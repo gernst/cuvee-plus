@@ -4,7 +4,7 @@ import scala.annotation.nowarn
 
 import cuvee.Name
 
-object Printer:
+object Printer extends cuvee.Printer:
   def lines(expr: Any): List[String] =
     expr match
       case atom: Atom    => List(atom.text)

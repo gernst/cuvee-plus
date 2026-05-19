@@ -9,10 +9,16 @@ sealed trait Type
 case class Param(name: Name) extends Type
 case class Sort(con: Con, args: List[Type]) extends Type
 
+object Param:
+  val a = Param("a")
+  val b = Param("b")
+
 object Con:
   val bool = Con("Bool", 0)
   val int = Con("Int", 0)
   val real = Con("Real", 0)
+
+  val array = Con("Array", 2)
 
 object Sort:
   val bool = Sort(Con.bool, Nil)

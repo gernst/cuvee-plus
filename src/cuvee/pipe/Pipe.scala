@@ -2,30 +2,38 @@ package cuvee.pipe
 
 import scala.util.control.Breaks
 
-import cuvee.Error
 import cuvee.smtlib._
+import cuvee.sexpr.Id
 
 type Source = Iterable[Cmd]
-
 type Transform = (List[Cmd], List[Cmd], State) => List[Cmd]
 
 object Pipe:
   def run(source: Source, init: Sink, report: Report, incremental: Boolean) =
     var sink = init
+    var printSuccess = false
 
     Breaks.breakable:
       for cmd <- source do
-        try
-          val (result, next) = sink.query(cmd)
-          sink = next
-          report.report(result)
+        cmd match
+          case SetOption("print-success", Id("true")) =>
+            printSuccess = true
 
-        catch
-          case Exit =>
-            Breaks.break()
+          case SetOption("print-success", Id("false")) =>
+            printSuccess = false
 
-          case Error(msg) =>
-            report.error(msg)
+          case _ =>
+            try
+              val (result, next) = sink.query(cmd)
+              sink = next
+              report.report(result, printSuccess)
 
-            if (!incremental)
-              Breaks.break()
+              if cmd == Exit
+              then Breaks.break()
+
+            catch
+              case result @ Error(msg) =>
+                report.report(result, printSuccess)
+
+                if (!incremental)
+                  Breaks.break()

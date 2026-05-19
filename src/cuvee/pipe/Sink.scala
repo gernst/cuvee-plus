@@ -1,6 +1,8 @@
 package cuvee.pipe
 
+import cuvee.Error
 import cuvee.smtlib._
+import java.io.PrintStream
 
 trait Sink:
   def query(cmd: Cmd): (Result, Sink)
@@ -19,3 +21,25 @@ trait Sink:
 
       case first :: rest =>
         exec(first).exec(rest)
+
+object Sink:
+  case class print(stream: PrintStream, printer: cuvee.Printer) extends Sink:
+    def query(cmd: Cmd) =
+      for (line <- printer.lines(cmd))
+        stream.println(line)
+
+      cmd match
+        case _: Decl =>
+          (Ack.Success, this)
+
+        case _: Ctrl =>
+          (Ack.Success, this)
+
+        case CheckSat =>
+          (Status.Unknown, this)
+
+        case GetModel =>
+          Error.report("no model available")
+
+        case Labels =>
+          Error.report("no labels available")

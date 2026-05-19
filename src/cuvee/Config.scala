@@ -1,3 +1,5 @@
 package cuvee
 
-case class Config()
+case class Config(
+    printer: Printer
+)

@@ -62,10 +62,14 @@ class Parser(init: State):
       case List(Id("set-info"), Kw(attr), arg) =>
         SetInfo(attr, Some(arg))
 
-      case List(Id("get-model")) => GetModel
-      case List(Id("labels"))    => Labels
+      case List(Id("get-model")) =>
+        GetModel
 
-      case List(Id("check-sat")) => CheckSat
+      case List(Id("labels")) =>
+        Labels
+
+      case List(Id("check-sat")) =>
+        CheckSat
 
       case List(Id("push")) =>
         stack = state :: stack

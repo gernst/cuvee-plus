@@ -3,6 +3,7 @@ package cuvee.smtlib
 import cuvee.Name
 import cuvee.pure._
 import cuvee.prog._
+import cuvee.sexpr.Attrs
 
 trait Result
 
@@ -15,20 +16,23 @@ enum Status extends Result:
   case Sat
   case Unsat
 
+case class Error(msg: String) extends Throwable with Result
+
 case class Labels(labels: List[String]) extends Result
 
 sealed trait Cmd
+sealed trait Ctrl extends Cmd
 sealed trait Decl extends Cmd
+sealed trait Query extends Cmd
 
-case object Exit extends Throwable with Cmd
+case object CheckSat extends Query
+case object Labels extends Query
+case object GetModel extends Query
 
-case object CheckSat extends Cmd
-case object Labels extends Cmd
-case object GetModel extends Cmd
-
-case object Push extends Cmd
-case object Pop extends Cmd
-case object Reset extends Cmd
+case object Exit extends Throwable with Ctrl
+case object Push extends Ctrl
+case object Pop extends Ctrl
+case object Reset extends Ctrl
 
 case class SetLogic(name: String) extends Decl
 
@@ -44,8 +48,8 @@ case class DeclareProc(proc: Proc) extends Decl
 
 enum Justify:
   case Axiom
-  case Free
   case Goal
   case Lemma
+  // case Free // should be done as an attribute
 
-case class Assert(phi: Expr, justify: Justify) extends Decl
+case class Assert(params: List[Param], phi: Expr, attrs: Attrs, justify: Justify) extends Decl

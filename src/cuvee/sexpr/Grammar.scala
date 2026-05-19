@@ -1,26 +1,14 @@
 package cuvee.sexpr
 
-import cuvee.util._
-
 object Grammar:
-  val lp = Tok.Lit("(")
-  val rp = Tok.Lit(")")
-  val eof = Tok.Lit("<eof>")
+  import easyparse._
+  import Brackets._
 
-  def id(name: String) = Tok.Val("id", Id(name))
-  def kw(name: String) = Tok.Val("kw", Kw(name))
+  def atom: Parser[Any] =
+    P(???)
 
-  def str(text: String): Tok = ???
-  def num(text: String): Tok = ???
-  def dec(text: String): Tok = ???
-  def hex(text: String): Tok = ???
-  def bin(text: String): Tok = ???
+  val sexprs =
+    sexpr.*
 
-  val sexprs: Pat = ???
-
-  val sexpr = a(
-    v("id"),
-    $("(", sexprs, ")"),
-
-    v("kw")
-  )
+  val sexpr: Parser[Any] =
+    P(parens(sexprs) | atom)

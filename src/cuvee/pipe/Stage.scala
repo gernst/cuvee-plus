@@ -18,9 +18,6 @@ case class Stage(
     state: State,
     next: Sink
 ) extends Sink:
-  def pending =
-    rpending.reverse
-
   def push =
     Error.abortIf("pipe not flushed", rpending.nonEmpty)
     copy(stack = (prefix, state) :: stack)
@@ -37,24 +34,23 @@ case class Stage(
 
   def query(cmd: Cmd) =
     cmd match
-      case Exit =>
-        throw Exit
-
       case decl: Decl =>
-        val sink = copy(rpending = decl :: rpending, state = state.add(decl))
-        (Ack.Success, sink)
+        val stage_ = copy(rpending = decl :: rpending, state = state.add(decl))
+        (Ack.Success, stage_)
 
       case last =>
+        val pending = rpending.reverse
+
         val cmds = transform(prefix, pending, state)
         val (result, next_) = next.query(cmds, last)
 
         val prefix_ = prefix ++ pending
         val rpending_ = Nil
 
-        val sink_ = copy(prefix = prefix_, rpending = rpending_, next = next_)
+        val stage_ = copy(prefix = prefix_, rpending = rpending_, next = next_)
 
         last match
-          case Push     => (result, sink_.push)
-          case Pop      => (result, sink_.pop)
-          case Reset    => (result, sink_.reset)
-          case CheckSat => (result, sink_)
+          case Push  => (result, stage_.push)
+          case Pop   => (result, stage_.pop)
+          case Reset => (result, stage_.reset)
+          case _     => (result, stage_)
