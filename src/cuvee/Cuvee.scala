@@ -3,7 +3,9 @@ package cuvee
 import cuvee.core._
 import cuvee.pipe._
 
-case class Name(name: String, index: Option[Int])
+case class Name(name: String, index: Option[Int]):
+  def withIndex(index: Int) =
+    Name(name, Some(index))
 
 object Name:
   given Conversion[String, Name] =

@@ -2,7 +2,7 @@ package cuvee.core
 
 import cuvee.Name
 
-case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var])
+case class Proc(name: Name, params: List[Param], in: List[Type], out: List[Type])
 
 case class Body(spec: Spec, body: Prog)
 

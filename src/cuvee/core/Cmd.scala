@@ -47,8 +47,12 @@ case class GetInfo(name: String) extends Decl
 case class SetInfo(name: String, value: Any) extends Decl
 
 case class DeclareSort(con: Con) extends Decl
+case class DefineSort(con: Con, params: List[Param], body: Type) extends Decl
+
 case class DeclareFun(fun: Fun) extends Decl
-case class DeclareProc(proc: Proc) extends Decl
+case class DefineFun(fun: Fun, formals: List[Var], body: Expr) extends Decl
+
+// case class DeclareProc(proc: Proc) extends Decl
 
 enum Justify:
   case Axiom

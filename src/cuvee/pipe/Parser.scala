@@ -44,22 +44,28 @@ class Parser(init: State):
   var state = init
   var stack: List[State] = List()
 
+  def list[A](from: Seq[Any])(f: Any => A): List[A] =
+    for arg <- from.toList
+    yield f(arg)
+
   def cmd(from: Any): Cmd =
     from match
+      // control commands
+
       case List(Id("set-logic"), Id(logic)) =>
+        state = state.setLogic(logic)
         SetLogic(logic)
 
-      case List(Id("set-option"), Kw(attr), arg) =>
-        SetOption(attr, arg)
+      case List(Id("set-option"), Kw(name), value) =>
+        state = state.setOption(name, value)
+        SetOption(name, value)
 
-      case List(Id("get-info"), Kw(attr)) =>
-        GetInfo(attr)
+      case List(Id("get-info"), Kw(name)) =>
+        GetInfo(name)
 
-      case List(Id("set-info"), Kw(attr)) =>
-        SetInfo(attr, None)
-
-      case List(Id("set-info"), Kw(attr), arg) =>
-        SetInfo(attr, Some(arg))
+      case List(Id("set-info"), Kw(name), value) =>
+        state = state.setInfo(name, value)
+        SetInfo(name, value)
 
       case List(Id("get-model")) =>
         GetModel
@@ -87,29 +93,161 @@ class Parser(init: State):
       case List(Id("exit")) =>
         Exit
 
-      // case List(Id("declare-sort"), Id(name), Num(digits)) =>
-      //   val con = Con(name, digits.toInt)
-      //   DeclareSort(con)
+      // sort and datatype declarations and definitions
 
-  def exprs(scope: Scope, from: Seq[Any]): List[Expr] =
-    for arg <- from.toList
-    yield expr(scope, arg)
+      case List(Id("declare-sort"), Id(name), Num(digits)) =>
+        val arity = digits.toInt
+        val con = Con(name, arity)
+
+        state = state.declare(con)
+        DeclareSort(con)
+
+      case List(Id("define-sort"), Id(name), List(params*), body) =>
+        val params_ = list(params) { param(_) }
+        val scope = Scope(params_)
+
+        val arity = params.length
+        val con = Con(name, arity)
+
+        val body_ = typ(scope, body)
+
+        state = state.declare(con)
+        state = state.define(con, params_, body_)
+        DefineSort(con, params_, body_)
+
+      // polymorphic Alt-Ergo .psmt declarations and definitions
+
+      case List(Id("declare-const"), Id(name), List(Id("par"), List(params*), res)) =>
+        val params_ = list(params) { param(_) }
+        val scope = Scope(params_)
+
+        val args_ = Nil
+        val res_ = typ(scope, res)
+        val fun = Fun(name, params_, args_, res_)
+
+        state = state.declare(fun)
+        DeclareFun(fun)
+
+      case List(Id("declare-fun"), Id(name), List(Id("par"), List(params*), List(args*), res)) =>
+        val params_ = list(params) { param(_) }
+        val scope = Scope(params_)
+
+        val args_ = list(args) { typ(scope, _) }
+        val res_ = typ(scope, res)
+        val fun = Fun(name, params_, args_, res_)
+
+        state = state.declare(fun)
+        DeclareFun(fun)
+
+      case List(Id("define-fun"), Id(name), List(Id("par"), List(params*), List(formals*), res, body)) =>
+        val params_ = list(params) { param(_) }
+        val scope = Scope(params_)
+
+        val formals_ = list(formals) { formal(scope, _) }
+        val res_ = typ(scope, res)
+        val fun = Fun(name, params_, formals_.types, res_)
+
+        val expr_ = expr(scope ++ formals_, body)
+        val body_ = Type.check(scope, expr_, res_)
+
+        state = state.declare(fun)
+        state = state.define(fun, formals_, body_)
+        DefineFun(fun, formals_, body_)
+
+      // monomorphic SMT-LIB declarations and definitions
+
+      case List(Id("declare-const"), Id(name), res) =>
+        val params_ = Nil
+        val scope = Scope.empty
+
+        val args_ = Nil
+        val res_ = typ(scope, res)
+        val fun = Fun(name, params_, args_, res_)
+
+        state = state.declare(fun)
+        DeclareFun(fun)
+
+      case List(Id("declare-fun"), Id(name), List(args*), res) =>
+        val params_ = Nil
+        val scope = Scope.empty
+
+        val args_ = list(args) { typ(scope, _) }
+        val res_ = typ(scope, res)
+        val fun = Fun(name, params_, args_, res_)
+
+        state = state.declare(fun)
+        DeclareFun(fun)
+
+      case List(Id("define-fun"), Id(name), List(formals*), res, body) =>
+        val params_ = Nil
+        val scope = Scope.empty
+
+        val formals_ = list(formals) { formal(scope, _) }
+        val res_ = typ(scope, res)
+        val fun = Fun(name, params_, formals_.types, res_)
+
+        val expr_ = expr(scope ++ formals_, body)
+        val body_ = Type.check(scope, expr_, res_)
+
+        state = state.declare(fun)
+        state = state.define(fun, formals_, body_)
+        DefineFun(fun, formals_, body_)
+
+      // assertions and proof goals
+
+      case List(Id("assert"), expr) =>
+        ???
+
+  def param(from: Any): Param =
+    from match
+      case Id(name) =>
+        Param(name)
+
+      case _ =>
+        Error.report("not a type parameter: " + from)
+
+  def formal(scope: Scope, from: Any): Var =
+    from match
+      case List(Id(name), sort) =>
+        Var(name, typ(scope, sort))
+
+      case _ =>
+        Error.report("not a formal argument: " + from)
+
+  def typ(scope: Scope, from: Any): Type =
+    from match
+      case Id(name) if scope.params.contains(name) =>
+        scope.params(name)
+
+      case Id(name) if state.sorts contains name =>
+        Sort(state.sorts(name), Nil)
+
+      case List(Id(name), args*) if state.sorts contains name =>
+        val args_ = list(args) { typ(scope, _) }
+        Sort(state.sorts(name), args_)
+
+      case _ =>
+        Error.report("not a type: " + from)
 
   def expr(scope: Scope, from: Any): Expr =
     from match
-      // case Num(digits) =>
-      //   Lit(BigInt(digits), Sort.int)
+      case Num(digits) =>
+        Lit(BigInt(digits), Sort.int)
 
-      // case Dec(digits) =>
-      //   Lit(digits.toDouble, Sort.real)
+      case Str(text) =>
+        Lit(text, Sort.string)
 
       case Id(name) if scope.bound.contains(name) =>
-        Var(name, scope.bound(name))
+        scope.bound(name)
 
       case Id(name) if state.funs.contains(name) =>
-        ???
+        val fun = state.funs(name)
+        val inst_ = ???
+        val args_ = Nil
+        App(fun, inst_, args_)
 
       case List(Id(name), args*) if state.funs.contains(name) =>
         val fun = state.funs(name)
-        val args_ = exprs(scope, args)
-        App(fun, ???, args_)
+        val inst_ = ???
+        val args_ = list(args) { expr(scope, _) }
+        App(fun, inst_, args_)

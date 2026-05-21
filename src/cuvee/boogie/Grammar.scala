@@ -131,7 +131,7 @@ object Grammar extends cuvee.Grammar:
     P("lemma" ~ attrs ~ params ~ expr ~ lemmabody) $ Syntax.lemma("lemma")
 
   val goal =
-    P("goal" ~ attrs ~ params ~ expr ~ lemmabody) $ Syntax.lemma("goal")
+    P("goal" ~ attrs ~ params ~ expr ~ lemmabody) $ Syntax.lemma("prove")
 
   val cmd: Parser[Any] = 
     P(sortdef | datadef | constdef | fundef | vardecl | axiom | lemma | goal)

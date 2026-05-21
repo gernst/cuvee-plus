@@ -15,8 +15,14 @@ object Error:
   def reportIf(msg: String, phi: Boolean) =
     if phi then report(msg)
 
+  def reportIfNot(msg: String, phi: Boolean) =
+    if !phi then report(msg)
+
   def abort(msg: String) =
     throw Fatal(msg)
 
   def abortIf(msg: String, phi: Boolean) =
     if phi then abort(msg)
+
+  def abortIfNot(msg: String, phi: Boolean) =
+    if !phi then abort(msg)

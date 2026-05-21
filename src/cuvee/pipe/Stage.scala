@@ -5,6 +5,7 @@ import scala.annotation.nowarn
 import cuvee.Error
 import cuvee.core._
 
+// the state already encompasses the new commands
 type Transform = (List[Cmd], List[Cmd], State) => List[Cmd]
 
 object Stage:
