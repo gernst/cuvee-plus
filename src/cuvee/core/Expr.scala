@@ -5,11 +5,6 @@ import scala.annotation.targetName
 import cuvee.Name
 import cuvee.util.Counter
 
-case class LetEq(x: Var, rhs: Expr):
-  def params = x.params ++ rhs.params
-  def bound = Set(x)
-  def free = rhs.free
-
 sealed trait Expr:
   def params: Set[Param]
   def free: Set[Var]
@@ -40,6 +35,6 @@ case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params
   def free = body.free -- bound
 
-case class Let(eqs: List[LetEq], body: Expr) extends Expr:
-  def params = eqs.params
-  def free = eqs.free ++ (body.free -- eqs.bound)
+case class Let(bound: List[Var], args: List[Expr], body: Expr) extends Expr:
+  def params = bound.params ++ args.params ++ body.params
+  def free = args.free ++ (body.free -- bound)
