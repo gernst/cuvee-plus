@@ -4,11 +4,12 @@ package cuvee.sexpr;
 
 %public
 %class Scanner
+%implements cuvee.Scanner
 %function next
-%type cuvee.util.Tok
+%type easyparse.Token
 
 %eofval{
-    return Grammar.eof();
+    return Syntax.eof();
 %eofval}
 
 %line
@@ -48,21 +49,21 @@ kw      = ":" {symbol}
 {ws}+ {}
 ";" .* {nl} {}
 
-"("         { return Grammar.lp();   }
-")"         { return Grammar.rp();   }
+"("         { return Syntax.lp();   }
+")"         { return Syntax.rp();   }
 
 \" ~ \"
-            { return Grammar.str(yytext(+1,-1)); }
+            { return Syntax.value("str", yytext(+1,-1)); }
 
-{dec}       { return Grammar.dec(yytext()); }
-{num}       { return Grammar.num(yytext()); }
-{hex}       { return Grammar.hex(yytext(+2,0)); }
-{bin}       { return Grammar.bin(yytext(+2,0)); }
+{dec}       { return Syntax.value("dec", yytext()); }
+{num}       { return Syntax.value("num", yytext()); }
+{hex}       { return Syntax.value("hex", yytext(+2,0)); }
+{bin}       { return Syntax.value("bin", yytext(+2,0)); }
 
-{symbol}    { return Grammar.id(yytext()); }
-{quoted}    { return Grammar.id(yytext(+1,-1)); }
-{kw}        { return Grammar.kw(yytext(+1,0));  }
+{symbol}    { return Syntax.value("id", yytext()); }
+{quoted}    { return Syntax.value("id", yytext(+1,-1)); }
+{kw}        { return Syntax.value("kw", yytext(+1,0));  }
 
-[^]         { throw new RuntimeException("unexpected character '" + yytext() + "' at " + yyline + ":" + yycolumn); }
+[^]         { Syntax.error("unexpected character '" + yytext() + "' at " + yyline + ":" + yycolumn); }
 
 }

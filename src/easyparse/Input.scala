@@ -1,6 +1,6 @@
 package easyparse
 
-type Text = List[Token]
+type Input = LazyList[Token]
 
 type ~[+A, +B] = Tuple2[A, B]
 val ~ = Tuple2
@@ -26,6 +26,51 @@ object Brackets:
 
   def braces[A](p: Parser[A]) =
     "{" ~ p ~ "}"
+
+object Input:
+  val empty: Input =
+    LazyList.empty[Token]
+
+  def cons(tok: Token, in: => Input): Input =
+    tok #:: in
+
+  def shift[A](where: String, in: Input, cm: Boolean)(pf: PartialFunction[(Token, Input), (A, Input)]) =
+    in match
+      case tok #:: in_ if pf.isDefinedAt((tok, in_)) =>
+        pf((tok, in_))
+
+      case _ =>
+        Input.fail(where, in, cm)
+
+  def shift[A](where: String, in: Input, cm: Boolean)(pf: PartialFunction[(Token, Input), Input]) =
+    in match
+      case tok #:: in_ if pf.isDefinedAt((tok, in_)) =>
+        pf((tok, in_))
+
+      case _ =>
+        Input.fail(where, in, cm)
+
+  def fail(where: String, in: Input, cm: Boolean) =
+    if cm
+    then throw Fail(in, List(where))
+    else throw Backtrack
+
+enum Token:
+  case Keyword(name: String)
+  case Value(name: String, Input: String)
+
+object Token:
+  val eof = Keyword("eof")
+
+case object Backtrack extends Throwable
+case class Fail(in: Input, from: List[String]) extends Exception
+
+extension [A](first: => A)
+  infix def or[B <: A](second: => B) =
+    try first
+    catch
+      case Backtrack =>
+        second
 
 // extension [A](p: Parser[List[A]])
 //   def ::[B >: A](q: Parser[B]): Parser[List[B]] =
@@ -57,23 +102,3 @@ extension [A1, A2, A3, A4](p: Parser[A1 ~ A2 ~ A3 ~ A4])
 extension [A1, A2, A3, A4, A5](p: Parser[A1 ~ A2 ~ A3 ~ A4 ~ A5])
   infix def $[B](f: (A1, A2, A3, A4, A5) => B): Parser[B] =
     p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 => f(a1, a2, a3, a4, a5) }
-
-object Text:
-  def fail(in: Text, cm: Boolean, where: String) =
-    if cm
-    then throw Fail(in, List(where))
-    else throw Backtrack
-
-enum Token:
-  case Keyword(name: String)
-  case Value(name: String, text: String)
-
-case object Backtrack extends Throwable
-case class Fail(in: Text, from: List[String]) extends Exception
-
-extension [A](first: => A)
-  infix def or[B <: A](second: => B) =
-    try first
-    catch
-      case Backtrack =>
-        second

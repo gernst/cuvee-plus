@@ -1,11 +1,7 @@
-package cuvee.smtlib
+package cuvee.core
 
 import cuvee.Name
 import cuvee.Error
-
-import cuvee.pure._
-import cuvee.prog._
-import cuvee.smtlib._
 
 case class State(
     logic: Option[String] = None,
@@ -63,5 +59,5 @@ case class State(
 
 object State {
   // XXX: add SMT-LIB predefined
-  def default = State(???)
+  def default = State(None)
 }

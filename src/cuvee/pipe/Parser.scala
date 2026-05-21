@@ -1,11 +1,10 @@
-package cuvee.smtlib
+package cuvee.pipe
 
 import cuvee.Error
 
 import cuvee.Name
 import cuvee.sexpr._
-import cuvee.smtlib._
-import cuvee.pure._
+import cuvee.core._
 
 object Parser:
   def ack(from: Any): Ack =

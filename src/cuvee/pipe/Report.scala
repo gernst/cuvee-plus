@@ -2,7 +2,7 @@ package cuvee.pipe
 
 import java.io.PrintStream
 
-import cuvee.smtlib._
+import cuvee.core._
 
 trait Report:
   def report(result: Result, printSuccess: Boolean): Unit

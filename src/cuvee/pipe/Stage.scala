@@ -3,7 +3,9 @@ package cuvee.pipe
 import scala.annotation.nowarn
 
 import cuvee.Error
-import cuvee.smtlib._
+import cuvee.core._
+
+type Transform = (List[Cmd], List[Cmd], State) => List[Cmd]
 
 object Stage:
   def empty(init: State, transform: Transform, next: Sink) =

@@ -1,8 +1,7 @@
-package cuvee.smtlib
+package cuvee.core
 
 import cuvee.Name
-import cuvee.pure._
-import cuvee.prog._
+import cuvee.core._
 import cuvee.sexpr.Attrs
 
 trait Result
@@ -16,7 +15,9 @@ enum Status extends Result:
   case Sat
   case Unsat
 
-case class Error(msg: String) extends Throwable with Result
+case class Error(msg: String) extends Throwable with Result:
+  override def toString =
+    "Error(" + msg + ")"
 
 case class Labels(labels: List[String]) extends Result
 
@@ -29,7 +30,10 @@ case object CheckSat extends Query
 case object Labels extends Query
 case object GetModel extends Query
 
-case object Exit extends Throwable with Ctrl
+case object Exit extends Throwable with Ctrl:
+  override def toString =
+    "Exit"
+
 case object Push extends Ctrl
 case object Pop extends Ctrl
 case object Reset extends Ctrl

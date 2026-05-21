@@ -1,10 +1,8 @@
 package cuvee.sexpr
 
-import scala.annotation.nowarn
-
 import cuvee.Name
 
-object Printer extends cuvee.Printer:
+object Printer:
   def lines(expr: Any): List[String] =
     expr match
       case atom: Atom    => List(atom.text)

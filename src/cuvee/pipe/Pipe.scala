@@ -2,11 +2,8 @@ package cuvee.pipe
 
 import scala.util.control.Breaks
 
-import cuvee.smtlib._
+import cuvee.core._
 import cuvee.sexpr.Id
-
-type Source = Iterable[Cmd]
-type Transform = (List[Cmd], List[Cmd], State) => List[Cmd]
 
 object Pipe:
   def run(source: Source, init: Sink, report: Report, incremental: Boolean) =

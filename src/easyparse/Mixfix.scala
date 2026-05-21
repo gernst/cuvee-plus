@@ -37,7 +37,7 @@ case class Mixfix[Expr](
     min: Int,
     max: Int
 ) extends Parser[Expr]:
-  def parse(in: Text, cm: Boolean) =
+  def parse(in: Input, cm: Boolean) =
     mixfix_app(min, in, cm)
 
   def nprec(assoc: Assoc, prec: Int) =
@@ -46,14 +46,14 @@ case class Mixfix[Expr](
   def rprec(assoc: Assoc, prec: Int) =
     if (assoc == Assoc.Right) prec else prec + 1
 
-  def check(ok: Boolean, in0: Text, cm: Boolean) =
-    if (!ok) Text.fail(in0, cm, name)
+  def check(ok: Boolean, in: Input, cm: Boolean) =
+    if (!ok) Input.fail(name, in, cm)
 
-  def operator[A](table: Map[String, A], in: Text, cm: Boolean) =
+  def operator[A](table: Map[String, A], in: Input, cm: Boolean) =
     val (key, in_) = op.parse(in, cm)
     if table.contains(key)
     then (key, table(key), in_)
-    else Text.fail(in, cm, name)
+    else Input.fail(name, in, cm)
 
   def unary(op: String, arg: Expr) =
     apply(op, List(arg))
@@ -61,13 +61,13 @@ case class Mixfix[Expr](
   def binary(op: String, arg1: Expr, arg2: Expr) =
     apply(op, List(arg1, arg2))
 
-  def mixfix_arg(lower: Int, in: Text, cm: Boolean): (Expr, Text) = {
+  def mixfix_arg(lower: Int, in: Input, cm: Boolean): (Expr, Input) = {
     prefix_app(lower, in, false)
   } or {
     inner_expr().parse(in, cm)
   }
 
-  def prefix_app(lower: Int, in0: Text, cm: Boolean) =
+  def prefix_app(lower: Int, in0: Input, cm: Boolean) =
     val (op, prec, in1) = operator(prefix_ops, in0, false)
     check(lower <= prec, in0, cm)
     val (right, in2) = mixfix_app(prec, in1, true)
@@ -77,7 +77,7 @@ case class Mixfix[Expr](
       lower: Int,
       upper: Int,
       left: Expr,
-      in0: Text,
+      in0: Input,
       cm: Boolean
   ) =
     val (op, prec, in1) = operator(postfix_ops, in0, false)
@@ -88,7 +88,7 @@ case class Mixfix[Expr](
       lower: Int,
       upper: Int,
       left: Expr,
-      in0: Text,
+      in0: Input,
       cm: Boolean
   ) =
     val (op, (assoc, prec), in1) = operator(infix_ops, in0, false)
@@ -100,9 +100,9 @@ case class Mixfix[Expr](
       lower: Int,
       upper: Int,
       left: Expr,
-      in: Text,
+      in: Input,
       cm: Boolean
-  ): (Expr, Text) = {
+  ): (Expr, Input) = {
     infix_app(lower, upper, left, in, false)
   } or {
     postfix_app(lower, upper, left, in, false)
@@ -110,6 +110,6 @@ case class Mixfix[Expr](
     (left, in)
   }
 
-  def mixfix_app(lower: Int, in0: Text, cm: Boolean): (Expr, Text) =
+  def mixfix_app(lower: Int, in0: Input, cm: Boolean): (Expr, Input) =
     val (left, in1) = mixfix_arg(lower, in0, cm)
     postinfix_app(lower, max, left, in1, true)

@@ -1,6 +1,6 @@
 package cuvee.boogie
 
-object Grammar:
+object Grammar extends cuvee.Grammar:
   import easyparse._
   import Brackets._
 

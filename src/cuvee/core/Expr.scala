@@ -1,4 +1,4 @@
-package cuvee.pure
+package cuvee.core
 
 import cuvee.Name
 

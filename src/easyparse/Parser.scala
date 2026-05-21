@@ -3,14 +3,14 @@ package easyparse
 import scala.collection.IterableFactory
 
 trait Parser[+A]:
-  def parse(in: Text, cm: Boolean): (A, Text)
+  def parse(in: Input, cm: Boolean): (A, Input)
 
-  def parse(in: Text): (A, Text) =
+  def parse(in: Input): (A, Input) =
     parse(in, cm = true)
 
-  def parseAll(in: Text): A =
+  def parseAll(in: Input): A =
     val (a, in_) = this.parse(in)
-    if (in_ != Nil) Text.fail(in_, true, "<eof>")
+    if (in_.nonEmpty) Input.fail("<eof>", in_, true)
     else a
 
   def asScanner: Scanner =
@@ -59,79 +59,68 @@ trait Parser[+A]:
   def ~+(sep: Scanner): Parser[List[A]] =
     Parser.Intersperse(this, sep, true)
 
-  def unfold[CC[+_]](factory: IterableFactory[CC], in: Text): CC[A] =
+  def unfold[CC[+_]](factory: IterableFactory[CC])(in: Input): CC[A] =
     val p = this.?
-    val b = factory.newBuilder[(A, Text)]
+    val b = factory.newBuilder[(A, Input)]
 
-    factory.unfold(in) { in0 =>
+    factory.unfold(in): in0 =>
       val (a, in1) = p.parse(in0)
       a map { (_, in1) }
-    }
 
 object Parser:
   case class Recursive[A](name: String, p: () => Parser[A]) extends Parser[A]:
-    def parse(in0: Text, cm: Boolean) =
+    def parse(in0: Input, cm: Boolean) =
       try p().parse(in0, cm)
       catch
         case Fail(in1, trace) =>
           throw Fail(in1, name :: trace)
 
   case class Accept[A](a: A) extends Parser[A]:
-    def parse(in: Text, cm: Boolean) =
+    def parse(in: Input, cm: Boolean) =
       (a, in)
 
   case class Match(name: String) extends Parser[String]:
-    def parse(in: Text, cm: Boolean) =
-      in match
-        case Token.Value(`name`, value) :: in_ =>
+    def parse(in: Input, cm: Boolean) =
+      Input.shift(name, in, cm):
+        case (Token.Value(`name`, value), in_) =>
           (value, in_)
-        case _ =>
-          Text.fail(in, cm, name)
-
-  case class Dispatch[A](name: String, table: Map[String, Parser[A]]) extends Parser[A]:
-    def parse(in: Text, cm: Boolean) =
-      in match
-        case Token.Value(`name`, key) :: in_ if table.contains(key) =>
-          table(key).parse(in_, cm)
-        case _ =>
-          Text.fail(in, cm, name)
 
   case class Apply[A, +B](p: Parser[A], f: A => B) extends Parser[B]:
-    def parse(in0: Text, cm: Boolean) =
+    def parse(in0: Input, cm: Boolean) =
       val (a, in1) = p.parse(in0, cm)
       (f(a), in1)
 
   case class Collect[A, +B](name: String, p: Parser[A], f: PartialFunction[A, B]) extends Parser[B]:
-    def parse(in0: Text, cm: Boolean) =
+    def parse(in0: Input, cm: Boolean) =
       val (a, in1) = p.parse(in0, cm)
       if f.isDefinedAt(a)
       then (f(a), in1)
-      else Text.fail(in0, cm, name)
+      else Input.fail(name, in0, cm)
 
   case class Filter[A](name: String, p: Parser[A], f: A => Boolean) extends Parser[A]:
-    def parse(in0: Text, cm: Boolean) =
+    def parse(in0: Input, cm: Boolean) =
       val (a, in1) = p.parse(in0, cm)
       if f(a) then (a, in1)
-      else Text.fail(in0, cm, name)
+      else Input.fail(name, in0, cm)
 
   case class Choice[+A](p: Parser[A], q: Parser[A]) extends Parser[A]:
-    def parse(in: Text, cm: Boolean) =
+    def parse(in: Input, cm: Boolean) =
       p.parse(in, cm = false) or q.parse(in, cm)
 
   case class SeqParser[+A, +B](p: Parser[A], q: Parser[B], strict: Boolean) extends Parser[(A, B)]:
-    def parse(in0: Text, cm: Boolean) =
+    def parse(in0: Input, cm: Boolean) =
       val (a, in1) = p.parse(in0, cm)
       val (b, in2) = q.parse(in1, cm || strict)
       ((a, b), in2)
 
   case class SeqScanner[+A](p: Parser[A], q: Scanner, strict: Boolean) extends Parser[A]:
-    def parse(in0: Text, cm: Boolean) =
+    def parse(in0: Input, cm: Boolean) =
       val (a, in1) = p.parse(in0, cm)
       val in2 = q.scan(in1, cm || strict)
       (a, in2)
 
   case class Intersperse[+A](p: Parser[A], q: Scanner, min: Boolean) extends Parser[List[A]]:
-    def parse(in0: Text, cm: Boolean): (List[A], Text) =
+    def parse(in0: Input, cm: Boolean): (List[A], Input) =
       if min
       then
         val (a, in1) = p.parse(in0, cm)
@@ -157,10 +146,10 @@ object Parser:
   case class Repeat[+A](p: Parser[A], min: Int, max: Int) extends Parser[List[A]]:
     require(0 <= min && min <= max)
 
-    def parse(in: Text, cm: Boolean): (List[A], Text) =
+    def parse(in: Input, cm: Boolean): (List[A], Input) =
       parse(0, in, cm)
 
-    def parse(done: Int, in0: Text, cm: Boolean): (List[A], Text) =
+    def parse(done: Int, in0: Input, cm: Boolean): (List[A], Input) =
       if done < min
       then
         val (a, in1) = p.parse(in0, cm)
