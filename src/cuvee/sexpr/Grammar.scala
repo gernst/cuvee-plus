@@ -1,6 +1,11 @@
 package cuvee.sexpr
 
+import cuvee.core.State
+
 object Grammar extends cuvee.Grammar:
+  val init = State.default
+  val cmd = sexpr
+
   import easyparse._
   import Brackets._
 
@@ -19,4 +24,3 @@ object Grammar extends cuvee.Grammar:
     P(parens(sexprs) | atom)
 
   val sexprs = sexpr.*
-  val cmd = sexpr

@@ -5,9 +5,9 @@ import cuvee.core._
 type Source = Iterable[Cmd]
 
 object Source:
-  def read(init: State, scanner: cuvee.Scanner, grammar: cuvee.Grammar): Source =
+  def read(scanner: cuvee.Scanner, grammar: cuvee.Grammar): Source =
     val in = scanner.input
-    val parser = Parser(init)
+    val parser = Parser(grammar.init)
 
     def cmds(in: easyparse.Input): LazyList[Cmd] =
       if in.isEmpty

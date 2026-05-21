@@ -1,8 +1,12 @@
 package cuvee.boogie
 
+import cuvee.core.State
+
 object Grammar extends cuvee.Grammar:
   import easyparse._
   import Brackets._
+
+  val init = State.default
 
   val sym = T("sym")
   val num = T("int") $ { BigInt(_) }
