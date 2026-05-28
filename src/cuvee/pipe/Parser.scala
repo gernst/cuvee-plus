@@ -14,9 +14,9 @@ object Parser:
       case Id("unsupported") =>
         Ack.Unsupported
       // case List(Id("error"), Str(msg)) =>
-      //   Error.report(msg)
+      //   Error.raise(msg)
       case _ =>
-        Error.report("invalid response: " + from)
+        Error.raise("invalid response", from)
 
   def issat(from: Any): Status =
     from match
@@ -27,18 +27,18 @@ object Parser:
       case Id("unknown") =>
         Status.Unknown
       // case List(Id("error"), Str(msg)) =>
-      //   Error.report(msg)
+      //   Error.raise(msg)
       case _ =>
-        Error.report("invalid status: " + from)
+        Error.raise("invalid status", from)
 
   def labels(from: Any): Labels =
     from match
       case List(Id("labels"), ids*) =>
         Labels(ids.toList.map { case Id(name) => name })
       // case List(Id("error"), Str(msg)) =>
-      //   Error.report(msg)
+      //   Error.raise(msg)
       case _ =>
-        Error.report("invalid labels: " + from)
+        Error.raise("invalid labels", from)
 
 class Parser(init: State):
   var state = init
@@ -114,6 +114,9 @@ class Parser(init: State):
         state = state.declare(con)
         state = state.define(con, params_, body_)
         DefineSort(con, params_, body_)
+
+      case List(Id("declare-datatypes"), _*) =>
+        Error.raise("unsupported", from)
 
       // polymorphic Alt-Ergo .psmt declarations and definitions
 
@@ -195,8 +198,21 @@ class Parser(init: State):
 
       // assertions and proof goals
 
-      case List(Id("assert"), expr) =>
-        ???
+      case List(Id("assert"), List(Id("par"), List(params*), phi)) =>
+        val params_ = list(params) { param(_) }
+        val scope = Scope(params_)
+        val expr_ = expr(scope, phi)
+        val phi_ = Type.check(scope, expr_, Sort.bool)
+        val attrs_ = Attrs.empty
+        Assert(Axiom, params_, phi_, attrs_)
+
+      case List(Id("assert"), phi) =>
+        val params_ = Nil
+        val scope = Scope.empty
+        val expr_ = expr(scope, phi)
+        val phi_ = Type.check(scope, expr_, Sort.bool)
+        val attrs_ = Attrs.empty
+        Assert(Axiom, params_, phi_, attrs_)
 
   def param(from: Any): Param =
     from match
@@ -204,7 +220,7 @@ class Parser(init: State):
         Param(name)
 
       case _ =>
-        Error.report("not a type parameter: " + from)
+        Error.raise("not a type parameter", from)
 
   def formal(scope: Scope, from: Any): Var =
     from match
@@ -212,7 +228,7 @@ class Parser(init: State):
         Var(name, typ(scope, sort))
 
       case _ =>
-        Error.report("not a formal argument: " + from)
+        Error.raise("not a formal argument", from)
 
   def typ(scope: Scope, from: Any): Type =
     from match
@@ -227,7 +243,7 @@ class Parser(init: State):
         Sort(state.sorts(name), args_)
 
       case _ =>
-        Error.report("not a type: " + from)
+        Error.raise("not a type", from)
 
   def expr(scope: Scope, from: Any): Expr =
     from match
@@ -237,17 +253,29 @@ class Parser(init: State):
       case Str(text) =>
         Lit(text, Sort.string)
 
-      case Id(name) if scope.bound.contains(name) =>
-        scope.bound(name)
+      case Id(name) if scope.vars.contains(name) =>
+        scope.vars(name)
 
       case Id(name) if state.funs.contains(name) =>
         val fun = state.funs(name)
-        val inst_ = ???
+        val inst_ = fun.params.fresh
         val args_ = Nil
         App(fun, inst_, args_)
 
       case List(Id(name), args*) if state.funs.contains(name) =>
         val fun = state.funs(name)
-        val inst_ = ???
         val args_ = list(args) { expr(scope, _) }
+        val inst_ = args_.types
         App(fun, inst_, args_)
+
+      case List(Id("forall"), List(bound*), body) =>
+        val bound_ = list(bound) { formal(scope, _) }
+        val scope_ = scope ++ bound_
+        val body_ = expr(scope_, body)
+        Forall(bound_, body_)
+
+      case List(Id("exists"), List(bound*), body) =>
+        val bound_ = list(bound) { formal(scope, _) }
+        val scope_ = scope ++ bound_
+        val body_ = expr(scope_, body)
+        Forall(bound_, body_)

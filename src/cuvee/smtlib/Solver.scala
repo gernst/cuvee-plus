@@ -1,9 +1,10 @@
 package cuvee.smtlib
 
+import util.Tool
+
 import cuvee.Debug
 
 import cuvee.sexpr.Printer
-import cuvee.util.Tool
 import cuvee.pipe.Parser
 import cuvee.core.Cmd
 

@@ -3,25 +3,28 @@ package cuvee.core
 import scala.annotation.targetName
 
 import cuvee.Name
-import cuvee.util.Counter
+import util.Counter
 
 sealed trait Expr:
   def params: Set[Param]
   def free: Set[Var]
+  def typ: Type
 
 object Expr:
   def vars(name: String, types: List[Type]) =
     for (typ, index) <- types.zipWithIndex
     yield Var(Name(name, Some(index)), typ)
 
-case class Var(name: Name, typ: Type) extends Expr with Counter:
+case class Var(name: Name, typ: Type) extends Expr:
   def params = typ.params
   def free = Set(this)
 
   def asPair = (name, typ)
   def asIndex = (name, this)
 
-  def fresh = Var(name.withIndex(next()), typ)
+  def fresh = Var(name.withIndex(Var.next()), typ)
+
+object Var extends Counter
 
 case class Lit(value: Any, typ: Type) extends Expr:
   def params = typ.params

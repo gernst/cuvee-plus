@@ -2,6 +2,7 @@ package cuvee.pipe
 
 import scala.util.control.Breaks
 
+import cuvee.Error
 import cuvee.core._
 import cuvee.sexpr.Id
 
@@ -29,7 +30,7 @@ object Pipe:
               then Breaks.break()
 
             catch
-              case result @ Error(msg) =>
+              case result @ Error(msg, info) =>
                 report.report(result, printSuccess)
 
                 if (!incremental)

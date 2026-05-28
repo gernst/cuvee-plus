@@ -4,25 +4,25 @@ object Debug:
   def info(what: String, msg: String) =
     ???
 
-case class Fatal(msg: String) extends Throwable:
+trait Debug:
+  def apply(msg: String, info: Any*): Throwable
+
+  def raise[A](msg: String, info: Any*) =
+    throw apply(msg, info*)
+
+  def report[A](msg: String, info: Any*)(f: => A): A =
+    try f
+    catch
+      case cause: Throwable =>
+        throw apply(msg, info*).initCause(cause)
+
+case class Fatal(msg: String, info: Any*) extends Throwable:
   override def toString =
-    "Fatal(" + msg + ")"
+    "Fatal(" + msg + "," + info.mkString(",") + ")"
 
-object Error:
-  def report(msg: String) =
-    throw cuvee.core.Error(msg)
+case class Error(msg: String, info: Any*) extends Throwable with core.Result:
+  override def toString =
+    "Error(" + msg + "," + info.mkString(",") + ")"
 
-  def reportIf(msg: String, phi: Boolean) =
-    if phi then report(msg)
-
-  def reportIfNot(msg: String, phi: Boolean) =
-    if !phi then report(msg)
-
-  def abort(msg: String) =
-    throw Fatal(msg)
-
-  def abortIf(msg: String, phi: Boolean) =
-    if phi then abort(msg)
-
-  def abortIfNot(msg: String, phi: Boolean) =
-    if !phi then abort(msg)
+object Fatal extends Debug
+object Error extends Debug

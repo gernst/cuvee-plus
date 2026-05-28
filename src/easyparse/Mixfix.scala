@@ -1,5 +1,7 @@
 package easyparse
 
+import util.or
+
 case class M[A](
     op: Parser[String],
     prefix_ops: Map[String, Int],

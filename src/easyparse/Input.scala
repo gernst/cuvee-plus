@@ -1,5 +1,7 @@
 package easyparse
 
+import util.backtrack
+
 type Input = LazyList[Token]
 
 type ~[+A, +B] = Tuple2[A, B]
@@ -53,7 +55,7 @@ object Input:
   def fail(where: String, in: Input, cm: Boolean) =
     if cm
     then throw Fail(in, List(where))
-    else throw Backtrack
+    else backtrack
 
 enum Token:
   case Keyword(name: String)
@@ -62,15 +64,7 @@ enum Token:
 object Token:
   val eof = Keyword("eof")
 
-case object Backtrack extends Throwable
 case class Fail(in: Input, from: List[String]) extends Exception
-
-extension [A](first: => A)
-  infix def or[B <: A](second: => B) =
-    try first
-    catch
-      case Backtrack =>
-        second
 
 // extension [A](p: Parser[List[A]])
 //   def ::[B >: A](q: Parser[B]): Parser[List[B]] =

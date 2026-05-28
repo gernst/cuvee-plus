@@ -15,10 +15,6 @@ enum Status extends Result:
   case Sat
   case Unsat
 
-case class Error(msg: String) extends Throwable with Result:
-  override def toString =
-    "Error(" + msg + ")"
-
 case class Labels(labels: List[String]) extends Result
 
 sealed trait Cmd
@@ -54,10 +50,10 @@ case class DefineFun(fun: Fun, formals: List[Var], body: Expr) extends Decl
 
 // case class DeclareProc(proc: Proc) extends Decl
 
-enum Justify:
-  case Axiom
-  case Goal
-  case Lemma
-  // case Free // should be done as an attribute
+sealed trait Justify
+case object Axiom extends Justify
+case object Goal extends Justify
+case object Lemma extends Justify
+case object FreeLemma extends Justify
 
-case class Assert(params: List[Param], phi: Expr, attrs: Attrs, justify: Justify) extends Decl
+case class Assert(justify: Justify, params: List[Param], phi: Expr, attrs: Attrs) extends Decl

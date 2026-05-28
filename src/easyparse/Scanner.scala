@@ -1,5 +1,7 @@
 package easyparse
 
+import util.or
+
 trait Scanner:
   def scan(in: Input, cm: Boolean): Input
 

@@ -2,6 +2,8 @@ package easyparse
 
 import scala.collection.IterableFactory
 
+import util.or
+
 trait Parser[+A]:
   def parse(in: Input, cm: Boolean): (A, Input)
 

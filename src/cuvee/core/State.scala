@@ -25,7 +25,8 @@ case class State(
       case _            => false
 
   def setLogic(name: String) =
-    Error.reportIf("logic already set", logic.nonEmpty)
+    Error.report("logic already set"):
+      require(logic.nonEmpty)
     copy(logic = Some(name))
 
   def setOption(name: String, value: Any) =
@@ -36,26 +37,34 @@ case class State(
 
   def declare(con: Con) =
     val name = con.name
-    Error.reportIf("sort already declared: " + con, sorts.contains(name))
+    Error.report("sort already declared", con):
+      require(!sorts.contains(name))
     copy(sorts = sorts + (name -> con))
 
   def define(con: Con, params: List[Param], body: Type) =
     val name = con.name
-    Error.reportIfNot("sort not declared: " + con, sorts.contains(name))
-    Error.reportIfNot("sort already declared differently: " + con, sorts(name) == con)
-    Error.reportIf("sort already defined: " + con, sortdefs.contains(name))
+    Error.report("sort not declared", con):
+      require(sorts.contains(name))
+    Error.report("sort already declared differently", con):
+      require(sorts(name) == con)
+    Error.report("sort already defined", con):
+      require(!sortdefs.contains(name))
     copy(sortdefs = sortdefs + (name -> (params, body)))
 
   def declare(fun: Fun) =
     val name = fun.name
-    Error.reportIf("function already declared: " + fun, funs.contains(name))
+    Error.report("function already declared", fun):
+      require(!funs.contains(name))
     copy(funs = funs + (name -> fun))
 
   def define(fun: Fun, formals: List[Var], body: Expr) =
     val name = fun.name
-    Error.reportIfNot("function not declared: " + fun, funs.contains(name))
-    Error.reportIfNot("function already declared differently: " + fun, funs(name) == fun)
-    Error.reportIf("function already defined: " + fun, fundefs.contains(name))
+    Error.report("function not declared", fun):
+      require(funs.contains(name))
+    Error.report("function already declared differently", fun):
+      require(funs(name) == fun)
+    Error.report("function already defined", fun):
+      require(!fundefs.contains(name))
     copy(fundefs = fundefs + (name -> (formals, body)))
 
   // def declare(proc: Proc) =

@@ -4,10 +4,21 @@ import scala.annotation.targetName
 
 import cuvee.Error
 
+object Subst:
+  val empty = Subst(Map(), Map())
+
 case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E]):
   def inst = params.keySet
   def bound = vars.keySet
   def free = vars.values.free
+
+  @targetName("Subst.updateParam")
+  def +(pair: (Param, T)) =
+    Subst(params + pair, vars)
+
+  @targetName("Subst.updateVar")
+  def +(pair: (Var, E)) =
+    Subst(params, vars + pair)
 
   def avoid(bound: List[Var]) =
     val captured = bound.filter(free)

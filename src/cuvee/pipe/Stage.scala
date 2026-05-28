@@ -22,17 +22,21 @@ case class Stage(
     next: Sink
 ) extends Sink:
   def push =
-    Error.abortIf("pipe not flushed", rpending.nonEmpty)
+    Error.report("pipe not flushed"):
+      require(rpending.isEmpty)
     copy(stack = (prefix, state) :: stack)
 
   def pop =
-    Error.abortIf("pipe not flushed", rpending.nonEmpty)
-    Error.reportIf("cannot pop", stack.isEmpty)
+    Error.report("pipe not flushed"):
+      require(rpending.isEmpty)
+    Error.report("cannot pop from empty stack"):
+      require(stack.nonEmpty)
     @nowarn val (prefix_, state_) :: stack_ = stack
     copy(stack = stack_, prefix = prefix_, state = state_)
 
   def reset =
-    Error.abortIf("pipe not flushed", rpending.nonEmpty)
+    Error.report("pipe not flushed"):
+      require(rpending.isEmpty)
     Stage.empty(init, transform, next)
 
   def query(cmd: Cmd) =

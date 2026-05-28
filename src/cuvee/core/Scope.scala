@@ -4,14 +4,14 @@ import scala.annotation.targetName
 
 import cuvee.Name
 
-case class Scope(params: Map[Name, Param], bound: Map[Name, Var]):
+case class Scope(params: Map[Name, Param], vars: Map[Name, Var]):
   @targetName("Scope.addParam")
   def ++(that: List[Param]) =
-    Scope(params ++ that.asIndex, bound)
+    Scope(params ++ that.asIndex, vars)
 
   @targetName("Scope.addVars")
   def ++(that: List[Var]) =
-    Scope(params, bound ++ that.asIndex)
+    Scope(params, vars ++ that.asIndex)
 
 object Scope:
   val empty = Scope(Map(), Map())

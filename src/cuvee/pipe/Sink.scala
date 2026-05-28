@@ -45,7 +45,7 @@ object Sink:
           (Status.Unknown, this)
 
         case GetModel =>
-          Error.report("no model available")
+          Error.raise("no model available")
 
         case Labels =>
-          Error.report("no labels available")
+          Error.raise("no labels available")
