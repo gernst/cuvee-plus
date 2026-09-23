@@ -134,10 +134,10 @@ object Grammar extends cuvee.pipe.Grammar:
     some(braces(expr)) | none(";")
 
   val constdef =
-    P("const" ~ id ~ params ~ nil ~ ":" ~ typ ~ funbody) $ Syntax.fundef
+    P("const" ~ id ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ funbody) $ Syntax.fundef
     
   val fundef =
-    P("function" ~ id ~ params ~ formals ~ ":" ~ typ ~ funbody) $ Syntax.fundef
+    P("function" ~ id ~ params ~ formals ~ ":" ~ typ ~ nil ~ nil ~ funbody) $ Syntax.fundef
 
   val vardecl =
     P("var" ~ id ~ ":" ~ typ ~ ";") $ Syntax.binary("declare-var")

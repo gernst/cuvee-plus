@@ -77,23 +77,28 @@ object Syntax:
       case Some(typ) =>
         List(Id("define-sort"), sort, args, typ)
 
-  def fundef(fun: Id, params: List[Any], args: List[Any], res: Any, rhs: Option[Any]) =
+  def fundef(fun: Id, params: List[Any], args: List[Any], res: Any, pre: List[Any], post: List[Any], rhs: Option[Any]) =
+    val argnames = List(kw("formals"), args)
+    val pre_ = for phi <- pre yield List(Kw("requires"), List(Id("lambda"), args, phi))
+    val post_ = for phi <- pre yield List(Kw("ensures"), List(Id("lambda"), args, phi))
+    val attrs = argnames ++ pre_.flatten ++ post_.flatten
+
     (rhs, params) match
       case (None, Nil) =>
         val types = args.map { case List(_, typ) => typ }
-        List(Id("declare-fun"), fun, types, res)
+        List(Id("declare-fun"), fun, types, res) ++ attrs
 
       case (None, _) =>
         val types = args.map { case List(_, typ) => typ }
-        List(Id("declare-fun"), fun, List(Id("par"), params, types, res))
+        List(Id("declare-fun"), fun, List(Id("par"), params, types, res) ++ attrs)
 
       case (Some(expr), Nil) =>
         val types = args.map { case List(_, typ) => typ }
-        List(Id("define-fun"), fun, args, res, expr)
+        List(Id("define-fun"), fun, args, res, expr) ++ attrs
 
       case (Some(expr), _) =>
         val types = args.map { case List(_, typ) => typ }
-        List(Id("define-fun"), fun, List(Id("par"), params, args, res, expr))
+        List(Id("define-fun"), fun, List(Id("par"), params, args, res, expr) ++ attrs)
 
   def procdef(proc: Id, params: List[Any], in: List[Any], out: Option[List[Any]], pre: List[Any], post: List[Any], body: Option[Any]) =
     ???

@@ -8,6 +8,7 @@ object Printer extends cuvee.pipe.Printer:
   import cuvee.sexpr.Printer.escape
   import cuvee.sexpr.Printer.atom
   import cuvee.sexpr.Printer.list
+  import cuvee.sexpr.Printer.flat
   import cuvee.sexpr.Printer.{lines => sexpr}
 
   def mangle(name: Name) =
@@ -118,23 +119,23 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("set-info"), kw(name), sexpr(value))
 
       case DeclareSort(Con(name, arity), attrs) =>
-        apps(atom("declare-sort"), mangle(name), atom(arity.toString), sexprs(attrs.flatten))
+        apps(atom("declare-sort"), mangle(name), atom(arity.toString), flat(attrs.flatten))
 
       case DefineSort(Con(name, arity), params, body, attrs) =>
-        apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), sexprs(attrs.flatten))
+        apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), flat(attrs.flatten))
 
       case DeclareFun(Fun(name, Nil, args, res), attrs) =>
-        apps(atom("declare-fun"), mangle(name), list(lines(args)), lines(res), sexprs(attrs.flatten))
+        apps(atom("declare-fun"), mangle(name), list(lines(args)), lines(res), flat(attrs.flatten))
 
       case DeclareFun(Fun(name, params, args, res), attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(lines(args)), lines(res), sexprs(attrs.flatten))
+        val body_ = apps(atom("par"), list(lines(params)), list(lines(args)), lines(res), flat(attrs.flatten))
         apps(atom("declare-fun"), mangle(name), body_)
 
       case DefineFun(Fun(name, Nil, args, res), bound, body, attrs) =>
-        apps(atom("define-fun"), mangle(name), list(formals(bound)), lines(res), lines(body), sexprs(attrs.flatten))
+        apps(atom("define-fun"), mangle(name), list(formals(bound)), lines(res), lines(body), flat(attrs.flatten))
 
       case DefineFun(Fun(name, params, args, res), bound, body, attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(formals(bound)), lines(res), lines(body), sexprs(attrs.flatten))
+        val body_ = apps(atom("par"), list(lines(params)), list(formals(bound)), lines(res), lines(body), flat(attrs.flatten))
         apps(atom("define-fun"), mangle(name), body_)
 
       case Assert(Axiom, Nil, phi, attrs) =>

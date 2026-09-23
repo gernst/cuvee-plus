@@ -72,6 +72,17 @@ object Config:
     flag("-o", "<file>", "redirect output to <file> and report to stdout") { case (config, name :: rest) =>
       val config_ = config.copy(sink = Sink.file(name), report = Report.stdout)
       (config_, rest)
+    },
+
+    flag("-print", "<format>", "override printer format") {
+      case (config, name :: rest) if langs.contains(name) =>
+        val lang = langs(name)
+        val config_ = config.copy(printer = lang.printer)
+        (config_, rest)
+
+      case (config, "scala" :: rest) =>
+        val config_ = config.copy(printer = Printer.default)
+        (config_, rest)
     }
   )
 

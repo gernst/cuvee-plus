@@ -53,5 +53,5 @@ case class Attrs(attrs: List[(String, Option[Any])]):
 
   def flatten =
     attrs flatMap:
-      case (kw, None)         => List(kw)
-      case (kw, Some(sSExpr)) => List(kw, sSExpr)
+      case (kw, None)      => List(Kw(kw))
+      case (kw, Some(arg)) => List(Kw(kw), arg)

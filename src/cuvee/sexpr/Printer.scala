@@ -7,8 +7,13 @@ object Printer:
   def lines(expr: Any): List[String] =
     expr match
       case Id(text)      => atom(escape(text))
+      case Kw(text)      => atom(":" + text)
       case expr: Atom    => atom(expr.text)
-      case args: List[_] => list(args flatMap lines)
+      case args: List[_] => list(flat(args))
+
+  def flat(args: List[Any]) =
+    println(args)
+    args flatMap lines
 
   def atom(text: String) =
     List(text)
