@@ -12,7 +12,6 @@ object Printer:
       case args: List[_] => list(flat(args))
 
   def flat(args: List[Any]) =
-    println(args)
     args flatMap lines
 
   def atom(text: String) =
