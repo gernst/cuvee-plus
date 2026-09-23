@@ -7,7 +7,7 @@ package cuvee.sexpr;
 
 // See https://github.com/jflex-de/jflex/issues/222
 @SuppressWarnings("FallThrough")
-public class Scanner implements cuvee.Scanner {
+public class Scanner implements cuvee.pipe.Scanner {
 
   /** This character denotes the end of file. */
   public static final int YYEOF = -1;

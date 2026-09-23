@@ -2,7 +2,7 @@ package cuvee.boogie
 
 import cuvee.core.State
 
-object Grammar extends cuvee.Grammar:
+object Grammar extends cuvee.pipe.Grammar:
   import easyparse._
   import Brackets._
 
@@ -149,16 +149,16 @@ object Grammar extends cuvee.Grammar:
   )
 
   val infix_ops = Map(
-    "<==>" -> (Assoc.Left, 0),
+    "<==>" -> (Assoc.Non, 0),
     "==>" -> (Assoc.Right, 1),
     "||" -> (Assoc.Left, 2),
     "&&" -> (Assoc.Left, 3),
     "==" -> (Assoc.Left, 5),
     "!=" -> (Assoc.Left, 5),
-    ">=" -> (Assoc.Left, 5),
-    ">" -> (Assoc.Left, 5),
-    "<" -> (Assoc.Left, 5),
-    "<=" -> (Assoc.Left, 5),
+    ">=" -> (Assoc.Non, 5),
+    ">" -> (Assoc.Non, 5),
+    "<" -> (Assoc.Non, 5),
+    "<=" -> (Assoc.Non, 5),
     "+" -> (Assoc.Left, 6),
     "-" -> (Assoc.Left, 6),
     "*" -> (Assoc.Left, 7),

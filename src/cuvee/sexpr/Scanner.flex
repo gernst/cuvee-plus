@@ -4,7 +4,7 @@ package cuvee.sexpr;
 
 %public
 %class Scanner
-%implements cuvee.Scanner
+%implements cuvee.pipe.Scanner
 %function next
 %type easyparse.Token
 

@@ -11,6 +11,8 @@ object Name:
   given Conversion[String, Name] =
     (name: String) => Name(name, None)
 
+object foo extends util.Run(Cuvee, "examples/test.dafny")
+
 object Cuvee extends util.Main:
   def main(args: Array[String]) =
     import java.io.InputStreamReader

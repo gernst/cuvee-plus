@@ -1,8 +1,9 @@
 package cuvee.pipe
 
+import java.io.PrintStream
+
 import cuvee.Error
 import cuvee.core._
-import java.io.PrintStream
 
 trait Sink:
   def query(cmd: Cmd): (Result, Sink)
@@ -23,13 +24,13 @@ trait Sink:
         exec(first).exec(rest)
 
 object Sink:
-  def stdout(printer: cuvee.Printer) =
+  def stdout(printer: Printer) =
     Print(System.out, printer)
 
-  def stderr(printer: cuvee.Printer) =
+  def stderr(printer: Printer) =
     Print(System.err, printer)
 
-  class Print(stream: PrintStream, printer: cuvee.Printer) extends Sink:
+  class Print(stream: PrintStream, printer: Printer) extends Sink:
     def query(cmd: Cmd) =
       for (line <- printer.lines(cmd))
         stream.println(line)

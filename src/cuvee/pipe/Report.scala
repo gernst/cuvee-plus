@@ -8,13 +8,13 @@ trait Report:
   def report(result: Result, printSuccess: Boolean): Unit
 
 object Report:
-  def stdout(printer: cuvee.Printer) =
+  def stdout(printer: Printer) =
     new print(System.out, printer)
 
-  def stderr(printer: cuvee.Printer) =
+  def stderr(printer: Printer) =
     new print(System.err, printer)
 
-  class print(stream: PrintStream, printer: cuvee.Printer) extends Report:
+  class print(stream: PrintStream, printer: Printer) extends Report:
     def report(result: Result, printSuccess: Boolean) =
       result match
         case ack: Ack if !printSuccess =>

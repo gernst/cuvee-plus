@@ -2,7 +2,7 @@ package cuvee.sexpr
 
 import cuvee.core.State
 
-object Grammar extends cuvee.Grammar:
+object Grammar extends cuvee.pipe.Grammar:
   val init = State.default
   val cmd = sexpr
 

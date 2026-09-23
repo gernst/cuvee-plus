@@ -4,7 +4,7 @@ import cuvee.Name
 import cuvee.core._
 import cuvee.sexpr.Attrs
 
-object Printer extends cuvee.Printer:
+object Printer extends cuvee.pipe.Printer:
   import cuvee.sexpr.Printer.escape
   import cuvee.sexpr.Printer.atom
   import cuvee.sexpr.Printer.list

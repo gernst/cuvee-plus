@@ -4,8 +4,12 @@ import cuvee.core._
 
 type Source = Iterable[Cmd]
 
+trait Grammar:
+  def init: State
+  def cmd: easyparse.Parser[Any]
+
 object Source:
-  def read(scanner: cuvee.Scanner, grammar: cuvee.Grammar): Source =
+  def read(scanner: Scanner, grammar: Grammar): Source =
     val in = scanner.input
     val parser = Parser(grammar.init)
 
