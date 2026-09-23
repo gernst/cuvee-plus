@@ -77,27 +77,48 @@ object Syntax:
       case Some(typ) =>
         List(Id("define-sort"), sort, args, typ)
 
+  def contract(args: List[Any], pre: List[Any], args_ : List[Any], post: List[Any]) =
+    val pre_ =
+      for phi <- pre
+      yield List(Kw("requires"), List(Id("lambda"), args, phi))
+
+    val post_ =
+      for phi <- pre
+      yield List(Kw("ensures"), List(Id("lambda"), args_, phi))
+
+    pre_.flatten ++ post_.flatten
+
+  def argnames(args: List[Any], args_ : List[Any]) =
+    val formals_ =
+      if args.nonEmpty
+      then List(kw("formals"), args)
+      else Nil
+
+    val returns_ =
+      if args_.nonEmpty
+      then List(kw("formals"), args_)
+      else Nil
+
+    formals_ ++ returns_
+
   def fundef(fun: Id, params: List[Any], args: List[Any], res: Any, pre: List[Any], post: List[Any], rhs: Option[Any]) =
-    val argnames = if args.nonEmpty then List(kw("formals"), args) else Nil
-    val pre_ = for phi <- pre yield List(Kw("requires"), List(Id("lambda"), args, phi))
-    val post_ = for phi <- pre yield List(Kw("ensures"), List(Id("lambda"), args, phi))
-    val attrs = argnames ++ pre_.flatten ++ post_.flatten
+    val names_ = argnames(args, Nil)
+    val contract_ = contract(args, pre, args, post)
+    val attrs = names_ ++ contract_
+
+    val types_ = args.map { case List(_, typ) => typ }
 
     (rhs, params) match
       case (None, Nil) =>
-        val types = args.map { case List(_, typ) => typ }
-        List(Id("declare-fun"), fun, types, res) ++ attrs
+        List(Id("declare-fun"), fun, types_, res) ++ attrs
 
       case (None, _) =>
-        val types = args.map { case List(_, typ) => typ }
-        List(Id("declare-fun"), fun, List(Id("par"), params, types, res) ++ attrs)
+        List(Id("declare-fun"), fun, List(Id("par"), params, types_, res) ++ attrs)
 
       case (Some(expr), Nil) =>
-        val types = args.map { case List(_, typ) => typ }
         List(Id("define-fun"), fun, args, res, expr) ++ attrs
 
       case (Some(expr), _) =>
-        val types = args.map { case List(_, typ) => typ }
         List(Id("define-fun"), fun, List(Id("par"), params, args, res, expr) ++ attrs)
 
   def procdef(
@@ -110,7 +131,21 @@ object Syntax:
       post: List[Any],
       body: Option[Any]
   ) =
-    ???
+    val ret = out.toList.flatten
+    val names_ = argnames(in, ret)
+    val contract_ = contract(in, pre, in ++ ret, post)
+    val attrs = names_ ++ contract_
+
+    val in_ = in.map { case List(_, typ) => typ }
+    val out_ = ret.map { case List(_, typ) => typ }
+
+    (params, body) match {
+      case (Nil, None) =>
+        List(Id("declare-proc"), proc, in, out) ++ attrs
+
+      case (Nil, Some(prog)) =>
+        List(Id("define-proc"), proc, in, out, prog) ++ attrs
+    }
 
   def lemma(justify: String)(attrs: List[Kw], params: List[Any], expr: Any, proof: Option[Any]) =
     val attrs_ =

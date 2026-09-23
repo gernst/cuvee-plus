@@ -49,7 +49,7 @@ case class DeclareFun(fun: Fun, attrs: Attrs) extends Decl
 case class DefineFun(fun: Fun, formals: List[Var], body: Expr, attrs: Attrs) extends Decl
 
 case class DeclareProc(proc: Proc, attrs: Attrs) extends Decl
-case class DefineProc(proc: Proc, in: List[Var], out: List[Var], attrs: Attrs) extends Decl
+case class DefineProc(proc: Proc, in: List[Var], out: List[Var], body: Prog, attrs: Attrs) extends Decl
 
 sealed trait Justify
 case object Axiom extends Justify
