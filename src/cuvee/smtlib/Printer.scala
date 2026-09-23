@@ -4,8 +4,6 @@ import cuvee.Name
 import cuvee.core._
 import cuvee.sexpr.Attrs
 
-// case class Labels(labels: List[String]) extends Result
-
 object Printer extends cuvee.Printer:
   import cuvee.sexpr.Printer.escape
   import cuvee.sexpr.Printer.atom
@@ -68,6 +66,9 @@ object Printer extends cuvee.Printer:
 
       case Status.Unsat =>
         atom("unsat")
+
+      case Labels(labels) =>
+        apps(atom("labels"), labels)
 
   def lines(cmd: Cmd) =
     cmd match
