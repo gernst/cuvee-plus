@@ -45,6 +45,9 @@ case class Attrs(attrs: List[(String, Option[Any])]):
   infix def ++(that: Attrs) =
     Attrs(this.attrs ++ that.attrs)
 
+  def isEmpty =
+    attrs.isEmpty
+
   def contains(kw: String) =
     attrs.exists:
       case (kw_, _) => kw == kw_

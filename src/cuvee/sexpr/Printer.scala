@@ -5,10 +5,17 @@ import cuvee.Name
 object Printer:
   def lines(expr: Any): List[String] =
     expr match
-      case atom: Atom    => List(atom.text)
-      case args: List[_] => app(args.toList flatMap lines)
+      case Id(text)      => atom(escape(text)) // check if need to escape
+      case expr: Atom    => atom(expr.text)
+      case args: List[_] => list(args flatMap lines)
 
-  def app(args: List[String]): List[String] =
+  def atom(text: String) =
+    List(text)
+
+  def escape(text: String) =
+    ???
+
+  def list(args: List[String]): List[String] =
     args match
       case Nil =>
         List("()")

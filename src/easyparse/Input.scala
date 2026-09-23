@@ -85,6 +85,9 @@ extension [A1, A2](p: Parser[A1 ~ A2])
   infix def $[B](f: (A1, A2) => B): Parser[B] =
     p.map { case a1 ~ a2 => f(a1, a2) }
 
+  def apply[B](f: (A1, A2) => B): Parser[B] =
+    p.map { case a1 ~ a2 => f(a1, a2) }
+
 extension [A1, A2, A3](p: Parser[A1 ~ A2 ~ A3])
   infix def $[B](f: (A1, A2, A3) => B): Parser[B] =
     p.map { case a1 ~ a2 ~ a3 => f(a1, a2, a3) }

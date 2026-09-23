@@ -33,11 +33,14 @@ case class Lit(value: Any, typ: Type) extends Expr:
 case class App(fun: Fun, inst: List[Type], args: List[Expr]) extends Expr:
   def params = inst.params ++ args.params
   def free = args.free
+  def typ = ???
 
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params
   def free = body.free -- bound
+  def typ = body.typ
 
 case class Let(bound: List[Var], args: List[Expr], body: Expr) extends Expr:
   def params = bound.params ++ args.params ++ body.params
   def free = args.free ++ (body.free -- bound)
+  def typ = body.typ
