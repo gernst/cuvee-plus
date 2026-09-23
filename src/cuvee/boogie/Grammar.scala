@@ -41,7 +41,7 @@ object Grammar extends cuvee.pipe.Grammar:
     P(id ~ inst) $ Syntax.app
 
   val array =
-    P(brackets(typ) ~ typ) $ Syntax.binary("Array")
+    P(brackets(typ) ~ typ) $ Syntax.binary("array")
 
   val typ: Parser[Any] =
     P(sort | array)

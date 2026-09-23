@@ -29,7 +29,7 @@ object Printer extends cuvee.pipe.Printer:
     yield line
 
   def str(value: String) =
-    atom("\""+ value.replace("\"", "\\\"") + "\"")
+    atom("\"" + value.replace("\"", "\\\"") + "\"")
 
   def int(value: BigInt) =
     if value < 0

@@ -214,6 +214,9 @@ class Parser(init: State):
         val attrs_ = Attrs.empty
         Assert(Axiom, params_, phi_, attrs_)
 
+      case _ =>
+        Error.raise("not a command", from)
+
   def param(from: Any): Param =
     from match
       case Id(name) =>
