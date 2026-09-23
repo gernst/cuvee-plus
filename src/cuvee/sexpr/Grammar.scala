@@ -4,7 +4,7 @@ import cuvee.sexpr._
 import cuvee.core.State
 
 object Grammar extends cuvee.pipe.Grammar:
-  val init = State.default
+  val init = State.empty
   val cmd = sexpr
 
   import easyparse._

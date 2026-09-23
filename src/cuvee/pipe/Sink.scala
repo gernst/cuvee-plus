@@ -4,6 +4,7 @@ import java.io.PrintStream
 
 import cuvee.Error
 import cuvee.core._
+import java.io.FileOutputStream
 
 trait Sink:
   def query(cmd: Cmd): (Result, Sink)
@@ -29,6 +30,10 @@ object Sink:
 
   def stderr(printer: Printer) =
     Print(System.err, printer)
+
+  def file(name: String)(printer: Printer) =
+    val stream = new PrintStream(new FileOutputStream(name))
+    Print(stream, printer)
 
   class Print(stream: PrintStream, printer: Printer) extends Sink:
     def query(cmd: Cmd) =

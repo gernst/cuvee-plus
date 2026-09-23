@@ -73,7 +73,11 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("labels"), labels)
 
       case error: cuvee.Error =>
-        apps(atom("error"), str(error.msg), str(error.info.mkString(" ")))
+        val info =
+          for item <- error.info.toList; line <- str(item.toString)
+          yield line
+
+        apps(atom("error"), str(error.msg), info)
 
   def lines(cmd: Cmd) =
     cmd match
@@ -113,23 +117,25 @@ object Printer extends cuvee.pipe.Printer:
       case SetInfo(name, value) =>
         apps(atom("set-info"), kw(name), sexpr(value))
 
-      case DeclareSort(Con(name, arity)) =>
-        apps(atom("declare-sort"), mangle(name), atom(arity.toString))
+      case DeclareSort(Con(name, arity), attrs) =>
+        apps(atom("declare-sort"), mangle(name), atom(arity.toString), sexprs(attrs.flatten))
 
-      case DefineSort(Con(name, arity), params, body) =>
-        apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body))
+      case DefineSort(Con(name, arity), params, body, attrs) =>
+        apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), sexprs(attrs.flatten))
 
-      case DeclareFun(Fun(name, Nil, args, res)) =>
-        apps(atom("declare-fun"), mangle(name), list(lines(args)), lines(res))
+      case DeclareFun(Fun(name, Nil, args, res), attrs) =>
+        apps(atom("declare-fun"), mangle(name), list(lines(args)), lines(res), sexprs(attrs.flatten))
 
-      case DeclareFun(Fun(name, params, args, res)) =>
-        apps(atom("declare-fun"), mangle(name), apps(atom("par"), list(lines(params)), list(lines(args)), lines(res)))
+      case DeclareFun(Fun(name, params, args, res), attrs) =>
+        val body_ = apps(atom("par"), list(lines(params)), list(lines(args)), lines(res), sexprs(attrs.flatten))
+        apps(atom("declare-fun"), mangle(name), body_)
 
-      case DefineFun(Fun(name, Nil, args, res), bound, body) =>
-        apps(atom("define-fun"), mangle(name), list(formals(bound)), lines(res), lines(body))
+      case DefineFun(Fun(name, Nil, args, res), bound, body, attrs) =>
+        apps(atom("define-fun"), mangle(name), list(formals(bound)), lines(res), lines(body), sexprs(attrs.flatten))
 
-      case DefineFun(Fun(name, params, args, res), bound, body) =>
-        apps(atom("define-fun"), mangle(name), apps(atom("par"), list(lines(params)), list(formals(bound)), lines(res), lines(body)))
+      case DefineFun(Fun(name, params, args, res), bound, body, attrs) =>
+        val body_ = apps(atom("par"), list(lines(params)), list(formals(bound)), lines(res), lines(body), sexprs(attrs.flatten))
+        apps(atom("define-fun"), mangle(name), body_)
 
       case Assert(Axiom, Nil, phi, attrs) =>
         apps(atom("assert"), note(phi, attrs))
@@ -159,10 +165,10 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: BigInt, typ) =>
         int(value)
 
-      case App(fun, inst, Nil) =>
+      case App(fun, inst, typ, Nil) =>
         mangle(fun.name)
 
-      case App(fun, inst, args) =>
+      case App(fun, inst, typ, args) =>
         apps(mangle(fun.name), lines(args))
 
       case Bind(quant, bound, body) =>

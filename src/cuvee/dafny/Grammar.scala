@@ -7,12 +7,39 @@ object Grammar extends cuvee.pipe.Grammar:
   import easyparse._
   import Brackets._
 
-  val init = State.default
+  val init = State.empty
+
+  val prefix_ops = Map(
+    "-" -> 8,
+    "!" -> 4
+  )
+
+  val postfix_ops = Map(
+    "!" -> 8
+  )
+
+  val infix_ops = Map(
+    "<==>" -> (Assoc.Non, 0),
+    "==>" -> (Assoc.Right, 1),
+    "||" -> (Assoc.Left, 2),
+    "&&" -> (Assoc.Left, 3),
+    "==" -> (Assoc.Left, 5),
+    "!=" -> (Assoc.Left, 5),
+    ">=" -> (Assoc.Non, 5),
+    ">" -> (Assoc.Non, 5),
+    "<" -> (Assoc.Non, 5),
+    "<=" -> (Assoc.Non, 5),
+    "+" -> (Assoc.Left, 6),
+    "-" -> (Assoc.Left, 6),
+    "*" -> (Assoc.Left, 7),
+    "/" -> (Assoc.Left, 7),
+    "%" -> (Assoc.Left, 7)
+  )
 
   val kwd = T("kwd")
   val sym = T("sym")
-  val str = T("str")
-  val num = T("int") $ { BigInt(_) }
+  val num = T("num") $ Syntax.num
+  val str = T("str") $ Syntax.str
 
   val nil = R(Nil)
 
@@ -30,6 +57,9 @@ object Grammar extends cuvee.pipe.Grammar:
 
   val kw = sym $ Syntax.kw
   val id = sym $ Syntax.id
+  
+  val lit = 
+    P(num | str)
 
   val attrs =
     P(braces(":" ~ (kw ~* ",")) | nil)
@@ -77,10 +107,13 @@ object Grammar extends cuvee.pipe.Grammar:
     P(forall | exists)
 
   val inner: Parser[Any] =
-    P(parens(expr) | bind | app)
+    P(parens(expr) | lit | bind | app)
 
   val expr: Parser[Any] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, Syntax.infix)
+  
+  val prog: Parser[Any] =
+    P(???)
 
   val sortdef =
     P("type" ~ id ~ params ~ ("=" ~ typ).?) $ Syntax.sortdef
@@ -109,35 +142,20 @@ object Grammar extends cuvee.pipe.Grammar:
   val axiom =
     P("axiom" ~ expr) $ Syntax.unary("assert")
 
+  val returns =
+    P("returns" ~ parens(formals))
+
+  val requires =
+    P("requires" ~ expr)
+
+  val ensures =
+    P("ensures" ~ expr)
+
+  val procdef =
+    P("method" ~ id ~ params ~ formals ~ returns.? ~ requires.* ~ ensures.* ~ braces(prog).?) $ Syntax.procdef
+
   val cmd: Parser[Any] = 
     P(sortdef | datadef | constdef | fundef | axiom)
 
   val script =
     P(cmd.*)
-
-  val prefix_ops = Map(
-    "-" -> 8,
-    "!" -> 4
-  )
-
-  val postfix_ops = Map(
-    "!" -> 8
-  )
-
-  val infix_ops = Map(
-    "<==>" -> (Assoc.Non, 0),
-    "==>" -> (Assoc.Right, 1),
-    "||" -> (Assoc.Left, 2),
-    "&&" -> (Assoc.Left, 3),
-    "==" -> (Assoc.Left, 5),
-    "!=" -> (Assoc.Left, 5),
-    ">=" -> (Assoc.Non, 5),
-    ">" -> (Assoc.Non, 5),
-    "<" -> (Assoc.Non, 5),
-    "<=" -> (Assoc.Non, 5),
-    "+" -> (Assoc.Left, 6),
-    "-" -> (Assoc.Left, 6),
-    "*" -> (Assoc.Left, 7),
-    "/" -> (Assoc.Left, 7),
-    "%" -> (Assoc.Left, 7)
-  )

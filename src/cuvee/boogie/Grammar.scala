@@ -6,7 +6,34 @@ object Grammar extends cuvee.pipe.Grammar:
   import easyparse._
   import Brackets._
 
-  val init = State.default
+  val init = State.empty
+
+  val prefix_ops = Map(
+    "-" -> 8,
+    "!" -> 4
+  )
+
+  val postfix_ops = Map(
+    "!" -> 8
+  )
+
+  val infix_ops = Map(
+    "<==>" -> (Assoc.Non, 0),
+    "==>" -> (Assoc.Right, 1),
+    "||" -> (Assoc.Left, 2),
+    "&&" -> (Assoc.Left, 3),
+    "==" -> (Assoc.Left, 5),
+    "!=" -> (Assoc.Left, 5),
+    ">=" -> (Assoc.Non, 5),
+    ">" -> (Assoc.Non, 5),
+    "<" -> (Assoc.Non, 5),
+    "<=" -> (Assoc.Non, 5),
+    "+" -> (Assoc.Left, 6),
+    "-" -> (Assoc.Left, 6),
+    "*" -> (Assoc.Left, 7),
+    "/" -> (Assoc.Left, 7),
+    "%" -> (Assoc.Left, 7)
+  )
 
   val sym = T("sym")
   val num = T("int") $ { BigInt(_) }
@@ -139,29 +166,3 @@ object Grammar extends cuvee.pipe.Grammar:
   val script =
     P(cmd.*)
 
-  val prefix_ops = Map(
-    "-" -> 8,
-    "!" -> 4
-  )
-
-  val postfix_ops = Map(
-    "!" -> 8
-  )
-
-  val infix_ops = Map(
-    "<==>" -> (Assoc.Non, 0),
-    "==>" -> (Assoc.Right, 1),
-    "||" -> (Assoc.Left, 2),
-    "&&" -> (Assoc.Left, 3),
-    "==" -> (Assoc.Left, 5),
-    "!=" -> (Assoc.Left, 5),
-    ">=" -> (Assoc.Non, 5),
-    ">" -> (Assoc.Non, 5),
-    "<" -> (Assoc.Non, 5),
-    "<=" -> (Assoc.Non, 5),
-    "+" -> (Assoc.Left, 6),
-    "-" -> (Assoc.Left, 6),
-    "*" -> (Assoc.Left, 7),
-    "/" -> (Assoc.Left, 7),
-    "%" -> (Assoc.Left, 7)
-  )

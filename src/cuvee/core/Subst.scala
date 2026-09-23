@@ -7,6 +7,26 @@ import cuvee.Error
 object Subst:
   val empty = Subst(Map(), Map())
 
+  @targetName("Subst.freshParams")
+  def fresh(params: List[Param]): Subst[Param, Nothing] =
+    from(params, params.fresh)
+
+  @targetName("Subst.fromParams")
+  def from[T <: Type](params: List[Param], types: List[T]): Subst[T, Nothing] =
+    Error.report("mismatching length", params, types):
+      require(params.length == types.length)
+    Subst(Map(params zip types*), Map())
+
+  @targetName("Subst.freshVars")
+  def fresh(vars: List[Var]): Subst[Nothing, Expr] =
+    from(vars, vars.fresh)
+
+  @targetName("Subst.fromVars")
+  def from[E <: Expr](vars: List[Var], exprs: List[E]): Subst[Nothing, E] =
+    Error.report("mismatching length", vars, exprs):
+      require(vars.length == exprs.length)
+    Subst(Map(), Map(vars zip exprs*))
+
 case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E]):
   def inst = params.keySet
   def bound = vars.keySet
@@ -51,8 +71,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
       case Lit(value, typ) =>
         Lit(value, this(typ))
 
-      case App(fun, inst, args) =>
-        App(fun, this(inst), this(args))
+      case App(fun, inst, typ, args) =>
+        App(fun, this(inst), this(typ), this(args))
 
       case Bind(quant, bound, body) =>
         val (rename, that) = avoid(bound)

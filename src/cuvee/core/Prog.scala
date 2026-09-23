@@ -4,11 +4,27 @@ import cuvee.Name
 
 case class Proc(name: Name, params: List[Param], in: List[Type], out: List[Type])
 
-case class Body(spec: Spec, body: Prog)
+sealed trait Prog:
+  def mod: Set[Var]
 
-sealed trait Prog
+case class Spec(xs: List[Var], pre: Expr, post: Expr) extends Prog:
+  def mod = Set(xs*)
 
-case class Spec(mod: List[Name], pre: Expr, post: Expr) extends Prog
-case class Assign(lhs: List[Var], rhs: List[Expr]) extends Prog
-case class Block(progs: List[Prog]) extends Prog
-case class Choice(progs: List[Prog]) extends Prog
+object Spec:
+  def havoc(xs: List[Var]) =
+    Spec(xs, True, True)
+
+  def assume(pre: Expr) =
+    Spec(Nil, pre, True)
+
+  def assert(post: Expr) =
+    Spec(Nil, True, post)
+
+case class Assign(lhs: List[Var], rhs: List[Expr]) extends Prog:
+  def mod = Set(lhs*)
+
+case class Block(progs: List[Prog]) extends Prog:
+  def mod = progs.mod
+
+case class Choice(progs: List[Prog]) extends Prog:
+  def mod = progs.mod

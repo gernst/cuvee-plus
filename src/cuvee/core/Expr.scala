@@ -22,7 +22,8 @@ case class Var(name: Name, typ: Type) extends Expr:
   def asPair = (name, typ)
   def asIndex = (name, this)
 
-  def fresh = Var(name.withIndex(Var.next()), typ)
+  def fresh = 
+    Var(name.withIndex(Var.next()), typ)
 
 object Var extends Counter
 
@@ -30,10 +31,10 @@ case class Lit(value: Any, typ: Type) extends Expr:
   def params = typ.params
   def free = Set()
 
-case class App(fun: Fun, inst: List[Type], args: List[Expr]) extends Expr:
+case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends Expr:
   def params = inst.params ++ args.params
   def free = args.free
-  def typ = ???
+  // def typ = ???
 
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params

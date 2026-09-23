@@ -23,7 +23,7 @@ ws = {nl} | [ \t\f]
 
 num  = [1-9][0-9]* | 0
 
-kw = "function" | "axiom" | "const" | "datatype" | "type" | "method"
+kw = "function" | "axiom" | "const" | "datatype" | "type" | "method" | "returns" | "requires" | "ensures"
    | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "|"
 
 sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$.?]* | "seq.++"

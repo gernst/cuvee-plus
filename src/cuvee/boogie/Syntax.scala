@@ -8,6 +8,12 @@ object Syntax:
   def kw(text: String) =
     Kw(text)
 
+  def str(text: String) =
+    Str(text)
+
+  def num(text: String) =
+    Num(text)
+
   def id(name: String) =
     if translate.contains(name)
     then Id(translate(name))
@@ -17,7 +23,7 @@ object Syntax:
     List(arg1, arg2)
 
   def const(fun: String): Any =
-    List(id(fun))
+    id(fun)
 
   def unary(fun: String)(arg1: Any): Any =
     List(id(fun), arg1)
@@ -37,7 +43,9 @@ object Syntax:
         List(Id("not"), Id("=") :: args)
 
       case _ =>
-        fun :: args
+        if args.isEmpty
+        then fun
+        else fun :: args
 
   def app(fun: Id, args: List[Any], access: List[(Any, Option[Any])]): Any =
     zip(app(fun, args), access)
@@ -86,6 +94,9 @@ object Syntax:
       case (Some(expr), _) =>
         val types = args.map { case List(_, typ) => typ }
         List(Id("define-fun"), fun, List(Id("par"), params, args, res, expr))
+
+  def procdef(proc: Id, params: List[Any], in: List[Any], out: Option[List[Any]], pre: List[Any], post: List[Any], body: Option[Any]) =
+    ???
 
   def lemma(justify: String)(attrs: List[Kw], params: List[Any], expr: Any, proof: Option[Any]) =
     val attrs_ =

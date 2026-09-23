@@ -2,6 +2,7 @@ package cuvee.core
 
 import cuvee.Name
 import cuvee.Error
+import cuvee.sexpr.Attrs
 
 case class State(
     logic: Option[String] = None,
@@ -9,12 +10,12 @@ case class State(
     infos: Map[String, Any] = Map(),
 
     sorts: Map[Name, Con] = Map(),
-    funs: Map[Name, Fun] = Map(),
-    // procs: Map[Name, Proc] = Map(),
+    funs: Map[(Name, Int), Fun] = Map(),
+    procs: Map[Name, Proc] = Map(),
 
     sortdefs: Map[Name, (List[Param], Type)] = Map(),
-    fundefs: Map[Name, (List[Var], Expr)] = Map(),
-    // procdefs: Map[Name, Body] = Map(),
+    fundefs: Map[(Name, Int), (List[Var], Expr)] = Map(),
+    procdefs: Map[Name, (List[Var], List[Var], List[Var], List[Expr], List[Expr])] = Map(),
 
     asserts: List[Assert] = List()
     // XXX: add cache of further common things
@@ -35,7 +36,7 @@ case class State(
   def setInfo(name: String, value: Any) =
     copy(infos = infos + (name -> value))
 
-  def declare(con: Con) =
+  def declare(con: Con, attrs: Attrs) =
     val name = con.name
     Error.report("sort already declared", con):
       require(!sorts.contains(name))
@@ -51,40 +52,51 @@ case class State(
       require(!sortdefs.contains(name))
     copy(sortdefs = sortdefs + (name -> (params, body)))
 
-  def declare(fun: Fun) =
-    val name = fun.name
+  def declare(fun: Fun, attrs: Attrs) =
+    val key = (fun.name, fun.arity)
     Error.report("function already declared", fun):
-      require(!funs.contains(name))
-    copy(funs = funs + (name -> fun))
+      require(!funs.contains(key))
+    copy(funs = funs + (key -> fun))
 
   def define(fun: Fun, formals: List[Var], body: Expr) =
-    val name = fun.name
+    val key = (fun.name, fun.arity)
     Error.report("function not declared", fun):
-      require(funs.contains(name))
+      require(funs.contains(key))
     Error.report("function already declared differently", fun):
-      require(funs(name) == fun)
+      require(funs(key) == fun)
     Error.report("function already defined", fun):
-      require(!fundefs.contains(name))
-    copy(fundefs = fundefs + (name -> (formals, body)))
+      require(!fundefs.contains(key))
+    copy(fundefs = fundefs + (key -> (formals, body)))
 
-  // def declare(proc: Proc) =
-  //   val name = proc.name
-  //   Error.reportIf("procedure already declared", procs.contains(name))
-  //   copy(procs = procs + (name -> proc))
+  def declare(proc: Proc, attrs: Attrs) =
+    val name = proc.name
+    Error.report("procedure already declared", proc):
+      require(!procs.contains(name))
+    copy(procs = procs + (name -> proc))
+
+  def define(proc: Proc, in: List[Var], out: List[Var], mod: List[Var], pre: List[Expr], post: List[Expr]) =
+    val name = proc.name
+    Error.report("procedure not declared", proc):
+      require(procs.contains(name))
+    Error.report("procedure already declared differently", proc):
+      require(procs(name) == proc)
+    Error.report("procedure already defined", proc):
+      require(!procdefs.contains(name))
+    copy(procdefs = procdefs + (name -> (in, out, mod, pre, post)))
 
   def assert(cmd: Assert) =
     copy(asserts = asserts ++ List(cmd))
 
   def add(cmd: Decl): State =
     cmd match
-      case SetLogic(name)         => setLogic(name)
-      case SetOption(name, value) => setOption(name, value)
-      case DeclareSort(con)       => declare(con)
-      case DeclareFun(fun)        => declare(fun)
-      // case DeclareProc(proc)      => declare(proc)
-      case cmd: Assert => assert(cmd)
+      case SetLogic(name)           => setLogic(name)
+      case SetOption(name, value)   => setOption(name, value)
+      case DeclareSort(con, attrs)  => declare(con, attrs)
+      case DeclareFun(fun, attrs)   => declare(fun, attrs)
+      case DeclareProc(proc, attrs) => declare(proc, attrs)
+      case cmd: Assert              => assert(cmd)
 
 object State {
   // XXX: add SMT-LIB predefined
-  def default = State(None).declare(Con.int)
+  def empty = State(None)
 }

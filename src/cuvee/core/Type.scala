@@ -17,7 +17,8 @@ case class Param(name: Name) extends Type:
 
   def asIndex = (name, this)
 
-  def fresh = Param(name.withIndex(Param.next()))
+  def fresh =
+    Param(name.withIndex(Param.next()))
 
 case class Sort(con: Con, args: List[Type]) extends Type:
   def params = args.params
@@ -83,7 +84,7 @@ object Type:
         Error.report("type mismatch", expr, typ):
           unify(scope, typ, res, subst)
 
-      case App(fun, inst, args) =>
+      case App(fun, inst, typ, args) =>
         // we expect `inst` to be a list of fresh params (from Parser.expr)
         // therefore orienting the unification this way prefers to instantiate those in `inst`
         val scope_ = scope ++ fun.params
@@ -91,8 +92,7 @@ object Type:
         Error.report("type mismatch", fun, inst, res):
           unify(scope_, inst, fun.args, subst)
           unify(scope_, res, fun.res, subst)
-
-        ???
+          unify(scope_, typ, fun.res, subst)
 
       case Bind(quant, bound, body) =>
         Error.report("type mismatch", body, res, Sort.bool):
@@ -106,8 +106,10 @@ object Type:
     val subst = Ref(Subst.empty)
     check(scope, expr, res, subst)
 
-    val uninstantiated = subst.params.keySet -- scope.params.values
-    Error.report("type error: uninstantiated type variables", uninstantiated):
-      require(uninstantiated.isEmpty)
+    val expr_ = subst(expr)
+    val missed = expr_.params -- scope.params.values.toSet
 
-    subst(expr)
+    Error.report("type error: uninstantiated type variables", expr, res, subst.value, missed):
+      require(missed.isEmpty)
+
+    expr_

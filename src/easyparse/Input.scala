@@ -99,3 +99,11 @@ extension [A1, A2, A3, A4](p: Parser[A1 ~ A2 ~ A3 ~ A4])
 extension [A1, A2, A3, A4, A5](p: Parser[A1 ~ A2 ~ A3 ~ A4 ~ A5])
   infix def $[B](f: (A1, A2, A3, A4, A5) => B): Parser[B] =
     p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 => f(a1, a2, a3, a4, a5) }
+
+extension [A1, A2, A3, A4, A5, A6](p: Parser[A1 ~ A2 ~ A3 ~ A4 ~ A5 ~ A6])
+  infix def $[B](f: (A1, A2, A3, A4, A5, A6) => B): Parser[B] =
+    p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 ~ a6 => f(a1, a2, a3, a4, a5, a6) }
+
+extension [A1, A2, A3, A4, A5, A6, A7](p: Parser[A1 ~ A2 ~ A3 ~ A4 ~ A5 ~ A6 ~ A7])
+  infix def $[B](f: (A1, A2, A3, A4, A5, A6, A7) => B): Parser[B] =
+    p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 ~ a6 ~ a7 => f(a1, a2, a3, a4, a5, a6, a7) }

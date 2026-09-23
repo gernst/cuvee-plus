@@ -57,20 +57,26 @@ object Config:
     key -> Flag(None, help, action)
 
   def flag(key: String, args: String, help: String)(action: PartialFunction[(Config, List[String]), (Config, List[String])]) =
-    key -> Flag(None, help, action)
+    key -> Flag(Some(args), help, action)
 
   def lang(key: String, lang: Lang) =
     key -> lang
 
   val flags = Map(
-    flag("-debug", "<modules>", "enable debugging in specified modules") { case (config, arg :: rest) =>
+    flag("-debug", "<modules>", "enable debugging in <modules> (comma-separated list)") { case (config, arg :: rest) =>
       val modules = arg.split(",")
       val config_ = config.copy(debug = config.debug ++ modules)
+      (config_, rest)
+    },
+
+    flag("-o", "<file>", "redirect output to <file> and report to stdout") { case (config, name :: rest) =>
+      val config_ = config.copy(sink = Sink.file(name), report = Report.stdout)
       (config_, rest)
     }
   )
 
   val langs = Map(
+    lang(".smt2", Lang.smtlib),
     lang(".dfy", Lang.dafny)
   )
 
@@ -80,6 +86,33 @@ object Config:
       if pos < 0
       then null
       else file.substring(pos)
+
+  def help() =
+    version()
+    copyright()
+    println()
+
+    println("supported input/output dialects")
+    for (suffix, lang) <- langs
+    do println("  " + lang.help + " (" + suffix + ")")
+    println()
+
+    println("command line options")
+    for (key, flag) <- flags
+    do
+      flag.args match
+        case None =>
+          println("  " + key)
+        case Some(args) =>
+          println("  " + key + " " + args)
+      println("    " + flag.help)
+      println()
+
+  def version() =
+    println("Cuvée 0.0.1")
+
+  def copyright() =
+    println("Gidon Ernst <gidon.ernst@gmail.com>")
 
   def parse(config: Config, args: List[String]): Config =
     args match
