@@ -113,3 +113,6 @@ object Type:
       require(missed.isEmpty)
 
     expr_
+
+  def check(scope: Scope, prog: Prog): Prog =
+    ???

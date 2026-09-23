@@ -38,7 +38,8 @@ case class Config(
     printer: Printer,
     sink: (Printer => Sink),
     report: (Printer => Report),
-    debug: Set[String]
+    debug: Set[String] = Set(),
+    overridePrinter: Boolean = false
 ) {
   def reader =
     input match
@@ -51,7 +52,7 @@ case class Config(
 
 object Config:
   val default =
-    Config(None, reader => new cuvee.sexpr.Scanner(reader), cuvee.sexpr.Grammar, cuvee.smtlib.Printer, Sink.stdout, Report.stderr, Set())
+    Config(None, reader => new cuvee.sexpr.Scanner(reader), cuvee.sexpr.Grammar, cuvee.smtlib.Printer, Sink.stdout, Report.stderr)
 
   def flag(key: String, help: String)(action: PartialFunction[(Config, List[String]), (Config, List[String])]) =
     key -> Flag(None, help, action)
@@ -77,18 +78,18 @@ object Config:
     flag("-print", "<format>", "override printer format") {
       case (config, name :: rest) if langs.contains(name) =>
         val lang = langs(name)
-        val config_ = config.copy(printer = lang.printer)
+        val config_ = config.copy(printer = lang.printer, overridePrinter = true)
         (config_, rest)
 
       case (config, "scala" :: rest) =>
-        val config_ = config.copy(printer = Printer.default)
+        val config_ = config.copy(printer = Printer.default, overridePrinter = true)
         (config_, rest)
     }
   )
 
   val langs = Map(
-    lang(".smt2", Lang.smtlib),
-    lang(".dfy", Lang.dafny)
+    lang("smt2", Lang.smtlib),
+    lang("dfy", Lang.dafny)
   )
 
   extension (file: String)
@@ -96,7 +97,7 @@ object Config:
       val pos = file.lastIndexOf(".")
       if pos < 0
       then null
-      else file.substring(pos)
+      else file.substring(pos + 1)
 
   def help() =
     version()
@@ -105,7 +106,7 @@ object Config:
 
     println("supported input/output dialects")
     for (suffix, lang) <- langs
-    do println("  " + lang.help + " (" + suffix + ")")
+    do println("  " + lang.help + " (extension ." + suffix + ")")
     println()
 
     println("command line options")
@@ -141,7 +142,14 @@ object Config:
 
       case file :: rest if langs.contains(file.suffix) =>
         val Lang(help, scanner, grammar, printer) = langs(file.suffix)
-        val config_ = config.copy(input = Some(file), scanner = scanner, grammar = grammar, printer = printer)
+
+        var config_ = config
+        
+        config_ = config_.copy(input = Some(file), scanner = scanner, grammar = grammar)
+
+        if (!config_.overridePrinter)
+        then config_ = config_.copy(printer = printer)
+
         parse(config_, rest)
 
       case _ =>

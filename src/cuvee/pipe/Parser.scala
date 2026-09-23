@@ -222,6 +222,66 @@ class Parser(init: State):
         val attrs_ = annotation(attrs.toList)
         Assert(Axiom, params_, phi_, attrs_)
 
+      // procedural fragment
+
+      case List(Id("declare-proc"), Id(name), List(in*), List(out*), attrs*) =>
+        val params_ = Nil
+        val scope = Scope.empty
+
+        val in_ = list(in) { formal(scope, _) }
+        val out_ = list(out) { formal(scope, _) }
+        val proc = Proc(name, params_, in_.types, out_.types)
+
+        val attrs_ = annotation(attrs.toList)
+
+        state = state.declare(proc, attrs_)
+        DeclareProc(proc, attrs_)
+
+      case List(Id("define-proc"), Id(name), List(in*), List(out*), body, attrs*) =>
+        val params_ = Nil
+        val scope = Scope.empty
+
+        val in_ = list(in) { formal(scope, _) }
+        val out_ = list(out) { formal(scope, _) }
+        val proc = Proc(name, params_, in_.types, out_.types)
+
+        val prog_ = prog(scope ++ in_ ++ out_, body)
+        val body_ = Type.check(scope, prog_)
+
+        val attrs_ = annotation(attrs.toList)
+
+        state = state.declare(proc, attrs_)
+        DefineProc(proc, in_, out_, body_, attrs_)
+
+      case List(Id("declare-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), attrs*)) =>
+        val params_ = list(params) { param(_) }
+        val scope = Scope.empty
+
+        val in_ = list(in) { formal(scope, _) }
+        val out_ = list(out) { formal(scope, _) }
+        val proc = Proc(name, params_, in_.types, out_.types)
+
+        val attrs_ = annotation(attrs.toList)
+
+        state = state.declare(proc, attrs_)
+        DeclareProc(proc, attrs_)
+
+      case List(Id("define-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), body, attrs*)) =>
+        val params_ = list(params) { param(_) }
+        val scope = Scope.empty
+
+        val in_ = list(in) { formal(scope, _) }
+        val out_ = list(out) { formal(scope, _) }
+        val proc = Proc(name, params_, in_.types, out_.types)
+
+        val prog_ = prog(scope ++ in_ ++ out_, body)
+        val body_ = Type.check(scope, prog_)
+
+        val attrs_ = annotation(attrs.toList)
+
+        state = state.declare(proc, attrs_)
+        DefineProc(proc, in_, out_, body_, attrs_)
+
       case _ =>
         Error.raise("not a command", from)
 
@@ -316,3 +376,6 @@ class Parser(init: State):
 
       case _ =>
         Error.raise("not an expression", from)
+
+  def prog(scope: Scope, from: Any): Prog =
+    ???

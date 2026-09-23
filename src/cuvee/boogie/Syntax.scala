@@ -143,8 +143,14 @@ object Syntax:
       case (Nil, None) =>
         List(Id("declare-proc"), proc, in, out) ++ attrs
 
+      case (_, None) =>
+        List(Id("declare-proc"), proc, List(Id("par"), in, out) ++ attrs)
+
       case (Nil, Some(prog)) =>
         List(Id("define-proc"), proc, in, out, prog) ++ attrs
+
+      case (_, Some(prog)) =>
+        List(Id("define-proc"), proc, in, out, List(Id("par"), in, out, prog) ++ attrs)
     }
 
   def lemma(justify: String)(attrs: List[Kw], params: List[Any], expr: Any, proof: Option[Any]) =
