@@ -22,12 +22,14 @@ object Printer extends cuvee.pipe.Printer:
     app(args.toString)
 
   def apps(arglists: List[String]*): List[String] =
-    for args <- arglists.toList; line <- list(args)
-    yield line
+    list(arglists.flatten.toList)
 
   def sexprs(anys: List[Any]*): List[String] =
     for any <- anys.toList; line <- sexpr(any)
     yield line
+
+  def str(value: String) =
+    atom("\""+ value.replace("\"", "\\\"") + "\"")
 
   def int(value: BigInt) =
     if value < 0
@@ -69,6 +71,9 @@ object Printer extends cuvee.pipe.Printer:
 
       case Labels(labels) =>
         apps(atom("labels"), labels)
+
+      case error: cuvee.Error =>
+        apps(atom("error"), str(error.msg), str(error.info.mkString(" ")))
 
   def lines(cmd: Cmd) =
     cmd match
@@ -138,6 +143,9 @@ object Printer extends cuvee.pipe.Printer:
   def lines(typ: Type) =
     typ match
       case Param(name) =>
+        mangle(name)
+
+      case Sort(Con(name, arity), Nil) =>
         mangle(name)
 
       case Sort(Con(name, arity), args) =>

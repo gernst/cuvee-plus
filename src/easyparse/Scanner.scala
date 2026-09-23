@@ -18,7 +18,7 @@ object Scanner:
 
   case class Match(name: String) extends Scanner:
     def scan(in: Input, cm: Boolean) =
-      Input.shift(name, in, cm):
+      Input.shift("'" + name + "'", in, cm):
         case (Token.Keyword(`name`), in_) =>
           in_
 

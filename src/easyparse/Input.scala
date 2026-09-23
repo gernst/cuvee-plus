@@ -59,7 +59,7 @@ object Input:
 
 enum Token:
   case Keyword(name: String)
-  case Value(name: String, Input: String)
+  case Value(name: String, text: String)
 
 object Token:
   val eof = Keyword("eof")

@@ -11,19 +11,18 @@ object Name:
   given Conversion[String, Name] =
     (name: String) => Name(name, None)
 
-object foo extends util.Run(Cuvee, "examples/test.dafny")
+object foo extends util.Run(Cuvee, "examples/test.dfy")
 
 object Cuvee extends util.Main:
   def main(args: Array[String]) =
-    import java.io.InputStreamReader
+    val config = Config.parse(Config.default, args.toList)
 
-    val scanner = sexpr.Scanner(new InputStreamReader(System.in))
-    val grammar = sexpr.Grammar
-    val source = Source.read(scanner, grammar)
+    val reader = config.reader
+    val scanner = config.scanner(reader)
+    val source = Source.read(scanner, config.grammar)
 
-    val printer = Printer.default
-    val sink = Sink.stdout(printer)
-
-    val report = Report.stderr(printer)
+    val printer = config.printer
+    val sink = config.sink(printer)
+    val report = config.report(printer)
 
     Pipe.run(source, sink, report, true)

@@ -9,7 +9,9 @@ object Grammar extends cuvee.pipe.Grammar:
 
   val init = State.default
 
+  val kwd = T("kwd")
   val sym = T("sym")
+  val str = T("str")
   val num = T("int") $ { BigInt(_) }
 
   val nil = R(Nil)

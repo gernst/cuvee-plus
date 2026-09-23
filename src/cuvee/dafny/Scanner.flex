@@ -4,6 +4,7 @@ package cuvee.dafny;
 
 %public
 %class Scanner
+%implements cuvee.pipe.Scanner
 %function next
 %type easyparse.Token
 
@@ -20,17 +21,14 @@ package cuvee.dafny;
 nl = \r|\n|\r\n
 ws = {nl} | [ \t\f]
 
-number  = [1-9][0-9]* | 0
+num  = [1-9][0-9]* | 0
 
 kw = "function" | "axiom" | "const" | "datatype" | "type" | "method"
    | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "|"
 
-id = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$.?]* | "seq.++"
-op = [+\-*/%] | "&&" | "||" | "==>" | "<==>" | "!"
-   | "==" | "!=" | "<=" | "<" | ">" | ">="
-
-quant = "forall" | "exists"
-loc = "old"
+sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$.?]* | "seq.++"
+    | [+\-*/%] | "&&" | "||" | "==>" | "<==>" | "!"
+    | "==" | "!=" | "<=" | "<" | ">" | ">="
 
 %%
 
@@ -39,13 +37,10 @@ loc = "old"
 {ws}+ {}
 "//" .* {nl} {}
 
-{kw}        { return Parser.kw(yytext()); }
-\" ~ \"     { return Parser.string().apply(yytext(+1,-1)); }
-{quant}     { return Parser.quant().apply(yytext()); }
-{loc}       { return Parser.loc().apply(yytext()); }
-{number}    { return Parser.number().apply(yytext()); }
-{id}        { return Parser.id().apply(yytext()); }
-{op}        { return Parser.op().apply(yytext()); }
+{kw}        { return Syntax.apply(yytext()); }
+\" ~ \"     { return Syntax.apply("str", yytext(+1,-1)); }
+{num}       { return Syntax.apply("num", yytext()); }
+{sym}       { return Syntax.apply("sym", yytext()); }
 
 [^]         { throw new RuntimeException("unexpected character '" + yytext() + "' at " + yyline + ":" + yycolumn); }
 

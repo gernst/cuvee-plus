@@ -122,28 +122,24 @@ object Parser:
       (a, in2)
 
   case class Intersperse[+A](p: Parser[A], q: Scanner, min: Boolean) extends Parser[List[A]]:
-    def parse(in0: Input, cm: Boolean): (List[A], Input) =
-      if min
-      then
-        val (a, in1) = p.parse(in0, cm)
-        {
-          // the separator is optional
-          val in2 = q.scan(in1, false)
-          // but if present, we need another element
-          val (as, in3) = this.parse(in2, true)
-          (a :: as, in3)
-        } or {
-          (List(a), in1)
-        }
-      else
-        {
-          val (a, in1) = p.parse(in0, false)
-          val in2 = q.scan(in1, false)
-          val (as, in3) = this.parse(in2, true)
-          (a :: as, in3)
-        } or {
-          (Nil, in0)
-        }
+    def parse(in: Input, cm: Boolean): (List[A], Input) =
+      parse(false, in, cm)
+
+    def parse(done: Boolean, in0: Input, cm: Boolean): (List[A], Input) = {
+      val (a, in1) = p.parse(in0, done < min)
+
+      {
+        // the separator is optional
+        val in2 = q.scan(in1, false)
+        // but if present, we need another element
+        val (as, in3) = this.parse(true, in2, true)
+        (a :: as, in3)
+      } or {
+        (List(a), in1)
+      }
+    } or {
+      (Nil, in0)
+    }
 
   case class Repeat[+A](p: Parser[A], min: Int, max: Int) extends Parser[List[A]]:
     require(0 <= min && min <= max)

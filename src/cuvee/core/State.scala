@@ -86,5 +86,5 @@ case class State(
 
 object State {
   // XXX: add SMT-LIB predefined
-  def default = State(None)
+  def default = State(None).declare(Con.int)
 }

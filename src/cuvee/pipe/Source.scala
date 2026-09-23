@@ -1,5 +1,6 @@
 package cuvee.pipe
 
+import cuvee.Error
 import cuvee.core._
 
 type Source = Iterable[Cmd]
@@ -14,11 +15,15 @@ object Source:
     val parser = Parser(grammar.init)
 
     def cmds(in: easyparse.Input): LazyList[Cmd] =
-      if in.isEmpty
+      if in.isEmpty || in.head == null
       then LazyList.empty
       else
-        val (from, in_) = grammar.cmd.parse(in, true)
-        val cmd = parser.cmd(from)
-        cmd #:: cmds(in_)
+        try
+          val (from, in_) = grammar.cmd.parse(in, true)
+          val cmd = parser.cmd(from)
+          cmd #:: cmds(in_)
+        catch
+          case easyparse.Fail(in, from) =>
+            Error.raise("parse error", from, in)
 
     cmds(in)

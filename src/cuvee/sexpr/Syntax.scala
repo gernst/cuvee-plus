@@ -29,15 +29,6 @@ object Syntax:
   def error(msg: String) =
     Error.report(msg)
 
-object Id:
-  val simple =
-    Pattern.compile("[:]?[a-zA-Z_~!@$%^&*+=<>.?/\\-][0-9a-zA-Z_~!@$%^&*+=<>.?/\\-]*")
-
-  def mangle(str: String) =
-    if simple.matcher(str).matches()
-    then str
-    else "|" + str + "|"
-
 object Attrs:
   val empty = Attrs(Nil)
 

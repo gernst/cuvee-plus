@@ -1,6 +1,7 @@
 package cuvee.sexpr
 
 import cuvee.Name
+import java.util.regex.Pattern
 
 object Printer:
   def lines(expr: Any): List[String] =
@@ -12,8 +13,13 @@ object Printer:
   def atom(text: String) =
     List(text)
 
-  def escape(text: String) =
-    ???
+  val simple =
+    Pattern.compile("[:]?[a-zA-Z_~!@$%^&*+=<>.?/\\-][0-9a-zA-Z_~!@$%^&*+=<>.?/\\-]*")
+
+  def escape(str: String) =
+    if simple.matcher(str).matches()
+    then str
+    else "|" + str + "|"
 
   def list(args: List[String]): List[String] =
     args match

@@ -70,12 +70,20 @@ object Syntax:
         List(Id("define-sort"), sort, args, typ)
 
   def fundef(fun: Id, params: List[Any], args: List[Any], res: Any, rhs: Option[Any]) =
-    rhs match
-      case None =>
-        List(Id("declare-fun"), fun, params, args, res)
+    (rhs, params) match
+      case (None, Nil) =>
+        val types = args.map { case List(_, typ) => typ }
+        List(Id("declare-fun"), fun, types, res)
 
-      case Some(expr) =>
-        List(Id("define-fun"), fun, params, args, res, expr)
+      case (None, _) =>
+        val types = args.map { case List(_, typ) => typ }
+        List(Id("declare-fun"), fun, List(Id("par"), params, types, res))
+
+      case (Some(expr), Nil) =>
+        List(Id("define-fun"), fun, args, res, expr)
+
+      case (Some(expr), _) =>
+        List(Id("define-fun"), fun, List(Id("par"), params, args, res, expr))
 
   def lemma(justify: String)(attrs: List[Kw], params: List[Any], expr: Any, proof: Option[Any]) =
     val attrs_ =
@@ -95,6 +103,8 @@ object Syntax:
     else List(Id(justify), List("par", params, expr_))
 
   val translate = Map(
+    "int" -> "Int",
+    "bool" -> "Bool",
     "<==>" -> "=",
     "==>" -> "=>",
     "&&" -> "and",

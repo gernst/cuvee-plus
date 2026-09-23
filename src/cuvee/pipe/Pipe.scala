@@ -11,27 +11,34 @@ object Pipe:
     var sink = init
     var printSuccess = false
 
-    Breaks.breakable:
-      for cmd <- source do
-        cmd match
-          case SetOption("print-success", Id("true")) =>
-            printSuccess = true
+    try
+      Breaks.breakable:
+        for cmd <- source do
+          cmd match
+            case SetOption("print-success", Id("true")) =>
+              printSuccess = true
 
-          case SetOption("print-success", Id("false")) =>
-            printSuccess = false
+            case SetOption("print-success", Id("false")) =>
+              printSuccess = false
 
-          case _ =>
-            try
-              val (result, next) = sink.query(cmd)
-              sink = next
-              report.report(result, printSuccess)
-
-              if cmd == Exit
-              then Breaks.break()
-
-            catch
-              case result @ Error(msg, info) =>
+            case _ =>
+              try
+                val (result, next) = sink.query(cmd)
+                sink = next
                 report.report(result, printSuccess)
 
-                if (!incremental)
-                  Breaks.break()
+                if cmd == Exit
+                then Breaks.break()
+
+              catch
+                // don't catch parse errors here without advancing the input stream!
+                case result: Error =>
+                  report.report(result, printSuccess)
+
+                  if (!incremental)
+                    Breaks.break()
+
+    catch
+      // catches parse errors
+      case result: Error =>
+        report.report(result, printSuccess)
