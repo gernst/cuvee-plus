@@ -121,6 +121,9 @@ object Grammar extends cuvee.pipe.Grammar:
   val ensures =
     P("ensures" ~ expr)
 
+  val modifies =
+    P("modifies" ~ (id ~+ ","))
+
   val sortdef =
     P("type" ~ id ~ params ~ ("=" ~ typ).?) $ Syntax.sortdef
 
@@ -149,13 +152,13 @@ object Grammar extends cuvee.pipe.Grammar:
     P("axiom" ~ expr) $ Syntax.unary("assert")
 
   val returns =
-    P("returns" ~ parens(formals))
+    P("returns" ~ formals)
 
   val procdef =
-    P("method" ~ id ~ params ~ formals ~ returns.? ~ requires.* ~ ensures.* ~ braces(prog).?) $ Syntax.procdef
+    P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ braces(prog).?) $ Syntax.procdef
 
   val cmd: Parser[Any] = 
-    P(sortdef | datadef | constdef | fundef | axiom)
+    P(sortdef | datadef | constdef | fundef | procdef | axiom)
 
   val script =
     P(cmd.*)

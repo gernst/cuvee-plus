@@ -78,7 +78,7 @@ object Syntax:
         List(Id("define-sort"), sort, args, typ)
 
   def fundef(fun: Id, params: List[Any], args: List[Any], res: Any, pre: List[Any], post: List[Any], rhs: Option[Any]) =
-    val argnames = List(kw("formals"), args)
+    val argnames = if args.nonEmpty then List(kw("formals"), args) else Nil
     val pre_ = for phi <- pre yield List(Kw("requires"), List(Id("lambda"), args, phi))
     val post_ = for phi <- pre yield List(Kw("ensures"), List(Id("lambda"), args, phi))
     val attrs = argnames ++ pre_.flatten ++ post_.flatten
@@ -100,7 +100,16 @@ object Syntax:
         val types = args.map { case List(_, typ) => typ }
         List(Id("define-fun"), fun, List(Id("par"), params, args, res, expr) ++ attrs)
 
-  def procdef(proc: Id, params: List[Any], in: List[Any], out: Option[List[Any]], pre: List[Any], post: List[Any], body: Option[Any]) =
+  def procdef(
+      proc: Id,
+      params: List[Any],
+      in: List[Any],
+      out: Option[List[Any]],
+      mod: List[List[Any]],
+      pre: List[Any],
+      post: List[Any],
+      body: Option[Any]
+  ) =
     ???
 
   def lemma(justify: String)(attrs: List[Kw], params: List[Any], expr: Any, proof: Option[Any]) =
