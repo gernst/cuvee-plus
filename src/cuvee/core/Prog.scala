@@ -23,6 +23,9 @@ object Spec:
 case class Assign(lhs: List[Var], rhs: List[Expr]) extends Prog:
   def mod = Set(lhs*)
 
+case class Call(proc: Name, lhs: List[Var], args: List[Expr]) extends Prog:
+  def mod = Set(lhs*)
+
 case class Block(progs: List[Prog]) extends Prog:
   def mod = progs.mod
 

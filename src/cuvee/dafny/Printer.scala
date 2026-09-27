@@ -8,3 +8,4 @@ object Printer extends cuvee.pipe.Printer:
   def lines(cmd: Cmd) = ???
   def lines(typ: Type) = ???
   def lines(expr: Expr) = ???
+  def lines(prog: Prog) = ???

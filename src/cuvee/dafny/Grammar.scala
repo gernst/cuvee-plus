@@ -64,11 +64,20 @@ object Grammar extends cuvee.pipe.Grammar:
   val attrs =
     P(braces(":" ~ (kw ~* ",")) | nil)
 
+  val ids =
+    P(id ~+ ",")
+    
+  val types =
+    P(typ ~+ ",")
+
+  val exprs =
+    P(expr ~+ ",")
+
   val params =
-    P(angle(id ~+ ",") | nil)
+    P(angle(ids) | nil)
 
   val inst =
-    P(angle(typ ~+ ",") | nil)
+    P(angle(types) | nil)
 
   val typ: Parser[Any] =
     P(id ~ inst) $ Syntax.app
@@ -80,7 +89,7 @@ object Grammar extends cuvee.pipe.Grammar:
     P(parens(formal ~* ","))
 
   val args =
-    P(parens(expr ~+ ",") | nil)
+    P(parens(exprs) | nil)
 
   val access =
     P(brackets(expr ~ (":=" ~ expr).?))
@@ -111,9 +120,9 @@ object Grammar extends cuvee.pipe.Grammar:
 
   val expr: Parser[Any] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, Syntax.infix)
-  
-  val prog: Parser[Any] =
-    P(???)
+
+  val invariant =
+    P("invariant" ~ expr)
 
   val requires =
     P("requires" ~ expr)
@@ -122,7 +131,52 @@ object Grammar extends cuvee.pipe.Grammar:
     P("ensures" ~ expr)
 
   val modifies =
-    P("modifies" ~ (id ~+ ","))
+    P("modifies" ~ ids)
+  
+  val break =
+    "break"  ~ ";" $ Syntax.const
+
+  val return_ =
+    "return" ~ ";" $ Syntax.const
+
+  val continue =
+    "continue" ~ ";" $ Syntax.const
+
+  val ctrl =
+    P(break | return_ | continue)
+
+  val assume =
+    P("assume" ~ expr ~ ";") $ Syntax.unary("assume")
+
+  val assert =
+    P("assert" ~ expr ~ ";") $ Syntax.unary("assert")
+
+  val havoc = // difference to Dafny: only one * at rhs
+    P(ids ?~ ":=" ?~ "*" ~ ";") $ Syntax.nary("havoc")
+
+  val spec =
+    P(assume | assert | havoc)
+
+  val call =
+    P(???)
+
+  val assign =
+    P(ids ~ ":=" ~ exprs) $ Syntax.assign
+
+  val block =
+    P(braces(prog.*)) $ Syntax.nary("sequence")
+
+  val else_block_or_skip =
+    ("else" ~ block) | true_
+
+  val if_ =
+    P("if" ~ expr ~ block ~ else_block_or_skip)
+
+  val while_ =
+    P("while" ~ expr ~ invariant.* ~ block) $ Syntax.while_
+
+  val prog: Parser[Any] =
+    P(ctrl | spec | if_ | while_ | block | assign)
 
   val sortdef =
     P("type" ~ id ~ params ~ ("=" ~ typ).?) $ Syntax.sortdef

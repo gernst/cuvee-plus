@@ -147,6 +147,20 @@ object Printer extends cuvee.pipe.Printer:
       case Assert(justify, params, phi, attrs) =>
         ???
 
+      case DeclareProc(Proc(name, Nil, args, ret), attrs) =>
+        apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), flat(attrs.flatten))
+
+      case DefineProc(Proc(name, Nil, args, ret), in, out, body, attrs) =>
+        apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), list(lines(body)), flat(attrs.flatten))
+
+      case DeclareProc(Proc(name, params, args, ret), attrs) =>
+        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), flat(attrs.flatten))
+        apps(atom("declare-proc"), mangle(name), body_)
+
+      case DefineProc(Proc(name, params, args, ret), in, out, body, attrs) =>
+        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), list(lines(body)), flat(attrs.flatten))
+        apps(atom("declare-proc"), mangle(name), body_)
+
   def lines(typ: Type) =
     typ match
       case Param(name) =>
@@ -177,3 +191,6 @@ object Printer extends cuvee.pipe.Printer:
 
       case Let(bound, args, body) =>
         apps(atom("let"), list(eqs(bound, args)), lines(body))
+
+  def lines(prog: Prog): List[String] =
+    ???

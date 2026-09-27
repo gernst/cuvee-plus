@@ -228,9 +228,9 @@ class Parser(init: State):
         val params_ = Nil
         val scope = Scope.empty
 
-        val in_ = list(in) { formal(scope, _) }
-        val out_ = list(out) { formal(scope, _) }
-        val proc = Proc(name, params_, in_.types, out_.types)
+        val in_ = list(in) { typ(scope, _) }
+        val out_ = list(out) { typ(scope, _) }
+        val proc = Proc(name, params_, in_, out_)
 
         val attrs_ = annotation(attrs.toList)
 
@@ -245,8 +245,7 @@ class Parser(init: State):
         val out_ = list(out) { formal(scope, _) }
         val proc = Proc(name, params_, in_.types, out_.types)
 
-        val prog_ = prog(scope ++ in_ ++ out_, body)
-        val body_ = Type.check(scope, prog_)
+        val body_ = prog(scope ++ in_ ++ out_, out_.toSet, body)
 
         val attrs_ = annotation(attrs.toList)
 
@@ -257,9 +256,9 @@ class Parser(init: State):
         val params_ = list(params) { param(_) }
         val scope = Scope.empty
 
-        val in_ = list(in) { formal(scope, _) }
-        val out_ = list(out) { formal(scope, _) }
-        val proc = Proc(name, params_, in_.types, out_.types)
+        val in_ = list(in) { typ(scope, _) }
+        val out_ = list(out) { typ(scope, _) }
+        val proc = Proc(name, params_, in_, out_)
 
         val attrs_ = annotation(attrs.toList)
 
@@ -274,8 +273,7 @@ class Parser(init: State):
         val out_ = list(out) { formal(scope, _) }
         val proc = Proc(name, params_, in_.types, out_.types)
 
-        val prog_ = prog(scope ++ in_ ++ out_, body)
-        val body_ = Type.check(scope, prog_)
+        val body_ = prog(scope ++ in_ ++ out_, out_.toSet, body)
 
         val attrs_ = annotation(attrs.toList)
 
@@ -377,5 +375,5 @@ class Parser(init: State):
       case _ =>
         Error.raise("not an expression", from)
 
-  def prog(scope: Scope, from: Any): Prog =
+  def prog(scope: Scope, mod: Set[Var], from: Any): Prog =
     ???

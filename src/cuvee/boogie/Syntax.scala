@@ -1,5 +1,6 @@
 package cuvee.boogie
 
+import cuvee.Error
 import cuvee.sexpr._
 
 object Syntax:
@@ -33,6 +34,9 @@ object Syntax:
 
   def ternary(fun: String)(arg1: Any, arg2: Any, arg3: Any): Any =
     List(id(fun), arg1, arg2, arg3)
+
+  def nary(fun: String)(args: List[Any]): Any =
+    id(fun) :: args
 
   def infix(fun: String, args: List[Any]): Any =
     app(id(fun), args)
@@ -77,6 +81,13 @@ object Syntax:
       case Some(typ) =>
         List(Id("define-sort"), sort, args, typ)
 
+  def invariants(invs: List[Any]) =
+    val invs_ =
+      for inv <- invs
+      yield List(Kw("invariant"), inv)
+
+    invs_.flatten
+
   def contract(args: List[Any], pre: List[Any], args_ : List[Any], post: List[Any]) =
     val pre_ =
       for phi <- pre
@@ -96,7 +107,7 @@ object Syntax:
 
     val returns_ =
       if args_.nonEmpty
-      then List(kw("formals"), args_)
+      then List(kw("returns"), args_)
       else Nil
 
     formals_ ++ returns_
@@ -137,21 +148,40 @@ object Syntax:
     val attrs = names_ ++ contract_
 
     val in_ = in.map { case List(_, typ) => typ }
-    val out_ = ret.map { case List(_, typ) => typ }
+    val ret_ = ret.map { case List(_, typ) => typ }
 
     (params, body) match {
       case (Nil, None) =>
-        List(Id("declare-proc"), proc, in, out) ++ attrs
+        List(Id("declare-proc"), proc, in_, ret_) ++ attrs
 
       case (_, None) =>
-        List(Id("declare-proc"), proc, List(Id("par"), in, out) ++ attrs)
+        List(Id("declare-proc"), proc, List(Id("par"), in_, ret_) ++ attrs)
 
       case (Nil, Some(prog)) =>
-        List(Id("define-proc"), proc, in, out, prog) ++ attrs
+        List(Id("define-proc"), proc, in, ret, prog) ++ attrs
 
       case (_, Some(prog)) =>
-        List(Id("define-proc"), proc, in, out, List(Id("par"), in, out, prog) ++ attrs)
+        List(Id("define-proc"), proc, List(Id("par"), in, out, prog) ++ attrs)
     }
+
+  def assign(vars: List[Id], exprs: List[Any]) =
+    Error.report("malformed assignment", vars, exprs):
+      require(vars.length == exprs.length)
+
+    val pairs =
+      for (x, e) <- (vars zip exprs)
+      yield List(x, e)
+
+    List(Id("assign")) ++ pairs
+
+  def while_(test: Any, invs: List[Any], body: Any) =
+    val attrs_ = invariants(invs)
+
+    val prog = List(Id("while"), test, body)
+
+    if attrs_.nonEmpty
+    then List(Id("!"), prog) ++ attrs_
+    else prog
 
   def lemma(justify: String)(attrs: List[Kw], params: List[Any], expr: Any, proof: Option[Any]) =
     val attrs_ =

@@ -9,6 +9,7 @@ trait Printer:
   def lines(cmd: Cmd): List[String]
   def lines(typ: Type): List[String]
   def lines(expr: Expr): List[String]
+  def lines(prog: Prog): List[String]
 
   @targetName("Printer.linesOfCmds")
   def lines(cmds: List[Cmd]): List[String] =
@@ -31,3 +32,4 @@ object Printer:
     def lines(cmd: Cmd) = List(cmd.toString)
     def lines(typ: Type) = List(typ.toString)
     def lines(expr: Expr) = List(expr.toString)
+    def lines(prog: Prog) = List(prog.toString)
