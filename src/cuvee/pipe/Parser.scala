@@ -364,13 +364,13 @@ class Parser(init: State):
         val bound_ = list(bound) { formal(scope, _) }
         val scope_ = scope ++ bound_
         val body_ = expr(scope_, body)
-        Forall(bound_, body_)
+        All(bound_, body_)
 
       case List(Id("exists"), List(bound*), body) =>
         val bound_ = list(bound) { formal(scope, _) }
         val scope_ = scope ++ bound_
         val body_ = expr(scope_, body)
-        Forall(bound_, body_)
+        Ex(bound_, body_)
 
       case _ =>
         Error.raise("not an expression", from)

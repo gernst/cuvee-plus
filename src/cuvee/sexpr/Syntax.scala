@@ -1,9 +1,5 @@
 package cuvee.sexpr
 
-import java.util.regex.Pattern
-
-import scala.reflect.ClassTag
-
 import cuvee.Error
 import easyparse.Token
 
@@ -29,29 +25,3 @@ object Syntax:
   def error(msg: String) =
     Error.report(msg)
 
-object Attrs:
-  val empty = Attrs(Nil)
-
-case class Attrs(attrs: List[(String, Option[Any])]):
-  infix def ++(that: Attrs) =
-    Attrs(this.attrs ++ that.attrs)
-
-  def isEmpty =
-    attrs.isEmpty
-
-  def contains(kw: String) =
-    attrs.exists:
-      case (kw_, _) => kw == kw_
-
-  def get(kw: String) =
-    attrs.collect:
-      case (`kw`, arg) => arg
-
-  def values[T: ClassTag](kw: String) =
-    attrs.collect:
-      case (`kw`, Some(arg: T)) => arg
-
-  def flatten =
-    attrs flatMap:
-      case (kw, None)      => List(Kw(kw))
-      case (kw, Some(arg)) => List(Kw(kw), arg)

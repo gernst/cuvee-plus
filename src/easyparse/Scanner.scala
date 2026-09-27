@@ -5,6 +5,9 @@ import util.or
 trait Scanner:
   def scan(in: Input, cm: Boolean): Input
 
+  def map[B](f: => B): Parser[B] =
+    Scanner.Apply(this, f)
+
   def ~[B](that: Parser[B]): Parser[B] =
     Scanner.SeqParser(this, that, strict = true)
 
@@ -15,6 +18,11 @@ object Scanner:
   case object Accept extends Scanner:
     def scan(in: Input, cm: Boolean) =
       in
+
+  case class Apply[+B](p: Scanner, f: B) extends Parser[B]:
+    def parse(in0: Input, cm: Boolean) =
+      val in1 = p.scan(in0, cm)
+      (f, in1)
 
   case class Match(name: String) extends Scanner:
     def scan(in: Input, cm: Boolean) =

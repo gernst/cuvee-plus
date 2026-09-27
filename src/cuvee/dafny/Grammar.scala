@@ -1,7 +1,6 @@
 package cuvee.dafny
 
 import cuvee.core.State
-import cuvee.boogie.Syntax
 
 object Grammar extends cuvee.pipe.Grammar:
   import easyparse._
@@ -38,35 +37,33 @@ object Grammar extends cuvee.pipe.Grammar:
 
   val kwd = T("kwd")
   val sym = T("sym")
-  val num = T("num") $ Syntax.num
-  val str = T("str") $ Syntax.str
+  val num = Num(T("num"))
+  val str = Str(T("str"))
 
   val nil = R(Nil)
 
   def none(s: Scanner) =
-    s $ { None }
+    None(s)
 
   def some[A](p: Parser[A]) =
-    p $ { Some(_) }
+    Some(p)
 
-  val la = sym.filter (_ == "<").asScanner
-  val ra = sym.filter (_ == ">").asScanner
+  val star = sym.filter(_ == "*").asScanner
+  val la = sym.filter(_ == "<").asScanner
+  val ra = sym.filter(_ == ">").asScanner
 
   def angle[A](p: Parser[A]) =
     la ~ p ~ ra
 
-  val kw = sym $ Syntax.kw
-  val id = sym $ Syntax.id
-  
-  val lit = 
+  val lit =
     P(num | str)
 
   val attrs =
-    P(braces(":" ~ (kw ~* ",")) | nil)
+    P(braces(":" ~ (sym ~* ",")) | nil)
 
-  val ids =
-    P(id ~+ ",")
-    
+  val syms =
+    P(sym ~+ ",")
+
   val types =
     P(typ ~+ ",")
 
@@ -74,16 +71,16 @@ object Grammar extends cuvee.pipe.Grammar:
     P(expr ~+ ",")
 
   val params =
-    P(angle(ids) | nil)
+    P(angle(syms) | nil)
 
   val inst =
     P(angle(types) | nil)
 
-  val typ: Parser[Any] =
-    P(id ~ inst) $ Syntax.app
+  val typ: Parser[Type] =
+    Sort(P(sym ~ inst))
 
   val formal =
-    P(id ~ ":" ~ typ) $ Syntax.pair
+    P(sym ~ ":" ~ typ)
 
   val formals =
     P(parens(formal ~* ","))
@@ -95,31 +92,31 @@ object Grammar extends cuvee.pipe.Grammar:
     P(brackets(expr ~ (":=" ~ expr).?))
 
   val app =
-    P(id ~ args ~ access.*) $ Syntax.app
+    App(P(sym ~ args ~ access.*))
 
   val true_ =
-    R(Syntax.const("true"))
+    R(True)
 
   val else_expr_or_true =
     ("else" ~ expr) | true_
 
   val ite =
-    P("if" ~ expr ~ "then" ~ expr ~ else_expr_or_true) $ Syntax.ternary("ite")
+    Ite(P("if" ~ expr ~ "then" ~ expr ~ else_expr_or_true))
 
   val forall =
-    P("forall" ~ formals ~ "::" ~ expr) $ Syntax.binary("forall")
+    All(P("forall" ~ formals ~ "::" ~ expr))
 
   val exists =
-    P("exists" ~ formals ~ "::" ~ expr) $ Syntax.binary("exists")
+    Ex(P("exists" ~ formals ~ "::" ~ expr))
 
   val bind =
     P(forall | exists)
 
-  val inner: Parser[Any] =
+  val inner: Parser[Expr] =
     P(parens(expr) | lit | bind | app)
 
-  val expr: Parser[Any] =
-    M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, Syntax.infix)
+  val expr: Parser[Expr] =
+    M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, App(_, _, Nil))
 
   val invariant =
     P("invariant" ~ expr)
@@ -131,87 +128,87 @@ object Grammar extends cuvee.pipe.Grammar:
     P("ensures" ~ expr)
 
   val modifies =
-    P("modifies" ~ ids)
-  
+    P("modifies" ~ syms)
+
   val break =
-    "break"  ~ ";" $ Syntax.const
+    Break("break" ~ ";")
 
   val return_ =
-    "return" ~ ";" $ Syntax.const
+    Return("return" ~ ";")
 
   val continue =
-    "continue" ~ ";" $ Syntax.const
+    Continue("continue" ~ ";")
 
   val ctrl =
     P(break | return_ | continue)
 
   val assume =
-    P("assume" ~ expr ~ ";") $ Syntax.unary("assume")
+    Assume(P("assume" ~ expr ~ ";"))
 
   val assert =
-    P("assert" ~ expr ~ ";") $ Syntax.unary("assert")
-
-  val havoc = // difference to Dafny: only one * at rhs
-    P(ids ?~ ":=" ?~ "*" ~ ";") $ Syntax.nary("havoc")
+    Assert(P("assert" ~ expr ~ ";"))
 
   val spec =
-    P(assume | assert | havoc)
+    P(assume | assert)
 
-  val call =
-    P(???)
+  val nondet =
+    Nondet(star)
+
+  val rhs =
+    P(nondet | expr)
 
   val assign =
-    P(ids ~ ":=" ~ exprs) $ Syntax.assign
+    Assign(P(syms ~ ":=" ~ (rhs ~+ ",")))
 
   val block =
-    P(braces(prog.*)) $ Syntax.nary("sequence")
+    Block(P(braces(prog.*)))
 
   val else_block_or_skip =
-    ("else" ~ block) | true_
+    ("else" ~ block) | R(Skip)
 
   val if_ =
-    P("if" ~ expr ~ block ~ else_block_or_skip)
+    If(P("if" ~ expr ~ block ~ else_block_or_skip))
 
   val while_ =
-    P("while" ~ expr ~ invariant.* ~ block) $ Syntax.while_
+    While(P("while" ~ expr ~ invariant.* ~ block))
 
-  val prog: Parser[Any] =
+  val prog: Parser[Prog] =
     P(ctrl | spec | if_ | while_ | block | assign)
 
-  val sortdef =
-    P("type" ~ id ~ params ~ ("=" ~ typ).?) $ Syntax.sortdef
-
   val sel =
-    P(id ~ ":" ~ typ) $ Syntax.pair
+    Sel(P(sym ~ ":" ~ typ))
 
   val sels =
     parens(sel ~+ ",") | nil
 
   val constr =
-    P(id ~ sels)
+    Constr(P(sym ~ sels))
 
   val constrs =
     P(constr ~+ "|")
 
+  val sortdef =
+    SortDef(P("type" ~ sym ~ params ~ ("=" ~ typ).?))
+
   val datadef =
-    P("datatype" ~ id ~ params ~ "=" ~ constrs) $ Syntax.datadef
+    DataDef(P("datatype" ~ sym ~ params ~ "=" ~ constrs))
 
   val constdef =
-    P("const" ~ id ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ (":=" ~ expr).?) $ Syntax.fundef
-    
+    FunDef(P("const" ~ sym ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ (":=" ~ expr).?))
+
   val fundef =
-    P("function" ~ id ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ braces(expr).?) $ Syntax.fundef
+    FunDef(P("function" ~ sym ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ braces(expr).?))
 
   val axiom =
-    P("axiom" ~ expr) $ Syntax.unary("assert")
+    Axiom(P("axiom" ~ expr))
 
   val returns =
     P("returns" ~ formals)
 
   val procdef =
-    P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ braces(prog).?) $ Syntax.procdef
+    MethodDef(P("method" ~ sym ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ braces(prog).?))
 
-  val cmd: Parser[Any] = 
+  val cmd: Parser[Cmd] =
     P(sortdef | datadef | constdef | fundef | procdef | axiom)
 
   val script =

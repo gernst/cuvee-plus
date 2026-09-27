@@ -96,6 +96,42 @@ case class State(
       case DeclareProc(proc, attrs) => declare(proc, attrs)
       case cmd: Assert              => assert(cmd)
 
+  def sort(name: Name, args: List[Type]) =
+    Error.report("sort not declared", name):
+      require(sorts.contains(name))
+
+    val con = sorts(name)
+    Sort(con, args)
+
+  def formal(name: Name, typ: Type) =
+    Var(name, typ)
+
+  def num(value: BigInt) =
+    Lit(value, Sort.int)
+
+  def str(value: String) =
+    Lit(value, Sort.string)
+
+  def const(name: Name) =
+    app(name, Nil)
+
+  def app(name: Name, args: List[Expr]) =
+    val key = (name, args.length)
+    Error.report("function not declared", name):
+      require(funs.contains(key))
+
+    val fun = funs(key)
+    val su = Subst.fresh(fun.params)
+    val inst = su(fun.args)
+    val typ = su(fun.res)
+    App(fun, inst, typ, args)
+
+  def all(bound: List[Var], body: Expr) =
+    All(bound, body)
+
+  def ex(bound: List[Var], body: Expr) =
+    Ex(bound, body)
+
 object State {
   // XXX: add SMT-LIB predefined
   def empty = State(None)

@@ -49,5 +49,5 @@ class Quant(name: Name):
       case _ =>
         None
 
-object Forall extends Quant("forall")
-object Exists extends Quant("exists")
+object All extends Quant("forall")
+object Ex extends Quant("exists")
