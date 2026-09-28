@@ -1,4 +1,4 @@
-package cuvee.pipe
+package cuvee.smtlib
 
 import cuvee.Error
 
@@ -97,10 +97,10 @@ class Parser(init: State):
 
       case List(Id("declare-sort"), Id(name), Num(digits), attrs*) =>
         val arity = digits.toInt
-        val con = Con(name, arity)
         val attrs_ = annotation(attrs.toList)
+        val con = Con(name, arity)
 
-        state = state.declare(con, attrs_)
+        state = state.declare(name, arity, attrs_)
         DeclareSort(con, attrs_)
 
       case List(Id("define-sort"), Id(name), List(params*), body, attrs*) =>
@@ -113,8 +113,8 @@ class Parser(init: State):
         val body_ = typ(scope, body)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(con, attrs_)
-        state = state.define(con, params_, body_)
+        state = state.declare(name, arity, attrs_)
+        state = state.define(name, params_, body_)
         DefineSort(con, params_, body_, attrs_)
 
       case List(Id("declare-datatypes"), _*) =>
@@ -131,7 +131,7 @@ class Parser(init: State):
         val fun = Fun(name, params_, args_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(fun, attrs_)
+        state = state.declare(name, params_, args_, res_, attrs_)
         DeclareFun(fun, attrs_)
 
       case List(Id("declare-fun"), Id(name), List(Id("par"), List(params*), List(args*), res, attrs*)) =>
@@ -143,7 +143,7 @@ class Parser(init: State):
         val fun = Fun(name, params_, args_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(fun, attrs_)
+        state = state.declare(name, params_, args_, res_, attrs_)
         DeclareFun(fun, attrs_)
 
       case List(Id("define-fun"), Id(name), List(Id("par"), List(params*), List(formals*), res, body, attrs*)) =>
@@ -158,8 +158,8 @@ class Parser(init: State):
         val body_ = Type.check(scope, expr_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(fun, attrs_)
-        state = state.define(fun, formals_, body_)
+        state = state.declare(name, params_, formals_.types, res_, attrs_)
+        state = state.define(name, formals_, body_)
         DefineFun(fun, formals_, body_, attrs_)
 
       // monomorphic SMT-LIB declarations and definitions
@@ -173,7 +173,7 @@ class Parser(init: State):
         val fun = Fun(name, params_, args_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(fun, attrs_)
+        state = state.declare(name, params_, args_, res_, attrs_)
         DeclareFun(fun, attrs_)
 
       case List(Id("declare-fun"), Id(name), List(args*), res, attrs*) =>
@@ -185,7 +185,7 @@ class Parser(init: State):
         val fun = Fun(name, params_, args_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(fun, attrs_)
+        state = state.declare(name, params_, args_, res_, attrs_)
         DeclareFun(fun, attrs_)
 
       case List(Id("define-fun"), Id(name), List(formals*), res, body, attrs*) =>
@@ -200,8 +200,8 @@ class Parser(init: State):
         val body_ = Type.check(scope, expr_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(fun, attrs_)
-        state = state.define(fun, formals_, body_)
+        state = state.declare(name, params_, formals_.types, res_, attrs_)
+        state = state.define(name, formals_, body_)
         DefineFun(fun, formals_, body_, attrs_)
 
       // assertions and proof goals
@@ -234,7 +234,7 @@ class Parser(init: State):
 
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(proc, attrs_)
+        state = state.declare(name, params_, in_, out_, attrs_)
         DeclareProc(proc, attrs_)
 
       case List(Id("define-proc"), Id(name), List(in*), List(out*), body, attrs*) =>
@@ -249,7 +249,8 @@ class Parser(init: State):
 
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(proc, attrs_)
+        state = state.declare(name, params_, in_.types, out_.types, attrs_)
+        state = state.define(name, in_, out_, body_)
         DefineProc(proc, in_, out_, body_, attrs_)
 
       case List(Id("declare-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), attrs*)) =>
@@ -262,7 +263,7 @@ class Parser(init: State):
 
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(proc, attrs_)
+        state = state.declare(name, params_, in_, out_, attrs_)
         DeclareProc(proc, attrs_)
 
       case List(Id("define-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), body, attrs*)) =>
@@ -277,7 +278,8 @@ class Parser(init: State):
 
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(proc, attrs_)
+        state = state.declare(name, params_, in_.types, out_.types, attrs_)
+        state = state.define(name, in_, out_, body_)
         DefineProc(proc, in_, out_, body_, attrs_)
 
       case _ =>
@@ -376,4 +378,4 @@ class Parser(init: State):
         Error.raise("not an expression", from)
 
   def prog(scope: Scope, mod: Set[Var], from: Any): Prog =
-    ???
+    Error.raise("imperative programs in SMT-LIB are currently unsupported", from)

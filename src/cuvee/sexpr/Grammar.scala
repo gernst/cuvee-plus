@@ -3,20 +3,17 @@ package cuvee.sexpr
 import cuvee.sexpr._
 import cuvee.core.State
 
-object Grammar extends cuvee.pipe.Grammar:
-  val init = State.empty
-  val cmd = sexpr
-
+object Grammar:
   import easyparse._
   import Brackets._
 
-  val id = T("id") $ { Id(_) }
-  val kw = T("kd") $ { Kw(_) }
-  val str = T("str") $ { Str(_) }
-  val num = T("num") $ { Num(_) }
-  val dec = T("dec") $ { Dec(_) }
-  val hex = T("hex") $ { Hex(_) }
-  val bin = T("bin") $ { Bin(_) }
+  val id = Id(T("id"))
+  val kw = Kw(T("kd"))
+  val str = Str(T("str"))
+  val num = Num(T("num"))
+  val dec = Dec(T("dec"))
+  val hex = Hex(T("hex"))
+  val bin = Bin(T("bin"))
 
   val atom: Parser[Any] =
     P(id | kw | str | num | dec | hex | bin)

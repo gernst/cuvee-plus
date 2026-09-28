@@ -23,7 +23,7 @@ ws = {nl} | [ \t\f]
 
 num  = [1-9][0-9]* | 0
 
-kw = "function" | "axiom" | "const" | "datatype" | "type" | "method"
+kw = "function" | "predicate" | "axiom" | "const" | "datatype" | "type" | "method"
    | "returns" | "requires" | "ensures" | "modifies" | "invariant"
    | "while" | "if" | "then" | "else" | "assert" | "assume"
    | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "|"

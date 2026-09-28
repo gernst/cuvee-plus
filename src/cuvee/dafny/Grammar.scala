@@ -2,11 +2,9 @@ package cuvee.dafny
 
 import cuvee.core.State
 
-object Grammar extends cuvee.pipe.Grammar:
+object Grammar:
   import easyparse._
   import Brackets._
-
-  val init = State.empty
 
   val prefix_ops = Map(
     "-" -> 8,
@@ -35,18 +33,34 @@ object Grammar extends cuvee.pipe.Grammar:
     "%" -> (Assoc.Left, 7)
   )
 
+  val translate = Map(
+    "!" -> "not",
+    "&&" -> "and",
+    "||" -> "or",
+    "==>" -> "=>",
+    "/" -> "div",
+    "%" -> "mod",
+    "int" -> "Int",
+    "bool" -> "Bool",
+    "real" -> "Real"
+  )
+
   val kwd = T("kwd")
   val sym = T("sym")
   val num = Num(T("num"))
   val str = Str(T("str"))
 
   val nil = R(Nil)
-
-  def none(s: Scanner) =
-    None(s)
+  val none = R(None)
 
   def some[A](p: Parser[A]) =
-    Some(p)
+    p.map { Some(_) }
+
+  def left[A](p: Parser[A]) =
+    p.map { Left(_) }
+
+  def right[A](p: Parser[A]) =
+    p.map { Right(_) }
 
   val star = sym.filter(_ == "*").asScanner
   val la = sym.filter(_ == "<").asScanner
@@ -76,8 +90,11 @@ object Grammar extends cuvee.pipe.Grammar:
   val inst =
     P(angle(types) | nil)
 
-  val typ: Parser[Type] =
+  val sort =
     Sort(P(sym ~ inst))
+
+  val typ: Parser[Type] =
+    P(parens(typ) | sort)
 
   val formal =
     P(sym ~ ":" ~ typ)
@@ -86,7 +103,7 @@ object Grammar extends cuvee.pipe.Grammar:
     P(parens(formal ~* ","))
 
   val args =
-    P(parens(exprs) | nil)
+    P(parens(expr ~* ",") | nil)
 
   val access =
     P(brackets(expr ~ (":=" ~ expr).?))
@@ -96,6 +113,9 @@ object Grammar extends cuvee.pipe.Grammar:
 
   val true_ =
     R(True)
+
+  val bool =
+    R(Sort("bool", Nil))
 
   val else_expr_or_true =
     ("else" ~ expr) | true_
@@ -112,8 +132,11 @@ object Grammar extends cuvee.pipe.Grammar:
   val bind =
     P(forall | exists)
 
+  val let =
+    Let(P("var" ~ syms ~ ":=" ~ exprs ~ ";" ~ expr))
+
   val inner: Parser[Expr] =
-    P(parens(expr) | lit | bind | app)
+    P(parens(expr) | lit | bind | let | app)
 
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, App(_, _, Nil))
@@ -187,17 +210,29 @@ object Grammar extends cuvee.pipe.Grammar:
   val constrs =
     P(constr ~+ "|")
 
+  val sortalias =
+    P("=" ~ typ)
+
+  val sortcmd =
+    P(constdef | fundef | preddef | procdef)
+
+  val sortimpl =
+    P(braces(sortcmd.*) | nil)
+
   val sortdef =
-    SortDef(P("type" ~ sym ~ params ~ ("=" ~ typ).?))
+    SortDef(P("type" ~ sym ~ params ~ (right(sortimpl) | left(sortalias.?))))
 
   val datadef =
-    DataDef(P("datatype" ~ sym ~ params ~ "=" ~ constrs))
+    DataDef(P("datatype" ~ sym ~ params ~ "=" ~ constrs ~ sortimpl.?))
 
   val constdef =
     FunDef(P("const" ~ sym ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ (":=" ~ expr).?))
 
   val fundef =
     FunDef(P("function" ~ sym ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ braces(expr).?))
+
+  val preddef =
+    FunDef(P("predicate" ~ sym ~ params ~ formals ~ bool ~ requires.* ~ ensures.* ~ braces(expr).?))
 
   val axiom =
     Axiom(P("axiom" ~ expr))

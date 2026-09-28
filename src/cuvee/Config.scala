@@ -19,25 +19,23 @@ case class Flag(
 
 case class Lang(
     help: String,
-    scanner: Reader => Scanner,
-    grammar: Grammar,
+    source: Source,
     printer: Printer
 )
 
 object Lang:
   val smtlib =
-    Lang("SMT-LIB", reader => new cuvee.sexpr.Scanner(reader), cuvee.sexpr.Grammar, cuvee.smtlib.Printer)
+    Lang("SMT-LIB", cuvee.smtlib.Source, cuvee.smtlib.Printer)
 
   val dafny =
-    Lang("Dafny", reader => new cuvee.dafny.Scanner(reader), cuvee.dafny.Grammar, cuvee.smtlib.Printer)
+    Lang("Dafny", cuvee.dafny.Source, cuvee.smtlib.Printer)
 
 case class Config(
     input: Option[String],
-    scanner: Reader => Scanner,
-    grammar: Grammar,
+    source: Source,
     printer: Printer,
-    sink: (Printer => Sink),
-    report: (Printer => Report),
+    sink: Printer => Sink,
+    report: Printer => Report,
     debug: Set[String] = Set(),
     overridePrinter: Boolean = false
 ) {
@@ -52,7 +50,7 @@ case class Config(
 
 object Config:
   val default =
-    Config(None, reader => new cuvee.sexpr.Scanner(reader), cuvee.sexpr.Grammar, cuvee.smtlib.Printer, Sink.stdout, Report.stderr)
+    Config(None, cuvee.smtlib.Source, cuvee.smtlib.Printer, Sink.stdout, Report.stderr)
 
   def flag(key: String, help: String)(action: PartialFunction[(Config, List[String]), (Config, List[String])]) =
     key -> Flag(None, help, action)
@@ -141,11 +139,11 @@ object Config:
         else Error.raise("malformed argument for command line option", flag, rest)
 
       case file :: rest if langs.contains(file.suffix) =>
-        val Lang(help, scanner, grammar, printer) = langs(file.suffix)
+        val Lang(help, source, printer) = langs(file.suffix)
 
         var config_ = config
-        
-        config_ = config_.copy(input = Some(file), scanner = scanner, grammar = grammar)
+
+        config_ = config_.copy(input = Some(file), source = source)
 
         if (!config_.overridePrinter)
         then config_ = config_.copy(printer = printer)

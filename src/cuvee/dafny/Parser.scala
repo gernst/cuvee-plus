@@ -1,21 +1,150 @@
 package cuvee.dafny
 
+import cuvee.Error
 import cuvee.core
 import cuvee.core.State
 import cuvee.core.Scope
+import cuvee.core.types
+import cuvee.sexpr.Attrs
 
-class Parser(init: State):
-  var state = init
+class Parser(var state: State):
+  val attrs_ = Attrs.empty
 
-  var stack: List[State] = List()
+  def translate(name: String) =
+    if Grammar.translate.contains(name)
+    then Grammar.translate(name)
+    else name
 
-  def list[A, B](from: List[A])(f: A => B): List[B] =
-    for arg <- from.toList
-    yield f(arg)
+  def resolve(scope: Scope, name: String): core.Param =
+    state.types.param(name)
 
   def resolve(scope: Scope, formal: (String, Type)): core.Var =
     val (name, typ) = formal
-    state.formal(name, resolve(scope, typ))
+    state.exprs.formal(name, resolve(scope, typ))
+
+  def resolve(cmd: Cmd): List[core.Cmd] =
+    cmd match
+      case Axiom(expr) =>
+        val scope = Scope.empty
+        val expr_ = resolve(scope, expr)
+        val typ_ = state.types.sort("Bool")
+        val phi_ = state.exprs.check(scope, expr_, typ_)
+        val params_ = phi_.params.toList
+
+        val cmd_ = state.cmds.axiom(params_, phi_, attrs_)
+        List(cmd_)
+
+      case SortDef(name, params, impl) =>
+        val scope = Scope.empty
+        val params_ = params.map(resolve(scope, _))
+        val scope_ = scope ++ params_
+
+        val arity_ = params.length
+        state = state.declare(name, arity_, attrs_)
+
+        impl match
+          case Left(None) =>
+            val decl = state.cmds.declareSort(name)
+            List(decl)
+
+          case Left(Some(typ)) =>
+            val typ_ = resolve(scope_, typ)
+            state = state.define(name, params_, typ_)
+
+            val defn = state.cmds.defineSort(name)
+            List(defn)
+
+          case Right(cmds) =>
+            val sort_ = state.types.sort(name, params_)
+            val this_ = state.exprs.formal("this", sort_)
+
+            for
+              cmd <- cmds;
+              cmd_ <- resolve(scope_, name + ".", params_, List(this_), cmd)
+            yield cmd_
+
+      case DataDef(name, params, constrs, impl) =>
+        Nil
+
+      case _ =>
+        resolve(Scope.empty, "", Nil, Nil, cmd)
+
+  def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr]) =
+    val mod_ =
+      for xs <- mod
+      yield "modifies" -> Some(xs.map(scope.vars(_)))
+
+    val req_ =
+      for phi <- req
+      yield "requires" -> Some(resolve(scope, phi))
+
+    val ens_ =
+      for phi <- ens
+      yield "ensures" -> Some(resolve(scope, phi))
+
+    Attrs(mod_ ++ req_ ++ ens_)
+
+  def resolve(scope: Scope, prefix: String, outer_ : List[core.Param], self: List[core.Var], cmd: Cmd): List[core.Cmd] =
+    cmd match
+      case FunDef(name, inner, formals, typ, req, ens, body) =>
+        val qname = prefix + name
+
+        val inner_ = inner.map(resolve(scope, _))
+        val params_ = outer_ ++ inner_
+        val scope_ = scope ++ inner_
+
+        val formals_ = self ++ formals.map(resolve(scope_, _))
+        val in_ = formals_.types
+
+        val typ_ = resolve(scope_, typ)
+        val scope__ = scope_ ++ formals_
+        val attrs_ = contract(scope__, Nil, req, ens)
+
+        val arity = in_.length
+        state = state.declare(qname, params_, in_, typ_, attrs_)
+
+        body match
+          case None =>
+            val cmd_ = state.cmds.declareFun(qname, arity)
+            List(cmd_)
+
+          case Some(expr) =>
+            val body_ = resolve(scope__, expr)
+            state = state.define(qname, formals_, body_)
+
+            val cmd_ = state.cmds.defineFun(qname, arity)
+            List(cmd_)
+
+      case MethodDef(name, inner, formals, rets, mod, req, ens, body) =>
+        val qname = prefix + name
+        val inner_ = inner.map(resolve(scope, _))
+        val params_ = outer_ ++ inner_
+        val scope_ = scope ++ inner_
+
+        val formals_ = self ++ formals.map(resolve(scope_, _))
+        val in_ = formals_.types
+
+        val rets_ = rets.toList.flatten.map(resolve(scope_, _))
+        val out_ = rets_.types
+
+        val scope__ = scope_ ++ formals_ ++ rets_
+        val attrs_ = contract(scope__, mod, req, ens)
+        state = state.declare(qname, params_, in_, out_, attrs_)
+
+        body match
+          case None =>
+            val cmd_ = state.cmds.declareProc(qname)
+            List(cmd_)
+
+          case Some(prog) =>
+            val body_ = resolve(scope__, prog)
+            state = state.define(qname, formals_, rets_, body_)
+
+            val cmd_ = state.cmds.defineProc(name)
+            List(cmd_)
+
+      case _ =>
+        Error.raise("unsupported nested command", prefix, cmd)
 
   def resolve(scope: Scope, typ: Type): core.Type =
     typ match
@@ -23,36 +152,70 @@ class Parser(init: State):
         scope.params(name)
 
       case Sort(con, args) =>
-        val args_ = list(args) { resolve(scope, _) }
-        state.sort(con, args_)
+        val args_ = args.map(resolve(scope, _))
+        state.types.sort(con, args_)
+
+  def resolve(scope: Scope, base: core.Expr, access: List[(Expr, Option[Expr])]): core.Expr =
+    access match
+      case Nil =>
+        base
+
+      case (index, None) :: access =>
+        val index_ = resolve(scope, index)
+        val base_ = state.exprs.app("select", List(base, index_))
+        resolve(scope, base_, access)
+
+      case (index, Some(value)) :: access =>
+        val index_ = resolve(scope, index)
+        val value_ = resolve(scope, value)
+        val base_ = state.exprs.app("store", List(base, index_, value_))
+        resolve(scope, base_, access)
+
+  def resolve(scope: Scope, prog: Prog): core.Prog =
+    ???
 
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match
       case Num(value) =>
-        state.num(BigInt(value))
+        state.exprs.num(BigInt(value))
 
       case Str(value) =>
-        state.str(value)
+        state.exprs.str(value)
 
       case App(name, Nil, Nil) if scope.vars.contains(name) =>
         scope.vars(name)
 
       case App(fun, args, access) =>
-        ???
-        val args_ = list(args) { resolve(scope, _) }
-        state.app(fun, args_)
+        val fun_ = translate(fun)
+        val args_ = args.map(resolve(scope, _))
+        val base_ = state.exprs.app(fun_, args_)
+        resolve(scope, base_, access)
+
+      case Ite(test, left, right) =>
+        val test_ = resolve(scope, test)
+        val left_ = resolve(scope, left)
+        val right_ = resolve(scope, right)
+        state.exprs.app("ite", List(test_, left_, right_))
 
       case Ex(bound, body) =>
-        val bound_ = list(bound) { resolve(scope, _) }
+        val bound_ = bound.map(resolve(scope, _))
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
-        state.ex(bound_, body_)
+        state.exprs.ex(bound_, body_)
 
       case All(bound, body) =>
-        val bound_ = list(bound) { resolve(scope, _) }
+        val bound_ = bound.map(resolve(scope, _))
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
-        state.all(bound_, body_)
+        state.exprs.all(bound_, body_)
 
-      case Let(vars, args, body) =>
-        ???
+      case Let(bound, args, body) =>
+        val args_ = args.map(resolve(scope, _))
+        val types_ = args_.types
+        val bound_ =
+          for (name, typ) <- bound zip types_
+          yield state.exprs.formal(name, typ)
+
+        val scope_ = scope ++ bound_
+        val body_ = resolve(scope_, body)
+        state.exprs.let(bound_, args_, body_)

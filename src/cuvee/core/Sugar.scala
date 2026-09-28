@@ -35,7 +35,9 @@ extension (self: Iterable[Prog])
   @targetName("Progs.mod")
   def mod = self.flatMap(_.mod).toSet
 
-extension (self: List[Expr]) def types = self.map(_.typ)
+extension (self: List[Expr])
+  @targetName("Exprs.types")
+  def types = self.map(_.typ)
 
 class Quant(name: Name):
   def apply(bound: List[Var], body: Expr) =

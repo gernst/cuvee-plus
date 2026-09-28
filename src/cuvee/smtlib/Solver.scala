@@ -5,7 +5,6 @@ import util.Tool
 import cuvee.Debug
 
 import cuvee.sexpr.Printer
-import cuvee.pipe.Parser
 import cuvee.core.Cmd
 
 class Solver(cmd: String*):

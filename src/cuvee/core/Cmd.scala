@@ -18,6 +18,7 @@ enum Status extends Result:
 case class Labels(labels: List[String]) extends Result
 
 sealed trait Cmd
+
 sealed trait Ctrl extends Cmd
 sealed trait Decl extends Cmd
 sealed trait Query extends Cmd
@@ -36,10 +37,10 @@ case object Reset extends Ctrl
 
 case class SetLogic(name: String) extends Decl
 
-case class GetOption(name: String) extends Decl
+case class GetOption(name: String) extends Query
 case class SetOption(name: String, value: Any) extends Decl
 
-case class GetInfo(name: String) extends Decl
+case class GetInfo(name: String) extends Query
 case class SetInfo(name: String, value: Any) extends Decl
 
 case class DeclareSort(con: Con, attrs: Attrs) extends Decl
@@ -55,6 +56,5 @@ sealed trait Justify
 case object Axiom extends Justify
 case object Goal extends Justify
 case object Lemma extends Justify
-case object FreeLemma extends Justify
 
 case class Assert(justify: Justify, params: List[Param], phi: Expr, attrs: Attrs) extends Decl

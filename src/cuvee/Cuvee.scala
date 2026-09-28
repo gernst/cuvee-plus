@@ -21,14 +21,19 @@ object Cuvee extends util.Main:
         Config.version()
 
       case _ =>
-        val config = Config.parse(Config.default, args.toList)
+        run(args.toList)
 
-        val reader = config.reader
-        val scanner = config.scanner(reader)
-        val source = Source.read(scanner, config.grammar)
+  def run(args: String*): (List[Cmd], List[Result]) =
+    run(args.toList)
 
-        val printer = config.printer
-        val sink = config.sink(printer)
-        val report = config.report(printer)
+  def run(args: List[String]) =
+    val config = Config.parse(Config.default, args)
 
-        Pipe.run(source, sink, report, incremental = false)
+    val reader = config.reader
+    val cmds = config.source(reader)
+
+    val printer = config.printer
+    val sink = config.sink(printer)
+    val report = config.report(printer)
+
+    Pipe.run(cmds, sink, report, incremental = false)

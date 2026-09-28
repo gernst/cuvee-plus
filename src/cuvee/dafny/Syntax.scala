@@ -19,6 +19,7 @@ sealed trait Prog
 sealed trait Cmd
 
 case class Sort(con: String, args: List[Type]) extends Type
+case class Product(args: List[Type]) extends Type
 
 object Sort extends ((String, List[Type]) => Type)
 
@@ -67,8 +68,8 @@ object Sel extends ((String, Type) => Sel)
 object Constr extends ((String, List[Sel]) => Constr)
 
 case class Axiom(phi: Expr) extends Cmd
-case class SortDef(name: String, params: List[String], typ: Option[Type]) extends Cmd
-case class DataDef(name: String, params: List[String], constrs: List[Constr]) extends Cmd
+case class SortDef(name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
+case class DataDef(name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
 
 case class FunDef(
     name: String,
@@ -92,8 +93,8 @@ case class MethodDef(
 ) extends Cmd
 
 object Axiom extends (Expr => Cmd)
-object SortDef extends ((String, List[String], Option[Type]) => Cmd)
-object DataDef extends ((String, List[String], List[Constr]) => Cmd)
+object SortDef extends ((String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
+object DataDef extends ((String, List[String], List[Constr], Option[List[Cmd]]) => Cmd)
 object FunDef extends ((String, List[String], List[(String, Type)], Type, List[Expr], List[Expr], Option[Expr]) => Cmd)
 
 object MethodDef

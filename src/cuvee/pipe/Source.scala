@@ -2,28 +2,25 @@ package cuvee.pipe
 
 import cuvee.Error
 import cuvee.core._
+import cuvee.smtlib.Parser
+import java.io.Reader
 
-type Source = Iterable[Cmd]
+trait Source extends (Reader => Iterable[Cmd]):
+  def newScanner(reader: Reader): Scanner
+  def newParser(): easyparse.Parser[List[Cmd]]
 
-trait Grammar:
-  def init: State
-  def cmd: easyparse.Parser[Any]
+  def apply(reader: Reader): LazyList[Cmd] =
+    val scanner = newScanner(reader)
+    cmds(scanner.input, newParser())
 
-object Source:
-  def read(scanner: Scanner, grammar: Grammar): Source =
-    val in = scanner.input
-    val parser = Parser(grammar.init)
-
-    def cmds(in: easyparse.Input): LazyList[Cmd] =
-      if in.isEmpty || in.head == null
-      then LazyList.empty
-      else
-        try
-          val (from, in_) = grammar.cmd.parse(in, true)
-          val cmd = parser.cmd(from)
-          cmd #:: cmds(in_)
-        catch
-          case easyparse.Fail(in, from) =>
-            Error.raise("parse error", from, in)
-
-    cmds(in)
+  def cmds(in: easyparse.Input, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
+    if in.isEmpty || in.head == null
+    then LazyList.empty
+    else
+      try
+        val (chunk, in_) = parser.parse(in, true)
+        LazyList(chunk*) #::: cmds(in_, parser)
+      catch
+        case easyparse.Fail(in, from) =>
+          in.take(10).toList // force lazy prefix as side-effect
+          Error.raise("parse error", from, in)

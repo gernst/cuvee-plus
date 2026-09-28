@@ -35,6 +35,9 @@ object Sink:
     val stream = new PrintStream(new FileOutputStream(name))
     Print(stream, printer)
 
+  def tee(primary: Sink, secondary: Sink*) =
+    Tee(primary, secondary.toList)
+
   class Print(stream: PrintStream, printer: Printer) extends Sink:
     def query(cmd: Cmd) =
       for (line <- printer.lines(cmd))
@@ -55,3 +58,14 @@ object Sink:
 
         case Labels =>
           Error.raise("no labels available")
+
+  class Tee(primary: Sink, secondary: List[Sink]) extends Sink:
+    def query(cmd: Cmd) =
+      val secondary_ =
+        for sink <- secondary
+        yield
+          val (_, sink_) = sink.query(cmd)
+          sink_
+
+      val (res, primary_) = primary.query(cmd)
+      (res, Tee(primary_, secondary_))

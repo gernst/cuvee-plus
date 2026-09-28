@@ -21,6 +21,9 @@ trait Parser[+A]:
   def map[B](f: A => B): Parser[B] =
     Parser.Apply(this, f)
 
+  def flatMap[B](f: A => List[B]): Parser[List[B]] =
+    Parser.Apply(this, f)
+
   def collect[B](f: PartialFunction[A, B])(implicit name: sourcecode.Name): Parser[B] =
     Parser.Collect(name.value, this, f)
 

@@ -1,15 +1,19 @@
 package cuvee.pipe
 
 import scala.util.control.Breaks
+import scala.collection.mutable
 
 import cuvee.Error
 import cuvee.core._
 import cuvee.sexpr.Id
 
 object Pipe:
-  def run(source: Source, init: Sink, report: Report, incremental: Boolean) =
+  def run(source: Iterable[Cmd], init: Sink, report: Report, incremental: Boolean) =
     var sink = init
     var printSuccess = false
+
+    val done = mutable.ListBuffer[Cmd]()
+    val results = mutable.ListBuffer[Result]()
 
     try
       Breaks.breakable:
@@ -27,6 +31,9 @@ object Pipe:
                 sink = next
                 report.report(result, printSuccess)
 
+                done.append(cmd)
+                results.append(result)
+
                 if cmd == Exit
                 then Breaks.break()
 
@@ -42,3 +49,5 @@ object Pipe:
       // catches parse errors
       case result: Error =>
         report.report(result, printSuccess)
+
+    (done.toList, results.toList)

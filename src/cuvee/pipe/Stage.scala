@@ -41,6 +41,10 @@ case class Stage(
 
   def query(cmd: Cmd) =
     cmd match
+      case decl: Assert =>
+        val stage_ = copy(rpending = decl :: rpending)
+        (Ack.Success, stage_)
+
       case decl: Decl =>
         val stage_ = copy(rpending = decl :: rpending, state = state.add(decl))
         (Ack.Success, stage_)
