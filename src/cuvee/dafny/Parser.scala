@@ -52,13 +52,18 @@ class Parser(var state: State):
             List(defn)
 
           case Right(cmds) =>
+            val decl = state.cmds.declareSort(name)
+
             val sort_ = state.types.sort(name, params_)
             val this_ = state.exprs.formal("this", sort_)
 
-            for
-              cmd <- cmds;
-              cmd_ <- resolve(scope_, name + ".", params_, List(this_), cmd)
-            yield cmd_
+            val cmds_ =
+              for
+                cmd <- cmds;
+                cmd_ <- resolve(scope_, name + ".", params_, List(this_), cmd)
+              yield cmd_
+
+            decl :: cmds_
 
       case DataDef(name, params, constrs, impl) =>
         Nil
