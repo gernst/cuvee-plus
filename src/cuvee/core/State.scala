@@ -192,8 +192,8 @@ case class State(
     def assign(lhs: List[Var], rhs: List[Expr]) =
       Assign(lhs, rhs)
 
-    def call(proc: Name, lhs: List[Var], args: List[Expr]) =
-      Call(proc, lhs, args)
+    def call(proc: Name, args: List[Expr], res: List[Var]) =
+      Call(proc, args, res)
 
     def block(locals: List[Var], progs: List[Prog]) =
       Block(locals, progs)

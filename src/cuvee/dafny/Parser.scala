@@ -292,7 +292,7 @@ class Parser(var state: State):
 
           case _ if state.procs.contains(qname) =>
             val args_ = args.map(resolve(scope, _))
-            state.progs.call(qname, lhs_, args_)
+            state.progs.call(qname, args_, lhs_)
 
           case _ =>
             Error.raise("invalid access", base, qname, fun, scope, state.funs.keys, state.procs.keys)
