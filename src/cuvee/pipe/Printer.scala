@@ -26,6 +26,11 @@ trait Printer:
     for expr <- exprs; line <- lines(expr)
     yield line
 
+  @targetName("Printer.linesOfProgs")
+  def lines(progs: List[Prog]): List[String] =
+    for prog <- progs; line <- lines(prog)
+    yield line
+
 object Printer:
   object default extends Printer:
     def lines(res: Result) = List(res.toString)

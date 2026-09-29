@@ -11,10 +11,8 @@ object Syntax:
   def apply(name: String, text: String) =
     Token.Value(name, text)
 
-sealed trait Rhs
-
 sealed trait Type
-sealed trait Expr extends Rhs
+sealed trait Expr
 sealed trait Prog
 sealed trait Cmd
 
@@ -48,23 +46,21 @@ object Ex extends ((List[(String, Type)], Expr) => Expr)
 object All extends ((List[(String, Type)], Expr) => Expr)
 object Let extends ((List[String], List[Expr], Expr) => Expr)
 
-case object Nondet extends Rhs
-
 case object Skip extends Prog
 case object Break extends Prog
 case object Continue extends Prog
 case object Return extends Prog
 case class Assume(phi: Expr) extends Prog
 case class Assert(phi: Expr) extends Prog
-case class Assign(lhs: List[String], rhs: List[Rhs]) extends Prog
-case class Block(progs: List[Prog]) extends Prog
+case class Assign(lhs: List[String], rhs: List[Expr]) extends Prog
+case class Block(locals: List[List[(String, Type)]], progs: List[Prog]) extends Prog
 case class If(test: Expr, left: Prog, right: Prog) extends Prog
 case class While(test: Expr, invs: List[Expr], body: Prog) extends Prog
 
 object Assume extends (Expr => Prog)
 object Assert extends (Expr => Prog)
-object Assign extends ((List[String], List[Rhs]) => Prog)
-object Block extends (List[Prog] => Prog)
+object Assign extends ((List[String], List[Expr]) => Prog)
+object Block extends ((List[List[(String, Type)]], List[Prog]) => Prog)
 object If extends ((Expr, Prog, Prog) => Prog)
 object While extends ((Expr, List[Expr], Prog) => Prog)
 

@@ -81,6 +81,13 @@ class Parser(var state: State):
 
     Attrs(mod_ ++ req_ ++ ens_)
 
+  def invariants(scope: Scope, invs: List[Expr]) =
+    val invs_ =
+      for phi <- invs
+      yield "invariant" -> Some(resolve(scope, phi))
+
+    Attrs(invs_)
+
   def resolve(scope: Scope, prefix: String, outer_ : List[core.Param], self: List[core.Var], cmd: Cmd): List[core.Cmd] =
     cmd match
       case FunDef(fun, inner, formals, typ, req, ens, body) =>
@@ -239,4 +246,80 @@ class Parser(var state: State):
         Error.raise("unknown expression", expr, scope.vars.keys, state.funs.keys)
 
   def resolve(scope: Scope, prog: Prog): core.Prog =
-    ???
+    prog match
+      case Skip =>
+        state.progs.skip
+
+      case Break =>
+        state.progs.break
+
+      case Continue =>
+        state.progs.continue
+
+      case Return =>
+        state.progs.return_
+
+      case Assume(phi) =>
+        val expr_ = resolve(scope, phi)
+        val typ_ = state.types.sort("Bool")
+        val phi_ = state.exprs.check(scope, expr_, typ_)
+        state.progs.assume(phi_)
+
+      case Assert(phi) =>
+        val expr_ = resolve(scope, phi)
+        val typ_ = state.types.sort("Bool")
+        val phi_ = state.exprs.check(scope, expr_, typ_)
+        state.progs.assert(phi_)
+
+      // all method calls must be top-level on variables
+      case Assign(lhs, List(App(base, Nil, List(Member(fun, args))))) =>
+        val unknown = (base :: lhs).filterNot(scope.vars.contains(_))
+        Error.report("unknown local variables", scope, unknown):
+          require(unknown.isEmpty)
+
+        val lhs_ = lhs.map(scope.vars(_))
+        val base_ = scope.vars(base)
+
+        @nowarn
+        val Name(prefix, None) = base_.typ.name
+        val qname = prefix + "." + fun
+
+        args match
+          case _ if state.funs.contains((qname, 1 + args.length)) =>
+            val args_ = args.map(resolve(scope, _))
+            val rhs_ = List(state.exprs.app(qname, base_ :: args_))
+            state.progs.assign(lhs_, rhs_)
+
+          case _ if state.procs.contains(qname) =>
+            val args_ = args.map(resolve(scope, _))
+            state.progs.call(qname, lhs_, args_)
+
+          case _ =>
+            Error.raise("invalid access", base, qname, fun, scope, state.funs.keys, state.procs.keys)
+
+      case Assign(lhs, rhs) =>
+        val unknown = lhs.filterNot(scope.vars.contains(_))
+        Error.report("unknown local variables", scope, unknown, lhs):
+          require(unknown.isEmpty)
+
+        val lhs_ = lhs.map(scope.vars(_))
+        val rhs_ = rhs.map(resolve(scope, _))
+        state.progs.assign(lhs_, rhs_)
+
+      case Block(locals, progs) =>
+        val locals_ = locals.flatten.map(resolve(scope, _))
+        val scope_ = scope ++ locals_
+        val progs_ = progs.map(resolve(scope_, _))
+        state.progs.block(locals_, progs_)
+
+      case If(test, left, right) =>
+        val test_ = resolve(scope, test)
+        val left_ = resolve(scope, left)
+        val right_ = resolve(scope, right)
+        state.progs.if_(test_, left_, right_)
+
+      case While(test, invs, body) =>
+        val test_ = resolve(scope, test)
+        val body_ = resolve(scope, body)
+        val attrs_ = invariants(scope, invs)
+        state.progs.while_(test_, body_, attrs_)

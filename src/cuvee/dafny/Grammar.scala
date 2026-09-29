@@ -77,7 +77,6 @@ object Grammar:
   def right[A](p: Parser[A]) =
     p.map { Right(_) }
 
-  val star = id.filter(_ == "*").asScanner
   val la = id.filter(_ == "<").asScanner
   val ra = id.filter(_ == ">").asScanner
 
@@ -195,17 +194,14 @@ object Grammar:
   val spec =
     P(assume | assert)
 
-  val nondet =
-    Nondet(star)
-
-  val rhs =
-    P(nondet | expr)
+  val local =
+    P("var" ~ (formal ~+ ",") ~ ";")
 
   val assign =
-    Assign(P(ids ~ ":=" ~ (rhs ~+ ",")))
+    Assign(P(ids ~ ":=" ~ exprs ~ ";"))
 
   val block =
-    Block(P(braces(prog.*)))
+    Block(P(braces(local.* ~ prog.*)))
 
   val else_block_or_skip =
     ("else" ~ block) | R(Skip)
@@ -262,7 +258,7 @@ object Grammar:
     P("returns" ~ formals)
 
   val procdef =
-    MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ braces(prog).?))
+    MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ block.?))
 
   val cmd: Parser[Cmd] =
     P(sortdef | datadef | constdef | fundef | procdef | axiom)

@@ -3,6 +3,7 @@ package cuvee.core
 import cuvee.Name
 import cuvee.Error
 import cuvee.sexpr.Attrs
+import org.w3c.dom.Attr
 
 case class State(
     logic: Option[String] = None,
@@ -100,7 +101,7 @@ case class State(
       case SetOption(name, value) =>
         setOption(name, value)
 
-      case SetInfo(name, value) => 
+      case SetInfo(name, value) =>
         setInfo(name, value)
 
       case DeclareSort(Con(name, arity), attrs) =>
@@ -121,7 +122,7 @@ case class State(
       case DefineProc(Proc(name, params, in, out), args, ret, body, attrs) =>
         declare(name, params, in, out, attrs).define(name, args, ret, body)
 
-      case Assert(justify, params, phi, attrs) => 
+      case Assert(justify, params, phi, attrs) =>
         ???
 
   object types:
@@ -172,6 +173,36 @@ case class State(
 
     def check(scope: Scope, expr: Expr, typ: Type) =
       Type.check(scope, expr, typ)
+
+  object progs:
+    def skip = Block(Nil, Nil)
+    def break = Break
+    def continue = Continue
+    def return_ = Return
+
+    def havoc(xs: List[Var]) =
+      Spec.havoc(xs)
+
+    def assume(phi: Expr) =
+      Spec.assume(phi)
+
+    def assert(phi: Expr) =
+      Spec.assert(phi)
+
+    def assign(lhs: List[Var], rhs: List[Expr]) =
+      Assign(lhs, rhs)
+
+    def call(proc: Name, lhs: List[Var], args: List[Expr]) =
+      Call(proc, lhs, args)
+
+    def block(locals: List[Var], progs: List[Prog]) =
+      Block(locals, progs)
+
+    def if_(test: Expr, left: Prog, right: Prog) =
+      If(test, left, right)
+
+    def while_(test: Expr, body: Prog, attrs: Attrs) =
+      While(test, body, attrs)
 
   object cmds:
     def declareSort(name: Name) =

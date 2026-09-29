@@ -230,4 +230,27 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("let"), list(eqs(bound, args)), lines(body))
 
   def lines(prog: Prog): List[String] =
-    ???
+    prog match
+      case Break =>
+        apps(atom("break"))
+
+      case Continue =>
+        apps(atom("continue"))
+
+      case Return =>
+        apps(atom("break"))
+
+      // case Spec(xs, pre, post) =>
+
+      case Assign(lhs, rhs) =>
+        apps(atom("assign"), eqs(lhs, rhs))
+
+      case Call(proc, lhs, args) =>
+        apps(atom("call"), mangle(proc), list(lines(lhs)), list(lines(args)))
+
+      case Block(locals, progs) =>
+        apps(mangle("block"), apps(mangle("locals"), formals(locals)), lines(progs))
+
+      // case Choice(progs) =>
+      // case If(test, left, right) =>
+      // case While(test, body, attrs) =>

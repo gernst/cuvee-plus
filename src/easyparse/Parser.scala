@@ -125,21 +125,28 @@ object Parser:
       (a, in2)
 
   case class Intersperse[+A](p: Parser[A], q: Scanner, min: Boolean) extends Parser[List[A]]:
-    def parse(in: Input, cm: Boolean): (List[A], Input) =
-      parse(false, in, cm)
+    def parse(in0: Input, cm: Boolean): (List[A], Input) =
+      if min
+      then
+        val (a, in1) = p.parse(in0, cm)
+        val (as, in2) = more(in1)
+        (a :: as, in2)
+      else
+        {
+          val (a, in1) = p.parse(in0, cm)
+          val (as, in2) = more(in1)
+          (a :: as, in2)
+        } or {
+          (Nil, in0)
+        }
 
-    def parse(done: Boolean, in0: Input, cm: Boolean): (List[A], Input) = {
-      val (a, in1) = p.parse(in0, done < min)
-
-      {
-        // the separator is optional
-        val in2 = q.scan(in1, false)
-        // but if present, we need another element
-        val (as, in3) = this.parse(true, in2, true)
-        (a :: as, in3)
-      } or {
-        (List(a), in1)
-      }
+    def more(in0: Input): (List[A], Input) = {
+      // the separator to parse further is always optional
+      val in1 = q.scan(in0, false)
+      // but if present, we need another element
+      val (a, in2) = p.parse(in1, true)
+      val (as, in3) = more(in2)
+      (a :: as, in3)
     } or {
       (Nil, in0)
     }
