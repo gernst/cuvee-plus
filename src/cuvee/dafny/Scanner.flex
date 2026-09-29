@@ -8,6 +8,10 @@ package cuvee.dafny;
 %function next
 %type easyparse.Token
 
+%eofval{
+    return easyparse.Token.eof();
+%eofval}
+
 %line
 %column
 
@@ -25,10 +29,10 @@ num  = [1-9][0-9]* | 0
 
 kw = "function" | "predicate" | "axiom" | "const" | "datatype" | "type" | "method"
    | "returns" | "requires" | "ensures" | "modifies" | "invariant"
-   | "while" | "if" | "then" | "else" | "assert" | "assume"
-   | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "|"
+   | "while" | "if" | "then" | "else" | "assert" | "assume" | "var"
+   | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "|" | "."
 
-sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$.?]* | "seq.++"
+sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*
     | [+\-*/%] | "&&" | "||" | "==>" | "<==>" | "!"
     | "==" | "!=" | "<=" | "<" | ">" | ">="
 

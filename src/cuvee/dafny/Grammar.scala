@@ -105,8 +105,14 @@ object Grammar:
   val args =
     P(parens(expr ~* ",") | nil)
 
+  val array =
+    Array(P(brackets(expr ~ (":=" ~ expr).?)))
+
+  val member =
+    Member(P("." ~ sym ~ args))
+
   val access =
-    P(brackets(expr ~ (":=" ~ expr).?))
+    P(array | member)
 
   val app =
     App(P(sym ~ args ~ access.*))

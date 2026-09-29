@@ -1,9 +1,11 @@
 package cuvee.pipe
 
+import java.io.Reader
+import easyparse.Token
+
 import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib.Parser
-import java.io.Reader
 
 trait Source extends (Reader => Iterable[Cmd]):
   def newScanner(reader: Reader): Scanner
@@ -14,7 +16,7 @@ trait Source extends (Reader => Iterable[Cmd]):
     cmds(scanner.input, newParser())
 
   def cmds(in: easyparse.Input, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
-    if in.isEmpty || in.head == null
+    if in.isEmpty || in.head == Token.eof
     then LazyList.empty
     else
       try
@@ -22,5 +24,5 @@ trait Source extends (Reader => Iterable[Cmd]):
         LazyList(chunk*) #::: cmds(in_, parser)
       catch
         case easyparse.Fail(in, from) =>
-          in.take(10).toList // force lazy prefix as side-effect
-          Error.raise("parse error", from, in)
+          val where = in.take(10).map(_.text).mkString("", " ", " ... ")
+          Error.raise("parse error", from, where)

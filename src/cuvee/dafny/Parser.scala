@@ -1,11 +1,13 @@
 package cuvee.dafny
 
+import cuvee.Name
 import cuvee.Error
 import cuvee.core
 import cuvee.core.State
 import cuvee.core.Scope
 import cuvee.core.types
 import cuvee.sexpr.Attrs
+import scala.annotation.nowarn
 
 class Parser(var state: State):
   val attrs_ = Attrs.empty
@@ -60,7 +62,7 @@ class Parser(var state: State):
 
             for
               cmd <- cmds;
-              cmd_ <- resolve(scope_, name + ".", params_, List(this_), cmd)
+              cmd_ <- resolve(scope_, name, params_, List(this_), cmd)
             yield cmd_
 
       case DataDef(name, params, constrs, impl) =>
@@ -86,8 +88,9 @@ class Parser(var state: State):
 
   def resolve(scope: Scope, prefix: String, outer_ : List[core.Param], self: List[core.Var], cmd: Cmd): List[core.Cmd] =
     cmd match
-      case FunDef(name, inner, formals, typ, req, ens, body) =>
-        val qname = prefix + name
+      case FunDef(fun, inner, formals, typ, req, ens, body) =>
+        val fun_ = translate(fun)
+        val qname = prefix + "." + fun_
 
         val inner_ = inner.map(resolve(scope, _))
         val params_ = outer_ ++ inner_
@@ -115,8 +118,10 @@ class Parser(var state: State):
             val cmd_ = state.cmds.defineFun(qname, arity)
             List(cmd_)
 
-      case MethodDef(name, inner, formals, rets, mod, req, ens, body) =>
-        val qname = prefix + name
+      case MethodDef(meth, inner, formals, rets, mod, req, ens, body) =>
+        val meth_ = translate(meth)
+        val qname = prefix + "." + meth_
+
         val inner_ = inner.map(resolve(scope, _))
         val params_ = outer_ ++ inner_
         val scope_ = scope ++ inner_
@@ -140,7 +145,7 @@ class Parser(var state: State):
             val body_ = resolve(scope__, prog)
             state = state.define(qname, formals_, rets_, body_)
 
-            val cmd_ = state.cmds.defineProc(name)
+            val cmd_ = state.cmds.defineProc(qname)
             List(cmd_)
 
       case _ =>
@@ -151,25 +156,46 @@ class Parser(var state: State):
       case Sort(name, Nil) if scope.params.contains(name) =>
         scope.params(name)
 
-      case Sort(con, args) =>
+      case Sort(name, args) if state.sorts.contains(name) =>
         val args_ = args.map(resolve(scope, _))
-        state.types.sort(con, args_)
+        state.types.sort(name, args_)
 
-  def resolve(scope: Scope, base: core.Expr, access: List[(Expr, Option[Expr])]): core.Expr =
+      case _ =>
+        Error.raise("unknown type", typ, scope.params.keys, state.sorts.keys)
+
+  def resolve(scope: Scope, base: core.Expr, access: List[Access]): core.Expr =
     access match
       case Nil =>
         base
 
-      case (index, None) :: access =>
+      case Array(index, None) :: rest =>
         val index_ = resolve(scope, index)
         val base_ = state.exprs.app("select", List(base, index_))
-        resolve(scope, base_, access)
+        resolve(scope, base_, rest)
 
-      case (index, Some(value)) :: access =>
+      case Array(index, Some(value)) :: rest =>
         val index_ = resolve(scope, index)
         val value_ = resolve(scope, value)
         val base_ = state.exprs.app("store", List(base, index_, value_))
-        resolve(scope, base_, access)
+        resolve(scope, base_, rest)
+
+      case Member(fun, args) :: rest =>
+        @nowarn
+        val Name(prefix, None) = base.typ.name
+        val fun_ = translate(fun)
+        val qname = prefix + "." + fun_
+
+        args match
+          case _ if state.funs.contains((qname, 1 + args.length)) =>
+            val args_ = args.map(resolve(scope, _))
+            val base_ = state.exprs.app(qname, base :: args_)
+            resolve(scope, base_, rest)
+
+          case _ if state.procs.contains(qname) =>
+            Error.raise("method call not allowed here", base, qname, args)
+
+          case _ =>
+            Error.raise("invalid access", base, qname, access, scope, state.funs.keys, state.procs.keys)
 
   def resolve(scope: Scope, prog: Prog): core.Prog =
     ???
@@ -182,10 +208,11 @@ class Parser(var state: State):
       case Str(value) =>
         state.exprs.str(value)
 
-      case App(name, Nil, Nil) if scope.vars.contains(name) =>
-        scope.vars(name)
+      case App(name, Nil, access) if scope.vars.contains(name) =>
+        val base_ = scope.vars(name)
+        resolve(scope, base_, access)
 
-      case App(fun, args, access) =>
+      case App(fun, args, access) if state.funs.contains((fun, args.length)) =>
         val fun_ = translate(fun)
         val args_ = args.map(resolve(scope, _))
         val base_ = state.exprs.app(fun_, args_)
@@ -219,3 +246,6 @@ class Parser(var state: State):
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
         state.exprs.let(bound_, args_, body_)
+
+      case _ =>
+        Error.raise("unknown expression", expr, scope.vars.keys, state.funs.keys)

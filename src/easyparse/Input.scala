@@ -57,11 +57,15 @@ object Input:
     then throw Fail(in, List(where))
     else backtrack
 
-enum Token:
-  case Keyword(name: String)
-  case Value(name: String, text: String)
+sealed trait Token:
+  def text: String
 
 object Token:
-  val eof = Keyword("eof")
+  val eof = Keyword("<eof>")
+
+  case class Keyword(name: String) extends Token:
+    def text = name
+    
+  case class Value(name: String, text: String) extends Token
 
 case class Fail(in: Input, from: List[String]) extends Exception

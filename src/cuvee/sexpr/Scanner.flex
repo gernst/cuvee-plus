@@ -9,7 +9,7 @@ package cuvee.sexpr;
 %type easyparse.Token
 
 %eofval{
-    return Syntax.eof();
+    return easyparse.Token.eof();
 %eofval}
 
 %line

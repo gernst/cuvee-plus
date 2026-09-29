@@ -10,6 +10,7 @@ case class Con(name: Name, arity: Int)
 case class Data(params: List[Param], constrs: List[(Fun, List[Fun])])
 
 sealed trait Type:
+  def name: Name
   def params: Set[Param]
 
 case class Param(name: Name) extends Type:
@@ -21,6 +22,7 @@ case class Param(name: Name) extends Type:
     Param(name.withIndex(Param.next()))
 
 case class Sort(con: Con, args: List[Type]) extends Type:
+  def name = con.name
   def params = args.params
 
 object Param extends Counter:

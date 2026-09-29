@@ -683,7 +683,7 @@ public class Scanner implements cuvee.pipe.Scanner {
 
       if (zzInput == YYEOF && zzStartRead == zzCurrentPos) {
         zzAtEOF = true;
-          {     return Syntax.eof();
+          {     return easyparse.Token.eof();
  }
       }
       else {

@@ -25,7 +25,6 @@ object Bin extends (String => Atom)
 object Syntax:
   val lp = Token.Keyword("(")
   val rp = Token.Keyword(")")
-  val eof = Token.eof
 
   def value(name: String, text: String) =
     Token.Value(name, text)
