@@ -1,5 +1,6 @@
 package cuvee.dafny
 
+import cuvee.Error
 import cuvee.core.State
 
 object Grammar:
@@ -11,8 +12,8 @@ object Grammar:
     "!" -> 4
   )
 
-  val postfix_ops = Map(
-    "!" -> 8
+  val postfix_ops = Map[String, Int](
+    // "!" -> 8
   )
 
   val infix_ops = Map(
@@ -34,10 +35,12 @@ object Grammar:
   )
 
   val translate = Map(
+    "==" -> "=",
     "!" -> "not",
     "&&" -> "and",
     "||" -> "or",
     "==>" -> "=>",
+    "<==>" -> "<=>",
     "/" -> "div",
     "%" -> "mod",
     "int" -> "Int",
@@ -45,10 +48,22 @@ object Grammar:
     "real" -> "Real"
   )
 
+  val avoid =
+    translate.values.toSet
+
+  val Sym = (name: String) =>
+    if translate.contains(name)
+    then Grammar.translate(name)
+    else if avoid.contains(name)
+    then Error.raise("identifier invalid in Dafny", name)
+    else name
+
   val kwd = T("kwd")
   val sym = T("sym")
   val num = Num(T("num"))
   val str = Str(T("str"))
+
+  val id = Sym(sym)
 
   val nil = R(Nil)
   val none = R(None)
@@ -62,9 +77,9 @@ object Grammar:
   def right[A](p: Parser[A]) =
     p.map { Right(_) }
 
-  val star = sym.filter(_ == "*").asScanner
-  val la = sym.filter(_ == "<").asScanner
-  val ra = sym.filter(_ == ">").asScanner
+  val star = id.filter(_ == "*").asScanner
+  val la = id.filter(_ == "<").asScanner
+  val ra = id.filter(_ == ">").asScanner
 
   def angle[A](p: Parser[A]) =
     la ~ p ~ ra
@@ -73,10 +88,10 @@ object Grammar:
     P(num | str)
 
   val attrs =
-    P(braces(":" ~ (sym ~* ",")) | nil)
+    P(braces(":" ~ (id ~* ",")) | nil)
 
-  val syms =
-    P(sym ~+ ",")
+  val ids =
+    P(id ~+ ",")
 
   val types =
     P(typ ~+ ",")
@@ -85,19 +100,19 @@ object Grammar:
     P(expr ~+ ",")
 
   val params =
-    P(angle(syms) | nil)
+    P(angle(ids) | nil)
 
   val inst =
     P(angle(types) | nil)
 
   val sort =
-    Sort(P(sym ~ inst))
+    Sort(P(id ~ inst))
 
   val typ: Parser[Type] =
     P(parens(typ) | sort)
 
   val formal =
-    P(sym ~ ":" ~ typ)
+    P(id ~ ":" ~ typ)
 
   val formals =
     P(parens(formal ~* ","))
@@ -109,19 +124,19 @@ object Grammar:
     Array(P(brackets(expr ~ (":=" ~ expr).?)))
 
   val member =
-    Member(P("." ~ sym ~ args))
+    Member(P("." ~ id ~ args))
 
   val access =
     P(array | member)
 
   val app =
-    App(P(sym ~ args ~ access.*))
+    App(P(id ~ args ~ access.*))
 
   val true_ =
     R(True)
 
   val bool =
-    R(Sort("bool", Nil))
+    R(Sort("Bool", Nil))
 
   val else_expr_or_true =
     ("else" ~ expr) | true_
@@ -139,13 +154,13 @@ object Grammar:
     P(forall | exists)
 
   val let =
-    Let(P("var" ~ syms ~ ":=" ~ exprs ~ ";" ~ expr))
+    Let(P("var" ~ ids ~ ":=" ~ exprs ~ ";" ~ expr))
 
   val inner: Parser[Expr] =
     P(parens(expr) | lit | bind | let | app)
 
   val expr: Parser[Expr] =
-    M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, App(_, _, Nil))
+    M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))
 
   val invariant =
     P("invariant" ~ expr)
@@ -157,7 +172,7 @@ object Grammar:
     P("ensures" ~ expr)
 
   val modifies =
-    P("modifies" ~ syms)
+    P("modifies" ~ ids)
 
   val break =
     Break("break" ~ ";")
@@ -187,7 +202,7 @@ object Grammar:
     P(nondet | expr)
 
   val assign =
-    Assign(P(syms ~ ":=" ~ (rhs ~+ ",")))
+    Assign(P(ids ~ ":=" ~ (rhs ~+ ",")))
 
   val block =
     Block(P(braces(prog.*)))
@@ -205,13 +220,13 @@ object Grammar:
     P(ctrl | spec | if_ | while_ | block | assign)
 
   val sel =
-    Sel(P(sym ~ ":" ~ typ))
+    Sel(P(id ~ ":" ~ typ))
 
   val sels =
     parens(sel ~+ ",") | nil
 
   val constr =
-    Constr(P(sym ~ sels))
+    Constr(P(id ~ sels))
 
   val constrs =
     P(constr ~+ "|")
@@ -226,19 +241,19 @@ object Grammar:
     P(braces(sortcmd.*) | nil)
 
   val sortdef =
-    SortDef(P("type" ~ sym ~ params ~ (right(sortimpl) | left(sortalias.?))))
+    SortDef(P("type" ~ id ~ params ~ (right(sortimpl) | left(sortalias.?))))
 
   val datadef =
-    DataDef(P("datatype" ~ sym ~ params ~ "=" ~ constrs ~ sortimpl.?))
+    DataDef(P("datatype" ~ id ~ params ~ "=" ~ constrs ~ sortimpl.?))
 
   val constdef =
-    FunDef(P("const" ~ sym ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ (":=" ~ expr).?))
+    FunDef(P("const" ~ id ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ (":=" ~ expr).?))
 
   val fundef =
-    FunDef(P("function" ~ sym ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ braces(expr).?))
+    FunDef(P("function" ~ id ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ braces(expr).?))
 
   val preddef =
-    FunDef(P("predicate" ~ sym ~ params ~ formals ~ bool ~ requires.* ~ ensures.* ~ braces(expr).?))
+    FunDef(P("predicate" ~ id ~ params ~ formals ~ bool ~ requires.* ~ ensures.* ~ braces(expr).?))
 
   val axiom =
     Axiom(P("axiom" ~ expr))
@@ -247,7 +262,7 @@ object Grammar:
     P("returns" ~ formals)
 
   val procdef =
-    MethodDef(P("method" ~ sym ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ braces(prog).?))
+    MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ braces(prog).?))
 
   val cmd: Parser[Cmd] =
     P(sortdef | datadef | constdef | fundef | procdef | axiom)

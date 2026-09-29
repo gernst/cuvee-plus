@@ -100,6 +100,9 @@ case class State(
       case SetOption(name, value) =>
         setOption(name, value)
 
+      case SetInfo(name, value) => 
+        setInfo(name, value)
+
       case DeclareSort(Con(name, arity), attrs) =>
         declare(name, arity, attrs)
 
@@ -117,6 +120,9 @@ case class State(
 
       case DefineProc(Proc(name, params, in, out), args, ret, body, attrs) =>
         declare(name, params, in, out, attrs).define(name, args, ret, body)
+
+      case Assert(justify, params, phi, attrs) => 
+        ???
 
   object types:
     def param(name: Name) =

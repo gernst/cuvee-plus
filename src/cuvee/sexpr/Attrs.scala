@@ -2,22 +2,13 @@ package cuvee.sexpr
 
 import scala.reflect.ClassTag
 
+import cuvee.Error
+import cuvee.core.Expr
+
 object Attrs:
-  val empty = Attrs(Nil)
+  def empty = Attrs(Nil)
 
 case class Attrs(attrs: List[(String, Option[Any])]):
-  infix def ++(that: Attrs) =
-    Attrs(this.attrs ++ that.attrs)
-
-  infix def +(kw: String) =
-    Attrs(attrs ++ List(kw -> None))
-
-  infix def +(kw: String, arg: Any) =
-    Attrs(attrs ++ List(kw -> Some(arg)))
-
-  infix def ++(kw: String, args: List[Any]) =
-    Attrs(attrs ++ args.map(kw -> Some(_)))
-
   def isEmpty =
     attrs.isEmpty
 

@@ -1,6 +1,7 @@
 package cuvee.smtlib
 
 import cuvee.Name
+import cuvee.Error
 import cuvee.core._
 import cuvee.sexpr.Attrs
 
@@ -48,10 +49,40 @@ object Printer extends cuvee.pipe.Printer:
     for (x, e) <- vars.zip(args); line <- apps(lines(x), lines(e))
     yield line
 
+  def attr(name: String, arg: Any): List[String] =
+    arg match
+      case None =>
+        kw(name)
+
+      // some attributes may have been resolved already
+      case Some(res: Result) =>
+        kw(name) ++ lines(res)
+
+      case Some(cmd: Cmd) =>
+        kw(name) ++ lines(cmd)
+
+      case Some(typ: Type) =>
+        kw(name) ++ lines(typ)
+
+      case Some(expr: Expr) =>
+        kw(name) ++ lines(expr)
+
+      case Some(prog: Prog) =>
+        kw(name) ++ lines(prog)
+
+      case Some(arg) =>
+        sexpr(arg)
+
+  def lines(attrs: Attrs): List[String] =
+    for
+      (name, arg) <- attrs.attrs;
+      line <- attr(name, arg)
+    yield line
+
   def note(expr: Expr, attrs: Attrs) =
     if attrs.isEmpty
     then lines(expr)
-    else apps(atom("!"), lines(expr), sexprs(attrs.flatten))
+    else apps(atom("!"), lines(expr), lines(attrs))
 
   def lines(res: Result) =
     res match
@@ -119,23 +150,23 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("set-info"), kw(name), sexpr(value))
 
       case DeclareSort(Con(name, arity), attrs) =>
-        apps(atom("declare-sort"), mangle(name), atom(arity.toString), flat(attrs.flatten))
+        apps(atom("declare-sort"), mangle(name), atom(arity.toString), lines(attrs))
 
       case DefineSort(Con(name, arity), params, body, attrs) =>
-        apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), flat(attrs.flatten))
+        apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), lines(attrs))
 
       case DeclareFun(Fun(name, Nil, args, res), attrs) =>
-        apps(atom("declare-fun"), mangle(name), list(lines(args)), lines(res), flat(attrs.flatten))
+        apps(atom("declare-fun"), mangle(name), list(lines(args)), lines(res), lines(attrs))
 
       case DeclareFun(Fun(name, params, args, res), attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(lines(args)), lines(res), flat(attrs.flatten))
+        val body_ = apps(atom("par"), list(lines(params)), list(lines(args)), lines(res), lines(attrs))
         apps(atom("declare-fun"), mangle(name), body_)
 
       case DefineFun(Fun(name, Nil, args, res), bound, body, attrs) =>
-        apps(atom("define-fun"), mangle(name), list(formals(bound)), lines(res), lines(body), flat(attrs.flatten))
+        apps(atom("define-fun"), mangle(name), list(formals(bound)), lines(res), lines(body), lines(attrs))
 
       case DefineFun(Fun(name, params, args, res), bound, body, attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(formals(bound)), lines(res), lines(body), flat(attrs.flatten))
+        val body_ = apps(atom("par"), list(lines(params)), list(formals(bound)), lines(res), lines(body), lines(attrs))
         apps(atom("define-fun"), mangle(name), body_)
 
       case Assert(Axiom, Nil, phi, attrs) =>
@@ -148,17 +179,17 @@ object Printer extends cuvee.pipe.Printer:
         ???
 
       case DeclareProc(Proc(name, Nil, args, ret), attrs) =>
-        apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), flat(attrs.flatten))
+        apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), lines(attrs))
 
       case DefineProc(Proc(name, Nil, args, ret), in, out, body, attrs) =>
-        apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), list(lines(body)), flat(attrs.flatten))
+        apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), list(lines(body)), lines(attrs))
 
       case DeclareProc(Proc(name, params, args, ret), attrs) =>
-        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), flat(attrs.flatten))
+        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), lines(attrs))
         apps(atom("declare-proc"), mangle(name), body_)
 
       case DefineProc(Proc(name, params, args, ret), in, out, body, attrs) =>
-        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), list(lines(body)), flat(attrs.flatten))
+        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), list(lines(body)), lines(attrs))
         apps(atom("declare-proc"), mangle(name), body_)
 
   def lines(typ: Type) =
@@ -179,6 +210,12 @@ object Printer extends cuvee.pipe.Printer:
 
       case Lit(value: BigInt, typ) =>
         int(value)
+
+      case Lit(value: String, typ) =>
+        str(value)
+
+      case Lit(_, _) =>
+        Error.raise("unprintable literal", expr)
 
       case App(fun, inst, typ, Nil) =>
         mangle(fun.name)

@@ -12,9 +12,11 @@ case class Data(params: List[Param], constrs: List[(Fun, List[Fun])])
 sealed trait Type:
   def name: Name
   def params: Set[Param]
+  def sig: Option[Sig]
 
 case class Param(name: Name) extends Type:
   def params = Set(this)
+  def sig = None
 
   def asIndex = (name, this)
 
@@ -24,6 +26,7 @@ case class Param(name: Name) extends Type:
 case class Sort(con: Con, args: List[Type]) extends Type:
   def name = con.name
   def params = args.params
+  def sig = Some(Sig(con.name, args.sig))
 
 object Param extends Counter:
   val a = Param("a")
