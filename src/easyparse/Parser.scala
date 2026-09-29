@@ -133,7 +133,7 @@ object Parser:
         (a :: as, in2)
       else
         {
-          val (a, in1) = p.parse(in0, cm)
+          val (a, in1) = p.parse(in0, false)
           val (as, in2) = more(in1)
           (a :: as, in2)
         } or {

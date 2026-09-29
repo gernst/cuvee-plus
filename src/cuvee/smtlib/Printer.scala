@@ -182,15 +182,15 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), lines(attrs))
 
       case DefineProc(Proc(name, Nil, args, ret), in, out, body, attrs) =>
-        apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), list(lines(body)), lines(attrs))
+        apps(atom("define-proc"), mangle(name), list(lines(args)), list(lines(ret)), lines(body), lines(attrs))
 
       case DeclareProc(Proc(name, params, args, ret), attrs) =>
         val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), lines(attrs))
         apps(atom("declare-proc"), mangle(name), body_)
 
       case DefineProc(Proc(name, params, args, ret), in, out, body, attrs) =>
-        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), list(lines(body)), lines(attrs))
-        apps(atom("declare-proc"), mangle(name), body_)
+        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), lines(body), lines(attrs))
+        apps(atom("define-proc"), mangle(name), list(lines(args)), list(lines(ret)), body_)
 
   def lines(typ: Type) =
     typ match

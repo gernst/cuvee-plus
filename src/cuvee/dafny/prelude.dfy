@@ -2,6 +2,9 @@
 type bool
 type int
 
+const true: bool
+const false: bool
+
 // finite container types
 type seq<a>
 type set<a>
