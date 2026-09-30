@@ -66,7 +66,54 @@ class Parser(var state: State):
             decl :: cmds_
 
       case DataDef(name, params, constrs, impl) =>
-        Nil
+        val scope = Scope.empty
+        val params_ = params.map(resolve(scope, _))
+        val scope_ = scope ++ params_
+
+        val arity_ = params.length
+        state = state.declare(name, arity_, Attrs.empty)
+
+        val sort_ = state.types.sort(name, params_)
+
+        val constrs_ =
+          for Constr(constr, sels) <- constrs
+          yield
+            val sels_ =
+              for Sel(sel, arg) <- sels
+              yield
+                val arg_ = resolve(scope, arg)
+                state = state.declare(sel, 1, Attrs.empty)
+
+                val sel_ = state.funs(sel, 1)
+                sel_
+
+            val args_ = sels_.map(_.res)
+            val arity = args_.length
+            state = state.declare(constr, arity, Attrs.empty)
+
+            val constr_ = state.funs((constr, arity))
+            (constr_, sels_)
+
+        state = state.define(name, params_, constrs_)
+
+        impl match
+          case None =>
+            val cmd_ = state.cmds.declareDatatype(name)
+            List(cmd_)
+
+          case Some(cmds) =>
+            val decl = state.cmds.declareDatatype(name)
+
+            val sort_ = state.types.sort(name, params_)
+            val this_ = state.exprs.formal("this", sort_)
+
+            val cmds_ =
+              for
+                cmd <- cmds;
+                cmd_ <- resolve(scope_, name + ".", params_, List(this_), cmd)
+              yield cmd_
+
+            decl :: cmds_
 
       case _ =>
         resolve(Scope.empty, "", Nil, Nil, cmd)

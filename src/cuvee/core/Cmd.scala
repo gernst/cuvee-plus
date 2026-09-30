@@ -45,6 +45,7 @@ case class SetInfo(name: String, value: Any) extends Decl
 
 case class DeclareSort(con: Con, attrs: Attrs) extends Decl
 case class DefineSort(con: Con, params: List[Param], body: Type, attrs: Attrs) extends Decl
+case class DeclareDatatype(con: Con, params: List[Param], constrs: List[(Fun, List[Fun])], attrs: Attrs) extends Decl
 
 case class DeclareFun(fun: Fun, attrs: Attrs) extends Decl
 case class DefineFun(fun: Fun, formals: List[Var], body: Expr, attrs: Attrs) extends Decl

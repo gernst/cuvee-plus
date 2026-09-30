@@ -22,6 +22,8 @@ case class State(
     fundefs: Map[(Name, Int), (List[Var], Expr)] = Map(),
     procdefs: Map[Name, (List[Var], List[Var], Prog)] = Map(),
 
+    datatypes: Map[Name, (List[Param], List[(Fun, List[Fun])])] = Map(),
+
     asserts: List[Assert] = List()
     // XXX: add cache of further common things
 ):
@@ -56,6 +58,35 @@ case class State(
       require(!sortdefs.contains(name))
 
     copy(sortdefs = sortdefs + (name -> (params, body)))
+
+  def define(name: Name, params: List[Param], constrs: List[(Fun, List[Fun])]) =
+    Error.report("sort not declared", name):
+      require(sorts.contains(name))
+    Error.report("datatype already defined", name):
+      require(!sortdefs.contains(name))
+
+    val con = sorts(name)
+    val sort = Sort(con, params)
+
+    for (constr, sels) <- constrs
+    do
+      Error.report("constructor not declared", constr.name):
+        val key = (constr.name, constr.args.length)
+        require(funs.contains(key))
+      Error.report("constructor has wrong result type", con, constr):
+        require(constr.res == sort)
+      Error.report("wrong selector types", constr, sels):
+        require(constr.args == sels.map(_.res))
+
+      for (sel, typ) <- (sels zip constr.args)
+      do
+        Error.report("selector not declared", constr.name):
+          val key = (sel.name, sel.args.length)
+          require(funs.contains(key))
+        Error.report("selector can only have one argument", sel):
+          require(sel.args.length == 1)
+
+    copy(datatypes = datatypes + (name -> (params, constrs)))
 
   def declare(name: Name, params: List[Param], args: List[Type], res: Type, attrs: Attrs) =
     val arity = args.length
@@ -106,6 +137,9 @@ case class State(
 
       case DeclareSort(Con(name, arity), attrs) =>
         declare(name, arity, attrs)
+
+      case DeclareDatatype(Con(name, arity), params, constrs, attrs) =>
+        declare(name, arity, attrs).define(name, params, constrs)
 
       case DefineSort(Con(name, arity), params, body, attrs) =>
         declare(name, arity, attrs).define(name, params, body)
@@ -215,6 +249,12 @@ case class State(
       val attrs = sortattrs(name)
       val (params, body) = sortdefs(name)
       DefineSort(con, params, body, attrs)
+
+    def declareDatatype(name: Name) =
+      val con = sorts(name)
+      val attrs = sortattrs(name)
+      val (params, constrs) = datatypes(name)
+      DeclareDatatype(con, params, constrs, attrs)
 
     def declareFun(name: Name, arity: Int) =
       val key = (name, arity)

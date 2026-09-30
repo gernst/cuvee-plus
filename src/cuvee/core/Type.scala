@@ -7,7 +7,6 @@ import cuvee.Name
 import cuvee.Error
 
 case class Con(name: Name, arity: Int)
-case class Data(params: List[Param], constrs: List[(Fun, List[Fun])])
 
 sealed trait Type:
   def name: Name
