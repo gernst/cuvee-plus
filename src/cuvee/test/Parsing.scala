@@ -11,4 +11,4 @@ object Parsing extends Main with Tests:
       for file <- files
       do
         test(file):
-          val (cmds, results) = Cuvee.run(file)
+          val (cmds, results) = Cuvee.run("-print", "null", file)

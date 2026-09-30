@@ -38,3 +38,10 @@ object Printer:
     def lines(typ: Type) = List(typ.toString)
     def lines(expr: Expr) = List(expr.toString)
     def lines(prog: Prog) = List(prog.toString)
+
+  object silent extends Printer:
+    def lines(res: Result) = Nil
+    def lines(cmd: Cmd) = Nil
+    def lines(typ: Type) = Nil
+    def lines(expr: Expr) = Nil
+    def lines(prog: Prog) = Nil

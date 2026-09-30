@@ -79,6 +79,10 @@ object Config:
         val config_ = config.copy(printer = lang.printer, overridePrinter = true)
         (config_, rest)
 
+      case (config, "null" :: rest) =>
+        val config_ = config.copy(printer = Printer.silent, overridePrinter = true)
+        (config_, rest)
+
       case (config, "scala" :: rest) =>
         val config_ = config.copy(printer = Printer.default, overridePrinter = true)
         (config_, rest)

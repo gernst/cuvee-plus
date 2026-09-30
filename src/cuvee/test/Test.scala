@@ -1,6 +1,7 @@
 package cuvee.test
 
 import java.io.File
+import scala.util.DynamicVariable
 
 object Assert:
   case class NotTrue(msg: String) extends Throwable
@@ -15,14 +16,17 @@ object Assert:
     then throw NotEqual(msg, actual, expected)
 
 trait Tests:
+  object indent extends DynamicVariable("¨")
+
   def tests(msg: String)(action: => Any) =
-    println(msg)
-    action
+    println(indent.value + msg)
+    indent.withValue(indent.value + "  "):
+      action
     println()
 
   def test(msg: String)(action: => Any) =
     try
-      print(msg + " ... ")
+      print(indent.value + msg + " ...")
       action
       println(" passed")
 
