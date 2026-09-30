@@ -81,15 +81,15 @@ class Parser(var state: State):
             val sels_ =
               for Sel(sel, arg) <- sels
               yield
-                val arg_ = resolve(scope, arg)
-                state = state.declare(sel, 1, Attrs.empty)
+                val typ_ = resolve(scope_, arg)
+                state = state.declare(sel, params_, List(sort_), typ_, Attrs.empty)
 
                 val sel_ = state.funs(sel, 1)
                 sel_
 
             val args_ = sels_.map(_.res)
             val arity = args_.length
-            state = state.declare(constr, arity, Attrs.empty)
+            state = state.declare(constr, params_, args_, sort_, Attrs.empty)
 
             val constr_ = state.funs((constr, arity))
             (constr_, sels_)
@@ -255,6 +255,10 @@ class Parser(var state: State):
 
       case Str(value) =>
         state.exprs.str(value)
+
+      case App("!=", args, access) =>
+        val expr_ = App("not", List(App("=", args, Nil)), access)
+        resolve(scope, expr_)
 
       case App(name, Nil, access) if scope.vars.contains(name) =>
         val base_ = scope.vars(name)

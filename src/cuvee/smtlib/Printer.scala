@@ -152,6 +152,25 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareSort(Con(name, arity), attrs) =>
         apps(atom("declare-sort"), mangle(name), atom(arity.toString), lines(attrs))
 
+      case DeclareDatatype(Con(name, arity), params, constrs, attrs) =>
+        val lines_ =
+          for (constr, sels) <- constrs
+          yield
+            val sels_ =
+              for
+                sel <- sels
+                line <- apps(mangle(sel.name), lines(sel.res))
+              yield line
+
+            apps(mangle(constr.name), sels_)
+
+        val body_ =
+          if params.nonEmpty
+          then apps(atom("par"), list(lines(params)), list(lines_.flatten))
+          else list(lines_.flatten)
+
+        apps(atom("declare-datatype"), mangle(name), body_, lines(attrs))
+
       case DefineSort(Con(name, arity), params, body, attrs) =>
         apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), lines(attrs))
 

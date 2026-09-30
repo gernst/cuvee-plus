@@ -219,7 +219,7 @@ object Grammar:
     Sel(P(id ~ ":" ~ typ))
 
   val sels =
-    parens(sel ~+ ",") | nil
+    parens(sel ~* ",") | nil
 
   val constr =
     Constr(P(id ~ sels))
