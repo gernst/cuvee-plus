@@ -24,8 +24,6 @@
   plain strings, lists of resolved expressions, e.g. the variables of a
   `modifies` attribute, and other values such as numbers
   ([dafny/Printer.scala](src/cuvee/dafny/Printer.scala)).
-- The SMT-LIB printer: `lines(prog)` does not handle `Spec`, `Choice`, `If` and
-  `While` (the compiler warns that the match is not exhaustive).
 - SMT-LIB parser: imperative programs are not supported, `prog` always raises
   an error ([smtlib/Parser.scala](src/cuvee/smtlib/Parser.scala)).
 - SMT-LIB parser: no `!` inside terms, `match`, `get-value`,

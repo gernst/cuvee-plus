@@ -302,7 +302,17 @@ object Printer extends cuvee.pipe.Printer:
       case Return =>
         apps(atom("return"))
 
-      // case Spec(xs, pre, post) =>
+      case Spec(Nil, False, True) =>
+        apps(atom("abort"))
+
+      case Spec(Nil, True, phi) =>
+        apps(atom("assume"), lines(phi))
+
+      case Spec(xs, True, True) =>
+        apps(atom("havoc"), lines(xs))
+
+      case Spec(xs, pre, post) =>
+        apps(atom("spec"), list(lines(xs)), lines(pre), lines(post))
 
       case Assign(lhs, rhs) =>
         apps(atom("assign"), eqs(lhs, rhs))
@@ -313,6 +323,11 @@ object Printer extends cuvee.pipe.Printer:
       case Block(locals, progs) =>
         apps(mangle("block"), apps(mangle("locals"), formals(locals)), lines(progs))
 
-      // case Choice(progs) =>
-      // case If(test, left, right) =>
-      // case While(test, body, attrs) =>
+      case Choice(progs) =>
+        apps(atom("choose"), lines(progs))
+
+      case If(test, left, right) =>
+        apps(atom("if"), lines(test), lines(left), lines(right))
+
+      case While(test, body, attrs) =>
+        apps(atom("while"), lines(test), lines(body), lines(attrs))
