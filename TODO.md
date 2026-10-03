@@ -40,9 +40,9 @@
   Names that are not local variables should be resolved as members of `this`
   (see [examples/stack.dfy](examples/stack.dfy)).
 - Dafny: `var` declarations must come before the statements of a block.
-- No termination checking in `Verify`: `decreases` clauses are parsed and
-  stored as `:decreases` attributes, one per component of the lexicographic
-  measure, but not checked.
+- Termination in `Verify` and `Horn`: loops and procedures without
+  `decreases` clause are not checked (Dafny guesses a measure), measures are
+  integers only, and the measure of a procedure must refer to its inputs.
 - Add a cache of further commonly used information to `State`
   ([core/State.scala](src/cuvee/core/State.scala)).
 

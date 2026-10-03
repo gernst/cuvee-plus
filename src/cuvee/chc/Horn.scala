@@ -119,6 +119,12 @@ object Horn extends Transform:
     decls := decls.value :+ DeclareFun(pred, Attrs.empty)
     pred
 
+  // a fresh predicate over `inner` that leads to `target` over `outer`, which drops the additional variables of `inner`
+  def exit(proc: Name, inner: List[Var], outer: List[Var], target: Fun, decls: Ref[List[DeclareFun]], clauses: Ref[List[Expr]]): Fun =
+    val pred = predicate(proc, inner, decls)
+    clause(inner, List(App(pred, inner)), App(target, outer), clauses)
+    pred
+
   // add the clause ∀ scope. assumptions ⇒ head
   def clause(scope: List[Var], assumptions: List[Expr], head: Expr, clauses: Ref[List[Expr]]): Unit =
     clauses := clauses.value :+ All(scope, Imp(And(assumptions), head))
@@ -195,6 +201,14 @@ object Horn extends Transform:
         val next = predicate(proc, scope, decls)
 
         clause(scope, List(App(pre, scope)), App(precondition(state, name), args), clauses)
+
+        // recursive calls must decrease the measure, which refers to the inputs that are in scope
+        if name == proc then
+          val dec = Verify.measure(state, proc)
+          val su_ = Subst.from(in, args)
+          if dec.nonEmpty then
+            clause(scope, List(App(pre, scope), Not(Verify.decreases(su_(dec), dec))), False, clauses)
+
         clause(
           scope ++ res_,
           List(App(pre, scope), App(postcondition(state, name), args ++ res_)),
@@ -212,11 +226,8 @@ object Horn extends Transform:
         val su = Subst.from(locals, locals_)
         val scope_ = scope ++ locals_
 
-        // a predicate over scope_ that leads to `target` over scope
         def exit(target: Fun): Fun =
-          val pred = predicate(proc, scope_, decls)
-          clause(scope_, List(App(pred, scope_)), App(target, scope), clauses)
-          pred
+          Horn.exit(proc, scope_, scope, target, decls, clauses)
 
         val entry = predicate(proc, scope_, decls)
         val next = predicate(proc, scope, decls)
@@ -248,19 +259,31 @@ object Horn extends Transform:
         wp(state, proc, scope, rest, join, post, break, continue, return_, decls, clauses)
 
       // pre(scope) ⇒ inv(scope), where inv is the invariant at the loop head,
-      // inv(scope) ∧ test ⇒ body(scope), from which the body leads back to inv,
+      // inv(scope) ∧ test ⇒ body(scope, measure), from which the body leads back to inv,
       // inv(scope) ∧ ¬test ⇒ next(scope), from which the remaining statements continue,
       // break leads to next, continue to inv,
-      // and the annotated invariant is the query inv(scope) ∧ ¬invariant ⇒ false
+      // and the annotated invariant is the query inv(scope) ∧ ¬invariant ⇒ false;
+      // the body ranges over the scope extended by fresh variables ms for the values of the measure at the start of the iteration,
+      // which are dropped on each way out of the body, where the end of an iteration is the query iter(scope, ms) ∧ ¬(measure < ms) ⇒ false
       case While(test, body, attrs) :: rest =>
+        val dec = attrs.values[Expr]("decreases")
+        val ms = Expr.vars("m", dec.map(_.typ)).fresh
+        val scope_ = scope ++ ms
+
+        def exit(target: Fun): Fun =
+          Horn.exit(proc, scope_, scope, target, decls, clauses)
+
         val inv = predicate(proc, scope, decls)
-        val body_ = predicate(proc, scope, decls)
+        val body_ = predicate(proc, scope_, decls)
         val next = predicate(proc, scope, decls)
+        val iter = exit(inv)
         val invariant = And(attrs.values[Expr]("invariant"))
 
         clause(scope, List(App(pre, scope)), App(inv, scope), clauses)
-        clause(scope, List(App(inv, scope), test), App(body_, scope), clauses)
+        clause(scope, List(App(inv, scope), test), App(body_, scope ++ dec), clauses)
         clause(scope, List(App(inv, scope), Not(test)), App(next, scope), clauses)
         clause(scope, List(App(inv, scope), Not(invariant)), False, clauses)
-        wp(state, proc, scope, List(body), body_, inv, Some(next), Some(inv), return_, decls, clauses)
+        if dec.nonEmpty then
+          clause(scope_, List(App(iter, scope_), Not(Verify.decreases(dec, ms))), False, clauses)
+        wp(state, proc, scope_, List(body), body_, iter, Some(exit(next)), Some(iter), exit(return_), decls, clauses)
         wp(state, proc, scope, rest, next, post, break, continue, return_, decls, clauses)
