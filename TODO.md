@@ -22,8 +22,7 @@
 - SMT-LIB parser: imperative programs are not supported, `prog` always raises
   an error ([smtlib/Parser.scala](src/cuvee/smtlib/Parser.scala)).
 - SMT-LIB parser: no `!` inside terms, `match`, `get-value`,
-  `check-sat-assuming`, `echo`, and `(as ...)` only for constants and constant
-  arrays.
+  `check-sat-assuming`, `echo`.
 - Dafny `lemma` is not parsed, so lemmas and goals only come from SMT-LIB
   input (`lemma`, `goal`) and from `-verify`.
 - Real arithmetic: decimal literals are typed `Real`, but no `Real` functions
@@ -32,8 +31,9 @@
   prelude but have no functions, and are not declared to the solver.
 - Polymorphic declarations (`par`) are sent to z3/cvc5 as they are, which the
   solvers do not accept; they need monomorphization first.
-- The printer does not add `(as ...)` annotations to ambiguous polymorphic
-  constants, nor to abstract values from models such as `@U_0` (cvc5).
+- Dafny syntax for testers `Is` and type annotations `As`, e.g. `e.C?` and
+  `e as T`: neither is parsed, and the Dafny printer raises an error
+  ([dafny/Printer.scala](src/cuvee/dafny/Printer.scala)).
 - Dafny: inside a `type` or `datatype` body, members must be accessed through
   `this`, e.g. `this.counter` and `this.m(a)`; a plain `counter` is an unknown
   expression, and a plain `m(a);` is only resolved for top-level methods.

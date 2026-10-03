@@ -99,6 +99,16 @@ case class State(
     val fun = Fun(name, params, formals, res)
     copy(funs = funs + (key -> fun), funattrs = funattrs + (key -> attrs))
 
+  // the constructors of all datatypes by name
+  def constrs: Map[Name, Fun] =
+    val all =
+      for
+        data <- datatypes.values
+        (constr, _) <- data.constrs
+      yield constr.name -> constr
+
+    all.toMap
+
   // constructors and selectors of a datatype
   def declare(data: Datatype): State =
     val funs =

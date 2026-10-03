@@ -186,6 +186,20 @@ object Type:
         Error.report("type mismatch", expr, Sort.bool, res):
           unify(state, scope, Sort.bool, res, subst)
 
+      // the type parameters of the constructor are instantiated freshly
+      case Is(arg, fun) =>
+        val su = Subst.fresh(fun.params)
+        check(state, scope, arg, su(fun.res), subst)
+
+        Error.report("type mismatch", expr, Sort.bool, res):
+          unify(state, scope, Sort.bool, res, subst)
+
+      case As(arg, typ) =>
+        check(state, scope, arg, typ, subst)
+
+        Error.report("type mismatch", expr, typ, res):
+          unify(state, scope, typ, res, subst)
+
       case Bind(quant, bound, body) =>
         check(state, scope, body, Sort.bool, subst)
 

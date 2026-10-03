@@ -86,6 +86,12 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
       case Distinct(exprs) =>
         Distinct(this(exprs))
 
+      case Is(expr, fun) =>
+        Is(this(expr), fun)
+
+      case As(expr, typ) =>
+        As(this(expr), this(typ))
+
       case Bind(quant, bound, body) =>
         val (rename, that) = avoid(bound)
         Bind(quant, rename(bound), that(body))

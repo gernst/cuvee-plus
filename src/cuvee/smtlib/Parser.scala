@@ -568,13 +568,20 @@ class Parser(private var init: State):
       case List(Id("as"), Id(name), sort) if name.startsWith("@") && !state.funs.contains((name, 0)) =>
         val typ_ = typ(scope, sort)
         state = state.declare(name, Nil, Nil, typ_, Attrs.empty)
-        app(name, Nil)
+        As(app(name, Nil), typ_)
 
-      case List(Id("as"), Id(name), sort) if state.funs.contains((name, 0)) =>
-        val fun = state.funs((name, 0))
-        val typ_ = typ(scope, sort)
-        Type.bind(List(fun.res), List(typ_))
-        App(fun, Nil, typ_, Nil)
+      // the annotation is kept, its type is checked against that of the expression by type checking
+      case List(Id("as"), arg, sort) =>
+        As(expr(scope, arg), typ(scope, sort))
+
+      // testers of constructors
+      case List(List(Id("_"), Id("is"), Id(name)), arg) =>
+        val constrs = state.constrs
+
+        Error.report("unknown constructor", name):
+          require(constrs contains name)
+
+        Is(expr(scope, arg), constrs(name))
 
       case Id(name) if state.funs.contains((name, 0)) =>
         app(name, Nil)

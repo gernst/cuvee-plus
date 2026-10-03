@@ -53,6 +53,17 @@ case class Distinct(exprs: List[Expr]) extends Expr:
   def free = exprs.free
   def typ = Sort.bool
 
+// whether `expr` is built by the constructor `fun` of a datatype
+case class Is(expr: Expr, fun: Fun) extends Expr:
+  def params = expr.params
+  def free = expr.free
+  def typ = Sort.bool
+
+// explicit type annotation, e.g. for polymorphic constants
+case class As(expr: Expr, typ: Type) extends Expr:
+  def params = expr.params ++ typ.params
+  def free = expr.free
+
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params
   def free = body.free -- bound

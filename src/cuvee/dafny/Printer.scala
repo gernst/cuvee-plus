@@ -514,6 +514,10 @@ object Printer extends cuvee.pipe.Printer:
       case Distinct(_) =>
         cuvee.Error.raise("unprintable distinct", expr)
 
+      // TODO: Dafny syntax for testers and type annotations, e.g. e.C? and e as T
+      case Is(_, _) | As(_, _) =>
+        cuvee.Error.raise("not supported in Dafny", expr)
+
       case Bind(quant, bound, body) =>
         Group(text(name(quant)) +:+ Group(formals(bound)) +:+ text("::") ++ Nest(2, line ++ doc(body)))
 

@@ -57,6 +57,15 @@ object Simplify extends Transform:
         val exprs_ = exprs.map(simplify(state, ctx.neutral, _))
         distinct(state, ctx, exprs_)
 
+      case Is(arg, fun) =>
+        val arg_ = simplify(state, ctx.neutral, arg)
+        is(state, ctx, arg_, fun)
+
+      // the annotation does not change the value, hence the polarity is kept
+      case As(arg, typ) =>
+        val arg_ = simplify(state, ctx, arg)
+        As(arg_, typ)
+
       case Ite(test, left, right) =>
         val test_ = simplify(state, ctx.neutral, test)
         val left_ = simplify(state, ctx.assume(List(test_), Nil), left)
@@ -228,6 +237,25 @@ object Simplify extends Transform:
       exprs match
         case List(a, b) => Not(Eq(a, b))
         case _          => Distinct(exprs)
+
+  // testers on constructor applications
+  def is(state: State, ctx: Ctx, arg: Expr, fun: Fun): Expr =
+    constr(state, arg) match
+      case Some(constr) if constr.name == fun.name => True
+      case Some(constr)                            => False
+      case None                                    => Is(arg, fun)
+
+  // the constructor that `expr` is built by, looking through type annotations
+  def constr(state: State, expr: Expr): Option[Fun] =
+    expr match
+      case As(expr_, _) =>
+        constr(state, expr_)
+
+      case App(fun, _, _, _) if state.constrs contains fun.name =>
+        Some(fun)
+
+      case _ =>
+        None
 
   def ite(state: State, ctx: Ctx, test: Expr, left: Expr, right: Expr): Expr =
     (test, left, right) match

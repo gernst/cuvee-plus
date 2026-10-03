@@ -282,6 +282,10 @@ object Printer extends cuvee.pipe.Printer:
       case App(Fun.const, inst, typ, List(arg)) =>
         apps(apps(atom("as"), atom("const"), lines(typ)), lines(arg))
 
+      // polymorphic constants are annotated with their type, which is not determined by arguments
+      case App(fun, inst, typ, Nil) if fun.params.nonEmpty =>
+        apps(atom("as"), apply(fun), lines(typ))
+
       case App(fun, inst, typ, Nil) =>
         apply(fun)
 
@@ -290,6 +294,16 @@ object Printer extends cuvee.pipe.Printer:
 
       case Distinct(exprs) =>
         apps(atom("distinct"), lines(exprs))
+
+      case Is(expr, fun) =>
+        apps(apps(atom("_"), atom("is"), mangle(fun.name)), lines(expr))
+
+      // polymorphic constants are annotated already
+      case As(App(fun, _, _, Nil), typ) if fun.params.nonEmpty =>
+        apps(atom("as"), apply(fun), lines(typ))
+
+      case As(expr, typ) =>
+        apps(atom("as"), lines(expr), lines(typ))
 
       case Bind(quant, bound, body) =>
         apps(mangle(quant), list(formals(bound)), lines(body))
