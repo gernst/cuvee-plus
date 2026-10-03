@@ -1,6 +1,7 @@
 package cuvee.pipe
 
 import java.io.PrintStream
+import scala.collection.mutable
 
 import cuvee.Error
 import cuvee.core._
@@ -35,8 +36,33 @@ object Sink:
     val stream = new PrintStream(new FileOutputStream(name))
     Print(stream, printer)
 
+  def collect(buffer: mutable.ListBuffer[Cmd]) =
+    Collect(buffer)
+
   def tee(primary: Sink, secondary: Sink*) =
     Tee(primary, secondary.toList)
+
+  // the answer of sinks that only pass on commands without solving
+  def passive(cmd: Cmd): Result =
+    cmd match
+      case _: Decl =>
+        Ack.Success
+
+      case _: Ctrl =>
+        Ack.Success
+
+      case CheckSat =>
+        Status.Unknown
+
+      // no information is available when printing only
+      case _: GetInfo | _: GetOption =>
+        Ack.Unsupported
+
+      case GetModel =>
+        Error.raise("no model available")
+
+      case Labels =>
+        Error.raise("no labels available")
 
   class Print(stream: PrintStream, printer: Printer) extends Sink:
     def query(cmd: Cmd) =
@@ -44,25 +70,15 @@ object Sink:
         for (line <- printer.lines(cmd))
           stream.println(line)
 
-      cmd match
-        case _: Decl =>
-          (Ack.Success, this)
+      (passive(cmd), this)
 
-        case _: Ctrl =>
-          (Ack.Success, this)
+  // appends all commands to `buffer`, e.g. to inspect the output of transforms in tests
+  class Collect(buffer: mutable.ListBuffer[Cmd]) extends Sink:
+    def query(cmd: Cmd) =
+      if cmd != Done then
+        buffer.append(cmd)
 
-        case CheckSat =>
-          (Status.Unknown, this)
-
-        // no information is available when printing only
-        case _: GetInfo | _: GetOption =>
-          (Ack.Unsupported, this)
-
-        case GetModel =>
-          Error.raise("no model available")
-
-        case Labels =>
-          Error.raise("no labels available")
+      (passive(cmd), this)
 
   class Tee(primary: Sink, secondary: List[Sink]) extends Sink:
     def query(cmd: Cmd) =

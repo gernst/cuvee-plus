@@ -18,7 +18,8 @@ object Cuvee extends util.Main:
   def run(args: String*): (List[Cmd], List[Result]) =
     run(args.toList)
 
-  def run(args: List[String]) =
+  // the output is additionally passed to `sinks`, e.g. to collect the commands in tests
+  def run(args: List[String], sinks: List[Sink] = Nil) =
     val config = Config.parse(Config.default, args)
     Debug.modules = config.debug
 
@@ -26,7 +27,7 @@ object Cuvee extends util.Main:
     val (init, cmds) = config.source(reader)
 
     val printer = config.printer
-    val sink = config.sink(init, printer)
+    val sink = Sink.tee(config.sink(init, printer), sinks*)
     val report = config.report(printer)
     val stages = config.stages(init, sink)
 

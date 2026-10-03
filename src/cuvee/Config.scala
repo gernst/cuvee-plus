@@ -81,6 +81,11 @@ object Config:
       (config_, rest)
     },
 
+    flag("-simplify", "simplify formulas and function definitions") { case (config, rest) =>
+      val config_ = config.copy(transforms = config.transforms :+ cuvee.simplify.Simplify)
+      (config_, rest)
+    },
+
     flag("-z3", "pass output to z3") { case (config, rest) =>
       val config_ = config.copy(sink = (init, _) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(), init))
       (config_, rest)

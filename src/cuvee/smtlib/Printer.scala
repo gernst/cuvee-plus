@@ -35,7 +35,7 @@ object Printer extends cuvee.pipe.Printer:
 
   def int(value: BigInt) =
     if value < 0
-    then app("-", value.toString)
+    then app("-", (-value).toString)
     else atom(value.toString)
 
   def kw(name: String) =

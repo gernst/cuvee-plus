@@ -4,7 +4,11 @@ import utest.Tests
 import utest.framework.Tree
 import utest.framework.TestCallTree
 
+import scala.collection.mutable
+
 import cuvee.Error
+import cuvee.core.Cmd
+import cuvee.pipe.Sink
 
 object Examples:
   val root = os.Path(sys.env("MILL_WORKSPACE_ROOT")) / "examples"
@@ -25,3 +29,15 @@ object Examples:
   def errors(args: String*): List[String] =
     val (_, results) = cuvee.Cuvee.run(args*)
     results.collect { case error: Error => error.msg }
+
+  // runs Cuvee on `args` and returns the commands that reach the sink, i.e., after all transforms,
+  // together with the messages of all errors that are reported
+  def output(args: String*): (List[Cmd], List[String]) =
+    val buffer = mutable.ListBuffer[Cmd]()
+    val (_, results) = cuvee.Cuvee.run(args.toList, List(Sink.collect(buffer)))
+    (buffer.toList, results.collect { case error: Error => error.msg })
+
+  // runs Cuvee on `args` and returns the parsed input commands
+  def input(args: String*): List[Cmd] =
+    val (cmds, _) = cuvee.Cuvee.run(args*)
+    cmds

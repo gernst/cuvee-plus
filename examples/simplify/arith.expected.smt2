@@ -1,0 +1,11 @@
+; normal form of arithmetic as polynomials
+(declare-const x Int)
+(declare-const y Int)
+(assert true)
+(assert (= (+ (* x x) (- 1)) y))
+(assert (= 0 y))
+(assert true)
+(assert true)
+(assert (= x y))
+(assert (< x y))
+(assert true)

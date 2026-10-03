@@ -547,6 +547,13 @@ class Parser(private var init: State):
       case Str(text) =>
         Lit(text, Sort.string)
 
+      // negative literals, as printed by the printer
+      case List(Id("-"), Num(digits)) =>
+        Lit(-BigInt(digits), Sort.int)
+
+      case List(Id("-"), Dec(digits)) =>
+        Lit(-BigDecimal(digits), Sort.real)
+
       case Id(name) if scope.vars.contains(name) =>
         scope.vars(name)
 

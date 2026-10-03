@@ -1,0 +1,11 @@
+; cancellation laws of the boolean connectives
+(declare-const p Bool)
+(declare-const q Bool)
+(assert false)
+(assert true)
+(assert (=> (and p q) p))
+(assert (and p (=> p q)))
+(assert p)
+(assert q)
+(assert p)
+(assert p)
