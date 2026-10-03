@@ -431,11 +431,16 @@ class Parser(var state: State):
         val progs_ = (inits ++ progs).map(resolve(scope_, _))
         state.progs.block(locals_, progs_)
 
-      case If(test, left, right) =>
+      case If(Some(test), left, right) =>
         val test_ = resolve(scope, test)
         val left_ = resolve(scope, left)
         val right_ = resolve(scope, right)
         state.progs.if_(test_, left_, right_)
+
+      case If(None, left, right) =>
+        val left_ = resolve(scope, left)
+        val right_ = resolve(scope, right)
+        state.progs.choice(left_, right_)
 
       case While(test, invs, dec, body) =>
         val test_ = resolve(scope, test)

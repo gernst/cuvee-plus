@@ -213,11 +213,18 @@ object Grammar:
   val block =
     Block(P(braces(local.* ~ prog.*)))
 
+  // else if chains are nested if statements
   val else_block_or_skip =
-    ("else" ~ block) | R(Skip)
+    P(("else" ~ (if_ | block)) | R(Skip))
 
-  val if_ =
-    If(P("if" ~ expr ~ block ~ else_block_or_skip))
+  // the guard * of a choice
+  val star = id.filter(_ == "*").asScanner
+
+  val guard =
+    P(star.map(None) | some(expr))
+
+  val if_ : Parser[Prog] =
+    If(P("if" ~ guard ~ block ~ else_block_or_skip))
 
   val while_ =
     While(P("while" ~ expr ~ invariant.* ~ decreases.* ~ block))

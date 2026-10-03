@@ -264,6 +264,12 @@ case class State(
     def if_(test: Expr, left: Prog, right: Prog) =
       If(test, left, right)
 
+    // chains of choices are flattened, if * { a } else if * { b } else { c }
+    def choice(left: Prog, right: Prog) =
+      right match
+        case Choice(progs) => Choice(left :: progs)
+        case _             => Choice(List(left, right))
+
     def while_(test: Expr, body: Prog, attrs: Attrs) =
       While(test, body, attrs)
 
