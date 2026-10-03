@@ -591,22 +591,25 @@ class Parser(init: State):
       // bindings are parallel, all bound expressions are parsed in the outer scope,
       // the bound variables have the types of their expressions, which are resolved by Type.check
       case List(Id("let"), List(bindings*), body) =>
-        val (names, args) =
-          list(bindings):
-            case List(Id(name), arg) => (name, arg)
-            case binding             => Error.raise("not a let binding", binding)
-          .unzip
-
-        val args_ = list(args) { expr(scope, _) }
-        val bound_ =
-          for (name, arg_) <- names zip args_
-          yield Var(name, arg_.typ)
-
+        val (bound_, args_) = leteqs(scope, bindings)
         val body_ = expr(scope ++ bound_, body)
         Let(bound_, args_, body_)
 
       case _ =>
         Error.raise("not an expression", from)
+
+  def leteqs(scope: Scope, from: Seq[Any]): (List[Var], List[Expr]) =
+    val eqs = list(from) { leteq(scope, _) }
+    eqs.unzip
+
+  def leteq(scope: Scope, from: Any): (Var, Expr) =
+    from match
+      case List(Id(name), arg) =>
+        val arg_ = expr(scope, arg)
+        (Var(name, arg_.typ), arg_)
+
+      case _ =>
+        Error.raise("not a let binding", from)
 
   def prog(scope: Scope, mod: Set[Var], from: Any): Prog =
     Error.raise("imperative programs in SMT-LIB are currently unsupported", from)
