@@ -127,7 +127,7 @@ class Parser(var state: State):
     val typ_ = state.types.sort("Bool")
     state.exprs.check(scope, expr_, typ_)
 
-  def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr]) =
+  def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr], dec: List[List[Expr]]) =
     val unknown = mod.flatten.filterNot(scope.vars.contains(_))
     Error.report("unknown variables in modifies clause", scope, unknown):
       require(unknown.isEmpty)
@@ -144,18 +144,25 @@ class Parser(var state: State):
       for phi <- ens
       yield "ensures" -> Some(formula(scope, phi))
 
-    Attrs(mod_ ++ req_ ++ ens_)
+    Attrs(mod_ ++ req_ ++ ens_ ++ decreases(scope, dec))
 
-  def invariants(scope: Scope, invs: List[Expr]) =
+  def invariants(scope: Scope, invs: List[Expr], dec: List[List[Expr]]) =
     val invs_ =
       for phi <- invs
       yield "invariant" -> Some(formula(scope, phi))
 
-    Attrs(invs_)
+    Attrs(invs_ ++ decreases(scope, dec))
+
+  // the components of a lexicographic termination measure in order, which may be of any type
+  def decreases(scope: Scope, dec: List[List[Expr]]) =
+    for expr <- dec.flatten
+    yield
+      val expr_ = resolve(scope, expr)
+      "decreases" -> Some(state.exprs.check(scope, expr_, expr_.typ))
 
   def resolve(scope: Scope, prefix: String, outer_ : List[core.Param], self: List[core.Var], cmd: Cmd): List[core.Cmd] =
     cmd match
-      case FunDef(fun, inner, formals, typ, req, ens, body) =>
+      case FunDef(fun, inner, formals, typ, req, ens, dec, body) =>
         val qname = prefix + fun
 
         val inner_ = inner.map(resolve(scope, _))
@@ -166,7 +173,7 @@ class Parser(var state: State):
 
         val typ_ = resolve(scope_, typ)
         val scope__ = scope_ ++ formals_
-        val attrs_ = contract(scope__, Nil, req, ens)
+        val attrs_ = contract(scope__, Nil, req, ens, dec)
 
         val arity = formals_.length
         state = state.declare(qname, params_, formals_, typ_, attrs_)
@@ -184,7 +191,7 @@ class Parser(var state: State):
             val cmd_ = state.cmds.defineFun(qname, arity)
             List(cmd_)
 
-      case MethodDef(meth, inner, formals, rets, mod, req, ens, body) =>
+      case MethodDef(meth, inner, formals, rets, mod, req, ens, dec, body) =>
         val qname = prefix + meth
 
         val inner_ = inner.map(resolve(scope, _))
@@ -195,7 +202,7 @@ class Parser(var state: State):
         val rets_ = rets.toList.flatten.map(resolve(scope_, _))
 
         val scope__ = scope_ ++ formals_ ++ rets_
-        val attrs_ = contract(scope__, mod, req, ens)
+        val attrs_ = contract(scope__, mod, req, ens, dec)
         state = state.declare(qname, params_, formals_, rets_, attrs_)
 
         body match
@@ -363,6 +370,16 @@ class Parser(var state: State):
         val phi_ = resolve(scope, phi)
         state.progs.assert(phi_)
 
+      // calls to top-level methods, with or without results
+      case Assign(lhs, List(App(name, args, Nil))) if state.procs.contains(name) =>
+        val unknown = lhs.filterNot(scope.vars.contains(_))
+        Error.report("unknown local variables", scope, unknown, lhs):
+          require(unknown.isEmpty)
+
+        val lhs_ = lhs.map(scope.vars(_))
+        val args_ = args.map(resolve(scope, _))
+        state.progs.call(name, args_, lhs_)
+
       // all method calls must be top-level on variables
       case Assign(lhs, List(App(base, Nil, List(Member(fun, args))))) =>
         val unknown = (base :: lhs).filterNot(scope.vars.contains(_))
@@ -389,6 +406,9 @@ class Parser(var state: State):
 
           case _ =>
             Error.raise("invalid access", base, qname, fun, scope, state.funs.keys, state.procs.keys)
+
+      case Assign(Nil, rhs) =>
+        Error.raise("statement must be a method call", rhs)
 
       case Assign(lhs, rhs) =>
         val unknown = lhs.filterNot(scope.vars.contains(_))
@@ -422,8 +442,8 @@ class Parser(var state: State):
         val right_ = resolve(scope, right)
         state.progs.if_(test_, left_, right_)
 
-      case While(test, invs, body) =>
+      case While(test, invs, dec, body) =>
         val test_ = resolve(scope, test)
         val body_ = resolve(scope, body)
-        val attrs_ = invariants(scope, invs)
+        val attrs_ = invariants(scope, invs, dec)
         state.progs.while_(test_, body_, attrs_)

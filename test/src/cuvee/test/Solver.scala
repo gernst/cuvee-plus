@@ -134,3 +134,19 @@ object Solver extends TestSuite:
       )
 
       defined(model) ==> Set("u", "v")
+
+    // SMT-LIB does not admit attributes on definitions, they are only kept in the state of the sink
+    test("attributes are not sent to the solver"):
+      val y = Var("y", Sort.int)
+      val f = Fun("f", Nil, List(y), Sort.int)
+      val attrs = Attrs(List("requires" -> Some(Lt(Zero, y))))
+
+      val solver = cuvee.smtlib.Solver.z3()
+      try
+        val (init, _) = cuvee.smtlib.Source.newParser()
+        val sink = cuvee.smtlib.Solver.sink(solver, init)
+        val (ack, _) = sink.query(DefineFun(f, y, attrs))
+
+        ack ==> Ack.Success
+        sink.parser.state.funattrs(("f", 1)) ==> attrs
+      finally solver.destroy()

@@ -46,3 +46,9 @@ extension [A1, A2, A3, A4, A5, A6, A7, A8, B](f: (A1, A2, A3, A4, A5, A6, A7, A8
     p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 ~ a6 ~ a7 ~ a8 =>
       f(a1, a2, a3, a4, a5, a6, a7, a8)
     }
+
+extension [A1, A2, A3, A4, A5, A6, A7, A8, A9, B](f: (A1, A2, A3, A4, A5, A6, A7, A8, A9) => B)
+  def apply(p: Parser[A1 ~ A2 ~ A3 ~ A4 ~ A5 ~ A6 ~ A7 ~ A8 ~ A9]): Parser[B] =
+    p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 ~ a6 ~ a7 ~ a8 ~ a9 =>
+      f(a1, a2, a3, a4, a5, a6, a7, a8, a9)
+    }

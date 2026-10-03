@@ -30,13 +30,14 @@
 - The printer does not add `(as ...)` annotations to ambiguous polymorphic
   constants, nor to abstract values from models such as `@U_0` (cvc5).
 - Dafny: inside a `type` or `datatype` body, members must be accessed through
-  `this`, e.g. `this.counter`; a plain `counter` is an unknown expression.
+  `this`, e.g. `this.counter` and `this.m(a)`; a plain `counter` is an unknown
+  expression, and a plain `m(a);` is only resolved for top-level methods.
   Names that are not local variables should be resolved as members of `this`
   (see [examples/stack.dfy](examples/stack.dfy)).
-- Dafny statements: calls to methods that are not members (`x := m(a);`) and
-  call statements without results.
 - Dafny: `var` declarations must come before the statements of a block.
-- No termination checking (`decreases`) in `Verify`.
+- No termination checking in `Verify`: `decreases` clauses are parsed and
+  stored as `:decreases` attributes, one per component of the lexicographic
+  measure, but not checked.
 - Add a cache of further commonly used information to `State`
   ([core/State.scala](src/cuvee/core/State.scala)).
 

@@ -171,6 +171,10 @@ object Grammar:
   val ensures =
     P("ensures" ~ expr)
 
+  // a lexicographic termination measure
+  val decreases =
+    P("decreases" ~ exprs)
+
   val modifies =
     P("modifies" ~ ids)
 
@@ -198,8 +202,13 @@ object Grammar:
   val local =
     Local(P("var" ~ (formal ~+ ",") ~ (":=" ~ exprs).? ~ ";"))
 
+  // backtracks if there is no :=, which is then a call statement
   val assign =
-    Assign(P(ids ~ ":=" ~ exprs ~ ";"))
+    Assign(P(ids ?~ ":=" ~ exprs ~ ";"))
+
+  // method calls without results, represented as assignments to no variables
+  val call =
+    Assign(P(nil ?~ app.map(List(_)) ~ ";"))
 
   val block =
     Block(P(braces(local.* ~ prog.*)))
@@ -211,10 +220,10 @@ object Grammar:
     If(P("if" ~ expr ~ block ~ else_block_or_skip))
 
   val while_ =
-    While(P("while" ~ expr ~ invariant.* ~ block))
+    While(P("while" ~ expr ~ invariant.* ~ decreases.* ~ block))
 
   val prog: Parser[Prog] =
-    P(ctrl | spec | if_ | while_ | block | assign)
+    P(ctrl | spec | if_ | while_ | block | assign | call)
 
   val sel =
     Sel(P(id ~ ":" ~ typ))
@@ -244,13 +253,13 @@ object Grammar:
     DataDef(P("datatype" ~ id ~ params ~ "=" ~ constrs ~ sortimpl.?))
 
   val constdef =
-    FunDef(P("const" ~ id ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ (":=" ~ expr).?))
+    FunDef(P("const" ~ id ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ nil ~ (":=" ~ expr).?))
 
   val fundef =
-    FunDef(P("function" ~ id ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ braces(expr).?))
+    FunDef(P("function" ~ id ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ decreases.* ~ braces(expr).?))
 
   val preddef =
-    FunDef(P("predicate" ~ id ~ params ~ formals ~ bool ~ requires.* ~ ensures.* ~ braces(expr).?))
+    FunDef(P("predicate" ~ id ~ params ~ formals ~ bool ~ requires.* ~ ensures.* ~ decreases.* ~ braces(expr).?))
 
   val axiom =
     Axiom(P("axiom" ~ expr))
@@ -259,7 +268,7 @@ object Grammar:
     P("returns" ~ formals)
 
   val procdef =
-    MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ block.?))
+    MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ decreases.* ~ block.?))
 
   val cmd: Parser[Cmd] =
     P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom)

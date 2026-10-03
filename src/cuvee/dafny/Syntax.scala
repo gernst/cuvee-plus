@@ -55,7 +55,7 @@ case class Assert(phi: Expr) extends Prog
 case class Assign(lhs: List[String], rhs: List[Expr]) extends Prog
 case class Block(locals: List[Local], progs: List[Prog]) extends Prog
 case class If(test: Expr, left: Prog, right: Prog) extends Prog
-case class While(test: Expr, invs: List[Expr], body: Prog) extends Prog
+case class While(test: Expr, invs: List[Expr], dec: List[List[Expr]], body: Prog) extends Prog
 
 // local variable declarations with optional initial values, var x: int, y: int := 1, 2;
 case class Local(vars: List[(String, Type)], init: Option[List[Expr]])
@@ -66,7 +66,7 @@ object Assert extends (Expr => Prog)
 object Assign extends ((List[String], List[Expr]) => Prog)
 object Block extends ((List[Local], List[Prog]) => Prog)
 object If extends ((Expr, Prog, Prog) => Prog)
-object While extends ((Expr, List[Expr], Prog) => Prog)
+object While extends ((Expr, List[Expr], List[List[Expr]], Prog) => Prog)
 
 case class Sel(name: String, typ: Type)
 case class Constr(name: String, sels: List[Sel])
@@ -85,6 +85,7 @@ case class FunDef(
     typ: Type,
     req: List[Expr],
     ens: List[Expr],
+    dec: List[List[Expr]],
     body: Option[Expr]
 ) extends Cmd
 
@@ -96,13 +97,14 @@ case class MethodDef(
     mod: List[List[String]],
     req: List[Expr],
     ens: List[Expr],
+    dec: List[List[Expr]],
     body: Option[Prog]
 ) extends Cmd
 
 object Axiom extends (Expr => Cmd)
 object SortDef extends ((String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
 object DataDef extends ((String, List[String], List[Constr], Option[List[Cmd]]) => Cmd)
-object FunDef extends ((String, List[String], List[(String, Type)], Type, List[Expr], List[Expr], Option[Expr]) => Cmd)
+object FunDef extends ((String, List[String], List[(String, Type)], Type, List[Expr], List[Expr], List[List[Expr]], Option[Expr]) => Cmd)
 
 object MethodDef
     extends (
@@ -114,6 +116,7 @@ object MethodDef
             List[List[String]],
             List[Expr],
             List[Expr],
+            List[List[Expr]],
             Option[Prog]
         ) => Cmd
     )

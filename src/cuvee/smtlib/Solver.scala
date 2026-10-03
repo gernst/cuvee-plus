@@ -144,10 +144,11 @@ object Solver:
           solver.destroy()
           (ack, this)
 
-        // the state is updated only once the solver has accepted the declaration
+        // the state is updated only once the solver has accepted the declaration,
+        // attributes are kept in the state but not sent to the solver
         case decl: Decl =>
           val state_ = parser.state.add(decl)
-          val ack = solver.ack(cmd)
+          val ack = solver.ack(noAttrs(decl))
           parser.state = state_
           (ack, this)
 
@@ -165,6 +166,18 @@ object Solver:
           val ack = solver.ack(cmd)
           parser.reset()
           (ack, this)
+
+    // SMT-LIB does not admit attributes on declarations and definitions,
+    // assertions are handled separately and keep theirs, e.g. for :named
+    def noAttrs(decl: Decl): Decl =
+      decl match
+        case DeclareSort(con, _)                      => DeclareSort(con, Attrs.empty)
+        case DefineSort(con, params, body, _)         => DefineSort(con, params, body, Attrs.empty)
+        case DeclareDatatype(con, params, constrs, _) => DeclareDatatype(con, params, constrs, Attrs.empty)
+        case DeclareDatatypes(datatypes)              => DeclareDatatypes(datatypes.map(_.copy(attrs = Attrs.empty)))
+        case DeclareFun(fun, _)                       => DeclareFun(fun, Attrs.empty)
+        case DefineFun(fun, body, _)                  => DefineFun(fun, body, Attrs.empty)
+        case _                                        => decl
 
     def prove(justify: Justify, params: List[Param], phi: Expr) =
       solver.valid(params, phi) match
