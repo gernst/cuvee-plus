@@ -78,7 +78,7 @@ object Parser:
   def annotation(from: List[Any]): Attrs =
     Attrs(annotations(from))
 
-class Parser(init: State):
+class Parser(var init: State):
   import Parser.annotation
 
   var state = init
