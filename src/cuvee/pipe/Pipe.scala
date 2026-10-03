@@ -30,10 +30,11 @@ object Pipe:
                 val (result, next) = sink.query(cmd)
                 sink = next
 
-                // Done is not part of the input, only errors from flushing are reported
-                if cmd != Done then
+                // Done is not part of the input, its answer is reported only if it has one,
+                // e.g. to a query added by a transform at the end of the input
+                if cmd != Done || result != Ack.Done then
                   report.report(result, printSuccess)
-                  done.append(cmd)
+                  if cmd != Done then done.append(cmd)
                   results.append(result)
 
                 if cmd == Exit

@@ -34,11 +34,14 @@ case class Config(
     input: Option[String],
     source: Source,
     printer: Printer,
-    sink: (State, Printer) => Sink,
+    // built from the final configuration, such that the order of the command line options does not matter
+    sink: (State, Config) => Sink,
     report: Printer => Report,
     transforms: List[Transform] = Nil,
     debug: Set[String] = Set(),
-    overridePrinter: Boolean = false
+    overridePrinter: Boolean = false,
+    // per query, in milliseconds
+    timeout: Int = 1000
 ) {
   def reader =
     input match
@@ -58,7 +61,7 @@ case class Config(
 
 object Config:
   val default =
-    Config(None, cuvee.smtlib.Source, cuvee.smtlib.Printer, (_, printer) => Sink.stdout(printer), Report.stderr)
+    Config(None, cuvee.smtlib.Source, cuvee.smtlib.Printer, (_, config) => Sink.stdout(config.printer), Report.stderr)
 
   def flag(key: String, help: String)(action: PartialFunction[(Config, List[String]), (Config, List[String])]) =
     key -> Flag(None, help, action)
@@ -92,17 +95,23 @@ object Config:
     },
 
     flag("-z3", "pass output to z3") { case (config, rest) =>
-      val config_ = config.copy(sink = (init, _) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(), init))
+      val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(config.timeout), init))
       (config_, rest)
     },
 
     flag("-cvc5", "pass output to cvc5") { case (config, rest) =>
-      val config_ = config.copy(sink = (init, _) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(), init))
+      val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(config.timeout), init))
       (config_, rest)
     },
 
+    flag("-timeout", "<ms>", "timeout per solver query in milliseconds (default 1000)") {
+      case (config, ms :: rest) if ms.toIntOption.exists(_ > 0) =>
+        val config_ = config.copy(timeout = ms.toInt)
+        (config_, rest)
+    },
+
     flag("-o", "<file>", "redirect output to <file> and report to stdout") { case (config, name :: rest) =>
-      val config_ = config.copy(sink = (_, printer) => Sink.file(name)(printer), report = Report.stdout)
+      val config_ = config.copy(sink = (_, config) => Sink.file(name)(config.printer), report = Report.stdout)
       (config_, rest)
     },
 

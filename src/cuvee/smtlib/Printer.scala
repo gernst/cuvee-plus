@@ -92,6 +92,10 @@ object Printer extends cuvee.pipe.Printer:
       case Ack.Unsupported =>
         atom("unsupported")
 
+      // not reported
+      case Ack.Done =>
+        Nil
+
       case Status.Unknown =>
         atom("unknown")
 

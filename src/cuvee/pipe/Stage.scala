@@ -3,8 +3,9 @@ package cuvee.pipe
 import cuvee.Error
 import cuvee.core._
 
-// the state already encompasses the new commands
-type Transform = (List[Cmd], List[Cmd], State) => List[Cmd]
+// arguments: the commands passed so far, the new commands, the command that flushes them, e.g. Done,
+// and the state, which already encompasses the new commands
+type Transform = (List[Cmd], List[Cmd], Cmd, State) => List[Cmd]
 
 object Stage:
   def empty(init: State, transform: Transform, next: Sink) =
@@ -52,7 +53,7 @@ case class Stage(
       case last =>
         val pending = rpending.reverse
 
-        val cmds = transform(prefix, pending, state)
+        val cmds = transform(prefix, pending, last, state)
         val (result, next_) = next.query(cmds, last)
 
         val prefix_ = prefix ++ pending

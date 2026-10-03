@@ -15,8 +15,9 @@ import cuvee.sexpr.Attrs
 // the annotations requires, ensures, and invariant become queries on these predicates
 object Horn extends Transform:
   // the logic is HORN, which replaces the one given in the input,
-  // or is set at the beginning, i.e., when nothing has been passed through so far
-  def apply(prefix: List[Cmd], cmds: List[Cmd], state: State): List[Cmd] =
+  // or is set at the beginning, i.e., when nothing has been passed through so far;
+  // at the end of the input, the clauses are checked for satisfiability
+  def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
     val cmds_ =
       for
         cmd <- cmds;
@@ -27,9 +28,17 @@ object Horn extends Transform:
       case SetLogic(_) => true
       case _           => false
 
-    if prefix.isEmpty && !hasLogic
-    then SetLogic("HORN") :: cmds_
-    else cmds_
+    val logic =
+      if prefix.isEmpty && !hasLogic
+      then List(SetLogic("HORN"))
+      else Nil
+
+    val check =
+      if last == Done
+      then List(CheckSat)
+      else Nil
+
+    logic ++ cmds_ ++ check
 
   // a procedure is either declared or defined, never both (see State.declare),
   // therefore its predicates p_pre and p_post are declared exactly once;

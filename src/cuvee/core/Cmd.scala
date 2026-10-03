@@ -9,6 +9,8 @@ trait Result
 enum Ack extends Result:
   case Success
   case Unsupported
+  // default answer to Done, which is not reported
+  case Done
 
 enum Status extends Result:
   case Unknown

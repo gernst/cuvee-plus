@@ -7,7 +7,7 @@ import cuvee.core._
 import cuvee.sexpr.Attrs
 
 object Verify extends Transform:
-  def apply(prefix: List[Cmd], cmds: List[Cmd], state: State): List[Cmd] =
+  def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
     for
       cmd <- cmds;
       cmd_ <- verify(state, cmd)

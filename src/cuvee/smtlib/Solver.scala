@@ -94,11 +94,12 @@ class Solver(cmd: String*):
       check()
 
 object Solver:
-  def z3() =
-    new Solver("z3", "-in")
+  // the timeout in milliseconds applies to each query, the solver keeps running afterwards
+  def z3(timeout: Int = 1000) =
+    new Solver("z3", "-in", "-t:" + timeout)
 
-  def cvc5() =
-    new Solver("cvc5", "--lang=smt2", "--incremental")
+  def cvc5(timeout: Int = 1000) =
+    new Solver("cvc5", "--lang=smt2", "--incremental", "--tlimit-per=" + timeout)
 
   // a sink that passes commands to the solver,
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
@@ -149,7 +150,7 @@ object Solver:
 
         case Done =>
           solver.destroy()
-          (Ack.Success, this)
+          (Ack.Done, this)
 
         // the state is updated only once the solver has accepted the declaration,
         // attributes are kept in the state but not sent to the solver

@@ -10,8 +10,24 @@ import java.io.FileOutputStream
 trait Sink:
   def query(cmd: Cmd): (Result, Sink)
 
+  // the answer to `last`, where Done has no answer of its own (Ack.Done),
+  // then the answer to the last query among `cmds` is passed on instead,
+  // e.g. to a check-sat added by a transform at the end of the input
   def query(cmds: List[Cmd], last: Cmd): (Result, Sink) =
-    exec(cmds).query(last)
+    val (answer, sink) =
+      cmds.foldLeft((None: Option[Result], this)):
+        case ((_, sink), cmd: Query) =>
+          val (result, sink_) = sink.query(cmd)
+          (Some(result), sink_)
+
+        case ((answer, sink), cmd) =>
+          (answer, sink.exec(cmd))
+
+    val (result, sink_) = sink.query(last)
+
+    (result, answer) match
+      case (Ack.Done, Some(answer)) => (answer, sink_)
+      case _                        => (result, sink_)
 
   def exec(cmd: Cmd) =
     val (result, sink) = query(cmd)
@@ -47,6 +63,9 @@ object Sink:
     cmd match
       case _: Decl =>
         Ack.Success
+
+      case Done =>
+        Ack.Done
 
       case _: Ctrl =>
         Ack.Success

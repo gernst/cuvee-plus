@@ -7,7 +7,7 @@ import cuvee.core._
 // contextual simplification of the formulas in assertions and function definitions,
 // where each subterm is simplified under the facts known to hold at its position
 object Simplify extends Transform:
-  def apply(prefix: List[Cmd], cmds: List[Cmd], state: State): List[Cmd] =
+  def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
     for cmd <- cmds
     yield simplify(state, cmd)
 
