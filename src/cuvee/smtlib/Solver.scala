@@ -112,8 +112,11 @@ object Solver:
         case Assert(Axiom, _, _, _) =>
           (solver.ack(cmd), this)
 
+        // the solver's answer is reported if the goal is not valid, i.e., sat or unknown
         case Assert(justify, params, phi, attrs) =>
-          prove(justify, params, phi)
+          val status = solver.valid(params, phi)
+          if status != Status.Unsat then
+            Error.raise(justify.toString.toLowerCase + " does not hold", status, Printer.lines(phi).mkString(" "))
 
           if justify == Lemma
           then solver.ack(Assert(Axiom, params, phi, attrs))
@@ -176,13 +179,3 @@ object Solver:
         case DeclareFun(fun, _)               => DeclareFun(fun, Attrs.empty)
         case DefineFun(fun, body, _)          => DefineFun(fun, body, Attrs.empty)
         case _                                => decl
-
-    def prove(justify: Justify, params: List[Param], phi: Expr) =
-      solver.valid(params, phi) match
-        case Status.Unsat =>
-
-        case Status.Sat =>
-          Error.raise(justify.toString.toLowerCase + " does not hold", Printer.lines(phi).mkString(" "))
-
-        case Status.Unknown =>
-          Error.raise(justify.toString.toLowerCase + " could not be proved", Printer.lines(phi).mkString(" "))
