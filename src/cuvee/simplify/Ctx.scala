@@ -54,7 +54,12 @@ case class Ctx(
     then Some(false)
     else None
 
-  // equations between variables are recorded in the substitution
+  // equations between variables are recorded in the substitution;
+  // facts are stored as given and not normalized under the substitution,
+  // e.g. denying x = y when x is replaced by y is not detected as inconsistent here,
+  // and lookup misses (p y) when the fact is stored as (p x);
+  // this is done at the top level instead: Simplify.simplify iterates to a fixpoint,
+  // where the facts are the simplified siblings, which are already rewritten under the substitution
   def assume(phi: Expr): Ctx =
     phi match
       case Eq(e1, e2) if e1 == e2 =>
@@ -63,25 +68,13 @@ case class Ctx(
       case Eq(x: Var, y: Var) if !(su.bound contains x) =>
         copy(su = su + (x -> y))
 
-      case False =>
-        copy(inconsistent = true)
-
-      case _ if concls contains phi =>
-        copy(inconsistent = true)
-
       case _ =>
-        copy(assms = phi :: assms)
+        val inconsistent_ = inconsistent || phi == False || (concls contains phi)
+        copy(assms = phi :: assms, inconsistent = inconsistent_)
 
   def deny(phi: Expr): Ctx =
-    phi match
-      case True =>
-        copy(inconsistent = true)
-
-      case _ if assms contains phi =>
-        copy(inconsistent = true)
-
-      case _ =>
-        copy(concls = phi :: concls)
+    val inconsistent_ = inconsistent || phi == True || (assms contains phi)
+    copy(concls = phi :: concls, inconsistent = inconsistent_)
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
