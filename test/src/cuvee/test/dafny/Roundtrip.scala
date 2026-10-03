@@ -1,15 +1,22 @@
 package cuvee.test
 package dafny
 
+import java.io.StringReader
+
 import utest._
 
+import cuvee.dafny.Printer
+import cuvee.dafny.Source
+
 object Roundtrip extends TestSuite:
-  // printing Dafny examples must be stable when the output is parsed again
+  // printing the internal representation of the Dafny examples must be stable
+  // when the output is parsed again, the original file is not compared
   val tests =
     Examples.tests(Examples.find(os.sub, "dfy")): file =>
-      val first = os.temp(suffix = ".dfy")
-      val second = os.temp(suffix = ".dfy")
+      val (cmds, errors) = Examples.output("-print", "null", file.toString)
+      errors ==> Nil
 
-      Examples.errors(file.toString, "-o", first.toString) ==> Nil
-      Examples.errors(first.toString, "-o", second.toString) ==> Nil
-      os.read(second) ==> os.read(first)
+      val first = Printer.lines(cmds)
+      val (_, cmds_) = Source(new StringReader(first.mkString("\n")))
+      val second = Printer.lines(cmds_.toList)
+      second ==> first
