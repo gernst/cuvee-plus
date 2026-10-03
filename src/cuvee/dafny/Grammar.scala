@@ -64,8 +64,8 @@ object Grammar:
 
   val kwd = T("kwd")
   val sym = T("sym")
-  val num = Num(T("num"))
-  val str = Str(T("str"))
+  val num = T("num")
+  val str = T("str")
 
   val id = Sym(sym)
 
@@ -88,7 +88,7 @@ object Grammar:
     la ~ p ~ ra
 
   val lit =
-    P(num | str)
+    P(Num(num) | Str(str))
 
   val attrs =
     P(braces(":" ~ (id ~* ",")) | nil)
@@ -127,7 +127,7 @@ object Grammar:
     Array(P(brackets(expr ~ (":=" ~ expr).?)))
 
   val member =
-    Member(P("." ~ id ~ args))
+    Member(P("." ~ (id | num) ~ args))
 
   val access =
     P(array | member)
@@ -237,7 +237,7 @@ object Grammar:
     P(ctrl | spec | if_ | while_ | block | assign | call)
 
   val sel =
-    Sel(P(id ~ ":" ~ typ))
+    Sel(P((id | num) ~ ":" ~ typ))
 
   val sels =
     parens(sel ~* ",") | nil

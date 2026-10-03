@@ -210,6 +210,10 @@ object Printer extends cuvee.pipe.Printer:
     then empty
     else space ++ Group(text("returns (") ++ Nest(2, linebreak ++ formals(out)) ++ text(")"))
 
+  // selectors are declared without the qualification with the datatype, which the parser adds again
+  def selector(con: Con, sel: Fun): String =
+    name(sel.name).stripPrefix(name(con.name) + "_")
+
   def datatype(con: Con, data: Datatype, attrs: Attrs): Doc =
     val Datatype(params_, constrs) = data
 
@@ -218,7 +222,7 @@ object Printer extends cuvee.pipe.Printer:
       yield
         val sels_ =
           for sel <- sels
-          yield text(name(sel.name) + ":") +:+ doc(sel.res)
+          yield text(selector(con, sel) + ":") +:+ doc(sel.res)
 
         if sels.isEmpty
         then text(name(constr.name))

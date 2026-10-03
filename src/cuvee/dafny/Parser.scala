@@ -80,11 +80,14 @@ class Parser(var state: State):
             val sels_ =
               for Sel(sel, arg) <- sels
               yield
+                // selectors are qualified with the datatype like members, e.g. pair_fst,
+                // such that datatypes may have selectors of the same name, e.g. the components 0, 1, ... of tuples
+                val qname = name + "_" + sel
                 val typ_ = resolve(scope_, arg)
                 val this_ = state.exprs.formal("this", sort_)
-                state = state.declare(sel, params_, List(this_), typ_, Attrs.empty)
+                state = state.declare(qname, params_, List(this_), typ_, Attrs.empty)
 
-                val sel_ = state.funs(sel, 1)
+                val sel_ = state.funs(qname, 1)
                 sel_
 
             // the formal parameters of constructors are named after the selectors
@@ -240,15 +243,6 @@ class Parser(var state: State):
   // members are looked up by the name of the type of `base`, which is resolved here,
   // since the type of an application may still be a fresh type parameter
   // fields of datatypes are their selectors, which are declared without the datatype as prefix
-  def isField(typ: core.Type, name: String) =
-    state.datatypes.get(typ.name) match
-      case Some(core.Datatype(_, constrs)) =>
-        constrs.exists:
-          case (_, sels) => sels.exists(_.name == Name(name, None))
-
-      case None =>
-        false
-
   def resolve(scope: Scope, base: core.Expr, access: List[Access]): core.Expr =
     access match
       case Nil =>
@@ -277,10 +271,6 @@ class Parser(var state: State):
           case _ if state.funs.contains((qname, 1 + args.length)) =>
             val args_ = args.map(resolve(scope, _))
             val base_ = state.exprs.app(qname, self :: args_)
-            resolve(scope, base_, rest)
-
-          case Nil if isField(self.typ, fun) =>
-            val base_ = state.exprs.app(fun, List(self))
             resolve(scope, base_, rest)
 
           case _ if state.procs.contains(qname) =>
@@ -388,10 +378,6 @@ class Parser(var state: State):
           case _ if state.funs.contains((qname, 1 + args.length)) =>
             val args_ = args.map(resolve(scope, _))
             val rhs_ = List(state.exprs.app(qname, base_ :: args_))
-            state.progs.assign(lhs_, rhs_)
-
-          case Nil if isField(base_.typ, fun) =>
-            val rhs_ = List(state.exprs.app(fun, List(base_)))
             state.progs.assign(lhs_, rhs_)
 
           case _ if state.procs.contains(qname) =>
