@@ -1,12 +1,6 @@
 # TODO
 
-## Bugs (reproduced)
-
-- An unknown variable in a Dafny `modifies` clause crashes with
-  `NoSuchElementException` instead of reporting an error: `contract` uses
-  `scope.vars(_)` directly ([dafny/Parser.scala](src/cuvee/dafny/Parser.scala)).
-
-## Bugs (found by reading the code)
+## Bugs
 
 - Exceptions other than `cuvee.Error` (`MatchError`, `NoSuchElementException`,
   `NotImplementedError`, `NumberFormatException` from `digits.toInt`) are not
@@ -16,9 +10,6 @@
   first `"`, so a doubled `""` inside a string is not supported
   ([sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)). The printers already
   escape `"` as `""`.
-- `Solver.sink` forwards `GetInfo`/`GetOption` with `ack`, so the solver's
-  answer is reported as a "solver error"
-  ([smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala)).
 - `State.define` for datatypes checks `sortdefs` instead of `datatypes` for
   "datatype already defined", reports the constructor's name instead of the
   selector's in "selector not declared", and does not check that a selector's
@@ -40,8 +31,9 @@
   `While` (the compiler warns that the match is not exhaustive).
 - SMT-LIB parser: imperative programs are not supported, `prog` always raises
   an error ([smtlib/Parser.scala](src/cuvee/smtlib/Parser.scala)).
-- SMT-LIB parser: no `let`, `!` inside terms, `(as ...)`, `match`,
-  `get-value`, `check-sat-assuming`, `echo`.
+- SMT-LIB parser: no `let`, `!` inside terms, `match`, `get-value`,
+  `check-sat-assuming`, `echo`, and `(as ...)` only for constants and constant
+  arrays.
 - Dafny `lemma` is not parsed, so lemmas and goals only come from SMT-LIB
   input (`lemma`, `goal`) and from `-verify`.
 - Defined sorts (`define-sort`, Dafny `type T = ...`) are not unfolded during
@@ -53,7 +45,7 @@
 - Polymorphic declarations (`par`) are sent to z3/cvc5 as they are, which the
   solvers do not accept; they need monomorphization first.
 - The printer does not add `(as ...)` annotations to ambiguous polymorphic
-  constants.
+  constants, nor to abstract values from models such as `@U_0` (cvc5).
 - Dafny: inside a `type` or `datatype` body, members must be accessed through
   `this`, e.g. `this.counter`; a plain `counter` is an unknown expression.
   Names that are not local variables should be resolved as members of `this`
@@ -63,7 +55,6 @@
 - Procedure calls are not checked against the signature of the procedure in
   `Type.check` (only later by `Verify`, and only their number of arguments).
 - No termination checking (`decreases`) in `Verify`.
-- `Solver.sink` rejects `GetModel` and `Labels`.
 - Add a cache of further commonly used information to `State`
   ([core/State.scala](src/cuvee/core/State.scala)).
 

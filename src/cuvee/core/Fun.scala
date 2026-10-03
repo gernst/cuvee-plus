@@ -40,6 +40,7 @@ object Fun:
 
   val select = Fun("select", List(a, b), formals(Sort.array(a, b), a), b)
   val store = Fun("store", List(a, b), formals(Sort.array(a, b), a, b), Sort.array(a, b))
+  val const = Fun("const", List(a, b), formals(b), Sort.array(a, b))
 
   val not = Fun("not", Nil, formals(bool), bool)
   val imp = Fun("=>", Nil, formals(bool, bool), bool)

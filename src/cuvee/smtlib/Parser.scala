@@ -40,7 +40,47 @@ object Parser:
       case _ =>
         Error.raise("invalid labels", from)
 
+  // answer to get-info
+  def info(from: Any): Result =
+    from match
+      case Id("unsupported") =>
+        Ack.Unsupported
+      case List(attrs*) =>
+        Info(annotation(attrs.toList))
+      case _ =>
+        Error.raise("invalid info", from)
+
+  // answer to get-option
+  def value(from: Any): Result =
+    from match
+      case Id("unsupported") =>
+        Ack.Unsupported
+      case _ =>
+        Value(from)
+
+  def annotations(from: List[Any]): List[(String, Option[Any])] =
+    from match
+      case Nil =>
+        Nil
+
+      case Kw(kw) :: Nil =>
+        List(kw -> None)
+
+      case Kw(kw) :: (rest @ Kw(_) :: _) =>
+        List(kw -> None) ++ annotations(rest)
+
+      case Kw(kw) :: arg :: rest =>
+        List(kw -> Some(arg)) ++ annotations(rest)
+
+      case _ =>
+        Error.raise("not an annotation", from)
+
+  def annotation(from: List[Any]): Attrs =
+    Attrs(annotations(from))
+
 class Parser(init: State):
+  import Parser.annotation
+
   var state = init
   var stack: List[State] = List()
 
@@ -60,6 +100,11 @@ class Parser(init: State):
       state = stack(depth - 1)
       stack = stack.drop(depth)
     Pop(depth)
+
+  def reset(): Cmd =
+    state = init
+    stack = List()
+    Reset
 
   def cmd(from: Any): Cmd =
     from match
@@ -105,9 +150,7 @@ class Parser(init: State):
         pop(digits.toInt)
 
       case List(Id("reset")) =>
-        state = init
-        stack = List()
-        Reset
+        reset()
 
       case List(Id("exit")) =>
         Exit
@@ -382,32 +425,49 @@ class Parser(init: State):
       case "lemma"  => Lemma
       case _        => Error.raise("not an assertion command", cmd)
 
+  // models are interpreted in the current state, which is not changed:
+  // functions that are not declared yet, and the declarations in the model, are local to the model
+  def model(from: Any): Model =
+    val items =
+      from match
+        case List(Id("model"), items*) => items.toList
+        case List(items*)              => items.toList
+        case _                         => Error.raise("invalid model", from)
+
+    val saved = state
+    try Model(items map definition)
+    finally state = saved
+
+  def definition(from: Any): Decl =
+    from match
+      // elements of uninterpreted sorts (z3)
+      case List(Id("declare-fun"), _*) =>
+        cmd(from) match
+          case decl: DeclareFun => decl
+          case _                => Error.raise("invalid declaration in model", from)
+
+      case List(Id("define-fun"), Id(name), List(formals*), res, body) =>
+        val formals_ = list(formals) { formal(Scope.empty, _) }
+        val res_ = typ(Scope.empty, res)
+        val fun = Fun(name, Nil, formals_, res_)
+
+        if !state.funs.contains((name, formals_.length))
+        then state = state.declare(name, Nil, formals_, res_, Attrs.empty)
+
+        val expr_ = expr(Scope(Nil, formals_), body)
+        val body_ = Type.check(Scope.empty, expr_, res_)
+        DefineFun(fun, body_, Attrs.empty)
+
+      // cardinality constraints of uninterpreted sorts (z3)
+      case phi =>
+        assertion(Axiom, Nil, phi, Nil)
+
   def assertion(justify: Justify, params: List[Param], phi: Any, attrs: List[Any]) =
     val scope = Scope(params)
     val expr_ = expr(scope, phi)
     val phi_ = Type.check(scope, expr_, Sort.bool)
     val attrs_ = annotation(attrs)
     Assert(justify, params, phi_, attrs_)
-
-  def annotations(from: List[Any]): List[(String, Option[Any])] =
-    from match
-      case Nil =>
-        Nil
-
-      case Kw(kw) :: Nil =>
-        List(kw -> None)
-
-      case Kw(kw) :: (rest @ Kw(_) :: _) =>
-        List(kw -> None) ++ annotations(rest)
-
-      case Kw(kw) :: arg :: rest =>
-        List(kw -> Some(arg)) ++ annotations(rest)
-
-      case _ =>
-        Error.raise("not an annotation", from)
-
-  def annotation(from: List[Any]): Attrs =
-    Attrs(annotations(from))
 
   def param(from: Any): Param =
     from match
@@ -480,6 +540,28 @@ class Parser(init: State):
 
       case Id(name) if scope.vars.contains(name) =>
         scope.vars(name)
+
+      // constant arrays
+      case List(List(Id("as"), Id("const"), sort), arg) =>
+        typ(scope, sort) match
+          case typ_ @ Sort(Con.array, List(dom, ran)) =>
+            val fun = state.funs(("const", 1))
+            App(fun, List(ran), typ_, List(expr(scope, arg)))
+
+          case typ_ =>
+            Error.raise("constant array must have array type", from, typ_)
+
+      // abstract values in models start with @ and are declared on first use (cvc5)
+      case List(Id("as"), Id(name), sort) if name.startsWith("@") && !state.funs.contains((name, 0)) =>
+        val typ_ = typ(scope, sort)
+        state = state.declare(name, Nil, Nil, typ_, Attrs.empty)
+        app(name, Nil)
+
+      case List(Id("as"), Id(name), sort) if state.funs.contains((name, 0)) =>
+        val fun = state.funs((name, 0))
+        val typ_ = typ(scope, sort)
+        Type.bind(List(fun.res), List(typ_))
+        App(fun, Nil, typ_, Nil)
 
       case Id(name) if state.funs.contains((name, 0)) =>
         app(name, Nil)

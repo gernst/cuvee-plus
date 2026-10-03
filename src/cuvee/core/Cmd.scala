@@ -17,6 +17,16 @@ enum Status extends Result:
 
 case class Labels(labels: List[String]) extends Result
 
+// answer to get-info, a list of keywords with values
+case class Info(attrs: Attrs) extends Result
+
+// answer to get-option
+case class Value(value: Any) extends Result
+
+// answer to get-model, definitions of the declared functions together with
+// auxiliary declarations and constraints, e.g. for the elements of uninterpreted sorts
+case class Model(decls: List[Decl]) extends Result
+
 sealed trait Cmd
 
 sealed trait Ctrl extends Cmd

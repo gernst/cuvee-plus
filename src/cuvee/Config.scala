@@ -34,7 +34,7 @@ case class Config(
     input: Option[String],
     source: Source,
     printer: Printer,
-    sink: Printer => Sink,
+    sink: (State, Printer) => Sink,
     report: Printer => Report,
     transforms: List[Transform] = Nil,
     debug: Set[String] = Set(),
@@ -58,7 +58,7 @@ case class Config(
 
 object Config:
   val default =
-    Config(None, cuvee.smtlib.Source, cuvee.smtlib.Printer, Sink.stdout, Report.stderr)
+    Config(None, cuvee.smtlib.Source, cuvee.smtlib.Printer, (_, printer) => Sink.stdout(printer), Report.stderr)
 
   def flag(key: String, help: String)(action: PartialFunction[(Config, List[String]), (Config, List[String])]) =
     key -> Flag(None, help, action)
@@ -82,17 +82,17 @@ object Config:
     },
 
     flag("-z3", "check goals and lemmas with z3 instead of printing the output") { case (config, rest) =>
-      val config_ = config.copy(sink = _ => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3()))
+      val config_ = config.copy(sink = (init, _) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(), init))
       (config_, rest)
     },
 
     flag("-cvc5", "check goals and lemmas with cvc5 instead of printing the output") { case (config, rest) =>
-      val config_ = config.copy(sink = _ => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5()))
+      val config_ = config.copy(sink = (init, _) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(), init))
       (config_, rest)
     },
 
     flag("-o", "<file>", "redirect output to <file> and report to stdout") { case (config, name :: rest) =>
-      val config_ = config.copy(sink = Sink.file(name), report = Report.stdout)
+      val config_ = config.copy(sink = (_, printer) => Sink.file(name)(printer), report = Report.stdout)
       (config_, rest)
     },
 

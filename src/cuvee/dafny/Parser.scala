@@ -129,6 +129,10 @@ class Parser(var state: State):
     state.exprs.check(scope, expr_, typ_)
 
   def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr]) =
+    val unknown = mod.flatten.filterNot(scope.vars.contains(_))
+    Error.report("unknown variables in modifies clause", scope, unknown):
+      require(unknown.isEmpty)
+
     val mod_ =
       for xs <- mod
       yield "modifies" -> Some(xs.map(scope.vars(_)))

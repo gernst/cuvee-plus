@@ -38,7 +38,7 @@ object Cuvee extends util.Main:
     val (init, cmds) = config.source(reader)
 
     val printer = config.printer
-    val sink = config.sink(printer)
+    val sink = config.sink(init, printer)
     val report = config.report(printer)
     val stages = config.stages(init, sink)
 

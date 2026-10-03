@@ -7,12 +7,17 @@ import cuvee.Error
 
 import cuvee.core._
 import cuvee.sexpr.Attrs
+import cuvee.sexpr.Grammar
 import cuvee.sexpr.Id
+import cuvee.sexpr.Str
 
 // an SMT solver as an external process, which is run with print-success
-// so that each command is answered by exactly one line
+// so that each command is answered by exactly one s-expression
 class Solver(cmd: String*):
   val (out, in, err, proc) = Tool.pipe(cmd*)
+
+  // responses may span several lines, e.g. models, and are read token by token
+  var responses = new cuvee.sexpr.Scanner(in).input
 
   ack(SetOption("print-success", Id("true")))
 
@@ -26,27 +31,31 @@ class Solver(cmd: String*):
       out.println(line)
     out.flush()
 
-  def read() =
-    val line = in.readLine()
+  // the response to `query` as an s-expression, errors reported by the solver are raised
+  def read(query: Cmd): Any =
+    Error.report("solver terminated unexpectedly", cmd, query):
+      require(responses.nonEmpty)
 
-    Error.report("solver terminated unexpectedly", cmd):
-      require(line != null)
+    val (from, rest) =
+      Error.report("invalid solver response", query):
+        Grammar.sexpr.parse(responses)
 
-    Debug.info("solver", proc.pid + "< " + line)
-    line
+    responses = rest
+    Debug.info("solver", proc.pid + "< " + cuvee.sexpr.Printer.lines(from).mkString(" "))
+
+    from match
+      case List(Id("error"), Str(msg)) =>
+        Error.raise("solver error", query, msg)
+
+      case _ =>
+        from
+
+  def query(cmd: Cmd): Any =
+    write(cmd)
+    read(cmd)
 
   def ack(cmd: Cmd): Ack =
-    write(cmd)
-
-    read() match
-      case "success" =>
-        Ack.Success
-
-      case "unsupported" =>
-        Ack.Unsupported
-
-      case line =>
-        Error.raise("solver error", cmd, line)
+    Parser.ack(query(cmd))
 
   def push(depth: Int = 1): Ack =
     ack(Push(depth))
@@ -76,13 +85,7 @@ class Solver(cmd: String*):
     finally pop()
 
   def check(): Status =
-    write(CheckSat)
-
-    read() match
-      case "sat"     => Status.Sat
-      case "unsat"   => Status.Unsat
-      case "unknown" => Status.Unknown
-      case line      => Error.raise("solver error", CheckSat, line)
+    Parser.issat(query(CheckSat))
 
   // phi is valid iff its negation is unsatisfiable, the assertion is retracted afterwards
   def valid(params: List[Param], phi: Expr): Status =
@@ -98,8 +101,12 @@ object Solver:
     new Solver("cvc5", "--lang=smt2", "--incremental")
 
   // a sink that passes commands to the solver,
-  // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently
-  class sink(solver: Solver) extends cuvee.pipe.Sink:
+  // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
+  // the parser keeps track of the declarations known to the solver, starting from `init`,
+  // and interprets the answers to queries in that state
+  class sink(solver: Solver, init: State) extends cuvee.pipe.Sink:
+    val parser = new Parser(init)
+
     def query(cmd: Cmd) =
       cmd match
         case Assert(Axiom, _, _, _) =>
@@ -120,16 +127,44 @@ object Solver:
         case _: DeclareProc | _: DefineProc =>
           (Ack.Unsupported, this)
 
-        case GetModel | Labels =>
-          Error.raise("unsupported query", cmd)
+        case _: GetInfo =>
+          (Parser.info(solver.query(cmd)), this)
+
+        case _: GetOption =>
+          (Parser.value(solver.query(cmd)), this)
+
+        case Labels =>
+          (Parser.labels(solver.query(cmd)), this)
+
+        case GetModel =>
+          (parser.model(solver.query(cmd)), this)
 
         case Exit =>
           val ack = solver.ack(cmd)
           solver.destroy()
           (ack, this)
 
-        case _ =>
+        // the state is updated only once the solver has accepted the declaration
+        case decl: Decl =>
+          val state_ = parser.state.add(decl)
+          val ack = solver.ack(cmd)
+          parser.state = state_
+          (ack, this)
+
+        case Push(depth) =>
+          val ack = solver.ack(cmd)
+          parser.push(depth)
+          (ack, this)
+
+        // the parser checks first that there are enough levels to pop
+        case Pop(depth) =>
+          parser.pop(depth)
           (solver.ack(cmd), this)
+
+        case Reset =>
+          val ack = solver.ack(cmd)
+          parser.reset()
+          (ack, this)
 
     def prove(justify: Justify, params: List[Param], phi: Expr) =
       solver.valid(params, phi) match

@@ -17,6 +17,9 @@
 (declare-fun select (par (a b) ((Array a b) a) b))
 (declare-fun store (par (a b) ((Array a b) a b) (Array a b)))
 
+; constant arrays are written ((as const (Array a b)) v)
+(declare-fun const (par (a b) (b) (Array a b)))
+
 (declare-fun not (Bool) Bool)
 (declare-fun => (Bool Bool) Bool)
 

@@ -9,10 +9,7 @@ trait Scanner:
   @throws[IOException]
   def next: Token
 
+  // tokens are read only when they are needed, not already when the input is created,
+  // so that interactive input such as solver responses does not block
   def input: Input =
-    next match
-      case Token.eof =>
-        Input.empty
-
-      case token =>
-        Input.cons(token, input)
+    LazyList.continually(next).takeWhile(_ != Token.eof)

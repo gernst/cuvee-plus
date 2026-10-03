@@ -104,6 +104,15 @@ object Printer extends cuvee.pipe.Printer:
       case Labels(labels) =>
         apps(atom("labels"), labels)
 
+      case Info(attrs) =>
+        list(lines(attrs))
+
+      case Value(value) =>
+        sexpr(value)
+
+      case Model(decls) =>
+        list(lines(decls))
+
       case error: cuvee.Error =>
         val info =
           for item <- error.info.toList; line <- str(item.toString)
@@ -263,6 +272,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case Lit(_, _) =>
         Error.raise("unprintable literal", expr)
+
+      // constant arrays need their type, which is not determined by the argument
+      case App(Fun.const, inst, typ, List(arg)) =>
+        apps(apps(atom("as"), atom("const"), lines(typ)), lines(arg))
 
       case App(fun, inst, typ, Nil) =>
         apply(fun)
