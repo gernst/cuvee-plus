@@ -73,6 +73,9 @@ class Parser(init: State):
         state = state.setOption(name, value)
         SetOption(name, value)
 
+      case List(Id("get-option"), Kw(name)) =>
+        GetOption(name)
+
       case List(Id("get-info"), Kw(name)) =>
         GetInfo(name)
 
@@ -250,19 +253,19 @@ class Parser(init: State):
 
       // assertions and proof goals
 
-      case List(Id("assert"), List(Id("par"), List(params*), List(Id("!"), phi, attrs*))) =>
+      case List(Id(cmd @ ("assert" | "goal" | "lemma")), List(Id("par"), List(params*), List(Id("!"), phi, attrs*))) =>
         val params_ = list(params) { param(_) }
-        assertion(params_, phi, attrs.toList)
+        assertion(justification(cmd), params_, phi, attrs.toList)
 
-      case List(Id("assert"), List(Id("par"), List(params*), phi, attrs*)) =>
+      case List(Id(cmd @ ("assert" | "goal" | "lemma")), List(Id("par"), List(params*), phi, attrs*)) =>
         val params_ = list(params) { param(_) }
-        assertion(params_, phi, attrs.toList)
+        assertion(justification(cmd), params_, phi, attrs.toList)
 
-      case List(Id("assert"), List(Id("!"), phi, attrs*)) =>
-        assertion(Nil, phi, attrs.toList)
+      case List(Id(cmd @ ("assert" | "goal" | "lemma")), List(Id("!"), phi, attrs*)) =>
+        assertion(justification(cmd), Nil, phi, attrs.toList)
 
-      case List(Id("assert"), phi, attrs*) =>
-        assertion(Nil, phi, attrs.toList)
+      case List(Id(cmd @ ("assert" | "goal" | "lemma")), phi, attrs*) =>
+        assertion(justification(cmd), Nil, phi, attrs.toList)
 
       // procedural fragment
 
@@ -371,12 +374,20 @@ class Parser(init: State):
     state = state.declare(constrs_).define(name, params_, constrs_)
     DeclareDatatype(con, params_, constrs_, Attrs.empty)
 
-  def assertion(params: List[Param], phi: Any, attrs: List[Any]) =
+  // goals and lemmas are not part of SMT-LIB, they are written like assertions with their own command
+  def justification(cmd: String): Justify =
+    cmd match
+      case "assert" => Axiom
+      case "goal"   => Goal
+      case "lemma"  => Lemma
+      case _        => Error.raise("not an assertion command", cmd)
+
+  def assertion(justify: Justify, params: List[Param], phi: Any, attrs: List[Any]) =
     val scope = Scope(params)
     val expr_ = expr(scope, phi)
     val phi_ = Type.check(scope, expr_, Sort.bool)
     val attrs_ = annotation(attrs)
-    Assert(Axiom, params, phi_, attrs_)
+    Assert(justify, params, phi_, attrs_)
 
   def annotations(from: List[Any]): List[(String, Option[Any])] =
     from match
@@ -420,11 +431,11 @@ class Parser(init: State):
         scope.params(name)
 
       case Id(name) if state.sorts contains name =>
-        Sort(state.sorts(name), Nil)
+        state.types.sort(name)
 
       case List(Id(name), args*) if state.sorts contains name =>
         val args_ = list(args) { typ(scope, _) }
-        Sort(state.sorts(name), args_)
+        state.types.sort(name, args_)
 
       case _ =>
         Error.raise("not a type", from)

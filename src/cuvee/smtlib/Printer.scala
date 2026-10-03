@@ -31,7 +31,7 @@ object Printer extends cuvee.pipe.Printer:
     yield line
 
   def str(value: String) =
-    atom("\"" + value.replace("\"", "\\\"") + "\"")
+    atom(cuvee.sexpr.Printer.str(value))
 
   def int(value: BigInt) =
     if value < 0
@@ -184,14 +184,11 @@ object Printer extends cuvee.pipe.Printer:
         val body_ = apps(atom("par"), list(lines(params)), list(this.formals(formals)), lines(res), lines(body), lines(attrs))
         apps(atom("define-fun"), mangle(name), body_)
 
-      case Assert(Axiom, Nil, phi, attrs) =>
-        apps(atom("assert"), note(phi, attrs))
-
-      case Assert(Axiom, params, phi, attrs) =>
-        apps(atom("assert"), apps(atom("par"), list(lines(params)), note(phi, attrs)))
+      case Assert(justify, Nil, phi, attrs) =>
+        apps(atom(command(justify)), note(phi, attrs))
 
       case Assert(justify, params, phi, attrs) =>
-        ???
+        apps(atom(command(justify)), apps(atom("par"), list(lines(params)), note(phi, attrs)))
 
       case DeclareProc(Proc(name, Nil, in, out), attrs) =>
         apps(atom("declare-proc"), mangle(name), list(lines(in.types)), list(lines(out.types)), lines(attrs))
@@ -206,6 +203,13 @@ object Printer extends cuvee.pipe.Printer:
       case DefineProc(Proc(name, params, in, out), body, attrs) =>
         val body_ = apps(atom("par"), list(lines(params)), list(formals(in)), list(formals(out)), lines(body), lines(attrs))
         apps(atom("define-proc"), mangle(name), body_)
+
+  // goals and lemmas are not part of SMT-LIB, they are printed like assertions with their own command
+  def command(justify: Justify) =
+    justify match
+      case Axiom => "assert"
+      case Goal  => "goal"
+      case Lemma => "lemma"
 
   def datatype(params: List[Param], constrs: List[(Fun, List[Fun])]) =
     val lines_ =
@@ -234,6 +238,12 @@ object Printer extends cuvee.pipe.Printer:
       case Sort(Con(name, arity), args) =>
         apps(mangle(name), lines(args))
 
+  // functions that are not part of SMT-LIB are printed as their SMT-LIB counterparts
+  def apply(fun: Fun) =
+    fun.name match
+      case Name("<=>", None) => atom("=")
+      case name              => mangle(name)
+
   def lines(expr: Expr) =
     expr match
       case Var(name, typ) =>
@@ -255,10 +265,10 @@ object Printer extends cuvee.pipe.Printer:
         Error.raise("unprintable literal", expr)
 
       case App(fun, inst, typ, Nil) =>
-        mangle(fun.name)
+        apply(fun)
 
       case App(fun, inst, typ, args) =>
-        apps(mangle(fun.name), lines(args))
+        apps(apply(fun), lines(args))
 
       case Bind(quant, bound, body) =>
         apps(mangle(quant), list(formals(bound)), lines(body))

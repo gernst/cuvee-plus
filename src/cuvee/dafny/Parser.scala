@@ -223,6 +223,16 @@ class Parser(var state: State):
       case _ =>
         Error.raise("unknown type", typ, scope.params.keys, state.sorts.keys)
 
+  // fields of datatypes are their selectors, which are declared without the datatype as prefix
+  def isField(typ: core.Type, name: String) =
+    state.datatypes.get(typ.name) match
+      case Some((_, constrs)) =>
+        constrs.exists:
+          case (_, sels) => sels.exists(_.name == Name(name, None))
+
+      case None =>
+        false
+
   def resolve(scope: Scope, base: core.Expr, access: List[Access]): core.Expr =
     access match
       case Nil =>
@@ -248,6 +258,10 @@ class Parser(var state: State):
           case _ if state.funs.contains((qname, 1 + args.length)) =>
             val args_ = args.map(resolve(scope, _))
             val base_ = state.exprs.app(qname, base :: args_)
+            resolve(scope, base_, rest)
+
+          case Nil if isField(base.typ, fun) =>
+            val base_ = state.exprs.app(fun, List(base))
             resolve(scope, base_, rest)
 
           case _ if state.procs.contains(qname) =>
@@ -349,6 +363,10 @@ class Parser(var state: State):
           case _ if state.funs.contains((qname, 1 + args.length)) =>
             val args_ = args.map(resolve(scope, _))
             val rhs_ = List(state.exprs.app(qname, base_ :: args_))
+            state.progs.assign(lhs_, rhs_)
+
+          case Nil if isField(base_.typ, fun) =>
+            val rhs_ = List(state.exprs.app(fun, List(base_)))
             state.progs.assign(lhs_, rhs_)
 
           case _ if state.procs.contains(qname) =>

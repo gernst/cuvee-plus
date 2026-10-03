@@ -157,11 +157,11 @@ public class Scanner implements cuvee.pipe.Scanner {
     "\1\10\1\4\1\11\2\12\1\13\1\14\3\4\1\15"+
     "\26\0\2\3\1\0\2\3\25\0\1\4\4\0\4\4"+
     "\2\0\3\4\1\0\7\16\1\17\15\16\22\0\1\20"+
-    "\15\0\1\21\7\0\1\22\14\0\1\21\3\12\14\0"+
-    "\1\23\4\0\1\23\5\0\3\23\1\0\2\24\1\25"+
-    "\2\0\1\26\17\24\24\27\1\30\14\0\2\31\23\0"+
-    "\3\32\22\0\3\33\2\0\2\33\10\0\1\23\4\0"+
-    "\4\23\2\0\3\23\3\0\1\25\22\0";
+    "\1\21\14\0\1\22\24\0\1\22\3\12\14\0\1\23"+
+    "\4\0\1\23\5\0\3\23\1\0\2\24\1\25\2\0"+
+    "\1\26\17\24\24\27\1\30\14\0\2\31\23\0\3\32"+
+    "\2\0\2\32\16\0\3\33\14\0\1\23\4\0\4\23"+
+    "\2\0\3\23\3\0\1\25\22\0";
 
   private static int [] zzUnpackTrans() {
     int [] result = new int[336];
@@ -739,12 +739,12 @@ public class Scanner implements cuvee.pipe.Scanner {
             // fall through
           case 22: break;
           case 11:
-            { return Syntax.value("dec", yytext());
+            { return Syntax.value("hex", yytext(+2,0));
             }
             // fall through
           case 23: break;
           case 12:
-            { return Syntax.value("hex", yytext(+2,0));
+            { return Syntax.value("dec", yytext());
             }
             // fall through
           case 24: break;

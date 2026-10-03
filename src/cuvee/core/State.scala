@@ -189,6 +189,9 @@ case class State(
         require(sorts.contains(name))
 
       val con = sorts(name)
+      Error.report("wrong number of sort arguments", name, con.arity, args):
+        require(con.arity == args.length)
+
       Sort(con, args)
 
   object exprs:

@@ -49,8 +49,9 @@ object Pipe:
                     Breaks.break()
 
     catch
-      // catches parse errors
+      // catches parse errors, which have no command
       case result: Error =>
         report.report(result, printSuccess)
+        results.append(result)
 
     (done.toList, results.toList)

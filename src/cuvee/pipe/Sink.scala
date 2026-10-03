@@ -53,6 +53,10 @@ object Sink:
         case CheckSat =>
           (Status.Unknown, this)
 
+        // no information is available when printing only
+        case _: GetInfo | _: GetOption =>
+          (Ack.Unsupported, this)
+
         case GetModel =>
           Error.raise("no model available")
 

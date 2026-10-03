@@ -19,6 +19,10 @@
 
 (declare-fun not (Bool) Bool)
 (declare-fun => (Bool Bool) Bool)
+
+; not part of SMT-LIB, kept explicit for readability and printed as =
+(declare-fun <=> (Bool Bool) Bool)
+
 (declare-fun and (Bool Bool) Bool)
 (declare-fun or (Bool Bool) Bool)
 

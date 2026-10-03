@@ -5,8 +5,8 @@ datatype stack<a>
   = stack(counter: int, size: int, elem: a, offset: int)
 {
   predicate valid() {
-    0 <= counter &&
-    0 <= offset && offset < size
+    0 <= this.counter &&
+    0 <= this.offset && this.offset < this.size
   }
 
   predicate isEmpty()

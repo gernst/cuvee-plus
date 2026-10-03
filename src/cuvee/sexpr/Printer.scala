@@ -8,6 +8,9 @@ object Printer:
     expr match
       case Id(text)      => atom(escape(text))
       case Kw(text)      => atom(":" + text)
+      case Str(text)     => atom(str(text))
+      case Hex(text)     => atom("#x" + text)
+      case Bin(text)     => atom("#b" + text)
       case expr: Atom    => atom(expr.text)
       case args: List[_] => list(flat(args))
 
@@ -24,6 +27,10 @@ object Printer:
     if simple.matcher(str).matches()
     then str
     else "|" + str + "|"
+
+  // SMT-LIB 2.6 escapes double quotes in string literals by doubling them
+  def str(text: String) =
+    "\"" + text.replace("\"", "\"\"") + "\""
 
   def list(args: List[String]): List[String] =
     args match

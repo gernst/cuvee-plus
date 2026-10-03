@@ -31,7 +31,7 @@ extra   = [~!@$%&*_+=<>.?/] | "-" | "^"
 
 num     = [1-9]{digit}* | 0
 dec     = {num} "\." 0* {num}
-hex     = "0x" [0-9a-fA-F]+
+hex     = "#x" [0-9a-fA-F]+
 bin     = "#b" [01]+
 
 symbol0 = {letter} | {extra}

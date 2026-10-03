@@ -2,24 +2,9 @@
 
 ## Bugs (reproduced)
 
-- `-verify` without `-z3` crashes with `NotImplementedError`: the SMT-LIB
-  printer has `???` for `Assert` with `Goal`/`Lemma`
-  ([smtlib/Printer.scala](src/cuvee/smtlib/Printer.scala)).
-- `(get-info ...)` and `(get-option ...)` crash the printing sink with a
-  `MatchError`: `Sink.Print.query` has no case for `GetInfo`/`GetOption`
-  ([pipe/Sink.scala](src/cuvee/pipe/Sink.scala)).
-- String literals in s-expressions lose their quotes when printed:
-  `(set-info :source "hello world")` is printed as
-  `(set-info :source hello world)`. `cuvee.sexpr.Printer` prints every `Atom`
-  by its raw text, which also drops the prefixes of `Hex` and `Bin`
-  ([sexpr/Printer.scala](src/cuvee/sexpr/Printer.scala)).
-- Dafny `<==>` is translated to `<=>`, which is not an SMT-LIB function; it
-  should become `=` on `Bool` ([dafny/Grammar.scala](src/cuvee/dafny/Grammar.scala)).
 - An unknown variable in a Dafny `modifies` clause crashes with
   `NoSuchElementException` instead of reporting an error: `contract` uses
   `scope.vars(_)` directly ([dafny/Parser.scala](src/cuvee/dafny/Parser.scala)).
-- Sort arity is not checked: `(declare-const a (Array Int))` is accepted, in
-  both `smtlib.Parser.typ` and `State.types.sort`.
 
 ## Bugs (found by reading the code)
 
@@ -31,10 +16,10 @@
   (`src/cuvee/smtlib/prelude.smt2`, `src/cuvee/dafny/prelude.dfy`), so
   `cuvee.jar` only works when run from the repository root. They should be
   loaded as classpath resources.
-- String escaping does not follow SMT-LIB 2.6, which escapes `"` as `""`: the
-  printer writes `\"`, and the scanner stops at the first `"`
-  ([smtlib/Printer.scala](src/cuvee/smtlib/Printer.scala),
-  [sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)).
+- The scanner does not read SMT-LIB 2.6 string escapes: a string ends at the
+  first `"`, so a doubled `""` inside a string is not supported
+  ([sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)). The printers already
+  escape `"` as `""`.
 - `Solver.sink` forwards `GetInfo`/`GetOption` with `ack`, so the solver's
   answer is reported as a "solver error"
   ([smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala)).
@@ -60,10 +45,9 @@
 - SMT-LIB parser: imperative programs are not supported, `prog` always raises
   an error ([smtlib/Parser.scala](src/cuvee/smtlib/Parser.scala)).
 - SMT-LIB parser: no `let`, `!` inside terms, `(as ...)`, `match`,
-  `get-option`, `get-value`, `check-sat-assuming`, `echo`.
-- Neither parser produces lemmas or goals (only `Axiom`), so `Solver.sink`'s
-  handling of them and `State.cmds.lemma`/`goal` are only reachable through
-  `-verify`. Dafny `lemma` is not parsed.
+  `get-value`, `check-sat-assuming`, `echo`.
+- Dafny `lemma` is not parsed, so lemmas and goals only come from SMT-LIB
+  input (`lemma`, `goal`) and from `-verify`.
 - Defined sorts (`define-sort`, Dafny `type T = ...`) are not unfolded during
   type checking, so a defined sort never unifies with its definition.
 - Real arithmetic: decimal literals are typed `Real`, but no `Real` functions
@@ -74,6 +58,10 @@
   solvers do not accept; they need monomorphization first.
 - The printer does not add `(as ...)` annotations to ambiguous polymorphic
   constants.
+- Dafny: inside a `type` or `datatype` body, members must be accessed through
+  `this`, e.g. `this.counter`; a plain `counter` is an unknown expression.
+  Names that are not local variables should be resolved as members of `this`
+  (see [examples/stack.dfy](examples/stack.dfy)).
 - Dafny statements: calls to methods that are not members (`x := m(a);`),
   call statements without results, and initialized locals (`var x := e;`).
 - Procedure calls are not checked against the signature of the procedure in
@@ -95,7 +83,3 @@
 - Readers for input files and preludes, and the output stream of `-o`, are
   never closed.
 
-## Tests
-
-- `test.Parsing` ignores the results for Dafny examples, so Dafny parse
-  errors do not fail the test ([test/Parsing.scala](test/src/cuvee/test/Parsing.scala)).
