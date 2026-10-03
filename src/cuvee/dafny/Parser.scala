@@ -59,7 +59,7 @@ class Parser(var state: State):
             val cmds_ =
               for
                 cmd <- cmds;
-                cmd_ <- resolve(scope_, name + ".", params_, List(this_), cmd)
+                cmd_ <- resolve(scope_, name + "_", params_, List(this_), cmd)
               yield cmd_
 
             decl :: cmds_
@@ -114,7 +114,7 @@ class Parser(var state: State):
             val cmds_ =
               for
                 cmd <- cmds;
-                cmd_ <- resolve(scope_, name + ".", params_, List(this_), cmd)
+                cmd_ <- resolve(scope_, name + "_", params_, List(this_), cmd)
               yield cmd_
 
             decl :: cmds_
@@ -271,7 +271,7 @@ class Parser(var state: State):
           case self: core.Var => self
           case _              => Error.raise("member access on an expression that is not a variable", base, fun)
 
-        val qname = self.typ.name.name + "." + fun
+        val qname = self.typ.name.name + "_" + fun
 
         args match
           case _ if state.funs.contains((qname, 1 + args.length)) =>
@@ -382,7 +382,7 @@ class Parser(var state: State):
 
         val lhs_ = lhs.map(scope.vars(_))
         val base_ = scope.vars(base)
-        val qname = base_.typ.name.name + "." + fun
+        val qname = base_.typ.name.name + "_" + fun
 
         args match
           case _ if state.funs.contains((qname, 1 + args.length)) =>

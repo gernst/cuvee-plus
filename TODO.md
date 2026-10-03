@@ -10,14 +10,10 @@
   first `"`, so a doubled `""` inside a string is not supported
   ([sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)). The printers already
   escape `"` as `""`.
-- Add a test that printing Dafny is stable when the output is parsed again, as
-  for SMT-LIB, once the Dafny printer prints valid Dafny (see below). Chains of
-  equations and comparisons with more than two arguments are still printed like
-  function calls, e.g. `==(x, y, z)`.
-- The Dafny printer does not always print valid Dafny: members are printed
-  with their qualified name, e.g. `function counter.get(this: counter)`,
-  instead of inside their type; indexed names are printed with unicode
-  subscripts, e.g. `x₀`; the type parameters of assertions are omitted.
+- The Dafny printer does not always print valid Dafny: indexed names are
+  printed with unicode subscripts, e.g. `x₀`; the type parameters of assertions
+  are omitted; chains of equations and comparisons with more than two arguments
+  are printed like function calls, e.g. `==(x, y, z)`.
 - The Dafny printer's `any` passes all values that are not results, commands,
   types, expressions or programs to the s-expression printer, which raises a
   `MatchError` on anything that is not an atom or a list of such:
