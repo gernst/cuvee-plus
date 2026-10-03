@@ -81,12 +81,12 @@ object Config:
       (config_, rest)
     },
 
-    flag("-z3", "check goals and lemmas with z3 instead of printing the output") { case (config, rest) =>
+    flag("-z3", "pass output to z3") { case (config, rest) =>
       val config_ = config.copy(sink = (init, _) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(), init))
       (config_, rest)
     },
 
-    flag("-cvc5", "check goals and lemmas with cvc5 instead of printing the output") { case (config, rest) =>
+    flag("-cvc5", "pass output to cvc5") { case (config, rest) =>
       val config_ = config.copy(sink = (init, _) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(), init))
       (config_, rest)
     },

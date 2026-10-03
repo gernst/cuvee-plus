@@ -69,4 +69,3 @@
   (main and tests); enable it once in the build with `-language:implicitConversions`.
 - Two deprecation warnings for `Long + String` in debug messages of
   [smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala) (lines 30 and 44).
-

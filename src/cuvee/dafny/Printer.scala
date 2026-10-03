@@ -171,7 +171,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // the type parameters of assertions are implicit
       case Assert(justify, _, phi, attrs) =>
-        Group(text(command(justify)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi)))
+        Group(text(format(justify)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi)))
 
       case DeclareProc(Proc(name_, params_, in, out), attrs) =>
         header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, None)
@@ -180,7 +180,7 @@ object Printer extends cuvee.pipe.Printer:
         header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, Some(block(body)))
 
   // goals and lemmas are not part of Dafny, they are printed like axioms with their own keyword
-  def command(justify: Justify) =
+  def format(justify: Justify) =
     justify match
       case Axiom => "axiom"
       case Goal  => "goal"
