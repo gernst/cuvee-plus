@@ -1,6 +1,6 @@
 package cuvee.smtlib
 
-import cuvee.Name
+import util.Name
 import cuvee.Error
 import cuvee.core._
 import cuvee.sexpr.Attrs

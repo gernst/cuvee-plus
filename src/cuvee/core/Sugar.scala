@@ -1,7 +1,7 @@
 package cuvee.core
 
 import scala.annotation.targetName
-import cuvee.Name
+import util.Name
 
 extension (self: List[Param])
   @targetName("Params.fresh")

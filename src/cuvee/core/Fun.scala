@@ -1,6 +1,6 @@
 package cuvee.core
 
-import cuvee.Name
+import util.Name
 import scala.annotation.targetName
 
 case class Sig(name: Name, sorts: List[Option[Sig]]):

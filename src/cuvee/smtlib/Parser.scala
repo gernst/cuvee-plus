@@ -2,7 +2,7 @@ package cuvee.smtlib
 
 import cuvee.Error
 
-import cuvee.Name
+import util.Name
 import cuvee.sexpr._
 import cuvee.core._
 

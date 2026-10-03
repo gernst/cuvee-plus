@@ -1,6 +1,6 @@
 package cuvee.chc
 
-import cuvee.Name
+import util.Name
 import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._

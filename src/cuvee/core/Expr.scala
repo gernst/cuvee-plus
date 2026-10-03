@@ -2,7 +2,7 @@ package cuvee.core
 
 import scala.annotation.targetName
 
-import cuvee.Name
+import util.Name
 import util.Counter
 
 sealed trait Expr:

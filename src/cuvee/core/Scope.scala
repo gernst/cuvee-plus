@@ -2,7 +2,7 @@ package cuvee.core
 
 import scala.annotation.targetName
 
-import cuvee.Name
+import util.Name
 
 case class Scope(params: Map[Name, Param], vars: Map[Name, Var]):
   @targetName("Scope.addParam")

@@ -1,6 +1,6 @@
 package cuvee.dafny
 
-import cuvee.Name
+import util.Name
 import cuvee.core._
 import cuvee.smtlib._
 import cuvee.sexpr.Atom

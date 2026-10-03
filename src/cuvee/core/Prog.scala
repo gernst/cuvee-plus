@@ -1,6 +1,6 @@
 package cuvee.core
 
-import cuvee.Name
+import util.Name
 import cuvee.sexpr.Attrs
 
 case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var]):

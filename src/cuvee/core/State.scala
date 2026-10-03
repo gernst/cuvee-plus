@@ -1,6 +1,6 @@
 package cuvee.core
 
-import cuvee.Name
+import util.Name
 import cuvee.Error
 import cuvee.sexpr.Attrs
 

@@ -3,7 +3,7 @@ package cuvee.core
 import util.Counter
 import util.backtrack
 
-import cuvee.Name
+import util.Name
 import cuvee.Error
 
 case class Con(name: Name, arity: Int)

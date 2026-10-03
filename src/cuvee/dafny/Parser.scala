@@ -1,6 +1,6 @@
 package cuvee.dafny
 
-import cuvee.Name
+import util.Name
 import cuvee.Error
 import cuvee.core
 import cuvee.core.State
