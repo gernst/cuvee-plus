@@ -57,10 +57,11 @@ case class SetInfo(name: String, value: Any) extends Decl
 
 case class DeclareSort(con: Con, attrs: Attrs) extends Decl
 case class DefineSort(con: Con, params: List[Param], body: Type, attrs: Attrs) extends Decl
-case class DeclareDatatype(con: Con, params: List[Param], constrs: List[(Fun, List[Fun])], attrs: Attrs) extends Decl
+// the constructors of a datatype together with their selectors
+case class Datatype(params: List[Param], constrs: List[(Fun, List[Fun])])
 
-// mutually recursive datatypes
-case class DeclareDatatypes(datatypes: List[DeclareDatatype]) extends Decl
+// (mutually recursive) datatypes, where cons and datas correspond to each other
+case class DeclareDatatypes(cons: List[Con], datas: List[Datatype]) extends Decl
 
 case class DeclareFun(fun: Fun, attrs: Attrs) extends Decl
 case class DefineFun(fun: Fun, body: Expr, attrs: Attrs) extends Decl

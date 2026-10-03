@@ -21,7 +21,7 @@ case class State(
     fundefs: Map[(Name, Int), Expr] = Map(),
     procdefs: Map[Name, Prog] = Map(),
 
-    datatypes: Map[Name, (List[Param], List[(Fun, List[Fun])])] = Map(),
+    datatypes: Map[Name, Datatype] = Map(),
 
     asserts: List[Assert] = List()
     // XXX: add cache of further common things
@@ -58,7 +58,9 @@ case class State(
 
     copy(sortdefs = sortdefs + (name -> (params, body)))
 
-  def define(name: Name, params: List[Param], constrs: List[(Fun, List[Fun])]) =
+  def define(name: Name, data: Datatype) =
+    val Datatype(params, constrs) = data
+
     Error.report("sort not declared", name):
       require(sorts.contains(name))
     Error.report("datatype already defined", name):
@@ -85,7 +87,7 @@ case class State(
         Error.report("selector must take the datatype as its only argument", sel, sort):
           require(sel.args == List(sort))
 
-    copy(datatypes = datatypes + (name -> (params, constrs)))
+    copy(datatypes = datatypes + (name -> data))
 
   def declare(name: Name, params: List[Param], formals: List[Var], res: Type, attrs: Attrs) =
     val arity = formals.length
@@ -98,10 +100,10 @@ case class State(
     copy(funs = funs + (key -> fun), funattrs = funattrs + (key -> attrs))
 
   // constructors and selectors of a datatype
-  def declare(constrs: List[(Fun, List[Fun])]): State =
+  def declare(data: Datatype): State =
     val funs =
       for
-        (constr, sels) <- constrs;
+        (constr, sels) <- data.constrs;
         fun <- constr :: sels
       yield fun
 
@@ -148,19 +150,19 @@ case class State(
       case DeclareSort(Con(name, arity), attrs) =>
         declare(name, arity, attrs)
 
-      case DeclareDatatype(Con(name, arity), params, constrs, attrs) =>
-        declare(name, arity, attrs).declare(constrs).define(name, params, constrs)
-
       // all sorts are declared first since they may occur in each others' constructors
-      case DeclareDatatypes(datatypes) =>
-        val state =
-          datatypes.foldLeft(this):
-            case (state, DeclareDatatype(Con(name, arity), _, _, attrs)) =>
-              state.declare(name, arity, attrs)
+      case DeclareDatatypes(cons, datas) =>
+        Error.report("mismatching datatype declarations", cons, datas):
+          require(cons.length == datas.length)
 
-        datatypes.foldLeft(state):
-          case (state, DeclareDatatype(Con(name, _), params, constrs, _)) =>
-            state.declare(constrs).define(name, params, constrs)
+        val state =
+          cons.foldLeft(this):
+            case (state, Con(name, arity)) =>
+              state.declare(name, arity, Attrs.empty)
+
+        (cons zip datas).foldLeft(state):
+          case (state, (Con(name, _), data)) =>
+            state.declare(data).define(name, data)
 
       case DefineSort(Con(name, arity), params, body, attrs) =>
         declare(name, arity, attrs).define(name, params, body)
@@ -279,9 +281,8 @@ case class State(
 
     def declareDatatype(name: Name) =
       val con = sorts(name)
-      val attrs = sortattrs(name)
-      val (params, constrs) = datatypes(name)
-      DeclareDatatype(con, params, constrs, attrs)
+      val data = datatypes(name)
+      DeclareDatatypes(List(con), List(data))
 
     def declareFun(name: Name, arity: Int) =
       val key = (name, arity)

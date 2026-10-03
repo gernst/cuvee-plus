@@ -194,11 +194,11 @@ class Parser(init: State):
             case _ =>
               Error.raise("not a datatype signature", sig)
 
-        val datatypes_ =
+        val datas_ =
           for (name, decl) <- names zip decls.toList
           yield datatype(name, decl)
 
-        DeclareDatatypes(datatypes_)
+        DeclareDatatypes(names.map(state.sorts(_)), datas_)
 
       case List(Id("declare-datatype"), Id(name), decl) =>
         val arity = decl match
@@ -206,7 +206,8 @@ class Parser(init: State):
           case _                                 => 0
 
         state = state.declare(name, arity, Attrs.empty)
-        datatype(name, decl)
+        val data_ = datatype(name, decl)
+        DeclareDatatypes(List(state.sorts(name)), List(data_))
 
       // polymorphic Alt-Ergo .psmt declarations and definitions
 
@@ -374,7 +375,7 @@ class Parser(init: State):
         Error.raise("not a command", from)
 
   // the sort `name` must have been declared already as it may occur recursively
-  def datatype(name: Name, decl: Any): DeclareDatatype =
+  def datatype(name: Name, decl: Any): Datatype =
     val (params_, constrs) =
       decl match
         case List(Id("par"), List(params*), List(constrs*)) =>
@@ -414,8 +415,9 @@ class Parser(init: State):
         val formals_ = Expr.vars("x", sels_.map(_.res))
         (Fun(name_, params_, formals_, sort_), sels_)
 
-    state = state.declare(constrs_).define(name, params_, constrs_)
-    DeclareDatatype(con, params_, constrs_, Attrs.empty)
+    val data_ = Datatype(params_, constrs_)
+    state = state.declare(data_).define(name, data_)
+    data_
 
   // goals and lemmas are not part of SMT-LIB, they are written like assertions with their own command
   def justification(cmd: String): Justify =

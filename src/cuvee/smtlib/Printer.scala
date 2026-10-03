@@ -161,17 +161,17 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareSort(Con(name, arity), attrs) =>
         apps(atom("declare-sort"), mangle(name), atom(arity.toString), lines(attrs))
 
-      case DeclareDatatype(Con(name, arity), params, constrs, attrs) =>
-        apps(atom("declare-datatype"), mangle(name), datatype(params, constrs), lines(attrs))
+      case DeclareDatatypes(List(Con(name, _)), List(data)) =>
+        apps(atom("declare-datatype"), mangle(name), datatype(data))
 
-      case DeclareDatatypes(datatypes) =>
+      case DeclareDatatypes(cons, datas) =>
         val sigs_ =
-          for DeclareDatatype(Con(name, arity), _, _, _) <- datatypes
+          for Con(name, arity) <- cons
           yield apps(mangle(name), atom(arity.toString))
 
         val decls_ =
-          for DeclareDatatype(_, params, constrs, _) <- datatypes
-          yield datatype(params, constrs)
+          for data <- datas
+          yield datatype(data)
 
         apps(atom("declare-datatypes"), list(sigs_.flatten), list(decls_.flatten))
 
@@ -220,7 +220,9 @@ object Printer extends cuvee.pipe.Printer:
       case Goal  => "goal"
       case Lemma => "lemma"
 
-  def datatype(params: List[Param], constrs: List[(Fun, List[Fun])]) =
+  def datatype(data: Datatype) =
+    val Datatype(params, constrs) = data
+
     val lines_ =
       for (constr, sels) <- constrs
       yield

@@ -98,7 +98,7 @@ class Parser(var state: State):
             val constr_ = state.funs((constr, arity))
             (constr_, sels_)
 
-        state = state.define(name, params_, constrs_)
+        state = state.define(name, core.Datatype(params_, constrs_))
 
         impl match
           case None =>
@@ -251,7 +251,7 @@ class Parser(var state: State):
   // fields of datatypes are their selectors, which are declared without the datatype as prefix
   def isField(typ: core.Type, name: String) =
     state.datatypes.get(typ.name) match
-      case Some((_, constrs)) =>
+      case Some(core.Datatype(_, constrs)) =>
         constrs.exists:
           case (_, sels) => sels.exists(_.name == Name(name, None))
 
