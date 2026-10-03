@@ -28,7 +28,7 @@ object Lang:
     Lang("SMT-LIB", cuvee.smtlib.Source, cuvee.smtlib.Printer)
 
   val dafny =
-    Lang("Dafny", cuvee.dafny.Source, cuvee.smtlib.Printer)
+    Lang("Dafny", cuvee.dafny.Source, cuvee.dafny.Printer)
 
 case class Config(
     input: Option[String],
