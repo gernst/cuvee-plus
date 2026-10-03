@@ -10,6 +10,18 @@ case class Ctx(bound: List[Var], assms: List[Expr], concls: List[Expr], su: Subs
   def bind(xs: List[Var]) =
     copy(bound = xs ++ bound)
 
+  // variables that occur in the context
+  def free: Set[Var] =
+    bound.toSet ++ assms.free ++ concls.free ++ su.bound ++ su.free
+
+  // rename those of `xs` that clash with variables of the context (compared by name),
+  // returning the fresh list of variables and the renaming to be applied to the scope of `xs`
+  def avoid(xs: List[Var]): (List[Var], Subst[Nothing, Var]) =
+    val names = free.map(_.name)
+    val captured = xs.filter(x => names contains x.name)
+    val re = Subst.from(captured, captured.fresh)
+    (re.lhs(xs), re)
+
   // equations between variables are recorded in the substitution
   def assume(phi: Expr): Ctx =
     phi match

@@ -116,14 +116,17 @@ object Simplify extends Transform:
         val args_ = args.map(simplify(state, ctx, _))
         app(state, ctx, fun, inst, typ, args_)
 
+      // bound variables are renamed apart from the context before entering the body
       case Bind(quant, bound, body) =>
-        val body_ = simplify(state, ctx.bind(bound), body)
-        bind(state, ctx, quant, bound, body_)
+        val (bound_, re) = ctx.avoid(bound)
+        val body_ = simplify(state, ctx.bind(bound_), re(body))
+        bind(state, ctx, quant, bound_, body_)
 
       case Let(bound, args, body) =>
         val args_ = args.map(simplify(state, ctx, _))
-        val body_ = simplify(state, ctx.bind(bound), body)
-        let(state, ctx, bound, args_, body_)
+        val (bound_, re) = ctx.avoid(bound)
+        val body_ = simplify(state, ctx.bind(bound_), re(body))
+        let(state, ctx, bound_, args_, body_)
 
   // simplify each of `phis` assuming the others, which hold if `pos` (conjunction)
   // and do not hold otherwise (disjunction);
