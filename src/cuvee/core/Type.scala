@@ -179,6 +179,13 @@ object Type:
         Error.report("type mismatch", expr, typ, res):
           unify(state, scope, typ, res, subst)
 
+      // all expressions have the type of the first one
+      case Distinct(exprs) =>
+        check(state, scope, exprs, exprs.map(_ => exprs.head.typ), subst)
+
+        Error.report("type mismatch", expr, Sort.bool, res):
+          unify(state, scope, Sort.bool, res, subst)
+
       case Bind(quant, bound, body) =>
         check(state, scope, body, Sort.bool, subst)
 

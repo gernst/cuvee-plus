@@ -47,6 +47,12 @@ case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends 
   def free = args.free
   // def typ = ???
 
+// pairwise distinctness of two or more expressions of the same type, n-ary as in SMT-LIB
+case class Distinct(exprs: List[Expr]) extends Expr:
+  def params = exprs.params
+  def free = exprs.free
+  def typ = Sort.bool
+
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params
   def free = body.free -- bound

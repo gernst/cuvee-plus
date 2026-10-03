@@ -17,6 +17,8 @@ object Grammar:
     // "!" -> 8
   )
 
+  // chained equations and comparisons as in Dafny, e.g. x == y == z or x < y <= z, are not supported for now:
+  // == and != associate to the left as boolean operators, and the comparisons do not associate
   val infix_ops = Map(
     "<==>" -> (Assoc.Non, 0),
     "==>" -> (Assoc.Right, 1),

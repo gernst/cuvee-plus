@@ -53,6 +53,10 @@ object Simplify extends Transform:
         val right_ = simplify(state, ctx.neutral, right)
         eq_(state, ctx, left_, right_)
 
+      case Distinct(exprs) =>
+        val exprs_ = exprs.map(simplify(state, ctx.neutral, _))
+        distinct(state, ctx, exprs_)
+
       case Ite(test, left, right) =>
         val test_ = simplify(state, ctx.neutral, test)
         val left_ = simplify(state, ctx.assume(List(test_), Nil), left)
@@ -210,6 +214,20 @@ object Simplify extends Transform:
 
       case _ =>
         Eq(left, right)
+
+  // false if two of the expressions are equal, true if all of them are pairwise different,
+  // e.g. literals, two expressions are distinct exactly if they are not equal
+  def distinct(state: State, ctx: Ctx, exprs: List[Expr]): Expr =
+    val eqs = for case a :: rest <- exprs.tails.toList; b <- rest yield eq_(state, ctx, a, b)
+
+    if eqs contains True
+    then False
+    else if eqs forall (_ == False)
+    then True
+    else
+      exprs match
+        case List(a, b) => Not(Eq(a, b))
+        case _          => Distinct(exprs)
 
   def ite(state: State, ctx: Ctx, test: Expr, left: Expr, right: Expr): Expr =
     (test, left, right) match

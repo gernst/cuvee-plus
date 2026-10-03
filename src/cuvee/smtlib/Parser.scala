@@ -530,9 +530,6 @@ class Parser(private var init: State):
       case Name("=" | "<" | "<=" | ">" | ">=", None) =>
         and(for (a, b) <- args zip args.tail yield app(name, List(a, b)))
 
-      case Name("distinct", None) =>
-        and(for case a :: rest <- args.tails.toList; b <- rest yield app(name, List(a, b)))
-
       case _ =>
         args.reduceLeft((a, b) => app(name, List(a, b)))
 
@@ -581,6 +578,11 @@ class Parser(private var init: State):
 
       case Id(name) if state.funs.contains((name, 0)) =>
         app(name, Nil)
+
+      // distinct is n-ary and not declared as a function
+      case List(Id("distinct"), args*) if args.length >= 2 =>
+        val args_ = list(args) { expr(scope, _) }
+        Distinct(args_)
 
       case List(Id(name), args*) if state.funs.contains((name, args.length)) =>
         val args_ = list(args) { expr(scope, _) }

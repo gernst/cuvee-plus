@@ -400,7 +400,9 @@ object Printer extends cuvee.pipe.Printer:
         None
 
   // chains with more than two arguments are printed as nested applications, a + b + c is (a + b) + c,
-  // which is wrong for chainable relations
+  // which is wrong for chainable relations;
+  // chained equations and comparisons, e.g. x == y == z or x < y <= z,
+  // are not supported for now (see Grammar.infix_ops) and are printed like function calls, e.g. ==(x, y, z)
   def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =
     expr match
       case App(fun, _, _, args) if Grammar.infix_ops.contains(name(fun.name)) =>
@@ -410,6 +412,15 @@ object Printer extends cuvee.pipe.Printer:
         if args.length == 2 || (args.length > 2 && chain)
         then Some((op, assoc, prec, args))
         else None
+
+      case Distinct(List(a, b)) =>
+        val (assoc, prec) = Grammar.infix_ops("!=")
+        Some(("!=", assoc, prec, List(a, b)))
+
+      // Dafny has no n-ary distinct, it is printed as the conjunction of pairwise disequalities
+      case Distinct(exprs) =>
+        val pairs = for case a :: rest <- exprs.tails.toList; b <- rest yield Distinct(List(a, b))
+        infix(And(pairs))
 
       case _ =>
         None
@@ -498,6 +509,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case App(fun, _, _, args) =>
         call(name(fun.name), args.map(doc(_)))
+
+      // two or more arguments are printed in infix notation above
+      case Distinct(_) =>
+        cuvee.Error.raise("unprintable distinct", expr)
 
       case Bind(quant, bound, body) =>
         Group(text(name(quant)) +:+ Group(formals(bound)) +:+ text("::") ++ Nest(2, line ++ doc(body)))

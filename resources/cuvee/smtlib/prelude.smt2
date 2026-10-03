@@ -11,7 +11,6 @@
 (declare-const false Bool)
 
 (declare-fun = (par (a) (a a) Bool))
-(declare-fun distinct (par (a) (a a) Bool))
 (declare-fun ite (par (a) (Bool a a) a))
 
 (declare-fun select (par (a b) ((Array a b) a) b))

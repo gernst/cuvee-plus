@@ -288,6 +288,9 @@ object Printer extends cuvee.pipe.Printer:
       case App(fun, inst, typ, args) =>
         apps(apply(fun), lines(args))
 
+      case Distinct(exprs) =>
+        apps(atom("distinct"), lines(exprs))
+
       case Bind(quant, bound, body) =>
         apps(mangle(quant), list(formals(bound)), lines(body))
 

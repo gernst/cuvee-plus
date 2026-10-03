@@ -35,7 +35,6 @@ object Fun:
   val false_ = Fun("false", Nil, Nil, bool)
 
   val eq_ = Fun("=", List(a), formals(a, a), bool)
-  val distinct = Fun("distinct", List(a), formals(a, a), bool)
   val ite = Fun("ite", List(a), formals(bool, a, a), a)
 
   val select = Fun("select", List(a, b), formals(Sort.array(a, b), a), b)

@@ -12,8 +12,7 @@
   escape `"` as `""`.
 - The Dafny printer does not always print valid Dafny: indexed names are
   printed with unicode subscripts, e.g. `x₀`; the type parameters of assertions
-  are omitted; chains of equations and comparisons with more than two arguments
-  are printed like function calls, e.g. `==(x, y, z)`.
+  are omitted.
 - The Dafny printer's `any` passes all values that are not results, commands,
   types, expressions or programs to the s-expression printer, which raises a
   `MatchError` on anything that is not an atom or a list of such:
