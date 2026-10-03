@@ -196,7 +196,7 @@ object Grammar:
     P(assume | assert)
 
   val local =
-    P("var" ~ (formal ~+ ",") ~ ";")
+    Local(P("var" ~ (formal ~+ ",") ~ (":=" ~ exprs).? ~ ";"))
 
   val assign =
     Assign(P(ids ~ ":=" ~ exprs ~ ";"))

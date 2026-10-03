@@ -399,10 +399,21 @@ class Parser(var state: State):
         val rhs_ = rhs.map(resolve(scope, _))
         state.progs.assign(lhs_, rhs_)
 
+      // locals must not shadow variables in scope, therefore their initial values
+      // can be resolved together with the block as assignments at its beginning
       case Block(locals, progs) =>
-        val locals_ = locals.flatten.map(resolve(scope, _))
+        val locals_ = locals.flatMap(_.vars).map(resolve(scope, _))
+        val shadowed = locals_.filter(x => scope.vars.contains(x.name))
+
+        Error.report("local variables shadow variables in scope", shadowed):
+          require(shadowed.isEmpty)
+
+        val inits =
+          for case Local(vars, Some(rhs)) <- locals
+          yield Assign(vars.map(_._1), rhs)
+
         val scope_ = scope ++ locals_
-        val progs_ = progs.map(resolve(scope_, _))
+        val progs_ = (inits ++ progs).map(resolve(scope_, _))
         state.progs.block(locals_, progs_)
 
       case If(test, left, right) =>

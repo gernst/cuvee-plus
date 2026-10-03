@@ -53,14 +53,18 @@ case object Return extends Prog
 case class Assume(phi: Expr) extends Prog
 case class Assert(phi: Expr) extends Prog
 case class Assign(lhs: List[String], rhs: List[Expr]) extends Prog
-case class Block(locals: List[List[(String, Type)]], progs: List[Prog]) extends Prog
+case class Block(locals: List[Local], progs: List[Prog]) extends Prog
 case class If(test: Expr, left: Prog, right: Prog) extends Prog
 case class While(test: Expr, invs: List[Expr], body: Prog) extends Prog
+
+// local variable declarations with optional initial values, var x: int, y: int := 1, 2;
+case class Local(vars: List[(String, Type)], init: Option[List[Expr]])
+object Local extends ((List[(String, Type)], Option[List[Expr]]) => Local)
 
 object Assume extends (Expr => Prog)
 object Assert extends (Expr => Prog)
 object Assign extends ((List[String], List[Expr]) => Prog)
-object Block extends ((List[List[(String, Type)]], List[Prog]) => Prog)
+object Block extends ((List[Local], List[Prog]) => Prog)
 object If extends ((Expr, Prog, Prog) => Prog)
 object While extends ((Expr, List[Expr], Prog) => Prog)
 
