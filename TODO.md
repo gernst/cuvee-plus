@@ -10,8 +10,14 @@
   first `"`, so a doubled `""` inside a string is not supported
   ([sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)). The printers already
   escape `"` as `""`.
-- The Dafny printer is not implemented: all `lines` methods in
-  [dafny/Printer.scala](src/cuvee/dafny/Printer.scala) are `???`.
+- The Dafny printer ([dafny/Printer.scala](src/cuvee/dafny/Printer.scala))
+  prints operators like function calls, e.g. `+(x, 1)` and `!(p)`, until mixfix
+  printing is done. Once it is, add a test that printing Dafny is stable when
+  the output is parsed again, as for SMT-LIB.
+- The Dafny printer does not always print valid Dafny: members are printed
+  with their qualified name, e.g. `function counter.get(this: counter)`,
+  instead of inside their type; indexed names are printed with unicode
+  subscripts, e.g. `x₀`; the type parameters of assertions are omitted.
 - The SMT-LIB printer: `lines(prog)` does not handle `Spec`, `Choice`, `If` and
   `While` (the compiler warns that the match is not exhaustive).
 - SMT-LIB parser: imperative programs are not supported, `prog` always raises
@@ -51,4 +57,12 @@
 - The exit status is always 0, even when goals fail or errors are reported
   ([Cuvee.scala](src/cuvee/Cuvee.scala)).
 - Readers for input files and the output stream of `-o` are never closed.
+
+## Warnings
+
+- The implicit conversion `String => Name` is used without enabling
+  `scala.language.implicitConversions`, which causes about 190 feature warnings
+  (main and tests); enable it once in the build with `-language:implicitConversions`.
+- Two deprecation warnings for `Long + String` in debug messages of
+  [smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala) (lines 30 and 44).
 
