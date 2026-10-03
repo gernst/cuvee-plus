@@ -50,6 +50,9 @@ object Sort:
 object Type:
   import util.Ref
 
+  // TODO: structural ordering, for now by the printed representation
+  given Ordering[Type] = Ordering.by(_.toString)
+
   def params(name: String, count: Int) =
     for index <- List.range(0, count)
     yield Param(Name(name, Some(index)))

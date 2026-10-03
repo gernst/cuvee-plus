@@ -11,6 +11,9 @@ sealed trait Expr:
   def typ: Type
 
 object Expr:
+  // TODO: structural ordering, for now by the printed representation
+  given Ordering[Expr] = Ordering.by(_.toString)
+
   def vars(name: String, types: List[Type]) =
     for (typ, index) <- types.zipWithIndex
     yield Var(Name(name, Some(index)), typ)

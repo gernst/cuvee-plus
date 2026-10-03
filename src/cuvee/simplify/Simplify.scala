@@ -121,14 +121,10 @@ object Simplify extends Transform:
         le(state, ctx, left_, right_)
 
       case Gt(left, right) =>
-        val left_ = simplify(state, ctx, left)
-        val right_ = simplify(state, ctx, right)
-        gt(state, ctx, left_, right_)
+        Lt(right, left)
 
       case Ge(left, right) =>
-        val left_ = simplify(state, ctx, left)
-        val right_ = simplify(state, ctx, right)
-        ge(state, ctx, left_, right_)
+        Le(right, left)
 
       case App(fun, inst, typ, args) =>
         val args_ = args.map(simplify(state, ctx, _))
@@ -210,12 +206,6 @@ object Simplify extends Transform:
     ???
 
   def le(state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
-    ???
-
-  def gt(state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
-    ???
-
-  def ge(state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     ???
 
   // applications of other functions, e.g. user-defined ones
