@@ -1,0 +1,9 @@
+# build output
+out/
+cuvee.jar
+
+# IDE and build server state
+.bsp/
+.metals/
+.vscode/*
+!.vscode/launch.json
