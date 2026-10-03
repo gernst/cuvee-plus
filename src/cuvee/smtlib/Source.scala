@@ -25,6 +25,6 @@ object Source extends cuvee.pipe.Source:
     try cmds(newScanner(reader).input, lifted).force
     finally reader.close()
 
-    // the parser's state now contains the prelude, make it the reset point
-    parser.init = parser.state
+    // the parser's state now contains the prelude
+    parser.resetPoint()
     (parser.state, lifted)

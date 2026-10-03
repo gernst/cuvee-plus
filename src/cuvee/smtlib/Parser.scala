@@ -78,7 +78,7 @@ object Parser:
   def annotation(from: List[Any]): Attrs =
     Attrs(annotations(from))
 
-class Parser(var init: State):
+class Parser(private var init: State):
   import Parser.annotation
 
   var state = init
@@ -105,6 +105,10 @@ class Parser(var init: State):
     state = init
     stack = List()
     Reset
+
+  // the current state becomes the one that reset returns to
+  def resetPoint() =
+    init = state
 
   def cmd(from: Any): Cmd =
     from match
