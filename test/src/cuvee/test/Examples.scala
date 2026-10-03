@@ -21,10 +21,6 @@ object Examples:
     val calls = files.map(file => new TestCallTree(Left(body(file))))
     Tests(Tree("", names*), new TestCallTree(Right(calls.toIndexedSeq)))
 
-  // nest the tests under a common name
-  def group(name: String, tests: Tests): Tests =
-    Tests(Tree("", Tree(name, tests.nameTree.children*)), new TestCallTree(Right(IndexedSeq(tests.callTree))))
-
   // runs Cuvee on `args` and returns the messages of all errors that are reported
   def errors(args: String*): List[String] =
     val (_, results) = cuvee.Cuvee.run(args*)

@@ -1,11 +1,12 @@
 package cuvee.test
+package dafny
 
 import utest._
 
 import cuvee.core._
 import cuvee.dafny.Printer
 
-object DafnyPrinter extends TestSuite:
+object Printing extends TestSuite:
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)
   val zero = Lit(BigInt(0), Sort.int)

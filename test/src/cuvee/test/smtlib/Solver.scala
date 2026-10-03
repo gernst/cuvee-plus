@@ -1,4 +1,5 @@
 package cuvee.test
+package smtlib
 
 import utest._
 

@@ -1,4 +1,5 @@
 package cuvee.test
+package dafny
 
 import utest._
 
