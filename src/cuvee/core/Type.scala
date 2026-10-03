@@ -68,15 +68,30 @@ object Type:
 
     Subst(params_, subst.vars)
 
-  def unify(scope: Scope, typ1: Type, typ2: Type, subst: Ref[Subst[Type, Expr]]): Unit =
+  def defined(state: State, typ: Type) =
+    typ match
+      case Sort(con, _) => state.sortdefs.contains(con.name)
+      case _            => false
+
+  // replace a defined sort by its definition, at the top only
+  def unfold(state: State, typ: Type): Type =
+    typ match
+      case Sort(con, args) if state.sortdefs.contains(con.name) =>
+        val (params, body) = state.sortdefs(con.name)
+        unfold(state, Subst.from(params, args)(body))
+
+      case _ =>
+        typ
+
+  def unify(state: State, scope: Scope, typ1: Type, typ2: Type, subst: Ref[Subst[Type, Expr]]): Unit =
     (typ1, typ2) match
       case _ if typ1 == typ2 =>
 
       case (a1: Param, _) if subst.inst.contains(a1) =>
-        unify(scope, subst(a1), typ2, subst)
+        unify(state, scope, subst(a1), typ2, subst)
 
       case (_, a2: Param) if subst.inst.contains(a2) =>
-        unify(scope, typ1, subst(a2), subst)
+        unify(state, scope, typ1, subst(a2), subst)
 
       case (a1: Param, _) if !rigid(scope, a1) =>
         // occurs check
@@ -86,21 +101,28 @@ object Type:
         subst := { subst + (a1 -> typ2) }
 
       case (_, a2: Param) if !rigid(scope, a2) =>
-        unify(scope, a2, typ1, subst)
+        unify(state, scope, a2, typ1, subst)
+
+      // defined sorts are unfolded before comparing constructors, since their parameters need not occur in the definition
+      case _ if defined(state, typ1) =>
+        unify(state, scope, unfold(state, typ1), typ2, subst)
+
+      case _ if defined(state, typ2) =>
+        unify(state, scope, typ1, unfold(state, typ2), subst)
 
       case (Sort(con1, args1), Sort(con2, args2)) if con1 == con2 =>
-        unify(scope, args1, args2, subst)
+        unify(state, scope, args1, args2, subst)
 
       case _ =>
         backtrack
 
-  def unify(scope: Scope, types1: List[Type], types2: List[Type], subst: Ref[Subst[Type, Expr]]): Unit =
+  def unify(state: State, scope: Scope, types1: List[Type], types2: List[Type], subst: Ref[Subst[Type, Expr]]): Unit =
     (types1, types2) match
       case (Nil, Nil) =>
 
       case (typ1 :: types1, typ2 :: types2) =>
-        unify(scope, typ1, typ2, subst)
-        unify(scope, types1, types2, subst)
+        unify(state, scope, typ1, typ2, subst)
+        unify(state, scope, types1, types2, subst)
 
       case _ =>
         backtrack
@@ -136,58 +158,61 @@ object Type:
 
   // the types of expressions are already instantiated with fresh parameters by the parsers,
   // in particular `inst` of an application holds the expected types of the arguments
-  def check(scope: Scope, expr: Expr, res: Type, subst: Ref[Subst[Type, Expr]]): Unit =
+  def check(state: State, scope: Scope, expr: Expr, res: Type, subst: Ref[Subst[Type, Expr]]): Unit =
     expr match
       case Var(name, typ) =>
         Error.report("type mismatch", expr, typ, res):
-          unify(scope, typ, res, subst)
+          unify(state, scope, typ, res, subst)
 
       case Lit(value, typ) =>
         Error.report("type mismatch", expr, typ, res):
-          unify(scope, typ, res, subst)
+          unify(state, scope, typ, res, subst)
 
       case App(fun, inst, typ, args) =>
         Error.report("wrong number of arguments", fun, args):
           require(inst.length == args.length)
 
-        check(scope, args, inst, subst)
+        check(state, scope, args, inst, subst)
 
         Error.report("type mismatch", expr, typ, res):
-          unify(scope, typ, res, subst)
+          unify(state, scope, typ, res, subst)
 
       case Bind(quant, bound, body) =>
-        check(scope, body, Sort.bool, subst)
+        check(state, scope, body, Sort.bool, subst)
 
         Error.report("type mismatch", expr, Sort.bool, res):
-          unify(scope, Sort.bool, res, subst)
+          unify(state, scope, Sort.bool, res, subst)
 
       case Let(bound, args, body) =>
-        check(scope, args, bound.types, subst)
-        check(scope, body, res, subst)
+        check(state, scope, args, bound.types, subst)
+        check(state, scope, body, res, subst)
 
-  def check(scope: Scope, exprs: List[Expr], types: List[Type], subst: Ref[Subst[Type, Expr]]): Unit =
+  def check(state: State, scope: Scope, exprs: List[Expr], types: List[Type], subst: Ref[Subst[Type, Expr]]): Unit =
     for (expr, typ) <- exprs zip types
-    do check(scope, expr, typ, subst)
+    do check(state, scope, expr, typ, subst)
 
-  def check(scope: Scope, expr: Expr, res: Type): Expr =
+  def check(state: State, scope: Scope, expr: Expr, res: Type): Expr =
     val subst = Ref[Subst[Type, Expr]](Subst(Map(), Map()))
-    check(scope, expr, res, subst)
+    check(state, scope, expr, res, subst)
+    instantiate(scope, subst, List(expr)).head
 
-    val expr_ = close(subst)(expr)
-    val missed = expr_.params -- scope.params.values.toSet
+  // apply the solution of the type constraints, all type parameters must be determined
+  def instantiate(scope: Scope, subst: Ref[Subst[Type, Expr]], exprs: List[Expr]): List[Expr] =
+    val exprs_ = close(subst)(exprs)
+    val missed = exprs_.params -- scope.params.values.toSet
 
-    Error.report("type error: uninstantiated type variables", expr, res, subst.value, missed):
+    Error.report("type error: uninstantiated type variables", exprs, subst.value, missed):
       require(missed.isEmpty)
 
-    expr_
+    exprs_
 
   // well-formedness of programs: assignments match up, break and continue occur inside loops only,
   // and all expressions are well-typed, variables in `fixed`, e.g. the inputs of a procedure, must not be assigned;
   // variables are not checked for being declared, since unknown names are rejected already when resolving them
-  def check(scope: Scope, fixed: Set[Var], prog: Prog): Prog =
-    check(scope, fixed, prog, false)
+  def check(state: State, scope: Scope, fixed: Set[Var], prog: Prog): Prog =
+    check(state, scope, fixed, prog, false)
 
-  def check(scope: Scope, fixed: Set[Var], prog: Prog, loop: Boolean): Prog =
+  def check(state: State, scope: Scope, fixed: Set[Var], prog: Prog, loop: Boolean): Prog =
     prog match
       case Break | Continue =>
         Error.report("break or continue outside of loop", prog):
@@ -199,8 +224,8 @@ object Type:
 
       case Spec(xs, pre, post) =>
         assignable(fixed, xs)
-        val pre_ = formula(scope, pre)
-        val post_ = formula(scope, post)
+        val pre_ = formula(state, scope, pre)
+        val post_ = formula(state, scope, post)
         Spec(xs, pre_, post_)
 
       case Assign(lhs, rhs) =>
@@ -211,19 +236,32 @@ object Type:
 
         val rhs_ =
           for (x, e) <- lhs zip rhs
-          yield check(scope, e, x.typ)
+          yield check(state, scope, e, x.typ)
 
         Assign(lhs, rhs_)
 
-      // the signature of the procedure is not known here, only the arguments are checked individually
-      case Call(proc, args, res) =>
+      // arguments and results are checked together against the signature of the procedure,
+      // whose type parameters are instantiated freshly
+      case Call(name, args, res) =>
         assignable(fixed, res)
 
-        val args_ =
-          for e <- args
-          yield check(scope, e, e.typ)
+        Error.report("procedure not declared", name):
+          require(state.procs.contains(name))
 
-        Call(proc, args_, res)
+        val Proc(_, params, in, out) = state.procs(name)
+
+        Error.report("wrong number of arguments or results in call", name, args, res):
+          require(in.length == args.length && out.length == res.length)
+
+        val su = Subst.fresh(params)
+        val subst = Ref[Subst[Type, Expr]](Subst(Map(), Map()))
+        check(state, scope, args, su(in.types), subst)
+
+        Error.report("type mismatch in results of call", name, res, out):
+          unify(state, scope, res.types, su(out.types), subst)
+
+        val args_ = instantiate(scope, subst, args)
+        Call(name, args_, res)
 
       case Block(locals, progs) =>
         Error.report("duplicate local variables", locals):
@@ -232,26 +270,26 @@ object Type:
         // locals shadow fixed variables of the same name
         val scope_ = scope ++ locals
         val fixed_ = fixed.filterNot(x => locals.exists(_.name == x.name))
-        val progs_ = progs.map(check(scope_, fixed_, _, loop))
+        val progs_ = progs.map(check(state, scope_, fixed_, _, loop))
         Block(locals, progs_)
 
       case Choice(progs) =>
-        val progs_ = progs.map(check(scope, fixed, _, loop))
+        val progs_ = progs.map(check(state, scope, fixed, _, loop))
         Choice(progs_)
 
       case If(test, left, right) =>
-        val test_ = formula(scope, test)
-        val left_ = check(scope, fixed, left, loop)
-        val right_ = check(scope, fixed, right, loop)
+        val test_ = formula(state, scope, test)
+        val left_ = check(state, scope, fixed, left, loop)
+        val right_ = check(state, scope, fixed, right, loop)
         If(test_, left_, right_)
 
       case While(test, body, attrs) =>
-        val test_ = formula(scope, test)
-        val body_ = check(scope, fixed, body, true)
+        val test_ = formula(state, scope, test)
+        val body_ = check(state, scope, fixed, body, true)
         While(test_, body_, attrs)
 
-  def formula(scope: Scope, phi: Expr) =
-    check(scope, phi, Sort.bool)
+  def formula(state: State, scope: Scope, phi: Expr) =
+    check(state, scope, phi, Sort.bool)
 
   // assigned variables must be distinct and must not be in `fixed`
   def assignable(fixed: Set[Var], xs: List[Var]) =

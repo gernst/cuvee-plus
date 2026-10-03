@@ -230,11 +230,11 @@ case class State(
       Let(bound, args, body)
 
     def check(scope: Scope, expr: Expr, typ: Type) =
-      Type.check(scope, expr, typ)
+      Type.check(State.this, scope, expr, typ)
 
   object progs:
     def check(scope: Scope, fixed: Set[Var], prog: Prog) =
-      Type.check(scope, fixed, prog)
+      Type.check(State.this, scope, fixed, prog)
 
     def skip = Block(Nil, Nil)
     def break = Break

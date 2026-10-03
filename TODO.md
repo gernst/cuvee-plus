@@ -21,8 +21,6 @@
   arrays.
 - Dafny `lemma` is not parsed, so lemmas and goals only come from SMT-LIB
   input (`lemma`, `goal`) and from `-verify`.
-- Defined sorts (`define-sort`, Dafny `type T = ...`) are not unfolded during
-  type checking, so a defined sort never unifies with its definition.
 - Real arithmetic: decimal literals are typed `Real`, but no `Real` functions
   are declared in the preludes.
 - Dafny containers `seq`, `set`, `multiset`, `map` are declared as sorts in the
@@ -37,8 +35,6 @@
   (see [examples/stack.dfy](examples/stack.dfy)).
 - Dafny statements: calls to methods that are not members (`x := m(a);`),
   call statements without results, and initialized locals (`var x := e;`).
-- Procedure calls are not checked against the signature of the procedure in
-  `Type.check` (only later by `Verify`, and only their number of arguments).
 - No termination checking (`decreases`) in `Verify`.
 - Add a cache of further commonly used information to `State`
   ([core/State.scala](src/cuvee/core/State.scala)).

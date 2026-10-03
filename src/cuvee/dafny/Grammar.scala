@@ -238,7 +238,7 @@ object Grammar:
     P(braces(sortcmd.*) | nil)
 
   val sortdef =
-    SortDef(P("type" ~ id ~ params ~ (right(sortimpl) | left(sortalias.?))))
+    SortDef(P("type" ~ id ~ params ~ (right(braces(sortcmd.*)) | left(sortalias.?))))
 
   val datadef =
     DataDef(P("datatype" ~ id ~ params ~ "=" ~ constrs ~ sortimpl.?))
