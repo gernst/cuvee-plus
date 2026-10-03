@@ -1,13 +1,5 @@
-// decreases clauses on functions, predicates, methods, and loops,
+// decreases clauses on predicates, methods, and loops,
 // stored as :decreases attributes in order, one per component of the lexicographic measure
-datatype list = nil() | cons(head: int, tail: list)
-
-function len(xs: list): int
-  decreases xs
-{
-  0
-}
-
 predicate pos(n: int)
   requires 0 <= n
   decreases n

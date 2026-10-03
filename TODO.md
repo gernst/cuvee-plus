@@ -41,6 +41,11 @@
   Names that are not local variables should be resolved as members of `this`
   (see [examples/stack.dfy](examples/stack.dfy)).
 - Dafny: `var` declarations must come before the statements of a block.
+- Dafny: let expressions `var x := e; body` should require explicit type
+  annotations, `var x: T := e; body`. Currently `x` gets the type of `e`
+  before type checking, so binding the result of a polymorphic function gives
+  `x` an uninstantiated type parameter, and member access on `x` fails
+  ([examples/members.dfy](examples/members.dfy) fails until this is done).
 - No termination checking in `Verify`: `decreases` clauses are parsed and
   stored as `:decreases` attributes, one per component of the lexicographic
   measure, but not checked.

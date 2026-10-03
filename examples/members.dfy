@@ -1,4 +1,4 @@
-// member access on results of polymorphic functions, whose type is only known after type checking
+// member access on variables, results of functions must be bound first
 datatype pair<a> = pair(fst: a, snd: a)
 {
   predicate same() { this.fst == this.snd }
@@ -6,4 +6,4 @@ datatype pair<a> = pair(fst: a, snd: a)
 
 function id<b>(x: b): b
 
-predicate both(p: pair<int>) { id(p).same() && id(p).fst == p.snd }
+predicate both(p: pair<int>) { var q := id(p); q.same() && q.fst == p.snd }

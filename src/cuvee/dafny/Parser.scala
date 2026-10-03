@@ -239,18 +239,6 @@ class Parser(var state: State):
 
   // members are looked up by the name of the type of `base`, which is resolved here,
   // since the type of an application may still be a fresh type parameter
-  def owner(scope: Scope, base: core.Expr): (core.Expr, String) =
-    val base_ =
-      Error.report("cannot determine the type for member access", base):
-        state.exprs.check(scope, base, base.typ)
-
-    base_.typ match
-      case core.Sort(core.Con(Name(name, None), _), _) =>
-        (base_, name)
-
-      case typ =>
-        Error.raise("member access on a value that is not of a named type", base_, typ)
-
   // fields of datatypes are their selectors, which are declared without the datatype as prefix
   def isField(typ: core.Type, name: String) =
     state.datatypes.get(typ.name) match
@@ -277,9 +265,13 @@ class Parser(var state: State):
         val base_ = state.exprs.app("store", List(base, index_, value_))
         resolve(scope, base_, rest)
 
+      // members are accessed on variables only, whose type is known without type checking
       case Member(fun, args) :: rest =>
-        val (self, prefix) = owner(scope, base)
-        val qname = prefix + "." + fun
+        val self = base match
+          case self: core.Var => self
+          case _              => Error.raise("member access on an expression that is not a variable", base, fun)
+
+        val qname = self.typ.name.name + "." + fun
 
         args match
           case _ if state.funs.contains((qname, 1 + args.length)) =>
@@ -390,8 +382,8 @@ class Parser(var state: State):
           require(unknown.isEmpty)
 
         val lhs_ = lhs.map(scope.vars(_))
-        val (base_, prefix) = owner(scope, scope.vars(base))
-        val qname = prefix + "." + fun
+        val base_ = scope.vars(base)
+        val qname = base_.typ.name.name + "." + fun
 
         args match
           case _ if state.funs.contains((qname, 1 + args.length)) =>
