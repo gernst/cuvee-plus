@@ -98,6 +98,4 @@
 ## Tests
 
 - `test.Parsing` ignores the results for Dafny examples, so Dafny parse
-  errors do not fail the test ([test/Parsing.scala](src/cuvee/test/Parsing.scala)).
-- Failing tests are only printed: there is no summary and no non-zero exit
-  status ([test/Test.scala](src/cuvee/test/Test.scala)).
+  errors do not fail the test ([test/Parsing.scala](test/src/cuvee/test/Parsing.scala)).
