@@ -6,7 +6,7 @@ import cuvee.Error
 import cuvee.sexpr.Attrs
 
 object Subst:
-  val empty = Subst(Map(), Map())
+  def empty[T <: Type, E <: Expr] = Subst[T, E](Map(), Map())
 
   @targetName("Subst.freshParams")
   def fresh(params: List[Param]): Subst[Param, Nothing] =
