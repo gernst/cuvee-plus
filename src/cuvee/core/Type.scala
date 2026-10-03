@@ -68,11 +68,6 @@ object Type:
 
     Subst(params_, subst.vars)
 
-  def defined(state: State, typ: Type) =
-    typ match
-      case Sort(con, _) => state.sortdefs.contains(con.name)
-      case _            => false
-
   // replace a defined sort by its definition, at the top only
   def unfold(state: State, typ: Type): Type =
     typ match
@@ -104,10 +99,10 @@ object Type:
         unify(state, scope, a2, typ1, subst)
 
       // defined sorts are unfolded before comparing constructors, since their parameters need not occur in the definition
-      case _ if defined(state, typ1) =>
+      case (Sort(con1, _), _) if state.sortdefs.contains(con1.name) =>
         unify(state, scope, unfold(state, typ1), typ2, subst)
 
-      case _ if defined(state, typ2) =>
+      case (_, Sort(con2, _)) if state.sortdefs.contains(con2.name) =>
         unify(state, scope, typ1, unfold(state, typ2), subst)
 
       case (Sort(con1, args1), Sort(con2, args2)) if con1 == con2 =>
