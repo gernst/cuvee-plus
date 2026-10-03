@@ -10,36 +10,6 @@
       "args": [],
       "jvmOptions": [],
       "env": {}
-    },
-    {
-      "type": "scala",
-      "request": "launch",
-      "name": "Parsing",
-      "mainClass": "cuvee.test.Parsing",
-      "buildTarget": "file:///home/ernst/Projects/cuvee-plus",
-      "args": [],
-      "jvmOptions": [],
-      "env": {}
-    },
-    {
-      "type": "scala",
-      "request": "launch",
-      "name": "Verify",
-      "mainClass": "cuvee.test.Verify",
-      "buildTarget": "file:///home/ernst/Projects/cuvee-plus",
-      "args": [],
-      "jvmOptions": [],
-      "env": {}
-    },
-    {
-      "type": "scala",
-      "request": "launch",
-      "name": "Solver",
-      "mainClass": "cuvee.test.Solver",
-      "buildTarget": "file:///home/ernst/Projects/cuvee-plus",
-      "args": [],
-      "jvmOptions": [],
-      "env": {}
     }
   ]
 }
