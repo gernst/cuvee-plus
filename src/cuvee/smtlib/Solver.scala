@@ -176,6 +176,7 @@ object Solver:
       decl match
         case DeclareSort(con, _)              => DeclareSort(con, Attrs.empty)
         case DefineSort(con, params, body, _) => DefineSort(con, params, body, Attrs.empty)
+        case DeclareDatatypes(cons, datas, _) => DeclareDatatypes(cons, datas, Attrs.empty)
         case DeclareFun(fun, _)               => DeclareFun(fun, Attrs.empty)
         case DefineFun(fun, body, _)          => DefineFun(fun, body, Attrs.empty)
         case _                                => decl

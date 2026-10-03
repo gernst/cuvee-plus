@@ -61,7 +61,7 @@ case class DefineSort(con: Con, params: List[Param], body: Type, attrs: Attrs) e
 case class Datatype(params: List[Param], constrs: List[(Fun, List[Fun])])
 
 // (mutually recursive) datatypes, where cons and datas correspond to each other
-case class DeclareDatatypes(cons: List[Con], datas: List[Datatype]) extends Decl
+case class DeclareDatatypes(cons: List[Con], datas: List[Datatype], attrs: Attrs) extends Decl
 
 case class DeclareFun(fun: Fun, attrs: Attrs) extends Decl
 case class DefineFun(fun: Fun, body: Expr, attrs: Attrs) extends Decl

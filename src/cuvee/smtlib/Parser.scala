@@ -179,7 +179,9 @@ class Parser(var init: State):
         state = state.define(name, params_, body_)
         DefineSort(con, params_, body_, attrs_)
 
-      case List(Id("declare-datatypes"), List(sigs*), List(decls*)) =>
+      case List(Id("declare-datatypes"), List(sigs*), List(decls*), attrs*) =>
+        val attrs_ = annotation(attrs.toList)
+
         Error.report("mismatching datatype declarations", sigs, decls):
           require(sigs.length == decls.length)
 
@@ -188,7 +190,7 @@ class Parser(var init: State):
           for sig <- sigs.toList
           yield sig match
             case List(Id(name), Num(arity)) =>
-              state = state.declare(name, arity.toInt, Attrs.empty)
+              state = state.declare(name, arity.toInt, attrs_)
               name
 
             case _ =>
@@ -198,16 +200,17 @@ class Parser(var init: State):
           for (name, decl) <- names zip decls.toList
           yield datatype(name, decl)
 
-        DeclareDatatypes(names.map(state.sorts(_)), datas_)
+        DeclareDatatypes(names.map(state.sorts(_)), datas_, attrs_)
 
-      case List(Id("declare-datatype"), Id(name), decl) =>
+      case List(Id("declare-datatype"), Id(name), decl, attrs*) =>
+        val attrs_ = annotation(attrs.toList)
         val arity = decl match
           case List(Id("par"), List(params*), _) => params.length
           case _                                 => 0
 
-        state = state.declare(name, arity, Attrs.empty)
+        state = state.declare(name, arity, attrs_)
         val data_ = datatype(name, decl)
-        DeclareDatatypes(List(state.sorts(name)), List(data_))
+        DeclareDatatypes(List(state.sorts(name)), List(data_), attrs_)
 
       // polymorphic Alt-Ergo .psmt declarations and definitions
 

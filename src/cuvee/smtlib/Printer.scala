@@ -161,10 +161,10 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareSort(Con(name, arity), attrs) =>
         apps(atom("declare-sort"), mangle(name), atom(arity.toString), lines(attrs))
 
-      case DeclareDatatypes(List(Con(name, _)), List(data)) =>
-        apps(atom("declare-datatype"), mangle(name), datatype(data))
+      case DeclareDatatypes(List(Con(name, _)), List(data), attrs) =>
+        apps(atom("declare-datatype"), mangle(name), datatype(data), lines(attrs))
 
-      case DeclareDatatypes(cons, datas) =>
+      case DeclareDatatypes(cons, datas, attrs) =>
         val sigs_ =
           for Con(name, arity) <- cons
           yield apps(mangle(name), atom(arity.toString))
@@ -173,7 +173,7 @@ object Printer extends cuvee.pipe.Printer:
           for data <- datas
           yield datatype(data)
 
-        apps(atom("declare-datatypes"), list(sigs_.flatten), list(decls_.flatten))
+        apps(atom("declare-datatypes"), list(sigs_.flatten), list(decls_.flatten), lines(attrs))
 
       case DefineSort(Con(name, arity), params, body, attrs) =>
         apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), lines(attrs))

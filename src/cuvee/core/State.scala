@@ -151,14 +151,14 @@ case class State(
         declare(name, arity, attrs)
 
       // all sorts are declared first since they may occur in each others' constructors
-      case DeclareDatatypes(cons, datas) =>
+      case DeclareDatatypes(cons, datas, attrs) =>
         Error.report("mismatching datatype declarations", cons, datas):
           require(cons.length == datas.length)
 
         val state =
           cons.foldLeft(this):
             case (state, Con(name, arity)) =>
-              state.declare(name, arity, Attrs.empty)
+              state.declare(name, arity, attrs)
 
         (cons zip datas).foldLeft(state):
           case (state, (Con(name, _), data)) =>
@@ -281,8 +281,9 @@ case class State(
 
     def declareDatatype(name: Name) =
       val con = sorts(name)
+      val attrs = sortattrs(name)
       val data = datatypes(name)
-      DeclareDatatypes(List(con), List(data))
+      DeclareDatatypes(List(con), List(data), attrs)
 
     def declareFun(name: Name, arity: Int) =
       val key = (name, arity)

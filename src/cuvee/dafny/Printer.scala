@@ -157,8 +157,12 @@ object Printer extends cuvee.pipe.Printer:
         text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(params_) +:+ text("=") +:+ doc(body)
 
       // mutually recursive datatypes are declared one after another
-      case DeclareDatatypes(cons, datas) =>
-        join(cons.zip(datas).map(datatype), hardline)
+      case DeclareDatatypes(cons, datas, attrs) =>
+        val datas_ =
+          for (con, data) <- cons zip datas
+          yield datatype(con, data, attrs)
+
+        join(datas_, hardline)
 
       case DeclareFun(Fun(name_, params_, Nil, res), attrs) =>
         header(text("const") ++ attributes(attrs) +:+ text(name(name_)) ++ params(params_) ++ text(":") +:+ doc(res), attrs, None)
@@ -210,7 +214,7 @@ object Printer extends cuvee.pipe.Printer:
     then empty
     else space ++ Group(text("returns (") ++ Nest(2, linebreak ++ formals(out)) ++ text(")"))
 
-  def datatype(con: Con, data: Datatype): Doc =
+  def datatype(con: Con, data: Datatype, attrs: Attrs): Doc =
     val Datatype(params_, constrs) = data
 
     val constrs_ =
@@ -224,7 +228,7 @@ object Printer extends cuvee.pipe.Printer:
         then text(name(constr.name))
         else call(name(constr.name), sels_)
 
-    val head = text("datatype") +:+ text(name(con.name)) ++ params(params_) +:+ text("=")
+    val head = text("datatype") ++ attributes(attrs) +:+ text(name(con.name)) ++ params(params_) +:+ text("=")
     Group(head ++ Nest(2, line ++ join(constrs_, line ++ text("| "))))
 
   // attributes that are printed as contract clauses of functions, methods, and loops,
