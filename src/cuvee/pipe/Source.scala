@@ -1,6 +1,8 @@
 package cuvee.pipe
 
 import java.io.Reader
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 import easyparse.Token
 
 import cuvee.Error
@@ -12,6 +14,15 @@ import cuvee.smtlib.Parser
 trait Source extends (Reader => (State, LazyList[Cmd])):
   def newScanner(reader: Reader): Scanner
   def newParser(): (State, easyparse.Parser[List[Cmd]])
+
+  // files on the classpath, such as the preludes, bundled from resources/
+  def resource(path: String): Reader =
+    val stream = getClass.getResourceAsStream(path)
+
+    Error.report("resource not found", path):
+      require(stream != null)
+
+    new InputStreamReader(stream, StandardCharsets.UTF_8)
 
   def apply(reader: Reader): (State, LazyList[Cmd]) =
     val scanner = newScanner(reader)

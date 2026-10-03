@@ -1,7 +1,6 @@
 package cuvee.smtlib
 
 import java.io.Reader
-import java.io.FileReader
 
 import cuvee.core.Cmd
 import cuvee.core.State
@@ -20,9 +19,9 @@ object Source extends cuvee.pipe.Source:
   // which is also the state that reset returns to
   def newParser(): (State, easyparse.Parser[List[Cmd]]) =
     val prelude = new Parser(State.empty)
-    val reader = new FileReader("src/cuvee/smtlib/prelude.smt2")
-    val scanner = newScanner(reader)
-    cmds(scanner.input, lift(prelude)).force
+    val reader = resource("/cuvee/smtlib/prelude.smt2")
+    try cmds(newScanner(reader).input, lift(prelude)).force
+    finally reader.close()
 
     val init = prelude.state
     val parser = new Parser(init)

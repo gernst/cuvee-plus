@@ -13,5 +13,3 @@ object test:
   mvnDeps:
   - com.lihaoyi::utest:0.9.5
   - com.lihaoyi::os-lib:0.11.8
-  # the preludes are loaded relative to the working directory, see TODO.md
-  testSandboxWorkingDir: false

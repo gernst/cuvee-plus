@@ -3,7 +3,6 @@ package cuvee.dafny
 import java.io.Reader
 
 import cuvee.core.State
-import java.io.FileReader
 
 object Source extends cuvee.pipe.Source:
   def newScanner(reader: Reader) =
@@ -18,10 +17,9 @@ object Source extends cuvee.pipe.Source:
         cmd_ <- parser.resolve(cmd)
       yield cmd_
 
-    val reader = new FileReader("src/cuvee/dafny/prelude.dfy")
-    val scanner = newScanner(reader)
-    val prelude = cmds(scanner.input, lifted)
-    prelude.force
+    val reader = resource("/cuvee/dafny/prelude.dfy")
+    try cmds(newScanner(reader).input, lifted).force
+    finally reader.close()
 
     // the parser's state now contains the declarations of the prelude
     (parser.state, lifted)

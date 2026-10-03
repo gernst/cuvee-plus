@@ -12,10 +12,6 @@
   `NotImplementedError`, `NumberFormatException` from `digits.toInt`) are not
   caught by `Pipe.run` and crash the whole run
   ([pipe/Pipe.scala](src/cuvee/pipe/Pipe.scala)).
-- The preludes are loaded from paths relative to the working directory
-  (`src/cuvee/smtlib/prelude.smt2`, `src/cuvee/dafny/prelude.dfy`), so
-  `cuvee.jar` only works when run from the repository root. They should be
-  loaded as classpath resources.
 - The scanner does not read SMT-LIB 2.6 string escapes: a string ends at the
   first `"`, so a doubled `""` inside a string is not supported
   ([sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)). The printers already
@@ -80,6 +76,5 @@
   lot to it ([util/Tool.scala](src/util/Tool.scala)).
 - The exit status is always 0, even when goals fail or errors are reported
   ([Cuvee.scala](src/cuvee/Cuvee.scala)).
-- Readers for input files and preludes, and the output stream of `-o`, are
-  never closed.
+- Readers for input files and the output stream of `-o` are never closed.
 
