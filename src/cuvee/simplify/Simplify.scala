@@ -14,7 +14,7 @@ object Simplify extends Transform:
   def simplify(state: State, cmd: Cmd): Cmd =
     cmd match
       case Assert(justify, params, phi, attrs) =>
-        Assert(justify, params, simplify(state, Ctx.empty, phi), attrs)
+        Assert(justify, params, simplify(state, Ctx.pos, phi), attrs)
 
       case DefineFun(fun, body, attrs) =>
         DefineFun(fun, simplify(state, Ctx.empty, body), attrs)
@@ -23,16 +23,23 @@ object Simplify extends Transform:
         cmd
 
   // simplify `expr` assuming that all facts in `ctx` hold
-  // by repeated rounds of simplification until a fixpoint is reached
+  // by repeated rounds of simplification until a fixpoint is reached,
+  // a formula that is known from the context is replaced by its truth value
   def simplify(state: State, ctx: Ctx, expr: Expr): Expr =
-    val expr_ = once(state, ctx, expr)
-    if expr_ == expr
-    then expr
-    else simplify(state, ctx, expr_)
+    ctx.lookup(expr) match
+      case Some(true)  => True
+      case Some(false) => False
+      case None =>
+        val expr_ = once(state, ctx, expr)
+        if expr_ == expr
+        then expr
+        else simplify(state, ctx, expr_)
 
   // a single round of simplification, dispatching on the builtin functions,
   // subterms are simplified first, where ite and the boolean connectives
-  // extend the context by the facts known at the position of each subterm
+  // extend the context by the facts known at the position of each subterm,
+  // negation and the premise of implication flip the polarity,
+  // and the arguments of other functions have none
   def once(state: State, ctx: Ctx, expr: Expr): Expr =
     expr match
       case x: Var =>
@@ -42,36 +49,36 @@ object Simplify extends Transform:
         expr
 
       case Eq(left, right) =>
-        val left_ = simplify(state, ctx, left)
-        val right_ = simplify(state, ctx, right)
+        val left_ = simplify(state, ctx.neutral, left)
+        val right_ = simplify(state, ctx.neutral, right)
         eq_(state, ctx, left_, right_)
 
       case Ite(test, left, right) =>
-        val test_ = simplify(state, ctx, test)
+        val test_ = simplify(state, ctx.neutral, test)
         val left_ = simplify(state, ctx.assume(List(test_), Nil), left)
         val right_ = simplify(state, ctx.assume(Nil, List(test_)), right)
         ite(state, ctx, test_, left_, right_)
 
       case Select(base, index) =>
-        val base_ = simplify(state, ctx, base)
-        val index_ = simplify(state, ctx, index)
+        val base_ = simplify(state, ctx.neutral, base)
+        val index_ = simplify(state, ctx.neutral, index)
         select(state, ctx, base_, index_)
 
       case Store(base, index, value) =>
-        val base_ = simplify(state, ctx, base)
-        val index_ = simplify(state, ctx, index)
-        val value_ = simplify(state, ctx, value)
+        val base_ = simplify(state, ctx.neutral, base)
+        val index_ = simplify(state, ctx.neutral, index)
+        val value_ = simplify(state, ctx.neutral, value)
         store(state, ctx, base_, index_, value_)
 
       case Not(phi) =>
-        val phi_ = simplify(state, ctx, phi)
+        val phi_ = simplify(state, ctx.flip, phi)
         not(state, ctx, phi_)
 
       case Imp(phi, psi) =>
         // like a disjunction of not phi and psi:
         // the premise is simplified assuming that the conclusion does not hold,
         // and the conclusion is simplified assuming the simplified premise
-        val phi_ = simplify(state, ctx.assume(Nil, List(psi)), phi)
+        val phi_ = simplify(state, ctx.flip.assume(Nil, List(psi)), phi)
         val psi_ = simplify(state, ctx.assume(List(phi_), Nil), psi)
         imp(state, ctx, phi_, psi_)
 
@@ -84,26 +91,26 @@ object Simplify extends Transform:
         or(state, ctx, phis_)
 
       case UMinus(_) | Plus(_) | Minus(_, _) | Times(_) =>
-        arith(state, ctx, expr)
+        arith(state, ctx.neutral, expr)
 
       case DivBy(left, right) =>
-        val left_ = arith(state, ctx, left)
-        val right_ = arith(state, ctx, right)
+        val left_ = arith(state, ctx.neutral, left)
+        val right_ = arith(state, ctx.neutral, right)
         div(state, ctx, left_, right_)
 
       case Mod(left, right) =>
-        val left_ = arith(state, ctx, left)
-        val right_ = arith(state, ctx, right)
+        val left_ = arith(state, ctx.neutral, left)
+        val right_ = arith(state, ctx.neutral, right)
         mod(state, ctx, left_, right_)
 
       case Lt(left, right) =>
-        val left_ = simplify(state, ctx, left)
-        val right_ = simplify(state, ctx, right)
+        val left_ = simplify(state, ctx.neutral, left)
+        val right_ = simplify(state, ctx.neutral, right)
         lt(state, ctx, left_, right_)
 
       case Le(left, right) =>
-        val left_ = simplify(state, ctx, left)
-        val right_ = simplify(state, ctx, right)
+        val left_ = simplify(state, ctx.neutral, left)
+        val right_ = simplify(state, ctx.neutral, right)
         le(state, ctx, left_, right_)
 
       case Gt(left, right) =>
@@ -113,7 +120,7 @@ object Simplify extends Transform:
         Le(right, left)
 
       case App(fun, inst, typ, args) =>
-        val args_ = args.map(simplify(state, ctx, _))
+        val args_ = args.map(simplify(state, ctx.neutral, _))
         app(state, ctx, fun, inst, typ, args_)
 
       // bound variables are renamed apart from the context before entering the body
@@ -123,7 +130,7 @@ object Simplify extends Transform:
         bind(state, ctx, quant, bound_, body_)
 
       case Let(bound, args, body) =>
-        val args_ = args.map(simplify(state, ctx, _))
+        val args_ = args.map(simplify(state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
         val body_ = simplify(state, ctx.bind(bound_), re(body))
         let(state, ctx, bound_, args_, body_)

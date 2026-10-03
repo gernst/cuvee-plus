@@ -5,10 +5,30 @@ import cuvee.core._
 // a sequent at the current position of the simplifier:
 // the assumptions are known to hold and the conclusions are known not to hold,
 // together with the variables bound by enclosing binders
-// and a substitution that replaces variables by others known to be equal
-case class Ctx(bound: List[Var], assms: List[Expr], concls: List[Expr], su: Subst[Nothing, Var]):
+// and a substitution that replaces variables by others known to be equal;
+// the polarity of the current position is Some(true) if it occurs positively,
+// Some(false) if it occurs negatively, and None if it occurs in both ways or not in a formula,
+// e.g. below an equation or in the argument of a function;
+// the context is inconsistent if it contains a contradiction,
+// then the current position is irrelevant for the truth value of the whole formula
+case class Ctx(
+    bound: List[Var],
+    assms: List[Expr],
+    concls: List[Expr],
+    su: Subst[Nothing, Var],
+    polarity: Option[Boolean],
+    inconsistent: Boolean
+):
   def bind(xs: List[Var]) =
     copy(bound = xs ++ bound)
+
+  // below a negation or in the premise of an implication
+  def flip =
+    copy(polarity = polarity.map(!_))
+
+  // in a position without polarity
+  def neutral =
+    copy(polarity = None)
 
   // variables that occur in the context
   def free: Set[Var] =
@@ -22,6 +42,18 @@ case class Ctx(bound: List[Var], assms: List[Expr], concls: List[Expr], su: Subs
     val re = Subst.from(captured, captured.fresh)
     (re.lhs(xs), re)
 
+  // whether `phi` is known to hold (true) or known not to hold (false);
+  // in an inconsistent context any formula may be chosen,
+  // true at positive positions and false at negative positions
+  def lookup(phi: Expr): Option[Boolean] =
+    if inconsistent && phi.typ == Sort.bool && polarity.isDefined
+    then polarity
+    else if assms contains phi
+    then Some(true)
+    else if concls contains phi
+    then Some(false)
+    else None
+
   // equations between variables are recorded in the substitution
   def assume(phi: Expr): Ctx =
     phi match
@@ -31,11 +63,25 @@ case class Ctx(bound: List[Var], assms: List[Expr], concls: List[Expr], su: Subs
       case Eq(x: Var, y: Var) if !(su.bound contains x) =>
         copy(su = su + (x -> y))
 
+      case False =>
+        copy(inconsistent = true)
+
+      case _ if concls contains phi =>
+        copy(inconsistent = true)
+
       case _ =>
         copy(assms = phi :: assms)
 
-  def deny(phi: Expr) =
-    copy(concls = phi :: concls)
+  def deny(phi: Expr): Ctx =
+    phi match
+      case True =>
+        copy(inconsistent = true)
+
+      case _ if assms contains phi =>
+        copy(inconsistent = true)
+
+      case _ =>
+        copy(concls = phi :: concls)
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
@@ -72,4 +118,7 @@ case class Ctx(bound: List[Var], assms: List[Expr], concls: List[Expr], su: Subs
         deny(phi).assume(Nil, neg)
 
 object Ctx:
-  val empty = Ctx(Nil, Nil, Nil, Subst.empty)
+  val empty = Ctx(Nil, Nil, Nil, Subst.empty, None, false)
+
+  // at the top of an asserted formula
+  val pos = empty.copy(polarity = Some(true))

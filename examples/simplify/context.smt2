@@ -7,3 +7,5 @@
 (assert (=> (= x y) (= (f x) (f y))))
 (assert (forall ((z Int)) (< x (+ x 1))))
 (define-fun g ((z Int)) Int (ite (= z 0) z 0))
+(assert (=> p (=> (not p) (< x y))))
+(assert (not (and p (not p) (< x y))))
