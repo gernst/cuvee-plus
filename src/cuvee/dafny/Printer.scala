@@ -11,6 +11,8 @@ import easyprint.Doc.{text, space, line, linebreak, hardline, empty, concat, joi
 import easyprint.Group
 import easyprint.Nest
 
+import easyparse.Assoc
+
 object Printer extends cuvee.pipe.Printer:
   // the width that documents are laid out for
   val width = 80
@@ -377,7 +379,71 @@ object Printer extends cuvee.pipe.Printer:
 
     commas(formals_)
 
-  // operators are still printed like function calls until mixfix printing is done
+  // the precedence of an expression in mixfix notation, and the associativity of its operator,
+  // atoms bind tightest, binders, let and if-then-else extend as far to the right as possible
+  val atomic = Int.MaxValue
+  val lowest = -1
+
+  // the bases of array accesses are atoms
+  val operand = (atomic - 1, None)
+
+  def prefix(expr: Expr): Option[(String, Int, Expr)] =
+    expr match
+      case App(fun, _, _, List(arg)) if Grammar.prefix_ops.contains(name(fun.name)) =>
+        val op = name(fun.name)
+        Some((op, Grammar.prefix_ops(op), arg))
+
+      case _ =>
+        None
+
+  // chains with more than two arguments are printed as nested applications, a + b + c is (a + b) + c,
+  // which is wrong for chainable relations
+  def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =
+    expr match
+      case App(fun, _, _, args) if Grammar.infix_ops.contains(name(fun.name)) =>
+        val op = name(fun.name)
+        val (assoc, prec) = Grammar.infix_ops(op)
+        val chain = assoc != Assoc.Non && op != "==" && op != "!="
+        if args.length == 2 || (args.length > 2 && chain)
+        then Some((op, assoc, prec, args))
+        else None
+
+      case _ =>
+        None
+
+  def level(expr: Expr): (Int, Option[Assoc]) =
+    expr match
+      case Lit(value: BigInt, _) if value < 0 =>
+        (Grammar.prefix_ops("-"), None)
+
+      case Lit(value: BigDecimal, _) if value < 0 =>
+        (Grammar.prefix_ops("-"), None)
+
+      case Ite(_, _, _) | Bind(_, _, _) | Let(_, _, _) =>
+        (lowest, None)
+
+      case _ =>
+        prefix(expr) match
+          case Some((_, prec, _)) =>
+            (prec, None)
+
+          case None =>
+            infix(expr) match
+              case Some((_, assoc, prec, _)) =>
+                (prec, Some(assoc))
+              case None =>
+                (atomic, None)
+
+  // an expression in a context that admits higher precedences,
+  // and the same precedence only for operators of the given associativity
+  def doc(expr: Expr, context: (Int, Option[Assoc])): Doc =
+    val (prec, assoc) = level(expr)
+    val (min, same) = context
+
+    if prec > min || (prec == min && assoc.isDefined && assoc == same)
+    then doc(expr)
+    else text("(") ++ doc(expr) ++ text(")")
+
   def doc(expr: Expr): Doc =
     expr match
       case Var(name_, _) =>
@@ -399,10 +465,30 @@ object Printer extends cuvee.pipe.Printer:
         Group(text("if") +:+ doc(test) ++ line ++ text("then") +:+ doc(left) ++ line ++ text("else") +:+ doc(right))
 
       case Select(base, index) =>
-        doc(base) ++ text("[") ++ doc(index) ++ text("]")
+        doc(base, operand) ++ text("[") ++ doc(index) ++ text("]")
 
       case Store(base, index, value) =>
-        Group(doc(base) ++ text("[") ++ Nest(2, linebreak ++ doc(index) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
+        Group(doc(base, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(index) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
+
+      case _ if prefix(expr).isDefined =>
+        val Some((op, prec, arg)) = prefix(expr): @unchecked
+        text(op) ++ doc(arg, (prec, None))
+
+      // a op b op c, which breaks before the operators if it does not fit
+      case _ if infix(expr).isDefined =>
+        val Some((op, assoc, prec, args)) = infix(expr): @unchecked
+        val first = if assoc == Assoc.Left then (prec, Some(Assoc.Left)) else (prec, None)
+        val last = if assoc == Assoc.Right then (prec, Some(Assoc.Right)) else (prec, None)
+        val inner = (prec, None)
+
+        val args_ =
+          for (arg, i) <- args.zipWithIndex
+          yield
+            if i == 0 then doc(arg, first)
+            else if i == args.length - 1 then doc(arg, last)
+            else doc(arg, inner)
+
+        Group(args_.head ++ Nest(2, concat(args_.tail.map(line ++ text(op) +:+ _))))
 
       case App(fun, _, _, Nil) =>
         text(name(fun.name))

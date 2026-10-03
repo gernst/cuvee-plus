@@ -7,9 +7,10 @@ object Grammar:
   import easyparse._
   import Brackets._
 
+  // prefix operators bind tighter than all infix operators, as in Dafny
   val prefix_ops = Map(
     "-" -> 8,
-    "!" -> 4
+    "!" -> 8
   )
 
   val postfix_ops = Map[String, Int](
@@ -139,7 +140,7 @@ object Grammar:
     R(Sort("Bool", Nil))
 
   val else_expr_or_true =
-    ("else" ~ expr) | true_
+    P(("else" ~ expr) | true_)
 
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ else_expr_or_true))
@@ -158,7 +159,7 @@ object Grammar:
     Let(P("var" ~ (formal ~+ ",") ~ ":=" ~ exprs ~ ";" ~ expr))
 
   val inner: Parser[Expr] =
-    P(parens(expr) | lit | bind | let | app)
+    P(parens(expr) | lit | bind | let | ite | app)
 
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))

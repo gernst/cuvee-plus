@@ -10,10 +10,10 @@
   first `"`, so a doubled `""` inside a string is not supported
   ([sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)). The printers already
   escape `"` as `""`.
-- The Dafny printer ([dafny/Printer.scala](src/cuvee/dafny/Printer.scala))
-  prints operators like function calls, e.g. `+(x, 1)` and `!(p)`, until mixfix
-  printing is done. Once it is, add a test that printing Dafny is stable when
-  the output is parsed again, as for SMT-LIB.
+- Add a test that printing Dafny is stable when the output is parsed again, as
+  for SMT-LIB, once the Dafny printer prints valid Dafny (see below). Chains of
+  equations and comparisons with more than two arguments are still printed like
+  function calls, e.g. `==(x, y, z)`.
 - The Dafny printer does not always print valid Dafny: members are printed
   with their qualified name, e.g. `function counter.get(this: counter)`,
   instead of inside their type; indexed names are printed with unicode
