@@ -329,12 +329,11 @@ class Parser(var state: State):
         state.exprs.all(bound_, body_)
 
       case Let(bound, args, body) =>
-        val args_ = args.map(resolve(scope, _))
-        val types_ = args_.types
-        val bound_ =
-          for (name, typ) <- bound zip types_
-          yield state.exprs.formal(name, typ)
+        Error.report("mismatching let", bound, args):
+          require(bound.length == args.length)
 
+        val args_ = args.map(resolve(scope, _))
+        val bound_ = bound.map(resolve(scope, _))
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
         state.exprs.let(bound_, args_, body_)

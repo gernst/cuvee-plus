@@ -6,4 +6,4 @@ datatype pair<a> = pair(fst: a, snd: a)
 
 function id<b>(x: b): b
 
-predicate both(p: pair<int>) { var q := id(p); q.same() && q.fst == p.snd }
+predicate both(p: pair<int>) { var q: pair<int> := id(p); q.same() && q.fst == p.snd }

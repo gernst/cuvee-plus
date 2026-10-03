@@ -36,7 +36,7 @@ case class App(fun: String, args: List[Expr], access: List[Access]) extends Expr
 case class Ite(test: Expr, left: Expr, right: Expr) extends Expr
 case class Ex(bound: List[(String, Type)], body: Expr) extends Expr
 case class All(bound: List[(String, Type)], body: Expr) extends Expr
-case class Let(vars: List[String], args: List[Expr], body: Expr) extends Expr
+case class Let(bound: List[(String, Type)], args: List[Expr], body: Expr) extends Expr
 
 object Num extends (String => Expr)
 object Str extends (String => Expr)
@@ -44,7 +44,7 @@ object App extends ((String, List[Expr], List[Access]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)
 object Ex extends ((List[(String, Type)], Expr) => Expr)
 object All extends ((List[(String, Type)], Expr) => Expr)
-object Let extends ((List[String], List[Expr], Expr) => Expr)
+object Let extends ((List[(String, Type)], List[Expr], Expr) => Expr)
 
 case object Skip extends Prog
 case object Break extends Prog

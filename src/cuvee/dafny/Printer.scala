@@ -414,5 +414,4 @@ object Printer extends cuvee.pipe.Printer:
         Group(text(name(quant)) +:+ Group(formals(bound)) +:+ text("::") ++ Nest(2, line ++ doc(body)))
 
       case Let(bound, args, body) =>
-        val names = commas(bound.map(x => text(name(x.name))))
-        Group(text("var") +:+ names +:+ text(":=") +:+ commas(args.map(doc(_))) ++ text(";") ++ line ++ doc(body))
+        Group(text("var") +:+ formals(bound) +:+ text(":=") +:+ commas(args.map(doc(_))) ++ text(";") ++ line ++ doc(body))

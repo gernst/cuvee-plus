@@ -153,8 +153,9 @@ object Grammar:
   val bind =
     P(forall | exists)
 
+  // the bound variables of let expressions have explicit types, var x: T := e; body
   val let =
-    Let(P("var" ~ ids ~ ":=" ~ exprs ~ ";" ~ expr))
+    Let(P("var" ~ (formal ~+ ",") ~ ":=" ~ exprs ~ ";" ~ expr))
 
   val inner: Parser[Expr] =
     P(parens(expr) | lit | bind | let | app)
