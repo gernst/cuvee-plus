@@ -50,6 +50,10 @@ object Sort:
 object Type:
   import util.Ref
 
+  def params(name: String, count: Int) =
+    for index <- List.range(0, count)
+    yield Param(Name(name, Some(index)))
+
   // type parameters of the enclosing declaration cannot be instantiated
   def rigid(scope: Scope, p: Param) =
     scope.params.get(p.name) == Some(p)

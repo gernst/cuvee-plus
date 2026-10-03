@@ -141,7 +141,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // the parameters of declared sorts are anonymous
       case DeclareSort(Con(name_, arity), attrs) =>
-        text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(anonymous(arity))
+        text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(Type.params("a", arity))
 
       case DefineSort(Con(name_, _), params_, body, attrs) =>
         text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(params_) +:+ text("=") +:+ doc(body)
@@ -187,9 +187,6 @@ object Printer extends cuvee.pipe.Printer:
       case Lemma => "lemma"
 
   // names A, B, C, ... for the parameters of declared sorts
-  def anonymous(arity: Int): List[Param] =
-    List.tabulate(arity)(i => Param(Name(('A' + i).toChar.toString, None)))
-
   def params(params: List[Param]): Doc =
     if params.isEmpty
     then empty
