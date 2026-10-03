@@ -42,6 +42,9 @@ object Pipe:
                 case result: Error =>
                   report.report(result, printSuccess)
 
+                  done.append(cmd)
+                  results.append(result)
+
                   if (!incremental)
                     Breaks.break()
 

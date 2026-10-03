@@ -3,7 +3,9 @@ package cuvee.core
 import cuvee.Name
 import cuvee.sexpr.Attrs
 
-case class Proc(name: Name, params: List[Param], in: List[Type], out: List[Type])
+case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var]):
+  def args = in.types
+  def res = out.types
 
 sealed trait Prog:
   def mod: Set[Var]
@@ -24,11 +26,11 @@ object Spec:
   def havoc(xs: List[Var]) =
     Spec(xs, True, True)
 
-  def assume(pre: Expr) =
-    Spec(Nil, pre, True)
+  def assume(phi: Expr) =
+    Spec(Nil, True, phi)
 
-  def assert(post: Expr) =
-    Spec(Nil, True, post)
+  def assert(phi: Expr) =
+    Spec(Nil, phi, True)
 
 case class Assign(lhs: List[Var], rhs: List[Expr]) extends Prog:
   def mod = Set(lhs*)
@@ -37,7 +39,7 @@ case class Call(proc: Name, args: List[Expr], res: List[Var]) extends Prog:
   def mod = Set(res*)
 
 case class Block(locals: List[Var], progs: List[Prog]) extends Prog:
-  def mod = progs.mod
+  def mod = progs.mod -- locals
 
 case class Choice(progs: List[Prog]) extends Prog:
   def mod = progs.mod

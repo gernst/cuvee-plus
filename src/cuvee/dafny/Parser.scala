@@ -82,14 +82,19 @@ class Parser(var state: State):
               for Sel(sel, arg) <- sels
               yield
                 val typ_ = resolve(scope_, arg)
-                state = state.declare(sel, params_, List(sort_), typ_, Attrs.empty)
+                val this_ = state.exprs.formal("this", sort_)
+                state = state.declare(sel, params_, List(this_), typ_, Attrs.empty)
 
                 val sel_ = state.funs(sel, 1)
                 sel_
 
-            val args_ = sels_.map(_.res)
-            val arity = args_.length
-            state = state.declare(constr, params_, args_, sort_, Attrs.empty)
+            // the formal parameters of constructors are named after the selectors
+            val formals_ =
+              for sel_ <- sels_
+              yield state.exprs.formal(sel_.name, sel_.res)
+
+            val arity = formals_.length
+            state = state.declare(constr, params_, formals_, sort_, Attrs.empty)
 
             val constr_ = state.funs((constr, arity))
             (constr_, sels_)
@@ -118,6 +123,11 @@ class Parser(var state: State):
       case _ =>
         resolve(Scope.empty, "", Nil, Nil, cmd)
 
+  def formula(scope: Scope, phi: Expr) =
+    val expr_ = resolve(scope, phi)
+    val typ_ = state.types.sort("Bool")
+    state.exprs.check(scope, expr_, typ_)
+
   def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr]) =
     val mod_ =
       for xs <- mod
@@ -125,18 +135,18 @@ class Parser(var state: State):
 
     val req_ =
       for phi <- req
-      yield "requires" -> Some(resolve(scope, phi))
+      yield "requires" -> Some(formula(scope, phi))
 
     val ens_ =
       for phi <- ens
-      yield "ensures" -> Some(resolve(scope, phi))
+      yield "ensures" -> Some(formula(scope, phi))
 
     Attrs(mod_ ++ req_ ++ ens_)
 
   def invariants(scope: Scope, invs: List[Expr]) =
     val invs_ =
       for phi <- invs
-      yield "invariant" -> Some(resolve(scope, phi))
+      yield "invariant" -> Some(formula(scope, phi))
 
     Attrs(invs_)
 
@@ -150,14 +160,13 @@ class Parser(var state: State):
         val scope_ = scope ++ inner_
 
         val formals_ = self ++ formals.map(resolve(scope_, _))
-        val in_ = formals_.types
 
         val typ_ = resolve(scope_, typ)
         val scope__ = scope_ ++ formals_
         val attrs_ = contract(scope__, Nil, req, ens)
 
-        val arity = in_.length
-        state = state.declare(qname, params_, in_, typ_, attrs_)
+        val arity = formals_.length
+        state = state.declare(qname, params_, formals_, typ_, attrs_)
 
         body match
           case None =>
@@ -165,8 +174,9 @@ class Parser(var state: State):
             List(cmd_)
 
           case Some(expr) =>
-            val body_ = resolve(scope__, expr)
-            state = state.define(qname, formals_, body_)
+            val expr_ = resolve(scope__, expr)
+            val body_ = state.exprs.check(scope__, expr_, typ_)
+            state = state.define(qname, arity, body_)
 
             val cmd_ = state.cmds.defineFun(qname, arity)
             List(cmd_)
@@ -179,14 +189,11 @@ class Parser(var state: State):
         val scope_ = scope ++ inner_
 
         val formals_ = self ++ formals.map(resolve(scope_, _))
-        val in_ = formals_.types
-
         val rets_ = rets.toList.flatten.map(resolve(scope_, _))
-        val out_ = rets_.types
 
         val scope__ = scope_ ++ formals_ ++ rets_
         val attrs_ = contract(scope__, mod, req, ens)
-        state = state.declare(qname, params_, in_, out_, attrs_)
+        state = state.declare(qname, params_, formals_, rets_, attrs_)
 
         body match
           case None =>
@@ -194,8 +201,9 @@ class Parser(var state: State):
             List(cmd_)
 
           case Some(prog) =>
-            val body_ = resolve(scope__, prog)
-            state = state.define(qname, formals_, rets_, body_)
+            val prog_ = resolve(scope__, prog)
+            val body_ = state.progs.check(scope__, prog_)
+            state = state.define(qname, body_)
 
             val cmd_ = state.cmds.defineProc(qname)
             List(cmd_)
@@ -315,16 +323,13 @@ class Parser(var state: State):
       case Return =>
         state.progs.return_
 
+      // statements are type checked as part of the entire method body
       case Assume(phi) =>
-        val expr_ = resolve(scope, phi)
-        val typ_ = state.types.sort("Bool")
-        val phi_ = state.exprs.check(scope, expr_, typ_)
+        val phi_ = resolve(scope, phi)
         state.progs.assume(phi_)
 
       case Assert(phi) =>
-        val expr_ = resolve(scope, phi)
-        val typ_ = state.types.sort("Bool")
-        val phi_ = state.exprs.check(scope, expr_, typ_)
+        val phi_ = resolve(scope, phi)
         state.progs.assert(phi_)
 
       // all method calls must be top-level on variables
@@ -348,7 +353,7 @@ class Parser(var state: State):
 
           case _ if state.procs.contains(qname) =>
             val args_ = args.map(resolve(scope, _))
-            state.progs.call(qname, args_, lhs_)
+            state.progs.call(qname, base_ :: args_, lhs_)
 
           case _ =>
             Error.raise("invalid access", base, qname, fun, scope, state.funs.keys, state.procs.keys)

@@ -36,6 +36,7 @@ case class Config(
     printer: Printer,
     sink: Printer => Sink,
     report: Printer => Report,
+    transforms: List[Transform] = Nil,
     debug: Set[String] = Set(),
     overridePrinter: Boolean = false
 ) {
@@ -46,6 +47,13 @@ case class Config(
 
       case Some(file) =>
         new FileReader(file)
+
+  // chain the transforms in order in front of `sink`,
+  // all stages start from the same initial state `init` provided by the source
+  def stages(init: State, sink: Sink): Sink =
+    transforms.foldRight(sink):
+      case (transform, next) =>
+        Stage.empty(init, transform, next)
 }
 
 object Config:
@@ -65,6 +73,21 @@ object Config:
     flag("-debug", "<modules>", "enable debugging in <modules> (comma-separated list)") { case (config, arg :: rest) =>
       val modules = arg.split(",")
       val config_ = config.copy(debug = config.debug ++ modules)
+      (config_, rest)
+    },
+
+    flag("-verify", "generate verification conditions for procedures") { case (config, rest) =>
+      val config_ = config.copy(transforms = config.transforms :+ cuvee.chc.Verify)
+      (config_, rest)
+    },
+
+    flag("-z3", "check goals and lemmas with z3 instead of printing the output") { case (config, rest) =>
+      val config_ = config.copy(sink = _ => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3()))
+      (config_, rest)
+    },
+
+    flag("-cvc5", "check goals and lemmas with cvc5 instead of printing the output") { case (config, rest) =>
+      val config_ = config.copy(sink = _ => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5()))
       (config_, rest)
     },
 

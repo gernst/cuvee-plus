@@ -24,6 +24,8 @@ sealed trait Decl extends Cmd
 sealed trait Query extends Cmd
 
 case object CheckSat extends Query
+// shares its name with the result Labels(labels) on purpose:
+// the query (labels) is answered by (labels ...), the object doubles as the companion of the result
 case object Labels extends Query
 case object GetModel extends Query
 
@@ -31,8 +33,8 @@ case object Exit extends Throwable with Ctrl:
   override def toString =
     "Exit"
 
-case object Push extends Ctrl
-case object Pop extends Ctrl
+case class Push(depth: Int) extends Ctrl
+case class Pop(depth: Int) extends Ctrl
 case object Reset extends Ctrl
 
 case class SetLogic(name: String) extends Decl
@@ -47,11 +49,14 @@ case class DeclareSort(con: Con, attrs: Attrs) extends Decl
 case class DefineSort(con: Con, params: List[Param], body: Type, attrs: Attrs) extends Decl
 case class DeclareDatatype(con: Con, params: List[Param], constrs: List[(Fun, List[Fun])], attrs: Attrs) extends Decl
 
+// mutually recursive datatypes
+case class DeclareDatatypes(datatypes: List[DeclareDatatype]) extends Decl
+
 case class DeclareFun(fun: Fun, attrs: Attrs) extends Decl
-case class DefineFun(fun: Fun, formals: List[Var], body: Expr, attrs: Attrs) extends Decl
+case class DefineFun(fun: Fun, body: Expr, attrs: Attrs) extends Decl
 
 case class DeclareProc(proc: Proc, attrs: Attrs) extends Decl
-case class DefineProc(proc: Proc, in: List[Var], out: List[Var], body: Prog, attrs: Attrs) extends Decl
+case class DefineProc(proc: Proc, body: Prog, attrs: Attrs) extends Decl
 
 sealed trait Justify
 case object Axiom extends Justify

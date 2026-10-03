@@ -30,4 +30,4 @@ object Syntax:
     Token.Value(name, text)
 
   def error(msg: String) =
-    Error.report(msg)
+    Error.raise(msg)

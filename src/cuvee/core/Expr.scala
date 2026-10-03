@@ -31,6 +31,14 @@ case class Lit(value: Any, typ: Type) extends Expr:
   def params = typ.params
   def free = Set()
 
+object App:
+  // instantiate the type parameters of `fun` by matching its argument types against those of `args`
+  def apply(fun: Fun, args: List[Expr]): App =
+    val inst = args.types
+    val su = Type.bind(fun.args, inst)
+    val typ = su(fun.res)
+    App(fun, inst, typ, args)
+
 case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends Expr:
   def params = inst.params ++ args.params
   def free = args.free

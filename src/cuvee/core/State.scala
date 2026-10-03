@@ -3,7 +3,6 @@ package cuvee.core
 import cuvee.Name
 import cuvee.Error
 import cuvee.sexpr.Attrs
-import org.w3c.dom.Attr
 
 case class State(
     logic: Option[String] = None,
@@ -19,8 +18,8 @@ case class State(
     procattrs: Map[Name, Attrs] = Map(),
 
     sortdefs: Map[Name, (List[Param], Type)] = Map(),
-    fundefs: Map[(Name, Int), (List[Var], Expr)] = Map(),
-    procdefs: Map[Name, (List[Var], List[Var], Prog)] = Map(),
+    fundefs: Map[(Name, Int), Expr] = Map(),
+    procdefs: Map[Name, Prog] = Map(),
 
     datatypes: Map[Name, (List[Param], List[(Fun, List[Fun])])] = Map(),
 
@@ -34,7 +33,7 @@ case class State(
 
   def setLogic(name: String) =
     Error.report("logic already set"):
-      require(logic.nonEmpty)
+      require(logic.isEmpty)
 
     copy(logic = Some(name))
 
@@ -88,18 +87,29 @@ case class State(
 
     copy(datatypes = datatypes + (name -> (params, constrs)))
 
-  def declare(name: Name, params: List[Param], args: List[Type], res: Type, attrs: Attrs) =
-    val arity = args.length
+  def declare(name: Name, params: List[Param], formals: List[Var], res: Type, attrs: Attrs) =
+    val arity = formals.length
     val key = (name, arity)
 
     Error.report("function already declared", key):
       require(!funs.contains(key))
 
-    val fun = Fun(name, params, args, res)
+    val fun = Fun(name, params, formals, res)
     copy(funs = funs + (key -> fun), funattrs = funattrs + (key -> attrs))
 
-  def define(name: Name, formals: List[Var], body: Expr) =
-    val arity = formals.length
+  // constructors and selectors of a datatype
+  def declare(constrs: List[(Fun, List[Fun])]): State =
+    val funs =
+      for
+        (constr, sels) <- constrs;
+        fun <- constr :: sels
+      yield fun
+
+    funs.foldLeft(this):
+      case (state, Fun(name, params, formals, res)) =>
+        state.declare(name, params, formals, res, Attrs.empty)
+
+  def define(name: Name, arity: Int, body: Expr) =
     val key = (name, arity)
 
     Error.report("function not declared", key):
@@ -107,22 +117,22 @@ case class State(
     Error.report("function already defined", key):
       require(!fundefs.contains(key))
 
-    copy(fundefs = fundefs + (key -> (formals, body)))
+    copy(fundefs = fundefs + (key -> body))
 
-  def declare(name: Name, params: List[Param], in: List[Type], out: List[Type], attrs: Attrs) =
+  def declare(name: Name, params: List[Param], in: List[Var], out: List[Var], attrs: Attrs) =
     Error.report("procedure already declared", name):
       require(!procs.contains(name))
 
     val proc = Proc(name, params, in, out)
     copy(procs = procs + (name -> proc), procattrs = procattrs + (name -> attrs))
 
-  def define(name: Name, in: List[Var], out: List[Var], body: Prog) =
+  def define(name: Name, body: Prog) =
     Error.report("procedure not declared", name):
       require(procs.contains(name))
     Error.report("procedure already defined", name):
       require(!procdefs.contains(name))
 
-    copy(procdefs = procdefs + (name -> (in, out, body)))
+    copy(procdefs = procdefs + (name -> body))
 
   def add(cmd: Decl): State =
     cmd match
@@ -139,25 +149,36 @@ case class State(
         declare(name, arity, attrs)
 
       case DeclareDatatype(Con(name, arity), params, constrs, attrs) =>
-        declare(name, arity, attrs).define(name, params, constrs)
+        declare(name, arity, attrs).declare(constrs).define(name, params, constrs)
+
+      // all sorts are declared first since they may occur in each others' constructors
+      case DeclareDatatypes(datatypes) =>
+        val state =
+          datatypes.foldLeft(this):
+            case (state, DeclareDatatype(Con(name, arity), _, _, attrs)) =>
+              state.declare(name, arity, attrs)
+
+        datatypes.foldLeft(state):
+          case (state, DeclareDatatype(Con(name, _), params, constrs, _)) =>
+            state.declare(constrs).define(name, params, constrs)
 
       case DefineSort(Con(name, arity), params, body, attrs) =>
         declare(name, arity, attrs).define(name, params, body)
 
-      case DeclareFun(Fun(name, params, args, res), attrs) =>
-        declare(name, params, args, res, attrs)
+      case DeclareFun(Fun(name, params, formals, res), attrs) =>
+        declare(name, params, formals, res, attrs)
 
-      case DefineFun(Fun(name, params, args, res), formals, body, attrs) =>
-        declare(name, params, args, res, attrs).define(name, formals, body)
+      case DefineFun(Fun(name, params, formals, res), body, attrs) =>
+        declare(name, params, formals, res, attrs).define(name, formals.length, body)
 
       case DeclareProc(Proc(name, params, in, out), attrs) =>
         declare(name, params, in, out, attrs)
 
-      case DefineProc(Proc(name, params, in, out), args, ret, body, attrs) =>
-        declare(name, params, in, out, attrs).define(name, args, ret, body)
+      case DefineProc(Proc(name, params, in, out), body, attrs) =>
+        declare(name, params, in, out, attrs).define(name, body)
 
-      case Assert(justify, params, phi, attrs) =>
-        ???
+      case cmd: Assert =>
+        copy(asserts = asserts :+ cmd)
 
   object types:
     def param(name: Name) =
@@ -209,6 +230,9 @@ case class State(
       Type.check(scope, expr, typ)
 
   object progs:
+    def check(scope: Scope, prog: Prog) =
+      Type.check(scope, prog)
+
     def skip = Block(Nil, Nil)
     def break = Break
     def continue = Continue
@@ -266,8 +290,8 @@ case class State(
       val key = (name, arity)
       val fun = funs(key)
       val attrs = funattrs(key)
-      val (formals, body) = fundefs(key)
-      DefineFun(fun, formals, body, attrs)
+      val body = fundefs(key)
+      DefineFun(fun, body, attrs)
 
     def declareProc(name: Name) =
       val proc = procs(name)
@@ -277,8 +301,8 @@ case class State(
     def defineProc(name: Name) =
       val proc = procs(name)
       val attrs = procattrs(name)
-      val (in, out, body) = procdefs(name)
-      DefineProc(proc, in, out, body, attrs)
+      val body = procdefs(name)
+      DefineProc(proc, body, attrs)
 
     def axiom(params: List[Param], phi: Expr, attrs: Attrs) =
       Assert(Axiom, params, phi, attrs)
@@ -290,6 +314,5 @@ case class State(
       Assert(Goal, params, phi, attrs)
 
 object State {
-  // XXX: add SMT-LIB predefined
   def empty = State(None)
 }

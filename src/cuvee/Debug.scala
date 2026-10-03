@@ -1,8 +1,12 @@
 package cuvee
 
 object Debug:
+  // modules for which debug output is enabled, see command line option -debug
+  var modules: Set[String] = Set()
+
   def info(what: String, msg: String) =
-    ???
+    if modules.contains(what)
+    then System.err.println("[" + what + "] " + msg)
 
 trait Debug:
   def apply(msg: String, info: Any*): Throwable

@@ -7,13 +7,18 @@ import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib.Parser
 
-trait Source extends (Reader => Iterable[Cmd]):
+// produces the commands together with the initial state of the parser,
+// which must be shared by all stages of the pipeline
+trait Source extends (Reader => (State, LazyList[Cmd])):
   def newScanner(reader: Reader): Scanner
-  def newParser(): easyparse.Parser[List[Cmd]]
+  def newParser(): (State, easyparse.Parser[List[Cmd]])
 
-  def apply(reader: Reader): LazyList[Cmd] =
+  def apply(reader: Reader): (State, LazyList[Cmd]) =
     val scanner = newScanner(reader)
-    cmds(scanner.input, newParser())
+    val (init, parser) = newParser()
+
+    // defer parsing such that errors in the first command are reported by the pipeline, too
+    (init, LazyList.empty #::: cmds(scanner.input, parser))
 
   def cmds(in: easyparse.Input, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
     if in.isEmpty || in.head == Token.eof

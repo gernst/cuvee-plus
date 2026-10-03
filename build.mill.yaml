@@ -6,3 +6,4 @@ scalaVersion: 3.8.1
 
 mvnDeps:
 - com.lihaoyi::sourcecode:0.4.4
+mainClass: cuvee.Cuvee

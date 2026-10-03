@@ -23,4 +23,5 @@ object Source extends cuvee.pipe.Source:
     val prelude = cmds(scanner.input, lifted)
     prelude.force
 
-    lifted
+    // the parser's state now contains the declarations of the prelude
+    (parser.state, lifted)

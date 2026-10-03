@@ -1,13 +1,29 @@
 package cuvee.smtlib
 
 import java.io.Reader
+import java.io.FileReader
 
 import cuvee.core.Cmd
+import cuvee.core.State
 import cuvee.pipe.Scanner
+import cuvee.sexpr.Grammar
 
-object Source extends cuvee.pipe.Source {
+object Source extends cuvee.pipe.Source:
+  def newScanner(reader: Reader): Scanner =
+    new cuvee.sexpr.Scanner(reader)
 
-  def newScanner(reader: Reader): Scanner = ???
+  // each s-expression is one command
+  def lift(parser: Parser) =
+    Grammar.sexpr.map(from => List(parser.cmd(from)))
 
-  def newParser(): easyparse.Parser[List[Cmd]] = ???
-}
+  // the input is parsed starting from the predefined sorts and functions,
+  // which is also the state that reset returns to
+  def newParser(): (State, easyparse.Parser[List[Cmd]]) =
+    val prelude = new Parser(State.empty)
+    val reader = new FileReader("src/cuvee/smtlib/prelude.smt2")
+    val scanner = newScanner(reader)
+    cmds(scanner.input, lift(prelude)).force
+
+    val init = prelude.state
+    val parser = new Parser(init)
+    (init, lift(parser))

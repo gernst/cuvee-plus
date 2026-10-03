@@ -1,8 +1,10 @@
 package util
 
 import scala.annotation.targetName
+import scala.util.control.NoStackTrace
 
-case object Backtrack extends Throwable
+// control flow only, a stack trace would be meaningless since there is a single instance
+case object Backtrack extends Throwable with NoStackTrace
 
 def backtrack =
   throw Backtrack

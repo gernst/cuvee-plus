@@ -15,22 +15,27 @@ type map<a,b>
 type array<a,b>
 
 // built-in functions (fixity/precedence is built-in)
-function == <a>(left: a, right: a): bool
+function == <a>(x$0: a, x$1: a): bool
 
-function ite<a>(test: bool, left: a, right: a): a
-function select<a,b>(base: array<a,b>, index: a): b
-function store<a,b>(base: array<a,b>, index: a, value: b): array<a,b>
+function ite<a>(x$0: bool, x$1: a, x$2: a): a
+function select<a,b>(x$0: array<a,b>, x$1: a): b
+function store<a,b>(x$0: array<a,b>, x$1: a, x$2: b): array<a,b>
 
-function !(arg: bool): bool
-function &&(left: bool, right: bool): bool
-function ||(left: bool, right: bool): bool
-function ==>(left: bool, right: bool): bool
-function <==>(left: bool, right: bool): bool
+function !(x$0: bool): bool
+function &&(x$0: bool, x$1: bool): bool
+function ||(x$0: bool, x$1: bool): bool
+function ==>(x$0: bool, x$1: bool): bool
+function <==>(x$0: bool, x$1: bool): bool
 
-function +(arg: int): int
-function -(arg: int): int
-function +(left: int, right: int): int
-function -(left: int, right: int): int
-function *(left: int, right: int): int
-function /(left: int, right: int): int
-function %(left: int, right: int): int
+function +(x$0: int): int
+function -(x$0: int): int
+function +(x$0: int, x$1: int): int
+function -(x$0: int, x$1: int): int
+function *(x$0: int, x$1: int): int
+function /(x$0: int, x$1: int): int
+function %(x$0: int, x$1: int): int
+
+function <(x$0: int, x$1: int): bool
+function <=(x$0: int, x$1: int): bool
+function >(x$0: int, x$1: int): bool
+function >=(x$0: int, x$1: int): bool

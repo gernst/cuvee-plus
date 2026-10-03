@@ -1,7 +1,5 @@
 package cuvee.pipe
 
-import scala.annotation.nowarn
-
 import cuvee.Error
 import cuvee.core._
 
@@ -21,18 +19,20 @@ case class Stage(
     state: State,
     next: Sink
 ) extends Sink:
-  def push =
+  def push(depth: Int) =
     Error.report("pipe not flushed"):
       require(rpending.isEmpty)
-    copy(stack = (prefix, state) :: stack)
+    copy(stack = List.fill(depth)((prefix, state)) ++ stack)
 
-  def pop =
+  def pop(depth: Int) =
     Error.report("pipe not flushed"):
       require(rpending.isEmpty)
-    Error.report("cannot pop from empty stack"):
-      require(stack.nonEmpty)
-    @nowarn val (prefix_, state_) :: stack_ = stack
-    copy(stack = stack_, prefix = prefix_, state = state_)
+    Error.report("cannot pop " + depth + " levels from stack of size " + stack.length):
+      require(depth <= stack.length)
+    if depth == 0 then this
+    else
+      val (prefix_, state_) = stack(depth - 1)
+      copy(stack = stack.drop(depth), prefix = prefix_, state = state_)
 
   def reset =
     Error.report("pipe not flushed"):
@@ -61,7 +61,7 @@ case class Stage(
         val stage_ = copy(prefix = prefix_, rpending = rpending_, next = next_)
 
         last match
-          case Push  => (result, stage_.push)
-          case Pop   => (result, stage_.pop)
-          case Reset => (result, stage_.reset)
-          case _     => (result, stage_)
+          case Push(depth) => (result, stage_.push(depth))
+          case Pop(depth)  => (result, stage_.pop(depth))
+          case Reset       => (result, stage_.reset)
+          case _           => (result, stage_)

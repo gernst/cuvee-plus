@@ -45,7 +45,8 @@ object Grammar:
     "%" -> "mod",
     "int" -> "Int",
     "bool" -> "Bool",
-    "real" -> "Real"
+    "real" -> "Real",
+    "array" -> "Array"
   )
 
   val avoid =

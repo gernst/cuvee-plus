@@ -3,6 +3,7 @@ package cuvee.core
 import scala.annotation.targetName
 
 import cuvee.Error
+import cuvee.sexpr.Attrs
 
 object Subst:
   val empty = Subst(Map(), Map())
@@ -41,8 +42,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     Subst(params, vars + pair)
 
   def avoid(bound: List[Var]) =
-    val captured = bound.filter(free)
-    val alpha = Map(captured zip captured.fresh*)
+    // compare by name since bound variables may change their type
+    val names = free.map(_.name)
+    val captured = bound.filter(x => names.contains(x.name))
+    val alpha = Map(captured zip captured.fresh.map(retype)*)
 
     val rename = Subst(params, alpha)
     val that = Subst(params, vars -- bound ++ alpha)
@@ -52,8 +55,14 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def apply(p: Param): T | Param =
     params.getOrElse(p, p)
 
+  // variables not in the domain keep their name but have the type parameters substituted
   def apply(x: Var): E | Var =
-    vars.getOrElse(x, x)
+    vars.getOrElse(x, retype(x))
+
+  def retype(x: Var): Var =
+    if params.isEmpty
+    then x
+    else Var(x.name, this(x.typ))
 
   def apply(typ: Type): Type =
     typ match
@@ -82,6 +91,56 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
         val (rename, that) = avoid(bound)
         Let(rename(bound), this(args), that(body))
 
+  // assigned variables can only be renamed
+  def lhs(x: Var): Var =
+    this(x) match
+      case x_ : Var =>
+        x_
+
+      case e =>
+        Error.raise("cannot substitute assigned variable", x, e)
+
+  @targetName("Subst.lhsVars")
+  def lhs(xs: List[Var]): List[Var] =
+    for x <- xs
+    yield lhs(x)
+
+  def apply(attrs: Attrs): Attrs =
+    val attrs_ =
+      for (kw, arg) <- attrs.attrs
+      yield arg match
+        case Some(expr: Expr) => (kw, Some(this(expr)))
+        case _                => (kw, arg)
+
+    Attrs(attrs_)
+
+  def apply(prog: Prog): Prog =
+    prog match
+      case Break | Continue | Return =>
+        prog
+
+      case Spec(xs, pre, post) =>
+        Spec(lhs(xs), this(pre), this(post))
+
+      case Assign(xs, rhs) =>
+        Assign(lhs(xs), this(rhs))
+
+      case Call(proc, args, res) =>
+        Call(proc, this(args), lhs(res))
+
+      case Block(locals, progs) =>
+        val (rename, that) = avoid(locals)
+        Block(rename.lhs(locals), that(progs))
+
+      case Choice(progs) =>
+        Choice(this(progs))
+
+      case If(test, left, right) =>
+        If(this(test), this(left), this(right))
+
+      case While(test, body, attrs) =>
+        While(this(test), this(body), this(attrs))
+
   @targetName("Subst.applyParams")
   def apply(params: List[Param]): List[Param | T] =
     for p <- params
@@ -101,3 +160,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def apply(exprs: List[Expr]): List[Expr] =
     for expr <- exprs
     yield this(expr)
+
+  @targetName("Subst.applyProgs")
+  def apply(progs: List[Prog]): List[Prog] =
+    for prog <- progs
+    yield this(prog)

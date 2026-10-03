@@ -21,7 +21,7 @@ object Printer extends cuvee.pipe.Printer:
         atom(escape(name + "$" + index))
 
   def app(args: String*): List[String] =
-    app(args.toString)
+    list(args.toList)
 
   def apps(arglists: List[String]*): List[String] =
     list(arglists.flatten.toList)
@@ -71,7 +71,7 @@ object Printer extends cuvee.pipe.Printer:
         kw(name) ++ lines(prog)
 
       case Some(arg) =>
-        sexpr(arg)
+        kw(name) ++ sexpr(arg)
 
   def lines(attrs: Attrs): List[String] =
     for
@@ -125,11 +125,11 @@ object Printer extends cuvee.pipe.Printer:
       case Exit =>
         app("exit")
 
-      case Push =>
-        app("push")
+      case Push(depth) =>
+        app("push", depth.toString)
 
-      case Pop =>
-        app("pop")
+      case Pop(depth) =>
+        app("pop", depth.toString)
 
       case Reset =>
         app("reset")
@@ -144,7 +144,7 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("set-option"), kw(name), sexpr(value))
 
       case GetInfo(name) =>
-        apps(atom("get-option"), kw(name))
+        apps(atom("get-info"), kw(name))
 
       case SetInfo(name, value) =>
         apps(atom("set-info"), kw(name), sexpr(value))
@@ -153,39 +153,35 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("declare-sort"), mangle(name), atom(arity.toString), lines(attrs))
 
       case DeclareDatatype(Con(name, arity), params, constrs, attrs) =>
-        val lines_ =
-          for (constr, sels) <- constrs
-          yield
-            val sels_ =
-              for
-                sel <- sels
-                line <- apps(mangle(sel.name), lines(sel.res))
-              yield line
+        apps(atom("declare-datatype"), mangle(name), datatype(params, constrs), lines(attrs))
 
-            apps(mangle(constr.name), sels_)
+      case DeclareDatatypes(datatypes) =>
+        val sigs_ =
+          for DeclareDatatype(Con(name, arity), _, _, _) <- datatypes
+          yield apps(mangle(name), atom(arity.toString))
 
-        val body_ =
-          if params.nonEmpty
-          then apps(atom("par"), list(lines(params)), list(lines_.flatten))
-          else list(lines_.flatten)
+        val decls_ =
+          for DeclareDatatype(_, params, constrs, _) <- datatypes
+          yield datatype(params, constrs)
 
-        apps(atom("declare-datatype"), mangle(name), body_, lines(attrs))
+        apps(atom("declare-datatypes"), list(sigs_.flatten), list(decls_.flatten))
 
       case DefineSort(Con(name, arity), params, body, attrs) =>
         apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), lines(attrs))
 
-      case DeclareFun(Fun(name, Nil, args, res), attrs) =>
-        apps(atom("declare-fun"), mangle(name), list(lines(args)), lines(res), lines(attrs))
+      // SMT-LIB declarations do not name the formal parameters
+      case DeclareFun(Fun(name, Nil, formals, res), attrs) =>
+        apps(atom("declare-fun"), mangle(name), list(lines(formals.types)), lines(res), lines(attrs))
 
-      case DeclareFun(Fun(name, params, args, res), attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(lines(args)), lines(res), lines(attrs))
+      case DeclareFun(Fun(name, params, formals, res), attrs) =>
+        val body_ = apps(atom("par"), list(lines(params)), list(lines(formals.types)), lines(res), lines(attrs))
         apps(atom("declare-fun"), mangle(name), body_)
 
-      case DefineFun(Fun(name, Nil, args, res), bound, body, attrs) =>
-        apps(atom("define-fun"), mangle(name), list(formals(bound)), lines(res), lines(body), lines(attrs))
+      case DefineFun(Fun(name, Nil, formals, res), body, attrs) =>
+        apps(atom("define-fun"), mangle(name), list(this.formals(formals)), lines(res), lines(body), lines(attrs))
 
-      case DefineFun(Fun(name, params, args, res), bound, body, attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(formals(bound)), lines(res), lines(body), lines(attrs))
+      case DefineFun(Fun(name, params, formals, res), body, attrs) =>
+        val body_ = apps(atom("par"), list(lines(params)), list(this.formals(formals)), lines(res), lines(body), lines(attrs))
         apps(atom("define-fun"), mangle(name), body_)
 
       case Assert(Axiom, Nil, phi, attrs) =>
@@ -197,19 +193,35 @@ object Printer extends cuvee.pipe.Printer:
       case Assert(justify, params, phi, attrs) =>
         ???
 
-      case DeclareProc(Proc(name, Nil, args, ret), attrs) =>
-        apps(atom("declare-proc"), mangle(name), list(lines(args)), list(lines(ret)), lines(attrs))
+      case DeclareProc(Proc(name, Nil, in, out), attrs) =>
+        apps(atom("declare-proc"), mangle(name), list(lines(in.types)), list(lines(out.types)), lines(attrs))
 
-      case DefineProc(Proc(name, Nil, args, ret), in, out, body, attrs) =>
-        apps(atom("define-proc"), mangle(name), list(lines(args)), list(lines(ret)), lines(body), lines(attrs))
+      case DefineProc(Proc(name, Nil, in, out), body, attrs) =>
+        apps(atom("define-proc"), mangle(name), list(formals(in)), list(formals(out)), lines(body), lines(attrs))
 
-      case DeclareProc(Proc(name, params, args, ret), attrs) =>
-        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), lines(attrs))
+      case DeclareProc(Proc(name, params, in, out), attrs) =>
+        val body_ = apps(atom("par"), list(lines(params)), list(lines(in.types)), list(lines(out.types)), lines(attrs))
         apps(atom("declare-proc"), mangle(name), body_)
 
-      case DefineProc(Proc(name, params, args, ret), in, out, body, attrs) =>
-        val body_ = apps(atom("par"), list(lines(args)), list(lines(ret)), lines(body), lines(attrs))
-        apps(atom("define-proc"), mangle(name), list(lines(args)), list(lines(ret)), body_)
+      case DefineProc(Proc(name, params, in, out), body, attrs) =>
+        val body_ = apps(atom("par"), list(lines(params)), list(formals(in)), list(formals(out)), lines(body), lines(attrs))
+        apps(atom("define-proc"), mangle(name), body_)
+
+  def datatype(params: List[Param], constrs: List[(Fun, List[Fun])]) =
+    val lines_ =
+      for (constr, sels) <- constrs
+      yield
+        val sels_ =
+          for
+            sel <- sels
+            line <- apps(mangle(sel.name), lines(sel.res))
+          yield line
+
+        apps(mangle(constr.name), sels_)
+
+    if params.nonEmpty
+    then apps(atom("par"), list(lines(params)), list(lines_.flatten))
+    else list(lines_.flatten)
 
   def lines(typ: Type) =
     typ match
@@ -232,6 +244,12 @@ object Printer extends cuvee.pipe.Printer:
 
       case Lit(value: String, typ) =>
         str(value)
+
+      case Lit(value: BigDecimal, typ) if value < 0 =>
+        app("-", value.abs.bigDecimal.toPlainString)
+
+      case Lit(value: BigDecimal, typ) =>
+        atom(value.bigDecimal.toPlainString)
 
       case Lit(_, _) =>
         Error.raise("unprintable literal", expr)
@@ -257,15 +275,15 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("continue"))
 
       case Return =>
-        apps(atom("break"))
+        apps(atom("return"))
 
       // case Spec(xs, pre, post) =>
 
       case Assign(lhs, rhs) =>
         apps(atom("assign"), eqs(lhs, rhs))
 
-      case Call(proc, lhs, args) =>
-        apps(atom("call"), mangle(proc), list(lines(lhs)), list(lines(args)))
+      case Call(proc, args, res) =>
+        apps(atom("call"), mangle(proc), list(lines(args)), list(lines(res)))
 
       case Block(locals, progs) =>
         apps(mangle("block"), apps(mangle("locals"), formals(locals)), lines(progs))

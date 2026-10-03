@@ -8,7 +8,7 @@ object Grammar:
   import Brackets._
 
   val id = Id(T("id"))
-  val kw = Kw(T("kd"))
+  val kw = Kw(T("kw"))
   val str = Str(T("str"))
   val num = Num(T("num"))
   val dec = Dec(T("dec"))

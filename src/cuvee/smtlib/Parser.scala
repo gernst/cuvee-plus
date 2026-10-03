@@ -48,6 +48,19 @@ class Parser(init: State):
     for arg <- from.toList
     yield f(arg)
 
+  def push(depth: Int): Cmd =
+    stack = List.fill(depth)(state) ++ stack
+    Push(depth)
+
+  def pop(depth: Int): Cmd =
+    Error.report("cannot pop " + depth + " levels from stack of size " + stack.length):
+      require(depth <= stack.length)
+
+    if depth > 0 then
+      state = stack(depth - 1)
+      stack = stack.drop(depth)
+    Pop(depth)
+
   def cmd(from: Any): Cmd =
     from match
       // control commands
@@ -77,13 +90,16 @@ class Parser(init: State):
         CheckSat
 
       case List(Id("push")) =>
-        stack = state :: stack
-        Push
+        push(1)
+
+      case List(Id("push"), Num(digits)) =>
+        push(digits.toInt)
 
       case List(Id("pop")) =>
-        state = stack.head
-        stack = stack.tail
-        Pop
+        pop(1)
+
+      case List(Id("pop"), Num(digits)) =>
+        pop(digits.toInt)
 
       case List(Id("reset")) =>
         state = init
@@ -117,8 +133,34 @@ class Parser(init: State):
         state = state.define(name, params_, body_)
         DefineSort(con, params_, body_, attrs_)
 
-      case List(Id("declare-datatypes"), _*) =>
-        Error.raise("unsupported", from)
+      case List(Id("declare-datatypes"), List(sigs*), List(decls*)) =>
+        Error.report("mismatching datatype declarations", sigs, decls):
+          require(sigs.length == decls.length)
+
+        // all sorts must be known before any of the constructors
+        val names =
+          for sig <- sigs.toList
+          yield sig match
+            case List(Id(name), Num(arity)) =>
+              state = state.declare(name, arity.toInt, Attrs.empty)
+              name
+
+            case _ =>
+              Error.raise("not a datatype signature", sig)
+
+        val datatypes_ =
+          for (name, decl) <- names zip decls.toList
+          yield datatype(name, decl)
+
+        DeclareDatatypes(datatypes_)
+
+      case List(Id("declare-datatype"), Id(name), decl) =>
+        val arity = decl match
+          case List(Id("par"), List(params*), _) => params.length
+          case _                                 => 0
+
+        state = state.declare(name, arity, Attrs.empty)
+        datatype(name, decl)
 
       // polymorphic Alt-Ergo .psmt declarations and definitions
 
@@ -126,12 +168,12 @@ class Parser(init: State):
         val params_ = list(params) { param(_) }
         val scope = Scope(params_)
 
-        val args_ = Nil
+        val formals_ = Nil
         val res_ = typ(scope, res)
-        val fun = Fun(name, params_, args_, res_)
+        val fun = Fun(name, params_, formals_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(name, params_, args_, res_, attrs_)
+        state = state.declare(name, params_, formals_, res_, attrs_)
         DeclareFun(fun, attrs_)
 
       case List(Id("declare-fun"), Id(name), List(Id("par"), List(params*), List(args*), res, attrs*)) =>
@@ -139,11 +181,12 @@ class Parser(init: State):
         val scope = Scope(params_)
 
         val args_ = list(args) { typ(scope, _) }
+        val formals_ = Expr.vars("x", args_)
         val res_ = typ(scope, res)
-        val fun = Fun(name, params_, args_, res_)
+        val fun = Fun(name, params_, formals_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(name, params_, args_, res_, attrs_)
+        state = state.declare(name, params_, formals_, res_, attrs_)
         DeclareFun(fun, attrs_)
 
       case List(Id("define-fun"), Id(name), List(Id("par"), List(params*), List(formals*), res, body, attrs*)) =>
@@ -152,15 +195,15 @@ class Parser(init: State):
 
         val formals_ = list(formals) { formal(scope, _) }
         val res_ = typ(scope, res)
-        val fun = Fun(name, params_, formals_.types, res_)
+        val fun = Fun(name, params_, formals_, res_)
 
         val expr_ = expr(scope ++ formals_, body)
         val body_ = Type.check(scope, expr_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(name, params_, formals_.types, res_, attrs_)
-        state = state.define(name, formals_, body_)
-        DefineFun(fun, formals_, body_, attrs_)
+        state = state.declare(name, params_, formals_, res_, attrs_)
+        state = state.define(name, formals_.length, body_)
+        DefineFun(fun, body_, attrs_)
 
       // monomorphic SMT-LIB declarations and definitions
 
@@ -168,12 +211,12 @@ class Parser(init: State):
         val params_ = Nil
         val scope = Scope.empty
 
-        val args_ = Nil
+        val formals_ = Nil
         val res_ = typ(scope, res)
-        val fun = Fun(name, params_, args_, res_)
+        val fun = Fun(name, params_, formals_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(name, params_, args_, res_, attrs_)
+        state = state.declare(name, params_, formals_, res_, attrs_)
         DeclareFun(fun, attrs_)
 
       case List(Id("declare-fun"), Id(name), List(args*), res, attrs*) =>
@@ -181,11 +224,12 @@ class Parser(init: State):
         val scope = Scope.empty
 
         val args_ = list(args) { typ(scope, _) }
+        val formals_ = Expr.vars("x", args_)
         val res_ = typ(scope, res)
-        val fun = Fun(name, params_, args_, res_)
+        val fun = Fun(name, params_, formals_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(name, params_, args_, res_, attrs_)
+        state = state.declare(name, params_, formals_, res_, attrs_)
         DeclareFun(fun, attrs_)
 
       case List(Id("define-fun"), Id(name), List(formals*), res, body, attrs*) =>
@@ -194,33 +238,31 @@ class Parser(init: State):
 
         val formals_ = list(formals) { formal(scope, _) }
         val res_ = typ(scope, res)
-        val fun = Fun(name, params_, formals_.types, res_)
+        val fun = Fun(name, params_, formals_, res_)
 
         val expr_ = expr(scope ++ formals_, body)
         val body_ = Type.check(scope, expr_, res_)
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(name, params_, formals_.types, res_, attrs_)
-        state = state.define(name, formals_, body_)
-        DefineFun(fun, formals_, body_, attrs_)
+        state = state.declare(name, params_, formals_, res_, attrs_)
+        state = state.define(name, formals_.length, body_)
+        DefineFun(fun, body_, attrs_)
 
       // assertions and proof goals
 
+      case List(Id("assert"), List(Id("par"), List(params*), List(Id("!"), phi, attrs*))) =>
+        val params_ = list(params) { param(_) }
+        assertion(params_, phi, attrs.toList)
+
       case List(Id("assert"), List(Id("par"), List(params*), phi, attrs*)) =>
         val params_ = list(params) { param(_) }
-        val scope = Scope(params_)
-        val expr_ = expr(scope, phi)
-        val phi_ = Type.check(scope, expr_, Sort.bool)
-        val attrs_ = annotation(attrs.toList)
-        Assert(Axiom, params_, phi_, attrs_)
+        assertion(params_, phi, attrs.toList)
+
+      case List(Id("assert"), List(Id("!"), phi, attrs*)) =>
+        assertion(Nil, phi, attrs.toList)
 
       case List(Id("assert"), phi, attrs*) =>
-        val params_ = Nil
-        val scope = Scope.empty
-        val expr_ = expr(scope, phi)
-        val phi_ = Type.check(scope, expr_, Sort.bool)
-        val attrs_ = annotation(attrs.toList)
-        Assert(Axiom, params_, phi_, attrs_)
+        assertion(Nil, phi, attrs.toList)
 
       // procedural fragment
 
@@ -228,8 +270,8 @@ class Parser(init: State):
         val params_ = Nil
         val scope = Scope.empty
 
-        val in_ = list(in) { typ(scope, _) }
-        val out_ = list(out) { typ(scope, _) }
+        val in_ = Expr.vars("in", list(in) { typ(scope, _) })
+        val out_ = Expr.vars("out", list(out) { typ(scope, _) })
         val proc = Proc(name, params_, in_, out_)
 
         val attrs_ = annotation(attrs.toList)
@@ -243,22 +285,22 @@ class Parser(init: State):
 
         val in_ = list(in) { formal(scope, _) }
         val out_ = list(out) { formal(scope, _) }
-        val proc = Proc(name, params_, in_.types, out_.types)
+        val proc = Proc(name, params_, in_, out_)
 
         val body_ = prog(scope ++ in_ ++ out_, out_.toSet, body)
 
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(name, params_, in_.types, out_.types, attrs_)
-        state = state.define(name, in_, out_, body_)
-        DefineProc(proc, in_, out_, body_, attrs_)
+        state = state.declare(name, params_, in_, out_, attrs_)
+        state = state.define(name, body_)
+        DefineProc(proc, body_, attrs_)
 
       case List(Id("declare-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), attrs*)) =>
         val params_ = list(params) { param(_) }
-        val scope = Scope.empty
+        val scope = Scope(params_)
 
-        val in_ = list(in) { typ(scope, _) }
-        val out_ = list(out) { typ(scope, _) }
+        val in_ = Expr.vars("in", list(in) { typ(scope, _) })
+        val out_ = Expr.vars("out", list(out) { typ(scope, _) })
         val proc = Proc(name, params_, in_, out_)
 
         val attrs_ = annotation(attrs.toList)
@@ -268,22 +310,73 @@ class Parser(init: State):
 
       case List(Id("define-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), body, attrs*)) =>
         val params_ = list(params) { param(_) }
-        val scope = Scope.empty
+        val scope = Scope(params_)
 
         val in_ = list(in) { formal(scope, _) }
         val out_ = list(out) { formal(scope, _) }
-        val proc = Proc(name, params_, in_.types, out_.types)
+        val proc = Proc(name, params_, in_, out_)
 
         val body_ = prog(scope ++ in_ ++ out_, out_.toSet, body)
 
         val attrs_ = annotation(attrs.toList)
 
-        state = state.declare(name, params_, in_.types, out_.types, attrs_)
-        state = state.define(name, in_, out_, body_)
-        DefineProc(proc, in_, out_, body_, attrs_)
+        state = state.declare(name, params_, in_, out_, attrs_)
+        state = state.define(name, body_)
+        DefineProc(proc, body_, attrs_)
 
       case _ =>
         Error.raise("not a command", from)
+
+  // the sort `name` must have been declared already as it may occur recursively
+  def datatype(name: Name, decl: Any): DeclareDatatype =
+    val (params_, constrs) =
+      decl match
+        case List(Id("par"), List(params*), List(constrs*)) =>
+          (list(params) { param(_) }, constrs.toList)
+
+        case List(constrs*) =>
+          (Nil, constrs.toList)
+
+        case _ =>
+          Error.raise("not a datatype declaration", decl)
+
+    val con = state.sorts(name)
+    val scope = Scope(params_)
+    val sort_ = Sort(con, params_)
+
+    Error.report("wrong number of type parameters", name, con.arity, params_):
+      require(con.arity == params_.length)
+
+    val constrs_ =
+      for constr <- constrs
+      yield
+        val (name_, sels) =
+          constr match
+            case List(Id(name_), sels*) => (name_, sels.toList)
+            case Id(name_)              => (name_, Nil)
+            case _                      => Error.raise("not a constructor", constr)
+
+        val sels_ =
+          for sel <- sels
+          yield sel match
+            case List(Id(sel), res) =>
+              Fun(sel, params_, Expr.vars("x", List(sort_)), typ(scope, res))
+
+            case _ =>
+              Error.raise("not a selector", sel)
+
+        val formals_ = Expr.vars("x", sels_.map(_.res))
+        (Fun(name_, params_, formals_, sort_), sels_)
+
+    state = state.declare(constrs_).define(name, params_, constrs_)
+    DeclareDatatype(con, params_, constrs_, Attrs.empty)
+
+  def assertion(params: List[Param], phi: Any, attrs: List[Any]) =
+    val scope = Scope(params)
+    val expr_ = expr(scope, phi)
+    val phi_ = Type.check(scope, expr_, Sort.bool)
+    val attrs_ = annotation(attrs)
+    Assert(Axiom, params, phi_, attrs_)
 
   def annotations(from: List[Any]): List[(String, Option[Any])] =
     from match
@@ -336,19 +429,40 @@ class Parser(init: State):
       case _ =>
         Error.raise("not a type", from)
 
-  def app(scope: Scope, name: Name, args: List[Any]): Expr =
+  // the types are instantiated with fresh parameters, which are resolved by Type.check
+  def app(name: Name, args: List[Expr]): Expr =
     val fun = state.funs((name, args.length))
-    val args_ = list(args) { expr(scope, _) }
 
     val su = Subst.fresh(fun.params)
     val inst_ = su(fun.args)
     val typ_ = su(fun.res)
-    App(fun, inst_, typ_, args_)
+    App(fun, inst_, typ_, args)
+
+  // applications of binary functions to more than two arguments
+  def nary(name: Name, args: List[Expr]): Expr =
+    def and(phis: List[Expr]) =
+      phis.reduceLeft((phi, psi) => app("and", List(phi, psi)))
+
+    name match
+      case Name("=>", None) =>
+        args.reduceRight((phi, psi) => app(name, List(phi, psi)))
+
+      case Name("=" | "<" | "<=" | ">" | ">=", None) =>
+        and(for (a, b) <- args zip args.tail yield app(name, List(a, b)))
+
+      case Name("distinct", None) =>
+        and(for case a :: rest <- args.tails.toList; b <- rest yield app(name, List(a, b)))
+
+      case _ =>
+        args.reduceLeft((a, b) => app(name, List(a, b)))
 
   def expr(scope: Scope, from: Any): Expr =
     from match
       case Num(digits) =>
         Lit(BigInt(digits), Sort.int)
+
+      case Dec(digits) =>
+        Lit(BigDecimal(digits), Sort.real)
 
       case Str(text) =>
         Lit(text, Sort.string)
@@ -357,10 +471,15 @@ class Parser(init: State):
         scope.vars(name)
 
       case Id(name) if state.funs.contains((name, 0)) =>
-        app(scope, name, Nil)
+        app(name, Nil)
 
       case List(Id(name), args*) if state.funs.contains((name, args.length)) =>
-        app(scope, name, args.toList)
+        val args_ = list(args) { expr(scope, _) }
+        app(name, args_)
+
+      case List(Id(name), args*) if args.length > 2 && state.funs.contains((name, 2)) =>
+        val args_ = list(args) { expr(scope, _) }
+        nary(name, args_)
 
       case List(Id("forall"), List(bound*), body) =>
         val bound_ = list(bound) { formal(scope, _) }
