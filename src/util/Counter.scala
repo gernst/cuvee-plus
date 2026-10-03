@@ -6,3 +6,6 @@ trait Counter:
   def next() =
     index = index + 1
     index
+
+  def reset() =
+    index = 0

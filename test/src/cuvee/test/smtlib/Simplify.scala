@@ -13,8 +13,6 @@ object Simplify extends TestSuite:
     Examples.tests(inputs): file =>
       val expected = file / os.up / (file.baseName + ".expected.smt2")
 
-      // fresh names of renamed bound variables are deterministic per example
-      cuvee.core.Var.index = 0
       val (actual, errors) = Examples.output("-print", "null", "-simplify", file.toString)
       errors ==> Nil
       actual ==> Examples.input("-print", "null", expected.toString)

@@ -23,6 +23,10 @@ object Cuvee extends util.Main:
     val config = Config.parse(Config.default, args)
     Debug.modules = config.debug
 
+    // fresh names are deterministic per run
+    Var.reset()
+    Param.reset()
+
     val reader = config.reader
     val (init, cmds) = config.source(reader)
 
