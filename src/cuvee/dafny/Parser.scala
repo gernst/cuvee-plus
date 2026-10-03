@@ -127,6 +127,11 @@ class Parser(var state: State):
     val typ_ = state.types.sort("Bool")
     state.exprs.check(scope, expr_, typ_)
 
+  def measure(scope: Scope, expr: Expr) =
+    val expr_ = resolve(scope, expr)
+    val typ_ = state.types.sort("Int")
+    state.exprs.check(scope, expr_, typ_)
+
   def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr], dec: List[List[Expr]]) =
     val unknown = mod.flatten.filterNot(scope.vars.contains(_))
     Error.report("unknown variables in modifies clause", scope, unknown):
@@ -153,12 +158,10 @@ class Parser(var state: State):
 
     Attrs(invs_ ++ decreases(scope, dec))
 
-  // the components of a lexicographic termination measure in order, which may be of any type
+  // the components of a lexicographic termination measure in order, each of which is an integer
   def decreases(scope: Scope, dec: List[List[Expr]]) =
     for expr <- dec.flatten
-    yield
-      val expr_ = resolve(scope, expr)
-      "decreases" -> Some(state.exprs.check(scope, expr_, expr_.typ))
+    yield "decreases" -> Some(measure(scope, expr))
 
   def resolve(scope: Scope, prefix: String, outer_ : List[core.Param], self: List[core.Var], cmd: Cmd): List[core.Cmd] =
     cmd match
