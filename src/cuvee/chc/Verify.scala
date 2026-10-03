@@ -6,10 +6,6 @@ import cuvee.pipe.Transform
 import cuvee.core._
 import cuvee.sexpr.Attrs
 
-// verification conditions are computed by weakest preconditions,
-// which need a separate postcondition for each way a program can terminate
-case class Post(normal: Expr, break: Expr, continue: Expr, ret: Expr)
-
 object Verify extends Transform:
   def apply(prefix: List[Cmd], cmds: List[Cmd], state: State): List[Cmd] =
     for
@@ -26,8 +22,7 @@ object Verify extends Transform:
 
       case DefineProc(Proc(name, params, _, _), body, _) =>
         val (in, out, pre, post) = contract(state, name)
-        val post_ = Post(post, False, False, post)
-        val phi_ = all(in ++ out, Imp(pre, wp(state, body, post_)))
+        val phi_ = All(in ++ out, Imp(pre, wp(state, body, post, False, False, post)))
         List(Assert(Goal, params, phi_, Attrs.empty))
 
       case _ =>
@@ -44,28 +39,30 @@ object Verify extends Transform:
     val post = And(attrs.values[Expr]("ensures"))
     (in, out, pre, post)
 
-  def wp(state: State, progs: List[Prog], post: Post): Expr =
-    progs.foldRight(post.normal):
+  // weakest preconditions need a separate postcondition for each way a program can terminate:
+  // normally, by break, by continue, and by return
+  def wp(state: State, progs: List[Prog], post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
+    progs.foldRight(post):
       case (prog, phi) =>
-        wp(state, prog, post.copy(normal = phi))
+        wp(state, prog, phi, break, continue, return_)
 
-  def wp(state: State, prog: Prog, post: Post): Expr =
+  def wp(state: State, prog: Prog, post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
     prog match
       case Break =>
-        post.break
+        break
 
       case Continue =>
-        post.continue
+        continue
 
       case Return =>
-        post.ret
+        return_
 
       case Spec(xs, pre, phi) =>
-        And(pre, all(xs, Imp(phi, post.normal)))
+        And(pre, All(xs, Imp(phi, post)))
 
       case Assign(xs, rhs) =>
         val su = Subst.from(xs, rhs)
-        su(post.normal)
+        su(post)
 
       case Call(name, args, res) =>
         val (in, out, pre, phi) = contract(state, name)
@@ -77,34 +74,27 @@ object Verify extends Transform:
         val res_ = res.fresh
         val su = Subst.from(in ++ out, args ++ res_)
         val rename = Subst.from(res, res_)
-        And(su(pre), all(res_, Imp(su(phi), rename(post.normal))))
+        And(su(pre), All(res_, Imp(su(phi), rename(post))))
 
       case Block(locals, progs) =>
         // locals may shadow variables in the postcondition, therefore they are renamed apart
         val locals_ = locals.fresh
         val su = Subst.from(locals, locals_)
-        all(locals_, wp(state, su(progs), post))
+        All(locals_, wp(state, su(progs), post, break, continue, return_))
 
       case Choice(progs) =>
-        And(progs.map(wp(state, _, post)))
+        And(progs.map(wp(state, _, post, break, continue, return_)))
 
       case If(test, left, right) =>
-        val left_ = Imp(test, wp(state, left, post))
-        val right_ = Imp(Not(test), wp(state, right, post))
+        val left_ = Imp(test, wp(state, left, post, break, continue, return_))
+        val right_ = Imp(Not(test), wp(state, right, post, break, continue, return_))
         And(left_, right_)
 
       case While(test, body, attrs) =>
         val inv = And(attrs.values[Expr]("invariant"))
         val xs = body.mod.toList
 
-        val post_ = Post(inv, post.normal, inv, post.ret)
-        val step = Imp(test, wp(state, body, post_))
-        val exit = Imp(Not(test), post.normal)
+        val step = Imp(test, wp(state, body, inv, post, inv, return_))
+        val exit = Imp(Not(test), post)
 
-        And(inv, all(xs, Imp(inv, And(step, exit))))
-
-  // SMT-LIB does not admit quantifiers without bound variables
-  def all(xs: List[Var], phi: Expr): Expr =
-    if xs.isEmpty
-    then phi
-    else All(xs, phi)
+        And(inv, All(xs, Imp(inv, And(step, exit))))

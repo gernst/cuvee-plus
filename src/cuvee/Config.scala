@@ -81,6 +81,11 @@ object Config:
       (config_, rest)
     },
 
+    flag("-chc", "generate constrained Horn clauses for procedures") { case (config, rest) =>
+      val config_ = config.copy(transforms = config.transforms :+ cuvee.chc.Horn)
+      (config_, rest)
+    },
+
     flag("-simplify", "simplify formulas and function definitions") { case (config, rest) =>
       val config_ = config.copy(transforms = config.transforms :+ cuvee.simplify.Simplify)
       (config_, rest)

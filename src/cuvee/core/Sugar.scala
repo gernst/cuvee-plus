@@ -44,8 +44,11 @@ extension (self: List[Expr])
   def types = self.map(_.typ)
 
 class Quant(name: Name):
-  def apply(bound: List[Var], body: Expr) =
-    Bind(name, bound, body)
+  // SMT-LIB does not admit quantifiers without bound variables
+  def apply(bound: List[Var], body: Expr): Expr =
+    if bound.isEmpty
+    then body
+    else Bind(name, bound, body)
 
   def unapply(expr: Expr) =
     expr match
