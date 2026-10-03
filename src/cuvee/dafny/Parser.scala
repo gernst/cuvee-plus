@@ -7,7 +7,6 @@ import cuvee.core.State
 import cuvee.core.Scope
 import cuvee.core.types
 import cuvee.sexpr.Attrs
-import scala.annotation.nowarn
 
 class Parser(var state: State):
   // val attrs_ = Attrs.empty
@@ -206,7 +205,8 @@ class Parser(var state: State):
 
           case Some(prog) =>
             val prog_ = resolve(scope__, prog)
-            val body_ = state.progs.check(scope__, prog_)
+            // the inputs of a method must not be modified
+            val body_ = state.progs.check(scope__, formals_.toSet, prog_)
             state = state.define(qname, body_)
 
             val cmd_ = state.cmds.defineProc(qname)
@@ -226,6 +226,20 @@ class Parser(var state: State):
 
       case _ =>
         Error.raise("unknown type", typ, scope.params.keys, state.sorts.keys)
+
+  // members are looked up by the name of the type of `base`, which is resolved here,
+  // since the type of an application may still be a fresh type parameter
+  def owner(scope: Scope, base: core.Expr): (core.Expr, String) =
+    val base_ =
+      Error.report("cannot determine the type for member access", base):
+        state.exprs.check(scope, base, base.typ)
+
+    base_.typ match
+      case core.Sort(core.Con(Name(name, None), _), _) =>
+        (base_, name)
+
+      case typ =>
+        Error.raise("member access on a value that is not of a named type", base_, typ)
 
   // fields of datatypes are their selectors, which are declared without the datatype as prefix
   def isField(typ: core.Type, name: String) =
@@ -254,25 +268,24 @@ class Parser(var state: State):
         resolve(scope, base_, rest)
 
       case Member(fun, args) :: rest =>
-        @nowarn
-        val Name(prefix, None) = base.typ.name
+        val (self, prefix) = owner(scope, base)
         val qname = prefix + "." + fun
 
         args match
           case _ if state.funs.contains((qname, 1 + args.length)) =>
             val args_ = args.map(resolve(scope, _))
-            val base_ = state.exprs.app(qname, base :: args_)
+            val base_ = state.exprs.app(qname, self :: args_)
             resolve(scope, base_, rest)
 
-          case Nil if isField(base.typ, fun) =>
-            val base_ = state.exprs.app(fun, List(base))
+          case Nil if isField(self.typ, fun) =>
+            val base_ = state.exprs.app(fun, List(self))
             resolve(scope, base_, rest)
 
           case _ if state.procs.contains(qname) =>
-            Error.raise("method call not allowed here", base, qname, args)
+            Error.raise("method call not allowed here", self, qname, args)
 
           case _ =>
-            Error.raise("invalid access", base, qname, access, scope, state.funs.keys, state.procs.keys)
+            Error.raise("invalid access", self, qname, access, scope, state.funs.keys, state.procs.keys)
 
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match
@@ -357,10 +370,7 @@ class Parser(var state: State):
           require(unknown.isEmpty)
 
         val lhs_ = lhs.map(scope.vars(_))
-        val base_ = scope.vars(base)
-
-        @nowarn
-        val Name(prefix, None) = base_.typ.name
+        val (base_, prefix) = owner(scope, scope.vars(base))
         val qname = prefix + "." + fun
 
         args match

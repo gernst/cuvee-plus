@@ -262,7 +262,7 @@ object Grammar:
     MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ block.?))
 
   val cmd: Parser[Cmd] =
-    P(sortdef | datadef | constdef | fundef | procdef | axiom)
+    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom)
 
   val script =
     P(cmd.*)

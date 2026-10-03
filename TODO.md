@@ -10,21 +10,6 @@
   first `"`, so a doubled `""` inside a string is not supported
   ([sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)). The printers already
   escape `"` as `""`.
-- `State.define` for datatypes checks `sortdefs` instead of `datatypes` for
-  "datatype already defined", reports the constructor's name instead of the
-  selector's in "selector not declared", and does not check that a selector's
-  argument is the datatype sort ([core/State.scala](src/cuvee/core/State.scala)).
-- Dafny member access needs the base type to be known while resolving
-  (`val Name(prefix, None) = base.typ.name`). It fails on results of
-  polymorphic functions whose type is still a fresh parameter, and crashes with
-  `MatchError` for indexed names ([dafny/Parser.scala](src/cuvee/dafny/Parser.scala)).
-- Assignments to input parameters of procedures are not rejected, so
-  postconditions in VCs may refer to the modified rather than the initial
-  values ([chc/Verify.scala](src/cuvee/chc/Verify.scala),
-  [core/Type.scala](src/cuvee/core/Type.scala)).
-
-## Missing features
-
 - The Dafny printer is not implemented: all `lines` methods in
   [dafny/Printer.scala](src/cuvee/dafny/Printer.scala) are `???`.
 - The SMT-LIB printer: `lines(prog)` does not handle `Spec`, `Choice`, `If` and

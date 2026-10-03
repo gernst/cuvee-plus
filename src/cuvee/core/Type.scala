@@ -181,12 +181,13 @@ object Type:
 
     expr_
 
-  // well-formedness of programs: variables are declared, assignments match up,
-  // break and continue occur inside loops only, and all expressions are well-typed
-  def check(scope: Scope, prog: Prog): Prog =
-    check(scope, prog, false)
+  // well-formedness of programs: assignments match up, break and continue occur inside loops only,
+  // and all expressions are well-typed, variables in `fixed`, e.g. the inputs of a procedure, must not be assigned;
+  // variables are not checked for being declared, since unknown names are rejected already when resolving them
+  def check(scope: Scope, fixed: Set[Var], prog: Prog): Prog =
+    check(scope, fixed, prog, false)
 
-  def check(scope: Scope, prog: Prog, loop: Boolean): Prog =
+  def check(scope: Scope, fixed: Set[Var], prog: Prog, loop: Boolean): Prog =
     prog match
       case Break | Continue =>
         Error.report("break or continue outside of loop", prog):
@@ -197,30 +198,30 @@ object Type:
         prog
 
       case Spec(xs, pre, post) =>
-        declared(scope, xs)
+        assignable(fixed, xs)
         val pre_ = formula(scope, pre)
         val post_ = formula(scope, post)
         Spec(xs, pre_, post_)
 
       case Assign(lhs, rhs) =>
-        declared(scope, lhs)
+        assignable(fixed, lhs)
 
         Error.report("mismatching assignment", lhs, rhs):
           require(lhs.length == rhs.length)
 
         val rhs_ =
           for (x, e) <- lhs zip rhs
-          yield wellformed(scope, e, x.typ)
+          yield check(scope, e, x.typ)
 
         Assign(lhs, rhs_)
 
       // the signature of the procedure is not known here, only the arguments are checked individually
       case Call(proc, args, res) =>
-        declared(scope, res)
+        assignable(fixed, res)
 
         val args_ =
           for e <- args
-          yield wellformed(scope, e, e.typ)
+          yield check(scope, e, e.typ)
 
         Call(proc, args_, res)
 
@@ -228,39 +229,36 @@ object Type:
         Error.report("duplicate local variables", locals):
           require(locals.distinctBy(_.name) == locals)
 
+        // locals shadow fixed variables of the same name
         val scope_ = scope ++ locals
-        val progs_ = progs.map(check(scope_, _, loop))
+        val fixed_ = fixed.filterNot(x => locals.exists(_.name == x.name))
+        val progs_ = progs.map(check(scope_, fixed_, _, loop))
         Block(locals, progs_)
 
       case Choice(progs) =>
-        val progs_ = progs.map(check(scope, _, loop))
+        val progs_ = progs.map(check(scope, fixed, _, loop))
         Choice(progs_)
 
       case If(test, left, right) =>
         val test_ = formula(scope, test)
-        val left_ = check(scope, left, loop)
-        val right_ = check(scope, right, loop)
+        val left_ = check(scope, fixed, left, loop)
+        val right_ = check(scope, fixed, right, loop)
         If(test_, left_, right_)
 
       case While(test, body, attrs) =>
         val test_ = formula(scope, test)
-        val body_ = check(scope, body, true)
+        val body_ = check(scope, fixed, body, true)
         While(test_, body_, attrs)
 
-  // expressions in programs may only refer to declared variables
-  def wellformed(scope: Scope, expr: Expr, res: Type): Expr =
-    declared(scope, expr.free)
-    check(scope, expr, res)
-
   def formula(scope: Scope, phi: Expr) =
-    wellformed(scope, phi, Sort.bool)
+    check(scope, phi, Sort.bool)
 
-  // variables must refer to declarations in scope and assigned variables must be distinct
-  def declared(scope: Scope, xs: Iterable[Var]) =
-    val unknown = xs.filterNot(x => scope.vars.get(x.name) == Some(x))
-
-    Error.report("undeclared variables", unknown, scope.vars.keys):
-      require(unknown.isEmpty)
-
+  // assigned variables must be distinct and must not be in `fixed`
+  def assignable(fixed: Set[Var], xs: List[Var]) =
     Error.report("duplicate variables", xs):
-      require(xs.toList.distinct.length == xs.size)
+      require(xs.distinct == xs)
+
+    val wrong = xs.filter(fixed)
+
+    Error.report("assignment to variables that must not be modified", wrong):
+      require(wrong.isEmpty)

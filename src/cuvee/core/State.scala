@@ -62,7 +62,7 @@ case class State(
     Error.report("sort not declared", name):
       require(sorts.contains(name))
     Error.report("datatype already defined", name):
-      require(!sortdefs.contains(name))
+      require(!sortdefs.contains(name) && !datatypes.contains(name))
 
     val con = sorts(name)
     val sort = Sort(con, params)
@@ -77,13 +77,13 @@ case class State(
       Error.report("wrong selector types", constr, sels):
         require(constr.args == sels.map(_.res))
 
-      for (sel, typ) <- (sels zip constr.args)
+      for sel <- sels
       do
-        Error.report("selector not declared", constr.name):
+        Error.report("selector not declared", sel.name):
           val key = (sel.name, sel.args.length)
           require(funs.contains(key))
-        Error.report("selector can only have one argument", sel):
-          require(sel.args.length == 1)
+        Error.report("selector must take the datatype as its only argument", sel, sort):
+          require(sel.args == List(sort))
 
     copy(datatypes = datatypes + (name -> (params, constrs)))
 
@@ -233,8 +233,8 @@ case class State(
       Type.check(scope, expr, typ)
 
   object progs:
-    def check(scope: Scope, prog: Prog) =
-      Type.check(scope, prog)
+    def check(scope: Scope, fixed: Set[Var], prog: Prog) =
+      Type.check(scope, fixed, prog)
 
     def skip = Block(Nil, Nil)
     def break = Break
