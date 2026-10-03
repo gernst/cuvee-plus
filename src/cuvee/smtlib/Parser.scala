@@ -586,6 +586,23 @@ class Parser(init: State):
         val body_ = expr(scope_, body)
         Ex(bound_, body_)
 
+      // bindings are parallel, all bound expressions are parsed in the outer scope,
+      // the bound variables have the types of their expressions, which are resolved by Type.check
+      case List(Id("let"), List(bindings*), body) =>
+        val (names, args) =
+          list(bindings):
+            case List(Id(name), arg) => (name, arg)
+            case binding             => Error.raise("not a let binding", binding)
+          .unzip
+
+        val args_ = list(args) { expr(scope, _) }
+        val bound_ =
+          for (name, arg_) <- names zip args_
+          yield Var(name, arg_.typ)
+
+        val body_ = expr(scope ++ bound_, body)
+        Let(bound_, args_, body_)
+
       case _ =>
         Error.raise("not an expression", from)
 

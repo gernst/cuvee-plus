@@ -16,7 +16,7 @@
   `While` (the compiler warns that the match is not exhaustive).
 - SMT-LIB parser: imperative programs are not supported, `prog` always raises
   an error ([smtlib/Parser.scala](src/cuvee/smtlib/Parser.scala)).
-- SMT-LIB parser: no `let`, `!` inside terms, `match`, `get-value`,
+- SMT-LIB parser: no `!` inside terms, `match`, `get-value`,
   `check-sat-assuming`, `echo`, and `(as ...)` only for constants and constant
   arrays.
 - Dafny `lemma` is not parsed, so lemmas and goals only come from SMT-LIB
