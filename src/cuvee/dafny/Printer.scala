@@ -48,18 +48,8 @@ object Printer extends cuvee.pipe.Printer:
       case typ: Type        => doc(typ)
       case expr: Expr       => doc(expr)
       case prog: Prog       => doc(prog)
-      case value: Atom      => Doc.lines(cuvee.sexpr.Printer.lines(value))
-      case values: List[?] if sexpr(values) => Doc.lines(cuvee.sexpr.Printer.lines(values))
-      case values: List[?]  => commas(values.map(any))
-      case value: String    => str(value)
-      case value            => text(value.toString)
-
-  // attributes that have not been resolved are s-expressions
-  def sexpr(value: Any): Boolean =
-    value match
-      case _: Atom         => true
-      case values: List[?] => values.forall(sexpr)
-      case _               => false
+      // attributes that have not been resolved are s-expressions
+      case value            => Doc.lines(cuvee.sexpr.Printer.lines(value))
 
   def lines(res: Result): List[String] =
     render(doc(res), width)
@@ -106,7 +96,7 @@ object Printer extends cuvee.pipe.Printer:
         join(decls.map(doc(_)), hardline)
 
       case error: cuvee.Error =>
-        val info = error.info.toList.map(any)
+        val info = error.info.toList.map(value => str(value.toString))
         Group(text("error") +:+ str(error.msg) ++ Nest(2, concat(info.map(line ++ _))))
 
   // commands that are not part of Dafny are statements ending with a semicolon,

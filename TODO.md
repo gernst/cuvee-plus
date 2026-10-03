@@ -18,6 +18,12 @@
   with their qualified name, e.g. `function counter.get(this: counter)`,
   instead of inside their type; indexed names are printed with unicode
   subscripts, e.g. `x₀`; the type parameters of assertions are omitted.
+- The Dafny printer's `any` passes all values that are not results, commands,
+  types, expressions or programs to the s-expression printer, which raises a
+  `MatchError` on anything that is not an atom or a list of such:
+  plain strings, lists of resolved expressions, e.g. the variables of a
+  `modifies` attribute, and other values such as numbers
+  ([dafny/Printer.scala](src/cuvee/dafny/Printer.scala)).
 - The SMT-LIB printer: `lines(prog)` does not handle `Spec`, `Choice`, `If` and
   `While` (the compiler warns that the match is not exhaustive).
 - SMT-LIB parser: imperative programs are not supported, `prog` always raises
