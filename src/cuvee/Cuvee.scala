@@ -31,7 +31,7 @@ object Cuvee extends util.Main:
     val stages = config.stages(init, sink)
 
     // stages flush pending declarations only on control commands and queries,
-    // therefore the end of the input implies exit
-    val cmds_ = cmds #::: LazyList(Exit)
+    // therefore the end of the input is marked by Done
+    val cmds_ = cmds #::: LazyList(Done)
 
     Pipe.run(cmds_, stages, report, incremental = false)

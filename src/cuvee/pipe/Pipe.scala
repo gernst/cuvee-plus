@@ -29,10 +29,12 @@ object Pipe:
               try
                 val (result, next) = sink.query(cmd)
                 sink = next
-                report.report(result, printSuccess)
 
-                done.append(cmd)
-                results.append(result)
+                // Done is not part of the input, only errors from flushing are reported
+                if cmd != Done then
+                  report.report(result, printSuccess)
+                  done.append(cmd)
+                  results.append(result)
 
                 if cmd == Exit
                 then Breaks.break()
@@ -42,7 +44,8 @@ object Pipe:
                 case result: Error =>
                   report.report(result, printSuccess)
 
-                  done.append(cmd)
+                  if cmd != Done then
+                    done.append(cmd)
                   results.append(result)
 
                   if (!incremental)

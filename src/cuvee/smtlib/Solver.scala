@@ -147,6 +147,10 @@ object Solver:
           solver.destroy()
           (ack, this)
 
+        case Done =>
+          solver.destroy()
+          (Ack.Success, this)
+
         // the state is updated only once the solver has accepted the declaration,
         // attributes are kept in the state but not sent to the solver
         case decl: Decl =>

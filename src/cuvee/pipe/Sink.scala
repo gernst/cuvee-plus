@@ -40,8 +40,9 @@ object Sink:
 
   class Print(stream: PrintStream, printer: Printer) extends Sink:
     def query(cmd: Cmd) =
-      for (line <- printer.lines(cmd))
-        stream.println(line)
+      if cmd != Done then
+        for (line <- printer.lines(cmd))
+          stream.println(line)
 
       cmd match
         case _: Decl =>

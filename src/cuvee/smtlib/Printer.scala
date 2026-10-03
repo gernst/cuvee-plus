@@ -134,6 +134,9 @@ object Printer extends cuvee.pipe.Printer:
       case Exit =>
         app("exit")
 
+      case Done =>
+        Error.raise("internal command cannot be printed", cmd)
+
       case Push(depth) =>
         app("push", depth.toString)
 

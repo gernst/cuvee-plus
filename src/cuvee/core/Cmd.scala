@@ -43,6 +43,10 @@ case object Exit extends Throwable with Ctrl:
   override def toString =
     "Exit"
 
+// internal, marks the end of the input: stages flush their pending declarations,
+// but nothing is printed or sent to a solver
+case object Done extends Ctrl
+
 case class Push(depth: Int) extends Ctrl
 case class Pop(depth: Int) extends Ctrl
 case object Reset extends Ctrl
