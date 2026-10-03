@@ -4,26 +4,6 @@
     {
       "type": "scala",
       "request": "launch",
-      "name": "run",
-      "mainClass": "cuvee.run",
-      "buildTarget": "file:///home/ernst/Projects/cuvee-plus",
-      "args": [],
-      "jvmOptions": [],
-      "env": {}
-    },
-    {
-      "type": "scala",
-      "request": "launch",
-      "name": "foo",
-      "mainClass": "cuvee.foo",
-      "buildTarget": "file:///home/ernst/Projects/cuvee-plus",
-      "args": [],
-      "jvmOptions": [],
-      "env": {}
-    },
-    {
-      "type": "scala",
-      "request": "launch",
       "name": "Cuvee",
       "mainClass": "cuvee.Cuvee",
       "buildTarget": "file:///home/ernst/Projects/cuvee-plus",
