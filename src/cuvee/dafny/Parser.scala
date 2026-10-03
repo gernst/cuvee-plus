@@ -287,6 +287,14 @@ class Parser(var state: State):
       case Str(value) =>
         state.exprs.str(value)
 
+      case Tuple(List(arg)) =>
+        resolve(scope, arg)
+
+      // the constructors of tuples are declared in the prelude
+      case Tuple(args) =>
+        val args_ = args.map(resolve(scope, _))
+        state.exprs.app("tuple" + args.length, args_)
+
       case App("!=", args, access) =>
         val expr_ = App("not", List(App("=", args, Nil)), access)
         resolve(scope, expr_)

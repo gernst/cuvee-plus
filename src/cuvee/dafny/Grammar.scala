@@ -160,8 +160,12 @@ object Grammar:
   val let =
     Let(P("var" ~ (formal ~+ ",") ~ ":=" ~ exprs ~ ";" ~ expr))
 
+  // parenthesized expressions, which are tuples if there is more than one
+  val tuple =
+    Tuple(P(parens(exprs)))
+
   val inner: Parser[Expr] =
-    P(parens(expr) | lit | bind | let | ite | app)
+    P(tuple | lit | bind | let | ite | app)
 
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))
