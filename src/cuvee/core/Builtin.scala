@@ -99,3 +99,24 @@ object Gt:
 object Ge:
   object int extends Sugar.binary(Fun.int.ge)
   object real extends Sugar.binary(Fun.real.ge)
+
+// the functions on sequences, as in Fun.seq, e.g. Seqs.len(s) and Seqs.nth(s, i)
+object Seqs:
+  // the empty sequence needs the type of its elements
+  object empty:
+    def apply(elem: Type): Expr =
+      App(Fun.seq.empty, Nil, Sort.seq(elem), Nil)
+
+    def unapply(expr: Expr): Boolean =
+      expr match
+        case App(fun, _, _, Nil) => fun == Fun.seq.empty
+        case _                   => false
+
+  object unit extends Sugar.unary(Fun.seq.unit)
+  object concat extends Sugar.associative(Fun.seq.concat, Assoc.Left)
+  object len extends Sugar.unary(Fun.seq.len)
+  object nth extends Sugar.binary(Fun.seq.nth)
+  object update extends Sugar.ternary(Fun.seq.update)
+  object extract extends Sugar.ternary(Fun.seq.extract)
+  object contains extends Sugar.binary(Fun.seq.contains)
+  object prefixof extends Sugar.binary(Fun.seq.prefixof)

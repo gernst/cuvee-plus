@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- add syntactic sugar to `Builtin.scala` for the sequence types
 - parse and print function `butlast` specially, using left floor and right floor outfix syntax, add `Butlast` and `Counter` syntactic sugars, and use them in `TEQ.scala`
 - In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
 - Implement `n + 1 < m <==> n <= m` as a simplification step, similarly when `<=` becomes `<` by dropping `+ 1`. Use `Succ` for this, and only do that for integers, check if I got this correct first
@@ -96,8 +95,6 @@ inferred from the call graph. Open:
   `Subst`, `Overload.apply`, `Old.elim`, `Flat`;
   a generic map over the immediate subexpressions and subprograms would
   remove most of them.
-- The operations on sequences (`Fun.seq`) have no sugar objects, unlike
-  arithmetic (`Plus.int` etc.).
 - `core.Assoc` duplicates `easyparse.Assoc`.
 - `send` and `receive` are recognized by their names (`Send`, `Recv`), and the
   history by the name of the global variable `history` (`Par.history`).

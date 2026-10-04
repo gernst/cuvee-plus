@@ -25,7 +25,9 @@
 - names of core functions follow SMT-LIB where it has them (`select`,
   `seq.nth`, `div`), the frontends translate their own names onto these
 - sugar objects for built-in functions are named after the operation, with one
-  object per type where needed, `Plus.int`, `Lt.real`, `Zero.int`
+  object per type where needed, `Plus.int`, `Lt.real`, `Zero.int`, except
+  for the functions on sequences, which are grouped as in `Fun.seq`,
+  `Seqs.len`, `Seqs.nth`, since e.g. `Unit` would shadow a Scala name
 - avoid shadowing Scala names in `core`, e.g. no case class `Map` (hence
   `Maps`)
 

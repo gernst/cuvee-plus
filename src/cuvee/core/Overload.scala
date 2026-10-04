@@ -26,7 +26,7 @@ object Overload:
   // the update s[i := v] of a sequence replaces the subsequence of length 1 at index i
   val seqStore =
     val sig = Fun("store", List(a), Fun.formals(Sort.seq(a), Sort.int, a), Sort.seq(a))
-    Impl(sig, { case (state, List(s, i, v)) => app(state, Fun.seq.update, List(s, i, App(Fun.seq.unit, List(v)))) })
+    Impl(sig, { case (state, List(s, i, v)) => app(state, Fun.seq.update, List(s, i, Seqs.unit(v))) })
 
   // the application of an implementation, whose signature is matched against the argument types,
   // where defined sorts are unfolded

@@ -454,14 +454,14 @@ object Printer extends cuvee.pipe.Printer:
         None
 
       // concatenation and prefix of sequences are overloaded in Dafny, x in s is containment of [x]
-      case App(fun, _, _, args @ List(_, _)) if fun == Fun.seq.concat =>
-        infix(App(fun.copy(name = Name("+", None)), Nil, Sort.bool, args))
+      case Seqs.concat(left, right) =>
+        infix(App(Fun.seq.concat.copy(name = Name("+", None)), Nil, Sort.bool, List(left, right)))
 
-      case App(fun, _, _, args @ List(_, _)) if fun == Fun.seq.prefixof =>
-        infix(App(fun.copy(name = Name("<=", None)), Nil, Sort.bool, args))
+      case Seqs.prefixof(left, right) =>
+        infix(App(Fun.seq.prefixof.copy(name = Name("<=", None)), Nil, Sort.bool, List(left, right)))
 
-      case App(fun, _, _, List(seq, App(unit, _, _, List(elem)))) if fun == Fun.seq.contains && unit == Fun.seq.unit =>
-        infix(App(fun.copy(name = Name("in", None)), Nil, Sort.bool, List(elem, seq)))
+      case Seqs.contains(seq, Seqs.unit(elem)) =>
+        infix(App(Fun.seq.contains.copy(name = Name("in", None)), Nil, Sort.bool, List(elem, seq)))
 
       case App(fun, _, _, args) if Grammar.infix_ops.contains(name(fun.name)) =>
         val op = name(fun.name)
@@ -489,13 +489,13 @@ object Printer extends cuvee.pipe.Printer:
   // the elements of sequence literals, [], [a], and concatenations of these
   def elems(expr: Expr): Option[List[Expr]] =
     expr match
-      case App(fun, _, _, Nil) if fun == Fun.seq.empty =>
+      case Seqs.empty() =>
         Some(Nil)
 
-      case App(fun, _, _, List(elem)) if fun == Fun.seq.unit =>
+      case Seqs.unit(elem) =>
         Some(List(elem))
 
-      case App(fun, _, _, List(left, right)) if fun == Fun.seq.concat =>
+      case Seqs.concat(left, right) =>
         for left_ <- elems(left); right_ <- elems(right)
         yield left_ ++ right_
 
@@ -617,17 +617,17 @@ object Printer extends cuvee.pipe.Printer:
         val Some(elems_) = elems(expr): @unchecked
         Group(text("[") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("]"))
 
-      case App(fun, _, _, List(seq)) if fun == Fun.seq.len =>
+      case Seqs.len(seq) =>
         text("|") ++ doc(seq) ++ text("|")
 
-      case App(fun, _, _, List(seq, index)) if fun == Fun.seq.nth =>
+      case Seqs.nth(seq, index) =>
         doc(seq, operand) ++ text("[") ++ doc(index) ++ text("]")
 
-      case App(fun, _, _, List(seq, index, App(unit, _, _, List(value)))) if fun == Fun.seq.update && unit == Fun.seq.unit =>
+      case Seqs.update(seq, index, Seqs.unit(value)) =>
         Group(doc(seq, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(index) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
 
       // the length is the difference of the bounds, s[i..j] is extract(s, i, j - i)
-      case App(fun, _, _, List(seq, from, len)) if fun == Fun.seq.extract =>
+      case Seqs.extract(seq, from, len) =>
         val to = len match
           case Minus.int(to, `from`)       => to
           case _ if from == Lit(BigInt(0), Sort.int) => len
