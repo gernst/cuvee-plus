@@ -116,8 +116,14 @@ object Grammar:
   val sort =
     Sort(P(id ~ inst))
 
+  // parenthesized types, which are tuple types if there is more than one
+  val product =
+    P(parens(types)).map:
+      case List(typ) => typ
+      case types     => Product(types)
+
   val typ: Parser[Type] =
-    P(parens(typ) | sort)
+    P(product | sort)
 
   val formal =
     P(id ~ ":" ~ typ)

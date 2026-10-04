@@ -272,6 +272,11 @@ class Parser(var state: State):
 
   def resolve(scope: Scope, typ: Type): core.Type =
     typ match
+      // the tuple types are declared in the prelude
+      case Product(args) =>
+        val args_ = args.map(resolve(scope, _))
+        state.types.sort("tuple" + args.length, args_)
+
       case Sort(name, Nil) if scope.params.contains(name) =>
         scope.params(name)
 

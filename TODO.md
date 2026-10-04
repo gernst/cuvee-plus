@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- add tuples to the types in the Dafny grammar
 - add support for strings and decreases in the boogie printer
 - the C printer should get some fake notation for quantifiers and trace combinators, it is not good to mix sexprs with C-like notation
 - in the C frontend, initialized variables should give the initialization constraint for predicate `main_pre`

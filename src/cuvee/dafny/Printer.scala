@@ -404,9 +404,16 @@ object Printer extends cuvee.pipe.Printer:
       case Par(calls) =>
         text("parallel {") ++ Nest(2, concat(calls.map(hardline ++ doc(_)))) ++ hardline ++ text("}")
 
+  // the tuple types and their constructors, which are declared in the prelude as tuple2, tuple3, ...
+  def isTuple(name: Name, arity: Int): Boolean =
+    arity >= 2 && name == Name("tuple" + arity, None)
+
   // types are not broken across lines
   def doc(typ: Type): Doc =
     typ match
+      case Sort(Con(name_, arity), args) if isTuple(name_, arity) =>
+        text("(") ++ join(args.map(doc(_)), text(",") ++ space) ++ text(")")
+
       case Param(name_) =>
         text(name(name_))
 
@@ -670,6 +677,9 @@ object Printer extends cuvee.pipe.Printer:
 
       case App(fun, _, _, Nil) =>
         text(name(fun.name))
+
+      case App(fun, _, _, args) if isTuple(fun.name, args.length) =>
+        call("", args.map(doc(_)))
 
       case App(fun, _, _, args) =>
         call(name(fun.name), args.map(doc(_)))

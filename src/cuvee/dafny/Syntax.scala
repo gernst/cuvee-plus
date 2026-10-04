@@ -17,9 +17,11 @@ sealed trait Prog
 sealed trait Cmd
 
 case class Sort(con: String, args: List[Type]) extends Type
+// tuple types (A, B, ...) with at least two components
 case class Product(args: List[Type]) extends Type
 
 object Sort extends ((String, List[Type]) => Type)
+object Product extends (List[Type] => Type)
 
 object True extends App("true", Nil, Nil)
 

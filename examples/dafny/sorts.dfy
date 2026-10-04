@@ -13,3 +13,9 @@ method m(s: d) returns (y: int)
 {
   y := s.id(1);
 }
+
+// tuple types, whose components are numbered from 0
+function swap(p: (int, bool)): (bool, int)
+{
+  (p.1, p.0)
+}
