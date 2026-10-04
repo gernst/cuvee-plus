@@ -61,7 +61,7 @@ object Horn extends Transform:
         val (_, _, requires, ensures) = Verify.contract(state, name)
 
         val gs = Verify.globals(state)
-        val gs_ = gs.fresh
+        val gs_ = Horn.entry(gs)
         val mod = Verify.modifies(attrs)
         val frame = for (g, g_) <- gs zip gs_ if !mod.contains(g) yield Eq(g, g_)
 
@@ -79,7 +79,7 @@ object Horn extends Transform:
         val (_, _, requires, ensures) = Verify.contract(state, name)
 
         val gs = Verify.globals(state)
-        val gs_ = gs.fresh
+        val gs_ = Horn.entry(gs)
         val scope = in ++ gs_ ++ out ++ gs
         val decls_ = Ref[List[DeclareFun]](Nil)
         val clauses = Ref[List[Expr]](Nil)
@@ -127,8 +127,12 @@ object Horn extends Transform:
   def postcondition(state: State, name: Name): Fun =
     val Proc(_, params, in, out) = state.procs(name)
     val gs = Verify.globals(state)
-    val gs_ = Expr.vars("g", gs.types)
-    Fun(name.name + "_post", params, in ++ gs_ ++ out ++ gs, Sort.bool)
+    Fun(name.name + "_post", params, in ++ entry(gs) ++ out ++ gs, Sort.bool)
+
+  // the values of the global variables at the entry of a procedure, which are the formal parameters of p_post,
+  // they need not be fresh since each clause is quantified separately
+  def entry(gs: List[Var]): List[Var] =
+    Expr.vars("g", gs.types)
 
   // a fresh predicate for a program point in procedure `proc` with the variables in `scope` as formal parameters,
   // numbered by the predicates declared so far
