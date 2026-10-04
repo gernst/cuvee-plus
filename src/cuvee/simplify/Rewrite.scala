@@ -114,11 +114,11 @@ object Rewrite:
             cover(config, state, ctx, b_, update, update_, m)
         yield m2
 
-      case (TraceMap(deps, bound, update), TraceMap(deps_, bound_, update_)) =>
+      case (Maps(deps, bound, update), Maps(deps_, bound_, update_)) =>
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
           cover(config, state, ctx, b_, update, update_, m)
 
-      case (TraceAll(deps, bound, body), TraceAll(deps_, bound_, body_)) =>
+      case (Invs(deps, bound, body), Invs(deps_, bound_, body_)) =>
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
           matches(config, state, ctx, b_, body, body_, m)
 
@@ -259,7 +259,7 @@ object Rewrite:
                 case _ =>
                   val used = (deps_ zip bound_).filter((_, y_) => value.free.contains(y_))
                   val (deps__, bound__) = (if used.isEmpty then (deps_ zip bound_).take(1) else used).unzip
-                  TraceMap(deps__, bound__, List((True, value)))
+                  Maps(deps__, bound__, List((True, value)))
 
             matches(config, state, ctx, b, z, seq, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
 
@@ -363,7 +363,7 @@ object Rewrite:
       case Diff(xs, arg)                        => Diff(xs, f(arg))
       case Old(arg)                             => Old(f(arg))
       case Trace(init, deps, acc, bound, upd)   => Trace(f(init), deps.map(f), acc, bound, update(upd))
-      case TraceMap(deps, bound, upd)           => TraceMap(deps.map(f), bound, update(upd))
-      case TraceAll(deps, bound, body)          => TraceAll(deps.map(f), bound, f(body))
+      case Maps(deps, bound, upd)           => Maps(deps.map(f), bound, update(upd))
+      case Invs(deps, bound, body)          => Invs(deps.map(f), bound, f(body))
       case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))

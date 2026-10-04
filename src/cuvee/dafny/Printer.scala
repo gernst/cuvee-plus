@@ -644,10 +644,10 @@ object Printer extends cuvee.pipe.Printer:
         val head = text("trace(") ++ doc(init) ++ text(",") +:+ text("for") +:+ commas(deps.map(doc(_)))
         combinator(head, "do", acc :: bound, update)
 
-      case TraceMap(deps, bound, update) =>
+      case Maps(deps, bound, update) =>
         combinator(text("map(for") +:+ commas(deps.map(doc(_))), "yield", bound, update)
 
-      case TraceAll(deps, bound, body) =>
+      case Invs(deps, bound, body) =>
         combinator(text("all(for") +:+ commas(deps.map(doc(_))), "check", bound, List((True, body)))
 
       case Old(arg) =>

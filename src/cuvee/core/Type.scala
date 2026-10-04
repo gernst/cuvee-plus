@@ -236,7 +236,7 @@ object Type:
           unify(state, scope, Sort.trace(acc.typ), res, subst)
 
       // the results have the same type as the first one
-      case TraceMap(deps, bound, update) =>
+      case Maps(deps, bound, update) =>
         Error.report("map without update", expr):
           require(update.nonEmpty)
 
@@ -246,7 +246,7 @@ object Type:
         Error.report("type mismatch", expr, Sort.seq(update.head._2.typ), res):
           unify(state, scope, Sort.seq(update.head._2.typ), res, subst)
 
-      case TraceAll(deps, bound, body) =>
+      case Invs(deps, bound, body) =>
         dependencies(state, scope, expr, deps, bound, subst)
         check(state, scope, body, Sort.bool, subst)
 

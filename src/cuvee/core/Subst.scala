@@ -107,13 +107,13 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
         val (rename, that) = avoid(acc :: bound)
         Trace(this(init), this(deps), rename.lhs(acc), rename.lhs(bound), for (g, e) <- update yield (that(g), that(e)))
 
-      case TraceMap(deps, bound, update) =>
+      case Maps(deps, bound, update) =>
         val (rename, that) = avoid(bound)
-        TraceMap(this(deps), rename.lhs(bound), for (g, e) <- update yield (that(g), that(e)))
+        Maps(this(deps), rename.lhs(bound), for (g, e) <- update yield (that(g), that(e)))
 
-      case TraceAll(deps, bound, body) =>
+      case Invs(deps, bound, body) =>
         val (rename, that) = avoid(bound)
-        TraceAll(this(deps), rename.lhs(bound), that(body))
+        Invs(this(deps), rename.lhs(bound), that(body))
 
       case Let(bound, args, body) =>
         val (rename, that) = avoid(bound)

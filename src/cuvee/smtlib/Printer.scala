@@ -335,10 +335,10 @@ object Printer extends cuvee.pipe.Printer:
       case Trace(init, deps, acc, bound, update) =>
         apps(atom("trace"), apps(lines(acc), lines(init)), list(eqs(bound, deps)), cases(update))
 
-      case TraceMap(deps, bound, update) =>
+      case Maps(deps, bound, update) =>
         apps(atom("map"), list(eqs(bound, deps)), cases(update))
 
-      case TraceAll(deps, bound, body) =>
+      case Invs(deps, bound, body) =>
         apps(atom("all"), list(eqs(bound, deps)), lines(body))
 
       // not part of SMT-LIB, the value at the entry of the procedure

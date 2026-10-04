@@ -78,7 +78,7 @@ type Transform = (List[Cmd], List[Cmd], Cmd, State) => List[Cmd]
 - [`TEQ`](../src/cuvee/verify/TEQ.scala) replaces each procedure definition
   by a goal from symbolic execution (`Path`), where each loop is summarized by
   its trace equation system: one `Trace` per modified variable, the counter
-  `K = counter(0, 1, n)`, and the iteration constraint `TraceAll`.
+  `K = counter(0, 1, n)`, and the iteration constraint `Invs`.
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point.

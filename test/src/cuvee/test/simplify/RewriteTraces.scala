@@ -50,7 +50,7 @@ object RewriteTraces extends TestSuite:
 
   // map(for K yield k ↦ a[k]) = selects(a, K)
   val selectsRule =
-    Rule(TraceMap(List(Ks), List(k), List((True, Select(a, k)))), app(selects, a, Ks))
+    Rule(Maps(List(Ks), List(k), List((True, Select(a, k)))), app(selects, a, Ks))
 
   val tests = Tests:
     // example 2.3, the counter is matched modulo commutativity
@@ -61,7 +61,7 @@ object RewriteTraces extends TestSuite:
     // example 2.6, the dependency V is instantiated by a map over the dependencies of the expression
     test("sums"):
       val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List((True, Plus.int(s, Select(arr, j)))))
-      val values = TraceMap(List(app(butlast, J)), List(j), List((True, Select(arr, j))))
+      val values = Maps(List(app(butlast, J)), List(j), List((True, Select(arr, j))))
       R(List(sumsRule), expr) ==> app(sums, Zero.int, values)
 
     // ... which is then recognized as selects, example 6.2
@@ -100,12 +100,12 @@ object RewriteTraces extends TestSuite:
     // all(for ⌊K⌋ check k ↦ k < len) with the bound variable related to that of the expression
     test("all"):
       val len = Var("len", int)
-      val rule = Rule(TraceAll(List(app(butlast, K)), List(k), Lt.int(k, len)), Le.int(app(steps, app(butlast, K)), len))
-      val expr = TraceAll(List(app(butlast, J)), List(j), Lt.int(j, n))
+      val rule = Rule(Invs(List(app(butlast, K)), List(k), Lt.int(k, len)), Le.int(app(steps, app(butlast, K)), len))
+      val expr = Invs(List(app(butlast, J)), List(j), Lt.int(j, n))
       R(List(rule), expr) ==> Le.int(app(steps, app(butlast, J)), n)
 
     // the variables of the rule must not capture the bound variables of the expression
     test("capture"):
-      val rule = Rule(TraceAll(List(app(butlast, K)), List(k), Lt.int(c, k)), True)
-      val expr = TraceAll(List(app(butlast, J)), List(j), Lt.int(j, j))
+      val rule = Rule(Invs(List(app(butlast, K)), List(k), Lt.int(c, k)), True)
+      val expr = Invs(List(app(butlast, J)), List(j), Lt.int(j, j))
       R(List(rule), expr) ==> expr

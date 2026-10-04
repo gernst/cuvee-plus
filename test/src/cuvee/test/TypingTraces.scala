@@ -36,8 +36,8 @@ object TypingTraces extends TestSuite:
       val x = Var("x", a)
       // as built by the parsers, with the expected types of the arguments
       val not = App(Fun.not, List(Sort.bool), Sort.bool, List(x))
-      val trace = TraceMap(List(B), List(x), List((x, One.int), (not, Zero.int)))
-      val TraceMap(_, List(x_), _) = check(trace, Sort.seq(Sort.int)): @unchecked
+      val trace = Maps(List(B), List(x), List((x, One.int), (not, Zero.int)))
+      val Maps(_, List(x_), _) = check(trace, Sort.seq(Sort.int)): @unchecked
       x_.typ ==> Sort.bool
 
     test("dependencies"):
@@ -50,11 +50,11 @@ object TypingTraces extends TestSuite:
       error(trace, Sort.trace(Sort.int)) ==> "type mismatch"
 
     test("map"):
-      val map = TraceMap(List(J), List(j), List((Lt.int(j, n), j), (Not(Lt.int(j, n)), n)))
+      val map = Maps(List(J), List(j), List((Lt.int(j, n), j), (Not(Lt.int(j, n)), n)))
       check(map, Sort.seq(Sort.int)) ==> map
-      error(TraceMap(List(J), List(j), List((Lt.int(j, n), j), (Not(Lt.int(j, n)), True))), Sort.seq(Sort.int)) ==> "type mismatch"
+      error(Maps(List(J), List(j), List((Lt.int(j, n), j), (Not(Lt.int(j, n)), True))), Sort.seq(Sort.int)) ==> "type mismatch"
 
     test("all"):
-      val all = TraceAll(List(J, B), List(j, p), Or(p, Lt.int(j, n)))
+      val all = Invs(List(J, B), List(j, p), Or(p, Lt.int(j, n)))
       check(all, Sort.bool) ==> all
-      error(TraceAll(List(J), List(j), j), Sort.bool) ==> "type mismatch"
+      error(Invs(List(J), List(j), j), Sort.bool) ==> "type mismatch"

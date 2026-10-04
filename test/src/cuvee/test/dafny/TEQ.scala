@@ -36,7 +36,7 @@ object TEQ extends TestSuite:
       // the system occurs in the check of the body and at the exit
       val traces = subexprs(phi).collect { case t: Trace => t }.distinct
       assert(traces.length == 2)
-      assert(subexprs(phi).exists(_.isInstanceOf[TraceAll]))
+      assert(subexprs(phi).exists(_.isInstanceOf[Invs]))
 
       val i = Var("i", Sort.int)
       val c = Var("c", Sort.int)

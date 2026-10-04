@@ -162,7 +162,7 @@ case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updat
 
 // map(for deps yield bound ↦ update): the sequence of the results of the update for the values of the dependencies,
 // point-wise, which has the same length as the dependencies
-case class TraceMap(deps: List[Expr], bound: List[Var], update: List[(Expr, Expr)]) extends Expr:
+case class Maps(deps: List[Expr], bound: List[Var], update: List[(Expr, Expr)]) extends Expr:
   def subexprs = deps ++ Update.exprs(update)
   def params = deps.params ++ bound.params ++ Update.params(update)
   def free = deps.free ++ (Update.free(update) -- bound)
@@ -173,7 +173,7 @@ case class TraceMap(deps: List[Expr], bound: List[Var], update: List[(Expr, Expr
     Sort.seq(update.head._2.typ)
 
 // all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
-case class TraceAll(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:
+case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:
   def subexprs = deps :+ body
   def params = deps.params ++ bound.params ++ body.params
   def free = deps.free ++ (body.free -- bound)

@@ -234,7 +234,7 @@ object TEQ extends Transform:
       val deps = butlast(K) :: Xs.map(butlast) ++ Zs
       val bound = k :: sharp ++ zs
       val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C)))
-      TraceAll(deps, bound, And(inner(guard), paths_))
+      Invs(deps, bound, And(inner(guard), paths_))
 
     val wf = Le.int(Zero.int, n) :: Zs.map(seq => Eq(App(Fun.trace.length, List(seq)), n))
     val teq = And(counter :: current ++ equations ++ (iterations :: wf))

@@ -276,17 +276,17 @@ case class State(
       val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
       Trace(init, deps, acc_, bound_, update(acc_, bound_))
 
-    def map(deps: List[Expr], bound: List[Name])(update: List[Var] => List[(Expr, Expr)]): TraceMap =
+    def map(deps: List[Expr], bound: List[Name])(update: List[Var] => List[(Expr, Expr)]): Maps =
       Error.report("mismatching dependencies and bound variables", deps, bound):
         require(deps.length == bound.length)
       val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
-      TraceMap(deps, bound_, update(bound_))
+      Maps(deps, bound_, update(bound_))
 
-    def all(deps: List[Expr], bound: List[Name])(body: List[Var] => Expr): TraceAll =
+    def all(deps: List[Expr], bound: List[Name])(body: List[Var] => Expr): Invs =
       Error.report("mismatching dependencies and bound variables", deps, bound):
         require(deps.length == bound.length)
       val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
-      TraceAll(deps, bound_, body(bound_))
+      Invs(deps, bound_, body(bound_))
 
     // the value of `expr` at the entry of the enclosing procedure
     def old(expr: Expr) =
