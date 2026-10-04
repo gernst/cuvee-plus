@@ -181,7 +181,7 @@ object Simplify extends Transform:
   def poly(state: State, ctx: Ctx, expr: Expr): Poly =
     expr match
       case Lit(n: BigInt, Sort.int) =>
-        Poly.const(n)
+        Poly.const(util.Rational(n))
 
       case UMinus.int(arg) =>
         val arg_ = poly(state, ctx, arg)
