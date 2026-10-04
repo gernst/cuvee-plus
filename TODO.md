@@ -13,7 +13,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- in the generated constraints for `TEQs` make sure that the trace equations don't occur twice, by re-arranging the formula correctly
 - hook up trace terms to the simplifier
 - implement support for trace combinators in the transforms
 - have `TEQ.scala` inject lemmas from `teq.dfy`, which should be part of the resources as the lemma database, use a fresh dafny parser, and inject all commands, they can remain in the final output
@@ -191,9 +190,7 @@ inferred from the call graph. Open:
   connected to `-teq`) or encoded into first-order logic (fall-back encodings,
   section 5.3 of the paper) before a solver can prove them. It does not
   support differential equations and parallel composition; loop invariants are ignored; the
-  number of paths grows exponentially with the branches of a body; the trace
-  equation system of a loop occurs twice in the goal (safety of the body and
-  exit).
+  number of paths grows exponentially with the branches of a body.
 - The rewrite engine ([simplify/Rewrite.scala](src/cuvee/simplify/Rewrite.scala))
   is applied by the simplifier after each round with the rewrite rules, the
   assertions and lemmas with the attribute `:rw` (`{:rw}` in Dafny and

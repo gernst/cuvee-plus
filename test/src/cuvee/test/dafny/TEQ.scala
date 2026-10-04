@@ -43,9 +43,9 @@ object TEQ extends TestSuite:
       errors ==> Nil
       val List(Assert(Goal, _, phi, _)) = cmds: @unchecked
 
-      // the system occurs in the check of the body and at the exit
-      val traces = subexprs(phi).collect { case t: Trace => t }.distinct
-      assert(traces.length == 2)
+      // one trace for each of i and s, each of which occurs once, shared by the check of the body and the exit
+      val traces = subexprs(phi).collect { case t: Trace => t }
+      assert(traces.length == 2 && traces.distinct.length == 2)
       assert(subexprs(phi).exists(_.isInstanceOf[Invs]))
 
       val i = Var("i", Sort.int)

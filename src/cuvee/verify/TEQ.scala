@@ -6,35 +6,55 @@ import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
 
+// the steps of a path in order: fresh variables for nondeterministic choices and havoc,
+// assumptions, branch conditions, and checks, e.g. of assertions and preconditions of calls
+enum Step:
+  case Fresh(zs: List[Var])
+  case Assume(phi: Expr)
+  case When(phi: Expr)
+  case Check(phi: Expr)
+
 // a path through a program by symbolic execution:
-// the fresh variables for nondeterministic choices, the values of the program variables as a substitution,
-// the assumptions made, the branch conditions taken, and the checks from assertions,
-// where each check is conditional on the assumptions and branch conditions before it;
+// the values of the program variables as a substitution and the steps taken, where each check
+// is conditional on the assumptions and branch conditions before it;
 // a path that has left by a jump (break, continue, or return) skips the remaining statements
-case class Path(zs: List[Var], su: Map[Var, Expr], assms: List[Expr], branch: List[Expr], checks: List[Expr], jump: Option[Prog]):
+case class Path(su: Map[Var, Expr], steps: List[Step], jump: Option[Prog]):
   def apply(expr: Expr): Expr =
     Subst[Type, Expr](Map(), su)(expr)
 
   def apply(x: Var): Expr =
     su.getOrElse(x, x)
 
+  def zs = steps.collect { case Step.Fresh(zs) => zs }.flatten
+  def assms = steps.collect { case Step.Assume(phi) => phi }
+  def branch = steps.collect { case Step.When(phi) => phi }
+
+  // the checks, each conditional on the assumptions and branch conditions before it
+  def checks: List[Expr] =
+    val (_, checks) =
+      steps.foldLeft((List[Expr](), List[Expr]())):
+        case ((ctx, checks), Step.Assume(phi) ) => (ctx :+ phi, checks)
+        case ((ctx, checks), Step.When(phi))    => (ctx :+ phi, checks)
+        case ((ctx, checks), Step.Check(phi))   => (ctx, checks :+ Imp(And(ctx), phi))
+        case ((ctx, checks), Step.Fresh(_))     => (ctx, checks)
+    checks
+
   // the assumptions and branch conditions, under which the path is taken
   def context: Expr =
     And(assms ++ branch)
 
   def assume(phi: Expr) =
-    copy(assms = assms :+ phi)
+    copy(steps = steps :+ Step.Assume(phi))
 
   def when(phi: Expr) =
-    copy(branch = branch :+ phi)
+    copy(steps = steps :+ Step.When(phi))
 
-  // a check holds if the path is taken
   def check(phi: Expr) =
-    copy(checks = checks :+ Imp(context, phi))
+    copy(steps = steps :+ Step.Check(phi))
 
-  // the values of nondeterministic choices and havoc, which are quantified for the path
+  // the values of nondeterministic choices and havoc, which are quantified from here on
   def fresh(zs_ : List[Var]) =
-    copy(zs = zs ++ zs_)
+    copy(steps = steps :+ Step.Fresh(zs_))
 
   def assign(xs: List[Var], es: List[Expr]) =
     copy(su = su ++ (xs zip es))
@@ -46,13 +66,32 @@ case class Path(zs: List[Var], su: Map[Var, Expr], assms: List[Expr], branch: Li
 
 object Path:
   def apply(su: Map[Var, Expr]): Path =
-    Path(Nil, su, Nil, Nil, Nil, None)
+    Path(su, Nil, None)
+
+  // the formula that the steps of all paths hold, where the paths share their common prefixes,
+  // such that each assumption occurs once for the checks after it, e.g. a trace equation system;
+  // fresh variables are quantified universally, assumptions and branch conditions are premises,
+  // and checks are conjuncts
+  def formula(paths: List[List[Step]]): Expr =
+    val heads = paths.flatMap(_.headOption).distinct
+
+    val conjuncts =
+      for head <- heads
+      yield
+        val rest = formula(paths.collect { case `head` :: tail => tail })
+        head match
+          case Step.Fresh(zs)   => if rest == True then True else All(zs, rest)
+          case Step.Assume(phi) => if rest == True then True else Imp(phi, rest)
+          case Step.When(phi)   => if rest == True then True else Imp(phi, rest)
+          case Step.Check(phi)  => And(phi :: And.flattenStrong(rest))
+
+    And(conjuncts.flatMap(And.flattenStrong))
 
 // verification by symbolic execution, where loops are summarized by trace equation systems
 // (after Trace Equation Systems for Program Verification):
 // the goal of each procedure is that for all paths through its body, all checks hold,
-// and the postcondition holds if the assumptions and branch conditions do;
-// loops yield a single path, whose fresh variables are the state at the exit, the number of iterations, the traces,
+// and the postcondition holds if the assumptions and branch conditions do, where the paths share their prefixes;
+// loops yield a path for each way to leave them, whose fresh variables are the state at the exit, the number of iterations, the traces,
 // and the sequences of nondeterministic choices, which assumes the trace equation system and the negated guard,
 // and which checks that the body executes safely from the current state if the guard holds;
 // the goals contain the combinators trace and all, which must be rewritten before they are passed to a solver,
@@ -78,12 +117,11 @@ object TEQ extends Transform:
         val body_ = Old.elim(gs, gs_, body)
         val post_ = Old.elim(gs, gs_, post)
 
+        // the postcondition is the last check of each path
         val paths = symex(state, name, body_, Path(Map()))
-        val goals =
-          for p <- paths
-          yield All(p.zs, And(p.C, Imp(p.context, p(post_))))
+        val goal = Path.formula(for p <- paths yield p.check(p(post_)).steps)
 
-        val phi = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(And(goals))))
+        val phi = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(goal)))
         List(Assert(Goal, params, phi, Attrs.empty))
 
       case _ =>
@@ -233,8 +271,8 @@ object TEQ extends Transform:
     val iterations =
       val deps = Butlast(K) :: Xs.map(Butlast(_)) ++ Zs
       val bound = k :: sharp ++ zs
-      val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C)))
-      Invs(deps, bound, And(inner(guard), paths_))
+      val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
+      Invs(deps, bound, And(List(inner(guard), paths_).flatMap(And.flattenStrong)))
 
     val wf = Le.int(Zero.int, n) :: Zs.map(seq => Eq(App(Fun.trace.length, List(seq)), n))
     val teq = And(counter :: current ++ equations ++ (iterations :: wf))
@@ -243,16 +281,16 @@ object TEQ extends Transform:
     // the paths of the body from there that end by break or return leave the loop as well
     val exit = p.fresh(cur ++ List(n, K) ++ Xs ++ Zs).assign(xs, cur)
     val last = symex(state, proc, body, Path(exit.su))
-    val safe = And(for q <- last yield All(q.zs, q.C))
+    val safe = Path.formula(last.map(_.steps))
     val exit_ = exit.assume(teq)
     val guard_ = exit_(guard)
-    val checked = exit_.check(Imp(guard_, safe))
+    val checked = if safe == True then exit_ else exit_.check(Imp(guard_, safe))
 
     val left =
       for q <- last if !iterates(q)
       yield
         val jump = if q.jump == Some(Return) then q.jump else None
-        Path(checked.zs ++ q.zs, q.su, checked.assms ++ (guard_ :: q.assms), checked.branch ++ q.branch, checked.checks, jump)
+        Path(q.su, checked.steps ++ (Step.Assume(guard_) :: q.steps), jump)
 
     test match
       case Some(test) =>
