@@ -158,6 +158,16 @@ case class Par(calls: List[Call])                       // parallel composition 
   procedures `send` and `receive`, which extend the history. In `Verify`,
   each one asserts the enclosing procedure's commitment for the extended
   history and then assumes it.
+  - Communication is always joint: the event of a `receive` is the event of
+    the matching `send` of another process, and both extend the same history.
+    Hence a process commits first, also after receiving: the commitment must
+    hold for the extended history before the process relies on anything about
+    the new event.
+  - A commitment must always be made before an assumption is taken. The
+    assumption of a process is justified by the commitments of the other
+    processes (rule `par`), which hold for every history that they produce.
+    Inside the body, it is therefore taken only initially, and the new event
+    of a `receive` is constrained by the contract of `receive` only.
 
 ```scala
 case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var])

@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- fix the descripion of parallel composition and send/receive: it is crucial that the commitment is made first even after receiving, since the communication is always joint and a commitment must always be made before taking an assumption, please document this and remove the corresponding TODOs
 - Dafny printer: bound variables in forall and exists should flow to the end of the line, and then break, not be split one on each line
 - Dafny printer: similarly, both formal in the declaration and actual parameters in the use of a function/method should flow until the margin and then be indented after the opening parenthesis
 - there are many occurrences, where a name is unpacked and formatted (e.g., in the printers, and in monomorph), add methods to class `Name` that format a name into a string for the two use-cases: unicode subscripted name and name using `$`, and use those. Neither should be the `.toString` of `Name`.
@@ -262,8 +261,6 @@ a global history of events (see [examples/dafny/par.dfy](examples/dafny/par.dfy)
   procedure is called sequentially.
 - The commitment is checked only at `send` and `receive` directly in the body,
   not at those inside other procedures called by it.
-- A procedure may assume its assumption only initially, not after `receive`,
-  where the environment extends the history.
 - The history is declared by the input together with `send` and `receive`,
   since the value type of the events is fixed per program; the contracts of
   `send` and `receive` are not checked against their intended meaning.

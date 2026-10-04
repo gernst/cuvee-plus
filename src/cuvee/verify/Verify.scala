@@ -110,7 +110,10 @@ object Verify extends Transform:
         su(post)
 
       // send and receive assert the commitment of the enclosing procedure for the extended history
-      // and assume it afterwards, i.e., the commitment must hold in addition to `post` after the call
+      // and assume it afterwards, i.e., the commitment must hold in addition to `post` after the call;
+      // communication is joint, the event of a receive is that of the matching send of another process,
+      // hence the commitment is made first also after receiving, since a commitment must always be made
+      // before an assumption is taken, which is justified by the commitments of the other processes (see par)
       case Send(chan, value) =>
         committed(state, proc, Send(chan, value), post)
 
