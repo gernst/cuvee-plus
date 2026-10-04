@@ -16,10 +16,23 @@ case class Sig(name: Name, sorts: List[Option[Sig]]):
         case (Some(sig), Some(sig_)) => sig <= sig_
         case _                       => false
 
+// functions are equal if their names and signatures are, regardless of the names of the formal parameters,
+// e.g. the declarations of built-in functions in the preludes and the values below
 case class Fun(name: Name, params: List[Param], formals: List[Var], res: Type):
   def args = formals.types
   def arity = formals.length
   def sig = Sig(name, args.sig)
+
+  override def equals(that: Any) =
+    that match
+      case Fun(name_, params_, formals_, res_) =>
+        name == name_ && params == params_ && args == formals_.types && res == res_
+
+      case _ =>
+        false
+
+  override def hashCode =
+    (name, params, args, res).hashCode
 
 object Fun:
   import Param.a

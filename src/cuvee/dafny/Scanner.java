@@ -100,8 +100,8 @@ public class Scanner implements cuvee.pipe.Scanner {
   private static final String ZZ_ACTION_PACKED_0 =
     "\1\0\1\1\1\2\1\3\1\1\1\3\1\1\2\4"+
     "\1\3\2\5\1\4\1\3\1\4\16\3\1\4\1\0"+
-    "\1\6\2\0\15\3\1\4\12\3\2\2\1\7\1\0"+
-    "\67\3\1\4\10\3";
+    "\1\6\2\0\2\3\1\4\12\3\1\4\12\3\2\2"+
+    "\1\7\1\0\67\3\1\4\10\3";
 
   private static int [] zzUnpackAction() {
     int [] result = new int[126];

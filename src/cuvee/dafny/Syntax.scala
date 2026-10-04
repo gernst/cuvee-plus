@@ -45,6 +45,10 @@ case class Len(arg: Expr) extends Expr
 case class Diff(xs: List[String], expr: Expr) extends Expr
 case class App(fun: String, args: List[Expr], access: List[Access]) extends Expr
 case class Ite(test: Expr, left: Expr, right: Expr) extends Expr
+// type annotations e as T, testers e.C? are members whose name ends with ?
+case class As(expr: Expr, typ: Type) extends Expr
+// indexing and slices of expressions other than names and calls, e.g. (if b then s else t)[0]
+case class Access_(base: Expr, access: List[Access]) extends Expr
 case class Ex(bound: List[(String, Type)], body: Expr) extends Expr
 case class All(bound: List[(String, Type)], body: Expr) extends Expr
 case class Let(bound: List[(String, Type)], args: List[Expr], body: Expr) extends Expr
@@ -58,6 +62,8 @@ object Len extends (Expr => Expr)
 object Diff extends ((List[String], Expr) => Expr)
 object App extends ((String, List[Expr], List[Access]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)
+object As extends ((Expr, Type) => Expr)
+object Access_ extends ((Expr, List[Access]) => Expr)
 object Ex extends ((List[(String, Type)], Expr) => Expr)
 object All extends ((List[(String, Type)], Expr) => Expr)
 object Let extends ((List[(String, Type)], List[Expr], Expr) => Expr)

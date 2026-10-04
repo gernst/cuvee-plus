@@ -497,6 +497,10 @@ object Printer extends cuvee.pipe.Printer:
 
   def level(expr: Expr): (Int, Option[Assoc]) =
     expr match
+      // binds tighter than all operators, but is not an operand of accesses
+      case As(_, _) =>
+        (atomic - 1, None)
+
       case Lit(value: BigInt, _) if value < 0 =>
         (Grammar.prefix_ops("-"), None)
 
@@ -628,9 +632,15 @@ object Printer extends cuvee.pipe.Printer:
       case Diff(xs, arg) =>
         Group(text("(") ++ commas(xs.map(doc(_))) +:+ text("::") ++ Nest(2, line ++ doc(arg)) ++ text(")'"))
 
-      // TODO: Dafny syntax for testers and type annotations, e.g. e.C? and e as T
-      case Is(_, _) | As(_, _) =>
-        Error.raise("not supported in Dafny", expr)
+      // testers are parsed on variables only
+      case Is(x: Var, fun) =>
+        doc(x) ++ text("." + name(fun.name) + "?")
+
+      case Is(_, _) =>
+        Error.raise("tester on an expression that is not a variable not supported in Dafny", expr)
+
+      case As(arg, typ) =>
+        doc(arg, operand) +:+ text("as") +:+ doc(typ)
 
       case Bind(quant, bound, body) =>
         Group(text(name(quant)) +:+ Group(formals(bound)) +:+ text("::") ++ Nest(2, line ++ doc(body)))

@@ -104,3 +104,25 @@ object Parallel extends TestSuite:
     test("read"):
       errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(x); } }") ==>
         List("parallel calls share modified variables")
+
+// testers x.C? on variables and type annotations e as T
+object Datatypes extends TestSuite:
+  def errors(text: String) =
+    val file = os.temp(text, suffix = ".dfy")
+    Examples.errors("-print", "null", file.toString)
+
+  val list = "datatype list<a> = nil | cons(head: a, tail: list<a>) "
+
+  val tests = Tests:
+    test("tester"):
+      errors(list + "function f(xs: list<int>): bool { xs.cons? && !xs.nil? }") ==> Nil
+
+    test("tester on a call"):
+      errors(list + "function g(): list<int> function f(): bool { g().nil? }") ==>
+        List("tester on an expression that is not a variable")
+
+    test("annotation"):
+      errors(list + "function f(xs: list<int>): bool { xs != nil as list<int> }") ==> Nil
+
+    test("wrong annotation"):
+      errors(list + "function f(): bool { 0 as bool }") ==> List("type mismatch")

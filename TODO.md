@@ -89,9 +89,6 @@ reference semantics for array parameters.
   arithmetic (`Plus.int` etc.); `Mod.int` is `Sugar.associative`, but `mod` is
   not associative.
 - `core.Assoc` duplicates `easyparse.Assoc`.
-- Built-in functions are compared by equality of `Fun`, which includes the
-  names of the formal parameters (`x$0, x$1, ...`); declarations with other
-  names do not match the sugar.
 - `send` and `receive` are recognized by their names (`Send`, `Recv`), and the
   history by the name of the global variable `history` (`Par.history`).
 - The printers of Dafny and Boogie duplicate the mixfix logic (`prefix`,
@@ -106,13 +103,8 @@ reference semantics for array parameters.
 - Sequences: no `<` (proper prefix), `!in`, `seq(n, f)`, or
   multi-dimensional updates. `s[i := v]` is `seq.update` of cvc5, which z3
   does not support, and z3's logic `HORN` has no sequences at all.
-- Accesses `e[i]` and `e.f` are parsed only after names and calls, not after
-  parenthesized expressions, e.g. `(if b then s else t)[0]`.
-- Member access `e.f` works on variables only, e.g. `h[i].chan` must be
-  written `event_chan(h[i])`.
-- No syntax for testers `Is` and type annotations `As`, e.g. `e.C?` and
-  `e as T`: neither is parsed, and the printer raises an error
-  ([dafny/Printer.scala](src/cuvee/dafny/Printer.scala)).
+- Member access `x.f` and testers `x.C?` work on variables only, e.g.
+  `h[i].chan` must be written `event_chan(h[i])`.
 - Inside a `type` or `datatype` body, members must be accessed through
   `this`, e.g. `this.counter` and `this.m(a)`; a plain `counter` is an unknown
   expression, and a plain `m(a);` is only resolved for top-level methods.

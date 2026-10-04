@@ -258,6 +258,15 @@ case class State(
     def ex(bound: List[Var], body: Expr) =
       Ex(bound, body)
 
+    // whether `expr` is built by constructor `name`
+    def is(expr: Expr, name: Name) =
+      Error.report("constructor not declared", name):
+        require(constrs.contains(name))
+      Is(expr, constrs(name))
+
+    def as(expr: Expr, typ: Type) =
+      As(expr, typ)
+
     // the value of `expr` at the entry of the enclosing procedure
     def old(expr: Expr) =
       Old(expr)

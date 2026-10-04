@@ -89,6 +89,15 @@ object Printing extends TestSuite:
       expr(Not(Eq(p, Not(Eq(x, y))))) ==> "p != (x != y)"
       expr(Not(And(p, q))) ==> "!(p && q)"
 
+    // testers on variables, annotations bind tighter than operators but are no operands of accesses
+    test("datatypes"):
+      val Seq = Sort.seq(Sort.int)
+      val s = Var("s", Seq)
+      val nil = Fun("nil", Nil, Nil, Seq)
+      expr(Is(s, nil)) ==> "s.nil?"
+      expr(app(Fun.int.plus, As(x, Sort.int), y)) ==> "x as int + y"
+      expr(app(Fun.seq.nth, As(s, Seq), zero)) ==> "(s as seq<int>)[0]"
+
     test("mixfix"):
       expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
       expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"

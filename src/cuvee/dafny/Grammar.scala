@@ -188,8 +188,21 @@ object Grammar:
   val len =
     Len(P("|" ~ expr ~ "|"))
 
-  val inner: Parser[Expr] =
+  val atom: Parser[Expr] =
     P(diff | tuple | seq | len | lit | bind | let | ite | app)
+
+  // indexing and slices of other atoms than names and calls, which take their accesses themselves,
+  // members and testers are accessed on variables only
+  val accessed: Parser[Expr] =
+    P(atom ~ (slice | array).*).map:
+      case (expr, Nil)    => expr
+      case (expr, access) => Access_(expr, access)
+
+  // type annotations bind tighter than all operators
+  val inner: Parser[Expr] =
+    P(accessed ~ ("as" ~ typ).?).map:
+      case (expr, None)      => expr
+      case (expr, Some(typ)) => As(expr, typ)
 
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))

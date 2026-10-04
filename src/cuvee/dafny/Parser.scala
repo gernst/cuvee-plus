@@ -301,6 +301,14 @@ class Parser(var state: State):
         val base_ = state.exprs.app(core.Fun.seq.extract, List(base, from_, len_))
         resolve(scope, base_, rest)
 
+      // testers x.C? of the constructors of datatypes, on variables only like members
+      case Member(tester, Nil) :: rest if tester.endsWith("?") && state.constrs.contains(tester.dropRight(1)) =>
+        Error.report("tester on an expression that is not a variable", base, tester):
+          require(base.isInstanceOf[core.Var])
+
+        val base_ = state.exprs.is(base, tester.dropRight(1))
+        resolve(scope, base_, rest)
+
       // members are accessed on variables only, whose type is known without type checking
       case Member(fun, args) :: rest =>
         val self = base match
@@ -390,6 +398,15 @@ class Parser(var state: State):
         val args_ = args.map(resolve(scope, _))
         val base_ = state.exprs.app(fun, args_)
         resolve(scope, base_, access)
+
+      case Access_(base, access) =>
+        val base_ = resolve(scope, base)
+        resolve(scope, base_, access)
+
+      case As(arg, typ) =>
+        val arg_ = resolve(scope, arg)
+        val typ_ = resolve(scope, typ)
+        state.exprs.as(arg_, typ_)
 
       case Ite(test, left, right) =>
         val test_ = resolve(scope, test)
