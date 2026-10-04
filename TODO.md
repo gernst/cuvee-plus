@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- fix printing of div and mod in C
 - fix the descripion of parallel composition and send/receive: it is crucial that the commitment is made first even after receiving, since the communication is always joint and a commitment must always be made before taking an assumption, please document this and remove the corresponding TODOs
 - Dafny printer: bound variables in forall and exists should flow to the end of the line, and then break, not be split one on each line
 - Dafny printer: similarly, both formal in the declaration and actual parameters in the use of a function/method should flow until the margin and then be indented after the opening parenthesis
@@ -76,10 +75,9 @@ inferred from the call graph. Open:
   the branches of `?:`.
 - Initialized global variables, `switch`, `goto`, pointers, structs, strings,
   and the preprocessor (its lines are skipped).
-- The printer writes SMT-LIB's `div` and `mod`, which result from C's `/` and
-  `%`, as calls, which do not parse back; the temporary variables for the
-  results of calls inside expressions, `tmp_1, ...`, may clash with names of
-  the input when printed and parsed again.
+- The temporary variables for the results of calls inside expressions,
+  `tmp_1, ...`, may clash with names of the input when printed and parsed
+  again.
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/div.c](examples/c/div.c)).
 

@@ -13,7 +13,8 @@ import easyparse.Assoc
 
 // prints procedures as C functions, as far as they are C programs: integers are int, Bool is _Bool,
 // arrays Array Int T are T a[] (as values); assertions and assumptions are written with the conventions of SV-COMP;
-// div and mod of SMT-LIB are written as calls, since C's / and % truncate, quantifiers and other constructs raise an error;
+// C's / and % are recognized in their translation to div and mod of SMT-LIB (see Quot and Rem),
+// other occurrences of div and mod are written in terms of / and %; quantifiers and other constructs raise an error;
 // commands that are not part of C, e.g. assertions, are printed by the SMT-LIB printer
 object Printer extends cuvee.pipe.Printer:
   val width = 80
@@ -221,7 +222,12 @@ object Printer extends cuvee.pipe.Printer:
       val (assoc, prec) = Grammar.infix_ops(op)
       Some((op, assoc, prec, args))
 
+    // the translations of / and % come first, since they are conditionals and differences
     expr match
+      case Quot(a, b)          => op("/", List(a, b))
+      case Rem(a, b)           => op("%", List(a, b))
+      case App(Trunc.quot, _, _, args) => op("/", args)
+      case App(Trunc.rem, _, _, args)  => op("%", args)
       case Not(Eq(a, b))       => op("!=", List(a, b))
       case Eq(a, b)            => op("==", List(a, b))
       case And(args)           => op("&&", args)
@@ -240,7 +246,7 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: BigInt, _) if value < 0 =>
         (Grammar.prefix_ops("-"), None)
 
-      case Ite(_, _, _) =>
+      case Ite(_, _, _) if infix(expr).isEmpty =>
         (lowest, None)
 
       case _ =>
@@ -275,7 +281,7 @@ object Printer extends cuvee.pipe.Printer:
       case False =>
         text("false")
 
-      case Ite(test, left, right) =>
+      case Ite(test, left, right) if infix(expr).isEmpty =>
         Group(doc(test, (0, None)) +:+ text("?") +:+ doc(left, (0, None)) +:+ text(":") +:+ doc(right, (lowest, None)))
 
       case Select(base, index) =>
@@ -300,8 +306,11 @@ object Printer extends cuvee.pipe.Printer:
         doc(Or(Not(left), right))
 
       // div and mod of SMT-LIB, which differ from C's / and %
-      case App(fun, _, _, args) if fun == Fun.int.div || fun == Fun.int.mod =>
-        call(name(fun.name), args.map(doc(_)))
+      case DivBy.int(a, b) =>
+        doc(Trunc.div(a, b))
+
+      case Mod.int(a, b) =>
+        doc(Trunc.mod(a, b))
 
       case _ =>
         Error.raise("expression not supported in C", expr)

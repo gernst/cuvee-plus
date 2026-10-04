@@ -54,22 +54,14 @@ class Parser(var state: State):
       case IntType  => Not(Eq(expr, Zero.int))
       case _        => Error.raise("not a truth value", expr)
 
-  // division and remainder truncate towards zero in C, unlike div and mod in SMT-LIB
-  def quot(a: core.Expr, b: core.Expr): core.Expr =
-    val pos = Ite(Le.int(Zero.int, b), DivBy.int(a, b), UMinus.int(DivBy.int(a, UMinus.int(b))))
-    val neg = Ite(Le.int(Zero.int, b), UMinus.int(DivBy.int(UMinus.int(a), b)), DivBy.int(UMinus.int(a), UMinus.int(b)))
-    Ite(Le.int(Zero.int, a), pos, neg)
-
-  def rem(a: core.Expr, b: core.Expr): core.Expr =
-    Minus.int(a, Times.int(b, quot(a, b)))
-
   def arith(op: String, a: core.Expr, b: core.Expr): core.Expr =
     op match
       case "+" => Plus.int(a, b)
       case "-" => Minus.int(a, b)
       case "*" => Times.int(a, b)
-      case "/" => quot(a, b)
-      case "%" => rem(a, b)
+      // division and remainder truncate towards zero in C, unlike div and mod in SMT-LIB
+      case "/" => Quot(a, b)
+      case "%" => Rem(a, b)
       case _   => Error.raise("unknown arithmetic operator", op)
 
   // an expression together with the statements that evaluate the calls in it first, and its C type

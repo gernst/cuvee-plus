@@ -5,20 +5,15 @@ import utest._
 
 import cuvee.core._
 
-// the C examples parse, and those without division print back to the same program,
-// since div and mod of SMT-LIB are printed as calls
+// the C examples parse and print back to the same program, including division and remainder
 object Parsing extends TestSuite:
   val tests =
     Examples.tests(Examples.find(os.sub / "c", "c")): file =>
       Examples.errors("-print", "null", file.toString) ==> Nil
 
 object Roundtrip extends TestSuite:
-  def plain(file: os.Path) =
-    val code = os.read.lines(file).filterNot(_.trim.startsWith("//"))
-    !code.exists(line => line.contains(" / ") || line.contains("%"))
-
   val tests =
-    Examples.tests(Examples.find(os.sub / "c", "c").filter(plain)): file =>
+    Examples.tests(Examples.find(os.sub / "c", "c")): file =>
       val first = os.temp(suffix = ".c")
       val second = os.temp(suffix = ".c")
 
