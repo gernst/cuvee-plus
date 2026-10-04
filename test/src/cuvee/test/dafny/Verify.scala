@@ -35,6 +35,11 @@ object VerifyOde extends TestSuite:
     cuvee.dafny.Printer.lines(phi).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:
+    // the derivatives are simplified away before the goals are passed to z3
+    test("hybrid.dfy"):
+      val hybrid = Examples.root / "hybrid.dfy"
+      Examples.errors("-verify", "-simplify", "-z3", hybrid.toString) ==> Nil
+
     test("weakening"):
       ode(Nil, Le.int(zero, x)) ==> "forall x₁: int :: 0 < y ==> 0 <= x₁"
 

@@ -388,60 +388,48 @@ object Simplify extends Transform:
         Mod.int(left, right)
 
   // the derivative of `expr` with respect to `xs` (see Diff), by the rules of dL:
-  // terms on Int and Real that do not contain xs have derivative 0, a variable x in xs has derivative x',
+  // derivatives are on Real only, derivatives of terms on Int are kept;
+  // terms that do not contain xs have derivative 0, a variable x in xs has derivative x',
   // derivatives are linear, products follow the product rule,
   // and the derivative of e < f and of e <= f is e' <= f', that of a conjunction is the conjunction of the derivatives;
   // derivatives of other expressions are kept, e.g. of applications of other functions and of division
   def diff(state: State, xs: List[Var], expr: Expr): Expr =
     val d = (arg: Expr) => diff(state, xs, arg)
 
-    Ring(expr.typ) match
-      case Some(ring) =>
-        expr match
-          case _ if (expr.free intersect xs.toSet).isEmpty =>
-            ring.lit(util.Rational(0))
+    expr match
+      case _ if expr.typ == Sort.real && (expr.free intersect xs.toSet).isEmpty =>
+        Zero.real
 
-          case x: Var =>
-            x.primed
+      case x: Var if x.typ == Sort.real =>
+        x.primed
 
-          case ring.uminus(arg) =>
-            ring.uminus(d(arg))
+      case UMinus.real(arg) =>
+        UMinus.real(d(arg))
 
-          case ring.plus(args) =>
-            ring.plus(args.map(d))
+      case Plus.real(args) =>
+        Plus.real(args.map(d))
 
-          case ring.minus(left, right) =>
-            ring.minus(d(left), d(right))
+      case Minus.real(left, right) =>
+        Minus.real(d(left), d(right))
 
-          // (a * b * c)' = a' * b * c + a * b' * c + a * b * c'
-          case ring.times(args) =>
-            val summands =
-              for i <- args.indices.toList
-              yield ring.times(args.updated(i, d(args(i))))
-            ring.plus(summands)
+      // (a * b * c)' = a' * b * c + a * b' * c + a * b * c'
+      case Times.real(args) =>
+        val summands =
+          for i <- args.indices.toList
+          yield Times.real(args.updated(i, d(args(i))))
+        Plus.real(summands)
 
-          case _ =>
-            Diff(xs, expr)
+      case Lt.real(left, right) =>
+        Le.real(d(left), d(right))
 
-      case None =>
-        expr match
-          case Lt.int(left, right) =>
-            Le.int(d(left), d(right))
+      case Le.real(left, right) =>
+        Le.real(d(left), d(right))
 
-          case Lt.real(left, right) =>
-            Le.real(d(left), d(right))
+      case And(phis) =>
+        And(phis.map(d))
 
-          case Le.int(left, right) =>
-            Le.int(d(left), d(right))
-
-          case Le.real(left, right) =>
-            Le.real(d(left), d(right))
-
-          case And(phis) =>
-            And(phis.map(d))
-
-          case _ =>
-            Diff(xs, expr)
+      case _ =>
+        Diff(xs, expr)
 
   // comparisons on Int or Real, built by `op`
   def lt(state: State, ctx: Ctx, op: Sugar.binary, left: Expr, right: Expr): Expr =

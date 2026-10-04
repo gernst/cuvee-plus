@@ -1,27 +1,27 @@
 // hybrid programs: nondeterministic iterations, differential equations with evolution constraints and
-// differential invariants, and derivatives (x, y :: e)' of e with respect to x and y
+// differential invariants, and derivatives (x, y :: e)' of e with respect to x and y, which are on real
 
 // a bouncing ball at height x with velocity v under gravity g
-method ball(g: int, h: int) returns (x: int, v: int)
-  requires 0 < g && 0 <= h
+method ball(g: real, h: real) returns (x: real, v: real)
+  requires 0.0 < g && 0.0 <= h
 {
-  x, v := h, 0;
+  x, v := h, 0.0;
   while *
-    invariant 0 <= x
+    invariant 0.0 <= x && 2.0 * g * x + v * v <= 2.0 * g * h
   {
-    x', v' == v, -g && 0 <= x
-      invariant 2 * g * x + v * v <= 2 * g * h;
-    if x == 0 {
+    x', v' == v, -g && 0.0 <= x
+      invariant 2.0 * g * x + v * v <= 2.0 * g * h;
+    if x == 0.0 {
       v := -v;
     }
   }
 }
 
 // the derivative of the energy, which vanishes along the trajectories of the ball
-method energy(g: int, h: int) returns (e: int)
+method energy(g: real, h: real) returns (e: real)
 {
-  var x: int, v: int;
-  x, v := h, 0;
+  var x: real, v: real;
+  x, v := h, 0.0;
   x', v' == v, -g;
-  e := (x, v :: 2 * g * x + v * v)';
+  e := (x, v :: 2.0 * g * x + v * v)';
 }

@@ -37,7 +37,11 @@ object Derivatives extends TestSuite:
   val tests = Tests:
     test("constants"):
       diff(Plus.real(c, two), x) ==> "0.0"
-      diff(Times.int(n, n), x) ==> "0"
+
+    // derivatives are on Real only
+    test("integers"):
+      diff(Times.int(n, n), n) ==> "(n :: n * n)'"
+      diff(Lt.int(n, Zero.int), n) ==> "(n :: n < 0)'"
 
     test("variables"):
       diff(x, x) ==> "x'"

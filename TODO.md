@@ -136,8 +136,8 @@ Open:
   passed to a solver. `Horn` will not support `Ode` and raises an error.
 - The simplifier computes derivatives
   ([simplify/Simplify.scala](src/cuvee/simplify/Simplify.scala), `diff`) of
-  terms on Int and Real built from variables, literals, `+`, `-`, `*`, and of
-  `<`, `<=`, and conjunctions; open are the chain rule for applications of
+  terms on Real built from variables, literals, `+`, `-`, `*`, and of
+  `<`, `<=`, and conjunctions, derivatives on Int are kept; open are the chain rule for applications of
   other functions (where do their partial derivatives come from?), division,
   equations, and other formulas, which are kept as `Diff`.
 - The primed variables in `Diff` are not declared, and the type checker does
