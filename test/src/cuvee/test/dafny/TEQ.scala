@@ -26,6 +26,16 @@ object TEQ extends TestSuite:
         val first = os.read.lines(file).head
         Examples.errors("-teq", "-z3", file.toString) ==> expected(first)
 
+    // break, continue, and return inside of loops: the loop is left by a path that ends by break or return,
+    // in addition to the exit where the guard does not hold
+    test("jumps"):
+      for name <- List("break.dfy", "continue.dfy", "return.dfy", "invalid_break.dfy")
+      do
+        val file = Examples.root / "dafny" / "vcgen" / name
+        val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
+        errors ==> Nil
+        assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
+
     // the counter i of sum.dfy is recognized by the lemma of example 2.3
     test("counter"):
       val file = Examples.root / "dafny" / "vcgen" / "sum.dfy"

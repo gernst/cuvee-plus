@@ -10,8 +10,8 @@ import cuvee.core._
 // the fresh variables for nondeterministic choices, the values of the program variables as a substitution,
 // the assumptions made, the branch conditions taken, and the checks from assertions,
 // where each check is conditional on the assumptions and branch conditions before it;
-// a path that has returned skips the remaining statements
-case class Path(zs: List[Var], su: Map[Var, Expr], assms: List[Expr], branch: List[Expr], checks: List[Expr], returned: Boolean):
+// a path that has left by a jump (break, continue, or return) skips the remaining statements
+case class Path(zs: List[Var], su: Map[Var, Expr], assms: List[Expr], branch: List[Expr], checks: List[Expr], jump: Option[Prog]):
   def apply(expr: Expr): Expr =
     Subst[Type, Expr](Map(), su)(expr)
 
@@ -46,7 +46,7 @@ case class Path(zs: List[Var], su: Map[Var, Expr], assms: List[Expr], branch: Li
 
 object Path:
   def apply(su: Map[Var, Expr]): Path =
-    Path(Nil, su, Nil, Nil, Nil, false)
+    Path(Nil, su, Nil, Nil, Nil, None)
 
 // verification by symbolic execution, where loops are summarized by trace equation systems
 // (after Trace Equation Systems for Program Verification):
@@ -96,15 +96,13 @@ object TEQ extends Transform:
 
   // the paths through `prog` that extend `p`
   def symex(state: State, proc: Name, prog: Prog, p: Path): List[Path] =
-    if p.returned
+    if p.jump.isDefined
     then List(p)
     else
       prog match
-        case Return =>
-          List(p.copy(returned = true))
-
-        case Break | Continue =>
-          Error.raise("break and continue are not supported by symbolic execution", prog)
+        // break and continue occur inside of loops only (see Type.check), which resolve them
+        case Break | Continue | Return =>
+          List(p.copy(jump = Some(prog)))
 
         case Spec(xs, pre, post) =>
           val zs = xs.fresh
@@ -137,10 +135,10 @@ object TEQ extends Transform:
           choice(state, proc, progs, p)
 
         case While(test, body, attrs) =>
-          List(loop(state, proc, Some(test), body, attrs, p))
+          loop(state, proc, Some(test), body, attrs, p)
 
         case Iter(body, attrs) =>
-          List(loop(state, proc, None, body, attrs, p))
+          loop(state, proc, None, body, attrs, p)
 
         case _: Ode | _: Par =>
           Error.raise("not supported by symbolic execution", prog)
@@ -192,19 +190,18 @@ object TEQ extends Transform:
   def modified(state: State, body: Prog): List[Var] =
     (body.mod ++ Verify.calls(body).flatMap(call => state.procattrs(call.proc).modifies)).toList.distinct
 
-  // the trace equation system of a loop and the single path that leaves it, which summarizes all paths through the loop,
-  // loops without test (nondeterministic iterations) may be left in every iteration
-  def loop(state: State, proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, p: Path): Path =
+  // the trace equation system of a loop and the paths that leave it, which summarize all paths through the loop:
+  // the iterations take the paths through the body that end normally or by continue,
+  // the loop is left if the guard does not hold, where loops without test (nondeterministic iterations)
+  // may be left in every iteration, or by a path through the body that ends by break or return
+  def loop(state: State, proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, p: Path): List[Path] =
     val xs = modified(state, body)
     val guard = test.getOrElse(True)
 
     // the body from an arbitrary state x♯ of the loop variables, the other variables keep their values
     val sharp = xs.fresh
     val inner = Path(p.su ++ (xs zip sharp))
-    val paths = symex(state, proc, body, inner)
-
-    Error.report("return inside of loops is not supported by symbolic execution", body):
-      require(paths.forall(!_.returned))
+    val paths = symex(state, proc, body, inner).filter(iterates)
 
     // the nondeterministic choices of the body are ranged over by sequences, named after them with a final ?, e.g. Choice?
     val zs = paths.flatMap(_.zs).distinct
@@ -242,14 +239,28 @@ object TEQ extends Transform:
     val wf = Le.int(Zero.int, n) :: Zs.map(seq => Eq(App(Fun.trace.length, List(seq)), n))
     val teq = And(counter :: current ++ equations ++ (iterations :: wf))
 
-    // the state at the exit, from which the body executes safely if the guard holds
+    // the state at the exit, from which the body executes safely if the guard holds,
+    // the paths of the body from there that end by break or return leave the loop as well
     val exit = p.fresh(cur ++ List(n, K) ++ Xs ++ Zs).assign(xs, cur)
-    val safe = And(for q <- symex(state, proc, body, Path(exit.su)) yield All(q.zs, q.C))
+    val last = symex(state, proc, body, Path(exit.su))
+    val safe = And(for q <- last yield All(q.zs, q.C))
     val exit_ = exit.assume(teq)
+    val guard_ = exit_(guard)
+    val checked = exit_.check(Imp(guard_, safe))
+
+    val left =
+      for q <- last if !iterates(q)
+      yield
+        val jump = if q.jump == Some(Return) then q.jump else None
+        Path(checked.zs ++ q.zs, q.su, checked.assms ++ (guard_ :: q.assms), checked.branch ++ q.branch, checked.checks, jump)
 
     test match
       case Some(test) =>
-        exit_.check(Imp(exit_(test), safe)).assume(Not(exit_(test)))
+        checked.assume(Not(exit_(test))) :: left
 
       case None =>
-        exit_.check(safe)
+        checked :: left
+
+  // the paths through a loop body that lead to the next iteration, i.e., that end normally or by continue
+  def iterates(q: Path): Boolean =
+    q.jump.isEmpty || q.jump == Some(Continue)

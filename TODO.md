@@ -13,7 +13,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- `TEQ.scala`: support break and continue in symex
 - in the generated constraints for `TEQs` make sure that the trace equations don't occur twice, by re-arranging the formula correctly
 - hook up trace terms to the simplifier
 - implement support for trace combinators in the transforms
@@ -191,8 +190,7 @@ inferred from the call graph. Open:
   rewritten by lemmas (a database is missing, and the rewrite engine is not
   connected to `-teq`) or encoded into first-order logic (fall-back encodings,
   section 5.3 of the paper) before a solver can prove them. It does not
-  support `break`, `continue`, `return` inside of loops, differential
-  equations, and parallel composition; loop invariants are ignored; the
+  support differential equations and parallel composition; loop invariants are ignored; the
   number of paths grows exponentially with the branches of a body; the trace
   equation system of a loop occurs twice in the goal (safety of the body and
   exit).
