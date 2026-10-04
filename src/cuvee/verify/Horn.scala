@@ -61,7 +61,7 @@ object Horn extends Transform:
         val (_, _, requires, ensures) = Verify.contract(state, name)
 
         val gs = state.globals
-        val gs_ = Horn.entry(gs)
+        val gs_ = gs.fresh
         val ensures_ = Old.elim(gs, gs_, ensures)
         val mod = Verify.modifies(attrs)
         val frame = for (g, g_) <- gs zip gs_ if !mod.contains(g) yield Eq(g, g_)
@@ -74,13 +74,14 @@ object Horn extends Transform:
         decls ++ clauses.value.map(axiom)
 
       // the body leads from p_pre to p_post, the postcondition is the query p_pre ∧ p_post ∧ ¬ensures ⇒ false;
-      // the body ranges over the values gs_ of the global variables at the entry, which are never modified
+      // the body ranges over the values gs_ of the global variables at the entry, which are never modified,
+      // fresh copies of the global variables, which cannot clash with other names in the clauses
       case DefineProc(Proc(name, params, in, out), body, _) =>
         val (pre, post, decls) = declare(state, name)
         val (_, _, requires, ensures) = Verify.contract(state, name)
 
         val gs = state.globals
-        val gs_ = Horn.entry(gs)
+        val gs_ = gs.fresh
         val scope = in ++ gs_ ++ out ++ gs
         // old(e) refers to the values gs_ at the entry
         val body_ = Old.elim(gs, gs_, body)
@@ -133,8 +134,8 @@ object Horn extends Transform:
     val gs = state.globals
     Fun(name.name + "_post", params, in ++ entry(gs) ++ out ++ gs, Sort.bool)
 
-  // the values of the global variables at the entry of a procedure, which are the formal parameters of p_post,
-  // they need not be fresh since each clause is quantified separately
+  // the formal parameters of p_post for the values of the global variables at the entry of a procedure,
+  // fixed such that p_post is the same function at all uses
   def entry(gs: List[Var]): List[Var] =
     Expr.vars("g", gs.types)
 

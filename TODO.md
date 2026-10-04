@@ -76,8 +76,6 @@ reference semantics for array parameters.
   `decreases` clause are not checked (Dafny guesses a measure), measures are
   integers only, and the measure of a procedure must refer to its inputs.
 - `old(e)` (`core.Old`) inside preconditions refers to the current values.
-- `Horn` names the values of the global variables at the entry of a procedure
-  `g$0, g$1, ...`, which may clash with names in the input.
 - Add a cache of further commonly used information to `State`
   ([core/State.scala](src/cuvee/core/State.scala)).
 
