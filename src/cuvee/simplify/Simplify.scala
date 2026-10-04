@@ -19,8 +19,77 @@ object Simplify extends Transform:
       case DefineFun(fun, body, attrs) =>
         DefineFun(fun, simplify(state, Ctx.empty, body), attrs)
 
+      case DeclareProc(proc, attrs) =>
+        DeclareProc(proc, simplify(state, attrs))
+
+      case DefineProc(proc, body, attrs) =>
+        DefineProc(proc, simplify(state, body), simplify(state, attrs))
+
       case _ =>
         cmd
+
+  // the formulas and terms in attributes, e.g. contracts and invariants, are simplified without context
+  def simplify(state: State, attrs: Attrs): Attrs =
+    val attrs_ =
+      for (kw, arg) <- attrs.attrs
+      yield arg match
+        case Some(expr: Expr) => kw -> Some(simplify(state, Ctx.empty, expr))
+        case _                => kw -> arg
+
+    Attrs(attrs_)
+
+  // programs are simplified statement by statement, where the expressions are simplified without context,
+  // since the facts known before an assignment may not hold afterwards;
+  // branches and loops with constant tests are reduced, and statements without effect are dropped
+  def simplify(state: State, prog: Prog): Prog =
+    val e = (expr: Expr) => simplify(state, Ctx.empty, expr)
+    val p = (prog: Prog) => simplify(state, prog)
+
+    prog match
+      case Break | Continue | Return =>
+        prog
+
+      case Spec(xs, pre, post) =>
+        Spec(xs, e(pre), e(post))
+
+      case Assign(lhs, rhs) =>
+        val pairs = (lhs zip rhs.map(e)).filterNot((x, rhs_) => x == rhs_)
+        Assign(pairs.map(_._1), pairs.map(_._2))
+
+      case Call(name, args, res) =>
+        Call(name, args.map(e), res)
+
+      // nested blocks without locals are merged, statements without effect are dropped
+      case Block(locals, progs) =>
+        val progs_ =
+          progs.map(p).flatMap:
+            case Block(Nil, inner)                  => inner
+            case Assign(Nil, Nil) | Spec(Nil, True, True) => Nil
+            case prog_                              => List(prog_)
+        Block(locals.filter(x => progs_.exists(_.free.contains(x))), progs_)
+
+      case Choice(progs) =>
+        Choice(progs.map(p))
+
+      case If(test, left, right) =>
+        e(test) match
+          case True  => p(left)
+          case False => p(right)
+          case test_ => If(test_, p(left), p(right))
+
+      case While(test, body, attrs) =>
+        e(test) match
+          case False => Block(Nil, Nil)
+          case test_ => While(test_, p(body), simplify(state, attrs))
+
+      case Iter(body, attrs) =>
+        Iter(p(body), simplify(state, attrs))
+
+      case Ode(xs, rhs, dom, attrs) =>
+        Ode(xs, rhs.map(e), e(dom), simplify(state, attrs))
+
+      case Par(calls) =>
+        Par(for Call(name, args, res) <- calls yield Call(name, args.map(e), res))
 
   // simplify `expr` assuming that all facts in `ctx` hold
   // by repeated rounds of simplification until a fixpoint is reached,

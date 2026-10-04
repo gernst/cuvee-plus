@@ -79,7 +79,8 @@ type Transform = (List[Cmd], List[Cmd], Cmd, State) => List[Cmd]
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point.
 - [`Simplify`](../src/cuvee/simplify/Simplify.scala) rewrites assertions and
-  function definitions to a fixpoint.
+  function definitions to a fixpoint, and simplifies procedures statement by
+  statement.
   - The context `Ctx` holds the facts known at the current position.
   - Arithmetic is normalised into polynomials (`Arith`); comparisons become
     `0 < p` and `0 <= p` with positive coefficients on both sides.

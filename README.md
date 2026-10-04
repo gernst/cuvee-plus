@@ -28,7 +28,8 @@ languages or passes it to an SMT solver (z3 or cvc5).
 - **Splitting** (`-split`): goals and lemmas are split into individual
   obligations `forall xs. antecedents ==> conclusion`, which the solvers report
   one by one.
-- **Simplifier** (`-simplify`): contextual simplification of formulas,
+- **Simplifier** (`-simplify`): contextual simplification of formulas and
+  simplification of programs,
   normalisation of arithmetic on `Int` and `Real` into polynomials, and
   derivatives.
 - **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`): goals and lemmas are checked

@@ -59,3 +59,36 @@ object Derivatives extends TestSuite:
     // the chain rule for other functions is not applied
     test("other functions"):
       diff(App(f, List(x)), x) ==> "(x :: f(x))'"
+
+// programs are simplified statement by statement, before verification the verdicts are the same
+object SimplifyPrograms extends TestSuite:
+  import cuvee.test.dafny.Verify.expected
+
+  val tests = Tests:
+    test("statements"):
+      val text = """
+        method m(x: int) returns (y: int)
+          requires 0 <= x + 0
+        {
+          var z: int;
+          y := y;
+          if 1 < 2 { y := (x + 1) * 1; } else { y := 0; }
+          while false { y := 2; }
+        }
+      """
+      val file = os.temp(text, suffix = ".dfy")
+      val (cmds, errors) = Examples.output("-simplify", file.toString)
+      errors ==> Nil
+      cuvee.dafny.Printer.lines(cmds) ==> List(
+        "method m(x: int) returns (y: int)",
+        "  requires 0 <= x",
+        "{",
+        "  y := x + 1;",
+        "}"
+      )
+
+    test("examples"):
+      for file <- Examples.find(os.sub / "vcgen", "dfy")
+      do
+        val first = os.read.lines(file).head
+        Examples.errors("-simplify", "-verify", "-z3", file.toString) ==> expected(first)
