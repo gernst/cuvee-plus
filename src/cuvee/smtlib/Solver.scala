@@ -105,11 +105,13 @@ object Solver:
   def cvc5(timeout: Int = 1000) =
     new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
 
-  // the sorts and datatypes of the prelude of a frontend that SMT-LIB does not know, e.g. the tuples of Dafny,
+  // the sorts that the solvers know
+  val known = Set(Con.bool, Con.int, Con.real, Con.string, Con.array, Con.seq).map(_.name)
+
+  // the built-in sorts and datatypes of a frontend that the solvers do not know, e.g. Trace and the sets of Dafny,
   // which are declared to the solver at the start, the sorts first since datatypes may refer to them
   def prelude(init: State): List[Decl] =
-    val (smtlib, _) = Source.newParser()
-    val names = (init.sorts.keySet -- smtlib.sorts.keySet).toList.sortBy(_.toString)
+    val names = (init.sorts.keySet -- known).toList.sortBy(_.toString)
 
     val sorts =
       for name <- names if !init.datatypes.contains(name) && !init.sortdefs.contains(name)
@@ -137,6 +139,11 @@ object Solver:
 
     def query(cmd: Cmd) =
       cmd match
+        // assumptions with the combinators of trace equation systems are not passed to the solver,
+        // which does not support them, e.g. the lemmas of -teq; this is sound since only facts are omitted
+        case Assert(justify, _, phi, attrs) if assumed(justify, attrs) && combinators(phi) =>
+          (Ack.Unsupported, this)
+
         // only the attribute :named is passed on, the solvers reject unknown ones, e.g. :rw
         case Assert(Axiom, params, phi, attrs) =>
           (solver.ack(Assert(Axiom, params, phi, named(attrs))), this)
@@ -218,6 +225,16 @@ object Solver:
           val ack = solver.ack(cmd)
           parser.reset()
           (ack, this)
+
+    // axioms and free lemmas, which are assumed without proof
+    def assumed(justify: Justify, attrs: Attrs): Boolean =
+      justify == Axiom || (justify == Lemma && attrs.contains("free"))
+
+    // whether `expr` contains a combinator of trace equation systems
+    def combinators(expr: Expr): Boolean =
+      expr match
+        case _: Trace | _: Maps | _: Invs => true
+        case _                            => expr.subexprs.exists(combinators)
 
     // the names of assertions, e.g. for labels
     def named(attrs: Attrs): Attrs =

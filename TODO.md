@@ -13,7 +13,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- have `TEQ.scala` inject lemmas from `teq.dfy`, which should be part of the resources as the lemma database, use a fresh dafny parser, and inject all commands, they can remain in the final output
 - check the flattening operation in this `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Clause.scala` file, implement a similar normalization step as `Normalize` in `simplify`, and integrate it into `Simplify`. should it be the first or last step in `Simplify`? I'm not sure.
 - implement Dafny's additional types set, etc using CVC5's notation if available, ensure the overloading reoslution works propertly
 - add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
@@ -170,9 +169,12 @@ inferred from the call graph. Open:
   variables. It has no rules for sequences.
 
 - The functions on traces other than `butlast` (`⌊X⌋` in Dafny and Boogie),
-  i.e. `counter`, `current`, `steps`, `length`, `nth`, `earlier`, are not
-  declared by the preludes, since their names would clash with functions of
-  the input; hence the goals of `-teq` do not parse back.
+  i.e. `counter`, `current`, `steps`, `length`, `nth`, `earlier`, are declared
+  by the lemma database of `-teq` ([resources/cuvee/teq.dfy](resources/cuvee/teq.dfy))
+  only, whose names may clash with functions of the input; the database
+  contains the lemmas that the rewrite engine can express, lemmas about `all`
+  over a formula would need higher-order patterns; its polymorphic functions
+  must be monomorphized for a solver.
 - The combinators of trace equation systems are written
   `trace(e, for Y do x, y => u)`, `map(for Y yield y => u)`, and
   `all(for Y check y => φ)` in Dafny and Boogie, where updates with several
@@ -184,8 +186,8 @@ inferred from the call graph. Open:
 - The verifier by symbolic execution and trace equation systems (`-teq`,
   [verify/TEQ.scala](src/cuvee/verify/TEQ.scala)) generates high-level goals
   that contain the combinators for programs with loops, which must be
-  rewritten by lemmas (a database is missing, and the rewrite engine is not
-  connected to `-teq`) or encoded into first-order logic (fall-back encodings,
+  rewritten by lemmas (`-teq -simplify` with the lemma database, which is
+  small) or encoded into first-order logic (fall-back encodings,
   section 5.3 of the paper) before a solver can prove them. It does not
   support differential equations and parallel composition; loop invariants are ignored; the
   number of paths grows exponentially with the branches of a body.
