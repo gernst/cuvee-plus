@@ -52,6 +52,9 @@ object Printer extends cuvee.pipe.Printer:
       case typ: Type        => doc(typ)
       case expr: Expr       => doc(expr)
       case prog: Prog       => doc(prog)
+      // e.g. the variables of a modifies clause
+      case exprs: List[?] if exprs.nonEmpty && exprs.forall(_.isInstanceOf[Expr]) =>
+        commas(exprs.map { case expr: Expr => doc(expr) })
       // attributes that have not been resolved are s-expressions
       case value            => Doc.lines(cuvee.sexpr.Printer.lines(value))
 
@@ -184,9 +187,9 @@ object Printer extends cuvee.pipe.Printer:
       case Assert(justify, _, phi, attrs) =>
         Group(text(format(justify)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi)))
 
-      // global variables do not exist in Dafny
+      // global variables are not Dafny, which has fields of objects instead
       case DeclareVar(Var(name_, typ), attrs) =>
-        text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ)
+        text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ) ++ text(";")
 
       case DeclareProc(Proc(name_, params_, in, out), attrs) =>
         header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, None)
@@ -608,6 +611,9 @@ object Printer extends cuvee.pipe.Printer:
       // two or more arguments are printed in infix notation above
       case Distinct(_) =>
         Error.raise("unprintable distinct", expr)
+
+      case Old(arg) =>
+        call("old", List(doc(arg)))
 
       case Diff(xs, arg) =>
         Group(text("(") ++ commas(xs.map(doc(_))) +:+ text("::") ++ Nest(2, line ++ doc(arg)) ++ text(")'"))

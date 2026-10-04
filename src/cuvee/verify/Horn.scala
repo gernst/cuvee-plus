@@ -62,13 +62,14 @@ object Horn extends Transform:
 
         val gs = state.globals
         val gs_ = Horn.entry(gs)
+        val ensures_ = Old.elim(gs, gs_, ensures)
         val mod = Verify.modifies(attrs)
         val frame = for (g, g_) <- gs zip gs_ if !mod.contains(g) yield Eq(g, g_)
 
         val clauses = Ref[List[Expr]](Nil)
         clause(in ++ gs, List(requires), App(pre, in ++ gs), clauses)
         clause(in ++ gs, List(App(pre, in ++ gs), Not(requires)), False, clauses)
-        clause(in ++ gs_ ++ out ++ gs, App(pre, in ++ gs_) :: ensures :: frame, App(post, in ++ gs_ ++ out ++ gs), clauses)
+        clause(in ++ gs_ ++ out ++ gs, App(pre, in ++ gs_) :: ensures_ :: frame, App(post, in ++ gs_ ++ out ++ gs), clauses)
 
         decls ++ clauses.value.map(axiom)
 
@@ -81,17 +82,20 @@ object Horn extends Transform:
         val gs = state.globals
         val gs_ = Horn.entry(gs)
         val scope = in ++ gs_ ++ out ++ gs
+        // old(e) refers to the values gs_ at the entry
+        val body_ = Old.elim(gs, gs_, body)
+        val ensures_ = Old.elim(gs, gs_, ensures)
         val decls_ = Ref[List[DeclareFun]](Nil)
         val clauses = Ref[List[Expr]](Nil)
 
         // p_pre ranges over the inputs and the global variables only, the outputs are unconstrained initially
         val entry = predicate(name, scope, decls_)
         clause(in ++ out ++ gs, List(App(pre, in ++ gs)), App(entry, in ++ gs ++ out ++ gs), clauses)
-        wp(state, name, scope, List(body), entry, post, None, None, post, decls_, clauses)
+        wp(state, name, scope, List(body_), entry, post, None, None, post, decls_, clauses)
 
         clause(in ++ gs, List(requires), App(pre, in ++ gs), clauses)
         clause(in ++ gs, List(App(pre, in ++ gs), Not(requires)), False, clauses)
-        clause(scope, List(App(pre, in ++ gs_), App(post, scope), Not(ensures)), False, clauses)
+        clause(scope, List(App(pre, in ++ gs_), App(post, scope), Not(ensures_)), False, clauses)
 
         decls ++ decls_.value ++ clauses.value.map(axiom)
 

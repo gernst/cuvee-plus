@@ -192,6 +192,9 @@ object Flat extends Transform:
       case Diff(xs, arg) =>
         Diff(xs, flat(state, arg))
 
+      case Old(arg) =>
+        Old(flat(state, arg))
+
       case _: Var | _: Lit =>
         expr
 

@@ -66,6 +66,9 @@ object Simplify extends Transform:
         val arg_ = simplify(state, ctx.neutral, arg)
         diff(state, xs, arg_)
 
+      case Old(arg) =>
+        Old(simplify(state, ctx.neutral, arg))
+
       // the annotation does not change the value, hence the polarity is kept
       case As(arg, typ) =>
         val arg_ = simplify(state, ctx, arg)

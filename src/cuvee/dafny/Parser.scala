@@ -25,8 +25,19 @@ class Parser(var state: State):
     val (name, typ) = formal
     state.exprs.formal(name, resolve(scope, typ))
 
+  // the global variables that calls in the method body that is resolved may modify
+  var modifiable: Set[core.Var] = Set()
+
   def resolve(cmd: Cmd): List[core.Cmd] =
     cmd match
+      case VarDef(vars) =>
+        val scope = Scope.empty
+        for (name, typ) <- vars
+        yield
+          val typ_ = resolve(scope, typ)
+          state = state.declare(name, typ_, Attrs.empty)
+          state.cmds.declareVar(name)
+
       case Axiom(expr) =>
         val scope = Scope.empty
         val expr_ = resolve(scope, expr)
@@ -214,19 +225,29 @@ class Parser(var state: State):
         val formals_ = self ++ formals.map(resolve(scope_, _))
         val rets_ = rets.toList.flatten.map(resolve(scope_, _))
 
-        val scope__ = scope_ ++ formals_ ++ rets_
+        // methods may read all global variables and modify those in their modifies clause,
+        // the formal parameters shadow global variables of the same name
+        val globals = state.globals
+        val scope__ = scope_ ++ globals ++ formals_ ++ rets_
         val attrs_ = contract(scope__, mod, req, ens, dec)
         state = state.declare(qname, params_, formals_, rets_, attrs_)
+
+        val mod_ = cuvee.verify.Verify.modifies(attrs_)
+        val nonglobal = mod_.filterNot(globals.contains)
+        Error.report("modifies clause of method lists variables that are not global", qname, nonglobal):
+          require(nonglobal.isEmpty)
 
         body match
           case None =>
             val cmd_ = state.cmds.declareProc(qname)
             List(cmd_)
 
+          // the inputs of a method and the global variables that are not modified must not be assigned
           case Some(prog) =>
+            modifiable = mod_.toSet
             val prog_ = resolve(scope__, prog)
-            // the inputs of a method must not be modified
-            val body_ = check(scope__, formals_.toSet, prog_)
+            val fixed = formals_.toSet ++ (globals.toSet -- mod_)
+            val body_ = check(scope__, fixed, prog_)
             state = state.define(qname, body_)
 
             val cmd_ = state.cmds.defineProc(qname)
@@ -359,6 +380,10 @@ class Parser(var state: State):
         val unit_ = state.exprs.app(core.Fun.seq.unit, List(elem_))
         state.exprs.app(core.Fun.seq.contains, List(seq_, unit_))
 
+      // the value at the entry of the method
+      case App("old", List(arg), Nil) =>
+        core.Old(resolve(scope, arg))
+
       // unary + is the identity
       case App("+", List(arg), Nil) =>
         resolve(scope, arg)
@@ -416,6 +441,13 @@ class Parser(var state: State):
       case _ =>
         Error.raise("unknown expression", expr, scope.vars.keys, state.funs.keys)
 
+  // calls may modify the global variables in the modifies clause of the method that contains them only
+  def calls(name: String) =
+    val callee = cuvee.verify.Verify.modifies(state.procattrs(name))
+    val unknown = callee.filterNot(modifiable.contains)
+    Error.report("call modifies variables that are not in the modifies clause", name, unknown):
+      require(unknown.isEmpty)
+
   def resolve(scope: Scope, prog: Prog): core.Prog =
     prog match
       case Skip =>
@@ -447,6 +479,7 @@ class Parser(var state: State):
 
         val lhs_ = lhs.map(scope.vars(_))
         val args_ = args.map(resolve(scope, _))
+        calls(name)
         state.progs.call(name, args_, lhs_)
 
       // all method calls must be top-level on variables
@@ -467,6 +500,7 @@ class Parser(var state: State):
 
           case _ if state.procs.contains(qname) =>
             val args_ = args.map(resolve(scope, _))
+            calls(qname)
             state.progs.call(qname, base_ :: args_, lhs_)
 
           case _ =>

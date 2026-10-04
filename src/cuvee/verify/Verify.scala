@@ -27,9 +27,15 @@ object Verify extends Transform:
       case DeclareVar(x, attrs) =>
         Nil
 
+      // old(e) in the body and in the postcondition refers to the values gs_ of the global variables at the entry,
+      // which are never modified and coincide with gs initially
       case DefineProc(Proc(name, params, _, _), body, _) =>
         val (in, out, pre, post) = contract(state, name)
-        val phi_ = All(in ++ out ++ gs, Imp(pre, wp(state, gs, name, body, post, False, False, post)))
+        val gs_ = gs.fresh
+        val body_ = Old.elim(gs, gs_, body)
+        val post_ = Old.elim(gs, gs_, post)
+        val phi = wp(state, gs, name, body_, post_, False, False, post_)
+        val phi_ = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(phi)))
         List(Assert(Goal, params, phi_, Attrs.empty))
 
       case _ =>
@@ -110,13 +116,16 @@ object Verify extends Transform:
           require(in.length == args.length && out.length == res.length)
 
         // results and the modified global variables are fresh since `args` may refer to their old values,
-        // the precondition refers to the values of the global variables before the call
+        // the precondition refers to the values of the global variables before the call,
+        // as does old(e) in the postcondition, whose modified global variables are kept apart as mod0 meanwhile
         val mod = modifies(state.procattrs(name))
         val res_ = res.fresh
         val mod_ = mod.fresh
+        val mod0 = mod.fresh
         val su = Subst.from(in, args)
         val su_ = Subst.from(in ++ out ++ mod, args ++ res_ ++ mod_)
         val rename = Subst.from(res ++ mod, res_ ++ mod_)
+        val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
 
         // the measure refers to the inputs, whose values at the call are those at the entry of `proc`
         val dec =
@@ -126,7 +135,7 @@ object Verify extends Transform:
             decreases(su(dec), dec)
           else True
 
-        And(List(su(pre), dec, All(res_ ++ mod_, Imp(su_(phi), rename(post)))))
+        And(List(su(pre), dec, All(res_ ++ mod_, Imp(phi_, rename(post)))))
 
       case Block(locals, progs) =>
         // locals may shadow variables in the postcondition, therefore they are renamed apart

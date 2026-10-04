@@ -78,6 +78,9 @@ object Overload:
       case Diff(xs, expr) =>
         Diff(xs, apply(state, expr))
 
+      case Old(expr) =>
+        Old(apply(state, expr))
+
       case Bind(quant, bound, body) =>
         Bind(quant, bound, apply(state, body))
 

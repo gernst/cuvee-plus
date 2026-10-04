@@ -96,6 +96,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
       case Diff(xs, expr) =>
         Diff(lhs(xs), this(expr))
 
+      case Old(expr) =>
+        Old(this(expr))
+
       case Bind(quant, bound, body) =>
         val (rename, that) = avoid(bound)
         Bind(quant, rename(bound), that(body))

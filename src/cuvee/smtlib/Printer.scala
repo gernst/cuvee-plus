@@ -321,6 +321,10 @@ object Printer extends cuvee.pipe.Printer:
       case As(expr, typ) =>
         apps(atom("as"), lines(expr), lines(typ))
 
+      // not part of SMT-LIB, the value at the entry of the procedure
+      case Old(expr) =>
+        apps(atom("old"), lines(expr))
+
       // not part of SMT-LIB, the derivative with respect to xs is written (diff (xs) expr)
       case Diff(xs, expr) =>
         apps(atom("diff"), list(lines(xs)), lines(expr))

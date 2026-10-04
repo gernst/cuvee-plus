@@ -311,6 +311,9 @@ object Grammar:
   val axiom =
     Axiom(P("axiom" ~ expr))
 
+  val vardef =
+    VarDef(P("var" ~ (formal ~+ ",") ~ ";"))
+
   val returns =
     P("returns" ~ formals)
 
@@ -318,7 +321,7 @@ object Grammar:
     MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ decreases.* ~ block.?))
 
   val cmd: Parser[Cmd] =
-    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom)
+    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | vardef)
 
   val script =
     P(cmd.*)

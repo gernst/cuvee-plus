@@ -10,15 +10,11 @@
   solvers do not accept; they need monomorphization first.
 - Boogie has no decimal literals, and its printer raises an error on real
   literals.
-- No `old(e)` in postconditions and loop invariants to refer to the values of
-  global variables at the entry of a procedure, in Boogie and Dafny;
-  `Horn` already names these values `g$i` in the postcondition predicates.
+- `old(e)` (`core.Old`) is parsed in Dafny only, not in Boogie; inside
+  preconditions it refers to the current values.
 - Termination in `Verify` and `Horn`: loops and procedures without
   `decreases` clause are not checked (Dafny guesses a measure), measures are
   integers only, and the measure of a procedure must refer to its inputs.
-- `Verify` and `Horn` treat all variables in `modifies` attributes as global
-  variables, which holds for Boogie input (the parser checks it), but not
-  for Dafny `modifies` clauses.
 - `Horn` names the values of the global variables at the entry of a procedure
   `g$0, g$1, ...`, which may clash with names in the input.
 - Add a cache of further commonly used information to `State`
@@ -51,10 +47,11 @@
   with unicode subscripts, e.g. `x₀`; the type parameters of assertions are
   omitted.
 - The printer's `any` passes all values that are not results, commands,
-  types, expressions or programs to the s-expression printer, which raises a
-  `MatchError` on anything that is not an atom or a list of such:
-  plain strings, lists of resolved expressions, e.g. the variables of a
-  `modifies` attribute, and other values such as numbers.
+  types, expressions, programs or lists of expressions to the s-expression
+  printer, which raises a `MatchError` on anything that is not an atom or a
+  list of such, e.g. plain strings and numbers.
+- The contract clauses of methods must be in the order `modifies`,
+  `requires`, `ensures`, `decreases`; Dafny allows any order.
 
 ## Boogie frontend
 

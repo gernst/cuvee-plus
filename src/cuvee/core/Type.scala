@@ -210,6 +210,9 @@ object Type:
 
         check(state, scope, arg, res, subst)
 
+      case Old(arg) =>
+        check(state, scope, arg, res, subst)
+
       case As(arg, typ) =>
         check(state, scope, arg, typ, subst)
 

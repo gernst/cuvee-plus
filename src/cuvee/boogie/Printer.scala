@@ -543,6 +543,9 @@ object Printer extends cuvee.pipe.Printer:
       case Distinct(_) =>
         Error.raise("unprintable distinct", expr)
 
+      case Old(arg) =>
+        call("old", List(doc(arg)))
+
       case Is(_, _) | As(_, _) | Diff(_, _) =>
         Error.raise("not supported in Boogie", expr)
 
