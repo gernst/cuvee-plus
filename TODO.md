@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- make the help for `-print` clearer
 - import `cuvee.Debug` in Simplify and other files, don't use the qualified name
 - the Dafny printer uses a semicolon after check, it should not be there, check also that it's not in the grammar
 - make `Mod` non-associative
@@ -107,8 +106,6 @@ inferred from the call graph. Open:
   not accept, unless `-monomorph` replaces them by their instances;
   polymorphic assertions (`par`) are not instantiated, and procedures are not
   monomorphized.
-- `-print` takes the file extensions as names of the output languages,
-  `smt2`, `dfy`, `bpl`, which is not documented in `-help`.
 - The output of `-print smt2` for Dafny and Boogie input lacks the sorts and
   datatypes of the prelude of the frontend (e.g. `chan`, `event`, tuples),
   which the solver sinks declare by themselves (`Solver.prelude`), so the

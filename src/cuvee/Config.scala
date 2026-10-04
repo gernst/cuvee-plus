@@ -151,7 +151,7 @@ object Config:
         (config_, rest)
 
   val print_ =
-    flag("-print", "<format>", "override printer format"):
+    flag("-print", "<lang>", "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), scala (the internal representation), or null (nothing)"):
       case (config, name :: rest) if langs.contains(name) =>
         val lang = langs(name)
         val config_ = config.copy(printer = lang.printer, overridePrinter = true)
@@ -217,7 +217,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.8.2")
+    println("Cuvée 0.8.3")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
