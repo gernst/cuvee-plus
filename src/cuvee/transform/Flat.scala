@@ -189,6 +189,9 @@ object Flat extends Transform:
       case As(arg, typ) =>
         As(flat(state, arg), typ)
 
+      case Diff(xs, arg) =>
+        Diff(xs, flat(state, arg))
+
       case _: Var | _: Lit =>
         expr
 

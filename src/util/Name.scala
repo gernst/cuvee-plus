@@ -4,6 +4,10 @@ case class Name(name: String, index: Option[Int]):
   def withIndex(index: Int) =
     Name(name, Some(index))
 
+  // the name of the derivative, x'
+  def primed =
+    Name(name + "'", index)
+
   // the name with the index as unicode subscript, e.g. a₃
   def subscripted: String =
     index match

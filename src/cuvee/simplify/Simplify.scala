@@ -61,6 +61,11 @@ object Simplify extends Transform:
         val arg_ = simplify(state, ctx.neutral, arg)
         is(state, ctx, arg_, fun)
 
+      // derivatives are not simplified yet, only their argument
+      case Diff(xs, arg) =>
+        val arg_ = simplify(state, ctx.neutral, arg)
+        Diff(xs, arg_)
+
       // the annotation does not change the value, hence the polarity is kept
       case As(arg, typ) =>
         val arg_ = simplify(state, ctx, arg)

@@ -308,6 +308,12 @@ class Parser(var state: State):
         val expr_ = App("not", List(App("=", args, Nil)), access)
         resolve(scope, expr_)
 
+      // the derivative (e)' is with respect to all variables of e, ordered by name
+      case App("'", List(arg), Nil) =>
+        val arg_ = resolve(scope, arg)
+        val xs_ = arg_.free.toList.sortBy(x => (x.name.name, x.name.index))
+        state.exprs.diff(xs_, arg_)
+
       case App(name, Nil, access) if scope.vars.contains(name) =>
         val base_ = scope.vars(name)
         resolve(scope, base_, access)
@@ -454,3 +460,15 @@ class Parser(var state: State):
         val body_ = resolve(scope, body)
         val attrs_ = invariants(scope, invs, dec)
         state.progs.iter(body_, attrs_)
+
+      // the evolution constraint defaults to true
+      case Ode(xs, rhs, dom, invs) =>
+        val unknown = xs.filterNot(scope.vars.contains(_))
+        Error.report("unknown local variables", scope, unknown, xs):
+          require(unknown.isEmpty)
+
+        val xs_ = xs.map(scope.vars(_))
+        val rhs_ = rhs.map(resolve(scope, _))
+        val dom_ = dom.map(resolve(scope, _)).getOrElse(core.True)
+        val attrs_ = invariants(scope, invs, Nil)
+        state.progs.ode(xs_, rhs_, dom_, attrs_)

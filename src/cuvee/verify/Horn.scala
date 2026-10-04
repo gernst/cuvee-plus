@@ -292,6 +292,9 @@ object Horn extends Transform:
       // the body ranges over the scope extended by fresh variables ms for the values of the measure at the start of the iteration,
       // which are dropped on each way out of the body, where the end of an iteration is the query iter(scope, ms) ∧ ¬(measure < ms) ⇒ false;
       // nondeterministic iterations have no test, i.e., inv(scope) leads to both body and next
+      case (prog: Ode) :: rest =>
+        Error.raise("differential equations not supported yet", proc, prog)
+
       case (loop @ (_: While | _: Iter)) :: rest =>
         val (test, body, attrs) = (loop: @unchecked) match
           case While(test, body, attrs) => (List(test), body, attrs)

@@ -43,6 +43,20 @@ object Printing extends TestSuite:
       Printer.lines(Iter(Assign(List(x), List(y)), attrs)) ==>
         List("while *", "  invariant x <= y", "{", "  x := y;", "}")
 
+    // the right hand sides are in parentheses if they contain a conjunction
+    test("ode"):
+      val dom = app(Fun.int.le, zero, x)
+      val inv = cuvee.sexpr.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
+      Printer.lines(Ode(List(x, y), List(y, app(Fun.int.uminus, x)), True, cuvee.sexpr.Attrs.empty)) ==>
+        List("x', y' == y, -x;")
+      Printer.lines(Ode(List(p), List(app(Fun.and, p, q)), dom, inv)) ==>
+        List("p' == (p && q) && 0 <= x", "  invariant x <= y;")
+
+    test("diff"):
+      expr(Diff(List(x), x)) ==> "x'"
+      expr(Diff(List(x, y), app(Fun.int.times, x, y))) ==> "(x * y)'"
+      expr(app(Fun.int.uminus, Diff(List(x), x))) ==> "-x'"
+
     test("mixfix"):
       expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
       expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"

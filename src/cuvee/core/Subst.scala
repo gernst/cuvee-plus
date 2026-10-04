@@ -92,6 +92,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
       case As(expr, typ) =>
         As(this(expr), this(typ))
 
+      // the variables of a derivative can only be renamed, like assigned variables
+      case Diff(xs, expr) =>
+        Diff(lhs(xs), this(expr))
+
       case Bind(quant, bound, body) =>
         val (rename, that) = avoid(bound)
         Bind(quant, rename(bound), that(body))
@@ -152,6 +156,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 
       case Iter(body, attrs) =>
         Iter(this(body), this(attrs))
+
+      case Ode(xs, rhs, dom, attrs) =>
+        Ode(lhs(xs), this(rhs), this(dom), this(attrs))
 
   @targetName("Subst.applyParams")
   def apply(params: List[Param]): List[Param | T] =

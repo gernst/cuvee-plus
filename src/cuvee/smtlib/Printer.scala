@@ -317,6 +317,10 @@ object Printer extends cuvee.pipe.Printer:
       case As(expr, typ) =>
         apps(atom("as"), lines(expr), lines(typ))
 
+      // not part of SMT-LIB, the derivative with respect to xs is written (diff (xs) expr)
+      case Diff(xs, expr) =>
+        apps(atom("diff"), list(lines(xs)), lines(expr))
+
       case Bind(quant, bound, body) =>
         apps(mangle(quant), list(formals(bound)), lines(body))
 
@@ -366,3 +370,6 @@ object Printer extends cuvee.pipe.Printer:
 
       case Iter(body, attrs) =>
         apps(atom("iter"), lines(body), lines(attrs))
+
+      case Ode(xs, rhs, dom, attrs) =>
+        apps(atom("ode"), eqs(xs, rhs), lines(dom), lines(attrs))

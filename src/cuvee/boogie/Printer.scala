@@ -369,6 +369,9 @@ object Printer extends cuvee.pipe.Printer:
       case Iter(body, attrs) =>
         loop(text("(*)"), body, attrs)
 
+      case Ode(_, _, _, _) =>
+        Error.raise("differential equations not supported in Boogie", prog)
+
   // loops have no attributes other than their specification clauses in Boogie, e.g. no decreases
   def loop(test: Doc, body: Prog, attrs: Attrs): Doc =
     val other = attrs.attrs.filterNot(isClause(_, _))
@@ -540,7 +543,7 @@ object Printer extends cuvee.pipe.Printer:
       case Distinct(_) =>
         Error.raise("unprintable distinct", expr)
 
-      case Is(_, _) | As(_, _) =>
+      case Is(_, _) | As(_, _) | Diff(_, _) =>
         Error.raise("not supported in Boogie", expr)
 
       // quantifiers are always in parentheses

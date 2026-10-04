@@ -252,6 +252,9 @@ case class State(
     def ex(bound: List[Var], body: Expr) =
       Ex(bound, body)
 
+    def diff(xs: List[Var], expr: Expr) =
+      Diff(xs, expr)
+
     def let(bound: List[Var], args: List[Expr], body: Expr) =
       Error.report("invalid let binding", bound, args):
         require(bound.length == args.length)
@@ -301,6 +304,11 @@ case class State(
 
     def iter(body: Prog, attrs: Attrs) =
       Iter(body, attrs)
+
+    def ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) =
+      Error.report("mismatching differential equations", xs, rhs):
+        require(xs.length == rhs.length)
+      Ode(xs, rhs, dom, attrs)
 
   object cmds:
     def declareSort(name: Name) =

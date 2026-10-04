@@ -13,8 +13,9 @@ object Grammar:
     "!" -> 8
   )
 
+  // derivatives (e)' bind tighter than prefix operators, -x' is -(x')
   val postfix_ops = Map[String, Int](
-    // "!" -> 8
+    "'" -> 9
   )
 
   // chained equations and comparisons as in Dafny, e.g. x == y == z or x < y <= z, are not supported for now:
@@ -170,6 +171,10 @@ object Grammar:
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))
 
+  // expressions with operators that bind tighter than conjunction
+  val term: Parser[Expr] =
+    M(sym, prefix_ops, postfix_ops, infix_ops, min = infix_ops("&&")._2 + 1) $ (inner, (op, args) => App(Sym(op), args, Nil))
+
   val invariant =
     P("invariant" ~ expr)
 
@@ -237,8 +242,17 @@ object Grammar:
   val while_ =
     While(P("while" ~ guard ~ invariant.* ~ decreases.* ~ block))
 
+  val prime = sym.filter(_ == "'").asScanner
+  val eq = sym.filter(_ == "==").asScanner
+  val and = sym.filter(_ == "&&").asScanner
+
+  // backtracks if there is no prime after the first variable, which is then an assignment or call statement;
+  // the right hand sides bind tighter than the conjunction with the evolution constraint
+  val ode =
+    Ode(P(((id ?~ prime) ~+ ",") ~ eq ~ (term ~+ ",") ~ (and ~ expr).? ~ invariant.* ~ ";"))
+
   val prog: Parser[Prog] =
-    P(ctrl | spec | if_ | while_ | block | assign | call)
+    P(ctrl | spec | if_ | while_ | block | ode | assign | call)
 
   val sel =
     Sel(P((id | num) ~ ":" ~ typ))

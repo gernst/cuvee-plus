@@ -28,6 +28,10 @@ case class Var(name: Name, typ: Type) extends Expr:
   def fresh = 
     Var(name.withIndex(Var.next()), typ)
 
+  // the variable for the derivative of this one, x'
+  def primed =
+    Var(name.primed, typ)
+
 object Var extends Counter
 
 case class Lit(value: Any, typ: Type) extends Expr:
@@ -63,6 +67,13 @@ case class Is(expr: Expr, fun: Fun) extends Expr:
 case class As(expr: Expr, typ: Type) extends Expr:
   def params = expr.params ++ typ.params
   def free = expr.free
+
+// the (time-)derivative of `expr` with respect to the variables `xs`, i.e., the sum of ∂expr/∂x * x' for x in xs,
+// which depends on the variables x' for the derivatives of xs as well
+case class Diff(xs: List[Var], expr: Expr) extends Expr:
+  def params = xs.params ++ expr.params
+  def free = expr.free ++ xs.map(_.primed)
+  def typ = expr.typ
 
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params

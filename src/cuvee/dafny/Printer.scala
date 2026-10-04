@@ -315,6 +315,7 @@ object Printer extends cuvee.pipe.Printer:
   // statements that are not part of Dafny:
   // choices are nondeterministic if statements, if * { ... } else { ... },
   // nondeterministic iterations are loops without test, while * { ... },
+  // differential equations with evolution constraint are x', y' == e, f && dom invariant ...;
   // general specifications name the modified variables, spec x, y requires pre ensures post;
   def doc(prog: Prog): Doc =
     prog match
@@ -379,6 +380,14 @@ object Printer extends cuvee.pipe.Printer:
 
       case Iter(body, attrs) =>
         header(text("while") ++ attributes(attrs) +:+ text("*"), attrs, Some(block(body)))
+
+      // the right hand sides bind tighter than the conjunction with the evolution constraint
+      case Ode(xs, rhs, dom, attrs) =>
+        val lhs_ = commas(xs.map(x => text(name(x.name) + "'")))
+        val rhs_ = commas(rhs.map(doc(_, (Grammar.infix_ops("&&")._2, None))))
+        val dom_ = if dom == True then Nil else List(line ++ text("&&") +:+ doc(dom))
+        val ode = Group(lhs_ +:+ text("==") ++ Nest(2, line ++ rhs_ ++ concat(dom_)))
+        header(ode, attrs, None) ++ text(";")
 
   // types are not broken across lines
   def doc(typ: Type): Doc =
@@ -530,6 +539,10 @@ object Printer extends cuvee.pipe.Printer:
       // two or more arguments are printed in infix notation above
       case Distinct(_) =>
         Error.raise("unprintable distinct", expr)
+
+      // derivatives are written (e)', the variables are those of e
+      case Diff(_, arg) =>
+        doc(arg, operand) ++ text("'")
 
       // TODO: Dafny syntax for testers and type annotations, e.g. e.C? and e as T
       case Is(_, _) | As(_, _) =>

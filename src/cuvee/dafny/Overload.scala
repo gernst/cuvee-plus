@@ -70,6 +70,9 @@ object Overload:
       case As(expr, typ) =>
         As(apply(state, expr), typ)
 
+      case Diff(xs, expr) =>
+        Diff(xs, apply(state, expr))
+
       case Bind(quant, bound, body) =>
         Bind(quant, bound, apply(state, body))
 
@@ -106,6 +109,9 @@ object Overload:
 
       case Iter(body, attrs) =>
         Iter(apply(state, body), attrs)
+
+      case Ode(xs, rhs, dom, attrs) =>
+        Ode(xs, rhs.map(apply(state, _)), apply(state, dom), attrs)
 
   // the replacement of a single application of an overloaded operator, whose arguments have been replaced already,
   // determined by the type of the arguments, which coincide for all overloaded operators;

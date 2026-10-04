@@ -148,6 +148,9 @@ object Verify extends Transform:
       case Iter(body, attrs) =>
         loop(state, gs, proc, None, body, attrs, post, return_)
 
+      case Ode(_, _, _, _) =>
+        Error.raise("differential equations not supported yet", proc, prog)
+
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
   def loop(state: State, gs: List[Var], proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
     val inv = And(attrs.values[Expr]("invariant"))

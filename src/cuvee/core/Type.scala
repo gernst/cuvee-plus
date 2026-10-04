@@ -198,6 +198,9 @@ object Type:
         Error.report("type mismatch", expr, Sort.bool, res):
           unify(state, scope, Sort.bool, res, subst)
 
+      case Diff(xs, arg) =>
+        check(state, scope, arg, res, subst)
+
       case As(arg, typ) =>
         check(state, scope, arg, typ, subst)
 
@@ -318,6 +321,19 @@ object Type:
       case Iter(body, attrs) =>
         val body_ = check(state, scope, fixed, body, true)
         Iter(body_, attrs)
+
+      case Ode(xs, rhs, dom, attrs) =>
+        assignable(fixed, xs)
+
+        Error.report("mismatching differential equations", xs, rhs):
+          require(xs.length == rhs.length)
+
+        val rhs_ =
+          for (x, e) <- xs zip rhs
+          yield check(state, scope, e, x.typ)
+
+        val dom_ = formula(state, scope, dom)
+        Ode(xs, rhs_, dom_, attrs)
 
   def formula(state: State, scope: Scope, phi: Expr) =
     check(state, scope, phi, Sort.bool)
