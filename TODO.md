@@ -6,58 +6,70 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 ## New TODOs to be integrated, and instructions to address existing TODOs (provided by user)
 
 - start with prioritizing this list by small things first, rewrite this file accordingly
+- work on this list autonomously, if you have questions for which you'd like my input, defer the item and put a note in this file, keep this instruction when reordering the list
+
+### Small
+
+- make the help for `-print` clearer
+- import `cuvee.Debug` in Simplify and other files, don't use the qualified name
+- the Dafny printer uses a semicolon after check, it should not be there, check also that it's not in the grammar
+- make `Mod` non-associative
+- in `object Prog`: move `def free(attrs: Attrs)` as a method to `Attrs`
+- in `Simplify`: remove axioms and goals that are True (I did that but check if the code is fine)
+- add a newline after each command in each printer
+- Dafny printer: always put the `=` for a datatype definition indented on the next line
+- in `TEQ` in the comments: remove the references in to concrete definitions and lemmas from the paper, keep the description abstract
+- in `TEQ.scala`, use capitalized names for the traces, not prefix by `X_`. If the variable is already capitalized, that's ok. Use `?` at the end of the nondet sequences.
+- Introduce an `Eqv` sugar for boolean `<=>` and use that where appropriate, such as in the Simplifier
+- remove the `e` and `p` helper in `simplify(... prog)`, just be explicit about it, and introduce auxiliary variables for the results of recursive calls like it is done for expressions, similarly in other methods, including `diff`
+- switch to return `List(...)` in `Rewrite`, not `LazyList`
+- check that preconditions don't refer to `Old`
+- fix printing of div and mod in C
+- fix the descripion of parallel composition and send/receive: it is crucial that the commitment is made first even after receiving, since the communication is always joint and a commitment must always be made before taking an assumption, please document this and remove the corresponding TODOs
+- Dafny printer: bound variables in forall and exists should flow to the end of the line, and then break, not be split one on each line
+- Dafny printer: similarly, both formal in the declaration and actual parameters in the use of a function/method should flow until the margin and then be indented after the opening parenthesis
+- there are many occurrences, where a name is unpacked and formatted (e.g., in the printers, and in monomorph), add methods to class `Name` that format a name into a string for the two use-cases: unicode subscripted name and name using `$`, and use those. Neither should be the `.toString` of `Name`.
+
+### Medium
+
 - introduce class `Upd(cond, rhs)` to represent a single entry in an update, rename the attribute to `updates`, and ensure to make methods `.free`, `.params` as extensions of `List[Upd]`, as done for many other types of expressions
 - avoid constistency constraints like that of `Maps.typ` inside classes, but ensure that they are checked by the parsers
 - add syntactic sugar to `Builtin.scala` for the sequence types
-- `TEQ.scala`: support break and continue in symex
-- add comments in places where you would comment yourself
+- parse and print function `butlast` specially, using left floor and right floor outfix syntax, add `Butlast` and `Counter` syntactic sugars, and use them in `TEQ.scala`
+- In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
+- Implement `n + 1 < m <==> n <= m` as a simplification step, similarly when `<=` becomes `<` by dropping `+ 1`. Use `Succ` for this, and only do that for integers, check if I got this correct first
+- implement `Monomorph` without a separate class that has mutable state, use `Ref` from `util` instead
+- Move method `.map()` that generically traverses an expression into `Expr`. Check all traversals in the code whether they can be written with this new function.
+  Similarly introduce `.map()` for all other types. Don't attempt to formulate something more complex than a point-wise mapping generically, though, keep the latter as explicit recursions.
 - add tuples to the types in the Dafny grammar
+- add support for strings and decreases in the boogie printer
+- the C printer should get some fake notation for quantifiers and trace combinators, it is not good to mix sexprs with C-like notation
+- in the C frontend, initialized variables should give the initialization constraint for predicate `main_pre`
+- wrap the combinators in the Dafny printer so that if a line break is necessary, the `check` is below `for` etc... and the subsequent line after `=>` is indented at least some spaces from the surrounding parentheses
 - in Horn, write clauses with goal in head, not with head False
 - in Horn, omit the separate entry predicate, just come from the precondition
 - in Horn, for the Block exit, don't use a separate helper, and don't use the inline helper either, rather instantiate the respective exits for break, continue by hand, and after the body has been translated, so that the order of clauses is right. when there is no break, don't emit the corresponding predicate or clause, same for continue; check the loop case, too
-- in `Simplify`: remove axioms and goals that are True (I did that but check if the code is fine)
-- in `object Prog`: move `def free(attrs: Attrs)` as a method to `Attrs`
-- in `TEQ` in the comments: remove the references in to concrete definitions and lemmas from the paper, keep the description abstract
-- hook up trace terms to the simplifier
-- have `TEQ.scala` inject lemmas from `teq.dfy`, which should be part of the resources as the lemma database, use a fresh dafny parser, and inject all commands, they can remain in the final output
-- check that preconditions don't refer to `Old`
 - add checking of decreases clauses, if present, to Horn, but don't attempt to generate fresh predicates for well-founded orders, as that is not supported by solvers
-- add support for strings and decreases in the boogie printer
-- in the generated constraints for `TEQs` make sure that the trace equations don't occur twice, by re-arranging the formula correctly
-- implement support for trace combinators in the transforms
-- the C printer should get some fake notation for quantifiers and trace combinators, it is not good to mix sexprs with C-like notation
 - in Dafny parse goals like lemmas
 - consider the attribute "free" on lemmas, which treats them like axioms in the Solver sink, conceptually, however, the intention is that they should follow from the rest of the theory, but we don't want to enforce a proof
-- fix the descripion of parallel composition and send/receive: it is crucial that the commitment is made first even after receiving, since the communication is always joint and a commitment must always be made before taking an assumption, please document this and remove the corresponding TODOs
-- make the help for `-print` clearer
-- split the `prelude.*` files into two parts: one that is truly there just to describe what the SMT-Solver should know, i.e., those defintions that are not injected into the pipeline (call this `builtin.*`) and then into the `prelude.*` put all definitions that *are* needed. In Dafny, for example, this currently means the channel/history stuff, receive and send, and the tuple types.
-- make `Mod` non-associative
-- add a newline after each command in each printer
-- the Dafny printer uses a semicolon after check, it should not be there, check also that it's not in the grammar
-- Dafny printer: always put the `=` for a datatype definition indented on the next line
-- Dafny printer: bound variables in forall and exists should flow to the end of the line, and then break, not be split one on each line
-- Dafny printer: similarly, both formal in the declaration and actual parameters in the use of a function/method should flow until the margin and then be indented after the opening parenthesis
-- Introduce an `Eqv` sugar for boolean `<=>` and use that where appropriate, such as in the Simplifier
-- implement `if <phi> then <psi>` syntax in Dafny top-level `Assert(...)` commands to stand for `<phi> ==> <psi>` but with lowest precedence, i.e., the `else` should be optional there and implicitly `True`. please make sure that the grammar remains unambiguous, otherwise ask before making changes
-- remove the `e` and `p` helper in `simplify(... prog)`, just be explicit about it, and introduce auxiliary variables for the results of recursive calls like it is done for expressions, similarly in other methods, including `diff`
-- import `cuvee.Debug` in Simplify and other files, don't use the qualified name
-- switch to return `List(...)` in `Rewrite`, not `LazyList`
-- In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
-- Move method `.map()` that generically traverses an expression into `Expr`. Check all traversals in the code whether they can be written with this new function.
-  Similarly introduce `.map()` for all other types. Don't attempt to formulate something more complex than a point-wise mapping generically, though, keep the latter as explicit recursions.
-- Implement `n + 1 < m <==> n <= m` as a simplification step, similarly when `<=` becomes `<` by dropping `+ 1`. Use `Succ` for this, and only do that for integers, check if I got this correct first
 - write a proposal what Fourier Motzkin could contribute to the simplifier: actually making things simpler? put this proposal into the TODO.md file
-- implement `Monomorph` without a separate class that has mutable state, use `Ref` from `util` instead
 - check this splitter: `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Horn.scala` (don't mind the file name), and think if this helps you improve `Split.scala`
+- add comments in places where you would comment yourself
+
+### Large
+
+- split the `prelude.*` files into two parts: one that is truly there just to describe what the SMT-Solver should know, i.e., those defintions that are not injected into the pipeline (call this `builtin.*`) and then into the `prelude.*` put all definitions that *are* needed. In Dafny, for example, this currently means the channel/history stuff, receive and send, and the tuple types.
+- implement `if <phi> then <psi>` syntax in Dafny top-level `Assert(...)` commands to stand for `<phi> ==> <psi>` but with lowest precedence, i.e., the `else` should be optional there and implicitly `True`. please make sure that the grammar remains unambiguous, otherwise ask before making changes
+- `TEQ.scala`: support break and continue in symex
+- in the generated constraints for `TEQs` make sure that the trace equations don't occur twice, by re-arranging the formula correctly
+- hook up trace terms to the simplifier
+- implement support for trace combinators in the transforms
+- have `TEQ.scala` inject lemmas from `teq.dfy`, which should be part of the resources as the lemma database, use a fresh dafny parser, and inject all commands, they can remain in the final output
 - check the flattening operation in this `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Clause.scala` file, implement a similar normalization step as `Normalize` in `simplify`, and integrate it into `Simplify`. should it be the first or last step in `Simplify`? I'm not sure.
-- there are many occurrences, where a name is unpacked and formatted (e.g., in the printers, and in monomorph), add methods to class `Name` that format a name into a string for the two use-cases: unicode subscripted name and name using `$`, and use those. Neither should be the `.toString` of `Name`.
-- add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
-- in the C frontend, initialized variables should give the initialization constraint for predicate `main_pre`
-- fix printing of div and mod in C
 - implement Dafny's additional types set, etc using CVC5's notation if available, ensure the overloading reoslution works propertly
-- parse and print function `butlast` specially, using left floor and right floor outfix syntax, add `Butlast` and `Counter` syntactic sugars, and use them in `TEQ.scala`
-- in `TEQ.scala`, use capitalized names for the traces, not prefix by `X_`. If the variable is already capitalized, that's ok. Use `?` at the end of the nondet sequences.
-- wrap the combinators in the Dafny printer so that if a line break is necessary, the `check` is below `for` etc... and the subsequent line after `=>` is indented at least some spaces from the surrounding parentheses
+- add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
+
+### Deferred (questions for the user)
 
 ## C frontend
 
