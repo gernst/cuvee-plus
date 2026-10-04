@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- implement `Monomorph` without a separate class that has mutable state, use `Ref` from `util` instead
 - Move method `.map()` that generically traverses an expression into `Expr`. Check all traversals in the code whether they can be written with this new function.
   Similarly introduce `.map()` for all other types. Don't attempt to formulate something more complex than a point-wise mapping generically, though, keep the latter as explicit recursions.
 - add tuples to the types in the Dafny grammar

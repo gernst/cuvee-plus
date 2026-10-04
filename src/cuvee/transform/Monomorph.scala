@@ -1,9 +1,8 @@
 package cuvee.transform
 
-import scala.collection.mutable
-import cuvee.Config
-
 import util.Name
+import util.Ref
+import cuvee.Config
 import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
@@ -15,15 +14,27 @@ import cuvee.core._
 // polymorphic datatypes and sorts are kept, which the solvers accept,
 // as are polymorphic assertions, which are not instantiated (see TODO.md)
 object Monomorph extends Transform:
+  // the polymorphic functions of the input with their declaration or definition,
+  // the instances emitted so far, and the output
+  case class Env(poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: Ref[List[Cmd]])
+
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    val mono = new Monomorph(prefix ++ cmds)
+    val env = Env(polymorphic(prefix ++ cmds), Ref(Map()), Ref(Nil))
 
     // the instances emitted for the commands before are known, their output is discarded
-    prefix.foreach(mono.command)
-    mono.out.clear()
+    prefix.foreach(command(env, _))
+    env.out := Nil
 
-    cmds.foreach(mono.command)
-    mono.out.toList
+    cmds.foreach(command(env, _))
+    env.out.value
+
+  // the polymorphic functions of `cmds` with their declaration or definition
+  def polymorphic(cmds: List[Cmd]): Map[(Name, Int), Cmd] =
+    val decls =
+      cmds.collect:
+        case cmd @ DeclareFun(fun, _) if fun.params.nonEmpty    => (fun.name, fun.arity) -> cmd
+        case cmd @ DefineFun(fun, _, _) if fun.params.nonEmpty  => (fun.name, fun.arity) -> cmd
+    decls.toMap
 
   // the name of an instance, e.g. length<Elem> and select<Int,Array<Int,Bool>>
   def name(fun: Fun, types: List[Type]): Name =
@@ -35,60 +46,50 @@ object Monomorph extends Transform:
       case Sort(con, Nil)  => con.name.indexed
       case Sort(con, args) => con.name.indexed + "<" + args.map(show).mkString(",") + ">"
 
-class Monomorph(cmds: List[Cmd]):
-  // the polymorphic functions of the input with their declaration or definition
-  val poly: Map[(Name, Int), Cmd] =
-    val decls =
-      cmds.collect:
-        case cmd @ DeclareFun(fun, _) if fun.params.nonEmpty    => (fun.name, fun.arity) -> cmd
-        case cmd @ DefineFun(fun, _, _) if fun.params.nonEmpty  => (fun.name, fun.arity) -> cmd
-    decls.toMap
+  def isPoly(env: Env, fun: Fun) =
+    fun.params.nonEmpty && env.poly.contains((fun.name, fun.arity))
 
-  // the instances emitted so far, and the output
-  val instances = mutable.Map[(Name, Int, List[Type]), Fun]()
-  val out = mutable.ListBuffer[Cmd]()
+  def emit(env: Env, cmd: Cmd): Unit =
+    env.out := env.out.value :+ cmd
 
-  def isPoly(fun: Fun) =
-    fun.params.nonEmpty && poly.contains((fun.name, fun.arity))
-
-  def command(cmd: Cmd): Unit =
+  def command(env: Env, cmd: Cmd): Unit =
     cmd match
-      case DeclareFun(fun, _) if isPoly(fun) =>
+      case DeclareFun(fun, _) if isPoly(env, fun) =>
 
-      case DefineFun(fun, _, _) if isPoly(fun) =>
+      case DefineFun(fun, _, _) if isPoly(env, fun) =>
 
       case DefineFun(fun, body, attrs) =>
-        val body_ = expr(body)
-        out += DefineFun(fun, body_, attrs)
+        val body_ = expr(env, body)
+        emit(env, DefineFun(fun, body_, attrs))
 
       case Assert(justify, params, phi, attrs) =>
-        val phi_ = expr(phi)
-        out += Assert(justify, params, phi_, attrs)
+        val phi_ = expr(env, phi)
+        emit(env, Assert(justify, params, phi_, attrs))
 
       case _ =>
-        out += cmd
+        emit(env, cmd)
 
   // the monomorphic instance of `fun` for the instances `types` of its type parameters,
   // which is emitted on first use, after the instances that its body uses
-  def instance(fun: Fun, types: List[Type]): Fun =
+  def instance(env: Env, fun: Fun, types: List[Type]): Fun =
     val key = (fun.name, fun.arity, types)
 
-    instances.get(key) match
+    env.instances.value.get(key) match
       case Some(fun_) =>
         fun_
 
       case None =>
         val su = Subst.from(fun.params, types)
-        val fun_ = Fun(Monomorph.name(fun, types), Nil, fun.formals.map(x => Var(x.name, su(x.typ))), su(fun.res))
-        instances(key) = fun_
+        val fun_ = Fun(name(fun, types), Nil, fun.formals.map(x => Var(x.name, su(x.typ))), su(fun.res))
+        env.instances := env.instances.value + (key -> fun_)
 
-        poly((fun.name, fun.arity)) match
+        env.poly((fun.name, fun.arity)) match
           case DeclareFun(_, attrs) =>
-            out += DeclareFun(fun_, attrs)
+            emit(env, DeclareFun(fun_, attrs))
 
           case DefineFun(_, body, attrs) =>
-            val body_ = expr(su(body))
-            out += DefineFun(fun_, body_, attrs)
+            val body_ = expr(env, su(body))
+            emit(env, DefineFun(fun_, body_, attrs))
 
           case cmd =>
             Error.raise("not a function", cmd)
@@ -97,44 +98,72 @@ class Monomorph(cmds: List[Cmd]):
 
   // applications of polymorphic functions are replaced by their instances,
   // whose type parameters are determined by the types of the arguments and of the result
-  def expr(e: Expr): Expr =
+  def expr(env: Env, e: Expr): Expr =
     e match
       case _: Var | _: Lit =>
         e
 
-      case App(fun, inst, typ, args) if isPoly(fun) =>
+      case App(fun, inst, typ, args) if isPoly(env, fun) =>
         val su = Type.bind(fun.args :+ fun.res, inst :+ typ)
         val types = fun.params.map(su(_))
 
         Error.report("instance of polymorphic function is not monomorphic", fun, types):
           require(types.params.isEmpty)
 
-        App(instance(fun, types), inst, typ, args.map(expr))
+        // the instance is emitted before those of the arguments
+        val fun_ = instance(env, fun, types)
+        val args_ = args.map(expr(env, _))
+        App(fun_, inst, typ, args_)
 
       case App(fun, inst, typ, args) =>
-        App(fun, inst, typ, args.map(expr))
+        val args_ = args.map(expr(env, _))
+        App(fun, inst, typ, args_)
 
       case Distinct(exprs) =>
-        Distinct(exprs.map(expr))
+        val exprs_ = exprs.map(expr(env, _))
+        Distinct(exprs_)
 
       case Is(arg, fun) =>
-        Is(expr(arg), fun)
+        val arg_ = expr(env, arg)
+        Is(arg_, fun)
 
       // instances of polymorphic constants need no annotation of their type
-      case As(arg @ App(fun, _, _, Nil), typ) if isPoly(fun) =>
-        expr(arg)
+      case As(arg @ App(fun, _, _, Nil), typ) if isPoly(env, fun) =>
+        expr(env, arg)
 
       case As(arg, typ) =>
-        As(expr(arg), typ)
+        val arg_ = expr(env, arg)
+        As(arg_, typ)
 
       case Diff(xs, arg) =>
-        Diff(xs, expr(arg))
+        val arg_ = expr(env, arg)
+        Diff(xs, arg_)
 
       case Old(arg) =>
-        Old(expr(arg))
+        val arg_ = expr(env, arg)
+        Old(arg_)
+
+      case Trace(init, deps, acc, bound, updates) =>
+        val init_ = expr(env, init)
+        val deps_ = deps.map(expr(env, _))
+        val updates_ = for Upd(cond, rhs) <- updates yield Upd(expr(env, cond), expr(env, rhs))
+        Trace(init_, deps_, acc, bound, updates_)
+
+      case Maps(deps, bound, updates) =>
+        val deps_ = deps.map(expr(env, _))
+        val updates_ = for Upd(cond, rhs) <- updates yield Upd(expr(env, cond), expr(env, rhs))
+        Maps(deps_, bound, updates_)
+
+      case Invs(deps, bound, body) =>
+        val deps_ = deps.map(expr(env, _))
+        val body_ = expr(env, body)
+        Invs(deps_, bound, body_)
 
       case Bind(quant, bound, body) =>
-        Bind(quant, bound, expr(body))
+        val body_ = expr(env, body)
+        Bind(quant, bound, body_)
 
       case Let(bound, args, body) =>
-        Let(bound, args.map(expr), expr(body))
+        val args_ = args.map(expr(env, _))
+        val body_ = expr(env, body)
+        Let(bound, args_, body_)
