@@ -69,8 +69,9 @@ object DivBy:
   object int extends Sugar.associative(Fun.int.div, Assoc.Left)
   object real extends Sugar.associative(Fun.real.div, Assoc.Left)
 
+// mod is not associative, and unlike div not n-ary in SMT-LIB
 object Mod:
-  object int extends Sugar.associative(Fun.int.mod, Assoc.Left)
+  object int extends Sugar.binary(Fun.int.mod)
 
 object Succ:
   def apply(expr: Expr) =

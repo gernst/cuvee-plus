@@ -10,8 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- the Dafny printer uses a semicolon after check, it should not be there, check also that it's not in the grammar
-- make `Mod` non-associative
 - in `object Prog`: move `def free(attrs: Attrs)` as a method to `Attrs`
 - in `Simplify`: remove axioms and goals that are True (I did that but check if the code is fine)
 - add a newline after each command in each printer
@@ -121,8 +119,7 @@ inferred from the call graph. Open:
   a generic map over the immediate subexpressions and subprograms would
   remove most of them.
 - The operations on sequences (`Fun.seq`) have no sugar objects, unlike
-  arithmetic (`Plus.int` etc.); `Mod.int` is `Sugar.associative`, but `mod` is
-  not associative.
+  arithmetic (`Plus.int` etc.).
 - `core.Assoc` duplicates `easyparse.Assoc`.
 - `send` and `receive` are recognized by their names (`Send`, `Recv`), and the
   history by the name of the global variable `history` (`Par.history`).
