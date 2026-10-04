@@ -42,17 +42,18 @@ object Rewrite:
   def rewrite(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): Expr =
     val expr_ = map(expr, rewrite(config, state, ctx, _))
     step(config, state, ctx, expr_) match
-      case Some(next) => rewrite(config, state, ctx, next)
-      case None       => expr_
+      case next #:: _ => rewrite(config, state, ctx, next)
+      case _          => expr_
 
-  // a single application of a rule of the context at the top of `expr`
-  def step(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): Option[Expr] =
-    ctx.rules.iterator
+  // a single application of a rule of the context at the top of `expr`, empty if no rule applies
+  def step(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): LazyList[Expr] =
+    ctx.rules
+      .to(LazyList)
       .flatMap(rule => apply(config, state, ctx, rule, expr))
-      .nextOption()
+      .take(1)
 
-  // the first match whose instantiated condition holds
-  def apply(config: cuvee.Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): Option[Expr] =
+  // the first match whose instantiated condition holds, empty if there is none
+  def apply(config: cuvee.Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): LazyList[Expr] =
     val results =
       for
         su <- matches(config, state, ctx, Binding(rule.vars, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
@@ -61,7 +62,7 @@ object Rewrite:
         if rhs != expr && holds(config, state, ctx, su(rule.cond))
       yield rhs
 
-    results.headOption.map: rhs =>
+    results.take(1).map: rhs =>
       Error.report("rewriting does not terminate", rule, expr):
         require(ctx.steps.value > 0)
       ctx.steps := ctx.steps.value - 1
@@ -88,7 +89,7 @@ object Rewrite:
             LazyList()
 
           case None =>
-            for m_ <- Rewrite.types(x.typ, expr.typ, m).to(LazyList)
+            for m_ <- Rewrite.types(x.typ, expr.typ, m)
             yield m_ + (x -> expr)
 
       case _ if Rewrite.arithmetic(pat) =>
@@ -99,13 +100,13 @@ object Rewrite:
 
       case (App(fun, inst, typ, args), App(fun_, inst_, typ_, args_)) if fun == fun_ && args.length == args_.length =>
         for
-          m1 <- Rewrite.types(inst, inst_, m).to(LazyList)
-          m2 <- Rewrite.types(typ, typ_, m1).to(LazyList)
+          m1 <- Rewrite.types(inst, inst_, m)
+          m2 <- Rewrite.types(typ, typ_, m1)
           m3 <- matches(config, state, ctx, b, args, args_, m2)
         yield m3
 
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
-        Rewrite.types(typ, typ_, m).to(LazyList)
+        Rewrite.types(typ, typ_, m)
 
       case (Trace(init, deps, acc, bound, update), Trace(init_, deps_, acc_, bound_, update_)) =>
         for
@@ -327,27 +328,27 @@ object Rewrite:
       case (Nil, n :: ns)    => ns.foldLeft(ring.uminus(n))(ring.minus(_, _))
       case (_, _)            => neg.foldLeft(ring.plus(pos))(ring.minus(_, _))
 
-  // the type parameters of the pattern are instantiated consistently
-  def types(pat: Type, typ: Type, m: Subst[Type, Expr]): Option[Subst[Type, Expr]] =
+  // the type parameters of the pattern are instantiated consistently, a single match or none
+  def types(pat: Type, typ: Type, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     (pat, typ) match
       case (p: Param, _) =>
         m.params.get(p) match
-          case Some(t) => if t == typ then Some(m) else None
-          case None    => Some(m + (p -> typ))
+          case Some(t) => if t == typ then LazyList(m) else LazyList()
+          case None    => LazyList(m + (p -> typ))
 
       case (Sort(con, args), Sort(con_, args_)) if con == con_ =>
         types(args, args_, m)
 
       case _ =>
-        None
+        LazyList()
 
   @scala.annotation.targetName("typesOfLists")
-  def types(pats: List[Type], types_ : List[Type], m: Subst[Type, Expr]): Option[Subst[Type, Expr]] =
+  def types(pats: List[Type], types_ : List[Type], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     if pats.length != types_.length
-    then None
+    then LazyList()
     else
-      (pats zip types_).foldLeft(Option(m)):
-        case (m, (pat, typ)) => m.flatMap(types(pat, typ, _))
+      (pats zip types_).foldLeft(LazyList(m)):
+        case (ms, (pat, typ)) => ms.flatMap(types(pat, typ, _))
 
   // apply `f` to the immediate subexpressions
   def map(expr: Expr, f: Expr => Expr): Expr =
