@@ -94,6 +94,12 @@ case class Old(expr: Expr) extends Expr:
   def typ = expr.typ
 
 object Old:
+  // whether `expr` refers to old values
+  def occurs(expr: Expr): Boolean =
+    expr match
+      case Old(_) => true
+      case _      => expr.subexprs.exists(occurs)
+
   // replace old(e) by e[gs := gs_], where gs_ are the values of the global variables gs at the entry,
   // nested occurrences of old refer to the same values
   def elim(gs: List[Var], gs_ : List[Expr], expr: Expr): Expr =

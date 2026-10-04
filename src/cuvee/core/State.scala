@@ -147,6 +147,10 @@ case class State(
     Error.report("procedure already declared", name):
       require(!procs.contains(name))
 
+    // the precondition is evaluated at the entry, where there are no other values to refer to
+    Error.report("precondition refers to old values", name):
+      require(!Old.occurs(attrs.requires))
+
     val proc = Proc(name, params, in, out)
     copy(procs = procs + (name -> proc), procattrs = procattrs + (name -> attrs))
 

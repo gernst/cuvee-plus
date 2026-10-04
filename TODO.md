@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- check that preconditions don't refer to `Old`
 - fix printing of div and mod in C
 - fix the descripion of parallel composition and send/receive: it is crucial that the commitment is made first even after receiving, since the communication is always joint and a commitment must always be made before taking an assumption, please document this and remove the corresponding TODOs
 - Dafny printer: bound variables in forall and exists should flow to the end of the line, and then break, not be split one on each line
@@ -101,7 +100,6 @@ inferred from the call graph. Open:
 - Termination in `Verify` and `Horn`: loops and procedures without
   `decreases` clause are not checked (Dafny guesses a measure), measures are
   integers only, and the measure of a procedure must refer to its inputs.
-- `old(e)` (`core.Old`) inside preconditions refers to the current values.
 
 ## Code structure and consistency
 

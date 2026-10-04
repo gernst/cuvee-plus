@@ -137,3 +137,17 @@ object Check extends TestSuite:
       val cmds_ = cmds.toList
       assert(cmds_.contains(cuvee.core.CheckSat))
       cuvee.dafny.Printer.lines(cuvee.core.CheckSat) ==> List("check", "")
+
+// preconditions are evaluated at the entry of a method, where old values are the current ones
+object OldInPrecondition extends TestSuite:
+  def errors(text: String) =
+    val file = os.temp(text, suffix = ".dfy")
+    Examples.errors("-print", "null", file.toString)
+
+  val tests = Tests:
+    test("ensures"):
+      errors("var g: int; method m() modifies g ensures g == old(g) + 1 { g := g + 1; }") ==> Nil
+
+    test("requires"):
+      errors("var g: int; method m() modifies g requires old(g) == 0 { g := g + 1; }") ==>
+        List("precondition refers to old values")
