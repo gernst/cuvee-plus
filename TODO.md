@@ -104,12 +104,11 @@ inferred from the call graph. Open:
 - Polymorphic functions and sorts reach the solvers unchanged (see
   monomorphization above); `syntax.bpl` is therefore only parsed in the solver
   tests.
-- No quantifiers over types, `forall<a> ...`, no decimal literals,
+- No quantifiers over types, `forall<a> ...`,
   no sequences, no parallel composition.
 - The printer raises an error on datatypes, `continue`, attributes of loops
   other than `invariant` and `modifies` (e.g. `decreases`), binders other than
-  `forall` and `exists`, literals other than integers and strings without `"`
-  (e.g. reals), derivatives, differential equations, and parallel
+  `forall` and `exists`, strings with `"`, derivatives, differential equations, and parallel
   composition; goals and lemmas are printed as `goal` and `lemma`, which are
   not Boogie ([boogie/Printer.scala](src/cuvee/boogie/Printer.scala)).
 
@@ -119,7 +118,8 @@ inferred from the call graph. Open:
   `par`, ...), `old`, `diff`, and `declare-var` are extensions of SMT-LIB in
   the form written by the printer; there is no `assert` statement in the
   printed form, which writes `spec`.
-- No `!` inside terms, `match`, `get-value`, `check-sat-assuming`, `echo`.
+- No `match`, `get-value`, `check-sat-assuming`, `echo`; annotations `!`
+  inside terms are parsed but discarded, e.g. `:weight` in models of z3.
 
 ## Solvers and robustness
 

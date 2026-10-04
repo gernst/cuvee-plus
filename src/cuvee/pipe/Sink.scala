@@ -11,22 +11,24 @@ trait Sink:
   def query(cmd: Cmd): (Result, Sink)
 
   // the answer to `last`, where Done has no answer of its own (Ack.Done),
-  // then the answer to the last query among `cmds` is passed on instead,
-  // e.g. to a check-sat added by a transform at the end of the input
+  // then the answers to the queries among `cmds` are passed on instead,
+  // e.g. to check-sat and get-model added by a transform at the end of the input,
+  // where queries without answer (Ack.Done) are skipped
   def query(cmds: List[Cmd], last: Cmd): (Result, Sink) =
-    val (answer, sink) =
-      cmds.foldLeft((None: Option[Result], this)):
-        case ((_, sink), cmd: Query) =>
+    val (answers, sink) =
+      cmds.foldLeft((Nil: List[Result], this)):
+        case ((answers, sink), cmd: Query) =>
           val (result, sink_) = sink.query(cmd)
-          (Some(result), sink_)
+          (if result == Ack.Done then answers else answers :+ result, sink_)
 
-        case ((answer, sink), cmd) =>
-          (answer, sink.exec(cmd))
+        case ((answers, sink), cmd) =>
+          (answers, sink.exec(cmd))
 
     val (result, sink_) = sink.query(last)
 
-    (result, answer) match
-      case (Ack.Done, Some(answer)) => (answer, sink_)
+    (result, answers) match
+      case (Ack.Done, List(answer)) => (answer, sink_)
+      case (Ack.Done, answers @ (_ :: _)) => (Answers(answers), sink_)
       case _                        => (result, sink_)
 
   def exec(cmd: Cmd) =
@@ -77,8 +79,9 @@ object Sink:
       case _: GetInfo | _: GetOption =>
         Ack.Unsupported
 
+      // no answer, e.g. to the get-model added by Horn
       case GetModel =>
-        Error.raise("no model available")
+        Ack.Done
 
       case Labels =>
         Error.raise("no labels available")

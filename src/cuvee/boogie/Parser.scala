@@ -214,6 +214,9 @@ class Parser(var state: State):
 
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match
+      case Dec(value) =>
+        state.exprs.dec(util.Rational.decimal(value))
+
       case Num(value) =>
         state.exprs.num(BigInt(value))
 

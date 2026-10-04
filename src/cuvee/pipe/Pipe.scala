@@ -32,10 +32,13 @@ object Pipe:
 
                 // Done is not part of the input, its answer is reported only if it has one,
                 // e.g. to a query added by a transform at the end of the input
+                // several answers to queries added by a transform are reported one by one
                 if cmd != Done || result != Ack.Done then
-                  report.report(result, printSuccess)
+                  for result <- Answers.flatten(result)
+                  do
+                    report.report(result, printSuccess)
+                    results.append(result)
                   if cmd != Done then done.append(cmd)
-                  results.append(result)
 
                 if cmd == Exit
                 then Breaks.break()

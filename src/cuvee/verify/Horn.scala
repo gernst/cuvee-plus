@@ -34,9 +34,10 @@ object Horn extends Transform:
       then List(SetLogic("HORN"))
       else Nil
 
+    // the model of the predicates are the inferred invariants, if the clauses are satisfiable
     val check =
       if last == Done
-      then List(CheckSat)
+      then List(CheckSat, GetModel)
       else Nil
 
     logic ++ cmds_ ++ check

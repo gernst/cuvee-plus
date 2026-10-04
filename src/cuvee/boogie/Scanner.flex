@@ -26,6 +26,7 @@ nl = \r|\n|\r\n
 ws = {nl} | [ \t\f]
 
 num  = [0-9]+
+dec  = {num} "." [0-9]+
 
 kw  = "type" | "const" | "function" | "axiom" | "var" | "procedure"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant"
@@ -49,6 +50,7 @@ sym = {idchar} ({idchar} | [0-9])*
 
 {kw}        { return Syntax.apply(yytext()); }
 \" ~ \"     { return Syntax.apply("str", yytext(+1,-1)); }
+{dec}       { return Syntax.apply("dec", yytext()); }
 {num}       { return Syntax.apply("num", yytext()); }
 {sym}       { return Syntax.apply("sym", yytext()); }
 

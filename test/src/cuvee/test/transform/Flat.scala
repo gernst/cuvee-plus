@@ -15,7 +15,7 @@ object FlatHorn extends TestSuite:
       val first = os.read.lines(file).head
       val (_, results) = cuvee.Cuvee.run("-chc", "-flat", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
-      results.last ==> differs.getOrElse(file.last, expected(first))
+      Examples.status(results) ==> differs.getOrElse(file.last, expected(first))
 
 object Flat extends TestSuite:
   val file = (Examples.root / "transform" / "flat.smt2").toString
@@ -60,7 +60,7 @@ object Flat extends TestSuite:
 
     test("satisfiable"):
       val (_, results) = cuvee.Cuvee.run("-flat", "-z3", file)
-      results.last ==> Status.Sat
+      Examples.status(results) ==> Status.Sat
 
     // the parameters of the datatypes are instantiated, also those that do not occur in the fields
     test("polymorphic predicates"):

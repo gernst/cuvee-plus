@@ -125,6 +125,9 @@ object Solver:
   class sink(solver: Solver, init: State) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
 
+    // the answer to the last check-sat, a model is available only if it is sat
+    var status: Option[Status] = None
+
     for decl <- prelude(init)
     do solver.ack(noAttrs(decl))
 
@@ -145,7 +148,9 @@ object Solver:
           (Ack.Success, this)
 
         case CheckSat =>
-          (solver.check(), this)
+          val status_ = solver.check()
+          status = Some(status_)
+          (status_, this)
 
         // procedures and global variables are not understood by SMT solvers and must have been eliminated, e.g. with -verify,
         // in particular, z3 accepts declare-var but does not acknowledge it with print-success
@@ -161,8 +166,16 @@ object Solver:
         case Labels =>
           (Parser.labels(solver.query(cmd)), this)
 
+        // no answer if there is no model, e.g. to the get-model added by Horn when the clauses are unsat
+        case GetModel if status != Some(Status.Sat) =>
+          (Ack.Done, this)
+
+        // a model that cannot be read is reported as an error, which keeps the answer to check-sat before it
         case GetModel =>
-          (parser.model(solver.query(cmd)), this)
+          val model =
+            try parser.model(solver.query(cmd))
+            catch case error: Error => error
+          (model, this)
 
         case Exit =>
           val ack = solver.ack(cmd)

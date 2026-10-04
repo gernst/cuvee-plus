@@ -25,6 +25,10 @@ object Examples:
     val calls = files.map(file => new TestCallTree(Left(body(file))))
     Tests(Tree("", names*), new TestCallTree(Right(calls.toIndexedSeq)))
 
+  // the answer to the last check-sat among the results, e.g. before the model added by -chc
+  def status(results: List[cuvee.core.Result]): cuvee.core.Status =
+    results.collect { case status: cuvee.core.Status => status }.last
+
   // runs Cuvee on `args` and returns the messages of all errors that are reported
   def errors(args: String*): List[String] =
     val (_, results) = cuvee.Cuvee.run(args*)

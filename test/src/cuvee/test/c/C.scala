@@ -51,7 +51,7 @@ object Horn extends TestSuite:
   val tests =
     Examples.tests(Examples.find(os.sub / "c", "c").filterNot(file => skip.contains(file.last))): file =>
       val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
-      results.last ==> (if Verify.expected(file) then Status.Sat else Status.Unsat)
+      Examples.status(results) ==> (if Verify.expected(file) then Status.Sat else Status.Unsat)
 
 // the translation of C: conversions between integers and truth values, the inferred modifies attributes,
 // and the constructs that are rejected

@@ -45,7 +45,7 @@ object Horn extends TestSuite:
 
       val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
-      results.last ==> expected(first)
+      Examples.status(results) ==> expected(first)
 
 // global variables are eliminated by -verify and -chc, and are not passed to solvers
 object Globals extends TestSuite:

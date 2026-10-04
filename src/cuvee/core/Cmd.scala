@@ -28,6 +28,16 @@ case class Value(value: Any) extends Result
 // auxiliary declarations and constraints, e.g. for the elements of uninterpreted sorts
 case class Model(decls: List[Decl]) extends Result
 
+// the answers to several queries added by a transform, e.g. check-sat and get-model after Horn clauses
+case class Answers(results: List[Result]) extends Result
+
+object Answers:
+  // the individual answers, where nested ones are flattened
+  def flatten(result: Result): List[Result] =
+    result match
+      case Answers(results) => results.flatMap(flatten)
+      case _                => List(result)
+
 sealed trait Cmd
 
 sealed trait Ctrl extends Cmd

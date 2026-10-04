@@ -546,17 +546,20 @@ class Parser(private var init: State):
           case decl: DeclareFun => decl
           case _                => Error.raise("invalid declaration in model", from)
 
+      // the formal parameters are renamed to x$0, x$1, ..., since the names of the solver,
+      // e.g. x!0 of z3, are not valid in other languages
       case List(Id("define-fun"), Id(name), List(formals*), res, body) =>
         val formals_ = list(formals) { formal(Scope.empty, _) }
         val res_ = typ(Scope.empty, res)
-        val fun = Fun(name, Nil, formals_, res_)
+        val renamed = Expr.vars("x", formals_.types)
+        val fun = Fun(name, Nil, renamed, res_)
 
         if !state.funs.contains((name, formals_.length))
-        then state = state.declare(name, Nil, formals_, res_, Attrs.empty)
+        then state = state.declare(name, Nil, renamed, res_, Attrs.empty)
 
         val expr_ = expr(Scope(Nil, formals_), body)
         val body_ = state.exprs.check(Scope.empty, expr_, res_)
-        DefineFun(fun, body_, Attrs.empty)
+        DefineFun(fun, Subst.from(formals_, renamed)(body_), Attrs.empty)
 
       // cardinality constraints of uninterpreted sorts (z3)
       case phi =>
@@ -634,6 +637,15 @@ class Parser(private var init: State):
 
       case Str(text) =>
         Lit(text, Sort.string)
+
+      // rational literals, as printed by the printer and by solvers in models
+      case List(Id("/"), Dec(num), Dec(den)) if !Rational.decimal(den).isZero =>
+        Lit(Rational.decimal(num) / Rational.decimal(den), Sort.real)
+
+      // annotations inside terms are parsed but discarded, e.g. (! e :weight 0) in models of z3
+      case List(Id("!"), arg, attrs*) =>
+        Parser.annotations(attrs.toList)
+        expr(scope, arg)
 
       // negative literals, as printed by the printer
       case List(Id("-"), Num(digits)) =>

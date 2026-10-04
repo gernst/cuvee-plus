@@ -39,12 +39,23 @@ object Printer extends cuvee.pipe.Printer:
   def call(fun: String, args: List[Doc]): Doc =
     Group(text(fun + "(") ++ Nest(2, linebreak ++ commas(args)) ++ text(")"))
 
+  // models are printed as C functions, those that are not C, e.g. with quantifiers, as in SMT-LIB
   def lines(res: Result): List[String] =
-    cuvee.smtlib.Printer.lines(res)
+    res match
+      case Model(decls) =>
+        for
+          decl <- decls
+          line <-
+            try lines(decl)
+            catch case _: Error => cuvee.smtlib.Printer.lines(decl)
+        yield line
+
+      case _ =>
+        cuvee.smtlib.Printer.lines(res)
 
   def lines(cmd: Cmd): List[String] =
     cmd match
-      case _: DeclareVar | _: DeclareProc | _: DefineProc =>
+      case _: DeclareVar | _: DeclareProc | _: DefineProc | _: DefineFun =>
         render(doc(cmd), width)
 
       case _ =>
@@ -90,6 +101,11 @@ object Printer extends cuvee.pipe.Printer:
 
       case DeclareProc(Proc(name_, Nil, in, out), _) =>
         signature(name_, in, out) ++ text(";")
+
+      // functions, e.g. the predicates of models of Horn clauses
+      case DefineFun(Fun(name_, Nil, formals, res), body, _) =>
+        val ret = Group(text("return") ++ Nest(2, line ++ doc(body))) ++ text(";")
+        doc(res) +:+ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) +:+ braces(List(ret))
 
       case DefineProc(Proc(name_, Nil, in, out), body, _) =>
         result = out.headOption
@@ -274,6 +290,13 @@ object Printer extends cuvee.pipe.Printer:
         val rest = (prec, None)
         val args_ = doc(args.head, first) :: args.tail.map(doc(_, rest))
         Group(args_.head ++ Nest(2, concat(args_.tail.map(line ++ text(op) +:+ _))))
+
+      // C has no let, the bound variables are substituted
+      case Let(bound, args, body) =>
+        doc(Subst.from(bound, args)(body))
+
+      case Imp(left, right) =>
+        doc(Or(Not(left), right))
 
       // div and mod of SMT-LIB, which differ from C's / and %
       case App(fun, _, _, args) if fun == Fun.int.div || fun == Fun.int.mod =>

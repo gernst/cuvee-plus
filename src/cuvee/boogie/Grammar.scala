@@ -76,6 +76,7 @@ object Grammar:
 
   val sym = T("sym")
   val num = T("num")
+  val dec = T("dec")
   val str = T("str")
 
   val id = Sym(sym)
@@ -135,7 +136,7 @@ object Grammar:
     P(parens(expr ~* ","))
 
   val lit =
-    P(Num(num) | Str(str))
+    P(Num(num) | Dec(dec) | Str(str))
 
   // map selection and update, a[i] and a[i := v]
   val access =
