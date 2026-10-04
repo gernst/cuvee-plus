@@ -69,7 +69,7 @@ object Printer extends cuvee.pipe.Printer:
         kw(name) ++ lines(res)
 
       case Some(cmd: Cmd) =>
-        kw(name) ++ lines(cmd)
+        kw(name) ++ command(cmd)
 
       case Some(typ: Type) =>
         kw(name) ++ lines(typ)
@@ -129,7 +129,7 @@ object Printer extends cuvee.pipe.Printer:
         sexpr(value)
 
       case Model(decls) =>
-        list(lines(decls))
+        list(decls.flatMap(command))
 
       case error: Error =>
         val info =
@@ -138,7 +138,12 @@ object Printer extends cuvee.pipe.Printer:
 
         apps(atom("error"), str(error.msg), info)
 
-  def lines(cmd: Cmd) =
+  // each command is followed by an empty line
+  def lines(cmd: Cmd): List[String] =
+    command(cmd) :+ ""
+
+  // a command without the empty line, e.g. inside a model or the value of an attribute
+  def command(cmd: Cmd): List[String] =
     cmd match
       case CheckSat =>
         app("check-sat")

@@ -67,8 +67,9 @@ object Printer extends cuvee.pipe.Printer:
   def lines(res: Result): List[String] =
     render(doc(res), width)
 
+  // each command is followed by an empty line
   def lines(cmd: Cmd): List[String] =
-    render(doc(cmd), width)
+    render(doc(cmd), width) :+ ""
 
   def lines(typ: Type): List[String] =
     render(doc(typ), width)

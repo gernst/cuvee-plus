@@ -172,7 +172,7 @@ object Rules extends TestSuite:
         function h(a: int): bool { f(g(a)) == a && p(1) }
       """, ".dfy")
       errors ==> Nil
-      cuvee.dafny.Printer.lines(cmds.last) ==> List("function h(a: int): bool {", "  true", "}")
+      cuvee.dafny.Printer.lines(cmds.last) ==> List("function h(a: int): bool {", "  true", "}", "")
 
     test("boogie"):
       val (cmds, errors) = simplify("""
@@ -183,13 +183,13 @@ object Rules extends TestSuite:
         function h(a: int): bool { f(g(a)) == a && !(f(a) < 0) }
       """, ".bpl")
       errors ==> Nil
-      cuvee.boogie.Printer.lines(cmds.last) ==> List("function h(a: int): bool { true }")
+      cuvee.boogie.Printer.lines(cmds.last) ==> List("function h(a: int): bool { true }", "")
 
     // the rules are printed with their attribute, which parses back
     test("printing"):
       val (cmds, errors) = simplify("function f(x: int): int axiom {:rw} forall x: int :: f(f(x)) == x", ".dfy")
       errors ==> Nil
-      cuvee.dafny.Printer.lines(cmds.last) ==> List("axiom {:rw} forall x: int :: f(f(x)) == x")
+      cuvee.dafny.Printer.lines(cmds.last) ==> List("axiom {:rw} forall x: int :: f(f(x)) == x", "")
 
     test("invalid"):
       val (_, errors) = simplify("predicate p(x: int) axiom {:rw} forall x: int :: p(x) && p(x + 1)", ".dfy")

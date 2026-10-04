@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- add a newline after each command in each printer
 - Dafny printer: always put the `=` for a datatype definition indented on the next line
 - in `TEQ` in the comments: remove the references in to concrete definitions and lemmas from the paper, keep the description abstract
 - in `TEQ.scala`, use capitalized names for the traces, not prefix by `X_`. If the variable is already capitalized, that's ok. Use `?` at the end of the nondet sequences.

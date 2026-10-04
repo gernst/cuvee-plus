@@ -53,10 +53,11 @@ object Printer extends cuvee.pipe.Printer:
       case _ =>
         cuvee.smtlib.Printer.lines(res)
 
+  // each command is followed by an empty line, as by the SMT-LIB printer
   def lines(cmd: Cmd): List[String] =
     cmd match
       case _: DeclareVar | _: DeclareProc | _: DefineProc | _: DefineFun =>
-        render(doc(cmd), width)
+        render(doc(cmd), width) :+ ""
 
       case _ =>
         cuvee.smtlib.Printer.lines(cmd)

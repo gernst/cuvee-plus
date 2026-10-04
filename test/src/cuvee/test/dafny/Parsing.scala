@@ -136,4 +136,4 @@ object Check extends TestSuite:
       val (_, cmds) = Source(new java.io.StringReader("const c: int\ncheck\naxiom c == 0"))
       val cmds_ = cmds.toList
       assert(cmds_.contains(cuvee.core.CheckSat))
-      cuvee.dafny.Printer.lines(cuvee.core.CheckSat) ==> List("check")
+      cuvee.dafny.Printer.lines(cuvee.core.CheckSat) ==> List("check", "")

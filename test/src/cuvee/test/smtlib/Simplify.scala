@@ -84,7 +84,8 @@ object SimplifyPrograms extends TestSuite:
         "  requires 0 <= x",
         "{",
         "  y := x + 1;",
-        "}"
+        "}",
+        ""
       )
 
     test("examples"):
