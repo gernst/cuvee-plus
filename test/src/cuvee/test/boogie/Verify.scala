@@ -6,9 +6,10 @@ import utest._
 import cuvee.Error
 import cuvee.core._
 
-// polymorphic functions are monomorphized before they are passed to a solver
+// polymorphic functions are monomorphized before they are passed to a solver,
+// traces.bpl contains the combinators of trace equation systems, which solvers do not support
 def solvable =
-  Examples.find(os.sub / "boogie", "bpl")
+  Examples.find(os.sub / "boogie", "bpl").filterNot(_.last == "traces.bpl")
 
 // runs the examples with -verify against z3,
 // the first line of each example states whether all goals are valid

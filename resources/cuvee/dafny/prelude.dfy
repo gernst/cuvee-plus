@@ -14,7 +14,7 @@ type map<a₀, a₁>
 
 // the events of parallel components, values sent and received on channels,
 // the global history of events, e.g. var history: seq<event<int>>;
-// and the methods send and receive are declared by the input (see examples/par.dfy)
+// and the methods send and receive are declared by the input (see examples/dafny/par.dfy)
 type chan
 datatype event<a₀> = event(chan: chan, value: a₀)
 

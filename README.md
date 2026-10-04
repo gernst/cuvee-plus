@@ -58,14 +58,14 @@ languages or passes it to an SMT solver (z3 or cvc5).
   - nondeterministic repetition, `while * { ... }`.
 
   Verification uses differential cuts and differential weakening (see
-  [examples/hybrid.dfy](examples/hybrid.dfy)).
+  [examples/dafny/hybrid.dfy](examples/dafny/hybrid.dfy)).
 - **Parallel composition:**
   - methods may have assumption-commitment contracts (`assumes`, `commits`)
     over a global history of events, which `send` and `receive` extend;
   - these contracts are used by the parallel composition of calls,
     `parallel { p(a); x := q(b); }`.
 
-  See [examples/par.dfy](examples/par.dfy).
+  See [examples/dafny/par.dfy](examples/dafny/par.dfy).
 
 Known limitations and planned work are listed in [TODO.md](TODO.md).
 
@@ -89,13 +89,13 @@ are given. The output options
 appear. For example:
 
 ```sh
-mill -i run -verify -z3 examples/vcgen/max.dfy              # verify methods
-mill -i run -chc -z3 examples/vcgen/max.dfy                 # infer invariants
-mill -i run -verify -simplify -z3 examples/hybrid.dfy       # hybrid programs
-mill -i run -verify -print smt2 examples/vcgen/max.dfy      # show the goals
-mill -i run -teq examples/vcgen/sum.dfy                     # trace equation systems
-mill -i run -teq -z3 examples/vcgen/max.dfy                 # loop-free, by symbolic execution
-mill -i run -chc -z3 examples/c/count.c                     # C, invariants by Horn clauses
+mill -i run -verify -z3 examples/dafny/vcgen/max.dfy          # verify methods
+mill -i run -chc -z3 examples/dafny/vcgen/max.dfy             # infer invariants
+mill -i run -verify -simplify -z3 examples/dafny/hybrid.dfy   # hybrid programs
+mill -i run -verify -print smt2 examples/dafny/vcgen/max.dfy  # show the goals
+mill -i run -teq examples/dafny/vcgen/sum.dfy                 # trace equation systems
+mill -i run -teq -z3 examples/dafny/vcgen/max.dfy             # loop-free, by symbolic execution
+mill -i run -chc -z3 examples/c/count.c                       # C, invariants by Horn clauses
 ```
 
 `-help` lists all options. `-debug simplify,rewrite` prints the steps of the

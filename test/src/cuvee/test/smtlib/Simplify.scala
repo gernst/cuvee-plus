@@ -88,7 +88,7 @@ object SimplifyPrograms extends TestSuite:
       )
 
     test("examples"):
-      for file <- Examples.find(os.sub / "vcgen", "dfy")
+      for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy")
       do
         val first = os.read.lines(file).head
         Examples.errors("-simplify", "-verify", "-z3", file.toString) ==> expected(first)

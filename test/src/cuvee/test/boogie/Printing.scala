@@ -14,7 +14,7 @@ import cuvee.boogie.Source
 // when the output is parsed again, the original file is not compared
 object Roundtrip extends TestSuite:
   val tests =
-    Examples.tests(Examples.find(os.sub, "bpl")): file =>
+    Examples.tests(Examples.find(os.sub / "boogie", "bpl")): file =>
       val (cmds, errors) = Examples.output("-print", "null", file.toString)
       errors ==> Nil
 

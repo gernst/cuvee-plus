@@ -11,7 +11,7 @@ object FlatHorn extends TestSuite:
   import cuvee.test.dafny.Horn.{expected, differs, skip}
 
   val tests =
-    Examples.tests(Examples.find(os.sub / "vcgen", "dfy").filterNot(file => skip.contains(file.last))): file =>
+    Examples.tests(Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(file => skip.contains(file.last))): file =>
       val first = os.read.lines(file).head
       val (_, results) = cuvee.Cuvee.run("-chc", "-flat", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil

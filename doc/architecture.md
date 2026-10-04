@@ -199,12 +199,14 @@ The tests use utest and run with `mill -i test`. Their sources are in
 `test/src/cuvee/test/`, by frontend:
 
 - Unit tests build core terms directly.
-- Example tests run `cuvee.Cuvee.run` on the files in `examples/`, through
+- Example tests run `cuvee.Cuvee.run` on the files in `examples/`, which has
+  a subfolder per language (`dafny`, `boogie`, `c`, `smtlib`) and per
+  transformation (`dafny/vcgen`, `simplify`, `transform`), through
   `Examples.find` and `Examples.tests`:
   - every file must parse;
   - the Dafny printer must roundtrip;
   - `examples/simplify/*.smt2` must produce `*.expected.smt2`;
-  - `examples/vcgen/*.dfy` must verify (or fail, as declared in their first
+  - `examples/dafny/vcgen/*.dfy` must verify (or fail, as declared in their first
     line) with `-verify -z3` and `-chc -z3`, those without loops also with
     `-teq -z3`;
   - the Boogie and C examples likewise, and the programs of the Dafny and

@@ -23,7 +23,7 @@ object Programs extends TestSuite:
     !prelude.exists(os.read(file).contains)
 
   val tests =
-    Examples.tests((Examples.find(os.sub, "dfy") ++ Examples.find(os.sub, "bpl")).filter(plain)): file =>
+    Examples.tests((Examples.find(os.sub / "dafny", "dfy") ++ Examples.find(os.sub / "boogie", "bpl")).filter(plain)): file =>
       val first = os.temp(suffix = ".smt2")
       val second = os.temp(suffix = ".smt2")
 

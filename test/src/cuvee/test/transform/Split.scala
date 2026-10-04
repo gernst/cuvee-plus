@@ -28,7 +28,7 @@ object Split extends TestSuite:
       S.split(Nil, Nil, All(List(x, y), Imp(p, p))) ==> List(Imp(p, p))
 
     test("examples"):
-      for file <- Examples.find(os.sub / "vcgen", "dfy")
+      for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy")
       do
         val first = os.read.lines(file).head
         val errors = Examples.errors("-verify", "-split", "-z3", file.toString)

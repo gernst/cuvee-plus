@@ -21,14 +21,14 @@ object TEQ extends TestSuite:
 
   val tests = Tests:
     test("without loops"):
-      for file <- Examples.find(os.sub / "vcgen", "dfy").filterNot(loops)
+      for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(loops)
       do
         val first = os.read.lines(file).head
         Examples.errors("-teq", "-z3", file.toString) ==> expected(first)
 
     // the counter i of sum.dfy is recognized by the lemma of example 2.3
     test("counter"):
-      val file = Examples.root / "vcgen" / "sum.dfy"
+      val file = Examples.root / "dafny" / "vcgen" / "sum.dfy"
       val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
       errors ==> Nil
       val List(Assert(Goal, _, phi, _)) = cmds: @unchecked

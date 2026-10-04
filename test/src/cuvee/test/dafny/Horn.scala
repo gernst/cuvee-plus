@@ -29,7 +29,7 @@ object Horn extends TestSuite:
   val skip = Set("contract.dfy", "nested.dfy", "sum.dfy", "seq.dfy", "invalid_seq.dfy")
 
   val tests =
-    Examples.tests(Examples.find(os.sub / "vcgen", "dfy").filterNot(file => skip.contains(file.last))): file =>
+    Examples.tests(Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(file => skip.contains(file.last))): file =>
       val first = os.read.lines(file).head
       assert(expected.contains(first))
 
@@ -48,7 +48,7 @@ object HornCmds extends TestSuite:
   val tests = Tests:
     // the logic is set at the beginning
     test("logic set"):
-      val cmds = output(os.sub / "vcgen" / "max.dfy")
+      val cmds = output(os.sub / "dafny" / "vcgen" / "max.dfy")
       cmds.head ==> SetLogic("HORN")
 
     // a given logic is replaced, not duplicated
@@ -58,12 +58,12 @@ object HornCmds extends TestSuite:
 
     // the clauses are checked at the end of the input
     test("check at the end"):
-      val cmds = output(os.sub / "vcgen" / "max.dfy")
+      val cmds = output(os.sub / "dafny" / "vcgen" / "max.dfy")
       cmds.takeRight(2) ==> List(CheckSat, GetModel)
 
     // the model of the predicates is read back from the solver and printed in the language of the input
     test("model"):
-      val max = Examples.root / "vcgen" / "max.dfy"
+      val max = Examples.root / "dafny" / "vcgen" / "max.dfy"
       val (_, results) = cuvee.Cuvee.run("-chc", "-z3", max.toString)
       val List(Status.Sat, Model(decls)) = results.filterNot(_ == Ack.Success): @unchecked
       assert(decls.nonEmpty && decls.forall(_.isInstanceOf[DefineFun]))
@@ -71,24 +71,24 @@ object HornCmds extends TestSuite:
 
     // no model if the clauses are unsatisfiable
     test("no model"):
-      val invalid = Examples.root / "vcgen" / "invalid_old.dfy"
+      val invalid = Examples.root / "dafny" / "vcgen" / "invalid_old.dfy"
       val (_, results) = cuvee.Cuvee.run("-chc", "-z3", invalid.toString)
       results.filterNot(_ == Ack.Success) ==> List(Status.Unsat)
 
     // differential equations are not supported in Horn clauses
     test("differential equations"):
-      val hybrid = Examples.root / "hybrid.dfy"
+      val hybrid = Examples.root / "dafny" / "hybrid.dfy"
       val errors = Examples.errors("-chc", "-print", "null", hybrid.toString)
       assert(errors.contains("differential equations not supported in Horn clauses"))
 
     // parallel composition is not supported in Horn clauses
     test("parallel composition"):
-      val par = Examples.root / "par.dfy"
+      val par = Examples.root / "dafny" / "par.dfy"
       val errors = Examples.errors("-chc", "-print", "null", par.toString)
       assert(errors.contains("parallel composition not supported in Horn clauses"))
 
     // every procedure has predicates for its pre- and postcondition
     test("contract predicates"):
-      val cmds = output(os.sub / "vcgen" / "max.dfy")
+      val cmds = output(os.sub / "dafny" / "vcgen" / "max.dfy")
       val names = cmds.collect { case DeclareFun(fun, _) => fun.name.name }
       assert(names.contains("max_pre"), names.contains("max_post"))

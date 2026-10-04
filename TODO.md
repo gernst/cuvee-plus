@@ -82,7 +82,7 @@ inferred from the call graph. Open:
   `this`, e.g. `this.counter` and `this.m(a)`; a plain `counter` is an unknown
   expression, and a plain `m(a);` is only resolved for top-level methods.
   Names that are not local variables should be resolved as members of `this`
-  (see [examples/stack.dfy](examples/stack.dfy)).
+  (see [examples/dafny/stack.dfy](examples/dafny/stack.dfy)).
 - `var` declarations must come before the statements of a block.
 - The contract clauses of methods must be in the order `modifies`,
   `requires`, `ensures`, `assumes`, `commits`, `decreases`; Dafny allows any
@@ -131,7 +131,7 @@ inferred from the call graph. Open:
 - Readers for input files and the output stream of `-o` are never closed.
 - Quantified specifications over sequences often end in `unknown`, e.g. a
   predicate defined by `forall i :: ... h[i] ...` for `h + [e]`; inductive
-  axioms work better (see [examples/par.dfy](examples/par.dfy)).
+  axioms work better (see [examples/dafny/par.dfy](examples/dafny/par.dfy)).
 
 ## Warnings
 
@@ -188,7 +188,7 @@ inferred from the call graph. Open:
 ## Hybrid programs
 
 Non-standard features from Platzer's dL, as part of the Dafny frontend
-(see [examples/hybrid.dfy](examples/hybrid.dfy)):
+(see [examples/dafny/hybrid.dfy](examples/dafny/hybrid.dfy)):
 
 - The derivatives of formulas from `Verify` for the invariants of `Ode` must
   be simplified (`-simplify`) before the goals can be passed to a solver.
@@ -205,7 +205,7 @@ Non-standard features from Platzer's dL, as part of the Dafny frontend
 ## Parallel composition
 
 Parallel composition of calls, whose assumption-commitment contracts are over
-a global history of events (see [examples/par.dfy](examples/par.dfy)):
+a global history of events (see [examples/dafny/par.dfy](examples/dafny/par.dfy)):
 
 - `Horn` raises an error on `parallel`, and ignores assumptions and
   commitments in the bodies of procedures.

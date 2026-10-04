@@ -6,7 +6,7 @@ import utest._
 object Parsing extends TestSuite:
   // Dafny examples must parse without errors
   val tests =
-    Examples.tests(Examples.find(os.sub, "dfy")): file =>
+    Examples.tests(Examples.find(os.sub / "dafny", "dfy")): file =>
       Examples.errors("-print", "null", file.toString) ==> Nil
 
 // derivatives are with respect to variables on real only

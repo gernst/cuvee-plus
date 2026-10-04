@@ -9,7 +9,7 @@ import cuvee.core._
 // Boogie examples must be resolved and type checked without errors
 object Parsing extends TestSuite:
   val tests =
-    Examples.tests(Examples.find(os.sub, "bpl")): file =>
+    Examples.tests(Examples.find(os.sub / "boogie", "bpl")): file =>
       Examples.errors("-print", "null", file.toString) ==> Nil
 
 // the declarations of the prelude coincide with the builtin functions,

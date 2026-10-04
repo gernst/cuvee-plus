@@ -14,7 +14,7 @@ object Verify extends TestSuite:
   )
 
   val tests =
-    Examples.tests(Examples.find(os.sub / "vcgen", "dfy")): file =>
+    Examples.tests(Examples.find(os.sub / "dafny" / "vcgen", "dfy")): file =>
       val first = os.read.lines(file).head
       assert(expected.contains(first))
 
@@ -37,7 +37,7 @@ object VerifyOde extends TestSuite:
   val tests = Tests:
     // the derivatives are simplified away before the goals are passed to z3
     test("hybrid.dfy"):
-      val hybrid = Examples.root / "hybrid.dfy"
+      val hybrid = Examples.root / "dafny" / "hybrid.dfy"
       Examples.errors("-verify", "-simplify", "-z3", hybrid.toString) ==> Nil
 
     test("weakening"):
@@ -53,19 +53,19 @@ object VerifyOde extends TestSuite:
 object VerifySeq extends TestSuite:
   val tests = Tests:
     test("seq.dfy"):
-      val seq = Examples.root / "seq.dfy"
+      val seq = Examples.root / "dafny" / "seq.dfy"
       Examples.errors("-verify", "-cvc5", seq.toString) ==> Nil
 
 // methods with assumption-commitment contracts composed in parallel
 object VerifyPar extends TestSuite:
   val tests = Tests:
     test("par.dfy"):
-      val par = Examples.root / "par.dfy"
+      val par = Examples.root / "dafny" / "par.dfy"
       Examples.errors("-verify", "-z3", par.toString) ==> Nil
 
     // the commitment of the other method does not imply the assumption
     test("assumption"):
-      val par = os.read(Examples.root / "par.dfy").replace(
+      val par = os.read(Examples.root / "dafny" / "par.dfy").replace(
         "  requires c != d\n  assumes positive(history, c)\n  commits positive(history, c)",
         "  requires c != d\n  assumes positive(history, c)"
       )
@@ -74,7 +74,7 @@ object VerifyPar extends TestSuite:
 
     // the parallel composition extends the history, after which the commitment of main must hold
     test("commitment"):
-      val par = os.read(Examples.root / "par.dfy")
+      val par = os.read(Examples.root / "dafny" / "par.dfy")
       val good = par.replace("  ensures positive(history, c)\n{\n  parallel", "  ensures positive(history, c)\n  commits positive(history, c)\n{\n  parallel")
       val bad = par.replace("  ensures positive(history, c)\n{\n  parallel", "  ensures positive(history, c)\n  commits history == []\n{\n  parallel")
       assert(good != par && bad != par)
