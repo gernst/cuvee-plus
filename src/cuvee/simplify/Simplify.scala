@@ -108,7 +108,9 @@ object Simplify extends Transform:
         val phis_ = nary(state, ctx, Nil, phis, false)
         or(state, ctx, phis_)
 
-      case UMinus.int(_) | Plus.int(_) | Minus.int(_, _) | Times.int(_) =>
+      // on Real, division by a nonzero literal is part of the polynomials
+      case UMinus.int(_) | Plus.int(_) | Minus.int(_, _) | Times.int(_) |
+          UMinus.real(_) | Plus.real(_) | Minus.real(_, _) | Times.real(_) | DivBy.real(_, _) =>
         arith(state, ctx.neutral, expr)
 
       case DivBy.int(left, right) =>
@@ -124,18 +126,34 @@ object Simplify extends Transform:
       case Lt.int(left, right) =>
         val left_ = simplify(state, ctx.neutral, left)
         val right_ = simplify(state, ctx.neutral, right)
-        lt(state, ctx, left_, right_)
+        lt(state, ctx, Lt.int, left_, right_)
+
+      case Lt.real(left, right) =>
+        val left_ = simplify(state, ctx.neutral, left)
+        val right_ = simplify(state, ctx.neutral, right)
+        lt(state, ctx, Lt.real, left_, right_)
 
       case Le.int(left, right) =>
         val left_ = simplify(state, ctx.neutral, left)
         val right_ = simplify(state, ctx.neutral, right)
-        le(state, ctx, left_, right_)
+        le(state, ctx, Le.int, left_, right_)
+
+      case Le.real(left, right) =>
+        val left_ = simplify(state, ctx.neutral, left)
+        val right_ = simplify(state, ctx.neutral, right)
+        le(state, ctx, Le.real, left_, right_)
 
       case Gt.int(left, right) =>
         Lt.int(right, left)
 
+      case Gt.real(left, right) =>
+        Lt.real(right, left)
+
       case Ge.int(left, right) =>
         Le.int(right, left)
+
+      case Ge.real(left, right) =>
+        Le.real(right, left)
 
       case App(fun, inst, typ, args) =>
         val args_ = args.map(simplify(state, ctx.neutral, _))
@@ -171,38 +189,51 @@ object Simplify extends Transform:
         val phi_ = simplify(state, ctx_, phi)
         nary(state, ctx, phi_ :: done, rest, pos)
 
-  // simplify an integer-valued term into the normal form of polynomials
+  // simplify an integer- or real-valued term into the normal form of polynomials,
+  // terms of other types, e.g. of defined sorts, are simplified only
   def arith(state: State, ctx: Ctx, expr: Expr): Expr =
-    poly(state, ctx, expr).normalize.toExpr
+    Ring(expr.typ) match
+      case Some(ring) => poly(state, ctx, ring, expr).normalize.toExpr(ring)
+      case None       => simplify(state, ctx, expr)
 
-  // simplify an integer-valued term into a polynomial (not normalized):
-  // descend through +, -, * and integer literals, simplify the leaves,
-  // which may in turn become arithmetic expressions, and combine the results
-  def poly(state: State, ctx: Ctx, expr: Expr): Poly =
-    expr match
-      case Lit(n: BigInt, Sort.int) =>
-        Poly.const(util.Rational(n))
+  // simplify an integer- or real-valued term into a polynomial (not normalized):
+  // descend through +, -, * and literals, simplify the leaves,
+  // which may in turn become arithmetic expressions, and combine the results;
+  // on Real, division by a term that simplifies to a nonzero literal is multiplication by its inverse
+  def poly(state: State, ctx: Ctx, ring: Ring, expr: Expr): Poly =
+    ring.num(expr) match
+      case Some(n) =>
+        Poly.const(n)
 
-      case UMinus.int(arg) =>
-        val arg_ = poly(state, ctx, arg)
-        -arg_
+      case None =>
+        expr match
+          case ring.uminus(arg) =>
+            val arg_ = poly(state, ctx, ring, arg)
+            -arg_
 
-      case Plus.int(args) =>
-        val args_ = args.map(poly(state, ctx, _))
-        args_.foldLeft(Poly.zero)(_ + _)
+          case ring.plus(args) =>
+            val args_ = args.map(poly(state, ctx, ring, _))
+            args_.foldLeft(Poly.zero)(_ + _)
 
-      case Minus.int(left, right) =>
-        val left_ = poly(state, ctx, left)
-        val right_ = poly(state, ctx, right)
-        left_ - right_
+          case ring.minus(left, right) =>
+            val left_ = poly(state, ctx, ring, left)
+            val right_ = poly(state, ctx, ring, right)
+            left_ - right_
 
-      case Times.int(args) =>
-        val args_ = args.map(poly(state, ctx, _))
-        args_.foldLeft(Poly.one)(_ * _)
+          case ring.times(args) =>
+            val args_ = args.map(poly(state, ctx, ring, _))
+            args_.foldLeft(Poly.one)(_ * _)
 
-      case _ =>
-        val expr_ = simplify(state, ctx, expr)
-        Arith.toPoly(expr_)
+          case DivBy.real(left, right) =>
+            val left_ = poly(state, ctx, ring, left)
+            val right_ = simplify(state, ctx, right)
+            ring.num(right_) match
+              case Some(r) if !r.isZero => left_ * (util.Rational(1) / r)
+              case _                    => Poly.atom(DivBy.real(left_.normalize.toExpr(ring), right_))
+
+          case _ =>
+            val expr_ = simplify(state, ctx, expr)
+            Arith.toPoly(ring, expr_)
 
   // variables known to be equal to another one are replaced
   def var_(state: State, ctx: Ctx, x: Var): Expr =
@@ -356,17 +387,18 @@ object Simplify extends Transform:
       case _ =>
         Mod.int(left, right)
 
-  def lt(state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
-    (left, right) match
-      case _ if left == right                    => False
-      case (Lit(m: BigInt, _), Lit(n: BigInt, _)) => if m < n then True else False
-      case _                                     => Lt.int(left, right)
+  // comparisons on Int or Real, built by `op`
+  def lt(state: State, ctx: Ctx, op: Sugar.binary, left: Expr, right: Expr): Expr =
+    (left, right, Ring.num(left), Ring.num(right)) match
+      case _ if left == right             => False
+      case (_, _, Some(m), Some(n))       => if m < n then True else False
+      case _                              => op(left, right)
 
-  def le(state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
-    (left, right) match
-      case _ if left == right                    => True
-      case (Lit(m: BigInt, _), Lit(n: BigInt, _)) => if m <= n then True else False
-      case _                                     => Le.int(left, right)
+  def le(state: State, ctx: Ctx, op: Sugar.binary, left: Expr, right: Expr): Expr =
+    (left, right, Ring.num(left), Ring.num(right)) match
+      case _ if left == right             => True
+      case (_, _, Some(m), Some(n))       => if m <= n then True else False
+      case _                              => op(left, right)
 
   // applications of other functions, e.g. user-defined ones
   def app(state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =

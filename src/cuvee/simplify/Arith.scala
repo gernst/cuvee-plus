@@ -27,14 +27,14 @@ case class Mono(factor: Rational, atoms: List[(Expr, BigInt)]):
     Mono(factor, atoms_.sortBy(_._1))
 
   // exponents are expanded into repeated factors, a factor of 1 is omitted and -1 becomes a negation
-  def toExpr: Expr =
+  def toExpr(ring: Ring): Expr =
     val args =
       for (expr, exp) <- atoms; _ <- List.range(BigInt(0), exp)
       yield expr
 
-    if factor == Rational(1) then Times.int(args)
-    else if factor == Rational(-1) then UMinus.int(Times.int(args))
-    else Times.int(Arith.lit(factor) :: args)
+    if factor == Rational(1) then ring.times(args)
+    else if factor == Rational(-1) then ring.uminus(ring.times(args))
+    else ring.times(ring.lit(factor) :: args)
 
 object Mono:
   // compares the atoms only, so that monomials which differ in their factor can be merged
@@ -82,13 +82,13 @@ case class Poly(const: Rational, monos: List[Mono]):
   // print back in a canonical order, so that equal polynomials yield equal expressions
   // (required for the fixpoint check in Simplify.simplify)
   // a constant of 0 is omitted, it is placed last otherwise
-  def toExpr: Expr =
+  def toExpr(ring: Ring): Expr =
     val const_ =
       if const.isZero
       then Nil
-      else List(Arith.lit(const))
+      else List(ring.lit(const))
 
-    Plus.int(monos.map(_.toExpr) ++ const_)
+    ring.plus(monos.map(_.toExpr(ring)) ++ const_)
 
 object Poly:
   val zero = const(Rational(0))
@@ -100,29 +100,67 @@ object Poly:
   def atom(expr: Expr): Poly =
     Poly(Rational(0), List(Mono.atom(expr)))
 
-// normal form of integer arithmetic as polynomials over atoms,
-// where atoms are all subterms that are not built from +, -, * and integer literals,
-// e.g. variables, applications of uninterpreted functions, div, mod, ite
+// the sugar of arithmetic on Int or Real, by which polynomials are read and printed back,
+// where the integral coefficients on Int become integer literals
+case class Ring(
+    typ: Type,
+    uminus: Sugar.unary,
+    plus: Sugar.commutative,
+    minus: Sugar.associative,
+    times: Sugar.commutative,
+    lit: Rational => Expr
+):
+  // the value of a literal of this type
+  def num(expr: Expr): Option[Rational] =
+    expr match
+      case Lit(n: BigInt, `typ`)   => Some(Rational(n))
+      case Lit(r: Rational, `typ`) => Some(r)
+      case _                       => None
+
+object Ring:
+  val int =
+    Ring(Sort.int, UMinus.int, Plus.int, Minus.int, Times.int, n =>
+      Error.report("non-integral coefficient in integer arithmetic", n):
+        require(n.den == 1)
+      Lit(n.num, Sort.int))
+
+  val real =
+    Ring(Sort.real, UMinus.real, Plus.real, Minus.real, Times.real, r => Lit(r, Sort.real))
+
+  def apply(typ: Type): Option[Ring] =
+    if typ == Sort.int then Some(int)
+    else if typ == Sort.real then Some(real)
+    else None
+
+  // the value of a literal on Int or Real
+  def num(expr: Expr): Option[Rational] =
+    int.num(expr) orElse real.num(expr)
+
+// normal form of arithmetic on Int and Real as polynomials over atoms,
+// where atoms are all subterms that are not built from +, -, * and literals,
+// e.g. variables, applications of uninterpreted functions, div, mod, ite,
+// and on Real, division by a nonzero literal, which is multiplication by its inverse
 //
 // example: (x + 1) * (x - 1)  ~>  x*x + -1
 object Arith:
   // entry point for the simplifier:
   // normalize an arithmetic expression whose subterms are already simplified
-  def normalize(expr: Expr): Expr =
-    toPoly(expr).normalize.toExpr
+  def normalize(ring: Ring, expr: Expr): Expr =
+    toPoly(ring, expr).normalize.toExpr(ring)
 
   // interpret an expression as a polynomial, flattening sums and products
-  def toPoly(expr: Expr): Poly =
-    expr match
-      case Lit(n: BigInt, Sort.int) => Poly.const(Rational(n))
-      case UMinus.int(arg)          => -toPoly(arg)
-      case Plus.int(args)           => args.map(toPoly).foldLeft(Poly.zero)(_ + _)
-      case Minus.int(left, right)   => toPoly(left) - toPoly(right)
-      case Times.int(args)          => args.map(toPoly).foldLeft(Poly.one)(_ * _)
-      case _                        => Poly.atom(expr)
+  def toPoly(ring: Ring, expr: Expr): Poly =
+    ring.num(expr) match
+      case Some(n) =>
+        Poly.const(n)
 
-  // the integer literal for a rational coefficient, which is integral on Int
-  def lit(n: Rational): Expr =
-    Error.report("non-integral coefficient in integer arithmetic", n):
-      require(n.den == 1)
-    Lit(n.num, Sort.int)
+      case None =>
+        expr match
+          case ring.uminus(arg)        => -toPoly(ring, arg)
+          case ring.plus(args)         => args.map(toPoly(ring, _)).foldLeft(Poly.zero)(_ + _)
+          case ring.minus(left, right) => toPoly(ring, left) - toPoly(ring, right)
+          case ring.times(args)        => args.map(toPoly(ring, _)).foldLeft(Poly.one)(_ * _)
+          case DivBy.real(left, Lit(r: Rational, _)) if ring == Ring.real && !r.isZero =>
+            toPoly(ring, left) * (Rational(1) / r)
+          case _ =>
+            Poly.atom(expr)

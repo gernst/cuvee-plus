@@ -14,8 +14,7 @@
   [core/Overload.scala](src/cuvee/core/Overload.scala) in all frontends.
   Boogie has no decimal literals, and its printer raises an error on real
   literals.
-- The core sugar `Plus`, `Lt`, etc. and the arithmetic simplifier
-  ([simplify/Arith.scala](src/cuvee/simplify/Arith.scala)) are for `Int` only.
+
 - No `old(e)` in postconditions and loop invariants to refer to the values of
   global variables at the entry of a procedure, in Boogie and Dafny;
   `Horn` already names these values `g$i` in the postcondition predicates.

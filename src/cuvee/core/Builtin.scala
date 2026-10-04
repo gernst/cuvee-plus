@@ -1,13 +1,17 @@
 package cuvee.core
 
+import util.Rational
 import cuvee.Error
 
-// constants and arithmetic per type, e.g. Plus.int, for now on Int only
+// constants and arithmetic per type, e.g. Plus.int and Plus.real,
+// where DivBy.int is div and DivBy.real is /, and Mod is on Int only
 object Zero:
   val int = Lit(BigInt(0), Sort.int)
+  val real = Lit(Rational(0), Sort.real)
 
 object One:
   val int = Lit(BigInt(1), Sort.int)
+  val real = Lit(Rational(1), Sort.real)
 
 object True extends App(Fun.true_, Nil, Sort.bool, Nil)
 object False extends App(Fun.false_, Nil, Sort.bool, Nil)
@@ -47,18 +51,23 @@ object Or extends Sugar.commutative(Fun.or, False, Assoc.Left)
 
 object UMinus:
   object int extends Sugar.unary(Fun.int.uminus)
+  object real extends Sugar.unary(Fun.real.uminus)
 
 object Plus:
   object int extends Sugar.commutative(Fun.int.plus, Zero.int, Assoc.Left)
+  object real extends Sugar.commutative(Fun.real.plus, Zero.real, Assoc.Left)
 
 object Minus:
   object int extends Sugar.associative(Fun.int.minus, Assoc.Left)
+  object real extends Sugar.associative(Fun.real.minus, Assoc.Left)
 
 object Times:
   object int extends Sugar.commutative(Fun.int.times, One.int, Assoc.Left)
+  object real extends Sugar.commutative(Fun.real.times, One.real, Assoc.Left)
 
 object DivBy:
   object int extends Sugar.associative(Fun.int.div, Assoc.Left)
+  object real extends Sugar.associative(Fun.real.div, Assoc.Left)
 
 object Mod:
   object int extends Sugar.associative(Fun.int.mod, Assoc.Left)
@@ -75,12 +84,16 @@ object Succ:
 
 object Lt:
   object int extends Sugar.binary(Fun.int.lt)
+  object real extends Sugar.binary(Fun.real.lt)
 
 object Le:
   object int extends Sugar.binary(Fun.int.le)
+  object real extends Sugar.binary(Fun.real.le)
 
 object Gt:
   object int extends Sugar.binary(Fun.int.gt)
+  object real extends Sugar.binary(Fun.real.gt)
 
 object Ge:
   object int extends Sugar.binary(Fun.int.ge)
+  object real extends Sugar.binary(Fun.real.ge)

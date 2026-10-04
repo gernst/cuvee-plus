@@ -1,0 +1,8 @@
+(declare-fun x () Real)
+(declare-fun y () Real)
+(assert true)
+(assert (= (* 0.5 x) y))
+(assert false)
+(assert true)
+(assert (< 0.0 (/ x y)))
+(assert true)
