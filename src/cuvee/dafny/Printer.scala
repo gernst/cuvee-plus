@@ -47,7 +47,7 @@ object Printer extends cuvee.pipe.Printer:
 
   // string literals escape backslashes and double quotes
   def str(value: String): Doc =
-    text("\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
+    text("\"" + util.Strings.escape(value) + "\"")
 
   // values of options, infos and attributes, which may already be resolved
   def any(value: Any): Doc =

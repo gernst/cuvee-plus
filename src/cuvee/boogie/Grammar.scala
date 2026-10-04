@@ -216,6 +216,10 @@ object Grammar:
   val modifies =
     Modifies(P("modifies" ~ ids ~ ";"))
 
+  // a lexicographic termination measure, not Boogie
+  val decreases =
+    Decreases(P("decreases" ~ exprs ~ ";"))
+
   val break =
     Break("break" ~ ";")
 
@@ -263,7 +267,7 @@ object Grammar:
     If(P("if" ~ parens(guard) ~ block ~ else_block_or_skip))
 
   val while_ =
-    While(P("while" ~ parens(guard) ~ (invariant | modifies).* ~ block))
+    While(P("while" ~ parens(guard) ~ (invariant | modifies | decreases).* ~ block))
 
   val prog: Parser[Prog] =
     P(break | return_ | assume | assert | havoc | call | if_ | while_ | block | assign)
@@ -298,7 +302,7 @@ object Grammar:
     P(("returns" ~ formals) | nil)
 
   val spec =
-    P(requires | ensures | modifies)
+    P(requires | ensures | modifies | decreases)
 
   // procedures without body end the signature with a semicolon, those with body must not
   val contract =

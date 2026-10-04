@@ -353,8 +353,9 @@ class Parser(var state: State):
       case Dec(value) =>
         state.exprs.dec(util.Rational.decimal(value))
 
+      // backslashes escape the next character
       case Str(value) =>
-        state.exprs.str(value)
+        state.exprs.str(util.Strings.unescape(value))
 
       case Tuple(List(arg)) =>
         resolve(scope, arg)

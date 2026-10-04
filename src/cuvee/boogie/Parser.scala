@@ -164,28 +164,37 @@ class Parser(var state: State):
     state.exprs.check(scope, expr_, typ_)
 
 
-  // the clauses of procedures and loops as attributes
+  // the clauses of procedures and loops as attributes,
+  // where each component of a lexicographic termination measure is an attribute decreases of its own
   def contract(scope: Scope, specs: List[Spec]): Attrs =
     val specs_ =
-      for spec <- specs
-      yield spec match
+      specs.flatMap:
         case Requires(phi) =>
-          "requires" -> Some(formula(scope, phi))
+          List("requires" -> Some(formula(scope, phi)))
 
         case Ensures(phi) =>
-          "ensures" -> Some(formula(scope, phi))
+          List("ensures" -> Some(formula(scope, phi)))
 
         case Invariant(phi) =>
-          "invariant" -> Some(formula(scope, phi))
+          List("invariant" -> Some(formula(scope, phi)))
 
         case Modifies(xs) =>
           val unknown = xs.filterNot(scope.vars.contains(_))
           Error.report("unknown variables in modifies clause", scope, unknown):
             require(unknown.isEmpty)
 
-          "modifies" -> Some(xs.map(scope.vars(_)))
+          List("modifies" -> Some(xs.map(scope.vars(_))))
+
+        case Decreases(exprs) =>
+          for expr <- exprs
+          yield "decreases" -> Some(measure(scope, expr))
 
     Attrs(specs_)
+
+  def measure(scope: Scope, expr: Expr) =
+    val expr_ = resolve(scope, expr)
+    val typ_ = state.types.sort("Int")
+    state.exprs.check(scope, expr_, typ_)
 
   def resolve(scope: Scope, typ: Type): core.Type =
     typ match
@@ -229,8 +238,9 @@ class Parser(var state: State):
       case Num(value) =>
         state.exprs.num(BigInt(value))
 
+      // backslashes escape the next character
       case Str(value) =>
-        state.exprs.str(value)
+        state.exprs.str(util.Strings.unescape(value))
 
       case App("!=", args, access) =>
         val expr_ = App("not", List(App("=", args, Nil)), access)

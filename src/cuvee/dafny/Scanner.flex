@@ -46,7 +46,7 @@ sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*
 "//" .* {nl} {}
 
 {kw}        { return Syntax.apply(yytext()); }
-\" ~ \"     { return Syntax.apply("str", yytext(+1,-1)); }
+\" ([^\"\\] | \\.)* \"     { return Syntax.apply("str", yytext(+1,-1)); }
 {dec}       { return Syntax.apply("dec", yytext()); }
 {num}       { return Syntax.apply("num", yytext()); }
 {sym}       { return Syntax.apply("sym", yytext()); }

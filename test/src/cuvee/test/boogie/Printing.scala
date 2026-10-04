@@ -85,8 +85,13 @@ object Printing extends TestSuite:
 
     test("unsupported"):
       error(prog(Continue)) ==> "continue not supported in Boogie"
-      val dec = cuvee.core.Attrs(List("decreases" -> Some(x)))
-      error(prog(While(True, Block(Nil, Nil), dec))) ==> "attributes of loops not supported in Boogie"
+      val other = cuvee.core.Attrs(List("other" -> Some(x)))
+      error(prog(While(True, Block(Nil, Nil), other))) ==> "attributes of loops not supported in Boogie"
+
+    // the components of a termination measure are a single clause
+    test("decreases"):
+      val dec = cuvee.core.Attrs(List("decreases" -> Some(x), "decreases" -> Some(y)))
+      prog(While(True, Block(Nil, Nil), dec)) ==> List("while (true)", "  decreases x, y;", "{}")
 
     test("mixfix"):
       expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"

@@ -91,11 +91,14 @@ case class Requires(phi: Expr) extends Spec
 case class Ensures(phi: Expr) extends Spec
 case class Invariant(phi: Expr) extends Spec
 case class Modifies(vars: List[String]) extends Spec
+// a lexicographic termination measure, not Boogie
+case class Decreases(exprs: List[Expr]) extends Spec
 
 object Requires extends (Expr => Spec)
 object Ensures extends (Expr => Spec)
 object Invariant extends (Expr => Spec)
 object Modifies extends (List[String] => Spec)
+object Decreases extends (List[Expr] => Spec)
 
 // attributes of top-level commands, e.g. {:inline} and {:msg "text", x}
 case class Attr(name: String, args: List[Expr])

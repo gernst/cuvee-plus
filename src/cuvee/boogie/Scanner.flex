@@ -29,7 +29,7 @@ num  = [0-9]+
 dec  = {num} "." [0-9]+
 
 kw  = "type" | "const" | "function" | "axiom" | "lemma" | "var" | "procedure"
-    | "returns" | "requires" | "ensures" | "modifies" | "invariant"
+    | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "if" | "then" | "else" | "while" | "break" | "return"
     | "assert" | "assume" | "havoc" | "call" | "forall" | "exists"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}] | "{:" | ":=" | "=" | "⌊" | "⌋"
@@ -49,7 +49,7 @@ sym = {idchar} ({idchar} | [0-9])*
 "/*" ~"*/" {}
 
 {kw}        { return Syntax.apply(yytext()); }
-\" ~ \"     { return Syntax.apply("str", yytext(+1,-1)); }
+\" ([^\"\\] | \\.)* \"     { return Syntax.apply("str", yytext(+1,-1)); }
 {dec}       { return Syntax.apply("dec", yytext()); }
 {num}       { return Syntax.apply("num", yytext()); }
 {sym}       { return Syntax.apply("sym", yytext()); }

@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- add support for strings and decreases in the boogie printer
 - the C printer should get some fake notation for quantifiers and trace combinators, it is not good to mix sexprs with C-like notation
 - in the C frontend, initialized variables should give the initialization constraint for predicate `main_pre`
 - wrap the combinators in the Dafny printer so that if a line break is necessary, the `check` is below `for` etc... and the subsequent line after `=>` is indented at least some spaces from the surrounding parentheses
@@ -134,10 +133,11 @@ inferred from the call graph. Open:
 - No quantifiers over types, `forall<a> ...`,
   no sequences, no parallel composition.
 - The printer raises an error on datatypes, `continue`, attributes of loops
-  other than `invariant` and `modifies` (e.g. `decreases`), binders other than
-  `forall` and `exists`, strings with `"`, derivatives, differential equations, and parallel
-  composition; goals and lemmas are printed as `goal` and `lemma`, which are
-  not Boogie ([boogie/Printer.scala](src/cuvee/boogie/Printer.scala)).
+  other than `invariant`, `modifies`, and `decreases`, binders other than
+  `forall` and `exists`, derivatives, differential equations, and parallel
+  composition; goals, lemmas, and `decreases` are printed as `goal`, `lemma`,
+  and `decreases`, which are not Boogie
+  ([boogie/Printer.scala](src/cuvee/boogie/Printer.scala)).
 
 ## SMT-LIB frontend
 

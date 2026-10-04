@@ -42,12 +42,9 @@ object Printer extends cuvee.pipe.Printer:
   def call(fun: String, args: List[Doc]): Doc =
     Group(text(fun + "(") ++ Nest(2, linebreak ++ commas(args)) ++ text(")"))
 
-  // string literals have no escapes in Boogie
+  // string literals escape backslashes and double quotes, as in Dafny
   def str(value: String): Doc =
-    Error.report("string literal with double quotes not supported in Boogie", value):
-      require(!value.contains("\""))
-
-    text("\"" + value + "\"")
+    text("\"" + util.Strings.escape(value) + "\"")
 
   // values of options, infos and attributes, which may already be resolved,
   // lists of expressions are the arguments of a single attribute, e.g. of modifies
@@ -226,7 +223,7 @@ object Printer extends cuvee.pipe.Printer:
   // provided that they have been resolved
   def isClause(name: String, arg: Option[Any]): Boolean =
     (name, arg) match
-      case ("requires" | "ensures" | "invariant", Some(_: Expr)) => true
+      case ("requires" | "ensures" | "invariant" | "decreases", Some(_: Expr)) => true
       case ("modifies", Some(xs: List[?])) => xs.forall(_.isInstanceOf[Var])
       case _ => false
 
@@ -247,10 +244,18 @@ object Printer extends cuvee.pipe.Printer:
 
     concat(attrs_)
 
-  // each clause ends with a semicolon
+  // each clause ends with a semicolon,
+  // the components of a lexicographic termination measure are combined into a single clause
   def clauses(attrs: Attrs): List[Doc] =
-    for case (name, Some(arg)) <- attrs.attrs if isClause(name, Some(arg))
-    yield Group(text(name) ++ Nest(2, line ++ any(arg))) ++ text(";")
+    val clauses_ =
+      for case (name, Some(arg)) <- attrs.attrs if isClause(name, Some(arg)) && name != "decreases"
+      yield Group(text(name) ++ Nest(2, line ++ any(arg))) ++ text(";")
+
+    val dec = attrs.decreases
+
+    if dec.isEmpty
+    then clauses_
+    else clauses_ :+ (Group(text("decreases") ++ Nest(2, line ++ commas(dec.map(doc(_))))) ++ text(";"))
 
   // a declaration or loop followed by its specification clauses on separate lines,
   // the body starts on the same line only if there are no clauses
@@ -377,7 +382,7 @@ object Printer extends cuvee.pipe.Printer:
       case Par(_) =>
         Error.raise("parallel composition not supported in Boogie", prog)
 
-  // loops have no attributes other than their specification clauses in Boogie, e.g. no decreases
+  // loops have no attributes other than their specification clauses in Boogie
   def loop(test: Doc, body: Prog, attrs: Attrs): Doc =
     val other = attrs.attrs.filterNot(isClause(_, _))
     Error.report("attributes of loops not supported in Boogie", other):
