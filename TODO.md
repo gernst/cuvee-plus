@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- wrap the combinators in the Dafny printer so that if a line break is necessary, the `check` is below `for` etc... and the subsequent line after `=>` is indented at least some spaces from the surrounding parentheses
 - in Horn, write clauses with goal in head, not with head False
 - in Horn, omit the separate entry predicate, just come from the precondition
 - in Horn, for the Block exit, don't use a separate helper, and don't use the inline helper either, rather instantiate the respective exits for break, continue by hand, and after the body has been translated, so that the order of clauses is right. when there is no break, don't emit the corresponding predicate or clause, same for continue; check the loop case, too

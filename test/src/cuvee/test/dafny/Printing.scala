@@ -124,6 +124,18 @@ object Printing extends TestSuite:
       val all = Bind("forall", List(x), app(Fun.int.lt, x, y))
       expr(app(Fun.and, all, p)) ==> "(forall x: int :: x < y) && p"
 
+    // combinators that do not fit have the keyword below for and the update below the keyword
+    test("combinator breaks"):
+      val sequence = Var("a_rather_long_sequence_of_values", Sort.seq(Sort.int))
+      val other = Var("another_rather_long_sequence", Sort.seq(Sort.int))
+      val (u, v) = (Var("u", Sort.int), Var("v", Sort.int))
+      val all = Invs(List(sequence, other), List(u, v), Lt.int(u, v))
+      Printer.lines(all) ==> List(
+        "all(for a_rather_long_sequence_of_values, another_rather_long_sequence",
+        "    check u, v =>",
+        "      u < v)"
+      )
+
     // the arguments flow up to the width, aligned after the opening parenthesis
     test("long call breaks"):
       val args = List.fill(12)(Var("argument", Sort.int))

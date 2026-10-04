@@ -104,11 +104,13 @@ object Printer extends cuvee.pipe.Printer:
           doc(rhs)
 
         case _ =>
-          commas(for Upd(cond, rhs) <- updates yield text("if") +:+ doc(cond) +:+ text("then") +:+ doc(rhs))
+          Group(commas(for Upd(cond, rhs) <- updates yield text("if") +:+ doc(cond) +:+ text("then") +:+ doc(rhs)))
 
+    // as in Dafny, the keyword goes below for and the update below the keyword if it does not fit
     val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
     val deps_ = Group(Align(commas(deps.map(doc(_)))))
-    Group(head ++ text("for") +:+ deps_ +:+ text(keyword) +:+ binders ++ Nest(2, line ++ updates_) ++ text(")"))
+    val body = text("for") +:+ deps_ ++ line ++ text(keyword) +:+ binders ++ Nest(2, line ++ updates_)
+    Group(head ++ Align(body) ++ text(")"))
 
   // a declaration of a variable, where arrays have their brackets after the name
   def decl(x: Var): Doc =
