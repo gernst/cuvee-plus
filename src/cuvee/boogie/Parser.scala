@@ -62,11 +62,11 @@ class Parser(var state: State):
         val scope = Scope.empty
         val attrs_ = attributes(scope, attrs)
 
-        for formal <- vars
+        for (name, typ) <- vars
         yield
-          val x_ = resolve(scope, formal)
-          state = state.declare(x_, attrs_)
-          state.cmds.declareVar(x_.name)
+          val typ_ = resolve(scope, typ)
+          state = state.declare(name, typ_, attrs_)
+          state.cmds.declareVar(name)
 
       case FunDef(attrs, name, params, formals, typ, body) =>
         val scope = Scope.empty
@@ -355,7 +355,11 @@ class Parser(var state: State):
         val test_ = resolve(scope, test)
         val attrs_ = contract(scope, specs)
 
-        val mod_ = modifies(attrs_) intersect state.vars.values.toSet
+        val mod_ = modifies(attrs_)
+        val nonglobal = mod_ -- state.vars.values
+        Error.report("modifies clause of loop lists variables that are not global", nonglobal):
+          require(nonglobal.isEmpty)
+
         val unknown = mod_ -- mod
         Error.report("modifies clause of loop lists global variables that are not modifiable", unknown):
           require(unknown.isEmpty)

@@ -1,4 +1,4 @@
-package cuvee.chc
+package cuvee.verify
 
 import util.Name
 import util.Ref
@@ -8,9 +8,10 @@ import cuvee.core._
 import cuvee.sexpr.Attrs
 
 // constrained Horn clauses, where pre-/postconditions and the program points are uninterpreted predicates:
-// each procedure p(in) returns (out) has predicates p_pre(in) and p_post(in, out),
+// each procedure p(in) returns (out) has predicates p_pre(in, gs) and p_post(in, gs_, out, gs),
+// where gs are the global variables and gs_ their values at the entry of p,
 // the program points in the body of p have predicates p_1, p_2, ..., generated on the fly,
-// whose formal parameters are the variables in scope;
+// whose formal parameters are the variables in scope, including the global variables;
 // each statement contributes the transition from the predicate before it to those after it,
 // the annotations requires, ensures, and invariant become queries on these predicates
 object Horn extends Transform:
@@ -49,35 +50,48 @@ object Horn extends Transform:
       case SetLogic(_) =>
         List(SetLogic("HORN"))
 
-      // procedures without body are trusted: p_pre ∧ ensures ⇒ p_post
-      case DeclareProc(Proc(name, params, in, out), _) =>
+      // global variables become arguments of the predicates
+      case DeclareVar(_, _) =>
+        Nil
+
+      // procedures without body are trusted: p_pre ∧ ensures ⇒ p_post,
+      // where the global variables that are not modified keep their values
+      case DeclareProc(Proc(name, params, in, out), attrs) =>
         val (pre, post, decls) = declare(state, name)
         val (_, _, requires, ensures) = Verify.contract(state, name)
 
+        val gs = Verify.globals(state)
+        val gs_ = gs.fresh
+        val mod = Verify.modifies(attrs)
+        val frame = for (g, g_) <- gs zip gs_ if !mod.contains(g) yield Eq(g, g_)
+
         val clauses = Ref[List[Expr]](Nil)
-        clause(in, List(requires), App(pre, in), clauses)
-        clause(in, List(App(pre, in), Not(requires)), False, clauses)
-        clause(in ++ out, List(App(pre, in), ensures), App(post, in ++ out), clauses)
+        clause(in ++ gs, List(requires), App(pre, in ++ gs), clauses)
+        clause(in ++ gs, List(App(pre, in ++ gs), Not(requires)), False, clauses)
+        clause(in ++ gs_ ++ out ++ gs, App(pre, in ++ gs_) :: ensures :: frame, App(post, in ++ gs_ ++ out ++ gs), clauses)
 
         decls ++ clauses.value.map(axiom)
 
-      // the body leads from p_pre to p_post, the postcondition is the query p_pre ∧ p_post ∧ ¬ensures ⇒ false
+      // the body leads from p_pre to p_post, the postcondition is the query p_pre ∧ p_post ∧ ¬ensures ⇒ false;
+      // the body ranges over the values gs_ of the global variables at the entry, which are never modified
       case DefineProc(Proc(name, params, in, out), body, _) =>
         val (pre, post, decls) = declare(state, name)
         val (_, _, requires, ensures) = Verify.contract(state, name)
 
-        val scope = in ++ out
+        val gs = Verify.globals(state)
+        val gs_ = gs.fresh
+        val scope = in ++ gs_ ++ out ++ gs
         val decls_ = Ref[List[DeclareFun]](Nil)
         val clauses = Ref[List[Expr]](Nil)
 
-        // p_pre ranges over the inputs only, the outputs are unconstrained initially
+        // p_pre ranges over the inputs and the global variables only, the outputs are unconstrained initially
         val entry = predicate(name, scope, decls_)
-        clause(scope, List(App(pre, in)), App(entry, scope), clauses)
+        clause(in ++ out ++ gs, List(App(pre, in ++ gs)), App(entry, in ++ gs ++ out ++ gs), clauses)
         wp(state, name, scope, List(body), entry, post, None, None, post, decls_, clauses)
 
-        clause(in, List(requires), App(pre, in), clauses)
-        clause(in, List(App(pre, in), Not(requires)), False, clauses)
-        clause(scope, List(App(pre, in), App(post, scope), Not(ensures)), False, clauses)
+        clause(in ++ gs, List(requires), App(pre, in ++ gs), clauses)
+        clause(in ++ gs, List(App(pre, in ++ gs), Not(requires)), False, clauses)
+        clause(scope, List(App(pre, in ++ gs_), App(post, scope), Not(ensures)), False, clauses)
 
         decls ++ decls_.value ++ clauses.value.map(axiom)
 
@@ -103,14 +117,18 @@ object Horn extends Transform:
     Assert(Axiom, Nil, phi, Attrs.empty)
 
   // the predicates p_pre and p_post of procedure `name`,
-  // whose formal parameters are the inputs, resp. the inputs and outputs
+  // whose formal parameters are the inputs and the global variables,
+  // resp. the inputs, the global variables at the entry, the outputs, and the global variables at the exit
   def precondition(state: State, name: Name): Fun =
     val Proc(_, params, in, out) = state.procs(name)
-    Fun(name.name + "_pre", params, in, Sort.bool)
+    val gs = Verify.globals(state)
+    Fun(name.name + "_pre", params, in ++ gs, Sort.bool)
 
   def postcondition(state: State, name: Name): Fun =
     val Proc(_, params, in, out) = state.procs(name)
-    Fun(name.name + "_post", params, in ++ out, Sort.bool)
+    val gs = Verify.globals(state)
+    val gs_ = Expr.vars("g", gs.types)
+    Fun(name.name + "_post", params, in ++ gs_ ++ out ++ gs, Sort.bool)
 
   // a fresh predicate for a program point in procedure `proc` with the variables in `scope` as formal parameters,
   // numbered by the predicates declared so far
@@ -187,20 +205,24 @@ object Horn extends Transform:
         clause(scope, List(App(pre, scope)), App(next, su(scope)), clauses)
         wp(state, proc, scope, rest, next, post, break, continue, return_, decls, clauses)
 
-      // pre(scope) ⇒ name_pre(args), which collects the states in which `name` is called,
-      // and pre(scope) ∧ name_post(args, res_) ⇒ next(scope[res := res_]), where res_ are the results
+      // pre(scope) ⇒ name_pre(args, gs), which collects the states in which `name` is called,
+      // and pre(scope) ∧ name_post(args, gs, res_, gs[mod := mod_]) ⇒ next(scope[res, mod := res_, mod_]),
+      // where res_ are the results and mod_ the new values of the global variables modified by `name`
       case Call(name, args, res) :: rest =>
         val Proc(_, _, in, out) = state.procs(name)
 
         Error.report("wrong number of arguments or results in call", name, args, res):
           require(in.length == args.length && out.length == res.length)
 
-        // results are fresh since `args` may refer to the old values of `res`
+        // results and modified global variables are fresh since `args` may refer to their old values
+        val gs = Verify.globals(state)
+        val mod = Verify.modifies(state.procattrs(name))
         val res_ = res.fresh
-        val su = Subst.from(res, res_)
+        val mod_ = mod.fresh
+        val su = Subst.from(res ++ mod, res_ ++ mod_)
         val next = predicate(proc, scope, decls)
 
-        clause(scope, List(App(pre, scope)), App(precondition(state, name), args), clauses)
+        clause(scope, List(App(pre, scope)), App(precondition(state, name), args ++ gs), clauses)
 
         // recursive calls must decrease the measure, which refers to the inputs that are in scope
         if name == proc then
@@ -210,8 +232,8 @@ object Horn extends Transform:
             clause(scope, List(App(pre, scope), Not(Verify.decreases(su_(dec), dec))), False, clauses)
 
         clause(
-          scope ++ res_,
-          List(App(pre, scope), App(postcondition(state, name), args ++ res_)),
+          scope ++ res_ ++ mod_,
+          List(App(pre, scope), App(postcondition(state, name), args ++ gs ++ res_ ++ su(gs))),
           App(next, su(scope)),
           clauses
         )

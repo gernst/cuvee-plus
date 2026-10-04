@@ -127,8 +127,9 @@ object Solver:
         case CheckSat =>
           (solver.check(), this)
 
-        // procedures are not understood by SMT solvers and must have been eliminated, e.g. with -verify
-        case _: DeclareProc | _: DefineProc =>
+        // procedures and global variables are not understood by SMT solvers and must have been eliminated, e.g. with -verify,
+        // in particular, z3 accepts declare-var but does not acknowledge it with print-success
+        case _: DeclareProc | _: DefineProc | _: DeclareVar =>
           (Ack.Unsupported, this)
 
         case _: GetInfo =>

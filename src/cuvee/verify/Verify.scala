@@ -1,4 +1,4 @@
-package cuvee.chc
+package cuvee.verify
 
 import util.Name
 import cuvee.Error
@@ -20,9 +20,13 @@ object Verify extends Transform:
       case DeclareProc(proc, attrs) =>
         Nil
 
+      // global variables are quantified in the goals, like the parameters of the procedures
+      case DeclareVar(x, attrs) =>
+        Nil
+
       case DefineProc(Proc(name, params, _, _), body, _) =>
         val (in, out, pre, post) = contract(state, name)
-        val phi_ = All(in ++ out, Imp(pre, wp(state, name, body, post, False, False, post)))
+        val phi_ = All(in ++ out ++ globals(state), Imp(pre, wp(state, name, body, post, False, False, post)))
         List(Assert(Goal, params, phi_, Attrs.empty))
 
       case _ =>
@@ -38,6 +42,14 @@ object Verify extends Transform:
     val pre = And(attrs.values[Expr]("requires"))
     val post = And(attrs.values[Expr]("ensures"))
     (in, out, pre, post)
+
+  // the global variables in a fixed order
+  def globals(state: State): List[Var] =
+    state.vars.values.toList.sortBy(_.name.toString)
+
+  // the global variables in the modifies attributes of procedures and loops
+  def modifies(attrs: Attrs): List[Var] =
+    attrs.values[List[Var]]("modifies").flatten.distinct
 
   // the termination measure of procedure `name`, the components of a lexicographic order,
   // which is evaluated at the entry of the procedure, therefore it must refer to the inputs only,
@@ -98,10 +110,14 @@ object Verify extends Transform:
         Error.report("wrong number of arguments or results in call", name, args, res):
           require(in.length == args.length && out.length == res.length)
 
-        // results are fresh since `args` may refer to the old values of `res`
+        // results and the modified global variables are fresh since `args` may refer to their old values,
+        // the precondition refers to the values of the global variables before the call
+        val mod = modifies(state.procattrs(name))
         val res_ = res.fresh
-        val su = Subst.from(in ++ out, args ++ res_)
-        val rename = Subst.from(res, res_)
+        val mod_ = mod.fresh
+        val su = Subst.from(in, args)
+        val su_ = Subst.from(in ++ out ++ mod, args ++ res_ ++ mod_)
+        val rename = Subst.from(res ++ mod, res_ ++ mod_)
 
         // the measure refers to the inputs, whose values at the call are those at the entry of `proc`
         val dec =
@@ -111,7 +127,7 @@ object Verify extends Transform:
             decreases(su(dec), dec)
           else True
 
-        And(List(su(pre), dec, All(res_, Imp(su(phi), rename(post)))))
+        And(List(su(pre), dec, All(res_ ++ mod_, Imp(su_(phi), rename(post)))))
 
       case Block(locals, progs) =>
         // locals may shadow variables in the postcondition, therefore they are renamed apart
@@ -129,7 +145,8 @@ object Verify extends Transform:
 
       case While(test, body, attrs) =>
         val inv = And(attrs.values[Expr]("invariant"))
-        val xs = body.mod.toList
+        // calls in the body modify the global variables in the modifies attribute of the loop
+        val xs = (body.mod ++ modifies(attrs)).toList
 
         // the measure must decrease from the start to the end of each iteration, i.e., also on continue,
         // its values at the start are the fresh variables ms, which are replaced by the measure afterwards

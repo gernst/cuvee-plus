@@ -3,20 +3,20 @@
 // statements: havoc, nondeterministic choice, break, return
 
 type Elem;
-type List<a>;
+type Stack<a>;
 type Pair = [int]bool;
 type Fun<a, b> = [a]b;
 
-const zero, one: int;
+const {:name "constants"} {:weight 1, 2} zero, one: int;
 const e: Elem;
 
-axiom {:name "constants"} {:weight 1, 2} zero == 0 && one == 1;
+axiom zero == 0 && one == 1;
 
-function nil<a>(): List<a>;
-function cons<a>(x: a, xs: List<a>): List<a>;
-function length<a>(xs: List<a>): int;
+function nil<a>(): Stack<a>;
+function cons<a>(x: a, xs: Stack<a>): Stack<a>;
+function length<a>(xs: Stack<a>): int;
 
-axiom (forall x: Elem, xs: List<Elem> :: { length(cons(x, xs)) } length(cons(x, xs)) == length(xs) + 1);
+axiom (forall x: Elem, xs: Stack<Elem> :: { length(cons(x, xs)) } length(cons(x, xs)) == length(xs) + 1);
 axiom (exists n: int :: n div 2 == 1 && n mod 2 == 0);
 
 function {:inline} double(x: int): int { x + x }

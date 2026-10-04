@@ -133,11 +133,12 @@ case class State(
 
     copy(fundefs = fundefs + (key -> body))
 
-  def declare(x: Var, attrs: Attrs) =
-    Error.report("variable already declared", x.name):
-      require(!vars.contains(x.name))
+  def declare(name: Name, typ: Type, attrs: Attrs) =
+    Error.report("variable already declared", name):
+      require(!vars.contains(name))
 
-    copy(vars = vars + (x.name -> x), varattrs = varattrs + (x.name -> attrs))
+    val x = Var(name, typ)
+    copy(vars = vars + (name -> x), varattrs = varattrs + (name -> attrs))
 
   def declare(name: Name, params: List[Param], in: List[Var], out: List[Var], attrs: Attrs) =
     Error.report("procedure already declared", name):
@@ -191,8 +192,8 @@ case class State(
       case DefineFun(Fun(name, params, formals, res), body, attrs) =>
         declare(name, params, formals, res, attrs).define(name, formals.length, body)
 
-      case DeclareVar(x, attrs) =>
-        declare(x, attrs)
+      case DeclareVar(Var(name, typ), attrs) =>
+        declare(name, typ, attrs)
 
       case DeclareProc(Proc(name, params, in, out), attrs) =>
         declare(name, params, in, out, attrs)

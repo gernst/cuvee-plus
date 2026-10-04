@@ -30,6 +30,9 @@ object Lang:
   val dafny =
     Lang("Dafny", cuvee.dafny.Source, cuvee.dafny.Printer)
 
+  val boogie =
+    Lang("Boogie", cuvee.boogie.Source, cuvee.boogie.Printer)
+
 case class Config(
     input: Option[String],
     source: Source,
@@ -80,12 +83,12 @@ object Config:
     },
 
     flag("-verify", "generate verification conditions for procedures") { case (config, rest) =>
-      val config_ = config.copy(transforms = config.transforms :+ cuvee.chc.Verify)
+      val config_ = config.copy(transforms = config.transforms :+ cuvee.verify.Verify)
       (config_, rest)
     },
 
     flag("-chc", "generate constrained Horn clauses for procedures") { case (config, rest) =>
-      val config_ = config.copy(transforms = config.transforms :+ cuvee.chc.Horn)
+      val config_ = config.copy(transforms = config.transforms :+ cuvee.verify.Horn)
       (config_, rest)
     },
 
@@ -133,7 +136,8 @@ object Config:
 
   val langs = Map(
     lang("smt2", Lang.smtlib),
-    lang("dfy", Lang.dafny)
+    lang("dfy", Lang.dafny),
+    lang("bpl", Lang.boogie)
   )
 
   extension (file: String)

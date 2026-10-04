@@ -7,16 +7,9 @@ import cuvee.core._
 
 // Boogie examples must be resolved and type checked without errors
 object Parsing extends TestSuite:
-  def parse(file: os.Path): (State, List[Cmd]) =
-    val reader = new java.io.FileReader(file.toIO)
-    try
-      val (init, cmds) = cuvee.boogie.Source(reader)
-      (init, cmds.toList)
-    finally reader.close()
-
   val tests =
-    Examples.tests(Examples.find(os.sub / "boogie", "bpl")): file =>
-      parse(file)
+    Examples.tests(Examples.find(os.sub, "bpl")): file =>
+      Examples.errors("-print", "null", file.toString) ==> Nil
 
 // the declarations of the prelude coincide with the builtin functions,
 // such that the sugar of the core, e.g. Plus, applies to Boogie input
@@ -59,6 +52,10 @@ object Errors extends TestSuite:
     test("loop modifies a global variable that is not modified"):
       error(globals + "procedure p() { while (true) modifies g; { } }") ==>
         "modifies clause of loop lists global variables that are not modifiable"
+
+    test("modifies clause of a loop lists a local variable"):
+      error(globals + "procedure p() { var x: int; while (true) modifies x; { } }") ==>
+        "modifies clause of loop lists variables that are not global"
 
     test("modifies clause of a procedure lists a local variable"):
       error("procedure p(x: int) modifies x; { }") ==>
