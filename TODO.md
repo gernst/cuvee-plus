@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- write a proposal what Fourier Motzkin could contribute to the simplifier: actually making things simpler? put this proposal into the TODO.md file
 - check this splitter: `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Horn.scala` (don't mind the file name), and think if this helps you improve `Split.scala`
 - add comments in places where you would comment yourself
 
@@ -212,6 +211,54 @@ inferred from the call graph. Open:
   decides linear constraints over the rationals, but is not used yet, e.g. by
   the simplifier for the comparisons in its context; it is incomplete over the
   integers.
+
+### Proposal: Fourier-Motzkin in the simplifier
+
+Fourier-Motzkin (FM) makes formulas simpler in the strict sense when it is used
+as a decision procedure for comparisons: the results are `true` and `false`,
+never larger terms. Only quantifier elimination may produce more constraints,
+and should be restricted to the cases where it does not.
+
+1. **Comparisons decided by the context.** `Ctx.lookup` is syntactic. At a
+   comparison `0 <= p` or `0 < p` (the normal form of `Simplify.lt` and `le`),
+   collect the linear constraints of the context: the comparisons among the
+   assumptions, and the negated comparisons among the conclusions
+   (`¬(0 <= p)` is `0 < -p`). If the context together with the negation of
+   the comparison is unsatisfiable, the comparison is `true`; if it is
+   unsatisfiable together with the comparison, it is `false`. E.g. under
+   `0 <= i && i < n`, `i <= n` becomes `true` and `n < i` becomes `false`,
+   which removes redundant guards and branches, also in the conjunctions and
+   disjunctions of the goals of `-verify` and `-teq`, whose siblings are
+   assumed by `nary`. Hook: `Ctx.constraints` and a call before the result of
+   `lt`/`le` is built.
+2. **Soundness on Int.** Unsatisfiability over the rationals implies
+   unsatisfiability over the integers, so the verdicts of (1) are sound on
+   `Int`, but incomplete. Tightening helps: on `Int`, `0 < p` is `1 <= p`, and
+   a constraint whose coefficients have a common divisor `g` can round its
+   constant down to a multiple of `g` (e.g. `2x <= 3` is `x <= 1`), which
+   decides e.g. `0 < 2x && 2x < 2` as `false`.
+3. **Inconsistent contexts.** When the linear assumptions are unsatisfiable,
+   the context is marked inconsistent (`Ctx.inconsistent`), which the
+   polarity mechanism already exploits, e.g. `x < y && y < x` is `false`.
+4. **Redundant bounds.** As a consequence of (1) with `nary`, a conjunct that
+   follows from the others is dropped, e.g. `x <= 3 && x <= 5` becomes
+   `x <= 3`; dually for disjunctions.
+5. **Quantifier elimination.** `exists x :: C(x)` for a conjunction of linear
+   constraints is the result of eliminating `x`, exactly over `Real`, and over
+   `Int` if all coefficients of `x` are `1` or `-1` (then `max l <= min u`
+   has an integer witness); e.g. `exists x: real :: a < x && x < b` is
+   `a < b`, and `∀ x. A(x) ⇒ B` with `x` not in `B` is `(∃ x. A(x)) ⇒ B`.
+   This applies to the fresh variables of the goals of `-verify` and `-teq`
+   (e.g. the values after a loop). The number of constraints grows from
+   `l + u` to `l * u` for `l` lower and `u` upper bounds, hence only if
+   `l <= 1` or `u <= 1`, where it shrinks.
+6. **Costs.** Atoms are the non-linear monomials and the applications of
+   other functions, which is sound. The constraints of a context are few in
+   practice; a limit on their number (e.g. 20) bounds the cost of the
+   elimination, which is otherwise doubly exponential.
+
+Suggested order: (1)–(3) first, since they only replace subterms by constants,
+then (4) and (5).
 
 ## Hybrid programs
 
