@@ -38,7 +38,7 @@ object Derivatives extends TestSuite:
     test("constants"):
       diff(Plus.real(c, two), x) ==> "0.0"
 
-    // derivatives are on Real only
+    // derivatives are on Real only, the type checker rejects these, which are built directly
     test("integers"):
       diff(Times.int(n, n), n) ==> "(n :: n * n)'"
       diff(Lt.int(n, Zero.int), n) ==> "(n :: n < 0)'"

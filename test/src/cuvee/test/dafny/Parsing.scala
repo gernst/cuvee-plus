@@ -8,3 +8,17 @@ object Parsing extends TestSuite:
   val tests =
     Examples.tests(Examples.find(os.sub, "dfy")): file =>
       Examples.errors("-print", "null", file.toString) ==> Nil
+
+// derivatives are with respect to variables on real only
+object Derivatives extends TestSuite:
+  def errors(text: String) =
+    val file = os.temp(text, suffix = ".dfy")
+    Examples.errors("-print", "null", file.toString)
+
+  val tests = Tests:
+    test("real"):
+      errors("method m(x: real) returns (y: real) { y := (x :: x * x)'; }") ==> Nil
+
+    test("int"):
+      errors("method m(n: int) returns (k: int) { k := (n :: n * n)'; }") ==>
+        List("derivative with respect to variables that are not real")

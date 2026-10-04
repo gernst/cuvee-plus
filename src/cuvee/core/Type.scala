@@ -198,7 +198,12 @@ object Type:
         Error.report("type mismatch", expr, Sort.bool, res):
           unify(state, scope, Sort.bool, res, subst)
 
+      // derivatives are with respect to variables on Real only
       case Diff(xs, arg) =>
+        val wrong = xs.filterNot(x => unfold(state, x.typ) == Sort.real)
+        Error.report("derivative with respect to variables that are not real", expr, wrong):
+          require(wrong.isEmpty)
+
         check(state, scope, arg, res, subst)
 
       case As(arg, typ) =>
