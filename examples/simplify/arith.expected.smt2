@@ -5,5 +5,7 @@
 (assert (= 0 y))
 (assert (= x y))
 (assert (< x y))
-(assert (<= (+ (* 2 x) 1) y))
+(assert (< (* 2 x) y))
 (assert (< (+ x 3) y))
+(assert (<= x y))
+(assert (< x y))

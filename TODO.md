@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- Implement `n + 1 < m <==> n <= m` as a simplification step, similarly when `<=` becomes `<` by dropping `+ 1`. Use `Succ` for this, and only do that for integers, check if I got this correct first
 - implement `Monomorph` without a separate class that has mutable state, use `Ref` from `util` instead
 - Move method `.map()` that generically traverses an expression into `Expr`. Check all traversals in the code whether they can be written with this new function.
   Similarly introduce `.map()` for all other types. Don't attempt to formulate something more complex than a point-wise mapping generically, though, keep the latter as explicit recursions.
@@ -43,6 +42,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
 
 ### Deferred (questions for the user)
+
+- note on `n + 1 < m <==> n <= m`: this does not hold on Int (n = 0, m = 1), the correct forms are `n < m + 1 <==> n <= m` and `n + 1 <= m <==> n < m`, which are implemented (`Simplify.lt`, `Simplify.le`, with `Succ`)
 
 - In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
   - done: `Rewrite.step` and `Rewrite.apply` return a single expression (`Option`), the first rule and the first match that apply

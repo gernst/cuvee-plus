@@ -12,3 +12,6 @@
 ; comparisons are re-arranged so that both sides have positive coefficients only
 (assert (<= (+ x 1) (- y x)))
 (assert (< (- x y) (- 3)))
+; on Int, < and <= absorb a summand 1
+(assert (< x (+ y 1)))
+(assert (<= (+ x y 1) (* 2 y)))

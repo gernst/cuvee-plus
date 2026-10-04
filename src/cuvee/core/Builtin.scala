@@ -74,15 +74,15 @@ object DivBy:
 object Mod:
   object int extends Sugar.binary(Fun.int.mod)
 
+// the successor n + 1 on Int, which matches sums with a summand 1, e.g. x + y + 1 as the successor of x + y
 object Succ:
   def apply(expr: Expr) =
     Plus.int(expr, One.int)
 
   def unapply(expr: Expr) =
     expr match
-      case Plus.int(List(arg, One.int)) => Some(arg)
-      case Plus.int(List(One.int, arg)) => Some(arg)
-      case _                            => None
+      case Plus.int(args) if args.contains(One.int) => Some(Plus.int(args diff List(One.int)))
+      case _                                        => None
 
 object Lt:
   object int extends Sugar.binary(Fun.int.lt)

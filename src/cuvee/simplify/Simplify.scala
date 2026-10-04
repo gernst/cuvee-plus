@@ -625,19 +625,25 @@ object Simplify extends Transform:
   // comparisons 0 < p and 0 <= p on Int or Real, built by `op`, are constants if p is,
   // otherwise they are re-arranged so that both sides have positive coefficients only,
   // e.g. 0 < y - x + 1 becomes x < y + 1
+  // on Int, n < m + 1 is n <= m
   def lt(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isPositive then True else False
     else
       val (left, right) = poly.sides
-      op(left.toExpr(ring), right.toExpr(ring))
+      (ring, right.toExpr(ring)) match
+        case (Ring.int, Succ(right_)) => Le.int(left.toExpr(ring), right_)
+        case (_, right_)              => op(left.toExpr(ring), right_)
 
+  // on Int, n + 1 <= m is n < m
   def le(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isNegative then False else True
     else
       val (left, right) = poly.sides
-      op(left.toExpr(ring), right.toExpr(ring))
+      (ring, left.toExpr(ring)) match
+        case (Ring.int, Succ(left_)) => Lt.int(left_, right.toExpr(ring))
+        case (_, left_)              => op(left_, right.toExpr(ring))
 
   // applications of other functions, e.g. user-defined ones
   def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
