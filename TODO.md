@@ -8,10 +8,12 @@
   ([pipe/Pipe.scala](src/cuvee/pipe/Pipe.scala)).
 - Polymorphic declarations (`par`) are sent to z3/cvc5 as they are, which the
   solvers do not accept; they need monomorphization first.
-- Real arithmetic: real literals are rationals (`util.Rational`); Dafny
-  resolves the operators on `real` by `Overload` and reads decimal literals,
-  e.g. `1.5`, but SMT-LIB input has no `Real` functions, since the prelude can
-  declare `+` etc. only once per arity; it needs overload resolution as in Dafny.
+- Real arithmetic: real literals are rationals (`util.Rational`); the
+  preludes declare arithmetic and comparison generically, which are resolved
+  for `Int` and `Real` after type checking by
+  [core/Overload.scala](src/cuvee/core/Overload.scala) in all frontends.
+  Boogie has no decimal literals, and its printer raises an error on real
+  literals.
 - The core sugar `Plus`, `Lt`, etc. and the arithmetic simplifier
   ([simplify/Arith.scala](src/cuvee/simplify/Arith.scala)) are for `Int` only.
 - No `old(e)` in postconditions and loop invariants to refer to the values of

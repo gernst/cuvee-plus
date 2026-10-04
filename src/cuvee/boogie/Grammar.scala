@@ -32,6 +32,7 @@ object Grammar:
     "+" -> (Assoc.Left, 6),
     "-" -> (Assoc.Left, 6),
     "*" -> (Assoc.Left, 7),
+    "/" -> (Assoc.Left, 7),
     "div" -> (Assoc.Left, 7),
     "mod" -> (Assoc.Left, 7)
   )
@@ -44,6 +45,7 @@ object Grammar:
     "==>" -> "=>",
     "<==>" -> "<=>",
     "int" -> "Int",
+    "real" -> "Real",
     "bool" -> "Bool",
     "array" -> "Array"
   )

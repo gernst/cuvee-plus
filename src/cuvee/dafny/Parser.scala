@@ -11,14 +11,12 @@ import cuvee.sexpr.Attrs
 class Parser(var state: State):
   // val attrs_ = Attrs.empty
 
-  // type check and resolve the overloaded operators, see Overload
+  // type checking resolves the overloaded operators, see core.Overload
   def check(scope: Scope, expr: core.Expr, typ: core.Type): core.Expr =
-    val expr_ = state.exprs.check(scope, expr, typ)
-    Overload(state, expr_)
+    state.exprs.check(scope, expr, typ)
 
   def check(scope: Scope, fixed: Set[core.Var], prog: core.Prog): core.Prog =
-    val prog_ = state.progs.check(scope, fixed, prog)
-    Overload(state, prog_)
+    state.progs.check(scope, fixed, prog)
 
   def resolve(scope: Scope, name: String): core.Param =
     state.types.param(name)
@@ -306,6 +304,10 @@ class Parser(var state: State):
       case Tuple(args) =>
         val args_ = args.map(resolve(scope, _))
         state.exprs.app("tuple" + args.length, args_)
+
+      // unary + is the identity
+      case App("+", List(arg), Nil) =>
+        resolve(scope, arg)
 
       case App("!=", args, access) =>
         val expr_ = App("not", List(App("=", args, Nil)), access)

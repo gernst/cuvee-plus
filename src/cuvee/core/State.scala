@@ -264,12 +264,13 @@ case class State(
         require(bound.length == args.length)
       Let(bound, args, body)
 
+    // type checking resolves the overloaded operators, see Overload
     def check(scope: Scope, expr: Expr, typ: Type) =
-      Type.check(State.this, scope, expr, typ)
+      Overload(State.this, Type.check(State.this, scope, expr, typ))
 
   object progs:
     def check(scope: Scope, fixed: Set[Var], prog: Prog) =
-      Type.check(State.this, scope, fixed, prog)
+      Overload(State.this, Type.check(State.this, scope, fixed, prog))
 
     def skip = Block(Nil, Nil)
     def break = Break

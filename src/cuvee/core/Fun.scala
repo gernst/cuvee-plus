@@ -59,6 +59,8 @@ object Fun:
     val gt = Fun(">", Nil, formals(Sort.int, Sort.int), bool)
     val ge = Fun(">=", Nil, formals(Sort.int, Sort.int), bool)
 
+    val all = List(uminus, plus, minus, times, div, mod, lt, le, gt, ge)
+
   object real:
     val uminus = Fun("-", Nil, formals(Sort.real), Sort.real)
     val plus = Fun("+", Nil, formals(Sort.real, Sort.real), Sort.real)
@@ -70,3 +72,5 @@ object Fun:
     val le = Fun("<=", Nil, formals(Sort.real, Sort.real), bool)
     val gt = Fun(">", Nil, formals(Sort.real, Sort.real), bool)
     val ge = Fun(">=", Nil, formals(Sort.real, Sort.real), bool)
+
+    val all = List(uminus, plus, minus, times, div, lt, le, gt, ge)

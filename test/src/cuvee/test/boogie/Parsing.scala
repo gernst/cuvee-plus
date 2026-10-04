@@ -18,10 +18,17 @@ object Prelude extends TestSuite:
   val tests = Tests:
     test("builtins"):
       val (init, _) = cuvee.boogie.Source(new java.io.StringReader(""))
-      val builtins = List(Fun.true_, Fun.false_, Fun.eq_, Fun.ite, Fun.select, Fun.store, Fun.not, Fun.and, Fun.or, Fun.imp, Fun.int.uminus, Fun.int.plus, Fun.int.minus, Fun.int.times, Fun.int.div, Fun.int.mod, Fun.int.lt, Fun.int.le, Fun.int.gt, Fun.int.ge)
+      val builtins = List(Fun.true_, Fun.false_, Fun.eq_, Fun.ite, Fun.select, Fun.store, Fun.not, Fun.and, Fun.or, Fun.imp, Fun.int.div, Fun.int.mod, Fun.real.div)
 
       for fun <- builtins
       do init.funs((fun.name, fun.arity)) ==> fun
+
+    // arithmetic and comparison are generic, they are resolved after type checking
+    test("overloaded"):
+      val (init, _) = cuvee.boogie.Source(new java.io.StringReader(""))
+
+      for fun <- List(Fun.int.uminus, Fun.int.plus, Fun.int.minus, Fun.int.times, Fun.int.lt, Fun.int.le, Fun.int.gt, Fun.int.ge)
+      do assert(Overload.isGeneric(init.funs((fun.name, fun.arity))))
 
 // inputs that are rejected, in particular, global variables may be assigned and modified by calls
 // only if they are declared as modified

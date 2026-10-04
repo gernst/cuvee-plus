@@ -253,7 +253,7 @@ class Parser(private var init: State):
         val fun = Fun(name, params_, formals_, res_)
 
         val expr_ = expr(scope ++ formals_, body)
-        val body_ = Type.check(state, scope, expr_, res_)
+        val body_ = state.exprs.check(scope, expr_, res_)
         val attrs_ = annotation(attrs.toList)
 
         state = state.declare(name, params_, formals_, res_, attrs_)
@@ -296,7 +296,7 @@ class Parser(private var init: State):
         val fun = Fun(name, params_, formals_, res_)
 
         val expr_ = expr(scope ++ formals_, body)
-        val body_ = Type.check(state, scope, expr_, res_)
+        val body_ = state.exprs.check(scope, expr_, res_)
         val attrs_ = annotation(attrs.toList)
 
         state = state.declare(name, params_, formals_, res_, attrs_)
@@ -465,7 +465,7 @@ class Parser(private var init: State):
         then state = state.declare(name, Nil, formals_, res_, Attrs.empty)
 
         val expr_ = expr(Scope(Nil, formals_), body)
-        val body_ = Type.check(state, Scope.empty, expr_, res_)
+        val body_ = state.exprs.check(Scope.empty, expr_, res_)
         DefineFun(fun, body_, Attrs.empty)
 
       // cardinality constraints of uninterpreted sorts (z3)
@@ -475,7 +475,7 @@ class Parser(private var init: State):
   def assertion(justify: Justify, params: List[Param], phi: Any, attrs: List[Any]) =
     val scope = Scope(params)
     val expr_ = expr(scope, phi)
-    val phi_ = Type.check(state, scope, expr_, Sort.bool)
+    val phi_ = state.exprs.check(scope, expr_, Sort.bool)
     val attrs_ = annotation(attrs)
     Assert(justify, params, phi_, attrs_)
 
