@@ -134,8 +134,14 @@ object Solver:
 
     def query(cmd: Cmd) =
       cmd match
-        case Assert(Axiom, _, _, _) =>
-          (solver.ack(cmd), this)
+        // only the attribute :named is passed on, the solvers reject unknown ones, e.g. :rw
+        case Assert(Axiom, params, phi, attrs) =>
+          (solver.ack(Assert(Axiom, params, phi, named(attrs))), this)
+
+        // lemmas with the attribute :free are assumed without proof, like axioms,
+        // although they are meant to follow from the theory, e.g. lemmas whose proof is left to another tool
+        case Assert(Lemma, params, phi, attrs) if attrs.contains("free") =>
+          (solver.ack(Assert(Axiom, params, phi, named(attrs))), this)
 
         // the solver's answer is reported if the goal is not valid, i.e., sat or unknown
         case Assert(justify, params, phi, attrs) =>
@@ -144,7 +150,7 @@ object Solver:
             Error.raise(justify.toString.toLowerCase + " does not hold", status, printer.lines(phi).map(_.trim).mkString(" "))
 
           if justify == Lemma
-          then solver.ack(Assert(Axiom, params, phi, attrs))
+          then solver.ack(Assert(Axiom, params, phi, named(attrs)))
 
           (Ack.Success, this)
 
@@ -210,8 +216,12 @@ object Solver:
           parser.reset()
           (ack, this)
 
+    // the names of assertions, e.g. for labels
+    def named(attrs: Attrs): Attrs =
+      Attrs(attrs.attrs.filter(_._1 == "named"))
+
     // SMT-LIB does not admit attributes on declarations and definitions,
-    // assertions are handled separately and keep theirs, e.g. for :named
+    // assertions are handled separately and keep their names
     def noAttrs(decl: Decl): Decl =
       decl match
         case DeclareSort(con, _)              => DeclareSort(con, Attrs.empty)

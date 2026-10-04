@@ -52,7 +52,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
   *Trace Equation Systems for Program Verification*; and Fourier-Motzkin
   elimination over the rationals.
 - **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`): goals and lemmas are checked
-  for validity, and assertions and `check-sat` are passed through.
+  for validity, and assertions and `check-sat` are passed through. Lemmas
+  with the attribute `free` (`lemma {:free} φ`) are assumed without proof,
+  like axioms, although they are meant to follow from the theory.
 - **Data types:**
   - integers, exact rationals for `real`;
   - arrays, sequences (`seq<T>`, using cvc5's `Seq` theory);

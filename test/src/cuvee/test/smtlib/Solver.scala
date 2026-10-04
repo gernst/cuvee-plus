@@ -56,6 +56,13 @@ object Solver extends TestSuite:
         z3(Assert(Lemma, Nil, Eq(x_, Zero.int), Attrs.empty))
       error.msg ==> "lemma does not hold"
 
+    // free lemmas are assumed like axioms, without proof
+    test("free lemma"):
+      z3(
+        Assert(Lemma, Nil, Eq(x_, One.int), Attrs(List("free" -> None))),
+        Assert(Goal, Nil, Lt.int(Zero.int, x_), Attrs.empty)
+      )
+
     test("invalid goal"):
       val error = assertThrows[Error]:
         z3(Assert(Goal, Nil, Eq(x_, Zero.int), Attrs.empty))

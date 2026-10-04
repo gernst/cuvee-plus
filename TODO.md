@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- consider the attribute "free" on lemmas, which treats them like axioms in the Solver sink, conceptually, however, the intention is that they should follow from the rest of the theory, but we don't want to enforce a proof
 - write a proposal what Fourier Motzkin could contribute to the simplifier: actually making things simpler? put this proposal into the TODO.md file
 - check this splitter: `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Horn.scala` (don't mind the file name), and think if this helps you improve `Split.scala`
 - add comments in places where you would comment yourself
