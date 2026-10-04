@@ -79,6 +79,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
       case Sort(con, args) =>
         Sort(con, this(args))
 
+      case _: BitVec =>
+        typ
+
   def apply(expr: Expr): Expr =
     expr match
       case x: Var =>

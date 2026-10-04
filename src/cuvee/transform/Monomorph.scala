@@ -43,6 +43,7 @@ object Monomorph extends Transform:
   def show(typ: Type): String =
     typ match
       case Param(name)     => name.indexed
+      case BitVec(n)       => "bv" + n
       case Sort(con, Nil)  => con.name.indexed
       case Sort(con, args) => con.name.indexed + "<" + args.map(show).mkString(",") + ">"
 

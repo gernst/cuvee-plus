@@ -113,7 +113,7 @@ object Overload:
   def impl(name: Name, arity: Int, typ: Type): Option[Impl] =
     typ match
       case Sort(con, _) => table.get((name, arity, con))
-      case _: Param     => None
+      case _            => None
 
   // whether `fun` is the generic declaration of an overloaded operator in a prelude,
   // the implementations have no type parameters or are not generic in the type of the first argument

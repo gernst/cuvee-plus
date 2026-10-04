@@ -399,6 +399,9 @@ object Printer extends cuvee.pipe.Printer:
       case Param(name_) =>
         text(name(name_))
 
+      case BitVec(n) =>
+        text("bv" + n)
+
       case Sort(Con.array, List(index, value)) =>
         text("[") ++ doc(index) ++ text("]") ++ doc(value)
 

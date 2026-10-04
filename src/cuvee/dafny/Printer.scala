@@ -414,6 +414,9 @@ object Printer extends cuvee.pipe.Printer:
       case Sort(Con(name_, arity), args) if isTuple(name_, arity) =>
         text("(") ++ join(args.map(doc(_)), text(",") ++ space) ++ text(")")
 
+      case BitVec(n) =>
+        text("bv" + n)
+
       case Param(name_) =>
         text(name(name_))
 

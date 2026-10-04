@@ -13,7 +13,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
 
 ### Deferred (questions for the user)
 
@@ -256,6 +255,49 @@ and should be restricted to the cases where it does not.
 
 Suggested order: (1)–(3) first, since they only replace subterms by constants,
 then (4) and (5).
+
+## Bitvectors
+
+`BitVec(n)` in `Type`, `(_ BitVec n)` in SMT-LIB, with literals `#b...`,
+`#x...`, `(_ bvK n)`, and the functions of SMT-LIB (`BitVecs`), which are
+instantiated for the widths of their arguments, where indexed functions are
+named by their indexed identifier, e.g. `(_ extract 7 0)`. Open: the simplifier
+has no rules for them (e.g. constant folding), and a width cannot be a
+parameter of polymorphic declarations.
+
+### Proposal: bitvectors in Dafny
+
+- Types `bv8`, `bv32`, ... (Dafny's own), parsed as `BitVec(n)` and printed as
+  such (done in the printer).
+- Operators by overloading on the type of the first argument, where
+  `Overload.impl` dispatches on `BitVec(n)` in addition to sort constructors
+  and instantiates `BitVecs.fun` for the width: `+`, `-`, `*` (wrap-around,
+  `bvadd`, `bvsub`, `bvmul`), `/`, `%` (unsigned, `bvudiv`, `bvurem`), `&`,
+  `|`, `^` (`bvand`, `bvor`, `bvxor`), `!` and unary `-` (`bvnot`, `bvneg`),
+  `<<`, `>>` (`bvshl`, `bvlshr`, whose shift amount is converted to the width),
+  `<`, `<=`, `>`, `>=` (unsigned comparisons), and the members
+  `x.RotateLeft(k)`, `x.RotateRight(k)` for literal `k`.
+- Literals: in Dafny, `5` and `0xff` take the type of their context. Numeric
+  literals would get a fresh type parameter instead of `Int`, which type
+  checking resolves to `Int`, `Real` (for decimals), or `BitVec(n)`, and which
+  defaults to `Int` if it remains open; `Lit` then needs its value converted
+  (modulo `2^n`) once the type is known (in `Type.instantiate`).
+- Conversions `x as int` and `n as bv8`, which SMT-LIB has as `bv2nat` and
+  `(_ int2bv n)` (supported by z3 and cvc5), as overloaded applications of
+  `As`.
+
+### Proposal: bitvectors in Boogie
+
+- Types `bv8`, ..., and literals `5bv8` (scanner: `[0-9]+ "bv" [0-9]+`).
+- Concatenation `x ++ y` (an infix operator) and extraction `x[8:0]`, which is
+  `(_ extract 7 0)` since Boogie's upper bound is exclusive, as a new form of
+  map access with `:`.
+- All other functions are declared by the input with the attribute
+  `{:bvbuiltin "bvadd"}`, e.g. `function {:bvbuiltin "bvadd"} add8(x: bv8,
+  y: bv8): bv8;`, which the parser resolves to the instance of `BitVecs.fun`
+  for the declared argument types; the declaration is kept, such that the
+  output prints back the same, and applications of the declared function are
+  replaced by the instance, similar to overloading.
 
 ## Hybrid programs
 

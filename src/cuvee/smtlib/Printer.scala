@@ -275,16 +275,26 @@ object Printer extends cuvee.pipe.Printer:
       case Sort(Con(name, arity), args) =>
         apps(mangle(name), lines(args))
 
-  // functions that are not part of SMT-LIB are printed as their SMT-LIB counterparts
+      case BitVec(n) =>
+        app("_", "BitVec", n.toString)
+
+  // functions that are not part of SMT-LIB are printed as their SMT-LIB counterparts,
+  // indexed functions on bitvectors as indexed identifiers, e.g. (_ extract 7 0)
   def apply(fun: Fun) =
     if fun == Fun.eqv
     then atom("=")
+    else if fun.name.name.startsWith("_ ")
+    then List("(" + fun.name.name + ")")
     else mangle(fun.name)
 
   def lines(expr: Expr) =
     expr match
       case Var(name, typ) =>
         mangle(name)
+
+      // bitvector literals in binary with all digits of the width
+      case Lit(value: BigInt, BitVec(n)) =>
+        atom("#b" + value.toString(2).reverse.padTo(n, '0').reverse)
 
       case Lit(value: BigInt, typ) =>
         int(value)

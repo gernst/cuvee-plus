@@ -163,3 +163,37 @@ object Bags:
   object count extends Sugar.binary(Fun.bag.count)
   object subbag extends Sugar.binary(Fun.bag.subbag)
   object card extends Sugar.unary(Fun.bag.card)
+
+// the functions on bitvectors of SMT-LIB, which are instantiated for the widths of their arguments,
+// where indexed functions are named by their indexed identifier, e.g. "_ extract 7 0" for (_ extract 7 0)
+object BitVecs:
+  val unary = Set("bvnot", "bvneg")
+  val binary = Set("bvand", "bvor", "bvxor", "bvnand", "bvnor", "bvxnor", "bvadd", "bvsub", "bvmul",
+    "bvudiv", "bvurem", "bvsdiv", "bvsrem", "bvsmod", "bvshl", "bvlshr", "bvashr")
+  val comparisons = Set("bvult", "bvule", "bvugt", "bvuge", "bvslt", "bvsle", "bvsgt", "bvsge")
+  val indexed = Set("extract", "zero_extend", "sign_extend", "repeat", "rotate_left", "rotate_right")
+
+  // the functions that are not indexed
+  val names = unary ++ binary ++ comparisons + "bvcomp" + "concat"
+
+  // the instance of the function `name` with `indices` for arguments of the widths `widths`, if it exists
+  def fun(name: String, indices: List[Int], widths: List[Int]): Option[Fun] =
+    def instance(res: Type) =
+      val name_ = if indices.isEmpty then name else ("_" :: name :: indices.map(_.toString)).mkString(" ")
+      Some(Fun(name_, Nil, Fun.formals(widths.map(BitVec(_))*), res))
+
+    (name, indices, widths) match
+      case (_, Nil, List(n)) if unary contains name                    => instance(BitVec(n))
+      case (_, Nil, List(n, m)) if (binary contains name) && n == m    => instance(BitVec(n))
+      case (_, Nil, List(n, m)) if (comparisons contains name) && n == m => instance(Sort.bool)
+      case ("bvcomp", Nil, List(n, m)) if n == m                       => instance(BitVec(1))
+      case ("concat", Nil, List(n, m))                                 => instance(BitVec(n + m))
+      case ("extract", List(i, j), List(n)) if j <= i && i < n         => instance(BitVec(i - j + 1))
+      case ("zero_extend" | "sign_extend", List(k), List(n))           => instance(BitVec(n + k))
+      case ("repeat", List(k), List(n)) if 0 < k                       => instance(BitVec(n * k))
+      case ("rotate_left" | "rotate_right", List(k), List(n))          => instance(BitVec(n))
+      case _                                                           => None
+
+  // the width of the bitvector literal with `value`, between 0 and 2^n - 1
+  def lit(value: BigInt, n: Int): Lit =
+    Lit(value, BitVec(n))

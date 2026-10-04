@@ -40,6 +40,14 @@ case class Sort(con: Con, args: List[Type]) extends Type:
   def sig = Some(Sig(con.name, args.sig))
 
 // the counter for fresh type parameters
+// bitvectors of width n, (_ BitVec n) in SMT-LIB, whose functions are instantiated per width (see BitVecs)
+case class BitVec(n: Int) extends Type:
+  def name = Name("BitVec", None)
+  def params = Set()
+  def cons = Set()
+  def sig = Some(Sig(Name("BitVec", Some(n)), Nil))
+
+// the counter for fresh type parameters
 object Param extends Counter:
   // the type parameters of the built-in functions and the preludes, a$0 and a$1, written a₀ and a₁ in Dafny and Boogie
   val a = Param(Name("a", Some(0)))
@@ -181,6 +189,8 @@ object Type:
   // extend `subst` such that `pat` instantiated becomes `typ`, an error if it cannot
   def bind(pat: Type, typ: Type, subst: Ref[Subst[Type, Nothing]]): Unit =
     (pat, typ) match
+      case _ if pat == typ =>
+
       case (p: Param, _) if subst.inst.contains(p) =>
         Error.report("type mismatch", p, subst(p), typ):
           require(subst(p) == typ)

@@ -600,6 +600,9 @@ class Parser(private var init: State):
         val args_ = list(args) { typ(scope, _) }
         state.types.sort(name, args_)
 
+      case List(Id("_"), Id("BitVec"), Num(digits)) if BigInt(digits) > 0 =>
+        BitVec(digits.toInt)
+
       case _ =>
         Error.raise("not a type", from)
 
@@ -611,6 +614,23 @@ class Parser(private var init: State):
     val inst_ = su(fun.args)
     val typ_ = su(fun.res)
     App(fun, inst_, typ_, args)
+
+  // the application of the function on bitvectors `name`, where the widths of the arguments must be known,
+  // functions on bitvectors of the same width also take it from another argument, e.g. of a polymorphic function
+  def bitvec(scope: Scope, name: String, indices: List[Int], args: List[Any], from: Any): Expr =
+    val args_ = list(args) { expr(scope, _) }
+    val known = args_.collect { case arg if arg.typ.isInstanceOf[BitVec] => arg.typ.asInstanceOf[BitVec].n }
+
+    val widths =
+      for arg <- args_
+      yield arg.typ match
+        case BitVec(n)                                   => n
+        case _ if name != "concat" && known.nonEmpty     => known.head
+        case _                                           => Error.raise("unknown width of bitvector", from)
+
+    BitVecs.fun(name, indices, widths) match
+      case Some(fun) => App(fun, fun.args, fun.res, args_)
+      case None      => Error.raise("invalid application of bitvector function", from, widths)
 
   // applications of binary functions to more than two arguments
   def nary(name: Name, args: List[Expr]): Expr =
@@ -637,6 +657,26 @@ class Parser(private var init: State):
 
       case Str(text) =>
         Lit(text, Sort.string)
+
+      // bitvector literals, whose width is that of the digits
+      case Bin(digits) =>
+        BitVecs.lit(BigInt(digits, 2), digits.length)
+
+      case Hex(digits) =>
+        BitVecs.lit(BigInt(digits, 16), 4 * digits.length)
+
+      case List(Id("_"), Id(name), Num(width)) if name.startsWith("bv") && name.drop(2).forall(_.isDigit) && name.length > 2 =>
+        BitVecs.lit(BigInt(name.drop(2)), width.toInt)
+
+      // functions on bitvectors, instantiated for the widths of their arguments
+      case List(Id(name), args*) if BitVecs.names.contains(name) =>
+        bitvec(scope, name, Nil, args.toList, from)
+
+      case List(List(Id("_"), Id(name), indices*), args*) if BitVecs.indexed.contains(name) =>
+        val indices_ =
+          for case Num(digits) <- indices.toList
+          yield digits.toInt
+        bitvec(scope, name, indices_, args.toList, from)
 
       // rational literals, as printed by the printer and by solvers in models
       case List(Id("/"), Dec(num), Dec(den)) if !Rational.decimal(den).isZero =>

@@ -22,11 +22,16 @@ case class Con(name: Name, arity: Int)          // sort constructor, e.g. Array/
 sealed trait Type
 case class Param(name: Name) extends Type       // type parameter
 case class Sort(con: Con, args: List[Type]) extends Type
+case class BitVec(n: Int) extends Type          // (_ BitVec n)
 ```
 
 - Built-in sorts:
   - `Sort.bool`, `Sort.int`, `Sort.real`, `Sort.string`;
-  - `Sort.array(dom, ran)`, `Sort.seq(elem)`.
+  - `Sort.array(dom, ran)`, `Sort.seq(elem)`, `Sort.set(elem)`,
+    `Sort.bag(elem)`, `Sort.trace(elem)`.
+- Bitvectors `BitVec(n)` are a type of their own, since their functions are
+  polymorphic in the width, which type parameters cannot express;
+  `BitVecs.fun` instantiates them for the widths of the arguments.
 - Defined sorts (`define-sort`, Dafny `type T = ...`) are unfolded on
   demand by `Type.unfold`.
 - `Type.unify` drives type checking. It respects rigid parameters: those of

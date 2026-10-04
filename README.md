@@ -65,7 +65,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
   - finite sets and multisets (`set<T>`, `multiset<T>`, using cvc5's `Set`
     and `Bag` theories) with literals `{a, b}`, `multiset{a, b}`, the
     operators `+`, `*`, `-`, `<=`, `<`, `in`, `!in`, `|s|`, and `m[x]`;
-  - algebraic datatypes, tuples, and defined sorts.
+  - algebraic datatypes, tuples, and defined sorts;
+  - bitvectors in SMT-LIB (`(_ BitVec n)`), with literals and all functions
+    of the theory.
 - **Hybrid programs** (Dafny syntax, after Platzer's dL):
   - differential equations with evolution constraints and differential
     invariants, `x', v' == v, -g && 0.0 <= x invariant ...;`;

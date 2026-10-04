@@ -89,6 +89,7 @@ object Printer extends cuvee.pipe.Printer:
     typ match
       case Sort.int | Sort.bool => doc(typ)
       case Param(name_)         => text(name(name_))
+      case BitVec(n)            => text("bv" + n)
       case Sort(con, Nil)       => text(name(con.name))
       case Sort(con, args)      => text(name(con.name)) ++ text("<") ++ join(args.map(logic), text(",") ++ space) ++ text(">")
 
