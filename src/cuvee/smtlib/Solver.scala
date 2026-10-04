@@ -122,7 +122,8 @@ object Solver:
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
   // and interprets the answers to queries in that state
-  class sink(solver: Solver, init: State) extends cuvee.pipe.Sink:
+  // goals that do not hold are reported with `printer`, e.g. that of the language of the input
+  class sink(solver: Solver, init: State, printer: cuvee.pipe.Printer = Printer) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
 
     // the answer to the last check-sat, a model is available only if it is sat
@@ -140,7 +141,7 @@ object Solver:
         case Assert(justify, params, phi, attrs) =>
           val status = solver.valid(params, phi)
           if status != Status.Unsat then
-            Error.raise(justify.toString.toLowerCase + " does not hold", status, Printer.lines(phi).mkString(" "))
+            Error.raise(justify.toString.toLowerCase + " does not hold", status, printer.lines(phi).map(_.trim).mkString(" "))
 
           if justify == Lemma
           then solver.ack(Assert(Axiom, params, phi, attrs))

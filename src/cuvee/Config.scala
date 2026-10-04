@@ -62,7 +62,7 @@ case class Config(
   def stages(init: State, sink: Sink): Sink =
     transforms.foldRight(sink):
       case (transform, next) =>
-        Stage.empty(init, transform, next)
+        Stage.empty(this, init, transform, next)
 
 object Config:
   val default =
@@ -129,13 +129,13 @@ object Config:
   val z3 =
     flag("-z3", "pass output to z3"):
       case (config, rest) =>
-        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(config.timeout), init))
+        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(config.timeout), init, config.printer))
         (config_, rest)
 
   val cvc5 =
     flag("-cvc5", "pass output to cvc5"):
       case (config, rest) =>
-        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(config.timeout), init))
+        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(config.timeout), init, config.printer))
         (config_, rest)
 
   val timeout_ =
@@ -217,7 +217,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.7.1")
+    println("Cuvée 0.7.2")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

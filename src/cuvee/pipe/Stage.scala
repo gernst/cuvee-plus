@@ -3,15 +3,16 @@ package cuvee.pipe
 import cuvee.Error
 import cuvee.core._
 
-// arguments: the commands passed so far, the new commands, the command that flushes them, e.g. Done,
-// and the state, which already encompasses the new commands
-type Transform = (List[Cmd], List[Cmd], Cmd, State) => List[Cmd]
+// arguments: the configuration of the run, e.g. its printer, the state, which already encompasses the new commands,
+// the commands passed so far, the new commands, and the command that flushes them, e.g. Done
+type Transform = (cuvee.Config, State, List[Cmd], List[Cmd], Cmd) => List[Cmd]
 
 object Stage:
-  def empty(init: State, transform: Transform, next: Sink) =
-    Stage(init, transform, Nil, Nil, Nil, init, next)
+  def empty(config: cuvee.Config, init: State, transform: Transform, next: Sink) =
+    Stage(config, init, transform, Nil, Nil, Nil, init, next)
 
 case class Stage(
+    config: cuvee.Config,
     init: State,
     transform: Transform,
     stack: List[(List[Cmd], State)],
@@ -38,7 +39,7 @@ case class Stage(
   def reset =
     Error.report("pipe not flushed"):
       require(rpending.isEmpty)
-    Stage.empty(init, transform, next)
+    Stage.empty(config, init, transform, next)
 
   def query(cmd: Cmd) =
     cmd match
@@ -53,7 +54,7 @@ case class Stage(
       case last =>
         val pending = rpending.reverse
 
-        val cmds = transform(prefix, pending, last, state)
+        val cmds = transform(config, state, prefix, pending, last)
         val (result, next_) = next.query(cmds, last)
 
         val prefix_ = prefix ++ pending

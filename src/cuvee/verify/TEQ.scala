@@ -54,7 +54,7 @@ object Path:
 // the goals contain the combinators trace and all, which must be rewritten before they are passed to a solver,
 // except for programs without loops
 object TEQ extends Transform:
-  def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
+  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val gs = state.globals
 
     for

@@ -19,10 +19,13 @@ case class Ctx(
     su: Subst[Nothing, Var],
     polarity: Option[Boolean],
     inconsistent: Boolean,
-    rules: List[Rule] = Nil
+    rules: List[Rule] = Nil,
+    steps: util.Ref[Int] = util.Ref(0)
 ):
-  def withRules(rules: List[Rule]) =
-    copy(rules = rules)
+  // the rewrite rules with a fresh number of steps, which is shared by the copies of this context,
+  // and which guards against rules that do not terminate
+  def withRules(rules: List[Rule], steps: Int = 1000) =
+    copy(rules = rules, steps = util.Ref(steps))
 
   def bind(xs: List[Var]) =
     copy(bound = xs ++ bound)

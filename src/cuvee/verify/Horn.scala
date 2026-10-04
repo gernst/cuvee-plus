@@ -18,7 +18,7 @@ object Horn extends Transform:
   // the logic is HORN, which replaces the one given in the input,
   // or is set at the beginning, i.e., when nothing has been passed through so far;
   // at the end of the input, the clauses are checked for satisfiability
-  def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
+  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val cmds_ =
       for
         cmd <- cmds;

@@ -31,7 +31,7 @@ object Derivatives extends TestSuite:
   val f = Fun("f", Nil, List(Var("a", Sort.real)), Sort.real)
 
   def diff(expr: Expr, xs: Var*) =
-    val expr_ = cuvee.simplify.Simplify.simplify(State.empty, Ctx.empty, Diff(xs.toList, expr))
+    val expr_ = cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, Ctx.empty, Diff(xs.toList, expr))
     cuvee.dafny.Printer.lines(expr_).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:

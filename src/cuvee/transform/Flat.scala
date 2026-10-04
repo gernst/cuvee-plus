@@ -14,7 +14,7 @@ import cuvee.core._
 // the predicates are the uninterpreted functions with a boolean result,
 // i.e., those declared without definition that are neither constructors nor selectors
 object Flat extends Transform:
-  def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
+  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     for cmd <- cmds
     yield flat(state, cmd)
 

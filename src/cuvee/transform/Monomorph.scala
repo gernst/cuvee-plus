@@ -14,7 +14,7 @@ import cuvee.core._
 // polymorphic datatypes and sorts are kept, which the solvers accept,
 // as are polymorphic assertions, which are not instantiated (see TODO.md)
 object Monomorph extends Transform:
-  def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
+  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val mono = new Monomorph(prefix ++ cmds)
 
     // the instances emitted for the commands before are known, their output is discarded

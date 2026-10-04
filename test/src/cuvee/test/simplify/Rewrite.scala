@@ -57,10 +57,8 @@ object Rewrite extends TestSuite:
     // conditions are decided by the simplifier
     test("conditional"):
       val rule = Rule(app(abs, x), x, Le.int(Zero.int, x))
-      val holds = (phi: Expr) => Simplify.simplify(State.empty, Ctx.empty, phi) == True
-      val rewrite = new R(List(rule), holds)
-      rewrite(app(abs, One.int)) ==> One.int
-      rewrite(app(abs, a)) ==> app(abs, a)
+      R(List(rule), app(abs, One.int)) ==> One.int
+      R(List(rule), app(abs, a)) ==> app(abs, a)
 
     // inside of binders
     test("binders"):
@@ -71,7 +69,7 @@ object Rewrite extends TestSuite:
       val rules = List(Rule(app(f, x), app(f, app(f, x))))
       val msg =
         try
-          new R(rules, steps = 10)(app(f, a))
+          R.rewrite(cuvee.Config.default, State.empty, Ctx.empty.withRules(rules, steps = 10), app(f, a))
           "no error"
         catch case cuvee.Error(msg, _*) => msg
       msg ==> "rewriting does not terminate"
@@ -119,7 +117,7 @@ object SimplifyRules extends TestSuite:
   def app(fun: Fun, args: Expr*) = App(fun, args.toList)
 
   def simplify(rules: List[Rule], expr: Expr) =
-    Simplify.simplify(State.empty, Ctx.pos.withRules(rules), expr)
+    Simplify.simplify(cuvee.Config.default, State.empty, Ctx.pos.withRules(rules), expr)
 
   val tests = Tests:
     // the argument is simplified first, then the rule applies to the result
