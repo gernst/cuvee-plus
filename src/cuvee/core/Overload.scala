@@ -101,6 +101,15 @@ object Overload:
       case Old(expr) =>
         Old(apply(state, expr))
 
+      case Trace(init, deps, acc, bound, update) =>
+        Trace(apply(state, init), deps.map(apply(state, _)), acc, bound, update.map((g, e) => (apply(state, g), apply(state, e))))
+
+      case TraceMap(deps, bound, update) =>
+        TraceMap(deps.map(apply(state, _)), bound, update.map((g, e) => (apply(state, g), apply(state, e))))
+
+      case TraceAll(deps, bound, body) =>
+        TraceAll(deps.map(apply(state, _)), bound, apply(state, body))
+
       case Bind(quant, bound, body) =>
         Bind(quant, bound, apply(state, body))
 

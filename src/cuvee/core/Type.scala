@@ -219,6 +219,33 @@ object Type:
       case Old(arg) =>
         check(state, scope, arg, res, subst)
 
+      // the accumulator starts with the initial value and is updated by the results
+      case Trace(init, deps, acc, bound, update) =>
+        check(state, scope, init, acc.typ, subst)
+        dependencies(state, scope, expr, deps, bound, subst)
+        updates(state, scope, update, acc.typ, subst)
+
+        Error.report("type mismatch", expr, Sort.trace(acc.typ), res):
+          unify(state, scope, Sort.trace(acc.typ), res, subst)
+
+      // the results have the same type as the first one
+      case TraceMap(deps, bound, update) =>
+        Error.report("map without update", expr):
+          require(update.nonEmpty)
+
+        dependencies(state, scope, expr, deps, bound, subst)
+        updates(state, scope, update, update.head._2.typ, subst)
+
+        Error.report("type mismatch", expr, Sort.seq(update.head._2.typ), res):
+          unify(state, scope, Sort.seq(update.head._2.typ), res, subst)
+
+      case TraceAll(deps, bound, body) =>
+        dependencies(state, scope, expr, deps, bound, subst)
+        check(state, scope, body, Sort.bool, subst)
+
+        Error.report("type mismatch", expr, Sort.bool, res):
+          unify(state, scope, Sort.bool, res, subst)
+
       case As(arg, typ) =>
         check(state, scope, arg, typ, subst)
 
@@ -234,6 +261,23 @@ object Type:
       case Let(bound, args, body) =>
         check(state, scope, args, bound.types, subst)
         check(state, scope, body, res, subst)
+
+  // the dependencies of the combinators are sequences over the types of the bound variables, of which there is at least one
+  def dependencies(state: State, scope: Scope, expr: Expr, deps: List[Expr], bound: List[Var], subst: Ref[Subst[Type, Expr]]): Unit =
+    Error.report("combinator without dependencies", expr):
+      require(deps.nonEmpty)
+
+    Error.report("mismatching dependencies and bound variables", expr, deps, bound):
+      require(deps.length == bound.length)
+
+    check(state, scope, deps, bound.map(x => Sort.seq(x.typ)), subst)
+
+  // the guards of updates are formulas, and the results have type `typ`
+  def updates(state: State, scope: Scope, update: List[(Expr, Expr)], typ: Type, subst: Ref[Subst[Type, Expr]]): Unit =
+    for (guard, result) <- update
+    do
+      check(state, scope, guard, Sort.bool, subst)
+      check(state, scope, result, typ, subst)
 
   def check(state: State, scope: Scope, exprs: List[Expr], types: List[Type], subst: Ref[Subst[Type, Expr]]): Unit =
     for (expr, typ) <- exprs zip types
