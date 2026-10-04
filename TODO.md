@@ -8,12 +8,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - start with prioritizing this list by small things first, rewrite this file accordingly
 - work on this list autonomously, if you have questions for which you'd like my input, defer the item and put a note in this file, keep this instruction when reordering the list
 
-### Medium
-
-
-### Large
-
-
 ### Deferred (questions for the user)
 
 - note on `Normalize` (from `cuvee.pure.Clause`): it is both the first and the last step of `Simplify` for assertions: first, such that all antecedents are available as context for the succedents; last, since simplification and rewriting may produce nested implications and negations again, and normalization does not change normalized formulas. Unlike the original, `let` is kept, since the simplifier substitutes its bindings, but not equations between a variable and a term, and a clause without succedents is the negation of its antecedents.
