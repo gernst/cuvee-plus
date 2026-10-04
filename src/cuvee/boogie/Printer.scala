@@ -504,16 +504,6 @@ object Printer extends cuvee.pipe.Printer:
       case Store(base, index, value) =>
         Group(doc(base, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(index) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
 
-      // degenerate conjunctions and disjunctions
-      case App(fun, _, _, Nil) if fun == Fun.and =>
-        doc(True)
-
-      case App(fun, _, _, Nil) if fun == Fun.or =>
-        doc(False)
-
-      case App(fun, _, _, List(arg)) if fun == Fun.and || fun == Fun.or =>
-        doc(arg)
-
       case _ if prefix(expr).isDefined =>
         val Some((op, prec, arg)) = prefix(expr): @unchecked
         text(op) ++ doc(arg, (prec, None))
