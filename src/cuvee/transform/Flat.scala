@@ -78,6 +78,7 @@ object Flat extends Transform:
     val su = Subst.from(data.params, typ.args)
     App(sel, List(typ), su(sel.res), List(arg))
 
+  // whether values of `typ` are records, whose fields replace them
   def isDatatype(state: State, typ: Type) =
     datatype(state, typ).isDefined
 
@@ -156,6 +157,8 @@ object Flat extends Transform:
     val su = Subst.from(xs, exprs)
     (bound_.flatten, su(body))
 
+  // the flattened expression: predicates take the fields of records, bound records are constructed from their fields,
+  // equations between records are equations between their fields, and selectors and testers on constructors are reduced
   def flat(state: State, expr: Expr): Expr =
     expr match
       case Bind(quant, bound, body) =>

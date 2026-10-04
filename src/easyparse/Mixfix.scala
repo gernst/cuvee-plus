@@ -2,6 +2,8 @@ package easyparse
 
 import util.or
 
+// a mixfix parser with operator tables, whose precedences are between `min` and `max`,
+// over the atoms of `inner_expr`, where `apply` builds the application of an operator
 case class M[A](
     op: Parser[String],
     prefix_ops: Map[String, Int],
@@ -28,6 +30,9 @@ enum Assoc:
   case Left
   case Right
 
+// precedence climbing: an argument is followed by operators whose precedence is at least `lower`,
+// where the right operand of an infix operator binds tighter unless it associates to the right (rprec),
+// and the operators after an application bind looser unless they associate to the left (nprec)
 case class Mixfix[Expr](
     name: String,
     op: Parser[String],
@@ -42,9 +47,11 @@ case class Mixfix[Expr](
   def parse(in: Input, cm: Boolean) =
     mixfix_app(min, in, cm)
 
+  // the maximal precedence of the operators that may follow an application of an operator of precedence `prec`
   def nprec(assoc: Assoc, prec: Int) =
     if (assoc == Assoc.Left) prec else prec - 1
 
+  // the minimal precedence of the operators in the right operand
   def rprec(assoc: Assoc, prec: Int) =
     if (assoc == Assoc.Right) prec else prec + 1
 
@@ -98,6 +105,7 @@ case class Mixfix[Expr](
     val (right, in2) = mixfix_app(rprec(assoc, prec), in1, true)
     postinfix_app(lower, nprec(assoc, prec), binary(op, left, right), in2, cm)
 
+  // the operators after `left`, if any
   def postinfix_app(
       lower: Int,
       upper: Int,

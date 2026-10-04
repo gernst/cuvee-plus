@@ -6,8 +6,10 @@ import util.backtrack
 import util.Name
 import cuvee.Error
 
+// a sort constructor with its number of arguments
 case class Con(name: Name, arity: Int)
 
+// types are type parameters or applications of sort constructors
 sealed trait Type:
   def name: Name
   def params: Set[Param]
@@ -15,6 +17,8 @@ sealed trait Type:
   def cons: Set[Con]
   def sig: Option[Sig]
 
+// a type parameter, which is rigid inside the declaration that introduces it (see rigid),
+// and is instantiated freshly at each use otherwise
 case class Param(name: Name) extends Type:
   def params = Set(this)
   def cons = Set()
@@ -35,6 +39,7 @@ case class Sort(con: Con, args: List[Type]) extends Type:
   def cons = args.cons + con
   def sig = Some(Sig(con.name, args.sig))
 
+// the counter for fresh type parameters
 object Param extends Counter:
   // the type parameters of the built-in functions and the preludes, a$0 and a$1, written a₀ and a₁ in Dafny and Boogie
   val a = Param(Name("a", Some(0)))
@@ -86,6 +91,7 @@ object Type:
     then typ
     else resolve(subst, typ_)
 
+  // the substitution with each type resolved, i.e., idempotent
   def close(subst: Subst[Type, Expr]): Subst[Type, Expr] =
     val params_ =
       for (p, typ) <- subst.params
@@ -110,6 +116,8 @@ object Type:
       case _ =>
         typ
 
+  // extend `subst` such that the types become equal, backtracks if they cannot be unified;
+  // the parameters of the scope are rigid, defined sorts are unfolded as needed
   def unify(state: State, scope: Scope, typ1: Type, typ2: Type, subst: Ref[Subst[Type, Expr]]): Unit =
     (typ1, typ2) match
       case _ if typ1 == typ2 =>
@@ -161,6 +169,7 @@ object Type:
     bind(pats, types, subst)
     subst.value
 
+  // extend `subst` such that `pat` instantiated becomes `typ`, an error if it cannot
   def bind(pat: Type, typ: Type, subst: Ref[Subst[Type, Nothing]]): Unit =
     (pat, typ) match
       case (p: Param, _) if subst.inst.contains(p) =>
@@ -295,6 +304,7 @@ object Type:
     for (expr, typ) <- exprs zip types
     do check(state, scope, expr, typ, subst)
 
+  // `expr` checked against `res`, with the solution of the type constraints applied
   def check(state: State, scope: Scope, expr: Expr, res: Type): Expr =
     val subst = Ref[Subst[Type, Expr]](Subst(Map(), Map()))
     check(state, scope, expr, res, subst)
@@ -351,6 +361,7 @@ object Type:
   def check(state: State, scope: Scope, fixed: Set[Var], prog: Prog): Prog =
     check(state, scope, fixed, prog, false)
 
+  // `loop` holds inside of loops, where break and continue are allowed
   def check(state: State, scope: Scope, fixed: Set[Var], prog: Prog, loop: Boolean): Prog =
     prog match
       case Break | Continue =>

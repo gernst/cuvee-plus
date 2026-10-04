@@ -24,6 +24,7 @@ class Solver(cmd: String*):
   def destroy() =
     proc.destroy()
 
+  // the command in SMT-LIB, line by line
   def write(cmd: Cmd) =
     for (line <- Printer.lines(cmd))
     do
@@ -50,6 +51,7 @@ class Solver(cmd: String*):
       case _ =>
         from
 
+  // the response to `cmd`, each command is answered by one s-expression since print-success is set
   def query(cmd: Cmd): Any =
     write(cmd)
     read(cmd)
@@ -84,6 +86,7 @@ class Solver(cmd: String*):
     try f
     finally pop()
 
+  // the answer to check-sat
   def check(): Status =
     Parser.issat(query(CheckSat))
 

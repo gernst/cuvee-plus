@@ -7,6 +7,8 @@ import cuvee.pipe.Transform
 import cuvee.core._
 import cuvee.core.Attrs
 
+// verification conditions by weakest preconditions: each procedure definition is replaced by the goal
+// that its precondition implies the weakest precondition of its body for its postcondition (see wp)
 object Verify extends Transform:
   // the global variables gs are computed once and passed to the generation of the verification conditions
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
@@ -17,6 +19,7 @@ object Verify extends Transform:
       cmd_ <- verify(state, gs, cmd)
     yield cmd_
 
+  // the goals of a command, the other commands are kept
   def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
     cmd match
       // procedures without body have nothing to verify,

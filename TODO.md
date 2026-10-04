@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- add comments in places where you would comment yourself
 
 ### Large
 

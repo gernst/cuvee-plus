@@ -4,6 +4,8 @@ import scala.annotation.targetName
 
 import cuvee.Error
 
+// substitutions of type parameters by types and of variables by expressions,
+// built from lists of the same length, or as fresh renamings
 object Subst:
   def empty[T <: Type, E <: Expr] = Subst[T, E](Map(), Map())
 
@@ -27,7 +29,10 @@ object Subst:
       require(vars.length == exprs.length)
     Subst(Map(), Map(vars zip exprs*))
 
+// a simultaneous substitution, applied to types, expressions, attributes, and programs,
+// which renames bound variables that would capture the free variables of its range (see avoid)
 case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E]):
+  // the instantiated type parameters, the substituted variables, and the free variables of the range
   def inst = params.keySet
   def bound = vars.keySet
   def free = vars.values.free
@@ -40,6 +45,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def +(pair: (Var, E)) =
     Subst(params, vars + pair)
 
+  // the renaming of those of `bound` that would capture a free variable of the range,
+  // and this substitution for the scope of `bound`, where `bound` is no longer substituted but renamed
   def avoid(bound: List[Var]) =
     // compare by name since bound variables may change their type
     val names = free.map(_.name)
@@ -58,6 +65,7 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def apply(x: Var): E | Var =
     vars.getOrElse(x, retype(x))
 
+  // the variable with the type parameters of its type substituted
   def retype(x: Var): Var =
     if params.isEmpty
     then x

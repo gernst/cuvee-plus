@@ -4,6 +4,9 @@ import util.Name
 import util.Rational
 import cuvee.Error
 
+// the declarations and definitions so far, by kind and name, with their attributes and the assertions,
+// together with builders for types, expressions, programs, and commands, which the frontends use (see style.md);
+// functions are identified by name and arity, since the frontends may overload names with different arities
 case class State(
     logic: Option[String] = None,
     options: Map[String, Any] = Map(),
@@ -27,6 +30,7 @@ case class State(
 
     asserts: List[Assert] = List()
 ):
+  // whether the option `name` is set to true
   def hasFlag(name: String) =
     options.get(name) match
       case Some("true") => true
@@ -162,6 +166,7 @@ case class State(
 
     copy(procdefs = procdefs + (name -> body))
 
+  // the state with the declaration or definition of `cmd`, which must not be declared already
   def add(cmd: Decl): State =
     cmd match
       case SetLogic(name) =>
@@ -211,6 +216,7 @@ case class State(
       case cmd: Assert =>
         copy(asserts = asserts :+ cmd)
 
+  // types, where sorts must be declared with the right number of arguments
   object types:
     def param(name: Name) =
       Param(name)
@@ -225,6 +231,8 @@ case class State(
 
       Sort(con, args)
 
+  // expressions, where applications instantiate the type parameters of the functions freshly,
+  // which are determined by type checking (see check)
   object exprs:
     def formal(name: Name, typ: Type) =
       Var(name, typ)
@@ -307,6 +315,7 @@ case class State(
     def check(scope: Scope, expr: Expr, typ: Type) =
       Overload(State.this, Type.check(State.this, scope, expr, typ))
 
+  // programs, which are type checked as a whole by `check`
   object progs:
     def check(scope: Scope, fixed: Set[Var], prog: Prog) =
       Overload(State.this, Type.check(State.this, scope, fixed, prog))
@@ -357,6 +366,7 @@ case class State(
     def par(calls: List[Call]) =
       Par(calls)
 
+  // the commands for the declarations and definitions of the state by name, with their attributes
   object cmds:
     def declareSort(name: Name) =
       val con = sorts(name)

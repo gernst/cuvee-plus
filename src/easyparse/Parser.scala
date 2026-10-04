@@ -4,17 +4,21 @@ import scala.collection.IterableFactory
 
 import util.or
 
+// parsers over token streams, where `cm` (committed) states whether a failure is an error
+// or backtracks to the next alternative (see util.or)
 trait Parser[+A]:
   def parse(in: Input, cm: Boolean): (A, Input)
 
   def parse(in: Input): (A, Input) =
     parse(in, cm = true)
 
+  // the result if the whole input is consumed
   def parseAll(in: Input): A =
     val (a, in_) = this.parse(in)
     if (in_.nonEmpty) Input.fail("<eof>", in_, true)
     else a
 
+  // the parser with its result discarded, e.g. for keywords
   def asScanner: Scanner =
     Scanner.Discard(this)
 

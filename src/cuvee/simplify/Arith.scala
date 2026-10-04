@@ -40,6 +40,7 @@ object Mono:
   // compares the atoms only, so that monomials which differ in their factor can be merged
   given Ordering[Mono] = Ordering.by(_.atoms)
 
+  // a non-arithmetic expression, e.g. a variable, as a monomial of degree 1
   def atom(expr: Expr) =
     Mono(Rational(1), List(expr -> BigInt(1)))
 
@@ -127,6 +128,7 @@ case class Ring(
       case Lit(r: Rational, `typ`) => Some(r)
       case _                       => None
 
+// the rings Int and Real, where the coefficients on Int must be integral
 object Ring:
   val int =
     Ring(Sort.int, UMinus.int, Plus.int, Minus.int, Times.int, n =>
@@ -137,6 +139,7 @@ object Ring:
   val real =
     Ring(Sort.real, UMinus.real, Plus.real, Minus.real, Times.real, r => Lit(r, Sort.real))
 
+  // the ring of `typ`, if it is Int or Real
   def apply(typ: Type): Option[Ring] =
     if typ == Sort.int then Some(int)
     else if typ == Sort.real then Some(real)

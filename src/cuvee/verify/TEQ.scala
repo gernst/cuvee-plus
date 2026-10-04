@@ -18,6 +18,7 @@ case class Path(zs: List[Var], su: Map[Var, Expr], assms: List[Expr], branch: Li
   def apply(x: Var): Expr =
     su.getOrElse(x, x)
 
+  // the assumptions and branch conditions, under which the path is taken
   def context: Expr =
     And(assms ++ branch)
 
@@ -27,9 +28,11 @@ case class Path(zs: List[Var], su: Map[Var, Expr], assms: List[Expr], branch: Li
   def when(phi: Expr) =
     copy(branch = branch :+ phi)
 
+  // a check holds if the path is taken
   def check(phi: Expr) =
     copy(checks = checks :+ Imp(context, phi))
 
+  // the values of nondeterministic choices and havoc, which are quantified for the path
   def fresh(zs_ : List[Var]) =
     copy(zs = zs ++ zs_)
 

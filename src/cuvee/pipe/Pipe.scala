@@ -7,6 +7,10 @@ import cuvee.Error
 import cuvee.core._
 import cuvee.sexpr.Id
 
+// runs the commands through the chain of sinks, reporting each result:
+// print-success is handled here, since it concerns the reports, not the sinks;
+// errors are reported and stop the run unless it is incremental, which continues with the next command;
+// returns the commands that were processed and the results
 object Pipe:
   def run(source: Iterable[Cmd], init: Sink, report: Report, incremental: Boolean) =
     var sink = init
