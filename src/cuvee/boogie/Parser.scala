@@ -233,6 +233,11 @@ class Parser(var state: State):
         val expr_ = App("not", List(App("=", args, Nil)), access)
         resolve(scope, expr_)
 
+      // the value at the entry of the procedure
+      case App("old", List(arg), access) =>
+        val base_ = core.Old(resolve(scope, arg))
+        resolve(scope, base_, access)
+
       case App(name, Nil, access) if scope.vars.contains(name) =>
         val base_ = scope.vars(name)
         resolve(scope, base_, access)
