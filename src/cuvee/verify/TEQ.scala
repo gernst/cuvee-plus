@@ -6,7 +6,7 @@ import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
 
-// a path through a program by symbolic execution (Trace Equation Systems, definition 4.1 and fig. 4):
+// a path through a program by symbolic execution:
 // the fresh variables for nondeterministic choices, the values of the program variables as a substitution,
 // the assumptions made, the branch conditions taken, and the checks from assertions,
 // where each check is conditional on the assumptions and branch conditions before it;
@@ -36,7 +36,7 @@ case class Path(zs: List[Var], su: Map[Var, Expr], assms: List[Expr], branch: Li
   def assign(xs: List[Var], es: List[Expr]) =
     copy(su = su ++ (xs zip es))
 
-  // the formulas of definition 4.2 for this path
+  // the assumptions A, the branch conditions B, and the checks C of this path as formulas
   def A = And(assms)
   def B = And(branch)
   def C = And(checks)
@@ -46,7 +46,7 @@ object Path:
     Path(Nil, su, Nil, Nil, Nil, false)
 
 // verification by symbolic execution, where loops are summarized by trace equation systems
-// (Trace Equation Systems for Program Verification, sections 4 and theorem 4.8):
+// (after Trace Equation Systems for Program Verification):
 // the goal of each procedure is that for all paths through its body, all checks hold,
 // and the postcondition holds if the assumptions and branch conditions do;
 // loops yield a single path, whose fresh variables are the state at the exit, the number of iterations, the traces,
@@ -189,7 +189,7 @@ object TEQ extends Transform:
   def modified(state: State, body: Prog): List[Var] =
     (body.mod ++ Verify.calls(body).flatMap(call => state.procattrs(call.proc).modifies)).toList.distinct
 
-  // the trace equation system of a loop (definition 4.4) and the single path that leaves it (theorem 4.8),
+  // the trace equation system of a loop and the single path that leaves it, which summarizes all paths through the loop,
   // loops without test (nondeterministic iterations) may be left in every iteration
   def loop(state: State, proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, p: Path): Path =
     val xs = modified(state, body)
