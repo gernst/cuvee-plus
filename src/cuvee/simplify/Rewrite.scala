@@ -119,16 +119,16 @@ object Rewrite:
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
         Rewrite.matches(typ, typ_, m)
 
-      case (Trace(init, deps, acc, bound, update), Trace(init_, deps_, acc_, bound_, update_)) =>
+      case (Trace(init, deps, acc, bound, updates), Trace(init_, deps_, acc_, bound_, updates_)) =>
         for
           m1 <- matches(config, state, ctx, b, init, init_, m)
           m2 <- combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(acc -> acc_), m1): (b_, m) =>
-            matches(config, state, ctx, b_, update, update_, m)
+            matches(config, state, ctx, b_, updates, updates_, m)
         yield m2
 
-      case (Maps(deps, bound, update), Maps(deps_, bound_, update_)) =>
+      case (Maps(deps, bound, updates), Maps(deps_, bound_, updates_)) =>
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
-          matches(config, state, ctx, b_, update, update_, m)
+          matches(config, state, ctx, b_, updates, updates_, m)
 
       case (Invs(deps, bound, body), Invs(deps_, bound_, body_)) =>
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
@@ -272,7 +272,7 @@ object Rewrite:
                 case _ =>
                   val used = (deps_ zip bound_).filter((_, y_) => value.free.contains(y_))
                   val (deps__, bound__) = (if used.isEmpty then (deps_ zip bound_).take(1) else used).unzip
-                  Maps(deps__, bound__, List((True, value)))
+                  Maps(deps__, bound__, List(Upd(True, value)))
 
             matches(config, state, ctx, b, z, seq, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
 
@@ -284,17 +284,17 @@ object Rewrite:
 
   // each case of the update of the expression is covered by some case of the pattern, whose guard follows from its own
   @scala.annotation.targetName("matchesUpdates")
-  def matches(config: Config, state: State, ctx: Ctx, b: Binding, update: List[(Expr, Expr)], update_ : List[(Expr, Expr)], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
-    update_ match
+  def matches(config: Config, state: State, ctx: Ctx, b: Binding, updates: List[Upd], updates_ : List[Upd], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+    updates_ match
       case Nil =>
         List(m)
 
-      case (guard_, result_) :: rest =>
+      case Upd(cond_, rhs_) :: rest =>
         for
-          (guard, result) <- update
-          m1 <- matches(config, state, ctx, b, result, result_, m)
-          if implies(config, state, ctx, b, guard_, guard, m1)
-          m2 <- matches(config, state, ctx, b, update, rest, m1)
+          Upd(cond, rhs) <- updates
+          m1 <- matches(config, state, ctx, b, rhs, rhs_, m)
+          if implies(config, state, ctx, b, cond_, cond, m1)
+          m2 <- matches(config, state, ctx, b, updates, rest, m1)
         yield m2
 
   def implies(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): Boolean =
@@ -399,8 +399,8 @@ object Rewrite:
 
   // apply `f` to the immediate subexpressions
   def map(expr: Expr, f: Expr => Expr): Expr =
-    def update(update: List[(Expr, Expr)]) =
-      for (guard, result) <- update yield (f(guard), f(result))
+    def update(upd: Upd) =
+      Upd(f(upd.cond), f(upd.rhs))
 
     expr match
       case _: Var | _: Lit                      => expr
@@ -410,8 +410,8 @@ object Rewrite:
       case As(arg, typ)                         => As(f(arg), typ)
       case Diff(xs, arg)                        => Diff(xs, f(arg))
       case Old(arg)                             => Old(f(arg))
-      case Trace(init, deps, acc, bound, upd)   => Trace(f(init), deps.map(f), acc, bound, update(upd))
-      case Maps(deps, bound, upd)           => Maps(deps.map(f), bound, update(upd))
+      case Trace(init, deps, acc, bound, upd)   => Trace(f(init), deps.map(f), acc, bound, upd.map(update))
+      case Maps(deps, bound, upd)           => Maps(deps.map(f), bound, upd.map(update))
       case Invs(deps, bound, body)          => Invs(deps.map(f), bound, f(body))
       case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))

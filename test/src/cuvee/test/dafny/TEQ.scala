@@ -45,7 +45,7 @@ object TEQ extends TestSuite:
       val K = Var("K", Sort.trace(Sort.int))
       val butlast = App(Fun.trace.butlast, List(K))
       val rule = Rule(
-        Trace(i, List(butlast), x, List(k), List((True, Plus.int(x, c)))),
+        Trace(i, List(butlast), x, List(k), List(Upd(True, Plus.int(x, c)))),
         App(Fun.trace.counter, List(i, c, App(Fun.trace.steps, List(K))))
       )
 

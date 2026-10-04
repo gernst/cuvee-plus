@@ -227,24 +227,25 @@ object Type:
         check(state, scope, arg, res, subst)
 
       // the accumulator starts with the initial value and is updated by the results
-      case Trace(init, deps, acc, bound, update) =>
+      case Trace(init, deps, acc, bound, updates) =>
         check(state, scope, init, acc.typ, subst)
         dependencies(state, scope, expr, deps, bound, subst)
-        updates(state, scope, update, acc.typ, subst)
+        this.updates(state, scope, updates, acc.typ, subst)
 
         Error.report("type mismatch", expr, Sort.trace(acc.typ), res):
           unify(state, scope, Sort.trace(acc.typ), res, subst)
 
       // the results have the same type as the first one
-      case Maps(deps, bound, update) =>
+      case Maps(deps, bound, updates) =>
         Error.report("map without update", expr):
-          require(update.nonEmpty)
+          require(updates.nonEmpty)
 
+        val typ = updates.head.rhs.typ
         dependencies(state, scope, expr, deps, bound, subst)
-        updates(state, scope, update, update.head._2.typ, subst)
+        this.updates(state, scope, updates, typ, subst)
 
-        Error.report("type mismatch", expr, Sort.seq(update.head._2.typ), res):
-          unify(state, scope, Sort.seq(update.head._2.typ), res, subst)
+        Error.report("type mismatch", expr, Sort.seq(typ), res):
+          unify(state, scope, Sort.seq(typ), res, subst)
 
       case Invs(deps, bound, body) =>
         dependencies(state, scope, expr, deps, bound, subst)
@@ -280,11 +281,11 @@ object Type:
     check(state, scope, deps, bound.map(x => Sort.seq(x.typ)), subst)
 
   // the guards of updates are formulas, and the results have type `typ`
-  def updates(state: State, scope: Scope, update: List[(Expr, Expr)], typ: Type, subst: Ref[Subst[Type, Expr]]): Unit =
-    for (guard, result) <- update
+  def updates(state: State, scope: Scope, updates: List[Upd], typ: Type, subst: Ref[Subst[Type, Expr]]): Unit =
+    for Upd(cond, rhs) <- updates
     do
-      check(state, scope, guard, Sort.bool, subst)
-      check(state, scope, result, typ, subst)
+      check(state, scope, cond, Sort.bool, subst)
+      check(state, scope, rhs, typ, subst)
 
   def check(state: State, scope: Scope, exprs: List[Expr], types: List[Type], subst: Ref[Subst[Type, Expr]]): Unit =
     for (expr, typ) <- exprs zip types

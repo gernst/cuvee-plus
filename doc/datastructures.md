@@ -67,8 +67,9 @@ case class Bind(quant: Name, bound: List[Var], body: Expr)   // forall, exists
 case class Let(bound: List[Var], args: List[Expr], body: Expr)
 
 // the combinators of trace equation systems, with guarded updates
-case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: List[(Expr, Expr)])
-case class Maps(deps: List[Expr], bound: List[Var], update: List[(Expr, Expr)])
+case class Upd(cond: Expr, rhs: Expr)                         // if cond then rhs
+case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd])
+case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd])
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
 ```
 
@@ -87,15 +88,16 @@ case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
   it by `e[gs := gs_]` before verification.
 - **Trace combinators** (*Trace Equation Systems for Program Verification*,
   section 3):
-  - `Trace(init, deps, acc, bound, update)` is the trace of the accumulator
+  - `Trace(init, deps, acc, bound, updates)` is the trace of the accumulator
     `acc`, of type `Trace(T)`. It starts with `init`; each further value is
     the update of the previous one and the next values of the dependencies,
     which `bound` ranges over point-wise.
-  - `Maps(deps, bound, update)` is the sequence of the updates, of type
+  - `Maps(deps, bound, updates)` is the sequence of the updates, of type
     `Seq(T)`.
   - `Invs(deps, bound, φ)` states `φ` for all values of the dependencies.
-  - An update is a list of guarded cases `(φᵢ, eᵢ)` with disjoint and
-    complete guards; a single case has the guard `true`.
+  - An update is a list of guarded cases `Upd(φᵢ, eᵢ)` with disjoint and
+    complete guards; a single case has the guard `true`. `List[Upd]` has
+    `free`, `params`, and `exprs` like lists of expressions.
   - The functions on traces are in `Fun.trace`: `counter`, `current`,
     `butlast` (the paper's `⌊X⌋`), `steps`, `length`, `nth`, `earlier`.
   - `state.exprs.trace`, `map`, and `all` create the bound variables with the

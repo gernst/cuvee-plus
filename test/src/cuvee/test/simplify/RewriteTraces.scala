@@ -42,58 +42,58 @@ object RewriteTraces extends TestSuite:
 
   // trace(i, for ⌊K⌋ do i, k ↦ i + c) = counter(i, c, steps(⌊K⌋))
   val counterRule =
-    Rule(Trace(i, List(app(butlast, K)), x, List(k), List((True, Plus.int(x, c)))), app(counter, i, c, app(steps, app(butlast, K))))
+    Rule(Trace(i, List(app(butlast, K)), x, List(k), List(Upd(True, Plus.int(x, c)))), app(counter, i, c, app(steps, app(butlast, K))))
 
   // trace(i, for V do x, v ↦ x + v) = sums(i, V)
   val sumsRule =
-    Rule(Trace(i, List(V), x, List(v), List((True, Plus.int(x, v)))), app(sums, i, V))
+    Rule(Trace(i, List(V), x, List(v), List(Upd(True, Plus.int(x, v)))), app(sums, i, V))
 
   // map(for K yield k ↦ a[k]) = selects(a, K)
   val selectsRule =
-    Rule(Maps(List(Ks), List(k), List((True, Select(a, k)))), app(selects, a, Ks))
+    Rule(Maps(List(Ks), List(k), List(Upd(True, Select(a, k)))), app(selects, a, Ks))
 
   val tests = Tests:
     // example 2.3, the counter is matched modulo commutativity
     test("counter"):
-      val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List((True, Plus.int(One.int, s))))
+      val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List(Upd(True, Plus.int(One.int, s))))
       R(List(counterRule), expr) ==> app(counter, Zero.int, One.int, app(steps, app(butlast, J)))
 
     // example 2.6, the dependency V is instantiated by a map over the dependencies of the expression
     test("sums"):
-      val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List((True, Plus.int(s, Select(arr, j)))))
-      val values = Maps(List(app(butlast, J)), List(j), List((True, Select(arr, j))))
+      val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List(Upd(True, Plus.int(s, Select(arr, j)))))
+      val values = Maps(List(app(butlast, J)), List(j), List(Upd(True, Select(arr, j))))
       R(List(sumsRule), expr) ==> app(sums, Zero.int, values)
 
     // ... which is then recognized as selects, example 6.2
     test("sums of selects"):
-      val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List((True, Plus.int(s, Select(arr, j)))))
+      val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List(Upd(True, Plus.int(s, Select(arr, j)))))
       R(List(sumsRule, selectsRule), expr) ==> app(sums, Zero.int, app(selects, arr, app(butlast, J)))
 
     // a bound variable that is the value directly yields the dependency itself
     test("dependency"):
       val W = Var("W", ints)
       val w = Var("w", int)
-      val expr = Trace(Zero.int, List(W), s, List(w), List((True, Plus.int(w, s))))
+      val expr = Trace(Zero.int, List(W), s, List(w), List(Upd(True, Plus.int(w, s))))
       R(List(sumsRule), expr) ==> app(sums, Zero.int, W)
 
     // the value must not depend on the accumulator
     test("accumulator"):
-      val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List((True, Plus.int(s, Times.int(s, j)))))
+      val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List(Upd(True, Plus.int(s, Times.int(s, j)))))
       R(List(sumsRule), expr) ==> expr
 
     // every case of the update of the expression is covered by the single case of the pattern
     test("cases"):
       val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List(
-        (Lt.int(j, n), Plus.int(s, One.int)),
-        (Not(Lt.int(j, n)), Plus.int(s, One.int))
+        Upd(Lt.int(j, n), Plus.int(s, One.int)),
+        Upd(Not(Lt.int(j, n)), Plus.int(s, One.int))
       ))
       R(List(counterRule), expr) ==> app(counter, Zero.int, One.int, app(steps, app(butlast, J)))
 
     // different increments in the cases are not a counter
     test("different cases"):
       val expr = Trace(Zero.int, List(app(butlast, J)), s, List(j), List(
-        (Lt.int(j, n), Plus.int(s, One.int)),
-        (Not(Lt.int(j, n)), Plus.int(s, Plus.int(One.int, One.int)))
+        Upd(Lt.int(j, n), Plus.int(s, One.int)),
+        Upd(Not(Lt.int(j, n)), Plus.int(s, Plus.int(One.int, One.int)))
       ))
       R(List(counterRule), expr) ==> expr
 

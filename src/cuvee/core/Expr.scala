@@ -131,16 +131,16 @@ object Old:
         val arg_ = elim(gs, gs_, arg)
         Diff(xs, arg_)
 
-      case Trace(init, deps, acc, bound, update) =>
+      case Trace(init, deps, acc, bound, updates) =>
         val init_ = elim(gs, gs_, init)
         val deps_ = elim(gs, gs_, deps)
-        val update_ = for (guard, result) <- update yield (elim(gs, gs_, guard), elim(gs, gs_, result))
-        Trace(init_, deps_, acc, bound, update_)
+        val updates_ = for Upd(cond, rhs) <- updates yield Upd(elim(gs, gs_, cond), elim(gs, gs_, rhs))
+        Trace(init_, deps_, acc, bound, updates_)
 
-      case Maps(deps, bound, update) =>
+      case Maps(deps, bound, updates) =>
         val deps_ = elim(gs, gs_, deps)
-        val update_ = for (guard, result) <- update yield (elim(gs, gs_, guard), elim(gs, gs_, result))
-        Maps(deps_, bound, update_)
+        val updates_ = for Upd(cond, rhs) <- updates yield Upd(elim(gs, gs_, cond), elim(gs, gs_, rhs))
+        Maps(deps_, bound, updates_)
 
       case Invs(deps, bound, body) =>
         val deps_ = elim(gs, gs_, deps)
@@ -228,37 +228,33 @@ object Old:
 
 // the combinators of trace equation systems, which describe the computation of a loop per variable;
 // their dependencies `deps` are sequences of the same length, over which the variables `bound` range point-wise,
-// and their updates are guarded results, if φ₁ then e₁, ..., if φₚ then eₚ, with disjoint and complete guards
-object Update:
-  def free(update: List[(Expr, Expr)]): Set[Var] =
-    update.flatMap((guard, result) => guard.free ++ result.free).toSet
-
-  def params(update: List[(Expr, Expr)]): Set[Param] =
-    update.flatMap((guard, result) => guard.params ++ result.params).toSet
-
-  def exprs(update: List[(Expr, Expr)]): List[Expr] =
-    update.flatMap((guard, result) => List(guard, result))
+// and their updates are guarded results, if φ₁ then e₁, ..., if φₚ then eₚ, with disjoint and complete guards,
+// each case of which is an Upd(φᵢ, eᵢ)
+case class Upd(cond: Expr, rhs: Expr):
+  def params = cond.params ++ rhs.params
+  def free = cond.free ++ rhs.free
+  def exprs = List(cond, rhs)
 
 // trace(init, for deps do acc, bound ↦ update): the trace of the values of the accumulator `acc`,
 // starting from `init`, where each subsequent value is computed by the update from the previous one
 // and the corresponding values of the dependencies, one entry longer than the dependencies
-case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: List[(Expr, Expr)]) extends Expr:
-  def subexprs = init :: deps ++ Update.exprs(update)
-  def params = init.params ++ deps.params ++ (acc :: bound).params ++ Update.params(update)
-  def free = init.free ++ deps.free ++ (Update.free(update) -- (acc :: bound))
+case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd]) extends Expr:
+  def subexprs = init :: deps ++ updates.exprs
+  def params = init.params ++ deps.params ++ (acc :: bound).params ++ updates.params
+  def free = init.free ++ deps.free ++ (updates.free -- (acc :: bound))
   def typ = Sort.trace(acc.typ)
 
 // map(for deps yield bound ↦ update): the sequence of the results of the update for the values of the dependencies,
 // point-wise, which has the same length as the dependencies
-case class Maps(deps: List[Expr], bound: List[Var], update: List[(Expr, Expr)]) extends Expr:
-  def subexprs = deps ++ Update.exprs(update)
-  def params = deps.params ++ bound.params ++ Update.params(update)
-  def free = deps.free ++ (Update.free(update) -- bound)
+case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd]) extends Expr:
+  def subexprs = deps ++ updates.exprs
+  def params = deps.params ++ bound.params ++ updates.params
+  def free = deps.free ++ (updates.free -- bound)
 
   def typ =
     Error.report("map without update", this):
-      require(update.nonEmpty)
-    Sort.seq(update.head._2.typ)
+      require(updates.nonEmpty)
+    Sort.seq(updates.head.rhs.typ)
 
 // all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:

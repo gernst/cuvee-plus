@@ -8,12 +8,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - start with prioritizing this list by small things first, rewrite this file accordingly
 - work on this list autonomously, if you have questions for which you'd like my input, defer the item and put a note in this file, keep this instruction when reordering the list
 
-### Small
-
-
 ### Medium
 
-- introduce class `Upd(cond, rhs)` to represent a single entry in an update, rename the attribute to `updates`, and ensure to make methods `.free`, `.params` as extensions of `List[Upd]`, as done for many other types of expressions
 - avoid constistency constraints like that of `Maps.typ` inside classes, but ensure that they are checked by the parsers
 - add syntactic sugar to `Builtin.scala` for the sequence types
 - parse and print function `butlast` specially, using left floor and right floor outfix syntax, add `Butlast` and `Counter` syntactic sugars, and use them in `TEQ.scala`

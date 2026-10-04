@@ -34,6 +34,16 @@ extension (self: Iterable[Expr])
   @targetName("Exprs.params")
   def params = self.flatMap(_.params).toSet
 
+extension (self: Iterable[Upd])
+  @targetName("Upds.free")
+  def free = self.flatMap(_.free).toSet
+
+  @targetName("Upds.params")
+  def params = self.flatMap(_.params).toSet
+
+  @targetName("Upds.exprs")
+  def exprs = self.toList.flatMap(_.exprs)
+
 extension (self: Iterable[Prog])
   @targetName("Progs.mod")
   def mod = self.flatMap(_.mod).toSet

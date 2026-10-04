@@ -101,11 +101,11 @@ object Overload:
       case Old(expr) =>
         Old(apply(state, expr))
 
-      case Trace(init, deps, acc, bound, update) =>
-        Trace(apply(state, init), deps.map(apply(state, _)), acc, bound, update.map((g, e) => (apply(state, g), apply(state, e))))
+      case Trace(init, deps, acc, bound, updates) =>
+        Trace(apply(state, init), deps.map(apply(state, _)), acc, bound, updates.map(apply(state, _)))
 
-      case Maps(deps, bound, update) =>
-        Maps(deps.map(apply(state, _)), bound, update.map((g, e) => (apply(state, g), apply(state, e))))
+      case Maps(deps, bound, updates) =>
+        Maps(deps.map(apply(state, _)), bound, updates.map(apply(state, _)))
 
       case Invs(deps, bound, body) =>
         Invs(deps.map(apply(state, _)), bound, apply(state, body))
@@ -115,6 +115,9 @@ object Overload:
 
       case Let(bound, args, body) =>
         Let(bound, args.map(apply(state, _)), apply(state, body))
+
+  def apply(state: State, upd: Upd): Upd =
+    Upd(apply(state, upd.cond), apply(state, upd.rhs))
 
   // replace all overloaded operators in the expressions of a type checked program,
   // the attributes of loops are type checked separately by the parsers, which resolves them as well

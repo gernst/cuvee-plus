@@ -220,13 +220,13 @@ object TEQ extends Transform:
     val equations =
       for ((x, x_), tr) <- xs zip sharp zip Xs
       yield
-        val update = for q <- paths yield (q.B, q(x))
-        val used = update.flatMap((g, e) => g.free ++ e.free).toSet
+        val updates = for q <- paths yield Upd(q.B, q(x))
+        val used = updates.free
         val others = (sharp zip Xs).filter((y_, _) => y_ != x_ && used.contains(y_))
         val choices = (zs zip Zs).filter((z, _) => used.contains(z))
         val deps = butlast(K) :: others.map((_, tr_) => butlast(tr_)) ++ choices.map(_._2)
         val bound = k :: others.map(_._1) ++ choices.map(_._1)
-        Eq(tr, Trace(p(x), deps, x_, bound, update))
+        Eq(tr, Trace(p(x), deps, x_, bound, updates))
 
     val counter = Eq(K, App(Fun.trace.counter, List(Zero.int, One.int, n)))
     val current = for (x, tr) <- cur zip Xs yield Eq(x, App(Fun.trace.current, List(tr)))

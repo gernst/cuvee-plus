@@ -549,18 +549,18 @@ object Printer extends cuvee.pipe.Printer:
     Group(Align(commas(deps.map(doc(_)))))
 
   // the update of a combinator, a single expression or guarded cases, if guard then result, ...
-  def combinator(head: Doc, keyword: String, bound: List[Var], update: List[(Expr, Expr)]): Doc =
-    val update_ =
-      update match
-        case List((True, result)) =>
-          doc(result)
+  def combinator(head: Doc, keyword: String, bound: List[Var], updates: List[Upd]): Doc =
+    val updates_ =
+      updates match
+        case List(Upd(True, rhs)) =>
+          doc(rhs)
 
         case _ =>
-          commas(for (guard, result) <- update yield text("if") +:+ doc(guard) +:+ text("then") +:+ doc(result))
+          commas(for Upd(cond, rhs) <- updates yield text("if") +:+ doc(cond) +:+ text("then") +:+ doc(rhs))
 
     // the bound variables are never broken across lines, the update goes on a line of its own if it does not fit
     val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
-    Group(head +:+ text(keyword) +:+ binders ++ Nest(2, line ++ update_) ++ text(")"))
+    Group(head +:+ text(keyword) +:+ binders ++ Nest(2, line ++ updates_) ++ text(")"))
 
   // chains of the same operator are flattened in the direction of its associativity, a && b && c,
   // such that the operators are aligned when they are broken across lines
@@ -675,15 +675,15 @@ object Printer extends cuvee.pipe.Printer:
         Error.raise("unprintable distinct", expr)
 
       // the combinators of trace equation systems
-      case Trace(init, deps, acc, bound, update) =>
+      case Trace(init, deps, acc, bound, updates) =>
         val head = text("trace(") ++ doc(init) ++ text(",") +:+ text("for") +:+ dependencies(deps)
-        combinator(head, "do", acc :: bound, update)
+        combinator(head, "do", acc :: bound, updates)
 
-      case Maps(deps, bound, update) =>
-        combinator(text("map(for") +:+ dependencies(deps), "yield", bound, update)
+      case Maps(deps, bound, updates) =>
+        combinator(text("map(for") +:+ dependencies(deps), "yield", bound, updates)
 
       case Invs(deps, bound, body) =>
-        combinator(text("all(for") +:+ dependencies(deps), "check", bound, List((True, body)))
+        combinator(text("all(for") +:+ dependencies(deps), "check", bound, List(Upd(True, body)))
 
       case Old(arg) =>
         call("old", List(doc(arg)))
