@@ -17,6 +17,19 @@ case class Name(name: String, index: Option[Int]):
       case Some(index) =>
         name + index.toString.map(digit => Name.subscripts(digit - '0'))
 
+  // the name with the index after `sep`, e.g. a_3 for C
+  def suffixed(sep: String): String =
+    index match
+      case None =>
+        name
+
+      case Some(index) =>
+        name + sep + index
+
+  // the name with the index after $, e.g. a$3, as in SMT-LIB
+  def indexed: String =
+    suffixed("$")
+
 object Name:
   // subscript digits 0 to 9, indexed by the digit
   val subscripts = "₀₁₂₃₄₅₆₇₈₉"

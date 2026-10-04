@@ -62,7 +62,7 @@ object Grammar:
       case subscripted(base, digits) =>
         // digits.map would convert the string to a scanner, see easyparse
         val index = digits.toSeq.map(Name.subscripts.indexOf(_)).mkString
-        base + "$" + index
+        Name(base, Some(index.toInt)).indexed
 
       case _ =>
         name

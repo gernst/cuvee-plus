@@ -29,10 +29,9 @@ object Printer extends cuvee.pipe.Printer:
     "or" -> "||"
   )
 
+  // C has no $ in names, the index follows an underscore
   def name(name: Name): String =
-    name match
-      case Name(name, None) => name
-      case Name(name, Some(index)) => name + "_" + index
+    name.suffixed("_")
 
   def commas(docs: List[Doc]): Doc =
     join(docs, text(",") ++ line)

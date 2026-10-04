@@ -14,12 +14,7 @@ object Printer extends cuvee.pipe.Printer:
   import cuvee.sexpr.Printer.{lines => sexpr}
 
   def mangle(name: Name) =
-    name match
-      case Name(name, None) =>
-        atom(escape(name))
-
-      case Name(name, Some(index)) =>
-        atom(escape(name + "$" + index))
+    atom(escape(name.indexed))
 
   def app(args: String*): List[String] =
     list(args.toList)

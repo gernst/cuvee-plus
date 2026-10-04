@@ -29,16 +29,11 @@ object Monomorph extends Transform:
   def name(fun: Fun, types: List[Type]): Name =
     Name(fun.name.name + "<" + types.map(show).mkString(",") + ">", fun.name.index)
 
-  def show(name: Name): String =
-    name match
-      case Name(name, None)        => name
-      case Name(name, Some(index)) => name + "$" + index
-
   def show(typ: Type): String =
     typ match
-      case Param(name)     => show(name)
-      case Sort(con, Nil)  => show(con.name)
-      case Sort(con, args) => show(con.name) + "<" + args.map(show).mkString(",") + ">"
+      case Param(name)     => name.indexed
+      case Sort(con, Nil)  => con.name.indexed
+      case Sort(con, args) => con.name.indexed + "<" + args.map(show).mkString(",") + ">"
 
 class Monomorph(cmds: List[Cmd]):
   // the polymorphic functions of the input with their declaration or definition

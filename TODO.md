@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- there are many occurrences, where a name is unpacked and formatted (e.g., in the printers, and in monomorph), add methods to class `Name` that format a name into a string for the two use-cases: unicode subscripted name and name using `$`, and use those. Neither should be the `.toString` of `Name`.
 
 ### Medium
 
