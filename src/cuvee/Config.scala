@@ -102,6 +102,12 @@ object Config:
         val config_ = config.copy(transforms = config.transforms :+ cuvee.transform.Flat)
         (config_, rest)
 
+  val split =
+    flag("-split", "split goals and lemmas into individual obligations, e.g. after -verify"):
+      case (config, rest) =>
+        val config_ = config.copy(transforms = config.transforms :+ cuvee.transform.Split)
+        (config_, rest)
+
   val simplify =
     flag("-simplify", "simplify formulas and function definitions"):
       case (config, rest) =>
@@ -152,6 +158,7 @@ object Config:
     verify,
     chc,
     flat,
+    split,
     simplify,
     z3,
     cvc5,
@@ -196,7 +203,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.4.1")
+    println("Cuvée 0.4.2")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
