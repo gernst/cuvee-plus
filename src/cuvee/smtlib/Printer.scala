@@ -381,3 +381,7 @@ object Printer extends cuvee.pipe.Printer:
 
       case Ode(xs, rhs, dom, attrs) =>
         apps(atom("ode"), eqs(xs, rhs), lines(dom), lines(attrs))
+
+      // not part of SMT-LIB, the calls to processes, (par (call ...) ...)
+      case Par(calls) =>
+        apps(atom("par"), lines(calls))

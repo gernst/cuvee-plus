@@ -52,3 +52,21 @@ extension [A1, A2, A3, A4, A5, A6, A7, A8, A9, B](f: (A1, A2, A3, A4, A5, A6, A7
     p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 ~ a6 ~ a7 ~ a8 ~ a9 =>
       f(a1, a2, a3, a4, a5, a6, a7, a8, a9)
     }
+
+extension [A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, B](f: (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10) => B)
+  def apply(p: Parser[A1 ~ A2 ~ A3 ~ A4 ~ A5 ~ A6 ~ A7 ~ A8 ~ A9 ~ A10]): Parser[B] =
+    p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 ~ a6 ~ a7 ~ a8 ~ a9 ~ a10 =>
+      f(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
+    }
+
+extension [A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, B](f: (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11) => B)
+  def apply(p: Parser[A1 ~ A2 ~ A3 ~ A4 ~ A5 ~ A6 ~ A7 ~ A8 ~ A9 ~ A10 ~ A11]): Parser[B] =
+    p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 ~ a6 ~ a7 ~ a8 ~ a9 ~ a10 ~ a11 =>
+      f(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11)
+    }
+
+extension [A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, B](f: (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12) => B)
+  def apply(p: Parser[A1 ~ A2 ~ A3 ~ A4 ~ A5 ~ A6 ~ A7 ~ A8 ~ A9 ~ A10 ~ A11 ~ A12]): Parser[B] =
+    p.map { case a1 ~ a2 ~ a3 ~ a4 ~ a5 ~ a6 ~ a7 ~ a8 ~ a9 ~ a10 ~ a11 ~ a12 =>
+      f(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12)
+    }

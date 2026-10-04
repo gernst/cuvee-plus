@@ -292,6 +292,9 @@ object Horn extends Transform:
       case (prog: Ode) :: rest =>
         Error.raise("differential equations not supported in Horn clauses", proc, prog)
 
+      case (prog: Par) :: rest =>
+        Error.raise("parallel composition not supported in Horn clauses", proc, prog)
+
       // pre(scope) ⇒ inv(scope), where inv is the invariant at the loop head,
       // inv(scope) ∧ test ⇒ body(scope, measure), from which the body leads back to inv,
       // inv(scope) ∧ ¬test ⇒ next(scope), from which the remaining statements continue,

@@ -12,6 +12,12 @@ type set<a>
 type multiset<a>
 type map<a,b>
 
+// the events of parallel components, values sent and received on channels,
+// the global history of events, e.g. var history: seq<event<int>>;
+// and the methods send and receive are declared by the input (see examples/par.dfy)
+type chan
+datatype event<a> = event(chan: chan, value: a)
+
 // SMT-LIB array, not Dafny array
 type array<a,b>
 

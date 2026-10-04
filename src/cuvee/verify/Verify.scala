@@ -30,9 +30,18 @@ object Verify extends Transform:
       // old(e) in the body and in the postcondition refers to the values gs_ of the global variables at the entry,
       // which are never modified and coincide with gs initially
       case DefineProc(Proc(name, params, _, _), body, _) =>
-        val (in, out, pre, post) = contract(state, name)
+        val (in, out, pre_, post) = contract(state, name)
         val gs_ = gs.fresh
-        val body_ = Old.elim(gs, gs_, body)
+
+        // a process may assume its assumption initially, and must keep its commitment
+        val (pre, body__) =
+          if state.procattrs(name).contains(Par.process)
+          then
+            val (assume, commit) = ac(state, name, in)
+            (And(pre_, assume), commitment(body, commit))
+          else (pre_, body)
+
+        val body_ = Old.elim(gs, gs_, body__)
         val post_ = Old.elim(gs, gs_, post)
         val phi = wp(state, gs, name, body_, post_, False, False, post_)
         val phi_ = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(phi)))
@@ -159,6 +168,61 @@ object Verify extends Transform:
 
       case Ode(xs, rhs, dom, attrs) =>
         ode(xs, rhs, dom, attrs.values[Expr]("invariant"), post)
+
+      case Par(calls) =>
+        par(state, gs, proc, calls, post)
+
+  // the history of events, which must be declared as a global variable to use processes
+  def history(state: State): Var =
+    Error.report("processes require a global variable history"):
+      require(state.vars.contains(Par.history))
+
+    state.vars(Par.history)
+
+  // for all values of the history h
+  def havoc(h: Var, phi: Expr): Expr =
+    val h_ = h.fresh
+    All(List(h_), Subst.from(List(h), List(h_))(phi))
+
+  // the assumption and the commitment of process `name` for the arguments `args`
+  def ac(state: State, name: Name, args: List[Expr]): (Expr, Expr) =
+    val Proc(_, _, in, _) = state.procs(name)
+    val attrs = state.procattrs(name)
+    val su = Subst.from(in, args)
+    (su(And(attrs.values[Expr]("assumes"))), su(And(attrs.values[Expr]("commits"))))
+
+  // parallel composition of processes by their assumption-commitment contracts over the history h:
+  // the assumptions and commitments must hold for the history initially,
+  // and the commitments of the other processes must imply the assumption of each process, for all histories;
+  // since the processes do not share modified variables other than h, their calls can be verified in sequence,
+  // where the history is arbitrary before each call, satisfying the assumption of the process,
+  // and the history is arbitrary after the composition, satisfying all commitments
+  def par(state: State, gs: List[Var], proc: Name, calls: List[Call], post: Expr): Expr =
+    val h = history(state)
+    val (assumes, commits) = calls.map(call => ac(state, call.proc, call.args)).unzip
+
+    val init = And(assumes ++ commits)
+
+    val side =
+      for (assume, i) <- assumes.zipWithIndex
+      yield havoc(h, Imp(And(commits.patch(i, Nil, 1)), assume))
+
+    val last = havoc(h, Imp(And(commits), post))
+
+    val seq = (calls zip assumes).foldRight(last):
+      case ((call, assume), phi) =>
+        havoc(h, Imp(assume, wp(state, gs, proc, call, phi, False, False, False)))
+
+    And((init :: side) :+ seq)
+
+  // in the body of a process, calls to send and receive are followed by the assertion and the assumption of its commitment
+  def commitment(prog: Prog, commit: Expr): Prog =
+    Prog.rewrite(
+      prog,
+      { case call @ Call(name, _, _) if name == Par.send || name == Par.receive =>
+          Block(Nil, List(call, Spec.assert(commit), Spec.assume(commit)))
+      }
+    )
 
   // differential cuts for the invariants in sequence, followed by differential weakening:
   // each invariant must hold initially, and its derivative must hold whenever the domain and the equations x' = e hold,

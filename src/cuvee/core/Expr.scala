@@ -124,6 +124,7 @@ object Old:
       case While(test, body, attrs)   => While(e(test), p(body), a(attrs))
       case Iter(body, attrs)          => Iter(p(body), a(attrs))
       case Ode(xs, rhs, dom, attrs)   => Ode(xs, rhs.map(e), e(dom), a(attrs))
+      case Par(calls)                 => Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(e), res))
 
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params

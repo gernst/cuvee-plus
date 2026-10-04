@@ -352,6 +352,21 @@ object Type:
         val dom_ = formula(state, scope, dom)
         Ode(xs, rhs_, dom_, attrs)
 
+      case Par(calls) =>
+        val nonprocess = calls.map(_.proc).filterNot(state.procattrs(_).contains(Par.process))
+        Error.report("parallel composition of procedures that are not processes", nonprocess):
+          require(nonprocess.isEmpty)
+
+        val shared = Par.shared(state, calls)
+        Error.report("parallel processes share modified variables", shared):
+          require(shared.isEmpty)
+
+        val calls_ =
+          for call <- calls
+          yield (check(state, scope, fixed, call, loop): @unchecked) match
+            case call_ : Call => call_
+        Par(calls_)
+
   def formula(state: State, scope: Scope, phi: Expr) =
     check(state, scope, phi, Sort.bool)
 

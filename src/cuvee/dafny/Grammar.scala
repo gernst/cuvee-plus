@@ -156,11 +156,15 @@ object Grammar:
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ else_expr_or_true))
 
+  // the bound variables of quantifiers, with or without parentheses
+  val bound =
+    P(formals | (formal ~+ ","))
+
   val forall =
-    All(P("forall" ~ formals ~ "::" ~ expr))
+    All(P("forall" ~ bound ~ "::" ~ expr))
 
   val exists =
-    Ex(P("exists" ~ formals ~ "::" ~ expr))
+    Ex(P("exists" ~ bound ~ "::" ~ expr))
 
   val bind =
     P(forall | exists)
@@ -269,8 +273,11 @@ object Grammar:
   val ode =
     Ode(P(((id ?~ prime) ~+ ",") ~ eq ~ (term ~+ ",") ~ (and ~ expr).? ~ invariant.* ~ ";"))
 
+  val par =
+    Par(P("parallel" ~ braces((assign | call).*)))
+
   val prog: Parser[Prog] =
-    P(ctrl | spec | if_ | while_ | block | ode | assign | call)
+    P(ctrl | spec | if_ | while_ | par | block | ode | assign | call)
 
   val sel =
     Sel(P((id | num) ~ ":" ~ typ))
@@ -317,8 +324,18 @@ object Grammar:
   val returns =
     P("returns" ~ formals)
 
+  val assumes =
+    P("assumes" ~ expr)
+
+  val commits =
+    P("commits" ~ expr)
+
+  val kind =
+    P(("method" ~ R(false)) | ("process" ~ R(true)))
+
+  // methods have no assumptions and commitments, which the parser checks
   val procdef =
-    MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ decreases.* ~ block.?))
+    MethodDef(P(kind ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ assumes.* ~ commits.* ~ decreases.* ~ block.?))
 
   val cmd: Parser[Cmd] =
     P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | vardef)

@@ -102,12 +102,31 @@ object Solver:
   def cvc5(timeout: Int = 1000) =
     new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
 
+  // the sorts and datatypes of the prelude of a frontend that SMT-LIB does not know, e.g. the tuples of Dafny,
+  // which are declared to the solver at the start, the sorts first since datatypes may refer to them
+  def prelude(init: State): List[Decl] =
+    val (smtlib, _) = Source.newParser()
+    val names = (init.sorts.keySet -- smtlib.sorts.keySet).toList.sortBy(_.toString)
+
+    val sorts =
+      for name <- names if !init.datatypes.contains(name) && !init.sortdefs.contains(name)
+      yield init.cmds.declareSort(name)
+
+    val datatypes =
+      for name <- names if init.datatypes.contains(name)
+      yield init.cmds.declareDatatype(name)
+
+    sorts ++ datatypes
+
   // a sink that passes commands to the solver,
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
   // and interprets the answers to queries in that state
   class sink(solver: Solver, init: State) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
+
+    for decl <- prelude(init)
+    do solver.ack(noAttrs(decl))
 
     def query(cmd: Cmd) =
       cmd match

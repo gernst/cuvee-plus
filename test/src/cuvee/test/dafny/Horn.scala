@@ -67,6 +67,12 @@ object HornCmds extends TestSuite:
       val errors = Examples.errors("-chc", "-print", "null", hybrid.toString)
       assert(errors.contains("differential equations not supported in Horn clauses"))
 
+    // parallel composition is not supported in Horn clauses
+    test("parallel composition"):
+      val par = Examples.root / "par.dfy"
+      val errors = Examples.errors("-chc", "-print", "null", par.toString)
+      assert(errors.contains("parallel composition not supported in Horn clauses"))
+
     // every procedure has predicates for its pre- and postcondition
     test("contract predicates"):
       val cmds = output(os.sub / "vcgen" / "max.dfy")

@@ -55,3 +55,19 @@ object VerifySeq extends TestSuite:
     test("seq.dfy"):
       val seq = Examples.root / "seq.dfy"
       Examples.errors("-verify", "-cvc5", seq.toString) ==> Nil
+
+// processes with assumption-commitment contracts composed in parallel
+object VerifyPar extends TestSuite:
+  val tests = Tests:
+    test("par.dfy"):
+      val par = Examples.root / "par.dfy"
+      Examples.errors("-verify", "-z3", par.toString) ==> Nil
+
+    // the commitment of the other process does not imply the assumption
+    test("assumption"):
+      val par = os.read(Examples.root / "par.dfy").replace(
+        "  requires c != d\n  assumes positive(history, c)\n  commits positive(history, c)",
+        "  requires c != d\n  assumes positive(history, c)"
+      )
+      val file = os.temp(par, suffix = ".dfy")
+      Examples.errors("-verify", "-z3", file.toString) ==> List("goal does not hold")
