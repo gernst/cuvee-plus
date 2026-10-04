@@ -98,6 +98,25 @@ object Rewrite extends TestSuite:
       R(rules, app(f, Plus.int(a, UMinus.int(b)))) ==> app(g, b)
       R(rules, app(f, Minus.int(Minus.int(a, b), Zero.int))) ==> app(g, b)
 
+    // comparisons modulo moving summands between the sides, where < on Int is <= with 1 added on the left
+    test("comparisons"):
+      val p = Fun("p", Nil, Fun.formals(Sort.int, Sort.int), Sort.bool)
+      R(List(Rule(Le.int(Plus.int(x, One.int), y), app(p, x, y))), Lt.int(a, b)) ==> app(p, a, b)
+      R(List(Rule(Lt.int(x, y), app(p, x, y))), Le.int(Plus.int(a, One.int), b)) ==> app(p, a, b)
+      R(List(Rule(Le.int(x, y), app(p, x, y))), Le.int(Minus.int(a, b), Zero.int)) ==> app(p, a, b)
+      R(List(Rule(Lt.int(x, y), app(p, x, y))), Gt.int(b, a)) ==> app(p, a, b)
+
+    // on Real, the strictness must agree
+    test("real comparisons"):
+      val r = Var("r", Sort.real)
+      val s = Var("s", Sort.real)
+      val c = Var("c", Sort.real)
+      val d = Var("d", Sort.real)
+      val q = Fun("q", Nil, Fun.formals(Sort.real, Sort.real), Sort.bool)
+      val rule = Rule(Lt.real(r, s), App(q, List(r, s)))
+      R(List(rule), Lt.real(c, d)) ==> App(q, List(c, d))
+      R(List(rule), Le.real(c, d)) ==> Le.real(c, d)
+
     // a variable of the pattern may take the neutral element if the expression is a sum, where 0 is dropped
     test("neutral"):
       val rules = List(Rule(app(f, Plus.int(x, y)), app(g, y)))

@@ -268,7 +268,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 - **`Rule(lhs, rhs, cond)`** is a conditional rewrite rule, whose variables
   are the free variables of `lhs`. `Rewrite` rewrites innermost first; a
   match is a `Subst` of the type parameters and variables of the rule,
-  modulo type instantiation, A/C and 0 of `+` and `-`, and the binding
+  modulo type instantiation, A/C and 0 of `+` and `-`, comparisons modulo
+  moving summands between the sides (as normalized polynomials of the
+  difference, where `<` on `Int` is `<=` with 1 added), and the binding
   structure of `Trace`, `Maps`, and `Invs`: dependencies of the pattern are
   selected among those of the expression (`Binding` relates the bound
   variables), and dependencies that are variables of the rule are

@@ -89,35 +89,44 @@ object Rewrite:
             LazyList()
 
           case None =>
-            for m_ <- Rewrite.types(x.typ, expr.typ, m)
+            for m_ <- Rewrite.matches(x.typ, expr.typ, m)
             yield m_ + (x -> expr)
+
+      // comparisons modulo moving summands between the sides, and < and <= on Int
+      case _ if Rewrite.comparison(pat).nonEmpty =>
+        for
+          (ring, strict, poly) <- Rewrite.comparison(pat)
+          (ring_, strict_, poly_) <- Rewrite.comparison(expr)
+          if ring == ring_ && strict == strict_
+          m_ <- matches(config, state, ctx, b, ring, Rewrite.signed(ring, poly), Rewrite.signed(ring, poly_), true, m)
+        yield m_
 
       case _ if Rewrite.arithmetic(pat) =>
         val Some(ring) = Ring(pat.typ): @unchecked
         if expr.typ == ring.typ
-        then sums(config, state, ctx, b, ring, Rewrite.summands(ring, pat), Rewrite.summands(ring, expr), Rewrite.arithmetic(expr), m)
+        then matches(config, state, ctx, b, ring, Rewrite.summands(ring, pat), Rewrite.summands(ring, expr), Rewrite.arithmetic(expr), m)
         else LazyList()
 
       case (App(fun, inst, typ, args), App(fun_, inst_, typ_, args_)) if fun == fun_ && args.length == args_.length =>
         for
-          m1 <- Rewrite.types(inst, inst_, m)
-          m2 <- Rewrite.types(typ, typ_, m1)
+          m1 <- Rewrite.matches(inst, inst_, m)
+          m2 <- Rewrite.matches(typ, typ_, m1)
           m3 <- matches(config, state, ctx, b, args, args_, m2)
         yield m3
 
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
-        Rewrite.types(typ, typ_, m)
+        Rewrite.matches(typ, typ_, m)
 
       case (Trace(init, deps, acc, bound, update), Trace(init_, deps_, acc_, bound_, update_)) =>
         for
           m1 <- matches(config, state, ctx, b, init, init_, m)
           m2 <- combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(acc -> acc_), m1): (b_, m) =>
-            cover(config, state, ctx, b_, update, update_, m)
+            matches(config, state, ctx, b_, update, update_, m)
         yield m2
 
       case (Maps(deps, bound, update), Maps(deps_, bound_, update_)) =>
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
-          cover(config, state, ctx, b_, update, update_, m)
+          matches(config, state, ctx, b_, update, update_, m)
 
       case (Invs(deps, bound, body), Invs(deps_, bound_, body_)) =>
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
@@ -143,7 +152,8 @@ object Rewrite:
   // where all but the last variable take a single summand or none, and the last one takes the rest;
   // variables take the empty sum 0 only if the expression is a sum itself,
   // otherwise e.g. x + 1 would match 1 with x = 0, which rewrites literals inside of sums first
-  def sums(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, ring: Ring, pats: List[(Boolean, Expr)], exprs: List[(Boolean, Expr)], sum: Boolean, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  @scala.annotation.targetName("matchesSums")
+  def matches(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, ring: Ring, pats: List[(Boolean, Expr)], exprs: List[(Boolean, Expr)], sum: Boolean, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     def flexible(summand: (Boolean, Expr)) =
       summand match
         case (_, x: Var) => b.isPattern(x) && !m.vars.contains(x)
@@ -271,7 +281,8 @@ object Rewrite:
         LazyList()
 
   // each case of the update of the expression is covered by some case of the pattern, whose guard follows from its own
-  def cover(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, update: List[(Expr, Expr)], update_ : List[(Expr, Expr)], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  @scala.annotation.targetName("matchesUpdates")
+  def matches(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, update: List[(Expr, Expr)], update_ : List[(Expr, Expr)], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     update_ match
       case Nil =>
         LazyList(m)
@@ -281,7 +292,7 @@ object Rewrite:
           (guard, result) <- update.to(LazyList)
           m1 <- matches(config, state, ctx, b, result, result_, m)
           if implies(config, state, ctx, b, guard_, guard, m1)
-          m2 <- cover(config, state, ctx, b, update, rest, m1)
+          m2 <- matches(config, state, ctx, b, update, rest, m1)
         yield m2
 
   def implies(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): Boolean =
@@ -304,6 +315,40 @@ object Rewrite:
 
       case None =>
         false
+
+  // comparisons on Int and Real as the difference right - left as a normalized polynomial,
+  // which is nonnegative, or positive if strict; on Int, left < right is left + 1 <= right, hence never strict,
+  // and > and >= are < and <= with the sides swapped
+  def comparison(expr: Expr): LazyList[(Ring, Boolean, Poly)] =
+    def difference(ring: Ring, left: Expr, right: Expr, offset: Int) =
+      (Arith.toPoly(ring, right) - Arith.toPoly(ring, left) - Poly.const(util.Rational(offset))).normalize
+
+    expr match
+      case Lt.int(left, right)  => LazyList((Ring.int, false, difference(Ring.int, left, right, 1)))
+      case Le.int(left, right)  => LazyList((Ring.int, false, difference(Ring.int, left, right, 0)))
+      case Gt.int(left, right)  => LazyList((Ring.int, false, difference(Ring.int, right, left, 1)))
+      case Ge.int(left, right)  => LazyList((Ring.int, false, difference(Ring.int, right, left, 0)))
+      case Lt.real(left, right) => LazyList((Ring.real, true, difference(Ring.real, left, right, 0)))
+      case Le.real(left, right) => LazyList((Ring.real, false, difference(Ring.real, left, right, 0)))
+      case Gt.real(left, right) => LazyList((Ring.real, true, difference(Ring.real, right, left, 0)))
+      case Ge.real(left, right) => LazyList((Ring.real, false, difference(Ring.real, right, left, 0)))
+      case _                    => LazyList()
+
+  // the summands of a polynomial with their signs, whose factors and constant are positive
+  def signed(ring: Ring, poly: Poly): List[(Boolean, Expr)] =
+    val monos =
+      for mono <- poly.monos
+      yield
+        if mono.factor.isNegative
+        then (false, (-mono).toExpr(ring))
+        else (true, mono.toExpr(ring))
+
+    val const =
+      if poly.const.isZero then Nil
+      else if poly.const.isNegative then List((false, ring.lit(-poly.const)))
+      else List((true, ring.lit(poly.const)))
+
+    monos ++ const
 
   // the summands of a sum with their signs, where 0 is dropped
   def summands(ring: Ring, expr: Expr): List[(Boolean, Expr)] =
@@ -329,7 +374,7 @@ object Rewrite:
       case (_, _)            => neg.foldLeft(ring.plus(pos))(ring.minus(_, _))
 
   // the type parameters of the pattern are instantiated consistently, a single match or none
-  def types(pat: Type, typ: Type, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  def matches(pat: Type, typ: Type, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     (pat, typ) match
       case (p: Param, _) =>
         m.params.get(p) match
@@ -337,18 +382,18 @@ object Rewrite:
           case None    => LazyList(m + (p -> typ))
 
       case (Sort(con, args), Sort(con_, args_)) if con == con_ =>
-        types(args, args_, m)
+        matches(args, args_, m)
 
       case _ =>
         LazyList()
 
-  @scala.annotation.targetName("typesOfLists")
-  def types(pats: List[Type], types_ : List[Type], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  @scala.annotation.targetName("matchesTypes")
+  def matches(pats: List[Type], types_ : List[Type], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     if pats.length != types_.length
     then LazyList()
     else
       (pats zip types_).foldLeft(LazyList(m)):
-        case (ms, (pat, typ)) => ms.flatMap(types(pat, typ, _))
+        case (ms, (pat, typ)) => ms.flatMap(matches(pat, typ, _))
 
   // apply `f` to the immediate subexpressions
   def map(expr: Expr, f: Expr => Expr): Expr =
