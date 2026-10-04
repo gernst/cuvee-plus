@@ -7,13 +7,16 @@ import cuvee.core._
 import cuvee.sexpr.Attrs
 
 object Verify extends Transform:
+  // the global variables gs are computed once and passed to the generation of the verification conditions
   def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
+    val gs = globals(state)
+
     for
       cmd <- cmds;
-      cmd_ <- verify(state, cmd)
+      cmd_ <- verify(state, gs, cmd)
     yield cmd_
 
-  def verify(state: State, cmd: Cmd): List[Cmd] =
+  def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
     cmd match
       // procedures without body have nothing to verify,
       // their contract is looked up from the state at call sites
@@ -26,7 +29,7 @@ object Verify extends Transform:
 
       case DefineProc(Proc(name, params, _, _), body, _) =>
         val (in, out, pre, post) = contract(state, name)
-        val phi_ = All(in ++ out ++ globals(state), Imp(pre, wp(state, name, body, post, False, False, post)))
+        val phi_ = All(in ++ out ++ gs, Imp(pre, wp(state, gs, name, body, post, False, False, post)))
         List(Assert(Goal, params, phi_, Attrs.empty))
 
       case _ =>
@@ -81,12 +84,12 @@ object Verify extends Transform:
   // weakest preconditions need a separate postcondition for each way a program can terminate:
   // normally, by break, by continue, and by return;
   // `proc` is the procedure that contains the program, whose recursive calls must decrease its measure
-  def wp(state: State, proc: Name, progs: List[Prog], post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
+  def wp(state: State, gs: List[Var], proc: Name, progs: List[Prog], post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
     progs.foldRight(post):
       case (prog, phi) =>
-        wp(state, proc, prog, phi, break, continue, return_)
+        wp(state, gs, proc, prog, phi, break, continue, return_)
 
-  def wp(state: State, proc: Name, prog: Prog, post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
+  def wp(state: State, gs: List[Var], proc: Name, prog: Prog, post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
     prog match
       case Break =>
         break
@@ -133,14 +136,14 @@ object Verify extends Transform:
         // locals may shadow variables in the postcondition, therefore they are renamed apart
         val locals_ = locals.fresh
         val su = Subst.from(locals, locals_)
-        All(locals_, wp(state, proc, su(progs), post, break, continue, return_))
+        All(locals_, wp(state, gs, proc, su(progs), post, break, continue, return_))
 
       case Choice(progs) =>
-        And(progs.map(wp(state, proc, _, post, break, continue, return_)))
+        And(progs.map(wp(state, gs, proc, _, post, break, continue, return_)))
 
       case If(test, left, right) =>
-        val left_ = Imp(test, wp(state, proc, left, post, break, continue, return_))
-        val right_ = Imp(Not(test), wp(state, proc, right, post, break, continue, return_))
+        val left_ = Imp(test, wp(state, gs, proc, left, post, break, continue, return_))
+        val right_ = Imp(Not(test), wp(state, gs, proc, right, post, break, continue, return_))
         And(left_, right_)
 
       case While(test, body, attrs) =>
@@ -155,7 +158,7 @@ object Verify extends Transform:
         val su = Subst.from(ms, dec)
         val iter = And(inv, decreases(dec, ms))
 
-        val step = Imp(test, su(wp(state, proc, body, iter, post, iter, return_)))
+        val step = Imp(test, su(wp(state, gs, proc, body, iter, post, iter, return_)))
         val exit = Imp(Not(test), post)
 
         And(inv, All(xs, Imp(inv, And(step, exit))))
