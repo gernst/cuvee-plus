@@ -5,10 +5,16 @@ import cuvee.pipe.Transform
 import cuvee.core._
 
 // splitting of goals and lemmas into individual proof obligations of the form
-// forall xs. antecedents ==> conclusion, e.g. those from Verify, which are reported separately by the solvers:
-// conjunctions in the conclusion are split, the premises of implications and the bound variables of
-// universal quantifiers are moved into the context, as well as negated existential quantifiers and disjunctions;
-// obligations that are true are dropped
+// forall xs. antecedents ==> succedents, e.g. those from Verify, which are reported separately by the solvers,
+// as a sequent calculus (after the splitter of the earlier Cuvée, cuvee.pure.Horn):
+// conclusions are decomposed into conjunctions, which are split, and disjunctions, whose disjuncts are succedents,
+// negated conclusions and the premises of implications are antecedents, if-then-else is split by its test,
+// the bound variables of universal quantifiers are moved into the context;
+// antecedents are decomposed as well: conjunctions are flattened, negations are pushed inwards,
+// existential quantifiers bind their variables in the context,
+// and disjunctions and if-then-else are split into cases;
+// obligations that are true, e.g. those with false among the antecedents
+// or with a succedent that is also an antecedent, are dropped, as are duplicates
 object Split extends Transform:
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     for
@@ -25,37 +31,97 @@ object Split extends Transform:
       case _ =>
         List(cmd)
 
-  // the obligations of `phi` under the bound variables and the antecedents (both in reverse) of the context,
-  // the bound variables of quantifiers are renamed if they clash with those of the context
-  def split(bound: List[Var], antecedents: List[Expr], phi: Expr): List[Expr] =
-    phi match
-      case True =>
+  // the obligations of `phi` under the bound variables and the antecedents of the context
+  def split(bound: List[Var], ant: List[Expr], phi: Expr): List[Expr] =
+    assert(List(phi), bound, ant, Nil).distinct
+
+  // the obligations for the conclusions `todo` and the succedents `suc` so far,
+  // under the bound variables and antecedents of the context, all in order
+  def assert(todo: List[Expr], bound: List[Var], ant: List[Expr], suc: List[Expr]): List[Expr] =
+    todo match
+      case Nil =>
+        obligation(bound, ant, suc)
+
+      case True :: rest =>
         Nil
 
-      case And(phis) =>
-        phis.flatMap(split(bound, antecedents, _))
+      case False :: rest =>
+        assert(rest, bound, ant, suc)
 
-      // the conjuncts of the premise are antecedents of their own, trivial ones are dropped
-      case Imp(premise, conclusion) =>
-        split(bound, And.flattenStrong(premise).reverse ++ antecedents, conclusion)
+      case Not(phi) :: rest =>
+        assume(List(phi), rest, bound, ant, suc)
 
-      case All(xs, body) =>
+      case Imp(phi, psi) :: rest =>
+        assume(List(phi), psi :: rest, bound, ant, suc)
+
+      case Or(phis) :: rest =>
+        assert(phis ++ rest, bound, ant, suc)
+
+      case And(phis) :: rest =>
+        phis.flatMap(phi => assert(phi :: rest, bound, ant, suc))
+
+      case Ite(test, left, right) :: rest if left.typ == Sort.bool =>
+        assume(List(test), left :: rest, bound, ant, suc) ++ assume(List(Not(test)), right :: rest, bound, ant, suc)
+
+      case All(xs, body) :: rest =>
         val (xs_, body_) = avoid(bound, xs, body)
-        split(xs_.reverse ++ bound, antecedents, body_)
+        assert(body_ :: rest, bound ++ xs_, ant, suc)
 
-      case Not(Ex(xs, body)) =>
+      case phi :: rest =>
+        assert(rest, bound, ant, suc :+ phi)
+
+  // the obligations with the additional antecedents `that`, which are decomposed first
+  def assume(that: List[Expr], todo: List[Expr], bound: List[Var], ant: List[Expr], suc: List[Expr]): List[Expr] =
+    that match
+      case Nil =>
+        assert(todo, bound, ant, suc)
+
+      case True :: rest =>
+        assume(rest, todo, bound, ant, suc)
+
+      case False :: rest =>
+        Nil
+
+      case And(phis) :: rest =>
+        assume(phis ++ rest, todo, bound, ant, suc)
+
+      case Not(Not(phi)) :: rest =>
+        assume(phi :: rest, todo, bound, ant, suc)
+
+      case Not(Imp(phi, psi)) :: rest =>
+        assume(phi :: Not(psi) :: rest, todo, bound, ant, suc)
+
+      case Not(Or(phis)) :: rest =>
+        assume(phis.map(Not(_)) ++ rest, todo, bound, ant, suc)
+
+      case Not(Ex(xs, body)) :: rest =>
+        assume(All(xs, Not(body)) :: rest, todo, bound, ant, suc)
+
+      case Or(phis) :: rest =>
+        phis.flatMap(phi => assume(phi :: rest, todo, bound, ant, suc))
+
+      case Ite(test, left, right) :: rest if left.typ == Sort.bool =>
+        assume(test :: left :: rest, todo, bound, ant, suc) ++ assume(Not(test) :: right :: rest, todo, bound, ant, suc)
+
+      case Ex(xs, body) :: rest =>
         val (xs_, body_) = avoid(bound, xs, body)
-        split(xs_.reverse ++ bound, antecedents, Not(body_))
+        assume(body_ :: rest, todo, bound ++ xs_, ant, suc)
 
-      case Not(Or(phis)) =>
-        phis.flatMap(phi => split(bound, antecedents, Not(phi)))
+      case phi :: rest =>
+        assume(rest, todo, bound, ant :+ phi, suc)
 
-      case _ =>
-        val antecedents_ = antecedents.reverse
-        val used = (phi.free ++ antecedents_.free)
-        val bound_ = bound.reverse.filter(used.contains)
-        List(All(bound_, if antecedents_.isEmpty then phi else Imp(And(antecedents_), phi)))
+  // forall bound. ant ==> suc, where only the bound variables that occur are quantified,
+  // true if a succedent is an antecedent
+  def obligation(bound: List[Var], ant: List[Expr], suc: List[Expr]): List[Expr] =
+    if suc.exists(ant.contains)
+    then Nil
+    else
+      val ant_ = ant.distinct
+      val suc_ = Or(suc.distinct)
+      val phi = if ant_.isEmpty then suc_ else Imp(And(ant_), suc_)
+      List(All(bound.filter(phi.free.contains), phi))
 
+  // the bound variables `xs` renamed apart from those of the context
   def avoid(bound: List[Var], xs: List[Var], body: Expr): (List[Var], Expr) =
     val names = bound.map(_.name).toSet
     val clash = xs.filter(x => names.contains(x.name))
