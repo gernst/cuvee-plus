@@ -12,7 +12,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
   integer programs in C (`.c`), with arrays as values and the verification
   conventions of SV-COMP. All are parsed into the same core, are type
   checked with polymorphism, and resolve overloaded arithmetic on `Int` and
-  `Real`, and indexing of arrays and sequences.
+  `Real`, and indexing of arrays and sequences. In Dafny, axioms, lemmas,
+  and goals may be written `if φ then ψ` for `φ ==> ψ`, also below the
+  quantifiers at the top, where `else` is optional.
 - **Printers:** any input can be printed as SMT-LIB, Boogie, Dafny, or C
   (`-print smt2|bpl|dfy|c`), within the limits of each language.
 - **Verification conditions** (`-verify`): weakest preconditions for

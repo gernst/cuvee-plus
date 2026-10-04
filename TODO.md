@@ -13,7 +13,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- implement `if <phi> then <psi>` syntax in Dafny top-level `Assert(...)` commands to stand for `<phi> ==> <psi>` but with lowest precedence, i.e., the `else` should be optional there and implicitly `True`. please make sure that the grammar remains unambiguous, otherwise ask before making changes
 - `TEQ.scala`: support break and continue in symex
 - in the generated constraints for `TEQs` make sure that the trace equations don't occur twice, by re-arranging the formula correctly
 - hook up trace terms to the simplifier

@@ -160,3 +160,34 @@ object Goals extends TestSuite:
       val cuvee.core.Assert(justify, _, _, attrs) = cmds.last: @unchecked
       justify ==> cuvee.core.Goal
       assert(attrs.contains("rw"))
+
+// in axioms, lemmas, and goals, if φ then ψ without else is φ ==> ψ with the lowest precedence,
+// also below the quantifiers at the top, inside of expressions, if-then-else must have an else branch
+object Conditionals extends TestSuite:
+  import cuvee.core.{Imp, Ite, All}
+
+  def formula(text: String) =
+    val (_, cmds) = Source(new java.io.StringReader("predicate p(x: int)\npredicate q(x: int)\n" + text))
+    val cuvee.core.Assert(_, _, phi, _) = cmds.last: @unchecked
+    phi
+
+  def errors(text: String) =
+    val file = os.temp(text, suffix = ".dfy")
+    Examples.errors("-print", "null", file.toString)
+
+  val tests = Tests:
+    test("implication"):
+      val Imp(_, cuvee.core.And(_)) = formula("axiom if p(0) then q(0) && q(1)"): @unchecked
+
+    test("below quantifiers"):
+      val All(_, Imp(_, _)) = formula("lemma forall x: int :: if p(x) then q(x)"): @unchecked
+
+    // the else belongs to the inner if, which must have one
+    test("nested"):
+      val Imp(_, Ite(_, _, _)) = formula("goal if p(0) then if q(0) then p(1) else q(1)"): @unchecked
+
+    test("else"):
+      val Ite(_, _, _) = formula("axiom if p(0) then q(0) else q(1)"): @unchecked
+
+    test("expressions need else"):
+      errors("axiom (if 1 < 2 then true) == true") ==> List("parse error")

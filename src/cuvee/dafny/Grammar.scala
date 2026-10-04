@@ -150,17 +150,12 @@ object Grammar:
   val app =
     App(P(id ~ args ~ access.*))
 
-  val true_ =
-    R(True)
-
   val bool =
     R(Sort("Bool", Nil))
 
-  val else_expr_or_true =
-    P(("else" ~ expr) | true_)
-
+  // inside of expressions, if-then-else must have an else branch, otherwise else would be ambiguous in nested ones
   val ite =
-    Ite(P("if" ~ expr ~ "then" ~ expr ~ else_expr_or_true))
+    Ite(P("if" ~ expr ~ "then" ~ expr ~ "else" ~ expr))
 
   // the bound variables of quantifiers, with or without parentheses
   val bound =
@@ -371,14 +366,28 @@ object Grammar:
   val annotation =
     P(braces(":" ~ id))
 
+  // the formulas of axioms, lemmas, and goals, where if φ then ψ without else is φ ==> ψ with the lowest precedence,
+  // also below the quantifiers at the top; the branch after then is an expression, whose if-then-else has an else,
+  // such that else belongs to the innermost if that admits it, e.g. if a then if b then c else d
+  val formula: Parser[Expr] =
+    P(conditional | quantified | expr)
+
+  val conditional =
+    P("if" ~ expr ~ "then" ~ expr ~ ("else" ~ formula).?).map:
+      case ((test, left), None)        => App(Sym("==>"), List(test, left), Nil)
+      case ((test, left), Some(right)) => Ite(test, left, right)
+
+  val quantified =
+    P(All(P("forall" ~ bound ~ "::" ~ formula)) | Ex(P("exists" ~ bound ~ "::" ~ formula)))
+
   val axiom =
-    Axiom(P("axiom" ~ annotation.* ~ expr))
+    Axiom(P("axiom" ~ annotation.* ~ formula))
 
   val lemma =
-    Lemma(P("lemma" ~ annotation.* ~ expr))
+    Lemma(P("lemma" ~ annotation.* ~ formula))
 
   val goal =
-    Goal(P("goal" ~ annotation.* ~ expr))
+    Goal(P("goal" ~ annotation.* ~ formula))
 
   val vardef =
     VarDef(P("var" ~ (formal ~+ ",") ~ ";"))
