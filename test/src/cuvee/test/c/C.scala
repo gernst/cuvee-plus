@@ -76,8 +76,11 @@ object Translation extends TestSuite:
       errors("int f(int x); int g(int x) { return x && f(x); }") ==>
         List("calls in the right operand of && and || are not supported")
 
+    // the initial values are the precondition of main, they must not call functions
     test("initialized globals"):
-      errors("int g = 1;") ==> List("initialized global variables are not supported")
+      errors("int g = 1; int main(void) { return g; }") ==> Nil
+      errors("int f(void); int g = f();") ==> List("initial value of global variable must not call functions")
+      errors("int a[2] = 1;") ==> List("initialized global array")
 
     test("unknown variable"):
       errors("int f(void) { return y; }") ==> List("unknown variable")

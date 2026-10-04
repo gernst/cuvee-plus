@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- in the C frontend, initialized variables should give the initialization constraint for predicate `main_pre`
 - wrap the combinators in the Dafny printer so that if a line break is necessary, the `check` is below `for` etc... and the subsequent line after `=>` is indented at least some spaces from the surrounding parentheses
 - in Horn, write clauses with goal in head, not with head False
 - in Horn, omit the separate entry predicate, just come from the precondition
@@ -60,7 +59,10 @@ inferred from the call graph. Open:
 - Calls are evaluated before the statement that contains them, which is not
   supported in loop conditions, in the right operand of `&&` and `||`, and in
   the branches of `?:`.
-- Initialized global variables, `switch`, `goto`, pointers, structs, strings,
+- Global variables without initializer are arbitrary, not zero as in C; the
+  initial values of the others are the precondition of `main`, which the
+  printer writes as an annotation `/*@ requires ...; */` that is not parsed.
+- `switch`, `goto`, pointers, structs, strings,
   and the preprocessor (its lines are skipped).
 - The temporary variables for the results of calls inside expressions,
   `tmp_1, ...`, may clash with names of the input when printed and parsed

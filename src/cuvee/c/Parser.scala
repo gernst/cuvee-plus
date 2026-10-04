@@ -508,12 +508,25 @@ class Parser(var state: State):
 
     val cmds = mutable.ListBuffer[core.Cmd]()
 
+    // the initial values of the global variables, which may refer to those declared before,
+    // are the precondition of main, the entry point of the program
+    val inits = mutable.ListBuffer[core.Expr]()
+
     for case Global(Decl(t, decls)) <- tops; Declarator(x, size, init) <- decls
     do
-      Error.report("initialized global variables are not supported", x):
-        require(init.isEmpty)
-
       val t_ = if size.isDefined then ArrayType(t) else t
+
+      for e <- init
+      do
+        Error.report("initialized global array", x):
+          require(size.isEmpty)
+
+        val (progs, e_) = value(globals.toMap, Ctx(None, mutable.ListBuffer()), e, t_)
+        Error.report("initial value of global variable must not call functions", x, e):
+          require(progs.isEmpty)
+
+        inits += Eq(core.Var(x, typ(t_)), e_)
+
       state = state.declare(x, typ(t_), Attrs.empty)
       globals(x) = (state.vars(x), t_)
 
@@ -525,7 +538,9 @@ class Parser(var state: State):
       val in = params.map((t, x) => core.Var(x, typ(t)))
       val out = if ret == VoidType then Nil else List(core.Var("result", typ(ret)))
       val mod_ = mod(name).toList.sorted.map(globals(_)._1)
-      val attrs = if mod_.isEmpty then Attrs.empty else Attrs(List("modifies" -> Some(mod_)))
+      val modifies = if mod_.isEmpty then Nil else List("modifies" -> Some(mod_))
+      val requires = if name == "main" && inits.nonEmpty then List("requires" -> Some(And(inits.toList))) else Nil
+      val attrs = Attrs(modifies ++ requires)
 
       Error.report("parameter named result", name):
         require(ret == VoidType || !params.exists(_._2 == "result"))

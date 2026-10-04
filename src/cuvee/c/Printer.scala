@@ -133,8 +133,8 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareVar(x, _) =>
         decl(x) ++ text(";")
 
-      case DeclareProc(Proc(name_, Nil, in, out), _) =>
-        signature(name_, in, out) ++ text(";")
+      case DeclareProc(Proc(name_, Nil, in, out), attrs) =>
+        contract(attrs) ++ signature(name_, in, out) ++ text(";")
 
       // uninterpreted functions, e.g. the predicates of Horn clauses
       case DeclareFun(Fun(name_, Nil, formals, res), _) =>
@@ -149,13 +149,24 @@ object Printer extends cuvee.pipe.Printer:
         val ret = Group(text("return") ++ Nest(2, line ++ doc(body))) ++ text(";")
         doc(res) +:+ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) +:+ braces(List(ret))
 
-      case DefineProc(Proc(name_, Nil, in, out), body, _) =>
+      case DefineProc(Proc(name_, Nil, in, out), body, attrs) =>
         result = out.headOption
-        try signature(name_, in, out) +:+ block(body)
+        try contract(attrs) ++ signature(name_, in, out) +:+ block(body)
         finally result = None
 
       case _ =>
         Error.raise("command not supported in C", cmd)
+
+  // the precondition and postcondition of a function as an annotation before its signature, as in ACSL,
+  // e.g. the initial values of the global variables as the precondition of main
+  def contract(attrs: Attrs): Doc =
+    val clauses =
+      for case (kw @ ("requires" | "ensures"), Some(phi: Expr)) <- attrs.attrs
+      yield Group(text(kw) ++ Nest(2, line ++ doc(phi))) ++ text(";")
+
+    if clauses.isEmpty
+    then empty
+    else text("/*@") +:+ join(clauses, hardline ++ text("    ")) +:+ text("*/") ++ hardline
 
   def braces(docs: List[Doc]): Doc =
     if docs.isEmpty
