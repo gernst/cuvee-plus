@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- switch to return `List(...)` in `Rewrite`, not `LazyList`
 - check that preconditions don't refer to `Old`
 - fix printing of div and mod in C
 - fix the descripion of parallel composition and send/receive: it is crucial that the commitment is made first even after receiving, since the communication is always joint and a commitment must always be made before taking an assumption, please document this and remove the corresponding TODOs
