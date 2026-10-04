@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
 - Implement `n + 1 < m <==> n <= m` as a simplification step, similarly when `<=` becomes `<` by dropping `+ 1`. Use `Succ` for this, and only do that for integers, check if I got this correct first
 - implement `Monomorph` without a separate class that has mutable state, use `Ref` from `util` instead
 - Move method `.map()` that generically traverses an expression into `Expr`. Check all traversals in the code whether they can be written with this new function.
@@ -44,6 +43,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
 
 ### Deferred (questions for the user)
+
+- In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
+  - done: `Rewrite.step` and `Rewrite.apply` return a single expression (`Option`), the first rule and the first match that apply
+  - question: matching modulo A/C of `+` and `-` is ambiguous for almost all rules with two variables in a sum or a comparison, e.g. `f(x - y) = g(y)` matches `f(a - b)` with the results `g(b)`, `g(-a)`, and `g(b - a)`, and `x < y` matches `a < b` with `p(a, b)`, `p(-b, -a)`, `p(0, b - a)`; an error would reject the tests `differences`, `comparisons`, `real comparisons`, and `neutral` of `test/simplify/Rewrite.scala`. Should the error be raised nevertheless (and these rules be rejected), or should the matching of sums be made deterministic first (e.g. variables take whole sides of comparisons, and summands in the order of the polynomial), and only the remaining ambiguities be errors?
 
 ## C frontend
 

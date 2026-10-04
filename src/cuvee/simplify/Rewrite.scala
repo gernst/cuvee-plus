@@ -51,18 +51,19 @@ object Rewrite:
   def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     val expr_ = map(expr, rewrite(config, state, ctx, _))
     step(config, state, ctx, expr_) match
-      case next :: _ => rewrite(config, state, ctx, next)
-      case _          => expr_
+      case Some(next) => rewrite(config, state, ctx, next)
+      case None       => expr_
 
-  // a single application of a rule of the context at the top of `expr`, empty if no rule applies
-  def step(config: Config, state: State, ctx: Ctx, expr: Expr): List[Expr] =
-    ctx.rules
-      
+  // a single application of the first rule of the context that applies at the top of `expr`, if any
+  def step(config: Config, state: State, ctx: Ctx, expr: Expr): Option[Expr] =
+    ctx.rules.iterator
       .flatMap(rule => apply(config, state, ctx, rule, expr))
-      .take(1)
+      .nextOption()
 
-  // the first match whose instantiated condition holds, empty if there is none
-  def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): List[Expr] =
+  // the result of the first match whose instantiated condition holds, if any;
+  // matching modulo associativity and commutativity may find several matches with different results,
+  // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
+  def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): Option[Expr] =
     val results =
       for
         su <- matches(config, state, ctx, Binding(rule.vars, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
@@ -71,7 +72,7 @@ object Rewrite:
         if rhs != expr && holds(config, state, ctx, su(rule.cond))
       yield rhs
 
-    results.take(1).map: rhs =>
+    results.headOption.map: rhs =>
       Error.report("rewriting does not terminate", rule, expr):
         require(ctx.steps.value > 0)
       ctx.steps := ctx.steps.value - 1
