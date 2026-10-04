@@ -152,6 +152,13 @@ inferred from the call graph. Open:
   test of a branch could be used up to the first assignment to their
   variables. It has no rules for sequences.
 
+- The rewrite engine ([simplify/Rewrite.scala](src/cuvee/simplify/Rewrite.scala))
+  is not connected yet; it matches modulo A/C of `+` and `-` only (not `*`),
+  where all but the last variable of a sum take a single summand or none, and
+  it does not instantiate the bound variables of the combinators by
+  conditional expressions or follow equations from the context (rule
+  `Subst` of the paper); rewriting is innermost first, which may rewrite
+  subterms before a rule for the whole term applies.
 - Fourier-Motzkin elimination
   ([simplify/FourierMotzkin.scala](src/cuvee/simplify/FourierMotzkin.scala))
   decides linear constraints over the rationals, but is not used yet, e.g. by

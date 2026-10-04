@@ -102,6 +102,19 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
         val (rename, that) = avoid(bound)
         Bind(quant, rename(bound), that(body))
 
+      // the accumulator and the bound variables of the combinators are renamed like those of binders
+      case Trace(init, deps, acc, bound, update) =>
+        val (rename, that) = avoid(acc :: bound)
+        Trace(this(init), this(deps), rename.lhs(acc), rename.lhs(bound), for (g, e) <- update yield (that(g), that(e)))
+
+      case TraceMap(deps, bound, update) =>
+        val (rename, that) = avoid(bound)
+        TraceMap(this(deps), rename.lhs(bound), for (g, e) <- update yield (that(g), that(e)))
+
+      case TraceAll(deps, bound, body) =>
+        val (rename, that) = avoid(bound)
+        TraceAll(this(deps), rename.lhs(bound), that(body))
+
       case Let(bound, args, body) =>
         val (rename, that) = avoid(bound)
         Let(rename(bound), this(args), that(body))

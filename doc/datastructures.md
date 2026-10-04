@@ -243,3 +243,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 - **`Constraint(poly, strict)`** is a linear constraint `0 <= poly` or
   `0 < poly`. `FourierMotzkin` eliminates atoms from conjunctions of these and
   decides their satisfiability over the rationals.
+- **`Rule(lhs, rhs, cond)`** is a conditional rewrite rule, whose variables
+  are the free variables of `lhs`. `Rewrite` rewrites innermost first,
+  matching modulo type instantiation, A/C and 0 of `+` and `-`, and the
+  binding structure of `Trace`, `TraceMap`, and `TraceAll` (dependencies of
+  the pattern that are variables are instantiated by `map` expressions).
