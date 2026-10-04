@@ -50,8 +50,9 @@ datatype tuple20<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀,a₁�
 function == <a>(x₀: a, x₁: a): bool
 
 function ite<a>(x₀: bool, x₁: a, x₂: a): a
-function select<a,b>(x₀: array<a,b>, x₁: a): b
-function store<a,b>(x₀: array<a,b>, x₁: a, x₂: b): array<a,b>
+// indexing and updates of arrays and sequences, s[i] and s[i := v], resolved like arithmetic
+function select<a,b,c>(x₀: a, x₁: b): c
+function store<a,b,c>(x₀: a, x₁: b, x₂: c): a
 
 function !(x₀: bool): bool
 function &&(x₀: bool, x₁: bool): bool

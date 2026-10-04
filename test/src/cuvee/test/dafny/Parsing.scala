@@ -48,8 +48,17 @@ object Sequences extends TestSuite:
       errors("function f(s: seq<int>): bool { s[1..] + s[..1] == [s[0]] + s[1..|s|] }") ==> Nil
 
     test("slice of array"):
-      errors("function f(a: array<int,int>): bool { a[1..] == a }") ==>
-        List("slice of an expression that is not a sequence")
+      errors("function f(a: array<int,int>): bool { a[1..] == a }") ==> List("type mismatch")
+
+    // indexing is resolved by overloading once the type of the base is known
+    test("indexing"):
+      errors("function id<a>(x: a): a { x } function f(s: seq<int>): bool { id(s)[0] == s[1] }") ==> Nil
+      errors("function f(s: seq<bool>, i: int, j: int): bool { s[i] == s[j] && s[i := s[j]] == s }") ==> Nil
+      errors("function f(a: array<int,bool>, i: int): bool { a[i] && a[i := false] == a }") ==> Nil
+      errors("type S = seq<int> function f(s: S): int { s[0] + |s| }") ==> Nil
+
+    test("indexing of int"):
+      errors("function f(n: int): int { n[0] }") ==> List("operator not defined for type")
 
     test("concatenation of int and seq"):
       errors("function f(s: seq<int>): seq<int> { s + 1 }") ==> List("type mismatch")

@@ -279,19 +279,7 @@ class Parser(var state: State):
       case Nil =>
         base
 
-      // sequences are indexed by integers and updated by a subsequence of length 1
-      case Array(index, None) :: rest if isSeq(base) =>
-        val index_ = resolve(scope, index)
-        val base_ = state.exprs.app(core.Fun.seq.nth, List(base, index_))
-        resolve(scope, base_, rest)
-
-      case Array(index, Some(value)) :: rest if isSeq(base) =>
-        val index_ = resolve(scope, index)
-        val value_ = resolve(scope, value)
-        val unit_ = state.exprs.app(core.Fun.seq.unit, List(value_))
-        val base_ = state.exprs.app(core.Fun.seq.update, List(base, index_, unit_))
-        resolve(scope, base_, rest)
-
+      // arrays and sequences, resolved by overloading (see core.Overload)
       case Array(index, None) :: rest =>
         val index_ = resolve(scope, index)
         val base_ = state.exprs.app("select", List(base, index_))
@@ -305,9 +293,6 @@ class Parser(var state: State):
 
       // s[i..j] is the subsequence of length j - i from offset i, the bounds default to 0 and |s|
       case Slice(from, to) :: rest =>
-        Error.report("slice of an expression that is not a sequence", base):
-          require(isSeq(base))
-
         val from_ = from.map(resolve(scope, _)).getOrElse(state.exprs.num(0))
         val to_ = to.map(resolve(scope, _)).getOrElse(state.exprs.app(core.Fun.seq.len, List(base)))
         val len_ = from match
@@ -335,13 +320,6 @@ class Parser(var state: State):
 
           case _ =>
             Error.raise("invalid access", self, qname, access, scope, state.funs.keys, state.procs.keys)
-
-  // whether `expr` is a sequence, which is decided before type checking by the sort constructor of its type,
-  // which is known unless the type is a type parameter, e.g. of if-then-else
-  def isSeq(expr: core.Expr): Boolean =
-    core.Type.unfold(state, expr.typ) match
-      case core.Sort(con, _) => con == core.Con.seq
-      case _                 => false
 
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match

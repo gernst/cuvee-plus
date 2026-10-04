@@ -95,7 +95,11 @@ case class Let(bound: List[Var], args: List[Expr], body: Expr)
   - `Fun.int.plus` or `Fun.real.plus`;
   - `seq.++` for `+`, and `seq.prefixof` for `<=`, on sequences.
 
-  The generic operators never leave the frontend.
+  `select` and `store` (Dafny's `s[i]` and `s[i := v]`) are overloaded in
+  the same way for arrays and sequences. The type checker picks the
+  implementation (`Impl`) as soon as the type of the first argument is
+  known, and checks the application against its signature. The generic
+  operators never leave the frontend.
 
 ## Programs ([Prog.scala](../src/cuvee/core/Prog.scala))
 

@@ -236,10 +236,45 @@ object Type:
   def check(state: State, scope: Scope, expr: Expr, res: Type): Expr =
     val subst = Ref[Subst[Type, Expr]](Subst(Map(), Map()))
     check(state, scope, expr, res, subst)
-    instantiate(scope, subst, List(expr)).head
+    instantiate(state, scope, subst, List(expr)).head
 
-  // apply the solution of the type constraints, all type parameters must be determined
-  def instantiate(scope: Scope, subst: Ref[Subst[Type, Expr]], exprs: List[Expr]): List[Expr] =
+  // the applications of overloaded operators are checked against the signature of their implementation,
+  // which is determined by the type of the first argument once it is known (see Overload),
+  // repeated as long as this determines further types
+  def overload(state: State, scope: Scope, apps: List[App], subst: Ref[Subst[Type, Expr]]): Unit =
+    val (ready, pending) =
+      apps.partition:
+        case App(_, inst, _, _) =>
+          unfold(state, resolve(subst.value, inst.head)).isInstanceOf[Sort]
+
+    for case app @ App(op, inst, typ, _) <- ready
+    do
+      val first = unfold(state, resolve(subst.value, inst.head))
+
+      Overload.impl(op.name, op.arity, first) match
+        case Some(Impl(sig, _)) =>
+          val su = Subst.fresh(sig.params)
+          Error.report("type mismatch", app, sig):
+            unify(state, scope, su(sig.args), inst, subst)
+            unify(state, scope, su(sig.res), typ, subst)
+
+        case None =>
+          Error.raise("operator not defined for type", op.name, first)
+
+    if ready.nonEmpty
+    then overload(state, scope, pending, subst)
+
+  // the applications of overloaded operators in `expr`, innermost first
+  def overloaded(expr: Expr): List[App] =
+    val inner = expr.subexprs.flatMap(overloaded)
+    expr match
+      case app @ App(fun, _, _, _) if Overload.isGeneric(fun) => inner :+ app
+      case _                                                  => inner
+
+  // apply the solution of the type constraints after resolving overloading,
+  // all type parameters must be determined
+  def instantiate(state: State, scope: Scope, subst: Ref[Subst[Type, Expr]], exprs: List[Expr]): List[Expr] =
+    overload(state, scope, exprs.flatMap(overloaded), subst)
     val exprs_ = close(subst)(exprs)
     val missed = exprs_.params -- scope.params.values.toSet
 
@@ -302,7 +337,7 @@ object Type:
         Error.report("type mismatch in results of call", name, res, out):
           unify(state, scope, res.types, su(out.types), subst)
 
-        val args_ = instantiate(scope, subst, args)
+        val args_ = instantiate(state, scope, subst, args)
         Call(name, args_, res)
 
       case Block(locals, progs) =>

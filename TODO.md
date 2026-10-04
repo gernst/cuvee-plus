@@ -103,12 +103,11 @@ reference semantics for array parameters.
   (`lemma`, `goal`) and from `-verify`.
 - Containers `set`, `multiset`, `map` are declared as sorts in the prelude
   but have no functions.
-- Sequences: whether `s[i]`, `s[i := v]` and `s[i..j]` are on sequences or
-  arrays is decided by the type of `s` before type checking, which is
-  unknown if it is a type parameter, e.g. `(if b then s else t)[0]`, and then
-  falls back to arrays; no `<` (proper prefix), `!in`, `seq(n, f)`, or
+- Sequences: no `<` (proper prefix), `!in`, `seq(n, f)`, or
   multi-dimensional updates. `s[i := v]` is `seq.update` of cvc5, which z3
   does not support, and z3's logic `HORN` has no sequences at all.
+- Accesses `e[i]` and `e.f` are parsed only after names and calls, not after
+  parenthesized expressions, e.g. `(if b then s else t)[0]`.
 - Member access `e.f` works on variables only, e.g. `h[i].chan` must be
   written `event_chan(h[i])`.
 - No syntax for testers `Is` and type annotations `As`, e.g. `e.C?` and
