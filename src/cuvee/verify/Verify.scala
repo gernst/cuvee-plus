@@ -1,6 +1,7 @@
 package cuvee.verify
 
 import util.Name
+import cuvee.Config
 import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
@@ -8,7 +9,7 @@ import cuvee.core.Attrs
 
 object Verify extends Transform:
   // the global variables gs are computed once and passed to the generation of the verification conditions
-  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val gs = state.globals
 
     for

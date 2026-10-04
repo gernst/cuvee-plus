@@ -1,6 +1,7 @@
 package cuvee.verify
 
 import util.Name
+import cuvee.Config
 import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
@@ -54,7 +55,7 @@ object Path:
 // the goals contain the combinators trace and all, which must be rewritten before they are passed to a solver,
 // except for programs without loops
 object TEQ extends Transform:
-  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val gs = state.globals
 
     for

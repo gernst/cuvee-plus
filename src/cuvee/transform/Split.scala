@@ -1,5 +1,6 @@
 package cuvee.transform
 
+import cuvee.Config
 import cuvee.pipe.Transform
 import cuvee.core._
 
@@ -9,7 +10,7 @@ import cuvee.core._
 // universal quantifiers are moved into the context, as well as negated existential quantifiers and disjunctions;
 // obligations that are true are dropped
 object Split extends Transform:
-  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     for
       cmd <- cmds
       cmd_ <- split(cmd)

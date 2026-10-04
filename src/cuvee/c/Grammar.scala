@@ -1,6 +1,7 @@
 package cuvee.c
 
 import easyparse.Assoc
+import cuvee.Error
 
 object Grammar:
   import easyparse._
@@ -71,7 +72,7 @@ object Grammar:
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (postfix, {
       case (op, List(arg))         => Unary(op, arg)
       case (op, List(left, right)) => Binary(op, left, right)
-      case (op, args)              => cuvee.Error.raise("unexpected operator application", op, args)
+      case (op, args)              => Error.raise("unexpected operator application", op, args)
     })
 
   val expr: Parser[Expr] =

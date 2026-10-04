@@ -1,6 +1,9 @@
 package cuvee.simplify
 
 import util.Name
+import cuvee.Error
+import cuvee.Debug
+import cuvee.Config
 import cuvee.pipe.Transform
 import cuvee.core._
 
@@ -10,7 +13,7 @@ object Simplify extends Transform:
   // the assertions and lemmas with the attribute :rw so far are rewrite rules, which are kept as they are,
   // the other commands are simplified with these rules, each with a fresh number of rewrite steps;
   // debug output is printed with the printer of the configuration
-  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val rules = this.rules(prefix ++ cmds)
 
     for cmd <- cmds
@@ -54,13 +57,13 @@ object Simplify extends Transform:
         Rule(phi, True)
 
       case _ =>
-        cuvee.Error.raise("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom", phi)
+        Error.raise("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom", phi)
 
   // the logical connectives, which are not boolean atoms
   val connectives = Set("and", "or", "=>", "not", "ite", "true", "false")
 
   // `ctx` is an empty context, which provides the rewrite rules
-  def simplify(config: cuvee.Config, state: State, ctx: Ctx, cmd: Cmd): Cmd =
+  def simplify(config: Config, state: State, ctx: Ctx, cmd: Cmd): Cmd =
     cmd match
       case Assert(justify, params, phi, attrs) =>
         Assert(justify, params, simplify(config, state, ctx.copy(polarity = Some(true)), phi), attrs)
@@ -78,7 +81,7 @@ object Simplify extends Transform:
         cmd
 
   // the formulas and terms in attributes, e.g. contracts and invariants, are simplified without context
-  def simplify(config: cuvee.Config, state: State, ctx: Ctx, attrs: Attrs): Attrs =
+  def simplify(config: Config, state: State, ctx: Ctx, attrs: Attrs): Attrs =
     val attrs_ =
       for (kw, arg) <- attrs.attrs
       yield arg match
@@ -90,7 +93,7 @@ object Simplify extends Transform:
   // programs are simplified statement by statement, where the expressions are simplified without context,
   // since the facts known before an assignment may not hold afterwards;
   // branches and loops with constant tests are reduced, and statements without effect are dropped
-  def simplify(config: cuvee.Config, state: State, ctx: Ctx, prog: Prog): Prog =
+  def simplify(config: Config, state: State, ctx: Ctx, prog: Prog): Prog =
     val e = (expr: Expr) => simplify(config, state, ctx, expr)
     val p = (prog: Prog) => simplify(config, state, ctx, prog)
 
@@ -144,14 +147,14 @@ object Simplify extends Transform:
   // by repeated rounds of simplification until a fixpoint is reached,
   // a formula that is known from the context is replaced by its truth value;
   // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
-  def simplify(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  def simplify(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     ctx.lookup(expr) match
       case Some(true)  => True
       case Some(false) => False
       case None =>
         val once_ = once(config, state, ctx, expr)
         if once_ != expr
-        then cuvee.Debug.info("simplify", show(config.printer, expr) + "  ~>  " + show(config.printer, once_))
+        then Debug.info("simplify", show(config.printer, expr) + "  ~>  " + show(config.printer, once_))
 
         val expr_ = rewrite(config, state, ctx, once_)
         if expr_ == expr
@@ -164,7 +167,7 @@ object Simplify extends Transform:
 
   // a single step with the rewrite rules of the context at the top of `expr`,
   // where the conditions of the rules are decided by simplification in the context (see Rewrite)
-  def rewrite(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     Rewrite.step(config, state, ctx, expr).headOption.getOrElse(expr)
 
   // a single round of simplification, dispatching on the builtin functions,
@@ -172,7 +175,7 @@ object Simplify extends Transform:
   // extend the context by the facts known at the position of each subterm,
   // negation and the premise of implication flip the polarity,
   // and the arguments of other functions have none
-  def once(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  def once(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     expr match
       case x: Var =>
         var_(config, state, ctx, x)
@@ -306,7 +309,7 @@ object Simplify extends Transform:
   // and do not hold otherwise (disjunction);
   // propositions in `done` are already processed (in reverse) and assumed in their simplified form,
   // otherwise e.g. both copies in `a and a` would simplify to true
-  def nary(config: cuvee.Config, state: State, ctx: Ctx, done: List[Expr], phis: List[Expr], pos: Boolean): List[Expr] =
+  def nary(config: Config, state: State, ctx: Ctx, done: List[Expr], phis: List[Expr], pos: Boolean): List[Expr] =
     phis match
       case Nil =>
         done.reverse
@@ -322,7 +325,7 @@ object Simplify extends Transform:
 
   // simplify an integer- or real-valued term into the normal form of polynomials,
   // terms of other types, e.g. of defined sorts, are simplified only
-  def arith(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  def arith(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     Ring(expr.typ) match
       case Some(ring) => poly(config, state, ctx, ring, expr).normalize.toExpr(ring)
       case None       => simplify(config, state, ctx, expr)
@@ -331,7 +334,7 @@ object Simplify extends Transform:
   // descend through +, -, * and literals, simplify the leaves,
   // which may in turn become arithmetic expressions, and combine the results;
   // on Real, division by a term that simplifies to a nonzero literal is multiplication by its inverse
-  def poly(config: cuvee.Config, state: State, ctx: Ctx, ring: Ring, expr: Expr): Poly =
+  def poly(config: Config, state: State, ctx: Ctx, ring: Ring, expr: Expr): Poly =
     ring.num(expr) match
       case Some(n) =>
         Poly.const(n)
@@ -367,12 +370,12 @@ object Simplify extends Transform:
             Arith.toPoly(ring, expr_)
 
   // variables known to be equal to another one are replaced
-  def var_(config: cuvee.Config, state: State, ctx: Ctx, x: Var): Expr =
+  def var_(config: Config, state: State, ctx: Ctx, x: Var): Expr =
     ctx.su.vars.get(x) match
       case Some(y) => y
       case None    => x
 
-  def eq_(config: cuvee.Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
+  def eq_(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     (left, right) match
       case _ if left == right =>
         True
@@ -393,7 +396,7 @@ object Simplify extends Transform:
 
   // false if two of the expressions are equal, true if all of them are pairwise different,
   // e.g. literals, two expressions are distinct exactly if they are not equal
-  def distinct(config: cuvee.Config, state: State, ctx: Ctx, exprs: List[Expr]): Expr =
+  def distinct(config: Config, state: State, ctx: Ctx, exprs: List[Expr]): Expr =
     val eqs = for case a :: rest <- exprs.tails.toList; b <- rest yield eq_(config, state, ctx, a, b)
 
     if eqs contains True
@@ -406,14 +409,14 @@ object Simplify extends Transform:
         case _          => Distinct(exprs)
 
   // testers on constructor applications
-  def is(config: cuvee.Config, state: State, ctx: Ctx, arg: Expr, fun: Fun): Expr =
+  def is(config: Config, state: State, ctx: Ctx, arg: Expr, fun: Fun): Expr =
     constr(config, state, arg) match
       case Some(constr) if constr.name == fun.name => True
       case Some(constr)                            => False
       case None                                    => Is(arg, fun)
 
   // the constructor that `expr` is built by, looking through type annotations
-  def constr(config: cuvee.Config, state: State, expr: Expr): Option[Fun] =
+  def constr(config: Config, state: State, expr: Expr): Option[Fun] =
     expr match
       case As(expr_, _) =>
         constr(config, state, expr_)
@@ -424,7 +427,7 @@ object Simplify extends Transform:
       case _ =>
         None
 
-  def ite(config: cuvee.Config, state: State, ctx: Ctx, test: Expr, left: Expr, right: Expr): Expr =
+  def ite(config: Config, state: State, ctx: Ctx, test: Expr, left: Expr, right: Expr): Expr =
     (test, left, right) match
       case (True, _, _)          => left
       case (False, _, _)         => right
@@ -434,7 +437,7 @@ object Simplify extends Transform:
       case _                     => Ite(test, left, right)
 
   // read over write
-  def select(config: cuvee.Config, state: State, ctx: Ctx, base: Expr, index: Expr): Expr =
+  def select(config: Config, state: State, ctx: Ctx, base: Expr, index: Expr): Expr =
     base match
       case Store(_, index_, value) if index_ == index =>
         value
@@ -445,7 +448,7 @@ object Simplify extends Transform:
       case _ =>
         Select(base, index)
 
-  def store(config: cuvee.Config, state: State, ctx: Ctx, base: Expr, index: Expr, value: Expr): Expr =
+  def store(config: Config, state: State, ctx: Ctx, base: Expr, index: Expr, value: Expr): Expr =
     (base, value) match
       // overwritten
       case (Store(base_, index_, _), _) if index_ == index =>
@@ -458,14 +461,14 @@ object Simplify extends Transform:
       case _ =>
         Store(base, index, value)
 
-  def not(config: cuvee.Config, state: State, ctx: Ctx, phi: Expr): Expr =
+  def not(config: Config, state: State, ctx: Ctx, phi: Expr): Expr =
     phi match
       case True     => False
       case False    => True
       case Not(psi) => psi
       case _        => Not(phi)
 
-  def imp(config: cuvee.Config, state: State, ctx: Ctx, phi: Expr, psi: Expr): Expr =
+  def imp(config: Config, state: State, ctx: Ctx, phi: Expr, psi: Expr): Expr =
     (phi, psi) match
       case (True, _)          => psi
       case (False, _)         => True
@@ -476,14 +479,14 @@ object Simplify extends Transform:
 
   // flatten nested conjunctions, drop true and duplicates,
   // false or a complementary pair makes the whole conjunction false
-  def and(config: cuvee.Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
+  def and(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
     val phis_ = phis.flatMap(And.flattenStrong).distinct
     if phis_.contains(False) || phis_.exists(phi => phis_ contains Not(phi))
     then False
     else And(phis_)
 
   // dual to and
-  def or(config: cuvee.Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
+  def or(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
     val phis_ = phis.flatMap(Or.flattenStrong).distinct
     if phis_.contains(True) || phis_.exists(phi => phis_ contains Not(phi))
     then True
@@ -491,7 +494,7 @@ object Simplify extends Transform:
 
   // SMT-LIB semantics: for n != 0, m = n * (m div n) + (m mod n) with 0 <= m mod n < |n|,
   // division by zero is unspecified and therefore left alone
-  def div(config: cuvee.Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
+  def div(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     (left, right) match
       case (Lit(m: BigInt, _), Lit(n: BigInt, _)) if n != 0 =>
         val r = m mod n.abs
@@ -507,7 +510,7 @@ object Simplify extends Transform:
       case _ =>
         DivBy.int(left, right)
 
-  def mod(config: cuvee.Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
+  def mod(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     (left, right) match
       case (Lit(m: BigInt, _), Lit(n: BigInt, _)) if n != 0 =>
         Lit(m mod n.abs, Sort.int)
@@ -524,7 +527,7 @@ object Simplify extends Transform:
   // derivatives are linear, products follow the product rule,
   // and the derivative of e < f and of e <= f is e' <= f', that of a conjunction is the conjunction of the derivatives;
   // derivatives of other expressions are kept, e.g. of applications of other functions and of division
-  def diff(config: cuvee.Config, state: State, xs: List[Var], expr: Expr): Expr =
+  def diff(config: Config, state: State, xs: List[Var], expr: Expr): Expr =
     val d = (arg: Expr) => diff(config, state, xs, arg)
 
     expr match
@@ -563,7 +566,7 @@ object Simplify extends Transform:
         Diff(xs, expr)
 
   // the difference right - left of the sides of a comparison as a normalized polynomial
-  def difference(config: cuvee.Config, state: State, ctx: Ctx, ring: Ring, left: Expr, right: Expr): Poly =
+  def difference(config: Config, state: State, ctx: Ctx, ring: Ring, left: Expr, right: Expr): Poly =
     val left_ = poly(config, state, ctx, ring, left)
     val right_ = poly(config, state, ctx, ring, right)
     (right_ - left_).normalize
@@ -571,14 +574,14 @@ object Simplify extends Transform:
   // comparisons 0 < p and 0 <= p on Int or Real, built by `op`, are constants if p is,
   // otherwise they are re-arranged so that both sides have positive coefficients only,
   // e.g. 0 < y - x + 1 becomes x < y + 1
-  def lt(config: cuvee.Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
+  def lt(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isPositive then True else False
     else
       val (left, right) = poly.sides
       op(left.toExpr(ring), right.toExpr(ring))
 
-  def le(config: cuvee.Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
+  def le(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isNegative then False else True
     else
@@ -586,19 +589,19 @@ object Simplify extends Transform:
       op(left.toExpr(ring), right.toExpr(ring))
 
   // applications of other functions, e.g. user-defined ones
-  def app(config: cuvee.Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
+  def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
     App(fun, inst, typ, args)
 
   // unused bound variables are dropped,
   // the binder vanishes when none remain (sorts are nonempty in SMT-LIB)
-  def bind(config: cuvee.Config, state: State, ctx: Ctx, quant: Name, bound: List[Var], body: Expr): Expr =
+  def bind(config: Config, state: State, ctx: Ctx, quant: Name, bound: List[Var], body: Expr): Expr =
     val bound_ = bound.filter(body.free.contains)
     if bound_.isEmpty
     then body
     else Bind(quant, bound_, body)
 
   // unused bindings are dropped
-  def let(config: cuvee.Config, state: State, ctx: Ctx, bound: List[Var], args: List[Expr], body: Expr): Expr =
+  def let(config: Config, state: State, ctx: Ctx, bound: List[Var], args: List[Expr], body: Expr): Expr =
     val pairs = (bound zip args).filter((x, _) => body.free contains x)
     if pairs.isEmpty
     then body

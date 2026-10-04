@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- import `cuvee.Debug` in Simplify and other files, don't use the qualified name
 - the Dafny printer uses a semicolon after check, it should not be there, check also that it's not in the grammar
 - make `Mod` non-associative
 - in `object Prog`: move `def free(attrs: Attrs)` as a method to `Attrs`

@@ -2,6 +2,7 @@ package cuvee.verify
 
 import util.Name
 import util.Ref
+import cuvee.Config
 import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
@@ -18,7 +19,7 @@ object Horn extends Transform:
   // the logic is HORN, which replaces the one given in the input,
   // or is set at the beginning, i.e., when nothing has been passed through so far;
   // at the end of the input, the clauses are checked for satisfiability
-  def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val cmds_ =
       for
         cmd <- cmds;

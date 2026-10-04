@@ -1,18 +1,19 @@
 package cuvee.pipe
 
+import cuvee.Config
 import cuvee.Error
 import cuvee.core._
 
 // arguments: the configuration of the run, e.g. its printer, the state, which already encompasses the new commands,
 // the commands passed so far, the new commands, and the command that flushes them, e.g. Done
-type Transform = (cuvee.Config, State, List[Cmd], List[Cmd], Cmd) => List[Cmd]
+type Transform = (Config, State, List[Cmd], List[Cmd], Cmd) => List[Cmd]
 
 object Stage:
-  def empty(config: cuvee.Config, init: State, transform: Transform, next: Sink) =
+  def empty(config: Config, init: State, transform: Transform, next: Sink) =
     Stage(config, init, transform, Nil, Nil, Nil, init, next)
 
 case class Stage(
-    config: cuvee.Config,
+    config: Config,
     init: State,
     transform: Transform,
     stack: List[(List[Cmd], State)],

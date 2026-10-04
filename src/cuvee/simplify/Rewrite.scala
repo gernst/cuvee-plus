@@ -1,5 +1,7 @@
 package cuvee.simplify
 
+import cuvee.Debug
+import cuvee.Config
 import cuvee.Error
 import cuvee.core._
 
@@ -37,23 +39,23 @@ case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound
 object Rewrite:
   // rewrite `expr` with `rules` until no rule applies
   def apply(rules: List[Rule], expr: Expr): Expr =
-    rewrite(cuvee.Config.default, State.empty, Ctx.empty.withRules(rules), expr)
+    rewrite(Config.default, State.empty, Ctx.empty.withRules(rules), expr)
 
-  def rewrite(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     val expr_ = map(expr, rewrite(config, state, ctx, _))
     step(config, state, ctx, expr_) match
       case next #:: _ => rewrite(config, state, ctx, next)
       case _          => expr_
 
   // a single application of a rule of the context at the top of `expr`, empty if no rule applies
-  def step(config: cuvee.Config, state: State, ctx: Ctx, expr: Expr): LazyList[Expr] =
+  def step(config: Config, state: State, ctx: Ctx, expr: Expr): LazyList[Expr] =
     ctx.rules
       .to(LazyList)
       .flatMap(rule => apply(config, state, ctx, rule, expr))
       .take(1)
 
   // the first match whose instantiated condition holds, empty if there is none
-  def apply(config: cuvee.Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): LazyList[Expr] =
+  def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): LazyList[Expr] =
     val results =
       for
         su <- matches(config, state, ctx, Binding(rule.vars, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
@@ -66,15 +68,15 @@ object Rewrite:
       Error.report("rewriting does not terminate", rule, expr):
         require(ctx.steps.value > 0)
       ctx.steps := ctx.steps.value - 1
-      cuvee.Debug.info("rewrite", Simplify.show(config.printer, expr) + "  ~>  " + Simplify.show(config.printer, rhs))
+      Debug.info("rewrite", Simplify.show(config.printer, expr) + "  ~>  " + Simplify.show(config.printer, rhs))
       rhs
 
   // side conditions and the guards of updates are decided by the simplifier in the context
-  def holds(config: cuvee.Config, state: State, ctx: Ctx, phi: Expr): Boolean =
+  def holds(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
     phi == True || Simplify.simplify(config, state, ctx.neutral, phi) == True
 
   // all matches of the pattern `pat` to `expr` that extend `m`
-  def matches(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, pat: Expr, expr: Expr, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  def matches(config: Config, state: State, ctx: Ctx, b: Binding, pat: Expr, expr: Expr, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     (pat, expr) match
       case (x: Var, _) if b.local.contains(x) =>
         if expr == b.local(x) then LazyList(m) else LazyList()
@@ -135,7 +137,7 @@ object Rewrite:
       case _ =>
         if pat == expr then LazyList(m) else LazyList()
 
-  def matches(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, pats: List[Expr], exprs: List[Expr], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  def matches(config: Config, state: State, ctx: Ctx, b: Binding, pats: List[Expr], exprs: List[Expr], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     (pats, exprs) match
       case (Nil, Nil) =>
         LazyList(m)
@@ -153,7 +155,7 @@ object Rewrite:
   // variables take the empty sum 0 only if the expression is a sum itself,
   // otherwise e.g. x + 1 would match 1 with x = 0, which rewrites literals inside of sums first
   @scala.annotation.targetName("matchesSums")
-  def matches(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, ring: Ring, pats: List[(Boolean, Expr)], exprs: List[(Boolean, Expr)], sum: Boolean, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  def matches(config: Config, state: State, ctx: Ctx, b: Binding, ring: Ring, pats: List[(Boolean, Expr)], exprs: List[(Boolean, Expr)], sum: Boolean, m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     def flexible(summand: (Boolean, Expr)) =
       summand match
         case (_, x: Var) => b.isPattern(x) && !m.vars.contains(x)
@@ -213,7 +215,7 @@ object Rewrite:
   // then the body is matched, which instantiates the bound variables of the pattern for the variables of the rule,
   // from which these are instantiated as the corresponding dependency or as a map over the dependencies of the expression
   def combinator(
-      config: cuvee.Config,
+      config: Config,
       state: State,
       ctx: Ctx,
       b: Binding,
@@ -254,7 +256,7 @@ object Rewrite:
 
   // the variables of the rule among the dependencies, from the values of their bound variables,
   // which must not depend on the accumulator
-  def instantiate(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, zs: List[(Expr, Var)], deps_ : List[Expr], bound_ : List[Var], accs: Set[Var], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  def instantiate(config: Config, state: State, ctx: Ctx, b: Binding, zs: List[(Expr, Var)], deps_ : List[Expr], bound_ : List[Var], accs: Set[Var], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     zs match
       case Nil =>
         LazyList(m)
@@ -282,7 +284,7 @@ object Rewrite:
 
   // each case of the update of the expression is covered by some case of the pattern, whose guard follows from its own
   @scala.annotation.targetName("matchesUpdates")
-  def matches(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, update: List[(Expr, Expr)], update_ : List[(Expr, Expr)], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
+  def matches(config: Config, state: State, ctx: Ctx, b: Binding, update: List[(Expr, Expr)], update_ : List[(Expr, Expr)], m: Subst[Type, Expr]): LazyList[Subst[Type, Expr]] =
     update_ match
       case Nil =>
         LazyList(m)
@@ -295,7 +297,7 @@ object Rewrite:
           m2 <- matches(config, state, ctx, b, update, rest, m1)
         yield m2
 
-  def implies(config: cuvee.Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): Boolean =
+  def implies(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): Boolean =
     if guard == True
     then true
     else
