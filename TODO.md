@@ -8,8 +8,12 @@
   ([pipe/Pipe.scala](src/cuvee/pipe/Pipe.scala)).
 - Polymorphic declarations (`par`) are sent to z3/cvc5 as they are, which the
   solvers do not accept; they need monomorphization first.
-- Real arithmetic: decimal literals are typed `Real`, but no `Real` functions
-  are declared in the preludes.
+- Real arithmetic: real literals are rationals (`util.Rational`); Dafny
+  resolves the operators on `real` by `Overload` and reads decimal literals,
+  e.g. `1.5`, but SMT-LIB input has no `Real` functions, since the prelude can
+  declare `+` etc. only once per arity; it needs overload resolution as in Dafny.
+- The core sugar `Plus`, `Lt`, etc. and the arithmetic simplifier
+  ([simplify/Arith.scala](src/cuvee/simplify/Arith.scala)) are for `Int` only.
 - No `old(e)` in postconditions and loop invariants to refer to the values of
   global variables at the entry of a procedure, in Boogie and Dafny;
   `Horn` already names these values `g$i` in the postcondition predicates.
@@ -39,6 +43,8 @@
   Names that are not local variables should be resolved as members of `this`
   (see [examples/stack.dfy](examples/stack.dfy)).
 - `var` declarations must come before the statements of a block.
+- Decimal literals are scanned greedily, so nested tuple selections such as
+  `t.0.1` are scanned as `t` and `.` followed by the literal `0.1`.
 - The printer does not always print valid Dafny: indexed names are printed
   with unicode subscripts, e.g. `x₀`; the type parameters of assertions are
   omitted.

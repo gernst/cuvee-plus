@@ -1,6 +1,7 @@
 package cuvee.core
 
 import util.Name
+import util.Rational
 import cuvee.Error
 import cuvee.sexpr.Attrs
 
@@ -228,6 +229,9 @@ case class State(
 
     def num(value: BigInt) =
       Lit(value, Sort.int)
+
+    def dec(value: Rational) =
+      Lit(value, Sort.real)
 
     def str(value: String) =
       Lit(value, Sort.string)

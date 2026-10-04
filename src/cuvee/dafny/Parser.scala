@@ -293,6 +293,9 @@ class Parser(var state: State):
       case Num(value) =>
         state.exprs.num(BigInt(value))
 
+      case Dec(value) =>
+        state.exprs.dec(util.Rational.decimal(value))
+
       case Str(value) =>
         state.exprs.str(value)
 

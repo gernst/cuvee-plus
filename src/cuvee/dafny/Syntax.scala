@@ -31,6 +31,8 @@ object Array extends ((Expr, Option[Expr]) => Access)
 object Member extends ((String, List[Expr]) => Access)
 
 case class Num(value: String) extends Expr
+// decimal literals of type real, e.g. 1.5
+case class Dec(value: String) extends Expr
 case class Str(value: String) extends Expr
 case class Tuple(args: List[Expr]) extends Expr
 // the derivative (x, y :: e)' of e with respect to x and y
@@ -42,6 +44,7 @@ case class All(bound: List[(String, Type)], body: Expr) extends Expr
 case class Let(bound: List[(String, Type)], args: List[Expr], body: Expr) extends Expr
 
 object Num extends (String => Expr)
+object Dec extends (String => Expr)
 object Str extends (String => Expr)
 object Tuple extends (List[Expr] => Expr)
 object Diff extends ((List[String], Expr) => Expr)

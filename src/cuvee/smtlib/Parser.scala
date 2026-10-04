@@ -3,6 +3,7 @@ package cuvee.smtlib
 import cuvee.Error
 
 import util.Name
+import util.Rational
 import cuvee.sexpr._
 import cuvee.core._
 
@@ -539,7 +540,7 @@ class Parser(private var init: State):
         Lit(BigInt(digits), Sort.int)
 
       case Dec(digits) =>
-        Lit(BigDecimal(digits), Sort.real)
+        Lit(Rational.decimal(digits), Sort.real)
 
       case Str(text) =>
         Lit(text, Sort.string)
@@ -549,7 +550,7 @@ class Parser(private var init: State):
         Lit(-BigInt(digits), Sort.int)
 
       case List(Id("-"), Dec(digits)) =>
-        Lit(-BigDecimal(digits), Sort.real)
+        Lit(-Rational.decimal(digits), Sort.real)
 
       case Id(name) if scope.vars.contains(name) =>
         scope.vars(name)

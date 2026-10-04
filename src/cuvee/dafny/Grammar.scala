@@ -65,6 +65,7 @@ object Grammar:
   val kwd = T("kwd")
   val sym = T("sym")
   val num = T("num")
+  val dec = T("dec")
   val str = T("str")
 
   val id = Sym(sym)
@@ -90,7 +91,7 @@ object Grammar:
     la ~ p ~ ra
 
   val lit =
-    P(Num(num) | Str(str))
+    P(Num(num) | Dec(dec) | Str(str))
 
   val attrs =
     P(braces(":" ~ (id ~* ",")) | nil)

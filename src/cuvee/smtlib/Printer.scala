@@ -1,6 +1,7 @@
 package cuvee.smtlib
 
 import util.Name
+import util.Rational
 import cuvee.Error
 import cuvee.core._
 import cuvee.sexpr.Attrs
@@ -281,11 +282,14 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: String, typ) =>
         str(value)
 
-      case Lit(value: BigDecimal, typ) if value < 0 =>
-        app("-", value.abs.bigDecimal.toPlainString)
+      case Lit(value: Rational, typ) if value.isNegative =>
+        apps(atom("-"), lines(Lit(-value, typ)))
 
-      case Lit(value: BigDecimal, typ) =>
-        atom(value.bigDecimal.toPlainString)
+      // rationals that have no finite decimal expansion are written as fractions, (/ 1.0 3.0)
+      case Lit(value: Rational, typ) =>
+        value.decimal match
+          case Some(digits) => atom(digits)
+          case None         => apps(atom("/"), lines(Lit(Rational(value.num), typ)), lines(Lit(Rational(value.den), typ)))
 
       case Lit(_, _) =>
         Error.raise("unprintable literal", expr)

@@ -57,6 +57,16 @@ object Printing extends TestSuite:
       expr(Diff(List(x, y), app(Fun.int.times, x, y))) ==> "(x, y :: x * y)'"
       expr(app(Fun.int.uminus, Diff(List(x), x))) ==> "-(x :: x)'"
 
+    // real literals have a decimal point, fractions without finite decimal expansion are divisions
+    test("real literals"):
+      val real = (r: _root_.util.Rational) => Lit(r, Sort.real)
+      expr(real(_root_.util.Rational(2))) ==> "2.0"
+      expr(real(_root_.util.Rational(-3, 2))) ==> "-1.5"
+      expr(real(_root_.util.Rational(1, 3))) ==> "1.0 / 3.0"
+      expr(real(_root_.util.Rational(-1, 3))) ==> "-1.0 / 3.0"
+      expr(app(Fun.real.times, real(_root_.util.Rational(1, 3)), x)) ==> "1.0 / 3.0 * x"
+      expr(app(Fun.real.times, x, real(_root_.util.Rational(1, 3)))) ==> "x * (1.0 / 3.0)"
+
     test("mixfix"):
       expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
       expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"

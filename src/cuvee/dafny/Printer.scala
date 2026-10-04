@@ -1,6 +1,7 @@
 package cuvee.dafny
 
 import util.Name
+import util.Rational
 import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib._
@@ -456,7 +457,12 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: BigInt, _) if value < 0 =>
         (Grammar.prefix_ops("-"), None)
 
-      case Lit(value: BigDecimal, _) if value < 0 =>
+      // fractions n.0 / d.0, whose sign is part of the numerator
+      case Lit(value: Rational, _) if value.den != 1 && (if value.isNegative then -value else value).decimal.isEmpty =>
+        val (assoc, prec) = Grammar.infix_ops("/")
+        (prec, Some(assoc))
+
+      case Lit(value: Rational, _) if value.isNegative =>
         (Grammar.prefix_ops("-"), None)
 
       case Ite(_, _, _) | Bind(_, _, _) | Let(_, _, _) =>
@@ -495,8 +501,17 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: String, _) =>
         str(value)
 
-      case Lit(value: BigDecimal, _) =>
-        text(value.bigDecimal.toPlainString)
+      // real literals always have a decimal point, 2.0, otherwise they would be parsed as integers,
+      // rationals that have no finite decimal expansion are written as fractions, 1.0 / 3.0
+      case Lit(value: Rational, typ) if value.isNegative =>
+        (-value).decimal match
+          case Some(digits) => text("-" + digits)
+          case None         => text("-") ++ doc(Lit(-value, typ))
+
+      case Lit(value: Rational, typ) =>
+        value.decimal match
+          case Some(digits) => text(digits)
+          case None         => doc(Lit(Rational(value.num), typ)) +:+ text("/") +:+ doc(Lit(Rational(value.den), typ))
 
       case Lit(value, _) =>
         Error.raise("unprintable literal", expr)
