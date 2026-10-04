@@ -77,7 +77,7 @@ object Rewrite extends TestSuite:
     test("invalid rule"):
       val msg =
         try
-          Rule(app(f, x), y)
+          Rule.check(Rule(app(f, x), y))
           "no error"
         catch case cuvee.Error(msg, _*) => msg
       msg ==> "variables of right hand side or condition do not occur in left hand side"

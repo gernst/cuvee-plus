@@ -9,16 +9,23 @@ import cuvee.core._
 // which may be instantiated by arbitrary expressions of the same type,
 // and whose type parameters may be instantiated by arbitrary types
 case class Rule(lhs: Expr, rhs: Expr, cond: Expr = True):
-  Error.report("variables of right hand side or condition do not occur in left hand side", this):
-    require((rhs.free ++ cond.free) subsetOf lhs.free)
-
-  Error.report("left hand side of rule is a variable", this):
-    require(!lhs.isInstanceOf[Var])
-
-  Error.report("sides of rule have different types", this):
-    require(lhs.typ == rhs.typ)
-
   def vars = lhs.free
+
+object Rule:
+  // well-formedness of rules from the input, see Simplify.rules
+  def check(rule: Rule): Rule =
+    val Rule(lhs, rhs, cond) = rule
+
+    Error.report("variables of right hand side or condition do not occur in left hand side", rule):
+      require((rhs.free ++ cond.free) subsetOf lhs.free)
+
+    Error.report("left hand side of rule is a variable", rule):
+      require(!lhs.isInstanceOf[Var])
+
+    Error.report("sides of rule have different types", rule):
+      require(lhs.typ == rhs.typ)
+
+    rule
 
 // the variables while matching below the combinators trace, map, and all:
 // `vars` are the variables of the rule, `locals` are the bound variables of the pattern that range over dependencies

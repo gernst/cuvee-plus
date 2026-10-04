@@ -251,10 +251,8 @@ case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd]) extends 
   def params = deps.params ++ bound.params ++ updates.params
   def free = deps.free ++ (updates.free -- bound)
 
-  def typ =
-    Error.report("map without update", this):
-      require(updates.nonEmpty)
-    Sort.seq(updates.head.rhs.typ)
+  // there is at least one case, see Type.check
+  def typ = Sort.seq(updates.head.rhs.typ)
 
 // all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:

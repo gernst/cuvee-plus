@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- avoid constistency constraints like that of `Maps.typ` inside classes, but ensure that they are checked by the parsers
 - add syntactic sugar to `Builtin.scala` for the sequence types
 - parse and print function `butlast` specially, using left floor and right floor outfix syntax, add `Butlast` and `Counter` syntactic sugars, and use them in `TEQ.scala`
 - In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression

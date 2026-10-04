@@ -56,6 +56,9 @@
 
 - all data structures are immutable case classes, sealed traits for the
   syntactic categories, so that pattern matches are checked for exhaustiveness
+- the classes do not check their consistency when they are constructed or
+  queried; the parsers and builders check the input instead, e.g. type checking
+  rejects map without update, and `Rule.check` the rules from the input
 - build expressions and programs in the frontends through the builders
   `state.exprs`, `state.progs`, `state.types`, and `state.cmds`, which look
   up declarations and instantiate type parameters freshly

@@ -36,7 +36,7 @@ object Simplify extends Transform:
   // the rewrite rules of the assertions and lemmas with the attribute :rw
   def rules(cmds: List[Cmd]): List[Rule] =
     for case cmd @ Assert(_, _, phi, _) <- cmds if isRule(cmd)
-    yield rule(phi)
+    yield Rule.check(rule(phi))
 
   // the rule of a formula: the universally quantified variables are the variables of the rule,
   // the premise of an implication is its condition, and the conclusion must be an equation l = r,
