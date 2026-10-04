@@ -81,3 +81,16 @@ object Translation extends TestSuite:
 
     test("unknown variable"):
       errors("int f(void) { return y; }") ==> List("unknown variable")
+
+// formulas that are not C are written in a notation after ACSL
+object Annotations extends TestSuite:
+  val x = Var("x", Sort.int)
+  val p = Fun("p", Nil, Fun.formals(Sort.int), Sort.bool)
+
+  val tests = Tests:
+    test("quantifiers"):
+      val phi = All(List(x), Imp(App(p, List(x)), Lt.int(x, One.int)))
+      cuvee.c.Printer.lines(Assert(Axiom, Nil, phi, Attrs.empty)) ==> List("/*@ axiom \\forall int x; p(x) ==> x < 1; */", "")
+
+    test("declarations"):
+      cuvee.c.Printer.lines(DeclareFun(p, Attrs.empty)) ==> List("_Bool p(int x_0);", "")

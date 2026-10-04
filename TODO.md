@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- the C printer should get some fake notation for quantifiers and trace combinators, it is not good to mix sexprs with C-like notation
 - in the C frontend, initialized variables should give the initialization constraint for predicate `main_pre`
 - wrap the combinators in the Dafny printer so that if a line break is necessary, the `check` is below `for` etc... and the subsequent line after `=>` is indented at least some spaces from the surrounding parentheses
 - in Horn, write clauses with goal in head, not with head False

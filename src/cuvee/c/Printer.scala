@@ -8,14 +8,20 @@ import easyprint.Doc
 import easyprint.Doc.{text, space, line, linebreak, hardline, empty, concat, join, render}
 import easyprint.Group
 import easyprint.Nest
+import easyprint.Align
 
 import easyparse.Assoc
 
 // prints procedures as C functions, as far as they are C programs: integers are int, Bool is _Bool,
 // arrays Array Int T are T a[] (as values); assertions and assumptions are written with the conventions of SV-COMP;
 // C's / and % are recognized in their translation to div and mod of SMT-LIB (see Quot and Rem),
-// other occurrences of div and mod are written in terms of / and %; quantifiers and other constructs raise an error;
-// commands that are not part of C, e.g. assertions, are printed by the SMT-LIB printer
+// other occurrences of div and mod are written in terms of / and %;
+// formulas that are not C are written in a notation after ACSL, \forall int x; φ and \exists int x; φ,
+// the combinators \trace(e, for Y do x, y => u), \map(for Y yield y => u), \all(for Y check y => φ),
+// where the types that are not C are written like sorts, e.g. Seq<int>, and other functions are calls;
+// assertions are annotations /*@ axiom φ; */, /*@ goal φ; */, /*@ lemma φ; */,
+// and other commands that are not part of C, e.g. check-sat, are printed by the SMT-LIB printer,
+// as are the declarations and definitions whose types are not C
 object Printer extends cuvee.pipe.Printer:
   val width = 80
 
@@ -56,8 +62,9 @@ object Printer extends cuvee.pipe.Printer:
   // each command is followed by an empty line, as by the SMT-LIB printer
   def lines(cmd: Cmd): List[String] =
     cmd match
-      case _: DeclareVar | _: DeclareProc | _: DefineProc | _: DefineFun =>
-        render(doc(cmd), width) :+ ""
+      case _: DeclareVar | _: DeclareProc | _: DefineProc | _: DeclareFun | _: DefineFun | _: Assert =>
+        try render(doc(cmd), width) :+ ""
+        catch case _: Error => cuvee.smtlib.Printer.lines(cmd)
 
       case _ =>
         cuvee.smtlib.Printer.lines(cmd)
@@ -76,6 +83,32 @@ object Printer extends cuvee.pipe.Printer:
       case Sort.int  => text("int")
       case Sort.bool => text("_Bool")
       case _         => Error.raise("type not supported in C", typ)
+
+  // the types of the bound variables of quantifiers and combinators, which need not be C
+  def logic(typ: Type): Doc =
+    typ match
+      case Sort.int | Sort.bool => doc(typ)
+      case Param(name_)         => text(name(name_))
+      case Sort(con, Nil)       => text(name(con.name))
+      case Sort(con, args)      => text(name(con.name)) ++ text("<") ++ join(args.map(logic), text(",") ++ space) ++ text(">")
+
+  // the declaration of a bound variable, int x
+  def bound(x: Var): Doc =
+    logic(x.typ) +:+ text(name(x.name))
+
+  // the dependencies of a combinator, and its update with guarded cases, if guard then result, ...
+  def combinator(head: Doc, deps: List[Expr], keyword: String, bound: List[Var], updates: List[Upd]): Doc =
+    val updates_ =
+      updates match
+        case List(Upd(True, rhs)) =>
+          doc(rhs)
+
+        case _ =>
+          commas(for Upd(cond, rhs) <- updates yield text("if") +:+ doc(cond) +:+ text("then") +:+ doc(rhs))
+
+    val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
+    val deps_ = Group(Align(commas(deps.map(doc(_)))))
+    Group(head ++ text("for") +:+ deps_ +:+ text(keyword) +:+ binders ++ Nest(2, line ++ updates_) ++ text(")"))
 
   // a declaration of a variable, where arrays have their brackets after the name
   def decl(x: Var): Doc =
@@ -102,6 +135,14 @@ object Printer extends cuvee.pipe.Printer:
 
       case DeclareProc(Proc(name_, Nil, in, out), _) =>
         signature(name_, in, out) ++ text(";")
+
+      // uninterpreted functions, e.g. the predicates of Horn clauses
+      case DeclareFun(Fun(name_, Nil, formals, res), _) =>
+        doc(res) +:+ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) ++ text(";")
+
+      case Assert(justify, Nil, phi, _) =>
+        val keyword = justify.toString.toLowerCase
+        Group(text("/*@") +:+ text(keyword) ++ Nest(2, line ++ doc(phi)) ++ text(";") +:+ text("*/"))
 
       // functions, e.g. the predicates of models of Horn clauses
       case DefineFun(Fun(name_, Nil, formals, res), body, _) =>
@@ -238,6 +279,8 @@ object Printer extends cuvee.pipe.Printer:
       case Le.int(a, b)        => op("<=", List(a, b))
       case Gt.int(a, b)        => op(">", List(a, b))
       case Ge.int(a, b)        => op(">=", List(a, b))
+      // implications occur in annotations only, as in ACSL
+      case Imp(a, b)           => Some(("==>", Assoc.Right, 1, List(a, b)))
       case _                   => None
 
   def level(expr: Expr): (Int, Option[Assoc]) =
@@ -246,6 +289,10 @@ object Printer extends cuvee.pipe.Printer:
         (Grammar.prefix_ops("-"), None)
 
       case Ite(_, _, _) if infix(expr).isEmpty =>
+        (lowest, None)
+
+      // quantifiers extend as far to the right as possible
+      case Bind(_, _, _) =>
         (lowest, None)
 
       case _ =>
@@ -293,16 +340,19 @@ object Printer extends cuvee.pipe.Printer:
       case _ if infix(expr).isDefined =>
         val Some((op, assoc, prec, args)) = infix(expr): @unchecked
         val first = if assoc == Assoc.Left then (prec, Some(Assoc.Left)) else (prec, None)
-        val rest = (prec, None)
-        val args_ = doc(args.head, first) :: args.tail.map(doc(_, rest))
+        val last = if assoc == Assoc.Right then (prec, Some(Assoc.Right)) else (prec, None)
+        val inner = (prec, None)
+        val args_ =
+          for (arg, i) <- args.zipWithIndex
+          yield
+            if i == 0 then doc(arg, first)
+            else if i == args.length - 1 then doc(arg, last)
+            else doc(arg, inner)
         Group(args_.head ++ Nest(2, concat(args_.tail.map(line ++ text(op) +:+ _))))
 
       // C has no let, the bound variables are substituted
       case Let(bound, args, body) =>
         doc(Subst.from(bound, args)(body))
-
-      case Imp(left, right) =>
-        doc(Or(Not(left), right))
 
       // div and mod of SMT-LIB, which differ from C's / and %
       case DivBy.int(a, b) =>
@@ -310,6 +360,30 @@ object Printer extends cuvee.pipe.Printer:
 
       case Mod.int(a, b) =>
         doc(Trunc.mod(a, b))
+
+      case Bind(quant, bound_, body) =>
+        val bound__ = Align(Doc.fill(bound_.map(bound), text(",")))
+        Group(text("\\" + name(quant)) +:+ bound__ ++ text(";") ++ Nest(2, line ++ doc(body)))
+
+      case Trace(init, deps, acc, bound_, updates) =>
+        combinator(text("\\trace(") ++ doc(init) ++ text(",") ++ space, deps, "do", acc :: bound_, updates)
+
+      case Maps(deps, bound_, updates) =>
+        combinator(text("\\map("), deps, "yield", bound_, updates)
+
+      case Invs(deps, bound_, body) =>
+        combinator(text("\\all("), deps, "check", bound_, List(Upd(True, body)))
+
+      // all but the last element of a trace, as in Dafny
+      case Butlast(arg) =>
+        text("⌊") ++ doc(arg) ++ text("⌋")
+
+      // other functions, e.g. predicates in models, and those on sequences and traces
+      case App(fun, _, _, Nil) =>
+        text(name(fun.name))
+
+      case App(fun, _, _, args) =>
+        call(name(fun.name), args.map(doc(_)))
 
       case _ =>
         Error.raise("expression not supported in C", expr)
