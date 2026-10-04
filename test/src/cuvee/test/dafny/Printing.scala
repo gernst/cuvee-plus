@@ -83,6 +83,12 @@ object Printing extends TestSuite:
       expr(app(Fun.seq.extract, s, one, app(Fun.int.minus, x, one))) ==> "s[1..x]"
       expr(app(Fun.seq.extract, s, zero, x)) ==> "s[0..x]"
 
+    // the parser reads a != b as !(a == b)
+    test("disequality"):
+      expr(Not(Eq(x, y))) ==> "x != y"
+      expr(Not(Eq(p, Not(Eq(x, y))))) ==> "p != (x != y)"
+      expr(Not(And(p, q))) ==> "!(p && q)"
+
     test("mixfix"):
       expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
       expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"

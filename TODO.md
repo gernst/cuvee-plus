@@ -125,7 +125,6 @@ reference semantics for array parameters.
 - Chained comparisons, e.g. `0 <= i < n`, are not supported.
 - Decimal literals are scanned greedily, so nested tuple selections such as
   `t.0.1` are scanned as `t` and `.` followed by the literal `0.1`.
-- `a != b` is parsed as `!(a == b)` and printed like that.
 - The printer does not always print valid Dafny: indexed names are printed
   with unicode subscripts, e.g. `x₀`; the type parameters of assertions are
   omitted.

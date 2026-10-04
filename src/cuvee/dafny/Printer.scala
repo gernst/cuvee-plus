@@ -425,6 +425,10 @@ object Printer extends cuvee.pipe.Printer:
 
   def prefix(expr: Expr): Option[(String, Int, Expr)] =
     expr match
+      // a != b, see infix
+      case Not(Eq(_, _)) =>
+        None
+
       case App(fun, _, _, List(arg)) if Grammar.prefix_ops.contains(name(fun.name)) =>
         val op = name(fun.name)
         Some((op, Grammar.prefix_ops(op), arg))
@@ -459,6 +463,9 @@ object Printer extends cuvee.pipe.Printer:
         if args.length == 2 || (args.length > 2 && chain)
         then Some((op, assoc, prec, args))
         else None
+
+      case Not(Eq(a, b)) =>
+        infix(Distinct(List(a, b)))
 
       case Distinct(List(a, b)) =>
         val (assoc, prec) = Grammar.infix_ops("!=")
