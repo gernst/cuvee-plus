@@ -33,6 +33,8 @@ object Member extends ((String, List[Expr]) => Access)
 case class Num(value: String) extends Expr
 case class Str(value: String) extends Expr
 case class Tuple(args: List[Expr]) extends Expr
+// the derivative (x, y :: e)' of e with respect to x and y
+case class Diff(xs: List[String], expr: Expr) extends Expr
 case class App(fun: String, args: List[Expr], access: List[Access]) extends Expr
 case class Ite(test: Expr, left: Expr, right: Expr) extends Expr
 case class Ex(bound: List[(String, Type)], body: Expr) extends Expr
@@ -42,6 +44,7 @@ case class Let(bound: List[(String, Type)], args: List[Expr], body: Expr) extend
 object Num extends (String => Expr)
 object Str extends (String => Expr)
 object Tuple extends (List[Expr] => Expr)
+object Diff extends ((List[String], Expr) => Expr)
 object App extends ((String, List[Expr], List[Access]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)
 object Ex extends ((List[(String, Type)], Expr) => Expr)

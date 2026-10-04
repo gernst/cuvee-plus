@@ -13,9 +13,8 @@ object Grammar:
     "!" -> 8
   )
 
-  // derivatives (e)' bind tighter than prefix operators, -x' is -(x')
   val postfix_ops = Map[String, Int](
-    "'" -> 9
+    // "!" -> 8
   )
 
   // chained equations and comparisons as in Dafny, e.g. x == y == z or x < y <= z, are not supported for now:
@@ -69,6 +68,8 @@ object Grammar:
   val str = T("str")
 
   val id = Sym(sym)
+
+  val prime = sym.filter(_ == "'").asScanner
 
   val nil = R(Nil)
   val none = R(None)
@@ -165,8 +166,13 @@ object Grammar:
   val tuple =
     Tuple(P(parens(exprs)))
 
+  // derivatives (x, y :: e)' with explicit variables,
+  // backtracks if there is no :: after the variables, e.g. for parenthesized expressions and tuples
+  val diff =
+    Diff(P(("(" ?~ ids ?~ "::") ~ expr ~ ")" ~ prime))
+
   val inner: Parser[Expr] =
-    P(tuple | lit | bind | let | ite | app)
+    P(diff | tuple | lit | bind | let | ite | app)
 
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))
@@ -242,7 +248,6 @@ object Grammar:
   val while_ =
     While(P("while" ~ guard ~ invariant.* ~ decreases.* ~ block))
 
-  val prime = sym.filter(_ == "'").asScanner
   val eq = sym.filter(_ == "==").asScanner
   val and = sym.filter(_ == "&&").asScanner
 

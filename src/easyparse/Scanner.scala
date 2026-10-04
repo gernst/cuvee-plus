@@ -14,6 +14,9 @@ trait Scanner:
   def ~(that: Scanner): Scanner =
     Scanner.SeqScanner(this, that, strict = true)
 
+  infix def ?~[B](that: Parser[B]): Parser[B] =
+    Scanner.SeqParser(this, that, strict = false)
+
 object Scanner:
   case object Accept extends Scanner:
     def scan(in: Input, cm: Boolean) =

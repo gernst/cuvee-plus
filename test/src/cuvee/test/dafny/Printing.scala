@@ -53,9 +53,9 @@ object Printing extends TestSuite:
         List("p' == (p && q) && 0 <= x", "  invariant x <= y;")
 
     test("diff"):
-      expr(Diff(List(x), x)) ==> "x'"
-      expr(Diff(List(x, y), app(Fun.int.times, x, y))) ==> "(x * y)'"
-      expr(app(Fun.int.uminus, Diff(List(x), x))) ==> "-x'"
+      expr(Diff(List(x), x)) ==> "(x :: x)'"
+      expr(Diff(List(x, y), app(Fun.int.times, x, y))) ==> "(x, y :: x * y)'"
+      expr(app(Fun.int.uminus, Diff(List(x), x))) ==> "-(x :: x)'"
 
     test("mixfix"):
       expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"

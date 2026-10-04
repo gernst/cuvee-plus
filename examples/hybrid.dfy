@@ -1,5 +1,5 @@
 // hybrid programs: nondeterministic iterations, differential equations with evolution constraints and
-// differential invariants, and derivatives (e)' with respect to the variables of e
+// differential invariants, and derivatives (x, y :: e)' of e with respect to x and y
 
 // a bouncing ball at height x with velocity v under gravity g
 method ball(g: int, h: int) returns (x: int, v: int)
@@ -23,5 +23,5 @@ method energy(g: int, h: int) returns (e: int)
   var x: int, v: int;
   x, v := h, 0;
   x', v' == v, -g;
-  e := (2 * g * x + v * v)';
+  e := (x, v :: 2 * g * x + v * v)';
 }

@@ -540,9 +540,8 @@ object Printer extends cuvee.pipe.Printer:
       case Distinct(_) =>
         Error.raise("unprintable distinct", expr)
 
-      // derivatives are written (e)', the variables are those of e
-      case Diff(_, arg) =>
-        doc(arg, operand) ++ text("'")
+      case Diff(xs, arg) =>
+        Group(text("(") ++ commas(xs.map(doc(_))) +:+ text("::") ++ Nest(2, line ++ doc(arg)) ++ text(")'"))
 
       // TODO: Dafny syntax for testers and type annotations, e.g. e.C? and e as T
       case Is(_, _) | As(_, _) =>

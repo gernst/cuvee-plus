@@ -308,10 +308,13 @@ class Parser(var state: State):
         val expr_ = App("not", List(App("=", args, Nil)), access)
         resolve(scope, expr_)
 
-      // the derivative (e)' is with respect to all variables of e, ordered by name
-      case App("'", List(arg), Nil) =>
+      case Diff(xs, arg) =>
+        val unknown = xs.filterNot(scope.vars.contains(_))
+        Error.report("unknown variables of derivative", scope, unknown, xs):
+          require(unknown.isEmpty)
+
+        val xs_ = xs.map(scope.vars(_))
         val arg_ = resolve(scope, arg)
-        val xs_ = arg_.free.toList.sortBy(x => (x.name.name, x.name.index))
         state.exprs.diff(xs_, arg_)
 
       case App(name, Nil, access) if scope.vars.contains(name) =>

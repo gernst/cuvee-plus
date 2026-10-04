@@ -117,15 +117,13 @@ Non-standard features from Platzer's dL, as part of the Dafny frontend
   constraint, `x', y' == e, f && dom invariant ...;` in Dafny, where `xs` are
   the variables without prime and the right hand sides bind tighter than `&&`.
 - `Diff(xs, expr)` ([core/Expr.scala](src/cuvee/core/Expr.scala)), the
-  derivative of `expr` with respect to `xs`, written `(e)'` in Dafny; its free
-  variables include the primed variables `x'` (`Var.primed`, `Name.primed`).
+  derivative of `expr` with respect to `xs`, written `(x, y :: e)'` in Dafny;
+  its free variables include the primed variables `x'` (`Var.primed`,
+  `Name.primed`).
 
 Open:
 
 - `Verify` and `Horn` raise an error on `Ode`.
 - `Diff` is not simplified yet, the simplifier only simplifies its argument.
-- The Dafny parser takes the derivative `(e)'` with respect to all free
-  variables of `e`, ordered by name, and the printer omits `xs`, so a `Diff`
-  with other variables does not survive printing and parsing.
 - The primed variables in `Diff` are not declared, and the type checker does
   not check that they are in scope.
