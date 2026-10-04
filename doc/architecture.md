@@ -1,0 +1,160 @@
+# Architecture
+
+Cuvée is a pipeline. A **source** turns the input file into a lazy stream of
+core commands. **Stages** transform the commands. A **sink** prints them or
+passes them to a solver. All stages share one representation, the core
+([datastructures.md](datastructures.md)), so any frontend combines with any
+transformation and any output.
+
+```
+ input.dfy ──► Source ──► Stage(Verify) ──► Stage(Simplify) ──► Sink(z3)
+              (parse,      (transform)       (transform)         (print or
+               resolve,                                           solve)
+               check)                        Report ◄── results of each command
+```
+
+## Packages
+
+| Package | Contents |
+|---|---|
+| `util` | `Name` (identifiers with an optional index), `Rational`, `Counter` (fresh indices), `Ref`, `Tool` (external processes), `Backtrack`. |
+| `easyparse` | Parser combinators over token streams. `~` commits and `?~` backtracks. `Mixfix` handles prefix, postfix and infix operators with precedence and associativity. `P(...)` names parsers for error messages. |
+| `easyprint` | Wadler-style pretty printing (`Doc`, `Group`, `Nest`, `line`). |
+| `cuvee.sexpr` | The s-expression scanner and syntax for SMT-LIB, and `Attrs`, the attributes of declarations, which `core` uses throughout. |
+| `cuvee.core` | The common representation: `Type`, `Expr`, `Prog`, `Cmd`, `Fun` and `State`, plus type checking (`Type.check`), substitution (`Subst`), overloading (`Overload`) and syntactic sugar (`Builtin`, `Sugar`). |
+| `cuvee.smtlib` | SMT-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks). |
+| `cuvee.boogie` | Boogie frontend and printer. |
+| `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and processes. |
+| `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
+| `cuvee.verify` | `Verify` (weakest preconditions to goals) and `Horn` (constrained Horn clauses). |
+| `cuvee.simplify` | `Simplify` (contextual rewriting under a `Ctx`) and `Arith` (polynomials over `Int` and `Real`). |
+| `cuvee.transform` | `Flat` (record arguments of predicates become their fields). |
+| `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
+
+## A run
+
+[`Cuvee.run`](../src/cuvee/Cuvee.scala) goes through these steps:
+
+1. `Config.parse` reads the command line:
+   - the input language from the file extension;
+   - the transforms in order (`-verify`, `-chc`, `-flat`, `-simplify`);
+   - the printer (`-print`);
+   - the sink (stdout, `-o`, `-z3`, `-cvc5`).
+2. `config.source(reader)` parses the frontend's prelude first. It returns
+   the initial `State`, which holds the prelude's declarations, and a lazy
+   `LazyList[Cmd]` of the input.
+3. `config.stages(init, sink)` chains one `Stage` per transform in front of
+   the sink. All stages start from the same initial state.
+4. `Pipe.run` feeds the commands, followed by the internal `Done`, through
+   the chain. It reports each result (`Ack`, `Status`, `Model`, `Error`, ...)
+   through `Report`. An `Error` stops the run unless the pipe is incremental.
+
+### Stages and transforms
+
+A [`Stage`](../src/cuvee/pipe/Stage.scala) buffers declarations (`Decl`) and
+adds them to its state. A control command or query (`check-sat`, `push`,
+`Done`, ...) flushes the buffer: it calls the stage's `Transform` with:
+
+- the commands passed so far;
+- the pending commands;
+- the flushing command;
+- the current state.
+
+It then passes the result on to the next sink. `push` and `pop` save and
+restore the prefix and the state. A transform is a plain function:
+
+```scala
+type Transform = (List[Cmd], List[Cmd], Cmd, State) => List[Cmd]
+```
+
+- [`Verify`](../src/cuvee/verify/Verify.scala) replaces each procedure
+  definition by a goal: `∀ in, out, globals. pre ⇒ wp(body, post)`.
+  - Loops, iterations, calls (by contract), `old`, termination measures,
+    differential equations (differential cuts, then weakening) and parallel
+    composition (assumption-commitment) each have a rule.
+  - `old(e)` is eliminated first, by `Old.elim`, into fresh variables for the
+    values at the entry.
+- [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
+  clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
+  per program point.
+- [`Simplify`](../src/cuvee/simplify/Simplify.scala) rewrites assertions and
+  function definitions to a fixpoint.
+  - The context `Ctx` holds the facts known at the current position.
+  - Arithmetic is normalised into polynomials (`Arith`); comparisons become
+    `0 < p` and `0 <= p` with positive coefficients on both sides.
+  - Derivatives are computed by the rules of dL.
+- [`Flat`](../src/cuvee/transform/Flat.scala) flattens record arguments of
+  Horn predicates.
+
+### Sinks
+
+A [`Sink`](../src/cuvee/pipe/Sink.scala) answers each command with a result
+and the next sink.
+
+- `Print` writes the commands with the configured printer.
+- `Collect` buffers them (used in tests).
+- `Tee` duplicates the stream.
+- [`Solver.sink`](../src/cuvee/smtlib/Solver.scala) runs z3 or cvc5 as a
+  process:
+  - It first declares the sorts and datatypes of the frontend's prelude that
+    SMT-LIB lacks (`Solver.prelude`), e.g. Dafny's tuples and events.
+  - Goals and lemmas are checked for validity in a `push`/`pop` scope; lemmas
+    are then asserted.
+  - Procedures and global variables must have been eliminated by `-verify` or
+    `-chc`.
+
+## Frontends
+
+Each frontend follows the same structure (see `cuvee.dafny` and
+`cuvee.boogie`):
+
+1. **Scanner** (`Scanner.flex`): jflex produces `Scanner.java`. Regenerate it
+   from the repository root with
+   `jflex -q --nobak src/cuvee/<lang>/Scanner.flex`. Keywords and symbols
+   become `Token`s.
+2. **Syntax** (`Syntax.scala`): an untyped AST close to the concrete syntax,
+   with names as strings.
+3. **Grammar** (`Grammar.scala`): easyparse parsers from tokens to the AST.
+   - Operators and their precedences are tables for `Mixfix`.
+   - `translate` maps the frontend's names onto core names, e.g.
+     `int → Int`, `&& → and`, `seq → Seq`.
+4. **Parser** (`Parser.scala`): resolves the AST into core against a mutable
+   `state` and a `Scope` of type parameters and variables.
+   - Declarations update `state` immediately, so later commands see them.
+   - Each expression and program body is type checked by `state.exprs.check`
+     or `state.progs.check`. These call `Type.check` and then
+     `Overload.apply`, which replaces the generic arithmetic operators of the
+     prelude by their `Int`, `Real` or `Seq` implementations.
+5. **Prelude** (`resources/cuvee/<lang>/prelude.*`), in the frontend's own
+   syntax. It declares the built-in sorts and the generic operators, and for
+   Dafny also tuples, `chan` and `event`.
+6. **Printer** (`Printer.scala`): core back to concrete syntax with
+   easyprint.
+   - It reverses `translate` and recognises sugar, e.g. sequence literals,
+     `x in s`, and `s[i..j]`.
+   - Constructs that the language lacks raise an error.
+
+The SMT-LIB frontend is the exception: it reads s-expressions with the shared
+`sexpr` scanner and turns them into core directly.
+
+## Errors and debugging
+
+`cuvee.Error(msg, info*)` is a result as well as an exception.
+`Error.report(msg, info*) { require(...) }` wraps a check and raises the
+error with its context. Errors are reported as results and do not crash the
+run, with the exceptions listed in [TODO.md](../TODO.md).
+`-debug solver` traces the communication with the solver.
+
+## Tests
+
+The tests use utest and run with `mill -i test`. Their sources are in
+`test/src/cuvee/test/`, by frontend:
+
+- Unit tests build core terms directly.
+- Example tests run `cuvee.Cuvee.run` on the files in `examples/`, through
+  `Examples.find` and `Examples.tests`:
+  - every file must parse;
+  - the Dafny printer must roundtrip;
+  - `examples/simplify/*.smt2` must produce `*.expected.smt2`;
+  - `examples/vcgen/*.dfy` must verify (or fail, as declared in their first
+    line) with `-verify -z3` and `-chc -z3`.

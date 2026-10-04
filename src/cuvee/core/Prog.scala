@@ -99,8 +99,7 @@ case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) extends 
 // parallel composition of calls to processes, i.e., procedures with assumption-commitment contracts
 // over the global history of events in their attributes, "assumes" and "commits",
 // where the history is extended by the procedures send and receive;
-// the calls must not share the variables that they modify, other than the history;
-// break and continue do not leave a process, and return is not allowed
+// the calls must not share the variables that they modify, other than the history
 case class Par(calls: List[Call]) extends Prog:
   def mod = calls.mod
   def free = calls.flatMap(_.free).toSet
