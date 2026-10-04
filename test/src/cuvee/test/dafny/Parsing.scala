@@ -151,3 +151,12 @@ object OldInPrecondition extends TestSuite:
     test("requires"):
       errors("var g: int; method m() modifies g requires old(g) == 0 { g := g + 1; }") ==>
         List("precondition refers to old values")
+
+// goals are parsed like lemmas, e.g. the output of -verify
+object Goals extends TestSuite:
+  val tests = Tests:
+    test("goal"):
+      val (_, cmds) = Source(new java.io.StringReader("goal {:rw} forall x: int :: x < x + 1"))
+      val List(cuvee.core.Assert(justify, _, _, attrs)) = cmds.toList: @unchecked
+      justify ==> cuvee.core.Goal
+      assert(attrs.contains("rw"))

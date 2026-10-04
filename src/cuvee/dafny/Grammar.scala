@@ -377,6 +377,9 @@ object Grammar:
   val lemma =
     Lemma(P("lemma" ~ annotation.* ~ expr))
 
+  val goal =
+    Goal(P("goal" ~ annotation.* ~ expr))
+
   val vardef =
     VarDef(P("var" ~ (formal ~+ ",") ~ ";"))
 
@@ -397,7 +400,7 @@ object Grammar:
     Check(word("check").asScanner)
 
   val cmd: Parser[Cmd] =
-    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | lemma | vardef | check)
+    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check)
 
   val script =
     P(cmd.*)

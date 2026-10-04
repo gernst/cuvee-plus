@@ -59,6 +59,15 @@ class Parser(var state: State):
         val cmd_ = state.cmds.lemma(params_, phi_, attrs_)
         List(cmd_)
 
+      case Goal(attrs, expr) =>
+        val scope = Scope.empty
+        val phi_ = formula(scope, expr)
+        val params_ = phi_.params.toList
+        val attrs_ = Attrs(attrs.map(_ -> None))
+
+        val cmd_ = state.cmds.goal(params_, phi_, attrs_)
+        List(cmd_)
+
       case SortDef(name, params, impl) =>
         val scope = Scope.empty
         val params_ = params.map(resolve(scope, _))
