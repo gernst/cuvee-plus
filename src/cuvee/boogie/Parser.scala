@@ -1,0 +1,364 @@
+package cuvee.boogie
+
+import util.Name
+import cuvee.Error
+import cuvee.core
+import cuvee.core.State
+import cuvee.core.Scope
+import cuvee.sexpr.Attrs
+
+class Parser(var state: State):
+  def resolve(scope: Scope, name: String): core.Param =
+    state.types.param(name)
+
+  def resolve(scope: Scope, formal: (String, Type)): core.Var =
+    val (name, typ) = formal
+    state.exprs.formal(name, resolve(scope, typ))
+
+  def resolve(cmd: Cmd): List[core.Cmd] =
+    cmd match
+      case Axiom(attrs, expr) =>
+        val scope = Scope.empty
+        val attrs_ = attributes(scope, attrs)
+        val phi_ = formula(scope, expr)
+        val params_ = phi_.params.toList
+
+        val cmd_ = state.cmds.axiom(params_, phi_, attrs_)
+        List(cmd_)
+
+      // sorts with parameters are declared or defined generically
+      case SortDef(attrs, name, params, alias) =>
+        val scope = Scope.empty
+        val attrs_ = attributes(scope, attrs)
+        val params_ = params.map(resolve(scope, _))
+        val scope_ = scope ++ params_
+
+        val arity_ = params.length
+        state = state.declare(name, arity_, attrs_)
+
+        alias match
+          case None =>
+            val decl = state.cmds.declareSort(name)
+            List(decl)
+
+          case Some(typ) =>
+            val typ_ = resolve(scope_, typ)
+            state = state.define(name, params_, typ_)
+
+            val defn = state.cmds.defineSort(name)
+            List(defn)
+
+      case ConstDef(attrs, consts) =>
+        val scope = Scope.empty
+        val attrs_ = attributes(scope, attrs)
+
+        for (name, typ) <- consts
+        yield
+          val typ_ = resolve(scope, typ)
+          state = state.declare(name, Nil, Nil, typ_, attrs_)
+          state.cmds.declareFun(name, 0)
+
+      case VarDef(attrs, vars) =>
+        val scope = Scope.empty
+        val attrs_ = attributes(scope, attrs)
+
+        for formal <- vars
+        yield
+          val x_ = resolve(scope, formal)
+          state = state.declare(x_, attrs_)
+          state.cmds.declareVar(x_.name)
+
+      case FunDef(attrs, name, params, formals, typ, body) =>
+        val scope = Scope.empty
+        val attrs_ = attributes(scope, attrs)
+
+        val params_ = params.map(resolve(scope, _))
+        val scope_ = scope ++ params_
+
+        val formals_ = formals.map(resolve(scope_, _))
+        val typ_ = resolve(scope_, typ)
+        val scope__ = scope_ ++ formals_
+
+        val arity = formals_.length
+        state = state.declare(name, params_, formals_, typ_, attrs_)
+
+        body match
+          case None =>
+            val cmd_ = state.cmds.declareFun(name, arity)
+            List(cmd_)
+
+          case Some(expr) =>
+            val expr_ = resolve(scope__, expr)
+            val body_ = state.exprs.check(scope__, expr_, typ_)
+            state = state.define(name, arity, body_)
+
+            val cmd_ = state.cmds.defineFun(name, arity)
+            List(cmd_)
+
+      // procedures may read all global variables, and modify those in their modifies clauses,
+      // the formal parameters shadow global variables of the same name
+      case ProcDef(attrs, name, params, formals, rets, specs, body) =>
+        val scope = Scope.empty
+        val attrs_ = attributes(scope, attrs)
+
+        val params_ = params.map(resolve(scope, _))
+        val scope_ = scope ++ params_
+
+        val formals_ = formals.map(resolve(scope_, _))
+        val rets_ = rets.map(resolve(scope_, _))
+
+        val globals = state.vars.values.toList
+        val scope__ = scope_ ++ globals ++ formals_ ++ rets_
+        val contract_ = contract(scope__, specs)
+
+        val mod = modifies(contract_)
+        val unknown = mod.filterNot(globals.contains)
+        Error.report("modifies clause of procedure lists variables that are not global", name, unknown):
+          require(unknown.isEmpty)
+
+        state = state.declare(name, params_, formals_, rets_, Attrs(attrs_.attrs ++ contract_.attrs))
+
+        body match
+          case None =>
+            val cmd_ = state.cmds.declareProc(name)
+            List(cmd_)
+
+          // the inputs of a procedure and the global variables that are not modified must not be assigned
+          case Some(prog) =>
+            val prog_ = resolve(scope__, mod, prog)
+            val fixed = formals_.toSet ++ (globals.toSet -- mod)
+            val body_ = state.progs.check(scope__, fixed, prog_)
+            state = state.define(name, body_)
+
+            val cmd_ = state.cmds.defineProc(name)
+            List(cmd_)
+
+  // an attribute with several arguments is repeated for each of them, {:a x, y} is {:a x} {:a y},
+  // the arguments may be of any type
+  def attributes(scope: Scope, attrs: List[Attr]): Attrs =
+    val attrs_ =
+      for
+        Attr(name, args) <- attrs;
+        arg <- if args.isEmpty then List(None) else args.map(arg => Some(term(scope, arg)))
+      yield name -> arg
+
+    Attrs(attrs_)
+
+  def term(scope: Scope, expr: Expr) =
+    val expr_ = resolve(scope, expr)
+    val typ_ = core.Param("a").fresh
+    state.exprs.check(scope, expr_, typ_)
+
+  def formula(scope: Scope, phi: Expr) =
+    val expr_ = resolve(scope, phi)
+    val typ_ = state.types.sort("Bool")
+    state.exprs.check(scope, expr_, typ_)
+
+  // the variables in the modifies clauses of a procedure or loop
+  def modifies(attrs: Attrs): Set[core.Var] =
+    val mod =
+      for
+        xs <- attrs.values[List[core.Var]]("modifies");
+        x <- xs
+      yield x
+
+    mod.toSet
+
+  // the clauses of procedures and loops as attributes
+  def contract(scope: Scope, specs: List[Spec]): Attrs =
+    val specs_ =
+      for spec <- specs
+      yield spec match
+        case Requires(phi) =>
+          "requires" -> Some(formula(scope, phi))
+
+        case Ensures(phi) =>
+          "ensures" -> Some(formula(scope, phi))
+
+        case Invariant(phi) =>
+          "invariant" -> Some(formula(scope, phi))
+
+        case Modifies(xs) =>
+          val unknown = xs.filterNot(scope.vars.contains(_))
+          Error.report("unknown variables in modifies clause", scope, unknown):
+            require(unknown.isEmpty)
+
+          "modifies" -> Some(xs.map(scope.vars(_)))
+
+    Attrs(specs_)
+
+  def resolve(scope: Scope, typ: Type): core.Type =
+    typ match
+      case Sort(name, Nil) if scope.params.contains(name) =>
+        scope.params(name)
+
+      case Sort(name, args) if state.sorts.contains(name) =>
+        val args_ = args.map(resolve(scope, _))
+        state.types.sort(name, args_)
+
+      case Array(index, value) =>
+        val index_ = resolve(scope, index)
+        val value_ = resolve(scope, value)
+        state.types.sort("Array", List(index_, value_))
+
+      case _ =>
+        Error.raise("unknown type", typ, scope.params.keys, state.sorts.keys)
+
+  // map selections and updates are applied from left to right
+  def resolve(scope: Scope, base: core.Expr, access: List[Access]): core.Expr =
+    access match
+      case Nil =>
+        base
+
+      case Access(index, None) :: rest =>
+        val index_ = resolve(scope, index)
+        val base_ = state.exprs.app("select", List(base, index_))
+        resolve(scope, base_, rest)
+
+      case Access(index, Some(value)) :: rest =>
+        val index_ = resolve(scope, index)
+        val value_ = resolve(scope, value)
+        val base_ = state.exprs.app("store", List(base, index_, value_))
+        resolve(scope, base_, rest)
+
+  def resolve(scope: Scope, expr: Expr): core.Expr =
+    expr match
+      case Num(value) =>
+        state.exprs.num(BigInt(value))
+
+      case Str(value) =>
+        state.exprs.str(value)
+
+      case App("!=", args, access) =>
+        val expr_ = App("not", List(App("=", args, Nil)), access)
+        resolve(scope, expr_)
+
+      case App(name, Nil, access) if scope.vars.contains(name) =>
+        val base_ = scope.vars(name)
+        resolve(scope, base_, access)
+
+      case App(fun, args, access) if state.funs.contains((fun, args.length)) =>
+        val args_ = args.map(resolve(scope, _))
+        val base_ = state.exprs.app(fun, args_)
+        resolve(scope, base_, access)
+
+      case Ite(test, left, right) =>
+        val test_ = resolve(scope, test)
+        val left_ = resolve(scope, left)
+        val right_ = resolve(scope, right)
+        state.exprs.app("ite", List(test_, left_, right_))
+
+      // triggers are ignored
+      case Ex(bound, triggers, body) =>
+        val bound_ = bound.map(resolve(scope, _))
+        val scope_ = scope ++ bound_
+        val body_ = resolve(scope_, body)
+        state.exprs.ex(bound_, body_)
+
+      case All(bound, triggers, body) =>
+        val bound_ = bound.map(resolve(scope, _))
+        val scope_ = scope ++ bound_
+        val body_ = resolve(scope_, body)
+        state.exprs.all(bound_, body_)
+
+      case _ =>
+        Error.raise("unknown expression", expr, scope.vars.keys, state.funs.keys)
+
+  def variables(scope: Scope, names: List[String]): List[core.Var] =
+    val unknown = names.filterNot(scope.vars.contains(_))
+    Error.report("unknown variables", scope, unknown):
+      require(unknown.isEmpty)
+
+    names.map(scope.vars(_))
+
+  // the assignment to an element a[i][j] := v is an update of the entire map a := a[i := a[i][j := v]]
+  def update(base: core.Expr, indices: List[core.Expr], value: core.Expr): core.Expr =
+    indices match
+      case Nil =>
+        value
+
+      case index :: rest =>
+        val inner = state.exprs.app("select", List(base, index))
+        val value_ = update(inner, rest, value)
+        state.exprs.app("store", List(base, index, value_))
+
+  // `mod` are the global variables that may be modified by calls,
+  // which are those in the modifies clause of the procedure and of the innermost loop
+  def resolve(scope: Scope, mod: Set[core.Var], prog: Prog): core.Prog =
+    prog match
+      case Skip =>
+        state.progs.skip
+
+      case Break =>
+        state.progs.break
+
+      case Return =>
+        state.progs.return_
+
+      // statements are type checked as part of the entire procedure body
+      case Assume(phi) =>
+        val phi_ = resolve(scope, phi)
+        state.progs.assume(phi_)
+
+      case Assert(phi) =>
+        val phi_ = resolve(scope, phi)
+        state.progs.assert(phi_)
+
+      case Assign(lhs, rhs) =>
+        Error.report("mismatching assignment", lhs, rhs):
+          require(lhs.length == rhs.length)
+
+        val lhs_ = variables(scope, lhs.map(_.name))
+        val rhs_ =
+          for (Lhs(_, indices), (x_, expr)) <- lhs zip (lhs_ zip rhs)
+          yield update(x_, indices.map(resolve(scope, _)), resolve(scope, expr))
+
+        state.progs.assign(lhs_, rhs_)
+
+      case Havoc(names) =>
+        val xs_ = variables(scope, names)
+        state.progs.havoc(xs_)
+
+      case Call(lhs, name, args) =>
+        Error.report("procedure not declared", name):
+          require(state.procs.contains(name))
+
+        val callee = modifies(state.procattrs(name))
+        val unknown = callee -- mod
+        Error.report("call modifies variables that are not in the modifies clause", name, unknown):
+          require(unknown.isEmpty)
+
+        val lhs_ = variables(scope, lhs)
+        val args_ = args.map(resolve(scope, _))
+        state.progs.call(name, args_, lhs_)
+
+      case Block(locals, progs) =>
+        val locals_ = locals.map(resolve(scope, _))
+        val scope_ = scope ++ locals_
+        val progs_ = progs.map(resolve(scope_, mod, _))
+        state.progs.block(locals_, progs_)
+
+      case If(Some(test), left, right) =>
+        val test_ = resolve(scope, test)
+        val left_ = resolve(scope, mod, left)
+        val right_ = resolve(scope, mod, right)
+        state.progs.if_(test_, left_, right_)
+
+      case If(None, left, right) =>
+        val left_ = resolve(scope, mod, left)
+        val right_ = resolve(scope, mod, right)
+        state.progs.choice(left_, right_)
+
+      // calls in the body may modify the global variables in the modifies clause of the loop only,
+      // which must be modifiable outside of the loop
+      case While(test, specs, body) =>
+        val test_ = resolve(scope, test)
+        val attrs_ = contract(scope, specs)
+
+        val mod_ = modifies(attrs_) intersect state.vars.values.toSet
+        val unknown = mod_ -- mod
+        Error.report("modifies clause of loop lists global variables that are not modifiable", unknown):
+          require(unknown.isEmpty)
+
+        val body_ = resolve(scope, mod_, body)
+        state.progs.while_(test_, body_, attrs_)

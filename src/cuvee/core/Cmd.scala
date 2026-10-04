@@ -72,6 +72,9 @@ case class DeclareDatatypes(cons: List[Con], datas: List[Datatype], attrs: Attrs
 case class DeclareFun(fun: Fun, attrs: Attrs) extends Decl
 case class DefineFun(fun: Fun, body: Expr, attrs: Attrs) extends Decl
 
+// global variables, which procedures may read and modify if declared so by their modifies attribute
+case class DeclareVar(x: Var, attrs: Attrs) extends Decl
+
 case class DeclareProc(proc: Proc, attrs: Attrs) extends Decl
 case class DefineProc(proc: Proc, body: Prog, attrs: Attrs) extends Decl
 

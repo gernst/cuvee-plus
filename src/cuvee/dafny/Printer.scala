@@ -182,6 +182,10 @@ object Printer extends cuvee.pipe.Printer:
       case Assert(justify, _, phi, attrs) =>
         Group(text(format(justify)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi)))
 
+      // global variables do not exist in Dafny
+      case DeclareVar(Var(name_, typ), attrs) =>
+        text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ)
+
       case DeclareProc(Proc(name_, params_, in, out), attrs) =>
         header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, None)
 

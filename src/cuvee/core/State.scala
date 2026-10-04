@@ -11,10 +11,12 @@ case class State(
 
     sorts: Map[Name, Con] = Map(),
     funs: Map[(Name, Int), Fun] = Map(),
+    vars: Map[Name, Var] = Map(),
     procs: Map[Name, Proc] = Map(),
 
     sortattrs: Map[Name, Attrs] = Map(),
     funattrs: Map[(Name, Int), Attrs] = Map(),
+    varattrs: Map[Name, Attrs] = Map(),
     procattrs: Map[Name, Attrs] = Map(),
 
     sortdefs: Map[Name, (List[Param], Type)] = Map(),
@@ -131,6 +133,12 @@ case class State(
 
     copy(fundefs = fundefs + (key -> body))
 
+  def declare(x: Var, attrs: Attrs) =
+    Error.report("variable already declared", x.name):
+      require(!vars.contains(x.name))
+
+    copy(vars = vars + (x.name -> x), varattrs = varattrs + (x.name -> attrs))
+
   def declare(name: Name, params: List[Param], in: List[Var], out: List[Var], attrs: Attrs) =
     Error.report("procedure already declared", name):
       require(!procs.contains(name))
@@ -182,6 +190,9 @@ case class State(
 
       case DefineFun(Fun(name, params, formals, res), body, attrs) =>
         declare(name, params, formals, res, attrs).define(name, formals.length, body)
+
+      case DeclareVar(x, attrs) =>
+        declare(x, attrs)
 
       case DeclareProc(Proc(name, params, in, out), attrs) =>
         declare(name, params, in, out, attrs)
@@ -313,6 +324,11 @@ case class State(
       val attrs = funattrs(key)
       val body = fundefs(key)
       DefineFun(fun, body, attrs)
+
+    def declareVar(name: Name) =
+      val x = vars(name)
+      val attrs = varattrs(name)
+      DeclareVar(x, attrs)
 
     def declareProc(name: Name) =
       val proc = procs(name)

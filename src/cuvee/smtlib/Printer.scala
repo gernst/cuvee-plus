@@ -70,6 +70,10 @@ object Printer extends cuvee.pipe.Printer:
       case Some(prog: Prog) =>
         kw(name) ++ lines(prog)
 
+      // e.g. the variables of a modifies attribute
+      case Some(exprs: List[?]) if exprs.forall(_.isInstanceOf[Expr]) =>
+        kw(name) ++ list(exprs.flatMap(expr => lines(expr.asInstanceOf[Expr])))
+
       case Some(arg) =>
         kw(name) ++ sexpr(arg)
 
@@ -205,6 +209,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case Assert(justify, params, phi, attrs) =>
         apps(atom(command(justify)), apps(atom("par"), list(lines(params)), note(phi, attrs)))
+
+      // not part of SMT-LIB, but understood by z3
+      case DeclareVar(Var(name, typ), attrs) =>
+        apps(atom("declare-var"), mangle(name), lines(typ), lines(attrs))
 
       case DeclareProc(Proc(name, Nil, in, out), attrs) =>
         apps(atom("declare-proc"), mangle(name), list(lines(in.types)), list(lines(out.types)), lines(attrs))
