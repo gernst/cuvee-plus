@@ -68,15 +68,25 @@
 
 ## Boogie frontend
 
-- structure it like the Dafny frontend
-- start with the Scanner
-- implement the Syntax
-  - in contrast to Dafny, there are no methods an no method calls
-  - only these types: bool, int, array as [key]value, no subtypes
-  - support the procedure keyword, but don't include the feature of distinct implementations
-- implement the Grammar and connect it to the syntax, using easyparse
-- implement the Boogie Parser
-- finally, integrate it into the configuration and pipeline, using the ending bpl
+- Procedures must be declared before they are called, so mutually recursive
+  procedures are not supported ([boogie/Parser.scala](src/cuvee/boogie/Parser.scala)).
+- Polymorphic functions and sorts reach the solvers unchanged, which reject
+  them (see Bugs: monomorphization); `syntax.bpl` is therefore only parsed in
+  the solver tests.
+- No quantifiers over types, `forall<a> ...`.
+- The SMT-LIB parser does not read `declare-var`, which the SMT-LIB printer
+  writes for global variables, so SMT-LIB output with global variables cannot
+  be read back.
+- `Verify` and `Horn` treat all variables in `modifies` attributes as global
+  variables, which holds for Boogie input (the parser checks it), but not
+  for Dafny `modifies` clauses.
+- `Horn` names the values of the global variables at the entry of a procedure
+  `g$0, g$1, ...`, which may clash with names in the input.
+- Printer: datatypes, `continue`, attributes of loops other than `invariant`
+  and `modifies` (e.g. `decreases`), binders other than `forall` and `exists`,
+  and literals other than integers and strings without `"` raise an error;
+  goals and lemmas are printed as `goal` and `lemma`, which are not Boogie
+  ([boogie/Printer.scala](src/cuvee/boogie/Printer.scala)).
 
 ## Additional transformations
 
