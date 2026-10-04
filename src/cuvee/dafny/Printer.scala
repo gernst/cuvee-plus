@@ -111,7 +111,7 @@ object Printer extends cuvee.pipe.Printer:
   def doc(cmd: Cmd): Doc =
     cmd match
       case CheckSat =>
-        text("check;")
+        text("check")
 
       case Labels =>
         text("labels;")
