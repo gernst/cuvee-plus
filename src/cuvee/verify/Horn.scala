@@ -91,7 +91,7 @@ object Horn extends Transform:
         val clauses = Ref[List[Expr]](Nil)
 
         // p_pre ranges over the inputs and the global variables only, the outputs are unconstrained initially
-        val entry = predicate(name, scope, decls_)
+        val entry = predicate(name, "entry", scope, decls_)
         clause(in ++ out ++ gs, List(App(pre, in ++ gs)), App(entry, in ++ gs ++ out ++ gs), clauses)
         wp(state, name, scope, List(body_), entry, post, None, None, post, decls_, clauses)
 
@@ -107,9 +107,6 @@ object Horn extends Transform:
   // the predicates p_pre and p_post of procedure `name` together with their declarations,
   // Horn solvers do not support polymorphism, therefore procedures must not have type parameters
   def declare(state: State, name: Name): (Fun, Fun, List[DeclareFun]) =
-    Error.report("polymorphic procedures are not supported in Horn clauses", name):
-      require(state.procs(name).params.isEmpty)
-
     val pre = precondition(state, name)
     val post = postcondition(state, name)
 
@@ -142,14 +139,14 @@ object Horn extends Transform:
 
   // a fresh predicate for a program point in procedure `proc` with the variables in `scope` as formal parameters,
   // numbered by the predicates declared so far
-  def predicate(proc: Name, scope: List[Var], decls: Ref[List[DeclareFun]]): Fun =
-    val pred = Fun(proc.name + "_" + (decls.value.length + 1), Nil, scope, Sort.bool)
+  def predicate(proc: Name, what: String, scope: List[Var], decls: Ref[List[DeclareFun]]): Fun =
+    val pred = Fun(proc.name + "_" + what + "_" + (decls.value.length + 1), Nil, scope, Sort.bool)
     decls := decls.value :+ DeclareFun(pred, Attrs.empty)
     pred
 
   // a fresh predicate over `inner` that leads to `target` over `outer`, which drops the additional variables of `inner`
   def exit(proc: Name, inner: List[Var], outer: List[Var], target: Fun, decls: Ref[List[DeclareFun]], clauses: Ref[List[Expr]]): Fun =
-    val pred = predicate(proc, inner, decls)
+    val pred = predicate(proc, "exit", inner, decls)
     clause(inner, List(App(pred, inner)), App(target, outer), clauses)
     pred
 
@@ -202,7 +199,7 @@ object Horn extends Transform:
       case Spec(xs, pre_, post_) :: rest =>
         clause(scope, List(App(pre, scope), Not(pre_)), False, clauses)
 
-        val next = predicate(proc, scope, decls)
+        val next = predicate(proc, "spec", scope, decls)
         val xs_ = xs.fresh
         val su = Subst.from(xs, xs_)
         clause(scope ++ xs_, List(App(pre, scope), su(post_)), App(next, su(scope)), clauses)
@@ -210,7 +207,7 @@ object Horn extends Transform:
 
       // pre(scope) ⇒ next(scope[xs := rhs]), where next is a fresh predicate over the scope
       case Assign(xs, rhs) :: rest =>
-        val next = predicate(proc, scope, decls)
+        val next = predicate(proc, "assign", scope, decls)
         val su = Subst.from(xs, rhs)
         clause(scope, List(App(pre, scope)), App(next, su(scope)), clauses)
         wp(state, proc, scope, rest, next, post, break, continue, return_, decls, clauses)
@@ -230,7 +227,7 @@ object Horn extends Transform:
         val res_ = res.fresh
         val mod_ = mod.fresh
         val su = Subst.from(res ++ mod, res_ ++ mod_)
-        val next = predicate(proc, scope, decls)
+        val next = predicate(proc, "call", scope, decls)
 
         clause(scope, List(App(pre, scope)), App(precondition(state, name), args ++ gs), clauses)
 
@@ -261,8 +258,8 @@ object Horn extends Transform:
         def exit(target: Fun): Fun =
           Horn.exit(proc, scope_, scope, target, decls, clauses)
 
-        val entry = predicate(proc, scope_, decls)
-        val next = predicate(proc, scope, decls)
+        val entry = predicate(proc, "begin", scope_, decls)
+        val next = predicate(proc, "end", scope, decls)
 
         clause(scope_, List(App(pre, scope)), App(entry, scope_), clauses)
         wp(state, proc, scope_, su(progs_), entry, exit(next), break.map(exit), continue.map(exit), exit(return_), decls, clauses)
@@ -271,7 +268,7 @@ object Horn extends Transform:
       // all alternatives start from pre and lead to the join point,
       // from which the remaining statements continue
       case Choice(progs_) :: rest =>
-        val join = predicate(proc, scope, decls)
+        val join = predicate(proc, "join", scope, decls)
 
         for prog <- progs_ do
           wp(state, proc, scope, List(prog), pre, join, break, continue, return_, decls, clauses)
@@ -280,9 +277,9 @@ object Horn extends Transform:
       // pre(scope) ∧ test ⇒ then(scope) and pre(scope) ∧ ¬test ⇒ else(scope),
       // both branches lead to the join point, from which the remaining statements continue
       case If(test, left, right) :: rest =>
-        val then_ = predicate(proc, scope, decls)
-        val else_ = predicate(proc, scope, decls)
-        val join = predicate(proc, scope, decls)
+        val then_ = predicate(proc, "then", scope, decls)
+        val else_ = predicate(proc, "else", scope, decls)
+        val join = predicate(proc, "join", scope, decls)
 
         clause(scope, List(App(pre, scope), test), App(then_, scope), clauses)
         clause(scope, List(App(pre, scope), Not(test)), App(else_, scope), clauses)
@@ -317,9 +314,9 @@ object Horn extends Transform:
         def exit(target: Fun): Fun =
           Horn.exit(proc, scope_, scope, target, decls, clauses)
 
-        val inv = predicate(proc, scope, decls)
-        val body_ = predicate(proc, scope_, decls)
-        val next = predicate(proc, scope, decls)
+        val inv = predicate(proc, "inv", scope, decls)
+        val body_ = predicate(proc, "body", scope_, decls)
+        val next = predicate(proc, "next", scope, decls)
         val iter = exit(inv)
         val invariant = attrs.invariant
 
