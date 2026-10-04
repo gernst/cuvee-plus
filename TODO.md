@@ -150,10 +150,6 @@ reference semantics for array parameters.
 - `declare-var` is not read, which the printer writes for global variables, so
   output with global variables cannot be read back.
 - No `!` inside terms, `match`, `get-value`, `check-sat-assuming`, `echo`.
-- The scanner does not read SMT-LIB 2.6 string escapes: a string ends at the
-  first `"`, so a doubled `""` inside a string is not supported
-  ([sexpr/Scanner.flex](src/cuvee/sexpr/Scanner.flex)). The printers already
-  escape `"` as `""`.
 
 ## Solvers and robustness
 

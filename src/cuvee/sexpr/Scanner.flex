@@ -52,8 +52,9 @@ kw      = ":" {symbol}
 "("         { return Syntax.lp();   }
 ")"         { return Syntax.rp();   }
 
-\" ~ \"
-            { return Syntax.value("str", yytext(+1,-1)); }
+// strings, where a doubled "" inside a string stands for " (SMT-LIB 2.6)
+\" ([^\"] | \"\")* \"
+            { return Syntax.value("str", yytext(+1,-1).replace("\"\"", "\"")); }
 
 {dec}       { return Syntax.value("dec", yytext()); }
 {num}       { return Syntax.value("num", yytext()); }

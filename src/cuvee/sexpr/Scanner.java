@@ -125,9 +125,9 @@ public class Scanner implements cuvee.pipe.Scanner {
 
   private static final String ZZ_ROWMAP_PACKED_0 =
     "\0\0\0\25\0\52\0\77\0\124\0\151\0\25\0\25"+
-    "\0\176\0\223\0\250\0\275\0\322\0\124\0\25\0\347"+
-    "\0\374\0\u0111\0\u0126\0\275\0\25\0\u013b\0\322\0\25"+
-    "\0\347\0\374\0\u0111";
+    "\0\176\0\223\0\250\0\275\0\322\0\124\0\347\0\374"+
+    "\0\u0111\0\u0126\0\u013b\0\275\0\25\0\u0150\0\322\0\25"+
+    "\0\374\0\u0111\0\u0126";
 
   private static int [] zzUnpackRowMap() {
     int [] result = new int[27];
@@ -159,12 +159,12 @@ public class Scanner implements cuvee.pipe.Scanner {
     "\2\0\3\4\1\0\7\16\1\17\15\16\22\0\1\20"+
     "\1\21\14\0\1\22\24\0\1\22\3\12\14\0\1\23"+
     "\4\0\1\23\5\0\3\23\1\0\2\24\1\25\2\0"+
-    "\1\26\17\24\24\27\1\30\14\0\2\31\23\0\3\32"+
-    "\2\0\2\32\16\0\3\33\14\0\1\23\4\0\4\23"+
-    "\2\0\3\23\3\0\1\25\22\0";
+    "\1\26\17\24\24\27\1\30\7\0\1\16\31\0\2\31"+
+    "\23\0\3\32\2\0\2\32\16\0\3\33\14\0\1\23"+
+    "\4\0\4\23\2\0\3\23\3\0\1\25\22\0";
 
   private static int [] zzUnpackTrans() {
-    int [] result = new int[336];
+    int [] result = new int[357];
     int offset = 0;
     offset = zzUnpackTrans(ZZ_TRANS_PACKED_0, offset, result);
     return result;
@@ -207,7 +207,7 @@ public class Scanner implements cuvee.pipe.Scanner {
   private static final int [] ZZ_ATTRIBUTE = zzUnpackAttribute();
 
   private static final String ZZ_ATTRIBUTE_PACKED_0 =
-    "\1\0\1\11\4\1\2\11\5\1\1\0\1\11\3\0"+
+    "\1\0\1\11\4\1\2\11\5\1\1\0\1\1\3\0"+
     "\1\1\1\0\1\11\1\1\1\0\1\11\3\1";
 
   private static int [] zzUnpackAttribute() {
@@ -719,7 +719,7 @@ public class Scanner implements cuvee.pipe.Scanner {
             // fall through
           case 18: break;
           case 7:
-            { return Syntax.value("str", yytext(+1,-1));
+            { return Syntax.value("str", yytext(+1,-1).replace("\"\"", "\""));
             }
             // fall through
           case 19: break;
