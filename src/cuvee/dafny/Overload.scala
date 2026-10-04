@@ -104,6 +104,9 @@ object Overload:
       case While(test, body, attrs) =>
         While(apply(state, test), apply(state, body), attrs)
 
+      case Iter(body, attrs) =>
+        Iter(apply(state, body), attrs)
+
   // the replacement of a single application of an overloaded operator, whose arguments have been replaced already,
   // determined by the type of the arguments, which coincide for all overloaded operators;
   // raises an error if the operator is not defined for that type, e.g. for a type parameter

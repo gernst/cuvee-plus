@@ -80,6 +80,9 @@
 - `Verify` and `Horn` treat all variables in `modifies` attributes as global
   variables, which holds for Boogie input (the parser checks it), but not
   for Dafny `modifies` clauses.
+- No `old(e)` in postconditions (and loop invariants) to refer to the values of
+  global variables at the entry of a procedure, in Boogie and Dafny;
+  `Horn` already names these values `g$i` in the postcondition predicates.
 - `Horn` names the values of the global variables at the entry of a procedure
   `g$0, g$1, ...`, which may clash with names in the input.
 - Printer: datatypes, `continue`, attributes of loops other than `invariant`
@@ -99,7 +102,11 @@
 ## Hybrid programs as part of the Dafny grammar
 
 - we want to extend the Dafny front-end with some non-standard features form Platzer's dL
-- first, create `Iter(body, attrs)` as a variant of `While` without the test, it should represent a while loop with nondeterministic iterations, in `Cmd`
-- then, add cases for `Iter` to the verifier and horn clause translator
-- then parse `while *` in Dafny and boogie to `Iter`, do that transfromation in the parser like for choice
-- 
+- `Iter(body, attrs)` ([core/Prog.scala](src/cuvee/core/Prog.scala)) is a loop with
+  nondeterministic iterations, `while * { ... }` in Dafny and `while (*) { ... }`
+  in Boogie, supported by `Verify`, `Horn`, and the printers; the SMT-LIB
+  printer writes `(iter body attrs)`, which the SMT-LIB parser does not read
+  (it reads no programs at all)
+- we add a new type of expressions `Diff(xs: List[Var], expr: Expr)` to represent the (time-)derivative  of expr wrt. variables xs
+- we add `.primed` to variables, which just add a "'" symbol to the name part, via a primed method in Name
+- we will simplify `Diff` in the simplifier later, don't implement that part yet

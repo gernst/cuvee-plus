@@ -143,18 +143,27 @@ object Verify extends Transform:
         And(left_, right_)
 
       case While(test, body, attrs) =>
-        val inv = And(attrs.values[Expr]("invariant"))
-        // calls in the body modify the global variables in the modifies attribute of the loop
-        val xs = (body.mod ++ modifies(attrs)).toList
+        loop(state, gs, proc, Some(test), body, attrs, post, return_)
 
-        // the measure must decrease from the start to the end of each iteration, i.e., also on continue,
-        // its values at the start are the fresh variables ms, which are replaced by the measure afterwards
-        val dec = attrs.values[Expr]("decreases")
-        val ms = Expr.vars("m", dec.map(_.typ)).fresh
-        val su = Subst.from(ms, dec)
-        val iter = And(inv, decreases(dec, ms))
+      case Iter(body, attrs) =>
+        loop(state, gs, proc, None, body, attrs, post, return_)
 
-        val step = Imp(test, su(wp(state, gs, proc, body, iter, post, iter, return_)))
-        val exit = Imp(Not(test), post)
+  // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
+  def loop(state: State, gs: List[Var], proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
+    val inv = And(attrs.values[Expr]("invariant"))
+    // calls in the body modify the global variables in the modifies attribute of the loop
+    val xs = (body.mod ++ modifies(attrs)).toList
 
-        And(inv, All(xs, Imp(inv, And(step, exit))))
+    // the measure must decrease from the start to the end of each iteration, i.e., also on continue,
+    // its values at the start are the fresh variables ms, which are replaced by the measure afterwards
+    val dec = attrs.values[Expr]("decreases")
+    val ms = Expr.vars("m", dec.map(_.typ)).fresh
+    val su = Subst.from(ms, dec)
+    val iter = And(inv, decreases(dec, ms))
+
+    val step_ = su(wp(state, gs, proc, body, iter, post, iter, return_))
+    val (step, exit) = test match
+      case Some(test) => (Imp(test, step_), Imp(Not(test), post))
+      case None       => (step_, post)
+
+    And(inv, All(xs, Imp(inv, And(step, exit))))

@@ -290,8 +290,13 @@ object Horn extends Transform:
       // break leads to next, continue to inv,
       // and the annotated invariant is the query inv(scope) ∧ ¬invariant ⇒ false;
       // the body ranges over the scope extended by fresh variables ms for the values of the measure at the start of the iteration,
-      // which are dropped on each way out of the body, where the end of an iteration is the query iter(scope, ms) ∧ ¬(measure < ms) ⇒ false
-      case While(test, body, attrs) :: rest =>
+      // which are dropped on each way out of the body, where the end of an iteration is the query iter(scope, ms) ∧ ¬(measure < ms) ⇒ false;
+      // nondeterministic iterations have no test, i.e., inv(scope) leads to both body and next
+      case (loop @ (_: While | _: Iter)) :: rest =>
+        val (test, body, attrs) = (loop: @unchecked) match
+          case While(test, body, attrs) => (List(test), body, attrs)
+          case Iter(body, attrs)        => (Nil, body, attrs)
+
         val dec = attrs.values[Expr]("decreases")
         val ms = Expr.vars("m", dec.map(_.typ)).fresh
         val scope_ = scope ++ ms
@@ -306,8 +311,8 @@ object Horn extends Transform:
         val invariant = And(attrs.values[Expr]("invariant"))
 
         clause(scope, List(App(pre, scope)), App(inv, scope), clauses)
-        clause(scope, List(App(inv, scope), test), App(body_, scope ++ dec), clauses)
-        clause(scope, List(App(inv, scope), Not(test)), App(next, scope), clauses)
+        clause(scope, App(inv, scope) :: test, App(body_, scope ++ dec), clauses)
+        clause(scope, App(inv, scope) :: test.map(Not(_)), App(next, scope), clauses)
         clause(scope, List(App(inv, scope), Not(invariant)), False, clauses)
         if dec.nonEmpty then
           clause(scope_, List(App(iter, scope_), Not(Verify.decreases(dec, ms))), False, clauses)

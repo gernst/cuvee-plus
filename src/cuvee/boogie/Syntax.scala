@@ -61,7 +61,8 @@ case class Call(lhs: List[String], proc: String, args: List[Expr]) extends Prog
 case class Block(locals: List[(String, Type)], progs: List[Prog]) extends Prog
 // the test is None for a nondeterministic choice, if (*) { left } else { right }
 case class If(test: Option[Expr], left: Prog, right: Prog) extends Prog
-case class While(test: Expr, specs: List[Spec], body: Prog) extends Prog
+// the test is None for nondeterministic iterations, while (*) { body }
+case class While(test: Option[Expr], specs: List[Spec], body: Prog) extends Prog
 
 object Assume extends (Expr => Prog)
 object Assert extends (Expr => Prog)
@@ -70,7 +71,7 @@ object Havoc extends (List[String] => Prog)
 object Call extends ((List[String], String, List[Expr]) => Prog)
 object Block extends ((List[(String, Type)], List[Prog]) => Prog)
 object If extends ((Option[Expr], Prog, Prog) => Prog)
-object While extends ((Expr, List[Spec], Prog) => Prog)
+object While extends ((Option[Expr], List[Spec], Prog) => Prog)
 
 // the specification clauses of procedures and loops, in any order;
 // modifies clauses of loops are an extension of Boogie

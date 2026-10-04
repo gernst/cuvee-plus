@@ -315,6 +315,10 @@ object Type:
         val body_ = check(state, scope, fixed, body, true)
         While(test_, body_, attrs)
 
+      case Iter(body, attrs) =>
+        val body_ = check(state, scope, fixed, body, true)
+        Iter(body_, attrs)
+
   def formula(state: State, scope: Scope, phi: Expr) =
     check(state, scope, phi, Sort.bool)
 

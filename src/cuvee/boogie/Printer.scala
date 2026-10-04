@@ -298,7 +298,8 @@ object Printer extends cuvee.pipe.Printer:
   def havoc(xs: List[Var]): Doc =
     Group(text("havoc") ++ Nest(2, line ++ commas(xs.map(doc(_))))) ++ text(";")
 
-  // choices are nondeterministic if statements, if (*) { ... } else { ... }
+  // choices are nondeterministic if statements, if (*) { ... } else { ... },
+  // nondeterministic iterations are loops without test, while (*) { ... }
   def doc(prog: Prog): Doc =
     prog match
       case Break =>
@@ -362,13 +363,19 @@ object Printer extends cuvee.pipe.Printer:
       case If(test, left, right) =>
         text("if") +:+ parens(test) +:+ block(left) +:+ text("else") +:+ block(right)
 
-      // loops have no attributes other than their specification clauses in Boogie, e.g. no decreases
       case While(test, body, attrs) =>
-        val other = attrs.attrs.filterNot(isClause(_, _))
-        Error.report("attributes of loops not supported in Boogie", other):
-          require(other.isEmpty)
+        loop(parens(test), body, attrs)
 
-        header(text("while") +:+ parens(test), clauses(attrs), Some(block(body)))
+      case Iter(body, attrs) =>
+        loop(text("(*)"), body, attrs)
+
+  // loops have no attributes other than their specification clauses in Boogie, e.g. no decreases
+  def loop(test: Doc, body: Prog, attrs: Attrs): Doc =
+    val other = attrs.attrs.filterNot(isClause(_, _))
+    Error.report("attributes of loops not supported in Boogie", other):
+      require(other.isEmpty)
+
+    header(text("while") +:+ test, clauses(attrs), Some(block(body)))
 
   def parens(expr: Expr): Doc =
     Group(text("(") ++ doc(expr) ++ text(")"))

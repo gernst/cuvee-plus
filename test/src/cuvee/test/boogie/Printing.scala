@@ -78,6 +78,11 @@ object Printing extends TestSuite:
       prog(While(app(Fun.int.lt, x, y), Block(Nil, Nil), attrs)) ==>
         List("while (x < y)", "  invariant x <= y;", "  modifies a;", "{}")
 
+    test("iter"):
+      val attrs = cuvee.sexpr.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
+      prog(Iter(Assign(List(x), List(y)), attrs)) ==>
+        List("while (*)", "  invariant x <= y;", "{", "  x := y;", "}")
+
     test("unsupported"):
       error(prog(Continue)) ==> "continue not supported in Boogie"
       val dec = cuvee.sexpr.Attrs(List("decreases" -> Some(x)))

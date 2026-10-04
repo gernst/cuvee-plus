@@ -444,8 +444,13 @@ class Parser(var state: State):
         val right_ = resolve(scope, right)
         state.progs.choice(left_, right_)
 
-      case While(test, invs, dec, body) =>
+      case While(Some(test), invs, dec, body) =>
         val test_ = resolve(scope, test)
         val body_ = resolve(scope, body)
         val attrs_ = invariants(scope, invs, dec)
         state.progs.while_(test_, body_, attrs_)
+
+      case While(None, invs, dec, body) =>
+        val body_ = resolve(scope, body)
+        val attrs_ = invariants(scope, invs, dec)
+        state.progs.iter(body_, attrs_)

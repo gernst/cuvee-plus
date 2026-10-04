@@ -38,6 +38,11 @@ object Printing extends TestSuite:
       val prog = If(App(Fun.int.lt, List(x, y)), Break, If(App(Fun.int.lt, List(y, x)), Continue, Block(Nil, Nil)))
       Printer.lines(prog) ==> List("if x < y {", "  break;", "} else if y < x {", "  continue;", "}")
 
+    test("iter"):
+      val attrs = cuvee.sexpr.Attrs(List("invariant" -> Some(App(Fun.int.le, List(x, y)))))
+      Printer.lines(Iter(Assign(List(x), List(y)), attrs)) ==>
+        List("while *", "  invariant x <= y", "{", "  x := y;", "}")
+
     test("mixfix"):
       expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
       expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"

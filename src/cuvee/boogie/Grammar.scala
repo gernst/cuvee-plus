@@ -216,7 +216,7 @@ object Grammar:
   val else_block_or_skip =
     P(("else" ~ (if_ | block)) | R(Skip))
 
-  // the guard * of a choice
+  // the guard * of a choice or of nondeterministic iterations
   val star = op("*")
 
   val guard =
@@ -226,7 +226,7 @@ object Grammar:
     If(P("if" ~ parens(guard) ~ block ~ else_block_or_skip))
 
   val while_ =
-    While(P("while" ~ parens(expr) ~ (invariant | modifies).* ~ block))
+    While(P("while" ~ parens(guard) ~ (invariant | modifies).* ~ block))
 
   val prog: Parser[Prog] =
     P(break | return_ | assume | assert | havoc | call | if_ | while_ | block | assign)

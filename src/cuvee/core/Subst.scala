@@ -150,6 +150,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
       case While(test, body, attrs) =>
         While(this(test), this(body), this(attrs))
 
+      case Iter(body, attrs) =>
+        Iter(this(body), this(attrs))
+
   @targetName("Subst.applyParams")
   def apply(params: List[Param]): List[Param | T] =
     for p <- params

@@ -49,3 +49,8 @@ case class If(test: Expr, left: Prog, right: Prog) extends Prog:
 
 case class While(test: Expr, body: Prog, attrs: Attrs) extends Prog:
   def mod = body.mod
+
+// a loop with a nondeterministic number of iterations, while * { body },
+// which corresponds to the repetition of hybrid programs in dL
+case class Iter(body: Prog, attrs: Attrs) extends Prog:
+  def mod = body.mod

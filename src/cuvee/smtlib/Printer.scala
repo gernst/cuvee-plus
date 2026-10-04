@@ -363,3 +363,6 @@ object Printer extends cuvee.pipe.Printer:
 
       case While(test, body, attrs) =>
         apps(atom("while"), lines(test), lines(body), lines(attrs))
+
+      case Iter(body, attrs) =>
+        apps(atom("iter"), lines(body), lines(attrs))

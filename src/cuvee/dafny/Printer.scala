@@ -314,6 +314,7 @@ object Printer extends cuvee.pipe.Printer:
 
   // statements that are not part of Dafny:
   // choices are nondeterministic if statements, if * { ... } else { ... },
+  // nondeterministic iterations are loops without test, while * { ... },
   // general specifications name the modified variables, spec x, y requires pre ensures post;
   def doc(prog: Prog): Doc =
     prog match
@@ -375,6 +376,9 @@ object Printer extends cuvee.pipe.Printer:
 
       case While(test, body, attrs) =>
         header(text("while") ++ attributes(attrs) +:+ doc(test), attrs, Some(block(body)))
+
+      case Iter(body, attrs) =>
+        header(text("while") ++ attributes(attrs) +:+ text("*"), attrs, Some(block(body)))
 
   // types are not broken across lines
   def doc(typ: Type): Doc =

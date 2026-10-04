@@ -299,6 +299,9 @@ case class State(
     def while_(test: Expr, body: Prog, attrs: Attrs) =
       While(test, body, attrs)
 
+    def iter(body: Prog, attrs: Attrs) =
+      Iter(body, attrs)
+
   object cmds:
     def declareSort(name: Name) =
       val con = sorts(name)

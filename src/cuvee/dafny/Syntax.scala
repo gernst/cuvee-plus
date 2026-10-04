@@ -58,7 +58,8 @@ case class Assign(lhs: List[String], rhs: List[Expr]) extends Prog
 case class Block(locals: List[Local], progs: List[Prog]) extends Prog
 // the test is None for a nondeterministic choice, if * { left } else { right }
 case class If(test: Option[Expr], left: Prog, right: Prog) extends Prog
-case class While(test: Expr, invs: List[Expr], dec: List[List[Expr]], body: Prog) extends Prog
+// the test is None for nondeterministic iterations, while * { body }
+case class While(test: Option[Expr], invs: List[Expr], dec: List[List[Expr]], body: Prog) extends Prog
 
 // local variable declarations with optional initial values, var x: int, y: int := 1, 2;
 case class Local(vars: List[(String, Type)], init: Option[List[Expr]])
@@ -69,7 +70,7 @@ object Assert extends (Expr => Prog)
 object Assign extends ((List[String], List[Expr]) => Prog)
 object Block extends ((List[Local], List[Prog]) => Prog)
 object If extends ((Option[Expr], Prog, Prog) => Prog)
-object While extends ((Expr, List[Expr], List[List[Expr]], Prog) => Prog)
+object While extends ((Option[Expr], List[Expr], List[List[Expr]], Prog) => Prog)
 
 case class Sel(name: String, typ: Type)
 case class Constr(name: String, sels: List[Sel])

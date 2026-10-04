@@ -350,9 +350,9 @@ class Parser(var state: State):
         state.progs.choice(left_, right_)
 
       // calls in the body may modify the global variables in the modifies clause of the loop only,
-      // which must be modifiable outside of the loop
+      // which must be modifiable outside of the loop;
+      // loops without test are nondeterministic iterations
       case While(test, specs, body) =>
-        val test_ = resolve(scope, test)
         val attrs_ = contract(scope, specs)
 
         val mod_ = modifies(attrs_)
@@ -365,4 +365,11 @@ class Parser(var state: State):
           require(unknown.isEmpty)
 
         val body_ = resolve(scope, mod_, body)
-        state.progs.while_(test_, body_, attrs_)
+
+        test match
+          case Some(test) =>
+            val test_ = resolve(scope, test)
+            state.progs.while_(test_, body_, attrs_)
+
+          case None =>
+            state.progs.iter(body_, attrs_)
