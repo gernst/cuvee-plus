@@ -11,10 +11,13 @@ case class Con(name: Name, arity: Int)
 sealed trait Type:
   def name: Name
   def params: Set[Param]
+  // the sort constructors that occur in the type
+  def cons: Set[Con]
   def sig: Option[Sig]
 
 case class Param(name: Name) extends Type:
   def params = Set(this)
+  def cons = Set()
   def sig = None
 
   def asIndex = (name, this)
@@ -25,6 +28,7 @@ case class Param(name: Name) extends Type:
 case class Sort(con: Con, args: List[Type]) extends Type:
   def name = con.name
   def params = args.params
+  def cons = args.cons + con
   def sig = Some(Sig(con.name, args.sig))
 
 object Param extends Counter:

@@ -66,18 +66,14 @@ object Flat extends Transform:
         case None =>
           Nil
 
-    def reaches(typ: Type, seen: Set[Con]): Boolean =
-      typ match
-        case Sort(`con`, _) =>
-          true
+    // the sorts reachable from `cons` through the fields of datatypes
+    def reachable(cons: Set[Con], seen: Set[Con]): Set[Con] =
+      val next = cons -- seen
+      if next.isEmpty
+      then seen
+      else reachable(next.flatMap(fields(_).cons), seen ++ next)
 
-        case Sort(other, args) =>
-          args.exists(reaches(_, seen)) || (!seen.contains(other) && fields(other).exists(reaches(_, seen + other)))
-
-        case _ =>
-          false
-
-    fields(con).exists(reaches(_, Set(con)))
+    reachable(fields(con).cons, Set()).contains(con)
 
   def isRecord(state: State, typ: Type) =
     record(state, typ).isDefined

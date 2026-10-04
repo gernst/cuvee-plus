@@ -24,6 +24,9 @@ extension (self: Iterable[Type])
   @targetName("Types.params")
   def params = self.flatMap(_.params).toSet
 
+  @targetName("Types.cons")
+  def cons = self.flatMap(_.cons).toSet
+
 extension (self: Iterable[Expr])
   @targetName("Exprs.free")
   def free = self.flatMap(_.free).toSet
