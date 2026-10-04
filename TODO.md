@@ -13,11 +13,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- check the flattening operation in this `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Clause.scala` file, implement a similar normalization step as `Normalize` in `simplify`, and integrate it into `Simplify`. should it be the first or last step in `Simplify`? I'm not sure.
 - implement Dafny's additional types set, etc using CVC5's notation if available, ensure the overloading reoslution works propertly
 - add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
 
 ### Deferred (questions for the user)
+
+- note on `Normalize` (from `cuvee.pure.Clause`): it is both the first and the last step of `Simplify` for assertions: first, such that all antecedents are available as context for the succedents; last, since simplification and rewriting may produce nested implications and negations again, and normalization does not change normalized formulas. Unlike the original, `let` is kept, since the simplifier substitutes its bindings, but not equations between a variable and a term, and a clause without succedents is the negation of its antecedents.
 
 - split the `prelude.*` files into `builtin.*` and `prelude.*`
   - done: `builtin.*` is parsed into the initial state, `prelude.*` (Dafny: `chan`, `event`, tuples) is injected at the beginning of the commands, inputs that repeat it are accepted

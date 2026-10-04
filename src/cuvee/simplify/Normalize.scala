@@ -1,0 +1,110 @@
+package cuvee.simplify
+
+import cuvee.core._
+
+// normalization of formulas into clauses forall xs. antecedents ==> succedents, after the earlier Cuvée (cuvee.pure.Clause):
+// conjunctions among the antecedents and disjunctions among the succedents are flattened, implications are split,
+// negations that are not of atoms move to the other side, existential quantifiers among the antecedents and
+// universal quantifiers among the succedents bind their variables in the prefix,
+// let is kept, since the simplifier substitutes its bindings, unlike equations;
+// the antecedents are normalized as clauses themselves, the succedents as conjunctions exists ys. a and not s;
+// unlike Split, the formula is not split into several obligations, it is equivalent to the result
+object Normalize:
+  def apply(phi: Expr): Expr =
+    sequent(phi.free, phi)
+
+  // atoms are not built by the logical connectives and quantifiers
+  def isAtomic(phi: Expr): Boolean =
+    phi match
+      case True | False | And(_) | Or(_) | Imp(_, _) | Not(_) | Bind(_, _, _) => false
+      case _                                                                 => true
+
+  def isSimpleSequent(phi: Expr): Boolean =
+    phi match
+      case Not(psi) => isAtomic(psi)
+      case _        => isAtomic(phi)
+
+  // the clause of `phi`, true if it is trivial
+  def sequent(bound: Set[Var], phi: Expr): Expr =
+    if isSimpleSequent(phi)
+    then phi
+    else
+      flatten(bound, Nil, List(phi)) match
+        case None                 => True
+        case Some((xs, ant, suc)) => clause(xs, ant, suc)
+
+  // the conjunction exists xs. ant and not suc that `phi` holds, false if it is trivial
+  def goal(bound: Set[Var], phi: Expr): Expr =
+    if isAtomic(phi)
+    then phi
+    else
+      flatten(bound, List(phi), Nil) match
+        case None                 => False
+        case Some((xs, ant, suc)) => Ex(xs, And(ant ++ suc.map(Not(_))))
+
+  // a clause without succedents is the negation of its antecedents
+  def clause(xs: List[Var], ant: List[Expr], suc: List[Expr]): Expr =
+    if ant.isEmpty
+    then All(xs, Or(suc))
+    else if suc.isEmpty
+    then All(xs, Not(And(ant)))
+    else All(xs, Imp(And(ant), Or(suc)))
+
+  // the clause forall xs. pos ==> neg as its bound variables, antecedents, and succedents, None if it is trivially true;
+  // `bound` are the variables in scope, which the variables of the prefix are renamed apart from
+  def flatten(bound: Set[Var], pos: List[Expr], neg: List[Expr]): Option[(List[Var], List[Expr], List[Expr])] =
+    (pos, neg) match
+      case (Nil, Nil)          => Some((Nil, Nil, Nil))
+      case (False :: _, _)     => None
+      case (_, True :: _)      => None
+
+      case (True :: pos, neg)      => flatten(bound, pos, neg)
+      case (And(phis) :: pos, neg) => flatten(bound, phis ++ pos, neg)
+
+      case (pos, False :: neg)         => flatten(bound, pos, neg)
+      case (pos, Imp(phi, psi) :: neg) => flatten(bound, pos :+ phi, psi :: neg)
+      case (pos, Or(phis) :: neg)      => flatten(bound, pos, phis ++ neg)
+
+      // negated atoms are kept among the antecedents
+      case (Not(phi) :: pos, neg) if !isAtomic(phi) => flatten(bound, pos, phi :: neg)
+      case (pos, Not(phi) :: neg)                   => flatten(bound, pos :+ phi, neg)
+
+      case (Ex(xs, phi) :: pos, neg) =>
+        val (xs_, phi_) = avoid(bound, xs, phi)
+        for (ys, ant, suc) <- flatten(bound ++ xs_, phi_ :: pos, neg)
+        yield (xs_ ++ ys, ant, suc)
+
+      case (pos, All(xs, phi) :: neg) =>
+        val (xs_, phi_) = avoid(bound, xs, phi)
+        for (ys, ant, suc) <- flatten(bound ++ xs_, pos, phi_ :: neg)
+        yield (xs_ ++ ys, ant, suc)
+
+      // other antecedents are normalized as clauses, which are flattened again if they change
+      case (phi :: pos, neg) =>
+        sequent(bound, phi) match
+          case `phi` =>
+            for (ys, ant, suc) <- flatten(bound, pos, neg)
+            yield (ys, phi :: ant, suc)
+
+          case phi_ =>
+            flatten(bound, phi_ :: pos, neg)
+
+      case (Nil, phi :: neg) =>
+        goal(bound, phi) match
+          case `phi` =>
+            for (ys, ant, suc) <- flatten(bound, Nil, neg)
+            yield (ys, ant, phi :: suc)
+
+          case phi_ =>
+            flatten(bound, Nil, phi_ :: neg)
+
+  // the bound variables `xs` renamed apart from the variables in scope
+  def avoid(bound: Set[Var], xs: List[Var], body: Expr): (List[Var], Expr) =
+    val names = bound.map(_.name)
+    val clash = xs.filter(x => names.contains(x.name))
+
+    if clash.isEmpty
+    then (xs, body)
+    else
+      val su = Subst.from(clash, clash.fresh)
+      (xs.map(x => su(x).asInstanceOf[Var]), su(body))
