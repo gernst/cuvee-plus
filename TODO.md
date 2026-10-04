@@ -5,6 +5,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New TODOs to be integrated, and instructions to address existing TODOs (provided by user)
 
+- start with prioritizing this list by small things first, rewrite this file accordingly
 - introduce class `Upd(cond, rhs)` to represent a single entry in an update, rename the attribute to `updates`, and ensure to make methods `.free`, `.params` as extensions of `List[Upd]`, as done for many other types of expressions
 - avoid constistency constraints like that of `Maps.typ` inside classes, but ensure that they are checked by the parsers
 - add syntactic sugar to `Builtin.scala` for the sequence types
@@ -50,6 +51,13 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - check this splitter: `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Horn.scala` (don't mind the file name), and think if this helps you improve `Split.scala`
 - check the flattening operation in this `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Clause.scala` file, implement a similar normalization step as `Normalize` in `simplify`, and integrate it into `Simplify`. should it be the first or last step in `Simplify`? I'm not sure.
 - there are many occurrences, where a name is unpacked and formatted (e.g., in the printers, and in monomorph), add methods to class `Name` that format a name into a string for the two use-cases: unicode subscripted name and name using `$`, and use those. Neither should be the `.toString` of `Name`.
+- add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
+- in the C frontend, initialized variables should give the initialization constraint for predicate `main_pre`
+- fix printing of div and mod in C
+- implement Dafny's additional types set, etc using CVC5's notation if available, ensure the overloading reoslution works propertly
+- parse and print function `butlast` specially, using left floor and right floor outfix syntax, add `Butlast` and `Counter` syntactic sugars, and use them in `TEQ.scala`
+- in `TEQ.scala`, use capitalized names for the traces, not prefix by `X_`. If the variable is already capitalized, that's ok. Use `?` at the end of the nondet sequences.
+- wrap the combinators in the Dafny printer so that if a line break is necessary, the `check` is below `for` etc... and the subsequent line after `=>` is indented at least some spaces from the surrounding parentheses
 
 ## C frontend
 
