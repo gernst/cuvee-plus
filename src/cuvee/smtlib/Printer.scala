@@ -282,9 +282,9 @@ object Printer extends cuvee.pipe.Printer:
 
   // functions that are not part of SMT-LIB are printed as their SMT-LIB counterparts
   def apply(fun: Fun) =
-    fun.name match
-      case Name("<=>", None) => atom("=")
-      case name              => mangle(name)
+    if fun == Fun.eqv
+    then atom("=")
+    else mangle(fun.name)
 
   def lines(expr: Expr) =
     expr match

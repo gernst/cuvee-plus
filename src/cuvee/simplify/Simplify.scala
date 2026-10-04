@@ -53,7 +53,7 @@ object Simplify extends Transform:
       case Eq(lhs, rhs) =>
         Rule(lhs, rhs)
 
-      case App(fun, _, _, List(lhs, rhs)) if fun.name == Name("<=>", None) =>
+      case Eqv(lhs, rhs) =>
         Rule(lhs, rhs)
 
       case Not(atom) =>
@@ -66,7 +66,7 @@ object Simplify extends Transform:
         Error.raise("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom", phi)
 
   // the logical connectives, which are not boolean atoms
-  val connectives = Set("and", "or", "=>", "not", "ite", "true", "false")
+  val connectives = Set("and", "or", "=>", "<=>", "not", "ite", "true", "false")
 
   // `ctx` is an empty context, which provides the rewrite rules
   def simplify(config: Config, state: State, ctx: Ctx, cmd: Cmd): Cmd =
@@ -193,6 +193,11 @@ object Simplify extends Transform:
         val left_ = simplify(config, state, ctx.neutral, left)
         val right_ = simplify(config, state, ctx.neutral, right)
         eq_(config, state, ctx, left_, right_)
+
+      case Eqv(left, right) =>
+        val left_ = simplify(config, state, ctx.neutral, left)
+        val right_ = simplify(config, state, ctx.neutral, right)
+        eqv(config, state, ctx, left_, right_)
 
       case Distinct(exprs) =>
         val exprs_ = exprs.map(simplify(config, state, ctx.neutral, _))
@@ -399,6 +404,11 @@ object Simplify extends Transform:
 
       case _ =>
         Eq(left, right)
+
+  // equivalences are equations on Bool, the normal form, such that both are known from the context alike,
+  // and as which SMT-LIB writes them
+  def eqv(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
+    eq_(config, state, ctx, left, right)
 
   // false if two of the expressions are equal, true if all of them are pairwise different,
   // e.g. literals, two expressions are distinct exactly if they are not equal

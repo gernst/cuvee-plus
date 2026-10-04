@@ -9,3 +9,6 @@
 (assert (ite p q q))
 (assert (ite p true false))
 (assert (= p true))
+(assert (<=> p true))
+(assert (<=> (and p q) (and p q)))
+(assert (<=> p (not q)))

@@ -7,3 +7,5 @@
 (assert q)
 (assert p)
 (assert p)
+(assert p)
+(assert (= p (not q)))

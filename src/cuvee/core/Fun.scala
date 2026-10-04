@@ -84,6 +84,8 @@ object Fun:
 
   val not = Fun("not", Nil, formals(bool), bool)
   val imp = Fun("=>", Nil, formals(bool, bool), bool)
+  // equivalence, which SMT-LIB writes as = on Bool, declared by the preludes of all frontends
+  val eqv = Fun("<=>", Nil, formals(bool, bool), bool)
   val and = Fun("and", Nil, formals(bool, bool), bool)
   val or = Fun("or", Nil, formals(bool, bool), bool)
 
