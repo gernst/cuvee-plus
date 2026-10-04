@@ -61,6 +61,22 @@ object Flat extends Transform:
 
     reachable(fields(con).cons, Set()).contains(con)
 
+  // the types of the fields of `constr` in the instance `typ` of the datatype,
+  // where the parameters are instantiated by the arguments of `typ`
+  def fields(data: Datatype, typ: Sort, constr: Fun): List[Type] =
+    val su = Subst.from(data.params, typ.args)
+    val Some((_, sels)) = data.constrs.find(_._1 == constr): @unchecked
+    sels.map(sel => su(sel.res))
+
+  // the constructor applied to values for its fields, a value of the instance `typ` of the datatype
+  def construct(data: Datatype, typ: Sort, constr: Fun, args: List[Expr]): Expr =
+    App(constr, fields(data, typ, constr), typ, args)
+
+  // the selector applied to a value of the instance `typ` of the datatype
+  def select(data: Datatype, typ: Sort, sel: Fun, arg: Expr): Expr =
+    val su = Subst.from(data.params, typ.args)
+    App(sel, List(typ), su(sel.res), List(arg))
+
   def isDatatype(state: State, typ: Type) =
     datatype(state, typ).isDefined
 
@@ -85,7 +101,7 @@ object Flat extends Transform:
 
       case Some((sort, data, constr)) =>
         for
-          (sel, typ) <- data.sels zip data.fields(sort, constr);
+          (sel, typ) <- data.sels zip fields(data, sort, constr);
           leaf <- leaves(state, Var(Name(x.name.name + "_" + sel.name.name, x.name.index), typ))
         yield leaf
 
@@ -97,12 +113,12 @@ object Flat extends Transform:
 
       case Some((sort, data, constr)) =>
         val (args, rest) =
-          data.fields(sort, constr).foldLeft((List.empty[Expr], leaves)):
+          fields(data, sort, constr).foldLeft((List.empty[Expr], leaves)):
             case ((args, leaves), typ) =>
               val (arg, rest) = build(state, typ, leaves)
               (args :+ arg, rest)
 
-        (data.construct(sort, constr, args), rest)
+        (construct(data, sort, constr, args), rest)
 
   // the fields of `expr`, recursively for nested records
   def parts(state: State, expr: Expr): List[Expr] =
@@ -116,7 +132,7 @@ object Flat extends Transform:
             args.flatMap(parts(state, _))
 
           case _ =>
-            data.sels.flatMap(sel => parts(state, data.select(sort, sel, expr)))
+            data.sels.flatMap(sel => parts(state, select(data, sort, sel, expr)))
 
   // bound variables of the sorts of records are replaced by the constructor applied to fresh variables for the fields,
   // which are fresh if their names clash with the other variables of the binder
@@ -159,7 +175,7 @@ object Flat extends Transform:
 
       case App(fun, inst, typ, args) =>
         val args_ = args.map(flat(state, _))
-        select(state, App(fun, inst, typ, args_))
+        reduce(state, App(fun, inst, typ, args_))
 
       case Distinct(exprs) =>
         Distinct(exprs.map(flat(state, _)))
@@ -177,7 +193,7 @@ object Flat extends Transform:
         expr
 
   // selectors applied to the constructor of a record
-  def select(state: State, expr: Expr): Expr =
+  def reduce(state: State, expr: Expr): Expr =
     expr match
       case App(sel, _, _, List(arg)) =>
         datatype(state, arg.typ) match
