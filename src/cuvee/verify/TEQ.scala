@@ -214,8 +214,6 @@ object TEQ extends Transform:
     val Xs = xs.map(x => Var(x.name.name.capitalize, Sort.trace(x.typ)).fresh)
     val cur = xs.fresh
 
-    def butlast(tr: Var) = App(Fun.trace.butlast, List(tr))
-
     // the update of x_j has a case for each path, the dependencies are the other loop variables and choices it uses
     val equations =
       for ((x, x_), tr) <- xs zip sharp zip Xs
@@ -224,16 +222,16 @@ object TEQ extends Transform:
         val used = updates.free
         val others = (sharp zip Xs).filter((y_, _) => y_ != x_ && used.contains(y_))
         val choices = (zs zip Zs).filter((z, _) => used.contains(z))
-        val deps = butlast(K) :: others.map((_, tr_) => butlast(tr_)) ++ choices.map(_._2)
+        val deps = Butlast(K) :: others.map((_, tr_) => Butlast(tr_)) ++ choices.map(_._2)
         val bound = k :: others.map(_._1) ++ choices.map(_._1)
         Eq(tr, Trace(p(x), deps, x_, bound, updates))
 
-    val counter = Eq(K, App(Fun.trace.counter, List(Zero.int, One.int, n)))
+    val counter = Eq(K, Counter(Zero.int, One.int, n))
     val current = for (x, tr) <- cur zip Xs yield Eq(x, App(Fun.trace.current, List(tr)))
 
     // all earlier iterations have taken some path through the body, with the guard holding before each of them
     val iterations =
-      val deps = butlast(K) :: Xs.map(butlast) ++ Zs
+      val deps = Butlast(K) :: Xs.map(Butlast(_)) ++ Zs
       val bound = k :: sharp ++ zs
       val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C)))
       Invs(deps, bound, And(inner(guard), paths_))

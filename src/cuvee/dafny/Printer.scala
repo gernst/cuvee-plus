@@ -664,6 +664,10 @@ object Printer extends cuvee.pipe.Printer:
 
         Group(args_.head ++ Nest(2, concat(args_.tail.map(line ++ text(op) +:+ _))))
 
+      // all but the last element of a trace
+      case Butlast(arg) =>
+        text("⌊") ++ doc(arg) ++ text("⌋")
+
       case App(fun, _, _, Nil) =>
         text(name(fun.name))
 

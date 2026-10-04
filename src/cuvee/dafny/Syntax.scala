@@ -41,6 +41,8 @@ case class Tuple(args: List[Expr]) extends Expr
 // sequence literals [a, b, c] and the length |s| of a sequence
 case class SeqLit(args: List[Expr]) extends Expr
 case class Len(arg: Expr) extends Expr
+// all but the last element ⌊X⌋ of a trace
+case class Butlast(arg: Expr) extends Expr
 // the derivative (x, y :: e)' of e with respect to x and y
 case class Diff(xs: List[String], expr: Expr) extends Expr
 case class App(fun: String, args: List[Expr], access: List[Access]) extends Expr
@@ -59,6 +61,7 @@ object Str extends (String => Expr)
 object Tuple extends (List[Expr] => Expr)
 object SeqLit extends (List[Expr] => Expr)
 object Len extends (Expr => Expr)
+object Butlast extends (Expr => Expr)
 object Diff extends ((List[String], Expr) => Expr)
 object App extends ((String, List[Expr], List[Access]) => Expr)
 

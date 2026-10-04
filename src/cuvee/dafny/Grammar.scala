@@ -188,8 +188,11 @@ object Grammar:
   val len =
     Len(P("|" ~ expr ~ "|"))
 
+  val butlast =
+    Butlast(P("⌊" ~ expr ~ "⌋"))
+
   val atom: Parser[Expr] =
-    P(diff | tuple | seq | len | lit | bind | let | ite | combinator | app)
+    P(diff | tuple | seq | len | butlast | lit | bind | let | ite | combinator | app)
 
   // indexing and slices of other atoms than names and calls, which take their accesses themselves,
   // members and testers are accessed on variables only

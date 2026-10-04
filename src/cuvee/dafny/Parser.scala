@@ -373,6 +373,10 @@ class Parser(var state: State):
         val arg_ = resolve(scope, arg)
         state.exprs.app(core.Fun.seq.len, List(arg_))
 
+      case Butlast(arg) =>
+        val arg_ = resolve(scope, arg)
+        state.exprs.app(core.Fun.trace.butlast, List(arg_))
+
       // x in s holds if s contains the sequence [x] of length 1
       case App("in", List(elem, seq), Nil) =>
         val elem_ = resolve(scope, elem)

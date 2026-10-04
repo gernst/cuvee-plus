@@ -32,7 +32,7 @@ kw  = "type" | "const" | "function" | "axiom" | "lemma" | "var" | "procedure"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant"
     | "if" | "then" | "else" | "while" | "break" | "return"
     | "assert" | "assume" | "havoc" | "call" | "forall" | "exists"
-    | "(" | ")" | "[" | "]" | "::" | [;,:{}] | "{:" | ":=" | "="
+    | "(" | ")" | "[" | "]" | "::" | [;,:{}] | "{:" | ":=" | "=" | "⌊" | "⌋"
 
 // identifiers as in Boogie, together with the subscripts of indexed names
 idchar = [a-zA-Z'~#$\^_.?`\\⁰-⁹₀-₉]

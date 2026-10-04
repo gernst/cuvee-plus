@@ -26,7 +26,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
   execution, where each loop is summarized by a trace equation system: one
   trace per modified variable, `trace(e, for Y do x, y => u)`, and the
   constraint that all earlier iterations took a path through the body,
-  `all(for Y check y => φ)`. Loop-free programs go directly to a solver,
+  `all(for Y check y => φ)`, where the dependencies are traces without their
+  last element, `⌊X⌋` in Dafny and Boogie (`butlast`, sort `Trace<T>`).
+  Loop-free programs go directly to a solver,
   loops need rewriting by lemmas first (in progress, see below).
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the

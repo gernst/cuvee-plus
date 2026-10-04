@@ -12,6 +12,9 @@ type set<a₀>
 type multiset<a₀>
 type map<a₀, a₁>
 
+// the traces of trace equation systems, the values of a variable at the loop head (see cuvee.core.Sort.trace)
+type Trace<a₀>
+
 // the events of parallel components, values sent and received on channels,
 // the global history of events, e.g. var history: seq<event<int>>;
 // and the methods send and receive are declared by the input (see examples/dafny/par.dfy)

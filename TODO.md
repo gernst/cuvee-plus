@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- parse and print function `butlast` specially, using left floor and right floor outfix syntax, add `Butlast` and `Counter` syntactic sugars, and use them in `TEQ.scala`
 - In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
 - Implement `n + 1 < m <==> n <= m` as a simplification step, similarly when `<=` becomes `<` by dropping `+ 1`. Use `Succ` for this, and only do that for integers, check if I got this correct first
 - implement `Monomorph` without a separate class that has mutable state, use `Ref` from `util` instead
@@ -186,6 +185,10 @@ inferred from the call graph. Open:
   test of a branch could be used up to the first assignment to their
   variables. It has no rules for sequences.
 
+- The functions on traces other than `butlast` (`⌊X⌋` in Dafny and Boogie),
+  i.e. `counter`, `current`, `steps`, `length`, `nth`, `earlier`, are not
+  declared by the preludes, since their names would clash with functions of
+  the input; hence the goals of `-teq` do not parse back.
 - The combinators of trace equation systems are written
   `trace(e, for Y do x, y => u)`, `map(for Y yield y => u)`, and
   `all(for Y check y => φ)` in Dafny and Boogie, where updates with several

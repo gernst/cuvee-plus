@@ -194,8 +194,12 @@ object Grammar:
   val combinator =
     P(trace_ | map_ | all_)
 
+  // all but the last element of a trace
+  val butlast =
+    Butlast(P("⌊" ~ expr ~ "⌋"))
+
   val inner: Parser[Expr] =
-    P(lit | parenthesized | ite | combinator | app)
+    P(lit | parenthesized | ite | butlast | combinator | app)
 
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))

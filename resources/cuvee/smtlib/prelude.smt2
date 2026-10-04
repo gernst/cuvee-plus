@@ -7,6 +7,8 @@
 (declare-sort String 0)
 (declare-sort Array 2)
 (declare-sort Seq 1)
+; not SMT-LIB, the traces of trace equation systems (see cuvee.core.Sort.trace)
+(declare-sort Trace 1)
 
 (declare-const true Bool)
 (declare-const false Bool)
@@ -30,6 +32,9 @@
 (declare-fun seq.extract (par (a$0) ((Seq a$0) Int Int) (Seq a$0)))
 (declare-fun seq.contains (par (a$0) ((Seq a$0) (Seq a$0)) Bool))
 (declare-fun seq.prefixof (par (a$0) ((Seq a$0) (Seq a$0)) Bool))
+
+; not SMT-LIB, all but the last element of a trace (see cuvee.core.Fun.trace)
+(declare-fun butlast (par (a$0) ((Trace a$0)) (Seq a$0)))
 
 (declare-fun not (Bool) Bool)
 (declare-fun => (Bool Bool) Bool)

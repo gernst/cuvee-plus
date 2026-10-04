@@ -34,6 +34,8 @@ case class Num(value: String) extends Expr
 // decimal literals of type real, e.g. 1.5
 case class Dec(value: String) extends Expr
 case class Str(value: String) extends Expr
+// all but the last element ⌊X⌋ of a trace
+case class Butlast(arg: Expr) extends Expr
 case class App(fun: String, args: List[Expr], access: List[Access]) extends Expr
 case class Ite(test: Expr, left: Expr, right: Expr) extends Expr
 // each trigger is a list of expressions, e.g. { f(x), g(x) }
@@ -43,6 +45,7 @@ case class All(bound: List[(String, Type)], triggers: List[List[Expr]], body: Ex
 object Num extends (String => Expr)
 object Dec extends (String => Expr)
 object Str extends (String => Expr)
+object Butlast extends (Expr => Expr)
 object App extends ((String, List[Expr], List[Access]) => Expr)
 
 // the combinators of trace equation systems, trace(init, for deps do acc, bound => update),

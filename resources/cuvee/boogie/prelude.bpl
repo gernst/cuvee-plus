@@ -9,6 +9,9 @@ type array<a₀, a₁>;
 // sequences, e.g. the dependencies of the combinators of trace equation systems
 type Seq<a₀>;
 
+// the traces of trace equation systems, the values of a variable at the loop head (see cuvee.core.Sort.trace)
+type Trace<a₀>;
+
 const true: bool;
 const false: bool;
 

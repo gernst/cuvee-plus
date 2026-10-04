@@ -269,6 +269,10 @@ class Parser(var state: State):
         val base_ = state.exprs.app(fun, args_)
         resolve(scope, base_, access)
 
+      case Butlast(arg) =>
+        val arg_ = resolve(scope, arg)
+        state.exprs.app(core.Fun.trace.butlast, List(arg_))
+
       case Ite(test, left, right) =>
         val test_ = resolve(scope, test)
         val left_ = resolve(scope, left)

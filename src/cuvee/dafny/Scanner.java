@@ -34,7 +34,7 @@ public class Scanner implements cuvee.pipe.Scanner {
   private static final int [] ZZ_CMAP_TOP = zzUnpackcmap_top();
 
   private static final String ZZ_CMAP_TOP_PACKED_0 =
-    "\1\0\37\u0100\1\u0200\267\u0100\10\u0300\u1020\u0100";
+    "\1\0\37\u0100\1\u0200\2\u0100\1\u0300\264\u0100\10\u0400\u1020\u0100";
 
   private static int [] zzUnpackcmap_top() {
     int [] result = new int[4352];
@@ -71,10 +71,10 @@ public class Scanner implements cuvee.pipe.Scanner {
     "\1\37\1\40\1\41\1\42\1\43\1\44\1\45\1\46"+
     "\1\47\1\50\1\51\1\52\1\53\1\24\1\13\1\54"+
     "\1\13\1\10\6\0\1\3\u01a2\0\2\3\106\0\12\10"+
-    "\6\0\12\10\166\0\u0100\3";
+    "\6\0\12\10\200\0\2\13\364\0\u0100\3";
 
   private static int [] zzUnpackcmap_blocks() {
-    int [] result = new int[1024];
+    int [] result = new int[1280];
     int offset = 0;
     offset = zzUnpackcmap_blocks(ZZ_CMAP_BLOCKS_PACKED_0, offset, result);
     return result;
