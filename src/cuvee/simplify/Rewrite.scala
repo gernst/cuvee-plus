@@ -74,6 +74,7 @@ class Rewrite(rules: List[Rule], holds: Expr => Boolean = _ == True, steps: Int 
       Error.report("rewriting does not terminate", rule, expr):
         require(remaining > 0)
       remaining -= 1
+      cuvee.Debug.info("rewrite", Simplify.show(expr) + "  ~>  " + Simplify.show(rhs))
       rhs
 
   // all matches of the pattern `pat` to `expr` that extend `m`
@@ -297,6 +298,9 @@ object Rewrite:
   // rewrite `expr` with `rules` until no rule applies
   def apply(rules: List[Rule], expr: Expr): Expr =
     new Rewrite(rules)(expr)
+
+  def apply(rules: List[Rule], holds: Expr => Boolean): Rewrite =
+    new Rewrite(rules, holds)
 
   // patterns that are sums on Int or Real
   def arithmetic(pat: Expr): Boolean =

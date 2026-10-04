@@ -172,7 +172,8 @@ inferred from the call graph. Open:
   equation system of a loop occurs twice in the goal (safety of the body and
   exit).
 - The rewrite engine ([simplify/Rewrite.scala](src/cuvee/simplify/Rewrite.scala))
-  is not connected yet; it matches modulo A/C of `+` and `-` only (not `*`),
+  is applied by the simplifier after each round with the rules of its context
+  (`Ctx.rules`), but no rules can be given on the command line yet; it matches modulo A/C of `+` and `-` only (not `*`),
   where all but the last variable of a sum take a single summand or none, and
   it does not instantiate the bound variables of the combinators by
   conditional expressions or follow equations from the context (rule

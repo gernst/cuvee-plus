@@ -89,7 +89,8 @@ mill -i run -verify -simplify -z3 examples/hybrid.dfy       # hybrid programs
 mill -i run -verify -print smt2 examples/vcgen/max.dfy      # show the goals
 ```
 
-`-help` lists all options.
+`-help` lists all options. `-debug simplify,rewrite` prints the steps of the
+simplifier and of the rewrite engine that change an expression.
 
 ## Documentation
 

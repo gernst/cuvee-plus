@@ -93,16 +93,34 @@ object Simplify extends Transform:
 
   // simplify `expr` assuming that all facts in `ctx` hold
   // by repeated rounds of simplification until a fixpoint is reached,
-  // a formula that is known from the context is replaced by its truth value
+  // a formula that is known from the context is replaced by its truth value;
+  // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
   def simplify(state: State, ctx: Ctx, expr: Expr): Expr =
     ctx.lookup(expr) match
       case Some(true)  => True
       case Some(false) => False
       case None =>
-        val expr_ = once(state, ctx, expr)
+        val once_ = once(state, ctx, expr)
+        if once_ != expr
+        then cuvee.Debug.info("simplify", show(expr) + "  ~>  " + show(once_))
+
+        val expr_ = rewrite(state, ctx, once_)
         if expr_ == expr
         then expr
         else simplify(state, ctx, expr_)
+
+  // expressions in debug output, on a single line
+  def show(expr: Expr): String =
+    cuvee.smtlib.Printer.lines(expr).map(_.trim).mkString(" ")
+
+  // a single step with the rewrite rules of the context at the top of `expr`,
+  // where the conditions of the rules are decided by simplification in the context
+  def rewrite(state: State, ctx: Ctx, expr: Expr): Expr =
+    if ctx.rules.isEmpty
+    then expr
+    else
+      val holds = (phi: Expr) => simplify(state, ctx.neutral, phi) == True
+      Rewrite(ctx.rules, holds).step(expr).getOrElse(expr)
 
   // a single round of simplification, dispatching on the builtin functions,
   // subterms are simplified first, where ite and the boolean connectives

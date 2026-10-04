@@ -105,3 +105,35 @@ object Rewrite extends TestSuite:
       val rules = List(Rule(app(f, Plus.int(x, y)), app(g, y)))
       R(rules, app(f, Plus.int(a, Zero.int))) ==> app(g, Zero.int)
       R(rules, app(f, a)) ==> app(f, a)
+
+// the simplifier applies the rewrite rules of its context after each round of simplification
+object SimplifyRules extends TestSuite:
+  import cuvee.simplify.{Ctx, Simplify}
+
+  val a = Var("a", Sort.int)
+  val x = Var("x", Sort.int)
+  val f = Fun("f", Nil, Fun.formals(Sort.int), Sort.int)
+  val g = Fun("g", Nil, Fun.formals(Sort.int), Sort.int)
+  val abs = Fun("abs", Nil, Fun.formals(Sort.int), Sort.int)
+
+  def app(fun: Fun, args: Expr*) = App(fun, args.toList)
+
+  def simplify(rules: List[Rule], expr: Expr) =
+    Simplify.simplify(State.empty, Ctx.pos.withRules(rules), expr)
+
+  val tests = Tests:
+    // the argument is simplified first, then the rule applies to the result
+    test("after simplification"):
+      val rules = List(Rule(app(f, app(g, x)), x))
+      simplify(rules, app(f, app(g, Plus.int(a, Zero.int)))) ==> a
+
+    // the condition of the rule follows from the context
+    test("conditional"):
+      val rules = List(Rule(app(abs, x), x, Le.int(Zero.int, x)))
+      simplify(rules, Imp(Le.int(Zero.int, a), Eq(app(abs, a), a))) ==> True
+      simplify(rules, Eq(app(abs, a), a)) ==> Eq(app(abs, a), a)
+
+    // the results of rules are simplified further
+    test("further"):
+      val rules = List(Rule(app(f, x), Plus.int(x, Minus.int(x, x))))
+      simplify(rules, Eq(app(f, a), a)) ==> True

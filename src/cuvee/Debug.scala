@@ -4,7 +4,8 @@ object Debug:
   // modules for which debug output is enabled, see command line option -debug
   var modules: Set[String] = Set()
 
-  def info(what: String, msg: String) =
+  // the message is computed only if debugging is enabled for `what`
+  def info(what: String, msg: => String) =
     if modules.contains(what)
     then System.err.println("[" + what + "] " + msg)
 

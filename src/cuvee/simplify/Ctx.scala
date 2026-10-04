@@ -10,15 +10,20 @@ import cuvee.core._
 // Some(false) if it occurs negatively, and None if it occurs in both ways or not in a formula,
 // e.g. below an equation or in the argument of a function;
 // the context is inconsistent if it contains a contradiction,
-// then the current position is irrelevant for the truth value of the whole formula
+// then the current position is irrelevant for the truth value of the whole formula;
+// the rewrite rules are applied after each round of simplification (see Simplify.simplify)
 case class Ctx(
     bound: List[Var],
     assms: List[Expr],
     concls: List[Expr],
     su: Subst[Nothing, Var],
     polarity: Option[Boolean],
-    inconsistent: Boolean
+    inconsistent: Boolean,
+    rules: List[Rule] = Nil
 ):
+  def withRules(rules: List[Rule]) =
+    copy(rules = rules)
+
   def bind(xs: List[Var]) =
     copy(bound = xs ++ bound)
 
