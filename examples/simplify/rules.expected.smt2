@@ -8,8 +8,5 @@
 (assert (! (forall ((x Int)) (= (f (g x)) x)) :rw))
 (assert (! (forall ((x Int)) (=> (<= 0 x) (p x))) :rw))
 (lemma (! (forall ((x Int)) (not (q x))) :rw))
-(assert true)
-(assert true)
-(assert true)
 (assert (p a))
 (assert false)

@@ -2,8 +2,6 @@
 (declare-const p Bool)
 (declare-const q Bool)
 (assert false)
-(assert true)
-(assert true)
 (assert (and p q))
 (assert p)
 (assert q)

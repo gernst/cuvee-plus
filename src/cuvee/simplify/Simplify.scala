@@ -11,16 +11,22 @@ import cuvee.core._
 // where each subterm is simplified under the facts known to hold at its position
 object Simplify extends Transform:
   // the assertions and lemmas with the attribute :rw so far are rewrite rules, which are kept as they are,
-  // the other commands are simplified with these rules, each with a fresh number of rewrite steps;
+  // the other commands are simplified with these rules, each with a fresh number of rewrite steps,
+  // where axioms, goals, and lemmas that simplify to true are dropped, since they state nothing;
   // debug output is printed with the printer of the configuration
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val rules = this.rules(prefix ++ cmds)
 
-    for cmd <- cmds
-    yield
-      if isRule(cmd)
-      then cmd
-      else simplify(config, state, Ctx.empty.withRules(rules), cmd)
+    for
+      cmd <- cmds
+      cmd_ = if isRule(cmd) then cmd else simplify(config, state, Ctx.empty.withRules(rules), cmd)
+      if !isTrivial(cmd_)
+    yield cmd_
+
+  def isTrivial(cmd: Cmd) =
+    cmd match
+      case Assert(_, _, True, _) => true
+      case _                     => false
 
   def isRule(cmd: Cmd) =
     cmd match

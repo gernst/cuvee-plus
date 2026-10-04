@@ -99,7 +99,7 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   printed in the language of the input.
 - [`Simplify`](../src/cuvee/simplify/Simplify.scala) rewrites assertions and
   function definitions to a fixpoint, and simplifies procedures statement by
-  statement.
+  statement. Assertions that simplify to `true` are dropped.
   - All methods take `(config, state, ctx, ...)`. The context `Ctx` holds the
     facts known at the current position and the rewrite rules, which are
     extracted from the assertions and lemmas with the attribute `:rw`

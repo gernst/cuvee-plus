@@ -5,8 +5,6 @@
 (assert (not (= x y)))
 (assert (distinct x y z))
 (assert false)
-(assert true)
 (assert false)
-(assert true)
 (assert (=> (= x y) (distinct x y z)))
 (assert (forall ((a Int) (b Int)) (not (= a b))))

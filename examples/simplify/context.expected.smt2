@@ -7,5 +7,3 @@
 (assert (=> (= x y) (= (f x) (f y))))
 (assert (< x (+ y 1)))
 (define-fun g ((z Int)) Int (ite (= z 0) z 0))
-(assert true)
-(assert true)
