@@ -74,18 +74,18 @@ object Printing extends TestSuite:
       prog(prog_) ==> List("if (x < y) {", "  break;", "} else if (y < x) {", "  return;", "}")
 
     test("loop"):
-      val attrs = cuvee.sexpr.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y)), "modifies" -> Some(List(a))))
+      val attrs = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y)), "modifies" -> Some(List(a))))
       prog(While(app(Fun.int.lt, x, y), Block(Nil, Nil), attrs)) ==>
         List("while (x < y)", "  invariant x <= y;", "  modifies a;", "{}")
 
     test("iter"):
-      val attrs = cuvee.sexpr.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
+      val attrs = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
       prog(Iter(Assign(List(x), List(y)), attrs)) ==>
         List("while (*)", "  invariant x <= y;", "{", "  x := y;", "}")
 
     test("unsupported"):
       error(prog(Continue)) ==> "continue not supported in Boogie"
-      val dec = cuvee.sexpr.Attrs(List("decreases" -> Some(x)))
+      val dec = cuvee.core.Attrs(List("decreases" -> Some(x)))
       error(prog(While(True, Block(Nil, Nil), dec))) ==> "attributes of loops not supported in Boogie"
 
     test("mixfix"):

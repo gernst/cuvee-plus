@@ -2,7 +2,6 @@ package cuvee.core
 
 import util.Name
 import cuvee.core._
-import cuvee.sexpr.Attrs
 
 trait Result
 

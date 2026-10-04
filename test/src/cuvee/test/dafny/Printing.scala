@@ -39,15 +39,15 @@ object Printing extends TestSuite:
       Printer.lines(prog) ==> List("if x < y {", "  break;", "} else if y < x {", "  continue;", "}")
 
     test("iter"):
-      val attrs = cuvee.sexpr.Attrs(List("invariant" -> Some(App(Fun.int.le, List(x, y)))))
+      val attrs = cuvee.core.Attrs(List("invariant" -> Some(App(Fun.int.le, List(x, y)))))
       Printer.lines(Iter(Assign(List(x), List(y)), attrs)) ==>
         List("while *", "  invariant x <= y", "{", "  x := y;", "}")
 
     // the right hand sides are in parentheses if they contain a conjunction
     test("ode"):
       val dom = app(Fun.int.le, zero, x)
-      val inv = cuvee.sexpr.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
-      Printer.lines(Ode(List(x, y), List(y, app(Fun.int.uminus, x)), True, cuvee.sexpr.Attrs.empty)) ==>
+      val inv = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
+      Printer.lines(Ode(List(x, y), List(y, app(Fun.int.uminus, x)), True, cuvee.core.Attrs.empty)) ==>
         List("x', y' == y, -x;")
       Printer.lines(Ode(List(p), List(app(Fun.and, p, q)), dom, inv)) ==>
         List("p' == (p && q) && 0 <= x", "  invariant x <= y;")

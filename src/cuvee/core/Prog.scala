@@ -1,7 +1,6 @@
 package cuvee.core
 
 import util.Name
-import cuvee.sexpr.Attrs
 
 case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var]):
   def args = in.types
@@ -96,7 +95,7 @@ object Par:
   // except for the history
   def modifies(state: State, call: Call): Set[Var] =
     val Call(name, _, res) = call
-    val mod = cuvee.verify.Verify.modifies(state.procattrs(name))
+    val mod = state.procattrs(name).modifies
     (res ++ mod).toSet.filterNot(_.name == history)
 
   // the variables modified by one call and used by another, other than the history

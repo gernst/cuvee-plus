@@ -5,7 +5,7 @@ import util.Ref
 import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 
 // constrained Horn clauses, where pre-/postconditions and the program points are uninterpreted predicates:
 // each procedure p(in) returns (out) has predicates p_pre(in, gs) and p_post(in, gs_, out, gs),
@@ -63,7 +63,7 @@ object Horn extends Transform:
         val gs = state.globals
         val gs_ = gs.fresh
         val ensures_ = Old.elim(gs, gs_, ensures)
-        val mod = Verify.modifies(attrs)
+        val mod = attrs.modifies
         val frame = for (g, g_) <- gs zip gs_ if !mod.contains(g) yield Eq(g, g_)
 
         val clauses = Ref[List[Expr]](Nil)
@@ -225,7 +225,7 @@ object Horn extends Transform:
 
         // results and modified global variables are fresh since `args` may refer to their old values
         val gs = state.globals
-        val mod = Verify.modifies(state.procattrs(name))
+        val mod = state.procattrs(name).modifies
         val res_ = res.fresh
         val mod_ = mod.fresh
         val su = Subst.from(res ++ mod, res_ ++ mod_)
@@ -309,7 +309,7 @@ object Horn extends Transform:
           case While(test, body, attrs) => (List(test), body, attrs)
           case Iter(body, attrs)        => (Nil, body, attrs)
 
-        val dec = attrs.values[Expr]("decreases")
+        val dec = attrs.decreases
         val ms = Expr.vars("m", dec.map(_.typ)).fresh
         val scope_ = scope ++ ms
 
@@ -320,7 +320,7 @@ object Horn extends Transform:
         val body_ = predicate(proc, scope_, decls)
         val next = predicate(proc, scope, decls)
         val iter = exit(inv)
-        val invariant = And(attrs.values[Expr]("invariant"))
+        val invariant = attrs.invariant
 
         clause(scope, List(App(pre, scope)), App(inv, scope), clauses)
         clause(scope, App(inv, scope) :: test, App(body_, scope ++ dec), clauses)

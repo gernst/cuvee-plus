@@ -3,7 +3,6 @@ package cuvee.core
 import util.Name
 import util.Rational
 import cuvee.Error
-import cuvee.sexpr.Attrs
 
 case class State(
     logic: Option[String] = None,
@@ -259,6 +258,10 @@ case class State(
     def ex(bound: List[Var], body: Expr) =
       Ex(bound, body)
 
+    // the value of `expr` at the entry of the enclosing procedure
+    def old(expr: Expr) =
+      Old(expr)
+
     def diff(xs: List[Var], expr: Expr) =
       Diff(xs, expr)
 
@@ -318,6 +321,9 @@ case class State(
         require(xs.length == rhs.length)
       Ode(xs, rhs, dom, attrs)
 
+    def par(calls: List[Call]) =
+      Par(calls)
+
   object cmds:
     def declareSort(name: Name) =
       val con = sorts(name)
@@ -374,6 +380,5 @@ case class State(
     def goal(params: List[Param], phi: Expr, attrs: Attrs) =
       Assert(Goal, params, phi, attrs)
 
-object State {
+object State:
   def empty = State(None)
-}

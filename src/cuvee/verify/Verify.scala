@@ -4,7 +4,7 @@ import util.Name
 import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 
 object Verify extends Transform:
   // the global variables gs are computed once and passed to the generation of the verification conditions
@@ -53,20 +53,14 @@ object Verify extends Transform:
 
     val Proc(_, _, in, out) = state.procs(name)
     val attrs = state.procattrs(name)
-    val pre = And(attrs.values[Expr]("requires"))
-    val post = And(attrs.values[Expr]("ensures"))
-    (in, out, pre, post)
-
-  // the global variables in the modifies attributes of procedures and loops
-  def modifies(attrs: Attrs): List[Var] =
-    attrs.values[List[Var]]("modifies").flatten.distinct
+    (in, out, attrs.requires, attrs.ensures)
 
   // the termination measure of procedure `name`, the components of a lexicographic order,
   // which is evaluated at the entry of the procedure, therefore it must refer to the inputs only,
   // which are never modified
   def measure(state: State, name: Name): List[Expr] =
     val Proc(_, _, in, _) = state.procs(name)
-    val dec = state.procattrs(name).values[Expr]("decreases")
+    val dec = state.procattrs(name).decreases
 
     Error.report("termination measure refers to variables other than the inputs", name, dec):
       require(dec.free subsetOf in.toSet)
@@ -146,7 +140,7 @@ object Verify extends Transform:
         loop(state, gs, proc, None, body, attrs, post, return_)
 
       case Ode(xs, rhs, dom, attrs) =>
-        ode(xs, rhs, dom, attrs.values[Expr]("invariant"), post)
+        ode(xs, rhs, dom, attrs.invariants, post)
 
       case Par(calls) =>
         par(state, gs, proc, calls, post)
@@ -167,7 +161,7 @@ object Verify extends Transform:
     // results and the modified global variables are fresh since `args` may refer to their old values,
     // the precondition refers to the values of the global variables before the call,
     // as does old(e) in the postcondition, whose modified global variables are kept apart as mod0 meanwhile
-    val mod = modifies(state.procattrs(name))
+    val mod = state.procattrs(name).modifies
     val res_ = res.fresh
     val mod_ = mod.fresh
     val mod0 = mod.fresh
@@ -203,7 +197,7 @@ object Verify extends Transform:
     val Proc(_, _, in, _) = state.procs(name)
     val attrs = state.procattrs(name)
     val su = Subst.from(in, args)
-    (su(And(attrs.values[Expr]("assumes"))), su(And(attrs.values[Expr]("commits"))))
+    (su(attrs.assumes), su(attrs.commits))
 
   // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h:
   // the assumptions and commitments must hold for the history initially,
@@ -252,13 +246,13 @@ object Verify extends Transform:
 
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
   def loop(state: State, gs: List[Var], proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
-    val inv = And(attrs.values[Expr]("invariant"))
+    val inv = attrs.invariant
     // calls in the body modify the global variables in the modifies attribute of the loop
-    val xs = (body.mod ++ modifies(attrs)).toList
+    val xs = (body.mod ++ attrs.modifies).toList
 
     // the measure must decrease from the start to the end of each iteration, i.e., also on continue,
     // its values at the start are the fresh variables ms, which are replaced by the measure afterwards
-    val dec = attrs.values[Expr]("decreases")
+    val dec = attrs.decreases
     val ms = Expr.vars("m", dec.map(_.typ)).fresh
     val su = Subst.from(ms, dec)
     val iter = And(inv, decreases(dec, ms))

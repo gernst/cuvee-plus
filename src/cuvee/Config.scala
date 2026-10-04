@@ -45,7 +45,7 @@ case class Config(
     overridePrinter: Boolean = false,
     // per query, in milliseconds
     timeout: Int = 1000
-) {
+):
   def reader =
     input match
       case None =>
@@ -60,7 +60,6 @@ case class Config(
     transforms.foldRight(sink):
       case (transform, next) =>
         Stage.empty(init, transform, next)
-}
 
 object Config:
   val default =
@@ -75,55 +74,63 @@ object Config:
   def lang(key: String, lang: Lang) =
     key -> lang
 
-  val flags = Map(
-    flag("-debug", "<modules>", "enable debugging in <modules> (comma-separated list)") { case (config, arg :: rest) =>
-      val modules = arg.split(",")
-      val config_ = config.copy(debug = config.debug ++ modules)
-      (config_, rest)
-    },
+  val debug_ =
+    flag("-debug", "<modules>", "enable debugging in <modules> (comma-separated list)"):
+      case (config, arg :: rest) =>
+        val modules = arg.split(",")
+        val config_ = config.copy(debug = config.debug ++ modules)
+        (config_, rest)
 
-    flag("-verify", "generate verification conditions for procedures") { case (config, rest) =>
-      val config_ = config.copy(transforms = config.transforms :+ cuvee.verify.Verify)
-      (config_, rest)
-    },
+  val verify =
+    flag("-verify", "generate verification conditions for procedures"):
+      case (config, rest) =>
+        val config_ = config.copy(transforms = config.transforms :+ cuvee.verify.Verify)
+        (config_, rest)
 
-    flag("-chc", "generate constrained Horn clauses for procedures") { case (config, rest) =>
-      val config_ = config.copy(transforms = config.transforms :+ cuvee.verify.Horn)
-      (config_, rest)
-    },
+  val chc =
+    flag("-chc", "generate constrained Horn clauses for procedures"):
+      case (config, rest) =>
+        val config_ = config.copy(transforms = config.transforms :+ cuvee.verify.Horn)
+        (config_, rest)
 
-    flag("-flat", "replace arguments of predicates that are records by their fields, e.g. after -chc") { case (config, rest) =>
-      val config_ = config.copy(transforms = config.transforms :+ cuvee.transform.Flat)
-      (config_, rest)
-    },
+  val flat =
+    flag("-flat", "replace arguments of predicates that are records by their fields, e.g. after -chc"):
+      case (config, rest) =>
+        val config_ = config.copy(transforms = config.transforms :+ cuvee.transform.Flat)
+        (config_, rest)
 
-    flag("-simplify", "simplify formulas and function definitions") { case (config, rest) =>
-      val config_ = config.copy(transforms = config.transforms :+ cuvee.simplify.Simplify)
-      (config_, rest)
-    },
+  val simplify =
+    flag("-simplify", "simplify formulas and function definitions"):
+      case (config, rest) =>
+        val config_ = config.copy(transforms = config.transforms :+ cuvee.simplify.Simplify)
+        (config_, rest)
 
-    flag("-z3", "pass output to z3") { case (config, rest) =>
-      val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(config.timeout), init))
-      (config_, rest)
-    },
+  val z3 =
+    flag("-z3", "pass output to z3"):
+      case (config, rest) =>
+        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(config.timeout), init))
+        (config_, rest)
 
-    flag("-cvc5", "pass output to cvc5") { case (config, rest) =>
-      val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(config.timeout), init))
-      (config_, rest)
-    },
+  val cvc5 =
+    flag("-cvc5", "pass output to cvc5"):
+      case (config, rest) =>
+        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(config.timeout), init))
+        (config_, rest)
 
-    flag("-timeout", "<ms>", "timeout per solver query in milliseconds (default 1000)") {
+  val timeout_ =
+    flag("-timeout", "<ms>", "timeout per solver query in milliseconds (default 1000)"):
       case (config, ms :: rest) if ms.toIntOption.exists(_ > 0) =>
         val config_ = config.copy(timeout = ms.toInt)
         (config_, rest)
-    },
 
-    flag("-o", "<file>", "redirect output to <file> and report to stdout") { case (config, name :: rest) =>
-      val config_ = config.copy(sink = (_, config) => Sink.file(name)(config.printer), report = Report.stdout)
-      (config_, rest)
-    },
+  val output =
+    flag("-o", "<file>", "redirect output to <file> and report to stdout"):
+      case (config, name :: rest) =>
+        val config_ = config.copy(sink = (_, config) => Sink.file(name)(config.printer), report = Report.stdout)
+        (config_, rest)
 
-    flag("-print", "<format>", "override printer format") {
+  val print_ =
+    flag("-print", "<format>", "override printer format"):
       case (config, name :: rest) if langs.contains(name) =>
         val lang = langs(name)
         val config_ = config.copy(printer = lang.printer, overridePrinter = true)
@@ -136,7 +143,18 @@ object Config:
       case (config, "scala" :: rest) =>
         val config_ = config.copy(printer = Printer.default, overridePrinter = true)
         (config_, rest)
-    }
+
+  val flags = Map(
+    debug_,
+    verify,
+    chc,
+    flat,
+    simplify,
+    z3,
+    cvc5,
+    timeout_,
+    output,
+    print_
   )
 
   val langs = Map(
@@ -174,7 +192,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.2.5")
+    println("Cuvée 0.2.6")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

@@ -142,7 +142,7 @@ A procedure's inputs are fixed (never assigned), and its outputs are
 results. The contract lives in the procedure's attributes in the `State`:
 `requires`, `ensures`, `modifies`, `decreases`, `assumes`, `commits`.
 
-## Attributes ([sexpr/Attrs.scala](../src/cuvee/sexpr/Attrs.scala))
+## Attributes ([Attrs.scala](../src/cuvee/core/Attrs.scala))
 
 ```scala
 case class Attrs(attrs: List[(String, Option[Any])])
@@ -151,7 +151,9 @@ case class Attrs(attrs: List[(String, Option[Any])])
 An ordered list of keywords with optional values, as in SMT-LIB annotations.
 The parsers store resolved values in them: `Expr` for `invariant` and
 `requires`, and `List[Var]` for `modifies`. `values[T](kw)` reads all values
-of one keyword with a given type.
+of one keyword with a given type. The accessors `requires`, `ensures`,
+`modifies`, `decreases`, `invariants`/`invariant`, `assumes` and `commits`
+read the contracts.
 
 ## Commands ([Cmd.scala](../src/cuvee/core/Cmd.scala))
 

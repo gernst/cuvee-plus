@@ -99,20 +99,20 @@ object Old:
       case Bind(quant, bound, body) => Bind(quant, bound, e(body))
       case Let(bound, args, body)  => Let(bound, args.map(e), e(body))
 
-  def elim(gs: List[Var], gs_ : List[Expr], attrs: cuvee.sexpr.Attrs): cuvee.sexpr.Attrs =
+  def elim(gs: List[Var], gs_ : List[Expr], attrs: cuvee.core.Attrs): cuvee.core.Attrs =
     val attrs_ =
       for (kw, arg) <- attrs.attrs
       yield arg match
         case Some(expr: Expr) => (kw, Some(elim(gs, gs_, expr)))
         case _                => (kw, arg)
 
-    cuvee.sexpr.Attrs(attrs_)
+    cuvee.core.Attrs(attrs_)
 
   // in all expressions and attributes of a program, e.g. assertions and loop invariants
   def elim(gs: List[Var], gs_ : List[Expr], prog: Prog): Prog =
     val e = (expr: Expr) => elim(gs, gs_, expr)
     val p = (prog: Prog) => elim(gs, gs_, prog)
-    val a = (attrs: cuvee.sexpr.Attrs) => elim(gs, gs_, attrs)
+    val a = (attrs: cuvee.core.Attrs) => elim(gs, gs_, attrs)
     prog match
       case Break | Continue | Return  => prog
       case Spec(xs, pre, post)        => Spec(xs, e(pre), e(post))

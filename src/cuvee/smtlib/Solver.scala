@@ -6,7 +6,7 @@ import cuvee.Debug
 import cuvee.Error
 
 import cuvee.core._
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 import cuvee.sexpr.Grammar
 import cuvee.sexpr.Id
 import cuvee.sexpr.Str

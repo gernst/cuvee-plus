@@ -5,7 +5,7 @@ import utest._
 
 import cuvee.Error
 import cuvee.core._
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 import cuvee.sexpr.Id
 import cuvee.sexpr.Str
 

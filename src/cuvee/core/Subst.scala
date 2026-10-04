@@ -3,7 +3,6 @@ package cuvee.core
 import scala.annotation.targetName
 
 import cuvee.Error
-import cuvee.sexpr.Attrs
 
 object Subst:
   def empty[T <: Type, E <: Expr] = Subst[T, E](Map(), Map())

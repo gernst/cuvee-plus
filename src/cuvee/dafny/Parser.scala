@@ -6,7 +6,7 @@ import cuvee.core
 import cuvee.core.State
 import cuvee.core.Scope
 import cuvee.core.types
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 
 class Parser(var state: State):
   // val attrs_ = Attrs.empty
@@ -235,7 +235,7 @@ class Parser(var state: State):
         val attrs_ = Attrs(contract(scope__, mod, req, ens, dec).attrs ++ ac_)
         state = state.declare(qname, params_, formals_, rets_, attrs_)
 
-        val mod_ = cuvee.verify.Verify.modifies(attrs_)
+        val mod_ = attrs_.modifies
         val nonglobal = mod_.filterNot(globals.contains)
         Error.report("modifies clause of method lists variables that are not global", qname, nonglobal):
           require(nonglobal.isEmpty)
@@ -385,7 +385,7 @@ class Parser(var state: State):
 
       // the value at the entry of the method
       case App("old", List(arg), Nil) =>
-        core.Old(resolve(scope, arg))
+        state.exprs.old(resolve(scope, arg))
 
       // unary + is the identity
       case App("+", List(arg), Nil) =>
@@ -446,7 +446,7 @@ class Parser(var state: State):
 
   // calls may modify the global variables in the modifies clause of the method that contains them only
   def calls(name: String) =
-    val callee = cuvee.verify.Verify.modifies(state.procattrs(name))
+    val callee = state.procattrs(name).modifies
     val unknown = callee.filterNot(modifiable.contains)
     Error.report("call modifies variables that are not in the modifies clause", name, unknown):
       require(unknown.isEmpty)
@@ -566,7 +566,7 @@ class Parser(var state: State):
           yield resolve(scope, call) match
             case call_ : core.Call => call_
             case prog_             => Error.raise("parallel composition of statements that are not calls", prog_)
-        core.Par(calls_)
+        state.progs.par(calls_)
 
       // the evolution constraint defaults to true
       case Ode(xs, rhs, dom, invs) =>

@@ -4,7 +4,7 @@ import util.Name
 import util.Rational
 import cuvee.Error
 import cuvee.core._
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 
 object Printer extends cuvee.pipe.Printer:
   import cuvee.sexpr.Printer.escape

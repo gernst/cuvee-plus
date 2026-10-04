@@ -81,17 +81,10 @@ reference semantics for array parameters.
 
 ## Code structure and consistency
 
-- `core` depends on `verify`: `Par.modifies` in
-  [core/Prog.scala](src/cuvee/core/Prog.scala) and the Dafny parser use
-  `Verify.modifies`; the attributes of procedures (`modifies`, `requires`,
-  `ensures`, `assumes`, `commits`) should be read by helpers in `core`.
-- `Attrs` lives in `cuvee.sexpr` but is used throughout `core`.
 - Traversals of expressions and programs are written out repeatedly:
   `Subst`, `Overload.apply`, `Old.elim`, `Flat`;
   a generic map over the immediate subexpressions and subprograms would
   remove most of them.
-- The parsers build `core.Old` and `core.Par` directly, all other expressions
-  and programs through the builders `state.exprs` and `state.progs`.
 - The operations on sequences (`Fun.seq`) have no sugar objects, unlike
   arithmetic (`Plus.int` etc.); `Mod.int` is `Sugar.associative`, but `mod` is
   not associative.
@@ -103,8 +96,6 @@ reference semantics for array parameters.
   history by the name of the global variable `history` (`Par.history`).
 - The printers of Dafny and Boogie duplicate the mixfix logic (`prefix`,
   `infix`, `level`, and the precedences).
-- Style ([doc/style.md](doc/style.md)): `Config` and the companion of `State`
-  use curly braces.
 
 ## Dafny frontend
 

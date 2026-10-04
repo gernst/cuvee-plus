@@ -4,7 +4,7 @@ import util.Name
 import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib._
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 
 import easyprint.Doc
 import easyprint.Doc.{text, space, line, linebreak, hardline, empty, concat, join, render}

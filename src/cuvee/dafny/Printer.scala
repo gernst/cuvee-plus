@@ -6,7 +6,7 @@ import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib._
 import cuvee.sexpr.Atom
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 
 import easyprint.Doc
 import easyprint.Doc.{text, space, line, linebreak, hardline, empty, concat, join, render}
@@ -270,7 +270,7 @@ object Printer extends cuvee.pipe.Printer:
       for case (name, Some(arg)) <- attrs.attrs if isClause(name, Some(arg)) && name != "decreases"
       yield Group(text(name) ++ Nest(2, line ++ any(arg)))
 
-    val dec = attrs.values[Expr]("decreases")
+    val dec = attrs.decreases
 
     if dec.isEmpty
     then clauses_

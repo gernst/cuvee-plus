@@ -20,8 +20,8 @@ transformation and any output.
 | `util` | `Name` (identifiers with an optional index), `Rational`, `Counter` (fresh indices), `Ref`, `Tool` (external processes), `Backtrack`. |
 | `easyparse` | Parser combinators over token streams. `~` commits and `?~` backtracks. `Mixfix` handles prefix, postfix and infix operators with precedence and associativity. `P(...)` names parsers for error messages. |
 | `easyprint` | Wadler-style pretty printing (`Doc`, `Group`, `Nest`, `line`). |
-| `cuvee.sexpr` | The s-expression scanner and syntax for SMT-LIB, and `Attrs`, the attributes of declarations, which `core` uses throughout. |
-| `cuvee.core` | The common representation: `Type`, `Expr`, `Prog`, `Cmd`, `Fun` and `State`, plus type checking (`Type.check`), substitution (`Subst`), overloading (`Overload`) and syntactic sugar (`Builtin`, `Sugar`). |
+| `cuvee.sexpr` | The s-expression scanner and syntax for SMT-LIB. |
+| `cuvee.core` | The common representation: `Type`, `Expr`, `Prog`, `Cmd`, `Fun`, `Attrs` and `State`, plus type checking (`Type.check`), substitution (`Subst`), overloading (`Overload`) and syntactic sugar (`Builtin`, `Sugar`). |
 | `cuvee.smtlib` | SMT-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks). |
 | `cuvee.boogie` | Boogie frontend and printer. |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |

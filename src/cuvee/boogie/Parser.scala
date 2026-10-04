@@ -5,7 +5,7 @@ import cuvee.Error
 import cuvee.core
 import cuvee.core.State
 import cuvee.core.Scope
-import cuvee.sexpr.Attrs
+import cuvee.core.Attrs
 
 class Parser(var state: State):
   def resolve(scope: Scope, name: String): core.Param =
@@ -111,7 +111,7 @@ class Parser(var state: State):
         val scope__ = scope_ ++ globals ++ formals_ ++ rets_
         val contract_ = contract(scope__, specs)
 
-        val mod = modifies(contract_)
+        val mod = contract_.modifies.toSet
         val unknown = mod.filterNot(globals.contains)
         Error.report("modifies clause of procedure lists variables that are not global", name, unknown):
           require(unknown.isEmpty)
@@ -154,15 +154,6 @@ class Parser(var state: State):
     val typ_ = state.types.sort("Bool")
     state.exprs.check(scope, expr_, typ_)
 
-  // the variables in the modifies clauses of a procedure or loop
-  def modifies(attrs: Attrs): Set[core.Var] =
-    val mod =
-      for
-        xs <- attrs.values[List[core.Var]]("modifies");
-        x <- xs
-      yield x
-
-    mod.toSet
 
   // the clauses of procedures and loops as attributes
   def contract(scope: Scope, specs: List[Spec]): Attrs =
@@ -235,7 +226,7 @@ class Parser(var state: State):
 
       // the value at the entry of the procedure
       case App("old", List(arg), access) =>
-        val base_ = core.Old(resolve(scope, arg))
+        val base_ = state.exprs.old(resolve(scope, arg))
         resolve(scope, base_, access)
 
       case App(name, Nil, access) if scope.vars.contains(name) =>
@@ -328,7 +319,7 @@ class Parser(var state: State):
         Error.report("procedure not declared", name):
           require(state.procs.contains(name))
 
-        val callee = modifies(state.procattrs(name))
+        val callee = state.procattrs(name).modifies.toSet
         val unknown = callee -- mod
         Error.report("call modifies variables that are not in the modifies clause", name, unknown):
           require(unknown.isEmpty)
@@ -360,7 +351,7 @@ class Parser(var state: State):
       case While(test, specs, body) =>
         val attrs_ = contract(scope, specs)
 
-        val mod_ = modifies(attrs_)
+        val mod_ = attrs_.modifies.toSet
         val nonglobal = mod_ -- state.globals
         Error.report("modifies clause of loop lists variables that are not global", nonglobal):
           require(nonglobal.isEmpty)
