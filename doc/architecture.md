@@ -95,8 +95,15 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     path.
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
-  per program point, followed by `check-sat` and `get-model`, whose model is
-  printed in the language of the input.
+  per program point after assignments, calls, loop heads, and joins, followed
+  by `check-sat` and `get-model`, whose model is printed in the language of the
+  input.
+  - The body starts from `p_pre`; branches extend the facts of the first
+    clause by the test, and `break`, `continue`, `return`, and the end of a
+    block lead directly to the predicate of their target, whose variables are
+    those in scope there.
+  - Annotations (`requires`, `ensures`, `invariant`, `decreases`) and
+    assertions are goals in the head of clauses, `facts ⇒ φ`.
 - [`Simplify`](../src/cuvee/simplify/Simplify.scala) rewrites assertions and
   function definitions to a fixpoint, and simplifies procedures statement by
   statement. Assertions that simplify to `true` are dropped.

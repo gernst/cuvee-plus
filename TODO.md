@@ -10,10 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- in Horn, write clauses with goal in head, not with head False
-- in Horn, omit the separate entry predicate, just come from the precondition
-- in Horn, for the Block exit, don't use a separate helper, and don't use the inline helper either, rather instantiate the respective exits for break, continue by hand, and after the body has been translated, so that the order of clauses is right. when there is no break, don't emit the corresponding predicate or clause, same for continue; check the loop case, too
-- add checking of decreases clauses, if present, to Horn, but don't attempt to generate fresh predicates for well-founded orders, as that is not supported by solvers
 - in Dafny parse goals like lemmas
 - consider the attribute "free" on lemmas, which treats them like axioms in the Solver sink, conceptually, however, the intention is that they should follow from the rest of the theory, but we don't want to enforce a proof
 - write a proposal what Fourier Motzkin could contribute to the simplifier: actually making things simpler? put this proposal into the TODO.md file
