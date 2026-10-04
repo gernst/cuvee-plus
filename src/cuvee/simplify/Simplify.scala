@@ -124,24 +124,20 @@ object Simplify extends Transform:
         mod(state, ctx, left_, right_)
 
       case Lt.int(left, right) =>
-        val left_ = simplify(state, ctx.neutral, left)
-        val right_ = simplify(state, ctx.neutral, right)
-        lt(state, ctx, Lt.int, left_, right_)
+        val poly_ = difference(state, ctx.neutral, Ring.int, left, right)
+        lt(state, ctx, Ring.int, Lt.int, poly_)
 
       case Lt.real(left, right) =>
-        val left_ = simplify(state, ctx.neutral, left)
-        val right_ = simplify(state, ctx.neutral, right)
-        lt(state, ctx, Lt.real, left_, right_)
+        val poly_ = difference(state, ctx.neutral, Ring.real, left, right)
+        lt(state, ctx, Ring.real, Lt.real, poly_)
 
       case Le.int(left, right) =>
-        val left_ = simplify(state, ctx.neutral, left)
-        val right_ = simplify(state, ctx.neutral, right)
-        le(state, ctx, Le.int, left_, right_)
+        val poly_ = difference(state, ctx.neutral, Ring.int, left, right)
+        le(state, ctx, Ring.int, Le.int, poly_)
 
       case Le.real(left, right) =>
-        val left_ = simplify(state, ctx.neutral, left)
-        val right_ = simplify(state, ctx.neutral, right)
-        le(state, ctx, Le.real, left_, right_)
+        val poly_ = difference(state, ctx.neutral, Ring.real, left, right)
+        le(state, ctx, Ring.real, Le.real, poly_)
 
       case Gt.int(left, right) =>
         Lt.int(right, left)
@@ -431,18 +427,28 @@ object Simplify extends Transform:
       case _ =>
         Diff(xs, expr)
 
-  // comparisons on Int or Real, built by `op`
-  def lt(state: State, ctx: Ctx, op: Sugar.binary, left: Expr, right: Expr): Expr =
-    (left, right, Ring.num(left), Ring.num(right)) match
-      case _ if left == right             => False
-      case (_, _, Some(m), Some(n))       => if m < n then True else False
-      case _                              => op(left, right)
+  // the difference right - left of the sides of a comparison as a normalized polynomial
+  def difference(state: State, ctx: Ctx, ring: Ring, left: Expr, right: Expr): Poly =
+    val left_ = poly(state, ctx, ring, left)
+    val right_ = poly(state, ctx, ring, right)
+    (right_ - left_).normalize
 
-  def le(state: State, ctx: Ctx, op: Sugar.binary, left: Expr, right: Expr): Expr =
-    (left, right, Ring.num(left), Ring.num(right)) match
-      case _ if left == right             => True
-      case (_, _, Some(m), Some(n))       => if m <= n then True else False
-      case _                              => op(left, right)
+  // comparisons 0 < p and 0 <= p on Int or Real, built by `op`, are constants if p is,
+  // otherwise they are re-arranged so that both sides have positive coefficients only,
+  // e.g. 0 < y - x + 1 becomes x < y + 1
+  def lt(state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
+    if poly.monos.isEmpty
+    then if poly.const.isPositive then True else False
+    else
+      val (left, right) = poly.sides
+      op(left.toExpr(ring), right.toExpr(ring))
+
+  def le(state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
+    if poly.monos.isEmpty
+    then if poly.const.isNegative then False else True
+    else
+      val (left, right) = poly.sides
+      op(left.toExpr(ring), right.toExpr(ring))
 
   // applications of other functions, e.g. user-defined ones
   def app(state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =

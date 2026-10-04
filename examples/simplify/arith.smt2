@@ -9,3 +9,6 @@
 (assert (= (div x 1) y))
 (assert (> y x))
 (assert (<= (+ x y) (+ y x)))
+; comparisons are re-arranged so that both sides have positive coefficients only
+(assert (<= (+ x 1) (- y x)))
+(assert (< (- x y) (- 3)))

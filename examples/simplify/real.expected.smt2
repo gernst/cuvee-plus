@@ -6,3 +6,4 @@
 (assert true)
 (assert (< 0.0 (/ x y)))
 (assert true)
+(assert (< x (+ (* 2.0 y) 1.5)))

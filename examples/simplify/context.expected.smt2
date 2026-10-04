@@ -5,7 +5,7 @@
 (declare-fun f (Int) Int)
 (assert (= (ite p x y) x))
 (assert (=> (= x y) (= (f x) (f y))))
-(assert (< x (+ x 1)))
+(assert (< x (+ y 1)))
 (define-fun g ((z Int)) Int (ite (= z 0) z 0))
 (assert true)
 (assert true)

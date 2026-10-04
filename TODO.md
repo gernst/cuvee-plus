@@ -8,13 +8,8 @@
   ([pipe/Pipe.scala](src/cuvee/pipe/Pipe.scala)).
 - Polymorphic declarations (`par`) are sent to z3/cvc5 as they are, which the
   solvers do not accept; they need monomorphization first.
-- Real arithmetic: real literals are rationals (`util.Rational`); the
-  preludes declare arithmetic and comparison generically, which are resolved
-  for `Int` and `Real` after type checking by
-  [core/Overload.scala](src/cuvee/core/Overload.scala) in all frontends.
-  Boogie has no decimal literals, and its printer raises an error on real
+- Boogie has no decimal literals, and its printer raises an error on real
   literals.
-
 - No `old(e)` in postconditions and loop invariants to refer to the values of
   global variables at the entry of a procedure, in Boogie and Dafny;
   `Horn` already names these values `g$i` in the postcondition predicates.
@@ -117,28 +112,12 @@
 Non-standard features from Platzer's dL, as part of the Dafny frontend
 (see [examples/hybrid.dfy](examples/hybrid.dfy)):
 
-- `Iter(body, attrs)` ([core/Prog.scala](src/cuvee/core/Prog.scala)), loops
-  with nondeterministic iterations, `while * { ... }` in Dafny and
-  `while (*) { ... }` in Boogie, supported by `Verify` and `Horn`.
-- `Ode(xs, rhs, dom, attrs)`, differential equations with an evolution
-  constraint, `x', y' == e, f && dom invariant ...;` in Dafny, where `xs` are
-  the variables without prime and the right hand sides bind tighter than `&&`.
-- `Diff(xs, expr)` ([core/Expr.scala](src/cuvee/core/Expr.scala)), the
-  derivative of `expr` with respect to `xs`, written `(x, y :: e)'` in Dafny;
-  its free variables include the primed variables `x'` (`Var.primed`,
-  `Name.primed`).
-
-Open:
-
-- `Verify` applies differential cuts for the invariants of `Ode` in sequence,
-  followed by differential weakening; the resulting derivatives of formulas,
-  `Diff(xs, phi)`, must be simplified (`-simplify`) before the goals can be
-  passed to a solver. `Horn` will not support `Ode` and raises an error.
+- The derivatives of formulas from `Verify` for the invariants of `Ode` must
+  be simplified (`-simplify`) before the goals can be passed to a solver.
 - The simplifier computes derivatives
-  ([simplify/Simplify.scala](src/cuvee/simplify/Simplify.scala), `diff`) of
-  terms on Real built from variables, literals, `+`, `-`, `*`, and of
-  `<`, `<=`, and conjunctions, derivatives on Int are kept; open are the chain rule for applications of
-  other functions (where do their partial derivatives come from?), division,
-  equations, and other formulas, which are kept as `Diff`.
+  ([simplify/Simplify.scala](src/cuvee/simplify/Simplify.scala), `diff`);
+  open are the chain rule for applications of other functions (where do their
+  partial derivatives come from?), division, equations, and other formulas,
+  which are kept as `Diff`.
 - The primed variables in `Diff` are not declared, and the type checker does
   not check that they are in scope.

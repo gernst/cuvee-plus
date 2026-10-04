@@ -9,3 +9,5 @@
 (assert (= x y))
 (assert (< x y))
 (assert true)
+(assert (<= (+ (* 2 x) 1) y))
+(assert (< (+ x 3) y))

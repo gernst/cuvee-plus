@@ -79,6 +79,16 @@ case class Poly(const: Rational, monos: List[Mono]):
 
     Poly(const_, merged.filter(!_.factor.isZero).sorted)
 
+  // the parts with negative and with positive coefficients, negated and as they are,
+  // i.e., (neg, pos) with this = pos - neg, where both have positive coefficients only
+  def sides: (Poly, Poly) =
+    val (pos, neg) = monos.partition(_.factor.isPositive)
+    val (const_neg, const_pos) =
+      if const.isNegative
+      then (-const, Rational(0))
+      else (Rational(0), const)
+    (Poly(const_neg, neg.map(-_)), Poly(const_pos, pos))
+
   // print back in a canonical order, so that equal polynomials yield equal expressions
   // (required for the fixpoint check in Simplify.simplify)
   // a constant of 0 is omitted, it is placed last otherwise
