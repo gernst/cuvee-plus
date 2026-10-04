@@ -152,6 +152,12 @@ inferred from the call graph. Open:
   test of a branch could be used up to the first assignment to their
   variables. It has no rules for sequences.
 
+- Fourier-Motzkin elimination
+  ([simplify/FourierMotzkin.scala](src/cuvee/simplify/FourierMotzkin.scala))
+  decides linear constraints over the rationals, but is not used yet, e.g. by
+  the simplifier for the comparisons in its context; it is incomplete over the
+  integers.
+
 ## Hybrid programs
 
 Non-standard features from Platzer's dL, as part of the Dafny frontend
