@@ -142,6 +142,3 @@ Open:
   equations, and other formulas, which are kept as `Diff`.
 - The primed variables in `Diff` are not declared, and the type checker does
   not check that they are in scope.
-- The type checker requires the variables of `Diff` to be on Real, but not
-  those of `Ode`, for which `Verify` builds the derivatives of the invariants
-  without type checking.

@@ -58,6 +58,6 @@ case class Iter(body: Prog, attrs: Attrs) extends Prog:
 // a system of ordinary differential equations x' = e for x in xs and e in rhs,
 // which evolves for some time within the domain `dom`, the evolution constraint,
 // as the continuous evolution of hybrid programs in dL, {x' = e, y' = f & dom},
-// the attributes are e.g. differential invariants, as the invariants of loops
+// the attributes are e.g. differential invariants, as the invariants of loops; xs must be on Real
 case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) extends Prog:
   def mod = Set(xs*)

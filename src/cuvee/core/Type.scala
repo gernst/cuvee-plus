@@ -327,8 +327,13 @@ object Type:
         val body_ = check(state, scope, fixed, body, true)
         Iter(body_, attrs)
 
+      // differential equations are on Real only, like derivatives
       case Ode(xs, rhs, dom, attrs) =>
         assignable(fixed, xs)
+
+        val wrong = xs.filterNot(x => unfold(state, x.typ) == Sort.real)
+        Error.report("differential equations for variables that are not real", wrong):
+          require(wrong.isEmpty)
 
         Error.report("mismatching differential equations", xs, rhs):
           require(xs.length == rhs.length)
