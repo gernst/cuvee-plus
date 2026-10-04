@@ -92,6 +92,11 @@ object Config:
       (config_, rest)
     },
 
+    flag("-flat", "replace arguments of predicates that are records by their fields, e.g. after -chc") { case (config, rest) =>
+      val config_ = config.copy(transforms = config.transforms :+ cuvee.transform.Flat)
+      (config_, rest)
+    },
+
     flag("-simplify", "simplify formulas and function definitions") { case (config, rest) =>
       val config_ = config.copy(transforms = config.transforms :+ cuvee.simplify.Simplify)
       (config_, rest)
