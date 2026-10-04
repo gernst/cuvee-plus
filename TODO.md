@@ -123,8 +123,10 @@ Non-standard features from Platzer's dL, as part of the Dafny frontend
 
 Open:
 
-- `Verify` raises an error on `Ode`; `Horn` will not support it and raises an
-  error as well.
+- `Verify` applies differential cuts for the invariants of `Ode` in sequence,
+  followed by differential weakening; the resulting derivatives of formulas,
+  `Diff(xs, phi)`, must be simplified before the goals can be passed to a
+  solver. `Horn` will not support `Ode` and raises an error.
 - `Diff` is not simplified yet, the simplifier only simplifies its argument.
 - The primed variables in `Diff` are not declared, and the type checker does
   not check that they are in scope.

@@ -19,3 +19,27 @@ object Verify extends TestSuite:
       assert(expected.contains(first))
 
       Examples.errors("-verify", "-z3", file.toString) ==> expected(first)
+
+// differential cuts for each invariant in sequence, followed by differential weakening
+object VerifyOde extends TestSuite:
+  import cuvee.core._
+
+  val x = Var("x", Sort.int)
+  val y = Var("y", Sort.int)
+  val zero = Lit(BigInt(0), Sort.int)
+
+  // the formula with fresh variables numbered from 1
+  def ode(invs: List[Expr], post: Expr) =
+    Var.reset()
+    val phi = cuvee.verify.Verify.ode(List(x), List(y), Lt(zero, y), invs, post)
+    cuvee.dafny.Printer.lines(phi).mkString(" ").replaceAll(" +", " ")
+
+  val tests = Tests:
+    test("weakening"):
+      ode(Nil, Le(zero, x)) ==> "forall x₁: int :: 0 < y ==> 0 <= x₁"
+
+    test("cut"):
+      ode(List(Le(zero, x)), Le(zero, x)) ==>
+        "0 <= x" +
+          " && (forall x₁: int, x'₁: int :: 0 < y && x'₁ == y ==> (x₁ :: 0 <= x₁)')" +
+          " && (forall x₂: int :: 0 < y && 0 <= x₂ ==> 0 <= x₂)"

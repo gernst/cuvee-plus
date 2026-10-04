@@ -148,8 +148,29 @@ object Verify extends Transform:
       case Iter(body, attrs) =>
         loop(state, gs, proc, None, body, attrs, post, return_)
 
-      case Ode(_, _, _, _) =>
-        Error.raise("differential equations not supported yet", proc, prog)
+      case Ode(xs, rhs, dom, attrs) =>
+        ode(xs, rhs, dom, attrs.values[Expr]("invariant"), post)
+
+  // differential cuts for the invariants in sequence, followed by differential weakening:
+  // each invariant must hold initially, and its derivative must hold whenever the domain and the equations x' = e hold,
+  // where the domain is strengthened by the invariants before it;
+  // finally, the postcondition must follow from the domain for all values that xs may evolve to;
+  // the derivatives of the invariants are those of formulas, (e <= f)' is e' <= f', which is left to the simplifier
+  def ode(xs: List[Var], rhs: List[Expr], dom: Expr, invs: List[Expr], post: Expr): Expr =
+    // the values of xs after the evolution, and in its course, are fresh
+    val xs_ = xs.fresh
+    val su = Subst.from(xs, xs_)
+    val dom_ = su(dom)
+
+    invs match
+      case Nil =>
+        All(xs_, Imp(dom_, su(post)))
+
+      case inv :: rest =>
+        val dxs_ = xs_.map(_.primed)
+        val evolve = And(dom_ :: Eq(dxs_, su(rhs)))
+        val cut = All(xs_ ++ dxs_, Imp(evolve, Diff(xs_, su(inv))))
+        And(List(inv, cut, ode(xs, rhs, And(dom, inv), rest, post)))
 
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
   def loop(state: State, gs: List[Var], proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
