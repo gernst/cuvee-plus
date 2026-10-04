@@ -21,9 +21,11 @@ object Name:
   // subscript digits 0 to 9, indexed by the digit
   val subscripts = "₀₁₂₃₄₅₆₇₈₉"
 
-  // inverse of how names are printed: a suffix $i denotes the index i
+  // inverse of how names are printed: a suffix $i (SMT-LIB) or a unicode subscript (Dafny, Boogie) denotes the index i
   val indexed = "(.+)\\$([0-9]+)".r
+  val subscripted = "(.+?)([₀-₉]+)".r
 
   given Conversion[String, Name] =
-    case indexed(name, index) => Name(name, Some(index.toInt))
-    case name                 => Name(name, None)
+    case indexed(name, index)     => Name(name, Some(index.toInt))
+    case subscripted(name, index) => Name(name, Some(index.map(digit => (digit - '₀').toString).mkString.toInt))
+    case name                     => Name(name, None)

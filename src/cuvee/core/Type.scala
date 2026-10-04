@@ -32,8 +32,9 @@ case class Sort(con: Con, args: List[Type]) extends Type:
   def sig = Some(Sig(con.name, args.sig))
 
 object Param extends Counter:
-  val a = Param("a")
-  val b = Param("b")
+  // the type parameters of the built-in functions and the preludes, a$0 and a$1, written a₀ and a₁ in Dafny and Boogie
+  val a = Param(Name("a", Some(0)))
+  val b = Param(Name("a", Some(1)))
 
 object Con:
   val bool = Con("Bool", 0)
