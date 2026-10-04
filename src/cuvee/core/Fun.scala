@@ -25,7 +25,6 @@ object Fun:
   import Param.a
   import Param.b
   import Sort.bool
-  import Sort.int
 
   // formal parameters are named x$0, x$1, ... as for functions declared in SMT-LIB
   def formals(types: Type*) =
@@ -46,14 +45,28 @@ object Fun:
   val and = Fun("and", Nil, formals(bool, bool), bool)
   val or = Fun("or", Nil, formals(bool, bool), bool)
 
-  val uminus = Fun("-", Nil, formals(int), int)
-  val plus = Fun("+", Nil, formals(int, int), int)
-  val minus = Fun("-", Nil, formals(int, int), int)
-  val times = Fun("*", Nil, formals(int, int), int)
-  val div = Fun("div", Nil, formals(int, int), int)
-  val mod = Fun("mod", Nil, formals(int, int), int)
+  // arithmetic and comparison, which SMT-LIB overloads for Int and Real
+  object int:
+    val uminus = Fun("-", Nil, formals(Sort.int), Sort.int)
+    val plus = Fun("+", Nil, formals(Sort.int, Sort.int), Sort.int)
+    val minus = Fun("-", Nil, formals(Sort.int, Sort.int), Sort.int)
+    val times = Fun("*", Nil, formals(Sort.int, Sort.int), Sort.int)
+    val div = Fun("div", Nil, formals(Sort.int, Sort.int), Sort.int)
+    val mod = Fun("mod", Nil, formals(Sort.int, Sort.int), Sort.int)
 
-  val lt = Fun("<", Nil, formals(int, int), bool)
-  val le = Fun("<=", Nil, formals(int, int), bool)
-  val gt = Fun(">", Nil, formals(int, int), bool)
-  val ge = Fun(">=", Nil, formals(int, int), bool)
+    val lt = Fun("<", Nil, formals(Sort.int, Sort.int), bool)
+    val le = Fun("<=", Nil, formals(Sort.int, Sort.int), bool)
+    val gt = Fun(">", Nil, formals(Sort.int, Sort.int), bool)
+    val ge = Fun(">=", Nil, formals(Sort.int, Sort.int), bool)
+
+  object real:
+    val uminus = Fun("-", Nil, formals(Sort.real), Sort.real)
+    val plus = Fun("+", Nil, formals(Sort.real, Sort.real), Sort.real)
+    val minus = Fun("-", Nil, formals(Sort.real, Sort.real), Sort.real)
+    val times = Fun("*", Nil, formals(Sort.real, Sort.real), Sort.real)
+    val div = Fun("/", Nil, formals(Sort.real, Sort.real), Sort.real)
+
+    val lt = Fun("<", Nil, formals(Sort.real, Sort.real), bool)
+    val le = Fun("<=", Nil, formals(Sort.real, Sort.real), bool)
+    val gt = Fun(">", Nil, formals(Sort.real, Sort.real), bool)
+    val ge = Fun(">=", Nil, formals(Sort.real, Sort.real), bool)

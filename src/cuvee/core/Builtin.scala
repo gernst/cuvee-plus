@@ -41,12 +41,12 @@ object Imp extends Sugar.binary(Fun.imp)
 object And extends Sugar.commutative(Fun.and, True, Assoc.Left)
 object Or extends Sugar.commutative(Fun.or, False, Assoc.Left)
 
-object UMinus extends Sugar.unary(Fun.uminus)
-object Plus extends Sugar.commutative(Fun.plus, Zero, Assoc.Left)
-object Minus extends Sugar.associative(Fun.minus, Assoc.Left)
-object Times extends Sugar.commutative(Fun.times, One, Assoc.Left)
-object DivBy extends Sugar.associative(Fun.div, Assoc.Left)
-object Mod extends Sugar.associative(Fun.mod, Assoc.Left)
+object UMinus extends Sugar.unary(Fun.int.uminus)
+object Plus extends Sugar.commutative(Fun.int.plus, Zero, Assoc.Left)
+object Minus extends Sugar.associative(Fun.int.minus, Assoc.Left)
+object Times extends Sugar.commutative(Fun.int.times, One, Assoc.Left)
+object DivBy extends Sugar.associative(Fun.int.div, Assoc.Left)
+object Mod extends Sugar.associative(Fun.int.mod, Assoc.Left)
 
 object Succ:
   def apply(expr: Expr) =
@@ -58,7 +58,7 @@ object Succ:
       case Plus(List(One, arg)) => Some(arg)
       case _                    => None
 
-object Lt extends Sugar.binary(Fun.lt)
-object Le extends Sugar.binary(Fun.le)
-object Gt extends Sugar.binary(Fun.gt)
-object Ge extends Sugar.binary(Fun.ge)
+object Lt extends Sugar.binary(Fun.int.lt)
+object Le extends Sugar.binary(Fun.int.le)
+object Gt extends Sugar.binary(Fun.int.gt)
+object Ge extends Sugar.binary(Fun.int.ge)

@@ -11,6 +11,15 @@ import cuvee.sexpr.Attrs
 class Parser(var state: State):
   // val attrs_ = Attrs.empty
 
+  // type check and resolve the overloaded operators, see Overload
+  def check(scope: Scope, expr: core.Expr, typ: core.Type): core.Expr =
+    val expr_ = state.exprs.check(scope, expr, typ)
+    Overload(state, expr_)
+
+  def check(scope: Scope, fixed: Set[core.Var], prog: core.Prog): core.Prog =
+    val prog_ = state.progs.check(scope, fixed, prog)
+    Overload(state, prog_)
+
   def resolve(scope: Scope, name: String): core.Param =
     state.types.param(name)
 
@@ -24,7 +33,7 @@ class Parser(var state: State):
         val scope = Scope.empty
         val expr_ = resolve(scope, expr)
         val typ_ = state.types.sort("Bool")
-        val phi_ = state.exprs.check(scope, expr_, typ_)
+        val phi_ = check(scope, expr_, typ_)
         val params_ = phi_.params.toList
 
         val cmd_ = state.cmds.axiom(params_, phi_, Attrs.empty)
@@ -128,12 +137,12 @@ class Parser(var state: State):
   def formula(scope: Scope, phi: Expr) =
     val expr_ = resolve(scope, phi)
     val typ_ = state.types.sort("Bool")
-    state.exprs.check(scope, expr_, typ_)
+    check(scope, expr_, typ_)
 
   def measure(scope: Scope, expr: Expr) =
     val expr_ = resolve(scope, expr)
     val typ_ = state.types.sort("Int")
-    state.exprs.check(scope, expr_, typ_)
+    check(scope, expr_, typ_)
 
   def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr], dec: List[List[Expr]]) =
     val unknown = mod.flatten.filterNot(scope.vars.contains(_))
@@ -191,7 +200,7 @@ class Parser(var state: State):
 
           case Some(expr) =>
             val expr_ = resolve(scope__, expr)
-            val body_ = state.exprs.check(scope__, expr_, typ_)
+            val body_ = check(scope__, expr_, typ_)
             state = state.define(qname, arity, body_)
 
             val cmd_ = state.cmds.defineFun(qname, arity)
@@ -219,7 +228,7 @@ class Parser(var state: State):
           case Some(prog) =>
             val prog_ = resolve(scope__, prog)
             // the inputs of a method must not be modified
-            val body_ = state.progs.check(scope__, formals_.toSet, prog_)
+            val body_ = check(scope__, formals_.toSet, prog_)
             state = state.define(qname, body_)
 
             val cmd_ = state.cmds.defineProc(qname)
