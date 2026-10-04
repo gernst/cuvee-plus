@@ -9,7 +9,7 @@ import cuvee.sexpr.Attrs
 object Verify extends Transform:
   // the global variables gs are computed once and passed to the generation of the verification conditions
   def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
-    val gs = globals(state)
+    val gs = state.globals
 
     for
       cmd <- cmds;
@@ -45,10 +45,6 @@ object Verify extends Transform:
     val pre = And(attrs.values[Expr]("requires"))
     val post = And(attrs.values[Expr]("ensures"))
     (in, out, pre, post)
-
-  // the global variables in a fixed order
-  def globals(state: State): List[Var] =
-    state.vars.values.toList.sortBy(_.name.toString)
 
   // the global variables in the modifies attributes of procedures and loops
   def modifies(attrs: Attrs): List[Var] =

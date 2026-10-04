@@ -60,7 +60,7 @@ object Horn extends Transform:
         val (pre, post, decls) = declare(state, name)
         val (_, _, requires, ensures) = Verify.contract(state, name)
 
-        val gs = Verify.globals(state)
+        val gs = state.globals
         val gs_ = Horn.entry(gs)
         val mod = Verify.modifies(attrs)
         val frame = for (g, g_) <- gs zip gs_ if !mod.contains(g) yield Eq(g, g_)
@@ -78,7 +78,7 @@ object Horn extends Transform:
         val (pre, post, decls) = declare(state, name)
         val (_, _, requires, ensures) = Verify.contract(state, name)
 
-        val gs = Verify.globals(state)
+        val gs = state.globals
         val gs_ = Horn.entry(gs)
         val scope = in ++ gs_ ++ out ++ gs
         val decls_ = Ref[List[DeclareFun]](Nil)
@@ -121,12 +121,12 @@ object Horn extends Transform:
   // resp. the inputs, the global variables at the entry, the outputs, and the global variables at the exit
   def precondition(state: State, name: Name): Fun =
     val Proc(_, params, in, out) = state.procs(name)
-    val gs = Verify.globals(state)
+    val gs = state.globals
     Fun(name.name + "_pre", params, in ++ gs, Sort.bool)
 
   def postcondition(state: State, name: Name): Fun =
     val Proc(_, params, in, out) = state.procs(name)
-    val gs = Verify.globals(state)
+    val gs = state.globals
     Fun(name.name + "_post", params, in ++ entry(gs) ++ out ++ gs, Sort.bool)
 
   // the values of the global variables at the entry of a procedure, which are the formal parameters of p_post,
@@ -219,7 +219,7 @@ object Horn extends Transform:
           require(in.length == args.length && out.length == res.length)
 
         // results and modified global variables are fresh since `args` may refer to their old values
-        val gs = Verify.globals(state)
+        val gs = state.globals
         val mod = Verify.modifies(state.procattrs(name))
         val res_ = res.fresh
         val mod_ = mod.fresh

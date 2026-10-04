@@ -133,6 +133,10 @@ case class State(
 
     copy(fundefs = fundefs + (key -> body))
 
+  // the global variables, whose order is fixed since the state does not change during a transformation
+  def globals: List[Var] =
+    vars.values.toList
+
   def declare(name: Name, typ: Type, attrs: Attrs) =
     Error.report("variable already declared", name):
       require(!vars.contains(name))

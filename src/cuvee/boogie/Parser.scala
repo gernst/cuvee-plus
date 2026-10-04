@@ -107,7 +107,7 @@ class Parser(var state: State):
         val formals_ = formals.map(resolve(scope_, _))
         val rets_ = rets.map(resolve(scope_, _))
 
-        val globals = state.vars.values.toList
+        val globals = state.globals
         val scope__ = scope_ ++ globals ++ formals_ ++ rets_
         val contract_ = contract(scope__, specs)
 
@@ -356,7 +356,7 @@ class Parser(var state: State):
         val attrs_ = contract(scope, specs)
 
         val mod_ = modifies(attrs_)
-        val nonglobal = mod_ -- state.vars.values
+        val nonglobal = mod_ -- state.globals
         Error.report("modifies clause of loop lists variables that are not global", nonglobal):
           require(nonglobal.isEmpty)
 
