@@ -64,7 +64,26 @@ case class SetInfo(name: String, value: Any) extends Decl
 case class DeclareSort(con: Con, attrs: Attrs) extends Decl
 case class DefineSort(con: Con, params: List[Param], body: Type, attrs: Attrs) extends Decl
 // the constructors of a datatype together with their selectors
-case class Datatype(params: List[Param], constrs: List[(Fun, List[Fun])])
+case class Datatype(params: List[Param], constrs: List[(Fun, List[Fun])]):
+  // the selectors of all constructors
+  def sels: List[Fun] =
+    constrs.flatMap(_._2)
+
+  // the types of the fields of `constr` in the instance `typ` of the datatype,
+  // where the parameters are instantiated by the arguments of `typ`
+  def fields(typ: Sort, constr: Fun): List[Type] =
+    val su = Subst.from(params, typ.args)
+    val Some((_, sels)) = constrs.find(_._1 == constr): @unchecked
+    sels.map(sel => su(sel.res))
+
+  // the constructor applied to values for its fields, a value of the instance `typ` of the datatype
+  def construct(typ: Sort, constr: Fun, args: List[Expr]): Expr =
+    App(constr, fields(typ, constr), typ, args)
+
+  // the selector applied to a value of the instance `typ` of the datatype
+  def select(typ: Sort, sel: Fun, arg: Expr): Expr =
+    val su = Subst.from(params, typ.args)
+    App(sel, List(typ), su(sel.res), List(arg))
 
 // (mutually recursive) datatypes, where cons and datas correspond to each other
 case class DeclareDatatypes(cons: List[Con], datas: List[Datatype], attrs: Attrs) extends Decl
