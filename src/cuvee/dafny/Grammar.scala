@@ -358,8 +358,15 @@ object Grammar:
   val preddef =
     FunDef(P("predicate" ~ id ~ params ~ formals ~ bool ~ requires.* ~ ensures.* ~ decreases.* ~ braces(expr).?))
 
+  // attributes without arguments, {:name}
+  val annotation =
+    P(braces(":" ~ id))
+
   val axiom =
-    Axiom(P("axiom" ~ expr))
+    Axiom(P("axiom" ~ annotation.* ~ expr))
+
+  val lemma =
+    Lemma(P("lemma" ~ annotation.* ~ expr))
 
   val vardef =
     VarDef(P("var" ~ (formal ~+ ",") ~ ";"))
@@ -377,7 +384,7 @@ object Grammar:
     MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ assumes.* ~ commits.* ~ decreases.* ~ block.?))
 
   val cmd: Parser[Cmd] =
-    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | vardef)
+    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | lemma | vardef)
 
   val script =
     P(cmd.*)

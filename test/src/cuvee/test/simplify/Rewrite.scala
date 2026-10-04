@@ -154,3 +154,43 @@ object SimplifyRules extends TestSuite:
     test("further"):
       val rules = List(Rule(app(f, x), Plus.int(x, Minus.int(x, x))))
       simplify(rules, Eq(app(f, a), a)) ==> True
+
+// rewrite rules are assertions and lemmas with the attribute :rw in Dafny, Boogie, and SMT-LIB (see examples/simplify)
+object Rules extends TestSuite:
+  def simplify(text: String, suffix: String) =
+    val file = os.temp(text, suffix = suffix)
+    Examples.output("-simplify", file.toString)
+
+  val tests = Tests:
+    test("dafny"):
+      val (cmds, errors) = simplify("""
+        function f(x: int): int
+        function g(x: int): int
+        predicate p(x: int)
+        axiom {:rw} forall x: int :: f(g(x)) == x
+        lemma {:rw} forall x: int :: 0 <= x ==> p(x)
+        function h(a: int): bool { f(g(a)) == a && p(1) }
+      """, ".dfy")
+      errors ==> Nil
+      cuvee.dafny.Printer.lines(cmds.last) ==> List("function h(a: int): bool {", "  true", "}")
+
+    test("boogie"):
+      val (cmds, errors) = simplify("""
+        function f(x: int): int;
+        function g(x: int): int;
+        axiom {:rw} (forall x: int :: f(g(x)) == x);
+        lemma {:rw} (forall x: int :: !(f(x) < 0));
+        function h(a: int): bool { f(g(a)) == a && !(f(a) < 0) }
+      """, ".bpl")
+      errors ==> Nil
+      cuvee.boogie.Printer.lines(cmds.last) ==> List("function h(a: int): bool { true }")
+
+    // the rules are printed with their attribute, which parses back
+    test("printing"):
+      val (cmds, errors) = simplify("function f(x: int): int axiom {:rw} forall x: int :: f(f(x)) == x", ".dfy")
+      errors ==> Nil
+      cuvee.dafny.Printer.lines(cmds.last) ==> List("axiom {:rw} forall x: int :: f(f(x)) == x")
+
+    test("invalid"):
+      val (_, errors) = simplify("predicate p(x: int) axiom {:rw} forall x: int :: p(x) && p(x + 1)", ".dfy")
+      errors ==> List("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom")

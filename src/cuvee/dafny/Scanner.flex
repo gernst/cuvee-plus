@@ -28,7 +28,7 @@ ws = {nl} | [ \t\f]
 num  = [1-9][0-9]* | 0
 dec  = {num} "." [0-9]+
 
-kw  = "function" | "predicate" | "axiom" | "const" | "datatype" | "type" | "method"
+kw  = "function" | "predicate" | "axiom" | "lemma" | "const" | "datatype" | "type" | "method"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "while" | "if" | "then" | "else" | "assert" | "assume" | "var"
     | "forall" | "exists" | "break" | "continue" | "return" | "parallel" | "as" | "assumes" | "commits"

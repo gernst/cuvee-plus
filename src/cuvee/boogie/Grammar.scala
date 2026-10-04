@@ -287,6 +287,9 @@ object Grammar:
   val axiom =
     Axiom(P("axiom" ~ attrs ~ expr ~ ";"))
 
+  val lemma =
+    Lemma(P("lemma" ~ attrs ~ expr ~ ";"))
+
   val returns =
     P(("returns" ~ formals) | nil)
 
@@ -301,7 +304,7 @@ object Grammar:
     ProcDef(P("procedure" ~ attrs ~ id ~ params ~ formals ~ returns ~ contract))
 
   val cmd: Parser[Cmd] =
-    P(sortdef | constdef | vardef | fundef | axiom | procdef)
+    P(sortdef | constdef | vardef | fundef | axiom | lemma | procdef)
 
   val script =
     P(cmd.*)

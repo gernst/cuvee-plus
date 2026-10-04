@@ -38,14 +38,22 @@ class Parser(var state: State):
           state = state.declare(name, typ_, Attrs.empty)
           state.cmds.declareVar(name)
 
-      case Axiom(expr) =>
+      case Axiom(attrs, expr) =>
         val scope = Scope.empty
-        val expr_ = resolve(scope, expr)
-        val typ_ = state.types.sort("Bool")
-        val phi_ = check(scope, expr_, typ_)
+        val phi_ = formula(scope, expr)
         val params_ = phi_.params.toList
+        val attrs_ = Attrs(attrs.map(_ -> None))
 
-        val cmd_ = state.cmds.axiom(params_, phi_, Attrs.empty)
+        val cmd_ = state.cmds.axiom(params_, phi_, attrs_)
+        List(cmd_)
+
+      case Lemma(attrs, expr) =>
+        val scope = Scope.empty
+        val phi_ = formula(scope, expr)
+        val params_ = phi_.params.toList
+        val attrs_ = Attrs(attrs.map(_ -> None))
+
+        val cmd_ = state.cmds.lemma(params_, phi_, attrs_)
         List(cmd_)
 
       case SortDef(name, params, impl) =>

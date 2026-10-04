@@ -100,6 +100,8 @@ object Attr extends ((String, List[Expr]) => Attr)
 
 // several constants or global variables can be declared at once, e.g. var x, y: int, b: bool;
 case class Axiom(attrs: List[Attr], phi: Expr) extends Cmd
+// not part of Boogie, lemmas are proved and then assumed like axioms
+case class Lemma(attrs: List[Attr], phi: Expr) extends Cmd
 case class SortDef(attrs: List[Attr], name: String, params: List[String], alias: Option[Type]) extends Cmd
 case class ConstDef(attrs: List[Attr], consts: List[(String, Type)]) extends Cmd
 case class VarDef(attrs: List[Attr], vars: List[(String, Type)]) extends Cmd
@@ -124,6 +126,7 @@ case class ProcDef(
 ) extends Cmd
 
 object Axiom extends ((List[Attr], Expr) => Cmd)
+object Lemma extends ((List[Attr], Expr) => Cmd)
 object SortDef extends ((List[Attr], String, List[String], Option[Type]) => Cmd)
 object ConstDef extends ((List[Attr], List[(String, Type)]) => Cmd)
 object VarDef extends ((List[Attr], List[(String, Type)]) => Cmd)

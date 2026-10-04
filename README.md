@@ -39,8 +39,12 @@ languages or passes it to an SMT solver (z3 or cvc5).
 - **Simplifier** (`-simplify`): contextual simplification of formulas and
   simplification of programs, normalisation of arithmetic on `Int` and `Real`
   into polynomials, comparisons with positive coefficients, and derivatives.
-- **Rewrite engine** (library, not on the command line yet): conditional
-  rules `lhs = rhs if cond`, applied by the simplifier after each round,
+- **Rewrite engine**: conditional rules `lhs = rhs if cond` from the
+  assertions and lemmas with the attribute `:rw` (`axiom {:rw} φ`,
+  `lemma {:rw} φ` in Dafny and Boogie, `(assert (! φ :rw))` in SMT-LIB), where
+  `φ` is a universally quantified equation, equivalence, negation, or boolean
+  atom, optionally with a premise as condition, applied by `-simplify` after
+  each round,
   matching modulo associativity, commutativity, and 0 of `+` and `-`, and the
   binding structure of the trace combinators `trace`, `map`, and `all` from
   *Trace Equation Systems for Program Verification*; and Fourier-Motzkin

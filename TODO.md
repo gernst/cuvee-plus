@@ -69,8 +69,8 @@ inferred from the call graph. Open:
 
 ## Dafny frontend
 
-- `lemma` is not parsed, so lemmas and goals only come from SMT-LIB input
-  (`lemma`, `goal`) and from `-verify`.
+- Lemmas are single formulas, `lemma {:rw} φ`, not Dafny's lemmas with
+  parameters and contracts; goals are not parsed.
 - Containers `set`, `multiset`, `map` are declared as sorts in the prelude
   but have no functions.
 - Sequences: no `<` (proper prefix), `!in`, `seq(n, f)`, or
@@ -172,8 +172,9 @@ inferred from the call graph. Open:
   equation system of a loop occurs twice in the goal (safety of the body and
   exit).
 - The rewrite engine ([simplify/Rewrite.scala](src/cuvee/simplify/Rewrite.scala))
-  is applied by the simplifier after each round with the rules of its context
-  (`Ctx.rules`), but no rules can be given on the command line yet; it matches modulo A/C of `+` and `-` only (not `*`),
+  is applied by the simplifier after each round with the rewrite rules, the
+  assertions and lemmas with the attribute `:rw` (`{:rw}` in Dafny and
+  Boogie); it matches modulo A/C of `+` and `-` only (not `*`),
   where all but the last variable of a sum take a single summand or none, and
   it does not instantiate the bound variables of the combinators by
   conditional expressions or follow equations from the context (rule

@@ -26,6 +26,15 @@ class Parser(var state: State):
         val cmd_ = state.cmds.axiom(params_, phi_, attrs_)
         List(cmd_)
 
+      case Lemma(attrs, expr) =>
+        val scope = Scope.empty
+        val attrs_ = attributes(scope, attrs)
+        val phi_ = formula(scope, expr)
+        val params_ = phi_.params.toList
+
+        val cmd_ = state.cmds.lemma(params_, phi_, attrs_)
+        List(cmd_)
+
       // sorts with parameters are declared or defined generically
       case SortDef(attrs, name, params, alias) =>
         val scope = Scope.empty

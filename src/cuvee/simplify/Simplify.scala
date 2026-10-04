@@ -7,12 +7,57 @@ import cuvee.core._
 // contextual simplification of the formulas in assertions and function definitions,
 // where each subterm is simplified under the facts known to hold at its position
 object Simplify extends Transform:
+  // the assertions and lemmas with the attribute :rw so far are rewrite rules, which are kept as they are,
+  // the other commands are simplified with these rules, each with a fresh number of rewrite steps;
   // debug output is printed with the printer of the configuration
   def apply(config: cuvee.Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    val ctx = Ctx.empty
+    val rules = this.rules(prefix ++ cmds)
 
     for cmd <- cmds
-    yield simplify(config, state, ctx, cmd)
+    yield
+      if isRule(cmd)
+      then cmd
+      else simplify(config, state, Ctx.empty.withRules(rules), cmd)
+
+  def isRule(cmd: Cmd) =
+    cmd match
+      case Assert(Axiom | Lemma, _, _, attrs) => attrs.contains("rw")
+      case _                                  => false
+
+  // the rewrite rules of the assertions and lemmas with the attribute :rw
+  def rules(cmds: List[Cmd]): List[Rule] =
+    for case cmd @ Assert(_, _, phi, _) <- cmds if isRule(cmd)
+    yield rule(phi)
+
+  // the rule of a formula: the universally quantified variables are the variables of the rule,
+  // the premise of an implication is its condition, and the conclusion must be an equation l = r,
+  // an equivalence l <=> r, a negation not φ (φ = false), or a boolean atom φ (φ = true)
+  def rule(phi: Expr): Rule =
+    phi match
+      case All(_, body) =>
+        rule(body)
+
+      case Imp(cond, body) =>
+        val Rule(lhs, rhs, cond_) = rule(body)
+        Rule(lhs, rhs, if cond_ == True then cond else And(cond, cond_))
+
+      case Eq(lhs, rhs) =>
+        Rule(lhs, rhs)
+
+      case App(fun, _, _, List(lhs, rhs)) if fun.name == Name("<=>", None) =>
+        Rule(lhs, rhs)
+
+      case Not(atom) =>
+        Rule(atom, False)
+
+      case App(fun, _, _, _) if !connectives.contains(fun.name.name) =>
+        Rule(phi, True)
+
+      case _ =>
+        cuvee.Error.raise("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom", phi)
+
+  // the logical connectives, which are not boolean atoms
+  val connectives = Set("and", "or", "=>", "not", "ite", "true", "false")
 
   // `ctx` is an empty context, which provides the rewrite rules
   def simplify(config: cuvee.Config, state: State, ctx: Ctx, cmd: Cmd): Cmd =
