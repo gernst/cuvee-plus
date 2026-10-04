@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- remove the `e` and `p` helper in `simplify(... prog)`, just be explicit about it, and introduce auxiliary variables for the results of recursive calls like it is done for expressions, similarly in other methods, including `diff`
 - switch to return `List(...)` in `Rewrite`, not `LazyList`
 - check that preconditions don't refer to `Old`
 - fix printing of div and mod in C

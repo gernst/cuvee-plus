@@ -100,54 +100,80 @@ object Simplify extends Transform:
   // since the facts known before an assignment may not hold afterwards;
   // branches and loops with constant tests are reduced, and statements without effect are dropped
   def simplify(config: Config, state: State, ctx: Ctx, prog: Prog): Prog =
-    val e = (expr: Expr) => simplify(config, state, ctx, expr)
-    val p = (prog: Prog) => simplify(config, state, ctx, prog)
-
     prog match
       case Break | Continue | Return =>
         prog
 
       case Spec(xs, pre, post) =>
-        Spec(xs, e(pre), e(post))
+        val pre_ = simplify(config, state, ctx, pre)
+        val post_ = simplify(config, state, ctx, post)
+        Spec(xs, pre_, post_)
 
+      // assignments of variables to themselves are dropped
       case Assign(lhs, rhs) =>
-        val pairs = (lhs zip rhs.map(e)).filterNot((x, rhs_) => x == rhs_)
-        Assign(pairs.map(_._1), pairs.map(_._2))
+        val rhs_ = rhs.map(simplify(config, state, ctx, _))
+        val (lhs__, rhs__) = (lhs zip rhs_).filterNot((x, e) => x == e).unzip
+        Assign(lhs__, rhs__)
 
       case Call(name, args, res) =>
-        Call(name, args.map(e), res)
+        val args_ = args.map(simplify(config, state, ctx, _))
+        Call(name, args_, res)
 
       // nested blocks without locals are merged, statements without effect are dropped
       case Block(locals, progs) =>
         val progs_ =
-          progs.map(p).flatMap:
-            case Block(Nil, inner)                  => inner
+          progs.map(simplify(config, state, ctx, _)).flatMap:
+            case Block(Nil, inner)                       => inner
             case Assign(Nil, Nil) | Spec(Nil, True, True) => Nil
-            case prog_                              => List(prog_)
-        Block(locals.filter(x => progs_.exists(_.free.contains(x))), progs_)
+            case prog_                                   => List(prog_)
+        val locals_ = locals.filter(x => progs_.exists(_.free.contains(x)))
+        Block(locals_, progs_)
 
       case Choice(progs) =>
-        Choice(progs.map(p))
+        val progs_ = progs.map(simplify(config, state, ctx, _))
+        Choice(progs_)
 
       case If(test, left, right) =>
-        e(test) match
-          case True  => p(left)
-          case False => p(right)
-          case test_ => If(test_, p(left), p(right))
+        val test_ = simplify(config, state, ctx, test)
+        test_ match
+          case True =>
+            simplify(config, state, ctx, left)
+
+          case False =>
+            simplify(config, state, ctx, right)
+
+          case _ =>
+            val left_ = simplify(config, state, ctx, left)
+            val right_ = simplify(config, state, ctx, right)
+            If(test_, left_, right_)
 
       case While(test, body, attrs) =>
-        e(test) match
-          case False => Block(Nil, Nil)
-          case test_ => While(test_, p(body), simplify(config, state, ctx, attrs))
+        val test_ = simplify(config, state, ctx, test)
+        test_ match
+          case False =>
+            Block(Nil, Nil)
+
+          case _ =>
+            val body_ = simplify(config, state, ctx, body)
+            val attrs_ = simplify(config, state, ctx, attrs)
+            While(test_, body_, attrs_)
 
       case Iter(body, attrs) =>
-        Iter(p(body), simplify(config, state, ctx, attrs))
+        val body_ = simplify(config, state, ctx, body)
+        val attrs_ = simplify(config, state, ctx, attrs)
+        Iter(body_, attrs_)
 
       case Ode(xs, rhs, dom, attrs) =>
-        Ode(xs, rhs.map(e), e(dom), simplify(config, state, ctx, attrs))
+        val rhs_ = rhs.map(simplify(config, state, ctx, _))
+        val dom_ = simplify(config, state, ctx, dom)
+        val attrs_ = simplify(config, state, ctx, attrs)
+        Ode(xs, rhs_, dom_, attrs_)
 
       case Par(calls) =>
-        Par(for Call(name, args, res) <- calls yield Call(name, args.map(e), res))
+        val calls_ =
+          for Call(name, args, res) <- calls
+          yield Call(name, args.map(simplify(config, state, ctx, _)), res)
+        Par(calls_)
 
   // simplify `expr` assuming that all facts in `ctx` hold
   // by repeated rounds of simplification until a fixpoint is reached,
@@ -544,8 +570,6 @@ object Simplify extends Transform:
   // and the derivative of e < f and of e <= f is e' <= f', that of a conjunction is the conjunction of the derivatives;
   // derivatives of other expressions are kept, e.g. of applications of other functions and of division
   def diff(config: Config, state: State, xs: List[Var], expr: Expr): Expr =
-    val d = (arg: Expr) => diff(config, state, xs, arg)
-
     expr match
       case _ if expr.typ == Sort.real && (expr.free intersect xs.toSet).isEmpty =>
         Zero.real
@@ -554,29 +578,40 @@ object Simplify extends Transform:
         x.primed
 
       case UMinus.real(arg) =>
-        UMinus.real(d(arg))
+        val arg_ = diff(config, state, xs, arg)
+        UMinus.real(arg_)
 
       case Plus.real(args) =>
-        Plus.real(args.map(d))
+        val args_ = args.map(diff(config, state, xs, _))
+        Plus.real(args_)
 
       case Minus.real(left, right) =>
-        Minus.real(d(left), d(right))
+        val left_ = diff(config, state, xs, left)
+        val right_ = diff(config, state, xs, right)
+        Minus.real(left_, right_)
 
       // (a * b * c)' = a' * b * c + a * b' * c + a * b * c'
       case Times.real(args) =>
         val summands =
-          for i <- args.indices.toList
-          yield Times.real(args.updated(i, d(args(i))))
+          for (arg, i) <- args.zipWithIndex
+          yield
+            val arg_ = diff(config, state, xs, arg)
+            Times.real(args.updated(i, arg_))
         Plus.real(summands)
 
       case Lt.real(left, right) =>
-        Le.real(d(left), d(right))
+        val left_ = diff(config, state, xs, left)
+        val right_ = diff(config, state, xs, right)
+        Le.real(left_, right_)
 
       case Le.real(left, right) =>
-        Le.real(d(left), d(right))
+        val left_ = diff(config, state, xs, left)
+        val right_ = diff(config, state, xs, right)
+        Le.real(left_, right_)
 
       case And(phis) =>
-        And(phis.map(d))
+        val phis_ = phis.map(diff(config, state, xs, _))
+        And(phis_)
 
       case _ =>
         Diff(xs, expr)

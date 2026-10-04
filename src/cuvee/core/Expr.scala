@@ -97,45 +97,128 @@ object Old:
   // replace old(e) by e[gs := gs_], where gs_ are the values of the global variables gs at the entry,
   // nested occurrences of old refer to the same values
   def elim(gs: List[Var], gs_ : List[Expr], expr: Expr): Expr =
-    val su = Subst.from(gs, gs_)
-    val e = (expr: Expr) => elim(gs, gs_, expr)
     expr match
-      case _: Var | _: Lit         => expr
-      case Old(arg)                => su(e(arg))
-      case App(fun, inst, typ, args) => App(fun, inst, typ, args.map(e))
-      case Distinct(exprs)         => Distinct(exprs.map(e))
-      case Is(arg, fun)            => Is(e(arg), fun)
-      case As(arg, typ)            => As(e(arg), typ)
-      case Diff(xs, arg)           => Diff(xs, e(arg))
-      case Bind(quant, bound, body) => Bind(quant, bound, e(body))
-      case Let(bound, args, body)  => Let(bound, args.map(e), e(body))
+      case _: Var | _: Lit =>
+        expr
 
-  def elim(gs: List[Var], gs_ : List[Expr], attrs: cuvee.core.Attrs): cuvee.core.Attrs =
+      case Old(arg) =>
+        val arg_ = elim(gs, gs_, arg)
+        Subst.from(gs, gs_)(arg_)
+
+      case App(fun, inst, typ, args) =>
+        val args_ = elim(gs, gs_, args)
+        App(fun, inst, typ, args_)
+
+      case Distinct(exprs) =>
+        val exprs_ = elim(gs, gs_, exprs)
+        Distinct(exprs_)
+
+      case Is(arg, fun) =>
+        val arg_ = elim(gs, gs_, arg)
+        Is(arg_, fun)
+
+      case As(arg, typ) =>
+        val arg_ = elim(gs, gs_, arg)
+        As(arg_, typ)
+
+      case Diff(xs, arg) =>
+        val arg_ = elim(gs, gs_, arg)
+        Diff(xs, arg_)
+
+      case Trace(init, deps, acc, bound, update) =>
+        val init_ = elim(gs, gs_, init)
+        val deps_ = elim(gs, gs_, deps)
+        val update_ = for (guard, result) <- update yield (elim(gs, gs_, guard), elim(gs, gs_, result))
+        Trace(init_, deps_, acc, bound, update_)
+
+      case Maps(deps, bound, update) =>
+        val deps_ = elim(gs, gs_, deps)
+        val update_ = for (guard, result) <- update yield (elim(gs, gs_, guard), elim(gs, gs_, result))
+        Maps(deps_, bound, update_)
+
+      case Invs(deps, bound, body) =>
+        val deps_ = elim(gs, gs_, deps)
+        val body_ = elim(gs, gs_, body)
+        Invs(deps_, bound, body_)
+
+      case Bind(quant, bound, body) =>
+        val body_ = elim(gs, gs_, body)
+        Bind(quant, bound, body_)
+
+      case Let(bound, args, body) =>
+        val args_ = elim(gs, gs_, args)
+        val body_ = elim(gs, gs_, body)
+        Let(bound, args_, body_)
+
+  @targetName("elimExprs")
+  def elim(gs: List[Var], gs_ : List[Expr], exprs: List[Expr]): List[Expr] =
+    for expr <- exprs
+    yield elim(gs, gs_, expr)
+
+  def elim(gs: List[Var], gs_ : List[Expr], attrs: Attrs): Attrs =
     val attrs_ =
       for (kw, arg) <- attrs.attrs
       yield arg match
         case Some(expr: Expr) => (kw, Some(elim(gs, gs_, expr)))
         case _                => (kw, arg)
 
-    cuvee.core.Attrs(attrs_)
+    Attrs(attrs_)
 
   // in all expressions and attributes of a program, e.g. assertions and loop invariants
   def elim(gs: List[Var], gs_ : List[Expr], prog: Prog): Prog =
-    val e = (expr: Expr) => elim(gs, gs_, expr)
-    val p = (prog: Prog) => elim(gs, gs_, prog)
-    val a = (attrs: cuvee.core.Attrs) => elim(gs, gs_, attrs)
     prog match
-      case Break | Continue | Return  => prog
-      case Spec(xs, pre, post)        => Spec(xs, e(pre), e(post))
-      case Assign(xs, rhs)            => Assign(xs, rhs.map(e))
-      case Call(proc, args, res)      => Call(proc, args.map(e), res)
-      case Block(locals, progs)       => Block(locals, progs.map(p))
-      case Choice(progs)              => Choice(progs.map(p))
-      case If(test, left, right)      => If(e(test), p(left), p(right))
-      case While(test, body, attrs)   => While(e(test), p(body), a(attrs))
-      case Iter(body, attrs)          => Iter(p(body), a(attrs))
-      case Ode(xs, rhs, dom, attrs)   => Ode(xs, rhs.map(e), e(dom), a(attrs))
-      case Par(calls)                 => Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(e), res))
+      case Break | Continue | Return =>
+        prog
+
+      case Spec(xs, pre, post) =>
+        val pre_ = elim(gs, gs_, pre)
+        val post_ = elim(gs, gs_, post)
+        Spec(xs, pre_, post_)
+
+      case Assign(xs, rhs) =>
+        val rhs_ = elim(gs, gs_, rhs)
+        Assign(xs, rhs_)
+
+      case Call(proc, args, res) =>
+        val args_ = elim(gs, gs_, args)
+        Call(proc, args_, res)
+
+      case Block(locals, progs) =>
+        val progs_ = progs.map(elim(gs, gs_, _))
+        Block(locals, progs_)
+
+      case Choice(progs) =>
+        val progs_ = progs.map(elim(gs, gs_, _))
+        Choice(progs_)
+
+      case If(test, left, right) =>
+        val test_ = elim(gs, gs_, test)
+        val left_ = elim(gs, gs_, left)
+        val right_ = elim(gs, gs_, right)
+        If(test_, left_, right_)
+
+      case While(test, body, attrs) =>
+        val test_ = elim(gs, gs_, test)
+        val body_ = elim(gs, gs_, body)
+        val attrs_ = elim(gs, gs_, attrs)
+        While(test_, body_, attrs_)
+
+      case Iter(body, attrs) =>
+        val body_ = elim(gs, gs_, body)
+        val attrs_ = elim(gs, gs_, attrs)
+        Iter(body_, attrs_)
+
+      case Ode(xs, rhs, dom, attrs) =>
+        val rhs_ = elim(gs, gs_, rhs)
+        val dom_ = elim(gs, gs_, dom)
+        val attrs_ = elim(gs, gs_, attrs)
+        Ode(xs, rhs_, dom_, attrs_)
+
+      case Par(calls) =>
+        val calls_ =
+          for Call(proc, args, res) <- calls
+          yield Call(proc, elim(gs, gs_, args), res)
+        Par(calls_)
 
 // the combinators of trace equation systems, which describe the computation of a loop per variable;
 // their dependencies `deps` are sequences of the same length, over which the variables `bound` range point-wise,
