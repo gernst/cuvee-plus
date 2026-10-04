@@ -27,7 +27,7 @@ transformation and any output.
 | `cuvee.c` | C frontend and printer, for integer programs with arrays as values. |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
-| `cuvee.verify` | `Verify` (weakest preconditions to goals) and `Horn` (constrained Horn clauses). |
+| `cuvee.verify` | `Verify` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual rewriting under a `Ctx`) and `Arith` (polynomials over `Int` and `Real`). |
 | `cuvee.transform` | `Flat` (record arguments of predicates become their fields) `Split` (goals into individual obligations), and `Monomorph` (instances of polymorphic functions). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
@@ -38,7 +38,7 @@ transformation and any output.
 
 1. `Config.parse` reads the command line:
    - the input language from the file extension;
-   - the transforms in order (`-verify`, `-chc`, `-flat`, `-split`, `-monomorph`, `-simplify`);
+   - the transforms in order (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-simplify`);
    - the printer (`-print`);
    - the sink (stdout, `-o`, `-z3`, `-cvc5`).
 2. `config.source(reader)` parses the frontend's prelude first. It returns
@@ -75,6 +75,10 @@ type Transform = (List[Cmd], List[Cmd], Cmd, State) => List[Cmd]
     composition (assumption-commitment) each have a rule.
   - `old(e)` is eliminated first, by `Old.elim`, into fresh variables for the
     values at the entry.
+- [`TEQ`](../src/cuvee/verify/TEQ.scala) replaces each procedure definition
+  by a goal from symbolic execution (`Path`), where each loop is summarized by
+  its trace equation system: one `Trace` per modified variable, the counter
+  `K = counter(0, 1, n)`, and the iteration constraint `TraceAll`.
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point.

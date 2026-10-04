@@ -160,6 +160,17 @@ inferred from the call graph. Open:
   `(cases (φ₁ e₁) (φ₂ e₂))`; `trace`, `map`, and `all` followed by `for` cannot
   be names of functions. The simplifier, Monomorph, Flat, and the C printer do
   not support them yet.
+- The verifier by symbolic execution and trace equation systems (`-teq`,
+  [verify/TEQ.scala](src/cuvee/verify/TEQ.scala)) generates high-level goals
+  that contain the combinators for programs with loops, which must be
+  rewritten by lemmas (a database is missing, and the rewrite engine is not
+  connected to `-teq`) or encoded into first-order logic (fall-back encodings,
+  section 5.3 of the paper) before a solver can prove them. It does not
+  support `break`, `continue`, `return` inside of loops, differential
+  equations, and parallel composition; loop invariants are ignored; the
+  number of paths grows exponentially with the branches of a body; the trace
+  equation system of a loop occurs twice in the goal (safety of the body and
+  exit).
 - The rewrite engine ([simplify/Rewrite.scala](src/cuvee/simplify/Rewrite.scala))
   is not connected yet; it matches modulo A/C of `+` and `-` only (not `*`),
   where all but the last variable of a sum take a single summand or none, and

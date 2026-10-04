@@ -22,6 +22,10 @@ languages or passes it to an SMT solver (z3 or cvc5).
   - termination measures (`decreases`);
   - global variables;
   - nondeterministic choice and iteration.
+- **Trace equation systems** (`-teq`): verification conditions by symbolic
+  execution, where loops are summarized by trace equation systems with the
+  combinators `trace`, `map`, and `all`, which a rewrite engine with lemmas
+  simplifies (in progress).
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the
   predicates by their fields.
@@ -72,7 +76,7 @@ mill -i assembly                            # build out/assembly.dest/out.jar
 ```
 
 Without options, the input is printed in its own language after parsing and
-type checking. The transformations (`-verify`, `-chc`, `-flat`, `-split`, `-monomorph`,
+type checking. The transformations (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`,
 `-simplify`)
 are applied in the order in which they are given. The output options
 (`-print`, `-z3`, `-cvc5`, `-o <file>`) apply to the result, wherever they

@@ -68,6 +68,20 @@ object Fun:
 
     val all = List(empty, unit, concat, len, nth, update, extract, contains, prefixof)
 
+  // the functions on traces and sequences of trace equation systems: counter(i, c, n) is the trace i, i + c, ..., i + n c,
+  // current the last element of a trace, butlast (written ⌊X⌋) all but the last element, steps the number of iterations,
+  // length the length of a sequence, nth and earlier the elements of traces and sequences
+  object trace:
+    val counter = Fun("counter", Nil, formals(Sort.int, Sort.int, Sort.int), Sort.trace(Sort.int))
+    val current = Fun("current", List(a), formals(Sort.trace(a)), a)
+    val butlast = Fun("butlast", List(a), formals(Sort.trace(a)), Sort.seq(a))
+    val steps = Fun("steps", List(a), formals(Sort.trace(a)), Sort.int)
+    val length = Fun("length", List(a), formals(Sort.seq(a)), Sort.int)
+    val nth = Fun("nth", List(a), formals(Sort.int, Sort.trace(a)), a)
+    val earlier = Fun("earlier", List(a), formals(Sort.int, Sort.seq(a)), a)
+
+    val all = List(counter, current, butlast, steps, length, nth, earlier)
+
   val not = Fun("not", Nil, formals(bool), bool)
   val imp = Fun("=>", Nil, formals(bool, bool), bool)
   val and = Fun("and", Nil, formals(bool, bool), bool)

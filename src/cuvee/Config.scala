@@ -90,6 +90,12 @@ object Config:
         val config_ = config.copy(transforms = config.transforms :+ cuvee.verify.Verify)
         (config_, rest)
 
+  val teq =
+    flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems"):
+      case (config, rest) =>
+        val config_ = config.copy(transforms = config.transforms :+ cuvee.verify.TEQ)
+        (config_, rest)
+
   val chc =
     flag("-chc", "generate constrained Horn clauses for procedures"):
       case (config, rest) =>
@@ -162,6 +168,7 @@ object Config:
   val flags = Map(
     debug_,
     verify,
+    teq,
     chc,
     flat,
     split,
@@ -210,7 +217,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.6.2")
+    println("Cuvée 0.7.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
