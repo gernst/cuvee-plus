@@ -4,6 +4,7 @@ import scala.annotation.targetName
 
 import util.Name
 import util.Counter
+import cuvee.Error
 
 sealed trait Expr:
   def params: Set[Param]
@@ -136,6 +137,47 @@ object Old:
       case Iter(body, attrs)          => Iter(p(body), a(attrs))
       case Ode(xs, rhs, dom, attrs)   => Ode(xs, rhs.map(e), e(dom), a(attrs))
       case Par(calls)                 => Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(e), res))
+
+// the combinators of trace equation systems, which describe the computation of a loop per variable;
+// their dependencies `deps` are sequences of the same length, over which the variables `bound` range point-wise,
+// and their updates are guarded results, if φ₁ then e₁, ..., if φₚ then eₚ, with disjoint and complete guards
+object Update:
+  def free(update: List[(Expr, Expr)]): Set[Var] =
+    update.flatMap((guard, result) => guard.free ++ result.free).toSet
+
+  def params(update: List[(Expr, Expr)]): Set[Param] =
+    update.flatMap((guard, result) => guard.params ++ result.params).toSet
+
+  def exprs(update: List[(Expr, Expr)]): List[Expr] =
+    update.flatMap((guard, result) => List(guard, result))
+
+// trace(init, for deps do acc, bound ↦ update): the trace of the values of the accumulator `acc`,
+// starting from `init`, where each subsequent value is computed by the update from the previous one
+// and the corresponding values of the dependencies, one entry longer than the dependencies
+case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: List[(Expr, Expr)]) extends Expr:
+  def subexprs = init :: deps ++ Update.exprs(update)
+  def params = init.params ++ deps.params ++ (acc :: bound).params ++ Update.params(update)
+  def free = init.free ++ deps.free ++ (Update.free(update) -- (acc :: bound))
+  def typ = Sort.trace(acc.typ)
+
+// map(for deps yield bound ↦ update): the sequence of the results of the update for the values of the dependencies,
+// point-wise, which has the same length as the dependencies
+case class TraceMap(deps: List[Expr], bound: List[Var], update: List[(Expr, Expr)]) extends Expr:
+  def subexprs = deps ++ Update.exprs(update)
+  def params = deps.params ++ bound.params ++ Update.params(update)
+  def free = deps.free ++ (Update.free(update) -- bound)
+
+  def typ =
+    Error.report("map without update", this):
+      require(update.nonEmpty)
+    Sort.seq(update.head._2.typ)
+
+// all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
+case class TraceAll(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:
+  def subexprs = deps :+ body
+  def params = deps.params ++ bound.params ++ body.params
+  def free = deps.free ++ (body.free -- bound)
+  def typ = Sort.bool
 
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def subexprs = List(body)

@@ -43,6 +43,7 @@ object Con:
   val string = Con("String", 0)
   val array = Con("Array", 2)
   val seq = Con("Seq", 1)
+  val trace = Con("Trace", 1)
 
 object Sort:
   val bool = Sort(Con.bool, Nil)
@@ -55,6 +56,10 @@ object Sort:
 
   def seq(elem: Type) =
     Sort(Con.seq, List(elem))
+
+  // the non-empty sequences of values of a variable at the loop head, see Trace
+  def trace(elem: Type) =
+    Sort(Con.trace, List(elem))
 
 object Type:
   import util.Ref
