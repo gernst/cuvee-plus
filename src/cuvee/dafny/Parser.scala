@@ -30,6 +30,9 @@ class Parser(var state: State):
 
   def resolve(cmd: Cmd): List[core.Cmd] =
     cmd match
+      case Check =>
+        List(core.CheckSat)
+
       case VarDef(vars) =>
         val scope = Scope.empty
         for (name, typ) <- vars

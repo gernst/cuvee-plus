@@ -3,6 +3,8 @@ package dafny
 
 import utest._
 
+import cuvee.dafny.Source
+
 object Parsing extends TestSuite:
   // Dafny examples must parse without errors
   val tests =
@@ -126,3 +128,12 @@ object Datatypes extends TestSuite:
 
     test("wrong annotation"):
       errors(list + "function f(): bool { 0 as bool }") ==> List("type mismatch")
+
+// check-sat is the command check, without semicolon, which is printed back the same way
+object Check extends TestSuite:
+  val tests = Tests:
+    test("roundtrip"):
+      val (_, cmds) = Source(new java.io.StringReader("const c: int\ncheck\naxiom c == 0"))
+      val cmds_ = cmds.toList
+      assert(cmds_.contains(cuvee.core.CheckSat))
+      cuvee.dafny.Printer.lines(cuvee.core.CheckSat) ==> List("check")

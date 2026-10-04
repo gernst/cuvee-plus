@@ -114,6 +114,8 @@ object Constr extends ((String, List[Sel]) => Constr)
 // axioms and lemmas with attributes, e.g. axiom {:rw} e for rewrite rules
 case class Axiom(attrs: List[String], phi: Expr) extends Cmd
 case class Lemma(attrs: List[String], phi: Expr) extends Cmd
+// check-sat, which is not Dafny
+case object Check extends Cmd
 // global variables, var x: int; which are not Dafny
 case class VarDef(vars: List[(String, Type)]) extends Cmd
 case class SortDef(name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd

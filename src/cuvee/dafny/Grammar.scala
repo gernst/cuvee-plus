@@ -383,8 +383,12 @@ object Grammar:
   val procdef =
     MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ assumes.* ~ commits.* ~ decreases.* ~ block.?))
 
+  // check-sat, without semicolon like the declarations
+  val check =
+    Check(word("check").asScanner)
+
   val cmd: Parser[Cmd] =
-    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | lemma | vardef)
+    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | lemma | vardef | check)
 
   val script =
     P(cmd.*)
