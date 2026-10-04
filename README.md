@@ -1,8 +1,8 @@
 # Cuvée
 
 Cuvée is a pipeline for program verification in Scala 3. It reads SMT-LIB,
-Boogie, and Dafny, translates them into one common representation of logic and
-programs, transforms that representation, and prints it in any of the three
+Boogie, Dafny, and C, translates them into one common representation of logic
+and programs, transforms that representation, and prints it in any of these
 languages or passes it to an SMT solver (z3 or cvc5).
 
 ## Capabilities
@@ -10,9 +10,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
 - **Frontends:** SMT-LIB 2 (`.smt2`, extended by procedures and programs),
   a subset of Boogie (`.bpl`), a subset of Dafny (`.dfy`), and simple
   integer programs in C (`.c`), with arrays as values and the verification
-  conventions of SV-COMP. All three are parsed into the same core, are type
+  conventions of SV-COMP. All are parsed into the same core, are type
   checked with polymorphism, and resolve overloaded arithmetic on `Int` and
-  `Real`.
+  `Real`, and indexing of arrays and sequences.
 - **Printers:** any input can be printed as SMT-LIB, Boogie, Dafny, or C
   (`-print smt2|bpl|dfy|c`), within the limits of each language.
 - **Verification conditions** (`-verify`): weakest preconditions for
@@ -23,9 +23,11 @@ languages or passes it to an SMT solver (z3 or cvc5).
   - global variables;
   - nondeterministic choice and iteration.
 - **Trace equation systems** (`-teq`): verification conditions by symbolic
-  execution, where loops are summarized by trace equation systems with the
-  combinators `trace`, `map`, and `all`, which a rewrite engine with lemmas
-  simplifies (in progress).
+  execution, where each loop is summarized by a trace equation system: one
+  trace per modified variable, `trace(e, for Y do x, y => u)`, and the
+  constraint that all earlier iterations took a path through the body,
+  `all(for Y check y => φ)`. Loop-free programs go directly to a solver,
+  loops need rewriting by lemmas first (in progress, see below).
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the
   predicates by their fields.
@@ -35,9 +37,14 @@ languages or passes it to an SMT solver (z3 or cvc5).
   obligations `forall xs. antecedents ==> conclusion`, which the solvers report
   one by one.
 - **Simplifier** (`-simplify`): contextual simplification of formulas and
-  simplification of programs,
-  normalisation of arithmetic on `Int` and `Real` into polynomials, and
-  derivatives.
+  simplification of programs, normalisation of arithmetic on `Int` and `Real`
+  into polynomials, comparisons with positive coefficients, and derivatives.
+- **Rewrite engine** (library, not on the command line yet): conditional
+  rules `lhs = rhs if cond`, applied by the simplifier after each round,
+  matching modulo associativity, commutativity, and 0 of `+` and `-`, and the
+  binding structure of the trace combinators `trace`, `map`, and `all` from
+  *Trace Equation Systems for Program Verification*; and Fourier-Motzkin
+  elimination over the rationals.
 - **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`): goals and lemmas are checked
   for validity, and assertions and `check-sat` are passed through.
 - **Data types:**
@@ -60,8 +67,7 @@ languages or passes it to an SMT solver (z3 or cvc5).
 
   See [examples/par.dfy](examples/par.dfy).
 
-Known limitations and planned work, including a C frontend, are listed in
-[TODO.md](TODO.md).
+Known limitations and planned work are listed in [TODO.md](TODO.md).
 
 ## Usage
 
@@ -76,9 +82,9 @@ mill -i assembly                            # build out/assembly.dest/out.jar
 ```
 
 Without options, the input is printed in its own language after parsing and
-type checking. The transformations (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`,
-`-simplify`)
-are applied in the order in which they are given. The output options
+type checking. The transformations (`-verify`, `-teq`, `-chc`, `-flat`,
+`-split`, `-monomorph`, `-simplify`) are applied in the order in which they
+are given. The output options
 (`-print`, `-z3`, `-cvc5`, `-o <file>`) apply to the result, wherever they
 appear. For example:
 
@@ -87,10 +93,15 @@ mill -i run -verify -z3 examples/vcgen/max.dfy              # verify methods
 mill -i run -chc -z3 examples/vcgen/max.dfy                 # infer invariants
 mill -i run -verify -simplify -z3 examples/hybrid.dfy       # hybrid programs
 mill -i run -verify -print smt2 examples/vcgen/max.dfy      # show the goals
+mill -i run -teq examples/vcgen/sum.dfy                     # trace equation systems
+mill -i run -teq -z3 examples/vcgen/max.dfy                 # loop-free, by symbolic execution
+mill -i run -chc -z3 examples/c/count.c                     # C, invariants by Horn clauses
 ```
 
 `-help` lists all options. `-debug simplify,rewrite` prints the steps of the
-simplifier and of the rewrite engine that change an expression.
+simplifier and of the rewrite engine that change an expression, in the
+language of the output; `-debug solver` traces the communication with the
+solvers.
 
 ## Documentation
 

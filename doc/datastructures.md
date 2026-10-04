@@ -65,6 +65,11 @@ case class Diff(xs: List[Var], expr: Expr)     // derivative (xs :: expr)'
 case class Old(expr: Expr)                     // value at the entry of the procedure
 case class Bind(quant: Name, bound: List[Var], body: Expr)   // forall, exists
 case class Let(bound: List[Var], args: List[Expr], body: Expr)
+
+// the combinators of trace equation systems, with guarded updates
+case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: List[(Expr, Expr)])
+case class Maps(deps: List[Expr], bound: List[Var], update: List[(Expr, Expr)])
+case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
 ```
 
 - **`App.inst`** holds the expected types of the arguments, not the
@@ -80,6 +85,21 @@ case class Let(bound: List[Var], args: List[Expr], body: Expr)
   `xs` appear only once the simplifier computes the derivative.
 - **`Old(e)`** never reaches the solver. `Old.elim(gs, gs_, ...)` replaces
   it by `e[gs := gs_]` before verification.
+- **Trace combinators** (*Trace Equation Systems for Program Verification*,
+  section 3):
+  - `Trace(init, deps, acc, bound, update)` is the trace of the accumulator
+    `acc`, of type `Trace(T)`. It starts with `init`; each further value is
+    the update of the previous one and the next values of the dependencies,
+    which `bound` ranges over point-wise.
+  - `Maps(deps, bound, update)` is the sequence of the updates, of type
+    `Seq(T)`.
+  - `Invs(deps, bound, φ)` states `φ` for all values of the dependencies.
+  - An update is a list of guarded cases `(φᵢ, eᵢ)` with disjoint and
+    complete guards; a single case has the guard `true`.
+  - The functions on traces are in `Fun.trace`: `counter`, `current`,
+    `butlast` (the paper's `⌊X⌋`), `steps`, `length`, `nth`, `earlier`.
+  - `state.exprs.trace`, `map`, and `all` create the bound variables with the
+    element types of the dependencies (`Type.elem`).
 - **Sugar.** [Builtin.scala](../src/cuvee/core/Builtin.scala) provides
   objects that both build and match applications of built-in functions:
   - `True`, `False`, `Eq`, `Ite`, `Not`, `And`, `Or`, `Imp`, `All`, `Ex`,
@@ -234,7 +254,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   - assumptions and conclusions;
   - bound variables;
   - equalities between variables, as a substitution;
-  - the polarity of the position, and whether the context is inconsistent.
+  - the polarity of the position, and whether the context is inconsistent;
+  - the rewrite rules and their remaining number of steps
+    (`ctx.withRules(rules, steps)`), which all copies share.
 - **`Poly(const, monos)`** with `Mono(factor, atoms)` is the normal form of
   arithmetic, with `Rational` coefficients. `Ring` bundles the sugar of one
   type (`Ring.int`, `Ring.real`) to read and print polynomials.
@@ -244,7 +266,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   `0 < poly`. `FourierMotzkin` eliminates atoms from conjunctions of these and
   decides their satisfiability over the rationals.
 - **`Rule(lhs, rhs, cond)`** is a conditional rewrite rule, whose variables
-  are the free variables of `lhs`. `Rewrite` rewrites innermost first,
-  matching modulo type instantiation, A/C and 0 of `+` and `-`, and the
-  binding structure of `Trace`, `Maps`, and `Invs` (dependencies of
-  the pattern that are variables are instantiated by `map` expressions).
+  are the free variables of `lhs`. `Rewrite` rewrites innermost first; a
+  match is a `Subst` of the type parameters and variables of the rule,
+  modulo type instantiation, A/C and 0 of `+` and `-`, and the binding
+  structure of `Trace`, `Maps`, and `Invs`: dependencies of the pattern are
+  selected among those of the expression (`Binding` relates the bound
+  variables), and dependencies that are variables of the rule are
+  instantiated by `Maps` expressions.
