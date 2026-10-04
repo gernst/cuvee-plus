@@ -108,6 +108,12 @@ object Config:
         val config_ = config.copy(transforms = config.transforms :+ cuvee.transform.Split)
         (config_, rest)
 
+  val monomorph =
+    flag("-monomorph", "replace polymorphic functions by their monomorphic instances, e.g. before -z3"):
+      case (config, rest) =>
+        val config_ = config.copy(transforms = config.transforms :+ cuvee.transform.Monomorph)
+        (config_, rest)
+
   val simplify =
     flag("-simplify", "simplify formulas and function definitions"):
       case (config, rest) =>
@@ -159,6 +165,7 @@ object Config:
     chc,
     flat,
     split,
+    monomorph,
     simplify,
     z3,
     cvc5,
@@ -203,7 +210,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.4.3")
+    println("Cuvée 0.5.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

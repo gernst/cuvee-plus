@@ -6,12 +6,9 @@ import utest._
 import cuvee.Error
 import cuvee.core._
 
-// polymorphic functions must be monomorphized before they are passed to a solver (see TODO.md),
-// therefore these examples are only parsed
-val polymorphic = Set("syntax.bpl")
-
+// polymorphic functions are monomorphized before they are passed to a solver
 def solvable =
-  Examples.find(os.sub / "boogie", "bpl").filterNot(file => polymorphic.contains(file.last))
+  Examples.find(os.sub / "boogie", "bpl")
 
 // runs the examples with -verify against z3,
 // the first line of each example states whether all goals are valid
@@ -27,7 +24,7 @@ object Verify extends TestSuite:
       val first = os.read.lines(file).head
       assert(expected.contains(first))
 
-      Examples.errors("-verify", "-z3", file.toString) ==> expected(first)
+      Examples.errors("-verify", "-monomorph", "-z3", file.toString) ==> expected(first)
 
 // runs the examples with -chc against z3, which checks the clauses for satisfiability:
 // sat if all queries hold, unsat if one of them fails
@@ -38,12 +35,15 @@ object Horn extends TestSuite:
     "// expected: invalid" -> Status.Unsat
   )
 
+  // syntax.bpl: unknown, since the axioms are quantified
+  val skip = Set("syntax.bpl")
+
   val tests =
-    Examples.tests(solvable): file =>
+    Examples.tests(solvable.filterNot(file => skip.contains(file.last))): file =>
       val first = os.read.lines(file).head
       assert(expected.contains(first))
 
-      val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
+      val (_, results) = cuvee.Cuvee.run("-chc", "-monomorph", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
       Examples.status(results) ==> expected(first)
 

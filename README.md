@@ -25,6 +25,8 @@ languages or passes it to an SMT solver (z3 or cvc5).
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the
   predicates by their fields.
+- **Monomorphization** (`-monomorph`): polymorphic functions are replaced by
+  their instances, which the solvers require.
 - **Splitting** (`-split`): goals and lemmas are split into individual
   obligations `forall xs. antecedents ==> conclusion`, which the solvers report
   one by one.
@@ -70,7 +72,8 @@ mill -i assembly                            # build out/assembly.dest/out.jar
 ```
 
 Without options, the input is printed in its own language after parsing and
-type checking. The transformations (`-verify`, `-chc`, `-flat`, `-split`, `-simplify`)
+type checking. The transformations (`-verify`, `-chc`, `-flat`, `-split`, `-monomorph`,
+`-simplify`)
 are applied in the order in which they are given. The output options
 (`-print`, `-z3`, `-cvc5`, `-o <file>`) apply to the result, wherever they
 appear. For example:

@@ -35,9 +35,10 @@ inferred from the call graph. Open:
   `NotImplementedError`, `NumberFormatException` from `digits.toInt`) are not
   caught by `Pipe.run` and crash the whole run
   ([pipe/Pipe.scala](src/cuvee/pipe/Pipe.scala)).
-- Polymorphic declarations (`par`) of functions are sent to z3/cvc5 as they
-  are, which the solvers do not accept; they need monomorphization first
-  (polymorphic datatypes are accepted).
+- Polymorphic functions are sent to z3/cvc5 as they are, which the solvers do
+  not accept, unless `-monomorph` replaces them by their instances;
+  polymorphic assertions (`par`) are not instantiated, and procedures are not
+  monomorphized.
 - `-print` takes the file extensions as names of the output languages,
   `smt2`, `dfy`, `bpl`, which is not documented in `-help`.
 - The output of `-print smt2` for Dafny and Boogie input lacks the sorts and
@@ -101,9 +102,6 @@ inferred from the call graph. Open:
 
 - Procedures must be declared before they are called, so mutually recursive
   procedures are not supported ([boogie/Parser.scala](src/cuvee/boogie/Parser.scala)).
-- Polymorphic functions and sorts reach the solvers unchanged (see
-  monomorphization above); `syntax.bpl` is therefore only parsed in the solver
-  tests.
 - No quantifiers over types, `forall<a> ...`,
   no sequences, no parallel composition.
 - The printer raises an error on datatypes, `continue`, attributes of loops

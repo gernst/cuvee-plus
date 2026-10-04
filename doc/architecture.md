@@ -29,7 +29,7 @@ transformation and any output.
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `Verify` (weakest preconditions to goals) and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual rewriting under a `Ctx`) and `Arith` (polynomials over `Int` and `Real`). |
-| `cuvee.transform` | `Flat` (record arguments of predicates become their fields) and `Split` (goals into individual obligations). |
+| `cuvee.transform` | `Flat` (record arguments of predicates become their fields) `Split` (goals into individual obligations), and `Monomorph` (instances of polymorphic functions). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
 ## A run
@@ -38,7 +38,7 @@ transformation and any output.
 
 1. `Config.parse` reads the command line:
    - the input language from the file extension;
-   - the transforms in order (`-verify`, `-chc`, `-flat`, `-split`, `-simplify`);
+   - the transforms in order (`-verify`, `-chc`, `-flat`, `-split`, `-monomorph`, `-simplify`);
    - the printer (`-print`);
    - the sink (stdout, `-o`, `-z3`, `-cvc5`).
 2. `config.source(reader)` parses the frontend's prelude first. It returns
@@ -89,6 +89,8 @@ type Transform = (List[Cmd], List[Cmd], Cmd, State) => List[Cmd]
   Horn predicates.
 - [`Split`](../src/cuvee/transform/Split.scala) splits goals and lemmas into
   individual obligations.
+- [`Monomorph`](../src/cuvee/transform/Monomorph.scala) replaces polymorphic
+  functions by their instances, which are emitted before their first use.
 
 ### Sinks
 
