@@ -336,6 +336,38 @@ object Simplify extends Transform:
         val body_ = simplify(config, state, ctx.bind(bound_), re(body))
         let(config, state, ctx, bound_, args_, body_)
 
+      // the combinators bind the accumulator and the variables for the dependencies like quantifiers
+      case Trace(init, deps, acc, bound, updates) =>
+        val init_ = simplify(config, state, ctx.neutral, init)
+        val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
+        val (vars_, re) = ctx.avoid(acc :: bound)
+        val updates_ = this.updates(config, state, ctx.neutral.bind(vars_), updates.map(_.map(re(_))))
+        Trace(init_, deps_, vars_.head, vars_.tail, updates_)
+
+      case Maps(deps, bound, updates) =>
+        val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
+        val (bound_, re) = ctx.avoid(bound)
+        val updates_ = this.updates(config, state, ctx.neutral.bind(bound_), updates.map(_.map(re(_))))
+        Maps(deps_, bound_, updates_)
+
+      // the body holds for all values of the dependencies, like the body of a universal quantifier
+      case Invs(deps, bound, body) =>
+        val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
+        val (bound_, re) = ctx.avoid(bound)
+        val body_ = simplify(config, state, ctx.bind(bound_), re(body))
+        if body_ == True
+        then True
+        else Invs(deps_, bound_, body_)
+
+  // the guards of the cases of an update are simplified, cases whose guard is false are dropped,
+  // and the results are simplified assuming their guard
+  def updates(config: Config, state: State, ctx: Ctx, updates: List[Upd]): List[Upd] =
+    for
+      Upd(cond, rhs) <- updates
+      cond_ = simplify(config, state, ctx, cond)
+      if cond_ != False
+    yield Upd(cond_, simplify(config, state, ctx.assume(List(cond_), Nil), rhs))
+
   // simplify each of `phis` assuming the others, which hold if `pos` (conjunction)
   // and do not hold otherwise (disjunction);
   // propositions in `done` are already processed (in reverse) and assumed in their simplified form,

@@ -13,8 +13,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- hook up trace terms to the simplifier
-- implement support for trace combinators in the transforms
 - have `TEQ.scala` inject lemmas from `teq.dfy`, which should be part of the resources as the lemma database, use a fresh dafny parser, and inject all commands, they can remain in the final output
 - check the flattening operation in this `https://github.com/gernst/cuvee/blob/main/cuvee/src/cuvee/pure/Clause.scala` file, implement a similar normalization step as `Normalize` in `simplify`, and integrate it into `Simplify`. should it be the first or last step in `Simplify`? I'm not sure.
 - implement Dafny's additional types set, etc using CVC5's notation if available, ensure the overloading reoslution works propertly
@@ -181,8 +179,8 @@ inferred from the call graph. Open:
   cases are `if φ₁ then e₁, if φ₂ then e₂`, and like let in SMT-LIB,
   `(trace (x e) ((y Y)) u)`, `(map ((y Y)) u)`, `(all ((y Y)) φ)`, with
   `(cases (φ₁ e₁) (φ₂ e₂))`; `trace`, `map`, and `all` followed by `for` cannot
-  be names of functions. The simplifier, Monomorph, Flat, and the C printer do
-  not support them yet.
+  be names of functions. The simplifier does not use the dependencies, e.g. it
+  does not drop unused ones, and Split treats the combinators as atoms.
 - The verifier by symbolic execution and trace equation systems (`-teq`,
   [verify/TEQ.scala](src/cuvee/verify/TEQ.scala)) generates high-level goals
   that contain the combinators for programs with loops, which must be
