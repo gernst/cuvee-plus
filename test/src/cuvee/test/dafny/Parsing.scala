@@ -157,6 +157,6 @@ object Goals extends TestSuite:
   val tests = Tests:
     test("goal"):
       val (_, cmds) = Source(new java.io.StringReader("goal {:rw} forall x: int :: x < x + 1"))
-      val List(cuvee.core.Assert(justify, _, _, attrs)) = cmds.toList: @unchecked
+      val cuvee.core.Assert(justify, _, _, attrs) = cmds.last: @unchecked
       justify ==> cuvee.core.Goal
       assert(attrs.contains("rw"))

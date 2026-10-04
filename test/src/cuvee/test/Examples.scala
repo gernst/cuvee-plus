@@ -35,11 +35,17 @@ object Examples:
     results.collect { case error: Error => error.msg }
 
   // runs Cuvee on `args` and returns the commands that reach the sink, i.e., after all transforms,
-  // together with the messages of all errors that are reported
+  // except for the prelude of the frontend, together with the messages of all errors that are reported
   def output(args: String*): (List[Cmd], List[String]) =
     val buffer = mutable.ListBuffer[Cmd]()
     val (_, results) = cuvee.Cuvee.run(args.toList, List(Sink.collect(buffer)))
-    (buffer.toList, results.collect { case error: Error => error.msg })
+    (buffer.toList.filterNot(prelude(args*).contains), results.collect { case error: Error => error.msg })
+
+  // the commands of the prelude of the frontend of the input file in `args`
+  def prelude(args: String*): List[Cmd] =
+    val config = cuvee.Config.parse(cuvee.Config.default, args.toList)
+    val (_, cmds) = config.source(new java.io.StringReader(""))
+    cmds.toList
 
   // runs Cuvee on `args` and returns the parsed input commands
   def input(args: String*): List[Cmd] =

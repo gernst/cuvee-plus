@@ -1,3 +1,5 @@
+// the built-in sorts and functions, which SMT-LIB knows, or which are eliminated before the output,
+// they are parsed into the initial state and not passed on (unlike prelude.bpl)
 // base types
 type bool;
 type int;

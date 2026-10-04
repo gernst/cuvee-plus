@@ -6,7 +6,9 @@ import cuvee.Error
 
 // the declarations and definitions so far, by kind and name, with their attributes and the assertions,
 // together with builders for types, expressions, programs, and commands, which the frontends use (see style.md);
-// functions are identified by name and arity, since the frontends may overload names with different arities
+// functions are identified by name and arity, since the frontends may overload names with different arities;
+// a declaration or definition that coincides with an existing one is accepted and leaves the state unchanged,
+// e.g. those of the prelude of a frontend in printed output that is parsed again (see cuvee.pipe.Source)
 case class State(
     logic: Option[String] = None,
     options: Map[String, Any] = Map(),
@@ -31,6 +33,10 @@ case class State(
     asserts: List[Assert] = List()
 ):
   // whether the option `name` is set to true
+  // `f` unless the declaration or definition coincides with the existing one, which leaves the state unchanged
+  def unless(same: Boolean)(f: => State): State =
+    if same then this else f
+
   def hasFlag(name: String) =
     options.get(name) match
       case Some("true") => true
@@ -48,61 +54,65 @@ case class State(
   def setInfo(name: String, value: Any) =
     copy(infos = infos + (name -> value))
 
-  def declare(name: Name, arity: Int, attrs: Attrs) =
-    Error.report("sort already declared", name):
-      require(!sorts.contains(name))
+  def declare(name: Name, arity: Int, attrs: Attrs): State =
+    unless(sorts.get(name) == Some(Con(name, arity))):
+      Error.report("sort already declared", name):
+        require(!sorts.contains(name))
 
-    val con = Con(name, arity)
-    copy(sorts = sorts + (name -> con), sortattrs = sortattrs + (name -> attrs))
+      val con = Con(name, arity)
+      copy(sorts = sorts + (name -> con), sortattrs = sortattrs + (name -> attrs))
 
-  def define(name: Name, params: List[Param], body: Type) =
-    Error.report("sort not declared", name):
-      require(sorts.contains(name))
-    Error.report("sort already defined", name):
-      require(!sortdefs.contains(name))
+  def define(name: Name, params: List[Param], body: Type): State =
+    unless(sortdefs.get(name) == Some((params, body))):
+      Error.report("sort not declared", name):
+        require(sorts.contains(name))
+      Error.report("sort already defined", name):
+        require(!sortdefs.contains(name))
 
-    copy(sortdefs = sortdefs + (name -> (params, body)))
+      copy(sortdefs = sortdefs + (name -> (params, body)))
 
-  def define(name: Name, data: Datatype) =
-    val Datatype(params, constrs) = data
+  def define(name: Name, data: Datatype): State =
+    unless(datatypes.get(name) == Some(data)):
+      val Datatype(params, constrs) = data
 
-    Error.report("sort not declared", name):
-      require(sorts.contains(name))
-    Error.report("datatype already defined", name):
-      require(!sortdefs.contains(name) && !datatypes.contains(name))
+      Error.report("sort not declared", name):
+        require(sorts.contains(name))
+      Error.report("datatype already defined", name):
+        require(!sortdefs.contains(name) && !datatypes.contains(name))
 
-    val con = sorts(name)
-    val sort = Sort(con, params)
+      val con = sorts(name)
+      val sort = Sort(con, params)
 
-    for (constr, sels) <- constrs
-    do
-      Error.report("constructor not declared", constr.name):
-        val key = (constr.name, constr.args.length)
-        require(funs.contains(key))
-      Error.report("constructor has wrong result type", con, constr):
-        require(constr.res == sort)
-      Error.report("wrong selector types", constr, sels):
-        require(constr.args == sels.map(_.res))
-
-      for sel <- sels
+      for (constr, sels) <- constrs
       do
-        Error.report("selector not declared", sel.name):
-          val key = (sel.name, sel.args.length)
+        Error.report("constructor not declared", constr.name):
+          val key = (constr.name, constr.args.length)
           require(funs.contains(key))
-        Error.report("selector must take the datatype as its only argument", sel, sort):
-          require(sel.args == List(sort))
+        Error.report("constructor has wrong result type", con, constr):
+          require(constr.res == sort)
+        Error.report("wrong selector types", constr, sels):
+          require(constr.args == sels.map(_.res))
 
-    copy(datatypes = datatypes + (name -> data))
+        for sel <- sels
+        do
+          Error.report("selector not declared", sel.name):
+            val key = (sel.name, sel.args.length)
+            require(funs.contains(key))
+          Error.report("selector must take the datatype as its only argument", sel, sort):
+            require(sel.args == List(sort))
 
-  def declare(name: Name, params: List[Param], formals: List[Var], res: Type, attrs: Attrs) =
+      copy(datatypes = datatypes + (name -> data))
+
+  def declare(name: Name, params: List[Param], formals: List[Var], res: Type, attrs: Attrs): State =
     val arity = formals.length
     val key = (name, arity)
 
-    Error.report("function already declared", key):
-      require(!funs.contains(key))
+    unless(funs.get(key) == Some(Fun(name, params, formals, res))):
+      Error.report("function already declared", key):
+        require(!funs.contains(key))
 
-    val fun = Fun(name, params, formals, res)
-    copy(funs = funs + (key -> fun), funattrs = funattrs + (key -> attrs))
+      val fun = Fun(name, params, formals, res)
+      copy(funs = funs + (key -> fun), funattrs = funattrs + (key -> attrs))
 
   // the constructors of all datatypes by name
   def constrs: Map[Name, Fun] =
@@ -126,45 +136,49 @@ case class State(
       case (state, Fun(name, params, formals, res)) =>
         state.declare(name, params, formals, res, Attrs.empty)
 
-  def define(name: Name, arity: Int, body: Expr) =
+  def define(name: Name, arity: Int, body: Expr): State =
     val key = (name, arity)
 
-    Error.report("function not declared", key):
-      require(funs.contains(key))
-    Error.report("function already defined", key):
-      require(!fundefs.contains(key))
+    unless(fundefs.get(key) == Some(body)):
+      Error.report("function not declared", key):
+        require(funs.contains(key))
+      Error.report("function already defined", key):
+        require(!fundefs.contains(key))
 
-    copy(fundefs = fundefs + (key -> body))
+      copy(fundefs = fundefs + (key -> body))
 
   // the global variables, whose order is fixed since the state does not change during a transformation
   def globals: List[Var] =
     vars.values.toList
 
-  def declare(name: Name, typ: Type, attrs: Attrs) =
-    Error.report("variable already declared", name):
-      require(!vars.contains(name))
+  def declare(name: Name, typ: Type, attrs: Attrs): State =
+    unless(vars.get(name) == Some(Var(name, typ))):
+      Error.report("variable already declared", name):
+        require(!vars.contains(name))
 
-    val x = Var(name, typ)
-    copy(vars = vars + (name -> x), varattrs = varattrs + (name -> attrs))
+      val x = Var(name, typ)
+      copy(vars = vars + (name -> x), varattrs = varattrs + (name -> attrs))
 
-  def declare(name: Name, params: List[Param], in: List[Var], out: List[Var], attrs: Attrs) =
-    Error.report("procedure already declared", name):
-      require(!procs.contains(name))
+  def declare(name: Name, params: List[Param], in: List[Var], out: List[Var], attrs: Attrs): State =
+    unless(procs.get(name) == Some(Proc(name, params, in, out))):
+      Error.report("procedure already declared", name):
+        require(!procs.contains(name))
 
-    // the precondition is evaluated at the entry, where there are no other values to refer to
-    Error.report("precondition refers to old values", name):
-      require(!Old.occurs(attrs.requires))
+      // the precondition is evaluated at the entry, where there are no other values to refer to
+      Error.report("precondition refers to old values", name):
+        require(!Old.occurs(attrs.requires))
 
-    val proc = Proc(name, params, in, out)
-    copy(procs = procs + (name -> proc), procattrs = procattrs + (name -> attrs))
+      val proc = Proc(name, params, in, out)
+      copy(procs = procs + (name -> proc), procattrs = procattrs + (name -> attrs))
 
-  def define(name: Name, body: Prog) =
-    Error.report("procedure not declared", name):
-      require(procs.contains(name))
-    Error.report("procedure already defined", name):
-      require(!procdefs.contains(name))
+  def define(name: Name, body: Prog): State =
+    unless(procdefs.get(name) == Some(body)):
+      Error.report("procedure not declared", name):
+        require(procs.contains(name))
+      Error.report("procedure already defined", name):
+        require(!procdefs.contains(name))
 
-    copy(procdefs = procdefs + (name -> body))
+      copy(procdefs = procdefs + (name -> body))
 
   // the state with the declaration or definition of `cmd`, which must not be declared already
   def add(cmd: Decl): State =

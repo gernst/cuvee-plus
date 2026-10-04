@@ -1,3 +1,5 @@
+; the built-in sorts and functions, which SMT-LIB knows, or which are eliminated before the output,
+; they are parsed into the initial state and not passed on (unlike prelude.smt2)
 ; sorts and functions predefined by SMT-LIB (core, integers, reals, arrays, sequences),
 ; formal parameters are implicitly named x$0, x$1, ... and type parameters a$0, a$1, ... as in cuvee.core.Fun
 

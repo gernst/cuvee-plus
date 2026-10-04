@@ -21,10 +21,10 @@ object Source extends cuvee.pipe.Source:
     val parser = new Parser(State.empty)
     val lifted = lift(parser)
 
-    val reader = resource("/cuvee/smtlib/prelude.smt2")
+    val reader = resource("/cuvee/smtlib/builtin.smt2")
     try cmds(newScanner(reader).input, lifted).force
     finally reader.close()
 
-    // the parser's state now contains the prelude
+    // the parser's state now contains the built-in declarations
     parser.resetPoint()
     (parser.state, lifted)

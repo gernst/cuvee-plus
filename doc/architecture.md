@@ -41,9 +41,12 @@ transformation and any output.
    - the transforms in order (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-simplify`);
    - the printer (`-print`);
    - the sink (stdout, `-o`, `-z3`, `-cvc5`).
-2. `config.source(reader)` parses the frontend's prelude first. It returns
-   the initial `State`, which holds the prelude's declarations, and a lazy
-   `LazyList[Cmd]` of the input.
+2. `config.source(reader)` parses the frontend's built-in declarations first
+   (`builtin.*`). It returns the initial `State`, which holds them, and a lazy
+   `LazyList[Cmd]`, which begins with the definitions of the frontend's
+   prelude (`prelude.*`, e.g. Dafny's tuples), followed by the input, where
+   commands that coincide with those of the prelude are dropped, e.g. when
+   printed output is parsed again.
 3. `config.stages(init, sink)` chains one `Stage` per transform in front of
    the sink. All stages start from the same initial state, and know the
    configuration.
@@ -138,8 +141,8 @@ and the next sink.
 - `Tee` duplicates the stream.
 - [`Solver.sink`](../src/cuvee/smtlib/Solver.scala) runs z3 or cvc5 as a
   process:
-  - It first declares the sorts and datatypes of the frontend's prelude that
-    SMT-LIB lacks (`Solver.prelude`), e.g. Dafny's tuples and events.
+  - It first declares the built-in sorts of the frontend that SMT-LIB lacks
+    (`Solver.prelude`), e.g. Dafny's `set`.
   - Goals and lemmas are checked for validity in a `push`/`pop` scope; lemmas
     are then asserted.
   - Procedures and global variables must have been eliminated by `-verify` or
@@ -167,9 +170,13 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      or `state.progs.check`. These call `Type.check` and then
      `Overload.apply`, which replaces the generic arithmetic operators of the
      prelude by their `Int`, `Real` or `Seq` implementations.
-5. **Prelude** (`resources/cuvee/<lang>/prelude.*`), in the frontend's own
-   syntax. It declares the built-in sorts and the generic operators, and for
-   Dafny also tuples, `chan` and `event`.
+5. **Built-ins and prelude** (`resources/cuvee/<lang>/builtin.*` and
+   `prelude.*`), in the frontend's own syntax. The built-ins declare the sorts
+   and the generic operators that SMT-LIB knows or that are eliminated, and
+   are not passed on; the prelude defines what the output needs, for Dafny
+   tuples, `chan` and `event`, and is injected at the beginning of the
+   commands. Declarations that coincide with existing ones leave the state
+   unchanged (`State.unless`).
 6. **Printer** (`Printer.scala`): core back to concrete syntax with
    easyprint.
    - It reverses `translate` and recognises sugar, e.g. sequence literals,

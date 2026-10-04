@@ -17,9 +17,12 @@ object Source extends cuvee.pipe.Source:
         cmd_ <- parser.resolve(cmd)
       yield cmd_
 
-    val reader = resource("/cuvee/dafny/prelude.dfy")
+    val reader = resource("/cuvee/dafny/builtin.dfy")
     try cmds(newScanner(reader).input, lifted).force
     finally reader.close()
 
-    // the parser's state now contains the declarations of the prelude
+    // the parser's state now contains the built-in declarations
     (parser.state, lifted)
+
+  // channels, events, and tuples
+  override def prelude = Some("/cuvee/dafny/prelude.dfy")

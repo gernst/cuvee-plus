@@ -18,5 +18,5 @@ object Roundtrip extends TestSuite:
 
       val first = Printer.lines(cmds)
       val (_, cmds_) = Source(new StringReader(first.mkString("\n")))
-      val second = Printer.lines(cmds_.toList)
+      val second = Printer.lines(cmds_.toList.filterNot(Examples.prelude(file.toString).contains))
       second ==> first

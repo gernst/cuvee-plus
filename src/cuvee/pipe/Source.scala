@@ -10,10 +10,18 @@ import cuvee.core._
 import cuvee.smtlib.Parser
 
 // produces the commands together with the initial state of the parser,
-// which must be shared by all stages of the pipeline
+// which must be shared by all stages of the pipeline:
+// the initial state holds the built-in declarations of the frontend (builtin.*),
+// the commands begin with the definitions of its prelude (prelude.*), which the output needs, e.g. tuples,
+// where the commands of the input that coincide with them are dropped, e.g. when printed output is parsed again
 trait Source extends (Reader => (State, LazyList[Cmd])):
   def newScanner(reader: Reader): Scanner
+
+  // a parser whose state holds the built-in declarations
   def newParser(): (State, easyparse.Parser[List[Cmd]])
+
+  // the resource with the definitions that are injected at the beginning of the commands, if any
+  def prelude: Option[String] = None
 
   // files on the classpath, such as the preludes, bundled from resources/
   def resource(path: String): Reader =
@@ -28,8 +36,18 @@ trait Source extends (Reader => (State, LazyList[Cmd])):
     val scanner = newScanner(reader)
     val (init, parser) = newParser()
 
+    val prelude_ =
+      for path <- prelude.toList; cmd <- parse(path, parser)
+      yield cmd
+
     // defer parsing such that errors in the first command are reported by the pipeline, too
-    (init, LazyList.empty #::: cmds(scanner.input, parser))
+    (init, LazyList.empty #::: prelude_.to(LazyList) #::: cmds(scanner.input, parser).filterNot(prelude_.contains))
+
+  // the commands of a resource
+  def parse(path: String, parser: easyparse.Parser[List[Cmd]]): List[Cmd] =
+    val reader = resource(path)
+    try cmds(newScanner(reader).input, parser).toList
+    finally reader.close()
 
   def cmds(in: easyparse.Input, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
     if in.isEmpty || in.head == Token.eof

@@ -13,7 +13,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- split the `prelude.*` files into two parts: one that is truly there just to describe what the SMT-Solver should know, i.e., those defintions that are not injected into the pipeline (call this `builtin.*`) and then into the `prelude.*` put all definitions that *are* needed. In Dafny, for example, this currently means the channel/history stuff, receive and send, and the tuple types.
 - implement `if <phi> then <psi>` syntax in Dafny top-level `Assert(...)` commands to stand for `<phi> ==> <psi>` but with lowest precedence, i.e., the `else` should be optional there and implicitly `True`. please make sure that the grammar remains unambiguous, otherwise ask before making changes
 - `TEQ.scala`: support break and continue in symex
 - in the generated constraints for `TEQs` make sure that the trace equations don't occur twice, by re-arranging the formula correctly
@@ -25,6 +24,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
 
 ### Deferred (questions for the user)
+
+- split the `prelude.*` files into `builtin.*` and `prelude.*`
+  - done: `builtin.*` is parsed into the initial state, `prelude.*` (Dafny: `chan`, `event`, tuples) is injected at the beginning of the commands, inputs that repeat it are accepted
+  - question: the history, `send`, and `receive` are still declared by the input (see examples/dafny/par.dfy). In the injected prelude, the global variable `history: seq<event<int>>` would become a parameter of all predicates of `-chc` and a quantified variable of all goals of `-verify`, for every Dafny program, and z3's logic HORN has no sequences, so `-chc` would fail for all Dafny inputs; also the value type of events would be fixed to `int`. Should they be injected only if the input uses `parallel`, `send`, or `receive` (e.g. a separate prelude `par.dfy`, injected on demand), or stay in the input?
 
 - note on `n + 1 < m <==> n <= m`: this does not hold on Int (n = 0, m = 1), the correct forms are `n < m + 1 <==> n <= m` and `n + 1 <= m <==> n < m`, which are implemented (`Simplify.lt`, `Simplify.le`, with `Succ`)
 
@@ -70,10 +73,9 @@ inferred from the call graph. Open:
   not accept, unless `-monomorph` replaces them by their instances;
   polymorphic assertions (`par`) are not instantiated, and procedures are not
   monomorphized.
-- The output of `-print smt2` for Dafny and Boogie input lacks the sorts and
-  datatypes of the prelude of the frontend (e.g. `chan`, `event`, tuples),
-  which the solver sinks declare by themselves (`Solver.prelude`), so the
-  printed output cannot be passed to a solver directly.
+- The built-in sorts of Dafny that SMT-LIB lacks (`set`, `multiset`, `map`)
+  are not in the output, the solver sinks declare them by themselves
+  (`Solver.prelude`).
 - Termination in `Verify` and `Horn`: loops and procedures without
   `decreases` clause are not checked (Dafny guesses a measure), measures are
   integers only, and the measure of a procedure must refer to its inputs.
