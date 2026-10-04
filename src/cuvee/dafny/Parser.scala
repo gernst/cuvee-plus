@@ -560,18 +560,13 @@ class Parser(var state: State):
         val attrs_ = invariants(scope, invs, dec)
         state.progs.iter(body_, attrs_)
 
-      // the shared history is the variable named history
       case Par(calls) =>
-        Error.report("parallel composition requires a variable history", scope):
-          require(scope.vars.contains(core.Par.history))
-
-        val history_ = scope.vars(core.Par.history)
         val calls_ =
           for call <- calls
           yield resolve(scope, call) match
             case call_ : core.Call => call_
             case prog_             => Error.raise("parallel composition of statements that are not calls", prog_)
-        core.Par(history_, calls_)
+        core.Par(calls_)
 
       // the evolution constraint defaults to true
       case Ode(xs, rhs, dom, invs) =>

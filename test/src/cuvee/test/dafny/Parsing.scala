@@ -95,7 +95,3 @@ object Parallel extends TestSuite:
     test("read"):
       errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(x); } }") ==>
         List("parallel calls share modified variables")
-
-    test("no history"):
-      errors("method p() { } method m() { parallel { p(); } }") ==>
-        List("parallel composition requires a variable history")

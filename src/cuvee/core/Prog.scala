@@ -82,31 +82,31 @@ case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) extends 
   def free = rhs.free ++ dom.free ++ xs ++ Prog.free(attrs)
 
 // parallel composition of calls to procedures, whose assumption-commitment contracts
-// over the shared history of events `history`, a global variable, are in their attributes, "assumes" and "commits";
+// over the global history of events are in their attributes, "assumes" and "commits";
 // the calls must not share the variables that they modify, other than the history
-case class Par(history: Var, calls: List[Call]) extends Prog:
+case class Par(calls: List[Call]) extends Prog:
   def mod = calls.mod
-  def free = calls.flatMap(_.free).toSet + history
+  def free = calls.flatMap(_.free).toSet
 
 object Par:
-  // the default name of the history in the frontends, which is extended by Send and Recv
+  // the global history of events, which is extended by Send and Recv
   val history = Name("history", None)
 
   // the variables modified by a call, including the global variables modified by the procedure,
-  // except for the history `h`
-  def modifies(state: State, h: Var, call: Call): Set[Var] =
+  // except for the history
+  def modifies(state: State, call: Call): Set[Var] =
     val Call(name, _, res) = call
     val mod = cuvee.verify.Verify.modifies(state.procattrs(name))
-    (res ++ mod).toSet - h
+    (res ++ mod).toSet.filterNot(_.name == history)
 
-  // the variables modified by one call and used by another, other than the history `h`
-  def shared(state: State, h: Var, calls: List[Call]): Set[Var] =
+  // the variables modified by one call and used by another, other than the history
+  def shared(state: State, calls: List[Call]): Set[Var] =
     val pairs =
       for
         (left, i) <- calls.zipWithIndex
         (right, j) <- calls.zipWithIndex
         if i != j
-      yield modifies(state, h, left) intersect ((right.free - h) ++ modifies(state, h, right))
+      yield modifies(state, left) intersect (right.free.filterNot(_.name == history) ++ modifies(state, right))
 
     pairs.flatten.toSet
 

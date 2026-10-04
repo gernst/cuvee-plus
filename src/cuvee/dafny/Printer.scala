@@ -393,8 +393,7 @@ object Printer extends cuvee.pipe.Printer:
         val ode = Group(lhs_ +:+ text("==") ++ Nest(2, line ++ rhs_ ++ concat(dom_)))
         header(ode, attrs, None) ++ text(";")
 
-      // the history is implicit, the variable named history
-      case Par(_, calls) =>
+      case Par(calls) =>
         text("parallel {") ++ Nest(2, concat(calls.map(hardline ++ doc(_)))) ++ hardline ++ text("}")
 
   // types are not broken across lines

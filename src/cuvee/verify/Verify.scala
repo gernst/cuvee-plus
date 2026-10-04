@@ -148,8 +148,8 @@ object Verify extends Transform:
       case Ode(xs, rhs, dom, attrs) =>
         ode(xs, rhs, dom, attrs.values[Expr]("invariant"), post)
 
-      case Par(h, calls) =>
-        par(state, gs, proc, h, calls, post)
+      case Par(calls) =>
+        par(state, gs, proc, calls, post)
 
   def committed(state: State, proc: Name, call: Call, post: Expr): Expr =
     val (in, _, _, _) = contract(state, proc)
@@ -186,6 +186,13 @@ object Verify extends Transform:
 
     And(List(su(pre), dec, All(res_ ++ mod_, Imp(phi_, rename(post)))))
 
+  // the history of events, which must be declared as a global variable to use parallel composition
+  def history(state: State): Var =
+    Error.report("parallel composition requires a global variable history"):
+      require(state.vars.contains(Par.history))
+
+    state.vars(Par.history)
+
   // for all values of the history h
   def havoc(h: Var, phi: Expr): Expr =
     val h_ = h.fresh
@@ -204,7 +211,8 @@ object Verify extends Transform:
   // since the calls do not share modified variables other than h, they can be verified in sequence,
   // where the history is arbitrary before each call, satisfying the assumption of the procedure,
   // and the history is arbitrary after the composition, satisfying all commitments
-  def par(state: State, gs: List[Var], proc: Name, h: Var, calls: List[Call], post: Expr): Expr =
+  def par(state: State, gs: List[Var], proc: Name, calls: List[Call], post: Expr): Expr =
+    val h = history(state)
     val (assumes, commits) = calls.map(call => ac(state, call.proc, call.args)).unzip
 
     val init = And(assumes ++ commits)

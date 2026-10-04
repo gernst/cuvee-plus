@@ -352,8 +352,8 @@ object Type:
         val dom_ = formula(state, scope, dom)
         Ode(xs, rhs_, dom_, attrs)
 
-      case Par(history, calls) =>
-        val shared = Par.shared(state, history, calls)
+      case Par(calls) =>
+        val shared = Par.shared(state, calls)
         Error.report("parallel calls share modified variables", shared):
           require(shared.isEmpty)
 
@@ -361,7 +361,7 @@ object Type:
           for call <- calls
           yield (check(state, scope, fixed, call, loop): @unchecked) match
             case call_ : Call => call_
-        Par(history, calls_)
+        Par(calls_)
 
   def formula(state: State, scope: Scope, phi: Expr) =
     check(state, scope, phi, Sort.bool)

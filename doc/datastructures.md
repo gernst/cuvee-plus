@@ -112,7 +112,7 @@ case class If(test: Expr, left: Prog, right: Prog)
 case class While(test: Expr, body: Prog, attrs: Attrs)  // invariant, decreases, modifies
 case class Iter(body: Prog, attrs: Attrs)               // while * { body }
 case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs)
-case class Par(history: Var, calls: List[Call])         // parallel composition of calls
+case class Par(calls: List[Call])                       // parallel composition of calls
 ```
 
 - **`Spec`** covers `assert`, `assume` and `havoc`, through
@@ -126,8 +126,7 @@ case class Par(history: Var, calls: List[Call])         // parallel composition 
   variables are on `Real`.
 - **`Par`** composes calls in parallel:
   - The callees' contracts `assumes` and `commits` are formulas over the
-    shared `history`, a global variable that `Par` holds explicitly so that
-    it can be renamed.
+    shared history, the global variable named `history`.
   - The calls must not share modified variables other than the history
     (`Par.shared`).
 - **`Send(chan, value)` and `Recv(chan, x)`** are sugar for calls to the

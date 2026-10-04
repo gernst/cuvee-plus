@@ -71,3 +71,8 @@ object VerifyPar extends TestSuite:
       )
       val file = os.temp(par, suffix = ".dfy")
       Examples.errors("-verify", "-z3", file.toString) ==> List("goal does not hold")
+
+    test("no history"):
+      val file = os.temp("method p() { } method m() { parallel { p(); } }", suffix = ".dfy")
+      Examples.errors("-verify", "-print", "null", file.toString) ==>
+        List("parallel composition requires a global variable history")

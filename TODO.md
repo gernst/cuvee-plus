@@ -103,7 +103,7 @@ reference semantics for array parameters.
   names of the formal parameters (`x$0, x$1, ...`); declarations with other
   names do not match the sugar.
 - `send` and `receive` are recognized by their names (`Send`, `Recv`), and the
-  Dafny parser takes the variable named `history` as the history of `Par`.
+  history by the name of the global variable `history` (`Par.history`).
 - The printers of Dafny and Boogie duplicate the mixfix logic (`prefix`,
   `infix`, `level`, and the precedences).
 - Style ([doc/style.md](doc/style.md)): `Config` and the companion of `State`

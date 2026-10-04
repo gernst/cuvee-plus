@@ -372,7 +372,7 @@ object Printer extends cuvee.pipe.Printer:
       case Ode(_, _, _, _) =>
         Error.raise("differential equations not supported in Boogie", prog)
 
-      case Par(_, _) =>
+      case Par(_) =>
         Error.raise("parallel composition not supported in Boogie", prog)
 
   // loops have no attributes other than their specification clauses in Boogie, e.g. no decreases
