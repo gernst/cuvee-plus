@@ -24,7 +24,7 @@ transformation and any output.
 | `cuvee.core` | The common representation: `Type`, `Expr`, `Prog`, `Cmd`, `Fun` and `State`, plus type checking (`Type.check`), substitution (`Subst`), overloading (`Overload`) and syntactic sugar (`Builtin`, `Sugar`). |
 | `cuvee.smtlib` | SMT-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks). |
 | `cuvee.boogie` | Boogie frontend and printer. |
-| `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and processes. |
+| `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `Verify` (weakest preconditions to goals) and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual rewriting under a `Ctx`) and `Arith` (polynomials over `Int` and `Real`). |

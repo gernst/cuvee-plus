@@ -121,8 +121,8 @@ object Overload:
       case Ode(xs, rhs, dom, attrs) =>
         Ode(xs, rhs.map(apply(state, _)), apply(state, dom), attrs)
 
-      case Par(calls) =>
-        Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(apply(state, _)), res))
+      case Par(history, calls) =>
+        Par(history, for Call(proc, args, res) <- calls yield Call(proc, args.map(apply(state, _)), res))
 
   // the replacement of a single application of an overloaded operator, whose arguments have been replaced already,
   // determined by the type of the arguments, which coincide for all overloaded operators,

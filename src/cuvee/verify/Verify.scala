@@ -33,15 +33,11 @@ object Verify extends Transform:
         val (in, out, pre_, post) = contract(state, name)
         val gs_ = gs.fresh
 
-        // a process may assume its assumption initially, and must keep its commitment
-        val (pre, body__) =
-          if state.procattrs(name).contains(Par.process)
-          then
-            val (assume, commit) = ac(state, name, in)
-            (And(pre_, assume), commitment(body, commit))
-          else (pre_, body)
+        // the body may assume the assumption initially, its commitment is checked at send and receive (see wp)
+        val (assume, _) = ac(state, name, in)
+        val pre = And(pre_, assume)
 
-        val body_ = Old.elim(gs, gs_, body__)
+        val body_ = Old.elim(gs, gs_, body)
         val post_ = Old.elim(gs, gs_, post)
         val phi = wp(state, gs, name, body_, post_, False, False, post_)
         val phi_ = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(phi)))
@@ -118,33 +114,16 @@ object Verify extends Transform:
         val su = Subst.from(xs, rhs)
         su(post)
 
-      case Call(name, args, res) =>
-        val (in, out, pre, phi) = contract(state, name)
+      // send and receive assert the commitment of the enclosing procedure for the extended history
+      // and assume it afterwards, i.e., the commitment must hold in addition to `post` after the call
+      case Send(chan, value) =>
+        committed(state, proc, Send(chan, value), post)
 
-        Error.report("wrong number of arguments or results in call", name, args, res):
-          require(in.length == args.length && out.length == res.length)
+      case Recv(chan, x) =>
+        committed(state, proc, Recv(chan, x), post)
 
-        // results and the modified global variables are fresh since `args` may refer to their old values,
-        // the precondition refers to the values of the global variables before the call,
-        // as does old(e) in the postcondition, whose modified global variables are kept apart as mod0 meanwhile
-        val mod = modifies(state.procattrs(name))
-        val res_ = res.fresh
-        val mod_ = mod.fresh
-        val mod0 = mod.fresh
-        val su = Subst.from(in, args)
-        val su_ = Subst.from(in ++ out ++ mod, args ++ res_ ++ mod_)
-        val rename = Subst.from(res ++ mod, res_ ++ mod_)
-        val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
-
-        // the measure refers to the inputs, whose values at the call are those at the entry of `proc`
-        val dec =
-          if name == proc
-          then
-            val dec = measure(state, proc)
-            decreases(su(dec), dec)
-          else True
-
-        And(List(su(pre), dec, All(res_ ++ mod_, Imp(phi_, rename(post)))))
+      case call: Call =>
+        this.call(state, proc, call, post)
 
       case Block(locals, progs) =>
         // locals may shadow variables in the postcondition, therefore they are renamed apart
@@ -169,36 +148,63 @@ object Verify extends Transform:
       case Ode(xs, rhs, dom, attrs) =>
         ode(xs, rhs, dom, attrs.values[Expr]("invariant"), post)
 
-      case Par(calls) =>
-        par(state, gs, proc, calls, post)
+      case Par(h, calls) =>
+        par(state, gs, proc, h, calls, post)
 
-  // the history of events, which must be declared as a global variable to use processes
-  def history(state: State): Var =
-    Error.report("processes require a global variable history"):
-      require(state.vars.contains(Par.history))
+  def committed(state: State, proc: Name, call: Call, post: Expr): Expr =
+    val (in, _, _, _) = contract(state, proc)
+    val (_, commit) = ac(state, proc, in)
+    this.call(state, proc, call, And(commit, post))
 
-    state.vars(Par.history)
+  // calls by the contract of the procedure, where the measure of `proc` must decrease on recursive calls
+  def call(state: State, proc: Name, call: Call, post: Expr): Expr =
+    val Call(name, args, res) = call
+    val (in, out, pre, phi) = contract(state, name)
+
+    Error.report("wrong number of arguments or results in call", name, args, res):
+      require(in.length == args.length && out.length == res.length)
+
+    // results and the modified global variables are fresh since `args` may refer to their old values,
+    // the precondition refers to the values of the global variables before the call,
+    // as does old(e) in the postcondition, whose modified global variables are kept apart as mod0 meanwhile
+    val mod = modifies(state.procattrs(name))
+    val res_ = res.fresh
+    val mod_ = mod.fresh
+    val mod0 = mod.fresh
+    val su = Subst.from(in, args)
+    val su_ = Subst.from(in ++ out ++ mod, args ++ res_ ++ mod_)
+    val rename = Subst.from(res ++ mod, res_ ++ mod_)
+    val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
+
+    // the measure refers to the inputs, whose values at the call are those at the entry of `proc`
+    val dec =
+      if name == proc
+      then
+        val dec = measure(state, proc)
+        decreases(su(dec), dec)
+      else True
+
+    And(List(su(pre), dec, All(res_ ++ mod_, Imp(phi_, rename(post)))))
 
   // for all values of the history h
   def havoc(h: Var, phi: Expr): Expr =
     val h_ = h.fresh
     All(List(h_), Subst.from(List(h), List(h_))(phi))
 
-  // the assumption and the commitment of process `name` for the arguments `args`
+  // the assumption and the commitment of procedure `name` for the arguments `args`, true if there are none
   def ac(state: State, name: Name, args: List[Expr]): (Expr, Expr) =
     val Proc(_, _, in, _) = state.procs(name)
     val attrs = state.procattrs(name)
     val su = Subst.from(in, args)
     (su(And(attrs.values[Expr]("assumes"))), su(And(attrs.values[Expr]("commits"))))
 
-  // parallel composition of processes by their assumption-commitment contracts over the history h:
+  // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h:
   // the assumptions and commitments must hold for the history initially,
   // and the commitments of the other processes must imply the assumption of each process, for all histories;
-  // since the processes do not share modified variables other than h, their calls can be verified in sequence,
-  // where the history is arbitrary before each call, satisfying the assumption of the process,
+  // since the calls do not share modified variables other than h, they can be verified in sequence,
+  // where the history is arbitrary before each call, satisfying the assumption of the procedure,
   // and the history is arbitrary after the composition, satisfying all commitments
-  def par(state: State, gs: List[Var], proc: Name, calls: List[Call], post: Expr): Expr =
-    val h = history(state)
+  def par(state: State, gs: List[Var], proc: Name, h: Var, calls: List[Call], post: Expr): Expr =
     val (assumes, commits) = calls.map(call => ac(state, call.proc, call.args)).unzip
 
     val init = And(assumes ++ commits)
@@ -214,15 +220,6 @@ object Verify extends Transform:
         havoc(h, Imp(assume, wp(state, gs, proc, call, phi, False, False, False)))
 
     And((init :: side) :+ seq)
-
-  // in the body of a process, calls to send and receive are followed by the assertion and the assumption of its commitment
-  def commitment(prog: Prog, commit: Expr): Prog =
-    Prog.rewrite(
-      prog,
-      { case call @ Call(name, _, _) if name == Par.send || name == Par.receive =>
-          Block(Nil, List(call, Spec.assert(commit), Spec.assume(commit)))
-      }
-    )
 
   // differential cuts for the invariants in sequence, followed by differential weakening:
   // each invariant must hold initially, and its derivative must hold whenever the domain and the equations x' = e hold,

@@ -215,10 +215,7 @@ class Parser(var state: State):
             val cmd_ = state.cmds.defineFun(qname, arity)
             List(cmd_)
 
-      case MethodDef(process, meth, inner, formals, rets, mod, req, ens, assumes, commits, dec, body) =>
-        Error.report("assumptions and commitments of a method that is not a process", meth, assumes, commits):
-          require(process || (assumes.isEmpty && commits.isEmpty))
-
+      case MethodDef(meth, inner, formals, rets, mod, req, ens, assumes, commits, dec, body) =>
         val qname = prefix + meth
 
         val inner_ = inner.map(resolve(scope, _))
@@ -233,8 +230,7 @@ class Parser(var state: State):
         val globals = state.globals
         val scope__ = scope_ ++ globals ++ formals_ ++ rets_
         val ac_ =
-          (if process then List(core.Par.process -> None) else Nil) ++
-            assumes.map(phi => "assumes" -> Some(formula(scope__, phi))) ++
+          assumes.map(phi => "assumes" -> Some(formula(scope__, phi))) ++
             commits.map(phi => "commits" -> Some(formula(scope__, phi)))
         val attrs_ = Attrs(contract(scope__, mod, req, ens, dec).attrs ++ ac_)
         state = state.declare(qname, params_, formals_, rets_, attrs_)
@@ -564,14 +560,18 @@ class Parser(var state: State):
         val attrs_ = invariants(scope, invs, dec)
         state.progs.iter(body_, attrs_)
 
-      // the type checker checks that the calls are to processes
+      // the shared history is the variable named history
       case Par(calls) =>
+        Error.report("parallel composition requires a variable history", scope):
+          require(scope.vars.contains(core.Par.history))
+
+        val history_ = scope.vars(core.Par.history)
         val calls_ =
           for call <- calls
           yield resolve(scope, call) match
             case call_ : core.Call => call_
             case prog_             => Error.raise("parallel composition of statements that are not calls", prog_)
-        core.Par(calls_)
+        core.Par(history_, calls_)
 
       // the evolution constraint defaults to true
       case Ode(xs, rhs, dom, invs) =>

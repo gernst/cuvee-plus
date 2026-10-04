@@ -330,12 +330,8 @@ object Grammar:
   val commits =
     P("commits" ~ expr)
 
-  val kind =
-    P(("method" ~ R(false)) | ("process" ~ R(true)))
-
-  // methods have no assumptions and commitments, which the parser checks
   val procdef =
-    MethodDef(P(kind ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ assumes.* ~ commits.* ~ decreases.* ~ block.?))
+    MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ assumes.* ~ commits.* ~ decreases.* ~ block.?))
 
   val cmd: Parser[Cmd] =
     P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | vardef)

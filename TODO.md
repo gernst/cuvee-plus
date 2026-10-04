@@ -90,7 +90,7 @@ reference semantics for array parameters.
   `ensures`, `assumes`, `commits`) should be read by helpers in `core`.
 - `Attrs` lives in `cuvee.sexpr` but is used throughout `core`.
 - Traversals of expressions and programs are written out repeatedly:
-  `Subst`, `Overload.apply`, `Old.elim`, `Flat`, `Prog.rewrite`, `Prog.calls`;
+  `Subst`, `Overload.apply`, `Old.elim`, `Flat`;
   a generic map over the immediate subexpressions and subprograms would
   remove most of them.
 - The parsers build `core.Old` and `core.Par` directly, all other expressions
@@ -102,8 +102,8 @@ reference semantics for array parameters.
 - Built-in functions are compared by equality of `Fun`, which includes the
   names of the formal parameters (`x$0, x$1, ...`); declarations with other
   names do not match the sugar.
-- The history of processes, `send`, and `receive` are recognized by their
-  names (`Par.history`, `Par.send`, `Par.receive`).
+- `send` and `receive` are recognized by their names (`Send`, `Recv`), and the
+  Dafny parser takes the variable named `history` as the history of `Par`.
 - The printers of Dafny and Boogie duplicate the mixfix logic (`prefix`,
   `infix`, `level`, and the precedences).
 - Style ([doc/style.md](doc/style.md)): `Config` and the companion of `State`
@@ -155,7 +155,7 @@ reference semantics for array parameters.
   monomorphization above); `syntax.bpl` is therefore only parsed in the solver
   tests.
 - No quantifiers over types, `forall<a> ...`, no decimal literals, no `old`,
-  no sequences, no processes.
+  no sequences, no parallel composition.
 - The printer raises an error on datatypes, `continue`, attributes of loops
   other than `invariant` and `modifies` (e.g. `decreases`), binders other than
   `forall` and `exists`, literals other than integers and strings without `"`
@@ -225,17 +225,22 @@ Non-standard features from Platzer's dL, as part of the Dafny frontend
 - The primed variables in `Diff` are not declared, and the type checker does
   not check that they are in scope.
 
-## Processes
+## Parallel composition
 
-Parallel composition of processes with assumption-commitment contracts over a
-global history of events (see [examples/par.dfy](examples/par.dfy)):
+Parallel composition of calls, whose assumption-commitment contracts are over
+a global history of events (see [examples/par.dfy](examples/par.dfy)):
 
-- `Horn` raises an error on `parallel`, and verifies the bodies of processes
-  like those of methods, i.e., without their assumptions and commitments.
-- A process may assume its assumption only initially, not after `receive`,
+- `Horn` raises an error on `parallel`, and ignores assumptions and
+  commitments in the bodies of procedures.
+- Assumptions and commitments are used only by `parallel`: a call outside of
+  `parallel` neither establishes the callee's assumption, which its body
+  assumes initially, nor guarantees its commitment; this is unsound if such a
+  procedure is called sequentially.
+- The commitment is checked only at `send` and `receive` directly in the body,
+  not at those inside other procedures called by it.
+- A procedure may assume its assumption only initially, not after `receive`,
   where the environment extends the history.
-- The history is a single global variable named `history`, declared by the
-  input together with `send` and `receive`, since the value type of the
-  events is fixed per program; the contracts of `send` and `receive` are not
-  checked against their intended meaning.
-- Only calls to processes may be composed, not arbitrary statements.
+- The history is declared by the input together with `send` and `receive`,
+  since the value type of the events is fixed per program; the contracts of
+  `send` and `receive` are not checked against their intended meaning.
+- Only calls may be composed, not arbitrary statements.

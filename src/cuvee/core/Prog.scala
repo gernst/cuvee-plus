@@ -17,21 +17,6 @@ object Prog:
   def free(attrs: Attrs): Set[Var] =
     attrs.attrs.flatMap(_._2).collect { case expr: Expr => expr.free }.flatten.toSet
 
-  // replace the subprograms for which `f` is defined, top-down, i.e., f is not applied inside its results
-  def rewrite(prog: Prog, f: PartialFunction[Prog, Prog]): Prog =
-    val r = (prog: Prog) => rewrite(prog, f)
-    if f.isDefinedAt(prog)
-    then f(prog)
-    else
-      prog match
-        case Break | Continue | Return | _: Spec | _: Assign | _: Call | _: Ode => prog
-        case Block(locals, progs)     => Block(locals, progs.map(r))
-        case Choice(progs)            => Choice(progs.map(r))
-        case If(test, left, right)    => If(test, r(left), r(right))
-        case While(test, body, attrs) => While(test, r(body), attrs)
-        case Iter(body, attrs)        => Iter(r(body), attrs)
-        case Par(calls)               => prog
-
 case object Break extends Prog:
   def mod = Set()
   def free = Set()
@@ -96,37 +81,55 @@ case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) extends 
   def mod = Set(xs*)
   def free = rhs.free ++ dom.free ++ xs ++ Prog.free(attrs)
 
-// parallel composition of calls to processes, i.e., procedures with assumption-commitment contracts
-// over the global history of events in their attributes, "assumes" and "commits",
-// where the history is extended by the procedures send and receive;
+// parallel composition of calls to procedures, whose assumption-commitment contracts
+// over the shared history of events `history`, a global variable, are in their attributes, "assumes" and "commits";
 // the calls must not share the variables that they modify, other than the history
-case class Par(calls: List[Call]) extends Prog:
+case class Par(history: Var, calls: List[Call]) extends Prog:
   def mod = calls.mod
-  def free = calls.flatMap(_.free).toSet
+  def free = calls.flatMap(_.free).toSet + history
 
 object Par:
-  // the global history of events, and the procedures that extend it
+  // the default name of the history in the frontends, which is extended by Send and Recv
   val history = Name("history", None)
-  val send = Name("send", None)
-  val receive = Name("receive", None)
-
-  // the attribute that marks procedures as processes
-  val process = "process"
 
   // the variables modified by a call, including the global variables modified by the procedure,
-  // except for the history, which the processes share
-  def modifies(state: State, call: Call): Set[Var] =
+  // except for the history `h`
+  def modifies(state: State, h: Var, call: Call): Set[Var] =
     val Call(name, _, res) = call
     val mod = cuvee.verify.Verify.modifies(state.procattrs(name))
-    (res ++ mod).toSet.filterNot(_.name == history)
+    (res ++ mod).toSet - h
 
-  // the variables modified by one call and used by another
-  def shared(state: State, calls: List[Call]): Set[Var] =
+  // the variables modified by one call and used by another, other than the history `h`
+  def shared(state: State, h: Var, calls: List[Call]): Set[Var] =
     val pairs =
       for
         (left, i) <- calls.zipWithIndex
         (right, j) <- calls.zipWithIndex
         if i != j
-      yield modifies(state, left) intersect (right.free.filterNot(_.name == history) ++ modifies(state, right))
+      yield modifies(state, h, left) intersect ((right.free - h) ++ modifies(state, h, right))
 
     pairs.flatten.toSet
+
+// calls to the procedures send(c, v) and receive(c) returns (x), which extend the history by an event,
+// where the enclosing procedure must keep its commitment
+object Send:
+  val name = Name("send", None)
+
+  def apply(chan: Expr, value: Expr): Call =
+    Call(name, List(chan, value), Nil)
+
+  def unapply(prog: Prog): Option[(Expr, Expr)] =
+    prog match
+      case Call(`name`, List(chan, value), Nil) => Some((chan, value))
+      case _                                    => None
+
+object Recv:
+  val name = Name("receive", None)
+
+  def apply(chan: Expr, x: Var): Call =
+    Call(name, List(chan), List(x))
+
+  def unapply(prog: Prog): Option[(Expr, Var)] =
+    prog match
+      case Call(`name`, List(chan), List(x)) => Some((chan, x))
+      case _                                 => None

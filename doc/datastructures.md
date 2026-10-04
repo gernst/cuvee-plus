@@ -112,7 +112,7 @@ case class If(test: Expr, left: Prog, right: Prog)
 case class While(test: Expr, body: Prog, attrs: Attrs)  // invariant, decreases, modifies
 case class Iter(body: Prog, attrs: Attrs)               // while * { body }
 case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs)
-case class Par(calls: List[Call])                       // parallel composition of processes
+case class Par(history: Var, calls: List[Call])         // parallel composition of calls
 ```
 
 - **`Spec`** covers `assert`, `assume` and `havoc`, through
@@ -124,13 +124,16 @@ case class Par(calls: List[Call])                       // parallel composition 
 - **`Ode`** is the system `x' = e` for `x` in `xs` with evolution constraint
   `dom`. Its `invariant` attributes are the differential invariants. The
   variables are on `Real`.
-- **`Par`** composes calls to processes. Processes are procedures with the
-  attribute `process` and contracts `assumes` and `commits` over the global
-  variable `history`, which is extended by `send` and `receive`. The calls
-  must not share modified variables other than the history
-  (`Par.shared`).
-- **Traversals.** `Prog.rewrite(prog, f)` rewrites subprograms top-down, and
-  `Prog.calls` collects the calls.
+- **`Par`** composes calls in parallel:
+  - The callees' contracts `assumes` and `commits` are formulas over the
+    shared `history`, a global variable that `Par` holds explicitly so that
+    it can be renamed.
+  - The calls must not share modified variables other than the history
+    (`Par.shared`).
+- **`Send(chan, value)` and `Recv(chan, x)`** are sugar for calls to the
+  procedures `send` and `receive`, which extend the history. In `Verify`,
+  each one asserts the enclosing procedure's commitment for the extended
+  history and then assumes it.
 
 ```scala
 case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var])
@@ -138,8 +141,7 @@ case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var])
 
 A procedure's inputs are fixed (never assigned), and its outputs are
 results. The contract lives in the procedure's attributes in the `State`:
-`requires`, `ensures`, `modifies`, `decreases`, and for processes `process`,
-`assumes`, `commits`.
+`requires`, `ensures`, `modifies`, `decreases`, `assumes`, `commits`.
 
 ## Attributes ([sexpr/Attrs.scala](../src/cuvee/sexpr/Attrs.scala))
 

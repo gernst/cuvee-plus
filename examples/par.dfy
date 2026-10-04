@@ -1,4 +1,4 @@
-// processes with assumption-commitment contracts over the global history of events,
+// methods with assumption-commitment contracts over the global history of events,
 // composed in parallel, verified with -verify -z3
 
 var history: seq<event<int>>;
@@ -21,7 +21,7 @@ axiom forall h: seq<event<int>>, c: chan, e: event<int> ::
   positive(h + [e], c) <==> positive(h, c) && (event_chan(e) == c ==> 0 < event_value(e))
 
 // sends positive values on c
-process producer(c: chan, n: int)
+method producer(c: chan, n: int)
   modifies history
   requires 0 < n
   assumes positive(history, c)
@@ -32,7 +32,7 @@ process producer(c: chan, n: int)
 }
 
 // receives on d, which keeps the values on c positive
-process consumer(c: chan, d: chan) returns (x: int)
+method consumer(c: chan, d: chan) returns (x: int)
   modifies history
   requires c != d
   assumes positive(history, c)

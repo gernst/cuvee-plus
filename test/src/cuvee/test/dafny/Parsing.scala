@@ -75,31 +75,27 @@ object Globals extends TestSuite:
       errors("var g: int; method m() modifies g { } method n() { m(); }") ==>
         List("call modifies variables that are not in the modifies clause")
 
-// parallel composition of calls to processes that do not share modified variables
-object Processes extends TestSuite:
+// parallel composition of calls that do not share modified variables other than the history
+object Parallel extends TestSuite:
   def errors(text: String) =
     val file = os.temp(text, suffix = ".dfy")
     Examples.errors("-print", "null", file.toString)
 
   val history = "var history: seq<event<int>>; "
-  val process = "process p(n: int) returns (x: int) modifies history assumes true commits true { x := n; } "
+  val p = "method p(n: int) returns (x: int) modifies history assumes true commits true { x := n; } "
 
   val tests = Tests:
-    test("process"):
-      errors(history + process + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(2); } }") ==> Nil
+    test("parallel"):
+      errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(2); } }") ==> Nil
 
     test("shared"):
-      errors(history + process + "method m() returns (x: int) modifies history { parallel { x := p(1); x := p(2); } }") ==>
-        List("parallel processes share modified variables")
+      errors(history + p + "method m() returns (x: int) modifies history { parallel { x := p(1); x := p(2); } }") ==>
+        List("parallel calls share modified variables")
 
     test("read"):
-      errors(history + process + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(x); } }") ==>
-        List("parallel processes share modified variables")
+      errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(x); } }") ==>
+        List("parallel calls share modified variables")
 
-    test("method"):
-      errors("method p(n: int) returns (x: int) { x := n; } method m() returns (x: int) { parallel { x := p(1); } }") ==>
-        List("parallel composition of procedures that are not processes")
-
-    test("contract of method"):
-      errors("method p() assumes true { }") ==>
-        List("assumptions and commitments of a method that is not a process")
+    test("no history"):
+      errors("method p() { } method m() { parallel { p(); } }") ==>
+        List("parallel composition requires a variable history")

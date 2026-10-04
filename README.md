@@ -40,10 +40,11 @@ languages or passes it to an SMT solver (z3 or cvc5).
 
   Verification uses differential cuts and differential weakening (see
   [examples/hybrid.dfy](examples/hybrid.dfy)).
-- **Processes:**
-  - `process` declarations with assumption-commitment contracts (`assumes`,
-    `commits`) over a global history of events;
-  - parallel composition of calls, `parallel { p(a); x := q(b); }`.
+- **Parallel composition:**
+  - methods may have assumption-commitment contracts (`assumes`, `commits`)
+    over a global history of events, which `send` and `receive` extend;
+  - these contracts are used by the parallel composition of calls,
+    `parallel { p(a); x := q(b); }`.
 
   See [examples/par.dfy](examples/par.dfy).
 

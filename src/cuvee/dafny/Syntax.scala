@@ -89,7 +89,7 @@ object If extends ((Option[Expr], Prog, Prog) => Prog)
 object While extends ((Option[Expr], List[Expr], List[List[Expr]], Prog) => Prog)
 object Ode extends ((List[String], List[Expr], Option[Expr], List[Expr]) => Prog)
 
-// parallel composition of calls to processes, parallel { p(a); x := q(b); }
+// parallel composition of calls, parallel { p(a); x := q(b); }
 case class Par(calls: List[Prog]) extends Prog
 
 object Par extends (List[Prog] => Prog)
@@ -117,9 +117,8 @@ case class FunDef(
     body: Option[Expr]
 ) extends Cmd
 
-// methods and processes, which have assumption-commitment contracts in addition
+// methods, with assumption-commitment contracts for parallel composition
 case class MethodDef(
-    process: Boolean,
     name: String,
     params: List[String],
     formals: List[(String, Type)],
@@ -142,7 +141,6 @@ object FunDef extends ((String, List[String], List[(String, Type)], Type, List[E
 object MethodDef
     extends (
         (
-            Boolean,
             String,
             List[String],
             List[(String, Type)],

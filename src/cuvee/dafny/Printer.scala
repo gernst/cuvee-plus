@@ -192,10 +192,10 @@ object Printer extends cuvee.pipe.Printer:
         text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ) ++ text(";")
 
       case DeclareProc(Proc(name_, params_, in, out), attrs) =>
-        header(text(kind(attrs)) ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, None)
+        header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, None)
 
       case DefineProc(Proc(name_, params_, in, out), body, attrs) =>
-        header(text(kind(attrs)) ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, Some(block(body)))
+        header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, Some(block(body)))
 
   // goals and lemmas are not part of Dafny, they are printed like axioms with their own keyword
   def format(justify: Justify) =
@@ -240,16 +240,11 @@ object Printer extends cuvee.pipe.Printer:
     val head = text("datatype") ++ attributes(attrs) +:+ text(name(con.name)) ++ params(params_) +:+ text("=")
     Group(head ++ Nest(2, line ++ join(constrs_, line ++ text("| "))))
 
-  def kind(attrs: Attrs): String =
-    if attrs.contains(Par.process) then "process" else "method"
-
   // attributes that are printed as contract clauses of functions, methods, and loops,
   // provided that they have been resolved
   def isClause(name: String, arg: Option[Any]): Boolean =
     (name, arg) match
       case ("requires" | "ensures" | "invariant" | "decreases" | "assumes" | "commits", Some(_: Expr)) => true
-      // printed as the keyword of the declaration
-      case (Par.process, None) => true
       case ("modifies", Some(xs: List[?])) => xs.forall(_.isInstanceOf[Var])
       case _ => false
 
@@ -398,7 +393,8 @@ object Printer extends cuvee.pipe.Printer:
         val ode = Group(lhs_ +:+ text("==") ++ Nest(2, line ++ rhs_ ++ concat(dom_)))
         header(ode, attrs, None) ++ text(";")
 
-      case Par(calls) =>
+      // the history is implicit, the variable named history
+      case Par(_, calls) =>
         text("parallel {") ++ Nest(2, concat(calls.map(hardline ++ doc(_)))) ++ hardline ++ text("}")
 
   // types are not broken across lines
