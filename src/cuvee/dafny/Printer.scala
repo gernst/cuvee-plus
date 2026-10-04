@@ -239,8 +239,9 @@ object Printer extends cuvee.pipe.Printer:
         then text(name(constr.name))
         else call(name(constr.name), sels_)
 
-    val head = text("datatype") ++ attributes(attrs) +:+ text(name(con.name)) ++ params(params_) +:+ text("=")
-    Group(head ++ Nest(2, line ++ join(constrs_, line ++ text("| "))))
+    // the = always goes on the next line, the constructors stay on its line if they fit, aligned by | otherwise
+    val head = text("datatype") ++ attributes(attrs) +:+ text(name(con.name)) ++ params(params_)
+    head ++ Nest(2, hardline ++ Group(text("=") +:+ join(constrs_, line ++ text("| "))))
 
   // attributes that are printed as contract clauses of functions, methods, and loops,
   // provided that they have been resolved
