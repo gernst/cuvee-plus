@@ -68,6 +68,33 @@ object Fun:
 
     val all = List(empty, unit, concat, len, nth, update, extract, contains, prefixof)
 
+  // finite sets as in cvc5, where set.empty needs its type, (as set.empty (Set a)), and member takes the element first
+  object set:
+    val empty = Fun("set.empty", List(a), Nil, Sort.set(a))
+    val singleton = Fun("set.singleton", List(a), formals(a), Sort.set(a))
+    val union = Fun("set.union", List(a), formals(Sort.set(a), Sort.set(a)), Sort.set(a))
+    val inter = Fun("set.inter", List(a), formals(Sort.set(a), Sort.set(a)), Sort.set(a))
+    val minus = Fun("set.minus", List(a), formals(Sort.set(a), Sort.set(a)), Sort.set(a))
+    val member = Fun("set.member", List(a), formals(a, Sort.set(a)), bool)
+    val subset = Fun("set.subset", List(a), formals(Sort.set(a), Sort.set(a)), bool)
+    val card = Fun("set.card", List(a), formals(Sort.set(a)), Sort.int)
+
+    val all = List(empty, singleton, union, inter, minus, member, subset, card)
+
+  // finite multisets (bags) as in cvc5, where bag(x, n) holds x with multiplicity n,
+  // the union adds multiplicities, the intersection takes the minimum, and the difference subtracts them
+  object bag:
+    val empty = Fun("bag.empty", List(a), Nil, Sort.bag(a))
+    val make = Fun("bag", List(a), formals(a, Sort.int), Sort.bag(a))
+    val union = Fun("bag.union_disjoint", List(a), formals(Sort.bag(a), Sort.bag(a)), Sort.bag(a))
+    val inter = Fun("bag.inter_min", List(a), formals(Sort.bag(a), Sort.bag(a)), Sort.bag(a))
+    val minus = Fun("bag.difference_subtract", List(a), formals(Sort.bag(a), Sort.bag(a)), Sort.bag(a))
+    val count = Fun("bag.count", List(a), formals(a, Sort.bag(a)), Sort.int)
+    val subbag = Fun("bag.subbag", List(a), formals(Sort.bag(a), Sort.bag(a)), bool)
+    val card = Fun("bag.card", List(a), formals(Sort.bag(a)), Sort.int)
+
+    val all = List(empty, make, union, inter, minus, count, subbag, card)
+
   // the functions on traces and sequences of trace equation systems: counter(i, c, n) is the trace i, i + c, ..., i + n c,
   // current the last element of a trace, butlast (written ⌊X⌋) all but the last element, steps the number of iterations,
   // length the length of a sequence, nth and earlier the elements of traces and sequences

@@ -439,8 +439,8 @@ object Printer extends cuvee.pipe.Printer:
 
   def prefix(expr: Expr): Option[(String, Int, Expr)] =
     expr match
-      // a != b, see infix
-      case Not(Eq(_, _)) =>
+      // a != b and x !in s, see infix
+      case Not(Eq(_, _)) | Not(Sets.member(_, _)) | Not(Seqs.contains(_, Seqs.unit(_))) =>
         None
 
       case App(fun, _, _, List(arg)) if Grammar.prefix_ops.contains(name(fun.name)) =>
@@ -456,8 +456,8 @@ object Printer extends cuvee.pipe.Printer:
   // are not supported for now (see Grammar.infix_ops) and are printed like function calls, e.g. ==(x, y, z)
   def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =
     expr match
-      // sequence literals are atoms
-      case _ if elems(expr).isDefined =>
+      // sequence, set, and multiset literals are atoms
+      case _ if elems(expr).isDefined || members(expr).isDefined || multiset(expr).isDefined =>
         None
 
       // concatenation and prefix of sequences are overloaded in Dafny, x in s is containment of [x]
@@ -468,7 +468,22 @@ object Printer extends cuvee.pipe.Printer:
         infix(App(Fun.seq.prefixof.copy(name = Name("<=", None)), Nil, Sort.bool, List(left, right)))
 
       case Seqs.contains(seq, Seqs.unit(elem)) =>
-        infix(App(Fun.seq.contains.copy(name = Name("in", None)), Nil, Sort.bool, List(elem, seq)))
+        operator("in", List(elem, seq))
+
+      case Not(Seqs.contains(seq, Seqs.unit(elem))) =>
+        operator("!in", List(elem, seq))
+
+      // the operations on sets and multisets are overloaded as well
+      case Sets.member(elem, set)       => operator("in", List(elem, set))
+      case Not(Sets.member(elem, set))  => operator("!in", List(elem, set))
+      case Sets.union(left, right)      => operator("+", List(left, right))
+      case Sets.inter(left, right)      => operator("*", List(left, right))
+      case Sets.minus(left, right)      => operator("-", List(left, right))
+      case Sets.subset(left, right)     => operator("<=", List(left, right))
+      case Bags.union(left, right)      => operator("+", List(left, right))
+      case Bags.inter(left, right)      => operator("*", List(left, right))
+      case Bags.minus(left, right)      => operator("-", List(left, right))
+      case Bags.subbag(left, right)     => operator("<=", List(left, right))
 
       case App(fun, _, _, args) if Grammar.infix_ops.contains(name(fun.name)) =>
         val op = name(fun.name)
@@ -492,6 +507,31 @@ object Printer extends cuvee.pipe.Printer:
 
       case _ =>
         None
+
+  // an infix operator of Dafny applied to `args`
+  def operator(op: String, args: List[Expr]): Option[(String, Assoc, Int, List[Expr])] =
+    val (assoc, prec) = Grammar.infix_ops(op)
+    Some((op, assoc, prec, args))
+
+  // the elements of set literals, {}, {a}, and unions of these
+  def members(expr: Expr): Option[List[Expr]] =
+    expr match
+      case Sets.empty()          => Some(Nil)
+      case Sets.singleton(elem)  => Some(List(elem))
+      case Sets.union(left, right) =>
+        for left_ <- members(left); right_ <- members(right)
+        yield left_ ++ right_
+      case _ => None
+
+  // the elements of multiset literals, multiset{}, multiset{a}, and unions of these
+  def multiset(expr: Expr): Option[List[Expr]] =
+    expr match
+      case Bags.empty()                   => Some(Nil)
+      case Bags.make(elem, One.int)       => Some(List(elem))
+      case Bags.union(left, right) =>
+        for left_ <- multiset(left); right_ <- multiset(right)
+        yield left_ ++ right_
+      case _ => None
 
   // the elements of sequence literals, [], [a], and concatenations of these
   def elems(expr: Expr): Option[List[Expr]] =
@@ -627,8 +667,26 @@ object Printer extends cuvee.pipe.Printer:
         val Some(elems_) = elems(expr): @unchecked
         Group(text("[") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("]"))
 
-      case Seqs.len(seq) =>
-        text("|") ++ doc(seq) ++ text("|")
+      case _ if members(expr).isDefined =>
+        val Some(elems_) = members(expr): @unchecked
+        Group(text("{") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("}"))
+
+      case _ if multiset(expr).isDefined =>
+        val Some(elems_) = multiset(expr): @unchecked
+        Group(text("multiset{") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("}"))
+
+      case Seqs.len(arg) =>
+        text("|") ++ doc(arg) ++ text("|")
+
+      case Sets.card(arg) =>
+        text("|") ++ doc(arg) ++ text("|")
+
+      case Bags.card(arg) =>
+        text("|") ++ doc(arg) ++ text("|")
+
+      // the multiplicity of an element of a multiset
+      case Bags.count(elem, bag) =>
+        doc(bag, operand) ++ text("[") ++ doc(elem) ++ text("]")
 
       case Seqs.nth(seq, index) =>
         doc(seq, operand) ++ text("[") ++ doc(index) ++ text("]")

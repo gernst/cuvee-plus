@@ -56,6 +56,15 @@ object VerifySeq extends TestSuite:
       val seq = Examples.root / "dafny" / "seq.dfy"
       Examples.errors("-verify", "-cvc5", seq.toString) ==> Nil
 
+// finite sets and multisets, which are supported by cvc5 only
+object VerifySets extends TestSuite:
+  val tests = Tests:
+    test("sets.dfy"):
+      Examples.errors("-verify", "-cvc5", (Examples.root / "dafny" / "sets.dfy").toString) ==> Nil
+
+    test("invalid_sets.dfy"):
+      Examples.errors("-verify", "-cvc5", (Examples.root / "dafny" / "invalid_sets.dfy").toString) ==> List("goal does not hold")
+
 // methods with assumption-commitment contracts composed in parallel
 object VerifyPar extends TestSuite:
   val tests = Tests:

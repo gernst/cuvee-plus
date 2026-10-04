@@ -62,6 +62,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
 - **Data types:**
   - integers, exact rationals for `real`;
   - arrays, sequences (`seq<T>`, using cvc5's `Seq` theory);
+  - finite sets and multisets (`set<T>`, `multiset<T>`, using cvc5's `Set`
+    and `Bag` theories) with literals `{a, b}`, `multiset{a, b}`, the
+    operators `+`, `*`, `-`, `<=`, `<`, `in`, `!in`, `|s|`, and `m[x]`;
   - algebraic datatypes, tuples, and defined sorts.
 - **Hybrid programs** (Dafny syntax, after Platzer's dL):
   - differential equations with evolution constraints and differential

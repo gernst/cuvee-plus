@@ -9,6 +9,9 @@
 (declare-sort String 0)
 (declare-sort Array 2)
 (declare-sort Seq 1)
+; finite sets and multisets as in cvc5
+(declare-sort Set 1)
+(declare-sort Bag 1)
 ; not SMT-LIB, the traces of trace equation systems (see cuvee.core.Sort.trace)
 (declare-sort Trace 1)
 
@@ -34,6 +37,26 @@
 (declare-fun seq.extract (par (a$0) ((Seq a$0) Int Int) (Seq a$0)))
 (declare-fun seq.contains (par (a$0) ((Seq a$0) (Seq a$0)) Bool))
 (declare-fun seq.prefixof (par (a$0) ((Seq a$0) (Seq a$0)) Bool))
+
+; finite sets as in cvc5 (see cuvee.core.Fun.set)
+(declare-fun set.empty (par (a$0) () (Set a$0)))
+(declare-fun set.singleton (par (a$0) (a$0) (Set a$0)))
+(declare-fun set.union (par (a$0) ((Set a$0) (Set a$0)) (Set a$0)))
+(declare-fun set.inter (par (a$0) ((Set a$0) (Set a$0)) (Set a$0)))
+(declare-fun set.minus (par (a$0) ((Set a$0) (Set a$0)) (Set a$0)))
+(declare-fun set.member (par (a$0) (a$0 (Set a$0)) Bool))
+(declare-fun set.subset (par (a$0) ((Set a$0) (Set a$0)) Bool))
+(declare-fun set.card (par (a$0) ((Set a$0)) Int))
+
+; finite multisets as in cvc5 (see cuvee.core.Fun.bag)
+(declare-fun bag.empty (par (a$0) () (Bag a$0)))
+(declare-fun bag (par (a$0) (a$0 Int) (Bag a$0)))
+(declare-fun bag.union_disjoint (par (a$0) ((Bag a$0) (Bag a$0)) (Bag a$0)))
+(declare-fun bag.inter_min (par (a$0) ((Bag a$0) (Bag a$0)) (Bag a$0)))
+(declare-fun bag.difference_subtract (par (a$0) ((Bag a$0) (Bag a$0)) (Bag a$0)))
+(declare-fun bag.count (par (a$0) (a$0 (Bag a$0)) Int))
+(declare-fun bag.subbag (par (a$0) ((Bag a$0) (Bag a$0)) Bool))
+(declare-fun bag.card (par (a$0) ((Bag a$0)) Int))
 
 ; not SMT-LIB, all but the last element of a trace (see cuvee.core.Fun.trace)
 (declare-fun butlast (par (a$0) ((Trace a$0)) (Seq a$0)))

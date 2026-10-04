@@ -1,0 +1,20 @@
+// expected: valid
+// finite sets and multisets, verified with cvc5
+
+method sets(x: int, s: set<int>, t: set<int>) returns (u: set<int>)
+  requires x !in s
+  ensures |u| == |s| + 1
+  ensures s < u && s <= u
+{
+  u := s + {x};
+  assert x in u && x !in s - {x};
+  assert s * t <= s && {} <= s;
+}
+
+method bags(x: int, m: multiset<int>) returns (n: multiset<int>)
+  ensures n[x] == m[x] + 2
+  ensures |n| == |m| + 2 && m <= n
+{
+  n := m + multiset{x, x};
+  assert x in n;
+}

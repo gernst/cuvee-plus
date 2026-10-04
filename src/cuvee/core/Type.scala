@@ -52,6 +52,9 @@ object Con:
   val string = Con("String", 0)
   val array = Con("Array", 2)
   val seq = Con("Seq", 1)
+  // finite sets and multisets as in cvc5
+  val set = Con("Set", 1)
+  val bag = Con("Bag", 1)
   val trace = Con("Trace", 1)
 
 object Sort:
@@ -65,6 +68,12 @@ object Sort:
 
   def seq(elem: Type) =
     Sort(Con.seq, List(elem))
+
+  def set(elem: Type) =
+    Sort(Con.set, List(elem))
+
+  def bag(elem: Type) =
+    Sort(Con.bag, List(elem))
 
   // the non-empty sequences of values of a variable at the loop head, see Trace
   def trace(elem: Type) =
@@ -311,17 +320,17 @@ object Type:
     instantiate(state, scope, subst, List(expr)).head
 
   // the applications of overloaded operators are checked against the signature of their implementation,
-  // which is determined by the type of the first argument once it is known (see Overload),
+  // which is determined by the type of the first argument (see Overload.dispatch) once it is known,
   // repeated as long as this determines further types
   def overload(state: State, scope: Scope, apps: List[App], subst: Ref[Subst[Type, Expr]]): Unit =
     val (ready, pending) =
       apps.partition:
-        case App(_, inst, _, _) =>
-          unfold(state, resolve(subst.value, inst.head)).isInstanceOf[Sort]
+        case App(op, inst, _, _) =>
+          unfold(state, resolve(subst.value, inst(Overload.dispatch(op.name, op.arity)))).isInstanceOf[Sort]
 
     for case app @ App(op, inst, typ, _) <- ready
     do
-      val first = unfold(state, resolve(subst.value, inst.head))
+      val first = unfold(state, resolve(subst.value, inst(Overload.dispatch(op.name, op.arity))))
 
       Overload.impl(op.name, op.arity, first) match
         case Some(Impl(sig, _)) =>

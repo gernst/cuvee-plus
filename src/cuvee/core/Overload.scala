@@ -28,6 +28,30 @@ object Overload:
     val sig = Fun("store", List(a), Fun.formals(Sort.seq(a), Sort.int, a), Sort.seq(a))
     Impl(sig, { case (state, List(s, i, v)) => app(state, Fun.seq.update, List(s, i, Seqs.unit(v))) })
 
+  // membership x in s and the cardinality |s| of sequences, sets, and multisets, which the frontends build directly,
+  // where membership is resolved by the type of its second argument (see dispatch)
+  val member = Fun("in", List(a, Param.b), Fun.formals(a, Param.b), Sort.bool)
+  val card = Fun("|_|", List(a), Fun.formals(a), Sort.int)
+
+  // x in s for a sequence holds if s contains the sequence [x] of length 1, for a multiset if x occurs in it
+  val seqMember =
+    val sig = Fun("in", List(a), Fun.formals(a, Sort.seq(a)), Sort.bool)
+    Impl(sig, { case (state, List(x, s)) => app(state, Fun.seq.contains, List(s, Seqs.unit(x))) })
+
+  val bagMember =
+    val sig = Fun("in", List(a), Fun.formals(a, Sort.bag(a)), Sort.bool)
+    Impl(sig, { case (state, List(x, s)) => Lt.int(Zero.int, app(state, Fun.bag.count, List(x, s))) })
+
+  // the multiplicity s[x] of an element of a multiset
+  val bagSelect =
+    val sig = Fun("select", List(a), Fun.formals(Sort.bag(a), a), Sort.int)
+    Impl(sig, { case (state, List(s, x)) => app(state, Fun.bag.count, List(x, s)) })
+
+  // proper prefixes, subsets, and submultisets s < t, which are different
+  def proper(con: Con, fun: Fun) =
+    val sig = Fun("<", List(a), Fun.formals(Sort(con, List(a)), Sort(con, List(a))), Sort.bool)
+    Impl(sig, { case (state, List(s, t)) => And(app(state, fun, List(s, t)), Not(Eq(s, t))) })
+
   // the application of an implementation, whose signature is matched against the argument types,
   // where defined sorts are unfolded
   def app(state: State, fun: Fun, args: List[Expr]): App =
@@ -52,10 +76,32 @@ object Overload:
       (Name("select", None), 2, Con.array) -> Impl(Fun.select),
       (Name("store", None), 3, Con.array) -> Impl(Fun.store),
       (Name("select", None), 2, Con.seq) -> Impl(Fun.seq.nth),
-      (Name("store", None), 3, Con.seq) -> seqStore
+      (Name("store", None), 3, Con.seq) -> seqStore,
+      (Name("<", None), 2, Con.seq) -> proper(Con.seq, Fun.seq.prefixof),
+      (member.name, 2, Con.seq) -> seqMember,
+      (card.name, 1, Con.seq) -> Impl(Fun.seq.len),
+      (Name("+", None), 2, Con.set) -> Impl(Fun.set.union),
+      (Name("*", None), 2, Con.set) -> Impl(Fun.set.inter),
+      (Name("-", None), 2, Con.set) -> Impl(Fun.set.minus),
+      (Name("<=", None), 2, Con.set) -> Impl(Fun.set.subset),
+      (Name("<", None), 2, Con.set) -> proper(Con.set, Fun.set.subset),
+      (member.name, 2, Con.set) -> Impl(Fun.set.member),
+      (card.name, 1, Con.set) -> Impl(Fun.set.card),
+      (Name("+", None), 2, Con.bag) -> Impl(Fun.bag.union),
+      (Name("*", None), 2, Con.bag) -> Impl(Fun.bag.inter),
+      (Name("-", None), 2, Con.bag) -> Impl(Fun.bag.minus),
+      (Name("<=", None), 2, Con.bag) -> Impl(Fun.bag.subbag),
+      (Name("<", None), 2, Con.bag) -> proper(Con.bag, Fun.bag.subbag),
+      (member.name, 2, Con.bag) -> bagMember,
+      (card.name, 1, Con.bag) -> Impl(Fun.bag.card),
+      (Name("select", None), 2, Con.bag) -> bagSelect
     )
 
     Map(arith ++ other*)
+
+  // the position of the argument whose type determines the implementation, the first one except for membership
+  def dispatch(name: Name, arity: Int): Int =
+    if name == member.name && arity == 2 then 1 else 0
 
   // the overloaded operators (name and arity)
   val generic: Set[(Name, Int)] =
@@ -72,7 +118,7 @@ object Overload:
   // whether `fun` is the generic declaration of an overloaded operator in a prelude,
   // the implementations have no type parameters or are not generic in the type of the first argument
   def isGeneric(fun: Fun): Boolean =
-    fun.params.nonEmpty && generic.contains((fun.name, fun.arity)) && fun.args.head.isInstanceOf[Param]
+    fun.params.nonEmpty && generic.contains((fun.name, fun.arity)) && fun.args(dispatch(fun.name, fun.arity)).isInstanceOf[Param]
 
   // replace all overloaded operators in a type checked expression, bottom-up
   def apply(state: State, expr: Expr): Expr =
@@ -91,7 +137,7 @@ object Overload:
   // by its implementation for the type of the first argument, where defined sorts are unfolded
   def resolve(state: State, app: App): Expr =
     val App(op, inst, typ, args) = app
-    val typ_ = Type.unfold(state, args.head.typ)
+    val typ_ = Type.unfold(state, args(dispatch(op.name, op.arity)).typ)
 
     impl(op.name, op.arity, typ_) match
       case Some(Impl(_, build)) => build(state, args)

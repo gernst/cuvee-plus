@@ -13,7 +13,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Large
 
-- implement Dafny's additional types set, etc using CVC5's notation if available, ensure the overloading reoslution works propertly
 - add support for bitvector types as `case class BitVec(n: Int)` in `Type` and then integrate all bitvector functions. Start with the SMT-LIB parser, and make proposals for Dafny and Boogie in TODO.md
 
 ### Deferred (questions for the user)
@@ -87,9 +86,12 @@ inferred from the call graph. Open:
 
 - Lemmas and goals are single formulas, `lemma {:rw} φ` and `goal φ`, not
   Dafny's lemmas with parameters and contracts.
-- Containers `set`, `multiset`, `map` are declared as sorts in the prelude
-  but have no functions.
-- Sequences: no `<` (proper prefix), `!in`, `seq(n, f)`, or
+- Sets and multisets use cvc5's theories (`Set`, `Bag`), which z3 does not
+  support; missing are set comprehensions, `multiset(s)` of a sequence,
+  `m[x := n]` on multisets, and `>=`, `>`, disjointness `!!`. Maps (`map`)
+  are declared as a sort but have no functions, since cvc5 has no theory of
+  finite maps (they could be arrays together with a set as the domain).
+- Sequences: no `seq(n, f)` or
   multi-dimensional updates. `s[i := v]` is `seq.update` of cvc5, which z3
   does not support, and z3's logic `HORN` has no sequences at all.
 - Member access `x.f` and testers `x.C?` work on variables only, e.g.

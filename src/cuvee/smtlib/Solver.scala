@@ -106,7 +106,7 @@ object Solver:
     new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
 
   // the sorts that the solvers know
-  val known = Set(Con.bool, Con.int, Con.real, Con.string, Con.array, Con.seq).map(_.name)
+  val known = Set(Con.bool, Con.int, Con.real, Con.string, Con.array, Con.seq, Con.set, Con.bag).map(_.name)
 
   // the built-in sorts and datatypes of a frontend that the solvers do not know, e.g. Trace and the sets of Dafny,
   // which are declared to the solver at the start, the sorts first since datatypes may refer to them

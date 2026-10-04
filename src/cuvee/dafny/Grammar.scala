@@ -31,6 +31,7 @@ object Grammar:
     "<" -> (Assoc.Non, 5),
     "<=" -> (Assoc.Non, 5),
     "in" -> (Assoc.Non, 5),
+    "!in" -> (Assoc.Non, 5),
     "+" -> (Assoc.Left, 6),
     "-" -> (Assoc.Left, 6),
     "*" -> (Assoc.Left, 7),
@@ -51,6 +52,8 @@ object Grammar:
     "bool" -> "Bool",
     "real" -> "Real",
     "seq" -> "Seq",
+    "set" -> "Set",
+    "multiset" -> "Bag",
     "array" -> "Array"
   )
 
@@ -189,11 +192,18 @@ object Grammar:
   val len =
     Len(P("|" ~ expr ~ "|"))
 
+  val set =
+    SetLit(P(braces(expr ~* ",")))
+
+  // backtracks if there is no brace after multiset, which is then a name
+  val bag =
+    BagLit(P((sym.filter(_ == "multiset") ?~ "{") ~ (expr ~* ",") ~ "}").map(_._2))
+
   val butlast =
     Butlast(P("⌊" ~ expr ~ "⌋"))
 
   val atom: Parser[Expr] =
-    P(diff | tuple | seq | len | butlast | lit | bind | let | ite | combinator | app)
+    P(diff | tuple | seq | set | bag | len | butlast | lit | bind | let | ite | combinator | app)
 
   // indexing and slices of other atoms than names and calls, which take their accesses themselves,
   // members and testers are accessed on variables only

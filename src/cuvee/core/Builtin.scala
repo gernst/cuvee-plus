@@ -125,3 +125,41 @@ object Seqs:
   object extract extends Sugar.ternary(Fun.seq.extract)
   object contains extends Sugar.binary(Fun.seq.contains)
   object prefixof extends Sugar.binary(Fun.seq.prefixof)
+
+// the functions on finite sets, as in Fun.set
+object Sets:
+  object empty:
+    def apply(elem: Type): Expr =
+      App(Fun.set.empty, Nil, Sort.set(elem), Nil)
+
+    def unapply(expr: Expr): Boolean =
+      expr match
+        case App(fun, _, _, Nil) => fun == Fun.set.empty
+        case _                   => false
+
+  object singleton extends Sugar.unary(Fun.set.singleton)
+  object union extends Sugar.associative(Fun.set.union, Assoc.Left)
+  object inter extends Sugar.associative(Fun.set.inter, Assoc.Left)
+  object minus extends Sugar.binary(Fun.set.minus)
+  object member extends Sugar.binary(Fun.set.member)
+  object subset extends Sugar.binary(Fun.set.subset)
+  object card extends Sugar.unary(Fun.set.card)
+
+// the functions on finite multisets, as in Fun.bag
+object Bags:
+  object empty:
+    def apply(elem: Type): Expr =
+      App(Fun.bag.empty, Nil, Sort.bag(elem), Nil)
+
+    def unapply(expr: Expr): Boolean =
+      expr match
+        case App(fun, _, _, Nil) => fun == Fun.bag.empty
+        case _                   => false
+
+  object make extends Sugar.binary(Fun.bag.make)
+  object union extends Sugar.associative(Fun.bag.union, Assoc.Left)
+  object inter extends Sugar.associative(Fun.bag.inter, Assoc.Left)
+  object minus extends Sugar.binary(Fun.bag.minus)
+  object count extends Sugar.binary(Fun.bag.count)
+  object subbag extends Sugar.binary(Fun.bag.subbag)
+  object card extends Sugar.unary(Fun.bag.card)

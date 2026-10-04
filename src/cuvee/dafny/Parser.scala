@@ -384,20 +384,43 @@ class Parser(var state: State):
           yield state.exprs.app(core.Fun.seq.unit, List(resolve(scope, arg)))
         units_.reduceLeft((left, right) => state.exprs.app(core.Fun.seq.concat, List(left, right)))
 
+      // the length of a sequence, or the cardinality of a set or multiset, resolved by overloading (see core.Overload)
       case Len(arg) =>
         val arg_ = resolve(scope, arg)
-        state.exprs.app(core.Fun.seq.len, List(arg_))
+        state.exprs.app(core.Overload.card, List(arg_))
+
+      // {a, b, c} is the union of the singletons, multiset{a, b, c} that of the elements with multiplicity 1
+      case SetLit(Nil) =>
+        state.exprs.app(core.Fun.set.empty, Nil)
+
+      case SetLit(args) =>
+        val singletons_ =
+          for arg <- args
+          yield state.exprs.app(core.Fun.set.singleton, List(resolve(scope, arg)))
+        singletons_.reduceLeft((left, right) => state.exprs.app(core.Fun.set.union, List(left, right)))
+
+      case BagLit(Nil) =>
+        state.exprs.app(core.Fun.bag.empty, Nil)
+
+      case BagLit(args) =>
+        val elems_ =
+          for arg <- args
+          yield state.exprs.app(core.Fun.bag.make, List(resolve(scope, arg), state.exprs.num(1)))
+        elems_.reduceLeft((left, right) => state.exprs.app(core.Fun.bag.union, List(left, right)))
 
       case Butlast(arg) =>
         val arg_ = resolve(scope, arg)
         state.exprs.app(core.Fun.trace.butlast, List(arg_))
 
-      // x in s holds if s contains the sequence [x] of length 1
-      case App("in", List(elem, seq), Nil) =>
+      // membership in sequences, sets, and multisets, resolved by overloading (see core.Overload)
+      case App("in", List(elem, coll), Nil) =>
         val elem_ = resolve(scope, elem)
-        val seq_ = resolve(scope, seq)
-        val unit_ = state.exprs.app(core.Fun.seq.unit, List(elem_))
-        state.exprs.app(core.Fun.seq.contains, List(seq_, unit_))
+        val coll_ = resolve(scope, coll)
+        state.exprs.app(core.Overload.member, List(elem_, coll_))
+
+      case App("!in", args, Nil) =>
+        val expr_ = App("not", List(App("in", args, Nil)), Nil)
+        resolve(scope, expr_)
 
       // the combinators of trace equation systems, whose bound variables are typed by the dependencies
       case Combinator("trace", Some(init), deps, acc :: bound, update) =>
