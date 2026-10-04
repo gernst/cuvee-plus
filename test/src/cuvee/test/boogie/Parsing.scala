@@ -3,6 +3,7 @@ package boogie
 
 import utest._
 
+import cuvee.Error
 import cuvee.core._
 
 // Boogie examples must be resolved and type checked without errors
@@ -29,7 +30,7 @@ object Errors extends TestSuite:
     try
       cuvee.boogie.Source(new java.io.StringReader(text))._2.toList
       "no error"
-    catch case cuvee.Error(msg, _*) => msg
+    catch case Error(msg, _*) => msg
 
   val globals = "var g: int; var h: int; procedure set() modifies g; { g := 0; } "
 

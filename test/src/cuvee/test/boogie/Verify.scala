@@ -3,6 +3,7 @@ package boogie
 
 import utest._
 
+import cuvee.Error
 import cuvee.core._
 
 // polymorphic functions must be monomorphized before they are passed to a solver (see TODO.md),
@@ -43,7 +44,7 @@ object Horn extends TestSuite:
       assert(expected.contains(first))
 
       val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
-      results.collect { case error: cuvee.Error => error.msg } ==> Nil
+      results.collect { case error: Error => error.msg } ==> Nil
       results.last ==> expected(first)
 
 // global variables are eliminated by -verify and -chc, and are not passed to solvers

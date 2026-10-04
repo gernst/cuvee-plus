@@ -1,0 +1,104 @@
+package cuvee.test
+package boogie
+
+import java.io.StringReader
+
+import utest._
+
+import cuvee.Error
+import cuvee.core._
+import cuvee.boogie.Printer
+import cuvee.boogie.Source
+
+// printing the internal representation of the Boogie examples must be stable
+// when the output is parsed again, the original file is not compared
+object Roundtrip extends TestSuite:
+  val tests =
+    Examples.tests(Examples.find(os.sub, "bpl")): file =>
+      val (cmds, errors) = Examples.output("-print", "null", file.toString)
+      errors ==> Nil
+
+      val first = Printer.lines(cmds)
+      val (_, cmds_) = Source(new StringReader(first.mkString("\n")))
+      val second = Printer.lines(cmds_.toList)
+      second ==> first
+
+object Printing extends TestSuite:
+  val x = Var("x", Sort.int)
+  val y = Var("y", Sort.int)
+  val zero = Lit(BigInt(0), Sort.int)
+  val p = Var("p", Sort.bool)
+  val q = Var("q", Sort.bool)
+  val a = Var("a", Sort.array(Sort.int, Sort.int))
+
+  // the printer ignores types, chains with more than two arguments do not match the signatures
+  def app(fun: Fun, args: Expr*) =
+    App(fun, Nil, fun.res, args.toList)
+
+  def expr(expr: Expr) =
+    Printer.lines(expr).mkString(" ")
+
+  def prog(prog: Prog) =
+    Printer.lines(prog)
+
+  def error(body: => Any): String =
+    try
+      body
+      "no error"
+    catch case Error(msg, _*) => msg
+
+  val tests = Tests:
+    test("types"):
+      Printer.lines(Sort.array(Sort.int, Sort.array(Sort.bool, Sort.int))) ==> List("[int][bool]int")
+      Printer.lines(Sort(Con("Stack", 1), List(Param("a")))) ==> List("Stack<a>")
+
+    test("specs"):
+      prog(Spec.assume(app(Fun.int.lt, x, y))) ==> List("assume x < y;")
+      prog(Spec.assert(app(Fun.int.lt, x, y))) ==> List("assert x < y;")
+      prog(Spec.havoc(List(x, y))) ==> List("havoc x, y;")
+      prog(Spec(List(x), app(Fun.int.lt, zero, x), app(Fun.int.lt, x, y))) ==>
+        List("assert 0 < x;", "havoc x;", "assume x < y;")
+
+    test("assign and call"):
+      prog(Assign(List(x, y), List(y, x))) ==> List("x, y := y, x;")
+      prog(Assign(List(a), List(Store(a, x, Select(a, y))))) ==> List("a := a[x := a[y]];")
+      prog(Call("p", List(x), Nil)) ==> List("call p(x);")
+      prog(Call("p", List(x), List(y))) ==> List("call y := p(x);")
+
+    test("choice"):
+      val progs = List(Assign(List(x), List(zero)), Assign(List(x), List(y)))
+      prog(Choice(progs)) ==> List("if (*) {", "  x := 0;", "} else {", "  x := y;", "}")
+
+    test("else if"):
+      val prog_ = If(app(Fun.int.lt, x, y), Break, If(app(Fun.int.lt, y, x), Return, Block(Nil, Nil)))
+      prog(prog_) ==> List("if (x < y) {", "  break;", "} else if (y < x) {", "  return;", "}")
+
+    test("loop"):
+      val attrs = cuvee.sexpr.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y)), "modifies" -> Some(List(a))))
+      prog(While(app(Fun.int.lt, x, y), Block(Nil, Nil), attrs)) ==>
+        List("while (x < y)", "  invariant x <= y;", "  modifies a;", "{}")
+
+    test("unsupported"):
+      error(prog(Continue)) ==> "continue not supported in Boogie"
+      val dec = cuvee.sexpr.Attrs(List("decreases" -> Some(x)))
+      error(prog(While(True, Block(Nil, Nil), dec))) ==> "attributes of loops not supported in Boogie"
+
+    test("mixfix"):
+      expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
+      expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"
+      expr(app(Fun.int.times, app(Fun.int.plus, x, y), app(Fun.int.minus, x, y))) ==> "(x + y) * (x - y)"
+      expr(app(Fun.imp, p, app(Fun.imp, q, p))) ==> "p ==> q ==> p"
+      expr(app(Fun.imp, app(Fun.imp, p, q), p)) ==> "(p ==> q) ==> p"
+      expr(app(Fun.and, app(Fun.or, p, q), app(Fun.int.lt, x, y))) ==> "(p || q) && x < y"
+
+    test("disequalities and chains"):
+      expr(Not(Eq(x, y))) ==> "x != y"
+      expr(Not(app(Fun.and, p, q))) ==> "!(p && q)"
+      expr(Distinct(List(x, y))) ==> "x != y"
+      expr(Distinct(List(x, y, zero))) ==> "x != y && x != 0 && y != 0"
+      expr(app(Fun.int.lt, x, y, zero)) ==> "x < y && y < 0"
+
+    test("quantifiers and conditionals"):
+      expr(app(Fun.and, All(List(x), app(Fun.int.lt, x, y)), p)) ==> "(forall x: int :: x < y) && p"
+      expr(app(Fun.int.plus, Ite(p, x, y), zero)) ==> "(if p then x else y) + 0"
+      expr(Let(List(x), List(y), app(Fun.int.plus, x, x))) ==> "y + y"

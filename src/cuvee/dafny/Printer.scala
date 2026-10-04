@@ -1,6 +1,7 @@
 package cuvee.dafny
 
 import util.Name
+import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib._
 import cuvee.sexpr.Atom
@@ -101,7 +102,7 @@ object Printer extends cuvee.pipe.Printer:
       case Model(decls) =>
         join(decls.map(doc(_)), hardline)
 
-      case error: cuvee.Error =>
+      case error: Error =>
         val info = error.info.toList.map(value => str(value.toString))
         Group(text("error") +:+ str(error.msg) ++ Nest(2, concat(info.map(line ++ _))))
 
@@ -122,7 +123,7 @@ object Printer extends cuvee.pipe.Printer:
         text("exit;")
 
       case Done =>
-        cuvee.Error.raise("internal command cannot be printed", cmd)
+        Error.raise("internal command cannot be printed", cmd)
 
       case Push(depth) =>
         text("push") +:+ text(depth.toString) ++ text(";")
@@ -485,7 +486,7 @@ object Printer extends cuvee.pipe.Printer:
         text(value.bigDecimal.toPlainString)
 
       case Lit(value, _) =>
-        cuvee.Error.raise("unprintable literal", expr)
+        Error.raise("unprintable literal", expr)
 
       case Ite(test, left, right) =>
         Group(text("if") +:+ doc(test) ++ line ++ text("then") +:+ doc(left) ++ line ++ text("else") +:+ doc(right))
@@ -524,11 +525,11 @@ object Printer extends cuvee.pipe.Printer:
 
       // two or more arguments are printed in infix notation above
       case Distinct(_) =>
-        cuvee.Error.raise("unprintable distinct", expr)
+        Error.raise("unprintable distinct", expr)
 
       // TODO: Dafny syntax for testers and type annotations, e.g. e.C? and e as T
       case Is(_, _) | As(_, _) =>
-        cuvee.Error.raise("not supported in Dafny", expr)
+        Error.raise("not supported in Dafny", expr)
 
       case Bind(quant, bound, body) =>
         Group(text(name(quant)) +:+ Group(formals(bound)) +:+ text("::") ++ Nest(2, line ++ doc(body)))

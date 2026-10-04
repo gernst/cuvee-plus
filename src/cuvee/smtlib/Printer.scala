@@ -121,7 +121,7 @@ object Printer extends cuvee.pipe.Printer:
       case Model(decls) =>
         list(lines(decls))
 
-      case error: cuvee.Error =>
+      case error: Error =>
         val info =
           for item <- error.info.toList; line <- str(item.toString)
           yield line
