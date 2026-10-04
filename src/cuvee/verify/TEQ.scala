@@ -203,14 +203,15 @@ object TEQ extends Transform:
     Error.report("return inside of loops is not supported by symbolic execution", body):
       require(paths.forall(!_.returned))
 
-    // the nondeterministic choices of the body are ranged over by sequences
+    // the nondeterministic choices of the body are ranged over by sequences, named after them with a final ?, e.g. Choice?
     val zs = paths.flatMap(_.zs).distinct
-    val Zs = zs.map(z => Var("Z_" + z.name.name, Sort.seq(z.typ)).fresh)
+    val Zs = zs.map(z => Var(z.name.name.capitalize + "?", Sort.seq(z.typ)).fresh)
 
     val n = Var("n", Sort.int).fresh
     val k = Var("k", Sort.int).fresh
     val K = Var("K", Sort.trace(Sort.int)).fresh
-    val Xs = xs.map(x => Var("X_" + x.name.name, Sort.trace(x.typ)).fresh)
+    // the traces are named after the variables, capitalized, e.g. I for i
+    val Xs = xs.map(x => Var(x.name.name.capitalize, Sort.trace(x.typ)).fresh)
     val cur = xs.fresh
 
     def butlast(tr: Var) = App(Fun.trace.butlast, List(tr))
