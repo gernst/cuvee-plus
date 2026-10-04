@@ -284,6 +284,10 @@ object Horn extends Transform:
         wp(state, proc, scope, List(right), else_, join, break, continue, return_, decls, clauses)
         wp(state, proc, scope, rest, join, post, break, continue, return_, decls, clauses)
 
+      // the continuous evolution has no counterpart in Horn clauses over the program variables
+      case (prog: Ode) :: rest =>
+        Error.raise("differential equations not supported in Horn clauses", proc, prog)
+
       // pre(scope) ⇒ inv(scope), where inv is the invariant at the loop head,
       // inv(scope) ∧ test ⇒ body(scope, measure), from which the body leads back to inv,
       // inv(scope) ∧ ¬test ⇒ next(scope), from which the remaining statements continue,
@@ -292,9 +296,6 @@ object Horn extends Transform:
       // the body ranges over the scope extended by fresh variables ms for the values of the measure at the start of the iteration,
       // which are dropped on each way out of the body, where the end of an iteration is the query iter(scope, ms) ∧ ¬(measure < ms) ⇒ false;
       // nondeterministic iterations have no test, i.e., inv(scope) leads to both body and next
-      case (prog: Ode) :: rest =>
-        Error.raise("differential equations not supported yet", proc, prog)
-
       case (loop @ (_: While | _: Iter)) :: rest =>
         val (test, body, attrs) = (loop: @unchecked) match
           case While(test, body, attrs) => (List(test), body, attrs)

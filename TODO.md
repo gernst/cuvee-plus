@@ -123,7 +123,8 @@ Non-standard features from Platzer's dL, as part of the Dafny frontend
 
 Open:
 
-- `Verify` and `Horn` raise an error on `Ode`.
+- `Verify` raises an error on `Ode`; `Horn` will not support it and raises an
+  error as well.
 - `Diff` is not simplified yet, the simplifier only simplifies its argument.
 - The primed variables in `Diff` are not declared, and the type checker does
   not check that they are in scope.

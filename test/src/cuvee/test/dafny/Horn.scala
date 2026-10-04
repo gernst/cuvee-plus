@@ -60,6 +60,12 @@ object HornCmds extends TestSuite:
       val cmds = output(os.sub / "vcgen" / "max.dfy")
       cmds.last ==> CheckSat
 
+    // differential equations are not supported in Horn clauses
+    test("differential equations"):
+      val hybrid = Examples.root / "hybrid.dfy"
+      val errors = Examples.errors("-chc", "-print", "null", hybrid.toString)
+      assert(errors.contains("differential equations not supported in Horn clauses"))
+
     // every procedure has predicates for its pre- and postcondition
     test("contract predicates"):
       val cmds = output(os.sub / "vcgen" / "max.dfy")
