@@ -257,14 +257,8 @@ object Verify extends Transform:
   // the calls in a program, also inside of nested loops
   def calls(prog: Prog): List[Call] =
     prog match
-      case call: Call             => List(call)
-      case Par(calls)             => calls
-      case Block(_, progs)        => progs.flatMap(this.calls)
-      case Choice(progs)          => progs.flatMap(this.calls)
-      case If(_, left, right)     => this.calls(left) ++ this.calls(right)
-      case While(_, body, _)      => this.calls(body)
-      case Iter(body, _)          => this.calls(body)
-      case _                      => Nil
+      case call: Call => List(call)
+      case _          => prog.subprogs.flatMap(this.calls)
 
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
   def loop(state: State, gs: List[Var], proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =

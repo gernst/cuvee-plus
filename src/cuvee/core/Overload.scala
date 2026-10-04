@@ -76,85 +76,16 @@ object Overload:
 
   // replace all overloaded operators in a type checked expression, bottom-up
   def apply(state: State, expr: Expr): Expr =
-    expr match
-      case _: Var | _: Lit =>
-        expr
+    expr.map(apply(state, _)) match
+      case app_ @ App(fun, _, _, _) if isGeneric(fun) =>
+        resolve(state, app_)
 
-      case App(fun, inst, typ, args) =>
-        val app_ = App(fun, inst, typ, args.map(apply(state, _)))
-        if isGeneric(fun)
-        then resolve(state, app_)
-        else app_
+      case expr_ =>
+        expr_
 
-      case Distinct(exprs) =>
-        Distinct(exprs.map(apply(state, _)))
-
-      case Is(expr, fun) =>
-        Is(apply(state, expr), fun)
-
-      case As(expr, typ) =>
-        As(apply(state, expr), typ)
-
-      case Diff(xs, expr) =>
-        Diff(xs, apply(state, expr))
-
-      case Old(expr) =>
-        Old(apply(state, expr))
-
-      case Trace(init, deps, acc, bound, updates) =>
-        Trace(apply(state, init), deps.map(apply(state, _)), acc, bound, updates.map(apply(state, _)))
-
-      case Maps(deps, bound, updates) =>
-        Maps(deps.map(apply(state, _)), bound, updates.map(apply(state, _)))
-
-      case Invs(deps, bound, body) =>
-        Invs(deps.map(apply(state, _)), bound, apply(state, body))
-
-      case Bind(quant, bound, body) =>
-        Bind(quant, bound, apply(state, body))
-
-      case Let(bound, args, body) =>
-        Let(bound, args.map(apply(state, _)), apply(state, body))
-
-  def apply(state: State, upd: Upd): Upd =
-    Upd(apply(state, upd.cond), apply(state, upd.rhs))
-
-  // replace all overloaded operators in the expressions of a type checked program,
-  // the attributes of loops are type checked separately by the parsers, which resolves them as well
+  // replace all overloaded operators in the expressions of a type checked program, including its attributes
   def apply(state: State, prog: Prog): Prog =
-    prog match
-      case Break | Continue | Return =>
-        prog
-
-      case Spec(xs, pre, post) =>
-        Spec(xs, apply(state, pre), apply(state, post))
-
-      case Assign(lhs, rhs) =>
-        Assign(lhs, rhs.map(apply(state, _)))
-
-      case Call(name, args, res) =>
-        Call(name, args.map(apply(state, _)), res)
-
-      case Block(locals, progs) =>
-        Block(locals, progs.map(apply(state, _)))
-
-      case Choice(progs) =>
-        Choice(progs.map(apply(state, _)))
-
-      case If(test, left, right) =>
-        If(apply(state, test), apply(state, left), apply(state, right))
-
-      case While(test, body, attrs) =>
-        While(apply(state, test), apply(state, body), attrs)
-
-      case Iter(body, attrs) =>
-        Iter(apply(state, body), attrs)
-
-      case Ode(xs, rhs, dom, attrs) =>
-        Ode(xs, rhs.map(apply(state, _)), apply(state, dom), attrs)
-
-      case Par(calls) =>
-        Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(apply(state, _)), res))
+    prog.map(apply(state, _: Expr), apply(state, _: Prog))
 
   // the replacement of a single application of an overloaded operator, whose arguments have been replaced already,
   // by its implementation for the type of the first argument, where defined sorts are unfolded

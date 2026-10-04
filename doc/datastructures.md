@@ -73,6 +73,12 @@ case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd])
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
 ```
 
+- **Traversals:** `expr.map(f)` applies `f` to the immediate subexpressions
+  point-wise and keeps bound variables, likewise `upd.map(f)`,
+  `sort.map(f)`, `attrs.map(f)`, `prog.map(e, p)` (expressions, attributes,
+  and immediate subprograms), and `cmd.map(e, p)`; `expr.subexprs` and
+  `prog.subprogs` list the immediate children. Traversals that rename bound
+  variables, e.g. `Subst`, are written out.
 - **`App.inst`** holds the expected types of the arguments, not the
   instances of the type parameters. `App(fun, args)` computes `inst` and
   `typ` from the arguments.

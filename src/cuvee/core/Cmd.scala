@@ -38,7 +38,20 @@ object Answers:
       case Answers(results) => results.flatMap(flatten)
       case _                => List(result)
 
-sealed trait Cmd
+sealed trait Cmd:
+  // apply `e` to the expressions, including those in attributes, and `p` to the bodies of procedures, point-wise
+  def map(e: Expr => Expr, p: Prog => Prog): Cmd =
+    this match
+      case DeclareSort(con, attrs)                => DeclareSort(con, attrs.map(e))
+      case DefineSort(con, params, body, attrs)   => DefineSort(con, params, body, attrs.map(e))
+      case DeclareDatatypes(cons, datas, attrs)   => DeclareDatatypes(cons, datas, attrs.map(e))
+      case DeclareFun(fun, attrs)                 => DeclareFun(fun, attrs.map(e))
+      case DefineFun(fun, body, attrs)            => DefineFun(fun, e(body), attrs.map(e))
+      case DeclareVar(x, attrs)                   => DeclareVar(x, attrs.map(e))
+      case DeclareProc(proc, attrs)               => DeclareProc(proc, attrs.map(e))
+      case DefineProc(proc, body, attrs)          => DefineProc(proc, p(body), attrs.map(e))
+      case Assert(justify, params, phi, attrs)    => Assert(justify, params, e(phi), attrs.map(e))
+      case _                                      => this
 
 sealed trait Ctrl extends Cmd
 sealed trait Decl extends Cmd

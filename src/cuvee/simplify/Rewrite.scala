@@ -49,7 +49,7 @@ object Rewrite:
     rewrite(Config.default, State.empty, Ctx.empty.withRules(rules), expr)
 
   def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    val expr_ = map(expr, rewrite(config, state, ctx, _))
+    val expr_ = expr.map(rewrite(config, state, ctx, _))
     step(config, state, ctx, expr_) match
       case Some(next) => rewrite(config, state, ctx, next)
       case None       => expr_
@@ -404,22 +404,3 @@ object Rewrite:
     else
       (pats zip types_).foldLeft(List(m)):
         case (ms, (pat, typ)) => ms.flatMap(matches(pat, typ, _))
-
-  // apply `f` to the immediate subexpressions
-  def map(expr: Expr, f: Expr => Expr): Expr =
-    def update(upd: Upd) =
-      Upd(f(upd.cond), f(upd.rhs))
-
-    expr match
-      case _: Var | _: Lit                      => expr
-      case App(fun, inst, typ, args)            => App(fun, inst, typ, args.map(f))
-      case Distinct(exprs)                      => Distinct(exprs.map(f))
-      case Is(arg, fun)                         => Is(f(arg), fun)
-      case As(arg, typ)                         => As(f(arg), typ)
-      case Diff(xs, arg)                        => Diff(xs, f(arg))
-      case Old(arg)                             => Old(f(arg))
-      case Trace(init, deps, acc, bound, upd)   => Trace(f(init), deps.map(f), acc, bound, upd.map(update))
-      case Maps(deps, bound, upd)           => Maps(deps.map(f), bound, upd.map(update))
-      case Invs(deps, bound, body)          => Invs(deps.map(f), bound, f(body))
-      case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
-      case Let(bound, args, body)               => Let(bound, args.map(f), f(body))

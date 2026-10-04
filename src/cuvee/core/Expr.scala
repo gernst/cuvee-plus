@@ -13,6 +13,23 @@ sealed trait Expr:
   // the immediate subexpressions
   def subexprs: List[Expr]
 
+  // apply `f` to the immediate subexpressions point-wise,
+  // the bound variables of binders and combinators are kept, i.e., `f` must avoid capture itself
+  def map(f: Expr => Expr): Expr =
+    this match
+      case _: Var | _: Lit                      => this
+      case App(fun, inst, typ, args)            => App(fun, inst, typ, args.map(f))
+      case Distinct(exprs)                      => Distinct(exprs.map(f))
+      case Is(arg, fun)                         => Is(f(arg), fun)
+      case As(arg, typ)                         => As(f(arg), typ)
+      case Diff(xs, arg)                        => Diff(xs, f(arg))
+      case Old(arg)                             => Old(f(arg))
+      case Trace(init, deps, acc, bound, upds)  => Trace(f(init), deps.map(f), acc, bound, upds.map(_.map(f)))
+      case Maps(deps, bound, upds)              => Maps(deps.map(f), bound, upds.map(_.map(f)))
+      case Invs(deps, bound, body)              => Invs(deps.map(f), bound, f(body))
+      case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
+      case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
+
 object Expr:
   // TODO: structural ordering, for now by the printed representation
   given Ordering[Expr] = Ordering.by(_.toString)
@@ -104,127 +121,16 @@ object Old:
   // nested occurrences of old refer to the same values
   def elim(gs: List[Var], gs_ : List[Expr], expr: Expr): Expr =
     expr match
-      case _: Var | _: Lit =>
-        expr
-
       case Old(arg) =>
         val arg_ = elim(gs, gs_, arg)
         Subst.from(gs, gs_)(arg_)
 
-      case App(fun, inst, typ, args) =>
-        val args_ = elim(gs, gs_, args)
-        App(fun, inst, typ, args_)
-
-      case Distinct(exprs) =>
-        val exprs_ = elim(gs, gs_, exprs)
-        Distinct(exprs_)
-
-      case Is(arg, fun) =>
-        val arg_ = elim(gs, gs_, arg)
-        Is(arg_, fun)
-
-      case As(arg, typ) =>
-        val arg_ = elim(gs, gs_, arg)
-        As(arg_, typ)
-
-      case Diff(xs, arg) =>
-        val arg_ = elim(gs, gs_, arg)
-        Diff(xs, arg_)
-
-      case Trace(init, deps, acc, bound, updates) =>
-        val init_ = elim(gs, gs_, init)
-        val deps_ = elim(gs, gs_, deps)
-        val updates_ = for Upd(cond, rhs) <- updates yield Upd(elim(gs, gs_, cond), elim(gs, gs_, rhs))
-        Trace(init_, deps_, acc, bound, updates_)
-
-      case Maps(deps, bound, updates) =>
-        val deps_ = elim(gs, gs_, deps)
-        val updates_ = for Upd(cond, rhs) <- updates yield Upd(elim(gs, gs_, cond), elim(gs, gs_, rhs))
-        Maps(deps_, bound, updates_)
-
-      case Invs(deps, bound, body) =>
-        val deps_ = elim(gs, gs_, deps)
-        val body_ = elim(gs, gs_, body)
-        Invs(deps_, bound, body_)
-
-      case Bind(quant, bound, body) =>
-        val body_ = elim(gs, gs_, body)
-        Bind(quant, bound, body_)
-
-      case Let(bound, args, body) =>
-        val args_ = elim(gs, gs_, args)
-        val body_ = elim(gs, gs_, body)
-        Let(bound, args_, body_)
-
-  @targetName("elimExprs")
-  def elim(gs: List[Var], gs_ : List[Expr], exprs: List[Expr]): List[Expr] =
-    for expr <- exprs
-    yield elim(gs, gs_, expr)
-
-  def elim(gs: List[Var], gs_ : List[Expr], attrs: Attrs): Attrs =
-    val attrs_ =
-      for (kw, arg) <- attrs.attrs
-      yield arg match
-        case Some(expr: Expr) => (kw, Some(elim(gs, gs_, expr)))
-        case _                => (kw, arg)
-
-    Attrs(attrs_)
+      case _ =>
+        expr.map(elim(gs, gs_, _))
 
   // in all expressions and attributes of a program, e.g. assertions and loop invariants
   def elim(gs: List[Var], gs_ : List[Expr], prog: Prog): Prog =
-    prog match
-      case Break | Continue | Return =>
-        prog
-
-      case Spec(xs, pre, post) =>
-        val pre_ = elim(gs, gs_, pre)
-        val post_ = elim(gs, gs_, post)
-        Spec(xs, pre_, post_)
-
-      case Assign(xs, rhs) =>
-        val rhs_ = elim(gs, gs_, rhs)
-        Assign(xs, rhs_)
-
-      case Call(proc, args, res) =>
-        val args_ = elim(gs, gs_, args)
-        Call(proc, args_, res)
-
-      case Block(locals, progs) =>
-        val progs_ = progs.map(elim(gs, gs_, _))
-        Block(locals, progs_)
-
-      case Choice(progs) =>
-        val progs_ = progs.map(elim(gs, gs_, _))
-        Choice(progs_)
-
-      case If(test, left, right) =>
-        val test_ = elim(gs, gs_, test)
-        val left_ = elim(gs, gs_, left)
-        val right_ = elim(gs, gs_, right)
-        If(test_, left_, right_)
-
-      case While(test, body, attrs) =>
-        val test_ = elim(gs, gs_, test)
-        val body_ = elim(gs, gs_, body)
-        val attrs_ = elim(gs, gs_, attrs)
-        While(test_, body_, attrs_)
-
-      case Iter(body, attrs) =>
-        val body_ = elim(gs, gs_, body)
-        val attrs_ = elim(gs, gs_, attrs)
-        Iter(body_, attrs_)
-
-      case Ode(xs, rhs, dom, attrs) =>
-        val rhs_ = elim(gs, gs_, rhs)
-        val dom_ = elim(gs, gs_, dom)
-        val attrs_ = elim(gs, gs_, attrs)
-        Ode(xs, rhs_, dom_, attrs_)
-
-      case Par(calls) =>
-        val calls_ =
-          for Call(proc, args, res) <- calls
-          yield Call(proc, elim(gs, gs_, args), res)
-        Par(calls_)
+    prog.map(elim(gs, gs_, _: Expr), elim(gs, gs_, _: Prog))
 
 // the combinators of trace equation systems, which describe the computation of a loop per variable;
 // their dependencies `deps` are sequences of the same length, over which the variables `bound` range point-wise,
@@ -234,6 +140,9 @@ case class Upd(cond: Expr, rhs: Expr):
   def params = cond.params ++ rhs.params
   def free = cond.free ++ rhs.free
   def exprs = List(cond, rhs)
+
+  def map(f: Expr => Expr) =
+    Upd(f(cond), f(rhs))
 
 // trace(init, for deps do acc, bound ↦ update): the trace of the values of the accumulator `acc`,
 // starting from `init`, where each subsequent value is computed by the update from the previous one

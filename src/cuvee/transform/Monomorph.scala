@@ -100,9 +100,6 @@ object Monomorph extends Transform:
   // whose type parameters are determined by the types of the arguments and of the result
   def expr(env: Env, e: Expr): Expr =
     e match
-      case _: Var | _: Lit =>
-        e
-
       case App(fun, inst, typ, args) if isPoly(env, fun) =>
         val su = Type.bind(fun.args :+ fun.res, inst :+ typ)
         val types = fun.params.map(su(_))
@@ -115,55 +112,9 @@ object Monomorph extends Transform:
         val args_ = args.map(expr(env, _))
         App(fun_, inst, typ, args_)
 
-      case App(fun, inst, typ, args) =>
-        val args_ = args.map(expr(env, _))
-        App(fun, inst, typ, args_)
-
-      case Distinct(exprs) =>
-        val exprs_ = exprs.map(expr(env, _))
-        Distinct(exprs_)
-
-      case Is(arg, fun) =>
-        val arg_ = expr(env, arg)
-        Is(arg_, fun)
-
       // instances of polymorphic constants need no annotation of their type
       case As(arg @ App(fun, _, _, Nil), typ) if isPoly(env, fun) =>
         expr(env, arg)
 
-      case As(arg, typ) =>
-        val arg_ = expr(env, arg)
-        As(arg_, typ)
-
-      case Diff(xs, arg) =>
-        val arg_ = expr(env, arg)
-        Diff(xs, arg_)
-
-      case Old(arg) =>
-        val arg_ = expr(env, arg)
-        Old(arg_)
-
-      case Trace(init, deps, acc, bound, updates) =>
-        val init_ = expr(env, init)
-        val deps_ = deps.map(expr(env, _))
-        val updates_ = for Upd(cond, rhs) <- updates yield Upd(expr(env, cond), expr(env, rhs))
-        Trace(init_, deps_, acc, bound, updates_)
-
-      case Maps(deps, bound, updates) =>
-        val deps_ = deps.map(expr(env, _))
-        val updates_ = for Upd(cond, rhs) <- updates yield Upd(expr(env, cond), expr(env, rhs))
-        Maps(deps_, bound, updates_)
-
-      case Invs(deps, bound, body) =>
-        val deps_ = deps.map(expr(env, _))
-        val body_ = expr(env, body)
-        Invs(deps_, bound, body_)
-
-      case Bind(quant, bound, body) =>
-        val body_ = expr(env, body)
-        Bind(quant, bound, body_)
-
-      case Let(bound, args, body) =>
-        val args_ = args.map(expr(env, _))
-        val body_ = expr(env, body)
-        Let(bound, args_, body_)
+      case _ =>
+        e.map(expr(env, _))

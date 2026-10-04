@@ -134,13 +134,7 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     yield lhs(x)
 
   def apply(attrs: Attrs): Attrs =
-    val attrs_ =
-      for (kw, arg) <- attrs.attrs
-      yield arg match
-        case Some(expr: Expr) => (kw, Some(this(expr)))
-        case _                => (kw, arg)
-
-    Attrs(attrs_)
+    attrs.map(this(_))
 
   def apply(prog: Prog): Prog =
     prog match

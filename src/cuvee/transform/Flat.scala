@@ -162,9 +162,6 @@ object Flat extends Transform:
         val (bound_, body_) = bind(state, bound, body)
         Bind(quant, bound_, flat(state, body_))
 
-      case Let(bound, args, body) =>
-        Let(bound, args.map(flat(state, _)), flat(state, body))
-
       case App(fun, _, _, args) if isPredicate(state, fun) =>
         val args_ = args.map(flat(state, _))
         App(predicate(state, fun), args_.flatMap(parts(state, _)))
@@ -178,26 +175,14 @@ object Flat extends Transform:
         val args_ = args.map(flat(state, _))
         reduce(state, App(fun, inst, typ, args_))
 
-      case Distinct(exprs) =>
-        Distinct(exprs.map(flat(state, _)))
-
       case Is(arg, fun) =>
         val arg_ = flat(state, arg)
         datatype(state, arg_.typ) match
           case Some((_, _, constr)) => if constr == fun then True else False
           case None                 => Is(arg_, fun)
 
-      case As(arg, typ) =>
-        As(flat(state, arg), typ)
-
-      case Diff(xs, arg) =>
-        Diff(xs, flat(state, arg))
-
-      case Old(arg) =>
-        Old(flat(state, arg))
-
-      case _: Var | _: Lit =>
-        expr
+      case _ =>
+        expr.map(flat(state, _))
 
   // selectors applied to the constructor of a record
   def reduce(state: State, expr: Expr): Expr =

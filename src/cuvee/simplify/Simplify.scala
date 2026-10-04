@@ -88,13 +88,7 @@ object Simplify extends Transform:
 
   // the formulas and terms in attributes, e.g. contracts and invariants, are simplified without context
   def simplify(config: Config, state: State, ctx: Ctx, attrs: Attrs): Attrs =
-    val attrs_ =
-      for (kw, arg) <- attrs.attrs
-      yield arg match
-        case Some(expr: Expr) => kw -> Some(simplify(config, state, ctx, expr))
-        case _                => kw -> arg
-
-    Attrs(attrs_)
+    attrs.map(simplify(config, state, ctx, _))
 
   // programs are simplified statement by statement, where the expressions are simplified without context,
   // since the facts known before an assignment may not hold afterwards;

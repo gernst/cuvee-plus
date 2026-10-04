@@ -12,6 +12,33 @@ sealed trait Prog:
   // the variables that are read or assigned, including those in attributes, e.g. loop invariants
   def free: Set[Var]
 
+  // the immediate subprograms
+  def subprogs: List[Prog] =
+    this match
+      case Block(_, progs)    => progs
+      case Choice(progs)      => progs
+      case If(_, left, right) => List(left, right)
+      case While(_, body, _)  => List(body)
+      case Iter(body, _)      => List(body)
+      case Par(calls)         => calls
+      case _                  => Nil
+
+  // apply `e` to the immediate expressions, including those in attributes, and `p` to the immediate subprograms,
+  // point-wise, where the assigned and local variables are kept
+  def map(e: Expr => Expr, p: Prog => Prog): Prog =
+    this match
+      case Break | Continue | Return => this
+      case Spec(xs, pre, post)       => Spec(xs, e(pre), e(post))
+      case Assign(xs, rhs)           => Assign(xs, rhs.map(e))
+      case Call(proc, args, res)     => Call(proc, args.map(e), res)
+      case Block(locals, progs)      => Block(locals, progs.map(p))
+      case Choice(progs)             => Choice(progs.map(p))
+      case If(test, left, right)     => If(e(test), p(left), p(right))
+      case While(test, body, attrs)  => While(e(test), p(body), attrs.map(e))
+      case Iter(body, attrs)         => Iter(p(body), attrs.map(e))
+      case Ode(xs, rhs, dom, attrs)  => Ode(xs, rhs.map(e), e(dom), attrs.map(e))
+      case Par(calls)                => Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(e), res))
+
 case object Break extends Prog:
   def mod = Set()
   def free = Set()

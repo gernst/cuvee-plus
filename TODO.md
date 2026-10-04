@@ -10,8 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Medium
 
-- Move method `.map()` that generically traverses an expression into `Expr`. Check all traversals in the code whether they can be written with this new function.
-  Similarly introduce `.map()` for all other types. Don't attempt to formulate something more complex than a point-wise mapping generically, though, keep the latter as explicit recursions.
 - add tuples to the types in the Dafny grammar
 - add support for strings and decreases in the boogie printer
 - the C printer should get some fake notation for quantifiers and trace combinators, it is not good to mix sexprs with C-like notation
@@ -93,10 +91,6 @@ inferred from the call graph. Open:
 
 ## Code structure and consistency
 
-- Traversals of expressions and programs are written out repeatedly:
-  `Subst`, `Overload.apply`, `Old.elim`, `Flat`;
-  a generic map over the immediate subexpressions and subprograms would
-  remove most of them.
 - `core.Assoc` duplicates `easyparse.Assoc`.
 - `send` and `receive` are recognized by their names (`Send`, `Recv`), and the
   history by the name of the global variable `history` (`Par.history`).

@@ -25,6 +25,16 @@ case class Attrs(attrs: List[(String, Option[Any])]):
     attrs.collect:
       case (`kw`, Some(arg: T)) => arg
 
+  // apply `f` to the expressions among the values
+  def map(f: Expr => Expr): Attrs =
+    val attrs_ =
+      for (kw, arg) <- attrs
+      yield arg match
+        case Some(expr: Expr) => (kw, Some(f(expr)))
+        case _                => (kw, arg)
+
+    Attrs(attrs_)
+
   // the free variables of the expressions among the values, e.g. of loop invariants
   def free: Set[Var] =
     attrs.flatMap(_._2).collect { case expr: Expr => expr.free }.flatten.toSet

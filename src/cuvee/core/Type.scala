@@ -26,6 +26,10 @@ case class Param(name: Name) extends Type:
     Param(name.withIndex(Param.next()))
 
 case class Sort(con: Con, args: List[Type]) extends Type:
+  // apply `f` to the arguments
+  def map(f: Type => Type) =
+    Sort(con, args.map(f))
+
   def name = con.name
   def params = args.params
   def cons = args.cons + con
