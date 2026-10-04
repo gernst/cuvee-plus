@@ -37,9 +37,13 @@ object Printer extends cuvee.pipe.Printer:
   def commas(docs: List[Doc]): Doc =
     join(docs, text(",") ++ line)
 
-  // a call f(a, b, ...) whose arguments go on separate lines if it does not fit
+  // elements separated by commas, which flow up to the width of the line, aligned after a line break
+  def flow(docs: List[Doc]): Doc =
+    Align(Doc.fill(docs, text(",")))
+
+  // a call f(a, b, ...) whose arguments flow up to the width of the line, aligned after the opening parenthesis
   def call(fun: String, args: List[Doc]): Doc =
-    Group(text(fun + "(") ++ Nest(2, linebreak ++ commas(args)) ++ text(")"))
+    text(fun + "(") ++ flow(args) ++ text(")")
 
   // string literals escape backslashes and double quotes
   def str(value: String): Doc =
@@ -213,13 +217,14 @@ object Printer extends cuvee.pipe.Printer:
     else text("<") ++ join(params.map(doc(_)), text(",") ++ space) ++ text(">")
 
   // the name of a function or method with its type parameters and formal parameters
+  // the formal parameters flow up to the width of the line, aligned after the opening parenthesis
   def signature(name: String, params_ : List[Param], formals_ : List[Var]): Doc =
-    Group(text(name) ++ params(params_) ++ text("(") ++ Nest(2, linebreak ++ formals(formals_)) ++ text(")"))
+    text(name) ++ params(params_) ++ text("(") ++ flow(formals_.map(formal)) ++ text(")")
 
   def returns(out: List[Var]): Doc =
     if out.isEmpty
     then empty
-    else space ++ Group(text("returns (") ++ Nest(2, linebreak ++ formals(out)) ++ text(")"))
+    else space ++ text("returns (") ++ flow(out.map(formal)) ++ text(")")
 
   // selectors are declared without the qualification with the datatype, which the parser adds again
   def selector(con: Con, sel: Fun): String =
@@ -411,12 +416,11 @@ object Printer extends cuvee.pipe.Printer:
       case Sort(Con(name_, _), args) =>
         text(name(name_)) ++ text("<") ++ join(args.map(doc(_)), text(",") ++ space) ++ text(">")
 
-  def formals(vars: List[Var]): Doc =
-    val formals_ =
-      for Var(name_, typ) <- vars
-      yield text(name(name_) + ":") +:+ doc(typ)
+  def formal(x: Var): Doc =
+    text(name(x.name) + ":") +:+ doc(x.typ)
 
-    commas(formals_)
+  def formals(vars: List[Var]): Doc =
+    commas(vars.map(formal))
 
   // the precedence of an expression in mixfix notation, and the associativity of its operator,
   // atoms bind tightest, binders, let and if-then-else extend as far to the right as possible
@@ -698,7 +702,8 @@ object Printer extends cuvee.pipe.Printer:
         doc(arg, operand) +:+ text("as") +:+ doc(typ)
 
       case Bind(quant, bound, body) =>
-        Group(text(name(quant)) +:+ Group(Align(formals(bound))) +:+ text("::") ++ Nest(2, line ++ doc(body)))
+        // the bound variables flow up to the width of the line, aligned after the quantifier
+        Group(text(name(quant)) +:+ flow(bound.map(formal)) +:+ text("::") ++ Nest(2, line ++ doc(body)))
 
       case Let(bound, args, body) =>
         Group(text("var") +:+ formals(bound) +:+ text(":=") +:+ commas(args.map(doc(_))) ++ text(";") ++ line ++ doc(body))

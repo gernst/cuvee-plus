@@ -124,9 +124,10 @@ object Printing extends TestSuite:
       val all = Bind("forall", List(x), app(Fun.int.lt, x, y))
       expr(app(Fun.and, all, p)) ==> "(forall x: int :: x < y) && p"
 
+    // the arguments flow up to the width, aligned after the opening parenthesis
     test("long call breaks"):
       val args = List.fill(12)(Var("argument", Sort.int))
-      val lines = Printer.lines(Call("procedure", args, List(x)))
-      lines.head ==> "x := procedure("
-      lines.last ==> "  argument);"
+      val lines = Printer.lines(Call("procedure", args, List(x))).filter(_.nonEmpty)
+      lines.head ==> "x := procedure(argument, argument, argument, argument, argument, argument,"
+      lines.last ==> "               argument, argument, argument, argument, argument, argument);"
       assert(lines.forall(_.length <= Printer.width))

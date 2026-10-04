@@ -61,3 +61,8 @@ object DocTests extends TestSuite:
       val doc = join((1 to 100000).map(i => text(i.toString)), line)
       render(doc, 80).length ==> 100000
       render(Group(doc), 80).length ==> 100000
+
+    test("fill"):
+      val doc = text("f(") ++ Align(Doc.fill(List("aa", "bb", "cc", "dd").map(text), text(","))) ++ text(")")
+      render(doc, 80) ==> List("f(aa, bb, cc, dd)")
+      render(doc, 10) ==> List("f(aa, bb,", "  cc, dd)")

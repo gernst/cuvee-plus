@@ -50,6 +50,11 @@ object Doc:
     then empty
     else docs.reduceLeft(_ ++ sep ++ _)
 
+  // docs with `sep` in between, followed by a space or a newline, which flow up to the width of the line:
+  // each separator is a group of its own, which breaks only if the next doc does not fit on the line anymore
+  def fill(docs: Iterable[Doc], sep: Doc): Doc =
+    join(docs, sep ++ Group(line))
+
   // lines that are already laid out, e.g. by another printer, separated by hard lines
   def lines(lines: Iterable[String]): Doc =
     join(lines.map(text), hardline)
