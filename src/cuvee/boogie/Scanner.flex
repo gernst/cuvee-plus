@@ -37,7 +37,7 @@ kw  = "type" | "const" | "function" | "axiom" | "var" | "procedure"
 // identifiers as in Boogie, together with the subscripts of indexed names
 idchar = [a-zA-Z'~#$\^_.?`\\⁰-⁹₀-₉]
 sym = {idchar} ({idchar} | [0-9])*
-    | [+\-*/] | "&&" | "||" | "==>" | "<==>" | "!"
+    | [+\-*/] | "&&" | "||" | "==>" | "<==>" | "!" | "=>"
     | "==" | "!=" | "<=" | "<" | ">" | ">="
 
 %%

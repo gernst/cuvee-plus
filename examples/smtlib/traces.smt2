@@ -1,0 +1,6 @@
+; the combinators of trace equation systems, whose dependencies are bound like let
+(declare-const J (Seq Int))
+(declare-const a (Array Int Int))
+(declare-const n Int)
+(assert (= (trace (s 0) ((j J)) (+ s (select a j))) (trace (s 0) ((j J)) (cases ((< j n) (+ s 1)) ((not (< j n)) s)))))
+(assert (all ((j J) (k (map ((i J)) (+ i 1)))) (< j k)))

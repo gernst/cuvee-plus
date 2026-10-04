@@ -6,6 +6,9 @@ type real;
 // SMT-LIB array, written [a]b in Boogie
 type array<a₀, a₁>;
 
+// sequences, e.g. the dependencies of the combinators of trace equation systems
+type Seq<a₀>;
+
 const true: bool;
 const false: bool;
 

@@ -44,6 +44,11 @@ object Num extends (String => Expr)
 object Dec extends (String => Expr)
 object Str extends (String => Expr)
 object App extends ((String, List[Expr], List[Access]) => Expr)
+
+// the combinators of trace equation systems, trace(init, for deps do acc, bound => update),
+// map(for deps yield bound => update), and all(for deps check bound => body),
+// where the update are guarded cases if guard then result, ..., and the body of all is a single case
+case class Combinator(kind: String, init: Option[Expr], deps: List[Expr], bound: List[String], update: List[(Expr, Expr)]) extends Expr
 object Ite extends ((Expr, Expr, Expr) => Expr)
 object Ex extends ((List[(String, Type)], List[List[Expr]], Expr) => Expr)
 object All extends ((List[(String, Type)], List[List[Expr]], Expr) => Expr)

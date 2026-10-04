@@ -164,8 +164,38 @@ object Grammar:
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ "else" ~ expr))
 
+  def word(name: String) =
+    id.filter(_ == name)
+
+  val arrow = sym.filter(_ == "=>").asScanner
+
+  // the cases of an update, if guard then result, ..., which backtrack if followed by else,
+  // which is then an if-then-else expression, an update with a single case is just its result;
+  // the update ends the combinator, hence the closing parenthesis
+  val guarded =
+    P(("if" ?~ expr ?~ "then") ?~ expr)
+
+  val update: Parser[List[(Expr, Expr)]] =
+    P(((guarded ~+ ",") ?~ ")") | (expr.map(e => List((App("true", Nil, Nil), e))) ~ ")"))
+
+  // backtracks until for, the combinators may be names of functions otherwise
+  val trace_ =
+    P((word("trace") ?~ "(" ?~ expr ?~ "," ?~ word("for")) ~ exprs ~ word("do").asScanner ~ ids ~ arrow ~ update).map:
+      case ((((((_, init), _), deps), bound), update)) => Combinator("trace", Some(init), deps, bound, update)
+
+  val map_ =
+    P((word("map") ?~ "(" ?~ word("for")) ~ exprs ~ word("yield").asScanner ~ ids ~ arrow ~ update).map:
+      case ((((_, deps), bound), update)) => Combinator("map", None, deps, bound, update)
+
+  val all_ =
+    P((word("all") ?~ "(" ?~ word("for")) ~ exprs ~ word("check").asScanner ~ ids ~ arrow ~ expr ~ ")").map:
+      case ((((_, deps), bound), body)) => Combinator("all", None, deps, bound, List((App("true", Nil, Nil), body)))
+
+  val combinator =
+    P(trace_ | map_ | all_)
+
   val inner: Parser[Expr] =
-    P(lit | parenthesized | ite | app)
+    P(lit | parenthesized | ite | combinator | app)
 
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))

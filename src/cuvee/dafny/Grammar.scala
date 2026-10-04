@@ -189,7 +189,7 @@ object Grammar:
     Len(P("|" ~ expr ~ "|"))
 
   val atom: Parser[Expr] =
-    P(diff | tuple | seq | len | lit | bind | let | ite | app)
+    P(diff | tuple | seq | len | lit | bind | let | ite | combinator | app)
 
   // indexing and slices of other atoms than names and calls, which take their accesses themselves,
   // members and testers are accessed on variables only
@@ -199,6 +199,36 @@ object Grammar:
       case (expr, access) => Access_(expr, access)
 
   // type annotations bind tighter than all operators
+  def word(name: String) =
+    id.filter(_ == name)
+
+  val arrow = sym.filter(_ == "=>").asScanner
+
+  // the cases of an update, if guard then result, ..., which backtrack if followed by else,
+  // which is then an if-then-else expression, an update with a single case is just its result;
+  // the update ends the combinator, hence the closing parenthesis
+  val guarded =
+    P(("if" ?~ expr ?~ "then") ?~ expr)
+
+  val update: Parser[List[(Expr, Expr)]] =
+    P(((guarded ~+ ",") ?~ ")") | (expr.map(e => List((App("true", Nil, Nil), e))) ~ ")"))
+
+  // backtracks until for, the combinators may be names of functions otherwise
+  val trace_ =
+    P((word("trace") ?~ "(" ?~ expr ?~ "," ?~ word("for")) ~ exprs ~ word("do").asScanner ~ ids ~ arrow ~ update).map:
+      case ((((((_, init), _), deps), bound), update)) => Combinator("trace", Some(init), deps, bound, update)
+
+  val map_ =
+    P((word("map") ?~ "(" ?~ word("for")) ~ exprs ~ word("yield").asScanner ~ ids ~ arrow ~ update).map:
+      case ((((_, deps), bound), update)) => Combinator("map", None, deps, bound, update)
+
+  val all_ =
+    P((word("all") ?~ "(" ?~ word("for")) ~ exprs ~ word("check").asScanner ~ ids ~ arrow ~ expr ~ ")").map:
+      case ((((_, deps), bound), body)) => Combinator("all", None, deps, bound, List((App("true", Nil, Nil), body)))
+
+  val combinator =
+    P(trace_ | map_ | all_)
+
   val inner: Parser[Expr] =
     P(accessed ~ ("as" ~ typ).?).map:
       case (expr, None)      => expr

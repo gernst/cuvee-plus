@@ -267,6 +267,27 @@ case class State(
     def as(expr: Expr, typ: Type) =
       As(expr, typ)
 
+    // the combinators of trace equation systems, whose bound variables have the types of the elements of the dependencies,
+    // and the accumulator that of the initial value; the update or body is resolved with the bound variables
+    def trace(init: Expr, deps: List[Expr], acc: Name, bound: List[Name])(update: (Var, List[Var]) => List[(Expr, Expr)]): Trace =
+      Error.report("mismatching dependencies and bound variables", deps, bound):
+        require(deps.length == bound.length)
+      val acc_ = Var(acc, init.typ)
+      val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
+      Trace(init, deps, acc_, bound_, update(acc_, bound_))
+
+    def map(deps: List[Expr], bound: List[Name])(update: List[Var] => List[(Expr, Expr)]): TraceMap =
+      Error.report("mismatching dependencies and bound variables", deps, bound):
+        require(deps.length == bound.length)
+      val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
+      TraceMap(deps, bound_, update(bound_))
+
+    def all(deps: List[Expr], bound: List[Name])(body: List[Var] => Expr): TraceAll =
+      Error.report("mismatching dependencies and bound variables", deps, bound):
+        require(deps.length == bound.length)
+      val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
+      TraceAll(deps, bound_, body(bound_))
+
     // the value of `expr` at the entry of the enclosing procedure
     def old(expr: Expr) =
       Old(expr)

@@ -227,6 +227,25 @@ class Parser(var state: State):
         val expr_ = App("not", List(App("=", args, Nil)), access)
         resolve(scope, expr_)
 
+      // the combinators of trace equation systems, whose bound variables are typed by the dependencies
+      case Combinator("trace", Some(init), deps, acc :: bound, update) =>
+        val init_ = resolve(scope, init)
+        val deps_ = deps.map(resolve(scope, _))
+        state.exprs.trace(init_, deps_, acc, bound.map(util.Name(_, None))): (acc_, bound_) =>
+          val scope_ = scope ++ (acc_ :: bound_)
+          update.map((guard, result) => (resolve(scope_, guard), resolve(scope_, result)))
+
+      case Combinator("map", None, deps, bound, update) =>
+        val deps_ = deps.map(resolve(scope, _))
+        state.exprs.map(deps_, bound.map(util.Name(_, None))): bound_ =>
+          val scope_ = scope ++ bound_
+          update.map((guard, result) => (resolve(scope_, guard), resolve(scope_, result)))
+
+      case Combinator("all", None, deps, bound, List((_, body))) =>
+        val deps_ = deps.map(resolve(scope, _))
+        state.exprs.all(deps_, bound.map(util.Name(_, None))): bound_ =>
+          resolve(scope ++ bound_, body)
+
       // the value at the entry of the procedure
       case App("old", List(arg), access) =>
         val base_ = state.exprs.old(resolve(scope, arg))

@@ -152,6 +152,14 @@ inferred from the call graph. Open:
   test of a branch could be used up to the first assignment to their
   variables. It has no rules for sequences.
 
+- The combinators of trace equation systems are written
+  `trace(e, for Y do x, y => u)`, `map(for Y yield y => u)`, and
+  `all(for Y check y => φ)` in Dafny and Boogie, where updates with several
+  cases are `if φ₁ then e₁, if φ₂ then e₂`, and like let in SMT-LIB,
+  `(trace (x e) ((y Y)) u)`, `(map ((y Y)) u)`, `(all ((y Y)) φ)`, with
+  `(cases (φ₁ e₁) (φ₂ e₂))`; `trace`, `map`, and `all` followed by `for` cannot
+  be names of functions. The simplifier, Monomorph, Flat, and the C printer do
+  not support them yet.
 - The rewrite engine ([simplify/Rewrite.scala](src/cuvee/simplify/Rewrite.scala))
   is not connected yet; it matches modulo A/C of `+` and `-` only (not `*`),
   where all but the last variable of a sum take a single summand or none, and

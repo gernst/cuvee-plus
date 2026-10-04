@@ -502,6 +502,19 @@ object Printer extends cuvee.pipe.Printer:
     then doc(expr)
     else text("(") ++ doc(expr) ++ text(")")
 
+  // the update of a combinator, a single expression or guarded cases, if guard then result, ...
+  def combinator(head: Doc, keyword: String, bound: List[Var], update: List[(Expr, Expr)]): Doc =
+    val update_ =
+      update match
+        case List((True, result)) =>
+          doc(result)
+
+        case _ =>
+          commas(for (guard, result) <- update yield text("if") +:+ doc(guard) +:+ text("then") +:+ doc(result))
+
+    val binders = commas(bound.map(doc(_))) +:+ text("=>")
+    Group(head +:+ text(keyword) +:+ binders ++ Nest(2, line ++ update_) ++ text(")"))
+
   def doc(expr: Expr): Doc =
     expr match
       case Var(name_, _) =>
@@ -565,6 +578,17 @@ object Printer extends cuvee.pipe.Printer:
 
       case Distinct(_) =>
         Error.raise("unprintable distinct", expr)
+
+      // the combinators of trace equation systems
+      case Trace(init, deps, acc, bound, update) =>
+        val head = text("trace(") ++ doc(init) ++ text(",") +:+ text("for") +:+ commas(deps.map(doc(_)))
+        combinator(head, "do", acc :: bound, update)
+
+      case TraceMap(deps, bound, update) =>
+        combinator(text("map(for") +:+ commas(deps.map(doc(_))), "yield", bound, update)
+
+      case TraceAll(deps, bound, body) =>
+        combinator(text("all(for") +:+ commas(deps.map(doc(_))), "check", bound, List((True, body)))
 
       case Old(arg) =>
         call("old", List(doc(arg)))

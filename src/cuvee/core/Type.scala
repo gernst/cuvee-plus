@@ -89,6 +89,13 @@ object Type:
 
     Subst(params_, subst.vars)
 
+  // the type of the elements of a sequence, which is a fresh parameter if it is not known yet,
+  // e.g. for the bound variables of the combinators, which is then determined by type checking
+  def elem(typ: Type): Type =
+    typ match
+      case Sort(Con.seq, List(elem)) => elem
+      case _                         => Param("a").fresh
+
   // replace a defined sort by its definition, at the top only
   def unfold(state: State, typ: Type): Type =
     typ match
