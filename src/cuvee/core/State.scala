@@ -26,7 +26,6 @@ case class State(
     datatypes: Map[Name, Datatype] = Map(),
 
     asserts: List[Assert] = List()
-    // XXX: add cache of further common things
 ):
   def hasFlag(name: String) =
     options.get(name) match

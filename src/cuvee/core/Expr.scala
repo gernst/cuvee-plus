@@ -55,7 +55,6 @@ case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends 
   def subexprs = args
   def params = inst.params ++ args.params
   def free = args.free
-  // def typ = ???
 
 // pairwise distinctness of two or more expressions of the same type, n-ary as in SMT-LIB
 case class Distinct(exprs: List[Expr]) extends Expr:
