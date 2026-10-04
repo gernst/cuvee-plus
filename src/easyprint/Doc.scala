@@ -17,6 +17,8 @@ case class Text(text: String) extends Doc
 // `flat` is printed instead of the newline when laid out flat, a hard line has no flat alternative
 case class Line(flat: Option[String]) extends Doc
 case class Nest(indent: Int, doc: Doc) extends Doc
+// the newlines inside are indented to the column at which the document starts
+case class Align(doc: Doc) extends Doc
 case class Concat(left: Doc, right: Doc) extends Doc
 case class Group(doc: Doc) extends Doc
 
@@ -83,6 +85,9 @@ object Doc:
         case Nest(indent, doc) =>
           todo = Item(item.indent + indent, item.flat, doc) :: todo
 
+        case Align(doc) =>
+          todo = Item(line.length, item.flat, doc) :: todo
+
         case Concat(left, right) =>
           todo = Item(item.indent, item.flat, left) :: Item(item.indent, item.flat, right) :: todo
 
@@ -121,6 +126,9 @@ object Doc:
 
         case Nest(indent, doc) =>
           todo = Item(item.indent + indent, item.flat, doc) :: todo
+
+        case Align(doc) =>
+          todo = Item(item.indent, item.flat, doc) :: todo
 
         case Concat(left, right) =>
           todo = Item(item.indent, item.flat, left) :: Item(item.indent, item.flat, right) :: todo

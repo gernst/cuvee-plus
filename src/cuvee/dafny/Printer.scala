@@ -12,6 +12,7 @@ import easyprint.Doc
 import easyprint.Doc.{text, space, line, linebreak, hardline, empty, concat, join, render}
 import easyprint.Group
 import easyprint.Nest
+import easyprint.Align
 
 import easyparse.Assoc
 
@@ -537,6 +538,10 @@ object Printer extends cuvee.pipe.Printer:
     then doc(expr)
     else text("(") ++ doc(expr) ++ text(")")
 
+  // the dependencies of a combinator, which are broken across lines as a group of their own, aligned
+  def dependencies(deps: List[Expr]): Doc =
+    Group(Align(commas(deps.map(doc(_)))))
+
   // the update of a combinator, a single expression or guarded cases, if guard then result, ...
   def combinator(head: Doc, keyword: String, bound: List[Var], update: List[(Expr, Expr)]): Doc =
     val update_ =
@@ -547,8 +552,31 @@ object Printer extends cuvee.pipe.Printer:
         case _ =>
           commas(for (guard, result) <- update yield text("if") +:+ doc(guard) +:+ text("then") +:+ doc(result))
 
-    val binders = commas(bound.map(doc(_))) +:+ text("=>")
+    // the bound variables are never broken across lines, the update goes on a line of its own if it does not fit
+    val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
     Group(head +:+ text(keyword) +:+ binders ++ Nest(2, line ++ update_) ++ text(")"))
+
+  // chains of the same operator are flattened in the direction of its associativity, a && b && c,
+  // such that the operators are aligned when they are broken across lines
+  def chain(op: String, assoc: Assoc, args: List[Expr]): List[Expr] =
+    def same(arg: Expr) =
+      infix(arg) match
+        case Some((`op`, `assoc`, _, args_)) => Some(args_)
+        case _                               => None
+
+    assoc match
+      case Assoc.Left if args.nonEmpty =>
+        same(args.head) match
+          case Some(args_) => chain(op, assoc, args_) ++ args.tail
+          case None        => args
+
+      case Assoc.Right if args.nonEmpty =>
+        same(args.last) match
+          case Some(args_) => args.init ++ chain(op, assoc, args_)
+          case None        => args
+
+      case _ =>
+        args
 
   def doc(expr: Expr): Doc =
     expr match
@@ -615,7 +643,8 @@ object Printer extends cuvee.pipe.Printer:
 
       // a op b op c, which breaks before the operators if it does not fit
       case _ if infix(expr).isDefined =>
-        val Some((op, assoc, prec, args)) = infix(expr): @unchecked
+        val Some((op, assoc, prec, args__)) = infix(expr): @unchecked
+        val args = chain(op, assoc, args__)
         val first = if assoc == Assoc.Left then (prec, Some(Assoc.Left)) else (prec, None)
         val last = if assoc == Assoc.Right then (prec, Some(Assoc.Right)) else (prec, None)
         val inner = (prec, None)
@@ -641,14 +670,14 @@ object Printer extends cuvee.pipe.Printer:
 
       // the combinators of trace equation systems
       case Trace(init, deps, acc, bound, update) =>
-        val head = text("trace(") ++ doc(init) ++ text(",") +:+ text("for") +:+ commas(deps.map(doc(_)))
+        val head = text("trace(") ++ doc(init) ++ text(",") +:+ text("for") +:+ dependencies(deps)
         combinator(head, "do", acc :: bound, update)
 
       case Maps(deps, bound, update) =>
-        combinator(text("map(for") +:+ commas(deps.map(doc(_))), "yield", bound, update)
+        combinator(text("map(for") +:+ dependencies(deps), "yield", bound, update)
 
       case Invs(deps, bound, body) =>
-        combinator(text("all(for") +:+ commas(deps.map(doc(_))), "check", bound, List((True, body)))
+        combinator(text("all(for") +:+ dependencies(deps), "check", bound, List((True, body)))
 
       case Old(arg) =>
         call("old", List(doc(arg)))
@@ -667,7 +696,7 @@ object Printer extends cuvee.pipe.Printer:
         doc(arg, operand) +:+ text("as") +:+ doc(typ)
 
       case Bind(quant, bound, body) =>
-        Group(text(name(quant)) +:+ Group(formals(bound)) +:+ text("::") ++ Nest(2, line ++ doc(body)))
+        Group(text(name(quant)) +:+ Group(Align(formals(bound))) +:+ text("::") ++ Nest(2, line ++ doc(body)))
 
       case Let(bound, args, body) =>
         Group(text("var") +:+ formals(bound) +:+ text(":=") +:+ commas(args.map(doc(_))) ++ text(";") ++ line ++ doc(body))
