@@ -30,6 +30,7 @@ object Grammar:
     ">" -> (Assoc.Non, 5),
     "<" -> (Assoc.Non, 5),
     "<=" -> (Assoc.Non, 5),
+    "in" -> (Assoc.Non, 5),
     "+" -> (Assoc.Left, 6),
     "-" -> (Assoc.Left, 6),
     "*" -> (Assoc.Left, 7),
@@ -49,6 +50,7 @@ object Grammar:
     "int" -> "Int",
     "bool" -> "Bool",
     "real" -> "Real",
+    "seq" -> "Seq",
     "array" -> "Array"
   )
 
@@ -132,8 +134,12 @@ object Grammar:
   val member =
     Member(P("." ~ (id | num) ~ args))
 
+  // backtracks if there is no .. after the lower bound, which is then an array access
+  val slice =
+    Slice(P(("[" ?~ expr.? ?~ "..") ~ expr.? ~ "]"))
+
   val access =
-    P(array | member)
+    P(slice | array | member)
 
   val app =
     App(P(id ~ args ~ access.*))
@@ -172,8 +178,14 @@ object Grammar:
   val diff =
     Diff(P(("(" ?~ ids ?~ "::") ~ expr ~ ")" ~ prime))
 
+  val seq =
+    SeqLit(P(brackets(expr ~* ",")))
+
+  val len =
+    Len(P("|" ~ expr ~ "|"))
+
   val inner: Parser[Expr] =
-    P(diff | tuple | lit | bind | let | ite | app)
+    P(diff | tuple | seq | len | lit | bind | let | ite | app)
 
   val expr: Parser[Expr] =
     M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))

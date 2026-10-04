@@ -255,6 +255,19 @@ class Parser(var state: State):
       case Nil =>
         base
 
+      // sequences are indexed by integers and updated by a subsequence of length 1
+      case Array(index, None) :: rest if isSeq(base) =>
+        val index_ = resolve(scope, index)
+        val base_ = state.exprs.app(core.Fun.seq.nth, List(base, index_))
+        resolve(scope, base_, rest)
+
+      case Array(index, Some(value)) :: rest if isSeq(base) =>
+        val index_ = resolve(scope, index)
+        val value_ = resolve(scope, value)
+        val unit_ = state.exprs.app(core.Fun.seq.unit, List(value_))
+        val base_ = state.exprs.app(core.Fun.seq.update, List(base, index_, unit_))
+        resolve(scope, base_, rest)
+
       case Array(index, None) :: rest =>
         val index_ = resolve(scope, index)
         val base_ = state.exprs.app("select", List(base, index_))
@@ -264,6 +277,19 @@ class Parser(var state: State):
         val index_ = resolve(scope, index)
         val value_ = resolve(scope, value)
         val base_ = state.exprs.app("store", List(base, index_, value_))
+        resolve(scope, base_, rest)
+
+      // s[i..j] is the subsequence of length j - i from offset i, the bounds default to 0 and |s|
+      case Slice(from, to) :: rest =>
+        Error.report("slice of an expression that is not a sequence", base):
+          require(isSeq(base))
+
+        val from_ = from.map(resolve(scope, _)).getOrElse(state.exprs.num(0))
+        val to_ = to.map(resolve(scope, _)).getOrElse(state.exprs.app(core.Fun.seq.len, List(base)))
+        val len_ = from match
+          case None    => to_
+          case Some(_) => state.exprs.app("-", List(to_, from_))
+        val base_ = state.exprs.app(core.Fun.seq.extract, List(base, from_, len_))
         resolve(scope, base_, rest)
 
       // members are accessed on variables only, whose type is known without type checking
@@ -286,6 +312,13 @@ class Parser(var state: State):
           case _ =>
             Error.raise("invalid access", self, qname, access, scope, state.funs.keys, state.procs.keys)
 
+  // whether `expr` is a sequence, which is decided before type checking by the sort constructor of its type,
+  // which is known unless the type is a type parameter, e.g. of if-then-else
+  def isSeq(expr: core.Expr): Boolean =
+    core.Type.unfold(state, expr.typ) match
+      case core.Sort(con, _) => con == core.Con.seq
+      case _                 => false
+
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match
       case Num(value) =>
@@ -304,6 +337,27 @@ class Parser(var state: State):
       case Tuple(args) =>
         val args_ = args.map(resolve(scope, _))
         state.exprs.app("tuple" + args.length, args_)
+
+      // [a, b, c] is the concatenation of the sequences of length 1, [a] + [b] + [c]
+      case SeqLit(Nil) =>
+        state.exprs.app(core.Fun.seq.empty, Nil)
+
+      case SeqLit(args) =>
+        val units_ =
+          for arg <- args
+          yield state.exprs.app(core.Fun.seq.unit, List(resolve(scope, arg)))
+        units_.reduceLeft((left, right) => state.exprs.app(core.Fun.seq.concat, List(left, right)))
+
+      case Len(arg) =>
+        val arg_ = resolve(scope, arg)
+        state.exprs.app(core.Fun.seq.len, List(arg_))
+
+      // x in s holds if s contains the sequence [x] of length 1
+      case App("in", List(elem, seq), Nil) =>
+        val elem_ = resolve(scope, elem)
+        val seq_ = resolve(scope, seq)
+        val unit_ = state.exprs.app(core.Fun.seq.unit, List(elem_))
+        state.exprs.app(core.Fun.seq.contains, List(seq_, unit_))
 
       // unary + is the identity
       case App("+", List(arg), Nil) =>

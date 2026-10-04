@@ -239,12 +239,15 @@ case class State(
     def const(name: Name) =
       app(name, Nil)
 
-    def app(name: Name, args: List[Expr]) =
+    def app(name: Name, args: List[Expr]): App =
       val key = (name, args.length)
       Error.report("function not declared", name):
         require(funs.contains(key))
 
-      val fun = funs(key)
+      app(funs(key), args)
+
+    // applications of built-in functions that need not be declared, e.g. those on sequences
+    def app(fun: Fun, args: List[Expr]): App =
       val su = Subst.fresh(fun.params)
       val inst = su(fun.args)
       val typ = su(fun.res)

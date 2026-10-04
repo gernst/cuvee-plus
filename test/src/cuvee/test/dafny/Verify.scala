@@ -48,3 +48,10 @@ object VerifyOde extends TestSuite:
         "0.0 <= x" +
           " && (forall x₁: real, x'₁: real :: 0.0 < y && x'₁ == y ==> (x₁ :: 0.0 <= x₁)')" +
           " && (forall x₂: real :: 0.0 < y && 0.0 <= x₂ ==> 0.0 <= x₂)"
+
+// sequences, whose updates are supported by cvc5 only
+object VerifySeq extends TestSuite:
+  val tests = Tests:
+    test("seq.dfy"):
+      val seq = Examples.root / "seq.dfy"
+      Examples.errors("-verify", "-cvc5", seq.toString) ==> Nil

@@ -25,7 +25,8 @@ object Horn extends TestSuite:
   // examples that are not covered:
   //   contract.dfy: unknown, since the solver does not support uninterpreted functions
   //   nested.dfy, sum.dfy: time out, since the invariants are nonlinear
-  val skip = Set("contract.dfy", "nested.dfy", "sum.dfy")
+  //   seq.dfy, invalid_seq.dfy: the logic HORN of z3 has no sequences
+  val skip = Set("contract.dfy", "nested.dfy", "sum.dfy", "seq.dfy", "invalid_seq.dfy")
 
   val tests =
     Examples.tests(Examples.find(os.sub / "vcgen", "dfy").filterNot(file => skip.contains(file.last))): file =>

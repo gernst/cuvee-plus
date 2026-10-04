@@ -67,6 +67,22 @@ object Printing extends TestSuite:
       expr(app(Fun.real.times, real(_root_.util.Rational(1, 3)), x)) ==> "1.0 / 3.0 * x"
       expr(app(Fun.real.times, x, real(_root_.util.Rational(1, 3)))) ==> "x * (1.0 / 3.0)"
 
+    // sequence literals are concatenations of units, + and <= are overloaded, x in s is containment of [x]
+    test("sequences"):
+      val s = Var("s", Sort.seq(Sort.int))
+      val one = Lit(BigInt(1), Sort.int)
+      val unit = (e: Expr) => app(Fun.seq.unit, e)
+      expr(app(Fun.seq.empty)) ==> "[]"
+      expr(app(Fun.seq.concat, unit(x), unit(y))) ==> "[x, y]"
+      expr(app(Fun.seq.concat, s, unit(x))) ==> "s + [x]"
+      expr(app(Fun.seq.prefixof, unit(x), s)) ==> "[x] <= s"
+      expr(app(Fun.seq.contains, s, unit(x))) ==> "x in s"
+      expr(app(Fun.seq.len, s)) ==> "|s|"
+      expr(app(Fun.seq.nth, s, zero)) ==> "s[0]"
+      expr(app(Fun.seq.update, s, zero, unit(x))) ==> "s[0 := x]"
+      expr(app(Fun.seq.extract, s, one, app(Fun.int.minus, x, one))) ==> "s[1..x]"
+      expr(app(Fun.seq.extract, s, zero, x)) ==> "s[0..x]"
+
     test("mixfix"):
       expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
       expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"

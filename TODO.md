@@ -28,8 +28,14 @@
 
 - `lemma` is not parsed, so lemmas and goals only come from SMT-LIB input
   (`lemma`, `goal`) and from `-verify`.
-- Containers `seq`, `set`, `multiset`, `map` are declared as sorts in the
-  prelude but have no functions, and are not declared to the solver.
+- Containers `set`, `multiset`, `map` are declared as sorts in the prelude
+  but have no functions, and are not declared to the solver.
+- Sequences: whether `s[i]`, `s[i := v]` and `s[i..j]` are on sequences or
+  arrays is decided by the type of `s` before type checking, which is
+  unknown if it is a type parameter, e.g. `(if b then s else t)[0]`, and then
+  falls back to arrays; no `<` (proper prefix), `!in`, `seq(n, f)`, or
+  multi-dimensional updates. `s[i := v]` is `seq.update` of cvc5, which z3
+  does not support, and z3's logic `HORN` has no sequences at all.
 - No syntax for testers `Is` and type annotations `As`, e.g. `e.C?` and
   `e as T`: neither is parsed, and the printer raises an error
   ([dafny/Printer.scala](src/cuvee/dafny/Printer.scala)).

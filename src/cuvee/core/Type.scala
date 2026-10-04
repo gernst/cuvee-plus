@@ -41,6 +41,7 @@ object Con:
   val real = Con("Real", 0)
   val string = Con("String", 0)
   val array = Con("Array", 2)
+  val seq = Con("Seq", 1)
 
 object Sort:
   val bool = Sort(Con.bool, Nil)
@@ -50,6 +51,9 @@ object Sort:
 
   def array(dom: Type, ran: Type) =
     Sort(Con.array, List(dom, ran))
+
+  def seq(elem: Type) =
+    Sort(Con.seq, List(elem))
 
 object Type:
   import util.Ref

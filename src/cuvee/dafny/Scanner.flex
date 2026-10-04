@@ -32,7 +32,7 @@ kw  = "function" | "predicate" | "axiom" | "const" | "datatype" | "type" | "meth
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "while" | "if" | "then" | "else" | "assert" | "assume" | "var"
     | "break" | "continue" | "return"
-    | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "|" | "."
+    | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "|" | "." | ".."
 
 sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*
     | [+\-*/%] | "&&" | "||" | "==>" | "<==>" | "!"

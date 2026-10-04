@@ -98,8 +98,9 @@ object Solver:
   def z3(timeout: Int = 1000) =
     new Solver("z3", "-in", "-t:" + timeout)
 
+  // --strings-exp enables the extended functions on sequences, e.g. seq.nth
   def cvc5(timeout: Int = 1000) =
-    new Solver("cvc5", "--lang=smt2", "--incremental", "--tlimit-per=" + timeout)
+    new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
 
   // a sink that passes commands to the solver,
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,

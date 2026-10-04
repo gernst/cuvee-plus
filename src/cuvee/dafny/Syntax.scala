@@ -25,9 +25,12 @@ object True extends App("true", Nil, Nil)
 
 sealed trait Access
 case class Array(index: Expr, value: Option[Expr]) extends Access
+// slices of sequences s[i..j], where both bounds are optional
+case class Slice(from: Option[Expr], to: Option[Expr]) extends Access
 case class Member(fun: String, args: List[Expr]) extends Access
 
 object Array extends ((Expr, Option[Expr]) => Access)
+object Slice extends ((Option[Expr], Option[Expr]) => Access)
 object Member extends ((String, List[Expr]) => Access)
 
 case class Num(value: String) extends Expr
@@ -35,6 +38,9 @@ case class Num(value: String) extends Expr
 case class Dec(value: String) extends Expr
 case class Str(value: String) extends Expr
 case class Tuple(args: List[Expr]) extends Expr
+// sequence literals [a, b, c] and the length |s| of a sequence
+case class SeqLit(args: List[Expr]) extends Expr
+case class Len(arg: Expr) extends Expr
 // the derivative (x, y :: e)' of e with respect to x and y
 case class Diff(xs: List[String], expr: Expr) extends Expr
 case class App(fun: String, args: List[Expr], access: List[Access]) extends Expr
@@ -47,6 +53,8 @@ object Num extends (String => Expr)
 object Dec extends (String => Expr)
 object Str extends (String => Expr)
 object Tuple extends (List[Expr] => Expr)
+object SeqLit extends (List[Expr] => Expr)
+object Len extends (Expr => Expr)
 object Diff extends ((List[String], Expr) => Expr)
 object App extends ((String, List[Expr], List[Access]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)

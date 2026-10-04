@@ -6,6 +6,7 @@
 (declare-sort Real 0)
 (declare-sort String 0)
 (declare-sort Array 2)
+(declare-sort Seq 1)
 
 (declare-const true Bool)
 (declare-const false Bool)
@@ -18,6 +19,17 @@
 
 ; constant arrays are written ((as const (Array a b)) v)
 (declare-fun const (par (a b) (b) (Array a b)))
+
+; sequences as in cvc5 (see cuvee.core.Fun.seq)
+(declare-fun seq.empty (par (a) () (Seq a)))
+(declare-fun seq.unit (par (a) (a) (Seq a)))
+(declare-fun seq.++ (par (a) ((Seq a) (Seq a)) (Seq a)))
+(declare-fun seq.len (par (a) ((Seq a)) Int))
+(declare-fun seq.nth (par (a) ((Seq a) Int) a))
+(declare-fun seq.update (par (a) ((Seq a) Int (Seq a)) (Seq a)))
+(declare-fun seq.extract (par (a) ((Seq a) Int Int) (Seq a)))
+(declare-fun seq.contains (par (a) ((Seq a) (Seq a)) Bool))
+(declare-fun seq.prefixof (par (a) ((Seq a) (Seq a)) Bool))
 
 (declare-fun not (Bool) Bool)
 (declare-fun => (Bool Bool) Bool)

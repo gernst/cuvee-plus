@@ -4,7 +4,7 @@ import util.Name
 import cuvee.Error
 
 // the arithmetic operators and comparisons, which are implemented by different functions for Int and Real,
-// e.g. + by Fun.int.plus on Int and by Fun.real.plus on Real;
+// e.g. + by Fun.int.plus on Int and by Fun.real.plus on Real, and on sequences, + is concatenation and <= is prefix;
 // the frontends declare them once polymorphically in their preludes, and after type checking,
 // each application is replaced by the implementing function for the type of its arguments (see apply),
 // such that the generic operators never leave the frontend
@@ -20,7 +20,11 @@ object Overload:
         (fun.name, fun.arity, con) -> fun
 
     val alias = (Name("div", None), 2, Con.real) -> Fun.real.div
-    Map(funs :+ alias*)
+    val seq = List(
+      (Name("+", None), 2, Con.seq) -> Fun.seq.concat,
+      (Name("<=", None), 2, Con.seq) -> Fun.seq.prefixof
+    )
+    Map(funs ++ (alias :: seq)*)
 
   // the overloaded operators (name and arity)
   val generic: Set[(Name, Int)] =
@@ -116,9 +120,11 @@ object Overload:
 
   // the replacement of a single application of an overloaded operator, whose arguments have been replaced already,
   // determined by the type of the arguments, which coincide for all overloaded operators,
-  // where defined sorts are unfolded; the implementing functions are not polymorphic,
-  // hence their signature is the instance, also for arguments whose types are defined sorts
+  // where defined sorts are unfolded; the implementing functions are instantiated by matching their signature
+  // against the unfolded types, e.g. seq.++ on Seq Int
   def resolve(state: State, app: App): Expr =
     val App(op, inst, typ, args) = app
-    val fun_ = fun(op.name, op.arity, Type.unfold(state, inst.head))
-    App(fun_, fun_.args, fun_.res, args)
+    val inst_ = inst.map(Type.unfold(state, _))
+    val fun_ = fun(op.name, op.arity, inst_.head)
+    val su = Type.bind(fun_.args, inst_)
+    App(fun_, inst_, su(fun_.res), args)

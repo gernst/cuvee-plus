@@ -432,6 +432,20 @@ object Printer extends cuvee.pipe.Printer:
   // are not supported for now (see Grammar.infix_ops) and are printed like function calls, e.g. ==(x, y, z)
   def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =
     expr match
+      // sequence literals are atoms
+      case _ if elems(expr).isDefined =>
+        None
+
+      // concatenation and prefix of sequences are overloaded in Dafny, x in s is containment of [x]
+      case App(fun, _, _, args @ List(_, _)) if fun == Fun.seq.concat =>
+        infix(App(fun.copy(name = Name("+", None)), Nil, Sort.bool, args))
+
+      case App(fun, _, _, args @ List(_, _)) if fun == Fun.seq.prefixof =>
+        infix(App(fun.copy(name = Name("<=", None)), Nil, Sort.bool, args))
+
+      case App(fun, _, _, List(seq, App(unit, _, _, List(elem)))) if fun == Fun.seq.contains && unit == Fun.seq.unit =>
+        infix(App(fun.copy(name = Name("in", None)), Nil, Sort.bool, List(elem, seq)))
+
       case App(fun, _, _, args) if Grammar.infix_ops.contains(name(fun.name)) =>
         val op = name(fun.name)
         val (assoc, prec) = Grammar.infix_ops(op)
@@ -448,6 +462,22 @@ object Printer extends cuvee.pipe.Printer:
       case Distinct(exprs) =>
         val pairs = for case a :: rest <- exprs.tails.toList; b <- rest yield Distinct(List(a, b))
         infix(And(pairs))
+
+      case _ =>
+        None
+
+  // the elements of sequence literals, [], [a], and concatenations of these
+  def elems(expr: Expr): Option[List[Expr]] =
+    expr match
+      case App(fun, _, _, Nil) if fun == Fun.seq.empty =>
+        Some(Nil)
+
+      case App(fun, _, _, List(elem)) if fun == Fun.seq.unit =>
+        Some(List(elem))
+
+      case App(fun, _, _, List(left, right)) if fun == Fun.seq.concat =>
+        for left_ <- elems(left); right_ <- elems(right)
+        yield left_ ++ right_
 
       case _ =>
         None
@@ -518,6 +548,30 @@ object Printer extends cuvee.pipe.Printer:
 
       case Ite(test, left, right) =>
         Group(text("if") +:+ doc(test) ++ line ++ text("then") +:+ doc(left) ++ line ++ text("else") +:+ doc(right))
+
+      case _ if elems(expr).isDefined =>
+        val Some(elems_) = elems(expr): @unchecked
+        Group(text("[") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("]"))
+
+      case App(fun, _, _, List(seq)) if fun == Fun.seq.len =>
+        text("|") ++ doc(seq) ++ text("|")
+
+      case App(fun, _, _, List(seq, index)) if fun == Fun.seq.nth =>
+        doc(seq, operand) ++ text("[") ++ doc(index) ++ text("]")
+
+      case App(fun, _, _, List(seq, index, App(unit, _, _, List(value)))) if fun == Fun.seq.update && unit == Fun.seq.unit =>
+        Group(doc(seq, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(index) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
+
+      // the length is the difference of the bounds, s[i..j] is extract(s, i, j - i)
+      case App(fun, _, _, List(seq, from, len)) if fun == Fun.seq.extract =>
+        val to = len match
+          case Minus.int(to, `from`)       => to
+          case _ if from == Lit(BigInt(0), Sort.int) => len
+          case _                           => Plus.int(from, len)
+        doc(seq, operand) ++ text("[") ++ doc(from) ++ text("..") ++ doc(to) ++ text("]")
+
+      case App(fun, _, _, _) if (Fun.seq.all contains fun) && infix(expr).isEmpty =>
+        Error.raise("not supported in Dafny", expr)
 
       case Select(base, index) =>
         doc(base, operand) ++ text("[") ++ doc(index) ++ text("]")

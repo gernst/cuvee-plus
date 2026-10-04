@@ -40,6 +40,21 @@ object Fun:
   val store = Fun("store", List(a, b), formals(Sort.array(a, b), a, b), Sort.array(a, b))
   val const = Fun("const", List(a, b), formals(b), Sort.array(a, b))
 
+  // sequences as in cvc5, where seq.empty needs its type, (as seq.empty (Seq a)),
+  // seq.extract takes an offset and a length, and seq.update and seq.contains take a subsequence
+  object seq:
+    val empty = Fun("seq.empty", List(a), Nil, Sort.seq(a))
+    val unit = Fun("seq.unit", List(a), formals(a), Sort.seq(a))
+    val concat = Fun("seq.++", List(a), formals(Sort.seq(a), Sort.seq(a)), Sort.seq(a))
+    val len = Fun("seq.len", List(a), formals(Sort.seq(a)), Sort.int)
+    val nth = Fun("seq.nth", List(a), formals(Sort.seq(a), Sort.int), a)
+    val update = Fun("seq.update", List(a), formals(Sort.seq(a), Sort.int, Sort.seq(a)), Sort.seq(a))
+    val extract = Fun("seq.extract", List(a), formals(Sort.seq(a), Sort.int, Sort.int), Sort.seq(a))
+    val contains = Fun("seq.contains", List(a), formals(Sort.seq(a), Sort.seq(a)), bool)
+    val prefixof = Fun("seq.prefixof", List(a), formals(Sort.seq(a), Sort.seq(a)), bool)
+
+    val all = List(empty, unit, concat, len, nth, update, extract, contains, prefixof)
+
   val not = Fun("not", Nil, formals(bool), bool)
   val imp = Fun("=>", Nil, formals(bool, bool), bool)
   val and = Fun("and", Nil, formals(bool, bool), bool)
