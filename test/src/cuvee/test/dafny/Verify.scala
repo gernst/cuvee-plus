@@ -72,6 +72,15 @@ object VerifyPar extends TestSuite:
       val file = os.temp(par, suffix = ".dfy")
       Examples.errors("-verify", "-z3", file.toString) ==> List("goal does not hold")
 
+    // the parallel composition extends the history, after which the commitment of main must hold
+    test("commitment"):
+      val par = os.read(Examples.root / "par.dfy")
+      val good = par.replace("  ensures positive(history, c)\n{\n  parallel", "  ensures positive(history, c)\n  commits positive(history, c)\n{\n  parallel")
+      val bad = par.replace("  ensures positive(history, c)\n{\n  parallel", "  ensures positive(history, c)\n  commits history == []\n{\n  parallel")
+      assert(good != par && bad != par)
+      Examples.errors("-verify", "-z3", os.temp(good, suffix = ".dfy").toString) ==> Nil
+      Examples.errors("-verify", "-z3", os.temp(bad, suffix = ".dfy").toString) ==> List("goal does not hold")
+
     test("no history"):
       val file = os.temp("method p() { } method m() { parallel { p(); } }", suffix = ".dfy")
       Examples.errors("-verify", "-print", "null", file.toString) ==>

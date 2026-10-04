@@ -142,13 +142,19 @@ object Verify extends Transform:
       case Ode(xs, rhs, dom, attrs) =>
         ode(xs, rhs, dom, attrs.invariants, post)
 
+      // the parallel composition extends the history like send and receive,
+      // hence the commitment of the enclosing procedure is asserted and assumed afterwards as well
       case Par(calls) =>
-        par(state, gs, proc, calls, post)
+        par(state, gs, proc, calls, And(commitment(state, proc), post))
 
-  def committed(state: State, proc: Name, call: Call, post: Expr): Expr =
+  // the commitment of procedure `proc` for its own inputs
+  def commitment(state: State, proc: Name): Expr =
     val (in, _, _, _) = contract(state, proc)
     val (_, commit) = ac(state, proc, in)
-    this.call(state, proc, call, And(commit, post))
+    commit
+
+  def committed(state: State, proc: Name, call: Call, post: Expr): Expr =
+    this.call(state, proc, call, And(commitment(state, proc), post))
 
   // calls by the contract of the procedure, where the measure of `proc` must decrease on recursive calls
   def call(state: State, proc: Name, call: Call, post: Expr): Expr =

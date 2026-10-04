@@ -75,8 +75,9 @@ case class Let(bound: List[Var], args: List[Expr], body: Expr)
   - reals are exact [`util.Rational`](../src/util/Rational.scala), printed
     as decimals when finite, otherwise as fractions;
   - strings are `String`.
-- **`Diff(xs, e)`** is free in `xs` and in their primed versions `x'`, the
-  derivatives. The variables must be on `Real`.
+- **`Diff(xs, e)`** is free in `xs`, which are ordinary variables without
+  primes, and must be on `Real`. Primed variables `x'` for the derivatives of
+  `xs` appear only once the simplifier computes the derivative.
 - **`Old(e)`** never reaches the solver. `Old.elim(gs, gs_, ...)` replaces
   it by `e[gs := gs_]` before verification.
 - **Sugar.** [Builtin.scala](../src/cuvee/core/Builtin.scala) provides

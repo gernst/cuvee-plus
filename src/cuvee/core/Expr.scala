@@ -77,11 +77,12 @@ case class As(expr: Expr, typ: Type) extends Expr:
   def free = expr.free
 
 // the (time-)derivative of `expr` with respect to the variables `xs`, i.e., the sum of ∂expr/∂x * x' for x in xs,
-// which depends on the variables x' for the derivatives of xs as well; xs must be on Real
+// where the variables xs are ordinary free variables without primes, which are introduced only by computing
+// the derivative (see Simplify.diff); xs must be on Real
 case class Diff(xs: List[Var], expr: Expr) extends Expr:
   def subexprs = List(expr)
   def params = xs.params ++ expr.params
-  def free = expr.free ++ xs.map(_.primed)
+  def free = expr.free ++ xs
   def typ = expr.typ
 
 // the value of `expr` at the entry of the enclosing procedure, where the global variables have their initial values,

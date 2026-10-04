@@ -209,8 +209,10 @@ Non-standard features from Platzer's dL, as part of the Dafny frontend
   open are the chain rule for applications of other functions (where do their
   partial derivatives come from?), division, equations, and other formulas,
   which are kept as `Diff`.
-- The primed variables in `Diff` are not declared, and the type checker does
-  not check that they are in scope.
+- The derivatives computed by the simplifier introduce primed variables `x'`,
+  which are bound by `Verify` for the differential cuts, but are free and not
+  declared for derivatives written in the input, e.g. `(x, v :: e)'` in a
+  method body.
 
 ## Parallel composition
 
