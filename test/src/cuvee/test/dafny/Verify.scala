@@ -31,15 +31,15 @@ object VerifyOde extends TestSuite:
   // the formula with fresh variables numbered from 1
   def ode(invs: List[Expr], post: Expr) =
     Var.reset()
-    val phi = cuvee.verify.Verify.ode(List(x), List(y), Lt(zero, y), invs, post)
+    val phi = cuvee.verify.Verify.ode(List(x), List(y), Lt.int(zero, y), invs, post)
     cuvee.dafny.Printer.lines(phi).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:
     test("weakening"):
-      ode(Nil, Le(zero, x)) ==> "forall x₁: int :: 0 < y ==> 0 <= x₁"
+      ode(Nil, Le.int(zero, x)) ==> "forall x₁: int :: 0 < y ==> 0 <= x₁"
 
     test("cut"):
-      ode(List(Le(zero, x)), Le(zero, x)) ==>
+      ode(List(Le.int(zero, x)), Le.int(zero, x)) ==>
         "0 <= x" +
           " && (forall x₁: int, x'₁: int :: 0 < y && x'₁ == y ==> (x₁ :: 0 <= x₁)')" +
           " && (forall x₂: int :: 0 < y && 0 <= x₂ ==> 0 <= x₂)"

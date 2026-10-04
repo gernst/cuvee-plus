@@ -53,19 +53,19 @@ object Solver extends TestSuite:
 
     test("invalid lemma"):
       val error = assertThrows[Error]:
-        z3(Assert(Lemma, Nil, Eq(x_, Zero), Attrs.empty))
+        z3(Assert(Lemma, Nil, Eq(x_, Zero.int), Attrs.empty))
       error.msg ==> "lemma does not hold"
 
     test("invalid goal"):
       val error = assertThrows[Error]:
-        z3(Assert(Goal, Nil, Eq(x_, Zero), Attrs.empty))
+        z3(Assert(Goal, Nil, Eq(x_, Zero.int), Attrs.empty))
       error.msg ==> "goal does not hold"
 
     test("goal from axiom"):
       z3(
-        axiom(Eq(x_, One)),
-        Assert(Lemma, Nil, Lt(Zero, x_), Attrs.empty),
-        Assert(Goal, Nil, Lt(Zero, x_), Attrs.empty)
+        axiom(Eq(x_, One.int)),
+        Assert(Lemma, Nil, Lt.int(Zero.int, x_), Attrs.empty),
+        Assert(Goal, Nil, Lt.int(Zero.int, x_), Attrs.empty)
       )
 
     // the state of the sink must follow the scopes of the solver
@@ -92,8 +92,8 @@ object Solver extends TestSuite:
       z3(CheckSat, Labels) ==> Labels(Nil)
 
     test("model"):
-      z3(models, axiom(Eq(x_, One)), CheckSat, GetModel) ==>
-        Model(List(DefineFun(x, One, Attrs.empty)))
+      z3(models, axiom(Eq(x_, One.int)), CheckSat, GetModel) ==>
+        Model(List(DefineFun(x, One.int, Attrs.empty)))
 
     // z3 declares the elements of uninterpreted sorts with a cardinality constraint,
     // and writes constant arrays with (as const ...)
@@ -140,7 +140,7 @@ object Solver extends TestSuite:
     test("attributes are not sent to the solver"):
       val y = Var("y", Sort.int)
       val f = Fun("f", Nil, List(y), Sort.int)
-      val attrs = Attrs(List("requires" -> Some(Lt(Zero, y))))
+      val attrs = Attrs(List("requires" -> Some(Lt.int(Zero.int, y))))
 
       val solver = cuvee.smtlib.Solver.z3()
       try

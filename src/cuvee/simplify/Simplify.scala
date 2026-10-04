@@ -108,34 +108,34 @@ object Simplify extends Transform:
         val phis_ = nary(state, ctx, Nil, phis, false)
         or(state, ctx, phis_)
 
-      case UMinus(_) | Plus(_) | Minus(_, _) | Times(_) =>
+      case UMinus.int(_) | Plus.int(_) | Minus.int(_, _) | Times.int(_) =>
         arith(state, ctx.neutral, expr)
 
-      case DivBy(left, right) =>
+      case DivBy.int(left, right) =>
         val left_ = arith(state, ctx.neutral, left)
         val right_ = arith(state, ctx.neutral, right)
         div(state, ctx, left_, right_)
 
-      case Mod(left, right) =>
+      case Mod.int(left, right) =>
         val left_ = arith(state, ctx.neutral, left)
         val right_ = arith(state, ctx.neutral, right)
         mod(state, ctx, left_, right_)
 
-      case Lt(left, right) =>
+      case Lt.int(left, right) =>
         val left_ = simplify(state, ctx.neutral, left)
         val right_ = simplify(state, ctx.neutral, right)
         lt(state, ctx, left_, right_)
 
-      case Le(left, right) =>
+      case Le.int(left, right) =>
         val left_ = simplify(state, ctx.neutral, left)
         val right_ = simplify(state, ctx.neutral, right)
         le(state, ctx, left_, right_)
 
-      case Gt(left, right) =>
-        Lt(right, left)
+      case Gt.int(left, right) =>
+        Lt.int(right, left)
 
-      case Ge(left, right) =>
-        Le(right, left)
+      case Ge.int(left, right) =>
+        Le.int(right, left)
 
       case App(fun, inst, typ, args) =>
         val args_ = args.map(simplify(state, ctx.neutral, _))
@@ -183,20 +183,20 @@ object Simplify extends Transform:
       case Lit(n: BigInt, Sort.int) =>
         Poly.const(n)
 
-      case UMinus(arg) =>
+      case UMinus.int(arg) =>
         val arg_ = poly(state, ctx, arg)
         -arg_
 
-      case Plus(args) =>
+      case Plus.int(args) =>
         val args_ = args.map(poly(state, ctx, _))
         args_.foldLeft(Poly.zero)(_ + _)
 
-      case Minus(left, right) =>
+      case Minus.int(left, right) =>
         val left_ = poly(state, ctx, left)
         val right_ = poly(state, ctx, right)
         left_ - right_
 
-      case Times(args) =>
+      case Times.int(args) =>
         val args_ = args.map(poly(state, ctx, _))
         args_.foldLeft(Poly.one)(_ * _)
 
@@ -340,10 +340,10 @@ object Simplify extends Transform:
 
       // normalized in the next round
       case (_, Lit(n: BigInt, _)) if n == -1 =>
-        UMinus(left)
+        UMinus.int(left)
 
       case _ =>
-        DivBy(left, right)
+        DivBy.int(left, right)
 
   def mod(state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     (left, right) match
@@ -351,22 +351,22 @@ object Simplify extends Transform:
         Lit(m mod n.abs, Sort.int)
 
       case (_, Lit(n: BigInt, _)) if n == 1 || n == -1 =>
-        Zero
+        Zero.int
 
       case _ =>
-        Mod(left, right)
+        Mod.int(left, right)
 
   def lt(state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     (left, right) match
       case _ if left == right                    => False
       case (Lit(m: BigInt, _), Lit(n: BigInt, _)) => if m < n then True else False
-      case _                                     => Lt(left, right)
+      case _                                     => Lt.int(left, right)
 
   def le(state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     (left, right) match
       case _ if left == right                    => True
       case (Lit(m: BigInt, _), Lit(n: BigInt, _)) => if m <= n then True else False
-      case _                                     => Le(left, right)
+      case _                                     => Le.int(left, right)
 
   // applications of other functions, e.g. user-defined ones
   def app(state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =

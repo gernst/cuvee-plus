@@ -29,9 +29,9 @@ case class Mono(factor: BigInt, atoms: List[(Expr, BigInt)]):
       for (expr, exp) <- atoms; _ <- List.range(BigInt(0), exp)
       yield expr
 
-    if factor == 1 then Times(args)
-    else if factor == -1 then UMinus(Times(args))
-    else Times(Lit(factor, Sort.int) :: args)
+    if factor == 1 then Times.int(args)
+    else if factor == -1 then UMinus.int(Times.int(args))
+    else Times.int(Lit(factor, Sort.int) :: args)
 
 object Mono:
   // compares the atoms only, so that monomials which differ in their factor can be merged
@@ -85,7 +85,7 @@ case class Poly(const: BigInt, monos: List[Mono]):
       then Nil
       else List(Lit(const, Sort.int))
 
-    Plus(monos.map(_.toExpr) ++ const_)
+    Plus.int(monos.map(_.toExpr) ++ const_)
 
 object Poly:
   val zero = const(0)
@@ -112,8 +112,8 @@ object Arith:
   def toPoly(expr: Expr): Poly =
     expr match
       case Lit(n: BigInt, Sort.int) => Poly.const(n)
-      case UMinus(arg)              => -toPoly(arg)
-      case Plus(args)               => args.map(toPoly).foldLeft(Poly.zero)(_ + _)
-      case Minus(left, right)       => toPoly(left) - toPoly(right)
-      case Times(args)              => args.map(toPoly).foldLeft(Poly.one)(_ * _)
+      case UMinus.int(arg)          => -toPoly(arg)
+      case Plus.int(args)           => args.map(toPoly).foldLeft(Poly.zero)(_ + _)
+      case Minus.int(left, right)   => toPoly(left) - toPoly(right)
+      case Times.int(args)          => args.map(toPoly).foldLeft(Poly.one)(_ * _)
       case _                        => Poly.atom(expr)

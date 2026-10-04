@@ -2,8 +2,12 @@ package cuvee.core
 
 import cuvee.Error
 
-object Zero extends Lit(BigInt(0), Sort.int)
-object One extends Lit(BigInt(1), Sort.int)
+// constants and arithmetic per type, e.g. Plus.int, for now on Int only
+object Zero:
+  val int = Lit(BigInt(0), Sort.int)
+
+object One:
+  val int = Lit(BigInt(1), Sort.int)
 
 object True extends App(Fun.true_, Nil, Sort.bool, Nil)
 object False extends App(Fun.false_, Nil, Sort.bool, Nil)
@@ -41,24 +45,42 @@ object Imp extends Sugar.binary(Fun.imp)
 object And extends Sugar.commutative(Fun.and, True, Assoc.Left)
 object Or extends Sugar.commutative(Fun.or, False, Assoc.Left)
 
-object UMinus extends Sugar.unary(Fun.int.uminus)
-object Plus extends Sugar.commutative(Fun.int.plus, Zero, Assoc.Left)
-object Minus extends Sugar.associative(Fun.int.minus, Assoc.Left)
-object Times extends Sugar.commutative(Fun.int.times, One, Assoc.Left)
-object DivBy extends Sugar.associative(Fun.int.div, Assoc.Left)
-object Mod extends Sugar.associative(Fun.int.mod, Assoc.Left)
+object UMinus:
+  object int extends Sugar.unary(Fun.int.uminus)
+
+object Plus:
+  object int extends Sugar.commutative(Fun.int.plus, Zero.int, Assoc.Left)
+
+object Minus:
+  object int extends Sugar.associative(Fun.int.minus, Assoc.Left)
+
+object Times:
+  object int extends Sugar.commutative(Fun.int.times, One.int, Assoc.Left)
+
+object DivBy:
+  object int extends Sugar.associative(Fun.int.div, Assoc.Left)
+
+object Mod:
+  object int extends Sugar.associative(Fun.int.mod, Assoc.Left)
 
 object Succ:
   def apply(expr: Expr) =
-    Plus(expr, One)
+    Plus.int(expr, One.int)
 
   def unapply(expr: Expr) =
     expr match
-      case Plus(List(arg, One)) => Some(arg)
-      case Plus(List(One, arg)) => Some(arg)
-      case _                    => None
+      case Plus.int(List(arg, One.int)) => Some(arg)
+      case Plus.int(List(One.int, arg)) => Some(arg)
+      case _                            => None
 
-object Lt extends Sugar.binary(Fun.int.lt)
-object Le extends Sugar.binary(Fun.int.le)
-object Gt extends Sugar.binary(Fun.int.gt)
-object Ge extends Sugar.binary(Fun.int.ge)
+object Lt:
+  object int extends Sugar.binary(Fun.int.lt)
+
+object Le:
+  object int extends Sugar.binary(Fun.int.le)
+
+object Gt:
+  object int extends Sugar.binary(Fun.int.gt)
+
+object Ge:
+  object int extends Sugar.binary(Fun.int.ge)

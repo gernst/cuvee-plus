@@ -74,7 +74,7 @@ object Verify extends Transform:
     else
       val cases =
         for i <- prev.indices.toList
-        yield And(Eq(next.take(i), prev.take(i)) ++ List(Le(Zero, prev(i)), Lt(next(i), prev(i))))
+        yield And(Eq(next.take(i), prev.take(i)) ++ List(Le.int(Zero.int, prev(i)), Lt.int(next(i), prev(i))))
       Or(cases)
 
   // weakest preconditions need a separate postcondition for each way a program can terminate:
