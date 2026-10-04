@@ -7,8 +7,8 @@ languages or passes it to an SMT solver (z3 or cvc5).
 
 ## Capabilities
 
-- **Frontends:** SMT-LIB 2 (`.smt2`), a subset of Boogie (`.bpl`), and a
-  subset of Dafny (`.dfy`). All three are parsed into the same core, are type
+- **Frontends:** SMT-LIB 2 (`.smt2`, extended by procedures and programs),
+  a subset of Boogie (`.bpl`), and a subset of Dafny (`.dfy`). All three are parsed into the same core, are type
   checked with polymorphism, and resolve overloaded arithmetic on `Int` and
   `Real`.
 - **Printers:** any input can be printed as SMT-LIB, Boogie, or Dafny

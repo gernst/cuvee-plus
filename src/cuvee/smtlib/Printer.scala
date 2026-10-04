@@ -215,14 +215,15 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareVar(Var(name, typ), attrs) =>
         apps(atom("declare-var"), mangle(name), lines(typ), lines(attrs))
 
+      // the formal parameters are named, since the contract may refer to them
       case DeclareProc(Proc(name, Nil, in, out), attrs) =>
-        apps(atom("declare-proc"), mangle(name), list(lines(in.types)), list(lines(out.types)), lines(attrs))
+        apps(atom("declare-proc"), mangle(name), list(formals(in)), list(formals(out)), lines(attrs))
 
       case DefineProc(Proc(name, Nil, in, out), body, attrs) =>
         apps(atom("define-proc"), mangle(name), list(formals(in)), list(formals(out)), lines(body), lines(attrs))
 
       case DeclareProc(Proc(name, params, in, out), attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(lines(in.types)), list(lines(out.types)), lines(attrs))
+        val body_ = apps(atom("par"), list(lines(params)), list(formals(in)), list(formals(out)), lines(attrs))
         apps(atom("declare-proc"), mangle(name), body_)
 
       case DefineProc(Proc(name, params, in, out), body, attrs) =>
@@ -380,7 +381,7 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("iter"), lines(body), lines(attrs))
 
       case Ode(xs, rhs, dom, attrs) =>
-        apps(atom("ode"), eqs(xs, rhs), lines(dom), lines(attrs))
+        apps(atom("ode"), list(eqs(xs, rhs)), lines(dom), lines(attrs))
 
       // not part of SMT-LIB, the calls in parallel, (par (call ...) ...)
       case Par(calls) =>

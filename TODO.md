@@ -143,12 +143,10 @@ reference semantics for array parameters.
 
 ## SMT-LIB frontend
 
-- Imperative programs are not supported, `prog` always raises an error
-  ([smtlib/Parser.scala](src/cuvee/smtlib/Parser.scala)), so the output of the
-  printer for procedures cannot be read back, including the extensions
-  `iter`, `ode`, `par`, `diff`, and `old`.
-- `declare-var` is not read, which the printer writes for global variables, so
-  output with global variables cannot be read back.
+- Procedures, programs (`assign`, `call`, `block`, `while`, `iter`, `ode`,
+  `par`, ...), `old`, `diff`, and `declare-var` are extensions of SMT-LIB in
+  the form written by the printer; there is no `assert` statement in the
+  printed form, which writes `spec`.
 - No `!` inside terms, `match`, `get-value`, `check-sat-assuming`, `echo`.
 
 ## Solvers and robustness

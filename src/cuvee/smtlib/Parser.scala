@@ -321,66 +321,156 @@ class Parser(private var init: State):
 
       // procedural fragment
 
-      case List(Id("declare-proc"), Id(name), List(in*), List(out*), attrs*) =>
-        val params_ = Nil
-        val scope = Scope.empty
-
-        val in_ = Expr.vars("in", list(in) { typ(scope, _) })
-        val out_ = Expr.vars("out", list(out) { typ(scope, _) })
-        val proc = Proc(name, params_, in_, out_)
-
+      // global variables, which procedures may modify if they declare so
+      case List(Id("declare-var"), Id(name), sort, attrs*) =>
+        val typ_ = typ(Scope.empty, sort)
         val attrs_ = annotation(attrs.toList)
+        state = state.declare(name, typ_, attrs_)
+        state.cmds.declareVar(name)
 
-        state = state.declare(name, params_, in_, out_, attrs_)
-        DeclareProc(proc, attrs_)
+      case List(Id("declare-proc"), Id(name), List(in*), List(out*), attrs*) =>
+        procedure(name, Nil, list(in) { formal(Scope.empty, _) }, list(out) { formal(Scope.empty, _) }, None, attrs.toList)
 
       case List(Id("define-proc"), Id(name), List(in*), List(out*), body, attrs*) =>
-        val params_ = Nil
-        val scope = Scope.empty
-
-        val in_ = list(in) { formal(scope, _) }
-        val out_ = list(out) { formal(scope, _) }
-        val proc = Proc(name, params_, in_, out_)
-
-        val body_ = prog(scope ++ in_ ++ out_, out_.toSet, body)
-
-        val attrs_ = annotation(attrs.toList)
-
-        state = state.declare(name, params_, in_, out_, attrs_)
-        state = state.define(name, body_)
-        DefineProc(proc, body_, attrs_)
+        procedure(name, Nil, list(in) { formal(Scope.empty, _) }, list(out) { formal(Scope.empty, _) }, Some(body), attrs.toList)
 
       case List(Id("declare-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), attrs*)) =>
         val params_ = list(params) { param(_) }
         val scope = Scope(params_)
-
-        val in_ = Expr.vars("in", list(in) { typ(scope, _) })
-        val out_ = Expr.vars("out", list(out) { typ(scope, _) })
-        val proc = Proc(name, params_, in_, out_)
-
-        val attrs_ = annotation(attrs.toList)
-
-        state = state.declare(name, params_, in_, out_, attrs_)
-        DeclareProc(proc, attrs_)
+        procedure(name, params_, list(in) { formal(scope, _) }, list(out) { formal(scope, _) }, None, attrs.toList)
 
       case List(Id("define-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), body, attrs*)) =>
         val params_ = list(params) { param(_) }
         val scope = Scope(params_)
-
-        val in_ = list(in) { formal(scope, _) }
-        val out_ = list(out) { formal(scope, _) }
-        val proc = Proc(name, params_, in_, out_)
-
-        val body_ = prog(scope ++ in_ ++ out_, out_.toSet, body)
-
-        val attrs_ = annotation(attrs.toList)
-
-        state = state.declare(name, params_, in_, out_, attrs_)
-        state = state.define(name, body_)
-        DefineProc(proc, body_, attrs_)
+        procedure(name, params_, list(in) { formal(scope, _) }, list(out) { formal(scope, _) }, Some(body), attrs.toList)
 
       case _ =>
         Error.raise("not a command", from)
+
+  // procedures are declared together with their contract before the body is resolved, which may call them recursively;
+  // they may read all global variables, which the formal parameters shadow,
+  // and the inputs and the global variables that are not modified must not be assigned
+  def procedure(name: Name, params: List[Param], in: List[Var], out: List[Var], body: Option[Any], attrs: List[Any]): Cmd =
+    val globals = state.globals
+    val scope = Scope(params) ++ globals ++ in ++ out
+    val attrs_ = contract(scope, attrs)
+
+    val mod = attrs_.modifies
+    val nonglobal = mod.filterNot(globals.contains)
+    Error.report("modifies clause of procedure lists variables that are not global", name, nonglobal):
+      require(nonglobal.isEmpty)
+
+    state = state.declare(name, params, in, out, attrs_)
+
+    body match
+      case None =>
+        state.cmds.declareProc(name)
+
+      case Some(body) =>
+        val fixed = in.toSet ++ (globals.toSet -- mod)
+        val body_ = state.progs.check(scope, fixed, prog(scope, body))
+        state = state.define(name, body_)
+        state.cmds.defineProc(name)
+
+  // attributes whose arguments are resolved: formulas for contracts and invariants,
+  // integers for termination measures, and lists of variables for modifies
+  def contract(scope: Scope, from: List[Any]): Attrs =
+    val attrs_ =
+      for (kw, arg) <- Parser.annotations(from)
+      yield (kw, arg) match
+        case ("requires" | "ensures" | "invariant" | "assumes" | "commits", Some(phi)) =>
+          kw -> Some(state.exprs.check(scope, expr(scope, phi), Sort.bool))
+
+        case ("decreases", Some(arg)) =>
+          kw -> Some(state.exprs.check(scope, expr(scope, arg), Sort.int))
+
+        case ("modifies", Some(List(xs*))) =>
+          kw -> Some(list(xs) { variable(scope, _) })
+
+        case _ =>
+          kw -> arg
+
+    Attrs(attrs_)
+
+  def variable(scope: Scope, from: Any): Var =
+    from match
+      case Id(name) if scope.vars.contains(name) =>
+        scope.vars(name)
+
+      case _ =>
+        Error.raise("unknown variable", from)
+
+  def variables(scope: Scope, from: Any): List[Var] =
+    from match
+      case List(xs*) => list(xs) { variable(scope, _) }
+      case _         => Error.raise("not a list of variables", from)
+
+  def assignments(scope: Scope, from: Seq[Any]): (List[Var], List[Expr]) =
+    val pairs =
+      list(from):
+        case List(x, arg) => (variable(scope, x), expr(scope, arg))
+        case from         => Error.raise("not an assignment", from)
+    pairs.unzip
+
+  // programs as written by the printer, the expressions are type checked together with the whole body
+  def prog(scope: Scope, from: Any): Prog =
+    from match
+      case List(Id("break"))    => Break
+      case List(Id("continue")) => Continue
+      case List(Id("return"))   => Return
+      case List(Id("abort"))    => Spec(Nil, False, True)
+
+      case List(Id("assume"), phi) =>
+        Spec.assume(expr(scope, phi))
+
+      case List(Id("assert"), phi) =>
+        Spec.assert(expr(scope, phi))
+
+      case List(Id("havoc"), xs*) =>
+        Spec.havoc(list(xs) { variable(scope, _) })
+
+      case List(Id("spec"), xs, pre, post) =>
+        Spec(variables(scope, xs), expr(scope, pre), expr(scope, post))
+
+      case List(Id("assign"), pairs*) =>
+        val (lhs, rhs) = assignments(scope, pairs)
+        state.progs.assign(lhs, rhs)
+
+      case List(Id("call"), Id(name), List(args*), res) =>
+        state.progs.call(name, list(args) { expr(scope, _) }, variables(scope, res))
+
+      case List(Id("block"), List(Id("locals"), locals*), progs*) =>
+        val locals_ = list(locals) { formal(scope, _) }
+        val scope_ = scope ++ locals_
+        state.progs.block(locals_, list(progs) { prog(scope_, _) })
+
+      case List(Id("choose"), progs*) =>
+        Choice(list(progs) { prog(scope, _) })
+
+      case List(Id("if"), test, left, right) =>
+        state.progs.if_(expr(scope, test), prog(scope, left), prog(scope, right))
+
+      case List(Id("while"), test, body, attrs*) =>
+        state.progs.while_(expr(scope, test), prog(scope, body), contract(scope, attrs.toList))
+
+      case List(Id("iter"), body, attrs*) =>
+        state.progs.iter(prog(scope, body), contract(scope, attrs.toList))
+
+      case List(Id("ode"), List(pairs*), dom, attrs*) =>
+        val (xs, rhs) = assignments(scope, pairs)
+        state.progs.ode(xs, rhs, expr(scope, dom), contract(scope, attrs.toList))
+
+      case List(Id("par"), calls*) =>
+        val calls_ =
+          list(calls):
+            case from =>
+              prog(scope, from) match
+                case call: Call => call
+                case prog_      => Error.raise("parallel composition of statements that are not calls", prog_)
+        state.progs.par(calls_)
+
+      case _ =>
+        Error.raise("not a program", from)
 
   // the sort `name` must have been declared already as it may occur recursively
   def datatype(name: Name, decl: Any): Datatype =
@@ -575,6 +665,13 @@ class Parser(private var init: State):
       case List(Id("as"), arg, sort) =>
         As(expr(scope, arg), typ(scope, sort))
 
+      // not part of SMT-LIB, the value at the entry of the procedure, and derivatives
+      case List(Id("old"), arg) =>
+        state.exprs.old(expr(scope, arg))
+
+      case List(Id("diff"), xs, arg) =>
+        state.exprs.diff(variables(scope, xs), expr(scope, arg))
+
       // testers of constructors
       case List(List(Id("_"), Id("is"), Id(name)), arg) =>
         val constrs = state.constrs
@@ -635,5 +732,3 @@ class Parser(private var init: State):
       case _ =>
         Error.raise("not a let binding", from)
 
-  def prog(scope: Scope, mod: Set[Var], from: Any): Prog =
-    Error.raise("imperative programs in SMT-LIB are currently unsupported", from)
