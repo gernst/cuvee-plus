@@ -14,6 +14,17 @@ import cuvee.core._
 // the predicates are the uninterpreted functions with a boolean result,
 // i.e., those declared without definition that are neither constructors nor selectors
 object Flat extends Transform:
+  // a record sort `typ` with its constructor, selectors, and the types of its fields,
+  // where the parameters of the datatype are instantiated by the arguments of `typ`
+  case class Record(typ: Type, constr: Fun, sels: List[Fun], fields: List[Type]):
+    // the constructor applied to values for the fields
+    def apply(args: List[Expr]): Expr =
+      App(constr, fields, typ, args)
+
+    // the selector applied to a value of the record
+    def select(sel: Fun, arg: Expr): Expr =
+      App(sel, List(typ), fields(sels.indexOf(sel)), List(arg))
+
   def apply(prefix: List[Cmd], cmds: List[Cmd], last: Cmd, state: State): List[Cmd] =
     for cmd <- cmds
     yield flat(state, cmd)
@@ -29,14 +40,14 @@ object Flat extends Transform:
       case _ =>
         cmd
 
-  // the single constructor of a non-recursive datatype `typ` with its selectors,
-  // whose types are instantiated by the arguments of `typ`
-  def record(state: State, typ: Type): Option[(Fun, List[Fun])] =
+  // the single constructor of a non-recursive datatype `typ` with its selectors
+  def record(state: State, typ: Type): Option[Record] =
     typ match
       case Sort(con, args) if state.datatypes.contains(con.name) && !recursive(state, con) =>
         state.datatypes(con.name) match
-          case Datatype(_, List((constr, sels))) =>
-            Some((constr, sels))
+          case Datatype(params, List((constr, sels))) =>
+            val su = Subst.from(params, args)
+            Some(Record(typ, constr, sels, sels.map(sel => su(sel.res))))
 
           case _ =>
             None
@@ -82,7 +93,6 @@ object Flat extends Transform:
       yield sel
 
     fun.res == Sort.bool
-      && fun.params.isEmpty
       && fun.args.exists(isRecord(state, _))
       && !state.fundefs.contains(key)
       && !selectors.exists(_ == fun)
@@ -98,15 +108,11 @@ object Flat extends Transform:
       case None =>
         List(x)
 
-      case Some((constr, sels)) =>
+      case Some(rec) =>
         for
-          sel <- sels;
-          leaf <- leaves(state, Var(Name(x.name.name + "_" + sel.name.name, x.name.index), field(sel, x)))
+          (sel, typ) <- rec.sels zip rec.fields;
+          leaf <- leaves(state, Var(Name(x.name.name + "_" + sel.name.name, x.name.index), typ))
         yield leaf
-
-  // the type of `sel` applied to `arg`
-  def field(sel: Fun, arg: Expr): Type =
-    App(sel, List(arg)).typ
 
   // a value of type `typ` in terms of the variables for its fields, together with the unused variables
   def build(state: State, typ: Type, leaves: List[Var]): (Expr, List[Var]) =
@@ -114,15 +120,14 @@ object Flat extends Transform:
       case None =>
         (leaves.head, leaves.tail)
 
-      case Some((constr, sels)) =>
-        val x = Var("x", typ)
+      case Some(rec) =>
         val (args, rest) =
-          sels.foldLeft((List.empty[Expr], leaves)):
-            case ((args, leaves), sel) =>
-              val (arg, rest) = build(state, field(sel, x), leaves)
+          rec.fields.foldLeft((List.empty[Expr], leaves)):
+            case ((args, leaves), typ) =>
+              val (arg, rest) = build(state, typ, leaves)
               (args :+ arg, rest)
 
-        (App(constr, args), rest)
+        (rec(args), rest)
 
   // the fields of `expr`, recursively for nested records
   def parts(state: State, expr: Expr): List[Expr] =
@@ -130,13 +135,13 @@ object Flat extends Transform:
       case None =>
         List(expr)
 
-      case Some((constr, sels)) =>
+      case Some(rec) =>
         expr match
-          case App(`constr`, _, _, args) =>
+          case App(rec.constr, _, _, args) =>
             args.flatMap(parts(state, _))
 
           case _ =>
-            sels.flatMap(sel => parts(state, App(sel, List(expr))))
+            rec.sels.flatMap(sel => parts(state, rec.select(sel, expr)))
 
   // bound variables of record sorts are replaced by the constructor applied to fresh variables for the fields,
   // which are fresh if their names clash with the other variables of the binder
@@ -187,8 +192,8 @@ object Flat extends Transform:
       case Is(arg, fun) =>
         val arg_ = flat(state, arg)
         record(state, arg_.typ) match
-          case Some((constr, _)) => if constr == fun then True else False
-          case None              => Is(arg_, fun)
+          case Some(rec) => if rec.constr == fun then True else False
+          case None      => Is(arg_, fun)
 
       case As(arg, typ) =>
         As(flat(state, arg), typ)
@@ -201,10 +206,10 @@ object Flat extends Transform:
     expr match
       case App(sel, _, _, List(arg)) =>
         record(state, arg.typ) match
-          case Some((constr, sels)) if sels.contains(sel) =>
+          case Some(rec) if rec.sels.contains(sel) =>
             arg match
-              case App(`constr`, _, _, args) => args(sels.indexOf(sel))
-              case _                         => expr
+              case App(rec.constr, _, _, args) => args(rec.sels.indexOf(sel))
+              case _                           => expr
 
           case _ =>
             expr

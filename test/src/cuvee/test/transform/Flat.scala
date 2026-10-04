@@ -19,6 +19,7 @@ object FlatHorn extends TestSuite:
 
 object Flat extends TestSuite:
   val file = (Examples.root / "transform" / "flat.smt2").toString
+  val poly = (Examples.root / "transform" / "flat_poly.smt2").toString
 
   def output(args: String*): List[Cmd] =
     val (cmds, errors) = Examples.output(args*)
@@ -31,6 +32,13 @@ object Flat extends TestSuite:
       case Assert(_, _, Bind(_, xs, _), _) <- cmds;
       x <- xs
     yield x.typ
+
+  // the types of all subexpressions, including the instances of the functions
+  def types(expr: Expr): List[Type] =
+    expr match
+      case App(_, inst, typ, args) => inst ++ (typ :: args.flatMap(types))
+      case Bind(_, xs, body)       => xs.map(_.typ) ++ types(body)
+      case _                       => List(expr.typ)
 
   val pair = Con("Pair", 2)
   val stack = Sort(Con("Stack", 1), List(Sort.int))
@@ -53,3 +61,17 @@ object Flat extends TestSuite:
     test("satisfiable"):
       val (_, results) = cuvee.Cuvee.run("-flat", "-z3", file)
       results.last ==> Status.Sat
+
+    // the parameters of the datatypes are instantiated, also those that do not occur in the fields
+    test("polymorphic predicates"):
+      val cmds = output("-flat", "-print", "null", poly)
+      val q = cmds.collectFirst { case DeclareFun(fun, _) if fun.name.name == "q" => fun }
+      q.map(_.args) ==> Some(List(Param("a"), Sort.int))
+
+      // the types inside the flattened assertions are those found by the type checker when they are parsed again,
+      // the formal parameters of the predicates are named differently
+      val printed = cuvee.smtlib.Printer.lines(cmds).mkString("\n")
+      val (_, cmds_) = cuvee.smtlib.Source(new java.io.StringReader(printed))
+      val phis = cmds.collect { case Assert(_, _, phi, _) => phi }
+      val phis_ = cmds_.toList.collect { case Assert(_, _, phi, _) => phi }
+      phis_.flatMap(types) ==> phis.flatMap(types)
