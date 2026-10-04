@@ -61,10 +61,10 @@ object Simplify extends Transform:
         val arg_ = simplify(state, ctx.neutral, arg)
         is(state, ctx, arg_, fun)
 
-      // derivatives are not simplified yet, only their argument
+      // the derivative is taken of the simplified argument, e.g. after > is turned into <
       case Diff(xs, arg) =>
         val arg_ = simplify(state, ctx.neutral, arg)
-        Diff(xs, arg_)
+        diff(state, xs, arg_)
 
       // the annotation does not change the value, hence the polarity is kept
       case As(arg, typ) =>
@@ -386,6 +386,62 @@ object Simplify extends Transform:
 
       case _ =>
         Mod.int(left, right)
+
+  // the derivative of `expr` with respect to `xs` (see Diff), by the rules of dL:
+  // terms on Int and Real that do not contain xs have derivative 0, a variable x in xs has derivative x',
+  // derivatives are linear, products follow the product rule,
+  // and the derivative of e < f and of e <= f is e' <= f', that of a conjunction is the conjunction of the derivatives;
+  // derivatives of other expressions are kept, e.g. of applications of other functions and of division
+  def diff(state: State, xs: List[Var], expr: Expr): Expr =
+    val d = (arg: Expr) => diff(state, xs, arg)
+
+    Ring(expr.typ) match
+      case Some(ring) =>
+        expr match
+          case _ if (expr.free intersect xs.toSet).isEmpty =>
+            ring.lit(util.Rational(0))
+
+          case x: Var =>
+            x.primed
+
+          case ring.uminus(arg) =>
+            ring.uminus(d(arg))
+
+          case ring.plus(args) =>
+            ring.plus(args.map(d))
+
+          case ring.minus(left, right) =>
+            ring.minus(d(left), d(right))
+
+          // (a * b * c)' = a' * b * c + a * b' * c + a * b * c'
+          case ring.times(args) =>
+            val summands =
+              for i <- args.indices.toList
+              yield ring.times(args.updated(i, d(args(i))))
+            ring.plus(summands)
+
+          case _ =>
+            Diff(xs, expr)
+
+      case None =>
+        expr match
+          case Lt.int(left, right) =>
+            Le.int(d(left), d(right))
+
+          case Lt.real(left, right) =>
+            Le.real(d(left), d(right))
+
+          case Le.int(left, right) =>
+            Le.int(d(left), d(right))
+
+          case Le.real(left, right) =>
+            Le.real(d(left), d(right))
+
+          case And(phis) =>
+            And(phis.map(d))
+
+          case _ =>
+            Diff(xs, expr)
 
   // comparisons on Int or Real, built by `op`
   def lt(state: State, ctx: Ctx, op: Sugar.binary, left: Expr, right: Expr): Expr =
