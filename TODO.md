@@ -3,59 +3,31 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
-## C frontend (plan)
+## C frontend
 
-A frontend for simple imperative integer programs in a subset of C, without
-memory: no pointers, no `&`, no structs, no heap. Arrays are value types,
-i.e., they are copied on assignment and passed by value, unlike in C.
+Simple imperative integer programs in a subset of C, without memory
+([c/](src/cuvee/c), see [examples/c](examples/c)): integer types are `Int`,
+`_Bool` is `Bool`, arrays are values `Array Int T`, functions are procedures
+with the output `result`, and the global variables modified by a function are
+inferred from the call graph. Open:
 
-Scope of the language:
-
-- types `int`, `long`, `unsigned`, `char`, `_Bool`/`bool`, all mapped to `Int`
-  (unbounded, first without overflow checks), and one-dimensional arrays
-  `int a[n]`, mapped to `Array Int Int` (no length, bounds checks later);
-- global variables and functions; parameters are mutable locals in C, which
-  are copied into fresh locals since the inputs of procedures are fixed;
-  the result is the output `result` of the procedure, and `return e;` is
-  `result := e; return;`;
-- statements: declarations with initializers, `=` and compound assignments
-  (`+=`, `++`, ...) as statements only, `if`/`else`, `while`, `do`/`while`,
-  `for` (desugared into `while`, where `continue` must still run the
-  increment), `break`, `continue`, `return`, blocks;
-- expressions with C precedence and C truth values: integers as conditions
-  are compared to 0, comparisons and `&&`, `||`, `!` used as integers are
-  `ite(b, 1, 0)`; `/` and `%` truncate towards zero, unlike SMT-LIB `div` and
-  `mod`, and are translated by cases on the signs; calls only as the right
-  hand side of assignments and as statements, otherwise they are lifted into
-  temporaries (evaluation order as in the source);
-- verification conventions of SV-COMP: `assert(e)`, `__VERIFIER_assume(e)`,
-  `__VERIFIER_nondet_int()` (a havoc), `reach_error()`;
-- contracts in ACSL-like comments, `//@ requires e;`, `/*@ ensures e; */`,
-  `//@ loop invariant e;`, `//@ loop variant e;`, with `\result` and
-  `\old(e)`;
-- `modifies` attributes are not written in C: the global variables modified
-  by a function are inferred from the call graph (transitively, also for
-  recursion);
-- preprocessor lines (`#include`, `#define`) are skipped first, later maybe
-  simple constant macros.
-
-Implementation, following the Boogie and Dafny frontends:
-
-- `src/cuvee/c/`: `Scanner.flex` (jflex), `Syntax.scala`, `Grammar.scala`
-  (easyparse, the mixfix parser with C's precedence table), `Parser.scala`
-  (resolution into core, type checking by `state.exprs.check` and
-  `state.progs.check`, which resolves overloading by `core.Overload`),
-  `Printer.scala` (best effort, for `-print c`), `Source.scala`;
-- a prelude `resources/cuvee/c/prelude.c` in the frontend's own syntax for the
-  generic operators, like the other preludes;
-- register the extension `.c` in [Config.scala](src/cuvee/Config.scala);
-- examples `examples/c/*.c` with the first line `// expected: valid` or
-  `// expected: invalid`, tests for parsing, the roundtrip through the
-  printer, `-verify -z3`, and `-chc -z3`, as for Dafny.
-
-Open questions: bounded integers and overflow (as assertions, or bitvectors),
-the semantics of out-of-bounds accesses, and arrays as value types versus C's
-reference semantics for array parameters.
+- Contracts in ACSL-like comments, `//@ requires e;`, `/*@ ensures e; */`,
+  `//@ loop invariant e;`, with `\result` and `\old(e)`; without them, only
+  loop-free programs can be verified with `-verify`, others with `-chc`.
+- Bounded integers and overflow (as assertions, or bitvectors), the semantics
+  of out-of-bounds accesses, and arrays as values versus C's reference
+  semantics for array parameters; the sizes of arrays are ignored.
+- Calls are evaluated before the statement that contains them, which is not
+  supported in loop conditions, in the right operand of `&&` and `||`, and in
+  the branches of `?:`.
+- Initialized global variables, `switch`, `goto`, pointers, structs, strings,
+  and the preprocessor (its lines are skipped).
+- The printer writes SMT-LIB's `div` and `mod`, which result from C's `/` and
+  `%`, as calls, which do not parse back; the temporary variables for the
+  results of calls inside expressions, `tmp_1, ...`, may clash with names of
+  the input when printed and parsed again.
+- z3 answers `unknown` for Horn clauses with division by variables
+  ([examples/c/div.c](examples/c/div.c)).
 
 ## General
 

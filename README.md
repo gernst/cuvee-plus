@@ -8,11 +8,13 @@ languages or passes it to an SMT solver (z3 or cvc5).
 ## Capabilities
 
 - **Frontends:** SMT-LIB 2 (`.smt2`, extended by procedures and programs),
-  a subset of Boogie (`.bpl`), and a subset of Dafny (`.dfy`). All three are parsed into the same core, are type
+  a subset of Boogie (`.bpl`), a subset of Dafny (`.dfy`), and simple
+  integer programs in C (`.c`), with arrays as values and the verification
+  conventions of SV-COMP. All three are parsed into the same core, are type
   checked with polymorphism, and resolve overloaded arithmetic on `Int` and
   `Real`.
-- **Printers:** any input can be printed as SMT-LIB, Boogie, or Dafny
-  (`-print smt2|bpl|dfy`), within the limits of each language.
+- **Printers:** any input can be printed as SMT-LIB, Boogie, Dafny, or C
+  (`-print smt2|bpl|dfy|c`), within the limits of each language.
 - **Verification conditions** (`-verify`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;
@@ -57,7 +59,7 @@ The build uses [mill](https://mill-build.org). z3 and cvc5 must be on the
 `PATH` for `-z3`, `-cvc5`, and the tests.
 
 ```sh
-mill -i run [options] file.{smt2,bpl,dfy}   # run from source
+mill -i run [options] file.{smt2,bpl,dfy,c} # run from source
 mill -i test                                # run all tests
 mill -i assembly                            # build out/assembly.dest/out.jar
 ./Cuvee.sh [options] file                   # run cuvee.jar, a copy of the assembly

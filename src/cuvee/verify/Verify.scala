@@ -250,11 +250,24 @@ object Verify extends Transform:
         val cut = All(xs_ ++ dxs_, Imp(evolve, Diff(xs_, su(inv))))
         And(List(inv, cut, ode(xs, rhs, And(dom, inv), rest, post)))
 
+  // the calls in a program, also inside of nested loops
+  def calls(prog: Prog): List[Call] =
+    prog match
+      case call: Call             => List(call)
+      case Par(calls)             => calls
+      case Block(_, progs)        => progs.flatMap(this.calls)
+      case Choice(progs)          => progs.flatMap(this.calls)
+      case If(_, left, right)     => this.calls(left) ++ this.calls(right)
+      case While(_, body, _)      => this.calls(body)
+      case Iter(body, _)          => this.calls(body)
+      case _                      => Nil
+
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
   def loop(state: State, gs: List[Var], proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
     val inv = attrs.invariant
-    // calls in the body modify the global variables in the modifies attribute of the loop
-    val xs = (body.mod ++ attrs.modifies).toList
+    // calls in the body modify the global variables in the modifies attributes of the procedures they call,
+    // and in the modifies attribute of the loop, if any
+    val xs = (body.mod ++ attrs.modifies ++ calls(body).flatMap(call => state.procattrs(call.proc).modifies)).toList.distinct
 
     // the measure must decrease from the start to the end of each iteration, i.e., also on continue,
     // its values at the start are the fresh variables ms, which are replaced by the measure afterwards

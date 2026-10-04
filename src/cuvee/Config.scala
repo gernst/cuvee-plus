@@ -33,6 +33,9 @@ object Lang:
   val boogie =
     Lang("Boogie", cuvee.boogie.Source, cuvee.boogie.Printer)
 
+  val c =
+    Lang("C", cuvee.c.Source, cuvee.c.Printer)
+
 case class Config(
     input: Option[String],
     source: Source,
@@ -160,7 +163,8 @@ object Config:
   val langs = Map(
     lang("smt2", Lang.smtlib),
     lang("dfy", Lang.dafny),
-    lang("bpl", Lang.boogie)
+    lang("bpl", Lang.boogie),
+    lang("c", Lang.c)
   )
 
   extension (file: String)
@@ -192,7 +196,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.3.0")
+    println("Cuvée 0.4.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

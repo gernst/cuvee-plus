@@ -24,6 +24,7 @@ transformation and any output.
 | `cuvee.core` | The common representation: `Type`, `Expr`, `Prog`, `Cmd`, `Fun`, `Attrs` and `State`, plus type checking (`Type.check`), substitution (`Subst`), overloading (`Overload`) and syntactic sugar (`Builtin`, `Sugar`). |
 | `cuvee.smtlib` | SMT-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks). |
 | `cuvee.boogie` | Boogie frontend and printer. |
+| `cuvee.c` | C frontend and printer, for integer programs with arrays as values. |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `Verify` (weakest preconditions to goals) and `Horn` (constrained Horn clauses). |
@@ -134,8 +135,11 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      `x in s`, and `s[i..j]`.
    - Constructs that the language lacks raise an error.
 
-The SMT-LIB frontend is the exception: it reads s-expressions with the shared
-`sexpr` scanner and turns them into core directly.
+The SMT-LIB frontend is an exception: it reads s-expressions with the shared
+`sexpr` scanner and turns them into core directly. The C frontend is another:
+it starts from the SMT-LIB prelude, builds expressions on `Int` and `Bool`
+with the sugar directly, and parses the whole translation unit at once, so
+that it can infer the global variables that each function modifies.
 
 ## Errors and debugging
 
