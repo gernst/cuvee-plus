@@ -10,7 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Small
 
-- in `object Prog`: move `def free(attrs: Attrs)` as a method to `Attrs`
 - in `Simplify`: remove axioms and goals that are True (I did that but check if the code is fine)
 - add a newline after each command in each printer
 - Dafny printer: always put the `=` for a datatype definition indented on the next line

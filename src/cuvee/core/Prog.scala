@@ -12,10 +12,6 @@ sealed trait Prog:
   // the variables that are read or assigned, including those in attributes, e.g. loop invariants
   def free: Set[Var]
 
-object Prog:
-  def free(attrs: Attrs): Set[Var] =
-    attrs.attrs.flatMap(_._2).collect { case expr: Expr => expr.free }.flatten.toSet
-
 case object Break extends Prog:
   def mod = Set()
   def free = Set()
@@ -64,13 +60,13 @@ case class If(test: Expr, left: Prog, right: Prog) extends Prog:
 
 case class While(test: Expr, body: Prog, attrs: Attrs) extends Prog:
   def mod = body.mod
-  def free = test.free ++ body.free ++ Prog.free(attrs)
+  def free = test.free ++ body.free ++ attrs.free
 
 // a loop with a nondeterministic number of iterations, while * { body },
 // which corresponds to the repetition of hybrid programs in dL
 case class Iter(body: Prog, attrs: Attrs) extends Prog:
   def mod = body.mod
-  def free = body.free ++ Prog.free(attrs)
+  def free = body.free ++ attrs.free
 
 // a system of ordinary differential equations x' = e for x in xs and e in rhs,
 // which evolves for some time within the domain `dom`, the evolution constraint,
@@ -78,7 +74,7 @@ case class Iter(body: Prog, attrs: Attrs) extends Prog:
 // the attributes are e.g. differential invariants, as the invariants of loops; xs must be on Real
 case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) extends Prog:
   def mod = Set(xs*)
-  def free = rhs.free ++ dom.free ++ xs ++ Prog.free(attrs)
+  def free = rhs.free ++ dom.free ++ xs ++ attrs.free
 
 // parallel composition of calls to procedures, whose assumption-commitment contracts
 // over the global history of events are in their attributes, "assumes" and "commits";
