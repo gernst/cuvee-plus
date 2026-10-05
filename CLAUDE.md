@@ -114,5 +114,24 @@ or solvers consume.
   Transforms therefore see the prelude's declarations, e.g. `Monomorph` must
   ignore the generic `=`. Tests that call a `Source` directly must drop
   `Examples.prelude(...)`.
+- **Stages buffer declarations.** A `Stage` passes pending declarations to
+  the sink as a batch, and `Sink.query(cmds, last)` reports only the answers
+  to queries. So the sink's answer to a declaration (an error, `Unsupported`)
+  is lost behind a stage. A filter that must keep those answers is a sink
+  wrapper (like `Language.sink`), not a stage.
+- **Normal forms and the context.** `Ctx.lookup` is syntactic. When a helper
+  changes the normal form (e.g. `not` turns `!(a < b)` into `b <= a`), make
+  sure facts are still found (here `Ctx.complement`). Check the diff of
+  expected outputs for simplifications that got weaker, not only stronger.
+- **Pretty printing.** A parenthesized document must be wrapped in
+  `Align(...)`, otherwise its line breaks nest relative to the enclosing
+  indentation and operators end up left of their opening parenthesis. Check
+  long outputs (e.g. `-verify` on `examples/dafny/vcgen/sum.dfy`) after
+  printer changes.
+- **Checking that a new test catches a bug:** stash only the fix
+  (`git stash push <file>`), not the test, and run the test alone with
+  `mill -i test.testOnly <suite>`.
+- **Transient mill failures:** a crash inside the mill launcher (stack trace
+  ending in `MillLauncherMain`) is not a test failure. Rerun.
 - **Names the user mentions may refer to counterparts.** E.g. "teq.bpl"
   for the repository's `teq.dfy`. Check which files exist before assuming.
