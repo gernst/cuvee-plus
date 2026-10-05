@@ -2,6 +2,7 @@ package cuvee.core
 
 import scala.annotation.targetName
 import util.Name
+import cuvee.Error
 
 extension (self: List[Param])
   @targetName("Params.fresh")
@@ -95,6 +96,21 @@ enum Assoc:
       case Right => xs.reduceRight(f)
 
 object Sugar:
+  // calls of the procedure `name` with `in` arguments and `out` results
+  class call(val name: Name, in: Int, out: Int):
+    def apply(args: List[Expr], res: List[Var]): Call =
+      Error.report("wrong number of arguments or results in call", name, args, res):
+        require(args.length == in && res.length == out)
+      Call(name, args, res)
+
+    def unapply(prog: Prog): Option[Call] =
+      prog match
+        case call @ Call(`name`, args, res) if args.length == in && res.length == out =>
+          Some(call)
+
+        case _ =>
+          None
+
   class unary(val fun: Fun) extends (Expr => Expr):
     def apply(arg: Expr): Expr =
       App(fun, List(arg))

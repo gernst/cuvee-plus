@@ -280,7 +280,7 @@ object Verify extends Transform:
   // the tick of the history by the time that has passed in a differential equation, if the history is declared
   def tick(state: State, time: Var): Option[Call] =
     for h <- state.vars.get("history")
-    yield Call(Tick.name, List(h, time), List(h))
+    yield Tick(List(h, time), List(h))
 
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
   def loop(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =

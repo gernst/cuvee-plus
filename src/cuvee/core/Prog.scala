@@ -142,26 +142,6 @@ object Par:
 
 // calls h_ := h.send(c, v), x, h_ := h.receive(c), and h_ := h.tick(t) of the methods of the type history
 // (see hybrid.dfy), which return the history extended by an event, where the enclosing procedure must keep its commitment
-object Send:
-  val name = Name("history_send", None)
-
-  def unapply(prog: Prog): Option[Call] =
-    prog match
-      case call @ Call(`name`, List(_, _, _), List(_)) => Some(call)
-      case _                                         => None
-
-object Recv:
-  val name = Name("history_receive", None)
-
-  def unapply(prog: Prog): Option[Call] =
-    prog match
-      case call @ Call(`name`, List(_, _), List(_, _)) => Some(call)
-      case _                                         => None
-
-object Tick:
-  val name = Name("history_tick", None)
-
-  def unapply(prog: Prog): Option[Call] =
-    prog match
-      case call @ Call(`name`, List(_, _), List(_)) => Some(call)
-      case _                                      => None
+object Send extends Sugar.call(Name("history_send", None), 3, 1)
+object Recv extends Sugar.call(Name("history_receive", None), 2, 2)
+object Tick extends Sugar.call(Name("history_tick", None), 2, 1)

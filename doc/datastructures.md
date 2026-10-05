@@ -161,6 +161,9 @@ case class Par(calls: List[Call])                       // parallel composition 
   invariants.
 - **`Ode`**, **`Iter`**, **`Par`**, `Send`, `Recv`, and `Tick` are hybrid programs and
   parallel composition, see [hybrid.md](hybrid.md).
+- **`Sugar.call(name, in, out)`** builds and matches calls of a procedure with
+  `in` arguments and `out` results, like the sugar of functions; `Send`,
+  `Recv`, and `Tick` are instances.
 
 ```scala
 case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var])
