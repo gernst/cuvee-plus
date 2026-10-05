@@ -40,8 +40,11 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 - `Solver.scoped` pops in `finally`, which hides the original error if the
   solver died; its stderr is never read, which can block it.
-- Quantified specifications over sequences often end in `unknown`; inductive
-  axioms work better ([examples/dafny/par.dfy](examples/dafny/par.dfy)).
+- Quantified specifications over sequences often end in `unknown`, e.g.
+  `positive` in [examples/dafny/par.dfy](examples/dafny/par.dfy), a quantifier
+  over the events, although a hand-written version of its first goal is
+  `unsat` in z3 and cvc5; inductive axioms work better, which the test
+  `VerifyPar` substitutes for the definition.
 
 ## Simplifier and rewriting
 
