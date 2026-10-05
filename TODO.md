@@ -113,8 +113,8 @@ inferred from the call graph. Open:
 
 - Procedures, programs (`assign`, `call`, `block`, `while`, `iter`, `ode`,
   `par`, ...), `old`, `diff`, and `declare-var` are extensions of SMT-LIB in
-  the form written by the printer; there is no `assert` statement in the
-  printed form, which writes `spec`.
+  the form written by the printer; specifications are printed as `assume`,
+  `assert`, `havoc`, and `abort` in these special cases, and as `spec` otherwise.
 - No `match`, `get-value`, `check-sat-assuming`, `echo`; annotations `!`
   inside terms are parsed but discarded, e.g. `:weight` in models of z3.
 

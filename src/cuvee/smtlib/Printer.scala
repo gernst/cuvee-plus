@@ -402,6 +402,9 @@ object Printer extends cuvee.pipe.Printer:
       case Spec(Nil, True, phi) =>
         apps(atom("assume"), lines(phi))
 
+      case Spec(Nil, phi, True) =>
+        apps(atom("assert"), lines(phi))
+
       case Spec(xs, True, True) =>
         apps(atom("havoc"), lines(xs))
 
