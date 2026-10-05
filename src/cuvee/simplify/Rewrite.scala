@@ -50,20 +50,23 @@ object Rewrite:
 
   def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     val expr_ = expr.map(rewrite(config, state, ctx, _))
-    step(config, state, ctx, expr_) match
-      case Some(next) => rewrite(config, state, ctx, next)
-      case None       => expr_
+    val next = step(config, state, ctx, expr_)
+    if next == expr_
+    then expr_
+    else rewrite(config, state, ctx, next)
 
-  // a single application of the first rule of the context that applies at the top of `expr`, if any
-  def step(config: Config, state: State, ctx: Ctx, expr: Expr): Option[Expr] =
+  // a single application of the first rule of the context that applies at the top of `expr`,
+  // `expr` itself if none applies (an application always changes the expression)
+  def step(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     ctx.rules.iterator
-      .flatMap(rule => apply(config, state, ctx, rule, expr))
-      .nextOption()
+      .map(rule => apply(config, state, ctx, rule, expr))
+      .find(_ != expr)
+      .getOrElse(expr)
 
-  // the result of the first match whose instantiated condition holds, if any;
+  // the result of the first match whose instantiated condition holds, `expr` itself if there is none;
   // matching modulo associativity and commutativity may find several matches with different results,
   // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
-  def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): Option[Expr] =
+  def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): Expr =
     val results =
       for
         su <- matches(config, state, ctx, Binding(rule.vars, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
@@ -72,12 +75,14 @@ object Rewrite:
         if rhs != expr && holds(config, state, ctx, su(rule.cond))
       yield rhs
 
-    results.headOption.map: rhs =>
-      Error.report("rewriting does not terminate", rule, expr):
-        require(ctx.steps.value > 0)
-      ctx.steps := ctx.steps.value - 1
-      Debug.info("rewrite", Simplify.show(config.printer, expr) + "  ~>  " + Simplify.show(config.printer, rhs))
-      rhs
+    results.headOption match
+      case None => expr
+      case Some(rhs) =>
+        Error.report("rewriting does not terminate", rule, expr):
+          require(ctx.steps.value > 0)
+        ctx.steps := ctx.steps.value - 1
+        Debug.info("rewrite", Simplify.show(config.printer, expr) + "  ~>  " + Simplify.show(config.printer, rhs))
+        rhs
 
   // side conditions and the guards of updates are decided by the simplifier in the context
   def holds(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =

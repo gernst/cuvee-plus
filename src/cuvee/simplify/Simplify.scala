@@ -198,7 +198,7 @@ object Simplify extends Transform:
   // a single step with the rewrite rules of the context at the top of `expr`,
   // where the conditions of the rules are decided by simplification in the context (see Rewrite)
   def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    Rewrite.step(config, state, ctx, expr).getOrElse(expr)
+    Rewrite.step(config, state, ctx, expr)
 
   // a single round of simplification, dispatching on the builtin functions,
   // subterms are simplified first, where ite and the boolean connectives
