@@ -98,5 +98,10 @@ case class Par(calls: List[Call])                       // parallel composition 
     processes (rule `par`), which hold for every history that they produce.
     Inside the body, it is therefore taken only initially, and the new event
     of a `receive` is constrained by the contract of `receive` only.
-- `Verify` has a rule `par` (assumption-commitment); `Horn` and `-teq` do not
+- `Verify` has a rule `par` (assumption-commitment), which knows the
+  assumption and commitment of the enclosing procedure (parameters `assume`
+  and `commit` of `wp`): the commitments of the calls must hold initially,
+  the enclosing assumption and the commitments of the other calls must imply
+  the assumption of each call, and the commitments of the calls must imply
+  the enclosing commitment, both for all histories. `Horn` and `-teq` do not
   support parallel composition.

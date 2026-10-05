@@ -38,13 +38,14 @@ object Verify extends Transform:
         val (in, out, pre_, post) = contract(state, name)
         val gs_ = gs.fresh
 
-        // the body may assume the assumption initially, its commitment is checked at send and receive (see wp)
-        val (assume, _) = ac(state, name, in)
+        // the body may assume the assumption initially, its commitment is checked at send and receive,
+        // and both are needed for parallel compositions in the body (see wp)
+        val (assume, commit) = ac(state, name, in)
         val pre = And(pre_, assume)
 
         val body_ = Old.elim(gs, gs_, body)
         val post_ = Old.elim(gs, gs_, post)
-        val phi = wp(state, gs, name, body_, post_, False, False, post_)
+        val phi = wp(state, gs, name, assume, commit, body_, post_, False, False, post_)
         val phi_ = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(phi)))
         List(Assert(Goal, params, phi_, Attrs.empty))
 
@@ -89,13 +90,14 @@ object Verify extends Transform:
 
   // weakest preconditions need a separate postcondition for each way a program can terminate:
   // normally, by break, by continue, and by return;
-  // `proc` is the procedure that contains the program, whose recursive calls must decrease its measure
-  def wp(state: State, gs: List[Var], proc: Name, progs: List[Prog], post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
+  // `proc` is the procedure that contains the program, whose recursive calls must decrease its measure,
+  // `assume` and `commit` are its assumption and commitment (true if there are none)
+  def wp(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, progs: List[Prog], post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
     progs.foldRight(post):
       case (prog, phi) =>
-        wp(state, gs, proc, prog, phi, break, continue, return_)
+        wp(state, gs, proc, assume, commit, prog, phi, break, continue, return_)
 
-  def wp(state: State, gs: List[Var], proc: Name, prog: Prog, post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
+  def wp(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, prog: Prog, post: Expr, break: Expr, continue: Expr, return_ : Expr): Expr =
     prog match
       case Break =>
         break
@@ -119,10 +121,10 @@ object Verify extends Transform:
       // hence the commitment is made first also after receiving, since a commitment must always be made
       // before an assumption is taken, which is justified by the commitments of the other processes (see par)
       case Send(call) =>
-        committed(state, proc, call, post)
+        this.call(state, proc, call, And(commit, post))
 
       case Recv(call) =>
-        committed(state, proc, call, post)
+        this.call(state, proc, call, And(commit, post))
 
       case call: Call =>
         this.call(state, proc, call, post)
@@ -131,38 +133,29 @@ object Verify extends Transform:
         // locals may shadow variables in the postcondition, therefore they are renamed apart
         val locals_ = locals.fresh
         val su = Subst.from(locals, locals_)
-        All(locals_, wp(state, gs, proc, su(progs), post, break, continue, return_))
+        All(locals_, wp(state, gs, proc, assume, commit, su(progs), post, break, continue, return_))
 
       case Choice(progs) =>
-        And(progs.map(wp(state, gs, proc, _, post, break, continue, return_)))
+        And(progs.map(wp(state, gs, proc, assume, commit, _, post, break, continue, return_)))
 
       case If(test, left, right) =>
-        val left_ = Imp(test, wp(state, gs, proc, left, post, break, continue, return_))
-        val right_ = Imp(Not(test), wp(state, gs, proc, right, post, break, continue, return_))
+        val left_ = Imp(test, wp(state, gs, proc, assume, commit, left, post, break, continue, return_))
+        val right_ = Imp(Not(test), wp(state, gs, proc, assume, commit, right, post, break, continue, return_))
         And(left_, right_)
 
       case While(test, body, attrs) =>
-        loop(state, gs, proc, Some(test), body, attrs, post, return_)
+        loop(state, gs, proc, assume, commit, Some(test), body, attrs, post, return_)
 
       case Iter(body, attrs) =>
-        loop(state, gs, proc, None, body, attrs, post, return_)
+        loop(state, gs, proc, assume, commit, None, body, attrs, post, return_)
 
       case Ode(xs, rhs, dom, attrs) =>
         ode(xs, rhs, dom, attrs.invariants, post)
 
-      // the parallel composition extends the history like send and receive,
-      // hence the commitment of the enclosing procedure is asserted and assumed afterwards as well
+      // the parallel composition relies on the assumption of the enclosing procedure
+      // and must establish its commitment (see par)
       case Par(calls) =>
-        par(state, gs, proc, calls, And(commitment(state, proc), post))
-
-  // the commitment of procedure `proc` for its own inputs
-  def commitment(state: State, proc: Name): Expr =
-    val (in, _, _, _) = contract(state, proc)
-    val (_, commit) = ac(state, proc, in)
-    commit
-
-  def committed(state: State, proc: Name, call: Call, post: Expr): Expr =
-    this.call(state, proc, call, And(commitment(state, proc), post))
+        par(state, gs, proc, assume, commit, calls, post)
 
   // calls by the contract of the procedure, where the measure of `proc` must decrease on recursive calls
   def call(state: State, proc: Name, call: Call, post: Expr): Expr =
@@ -219,30 +212,33 @@ object Verify extends Transform:
     Type.bind(in, args, su)
     (su(attrs.assumes), su(attrs.commits))
 
-  // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h:
-  // the commitments must hold for the history initially,
-  // and the commitments of the other processes must imply the assumption of each process, for all histories,
-  // hence also initially;
+  // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h,
+  // inside of the procedure `proc` with the assumption `assume` and the commitment `commit`:
+  // the commitments of the calls must hold for the history initially,
+  // the assumption of `proc` and the commitments of the other calls must imply the assumption of each call,
+  // and the commitments of the calls must imply the commitment of `proc`, both for all histories;
   // since the calls do not share modified variables other than h, they can be verified in sequence,
   // where the history is arbitrary before each call, satisfying the assumption of the procedure,
   // and the history is arbitrary after the composition, satisfying all commitments
-  def par(state: State, gs: List[Var], proc: Name, calls: List[Call], post: Expr): Expr =
+  def par(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, calls: List[Call], post: Expr): Expr =
     val h = history(state)
     val (assumes, commits) = calls.map(call => ac(state, call.proc, call.args)).unzip
 
     val init = And(commits)
 
     val side =
-      for (assume, i) <- assumes.zipWithIndex
-      yield havoc(h, Imp(And(commits.patch(i, Nil, 1)), assume))
+      for (assume_, i) <- assumes.zipWithIndex
+      yield havoc(h, Imp(And(assume :: commits.patch(i, Nil, 1)), assume_))
+
+    val guarantee = havoc(h, Imp(And(commits), commit))
 
     val last = havoc(h, Imp(And(commits), post))
 
     val seq = (calls zip assumes).foldRight(last):
-      case ((call, assume), phi) =>
-        havoc(h, Imp(assume, wp(state, gs, proc, call, phi, False, False, False)))
+      case ((call, assume_), phi) =>
+        havoc(h, Imp(assume_, wp(state, gs, proc, assume, commit, call, phi, False, False, False)))
 
-    And((init :: side) :+ seq)
+    And((init :: side) ++ List(guarantee, seq))
 
   // differential cuts for the invariants in sequence, followed by differential weakening:
   // each invariant must hold initially, and its derivative must hold whenever the domain and the equations x' = e hold,
@@ -272,7 +268,7 @@ object Verify extends Transform:
       case _          => prog.subprogs.flatMap(this.calls)
 
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
-  def loop(state: State, gs: List[Var], proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
+  def loop(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
     val inv = attrs.invariant
     // calls in the body modify the global variables in the modifies attributes of the procedures they call,
     // and in the modifies attribute of the loop, if any
@@ -285,7 +281,7 @@ object Verify extends Transform:
     val su = Subst.from(ms, dec)
     val iter = And(inv, decreases(dec, ms))
 
-    val step_ = su(wp(state, gs, proc, body, iter, post, iter, return_))
+    val step_ = su(wp(state, gs, proc, assume, commit, body, iter, post, iter, return_))
     val (step, exit) = test match
       case Some(test) => (Imp(test, step_), Imp(Not(test), post))
       case None       => (step_, post)

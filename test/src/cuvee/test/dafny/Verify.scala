@@ -104,6 +104,16 @@ object VerifyPar extends TestSuite:
       assert(weak != par)
       errors(weak) ==> List("goal does not hold")
 
+    // the assumption of main, the enclosing method, justifies the assumption of the producer in addition
+    test("enclosing assumption"):
+      val weak = par.replace(
+        "  requires c != d\n  assumes positive(history.events, c)\n  commits positive(history.events, c)",
+        "  requires c != d\n  assumes positive(history.events, c)"
+      )
+      val assumed = weak.replace("  ensures positive(history.events, c)\n{\n  parallel", "  ensures positive(history.events, c)\n  assumes positive(history.events, c)\n{\n  parallel")
+      assert(assumed != weak)
+      errors(assumed) ==> Nil
+
     // the parallel composition extends the history, after which the commitment of main must hold
     test("commitment"):
       val good = par.replace("  ensures positive(history.events, c)\n{\n  parallel", "  ensures positive(history.events, c)\n  commits positive(history.events, c)\n{\n  parallel")
