@@ -8,311 +8,155 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - start with prioritizing this list by small things first, rewrite this file accordingly
 - work on this list autonomously, if you have questions for which you'd like my input, defer the item and put a note in this file, keep this instruction when reordering the list
 
-## C frontend
-
-Simple imperative integer programs in a subset of C, without memory
-([c/](src/cuvee/c), see [examples/c](examples/c)): integer types are `Int`,
-`_Bool` is `Bool`, arrays are values `Array Int T`, functions are procedures
-with the output `result`, and the global variables modified by a function are
-inferred from the call graph. Open:
-
-- Contracts in ACSL-like comments, `//@ requires e;`, `/*@ ensures e; */`,
-  `//@ loop invariant e;`, with `\result` and `\old(e)`; without them, only
-  loop-free programs can be verified with `-verify`, others with `-chc`.
-- Bounded integers and overflow (as assertions, or bitvectors), the semantics
-  of out-of-bounds accesses, and arrays as values versus C's reference
-  semantics for array parameters; the sizes of arrays are ignored.
-- Calls are evaluated before the statement that contains them, which is not
-  supported in loop conditions, in the right operand of `&&` and `||`, and in
-  the branches of `?:`.
-- The initial values of global variables, zero without initializer as in C,
-  are the precondition of `main`, which the printer writes as an annotation
-  `/*@ requires ...; */` that is not parsed; arrays cannot be initialized.
-- `switch`, `goto`, pointers, structs, strings,
-  and the preprocessor (its lines are skipped).
-- The temporary variables for the results of calls inside expressions,
-  `tmp_1, ...`, may clash with names of the input when printed and parsed
-  again.
-- z3 answers `unknown` for Horn clauses with division by variables
-  ([examples/c/div.c](examples/c/div.c)).
-
 ## General
 
 - Exceptions other than `cuvee.Error` (`MatchError`, `NoSuchElementException`,
-  `NotImplementedError`, `NumberFormatException` from `digits.toInt`) are not
-  caught by `Pipe.run` and crash the whole run
+  `NumberFormatException`, ...) crash the run instead of being reported
   ([pipe/Pipe.scala](src/cuvee/pipe/Pipe.scala)).
-- Polymorphic functions are sent to z3/cvc5 as they are, which the solvers do
-  not accept, unless `-monomorph` replaces them by their instances;
-  polymorphic assertions (`par`) are not instantiated, and procedures are not
-  monomorphized.
-- Termination in `Verify` and `Horn`: loops and procedures without
-  `decreases` clause are not checked (Dafny guesses a measure), measures are
-  integers only, and the measure of a procedure must refer to its inputs.
-- Match expressions (`Match`, `Case` in [core/Expr.scala](src/cuvee/core/Expr.scala))
-  are supported by substitution, type checking, and the traversal of the
-  simplifier, and printed in SMT-LIB if their cases have no conditions;
-  missing: parsing in the frontends, printing in Boogie and Dafny, reducing a
-  match whose argument is a constructor application, rewriting modulo
-  matches, and their translation for the solvers that do not support them.
+- The exit status is always 0, even when goals fail or errors are reported.
+- Readers of input files and the stream of `-o` are never closed.
+- Polymorphic functions reach the solvers as they are unless `-monomorph`;
+  polymorphic assertions and procedures are not monomorphized.
+- Termination: loops and procedures without `decreases` are not checked,
+  measures are integers, a procedure's measure must refer to its inputs.
+- `Match`: no parsing in the frontends, no printing in Boogie and Dafny, no
+  reduction on constructors, no rewriting modulo matches, no translation for
+  solvers without `match`; SMT-LIB prints it only without case conditions.
 
-## Code structure and consistency
+## Code structure
 
 - `core.Assoc` duplicates `easyparse.Assoc`.
-- `send` and `receive` are recognized by their names (`Send`, `Recv`), and the
-  history by the name of the global variable `history` (`Par.history`).
-- The printers of Dafny and Boogie duplicate the mixfix logic (`prefix`,
-  `infix`, `level`, and the precedences).
+- The printers of Dafny and Boogie duplicate the mixfix logic.
+- `Arith.toPoly` and `Simplify.poly` duplicate the traversal of polynomials;
+  `toPoly` could take a function for the leaves (identity for `Rewrite`,
+  `simplify` for `poly`).
+- `send`, `receive`, and the history are recognized by their names.
+- Warnings: the implicit conversion `String => Name` without
+  `-language:implicitConversions`; two deprecations for `Long + String` in
+  [smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala).
+
+## Solvers
+
+- `Solver.scoped` pops in `finally`, which hides the original error if the
+  solver died; its stderr is never read, which can block it.
+- Quantified specifications over sequences often end in `unknown`; inductive
+  axioms work better ([examples/dafny/par.dfy](examples/dafny/par.dfy)).
+
+## Simplifier and rewriting
+
+- Statements are simplified without context (assignments invalidate facts);
+  tests of branches could be used up to the first assignment to their
+  variables. No rules for sequences or bitvectors.
+- Rewriting matches modulo A/C of `+` and `-` only (not `*`); all but the last
+  variable of a sum take one summand or none; bound variables of combinators
+  are not instantiated by conditional expressions; equations of the context
+  are not followed (rule `Subst` of the paper); innermost first, which may
+  rewrite subterms before a rule for the whole term applies.
+- Guards below combinators are matched syntactically first, so a bound
+  variable that occurs only in guards may match any formula, e.g. `b` matches
+  `!b`; lemmas whose guards are more specific must come first (as for
+  `counts` in [teq.dfy](resources/cuvee/teq.dfy)).
+- Fourier-Motzkin ([simplify/FourierMotzkin.scala](src/cuvee/simplify/FourierMotzkin.scala))
+  is not used yet. Proposal, in this order:
+  1. decide `0 <= p`/`0 < p` against the linear facts of the context (the
+     comparisons among the assumptions, negated ones among the conclusions)
+     in `Simplify.implied`/`denied`, sound on `Int` too, with tightening
+     (`0 < p` is `1 <= p`, rounding by the gcd of the coefficients);
+  2. mark contexts with unsatisfiable linear assumptions inconsistent;
+  3. then redundant bounds vanish by `nary`, e.g. `x <= 3 && x <= 5`;
+  4. eliminate `exists x` over linear constraints where the number of
+     constraints does not grow (`l <= 1` or `u <= 1` bounds), exact on `Real`,
+     on `Int` for coefficients ±1;
+  5. limit the number of constraints (e.g. 20).
+
+## Trace equation systems (`-teq`)
+
+- The functions on traces are declared only by the lemma database
+  ([teq.dfy](resources/cuvee/teq.dfy)), whose names may clash with the input,
+  and which inputs cannot use before `-teq` injects it. Lemmas about `all`
+  over a formula would need higher-order patterns.
+- `trace`, `map`, `all` followed by `for` cannot be function names; Split
+  treats the combinators as atoms.
+- The goals contain the combinators and must be rewritten by lemmas or
+  encoded into first-order logic (section 5.3 of the paper) for a solver. No
+  differential equations or parallel composition; loop invariants are
+  ignored; paths grow exponentially with the branches of a body.
+- Counting `a[i] == v` over `⌊I⌋` yields `counts(0, v, map(for ⌊I⌋ yield i => a[i]))`;
+  there are no lemmas that relate such maps to `selects` or to `count` on
+  sequences.
 
 ## Dafny frontend
 
-- Lemmas and goals are single formulas, `lemma <a> {:rw} φ` and `goal φ` with
-  optional type parameters, not
+- Lemmas and goals are single formulas (`lemma <a> {:rw} φ`, `goal φ`), not
   Dafny's lemmas with parameters and contracts.
-- Sets and multisets use cvc5's theories (`Set`, `Bag`), which z3 does not
-  support; missing are set comprehensions, `multiset(s)` of a sequence,
-  `m[x := n]` on multisets, and `>=`, `>`, disjointness `!!`. Maps (`map`)
-  are declared as a sort but have no functions, since cvc5 has no theory of
-  finite maps (they could be arrays together with a set as the domain).
-- Sequences: no `seq(n, f)` or
-  multi-dimensional updates. `s[i := v]` is `seq.update` of cvc5, which z3
-  does not support, and z3's logic `HORN` has no sequences at all.
-- Member access `x.f` and testers `x.C?` work on variables only, e.g.
-  `h[i].chan` must be written `event_chan(h[i])`.
-- Inside a `type` or `datatype` body, members must be accessed through
-  `this`, e.g. `this.counter` and `this.m(a)`; a plain `counter` is an unknown
-  expression, and a plain `m(a);` is only resolved for top-level methods.
-  Names that are not local variables should be resolved as members of `this`
-  (see [examples/dafny/stack.dfy](examples/dafny/stack.dfy)).
-- `var` declarations must come before the statements of a block.
-- The contract clauses of methods must be in the order `modifies`,
-  `requires`, `ensures`, `assumes`, `commits`, `decreases`; Dafny allows any
-  order.
-- Decimal literals are scanned greedily, so nested tuple selections such as
-  `t.0.1` are scanned as `t` and `.` followed by the literal `0.1`.
-- The printer does not always print valid Dafny: indexed names are printed
-  with unicode subscripts, e.g. `x₀`.
-- The printer's `any` passes all values that are not results, commands,
-  types, expressions, programs or lists of expressions to the s-expression
-  printer, which raises a `MatchError` on anything that is not an atom or a
-  list of such, e.g. plain strings and numbers.
+- Sets and multisets use cvc5's theories (not z3); missing comprehensions,
+  `multiset(s)`, `m[x := n]`, `>=`, `>`, `!!`. `map` is a sort without
+  functions. Sequences: no `seq(n, f)`, no multi-dimensional updates;
+  `s[i := v]` is cvc5's `seq.update`; z3's `HORN` has no sequences.
+- `x.f` and `x.C?` on variables only; members inside `type`/`datatype` bodies
+  need `this.` ([examples/dafny/stack.dfy](examples/dafny/stack.dfy)).
+- `var` declarations before statements; contract clauses in the fixed order
+  `modifies`, `requires`, `ensures`, `assumes`, `commits`, `decreases`.
+- `t.0.1` is scanned as `t` `.` `0.1`.
+- The printer writes unicode subscripts (`x₀`), and its `any` raises
+  `MatchError` on plain strings and numbers.
 
 ## Boogie frontend
 
-- Procedures must be declared before they are called, so mutually recursive
-  procedures are not supported ([boogie/Parser.scala](src/cuvee/boogie/Parser.scala)).
-- No quantifiers over types, `forall<a> ...`,
-  no sequences, no parallel composition.
-- The printer raises an error on datatypes, attributes of loops
-  other than `invariant`, `modifies`, and `decreases`, binders other than
-  `forall` and `exists`, derivatives, differential equations, and parallel
-  composition; goals, lemmas, `decreases`, and `continue` are printed as `goal`, `lemma`,
-  `decreases`, and `continue;`, which are not Boogie (`continue` could be encoded in Boogie
-  as a labeled break, `while (b) { L: if (true) { ... break L; ... } }`)
-  ([boogie/Printer.scala](src/cuvee/boogie/Printer.scala)).
+- Procedures must be declared before calls (no mutual recursion); no
+  `forall<a>`, sequences, or parallel composition.
+- The printer rejects datatypes, loop attributes other than `invariant`,
+  `modifies`, `decreases`, other binders, derivatives, ODEs, and `par`;
+  `goal`, `lemma`, `decreases`, `continue` are printed although not Boogie.
 
 ## SMT-LIB frontend
 
-- Procedures, programs (`assign`, `call`, `block`, `while`, `iter`, `ode`,
-  `par`, ...), `old`, `diff`, and `declare-var` are extensions of SMT-LIB in
-  the form written by the printer; specifications are printed as `assume`,
-  `assert`, `havoc`, and `abort` in these special cases, and as `spec` otherwise.
+- Programs, `old`, `diff`, `declare-var` are extensions in the printer's form.
 - No `match`, `get-value`, `check-sat-assuming`, `echo`; annotations `!`
-  inside terms are parsed but discarded, e.g. `:weight` in models of z3.
+  inside terms are discarded.
 
-## Solvers and robustness
+## C frontend
 
-- `Solver.scoped` always pops in `finally`: if the solver process died, the
-  failing `pop` hides the original error
-  ([smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala)).
-- The solver's stderr is never read, which can block the solver if it writes a
-  lot to it ([util/Tool.scala](src/util/Tool.scala)).
-- The exit status is always 0, even when goals fail or errors are reported
-  ([Cuvee.scala](src/cuvee/Cuvee.scala)).
-- Readers for input files and the output stream of `-o` are never closed.
-- Quantified specifications over sequences often end in `unknown`, e.g. a
-  predicate defined by `forall i :: ... h[i] ...` for `h + [e]`; inductive
-  axioms work better (see [examples/dafny/par.dfy](examples/dafny/par.dfy)).
+Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 
-## Warnings
-
-- The implicit conversion `String => Name` is used without enabling
-  `scala.language.implicitConversions`, which causes many feature warnings
-  (main and tests); enable it once in the build with `-language:implicitConversions`.
-- Two deprecation warnings for `Long + String` in debug messages of
-  [smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala) (lines 30 and 44).
-
-## Transformations
-
-- `Flat` ([transform/Flat.scala](src/cuvee/transform/Flat.scala)) treats all
-  uninterpreted functions with a boolean result as predicates, not only those
-  generated by `Horn`; the names of the fields of predicate parameters, `x_sel`,
-  may clash with other parameters of the same predicate.
-- The simplifier simplifies the expressions in procedures without context,
-  since assignments invalidate the facts known before them; facts such as the
-  test of a branch could be used up to the first assignment to their
-  variables. It has no rules for sequences.
-
-- The functions on traces other than `butlast` (`⌊X⌋` in Dafny and Boogie),
-  i.e. `counter`, `current`, `steps`, `length`, `nth`, `earlier`, are declared
-  by the lemma database of `-teq` ([resources/cuvee/teq.dfy](resources/cuvee/teq.dfy))
-  only, whose names may clash with functions of the input; the database
-  contains the lemmas that the rewrite engine can express, lemmas about `all`
-  over a formula would need higher-order patterns; its polymorphic functions
-  must be monomorphized for a solver.
-- The combinators of trace equation systems are written
-  `trace(e, for Y do x, y => u)`, `map(for Y yield y => u)`, and
-  `all(for Y check y => φ)` in Dafny and Boogie, where updates with several
-  cases are `if φ₁ then e₁, if φ₂ then e₂`, and like let in SMT-LIB,
-  `(trace (x e) ((y Y)) u)`, `(map ((y Y)) u)`, `(all ((y Y)) φ)`, with
-  `(cases (φ₁ e₁) (φ₂ e₂))`; `trace`, `map`, and `all` followed by `for` cannot
-  be names of functions. The simplifier does not use the dependencies, e.g. it
-  does not drop unused ones, and Split treats the combinators as atoms.
-- The verifier by symbolic execution and trace equation systems (`-teq`,
-  [verify/TEQ.scala](src/cuvee/verify/TEQ.scala)) generates high-level goals
-  that contain the combinators for programs with loops, which must be
-  rewritten by lemmas (`-teq -simplify` with the lemma database, which is
-  small) or encoded into first-order logic (fall-back encodings,
-  section 5.3 of the paper) before a solver can prove them. It does not
-  support differential equations and parallel composition; loop invariants are ignored; the
-  number of paths grows exponentially with the branches of a body.
-- The rewrite engine ([simplify/Rewrite.scala](src/cuvee/simplify/Rewrite.scala))
-  is applied by the simplifier after each round with the rewrite rules, the
-  assertions and lemmas with the attribute `:rw` (`{:rw}` in Dafny and
-  Boogie); it matches modulo A/C of `+` and `-` only (not `*`),
-  where all but the last variable of a sum take a single summand or none, and
-  it does not instantiate the bound variables of the combinators by
-  conditional expressions or follow equations from the context (rule
-  `Subst` of the paper); rewriting is innermost first, which may rewrite
-  subterms before a rule for the whole term applies.
-- Fourier-Motzkin elimination
-  ([simplify/FourierMotzkin.scala](src/cuvee/simplify/FourierMotzkin.scala))
-  decides linear constraints over the rationals, but is not used yet, e.g. by
-  the simplifier for the comparisons in its context; it is incomplete over the
-  integers.
-
-### Proposal: Fourier-Motzkin in the simplifier
-
-Fourier-Motzkin (FM) makes formulas simpler in the strict sense when it is used
-as a decision procedure for comparisons: the results are `true` and `false`,
-never larger terms. Only quantifier elimination may produce more constraints,
-and should be restricted to the cases where it does not.
-
-1. **Comparisons decided by the context.** `Ctx.lookup` is syntactic. At a
-   comparison `0 <= p` or `0 < p` (the normal form of `Simplify.lt` and `le`),
-   collect the linear constraints of the context: the comparisons among the
-   assumptions, and the negated comparisons among the conclusions
-   (`¬(0 <= p)` is `0 < -p`). If the context together with the negation of
-   the comparison is unsatisfiable, the comparison is `true`; if it is
-   unsatisfiable together with the comparison, it is `false`. E.g. under
-   `0 <= i && i < n`, `i <= n` becomes `true` and `n < i` becomes `false`,
-   which removes redundant guards and branches, also in the conjunctions and
-   disjunctions of the goals of `-verify` and `-teq`, whose siblings are
-   assumed by `nary`. Hook: `Ctx.constraints` and a call before the result of
-   `lt`/`le` is built.
-2. **Soundness on Int.** Unsatisfiability over the rationals implies
-   unsatisfiability over the integers, so the verdicts of (1) are sound on
-   `Int`, but incomplete. Tightening helps: on `Int`, `0 < p` is `1 <= p`, and
-   a constraint whose coefficients have a common divisor `g` can round its
-   constant down to a multiple of `g` (e.g. `2x <= 3` is `x <= 1`), which
-   decides e.g. `0 < 2x && 2x < 2` as `false`.
-3. **Inconsistent contexts.** When the linear assumptions are unsatisfiable,
-   the context is marked inconsistent (`Ctx.inconsistent`), which the
-   polarity mechanism already exploits, e.g. `x < y && y < x` is `false`.
-4. **Redundant bounds.** As a consequence of (1) with `nary`, a conjunct that
-   follows from the others is dropped, e.g. `x <= 3 && x <= 5` becomes
-   `x <= 3`; dually for disjunctions.
-5. **Quantifier elimination.** `exists x :: C(x)` for a conjunction of linear
-   constraints is the result of eliminating `x`, exactly over `Real`, and over
-   `Int` if all coefficients of `x` are `1` or `-1` (then `max l <= min u`
-   has an integer witness); e.g. `exists x: real :: a < x && x < b` is
-   `a < b`, and `∀ x. A(x) ⇒ B` with `x` not in `B` is `(∃ x. A(x)) ⇒ B`.
-   This applies to the fresh variables of the goals of `-verify` and `-teq`
-   (e.g. the values after a loop). The number of constraints grows from
-   `l + u` to `l * u` for `l` lower and `u` upper bounds, hence only if
-   `l <= 1` or `u <= 1`, where it shrinks.
-6. **Costs.** Atoms are the non-linear monomials and the applications of
-   other functions, which is sound. The constraints of a context are few in
-   practice; a limit on their number (e.g. 20) bounds the cost of the
-   elimination, which is otherwise doubly exponential.
-
-Suggested order: (1)–(3) first, since they only replace subterms by constants,
-then (4) and (5).
+- No ACSL contracts (`//@ requires`, `loop invariant`, `\result`, `\old`), so
+  only loop-free programs verify with `-verify`, others need `-chc`.
+- Unbounded integers, no overflow; arrays are values, sizes are ignored.
+- Calls inside loop conditions, right operands of `&&`/`||`, and branches of
+  `?:` are not supported; temporaries `tmp_1, ...` may clash with input names.
+- Initial values of globals become a `requires` annotation of `main` that is
+  not parsed; arrays cannot be initialized.
+- No `switch`, `goto`, pointers, structs, strings, preprocessor.
+- z3 answers `unknown` for Horn clauses with division by variables
+  ([examples/c/div.c](examples/c/div.c)).
 
 ## Bitvectors
 
-`BitVec(n)` in `Type`, `(_ BitVec n)` in SMT-LIB, with literals `#b...`,
-`#x...`, `(_ bvK n)`, and the functions of SMT-LIB (`BitVecs`), which are
-instantiated for the widths of their arguments, where indexed functions are
-named by their indexed identifier, e.g. `(_ extract 7 0)`. Open: the simplifier
-has no rules for them (e.g. constant folding), and a width cannot be a
-parameter of polymorphic declarations.
+`BitVec(n)` with the SMT-LIB literals and functions (`BitVecs`). Open: no
+simplifier rules; widths cannot be parameters.
 
-### Proposal: bitvectors in Dafny
-
-- Types `bv8`, `bv32`, ... (Dafny's own), parsed as `BitVec(n)` and printed as
-  such (done in the printer).
-- Operators by overloading on the type of the first argument, where
-  `Overload.impl` dispatches on `BitVec(n)` in addition to sort constructors
-  and instantiates `BitVecs.fun` for the width: `+`, `-`, `*` (wrap-around,
-  `bvadd`, `bvsub`, `bvmul`), `/`, `%` (unsigned, `bvudiv`, `bvurem`), `&`,
-  `|`, `^` (`bvand`, `bvor`, `bvxor`), `!` and unary `-` (`bvnot`, `bvneg`),
-  `<<`, `>>` (`bvshl`, `bvlshr`, whose shift amount is converted to the width),
-  `<`, `<=`, `>`, `>=` (unsigned comparisons), and the members
-  `x.RotateLeft(k)`, `x.RotateRight(k)` for literal `k`.
-- Literals: in Dafny, `5` and `0xff` take the type of their context. Numeric
-  literals would get a fresh type parameter instead of `Int`, which type
-  checking resolves to `Int`, `Real` (for decimals), or `BitVec(n)`, and which
-  defaults to `Int` if it remains open; `Lit` then needs its value converted
-  (modulo `2^n`) once the type is known (in `Type.instantiate`).
-- Conversions `x as int` and `n as bv8`, which SMT-LIB has as `bv2nat` and
-  `(_ int2bv n)` (supported by z3 and cvc5), as overloaded applications of
-  `As`.
-
-### Proposal: bitvectors in Boogie
-
-- Types `bv8`, ..., and literals `5bv8` (scanner: `[0-9]+ "bv" [0-9]+`).
-- Concatenation `x ++ y` (an infix operator) and extraction `x[8:0]`, which is
-  `(_ extract 7 0)` since Boogie's upper bound is exclusive, as a new form of
-  map access with `:`.
-- All other functions are declared by the input with the attribute
-  `{:bvbuiltin "bvadd"}`, e.g. `function {:bvbuiltin "bvadd"} add8(x: bv8,
-  y: bv8): bv8;`, which the parser resolves to the instance of `BitVecs.fun`
-  for the declared argument types; the declaration is kept, such that the
-  output prints back the same, and applications of the declared function are
-  replaced by the instance, similar to overloading.
+- Dafny proposal: types `bv8`, ...; operators by overloading on `BitVec(n)`
+  (`+ - *` wrap-around, `/ %` unsigned, `& | ^ ! -`, `<< >>`, unsigned
+  comparisons, `RotateLeft/Right`); numeric literals with a fresh type
+  parameter that defaults to `Int`, converted modulo `2^n`; `as int`/`as bv8`
+  as `bv2nat`/`int2bv`.
+- Boogie proposal: types `bv8`, literals `5bv8`, `x ++ y`, `x[8:0]` (exclusive
+  upper bound), and functions declared with `{:bvbuiltin "bvadd"}` resolved to
+  the instance of `BitVecs.fun`.
 
 ## Hybrid programs
 
-Non-standard features from Platzer's dL, as part of the Dafny frontend
-(see [examples/dafny/hybrid.dfy](examples/dafny/hybrid.dfy)):
-
-- The derivatives of formulas from `Verify` for the invariants of `Ode` must
-  be simplified (`-simplify`) before the goals can be passed to a solver.
-- The simplifier computes derivatives
-  ([simplify/Simplify.scala](src/cuvee/simplify/Simplify.scala), `diff`);
-  open are the chain rule for applications of other functions (where do their
-  partial derivatives come from?), division, equations, and other formulas,
-  which are kept as `Diff`.
-- The derivatives computed by the simplifier introduce primed variables `x'`,
-  which are bound by `Verify` for the differential cuts, but are free and not
-  declared for derivatives written in the input, e.g. `(x, v :: e)'` in a
-  method body.
+- Derivatives of `Ode` invariants need `-simplify` before a solver; no chain
+  rule for other functions, no division or equations (kept as `Diff`).
+- Primed variables of derivatives written in the input are free and
+  undeclared.
 
 ## Parallel composition
 
-Parallel composition of calls, whose assumption-commitment contracts are over
-a global history of events (see [examples/dafny/par.dfy](examples/dafny/par.dfy)):
-
-- `Horn` raises an error on `parallel`, and ignores assumptions and
-  commitments in the bodies of procedures.
-- Assumptions and commitments are used only by `parallel`: a call outside of
-  `parallel` neither establishes the callee's assumption, which its body
-  assumes initially, nor guarantees its commitment; this is unsound if such a
-  procedure is called sequentially.
-- The commitment is checked only at `send` and `receive` directly in the body,
-  not at those inside other procedures called by it.
-- The history, `send`, and `receive` are declared by
-  [resources/cuvee/dafny/hybrid.dfy](resources/cuvee/dafny/hybrid.dfy),
-  which `-hybrid` injects, where the values of events are fixed to `int`.
-- Only calls may be composed, not arbitrary statements.
+- `Horn` rejects `parallel` and ignores assumptions and commitments.
+- Sequential calls neither establish the callee's assumption nor guarantee
+  its commitment (unsound); commitments are checked only at `send`/`receive`
+  directly in the body.
+- History, `send`, `receive` come from `-hybrid`
+  ([hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)), with events on `int`.
+- Only calls can be composed.

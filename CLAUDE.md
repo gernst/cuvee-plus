@@ -138,3 +138,17 @@ or solvers consume.
   ending in `MillLauncherMain`) is not a test failure. Rerun.
 - **Names the user mentions may refer to counterparts.** E.g. "teq.bpl"
   for the repository's `teq.dfy`. Check which files exist before assuming.
+- **Rules with guards below combinators.** A bound variable of a pattern
+  that occurs only in guards (`b` in `if b then y + 1, if !b then y`) is
+  instantiated by matching the guard syntactically, not by implication. Such
+  a variable also matches a negation, so put the lemma with the more
+  specific guard (`!b`) first.
+- **Testing lemmas of teq.dfy.** Inputs cannot use the trace functions
+  before `-teq` injects them. Test rules on core terms with
+  `Simplify.rules(TEQ.lemmas)` and `Rewrite`.
+- **Expected values in unit tests** must be in the simplifier's normal form,
+  e.g. `x - 1` becomes `x + -1`, and `j < j` collapses whole formulas.
+- **Statements without effect** are the empty block (`Simplify.skip`), which
+  `block` drops; a block of one statement without locals is that statement.
+- **Commits with unrelated changes in the tree:** the version bump commits
+  all tracked changes, so stash the unrelated files first.
