@@ -227,9 +227,10 @@ object Verify extends Transform:
 
     val last = havoc(h, Imp(And(commits), post))
 
-    val seq = (calls zip assumes).foldRight(last):
-      case ((call, assume_), phi) =>
-        havoc(h, Imp(assume_, wp(state, gs, proc, assume, commit, call, phi, False, False, False)))
+    // each call is a process of its own, with its assumption and commitment, e.g. for send and receive
+    val seq = (calls zip (assumes zip commits)).foldRight(last):
+      case ((call, (assume_, commit_)), phi) =>
+        havoc(h, Imp(assume_, wp(state, gs, proc, assume_, commit_, call, phi, False, False, False)))
 
     And((init :: side) ++ List(guarantee, seq))
 
