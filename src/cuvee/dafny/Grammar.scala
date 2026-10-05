@@ -391,13 +391,13 @@ object Grammar:
     P(All(P("forall" ~ bound ~ "::" ~ formula)) | Ex(P("exists" ~ bound ~ "::" ~ formula)))
 
   val axiom =
-    Axiom(P("axiom" ~ annotation.* ~ formula))
+    Axiom(P("axiom" ~ params ~ annotation.* ~ formula))
 
   val lemma =
-    Lemma(P("lemma" ~ annotation.* ~ formula))
+    Lemma(P("lemma" ~ params ~ annotation.* ~ formula))
 
   val goal =
-    Goal(P("goal" ~ annotation.* ~ formula))
+    Goal(P("goal" ~ params ~ annotation.* ~ formula))
 
   val vardef =
     VarDef(P("var" ~ (formal ~+ ",") ~ ";"))

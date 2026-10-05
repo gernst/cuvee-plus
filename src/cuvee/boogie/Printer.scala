@@ -179,12 +179,13 @@ object Printer extends cuvee.pipe.Printer:
         val sig = signature(text("function") ++ attributes(attrs), name(name_), params_, formals_) ++ text(":") +:+ doc(res)
         Group(sig +:+ text("{") ++ Nest(2, line ++ doc(body)) ++ line ++ text("}"))
 
-      case Assert(Axiom, _, phi, attrs) =>
-        Group(text("axiom") ++ attributes(attrs) ++ Nest(2, line ++ doc(phi))) ++ text(";")
+      // with type parameters, axiom <a> {:rw} (forall x: a :: φ);
+      case Assert(Axiom, params_, phi, attrs) =>
+        Group(text("axiom") ++ (if params_.isEmpty then empty else space ++ params(params_)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi))) ++ text(";")
 
       // goals and lemmas are not part of Boogie, they are printed like axioms with their own keyword
-      case Assert(justify, _, phi, attrs) =>
-        Group(text(format(justify)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi))) ++ text(";")
+      case Assert(justify, params_, phi, attrs) =>
+        Group(text(format(justify)) ++ (if params_.isEmpty then empty else space ++ params(params_)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi))) ++ text(";")
 
       case DeclareVar(Var(name_, typ), attrs) =>
         text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ) ++ text(";")

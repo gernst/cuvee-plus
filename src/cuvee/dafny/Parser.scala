@@ -41,32 +41,17 @@ class Parser(var state: State):
           state = state.declare(name, typ_, Attrs.empty)
           state.cmds.declareVar(name)
 
-      case Axiom(attrs, expr) =>
-        val scope = Scope.empty
-        val phi_ = formula(scope, expr)
-        val params_ = phi_.params.toList
-        val attrs_ = Attrs(attrs.map(_ -> None))
+      case Axiom(params, attrs, expr) =>
+        val (params_, phi_, attrs_) = assertion(params, attrs, expr)
+        List(state.cmds.axiom(params_, phi_, attrs_))
 
-        val cmd_ = state.cmds.axiom(params_, phi_, attrs_)
-        List(cmd_)
+      case Lemma(params, attrs, expr) =>
+        val (params_, phi_, attrs_) = assertion(params, attrs, expr)
+        List(state.cmds.lemma(params_, phi_, attrs_))
 
-      case Lemma(attrs, expr) =>
-        val scope = Scope.empty
-        val phi_ = formula(scope, expr)
-        val params_ = phi_.params.toList
-        val attrs_ = Attrs(attrs.map(_ -> None))
-
-        val cmd_ = state.cmds.lemma(params_, phi_, attrs_)
-        List(cmd_)
-
-      case Goal(attrs, expr) =>
-        val scope = Scope.empty
-        val phi_ = formula(scope, expr)
-        val params_ = phi_.params.toList
-        val attrs_ = Attrs(attrs.map(_ -> None))
-
-        val cmd_ = state.cmds.goal(params_, phi_, attrs_)
-        List(cmd_)
+      case Goal(params, attrs, expr) =>
+        val (params_, phi_, attrs_) = assertion(params, attrs, expr)
+        List(state.cmds.goal(params_, phi_, attrs_))
 
       case SortDef(name, params, impl) =>
         val scope = Scope.empty
@@ -162,6 +147,14 @@ class Parser(var state: State):
 
       case _ =>
         resolve(Scope.empty, "", Nil, Nil, cmd)
+
+  // the formula of an axiom, lemma, or goal is resolved and checked in the scope of its type parameters,
+  // the type parameters of the assertion are these followed by those that remain in the formula otherwise
+  def assertion(params: List[String], attrs: List[String], expr: Expr): (List[core.Param], core.Expr, Attrs) =
+    val params_ = params.map(resolve(Scope.empty, _))
+    val phi_ = formula(Scope.empty ++ params_, expr)
+    val attrs_ = Attrs(attrs.map(_ -> None))
+    (params_ ++ phi_.params.toList.filterNot(params_.contains), phi_, attrs_)
 
   def formula(scope: Scope, phi: Expr) =
     val expr_ = resolve(scope, phi)

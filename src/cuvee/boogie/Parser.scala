@@ -17,23 +17,13 @@ class Parser(var state: State):
 
   def resolve(cmd: Cmd): List[core.Cmd] =
     cmd match
-      case Axiom(attrs, expr) =>
-        val scope = Scope.empty
-        val attrs_ = attributes(scope, attrs)
-        val phi_ = formula(scope, expr)
-        val params_ = phi_.params.toList
+      case Axiom(params, attrs, expr) =>
+        val (params_, phi_, attrs_) = assertion(params, attrs, expr)
+        List(state.cmds.axiom(params_, phi_, attrs_))
 
-        val cmd_ = state.cmds.axiom(params_, phi_, attrs_)
-        List(cmd_)
-
-      case Lemma(attrs, expr) =>
-        val scope = Scope.empty
-        val attrs_ = attributes(scope, attrs)
-        val phi_ = formula(scope, expr)
-        val params_ = phi_.params.toList
-
-        val cmd_ = state.cmds.lemma(params_, phi_, attrs_)
-        List(cmd_)
+      case Lemma(params, attrs, expr) =>
+        val (params_, phi_, attrs_) = assertion(params, attrs, expr)
+        List(state.cmds.lemma(params_, phi_, attrs_))
 
       // sorts with parameters are declared or defined generically
       case SortDef(attrs, name, params, alias) =>
@@ -157,6 +147,15 @@ class Parser(var state: State):
     val expr_ = resolve(scope, expr)
     val typ_ = core.Param("a").fresh
     state.exprs.check(scope, expr_, typ_)
+
+  // the formula of an axiom or lemma is resolved and checked in the scope of its type parameters,
+  // the type parameters of the assertion are these followed by those that remain in the formula otherwise
+  def assertion(params: List[String], attrs: List[Attr], expr: Expr): (List[core.Param], core.Expr, Attrs) =
+    val params_ = params.map(resolve(Scope.empty, _))
+    val scope = Scope.empty ++ params_
+    val attrs_ = attributes(scope, attrs)
+    val phi_ = formula(scope, expr)
+    (params_ ++ phi_.params.toList.filterNot(params_.contains), phi_, attrs_)
 
   def formula(scope: Scope, phi: Expr) =
     val expr_ = resolve(scope, phi)

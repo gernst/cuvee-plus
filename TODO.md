@@ -69,13 +69,9 @@ inferred from the call graph. Open:
 
 ## Dafny frontend
 
-- Lemmas and goals are single formulas, `lemma {:rw} φ` and `goal φ`, not
+- Lemmas and goals are single formulas, `lemma <a> {:rw} φ` and `goal φ` with
+  optional type parameters, not
   Dafny's lemmas with parameters and contracts.
-- Lemmas cannot have type parameters, `forall v: a :: ...` is an unknown
-  type `a`, hence the lemmas of [teq.dfy](resources/cuvee/teq.dfy) taken from
-  teq.bpl are instantiated at `int` and `array<int, int>` only. Syntax
-  `lemma <a> {:rw} φ` as in Boogie? The lemmas there are not checked yet
-  either (they are `{:free}`).
 - Sets and multisets use cvc5's theories (`Set`, `Bag`), which z3 does not
   support; missing are set comprehensions, `multiset(s)` of a sequence,
   `m[x := n]` on multisets, and `>=`, `>`, disjointness `!!`. Maps (`map`)
@@ -99,8 +95,7 @@ inferred from the call graph. Open:
 - Decimal literals are scanned greedily, so nested tuple selections such as
   `t.0.1` are scanned as `t` and `.` followed by the literal `0.1`.
 - The printer does not always print valid Dafny: indexed names are printed
-  with unicode subscripts, e.g. `x₀`; the type parameters of assertions are
-  omitted.
+  with unicode subscripts, e.g. `x₀`.
 - The printer's `any` passes all values that are not results, commands,
   types, expressions, programs or lists of expressions to the s-expression
   printer, which raises a `MatchError` on anything that is not an atom or a

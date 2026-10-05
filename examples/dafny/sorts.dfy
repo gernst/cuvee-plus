@@ -3,6 +3,9 @@ type pred<a> = array<a, bool>
 
 function mem<a>(s: pred<a>, x: a): bool { s[x] }
 
+// axioms and lemmas with type parameters
+axiom <a> {:rw} forall s: pred<a>, x: a :: mem(s, x) == s[x]
+
 datatype d = d(f: int)
 {
   method id<b>(x: b) returns (y: b)

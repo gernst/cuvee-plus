@@ -10,3 +10,9 @@ function g(K: Trace<int>, n: int): bool
 {
   all(for ⌊K⌋ check k => k < n)
 }
+
+// lemmas on traces with type parameters, which are not monomorphized (see TODO.md)
+function current<a>(X: Trace<a>): a;
+function consts<a>(n: int, v: a): Trace<a>;
+
+lemma <a> {:rw} (forall n: int, v: a :: 0 <= n ==> current(consts(n, v)) == v);

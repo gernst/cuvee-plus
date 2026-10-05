@@ -122,10 +122,11 @@ object Sel extends ((String, Type) => Sel)
 object Constr extends ((String, List[Sel]) => Constr)
 
 // axioms and lemmas with attributes, e.g. axiom {:rw} e for rewrite rules
-case class Axiom(attrs: List[String], phi: Expr) extends Cmd
-case class Lemma(attrs: List[String], phi: Expr) extends Cmd
+// with type parameters, lemma <a> {:rw} forall x: a :: φ
+case class Axiom(params: List[String], attrs: List[String], phi: Expr) extends Cmd
+case class Lemma(params: List[String], attrs: List[String], phi: Expr) extends Cmd
 // formulas to be proved, which are not assumed afterwards, unlike lemmas, not Dafny
-case class Goal(attrs: List[String], phi: Expr) extends Cmd
+case class Goal(params: List[String], attrs: List[String], phi: Expr) extends Cmd
 // check-sat, which is not Dafny
 case object Check extends Cmd
 // global variables, var x: int; which are not Dafny
@@ -159,9 +160,9 @@ case class MethodDef(
     body: Option[Prog]
 ) extends Cmd
 
-object Axiom extends ((List[String], Expr) => Cmd)
-object Lemma extends ((List[String], Expr) => Cmd)
-object Goal extends ((List[String], Expr) => Cmd)
+object Axiom extends ((List[String], List[String], Expr) => Cmd)
+object Lemma extends ((List[String], List[String], Expr) => Cmd)
+object Goal extends ((List[String], List[String], Expr) => Cmd)
 object VarDef extends (List[(String, Type)] => Cmd)
 object SortDef extends ((String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
 object DataDef extends ((String, List[String], List[Constr], Option[List[Cmd]]) => Cmd)

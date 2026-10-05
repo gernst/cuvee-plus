@@ -189,9 +189,9 @@ object Printer extends cuvee.pipe.Printer:
         val sig = signature(name(name_), params_, formals_) ++ text(":") +:+ doc(res)
         header(text("function") ++ attributes(attrs) +:+ sig, attrs, Some(braces(List(doc(body)))))
 
-      // the type parameters of assertions are implicit
-      case Assert(justify, _, phi, attrs) =>
-        Group(text(format(justify)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi)))
+      // with type parameters, lemma <a> {:rw} forall x: a :: φ
+      case Assert(justify, params_, phi, attrs) =>
+        Group(text(format(justify)) ++ (if params_.isEmpty then empty else space ++ params(params_)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi)))
 
       // global variables are not Dafny, which has fields of objects instead
       case DeclareVar(Var(name_, typ), attrs) =>

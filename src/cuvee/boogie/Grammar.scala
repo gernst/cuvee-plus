@@ -297,10 +297,10 @@ object Grammar:
     FunDef(P("function" ~ attrs ~ id ~ params ~ formals ~ ":" ~ typ ~ (some(braces(expr)) | (";" ~ none))))
 
   val axiom =
-    Axiom(P("axiom" ~ attrs ~ expr ~ ";"))
+    Axiom(P("axiom" ~ params ~ attrs ~ expr ~ ";"))
 
   val lemma =
-    Lemma(P("lemma" ~ attrs ~ expr ~ ";"))
+    Lemma(P("lemma" ~ params ~ attrs ~ expr ~ ";"))
 
   val returns =
     P(("returns" ~ formals) | nil)
