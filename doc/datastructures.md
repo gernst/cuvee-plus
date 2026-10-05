@@ -274,6 +274,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   type (`Ring.int`, `Ring.real`) to read and print polynomials.
 - **`Poly.sides`** splits a polynomial into its negative and positive parts,
   so that comparisons have positive coefficients on both sides.
+- **`Poly.primitive`** scales a polynomial by a positive factor to integral
+  coefficients without a common divisor. Comparisons with 0 use it
+  (`Simplify.difference`), since only the sign matters there, e.g.
+  `x < 2y + 1.5` becomes `2x < 4y + 3`.
 - **`Constraint(poly, strict)`** is a linear constraint `0 <= poly` or
   `0 < poly`. `FourierMotzkin` eliminates atoms from conjunctions of these and
   decides their satisfiability over the rationals.

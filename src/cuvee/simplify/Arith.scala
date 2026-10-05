@@ -80,6 +80,14 @@ case class Poly(const: Rational, monos: List[Mono]):
 
     Poly(const_, merged.filter(!_.factor.isZero).sorted)
 
+  // scaled by a positive factor such that all coefficients, including the constant, are integers without
+  // a common divisor; this preserves the sign and hence comparisons with 0, but not the value
+  def primitive: Poly =
+    val factors = const :: monos.map(_.factor)
+    val lcm = factors.map(_.den).foldLeft(BigInt(1))((a, b) => a * b / a.gcd(b))
+    val gcd = factors.map(r => (r * Rational(lcm)).num).foldLeft(BigInt(0))(_ gcd _)
+    if gcd == 0 then this else this * Rational(lcm, gcd)
+
   // the parts with negative and with positive coefficients, negated and as they are,
   // i.e., (neg, pos) with this = pos - neg, where both have positive coefficients only
   def sides: (Poly, Poly) =

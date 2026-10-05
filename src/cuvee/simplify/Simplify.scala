@@ -771,11 +771,12 @@ object Simplify extends Transform:
       case _ =>
         Diff(xs, expr)
 
-  // the difference right - left of the sides of a comparison as a normalized polynomial
+  // the difference right - left of the sides of a comparison as a normalized polynomial,
+  // whose sign is all that matters, hence with integral coefficients without a common divisor
   def difference(config: Config, state: State, ctx: Ctx, ring: Ring, left: Expr, right: Expr): Poly =
     val left_ = poly(config, state, ctx, ring, left)
     val right_ = poly(config, state, ctx, ring, right)
-    (right_ - left_).normalize
+    (right_ - left_).normalize.primitive
 
   // comparisons 0 < p and 0 <= p on Int or Real, built by `op`, are constants if p is,
   // otherwise they are re-arranged so that both sides have positive coefficients only,

@@ -3,4 +3,6 @@
 (assert (= (* 0.5 x) y))
 (assert false)
 (assert (< 0.0 (/ x y)))
-(assert (< x (+ (* 2.0 y) 1.5)))
+(assert (< (* 2.0 x) (+ (* 4.0 y) 3.0)))
+(assert (<= (* 8.0 x) (+ (* 12.0 y) 1.0)))
+(assert (<= (* 2.0 x) (* 3.0 y)))

@@ -1,5 +1,6 @@
 ; arithmetic on Real is normalized into polynomials with rational coefficients,
-; division by a nonzero literal is multiplication by its inverse
+; division by a nonzero literal is multiplication by its inverse,
+; comparisons have integral coefficients without a common divisor
 
 (declare-const x Real)
 (declare-const y Real)
@@ -11,3 +12,5 @@
 (assert (> (/ x y) 0.0))
 (assert (>= (- x) (* (- 1.0) x)))
 (assert (< (- x 1.5) (* 2.0 y)))
+(assert (<= (* 4.0 x) (+ (* 6.0 y) 0.5)))
+(assert (<= (* 4.0 x) (* 6.0 y)))
