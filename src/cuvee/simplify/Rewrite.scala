@@ -67,6 +67,8 @@ object Rewrite:
   // matching modulo associativity and commutativity may find several matches with different results,
   // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
   def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): Expr =
+    // variables are not rewritten by following their equations, only inside of expressions
+    if expr.isInstanceOf[Var] then return expr
     val results =
       for
         su <- matches(config, state, ctx, Binding(rule.vars, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
@@ -147,8 +149,17 @@ object Rewrite:
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
           matches(config, state, ctx, b_, body, body_, m)
 
+      case _ if pat == expr =>
+        List(m)
+
+      // a variable x of the expression with an equation x == e in the context is matched like e,
+      // only if the pattern is not a variable, which binds x itself (see above);
+      // equations between variables are not followed, since they may be cyclic
+      case (_, x: Var) if ctx.eq.get(x).exists(!_.isInstanceOf[Var]) =>
+        matches(config, state, ctx, b, pat, ctx.eq(x), m)
+
       case _ =>
-        if pat == expr then List(m) else Nil
+        Nil
 
   def matches(config: Config, state: State, ctx: Ctx, b: Binding, pats: List[Expr], exprs: List[Expr], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     (pats, exprs) match
@@ -194,7 +205,9 @@ object Rewrite:
         case Nil =>
           if exprs.isEmpty then List(m) else Nil
 
-        case List((sign, x)) if exprs.nonEmpty || sum =>
+        // a negated variable -x takes negative summands only, otherwise -x would match every sum,
+        // e.g. y + 1 with x = -y - 1, whose result matches again with x = y + 1
+        case List((sign, x)) if (exprs.nonEmpty || sum) && (sign || exprs.forall(!_._1)) =>
           val rest = if sign then exprs else Rewrite.negate(exprs)
           matches(config, state, ctx, b, x, Rewrite.sum(ring, rest), m)
 

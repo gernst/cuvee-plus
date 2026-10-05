@@ -58,9 +58,11 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   tests of branches could be used up to the first assignment to their
   variables. No rules for sequences or bitvectors.
 - Rewriting matches modulo A/C of `+` and `-` only (not `*`); all but the last
-  variable of a sum take one summand or none; bound variables of combinators
-  are not instantiated by conditional expressions; equations of the context
-  are not followed (rule `Subst` of the paper); innermost first, which may
+  variable of a sum take one summand or none, a negated last variable takes
+  negative summands only; bound variables of combinators are not instantiated
+  by conditional expressions; equations of the context are followed only for
+  variables inside of the expression (`Ctx.eq`, rule `Subst` of the paper),
+  not for terms such as `history.events == []`; innermost first, which may
   rewrite subterms before a rule for the whole term applies.
 - Type annotations `e as T` are dropped from the left-hand sides of rules
   (`Simplify.unannotated`) but kept in expressions, where the printers need

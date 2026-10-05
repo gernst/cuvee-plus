@@ -93,11 +93,13 @@ case class Ctx(
       case Eq(l: Lit, x: Var) if !(su contains x) =>
         copy(su = su + (x -> l))
 
-      // the equation remains an assumption, such that it is still found by Simplify.implied
-      case Eq(x: Var, e) if !(eq contains x) && !(e.free contains x) =>
+      // the equation remains an assumption, such that it is still found by Simplify.implied;
+      // equations whose right-hand side is a sum, difference, negation, or product are not recorded,
+      // since rewriting follows the equations (see Rewrite.matches), whereas arithmetic is normalized instead
+      case Eq(x: Var, e) if !(eq contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
         copy(assms = phi :: assms, eq = eq + (x -> e))
 
-      case Eq(e, x: Var) if !(eq contains x) && !(e.free contains x) =>
+      case Eq(e, x: Var) if !(eq contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
         copy(assms = phi :: assms, eq = eq + (x -> e))
 
       case _ =>
@@ -145,6 +147,17 @@ case class Ctx(
         deny(phi).assume(Nil, neg)
 
 object Ctx:
+  // applications of the basic arithmetic operators on Int or Real
+  def arithmetic(expr: Expr): Boolean =
+    Ring(expr.typ) match
+      case Some(ring) =>
+        expr match
+          case ring.plus(_) | ring.minus(_, _) | ring.uminus(_) | ring.times(_) => true
+          case _                                                                => false
+
+      case None =>
+        false
+
   // the primed variables x' of the derivatives (xs :: e)' in `expr`
   def primed(expr: Expr): Set[Var] =
     val inner = Set.newBuilder[Var]

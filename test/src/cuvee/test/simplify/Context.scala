@@ -7,10 +7,12 @@ import cuvee.core._
 import cuvee.simplify.Ctx
 
 // equations among the assumptions: between variables in su, others in eq if they are not recursive
+// and their right-hand side is not an arithmetic operation
 object Context extends TestSuite:
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)
   val z = Var("z", Sort.int)
+  val f = Fun("f", Nil, Fun.formals(Sort.int), Sort.int)
 
   val tests = Tests:
     test("variables"):
@@ -29,7 +31,7 @@ object Context extends TestSuite:
       cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, ctx, Plus.int(x, y)) ==> Plus.int(y, one)
 
     test("equations"):
-      val e = Plus.int(y, One.int)
+      val e = App(f, List(y))
       Ctx.empty.assume(Eq(x, e)).eq ==> Map(x -> e)
       Ctx.empty.assume(Eq(e, x)).eq ==> Map(x -> e)
       // the equation is still an assumption
@@ -38,8 +40,13 @@ object Context extends TestSuite:
       Ctx.empty.assume(Eq(x, e)).assume(Eq(x, z)).eq ==> Map(x -> e)
 
     test("recursive"):
-      val e = Plus.int(x, One.int)
+      val e = App(f, List(x))
       Ctx.empty.assume(Eq(x, e)).eq ==> Map()
+
+    test("arithmetic"):
+      val e = Plus.int(y, One.int)
+      Ctx.empty.assume(Eq(x, e)).eq ==> Map()
+      Ctx.empty.assume(Eq(x, e)).assms ==> List(Eq(x, e))
 
 // one-point rule: an equation x == e of a quantified variable x that occurs nowhere else is true,
 // negatively below forall and positively below exists

@@ -93,6 +93,13 @@ object Rewrite extends TestSuite:
       R(rules, Minus.int(One.int, a)) ==> app(g, UMinus.int(a))
       R(rules, a) ==> a
 
+    // a negated variable takes negative summands only, not the negation of others
+    test("negations"):
+      val rules = List(Rule(app(f, UMinus.int(x)), app(g, x)))
+      R(rules, app(f, UMinus.int(a))) ==> app(g, a)
+      R(rules, app(f, Minus.int(UMinus.int(a), b))) ==> app(g, Plus.int(a, b))
+      R(rules, app(f, Plus.int(a, One.int))) ==> app(f, Plus.int(a, One.int))
+
     test("differences"):
       val rules = List(Rule(app(f, Minus.int(x, y)), app(g, y)))
       R(rules, app(f, Plus.int(a, UMinus.int(b)))) ==> app(g, b)
@@ -184,6 +191,17 @@ object Rules extends TestSuite:
       """, ".bpl")
       errors ==> Nil
       cuvee.boogie.Printer.lines(cmds.last) ==> List("function h(a: int): bool { true }", "")
+
+    // a variable of the expression is matched like the right-hand side of its equation in the context
+    test("equations"):
+      val (cmds, errors) = simplify("""
+        function f(x: int): int
+        function g(x: int): int
+        axiom {:rw} forall x: int :: f(g(x)) == x
+        function h(y: int, z: int): bool { y == g(z) ==> f(y) == z }
+      """, ".dfy")
+      errors ==> Nil
+      cuvee.dafny.Printer.lines(cmds.last) ==> List("function h(y: int, z: int): bool {", "  true", "}", "")
 
     // the rules are printed with their attribute, which parses back
     test("printing"):

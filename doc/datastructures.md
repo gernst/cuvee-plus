@@ -273,8 +273,11 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   - bound variables;
   - equations of variables with variables or literals, as a map `su`, which
     the simplifier substitutes eagerly (`var_`);
-  - the non-recursive equations `x == e` among the assumptions, as a map `eq`
-    from variables to expressions (the equation remains an assumption);
+  - the non-recursive equations `x == e` among the assumptions whose `e` is
+    not an arithmetic operation (`+`, `-`, `*`), as a map `eq` from variables
+    to expressions (the equation remains an assumption); rewriting matches a
+    variable inside of the expression like its `e` (`Rewrite.matches`), but
+    never rewrites a variable on its own;
   - the quantified variables whose equations are true at a given polarity
     (`points`, the one-point rule);
   - the polarity of the position, and whether the context is inconsistent;
