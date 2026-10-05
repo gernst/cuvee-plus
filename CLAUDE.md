@@ -171,7 +171,11 @@ Details in [doc/teq.md](doc/teq.md).
   forget its information there (`Ctx.opaque`).
 - **Derivatives hide variables.** `Diff(xs, e)` is not free in the primed
   variables `x'` that its derivative introduces; `Ctx.used` adds them. The
-  hybrid example (`-verify -simplify -z3`) caught this.
+  hybrid example with z3 caught this.
+- **No solvers on polymorphic input.** Never run z3 (nor `-monomorph` as a
+  workaround) on inputs with polymorphic definitions or axioms, e.g. anything
+  with `-hybrid`. The tests of hybrid programs only generate the goals
+  (`-print null`). Type annotations in Dafny are written `e as T`.
 - **Helpers used as decisions** (e.g. `eq_(...) == True` in `distinct`,
   `select`, `deps`) get `ctx.neutral`, so that position-dependent rules do not
   fire there.

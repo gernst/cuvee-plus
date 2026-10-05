@@ -10,7 +10,7 @@ var history: history<int>
 // all values on channel c are positive
 predicate positive(h: seq<event<int>>, c: chan)
 {
-  forall e: event<int> :: e in h && e.chan == c ==> 0 < e.value
+  forall e: event<int> :: e in h && e.message? && e.chan == c ==> 0 < e.value
 }
 
 // sends positive values on c

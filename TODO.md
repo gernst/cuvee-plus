@@ -49,8 +49,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - Quantified specifications over sequences often end in `unknown`, e.g.
   `positive` in [examples/dafny/par.dfy](examples/dafny/par.dfy), a quantifier
   over the events, although a hand-written version of its first goal is
-  `unsat` in z3 and cvc5; inductive axioms work better, which the test
-  `VerifyPar` substitutes for the definition.
+  `unsat` in z3 and cvc5; inductive axioms work better.
 
 ## Simplifier and rewriting
 
@@ -177,3 +176,10 @@ simplifier rules; widths cannot be parameters.
   global `history`, and its results must be assigned to it, which is not
   checked.
 - Only calls can be composed.
+- Events are `message(chan, value)` or `time(time: real)`
+  ([hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)); `send` and `receive`
+  produce messages only, nothing produces time events yet.
+- `project(c, h)` (the values of the messages on `c`) is polymorphic with
+  polymorphic axioms, which solvers are not expected to handle; the tests of
+  hybrid programs (`VerifyOde`, `VerifyPar`) therefore only generate the
+  goals (`-print null`), and the examples are not expected to verify.
