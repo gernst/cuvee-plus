@@ -56,3 +56,29 @@ object Programs extends TestSuite:
     test("choice"):
       simplify(Choice(List(inc, Choice(List(dec, inc))))) ==> Choice(List(inc, dec))
       simplify(Choice(List(inc, inc))) ==> inc
+
+// the dependencies of combinators: unused ones are dropped, except counters, equal ones are collapsed
+object Dependencies extends TestSuite:
+  val n = Var("n", Sort.int)
+  val j = Var("j", Sort.int)
+  val k = Var("k", Sort.int)
+  val l = Var("l", Sort.int)
+  val J = Var("J", Sort.seq(Sort.int))
+  val K = Var("K", Sort.seq(Sort.int))
+  val C = Butlast(Counter(Zero.int, One.int, n))
+
+  def simplify(expr: Expr) =
+    Simplify.simplify(Config.default, State.empty, Ctx.empty, expr)
+
+  val tests = Tests:
+    test("unused"):
+      simplify(Maps(List(K, J), List(k, j), List(Upd(True, j)))) ==> Maps(List(J), List(j), List(Upd(True, j)))
+      // the counter is kept
+      simplify(Maps(List(C, J), List(k, j), List(Upd(True, j)))) ==> Maps(List(C, J), List(k, j), List(Upd(True, j)))
+      // the first dependency is kept if none remains
+      simplify(Invs(List(K, J), List(k, j), Lt.int(Zero.int, n))) ==> Invs(List(K), List(k), Lt.int(Zero.int, n))
+
+    test("duplicates"):
+      val Invs(deps, List(j_), body) = simplify(Invs(List(J, J), List(j, l), Lt.int(n, Plus.int(j, l)))): @unchecked
+      deps ==> List(J)
+      body.free ==> Set(n, j_)

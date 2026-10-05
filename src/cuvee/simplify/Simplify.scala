@@ -811,10 +811,12 @@ object Simplify extends Transform:
     Upd(cond, rhs)
 
   def trace(config: Config, state: State, ctx: Ctx, init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd]): Expr =
-    Trace(init, deps, acc, bound, updates)
+    val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, updates.free - acc)
+    Trace(init, deps_, acc, bound_, updates.map(_.map(re(_))))
 
   def maps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], updates: List[Upd]): Expr =
-    Maps(deps, bound, updates)
+    val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, updates.free)
+    Maps(deps_, bound_, updates.map(_.map(re(_))))
 
   // invariants with a constant body: true holds trivially,
   // false holds exactly if there are no values, i.e., the dependencies, which have the same length, are empty
@@ -822,4 +824,27 @@ object Simplify extends Transform:
     (deps, body) match
       case (_, True)          => True
       case (dep :: _, False)  => Eq(Seqs.len(dep), Zero.int)
-      case _                  => Invs(deps, bound, body)
+      case _ =>
+        val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, body.free)
+        Invs(deps_, bound_, re(body))
+
+  // the dependencies of a combinator, whose bound variables are `bound`, and of whose body `used` are the free variables:
+  // equal dependencies are collapsed, whose bound variables are renamed to the first one by the substitution,
+  // and those whose bound variables are not used are dropped, except counters, which keep the dependencies nonempty
+  // (if there is none, the first dependency is kept)
+  def deps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], used: Set[Var]): (List[Expr], List[Var], Subst[Nothing, Var]) =
+    val (distinct, re) =
+      (deps zip bound).foldLeft((List.empty[(Expr, Var)], Subst.empty[Nothing, Var])):
+        case ((done, re), (dep, x)) =>
+          done.find((dep_, x_) => x_.typ == x.typ && eq_(config, state, ctx, dep_, dep) == True) match
+            case Some((_, x_)) => (done, re + (x -> x_))
+            case None          => (done :+ (dep, x), re)
+
+    val used_ = used.map(x => re.vars.getOrElse(x, x))
+    val kept =
+      distinct.filter:
+        case (Butlast(Counter(_, _, _)) | Counter(_, _, _), _) => true
+        case (_, x)                                           => used_ contains x
+
+    val pairs = if kept.isEmpty then distinct.take(1) else kept
+    (pairs.map(_._1), pairs.map(_._2), re)

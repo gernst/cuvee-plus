@@ -141,6 +141,11 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     outer loop already decides. E.g. complementary conjuncts are found by
     `nary`, which simplifies each argument of `and` and `or` assuming the
     others, not by `and` itself.
+  - `trace`, `maps`, and `invs` collapse equal dependencies (by `eq_`),
+    renaming their bound variables to the first one, and drop dependencies
+    whose bound variables are unused, except counters `⌊counter(...)⌋`;
+    the first one is kept if none remains, since the dependencies must be
+    nonempty.
   - Statements have helpers likewise, `spec`, `assign`, `block`, `choice`,
     `if_`, `while_`, ...: statements without effect are the empty block
     `skip`, `block` merges nested blocks (hoisting locals unless they
