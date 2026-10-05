@@ -36,6 +36,8 @@ object Flat extends TestSuite:
   // the types of all subexpressions, including the instances of the functions
   def types(expr: Expr): List[Type] =
     expr match
+      // conjunctions are flattened, since the printer collapses them and the parser nests them to the left
+      case And(phis)               => Sort.bool :: phis.flatMap(types)
       case App(_, inst, typ, args) => inst ++ (typ :: args.flatMap(types))
       case Bind(_, xs, body)       => xs.map(_.typ) ++ types(body)
       case _                       => List(expr.typ)

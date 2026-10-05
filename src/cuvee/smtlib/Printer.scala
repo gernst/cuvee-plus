@@ -325,6 +325,26 @@ object Printer extends cuvee.pipe.Printer:
       case App(fun, inst, typ, Nil) =>
         apply(fun)
 
+      // nested conjunctions, disjunctions, sums, and products are flattened into a single application,
+      // which the parser reads back as left-nested applications
+      case And(phis) =>
+        apps(apply(Fun.and), lines(phis))
+
+      case Or(phis) =>
+        apps(apply(Fun.or), lines(phis))
+
+      case Plus.int(args) =>
+        apps(apply(Fun.int.plus), lines(args))
+
+      case Plus.real(args) =>
+        apps(apply(Fun.real.plus), lines(args))
+
+      case Times.int(args) =>
+        apps(apply(Fun.int.times), lines(args))
+
+      case Times.real(args) =>
+        apps(apply(Fun.real.times), lines(args))
+
       case App(fun, inst, typ, args) =>
         apps(apply(fun), lines(args))
 
