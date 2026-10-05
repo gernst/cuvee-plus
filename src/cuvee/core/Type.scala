@@ -87,6 +87,11 @@ object Sort:
   def trace(elem: Type) =
     Sort(Con.trace, List(elem))
 
+// the state of type inference: the solution of the type equations so far, extended by unification,
+// and the applications of overloaded operators whose implementation is not determined yet (see Type.overload)
+class Constraints extends util.Ref[Subst[Type, Expr]](Subst.empty):
+  var pending: List[App] = Nil
+
 object Type:
   import util.Ref
 
@@ -213,7 +218,7 @@ object Type:
 
   // the types of expressions are already instantiated with fresh parameters by the parsers,
   // in particular `inst` of an application holds the expected types of the arguments
-  def check(state: State, scope: Scope, expr: Expr, res: Type, subst: Ref[Subst[Type, Expr]]): Unit =
+  def check(state: State, scope: Scope, expr: Expr, res: Type, subst: Constraints): Unit =
     expr match
       case Var(name, typ) =>
         Error.report("type mismatch", expr, typ, res):
@@ -228,6 +233,11 @@ object Type:
           require(inst.length == args.length)
 
         check(state, scope, args, inst, subst)
+
+        // the implementation is determined later, once the type that it depends on is known
+        expr match
+          case app @ App(fun, _, _, _) if Overload.isGeneric(fun) => subst.pending = app :: subst.pending
+          case _                                                  =>
 
         Error.report("type mismatch", expr, typ, res):
           unify(state, scope, typ, res, subst)
@@ -337,7 +347,7 @@ object Type:
     vars(pat).exists(xs => xs.distinct.length == xs.length)
 
   // the dependencies of the combinators are sequences over the types of the bound variables, of which there is at least one
-  def dependencies(state: State, scope: Scope, expr: Expr, deps: List[Expr], bound: List[Var], subst: Ref[Subst[Type, Expr]]): Unit =
+  def dependencies(state: State, scope: Scope, expr: Expr, deps: List[Expr], bound: List[Var], subst: Constraints): Unit =
     Error.report("combinator without dependencies", expr):
       require(deps.nonEmpty)
 
@@ -347,34 +357,33 @@ object Type:
     check(state, scope, deps, bound.map(x => Sort.seq(x.typ)), subst)
 
   // the guards of updates are formulas, and the results have type `typ`
-  def updates(state: State, scope: Scope, updates: List[Upd], typ: Type, subst: Ref[Subst[Type, Expr]]): Unit =
+  def updates(state: State, scope: Scope, updates: List[Upd], typ: Type, subst: Constraints): Unit =
     for Upd(cond, rhs) <- updates
     do
       check(state, scope, cond, Sort.bool, subst)
       check(state, scope, rhs, typ, subst)
 
-  def check(state: State, scope: Scope, exprs: List[Expr], types: List[Type], subst: Ref[Subst[Type, Expr]]): Unit =
+  def check(state: State, scope: Scope, exprs: List[Expr], types: List[Type], subst: Constraints): Unit =
     for (expr, typ) <- exprs zip types
     do check(state, scope, expr, typ, subst)
 
   // `expr` checked against `res`, with the solution of the type constraints applied
   def check(state: State, scope: Scope, expr: Expr, res: Type): Expr =
-    val subst = Ref[Subst[Type, Expr]](Subst(Map(), Map()))
+    val subst = Constraints()
     check(state, scope, expr, res, subst)
     instantiate(state, scope, subst, List(expr)).head
 
-  // the applications of overloaded operators are checked against the signature of their implementation,
-  // which is determined by the type of the first argument (see Overload.dispatch) once it is known,
-  // repeated as long as this determines further types
-  def overload(state: State, scope: Scope, apps: List[App], subst: Ref[Subst[Type, Expr]]): Unit =
-    val (ready, pending) =
-      apps.partition:
-        case App(op, inst, _, _) =>
-          unfold(state, resolve(subst.value, inst(Overload.dispatch(op.name, op.arity)))).isInstanceOf[Sort]
+  // the applications of overloaded operators collected by type checking are deferred constraints:
+  // each is checked against the signature of its implementation, once the type of its first argument
+  // (see Overload.dispatch) is known, which may determine further types, e.g. of s[0] in s[0] + 1,
+  // or of a polymorphic constant c in (c + d) == s[0]; this is repeated as long as some application is decided
+  def overload(state: State, scope: Scope, subst: Constraints): Unit =
+    val (blocked, ready) = subst.pending.partition(app => dispatch(state, subst, app).isInstanceOf[Param])
+    subst.pending = blocked
 
-    for case app @ App(op, inst, typ, _) <- ready
+    for app @ App(op, inst, typ, _) <- ready
     do
-      val first = unfold(state, resolve(subst.value, inst(Overload.dispatch(op.name, op.arity))))
+      val first = dispatch(state, subst, app)
 
       Overload.impl(op.name, op.arity, first) match
         case Some(Impl(sig, _)) =>
@@ -387,23 +396,21 @@ object Type:
           Error.raise("operator not defined for type", op.name, first)
 
     if ready.nonEmpty
-    then overload(state, scope, pending, subst)
+    then overload(state, scope, subst)
 
-  // the applications of overloaded operators in `expr`, innermost first
-  def overloaded(expr: Expr): List[App] =
-    val inner = List.newBuilder[App]
-    expr.map: arg =>
-      inner ++= overloaded(arg)
-      arg
-
-    expr match
-      case app @ App(fun, _, _, _) if Overload.isGeneric(fun) => inner.result() :+ app
-      case _                                                  => inner.result()
+  // the type that determines the implementation of an overloaded operator, as far as it is known
+  def dispatch(state: State, subst: Constraints, app: App): Type =
+    val App(op, inst, _, _) = app
+    unfold(state, resolve(subst.value, inst(Overload.dispatch(op.name, op.arity))))
 
   // apply the solution of the type constraints after resolving overloading,
-  // all type parameters must be determined
-  def instantiate(state: State, scope: Scope, subst: Ref[Subst[Type, Expr]], exprs: List[Expr]): List[Expr] =
-    overload(state, scope, exprs.flatMap(overloaded), subst)
+  // all overloaded operators and type parameters must be determined
+  def instantiate(state: State, scope: Scope, subst: Constraints, exprs: List[Expr]): List[Expr] =
+    overload(state, scope, subst)
+
+    Error.report("ambiguous overloaded operator", subst.pending):
+      require(subst.pending.isEmpty)
+
     val exprs_ = close(subst)(exprs)
     val missed = exprs_.params -- scope.params.values.toSet
 
@@ -461,7 +468,7 @@ object Type:
           require(in.length == args.length && out.length == res.length)
 
         val su = Subst.fresh(params)
-        val subst = Ref[Subst[Type, Expr]](Subst(Map(), Map()))
+        val subst = Constraints()
         check(state, scope, args, su(in.types), subst)
 
         Error.report("type mismatch in results of call", name, res, out):

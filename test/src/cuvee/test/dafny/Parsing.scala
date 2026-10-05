@@ -59,6 +59,12 @@ object Sequences extends TestSuite:
       errors("function f(a: array<int,bool>, i: int): bool { a[i] && a[i := false] == a }") ==> Nil
       errors("type S = seq<int> function f(s: S): int { s[0] + |s| }") ==> Nil
 
+    // the type of a polymorphic constant is determined by an overloaded operator to its right,
+    // and remains ambiguous without one
+    test("polymorphic constants"):
+      errors("function c<a>(): a function f(s: seq<int>): bool { c() + c() == s[0] }") ==> Nil
+      errors("function c<a>(): a function f(): bool { c() + c() == c() }") ==> List("ambiguous overloaded operator")
+
     test("indexing of int"):
       errors("function f(n: int): int { n[0] }") ==> List("operator not defined for type")
 
