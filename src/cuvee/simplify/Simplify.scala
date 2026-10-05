@@ -340,6 +340,18 @@ object Simplify extends Transform:
         val body_ = simplify(config, state, ctx.bind(bound_), re(body))
         let(config, state, ctx, bound_, args_, body_)
 
+      // the variables of the patterns are renamed apart like bound variables, and the bodies assume their condition
+      case Match(arg, cases) =>
+        val arg_ = simplify(config, state, ctx.neutral, arg)
+        val cases_ =
+          for Case(pat, body, cond) <- cases
+          yield
+            val (bound_, re) = ctx.avoid(pat.free.toList)
+            val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
+            val body_ = simplify(config, state, ctx.bind(bound_).assume(List(cond_), Nil), re(body))
+            Case(re(pat), body_, cond_)
+        Match(arg_, cases_)
+
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers
       case Trace(init, deps, acc, bound, updates) =>
         val init_ = simplify(config, state, ctx.neutral, init)

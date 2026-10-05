@@ -385,6 +385,12 @@ object Printer extends cuvee.pipe.Printer:
       case Let(bound, args, body) =>
         apps(atom("let"), list(eqs(bound, args)), lines(body))
 
+      // conditions of the cases are not part of SMT-LIB
+      case Match(arg, cases) =>
+        Error.report("match with conditions not supported in SMT-LIB", expr):
+          require(cases.forall(_.cond == True))
+        apps(atom("match"), lines(arg), list(for Case(pat, body, _) <- cases; line <- apps(lines(pat), lines(body)) yield line))
+
   def lines(prog: Prog): List[String] =
     prog match
       case Break =>

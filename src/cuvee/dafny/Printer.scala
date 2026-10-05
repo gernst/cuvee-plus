@@ -782,5 +782,9 @@ object Printer extends cuvee.pipe.Printer:
         // the bound variables flow up to the width of the line, aligned after the quantifier
         Group(text(name(quant)) +:+ flow(bound.map(formal)) +:+ text("::") ++ Nest(2, line ++ doc(body)))
 
+      // TODO: match expressions
+      case Match(_, _) =>
+        Error.raise("not supported in Dafny", expr)
+
       case Let(bound, args, body) =>
         Group(text("var") +:+ formals(bound) +:+ text(":=") +:+ commas(args.map(doc(_))) ++ text(";") ++ line ++ doc(body))

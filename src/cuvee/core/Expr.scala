@@ -29,6 +29,7 @@ sealed trait Expr:
       case Invs(deps, bound, body)              => Invs(deps.map(f), bound, f(body))
       case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
+      case Match(arg, cases)                    => Match(f(arg), cases.map(_.map(f)))
 
 object Expr:
   // TODO: structural ordering, for now by the printed representation
@@ -181,3 +182,26 @@ case class Let(bound: List[Var], args: List[Expr], body: Expr) extends Expr:
   def params = bound.params ++ args.params ++ body.params
   def free = args.free ++ (body.free -- bound)
   def typ = body.typ
+
+// a case of a match expression, which applies if the argument matches the pattern and the condition holds,
+// the pattern consists of variables and constructor applications (see Type.check), whose variables are bound
+// in the body and the condition; conditions are not part of SMT-LIB, where they are always true
+case class Case(pat: Expr, body: Expr, cond: Expr):
+  def bound = pat.free
+  def params = pat.params ++ body.params ++ cond.params
+  def free = body.free ++ cond.free -- bound
+
+  // the pattern is not a subexpression, like the bound variables of binders
+  def exprs = List(body, cond)
+
+  def map(f: Expr => Expr) =
+    Case(pat, f(body), f(cond))
+
+// the result of the first case whose pattern matches `arg` and whose condition holds
+case class Match(arg: Expr, cases: List[Case]) extends Expr:
+  def subexprs = arg :: cases.exprs
+  def params = arg.params ++ cases.params
+  def free = arg.free ++ cases.free
+
+  // there is at least one case, see Type.check
+  def typ = cases.head.body.typ

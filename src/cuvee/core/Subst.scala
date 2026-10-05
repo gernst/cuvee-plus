@@ -130,6 +130,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
         val (rename, that) = avoid(bound)
         Let(rename(bound), this(args), that(body))
 
+      // the variables of each pattern are bound in its body and condition
+      case Match(arg, cases) =>
+        Match(this(arg), this(cases))
+
   // assigned variables can only be renamed
   def lhs(x: Var): Var =
     this(x) match
@@ -202,6 +206,16 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def apply(exprs: List[Expr]): List[Expr] =
     for expr <- exprs
     yield this(expr)
+
+  def apply(cs: Case): Case =
+    val Case(pat, body, cond) = cs
+    val (rename, that) = avoid(pat.free.toList)
+    Case(rename(pat), that(body), that(cond))
+
+  @targetName("Subst.applyCases")
+  def apply(cases: List[Case]): List[Case] =
+    for cs <- cases
+    yield this(cs)
 
   @targetName("Subst.applyProgs")
   def apply(progs: List[Prog]): List[Prog] =

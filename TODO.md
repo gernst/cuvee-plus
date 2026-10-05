@@ -52,6 +52,12 @@ inferred from the call graph. Open:
 - Termination in `Verify` and `Horn`: loops and procedures without
   `decreases` clause are not checked (Dafny guesses a measure), measures are
   integers only, and the measure of a procedure must refer to its inputs.
+- Match expressions (`Match`, `Case` in [core/Expr.scala](src/cuvee/core/Expr.scala))
+  are supported by substitution, type checking, and the traversal of the
+  simplifier, and printed in SMT-LIB if their cases have no conditions;
+  missing: parsing in the frontends, printing in Boogie and Dafny, reducing a
+  match whose argument is a constructor application, rewriting modulo
+  matches, and their translation for the solvers that do not support them.
 
 ## Code structure and consistency
 

@@ -325,6 +325,11 @@ case class State(
         require(bound.length == args.length)
       Let(bound, args, body)
 
+    def match_(arg: Expr, cases: List[Case]) =
+      Error.report("match without cases", arg):
+        require(cases.nonEmpty)
+      Match(arg, cases)
+
     // type checking resolves the overloaded operators, see Overload
     def check(scope: Scope, expr: Expr, typ: Type) =
       Overload(State.this, Type.check(State.this, scope, expr, typ))
