@@ -5,7 +5,7 @@ import cuvee.core._
 // a sequent at the current position of the simplifier:
 // the assumptions are known to hold and the conclusions are known not to hold,
 // together with the variables bound by enclosing binders, in the order of binding (innermost first),
-// among which `forall` and `exists` are those that are universal and existential at the current position,
+// among which `universal` and `existential` are those quantified universally and existentially seen from the current position,
 // such that the equations x == e of the latter are true at a position with polarity (one-point rule),
 // which is only sound if the context records all siblings between the binder and the current position;
 // a substitution that replaces variables by others or by literals known to be equal,
@@ -18,8 +18,8 @@ import cuvee.core._
 // the rewrite rules are applied after each round of simplification (see Simplify.simplify)
 case class Ctx(
     bound: List[Var],
-    forall: Set[Var],
-    exists: Set[Var],
+    universal: Set[Var],
+    existential: Set[Var],
     assms: List[Expr],
     concls: List[Expr],
     su: Map[Var, Expr],
@@ -33,23 +33,25 @@ case class Ctx(
   def withRules(rules: List[Rule], steps: Int = 1000) =
     copy(rules = rules, steps = util.Ref(steps))
 
-  // variables bound universally, also those of let, match, and the combinators,
-  // which are bound below neutral positions only
-  def universal(xs: List[Var]) =
-    copy(bound = xs ++ bound, forall = forall ++ xs)
+  // variables bound by let, match, and the combinators, which are neither universal nor existential
+  def bind(xs: List[Var]) =
+    copy(bound = xs ++ bound)
 
-  def existential(xs: List[Var]) =
-    copy(bound = xs ++ bound, exists = exists ++ xs)
+  def forall(xs: List[Var]) =
+    copy(bound = xs ++ bound, universal = universal ++ xs)
+
+  def exists(xs: List[Var]) =
+    copy(bound = xs ++ bound, existential = existential ++ xs)
 
   // below a negation or in the premise of an implication, where universal variables become existential
-  // and vice versa, since forall x. !phi is !exists x. phi
+  // and vice versa, since forall x. !phi is !exists x. !!phi
   def flip =
-    copy(forall = exists, exists = forall, polarity = polarity.map(!_))
+    copy(universal = existential, existential = universal, polarity = polarity.map(!_))
 
   // in a position without polarity, also below positions whose siblings are not recorded in the context,
   // e.g. the other branch of ite, where the one-point rule must not apply
   def neutral =
-    copy(forall = Set(), exists = Set(), polarity = None)
+    copy(universal = Set(), existential = Set(), polarity = None)
 
   // variables that occur in the context
   def free: Set[Var] =

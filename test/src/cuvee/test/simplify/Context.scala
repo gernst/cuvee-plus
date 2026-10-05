@@ -99,6 +99,13 @@ object OnePoint extends TestSuite:
       val phi = All(List(x), Ex(List(y), Not(Eq(x, y))))
       simplify(phi) ==> phi
 
+    // a quantifier in a position without polarity has the one-point rule for its own variables,
+    // whereas the variables of let are neither universal nor existential, also below a negation
+    test("nested"):
+      simplify(Eqv(q, Ex(List(x), And(Eq(x, Plus.int(y, One.int)), P(y))))) ==> Eq(q, P(y))
+      val let = Let(List(x), List(Plus.int(y, One.int)), Not(Eq(x, z)))
+      simplify(Imp(P(z), let)) ==> Imp(P(z), let)
+
     // the context does not record the other branch of ite and the dependencies of all
     test("opaque"):
       val branch = All(List(x), Ite(q, Imp(Eq(x, y), P(y)), P(x)))

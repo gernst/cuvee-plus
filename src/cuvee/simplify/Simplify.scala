@@ -433,19 +433,19 @@ object Simplify extends Transform:
       // bound variables are renamed apart from the context before entering the body
       case All(bound, body) =>
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.universal(bound_), re(body))
+        val body_ = simplify(config, state, ctx.forall(bound_), re(body))
         bind(config, state, ctx, All.name, bound_, body_)
 
       case Ex(bound, body) =>
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.existential(bound_), re(body))
+        val body_ = simplify(config, state, ctx.exists(bound_), re(body))
         bind(config, state, ctx, Ex.name, bound_, body_)
 
       // the body has no polarity, since the context does not record the bindings
       case Let(bound, args, body) =>
         val args_ = args.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.neutral.universal(bound_), re(body))
+        val body_ = simplify(config, state, ctx.neutral.bind(bound_), re(body))
         let(config, state, ctx, bound_, args_, body_)
 
       // the variables of the patterns are renamed apart like bound variables, and the bodies assume their condition,
@@ -456,8 +456,8 @@ object Simplify extends Transform:
           for Case(pat, body, cond) <- cases
           yield
             val (bound_, re) = ctx.avoid(pat.free.toList)
-            val cond_ = simplify(config, state, ctx.neutral.universal(bound_), re(cond))
-            val body_ = simplify(config, state, ctx.neutral.universal(bound_).assume(state, List(cond_), Nil), re(body))
+            val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
+            val body_ = simplify(config, state, ctx.neutral.bind(bound_).assume(state, List(cond_), Nil), re(body))
             case_(config, state, ctx, re(pat), body_, cond_)
         match_(config, state, ctx, arg_, cases_)
 
@@ -466,13 +466,13 @@ object Simplify extends Transform:
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (vars_, re) = ctx.avoid(acc :: bound)
-        val updates_ = this.updates(config, state, ctx.neutral.universal(vars_), updates.map(_.map(re(_))))
+        val updates_ = this.updates(config, state, ctx.neutral.bind(vars_), updates.map(_.map(re(_))))
         trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, updates_)
 
       case Maps(deps, bound, updates) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val updates_ = this.updates(config, state, ctx.neutral.universal(bound_), updates.map(_.map(re(_))))
+        val updates_ = this.updates(config, state, ctx.neutral.bind(bound_), updates.map(_.map(re(_))))
         maps(config, state, ctx, deps_, bound_, updates_)
 
       // the body holds for all values of the dependencies, like the body of a universal quantifier,
@@ -480,7 +480,7 @@ object Simplify extends Transform:
       case Invs(deps, bound, body) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.neutral.universal(bound_), re(body))
+        val body_ = simplify(config, state, ctx.neutral.bind(bound_), re(body))
         invs(config, state, ctx, deps_, bound_, body_)
 
   // the guards of the cases of an update are simplified, cases whose guard is false are dropped,
@@ -588,12 +588,12 @@ object Simplify extends Transform:
         Eq(left, right)
 
   // one-point rule: forall x. C[x == e] is C[true] if x == e occurs negatively in C, and exists x. C[x == e] likewise
-  // if it occurs positively, i.e., x is existential at the current position (see Ctx.flip), provided that x does not occur elsewhere, i.e., neither in e nor in the context,
+  // if it occurs positively, i.e., x is existential seen from the current position (see Ctx.flip),
+  // which neutral positions forget, provided that x does not occur elsewhere, i.e., neither in e nor in the context,
   // and e does not depend on variables bound inside the scope of x, otherwise x cannot be instantiated by e,
   // e.g. not in forall x. exists y. !(x == y)
   def point(ctx: Ctx, x: Var, e: Expr): Boolean =
-    ctx.polarity.nonEmpty
-      && (ctx.exists contains x)
+    (ctx.existential contains x)
       && !(e.free contains x)
       && !(Ctx.primed(e) contains x)
       && !(ctx.used contains x)
