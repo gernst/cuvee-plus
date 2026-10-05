@@ -30,6 +30,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `Arith.toPoly` and `Simplify.poly` duplicate the traversal of polynomials;
   `toPoly` could take a function for the leaves (identity for `Rewrite`,
   `simplify` for `poly`).
+- `Verify.instance` eliminates `old(g)` in the postcondition of a callee by
+  three substitutions with fresh placeholders `mod0`, since `Subst` also
+  substitutes inside `old(e)`. A single traversal in `Verify` or `Old` that
+  replaces the new values and strips `old(e)` would avoid them, but needs its
+  own capture-avoiding handling of binders; `Subst` must not get a special
+  case for this.
 - `send`, `receive`, and the history are recognized by their names
   (`history_send`, `history_receive`, the global variable `history`).
 - Warnings: the implicit conversion `String => Name` without
