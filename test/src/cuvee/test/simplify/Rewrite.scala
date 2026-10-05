@@ -216,6 +216,18 @@ object Rules extends TestSuite:
       errors ==> Nil
       cuvee.dafny.Printer.lines(cmds.last) ==> List("function h(y: int, z: int): bool {", "  true", "}", "")
 
+    // an equation of the context with a ground side is a rule without variables, in either direction
+    test("ground"):
+      val (cmds, errors) = simplify("""
+        datatype box = box(v: int)
+        function f(x: int): int
+        function g(x: int): int
+        function h(b: box, c: box, x: int): bool { b.v == 0 && 1 == f(x) ==> g(b.v) == g(0) && g(f(x)) == g(1) && g(c.v) == g(0) }
+      """, ".dfy")
+      errors ==> Nil
+      cuvee.dafny.Printer.lines(cmds.last).mkString(" ").replaceAll(" +", " ") ==>
+        "function h(b: box, c: box, x: int): bool { box_v(b) == 0 && 1 == f(x) ==> g(box_v(c)) == g(0) } "
+
     // the rules are printed with their attribute, which parses back
     test("printing"):
       val (cmds, errors) = simplify("function f(x: int): int axiom {:rw} forall x: int :: f(f(x)) == x", ".dfy")

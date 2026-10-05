@@ -102,6 +102,15 @@ case class Ctx(
       case Eq(e, x: Var) if !(eq contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
         copy(assms = phi :: assms, eq = eq + (x -> e))
 
+      // an equation of a term with variables and a ground term is a rewrite rule without instantiable variables,
+      // whose free variables are constants, e.g. history.events == [] for delay(history.events, t);
+      // it terminates, since each step removes occurrences of variables, which no other such rule matches
+      case Eq(lhs, rhs) if Ctx.rule(lhs, rhs) =>
+        copy(assms = phi :: assms, rules = Rule(Nil, lhs, rhs, True) :: rules)
+
+      case Eq(rhs, lhs) if Ctx.rule(lhs, rhs) =>
+        copy(assms = phi :: assms, rules = Rule(Nil, lhs, rhs, True) :: rules)
+
       case _ =>
         copy(assms = phi :: assms)
 
@@ -147,6 +156,11 @@ case class Ctx(
         deny(phi).assume(state, Nil, neg)
 
 object Ctx:
+  // whether lhs == rhs is a rule of the context: rhs is ground and lhs is not;
+  // equations of variables are recorded in eq, those of arithmetic are normalized instead
+  def rule(lhs: Expr, rhs: Expr): Boolean =
+    !lhs.isInstanceOf[Var] && !arithmetic(lhs) && lhs.free.nonEmpty && rhs.free.isEmpty
+
   // applications of the basic arithmetic operators on Int or Real
   def arithmetic(expr: Expr): Boolean =
     Ring(expr.typ) match
