@@ -9,7 +9,7 @@ import cuvee.core._
 // the polarity of the current position is Some(true) if it occurs positively,
 // Some(false) if it occurs negatively, and None if it occurs in both ways or not in a formula,
 // e.g. below an equation or in the argument of a function;
-// the context is inconsistent if it contains a contradiction,
+// the context is inconsistent if false is among the assumptions or true among the conclusions,
 // then the current position is irrelevant for the truth value of the whole formula;
 // the rewrite rules are applied after each round of simplification (see Simplify.simplify)
 case class Ctx(
@@ -18,7 +18,6 @@ case class Ctx(
     concls: List[Expr],
     su: Subst[Nothing, Var],
     polarity: Option[Boolean],
-    inconsistent: Boolean,
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0)
 ):
@@ -52,8 +51,7 @@ case class Ctx(
 
   // equations between variables are recorded in the substitution;
   // facts are stored as given and not normalized under the substitution,
-  // e.g. denying x = y when x is replaced by y is not detected as inconsistent here,
-  // and Simplify.implies misses (p y) when the fact is stored as (p x);
+  // e.g. Simplify.implied misses (p y) when the fact is stored as (p x);
   // this is done at the top level instead: Simplify.simplify iterates to a fixpoint,
   // where the facts are the simplified siblings, which are already rewritten under the substitution
   def assume(phi: Expr): Ctx =
@@ -65,12 +63,14 @@ case class Ctx(
         copy(su = su + (x -> y))
 
       case _ =>
-        val inconsistent_ = inconsistent || phi == False || (concls contains phi)
-        copy(assms = phi :: assms, inconsistent = inconsistent_)
+        copy(assms = phi :: assms)
 
   def deny(phi: Expr): Ctx =
-    val inconsistent_ = inconsistent || phi == True || (assms contains phi)
-    copy(concls = phi :: concls, inconsistent = inconsistent_)
+    copy(concls = phi :: concls)
+
+  // false among the assumptions or true among the conclusions
+  def inconsistent =
+    (assms contains False) || (concls contains True)
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
@@ -107,7 +107,7 @@ case class Ctx(
         deny(phi).assume(Nil, neg)
 
 object Ctx:
-  val empty = Ctx(Nil, Nil, Nil, Subst.empty, None, false)
+  val empty = Ctx(Nil, Nil, Nil, Subst.empty, None)
 
   // at the top of an asserted formula
   val pos = empty.copy(polarity = Some(true))

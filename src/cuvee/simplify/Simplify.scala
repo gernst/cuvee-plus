@@ -178,7 +178,7 @@ object Simplify extends Transform:
   // a formula that is known from the context is replaced by its truth value;
   // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
   def simplify(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    implies(config, state, ctx, expr) match
+    implied(config, state, ctx, expr) match
       case Some(true)  => True
       case Some(false) => False
       case None =>
@@ -195,7 +195,7 @@ object Simplify extends Transform:
   // also by its negation in normal form, e.g. a < b is false if b <= a is known (see not);
   // in an inconsistent context any formula may be chosen,
   // true at positive positions and false at negative positions
-  def implies(config: Config, state: State, ctx: Ctx, phi: Expr): Option[Boolean] =
+  def implied(config: Config, state: State, ctx: Ctx, phi: Expr): Option[Boolean] =
     if ctx.inconsistent && phi.typ == Sort.bool && ctx.polarity.isDefined
     then ctx.polarity
     else if ctx.assms contains phi
