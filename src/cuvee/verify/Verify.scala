@@ -183,7 +183,7 @@ object Verify extends Transform:
     // by the types of the arguments, and those of the results, which su_ replaces in addition
     val su = Ref(Subst.empty[Type, Expr])
     Type.bind(in, args, su)
-    val su_ = Ref(su.value)
+    val su_ = su.copy
     Type.bind(out ++ mod, res_ ++ mod_, su_)
     val rename = Subst.from(res ++ mod, res_ ++ mod_)
     val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
@@ -239,7 +239,8 @@ object Verify extends Transform:
     val pres = instances.map(_._1)
     val fresh = instances.flatMap(_._2)
     val phis = instances.map(_._3)
-    val rename = Subst[Nothing, Var](Map(), instances.flatMap(_._4.vars).toMap - h)
+    val renamed = instances.flatMap(_._4.vars).toMap - h
+    val rename = Subst.from(renamed.keys.toList, renamed.values.toList)
     val effect = All(fresh, havoc(h, Imp(And(phis ++ commits), rename(post))))
 
     And((init :: side) ++ pres ++ List(guarantee, effect))

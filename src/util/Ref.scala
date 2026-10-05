@@ -10,3 +10,7 @@ class Ref[A](var value: A):
 
   def map(f: A => A) =
     value = f(value)
+
+  // a new reference with the current value, which is updated independently
+  def copy: Ref[A] =
+    Ref(value)
