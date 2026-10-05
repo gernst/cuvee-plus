@@ -1,7 +1,8 @@
 // the lemma database of -teq, which is injected at the beginning of its output:
 // the type of traces and the functions on them (see cuvee.core.Sort.trace and cuvee.core.Fun.trace),
 // which exist only with -teq, and lemmas about them, which are rewrite rules of the simplifier ({:rw}),
-// the simplifier is expected to prove the goals of -teq on its own, not the solvers
+// the simplifier is expected to prove the goals of -teq on its own, not the solvers,
+// functions that produce traces are plural (sums, counts), their scalar counterparts singular (sum, count)
 
 // the traces of trace equation systems, the values of a variable at the loop head
 type Trace<a₀>
@@ -97,8 +98,8 @@ function min(m: int, n: int): int
   if m <= n then m else n
 }
 
-// the number of true values, counted from an initial value
-function counts(x₀: int, x₁: seq<bool>): Trace<int>
+// the number of occurrences of a value, counted from an initial value
+function counts<a₀>(x₀: int, x₁: a₀, x₂: seq<a₀>): Trace<int>
 
 // counters
 
@@ -342,8 +343,16 @@ lemma {:rw} {:free} forall x: int, values: seq<int> ::
 
 // counts
 
+lemma <a> {:rw} {:free} forall x: int, e: a, vs: seq<a> ::
+  trace(x, for vs do y, v => if v == e then y + 1, if v != e then y) == counts(x, e, vs)
+
+// on booleans, the guards are the values themselves; the occurrences of false come first,
+// since the guard b of the other lemma also matches !b, which counts the occurrences of true among the negations
 lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
-  trace(x, for bs do y, b => if b then y + 1, if !b then y) == counts(x, bs)
+  trace(x, for bs do y, b => if !b then y + 1, if b then y) == counts(x, false, bs)
+
+lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
+  trace(x, for bs do y, b => if b then y + 1, if !b then y) == counts(x, true, bs)
 
 // =====================================================================================================================
 // FURTHER LEMMAS THAT NEED TO BE CHECKED MANUALLY
@@ -352,8 +361,8 @@ lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
 // earlier and nth, the lengths of prefixes, and the facts that are needed for inductive invariants over prefixes
 // =====================================================================================================================
 
-// the number of true values of a sequence
-function count(x₀: seq<bool>): int
+// the number of occurrences of a value in a sequence
+function count<a₀>(x₀: a₀, x₁: seq<a₀>): int
 
 // the elements of a trace and of all but its last element coincide
 lemma <a> {:rw} {:free} forall k: int, X: Trace<a> ::
@@ -416,8 +425,8 @@ lemma {:rw} {:free} forall x: int, values: seq<int> ::
 lemma {:rw} {:free} forall x: int, values: seq<int> ::
   steps(mins(x, values)) == length(values)
 
-lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
-  steps(counts(x, bs)) == length(bs)
+lemma <a> {:rw} {:free} forall x: int, e: a, vs: seq<a> ::
+  steps(counts(x, e, vs)) == length(vs)
 
 // the step of the prefix sums, for invariants of the form s == sum(prefix(i, values))
 lemma {:free} forall k: int, values: seq<int> ::
@@ -437,16 +446,16 @@ lemma {:free} forall k: int, x: int, values: seq<int> ::
 
 // counts, which are linear like sums
 
-lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
-  current(counts(x, bs)) == x + count(bs)
+lemma <a> {:rw} {:free} forall x: int, e: a, vs: seq<a> ::
+  current(counts(x, e, vs)) == x + count(e, vs)
 
-lemma {:free} forall bs: seq<bool> ::
-  0 <= count(bs) && count(bs) <= length(bs)
+lemma <a> {:free} forall e: a, vs: seq<a> ::
+  0 <= count(e, vs) <= length(vs)
 
-lemma {:rw} {:free} forall k: int, x: int, bs: seq<bool> ::
-  if 0 <= k <= length(bs)
-  then prefix(k, ⌊counts(x, bs)⌋) == ⌊counts(x, prefix(k, bs))⌋
+lemma <a> {:rw} {:free} forall k: int, x: int, e: a, vs: seq<a> ::
+  if 0 <= k <= length(vs)
+  then prefix(k, ⌊counts(x, e, vs)⌋) == ⌊counts(x, e, prefix(k, vs))⌋
 
-lemma {:rw} {:free} forall n: int, b: bool ::
+lemma <a> {:rw} {:free} forall n: int, e: a, v: a ::
   if 0 <= n
-  then count(⌊consts(n, b)⌋) == if b then n else 0
+  then count(e, ⌊consts(n, v)⌋) == if v == e then n else 0

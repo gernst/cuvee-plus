@@ -97,6 +97,8 @@ or solvers consume.
 - **The lemma database** [teq.dfy](resources/cuvee/teq.dfy) is injected by
   `-teq`.
   - Its sections after the first one are marked as needing manual checking.
+  - Functions that produce traces are plural (`sums`, `maxs`, `counts`),
+    their scalar counterparts singular (`sum`, `max`, `count`).
   - `counter(i, c, n)` is the trace `i, i + c, ..., i + n c`. The old Boogie
     `teq.bpl` had `counter(n)` = `counter(0, 1, n)` and
     `range(i, c, n)` = `counter(i, c, n)`.

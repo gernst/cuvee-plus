@@ -306,9 +306,16 @@ object Rewrite:
         for
           Upd(cond, rhs) <- updates
           m1 <- matches(config, state, ctx, b, rhs, rhs_, m)
-          if implies(config, state, ctx, b, cond_, cond, m1)
-          m2 <- matches(config, state, ctx, b, updates, rest, m1)
-        yield m2
+          m2 <- guard(config, state, ctx, b, cond_, cond, m1)
+          m3 <- matches(config, state, ctx, b, updates, rest, m2)
+        yield m3
+
+  // the guard of the pattern matches that of the expression, which instantiates the bound variables of the pattern
+  // that do not occur in its result, e.g. b in if b then y + 1, and otherwise it must follow from that of the expression
+  def guard(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+    matches(config, state, ctx, b, guard, guard_, m) match
+      case Nil if implies(config, state, ctx, b, guard_, guard, m) => List(m)
+      case ms                                                     => ms
 
   def implies(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): Boolean =
     if guard == True

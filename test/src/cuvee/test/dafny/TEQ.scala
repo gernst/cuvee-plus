@@ -89,3 +89,25 @@ object TEQ extends TestSuite:
       // the synthetic counter K = counter(0, 1, n) and the loop variable i = counter(0, 1, steps(K))
       assert(counters.exists { case App(_, _, _, List(_, _, App(fun, _, _, _))) => fun == Fun.trace.steps; case _ => false })
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
+
+    // a variable that is increased where the values are equal to e counts the occurrences of e,
+    // also on values of other types than bool, and on booleans whose guards are the values themselves
+    test("counts"):
+      val rules = cuvee.simplify.Simplify.rules(cuvee.verify.TEQ.lemmas)
+      val counts = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == "counts" => fun }.get
+      val x = Var("x", Sort.int)
+      val y = Var("y", Sort.int)
+      val e = Var("e", Sort.real)
+      val v = Var("v", Sort.real)
+      val vs = Var("vs", Sort.seq(Sort.real))
+      val b = Var("b", Sort.bool)
+      val bs = Var("bs", Sort.seq(Sort.bool))
+
+      val trues = Trace(x, List(bs), y, List(b), List(Upd(b, Plus.int(y, One.int)), Upd(Not(b), y)))
+      Rewrite(rules, trues) ==> App(counts, List(x, True, bs))
+
+      val falses = Trace(x, List(bs), y, List(b), List(Upd(Not(b), Plus.int(y, One.int)), Upd(b, y)))
+      Rewrite(rules, falses) ==> App(counts, List(x, False, bs))
+
+      val occurrences = Trace(x, List(vs), y, List(v), List(Upd(Eq(v, e), Plus.int(y, One.int)), Upd(Not(Eq(v, e)), y)))
+      Rewrite(rules, occurrences) ==> App(counts, List(x, e, vs))

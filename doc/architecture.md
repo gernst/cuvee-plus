@@ -155,7 +155,11 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
 - [`Rewrite`](../src/cuvee/simplify/Rewrite.scala) applies conditional rules
   innermost first, also as a library. Its methods take
   `(config, state, ctx, ...)` as well; matches are substitutions, and side
-  conditions are decided by `Simplify.simplify` in the context.
+  conditions are decided by `Simplify.simplify` in the context. Below the
+  combinators, each case of the expression's update is covered by a case of
+  the pattern, whose guard matches syntactically (which instantiates bound
+  variables that occur only in guards, e.g. `b` in `if b then y + 1`) or
+  follows from the guard of the expression.
 - [`Flat`](../src/cuvee/transform/Flat.scala) flattens record arguments of
   Horn predicates.
 - [`Split`](../src/cuvee/transform/Split.scala) splits goals and lemmas into
