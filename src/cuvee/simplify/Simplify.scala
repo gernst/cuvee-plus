@@ -155,9 +155,6 @@ object Simplify extends Transform:
   // the statement without effect
   val skip = Block(Nil, Nil)
 
-  def isSkip(prog: Prog) =
-    prog == skip
-
   // havoc of no variables under the trivial contract has no effect
   def spec(config: Config, state: State, ctx: Ctx, xs: List[Var], pre: Expr, post: Expr): Prog =
     (xs, pre, post) match
@@ -174,8 +171,8 @@ object Simplify extends Transform:
   def call(config: Config, state: State, ctx: Ctx, name: Name, args: List[Expr], res: List[Var]): Prog =
     Call(name, args, res)
 
-  // nested blocks are merged, whose locals are hoisted unless that captures variables of the other statements,
-  // statements without effect are dropped, as are those after a jump, and locals that are not used;
+  // nested blocks are merged, which drops skip, the empty block, and whose locals are hoisted unless that captures
+  // variables of the other statements; statements after a jump and locals that are not used are dropped;
   // a block of a single statement without locals is that statement
   def block(config: Config, state: State, ctx: Ctx, locals: List[Var], progs: List[Prog]): Prog =
     def flatten(locals: List[Var], done: List[Prog], progs: List[Prog]): (List[Var], List[Prog]) =
@@ -189,9 +186,6 @@ object Simplify extends Transform:
         case Block(inner, progs_) :: rest
             if (inner intersect locals).isEmpty && !(done ++ rest).exists(p => inner.exists(p.free.contains)) =>
           flatten(locals ++ inner, done, progs_ ++ rest)
-
-        case prog :: rest if isSkip(prog) =>
-          flatten(locals, done, rest)
 
         case prog :: rest =>
           flatten(locals, done :+ prog, rest)
