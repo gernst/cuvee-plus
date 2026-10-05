@@ -30,7 +30,7 @@ axiom <a₀> forall c: chan, h₁: seq<event<a₀>>, h₂: seq<event<a₀>> ::
 function delay<a₀>(h: seq<event<a₀>>, t: real): seq<event<a₀>>
 
 axiom <a₀> forall t: real ::
-  delay([] as seq<event<a₀>>, t) == [time(t)]
+  delay([] as seq<event<a₀>>, t) == (if t == 0.0 then [] else [time(t)])
 
 axiom <a₀> forall h: seq<event<a₀>>, c: chan, v: a₀, t: real ::
   delay(h + [message(c, v)], t) == h + [message(c, v), time(t)]
