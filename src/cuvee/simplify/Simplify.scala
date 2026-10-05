@@ -719,8 +719,10 @@ object Simplify extends Transform:
   def maps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], updates: List[Upd]): Expr =
     Maps(deps, bound, updates)
 
-  // invariants that hold trivially
+  // invariants with a constant body: true holds trivially,
+  // false holds exactly if there are no values, i.e., the dependencies, which have the same length, are empty
   def invs(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], body: Expr): Expr =
-    if body == True
-    then True
-    else Invs(deps, bound, body)
+    (deps, body) match
+      case (_, True)          => True
+      case (dep :: _, False)  => Eq(App(Fun.trace.length, List(dep)), Zero.int)
+      case _                  => Invs(deps, bound, body)
