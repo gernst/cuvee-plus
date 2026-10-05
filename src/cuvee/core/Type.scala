@@ -87,11 +87,6 @@ object Sort:
   def trace(elem: Type) =
     Sort(Con.trace, List(elem))
 
-// the state of type inference: the solution of the type equations so far, extended by unification,
-// and the applications of overloaded operators whose implementation is not determined yet (see Type.overload)
-class Constraints extends util.Ref[Subst[Type, Expr]](Subst.empty):
-  var pending: List[App] = Nil
-
 object Type:
   import util.Ref
 
@@ -217,8 +212,10 @@ object Type:
     do bind(pat, typ, subst)
 
   // the types of expressions are already instantiated with fresh parameters by the parsers,
-  // in particular `inst` of an application holds the expected types of the arguments
-  def check(state: State, scope: Scope, expr: Expr, res: Type, subst: Constraints): Unit =
+  // in particular `inst` of an application holds the expected types of the arguments;
+  // `subst` collects the solution of the type equations, `pending` the applications of overloaded operators,
+  // whose implementations are determined afterwards (see overload)
+  def check(state: State, scope: Scope, expr: Expr, res: Type, subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]]): Unit =
     expr match
       case Var(name, typ) =>
         Error.report("type mismatch", expr, typ, res):
@@ -232,11 +229,11 @@ object Type:
         Error.report("wrong number of arguments", fun, args):
           require(inst.length == args.length)
 
-        check(state, scope, args, inst, subst)
+        check(state, scope, args, inst, subst, pending)
 
         // the implementation is determined later, once the type that it depends on is known
         expr match
-          case app @ App(fun, _, _, _) if Overload.isGeneric(fun) => subst.pending = app :: subst.pending
+          case app @ App(fun, _, _, _) if Overload.isGeneric(fun) => pending := app :: pending.value
           case _                                                  =>
 
         Error.report("type mismatch", expr, typ, res):
@@ -244,7 +241,7 @@ object Type:
 
       // all expressions have the type of the first one
       case Distinct(exprs) =>
-        check(state, scope, exprs, exprs.map(_ => exprs.head.typ), subst)
+        check(state, scope, exprs, exprs.map(_ => exprs.head.typ), subst, pending)
 
         Error.report("type mismatch", expr, Sort.bool, res):
           unify(state, scope, Sort.bool, res, subst)
@@ -252,7 +249,7 @@ object Type:
       // the type parameters of the constructor are instantiated freshly
       case Is(arg, fun) =>
         val su = Subst.fresh(fun.params)
-        check(state, scope, arg, su(fun.res), subst)
+        check(state, scope, arg, su(fun.res), subst, pending)
 
         Error.report("type mismatch", expr, Sort.bool, res):
           unify(state, scope, Sort.bool, res, subst)
@@ -263,16 +260,16 @@ object Type:
         Error.report("derivative with respect to variables that are not real", expr, wrong):
           require(wrong.isEmpty)
 
-        check(state, scope, arg, res, subst)
+        check(state, scope, arg, res, subst, pending)
 
       case Old(arg) =>
-        check(state, scope, arg, res, subst)
+        check(state, scope, arg, res, subst, pending)
 
       // the accumulator starts with the initial value and is updated by the results
       case Trace(init, deps, acc, bound, updates) =>
-        check(state, scope, init, acc.typ, subst)
-        dependencies(state, scope, expr, deps, bound, subst)
-        this.updates(state, scope, updates, acc.typ, subst)
+        check(state, scope, init, acc.typ, subst, pending)
+        dependencies(state, scope, expr, deps, bound, subst, pending)
+        this.updates(state, scope, updates, acc.typ, subst, pending)
 
         Error.report("type mismatch", expr, Sort.trace(acc.typ), res):
           unify(state, scope, Sort.trace(acc.typ), res, subst)
@@ -283,34 +280,34 @@ object Type:
           require(updates.nonEmpty)
 
         val typ = updates.head.rhs.typ
-        dependencies(state, scope, expr, deps, bound, subst)
-        this.updates(state, scope, updates, typ, subst)
+        dependencies(state, scope, expr, deps, bound, subst, pending)
+        this.updates(state, scope, updates, typ, subst, pending)
 
         Error.report("type mismatch", expr, Sort.seq(typ), res):
           unify(state, scope, Sort.seq(typ), res, subst)
 
       case Invs(deps, bound, body) =>
-        dependencies(state, scope, expr, deps, bound, subst)
-        check(state, scope, body, Sort.bool, subst)
+        dependencies(state, scope, expr, deps, bound, subst, pending)
+        check(state, scope, body, Sort.bool, subst, pending)
 
         Error.report("type mismatch", expr, Sort.bool, res):
           unify(state, scope, Sort.bool, res, subst)
 
       case As(arg, typ) =>
-        check(state, scope, arg, typ, subst)
+        check(state, scope, arg, typ, subst, pending)
 
         Error.report("type mismatch", expr, typ, res):
           unify(state, scope, typ, res, subst)
 
       case Bind(quant, bound, body) =>
-        check(state, scope, body, Sort.bool, subst)
+        check(state, scope, body, Sort.bool, subst, pending)
 
         Error.report("type mismatch", expr, Sort.bool, res):
           unify(state, scope, Sort.bool, res, subst)
 
       case Let(bound, args, body) =>
-        check(state, scope, args, bound.types, subst)
-        check(state, scope, body, res, subst)
+        check(state, scope, args, bound.types, subst, pending)
+        check(state, scope, body, res, subst, pending)
 
       // the patterns have the type of the argument, the bodies that of the match
       case Match(arg, cases) =>
@@ -323,12 +320,12 @@ object Type:
           Error.report("invalid pattern", pat):
             require(pattern(state, pat))
 
-        check(state, scope, arg :: pats, (arg :: pats).map(_ => arg.typ), subst)
+        check(state, scope, arg :: pats, (arg :: pats).map(_ => arg.typ), subst, pending)
 
         for Case(_, body, cond) <- cases
         do
-          check(state, scope, cond, Sort.bool, subst)
-          check(state, scope, body, res, subst)
+          check(state, scope, cond, Sort.bool, subst, pending)
+          check(state, scope, body, res, subst, pending)
 
   // patterns consist of variables and constructors applied to patterns, where each variable occurs at most once
   def pattern(state: State, pat: Expr): Boolean =
@@ -347,39 +344,40 @@ object Type:
     vars(pat).exists(xs => xs.distinct.length == xs.length)
 
   // the dependencies of the combinators are sequences over the types of the bound variables, of which there is at least one
-  def dependencies(state: State, scope: Scope, expr: Expr, deps: List[Expr], bound: List[Var], subst: Constraints): Unit =
+  def dependencies(state: State, scope: Scope, expr: Expr, deps: List[Expr], bound: List[Var], subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]]): Unit =
     Error.report("combinator without dependencies", expr):
       require(deps.nonEmpty)
 
     Error.report("mismatching dependencies and bound variables", expr, deps, bound):
       require(deps.length == bound.length)
 
-    check(state, scope, deps, bound.map(x => Sort.seq(x.typ)), subst)
+    check(state, scope, deps, bound.map(x => Sort.seq(x.typ)), subst, pending)
 
   // the guards of updates are formulas, and the results have type `typ`
-  def updates(state: State, scope: Scope, updates: List[Upd], typ: Type, subst: Constraints): Unit =
+  def updates(state: State, scope: Scope, updates: List[Upd], typ: Type, subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]]): Unit =
     for Upd(cond, rhs) <- updates
     do
-      check(state, scope, cond, Sort.bool, subst)
-      check(state, scope, rhs, typ, subst)
+      check(state, scope, cond, Sort.bool, subst, pending)
+      check(state, scope, rhs, typ, subst, pending)
 
-  def check(state: State, scope: Scope, exprs: List[Expr], types: List[Type], subst: Constraints): Unit =
+  def check(state: State, scope: Scope, exprs: List[Expr], types: List[Type], subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]]): Unit =
     for (expr, typ) <- exprs zip types
-    do check(state, scope, expr, typ, subst)
+    do check(state, scope, expr, typ, subst, pending)
 
   // `expr` checked against `res`, with the solution of the type constraints applied
   def check(state: State, scope: Scope, expr: Expr, res: Type): Expr =
-    val subst = Constraints()
-    check(state, scope, expr, res, subst)
-    instantiate(state, scope, subst, List(expr)).head
+    val subst = Ref[Subst[Type, Expr]](Subst.empty)
+    val pending = Ref[List[App]](Nil)
+    check(state, scope, expr, res, subst, pending)
+    instantiate(state, scope, subst, pending, List(expr)).head
 
   // the applications of overloaded operators collected by type checking are deferred constraints:
   // each is checked against the signature of its implementation, once the type of its first argument
   // (see Overload.dispatch) is known, which may determine further types, e.g. of s[0] in s[0] + 1,
   // or of a polymorphic constant c in (c + d) == s[0]; this is repeated as long as some application is decided
-  def overload(state: State, scope: Scope, subst: Constraints): Unit =
-    val (blocked, ready) = subst.pending.partition(app => dispatch(state, subst, app).isInstanceOf[Param])
-    subst.pending = blocked
+  def overload(state: State, scope: Scope, subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]]): Unit =
+    val (blocked, ready) = pending.value.partition(app => dispatch(state, subst, app).isInstanceOf[Param])
+    pending := blocked
 
     for app @ App(op, inst, typ, _) <- ready
     do
@@ -396,20 +394,20 @@ object Type:
           Error.raise("operator not defined for type", op.name, first)
 
     if ready.nonEmpty
-    then overload(state, scope, subst)
+    then overload(state, scope, subst, pending)
 
   // the type that determines the implementation of an overloaded operator, as far as it is known
-  def dispatch(state: State, subst: Constraints, app: App): Type =
+  def dispatch(state: State, subst: Ref[Subst[Type, Expr]], app: App): Type =
     val App(op, inst, _, _) = app
     unfold(state, resolve(subst.value, inst(Overload.dispatch(op.name, op.arity))))
 
   // apply the solution of the type constraints after resolving overloading,
   // all overloaded operators and type parameters must be determined
-  def instantiate(state: State, scope: Scope, subst: Constraints, exprs: List[Expr]): List[Expr] =
-    overload(state, scope, subst)
+  def instantiate(state: State, scope: Scope, subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]], exprs: List[Expr]): List[Expr] =
+    overload(state, scope, subst, pending)
 
-    Error.report("ambiguous overloaded operator", subst.pending):
-      require(subst.pending.isEmpty)
+    Error.report("ambiguous overloaded operator", pending.value):
+      require(pending.value.isEmpty)
 
     val exprs_ = close(subst)(exprs)
     val missed = exprs_.params -- scope.params.values.toSet
@@ -468,13 +466,14 @@ object Type:
           require(in.length == args.length && out.length == res.length)
 
         val su = Subst.fresh(params)
-        val subst = Constraints()
-        check(state, scope, args, su(in.types), subst)
+        val subst = Ref[Subst[Type, Expr]](Subst.empty)
+        val pending = Ref[List[App]](Nil)
+        check(state, scope, args, su(in.types), subst, pending)
 
         Error.report("type mismatch in results of call", name, res, out):
           unify(state, scope, res.types, su(out.types), subst)
 
-        val args_ = instantiate(state, scope, subst, args)
+        val args_ = instantiate(state, scope, subst, pending, args)
         Call(name, args_, res)
 
       case Block(locals, progs) =>
