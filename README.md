@@ -32,8 +32,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
   last element, `⌊X⌋` in Dafny and Boogie (`butlast`, sort `Trace<T>`).
   Loop-free programs go directly to a solver,
   loops need rewriting by lemmas first: `-teq` injects a lemma database
-  ([resources/cuvee/teq.dfy](resources/cuvee/teq.dfy)) for programs with
-  loops, whose rewrite rules `-simplify` applies, e.g. the counter lemma.
+  ([resources/cuvee/teq.dfy](resources/cuvee/teq.dfy)) once at the beginning
+  of its output, whose rewrite rules `-simplify` applies, e.g. the counter
+  lemma.
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the
   predicates by their fields.

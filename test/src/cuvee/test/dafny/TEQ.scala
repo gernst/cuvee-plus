@@ -20,13 +20,17 @@ object TEQ extends TestSuite:
     expr :: expr.subexprs.flatMap(subexprs)
 
   val tests = Tests:
+    // the goals are passed to z3 without the lemma database, whose functions on traces z3 does not support
     test("without loops"):
       for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(loops)
       do
         val first = os.read.lines(file).head
-        Examples.errors("-teq", "-z3", file.toString) ==> expected(first)
+        val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
+        errors ==> Nil
+        val goals = os.temp(cuvee.smtlib.Printer.lines(cmds.filterNot(cuvee.verify.TEQ.lemmas.contains)).mkString("\n"), suffix = ".smt2")
+        Examples.errors("-z3", goals.toString) ==> expected(first)
 
-    // the lemma database is injected for programs with loops, whose counter lemma rewrites the trace of i in sum.dfy
+    // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy
     test("lemmas"):
       val sum = Examples.root / "dafny" / "vcgen" / "sum.dfy"
       val (cmds, errors) = Examples.output("-teq", "-simplify", "-print", "null", sum.toString)
@@ -35,10 +39,11 @@ object TEQ extends TestSuite:
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked
       assert(subexprs(phi).collect { case t: Trace => t }.length == 1)
 
-      // without loops, nothing is injected
+      // also without loops, once at the beginning
       val abs = Examples.root / "dafny" / "vcgen" / "abs.dfy"
       val (cmds_, _) = Examples.output("-teq", "-print", "null", abs.toString)
-      assert(!cmds_.exists { case DeclareFun(fun, _) => fun == Fun.trace.counter; case _ => false })
+      cmds_.take(cuvee.verify.TEQ.lemmas.length) ==> cuvee.verify.TEQ.lemmas
+      cmds_.count(cuvee.verify.TEQ.lemmas.contains) ==> cuvee.verify.TEQ.lemmas.length
 
     // break, continue, and return inside of loops: the loop is left by a path that ends by break or return,
     // in addition to the exit where the guard does not hold

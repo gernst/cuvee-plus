@@ -97,9 +97,7 @@ object Path:
 // the goals contain the combinators trace and all, which must be rewritten before they are passed to a solver,
 // except for programs without loops
 object TEQ extends Transform:
-  // the lemma database is injected before the first goal with a trace equation system,
-  // i.e., with the first procedure that contains a loop, such that the goals of programs without loops
-  // can be passed to a solver, which does not accept the polymorphic functions on traces
+  // the lemma database is injected once at the beginning, i.e., when nothing has been passed through so far
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val gs = state.globals
 
@@ -109,20 +107,9 @@ object TEQ extends Transform:
         cmd_ <- verify(state, gs, cmd)
       yield cmd_
 
-    if cmds.exists(loops) && !prefix.exists(loops)
+    if prefix.isEmpty
     then lemmas ++ cmds_
     else cmds_
-
-  // whether `cmd` defines a procedure with a loop
-  def loops(cmd: Cmd): Boolean =
-    def loops(prog: Prog): Boolean =
-      prog match
-        case _: While | _: Iter => true
-        case _                  => prog.subprogs.exists(loops)
-
-    cmd match
-      case DefineProc(_, body, _) => loops(body)
-      case _                      => false
 
   // the declarations of the functions on traces and the lemmas about them (resources/cuvee/teq.dfy),
   // which are parsed by a fresh parser for Dafny
