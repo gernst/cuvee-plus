@@ -82,14 +82,11 @@ object Simplify extends Transform:
   val connectives = Set("and", "or", "=>", "<=>", "not", "ite", "true", "false")
 
   // `ctx` is an empty context, which provides the rewrite rules;
-  // the antecedents of assertions are assumed in the context of their succedents during simplification,
-  // assertions are normalized into clauses afterwards (see Normalize),
-  // since simplification may produce nested implications and negations again
+  // the antecedents of assertions are assumed in the context of their succedents during simplification
   def simplify(config: Config, state: State, ctx: Ctx, cmd: Cmd): Cmd =
     cmd match
       case Assert(justify, params, phi, attrs) =>
-        val phi_ = simplify(config, state, ctx.copy(polarity = Some(true)), phi)
-        Assert(justify, params, Normalize(phi_), attrs)
+        Assert(justify, params, apply(config, state, ctx.copy(polarity = Some(true)), Normalize(phi)), attrs)
 
       case DefineFun(fun, body, attrs) =>
         DefineFun(fun, simplify(config, state, ctx, body), attrs)
@@ -239,6 +236,16 @@ object Simplify extends Transform:
 
   def par(config: Config, state: State, ctx: Ctx, calls: List[Call]): Prog =
     Par(calls)
+
+  // the outer loop for assertions, which are normalized into clauses (see Normalize) before and after each round,
+  // since simplification may produce nested implications and negations again,
+  // and which are simplified again as long as they change, e.g. the equations of let are then known in the context;
+  // normalizing before simplification removes let at positions with a polarity (see Ctx.opaque)
+  def apply(config: Config, state: State, ctx: Ctx, phi: Expr): Expr =
+    val phi_ = Normalize(simplify(config, state, ctx, phi))
+    if phi_ == phi
+    then phi
+    else apply(config, state, ctx, phi_)
 
   // simplify `expr` assuming that all facts in `ctx` hold
   // by repeated rounds of simplification until a fixpoint is reached,

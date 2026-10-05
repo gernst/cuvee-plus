@@ -105,8 +105,10 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     assertions are goals in the head of clauses, `facts ⇒ φ`.
 - [`Simplify`](../src/cuvee/simplify/Simplify.scala) rewrites assertions and
   function definitions to a fixpoint, and simplifies procedures statement by
-  statement. Assertions are normalized into clauses before and after
-  (`Normalize`), and dropped if they simplify to `true`.
+  statement. Assertions are normalized into clauses (`Normalize`) before
+  simplification and after each round of it, which repeats while they change
+  (`Simplify.apply`), such that e.g. the equations of `let` are simplified in
+  the context; they are dropped if they simplify to `true`.
   - All methods take `(config, state, ctx, ...)`. The context `Ctx` holds the
     facts known at the current position and the rewrite rules, which are
     extracted from the assertions and lemmas with the attribute `:rw`

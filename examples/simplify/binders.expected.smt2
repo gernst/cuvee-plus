@@ -4,14 +4,10 @@
   (forall ((y Int)) (p y)))
 
 (assert
-  (forall
-    ((y Int) (x$2 Int))
-    (=> (= x$2 1) (< x$2 y))))
+  (forall ((y Int)) (< 1 y)))
 
 (assert
-  (forall
-    ((y Int) (x$3 Int))
-    (=> (= x$3 y) (p x$3))))
+  (forall ((x$3 Int)) (p x$3)))
 
 (assert
   (forall ((x$4 Int)) (p x$4)))
