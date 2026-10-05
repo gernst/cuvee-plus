@@ -91,7 +91,6 @@ inferred from the call graph. Open:
 - The contract clauses of methods must be in the order `modifies`,
   `requires`, `ensures`, `assumes`, `commits`, `decreases`; Dafny allows any
   order.
-- Chained comparisons, e.g. `0 <= i < n`, are not supported.
 - Decimal literals are scanned greedily, so nested tuple selections such as
   `t.0.1` are scanned as `t` and `.` followed by the literal `0.1`.
 - The printer does not always print valid Dafny: indexed names are printed

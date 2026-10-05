@@ -17,8 +17,9 @@ object Grammar:
     // "!" -> 8
   )
 
-  // chained equations and comparisons as in Dafny, e.g. x == y == z or x < y <= z, are not supported for now:
-  // == and != associate to the left as boolean operators, and the comparisons do not associate
+  // chained equations and comparisons as in Dafny, e.g. x == y == z or x < y <= z, associate to the left,
+  // such that the comparison to the left of another one is the beginning of a chain (see chain),
+  // != associates to the left as a boolean operator
   val infix_ops = Map(
     "<==>" -> (Assoc.Non, 0),
     "==>" -> (Assoc.Right, 1),
@@ -26,10 +27,10 @@ object Grammar:
     "&&" -> (Assoc.Left, 3),
     "==" -> (Assoc.Left, 5),
     "!=" -> (Assoc.Left, 5),
-    ">=" -> (Assoc.Non, 5),
-    ">" -> (Assoc.Non, 5),
-    "<" -> (Assoc.Non, 5),
-    "<=" -> (Assoc.Non, 5),
+    ">=" -> (Assoc.Left, 5),
+    ">" -> (Assoc.Left, 5),
+    "<" -> (Assoc.Left, 5),
+    "<=" -> (Assoc.Left, 5),
     "in" -> (Assoc.Non, 5),
     "!in" -> (Assoc.Non, 5),
     "+" -> (Assoc.Left, 6),
@@ -59,6 +60,22 @@ object Grammar:
 
   val avoid =
     translate.values.toSet
+
+  // the operators that can be chained, x == y == z and x < y <= z
+  val chainable = Set("==", "<", "<=", ">", ">=")
+
+  // the application of an operator, where a comparison whose left operand is a comparison or a chain
+  // extends that to a chain; parenthesized comparisons are tuples, which do not chain, e.g. (x == y) == b
+  def chain(op: String, args: List[Expr]): Expr =
+    args match
+      case List(Chain(ops, args_), right) if chainable(op) =>
+        Chain(ops :+ Sym(op), args_ :+ right)
+
+      case List(App(op_, List(left, middle), Nil), right) if chainable(op) && chainable.exists(Sym(_) == op_) =>
+        Chain(List(op_, Sym(op)), List(left, middle, right))
+
+      case _ =>
+        App(Sym(op), args, Nil)
 
   val Sym = (name: String) =>
     if translate.contains(name)
@@ -249,11 +266,11 @@ object Grammar:
       case (expr, Some(typ)) => As(expr, typ)
 
   val expr: Parser[Expr] =
-    M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))
+    M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, chain)
 
   // expressions with operators that bind tighter than conjunction
   val term: Parser[Expr] =
-    M(sym, prefix_ops, postfix_ops, infix_ops, min = infix_ops("&&")._2 + 1) $ (inner, (op, args) => App(Sym(op), args, Nil))
+    M(sym, prefix_ops, postfix_ops, infix_ops, min = infix_ops("&&")._2 + 1) $ (inner, chain)
 
   val invariant =
     P("invariant" ~ expr)

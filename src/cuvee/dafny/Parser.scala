@@ -401,6 +401,16 @@ class Parser(var state: State):
           yield state.exprs.app(core.Fun.bag.make, List(resolve(scope, arg), state.exprs.num(1)))
         elems_.reduceLeft((left, right) => state.exprs.app(core.Fun.bag.union, List(left, right)))
 
+      // chained comparisons x < y <= z are the conjunction x < y && y <= z, which must not mix directions, as in Dafny
+      case Chain(ops, args) =>
+        Error.report("chained comparisons in different directions", ops):
+          require(!(ops.exists(Set("<", "<=")) && ops.exists(Set(">", ">="))))
+
+        val pairs =
+          for ((op, left), right) <- ops zip args zip args.tail
+          yield App(op, List(left, right), Nil)
+        resolve(scope, pairs.reduceLeft((phi, psi) => App("and", List(phi, psi), Nil)))
+
       case Butlast(arg) =>
         val arg_ = resolve(scope, arg)
         state.exprs.app(core.Fun.trace.butlast, List(arg_))

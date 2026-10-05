@@ -454,9 +454,9 @@ object Printer extends cuvee.pipe.Printer:
         None
 
   // chains with more than two arguments are printed as nested applications, a + b + c is (a + b) + c,
-  // which is wrong for chainable relations;
-  // chained equations and comparisons, e.g. x == y == z or x < y <= z,
-  // are not supported for now (see Grammar.infix_ops) and are printed like function calls, e.g. ==(x, y, z)
+  // which is wrong for chainable relations, which are printed like function calls, e.g. ==(x, y, z);
+  // the comparisons do not associate when printed, since one to the left of another one would begin a chain,
+  // chained comparisons x < y <= z are conjunctions instead (see comparisons)
   def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =
     expr match
       // sequence, set, and multiset literals are atoms
@@ -491,9 +491,9 @@ object Printer extends cuvee.pipe.Printer:
       case App(fun, _, _, args) if Grammar.infix_ops.contains(name(fun.name)) =>
         val op = name(fun.name)
         val (assoc, prec) = Grammar.infix_ops(op)
-        val chain = assoc != Assoc.Non && op != "==" && op != "!="
+        val chain = assoc != Assoc.Non && op != "!=" && !Grammar.chainable(op)
         if args.length == 2 || (args.length > 2 && chain)
-        then Some((op, assoc, prec, args))
+        then operator(op, args)
         else None
 
       case Not(Eq(a, b)) =>
@@ -514,7 +514,45 @@ object Printer extends cuvee.pipe.Printer:
   // an infix operator of Dafny applied to `args`
   def operator(op: String, args: List[Expr]): Option[(String, Assoc, Int, List[Expr])] =
     val (assoc, prec) = Grammar.infix_ops(op)
-    Some((op, assoc, prec, args))
+    Some((op, if Grammar.chainable(op) then Assoc.Non else assoc, prec, args))
+
+  // a comparison x < y, which can be part of a chain
+  def comparison(expr: Expr): Option[(String, Expr, Expr)] =
+    infix(expr) match
+      case Some((op, _, _, List(left, right))) if Grammar.chainable(op) => Some((op, left, right))
+      case _                                                            => None
+
+  // whether the comparisons `ops` go in one direction, which chains must not mix
+  def monotone(ops: List[String]): Boolean =
+    !(ops.exists(Set("<", "<=")) && ops.exists(Set(">", ">=")))
+
+  // a conjunction x < y && y <= z of comparisons that are linked by their operands, printed as x < y <= z
+  def comparisons(expr: Expr): Option[(List[String], List[Expr])] =
+    expr match
+      case And(phis) if phis.length >= 2 =>
+        val cmps = phis.map(comparison)
+        if cmps.forall(_.isDefined)
+        then
+          val cmps_ = cmps.flatten
+          val ops = cmps_.map(_._1)
+          val linked = cmps_.zip(cmps_.tail).forall { case ((_, _, right), (_, left, _)) => right == left }
+          if linked && monotone(ops)
+          then Some((ops, cmps_.head._2 :: cmps_.map(_._3)))
+          else None
+        else None
+
+      case _ =>
+        None
+
+  // the maximal groups of consecutive conjuncts that can be printed as chained comparisons, which are conjunctions
+  def chains(phis: List[Expr]): List[Expr] =
+    val groups =
+      phis.foldLeft(List[List[Expr]]()):
+        case (group :: groups, phi) if comparisons(And(group.reverse :+ phi)).isDefined =>
+          (phi :: group) :: groups
+        case (groups, phi) =>
+          List(phi) :: groups
+    groups.reverse.map(group => And(group.reverse))
 
   // the elements of set literals, {}, {a}, and unions of these
   def members(expr: Expr): Option[List[Expr]] =
@@ -576,6 +614,9 @@ object Printer extends cuvee.pipe.Printer:
         prefix(expr) match
           case Some((_, prec, _)) =>
             (prec, None)
+
+          case None if comparisons(expr).isDefined =>
+            (Grammar.infix_ops("<")._2, Some(Assoc.Non))
 
           case None =>
             infix(expr) match
@@ -718,10 +759,19 @@ object Printer extends cuvee.pipe.Printer:
         val Some((op, prec, arg)) = prefix(expr): @unchecked
         text(op) ++ doc(arg, (prec, None))
 
-      // a op b op c, which breaks before the operators if it does not fit
+      // x < y <= z, which breaks before the operators if it does not fit
+      case _ if comparisons(expr).isDefined =>
+        val Some((ops, args)) = comparisons(expr): @unchecked
+        val inner = (Grammar.infix_ops("<")._2, None)
+        val args_ = args.map(doc(_, inner))
+        Group(args_.head ++ Nest(2, concat(ops.zip(args_.tail).map((op, arg) => line ++ text(op) +:+ arg))))
+
+      // a op b op c, which breaks before the operators if it does not fit,
+      // consecutive comparisons of conjunctions are chained, x < y <= z && b
       case _ if infix(expr).isDefined =>
         val Some((op, assoc, prec, args__)) = infix(expr): @unchecked
-        val args = chain(op, assoc, args__)
+        val args_chained = chain(op, assoc, args__)
+        val args = if op == "&&" then chains(args_chained) else args_chained
         val first = if assoc == Assoc.Left then (prec, Some(Assoc.Left)) else (prec, None)
         val last = if assoc == Assoc.Right then (prec, Some(Assoc.Right)) else (prec, None)
         val inner = (prec, None)

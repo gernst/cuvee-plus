@@ -54,7 +54,7 @@ object Derivatives extends TestSuite:
 
     test("comparisons and conjunction"):
       diff(Lt.real(x, c), x) ==> "x' <= 0.0"
-      diff(And(Le.real(c, x), Lt.real(x, y)), x, y) ==> "0.0 <= x' && x' <= y'"
+      diff(And(Le.real(c, x), Lt.real(x, y)), x, y) ==> "0.0 <= x' <= y'"
 
     // the chain rule for other functions is not applied
     test("other functions"):

@@ -198,3 +198,35 @@ object Conditionals extends TestSuite:
 
     test("expressions need else"):
       errors("axiom (if 1 < 2 then true) == true") ==> List("parse error")
+
+// chained comparisons x < y <= z are the conjunctions x < y && y <= z, which must not mix directions,
+// parenthesized comparisons do not chain
+object Chains extends TestSuite:
+  import cuvee.core.{And, Eq, Le, Lt, Var, Sort}
+
+  def formula(text: String) =
+    val (_, cmds) = Source(new java.io.StringReader("lemma forall i: int, j: int, n: int, b: bool :: " + text))
+    val cuvee.core.Assert(_, _, cuvee.core.All(_, phi), _) = cmds.last: @unchecked
+    phi
+
+  def errors(text: String) =
+    val file = os.temp("function f(i: int, j: int, n: int): bool { " + text + " }", suffix = ".dfy")
+    Examples.errors("-print", "null", file.toString)
+
+  val i = Var("i", Sort.int)
+  val j = Var("j", Sort.int)
+  val n = Var("n", Sort.int)
+  val b = Var("b", Sort.bool)
+
+  val tests = Tests:
+    test("chains"):
+      formula("0 <= i < n") ==> And(Le.int(cuvee.core.Zero.int, i), Lt.int(i, n))
+      formula("i == j == n") ==> And(Eq(i, j), Eq(j, n))
+      formula("i <= j == n < 1") ==> And(And(Le.int(i, j), Eq(j, n)), Lt.int(n, cuvee.core.One.int))
+
+    test("parentheses"):
+      formula("(i == j) == b") ==> Eq(Eq(i, j), b)
+
+    test("directions"):
+      errors("i < j > n") ==> List("chained comparisons in different directions")
+      errors("n > j >= i == 0") ==> Nil

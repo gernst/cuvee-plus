@@ -113,6 +113,15 @@ object Printing extends TestSuite:
       expr(app(Fun.eq_, p, app(Fun.eq_, q, p))) ==> "p == (q == p)"
       expr(app(Fun.eq_, x, y, zero)) ==> "==(x, y, 0)"
 
+    // conjunctions of comparisons that are linked by their operands in one direction are chained,
+    // comparisons as operands of comparisons are parenthesized
+    test("chained comparisons"):
+      expr(app(Fun.and, app(Fun.int.le, zero, x), app(Fun.int.lt, x, y))) ==> "0 <= x < y"
+      expr(app(Fun.and, app(Fun.and, app(Fun.int.le, zero, x), app(Fun.int.lt, x, y)), p)) ==> "0 <= x < y && p"
+      expr(app(Fun.and, app(Fun.int.lt, zero, x), app(Fun.int.lt, y, x))) ==> "0 < x && y < x"
+      expr(app(Fun.and, app(Fun.int.lt, zero, x), app(Fun.int.gt, x, y))) ==> "0 < x && x > y"
+      expr(app(Fun.eq_, app(Fun.eq_, x, y), p)) ==> "(x == y) == p"
+
     test("mixfix prefix"):
       expr(app(Fun.not, app(Fun.and, p, q))) ==> "!(p && q)"
       expr(app(Fun.and, app(Fun.not, p), q)) ==> "!p && q"
