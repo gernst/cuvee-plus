@@ -560,19 +560,33 @@ object Simplify extends Transform:
       case _                  => Imp(phi, psi)
 
   // flatten nested conjunctions, drop true and duplicates, false makes the whole conjunction false;
-  // complementary pairs are decided already, since each conjunct is simplified assuming the others (see nary)
+  // complementary pairs are decided already, since each conjunct is simplified assuming the others (see nary);
+  // disjuncts common to all conjuncts are extracted, e.g. (A or C) and (A or B) is A or (C and B)
   def and(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
     val phis_ = phis.conjuncts
     if phis_.contains(False)
     then False
-    else And(phis_)
+    else
+      val (common, rests) = factor(phis_.map(phi => List(phi).disjuncts))
+      if phis_.length < 2 || common.isEmpty
+      then And(phis_)
+      else or(config, state, ctx, common :+ and(config, state, ctx, rests.map(Or(_))))
 
   // dual to and
   def or(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
     val phis_ = phis.disjuncts
     if phis_.contains(True)
     then True
-    else Or(phis_)
+    else
+      val (common, rests) = factor(phis_.map(phi => List(phi).conjuncts))
+      if phis_.length < 2 || common.isEmpty
+      then Or(phis_)
+      else and(config, state, ctx, common :+ or(config, state, ctx, rests.map(And(_))))
+
+  // the elements common to all of `args`, in the order of the first one, and what remains of each
+  def factor(args: List[List[Expr]]): (List[Expr], List[List[Expr]]) =
+    val common = args.headOption.getOrElse(Nil).filter(phi => args.forall(_ contains phi))
+    (common, args.map(_.filterNot(common.contains)))
 
   // SMT-LIB semantics: for n != 0, m = n * (m div n) + (m mod n) with 0 <= m mod n < |n|,
   // division by zero is unspecified and therefore left alone
