@@ -175,40 +175,37 @@ object Simplify extends Transform:
 
   // simplify `expr` assuming that all facts in `ctx` hold
   // by repeated rounds of simplification until a fixpoint is reached,
-  // a formula that is known from the context is replaced by its truth value;
+  // a formula that is known from the context is replaced by its truth value (only formulas, which not applies to);
   // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
   def simplify(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    implied(config, state, ctx, expr) match
-      case Some(true)  => True
-      case Some(false) => False
-      case None =>
-        val once_ = once(config, state, ctx, expr)
-        if once_ != expr
-        then Debug.info("simplify", show(config.printer, expr) + "  ~>  " + show(config.printer, once_))
-
-        val expr_ = rewrite(config, state, ctx, once_)
-        if expr_ == expr
-        then expr
-        else simplify(config, state, ctx, expr_)
-
-  // whether `phi` is known to hold (true) or known not to hold (false) in `ctx`,
-  // also by its negation in normal form, e.g. a < b is false if b <= a is known (see not);
-  // in an inconsistent context any formula may be chosen,
-  // true at positive positions and false at negative positions
-  def implied(config: Config, state: State, ctx: Ctx, phi: Expr): Option[Boolean] =
-    if ctx.inconsistent && phi.typ == Sort.bool && ctx.polarity.isDefined
-    then ctx.polarity
-    else if ctx.assms contains phi
-    then Some(true)
-    else if ctx.concls contains phi
-    then Some(false)
-    else if phi.typ != Sort.bool
-    then None
+    if expr.typ == Sort.bool && implied(config, state, ctx, expr)
+    then True
+    else if expr.typ == Sort.bool && denied(config, state, ctx, expr)
+    then False
     else
-      not(config, state, ctx, phi) match
-        case psi if ctx.assms contains psi  => Some(false)
-        case psi if ctx.concls contains psi => Some(true)
-        case _                              => None
+      val once_ = once(config, state, ctx, expr)
+      if once_ != expr
+      then Debug.info("simplify", show(config.printer, expr) + "  ~>  " + show(config.printer, once_))
+
+      val expr_ = rewrite(config, state, ctx, once_)
+      if expr_ == expr
+      then expr
+      else simplify(config, state, ctx, expr_)
+
+  // whether `phi` is known to hold in `ctx`, also by its negation in normal form, e.g. a < b if !(b <= a) is known,
+  // in an inconsistent context at positive positions, where any formula may be chosen (polarity is only defined for formulas)
+  def implied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
+    phi == True
+      || (ctx.inconsistent && ctx.polarity == Some(true))
+      || (ctx.assms contains phi)
+      || (ctx.concls contains not(config, state, ctx, phi))
+
+  // whether `phi` is known not to hold in `ctx`, dually, e.g. a < b if b <= a is known
+  def denied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
+    phi == False
+      || (ctx.inconsistent && ctx.polarity == Some(false))
+      || (ctx.concls contains phi)
+      || (ctx.assms contains not(config, state, ctx, phi))
 
   // expressions in debug output, on a single line
   def show(printer: cuvee.pipe.Printer, expr: Expr): String =

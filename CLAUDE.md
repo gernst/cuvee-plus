@@ -119,7 +119,7 @@ or solvers consume.
   to queries. So the sink's answer to a declaration (an error, `Unsupported`)
   is lost behind a stage. A filter that must keep those answers is a sink
   wrapper (like `Language.sink`), not a stage.
-- **Normal forms and the context.** `Simplify.implied` looks facts up
+- **Normal forms and the context.** `Simplify.implied` and `denied` look facts up
   syntactically, and also by the negation in normal form (`not`). When a
   helper changes the normal form (e.g. `not` turns `!(a < b)` into
   `b <= a`), make sure facts are still found. Check the diff of
