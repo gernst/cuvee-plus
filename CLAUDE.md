@@ -74,6 +74,10 @@ Details in [doc/teq.md](doc/teq.md).
   `Maps`, and `Invs` always have type `Seq(T)`, at least one, of equal length.
   Their length is `Seqs.len` (theory of sequences), not `Fun.trace.length`.
   A trace of `n` steps has `n + 1` elements, `⌊X⌋` has `n`.
+- **The simplifier runs only as the transform of `-simplify`.** Other
+  transforms (e.g. `Verify`, `TEQ`) never call it, not even its pure
+  helpers such as `Simplify.diff`; they produce their goals as they are and
+  leave simplification to `-simplify`.
 - **Simplifier helpers are local.** Each helper (`and`, `or`, `not`, `ite`,
   `imp`, `eq_`, `invs`, ...) normalizes its own constructor only:
   - Build further formulas with the normalizing helpers (`not(...)`, not
