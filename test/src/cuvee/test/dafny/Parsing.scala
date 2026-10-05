@@ -239,3 +239,17 @@ object Strings extends TestSuite:
       val decls = cmds.toList.collect { case cmd @ cuvee.core.DefineFun(fun, _, _) if fun.name.name == "s" => cmd }
       decls.map(_.fun.res) ==> List(cuvee.core.Sort.string)
       decls.flatMap(cuvee.dafny.Printer.lines).head.trim ==> "const s: string := \"a\""
+
+// top-level commands are printed without semicolon, the semicolon after global variables is optional
+object Semicolons extends TestSuite:
+  val tests = Tests:
+    test("global variables"):
+      for text <- List("var g: int\nconst c: int", "var g: int;\nconst c: int")
+      do
+        val (_, cmds) = Source(new java.io.StringReader(text))
+        val decls = cmds.toList.collect { case cmd @ cuvee.core.DeclareVar(x, _) if x.name.name == "g" => cmd }
+        decls.flatMap(cuvee.dafny.Printer.lines).head.trim ==> "var g: int"
+
+    test("commands"):
+      cuvee.dafny.Printer.lines(cuvee.core.Push(1)).head ==> "push 1"
+      cuvee.dafny.Printer.lines(cuvee.core.GetModel).head ==> "model"

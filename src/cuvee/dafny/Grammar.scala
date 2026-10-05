@@ -418,8 +418,9 @@ object Grammar:
   val goal =
     Goal(P("goal" ~ params ~ annotation.* ~ formula))
 
+  // the semicolon is optional, which the printer omits like after the other top-level commands
   val vardef =
-    VarDef(P("var" ~ (formal ~+ ",") ~ ";"))
+    VarDef(P("var" ~ (formal ~+ ",") ~ Scanner.Choice(";", Scanner.Accept)))
 
   val returns =
     P("returns" ~ formals)

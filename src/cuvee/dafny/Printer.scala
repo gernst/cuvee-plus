@@ -101,7 +101,7 @@ object Printer extends cuvee.pipe.Printer:
         text("unsat")
 
       case Labels(labels) =>
-        Group(text("labels") ++ Nest(2, line ++ commas(labels.map(text)))) ++ text(";")
+        Group(text("labels") ++ Nest(2, line ++ commas(labels.map(text))))
 
       case Info(attrs) =>
         Group(join(attrs.attrs.map(attribute), line))
@@ -116,7 +116,7 @@ object Printer extends cuvee.pipe.Printer:
         val info = error.info.toList.map(value => str(value.toString))
         Group(text("error") +:+ str(error.msg) ++ Nest(2, concat(info.map(line ++ _))))
 
-  // commands that are not part of Dafny are statements ending with a semicolon,
+  // top-level commands end without semicolon, also those that are not part of Dafny,
   // options and infos are named like attributes
   def doc(cmd: Cmd): Doc =
     cmd match
@@ -124,40 +124,40 @@ object Printer extends cuvee.pipe.Printer:
         text("check")
 
       case Labels =>
-        text("labels;")
+        text("labels")
 
       case GetModel =>
-        text("model;")
+        text("model")
 
       case Exit =>
-        text("exit;")
+        text("exit")
 
       case Done =>
         Error.raise("internal command cannot be printed", cmd)
 
       case Push(depth) =>
-        text("push") +:+ text(depth.toString) ++ text(";")
+        text("push") +:+ text(depth.toString)
 
       case Pop(depth) =>
-        text("pop") +:+ text(depth.toString) ++ text(";")
+        text("pop") +:+ text(depth.toString)
 
       case Reset =>
-        text("reset;")
+        text("reset")
 
       case SetLogic(name) =>
-        text("logic") +:+ text(name) ++ text(";")
+        text("logic") +:+ text(name)
 
       case GetOption(name) =>
-        text("option") +:+ text(":" + name) ++ text(";")
+        text("option") +:+ text(":" + name)
 
       case SetOption(name, value) =>
-        Group(text("option") +:+ text(":" + name) +:+ text(":=") ++ Nest(2, line ++ any(value)) ++ text(";"))
+        Group(text("option") +:+ text(":" + name) +:+ text(":=") ++ Nest(2, line ++ any(value)))
 
       case GetInfo(name) =>
-        text("info") +:+ text(":" + name) ++ text(";")
+        text("info") +:+ text(":" + name)
 
       case SetInfo(name, value) =>
-        Group(text("info") +:+ text(":" + name) +:+ text(":=") ++ Nest(2, line ++ any(value)) ++ text(";"))
+        Group(text("info") +:+ text(":" + name) +:+ text(":=") ++ Nest(2, line ++ any(value)))
 
       // the parameters of declared sorts are anonymous
       case DeclareSort(Con(name_, arity), attrs) =>
@@ -195,7 +195,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // global variables are not Dafny, which has fields of objects instead
       case DeclareVar(Var(name_, typ), attrs) =>
-        text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ) ++ text(";")
+        text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ)
 
       case DeclareProc(Proc(name_, params_, in, out), attrs) =>
         header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, None)
