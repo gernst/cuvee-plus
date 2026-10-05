@@ -357,9 +357,11 @@ object Simplify extends Transform:
         val phis_ = nary(config, state, ctx, Nil, phis, false)
         or(config, state, ctx, phis_)
 
+      case UMinus.int(_) | Plus.int(_) | Minus.int(_, _) | Times.int(_) =>
+        arith(config, state, ctx.neutral, expr)
+
       // on Real, division by a nonzero literal is part of the polynomials
-      case UMinus.int(_) | Plus.int(_) | Minus.int(_, _) | Times.int(_) |
-          UMinus.real(_) | Plus.real(_) | Minus.real(_, _) | Times.real(_) | DivBy.real(_, _) =>
+      case UMinus.real(_) | Plus.real(_) | Minus.real(_, _) | Times.real(_) | DivBy.real(_, _) =>
         arith(config, state, ctx.neutral, expr)
 
       case DivBy.int(left, right) =>
