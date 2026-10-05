@@ -239,8 +239,8 @@ object Verify extends Transform:
     val pres = instances.map(_._1)
     val fresh = instances.flatMap(_._2)
     val phis = instances.map(_._3)
-    val renamed = instances.flatMap(_._4.vars).toMap - h
-    val rename = Subst.from(renamed.keys.toList, renamed.values.toList)
+    val renamed = instances.flatMap(_._4.vars)
+    val rename = Subst.from(renamed.map(_._1), renamed.map(_._2)) - h
     val effect = All(fresh, havoc(h, Imp(And(phis ++ commits), rename(post))))
 
     And((init :: side) ++ pres ++ List(guarantee, effect))
