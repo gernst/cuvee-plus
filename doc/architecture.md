@@ -123,6 +123,18 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     outer loop already decides. E.g. complementary conjuncts are found by
     `nary`, which simplifies each argument of `and` and `or` assuming the
     others, not by `and` itself.
+  - One-point rule: `eq_` turns `x == e` into `true` if `x` is quantified
+    (`Ctx.quantify`) and occurs at the polarity recorded in `Ctx.points`
+    (negatively below `forall`, positively below `exists`), and `x` occurs
+    nowhere else: not in `e`, not in the facts of the context (`Ctx.used`,
+    which includes the primed variables of derivatives), and `e` has no
+    variables bound inside the scope of `x`. `bind` then drops `x`. This
+    relies on the context recording all siblings between the binder and the
+    equation, which holds for `and`, `or`, `not`, `==>`, and binders only;
+    the branches of `ite`, the bodies of `let`, `match`, and `all`, and
+    neutral positions forget the points (`Ctx.opaque`, `Ctx.neutral`).
+    Callers that use `eq_` as a decision (`distinct`, `select`, `deps`)
+    pass `ctx.neutral`.
   - `trace`, `maps`, and `invs` normalize their dependencies, see
     [teq.md](teq.md).
   - Statements have helpers likewise, `spec`, `assign`, `block`, `choice`,

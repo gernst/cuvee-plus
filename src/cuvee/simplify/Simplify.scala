@@ -322,8 +322,8 @@ object Simplify extends Transform:
 
       case Ite(test, left, right) =>
         val test_ = simplify(config, state, ctx.neutral, test)
-        val left_ = simplify(config, state, ctx.assume(List(test_), Nil), left)
-        val right_ = simplify(config, state, ctx.assume(Nil, List(test_)), right)
+        val left_ = simplify(config, state, ctx.opaque.assume(List(test_), Nil), left)
+        val right_ = simplify(config, state, ctx.opaque.assume(Nil, List(test_)), right)
         ite(config, state, ctx, test_, left_, right_)
 
       case Select(base, index) =>
@@ -409,13 +409,13 @@ object Simplify extends Transform:
       // bound variables are renamed apart from the context before entering the body
       case Bind(quant, bound, body) =>
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.bind(bound_), re(body))
+        val body_ = simplify(config, state, ctx.quantify(quant, bound_), re(body))
         bind(config, state, ctx, quant, bound_, body_)
 
       case Let(bound, args, body) =>
         val args_ = args.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.bind(bound_), re(body))
+        val body_ = simplify(config, state, ctx.opaque.bind(bound_), re(body))
         let(config, state, ctx, bound_, args_, body_)
 
       // the variables of the patterns are renamed apart like bound variables, and the bodies assume their condition
@@ -426,7 +426,7 @@ object Simplify extends Transform:
           yield
             val (bound_, re) = ctx.avoid(pat.free.toList)
             val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
-            val body_ = simplify(config, state, ctx.bind(bound_).assume(List(cond_), Nil), re(body))
+            val body_ = simplify(config, state, ctx.opaque.bind(bound_).assume(List(cond_), Nil), re(body))
             case_(config, state, ctx, re(pat), body_, cond_)
         match_(config, state, ctx, arg_, cases_)
 
@@ -448,7 +448,7 @@ object Simplify extends Transform:
       case Invs(deps, bound, body) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.bind(bound_), re(body))
+        val body_ = simplify(config, state, ctx.opaque.bind(bound_), re(body))
         invs(config, state, ctx, deps_, bound_, body_)
 
   // the guards of the cases of an update are simplified, cases whose guard is false are dropped,
@@ -535,6 +535,12 @@ object Simplify extends Transform:
       case _ if left == right =>
         True
 
+      case (x: Var, e) if point(ctx, x, e) =>
+        True
+
+      case (e, x: Var) if point(ctx, x, e) =>
+        True
+
       case (Lit(a, _), Lit(b, _)) =>
         if a == b then True else False
 
@@ -549,6 +555,18 @@ object Simplify extends Transform:
       case _ =>
         Eq(left, right)
 
+  // one-point rule: forall x. C[x == e] is C[true] if x == e occurs negatively in C, and exists x. C[x == e] likewise
+  // if it occurs positively, provided that x does not occur elsewhere, i.e., neither in e nor in the context,
+  // and e does not depend on variables bound inside the scope of x, otherwise x cannot be instantiated by e,
+  // e.g. not in forall x. exists y. !(x == y)
+  def point(ctx: Ctx, x: Var, e: Expr): Boolean =
+    ctx.polarity.nonEmpty
+      && ctx.points.get(x) == ctx.polarity
+      && !(e.free contains x)
+      && !(Ctx.primed(e) contains x)
+      && !(ctx.used contains x)
+      && (e.free intersect ctx.bound.takeWhile(_ != x).toSet).isEmpty
+
   // equivalences are equations on Bool, the normal form, such that both are known from the context alike,
   // and as which SMT-LIB writes them
   def eqv(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
@@ -557,7 +575,7 @@ object Simplify extends Transform:
   // false if two of the expressions are equal, true if all of them are pairwise different,
   // e.g. literals, two expressions are distinct exactly if they are not equal
   def distinct(config: Config, state: State, ctx: Ctx, exprs: List[Expr]): Expr =
-    val eqs = for case a :: rest <- exprs.tails.toList; b <- rest yield eq_(config, state, ctx, a, b)
+    val eqs = for case a :: rest <- exprs.tails.toList; b <- rest yield eq_(config, state, ctx.neutral, a, b)
 
     if eqs contains True
     then False
@@ -602,7 +620,7 @@ object Simplify extends Transform:
       case Store(_, index_, value) if index_ == index =>
         value
 
-      case Store(base_, index_, _) if eq_(config, state, ctx, index_, index) == False =>
+      case Store(base_, index_, _) if eq_(config, state, ctx.neutral, index_, index) == False =>
         Select(base_, index)
 
       case _ =>
@@ -836,7 +854,7 @@ object Simplify extends Transform:
     val (distinct, re) =
       (deps zip bound).foldLeft((List.empty[(Expr, Var)], Subst.empty[Nothing, Var])):
         case ((done, re), (dep, x)) =>
-          done.find((dep_, x_) => x_.typ == x.typ && eq_(config, state, ctx, dep_, dep) == True) match
+          done.find((dep_, x_) => x_.typ == x.typ && eq_(config, state, ctx.neutral, dep_, dep) == True) match
             case Some((_, x_)) => (done, re + (x -> x_))
             case None          => (done :+ (dep, x), re)
 

@@ -7,6 +7,8 @@ import cuvee.core._
 // together with the variables bound by enclosing binders
 // a substitution that replaces variables by others known to be equal,
 // and the equations x == e of the assumptions that are not recursive, i.e., where x is not free in e;
+// `points` are the quantified variables whose equations x == e are true at the given polarity (one-point rule),
+// which is only sound if the context records all siblings between the binder and the current position;
 // the polarity of the current position is Some(true) if it occurs positively,
 // Some(false) if it occurs negatively, and None if it occurs in both ways or not in a formula,
 // e.g. below an equation or in the argument of a function;
@@ -20,6 +22,7 @@ case class Ctx(
     su: Map[Var, Var],
     eq: Map[Var, Expr],
     polarity: Option[Boolean],
+    points: Map[Var, Boolean] = Map(),
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0)
 ):
@@ -31,17 +34,37 @@ case class Ctx(
   def bind(xs: List[Var]) =
     copy(bound = xs ++ bound)
 
+  // the variables of a quantifier, whose equations are true at the opposite polarity for forall,
+  // and at the same polarity for exists, which is undetermined at a position without polarity
+  def quantify(quant: util.Name, xs: List[Var]) =
+    val points_ =
+      (quant.name, polarity) match
+        case ("forall", Some(pol)) => xs.map(_ -> !pol)
+        case ("exists", Some(pol)) => xs.map(_ -> pol)
+        case _                     => Nil
+    bind(xs).copy(points = points ++ points_)
+
+  // below positions whose siblings are not recorded in the context, e.g. the other branch of ite
+  def opaque =
+    copy(points = Map())
+
   // below a negation or in the premise of an implication
   def flip =
     copy(polarity = polarity.map(!_))
 
   // in a position without polarity
   def neutral =
-    copy(polarity = None)
+    copy(polarity = None, points = Map())
 
   // variables that occur in the context
   def free: Set[Var] =
-    bound.toSet ++ assms.free ++ concls.free ++ su.keys ++ su.values ++ eq.keys ++ eq.values.free
+    bound.toSet ++ used
+
+  // variables that occur in the facts of the context, including the primed variables of derivatives,
+  // which these refer to once the derivative is computed, but which are not free in Diff
+  def used: Set[Var] =
+    val facts = assms ++ concls
+    facts.free ++ facts.flatMap(Ctx.primed) ++ su.keys ++ su.values ++ eq.keys ++ eq.values.free
 
   // rename those of `xs` that clash with variables of the context (compared by name),
   // returning the fresh list of variables and the renaming to be applied to the scope of `xs`
@@ -116,6 +139,16 @@ case class Ctx(
         deny(phi).assume(Nil, neg)
 
 object Ctx:
+  // the primed variables x' of the derivatives (xs :: e)' in `expr`
+  def primed(expr: Expr): Set[Var] =
+    val inner = Set.newBuilder[Var]
+    expr.map: arg =>
+      inner ++= primed(arg)
+      arg
+    expr match
+      case Diff(xs, _) => inner.result() ++ xs.map(_.primed)
+      case _           => inner.result()
+
   val empty = Ctx(Nil, Nil, Nil, Map(), Map(), None)
 
   // at the top of an asserted formula

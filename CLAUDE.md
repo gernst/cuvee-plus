@@ -158,3 +158,14 @@ Details in [doc/teq.md](doc/teq.md).
   `block` drops; a block of one statement without locals is that statement.
 - **Commits with unrelated changes in the tree:** the version bump commits
   all tracked changes, so stash the unrelated files first.
+- **The context is not a complete record of the siblings.** Below `ite`
+  (the other branch), `let`, `match`, `all` (the dependencies), and neutral
+  positions, parts of the formula are missing from `Ctx`. Anything that
+  concludes from "x does not occur in the context" (the one-point rule) must
+  forget its information there (`Ctx.opaque`).
+- **Derivatives hide variables.** `Diff(xs, e)` is not free in the primed
+  variables `x'` that its derivative introduces; `Ctx.used` adds them. The
+  hybrid example (`-verify -simplify -z3`) caught this.
+- **Helpers used as decisions** (e.g. `eq_(...) == True` in `distinct`,
+  `select`, `deps`) get `ctx.neutral`, so that position-dependent rules do not
+  fire there.

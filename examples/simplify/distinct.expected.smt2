@@ -7,4 +7,4 @@
 (assert false)
 (assert false)
 (assert (=> (= x y) (distinct x y z)))
-(assert (forall ((a Int) (b Int)) (not (= a b))))
+(assert false)

@@ -252,6 +252,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   - equalities between variables, as a map `su` from variables to variables;
   - the non-recursive equations `x == e` among the assumptions, as a map `eq`
     from variables to expressions (the equation remains an assumption);
+  - the quantified variables whose equations are true at a given polarity
+    (`points`, the one-point rule);
   - the polarity of the position, and whether the context is inconsistent;
   - the rewrite rules and their remaining number of steps
     (`ctx.withRules(rules, steps)`), which all copies share.
