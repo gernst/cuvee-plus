@@ -465,8 +465,8 @@ object Simplify extends Transform:
 
       case (_, True) => left
       case (True, _) => right
-      case (_, False) => Not(left)
-      case (False, _) => Not(right)
+      case (_, False) => not(config, state, ctx, left)
+      case (False, _) => not(config, state, ctx, right)
 
       case _ =>
         Eq(left, right)
@@ -487,7 +487,7 @@ object Simplify extends Transform:
     then True
     else
       exprs match
-        case List(a, b) => Not(Eq(a, b))
+        case List(a, b) => not(config, state, ctx, Eq(a, b))
         case _          => Distinct(exprs)
 
   // testers on constructor applications
@@ -515,7 +515,7 @@ object Simplify extends Transform:
       case (False, _, _)         => right
       case _ if left == right    => left
       case (_, True, False)      => test
-      case (_, False, True)      => Not(test)
+      case (_, False, True)      => not(config, state, ctx, test)
       case _                     => Ite(test, left, right)
 
   // read over write
@@ -555,7 +555,7 @@ object Simplify extends Transform:
       case (True, _)          => psi
       case (False, _)         => True
       case (_, True)          => True
-      case (_, False)         => Not(phi)
+      case (_, False)         => not(config, state, ctx, phi)
       case _ if phi == psi    => True
       case _                  => Imp(phi, psi)
 
