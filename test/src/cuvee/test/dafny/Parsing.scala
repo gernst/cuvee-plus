@@ -11,39 +11,43 @@ object Parsing extends TestSuite:
     Examples.tests(Examples.find(os.sub / "dafny", "dfy")): file =>
       Examples.errors(List("-print", "null") ++ Examples.options(file) :+ file.toString*) ==> Nil
 
-// derivatives are with respect to variables on real only
-object Derivatives extends TestSuite:
+// derivatives and differential equations are for variables on real only,
+// parallel composition of calls that do not share modified variables other than the history,
+// with -hybrid, which declares the history
+object Hybrid extends TestSuite:
   def errors(text: String) =
-    val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
+    Examples.check("dfy", text, "-hybrid")
+
+  // the input declares the global history, whose type is declared by -hybrid
+  val history = "var history: history<int> "
+  val p = "method p(n: int) returns (x: int) modifies history assumes true commits true { x := n; } "
 
   val tests = Tests:
-    test("real"):
+    test("derivatives"):
       errors("method m(x: real) returns (y: real) { y := (x :: x * x)'; }") ==> Nil
-
-    test("int"):
       errors("method m(n: int) returns (k: int) { k := (n :: n * n)'; }") ==>
         List("derivative with respect to variables that are not real")
 
-// differential equations are for variables on real only
-object Odes extends TestSuite:
-  def errors(text: String) =
-    val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
-
-  val tests = Tests:
-    test("real"):
+    test("differential equations"):
       errors("method m(g: real) returns (x: real) { x' == g; }") ==> Nil
-
-    test("int"):
       errors("method m(g: int) returns (x: int) { x' == g; }") ==>
         List("differential equations for variables that are not real")
+
+    test("parallel"):
+      errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(2); } }") ==> Nil
+
+    test("shared"):
+      errors(history + p + "method m() returns (x: int) modifies history { parallel { x := p(1); x := p(2); } }") ==>
+        List("parallel calls share modified variables")
+
+    test("read"):
+      errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(x); } }") ==>
+        List("parallel calls share modified variables")
 
 // slices and updates are on sequences only, indexing falls back to arrays
 object Sequences extends TestSuite:
   def errors(text: String) =
-    val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
+    Examples.check("dfy", text)
 
   val tests = Tests:
     test("seq"):
@@ -71,11 +75,11 @@ object Sequences extends TestSuite:
     test("concatenation of int and seq"):
       errors("function f(s: seq<int>): seq<int> { s + 1 }") ==> List("type mismatch")
 
-// global variables are modified by methods with a modifies clause only
+// global variables are modified by methods with a modifies clause only,
+// preconditions are evaluated at the entry of a method, where old values are the current ones
 object Globals extends TestSuite:
   def errors(text: String) =
-    val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
+    Examples.check("dfy", text)
 
   val tests = Tests:
     test("modifies"):
@@ -92,34 +96,14 @@ object Globals extends TestSuite:
       errors("var g: int; method m() modifies g { } method n() { m(); }") ==>
         List("call modifies variables that are not in the modifies clause")
 
-// parallel composition of calls that do not share modified variables other than the history
-// with -hybrid, which declares the history
-object Parallel extends TestSuite:
-  def errors(text: String) =
-    val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-hybrid", "-print", "null", file.toString)
-
-  // the input declares the global history, whose type is declared by -hybrid
-  val history = "var history: history<int> "
-  val p = "method p(n: int) returns (x: int) modifies history assumes true commits true { x := n; } "
-
-  val tests = Tests:
-    test("parallel"):
-      errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(2); } }") ==> Nil
-
-    test("shared"):
-      errors(history + p + "method m() returns (x: int) modifies history { parallel { x := p(1); x := p(2); } }") ==>
-        List("parallel calls share modified variables")
-
-    test("read"):
-      errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(x); } }") ==>
-        List("parallel calls share modified variables")
+    test("old in precondition"):
+      errors("var g: int; method m() modifies g requires old(g) == 0 { g := g + 1; }") ==>
+        List("precondition refers to old values")
 
 // testers x.C? on variables and type annotations e as T
 object Datatypes extends TestSuite:
   def errors(text: String) =
-    val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
+    Examples.check("dfy", text)
 
   val list = "datatype list<a> = nil | cons(head: a, tail: list<a>) "
 
@@ -137,38 +121,6 @@ object Datatypes extends TestSuite:
     test("wrong annotation"):
       errors(list + "function f(): bool { 0 as bool }") ==> List("type mismatch")
 
-// check-sat is the command check, without semicolon, which is printed back the same way
-object Check extends TestSuite:
-  val tests = Tests:
-    test("roundtrip"):
-      val (_, cmds) = Source(new java.io.StringReader("const c: int\ncheck\naxiom c == 0"))
-      val cmds_ = cmds.toList
-      assert(cmds_.contains(cuvee.core.CheckSat))
-      cuvee.dafny.Printer.lines(cuvee.core.CheckSat) ==> List("check", "")
-
-// preconditions are evaluated at the entry of a method, where old values are the current ones
-object OldInPrecondition extends TestSuite:
-  def errors(text: String) =
-    val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
-
-  val tests = Tests:
-    test("ensures"):
-      errors("var g: int; method m() modifies g ensures g == old(g) + 1 { g := g + 1; }") ==> Nil
-
-    test("requires"):
-      errors("var g: int; method m() modifies g requires old(g) == 0 { g := g + 1; }") ==>
-        List("precondition refers to old values")
-
-// goals are parsed like lemmas, e.g. the output of -verify
-object Goals extends TestSuite:
-  val tests = Tests:
-    test("goal"):
-      val (_, cmds) = Source(new java.io.StringReader("goal {:rw} forall x: int :: x < x + 1"))
-      val cuvee.core.Assert(justify, _, _, attrs) = cmds.last: @unchecked
-      justify ==> cuvee.core.Goal
-      assert(attrs.contains("rw"))
-
 // in axioms, lemmas, and goals, if φ then ψ without else is φ ==> ψ with the lowest precedence,
 // also below the quantifiers at the top, inside of expressions, if-then-else must have an else branch
 object Conditionals extends TestSuite:
@@ -180,8 +132,7 @@ object Conditionals extends TestSuite:
     phi
 
   def errors(text: String) =
-    val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
+    Examples.check("dfy", text)
 
   val tests = Tests:
     test("implication"):
@@ -211,8 +162,7 @@ object Chains extends TestSuite:
     phi
 
   def errors(text: String) =
-    val file = os.temp("function f(i: int, j: int, n: int): bool { " + text + " }", suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
+    Examples.check("dfy", "function f(i: int, j: int, n: int): bool { " + text + " }")
 
   val i = Var("i", Sort.int)
   val j = Var("j", Sort.int)
@@ -232,26 +182,35 @@ object Chains extends TestSuite:
       errors("i < j > n") ==> List("chained comparisons in different directions")
       errors("n > j >= i == 0") ==> Nil
 
-// the type string of Dafny is String in the core, and printed back lowercase
-object Strings extends TestSuite:
+// the commands and declarations of the dialect: check-sat is check, goals are parsed like lemmas (e.g. the output
+// of -verify), the type string is String in the core, top-level commands are printed without semicolon,
+// and the semicolon after global variables is optional
+object Commands extends TestSuite:
+  def parse(text: String) =
+    Source(new java.io.StringReader(text))._2.toList
+
   val tests = Tests:
-    test("roundtrip"):
-      val (_, cmds) = Source(new java.io.StringReader("const s: string := \"a\""))
-      val decls = cmds.toList.collect { case cmd @ cuvee.core.DefineFun(fun, _, _) if fun.name.name == "s" => cmd }
+    test("check"):
+      assert(parse("const c: int\ncheck\naxiom c == 0").contains(cuvee.core.CheckSat))
+      cuvee.dafny.Printer.lines(cuvee.core.CheckSat) ==> List("check", "")
+
+    test("goal"):
+      val cuvee.core.Assert(justify, _, _, attrs) = parse("goal {:rw} forall x: int :: x < x + 1").last: @unchecked
+      justify ==> cuvee.core.Goal
+      assert(attrs.contains("rw"))
+
+    test("string"):
+      val decls = parse("const s: string := \"a\"").collect { case cmd @ cuvee.core.DefineFun(fun, _, _) if fun.name.name == "s" => cmd }
       decls.map(_.fun.res) ==> List(cuvee.core.Sort.string)
       decls.flatMap(cuvee.dafny.Printer.lines).head.trim ==> "const s: string := \"a\""
 
-// top-level commands are printed without semicolon, the semicolon after global variables is optional
-object Semicolons extends TestSuite:
-  val tests = Tests:
     test("global variables"):
       for text <- List("var g: int\nconst c: int", "var g: int;\nconst c: int")
       do
-        val (_, cmds) = Source(new java.io.StringReader(text))
-        val decls = cmds.toList.collect { case cmd @ cuvee.core.DeclareVar(x, _) if x.name.name == "g" => cmd }
+        val decls = parse(text).collect { case cmd @ cuvee.core.DeclareVar(x, _) if x.name.name == "g" => cmd }
         decls.flatMap(cuvee.dafny.Printer.lines).head.trim ==> "var g: int"
 
-    test("commands"):
+    test("semicolons"):
       cuvee.dafny.Printer.lines(cuvee.core.Push(1)).head ==> "push 1"
       cuvee.dafny.Printer.lines(cuvee.core.GetModel).head ==> "model"
 

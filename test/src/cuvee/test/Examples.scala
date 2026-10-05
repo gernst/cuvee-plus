@@ -53,6 +53,11 @@ object Examples:
     val (_, cmds) = config.source(new java.io.StringReader(""), config)
     cmds.toList
 
+  // the errors reported for `text` as input in the language of `ext`, parsed and checked only
+  def check(ext: String, text: String, options: String*): List[String] =
+    val file = os.temp(text, suffix = "." + ext)
+    errors(List("-print", "null") ++ options :+ file.toString*)
+
   // runs Cuvee on `args` and returns the parsed input commands, without the prelude of the frontend
   def input(args: String*): List[Cmd] =
     val (cmds, _) = cuvee.Cuvee.run(args*)

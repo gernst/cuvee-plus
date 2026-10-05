@@ -30,8 +30,7 @@ object BitVectors extends TestSuite:
     left
 
   def errors(text: String) =
-    val file = os.temp("(declare-const x (_ BitVec 8))\n(assert " + text + ")", suffix = ".smt2")
-    Examples.errors("-print", "null", file.toString)
+    Examples.check("smt2", "(declare-const x (_ BitVec 8))\n(assert " + text + ")")
 
   val tests = Tests:
     test("literals"):

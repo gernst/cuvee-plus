@@ -46,20 +46,19 @@ object HornCmds extends TestSuite:
     cmds
 
   val tests = Tests:
-    // the logic is set at the beginning
-    test("logic set"):
+    // the logic is set at the beginning, every procedure has predicates for its pre- and postcondition,
+    // and the clauses are checked at the end of the input
+    test("max.dfy"):
       val cmds = output(os.sub / "dafny" / "vcgen" / "max.dfy")
       cmds.head ==> SetLogic("HORN")
+      val names = cmds.collect { case DeclareFun(fun, _) => fun.name.name }
+      assert(names.contains("max_pre"), names.contains("max_post"))
+      cmds.takeRight(2) ==> List(CheckSat, GetModel)
 
     // a given logic is replaced, not duplicated
     test("logic replaced"):
       val cmds = output(os.sub / "smtlib" / "basic.smt2")
       cmds.collect { case cmd: SetLogic => cmd } ==> List(SetLogic("HORN"))
-
-    // the clauses are checked at the end of the input
-    test("check at the end"):
-      val cmds = output(os.sub / "dafny" / "vcgen" / "max.dfy")
-      cmds.takeRight(2) ==> List(CheckSat, GetModel)
 
     // the model of the predicates is read back from the solver and printed in the language of the input
     test("model"):
@@ -86,9 +85,3 @@ object HornCmds extends TestSuite:
       val par = Examples.root / "dafny" / "par.dfy"
       val errors = Examples.errors("-hybrid", "-chc", "-print", "null", par.toString)
       assert(errors.contains("parallel composition not supported in Horn clauses"))
-
-    // every procedure has predicates for its pre- and postcondition
-    test("contract predicates"):
-      val cmds = output(os.sub / "dafny" / "vcgen" / "max.dfy")
-      val names = cmds.collect { case DeclareFun(fun, _) => fun.name.name }
-      assert(names.contains("max_pre"), names.contains("max_post"))

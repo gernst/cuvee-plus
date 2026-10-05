@@ -20,8 +20,10 @@ object Verify extends TestSuite:
 
       Examples.errors("-verify", "-z3", file.toString) ==> expected(first)
 
-// differential cuts for each invariant in sequence, followed by differential weakening
-object VerifyOde extends TestSuite:
+// hybrid programs, whose goals are generated without errors, not passed to a solver:
+// differential cuts for each invariant in sequence, followed by differential weakening,
+// and methods with assumption-commitment contracts composed in parallel
+object VerifyHybrid extends TestSuite:
   import cuvee.core._
 
   val x = Var("x", Sort.real)
@@ -35,10 +37,17 @@ object VerifyOde extends TestSuite:
     cuvee.dafny.Printer.lines(phi).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:
-    // the goals are generated and simplified without errors, not passed to a solver
     test("hybrid.dfy"):
       val hybrid = Examples.root / "dafny" / "hybrid.dfy"
       Examples.errors("-verify", "-simplify", "-print", "null", hybrid.toString) ==> Nil
+
+    test("par.dfy"):
+      val par = Examples.root / "dafny" / "par.dfy"
+      Examples.errors("-hybrid", "-verify", "-print", "null", par.toString) ==> Nil
+
+    test("no history"):
+      Examples.check("dfy", "method p() { } method m() { parallel { p(); } }", "-verify") ==>
+        List("parallel composition requires a global variable history")
 
     test("weakening"):
       ode(Nil, Le.real(zero, x)) ==> "forall x₁: real :: 0.0 < y ==> 0.0 <= x₁"
@@ -49,31 +58,17 @@ object VerifyOde extends TestSuite:
           " && (forall x₁: real, x'₁: real :: 0.0 < y && x'₁ == y ==> (x₁ :: 0.0 <= x₁)')" +
           " && (forall x₂: real :: 0.0 < y && 0.0 <= x₂ ==> 0.0 <= x₂)"
 
-// sequences, whose updates are supported by cvc5 only
-object VerifySeq extends TestSuite:
+// sequence updates, finite sets, and multisets, which cvc5 supports and z3 does not
+object VerifyCvc5 extends TestSuite:
+  def errors(name: String) =
+    Examples.errors("-verify", "-cvc5", (Examples.root / "dafny" / name).toString)
+
   val tests = Tests:
     test("seq.dfy"):
-      val seq = Examples.root / "dafny" / "seq.dfy"
-      Examples.errors("-verify", "-cvc5", seq.toString) ==> Nil
+      errors("seq.dfy") ==> Nil
 
-// finite sets and multisets, which are supported by cvc5 only
-object VerifySets extends TestSuite:
-  val tests = Tests:
     test("sets.dfy"):
-      Examples.errors("-verify", "-cvc5", (Examples.root / "dafny" / "sets.dfy").toString) ==> Nil
+      errors("sets.dfy") ==> Nil
 
     test("invalid_sets.dfy"):
-      Examples.errors("-verify", "-cvc5", (Examples.root / "dafny" / "invalid_sets.dfy").toString) ==> List("goal does not hold")
-
-// methods with assumption-commitment contracts composed in parallel,
-// the goals are generated without errors, not passed to a solver
-object VerifyPar extends TestSuite:
-  val tests = Tests:
-    test("par.dfy"):
-      val par = Examples.root / "dafny" / "par.dfy"
-      Examples.errors("-hybrid", "-verify", "-print", "null", par.toString) ==> Nil
-
-    test("no history"):
-      val file = os.temp("method p() { } method m() { parallel { p(); } }", suffix = ".dfy")
-      Examples.errors("-verify", "-print", "null", file.toString) ==>
-        List("parallel composition requires a global variable history")
+      errors("invalid_sets.dfy") ==> List("goal does not hold")

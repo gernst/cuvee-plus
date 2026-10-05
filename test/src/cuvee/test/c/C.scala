@@ -55,8 +55,7 @@ object Translation extends TestSuite:
     cuvee.c.Source(new java.io.StringReader(text))._2.toList
 
   def errors(text: String) =
-    val file = os.temp(text, suffix = ".c")
-    Examples.errors("-print", "null", file.toString)
+    Examples.check("c", text)
 
   def modifies(cmds: List[Cmd], name: String) =
     cmds.collectFirst:

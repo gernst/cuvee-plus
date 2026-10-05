@@ -263,7 +263,11 @@ A single run is `mill -i run <options> <file>`, e.g.
 `mill -i run -teq -simplify examples/dafny/vcgen/sum.dfy`. Their sources are in
 `test/src/cuvee/test/`, by frontend:
 
-- Unit tests build core terms directly.
+- Unit tests build core terms directly, or check short inputs with
+  `Examples.check(ext, text, options*)`, which returns the errors reported for
+  them.
+- Hybrid programs and other inputs with polymorphic axioms are not passed to
+  solvers; their tests generate the goals only (`-print null`).
 - Example tests run `cuvee.Cuvee.run` on the files in `examples/`, which has
   a subfolder per language (`dafny`, `boogie`, `c`, `smtlib`) and per
   transformation (`dafny/vcgen`, `simplify`, `transform`), through

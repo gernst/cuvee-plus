@@ -44,3 +44,9 @@ object Preludes extends TestSuite:
         do
           val decl = state.funs((name, arity))
           assert(decl.params.isEmpty || decl.params.head == Param.a)
+
+    // arithmetic and comparison are generic in Boogie, they are resolved after type checking
+    test("overloaded"):
+      val state = init(cuvee.boogie.Source)
+      for fun <- List(Fun.int.uminus, Fun.int.plus, Fun.int.minus, Fun.int.times, Fun.int.lt, Fun.int.le, Fun.int.gt, Fun.int.ge)
+      do assert(Overload.isGeneric(state.funs((fun.name, fun.arity))))

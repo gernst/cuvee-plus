@@ -181,5 +181,5 @@ simplifier rules; widths cannot be parameters.
   produce messages only, nothing produces time events yet.
 - `project(c, h)` (the values of the messages on `c`) is polymorphic with
   polymorphic axioms, which solvers are not expected to handle; the tests of
-  hybrid programs (`VerifyOde`, `VerifyPar`) therefore only generate the
+  hybrid programs (`VerifyHybrid`) therefore only generate the
   goals (`-print null`), and the examples are not expected to verify.
