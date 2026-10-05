@@ -166,17 +166,14 @@ object Verify extends Transform:
   // calls by the contract of the procedure, where the measure of `proc` must decrease on recursive calls
   def call(state: State, proc: Name, call: Call, post: Expr): Expr =
     val Call(name, args, res) = call
-    val (in0, out0, pre0, phi0) = contract(state, name)
+    val (in, out, pre, phi) = contract(state, name)
 
     Error.report("wrong number of arguments or results in call", name, args, res):
-      require(in0.length == args.length && out0.length == res.length)
+      require(in.length == args.length && out.length == res.length)
 
-    // the type parameters of a polymorphic procedure are instantiated by the types of the arguments and results
-    val ty = Type.bind((in0 ++ out0).map(_.typ), (args ++ res).map(_.typ))
-    val in = in0.map(x => Var(x.name, ty(x.typ)))
-    val out = out0.map(x => Var(x.name, ty(x.typ)))
-    val pre = ty(pre0)
-    val phi = ty(phi0)
+    // the type parameters of a polymorphic procedure are instantiated by the types of the arguments and results,
+    // by the same substitutions that replace the formal parameters
+    val inst = Type.bind((in ++ out).map(_.typ), (args ++ res).map(_.typ)).params
 
     // results and the modified global variables are fresh since `args` may refer to their old values,
     // the precondition refers to the values of the global variables before the call,
@@ -185,8 +182,8 @@ object Verify extends Transform:
     val res_ = res.fresh
     val mod_ = mod.fresh
     val mod0 = mod.fresh
-    val su = Subst.from(in, args)
-    val su_ = Subst.from(in ++ out ++ mod, args ++ res_ ++ mod_)
+    val su = Subst[Type, Expr](inst, Map(in zip args*))
+    val su_ = Subst[Type, Expr](inst, Map((in ++ out ++ mod) zip (args ++ res_ ++ mod_)*))
     val rename = Subst.from(res ++ mod, res_ ++ mod_)
     val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
 
@@ -214,12 +211,12 @@ object Verify extends Transform:
 
   // the assumption and the commitment of procedure `name` for the arguments `args`, true if there are none
   def ac(state: State, name: Name, args: List[Expr]): (Expr, Expr) =
-    val Proc(_, _, in0, _) = state.procs(name)
+    val Proc(_, _, in, _) = state.procs(name)
     val attrs = state.procattrs(name)
-    val ty = Type.bind(in0.map(_.typ), args.map(_.typ))
-    val in = in0.map(x => Var(x.name, ty(x.typ)))
-    val su = Subst.from(in, args)
-    (su(ty(attrs.assumes)), su(ty(attrs.commits)))
+    // the type parameters of a polymorphic procedure are instantiated together with the formal parameters
+    val inst = Type.bind(in.map(_.typ), args.map(_.typ)).params
+    val su = Subst[Type, Expr](inst, Map(in zip args*))
+    (su(attrs.assumes), su(attrs.commits))
 
   // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h:
   // the assumptions and commitments must hold for the history initially,
