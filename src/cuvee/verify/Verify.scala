@@ -217,9 +217,9 @@ object Verify extends Transform:
   // the commitments of the calls must hold for the history initially,
   // the assumption of `proc` and the commitments of the other calls must imply the assumption of each call,
   // and the commitments of the calls must imply the commitment of `proc`, both for all histories;
-  // each call is a process that starts in the current state, which is verified in isolation
-  // with its own assumption and commitment, e.g. for send and receive;
-  // afterwards, the results and modified variables of each call satisfy its postcondition,
+  // each call is a process that starts in the current state, which is verified modularly by its contract
+  // like a call (see instance), i.e., its precondition must hold initially,
+  // and afterwards, the results and modified variables of each call satisfy its postcondition,
   // where its history is a copy of its own, since the other processes extend the history as well,
   // and the history is arbitrary, satisfying all commitments
   def par(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, calls: List[Call], post: Expr): Expr =
@@ -234,18 +234,15 @@ object Verify extends Transform:
 
     val guarantee = havoc(h, Imp(And(commits), commit))
 
-    val procs =
-      for (call, (assume_, commit_)) <- calls zip (assumes zip commits)
-      yield wp(state, gs, proc, assume_, commit_, call, True, False, False, False)
-
     // the calls do not share modified variables other than the history, hence the renamings do not overlap
     val instances = calls.map(instance(state, proc, _))
+    val pres = instances.map(_._1)
     val fresh = instances.flatMap(_._2)
     val phis = instances.map(_._3)
     val rename = Subst[Nothing, Var](Map(), instances.flatMap(_._4.vars).toMap - h)
     val effect = All(fresh, havoc(h, Imp(And(phis ++ commits), rename(post))))
 
-    And((init :: side) ++ procs ++ List(guarantee, effect))
+    And((init :: side) ++ pres ++ List(guarantee, effect))
 
   // differential cuts for the invariants in sequence, followed by differential weakening:
   // each invariant must hold initially, and its derivative must hold whenever the domain and the equations x' = e hold,
