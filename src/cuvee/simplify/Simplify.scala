@@ -349,8 +349,8 @@ object Simplify extends Transform:
             val (bound_, re) = ctx.avoid(pat.free.toList)
             val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
             val body_ = simplify(config, state, ctx.bind(bound_).assume(List(cond_), Nil), re(body))
-            Case(re(pat), body_, cond_)
-        Match(arg_, cases_)
+            case_(config, state, ctx, re(pat), body_, cond_)
+        match_(config, state, ctx, arg_, cases_)
 
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers
       case Trace(init, deps, acc, bound, updates) =>
@@ -358,22 +358,20 @@ object Simplify extends Transform:
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (vars_, re) = ctx.avoid(acc :: bound)
         val updates_ = this.updates(config, state, ctx.neutral.bind(vars_), updates.map(_.map(re(_))))
-        Trace(init_, deps_, vars_.head, vars_.tail, updates_)
+        trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, updates_)
 
       case Maps(deps, bound, updates) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
         val updates_ = this.updates(config, state, ctx.neutral.bind(bound_), updates.map(_.map(re(_))))
-        Maps(deps_, bound_, updates_)
+        maps(config, state, ctx, deps_, bound_, updates_)
 
       // the body holds for all values of the dependencies, like the body of a universal quantifier
       case Invs(deps, bound, body) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
         val body_ = simplify(config, state, ctx.bind(bound_), re(body))
-        if body_ == True
-        then True
-        else Invs(deps_, bound_, body_)
+        invs(config, state, ctx, deps_, bound_, body_)
 
   // the guards of the cases of an update are simplified, cases whose guard is false are dropped,
   // and the results are simplified assuming their guard
@@ -382,7 +380,7 @@ object Simplify extends Transform:
       Upd(cond, rhs) <- updates
       cond_ = simplify(config, state, ctx, cond)
       if cond_ != False
-    yield Upd(cond_, simplify(config, state, ctx.assume(List(cond_), Nil), rhs))
+    yield upd(config, state, ctx, cond_, simplify(config, state, ctx.assume(List(cond_), Nil), rhs))
 
   // simplify each of `phis` assuming the others, which hold if `pos` (conjunction)
   // and do not hold otherwise (disjunction);
@@ -705,3 +703,24 @@ object Simplify extends Transform:
     if pairs.isEmpty
     then body
     else Let(pairs.map(_._1), pairs.map(_._2), body)
+
+  def case_(config: Config, state: State, ctx: Ctx, pat: Expr, body: Expr, cond: Expr): Case =
+    Case(pat, body, cond)
+
+  def match_(config: Config, state: State, ctx: Ctx, arg: Expr, cases: List[Case]): Expr =
+    Match(arg, cases)
+
+  def upd(config: Config, state: State, ctx: Ctx, cond: Expr, rhs: Expr): Upd =
+    Upd(cond, rhs)
+
+  def trace(config: Config, state: State, ctx: Ctx, init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd]): Expr =
+    Trace(init, deps, acc, bound, updates)
+
+  def maps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], updates: List[Upd]): Expr =
+    Maps(deps, bound, updates)
+
+  // invariants that hold trivially
+  def invs(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], body: Expr): Expr =
+    if body == True
+    then True
+    else Invs(deps, bound, body)
