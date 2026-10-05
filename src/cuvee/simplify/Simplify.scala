@@ -758,6 +758,12 @@ object Simplify extends Transform:
         val right_ = diff(config, state, xs, right)
         Le.real(left_, right_)
 
+      // equations are invariant if both sides change alike
+      case Eq(left, right) if left.typ == Sort.real =>
+        val left_ = diff(config, state, xs, left)
+        val right_ = diff(config, state, xs, right)
+        Eq(left_, right_)
+
       case And(phis) =>
         val phis_ = phis.map(diff(config, state, xs, _))
         And(phis_)

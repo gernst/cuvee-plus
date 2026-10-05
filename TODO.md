@@ -162,7 +162,10 @@ simplifier rules; widths cannot be parameters.
 ## Hybrid programs
 
 - Derivatives of `Ode` invariants need `-simplify` before a solver; no chain
-  rule for other functions, no division or equations (kept as `Diff`).
+  rule for other functions, no division (kept as `Diff`). The goals of
+  [newton.dfy](examples/hybrid/newton.dfy) remain after `-simplify`, e.g.
+  `2 v == 2 a t + 2 v0` given `v == a t + v0`: equations of the context are not
+  substituted and the factor 2 is not recognized.
 - Primed variables of derivatives written in the input are free and
   undeclared.
 
