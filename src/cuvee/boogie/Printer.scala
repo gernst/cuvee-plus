@@ -393,7 +393,7 @@ object Printer extends cuvee.pipe.Printer:
     header(text("while") +:+ test, clauses(attrs), Some(block(body)))
 
   def parens(expr: Expr): Doc =
-    Group(text("(") ++ doc(expr) ++ text(")"))
+    Group(text("(") ++ Align(doc(expr)) ++ text(")"))
 
   // types are not broken across lines, arrays are written as maps [k]v
   def doc(typ: Type): Doc =
@@ -512,7 +512,7 @@ object Printer extends cuvee.pipe.Printer:
 
     if prec > min || (prec == min && assoc.isDefined && assoc == same)
     then doc(expr)
-    else text("(") ++ doc(expr) ++ text(")")
+    else text("(") ++ Align(doc(expr)) ++ text(")")
 
   // the dependencies of a combinator, which are broken across lines as a group of their own, aligned
   def dependencies(deps: List[Expr]): Doc =
@@ -644,7 +644,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // quantifiers are always in parentheses
       case Bind(quant @ Name("forall" | "exists", None), bound, body) =>
-        Group(text("(") ++ text(name(quant)) +:+ Group(Align(formals(bound))) +:+ text("::") ++ Nest(2, line ++ doc(body)) ++ text(")"))
+        Group(text("(") ++ Align(text(name(quant)) +:+ Group(Align(formals(bound))) +:+ text("::") ++ Nest(2, line ++ doc(body))) ++ text(")"))
 
       case Bind(_, _, _) =>
         Error.raise("binder not supported in Boogie", expr)

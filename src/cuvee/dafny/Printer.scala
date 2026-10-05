@@ -633,7 +633,7 @@ object Printer extends cuvee.pipe.Printer:
 
     if prec > min || (prec == min && assoc.isDefined && assoc == same)
     then doc(expr)
-    else text("(") ++ doc(expr) ++ text(")")
+    else text("(") ++ Align(doc(expr)) ++ text(")")
 
   // the dependencies of a combinator, which are broken across lines as a group of their own, aligned
   def dependencies(deps: List[Expr]): Doc =
@@ -816,7 +816,7 @@ object Printer extends cuvee.pipe.Printer:
         call("old", List(doc(arg)))
 
       case Diff(xs, arg) =>
-        Group(text("(") ++ commas(xs.map(doc(_))) +:+ text("::") ++ Nest(2, line ++ doc(arg)) ++ text(")'"))
+        Group(text("(") ++ Align(commas(xs.map(doc(_))) +:+ text("::") ++ Nest(2, line ++ doc(arg))) ++ text(")'"))
 
       // testers are parsed on variables only
       case Is(x: Var, fun) =>

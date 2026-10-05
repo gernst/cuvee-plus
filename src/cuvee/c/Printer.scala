@@ -257,7 +257,7 @@ object Printer extends cuvee.pipe.Printer:
         Error.raise("statement not supported in C", prog)
 
   def parens(expr: Expr): Doc =
-    Group(text("(") ++ doc(expr) ++ text(")"))
+    Group(text("(") ++ Align(doc(expr)) ++ text(")"))
 
   // the precedences of C as in the grammar, where ?: binds weakest
   val atomic = Int.MaxValue
@@ -325,7 +325,7 @@ object Printer extends cuvee.pipe.Printer:
 
     if prec > min || (prec == min && assoc.isDefined && assoc == same)
     then doc(expr)
-    else text("(") ++ doc(expr) ++ text(")")
+    else text("(") ++ Align(doc(expr)) ++ text(")")
 
   def doc(expr: Expr): Doc =
     expr match

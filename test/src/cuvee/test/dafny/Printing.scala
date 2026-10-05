@@ -113,6 +113,14 @@ object Printing extends TestSuite:
       expr(app(Fun.eq_, p, app(Fun.eq_, q, p))) ==> "p == (q == p)"
       expr(app(Fun.eq_, x, y, zero)) ==> "==(x, y, 0)"
 
+    // the operators inside of parentheses are indented beyond the opening parenthesis
+    test("parentheses align"):
+      val long = (1 to 8).map(i => app(Fun.int.lt, x, Lit(BigInt(1000000 * i), Sort.int))).reduce((phi, psi) => app(Fun.and, phi, psi))
+      val lines = Printer.lines(app(Fun.imp, p, app(Fun.and, app(Fun.imp, app(Fun.int.lt, x, y), long), q)))
+      val open = lines.find(_.contains("(x < y")).get.indexOf("(")
+      val inner = lines.dropWhile(!_.contains("(x < y")).tail.takeWhile(!_.contains("q"))
+      assert(inner.nonEmpty && inner.forall(_.indexWhere(_ != ' ') > open))
+
     // conjunctions of comparisons that are linked by their operands in one direction are chained,
     // comparisons as operands of comparisons are parenthesized
     test("chained comparisons"):
