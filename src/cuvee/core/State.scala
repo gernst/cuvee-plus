@@ -154,9 +154,9 @@ case class State(
   // the history of events, which must be declared as a global variable to use parallel composition
   def history: Var =
     Error.report("parallel composition requires a global variable history"):
-      require(vars.contains(Par.history))
+      require(vars.contains("history"))
 
-    vars(Par.history)
+    vars("history")
 
   def declare(name: Name, typ: Type, attrs: Attrs): State =
     unless(vars.get(name) == Some(Var(name, typ))):

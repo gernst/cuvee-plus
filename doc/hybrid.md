@@ -77,7 +77,7 @@ case class Par(calls: List[Call])                       // parallel composition 
 
 - The callees' contracts `assumes` and `commits` (procedure attributes) are
   formulas over the shared history, the global variable named `history`
-  (`Par.history`), whose events are `history.events`.
+  (`State.history`), whose events are `history.events`.
 - The calls must not share modified variables other than the history
   (`Par.shared`).
 - `history := history.send(c, v)` and `x, history := history.receive(c)`

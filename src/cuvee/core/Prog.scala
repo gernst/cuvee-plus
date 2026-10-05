@@ -121,15 +121,12 @@ case class Par(calls: List[Call]) extends Prog:
   def free = calls.flatMap(_.free).toSet
 
 object Par:
-  // the global history of events, which is extended by Send and Recv
-  val history = Name("history", None)
-
   // the variables modified by a call, including the global variables modified by the procedure,
-  // except for the history
+  // except for the global history of events, if it is declared (see State.history)
   def modifies(state: State, call: Call): Set[Var] =
     val Call(name, _, res) = call
     val mod = state.procattrs(name).modifies
-    (res ++ mod).toSet.filterNot(_.name == history)
+    (res ++ mod).toSet -- state.vars.get("history")
 
   // the variables modified by one call and used by another, other than the history
   def shared(state: State, calls: List[Call]): Set[Var] =
@@ -138,7 +135,7 @@ object Par:
         (left, i) <- calls.zipWithIndex
         (right, j) <- calls.zipWithIndex
         if i != j
-      yield modifies(state, left) intersect (right.free.filterNot(_.name == history) ++ modifies(state, right))
+      yield modifies(state, left) intersect (right.free -- state.vars.get("history") ++ modifies(state, right))
 
     pairs.flatten.toSet
 
