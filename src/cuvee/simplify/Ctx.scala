@@ -50,7 +50,8 @@ case class Ctx(
     val re = Subst.from(captured, captured.fresh)
     (re.lhs(xs), re)
 
-  // whether `phi` is known to hold (true) or known not to hold (false);
+  // whether `phi` is known to hold (true) or known not to hold (false),
+  // also by its complement, e.g. a < b is false if b <= a is known (see Simplify.not);
   // in an inconsistent context any formula may be chosen,
   // true at positive positions and false at negative positions
   def lookup(phi: Expr): Option[Boolean] =
@@ -60,7 +61,11 @@ case class Ctx(
     then Some(true)
     else if concls contains phi
     then Some(false)
-    else None
+    else
+      Ctx.complement(phi) match
+        case Some(psi) if assms contains psi  => Some(false)
+        case Some(psi) if concls contains psi => Some(true)
+        case _                                => None
 
   // equations between variables are recorded in the substitution;
   // facts are stored as given and not normalized under the substitution,
@@ -77,11 +82,11 @@ case class Ctx(
         copy(su = su + (x -> y))
 
       case _ =>
-        val inconsistent_ = inconsistent || phi == False || (concls contains phi)
+        val inconsistent_ = inconsistent || phi == False || (concls contains phi) || Ctx.complement(phi).exists(assms.contains)
         copy(assms = phi :: assms, inconsistent = inconsistent_)
 
   def deny(phi: Expr): Ctx =
-    val inconsistent_ = inconsistent || phi == True || (assms contains phi)
+    val inconsistent_ = inconsistent || phi == True || (assms contains phi) || Ctx.complement(phi).exists(concls.contains)
     copy(concls = phi :: concls, inconsistent = inconsistent_)
 
   // add facts known to hold (pos) and known not to hold (neg),
@@ -120,6 +125,15 @@ case class Ctx(
 
 object Ctx:
   val empty = Ctx(Nil, Nil, Nil, Subst.empty, None, false)
+
+  // the comparison that holds exactly if `phi` does not, the other one with the arguments swapped
+  def complement(phi: Expr): Option[Expr] =
+    phi match
+      case Lt.int(a, b)  => Some(Le.int(b, a))
+      case Le.int(a, b)  => Some(Lt.int(b, a))
+      case Lt.real(a, b) => Some(Le.real(b, a))
+      case Le.real(a, b) => Some(Lt.real(b, a))
+      case _             => None
 
   // at the top of an asserted formula
   val pos = empty.copy(polarity = Some(true))

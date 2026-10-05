@@ -543,12 +543,17 @@ object Simplify extends Transform:
       case _ =>
         Store(base, index, value)
 
+  // negated comparisons are the other comparison with the arguments swapped, !(a < b) is b <= a
   def not(config: Config, state: State, ctx: Ctx, phi: Expr): Expr =
     phi match
-      case True     => False
-      case False    => True
-      case Not(psi) => psi
-      case _        => Not(phi)
+      case True             => False
+      case False            => True
+      case Not(psi)         => psi
+      case Lt.int(a, b)     => Le.int(b, a)
+      case Le.int(a, b)     => Lt.int(b, a)
+      case Lt.real(a, b)    => Le.real(b, a)
+      case Le.real(a, b)    => Lt.real(b, a)
+      case _                => Not(phi)
 
   def imp(config: Config, state: State, ctx: Ctx, phi: Expr, psi: Expr): Expr =
     (phi, psi) match
