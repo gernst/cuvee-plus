@@ -178,7 +178,8 @@ simplifier rules; widths cannot be parameters.
 - Only calls can be composed.
 - Events are `message(chan, value)` or `time(time: real)`
   ([hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)); `send` and `receive`
-  produce messages only, nothing produces time events yet.
+  produce messages only, `delay` (no test yet) appends time events; nothing
+  calls it yet.
 - `project(c, h)` (the values of the messages on `c`) is polymorphic with
   polymorphic axioms, which solvers are not expected to handle; the tests of
   hybrid programs (`VerifyHybrid`) therefore only generate the
