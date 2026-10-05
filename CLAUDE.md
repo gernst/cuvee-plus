@@ -171,7 +171,8 @@ Details in [doc/teq.md](doc/teq.md).
   (the other branch), `let`, `match`, `all` (the dependencies), and neutral
   positions, parts of the formula are missing from `Ctx`. Anything that
   concludes from "x does not occur in the context" (the one-point rule) must
-  forget its information there (`Ctx.opaque`).
+  forget its information there: these positions have no polarity
+  (`Ctx.neutral`).
 - **Derivatives hide variables.** `Diff(xs, e)` is not free in the primed
   variables `x'` that its derivative introduces; `Ctx.used` adds them. The
   hybrid example with z3 caught this.

@@ -44,15 +44,12 @@ case class Ctx(
         case _                     => Nil
     bind(xs).copy(points = points ++ points_)
 
-  // below positions whose siblings are not recorded in the context, e.g. the other branch of ite
-  def opaque =
-    copy(points = Map())
-
   // below a negation or in the premise of an implication
   def flip =
     copy(polarity = polarity.map(!_))
 
-  // in a position without polarity
+  // in a position without polarity, also below positions whose siblings are not recorded in the context,
+  // e.g. the other branch of ite, where the one-point rule must not apply
   def neutral =
     copy(polarity = None, points = Map())
 

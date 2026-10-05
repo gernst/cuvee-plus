@@ -240,7 +240,7 @@ object Simplify extends Transform:
   // the outer loop for assertions, which are normalized into clauses (see Normalize) before and after each round,
   // since simplification may produce nested implications and negations again,
   // and which are simplified again as long as they change, e.g. the equations of let are then known in the context;
-  // normalizing before simplification removes let at positions with a polarity (see Ctx.opaque)
+  // normalizing before simplification removes let at positions with a polarity, whose body is neutral otherwise
   def apply(config: Config, state: State, ctx: Ctx, phi: Expr): Expr =
     val phi_ = Normalize(simplify(config, state, ctx, phi))
     if phi_ == phi
@@ -343,10 +343,11 @@ object Simplify extends Transform:
         val arg_ = simplify(config, state, ctx, arg)
         As(arg_, typ)
 
+      // the branches have no polarity, since the context does not record the other branch (see Ctx.neutral)
       case Ite(test, left, right) =>
         val test_ = simplify(config, state, ctx.neutral, test)
-        val left_ = simplify(config, state, ctx.opaque.assume(state, List(test_), Nil), left)
-        val right_ = simplify(config, state, ctx.opaque.assume(state, Nil, List(test_)), right)
+        val left_ = simplify(config, state, ctx.neutral.assume(state, List(test_), Nil), left)
+        val right_ = simplify(config, state, ctx.neutral.assume(state, Nil, List(test_)), right)
         ite(config, state, ctx, test_, left_, right_)
 
       case Select(base, index) =>
@@ -435,13 +436,15 @@ object Simplify extends Transform:
         val body_ = simplify(config, state, ctx.quantify(quant, bound_), re(body))
         bind(config, state, ctx, quant, bound_, body_)
 
+      // the body has no polarity, since the context does not record the bindings
       case Let(bound, args, body) =>
         val args_ = args.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.opaque.bind(bound_), re(body))
+        val body_ = simplify(config, state, ctx.neutral.bind(bound_), re(body))
         let(config, state, ctx, bound_, args_, body_)
 
-      // the variables of the patterns are renamed apart like bound variables, and the bodies assume their condition
+      // the variables of the patterns are renamed apart like bound variables, and the bodies assume their condition,
+      // without polarity, since the context does not record the argument
       case Match(arg, cases) =>
         val arg_ = simplify(config, state, ctx.neutral, arg)
         val cases_ =
@@ -449,7 +452,7 @@ object Simplify extends Transform:
           yield
             val (bound_, re) = ctx.avoid(pat.free.toList)
             val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
-            val body_ = simplify(config, state, ctx.opaque.bind(bound_).assume(state, List(cond_), Nil), re(body))
+            val body_ = simplify(config, state, ctx.neutral.bind(bound_).assume(state, List(cond_), Nil), re(body))
             case_(config, state, ctx, re(pat), body_, cond_)
         match_(config, state, ctx, arg_, cases_)
 
@@ -467,11 +470,12 @@ object Simplify extends Transform:
         val updates_ = this.updates(config, state, ctx.neutral.bind(bound_), updates.map(_.map(re(_))))
         maps(config, state, ctx, deps_, bound_, updates_)
 
-      // the body holds for all values of the dependencies, like the body of a universal quantifier
+      // the body holds for all values of the dependencies, like the body of a universal quantifier,
+      // but without polarity, since the dependencies are not recorded in the context
       case Invs(deps, bound, body) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.opaque.bind(bound_), re(body))
+        val body_ = simplify(config, state, ctx.neutral.bind(bound_), re(body))
         invs(config, state, ctx, deps_, bound_, body_)
 
   // the guards of the cases of an update are simplified, cases whose guard is false are dropped,

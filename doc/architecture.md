@@ -134,7 +134,8 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     relies on the context recording all siblings between the binder and the
     equation, which holds for `and`, `or`, `not`, `==>`, and binders only;
     the branches of `ite`, the bodies of `let`, `match`, and `all`, and
-    neutral positions forget the points (`Ctx.opaque`, `Ctx.neutral`).
+    neutral positions are without polarity and forget the points
+    (`Ctx.neutral`).
     Callers that use `eq_` as a decision (`distinct`, `select`, `deps`)
     pass `ctx.neutral`.
   - `trace`, `maps`, and `invs` normalize their dependencies, see
