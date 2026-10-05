@@ -159,6 +159,13 @@ object Verify extends Transform:
 
   // calls by the contract of the procedure, where the measure of `proc` must decrease on recursive calls
   def call(state: State, proc: Name, call: Call, post: Expr): Expr =
+    val (pre, fresh, phi, rename) = instance(state, proc, call)
+    And(pre, All(fresh, Imp(phi, rename(post))))
+
+  // the contract of procedure `name` instantiated for a call: the precondition, which includes the decrease of the
+  // measure of `proc` on recursive calls, the fresh values of the results and the modified global variables,
+  // the postcondition over them, and the renaming of the results and modified variables to these values
+  def instance(state: State, proc: Name, call: Call): (Expr, List[Var], Expr, Subst[Nothing, Var]) =
     val Call(name, args, res) = call
     val (in, out, pre, phi) = contract(state, name)
 
@@ -189,7 +196,7 @@ object Verify extends Transform:
         decreases(su(dec), dec)
       else True
 
-    And(List(su(pre), dec, All(res_ ++ mod_, Imp(phi_, rename(post)))))
+    (And(su(pre), dec), res_ ++ mod_, phi_, rename)
 
   // for all values of the history h
   def havoc(h: Var, phi: Expr): Expr =
@@ -210,9 +217,11 @@ object Verify extends Transform:
   // the commitments of the calls must hold for the history initially,
   // the assumption of `proc` and the commitments of the other calls must imply the assumption of each call,
   // and the commitments of the calls must imply the commitment of `proc`, both for all histories;
-  // since the calls do not share modified variables other than h, they can be verified in sequence,
-  // where the history is arbitrary before each call, satisfying the assumption of the procedure,
-  // and the history is arbitrary after the composition, satisfying all commitments
+  // each call is a process that starts in the current state, which is verified in isolation
+  // with its own assumption and commitment, e.g. for send and receive;
+  // afterwards, the results and modified variables of each call satisfy its postcondition,
+  // where its history is a copy of its own, since the other processes extend the history as well,
+  // and the history is arbitrary, satisfying all commitments
   def par(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, calls: List[Call], post: Expr): Expr =
     val h = state.history
     val (assumes, commits) = calls.map(call => ac(state, call.proc, call.args)).unzip
@@ -225,14 +234,18 @@ object Verify extends Transform:
 
     val guarantee = havoc(h, Imp(And(commits), commit))
 
-    val last = havoc(h, Imp(And(commits), post))
+    val procs =
+      for (call, (assume_, commit_)) <- calls zip (assumes zip commits)
+      yield wp(state, gs, proc, assume_, commit_, call, True, False, False, False)
 
-    // each call is a process of its own, with its assumption and commitment, e.g. for send and receive
-    val seq = (calls zip (assumes zip commits)).foldRight(last):
-      case ((call, (assume_, commit_)), phi) =>
-        havoc(h, Imp(assume_, wp(state, gs, proc, assume_, commit_, call, phi, False, False, False)))
+    // the calls do not share modified variables other than the history, hence the renamings do not overlap
+    val instances = calls.map(instance(state, proc, _))
+    val fresh = instances.flatMap(_._2)
+    val phis = instances.map(_._3)
+    val rename = Subst[Nothing, Var](Map(), instances.flatMap(_._4.vars).toMap - h)
+    val effect = All(fresh, havoc(h, Imp(And(phis ++ commits), rename(post))))
 
-    And((init :: side) ++ List(guarantee, seq))
+    And((init :: side) ++ procs ++ List(guarantee, effect))
 
   // differential cuts for the invariants in sequence, followed by differential weakening:
   // each invariant must hold initially, and its derivative must hold whenever the domain and the equations x' = e hold,

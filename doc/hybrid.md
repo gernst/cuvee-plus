@@ -103,5 +103,9 @@ case class Par(calls: List[Call])                       // parallel composition 
   and `commit` of `wp`): the commitments of the calls must hold initially,
   the enclosing assumption and the commitments of the other calls must imply
   the assumption of each call, and the commitments of the calls must imply
-  the enclosing commitment, both for all histories. `Horn` and `-teq` do not
-  support parallel composition.
+  the enclosing commitment, both for all histories. Each call is a process
+  that starts in the current state and is verified in isolation, with its
+  own assumption and commitment (`procs`, a map, not a sequence). Afterwards,
+  the results of each call satisfy its postcondition, over a copy of the
+  history of its own, and the history is arbitrary, satisfying all
+  commitments. `Horn` and `-teq` do not support parallel composition.

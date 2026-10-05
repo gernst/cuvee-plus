@@ -114,6 +114,12 @@ object VerifyPar extends TestSuite:
       assert(assumed != weak)
       errors(assumed) ==> Nil
 
+    // each call is verified in isolation from the start, where its precondition must hold
+    test("precondition"):
+      val weak = par.replace("  requires c != d && 0 < n && positive(history.events, c)", "  requires c != d && positive(history.events, c)")
+      assert(weak != par)
+      errors(weak) ==> List("goal does not hold")
+
     // the parallel composition extends the history, after which the commitment of main must hold
     test("commitment"):
       val good = par.replace("  ensures positive(history.events, c)\n{\n  parallel", "  ensures positive(history.events, c)\n  commits positive(history.events, c)\n{\n  parallel")
