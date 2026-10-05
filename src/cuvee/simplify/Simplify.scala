@@ -559,18 +559,18 @@ object Simplify extends Transform:
       case _ if phi == psi    => True
       case _                  => Imp(phi, psi)
 
-  // flatten nested conjunctions, drop true and duplicates,
-  // false or a complementary pair makes the whole conjunction false
+  // flatten nested conjunctions, drop true and duplicates, false makes the whole conjunction false;
+  // complementary pairs are decided already, since each conjunct is simplified assuming the others (see nary)
   def and(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
     val phis_ = phis.flatMap(And.flattenStrong).distinct
-    if phis_.contains(False) || phis_.exists(phi => phis_ contains Not(phi))
+    if phis_.contains(False)
     then False
     else And(phis_)
 
   // dual to and
   def or(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
     val phis_ = phis.flatMap(Or.flattenStrong).distinct
-    if phis_.contains(True) || phis_.exists(phi => phis_ contains Not(phi))
+    if phis_.contains(True)
     then True
     else Or(phis_)
 
