@@ -71,6 +71,11 @@ inferred from the call graph. Open:
 
 - Lemmas and goals are single formulas, `lemma {:rw} φ` and `goal φ`, not
   Dafny's lemmas with parameters and contracts.
+- Lemmas cannot have type parameters, `forall v: a :: ...` is an unknown
+  type `a`, hence the lemmas of [teq.dfy](resources/cuvee/teq.dfy) taken from
+  teq.bpl are instantiated at `int` and `array<int, int>` only. Syntax
+  `lemma <a> {:rw} φ` as in Boogie? The lemmas there are not checked yet
+  either (they are `{:free}`).
 - Sets and multisets use cvc5's theories (`Set`, `Bag`), which z3 does not
   support; missing are set comprehensions, `multiset(s)` of a sequence,
   `m[x := n]` on multisets, and `>=`, `>`, disjointness `!!`. Maps (`map`)
