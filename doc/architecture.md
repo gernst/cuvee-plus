@@ -111,7 +111,7 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   the context; they are dropped if they simplify to `true`.
   `Normalize.lift` lifts `ite` out of the terms of atoms to the level of
   formulas, `A[ite(c, a, b)]` to `ite(c, A[a], A[b])`, but not out of
-  binders, derivatives, and `old` inside of `A`; it is not used yet.
+  binders, derivatives, and `old` inside of `A`; `Split` uses it.
   - All methods take `(config, state, ctx, ...)`. The context `Ctx` holds the
     facts known at the current position and the rewrite rules, which are
     extracted from the assertions and lemmas with the attribute `:rw`
@@ -170,7 +170,8 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
 - [`Flat`](../src/cuvee/transform/Flat.scala) flattens record arguments of
   Horn predicates.
 - [`Split`](../src/cuvee/transform/Split.scala) splits goals and lemmas into
-  individual obligations.
+  individual obligations, after lifting `ite` out of the terms of atoms
+  (`Normalize.lift`), such that it is split by its test as well.
 - [`Monomorph`](../src/cuvee/transform/Monomorph.scala) replaces polymorphic
   functions by their instances, which are emitted before their first use.
 

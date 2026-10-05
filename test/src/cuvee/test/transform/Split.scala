@@ -37,6 +37,14 @@ object Split extends TestSuite:
       val q = Var("q", Sort.bool)
       S.split(Nil, Nil, Or(Not(p), q)) ==> List(Imp(p, q))
 
+    // if-then-else in the terms of atoms is lifted and split by its test
+    test("lifted"):
+      val goal = Assert(Goal, Nil, Lt.int(Ite(p, x, y), Zero.int), Attrs.empty)
+      S.split(goal) ==> List(
+        Assert(Goal, Nil, Imp(p, Lt.int(x, Zero.int)), Attrs.empty),
+        Assert(Goal, Nil, Imp(Not(p), Lt.int(y, Zero.int)), Attrs.empty)
+      )
+
     // disjunctions and if-then-else among the antecedents are split into cases
     test("cases"):
       val q = Var("q", Sort.bool)

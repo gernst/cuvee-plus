@@ -3,6 +3,7 @@ package cuvee.transform
 import cuvee.Config
 import cuvee.pipe.Transform
 import cuvee.core._
+import cuvee.simplify.Normalize
 
 // splitting of goals and lemmas into individual proof obligations of the form
 // forall xs. antecedents ==> succedents, e.g. those from Verify, which are reported separately by the solvers,
@@ -14,7 +15,8 @@ import cuvee.core._
 // existential quantifiers bind their variables in the context,
 // and disjunctions and if-then-else are split into cases;
 // obligations that are true, e.g. those with false among the antecedents
-// or with a succedent that is also an antecedent, are dropped, as are duplicates
+// or with a succedent that is also an antecedent, are dropped, as are duplicates;
+// beforehand, if-then-else is lifted out of the terms of atoms (see Normalize.lift), such that it is split as well
 object Split extends Transform:
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     for
@@ -25,7 +27,7 @@ object Split extends Transform:
   def split(cmd: Cmd): List[Cmd] =
     cmd match
       case Assert(justify @ (Goal | Lemma), params, phi, attrs) =>
-        for phi_ <- split(Nil, Nil, phi)
+        for phi_ <- split(Nil, Nil, Normalize.lift(phi))
         yield Assert(justify, params, phi_, attrs)
 
       case _ =>
