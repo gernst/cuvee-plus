@@ -150,8 +150,9 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     `∀ xs. if φ then l == r` (also `<==>`, `!p` for `p == false`, and a
     boolean atom `p` for `p == true`); the variables of `r` and `φ` must occur
     in `l` (`Rule.check`).
-  - Arithmetic is normalised into polynomials (`Arith`); comparisons become
-    `0 < p` and `0 <= p` with positive coefficients on both sides.
+  - Arithmetic is normalised into polynomials (`Arith`); comparisons and
+    equations on `Int` and `Real` become `0 < p`, `0 <= p`, and `0 == p`,
+    with `p` primitive, printed with positive coefficients on both sides.
   - Derivatives are computed by the rules of dL ([hybrid.md](hybrid.md)).
 - [`Rewrite`](../src/cuvee/simplify/Rewrite.scala) applies conditional rules
   innermost first, also as a library. Its methods take

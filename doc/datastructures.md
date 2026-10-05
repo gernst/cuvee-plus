@@ -275,9 +275,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 - **`Poly.sides`** splits a polynomial into its negative and positive parts,
   so that comparisons have positive coefficients on both sides.
 - **`Poly.primitive`** scales a polynomial by a positive factor to integral
-  coefficients without a common divisor. Comparisons with 0 use it
-  (`Simplify.difference`), since only the sign matters there, e.g.
-  `x < 2y + 1.5` becomes `2x < 4y + 3`.
+  coefficients without a common divisor. Comparisons and equations on `Int`
+  and `Real` with 0 use it (`Simplify.difference`), since only the sign
+  matters there, e.g. `x < 2y + 1.5` becomes `2x < 4y + 3`, and `0.5x == y`
+  becomes `x == 2y`.
 - **`Constraint(poly, strict)`** is a linear constraint `0 <= poly` or
   `0 < poly`. `FourierMotzkin` eliminates atoms from conjunctions of these and
   decides their satisfiability over the rationals.

@@ -1,7 +1,7 @@
 ; normal form of arithmetic as polynomials
 (declare-const x Int)
 (declare-const y Int)
-(assert (= (+ (* x x) (- 1)) y))
+(assert (= (* x x) (+ y 1)))
 (assert (= 0 y))
 (assert (= x y))
 (assert (< x y))

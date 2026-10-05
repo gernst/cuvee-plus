@@ -283,6 +283,15 @@ object Simplify extends Transform:
       case _: Lit | True | False =>
         expr
 
+      // equations on Int and Real are compared as polynomials, like < and <=
+      case Eq(left, right) if left.typ == Sort.int =>
+        val poly_ = difference(config, state, ctx.neutral, Ring.int, left, right)
+        eq(config, state, ctx, Ring.int, poly_)
+
+      case Eq(left, right) if left.typ == Sort.real =>
+        val poly_ = difference(config, state, ctx.neutral, Ring.real, left, right)
+        eq(config, state, ctx, Ring.real, poly_)
+
       case Eq(left, right) =>
         val left_ = simplify(config, state, ctx.neutral, left)
         val right_ = simplify(config, state, ctx.neutral, right)
@@ -790,6 +799,15 @@ object Simplify extends Transform:
       (ring, right.toExpr(ring)) match
         case (Ring.int, Succ(right_)) => Le.int(left.toExpr(ring), right_)
         case (_, right_)              => op(left.toExpr(ring), right_)
+
+  // equations 0 == p on Int or Real are constants if p is, otherwise they are re-arranged like comparisons,
+  // the result is an equation as built by eq_, e.g. by the one-point rule
+  def eq(config: Config, state: State, ctx: Ctx, ring: Ring, poly: Poly): Expr =
+    if poly.monos.isEmpty
+    then if poly.const.isZero then True else False
+    else
+      val (left, right) = poly.sides
+      eq_(config, state, ctx, left.toExpr(ring), right.toExpr(ring))
 
   // on Int, n + 1 <= m is n < m
   def le(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
