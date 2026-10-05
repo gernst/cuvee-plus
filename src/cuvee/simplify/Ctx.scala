@@ -58,10 +58,11 @@ case class Ctx(
     bound.toSet ++ used
 
   // variables that occur in the facts of the context, including the primed variables of derivatives,
-  // which these refer to once the derivative is computed, but which are not free in Diff
+  // which these refer to once the derivative is computed, but which are not free in Diff;
+  // the equations in eq remain among the assumptions, unlike those in su
   def used: Set[Var] =
     val facts = assms ++ concls
-    facts.free ++ facts.flatMap(Ctx.primed) ++ su.keys ++ su.values.free ++ eq.keys ++ eq.values.free
+    facts.free ++ facts.flatMap(Ctx.primed) ++ su.keys ++ su.values.free
 
   // rename those of `xs` that clash with variables of the context (compared by name),
   // returning the fresh list of variables and the renaming to be applied to the scope of `xs`
