@@ -82,3 +82,19 @@ object Dependencies extends TestSuite:
       val Invs(deps, List(j_), body) = simplify(Invs(List(J, J), List(j, l), Lt.int(n, Plus.int(j, l)))): @unchecked
       deps ==> List(J)
       body.free ==> Set(n, j_)
+
+    // invariants distribute over conjunctions, each part keeps the dependencies that it uses
+    test("conjunctions"):
+      val phi = Invs(List(K, J), List(k, j), And(Lt.int(Zero.int, k), Lt.int(Zero.int, j)))
+      simplify(phi) ==> And(Invs(List(K), List(k), Lt.int(Zero.int, k)), Invs(List(J), List(j), Lt.int(Zero.int, j)))
+
+    // the invariants of the context over some of the dependencies hold in the bodies and updates
+    test("invariants"):
+      val ctx = Ctx.empty.assume(List(Invs(List(J), List(l), Lt.int(Zero.int, l))), Nil)
+      def simplify(expr: Expr) = Simplify.simplify(Config.default, State.empty, ctx, expr)
+      simplify(Invs(List(K, J), List(k, j), Lt.int(Zero.int, j))) ==> True
+      val upds = List(Upd(Lt.int(Zero.int, j), j), Upd(Le.int(j, Zero.int), Zero.int))
+      simplify(Maps(List(J), List(j), upds)) ==> Maps(List(J), List(j), List(Upd(True, j)))
+      // not for other dependencies
+      val other = Invs(List(K), List(k), Lt.int(Zero.int, k))
+      simplify(other) ==> other

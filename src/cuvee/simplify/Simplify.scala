@@ -461,18 +461,21 @@ object Simplify extends Transform:
             case_(config, state, ctx, re(pat), body_, cond_)
         match_(config, state, ctx, arg_, cases_)
 
-      // the combinators bind the accumulator and the variables for the dependencies like quantifiers
+      // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
+      // their updates and bodies assume the invariants of the context over the same dependencies (see invariants)
       case Trace(init, deps, acc, bound, updates) =>
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (vars_, re) = ctx.avoid(acc :: bound)
-        val updates_ = this.updates(config, state, ctx.neutral.bind(vars_), updates.map(_.map(re(_))))
+        val ctx_ = ctx.neutral.bind(vars_).assume(invariants(ctx, deps_, vars_.tail), Nil)
+        val updates_ = this.updates(config, state, ctx_, updates.map(_.map(re(_))))
         trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, updates_)
 
       case Maps(deps, bound, updates) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val updates_ = this.updates(config, state, ctx.neutral.bind(bound_), updates.map(_.map(re(_))))
+        val ctx_ = ctx.neutral.bind(bound_).assume(invariants(ctx, deps_, bound_), Nil)
+        val updates_ = this.updates(config, state, ctx_, updates.map(_.map(re(_))))
         maps(config, state, ctx, deps_, bound_, updates_)
 
       // the body holds for all values of the dependencies, like the body of a universal quantifier,
@@ -480,8 +483,21 @@ object Simplify extends Transform:
       case Invs(deps, bound, body) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = ctx.avoid(bound)
-        val body_ = simplify(config, state, ctx.neutral.bind(bound_), re(body))
+        val ctx_ = ctx.neutral.bind(bound_).assume(invariants(ctx, deps_, bound_), Nil)
+        val body_ = simplify(config, state, ctx_, re(body))
         invs(config, state, ctx, deps_, bound_, body_)
+
+  // the bodies of the invariants among the assumptions whose dependencies are among `deps`,
+  // with their bound variables renamed to those of the corresponding dependencies in `bound`,
+  // which hold at each position of the dependencies, hence also for the values bound there;
+  // the dependencies of a combinator have equal length, such that the positions coincide
+  def invariants(ctx: Ctx, deps: List[Expr], bound: List[Var]): List[Expr] =
+    for
+      case Invs(deps_, bound_, body) <- ctx.assms
+      if deps_.forall(deps.contains)
+    yield
+      val re = Subst.from(bound_, deps_.map(dep => bound(deps.indexOf(dep))))
+      re(body)
 
   // the guards of the cases of an update are simplified, cases whose guard is false are dropped,
   // and the results are simplified assuming their guard
@@ -896,10 +912,12 @@ object Simplify extends Transform:
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, updates.free)
     Maps(deps_, bound_, updates.map(_.map(re(_))))
 
-  // invariants with a constant body: true holds trivially,
+  // invariants distribute over conjunctions, where each part keeps the dependencies that it uses;
+  // with a constant body: true holds trivially,
   // false holds exactly if there are no values, i.e., the dependencies, which have the same length, are empty
   def invs(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], body: Expr): Expr =
     (deps, body) match
+      case (_, And(phis))     => and(config, state, ctx, phis.map(invs(config, state, ctx, deps, bound, _)))
       case (_, True)          => True
       case (dep :: _, False)  => Eq(Seqs.len(dep), Zero.int)
       case _ =>
