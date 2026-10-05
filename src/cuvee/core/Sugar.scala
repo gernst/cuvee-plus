@@ -60,6 +60,14 @@ extension (self: List[Expr])
   @targetName("Exprs.types")
   def types = self.map(_.typ)
 
+  // the arguments of a conjunction of `self`, flattened, without true and without duplicates
+  @targetName("Exprs.conjuncts")
+  def conjuncts = self.flatMap(And.flattenStrong).distinct
+
+  // the arguments of a disjunction of `self`, flattened, without false and without duplicates
+  @targetName("Exprs.disjuncts")
+  def disjuncts = self.flatMap(Or.flattenStrong).distinct
+
 class Quant(name: Name):
   // SMT-LIB does not admit quantifiers without bound variables
   def apply(bound: List[Var], body: Expr): Expr =

@@ -562,14 +562,14 @@ object Simplify extends Transform:
   // flatten nested conjunctions, drop true and duplicates, false makes the whole conjunction false;
   // complementary pairs are decided already, since each conjunct is simplified assuming the others (see nary)
   def and(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
-    val phis_ = phis.flatMap(And.flattenStrong).distinct
+    val phis_ = phis.conjuncts
     if phis_.contains(False)
     then False
     else And(phis_)
 
   // dual to and
   def or(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
-    val phis_ = phis.flatMap(Or.flattenStrong).distinct
+    val phis_ = phis.disjuncts
     if phis_.contains(True)
     then True
     else Or(phis_)
