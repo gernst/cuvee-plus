@@ -2,20 +2,28 @@ package cuvee.simplify
 
 import cuvee.core._
 
-// a sequent at the current position of the simplifier:
-// the assumptions are known to hold and the conclusions are known not to hold,
-// together with the variables bound by enclosing binders, in the order of binding (innermost first),
-// among which `universal` and `existential` are those quantified universally and existentially seen from the current position,
-// such that the equations x == e of the latter are true at a position with polarity (one-point rule),
-// which is only sound if the context records all siblings between the binder and the current position;
-// a substitution that replaces variables by others or by literals known to be equal,
-// and the equations x == e of the assumptions that are not recursive, i.e., where x is not free in e;
-// the polarity of the current position is Some(true) if it occurs positively,
-// Some(false) if it occurs negatively, and None if it occurs in both ways or not in a formula,
-// e.g. below an equation or in the argument of a function;
+// a sequent at the current position of the simplifier
+//
+// bound: the variables bound by enclosing binders, in the order of binding (innermost first)
+//
+// universal, existential: those of the bound variables that are quantified universally and existentially,
+// seen from the current position, i.e., swapped below negations and premises (see flip);
+// the equations x == e of the existential ones are true (one-point rule, see Simplify.point),
+// which is only sound if the context records all siblings between the binder and the current position
+//
+// assms, concls: the assumptions are known to hold, the conclusions are known not to hold
+//
+// su: a substitution that replaces variables by others or by literals known to be equal
+//
+// eq: the equations x == e of the assumptions that are not recursive, i.e., where x is not free in e
+//
+// polarity: Some(true) if the current position occurs positively, Some(false) if it occurs negatively,
+// and None if it occurs in both ways or not in a formula, e.g. below an equation or in the argument of a function;
 // the context is inconsistent if false is among the assumptions or true among the conclusions,
-// then the current position is irrelevant for the truth value of the whole formula;
-// the rewrite rules are applied after each round of simplification (see Simplify.simplify)
+// then the current position is irrelevant for the truth value of the whole formula
+//
+// rules, steps: the rewrite rules, which are applied after each round of simplification (see Simplify.simplify),
+// and the remaining number of steps
 case class Ctx(
     bound: List[Var],
     universal: Set[Var],
