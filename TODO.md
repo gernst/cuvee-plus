@@ -62,6 +62,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   are not instantiated by conditional expressions; equations of the context
   are not followed (rule `Subst` of the paper); innermost first, which may
   rewrite subterms before a rule for the whole term applies.
+- Type annotations `e as T` are dropped from the left-hand sides of rules
+  (`Simplify.unannotated`) but kept in expressions, where the printers need
+  them, so rules do not match annotated subterms such as `[] as T`.
+- The goal of [clock.dfy](examples/hybrid/clock.dfy) remains after
+  `-simplify`: the `{:rw}` rules of `delay` would need the context equation
+  `history.events == []` and the instantiation of `exists s` by the time.
 - Guards below combinators are matched syntactically first, so a bound
   variable that occurs only in guards may match any formula, e.g. `b` matches
   `!b`; lemmas whose guards are more specific must come first (as for

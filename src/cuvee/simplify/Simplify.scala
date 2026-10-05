@@ -36,7 +36,16 @@ object Simplify extends Transform:
   // the rewrite rules of the assertions and lemmas with the attribute :rw
   def rules(cmds: List[Cmd]): List[Rule] =
     for case cmd @ Assert(_, _, phi, _) <- cmds if isRule(cmd)
-    yield Rule.check(rule(phi))
+    yield
+      val Rule(lhs, rhs, cond) = rule(phi)
+      Rule.check(Rule(unannotated(lhs), rhs, cond))
+
+  // type annotations e as T are dropped from the left-hand sides of rules, they are needed for typing only,
+  // and matching would compare their types literally, which may contain the type parameters of the rule
+  def unannotated(expr: Expr): Expr =
+    expr match
+      case As(arg, _) => unannotated(arg)
+      case _          => expr.map(unannotated)
 
   // the rule of a formula: the universally quantified variables are the variables of the rule,
   // the premise of an implication is its condition, and the conclusion must be an equation l = r,

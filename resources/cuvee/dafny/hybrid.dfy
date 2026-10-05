@@ -20,13 +20,13 @@ axiom <a₀> forall c: chan, h₁: seq<event<a₀>>, h₂: seq<event<a₀>> ::
 // the passing of t time units after h, merged with the last event if that is time already
 function delay<a₀>(h: seq<event<a₀>>, t: real): seq<event<a₀>>
 
-axiom <a₀> forall t: real ::
+axiom <a₀> {:rw} forall t: real ::
   delay([] as seq<event<a₀>>, t) == (if t == 0.0 then [] else [time(t)])
 
-axiom <a₀> forall h: seq<event<a₀>>, c: chan, v: a₀, t: real ::
+axiom <a₀> {:rw} forall h: seq<event<a₀>>, c: chan, v: a₀, t: real ::
   delay(h + [message(c, v)], t) == h + [message(c, v)] + (if t == 0.0 then [] else [time(t)])
 
-axiom <a₀> forall h: seq<event<a₀>>, s: real, t: real ::
+axiom <a₀> {:rw} forall h: seq<event<a₀>>, s: real, t: real ::
   delay(h + [time(s)], t) == h + [time(s + t)]
 
 datatype history<a₀> = history(events: seq<event<a₀>>)
