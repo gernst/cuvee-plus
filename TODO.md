@@ -106,7 +106,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `x.f` and `x.C?` on variables only; members inside `type`/`datatype` bodies
   need `this.` ([examples/dafny/stack.dfy](examples/dafny/stack.dfy)).
 - `var` declarations before statements; contract clauses in the fixed order
-  `modifies`, `requires`, `ensures`, `assumes`, `commits`, `decreases`.
+  `modifies`, `requires`, `ensures`, `assumes`, `commits`, `decreases`, for
+  loops `modifies`, `invariant`, `decreases`.
 - `t.0.1` is scanned as `t` `.` `0.1`.
 - The printer writes unicode subscripts (`x₀`), and its `any` raises
   `MatchError` on plain strings and numbers.
@@ -142,6 +143,8 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 - Initial values of globals become a `requires` annotation of `main` that is
   not parsed; arrays cannot be initialized.
 - No `switch`, `goto`, pointers, structs, strings, preprocessor.
+- The modifies clause of a loop is inferred from the core program, where a
+  local variable that shadows a global one of the same type counts as global.
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/div.c](examples/c/div.c)).
 
@@ -181,8 +184,6 @@ simplifier rules; widths cannot be parameters.
   ([hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)); `send` and `receive`
   produce messages, `tick` (`Tick`) time events by `delay`, also implicitly
   after each `ode` in `Verify`; neither `tick` nor `delay` has a test yet.
-  The implicit tick modifies the history, which is not checked against the
-  modifies clause of the method.
 - `project(c, h)` (the values of the messages on `c`) is polymorphic with
   polymorphic axioms, which solvers are not expected to handle; the tests of
   hybrid programs (`VerifyHybrid`) therefore only generate the

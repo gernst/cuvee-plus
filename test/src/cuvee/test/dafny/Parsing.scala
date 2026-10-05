@@ -41,6 +41,12 @@ object Hybrid extends TestSuite:
       errors(history + p + "method m() returns (x: int) modifies history { parallel { x := p(1); x := p(2); } }") ==>
         List("parallel calls share modified variables")
 
+    // the history ticks after a differential equation
+    test("tick"):
+      errors(history + "method m(g: real) returns (x: real) modifies history { ode t :: x' == g; }") ==> Nil
+      errors(history + "method m(g: real) returns (x: real) { ode t :: x' == g; }") ==>
+        List("differential equation ticks the history, which is not in the modifies clause")
+
     test("read"):
       errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(x); } }") ==>
         List("parallel calls share modified variables")
@@ -96,6 +102,18 @@ object Globals extends TestSuite:
     test("call"):
       errors("var g: int; method m() modifies g { } method n() { m(); }") ==>
         List("call modifies variables that are not in the modifies clause")
+
+    // loops modify the global variables in their modifies clause only, directly or by calls,
+    // which must be modifiable by the enclosing method
+    test("loops"):
+      val p = "var g: int; method p() modifies g { } "
+      errors(p + "method m() modifies g { while true modifies g { g := 1; p(); } }") ==> Nil
+      errors(p + "method m() modifies g { while true { g := 1; } }") ==>
+        List("assignment to variables that must not be modified")
+      errors(p + "method m() modifies g { while true { p(); } }") ==>
+        List("call modifies variables that are not in the modifies clause")
+      errors(p + "method m() { while true modifies g { } }") ==>
+        List("modifies clause of loop lists global variables that are not modifiable")
 
     test("old in precondition"):
       errors("var g: int; method m() modifies g requires old(g) == 0 { g := g + 1; }") ==>

@@ -79,8 +79,10 @@ case class Iter(body: Prog, attrs: Attrs)               // while * { body }
   weakening, where the time starts at `0.0` and evolves with `time' = 1`
   within `0 <= time`. Afterwards, if the global `history` is declared, it
   ticks by the time that has passed, `history := history.tick(time)`
-  (`Verify.tick`), which asserts the enclosing commitment like `Tick`; loops
-  around an `Ode` therefore modify the history; the derivatives of the invariants must be simplified
+  (`Verify.tick`), which asserts the enclosing commitment like `Tick`. Hence
+  an `Ode` modifies the history, which must be in the modifies clause of the
+  method and of loops around it (`Type.check`). The derivatives of the
+  invariants must be simplified
   (`-simplify`) before the goals can be passed to a solver.
 
 ## Parallel composition

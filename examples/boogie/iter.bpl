@@ -11,6 +11,7 @@ procedure walk(n: int) returns (k: int)
   k := 0;
   while (*)
     invariant 0 <= k && k <= n;
+    modifies steps;
   {
     if (k < n) {
       k := k + 1;

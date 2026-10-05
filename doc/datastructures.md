@@ -149,6 +149,14 @@ case class Par(calls: List[Call])                       // parallel composition 
   `Spec.assert(phi)`, `Spec.assume(phi)` and `Spec.havoc(xs)`.
 - **`mod`** is the set of assigned variables. Global variables modified by
   calls are not included; they come from the callee's `modifies` attribute.
+- **Modifies clauses.** `Type.check` takes the global variables that the
+  enclosing procedure may modify. A loop modifies the global variables in its
+  `modifies` attribute only, which must be modifiable outside of the loop and
+  subsume the global variables that its body assigns, that calls in it modify,
+  and the history that differential equations tick. Hence `Verify` and `TEQ`
+  take the modified variables of a loop as its `mod` and its `modifies`
+  attribute. The C frontend infers the attribute of loops, the others require
+  it in the input (`while ... modifies g` in Dafny, `modifies g;` in Boogie).
 - **`free`** includes the variables in the attributes, e.g. in loop
   invariants.
 - **`Ode`**, **`Iter`**, **`Par`**, `Send`, `Recv`, and `Tick` are hybrid programs and

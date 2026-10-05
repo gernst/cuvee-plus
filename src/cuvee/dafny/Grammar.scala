@@ -338,7 +338,7 @@ object Grammar:
     If(P("if" ~ guard ~ block ~ else_block_or_skip))
 
   val while_ =
-    While(P("while" ~ guard ~ invariant.* ~ decreases.* ~ block))
+    While(P("while" ~ guard ~ modifies.* ~ invariant.* ~ decreases.* ~ block))
 
   val eq = sym.filter(_ == "==").asScanner
   val and = sym.filter(_ == "&&").asScanner

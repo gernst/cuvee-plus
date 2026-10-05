@@ -295,7 +295,7 @@ class Parser(var state: State):
         Error.report("calls in loop conditions are not supported", test):
           require(pre.isEmpty)
 
-        List(core.While(test_, wrap(stmt(scope, ctx, body)), Attrs.empty))
+        List(while_(test_, wrap(stmt(scope, ctx, body))))
 
       // the test is evaluated after each iteration, also after continue, but not before the first one
       case DoWhile(body, test) =>
@@ -306,7 +306,7 @@ class Parser(var state: State):
 
         val first = temp(ctx, BoolType)
         val body_ = core.Block(Nil, core.Assign(List(first), List(False)) :: stmt(scope, ctx, body))
-        List(core.Assign(List(first), List(True)), core.While(Or(first, test_), body_, Attrs.empty))
+        List(core.Assign(List(first), List(True)), while_(Or(first, test_), body_))
 
       // the initialization may declare variables, whose scope is the loop
       case For(init, test, step, body) =>
@@ -324,12 +324,12 @@ class Parser(var state: State):
         val step_ = step.toList.flatMap(stmt(scope, ctx, _))
 
         if !body_.exists(continues)
-        then List(core.While(test_, core.Block(Nil, body_ ++ step_), Attrs.empty))
+        then List(while_(test_, core.Block(Nil, body_ ++ step_)))
         else
           val brk = temp(ctx, BoolType)
-          val inner = core.While(True, core.Block(Nil, body_.map(exits(brk, _)) :+ core.Break), Attrs.empty)
+          val inner = while_(True, core.Block(Nil, body_.map(exits(brk, _)) :+ core.Break))
           val leave = core.If(brk, core.Break, core.Block(Nil, Nil))
-          val outer = core.While(test_, core.Block(Nil, List(inner, leave) ++ step_), Attrs.empty)
+          val outer = while_(test_, core.Block(Nil, List(inner, leave) ++ step_))
           List(core.Assign(List(brk), List(False)), outer)
 
       case Return(None) =>
@@ -417,6 +417,19 @@ class Parser(var state: State):
       case Call("__VERIFIER_nondet_bool", Nil) => t == BoolType
       case Call(f, Nil)                        => f.startsWith("__VERIFIER_nondet_") && t == IntType
       case _                                   => false
+
+  // loops modify the global variables that their body assigns or that the functions it calls modify,
+  // which are their modifies clause, as C has no annotations for it
+  def while_(test: core.Expr, body: core.Prog): core.Prog =
+    def calls(prog: core.Prog): Set[core.Var] =
+      prog match
+        case core.Call(f, _, _) => state.procattrs(f).modifies.toSet
+        case _                  => prog.subprogs.flatMap(calls).toSet
+
+    val vars = globals.values.map(_._1).toSet
+    val mod = (body.mod.toSet intersect vars) ++ calls(body)
+    val attrs = if mod.isEmpty then Attrs.empty else Attrs(List("modifies" -> Some(mod.toList.sortBy(_.name.toString))))
+    core.While(test, body, attrs)
 
   // calls of functions whose result has the type of the variable, which needs no conversion
   def direct(rhs: Expr, t: Type) =
@@ -604,4 +617,4 @@ class Parser(var state: State):
 
     val fixed = in.toSet ++ (globals.values.map(_._1).toSet -- mod.map(globals(_)._1))
     val scope_ = core.Scope.empty ++ globals.values.map(_._1).toList ++ in ++ out
-    state.progs.check(scope_, fixed, prog)
+    state.progs.check(scope_, fixed, mod.map(globals(_)._1), prog)

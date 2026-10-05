@@ -163,9 +163,9 @@ class Parser(var state: State):
 
           // the inputs of a procedure and the global variables that are not modified must not be assigned
           case Some(prog) =>
-            val prog_ = resolve(scope__, mod, prog)
+            val prog_ = resolve(scope__, prog)
             val fixed = formals_.toSet ++ (globals.toSet -- mod)
-            val body_ = state.progs.check(scope__, fixed, prog_)
+            val body_ = state.progs.check(scope__, fixed, mod, prog_)
             state = state.define(name, body_)
 
             val cmd_ = state.cmds.defineProc(name)
@@ -361,9 +361,8 @@ class Parser(var state: State):
         val value_ = update(inner, rest, value)
         state.exprs.app("store", List(base, index, value_))
 
-  // `mod` are the global variables that may be modified by calls,
-  // which are those in the modifies clause of the procedure and of the innermost loop
-  def resolve(scope: Scope, mod: Set[core.Var], prog: Prog): core.Prog =
+  // statements are resolved, the global variables that they modify are checked by Type.check
+  def resolve(scope: Scope, prog: Prog): core.Prog =
     prog match
       case Skip =>
         state.progs.skip
@@ -405,11 +404,6 @@ class Parser(var state: State):
         Error.report("procedure not declared", name):
           require(state.procs.contains(name))
 
-        val callee = state.procattrs(name).modifies.toSet
-        val unknown = callee -- mod
-        Error.report("call modifies variables that are not in the modifies clause", name, unknown):
-          require(unknown.isEmpty)
-
         val lhs_ = variables(scope, lhs)
         val args_ = args.map(resolve(scope, _))
         state.progs.call(name, args_, lhs_)
@@ -417,36 +411,24 @@ class Parser(var state: State):
       case Block(locals, progs) =>
         val locals_ = locals.map(resolve(scope, _))
         val scope_ = scope ++ locals_
-        val progs_ = progs.map(resolve(scope_, mod, _))
+        val progs_ = progs.map(resolve(scope_, _))
         state.progs.block(locals_, progs_)
 
       case If(Some(test), left, right) =>
         val test_ = resolve(scope, test)
-        val left_ = resolve(scope, mod, left)
-        val right_ = resolve(scope, mod, right)
+        val left_ = resolve(scope, left)
+        val right_ = resolve(scope, right)
         state.progs.if_(test_, left_, right_)
 
       case If(None, left, right) =>
-        val left_ = resolve(scope, mod, left)
-        val right_ = resolve(scope, mod, right)
+        val left_ = resolve(scope, left)
+        val right_ = resolve(scope, right)
         state.progs.choice(left_, right_)
 
-      // calls in the body may modify the global variables in the modifies clause of the loop only,
-      // which must be modifiable outside of the loop;
       // loops without test are nondeterministic iterations
       case While(test, specs, body) =>
         val attrs_ = contract(scope, specs)
-
-        val mod_ = attrs_.modifies.toSet
-        val nonglobal = mod_ -- state.globals
-        Error.report("modifies clause of loop lists variables that are not global", nonglobal):
-          require(nonglobal.isEmpty)
-
-        val unknown = mod_ -- mod
-        Error.report("modifies clause of loop lists global variables that are not modifiable", unknown):
-          require(unknown.isEmpty)
-
-        val body_ = resolve(scope, mod_, body)
+        val body_ = resolve(scope, body)
 
         test match
           case Some(test) =>

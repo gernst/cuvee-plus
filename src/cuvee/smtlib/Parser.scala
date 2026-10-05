@@ -368,7 +368,7 @@ class Parser(private var init: State):
 
       case Some(body) =>
         val fixed = in.toSet ++ (globals.toSet -- mod)
-        val body_ = state.progs.check(scope, fixed, prog(scope, body))
+        val body_ = state.progs.check(scope, fixed, mod.toSet, prog(scope, body))
         state = state.define(name, body_)
         state.cmds.defineProc(name)
 

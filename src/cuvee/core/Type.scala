@@ -431,12 +431,14 @@ object Type:
 
   // well-formedness of programs: assignments match up, break and continue occur inside loops only,
   // and all expressions are well-typed, variables in `fixed`, e.g. the inputs of a procedure, must not be assigned;
+  // `mod` are the global variables that may be modified, those in the modifies clause of the procedure
+  // and of the innermost loop, which subsumes the global variables that calls modify;
   // variables are not checked for being declared, since unknown names are rejected already when resolving them
-  def check(state: State, scope: Scope, fixed: Set[Var], prog: Prog): Prog =
-    check(state, scope, fixed, prog, false)
+  def check(state: State, scope: Scope, fixed: Set[Var], mod: Set[Var], prog: Prog): Prog =
+    check(state, scope, fixed, mod, prog, false)
 
   // `loop` holds inside of loops, where break and continue are allowed
-  def check(state: State, scope: Scope, fixed: Set[Var], prog: Prog, loop: Boolean): Prog =
+  def check(state: State, scope: Scope, fixed: Set[Var], mod: Set[Var], prog: Prog, loop: Boolean): Prog =
     prog match
       case Break | Continue =>
         Error.report("break or continue outside of loop", prog):
@@ -472,6 +474,10 @@ object Type:
         Error.report("procedure not declared", name):
           require(state.procs.contains(name))
 
+        val unknown = state.procattrs(name).modifies.filterNot(mod)
+        Error.report("call modifies variables that are not in the modifies clause", name, unknown):
+          require(unknown.isEmpty)
+
         val Proc(_, params, in, out) = state.procs(name)
 
         Error.report("wrong number of arguments or results in call", name, args, res):
@@ -495,31 +501,36 @@ object Type:
         // locals shadow fixed variables of the same name
         val scope_ = scope ++ locals
         val fixed_ = fixed.filterNot(x => locals.exists(_.name == x.name))
-        val progs_ = progs.map(check(state, scope_, fixed_, _, loop))
+        val progs_ = progs.map(check(state, scope_, fixed_, mod, _, loop))
         Block(locals, progs_)
 
       case Choice(progs) =>
-        val progs_ = progs.map(check(state, scope, fixed, _, loop))
+        val progs_ = progs.map(check(state, scope, fixed, mod, _, loop))
         Choice(progs_)
 
       case If(test, left, right) =>
         val test_ = formula(state, scope, test)
-        val left_ = check(state, scope, fixed, left, loop)
-        val right_ = check(state, scope, fixed, right, loop)
+        val left_ = check(state, scope, fixed, mod, left, loop)
+        val right_ = check(state, scope, fixed, mod, right, loop)
         If(test_, left_, right_)
 
       case While(test, body, attrs) =>
         val test_ = formula(state, scope, test)
-        val body_ = check(state, scope, fixed, body, true)
+        val body_ = loop_(state, scope, fixed, mod, body, attrs)
         While(test_, body_, attrs)
 
       case Iter(body, attrs) =>
-        val body_ = check(state, scope, fixed, body, true)
+        val body_ = loop_(state, scope, fixed, mod, body, attrs)
         Iter(body_, attrs)
 
       // differential equations are on Real only, like derivatives, and so is the time
+      // the history, if it is declared, ticks after the evolution (see Verify) and must be modifiable
       case Ode(time, xs, rhs, dom, attrs) =>
         assignable(fixed, xs)
+
+        val history = state.vars.get("history").toList.filterNot(mod)
+        Error.report("differential equation ticks the history, which is not in the modifies clause", history):
+          require(history.isEmpty)
 
         val wrong = (time :: xs).filterNot(x => unfold(state, x.typ) == Sort.real)
         Error.report("differential equations for variables that are not real", wrong):
@@ -542,9 +553,24 @@ object Type:
 
         val calls_ =
           for call <- calls
-          yield (check(state, scope, fixed, call, loop): @unchecked) match
+          yield (check(state, scope, fixed, mod, call, loop): @unchecked) match
             case call_ : Call => call_
         Par(calls_)
+
+  // the body of a loop modifies the global variables in the modifies clause of the loop only, directly or by calls,
+  // which must be global variables that are modifiable outside of the loop
+  def loop_(state: State, scope: Scope, fixed: Set[Var], mod: Set[Var], body: Prog, attrs: Attrs): Prog =
+    val mod_ = attrs.modifies.toSet
+
+    val nonglobal = mod_ -- state.globals
+    Error.report("modifies clause of loop lists variables that are not global", nonglobal):
+      require(nonglobal.isEmpty)
+
+    val unknown = mod_ -- mod
+    Error.report("modifies clause of loop lists global variables that are not modifiable", unknown):
+      require(unknown.isEmpty)
+
+    check(state, scope, fixed ++ (mod -- mod_), mod_, body, true)
 
   def formula(state: State, scope: Scope, phi: Expr) =
     check(state, scope, phi, Sort.bool)

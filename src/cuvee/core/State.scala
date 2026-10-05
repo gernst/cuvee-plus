@@ -343,8 +343,8 @@ case class State(
 
   // programs, which are type checked as a whole by `check`
   object progs:
-    def check(scope: Scope, fixed: Set[Var], prog: Prog) =
-      Overload(State.this, Type.check(State.this, scope, fixed, prog))
+    def check(scope: Scope, fixed: Set[Var], mod: Set[Var], prog: Prog) =
+      Overload(State.this, Type.check(State.this, scope, fixed, mod, prog))
 
     def skip = Block(Nil, Nil)
     def break = Break

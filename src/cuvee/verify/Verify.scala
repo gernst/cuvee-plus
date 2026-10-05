@@ -282,19 +282,12 @@ object Verify extends Transform:
     for h <- state.vars.get("history")
     yield Call(Tick.name, List(h, time), List(h))
 
-  // the calls in a program, also inside of nested loops, and the ticks of differential equations
-  def calls(state: State, prog: Prog): List[Call] =
-    prog match
-      case call: Call            => List(call)
-      case Ode(time, _, _, _, _) => tick(state, time).toList
-      case _                     => prog.subprogs.flatMap(calls(state, _))
-
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
   def loop(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
     val inv = attrs.invariant
-    // calls in the body modify their results and the global variables in the modifies attributes of the procedures
-    // they call, the ticks of differential equations the history, and so does the modifies attribute of the loop
-    val xs = (body.mod ++ attrs.modifies ++ calls(state, body).flatMap(call => call.res ++ state.procattrs(call.proc).modifies)).toList.distinct
+    // the body modifies the local variables that it assigns, and the global variables in the modifies clause of the loop,
+    // which subsumes those that it assigns, that calls modify, and the history that differential equations tick (Type.check)
+    val xs = (body.mod ++ attrs.modifies).toList.distinct
 
     // the measure must decrease from the start to the end of each iteration, i.e., also on continue,
     // its values at the start are the fresh variables ms, which are replaced by the measure afterwards

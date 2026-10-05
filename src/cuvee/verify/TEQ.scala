@@ -236,16 +236,16 @@ object TEQ extends Transform:
 
     p.check(And(before(pre), dec)).fresh(res_ ++ mod_).assign(res ++ mod, res_ ++ mod_).assume(post_)
 
-  // the variables modified by a loop body, including the global variables modified by calls
-  def modified(state: State, body: Prog): List[Var] =
-    (body.mod ++ Verify.calls(state, body).flatMap(call => state.procattrs(call.proc).modifies)).toList.distinct
+  // the variables modified by a loop body, the global ones are those in the modifies clause of the loop (see Type.check)
+  def modified(body: Prog, attrs: Attrs): List[Var] =
+    (body.mod ++ attrs.modifies).toList.distinct
 
   // the trace equation system of a loop and the paths that leave it, which summarize all paths through the loop:
   // the iterations take the paths through the body that end normally or by continue,
   // the loop is left if the guard does not hold, where loops without test (nondeterministic iterations)
   // may be left in every iteration, or by a path through the body that ends by break or return
   def loop(state: State, proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, p: Path): List[Path] =
-    val xs = modified(state, body)
+    val xs = modified(body, attrs)
     val guard = test.getOrElse(True)
 
     // the body from an arbitrary state x♯ of the loop variables, the other variables keep their values

@@ -244,7 +244,8 @@ The SMT-LIB frontend is an exception: it reads s-expressions with the shared
 `sexpr` scanner and turns them into core directly. The C frontend is another:
 it starts from the SMT-LIB prelude, builds expressions on `Int` and `Bool`
 with the sugar directly, and parses the whole translation unit at once, so
-that it can infer the global variables that each function modifies.
+that it can infer the global variables that each function and each loop
+modifies.
 
 ## Errors and debugging
 

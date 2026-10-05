@@ -1,5 +1,5 @@
 // expected: invalid
-// calls in a loop modify the global variables that the callee modifies
+// calls in a loop modify the global variables that the callee modifies, which the loop declares
 
 var g: int;
 
@@ -17,6 +17,7 @@ method m(n: int)
   g := 0;
   i := 0;
   while i < n
+    modifies g
     invariant i <= n
   {
     inc();

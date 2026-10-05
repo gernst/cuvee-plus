@@ -28,6 +28,7 @@ method loop(n: int)
   var i: int;
   i := 0;
   while i < n
+    modifies count
     invariant i <= n && count == old(count) + i
   {
     inc(1);
