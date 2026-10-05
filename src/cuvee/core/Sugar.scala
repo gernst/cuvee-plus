@@ -69,7 +69,7 @@ extension (self: List[Expr])
   @targetName("Exprs.disjuncts")
   def disjuncts = self.flatMap(Or.flattenStrong).distinct
 
-class Quant(name: Name):
+class Quant(val name: Name):
   // SMT-LIB does not admit quantifiers without bound variables
   def apply(bound: List[Var], body: Expr): Expr =
     if bound.isEmpty

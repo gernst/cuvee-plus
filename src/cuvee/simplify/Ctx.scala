@@ -4,11 +4,12 @@ import cuvee.core._
 
 // a sequent at the current position of the simplifier:
 // the assumptions are known to hold and the conclusions are known not to hold,
-// together with the variables bound by enclosing binders
+// together with the variables bound by enclosing binders, in the order of binding (innermost first),
+// among which `forall` and `exists` are those that are universal and existential at the current position,
+// such that the equations x == e of the latter are true at a position with polarity (one-point rule),
+// which is only sound if the context records all siblings between the binder and the current position;
 // a substitution that replaces variables by others or by literals known to be equal,
 // and the equations x == e of the assumptions that are not recursive, i.e., where x is not free in e;
-// `points` are the quantified variables whose equations x == e are true at the given polarity (one-point rule),
-// which is only sound if the context records all siblings between the binder and the current position;
 // the polarity of the current position is Some(true) if it occurs positively,
 // Some(false) if it occurs negatively, and None if it occurs in both ways or not in a formula,
 // e.g. below an equation or in the argument of a function;
@@ -17,12 +18,13 @@ import cuvee.core._
 // the rewrite rules are applied after each round of simplification (see Simplify.simplify)
 case class Ctx(
     bound: List[Var],
+    forall: Set[Var],
+    exists: Set[Var],
     assms: List[Expr],
     concls: List[Expr],
     su: Map[Var, Expr],
     eq: Map[Var, Expr],
     polarity: Option[Boolean],
-    points: Map[Var, Boolean] = Map(),
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0)
 ):
@@ -31,27 +33,23 @@ case class Ctx(
   def withRules(rules: List[Rule], steps: Int = 1000) =
     copy(rules = rules, steps = util.Ref(steps))
 
-  def bind(xs: List[Var]) =
-    copy(bound = xs ++ bound)
+  // variables bound universally, also those of let, match, and the combinators,
+  // which are bound below neutral positions only
+  def universal(xs: List[Var]) =
+    copy(bound = xs ++ bound, forall = forall ++ xs)
 
-  // the variables of a quantifier, whose equations are true at the opposite polarity for forall,
-  // and at the same polarity for exists, which is undetermined at a position without polarity
-  def quantify(quant: util.Name, xs: List[Var]) =
-    val points_ =
-      (quant.name, polarity) match
-        case ("forall", Some(pol)) => xs.map(_ -> !pol)
-        case ("exists", Some(pol)) => xs.map(_ -> pol)
-        case _                     => Nil
-    bind(xs).copy(points = points ++ points_)
+  def existential(xs: List[Var]) =
+    copy(bound = xs ++ bound, exists = exists ++ xs)
 
-  // below a negation or in the premise of an implication
+  // below a negation or in the premise of an implication, where universal variables become existential
+  // and vice versa, since forall x. !phi is !exists x. phi
   def flip =
-    copy(polarity = polarity.map(!_))
+    copy(forall = exists, exists = forall, polarity = polarity.map(!_))
 
   // in a position without polarity, also below positions whose siblings are not recorded in the context,
   // e.g. the other branch of ite, where the one-point rule must not apply
   def neutral =
-    copy(polarity = None, points = Map())
+    copy(forall = Set(), exists = Set(), polarity = None)
 
   // variables that occur in the context
   def free: Set[Var] =
@@ -179,7 +177,7 @@ object Ctx:
       case Diff(xs, _) => inner.result() ++ xs.map(_.primed)
       case _           => inner.result()
 
-  val empty = Ctx(Nil, Nil, Nil, Map(), Map(), None)
+  val empty = Ctx(Nil, Set(), Set(), Nil, Nil, Map(), Map(), None)
 
   // at the top of an asserted formula
   val pos = empty.copy(polarity = Some(true))

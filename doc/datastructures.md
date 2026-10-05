@@ -278,8 +278,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     to expressions (the equation remains an assumption); rewriting matches a
     variable inside of the expression like its `e` (`Rewrite.matches`), but
     never rewrites a variable on its own;
-  - the quantified variables whose equations are true at a given polarity
-    (`points`, the one-point rule);
+  - the bound variables in the order of binding (`bound`), and among them
+    those that are universal and existential at the current position
+    (`forall`, `exists`), which `flip` swaps; the equations of the
+    existential ones are true (the one-point rule);
   - the polarity of the position, and whether the context is inconsistent;
   - the rewrite rules and their remaining number of steps
     (`ctx.withRules(rules, steps)`), which all copies share; `Ctx.assume`
