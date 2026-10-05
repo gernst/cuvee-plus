@@ -45,9 +45,9 @@ transformation and any output.
    (`prelude.*`). It returns the initial `State`, which holds its
    declarations, and a lazy `LazyList[Cmd]`, which begins with these
    declarations and those that depend on the configuration (`hybrid.dfy`
-   with `-hybrid`), followed by the input, where commands that coincide with
-   those of the prelude are dropped, e.g. when printed output is parsed
-   again.
+   with `-hybrid`, see [hybrid.md](hybrid.md)), followed by the input, where
+   commands that coincide with those of the prelude are dropped, e.g. when
+   printed output is parsed again.
 3. `config.stages(init, sink)` chains one `Stage` per transform in front of
    the sink. All stages start from the same initial state, and know the
    configuration. The implicit last step is `Language.sink`, which drops
@@ -85,31 +85,13 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
 - [`Verify`](../src/cuvee/verify/Verify.scala) replaces each procedure
   definition by a goal: `∀ in, out, globals. pre ⇒ wp(body, post)`.
   - Loops, iterations, calls (by contract), `old`, termination measures,
-    differential equations (differential cuts, then weakening) and parallel
-    composition (assumption-commitment) each have a rule.
+    differential equations and parallel composition ([hybrid.md](hybrid.md))
+    each have a rule.
   - `old(e)` is eliminated first, by `Old.elim`, into fresh variables for the
     values at the entry.
 - [`TEQ`](../src/cuvee/verify/TEQ.scala) replaces each procedure definition
-  by a goal from symbolic execution, after section 4 of the paper.
-  - A `Path` holds the fresh variables for nondeterministic choices, the
-    values of the variables as a substitution, and the assumptions, branch
-    conditions, and checks along the way. Choices `if *` become branches on
-    fresh booleans, calls go by contract.
-  - Each loop yields a single path (theorem 4.8), which assumes its trace
-    equation system (definition 4.4): one `Trace` per modified variable,
-    whose update has a case per path through the body, the counter
-    `K = counter(0, 1, n)`, and the iteration constraint `Invs`, and which
-    checks that the body executes safely from the current state.
-  - The goal is that all checks hold and the postcondition follows on every
-    path.
-  - The lemma database [teq.dfy](../resources/cuvee/teq.dfy) is parsed by a
-    fresh Dafny parser and injected once at the beginning of the output
-    (`TEQ.lemmas`). It declares the functions on traces and lemmas about them,
-    which are `{:rw}` (rewrite rules of `-simplify`) and `{:free}` (assumed by
-    the solvers without proof). The lemmas after the first section are taken
-    from `teq.bpl` of the earlier Boogie implementation or added later, and
-    need to be checked manually. In `teq.bpl`, `counter(n)` and
-    `range(i, c, n)` are `counter(0, 1, n)` and `counter(i, c, n)` here.
+  by a goal from symbolic execution with trace equation systems for loops,
+  see [teq.md](teq.md).
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point after assignments, calls, loop heads, and joins, followed
@@ -141,11 +123,8 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     outer loop already decides. E.g. complementary conjuncts are found by
     `nary`, which simplifies each argument of `and` and `or` assuming the
     others, not by `and` itself.
-  - `trace`, `maps`, and `invs` collapse equal dependencies (by `eq_`),
-    renaming their bound variables to the first one, and drop dependencies
-    whose bound variables are unused, except counters `⌊counter(...)⌋`;
-    the first one is kept if none remains, since the dependencies must be
-    nonempty.
+  - `trace`, `maps`, and `invs` normalize their dependencies, see
+    [teq.md](teq.md).
   - Statements have helpers likewise, `spec`, `assign`, `block`, `choice`,
     `if_`, `while_`, ...: statements without effect are the empty block
     `skip`, `block` merges nested blocks (hoisting locals unless they
@@ -161,15 +140,12 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     in `l` (`Rule.check`).
   - Arithmetic is normalised into polynomials (`Arith`); comparisons become
     `0 < p` and `0 <= p` with positive coefficients on both sides.
-  - Derivatives are computed by the rules of dL.
+  - Derivatives are computed by the rules of dL ([hybrid.md](hybrid.md)).
 - [`Rewrite`](../src/cuvee/simplify/Rewrite.scala) applies conditional rules
   innermost first, also as a library. Its methods take
   `(config, state, ctx, ...)` as well; matches are substitutions, and side
-  conditions are decided by `Simplify.simplify` in the context. Below the
-  combinators, each case of the expression's update is covered by a case of
-  the pattern, whose guard matches syntactically (which instantiates bound
-  variables that occur only in guards, e.g. `b` in `if b then y + 1`) or
-  follows from the guard of the expression.
+  conditions are decided by `Simplify.simplify` in the context. Matching
+  below the combinators of TEQs is described in [teq.md](teq.md).
 - [`Flat`](../src/cuvee/transform/Flat.scala) flattens record arguments of
   Horn predicates.
 - [`Split`](../src/cuvee/transform/Split.scala) splits goals and lemmas into
@@ -237,8 +213,7 @@ Each frontend follows the same structure (see `cuvee.dafny` and
    sort. Declarations that coincide with existing ones leave the state
    unchanged (`State.unless`). Transforms see the prelude's declarations,
    e.g. `Monomorph` ignores those that are part of the output language.
-   `Trace` is in no prelude: it exists only with `-teq`, whose lemma database
-   declares it.
+   `Trace` is in no prelude: it exists only with `-teq` ([teq.md](teq.md)).
 6. **Printer** (`Printer.scala`): core back to concrete syntax with
    easyprint.
    - It reverses `translate` and recognises sugar, e.g. sequence literals,
@@ -249,15 +224,8 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      parenthesized and is not read back as a chain.
    - Constructs that the language lacks raise an error.
 
-The combinators of trace equation systems are written in each language as
-follows, where updates with several cases are guarded:
-
-| Combinator | Dafny and Boogie | SMT-LIB |
-|---|---|---|
-| `Trace` | `trace(e, for Y, Z do x, y, z => u)` | `(trace (x e) ((y Y) (z Z)) u)` |
-| `Maps` | `map(for Y yield y => u)` | `(map ((y Y)) u)` |
-| `Invs` | `all(for Y check y => φ)` | `(all ((y Y)) φ)` |
-| update | `if φ₁ then e₁, if φ₂ then e₂` | `(cases (φ₁ e₁) (φ₂ e₂))` |
+The syntax of the combinators of trace equation systems is in
+[teq.md](teq.md), that of hybrid programs in [hybrid.md](hybrid.md).
 
 The SMT-LIB frontend is an exception: it reads s-expressions with the shared
 `sexpr` scanner and turns them into core directly. The C frontend is another:
@@ -292,9 +260,7 @@ A single run is `mill -i run <options> <file>`, e.g.
   - the Dafny printer must roundtrip;
   - `examples/simplify/*.smt2` must produce `*.expected.smt2`;
   - `examples/dafny/vcgen/*.dfy` must verify (or fail, as declared in their first
-    line) with `-verify -z3` and `-chc -z3`, those without loops also with
-    `-teq -z3`;
+    line) with `-verify -z3` and `-chc -z3`;
   - the Boogie and C examples likewise, and the programs of the Dafny and
     Boogie examples must roundtrip through SMT-LIB.
-- The rewrite engine is tested with the examples of the paper (counters,
-  summations, `selects`), also on the goals of `-teq`.
+- The tests of trace equation systems are listed in [teq.md](teq.md).

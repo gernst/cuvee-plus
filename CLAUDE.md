@@ -11,6 +11,10 @@ or solvers consume.
   stages, the frontends, the tests.
 - [doc/datastructures.md](doc/datastructures.md): the core (types, functions,
   expressions, programs, commands, state, substitutions, simplifier).
+- [doc/teq.md](doc/teq.md): trace equation systems (`-teq`), the
+  combinators, the lemma database, their simplification and rewriting.
+- [doc/hybrid.md](doc/hybrid.md): derivatives, differential equations, and
+  parallel composition (`-hybrid`).
 - [doc/style.md](doc/style.md): coding style. Match it, including comments
   in lowercase prose that explain why.
 - [TODO.md](TODO.md): open problems and the user's instructions, grouped by
@@ -48,6 +52,8 @@ or solvers consume.
 - The shell is fish. Write multi-line scripts for bash explicitly.
 
 ## Trace equation systems and solvers
+
+Details in [doc/teq.md](doc/teq.md).
 
 - `Trace` (and `butlast`) must never be included implicitly. They exist only
   with `-teq`, whose lemma database [teq.dfy](resources/cuvee/teq.dfy)

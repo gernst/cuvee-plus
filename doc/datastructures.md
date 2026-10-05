@@ -13,7 +13,7 @@ exhaustiveness.
   SMT-LIB and as `x₃` in Dafny.
 - A string converts implicitly to a `Name`, and `"x$3"` becomes
   `Name("x", Some(3))`.
-- `Name.primed` appends `'`; derivatives use it.
+- `Name.primed` appends `'`; derivatives use it ([hybrid.md](hybrid.md)).
 
 ## Types ([Type.scala](../src/cuvee/core/Type.scala))
 
@@ -28,7 +28,7 @@ case class BitVec(n: Int) extends Type          // (_ BitVec n)
 - Built-in sorts:
   - `Sort.bool`, `Sort.int`, `Sort.real`, `Sort.string`;
   - `Sort.array(dom, ran)`, `Sort.seq(elem)`, `Sort.set(elem)`,
-    `Sort.bag(elem)`, `Sort.trace(elem)`.
+    `Sort.bag(elem)`, `Sort.trace(elem)` ([teq.md](teq.md)).
 - Bitvectors `BitVec(n)` are a type of their own, since their functions are
   polymorphic in the width, which type parameters cannot express;
   `BitVecs.fun` instantiates them for the widths of the arguments.
@@ -73,11 +73,8 @@ case class Let(bound: List[Var], args: List[Expr], body: Expr)
 case class Match(arg: Expr, cases: List[Case])  // the first case that matches and whose condition holds
 case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bound in body and cond
 
-// the combinators of trace equation systems, with guarded updates
-case class Upd(cond: Expr, rhs: Expr)                         // if cond then rhs
-case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd])
-case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd])
-case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
+// the combinators of trace equation systems, see teq.md
+case class Trace(...); case class Maps(...); case class Invs(...)
 ```
 
 - **Traversals:** `expr.map(f)` applies `f` to the immediate subexpressions
@@ -99,33 +96,11 @@ case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
   - reals are exact [`util.Rational`](../src/util/Rational.scala), printed
     as decimals when finite, otherwise as fractions;
   - strings are `String`.
-- **`Diff(xs, e)`** is free in `xs`, which are ordinary variables without
-  primes, and must be on `Real`. Primed variables `x'` for the derivatives of
-  `xs` appear only once the simplifier computes the derivative.
+- **`Diff(xs, e)`** is a derivative, see [hybrid.md](hybrid.md).
 - **`Old(e)`** never reaches the solver. `Old.elim(gs, gs_, ...)` replaces
   it by `e[gs := gs_]` before verification.
-- **Trace combinators** (*Trace Equation Systems for Program Verification*,
-  section 3):
-  - `Trace(init, deps, acc, bound, updates)` is the trace of the accumulator
-    `acc`, of type `Trace(T)`. It starts with `init`; each further value is
-    the update of the previous one and the next values of the dependencies,
-    which `bound` ranges over point-wise.
-  - `Maps(deps, bound, updates)` is the sequence of the updates, of type
-    `Seq(T)`.
-  - `Invs(deps, bound, φ)` states `φ` for all values of the dependencies.
-  - The dependencies are always sequences (`Seq(T)`), at least one, all of
-    the same length (`Type.dependencies`), e.g. `⌊K⌋` of a trace `K`. Their
-    length is `Seqs.len` of the theory of sequences (not
-    `Fun.trace.length`). A trace with `n` steps has `n + 1` elements
-    (`nth(0..n, X)`), `⌊X⌋` has `n` (`earlier(0..n-1, ⌊X⌋)`), and
-    `current(X)` is `nth(n, X)`.
-  - An update is a list of guarded cases `Upd(φᵢ, eᵢ)` with disjoint and
-    complete guards; a single case has the guard `true`. `List[Upd]` has
-    `free`, `params`, and `exprs` like lists of expressions.
-  - The functions on traces are in `Fun.trace`: `counter`, `current`,
-    `butlast` (the paper's `⌊X⌋`), `steps`, `length`, `nth`, `earlier`.
-  - `state.exprs.trace`, `map`, and `all` create the bound variables with the
-    element types of the dependencies (`Type.elem`).
+- **Trace combinators** `Trace`, `Maps`, `Invs` with guarded updates `Upd`
+  are described in [teq.md](teq.md).
 - **Sugar.** [Builtin.scala](../src/cuvee/core/Builtin.scala) provides
   objects that both build and match applications of built-in functions:
   - `True`, `False`, `Eq`, `Ite`, `Not`, `And`, `Or`, `Imp`, `All`, `Ex`,
@@ -176,28 +151,8 @@ case class Par(calls: List[Call])                       // parallel composition 
   calls are not included; they come from the callee's `modifies` attribute.
 - **`free`** includes the variables in the attributes, e.g. in loop
   invariants.
-- **`Ode`** is the system `x' = e` for `x` in `xs` with evolution constraint
-  `dom`. Its `invariant` attributes are the differential invariants. The
-  variables are on `Real`.
-- **`Par`** composes calls in parallel:
-  - The callees' contracts `assumes` and `commits` are formulas over the
-    shared history, the global variable named `history`.
-  - The calls must not share modified variables other than the history
-    (`Par.shared`).
-- **`Send(chan, value)` and `Recv(chan, x)`** are sugar for calls to the
-  procedures `send` and `receive`, which extend the history. In `Verify`,
-  each one asserts the enclosing procedure's commitment for the extended
-  history and then assumes it.
-  - Communication is always joint: the event of a `receive` is the event of
-    the matching `send` of another process, and both extend the same history.
-    Hence a process commits first, also after receiving: the commitment must
-    hold for the extended history before the process relies on anything about
-    the new event.
-  - A commitment must always be made before an assumption is taken. The
-    assumption of a process is justified by the commitments of the other
-    processes (rule `par`), which hold for every history that they produce.
-    Inside the body, it is therefore taken only initially, and the new event
-    of a `receive` is constrained by the contract of `receive` only.
+- **`Ode`**, **`Iter`**, **`Par`**, `Send`, and `Recv` are hybrid programs and
+  parallel composition, see [hybrid.md](hybrid.md).
 
 ```scala
 case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var])
@@ -312,7 +267,4 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   modulo type instantiation, A/C and 0 of `+` and `-`, comparisons modulo
   moving summands between the sides (as normalized polynomials of the
   difference, where `<` on `Int` is `<=` with 1 added), and the binding
-  structure of `Trace`, `Maps`, and `Invs`: dependencies of the pattern are
-  selected among those of the expression (`Binding` relates the bound
-  variables), and dependencies that are variables of the rule are
-  instantiated by `Maps` expressions.
+  structure of `Trace`, `Maps`, and `Invs` ([teq.md](teq.md)).
