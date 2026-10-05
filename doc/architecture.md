@@ -96,6 +96,14 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     checks that the body executes safely from the current state.
   - The goal is that all checks hold and the postcondition follows on every
     path.
+  - The lemma database [teq.dfy](../resources/cuvee/teq.dfy) is parsed by a
+    fresh Dafny parser and injected once at the beginning of the output
+    (`TEQ.lemmas`). It declares the functions on traces and lemmas about them,
+    which are `{:rw}` (rewrite rules of `-simplify`) and `{:free}` (assumed by
+    the solvers without proof). The lemmas after the first section are taken
+    from `teq.bpl` of the earlier Boogie implementation or added later, and
+    need to be checked manually. In `teq.bpl`, `counter(n)` and
+    `range(i, c, n)` are `counter(0, 1, n)` and `counter(i, c, n)` here.
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point after assignments, calls, loop heads, and joins, followed
@@ -118,6 +126,23 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   - Each round (`once`) simplifies the subterms first and dispatches on the
     built-in functions; afterwards, one rewrite step with the rules of the
     context is tried at the top (`Rewrite.step`), until a fixpoint.
+  - Every kind of expression has a helper that takes the simplified
+    subterms and builds the result, `and`, `or`, `not`, `imp`, `eq_`,
+    `distinct`, `ite`, `upd`, `case_`, `match_`, `trace`, `maps`, `invs`, ...
+    The helpers are local normalizations of one constructor: they call each
+    other where they build further formulas (e.g. `not` instead of `Not`,
+    except in the fallthrough case of `not` itself), and leave out what the
+    outer loop already decides. E.g. complementary conjuncts are found by
+    `nary`, which simplifies each argument of `and` and `or` assuming the
+    others, not by `and` itself.
+  - `and` extracts the disjuncts that are common to all conjuncts,
+    `(A ∨ C) ∧ (A ∨ B)` is `A ∨ (C ∧ B)`, and `or` dually the common
+    conjuncts; this is a local transformation, not a conversion to CNF or
+    DNF.
+  - The rewrite rules are extracted from formulas
+    `∀ xs. if φ then l == r` (also `<==>`, `!p` for `p == false`, and a
+    boolean atom `p` for `p == true`); the variables of `r` and `φ` must occur
+    in `l` (`Rule.check`).
   - Arithmetic is normalised into polynomials (`Arith`); comparisons become
     `0 < p` and `0 <= p` with positive coefficients on both sides.
   - Derivatives are computed by the rules of dL.
@@ -145,7 +170,8 @@ and the next sink.
   - It first declares the built-in sorts of the frontend that SMT-LIB lacks
     (`Solver.prelude`), e.g. Dafny's `set`.
   - Goals and lemmas are checked for validity in a `push`/`pop` scope; lemmas
-    are then asserted.
+    are then asserted. Lemmas with the attribute `:free` are assumed without
+    proof, like axioms.
   - Procedures and global variables must have been eliminated by `-verify` or
     `-chc`.
 
@@ -171,6 +197,18 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      or `state.progs.check`. These call `Type.check` and then
      `Overload.apply`, which replaces the generic arithmetic operators of the
      prelude by their `Int`, `Real` or `Seq` implementations.
+   - Axioms, lemmas, and goals are single formulas with optional type
+     parameters and attributes, `lemma <a> {:rw} φ` (Boogie:
+     `lemma <a> {:rw} φ;`). The formula is resolved and checked in the scope
+     of the type parameters (`assertion`). In Dafny, `if φ then ψ` without
+     `else` at the top of such a formula is `φ ==> ψ`.
+   - Dafny's chained comparisons `0 <= i < n` and `x == y == z` are
+     conjunctions: the comparison operators associate to the left in the
+     grammar, and `Grammar.chain` turns a comparison whose left operand is
+     another (unparenthesized) comparison into a `Chain`, which the parser
+     expands. Parenthesized expressions are `Tuple(List(e))` in the syntax,
+     which is how `(x == y) == b` stays apart. Chains must not mix `<`/`<=`
+     with `>`/`>=`.
 5. **Built-ins and prelude** (`resources/cuvee/<lang>/builtin.*` and
    `prelude.*`), in the frontend's own syntax. The built-ins declare the sorts
    and the generic operators that SMT-LIB knows or that are eliminated, and
@@ -182,6 +220,10 @@ Each frontend follows the same structure (see `cuvee.dafny` and
    easyprint.
    - It reverses `translate` and recognises sugar, e.g. sequence literals,
      `x in s`, `s[i..j]`, and `a != b`.
+   - The Dafny printer prints conjunctions of comparisons that are linked by
+     their operands as chains, and treats the comparison operators as
+     non-associative, so a comparison as operand of a comparison is
+     parenthesized and is not read back as a chain.
    - Constructs that the language lacks raise an error.
 
 The combinators of trace equation systems are written in each language as
@@ -212,7 +254,10 @@ that change an expression with the printer of the configuration.
 
 ## Tests
 
-The tests use utest and run with `mill -i test`. Their sources are in
+The tests use utest and run with `mill -i test` (four forked groups, each
+reporting `Tests: n, Passed: n, Failed: n`; failures are marked `X`).
+A single run is `mill -i run <options> <file>`, e.g.
+`mill -i run -teq -simplify examples/dafny/vcgen/sum.dfy`. Their sources are in
 `test/src/cuvee/test/`, by frontend:
 
 - Unit tests build core terms directly.

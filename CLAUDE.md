@@ -1,0 +1,97 @@
+# Cuvée
+
+A verification toolchain in Scala 3: frontends for SMT-LIB, Dafny, Boogie, and
+C produce one core representation, which transformations (verification
+conditions, trace equation systems, Horn clauses, simplification) and printers
+or solvers consume.
+
+## Read first
+
+- [doc/architecture.md](doc/architecture.md): the pipeline, the packages, the
+  stages, the frontends, the tests.
+- [doc/datastructures.md](doc/datastructures.md): the core (types, functions,
+  expressions, programs, commands, state, substitutions, simplifier).
+- [doc/style.md](doc/style.md): coding style. Match it, including comments
+  in lowercase prose that explain why.
+- [TODO.md](TODO.md): open problems and the user's instructions, grouped by
+  area.
+
+## Workflow
+
+- Commit after each finished item, once it compiles and all tests pass,
+  without being asked. Messages are one line, `area: what changed; ...`,
+  ending in `; version X.Y.Z`.
+- Bump `Config.version` in [src/cuvee/Config.scala](src/cuvee/Config.scala)
+  in every commit: the second digit for major features (resetting the third),
+  the third for minor ones.
+- Questions for the user go into TODO.md as a note on the item, rather than
+  blocking; continue with the other pending instructions meanwhile.
+- Keep the instruction lines at the top of TODO.md
+  ("New TODOs ... (provided by user)") when rewriting the file. Remove items
+  once done and add new limitations there, not in code comments.
+- Do not commit the user's untracked scratch files (e.g. `*.dfy` at the root).
+- Every feature gets tests (unit tests on core terms and/or an example in
+  `examples/<language>/`). Changing the simplifier or the lemma database can
+  change expected outputs (`examples/simplify/*.expected.smt2`, the TEQ tests).
+  Update them deliberately and say so.
+
+## Commands
+
+- Build and test: `mill -i test` (there is no `./mill` wrapper). The tests run
+  in four forked groups. Check that every `Tests: n, Passed: n, Failed: 0`
+  line is clean, and find failures by the marker `X` in the output.
+- Run: `mill -i run <options> <file>`, e.g.
+  `mill -i run -teq -simplify examples/dafny/vcgen/sum.dfy`. Without `-print`,
+  the output is printed in the language of the input. `-print` takes an
+  argument (e.g. `-print null` in tests), so `-print file.dfy` is an error.
+- z3 by hand always with a timeout: `z3 -T:5 file.smt2`.
+- The shell is fish. Write multi-line scripts for bash explicitly.
+
+## Things that were easy to get wrong
+
+- **Combinator dependencies are sequences.** The dependencies of `Trace`,
+  `Maps`, and `Invs` always have type `Seq(T)`, at least one, of equal length.
+  Their length is `Seqs.len` (theory of sequences), not `Fun.trace.length`.
+  A trace of `n` steps has `n + 1` elements, `⌊X⌋` has `n`.
+- **Simplifier helpers are local.** Each helper (`and`, `or`, `not`, `ite`,
+  `imp`, `eq_`, `invs`, ...) normalizes its own constructor only:
+  - Build further formulas with the normalizing helpers (`not(...)`, not
+    `Not(...)`), except in the fallthrough case of the helper itself.
+  - Do not re-check what the outer loop decides, e.g. complementary
+    conjuncts, which `nary` finds by simplifying each argument under the
+    others.
+  - Prefer local transformations over global normal forms. E.g. common
+    disjuncts are factored out of conjunctions, but there is no CNF/DNF.
+- **Lemmas and attributes.** `{:rw}` makes a lemma a rewrite rule of
+  `-simplify`. `{:free}` makes the solver assume it without proof. A lemma
+  without `{:free}` is proved by the solver, which fails for uninterpreted
+  functions. Rules have the shape `∀ xs. if φ then l == r` (or `<==>`,
+  `!p`, `p`). The variables of `r` and `φ` must occur in `l`. A rule must not
+  loop: keep looping lemmas `{:free}` only.
+- **Type parameters of assertions.** `lemma <a> {:rw} φ` (Dafny and Boogie).
+  Without the declaration, `forall v: a` is "unknown type". `-monomorph`
+  does not instantiate polymorphic assertions. So polymorphic axioms must not
+  go into examples that the solver tests verify (e.g. `syntax.bpl`). Use
+  `traces.bpl` and `sorts.dfy` instead.
+- **Dafny syntax facts.**
+  - Parenthesized expressions are `Tuple(List(e))` in the syntax. That is
+    how chained comparisons (`0 <= i < n`, built by `Grammar.chain`) are
+    told apart from `(x == y) == b`.
+  - `x == y == z` is a chain, as in Dafny.
+  - In axioms and lemmas, `if φ then ψ` without `else` is `φ ==> ψ` at the
+    top. In [teq.dfy](resources/cuvee/teq.dfy) it is written with a line
+    break before `then`.
+- **The lemma database** [teq.dfy](resources/cuvee/teq.dfy) is injected by
+  `-teq`.
+  - Its sections after the first one are marked as needing manual checking.
+  - `counter(i, c, n)` is the trace `i, i + c, ..., i + n c`. The old Boogie
+    `teq.bpl` had `counter(n)` = `counter(0, 1, n)` and
+    `range(i, c, n)` = `counter(i, c, n)`.
+  - Lemmas taken from there need explicit bounds (`0 <= k < n`, equal
+    lengths, `distincts(keys)`), which the old file left implicit or got
+    wrong.
+- **Matching in rules** respects binders. A rule variable never captures a
+  bound variable of the expression, so `map(for xs yield v => c)` only
+  matches constant bodies.
+- **Names the user mentions may refer to counterparts.** E.g. "teq.bpl"
+  for the repository's `teq.dfy`. Check which files exist before assuming.

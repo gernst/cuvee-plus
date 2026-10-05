@@ -66,6 +66,13 @@
   up declarations and instantiate type parameters freshly
 - use the sugar objects (`And`, `Eq`, `Plus.int`, ...) to build and match
   applications of built-in functions instead of spelling out `App`
+- recurring operations on lists of core terms are extension methods in
+  [Sugar.scala](../src/cuvee/core/Sugar.scala), e.g. `phis.conjuncts` and
+  `phis.disjuncts` (flattened, without neutral elements and duplicates)
+- in the simplifier, results are built with the normalizing helpers
+  (`not`, `and`, `or`, ...) rather than the constructors, and each helper
+  covers its own constructor only; what the traversal already decides is not
+  checked again
 - substitutions (`Subst`) avoid capture under binders; fresh variables come
   from `x.fresh`
 - built-in functions in `Fun` and the declarations of the preludes coincide,

@@ -70,6 +70,8 @@ case class Diff(xs: List[Var], expr: Expr)     // derivative (xs :: expr)'
 case class Old(expr: Expr)                     // value at the entry of the procedure
 case class Bind(quant: Name, bound: List[Var], body: Expr)   // forall, exists
 case class Let(bound: List[Var], args: List[Expr], body: Expr)
+case class Match(arg: Expr, cases: List[Case])  // the first case that matches and whose condition holds
+case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bound in body and cond
 
 // the combinators of trace equation systems, with guarded updates
 case class Upd(cond: Expr, rhs: Expr)                         // if cond then rhs
@@ -81,9 +83,14 @@ case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
 - **Traversals:** `expr.map(f)` applies `f` to the immediate subexpressions
   point-wise and keeps bound variables, likewise `upd.map(f)`,
   `sort.map(f)`, `attrs.map(f)`, `prog.map(e, p)` (expressions, attributes,
-  and immediate subprograms), and `cmd.map(e, p)`; `expr.subexprs` and
-  `prog.subprogs` list the immediate children. Traversals that rename bound
-  variables, e.g. `Subst`, are written out.
+  and immediate subprograms), and `cmd.map(e, p)`; `prog.subprogs` lists the
+  immediate subprograms. There is no `subexprs`: to visit the subexpressions,
+  call `expr.map` for its side effect and return the argument unchanged.
+  Traversals that rename bound variables, e.g. `Subst`, are written out.
+- **`Match`** has linear patterns built from constructors and variables
+  (checked by `Type.check`); the patterns are not visited by `map` and not
+  substituted, their variables are renamed if they would capture. Conditions
+  of cases are not SMT-LIB, where they are `true`.
 - **`App.inst`** holds the expected types of the arguments, not the
   instances of the type parameters. `App(fun, args)` computes `inst` and
   `typ` from the arguments.
@@ -106,6 +113,12 @@ case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
   - `Maps(deps, bound, updates)` is the sequence of the updates, of type
     `Seq(T)`.
   - `Invs(deps, bound, φ)` states `φ` for all values of the dependencies.
+  - The dependencies are always sequences (`Seq(T)`), at least one, all of
+    the same length (`Type.dependencies`), e.g. `⌊K⌋` of a trace `K`. Their
+    length is `Seqs.len` of the theory of sequences (not
+    `Fun.trace.length`). A trace with `n` steps has `n + 1` elements
+    (`nth(0..n, X)`), `⌊X⌋` has `n` (`earlier(0..n-1, ⌊X⌋)`), and
+    `current(X)` is `nth(n, X)`.
   - An update is a list of guarded cases `Upd(φᵢ, eᵢ)` with disjoint and
     complete guards; a single case has the guard `true`. `List[Upd]` has
     `free`, `params`, and `exprs` like lists of expressions.
@@ -130,9 +143,13 @@ case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
   - `seq.++` for `+`, and `seq.prefixof` for `<=`, on sequences.
 
   `select` and `store` (Dafny's `s[i]` and `s[i := v]`) are overloaded in
-  the same way for arrays and sequences. The type checker picks the
-  implementation (`Impl`) as soon as the type of the first argument is
-  known, and checks the application against its signature. The generic
+  the same way for arrays and sequences, membership `in` for sequences, sets,
+  and multisets (dispatched by its second argument). `Type.check` records the
+  applications of overloaded operators as pending constraints (a `Ref`
+  threaded through checking), which are decided once the dispatch type is
+  known, each exactly once, until no further one is decided; the remaining
+  ones are reported as ambiguous. The implementations are in the table
+  `Overload.table`, keyed by operator name, arity, and sort constructor. The generic
   operators never leave the frontend.
 
 ## Programs ([Prog.scala](../src/cuvee/core/Prog.scala))
@@ -218,7 +235,8 @@ sealed trait Ctrl extends Cmd     // Push, Pop, Reset, Exit, Done
   - `DeclareVar` (global variables);
   - `DeclareProc`, `DefineProc`;
   - `Assert(justify, params, phi, attrs)`, where `justify` is `Axiom`,
-    `Goal` or `Lemma`.
+    `Goal` or `Lemma`, and `params` are the type parameters, those declared
+    by `lemma <a> ...` followed by those that remain in `phi`.
 - `Datatype(params, constrs)` lists each constructor with its selectors.
   Dafny qualifies the selectors with the datatype, e.g. `event_chan`.
 - `Done` is internal: it marks the end of the input, so that the stages
