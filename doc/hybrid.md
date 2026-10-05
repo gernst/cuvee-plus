@@ -7,7 +7,9 @@ contracts (see [examples/dafny/hybrid.dfy](../examples/dafny/hybrid.dfy) and
 differential equations, and nondeterministic iterations are always part of
 the Dafny frontend; the option `-hybrid` is needed for parallel composition
 only, it injects [hybrid.dfy](../resources/cuvee/dafny/hybrid.dfy), which
-declares the history, `send`, and `receive`.
+declares the polymorphic datatype `history<a₀>` of event sequences with the
+methods `send` and `receive`. The input declares the global variable
+`history` of an instance, e.g. `var history: history<int>`.
 
 ## Syntax
 
@@ -75,13 +77,17 @@ case class Par(calls: List[Call])                       // parallel composition 
 
 - The callees' contracts `assumes` and `commits` (procedure attributes) are
   formulas over the shared history, the global variable named `history`
-  (`Par.history`).
+  (`Par.history`), whose events are `history.events`.
 - The calls must not share modified variables other than the history
   (`Par.shared`).
-- `Send(chan, value)` and `Recv(chan, x)` are sugar for calls to the
-  procedures `send` and `receive`, which extend the history. In `Verify`,
-  each one asserts the enclosing procedure's commitment for the extended
-  history and then assumes it.
+- `history := history.send(c, v)` and `x, history := history.receive(c)`
+  call the methods of the datatype, i.e. the procedures `history_send` and
+  `history_receive` with the history as first argument, which return the
+  extended history as an additional result. `Send` and `Recv` recognize
+  these calls; in `Verify`, each one asserts the enclosing procedure's
+  commitment for the extended history and then assumes it. Calls to
+  polymorphic procedures instantiate their contracts by the types of the
+  arguments and results (`Type.bind`).
   - Communication is always joint: the event of a `receive` is the event of
     the matching `send` of another process, and both extend the same history.
     Hence a process commits first, also after receiving: the commitment must

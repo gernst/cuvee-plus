@@ -1,42 +1,46 @@
 // options: -hybrid
 // methods with assumption-commitment contracts over the global history of events,
 // composed in parallel, verified with -hybrid -verify -z3,
-// where -hybrid declares the history, send, and receive (see resources/cuvee/dafny/hybrid.dfy)
+// where -hybrid declares the type of histories with the methods send and receive,
+// which return the extended history (see resources/cuvee/dafny/hybrid.dfy)
 
-// all values on channel c are positive, specified inductively over the history,
+// the global history, whose events carry values of type int
+var history: history<int>
+
+// all values on channel c are positive, specified inductively over the events,
 // which the solvers handle better than a quantifier over the indices
 predicate positive(h: seq<event<int>>, c: chan)
 
 axiom forall c: chan :: positive([], c)
 
 axiom forall h: seq<event<int>>, c: chan, e: event<int> ::
-  positive(h + [e], c) <==> positive(h, c) && (event_chan(e) == c ==> 0 < event_value(e))
+  positive(h + [e], c) <==> positive(h, c) && (e.chan == c ==> 0 < e.value)
 
 // sends positive values on c
 method producer(c: chan, n: int)
   modifies history
   requires 0 < n
-  assumes positive(history, c)
-  commits positive(history, c)
+  assumes positive(history.events, c)
+  commits positive(history.events, c)
 {
-  send(c, n);
-  send(c, n + 1);
+  history := history.send(c, n);
+  history := history.send(c, n + 1);
 }
 
 // receives on d, which keeps the values on c positive
 method consumer(c: chan, d: chan) returns (x: int)
   modifies history
   requires c != d
-  assumes positive(history, c)
-  commits positive(history, c)
+  assumes positive(history.events, c)
+  commits positive(history.events, c)
 {
-  x := receive(d);
+  x, history := history.receive(d);
 }
 
 method main(c: chan, d: chan, n: int) returns (x: int)
   modifies history
-  requires c != d && 0 < n && positive(history, c)
-  ensures positive(history, c)
+  requires c != d && 0 < n && positive(history.events, c)
+  ensures positive(history.events, c)
 {
   parallel {
     producer(c, n);

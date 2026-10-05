@@ -1,15 +1,15 @@
 // the definitions of parallel composition, which are injected after prelude.dfy with the option -hybrid:
 // the events of parallel components, values sent and received on channels,
-// the global history of events, and the methods send and receive, which extend it (see examples/dafny/par.dfy)
+// and histories of events, whose methods send and receive return the extended history as an additional result;
+// the input declares the global variable history of an instance of this type (see examples/dafny/par.dfy)
 type chan
 datatype event<a₀> = event(chan: chan, value: a₀)
 
-var history: seq<event<int>>;
+datatype history<a₀> = history(events: seq<event<a₀>>)
+{
+  method send(c: chan, v: a₀) returns (h: history<a₀>)
+    ensures h.events == this.events + [event(c, v)]
 
-method send(c: chan, v: int)
-  modifies history
-  ensures history == old(history) + [event(c, v)]
-
-method receive(c: chan) returns (v: int)
-  modifies history
-  ensures history == old(history) + [event(c, v)]
+  method receive(c: chan) returns (v: a₀, h: history<a₀>)
+    ensures h.events == this.events + [event(c, v)]
+}

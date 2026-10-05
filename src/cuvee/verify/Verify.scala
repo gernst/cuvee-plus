@@ -117,11 +117,11 @@ object Verify extends Transform:
       // communication is joint, the event of a receive is that of the matching send of another process,
       // hence the commitment is made first also after receiving, since a commitment must always be made
       // before an assumption is taken, which is justified by the commitments of the other processes (see par)
-      case Send(chan, value) =>
-        committed(state, proc, Send(chan, value), post)
+      case Send(call) =>
+        committed(state, proc, call, post)
 
-      case Recv(chan, x) =>
-        committed(state, proc, Recv(chan, x), post)
+      case Recv(call) =>
+        committed(state, proc, call, post)
 
       case call: Call =>
         this.call(state, proc, call, post)
@@ -166,10 +166,17 @@ object Verify extends Transform:
   // calls by the contract of the procedure, where the measure of `proc` must decrease on recursive calls
   def call(state: State, proc: Name, call: Call, post: Expr): Expr =
     val Call(name, args, res) = call
-    val (in, out, pre, phi) = contract(state, name)
+    val (in0, out0, pre0, phi0) = contract(state, name)
 
     Error.report("wrong number of arguments or results in call", name, args, res):
-      require(in.length == args.length && out.length == res.length)
+      require(in0.length == args.length && out0.length == res.length)
+
+    // the type parameters of a polymorphic procedure are instantiated by the types of the arguments and results
+    val ty = Type.bind((in0 ++ out0).map(_.typ), (args ++ res).map(_.typ))
+    val in = in0.map(x => Var(x.name, ty(x.typ)))
+    val out = out0.map(x => Var(x.name, ty(x.typ)))
+    val pre = ty(pre0)
+    val phi = ty(phi0)
 
     // results and the modified global variables are fresh since `args` may refer to their old values,
     // the precondition refers to the values of the global variables before the call,
@@ -207,10 +214,12 @@ object Verify extends Transform:
 
   // the assumption and the commitment of procedure `name` for the arguments `args`, true if there are none
   def ac(state: State, name: Name, args: List[Expr]): (Expr, Expr) =
-    val Proc(_, _, in, _) = state.procs(name)
+    val Proc(_, _, in0, _) = state.procs(name)
     val attrs = state.procattrs(name)
+    val ty = Type.bind(in0.map(_.typ), args.map(_.typ))
+    val in = in0.map(x => Var(x.name, ty(x.typ)))
     val su = Subst.from(in, args)
-    (su(attrs.assumes), su(attrs.commits))
+    (su(ty(attrs.assumes)), su(ty(attrs.commits)))
 
   // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h:
   // the assumptions and commitments must hold for the history initially,

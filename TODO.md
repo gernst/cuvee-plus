@@ -30,7 +30,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `Arith.toPoly` and `Simplify.poly` duplicate the traversal of polynomials;
   `toPoly` could take a function for the leaves (identity for `Rewrite`,
   `simplify` for `poly`).
-- `send`, `receive`, and the history are recognized by their names.
+- `send`, `receive`, and the history are recognized by their names
+  (`history_send`, `history_receive`, the global variable `history`).
 - Warnings: the implicit conversion `String => Name` without
   `-language:implicitConversions`; two deprecations for `Long + String` in
   [smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala).
@@ -162,16 +163,8 @@ simplifier rules; widths cannot be parameters.
 - Sequential calls neither establish the callee's assumption nor guarantee
   its commitment (unsound); commitments are checked only at `send`/`receive`
   directly in the body.
-- **Question (deferred):** `send` and `receive` should be polymorphic in the
-  event type (`send<a₀>`), but their contracts extend the single global
-  `history: seq<event<int>>`, and `event(c, v)` with `v: a₀` does not
-  type-check against it, since a global variable cannot be polymorphic.
-  Options: (a) the input declares `history` (and thus the event type) itself,
-  and `send`/`receive` stay monomorphic over it, declared after it;
-  (b) a type `value` of event values that the input defines,
-  e.g. `type value = int`, instead of a type parameter; (c) one history per
-  instance, e.g. `history<a₀>()` as a polymorphic function of the state,
-  which global variables do not support yet.
-- History, `send`, `receive` come from `-hybrid`
-  ([hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)), with events on `int`.
+- The type of histories with `send` and `receive` comes from `-hybrid`
+  ([hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)); the input declares the
+  global `history`, and its results must be assigned to it, which is not
+  checked.
 - Only calls can be composed.

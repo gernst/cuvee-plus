@@ -142,26 +142,20 @@ object Par:
 
     pairs.flatten.toSet
 
-// calls to the procedures send(c, v) and receive(c) returns (x), which extend the history by an event,
-// where the enclosing procedure must keep its commitment
+// calls h_ := h.send(c, v) and x, h_ := h.receive(c) of the methods of the type history (see hybrid.dfy),
+// which return the history extended by an event, where the enclosing procedure must keep its commitment
 object Send:
-  val name = Name("send", None)
+  val name = Name("history_send", None)
 
-  def apply(chan: Expr, value: Expr): Call =
-    Call(name, List(chan, value), Nil)
-
-  def unapply(prog: Prog): Option[(Expr, Expr)] =
+  def unapply(prog: Prog): Option[Call] =
     prog match
-      case Call(`name`, List(chan, value), Nil) => Some((chan, value))
-      case _                                    => None
+      case call @ Call(`name`, List(_, _, _), List(_)) => Some(call)
+      case _                                         => None
 
 object Recv:
-  val name = Name("receive", None)
+  val name = Name("history_receive", None)
 
-  def apply(chan: Expr, x: Var): Call =
-    Call(name, List(chan), List(x))
-
-  def unapply(prog: Prog): Option[(Expr, Var)] =
+  def unapply(prog: Prog): Option[Call] =
     prog match
-      case Call(`name`, List(chan), List(x)) => Some((chan, x))
-      case _                                 => None
+      case call @ Call(`name`, List(_, _), List(_, _)) => Some(call)
+      case _                                         => None

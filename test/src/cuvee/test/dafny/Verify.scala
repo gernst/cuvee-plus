@@ -75,8 +75,8 @@ object VerifyPar extends TestSuite:
     // the commitment of the other method does not imply the assumption
     test("assumption"):
       val par = os.read(Examples.root / "dafny" / "par.dfy").replace(
-        "  requires c != d\n  assumes positive(history, c)\n  commits positive(history, c)",
-        "  requires c != d\n  assumes positive(history, c)"
+        "  requires c != d\n  assumes positive(history.events, c)\n  commits positive(history.events, c)",
+        "  requires c != d\n  assumes positive(history.events, c)"
       )
       val file = os.temp(par, suffix = ".dfy")
       Examples.errors("-hybrid", "-verify", "-z3", file.toString) ==> List("goal does not hold")
@@ -84,8 +84,8 @@ object VerifyPar extends TestSuite:
     // the parallel composition extends the history, after which the commitment of main must hold
     test("commitment"):
       val par = os.read(Examples.root / "dafny" / "par.dfy")
-      val good = par.replace("  ensures positive(history, c)\n{\n  parallel", "  ensures positive(history, c)\n  commits positive(history, c)\n{\n  parallel")
-      val bad = par.replace("  ensures positive(history, c)\n{\n  parallel", "  ensures positive(history, c)\n  commits history == []\n{\n  parallel")
+      val good = par.replace("  ensures positive(history.events, c)\n{\n  parallel", "  ensures positive(history.events, c)\n  commits positive(history.events, c)\n{\n  parallel")
+      val bad = par.replace("  ensures positive(history.events, c)\n{\n  parallel", "  ensures positive(history.events, c)\n  commits history.events == []\n{\n  parallel")
       assert(good != par && bad != par)
       Examples.errors("-hybrid", "-verify", "-z3", os.temp(good, suffix = ".dfy").toString) ==> Nil
       Examples.errors("-hybrid", "-verify", "-z3", os.temp(bad, suffix = ".dfy").toString) ==> List("goal does not hold")

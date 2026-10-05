@@ -99,7 +99,8 @@ object Parallel extends TestSuite:
     val file = os.temp(text, suffix = ".dfy")
     Examples.errors("-hybrid", "-print", "null", file.toString)
 
-  val history = ""
+  // the input declares the global history, whose type is declared by -hybrid
+  val history = "var history: history<int> "
   val p = "method p(n: int) returns (x: int) modifies history assumes true commits true { x := n; } "
 
   val tests = Tests:
