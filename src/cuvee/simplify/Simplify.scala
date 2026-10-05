@@ -178,7 +178,7 @@ object Simplify extends Transform:
   // a formula that is known from the context is replaced by its truth value;
   // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
   def simplify(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    ctx.lookup(expr) match
+    implies(config, state, ctx, expr) match
       case Some(true)  => True
       case Some(false) => False
       case None =>
@@ -190,6 +190,25 @@ object Simplify extends Transform:
         if expr_ == expr
         then expr
         else simplify(config, state, ctx, expr_)
+
+  // whether `phi` is known to hold (true) or known not to hold (false) in `ctx`,
+  // also by its negation in normal form, e.g. a < b is false if b <= a is known (see not);
+  // in an inconsistent context any formula may be chosen,
+  // true at positive positions and false at negative positions
+  def implies(config: Config, state: State, ctx: Ctx, phi: Expr): Option[Boolean] =
+    if ctx.inconsistent && phi.typ == Sort.bool && ctx.polarity.isDefined
+    then ctx.polarity
+    else if ctx.assms contains phi
+    then Some(true)
+    else if ctx.concls contains phi
+    then Some(false)
+    else if phi.typ != Sort.bool
+    then None
+    else
+      not(config, state, ctx, phi) match
+        case psi if ctx.assms contains psi  => Some(false)
+        case psi if ctx.concls contains psi => Some(true)
+        case _                              => None
 
   // expressions in debug output, on a single line
   def show(printer: cuvee.pipe.Printer, expr: Expr): String =

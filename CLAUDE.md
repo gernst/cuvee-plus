@@ -119,9 +119,10 @@ or solvers consume.
   to queries. So the sink's answer to a declaration (an error, `Unsupported`)
   is lost behind a stage. A filter that must keep those answers is a sink
   wrapper (like `Language.sink`), not a stage.
-- **Normal forms and the context.** `Ctx.lookup` is syntactic. When a helper
-  changes the normal form (e.g. `not` turns `!(a < b)` into `b <= a`), make
-  sure facts are still found (here `Ctx.complement`). Check the diff of
+- **Normal forms and the context.** `Simplify.implies` looks facts up
+  syntactically, and also by the negation in normal form (`not`). When a
+  helper changes the normal form (e.g. `not` turns `!(a < b)` into
+  `b <= a`), make sure facts are still found. Check the diff of
   expected outputs for simplifications that got weaker, not only stronger.
 - **Pretty printing.** A parenthesized document must be wrapped in
   `Align(...)`, otherwise its line breaks nest relative to the enclosing
