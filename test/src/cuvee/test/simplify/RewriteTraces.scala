@@ -8,6 +8,10 @@ import cuvee.simplify.{Rule, Rewrite => R}
 
 // patterns with the combinators trace, map, and all, as in the examples of Trace Equation Systems
 object RewriteTraces extends TestSuite:
+  // a rule whose variables are the free variables of its left-hand side
+  def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
+    Rule(lhs, rhs, cond, lhs.free.toList)
+
   val int = Sort.int
   val ints = Sort.seq(int)
   val trace = Sort.trace(int)
@@ -42,15 +46,15 @@ object RewriteTraces extends TestSuite:
 
   // trace(i, for ⌊K⌋ do i, k ↦ i + c) = counter(i, c, steps(⌊K⌋))
   val counterRule =
-    Rule(Trace(i, List(app(butlast, K)), x, List(k), List(Upd(True, Plus.int(x, c)))), app(counter, i, c, app(steps, app(butlast, K))))
+    rw(Trace(i, List(app(butlast, K)), x, List(k), List(Upd(True, Plus.int(x, c)))), app(counter, i, c, app(steps, app(butlast, K))))
 
   // trace(i, for V do x, v ↦ x + v) = sums(i, V)
   val sumsRule =
-    Rule(Trace(i, List(V), x, List(v), List(Upd(True, Plus.int(x, v)))), app(sums, i, V))
+    rw(Trace(i, List(V), x, List(v), List(Upd(True, Plus.int(x, v)))), app(sums, i, V))
 
   // map(for K yield k ↦ a[k]) = selects(a, K)
   val selectsRule =
-    Rule(Maps(List(Ks), List(k), List(Upd(True, Select(a, k)))), app(selects, a, Ks))
+    rw(Maps(List(Ks), List(k), List(Upd(True, Select(a, k)))), app(selects, a, Ks))
 
   val tests = Tests:
     // example 2.3, the counter is matched modulo commutativity
@@ -100,12 +104,12 @@ object RewriteTraces extends TestSuite:
     // all(for ⌊K⌋ check k ↦ k < len) with the bound variable related to that of the expression
     test("all"):
       val len = Var("len", int)
-      val rule = Rule(Invs(List(app(butlast, K)), List(k), Lt.int(k, len)), Le.int(app(steps, app(butlast, K)), len))
+      val rule = rw(Invs(List(app(butlast, K)), List(k), Lt.int(k, len)), Le.int(app(steps, app(butlast, K)), len))
       val expr = Invs(List(app(butlast, J)), List(j), Lt.int(j, n))
       R(List(rule), expr) ==> Le.int(app(steps, app(butlast, J)), n)
 
     // the variables of the rule must not capture the bound variables of the expression
     test("capture"):
-      val rule = Rule(Invs(List(app(butlast, K)), List(k), Lt.int(c, k)), True)
+      val rule = rw(Invs(List(app(butlast, K)), List(k), Lt.int(c, k)), True)
       val expr = Invs(List(app(butlast, J)), List(j), Lt.int(j, j))
       R(List(rule), expr) ==> expr

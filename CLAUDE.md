@@ -22,6 +22,9 @@ or solvers consume.
 
 ## Workflow
 
+- When developing new algorithms (e.g. in the simplifier or the rewriting),
+  not every proof goal must close. The aim is reasonable progress: report
+  which goals remain and why, instead of forcing them through.
 - Commit after each finished item, once it compiles and all tests pass,
   without being asked. Messages are one line, `area: what changed; ...`,
   ending in `; version X.Y.Z`.

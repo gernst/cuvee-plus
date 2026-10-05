@@ -79,7 +79,7 @@ case class Ctx(
   // e.g. Simplify.implied misses (p y) when the fact is stored as (p x);
   // this is done at the top level instead: Simplify.simplify iterates to a fixpoint,
   // where the facts are the simplified siblings, which are already rewritten under the substitution
-  def assume(phi: Expr): Ctx =
+  def assume(state: State, phi: Expr): Ctx =
     phi match
       case Eq(e1, e2) if e1 == e2 =>
         this
@@ -102,6 +102,11 @@ case class Ctx(
       case Eq(e, x: Var) if !(eq contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
         copy(assms = phi :: assms, eq = eq + (x -> e))
 
+      // a selector sel(e) == r with a ground right-hand side is a rewrite rule without variables where the fact holds,
+      // whose free variables are constants, e.g. history.events == [] for delay(history.events, t)
+      case Eq(lhs @ App(sel, _, _, List(_)), rhs) if state.sels.contains(sel) && rhs.free.isEmpty =>
+        copy(assms = phi :: assms, rules = Rule(lhs, rhs, True, Nil) :: rules)
+
       case _ =>
         copy(assms = phi :: assms)
 
@@ -114,37 +119,37 @@ case class Ctx(
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
-  def assume(pos: List[Expr], neg: List[Expr]): Ctx =
+  def assume(state: State, pos: List[Expr], neg: List[Expr]): Ctx =
     (pos, neg) match
       case (Nil, Nil) =>
         this
 
       case (True :: pos, neg) =>
-        assume(pos, neg)
+        assume(state, pos, neg)
 
       case (Not(phi) :: pos, neg) =>
-        assume(pos, phi :: neg)
+        assume(state, pos, phi :: neg)
 
       case (And(phis) :: pos, neg) =>
-        assume(phis ++ pos, neg)
+        assume(state, phis ++ pos, neg)
 
       case (phi :: pos, neg) =>
-        assume(phi).assume(pos, neg)
+        assume(state, phi).assume(state, pos, neg)
 
       case (Nil, False :: neg) =>
-        assume(Nil, neg)
+        assume(state, Nil, neg)
 
       case (Nil, Not(phi) :: neg) =>
-        assume(List(phi), neg)
+        assume(state, List(phi), neg)
 
       case (Nil, Or(phis) :: neg) =>
-        assume(Nil, phis ++ neg)
+        assume(state, Nil, phis ++ neg)
 
       case (Nil, Imp(phi, psi) :: neg) =>
-        assume(List(phi), psi :: neg)
+        assume(state, List(phi), psi :: neg)
 
       case (Nil, phi :: neg) =>
-        deny(phi).assume(Nil, neg)
+        deny(phi).assume(state, Nil, neg)
 
 object Ctx:
   // applications of the basic arithmetic operators on Int or Real

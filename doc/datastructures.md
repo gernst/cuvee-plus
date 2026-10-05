@@ -282,7 +282,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     (`points`, the one-point rule);
   - the polarity of the position, and whether the context is inconsistent;
   - the rewrite rules and their remaining number of steps
-    (`ctx.withRules(rules, steps)`), which all copies share.
+    (`ctx.withRules(rules, steps)`), which all copies share; `Ctx.assume`
+    (which takes the state) adds an equation `sel(e) == r` of a selector
+    (`State.sels`) with a ground `r` as a rule without variables.
 - **`Poly(const, monos)`** with `Mono(factor, atoms)` is the normal form of
   arithmetic, with `Rational` coefficients. `Ring` bundles the sugar of one
   type (`Ring.int`, `Ring.real`) to read and print polynomials.
@@ -296,8 +298,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 - **`Constraint(poly, strict)`** is a linear constraint `0 <= poly` or
   `0 < poly`. `FourierMotzkin` eliminates atoms from conjunctions of these and
   decides their satisfiability over the rationals.
-- **`Rule(lhs, rhs, cond)`** is a conditional rewrite rule, whose variables
-  are the free variables of `lhs`. `Rewrite` rewrites innermost first; a
+- **`Rule(lhs, rhs, cond, xs)`** is a conditional rewrite rule with the
+  variables `xs`, the quantified variables of a lemma (`Simplify.rule`), which
+  must occur in `lhs` if they occur in `rhs` or `cond`; other free variables
+  are constants. `Rewrite` rewrites innermost first; a
   match is a `Subst` of the type parameters and variables of the rule,
   modulo type instantiation, A/C and 0 of `+` and `-`, comparisons modulo
   moving summands between the sides (as normalized polynomials of the

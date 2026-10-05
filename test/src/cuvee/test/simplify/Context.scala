@@ -16,7 +16,7 @@ object Context extends TestSuite:
 
   val tests = Tests:
     test("variables"):
-      val ctx = Ctx.empty.assume(Eq(x, y))
+      val ctx = Ctx.empty.assume(State.empty, Eq(x, y))
       ctx.su ==> Map(x -> y)
       ctx.eq ==> Map()
       ctx.assms ==> Nil
@@ -24,29 +24,29 @@ object Context extends TestSuite:
     // equations with literals are substituted like those between variables
     test("literals"):
       val one = One.int
-      Ctx.empty.assume(Eq(x, one)).su ==> Map(x -> one)
-      Ctx.empty.assume(Eq(one, x)).su ==> Map(x -> one)
-      Ctx.empty.assume(Eq(x, one)).assms ==> Nil
-      val ctx = Ctx.empty.assume(Eq(x, one))
+      Ctx.empty.assume(State.empty, Eq(x, one)).su ==> Map(x -> one)
+      Ctx.empty.assume(State.empty, Eq(one, x)).su ==> Map(x -> one)
+      Ctx.empty.assume(State.empty, Eq(x, one)).assms ==> Nil
+      val ctx = Ctx.empty.assume(State.empty, Eq(x, one))
       cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, ctx, Plus.int(x, y)) ==> Plus.int(y, one)
 
     test("equations"):
       val e = App(f, List(y))
-      Ctx.empty.assume(Eq(x, e)).eq ==> Map(x -> e)
-      Ctx.empty.assume(Eq(e, x)).eq ==> Map(x -> e)
+      Ctx.empty.assume(State.empty, Eq(x, e)).eq ==> Map(x -> e)
+      Ctx.empty.assume(State.empty, Eq(e, x)).eq ==> Map(x -> e)
       // the equation is still an assumption
-      Ctx.empty.assume(Eq(x, e)).assms ==> List(Eq(x, e))
+      Ctx.empty.assume(State.empty, Eq(x, e)).assms ==> List(Eq(x, e))
       // the first equation of a variable is kept
-      Ctx.empty.assume(Eq(x, e)).assume(Eq(x, z)).eq ==> Map(x -> e)
+      Ctx.empty.assume(State.empty, Eq(x, e)).assume(State.empty, Eq(x, z)).eq ==> Map(x -> e)
 
     test("recursive"):
       val e = App(f, List(x))
-      Ctx.empty.assume(Eq(x, e)).eq ==> Map()
+      Ctx.empty.assume(State.empty, Eq(x, e)).eq ==> Map()
 
     test("arithmetic"):
       val e = Plus.int(y, One.int)
-      Ctx.empty.assume(Eq(x, e)).eq ==> Map()
-      Ctx.empty.assume(Eq(x, e)).assms ==> List(Eq(x, e))
+      Ctx.empty.assume(State.empty, Eq(x, e)).eq ==> Map()
+      Ctx.empty.assume(State.empty, Eq(x, e)).assms ==> List(Eq(x, e))
 
 // one-point rule: an equation x == e of a quantified variable x that occurs nowhere else is true,
 // negatively below forall and positively below exists

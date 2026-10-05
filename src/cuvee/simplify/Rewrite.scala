@@ -5,19 +5,18 @@ import cuvee.Config
 import cuvee.Error
 import cuvee.core._
 
-// a conditional rewrite rule lhs = rhs if cond, whose variables are the free variables of lhs,
-// which may be instantiated by arbitrary expressions of the same type,
-// and whose type parameters may be instantiated by arbitrary types
-case class Rule(lhs: Expr, rhs: Expr, cond: Expr = True):
-  def vars = lhs.free
+// a conditional rewrite rule lhs = rhs if cond, whose variables xs may be instantiated by arbitrary expressions
+// of the same type, and whose type parameters may be instantiated by arbitrary types;
+// the other free variables are constants, e.g. those of the facts of the context (see Ctx.assume)
+case class Rule(lhs: Expr, rhs: Expr, cond: Expr, xs: List[Var])
 
 object Rule:
   // well-formedness of rules from the input, see Simplify.rules
   def check(rule: Rule): Rule =
-    val Rule(lhs, rhs, cond) = rule
+    val Rule(lhs, rhs, cond, xs) = rule
 
     Error.report("variables of right hand side or condition do not occur in left hand side", rule):
-      require((rhs.free ++ cond.free) subsetOf lhs.free)
+      require(((rhs.free ++ cond.free) intersect xs.toSet) subsetOf lhs.free)
 
     Error.report("left hand side of rule is a variable", rule):
       require(!lhs.isInstanceOf[Var])
@@ -71,7 +70,7 @@ object Rewrite:
     if expr.isInstanceOf[Var] then return expr
     val results =
       for
-        su <- matches(config, state, ctx, Binding(rule.vars, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
+        su <- matches(config, state, ctx, Binding(rule.xs.toSet, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
         rhs = su(rule.rhs)
         // steps that do not change the expression are not applications, e.g. x + 0 = x for x without +
         if rhs != expr && holds(config, state, ctx, su(rule.cond))

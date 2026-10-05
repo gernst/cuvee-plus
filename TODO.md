@@ -68,8 +68,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   (`Simplify.unannotated`) but kept in expressions, where the printers need
   them, so rules do not match annotated subterms such as `[] as T`.
 - The goal of [clock.dfy](examples/hybrid/clock.dfy) remains after
-  `-simplify`: the `{:rw}` rules of `delay` would need the context equation
-  `history.events == []` and the instantiation of `exists s` by the time.
+  `-simplify`: the fact `history.events == []` rewrites `delay`, but the
+  equation of the new history has the free time on its right-hand side, which
+  is not a rule (ground right-hand sides only), and `exists s` would need to be
+  instantiated by the time.
 - Guards below combinators are matched syntactically first, so a bound
   variable that occurs only in guards may match any formula, e.g. `b` matches
   `!b`; lemmas whose guards are more specific must come first (as for

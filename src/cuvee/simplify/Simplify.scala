@@ -37,8 +37,8 @@ object Simplify extends Transform:
   def rules(cmds: List[Cmd]): List[Rule] =
     for case cmd @ Assert(_, _, phi, _) <- cmds if isRule(cmd)
     yield
-      val Rule(lhs, rhs, cond) = rule(phi)
-      Rule.check(Rule(unannotated(lhs), rhs, cond))
+      val Rule(lhs, rhs, cond, xs) = rule(phi)
+      Rule.check(Rule(unannotated(lhs), rhs, cond, xs))
 
   // type annotations e as T are dropped from the left-hand sides of rules, they are needed for typing only,
   // and matching would compare their types literally, which may contain the type parameters of the rule
@@ -51,25 +51,29 @@ object Simplify extends Transform:
   // the premise of an implication is its condition, and the conclusion must be an equation l = r,
   // an equivalence l <=> r, a negation not φ (φ = false), or a boolean atom φ (φ = true)
   def rule(phi: Expr): Rule =
+    rule(Nil, phi)
+
+  // `xs` are the universally quantified variables so far, the variables of the rule
+  def rule(xs: List[Var], phi: Expr): Rule =
     phi match
-      case All(_, body) =>
-        rule(body)
+      case All(bound, body) =>
+        rule(xs ++ bound, body)
 
       case Imp(cond, body) =>
-        val Rule(lhs, rhs, cond_) = rule(body)
-        Rule(lhs, rhs, if cond_ == True then cond else And(cond, cond_))
+        val Rule(lhs, rhs, cond_, _) = rule(xs, body)
+        Rule(lhs, rhs, if cond_ == True then cond else And(cond, cond_), xs)
 
       case Eq(lhs, rhs) =>
-        Rule(lhs, rhs)
+        Rule(lhs, rhs, True, xs)
 
       case Eqv(lhs, rhs) =>
-        Rule(lhs, rhs)
+        Rule(lhs, rhs, True, xs)
 
       case Not(atom) =>
-        Rule(atom, False)
+        Rule(atom, False, True, xs)
 
       case App(fun, _, _, _) if !connectives.contains(fun.name.name) =>
-        Rule(phi, True)
+        Rule(phi, True, True, xs)
 
       case _ =>
         Error.raise("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom", phi)
@@ -334,8 +338,8 @@ object Simplify extends Transform:
 
       case Ite(test, left, right) =>
         val test_ = simplify(config, state, ctx.neutral, test)
-        val left_ = simplify(config, state, ctx.opaque.assume(List(test_), Nil), left)
-        val right_ = simplify(config, state, ctx.opaque.assume(Nil, List(test_)), right)
+        val left_ = simplify(config, state, ctx.opaque.assume(state, List(test_), Nil), left)
+        val right_ = simplify(config, state, ctx.opaque.assume(state, Nil, List(test_)), right)
         ite(config, state, ctx, test_, left_, right_)
 
       case Select(base, index) =>
@@ -357,8 +361,8 @@ object Simplify extends Transform:
         // like a disjunction of not phi and psi:
         // the premise is simplified assuming that the conclusion does not hold,
         // and the conclusion is simplified assuming the simplified premise
-        val phi_ = simplify(config, state, ctx.flip.assume(Nil, List(psi)), phi)
-        val psi_ = simplify(config, state, ctx.assume(List(phi_), Nil), psi)
+        val phi_ = simplify(config, state, ctx.flip.assume(state, Nil, List(psi)), phi)
+        val psi_ = simplify(config, state, ctx.assume(state, List(phi_), Nil), psi)
         imp(config, state, ctx, phi_, psi_)
 
       case And(phis) =>
@@ -438,7 +442,7 @@ object Simplify extends Transform:
           yield
             val (bound_, re) = ctx.avoid(pat.free.toList)
             val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
-            val body_ = simplify(config, state, ctx.opaque.bind(bound_).assume(List(cond_), Nil), re(body))
+            val body_ = simplify(config, state, ctx.opaque.bind(bound_).assume(state, List(cond_), Nil), re(body))
             case_(config, state, ctx, re(pat), body_, cond_)
         match_(config, state, ctx, arg_, cases_)
 
@@ -470,7 +474,7 @@ object Simplify extends Transform:
       Upd(cond, rhs) <- updates
       cond_ = simplify(config, state, ctx, cond)
       if cond_ != False
-    yield upd(config, state, ctx, cond_, simplify(config, state, ctx.assume(List(cond_), Nil), rhs))
+    yield upd(config, state, ctx, cond_, simplify(config, state, ctx.assume(state, List(cond_), Nil), rhs))
 
   // simplify each of `phis` assuming the others, which hold if `pos` (conjunction)
   // and do not hold otherwise (disjunction);
@@ -485,8 +489,8 @@ object Simplify extends Transform:
         val others = done ++ rest
         val ctx_ =
           if pos
-          then ctx.assume(others, Nil)
-          else ctx.assume(Nil, others)
+          then ctx.assume(state, others, Nil)
+          else ctx.assume(state, Nil, others)
         val phi_ = simplify(config, state, ctx_, phi)
         nary(config, state, ctx, phi_ :: done, rest, pos)
 

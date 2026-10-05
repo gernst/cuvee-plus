@@ -10,6 +10,10 @@ import cuvee.simplify.{Rule, Rewrite}
 // for programs without loops, the verdicts coincide with -verify,
 // loops are summarized by trace equation systems, which the rewrite engine simplifies with lemmas
 object TEQ extends TestSuite:
+  // a rule whose variables are the free variables of its left-hand side
+  def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
+    Rule(lhs, rhs, cond, lhs.free.toList)
+
   import Verify.expected
 
   def loops(file: os.Path) =
@@ -79,7 +83,7 @@ object TEQ extends TestSuite:
       val k = Var("k", Sort.int)
       val K = Var("K", Sort.trace(Sort.int))
       val butlast = App(Fun.trace.butlast, List(K))
-      val rule = Rule(
+      val rule = rw(
         Trace(i, List(butlast), x, List(k), List(Upd(True, Plus.int(x, c)))),
         App(Fun.trace.counter, List(i, c, App(Fun.trace.steps, List(K))))
       )
