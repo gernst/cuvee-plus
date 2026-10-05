@@ -7,7 +7,7 @@
 (declare-sort Bool 0 :smt2 :dfy :bpl :c)
 (declare-sort Int 0 :smt2 :dfy :bpl :c)
 (declare-sort Real 0 :smt2 :dfy :bpl :c)
-(declare-sort String 0 :smt2 :c)
+(declare-sort String 0 :smt2 :dfy :c)
 (declare-sort Array 2 :smt2 :dfy :bpl :c)
 (declare-sort Seq 1 :smt2 :dfy :bpl :c)
 ; finite sets and multisets as in cvc5

@@ -8,6 +8,7 @@
 type {:dfy} {:bpl} {:smt2} {:c} bool
 type {:dfy} {:bpl} {:smt2} {:c} int
 type {:dfy} {:bpl} {:smt2} {:c} real
+type {:dfy} {:smt2} {:c} string
 
 const {:dfy} {:bpl} {:smt2} {:c} true: bool
 const {:dfy} {:bpl} {:smt2} {:c} false: bool

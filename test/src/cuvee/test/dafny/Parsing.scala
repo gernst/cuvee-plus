@@ -230,3 +230,12 @@ object Chains extends TestSuite:
     test("directions"):
       errors("i < j > n") ==> List("chained comparisons in different directions")
       errors("n > j >= i == 0") ==> Nil
+
+// the type string of Dafny is String in the core, and printed back lowercase
+object Strings extends TestSuite:
+  val tests = Tests:
+    test("roundtrip"):
+      val (_, cmds) = Source(new java.io.StringReader("const s: string := \"a\""))
+      val decls = cmds.toList.collect { case cmd @ cuvee.core.DefineFun(fun, _, _) if fun.name.name == "s" => cmd }
+      decls.map(_.fun.res) ==> List(cuvee.core.Sort.string)
+      decls.flatMap(cuvee.dafny.Printer.lines).head.trim ==> "const s: string := \"a\""

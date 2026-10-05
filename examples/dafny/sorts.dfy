@@ -22,3 +22,9 @@ function swap(p: (int, bool)): (bool, int)
 {
   (p.1, p.0)
 }
+
+// strings, which are String in SMT-LIB
+function greeting(name: string): string
+{
+  if name == "" then "hello" else name
+}

@@ -52,6 +52,7 @@ object Grammar:
     "int" -> "Int",
     "bool" -> "Bool",
     "real" -> "Real",
+    "string" -> "String",
     "seq" -> "Seq",
     "set" -> "Set",
     "multiset" -> "Bag",
