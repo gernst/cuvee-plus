@@ -76,7 +76,7 @@ case class Ctx(
   // e.g. Simplify.implied misses (p y) when the fact is stored as (p x);
   // this is done at the top level instead: Simplify.simplify iterates to a fixpoint,
   // where the facts are the simplified siblings, which are already rewritten under the substitution
-  def assume(state: State, phi: Expr): Ctx =
+  def assume(phi: Expr): Ctx =
     phi match
       case Eq(e1, e2) if e1 == e2 =>
         this
@@ -120,37 +120,37 @@ case class Ctx(
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
-  def assume(state: State, pos: List[Expr], neg: List[Expr]): Ctx =
+  def assume(pos: List[Expr], neg: List[Expr]): Ctx =
     (pos, neg) match
       case (Nil, Nil) =>
         this
 
       case (True :: pos, neg) =>
-        assume(state, pos, neg)
+        assume(pos, neg)
 
       case (Not(phi) :: pos, neg) =>
-        assume(state, pos, phi :: neg)
+        assume(pos, phi :: neg)
 
       case (And(phis) :: pos, neg) =>
-        assume(state, phis ++ pos, neg)
+        assume(phis ++ pos, neg)
 
       case (phi :: pos, neg) =>
-        assume(state, phi).assume(state, pos, neg)
+        assume(phi).assume(pos, neg)
 
       case (Nil, False :: neg) =>
-        assume(state, Nil, neg)
+        assume(Nil, neg)
 
       case (Nil, Not(phi) :: neg) =>
-        assume(state, List(phi), neg)
+        assume(List(phi), neg)
 
       case (Nil, Or(phis) :: neg) =>
-        assume(state, Nil, phis ++ neg)
+        assume(Nil, phis ++ neg)
 
       case (Nil, Imp(phi, psi) :: neg) =>
-        assume(state, List(phi), psi :: neg)
+        assume(List(phi), psi :: neg)
 
       case (Nil, phi :: neg) =>
-        deny(phi).assume(state, Nil, neg)
+        deny(phi).assume(Nil, neg)
 
 object Ctx:
   // whether lhs == rhs is a rule of the context: rhs is ground and lhs is not;
