@@ -68,10 +68,11 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   (`Simplify.unannotated`) but kept in expressions, where the printers need
   them, so rules do not match annotated subterms such as `[] as T`.
 - The goal of [clock.dfy](examples/hybrid/clock.dfy) remains after
-  `-simplify`: the fact `history.events == []` rewrites `delay`, but the
-  equation of the new history has the free time on its right-hand side, which
-  is not a rule (ground right-hand sides only), and `exists s` would need to be
-  instantiated by the time.
+  `-simplify`: the rules of `delay` would need the fact `history.events == []`,
+  and `exists s` would need to be instantiated by the time. Plan: replace
+  quantified variables of record types, whose selectors occur in the body, by
+  their constructor applied to fresh variables (as `Flat` does), with the
+  reduction of selectors on constructors.
 - Guards below combinators are matched syntactically first, so a bound
   variable that occurs only in guards may match any formula, e.g. `b` matches
   `!b`; lemmas whose guards are more specific must come first (as for

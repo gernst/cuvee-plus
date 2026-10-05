@@ -102,11 +102,6 @@ case class Ctx(
       case Eq(e, x: Var) if !(eq contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
         copy(assms = phi :: assms, eq = eq + (x -> e))
 
-      // a selector sel(e) == r with a ground right-hand side is a rewrite rule without variables where the fact holds,
-      // whose free variables are constants, e.g. history.events == [] for delay(history.events, t)
-      case Eq(lhs @ App(sel, _, _, List(_)), rhs) if state.sels.contains(sel) && rhs.free.isEmpty =>
-        copy(assms = phi :: assms, rules = Rule(Nil, lhs, rhs, True) :: rules)
-
       case _ =>
         copy(assms = phi :: assms)
 

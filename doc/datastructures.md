@@ -282,9 +282,7 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     (`points`, the one-point rule);
   - the polarity of the position, and whether the context is inconsistent;
   - the rewrite rules and their remaining number of steps
-    (`ctx.withRules(rules, steps)`), which all copies share; `Ctx.assume`
-    (which takes the state) adds an equation `sel(e) == r` of a selector
-    (`State.sels`) with a ground `r` as a rule without variables.
+    (`ctx.withRules(rules, steps)`), which all copies share.
 - **`Poly(const, monos)`** with `Mono(factor, atoms)` is the normal form of
   arithmetic, with `Rational` coefficients. `Ring` bundles the sugar of one
   type (`Ring.int`, `Ring.real`) to read and print polynomials.
