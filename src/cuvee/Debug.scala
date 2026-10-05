@@ -9,6 +9,14 @@ object Debug:
     if modules.contains(what)
     then System.err.println("[" + what + "] " + msg)
 
+  // a step from `before` to `after`, where ~> starts the second line,
+  // such that both terms begin at the same column after the prefix [what]
+  def step(what: String, before: => String, after: => String) =
+    if modules.contains(what)
+    then
+      val prefix = "[" + what + "] "
+      System.err.println(prefix + before + "\n" + " " * (prefix.length - 3) + "~> " + after)
+
 trait Debug:
   def apply(msg: String, info: Any*): Throwable
 
