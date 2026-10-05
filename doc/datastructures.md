@@ -249,7 +249,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 - **`Ctx`** is a sequent at the current position:
   - assumptions and conclusions;
   - bound variables;
-  - equalities between variables, as a substitution;
+  - equalities between variables, as a map `su` from variables to variables;
+  - the non-recursive equations `x == e` among the assumptions, as a map `eq`
+    from variables to expressions (the equation remains an assumption);
   - the polarity of the position, and whether the context is inconsistent;
   - the rewrite rules and their remaining number of steps
     (`ctx.withRules(rules, steps)`), which all copies share.

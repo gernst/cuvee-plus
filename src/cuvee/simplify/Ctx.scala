@@ -5,7 +5,8 @@ import cuvee.core._
 // a sequent at the current position of the simplifier:
 // the assumptions are known to hold and the conclusions are known not to hold,
 // together with the variables bound by enclosing binders
-// and a substitution that replaces variables by others known to be equal;
+// a substitution that replaces variables by others known to be equal,
+// and the equations x == e of the assumptions that are not recursive, i.e., where x is not free in e;
 // the polarity of the current position is Some(true) if it occurs positively,
 // Some(false) if it occurs negatively, and None if it occurs in both ways or not in a formula,
 // e.g. below an equation or in the argument of a function;
@@ -16,7 +17,8 @@ case class Ctx(
     bound: List[Var],
     assms: List[Expr],
     concls: List[Expr],
-    su: Subst[Nothing, Var],
+    su: Map[Var, Var],
+    eq: Map[Var, Expr],
     polarity: Option[Boolean],
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0)
@@ -39,7 +41,7 @@ case class Ctx(
 
   // variables that occur in the context
   def free: Set[Var] =
-    bound.toSet ++ assms.free ++ concls.free ++ su.bound ++ su.free
+    bound.toSet ++ assms.free ++ concls.free ++ su.keySet ++ su.values ++ eq.keySet ++ eq.values.free
 
   // rename those of `xs` that clash with variables of the context (compared by name),
   // returning the fresh list of variables and the renaming to be applied to the scope of `xs`
@@ -59,8 +61,15 @@ case class Ctx(
       case Eq(e1, e2) if e1 == e2 =>
         this
 
-      case Eq(x: Var, y: Var) if !(su.bound contains x) =>
+      case Eq(x: Var, y: Var) if !(su contains x) =>
         copy(su = su + (x -> y))
+
+      // the equation remains an assumption, such that it is still found by Simplify.implied
+      case Eq(x: Var, e) if !(eq contains x) && !(e.free contains x) =>
+        copy(assms = phi :: assms, eq = eq + (x -> e))
+
+      case Eq(e, x: Var) if !(eq contains x) && !(e.free contains x) =>
+        copy(assms = phi :: assms, eq = eq + (x -> e))
 
       case _ =>
         copy(assms = phi :: assms)
@@ -107,7 +116,7 @@ case class Ctx(
         deny(phi).assume(Nil, neg)
 
 object Ctx:
-  val empty = Ctx(Nil, Nil, Nil, Subst.empty, None)
+  val empty = Ctx(Nil, Nil, Nil, Map(), Map(), None)
 
   // at the top of an asserted formula
   val pos = empty.copy(polarity = Some(true))
