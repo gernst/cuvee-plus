@@ -191,13 +191,6 @@ object Verify extends Transform:
 
     And(List(su(pre), dec, All(res_ ++ mod_, Imp(phi_, rename(post)))))
 
-  // the history of events, which must be declared as a global variable to use parallel composition
-  def history(state: State): Var =
-    Error.report("parallel composition requires a global variable history"):
-      require(state.vars.contains(Par.history))
-
-    state.vars(Par.history)
-
   // for all values of the history h
   def havoc(h: Var, phi: Expr): Expr =
     val h_ = h.fresh
@@ -221,7 +214,7 @@ object Verify extends Transform:
   // where the history is arbitrary before each call, satisfying the assumption of the procedure,
   // and the history is arbitrary after the composition, satisfying all commitments
   def par(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, calls: List[Call], post: Expr): Expr =
-    val h = history(state)
+    val h = state.history
     val (assumes, commits) = calls.map(call => ac(state, call.proc, call.args)).unzip
 
     val init = And(commits)
