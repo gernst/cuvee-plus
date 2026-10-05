@@ -25,6 +25,8 @@ or solvers consume.
 - Commit after each finished item, once it compiles and all tests pass,
   without being asked. Messages are one line, `area: what changed; ...`,
   ending in `; version X.Y.Z`.
+- After each commit, regenerate `cuvee.jar` (gitignored):
+  `mill -i assembly; cp out/assembly.dest/out.jar cuvee.jar`.
 - Bump `Config.version` in [src/cuvee/Config.scala](src/cuvee/Config.scala)
   in every commit: the second digit for major features (resetting the third),
   the third for minor ones.
