@@ -6,4 +6,4 @@
 (assert (= (ite p x y) x))
 (assert (=> (= x y) (= (f x) (f y))))
 (assert (<= x y))
-(define-fun g ((z Int)) Int (ite (= z 0) z 0))
+(define-fun g ((z Int)) Int 0)

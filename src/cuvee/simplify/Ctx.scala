@@ -5,7 +5,7 @@ import cuvee.core._
 // a sequent at the current position of the simplifier:
 // the assumptions are known to hold and the conclusions are known not to hold,
 // together with the variables bound by enclosing binders
-// a substitution that replaces variables by others known to be equal,
+// a substitution that replaces variables by others or by literals known to be equal,
 // and the equations x == e of the assumptions that are not recursive, i.e., where x is not free in e;
 // `points` are the quantified variables whose equations x == e are true at the given polarity (one-point rule),
 // which is only sound if the context records all siblings between the binder and the current position;
@@ -19,7 +19,7 @@ case class Ctx(
     bound: List[Var],
     assms: List[Expr],
     concls: List[Expr],
-    su: Map[Var, Var],
+    su: Map[Var, Expr],
     eq: Map[Var, Expr],
     polarity: Option[Boolean],
     points: Map[Var, Boolean] = Map(),
@@ -64,7 +64,7 @@ case class Ctx(
   // which these refer to once the derivative is computed, but which are not free in Diff
   def used: Set[Var] =
     val facts = assms ++ concls
-    facts.free ++ facts.flatMap(Ctx.primed) ++ su.keys ++ su.values ++ eq.keys ++ eq.values.free
+    facts.free ++ facts.flatMap(Ctx.primed) ++ su.keys ++ su.values.free ++ eq.keys ++ eq.values.free
 
   // rename those of `xs` that clash with variables of the context (compared by name),
   // returning the fresh list of variables and the renaming to be applied to the scope of `xs`
@@ -74,7 +74,7 @@ case class Ctx(
     val re = Subst.from(captured, captured.fresh)
     (re.lhs(xs), re)
 
-  // equations between variables are recorded in the substitution;
+  // equations of variables with variables and literals are recorded in the substitution;
   // facts are stored as given and not normalized under the substitution,
   // e.g. Simplify.implied misses (p y) when the fact is stored as (p x);
   // this is done at the top level instead: Simplify.simplify iterates to a fixpoint,
@@ -86,6 +86,12 @@ case class Ctx(
 
       case Eq(x: Var, y: Var) if !(su contains x) =>
         copy(su = su + (x -> y))
+
+      case Eq(x: Var, l: Lit) if !(su contains x) =>
+        copy(su = su + (x -> l))
+
+      case Eq(l: Lit, x: Var) if !(su contains x) =>
+        copy(su = su + (x -> l))
 
       // the equation remains an assumption, such that it is still found by Simplify.implied
       case Eq(x: Var, e) if !(eq contains x) && !(e.free contains x) =>

@@ -518,7 +518,7 @@ object Simplify extends Transform:
             val expr_ = simplify(config, state, ctx, expr)
             Arith.toPoly(ring, expr_)
 
-  // variables known to be equal to another one are replaced
+  // variables known to be equal to another one or to a literal are replaced
   def var_(config: Config, state: State, ctx: Ctx, x: Var): Expr =
     ctx.su.get(x) match
       case Some(y) => y

@@ -19,6 +19,15 @@ object Context extends TestSuite:
       ctx.eq ==> Map()
       ctx.assms ==> Nil
 
+    // equations with literals are substituted like those between variables
+    test("literals"):
+      val one = One.int
+      Ctx.empty.assume(Eq(x, one)).su ==> Map(x -> one)
+      Ctx.empty.assume(Eq(one, x)).su ==> Map(x -> one)
+      Ctx.empty.assume(Eq(x, one)).assms ==> Nil
+      val ctx = Ctx.empty.assume(Eq(x, one))
+      cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, ctx, Plus.int(x, y)) ==> Plus.int(y, one)
+
     test("equations"):
       val e = Plus.int(y, One.int)
       Ctx.empty.assume(Eq(x, e)).eq ==> Map(x -> e)
