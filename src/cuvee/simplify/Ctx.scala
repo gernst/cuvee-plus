@@ -41,7 +41,7 @@ case class Ctx(
 
   // variables that occur in the context
   def free: Set[Var] =
-    bound.toSet ++ assms.free ++ concls.free ++ su.keySet ++ su.values ++ eq.keySet ++ eq.values.free
+    bound.toSet ++ assms.free ++ concls.free ++ su.keys ++ su.values ++ eq.keys ++ eq.values.free
 
   // rename those of `xs` that clash with variables of the context (compared by name),
   // returning the fresh list of variables and the renaming to be applied to the scope of `xs`
