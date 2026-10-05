@@ -6,7 +6,8 @@ import cuvee.core._
 // conjunctions among the antecedents and disjunctions among the succedents are flattened, implications are split,
 // negations that are not of atoms move to the other side, existential quantifiers among the antecedents and
 // universal quantifiers among the succedents bind their variables in the prefix,
-// let is kept, since the simplifier substitutes its bindings, unlike equations;
+// let among the antecedents is exists xs. xs = args and body, and among the succedents forall xs. xs = args ==> body,
+// such that its bindings are equations like any other;
 // the antecedents are normalized as clauses themselves, the succedents as conjunctions exists ys. a and not s;
 // unlike Split, the formula is not split into several obligations, it is equivalent to the result
 object Normalize:
@@ -16,8 +17,8 @@ object Normalize:
   // atoms are not built by the logical connectives and quantifiers
   def isAtomic(phi: Expr): Boolean =
     phi match
-      case True | False | And(_) | Or(_) | Imp(_, _) | Not(_) | Bind(_, _, _) => false
-      case _                                                                 => true
+      case True | False | And(_) | Or(_) | Imp(_, _) | Not(_) | Bind(_, _, _) | Let(_, _, _) => false
+      case _                                                                                => true
 
   def isSimpleSequent(phi: Expr): Boolean =
     phi match
@@ -68,6 +69,15 @@ object Normalize:
       // negated atoms are kept among the antecedents
       case (Not(phi) :: pos, neg) if !isAtomic(phi) => flatten(bound, pos, phi :: neg)
       case (pos, Not(phi) :: neg)                   => flatten(bound, pos :+ phi, neg)
+
+      // the bindings of let are equations, renamed apart from the variables of its arguments
+      case (Let(xs, args, body) :: pos, neg) =>
+        val (xs_, body_) = avoid(bound ++ args.free, xs, body)
+        flatten(bound, Ex(xs_, And(Eq(xs_, args) :+ body_)) :: pos, neg)
+
+      case (pos, Let(xs, args, body) :: neg) =>
+        val (xs_, body_) = avoid(bound ++ args.free, xs, body)
+        flatten(bound, pos, All(xs_, Imp(And(Eq(xs_, args)), body_)) :: neg)
 
       case (Ex(xs, phi) :: pos, neg) =>
         val (xs_, phi_) = avoid(bound, xs, phi)

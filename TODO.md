@@ -10,7 +10,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ### Deferred (questions for the user)
 
-- note on `Normalize` (from `cuvee.pure.Clause`): it is the last step of `Simplify` for assertions (not the first, since the antecedents are assumed in the context of the succedents during simplification anyway), since simplification and rewriting may produce nested implications and negations again, and normalization does not change normalized formulas. Unlike the original, `let` is kept, since the simplifier substitutes its bindings, but not equations between a variable and a term, and a clause without succedents is the negation of its antecedents.
+- note on `Normalize` (from `cuvee.pure.Clause`): it is the last step of `Simplify` for assertions (not the first, since the antecedents are assumed in the context of the succedents during simplification anyway), since simplification and rewriting may produce nested implications and negations again, and normalization does not change normalized formulas. As in the original, `let` is turned into equations (exists among the antecedents, forall among the succedents), equations themselves are kept as they are, and a clause without succedents is the negation of its antecedents.
 
 - note on `n + 1 < m <==> n <= m`: this does not hold on Int (n = 0, m = 1), the correct forms are `n < m + 1 <==> n <= m` and `n + 1 <= m <==> n < m`, which are implemented (`Simplify.lt`, `Simplify.le`, with `Succ`)
 
