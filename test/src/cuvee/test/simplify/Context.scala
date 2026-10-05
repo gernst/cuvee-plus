@@ -94,6 +94,12 @@ object OnePoint extends TestSuite:
       assert(simplify(neutral).free.isEmpty || simplify(neutral) != Imp(q, q))
       simplify(All(List(x), Imp(P(Ite(Eq(x, y), y, z)), q))) ==> All(List(x), Imp(P(Ite(Eq(x, y), y, z)), q))
 
+    // forall distributes over and, exists over or, after which the one-point rule applies to one part
+    test("distribute"):
+      val e = Plus.int(y, One.int)
+      simplify(All(List(x), And(P(x), Imp(Eq(x, e), q)))) ==> And(All(List(x), P(x)), q)
+      simplify(Ex(List(x), Or(P(x), And(Eq(x, e), q)))) ==> Or(Ex(List(x), P(x)), q)
+
     // x cannot be instantiated by e that depends on a variable bound inside the scope of x
     test("scope"):
       val phi = All(List(x), Ex(List(y), Not(Eq(x, y))))

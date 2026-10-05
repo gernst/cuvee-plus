@@ -434,12 +434,12 @@ object Simplify extends Transform:
       case All(bound, body) =>
         val (bound_, re) = ctx.avoid(bound)
         val body_ = simplify(config, state, ctx.forall(bound_), re(body))
-        bind(config, state, ctx, All.name, bound_, body_)
+        all(config, state, ctx, bound_, body_)
 
       case Ex(bound, body) =>
         val (bound_, re) = ctx.avoid(bound)
         val body_ = simplify(config, state, ctx.exists(bound_), re(body))
-        bind(config, state, ctx, Ex.name, bound_, body_)
+        ex(config, state, ctx, bound_, body_)
 
       // the body has no polarity, since the context does not record the bindings
       case Let(bound, args, body) =>
@@ -851,6 +851,18 @@ object Simplify extends Transform:
   // applications of other functions, e.g. user-defined ones
   def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
     App(fun, inst, typ, args)
+
+  // forall distributes over and, where each conjunct binds the variables that it uses
+  def all(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr): Expr =
+    body match
+      case And(phis) => and(config, state, ctx, phis.map(bind(config, state, ctx, All.name, bound, _)))
+      case _         => bind(config, state, ctx, All.name, bound, body)
+
+  // exists distributes over or, where each disjunct binds the variables that it uses
+  def ex(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr): Expr =
+    body match
+      case Or(phis) => or(config, state, ctx, phis.map(bind(config, state, ctx, Ex.name, bound, _)))
+      case _        => bind(config, state, ctx, Ex.name, bound, body)
 
   // unused bound variables are dropped,
   // the binder vanishes when none remain (sorts are nonempty in SMT-LIB)
