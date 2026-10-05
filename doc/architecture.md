@@ -109,6 +109,9 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   simplification and after each round of it, which repeats while they change
   (`Simplify.apply`), such that e.g. the equations of `let` are simplified in
   the context; they are dropped if they simplify to `true`.
+  `Normalize.lift` lifts `ite` out of the terms of atoms to the level of
+  formulas, `A[ite(c, a, b)]` to `ite(c, A[a], A[b])`, but not out of
+  binders, derivatives, and `old` inside of `A`; it is not used yet.
   - All methods take `(config, state, ctx, ...)`. The context `Ctx` holds the
     facts known at the current position and the rewrite rules, which are
     extracted from the assertions and lemmas with the attribute `:rw`

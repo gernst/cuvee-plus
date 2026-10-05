@@ -108,6 +108,48 @@ object Normalize:
           case phi_ =>
             flatten(bound, Nil, phi_ :: neg)
 
+  // ite is lifted out of the terms of the atoms to the level of formulas: A[ite(c, a, b)] is ite(c, A[a], A[b]),
+  // where the connectives, quantifiers, and ite on formulas are traversed;
+  // an ite below a binder of A is kept, since its test may refer to the bound variables,
+  // and so is one below a derivative, which depends on the whole term, and below old, whose test refers to the old state
+  def lift(phi: Expr): Expr =
+    phi match
+      case True | False         => phi
+      case Not(psi)             => Not(lift(psi))
+      case And(phis)            => And(phis.map(lift))
+      case Or(phis)             => Or(phis.map(lift))
+      case Imp(psi, chi)        => Imp(lift(psi), lift(chi))
+      case Bind(quant, xs, psi) => Bind(quant, xs, lift(psi))
+      case Let(xs, args, psi)   => Let(xs, args, lift(psi))
+
+      case Ite(test, left, right) if phi.typ == Sort.bool =>
+        Ite(lift(test), lift(left), lift(right))
+
+      case _ =>
+        ite(phi) match
+          case Some(it @ Ite(test, left, right)) =>
+            lift(Ite(test, replace(phi, it, left), replace(phi, it, right)))
+
+          case _ =>
+            phi
+
+  // the outermost leftmost ite in `expr` that is not below a binder, a derivative, or old
+  def ite(expr: Expr): Option[Expr] =
+    expr match
+      case Ite(_, _, _)       => Some(expr)
+      case App(_, _, _, args) => args.view.flatMap(ite).headOption
+      case Distinct(exprs)    => exprs.view.flatMap(ite).headOption
+      case Is(arg, _)         => ite(arg)
+      case As(arg, _)         => ite(arg)
+      case _                  => None
+
+  // the occurrences of `from` in `expr` that are not below a binder, a derivative, or old replaced by `to`
+  def replace(expr: Expr, from: Expr, to: Expr): Expr =
+    expr match
+      case `from`                               => to
+      case _: App | _: Distinct | _: Is | _: As => expr.map(replace(_, from, to))
+      case _                                    => expr
+
   // the bound variables `xs` renamed apart from the variables in scope
   def avoid(bound: Set[Var], xs: List[Var], body: Expr): (List[Var], Expr) =
     val names = bound.map(_.name)

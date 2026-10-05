@@ -34,6 +34,17 @@ object Normalize extends TestSuite:
       // bound variables are renamed apart from free ones of the same name
       show(N(Imp(Ex(List(x), Lt.int(x, y)), Le.int(x, y)))) ==> "forall x₁: int :: x₁ < y ==> x <= y"
 
+    // ite is lifted out of atoms, all of its occurrences at once, but not out of binders inside of atoms
+    test("lift"):
+      val zero = Zero.int
+      show(N.lift(Lt.int(Ite(p, x, y), zero))) ==> "if p then x < 0 else y < 0"
+      show(N.lift(Imp(q, Lt.int(Ite(p, x, y), Plus.int(Ite(p, x, y), One.int))))) ==> "q ==> (if p then x < x + 1 else y < y + 1)"
+      show(N.lift(Lt.int(Ite(p, Ite(q, x, y), y), zero))) ==> "if p then if q then x < 0 else y < 0 else y < 0"
+      val inner = Eq(q, Ex(List(x), Lt.int(Ite(Lt.int(x, y), x, y), zero)))
+      N.lift(inner) ==> inner
+      val bound = All(List(x), Lt.int(Ite(Lt.int(x, y), x, y), zero))
+      show(N.lift(bound)) ==> "forall x: int :: if x < y then x < 0 else y < 0"
+
     // trivial clauses are true
     test("trivial"):
       N(Imp(False, p)) ==> True
