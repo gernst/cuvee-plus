@@ -36,6 +36,14 @@ class Parser(var state: State):
       case ArrayType(e) => Sort.array(Sort.int, typ(e))
       case VoidType     => Error.raise("void is not a type of values")
 
+  // the value of global variables without initializer, where arrays are constant
+  def zero(t: Type): core.Expr =
+    t match
+      case IntType      => Zero.int
+      case BoolType     => False
+      case ArrayType(e) => core.App(core.Fun.const, List(typ(e)), typ(t), List(zero(e)))
+      case VoidType     => Error.raise("void is not a type of values")
+
   def temp(ctx: Ctx, t: Type): core.Var =
     val x = core.Var("tmp", typ(t)).fresh
     ctx.temps += x
@@ -509,7 +517,8 @@ class Parser(var state: State):
     val cmds = mutable.ListBuffer[core.Cmd]()
 
     // the initial values of the global variables, which may refer to those declared before,
-    // are the precondition of main, the entry point of the program
+    // are the precondition of main, the entry point of the program;
+    // global variables without initializer are zero, as in C
     val inits = mutable.ListBuffer[core.Expr]()
 
     for case Global(Decl(t, decls)) <- tops; Declarator(x, size, init) <- decls
@@ -526,6 +535,9 @@ class Parser(var state: State):
           require(progs.isEmpty)
 
         inits += Eq(core.Var(x, typ(t_)), e_)
+
+      if init.isEmpty
+      then inits += Eq(core.Var(x, typ(t_)), zero(t_))
 
       state = state.declare(x, typ(t_), Attrs.empty)
       globals(x) = (state.vars(x), t_)

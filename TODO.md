@@ -35,9 +35,9 @@ inferred from the call graph. Open:
 - Calls are evaluated before the statement that contains them, which is not
   supported in loop conditions, in the right operand of `&&` and `||`, and in
   the branches of `?:`.
-- Global variables without initializer are arbitrary, not zero as in C; the
-  initial values of the others are the precondition of `main`, which the
-  printer writes as an annotation `/*@ requires ...; */` that is not parsed.
+- The initial values of global variables, zero without initializer as in C,
+  are the precondition of `main`, which the printer writes as an annotation
+  `/*@ requires ...; */` that is not parsed; arrays cannot be initialized.
 - `switch`, `goto`, pointers, structs, strings,
   and the preprocessor (its lines are skipped).
 - The temporary variables for the results of calls inside expressions,
