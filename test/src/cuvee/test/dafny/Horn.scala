@@ -84,7 +84,7 @@ object HornCmds extends TestSuite:
     // parallel composition is not supported in Horn clauses
     test("parallel composition"):
       val par = Examples.root / "dafny" / "par.dfy"
-      val errors = Examples.errors("-chc", "-print", "null", par.toString)
+      val errors = Examples.errors("-hybrid", "-chc", "-print", "null", par.toString)
       assert(errors.contains("parallel composition not supported in Horn clauses"))
 
     // every procedure has predicates for its pre- and postcondition

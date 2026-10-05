@@ -29,6 +29,12 @@ object Examples:
   def status(results: List[cuvee.core.Result]): cuvee.core.Status =
     results.collect { case status: cuvee.core.Status => status }.last
 
+  // the command line options that an example needs, stated in its first line as "// options: -hybrid"
+  def options(file: os.Path): List[String] =
+    os.read.lines(file).headOption match
+      case Some(line) if line.startsWith("// options:") => line.stripPrefix("// options:").trim.split(" +").toList
+      case _                                            => Nil
+
   // runs Cuvee on `args` and returns the messages of all errors that are reported
   def errors(args: String*): List[String] =
     val (_, results) = cuvee.Cuvee.run(args*)
@@ -44,7 +50,7 @@ object Examples:
   // the commands of the prelude of the frontend of the input file in `args`
   def prelude(args: String*): List[Cmd] =
     val config = cuvee.Config.parse(cuvee.Config.default, args.toList)
-    val (_, cmds) = config.source(new java.io.StringReader(""))
+    val (_, cmds) = config.source(new java.io.StringReader(""), config)
     cmds.toList
 
   // runs Cuvee on `args` and returns the parsed input commands

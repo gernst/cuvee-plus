@@ -14,14 +14,15 @@ import cuvee.smtlib.Parser
 // the initial state holds the built-in declarations of the frontend (builtin.*),
 // the commands begin with the definitions of its prelude (prelude.*), which the output needs, e.g. tuples,
 // where the commands of the input that coincide with them are dropped, e.g. when printed output is parsed again
-trait Source extends (Reader => (State, LazyList[Cmd])):
+trait Source:
   def newScanner(reader: Reader): Scanner
 
   // a parser whose state holds the built-in declarations
   def newParser(): (State, easyparse.Parser[List[Cmd]])
 
-  // the resource with the definitions that are injected at the beginning of the commands, if any
-  def prelude: Option[String] = None
+  // the resources with the definitions that are injected at the beginning of the commands, in order,
+  // which may depend on the configuration
+  def preludes(config: cuvee.Config): List[String] = Nil
 
   // files on the classpath, such as the preludes, bundled from resources/
   def resource(path: String): Reader =
@@ -32,12 +33,12 @@ trait Source extends (Reader => (State, LazyList[Cmd])):
 
     new InputStreamReader(stream, StandardCharsets.UTF_8)
 
-  def apply(reader: Reader): (State, LazyList[Cmd]) =
+  def apply(reader: Reader, config: cuvee.Config = cuvee.Config.default): (State, LazyList[Cmd]) =
     val scanner = newScanner(reader)
     val (init, parser) = newParser()
 
     val prelude_ =
-      for path <- prelude.toList; cmd <- parse(path, parser)
+      for path <- preludes(config); cmd <- parse(path, parser)
       yield cmd
 
     // defer parsing such that errors in the first command are reported by the pipeline, too

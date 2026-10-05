@@ -47,7 +47,9 @@ case class Config(
     debug: Set[String] = Set(),
     overridePrinter: Boolean = false,
     // per query, in milliseconds
-    timeout: Int = 1000
+    timeout: Int = 1000,
+    // the definitions of parallel composition in Dafny (resources/cuvee/dafny/hybrid.dfy)
+    hybrid: Boolean = false
 ):
   def reader =
     input match
@@ -126,6 +128,12 @@ object Config:
         val config_ = config.copy(transforms = config.transforms :+ cuvee.simplify.Simplify)
         (config_, rest)
 
+  val hybrid =
+    flag("-hybrid", "inject the definitions of parallel composition into Dafny input: chan, event, history, send, receive"):
+      case (config, rest) =>
+        val config_ = config.copy(hybrid = true)
+        (config_, rest)
+
   val z3 =
     flag("-z3", "pass output to z3"):
       case (config, rest) =>
@@ -174,6 +182,7 @@ object Config:
     split,
     monomorph,
     simplify,
+    hybrid,
     z3,
     cvc5,
     timeout_,
@@ -217,7 +226,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.11.2")
+    println("Cuvée 0.11.3")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

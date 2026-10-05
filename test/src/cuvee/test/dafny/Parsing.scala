@@ -6,10 +6,10 @@ import utest._
 import cuvee.dafny.Source
 
 object Parsing extends TestSuite:
-  // Dafny examples must parse without errors
+  // Dafny examples must parse without errors, with the options they state
   val tests =
     Examples.tests(Examples.find(os.sub / "dafny", "dfy")): file =>
-      Examples.errors("-print", "null", file.toString) ==> Nil
+      Examples.errors(List("-print", "null") ++ Examples.options(file) :+ file.toString*) ==> Nil
 
 // derivatives are with respect to variables on real only
 object Derivatives extends TestSuite:
@@ -87,12 +87,13 @@ object Globals extends TestSuite:
         List("call modifies variables that are not in the modifies clause")
 
 // parallel composition of calls that do not share modified variables other than the history
+// with -hybrid, which declares the history
 object Parallel extends TestSuite:
   def errors(text: String) =
     val file = os.temp(text, suffix = ".dfy")
-    Examples.errors("-print", "null", file.toString)
+    Examples.errors("-hybrid", "-print", "null", file.toString)
 
-  val history = "var history: seq<event<int>>; "
+  val history = ""
   val p = "method p(n: int) returns (x: int) modifies history assumes true commits true { x := n; } "
 
   val tests = Tests:

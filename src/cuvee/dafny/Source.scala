@@ -24,5 +24,8 @@ object Source extends cuvee.pipe.Source:
     // the parser's state now contains the built-in declarations
     (parser.state, lifted)
 
-  // channels, events, and tuples
-  override def prelude = Some("/cuvee/dafny/prelude.dfy")
+  // tuples, and with -hybrid, the definitions of parallel composition
+  override def preludes(config: cuvee.Config) =
+    if config.hybrid
+    then List("/cuvee/dafny/prelude.dfy", "/cuvee/dafny/hybrid.dfy")
+    else List("/cuvee/dafny/prelude.dfy")

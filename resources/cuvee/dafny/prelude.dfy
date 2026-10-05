@@ -1,11 +1,6 @@
 // the definitions that the output needs, which are injected at the beginning of the commands,
-// unlike the built-in sorts and functions (see builtin.dfy), which SMT-LIB knows
-
-// the events of parallel components, values sent and received on channels,
-// the global history of events, e.g. var history: seq<event<int>>;
-// and the methods send and receive are declared by the input (see examples/dafny/par.dfy)
-type chan
-datatype event<a₀> = event(chan: chan, value: a₀)
+// unlike the built-in sorts and functions (see builtin.dfy), which SMT-LIB knows;
+// those of parallel composition are injected with the option -hybrid (see hybrid.dfy)
 
 // tuples, where the components are numbered from 0 as in Dafny,
 // the selectors are qualified with the type since selector names must be unique

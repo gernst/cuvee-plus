@@ -12,10 +12,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 - note on `Normalize` (from `cuvee.pure.Clause`): it is both the first and the last step of `Simplify` for assertions: first, such that all antecedents are available as context for the succedents; last, since simplification and rewriting may produce nested implications and negations again, and normalization does not change normalized formulas. Unlike the original, `let` is kept, since the simplifier substitutes its bindings, but not equations between a variable and a term, and a clause without succedents is the negation of its antecedents.
 
-- split the `prelude.*` files into `builtin.*` and `prelude.*`
-  - done: `builtin.*` is parsed into the initial state, `prelude.*` (Dafny: `chan`, `event`, tuples) is injected at the beginning of the commands, inputs that repeat it are accepted
-  - question: the history, `send`, and `receive` are still declared by the input (see examples/dafny/par.dfy). In the injected prelude, the global variable `history: seq<event<int>>` would become a parameter of all predicates of `-chc` and a quantified variable of all goals of `-verify`, for every Dafny program, and z3's logic HORN has no sequences, so `-chc` would fail for all Dafny inputs; also the value type of events would be fixed to `int`. Should they be injected only if the input uses `parallel`, `send`, or `receive` (e.g. a separate prelude `par.dfy`, injected on demand), or stay in the input?
-
 - note on `n + 1 < m <==> n <= m`: this does not hold on Int (n = 0, m = 1), the correct forms are `n < m + 1 <==> n <= m` and `n + 1 <= m <==> n < m`, which are implemented (`Simplify.lt`, `Simplify.le`, with `Succ`)
 
 - In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
@@ -323,7 +319,7 @@ a global history of events (see [examples/dafny/par.dfy](examples/dafny/par.dfy)
   procedure is called sequentially.
 - The commitment is checked only at `send` and `receive` directly in the body,
   not at those inside other procedures called by it.
-- The history is declared by the input together with `send` and `receive`,
-  since the value type of the events is fixed per program; the contracts of
-  `send` and `receive` are not checked against their intended meaning.
+- The history, `send`, and `receive` are declared by
+  [resources/cuvee/dafny/hybrid.dfy](resources/cuvee/dafny/hybrid.dfy),
+  which `-hybrid` injects, where the values of events are fixed to `int`.
 - Only calls may be composed, not arbitrary statements.

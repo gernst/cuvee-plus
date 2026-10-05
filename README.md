@@ -81,7 +81,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
   - methods may have assumption-commitment contracts (`assumes`, `commits`)
     over a global history of events, which `send` and `receive` extend;
   - these contracts are used by the parallel composition of calls,
-    `parallel { p(a); x := q(b); }`.
+    `parallel { p(a); x := q(b); }`;
+  - `-hybrid` declares the channels, events, the history, `send`, and
+    `receive` ([resources/cuvee/dafny/hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)).
 
   See [examples/dafny/par.dfy](examples/dafny/par.dfy).
 

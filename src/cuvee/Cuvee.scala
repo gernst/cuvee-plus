@@ -28,7 +28,7 @@ object Cuvee extends util.Main:
     Param.reset()
 
     val reader = config.reader
-    val (init, cmds) = config.source(reader)
+    val (init, cmds) = config.source(reader, config)
 
     val printer = config.printer
     val sink = Sink.tee(config.sink(init, config), sinks*)

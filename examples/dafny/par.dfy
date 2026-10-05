@@ -1,15 +1,7 @@
+// options: -hybrid
 // methods with assumption-commitment contracts over the global history of events,
-// composed in parallel, verified with -verify -z3
-
-var history: seq<event<int>>;
-
-method send(c: chan, v: int)
-  modifies history
-  ensures history == old(history) + [event(c, v)]
-
-method receive(c: chan) returns (v: int)
-  modifies history
-  ensures history == old(history) + [event(c, v)]
+// composed in parallel, verified with -hybrid -verify -z3,
+// where -hybrid declares the history, send, and receive (see resources/cuvee/dafny/hybrid.dfy)
 
 // all values on channel c are positive, specified inductively over the history,
 // which the solvers handle better than a quantifier over the indices
