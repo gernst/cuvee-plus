@@ -1,6 +1,7 @@
 package cuvee.verify
 
 import util.Name
+import util.Ref
 import cuvee.Config
 import cuvee.Error
 import cuvee.pipe.Transform
@@ -171,10 +172,6 @@ object Verify extends Transform:
     Error.report("wrong number of arguments or results in call", name, args, res):
       require(in.length == args.length && out.length == res.length)
 
-    // the type parameters of a polymorphic procedure are instantiated by the types of the arguments and results,
-    // by the same substitutions that replace the formal parameters
-    val inst = Type.bind((in ++ out).map(_.typ), (args ++ res).map(_.typ)).params
-
     // results and the modified global variables are fresh since `args` may refer to their old values,
     // the precondition refers to the values of the global variables before the call,
     // as does old(e) in the postcondition, whose modified global variables are kept apart as mod0 meanwhile
@@ -182,8 +179,12 @@ object Verify extends Transform:
     val res_ = res.fresh
     val mod_ = mod.fresh
     val mod0 = mod.fresh
-    val su = Subst[Type, Expr](inst, Map(in zip args*))
-    val su_ = Subst[Type, Expr](inst, Map((in ++ out ++ mod) zip (args ++ res_ ++ mod_)*))
+    // the substitutions replace the formal parameters and instantiate the type parameters of a polymorphic procedure
+    // by the types of the arguments, and those of the results, which su_ replaces in addition
+    val su = Ref(Subst.empty[Type, Expr])
+    Type.bind(in, args, su)
+    val su_ = Ref(su.value)
+    Type.bind(out ++ mod, res_ ++ mod_, su_)
     val rename = Subst.from(res ++ mod, res_ ++ mod_)
     val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
 
@@ -213,9 +214,9 @@ object Verify extends Transform:
   def ac(state: State, name: Name, args: List[Expr]): (Expr, Expr) =
     val Proc(_, _, in, _) = state.procs(name)
     val attrs = state.procattrs(name)
-    // the type parameters of a polymorphic procedure are instantiated together with the formal parameters
-    val inst = Type.bind(in.map(_.typ), args.map(_.typ)).params
-    val su = Subst[Type, Expr](inst, Map(in zip args*))
+    // the formal parameters are replaced and the type parameters instantiated by the arguments
+    val su = Ref(Subst.empty[Type, Expr])
+    Type.bind(in, args, su)
     (su(attrs.assumes), su(attrs.commits))
 
   // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h:

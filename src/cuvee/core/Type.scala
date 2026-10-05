@@ -187,7 +187,7 @@ object Type:
     subst.value
 
   // extend `subst` such that `pat` instantiated becomes `typ`, an error if it cannot
-  def bind(pat: Type, typ: Type, subst: Ref[Subst[Type, Nothing]]): Unit =
+  def bind[E <: Expr](pat: Type, typ: Type, subst: Ref[Subst[Type, E]]): Unit =
     (pat, typ) match
       case _ if pat == typ =>
 
@@ -204,12 +204,24 @@ object Type:
       case _ =>
         Error.raise("type mismatch", pat, typ)
 
-  def bind(pats: List[Type], types: List[Type], subst: Ref[Subst[Type, Nothing]]): Unit =
+  def bind[E <: Expr](pats: List[Type], types: List[Type], subst: Ref[Subst[Type, E]]): Unit =
     Error.report("mismatching length", pats, types):
       require(pats.length == types.length)
 
     for (pat, typ) <- pats zip types
     do bind(pat, typ, subst)
+
+  // extend `subst` by the formal parameters `xs` replaced by `exprs`,
+  // where the type parameters in the types of `xs` are instantiated by the types of `exprs`
+  @scala.annotation.targetName("bindVars")
+  def bind(xs: List[Var], exprs: List[Expr], subst: Ref[Subst[Type, Expr]]): Unit =
+    Error.report("mismatching length", xs, exprs):
+      require(xs.length == exprs.length)
+
+    for (x, expr) <- xs zip exprs
+    do
+      bind(x.typ, expr.typ, subst)
+      subst := { subst + (x -> expr) }
 
   // the types of expressions are already instantiated with fresh parameters by the parsers,
   // in particular `inst` of an application holds the expected types of the arguments;
