@@ -164,8 +164,9 @@ object Printer extends cuvee.pipe.Printer:
       case DefineSort(Con(name_, _), params_, body, attrs) =>
         text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(params_) +:+ text("=") +:+ doc(body) ++ text(";")
 
-      case DeclareDatatypes(_, _, _) =>
-        Error.raise("datatypes not supported in Boogie", cmd)
+      // not Boogie, datatypes as in Dafny with the keyword data; mutually recursive ones are declared one after another
+      case DeclareDatatypes(cons, datas, attrs) =>
+        join(for (con, data) <- cons zip datas yield datatype(con, data, attrs), hardline)
 
       // constants have no type parameters in Boogie, polymorphic ones are functions without arguments
       case DeclareFun(Fun(name_, Nil, Nil, res), attrs) =>
@@ -206,6 +207,24 @@ object Printer extends cuvee.pipe.Printer:
       case Lemma => "lemma"
 
   // type parameters in angle brackets
+  def datatype(con: Con, data: Datatype, attrs: Attrs): Doc =
+    val Datatype(params_, constrs) = data
+
+    val constrs_ =
+      for (constr, sels) <- constrs
+      yield
+        val sels_ =
+          for sel <- sels
+          yield text(name(sel.name) + ":") +:+ doc(sel.res)
+
+        if sels.isEmpty
+        then text(name(constr.name))
+        else Group(text(name(constr.name) + "(") ++ Align(join(sels_, text(",") ++ line)) ++ text(")"))
+
+    // the = always goes on the next line, the constructors stay on its line if they fit, aligned by | otherwise
+    val head = text("data") ++ attributes(attrs) +:+ text(name(con.name)) ++ params(params_)
+    head ++ Nest(2, hardline ++ Group(text("=") +:+ join(constrs_, line ++ text("| ")) ++ text(";")))
+
   def params(params: List[Param]): Doc =
     if params.isEmpty
     then empty

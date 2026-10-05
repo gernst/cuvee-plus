@@ -112,6 +112,8 @@ case class Axiom(params: List[String], attrs: List[Attr], phi: Expr) extends Cmd
 // not part of Boogie, lemmas are proved and then assumed like axioms
 case class Lemma(params: List[String], attrs: List[Attr], phi: Expr) extends Cmd
 case class SortDef(attrs: List[Attr], name: String, params: List[String], alias: Option[Type]) extends Cmd
+// not part of Boogie, datatypes as in Dafny, data List<a> = nil | cons(head: a, tail: List<a>);
+case class DataDef(attrs: List[Attr], name: String, params: List[String], constrs: List[Constr]) extends Cmd
 case class ConstDef(attrs: List[Attr], consts: List[(String, Type)]) extends Cmd
 case class VarDef(attrs: List[Attr], vars: List[(String, Type)]) extends Cmd
 
@@ -137,6 +139,13 @@ case class ProcDef(
 object Axiom extends ((List[String], List[Attr], Expr) => Cmd)
 object Lemma extends ((List[String], List[Attr], Expr) => Cmd)
 object SortDef extends ((List[Attr], String, List[String], Option[Type]) => Cmd)
+object DataDef extends ((List[Attr], String, List[String], List[Constr]) => Cmd)
+
+// the constructors of datatypes and their selectors
+case class Sel(name: String, typ: Type)
+case class Constr(name: String, sels: List[Sel])
+object Sel extends ((String, Type) => Sel)
+object Constr extends ((String, List[Sel]) => Constr)
 object ConstDef extends ((List[Attr], List[(String, Type)]) => Cmd)
 object VarDef extends ((List[Attr], List[(String, Type)]) => Cmd)
 object FunDef extends ((List[Attr], String, List[String], List[(String, Type)], Type, Option[Expr]) => Cmd)

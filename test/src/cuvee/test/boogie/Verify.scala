@@ -36,8 +36,9 @@ object Horn extends TestSuite:
     "// expected: invalid" -> Status.Unsat
   )
 
-  // syntax.bpl: unknown, since the axioms are quantified
-  val skip = Set("syntax.bpl")
+  // syntax.bpl: unknown, since the axioms are quantified,
+  // data.bpl: unknown, since z3 does not solve Horn clauses over recursive datatypes
+  val skip = Set("syntax.bpl", "data.bpl")
 
   val tests =
     Examples.tests(solvable.filterNot(file => skip.contains(file.last))): file =>

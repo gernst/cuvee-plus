@@ -105,9 +105,49 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 - Procedures must be declared before calls (no mutual recursion); no
   `forall<a>`, sequences, or parallel composition.
-- The printer rejects datatypes, loop attributes other than `invariant`,
+- Datatypes (`data`, not Boogie) have no testers and no `match`; `data` and
+  `|` are keywords. Mutually recursive datatypes are printed one after
+  another, which cannot be parsed again; see the proposal below.
+- z3 answers `unknown` for Horn clauses over recursive datatypes
+  ([examples/boogie/data.bpl](examples/boogie/data.bpl) is skipped by the
+  `-chc` test).
+- The printer rejects loop attributes other than `invariant`,
   `modifies`, `decreases`, other binders, derivatives, ODEs, and `par`;
   `goal`, `lemma`, `decreases`, `continue` are printed although not Boogie.
+
+### Proposal: mutually recursive datatypes
+
+SMT-LIB declares them in one command, where each datatype has its own type
+parameters (`par`), and the attributes belong to the command:
+
+```smt2
+(declare-datatypes ((Tree 1) (Forest 1))
+  ((par (a) ((node (value a) (children (Forest a)))))
+   (par (a) ((leaf) (grow (first (Tree a)) (rest (Forest a)))))))
+```
+
+This is `DeclareDatatypes(cons, datas, attrs)` in the core. Boogie mirrors it
+by one `data` command, whose datatypes are joined by `and` as in ML, each with
+its own type parameters, and with the attributes after `data` and a single
+semicolon at the end:
+
+```boogie
+data {:attr} Tree<a> = node(value: a, children: Forest<a>)
+ and Forest<a> = leaf | grow(first: Tree<a>, rest: Forest<a>);
+```
+
+- Parsing: `and` becomes a keyword (Boogie writes `&&`, so it is free). The
+  parser declares all sorts of the group first, then resolves the
+  constructors, so that they may refer to each other, and emits one
+  `DeclareDatatypes`. A group of one is the current syntax.
+- Printing: one `DeclareDatatypes` is one `data` command with `and`, which
+  replaces printing them one after another.
+- Dafny: Dafny itself resolves all top-level declarations together, so the
+  Dafny-compliant form is consecutive `datatype` declarations that refer to
+  each other. The parser would collect a maximal run of consecutive
+  `datatype` declarations, declare their sorts first, and emit one
+  `DeclareDatatypes` for each strongly connected component (or for the whole
+  run, which SMT-LIB accepts as well). The printer stays as it is.
 
 ## SMT-LIB frontend
 

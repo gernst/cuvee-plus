@@ -287,6 +287,19 @@ object Grammar:
   val sortdef =
     SortDef(P("type" ~ attrs ~ id ~ params ~ ("=" ~ typ).? ~ ";"))
 
+  // datatypes as in Dafny, with the keyword data, whose selectors are functions, e.g. head(xs)
+  val sel =
+    Sel(P(id ~ ":" ~ typ))
+
+  val sels =
+    P(parens(sel ~* ",") | nil)
+
+  val constr =
+    Constr(P(id ~ sels))
+
+  val datadef =
+    DataDef(P("data" ~ attrs ~ id ~ params ~ "=" ~ (constr ~+ "|") ~ ";"))
+
   val constdef =
     ConstDef(P("const" ~ attrs ~ typed ~ ";"))
 
@@ -316,7 +329,7 @@ object Grammar:
     ProcDef(P("procedure" ~ attrs ~ id ~ params ~ formals ~ returns ~ contract))
 
   val cmd: Parser[Cmd] =
-    P(sortdef | constdef | vardef | fundef | axiom | lemma | procdef)
+    P(sortdef | datadef | constdef | vardef | fundef | axiom | lemma | procdef)
 
   val script =
     P(cmd.*)

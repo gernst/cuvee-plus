@@ -193,7 +193,11 @@ sealed trait Ctrl extends Cmd     // Push, Pop, Reset, Exit, Done
     `Goal` or `Lemma`, and `params` are the type parameters, those declared
     by `lemma <a> ...` followed by those that remain in `phi`.
 - `Datatype(params, constrs)` lists each constructor with its selectors.
-  Dafny qualifies the selectors with the datatype, e.g. `event_chan`.
+  Dafny qualifies the selectors with the datatype, e.g. `event_chan`;
+  Boogie, whose datatypes are written like Dafny's with the keyword `data`
+  (`data Stack<a> = empty | push(top: a, pop: Stack<a>);`, not Boogie),
+  does not, since it has no member access, so its selectors are unique
+  functions as in SMT-LIB.
 - `Done` is internal: it marks the end of the input, so that the stages
   flush.
 - Results:
