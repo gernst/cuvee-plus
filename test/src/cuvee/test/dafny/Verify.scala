@@ -37,13 +37,9 @@ object VerifyHybrid extends TestSuite:
     cuvee.dafny.Printer.lines(phi).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:
-    test("hybrid.dfy"):
-      val hybrid = Examples.root / "dafny" / "hybrid.dfy"
-      Examples.errors("-verify", "-simplify", "-print", "null", hybrid.toString) ==> Nil
-
-    test("par.dfy"):
-      val par = Examples.root / "dafny" / "par.dfy"
-      Examples.errors("-hybrid", "-verify", "-print", "null", par.toString) ==> Nil
+    test("examples"):
+      for file <- Examples.find(os.sub / "hybrid", "dfy")
+      do Examples.errors(List("-verify", "-simplify", "-print", "null") ++ Examples.options(file) :+ file.toString*) ==> Nil
 
     test("no history"):
       Examples.check("dfy", "method p() { } method m() { parallel { p(); } }", "-verify") ==>

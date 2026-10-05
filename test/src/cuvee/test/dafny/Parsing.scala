@@ -8,7 +8,7 @@ import cuvee.dafny.Source
 object Parsing extends TestSuite:
   // Dafny examples must parse without errors, with the options they state
   val tests =
-    Examples.tests(Examples.find(os.sub / "dafny", "dfy")): file =>
+    Examples.tests(Examples.find(os.sub / "dafny", "dfy") ++ Examples.find(os.sub / "hybrid", "dfy")): file =>
       Examples.errors(List("-print", "null") ++ Examples.options(file) :+ file.toString*) ==> Nil
 
 // derivatives and differential equations are for variables on real only,

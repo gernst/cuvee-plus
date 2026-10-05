@@ -76,12 +76,12 @@ object HornCmds extends TestSuite:
 
     // differential equations are not supported in Horn clauses
     test("differential equations"):
-      val hybrid = Examples.root / "dafny" / "hybrid.dfy"
+      val hybrid = Examples.root / "hybrid" / "ball.dfy"
       val errors = Examples.errors("-chc", "-print", "null", hybrid.toString)
       assert(errors.contains("differential equations not supported in Horn clauses"))
 
     // parallel composition is not supported in Horn clauses
     test("parallel composition"):
-      val par = Examples.root / "dafny" / "par.dfy"
+      val par = Examples.root / "hybrid" / "par.dfy"
       val errors = Examples.errors("-hybrid", "-chc", "-print", "null", par.toString)
       assert(errors.contains("parallel composition not supported in Horn clauses"))

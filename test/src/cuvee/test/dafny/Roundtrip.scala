@@ -12,7 +12,7 @@ object Roundtrip extends TestSuite:
   // printing the internal representation of the Dafny examples must be stable
   // when the output is parsed again, the original file is not compared
   val tests =
-    Examples.tests(Examples.find(os.sub / "dafny", "dfy")): file =>
+    Examples.tests(Examples.find(os.sub / "dafny", "dfy") ++ Examples.find(os.sub / "hybrid", "dfy")): file =>
       val args = List("-print", "null") ++ Examples.options(file) :+ file.toString
       val (cmds, errors) = Examples.output(args*)
       errors ==> Nil

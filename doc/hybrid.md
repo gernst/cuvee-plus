@@ -2,8 +2,8 @@
 
 Non-standard extensions of the Dafny frontend after Platzer's differential
 dynamic logic (dL), and parallel composition with assumption-commitment
-contracts (see [examples/dafny/hybrid.dfy](../examples/dafny/hybrid.dfy) and
-[examples/dafny/par.dfy](../examples/dafny/par.dfy)). Derivatives,
+contracts (see [examples/hybrid/](../examples/hybrid): `ball.dfy`,
+`newton.dfy`, and `par.dfy`). Derivatives,
 differential equations, and nondeterministic iterations are always part of
 the Dafny frontend; the option `-hybrid` is needed for parallel composition
 only, it injects [hybrid.dfy](../resources/cuvee/dafny/hybrid.dfy), which
