@@ -3,9 +3,41 @@
 Non-standard extensions of the Dafny frontend after Platzer's differential
 dynamic logic (dL), and parallel composition with assumption-commitment
 contracts (see [examples/dafny/hybrid.dfy](../examples/dafny/hybrid.dfy) and
-[examples/dafny/par.dfy](../examples/dafny/par.dfy)). The option `-hybrid`
-injects [hybrid.dfy](../resources/cuvee/dafny/hybrid.dfy), which declares the
-history, `send`, and `receive`.
+[examples/dafny/par.dfy](../examples/dafny/par.dfy)). Derivatives,
+differential equations, and nondeterministic iterations are always part of
+the Dafny frontend; the option `-hybrid` is needed for parallel composition
+only, it injects [hybrid.dfy](../resources/cuvee/dafny/hybrid.dfy), which
+declares the history, `send`, and `receive`.
+
+## Syntax
+
+| Construct | Dafny frontend | dL |
+|---|---|---|
+| derivative | `(x, v :: 2.0 * g * x + v * v)'` | `(2 g x + v²)'` |
+| differential equation | `x', v' == v, -g && 0.0 <= x invariant φ;` | `{x' = v, v' = -g & 0 ≤ x}` |
+| iteration | `while * invariant φ { body }` | `body*` |
+| parallel composition | `parallel { x := p(a); q(b); }` | |
+| contracts | `assumes φ` and `commits ψ` after `ensures` | |
+
+- A differential equation is a statement: the primed variables, `==`, the
+  right-hand sides in the same order, optionally `&&` and the evolution
+  constraint, then the differential invariants, and a semicolon, e.g.
+
+  ```dafny
+  x', v' == v, -g && 0.0 <= x
+    invariant 2.0 * g * x + v * v <= 2.0 * g * h;
+  ```
+
+  The right-hand sides bind tighter than `&&`, so the constraint is not part
+  of the last one. Without a prime after the first variable, the statement
+  is an assignment or a call instead.
+- `while *` is a loop with a nondeterministic number of iterations; `if *`
+  is a nondeterministic choice.
+- In a derivative `(xs :: e)'`, the variables `xs` are those that `e` is
+  differentiated with respect to; the result refers to their primed versions
+  `x'`.
+- `parallel { ... }` composes calls, written as call statements or as
+  assignments of their results.
 
 ## Derivatives
 
@@ -27,8 +59,8 @@ case class Iter(body: Prog, attrs: Attrs)               // while * { body }
 ```
 
 - `Ode` is the system `x' = e` for `x` in `xs` with the evolution constraint
-  `dom`, written `{x' = e, y' = f & dom}` in dL. Its `invariant` attributes are
-  the differential invariants. The variables are on `Real`.
+  `dom` (`True` if there is none). Its `invariant` attributes are the
+  differential invariants. The variables are on `Real`.
 - `Iter` is the repetition of dL, a loop with a nondeterministic number of
   iterations.
 - `Verify` proves an `Ode` by differential cuts with its invariants, then
