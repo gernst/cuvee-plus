@@ -220,8 +220,9 @@ object Verify extends Transform:
     (su(attrs.assumes), su(attrs.commits))
 
   // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h:
-  // the assumptions and commitments must hold for the history initially,
-  // and the commitments of the other processes must imply the assumption of each process, for all histories;
+  // the commitments must hold for the history initially,
+  // and the commitments of the other processes must imply the assumption of each process, for all histories,
+  // hence also initially;
   // since the calls do not share modified variables other than h, they can be verified in sequence,
   // where the history is arbitrary before each call, satisfying the assumption of the procedure,
   // and the history is arbitrary after the composition, satisfying all commitments
@@ -229,7 +230,7 @@ object Verify extends Transform:
     val h = history(state)
     val (assumes, commits) = calls.map(call => ac(state, call.proc, call.args)).unzip
 
-    val init = And(assumes ++ commits)
+    val init = And(commits)
 
     val side =
       for (assume, i) <- assumes.zipWithIndex
