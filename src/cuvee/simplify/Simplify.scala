@@ -69,13 +69,13 @@ object Simplify extends Transform:
   val connectives = Set("and", "or", "=>", "<=>", "not", "ite", "true", "false")
 
   // `ctx` is an empty context, which provides the rewrite rules;
-  // assertions are normalized into clauses before simplification (see Normalize),
-  // such that all antecedents are available as context for the succedents,
-  // and afterwards, since simplification may produce nested implications and negations again
+  // the antecedents of assertions are assumed in the context of their succedents during simplification,
+  // assertions are normalized into clauses afterwards (see Normalize),
+  // since simplification may produce nested implications and negations again
   def simplify(config: Config, state: State, ctx: Ctx, cmd: Cmd): Cmd =
     cmd match
       case Assert(justify, params, phi, attrs) =>
-        val phi_ = simplify(config, state, ctx.copy(polarity = Some(true)), Normalize(phi))
+        val phi_ = simplify(config, state, ctx.copy(polarity = Some(true)), phi)
         Assert(justify, params, Normalize(phi_), attrs)
 
       case DefineFun(fun, body, attrs) =>

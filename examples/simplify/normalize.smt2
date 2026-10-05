@@ -1,4 +1,4 @@
-; assertions are normalized into clauses forall xs. antecedents ==> succedents before and after simplification
+; assertions are normalized into clauses forall xs. antecedents ==> succedents after simplification, the antecedents are the context of the succedents
 (declare-fun p (Int) Bool)
 (declare-fun q (Int Int) Bool)
 (declare-const r Bool)

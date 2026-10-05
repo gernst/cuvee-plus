@@ -1,4 +1,4 @@
-; assertions are normalized into clauses forall xs. antecedents ==> succedents before and after simplification
+; assertions are normalized into clauses forall xs. antecedents ==> succedents after simplification, the antecedents are the context of the succedents
 (declare-fun p (Int) Bool)
 
 (declare-fun q (Int Int) Bool)
@@ -8,12 +8,14 @@
 (assert
   (forall
     ((x Int) (y Int))
-    (=> (and (q x y) (p x)) r)))
+    (=> (and (p x) (q x y)) r)))
 
 (assert
   (forall
     ((x Int))
-    (=> (p x) (or (q x x) r))))
+    (=>
+      (and (p x) (not (q x x)))
+      r)))
 
 (assert
   (forall ((x Int)) (not (and r (p x)))))
