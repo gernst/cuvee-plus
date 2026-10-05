@@ -17,7 +17,11 @@ object TEQ extends TestSuite:
 
   // all subexpressions
   def subexprs(expr: Expr): List[Expr] =
-    expr :: expr.subexprs.flatMap(subexprs)
+    val inner = List.newBuilder[Expr]
+    expr.map: arg =>
+      inner ++= subexprs(arg)
+      arg
+    expr :: inner.result()
 
   val tests = Tests:
     // the goals are passed to z3 without the lemma database, whose functions on traces z3 does not support

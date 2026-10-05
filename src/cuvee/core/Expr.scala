@@ -10,11 +10,10 @@ sealed trait Expr:
   def params: Set[Param]
   def free: Set[Var]
   def typ: Type
-  // the immediate subexpressions
-  def subexprs: List[Expr]
 
   // apply `f` to the immediate subexpressions point-wise,
   // the bound variables of binders and combinators are kept, i.e., `f` must avoid capture itself
+  // the subexpressions are visited from left to right, such that `f` may be used for its side effects only (see Old.occurs)
   def map(f: Expr => Expr): Expr =
     this match
       case _: Var | _: Lit                      => this
@@ -40,7 +39,6 @@ object Expr:
     yield Var(Name(name, Some(index)), typ)
 
 case class Var(name: Name, typ: Type) extends Expr:
-  def subexprs = Nil
   def params = typ.params
   def free = Set(this)
 
@@ -57,7 +55,6 @@ case class Var(name: Name, typ: Type) extends Expr:
 object Var extends Counter
 
 case class Lit(value: Any, typ: Type) extends Expr:
-  def subexprs = Nil
   def params = typ.params
   def free = Set()
 
@@ -70,27 +67,23 @@ object App:
     App(fun, inst, typ, args)
 
 case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends Expr:
-  def subexprs = args
   def params = inst.params ++ args.params
   def free = args.free
 
 // pairwise distinctness of two or more expressions of the same type, n-ary as in SMT-LIB
 case class Distinct(exprs: List[Expr]) extends Expr:
-  def subexprs = exprs
   def params = exprs.params
   def free = exprs.free
   def typ = Sort.bool
 
 // whether `expr` is built by the constructor `fun` of a datatype
 case class Is(expr: Expr, fun: Fun) extends Expr:
-  def subexprs = List(expr)
   def params = expr.params
   def free = expr.free
   def typ = Sort.bool
 
 // explicit type annotation, e.g. for polymorphic constants
 case class As(expr: Expr, typ: Type) extends Expr:
-  def subexprs = List(expr)
   def params = expr.params ++ typ.params
   def free = expr.free
 
@@ -98,7 +91,6 @@ case class As(expr: Expr, typ: Type) extends Expr:
 // where the variables xs are ordinary free variables without primes, which are introduced only by computing
 // the derivative (see Simplify.diff); xs must be on Real
 case class Diff(xs: List[Var], expr: Expr) extends Expr:
-  def subexprs = List(expr)
   def params = xs.params ++ expr.params
   def free = expr.free ++ xs
   def typ = expr.typ
@@ -106,7 +98,6 @@ case class Diff(xs: List[Var], expr: Expr) extends Expr:
 // the value of `expr` at the entry of the enclosing procedure, where the global variables have their initial values,
 // eliminated by `Old.elim` before verification
 case class Old(expr: Expr) extends Expr:
-  def subexprs = List(expr)
   def params = expr.params
   def free = expr.free
   def typ = expr.typ
@@ -115,8 +106,15 @@ object Old:
   // whether `expr` refers to old values
   def occurs(expr: Expr): Boolean =
     expr match
-      case Old(_) => true
-      case _      => expr.subexprs.exists(occurs)
+      case Old(_) =>
+        true
+
+      case _ =>
+        var found = false
+        expr.map: arg =>
+          found ||= occurs(arg)
+          arg
+        found
 
   // replace old(e) by e[gs := gs_], where gs_ are the values of the global variables gs at the entry,
   // nested occurrences of old refer to the same values
@@ -140,7 +138,6 @@ object Old:
 case class Upd(cond: Expr, rhs: Expr):
   def params = cond.params ++ rhs.params
   def free = cond.free ++ rhs.free
-  def exprs = List(cond, rhs)
 
   def map(f: Expr => Expr) =
     Upd(f(cond), f(rhs))
@@ -149,7 +146,6 @@ case class Upd(cond: Expr, rhs: Expr):
 // starting from `init`, where each subsequent value is computed by the update from the previous one
 // and the corresponding values of the dependencies, one entry longer than the dependencies
 case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd]) extends Expr:
-  def subexprs = init :: deps ++ updates.exprs
   def params = init.params ++ deps.params ++ (acc :: bound).params ++ updates.params
   def free = init.free ++ deps.free ++ (updates.free -- (acc :: bound))
   def typ = Sort.trace(acc.typ)
@@ -157,7 +153,6 @@ case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updat
 // map(for deps yield bound ↦ update): the sequence of the results of the update for the values of the dependencies,
 // point-wise, which has the same length as the dependencies
 case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd]) extends Expr:
-  def subexprs = deps ++ updates.exprs
   def params = deps.params ++ bound.params ++ updates.params
   def free = deps.free ++ (updates.free -- bound)
 
@@ -166,19 +161,16 @@ case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd]) extends 
 
 // all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:
-  def subexprs = deps :+ body
   def params = deps.params ++ bound.params ++ body.params
   def free = deps.free ++ (body.free -- bound)
   def typ = Sort.bool
 
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
-  def subexprs = List(body)
   def params = bound.params ++ body.params
   def free = body.free -- bound
   def typ = body.typ
 
 case class Let(bound: List[Var], args: List[Expr], body: Expr) extends Expr:
-  def subexprs = args :+ body
   def params = bound.params ++ args.params ++ body.params
   def free = args.free ++ (body.free -- bound)
   def typ = body.typ
@@ -191,15 +183,12 @@ case class Case(pat: Expr, body: Expr, cond: Expr):
   def params = pat.params ++ body.params ++ cond.params
   def free = body.free ++ cond.free -- bound
 
-  // the pattern is not a subexpression, like the bound variables of binders
-  def exprs = List(body, cond)
-
+  // the pattern is kept, like the bound variables of binders
   def map(f: Expr => Expr) =
     Case(pat, f(body), f(cond))
 
 // the result of the first case whose pattern matches `arg` and whose condition holds
 case class Match(arg: Expr, cases: List[Case]) extends Expr:
-  def subexprs = arg :: cases.exprs
   def params = arg.params ++ cases.params
   def free = arg.free ++ cases.free
 

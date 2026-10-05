@@ -45,7 +45,13 @@ object Matching extends TestSuite:
     test("free"):
       expr.free ==> Set(ys, n, y)
       expr.typ ==> Sort.int
-      expr.subexprs ==> List(ys, n, True, Plus.int(x, y), Lt.int(x, n))
+
+      // the patterns are not visited
+      val visited = List.newBuilder[Expr]
+      expr.map: arg =>
+        visited += arg
+        arg
+      visited.result() ==> List(ys, n, True, Plus.int(x, y), Lt.int(x, n))
 
     // the variables of the patterns are not substituted, and renamed if they would capture
     test("substitution"):

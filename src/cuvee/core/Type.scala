@@ -391,10 +391,14 @@ object Type:
 
   // the applications of overloaded operators in `expr`, innermost first
   def overloaded(expr: Expr): List[App] =
-    val inner = expr.subexprs.flatMap(overloaded)
+    val inner = List.newBuilder[App]
+    expr.map: arg =>
+      inner ++= overloaded(arg)
+      arg
+
     expr match
-      case app @ App(fun, _, _, _) if Overload.isGeneric(fun) => inner :+ app
-      case _                                                  => inner
+      case app @ App(fun, _, _, _) if Overload.isGeneric(fun) => inner.result() :+ app
+      case _                                                  => inner.result()
 
   // apply the solution of the type constraints after resolving overloading,
   // all type parameters must be determined
