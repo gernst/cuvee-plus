@@ -724,5 +724,5 @@ object Simplify extends Transform:
   def invs(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], body: Expr): Expr =
     (deps, body) match
       case (_, True)          => True
-      case (dep :: _, False)  => Eq(App(Fun.trace.length, List(dep)), Zero.int)
+      case (dep :: _, False)  => Eq(Seqs.len(dep), Zero.int)
       case _                  => Invs(deps, bound, body)
