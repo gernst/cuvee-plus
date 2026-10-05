@@ -8,12 +8,12 @@ import cuvee.core._
 // a conditional rewrite rule lhs = rhs if cond, whose variables xs may be instantiated by arbitrary expressions
 // of the same type, and whose type parameters may be instantiated by arbitrary types;
 // the other free variables are constants, e.g. those of the facts of the context (see Ctx.assume)
-case class Rule(lhs: Expr, rhs: Expr, cond: Expr, xs: List[Var])
+case class Rule(xs: List[Var], lhs: Expr, rhs: Expr, cond: Expr)
 
 object Rule:
   // well-formedness of rules from the input, see Simplify.rules
   def check(rule: Rule): Rule =
-    val Rule(lhs, rhs, cond, xs) = rule
+    val Rule(xs, lhs, rhs, cond) = rule
 
     Error.report("variables of right hand side or condition do not occur in left hand side", rule):
       require(((rhs.free ++ cond.free) intersect xs.toSet) subsetOf lhs.free)

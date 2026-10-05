@@ -37,8 +37,8 @@ object Simplify extends Transform:
   def rules(cmds: List[Cmd]): List[Rule] =
     for case cmd @ Assert(_, _, phi, _) <- cmds if isRule(cmd)
     yield
-      val Rule(lhs, rhs, cond, xs) = rule(phi)
-      Rule.check(Rule(unannotated(lhs), rhs, cond, xs))
+      val Rule(xs, lhs, rhs, cond) = rule(phi)
+      Rule.check(Rule(xs, unannotated(lhs), rhs, cond))
 
   // type annotations e as T are dropped from the left-hand sides of rules, they are needed for typing only,
   // and matching would compare their types literally, which may contain the type parameters of the rule
@@ -60,20 +60,20 @@ object Simplify extends Transform:
         rule(xs ++ bound, body)
 
       case Imp(cond, body) =>
-        val Rule(lhs, rhs, cond_, _) = rule(xs, body)
-        Rule(lhs, rhs, if cond_ == True then cond else And(cond, cond_), xs)
+        val Rule(_, lhs, rhs, cond_) = rule(xs, body)
+        Rule(xs, lhs, rhs, if cond_ == True then cond else And(cond, cond_))
 
       case Eq(lhs, rhs) =>
-        Rule(lhs, rhs, True, xs)
+        Rule(xs, lhs, rhs, True)
 
       case Eqv(lhs, rhs) =>
-        Rule(lhs, rhs, True, xs)
+        Rule(xs, lhs, rhs, True)
 
       case Not(atom) =>
-        Rule(atom, False, True, xs)
+        Rule(xs, atom, False, True)
 
       case App(fun, _, _, _) if !connectives.contains(fun.name.name) =>
-        Rule(phi, True, True, xs)
+        Rule(xs, phi, True, True)
 
       case _ =>
         Error.raise("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom", phi)

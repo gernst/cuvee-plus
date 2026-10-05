@@ -12,7 +12,7 @@ import cuvee.simplify.{Rule, Rewrite}
 object TEQ extends TestSuite:
   // a rule whose variables are the free variables of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
-    Rule(lhs, rhs, cond, lhs.free.toList)
+    Rule(lhs.free.toList, lhs, rhs, cond)
 
   import Verify.expected
 

@@ -9,7 +9,7 @@ import cuvee.simplify.{Rule, Rewrite => R, Simplify, Ctx}
 object Rewrite extends TestSuite:
   // a rule whose variables are the free variables of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
-    Rule(lhs, rhs, cond, lhs.free.toList)
+    Rule(lhs.free.toList, lhs, rhs, cond)
 
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)
@@ -82,15 +82,15 @@ object Rewrite extends TestSuite:
     test("invalid rule"):
       val msg =
         try
-          Rule.check(Rule(app(f, x), y, True, List(x, y)))
+          Rule.check(Rule(List(x, y), app(f, x), y, True))
           "no error"
         catch case cuvee.Error(msg, _*) => msg
       msg ==> "variables of right hand side or condition do not occur in left hand side"
-      Rule.check(Rule(app(f, x), y, True, List(x)))
+      Rule.check(Rule(List(x), app(f, x), y, True))
 
     // constants of a rule are not instantiated
     test("constants"):
-      val rules = List(Rule(app(f, a), b, True, Nil))
+      val rules = List(Rule(Nil, app(f, a), b, True))
       R(rules, app(g, app(f, a))) ==> app(g, b)
       R(rules, app(f, b)) ==> app(f, b)
 
