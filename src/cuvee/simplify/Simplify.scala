@@ -140,11 +140,11 @@ object Simplify extends Transform:
         val attrs_ = simplify(config, state, ctx, attrs)
         iter(config, state, ctx, body_, attrs_)
 
-      case Ode(xs, rhs, dom, attrs) =>
+      case Ode(time, xs, rhs, dom, attrs) =>
         val rhs_ = rhs.map(simplify(config, state, ctx, _))
         val dom_ = simplify(config, state, ctx, dom)
         val attrs_ = simplify(config, state, ctx, attrs)
-        ode(config, state, ctx, xs, rhs_, dom_, attrs_)
+        ode(config, state, ctx, time, xs, rhs_, dom_, attrs_)
 
       case Par(calls) =>
         val calls_ =
@@ -221,8 +221,8 @@ object Simplify extends Transform:
   def iter(config: Config, state: State, ctx: Ctx, body: Prog, attrs: Attrs): Prog =
     Iter(body, attrs)
 
-  def ode(config: Config, state: State, ctx: Ctx, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): Prog =
-    Ode(xs, rhs, dom, attrs)
+  def ode(config: Config, state: State, ctx: Ctx, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): Prog =
+    Ode(time, xs, rhs, dom, attrs)
 
   def par(config: Config, state: State, ctx: Ctx, calls: List[Call]): Prog =
     Par(calls)

@@ -394,8 +394,8 @@ object Printer extends cuvee.pipe.Printer:
         header(text("while") ++ attributes(attrs) +:+ text("*"), attrs, Some(block(body)))
 
       // the right hand sides bind tighter than the conjunction with the evolution constraint
-      case Ode(xs, rhs, dom, attrs) =>
-        val lhs_ = commas(xs.map(x => text(name(x.name) + "'")))
+      case Ode(time, xs, rhs, dom, attrs) =>
+        val lhs_ = text("ode") +:+ text(name(time.name)) +:+ text("::") +:+ commas(xs.map(x => text(name(x.name) + "'")))
         val rhs_ = commas(rhs.map(doc(_, (Grammar.infix_ops("&&")._2, None))))
         val dom_ = if dom == True then Nil else List(line ++ text("&&") +:+ doc(dom))
         val ode = Group(lhs_ +:+ text("==") ++ Nest(2, line ++ rhs_ ++ concat(dom_)))

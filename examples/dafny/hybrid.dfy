@@ -1,4 +1,4 @@
-// hybrid programs: nondeterministic iterations, differential equations with evolution constraints and
+// hybrid programs: nondeterministic iterations, differential equations over a local time t with evolution constraints and
 // differential invariants, and derivatives (x, y :: e)' of e with respect to x and y, which are on real
 
 // a bouncing ball at height x with velocity v under gravity g
@@ -9,7 +9,7 @@ method ball(g: real, h: real) returns (x: real, v: real)
   while *
     invariant 0.0 <= x && 2.0 * g * x + v * v <= 2.0 * g * h
   {
-    x', v' == v, -g && 0.0 <= x
+    ode t :: x', v' == v, -g && 0.0 <= x
       invariant 2.0 * g * x + v * v <= 2.0 * g * h;
     if x == 0.0 {
       v := -v;
@@ -22,6 +22,6 @@ method energy(g: real, h: real) returns (e: real)
 {
   var x: real, v: real;
   x, v := h, 0.0;
-  x', v' == v, -g;
+  ode t :: x', v' == v, -g;
   e := (x, v :: 2.0 * g * x + v * v)';
 }

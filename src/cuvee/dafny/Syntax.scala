@@ -97,8 +97,8 @@ case class Block(locals: List[Local], progs: List[Prog]) extends Prog
 case class If(test: Option[Expr], left: Prog, right: Prog) extends Prog
 // the test is None for nondeterministic iterations, while * { body }
 case class While(test: Option[Expr], invs: List[Expr], dec: List[List[Expr]], body: Prog) extends Prog
-// differential equations x', y' == e, f && dom invariant ..., the variables are without prime
-case class Ode(xs: List[String], rhs: List[Expr], dom: Option[Expr], invs: List[Expr]) extends Prog
+// differential equations ode t :: x', y' == e, f && dom invariant ..., the variables are without prime
+case class Ode(time: String, xs: List[String], rhs: List[Expr], dom: Option[Expr], invs: List[Expr]) extends Prog
 
 // local variable declarations with optional initial values, var x: int, y: int := 1, 2;
 case class Local(vars: List[(String, Type)], init: Option[List[Expr]])
@@ -110,7 +110,7 @@ object Assign extends ((List[String], List[Expr]) => Prog)
 object Block extends ((List[Local], List[Prog]) => Prog)
 object If extends ((Option[Expr], Prog, Prog) => Prog)
 object While extends ((Option[Expr], List[Expr], List[List[Expr]], Prog) => Prog)
-object Ode extends ((List[String], List[Expr], Option[Expr], List[Expr]) => Prog)
+object Ode extends ((String, List[String], List[Expr], Option[Expr], List[Expr]) => Prog)
 
 // parallel composition of calls, parallel { p(a); x := q(b); }
 case class Par(calls: List[Prog]) extends Prog

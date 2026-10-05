@@ -238,7 +238,7 @@ object TEQ extends Transform:
 
   // the variables modified by a loop body, including the global variables modified by calls
   def modified(state: State, body: Prog): List[Var] =
-    (body.mod ++ Verify.calls(body).flatMap(call => state.procattrs(call.proc).modifies)).toList.distinct
+    (body.mod ++ Verify.calls(state, body).flatMap(call => state.procattrs(call.proc).modifies)).toList.distinct
 
   // the trace equation system of a loop and the paths that leave it, which summarize all paths through the loop:
   // the iterations take the paths through the body that end normally or by continue,

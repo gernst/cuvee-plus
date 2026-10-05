@@ -29,9 +29,10 @@ object Hybrid extends TestSuite:
         List("derivative with respect to variables that are not real")
 
     test("differential equations"):
-      errors("method m(g: real) returns (x: real) { x' == g; }") ==> Nil
-      errors("method m(g: int) returns (x: int) { x' == g; }") ==>
+      errors("method m(g: real) returns (x: real) { ode t :: x' == g + t; }") ==> Nil
+      errors("method m(g: int) returns (x: int) { ode t :: x' == g; }") ==>
         List("differential equations for variables that are not real")
+      errors("method m(g: int) returns (x: real) { ode t :: x' == t + g; }") ==> List("type mismatch")
 
     test("parallel"):
       errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(2); } }") ==> Nil

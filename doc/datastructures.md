@@ -141,7 +141,7 @@ case class Choice(progs: List[Prog])                    // nondeterministic choi
 case class If(test: Expr, left: Prog, right: Prog)
 case class While(test: Expr, body: Prog, attrs: Attrs)  // invariant, decreases, modifies
 case class Iter(body: Prog, attrs: Attrs)               // while * { body }
-case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs)
+case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs)
 case class Par(calls: List[Call])                       // parallel composition of calls
 ```
 
@@ -151,7 +151,7 @@ case class Par(calls: List[Call])                       // parallel composition 
   calls are not included; they come from the callee's `modifies` attribute.
 - **`free`** includes the variables in the attributes, e.g. in loop
   invariants.
-- **`Ode`**, **`Iter`**, **`Par`**, `Send`, and `Recv` are hybrid programs and
+- **`Ode`**, **`Iter`**, **`Par`**, `Send`, `Recv`, and `Tick` are hybrid programs and
   parallel composition, see [hybrid.md](hybrid.md).
 
 ```scala

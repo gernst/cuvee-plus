@@ -115,7 +115,7 @@ object Verify extends Transform:
         val su = Subst.from(xs, rhs)
         su(post)
 
-      // send and receive assert the commitment of the enclosing procedure for the extended history
+      // send, receive, and tick assert the commitment of the enclosing procedure for the extended history
       // and assume it afterwards, i.e., the commitment must hold in addition to `post` after the call;
       // communication is joint, the event of a receive is that of the matching send of another process,
       // hence the commitment is made first also after receiving, since a commitment must always be made
@@ -124,6 +124,9 @@ object Verify extends Transform:
         this.call(state, proc, call, And(commit, post))
 
       case Recv(call) =>
+        this.call(state, proc, call, And(commit, post))
+
+      case Tick(call) =>
         this.call(state, proc, call, And(commit, post))
 
       case call: Call =>
@@ -149,8 +152,16 @@ object Verify extends Transform:
       case Iter(body, attrs) =>
         loop(state, gs, proc, assume, commit, None, body, attrs, post, return_)
 
-      case Ode(xs, rhs, dom, attrs) =>
-        ode(xs, rhs, dom, attrs.invariants, post)
+      // the time starts at 0 and evolves along with the variables, with derivative 1, hence it stays nonnegative,
+      // afterwards the history, if any, ticks by the time that has passed (see Tick)
+      case Ode(time, xs, rhs, dom, attrs) =>
+        val t = time.fresh
+        val su = Subst.from(List(time), List(t))
+        val after = tick(state, t) match
+          case Some(call) => wp(state, gs, proc, assume, commit, call, post, break, continue, return_)
+          case None       => post
+        val phi = ode(t :: xs, One.real :: su(rhs), And(Le.real(Zero.real, t), su(dom)), attrs.invariants.map(su(_)), after)
+        Subst.from(List(t), List(Zero.real))(phi)
 
       // the parallel composition relies on the assumption of the enclosing procedure
       // and must establish its commitment (see par)
@@ -266,18 +277,24 @@ object Verify extends Transform:
         val cut = All(xs_ ++ dxs_, Imp(evolve, Diff(xs_, su(inv))))
         And(List(inv, cut, ode(xs, rhs, And(dom, inv), rest, post)))
 
-  // the calls in a program, also inside of nested loops
-  def calls(prog: Prog): List[Call] =
+  // the tick of the history by the time that has passed in a differential equation, if the history is declared
+  def tick(state: State, time: Var): Option[Call] =
+    for h <- state.vars.get("history")
+    yield Call(Tick.name, List(h, time), List(h))
+
+  // the calls in a program, also inside of nested loops, and the ticks of differential equations
+  def calls(state: State, prog: Prog): List[Call] =
     prog match
-      case call: Call => List(call)
-      case _          => prog.subprogs.flatMap(this.calls)
+      case call: Call            => List(call)
+      case Ode(time, _, _, _, _) => tick(state, time).toList
+      case _                     => prog.subprogs.flatMap(calls(state, _))
 
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
   def loop(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
     val inv = attrs.invariant
-    // calls in the body modify the global variables in the modifies attributes of the procedures they call,
-    // and in the modifies attribute of the loop, if any
-    val xs = (body.mod ++ attrs.modifies ++ calls(body).flatMap(call => state.procattrs(call.proc).modifies)).toList.distinct
+    // calls in the body modify their results and the global variables in the modifies attributes of the procedures
+    // they call, the ticks of differential equations the history, and so does the modifies attribute of the loop
+    val xs = (body.mod ++ attrs.modifies ++ calls(state, body).flatMap(call => call.res ++ state.procattrs(call.proc).modifies)).toList.distinct
 
     // the measure must decrease from the start to the end of each iteration, i.e., also on continue,
     // its values at the start are the fresh variables ms, which are replaced by the measure afterwards

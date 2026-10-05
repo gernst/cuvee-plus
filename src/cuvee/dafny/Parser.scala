@@ -668,13 +668,16 @@ class Parser(var state: State):
         state.progs.par(calls_)
 
       // the evolution constraint defaults to true
-      case Ode(xs, rhs, dom, invs) =>
+      // the time is bound on real in the right hand sides, the evolution constraint, and the invariants
+      case Ode(time, xs, rhs, dom, invs) =>
         val unknown = xs.filterNot(scope.vars.contains(_))
         Error.report("unknown local variables", scope, unknown, xs):
           require(unknown.isEmpty)
 
+        val time_ = core.Var(time, core.Sort.real)
+        val scope_ = scope ++ List(time_)
         val xs_ = xs.map(scope.vars(_))
-        val rhs_ = rhs.map(resolve(scope, _))
-        val dom_ = dom.map(resolve(scope, _)).getOrElse(core.True)
-        val attrs_ = invariants(scope, invs, Nil)
-        state.progs.ode(xs_, rhs_, dom_, attrs_)
+        val rhs_ = rhs.map(resolve(scope_, _))
+        val dom_ = dom.map(resolve(scope_, _)).getOrElse(core.True)
+        val attrs_ = invariants(scope_, invs, Nil)
+        state.progs.ode(time_, xs_, rhs_, dom_, attrs_)

@@ -384,10 +384,10 @@ case class State(
     def iter(body: Prog, attrs: Attrs) =
       Iter(body, attrs)
 
-    def ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) =
+    def ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) =
       Error.report("mismatching differential equations", xs, rhs):
         require(xs.length == rhs.length)
-      Ode(xs, rhs, dom, attrs)
+      Ode(time, xs, rhs, dom, attrs)
 
     def par(calls: List[Call]) =
       Par(calls)

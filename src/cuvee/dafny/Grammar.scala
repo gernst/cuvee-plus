@@ -343,10 +343,10 @@ object Grammar:
   val eq = sym.filter(_ == "==").asScanner
   val and = sym.filter(_ == "&&").asScanner
 
-  // backtracks if there is no prime after the first variable, which is then an assignment or call statement;
+  // the keyword ode and the time avoid backtracking against assignments and calls;
   // the right hand sides bind tighter than the conjunction with the evolution constraint
   val ode =
-    Ode(P(((id ?~ prime) ~+ ",") ~ eq ~ (term ~+ ",") ~ (and ~ expr).? ~ invariant.* ~ ";"))
+    Ode(P("ode" ~ id ~ "::" ~ ((id ~ prime) ~+ ",") ~ eq ~ (term ~+ ",") ~ (and ~ expr).? ~ invariant.* ~ ";"))
 
   val par =
     Par(P("parallel" ~ braces((assign | call).*)))

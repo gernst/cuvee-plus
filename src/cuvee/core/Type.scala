@@ -517,11 +517,11 @@ object Type:
         val body_ = check(state, scope, fixed, body, true)
         Iter(body_, attrs)
 
-      // differential equations are on Real only, like derivatives
-      case Ode(xs, rhs, dom, attrs) =>
+      // differential equations are on Real only, like derivatives, and so is the time
+      case Ode(time, xs, rhs, dom, attrs) =>
         assignable(fixed, xs)
 
-        val wrong = xs.filterNot(x => unfold(state, x.typ) == Sort.real)
+        val wrong = (time :: xs).filterNot(x => unfold(state, x.typ) == Sort.real)
         Error.report("differential equations for variables that are not real", wrong):
           require(wrong.isEmpty)
 
@@ -533,7 +533,7 @@ object Type:
           yield check(state, scope, e, x.typ)
 
         val dom_ = formula(state, scope, dom)
-        Ode(xs, rhs_, dom_, attrs)
+        Ode(time, xs, rhs_, dom_, attrs)
 
       case Par(calls) =>
         val shared = Par.shared(state, calls)

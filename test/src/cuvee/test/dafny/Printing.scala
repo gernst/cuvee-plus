@@ -47,10 +47,11 @@ object Printing extends TestSuite:
     test("ode"):
       val dom = app(Fun.int.le, zero, x)
       val inv = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
-      Printer.lines(Ode(List(x, y), List(y, app(Fun.int.uminus, x)), True, cuvee.core.Attrs.empty)) ==>
-        List("x', y' == y, -x;")
-      Printer.lines(Ode(List(p), List(app(Fun.and, p, q)), dom, inv)) ==>
-        List("p' == (p && q) && 0 <= x", "  invariant x <= y;")
+      val t = Var("t", Sort.real)
+      Printer.lines(Ode(t, List(x, y), List(y, app(Fun.int.uminus, x)), True, cuvee.core.Attrs.empty)) ==>
+        List("ode t :: x', y' == y, -x;")
+      Printer.lines(Ode(t, List(p), List(app(Fun.and, p, q)), dom, inv)) ==>
+        List("ode t :: p' == (p && q) && 0 <= x", "  invariant x <= y;")
 
     test("diff"):
       expr(Diff(List(x), x)) ==> "(x :: x)'"

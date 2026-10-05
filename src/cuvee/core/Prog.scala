@@ -27,17 +27,17 @@ sealed trait Prog:
   // point-wise, where the assigned and local variables are kept
   def map(e: Expr => Expr, p: Prog => Prog): Prog =
     this match
-      case Break | Continue | Return => this
-      case Spec(xs, pre, post)       => Spec(xs, e(pre), e(post))
-      case Assign(xs, rhs)           => Assign(xs, rhs.map(e))
-      case Call(proc, args, res)     => Call(proc, args.map(e), res)
-      case Block(locals, progs)      => Block(locals, progs.map(p))
-      case Choice(progs)             => Choice(progs.map(p))
-      case If(test, left, right)     => If(e(test), p(left), p(right))
-      case While(test, body, attrs)  => While(e(test), p(body), attrs.map(e))
-      case Iter(body, attrs)         => Iter(p(body), attrs.map(e))
-      case Ode(xs, rhs, dom, attrs)  => Ode(xs, rhs.map(e), e(dom), attrs.map(e))
-      case Par(calls)                => Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(e), res))
+      case Break | Continue | Return   => this
+      case Spec(xs, pre, post)         => Spec(xs, e(pre), e(post))
+      case Assign(xs, rhs)             => Assign(xs, rhs.map(e))
+      case Call(proc, args, res)       => Call(proc, args.map(e), res)
+      case Block(locals, progs)        => Block(locals, progs.map(p))
+      case Choice(progs)               => Choice(progs.map(p))
+      case If(test, left, right)       => If(e(test), p(left), p(right))
+      case While(test, body, attrs)    => While(e(test), p(body), attrs.map(e))
+      case Iter(body, attrs)           => Iter(p(body), attrs.map(e))
+      case Ode(t, xs, rhs, dom, attrs) => Ode(t, xs, rhs.map(e), e(dom), attrs.map(e))
+      case Par(calls)                  => Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(e), res))
 
 case object Break extends Prog:
   def mod = Set()
@@ -108,10 +108,11 @@ case class Iter(body: Prog, attrs: Attrs) extends Prog:
 // a system of ordinary differential equations x' = e for x in xs and e in rhs,
 // which evolves for some time within the domain `dom`, the evolution constraint,
 // as the continuous evolution of hybrid programs in dL, {x' = e, y' = f & dom},
-// the attributes are e.g. differential invariants, as the invariants of loops; xs must be on Real
-case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) extends Prog:
+// the attributes are e.g. differential invariants, as the invariants of loops;
+// the time is bound by the evolution, which starts at 0 and has derivative 1, time and xs must be on Real
+case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs) extends Prog:
   def mod = Set(xs*)
-  def free = rhs.free ++ dom.free ++ xs ++ attrs.free
+  def free = rhs.free ++ dom.free ++ attrs.free - time ++ xs
 
 // parallel composition of calls to procedures, whose assumption-commitment contracts
 // over the global history of events are in their attributes, "assumes" and "commits";
@@ -139,8 +140,8 @@ object Par:
 
     pairs.flatten.toSet
 
-// calls h_ := h.send(c, v) and x, h_ := h.receive(c) of the methods of the type history (see hybrid.dfy),
-// which return the history extended by an event, where the enclosing procedure must keep its commitment
+// calls h_ := h.send(c, v), x, h_ := h.receive(c), and h_ := h.tick(t) of the methods of the type history
+// (see hybrid.dfy), which return the history extended by an event, where the enclosing procedure must keep its commitment
 object Send:
   val name = Name("history_send", None)
 
@@ -156,3 +157,11 @@ object Recv:
     prog match
       case call @ Call(`name`, List(_, _), List(_, _)) => Some(call)
       case _                                         => None
+
+object Tick:
+  val name = Name("history_tick", None)
+
+  def unapply(prog: Prog): Option[Call] =
+    prog match
+      case call @ Call(`name`, List(_, _), List(_)) => Some(call)
+      case _                                      => None

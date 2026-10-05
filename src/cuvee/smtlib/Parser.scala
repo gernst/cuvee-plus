@@ -456,9 +456,12 @@ class Parser(private var init: State):
       case List(Id("iter"), body, attrs*) =>
         state.progs.iter(prog(scope, body), contract(scope, attrs.toList))
 
-      case List(Id("ode"), List(pairs*), dom, attrs*) =>
-        val (xs, rhs) = assignments(scope, pairs)
-        state.progs.ode(xs, rhs, expr(scope, dom), contract(scope, attrs.toList))
+      // the time is bound on Real
+      case List(Id("ode"), Id(time), List(pairs*), dom, attrs*) =>
+        val time_ = Var(time, Sort.real)
+        val scope_ = scope ++ List(time_)
+        val (xs, rhs) = assignments(scope_, pairs)
+        state.progs.ode(time_, xs, rhs, expr(scope_, dom), contract(scope_, attrs.toList))
 
       case List(Id("par"), calls*) =>
         val calls_ =

@@ -36,8 +36,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   replaces the new values and strips `old(e)` would avoid them, but needs its
   own capture-avoiding handling of binders; `Subst` must not get a special
   case for this.
-- `send`, `receive`, and the history are recognized by their names
-  (`history_send`, `history_receive`, the global variable `history`).
+- `send`, `receive`, `tick`, and the history are recognized by their names
+  (`history_send`, `history_receive`, `history_tick`, the global variable
+  `history`).
 - Warnings: the implicit conversion `String => Name` without
   `-language:implicitConversions`; two deprecations for `Long + String` in
   [smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala).
@@ -169,7 +170,7 @@ simplifier rules; widths cannot be parameters.
 
 - `Horn` rejects `parallel` and ignores assumptions and commitments.
 - Sequential calls neither establish the callee's assumption nor guarantee
-  its commitment (unsound); commitments are checked only at `send`/`receive`
+  its commitment (unsound); commitments are checked only at `send`/`receive`/`tick`
   directly in the body.
 - The type of histories with `send` and `receive` comes from `-hybrid`
   ([hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)); the input declares the
@@ -178,9 +179,10 @@ simplifier rules; widths cannot be parameters.
 - Only calls can be composed.
 - Events are `message(chan, value)` or `time(time: real)`
   ([hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)); `send` and `receive`
-  produce messages, `tick` time events by `delay`; neither `tick` nor `delay`
-  has a test yet, and the verifier does not recognize `tick` (unlike `Send`
-  and `Recv`), so it does not assert the enclosing commitment.
+  produce messages, `tick` (`Tick`) time events by `delay`, also implicitly
+  after each `ode` in `Verify`; neither `tick` nor `delay` has a test yet.
+  The implicit tick modifies the history, which is not checked against the
+  modifies clause of the method.
 - `project(c, h)` (the values of the messages on `c`) is polymorphic with
   polymorphic axioms, which solvers are not expected to handle; the tests of
   hybrid programs (`VerifyHybrid`) therefore only generate the

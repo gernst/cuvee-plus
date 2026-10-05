@@ -31,7 +31,7 @@ dec  = {num} "." [0-9]+
 kw  = "function" | "predicate" | "axiom" | "lemma" | "goal" | "const" | "datatype" | "type" | "method"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "while" | "if" | "then" | "else" | "assert" | "assume" | "var"
-    | "forall" | "exists" | "break" | "continue" | "return" | "parallel" | "as" | "assumes" | "commits"
+    | "forall" | "exists" | "break" | "continue" | "return" | "parallel" | "as" | "assumes" | "commits" | "ode"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "|" | "." | ".." | "⌊" | "⌋"
 
 sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*

@@ -398,7 +398,7 @@ object Printer extends cuvee.pipe.Printer:
       case Iter(body, attrs) =>
         loop(text("(*)"), body, attrs)
 
-      case Ode(_, _, _, _) =>
+      case Ode(_, _, _, _, _) =>
         Error.raise("differential equations not supported in Boogie", prog)
 
       case Par(_) =>

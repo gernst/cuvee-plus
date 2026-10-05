@@ -21,23 +21,26 @@ and nothing for `t == 0`. `history.tick(t)` extends the history by
 | Construct | Dafny frontend | dL |
 |---|---|---|
 | derivative | `(x, v :: 2.0 * g * x + v * v)'` | `(2 g x + v²)'` |
-| differential equation | `x', v' == v, -g && 0.0 <= x invariant φ;` | `{x' = v, v' = -g & 0 ≤ x}` |
+| differential equation | `ode t :: x', v' == v, -g && 0.0 <= x invariant φ;` | `{t' = 1, x' = v, v' = -g & 0 ≤ x}` |
 | iteration | `while * invariant φ { body }` | `body*` |
 | parallel composition | `parallel { x := p(a); q(b); }` | |
 | contracts | `assumes φ` and `commits ψ` after `ensures` | |
 
-- A differential equation is a statement: the primed variables, `==`, the
-  right-hand sides in the same order, optionally `&&` and the evolution
-  constraint, then the differential invariants, and a semicolon, e.g.
+- A differential equation is a statement: the keyword `ode`, the time
+  variable, `::`, the primed variables, `==`, the right-hand sides in the
+  same order, optionally `&&` and the evolution constraint, then the
+  differential invariants, and a semicolon, e.g.
 
   ```dafny
-  x', v' == v, -g && 0.0 <= x
+  ode t :: x', v' == v, -g && 0.0 <= x
     invariant 2.0 * g * x + v * v <= 2.0 * g * h;
   ```
 
-  The right-hand sides bind tighter than `&&`, so the constraint is not part
-  of the last one. Without a prime after the first variable, the statement
-  is an assignment or a call instead.
+  The time `t` is bound by `ode` on `real` (it is not declared), and
+  available in the right-hand sides, the constraint, and the invariants. The
+  right-hand sides bind tighter than `&&`, so the constraint is not part of
+  the last one. The keyword avoids backtracking against assignments and
+  calls.
 - `while *` is a loop with a nondeterministic number of iterations; `if *`
   is a nondeterministic choice.
 - In a derivative `(xs :: e)'`, the variables `xs` are those that `e` is
@@ -61,17 +64,23 @@ case class Diff(xs: List[Var], expr: Expr)     // derivative (xs :: expr)'
 ## Differential equations
 
 ```scala
-case class Ode(xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs)
+case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs)
 case class Iter(body: Prog, attrs: Attrs)               // while * { body }
 ```
 
 - `Ode` is the system `x' = e` for `x` in `xs` with the evolution constraint
   `dom` (`True` if there is none). Its `invariant` attributes are the
-  differential invariants. The variables are on `Real`.
+  differential invariants. The variables are on `Real`. The time is a bound
+  variable on `Real` (renamed by `Subst` like those of binders), neither free
+  nor modified. In SMT-LIB, it is `(ode t ((x e) ...) dom attrs)`.
 - `Iter` is the repetition of dL, a loop with a nondeterministic number of
   iterations.
 - `Verify` proves an `Ode` by differential cuts with its invariants, then
-  weakening; the derivatives of the invariants must be simplified
+  weakening, where the time starts at `0.0` and evolves with `time' = 1`
+  within `0 <= time`. Afterwards, if the global `history` is declared, it
+  ticks by the time that has passed, `history := history.tick(time)`
+  (`Verify.tick`), which asserts the enclosing commitment like `Tick`; loops
+  around an `Ode` therefore modify the history; the derivatives of the invariants must be simplified
   (`-simplify`) before the goals can be passed to a solver.
 
 ## Parallel composition
@@ -85,10 +94,11 @@ case class Par(calls: List[Call])                       // parallel composition 
   (`State.history`), whose events are `history.events`.
 - The calls must not share modified variables other than the history
   (`Par.shared`).
-- `history := history.send(c, v)` and `x, history := history.receive(c)`
-  call the methods of the datatype, i.e. the procedures `history_send` and
-  `history_receive` with the history as first argument, which return the
-  extended history as an additional result. `Send` and `Recv` recognize
+- `history := history.send(c, v)`, `x, history := history.receive(c)`, and
+  `history := history.tick(t)` call the methods of the datatype, i.e. the
+  procedures `history_send`, `history_receive`, and `history_tick` with the
+  history as first argument, which return the extended history as an
+  additional result. `Send`, `Recv`, and `Tick` recognize
   these calls; in `Verify`, each one asserts the enclosing procedure's
   commitment for the extended history and then assumes it. Calls to
   polymorphic procedures instantiate their contracts by the types of the
