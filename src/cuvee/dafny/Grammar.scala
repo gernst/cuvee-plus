@@ -385,6 +385,10 @@ object Grammar:
   val datadef =
     DataDef(P("datatype" ~ annotation.* ~ id ~ params ~ "=" ~ constrs ~ sortimpl.?))
 
+  // a run of consecutive datatypes, which the parser resolves together
+  val datadefs =
+    P(datadef.+).map(DataDefs(_))
+
   val constdef =
     FunDef(P("const" ~ annotation.* ~ id ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ nil ~ (":=" ~ expr).?))
 
@@ -439,7 +443,7 @@ object Grammar:
     Check(word("check").asScanner)
 
   val cmd: Parser[Cmd] =
-    P(sortdef | datadef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check)
+    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check)
 
   val script =
     P(cmd.*)

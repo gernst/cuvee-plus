@@ -198,6 +198,13 @@ sealed trait Ctrl extends Cmd     // Push, Pop, Reset, Exit, Done
   (`data Stack<a> = empty | push(top: a, pop: Stack<a>);`, not Boogie),
   does not, since it has no member access, so its selectors are unique
   functions as in SMT-LIB.
+- Mutually recursive datatypes are one `DeclareDatatypes`, as in SMT-LIB.
+  Boogie joins them by `and` in one `data` command,
+  `data Tree<a> = ... and Forest<a> = ...;`. Dafny reads a run of
+  consecutive `datatype` declarations together, which may refer to each
+  other and to later ones, and declares each strongly connected component
+  as one group, after those that it refers to (`Parser.groups`); its
+  printer writes the datatypes of a group one after another.
 - `Done` is internal: it marks the end of the input, so that the stages
   flush.
 - Results:

@@ -113,7 +113,9 @@ case class Axiom(params: List[String], attrs: List[Attr], phi: Expr) extends Cmd
 case class Lemma(params: List[String], attrs: List[Attr], phi: Expr) extends Cmd
 case class SortDef(attrs: List[Attr], name: String, params: List[String], alias: Option[Type]) extends Cmd
 // not part of Boogie, datatypes as in Dafny, data List<a> = nil | cons(head: a, tail: List<a>);
-case class DataDef(attrs: List[Attr], name: String, params: List[String], constrs: List[Constr]) extends Cmd
+// mutually recursive ones are joined by and, data Tree<a> = ... and Forest<a> = ...;
+case class DataDef(attrs: List[Attr], datas: List[Data]) extends Cmd
+case class Data(name: String, params: List[String], constrs: List[Constr])
 case class ConstDef(attrs: List[Attr], consts: List[(String, Type)]) extends Cmd
 case class VarDef(attrs: List[Attr], vars: List[(String, Type)]) extends Cmd
 
@@ -139,7 +141,8 @@ case class ProcDef(
 object Axiom extends ((List[String], List[Attr], Expr) => Cmd)
 object Lemma extends ((List[String], List[Attr], Expr) => Cmd)
 object SortDef extends ((List[Attr], String, List[String], Option[Type]) => Cmd)
-object DataDef extends ((List[Attr], String, List[String], List[Constr]) => Cmd)
+object DataDef extends ((List[Attr], List[Data]) => Cmd)
+object Data extends ((String, List[String], List[Constr]) => Data)
 
 // the constructors of datatypes and their selectors
 case class Sel(name: String, typ: Type)

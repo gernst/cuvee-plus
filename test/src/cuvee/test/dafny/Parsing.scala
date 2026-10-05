@@ -253,3 +253,15 @@ object Semicolons extends TestSuite:
     test("commands"):
       cuvee.dafny.Printer.lines(cuvee.core.Push(1)).head ==> "push 1"
       cuvee.dafny.Printer.lines(cuvee.core.GetModel).head ==> "model"
+
+// consecutive datatypes are declared by groups of mutually recursive ones, each after those that it refers to
+object MutualDatatypes extends TestSuite:
+  val tests = Tests:
+    test("groups"):
+      val file = Examples.root / "dafny" / "mutual.dfy"
+      val (cmds, errors) = Examples.output("-print", "null", file.toString)
+      errors ==> Nil
+      val groups =
+        cmds.collect { case cuvee.core.DeclareDatatypes(cons, _, _) => cons.map(_.name.name) }
+          .filterNot(_.exists(_.startsWith("tuple")))
+      groups ==> List(List("Tree", "Forest"), List("Box"))

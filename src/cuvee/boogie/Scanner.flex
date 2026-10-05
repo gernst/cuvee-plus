@@ -28,7 +28,7 @@ ws = {nl} | [ \t\f]
 num  = [0-9]+
 dec  = {num} "." [0-9]+
 
-kw  = "type" | "data" | "const" | "function" | "axiom" | "lemma" | "var" | "procedure"
+kw  = "type" | "data" | "and" | "const" | "function" | "axiom" | "lemma" | "var" | "procedure"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "if" | "then" | "else" | "while" | "break" | "continue" | "return"
     | "assert" | "assume" | "havoc" | "call" | "forall" | "exists"

@@ -297,8 +297,12 @@ object Grammar:
   val constr =
     Constr(P(id ~ sels))
 
+  val data =
+    Data(P(id ~ params ~ "=" ~ (constr ~+ "|")))
+
+  // mutually recursive datatypes are joined by and, like the single command of SMT-LIB
   val datadef =
-    DataDef(P("data" ~ attrs ~ id ~ params ~ "=" ~ (constr ~+ "|") ~ ";"))
+    DataDef(P("data" ~ attrs ~ (data ~+ "and") ~ ";"))
 
   val constdef =
     ConstDef(P("const" ~ attrs ~ typed ~ ";"))

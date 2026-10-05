@@ -11,6 +11,68 @@ import cuvee.core.Attrs
 class Parser(var state: State):
   // val attrs_ = Attrs.empty
 
+  // the constructors and selectors of a datatype whose sort is declared already
+  def datatype(data: DataDef) =
+    val DataDef(_, name, params, constrs, _) = data
+    val scope = Scope.empty
+    val params_ = params.map(resolve(scope, _))
+    val scope_ = scope ++ params_
+    val sort_ = state.types.sort(name, params_)
+
+    val constrs_ =
+      for Constr(constr, sels) <- constrs
+      yield
+        val sels_ =
+          for Sel(sel, arg) <- sels
+          yield
+            // selectors are qualified with the datatype like members, e.g. pair_fst,
+            // such that datatypes may have selectors of the same name, e.g. the components 0, 1, ... of tuples
+            val qname = name + "_" + sel
+            val typ_ = resolve(scope_, arg)
+            val this_ = state.exprs.formal("this", sort_)
+            state = state.declare(qname, params_, List(this_), typ_, Attrs.empty)
+            state.funs(qname, 1)
+
+        // the formal parameters of constructors are named after the selectors
+        val formals_ =
+          for sel_ <- sels_
+          yield state.exprs.formal(sel_.name, sel_.res)
+
+        state = state.declare(constr, params_, formals_, sort_, Attrs.empty)
+        (state.funs((constr, formals_.length)), sels_)
+
+    state = state.define(name, core.Datatype(params_, constrs_))
+
+  // the strongly connected components of the datatypes `names` by the sorts of their selectors,
+  // each after those that it refers to, and otherwise in the given order
+  def groups(names: List[Name]): List[List[Name]] =
+    val refs =
+      names.map: name =>
+        val core.Datatype(_, constrs) = state.datatypes(name)
+        val cons = constrs.flatMap(_._2).flatMap(_.res.cons).map(_.name).toSet
+        name -> names.filter(cons.contains).toSet
+      .toMap
+
+    // the datatypes reachable from each one
+    def reach(todo: List[Name], seen: Set[Name]): Set[Name] =
+      todo match
+        case Nil                         => seen
+        case n :: rest if seen contains n => reach(rest, seen)
+        case n :: rest                   => reach(refs(n).toList ++ rest, seen + n)
+
+    val reachable = names.map(n => n -> reach(refs(n).toList, Set())).toMap
+    val components = names.map(n => names.filter(m => m == n || reachable(n)(m) && reachable(m)(n))).distinct
+
+    def order(todo: List[List[Name]], done: List[List[Name]]): List[List[Name]] =
+      todo match
+        case Nil => done
+        case _ =>
+          val emitted = done.flatten.toSet
+          val next = todo.find(c => c.forall(n => (reachable(n) -- c).subsetOf(emitted))).get
+          order(todo.filterNot(_ == next), done :+ next)
+
+    order(components, Nil)
+
   // type checking resolves the overloaded operators, see core.Overload
   def check(scope: Scope, expr: core.Expr, typ: core.Type): core.Expr =
     state.exprs.check(scope, expr, typ)
@@ -87,63 +149,30 @@ class Parser(var state: State):
 
             decl :: cmds_
 
-      case DataDef(attrs, name, params, constrs, impl) =>
-        val scope = Scope.empty
-        val params_ = params.map(resolve(scope, _))
-        val scope_ = scope ++ params_
+      // the sorts of consecutive datatypes are declared first, such that the constructors may refer to all of them,
+      // then each group of mutually recursive datatypes is declared together, those that it refers to first,
+      // followed by the members of all of them
+      case DataDefs(datas) =>
+        for DataDef(attrs, name, params, _, _) <- datas
+        do state = state.declare(name, params.length, Attrs(attrs.map(_ -> None)))
 
-        val arity_ = params.length
-        state = state.declare(name, arity_, Attrs(attrs.map(_ -> None)))
+        for data <- datas
+        do datatype(data)
 
-        val sort_ = state.types.sort(name, params_)
+        val names = datas.map(data => Name(data.name, None))
+        val decls = groups(names).map(state.cmds.declareDatatypes)
 
-        val constrs_ =
-          for Constr(constr, sels) <- constrs
-          yield
-            val sels_ =
-              for Sel(sel, arg) <- sels
-              yield
-                // selectors are qualified with the datatype like members, e.g. pair_fst,
-                // such that datatypes may have selectors of the same name, e.g. the components 0, 1, ... of tuples
-                val qname = name + "_" + sel
-                val typ_ = resolve(scope_, arg)
-                val this_ = state.exprs.formal("this", sort_)
-                state = state.declare(qname, params_, List(this_), typ_, Attrs.empty)
+        val members =
+          for
+            DataDef(_, name, params, _, impl) <- datas
+            cmds <- impl.toList
+            params_ = params.map(resolve(Scope.empty, _))
+            this_ = state.exprs.formal("this", state.types.sort(name, params_))
+            cmd <- cmds
+            cmd_ <- resolve(Scope.empty ++ params_, name + "_", params_, List(this_), cmd)
+          yield cmd_
 
-                val sel_ = state.funs(qname, 1)
-                sel_
-
-            // the formal parameters of constructors are named after the selectors
-            val formals_ =
-              for sel_ <- sels_
-              yield state.exprs.formal(sel_.name, sel_.res)
-
-            val arity = formals_.length
-            state = state.declare(constr, params_, formals_, sort_, Attrs.empty)
-
-            val constr_ = state.funs((constr, arity))
-            (constr_, sels_)
-
-        state = state.define(name, core.Datatype(params_, constrs_))
-
-        impl match
-          case None =>
-            val cmd_ = state.cmds.declareDatatype(name)
-            List(cmd_)
-
-          case Some(cmds) =>
-            val decl = state.cmds.declareDatatype(name)
-
-            val sort_ = state.types.sort(name, params_)
-            val this_ = state.exprs.formal("this", sort_)
-
-            val cmds_ =
-              for
-                cmd <- cmds;
-                cmd_ <- resolve(scope_, name + "_", params_, List(this_), cmd)
-              yield cmd_
-
-            decl :: cmds_
+        decls ++ members
 
       case _ =>
         resolve(Scope.empty, "", Nil, Nil, cmd)

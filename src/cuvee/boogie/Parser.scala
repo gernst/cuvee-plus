@@ -48,37 +48,43 @@ class Parser(var state: State):
             List(defn)
 
       // the selectors are not qualified with the datatype, unlike in Dafny, since Boogie has no member access,
-      // hence they must be unique like in SMT-LIB
-      case DataDef(attrs, name, params, constrs) =>
+      // hence they must be unique like in SMT-LIB;
+      // the sorts of mutually recursive datatypes are declared first, such that the constructors may refer to all of them
+      case DataDef(attrs, datas) =>
         val scope = Scope.empty
         val attrs_ = attributes(scope, attrs)
-        val params_ = params.map(resolve(scope, _))
-        val scope_ = scope ++ params_
 
-        state = state.declare(name, params.length, attrs_)
-        val sort_ = state.types.sort(name, params_)
+        for Data(name, params, _) <- datas
+        do state = state.declare(name, params.length, attrs_)
 
-        val constrs_ =
-          for Constr(constr, sels) <- constrs
-          yield
-            val sels_ =
-              for Sel(sel, arg) <- sels
-              yield
-                val typ_ = resolve(scope_, arg)
-                val this_ = state.exprs.formal("this", sort_)
-                state = state.declare(sel, params_, List(this_), typ_, Attrs.empty)
-                state.funs((sel, 1))
+        for Data(name, params, constrs) <- datas
+        do
+          val params_ = params.map(resolve(scope, _))
+          val scope_ = scope ++ params_
+          val sort_ = state.types.sort(name, params_)
 
-            // the formal parameters of constructors are named after the selectors
-            val formals_ =
-              for sel_ <- sels_
-              yield state.exprs.formal(sel_.name, sel_.res)
+          val constrs_ =
+            for Constr(constr, sels) <- constrs
+            yield
+              val sels_ =
+                for Sel(sel, arg) <- sels
+                yield
+                  val typ_ = resolve(scope_, arg)
+                  val this_ = state.exprs.formal("this", sort_)
+                  state = state.declare(sel, params_, List(this_), typ_, Attrs.empty)
+                  state.funs((sel, 1))
 
-            state = state.declare(constr, params_, formals_, sort_, Attrs.empty)
-            (state.funs((constr, formals_.length)), sels_)
+              // the formal parameters of constructors are named after the selectors
+              val formals_ =
+                for sel_ <- sels_
+                yield state.exprs.formal(sel_.name, sel_.res)
 
-        state = state.define(name, core.Datatype(params_, constrs_))
-        List(state.cmds.declareDatatype(name))
+              state = state.declare(constr, params_, formals_, sort_, Attrs.empty)
+              (state.funs((constr, formals_.length)), sels_)
+
+          state = state.define(name, core.Datatype(params_, constrs_))
+
+        List(state.cmds.declareDatatypes(datas.map(data => Name(data.name, None))))
 
       case ConstDef(attrs, consts) =>
         val scope = Scope.empty

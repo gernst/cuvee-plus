@@ -399,10 +399,14 @@ case class State(
       DefineSort(con, params, body, attrs)
 
     def declareDatatype(name: Name) =
-      val con = sorts(name)
-      val attrs = sortattrs(name)
-      val data = datatypes(name)
-      DeclareDatatypes(List(con), List(data), attrs)
+      declareDatatypes(List(name))
+
+    // mutually recursive datatypes, whose attributes are those of the first one
+    def declareDatatypes(names: List[Name]) =
+      val cons = names.map(sorts(_))
+      val attrs = sortattrs(names.head)
+      val datas = names.map(datatypes(_))
+      DeclareDatatypes(cons, datas, attrs)
 
     def declareFun(name: Name, arity: Int) =
       val key = (name, arity)

@@ -16,3 +16,13 @@ procedure first(p: Pair) returns (x: int)
 {
   x := fst(pair(fst(p), snd(p)));
 }
+
+// mutually recursive datatypes are declared together, joined by and
+data Tree<a> = node(value: a, children: Forest<a>)
+and Forest<a> = leaf | grow(first: Tree<a>, rest: Forest<a>);
+
+procedure root(t: Tree<int>) returns (x: int)
+  ensures x == value(t);
+{
+  x := value(node(value(t), children(t)));
+}
