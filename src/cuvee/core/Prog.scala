@@ -81,6 +81,16 @@ case class Choice(progs: List[Prog]) extends Prog:
   def mod = progs.mod
   def free = progs.flatMap(_.free).toSet
 
+object Choice extends (List[Prog] => Choice):
+  // the alternatives of nested choices
+  def flatten(progs: List[Prog]): List[Prog] =
+    progs flatMap flatten
+
+  def flatten(prog: Prog): List[Prog] =
+    prog match
+      case Choice(progs) => flatten(progs)
+      case _             => List(prog)
+
 case class If(test: Expr, left: Prog, right: Prog) extends Prog:
   def mod = left.mod ++ right.mod
   def free = test.free ++ left.free ++ right.free

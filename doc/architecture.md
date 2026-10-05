@@ -141,6 +141,11 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     outer loop already decides. E.g. complementary conjuncts are found by
     `nary`, which simplifies each argument of `and` and `or` assuming the
     others, not by `and` itself.
+  - Statements have helpers likewise, `spec`, `assign`, `block`, `choice`,
+    `if_`, `while_`, ...: statements without effect are the empty block
+    `skip`, `block` merges nested blocks (hoisting locals unless they
+    capture), drops `skip`, statements after a jump, and unused locals, and
+    `if_` reduces constant tests, equal branches, and negated tests.
   - `and` extracts the disjuncts that are common to all conjuncts,
     `(A ∨ C) ∧ (A ∨ B)` is `A ∨ (C ∧ B)`, and `or` dually the common
     conjuncts; this is a local transformation, not a conversion to CNF or
