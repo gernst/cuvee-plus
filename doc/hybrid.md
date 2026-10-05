@@ -8,10 +8,12 @@ differential equations, and nondeterministic iterations are always part of
 the Dafny frontend; the option `-hybrid` is needed for parallel composition
 only, it injects [hybrid.dfy](../resources/cuvee/dafny/hybrid.dfy), which
 declares the polymorphic datatype `history<a₀>` of event sequences with the
-methods `send` and `receive`. An event is a message `message(chan, value)` or
-the passing of time `time(time: real)`. `project(c, h)` are the values of the messages
-on `c` in `h`; `delay(h, t)` appends the passing of `t` time units to `h`,
-merged with a last time event. The input declares the global variable
+methods `send`, `receive`, and `tick`. An event is a message
+`message(chan, value)` or the passing of time `time(time: real)`.
+`project(c, h)` are the values of the messages on `c` in `h`; `delay(h, t)`
+appends the passing of `t` time units to `h`, merged with a last time event,
+and nothing for `t == 0`. `history.tick(t)` extends the history by
+`delay`. The input declares the global variable
 `history` of an instance, e.g. `var history: history<int>`.
 
 ## Syntax
