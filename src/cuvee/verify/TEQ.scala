@@ -114,7 +114,7 @@ object TEQ extends Transform:
   // the declarations of the functions on traces and the lemmas about them (resources/cuvee/teq.dfy),
   // which are parsed by a fresh parser for Dafny
   lazy val lemmas: List[Cmd] =
-    val (_, parser) = cuvee.dafny.Source.newParser()
+    val (_, parser, _) = cuvee.dafny.Source.newParser()
     cuvee.dafny.Source.parse("/cuvee/teq.dfy", parser)
 
   def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =

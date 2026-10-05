@@ -53,7 +53,7 @@ object Examples:
     val (_, cmds) = config.source(new java.io.StringReader(""), config)
     cmds.toList
 
-  // runs Cuvee on `args` and returns the parsed input commands
+  // runs Cuvee on `args` and returns the parsed input commands, without the prelude of the frontend
   def input(args: String*): List[Cmd] =
     val (cmds, _) = cuvee.Cuvee.run(args*)
-    cmds
+    cmds.filterNot(prelude(args*).contains)

@@ -374,24 +374,25 @@ object Grammar:
   val sortimpl =
     P(braces(sortcmd.*) | nil)
 
-  val sortdef =
-    SortDef(P("type" ~ id ~ params ~ (right(braces(sortcmd.*)) | left(sortalias.?))))
-
-  val datadef =
-    DataDef(P("datatype" ~ id ~ params ~ "=" ~ constrs ~ sortimpl.?))
-
-  val constdef =
-    FunDef(P("const" ~ id ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ nil ~ (":=" ~ expr).?))
-
-  val fundef =
-    FunDef(P("function" ~ id ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ decreases.* ~ braces(expr).?))
-
-  val preddef =
-    FunDef(P("predicate" ~ id ~ params ~ formals ~ bool ~ requires.* ~ ensures.* ~ decreases.* ~ braces(expr).?))
-
   // attributes without arguments, {:name}
   val annotation =
     P(braces(":" ~ id))
+
+  val sortdef =
+    SortDef(P("type" ~ annotation.* ~ id ~ params ~ (right(braces(sortcmd.*)) | left(sortalias.?))))
+
+  val datadef =
+    DataDef(P("datatype" ~ annotation.* ~ id ~ params ~ "=" ~ constrs ~ sortimpl.?))
+
+  val constdef =
+    FunDef(P("const" ~ annotation.* ~ id ~ params ~ nil ~ ":" ~ typ ~ nil ~ nil ~ nil ~ (":=" ~ expr).?))
+
+  val fundef =
+    FunDef(P("function" ~ annotation.* ~ id ~ params ~ formals ~ ":" ~ typ ~ requires.* ~ ensures.* ~ decreases.* ~ braces(expr).?))
+
+  val preddef =
+    FunDef(P("predicate" ~ annotation.* ~ id ~ params ~ formals ~ bool ~ requires.* ~ ensures.* ~ decreases.* ~ braces(expr).?))
+
 
   // the formulas of axioms, lemmas, and goals, where if φ then ψ without else is φ ==> ψ with the lowest precedence,
   // also below the quantifiers at the top; the branch after then is an expression, whose if-then-else has an else,

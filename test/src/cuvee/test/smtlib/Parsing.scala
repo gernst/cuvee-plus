@@ -16,7 +16,7 @@ object Strings extends TestSuite:
   val tests = Tests:
     test("escape"):
       val (_, cmds) = cuvee.smtlib.Source(new java.io.StringReader("(assert (= \"a\"\"b\" \"\"))"))
-      val List(Assert(_, _, Eq(Lit(left, _), Lit(right, _)), _)) = cmds.toList: @unchecked
+      val Assert(_, _, Eq(Lit(left, _), Lit(right, _)), _) = cmds.last: @unchecked
       (left, right) ==> ("a\"b", "")
       cuvee.smtlib.Printer.lines(Lit("a\"b", Sort.string)) ==> List("\"a\"\"b\"")
 

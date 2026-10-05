@@ -17,9 +17,7 @@ object Source extends cuvee.pipe.Source:
         cmd_ <- parser.resolve(cmd)
       yield cmd_
 
-    val reader = resource("/cuvee/boogie/builtin.bpl")
-    try cmds(newScanner(reader).input, lifted).force
-    finally reader.close()
+    val prelude = parse("/cuvee/boogie/prelude.bpl", lifted)
 
-    // the parser's state now contains the built-in declarations
-    (parser.state, lifted)
+    // the parser's state now contains the declarations of the prelude
+    (parser.state, lifted, prelude)

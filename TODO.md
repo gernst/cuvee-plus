@@ -46,9 +46,6 @@ inferred from the call graph. Open:
   not accept, unless `-monomorph` replaces them by their instances;
   polymorphic assertions (`par`) are not instantiated, and procedures are not
   monomorphized.
-- The built-in sorts of Dafny that SMT-LIB lacks (`set`, `multiset`, `map`)
-  are not in the output, the solver sinks declare them by themselves
-  (`Solver.prelude`).
 - Termination in `Verify` and `Horn`: loops and procedures without
   `decreases` clause are not checked (Dafny guesses a measure), measures are
   integers only, and the measure of a procedure must refer to its inputs.

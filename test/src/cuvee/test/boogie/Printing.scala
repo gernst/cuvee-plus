@@ -15,12 +15,13 @@ import cuvee.boogie.Source
 object Roundtrip extends TestSuite:
   val tests =
     Examples.tests(Examples.find(os.sub / "boogie", "bpl")): file =>
-      val (cmds, errors) = Examples.output("-print", "null", file.toString)
+      val args = List("-print", "null", file.toString)
+      val (cmds, errors) = Examples.output(args*)
       errors ==> Nil
 
       val first = Printer.lines(cmds)
       val (_, cmds_) = Source(new StringReader(first.mkString("\n")))
-      val second = Printer.lines(cmds_.toList)
+      val second = Printer.lines(cmds_.toList.filterNot(Examples.prelude(args*).contains))
       second ==> first
 
 object Printing extends TestSuite:

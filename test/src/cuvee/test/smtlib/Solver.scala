@@ -29,7 +29,7 @@ object Solver extends TestSuite:
   // the solver is stopped even if a check fails
   def run(solver: cuvee.smtlib.Solver)(cmds: Cmd*): Result =
     try
-      val (init, _) = cuvee.smtlib.Source.newParser()
+      val (init, _, _) = cuvee.smtlib.Source.newParser()
       val sink = cuvee.smtlib.Solver.sink(solver, init)
       val (result, _) = sink.exec(cmds.init.toList).query(cmds.last)
       result
@@ -151,7 +151,7 @@ object Solver extends TestSuite:
 
       val solver = cuvee.smtlib.Solver.z3()
       try
-        val (init, _) = cuvee.smtlib.Source.newParser()
+        val (init, _, _) = cuvee.smtlib.Source.newParser()
         val sink = cuvee.smtlib.Solver.sink(solver, init)
         val (ack, _) = sink.query(DefineFun(f, y, attrs))
 

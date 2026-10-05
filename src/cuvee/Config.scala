@@ -49,8 +49,18 @@ case class Config(
     // per query, in milliseconds
     timeout: Int = 1000,
     // the definitions of parallel composition in Dafny (resources/cuvee/dafny/hybrid.dfy)
-    hybrid: Boolean = false
+    hybrid: Boolean = false,
+    // the language of the printed output by its file extension, given with -print, the language of the input otherwise
+    printed: Option[String] = None,
+    // whether the output is passed to a solver, which reads SMT-LIB
+    solver: Boolean = false
 ):
+  // the language of the output by its file extension, whose declarations the output drops (see transform.Language)
+  def language: String =
+    if solver
+    then "smt2"
+    else printed.orElse(input.map(Config.suffix)).getOrElse("smt2")
+
   def reader =
     input match
       case None =>
@@ -59,10 +69,11 @@ case class Config(
       case Some(file) =>
         new FileReader(file)
 
-  // chain the transforms in order in front of `sink`,
+  // chain the transforms in order in front of `sink`, followed by the implicit last step that drops the declarations
+  // that are part of the language of the output (see transform.Language),
   // all stages start from the same initial state `init` provided by the source
   def stages(init: State, sink: Sink): Sink =
-    transforms.foldRight(sink):
+    transforms.foldRight(cuvee.transform.Language.sink(language, sink): Sink):
       case (transform, next) =>
         Stage.empty(this, init, transform, next)
 
@@ -137,13 +148,13 @@ object Config:
   val z3 =
     flag("-z3", "pass output to z3"):
       case (config, rest) =>
-        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(config.timeout), init, config.printer))
+        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.z3(config.timeout), init, config.printer), solver = true)
         (config_, rest)
 
   val cvc5 =
     flag("-cvc5", "pass output to cvc5"):
       case (config, rest) =>
-        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(config.timeout), init, config.printer))
+        val config_ = config.copy(sink = (init, config) => cuvee.smtlib.Solver.sink(cuvee.smtlib.Solver.cvc5(config.timeout), init, config.printer), solver = true)
         (config_, rest)
 
   val timeout_ =
@@ -162,7 +173,7 @@ object Config:
     flag("-print", "<lang>", "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), scala (the internal representation), or null (nothing)"):
       case (config, name :: rest) if langs.contains(name) =>
         val lang = langs(name)
-        val config_ = config.copy(printer = lang.printer, overridePrinter = true)
+        val config_ = config.copy(printer = lang.printer, overridePrinter = true, printed = Some(name))
         (config_, rest)
 
       case (config, "null" :: rest) =>
@@ -226,7 +237,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.13.5")
+    println("Cuvée 0.14.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

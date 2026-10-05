@@ -11,16 +11,18 @@ import cuvee.smtlib.Parser
 
 // produces the commands together with the initial state of the parser,
 // which must be shared by all stages of the pipeline:
-// the initial state holds the built-in declarations of the frontend (builtin.*),
-// the commands begin with the definitions of its prelude (prelude.*), which the output needs, e.g. tuples,
-// where the commands of the input that coincide with them are dropped, e.g. when printed output is parsed again
+// the initial state holds the declarations of the prelude of the frontend (prelude.*),
+// the commands begin with these and further definitions that depend on the configuration (e.g. hybrid.dfy),
+// where the commands of the input that coincide with them are dropped, e.g. when printed output is parsed again;
+// the declarations of the prelude name the languages that they are part of,
+// which the output drops (see cuvee.transform.Language)
 trait Source:
   def newScanner(reader: Reader): Scanner
 
-  // a parser whose state holds the built-in declarations
-  def newParser(): (State, easyparse.Parser[List[Cmd]])
+  // a parser whose state holds the declarations of the prelude, and these declarations
+  def newParser(): (State, easyparse.Parser[List[Cmd]], List[Cmd])
 
-  // the resources with the definitions that are injected at the beginning of the commands, in order,
+  // the resources with further definitions that are injected after the prelude, in order,
   // which may depend on the configuration
   def preludes(config: cuvee.Config): List[String] = Nil
 
@@ -35,11 +37,10 @@ trait Source:
 
   def apply(reader: Reader, config: cuvee.Config = cuvee.Config.default): (State, LazyList[Cmd]) =
     val scanner = newScanner(reader)
-    val (init, parser) = newParser()
+    val (init, parser, prelude) = newParser()
 
     val prelude_ =
-      for path <- preludes(config); cmd <- parse(path, parser)
-      yield cmd
+      prelude ++ (for path <- preludes(config); cmd <- parse(path, parser) yield cmd)
 
     // defer parsing such that errors in the first command are reported by the pipeline, too
     (init, LazyList.empty #::: prelude_.to(LazyList) #::: cmds(scanner.input, parser).filterNot(prelude_.contains))

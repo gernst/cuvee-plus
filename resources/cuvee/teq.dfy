@@ -1,7 +1,12 @@
 // the lemma database of -teq, which is injected at the beginning of its output:
-// the functions on traces (see cuvee.core.Fun.trace), where butlast is written ⌊X⌋,
-// and lemmas about them, which are rewrite rules of the simplifier ({:rw}) and assumed by the solvers ({:free})
+// the type of traces and the functions on them (see cuvee.core.Sort.trace and cuvee.core.Fun.trace),
+// which exist only with -teq, and lemmas about them, which are rewrite rules of the simplifier ({:rw}),
+// the simplifier is expected to prove the goals of -teq on its own, not the solvers
 
+// the traces of trace equation systems, the values of a variable at the loop head
+type Trace<a₀>
+// all but the last element of a trace, written ⌊X⌋
+function butlast<a₀>(x₀: Trace<a₀>): seq<a₀>
 // counter(i, c, n) is the trace i, i + c, ..., i + n c of n steps
 function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 // the last element of a trace

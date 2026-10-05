@@ -47,6 +47,19 @@ or solvers consume.
 - z3 by hand always with a timeout: `z3 -T:5 file.smt2`.
 - The shell is fish. Write multi-line scripts for bash explicitly.
 
+## Trace equation systems and solvers
+
+- `Trace` (and `butlast`) must never be included implicitly. They exist only
+  with `-teq`, whose lemma database [teq.dfy](resources/cuvee/teq.dfy)
+  defines them. Inputs that use traces without `-teq` declare `Trace`
+  themselves. Do not put it into the preludes.
+- SMT solvers are not expected to solve TEQs. The simplifier must prove the
+  goals of `-teq` on its own. Hence:
+  - no special cases for traces in the solver interface;
+  - no implicit monomorphization;
+  - no implicit introduction of TEQ concepts (sorts, functions, lemmas) to
+    the solver.
+
 ## Things that were easy to get wrong
 
 - **Combinator dependencies are sequences.** The dependencies of `Trace`,
@@ -93,5 +106,13 @@ or solvers consume.
 - **Matching in rules** respects binders. A rule variable never captures a
   bound variable of the expression, so `map(for xs yield v => c)` only
   matches constant bodies.
+- **Preludes.** Each language has one `resources/cuvee/<lang>/prelude.*`,
+  whose declarations are attributed with the languages they are part of
+  (`{:dfy}`, `{:bpl}`, `{:smt2}`, `{:c}`). They are parsed into the initial
+  state and injected into the stream. The implicit last step
+  (`transform/Language.scala`) drops what is part of `config.language`.
+  Transforms therefore see the prelude's declarations, e.g. `Monomorph` must
+  ignore the generic `=`. Tests that call a `Source` directly must drop
+  `Examples.prelude(...)`.
 - **Names the user mentions may refer to counterparts.** E.g. "teq.bpl"
   for the repository's `teq.dfy`. Check which files exist before assuming.

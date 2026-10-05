@@ -1,4 +1,7 @@
-// the combinators of trace equation systems: trace, map, and all
+// the combinators of trace equation systems: trace, map, and all,
+// the type of traces is declared explicitly, since it exists only with -teq otherwise
+type Trace<a>;
+
 function f(J: Seq<int>, a: [int]int, n: int): bool
 {
   trace(0, for J do s, j => if j < n then s + a[j], if !(j < n) then s) == trace(0, for J do s, j => s)

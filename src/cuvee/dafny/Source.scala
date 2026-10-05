@@ -17,15 +17,13 @@ object Source extends cuvee.pipe.Source:
         cmd_ <- parser.resolve(cmd)
       yield cmd_
 
-    val reader = resource("/cuvee/dafny/builtin.dfy")
-    try cmds(newScanner(reader).input, lifted).force
-    finally reader.close()
+    val prelude = parse("/cuvee/dafny/prelude.dfy", lifted)
 
-    // the parser's state now contains the built-in declarations
-    (parser.state, lifted)
+    // the parser's state now contains the declarations of the prelude
+    (parser.state, lifted, prelude)
 
-  // tuples, and with -hybrid, the definitions of parallel composition
+  // with -hybrid, the definitions of parallel composition
   override def preludes(config: cuvee.Config) =
     if config.hybrid
-    then List("/cuvee/dafny/prelude.dfy", "/cuvee/dafny/hybrid.dfy")
-    else List("/cuvee/dafny/prelude.dfy")
+    then List("/cuvee/dafny/hybrid.dfy")
+    else Nil

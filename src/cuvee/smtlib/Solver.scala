@@ -108,21 +108,6 @@ object Solver:
   // the sorts that the solvers know
   val known = Set(Con.bool, Con.int, Con.real, Con.string, Con.array, Con.seq, Con.set, Con.bag).map(_.name)
 
-  // the built-in sorts and datatypes of a frontend that the solvers do not know, e.g. those of Dafny,
-  // which are declared to the solver at the start, the sorts first since datatypes may refer to them
-  def prelude(init: State): List[Decl] =
-    val names = (init.sorts.keySet -- known).toList.sortBy(_.toString)
-
-    val sorts =
-      for name <- names if !init.datatypes.contains(name) && !init.sortdefs.contains(name)
-      yield init.cmds.declareSort(name)
-
-    val datatypes =
-      for name <- names if init.datatypes.contains(name)
-      yield init.cmds.declareDatatype(name)
-
-    sorts ++ datatypes
-
   // a sink that passes commands to the solver,
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
@@ -133,9 +118,6 @@ object Solver:
 
     // the answer to the last check-sat, a model is available only if it is sat
     var status: Option[Status] = None
-
-    for decl <- prelude(init)
-    do solver.ack(noAttrs(decl))
 
     def query(cmd: Cmd) =
       cmd match

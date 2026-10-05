@@ -53,13 +53,13 @@ class Parser(var state: State):
         val (params_, phi_, attrs_) = assertion(params, attrs, expr)
         List(state.cmds.goal(params_, phi_, attrs_))
 
-      case SortDef(name, params, impl) =>
+      case SortDef(attrs, name, params, impl) =>
         val scope = Scope.empty
         val params_ = params.map(resolve(scope, _))
         val scope_ = scope ++ params_
 
         val arity_ = params.length
-        state = state.declare(name, arity_, Attrs.empty)
+        state = state.declare(name, arity_, Attrs(attrs.map(_ -> None)))
 
         impl match
           case Left(None) =>
@@ -87,13 +87,13 @@ class Parser(var state: State):
 
             decl :: cmds_
 
-      case DataDef(name, params, constrs, impl) =>
+      case DataDef(attrs, name, params, constrs, impl) =>
         val scope = Scope.empty
         val params_ = params.map(resolve(scope, _))
         val scope_ = scope ++ params_
 
         val arity_ = params.length
-        state = state.declare(name, arity_, Attrs.empty)
+        state = state.declare(name, arity_, Attrs(attrs.map(_ -> None)))
 
         val sort_ = state.types.sort(name, params_)
 
@@ -199,7 +199,7 @@ class Parser(var state: State):
 
   def resolve(scope: Scope, prefix: String, outer_ : List[core.Param], self: List[core.Var], cmd: Cmd): List[core.Cmd] =
     cmd match
-      case FunDef(fun, inner, formals, typ, req, ens, dec, body) =>
+      case FunDef(attrs, fun, inner, formals, typ, req, ens, dec, body) =>
         val qname = prefix + fun
 
         val inner_ = inner.map(resolve(scope, _))
@@ -210,7 +210,7 @@ class Parser(var state: State):
 
         val typ_ = resolve(scope_, typ)
         val scope__ = scope_ ++ formals_
-        val attrs_ = contract(scope__, Nil, req, ens, dec)
+        val attrs_ = Attrs(attrs.map(_ -> None) ++ contract(scope__, Nil, req, ens, dec).attrs)
 
         val arity = formals_.length
         state = state.declare(qname, params_, formals_, typ_, attrs_)

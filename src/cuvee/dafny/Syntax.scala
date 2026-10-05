@@ -133,10 +133,12 @@ case class Goal(params: List[String], attrs: List[String], phi: Expr) extends Cm
 case object Check extends Cmd
 // global variables, var x: int; which are not Dafny
 case class VarDef(vars: List[(String, Type)]) extends Cmd
-case class SortDef(name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
-case class DataDef(name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
+// declarations with attributes after the keyword, e.g. type {:dfy} int, see the preludes
+case class SortDef(attrs: List[String], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
+case class DataDef(attrs: List[String], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
 
 case class FunDef(
+    attrs: List[String],
     name: String,
     params: List[String],
     formals: List[(String, Type)],
@@ -166,9 +168,9 @@ object Axiom extends ((List[String], List[String], Expr) => Cmd)
 object Lemma extends ((List[String], List[String], Expr) => Cmd)
 object Goal extends ((List[String], List[String], Expr) => Cmd)
 object VarDef extends (List[(String, Type)] => Cmd)
-object SortDef extends ((String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
-object DataDef extends ((String, List[String], List[Constr], Option[List[Cmd]]) => Cmd)
-object FunDef extends ((String, List[String], List[(String, Type)], Type, List[Expr], List[Expr], List[List[Expr]], Option[Expr]) => Cmd)
+object SortDef extends ((List[String], String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
+object DataDef extends ((List[String], String, List[String], List[Constr], Option[List[Cmd]]) => Cmd)
+object FunDef extends ((List[String], String, List[String], List[(String, Type)], Type, List[Expr], List[Expr], List[List[Expr]], Option[Expr]) => Cmd)
 
 object MethodDef
     extends (

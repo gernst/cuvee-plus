@@ -17,14 +17,12 @@ object Source extends cuvee.pipe.Source:
 
   // the input is parsed starting from the predefined sorts and functions,
   // which is also the state that reset returns to
-  def newParser(): (State, easyparse.Parser[List[Cmd]]) =
+  def newParser(): (State, easyparse.Parser[List[Cmd]], List[Cmd]) =
     val parser = new Parser(State.empty)
     val lifted = lift(parser)
 
-    val reader = resource("/cuvee/smtlib/builtin.smt2")
-    try cmds(newScanner(reader).input, lifted).force
-    finally reader.close()
+    val prelude = parse("/cuvee/smtlib/prelude.smt2", lifted)
 
-    // the parser's state now contains the built-in declarations
+    // the parser's state now contains the declarations of the prelude
     parser.resetPoint()
-    (parser.state, lifted)
+    (parser.state, lifted, prelude)

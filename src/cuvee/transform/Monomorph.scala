@@ -19,7 +19,7 @@ object Monomorph extends Transform:
   case class Env(poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: Ref[List[Cmd]])
 
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    val env = Env(polymorphic(prefix ++ cmds), Ref(Map()), Ref(Nil))
+    val env = Env(polymorphic(config.language, prefix ++ cmds), Ref(Map()), Ref(Nil))
 
     // the instances emitted for the commands before are known, their output is discarded
     prefix.foreach(command(env, _))
@@ -28,10 +28,11 @@ object Monomorph extends Transform:
     cmds.foreach(command(env, _))
     env.out.value
 
-  // the polymorphic functions of `cmds` with their declaration or definition
-  def polymorphic(cmds: List[Cmd]): Map[(Name, Int), Cmd] =
+  // the polymorphic functions of `cmds` with their declaration or definition,
+  // except those that are part of the language of the output, e.g. = and select of SMT-LIB (see Language)
+  def polymorphic(language: String, cmds: List[Cmd]): Map[(Name, Int), Cmd] =
     val decls =
-      cmds.collect:
+      cmds.filterNot(Language.isPart(language, _)).collect:
         case cmd @ DeclareFun(fun, _) if fun.params.nonEmpty    => (fun.name, fun.arity) -> cmd
         case cmd @ DefineFun(fun, _, _) if fun.params.nonEmpty  => (fun.name, fun.arity) -> cmd
     decls.toMap
