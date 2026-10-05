@@ -8,16 +8,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - start with prioritizing this list by small things first, rewrite this file accordingly
 - work on this list autonomously, if you have questions for which you'd like my input, defer the item and put a note in this file, keep this instruction when reordering the list
 
-### Deferred (questions for the user)
-
-- note on `Normalize` (from `cuvee.pure.Clause`): it is the last step of `Simplify` for assertions (not the first, since the antecedents are assumed in the context of the succedents during simplification anyway), since simplification and rewriting may produce nested implications and negations again, and normalization does not change normalized formulas. As in the original, `let` is turned into equations (exists among the antecedents, forall among the succedents), equations themselves are kept as they are, and a clause without succedents is the negation of its antecedents.
-
-- note on `n + 1 < m <==> n <= m`: this does not hold on Int (n = 0, m = 1), the correct forms are `n < m + 1 <==> n <= m` and `n + 1 <= m <==> n < m`, which are implemented (`Simplify.lt`, `Simplify.le`, with `Succ`)
-
-- In `Rewrite`, when a match has been computed and it is ambiguous, i.e., more than one side condition holds, and they are not the same match, then raise an error. this should make the top-level interface return just a single expression
-  - done: `Rewrite.step` and `Rewrite.apply` return a single expression (`Option`), the first rule and the first match that apply
-  - question: matching modulo A/C of `+` and `-` is ambiguous for almost all rules with two variables in a sum or a comparison, e.g. `f(x - y) = g(y)` matches `f(a - b)` with the results `g(b)`, `g(-a)`, and `g(b - a)`, and `x < y` matches `a < b` with `p(a, b)`, `p(-b, -a)`, `p(0, b - a)`; an error would reject the tests `differences`, `comparisons`, `real comparisons`, and `neutral` of `test/simplify/Rewrite.scala`. Should the error be raised nevertheless (and these rules be rejected), or should the matching of sums be made deterministic first (e.g. variables take whole sides of comparisons, and summands in the order of the polynomial), and only the remaining ambiguities be errors?
-
 ## C frontend
 
 Simple imperative integer programs in a subset of C, without memory
@@ -111,11 +101,12 @@ inferred from the call graph. Open:
   procedures are not supported ([boogie/Parser.scala](src/cuvee/boogie/Parser.scala)).
 - No quantifiers over types, `forall<a> ...`,
   no sequences, no parallel composition.
-- The printer raises an error on datatypes, `continue`, attributes of loops
+- The printer raises an error on datatypes, attributes of loops
   other than `invariant`, `modifies`, and `decreases`, binders other than
   `forall` and `exists`, derivatives, differential equations, and parallel
-  composition; goals, lemmas, and `decreases` are printed as `goal`, `lemma`,
-  and `decreases`, which are not Boogie
+  composition; goals, lemmas, `decreases`, and `continue` are printed as `goal`, `lemma`,
+  `decreases`, and `continue;`, which are not Boogie (`continue` could be encoded in Boogie
+  as a labeled break, `while (b) { L: if (true) { ... break L; ... } }`)
   ([boogie/Printer.scala](src/cuvee/boogie/Printer.scala)).
 
 ## SMT-LIB frontend

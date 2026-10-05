@@ -333,6 +333,9 @@ class Parser(var state: State):
       case Break =>
         state.progs.break
 
+      case Continue =>
+        state.progs.continue
+
       case Return =>
         state.progs.return_
 

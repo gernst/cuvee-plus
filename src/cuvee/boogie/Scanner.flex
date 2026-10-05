@@ -30,7 +30,7 @@ dec  = {num} "." [0-9]+
 
 kw  = "type" | "const" | "function" | "axiom" | "lemma" | "var" | "procedure"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
-    | "if" | "then" | "else" | "while" | "break" | "return"
+    | "if" | "then" | "else" | "while" | "break" | "continue" | "return"
     | "assert" | "assume" | "havoc" | "call" | "forall" | "exists"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}] | "{:" | ":=" | "=" | "⌊" | "⌋"
 

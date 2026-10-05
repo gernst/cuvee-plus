@@ -73,6 +73,11 @@ object Printing extends TestSuite:
       val prog_ = If(app(Fun.int.lt, x, y), Break, If(app(Fun.int.lt, y, x), Return, Block(Nil, Nil)))
       prog(prog_) ==> List("if (x < y) {", "  break;", "} else if (y < x) {", "  return;", "}")
 
+    // continue is not Boogie, but part of the dialect
+    test("continue"):
+      prog(While(app(Fun.int.lt, x, y), Block(Nil, List(Continue)), cuvee.core.Attrs(Nil))) ==>
+        List("while (x < y) {", "  continue;", "}")
+
     test("loop"):
       val attrs = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y)), "modifies" -> Some(List(a))))
       prog(While(app(Fun.int.lt, x, y), Block(Nil, Nil), attrs)) ==>
@@ -84,7 +89,6 @@ object Printing extends TestSuite:
         List("while (*)", "  invariant x <= y;", "{", "  x := y;", "}")
 
     test("unsupported"):
-      error(prog(Continue)) ==> "continue not supported in Boogie"
       val other = cuvee.core.Attrs(List("other" -> Some(x)))
       error(prog(While(True, Block(Nil, Nil), other))) ==> "attributes of loops not supported in Boogie"
 

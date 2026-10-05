@@ -312,8 +312,9 @@ object Printer extends cuvee.pipe.Printer:
       case Break =>
         text("break;")
 
+      // not Boogie
       case Continue =>
-        Error.raise("continue not supported in Boogie", prog)
+        text("continue;")
 
       case Return =>
         text("return;")

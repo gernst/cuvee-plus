@@ -223,6 +223,10 @@ object Grammar:
   val break =
     Break("break" ~ ";")
 
+  // not Boogie
+  val continue_ =
+    Continue("continue" ~ ";")
+
   val return_ =
     Return("return" ~ ";")
 
@@ -270,7 +274,7 @@ object Grammar:
     While(P("while" ~ parens(guard) ~ (invariant | modifies | decreases).* ~ block))
 
   val prog: Parser[Prog] =
-    P(break | return_ | assume | assert | havoc | call | if_ | while_ | block | assign)
+    P(break | continue_ | return_ | assume | assert | havoc | call | if_ | while_ | block | assign)
 
   // attributes of top-level commands
   val attr =

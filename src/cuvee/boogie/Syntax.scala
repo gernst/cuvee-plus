@@ -62,6 +62,8 @@ object Lhs extends ((String, List[Expr]) => Lhs)
 
 case object Skip extends Prog
 case object Break extends Prog
+// not Boogie, the next iteration of the innermost loop
+case object Continue extends Prog
 case object Return extends Prog
 case class Assume(phi: Expr) extends Prog
 case class Assert(phi: Expr) extends Prog
