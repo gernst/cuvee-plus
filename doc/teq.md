@@ -117,7 +117,7 @@ after section 4 of the paper.
 - `examples/dafny/vcgen/*.dfy` without loops must verify with `-teq -z3`.
 - [TEQ.scala](../test/src/cuvee/test/dafny/TEQ.scala) checks the goals of
   `-teq`, the injection of the database, and the lemmas on core terms
-  (`Simplify.rules(TEQ.lemmas)` with `Rewrite`).
+  (`Rules.from(TEQ.lemmas)` with `Rewrite`).
 - [RewriteTraces.scala](../test/src/cuvee/test/simplify/RewriteTraces.scala)
   tests the rewrite engine with the examples of the paper (counters,
   summations, `selects`); `examples/simplify/traces.smt2` the simplifier.

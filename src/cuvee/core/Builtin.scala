@@ -16,6 +16,8 @@ object One:
 object True extends App(Fun.true_, Nil, Sort.bool, Nil)
 object False extends App(Fun.false_, Nil, Sort.bool, Nil)
 
+object Skip extends Block(Nil, Nil)
+
 object Eq extends Sugar.binary(Fun.eq_):
   def apply(left: List[Expr], right: List[Expr]): List[Expr] =
     Error.report("invalid equation between mismatching arguments", left, right):

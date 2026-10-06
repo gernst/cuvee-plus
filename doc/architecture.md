@@ -115,7 +115,7 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   - All methods take `(config, state, ctx, ...)`. The context `Ctx` holds the
     facts known at the current position and the rewrite rules, which are
     extracted from the assertions and lemmas with the attribute `:rw`
-    (`Simplify.rules`) and are kept as they are.
+    (`Rules.from`) and are kept as they are.
   - Each round (`once`) simplifies the subterms first and dispatches on the
     built-in functions; afterwards, one rewrite step with the rules of the
     context is tried at the top (`Rewrite.step`), until a fixpoint.

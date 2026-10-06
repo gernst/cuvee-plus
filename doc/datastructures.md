@@ -307,7 +307,7 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   `0 < poly`. `FourierMotzkin` eliminates atoms from conjunctions of these and
   decides their satisfiability over the rationals.
 - **`Rule(xs, lhs, rhs, cond)`** is a conditional rewrite rule with the
-  variables `xs`, the quantified variables of a lemma (`Simplify.rule`), which
+  variables `xs`, the quantified variables of a lemma (`Rule.from`), which
   must occur in `lhs` if they occur in `rhs` or `cond`; other free variables
   are constants. `Rewrite` rewrites innermost first; a
   match is a `Subst` of the type parameters and variables of the rule,

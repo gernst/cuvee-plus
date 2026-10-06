@@ -15,7 +15,7 @@ object Simplify extends Transform:
   // where axioms, goals, and lemmas that simplify to true are dropped, since they state nothing;
   // debug output is printed with the printer of the configuration
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    val rules = this.rules(prefix ++ cmds)
+    val rules = Rules.from(prefix ++ cmds)
 
     for
       cmd <- cmds
@@ -27,49 +27,6 @@ object Simplify extends Transform:
     cmd match
       case Assert(_, _, True, _) => true
       case _                     => false
-
-  // the rewrite rules of the assertions and lemmas with the attribute :rw
-  def rules(cmds: List[Cmd]): List[Rule] =
-    for case cmd @ Assert(_, _, phi, _) <- cmds if cmd.isRule
-    yield
-      val Rule(xs, lhs, rhs, cond) = rule(phi)
-      // type annotations e as T are dropped from the left-hand sides of rules, they are needed for typing only,
-      // and matching would compare their types literally, which may contain the type parameters of the rule
-      Rule.check(Rule(xs, lhs.removeAs, rhs, cond))
-
-  // the rule of a formula: the universally quantified variables are the variables of the rule,
-  // the premise of an implication is its condition, and the conclusion must be an equation l = r,
-  // an equivalence l <=> r, a negation not φ (φ = false), or a boolean atom φ (φ = true)
-  def rule(phi: Expr): Rule =
-    rule(Nil, phi)
-
-  // `xs` are the universally quantified variables so far, the variables of the rule
-  def rule(xs: List[Var], phi: Expr): Rule =
-    phi match
-      case All(bound, body) =>
-        rule(xs ++ bound, body)
-
-      case Imp(cond, body) =>
-        val Rule(_, lhs, rhs, cond_) = rule(xs, body)
-        Rule(xs, lhs, rhs, if cond_ == True then cond else And(cond, cond_))
-
-      case Eq(lhs, rhs) =>
-        Rule(xs, lhs, rhs, True)
-
-      case Eqv(lhs, rhs) =>
-        Rule(xs, lhs, rhs, True)
-
-      case Not(atom) =>
-        Rule(xs, atom, False, True)
-
-      case App(fun, _, _, _) if !connectives.contains(fun.name.name) =>
-        Rule(xs, phi, True, True)
-
-      case _ =>
-        Error.raise("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom", phi)
-
-  // the logical connectives, which are not boolean atoms
-  val connectives = Set("and", "or", "=>", "<=>", "not", "ite", "true", "false")
 
   // `ctx` is an empty context, which provides the rewrite rules;
   // the antecedents of assertions are assumed in the context of their succedents during simplification
@@ -93,139 +50,6 @@ object Simplify extends Transform:
   // the formulas and terms in attributes, e.g. contracts and invariants, are simplified without context
   def simplify(config: Config, state: State, ctx: Ctx, attrs: Attrs): Attrs =
     attrs.map(simplify(config, state, ctx, _))
-
-  // programs are simplified statement by statement, where the expressions are simplified without context,
-  // since the facts known before an assignment may not hold afterwards;
-  // the helpers below normalize their own constructor, as those of expressions
-  def simplify(config: Config, state: State, ctx: Ctx, prog: Prog): Prog =
-    prog match
-      case Break | Continue | Return =>
-        prog
-
-      case Spec(xs, pre, post) =>
-        val pre_ = simplify(config, state, ctx, pre)
-        val post_ = simplify(config, state, ctx, post)
-        spec(config, state, ctx, xs, pre_, post_)
-
-      case Assign(lhs, rhs) =>
-        val rhs_ = rhs.map(simplify(config, state, ctx, _))
-        assign(config, state, ctx, lhs, rhs_)
-
-      case Call(name, args, res) =>
-        val args_ = args.map(simplify(config, state, ctx, _))
-        call(config, state, ctx, name, args_, res)
-
-      case Block(locals, progs) =>
-        val progs_ = progs.map(simplify(config, state, ctx, _))
-        block(config, state, ctx, locals, progs_)
-
-      case Choice(progs) =>
-        val progs_ = progs.map(simplify(config, state, ctx, _))
-        choice(config, state, ctx, progs_)
-
-      case If(test, left, right) =>
-        val test_ = simplify(config, state, ctx, test)
-        val left_ = simplify(config, state, ctx, left)
-        val right_ = simplify(config, state, ctx, right)
-        if_(config, state, ctx, test_, left_, right_)
-
-      case While(test, body, attrs) =>
-        val test_ = simplify(config, state, ctx, test)
-        val body_ = simplify(config, state, ctx, body)
-        val attrs_ = simplify(config, state, ctx, attrs)
-        while_(config, state, ctx, test_, body_, attrs_)
-
-      case Iter(body, attrs) =>
-        val body_ = simplify(config, state, ctx, body)
-        val attrs_ = simplify(config, state, ctx, attrs)
-        iter(config, state, ctx, body_, attrs_)
-
-      case Ode(time, xs, rhs, dom, attrs) =>
-        val rhs_ = rhs.map(simplify(config, state, ctx, _))
-        val dom_ = simplify(config, state, ctx, dom)
-        val attrs_ = simplify(config, state, ctx, attrs)
-        ode(config, state, ctx, time, xs, rhs_, dom_, attrs_)
-
-      case Par(calls) =>
-        val calls_ =
-          for Call(name, args, res) <- calls
-          yield Call(name, args.map(simplify(config, state, ctx, _)), res)
-        par(config, state, ctx, calls_)
-
-  // the statement without effect
-  val skip = Block(Nil, Nil)
-
-  // havoc of no variables under the trivial contract has no effect
-  def spec(config: Config, state: State, ctx: Ctx, xs: List[Var], pre: Expr, post: Expr): Prog =
-    (xs, pre, post) match
-      case (Nil, True, True) => skip
-      case _                 => Spec(xs, pre, post)
-
-  // assignments of variables to themselves are dropped, and no assignment has no effect
-  def assign(config: Config, state: State, ctx: Ctx, lhs: List[Var], rhs: List[Expr]): Prog =
-    val (lhs_, rhs_) = (lhs zip rhs).filterNot((x, e) => x == e).unzip
-    if lhs_.isEmpty
-    then skip
-    else Assign(lhs_, rhs_)
-
-  def call(config: Config, state: State, ctx: Ctx, name: Name, args: List[Expr], res: List[Var]): Prog =
-    Call(name, args, res)
-
-  // nested blocks are merged, which drops skip, the empty block, and whose locals are hoisted unless that captures
-  // variables of the other statements; statements after a jump and locals that are not used are dropped;
-  // a block of a single statement without locals is that statement
-  def block(config: Config, state: State, ctx: Ctx, locals: List[Var], progs: List[Prog]): Prog =
-    def flatten(locals: List[Var], done: List[Prog], progs: List[Prog]): (List[Var], List[Prog]) =
-      progs match
-        case Nil =>
-          (locals, done)
-
-        case (jump @ (Break | Continue | Return)) :: _ =>
-          (locals, done :+ jump)
-
-        case Block(inner, progs_) :: rest
-            if (inner intersect locals).isEmpty && !(done ++ rest).exists(p => inner.exists(p.free.contains)) =>
-          flatten(locals ++ inner, done, progs_ ++ rest)
-
-        case prog :: rest =>
-          flatten(locals, done :+ prog, rest)
-
-    val (locals_, progs_) = flatten(locals, Nil, progs)
-    val used = locals_.filter(x => progs_.exists(_.free.contains(x)))
-    (used, progs_) match
-      case (Nil, List(prog)) => prog
-      case _                 => Block(used, progs_)
-
-  // nested choices are merged, duplicates are dropped, and a choice of a single statement is that statement
-  def choice(config: Config, state: State, ctx: Ctx, progs: List[Prog]): Prog =
-    Choice.flatten(progs).distinct match
-      case List(prog) => prog
-      case progs__    => Choice(progs__)
-
-  // constant tests select a branch, equal branches make the test irrelevant,
-  // and a negated test swaps the branches
-  def if_(config: Config, state: State, ctx: Ctx, test: Expr, left: Prog, right: Prog): Prog =
-    test match
-      case True                => left
-      case False               => right
-      case _ if left == right  => left
-      case Not(test_)          => If(test_, right, left)
-      case _                   => If(test, left, right)
-
-  // a loop that is never entered has no effect
-  def while_(config: Config, state: State, ctx: Ctx, test: Expr, body: Prog, attrs: Attrs): Prog =
-    test match
-      case False => skip
-      case _     => While(test, body, attrs)
-
-  def iter(config: Config, state: State, ctx: Ctx, body: Prog, attrs: Attrs): Prog =
-    Iter(body, attrs)
-
-  def ode(config: Config, state: State, ctx: Ctx, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): Prog =
-    Ode(time, xs, rhs, dom, attrs)
-
-  def par(config: Config, state: State, ctx: Ctx, calls: List[Call]): Prog =
-    Par(calls)
 
   // the outer loop for assertions, which are normalized into clauses (see Normalize) before and after each round,
   // since simplification may produce nested implications and negations again,
@@ -934,3 +758,133 @@ object Simplify extends Transform:
 
     val pairs = if kept.isEmpty then distinct.take(1) else kept
     (pairs.map(_._1), pairs.map(_._2), re)
+
+  // programs are simplified statement by statement, where the expressions are simplified without context,
+  // since the facts known before an assignment may not hold afterwards;
+  // the helpers below normalize their own constructor, as those of expressions
+  def simplify(config: Config, state: State, ctx: Ctx, prog: Prog): Prog =
+    prog match
+      case Break | Continue | Return =>
+        prog
+
+      case Spec(xs, pre, post) =>
+        val pre_ = simplify(config, state, ctx, pre)
+        val post_ = simplify(config, state, ctx, post)
+        spec(config, state, ctx, xs, pre_, post_)
+
+      case Assign(lhs, rhs) =>
+        val rhs_ = rhs.map(simplify(config, state, ctx, _))
+        assign(config, state, ctx, lhs, rhs_)
+
+      case Call(name, args, res) =>
+        val args_ = args.map(simplify(config, state, ctx, _))
+        call(config, state, ctx, name, args_, res)
+
+      case Block(locals, progs) =>
+        val progs_ = progs.map(simplify(config, state, ctx, _))
+        block(config, state, ctx, locals, progs_)
+
+      case Choice(progs) =>
+        val progs_ = progs.map(simplify(config, state, ctx, _))
+        choice(config, state, ctx, progs_)
+
+      case If(test, left, right) =>
+        val test_ = simplify(config, state, ctx, test)
+        val left_ = simplify(config, state, ctx, left)
+        val right_ = simplify(config, state, ctx, right)
+        if_(config, state, ctx, test_, left_, right_)
+
+      case While(test, body, attrs) =>
+        val test_ = simplify(config, state, ctx, test)
+        val body_ = simplify(config, state, ctx, body)
+        val attrs_ = simplify(config, state, ctx, attrs)
+        while_(config, state, ctx, test_, body_, attrs_)
+
+      case Iter(body, attrs) =>
+        val body_ = simplify(config, state, ctx, body)
+        val attrs_ = simplify(config, state, ctx, attrs)
+        iter(config, state, ctx, body_, attrs_)
+
+      case Ode(time, xs, rhs, dom, attrs) =>
+        val rhs_ = rhs.map(simplify(config, state, ctx, _))
+        val dom_ = simplify(config, state, ctx, dom)
+        val attrs_ = simplify(config, state, ctx, attrs)
+        ode(config, state, ctx, time, xs, rhs_, dom_, attrs_)
+
+      case Par(calls) =>
+        val calls_ =
+          for Call(name, args, res) <- calls
+          yield Call(name, args.map(simplify(config, state, ctx, _)), res)
+        par(config, state, ctx, calls_)
+
+  // havoc of no variables under the trivial contract has no effect
+  def spec(config: Config, state: State, ctx: Ctx, xs: List[Var], pre: Expr, post: Expr): Prog =
+    (xs, pre, post) match
+      case (Nil, True, True) => Skip
+      case _                 => Spec(xs, pre, post)
+
+  // assignments of variables to themselves are dropped, and no assignment has no effect
+  def assign(config: Config, state: State, ctx: Ctx, lhs: List[Var], rhs: List[Expr]): Prog =
+    val (lhs_, rhs_) = (lhs zip rhs).filterNot((x, e) => x == e).unzip
+    if lhs_.isEmpty
+    then Skip
+    else Assign(lhs_, rhs_)
+
+  def call(config: Config, state: State, ctx: Ctx, name: Name, args: List[Expr], res: List[Var]): Prog =
+    Call(name, args, res)
+
+  // nested blocks are merged, which drops Skip, the empty block, and whose locals are hoisted unless that captures
+  // variables of the other statements; statements after a jump and locals that are not used are dropped;
+  // a block of a single statement without locals is that statement
+  def block(config: Config, state: State, ctx: Ctx, locals: List[Var], progs: List[Prog]): Prog =
+    def flatten(locals: List[Var], done: List[Prog], progs: List[Prog]): (List[Var], List[Prog]) =
+      progs match
+        case Nil =>
+          (locals, done)
+
+        case (jump @ (Break | Continue | Return)) :: _ =>
+          (locals, done :+ jump)
+
+        case Block(inner, progs_) :: rest
+            if (inner intersect locals).isEmpty && !(done ++ rest).exists(p => inner.exists(p.free.contains)) =>
+          flatten(locals ++ inner, done, progs_ ++ rest)
+
+        case prog :: rest =>
+          flatten(locals, done :+ prog, rest)
+
+    val (locals_, progs_) = flatten(locals, Nil, progs)
+    val used = locals_.filter(x => progs_.exists(_.free.contains(x)))
+    (used, progs_) match
+      case (Nil, List(prog)) => prog
+      case _                 => Block(used, progs_)
+
+  // nested choices are merged, duplicates are dropped, and a choice of a single statement is that statement
+  def choice(config: Config, state: State, ctx: Ctx, progs: List[Prog]): Prog =
+    Choice.flatten(progs).distinct match
+      case List(prog) => prog
+      case progs__    => Choice(progs__)
+
+  // constant tests select a branch, equal branches make the test irrelevant,
+  // and a negated test swaps the branches
+  def if_(config: Config, state: State, ctx: Ctx, test: Expr, left: Prog, right: Prog): Prog =
+    test match
+      case True                => left
+      case False               => right
+      case _ if left == right  => left
+      case Not(test_)          => If(test_, right, left)
+      case _                   => If(test, left, right)
+
+  // a loop that is never entered has no effect
+  def while_(config: Config, state: State, ctx: Ctx, test: Expr, body: Prog, attrs: Attrs): Prog =
+    test match
+      case False => Skip
+      case _     => While(test, body, attrs)
+
+  def iter(config: Config, state: State, ctx: Ctx, body: Prog, attrs: Attrs): Prog =
+    Iter(body, attrs)
+
+  def ode(config: Config, state: State, ctx: Ctx, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): Prog =
+    Ode(time, xs, rhs, dom, attrs)
+
+  def par(config: Config, state: State, ctx: Ctx, calls: List[Call]): Prog =
+    Par(calls)

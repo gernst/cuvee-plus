@@ -97,7 +97,7 @@ object TEQ extends TestSuite:
     // a variable that is increased where the values are equal to e counts the occurrences of e,
     // also on values of other types than bool, and on booleans whose guards are the values themselves
     test("counts"):
-      val rules = cuvee.simplify.Simplify.rules(cuvee.verify.TEQ.lemmas)
+      val rules = cuvee.simplify.Rules.from(cuvee.verify.TEQ.lemmas)
       val counts = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == "counts" => fun }.get
       val x = Var("x", Sort.int)
       val y = Var("y", Sort.int)

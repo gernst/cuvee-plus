@@ -5,27 +5,6 @@ import cuvee.Config
 import cuvee.Error
 import cuvee.core._
 
-// a conditional rewrite rule lhs = rhs if cond, whose variables xs may be instantiated by arbitrary expressions
-// of the same type, and whose type parameters may be instantiated by arbitrary types;
-// the other free variables are constants, e.g. those of the facts of the context (see Ctx.assume)
-case class Rule(xs: List[Var], lhs: Expr, rhs: Expr, cond: Expr)
-
-object Rule:
-  // well-formedness of rules from the input, see Simplify.rules
-  def check(rule: Rule): Rule =
-    val Rule(xs, lhs, rhs, cond) = rule
-
-    Error.report("variables of right hand side or condition do not occur in left hand side", rule):
-      require(((rhs.free ++ cond.free) intersect xs.toSet) subsetOf lhs.free)
-
-    Error.report("left hand side of rule is a variable", rule):
-      require(!lhs.isInstanceOf[Var])
-
-    Error.report("sides of rule have different types", rule):
-      require(lhs.typ == rhs.typ)
-
-    rule
-
 // the variables while matching below the combinators trace, map, and all:
 // `vars` are the variables of the rule, `locals` are the bound variables of the pattern that range over dependencies
 // that are variables of the rule, which are instantiated like those, `local` relates the other bound variables

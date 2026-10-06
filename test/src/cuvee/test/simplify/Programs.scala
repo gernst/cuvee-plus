@@ -16,7 +16,6 @@ object Programs extends TestSuite:
 
   val inc = Assign(List(x), List(Plus.int(x, One.int)))
   val dec = Assign(List(x), List(Zero.int))
-  val skip = Block(Nil, Nil)
 
   def simplify(prog: Prog) =
     Simplify.simplify(Config.default, State.empty, Ctx.empty, prog)
@@ -25,8 +24,8 @@ object Programs extends TestSuite:
     // assignments of variables to themselves and trivial specifications have no effect
     test("skip"):
       simplify(Assign(List(x, y), List(x, Zero.int))) ==> Assign(List(y), List(Zero.int))
-      simplify(Assign(List(x), List(x))) ==> skip
-      simplify(Spec(Nil, True, True)) ==> skip
+      simplify(Assign(List(x), List(x))) ==> Skip
+      simplify(Spec(Nil, True, True)) ==> Skip
 
     // nested blocks are merged, also with locals, unless these capture variables of the other statements
     test("blocks"):
@@ -51,7 +50,7 @@ object Programs extends TestSuite:
       simplify(If(Not(p), inc, dec)) ==> If(p, dec, inc)
 
     test("while"):
-      simplify(While(False, inc, Attrs.empty)) ==> skip
+      simplify(While(False, inc, Attrs.empty)) ==> Skip
 
     test("choice"):
       simplify(Choice(List(inc, Choice(List(dec, inc))))) ==> Choice(List(inc, dec))

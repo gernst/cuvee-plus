@@ -346,7 +346,7 @@ case class State(
     def check(scope: Scope, fixed: Set[Var], mod: Set[Var], prog: Prog) =
       Overload(State.this, Type.check(State.this, scope, fixed, mod, prog))
 
-    def skip = Block(Nil, Nil)
+    def skip = Skip
     def break = Break
     def continue = Continue
     def return_ = Return
