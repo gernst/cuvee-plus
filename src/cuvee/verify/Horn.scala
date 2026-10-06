@@ -67,7 +67,9 @@ object Horn extends Transform:
       // the body starts from the precondition p_pre with the global variables gs at their values gs_ at the entry,
       // which are never modified, and leads to p_post;
       // gs_ are fresh copies of the global variables, which cannot clash with other names in the clauses
-      case DefineProc(Proc(name, params, in, out), body, _) =>
+      case DefineProc(Proc(name, params, in_, out_), body, _) =>
+        val in = Type.expand(state, in_)
+        val out = Type.expand(state, out_)
         // except for the precondition of main, e.g. the initial values of the global variables in C
         val (_, _, requires, ensures) = Verify.contract(state, name)
         Error.report("procedure with body has a contract", name, requires, ensures):
@@ -75,7 +77,7 @@ object Horn extends Transform:
 
         val (pre, post, decls) = declare(state, name)
 
-        val gs = state.globals
+        val gs = Type.expand(state, state.globals)
         val gs_ = gs.fresh
         val scope = in ++ gs_ ++ out ++ gs
         // old(e) refers to the values gs_ at the entry
@@ -125,13 +127,13 @@ object Horn extends Transform:
   // resp. the inputs, the global variables at the entry, the outputs, and the global variables at the exit
   def precondition(state: State, name: Name): Fun =
     val Proc(_, params, in, out) = state.procs(name)
-    val gs = state.globals
-    Fun(name.name + "_pre", params, in ++ gs, Sort.bool)
+    val gs = Type.expand(state, state.globals)
+    Fun(name.name + "_pre", params, Type.expand(state, in) ++ gs, Sort.bool)
 
   def postcondition(state: State, name: Name): Fun =
     val Proc(_, params, in, out) = state.procs(name)
-    val gs = state.globals
-    Fun(name.name + "_post", params, in ++ entry(gs) ++ out ++ gs, Sort.bool)
+    val gs = Type.expand(state, state.globals)
+    Fun(name.name + "_post", params, Type.expand(state, in) ++ entry(gs) ++ Type.expand(state, out) ++ gs, Sort.bool)
 
   // the formal parameters of p_post for the values of the global variables at the entry of a procedure,
   // fixed such that p_post is the same function at all uses
@@ -238,8 +240,8 @@ object Horn extends Transform:
           require(in.length == args.length && out.length == res.length)
 
         // results and modified global variables are fresh since `args` may refer to their old values
-        val gs = state.globals
-        val mod = state.procattrs(name).modifies
+        val gs = Type.expand(state, state.globals)
+        val mod = Type.expand(state, state.procattrs(name).modifies)
         val res_ = res.fresh
         val mod_ = mod.fresh
         val su = Subst.from(res ++ mod, res_ ++ mod_)

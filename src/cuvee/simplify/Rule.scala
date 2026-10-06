@@ -57,16 +57,19 @@ object Rule:
   // other parameters are renamed apart; overlapping patterns are not treated specially,
   // although the cases of a match apply in sequence
   def from(state: State, fun: Fun, body: Expr): List[Rule] =
+    // the body refers to the formal parameters with the defined sorts expanded (see Type.expand)
+    val formals = Type.expand(state, fun.formals)
+
     body match
-      case Match(x: Var, cases) if fun.formals.contains(x) =>
-        val others = fun.formals.filterNot(_ == x)
+      case Match(x: Var, cases) if formals.contains(x) =>
+        val others = formals.filterNot(_ == x)
 
         for Case(pat, rhs, cond) <- cases
         yield
           val re = Subst.fresh(others.filter(pat.free.contains))
           val pat_ = re(pat)
 
-          val args = fun.formals.map(y => if y == x then pat_ else y)
+          val args = formals.map(y => if y == x then pat_ else y)
           Rule(others ++ pat_.free.toList, App(state, fun, args), re(rhs), re(cond))
 
       case _ =>

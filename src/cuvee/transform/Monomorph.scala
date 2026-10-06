@@ -102,12 +102,11 @@ object Monomorph extends Transform:
 
   // applications of polymorphic functions are replaced by their instances,
   // whose type parameters are determined by the types of the arguments and of the result,
-  // where defined sorts are unfolded, such that each instance is named after the sorts of its definition
+  // in which defined sorts are expanded (see Type.expand), such that each instance is named after the sorts of its definition
   def expr(state: State, poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: mutable.ListBuffer[Cmd], e: Expr): Expr =
     e match
       case App(fun, inst, typ, args) if isPoly(poly, fun) =>
-        val types_ = (inst :+ typ).map(Type.expand(state, _))
-        val su = Type.bind(state, fun.args :+ fun.res, types_)
+        val su = Type.bind(state, fun.args :+ fun.res, inst :+ typ)
         val types = fun.params.map(su(_))
 
         Error.report("instance of polymorphic function is not monomorphic", fun, types):

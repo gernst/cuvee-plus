@@ -37,7 +37,7 @@ object Flat extends Transform:
 
       // the formal parameters are replaced by the constructors applied to their fields, as bound variables
       case DefineFun(fun, body, attrs) if isFlattened(state, fun) =>
-        val (_, body_) = bind(state, fun.formals, body)
+        val (_, body_) = bind(state, Type.expand(state, fun.formals), body)
         for (fun_, body__) <- functions(state, fun) zip leaf(state, body_)
         yield DefineFun(fun_, body__, attrs)
 

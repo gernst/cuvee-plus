@@ -99,7 +99,7 @@ object Path:
 object TEQ extends Transform:
   // the lemma database is injected once at the beginning, i.e., when nothing has been passed through so far
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    val gs = state.globals
+    val gs = Type.expand(state, state.globals)
 
     val cmds_ =
       for
@@ -211,7 +211,7 @@ object TEQ extends Transform:
   // where both refer to the values before the call, which are those of the path
   def call(state: State, proc: Name, call: Call, p: Path): Path =
     val (pre, fresh, post, _) = Verify.instance(state, proc, call)
-    val mod = state.procattrs(call.proc).modifies
+    val mod = Type.expand(state, state.procattrs(call.proc).modifies)
     p.check(p(pre)).fresh(fresh).assign(call.res ++ mod, fresh).assume(p(post))
 
   // the variables modified by a loop body, the global ones are those in the modifies clause of the loop (see Type.check)

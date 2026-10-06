@@ -58,9 +58,9 @@ object Overload:
     Impl(sig, { case (state, List(s, t)) => And(app(state, fun, List(s, t)), Not(Eq(s, t))) })
 
   // the application of an implementation, whose signature is matched against the argument types,
-  // where defined sorts are unfolded
+  // in which defined sorts are expanded already (see Type.expand)
   def app(state: State, fun: Fun, args: List[Expr]): App =
-    val inst = args.map(arg => Type.unfold(state, arg.typ))
+    val inst = args.types
     val su = Type.bind(state, fun.args, inst)
     App(fun, inst, su(fun.res), args)
 
@@ -147,10 +147,10 @@ object Overload:
     prog.map(apply(state, _: Expr), apply(state, _: Prog))
 
   // the replacement of a single application of an overloaded operator, whose arguments have been replaced already,
-  // by its implementation for the type of the first argument, where defined sorts are unfolded
+  // by its implementation for the type of the first argument, in which defined sorts are expanded already
   def resolve(state: State, app: App): Expr =
     val App(op, inst, typ, args) = app
-    val typ_ = Type.unfold(state, args(dispatch(op.name, op.arity)).typ)
+    val typ_ = args(dispatch(op.name, op.arity)).typ
 
     impl(op.name, op.arity, typ_) match
       case Some(Impl(_, build)) => build(state, args)

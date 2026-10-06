@@ -90,23 +90,6 @@ object Rewrite extends TestSuite:
       val rules = List(rw(app(length, App(nil, Nil, list, Nil)), Zero.int))
       R(rules, app(length, As(App(nil, Nil, ints, Nil), ints))) ==> Zero.int
 
-    // defined sorts are unfolded when matching types, of the expression and of the rule,
-    // and the type parameters are instantiated with the expanded types
-    test("defined sorts"):
-      val ints = Sort(Con("List", 1), List(Sort.int))
-      val defined = Sort(Con("Ints", 0), Nil)
-      val state = State.empty.declare("Ints", 0, Attrs.empty).define("Ints", Nil, ints)
-      def D(rules: List[Rule], expr: Expr) = R.rewrite(cuvee.Config.default, state, Ctx.empty.withRules(rules), expr)
-
-      val xs = Var("xs", list)
-      val s = Var("s", defined)
-      val rules = List(rw(app(length, xs), App(length, List(list), Sort.int, List(App(nil, Nil, list, Nil)))))
-      D(rules, App(length, List(defined), Sort.int, List(s))) ==> App(length, List(ints), Sort.int, List(App(nil, Nil, ints, Nil)))
-
-      val h = Fun("h", Nil, Fun.formals(defined), Sort.int)
-      val rules_ = List(rw(app(h, Var("ys", defined)), Zero.int))
-      D(rules_, App(h, List(ints), Sort.int, List(Var("t", ints)))) ==> Zero.int
-
     // conditions are decided by the simplifier
     test("conditional"):
       val rule = rw(app(abs, x), x, Le.int(Zero.int, x))

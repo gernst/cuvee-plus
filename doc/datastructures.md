@@ -33,10 +33,15 @@ case class BitVec(n: Int) extends Type          // (_ BitVec n)
   polymorphic in the width, which type parameters cannot express;
   `BitVecs.fun` instantiates them for the widths of the arguments.
 - Defined sorts (`define-sort`, Dafny `type T = ...`) are unfolded on
-  demand by `Type.unfold` (at the top) and `Type.expand` (everywhere), by
-  `unify`, `bind`, and the type matching of rewriting, which instantiates
-  type parameters with the expanded types; `Monomorph` names instances
-  after the expanded types.
+  demand by `Type.unfold` (at the top) during type checking (`unify`,
+  `bind`). Afterwards, `State.exprs.check` and `State.progs.check` expand
+  them (`Type.expand`) in all types of expressions and programs, including
+  variables and bound variables, before overloading is resolved;
+  `App(state, fun, args)` expands the result type. Declarations keep them,
+  e.g. formal parameters, global variables, and modifies clauses, which
+  `Verify`, `Horn`, `TEQ`, `Rule.from`, and `Flat` expand where they meet
+  bodies, since variables are compared with their types. Overloading,
+  rewriting, `Ring`, and `Monomorph` see expanded types only.
 - `Type.unify` drives type checking. It respects rigid parameters: those of
   the enclosing declaration, kept in the `Scope`.
 - `Type.bind` matches a signature against argument types. `App(fun, args)`

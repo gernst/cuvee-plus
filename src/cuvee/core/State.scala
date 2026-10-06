@@ -351,14 +351,14 @@ case class State(
         require(cases.nonEmpty)
       Match(arg, cases)
 
-    // type checking resolves the overloaded operators, see Overload
+    // type checking expands the defined sorts and then resolves the overloaded operators, see Overload
     def check(scope: Scope, expr: Expr, typ: Type) =
-      Overload(State.this, Type.check(State.this, scope, expr, typ))
+      Overload(State.this, Type.expand(State.this, Type.check(State.this, scope, expr, typ)))
 
   // programs, which are type checked as a whole by `check`
   object progs:
     def check(scope: Scope, fixed: Set[Var], mod: Set[Var], prog: Prog) =
-      Overload(State.this, Type.check(State.this, scope, fixed, mod, prog))
+      Overload(State.this, Type.expand(State.this, Type.check(State.this, scope, fixed, mod, prog)))
 
     def skip = Skip
     def break = Break

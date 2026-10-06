@@ -3,6 +3,8 @@ package cuvee.core
 import util.Counter
 import util.backtrack
 
+import scala.annotation.targetName
+
 import util.Name
 import cuvee.Error
 
@@ -143,6 +145,64 @@ object Type:
     unfold(state, typ) match
       case Sort(con, args) => Sort(con, args.map(expand(state, _)))
       case typ_            => typ_
+
+  // the defined sorts are expanded in all types of expressions and programs once they are type checked (see State.exprs),
+  // including the variables, also those bound by quantifiers, but not in declarations, e.g. not in formal parameters,
+  // which are expanded instead where they meet expressions, e.g. when a procedure is verified
+  def expand(state: State, x: Var): Var =
+    Var(x.name, expand(state, x.typ))
+
+  @targetName("expandVars")
+  def expand(state: State, xs: List[Var]): List[Var] =
+    xs.map(expand(state, _))
+
+  def expand(state: State, expr: Expr): Expr =
+    def e(expr: Expr) = expand(state, expr)
+    def xs(xs: List[Var]) = expand(state, xs)
+    def t(typ: Type) = expand(state, typ)
+
+    expr match
+      case x: Var                              => expand(state, x)
+      case Lit(value, typ)                     => Lit(value, t(typ))
+      case App(fun, inst, typ, args)           => App(fun, inst.map(t), t(typ), args.map(e))
+      case As(arg, typ)                        => As(e(arg), t(typ))
+      case Diff(ys, arg)                       => Diff(xs(ys), e(arg))
+      case Trace(init, deps, acc, bound, upds) => Trace(e(init), deps.map(e), expand(state, acc), xs(bound), upds.map(_.map(e)))
+      case Maps(deps, bound, upds)             => Maps(deps.map(e), xs(bound), upds.map(_.map(e)))
+      case Invs(deps, bound, body)             => Invs(deps.map(e), xs(bound), e(body))
+      case Bind(quant, bound, body)            => Bind(quant, xs(bound), e(body))
+      case Let(bound, args, body)              => Let(xs(bound), args.map(e), e(body))
+      case Match(arg, cases)                   => Match(e(arg), cases.map(c => Case(e(c.pat), e(c.body), e(c.cond))))
+      case _                                   => expr.map(e)
+
+  // the attributes, whose values are expressions and lists of variables (modifies)
+  def expand(state: State, attrs: Attrs): Attrs =
+    val attrs_ =
+      for (kw, arg) <- attrs.attrs
+      yield arg match
+        case Some(expr: Expr)  => (kw, Some(expand(state, expr)))
+        case Some(ys: List[?]) => (kw, Some(ys.map { case x: Var => expand(state, x); case y => y }))
+        case _                 => (kw, arg)
+
+    Attrs(attrs_)
+
+  def expand(state: State, prog: Prog): Prog =
+    def e(expr: Expr) = expand(state, expr)
+    def p(prog: Prog) = expand(state, prog)
+    def xs(xs: List[Var]) = expand(state, xs)
+    def a(attrs: Attrs) = expand(state, attrs)
+    def call(c: Call) = Call(c.proc, c.args.map(e), xs(c.res))
+
+    prog match
+      case Spec(ys, pre, post)         => Spec(xs(ys), e(pre), e(post))
+      case Assign(lhs, rhs)            => Assign(xs(lhs), rhs.map(e))
+      case c: Call                     => call(c)
+      case Block(locals, progs)        => Block(xs(locals), progs.map(p))
+      case While(test, body, attrs)    => While(e(test), p(body), a(attrs))
+      case Iter(body, attrs)           => Iter(p(body), a(attrs))
+      case Ode(t, ys, rhs, dom, attrs) => Ode(expand(state, t), xs(ys), rhs.map(e), e(dom), a(attrs))
+      case Par(calls)                  => Par(calls.map(call))
+      case _                           => prog.map(e, p)
 
   // extend `subst` such that the types become equal, backtracks if they cannot be unified;
   // the parameters of the scope are rigid, defined sorts are unfolded as needed

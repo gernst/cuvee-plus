@@ -402,20 +402,13 @@ object Rewrite:
       case (_, _)            => neg.foldLeft(ring.plus(pos))(ring.minus(_, _))
 
   // the type parameters of the pattern are instantiated consistently, a single match or none;
-  // defined sorts are unfolded before comparing constructors, and the parameters are bound to the expanded types
+  // defined sorts are expanded in both already (see Type.expand)
   def matches(state: State, pat: Type, typ: Type, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     (pat, typ) match
       case (p: Param, _) =>
-        val typ_ = Type.expand(state, typ)
         m.params.get(p) match
-          case Some(t) => if t == typ_ then List(m) else Nil
-          case None    => List(m + (p -> typ_))
-
-      case (Sort(con, _), _) if state.sortdefs.contains(con.name) =>
-        matches(state, Type.unfold(state, pat), typ, m)
-
-      case (_, Sort(con_, _)) if state.sortdefs.contains(con_.name) =>
-        matches(state, pat, Type.unfold(state, typ), m)
+          case Some(t) => if t == typ then List(m) else Nil
+          case None    => List(m + (p -> typ))
 
       case (Sort(con, args), Sort(con_, args_)) if con == con_ =>
         matches(state, args, args_, m)

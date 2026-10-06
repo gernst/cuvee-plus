@@ -11,9 +11,10 @@ import cuvee.core.Attrs
 // verification conditions by weakest preconditions: each procedure definition is replaced by the goal
 // that its precondition implies the weakest precondition of its body for its postcondition (see wp)
 object Verify extends Transform:
-  // the global variables gs are computed once and passed to the generation of the verification conditions
+  // the global variables gs are computed once and passed to the generation of the verification conditions;
+  // declarations keep defined sorts, which are expanded where they meet the expressions (see Type.expand)
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    val gs = state.globals
+    val gs = Type.expand(state, state.globals)
 
     for
       cmd <- cmds;
@@ -59,7 +60,7 @@ object Verify extends Transform:
 
     val Proc(_, _, in, out) = state.procs(name)
     val attrs = state.procattrs(name)
-    (in, out, attrs.requires, attrs.ensures)
+    (Type.expand(state, in), Type.expand(state, out), attrs.requires, attrs.ensures)
 
   // the termination measure of procedure `name`, the components of a lexicographic order,
   // which is evaluated at the entry of the procedure, therefore it must refer to the inputs only,
@@ -69,7 +70,7 @@ object Verify extends Transform:
     val dec = state.procattrs(name).decreases
 
     Error.report("termination measure refers to variables other than the inputs", name, dec):
-      require(dec.free subsetOf in.toSet)
+      require(dec.free subsetOf Type.expand(state, in).toSet)
 
     dec
 
@@ -185,7 +186,7 @@ object Verify extends Transform:
     // results and the modified global variables are fresh since `args` may refer to their old values,
     // the precondition refers to the values of the global variables before the call,
     // as does old(e) in the postcondition, whose modified global variables are kept apart as mod0 meanwhile
-    val mod = state.procattrs(name).modifies
+    val mod = Type.expand(state, state.procattrs(name).modifies)
     val (vars_, rename) = Subst.rename(res ++ mod)
     val mod0 = mod.fresh
     // the substitutions replace the formal parameters and instantiate the type parameters of a polymorphic procedure
@@ -217,7 +218,7 @@ object Verify extends Transform:
     val attrs = state.procattrs(name)
     // the formal parameters are replaced and the type parameters instantiated by the arguments
     val su = Ref(Subst.empty[Type, Expr])
-    Type.bind(state, in, args, su)
+    Type.bind(state, Type.expand(state, in), args, su)
     (su(attrs.assumes), su(attrs.commits))
 
   // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h,
@@ -275,7 +276,7 @@ object Verify extends Transform:
 
   // the tick of the history by the time that has passed in a differential equation, if the history is declared
   def tick(state: State, time: Var): Option[Call] =
-    for h <- state.vars.get("history")
+    for h <- state.vars.get("history").map(Type.expand(state, _))
     yield Tick(List(h, time), List(h))
 
   // loops with a test, and nondeterministic iterations without test, which may be left at any iteration

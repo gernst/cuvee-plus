@@ -66,11 +66,11 @@ case class Lit(value: Any, typ: Type) extends Expr:
 
 object App:
   // instantiate the type parameters of `fun` by matching its argument types against those of `args`,
-  // where the defined sorts of `state` are unfolded
+  // where the defined sorts of `state` are unfolded, and expanded in the result (see Type.expand)
   def apply(state: State, fun: Fun, args: List[Expr]): App =
     val inst = args.types
     val su = Type.bind(state, fun.args, inst)
-    val typ = su(fun.res)
+    val typ = Type.expand(state, su(fun.res))
     App(fun, inst, typ, args)
 
   // the same without defined sorts, where there is no state (e.g. sugar)
