@@ -47,6 +47,30 @@ The task set has 1397 tasks: 990 with a `.c` input and 407 with a `.i` input
   yml frontend as "malformed task definition"; they are lists of
   invariant sets, not tasks.
 
+### After steps 1–5 (branch `c`, version 0.19.7)
+
+The same 148 tasks, as they are:
+
+| | ok | error | timeout |
+|---|---|---|---|
+| before | 0 | 148 | 0 |
+| after | 109 | 39 | 0 |
+
+The remaining errors in the sample: libc headers with structs, unions,
+`long double` and prototypes with pointers (`stdlib.h`, 6 tasks, plus
+`__bswap_32` with `__builtin_bswap32`, 2), structs (12), floating point
+(4), bitwise `&` (5), `goto` in the CFA reducers of `loop-invgen` (5),
+pointers to pointers (1), `switch` (1), and increments inside expressions
+(4).
+
+Increments inside expressions, e.g. `while (counter++ < 10)`, were missed
+by the first survey: they occur in about 260 tasks, nearly all of
+`nla-digbench-scaling`, and are the largest gap left within integer
+programs. They need the grammar to allow `x++`, `x--`, `++x`, `--x` in
+expressions, and the parser to evaluate their effects before the
+expression (old value for postfix, new value for prefix), like calls;
+in loop conditions with `Parser.guard`.
+
 ## The SV-COMP harness (blocks every task)
 
 Every input starts with the same declarations and definitions, which already
