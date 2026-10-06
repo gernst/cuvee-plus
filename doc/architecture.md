@@ -137,7 +137,7 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     variables bound inside the scope of `x`. `bind` then drops `x`. This
     relies on the context recording all siblings between the binder and the
     equation, which holds for `and`, `or`, `not`, `==>`, and binders only;
-    the branches of `ite`, the bodies of `let`, `match`, and `all`, and
+    the branches of `ite`, the bodies of `let`, `match`, and `invs`, and
     neutral positions forget which variables are universal and existential
     (`Ctx.neutral`); the variables of `let`, `match`, and the combinators are
     neither (`Ctx.bind`).

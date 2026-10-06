@@ -80,14 +80,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 - The functions on traces are declared only by the lemma database
   ([teq.dfy](resources/cuvee/teq.dfy)), whose names may clash with the input,
-  and which inputs cannot use before `-teq` injects it. Lemmas about `all`
+  and which inputs cannot use before `-teq` injects it. Lemmas about `invs`
   over a formula would need higher-order patterns.
-- `trace`, `map`, `all` followed by `for` cannot be function names; Split
-  treats the combinators as atoms.
-- The goals contain the combinators and must be rewritten by lemmas or
-  encoded into first-order logic (section 5.3 of the paper) for a solver. No
-  differential equations or parallel composition; loop invariants are
-  ignored; paths grow exponentially with the branches of a body.
 - Counting `a[i] == v` over `⌊I⌋` yields `counts(0, v, maps(for ⌊I⌋ yield i => a[i]))`;
   there are no lemmas that relate such maps to `selects` or to `count` on
   sequences.

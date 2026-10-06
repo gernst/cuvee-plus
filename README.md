@@ -53,7 +53,7 @@ languages or passes it to an SMT solver (z3 or cvc5).
   atom, optionally with a premise as condition, applied by `-simplify` after
   each round,
   matching modulo associativity, commutativity, and 0 of `+` and `-`, and the
-  binding structure of the trace combinators `trace`, `map`, and `all` from
+  binding structure of the trace combinators `trace`, `maps`, and `invs` from
   *Trace Equation Systems for Program Verification*; and Fourier-Motzkin
   elimination over the rationals.
 - **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`): goals and lemmas are checked

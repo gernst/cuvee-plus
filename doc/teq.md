@@ -96,8 +96,9 @@ after section 4 of the paper.
   dependencies must be nonempty. `invs` with a constant body is `true` or
   `len(dep) == 0`. Guards and results of updates are simplified, results
   under their guard, and cases with guard `false` are dropped.
-- `invs` distributes over conjunctions, `all(Y, y => φ && ψ)` is
-  `all(Y, y => φ) && all(Y, y => ψ)`, each with the dependencies it uses.
+- `invs` distributes over conjunctions, `invs(for Y check y => φ && ψ)` is
+  `invs(for Y check y => φ) && invs(for Y check y => ψ)`, each with the
+  dependencies it uses.
 - The updates of `trace` and `maps` and the body of `invs` assume the
   invariants among the assumptions of the context whose dependencies are
   among their own (`Simplify.invariants`), with the bound variables renamed
