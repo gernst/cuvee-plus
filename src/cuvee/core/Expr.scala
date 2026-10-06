@@ -131,13 +131,70 @@ object Old:
   // replace old(e) by e[gs := gs_], where gs_ are the values of the global variables gs at the entry,
   // nested occurrences of old refer to the same values
   def elim(gs: List[Var], gs_ : List[Expr], expr: Expr): Expr =
+    instance(Subst.empty, Subst[Type, Expr](Map(), Map((gs zip gs_)*)), expr)
+
+  // a single traversal that replaces the free variables by `now`, and inside of old(e) by `before`, and strips old,
+  // e.g. for the postcondition of a call, whose modified global variables refer to their new values outside of old
+  // and to their values before the call inside of it (see Verify.instance); `Subst` substitutes inside old(e) as well;
+  // the type parameters are instantiated by `now`
+  def instance(now: Subst[Type, Expr], before: Subst[Type, Expr], expr: Expr): Expr =
+    instance(now, before, false, expr)
+
+  // `old` holds inside of old(e)
+  def instance(now: Subst[Type, Expr], before: Subst[Type, Expr], old: Boolean, expr: Expr): Expr =
+    def e(expr: Expr) = instance(now, before, old, expr)
+    def t(typ: Type) = now(typ)
+    val su = if old then before else now
+
+    // the variables bound in the context are no longer replaced, those that would capture
+    // a free variable of the replacements are renamed, also in the patterns of cases
+    def bind(xs: List[Var]): (List[Var], Expr => Expr) =
+      val names = (now.free ++ before.free).map(_.name)
+      val captured = xs.filter(x => names.contains(x.name))
+      val alpha = Map(captured zip captured.fresh.map(now.retype)*)
+      val xs_ = xs.map(x => alpha.getOrElse(x, now.retype(x)))
+      val now_ = Subst(now.params, now.vars -- xs ++ alpha)
+      val before_ = Subst(before.params, before.vars -- xs ++ alpha)
+      (xs_, instance(now_, before_, old, _))
+
     expr match
-      case Old(arg) =>
-        val arg_ = elim(gs, gs_, arg)
-        Subst.from(gs, gs_)(arg_)
+      case x: Var                    => su(x)
+      case Lit(value, typ)           => Lit(value, t(typ))
+      case App(fun, inst, typ, args) => App(fun, inst.map(t), t(typ), args.map(e))
+      case As(arg, typ)              => As(e(arg), t(typ))
+      case Diff(xs, arg)             => Diff(su.lhs(xs), e(arg))
+      case Old(arg)                  => instance(now, before, true, arg)
+
+      case Bind(quant, bound, body) =>
+        val (bound_, inner) = bind(bound)
+        Bind(quant, bound_, inner(body))
+
+      case Trace(init, deps, acc, bound, updates) =>
+        val (acc_ :: bound_, inner) = bind(acc :: bound): @unchecked
+        Trace(e(init), deps.map(e), acc_, bound_, updates.map(_.map(inner)))
+
+      case Maps(deps, bound, updates) =>
+        val (bound_, inner) = bind(bound)
+        Maps(deps.map(e), bound_, updates.map(_.map(inner)))
+
+      case Invs(deps, bound, body) =>
+        val (bound_, inner) = bind(bound)
+        Invs(deps.map(e), bound_, inner(body))
+
+      case Let(bound, args, body) =>
+        val (bound_, inner) = bind(bound)
+        Let(bound_, args.map(e), inner(body))
+
+      case Match(arg, cases) =>
+        val cases_ =
+          for Case(pat, body, cond) <- cases
+          yield
+            val (_, inner) = bind(pat.free.toList)
+            Case(inner(pat), inner(body), inner(cond))
+        Match(e(arg), cases_)
 
       case _ =>
-        expr.map(elim(gs, gs_, _))
+        expr.map(e)
 
   // in all expressions and attributes of a program, e.g. assertions and loop invariants
   def elim(gs: List[Var], gs_ : List[Expr], prog: Prog): Prog =

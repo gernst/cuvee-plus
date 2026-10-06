@@ -184,18 +184,17 @@ object Verify extends Transform:
       require(in.length == args.length && out.length == res.length)
 
     // results and the modified global variables are fresh since `args` may refer to their old values,
-    // the precondition refers to the values of the global variables before the call,
-    // as does old(e) in the postcondition, whose modified global variables are kept apart as mod0 meanwhile
+    // the precondition refers to the values of the global variables before the call, as does old(e) in the postcondition
     val mod = Type.expand(state, state.procattrs(name).modifies)
     val (vars_, rename) = Subst.rename(res ++ mod)
-    val mod0 = mod.fresh
     // the substitutions replace the formal parameters and instantiate the type parameters of a polymorphic procedure
-    // by the types of the arguments, and those of the results, which su_ replaces in addition
+    // by the types of the arguments, and those of the results, which su_ replaces in addition,
+    // except for the modified global variables inside of old(e)
     val su = Ref(Subst.empty[Type, Expr])
     Type.bind(state, in, args, su)
     val su_ = su.copy
     Type.bind(state, out ++ mod, vars_, su_)
-    val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
+    val phi_ = Old.instance(su_, mod.foldLeft(su_.value)(_ - _), phi)
 
     // the measure refers to the inputs, whose values at the call are those at the entry of `proc`
     val dec =
