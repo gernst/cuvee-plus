@@ -314,6 +314,10 @@ class Parser(var state: State):
       case Sort(name, Nil) if scope.params.contains(name) =>
         scope.params(name)
 
+      // bitvectors bv1, bv2, ..., unless the name is declared otherwise
+      case Sort(name, Nil) if name.matches("bv[1-9][0-9]*") && !state.sorts.contains(name) =>
+        core.BitVec(name.drop(2).toInt)
+
       case Sort(name, args) if state.sorts.contains(name) =>
         val args_ = args.map(resolve(scope, _))
         state.types.sort(name, args_)
@@ -354,9 +358,15 @@ class Parser(var state: State):
       case Array(None, _) :: _ =>
         Error.raise("missing index", base)
 
+      // conversions to integers and bitvectors, whose implementation depends on the type of the base,
+      // which is determined by type checking (see Overload.conversion), other targets are type annotations
       case As(typ) :: rest =>
         val typ_ = resolve(scope, typ)
-        resolve(scope, state.exprs.as(base, typ_), rest)
+        val base_ = typ_ match
+          case core.Sort.int  => state.exprs.app(core.Overload.toInt, List(base))
+          case core.BitVec(_) => state.exprs.app(core.Overload.toBitVec, List(base)).copy(typ = typ_)
+          case _              => state.exprs.as(base, typ_)
+        resolve(scope, base_, rest)
 
       // the keys and values m.Keys and m.Values of maps, which are sets
       case Member("Keys", Nil) :: rest if isMap(base) =>
@@ -413,8 +423,9 @@ class Parser(var state: State):
 
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match
+      // numeric literals are integers or bitvectors, depending on the context, and integers by default (see Type.instantiate)
       case Num(value) =>
-        state.exprs.num(BigInt(value))
+        core.Lit(BigInt(value), core.Param("n").fresh)
 
       case Dec(value) =>
         state.exprs.dec(util.Rational.decimal(value))

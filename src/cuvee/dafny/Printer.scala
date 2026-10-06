@@ -449,8 +449,38 @@ object Printer extends cuvee.pipe.Printer:
   // the bases of array accesses are atoms
   val operand = (atomic - 1, None)
 
+  // the functions on bitvectors that implement operators of Dafny (see Overload.bitvectors),
+  // as applications of these operators
+  object bitvector:
+    val ops =
+      for ((op, arity), fun) <- Overload.bitvectors
+      yield (fun, arity) -> op
+
+    def unapply(expr: Expr): Option[App] =
+      expr match
+        case App(fun, inst, typ, args) if fun.name.index.isEmpty =>
+          for op <- ops.get((fun.name.name, args.length))
+          yield App(fun.copy(name = op), inst, typ, args)
+
+        case _ =>
+          None
+
+  // the conversions between integers and bitvectors (see Overload.conversion), which are printed as e as T
+  object conversion:
+    def unapply(expr: Expr): Option[Expr] =
+      expr match
+        case App(fun, _, _, List(arg)) if fun.name.index.isEmpty && converts(fun.name.name) => Some(arg)
+        case _                                                                               => None
+
+    def converts(name: String) =
+      name == "bv2nat" || name.startsWith("_ int2bv ") || name.startsWith("_ zero_extend ")
+        || (name.startsWith("_ extract ") && name.endsWith(" 0"))
+
   def prefix(expr: Expr): Option[(String, Int, Expr)] =
     expr match
+      case bitvector(app) =>
+        prefix(app)
+
       // a != b and x !in s, see infix
       case Not(Eq(_, _)) | Not(Sets.member(_, _)) | Not(FinMaps.member(_, _)) | Not(Seqs.contains(_, Seqs.unit(_))) =>
         None
@@ -471,6 +501,9 @@ object Printer extends cuvee.pipe.Printer:
       // sequence, set, and multiset literals are atoms
       case _ if elems(expr).isDefined || members(expr).isDefined || multiset(expr).isDefined || pairs(expr).isDefined =>
         None
+
+      case bitvector(app) =>
+        infix(app)
 
       // concatenation and prefix of sequences are overloaded in Dafny, x in s is containment of [x]
       case Seqs.concat(left, right) =>
@@ -621,7 +654,7 @@ object Printer extends cuvee.pipe.Printer:
   def level(expr: Expr): (Int, Option[Assoc]) =
     expr match
       // binds tighter than all operators, but is not an operand of accesses
-      case As(_, _) =>
+      case As(_, _) | conversion(_) =>
         (atomic - 1, None)
 
       case Lit(value: BigInt, _) if value < 0 =>
@@ -809,6 +842,9 @@ object Printer extends cuvee.pipe.Printer:
 
       case App(fun, _, _, _) if (Fun.seq.all contains fun) && infix(expr).isEmpty =>
         Error.raise("not supported in Dafny", expr)
+
+      case conversion(arg) =>
+        doc(arg, operand) ~~ text("as") ~~ doc(expr.typ)
 
       case Select(base, index) =>
         doc(base, operand) ~ text("[") ~ doc(index) ~ text("]")

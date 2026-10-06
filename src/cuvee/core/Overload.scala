@@ -75,6 +75,8 @@ object Overload:
         (fun.name, fun.arity, con) -> Impl(fun)
 
     val other = List(
+      // negation is generic in Dafny, where it is also the complement of bitvectors
+      (Name("not", None), 1, Con.bool) -> Impl(Fun.not),
       (Name("*", None), 2, Con.set) -> Impl(Fun.set.inter),
       (Name("*", None), 2, Con.bag) -> Impl(Fun.bag.inter),
       (Name("+", None), 2, Con.seq) -> Impl(Fun.seq.concat),
@@ -112,21 +114,77 @@ object Overload:
 
     Map(arith ++ other*)
 
+  // the operators on bitvectors, as named by the frontends, by the functions of SMT-LIB for the width of the arguments,
+  // where division, remainder, and the comparisons are unsigned, as in Dafny
+  val bitvectors: Map[(Name, Int), String] =
+    val ops = List(
+      ("+", 2) -> "bvadd",
+      ("-", 2) -> "bvsub",
+      ("*", 2) -> "bvmul",
+      ("div", 2) -> "bvudiv",
+      ("mod", 2) -> "bvurem",
+      ("-", 1) -> "bvneg",
+      ("not", 1) -> "bvnot",
+      ("&", 2) -> "bvand",
+      ("^", 2) -> "bvxor",
+      ("<", 2) -> "bvult",
+      ("<=", 2) -> "bvule",
+      (">", 2) -> "bvugt",
+      (">=", 2) -> "bvuge"
+    )
+    for ((name, arity), fun) <- ops.toMap
+    yield (Name(name, None), arity) -> fun
+
+  // the conversions e as int and e as bv8 of the frontends, whose implementation depends on the target type as well
+  val toInt = Name("as_int", None)
+  val toBitVec = Name("as_bv", None)
+
+  // the conversions of integers and bitvectors from the type `typ` to the type `res`, the identity on equal types;
+  // bitvectors are extended by zeros or truncated to the lower bits
+  def conversion(name: Name, typ: Type, res: Type): Option[Impl] =
+    def id = Impl(Fun(name, Nil, Fun.formals(typ), res), { case (_, List(arg)) => arg })
+    def impl(fun: Fun) = Impl(fun.copy(name = name), { case (state, List(arg)) => app(state, fun, List(arg)) })
+
+    (name, typ, res) match
+      case (`toInt`, Sort.int, Sort.int)               => Some(id)
+      case (`toInt`, BitVec(n), Sort.int)              => BitVecs.fun("bv2nat", Nil, List(n)).map(impl)
+      case (`toBitVec`, Sort.int, BitVec(m))           => Some(impl(BitVecs.int2bv(m)))
+      case (`toBitVec`, BitVec(n), BitVec(m)) if n == m => Some(id)
+      case (`toBitVec`, BitVec(n), BitVec(m)) if n < m  => BitVecs.fun("zero_extend", List(m - n), List(n)).map(impl)
+      case (`toBitVec`, BitVec(n), BitVec(m))           => BitVecs.fun("extract", List(m - 1, 0), List(n)).map(impl)
+      case _                                            => None
+
   // the position of the argument whose type determines the implementation, the first one except for membership
   def dispatch(name: Name, arity: Int): Int =
     if name == member.name && arity == 2 then 1 else 0
 
   // the overloaded operators (name and arity)
   val generic: Set[(Name, Int)] =
-    for (name, arity, _) <- table.keySet
-    yield (name, arity)
+    val ops =
+      for (name, arity, _) <- table.keySet
+      yield (name, arity)
+    ops ++ bitvectors.keySet + (toInt -> 1) + (toBitVec -> 1)
 
-  // the implementation of operator `name` with `arity` for a first argument of type `typ`, if any,
-  // where `typ` must be unfolded already
-  def impl(name: Name, arity: Int, typ: Type): Option[Impl] =
+  // the implementation of operator `name` with `arity` for a first argument of type `typ` and the result type `res`,
+  // which only the conversions depend on, if any, where `typ` must be unfolded already;
+  // the functions on bitvectors are those of the width of `typ`, whose signatures carry the name of the operator,
+  // such that the type checker can match them against the application
+  def impl(name: Name, arity: Int, typ: Type, res: Type): Option[Impl] =
     typ match
-      case Sort(con, _) => table.get((name, arity, con))
-      case _            => None
+      case _ if name == toInt || name == toBitVec =>
+        conversion(name, typ, res)
+
+      case BitVec(n) =>
+        for
+          op <- bitvectors.get((name, arity))
+          fun <- BitVecs.fun(op, Nil, List.fill(arity)(n))
+        yield Impl(fun.copy(name = name), (state, args) => app(state, fun, args))
+
+      case Sort(con, _) =>
+        table.get((name, arity, con))
+
+      case _ =>
+        None
 
   // whether `fun` is the generic declaration of an overloaded operator in a prelude,
   // the implementations have no type parameters or are not generic in the type of the first argument
@@ -152,6 +210,6 @@ object Overload:
     val App(op, inst, typ, args) = app
     val typ_ = args(dispatch(op.name, op.arity)).typ
 
-    impl(op.name, op.arity, typ_) match
+    impl(op.name, op.arity, typ_, typ) match
       case Some(Impl(_, build)) => build(state, args)
       case None                 => Error.raise("operator not defined for type", op.name, typ_)

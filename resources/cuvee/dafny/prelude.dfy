@@ -34,7 +34,8 @@ function {:dfy} {:bpl} {:smt2} {:c} ite<a₀>(x₀: bool, x₁: a₀, x₂: a₀
 function {:dfy} {:bpl} {:smt2} {:c} select<a₀, a₁, a₂>(x₀: a₀, x₁: a₁): a₂
 function {:dfy} {:bpl} {:smt2} {:c} store<a₀, a₁, a₂>(x₀: a₀, x₁: a₁, x₂: a₂): a₀
 
-function {:dfy} {:bpl} {:smt2} {:c} !(x₀: bool): bool
+// negation, which is also the complement of bitvectors, resolved like arithmetic
+function {:dfy} {:bpl} {:smt2} {:c} ! <a₀>(x₀: a₀): a₀
 function {:dfy} {:bpl} {:smt2} {:c} &&(x₀: bool, x₁: bool): bool
 function {:dfy} {:bpl} {:smt2} {:c} ||(x₀: bool, x₁: bool): bool
 function {:dfy} {:bpl} {:smt2} {:c} ==>(x₀: bool, x₁: bool): bool
@@ -47,6 +48,14 @@ function {:dfy} {:bpl} {:smt2} {:c} - <a₀,a₁>(x₀: a₀, x₁: a₁): a₀
 function {:dfy} {:bpl} {:smt2} {:c} * <a₀>(x₀: a₀, x₁: a₀): a₀
 function {:dfy} {:bpl} {:smt2} {:c} / <a₀>(x₀: a₀, x₁: a₀): a₀
 function {:dfy} {:bpl} {:smt2} {:c} % <a₀>(x₀: a₀, x₁: a₀): a₀
+
+// bitwise and and exclusive or of bitvectors, which never leave the frontend, like the other generic operators
+function {:dfy} {:bpl} {:smt2} {:c} & <a₀>(x₀: a₀, x₁: a₀): a₀
+function {:dfy} {:bpl} {:smt2} {:c} ^ <a₀>(x₀: a₀, x₁: a₀): a₀
+
+// the conversions e as int and e as bv8 of integers and bitvectors, whose result type is the target
+function {:dfy} {:bpl} {:smt2} {:c} as_int<a₀>(x₀: a₀): int
+function {:dfy} {:bpl} {:smt2} {:c} as_bv<a₀, a₁>(x₀: a₀): a₁
 
 function {:dfy} {:bpl} {:smt2} {:c} < <a₀>(x₀: a₀, x₁: a₀): bool
 function {:dfy} {:bpl} {:smt2} {:c} <= <a₀>(x₀: a₀, x₁: a₀): bool

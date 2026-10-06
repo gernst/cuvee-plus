@@ -686,6 +686,11 @@ class Parser(private var init: State):
       case List(Id(name), args*) if BitVecs.names.contains(name) =>
         bitvec(scope, name, Nil, args.toList, from)
 
+      // the conversion of an integer to a bitvector, whose width is the index
+      case List(List(Id("_"), Id("int2bv"), Num(width)), arg) if BigInt(width) > 0 =>
+        val fun = BitVecs.int2bv(width.toInt)
+        App(fun, fun.args, fun.res, List(expr(scope, arg)))
+
       case List(List(Id("_"), Id(name), indices*), args*) if BitVecs.indexed.contains(name) =>
         val indices_ =
           for case Num(digits) <- indices.toList

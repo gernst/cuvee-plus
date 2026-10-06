@@ -7,8 +7,8 @@ object Grammar:
   import Brackets._
 
   val prefix_ops = Map(
-    "-" -> 8,
-    "!" -> 8
+    "-" -> 9,
+    "!" -> 9
   )
 
   val postfix_ops = Map[String, Int](
@@ -31,7 +31,10 @@ object Grammar:
     "-" -> (Assoc.Left, 6),
     "*" -> (Assoc.Left, 7),
     "/" -> (Assoc.Left, 7),
-    "%" -> (Assoc.Left, 7)
+    "%" -> (Assoc.Left, 7),
+    // bitwise operators bind stronger than multiplication, as in Dafny
+    "&" -> (Assoc.Left, 8),
+    "^" -> (Assoc.Left, 8)
   )
 
   val translate = Map(

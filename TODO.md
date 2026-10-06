@@ -157,11 +157,10 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 `BitVec(n)` with the SMT-LIB literals and functions (`BitVecs`). Open: no
 simplifier rules; widths cannot be parameters.
 
-- Dafny proposal: types `bv8`, ...; operators by overloading on `BitVec(n)`
-  (`+ - *` wrap-around, `/ %` unsigned, `& | ^ ! -`, `<< >>`, unsigned
-  comparisons, `RotateLeft/Right`); numeric literals with a fresh type
-  parameter that defaults to `Int`, converted modulo `2^n`; `as int`/`as bv8`
-  as `bv2nat`/`int2bv`.
+- Dafny: no `<<`, `>>` (as a token, `>>` would close nested type arguments
+  `seq<seq<int>>`), no infix `|` (which clashes with `|s|`), no
+  `RotateLeft/Right`, no `bv0`; `x as int < n` parses `int<` as type
+  arguments, it needs parentheses.
 - Boogie proposal: types `bv8`, literals `5bv8`, `x ++ y`, `x[8:0]` (exclusive
   upper bound), and functions declared with `{:bvbuiltin "bvadd"}` resolved to
   the instance of `BitVecs.fun`.

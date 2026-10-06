@@ -249,3 +249,40 @@ object MutualDatatypes extends TestSuite:
         cmds.collect { case cuvee.core.DeclareDatatypes(cons, _, _) => cons.map(_.name.name) }
           .filterNot(_.exists(_.startsWith("tuple")))
       groups ==> List(List("Tree", "Forest"), List("Box"))
+
+// bitvectors bv8, ...: the operators are resolved by overloading on the width, numeric literals take the type of
+// their context, integers by default, and are reduced modulo 2^n; e as int and e as bv8 convert
+object Bitvectors extends TestSuite:
+  import cuvee.core._
+
+  def errors(text: String) =
+    Examples.check("dfy", text)
+
+  // the expressions of the goals of a program
+  def goal(text: String): Expr =
+    val file = os.temp(text, suffix = ".dfy")
+    val (cmds, errors) = Examples.output("-print", "null", file.toString)
+    errors ==> Nil
+    cmds.collectFirst { case Assert(_, _, phi, _) => phi }.get
+
+  val x = Var("x", BitVec(8))
+
+  val tests = Tests:
+    test("literals"):
+      goal("lemma 1 + 2 == 3") ==> Eq(Plus.int(Lit(BigInt(1), Sort.int), Lit(BigInt(2), Sort.int)), Lit(BigInt(3), Sort.int))
+      goal("lemma forall x: bv8 :: x != 300") ==> All(List(x), Not(Eq(x, BitVecs.lit(44, 8))))
+      errors("function f(s: seq<int>): bool { s == 1 }") ==> List("type mismatch")
+
+    test("operators"):
+      val add = BitVecs.fun("bvadd", Nil, List(8, 8)).get
+      val ult = BitVecs.fun("bvult", Nil, List(8, 8)).get
+      goal("lemma forall x: bv8 :: x < x + 1") ==> All(List(x), App(ult, List(x, App(add, List(x, BitVecs.lit(1, 8))))))
+      errors("function f(x: bv8, y: bv16): bv8 { x + y }") ==> List("type mismatch")
+      errors("function f(x: bv8): bool { !x }") ==> List("type mismatch")
+
+    test("conversions"):
+      val bv2nat = BitVecs.fun("bv2nat", Nil, List(8)).get
+      goal("lemma forall x: bv8 :: (x as int) < 256") ==> All(List(x), Lt.int(App(bv2nat, List(x)), Lit(BigInt(256), Sort.int)))
+      goal("lemma forall n: int :: ((n as bv8) as int) < 256") ==>
+        All(List(Var("n", Sort.int)), Lt.int(App(bv2nat, List(App(BitVecs.int2bv(8), List(Var("n", Sort.int))))), Lit(BigInt(256), Sort.int)))
+      errors("function f(x: bool): int { x as int }") ==> List("operator not defined for type")

@@ -72,7 +72,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
     operators `+`, `*`, `-`, `<=`, `<`, `in`, `!in`, `|s|`, and `m[x]`;
   - algebraic datatypes, tuples, and defined sorts;
   - bitvectors in SMT-LIB (`(_ BitVec n)`), with literals and all functions
-    of the theory.
+    of the theory, and in Dafny (`bv8`, ...) with `+ - * / %`, `& ^ !`,
+    unary `-`, unsigned comparisons, and `e as int`/`e as bv8`; numeric
+    literals are bitvectors where the context requires it.
 - **Hybrid programs** (Dafny syntax, after Platzer's dL):
   - differential equations with evolution constraints and differential
     invariants, `x', v' == v, -g && 0.0 <= x invariant ...;`;

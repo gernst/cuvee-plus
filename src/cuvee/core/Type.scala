@@ -473,7 +473,7 @@ object Type:
     do
       val first = dispatch(state, subst, app)
 
-      Overload.impl(op.name, op.arity, first) match
+      Overload.impl(op.name, op.arity, first, unfold(state, resolve(subst.value, typ))) match
         case Some(Impl(sig, _)) =>
           val su = Subst.fresh(sig.params)
           Error.report("type mismatch", app, sig):
@@ -496,16 +496,51 @@ object Type:
   def instantiate(state: State, scope: Scope, subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]], exprs: List[Expr]): List[Expr] =
     overload(state, scope, subst, pending)
 
+    // numeric literals whose type is still open are integers, which may decide further overloaded operators,
+    // e.g. in 1 + 2, whereas in x + 1 for a bitvector x, the literal is a bitvector
+    val open =
+      exprs.flatMap(numerals).map(resolve(subst.value, _)).collect:
+        case p: Param if !rigid(scope, p) => p
+
+    if open.nonEmpty
+    then
+      for p <- open.distinct
+      do subst := { subst + (p -> Sort.int) }
+      overload(state, scope, subst, pending)
+
     Error.report("ambiguous overloaded operator", pending.value):
       require(pending.value.isEmpty)
 
-    val exprs_ = close(subst)(exprs)
+    val exprs_ = close(subst)(exprs).map(numeral(state, _))
     val missed = exprs_.params -- scope.params.values.toSet
 
     Error.report("type error: uninstantiated type variables", missed):
       require(missed.isEmpty)
 
     exprs_
+
+  // the types of the numeric literals in `expr`, which the frontends may leave open (see instantiate)
+  def numerals(expr: Expr): List[Type] =
+    val inner = List.newBuilder[Type]
+    expr.map: arg =>
+      inner ++= numerals(arg)
+      arg
+    expr match
+      case Lit(_: BigInt, typ) => typ :: inner.result()
+      case _                   => inner.result()
+
+  // numeric literals of bitvectors are reduced modulo 2^n, those of reals are rationals
+  def numeral(state: State, expr: Expr): Expr =
+    expr match
+      case Lit(value: BigInt, typ) =>
+        unfold(state, typ) match
+          case Sort.int  => expr
+          case BitVec(n) => Lit(value.mod(BigInt(2).pow(n)), typ)
+          case Sort.real => Lit(util.Rational(value), typ)
+          case typ_      => Error.raise("type mismatch", value, typ_)
+
+      case _ =>
+        expr.map(numeral(state, _))
 
   // well-formedness of programs: assignments match up, break and continue occur inside loops only,
   // and all expressions are well-typed, variables in `fixed`, e.g. the inputs of a procedure, must not be assigned;

@@ -32,6 +32,11 @@ case class BitVec(n: Int) extends Type          // (_ BitVec n)
 - Bitvectors `BitVec(n)` are a type of their own, since their functions are
   polymorphic in the width, which type parameters cannot express;
   `BitVecs.fun` instantiates them for the widths of the arguments.
+  `Overload` resolves the operators of the frontends on them by the width
+  (`Overload.bitvectors`) and the conversions `as_int`/`as_bv` by the
+  target type as well (`Overload.conversion`).
+- Numeric literals may have an open type (Dafny): `Type.instantiate`
+  defaults it to `Int` and reduces literals of bitvectors modulo `2^n`.
 - Defined sorts (`define-sort`, Dafny `type T = ...`) are unfolded on
   demand by `Type.unfold` (at the top) during type checking (`unify`,
   `bind`). Afterwards, `State.exprs.check` and `State.progs.check` expand

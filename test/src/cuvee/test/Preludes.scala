@@ -29,11 +29,12 @@ object Preludes extends TestSuite:
       for fun <- core ++ List(Fun.select, Fun.store, Fun.int.div, Fun.int.mod, Fun.real.div)
       do same(state, fun)
 
-    // indexing and updates are generic in Dafny, for arrays and sequences
+    // indexing and updates are generic in Dafny, for arrays and sequences, and so is negation, for bitvectors
     test("dafny"):
       val state = init(cuvee.dafny.Source)
-      for fun <- core
+      for fun <- core.filterNot(_ == Fun.not)
       do same(state, fun)
+      assert(Overload.isGeneric(state.funs((Fun.not.name, 1))))
 
     // the generic operators have one type parameter a$0 and are resolved by Overload
     test("generic"):
@@ -63,7 +64,8 @@ object Preludes extends TestSuite:
 
       def resolve(name: String, args: Expr*) =
         val name_ = _root_.util.Name(name, None)
-        val impl = Overload.impl(name_, args.length, args(Overload.dispatch(name_, args.length)).typ)
+        // the result type determines the implementation of conversions only
+        val impl = Overload.impl(name_, args.length, args(Overload.dispatch(name_, args.length)).typ, Param("r"))
         impl.get.build(state, args.toList)
 
       resolve("select", m, k) ==> FinMaps.get(m, k)

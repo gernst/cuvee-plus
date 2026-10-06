@@ -203,7 +203,12 @@ object BitVecs:
   val indexed = Set("extract", "zero_extend", "sign_extend", "repeat", "rotate_left", "rotate_right")
 
   // the functions that are not indexed
-  val names = unary ++ binary ++ comparisons + "bvcomp" + "concat"
+  val names = unary ++ binary ++ comparisons + "bvcomp" + "concat" + "bv2nat"
+
+  // the conversion of an integer to a bitvector of width n, modulo 2^n,
+  // the converse is bv2nat (see fun), the natural number that a bitvector represents
+  def int2bv(n: Int): Fun =
+    Fun("_ int2bv " + n, Nil, Fun.formals(Sort.int), BitVec(n))
 
   // the instance of the function `name` with `indices` for arguments of the widths `widths`, if it exists
   def fun(name: String, indices: List[Int], widths: List[Int]): Option[Fun] =
@@ -216,6 +221,7 @@ object BitVecs:
       case (_, Nil, List(n, m)) if (binary contains name) && n == m    => instance(BitVec(n))
       case (_, Nil, List(n, m)) if (comparisons contains name) && n == m => instance(Sort.bool)
       case ("bvcomp", Nil, List(n, m)) if n == m                       => instance(BitVec(1))
+      case ("bv2nat", Nil, List(n))                                    => instance(Sort.int)
       case ("concat", Nil, List(n, m))                                 => instance(BitVec(n + m))
       case ("extract", List(i, j), List(n)) if j <= i && i < n         => instance(BitVec(i - j + 1))
       case ("zero_extend" | "sign_extend", List(k), List(n))           => instance(BitVec(n + k))
