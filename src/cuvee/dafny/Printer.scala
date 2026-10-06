@@ -24,14 +24,24 @@ object Printer extends cuvee.pipe.Printer:
   val untranslate =
     Grammar.translate.map(_.swap)
 
-  // indexed names are printed with the index as unicode subscript, e.g. a₃
+  // indexed names are printed with the index as unicode subscript, e.g. a₃;
+  // names that are neither identifiers nor operators are escaped by backticks, which Dafny does not have,
+  // e.g. the instances `length<Int>` of Monomorph
   def name(name: Name): String =
-    name match
-      case Name(name, None) =>
-        untranslate.getOrElse(name, name)
+    val name_ =
+      name match
+        case Name(name, None) =>
+          untranslate.getOrElse(name, name)
 
-      case _ =>
-        name.subscripted
+        case _ =>
+          name.subscripted
+
+    if identifier.matches(name_) || Grammar.prefix_ops.contains(name_) || Grammar.infix_ops.contains(name_)
+    then name_
+    else "`" + name_ + "`"
+
+  // identifiers as accepted by the scanner, including unicode subscripts, and primed ones x' (see Grammar.id_prime)
+  val identifier = "[a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?']*".r
 
   // elements separated by commas, which go on separate lines if the enclosing group does not fit
   def commas(docs: List[Doc]): Doc =

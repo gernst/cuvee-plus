@@ -162,3 +162,16 @@ object Printing extends TestSuite:
       lines.head ==> "x := procedure(argument, argument, argument, argument, argument, argument,"
       lines.last ==> "               argument, argument, argument, argument, argument, argument);"
       assert(lines.forall(_.length <= Printer.width))
+
+    // names that are neither identifiers nor operators are escaped by backticks, which the scanner reads back,
+    // e.g. the instances of Monomorph
+    test("escaped names"):
+      val f = Fun("f<pair<Int>>", Nil, Fun.formals(Sort.int), Sort.int)
+      expr(App(f, List(x))) ==> "`f<pair<Int>>`(x)"
+      expr(Lt.int(x, y)) ==> "x < y"
+
+      val text = "function `f<Int>`(x: int): int\nlemma forall x: int :: `f<Int>`(x) == x\n"
+      val (cmds, errors) = Examples.output("-print", "null", os.temp(text, suffix = ".dfy").toString)
+      errors ==> Nil
+      cmds.collect { case DeclareFun(fun, _) => fun.name.name } ==> List("f<Int>")
+

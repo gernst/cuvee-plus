@@ -52,6 +52,7 @@ sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*
 {num}       { return Syntax.apply("num", yytext()); }
 "!in" / [^a-zA-Z0-9_]  { return Syntax.apply("sym", yytext()); }
 {sym}       { return Syntax.apply("sym", yytext()); }
+"`" [^`]* "`"  { return Syntax.apply("sym", yytext(+1,-1)); }
 
 [^]         { throw new RuntimeException("unexpected character '" + yytext() + "' at " + yyline + ":" + yycolumn); }
 

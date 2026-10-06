@@ -110,6 +110,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `t.0.1` is scanned as `t` `.` `0.1`.
 - The printer writes unicode subscripts (`x₀`), and its `any` raises
   `MatchError` on plain strings and numbers.
+- Names that are neither identifiers nor operators, e.g. the instances
+  `f<Int>` of `-monomorph`, are escaped by backticks, which the scanner reads
+  back but Dafny does not have; names containing backticks are not handled.
 
 ## Boogie frontend
 
