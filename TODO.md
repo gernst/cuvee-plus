@@ -22,6 +22,84 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - Warnings: the implicit conversion `String => Name` without
   `-language:implicitConversions`.
 
+## Code review (2026-10-06)
+
+Suggestions from a review of the whole code base, nothing changed yet.
+
+Possible bugs:
+
+- `TEQ.call` ([TEQ.scala](src/cuvee/verify/TEQ.scala)) duplicates
+  `Verify.instance`, but binds the formals with `Subst.from` only, without
+  `Type.bind`, so the type parameters of a polymorphic callee are not
+  instantiated; check with a call of a polymorphic procedure under `-teq`,
+  and reuse `Verify.instance`.
+- `State.globals` iterates `vars`, a hash map beyond four entries, so the
+  order of quantified globals and of inferred `modifies` lists follows the
+  hashes, not the declarations; an insertion-ordered map (`VectorMap`)
+  would make the output stable.
+- `Sugar.associative.apply(Nil)` throws `UnsupportedOperationException`
+  (`reduceLeft`), whereas `commutative` returns its neutral element; raise
+  an `Error` instead.
+- `Attrs.values[List[Var]]` matches any list (erasure), so a malformed
+  `modifies` value fails later with a `ClassCastException`.
+- `easyparse.Parser.Repeat` and `Intersperse` recurse once per element, so
+  the stack grows with the length of a list, e.g. the top-level
+  declarations of large `.i` files of SV-COMP; loops would avoid this.
+- `smtlib.Parser.labels` fails with a `MatchError` on a non-identifier.
+
+Dead or stale code and docs:
+
+- `State.asserts` is never read; stages do not add assertions to their
+  state (`Stage.query`).
+- `Config.overridePrinter`: the agreed refactoring is still open, i.e.
+  `print: Option[Printer]` with the printer derived from it, the input's
+  language, or SMT-LIB.
+- `easyparse.Parser.unfold` is unused (and has an unused builder);
+  `util.Tool.run` is unused and would block on a full output pipe.
+- The commented-out `error` cases in `smtlib.Parser.ack`, `issat`, `labels`
+  (errors are raised by `Solver.read`).
+- [util/Rational.scala](src/util/Rational.scala) links a private claude.ai
+  chat at the top.
+- Comments: the one above `State.unless` belongs to `hasFlag`; `BitVecs.lit`
+  is not "the width of"; two comments in `Pipe.run` run together.
+- [README.md](README.md) says lines of 160 characters, the default width is
+  80 (`pipe.Printer.width`, help of `-linewidth`);
+  [doc/architecture.md](doc/architecture.md) (Horn) says `requires` of
+  `main` holds the initial values of globals in C, which are now
+  assignments, the `requires` holds their zero values.
+
+Structure:
+
+- The printers of C, Dafny, and Boogie duplicate `commas`, `braces`,
+  `parens`, `atomic`, `level`, `doc(expr, context)`, and `combinator`;
+  a shared trait for precedence-based printing would remove them. Their
+  pattern `case _ if f(expr).isDefined => val Some(...) = f(expr):
+  @unchecked` computes `f` twice; extractor objects would avoid it.
+- Two `Assoc` enums, `core.Assoc` (Left, Right) and `easyparse.Assoc`
+  (Non, Left, Right), which the printers mix.
+- `Config.suffix` returns `null`; `Config.help` lists languages and flags
+  in hash order.
+- The fresh-name counters (`Var`, `Param`) are global and reset per run
+  only in `Cuvee.pipe`, so names in tests that call a `Source` directly
+  depend on the order of the tests.
+- `Monomorph` replays the whole prefix on every flush and appends with
+  `:+`, quadratic for long incremental inputs; the instances emitted so far
+  could be kept instead.
+- C frontend: [c/Parser.scala](src/cuvee/c/Parser.scala) (about 820 lines)
+  mixes the resolution of expressions and statements, the inference of
+  modifies (`assigned`, `effects`, `calls`, `writes`), and that of the
+  translation unit, which could be split. The data model reaches the
+  resolver through `c.Source.Unit` and a mutable `Parser.arch`, set in
+  `input`; `pipe.Source.newParser` taking the configuration would be
+  cleaner, but touches all frontends.
+- The yml frontend could recognize verification witnesses (`entry_type`)
+  and say so, instead of "malformed task definition".
+
+Tests:
+
+- No direct tests of easyparse (`Mixfix` precedences and associativity,
+  `Repeat`, `Intersperse`) and of `simplify/Arith`.
+
 ## Solvers
 
 - `Solver.scoped` pops in `finally`, which hides the original error if the
