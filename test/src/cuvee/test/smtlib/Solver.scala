@@ -158,3 +158,16 @@ object Solver extends TestSuite:
         ack ==> Ack.Success
         sink.parser.state.funattrs(("f", 1)) ==> attrs
       finally solver.destroy()
+
+    // the scope of a solver that has terminated is not popped, which would fail with an unrelated error
+    test("scopes of terminated solvers"):
+      val solver = cuvee.smtlib.Solver.z3()
+      val error =
+        try
+          solver.scoped:
+            solver.destroy()
+            solver.proc.waitFor()
+          None
+        catch case e: Error => Some(e.msg)
+
+      error ==> Some("solver terminated unexpectedly")

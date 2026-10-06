@@ -80,11 +80,15 @@ class Solver(cmd: String*):
   def assert(params: List[Param], phi: Expr): Ack =
     ack(Assert(Axiom, params, phi, Attrs.empty))
 
-  // run f in a fresh scope that is popped afterwards, even if f fails
+  // run f in a fresh scope that is popped afterwards, even if f fails,
+  // unless the solver has terminated, which is reported instead of the failure of pop
   def scoped[A](f: => A): A =
     push()
     try f
-    finally pop()
+    finally
+      if proc.isAlive
+      then pop()
+      else Error.raise("solver terminated unexpectedly", cmd.head, proc.exitValue)
 
   // the answer to check-sat
   def check(): Status =
