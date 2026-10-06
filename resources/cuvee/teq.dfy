@@ -502,7 +502,10 @@ lemma <a> {:rw} {:free} forall n: int, e: a, v: a ::
          == if v == e then n else 0
 
 lemma <a> {:free} forall e: a, vs: seq<a> ::
-  0 <= count(e, vs) <= length(vs)
+  0 <= count(e, vs)
+
+lemma <a> {:free} forall e: a, vs: seq<a> ::
+  count(e, vs) <= length(vs)
 
 // bounds
 
