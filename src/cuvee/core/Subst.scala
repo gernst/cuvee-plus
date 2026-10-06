@@ -66,6 +66,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def -(x: Var) =
     Subst(params, vars - x)
 
+  // the substitution without the bindings of `xs`
+  def --(xs: Iterable[Var]) =
+    Subst(params, vars -- xs)
+
   // the renaming of those of `bound` that would capture a free variable of the range,
   // and this substitution for the scope of `bound`, where `bound` is no longer substituted but renamed
   def avoid(bound: List[Var]) =

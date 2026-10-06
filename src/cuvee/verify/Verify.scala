@@ -194,7 +194,7 @@ object Verify extends Transform:
     Type.bind(state, in, args, su)
     val su_ = su.copy
     Type.bind(state, out ++ mod, vars_, su_)
-    val phi_ = Old.instance(su_, mod.foldLeft(su_.value)(_ - _), phi)
+    val phi_ = Old.instance(su_, su_.value -- mod, phi)
 
     // the measure refers to the inputs, whose values at the call are those at the entry of `proc`
     val dec =

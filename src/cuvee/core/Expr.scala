@@ -118,14 +118,14 @@ object Old:
   // replace old(e) by e[gs := gs_], where gs_ are the values of the global variables gs at the entry,
   // nested occurrences of old refer to the same values
   def elim(gs: List[Var], gs_ : List[Expr], expr: Expr): Expr =
-    instance(Subst.empty, Subst.from(gs, gs_), expr)
+    instance(Subst.empty, Subst.empty ++ Subst.from(gs, gs_), expr)
 
   // a single traversal that replaces the free variables by `now`, and inside of old(e) by `before`, and strips old,
   // e.g. for the postcondition of a call, whose modified global variables refer to their new values outside of old
   // and to their values before the call inside of it (see Verify.instance); `Subst` substitutes inside old(e) as well;
   // the type parameters are instantiated by `now`
-  def instance(now: Subst[? <: Type, ? <: Expr], before: Subst[? <: Type, ? <: Expr], expr: Expr): Expr =
-    instance(Subst(now.params, now.vars), Subst(before.params, before.vars), false, expr)
+  def instance(now: Subst[Type, Expr], before: Subst[Type, Expr], expr: Expr): Expr =
+    instance(now, before, false, expr)
 
   // `old` holds inside of old(e)
   def instance(now: Subst[Type, Expr], before: Subst[Type, Expr], old: Boolean, expr: Expr): Expr =
