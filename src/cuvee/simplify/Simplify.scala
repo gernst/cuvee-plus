@@ -308,16 +308,16 @@ object Simplify extends Transform:
   // and the results are simplified assuming their guard and, since the guards are disjoint, that the others are false;
   // not so the guards themselves, which would become true, as the guards are also complete
   def updates(config: Config, state: State, ctx: Ctx, updates: List[Upd]): List[Upd] =
-    val guards =
+    val updates_ =
       for
         Upd(cond, rhs) <- updates
         cond_ = simplify(config, state, ctx, cond)
         if cond_ != False
-      yield (cond_, rhs)
+      yield Upd(cond_, rhs)
 
-    for ((cond_, rhs), i) <- guards.zipWithIndex
+    for (Upd(cond_, rhs), i) <- updates_.zipWithIndex
     yield
-      val others = for ((cond, _), j) <- guards.zipWithIndex if i != j yield cond
+      val others = updates_.guards.patch(i, Nil, 1)
       upd(config, state, ctx, cond_, simplify(config, state, ctx.assume(List(cond_), others), rhs))
 
   // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,

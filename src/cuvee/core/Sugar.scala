@@ -42,6 +42,8 @@ extension (self: Iterable[Upd])
   @targetName("Upds.params")
   def params = self.flatMap(_.params).toSet
 
+  def guards = self.map(_.cond).toList
+
 extension (self: Iterable[Case])
   @targetName("Cases.free")
   def free = self.flatMap(_.free).toSet
