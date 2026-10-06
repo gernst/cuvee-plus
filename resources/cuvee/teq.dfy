@@ -447,8 +447,9 @@ lemma {:rw} {:free} forall a: array<int, int>, n: int, i: int, d: int, k: int ::
 
 // sum, which is linear, and the linear transformations are moved to the outside
 
-lemma {:rw} {:free} sum([])
-  == 0
+lemma {:rw} {:free}
+  sum([])
+    == 0
 
 lemma {:rw} {:free} forall n: int, x: int ::
   if 0 <= n
