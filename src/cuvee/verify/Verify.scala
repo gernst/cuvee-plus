@@ -191,9 +191,9 @@ object Verify extends Transform:
     // the substitutions replace the formal parameters and instantiate the type parameters of a polymorphic procedure
     // by the types of the arguments, and those of the results, which su_ replaces in addition
     val su = Ref(Subst.empty[Type, Expr])
-    Type.bind(in, args, su)
+    Type.bind(state, in, args, su)
     val su_ = su.copy
-    Type.bind(out ++ mod, vars_, su_)
+    Type.bind(state, out ++ mod, vars_, su_)
     val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
 
     // the measure refers to the inputs, whose values at the call are those at the entry of `proc`
@@ -217,7 +217,7 @@ object Verify extends Transform:
     val attrs = state.procattrs(name)
     // the formal parameters are replaced and the type parameters instantiated by the arguments
     val su = Ref(Subst.empty[Type, Expr])
-    Type.bind(in, args, su)
+    Type.bind(state, in, args, su)
     (su(attrs.assumes), su(attrs.commits))
 
   // parallel composition of calls by the assumption-commitment contracts of the procedures over the history h,

@@ -138,6 +138,12 @@ object Type:
       case _ =>
         typ
 
+  // replace defined sorts by their definitions, also in the arguments
+  def expand(state: State, typ: Type): Type =
+    unfold(state, typ) match
+      case Sort(con, args) => Sort(con, args.map(expand(state, _)))
+      case typ_            => typ_
+
   // extend `subst` such that the types become equal, backtracks if they cannot be unified;
   // the parameters of the scope are rigid, defined sorts are unfolded as needed
   def unify(state: State, scope: Scope, typ1: Type, typ2: Type, subst: Ref[Subst[Type, Expr]]): Unit =
@@ -185,47 +191,54 @@ object Type:
         backtrack
 
   // one-sided matching: instantiate the parameters in `pats` such that they become equal to `types`,
-  // parameters occurring in `types` are treated as rigid
-  def bind(pats: List[Type], types: List[Type]): Subst[Type, Nothing] =
+  // parameters occurring in `types` are treated as rigid, defined sorts are unfolded as needed
+  def bind(state: State, pats: List[Type], types: List[Type]): Subst[Type, Nothing] =
     val subst = Ref[Subst[Type, Nothing]](Subst(Map(), Map()))
-    bind(pats, types, subst)
+    bind(state, pats, types, subst)
     subst.value
 
   // extend `subst` such that `pat` instantiated becomes `typ`, an error if it cannot
-  def bind[E <: Expr](pat: Type, typ: Type, subst: Ref[Subst[Type, E]]): Unit =
+  def bind[E <: Expr](state: State, pat: Type, typ: Type, subst: Ref[Subst[Type, E]]): Unit =
     (pat, typ) match
       case _ if pat == typ =>
 
       case (p: Param, _) if subst.inst.contains(p) =>
         Error.report("type mismatch", p, subst(p), typ):
-          require(subst(p) == typ)
+          require(expand(state, subst(p)) == expand(state, typ))
 
       case (p: Param, _) =>
         subst := { subst + (p -> typ) }
 
+      // defined sorts are unfolded before comparing constructors, as in unify
+      case (Sort(con1, _), _) if state.sortdefs.contains(con1.name) =>
+        bind(state, unfold(state, pat), typ, subst)
+
+      case (_, Sort(con2, _)) if state.sortdefs.contains(con2.name) =>
+        bind(state, pat, unfold(state, typ), subst)
+
       case (Sort(con1, args1), Sort(con2, args2)) if con1 == con2 =>
-        bind(args1, args2, subst)
+        bind(state, args1, args2, subst)
 
       case _ =>
         Error.raise("type mismatch", pat, typ)
 
-  def bind[E <: Expr](pats: List[Type], types: List[Type], subst: Ref[Subst[Type, E]]): Unit =
+  def bind[E <: Expr](state: State, pats: List[Type], types: List[Type], subst: Ref[Subst[Type, E]]): Unit =
     Error.report("mismatching length", pats, types):
       require(pats.length == types.length)
 
     for (pat, typ) <- pats zip types
-    do bind(pat, typ, subst)
+    do bind(state, pat, typ, subst)
 
   // extend `subst` by the formal parameters `xs` replaced by `exprs`,
   // where the type parameters in the types of `xs` are instantiated by the types of `exprs`
   @scala.annotation.targetName("bindVars")
-  def bind(xs: List[Var], exprs: List[Expr], subst: Ref[Subst[Type, Expr]]): Unit =
+  def bind(state: State, xs: List[Var], exprs: List[Expr], subst: Ref[Subst[Type, Expr]]): Unit =
     Error.report("mismatching length", xs, exprs):
       require(xs.length == exprs.length)
 
     for (x, expr) <- xs zip exprs
     do
-      bind(x.typ, expr.typ, subst)
+      bind(state, x.typ, expr.typ, subst)
       subst := { subst + (x -> expr) }
 
   // the types of expressions are already instantiated with fresh parameters by the parsers,

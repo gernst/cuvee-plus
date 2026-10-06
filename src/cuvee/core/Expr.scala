@@ -65,10 +65,11 @@ case class Lit(value: Any, typ: Type) extends Expr:
   def free = Set()
 
 object App:
-  // instantiate the type parameters of `fun` by matching its argument types against those of `args`
+  // instantiate the type parameters of `fun` by matching its argument types against those of `args`,
+  // without the defined sorts of the input, since applications are also built where there is no state (e.g. sugar)
   def apply(fun: Fun, args: List[Expr]): App =
     val inst = args.types
-    val su = Type.bind(fun.args, inst)
+    val su = Type.bind(State.empty, fun.args, inst)
     val typ = su(fun.res)
     App(fun, inst, typ, args)
 

@@ -3,10 +3,11 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
-## New TODOs to be integrated, and instructions to address existing TODOs (provided by user)
+## New TODOs
 
-- start with prioritizing this list by small things first, rewrite this file accordingly
-- work on this list autonomously, if you have questions for which you'd like my input, defer the item and put a note in this file, keep this instruction when reordering the list
+- in Horn, if a method has only a contract but no implementation, don't generate pre/post predicates, just inline. the reason is that we want to instantiate data types that are specified only, and if they are polymorphic, inlining the requires and ensures does not produce polymorphic clauses if the caller is monomorphic,
+  the precondition would this be split into its conjuncts, simiplarly, the postcondition is as a conjunction, use And.flattenStrong for that
+- make a plan to resolve calls and selectors on this as well as on arbitrary terms, don't implement it
 
 ## General
 
@@ -42,6 +43,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - Statements are simplified without context (assignments invalidate facts);
   tests of branches could be used up to the first assignment to their
   variables. No rules for sequences or bitvectors.
+- Arithmetic on defined sorts (e.g. `type T = int`) is neither normalized nor
+  matched, since `Ring` does not unfold them.
 - Rewriting matches modulo A/C of `+` and `-` only (not `*`); all but the last
   variable of a sum take one summand or none, a negated last variable takes
   negative summands only; bound variables of combinators are not instantiated

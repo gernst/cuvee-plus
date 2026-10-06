@@ -61,7 +61,7 @@ object Overload:
   // where defined sorts are unfolded
   def app(state: State, fun: Fun, args: List[Expr]): App =
     val inst = args.map(arg => Type.unfold(state, arg.typ))
-    val su = Type.bind(fun.args, inst)
+    val su = Type.bind(state, fun.args, inst)
     App(fun, inst, su(fun.res), args)
 
   // the implementation of each operator (name and arity) for the sort constructor of its first argument,

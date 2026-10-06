@@ -84,7 +84,7 @@ object Rewrite:
             Nil
 
           case None =>
-            for m_ <- Rewrite.matches(x.typ, expr.typ, m)
+            for m_ <- Rewrite.matches(state, x.typ, expr.typ, m)
             yield m_ + (x -> expr)
 
       // annotations e as T of the expression are skipped, the left-hand sides of rules have none (see Rules.from)
@@ -108,13 +108,13 @@ object Rewrite:
 
       case (App(fun, inst, typ, args), App(fun_, inst_, typ_, args_)) if fun == fun_ && args.length == args_.length =>
         for
-          m1 <- Rewrite.matches(inst, inst_, m)
-          m2 <- Rewrite.matches(typ, typ_, m1)
+          m1 <- Rewrite.matches(state, inst, inst_, m)
+          m2 <- Rewrite.matches(state, typ, typ_, m1)
           m3 <- matches(config, state, ctx, b, args, args_, m2)
         yield m3
 
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
-        Rewrite.matches(typ, typ_, m)
+        Rewrite.matches(state, typ, typ_, m)
 
       case (Trace(init, deps, acc, bound, updates), Trace(init_, deps_, acc_, bound_, updates_)) =>
         for
@@ -401,24 +401,32 @@ object Rewrite:
       case (Nil, n :: ns)    => ns.foldLeft(ring.uminus(n))(ring.minus(_, _))
       case (_, _)            => neg.foldLeft(ring.plus(pos))(ring.minus(_, _))
 
-  // the type parameters of the pattern are instantiated consistently, a single match or none
-  def matches(pat: Type, typ: Type, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+  // the type parameters of the pattern are instantiated consistently, a single match or none;
+  // defined sorts are unfolded before comparing constructors, and the parameters are bound to the expanded types
+  def matches(state: State, pat: Type, typ: Type, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     (pat, typ) match
       case (p: Param, _) =>
+        val typ_ = Type.expand(state, typ)
         m.params.get(p) match
-          case Some(t) => if t == typ then List(m) else Nil
-          case None    => List(m + (p -> typ))
+          case Some(t) => if t == typ_ then List(m) else Nil
+          case None    => List(m + (p -> typ_))
+
+      case (Sort(con, _), _) if state.sortdefs.contains(con.name) =>
+        matches(state, Type.unfold(state, pat), typ, m)
+
+      case (_, Sort(con_, _)) if state.sortdefs.contains(con_.name) =>
+        matches(state, pat, Type.unfold(state, typ), m)
 
       case (Sort(con, args), Sort(con_, args_)) if con == con_ =>
-        matches(args, args_, m)
+        matches(state, args, args_, m)
 
       case _ =>
         Nil
 
   @scala.annotation.targetName("matchesTypes")
-  def matches(pats: List[Type], types_ : List[Type], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+  def matches(state: State, pats: List[Type], types_ : List[Type], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     if pats.length != types_.length
     then Nil
     else
       (pats zip types_).foldLeft(List(m)):
-        case (ms, (pat, typ)) => ms.flatMap(matches(pat, typ, _))
+        case (ms, (pat, typ)) => ms.flatMap(matches(state, pat, typ, _))
