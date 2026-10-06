@@ -82,19 +82,17 @@ object TEQ extends TestSuite:
 
       val i = Var("i", Sort.int)
       val c = Var("c", Sort.int)
+      val n = Var("n", Sort.int)
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
-      val K = Var("K", Sort.trace(Sort.int))
-      val butlast = Butlast(K)
       val rule = rw(
-        Trace(i, List(butlast), x, List(k), List(Upd(True, Plus.int(x, c)))),
-        Counter(i, c, Steps(K))
+        Trace(i, List(Butlast(Counter(Zero.int, One.int, n))), x, List(k), List(Upd(True, Plus.int(x, c)))),
+        Counter(i, c, n)
       )
 
-      val phi_ = Rewrite(List(rule), phi)
-      val counters = subexprs(phi_).collect { case app @ Counter(Zero.int, One.int, _) => app }
-      // the synthetic counter K = counter(0, 1, n) and the loop variable i = counter(0, 1, steps(K))
-      assert(counters.exists { case Counter(_, _, Steps(_)) => true; case _ => false })
+      // the synthetic counter K == counter(0, 1, n) is followed from the premises (see Ctx.↑),
+      // the trace of the loop variable i becomes counter(0, 1, n), only that of s remains
+      val phi_ = cuvee.simplify.Simplify(cuvee.Config.default, State.empty, cuvee.simplify.Ctx.pos.withRules(List(rule)), phi)
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
 
     // a variable that is increased where the values are equal to e counts the occurrences of e,
@@ -169,7 +167,6 @@ object TEQ extends TestSuite:
       val min = app("current", app("mins", x, vs))
 
       Rewrite(rules, Le.int(Zero.int, count)) ==> True
-      Rewrite(rules, Le.int(count, app("length", vs))) ==> True
       Rewrite(rules, Le.int(x, max)) ==> True
       Rewrite(rules, Le.int(min, x)) ==> True
 

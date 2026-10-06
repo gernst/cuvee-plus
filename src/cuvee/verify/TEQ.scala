@@ -283,8 +283,7 @@ object TEQ extends Transform:
       val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
       Invs(deps, bound, And(List(inner(guard), paths_).flatMap(And.flattenStrong)))
 
-    val wf = Le.int(Zero.int, n) :: Zs.map(seq => Eq(Length(seq), n))
-    val teq = And(counter :: current ++ equations ++ (iterations :: wf))
+    val teq = And(counter :: current ++ equations ++ List(iterations, Le.int(Zero.int, n)))
 
     // the state at the exit, from which the body executes safely if the guard holds,
     // the paths of the body from there that end by break or return leave the loop as well

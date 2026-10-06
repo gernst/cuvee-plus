@@ -15,8 +15,6 @@ function butlast<a₀>(x₀: Trace<a₀>): seq<a₀>
 function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 // the last element of a trace
 function current<a₀>(x₀: Trace<a₀>): a₀
-// the number of steps of a trace, which is one less than the number of its elements
-function steps<a₀>(x₀: Trace<a₀>): int
 // the length of a sequence
 function length<a₀>(x₀: seq<a₀>): int
 // the elements of sequences
@@ -74,13 +72,14 @@ function count<a>(e: a, vs: seq<a>): int
 // traces
 
 // a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)
-lemma {:rw} {:free} forall i: int, c: int, K: Trace<int> ::
-  trace(i, for ⌊K⌋ do x, k => x + c)
-    == counter(i, c, steps(K))
+lemma {:rw} {:free} forall i: int, c: int, n: int ::
+  trace(i, for ⌊counter(0, 1, n)⌋ do x, k => x + c)
+    == counter(i, c, n)
 
-lemma <a, b> {:rw} {:free} forall x: a, xs: seq<b> ::
-  trace(x, for xs do y, v => y)
-    == consts(length(xs), x)
+// a variable that keeps its value in each iteration
+lemma <a> {:rw} {:free} forall x: a, i: int, c: int, n: int ::
+  trace(x, for ⌊counter(i, c, n)⌋ do y, v => y)
+    == consts(n, x)
 
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a>, values: seq<b> ::
   trace(a, for keys, values do b, k, v => b[k := v])
@@ -128,6 +127,10 @@ lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
 
 // maps
 
+lemma <a> {:rw} {:free} forall x: a, i: int, c: int, n: int ::
+  maps(for ⌊counter(i, c, n)⌋ yield v => x)
+    == ⌊consts(n, x)⌋
+
 lemma <a> {:rw} {:free} forall n: int, xs: seq<a> ::
   maps(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs))
     == xs
@@ -136,15 +139,15 @@ lemma {:rw} {:free} forall a: int, b: int, i: int, c: int, n: int ::
   maps(for ⌊counter(i, c, n)⌋ yield v => a + b * v)
     == ⌊counter(a + b * i, b * c, n)⌋
 
-lemma <a, b> {:rw} {:free} forall x: a, xs: seq<b> ::
-  maps(for xs yield v => x)
-    == ⌊consts(length(xs), x)⌋
-
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a> ::
   maps(for keys yield k => a[k])
     == selects(a, keys)
 
 // invs
+
+lemma {:rw} {:free} forall b: bool, i: int, c: int, n: int ::
+  invs(for ⌊counter(i, c, n)⌋ check v => b)
+    <==> n == 0 || b
 
 lemma {:rw} {:free} forall m: int, i: int, c: int, n: int ::
   invs(for ⌊counter(i, c, n)⌋ check k => m <= k)
@@ -162,14 +165,6 @@ lemma {:rw} {:free} forall m: int, i: int, n: int ::
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
   invs(for ⌊counter(i, -1, n)⌋ check k => k != m)
     <==> i < m || m <= i - n
-
-lemma <a> {:rw} {:free} forall x: a, xs: seq<a> ::
-  invs(for xs check v => v == x)
-    <==> xs == ⌊consts(length(xs), x)⌋
-
-lemma <a> {:rw} {:free} forall b: bool, xs: seq<a> ::
-  invs(for xs check v => b)
-    <==> length(xs) == 0 || b
 
 // current
 
@@ -216,51 +211,6 @@ lemma {:rw} {:free} forall x: int, y: int, n: int ::
 lemma <a> {:rw} {:free} forall x: int, e: a, vs: seq<a> ::
   current(counts(x, e, vs))
     == x + count(e, vs)
-
-// steps
-
-lemma {:rw} {:free} forall i: int, c: int, n: int ::
-  steps(counter(i, c, n))
-    == n
-
-lemma <a> {:rw} {:free} forall n: int, x: a ::
-  steps(consts(n, x))
-    == n
-
-lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  steps(stores(a, keys, values))
-    == length(keys)
-
-lemma {:rw} {:free} forall x: int, values: seq<int> ::
-  steps(sums(x, values))
-    == length(values)
-
-lemma {:rw} {:free} forall x: int, values: seq<int> ::
-  steps(maxs(x, values))
-    == length(values)
-
-lemma {:rw} {:free} forall x: int, values: seq<int> ::
-  steps(mins(x, values))
-    == length(values)
-
-lemma <a> {:rw} {:free} forall x: int, e: a, vs: seq<a> ::
-  steps(counts(x, e, vs))
-    == length(vs)
-
-// length
-
-// all but the last element of a trace have the number of its steps
-lemma {:rw} {:free} forall X: Trace<int> ::
-  length(⌊X⌋)
-    == steps(X)
-
-lemma <a> {:rw} {:free} forall k: int, xs: seq<a> ::
-  length(prefix(k, xs))
-    == k
-
-lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a> ::
-  length(selects(a, keys))
-    == length(keys)
 
 // earlier
 
@@ -330,10 +280,6 @@ lemma <a> {:rw} {:free} forall k: int, x: int, e: a, vs: seq<a> ::
 lemma <a> {:rw} {:free} forall xs: seq<a> ::
   prefix(0, xs)
     == []
-
-lemma <a> {:rw} {:free} forall xs: seq<a> ::
-  prefix(length(xs), xs)
-    == xs
 
 lemma <a> {:rw} {:free} forall j: int, k: int, xs: seq<a> ::
   prefix(j, prefix(k, xs))
@@ -507,9 +453,6 @@ lemma {:rw} {:free} forall m: int, i: int, n: int ::
 
 lemma <a> {:rw} {:free} forall e: a, vs: seq<a> ::
   0 <= count(e, vs)
-
-lemma <a> {:rw} {:free} forall e: a, vs: seq<a> ::
-  count(e, vs) <= length(vs)
 
 // bounds
 

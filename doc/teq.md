@@ -29,13 +29,16 @@ After section 3 of the paper:
   same length (`Type.dependencies`), e.g. `⌊K⌋` of a trace `K`. Their length
   is `Seqs.len` of the theory of sequences (not `Fun.trace.length`). A trace
   with `n` steps has `n + 1` elements: the `n` of `⌊X⌋`
-  (`earlier(0..n-1, ⌊X⌋)`) and `current(X)`.
+  (`earlier(0..n-1, ⌊X⌋)`) and `current(X)`. The goals contain no lengths:
+  the number of iterations `n` is that of the counter `K == counter(0, 1, n)`
+  of the iterations, and the lemmas iterate over counters, whose length `n`
+  they use directly.
 - An update is a list of guarded cases `Upd(φᵢ, eᵢ)` with disjoint and
   complete guards; a single case has the guard `true`. `List[Upd]` has
   `free`, `params`, and `exprs` like lists of expressions.
 - The functions on traces are in `Fun.trace`: `counter`, `current`, `butlast`
-  (the paper's `⌊X⌋`), `steps`, `length`, `earlier`; `Counter`, `Current`,
-  `Butlast`, `Steps`, `Earlier`, and `Length` in
+  (the paper's `⌊X⌋`), `length`, `earlier`; `Counter`, `Current`,
+  `Butlast`, `Earlier`, and `Length` in
   [Builtin.scala](../src/cuvee/core/Builtin.scala) are their sugar. The sort is `Sort.trace(elem)`.
 - `state.exprs.trace`, `map`, and `all` create the bound variables with the
   element types of the dependencies (`Type.elem`).
