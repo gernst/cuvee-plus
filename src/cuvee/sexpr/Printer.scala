@@ -33,7 +33,7 @@ object Printer:
     "\"" + text.replace("\"", "\"\"") + "\""
 
   // the width beyond which lists are broken into lines, set by -linewidth (see Config)
-  var width = 160
+  var width = 80
 
   def list(args: List[String]): List[String] =
     args match

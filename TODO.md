@@ -133,6 +133,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - Programs, `old`, `diff`, `declare-var` are extensions in the printer's form.
 - No `match`, `get-value`, `check-sat-assuming`, `echo`; annotations `!`
   inside terms are discarded.
+- The printer drops the attributes of declarations and definitions, e.g.
+  `:rw` of `define-fun`, which the parser reads, so printed SMT-LIB loses
+  them; assertions keep theirs in `!`, procedures their contracts.
 
 ## C frontend
 

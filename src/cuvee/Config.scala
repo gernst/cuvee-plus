@@ -171,7 +171,7 @@ object Config:
 
   // the printers are objects, all of which are set, such that the order of the options does not matter
   val linewidth =
-    flag("-linewidth", "<n>", "lay out the output for lines of <n> characters (default 160)"):
+    flag("-linewidth", "<n>", "lay out the output for lines of <n> characters (default 80)"):
       case (config, n :: rest) if n.toIntOption.exists(_ > 0) =>
         for lang <- langs.values
         do lang.printer.width = n.toInt
@@ -247,7 +247,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.18.65")
+    println("Cuvée 0.18.66")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

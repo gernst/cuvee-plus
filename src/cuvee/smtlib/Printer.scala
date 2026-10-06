@@ -138,6 +138,8 @@ object Printer extends cuvee.pipe.Printer:
     command(cmd) :+ ""
 
   // a command without the empty line, e.g. inside a model or the value of an attribute
+  // the attributes of declarations and definitions are dropped, which SMT-LIB does not have,
+  // except for assertions, where they annotate the formula, and procedures, whose contracts they are
   def command(cmd: Cmd): List[String] =
     cmd match
       case CheckSat =>
@@ -179,13 +181,13 @@ object Printer extends cuvee.pipe.Printer:
       case SetInfo(name, value) =>
         apps(atom("set-info"), kw(name), sexpr(value))
 
-      case DeclareSort(Con(name, arity), attrs) =>
-        apps(atom("declare-sort"), mangle(name), atom(arity.toString), lines(attrs))
+      case DeclareSort(Con(name, arity), _) =>
+        apps(atom("declare-sort"), mangle(name), atom(arity.toString))
 
-      case DeclareDatatypes(List(Con(name, _)), List(data), attrs) =>
-        apps(atom("declare-datatype"), mangle(name), datatype(data), lines(attrs))
+      case DeclareDatatypes(List(Con(name, _)), List(data), _) =>
+        apps(atom("declare-datatype"), mangle(name), datatype(data))
 
-      case DeclareDatatypes(cons, datas, attrs) =>
+      case DeclareDatatypes(cons, datas, _) =>
         val sigs_ =
           for Con(name, arity) <- cons
           yield apps(mangle(name), atom(arity.toString))
@@ -194,24 +196,24 @@ object Printer extends cuvee.pipe.Printer:
           for data <- datas
           yield datatype(data)
 
-        apps(atom("declare-datatypes"), list(sigs_.flatten), list(decls_.flatten), lines(attrs))
+        apps(atom("declare-datatypes"), list(sigs_.flatten), list(decls_.flatten))
 
-      case DefineSort(Con(name, arity), params, body, attrs) =>
-        apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body), lines(attrs))
+      case DefineSort(Con(name, arity), params, body, _) =>
+        apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body))
 
       // SMT-LIB declarations do not name the formal parameters
-      case DeclareFun(Fun(name, Nil, formals, res), attrs) =>
-        apps(atom("declare-fun"), mangle(name), list(lines(formals.types)), lines(res), lines(attrs))
+      case DeclareFun(Fun(name, Nil, formals, res), _) =>
+        apps(atom("declare-fun"), mangle(name), list(lines(formals.types)), lines(res))
 
-      case DeclareFun(Fun(name, params, formals, res), attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(lines(formals.types)), lines(res), lines(attrs))
+      case DeclareFun(Fun(name, params, formals, res), _) =>
+        val body_ = apps(atom("par"), list(lines(params)), list(lines(formals.types)), lines(res))
         apps(atom("declare-fun"), mangle(name), body_)
 
-      case DefineFun(Fun(name, Nil, formals, res), body, attrs) =>
-        apps(atom("define-fun"), mangle(name), list(this.formals(formals)), lines(res), lines(body), lines(attrs))
+      case DefineFun(Fun(name, Nil, formals, res), body, _) =>
+        apps(atom("define-fun"), mangle(name), list(this.formals(formals)), lines(res), lines(body))
 
-      case DefineFun(Fun(name, params, formals, res), body, attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(this.formals(formals)), lines(res), lines(body), lines(attrs))
+      case DefineFun(Fun(name, params, formals, res), body, _) =>
+        val body_ = apps(atom("par"), list(lines(params)), list(this.formals(formals)), lines(res), lines(body))
         apps(atom("define-fun"), mangle(name), body_)
 
       case Assert(justify, Nil, phi, attrs) =>
@@ -221,8 +223,8 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom(command(justify)), apps(atom("par"), list(lines(params)), note(phi, attrs)))
 
       // not part of SMT-LIB, but understood by z3
-      case DeclareVar(Var(name, typ), attrs) =>
-        apps(atom("declare-var"), mangle(name), lines(typ), lines(attrs))
+      case DeclareVar(Var(name, typ), _) =>
+        apps(atom("declare-var"), mangle(name), lines(typ))
 
       // the formal parameters are named, since the contract may refer to them
       case DeclareProc(Proc(name, Nil, in, out), attrs) =>
