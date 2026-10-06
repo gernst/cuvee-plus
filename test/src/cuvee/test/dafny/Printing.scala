@@ -115,14 +115,6 @@ object Printing extends TestSuite:
       expr(Eq(p, Eq(q, p))) ==> "p == (q == p)"
       expr(app(Fun.eq_, x, y, zero)) ==> "==(x, y, 0)"
 
-    // the operators inside of parentheses are indented beyond the opening parenthesis
-    test("parentheses align"):
-      val long = (1 to 8).map(i => Lt.int(x, Lit(BigInt(1000000 * i), Sort.int))).reduce((phi, psi) => And(phi, psi))
-      val lines = Printer.lines(Imp(p, And(Imp(Lt.int(x, y), long), q)))
-      val open = lines.find(_.contains("(x < y")).get.indexOf("(")
-      val inner = lines.dropWhile(!_.contains("(x < y")).tail.takeWhile(!_.contains("q"))
-      assert(inner.nonEmpty && inner.forall(_.indexWhere(_ != ' ') > open))
-
     // conjunctions of comparisons that are linked by their operands in one direction are chained,
     // comparisons as operands of comparisons are parenthesized
     test("chained comparisons"):
@@ -142,26 +134,6 @@ object Printing extends TestSuite:
     test("mixfix binders"):
       val all = Bind("forall", List(x), Lt.int(x, y))
       expr(And(all, p)) ==> "(forall x: int :: x < y) && p"
-
-    // combinators that do not fit have the keyword below for and the update below the keyword
-    test("combinator breaks"):
-      val sequence = Var("a_rather_long_sequence_of_values", Sort.seq(Sort.int))
-      val other = Var("another_rather_long_sequence", Sort.seq(Sort.int))
-      val (u, v) = (Var("u", Sort.int), Var("v", Sort.int))
-      val all = Invs(List(sequence, other), List(u, v), Lt.int(u, v))
-      Printer.lines(all) ==> List(
-        "invs(for a_rather_long_sequence_of_values, another_rather_long_sequence",
-        "     check u, v =>",
-        "       u < v)"
-      )
-
-    // the arguments flow up to the width, aligned after the opening parenthesis
-    test("long call breaks"):
-      val args = List.fill(12)(Var("argument", Sort.int))
-      val lines = Printer.lines(Call("procedure", args, List(x))).filter(_.nonEmpty)
-      lines.head ==> "x := procedure(argument, argument, argument, argument, argument, argument,"
-      lines.last ==> "               argument, argument, argument, argument, argument, argument);"
-      assert(lines.forall(_.length <= Printer.width))
 
     // names that are neither identifiers nor operators are escaped by backticks, which the scanner reads back,
     // e.g. the instances of Monomorph

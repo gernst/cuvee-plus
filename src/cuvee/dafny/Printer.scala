@@ -18,7 +18,7 @@ import easyparse.Assoc
 
 object Printer extends cuvee.pipe.Printer:
   // the width that documents are laid out for
-  val width = 80
+  val width = 160
 
   // names of built-in sorts and functions in Dafny, inverse of the translation by the grammar
   val untranslate =

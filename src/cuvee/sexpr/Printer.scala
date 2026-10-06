@@ -32,6 +32,9 @@ object Printer:
   def str(text: String) =
     "\"" + text.replace("\"", "\"\"") + "\""
 
+  // the width beyond which lists are broken into lines
+  val width = 160
+
   def list(args: List[String]): List[String] =
     args match
       case Nil =>
@@ -40,7 +43,7 @@ object Printer:
       case first :: rest =>
         val max = args.maxBy(_.length)
         val sum = args.foldLeft(0)(_ + _.length)
-        val brk = args.length >= 2 && (max.length > 20 || sum >= 80)
+        val brk = args.length >= 2 && (max.length > 20 || sum >= width)
 
         brk match
           case true =>
