@@ -171,7 +171,10 @@ inputs, after the harness), with where they occurred in the sample.
    to `_Bool` a comparison with zero, others are rejected; arrays of arrays
    with updates of nested elements; initializer lists of local and global
    arrays, whose missing elements are zero; `x = y = e` is `y = e; x = y`.
-4. Calls in loop conditions and in `&&`/`||` (resolver only).
+4. Calls in loop conditions and in `&&`/`||` (resolver only). **Done:**
+   the calls of a loop condition are made at the beginning of each
+   iteration, which is left if the condition is false (`Parser.guard`); the
+   right operand of `&&`/`||` is evaluated in an `if` into a temporary.
 5. `typedef` of integer types (the `.i` headers), `sizeof` as a constant of
    the data model.
 6. Beyond integer programs with arrays: structs, pointers and `malloc`,

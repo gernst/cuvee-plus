@@ -150,11 +150,19 @@ class Parser(var state: State):
         val (pre1, left_) = cond(scope, ctx, left)
         val (pre2, right_) = cond(scope, ctx, right)
 
-        Error.report("calls in the right operand of && and || are not supported", right):
-          require(pre2.isEmpty)
-
-        val phi = if op == "&&" then And(left_, right_) else Or(left_, right_)
-        (pre1, phi, BoolType)
+        if pre2.isEmpty
+        then
+          val phi = if op == "&&" then And(left_, right_) else Or(left_, right_)
+          (pre1, phi, BoolType)
+        else
+          // the calls of the right operand are made only if the left one does not determine the result
+          val x = temp(ctx, BoolType)
+          val right__ = core.Block(Nil, pre2 :+ core.Assign(List(x), List(right_)))
+          val prog =
+            if op == "&&"
+            then core.If(left_, right__, core.Assign(List(x), List(False)))
+            else core.If(left_, core.Assign(List(x), List(True)), right__)
+          (pre1 :+ prog, x, BoolType)
 
       case App(op @ ("==" | "!="), List(left, right)) =>
         val (pre1, left_, lt) = expr(scope, ctx, left)
@@ -355,22 +363,19 @@ class Parser(var state: State):
         pre :+ core.If(test_, left_, right_)
 
       case While(test, body) =>
-        val (pre, test_) = cond(scope, ctx, test)
-
-        Error.report("calls in loop conditions are not supported", test):
-          require(pre.isEmpty)
-
-        List(while_(test_, wrap(stmt(scope, ctx, body))))
+        val (test_, check) = guard(scope, ctx, test)
+        List(while_(test_, wrap(check ++ stmt(scope, ctx, body))))
 
       // the test is evaluated after each iteration, also after continue, but not before the first one
       case DoWhile(body, test) =>
-        val (pre, test_) = cond(scope, ctx, test)
-
-        Error.report("calls in loop conditions are not supported", test):
-          require(pre.isEmpty)
-
+        val (test_, check) = guard(scope, ctx, test)
         val first = temp(ctx, BoolType)
-        val body_ = core.Block(Nil, core.Assign(List(first), List(False)) :: stmt(scope, ctx, body))
+
+        val body_ =
+          if check.isEmpty
+          then core.Block(Nil, core.Assign(List(first), List(False)) :: stmt(scope, ctx, body))
+          else core.Block(Nil, core.If(Not(first), core.Block(Nil, check), skip) :: core.Assign(List(first), List(False)) :: stmt(scope, ctx, body))
+
         List(core.Assign(List(first), List(True)), while_(Or(first, test_), body_))
 
       // the initialization may declare variables, whose scope is the loop
@@ -380,21 +385,17 @@ class Parser(var state: State):
       // continue must execute the step: the body is an inner loop that is left by break instead of continue,
       // and a break of the body sets a flag that leaves the outer loop
       case Loop(test, body, step) =>
-        val (pre, test_) = test.map(cond(scope, ctx, _)).getOrElse((Nil, True))
-
-        Error.report("calls in loop conditions are not supported", test):
-          require(pre.isEmpty)
-
+        val (test_, check) = test.map(guard(scope, ctx, _)).getOrElse((True, Nil))
         val body_ = stmt(scope, ctx, body)
         val step_ = step.toList.flatMap(stmt(scope, ctx, _))
 
         if !body_.exists(continues)
-        then List(while_(test_, core.Block(Nil, body_ ++ step_)))
+        then List(while_(test_, core.Block(Nil, check ++ body_ ++ step_)))
         else
           val brk = temp(ctx, BoolType)
           val inner = while_(True, core.Block(Nil, body_.map(exits(brk, _)) :+ core.Break))
-          val leave = core.If(brk, core.Break, core.Block(Nil, Nil))
-          val outer = while_(test_, core.Block(Nil, List(inner, leave) ++ step_))
+          val leave = core.If(brk, core.Break, skip)
+          val outer = while_(test_, core.Block(Nil, check ++ List(inner, leave) ++ step_))
           List(core.Assign(List(brk), List(False)), outer)
 
       case Return(None) =>
@@ -409,6 +410,17 @@ class Parser(var state: State):
         val Some((result, t)) = ctx.result: @unchecked
         val (pre, e_) = value(scope, ctx, e, t)
         pre ++ List(core.Assign(List(result), List(e_)), core.Return)
+
+  val skip = core.Block(Nil, Nil)
+
+  // the condition of a loop, whose calls are evaluated at the beginning of each iteration (`check`),
+  // which then leaves the loop if the condition is false, and the loop itself runs while true;
+  // without calls, the condition is that of the loop
+  def guard(scope: Scope, ctx: Ctx, test: Expr): (core.Expr, List[core.Prog]) =
+    val (pre, test_) = cond(scope, ctx, test)
+    if pre.isEmpty
+    then (test_, Nil)
+    else (True, pre :+ core.If(Not(test_), core.Break, skip))
 
   // whether continue occurs in `prog` outside of nested loops
   def continues(prog: core.Prog): Boolean =

@@ -71,9 +71,26 @@ object Translation extends TestSuite:
     test("conditions"):
       errors("int f(int x) { if (x) return !x; else return x && 1; }") ==> Nil
 
+    // the status of the Horn clauses of a program, sat if its assertions hold
+    def horn(text: String) =
+      val file = os.temp(text, suffix = ".c")
+      val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
+      Examples.status(results)
+
+    // the right operand is evaluated only if the left one does not determine the result
     test("calls in conditions"):
-      errors("int f(int x); int g(int x) { return x && f(x); }") ==>
-        List("calls in the right operand of && and || are not supported")
+      val f = "int c; int f(void) { c = c + 1; return 1; } "
+      horn(f + "int main(void) { int r; r = 0 && f(); assert(c == 0); r = 1 || f(); assert(c == 0); r = 1 && f(); assert(c == 1 && r); return 0; }") ==> Status.Sat
+      horn(f + "int main(void) { int r; r = 0 || f(); assert(c == 0); return 0; }") ==> Status.Unsat
+
+    // calls in the conditions of loops are evaluated before each iteration, also after continue
+    test("calls in loop conditions"):
+      val nondet = "extern _Bool __VERIFIER_nondet_bool(void); "
+      horn(nondet + "int main(void) { int i = 0; while (__VERIFIER_nondet_bool()) i++; assert(i >= 0); return 0; }") ==> Status.Sat
+      horn(nondet + "int main(void) { int i = 0; while (__VERIFIER_nondet_bool()) i++; assert(i == 0); return 0; }") ==> Status.Unsat
+      horn(nondet + "int main(void) { int i = 0; do i++; while (__VERIFIER_nondet_bool()); assert(i >= 1); return 0; }") ==> Status.Sat
+      horn(nondet + "int main(void) { int i = 0; do i++; while (__VERIFIER_nondet_bool()); assert(i == 1); return 0; }") ==> Status.Unsat
+      horn(nondet + "int main(void) { int i; int j = 0; for (i = 0; __VERIFIER_nondet_bool(); i++) { if (i > 2) continue; j++; } assert(j <= 3 && j <= i); return 0; }") ==> Status.Sat
 
     // the initial values are the precondition of main, they must not call functions
     test("initialized globals"):
