@@ -135,11 +135,11 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
       // the accumulator and the bound variables of the combinators are renamed like those of binders
       case Trace(init, deps, acc, bound, updates) =>
         val (rename, that) = avoid(acc :: bound)
-        Trace(this(init), this(deps), rename.lhs(acc), rename.lhs(bound), for Upd(cond, rhs) <- updates yield Upd(that(cond), that(rhs)))
+        Trace(this(init), this(deps), rename.lhs(acc), rename.lhs(bound), that(updates))
 
       case Maps(deps, bound, updates) =>
         val (rename, that) = avoid(bound)
-        Maps(this(deps), rename.lhs(bound), for Upd(cond, rhs) <- updates yield Upd(that(cond), that(rhs)))
+        Maps(this(deps), rename.lhs(bound), that(updates))
 
       case Invs(deps, bound, body) =>
         val (rename, that) = avoid(bound)
@@ -237,6 +237,15 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def apply(cases: List[Case]): List[Case] =
     for cs <- cases
     yield this(cs)
+
+  def apply(upd: Upd): Upd =
+    val Upd(cond, rhs) = upd
+    Upd(this(cond), this(rhs))
+
+  @targetName("Subst.applyUpdates")
+  def apply(updates: List[Upd]): List[Upd] =
+    for upd <- updates
+    yield this(upd)
 
   @targetName("Subst.applyProgs")
   def apply(progs: List[Prog]): List[Prog] =
