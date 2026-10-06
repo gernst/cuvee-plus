@@ -148,10 +148,11 @@ object Translation extends TestSuite:
       errors("typedef struct { int n; } S; int main(void) { return 0; }") ==> Nil
       errors("typedef struct { int n; } S; int main(void) { S s; return 0; }") ==> List("parse error")
 
-    // the sizes of integer types are those of the data models ILP32 and LP64, which differ for long
+    // the sizes of integer types are those of the data models ILP32 (-arch 32) and LP64 (-arch 64, the default), which differ for long
     test("sizeof"):
       valid("typedef unsigned int size_t; int main(void) { assert(sizeof(int) == 4 && sizeof(unsigned long long) == 8 && sizeof(char) == 1 && sizeof(short int) == 2 && sizeof(size_t) == 4); return 0; }")
-      errors("int main(void) { return sizeof(long); }") ==> List("the size of long depends on the data model")
+      valid("int main(void) { assert(sizeof(long) == 8 && sizeof(long int) == 8); return 0; }")
+      Examples.check("c", "int main(void) { assert(sizeof(long) == 4); return 0; }", "-arch", "32", "-verify", "-z3") ==> Nil
       errors("int main(void) { int a[2]; return sizeof(a); }") ==> List("sizeof of an expression is not supported")
 
     // memory for n elements is an array, whose elements are arbitrary, or zero for calloc

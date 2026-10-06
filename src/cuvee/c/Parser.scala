@@ -13,7 +13,8 @@ import cuvee.core.{Plus, Minus, Times, UMinus, DivBy, Mod, Lt, Le, Gt, Ge, Eq, N
 // functions are procedures whose result is the output `result`,
 // and whose global variables modified, directly or by calls, are inferred;
 // calls inside expressions are evaluated before the statement that contains them, in order
-class Parser(var state: State):
+// `arch` is the data model, 32 or 64 bit Linux (ILP32 or LP64), see Config.arch
+class Parser(var state: State, var arch: Int = 64):
   // the signatures of the functions by name
   val functions = mutable.Map[String, Function]()
 
@@ -112,14 +113,14 @@ class Parser(var state: State):
       else if digits.length > 1 && digits.startsWith("0") then BigInt(digits.drop(1), 8)
       else BigInt(digits)
 
-  // the size of an integer type in bytes, which is the same in the data models ILP32 and LP64, except for long
+  // the size of an integer type in bytes, where long has 4 bytes in the data model ILP32 and 8 bytes in LP64
   def sizeof(words: List[String]): BigInt =
     val longs = words.count(_ == "long")
     if words.contains("char") || words.contains("_Bool") || words.contains("bool") then 1
     else if words.contains("short") then 2
     else if longs == 0 then 4
-    else if longs == 2 then 8
-    else Error.raise("the size of long depends on the data model", words.mkString(" "))
+    else if longs == 1 then arch / 8
+    else 8
 
   // the simple escape sequences of C
   val escapes = Map('a' -> 7, 'b' -> 8, 't' -> 9, 'n' -> 10, 'v' -> 11, 'f' -> 12, 'r' -> 13, '\\' -> 92, '\'' -> 39, '"' -> 34, '?' -> 63)

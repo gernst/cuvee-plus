@@ -48,3 +48,14 @@ object Load extends TestSuite:
       errors("input_files: a.c\noptions:\n  language: Java\n") ==> List("unsupported language of task")
       errors("input_files: missing.c\n") ==> List("input file of task not found")
       errors("input_files: [a.c\n") ==> List("malformed task definition")
+
+    // the data model of the task determines the sizes of the integer types, regardless of -arch
+    test("data model"):
+      val dir = os.temp.dir()
+      os.write(dir / "long.c", "int main(void) { assert(sizeof(long) == 4); return 0; }")
+      def run(model: String) =
+        os.write.over(dir / "long.yml", "input_files: long.c\noptions:\n  data_model: " + model + "\n")
+        Examples.errors("-arch", "64", "-verify", "-z3", (dir / "long.yml").toString)
+      run("ILP32") ==> Nil
+      run("LP64") ==> List("goal does not hold")
+      run("LP32") ==> List("unsupported data model")

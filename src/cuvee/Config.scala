@@ -55,6 +55,8 @@ case class Config(
     timeout: Int = 1000,
     // the definitions of parallel composition in Dafny (resources/cuvee/dafny/hybrid.dfy)
     hybrid: Boolean = false,
+    // the data model of C for 32 or 64 bit Linux, ILP32 or LP64, i.e., the sizes of the integer types
+    arch: Int = 64,
     // the language of the printed output by its file extension, given with -print, the language of the input otherwise
     printed: Option[String] = None,
     // whether the output is passed to a solver, which reads SMT-LIB
@@ -150,6 +152,12 @@ object Config:
         val config_ = config.copy(hybrid = true)
         (config_, rest)
 
+  val arch =
+    flag("-arch", "<bits>", "the data model of C input, 32 or 64 bit Linux (ILP32 or LP64), e.g. for sizeof (default 64)"):
+      case (config, (bits @ ("32" | "64")) :: rest) =>
+        val config_ = config.copy(arch = bits.toInt)
+        (config_, rest)
+
   val z3 =
     flag("-z3", "pass output to z3"):
       case (config, rest) =>
@@ -208,6 +216,7 @@ object Config:
     monomorph,
     simplify,
     hybrid,
+    arch,
     z3,
     cvc5,
     timeout_,
@@ -257,7 +266,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.19.8")
+    println("Cuvée 0.19.9")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

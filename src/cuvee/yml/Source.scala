@@ -11,7 +11,7 @@ import cuvee.core._
 // SV-COMP task definitions defer to the C frontend for their input file,
 // which is relative to the directory of the task definition (the input of the configuration);
 // the task is read on demand, such that its errors are reported by the pipeline;
-// the properties are not used yet
+// its data model is passed on to the C frontend, the properties are not used yet
 object Source extends cuvee.pipe.Source:
   def newScanner(reader: Reader) =
     cuvee.c.Source.newScanner(reader)
@@ -30,4 +30,12 @@ object Source extends cuvee.pipe.Source:
     Error.report("input file of task not found", input):
       require(input.isFile)
 
-    cuvee.c.Source.input(config, new FileReader(input), parser)
+    // the data model of the task overrides the command line
+    val arch =
+      task.model match
+        case Some("ILP32") => 32
+        case Some("LP64")  => 64
+        case Some(model)   => Error.raise("unsupported data model", model)
+        case None          => config.arch
+
+    cuvee.c.Source.input(config.copy(arch = arch), new FileReader(input), parser)

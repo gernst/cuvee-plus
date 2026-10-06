@@ -11,7 +11,8 @@ languages or passes it to an SMT solver (z3 or cvc5).
   a subset of Boogie (`.bpl`), a subset of Dafny (`.dfy`), and simple
   integer programs in C (`.c`), with arrays as values and the verification
   conventions of SV-COMP, also given by SV-COMP task definitions (`.yml`)
-  with a single input file. All are parsed into the same core, are type
+  with a single input file; the sizes of integer types follow 32 or 64 bit
+  Linux (`-arch 32|64`, by default 64, or the data model of the task). All are parsed into the same core, are type
   checked with polymorphism, and resolve overloaded arithmetic on `Int` and
   `Real`, and indexing of arrays and sequences. In Dafny, axioms, lemmas,
   and goals may be written `if φ then ψ` for `φ ==> ψ`, also below the
