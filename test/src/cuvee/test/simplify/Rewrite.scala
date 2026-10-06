@@ -58,6 +58,12 @@ object Rewrite extends TestSuite:
       val expr = app(length, app(cons, a, app(cons, b, nil_)))
       R(rules, expr) ==> Plus.int(Plus.int(Zero.int, One.int), One.int)
 
+    // annotations e as T of the expression are skipped when matching, e.g. [] as List<int>
+    test("annotated"):
+      val ints = Sort(Con("List", 1), List(Sort.int))
+      val rules = List(rw(app(length, App(nil, Nil, list, Nil)), Zero.int))
+      R(rules, app(length, As(App(nil, Nil, ints, Nil), ints))) ==> Zero.int
+
     // conditions are decided by the simplifier
     test("conditional"):
       val rule = rw(app(abs, x), x, Le.int(Zero.int, x))

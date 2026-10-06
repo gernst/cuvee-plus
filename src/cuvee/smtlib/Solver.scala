@@ -28,7 +28,7 @@ class Solver(cmd: String*):
   def write(cmd: Cmd) =
     for (line <- Printer.lines(cmd))
     do
-      Debug.info("solver", proc.pid + "> " + line)
+      Debug.info("solver", proc.pid.toString + "> " + line)
       out.println(line)
     out.flush()
 
@@ -42,7 +42,7 @@ class Solver(cmd: String*):
         Grammar.sexpr.parse(responses)
 
     responses = rest
-    Debug.info("solver", proc.pid + "< " + cuvee.sexpr.Printer.lines(from).mkString(" "))
+    Debug.info("solver", proc.pid.toString + "< " + cuvee.sexpr.Printer.lines(from).mkString(" "))
 
     from match
       case List(Id("error"), Str(msg)) =>

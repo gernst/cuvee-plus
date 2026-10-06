@@ -29,17 +29,17 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   own capture-avoiding handling of binders; `Subst` must not get a special
   case for this.
 - Warnings: the implicit conversion `String => Name` without
-  `-language:implicitConversions`; two deprecations for `Long + String` in
-  [smtlib/Solver.scala](src/cuvee/smtlib/Solver.scala).
+  `-language:implicitConversions`.
 
 ## Solvers
 
 - `Solver.scoped` pops in `finally`, which hides the original error if the
   solver died; its stderr is never read, which can block it.
-- Quantified specifications over sequences often end in `unknown`, e.g.
-  `positive` in [examples/hybrid/par.dfy](examples/hybrid/par.dfy), a quantifier
-  over the events, although a hand-written version of its first goal is
-  `unsat` in z3 and cvc5; inductive axioms work better.
+- Axiomatization of data types: sequences are left to the solvers' theory,
+  where quantified specifications often end in `unknown` (e.g. `positive` in
+  [examples/hybrid/par.dfy](examples/hybrid/par.dfy)), whereas inductive
+  axioms, as for datatypes, work better; sequences could be axiomatized
+  inductively instead.
 
 ## Simplifier and rewriting
 
@@ -53,9 +53,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   variables inside of the expression (`Ctx.eq`, rule `Subst` of the paper),
   not for terms such as `history.events == []`; innermost first, which may
   rewrite subterms before a rule for the whole term applies.
-- Type annotations `e as T` are dropped from the left-hand sides of rules
-  (`Simplify.unannotated`) but kept in expressions, where the printers need
-  them, so rules do not match annotated subterms such as `[] as T`.
 - The goal of [clock.dfy](examples/hybrid/clock.dfy) remains after
   `-simplify`: the rules of `delay` would need the fact `history.events == []`,
   and `exists s` would need to be instantiated by the time. Plan: replace

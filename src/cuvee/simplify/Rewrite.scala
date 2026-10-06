@@ -87,6 +87,10 @@ object Rewrite:
             for m_ <- Rewrite.matches(x.typ, expr.typ, m)
             yield m_ + (x -> expr)
 
+      // annotations e as T of the expression are skipped, the left-hand sides of rules have none (see Rules.from)
+      case (_, As(arg, _)) =>
+        matches(config, state, ctx, b, pat, arg, m)
+
       // comparisons modulo moving summands between the sides, and < and <= on Int
       case _ if Rewrite.comparison(pat).nonEmpty =>
         for
