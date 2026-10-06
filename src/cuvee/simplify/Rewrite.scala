@@ -278,8 +278,12 @@ object Rewrite:
                   deps_(k)
 
                 case _ =>
-                  val used = (deps_ zip bound_).filter((_, y_) => value.free.contains(y_))
-                  val (deps__, bound__) = (if used.isEmpty then (deps_ zip bound_).take(1) else used).unzip
+                  // the first counter of the iterations comes first, also if the value does not use it,
+                  // and if there is none, the first dependency of the expression, followed by the used ones
+                  val pairs = deps_ zip bound_
+                  val front = pairs.find((dep_, _) => iterations(ctx, dep_)).getOrElse(pairs.head)
+                  val used = pairs.filter((_, y_) => value.free.contains(y_))
+                  val (deps__, bound__) = (front :: used.filter(_ != front)).unzip
                   Maps(deps__, bound__, List(Upd(True, value)))
 
             matches(config, state, ctx, b, z, seq, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
@@ -304,6 +308,13 @@ object Rewrite:
           m2 <- guard(config, state, ctx, b, cond_, cond, m1)
           m3 <- matches(config, state, ctx, b, updates, rest, m2)
         yield m3
+
+  // whether a dependency is the counter of the iterations of a loop, counter(0, 1, n),
+  // also one defined by an assumption (see Ctx.↑)
+  def iterations(ctx: Ctx, dep: Expr): Boolean =
+    dep match
+      case Butlast(ctx.↑(Counter(Zero.int, One.int, _))) => true
+      case _                                            => false
 
   // the guard of the pattern matches that of the expression, which instantiates the bound variables of the pattern
   // that do not occur in its result, e.g. b in if b then y + 1, and otherwise it must follow from that of the expression
