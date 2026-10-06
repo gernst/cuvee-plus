@@ -43,10 +43,22 @@ object Context extends TestSuite:
       val e = App(f, List(x))
       Ctx.empty.assume(Eq(x, e)).chains.chain ==> Map()
 
+    // arithmetic equations are solved for a variable with coefficient 1 or -1 and substituted, the substitution stays acyclic
     test("arithmetic"):
       val e = Plus.int(y, One.int)
+      val two = Lit(BigInt(2), Sort.int)
+      val forty = Lit(BigInt(40), Sort.int)
       Ctx.empty.assume(Eq(x, e)).chains.chain ==> Map()
-      Ctx.empty.assume(Eq(x, e)).facts.assms ==> List(Eq(x, e))
+      Ctx.empty.assume(Eq(x, e)).chains.replace ==> Map(x -> e)
+      Ctx.empty.assume(Eq(x, e)).facts.assms ==> Nil
+      Ctx.empty.assume(Eq(Plus.int(x, y), forty)).chains.replace ==> Map(x -> Plus.int(UMinus.int(y), forty))
+      // the first variable in the order of the monomials is solved for
+      val ctx = Ctx.empty.assume(Eq(y, Plus.int(x, One.int)))
+      ctx.chains.replace ==> Map(x -> Plus.int(y, Lit(BigInt(-1), Sort.int)))
+      // x is replaced already, z == x + 2 is solved neither for x nor for z, whose solution contains x
+      ctx.assume(Eq(z, Plus.int(x, two))).chains.replace ==> ctx.chains.replace
+      // y occurs in a replacement, y == z + 2 is solved for z instead
+      ctx.assume(Eq(y, Plus.int(z, two))).chains.replace ==> ctx.chains.replace + (z -> Plus.int(y, Lit(BigInt(-2), Sort.int)))
 
 // one-point rule: an equation x == e of a quantified variable x that occurs nowhere else is true,
 // negatively below forall and positively below exists
@@ -59,6 +71,7 @@ object OnePoint extends TestSuite:
   val z = Var("z", Sort.int)
   val p = Fun("p", Nil, Fun.formals(Sort.int), Sort.bool)
   val q = Var("q", Sort.bool)
+  val f = Fun("f", Nil, Fun.formals(Sort.int), Sort.int)
 
   def P(e: Expr) = App(p, List(e))
 
@@ -77,10 +90,11 @@ object OnePoint extends TestSuite:
       // below a negation, exists is universal
       simplify(Not(Ex(List(x), And(Eq(x, y), P(y))))) ==> Not(P(y))
 
-    // the variable occurs elsewhere, or twice in equations
+    // the variable occurs elsewhere, or twice in equations; an arithmetic definition is substituted first
     test("used"):
-      val used = All(List(x), Imp(Eq(x, Plus.int(y, One.int)), P(x)))
+      val used = All(List(x), Imp(Eq(x, App(f, List(y))), P(x)))
       simplify(used) ==> used
+      simplify(All(List(x), Imp(Eq(x, Plus.int(y, One.int)), P(x)))) ==> P(Plus.int(y, One.int))
       // equations between variables substitute first, after which the equation is unused
       simplify(All(List(x), Imp(Eq(x, y), P(x)))) ==> P(y)
       val twice = All(List(x), Imp(And(Eq(x, Plus.int(y, One.int)), Eq(x, z)), q))

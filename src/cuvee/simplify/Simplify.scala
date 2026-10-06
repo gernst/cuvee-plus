@@ -707,10 +707,13 @@ object Simplify extends Transform:
         case (_, right_)                     => op(left.toExpr(ring), right_)
 
   // equations 0 == p on Int or Real are constants if p is, otherwise they are re-arranged like comparisons,
-  // the result is an equation as built by eq_, e.g. by the one-point rule
+  // the result is an equation as built by eq_, e.g. by the one-point rule,
+  // which applies also to a variable for which the equation can be solved, e.g. n + x == 40 for x (see Poly.solutions)
   def eq(config: Config, state: State, ctx: Ctx, ring: Ring, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isZero then True else False
+    else if poly.solutions.exists((x, rest) => point(ctx, x, rest.toExpr(ring)))
+    then True
     else
       val (left, right) = poly.sides
       eq_(config, state, ctx, left.toExpr(ring), right.toExpr(ring))

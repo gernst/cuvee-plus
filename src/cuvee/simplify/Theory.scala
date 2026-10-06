@@ -38,6 +38,7 @@ object Chains:
 
 // equations of variables, which are never inconsistent, since conflicting equations are not recorded:
 // replace: a substitution that replaces variables by others or by literals known to be equal,
+// or by the solution of an arithmetic equation, e.g. x by 40 - n for n + x == 40,
 // whose equations are no facts of the context (see Ctx.assume);
 // chain: the equations x == e that are not recursive, i.e., where x is not free in e,
 // which remain facts of the context, such that they are still found by Simplify.implied;
@@ -58,6 +59,9 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
       case Eq(l: Lit, x: Var) if replaces(x, l) =>
         copy(replace = replace + (x -> l))
 
+      case Eq(left, right) if solve(left, right).nonEmpty =>
+        copy(replace = replace + solve(left, right).get)
+
       case Eq(x: Var, e) if chains(x, e) =>
         copy(chain = chain + (x -> e))
 
@@ -73,6 +77,26 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
   // whether x == e can be recorded in the substitution, e is a variable or a literal
   def replaces(x: Var, e: Expr): Boolean =
     x != e && !(replace contains x)
+
+  // the first solution of an arithmetic equation for a variable that is an arithmetic expression (see Poly.solutions),
+  // single variables and literals are replaced above, other terms are chained below;
+  // the substitution stays acyclic and is applied in one step (see Simplify.var_), since the solution contains no
+  // variable that is replaced, and the variable occurs in no replacement
+  def solve(left: Expr, right: Expr): Option[(Var, Expr)] =
+    Ring(left.typ) match
+      case Some(ring) =>
+        val poly = (Arith.toPoly(ring, left) - Arith.toPoly(ring, right)).normalize
+        val solutions =
+          for
+            (x, rest) <- poly.solutions
+            e = rest.toExpr(ring)
+            if Ctx.arithmetic(e) && replaces(x, e)
+            if (e.free intersect replace.keySet).isEmpty && !(replace.values.free contains x)
+          yield (x, e)
+        solutions.headOption
+
+      case None =>
+        None
 
   // whether x == e can be recorded in the chain
   def chains(x: Var, e: Expr): Boolean =
