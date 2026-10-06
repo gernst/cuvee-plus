@@ -163,3 +163,41 @@ object Definitions extends TestSuite:
     test("equations"):
       val ctx = Ctx.empty.assume(Eq(x, App(f, List(y)))).assume(Eq(z, App(f, List(y))))
       simplify(ctx, Eq(x, z)) ==> True
+
+// formulas are decided by whether denying or assuming them makes the theories of the context inconsistent
+object Decisions extends TestSuite:
+  import cuvee.Config
+  import cuvee.simplify.Simplify
+
+  val n = Var("n", Sort.int)
+  val p = Var("p", Sort.bool)
+
+  def lit(k: Int) = Lit(BigInt(k), Sort.int)
+
+  def simplify(ctx: Ctx, expr: Expr) =
+    Simplify.simplify(Config.default, State.empty, ctx, expr)
+
+  val tests = Tests:
+    // the bounds of the loop counter in the goal of array_1-1
+    test("differences"):
+      val ctx = Ctx.empty.assume(Le.int(lit(1024), n)).assume(Lt.int(n, lit(1025)))
+      simplify(ctx, Eq(n, lit(1024))) ==> True
+      simplify(ctx, Eq(n, Zero.int)) ==> False
+      simplify(ctx, Le.int(Zero.int, n)) ==> True
+      simplify(ctx, Lt.int(n, lit(1024))) ==> False
+      simplify(Ctx.empty.assume(Le.int(lit(1024), n)), Eq(n, lit(1024))) ==> Eq(n, lit(1024))
+
+    // the facts themselves, also by the negation in normal form
+    test("facts"):
+      simplify(Ctx.empty.assume(p), p) ==> True
+      simplify(Ctx.empty.deny(p), p) ==> False
+      simplify(Ctx.empty.deny(p), Not(p)) ==> True
+      val r = Var("r", Sort.real)
+      simplify(Ctx.empty.deny(Le.real(r, Zero.real)), Lt.real(Zero.real, r)) ==> True
+
+    // an inconsistent context decides formulas by polarity only, not by the theories
+    test("inconsistent"):
+      val ctx = Ctx.empty.assume(Le.int(One.int, n)).assume(Le.int(n, Zero.int))
+      assert(ctx.inconsistent)
+      assert(!ctx.implied(p, Not(p)))
+      assert(!ctx.denied(p, Not(p)))

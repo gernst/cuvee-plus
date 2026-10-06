@@ -10,19 +10,19 @@ trait Theory:
   def deny(expr: Expr): Theory
 
 object Facts:
-  val empty = Facts(Nil, Nil)
+  val empty = Facts(Nil, Nil, false)
 
 // the facts as given, the assumptions are known to hold, the conclusions are known not to hold;
-// they are inconsistent if false is among the assumptions or true among the conclusions
-case class Facts(assms: List[Expr], concls: List[Expr]) extends Theory:
-  def inconsistent =
-    (assms contains False) || (concls contains True)
-
+// they are inconsistent if false is among the assumptions, true among the conclusions, or a fact among both,
+// which is recorded as the facts are added, such that a query (see Ctx.implied) needs a single pass over them
+case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) extends Theory:
   def assume(expr: Expr): Facts =
-    copy(assms = expr :: assms)
+    val conflict = expr == False || (concls contains expr)
+    Facts(expr :: assms, concls, inconsistent || conflict)
 
   def deny(expr: Expr): Facts =
-    copy(concls = expr :: concls)
+    val conflict = expr == True || (assms contains expr)
+    Facts(assms, expr :: concls, inconsistent || conflict)
 
   // the variables that occur in the facts
   def free: Set[Var] =

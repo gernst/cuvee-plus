@@ -70,9 +70,9 @@ object Simplify extends Transform:
   // a formula that is known from the context is replaced by its truth value (only formulas, which not applies to);
   // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
   def simplify(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    if expr.typ == Sort.bool && implied(config, state, ctx, expr)
+    if implied(config, state, ctx, expr)
     then True
-    else if expr.typ == Sort.bool && denied(config, state, ctx, expr)
+    else if denied(config, state, ctx, expr)
     then False
     else
       val once_ = once(config, state, ctx, expr)
@@ -84,20 +84,21 @@ object Simplify extends Transform:
       then expr
       else simplify(config, state, ctx, expr_)
 
-  // whether `phi` is known to hold in `ctx`, also by its negation in normal form, e.g. a < b if !(b <= a) is known,
-  // in an inconsistent context at positive positions, where any formula may be chosen (polarity is only defined for formulas)
+  // whether `phi` is known to hold in `ctx`, also by its negation in normal form, e.g. a < b if !(b <= a) is known
+  // (see Ctx.implied), and in an inconsistent context at positive positions,
+  // where any formula may be chosen (polarity is only defined for formulas); false for expressions that are no formulas
   def implied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
-    phi == True
-      || (ctx.inconsistent && ctx.polarity == Some(true))
-      || (ctx.facts.assms contains phi)
-      || (ctx.facts.concls contains not(config, state, ctx, phi))
+    phi.typ == Sort.bool && (
+      phi == True
+        || (ctx.inconsistent && ctx.polarity == Some(true))
+        || ctx.implied(phi, not(config, state, ctx, phi)))
 
   // whether `phi` is known not to hold in `ctx`, dually, e.g. a < b if b <= a is known
   def denied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
-    phi == False
-      || (ctx.inconsistent && ctx.polarity == Some(false))
-      || (ctx.facts.concls contains phi)
-      || (ctx.facts.assms contains not(config, state, ctx, phi))
+    phi.typ == Sort.bool && (
+      phi == False
+        || (ctx.inconsistent && ctx.polarity == Some(false))
+        || ctx.denied(phi, not(config, state, ctx, phi)))
 
   // expressions in debug output, on a single line
   def show(printer: cuvee.pipe.Printer, expr: Expr): String =

@@ -102,8 +102,27 @@ case class Ctx(
   def deny(phi: Expr): Ctx =
     copy(facts = facts.deny(phi), chains = chains.deny(phi), diffs = diffs.deny(phi))
 
+  def theories: List[Theory] =
+    List(facts, chains, diffs)
+
   def inconsistent =
-    facts.inconsistent || chains.inconsistent || diffs.inconsistent
+    theories exists (_.inconsistent)
+
+  // phi follows from a consistent context if denying it or assuming its negation `not` makes one of the theories inconsistent,
+  // where `not` is the negation in normal form (see Simplify.not), e.g. a < b if b <= a is among the conclusions;
+  // in an inconsistent context, any formula would follow, which is decided by polarity instead (see Simplify.implied);
+  // an equation on Int follows from both comparisons, since a disequation is no difference constraint (see Diffs)
+  def implied(phi: Expr, not: Expr): Boolean =
+    phi match
+      case Eq(left, right) if left.typ == Sort.int =>
+        implied(Le.int(left, right), Lt.int(right, left)) && implied(Le.int(right, left), Lt.int(left, right))
+
+      case _ =>
+        !inconsistent && (deny(phi).inconsistent || assume(not).inconsistent)
+
+  // phi fails in a consistent context if assuming it or denying its negation makes one of the theories inconsistent
+  def denied(phi: Expr, not: Expr): Boolean =
+    !inconsistent && (assume(phi).inconsistent || deny(not).inconsistent)
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
