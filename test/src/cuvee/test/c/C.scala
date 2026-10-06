@@ -203,6 +203,11 @@ object Printing extends TestSuite:
       print(DefineFun(p, Ex(List(x), Lt.int(x, One.int)), Attrs.empty)) ==> Nil
       print(CheckSat) ==> Nil
 
+    // models are not programs, they are SMT-LIB
+    test("models"):
+      val model = Model(List(DefineFun(p, Lt.int(Var("x", Sort.int), One.int), Attrs.empty)))
+      cuvee.c.Printer.lines(model) ==> cuvee.smtlib.Printer.lines(model)
+
     // global variables are zero in C, initializers are assignments at the beginning of main
     test("contracts"):
       val file = os.temp("int g = 1; int main(void) { return g; }", suffix = ".c")

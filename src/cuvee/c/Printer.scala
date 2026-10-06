@@ -17,7 +17,7 @@ import easyparse.Assoc
 // div and mod of SMT-LIB are written as / and %, which C's / and % are translated to (see TODO.md);
 // uninterpreted functions are prototypes, and their applications calls;
 // everything else is omitted, e.g. contracts, assertions of formulas, quantifiers, and commands such as check-sat,
-// such that the output is C; results, e.g. models, are not programs, they are printed in SMT-LIB where not C
+// such that the output is C; results, e.g. models, are not programs, they are printed in SMT-LIB
 object Printer extends cuvee.pipe.Printer:
 
   // the result of the procedure that is printed, which return writes
@@ -40,28 +40,13 @@ object Printer extends cuvee.pipe.Printer:
   def call(fun: String, args: List[Doc]): Doc =
     Group(text(fun + "(") ~ Nest(2, linebreak ~ commas(args)) ~ text(")"))
 
-  // models are printed as C functions, those that are not C, e.g. with quantifiers, as in SMT-LIB
   def lines(res: Result): List[String] =
-    res match
-      case Model(decls) =>
-        for
-          decl <- decls
-          line <-
-            try c(decl)
-            catch case _: Error => cuvee.smtlib.Printer.lines(decl)
-        yield line
+    cuvee.smtlib.Printer.lines(res)
 
-      case _ =>
-        cuvee.smtlib.Printer.lines(res)
-
-  // commands that are not C are omitted
+  // commands that are not C are omitted, each other command is followed by an empty line, as by the SMT-LIB printer
   def lines(cmd: Cmd): List[String] =
-    try c(cmd)
+    try render(doc(cmd), width) :+ ""
     catch case _: Error => Nil
-
-  // each command is followed by an empty line, as by the SMT-LIB printer
-  def c(cmd: Cmd): List[String] =
-    render(doc(cmd), width) :+ ""
 
   def lines(typ: Type): List[String] =
     render(doc(typ), width)
@@ -109,11 +94,6 @@ object Printer extends cuvee.pipe.Printer:
       // uninterpreted functions, e.g. the predicates of Horn clauses
       case DeclareFun(Fun(name_, Nil, formals, res), _) =>
         doc(res) ~~ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) ~ text(";")
-
-      // functions, e.g. the predicates of models of Horn clauses
-      case DefineFun(Fun(name_, Nil, formals, res), body, _) =>
-        val ret = Group(text("return") ~ Nest(2, line ~ doc(body))) ~ text(";")
-        doc(res) ~~ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) ~~ braces(List(ret))
 
       // contracts are omitted, e.g. the zero values of global variables as the precondition of main
       case DefineProc(Proc(name_, Nil, in, out), body, _) =>
@@ -312,7 +292,7 @@ object Printer extends cuvee.pipe.Printer:
       case Let(bound, args, body) =>
         doc(Subst.from(bound, args)(body))
 
-      // other functions, e.g. predicates in models
+      // other functions, e.g. the predicates of Horn clauses
       case App(fun, Nil, _, Nil) =>
         text(name(fun.name))
 
