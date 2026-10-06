@@ -246,19 +246,19 @@ object Simplify extends Transform:
 
       // bound variables are renamed apart from the context before entering the body
       case All(bound, body) =>
-        val (bound_, re) = ctx.avoid(bound)
+        val (bound_, re) = Subst.rename(bound, ctx.free)
         val body_ = simplify(config, state, ctx.forall(bound_), re(body))
         all(config, state, ctx, bound_, body_)
 
       case Ex(bound, body) =>
-        val (bound_, re) = ctx.avoid(bound)
+        val (bound_, re) = Subst.rename(bound, ctx.free)
         val body_ = simplify(config, state, ctx.exists(bound_), re(body))
         ex(config, state, ctx, bound_, body_)
 
       // the body has no polarity, since the context does not record the bindings
       case Let(bound, args, body) =>
         val args_ = args.map(simplify(config, state, ctx.neutral, _))
-        val (bound_, re) = ctx.avoid(bound)
+        val (bound_, re) = Subst.rename(bound, ctx.free)
         val body_ = simplify(config, state, ctx.neutral.bind(bound_), re(body))
         let(config, state, ctx, bound_, args_, body_)
 
@@ -271,14 +271,14 @@ object Simplify extends Transform:
       case Trace(init, deps, acc, bound, updates) =>
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
-        val (vars_, re) = ctx.avoid(acc :: bound)
+        val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
         val ctx_ = ctx.neutral.bind(vars_).assume(invariants(ctx, deps_, vars_.tail), Nil)
         val updates_ = this.updates(config, state, ctx_, updates.map(_.map(re(_))))
         trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, updates_)
 
       case Maps(deps, bound, updates) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
-        val (bound_, re) = ctx.avoid(bound)
+        val (bound_, re) = Subst.rename(bound, ctx.free)
         val ctx_ = ctx.neutral.bind(bound_).assume(invariants(ctx, deps_, bound_), Nil)
         val updates_ = this.updates(config, state, ctx_, updates.map(_.map(re(_))))
         maps(config, state, ctx, deps_, bound_, updates_)
@@ -287,7 +287,7 @@ object Simplify extends Transform:
       // but without polarity, since the dependencies are not recorded in the context
       case Invs(deps, bound, body) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
-        val (bound_, re) = ctx.avoid(bound)
+        val (bound_, re) = Subst.rename(bound, ctx.free)
         val ctx_ = ctx.neutral.bind(bound_).assume(invariants(ctx, deps_, bound_), Nil)
         val body_ = simplify(config, state, ctx_, re(body))
         invs(config, state, ctx, deps_, bound_, body_)
@@ -317,7 +317,7 @@ object Simplify extends Transform:
   // without polarity, since the context does not record the argument
   def cases(config: Config, state: State, ctx: Ctx, cs: Case): Case =
     val Case(pat, body, cond) = cs
-    val (bound_, re) = ctx.avoid(pat.free.toList)
+    val (bound_, re) = Subst.rename(pat.free.toList, ctx.free)
     val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
     val body_ = simplify(config, state, ctx.neutral.bind(bound_).assume(List(cond_), Nil), re(body))
     case_(config, state, ctx, re(pat), body_, cond_)

@@ -134,8 +134,7 @@ object Verify extends Transform:
 
       case Block(locals, progs) =>
         // locals may shadow variables in the postcondition, therefore they are renamed apart
-        val locals_ = locals.fresh
-        val su = Subst.from(locals, locals_)
+        val (locals_, su) = Subst.rename(locals)
         All(locals_, wp(state, gs, proc, assume, commit, su(progs), post, break, continue, return_))
 
       case Choice(progs) =>
@@ -187,16 +186,14 @@ object Verify extends Transform:
     // the precondition refers to the values of the global variables before the call,
     // as does old(e) in the postcondition, whose modified global variables are kept apart as mod0 meanwhile
     val mod = state.procattrs(name).modifies
-    val res_ = res.fresh
-    val mod_ = mod.fresh
+    val (vars_, rename) = Subst.rename(res ++ mod)
     val mod0 = mod.fresh
     // the substitutions replace the formal parameters and instantiate the type parameters of a polymorphic procedure
     // by the types of the arguments, and those of the results, which su_ replaces in addition
     val su = Ref(Subst.empty[Type, Expr])
     Type.bind(in, args, su)
     val su_ = su.copy
-    Type.bind(out ++ mod, res_ ++ mod_, su_)
-    val rename = Subst.from(res ++ mod, res_ ++ mod_)
+    Type.bind(out ++ mod, vars_, su_)
     val phi_ = Subst.from(mod0, mod)(su_(Old.elim(mod, mod0, phi)))
 
     // the measure refers to the inputs, whose values at the call are those at the entry of `proc`
@@ -207,12 +204,12 @@ object Verify extends Transform:
         decreases(su(dec), dec)
       else True
 
-    (And(su(pre), dec), res_ ++ mod_, phi_, rename)
+    (And(su(pre), dec), vars_, phi_, rename)
 
   // for all values of the history h
   def havoc(h: Var, phi: Expr): Expr =
-    val h_ = h.fresh
-    All(List(h_), Subst.from(List(h), List(h_))(phi))
+    val (hs, su) = Subst.rename(List(h))
+    All(hs, su(phi))
 
   // the assumption and the commitment of procedure `name` for the arguments `args`, true if there are none
   def ac(state: State, name: Name, args: List[Expr]): (Expr, Expr) =
@@ -263,8 +260,7 @@ object Verify extends Transform:
   // the derivatives of the invariants are those of formulas, (e <= f)' is e' <= f', which is left to the simplifier
   def ode(xs: List[Var], rhs: List[Expr], dom: Expr, invs: List[Expr], post: Expr): Expr =
     // the values of xs after the evolution, and in its course, are fresh
-    val xs_ = xs.fresh
-    val su = Subst.from(xs, xs_)
+    val (xs_, su) = Subst.rename(xs)
     val dom_ = su(dom)
 
     invs match

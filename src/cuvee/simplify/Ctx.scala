@@ -72,14 +72,6 @@ case class Ctx(
     val facts = assms ++ concls
     facts.free ++ facts.flatMap(Ctx.primed) ++ su.keys ++ su.values.free
 
-  // rename those of `xs` that clash with variables of the context (compared by name),
-  // returning the fresh list of variables and the renaming to be applied to the scope of `xs`
-  def avoid(xs: List[Var]): (List[Var], Subst[Nothing, Var]) =
-    val names = free.map(_.name)
-    val captured = xs.filter(x => names contains x.name)
-    val re = Subst.from(captured, captured.fresh)
-    (re.lhs(xs), re)
-
   // equations of variables with variables and literals are recorded in the substitution;
   // facts are stored as given and not normalized under the substitution,
   // e.g. Simplify.implied misses (p y) when the fact is stored as (p x);

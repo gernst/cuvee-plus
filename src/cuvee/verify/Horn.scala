@@ -207,8 +207,7 @@ object Horn extends Transform:
         clause(scope, pre, pre_, clauses)
 
         val next = predicate(proc, "spec", scope, decls)
-        val xs_ = xs.fresh
-        val su = Subst.from(xs, xs_)
+        val (xs_, su) = Subst.rename(xs)
         clause(scope ++ xs_, pre :+ su(post_), App(next, su(scope)), clauses)
         wp(state, proc, scope, rest, List(App(next, scope)), post, break, continue, return_, decls, clauses)
 
@@ -258,8 +257,7 @@ object Horn extends Transform:
       // the remaining statements continue from a fresh predicate after the block, if there are any
       case Block(locals, progs_) :: rest =>
         // locals may shadow variables in scope, therefore they are renamed apart
-        val locals_ = locals.fresh
-        val su = Subst.from(locals, locals_)
+        val (locals_, su) = Subst.rename(locals)
         val scope_ = scope ++ locals_
 
         join(state, proc, "block", scope, rest, post, break, continue, return_, decls, clauses): post_ =>

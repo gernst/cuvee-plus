@@ -152,11 +152,5 @@ object Normalize:
 
   // the bound variables `xs` renamed apart from the variables in scope
   def avoid(bound: Set[Var], xs: List[Var], body: Expr): (List[Var], Expr) =
-    val names = bound.map(_.name)
-    val clash = xs.filter(x => names.contains(x.name))
-
-    if clash.isEmpty
-    then (xs, body)
-    else
-      val su = Subst.from(clash, clash.fresh)
-      (xs.map(x => su(x).asInstanceOf[Var]), su(body))
+    val (xs_, su) = Subst.rename(xs, bound)
+    (xs_, su(body))

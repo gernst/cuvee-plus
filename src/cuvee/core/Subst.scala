@@ -23,6 +23,18 @@ object Subst:
   def fresh(vars: List[Var]): Subst[Nothing, Expr] =
     from(vars, vars.fresh)
 
+  // fresh variables for `xs`, and the renaming to them
+  def rename(xs: List[Var]): (List[Var], Subst[Nothing, Var]) =
+    val xs_ = xs.fresh
+    (xs_, from(xs, xs_))
+
+  // fresh variables for those of `xs` that clash with `avoid` (compared by name, since types may differ),
+  // the others are kept, and the renaming to them
+  def rename(xs: List[Var], avoid: Set[Var]): (List[Var], Subst[Nothing, Var]) =
+    val names = avoid.map(_.name)
+    val (_, re) = rename(xs.filter(x => names.contains(x.name)))
+    (re.lhs(xs), re)
+
   @targetName("Subst.fromVars")
   def from[E <: Expr](vars: List[Var], exprs: List[E]): Subst[Nothing, E] =
     Error.report("mismatching length", vars, exprs):
@@ -75,9 +87,7 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 
   // the variable with the type parameters of its type substituted
   def retype(x: Var): Var =
-    if params.isEmpty
-    then x
-    else Var(x.name, this(x.typ))
+    Var(x.name, this(x.typ))
 
   def apply(typ: Type): Type =
     typ match
