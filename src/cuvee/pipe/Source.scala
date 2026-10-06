@@ -61,14 +61,25 @@ trait Source:
     try cmds(newScanner(reader).input, parser).toList
     finally reader.close()
 
+  // empty chunks are skipped in a loop, not by recursion, since a frontend may return many of them (e.g. C buffers its declarations)
   def cmds(in: easyparse.Input, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
-    if in.isEmpty || in.head == Token.eof
-    then LazyList.empty
-    else
+    var rest = in
+    var chunk: List[Cmd] = Nil
+
+    while chunk.isEmpty && !done(rest)
+    do
       try
-        val (chunk, in_) = parser.parse(in, true)
-        LazyList(chunk*) #::: cmds(in_, parser)
+        val (chunk_, rest_) = parser.parse(rest, true)
+        chunk = chunk_
+        rest = rest_
       catch
         case easyparse.Fail(in, from) =>
           val where = in.take(10).map(_.text).mkString("", " ", " ... ")
           Error.raise("parse error", from, where)
+
+    if chunk.isEmpty
+    then LazyList.empty
+    else LazyList(chunk*) #::: cmds(rest, parser)
+
+  def done(in: easyparse.Input) =
+    in.isEmpty || in.head == Token.eof
