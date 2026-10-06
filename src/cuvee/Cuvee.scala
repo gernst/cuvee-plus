@@ -13,13 +13,20 @@ object Cuvee extends util.Main:
         Config.version()
 
       case _ =>
-        run(args.toList, exit = true)
+        val (code, _, _) = pipe(args.toList)
+        System.out.flush()
+        sys.exit(code)
 
   def run(args: String*): (List[Cmd], List[Result]) =
     run(args.toList)
 
-  // the output is additionally passed to `sinks`, e.g. to collect the commands in tests
-  def run(args: List[String], sinks: List[Sink] = Nil, exit: Boolean = false) =
+  def run(args: List[String], sinks: List[Sink] = Nil): (List[Cmd], List[Result]) =
+    val (_, cmds, results) = pipe(args, sinks)
+    (cmds, results)
+
+  // the output is additionally passed to `sinks`, e.g. to collect the commands in tests,
+  // returns the exit code, the processed commands, and the results (see Pipe.run)
+  def pipe(args: List[String], sinks: List[Sink] = Nil) =
     val config = Config.parse(Config.default, args)
     Debug.modules = config.debug
 
@@ -39,4 +46,4 @@ object Cuvee extends util.Main:
     // therefore the end of the input is marked by Done
     val cmds_ = cmds #::: LazyList(Done)
 
-    Pipe.run(cmds_, stages, report, incremental = false, exit)
+    Pipe.run(cmds_, stages, report, incremental = false)

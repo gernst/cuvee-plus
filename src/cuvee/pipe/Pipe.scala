@@ -13,8 +13,8 @@ import cuvee.sexpr.Id
 // print-success is handled here, since it concerns the reports, not the sinks;
 // errors are reported and stop the run unless it is incremental, which continues with the next command;
 // other exceptions are reported as internal errors and always stop the run;
-// with `exit`, stopping exits the process with the codes below, otherwise
-// returns the commands that were processed and the results
+// returns the exit code of the run (see Cuvee.main), the commands that were processed, and the results,
+// 0 if it was not stopped or only by an error of an incremental run
 object Pipe:
   val errorCode = 1
   val internalCode = 2
@@ -28,16 +28,10 @@ object Pipe:
     result.initCause(cause)
     result
 
-  def run(source: Iterable[Cmd], init: Sink, report: Report, incremental: Boolean, exit: Boolean = false) =
+  def run(source: Iterable[Cmd], init: Sink, report: Report, incremental: Boolean) =
     var sink = init
     var printSuccess = false
-
-    def stop(code: Int) =
-      if exit then
-        System.out.flush()
-        System.err.flush()
-        sys.exit(code)
-      Breaks.break()
+    var code = 0
 
     val done = mutable.ListBuffer[Cmd]()
     val results = mutable.ListBuffer[Result]()
@@ -80,7 +74,8 @@ object Pipe:
                   results.append(result)
 
                   if (!incremental)
-                    stop(errorCode)
+                    code = errorCode
+                    Breaks.break()
 
                 case NonFatal(cause) =>
                   val result = internal(cause)
@@ -89,19 +84,20 @@ object Pipe:
                   if cmd != Done then
                     done.append(cmd)
                   results.append(result)
-                  stop(internalCode)
+                  code = internalCode
+                  Breaks.break()
 
     catch
       // catches parse errors, which have no command
       case result: Error =>
         report.report(result, printSuccess)
         results.append(result)
-        if exit && !incremental then stop(errorCode)
+        if !incremental then code = errorCode
 
       case NonFatal(cause) =>
         val result = internal(cause)
         report.report(result, printSuccess)
         results.append(result)
-        if exit then stop(internalCode)
+        code = internalCode
 
-    (done.toList, results.toList)
+    (code, done.toList, results.toList)

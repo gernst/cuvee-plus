@@ -60,9 +60,9 @@ transformation and any output.
    the chain. It reports each result (`Ack`, `Status`, `Model`, `Error`, ...)
    through `Report`. An `Error` stops the run unless the pipe is incremental;
    other exceptions are reported as `internal error` (stack trace with
-   `-debug internal`) and always stop it. From the command line
-   (`Cuvee.main`), stopping exits with status 1 for an error and 2 for an
-   internal error; `Cuvee.run`, used by the tests, returns instead.
+   `-debug internal`) and always stop it. `Pipe.run` returns an exit code,
+   1 for an error and 2 for an internal error, with which `Cuvee.main`
+   exits.
 
 ### Stages and transforms
 
