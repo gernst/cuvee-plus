@@ -484,12 +484,6 @@ lemma <a> {:rw} {:free} forall a: array<a, int>, k: a, v: int, keys: seq<a> ::
   then sum(selects(a[k := v], keys))
          == if occurs(k, keys) then sum(selects(a, keys)) + v - a[k] else sum(selects(a, keys))
 
-// the step of the prefix sums, for invariants of the form s == sum(prefix(i, values))
-lemma {:free} forall k: int, values: seq<int> ::
-  if 0 <= k < length(values)
-  then sum(prefix(k + 1, values))
-         == sum(prefix(k, values)) + earlier(k, values)
-
 // parity
 
 lemma <a> {:rw} {:free} forall a: array<a, int>, k: a, v: int, keys: seq<a> ::
@@ -513,12 +507,6 @@ lemma <a, b> {:rw} {:free} forall a: array<a, b>, k: a, w: b, e: b, keys: seq<a>
          == if occurs(k, keys)
             then count(e, selects(a, keys)) + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
             else count(e, selects(a, keys))
-
-// the step of the prefix counts, for invariants of the form c == count(e, prefix(i, vs))
-lemma <a> {:free} forall k: int, e: a, vs: seq<a> ::
-  if 0 <= k < length(vs)
-  then count(e, prefix(k + 1, vs))
-         == count(e, prefix(k, vs)) + (if earlier(k, vs) == e then 1 else 0)
 
 lemma <a> {:free} forall e: a, vs: seq<a> ::
   0 <= count(e, vs)
