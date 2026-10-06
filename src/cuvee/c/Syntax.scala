@@ -41,6 +41,8 @@ case class Call(fun: String, args: List[Expr]) extends Expr
 case class App(op: String, args: List[Expr]) extends Expr
 case class Cond(test: Expr, branches: Option[(Expr, Expr)]) extends Expr
 case class Cast(typ: Type, expr: Expr) extends Expr
+// increments and decrements inside expressions, x++ and x-- (post) or ++x and --x
+case class Incr(lhs: Expr, op: String, post: Boolean) extends Expr
 // the words of an integer type, e.g. unsigned long, or an expression
 case class SizeofType(words: List[String]) extends Expr
 case class SizeofExpr(expr: Expr) extends Expr

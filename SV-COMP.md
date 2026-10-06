@@ -65,11 +65,13 @@ pointers to pointers (1), `switch` (1), and increments inside expressions
 
 Increments inside expressions, e.g. `while (counter++ < 10)`, were missed
 by the first survey: they occur in about 260 tasks, nearly all of
-`nla-digbench-scaling`, and are the largest gap left within integer
-programs. They need the grammar to allow `x++`, `x--`, `++x`, `--x` in
-expressions, and the parser to evaluate their effects before the
-expression (old value for postfix, new value for prefix), like calls;
-in loop conditions with `Parser.guard`.
+`nla-digbench-scaling`. **Done:** `x++`, `x--`, `++x`, `--x` in
+expressions, whose updates are made before the expression, like calls, and
+whose value is the old one for the postfix forms.
+
+The sizes of integer types follow the data model: `-arch 32|64` (ILP32 or
+LP64, by default 64), which the yml frontend sets from the `data_model` of
+the task.
 
 ## The SV-COMP harness (blocks every task)
 

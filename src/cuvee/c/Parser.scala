@@ -244,6 +244,18 @@ class Parser(var state: State, var arch: Int = 64):
       case Items(_) =>
         Error.raise("initializer list outside of a declaration", e)
 
+      // the update is made before the expression, whose value is the old one for x++ and the new one for ++x
+      case Incr(lhs, op, post) =>
+        val t = lvalue(scope, lhs)
+        val (pre, now, _) = expr(scope, ctx, lhs)
+        val update = assign(scope, ctx, lhs, compound(op), Num("1"))
+
+        if post
+        then
+          val old = temp(ctx, t)
+          (pre ++ (core.Assign(List(old), List(now)) :: update), old, t)
+        else (pre ++ update, now, t)
+
       case SizeofType(words) =>
         (Nil, core.Lit(sizeof(words), Sort.int), IntType)
 
@@ -597,32 +609,53 @@ class Parser(var state: State, var arch: Int = 64):
   // the names assigned in a statement, syntactically, for the parameters that must be copied into locals
   def assigned(s: Stmt): Set[String] =
     s match
-      case Assign(lhs, _, _)             => root(lhs)
-      case If(_, left, right)            => assigned(left) ++ right.toSet.flatMap(assigned)
-      case While(_, body)                => assigned(body)
-      case DoWhile(body, _)              => assigned(body)
-      case For(init, _, step, body)      => init.toSet.flatMap(assigned) ++ step.toSet.flatMap(assigned) ++ assigned(body)
-      case Loop(_, body, step)           => step.toSet.flatMap(assigned) ++ assigned(body)
+      case Assign(lhs, _, rhs)           => root(lhs) ++ writes(lhs) ++ writes(rhs)
+      case ExprStmt(e)                   => writes(e)
+      case Return(e)                     => e.toSet.flatMap(writes)
+      case Decl(_, decls)                => decls.flatMap(_.init).toSet.flatMap(writes)
+      case If(test, left, right)         => writes(test) ++ assigned(left) ++ right.toSet.flatMap(assigned)
+      case While(test, body)             => writes(test) ++ assigned(body)
+      case DoWhile(body, test)           => writes(test) ++ assigned(body)
+      case For(init, test, step, body)   => init.toSet.flatMap(assigned) ++ test.toSet.flatMap(writes) ++ step.toSet.flatMap(assigned) ++ assigned(body)
+      case Loop(test, body, step)        => test.toSet.flatMap(writes) ++ step.toSet.flatMap(assigned) ++ assigned(body)
       case Block(stmts)                  => stmts.toSet.flatMap(assigned)
       case Labeled(_, stmt)              => assigned(stmt)
       case _                             => Set()
 
+  // the direct subexpressions of an expression
+  def parts(e: Expr): List[Expr] =
+    e match
+      case Call(_, args)        => args
+      case Index(base, index)   => List(base, index)
+      case App(_, args)         => args
+      case Cast(_, e)           => List(e)
+      case Incr(lhs, _, _)      => List(lhs)
+      case SizeofExpr(e)        => List(e)
+      case Items(items)         => items
+      case Cond(test, branches) => test :: branches.toList.flatMap((left, right) => List(left, right))
+      case _                    => Nil
+
+  // the functions called in an expression
+  def calls(e: Expr): Set[String] =
+    e match
+      case Call(f, _) => parts(e).toSet.flatMap(calls) + f
+      case _          => parts(e).toSet.flatMap(calls)
+
+  // the variables incremented or decremented in an expression
+  def writes(e: Expr): Set[String] =
+    e match
+      case Incr(lhs, _, _) => parts(e).toSet.flatMap(writes) ++ root(lhs)
+      case _               => parts(e).toSet.flatMap(writes)
+
   // the global variables assigned in a function body directly, respecting local declarations that shadow them,
   // and the functions that it calls
   def effects(scope: Set[String], s: Stmt): (Set[String], Set[String]) =
-    def calls(e: Expr): Set[String] =
-      e match
-        case Call(f, args)        => args.toSet.flatMap(calls) + f
-        case Index(base, index)   => calls(base) ++ calls(index)
-        case App(_, args)         => args.toSet.flatMap(calls)
-        case Cast(_, e)           => calls(e)
-        case SizeofExpr(e)        => calls(e)
-        case Items(items)         => items.toSet.flatMap(calls)
-        case Cond(test, branches) => calls(test) ++ branches.toSet.flatMap((left, right) => calls(left) ++ calls(right))
-        case _                    => Set()
-
     def global(x: String) =
       if globals.contains(x) && !scope.contains(x) then Set(x) else Set()
+
+    // the global variables incremented in expressions, and the functions they call
+    def exprs(es: List[Expr]): (Set[String], Set[String]) =
+      (es.toSet.flatMap(writes).flatMap(global), es.toSet.flatMap(calls))
 
     def all(scope: Set[String], stmts: List[Stmt]): (Set[String], Set[String]) =
       stmts match
@@ -630,9 +663,9 @@ class Parser(var state: State, var arch: Int = 64):
           (Set(), Set())
 
         case Decl(_, decls) :: rest =>
-          val inits = decls.flatMap(_.init).toSet.flatMap(calls)
-          val (mod, called) = all(scope ++ decls.map(_.name), rest)
-          (mod, called ++ inits)
+          val (mod1, called1) = exprs(decls.flatMap(_.init))
+          val (mod2, called2) = all(scope ++ decls.map(_.name), rest)
+          (mod1 ++ mod2, called1 ++ called2)
 
         case stmt :: rest =>
           val (mod1, called1) = effects(scope, stmt)
@@ -640,9 +673,11 @@ class Parser(var state: State, var arch: Int = 64):
           (mod1 ++ mod2, called1 ++ called2)
 
     s match
-      case Assign(lhs, _, rhs)                 => (root(lhs).flatMap(global), calls(lhs) ++ calls(rhs))
-      case ExprStmt(e)                         => (Set(), calls(e))
-      case Return(e)                           => (Set(), e.toSet.flatMap(calls))
+      case Assign(lhs, _, rhs)                 =>
+        val (mod, called) = exprs(List(lhs, rhs))
+        (root(lhs).flatMap(global) ++ mod, called)
+      case ExprStmt(e)                         => exprs(List(e))
+      case Return(e)                           => exprs(e.toList)
       case If(test, left, right)               => all(scope, List(ExprStmt(test), left) ++ right.toList)
       case While(test, body)                   => all(scope, List(ExprStmt(test), body))
       case DoWhile(body, test)                 => all(scope, List(body, ExprStmt(test)))

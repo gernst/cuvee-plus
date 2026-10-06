@@ -123,9 +123,9 @@ object Grammar:
   val call =
     Call(P(id ?~ args))
 
-  // the operand of a cast is a unary expression: a postfix expression, a prefix operator, or another cast
+  // the operand of a cast is a unary expression: an operand, a prefix operator, or another cast
   val unary: Parser[Expr] =
-    P(cast | postfix | App(sym.filter(prefix_ops.contains) ~ unary.map(List(_))))
+    P(cast | operand | App(sym.filter(prefix_ops.contains) ~ unary.map(List(_))))
 
   val cast: Parser[Expr] =
     Cast(P("(" ?~ pointer ~ ")" ~ unary))
@@ -143,8 +143,18 @@ object Grammar:
     P(atom ~ brackets(expr).*).map:
       case (base, indices) => indices.foldLeft(base)(Index(_, _))
 
+  // postfix expressions, which may be incremented or decremented, e.g. counter++ < 10
+  val operand: Parser[Expr] =
+    P(incremented | P(postfix ~ incr.?).map {
+      case (lhs, Some(op)) => Incr(lhs, op, true)
+      case (e, None)       => e
+    })
+
+  val incremented: Parser[Expr] =
+    P(incr ~ postfix).map((op, lhs) => Incr(lhs, op, false))
+
   val operators: Parser[Expr] =
-    M(sym, prefix_ops, postfix_ops, infix_ops) $ (postfix, App)
+    M(sym, prefix_ops, postfix_ops, infix_ops) $ (operand, App)
 
   val expr: Parser[Expr] =
     Cond(P(operators ~ ("?" ~ expr ~ ":" ~ expr).?))

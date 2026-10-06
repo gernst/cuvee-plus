@@ -165,6 +165,14 @@ object Translation extends TestSuite:
       errors("int main(void) { int *p = 0; return 0; }") ==> List("pointers are not supported")
       errors("int *g; int main(void) { return 0; }") ==> List("pointers are not supported")
 
+    // the value of x++ is the old one, that of ++x the new one, the update is made before the expression
+    test("increments in expressions"):
+      valid("int main(void) { int i = 0; int a[3]; a[i++] = 5; assert(i == 1 && a[0] == 5); int j = ++i; assert(j == 2 && i == 2); " +
+        "int k = i--; assert(k == 2 && i == 1); assert(--i == 0); return 0; }")
+      horn("int main(void) { int counter = 0; int x = 0; while (counter++ < 10) x++; assert(x == 10 && counter == 11); return 0; }") ==> Status.Sat
+      errors("int f(int n) { while (n-- > 0) ; return n; }") ==> Nil
+      modifies(parse("int g; int f(void) { return g++; }"), "f") ==> Some(List("g"))
+
     test("unexpected character"):
       errors("int f(int x) { return x @ 1; }") ==> List("unexpected character '@' at 0:24")
 
