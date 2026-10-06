@@ -5,20 +5,22 @@
 // functions that produce traces are plural (sums, counts), their scalar counterparts singular (sum, count),
 // the lemmas are grouped by the function of their left-hand side
 
+// the type and the functions of Fun.trace, whose type parameters and formals are numbered as there (Fun.formals)
+
 // the traces of trace equation systems, the values of a variable at the loop head
 type Trace<a₀>
 // all but the last element of a trace, written ⌊X⌋
-function butlast<a₀>(X: Trace<a₀>): seq<a₀>
+function butlast<a₀>(x₀: Trace<a₀>): seq<a₀>
 // counter(i, c, n) is the trace i, i + c, ..., i + n c of n steps
-function counter(i: int, c: int, n: int): Trace<int>
+function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 // the last element of a trace
-function current<a₀>(X: Trace<a₀>): a₀
+function current<a₀>(x₀: Trace<a₀>): a₀
 // the number of steps of a trace, which is one less than the number of its elements
-function steps<a₀>(X: Trace<a₀>): int
+function steps<a₀>(x₀: Trace<a₀>): int
 // the length of a sequence
-function length<a₀>(xs: seq<a₀>): int
+function length<a₀>(x₀: seq<a₀>): int
 // the elements of sequences
-function earlier<a₀>(k: int, xs: seq<a₀>): a₀
+function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
 
 // the first k elements of a sequence
 function prefix<a>(k: int, xs: seq<a>): seq<a>
