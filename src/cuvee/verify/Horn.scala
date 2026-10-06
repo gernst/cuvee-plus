@@ -288,10 +288,10 @@ object Horn extends Transform:
 
       // the continuous evolution has no counterpart in Horn clauses over the program variables
       case (prog: Ode) :: rest =>
-        Error.raise("differential equations not supported in Horn clauses", proc, prog)
+        Error.raise("differential equations not supported in Horn clauses", proc)
 
       case (prog: Par) :: rest =>
-        Error.raise("parallel composition not supported in Horn clauses", proc, prog)
+        Error.raise("parallel composition not supported in Horn clauses", proc)
 
       // pre ⇒ inv(scope), where inv is the invariant at the loop head, whose annotation is the goal of inv(scope);
       // the body starts from inv(scope) ∧ test ∧ ms = measure, where the fresh variables ms are the values of the measure

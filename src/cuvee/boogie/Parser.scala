@@ -218,7 +218,7 @@ class Parser(var state: State):
 
         case Modifies(xs) =>
           val unknown = xs.filterNot(scope.vars.contains(_))
-          Error.report("unknown variables in modifies clause", scope, unknown):
+          Error.report("unknown variables in modifies clause", unknown):
             require(unknown.isEmpty)
 
           List("modifies" -> Some(xs.map(scope.vars(_))))
@@ -249,7 +249,7 @@ class Parser(var state: State):
         state.types.sort("Array", List(index_, value_))
 
       case _ =>
-        Error.raise("unknown type", typ, scope.params.keys, state.sorts.keys)
+        Error.raise("unknown type", typ)
 
   // map selections and updates are applied from left to right
   def resolve(scope: Scope, base: core.Expr, access: List[Access]): core.Expr =
@@ -349,11 +349,11 @@ class Parser(var state: State):
         state.exprs.all(bound_, body_)
 
       case _ =>
-        Error.raise("unknown expression", expr, scope.vars.keys, state.funs.keys)
+        Error.raise("unknown expression", expr)
 
   def variables(scope: Scope, names: List[String]): List[core.Var] =
     val unknown = names.filterNot(scope.vars.contains(_))
-    Error.report("unknown variables", scope, unknown):
+    Error.report("unknown variables", unknown):
       require(unknown.isEmpty)
 
     names.map(scope.vars(_))

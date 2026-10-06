@@ -442,7 +442,7 @@ object Type:
     val exprs_ = close(subst)(exprs)
     val missed = exprs_.params -- scope.params.values.toSet
 
-    Error.report("type error: uninstantiated type variables", exprs, subst.value, missed):
+    Error.report("type error: uninstantiated type variables", missed):
       require(missed.isEmpty)
 
     exprs_

@@ -58,6 +58,12 @@ object Parser:
       case _ =>
         Value(from)
 
+  // the keyword of a command or program, e.g. in errors, instead of the whole s-expression
+  def head(from: Any): Any =
+    from match
+      case List(head, _*) => head
+      case _              => from
+
   def annotations(from: List[Any]): List[(String, Option[Any])] =
     from match
       case Nil =>
@@ -344,7 +350,7 @@ class Parser(private var init: State):
         procedure(name, params_, list(in) { formal(scope, _) }, list(out) { formal(scope, _) }, Some(body), attrs.toList)
 
       case _ =>
-        Error.raise("not a command", from)
+        Error.raise("not a command", Parser.head(from))
 
   // procedures are declared together with their contract before the body is resolved, which may call them recursively;
   // they may read all global variables, which the formal parameters shadow,
@@ -472,7 +478,7 @@ class Parser(private var init: State):
         state.progs.par(calls_)
 
       case _ =>
-        Error.raise("not a program", from)
+        Error.raise("not a program", Parser.head(from))
 
   // the sort `name` must have been declared already as it may occur recursively
   def datatype(name: Name, decl: Any): Datatype =

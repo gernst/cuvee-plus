@@ -397,10 +397,10 @@ object Printer extends cuvee.pipe.Printer:
         loop(text("(*)"), body, attrs)
 
       case Ode(_, _, _, _, _) =>
-        Error.raise("differential equations not supported in Boogie", prog)
+        Error.raise("differential equations not supported in Boogie")
 
       case Par(_) =>
-        Error.raise("parallel composition not supported in Boogie", prog)
+        Error.raise("parallel composition not supported in Boogie")
 
   // loops have no attributes other than their specification clauses in Boogie
   def loop(test: Doc, body: Prog, attrs: Attrs): Doc =

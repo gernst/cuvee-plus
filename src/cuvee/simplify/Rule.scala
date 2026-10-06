@@ -70,7 +70,7 @@ object Rule:
           Rule(others ++ pat_.free.toList, App(state, fun, args), re(rhs), re(cond))
 
       case _ =>
-        Error.raise("rewrite rules of a definition need a match on a parameter", fun, body)
+        Error.raise("rewrite rules of a definition need a match on a parameter", fun)
 
   // the logical connectives, which are not boolean atoms
   val connectives = Set("and", "or", "=>", "<=>", "not", "ite", "true", "false")

@@ -34,11 +34,11 @@ class Solver(cmd: String*):
 
   // the response to `query` as an s-expression, errors reported by the solver are raised
   def read(query: Cmd): Any =
-    Error.report("solver terminated unexpectedly", cmd, query):
+    Error.report("solver terminated unexpectedly", cmd):
       require(responses.nonEmpty)
 
     val (from, rest) =
-      Error.report("invalid solver response", query):
+      Error.report("invalid solver response"):
         Grammar.sexpr.parse(responses)
 
     responses = rest

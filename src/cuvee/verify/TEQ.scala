@@ -191,7 +191,7 @@ object TEQ extends Transform:
           loop(state, proc, None, body, attrs, p)
 
         case _: Ode | _: Par =>
-          Error.raise("not supported by symbolic execution", prog)
+          Error.raise("differential equations and parallel composition not supported by symbolic execution", proc)
 
   def choice(state: State, proc: Name, progs: List[Prog], p: Path): List[Path] =
     progs match

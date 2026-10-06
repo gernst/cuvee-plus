@@ -51,7 +51,7 @@ object FourierMotzkin:
   // the constraints without x that are satisfiable iff `cs` is for some value of x,
   // constraints without atoms that hold are dropped
   def eliminate(x: Expr, cs: List[Constraint]): List[Constraint] =
-    Error.report("constraints are not linear", cs):
+    Error.report("constraints are not linear", cs.filterNot(linear)):
       require(cs.forall(linear))
 
     val (lower, rest) = cs.partition(_.coeff(x).isPositive)

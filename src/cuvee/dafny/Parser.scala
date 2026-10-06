@@ -194,7 +194,7 @@ class Parser(var state: State):
 
   def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr], dec: List[List[Expr]]) =
     val unknown = mod.flatten.filterNot(scope.vars.contains(_))
-    Error.report("unknown variables in modifies clause", scope, unknown):
+    Error.report("unknown variables in modifies clause", unknown):
       require(unknown.isEmpty)
 
     val mod_ =
@@ -319,7 +319,7 @@ class Parser(var state: State):
         state.types.sort(name, args_)
 
       case _ =>
-        Error.raise("unknown type", typ, scope.params.keys, state.sorts.keys)
+        Error.raise("unknown type", typ)
 
   // members are looked up by the name of the type of `base`, which is resolved here,
   // since the type of an application may still be a fresh type parameter
@@ -391,7 +391,7 @@ class Parser(var state: State):
             Error.raise("method call not allowed here", self, qname, args)
 
           case _ =>
-            Error.raise("invalid access", self, qname, access, scope, state.funs.keys, state.procs.keys)
+            Error.raise("invalid access", self, qname, access)
 
   def isMap(expr: core.Expr): Boolean =
     expr.typ match
@@ -534,7 +534,7 @@ class Parser(var state: State):
 
       case Diff(xs, arg) =>
         val unknown = xs.filterNot(scope.vars.contains(_))
-        Error.report("unknown variables of derivative", scope, unknown, xs):
+        Error.report("unknown variables of derivative", unknown):
           require(unknown.isEmpty)
 
         val xs_ = xs.map(scope.vars(_))
@@ -611,7 +611,7 @@ class Parser(var state: State):
         state.exprs.let(bound_, args_, body_)
 
       case _ =>
-        Error.raise("unknown expression", expr, scope.vars.keys, state.funs.keys)
+        Error.raise("unknown expression", expr)
 
   def resolve(scope: Scope, prog: Prog): core.Prog =
     prog match
@@ -639,7 +639,7 @@ class Parser(var state: State):
       // calls to top-level methods, with or without results
       case Assign(lhs, List(Inner(App(name, args), Nil))) if state.procs.contains(name) =>
         val unknown = lhs.filterNot(scope.vars.contains(_))
-        Error.report("unknown local variables", scope, unknown, lhs):
+        Error.report("unknown local variables", unknown):
           require(unknown.isEmpty)
 
         val lhs_ = lhs.map(scope.vars(_))
@@ -649,7 +649,7 @@ class Parser(var state: State):
       // all method calls must be top-level on variables
       case Assign(lhs, List(Inner(App(base, Nil), List(Member(fun, args))))) =>
         val unknown = (base :: lhs).filterNot(scope.vars.contains(_))
-        Error.report("unknown local variables", scope, unknown):
+        Error.report("unknown local variables", unknown):
           require(unknown.isEmpty)
 
         val lhs_ = lhs.map(scope.vars(_))
@@ -667,14 +667,14 @@ class Parser(var state: State):
             state.progs.call(qname, base_ :: args_, lhs_)
 
           case _ =>
-            Error.raise("invalid access", base, qname, fun, scope, state.funs.keys, state.procs.keys)
+            Error.raise("invalid access", base, qname, fun)
 
       case Assign(Nil, rhs) =>
         Error.raise("statement must be a method call", rhs)
 
       case Assign(lhs, rhs) =>
         val unknown = lhs.filterNot(scope.vars.contains(_))
-        Error.report("unknown local variables", scope, unknown, lhs):
+        Error.report("unknown local variables", unknown):
           require(unknown.isEmpty)
 
         val lhs_ = lhs.map(scope.vars(_))
@@ -732,7 +732,7 @@ class Parser(var state: State):
       // the time is bound on real in the right hand sides, the evolution constraint, and the invariants
       case Ode(time, xs, rhs, dom, invs) =>
         val unknown = xs.filterNot(scope.vars.contains(_))
-        Error.report("unknown local variables", scope, unknown, xs):
+        Error.report("unknown local variables", unknown):
           require(unknown.isEmpty)
 
         val time_ = core.Var(time, core.Sort.real)
