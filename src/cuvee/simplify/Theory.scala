@@ -24,6 +24,11 @@ case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) e
     val conflict = expr == True || (assms contains expr)
     Facts(assms, expr :: concls, inconsistent || conflict)
 
+  // a fact that is not recorded, e.g. an equation in the substitution (see Ctx.assume), still conflicts with the conclusions
+  def check(expr: Expr): Facts =
+    val conflict = expr == False || (concls contains expr)
+    Facts(assms, concls, inconsistent || conflict)
+
   // the variables that occur in the facts
   def free: Set[Var] =
     assms.free ++ concls.free

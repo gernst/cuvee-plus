@@ -616,6 +616,10 @@ object Simplify extends Transform:
       case (_, Lit(n: BigInt, _)) if n == 1 || n == -1 =>
         Zero.int
 
+      // the coefficients and the constant of a polynomial are taken modulo n, e.g. (2 * x + 3) % 2 is 1
+      case (_, Lit(n: BigInt, _)) if n != 0 && Arith.toPoly(Ring.int, left).modulo(n) != Arith.toPoly(Ring.int, left).normalize =>
+        mod(config, state, ctx, Arith.toPoly(Ring.int, left).modulo(n).toExpr(Ring.int), right)
+
       case _ =>
         Mod.int(left, right)
 
@@ -688,10 +692,14 @@ object Simplify extends Transform:
   // comparisons 0 < p and 0 <= p on Int or Real, built by `op`, are constants if p is,
   // otherwise they are re-arranged so that both sides have positive coefficients only,
   // e.g. 0 < y - x + 1 becomes x < y + 1
-  // on Int, n < m + 1 is n <= m
+  // on Int, n < m + 1 is n <= m, and 0 < p is 0 < q + 1 where 0 <= q is 0 <= p - 1 rounded (see Poly.floor),
+  // e.g. 2 * n < 52 is n < 26
   def lt(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
+    val tight = (poly - Poly.one).floor + Poly.one
     if poly.monos.isEmpty
     then if poly.const.isPositive then True else False
+    else if ring == Ring.int && tight != poly
+    then lt(config, state, ctx, ring, op, tight)
     else
       val (left, right) = poly.sides
       (ring, right.toExpr(ring)) match
@@ -707,15 +715,25 @@ object Simplify extends Transform:
       val (left, right) = poly.sides
       eq_(config, state, ctx, left.toExpr(ring), right.toExpr(ring))
 
-  // on Int, n + 1 <= m is n < m
+  // on Int, n + 1 <= m is n < m, 0 <= p is rounded (see Poly.floor), e.g. 2 * n + 1 <= 52 is n <= 25,
+  // and n <= m is n < m if n != m is known (the decision is neutral)
   def le(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isNegative then False else True
+    else if ring == Ring.int && poly.floor != poly
+    then le(config, state, ctx, ring, op, poly.floor)
     else
       val (left, right) = poly.sides
-      (ring, left.toExpr(ring)) match
-        case (Ring.int, ctx.↑(Succ(left_))) => Lt.int(left_, right.toExpr(ring))
-        case (_, left_)                     => op(left_, right.toExpr(ring))
+      val (left_, right_) = (left.toExpr(ring), right.toExpr(ring))
+      (ring, left_) match
+        case (Ring.int, ctx.↑(Succ(left__))) =>
+          Lt.int(left__, right_)
+
+        case (Ring.int, _) if denied(config, state, ctx.neutral, Eq(left_, right_)) || denied(config, state, ctx.neutral, Eq(right_, left_)) =>
+          Lt.int(left_, right_)
+
+        case _ =>
+          op(left_, right_)
 
   // applications of other functions, e.g. user-defined ones
   def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =

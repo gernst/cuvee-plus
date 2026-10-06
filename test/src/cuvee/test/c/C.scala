@@ -171,6 +171,13 @@ object Translation extends TestSuite:
       errors("int main(void) { int *p = 0; return 0; }") ==> List("pointers are not supported")
       errors("int *g; int main(void) { return 0; }") ==> List("pointers are not supported")
 
+    // nondeterministic values of unsigned types are nonnegative, those of signed types are not
+    test("unsigned nondeterministic values"):
+      valid("int main(void) { unsigned int x = __VERIFIER_nondet_uint(); assert(x >= 0); x = __VERIFIER_nondet_ulong(); " +
+        "assert(x >= 0); int y = __VERIFIER_nondet_size_t() + 1; assert(y > 0); return 0; }")
+      Examples.check("c", "int main(void) { int x = __VERIFIER_nondet_int(); assert(x >= 0); return 0; }", "-verify", "-z3") ==>
+        List("goal does not hold")
+
     // the value of x++ is the old one, that of ++x the new one, the update is made before the expression
     test("increments in expressions"):
       valid("int main(void) { int i = 0; int a[3]; a[i++] = 5; assert(i == 1 && a[0] == 5); int j = ++i; assert(j == 2 && i == 2); " +

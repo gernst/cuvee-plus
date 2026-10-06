@@ -194,6 +194,31 @@ object Decisions extends TestSuite:
       simplify(Ctx.empty.deny(p), Not(p)) ==> True
       val r = Var("r", Sort.real)
       simplify(Ctx.empty.deny(Le.real(r, Zero.real)), Lt.real(Zero.real, r)) ==> True
+      // equations of variables are substituted rather than recorded, they still conflict with the conclusions
+      val m = Var("m", Sort.int)
+      simplify(Ctx.empty.deny(Eq(n, m)), Eq(n, m)) ==> False
+      simplify(Ctx.empty.deny(Eq(n, lit(40))), Eq(n, lit(40))) ==> False
+
+    // on Int, comparisons are rounded by the gcd of the coefficients
+    test("rounding"):
+      val twice = Times.int(lit(2), n)
+      simplify(Ctx.empty, Le.int(Plus.int(twice, One.int), lit(52))) ==> Le.int(n, lit(25))
+      simplify(Ctx.empty, Lt.int(twice, lit(52))) ==> Lt.int(n, lit(26))
+      simplify(Ctx.empty, Le.int(lit(1000000), twice)) ==> Le.int(lit(500000), n)
+
+    // a bound n <= m becomes strict if n != m is known
+    test("disequations"):
+      val ctx = Ctx.empty.deny(Eq(n, lit(40)))
+      simplify(ctx, Le.int(n, lit(40))) ==> Lt.int(n, lit(40))
+      simplify(Ctx.empty.deny(Eq(n, Zero.int)), Le.int(Zero.int, n)) ==> Lt.int(Zero.int, n)
+      simplify(ctx, Le.int(n, lit(41))) ==> Le.int(n, lit(41))
+
+    // the coefficients and the constant of a polynomial modulo a literal
+    test("modulo"):
+      simplify(Ctx.empty, Mod.int(Times.int(lit(2), n), lit(2))) ==> Zero.int
+      simplify(Ctx.empty, Mod.int(Plus.int(Times.int(lit(2), n), lit(11)), lit(2))) ==> One.int
+      simplify(Ctx.empty, Mod.int(Plus.int(Times.int(lit(3), n), One.int), lit(2))) ==> Mod.int(Plus.int(n, One.int), lit(2))
+      simplify(Ctx.empty, Mod.int(n, lit(2))) ==> Mod.int(n, lit(2))
 
     // an inconsistent context decides formulas by polarity only, not by the theories
     test("inconsistent"):

@@ -92,9 +92,9 @@ case class Ctx(
       case Eq(e1, e2) if e1 == e2 =>
         this
 
-      // the substitution grows only by the equation, which is then no fact
+      // the substitution grows only by the equation, which is then no fact, but may conflict with the conclusions
       case _ if chains_.replace.size > chains.replace.size =>
-        copy(chains = chains_, diffs = diffs_)
+        copy(facts = facts.check(phi), chains = chains_, diffs = diffs_)
 
       case _ =>
         copy(facts = facts.assume(phi), chains = chains_, diffs = diffs_, rules = Ctx.rules(phi) ++ rules)

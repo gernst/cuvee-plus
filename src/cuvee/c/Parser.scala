@@ -160,7 +160,7 @@ class Parser(var state: State, arch: Int):
       case Call(f, Nil) if f.startsWith("__VERIFIER_nondet_") =>
         val t = if f == "__VERIFIER_nondet_bool" then BoolType else IntType
         val x = temp(ctx, t)
-        (List(Spec.havoc(List(x))), x, t)
+        (List(havoc(f, x)), x, t)
 
       case Call(f, args) =>
         val (pre, args_) = arguments(scope, ctx, f, args)
@@ -517,7 +517,8 @@ class Parser(var state: State, arch: Int):
     lhs match
       // nondeterministic values and results of calls are assigned directly, without temporary variables
       case Id(x) if op == "=" && scope.contains(x) && nondet(rhs, scope(x)._2) =>
-        List(Spec.havoc(List(scope(x)._1)))
+        val Call(f, _) = rhs: @unchecked
+        List(havoc(f, scope(x)._1))
 
       case Id(x) if op == "=" && scope.contains(x) && direct(rhs, scope(x)._2) =>
         val Call(f, args) = rhs: @unchecked
@@ -591,6 +592,14 @@ class Parser(var state: State, arch: Int):
       case Id(x)          => Set(x)
       case Index(base, _) => root(base)
       case _              => Set()
+
+  // a nondeterministic value of __VERIFIER_nondet_f, which is nonnegative for unsigned types, e.g. uint and size_t,
+  // whose upper bounds are not modeled, as integers are unbounded
+  def havoc(f: String, x: core.Var): core.Prog =
+    val typ = f.stripPrefix("__VERIFIER_nondet_")
+    if typ.startsWith("u") || typ == "size_t"
+    then Spec(List(x), True, Le.int(Zero.int, x))
+    else Spec.havoc(List(x))
 
   def nondet(rhs: Expr, t: Type) =
     rhs match

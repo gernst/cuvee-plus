@@ -88,6 +88,20 @@ case class Poly(const: Rational, monos: List[Mono]):
     val gcd = factors.map(r => (r * Rational(lcm)).num).foldLeft(BigInt(0))(_ gcd _)
     if gcd == 0 then this else this * Rational(lcm, gcd)
 
+  // on Int, 0 <= p is 0 <= q + floor(c / g), where p = g * q + c and g is the gcd of the coefficients of the monomials,
+  // e.g. 0 <= 51 - 2 * n is 0 <= 25 - n; the coefficients and the constant are integers on Int
+  def floor: Poly =
+    val g = monos.map(_.factor.num).foldLeft(BigInt(0))(_ gcd _)
+    if g <= 1
+    then this
+    else Poly(Rational(const.num - (const.num mod g)) * Rational(1, g), monos.map(_ * Rational(1, g)))
+
+  // the coefficients and the constant modulo n, between 0 and |n|, where monomials with coefficient 0 vanish;
+  // equal modulo n, e.g. for (p mod n) on Int
+  def modulo(n: BigInt): Poly =
+    def mod(r: Rational) = Rational(r.num mod n.abs)
+    Poly(mod(normalize.const), normalize.monos.map(m => Mono(mod(m.factor), m.atoms))).normalize
+
   // the parts with negative and with positive coefficients, negated and as they are,
   // i.e., (neg, pos) with this = pos - neg, where both have positive coefficients only
   def sides: (Poly, Poly) =
