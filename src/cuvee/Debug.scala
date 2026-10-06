@@ -38,4 +38,7 @@ case class Error(msg: String, info: Any*) extends Throwable with core.Result:
     "Error(" + msg + "," + info.mkString(",") + ")"
 
 object Fatal extends Debug
-object Error extends Debug
+object Error extends Debug:
+  // the error itself, not just a Throwable, so it can also be reported as a result
+  override def apply(msg: String, info: Any*): Error =
+    new Error(msg, info*)

@@ -24,7 +24,7 @@ object Pipe:
     if Debug.modules.contains("internal")
     then cause.printStackTrace()
 
-    val result = new Error("internal error", cause.getClass.getSimpleName, String.valueOf(cause.getMessage))
+    val result = Error("internal error", cause.getClass.getSimpleName, String.valueOf(cause.getMessage))
     result.initCause(cause)
     result
 
