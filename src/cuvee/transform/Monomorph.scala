@@ -1,5 +1,7 @@
 package cuvee.transform
 
+import scala.collection.mutable
+
 import util.Name
 import util.Ref
 import cuvee.Config
@@ -19,14 +21,14 @@ object Monomorph extends Transform:
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val poly = polymorphic(config.language, prefix ++ cmds)
     val instances = Ref(Map[(Name, Int, List[Type]), Fun]())
-    val out = Ref(List[Cmd]())
+    val out = mutable.ListBuffer[Cmd]()
 
     // the instances emitted for the commands before are known, their output is discarded
     prefix.foreach(command(state, poly, instances, out, _))
-    out := Nil
+    out.clear()
 
     cmds.foreach(command(state, poly, instances, out, _))
-    out.value
+    out.toList
 
   // the polymorphic functions of `cmds` with their declaration or definition,
   // except those that are part of the language of the output, e.g. = and select of SMT-LIB (see Language)
@@ -51,10 +53,10 @@ object Monomorph extends Transform:
   def isPoly(poly: Map[(Name, Int), Cmd], fun: Fun) =
     fun.params.nonEmpty && poly.contains((fun.name, fun.arity))
 
-  def emit(out: Ref[List[Cmd]], cmd: Cmd): Unit =
-    out := out.value :+ cmd
+  def emit(out: mutable.ListBuffer[Cmd], cmd: Cmd): Unit =
+    out += cmd
 
-  def command(state: State, poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: Ref[List[Cmd]], cmd: Cmd): Unit =
+  def command(state: State, poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: mutable.ListBuffer[Cmd], cmd: Cmd): Unit =
     cmd match
       case DeclareFun(fun, _) if isPoly(poly, fun) =>
 
@@ -73,7 +75,7 @@ object Monomorph extends Transform:
 
   // the monomorphic instance of `fun` for the instances `types` of its type parameters,
   // which is emitted on first use, after the instances that its body uses
-  def instance(state: State, poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: Ref[List[Cmd]], fun: Fun, types: List[Type]): Fun =
+  def instance(state: State, poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: mutable.ListBuffer[Cmd], fun: Fun, types: List[Type]): Fun =
     val key = (fun.name, fun.arity, types)
 
     instances.value.get(key) match
@@ -101,7 +103,7 @@ object Monomorph extends Transform:
   // applications of polymorphic functions are replaced by their instances,
   // whose type parameters are determined by the types of the arguments and of the result,
   // where defined sorts are unfolded, such that each instance is named after the sorts of its definition
-  def expr(state: State, poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: Ref[List[Cmd]], e: Expr): Expr =
+  def expr(state: State, poly: Map[(Name, Int), Cmd], instances: Ref[Map[(Name, Int, List[Type]), Fun]], out: mutable.ListBuffer[Cmd], e: Expr): Expr =
     e match
       case App(fun, inst, typ, args) if isPoly(poly, fun) =>
         val types_ = (inst :+ typ).map(Type.expand(state, _))
