@@ -77,3 +77,29 @@ object Flat extends TestSuite:
       val phis = cmds.collect { case Assert(_, _, phi, _) => phi }
       val phis_ = cmds_.toList.collect { case Assert(_, _, phi, _) => phi }
       phis_.flatMap(types) ==> phis.flatMap(types)
+
+    // equations x == t of bound variables in the antecedent are inlined, also t == x,
+    // those of free variables and those where x occurs in t are kept, as are formulas that are not clauses
+    test("equations inlined"):
+      val x = Var("x", Sort.int)
+      val y = Var("y", Sort.int)
+      val z = Var("z", Sort.int)
+      val g = Var("g", Sort.int)
+      val p = Fun("p", Nil, cuvee.core.Fun.formals(Sort.int, Sort.int), Sort.bool)
+      def P(a: Expr, b: Expr) = App(p, List(a, b))
+      val f = cuvee.transform.Flat
+
+      f.eliminate(All(List(x, y), Imp(And(Eq(x, Plus.int(y, One.int)), P(x, y)), P(y, x)))) ==>
+        All(List(y), Imp(P(Plus.int(y, One.int), y), P(y, Plus.int(y, One.int))))
+      f.eliminate(All(List(x, y), Imp(And(P(x, y), Eq(y, x)), P(y, Zero.int)))) ==>
+        All(List(x), Imp(P(x, x), P(x, Zero.int)))
+      val kept = All(List(z), Imp(And(List(Eq(g, Plus.int(z, One.int)), Eq(z, Plus.int(z, One.int)), P(z, z))), P(g, z)))
+      f.eliminate(kept) ==> kept
+      f.eliminate(Imp(Eq(x, y), P(x, y))) ==> Imp(Eq(x, y), P(x, y))
+
+    // the equations between the fields of records are inlined
+    test("fields inlined"):
+      val cmds = output("-flat", "-print", "null", file)
+      val bound_ = cmds.collect { case Assert(_, _, All(xs, Imp(ante, _)), _) => (xs.toSet, And.flatten(ante)) }
+      for (xs, phis) <- bound_ do
+        assert(!phis.exists { case Eq(x: Var, _) => xs.contains(x); case Eq(_, x: Var) => xs.contains(x); case _ => false })

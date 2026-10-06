@@ -12,6 +12,7 @@ import cuvee.core._
 // the bound variables of such sorts are replaced by the constructor applied to fresh variables for the fields,
 // which makes selectors and testers applied to them trivial,
 // and equations between values of such sorts become conjunctions of equations between their fields;
+// in clauses ∀ xs. φ₁ ∧ ... ∧ φₙ ⇒ ψ, equations x == t of the antecedent with x among xs are inlined (see eliminate);
 // the predicates are the uninterpreted functions with a boolean result,
 // i.e., those declared without definition that are neither constructors nor selectors
 object Flat extends Transform:
@@ -25,7 +26,7 @@ object Flat extends Transform:
         DeclareFun(predicate(state, fun), attrs)
 
       case Assert(justify, params, phi, attrs) =>
-        Assert(justify, params, flat(state, phi), attrs)
+        Assert(justify, params, eliminate(flat(state, phi)), attrs)
 
       case _ =>
         cmd
@@ -186,6 +187,33 @@ object Flat extends Transform:
 
       case _ =>
         expr.map(flat(state, _))
+
+  // the clause ∀ xs. φ₁ ∧ ... ∧ φₙ ⇒ ψ without the equations x == t (or t == x) of the antecedent
+  // whose variable x is bound by the clause and does not occur in t, which replace x in the other conjuncts and the head,
+  // e.g. those between the fields of records; other formulas are kept
+  def eliminate(phi: Expr): Expr =
+    phi match
+      case All(bound, Imp(ante, head)) =>
+        val (phis_, head_) = eliminate(bound.toSet, And.flattenStrong(ante), head)
+        val phi_ = Imp(And(phis_), head_)
+        All(bound.filter(phi_.free), phi_)
+
+      case _ =>
+        phi
+
+  def eliminate(bound: Set[Var], phis: List[Expr], head: Expr): (List[Expr], Expr) =
+    val eqs =
+      phis.zipWithIndex.collectFirst:
+        case (Eq(x: Var, t), i) if bound.contains(x) && !t.free.contains(x) => (x, t, i)
+        case (Eq(t, x: Var), i) if bound.contains(x) && !t.free.contains(x) => (x, t, i)
+
+    eqs match
+      case Some((x, t, i)) =>
+        val su = Subst.from(List(x), List(t))
+        eliminate(bound - x, su(phis.patch(i, Nil, 1)), su(head))
+
+      case None =>
+        (phis, head)
 
   // selectors applied to the constructor of a record
   def reduce(state: State, expr: Expr): Expr =

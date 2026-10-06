@@ -29,7 +29,7 @@ transformation and any output.
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `Verify` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Ctx`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), and `FourierMotzkin` (linear constraints over the rationals). |
-| `cuvee.transform` | `Flat` (record arguments of predicates become their fields), `Split` (goals into individual obligations), and `Monomorph` (instances of polymorphic functions). |
+| `cuvee.transform` | `Flat` (record arguments of predicates become their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), and `Monomorph` (instances of polymorphic functions). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
 ## A run
@@ -186,7 +186,9 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   conditions are decided by `Simplify.simplify` in the context. Matching
   below the combinators of TEQs is described in [teq.md](teq.md).
 - [`Flat`](../src/cuvee/transform/Flat.scala) flattens record arguments of
-  Horn predicates.
+  Horn predicates, and inlines the equations `x == t` of the antecedents of
+  clauses `∀ xs. φ₁ ∧ ... ∧ φₙ ⇒ ψ` whose variable is among `xs` and not in
+  `t` (`Flat.eliminate`).
 - [`Split`](../src/cuvee/transform/Split.scala) splits goals and lemmas into
   individual obligations, after lifting `ite` out of the terms of atoms
   (`Normalize.lift`), such that it is split by its test as well.
