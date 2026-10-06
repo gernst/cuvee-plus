@@ -291,11 +291,15 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 ## Simplifier ([simplify/](../src/cuvee/simplify))
 
 - **`Ctx`** is a sequent at the current position:
-  - assumptions and conclusions;
+  - three theories (`Theory`: immutable facts that detect inconsistency), to
+    which `assume` and `deny` pass each fact: the assumptions and conclusions
+    as given (`Facts`), the equations of variables (`Chains`), and the
+    difference constraints on `Int`, closed by incremental Floyd-Warshall
+    (`Diffs`), whose negative cycles make the context inconsistent;
   - bound variables;
-  - equations of variables with variables or literals, as a map `replace`, which
+  - in `Chains`, equations of variables with variables or literals, as a map `replace`, which
     the simplifier substitutes eagerly (`var_`);
-  - the non-recursive equations `x == e` among the assumptions whose `e` is
+  - in `Chains`, the non-recursive equations `x == e` among the assumptions whose `e` is
     not an arithmetic operation (`+`, `-`, `*`), as a map `chain` from variables
     to expressions (the equation remains an assumption); the variables are not
     substituted, but the extractor `ctx.↑(e)` sees a variable as its

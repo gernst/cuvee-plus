@@ -4,10 +4,10 @@ package simplify
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.Differences
+import cuvee.simplify.Diffs
 
 // difference constraints on Int, whose closure detects negative cycles, i.e., inconsistent facts
-object DifferencesTests extends TestSuite:
+object DiffsTests extends TestSuite:
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)
   val z = Var("z", Sort.int)
@@ -17,7 +17,7 @@ object DifferencesTests extends TestSuite:
   def lit(k: Int) = Lit(BigInt(k), Sort.int)
 
   def facts(phis: Expr*) =
-    phis.foldLeft(Differences.empty)(_.assume(_))
+    phis.foldLeft(Diffs.empty)(_.assume(_))
 
   val tests = Tests:
     // the bounds of the loop counter in the goal of array_1-1
@@ -60,7 +60,7 @@ object DifferencesTests extends TestSuite:
 
     // facts that are no difference constraints are ignored, which is sound but incomplete
     test("ignored"):
-      assert(facts(Le.int(Plus.int(x, y), Zero.int), Lt.int(Zero.int, Plus.int(x, y))) == Differences.empty)
+      assert(facts(Le.int(Plus.int(x, y), Zero.int), Lt.int(Zero.int, Plus.int(x, y))) == Diffs.empty)
       assert(facts(Not(Eq(x, y)), Eq(x, y)).deny(Eq(x, y)) == facts(Eq(x, y)))
 
     // adding a fact leaves the collection it was added to unchanged

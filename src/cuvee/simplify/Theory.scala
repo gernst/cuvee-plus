@@ -28,20 +28,69 @@ case class Facts(assms: List[Expr], concls: List[Expr]) extends Theory:
   def free: Set[Var] =
     assms.free ++ concls.free
 
-object Differences:
-  val empty = Differences(Set(), Map())
+object Chains:
+  val empty = Chains(Map(), Map())
+
+// equations of variables, which are never inconsistent, since conflicting equations are not recorded:
+// replace: a substitution that replaces variables by others or by literals known to be equal,
+// whose equations are no facts of the context (see Ctx.assume);
+// chain: the equations x == e that are not recursive, i.e., where x is not free in e,
+// which remain facts of the context, such that they are still found by Simplify.implied;
+// equations whose right-hand side is a sum, difference, negation, or product are not recorded,
+// since rewriting follows the equations (see Rewrite.matches), whereas arithmetic is normalized instead
+case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory:
+  def inconsistent =
+    false
+
+  def assume(expr: Expr): Chains =
+    expr match
+      case Eq(x: Var, y: Var) if replaces(x, y) =>
+        copy(replace = replace + (x -> y))
+
+      case Eq(x: Var, l: Lit) if replaces(x, l) =>
+        copy(replace = replace + (x -> l))
+
+      case Eq(l: Lit, x: Var) if replaces(x, l) =>
+        copy(replace = replace + (x -> l))
+
+      case Eq(x: Var, e) if chains(x, e) =>
+        copy(chain = chain + (x -> e))
+
+      case Eq(e, x: Var) if chains(x, e) =>
+        copy(chain = chain + (x -> e))
+
+      case _ =>
+        this
+
+  def deny(expr: Expr): Chains =
+    this
+
+  // whether x == e can be recorded in the substitution, e is a variable or a literal
+  def replaces(x: Var, e: Expr): Boolean =
+    x != e && !(replace contains x)
+
+  // whether x == e can be recorded in the chain
+  def chains(x: Var, e: Expr): Boolean =
+    !(chain contains x) && !(e.free contains x) && !Ctx.arithmetic(e)
+
+  // the variables of the substitution, whose equations are not among the facts
+  def free: Set[Var] =
+    replace.keySet ++ replace.values.free
+
+object Diffs:
+  val empty = Diffs(Set(), Map())
 
 // difference constraints x - y <= c on Int, closed under the shortest paths (incremental Floyd-Warshall),
 // adapted from Christopher David Lösbrock, Implementing an Incremental Solver for Difference Logic (BA thesis, RWTH);
 // distance((x, y)) = c is the tightest known bound x - y <= c, bounds of a single atom x are relative to the node 0;
 // atoms are arbitrary non-arithmetic terms, and monomials with a factor, e.g. 2 * x, are atoms as a whole,
 // about which nothing else is known; facts that are no difference constraints are ignored
-case class Differences(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) extends Theory:
+case class Diffs(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) extends Theory:
   // a negative cycle, which the closure makes a negative distance of some node to itself
   def inconsistent =
     nodes exists (x => distance.get((x, x)) exists (_ < 0))
 
-  def assume(expr: Expr): Differences =
+  def assume(expr: Expr): Diffs =
     expr match
       case Not(phi)                              => deny(phi)
       case Le.int(left, right)                   => le(left, right)
@@ -52,7 +101,7 @@ case class Differences(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) ex
       case _                                     => this
 
   // on Int, the negation of a comparison is a comparison, whereas a disequation is not a difference constraint
-  def deny(expr: Expr): Differences =
+  def deny(expr: Expr): Diffs =
     expr match
       case Not(phi)            => assume(phi)
       case Le.int(left, right) => lt(right, left)
@@ -62,17 +111,17 @@ case class Differences(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) ex
       case _                   => this
 
   // left <= right as left - right <= 0
-  def le(left: Expr, right: Expr): Differences =
+  def le(left: Expr, right: Expr): Diffs =
     add(Arith.toPoly(Ring.int, left) - Arith.toPoly(Ring.int, right))
 
   // left < right as left - right + 1 <= 0, on Int
-  def lt(left: Expr, right: Expr): Differences =
+  def lt(left: Expr, right: Expr): Diffs =
     add(Arith.toPoly(Ring.int, left) - Arith.toPoly(Ring.int, right) + Poly.one)
 
   // poly <= 0, which is a difference constraint if it has at most one atom of either sign;
   // with poly = (c1 + x) - (c2 + y), the constraint is x - y <= c2 - c1, where a missing atom is the node 0,
   // and a constant constraint that fails is a negative cycle of 0
-  def add(poly: Poly): Differences =
+  def add(poly: Poly): Diffs =
     val (neg, pos) = poly.normalize.sides
     val c = (neg.const - pos.const).num
 
@@ -84,7 +133,7 @@ case class Differences(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) ex
       case _                  => this
 
   // from - to <= c, where every path x .. from .. to .. y may become shorter, which is O(n²) in the nodes
-  def add(from: Expr, to: Expr, c: BigInt): Differences =
+  def add(from: Expr, to: Expr, c: BigInt): Diffs =
     var distance = this.distance
 
     def link(x: Expr, y: Expr, a: BigInt) =
@@ -105,4 +154,4 @@ case class Differences(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) ex
       if (distance contains (x, from)) && (distance contains (to, y))
     do link(x, y, distance((x, from)) + c + distance((to, y)))
 
-    Differences(nodes, distance)
+    Diffs(nodes, distance)

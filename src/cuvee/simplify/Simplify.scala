@@ -418,7 +418,7 @@ object Simplify extends Transform:
 
   // variables known to be equal to another one or to a literal are replaced
   def var_(config: Config, state: State, ctx: Ctx, x: Var): Expr =
-    ctx.replace.get(x) match
+    ctx.chains.replace.get(x) match
       case Some(y) => y
       case None    => x
 

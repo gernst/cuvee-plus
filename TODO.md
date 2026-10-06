@@ -14,7 +14,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   test run, depending on the tests run before it in the same JVM; alone, and
   with `java -jar cuvee.jar -simplify -verify -z3`, it passes. The fresh-name
   counters are already reset per run (`Cuvee.pipe`), so some other state
-  persists across runs; not investigated further.
+  persists across runs; not investigated further. Also, rarely,
+  `c.Translation.increments in expressions` (Horn clauses of a loop with
+  `-chc -z3`, without the simplifier), which passes alone.
 
 ## Code structure
 
@@ -49,7 +51,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   variable of a sum take one summand or none, a negated last variable takes
   negative summands only; bound variables of combinators are not instantiated
   by conditional expressions; equations of the context are followed only for
-  variables inside of the expression (`Ctx.chain`, rule `Subst` of the paper),
+  variables inside of the expression (`Chains.chain`, rule `Subst` of the paper),
   not for terms such as `history.events == []`; innermost first, which may
   rewrite subterms before a rule for the whole term applies.
 - The goal of [clock.dfy](examples/hybrid/clock.dfy) remains after

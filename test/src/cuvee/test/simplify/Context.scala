@@ -17,35 +17,35 @@ object Context extends TestSuite:
   val tests = Tests:
     test("variables"):
       val ctx = Ctx.empty.assume(Eq(x, y))
-      ctx.replace ==> Map(x -> y)
-      ctx.chain ==> Map()
+      ctx.chains.replace ==> Map(x -> y)
+      ctx.chains.chain ==> Map()
       ctx.facts.assms ==> Nil
 
     // equations with literals are substituted like those between variables
     test("literals"):
       val one = One.int
-      Ctx.empty.assume(Eq(x, one)).replace ==> Map(x -> one)
-      Ctx.empty.assume(Eq(one, x)).replace ==> Map(x -> one)
+      Ctx.empty.assume(Eq(x, one)).chains.replace ==> Map(x -> one)
+      Ctx.empty.assume(Eq(one, x)).chains.replace ==> Map(x -> one)
       Ctx.empty.assume(Eq(x, one)).facts.assms ==> Nil
       val ctx = Ctx.empty.assume(Eq(x, one))
       cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, ctx, Plus.int(x, y)) ==> Plus.int(y, one)
 
     test("equations"):
       val e = App(f, List(y))
-      Ctx.empty.assume(Eq(x, e)).chain ==> Map(x -> e)
-      Ctx.empty.assume(Eq(e, x)).chain ==> Map(x -> e)
+      Ctx.empty.assume(Eq(x, e)).chains.chain ==> Map(x -> e)
+      Ctx.empty.assume(Eq(e, x)).chains.chain ==> Map(x -> e)
       // the equation is still an assumption
       Ctx.empty.assume(Eq(x, e)).facts.assms ==> List(Eq(x, e))
       // the first equation of a variable is kept
-      Ctx.empty.assume(Eq(x, e)).assume(Eq(x, z)).chain ==> Map(x -> e)
+      Ctx.empty.assume(Eq(x, e)).assume(Eq(x, z)).chains.chain ==> Map(x -> e)
 
     test("recursive"):
       val e = App(f, List(x))
-      Ctx.empty.assume(Eq(x, e)).chain ==> Map()
+      Ctx.empty.assume(Eq(x, e)).chains.chain ==> Map()
 
     test("arithmetic"):
       val e = Plus.int(y, One.int)
-      Ctx.empty.assume(Eq(x, e)).chain ==> Map()
+      Ctx.empty.assume(Eq(x, e)).chains.chain ==> Map()
       Ctx.empty.assume(Eq(x, e)).facts.assms ==> List(Eq(x, e))
 
 // one-point rule: an equation x == e of a quantified variable x that occurs nowhere else is true,
