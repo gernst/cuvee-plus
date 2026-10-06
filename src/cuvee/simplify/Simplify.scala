@@ -262,18 +262,9 @@ object Simplify extends Transform:
         val body_ = simplify(config, state, ctx.neutral.bind(bound_), re(body))
         let(config, state, ctx, bound_, args_, body_)
 
-      // the variables of the patterns are renamed apart like bound variables, and the bodies assume their condition,
-      // without polarity, since the context does not record the argument
       case Match(arg, cases) =>
         val arg_ = simplify(config, state, ctx.neutral, arg)
-        val cases_ =
-          for Case(pat, body, cond) <- cases
-          yield
-            val (bound_, re) = ctx.avoid(pat.free.toList)
-            val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
-            val body_ = simplify(config, state, ctx.neutral.bind(bound_).assume(List(cond_), Nil), re(body))
-            case_(config, state, ctx, re(pat), body_, cond_)
-        match_(config, state, ctx, arg_, cases_)
+        match_(config, state, ctx, arg_, cases.map(this.cases(config, state, ctx, _)))
 
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see invariants)
@@ -321,6 +312,15 @@ object Simplify extends Transform:
       cond_ = simplify(config, state, ctx, cond)
       if cond_ != False
     yield upd(config, state, ctx, cond_, simplify(config, state, ctx.assume(List(cond_), Nil), rhs))
+
+  // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,
+  // without polarity, since the context does not record the argument
+  def cases(config: Config, state: State, ctx: Ctx, cs: Case): Case =
+    val Case(pat, body, cond) = cs
+    val (bound_, re) = ctx.avoid(pat.free.toList)
+    val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
+    val body_ = simplify(config, state, ctx.neutral.bind(bound_).assume(List(cond_), Nil), re(body))
+    case_(config, state, ctx, re(pat), body_, cond_)
 
   // simplify each of `phis` assuming the others, which hold if `pos` (conjunction)
   // and do not hold otherwise (disjunction);
