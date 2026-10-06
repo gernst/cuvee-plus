@@ -162,6 +162,11 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   increments a global variable, called in the loop of `main` of
   [examples/c/count.c](examples/c/count.c) (now inlined there).
 
+## SV-COMP task definitions
+
+- The properties and expected verdicts of a task (`Task.properties`) are read
+  but not used; only a single input file in C is supported.
+
 ## Bitvectors
 
 `BitVec(n)` with the SMT-LIB literals and functions (`BitVecs`). Open: no

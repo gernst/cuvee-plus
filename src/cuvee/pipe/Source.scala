@@ -35,15 +35,21 @@ trait Source:
 
     new InputStreamReader(stream, StandardCharsets.UTF_8)
 
-  def apply(reader: Reader, config: cuvee.Config = cuvee.Config.default): (State, LazyList[Cmd]) =
-    val scanner = newScanner(reader)
+  def apply(reader: Reader): (State, LazyList[Cmd]) =
+    apply(cuvee.Config.default, reader)
+
+  def apply(config: cuvee.Config, reader: Reader): (State, LazyList[Cmd]) =
     val (init, parser, prelude) = newParser()
 
     val prelude_ =
       prelude ++ (for path <- preludes(config); cmd <- parse(path, parser) yield cmd)
 
-    // defer parsing such that errors in the first command are reported by the pipeline, too
-    (init, LazyList.empty #::: prelude_.to(LazyList) #::: cmds(scanner.input, parser).filterNot(prelude_.contains))
+    // defer reading and parsing such that errors in the first command are reported by the pipeline, too
+    (init, LazyList.empty #::: prelude_.to(LazyList) #::: input(config, reader, parser).filterNot(prelude_.contains))
+
+  // the commands of the input, evaluated on demand
+  def input(config: cuvee.Config, reader: Reader, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
+    cmds(newScanner(reader).input, parser)
 
   // the commands of a resource
   def parse(path: String, parser: easyparse.Parser[List[Cmd]]): List[Cmd] =

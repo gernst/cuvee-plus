@@ -25,6 +25,7 @@ transformation and any output.
 | `cuvee.smtlib` | SMT-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks). |
 | `cuvee.boogie` | Boogie frontend and printer, with datatypes written like Dafny's (`data`). |
 | `cuvee.c` | C frontend and printer, for integer programs with arrays as values. |
+| `cuvee.yml` | SV-COMP task definitions (`Task`, read with SnakeYAML Engine), whose single C input file is read by the C frontend. |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `Verify` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
@@ -283,7 +284,10 @@ The SMT-LIB frontend is an exception: it reads s-expressions with the shared
 it starts from the SMT-LIB prelude, builds expressions on `Int` and `Bool`
 with the sugar directly, and parses the whole translation unit at once, so
 that it can infer the global variables that each function and each loop
-modifies.
+modifies. SV-COMP task definitions (`.yml`) defer to the C frontend: their
+`Source` overrides `input`, which reads the input on demand, to load the task
+and parse its input file, relative to the task; the output is printed as C
+(`Lang.output`).
 
 ## Errors and debugging
 
@@ -309,7 +313,7 @@ A single run is `mill -i run <options> <file>`, e.g.
 - Hybrid programs and other inputs with polymorphic axioms are not passed to
   solvers; their tests generate the goals only (`-print null`).
 - Example tests run `cuvee.Cuvee.run` on the files in `examples/`, which has
-  a subfolder per language (`dafny`, `boogie`, `c`, `smtlib`) and per
+  a subfolder per language (`dafny`, `boogie`, `c`, `smtlib`, `yml`) and per
   transformation (`dafny/vcgen`, `hybrid`, `simplify`, `transform`), through
   `Examples.find` and `Examples.tests`:
   - every file must parse;

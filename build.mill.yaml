@@ -6,6 +6,7 @@ scalaVersion: 3.8.1
 
 mvnDeps:
 - com.lihaoyi::sourcecode:0.4.4
+- org.snakeyaml:snakeyaml-engine:3.2
 mainClass: cuvee.Cuvee
 
 object test:

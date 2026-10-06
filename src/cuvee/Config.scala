@@ -17,10 +17,12 @@ case class Flag(
     action: PartialFunction[(Config, List[String]), (Config, List[String])]
 )
 
+// output: the language of the output by its file extension, if not that of the input, e.g. c for SV-COMP tasks
 case class Lang(
     help: String,
     source: Source,
-    printer: Printer
+    printer: Printer,
+    output: Option[String] = None
 )
 
 object Lang:
@@ -35,6 +37,9 @@ object Lang:
 
   val c =
     Lang("C", cuvee.c.Source, cuvee.c.Printer)
+
+  val yml =
+    Lang("SV-COMP task definition, whose single input file is C", cuvee.yml.Source, cuvee.c.Printer, Some("c"))
 
 case class Config(
     input: Option[String],
@@ -59,7 +64,7 @@ case class Config(
   def language: String =
     if solver
     then "smt2"
-    else printed.orElse(input.map(Config.suffix)).getOrElse("smt2")
+    else printed.orElse(input.map(Config.output)).getOrElse("smt2")
 
   def reader =
     input match
@@ -215,8 +220,13 @@ object Config:
     lang("smt2", Lang.smtlib),
     lang("dfy", Lang.dafny),
     lang("bpl", Lang.boogie),
-    lang("c", Lang.c)
+    lang("c", Lang.c),
+    lang("yml", Lang.yml)
   )
+
+  // the language of the output for an input file by its file extension (see Lang)
+  def output(file: String): String =
+    langs.get(file.suffix).flatMap(_.output).getOrElse(file.suffix)
 
   extension (file: String)
     def suffix =
@@ -247,7 +257,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.18.67")
+    println("Cuvée 0.19.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
@@ -267,7 +277,7 @@ object Config:
         else Error.raise("malformed argument for command line option", flag, rest)
 
       case file :: rest if langs.contains(file.suffix) =>
-        val Lang(help, source, printer) = langs(file.suffix)
+        val Lang(help, source, printer, _) = langs(file.suffix)
 
         var config_ = config
 

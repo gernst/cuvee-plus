@@ -10,7 +10,8 @@ languages or passes it to an SMT solver (z3 or cvc5).
 - **Frontends:** SMT-LIB 2 (`.smt2`, extended by procedures and programs),
   a subset of Boogie (`.bpl`), a subset of Dafny (`.dfy`), and simple
   integer programs in C (`.c`), with arrays as values and the verification
-  conventions of SV-COMP. All are parsed into the same core, are type
+  conventions of SV-COMP, also given by SV-COMP task definitions (`.yml`)
+  with a single input file. All are parsed into the same core, are type
   checked with polymorphism, and resolve overloaded arithmetic on `Int` and
   `Real`, and indexing of arrays and sequences. In Dafny, axioms, lemmas,
   and goals may be written `if φ then ψ` for `φ ==> ψ`, also below the
