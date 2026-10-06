@@ -91,13 +91,16 @@ object Rewrite:
       case (_, As(arg, _)) =>
         matches(config, state, ctx, b, pat, arg, m)
 
-      // comparisons modulo moving summands between the sides, and < and <= on Int
+      // comparisons modulo moving summands between the sides, and < and <= on Int;
+      // the constant of the pattern is moved to the expression, whose constants are folded,
+      // e.g. k < m is m - k - 1 and matches i < 1024, which is 1023 - i, as m - k against 1024 - i
       case _ if Rewrite.comparison(pat).nonEmpty =>
         for
           (ring, strict, poly) <- Rewrite.comparison(pat)
           (ring_, strict_, poly_) <- Rewrite.comparison(expr)
           if ring == ring_ && strict == strict_
-          m_ <- matches(config, state, ctx, b, ring, Rewrite.signed(ring, poly), Rewrite.signed(ring, poly_), true, m)
+          const = Poly.const(poly.const)
+          m_ <- matches(config, state, ctx, b, ring, Rewrite.signed(ring, (poly - const).normalize), Rewrite.signed(ring, (poly_ - const).normalize), true, m)
         yield m_
 
       case _ if Rewrite.arithmetic(pat) =>

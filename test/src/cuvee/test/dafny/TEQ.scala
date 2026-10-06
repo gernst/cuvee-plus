@@ -175,6 +175,29 @@ object TEQ extends TestSuite:
       Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, Le.int(app("earlier", k, vs), max)) ==> True
       Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, Le.int(min, app("earlier", k, vs))) ==> True
 
+    // the invariant of a loop condition i < 1024 over a counter is rewritten by the lemma for k < m,
+    // which is m - k - 1 on Int, whereas the constant of 1023 - i is folded,
+    // also with a second dependency whose bound variable is unused, and with the counter defined in the context
+    test("invs with literal bound"):
+      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
+      val n = Var("n", Sort.int)
+      val trace = Sort(Con("Trace", 1), List(Sort.int))
+      val I = Var("I", trace)
+      val K = Var("K", trace)
+      val i = Var("i", Sort.int)
+      val k = Var("k", Sort.int)
+      val bound = Lit(BigInt(1024), Sort.int)
+      val counter = Counter(Zero.int, One.int, n)
+      val ctx = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, n)).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
+
+      for inv <- List(
+          Invs(List(Butlast(counter)), List(i), Lt.int(i, bound)),
+          Invs(List(Butlast(I)), List(i), Lt.int(i, bound)),
+          Invs(List(Butlast(K), Butlast(I)), List(k, i), Lt.int(i, bound)))
+      do
+        val inv_ = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, inv)
+        assert(!subexprs(inv_).exists(_.isInstanceOf[Invs]))
+
     // calls of polymorphic methods instantiate the type parameters of their contract, as with -verify
     test("polymorphic calls"):
       val file = Examples.root / "dafny" / "horn" / "contract.dfy"
