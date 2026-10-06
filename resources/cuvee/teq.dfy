@@ -129,14 +129,13 @@ lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
 // maps
 
 lemma <a> {:rw} {:free} forall n: int, xs: seq<a> ::
-  if 0 <= n && length(xs) == n
+  if length(xs) == n
   then maps(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs))
          == xs
 
 lemma {:rw} {:free} forall a: int, b: int, i: int, c: int, n: int ::
-  if 0 <= n
-  then maps(for ⌊counter(i, c, n)⌋ yield v => a + b * v)
-         == ⌊counter(a + b * i, b * c, n)⌋
+  maps(for ⌊counter(i, c, n)⌋ yield v => a + b * v)
+    == ⌊counter(a + b * i, b * c, n)⌋
 
 lemma <a, b> {:rw} {:free} forall x: a, xs: seq<b> ::
   maps(for xs yield v => x)
@@ -149,25 +148,21 @@ lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a> ::
 // invs
 
 lemma {:rw} {:free} forall m: int, i: int, c: int, n: int ::
-  if 0 <= n
-  then invs(for ⌊counter(i, c, n)⌋ check k => m <= k)
-         <==> n == 0 || m <= i && m <= i + (n - 1) * c
+  invs(for ⌊counter(i, c, n)⌋ check k => m <= k)
+    <==> n == 0 || m <= i && m <= i + (n - 1) * c
 
 lemma {:rw} {:free} forall m: int, i: int, c: int, n: int ::
-  if 0 <= n
-  then invs(for ⌊counter(i, c, n)⌋ check k => k < m)
-         <==> n == 0 || i < m && i + (n - 1) * c < m
+  invs(for ⌊counter(i, c, n)⌋ check k => k < m)
+    <==> n == 0 || i < m && i + (n - 1) * c < m
 
 // a counter by 1 or -1 avoids m if m lies outside of its range, e.g. for loops i != N
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
-  if 0 <= n
-  then invs(for ⌊counter(i, 1, n)⌋ check k => k != m)
-         <==> m < i || i + n <= m
+  invs(for ⌊counter(i, 1, n)⌋ check k => k != m)
+    <==> m < i || i + n <= m
 
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
-  if 0 <= n
-  then invs(for ⌊counter(i, -1, n)⌋ check k => k != m)
-         <==> i < m || m <= i - n
+  invs(for ⌊counter(i, -1, n)⌋ check k => k != m)
+    <==> i < m || m <= i - n
 
 lemma <a> {:rw} {:free} forall x: a, xs: seq<a> ::
   invs(for xs check v => v == x)
@@ -180,18 +175,16 @@ lemma <a> {:rw} {:free} forall b: bool, xs: seq<a> ::
 // current
 
 lemma {:rw} {:free} forall i: int, c: int, n: int ::
-  if 0 <= n
-  then current(counter(i, c, n))
-         == i + n * c
+  current(counter(i, c, n))
+    == i + n * c
 
 lemma <a, b> {:rw} {:free} forall x: a, y: a, xs: seq<b> ::
   current(trace(x, for xs do z, v => y))
     == if length(xs) == 0 then x else y
 
 lemma <a> {:rw} {:free} forall n: int, x: a ::
-  if 0 <= n
-  then current(consts(n, x))
-         == x
+  current(consts(n, x))
+    == x
 
 lemma <a> {:rw} {:free} forall a: array<a, int>, k: a, values: seq<int> ::
   current(trace(a, for values do b, v => b[k := b[k] + v]))
@@ -206,24 +199,20 @@ lemma {:rw} {:free} forall x: int, values: seq<int> ::
     == x + parity(values)
 
 lemma {:rw} {:free} forall x: int, i: int, c: int, n: int ::
-  if 0 <= n
-  then current(maxs(x, ⌊counter(i, c, n)⌋))
-         == if n == 0 then x else max(x, max(i, i + (n - 1) * c))
+  current(maxs(x, ⌊counter(i, c, n)⌋))
+    == if n == 0 then x else max(x, max(i, i + (n - 1) * c))
 
 lemma {:rw} {:free} forall x: int, y: int, n: int ::
-  if 0 <= n
-  then current(maxs(x, ⌊consts(n, y)⌋))
-         == if n == 0 then x else max(x, y)
+  current(maxs(x, ⌊consts(n, y)⌋))
+    == if n == 0 then x else max(x, y)
 
 lemma {:rw} {:free} forall x: int, i: int, c: int, n: int ::
-  if 0 <= n
-  then current(mins(x, ⌊counter(i, c, n)⌋))
-         == if n == 0 then x else min(x, min(i, i + (n - 1) * c))
+  current(mins(x, ⌊counter(i, c, n)⌋))
+    == if n == 0 then x else min(x, min(i, i + (n - 1) * c))
 
 lemma {:rw} {:free} forall x: int, y: int, n: int ::
-  if 0 <= n
-  then current(mins(x, ⌊consts(n, y)⌋))
-         == if n == 0 then x else min(x, y)
+  current(mins(x, ⌊consts(n, y)⌋))
+    == if n == 0 then x else min(x, y)
 
 // the minima are the negated maxima of the negated values,
 // not a rewrite rule, which would replace mins by maxs everywhere
@@ -238,19 +227,16 @@ lemma <a> {:rw} {:free} forall x: int, e: a, vs: seq<a> ::
 // steps
 
 lemma {:rw} {:free} forall i: int, c: int, n: int ::
-  if 0 <= n
-  then steps(counter(i, c, n))
-         == n
+  steps(counter(i, c, n))
+    == n
 
 lemma <a> {:rw} {:free} forall n: int, x: a ::
-  if 0 <= n
-  then steps(consts(n, x))
-         == n
+  steps(consts(n, x))
+    == n
 
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if length(keys) == length(values)
-  then steps(stores(a, keys, values))
-         == length(keys)
+  steps(stores(a, keys, values))
+    == length(keys)
 
 lemma {:rw} {:free} forall x: int, values: seq<int> ::
   steps(sums(x, values))
@@ -339,7 +325,7 @@ lemma <a, b> {:rw} {:free} forall k: int, a: array<a, b>, keys: seq<a> ::
          == selects(a, prefix(k, keys))
 
 lemma <a, b> {:rw} {:free} forall k: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if 0 <= k <= length(keys) && length(keys) == length(values)
+  if 0 <= k <= length(keys)
   then prefix(k, ⌊stores(a, keys, values)⌋)
          == ⌊stores(a, prefix(k, keys), prefix(k, values))⌋
 
@@ -379,19 +365,16 @@ lemma <a> {:rw} {:free} forall j: int, k: int, xs: seq<a> ::
 // occurs
 
 lemma {:rw} {:free} forall j: int, i: int, n: int ::
-  if 0 <= n
-  then occurs(j, ⌊counter(i, 1, n)⌋)
-         <==> i <= j < i + n
+  occurs(j, ⌊counter(i, 1, n)⌋)
+    <==> i <= j < i + n
 
 lemma {:rw} {:free} forall j: int, i: int, n: int ::
-  if 0 <= n
-  then occurs(j, ⌊counter(i, -1, n)⌋)
-         <==> i - n < j <= i
+  occurs(j, ⌊counter(i, -1, n)⌋)
+    <==> i - n < j <= i
 
 lemma <a> {:rw} {:free} forall x: a, n: int, y: a ::
-  if 0 <= n
-  then occurs(x, ⌊consts(n, y)⌋)
-         <==> n != 0 && x == y
+  occurs(x, ⌊consts(n, y)⌋)
+    <==> n != 0 && x == y
 
 lemma <a> {:free} forall x: a, k: int, xs: seq<a> ::
   if 0 <= k <= length(xs) && occurs(x, prefix(k, xs))
@@ -422,42 +405,41 @@ lemma <a> {:free} forall k: int, xs: seq<a> ::
 // selects
 
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if distincts(keys) && length(keys) == length(values)
+  if distincts(keys)
   then selects(current(stores(a, keys, values)), keys)
          == values
 
 lemma {:rw} {:free} forall a: array<int, int>, n: int, i: int, d: int ::
-  if 0 <= n && 0 <= d
+  if 0 <= d
   then selects(current(shifts(a, ⌊counter(i, 1, n)⌋, d)), ⌊counter(i, 1, n)⌋)
          == selects(a, ⌊counter(i + d, 1, n)⌋)
 
 // array selects
 
 lemma <a, b> {:rw} {:free} forall k: a, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if length(keys) == length(values)
-  then current(stores(a, keys, values))[k]
-         == if occurs(k, keys) then earlier(indexof(k, keys), values) else a[k]
+  current(stores(a, keys, values))[k]
+    == if occurs(k, keys) then earlier(indexof(k, keys), values) else a[k]
 
 // not a rewrite rule, since it loops: the index k may be rewritten to earlier(j, ...) by the assumptions,
 // instead, the two lemmas below distinguish whether k occurs among the first j keys
 lemma <a, b> {:free} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if 0 <= j < length(keys) && length(keys) == length(values)
+  if 0 <= j < length(keys)
   then earlier(j, ⌊stores(a, keys, values)⌋)[k]
          == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
 
 // Note, indexof(k, prefix(j, keys)) <= indexof(k, keys) but not equal, since indexof is the *last* occurrence
 lemma <a, b> {:rw} {:free} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if 0 <= j < length(keys) && length(keys) == length(values) && occurs(k, prefix(j, keys))
+  if 0 <= j < length(keys) && occurs(k, prefix(j, keys))
   then earlier(j, ⌊stores(a, keys, values)⌋)[k]
          == earlier(indexof(k, prefix(j, keys)), values)
 
 lemma <a, b> {:rw} {:free} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if 0 <= j < length(keys) && length(keys) == length(values) && !occurs(k, prefix(j, keys))
+  if 0 <= j < length(keys) && !occurs(k, prefix(j, keys))
   then earlier(j, ⌊stores(a, keys, values)⌋)[k]
          == a[k]
 
 lemma {:rw} {:free} forall a: array<int, int>, n: int, i: int, d: int, k: int ::
-  if 0 <= n && 0 <= d
+  if 0 <= d
   then current(shifts(a, ⌊counter(i, 1, n)⌋, d))[k]
          == if i <= k < i + n then a[k + d] else a[k]
 
@@ -468,9 +450,8 @@ lemma {:rw} {:free}
     == 0
 
 lemma {:rw} {:free} forall n: int, x: int ::
-  if 0 <= n
-  then sum(⌊consts(n, x)⌋)
-         == x * n
+  sum(⌊consts(n, x)⌋)
+    == x * n
 
 lemma {:rw} {:free} forall values: seq<int> ::
   sum(maps(for values yield v => -v))
@@ -486,9 +467,8 @@ lemma {:rw} {:free} forall xs: seq<int>, ys: seq<int> ::
 
 // the arithmetic series, which is exact, since n * (n - 1) is even
 lemma {:rw} {:free} forall i: int, c: int, n: int ::
-  if 0 <= n
-  then sum(⌊counter(i, c, n)⌋)
-         == (2 * i + (n - 1) * c) * n / 2
+  sum(⌊counter(i, c, n)⌋)
+    == (2 * i + (n - 1) * c) * n / 2
 
 lemma <a> {:rw} {:free} forall a: array<a, int>, k: a, v: int, keys: seq<a> ::
   if distincts(keys)
@@ -507,9 +487,8 @@ lemma <a> {:rw} {:free} forall a: array<a, int>, k: a, v: int, keys: seq<a> ::
 // count
 
 lemma <a> {:rw} {:free} forall n: int, e: a, v: a ::
-  if 0 <= n
-  then count(e, ⌊consts(n, v)⌋)
-         == if v == e then n else 0
+  count(e, ⌊consts(n, v)⌋)
+    == if v == e then n else 0
 
 // an update of a visited key replaces its contribution, as for sum and parity
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, k: a, w: b, e: b, keys: seq<a> ::
@@ -521,22 +500,22 @@ lemma <a, b> {:rw} {:free} forall a: array<a, b>, k: a, w: b, e: b, keys: seq<a>
 
 // the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
-  if 0 <= n && i <= m <= i + n
+  if i <= m <= i + n
   then count(true, maps(for ⌊counter(i, 1, n)⌋ yield k => k < m))
          == m - i
 
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
-  if 0 <= n && i <= m <= i + n
+  if i <= m <= i + n
   then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k => k < m))
          == i + n - m
 
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
-  if 0 <= n && i <= m <= i + n
+  if i <= m <= i + n
   then count(true, maps(for ⌊counter(i, 1, n)⌋ yield k => m <= k))
          == i + n - m
 
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
-  if 0 <= n && i <= m <= i + n
+  if i <= m <= i + n
   then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k => m <= k))
          == m - i
 
