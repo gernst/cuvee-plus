@@ -49,7 +49,7 @@ lemma {:rw} {:free} forall X: Trace<int> ::
 //   as well as those subsumed by the ones above (e.g. trace(i, for ⌊K⌋ do x, k => x + c)),
 // and with the following corrections:
 //   earlier(indexof(x, xs), xs) == x and the elements of selects, counter, and consts require that they exist,
-//   map(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs)) == xs requires that xs has length n,
+//   maps(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs)) == xs requires that xs has length n,
 //   the lemmas on sum and parity of selects(a[k := v], keys) require that the keys are distinct,
 //   earlier(j, ⌊stores(a, keys, values)⌋)[k] is a[k] if k is not among the first j keys, not a[j]
 // =====================================================================================================================
@@ -105,7 +105,7 @@ function counts<a₀>(x₀: int, x₁: a₀, x₂: seq<a₀>): Trace<int>
 
 lemma <a> {:rw} {:free} forall n: int, xs: seq<a> ::
   if 0 <= n && length(xs) == n
-  then map(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs)) == xs
+  then maps(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs)) == xs
 
 lemma {:rw} {:free} forall k: int, i: int, c: int, n: int ::
   if 0 <= k < n
@@ -117,15 +117,15 @@ lemma {:rw} {:free} forall k: int, i: int, c: int, n: int ::
 
 lemma {:rw} {:free} forall a: int, b: int, i: int, c: int, n: int ::
   if 0 <= n
-  then map(for ⌊counter(i, c, n)⌋ yield v => a + b * v) == ⌊counter(a + b * i, b * c, n)⌋
+  then maps(for ⌊counter(i, c, n)⌋ yield v => a + b * v) == ⌊counter(a + b * i, b * c, n)⌋
 
 lemma {:rw} {:free} forall m: int, i: int, c: int, n: int ::
   if 0 <= n
-  then all(for ⌊counter(i, c, n)⌋ check k => m <= k) <==> n == 0 || m <= i && m <= i + (n - 1) * c
+  then invs(for ⌊counter(i, c, n)⌋ check k => m <= k) <==> n == 0 || m <= i && m <= i + (n - 1) * c
 
 lemma {:rw} {:free} forall m: int, i: int, c: int, n: int ::
   if 0 <= n
-  then all(for ⌊counter(i, c, n)⌋ check k => k < m) <==> n == 0 || i < m && i + (n - 1) * c < m
+  then invs(for ⌊counter(i, c, n)⌋ check k => k < m) <==> n == 0 || i < m && i + (n - 1) * c < m
 
 lemma {:rw} {:free} forall j: int, i: int, n: int ::
   if 0 <= n
@@ -159,7 +159,7 @@ lemma <a, b> {:rw} {:free} forall x: a, xs: seq<b> ::
   trace(x, for xs do y, v => y) == consts(length(xs), x)
 
 lemma <a, b> {:rw} {:free} forall x: a, xs: seq<b> ::
-  map(for xs yield v => x) == ⌊consts(length(xs), x)⌋
+  maps(for xs yield v => x) == ⌊consts(length(xs), x)⌋
 
 lemma <a, b> {:rw} {:free} forall x: a, y: a, xs: seq<b> ::
   current(trace(x, for xs do z, v => y)) == if length(xs) == 0 then x else y
@@ -173,14 +173,14 @@ lemma <a> {:rw} {:free} forall k: int, n: int, x: a ::
   then earlier(k, ⌊consts(n, x)⌋) == x
 
 lemma <a> {:rw} {:free} forall x: a, xs: seq<a> ::
-  all(for xs check v => v == x) <==> xs == ⌊consts(length(xs), x)⌋
+  invs(for xs check v => v == x) <==> xs == ⌊consts(length(xs), x)⌋
 
 lemma <a> {:rw} {:free} forall x: a, n: int, y: a ::
   if 0 <= n
   then occurs(x, ⌊consts(n, y)⌋) <==> n != 0 && x == y
 
 lemma <a> {:rw} {:free} forall b: bool, xs: seq<a> ::
-  all(for xs check v => b) <==> length(xs) == 0 || b
+  invs(for xs check v => b) <==> length(xs) == 0 || b
 
 lemma <a> {:rw} {:free} forall k: int, n: int, x: a ::
   if 0 <= k <= n
@@ -189,7 +189,7 @@ lemma <a> {:rw} {:free} forall k: int, n: int, x: a ::
 // arrays
 
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a> ::
-  map(for keys yield k => a[k]) == selects(a, keys)
+  maps(for keys yield k => a[k]) == selects(a, keys)
 
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a>, values: seq<b> ::
   trace(a, for keys, values do b, k, v => b[k := v]) == stores(a, keys, values)
@@ -273,13 +273,13 @@ lemma {:rw} {:free} forall n: int, x: int ::
   then sum(⌊consts(n, x)⌋) == x * n
 
 lemma {:rw} {:free} forall values: seq<int> ::
-  sum(map(for values yield v => -v)) == -sum(values)
+  sum(maps(for values yield v => -v)) == -sum(values)
 
 lemma {:rw} {:free} forall values: seq<int>, a: int ::
-  sum(map(for values yield v => a * v)) == a * sum(values)
+  sum(maps(for values yield v => a * v)) == a * sum(values)
 
 lemma {:rw} {:free} forall xs: seq<int>, ys: seq<int> ::
-  sum(map(for xs, ys yield v, w => v + w)) == sum(xs) + sum(ys)
+  sum(maps(for xs, ys yield v, w => v + w)) == sum(xs) + sum(ys)
 
 // the arithmetic series, which is exact, since n * (n - 1) is even
 lemma {:rw} {:free} forall i: int, c: int, n: int ::

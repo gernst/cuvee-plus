@@ -8,7 +8,7 @@ datatype counter = counter(n: int)
 method inc(x: int) returns (y: int)
   ensures y == x + 1
 
-method check(x: int)
+method validate(x: int)
   requires x > 0
 
 method m(x: int, c: counter) returns (z: int)
@@ -16,7 +16,7 @@ method m(x: int, c: counter) returns (z: int)
   ensures z == x + 2
 {
   var y: int := inc(x);
-  check(x);
+  validate(x);
   c.tick();
   z := inc(y);
 }

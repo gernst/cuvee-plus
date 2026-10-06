@@ -217,12 +217,13 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      parameters and attributes, `lemma <a> {:rw} φ` (Boogie:
      `lemma <a> {:rw} φ;`). The formula is resolved and checked in the scope
      of the type parameters (`assertion`). In Dafny, `if φ then ψ` without
-     `else` at the top of such a formula is `φ ==> ψ`.
+     `else` is `φ ==> ψ` anywhere (the parser translates `Ite` whose else
+     branch is `true`); the updates of combinators admit only guarded cases,
+     so an if-then-else there needs parentheses.
    - Dafny's chained comparisons `0 <= i < n` and `x == y == z` are
      conjunctions: the comparison operators associate to the left in the
-     grammar, and `Grammar.chain` turns a comparison whose left operand is
-     another (unparenthesized) comparison into a `Chain`, which the parser
-     expands. Parenthesized expressions are `Tuple(List(e))` in the syntax,
+     grammar, and the parser expands a comparison whose left operand is
+     another (unparenthesized) comparison (`Parser.chain`). Parenthesized expressions are `Tuple(List(e))` in the syntax,
      which is how `(x == y) == b` stays apart. Chains must not mix `<`/`<=`
      with `>`/`>=`.
 5. **Prelude** (`resources/cuvee/<lang>/prelude.*`), in the frontend's own

@@ -7,7 +7,6 @@ object Grammar:
   import easyparse._
   import Brackets._
 
-  // the precedences of C, where the conditional ?: is parsed separately on top
   val prefix_ops = Map(
     "-" -> 11,
     "!" -> 11
@@ -38,59 +37,54 @@ object Grammar:
 
   val nil = R(Nil)
 
-  // qualifiers and storage classes are ignored, all integer types are int
-  val qualifier =
-    P("const".map(()) | "static".map(()) | "extern".map(()) | "volatile".map(()))
+  val qualifier: Scanner =
+    "const" | "static" | "extern" | "volatile"
 
-  val intword =
-    P("int".map(()) | "long".map(()) | "short".map(()) | "char".map(()) | "unsigned".map(()) | "signed".map(()))
+  val intword: Scanner =
+    "int" | "long" | "short" | "char" | "unsigned" | "signed"
+
+  val int =
+    IntType(intword.+)
+
+  val bool =
+    BoolType("_Bool" | "bool")
+
+  val void =
+    VoidType("void")
 
   val base: Parser[Type] =
-    P(intword.+.map(_ => IntType) | "_Bool".map(BoolType) | "bool".map(BoolType) | "void".map(VoidType))
+    P(int | bool | void)
 
-  // backtracks if there is no type after the qualifiers
   val typ: Parser[Type] =
-    P(qualifier.* ?~ base ~ qualifier.*).map:
-      case ((_, typ), _) => typ
+    P(qualifier.* ?~ base ~ qualifier.*)
 
   val args =
     P(parens(expr ~* ","))
 
-  // backtracks if there are no arguments, which is then a variable
   val call =
     Call(P(id ?~ args))
 
   val atom: Parser[Expr] =
     P(Num(num) | call | Id(id) | parens(expr))
 
-  // array accesses a[i]
   val postfix: Parser[Expr] =
     P(atom ~ brackets(expr).*).map:
       case (base, indices) => indices.foldLeft(base)(Index(_, _))
 
   val operators: Parser[Expr] =
-    M(sym, prefix_ops, postfix_ops, infix_ops) $ (postfix, {
-      case (op, List(arg))         => Unary(op, arg)
-      case (op, List(left, right)) => Binary(op, left, right)
-      case (op, args)              => Error.raise("unexpected operator application", op, args)
-    })
+    M(sym, prefix_ops, postfix_ops, infix_ops) $ (postfix, App)
 
   val expr: Parser[Expr] =
-    P(operators ~ ("?" ~ expr ~ ":" ~ expr).?).map:
-      case (expr, None)                => expr
-      case (test, Some((left, right))) => Cond(test, left, right)
+    Cond(P(operators ~ ("?" ~ expr ~ ":" ~ expr).?))
 
   val assignop =
-    P("=".map("=") | "+=".map("+") | "-=".map("-") | "*=".map("*") | "/=".map("/") | "%=".map("%"))
+    P(J("=") | J("+=") | J("-=") | J("*=") | J("/=") | J("%="))
 
-  // increments and decrements, x++ and ++x, are x += 1 and x -= 1
   val incr =
-    P("++".map("+") | "--".map("-"))
+    P(J("++") | J("--"))
 
   val one = R(Num("1"))
 
-  // simple statements without the semicolon, which are also the headers of for loops;
-  // assignments backtrack if there is no assignment operator after the left hand side, which is then an expression
   val assign =
     Assign(P(postfix ?~ assignop ~ expr))
 
@@ -108,7 +102,7 @@ object Grammar:
     Decl(P(typ ~ (declarator ~+ ",")))
 
   val simple: Parser[Stmt] =
-    P(decl | assign | postincr | preincr | expr.map(ExprStmt))
+    P(decl | assign | postincr | preincr | ExprStmt(expr))
 
   val block =
     Block(P(braces(stmt.*)))
@@ -128,13 +122,18 @@ object Grammar:
   val return_ =
     Return(P("return" ~ expr.? ~ ";"))
 
-  val stmt: Parser[Stmt] =
-    P(
-      block | if_ | while_ | dowhile | for_ | return_ |
-        ("break" ~ ";").map(Break) | ("continue" ~ ";").map(Continue) | ";".map(Empty) | (simple ~ ";")
-    )
+  val break_ =
+    Break("break" ~ ";")
 
-  // array parameters are written a[] or a[n], whose size is ignored
+  val continue_ =
+    Continue("continue" ~ ";")
+
+  val empty =
+    Empty(";")
+
+  val stmt: Parser[Stmt] =
+    P(block | if_ | while_ | dowhile | for_ | return_ | break_ | continue_ | empty | (simple ~ ";"))
+
   val param =
     P(typ ~ id ~ (brackets(expr.?).map(_ => true) | R(false))).map:
       case ((typ, name), true)  => (ArrayType(typ), name)
@@ -143,21 +142,14 @@ object Grammar:
   val params =
     P(parens("void".map(Nil) | (param ~* ",")))
 
-  // functions and global variables share the type and the first name
   val function =
-    P(params ~ (block.map(Some(_)) | ";".map(None)))
+    Function(P(typ ~ id ?~ params ~ (block.map(Some(_)) | ";".map(None))))
 
   val global =
-    P(brackets(expr.?).? ~ ("=" ~ expr).? ~ ("," ~ declarator).* ~ ";")
+    Global(Decl(P(typ ~ (declarator ~+ ",") ~ ";")))
 
   val top: Parser[Top] =
-    P(typ ~ id ~ (function.map(Left(_)) | global.map(Right(_)))).map:
-      case ((typ, name), Left((params, body))) =>
-        Function(typ, name, params, body)
+    P(function | global)
 
-      case ((typ, name), Right(((size, init), rest))) =>
-        Global(Decl(typ, Declarator(name, size, init) :: rest))
-
-  // the whole translation unit at once, such that the global variables modified by functions can be inferred
   val unit =
     P(top.*)

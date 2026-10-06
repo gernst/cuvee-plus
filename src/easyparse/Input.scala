@@ -16,6 +16,9 @@ implicit def S(name: String): Scanner =
 def T(name: String): Parser[String] =
   Parser.Match(name)
 
+def J(name: String): Parser[String] =
+  S(name).map(name)
+
 def P[A](p: => Parser[A])(implicit name: sourcecode.Name): Parser[A] =
   Parser.Recursive(name.value, () => p)
 

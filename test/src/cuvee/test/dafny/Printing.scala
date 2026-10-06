@@ -43,7 +43,7 @@ object Printing extends TestSuite:
       Printer.lines(Iter(Assign(List(x), List(y)), attrs)) ==>
         List("while *", "  invariant x <= y", "{", "  x := y;", "}")
 
-    // the right hand sides are in parentheses if they contain a conjunction
+    // the evolution constraint follows while, the right hand sides need no parentheses
     test("ode"):
       val dom = app(Fun.int.le, zero, x)
       val inv = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
@@ -51,7 +51,7 @@ object Printing extends TestSuite:
       Printer.lines(Ode(t, List(x, y), List(y, app(Fun.int.uminus, x)), True, cuvee.core.Attrs.empty)) ==>
         List("ode t :: x', y' == y, -x;")
       Printer.lines(Ode(t, List(p), List(app(Fun.and, p, q)), dom, inv)) ==>
-        List("ode t :: p' == (p && q) && 0 <= x", "  invariant x <= y;")
+        List("ode t :: p' == p && q while 0 <= x", "  invariant x <= y;")
 
     test("diff"):
       expr(Diff(List(x), x)) ==> "(x :: x)'"
@@ -149,9 +149,9 @@ object Printing extends TestSuite:
       val (u, v) = (Var("u", Sort.int), Var("v", Sort.int))
       val all = Invs(List(sequence, other), List(u, v), Lt.int(u, v))
       Printer.lines(all) ==> List(
-        "all(for a_rather_long_sequence_of_values, another_rather_long_sequence",
-        "    check u, v =>",
-        "      u < v)"
+        "invs(for a_rather_long_sequence_of_values, another_rather_long_sequence",
+        "     check u, v =>",
+        "       u < v)"
       )
 
     // the arguments flow up to the width, aligned after the opening parenthesis

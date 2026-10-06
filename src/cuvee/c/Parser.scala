@@ -112,15 +112,15 @@ class Parser(var state: State):
         val x = temp(ctx, ret)
         (pre :+ core.Call(f, args_, List(x)), x, ret)
 
-      case Unary("-", arg) =>
+      case App("-", List(arg)) =>
         val (pre, arg_) = int(scope, ctx, arg)
         (pre, UMinus.int(arg_), IntType)
 
-      case Unary("!", arg) =>
+      case App("!", List(arg)) =>
         val (pre, arg_) = cond(scope, ctx, arg)
         (pre, Not(arg_), BoolType)
 
-      case Binary(op @ ("&&" | "||"), left, right) =>
+      case App(op @ ("&&" | "||"), List(left, right)) =>
         val (pre1, left_) = cond(scope, ctx, left)
         val (pre2, right_) = cond(scope, ctx, right)
 
@@ -130,7 +130,7 @@ class Parser(var state: State):
         val phi = if op == "&&" then And(left_, right_) else Or(left_, right_)
         (pre1, phi, BoolType)
 
-      case Binary(op @ ("==" | "!="), left, right) =>
+      case App(op @ ("==" | "!="), List(left, right)) =>
         val (pre1, left_, lt) = expr(scope, ctx, left)
         val (pre2, right_, rt) = expr(scope, ctx, right)
 
@@ -141,7 +141,7 @@ class Parser(var state: State):
 
         (pre1 ++ pre2, if op == "==" then eq else Not(eq), BoolType)
 
-      case Binary(op @ ("<" | "<=" | ">" | ">="), left, right) =>
+      case App(op @ ("<" | "<=" | ">" | ">="), List(left, right)) =>
         val (pre1, left_) = int(scope, ctx, left)
         val (pre2, right_) = int(scope, ctx, right)
 
@@ -153,12 +153,15 @@ class Parser(var state: State):
 
         (pre1 ++ pre2, phi, BoolType)
 
-      case Binary(op, left, right) =>
+      case App(op, List(left, right)) =>
         val (pre1, left_) = int(scope, ctx, left)
         val (pre2, right_) = int(scope, ctx, right)
         (pre1 ++ pre2, arith(op, left_, right_), IntType)
 
-      case Cond(test, left, right) =>
+      case Cond(e, None) =>
+        expr(scope, ctx, e)
+
+      case Cond(test, Some((left, right))) =>
         val (pre0, test_) = cond(scope, ctx, test)
         val (pre1, left_, lt) = expr(scope, ctx, left)
         val (pre2, right_, rt) = expr(scope, ctx, right)
@@ -170,8 +173,8 @@ class Parser(var state: State):
         then (pre0, Ite(test_, left_, right_), BoolType)
         else (pre0, Ite(test_, toInt(left_, lt), toInt(right_, rt)), IntType)
 
-      case Unary(op, _) =>
-        Error.raise("unknown operator", op)
+      case App(op, args) =>
+        Error.raise("unknown operator", op, args)
 
   def int(scope: Scope, ctx: Ctx, e: Expr): (List[core.Prog], core.Expr) =
     val (pre, e_, t) = expr(scope, ctx, e)
@@ -255,8 +258,15 @@ class Parser(var state: State):
       case Block(stmts) =>
         List(block(scope, ctx, stmts))
 
+      // expressions without ?: (see Grammar.expr), which are matched against calls below
+      case ExprStmt(Cond(e, None)) =>
+        stmt(scope, ctx, ExprStmt(e))
+
+      case Assign(lhs, op, Cond(rhs, None)) =>
+        stmt(scope, ctx, Assign(lhs, op, rhs))
+
       case Assign(lhs, op, rhs) =>
-        assign(scope, ctx, lhs, op, rhs)
+        assign(scope, ctx, lhs, compound.getOrElse(op, op), rhs)
 
       case ExprStmt(Call("assert", List(phi))) =>
         val (pre, phi_) = cond(scope, ctx, phi)
@@ -365,6 +375,10 @@ class Parser(var state: State):
       case _                        => prog
 
   // assignments x op= e and a[i] op= e, where arrays are values that are updated as a whole
+  // the arithmetic operators of compound assignments x += e and of increments x++ and decrements x--,
+  // which are x = x + e, x = x + 1, and x = x - 1
+  val compound = Map("+=" -> "+", "-=" -> "-", "*=" -> "*", "/=" -> "/", "%=" -> "%", "++" -> "+", "--" -> "-")
+
   def assign(scope: Scope, ctx: Ctx, lhs: Expr, op: String, rhs: Expr): List[core.Prog] =
     lhs match
       // nondeterministic values and results of calls are assigned directly, without temporary variables
@@ -457,9 +471,8 @@ class Parser(var state: State):
       e match
         case Call(f, args)        => args.toSet.flatMap(calls) + f
         case Index(base, index)   => calls(base) ++ calls(index)
-        case Unary(_, arg)        => calls(arg)
-        case Binary(_, left, right) => calls(left) ++ calls(right)
-        case Cond(test, left, right) => calls(test) ++ calls(left) ++ calls(right)
+        case App(_, args)         => args.toSet.flatMap(calls)
+        case Cond(test, branches) => calls(test) ++ branches.toSet.flatMap((left, right) => calls(left) ++ calls(right))
         case _                    => Set()
 
     def global(x: String) =

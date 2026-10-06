@@ -32,13 +32,14 @@ kw  = "type" | "data" | "and" | "const" | "function" | "axiom" | "lemma" | "var"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "if" | "then" | "else" | "while" | "break" | "continue" | "return"
     | "assert" | "assume" | "havoc" | "call" | "forall" | "exists"
-    | "(" | ")" | "[" | "]" | "::" | [;,:{}|] | "{:" | ":=" | "=" | "⌊" | "⌋"
+    | "trace" | "map" | "all" | "for" | "do" | "yield" | "check"
+    | "(" | ")" | "[" | "]" | "::" | [;,:{}|] | "{:" | ":=" | "=" | "=>" | "<" | ">" | "*" | "⌊" | "⌋"
 
 // identifiers as in Boogie, together with the subscripts of indexed names
 idchar = [a-zA-Z'~#$\^_.?`\\⁰-⁹₀-₉]
 sym = {idchar} ({idchar} | [0-9])*
-    | [+\-*/] | "&&" | "||" | "==>" | "<==>" | "!" | "=>"
-    | "==" | "!=" | "<=" | "<" | ">" | ">="
+    | [+\-/] | "&&" | "||" | "==>" | "<==>" | "!"
+    | "==" | "!=" | "<=" | ">="
 
 %%
 

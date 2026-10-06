@@ -9,7 +9,7 @@ method ball(g: real, h: real) returns (x: real, v: real)
   while *
     invariant 0.0 <= x && 2.0 * g * x + v * v <= 2.0 * g * h
   {
-    ode t :: x', v' == v, -g && 0.0 <= x
+    ode t :: x', v' == v, -g while 0.0 <= x
       invariant 2.0 * g * x + v * v <= 2.0 * g * h;
     if x == 0.0 {
       v := -v;

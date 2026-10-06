@@ -545,7 +545,7 @@ object Printer extends cuvee.pipe.Printer:
     val updates_ =
       updates match
         case List(Upd(True, rhs)) =>
-          doc(rhs)
+          doc(rhs, (lowest, None))
 
         case _ =>
           Group(commas(for Upd(cond, rhs) <- updates yield text("if") +:+ doc(cond) +:+ text("then") +:+ doc(rhs)))

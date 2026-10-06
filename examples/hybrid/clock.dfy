@@ -11,6 +11,6 @@ method clock() returns (x: real)
   ensures history.events == [] || exists s: real :: 0.0 < s <= 2.0 && history.events == [time(s)]
 {
   x := 0.0;
-  ode t :: x' == 1.0 && x <= 2.0
+  ode t :: x' == 1.0 while x <= 2.0
     invariant x == t;
 }

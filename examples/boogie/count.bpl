@@ -25,10 +25,10 @@ procedure twice(n: int) returns (k: int)
   k := i + j;
 }
 
-procedure check(n: int);
+procedure validate(n: int);
   requires 0 <= n;
 
 procedure caller()
 {
-  call check(1);
+  call validate(1);
 }

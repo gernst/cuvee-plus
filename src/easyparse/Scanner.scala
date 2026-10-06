@@ -17,6 +17,15 @@ trait Scanner:
   infix def ?~[B](that: Parser[B]): Parser[B] =
     Scanner.SeqParser(this, that, strict = false)
 
+  infix def |(that: Scanner): Scanner =
+    Scanner.Choice(this, that)
+
+  def * : Scanner =
+    Scanner.Discard(Parser.Repeat(this.map(()), 0, Int.MaxValue))
+
+  def + : Scanner =
+    Scanner.Discard(Parser.Repeat(this.map(()), 1, Int.MaxValue))
+
 object Scanner:
   case object Accept extends Scanner:
     def scan(in: Input, cm: Boolean) =

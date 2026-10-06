@@ -393,11 +393,11 @@ object Printer extends cuvee.pipe.Printer:
       case Iter(body, attrs) =>
         header(text("while") ++ attributes(attrs) +:+ text("*"), attrs, Some(block(body)))
 
-      // the right hand sides bind tighter than the conjunction with the evolution constraint
+      // the evolution constraint follows the keyword while
       case Ode(time, xs, rhs, dom, attrs) =>
         val lhs_ = text("ode") +:+ text(name(time.name)) +:+ text("::") +:+ commas(xs.map(x => text(name(x.name) + "'")))
-        val rhs_ = commas(rhs.map(doc(_, (Grammar.infix_ops("&&")._2, None))))
-        val dom_ = if dom == True then Nil else List(line ++ text("&&") +:+ doc(dom))
+        val rhs_ = commas(rhs.map(doc(_)))
+        val dom_ = if dom == True then Nil else List(line ++ text("while") +:+ doc(dom))
         val ode = Group(lhs_ +:+ text("==") ++ Nest(2, line ++ rhs_ ++ concat(dom_)))
         header(ode, attrs, None) ++ text(";")
 
@@ -659,13 +659,14 @@ object Printer extends cuvee.pipe.Printer:
     Group(Align(commas(deps.map(doc(_)))))
 
   // a combinator, whose head is followed by the dependencies after for, the keyword with the bound variables,
-  // and the update, a single expression or guarded cases, if guard then result, ...;
+  // and the update, a single expression or guarded cases, if guard then result, ...,
+  // where a single if-then-else expression is parenthesized, since an if begins a guard;
   // if it does not fit, the keyword goes below for and the update below the keyword, indented
   def combinator(head: Doc, deps: List[Expr], keyword: String, bound: List[Var], updates: List[Upd]): Doc =
     val updates_ =
       updates match
         case List(Upd(True, rhs)) =>
-          doc(rhs)
+          doc(rhs, (lowest, None))
 
         case _ =>
           Group(commas(for Upd(cond, rhs) <- updates yield text("if") +:+ doc(cond) +:+ text("then") +:+ doc(rhs)))
@@ -846,10 +847,10 @@ object Printer extends cuvee.pipe.Printer:
         combinator(text("trace(") ++ doc(init) ++ text(",") ++ space, deps, "do", acc :: bound, updates)
 
       case Maps(deps, bound, updates) =>
-        combinator(text("map("), deps, "yield", bound, updates)
+        combinator(text("maps("), deps, "yield", bound, updates)
 
       case Invs(deps, bound, body) =>
-        combinator(text("all("), deps, "check", bound, List(Upd(True, body)))
+        combinator(text("invs("), deps, "check", bound, List(Upd(True, body)))
 
       case Old(arg) =>
         call("old", List(doc(arg)))

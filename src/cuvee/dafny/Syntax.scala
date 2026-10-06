@@ -17,47 +17,43 @@ sealed trait Prog
 sealed trait Cmd
 
 case class Sort(con: String, args: List[Type]) extends Type
-// tuple types (A, B, ...) with at least two components
 case class Product(args: List[Type]) extends Type
 
 object Sort extends ((String, List[Type]) => Type)
 object Product extends (List[Type] => Type)
 
-object True extends App("true", Nil, Nil)
+object True extends App("true", Nil)
 
 sealed trait Access
-case class Array(index: Expr, value: Option[Expr]) extends Access
-// slices of sequences s[i..j], where both bounds are optional
-case class Slice(from: Option[Expr], to: Option[Expr]) extends Access
+case class Array(index: Option[Expr], suffix: Option[Suffix]) extends Access
 case class Member(fun: String, args: List[Expr]) extends Access
+case class As(typ: Type) extends Access
 
-object Array extends ((Expr, Option[Expr]) => Access)
-object Slice extends ((Option[Expr], Option[Expr]) => Access)
+object Array extends ((Option[Expr], Option[Suffix]) => Access)
+
+sealed trait Suffix
+case class Store(value: Expr) extends Suffix
+case class Upto(to: Option[Expr]) extends Suffix
+
+object Store extends (Expr => Suffix)
+object Upto extends (Option[Expr] => Suffix)
 object Member extends ((String, List[Expr]) => Access)
+object As extends (Type => Access)
 
 case class Num(value: String) extends Expr
-// decimal literals of type real, e.g. 1.5
 case class Dec(value: String) extends Expr
 case class Str(value: String) extends Expr
 case class Tuple(args: List[Expr]) extends Expr
-// sequence literals [a, b, c] and the length |s| of a sequence
 case class SeqLit(args: List[Expr]) extends Expr
 case class Len(arg: Expr) extends Expr
-// set literals {a, b, c} and multiset literals multiset{a, b, c}
 case class SetLit(args: List[Expr]) extends Expr
 case class BagLit(args: List[Expr]) extends Expr
-// map literals map[k := v, ...]
 case class MapLit(args: List[(Expr, Expr)]) extends Expr
-// all but the last element ⌊X⌋ of a trace
 case class Butlast(arg: Expr) extends Expr
-// the derivative (x, y :: e)' of e with respect to x and y
 case class Diff(xs: List[String], expr: Expr) extends Expr
-case class App(fun: String, args: List[Expr], access: List[Access]) extends Expr
+case class App(fun: String, args: List[Expr]) extends Expr
 case class Ite(test: Expr, left: Expr, right: Expr) extends Expr
-// type annotations e as T, testers e.C? are members whose name ends with ?
-case class As(expr: Expr, typ: Type) extends Expr
-// indexing and slices of expressions other than names and calls, e.g. (if b then s else t)[0]
-case class Access_(base: Expr, access: List[Access]) extends Expr
+case class Inner(base: Expr, access: List[Access]) extends Expr
 case class Ex(bound: List[(String, Type)], body: Expr) extends Expr
 case class All(bound: List[(String, Type)], body: Expr) extends Expr
 case class Let(bound: List[(String, Type)], args: List[Expr], body: Expr) extends Expr
@@ -73,37 +69,28 @@ object BagLit extends (List[Expr] => Expr)
 object MapLit extends (List[(Expr, Expr)] => Expr)
 object Butlast extends (Expr => Expr)
 object Diff extends ((List[String], Expr) => Expr)
-object App extends ((String, List[Expr], List[Access]) => Expr)
+object App extends ((String, List[Expr]) => Expr)
 
-// the combinators of trace equation systems, trace(init, for deps do acc, bound => update),
-// map(for deps yield bound => update), and all(for deps check bound => body),
-// where the update are guarded cases if guard then result, ..., and the body of all is a single case
-// chained comparisons x < y <= z, which are the conjunction x < y && y <= z, with the translated operators (see Grammar.chain)
-case class Chain(ops: List[String], args: List[Expr]) extends Expr
 case class Combinator(kind: String, init: Option[Expr], deps: List[Expr], bound: List[String], update: List[(Expr, Expr)]) extends Expr
+object Combinator extends ((String, Option[Expr], List[Expr], List[String], List[(Expr, Expr)]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)
-object As extends ((Expr, Type) => Expr)
-object Access_ extends ((Expr, List[Access]) => Expr)
+object Inner extends ((Expr, List[Access]) => Expr)
 object Ex extends ((List[(String, Type)], Expr) => Expr)
 object All extends ((List[(String, Type)], Expr) => Expr)
 object Let extends ((List[(String, Type)], List[Expr], Expr) => Expr)
 
-case object Skip extends Prog
 case object Break extends Prog
 case object Continue extends Prog
 case object Return extends Prog
 case class Assume(phi: Expr) extends Prog
 case class Assert(phi: Expr) extends Prog
 case class Assign(lhs: List[String], rhs: List[Expr]) extends Prog
+case object Skip extends Prog
 case class Block(locals: List[Local], progs: List[Prog]) extends Prog
-// the test is None for a nondeterministic choice, if * { left } else { right }
 case class If(test: Option[Expr], left: Prog, right: Prog) extends Prog
-// the test is None for nondeterministic iterations, while * { body }
 case class While(test: Option[Expr], mod: List[List[String]], invs: List[Expr], dec: List[List[Expr]], body: Prog) extends Prog
-// differential equations ode t :: x', y' == e, f && dom invariant ..., the variables are without prime
 case class Ode(time: String, xs: List[String], rhs: List[Expr], dom: Option[Expr], invs: List[Expr]) extends Prog
 
-// local variable declarations with optional initial values, var x: int, y: int := 1, 2;
 case class Local(vars: List[(String, Type)], init: Option[List[Expr]])
 object Local extends ((List[(String, Type)], Option[List[Expr]]) => Local)
 
@@ -115,7 +102,6 @@ object If extends ((Option[Expr], Prog, Prog) => Prog)
 object While extends ((Option[Expr], List[List[String]], List[Expr], List[List[Expr]], Prog) => Prog)
 object Ode extends ((String, List[String], List[Expr], Option[Expr], List[Expr]) => Prog)
 
-// parallel composition of calls, parallel { p(a); x := q(b); }
 case class Par(calls: List[Prog]) extends Prog
 
 object Par extends (List[Prog] => Prog)
@@ -126,20 +112,13 @@ case class Constr(name: String, sels: List[Sel])
 object Sel extends ((String, Type) => Sel)
 object Constr extends ((String, List[Sel]) => Constr)
 
-// axioms and lemmas with attributes, e.g. axiom {:rw} e for rewrite rules
-// with type parameters, lemma <a> {:rw} forall x: a :: φ
 case class Axiom(params: List[String], attrs: List[String], phi: Expr) extends Cmd
 case class Lemma(params: List[String], attrs: List[String], phi: Expr) extends Cmd
-// formulas to be proved, which are not assumed afterwards, unlike lemmas, not Dafny
 case class Goal(params: List[String], attrs: List[String], phi: Expr) extends Cmd
-// check-sat, which is not Dafny
 case object Check extends Cmd
-// global variables, var x: int; which are not Dafny
 case class VarDef(vars: List[(String, Type)]) extends Cmd
-// declarations with attributes after the keyword, e.g. type {:dfy} int, see the preludes
 case class SortDef(attrs: List[String], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
 case class DataDef(attrs: List[String], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
-// consecutive datatypes, which may refer to each other, as Dafny resolves all declarations together
 case class DataDefs(datas: List[DataDef]) extends Cmd
 
 case class FunDef(
@@ -154,7 +133,6 @@ case class FunDef(
     body: Option[Expr]
 ) extends Cmd
 
-// methods, with assumption-commitment contracts for parallel composition
 case class MethodDef(
     name: String,
     params: List[String],
@@ -175,6 +153,7 @@ object Goal extends ((List[String], List[String], Expr) => Cmd)
 object VarDef extends (List[(String, Type)] => Cmd)
 object SortDef extends ((List[String], String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
 object DataDef extends ((List[String], String, List[String], List[Constr], Option[List[Cmd]]) => DataDef)
+object DataDefs extends (List[DataDef] => Cmd)
 object FunDef extends ((List[String], String, List[String], List[(String, Type)], Type, List[Expr], List[Expr], List[List[Expr]], Option[Expr]) => Cmd)
 
 object MethodDef

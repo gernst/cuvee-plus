@@ -140,8 +140,7 @@ object Datatypes extends TestSuite:
     test("wrong annotation"):
       errors(list + "function f(): bool { 0 as bool }") ==> List("type mismatch")
 
-// in axioms, lemmas, and goals, if φ then ψ without else is φ ==> ψ with the lowest precedence,
-// also below the quantifiers at the top, inside of expressions, if-then-else must have an else branch
+// if φ then ψ without else is φ ==> ψ, also inside of expressions, and else belongs to the innermost if
 object Conditionals extends TestSuite:
   import cuvee.core.{Imp, Ite, All}
 
@@ -167,8 +166,14 @@ object Conditionals extends TestSuite:
     test("else"):
       val Ite(_, _, _) = formula("axiom if p(0) then q(0) else q(1)"): @unchecked
 
-    test("expressions need else"):
-      errors("axiom (if 1 < 2 then true) == true") ==> List("parse error")
+    test("inside expressions"):
+      val cuvee.core.Eq(Imp(_, _), _) = formula("axiom (if p(0) then q(0)) == q(1)"): @unchecked
+
+    // the cases of updates are guarded, if-then-else expressions need parentheses there
+    test("updates have no else"):
+      val update = "type Trace<a>\nfunction f(J: seq<int>): bool { trace(0, for J do s, j => %s) == trace(0, for J do s, j => s) }"
+      errors(update.format("if j < 0 then s else s + 1")) ==> List("parse error")
+      errors(update.format("(if j < 0 then s else s + 1)")) ==> Nil
 
 // chained comparisons x < y <= z are the conjunctions x < y && y <= z, which must not mix directions,
 // parenthesized comparisons do not chain

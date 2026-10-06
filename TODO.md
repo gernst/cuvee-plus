@@ -102,7 +102,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   encoded into first-order logic (section 5.3 of the paper) for a solver. No
   differential equations or parallel composition; loop invariants are
   ignored; paths grow exponentially with the branches of a body.
-- Counting `a[i] == v` over `⌊I⌋` yields `counts(0, v, map(for ⌊I⌋ yield i => a[i]))`;
+- Counting `a[i] == v` over `⌊I⌋` yields `counts(0, v, maps(for ⌊I⌋ yield i => a[i]))`;
   there are no lemmas that relate such maps to `selects` or to `count` on
   sequences.
 

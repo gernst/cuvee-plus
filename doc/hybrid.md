@@ -21,26 +21,24 @@ and nothing for `t == 0`. `history.tick(t)` extends the history by
 | Construct | Dafny frontend | dL |
 |---|---|---|
 | derivative | `(x, v :: 2.0 * g * x + v * v)'` | `(2 g x + v²)'` |
-| differential equation | `ode t :: x', v' == v, -g && 0.0 <= x invariant φ;` | `{t' = 1, x' = v, v' = -g & 0 ≤ x}` |
+| differential equation | `ode t :: x', v' == v, -g while 0.0 <= x invariant φ;` | `{t' = 1, x' = v, v' = -g & 0 ≤ x}` |
 | iteration | `while * invariant φ { body }` | `body*` |
 | parallel composition | `parallel { x := p(a); q(b); }` | |
 | contracts | `assumes φ` and `commits ψ` after `ensures` | |
 
 - A differential equation is a statement: the keyword `ode`, the time
   variable, `::`, the primed variables, `==`, the right-hand sides in the
-  same order, optionally `&&` and the evolution constraint, then the
+  same order, optionally `while` and the evolution constraint, then the
   differential invariants, and a semicolon, e.g.
 
   ```dafny
-  ode t :: x', v' == v, -g && 0.0 <= x
+  ode t :: x', v' == v, -g while 0.0 <= x
     invariant 2.0 * g * x + v * v <= 2.0 * g * h;
   ```
 
   The time `t` is bound by `ode` on `real` (it is not declared), and
   available in the right-hand sides, the constraint, and the invariants. The
-  right-hand sides bind tighter than `&&`, so the constraint is not part of
-  the last one. The keyword avoids backtracking against assignments and
-  calls.
+  keyword `ode` avoids backtracking against assignments and calls.
 - `while *` is a loop with a nondeterministic number of iterations; `if *`
   is a nondeterministic choice.
 - In a derivative `(xs :: e)'`, the variables `xs` are those that `e` is

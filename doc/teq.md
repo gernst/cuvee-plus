@@ -45,8 +45,8 @@ After section 3 of the paper:
 | Combinator | Dafny and Boogie | SMT-LIB |
 |---|---|---|
 | `Trace` | `trace(e, for Y, Z do x, y, z => u)` | `(trace (x e) ((y Y) (z Z)) u)` |
-| `Maps` | `map(for Y yield y => u)` | `(map ((y Y)) u)` |
-| `Invs` | `all(for Y check y => φ)` | `(all ((y Y)) φ)` |
+| `Maps` | `maps(for Y yield y => u)` (Boogie: `map(...)`) | `(map ((y Y)) u)` |
+| `Invs` | `invs(for Y check y => φ)` (Boogie: `all(...)`) | `(all ((y Y)) φ)` |
 | update | `if φ₁ then e₁, if φ₂ then e₂` | `(cases (φ₁ e₁) (φ₂ e₂))` |
 
 `⌊X⌋` is `butlast(X)` in Dafny and Boogie.

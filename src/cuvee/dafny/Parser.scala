@@ -303,6 +303,9 @@ class Parser(var state: State):
 
   def resolve(scope: Scope, typ: Type): core.Type =
     typ match
+      case Product(List(typ)) =>
+        resolve(scope, typ)
+
       // the tuple types are declared in the prelude
       case Product(args) =>
         val args_ = args.map(resolve(scope, _))
@@ -327,19 +330,19 @@ class Parser(var state: State):
         base
 
       // arrays and sequences, resolved by overloading (see core.Overload)
-      case Array(index, None) :: rest =>
+      case Array(Some(index), None) :: rest =>
         val index_ = resolve(scope, index)
         val base_ = state.exprs.app("select", List(base, index_))
         resolve(scope, base_, rest)
 
-      case Array(index, Some(value)) :: rest =>
+      case Array(Some(index), Some(Store(value))) :: rest =>
         val index_ = resolve(scope, index)
         val value_ = resolve(scope, value)
         val base_ = state.exprs.app("store", List(base, index_, value_))
         resolve(scope, base_, rest)
 
       // s[i..j] is the subsequence of length j - i from offset i, the bounds default to 0 and |s|
-      case Slice(from, to) :: rest =>
+      case Array(from, Some(Upto(to))) :: rest =>
         val from_ = from.map(resolve(scope, _)).getOrElse(state.exprs.num(0))
         val to_ = to.map(resolve(scope, _)).getOrElse(state.exprs.app(core.Fun.seq.len, List(base)))
         val len_ = from match
@@ -347,6 +350,13 @@ class Parser(var state: State):
           case Some(_) => state.exprs.app("-", List(to_, from_))
         val base_ = state.exprs.app(core.Fun.seq.extract, List(base, from_, len_))
         resolve(scope, base_, rest)
+
+      case Array(None, _) :: _ =>
+        Error.raise("missing index", base)
+
+      case As(typ) :: rest =>
+        val typ_ = resolve(scope, typ)
+        resolve(scope, state.exprs.as(base, typ_), rest)
 
       // the keys and values m.Keys and m.Values of maps, which are sets
       case Member("Keys", Nil) :: rest if isMap(base) =>
@@ -387,6 +397,19 @@ class Parser(var state: State):
     expr.typ match
       case core.Sort(con, _) => con == core.Con.map
       case _                 => false
+
+  // the comparisons that can be chained, with the translated operators
+  val chainable = Grammar.chainable.map(op => Grammar.translate.getOrElse(op, op))
+
+  // the operators and operands of a chain, which associates to the left
+  def chain(expr: Expr): (List[String], List[Expr]) =
+    expr match
+      case App(op, List(left, right)) if chainable(op) =>
+        val (ops, args) = chain(left)
+        (ops :+ op, args :+ right)
+
+      case _ =>
+        (Nil, List(expr))
 
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match
@@ -452,28 +475,30 @@ class Parser(var state: State):
           yield state.exprs.app(core.Fun.map.singleton, List(resolve(scope, key), resolve(scope, value)))
         singletons_.reduceLeft((left, right) => state.exprs.app(core.Fun.map.update, List(left, right)))
 
-      // chained comparisons x < y <= z are the conjunction x < y && y <= z, which must not mix directions, as in Dafny
-      case Chain(ops, args) =>
+      // chained comparisons x < y <= z are the conjunction x < y && y <= z, which must not mix directions, as in Dafny;
+      // parenthesized comparisons are tuples, which do not chain, e.g. (x == y) == b
+      case App(op, List(App(op_, List(_, _)), _)) if chainable(op) && chainable(op_) =>
+        val (ops, args) = chain(expr)
         Error.report("chained comparisons in different directions", ops):
           require(!(ops.exists(Set("<", "<=")) && ops.exists(Set(">", ">="))))
 
         val pairs =
           for ((op, left), right) <- ops zip args zip args.tail
-          yield App(op, List(left, right), Nil)
-        resolve(scope, pairs.reduceLeft((phi, psi) => App("and", List(phi, psi), Nil)))
+          yield App(op, List(left, right))
+        resolve(scope, pairs.reduceLeft((phi, psi) => App("and", List(phi, psi))))
 
       case Butlast(arg) =>
         val arg_ = resolve(scope, arg)
         state.exprs.app(core.Fun.trace.butlast, List(arg_))
 
       // membership in sequences, sets, and multisets, resolved by overloading (see core.Overload)
-      case App("in", List(elem, coll), Nil) =>
+      case App("in", List(elem, coll)) =>
         val elem_ = resolve(scope, elem)
         val coll_ = resolve(scope, coll)
         state.exprs.app(core.Overload.member, List(elem_, coll_))
 
-      case App("!in", args, Nil) =>
-        val expr_ = App("not", List(App("in", args, Nil)), Nil)
+      case App("!in", args) =>
+        val expr_ = App("not", List(App("in", args)))
         resolve(scope, expr_)
 
       // the combinators of trace equation systems, whose bound variables are typed by the dependencies
@@ -484,27 +509,27 @@ class Parser(var state: State):
           val scope_ = scope ++ (acc_ :: bound_)
           update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result)))
 
-      case Combinator("map", None, deps, bound, update) =>
+      case Combinator("maps", None, deps, bound, update) =>
         val deps_ = deps.map(resolve(scope, _))
         state.exprs.map(deps_, bound.map(util.Name(_, None))): bound_ =>
           val scope_ = scope ++ bound_
           update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result)))
 
-      case Combinator("all", None, deps, bound, List((_, body))) =>
+      case Combinator("invs", None, deps, bound, List((_, body))) =>
         val deps_ = deps.map(resolve(scope, _))
         state.exprs.all(deps_, bound.map(util.Name(_, None))): bound_ =>
           resolve(scope ++ bound_, body)
 
       // the value at the entry of the method
-      case App("old", List(arg), Nil) =>
+      case App("old", List(arg)) =>
         state.exprs.old(resolve(scope, arg))
 
       // unary + is the identity
-      case App("+", List(arg), Nil) =>
+      case App("+", List(arg)) =>
         resolve(scope, arg)
 
-      case App("!=", args, access) =>
-        val expr_ = App("not", List(App("=", args, Nil)), access)
+      case App("!=", args) =>
+        val expr_ = App("not", List(App("=", args)))
         resolve(scope, expr_)
 
       case Diff(xs, arg) =>
@@ -516,23 +541,19 @@ class Parser(var state: State):
         val arg_ = resolve(scope, arg)
         state.exprs.diff(xs_, arg_)
 
-      case App(name, Nil, access) if scope.vars.contains(name) =>
-        val base_ = scope.vars(name)
-        resolve(scope, base_, access)
+      case App(name, Nil) if scope.vars.contains(name) =>
+        scope.vars(name)
 
-      case App(fun, args, access) if state.funs.contains((fun, args.length)) =>
+      case App(fun, args) if state.funs.contains((fun, args.length)) =>
         val args_ = args.map(resolve(scope, _))
-        val base_ = state.exprs.app(fun, args_)
-        resolve(scope, base_, access)
+        state.exprs.app(fun, args_)
 
-      case Access_(base, access) =>
+      case Inner(base, access) =>
         val base_ = resolve(scope, base)
         resolve(scope, base_, access)
 
-      case As(arg, typ) =>
-        val arg_ = resolve(scope, arg)
-        val typ_ = resolve(scope, typ)
-        state.exprs.as(arg_, typ_)
+      case Ite(test, left, True) =>
+        resolve(scope, App("=>", List(test, left)))
 
       case Ite(test, left, right) =>
         val test_ = resolve(scope, test)
@@ -589,7 +610,7 @@ class Parser(var state: State):
         state.progs.assert(phi_)
 
       // calls to top-level methods, with or without results
-      case Assign(lhs, List(App(name, args, Nil))) if state.procs.contains(name) =>
+      case Assign(lhs, List(Inner(App(name, args), Nil))) if state.procs.contains(name) =>
         val unknown = lhs.filterNot(scope.vars.contains(_))
         Error.report("unknown local variables", scope, unknown, lhs):
           require(unknown.isEmpty)
@@ -599,7 +620,7 @@ class Parser(var state: State):
         state.progs.call(name, args_, lhs_)
 
       // all method calls must be top-level on variables
-      case Assign(lhs, List(App(base, Nil, List(Member(fun, args))))) =>
+      case Assign(lhs, List(Inner(App(base, Nil), List(Member(fun, args))))) =>
         val unknown = (base :: lhs).filterNot(scope.vars.contains(_))
         Error.report("unknown local variables", scope, unknown):
           require(unknown.isEmpty)

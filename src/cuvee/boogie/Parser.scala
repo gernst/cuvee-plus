@@ -90,7 +90,7 @@ class Parser(var state: State):
         val scope = Scope.empty
         val attrs_ = attributes(scope, attrs)
 
-        for (name, typ) <- consts
+        for (name, typ) <- flatten(consts)
         yield
           val typ_ = resolve(scope, typ)
           state = state.declare(name, Nil, Nil, typ_, attrs_)
@@ -100,7 +100,7 @@ class Parser(var state: State):
         val scope = Scope.empty
         val attrs_ = attributes(scope, attrs)
 
-        for (name, typ) <- vars
+        for (name, typ) <- flatten(vars)
         yield
           val typ_ = resolve(scope, typ)
           state = state.declare(name, typ_, attrs_)
@@ -113,7 +113,7 @@ class Parser(var state: State):
         val params_ = params.map(resolve(scope, _))
         val scope_ = scope ++ params_
 
-        val formals_ = formals.map(resolve(scope_, _))
+        val formals_ = flatten(formals).map(resolve(scope_, _))
         val typ_ = resolve(scope_, typ)
         val scope__ = scope_ ++ formals_
 
@@ -142,8 +142,8 @@ class Parser(var state: State):
         val params_ = params.map(resolve(scope, _))
         val scope_ = scope ++ params_
 
-        val formals_ = formals.map(resolve(scope_, _))
-        val rets_ = rets.map(resolve(scope_, _))
+        val formals_ = flatten(formals).map(resolve(scope_, _))
+        val rets_ = flatten(rets).map(resolve(scope_, _))
 
         val globals = state.globals
         val scope__ = scope_ ++ globals ++ formals_ ++ rets_
@@ -268,6 +268,13 @@ class Parser(var state: State):
         val base_ = state.exprs.app("store", List(base, index_, value_))
         resolve(scope, base_, rest)
 
+  // groups of variables with a common type, x, y: int, b: bool
+  def flatten(groups: Typed): List[(String, Type)] =
+    for
+      (xs, typ) <- groups
+      x <- xs
+    yield (x, typ)
+
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match
       case Dec(value) =>
@@ -280,8 +287,8 @@ class Parser(var state: State):
       case Str(value) =>
         state.exprs.str(util.Strings.unescape(value))
 
-      case App("!=", args, access) =>
-        val expr_ = App("not", List(App("=", args, Nil)), access)
+      case App("!=", args) =>
+        val expr_ = App("not", List(App("=", args)))
         resolve(scope, expr_)
 
       // the combinators of trace equation systems, whose bound variables are typed by the dependencies
@@ -304,17 +311,18 @@ class Parser(var state: State):
           resolve(scope ++ bound_, body)
 
       // the value at the entry of the procedure
-      case App("old", List(arg), access) =>
-        val base_ = state.exprs.old(resolve(scope, arg))
-        resolve(scope, base_, access)
+      case App("old", List(arg)) =>
+        state.exprs.old(resolve(scope, arg))
 
-      case App(name, Nil, access) if scope.vars.contains(name) =>
-        val base_ = scope.vars(name)
-        resolve(scope, base_, access)
+      case App(name, Nil) if scope.vars.contains(name) =>
+        scope.vars(name)
 
-      case App(fun, args, access) if state.funs.contains((fun, args.length)) =>
+      case App(fun, args) if state.funs.contains((fun, args.length)) =>
         val args_ = args.map(resolve(scope, _))
-        val base_ = state.exprs.app(fun, args_)
+        state.exprs.app(fun, args_)
+
+      case Inner(base, access) =>
+        val base_ = resolve(scope, base)
         resolve(scope, base_, access)
 
       case Butlast(arg) =>
@@ -329,13 +337,13 @@ class Parser(var state: State):
 
       // triggers are ignored
       case Ex(bound, triggers, body) =>
-        val bound_ = bound.map(resolve(scope, _))
+        val bound_ = flatten(bound).map(resolve(scope, _))
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
         state.exprs.ex(bound_, body_)
 
       case All(bound, triggers, body) =>
-        val bound_ = bound.map(resolve(scope, _))
+        val bound_ = flatten(bound).map(resolve(scope, _))
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
         state.exprs.all(bound_, body_)
@@ -409,7 +417,7 @@ class Parser(var state: State):
         state.progs.call(name, args_, lhs_)
 
       case Block(locals, progs) =>
-        val locals_ = locals.map(resolve(scope, _))
+        val locals_ = locals.flatMap(local => flatten(local.vars)).map(resolve(scope, _))
         val scope_ = scope ++ locals_
         val progs_ = progs.map(resolve(scope_, _))
         state.progs.block(locals_, progs_)

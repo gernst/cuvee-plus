@@ -7,7 +7,6 @@ object Grammar:
   import easyparse._
   import Brackets._
 
-  // prefix operators bind tighter than all infix operators, as in Boogie
   val prefix_ops = Map(
     "-" -> 8,
     "!" -> 8
@@ -15,9 +14,6 @@ object Grammar:
 
   val postfix_ops = Map[String, Int]()
 
-  // Boogie puts && and || on the same level and rejects mixing them without parentheses,
-  // here && binds tighter as in Dafny, which accepts more programs;
-  // reverse implication <== is not supported
   val infix_ops = Map(
     "<==>" -> (Assoc.Left, 0),
     "==>" -> (Assoc.Right, 1),
@@ -53,14 +49,11 @@ object Grammar:
   val avoid =
     translate.values.toSet
 
-  // trailing subscripts denote the index of a name, e.g. x₀ is x$0, which is the internal form of indexed names,
-  // see util.Name, such that names print and parse back the same
   val subscripted = "(.+?)([₀-₉]+)".r
 
   def index(name: String) =
     name match
       case subscripted(base, digits) =>
-        // digits.map would convert the string to a scanner, see easyparse
         val index = digits.toSeq.map(Name.subscripts.indexOf(_)).mkString
         Name(base, Some(index.toInt)).indexed
 
@@ -79,30 +72,22 @@ object Grammar:
   val dec = T("dec")
   val str = T("str")
 
-  val id = Sym(sym)
+  val op = P(sym | J("<") | J(">") | J("*"))
+  val id = Sym(op)
 
   val nil = R(Nil)
   val none = R(None)
+  val true_ = R(True: Expr)
+  val skip = R(Skip)
 
   def some[A](p: Parser[A]) =
     p.map { Some(_) }
 
-  // symbols that are not keywords, e.g. < and > of type parameters
-  def op(name: String) =
-    id.filter(_ == name).asScanner
-
-  val la = op("<")
-  val ra = op(">")
+  def list[A](p: Parser[A]) =
+    p.map { List(_) }
 
   def angle[A](p: Parser[A]) =
-    la ~ p ~ ra
-
-  // groups of variables with a common type, x, y: int, b: bool
-  def flatten(groups: List[(List[String], Type)]) =
-    for
-      (xs, typ) <- groups;
-      x <- xs
-    yield (x, typ)
+    "<" ~ p ~ ">"
 
   val ids =
     P(id ~+ ",")
@@ -119,7 +104,6 @@ object Grammar:
   val types =
     P(typ ~+ ",")
 
-  // type arguments are in angle brackets, e.g. List<int>, unlike in Boogie
   val sort =
     Sort(P(id ~ (angle(types) | nil)))
 
@@ -127,7 +111,7 @@ object Grammar:
     P(array | parens(typ) | sort)
 
   val typed =
-    P((ids ~ ":" ~ typ) ~+ ",").map(flatten)
+    P((ids ~ ":" ~ typ) ~+ ",")
 
   val formals =
     P(parens(typed | nil))
@@ -138,12 +122,11 @@ object Grammar:
   val lit =
     P(Num(num) | Dec(dec) | Str(str))
 
-  // map selection and update, a[i] and a[i := v]
   val access =
     Access(P(brackets(expr ~ (":=" ~ expr).?)))
 
   val app =
-    App(P(id ~ (args | nil) ~ access.*))
+    App(P(id ~ (args | nil)))
 
   val trigger =
     P(braces(exprs))
@@ -157,52 +140,41 @@ object Grammar:
   val exists =
     Ex(P("exists" ~ binding))
 
-  // quantifiers are always in parentheses
   val parenthesized =
     P("(" ~ (forall | exists | expr) ~ ")")
 
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ "else" ~ expr))
 
-  def word(name: String) =
-    id.filter(_ == name)
-
-  val arrow = sym.filter(_ == "=>").asScanner
-
-  // the cases of an update, if guard then result, ..., which backtrack if followed by else,
-  // which is then an if-then-else expression, an update with a single case is just its result;
-  // the update ends the combinator, hence the closing parenthesis
   val guarded =
-    P(("if" ?~ expr ?~ "then") ?~ expr)
+    P(("if" ~ expr ~ "then" ~ expr) | (true_ ~ expr))
 
   val update: Parser[List[(Expr, Expr)]] =
-    P(((guarded ~+ ",") ?~ ")") | (expr.map(e => List((App("true", Nil, Nil), e))) ~ ")"))
+    P(guarded ~+ ",")
 
-  // backtracks until for, the combinators may be names of functions otherwise
   val trace_ =
-    P((word("trace") ?~ "(" ?~ expr ?~ "," ?~ word("for")) ~ exprs ~ word("do").asScanner ~ ids ~ arrow ~ update).map:
-      case ((((((_, init), _), deps), bound), update)) => Combinator("trace", Some(init), deps, bound, update)
+    Combinator(P(J("trace") ~ "(" ~ some(expr) ~ "," ~ "for" ~ exprs ~ "do" ~ ids ~ "=>" ~ update ~ ")"))
 
   val map_ =
-    P((word("map") ?~ "(" ?~ word("for")) ~ exprs ~ word("yield").asScanner ~ ids ~ arrow ~ update).map:
-      case ((((_, deps), bound), update)) => Combinator("map", None, deps, bound, update)
+    Combinator(P(J("map") ~ none ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "=>" ~ update ~ ")"))
 
   val all_ =
-    P((word("all") ?~ "(" ?~ word("for")) ~ exprs ~ word("check").asScanner ~ ids ~ arrow ~ expr ~ ")").map:
-      case ((((_, deps), bound), body)) => Combinator("all", None, deps, bound, List((App("true", Nil, Nil), body)))
+    Combinator(P(J("all") ~ none ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "=>" ~ list(true_ ~ expr) ~ ")"))
 
   val combinator =
     P(trace_ | map_ | all_)
 
-  // all but the last element of a trace
   val butlast =
     Butlast(P("⌊" ~ expr ~ "⌋"))
 
-  val inner: Parser[Expr] =
+  val atom: Parser[Expr] =
     P(lit | parenthesized | ite | butlast | combinator | app)
 
+  val inner: Parser[Expr] =
+    Inner(P(atom ~ access.*))
+
   val expr: Parser[Expr] =
-    M(sym, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args, Nil))
+    M(op, prefix_ops, postfix_ops, infix_ops) $ (inner, (op, args) => App(Sym(op), args))
 
   val requires =
     Requires(P("requires" ~ expr ~ ";"))
@@ -216,14 +188,12 @@ object Grammar:
   val modifies =
     Modifies(P("modifies" ~ ids ~ ";"))
 
-  // a lexicographic termination measure, not Boogie
   val decreases =
     Decreases(P("decreases" ~ exprs ~ ";"))
 
   val break =
     Break("break" ~ ";")
 
-  // not Boogie
   val continue_ =
     Continue("continue" ~ ";")
 
@@ -239,7 +209,6 @@ object Grammar:
   val havoc =
     Havoc(P("havoc" ~ ids ~ ";"))
 
-  // the results are optional, call p(x); and call y := p(x);
   val call =
     Call(P("call" ~ ((ids ?~ ":=") | nil) ~ id ~ args ~ ";"))
 
@@ -249,26 +218,20 @@ object Grammar:
   val assign =
     Assign(P((lhs ~+ ",") ~ ":=" ~ exprs ~ ";"))
 
-  // local variables, var x, y: int, b: bool;
-  val vars =
-    P("var" ~ typed ~ ";")
+  val local =
+    Local(P("var" ~ typed ~ ";"))
 
-  // local variables are declared at the beginning of a block, as in Dafny
   val block =
-    Block(P(braces(vars.*.map(_.flatten) ~ prog.*)))
+    Block(P(braces(local.* ~ prog.*)))
 
-  // else if chains are nested if statements
-  val else_block_or_skip =
-    P(("else" ~ (if_ | block)) | R(Skip))
-
-  // the guard * of a choice or of nondeterministic iterations
-  val star = op("*")
+  val else_or_skip =
+    P(("else" ~ (if_ | block)) | skip)
 
   val guard =
-    P(star.map(None) | some(expr))
+    P("*".map(None) | some(expr))
 
   val if_ : Parser[Prog] =
-    If(P("if" ~ parens(guard) ~ block ~ else_block_or_skip))
+    If(P("if" ~ parens(guard) ~ block ~ else_or_skip))
 
   val while_ =
     While(P("while" ~ parens(guard) ~ (invariant | modifies | decreases).* ~ block))
@@ -276,18 +239,15 @@ object Grammar:
   val prog: Parser[Prog] =
     P(break | continue_ | return_ | assume | assert | havoc | call | if_ | while_ | block | assign)
 
-  // attributes of top-level commands
   val attr =
     Attr(P("{:" ~ id ~ (expr ~* ",") ~ "}"))
 
   val attrs =
     P(attr.*)
 
-  // type parameters are in angle brackets, type array<a, b>, unlike in Boogie
   val sortdef =
     SortDef(P("type" ~ attrs ~ id ~ params ~ ("=" ~ typ).? ~ ";"))
 
-  // datatypes as in Dafny, with the keyword data, whose selectors are functions, e.g. head(xs)
   val sel =
     Sel(P(id ~ ":" ~ typ))
 
@@ -300,7 +260,6 @@ object Grammar:
   val data =
     Data(P(id ~ params ~ "=" ~ (constr ~+ "|")))
 
-  // mutually recursive datatypes are joined by and, like the single command of SMT-LIB
   val datadef =
     DataDef(P("data" ~ attrs ~ (data ~+ "and") ~ ";"))
 
@@ -325,7 +284,6 @@ object Grammar:
   val spec =
     P(requires | ensures | modifies | decreases)
 
-  // procedures without body end the signature with a semicolon, those with body must not
   val contract =
     P((";" ~ spec.* ~ none) | (spec.* ~ some(block)))
 
