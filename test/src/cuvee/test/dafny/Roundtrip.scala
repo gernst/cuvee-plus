@@ -19,6 +19,6 @@ object Roundtrip extends TestSuite:
 
       val first = Printer.lines(cmds)
       val config = cuvee.Config.parse(cuvee.Config.default, args)
-      val (_, cmds_) = Source(config, new StringReader(first.mkString("\n")))
+      val (_, cmds_) = Examples.source(Source, new StringReader(first.mkString("\n")), config)
       val second = Printer.lines(cmds_.toList.filterNot(Examples.prelude(args*).contains))
       second ==> first

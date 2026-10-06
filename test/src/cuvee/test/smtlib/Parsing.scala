@@ -15,7 +15,7 @@ object Strings extends TestSuite:
 
   val tests = Tests:
     test("escape"):
-      val (_, cmds) = cuvee.smtlib.Source(new java.io.StringReader("(assert (= \"a\"\"b\" \"\"))"))
+      val (_, cmds) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader("(assert (= \"a\"\"b\" \"\"))"))
       val Assert(_, _, Eq(Lit(left, _), Lit(right, _)), _) = cmds.last: @unchecked
       (left, right) ==> ("a\"b", "")
       cuvee.smtlib.Printer.lines(Lit("a\"b", Sort.string)) ==> List("\"a\"\"b\"")
@@ -25,7 +25,7 @@ object BitVectors extends TestSuite:
   import cuvee.core._
 
   def expr(text: String): Expr =
-    val (_, cmds) = cuvee.smtlib.Source(new java.io.StringReader("(declare-const x (_ BitVec 8))\n(assert (= " + text + " " + text + "))"))
+    val (_, cmds) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader("(declare-const x (_ BitVec 8))\n(assert (= " + text + " " + text + "))"))
     val Assert(_, _, Eq(left, _), _) = cmds.last: @unchecked
     left
 

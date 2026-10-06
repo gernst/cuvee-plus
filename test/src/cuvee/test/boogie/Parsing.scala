@@ -17,7 +17,7 @@ object Parsing extends TestSuite:
 object Errors extends TestSuite:
   def error(text: String): String =
     try
-      cuvee.boogie.Source(new java.io.StringReader(text))._2.toList
+      Examples.source(cuvee.boogie.Source, new java.io.StringReader(text))._2.toList
       "no error"
     catch case Error(msg, _*) => msg
 

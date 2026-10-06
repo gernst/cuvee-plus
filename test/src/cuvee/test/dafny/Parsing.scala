@@ -145,7 +145,7 @@ object Conditionals extends TestSuite:
   import cuvee.core.{Imp, Ite, All}
 
   def formula(text: String) =
-    val (_, cmds) = Source(new java.io.StringReader("predicate p(x: int)\npredicate q(x: int)\n" + text))
+    val (_, cmds) = Examples.source(Source, new java.io.StringReader("predicate p(x: int)\npredicate q(x: int)\n" + text))
     val cuvee.core.Assert(_, _, phi, _) = cmds.last: @unchecked
     phi
 
@@ -181,7 +181,7 @@ object Chains extends TestSuite:
   import cuvee.core.{And, Eq, Le, Lt, Var, Sort}
 
   def formula(text: String) =
-    val (_, cmds) = Source(new java.io.StringReader("lemma forall i: int, j: int, n: int, b: bool :: " + text))
+    val (_, cmds) = Examples.source(Source, new java.io.StringReader("lemma forall i: int, j: int, n: int, b: bool :: " + text))
     val cuvee.core.Assert(_, _, cuvee.core.All(_, phi), _) = cmds.last: @unchecked
     phi
 
@@ -211,7 +211,7 @@ object Chains extends TestSuite:
 // and the semicolon after global variables is optional
 object Commands extends TestSuite:
   def parse(text: String) =
-    Source(new java.io.StringReader(text))._2.toList
+    Examples.source(Source, new java.io.StringReader(text))._2.toList
 
   val tests = Tests:
     test("check"):

@@ -25,6 +25,13 @@ object Examples:
     val calls = files.map(file => new TestCallTree(Left(body(file))))
     Tests(Tree("", names*), new TestCallTree(Right(calls.toIndexedSeq)))
 
+  // a source applied directly, outside of Cuvee.run, whose fresh names are numbered from the start as in Cuvee.pipe,
+  // such that they do not depend on the order of the tests
+  def source(source: cuvee.pipe.Source, reader: java.io.Reader, config: cuvee.Config = cuvee.Config.default) =
+    cuvee.core.Var.reset()
+    cuvee.core.Param.reset()
+    source(config, reader)
+
   // the answer to the last check-sat among the results, e.g. before the model added by -chc
   def status(results: List[cuvee.core.Result]): cuvee.core.Status =
     results.collect { case status: cuvee.core.Status => status }.last

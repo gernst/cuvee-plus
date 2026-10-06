@@ -16,7 +16,7 @@ object Matching extends TestSuite:
 
   // the datatype (declare-datatype List ((nil) (cons (head Int) (tail List))))
   val state =
-    val init = cuvee.smtlib.Source(new java.io.StringReader(""))._1
+    val init = Examples.source(cuvee.smtlib.Source, new java.io.StringReader(""))._1
     init.declare(Name("List", None), 0, Attrs.empty).declare(data).define(Name("List", None), data)
 
   val x = Var("x", Sort.int)

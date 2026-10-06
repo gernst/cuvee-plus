@@ -52,7 +52,7 @@ object Horn extends TestSuite:
 // and the constructs that are rejected
 object Translation extends TestSuite:
   def parse(text: String) =
-    cuvee.c.Source(new java.io.StringReader(text))._2.toList
+    Examples.source(cuvee.c.Source, new java.io.StringReader(text))._2.toList
 
   def errors(text: String) =
     Examples.check("c", text)

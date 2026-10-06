@@ -74,7 +74,7 @@ object Flat extends TestSuite:
       // the types inside the flattened assertions are those found by the type checker when they are parsed again,
       // the formal parameters of the predicates are named differently
       val printed = cuvee.smtlib.Printer.lines(cmds).mkString("\n")
-      val (_, cmds_) = cuvee.smtlib.Source(new java.io.StringReader(printed))
+      val (_, cmds_) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader(printed))
       val phis = cmds.collect { case Assert(_, _, phi, _) => phi }
       val phis_ = cmds_.toList.collect { case Assert(_, _, phi, _) => phi }
       phis_.flatMap(types) ==> phis.flatMap(types)

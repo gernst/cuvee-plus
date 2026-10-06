@@ -6,7 +6,7 @@ import cuvee.core._
 
 // type checking of the combinators trace, map, and all
 object TypingTraces extends TestSuite:
-  val state = cuvee.smtlib.Source(new java.io.StringReader(""))._1
+  val state = Examples.source(cuvee.smtlib.Source, new java.io.StringReader(""))._1
 
   val n = Var("n", Sort.int)
   val s = Var("s", Sort.int)
