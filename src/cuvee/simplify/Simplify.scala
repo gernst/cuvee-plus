@@ -19,7 +19,7 @@ object Simplify extends Transform:
 
     for
       cmd <- cmds
-      cmd_ = if isRule(cmd) then cmd else simplify(config, state, Ctx.empty.withRules(rules), cmd)
+      cmd_ = if cmd.isRule then cmd else simplify(config, state, Ctx.empty.withRules(rules), cmd)
       if !isTrivial(cmd_)
     yield cmd_
 
@@ -28,14 +28,9 @@ object Simplify extends Transform:
       case Assert(_, _, True, _) => true
       case _                     => false
 
-  def isRule(cmd: Cmd) =
-    cmd match
-      case Assert(Axiom | Lemma, _, _, attrs) => attrs.contains("rw")
-      case _                                  => false
-
   // the rewrite rules of the assertions and lemmas with the attribute :rw
   def rules(cmds: List[Cmd]): List[Rule] =
-    for case cmd @ Assert(_, _, phi, _) <- cmds if isRule(cmd)
+    for case cmd @ Assert(_, _, phi, _) <- cmds if cmd.isRule
     yield
       val Rule(xs, lhs, rhs, cond) = rule(phi)
       // type annotations e as T are dropped from the left-hand sides of rules, they are needed for typing only,

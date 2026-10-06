@@ -53,6 +53,12 @@ sealed trait Cmd:
       case Assert(justify, params, phi, attrs)    => Assert(justify, params, e(phi), attrs.map(e))
       case _                                      => this
 
+  // axioms and lemmas with the attribute :rw, which are rewrite rules of -simplify
+  def isRule: Boolean =
+    this match
+      case Assert(Axiom | Lemma, _, _, attrs) => attrs.contains("rw")
+      case _                                  => false
+
 sealed trait Ctrl extends Cmd
 sealed trait Decl extends Cmd
 sealed trait Query extends Cmd
