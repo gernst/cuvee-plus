@@ -1,7 +1,5 @@
 package util
 
-// https://claude.ai/chat/a1f40075-cd15-4e0b-bf47-f8f95f22e9ca
-
 implicit def toRational(n: Int): Rational =
   Rational(n)
 

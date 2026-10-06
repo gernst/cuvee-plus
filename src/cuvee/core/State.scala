@@ -32,11 +32,11 @@ case class State(
 
     asserts: List[Assert] = List()
 ):
-  // whether the option `name` is set to true
   // `f` unless the declaration or definition coincides with the existing one, which leaves the state unchanged
   def unless(same: Boolean)(f: => State): State =
     if same then this else f
 
+  // whether the option `name` is set to true
   def hasFlag(name: String) =
     options.get(name) match
       case Some("true") => true

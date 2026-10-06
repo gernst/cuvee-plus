@@ -1,7 +1,5 @@
 package easyparse
 
-import scala.collection.IterableFactory
-
 import util.or
 
 // parsers over token streams, where `cm` (committed) states whether a failure is an error
@@ -68,14 +66,6 @@ trait Parser[+A]:
   def ~+(sep: Scanner): Parser[List[A]] =
     Parser.Intersperse(this, sep, true)
 
-  def unfold[CC[+_]](factory: IterableFactory[CC])(in: Input): CC[A] =
-    val p = this.?
-    val b = factory.newBuilder[(A, Input)]
-
-    factory.unfold(in): in0 =>
-      val (a, in1) = p.parse(in0)
-      a map { (_, in1) }
-
 object Parser:
   case class Recursive[A](name: String, p: () => Parser[A]) extends Parser[A]:
     def parse(in0: Input, cm: Boolean) =
@@ -128,6 +118,7 @@ object Parser:
       val in2 = q.scan(in1, cm || strict)
       (a, in2)
 
+  // like Repeat, recursive per element, such that long lists need a deep stack
   case class Intersperse[+A](p: Parser[A], q: Scanner, min: Boolean) extends Parser[List[A]]:
     def parse(in0: Input, cm: Boolean): (List[A], Input) =
       if min
@@ -155,6 +146,8 @@ object Parser:
       (Nil, in0)
     }
 
+  // recursive per element, such that the stack grows with the length of the list,
+  // e.g. the top-level declarations of a large preprocessed C file
   case class Repeat[+A](p: Parser[A], min: Int, max: Int) extends Parser[List[A]]:
     require(0 <= min && min <= max)
 

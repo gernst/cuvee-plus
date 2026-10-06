@@ -223,6 +223,6 @@ object BitVecs:
       case ("rotate_left" | "rotate_right", List(k), List(n))          => instance(BitVec(n))
       case _                                                           => None
 
-  // the width of the bitvector literal with `value`, between 0 and 2^n - 1
+  // the bitvector literal of width n with `value`, between 0 and 2^n - 1
   def lit(value: BigInt, n: Int): Lit =
     Lit(value, BitVec(n))

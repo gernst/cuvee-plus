@@ -103,8 +103,8 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   by `check-sat` and `get-model`, whose model is printed in the language of the
   input.
   - Procedures with a body have predicates and no contract, which is an
-    error, except for `requires` of `main` (the initial values of globals in
-    C). Those that no procedure calls are entry points, `requires ⇒ p_pre`.
+    error, except for `requires` of `main` (in C, the globals are zero; their
+    initializers are assignments at the beginning of `main`). Those that no procedure calls are entry points, `requires ⇒ p_pre`.
   - Procedures without body have no predicates; calls instantiate their
     contract (`Verify.instance`, also the type parameters), whose
     precondition's conjuncts are goals and whose postcondition's conjuncts
