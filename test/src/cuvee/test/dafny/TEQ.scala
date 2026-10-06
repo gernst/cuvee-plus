@@ -290,3 +290,18 @@ object TEQ extends TestSuite:
       val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
       errors ==> Nil
       cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
+
+    // a value read at one of the keys occurs among the values read at them, and a value at an index occurs in the sequence
+    test("occurrences"):
+      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
+      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun }.get
+      def app(name: String, args: Expr*) = App(fun(name), args.toList)
+
+      val a = Var("a", Sort.array(Sort.int, Sort.int))
+      val k = Var("k", Sort.int)
+      val j = Var("j", Sort.int)
+      val keys = Var("keys", Sort.seq(Sort.int))
+
+      val ctx = cuvee.simplify.Ctx.empty.assume(app("occurs", k, keys)).withRules(rules)
+      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("occurs", Select(a, k), app("selects", a, keys))) ==> True
+      Rewrite(rules, app("occurs", Earlier(j, keys), keys)) ==> True
