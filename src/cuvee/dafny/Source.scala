@@ -2,6 +2,7 @@ package cuvee.dafny
 
 import java.io.Reader
 
+import cuvee.Config
 import cuvee.core.State
 
 object Source extends cuvee.pipe.Source:
@@ -23,7 +24,7 @@ object Source extends cuvee.pipe.Source:
     (parser.state, lifted, prelude)
 
   // with -hybrid, the definitions of parallel composition
-  override def preludes(config: cuvee.Config) =
+  override def preludes(config: Config) =
     if config.hybrid
     then List("/cuvee/dafny/hybrid.dfy")
     else Nil

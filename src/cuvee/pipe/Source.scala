@@ -5,6 +5,7 @@ import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import easyparse.Token
 
+import cuvee.Config
 import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib.Parser
@@ -24,7 +25,7 @@ trait Source:
 
   // the resources with further definitions that are injected after the prelude, in order,
   // which may depend on the configuration
-  def preludes(config: cuvee.Config): List[String] = Nil
+  def preludes(config: Config): List[String] = Nil
 
   // files on the classpath, such as the preludes, bundled from resources/
   def resource(path: String): Reader =
@@ -36,19 +37,22 @@ trait Source:
     new InputStreamReader(stream, StandardCharsets.UTF_8)
 
   def apply(reader: Reader): (State, LazyList[Cmd]) =
-    apply(cuvee.Config.default, reader)
+    apply(Config.default, reader)
 
-  def apply(config: cuvee.Config, reader: Reader): (State, LazyList[Cmd]) =
+  def apply(config: Config, reader: Reader): (State, LazyList[Cmd]) =
     val (init, parser, prelude) = newParser()
 
-    val prelude_ =
-      prelude ++ (for path <- preludes(config); cmd <- parse(path, parser) yield cmd)
+    val injected =
+      for path <- preludes(config); cmd <- parse(path, parser)
+      yield cmd
+
+    val prelude_ = prelude ++ injected
 
     // defer reading and parsing such that errors in the first command are reported by the pipeline, too
     (init, LazyList.empty #::: prelude_.to(LazyList) #::: input(config, reader, parser).filterNot(prelude_.contains))
 
   // the commands of the input, evaluated on demand
-  def input(config: cuvee.Config, reader: Reader, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
+  def input(config: Config, reader: Reader, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
     cmds(newScanner(reader).input, parser)
 
   // the commands of a resource

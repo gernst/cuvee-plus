@@ -4,6 +4,7 @@ import java.io.File
 import java.io.FileReader
 import java.io.Reader
 
+import cuvee.Config
 import cuvee.Error
 import cuvee.core._
 
@@ -18,10 +19,7 @@ object Source extends cuvee.pipe.Source:
   def newParser() =
     cuvee.c.Source.newParser()
 
-  override def preludes(config: cuvee.Config) =
-    cuvee.c.Source.preludes(config)
-
-  override def input(config: cuvee.Config, reader: Reader, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
+  override def input(config: Config, reader: Reader, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
     val task = Task.load(reader)
     val dir = config.input.map(file => new File(file).getAbsoluteFile.getParentFile)
     val input =
