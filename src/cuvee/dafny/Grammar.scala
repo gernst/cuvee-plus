@@ -175,6 +175,15 @@ object Grammar:
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ (("else" ~ expr) | true_)))
 
+  val pat: Parser[Expr] =
+    App(P(id ~ (parens(pat ~* ",") | nil)))
+
+  val case_ =
+    P("case" ~ pat ~ "=>" ~ expr)
+
+  val match_ =
+    Match(P("match" ~ expr ~ (braces(case_.+) | case_.+)))
+
   val bound =
     P(formals | vars)
 
@@ -215,7 +224,7 @@ object Grammar:
     Butlast(P("⌊" ~ expr ~ "⌋"))
 
   val atom: Parser[Expr] =
-    P(diff | tuple | seq | set | bag | map | len | butlast | lit | bind | let | ite | combinator | app)
+    P(diff | tuple | seq | set | bag | map | len | butlast | lit | bind | let | ite | match_ | combinator | app)
 
   val inner: Parser[Expr] =
     Inner(P(atom ~ access.*))

@@ -552,6 +552,33 @@ class Parser(var state: State):
         val base_ = resolve(scope, base)
         resolve(scope, base_, access)
 
+      // patterns are constructors applied to patterns, variables, and wildcards _, which are named apart
+      case Match(arg, cases) =>
+        val arg_ = resolve(scope, arg)
+        val wildcards = Iterator.from(0)
+
+        def pattern(typ: core.Type, pat: Expr): core.Expr =
+          pat match
+            case App(name, args) if state.constrs.contains(name) =>
+              state.exprs.constr(name)(types => (types zip args).map(pattern))
+
+            case App("_", Nil) =>
+              core.Var(Name("_", Some(wildcards.next())), typ)
+
+            case App(name, Nil) =>
+              core.Var(Name(name, None), typ)
+
+            case _ =>
+              Error.raise("invalid pattern", pat)
+
+        val cases_ =
+          for (pat, body) <- cases
+          yield
+            val pat_ = pattern(arg_.typ, pat)
+            core.Case(pat_, resolve(scope ++ pat_.free.toList, body), core.True)
+
+        state.exprs.match_(arg_, cases_)
+
       case Ite(test, left, True) =>
         resolve(scope, App("=>", List(test, left)))
 

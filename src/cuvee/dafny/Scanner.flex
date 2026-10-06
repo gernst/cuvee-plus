@@ -32,7 +32,7 @@ kw  = "function" | "predicate" | "axiom" | "lemma" | "goal" | "const" | "datatyp
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "while" | "if" | "then" | "else" | "assert" | "assume" | "var"
     | "forall" | "exists" | "break" | "continue" | "return" | "parallel" | "as" | "assumes" | "commits" | "ode" | "check" | "map" | "multiset"
-    | "trace" | "maps" | "invs" | "for" | "do" | "yield"
+    | "trace" | "maps" | "invs" | "match" | "case" | "for" | "do" | "yield"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "=>" | "==" | "<" | ">" | "*" | "'" | "|" | "." | ".." | "⌊" | "⌋"
 
 sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*

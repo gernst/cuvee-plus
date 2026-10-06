@@ -53,6 +53,7 @@ case class Butlast(arg: Expr) extends Expr
 case class Diff(xs: List[String], expr: Expr) extends Expr
 case class App(fun: String, args: List[Expr]) extends Expr
 case class Ite(test: Expr, left: Expr, right: Expr) extends Expr
+case class Match(arg: Expr, cases: List[(Expr, Expr)]) extends Expr
 case class Inner(base: Expr, access: List[Access]) extends Expr
 case class Ex(bound: List[(String, Type)], body: Expr) extends Expr
 case class All(bound: List[(String, Type)], body: Expr) extends Expr
@@ -74,6 +75,7 @@ object App extends ((String, List[Expr]) => Expr)
 case class Combinator(kind: String, init: Option[Expr], deps: List[Expr], bound: List[String], update: List[(Expr, Expr)]) extends Expr
 object Combinator extends ((String, Option[Expr], List[Expr], List[String], List[(Expr, Expr)]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)
+object Match extends ((Expr, List[(Expr, Expr)]) => Expr)
 object Inner extends ((Expr, List[Access]) => Expr)
 object Ex extends ((List[(String, Type)], Expr) => Expr)
 object All extends ((List[(String, Type)], Expr) => Expr)

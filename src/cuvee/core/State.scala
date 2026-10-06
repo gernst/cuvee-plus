@@ -332,6 +332,21 @@ case class State(
         require(bound.length == args.length)
       Let(bound, args, body)
 
+    // a constructor pattern, whose arguments are built from the types of the formals, instantiated freshly
+    def constr(name: Name)(args: List[Type] => List[Expr]): App =
+      Error.report("constructor not declared", name):
+        require(constrs.contains(name))
+
+      val fun = constrs(name)
+      val su = Subst.fresh(fun.params)
+      val inst = su(fun.args)
+      val args_ = args(inst)
+
+      Error.report("wrong number of constructor arguments", name, inst, args_):
+        require(inst.length == args_.length)
+
+      App(fun, inst, su(fun.res), args_)
+
     def match_(arg: Expr, cases: List[Case]) =
       Error.report("match without cases", arg):
         require(cases.nonEmpty)

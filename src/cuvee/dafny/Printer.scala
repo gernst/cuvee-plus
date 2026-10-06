@@ -626,7 +626,7 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: Rational, _) if value.isNegative =>
         (Grammar.prefix_ops("-"), None)
 
-      case Ite(_, _, _) | Bind(_, _, _) | Let(_, _, _) =>
+      case Ite(_, _, _) | Bind(_, _, _) | Let(_, _, _) | Match(_, _) =>
         (lowest, None)
 
       case _ =>
@@ -643,6 +643,18 @@ object Printer extends cuvee.pipe.Printer:
                 (prec, Some(assoc))
               case None =>
                 (atomic, None)
+
+  // the wildcards _ of patterns are named apart by indices (see Parser), which are not printed
+  def pattern(pat: Expr): Doc =
+    pat match
+      case Var(Name("_", Some(_)), _) =>
+        text("_")
+
+      case App(fun, _, _, args) if args.nonEmpty =>
+        text(name(fun.name)) ++ text("(") ++ commas(args.map(pattern)) ++ text(")")
+
+      case _ =>
+        doc(pat)
 
   // an expression in a context that admits higher precedences,
   // and the same precedence only for operators of the given associativity
@@ -872,9 +884,18 @@ object Printer extends cuvee.pipe.Printer:
         // the bound variables flow up to the width of the line, aligned after the quantifier
         Group(text(name(quant)) +:+ flow(bound.map(formal)) +:+ text("::") ++ Nest(2, line ++ doc(body)))
 
-      // TODO: match expressions
-      case Match(_, _) =>
-        Error.raise("not supported in Dafny", expr)
+      // the bodies of all but the last case are parenthesized if they would extend over the following cases
+      case Match(arg, cases) =>
+        Error.report("match with conditions not supported in Dafny", expr):
+          require(cases.forall(_.cond == True))
+
+        val cases_ =
+          for (Case(pat, body, _), i) <- cases.zipWithIndex
+          yield
+            val body_ = if i < cases.length - 1 then doc(body, (lowest, None)) else doc(body)
+            Group(text("case") +:+ pattern(pat) +:+ text("=>") ++ Nest(2, line ++ body_))
+
+        Group(text("match") +:+ doc(arg) ++ Nest(2, concat(cases_.map(line ++ _))))
 
       case Let(bound, args, body) =>
         Group(text("var") +:+ formals(bound) +:+ text(":=") +:+ commas(args.map(doc(_))) ++ text(";") ++ line ++ doc(body))
