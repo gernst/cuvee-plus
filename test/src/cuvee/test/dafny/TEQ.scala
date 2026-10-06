@@ -117,6 +117,32 @@ object TEQ extends TestSuite:
       val occurrences = Trace(x, List(vs), y, List(v), List(Upd(Eq(v, e), Plus.int(y, One.int)), Upd(Not(Eq(v, e)), y)))
       Rewrite(rules, occurrences) ==> App(counts, List(x, e, vs))
 
+    // an update of a visited key replaces its contribution to the count, and the prefix counts are counts of prefixes;
+    // the conditions are decided by the assumptions of the context
+    test("count"):
+      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
+      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun }.get
+      def app(name: String, args: Expr*) = App(fun(name), args.toList)
+      def has(expr: Expr, name: String) = subexprs(expr).exists { case App(f, _, _, _) => f.name.name == name; case _ => false }
+
+      val a = Var("a", Sort.array(Sort.int, Sort.int))
+      val k = Var("k", Sort.int)
+      val w = Var("w", Sort.int)
+      val e = Var("e", Sort.int)
+      val j = Var("j", Sort.int)
+      val x = Var("x", Sort.int)
+      val keys = Var("keys", Sort.seq(Sort.int))
+
+      val ctx = cuvee.simplify.Ctx.empty.assume(app("distincts", keys)).withRules(rules)
+      val updated = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("count", e, app("selects", Store(a, k, w), keys)))
+      assert(subexprs(updated).contains(app("count", e, app("selects", a, keys))))
+      assert(!subexprs(updated).exists { case Store(_, _, _) => true; case _ => false })
+
+      val bounds = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, j)).assume(Lt.int(j, app("length", keys))).withRules(rules)
+      val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
+      assert(subexprs(earlier).contains(app("count", e, app("prefix", j, keys))))
+      assert(!has(earlier, "counts"))
+
     // the empty prefix is the empty sequence, whose sum is 0
     test("empty prefix"):
       val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)

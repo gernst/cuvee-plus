@@ -75,9 +75,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   ([teq.dfy](resources/cuvee/teq.dfy)), whose names may clash with the input,
   and which inputs cannot use before `-teq` injects it. Lemmas about `invs`
   over a formula would need higher-order patterns.
-- Counting `a[i] == v` over `⌊I⌋` yields `counts(0, v, maps(for ⌊I⌋ yield i => a[i]))`;
-  there are no lemmas that relate such maps to `selects` or to `count` on
-  sequences.
+- The bounds `0 <= count(e, vs) <= length(vs)` are free lemmas, which the
+  simplifier does not use, e.g. for `0 <= c <= n` after counting `a[i] == v`
+  over `⌊I⌋`, which yields `count(v, selects(a, ⌊I⌋))`.
 
 ## Dafny frontend
 

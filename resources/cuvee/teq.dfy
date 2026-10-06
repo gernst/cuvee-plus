@@ -300,6 +300,11 @@ lemma {:rw} {:free} forall j: int, x: int, values: seq<int> ::
   then earlier(j, ⌊sums(x, values)⌋)
          == x + sum(prefix(j, values))
 
+lemma <a> {:rw} {:free} forall j: int, x: int, e: a, vs: seq<a> ::
+  if 0 <= j < length(vs)
+  then earlier(j, ⌊counts(x, e, vs)⌋)
+         == x + count(e, prefix(j, vs))
+
 lemma <a> {:rw} {:free} forall j: int, k: int, xs: seq<a> ::
   if 0 <= j < k <= length(xs)
   then earlier(j, prefix(k, xs))
@@ -500,6 +505,20 @@ lemma <a> {:rw} {:free} forall n: int, e: a, v: a ::
   if 0 <= n
   then count(e, ⌊consts(n, v)⌋)
          == if v == e then n else 0
+
+// an update of a visited key replaces its contribution, as for sum and parity
+lemma <a, b> {:rw} {:free} forall a: array<a, b>, k: a, w: b, e: b, keys: seq<a> ::
+  if distincts(keys)
+  then count(e, selects(a[k := w], keys))
+         == if occurs(k, keys)
+            then count(e, selects(a, keys)) + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
+            else count(e, selects(a, keys))
+
+// the step of the prefix counts, for invariants of the form c == count(e, prefix(i, vs))
+lemma <a> {:free} forall k: int, e: a, vs: seq<a> ::
+  if 0 <= k < length(vs)
+  then count(e, prefix(k + 1, vs))
+         == count(e, prefix(k, vs)) + (if earlier(k, vs) == e then 1 else 0)
 
 lemma <a> {:free} forall e: a, vs: seq<a> ::
   0 <= count(e, vs)
