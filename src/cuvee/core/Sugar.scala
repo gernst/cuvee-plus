@@ -150,7 +150,10 @@ object Sugar:
           None
 
   class associative(fun: Fun, val assoc: Assoc) extends binary(fun):
+    // there is no neutral element, unlike for commutative operators
     def apply(args: List[Expr]): Expr =
+      Error.report("no arguments", fun.name):
+        require(args.nonEmpty)
       assoc.reduce(args, this)
 
     def flatten(expr: Expr): List[Expr] =

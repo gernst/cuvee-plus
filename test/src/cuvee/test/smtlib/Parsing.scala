@@ -58,3 +58,21 @@ object Internal extends TestSuite:
   val tests = Tests:
     test("reported"):
       Examples.check("smt2", "(push 99999999999999999999999)\n(check-sat)") ==> List("internal error")
+
+// malformed answers of solvers and malformed applications of sugar are errors, not internal errors
+object Malformed extends TestSuite:
+  import cuvee.core._
+  import cuvee.sexpr.{Id, Str}
+
+  def message(f: => Any) =
+    try { f; None }
+    catch case error: cuvee.Error => Some(error.msg)
+
+  val tests = Tests:
+    test("labels"):
+      cuvee.smtlib.Parser.labels(List(Id("labels"), Id("a"))) ==> Labels(List("a"))
+      message(cuvee.smtlib.Parser.labels(List(Id("labels"), Str("a")))) ==> Some("invalid label")
+
+    // associative operators have no neutral element
+    test("no arguments"):
+      message(Minus.int(Nil)) ==> Some("no arguments")
