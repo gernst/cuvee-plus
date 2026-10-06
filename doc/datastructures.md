@@ -239,7 +239,7 @@ case class State(
   sorts, funs, vars, procs,                     // declarations by name (funs by name and arity)
   sortattrs, funattrs, varattrs, procattrs,     // their attributes
   sortdefs, fundefs, procdefs, datatypes,       // their definitions
-  asserts, logic, options, infos)
+  logic, options, infos)
 ```
 
 - `State.add(decl)` returns the state extended by a declaration.

@@ -4,7 +4,7 @@ import util.Name
 import util.Rational
 import cuvee.Error
 
-// the declarations and definitions so far, by kind and name, with their attributes and the assertions,
+// the declarations and definitions so far, by kind and name, with their attributes,
 // together with builders for types, expressions, programs, and commands, which the frontends use (see style.md);
 // functions are identified by name and arity, since the frontends may overload names with different arities;
 // a declaration or definition that coincides with an existing one is accepted and leaves the state unchanged,
@@ -28,9 +28,7 @@ case class State(
     fundefs: Map[(Name, Int), Expr] = Map(),
     procdefs: Map[Name, Prog] = Map(),
 
-    datatypes: Map[Name, Datatype] = Map(),
-
-    asserts: List[Assert] = List()
+    datatypes: Map[Name, Datatype] = Map()
 ):
   // `f` unless the declaration or definition coincides with the existing one, which leaves the state unchanged
   def unless(same: Boolean)(f: => State): State =
@@ -234,8 +232,9 @@ case class State(
       case DefineProc(Proc(name, params, in, out), body, attrs) =>
         declare(name, params, in, out, attrs).define(name, body)
 
-      case cmd: Assert =>
-        copy(asserts = asserts :+ cmd)
+      // assertions declare nothing
+      case _: Assert =>
+        this
 
   // types, where sorts must be declared with the right number of arguments
   object types:
