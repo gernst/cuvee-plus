@@ -73,6 +73,63 @@ The sizes of integer types follow the data model: `-arch 32|64` (ILP32 or
 LP64, by default 64), which the yml frontend sets from the `data_model` of
 the task.
 
+### All tasks (version 0.19.12)
+
+All 1397 tasks, each parsed with `java -jar cuvee.jar task.yml -o /dev/null`,
+four at a time, with a timeout of 30 s: **1167 parse (84%), 230 fail, no
+timeouts**; the slowest task takes 2.8 s (with four runs in parallel).
+
+| Directory | ok | tasks |
+|---|---|---|
+| array-cav19 | 13 | 13 |
+| array-crafted | 28 | 43 |
+| array-examples | 92 | 96 |
+| array-fpi | 151 | 151 |
+| array-industry-pattern | 8 | 17 |
+| array-lopstr16 | 1 | 11 |
+| array-memsafety | 0 | 65 |
+| array-memsafety-realloc | 0 | 3 |
+| array-multidimensional | 20 | 20 |
+| array-patterns | 37 | 37 |
+| array-programs | 16 | 16 |
+| array-tiling | 27 | 29 |
+| loop-acceleration | 44 | 44 |
+| loop-crafted | 7 | 9 |
+| loop-floats-scientific-comp | 0 | 7 |
+| loop-industry-pattern | 2 | 18 |
+| loop-invariants | 9 | 10 |
+| loop-invariants64 | 1 | 1 |
+| loop-invgen | 8 | 29 |
+| loop-lit | 27 | 33 |
+| loop-new | 8 | 11 |
+| loops | 57 | 77 |
+| loops-crafted-1 | 53 | 55 |
+| loop-simple | 8 | 8 |
+| loop-zilu | 57 | 58 |
+| nla-digbench | 54 | 57 |
+| nla-digbench-scaling | 439 | 479 |
+
+The 230 failures need the constructs of step 6, which need decisions about
+the semantics:
+
+- libc headers (`stdlib.h`, e.g. `long double strtold`), 60, all in the
+  memory safety tasks (`array-memsafety*`), whose property is not
+  `unreach-call`;
+- floating point, 50 (`nla-digbench-scaling` with `double`, 40,
+  `loop-floats-scientific-comp`);
+- structs, about 40 (`loop-industry-pattern`, `array-lopstr16`,
+  `array-industry-pattern`, `loops`);
+- `goto`, about 25, the `*-reducer` variants of `loop-invgen`, `loop-lit`,
+  `loop-new`, `loop-crafted`, which are state machines of gotos;
+- bit-level operations (`&`, `|`, `^`, `>>`), about 25, not to be supported;
+- pointers other than allocated arrays, about 15, e.g. arrays of pointers
+  to separately allocated cells (`int *a[N]; a[i] = malloc(sizeof(int))`);
+- `__bswap_32` of `stdlib.h` with `__builtin_bswap32`, 4, not to be
+  supported.
+
+The comma operator (`i = 0, j = 0`, also in `for` loops) was missing too
+and is supported now.
+
 ### Trace equation systems
 
 `-teq` succeeds on all C examples and on ten tasks that use the new
