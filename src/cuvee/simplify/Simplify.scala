@@ -749,15 +749,15 @@ object Simplify extends Transform:
   // e.g. earlier(k, maps(for xs yield v => v + 1)) is earlier(k, xs) + 1, where the cases become conditionals
   // (the guards are complete, the last one is not tested); the indices of earlier are valid by construction
   def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
-    (fun, args) match
-      case (Fun.trace.earlier, List(k, Maps(deps, bound, updates))) =>
-        val su = Subst.from(bound, deps.map(Earlier(k, _)))
+    App(fun, inst, typ, args) match
+      case Earlier(j, ctx.↑(Maps(deps, bound, updates))) =>
+        val su = Subst.from(bound, deps.map(Earlier(j, _)))
         val cases = updates.map(upd => (su(upd.cond), su(upd.rhs)))
         cases.init.foldRight(cases.last._2):
           case ((cond, rhs), rest) => Ite(cond, rhs, rest)
 
-      case _ =>
-        App(fun, inst, typ, args)
+      case expr =>
+        expr
 
   // forall distributes over and, where each conjunct binds the variables that it uses
   def all(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr): Expr =
