@@ -88,6 +88,8 @@ object Translation extends TestSuite:
     test("pointers"):
       errors("extern void __assert_fail(const char *, const char *, unsigned int, const char *);") ==> Nil
       errors("int f(int *p);") ==> List("pointers are not supported")
+      errors("extern double __VERIFIER_nondet_double(void);") ==> Nil
+      errors("double f(void);") ==> List("floating point numbers are not supported")
 
     test("unnamed parameters"):
       errors("int f(int, int); int main(void) { return f(1, 2); }") ==> Nil
@@ -95,6 +97,15 @@ object Translation extends TestSuite:
     test("labels"):
       val cmds = parse("int g; void f(void) { L: g = 1; }")
       modifies(cmds, "f") ==> Some(List("g"))
+
+    test("literals"):
+      val text =
+        "int main(void) { assert(0x1F == 31); assert(010 == 8); assert(7UL == 7); assert(0xffffffffu == 4294967295LL); " +
+          "assert('a' == 97); assert('\\n' == 10); assert('\\0' == 0); assert('\\x41' == 65); assert('\\'' == 39); return 0; }"
+      Examples.check("c", text, "-verify", "-z3") ==> Nil
+
+    test("unexpected character"):
+      errors("int f(int x) { return x @ 1; }") ==> List("unexpected character '@' at 0:24")
 
     test("__VERIFIER_assert"):
       Examples.check("c", "void __VERIFIER_assert(int c); int main(void) { __VERIFIER_assert(0); return 0; }", "-verify", "-z3") ==>

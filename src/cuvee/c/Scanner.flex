@@ -18,10 +18,18 @@ package cuvee.c;
 nl = \r|\n|\r\n
 ws = {nl} | [ \t\f]
 
-num  = [0-9]+
+// integer constants, decimal, octal, or hexadecimal, with suffixes u, l, ll in any order and case,
+// and character constants, which the parser converts to their values (see Parser.literal)
+dec = [1-9][0-9]* | 0
+oct = 0[0-7]+
+hex = 0[xX][0-9a-fA-F]+
+suffix = [uU]? ([lL] | "ll" | "LL")? | ([lL] | "ll" | "LL") [uU]
+chr = \' ([^\'\\\n] | \\[^0-7x\n] | \\[0-7]{1,3} | \\x[0-9a-fA-F]+) \'
+
+num  = ({dec} | {oct} | {hex}) {suffix} | {chr}
 
 // type qualifiers and storage classes are ignored by the grammar, as are attributes of GCC
-kw  = "int" | "long" | "short" | "char" | "unsigned" | "signed" | "_Bool" | "bool" | "void"
+kw  = "int" | "long" | "short" | "char" | "unsigned" | "signed" | "_Bool" | "bool" | "void" | "float" | "double"
     | "const" | "static" | "extern" | "volatile" | "inline" | "restrict" | "__attribute__"
     | "if" | "else" | "while" | "do" | "for" | "break" | "continue" | "return"
     | "(" | ")" | "[" | "]" | [;,{}?:]
@@ -55,6 +63,6 @@ sym = {id}
 {num}       { return Syntax.apply("num", yytext()); }
 {sym}       { return Syntax.apply("sym", yytext()); }
 
-[^]         { throw new RuntimeException("unexpected character '" + yytext() + "' at " + yyline + ":" + yycolumn); }
+[^]         { Syntax.error("unexpected character '" + yytext() + "' at " + yyline + ":" + yycolumn); }
 
 }

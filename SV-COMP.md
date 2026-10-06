@@ -161,6 +161,11 @@ inputs, after the harness), with where they occurred in the sample.
    builtins skipped, labels dropped, `__VERIFIER_assert` as `assert`
    (example `examples/c/harness.c`).
 2. Literals: hex, integer suffixes, chars; scanner errors as parse errors.
+   **Done:** decimal, octal and hexadecimal constants with suffixes,
+   character constants with escapes (`Parser.literal`), unexpected
+   characters as errors (`Syntax.error`); also `float`/`double` in the
+   signatures of builtins such as `__VERIFIER_nondet_double`, rejected by the
+   parser otherwise, like pointers.
 3. Casts to integer types, multidimensional arrays, initializer lists,
    chained assignment.
 4. Calls in loop conditions and in `&&`/`||` (resolver only).

@@ -32,6 +32,7 @@ class Parser(var state: State):
       case ArrayType(e) => Sort.array(Sort.int, typ(e))
       case VoidType     => Error.raise("void is not a type of values")
       case PointerType(_) => Error.raise("pointers are not supported", t)
+      case FloatType    => Error.raise("floating point numbers are not supported", t)
 
   // the value of global variables without initializer, where arrays are constant
   def zero(t: Type): core.Expr =
@@ -41,6 +42,7 @@ class Parser(var state: State):
       case ArrayType(e) => core.App(core.Fun.const, List(typ(e)), typ(t), List(zero(e)))
       case VoidType     => Error.raise("void is not a type of values")
       case PointerType(_) => Error.raise("pointers are not supported", t)
+      case FloatType    => Error.raise("floating point numbers are not supported", t)
 
   def temp(ctx: Ctx, t: Type): core.Var =
     val x = core.Var("tmp", typ(t)).fresh
@@ -71,10 +73,32 @@ class Parser(var state: State):
       case _   => Error.raise("unknown arithmetic operator", op)
 
   // an expression together with the statements that evaluate the calls in it first, and its C type
+  // the value of an integer constant, decimal, octal (0...), or hexadecimal (0x...),
+  // whose suffixes u and l are dropped, as integers are unbounded, or of a character constant, its code
+  def literal(text: String): BigInt =
+    if text.startsWith("'")
+    then character(text.drop(1).dropRight(1))
+    else
+      val digits = text.toLowerCase.stripSuffix("u").stripSuffix("l").stripSuffix("l").stripSuffix("u")
+      if digits.startsWith("0x") then BigInt(digits.drop(2), 16)
+      else if digits.length > 1 && digits.startsWith("0") then BigInt(digits.drop(1), 8)
+      else BigInt(digits)
+
+  // the simple escape sequences of C
+  val escapes = Map('a' -> 7, 'b' -> 8, 't' -> 9, 'n' -> 10, 'v' -> 11, 'f' -> 12, 'r' -> 13, '\\' -> 92, '\'' -> 39, '"' -> 34, '?' -> 63)
+
+  def character(body: String): BigInt =
+    body match
+      case s"\\x$hex"                         => BigInt(hex, 16)
+      case s"\\$oct" if oct.forall(_.isDigit) => BigInt(oct, 8)
+      case s"\\$c" if c.length == 1 && escapes.contains(c.head) => BigInt(escapes(c.head))
+      case _ if body.length == 1                => BigInt(body.head.toInt)
+      case _                                  => Error.raise("unsupported character constant", body)
+
   def expr(scope: Scope, ctx: Ctx, e: Expr): (List[core.Prog], core.Expr, Type) =
     e match
-      case Num(digits) =>
-        (Nil, core.Lit(BigInt(digits), Sort.int), IntType)
+      case Num(text) =>
+        (Nil, core.Lit(literal(text), Sort.int), IntType)
 
       case Id("true") if !scope.contains("true") =>
         (Nil, True, BoolType)

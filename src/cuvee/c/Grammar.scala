@@ -85,8 +85,12 @@ object Grammar:
   val void =
     VoidType("void")
 
+  // e.g. __VERIFIER_nondet_double
+  val float =
+    FloatType("float" | "double")
+
   val base: Parser[Type] =
-    P(int | bool | void)
+    P(float | int | bool | void)
 
   val typ: Parser[Type] =
     P(qualifier.* ?~ base ~ qualifier.*)

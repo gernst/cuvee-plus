@@ -2,12 +2,17 @@ package cuvee.c
 
 import easyparse.Token
 
+import cuvee.Error
+
 object Syntax:
   def apply(name: String) =
     Token.Keyword(name)
 
   def apply(name: String, text: String) =
     Token.Value(name, text)
+
+  def error(msg: String) =
+    Error.raise(msg)
 
   // the functions of the verification conventions of SV-COMP and of assert.h, which are not procedures,
   // hence their bodies are skipped by the grammar and their declarations are dropped by the parser
@@ -19,8 +24,9 @@ case object IntType extends Type
 case object BoolType extends Type
 case object VoidType extends Type
 case class ArrayType(elem: Type) extends Type
-// only in the signatures of builtins, the parser rejects them otherwise
+// pointers and floating point numbers only in the signatures of builtins, the parser rejects them otherwise
 case class PointerType(elem: Type) extends Type
+case object FloatType extends Type
 
 sealed trait Expr
 case class Num(value: String) extends Expr
