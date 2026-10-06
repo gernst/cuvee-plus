@@ -35,15 +35,21 @@ case class Index(base: Expr, index: Expr) extends Expr
 case class Call(fun: String, args: List[Expr]) extends Expr
 case class App(op: String, args: List[Expr]) extends Expr
 case class Cond(test: Expr, branches: Option[(Expr, Expr)]) extends Expr
+case class Cast(typ: Type, expr: Expr) extends Expr
+// initializer lists of arrays, only in declarations
+case class Items(items: List[Expr]) extends Expr
 
 object Num extends (String => Expr)
 object Id extends (String => Expr)
 object Call extends ((String, List[Expr]) => Expr)
 object App extends ((String, List[Expr]) => Expr)
 object Cond extends ((Expr, Option[(Expr, Expr)]) => Expr)
+object Cast extends ((Type, Expr) => Expr)
+object Items extends (List[Expr] => Expr)
 
-case class Declarator(name: String, size: Option[Option[Expr]], init: Option[Expr])
-object Declarator extends ((String, Option[Option[Expr]], Option[Expr]) => Declarator)
+// the sizes of arrays, one per dimension, which are optional, e.g. int a[] = { 1, 2 }
+case class Declarator(name: String, sizes: List[Option[Expr]], init: Option[Expr])
+object Declarator extends ((String, List[Option[Expr]], Option[Expr]) => Declarator)
 
 sealed trait Stmt
 case class Decl(typ: Type, decls: List[Declarator]) extends Stmt

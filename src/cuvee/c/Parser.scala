@@ -35,6 +35,10 @@ class Parser(var state: State):
       case FloatType    => Error.raise("floating point numbers are not supported", t)
 
   // the value of global variables without initializer, where arrays are constant
+  // the type of a declared variable with the sizes of its dimensions, e.g. int a[2][3]
+  def array(t: Type, sizes: List[Option[Expr]]): Type =
+    sizes.foldLeft(t)((elem, _) => ArrayType(elem))
+
   def zero(t: Type): core.Expr =
     t match
       case IntType      => Zero.int
@@ -183,6 +187,21 @@ class Parser(var state: State):
       case Cond(e, None) =>
         expr(scope, ctx, e)
 
+      // casts to integer types are the identity, as integers are unbounded
+      case Cast(IntType, e) =>
+        val (pre, e_) = int(scope, ctx, e)
+        (pre, e_, IntType)
+
+      case Cast(BoolType, e) =>
+        val (pre, e_) = cond(scope, ctx, e)
+        (pre, e_, BoolType)
+
+      case Cast(t, e) =>
+        Error.raise("unsupported cast", t, e)
+
+      case Items(_) =>
+        Error.raise("initializer list outside of a declaration", e)
+
       case Cond(test, Some((left, right))) =>
         val (pre0, test_) = cond(scope, ctx, test)
         val (pre1, left_, lt) = expr(scope, ctx, left)
@@ -211,6 +230,16 @@ class Parser(var state: State):
     t match
       case IntType  => int(scope, ctx, e)
       case BoolType => cond(scope, ctx, e)
+
+      // the elements that are not given are zero, as in C
+      case ArrayType(elem) if e.isInstanceOf[Items] =>
+        val Items(items) = e: @unchecked
+        val results = items.map(value(scope, ctx, _, elem))
+        val array =
+          results.zipWithIndex.foldLeft(zero(t)):
+            case (array, ((_, item), i)) => Store(array, core.Lit(BigInt(i), Sort.int), item)
+        (results.flatMap(_._1), array)
+
       case _ =>
         val (pre, e_, t_) = expr(scope, ctx, e)
         Error.report("type mismatch", e, t, t_):
@@ -243,9 +272,9 @@ class Parser(var state: State):
       yield stmt match
         case Decl(t, decls) =>
           for
-            Declarator(x, size, init) <- decls
+            Declarator(x, sizes, init) <- decls
             prog <-
-              val t_ = if size.isDefined then ArrayType(t) else t
+              val t_ = array(t, sizes)
               val v = core.Var(x, typ(t_))
               val v_ = if scope_.values.exists(_._1.name == v.name) then v.fresh else v
               locals += v_
@@ -430,27 +459,59 @@ class Parser(var state: State):
 
         pre :+ core.Assign(List(v), List(rhs_))
 
-      case Index(Id(a), index) =>
-        Error.report("unknown variable", a):
-          require(scope.contains(a))
-
-        val (v, t) = scope(a)
-        val elem = t match
-          case ArrayType(elem) => elem
-          case _               => Error.raise("indexing of a variable that is not an array", a)
-
-        val (pre1, index_) = int(scope, ctx, index)
+      case Index(_, _) =>
+        val elem = lvalue(scope, lhs)
         val (pre2, rhs_) =
           if op == "="
           then value(scope, ctx, rhs, elem)
-          else
-            val (pre, rhs_) = int(scope, ctx, rhs)
-            (pre, arith(op, toInt(Select(v, index_), elem), rhs_))
+          else int(scope, ctx, rhs)
 
-        pre1 ++ pre2 :+ core.Assign(List(v), List(Store(v, index_, rhs_)))
+        val (pre1, v, array) =
+          store(scope, ctx, lhs, old => if op == "=" then rhs_ else arith(op, toInt(old, elem), rhs_))
+
+        pre1 ++ pre2 :+ core.Assign(List(v), List(array))
 
       case _ =>
         Error.raise("invalid left hand side of assignment", lhs)
+
+  // the type of an element of an array variable, e.g. a[i][j]
+  def lvalue(scope: Scope, lhs: Expr): Type =
+    lhs match
+      case Id(x) =>
+        Error.report("unknown variable", x):
+          require(scope.contains(x))
+        scope(x)._2
+
+      case Index(base, _) =>
+        lvalue(scope, base) match
+          case ArrayType(elem) => elem
+          case _               => Error.raise("indexing of a variable that is not an array", base)
+
+      case _ =>
+        Error.raise("invalid left hand side of assignment", lhs)
+
+  // the new value of the array variable of `lhs`, whose element is updated to `rhs` of its old value,
+  // where arrays are values: for nested arrays, the inner array is updated, and then the outer one
+  def store(scope: Scope, ctx: Ctx, lhs: Expr, rhs: core.Expr => core.Expr): (List[core.Prog], core.Var, core.Expr) =
+    lhs match
+      case Id(x) =>
+        val (v, _) = scope(x)
+        (Nil, v, rhs(v))
+
+      case Index(base, index) =>
+        val (pre, index_) = int(scope, ctx, index)
+        val (pre_, v, array) = store(scope, ctx, base, base_ => Store(base_, index_, rhs(Select(base_, index_))))
+        (pre_ ++ pre, v, array)
+
+      case _ =>
+        Error.raise("invalid left hand side of assignment", lhs)
+
+  // the array variable of an assignment to an element, e.g. a in a[i][j]
+  def root(lhs: Expr): Set[String] =
+    lhs match
+      case Id(x)          => Set(x)
+      case Index(base, _) => root(base)
+      case _              => Set()
 
   def nondet(rhs: Expr, t: Type) =
     rhs match
@@ -480,8 +541,7 @@ class Parser(var state: State):
   // the names assigned in a statement, syntactically, for the parameters that must be copied into locals
   def assigned(s: Stmt): Set[String] =
     s match
-      case Assign(Id(x), _, _)           => Set(x)
-      case Assign(Index(Id(x), _), _, _) => Set(x)
+      case Assign(lhs, _, _)             => root(lhs)
       case If(_, left, right)            => assigned(left) ++ right.toSet.flatMap(assigned)
       case While(_, body)                => assigned(body)
       case DoWhile(body, _)              => assigned(body)
@@ -499,6 +559,8 @@ class Parser(var state: State):
         case Call(f, args)        => args.toSet.flatMap(calls) + f
         case Index(base, index)   => calls(base) ++ calls(index)
         case App(_, args)         => args.toSet.flatMap(calls)
+        case Cast(_, e)           => calls(e)
+        case Items(items)         => items.toSet.flatMap(calls)
         case Cond(test, branches) => calls(test) ++ branches.toSet.flatMap((left, right) => calls(left) ++ calls(right))
         case _                    => Set()
 
@@ -521,8 +583,7 @@ class Parser(var state: State):
           (mod1 ++ mod2, called1 ++ called2)
 
     s match
-      case Assign(Id(x), _, rhs)               => (global(x), calls(rhs))
-      case Assign(Index(Id(x), i), _, rhs)     => (global(x), calls(i) ++ calls(rhs))
+      case Assign(lhs, _, rhs)                 => (root(lhs).flatMap(global), calls(lhs) ++ calls(rhs))
       case ExprStmt(e)                         => (Set(), calls(e))
       case Return(e)                           => (Set(), e.toSet.flatMap(calls))
       case If(test, left, right)               => all(scope, List(ExprStmt(test), left) ++ right.toList)
@@ -575,14 +636,14 @@ class Parser(var state: State):
     // global variables without initializer are zero, as in C
     val inits = mutable.ListBuffer[core.Expr]()
 
-    for case Global(Decl(t, decls)) <- tops; Declarator(x, size, init) <- decls
+    for case Global(Decl(t, decls)) <- tops; Declarator(x, sizes, init) <- decls
     do
-      val t_ = if size.isDefined then ArrayType(t) else t
+      val t_ = array(t, sizes)
 
       for e <- init
       do
         Error.report("initialized global array", x):
-          require(size.isEmpty)
+          require(sizes.isEmpty || e.isInstanceOf[Items])
 
         val (progs, e_) = value(globals.toMap, Ctx(None, mutable.ListBuffer()), e, t_)
         Error.report("initial value of global variable must not call functions", x, e):

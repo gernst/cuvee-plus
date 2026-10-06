@@ -106,8 +106,15 @@ object Grammar:
   val call =
     Call(P(id ?~ args))
 
+  // the operand of a cast is a unary expression: a postfix expression, a prefix operator, or another cast
+  val unary: Parser[Expr] =
+    P(cast | postfix | App(sym.filter(prefix_ops.contains) ~ unary.map(List(_))))
+
+  val cast: Parser[Expr] =
+    Cast(P("(" ?~ typ ~ ")" ~ unary))
+
   val atom: Parser[Expr] =
-    P(Num(num) | call | Id(id) | parens(expr))
+    P(Num(num) | call | Id(id) | cast | parens(expr))
 
   val postfix: Parser[Expr] =
     P(atom ~ brackets(expr).*).map:
@@ -127,8 +134,17 @@ object Grammar:
 
   val one = R(Num("1"))
 
-  val assign =
-    Assign(P(postfix ?~ assignop ~ expr))
+  // chained assignments x = y = e are the assignments y = e; x = y
+  val assign: Parser[Stmt] =
+    P(postfix ?~ assignop ~ (assign.map[Either[Expr, Stmt]](Right(_)) | expr.map(Left(_)))).map:
+      case ((lhs, op), Left(rhs))    => Assign(lhs, op, rhs)
+      case ((lhs, op), Right(inner)) => Block(List(inner, Assign(lhs, op, target(inner))))
+
+  def target(assign: Stmt): Expr =
+    assign match
+      case Assign(lhs, _, _) => lhs
+      case Block(stmts)      => target(stmts.last)
+      case _                 => Error.raise("not an assignment", assign)
 
   val postincr =
     Assign(P(postfix ?~ incr ~ one))
@@ -137,8 +153,11 @@ object Grammar:
     P(incr ~ postfix).map:
       case (op, lhs) => Assign(lhs, op, Num("1"))
 
+  val init: Parser[Expr] =
+    P(Items(braces(init ~* ",")) | expr)
+
   val declarator =
-    Declarator(P(id ~ brackets(expr.?).? ~ ("=" ~ expr).?))
+    Declarator(P(id ~ brackets(expr.?).* ~ ("=" ~ init).?))
 
   val decl =
     Decl(P(typ ~ (declarator ~+ ",")))

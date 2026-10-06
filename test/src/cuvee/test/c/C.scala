@@ -104,6 +104,26 @@ object Translation extends TestSuite:
           "assert('a' == 97); assert('\\n' == 10); assert('\\0' == 0); assert('\\x41' == 65); assert('\\'' == 39); return 0; }"
       Examples.check("c", text, "-verify", "-z3") ==> Nil
 
+    def valid(text: String) =
+      Examples.check("c", text, "-verify", "-z3") ==> Nil
+
+    // casts to integer types are the identity, to _Bool a comparison with zero
+    test("casts"):
+      valid("int main(void) { long long y = (long long) 2 * 3; assert(y == 6); assert((int) -1 == -1); assert((_Bool) 5 == 1); return 0; }")
+      errors("int main(void) { return (void) 0; }") ==> List("unsupported cast")
+
+    test("multidimensional arrays"):
+      valid("int main(void) { int a[2][3]; a[1][2] = 5; a[1][2] += 1; assert(a[1][2] == 6); return 0; }")
+      modifies(parse("int g[2][2]; void f(void) { g[0][1] = 1; }"), "f") ==> Some(List("g"))
+
+    // the elements that are not given are zero
+    test("initializer lists"):
+      valid("int g[3] = {1, 2}; int main(void) { int a[2][2] = {{1, 2}, {3}}; assert(a[1][0] == 3 && a[1][1] == 0 && g[1] == 2 && g[2] == 0); return 0; }")
+      errors("int main(void) { int x = {1}; return x; }") ==> List("initializer list outside of a declaration")
+
+    test("chained assignments"):
+      valid("int main(void) { int i; int k; i = k = 2; assert(i == 2 && k == 2); return 0; }")
+
     test("unexpected character"):
       errors("int f(int x) { return x @ 1; }") ==> List("unexpected character '@' at 0:24")
 

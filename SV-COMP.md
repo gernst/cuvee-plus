@@ -167,7 +167,10 @@ inputs, after the harness), with where they occurred in the sample.
    signatures of builtins such as `__VERIFIER_nondet_double`, rejected by the
    parser otherwise, like pointers.
 3. Casts to integer types, multidimensional arrays, initializer lists,
-   chained assignment.
+   chained assignment. **Done:** casts to integer types are the identity,
+   to `_Bool` a comparison with zero, others are rejected; arrays of arrays
+   with updates of nested elements; initializer lists of local and global
+   arrays, whose missing elements are zero; `x = y = e` is `y = e; x = y`.
 4. Calls in loop conditions and in `&&`/`||` (resolver only).
 5. `typedef` of integer types (the `.i` headers), `sizeof` as a constant of
    the data model.
