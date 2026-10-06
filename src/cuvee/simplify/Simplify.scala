@@ -461,7 +461,7 @@ object Simplify extends Transform:
       && !(e.free contains x)
       && !(e.primes contains x)
       && !(ctx.used contains x)
-      && (e.free intersect ctx.bound.takeWhile(_ != x).toSet).isEmpty
+      && (e.free intersect ctx.bound.takeWhile(!_.contains(x)).flatten.toSet).isEmpty
 
   // equivalences are equations on Bool, the normal form, such that both are known from the context alike,
   // and as which SMT-LIB writes them

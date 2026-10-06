@@ -104,6 +104,8 @@ object OnePoint extends TestSuite:
     test("scope"):
       val phi = All(List(x), Ex(List(y), Not(Eq(x, y))))
       simplify(phi) ==> phi
+      // the variables of one binder are not nested, e depends on one bound before x
+      simplify(All(List(y, x), Imp(Eq(x, Plus.int(y, One.int)), P(y)))) ==> All(List(y), P(y))
 
     // a quantifier in a position without polarity has the one-point rule for its own variables,
     // whereas the variables of let are neither universal nor existential, also below a negation

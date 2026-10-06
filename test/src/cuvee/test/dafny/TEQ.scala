@@ -38,8 +38,8 @@ object TEQ extends TestSuite:
         val goals = os.temp(cuvee.smtlib.Printer.lines(cmds.filterNot(cuvee.verify.TEQ.lemmas.contains)).mkString("\n"), suffix = ".smt2")
         Examples.errors("-z3", goals.toString) ==> expected(first)
 
-    // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy,
-    // and whose lemma on sums rewrites that of s
+    // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy;
+    // that of s, which the lemma on sums rewrites, is unused, its equation vanishes by the one-point rule
     test("lemmas"):
       val sum = Examples.root / "dafny" / "vcgen" / "sum.dfy"
       val (cmds, errors) = Examples.output("-teq", "-simplify", "-print", "null", sum.toString)
@@ -47,7 +47,8 @@ object TEQ extends TestSuite:
       assert(cmds.exists { case DeclareFun(fun, _) => fun == Fun.trace.counter; case _ => false })
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked
       assert(subexprs(phi).collect { case t: Trace => t }.isEmpty)
-      assert(subexprs(phi).exists { case App(fun, _, _, _) => fun.name.name == "sums"; case _ => false })
+      assert(subexprs(phi).exists { case App(fun, _, _, _) => fun == Fun.trace.counter; case _ => false })
+      assert(!subexprs(phi).exists { case App(fun, _, _, _) => fun.name.name == "sums"; case _ => false })
 
       // also without loops, once at the beginning
       val abs = Examples.root / "dafny" / "vcgen" / "abs.dfy"

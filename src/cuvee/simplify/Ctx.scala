@@ -4,7 +4,8 @@ import cuvee.core._
 
 // a sequent at the current position of the simplifier
 //
-// bound: the variables bound by enclosing binders, in the order of binding (innermost first)
+// bound: the variables bound by enclosing binders, one list per binder, innermost first;
+// the variables of one binder are not nested, e.g. in forall x, y. phi, y is not in the scope of x (see Simplify.point)
 //
 // universal, existential: those of the bound variables that are quantified universally and existentially,
 // seen from the current position, i.e., swapped below negations and premises (see flip);
@@ -25,7 +26,7 @@ import cuvee.core._
 // rules, steps: the rewrite rules, which are applied after each round of simplification (see Simplify.simplify),
 // and the remaining number of steps
 case class Ctx(
-    bound: List[Var],
+    bound: List[List[Var]],
     universal: Set[Var],
     existential: Set[Var],
     assms: List[Expr],
@@ -51,13 +52,13 @@ case class Ctx(
 
   // variables bound by let, match, and the combinators, which are neither universal nor existential
   def bind(xs: List[Var]) =
-    copy(bound = xs ++ bound)
+    copy(bound = xs :: bound)
 
   def forall(xs: List[Var]) =
-    copy(bound = xs ++ bound, universal = universal ++ xs)
+    copy(bound = xs :: bound, universal = universal ++ xs)
 
   def exists(xs: List[Var]) =
-    copy(bound = xs ++ bound, existential = existential ++ xs)
+    copy(bound = xs :: bound, existential = existential ++ xs)
 
   // below a negation or in the premise of an implication, where universal variables become existential
   // and vice versa, since forall x. !phi is !exists x. !!phi
@@ -71,7 +72,7 @@ case class Ctx(
 
   // variables that occur in the context
   def free: Set[Var] =
-    bound.toSet ++ used
+    bound.flatten.toSet ++ used
 
   // variables that occur in the facts of the context, including the primed variables of derivatives,
   // which these refer to once the derivative is computed, but which are not free in Diff;
