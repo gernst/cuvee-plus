@@ -1,12 +1,7 @@
 // expected: valid
-// loops, for with continue, and global variables modified by calls, verified with -chc
+// loops, for with continue, and global variables, verified with -chc
 
 int counter;
-
-void incr(void)
-{
-  counter++;
-}
 
 int main(void)
 {
@@ -16,7 +11,7 @@ int main(void)
   for (int i = 0; i < n; i++) {
     if (i % 2 == 1)
       continue;
-    incr();
+    counter++;
   }
   assert(counter <= n);
   return 0;

@@ -5,7 +5,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New TODOs
 
-- make a plan to resolve calls and selectors on this as well as on arbitrary terms, don't implement it
 - check for stray references of Fun.... that are not goverened by syntactic sugar objects
 
 ## General
@@ -90,7 +89,25 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   `m[x := n]`, `>=` and `>`, disjointness `!!`, `seq(n, f)`, and
   multi-dimensional updates.
 - `x.f` and `x.C?` on variables only; members inside `type`/`datatype` bodies
-  need `this.` ([examples/dafny/stack.dfy](examples/dafny/stack.dfy)).
+  need `this.` ([examples/dafny/stack.dfy](examples/dafny/stack.dfy)). The
+  qualified name `T_f` comes from the declared sort of the variable, before
+  type checking. Plan:
+  1. testers `e.C?` on terms: the constructor determines the datatype
+     (`state.exprs.is`), drop the restriction to variables;
+  2. unqualified members in type bodies: with `this: T` in scope, `f(args)` is
+     `T_f(this, args)` and `y := m(args)` calls `T_m(this, args)`, with
+     Dafny's precedence: locals, members of `T`, top-level functions;
+  3. functions and selectors on terms: the parser emits a generic
+     application `.f` with fresh types and the receiver first, `Type.check`
+     records it as pending, and `Overload.resolve` looks up `T_f` in
+     `state.funs` by the sort of the receiver (defined sorts unfolded),
+     extending `impl` by a lookup in the state; a receiver whose type is still
+     a parameter is an error;
+  4. method calls on terms (`y := f(x).m()`) need the receiver's sort when
+     the statement is built: type check the receiver on its own, otherwise
+     keep the restriction; last;
+  5. tests: [stack.dfy](examples/dafny/stack.dfy) without `this.`, nested
+     accesses `f(x).g()`, errors for unknown receivers.
 - `var` declarations before statements; contract clauses in the fixed order
   `modifies`, `requires`, `ensures`, `assumes`, `commits`, `decreases`, for
   loops `modifies`, `invariant`, `decreases`.
@@ -137,10 +154,11 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 - The modifies clause of a loop is inferred from the core program, where a
   local variable that shadows a global one of the same type counts as global.
 - z3 answers `unknown` for Horn clauses with division by variables
-  ([examples/c/div.c](examples/c/div.c)), and for
-  [examples/c/count.c](examples/c/count.c) since `incr_pre` is no longer
-  `true` but inferred from the calls (only uncalled procedures are entry
-  points).
+  ([examples/c/div.c](examples/c/div.c)), and for calls in loops whose
+  callee has no goals, since its precondition is inferred from the calls
+  (only uncalled procedures are entry points), e.g. a procedure `incr` that
+  increments a global variable, called in the loop of `main` of
+  [examples/c/count.c](examples/c/count.c) (now inlined there).
 
 ## Bitvectors
 
