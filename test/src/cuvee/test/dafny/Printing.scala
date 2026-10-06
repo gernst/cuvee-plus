@@ -135,6 +135,12 @@ object Printing extends TestSuite:
       val all = Bind("forall", List(x), Lt.int(x, y))
       expr(And(all, p)) ==> "(forall x: int :: x < y) && p"
 
+    // the definitions of a model are separated by empty lines, like commands
+    test("model"):
+      val f = Fun("f", Nil, List(x), Sort.int)
+      val g = Fun("g", Nil, List(x), Sort.int)
+      Printer.lines(Model(List(DefineFun(f, x, Attrs.empty), DefineFun(g, x, Attrs.empty)))).count(_.isEmpty) ==> 1
+
     // -linewidth sets the width of all printers, which are objects, hence reset afterwards
     test("linewidth"):
       try

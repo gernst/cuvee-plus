@@ -117,8 +117,9 @@ object Printer extends cuvee.pipe.Printer:
       case Value(value) =>
         any(value)
 
+      // the definitions are separated by empty lines, like commands
       case Model(decls) =>
-        join(decls.map(doc(_)), hardline)
+        join(decls.map(doc(_)), hardline ~ hardline)
 
       case error: Error =>
         val info = error.info.toList.map(value => str(value.toString))
