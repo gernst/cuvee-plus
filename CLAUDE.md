@@ -90,6 +90,12 @@ Details in [doc/teq.md](doc/teq.md).
     others.
   - Prefer local transformations over global normal forms. E.g. common
     disjuncts are factored out of conjunctions, but there is no CNF/DNF.
+  - One step per helper is enough: e.g. `all` distributes `forall` over
+    one `and` and does not recurse into or re-normalize the parts. The
+    outer loops (`Simplify.simplify`, `Simplify.apply`) iterate.
+  - The simplifier does not split cases beyond what it does already (no
+    lifting of `ite` out of atoms in it; `Normalize.lift` is used by `Split`
+    only). Quantifiers stay outermost, with no miniscoping beyond `all`/`ex`.
 - **Lemmas and attributes.** `{:rw}` makes a lemma a rewrite rule of
   `-simplify`. `{:free}` makes the solver assume it without proof. A lemma
   without `{:free}` is proved by the solver, which fails for uninterpreted
@@ -173,6 +179,23 @@ Details in [doc/teq.md](doc/teq.md).
   concludes from "x does not occur in the context" (the one-point rule) must
   forget its information there: these positions have no polarity
   (`Ctx.neutral`).
+- **The one-point rule is relative to the position.** `Ctx.universal` and
+  `existential` are the bound variables seen from the current position:
+  `forall`/`exists` add to them, `flip` swaps them, `neutral` clears them,
+  and `bind` (`let`, `match`, combinators) adds to neither. Only an
+  existential variable's equation may be dropped, so no polarity check is
+  needed. Keep `bound` a list: its order says which variables are bound
+  inside the scope of `x`.
+- **Assertions are normalized inside the loop.** `Simplify.apply` normalizes
+  before simplification and after each round, repeating while the formula
+  changes. `Normalize` turns `let` at positions with polarity into
+  equations; `Normalize` runs neither on function bodies nor on subterms.
+- **Rules from the context.** `Ctx.assume` turns an equation with one ground
+  side into a rule without variables (`Ctx.rule`), unless the other side is a
+  variable (that is `eq`) or arithmetic (that is `Poly`). This terminates
+  without an ordering, since each step removes variables. Equations with
+  variables on both sides are not oriented: term orderings were considered
+  too complex.
 - **Derivatives hide variables.** `Diff(xs, e)` is not free in the primed
   variables `x'` that its derivative introduces; `Ctx.used` adds them. The
   hybrid example with z3 caught this.
@@ -183,3 +206,11 @@ Details in [doc/teq.md](doc/teq.md).
 - **Helpers used as decisions** (e.g. `eq_(...) == True` in `distinct`,
   `select`, `deps`) get `ctx.neutral`, so that position-dependent rules do not
   fire there.
+- **Invariants of combinators.** `invs` distributes over conjunctions, and
+  the updates and bodies of `trace`, `maps`, and `invs` assume the
+  invariants of the context whose dependencies are among their own
+  (`Simplify.invariants`), renaming the bound variables by the positions of
+  the dependencies.
+- **Rejected tool calls may have taken effect.** After the user rejects an
+  edit (in particular a script that writes files), check `git status` and
+  revert what was written before continuing.
