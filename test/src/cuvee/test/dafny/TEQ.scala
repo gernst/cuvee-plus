@@ -151,6 +151,30 @@ object TEQ extends TestSuite:
 
       Rewrite(rules, App(fun("sum"), List(App(fun("prefix"), List(Zero.int, vs))))) ==> Zero.int
 
+    // the bounds of counts and of the prefix maxima and minima are rewrite rules, the latter for earlier values
+    // under the assumptions of the context
+    test("bounds"):
+      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
+      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun }.get
+      def app(name: String, args: Expr*) = App(fun(name), args.toList)
+
+      val e = Var("e", Sort.int)
+      val x = Var("x", Sort.int)
+      val k = Var("k", Sort.int)
+      val vs = Var("vs", Sort.seq(Sort.int))
+      val count = app("count", e, vs)
+      val max = app("current", app("maxs", x, vs))
+      val min = app("current", app("mins", x, vs))
+
+      Rewrite(rules, Le.int(Zero.int, count)) ==> True
+      Rewrite(rules, Le.int(count, app("length", vs))) ==> True
+      Rewrite(rules, Le.int(x, max)) ==> True
+      Rewrite(rules, Le.int(min, x)) ==> True
+
+      val bounds = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, k)).assume(Lt.int(k, app("length", vs))).withRules(rules)
+      Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, Le.int(app("earlier", k, vs), max)) ==> True
+      Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, Le.int(min, app("earlier", k, vs))) ==> True
+
     // calls of polymorphic methods instantiate the type parameters of their contract, as with -verify
     test("polymorphic calls"):
       val file = Examples.root / "dafny" / "horn" / "contract.dfy"

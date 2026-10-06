@@ -508,25 +508,25 @@ lemma <a, b> {:rw} {:free} forall a: array<a, b>, k: a, w: b, e: b, keys: seq<a>
             then count(e, selects(a, keys)) + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
             else count(e, selects(a, keys))
 
-lemma <a> {:free} forall e: a, vs: seq<a> ::
+lemma <a> {:rw} {:free} forall e: a, vs: seq<a> ::
   0 <= count(e, vs)
 
-lemma <a> {:free} forall e: a, vs: seq<a> ::
+lemma <a> {:rw} {:free} forall e: a, vs: seq<a> ::
   count(e, vs) <= length(vs)
 
 // bounds
 
 // the initial value is a bound of the prefix maxima and minima, which are attained by some value otherwise
-lemma {:free} forall x: int, values: seq<int> ::
+lemma {:rw} {:free} forall x: int, values: seq<int> ::
   x <= current(maxs(x, values))
 
-lemma {:free} forall k: int, x: int, values: seq<int> ::
+lemma {:rw} {:free} forall k: int, x: int, values: seq<int> ::
   if 0 <= k < length(values)
   then earlier(k, values) <= current(maxs(x, values))
 
-lemma {:free} forall x: int, values: seq<int> ::
+lemma {:rw} {:free} forall x: int, values: seq<int> ::
   current(mins(x, values)) <= x
 
-lemma {:free} forall k: int, x: int, values: seq<int> ::
+lemma {:rw} {:free} forall k: int, x: int, values: seq<int> ::
   if 0 <= k < length(values)
   then current(mins(x, values)) <= earlier(k, values)
