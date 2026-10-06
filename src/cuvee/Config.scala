@@ -169,6 +169,15 @@ object Config:
         val config_ = config.copy(sink = (_, config) => Sink.file(name)(config.printer), report = Report.stdout)
         (config_, rest)
 
+  // the printers are objects, all of which are set, such that the order of the options does not matter
+  val linewidth =
+    flag("-linewidth", "<n>", "lay out the output for lines of <n> characters (default 160)"):
+      case (config, n :: rest) if n.toIntOption.exists(_ > 0) =>
+        for lang <- langs.values
+        do lang.printer.width = n.toInt
+        cuvee.sexpr.Printer.width = n.toInt
+        (config, rest)
+
   val print_ =
     flag("-print", "<lang>", "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), scala (the internal representation), or null (nothing)"):
       case (config, name :: rest) if langs.contains(name) =>
@@ -197,6 +206,7 @@ object Config:
     z3,
     cvc5,
     timeout_,
+    linewidth,
     output,
     print_
   )
@@ -237,7 +247,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.18.64")
+    println("Cuvée 0.18.65")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

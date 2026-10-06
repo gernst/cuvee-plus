@@ -135,6 +135,21 @@ object Printing extends TestSuite:
       val all = Bind("forall", List(x), Lt.int(x, y))
       expr(And(all, p)) ==> "(forall x: int :: x < y) && p"
 
+    // -linewidth sets the width of all printers, which are objects, hence reset afterwards
+    test("linewidth"):
+      try
+        cuvee.Config.parse(cuvee.Config.default, List("-linewidth", "40"))
+        Printer.width ==> 40
+        cuvee.smtlib.Printer.width ==> 40
+        cuvee.sexpr.Printer.width ==> 40
+        val long = (1 to 8).map(i => Lt.int(x, Lit(BigInt(1000 * i), Sort.int))).reduce(And(_, _))
+        assert(Printer.lines(long).forall(_.length <= 40))
+        assert(Printer.lines(long).length > 1)
+      finally
+        for lang <- cuvee.Config.langs.values
+        do lang.printer.width = 160
+        cuvee.sexpr.Printer.width = 160
+
     // names that are neither identifiers nor operators are escaped by backticks, which the scanner reads back,
     // e.g. the instances of Monomorph
     test("escaped names"):

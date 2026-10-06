@@ -18,8 +18,6 @@ import easyparse.Assoc
 // constructs that have no counterpart in this syntax raise an error,
 // except for commands that are not part of Boogie, which are printed as in the Dafny printer
 object Printer extends cuvee.pipe.Printer:
-  // the width that documents are laid out for
-  val width = 160
 
   // names of built-in sorts and functions in Boogie, inverse of the translation by the grammar
   val untranslate =

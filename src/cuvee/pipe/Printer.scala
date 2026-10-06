@@ -5,6 +5,9 @@ import scala.annotation.targetName
 import cuvee.core._
 
 trait Printer:
+  // the width of the lines that the output is laid out for, set by -linewidth (see Config)
+  var width = 160
+
   def lines(res: Result): List[String]
   def lines(cmd: Cmd): List[String]
   def lines(typ: Type): List[String]

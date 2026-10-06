@@ -16,7 +16,8 @@ languages or passes it to an SMT solver (z3 or cvc5).
   and goals may be written `if φ then ψ` for `φ ==> ψ`, also below the
   quantifiers at the top, where `else` is optional.
 - **Printers:** any input can be printed as SMT-LIB, Boogie, Dafny, or C
-  (`-print smt2|bpl|dfy|c`), within the limits of each language.
+  (`-print smt2|bpl|dfy|c`), within the limits of each language, laid out
+  for lines of 160 characters (`-linewidth <n>`).
 - **Verification conditions** (`-verify`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;

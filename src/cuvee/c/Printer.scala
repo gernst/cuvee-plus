@@ -22,7 +22,6 @@ import easyparse.Assoc
 // and other commands that are not part of C, e.g. check-sat, are printed by the SMT-LIB printer,
 // as are the declarations and definitions whose types are not C
 object Printer extends cuvee.pipe.Printer:
-  val width = 160
 
   // the result of the procedure that is printed, which return writes
   var result: Option[Var] = None
