@@ -7,17 +7,17 @@
 // the traces of trace equation systems, the values of a variable at the loop head
 type Trace<a₀>
 // all but the last element of a trace, written ⌊X⌋
-function butlast<a₀>(x₀: Trace<a₀>): seq<a₀>
+function butlast<a₀>(X: Trace<a₀>): seq<a₀>
 // counter(i, c, n) is the trace i, i + c, ..., i + n c of n steps
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
+function counter(i: int, c: int, n: int): Trace<int>
 // the last element of a trace
-function current<a₀>(x₀: Trace<a₀>): a₀
+function current<a₀>(X: Trace<a₀>): a₀
 // the number of steps of a trace, which is one less than the number of its elements
-function steps<a₀>(x₀: Trace<a₀>): int
+function steps<a₀>(X: Trace<a₀>): int
 // the length of a sequence
-function length<a₀>(x₀: seq<a₀>): int
+function length<a₀>(xs: seq<a₀>): int
 // the elements of sequences
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
+function earlier<a₀>(k: int, xs: seq<a₀>): a₀
 
 // a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)
 lemma {:rw} {:free} forall i: int, c: int, K: Trace<int> ::
@@ -54,38 +54,38 @@ lemma {:rw} {:free} forall X: Trace<int> ::
 // =====================================================================================================================
 
 // the first k elements of a sequence
-function prefix<a₀>(x₀: int, x₁: seq<a₀>): seq<a₀>
+function prefix<a>(k: int, xs: seq<a>): seq<a>
 
 // whether x occurs in a sequence, and the index of its last occurrence (unspecified otherwise)
-function occurs<a₀>(x₀: a₀, x₁: seq<a₀>): bool
-function indexof<a₀>(x₀: a₀, x₁: seq<a₀>): int
+function occurs<a>(x: a, xs: seq<a>): bool
+function indexof<a>(x: a, xs: seq<a>): int
 
 // whether a sequence has no duplicates
-function distincts<a₀>(x₀: seq<a₀>): bool
+function distincts<a>(xs: seq<a>): bool
 
 // consts(n, v) is the trace v, ..., v of n steps
-function consts<a₀>(x₀: int, x₁: a₀): Trace<a₀>
+function consts<a>(n: int, v: a): Trace<a>
 
 // selects(a, keys) are the values of a at the keys,
 // stores(a, keys, values) is the trace of the successive stores of the values at the keys into a
-function selects<a₀, a₁>(x₀: array<a₀, a₁>, x₁: seq<a₀>): seq<a₁>
-function stores<a₀, a₁>(x₀: array<a₀, a₁>, x₁: seq<a₀>, x₂: seq<a₁>): Trace<array<a₀, a₁>>
+function selects<a, b>(a: array<a, b>, keys: seq<a>): seq<b>
+function stores<a, b>(a: array<a, b>, keys: seq<a>, values: seq<b>): Trace<array<a, b>>
 
 // shifts(a, keys, d) is the trace of the successive copies a[k] := a[k + d] for the keys
-function shifts(x₀: array<int, int>, x₁: seq<int>, x₂: int): Trace<array<int, int>>
+function shifts(a: array<int, int>, keys: seq<int>, d: int): Trace<array<int, int>>
 
 // the prefix sums of a sequence starting with an initial value, and the sum of a sequence
-function sums(x₀: int, x₁: seq<int>): Trace<int>
-function sum(x₀: seq<int>): int
+function sums(x: int, values: seq<int>): Trace<int>
+function sum(values: seq<int>): int
 
 // the prefix parities (the number of even minus the number of odd elements) starting with an initial value,
 // and the parity of a sequence
-function parities(x₀: int, x₁: seq<int>): Trace<int>
-function parity(x₀: seq<int>): int
+function parities(x: int, values: seq<int>): Trace<int>
+function parity(values: seq<int>): int
 
 // the prefix maxima and minima starting with an initial value
-function maxs(x₀: int, x₁: seq<int>): Trace<int>
-function mins(x₀: int, x₁: seq<int>): Trace<int>
+function maxs(x: int, values: seq<int>): Trace<int>
+function mins(x: int, values: seq<int>): Trace<int>
 
 function max(m: int, n: int): int
 {
@@ -98,7 +98,7 @@ function min(m: int, n: int): int
 }
 
 // the number of occurrences of a value, counted from an initial value
-function counts<a₀>(x₀: int, x₁: a₀, x₂: seq<a₀>): Trace<int>
+function counts<a>(x: int, e: a, vs: seq<a>): Trace<int>
 
 // counters
 
@@ -360,7 +360,7 @@ lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
 // =====================================================================================================================
 
 // the number of occurrences of a value in a sequence
-function count<a₀>(x₀: a₀, x₁: seq<a₀>): int
+function count<a>(e: a, vs: seq<a>): int
 
 // prefixes
 
