@@ -9,6 +9,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `Match`: parsed and printed only in Dafny (expressions, without case
   conditions, not statements), no reduction on constructors, no rewriting
   modulo matches; SMT-LIB prints it only without case conditions.
+- Flaky test: `SimplifyPrograms.examples` sometimes reports "goal does not
+  hold" for [bitvectors.dfy](examples/dafny/vcgen/bitvectors.dfy) in the full
+  test run, depending on the tests run before it in the same JVM; alone, and
+  with `java -jar cuvee.jar -simplify -verify -z3`, it passes. The fresh-name
+  counters are already reset per run (`Cuvee.pipe`), so some other state
+  persists across runs; not investigated further.
 
 ## Code structure
 
@@ -43,7 +49,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   variable of a sum take one summand or none, a negated last variable takes
   negative summands only; bound variables of combinators are not instantiated
   by conditional expressions; equations of the context are followed only for
-  variables inside of the expression (`Ctx.eq`, rule `Subst` of the paper),
+  variables inside of the expression (`Ctx.chain`, rule `Subst` of the paper),
   not for terms such as `history.events == []`; innermost first, which may
   rewrite subterms before a rule for the whole term applies.
 - The goal of [clock.dfy](examples/hybrid/clock.dfy) remains after

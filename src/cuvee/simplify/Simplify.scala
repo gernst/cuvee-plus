@@ -89,15 +89,15 @@ object Simplify extends Transform:
   def implied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
     phi == True
       || (ctx.inconsistent && ctx.polarity == Some(true))
-      || (ctx.assms contains phi)
-      || (ctx.concls contains not(config, state, ctx, phi))
+      || (ctx.facts.assms contains phi)
+      || (ctx.facts.concls contains not(config, state, ctx, phi))
 
   // whether `phi` is known not to hold in `ctx`, dually, e.g. a < b if b <= a is known
   def denied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
     phi == False
       || (ctx.inconsistent && ctx.polarity == Some(false))
-      || (ctx.concls contains phi)
-      || (ctx.assms contains not(config, state, ctx, phi))
+      || (ctx.facts.concls contains phi)
+      || (ctx.facts.assms contains not(config, state, ctx, phi))
 
   // expressions in debug output, on a single line
   def show(printer: cuvee.pipe.Printer, expr: Expr): String =
@@ -304,7 +304,7 @@ object Simplify extends Transform:
   // the dependencies of a combinator have equal length, such that the positions coincide
   def invariants(ctx: Ctx, deps: List[Expr], bound: List[Var]): List[Expr] =
     for
-      case Invs(deps_, bound_, body) <- ctx.assms
+      case Invs(deps_, bound_, body) <- ctx.facts.assms
       if deps_.forall(deps.contains)
     yield
       val re = Subst.from(bound_, deps_.map(dep => bound(deps.indexOf(dep))))
@@ -418,7 +418,7 @@ object Simplify extends Transform:
 
   // variables known to be equal to another one or to a literal are replaced
   def var_(config: Config, state: State, ctx: Ctx, x: Var): Expr =
-    ctx.su.get(x) match
+    ctx.replace.get(x) match
       case Some(y) => y
       case None    => x
 

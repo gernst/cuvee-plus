@@ -293,10 +293,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 - **`Ctx`** is a sequent at the current position:
   - assumptions and conclusions;
   - bound variables;
-  - equations of variables with variables or literals, as a map `su`, which
+  - equations of variables with variables or literals, as a map `replace`, which
     the simplifier substitutes eagerly (`var_`);
   - the non-recursive equations `x == e` among the assumptions whose `e` is
-    not an arithmetic operation (`+`, `-`, `*`), as a map `eq` from variables
+    not an arithmetic operation (`+`, `-`, `*`), as a map `chain` from variables
     to expressions (the equation remains an assumption); the variables are not
     substituted, but the extractor `ctx.↑(e)` sees a variable as its
     definition, otherwise as itself, by which rewriting matches a variable

@@ -12,15 +12,15 @@ import cuvee.core._
 // the equations x == e of the existential ones are true (one-point rule, see Simplify.point),
 // which is only sound if the context records all siblings between the binder and the current position
 //
-// assms, concls: the assumptions are known to hold, the conclusions are known not to hold
+// facts: the assumptions, known to hold, and the conclusions, known not to hold (see Facts)
 //
-// su: a substitution that replaces variables by others or by literals known to be equal
+// replace: a substitution that replaces variables by others or by literals known to be equal
 //
-// eq: the equations x == e of the assumptions that are not recursive, i.e., where x is not free in e
+// chain: the equations x == e of the assumptions that are not recursive, i.e., where x is not free in e
 //
 // polarity: Some(true) if the current position occurs positively, Some(false) if it occurs negatively,
 // and None if it occurs in both ways or not in a formula, e.g. below an equation or in the argument of a function;
-// the context is inconsistent if false is among the assumptions or true among the conclusions,
+// the context is inconsistent if its facts are,
 // then the current position is irrelevant for the truth value of the whole formula
 //
 // rules, steps: the rewrite rules, which are applied after each round of simplification (see Simplify.simplify),
@@ -29,10 +29,9 @@ case class Ctx(
     bound: List[List[Var]],
     universal: Set[Var],
     existential: Set[Var],
-    assms: List[Expr],
-    concls: List[Expr],
-    su: Map[Var, Expr],
-    eq: Map[Var, Expr],
+    facts: Facts,
+    replace: Map[Var, Expr],
+    chain: Map[Var, Expr],
     polarity: Option[Boolean],
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0)
@@ -42,12 +41,12 @@ case class Ctx(
   def withRules(rules: List[Rule], steps: Int = 1000) =
     copy(rules = rules, steps = util.Ref(steps))
 
-  // an expression seen through the equations of eq, otherwise itself,
+  // an expression seen through the equations of chain, otherwise itself,
   // e.g. ctx.↑(Counter(i, c, n)) matches a variable K with K == counter(i, c, n) among the assumptions
   object ↑ :
     def unapply(expr: Expr): Some[Expr] =
       expr match
-        case x: Var => Some(Ctx.this.eq.getOrElse(x, x))
+        case x: Var => Some(Ctx.this.chain.getOrElse(x, x))
         case _      => Some(expr)
 
   // variables bound by let, match, and the combinators, which are neither universal nor existential
@@ -75,10 +74,9 @@ case class Ctx(
     bound.flatten.toSet ++ used
 
   // variables that occur in the facts of the context, including the primed variables of derivatives (see Diff);
-  // the equations in eq remain among the assumptions, unlike those in su
+  // the equations in chain remain among the assumptions, unlike those in replace
   def used: Set[Var] =
-    val facts = assms ++ concls
-    facts.free ++ su.keys ++ su.values.free
+    facts.free ++ replace.keys ++ replace.values.free
 
   // equations of variables with variables and literals are recorded in the substitution;
   // facts are stored as given and not normalized under the substitution,
@@ -90,42 +88,41 @@ case class Ctx(
       case Eq(e1, e2) if e1 == e2 =>
         this
 
-      case Eq(x: Var, y: Var) if !(su contains x) =>
-        copy(su = su + (x -> y))
+      case Eq(x: Var, y: Var) if !(replace contains x) =>
+        copy(replace = replace + (x -> y))
 
-      case Eq(x: Var, l: Lit) if !(su contains x) =>
-        copy(su = su + (x -> l))
+      case Eq(x: Var, l: Lit) if !(replace contains x) =>
+        copy(replace = replace + (x -> l))
 
-      case Eq(l: Lit, x: Var) if !(su contains x) =>
-        copy(su = su + (x -> l))
+      case Eq(l: Lit, x: Var) if !(replace contains x) =>
+        copy(replace = replace + (x -> l))
 
       // the equation remains an assumption, such that it is still found by Simplify.implied;
       // equations whose right-hand side is a sum, difference, negation, or product are not recorded,
       // since rewriting follows the equations (see Rewrite.matches), whereas arithmetic is normalized instead
-      case Eq(x: Var, e) if !(eq contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
-        copy(assms = phi :: assms, eq = eq + (x -> e))
+      case Eq(x: Var, e) if !(chain contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
+        copy(facts = facts.assume(phi), chain = chain + (x -> e))
 
-      case Eq(e, x: Var) if !(eq contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
-        copy(assms = phi :: assms, eq = eq + (x -> e))
+      case Eq(e, x: Var) if !(chain contains x) && !(e.free contains x) && !Ctx.arithmetic(e) =>
+        copy(facts = facts.assume(phi), chain = chain + (x -> e))
 
       // an equation of a term with variables and a ground term is a rewrite rule without instantiable variables,
       // whose free variables are constants, e.g. history.events == [] for delay(history.events, t);
       // it terminates, since each step removes occurrences of variables, which no other such rule matches
       case Eq(lhs, rhs) if Ctx.rule(lhs, rhs) =>
-        copy(assms = phi :: assms, rules = Rule(Nil, lhs, rhs, True) :: rules)
+        copy(facts = facts.assume(phi), rules = Rule(Nil, lhs, rhs, True) :: rules)
 
       case Eq(rhs, lhs) if Ctx.rule(lhs, rhs) =>
-        copy(assms = phi :: assms, rules = Rule(Nil, lhs, rhs, True) :: rules)
+        copy(facts = facts.assume(phi), rules = Rule(Nil, lhs, rhs, True) :: rules)
 
       case _ =>
-        copy(assms = phi :: assms)
+        copy(facts = facts.assume(phi))
 
   def deny(phi: Expr): Ctx =
-    copy(concls = phi :: concls)
+    copy(facts = facts.deny(phi))
 
-  // false among the assumptions or true among the conclusions
   def inconsistent =
-    (assms contains False) || (concls contains True)
+    facts.inconsistent
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
@@ -163,7 +160,7 @@ case class Ctx(
 
 object Ctx:
   // whether lhs == rhs is a rule of the context: rhs is ground and lhs is not;
-  // equations of variables are recorded in eq, those of arithmetic are normalized instead
+  // equations of variables are recorded in chain, those of arithmetic are normalized instead
   def rule(lhs: Expr, rhs: Expr): Boolean =
     !lhs.isInstanceOf[Var] && !arithmetic(lhs) && lhs.free.nonEmpty && rhs.free.isEmpty
 
@@ -178,7 +175,7 @@ object Ctx:
       case None =>
         false
 
-  val empty = Ctx(Nil, Set(), Set(), Nil, Nil, Map(), Map(), None)
+  val empty = Ctx(Nil, Set(), Set(), Facts.empty, Map(), Map(), None)
 
   // at the top of an asserted formula
   val pos = empty.copy(polarity = Some(true))
