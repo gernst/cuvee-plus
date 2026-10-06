@@ -74,12 +74,11 @@ case class Ctx(
   def free: Set[Var] =
     bound.flatten.toSet ++ used
 
-  // variables that occur in the facts of the context, including the primed variables of derivatives,
-  // which these refer to once the derivative is computed, but which are not free in Diff;
+  // variables that occur in the facts of the context, including the primed variables of derivatives (see Diff);
   // the equations in eq remain among the assumptions, unlike those in su
   def used: Set[Var] =
     val facts = assms ++ concls
-    facts.free ++ facts.flatMap(_.primes) ++ su.keys ++ su.values.free
+    facts.free ++ su.keys ++ su.values.free
 
   // equations of variables with variables and literals are recorded in the substitution;
   // facts are stored as given and not normalized under the substitution,

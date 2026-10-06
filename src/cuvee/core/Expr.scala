@@ -30,17 +30,6 @@ sealed trait Expr:
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
       case Match(arg, cases)                    => Match(f(arg), cases.map(_.map(f)))
 
-  // the primed variables x' of the derivatives (xs :: e)' in this expression,
-  // which are not free in Diff (see Ctx.used)
-  def primes: Set[Var] =
-    val inner = Set.newBuilder[Var]
-    map: arg =>
-      inner ++= arg.primes
-      arg
-    this match
-      case Diff(xs, _) => inner.result() ++ xs.primed
-      case _           => inner.result()
-
   // the expression without type annotations e as T
   def removeAs: Expr =
     this match
@@ -111,10 +100,11 @@ case class As(expr: Expr, typ: Type) extends Expr:
 
 // the (time-)derivative of `expr` with respect to the variables `xs`, i.e., the sum of ∂expr/∂x * x' for x in xs,
 // where the variables xs are ordinary free variables without primes, which are introduced only by computing
-// the derivative (see Simplify.diff); xs must be on Real
+// the derivative (see Simplify.diff); xs must be on Real;
+// the primed variables are free, too, since the derivative refers to them once it is computed
 case class Diff(xs: List[Var], expr: Expr) extends Expr:
   def params = xs.params ++ expr.params
-  def free = expr.free ++ xs
+  def free = expr.free ++ xs ++ xs.primed
   def typ = expr.typ
 
 // the value of `expr` at the entry of the enclosing procedure, where the global variables have their initial values,

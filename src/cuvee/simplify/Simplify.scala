@@ -457,11 +457,13 @@ object Simplify extends Transform:
   // and e does not depend on variables bound inside the scope of x, otherwise x cannot be instantiated by e,
   // e.g. not in forall x. exists y. !(x == y)
   def point(ctx: Ctx, x: Var, e: Expr): Boolean =
-    (ctx.existential contains x)
-      && !(e.free contains x)
-      && !(e.primes contains x)
-      && !(ctx.used contains x)
-      && (e.free intersect ctx.bound.takeWhile(!_.contains(x)).flatten.toSet).isEmpty
+    // the variables of the binders inside that of x, those of the binder of x are not nested
+    val inner = ctx.bound.takeWhile(!_.contains(x)).flatten.toSet
+    val existential = ctx.existential contains x
+    val recursive = e.free contains x
+    val used = ctx.used contains x
+    val dependent = (e.free intersect inner).nonEmpty
+    existential && !recursive && !used && !dependent
 
   // equivalences are equations on Bool, the normal form, such that both are known from the context alike,
   // and as which SMT-LIB writes them
