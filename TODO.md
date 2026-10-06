@@ -9,14 +9,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `Match`: parsed and printed only in Dafny (expressions, without case
   conditions, not statements), no reduction on constructors, no rewriting
   modulo matches; SMT-LIB prints it only without case conditions.
-- Flaky test: `SimplifyPrograms.examples` sometimes reports "goal does not
-  hold" for [bitvectors.dfy](examples/dafny/vcgen/bitvectors.dfy) in the full
-  test run, depending on the tests run before it in the same JVM; alone, and
-  with `java -jar cuvee.jar -simplify -verify -z3`, it passes. The fresh-name
-  counters are already reset per run (`Cuvee.pipe`), so some other state
-  persists across runs; not investigated further. Also, rarely,
-  `c.Translation.increments in expressions` (Horn clauses of a loop with
-  `-chc -z3`, without the simplifier), which passes alone.
+- Flaky test: rarely, `c.Translation.increments in expressions` (Horn clauses
+  of a loop with `-chc -z3`, without the simplifier), which passes alone.
 
 ## Code structure
 
@@ -161,6 +155,13 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 
 `BitVec(n)` with the SMT-LIB literals and functions (`BitVecs`). Open: no
 simplifier rules; widths cannot be parameters.
+
+- Return to the bitvectors of Dafny: `SimplifyPrograms.examples` reported
+  "goal does not hold" for [bitvectors.dfy](examples/dafny/vcgen/bitvectors.dfy)
+  sometimes in the full test run, depending on the tests run before it in the
+  same JVM; alone, and with `java -jar cuvee.jar -simplify -verify -z3`, it
+  passes. The fresh-name counters are reset per run (`Cuvee.pipe`), so some
+  other state persists across runs. The example is left out of that test.
 
 - Dafny: no `<<`, `>>` (as a token, `>>` would close nested type arguments
   `seq<seq<int>>`), no infix `|` (which clashes with `|s|`), no
