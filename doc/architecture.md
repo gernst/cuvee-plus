@@ -209,6 +209,8 @@ Each frontend follows the same structure (see `cuvee.dafny` and
 2. **Syntax** (`Syntax.scala`): an untyped AST close to the concrete syntax,
    with names as strings.
 3. **Grammar** (`Grammar.scala`): easyparse parsers from tokens to the AST.
+   They build syntax only: no lookups in `state` or scopes, all resolution
+   happens in the parser.
    - Operators and their precedences are tables for `Mixfix`.
    - `translate` maps the frontend's names onto core names, e.g.
      `int → Int`, `&& → and`, `seq → Seq`.

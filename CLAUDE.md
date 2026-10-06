@@ -37,6 +37,9 @@ or solvers consume.
 - Run: `mill -i run <options> <file>`. `-print` takes an argument
   (`-print null`).
 - z3 by hand only with a timeout: `z3 -T:5 file.smt2`.
+- Commands that may read stdin hang otherwise: `java -jar cuvee.jar` only
+  with a file, a timeout, and `< /dev/null`; mill in scripts with
+  `< /dev/null`.
 - The shell is fish; write multi-line scripts for bash explicitly.
 
 ## Trace equation systems and solvers

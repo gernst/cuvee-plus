@@ -264,7 +264,11 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   (`lhs`).
 - Constructors:
   - `Subst.from(xs, es)`;
-  - `Subst.fresh(params)` and `Subst.fresh(vars)`.
+  - `Subst.fresh(params)` and `Subst.fresh(vars)`;
+  - `Subst.rename(xs)` returns fresh copies of `xs` with the renaming to
+    them, `Subst.rename(xs, avoid)` renames only those that clash with
+    `avoid` by name. Transforms that need fresh bound variables use these,
+    rather than renaming by hand.
 - `x.fresh` returns a copy with a new index from a global counter.
   `Var.reset()` and `Param.reset()` make the numbering deterministic per
   run.
@@ -315,3 +319,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   moving summands between the sides (as normalized polynomials of the
   difference, where `<` on `Int` is `<=` with 1 added), and the binding
   structure of `Trace`, `Maps`, and `Invs` ([teq.md](teq.md)).
+  A function definition with `:rw` whose body is a match on a parameter
+  gives one rule per case, the pattern in place of the parameter, and
+  pattern variables that shadow other parameters renamed apart
+  (`Rule.from(fun, body)`). Overlapping patterns are not handled: a later
+  case's rule also fires on arguments that an earlier case matches.
