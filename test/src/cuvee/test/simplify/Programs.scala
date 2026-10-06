@@ -98,6 +98,22 @@ object Dependencies extends TestSuite:
       val other = Invs(List(K), List(k), Lt.int(Zero.int, k))
       simplify(other) ==> other
 
+    // the iterations of a loop, counted by the first dependency, are 0 <= k < n,
+    // and the other dependencies have their values in iteration k
+    test("iterations"):
+      simplify(Invs(List(C), List(k), Le.int(Zero.int, k))) ==> True
+      simplify(Invs(List(C), List(k), Lt.int(k, n))) ==> True
+      simplify(Invs(List(C, J), List(k, j), Eq(j, Earlier(k, J)))) ==> True
+      val upds = List(Upd(Lt.int(k, n), j), Upd(Le.int(n, k), Zero.int))
+      simplify(Maps(List(C, J), List(k, j), upds)) ==> Maps(List(C, J), List(k, j), List(Upd(True, j)))
+      // also for a variable that denotes the counter by an assumption
+      val I = Var("I", Sort.trace(Sort.int))
+      val ctx = Ctx.empty.assume(List(Eq(I, Counter(Zero.int, One.int, n))), Nil)
+      Simplify.simplify(Config.default, State.empty, ctx, Invs(List(Butlast(I)), List(k), Lt.int(k, n))) ==> True
+      // not for other dependencies
+      val other = Invs(List(J), List(j), Le.int(Zero.int, j))
+      simplify(other) ==> other
+
     // the result of a case assumes that the guards of the other cases are false, not so its guard
     test("other guards"):
       val b = Var("b", Sort.bool)

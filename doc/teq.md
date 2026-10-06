@@ -106,6 +106,11 @@ after section 4 of the paper.
   among their own (`Simplify.invariants`), with the bound variables renamed
   to those of the same dependencies. The positions coincide, since the
   dependencies of a combinator have equal length.
+- If the first dependency counts the iterations of a loop,
+  `⌊counter(0, 1, n)⌋` (also through a variable `K == counter(0, 1, n)`)
+  bound to `k`, they also assume `0 <= k < n`, since the loop exits when
+  `k == n`, and `z == earlier(k, ⌊Z⌋)` for each other dependency `⌊Z⌋`
+  bound to `z` (`Simplify.iterations`).
 - The rewrite engine ([Rewrite.scala](../src/cuvee/simplify/Rewrite.scala))
   matches the binding structure of the combinators: dependencies of the
   pattern are selected among those of the expression (`Binding` relates the

@@ -272,14 +272,14 @@ object Simplify extends Transform:
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
-        val ctx_ = ctx.neutral.bind(vars_).assume(invariants(ctx, deps_, vars_.tail), Nil)
+        val ctx_ = ctx.neutral.bind(vars_).assume(invariants(ctx, deps_, vars_.tail) ++ iterations(config, state, ctx, deps_, vars_.tail), Nil)
         val updates_ = this.updates(config, state, ctx_, updates.map(_.map(re(_))))
         trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, updates_)
 
       case Maps(deps, bound, updates) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val ctx_ = ctx.neutral.bind(bound_).assume(invariants(ctx, deps_, bound_), Nil)
+        val ctx_ = ctx.neutral.bind(bound_).assume(invariants(ctx, deps_, bound_) ++ iterations(config, state, ctx, deps_, bound_), Nil)
         val updates_ = this.updates(config, state, ctx_, updates.map(_.map(re(_))))
         maps(config, state, ctx, deps_, bound_, updates_)
 
@@ -288,7 +288,7 @@ object Simplify extends Transform:
       case Invs(deps, bound, body) =>
         val deps_ = deps.map(simplify(config, state, ctx.neutral, _))
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val ctx_ = ctx.neutral.bind(bound_).assume(invariants(ctx, deps_, bound_), Nil)
+        val ctx_ = ctx.neutral.bind(bound_).assume(invariants(ctx, deps_, bound_) ++ iterations(config, state, ctx, deps_, bound_), Nil)
         val body_ = simplify(config, state, ctx_, re(body))
         invs(config, state, ctx, deps_, bound_, body_)
 
@@ -303,6 +303,20 @@ object Simplify extends Transform:
     yield
       val re = Subst.from(bound_, deps_.map(dep => bound(deps.indexOf(dep))))
       re(body)
+
+  // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),
+  // then 0 <= k < n, since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
+  // is its value in iteration k, i.e., z == earlier(k, ⌊Z⌋)
+  def iterations(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var]): List[Expr] =
+    (deps, bound) match
+      case (Butlast(ctx.↑(Counter(Zero.int, One.int, n))) :: deps_, k :: bound_) =>
+        val ctx_ = ctx.neutral.bind(bound)
+        val range = List(Le.int(Zero.int, k), Lt.int(k, n)).map(simplify(config, state, ctx_, _))
+        val values = (deps_ zip bound_).map((dep, z) => Eq(z, Earlier(k, dep)))
+        range ++ values
+
+      case _ =>
+        Nil
 
   // the guards of the cases of an update are simplified, cases whose guard is false are dropped,
   // and the results are simplified assuming their guard and, since the guards are disjoint, that the others are false;
