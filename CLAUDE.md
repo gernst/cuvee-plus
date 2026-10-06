@@ -71,6 +71,8 @@ or solvers consume.
 - **Stages buffer declarations**, losing the sink's answers to them; filters
   that need those are sink wrappers.
 - **Pretty printing:** wrap parenthesized documents in `Align(...)`.
+- **Dafny output need not be valid Dafny,** e.g. tuple selectors print as
+  `tuple2_1(p)`, not `p.1`; do not fix such cases unless asked.
 - **Test catches the bug?** Stash only the fix, run
   `mill -i test.testOnly <suite>`.
 - **Mill launcher crashes** (`MillLauncherMain`) are transient; rerun.
