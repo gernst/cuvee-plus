@@ -150,3 +150,6 @@ object Grammar:
 
   val top: Parser[Top] =
     P(function | global)
+
+  val unit =
+    P(top.*)
