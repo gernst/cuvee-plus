@@ -15,8 +15,6 @@ function butlast<a₀>(x₀: Trace<a₀>): seq<a₀>
 function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 // the last element of a trace
 function current<a₀>(x₀: Trace<a₀>): a₀
-// the length of a sequence
-function length<a₀>(x₀: seq<a₀>): int
 // the elements of sequences
 function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
 

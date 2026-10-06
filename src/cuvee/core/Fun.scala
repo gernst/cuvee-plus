@@ -113,15 +113,14 @@ object Fun:
 
   // the functions on traces and sequences of trace equation systems: counter(i, c, n) is the trace i, i + c, ..., i + n c,
   // current the last element of a trace, butlast (written ⌊X⌋) all but the last element,
-  // length the length of a sequence, earlier the elements of sequences
+  // earlier the elements of sequences
   object trace:
     val counter = Fun("counter", Nil, formals(Sort.int, Sort.int, Sort.int), Sort.trace(Sort.int))
     val current = Fun("current", List(a), formals(Sort.trace(a)), a)
     val butlast = Fun("butlast", List(a), formals(Sort.trace(a)), Sort.seq(a))
-    val length = Fun("length", List(a), formals(Sort.seq(a)), Sort.int)
     val earlier = Fun("earlier", List(a), formals(Sort.int, Sort.seq(a)), a)
 
-    val all = List(counter, current, butlast, length, earlier)
+    val all = List(counter, current, butlast, earlier)
 
   val not = Fun("not", Nil, formals(bool), bool)
   val imp = Fun("=>", Nil, formals(bool, bool), bool)

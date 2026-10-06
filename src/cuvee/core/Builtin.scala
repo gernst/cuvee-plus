@@ -104,12 +104,11 @@ object Ge:
 
 // the functions on traces (see Fun.trace): counter(i, c, n) is the trace i, i + c, ..., i + n c,
 // current(X) is the last element of X, butlast(X), written ⌊X⌋, is the sequence of all but the last element of X,
-// earlier(k, xs) is the k-th element of such a sequence, and length(xs) is its length
+// and earlier(k, xs) is the k-th element of such a sequence
 object Counter extends Sugar.ternary(Fun.trace.counter)
 object Current extends Sugar.unary(Fun.trace.current)
 object Butlast extends Sugar.unary(Fun.trace.butlast)
 object Earlier extends Sugar.binary(Fun.trace.earlier)
-object Length extends Sugar.unary(Fun.trace.length)
 
 // the functions on sequences, as in Fun.seq, e.g. Seqs.len(s) and Seqs.nth(s, i)
 object Seqs:

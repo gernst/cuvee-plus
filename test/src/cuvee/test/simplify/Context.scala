@@ -249,6 +249,17 @@ object Decisions extends TestSuite:
       simplify(Ctx.empty, Mod.int(Plus.int(Times.int(lit(3), n), One.int), lit(2))) ==> Mod.int(Plus.int(n, One.int), lit(2))
       simplify(Ctx.empty, Mod.int(n, lit(2))) ==> Mod.int(n, lit(2))
 
+    // earlier and maps commute, the cases of the update become conditionals
+    test("earlier of maps"):
+      val k = Var("k", Sort.int)
+      val v = Var("v", Sort.int)
+      val xs = Var("xs", Sort.seq(Sort.int))
+      simplify(Ctx.empty, Earlier(k, Maps(List(xs), List(v), List(Upd(True, Plus.int(v, One.int)))))) ==>
+        Plus.int(Earlier(k, xs), One.int)
+      val cases = List(Upd(Lt.int(v, Zero.int), Zero.int), Upd(Le.int(Zero.int, v), v))
+      simplify(Ctx.empty, Earlier(k, Maps(List(xs), List(v), cases))) ==>
+        Ite(Lt.int(Earlier(k, xs), Zero.int), Zero.int, Earlier(k, xs))
+
     // an inconsistent context decides formulas by polarity only, not by the theories
     test("inconsistent"):
       val ctx = Ctx.empty.assume(Le.int(One.int, n)).assume(Le.int(n, Zero.int))

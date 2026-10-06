@@ -138,7 +138,7 @@ object TEQ extends TestSuite:
       assert(subexprs(updated).contains(app("count", e, app("selects", a, keys))))
       assert(!subexprs(updated).exists { case Store(_, _, _) => true; case _ => false })
 
-      val bounds = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, j)).assume(Lt.int(j, app("length", keys))).withRules(rules)
+      val bounds = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, j)).withRules(rules)
       val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
       assert(subexprs(earlier).contains(app("count", e, app("prefix", j, keys))))
       assert(!has(earlier, "counts"))
@@ -170,7 +170,7 @@ object TEQ extends TestSuite:
       Rewrite(rules, Le.int(x, max)) ==> True
       Rewrite(rules, Le.int(min, x)) ==> True
 
-      val bounds = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, k)).assume(Lt.int(k, app("length", vs))).withRules(rules)
+      val bounds = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, k)).withRules(rules)
       Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, Le.int(app("earlier", k, vs), max)) ==> True
       Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, Le.int(min, app("earlier", k, vs))) ==> True
 
