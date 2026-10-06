@@ -15,7 +15,7 @@ object Simplify extends Transform:
   // where axioms, goals, and lemmas that simplify to true are dropped, since they state nothing;
   // debug output is printed with the printer of the configuration
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    val rules = Rules.from(prefix ++ cmds)
+    val rules = Rules.from(state, prefix ++ cmds)
 
     for
       cmd <- cmds

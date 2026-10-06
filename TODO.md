@@ -8,6 +8,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - in Horn, if a method has only a contract but no implementation, don't generate pre/post predicates, just inline. the reason is that we want to instantiate data types that are specified only, and if they are polymorphic, inlining the requires and ensures does not produce polymorphic clauses if the caller is monomorphic,
   the precondition would this be split into its conjuncts, simiplarly, the postcondition is as a conjunction, use And.flattenStrong for that
 - make a plan to resolve calls and selectors on this as well as on arbitrary terms, don't implement it
+- check for stray references of Fun.... that are not goverened by syntactic sugar objects
 
 ## General
 
@@ -125,6 +126,10 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 - No ACSL contracts (`//@ requires`, `loop invariant`, `\result`, `\old`), so
   only loop-free programs verify with `-verify`, others need `-chc`.
 - Unbounded integers, no overflow; arrays are values, sizes are ignored.
+- `/` and `%` are translated to `div` and `mod` of SMT-LIB, which round down
+  for a positive divisor, whereas C truncates towards zero
+  ([examples/c/div.c](examples/c/div.c)); introduce C's division and
+  remainder as proper functions in a C prelude.
 - Calls inside loop conditions, right operands of `&&`/`||`, and branches of
   `?:` are not supported; temporaries `tmp_1, ...` may clash with input names.
 - Initial values of globals become a `requires` annotation of `main` that is

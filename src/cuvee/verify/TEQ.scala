@@ -277,7 +277,7 @@ object TEQ extends Transform:
         Eq(tr, Trace(p(x), deps, x_, bound, updates))
 
     val counter = Eq(K, Counter(Zero.int, One.int, n))
-    val current = for (x, tr) <- cur zip Xs yield Eq(x, App(Fun.trace.current, List(tr)))
+    val current = for (x, tr) <- cur zip Xs yield Eq(x, Current(tr))
 
     // all earlier iterations have taken some path through the body, with the guard holding before each of them
     val iterations =
@@ -286,7 +286,7 @@ object TEQ extends Transform:
       val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
       Invs(deps, bound, And(List(inner(guard), paths_).flatMap(And.flattenStrong)))
 
-    val wf = Le.int(Zero.int, n) :: Zs.map(seq => Eq(App(Fun.trace.length, List(seq)), n))
+    val wf = Le.int(Zero.int, n) :: Zs.map(seq => Eq(Length(seq), n))
     val teq = And(counter :: current ++ equations ++ (iterations :: wf))
 
     // the state at the exit, from which the body executes safely if the guard holds,

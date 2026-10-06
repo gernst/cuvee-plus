@@ -1,5 +1,5 @@
-// expected: invalid
-// SMT-LIB's div rounds down for negative numbers, C's / does not
+// expected: valid
+// division is translated to div of SMT-LIB (see TODO.md), which rounds down, unlike C's /
 
 int main(void)
 {

@@ -14,8 +14,7 @@ import easyparse.Assoc
 
 // prints procedures as C functions, as far as they are C programs: integers are int, Bool is _Bool,
 // arrays Array Int T are T a[] (as values); assertions and assumptions are written with the conventions of SV-COMP;
-// C's / and % are recognized in their translation to div and mod of SMT-LIB (see Quot and Rem),
-// other occurrences of div and mod are written in terms of / and %;
+// div and mod of SMT-LIB are written as / and %, which C's / and % are translated to (see TODO.md);
 // formulas that are not C are written in a notation after ACSL, \forall int x; φ and \exists int x; φ,
 // the combinators \trace(e, for Y do x, y => u), \map(for Y yield y => u), \all(for Y check y => φ),
 // where the types that are not C are written like sorts, e.g. Seq<int>, and other functions are calls;
@@ -276,12 +275,7 @@ object Printer extends cuvee.pipe.Printer:
       val (assoc, prec) = Grammar.infix_ops(op)
       Some((op, assoc, prec, args))
 
-    // the translations of / and % come first, since they are conditionals and differences
     expr match
-      case Quot(a, b)          => op("/", List(a, b))
-      case Rem(a, b)           => op("%", List(a, b))
-      case App(Trunc.quot, _, _, args) => op("/", args)
-      case App(Trunc.rem, _, _, args)  => op("%", args)
       case Not(Eq(a, b))       => op("!=", List(a, b))
       case Eq(a, b)            => op("==", List(a, b))
       case And(args)           => op("&&", args)
@@ -289,6 +283,8 @@ object Printer extends cuvee.pipe.Printer:
       case Plus.int(args)      => op("+", args)
       case Minus.int(a, b)     => op("-", List(a, b))
       case Times.int(args)     => op("*", args)
+      case DivBy.int(a, b)     => op("/", List(a, b))
+      case Mod.int(a, b)       => op("%", List(a, b))
       case Lt.int(a, b)        => op("<", List(a, b))
       case Le.int(a, b)        => op("<=", List(a, b))
       case Gt.int(a, b)        => op(">", List(a, b))
@@ -367,13 +363,6 @@ object Printer extends cuvee.pipe.Printer:
       // C has no let, the bound variables are substituted
       case Let(bound, args, body) =>
         doc(Subst.from(bound, args)(body))
-
-      // div and mod of SMT-LIB, which differ from C's / and %
-      case DivBy.int(a, b) =>
-        doc(Trunc.div(a, b))
-
-      case Mod.int(a, b) =>
-        doc(Trunc.mod(a, b))
 
       case Bind(quant, bound_, body) =>
         val bound__ = Align(Doc.fill(bound_.map(bound), text(",")))

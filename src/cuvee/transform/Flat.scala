@@ -167,7 +167,7 @@ object Flat extends Transform:
 
       case App(fun, _, _, args) if isPredicate(state, fun) =>
         val args_ = args.map(flat(state, _))
-        App(predicate(state, fun), args_.flatMap(parts(state, _)))
+        App(state, predicate(state, fun), args_.flatMap(parts(state, _)))
 
       case Eq(left, right) if isDatatype(state, left.typ) =>
         val left_ = parts(state, flat(state, left))

@@ -69,9 +69,9 @@ object Horn extends Transform:
         val frame = for (g, g_) <- gs zip gs_ if !mod.contains(g) yield Eq(g, g_)
 
         val clauses = Ref[List[Expr]](Nil)
-        clause(in ++ gs, List(requires), App(pre, in ++ gs), clauses)
-        clause(in ++ gs, List(App(pre, in ++ gs)), requires, clauses)
-        clause(in ++ gs_ ++ out ++ gs, App(pre, in ++ gs_) :: ensures_ :: frame, App(post, in ++ gs_ ++ out ++ gs), clauses)
+        clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
+        clause(in ++ gs, List(App(state, pre, in ++ gs)), requires, clauses)
+        clause(in ++ gs_ ++ out ++ gs, App(state, pre, in ++ gs_) :: ensures_ :: frame, App(state, post, in ++ gs_ ++ out ++ gs), clauses)
 
         decls ++ clauses.value.map(axiom)
 
@@ -91,15 +91,15 @@ object Horn extends Transform:
         val decls_ = Ref[List[DeclareFun]](Nil)
         val clauses = Ref[List[Expr]](Nil)
 
-        clause(in ++ gs, List(requires), App(pre, in ++ gs), clauses)
-        clause(in ++ gs, List(App(pre, in ++ gs)), requires, clauses)
+        clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
+        clause(in ++ gs, List(App(state, pre, in ++ gs)), requires, clauses)
 
         // the outputs are unconstrained initially
-        val entry = App(pre, in ++ gs_) :: Eq(gs, gs_)
-        val exit = List(App(post, scope))
+        val entry = App(state, pre, in ++ gs_) :: Eq(gs, gs_)
+        val exit = List(App(state, post, scope))
         wp(state, name, scope, List(body_), entry, exit, None, None, exit, decls_, clauses)
 
-        clause(scope, List(App(pre, in ++ gs_), App(post, scope)), ensures_, clauses)
+        clause(scope, List(App(state, pre, in ++ gs_), App(state, post, scope)), ensures_, clauses)
 
         decls ++ decls_.value ++ clauses.value.map(axiom)
 
@@ -208,15 +208,15 @@ object Horn extends Transform:
 
         val next = predicate(proc, "spec", scope, decls)
         val (xs_, su) = Subst.rename(xs)
-        clause(scope ++ xs_, pre :+ su(post_), App(next, su(scope)), clauses)
-        wp(state, proc, scope, rest, List(App(next, scope)), post, break, continue, return_, decls, clauses)
+        clause(scope ++ xs_, pre :+ su(post_), App(state, next, su(scope)), clauses)
+        wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)
 
       // pre ⇒ next(scope[xs := rhs]), where next is a fresh predicate over the scope
       case Assign(xs, rhs) :: rest =>
         val next = predicate(proc, "assign", scope, decls)
         val su = Subst.from(xs, rhs)
-        clause(scope, pre, App(next, su(scope)), clauses)
-        wp(state, proc, scope, rest, List(App(next, scope)), post, break, continue, return_, decls, clauses)
+        clause(scope, pre, App(state, next, su(scope)), clauses)
+        wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)
 
       // pre ⇒ name_pre(args, gs), which collects the states in which `name` is called,
       // and pre ∧ name_post(args, gs, res_, gs[mod := mod_]) ⇒ next(scope[res, mod := res_, mod_]),
@@ -235,7 +235,7 @@ object Horn extends Transform:
         val su = Subst.from(res ++ mod, res_ ++ mod_)
         val next = predicate(proc, "call", scope, decls)
 
-        clause(scope, pre, App(precondition(state, name), args ++ gs), clauses)
+        clause(scope, pre, App(state, precondition(state, name), args ++ gs), clauses)
 
         // recursive calls must decrease the measure, which refers to the inputs that are in scope
         if name == proc then
@@ -246,11 +246,11 @@ object Horn extends Transform:
 
         clause(
           scope ++ res_ ++ mod_,
-          pre :+ App(postcondition(state, name), args ++ gs ++ res_ ++ su(gs)),
-          App(next, su(scope)),
+          pre :+ App(state, postcondition(state, name), args ++ gs ++ res_ ++ su(gs)),
+          App(state, next, su(scope)),
           clauses
         )
-        wp(state, proc, scope, rest, List(App(next, scope)), post, break, continue, return_, decls, clauses)
+        wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)
 
       // the statements inside the block range over the scope extended by the locals, which are unconstrained initially,
       // each way to leave the block leads to heads over the outer scope, which drops the locals;
@@ -298,7 +298,7 @@ object Horn extends Transform:
         val scope_ = scope ++ ms
 
         val inv = predicate(proc, "inv", scope, decls)
-        val head = App(inv, scope)
+        val head = App(state, inv, scope)
         val iter = if dec.isEmpty then List(head) else List(head, Verify.decreases(dec, ms))
 
         clause(scope, pre, head, clauses)
@@ -327,5 +327,5 @@ object Horn extends Transform:
     then body(post)
     else
       val next = predicate(proc, what, scope, decls)
-      body(List(App(next, scope)))
-      wp(state, proc, scope, rest, List(App(next, scope)), post, break, continue, return_, decls, clauses)
+      body(List(App(state, next, scope)))
+      wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)

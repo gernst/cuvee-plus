@@ -56,7 +56,7 @@ object Rule:
   // where the pattern replaces the parameter in the left-hand side, and pattern variables that shadow
   // other parameters are renamed apart; overlapping patterns are not treated specially,
   // although the cases of a match apply in sequence
-  def from(fun: Fun, body: Expr): List[Rule] =
+  def from(state: State, fun: Fun, body: Expr): List[Rule] =
     body match
       case Match(x: Var, cases) if fun.formals.contains(x) =>
         val others = fun.formals.filterNot(_ == x)
@@ -67,7 +67,7 @@ object Rule:
           val pat_ = re(pat)
 
           val args = fun.formals.map(y => if y == x then pat_ else y)
-          Rule(others ++ pat_.free.toList, App(fun, args), re(rhs), re(cond))
+          Rule(others ++ pat_.free.toList, App(state, fun, args), re(rhs), re(cond))
 
       case _ =>
         Error.raise("rewrite rules of a definition need a match on a parameter", fun, body)
@@ -77,16 +77,16 @@ object Rule:
 
 object Rules:
   // the rewrite rules of the assertions, lemmas, and function definitions with the attribute :rw
-  def from(cmds: List[Cmd]): List[Rule] =
+  def from(state: State, cmds: List[Cmd]): List[Rule] =
     for
       cmd <- cmds if cmd.isRule
-      Rule(xs, lhs, rhs, cond) <- from(cmd)
+      Rule(xs, lhs, rhs, cond) <- from(state, cmd)
     // type annotations e as T are dropped from the left-hand sides of rules, they are needed for typing only,
     // and matching would compare their types literally, which may contain the type parameters of the rule
     yield Rule.check(Rule(xs, lhs.removeAs, rhs, cond))
 
-  def from(cmd: Cmd): List[Rule] =
+  def from(state: State, cmd: Cmd): List[Rule] =
     cmd match
       case Assert(_, _, phi, _)   => List(Rule.from(Nil, phi))
-      case DefineFun(fun, body, _) => Rule.from(fun, body)
+      case DefineFun(fun, body, _) => Rule.from(state, fun, body)
       case _                       => Nil

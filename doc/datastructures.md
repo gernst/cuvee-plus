@@ -332,5 +332,5 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   A function definition with `:rw` whose body is a match on a parameter
   gives one rule per case, the pattern in place of the parameter, and
   pattern variables that shadow other parameters renamed apart
-  (`Rule.from(fun, body)`). Overlapping patterns are not handled: a later
+  (`Rule.from(state, fun, body)`). Overlapping patterns are not handled: a later
   case's rule also fires on arguments that an earlier case matches.

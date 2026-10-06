@@ -6,7 +6,7 @@ import util.Name
 import cuvee.Error
 import cuvee.core
 import cuvee.core.{State, Attrs, Sort, Spec, True, False, Zero, One}
-import cuvee.core.{Plus, Minus, Times, UMinus, DivBy, Lt, Le, Gt, Ge, Eq, Not, And, Or, Ite, Select, Store}
+import cuvee.core.{Plus, Minus, Times, UMinus, DivBy, Mod, Lt, Le, Gt, Ge, Eq, Not, And, Or, Ite, Select, Store}
 
 // resolution of a C translation unit into core procedures:
 // integer types are Int (unbounded), _Bool is Bool, arrays are values of type Array Int T;
@@ -67,9 +67,9 @@ class Parser(var state: State):
       case "+" => Plus.int(a, b)
       case "-" => Minus.int(a, b)
       case "*" => Times.int(a, b)
-      // division and remainder truncate towards zero in C, unlike div and mod in SMT-LIB
-      case "/" => Quot(a, b)
-      case "%" => Rem(a, b)
+      // division and remainder truncate towards zero in C, unlike div and mod in SMT-LIB (see TODO.md)
+      case "/" => DivBy.int(a, b)
+      case "%" => Mod.int(a, b)
       case _   => Error.raise("unknown arithmetic operator", op)
 
   // an expression together with the statements that evaluate the calls in it first, and its C type

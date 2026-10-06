@@ -66,12 +66,16 @@ case class Lit(value: Any, typ: Type) extends Expr:
 
 object App:
   // instantiate the type parameters of `fun` by matching its argument types against those of `args`,
-  // without the defined sorts of the input, since applications are also built where there is no state (e.g. sugar)
-  def apply(fun: Fun, args: List[Expr]): App =
+  // where the defined sorts of `state` are unfolded
+  def apply(state: State, fun: Fun, args: List[Expr]): App =
     val inst = args.types
-    val su = Type.bind(State.empty, fun.args, inst)
+    val su = Type.bind(state, fun.args, inst)
     val typ = su(fun.res)
     App(fun, inst, typ, args)
+
+  // the same without defined sorts, where there is no state (e.g. sugar)
+  def apply(fun: Fun, args: List[Expr]): App =
+    App(State.empty, fun, args)
 
 case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends Expr:
   def params = inst.params ++ args.params

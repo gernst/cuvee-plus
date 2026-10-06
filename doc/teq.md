@@ -34,9 +34,9 @@ After section 3 of the paper:
   complete guards; a single case has the guard `true`. `List[Upd]` has
   `free`, `params`, and `exprs` like lists of expressions.
 - The functions on traces are in `Fun.trace`: `counter`, `current`, `butlast`
-  (the paper's `⌊X⌋`), `steps`, `length`, `nth`, `earlier`; `Counter` and
-  `Butlast` in [Builtin.scala](../src/cuvee/core/Builtin.scala) are their
-  sugar. The sort is `Sort.trace(elem)`.
+  (the paper's `⌊X⌋`), `steps`, `length`, `earlier`; `Counter`, `Current`,
+  `Butlast`, `Earlier`, and `Length` in
+  [Builtin.scala](../src/cuvee/core/Builtin.scala) are their sugar. The sort is `Sort.trace(elem)`.
 - `state.exprs.trace`, `map`, and `all` create the bound variables with the
   element types of the dependencies (`Type.elem`).
 
@@ -120,7 +120,7 @@ after section 4 of the paper.
 - `examples/dafny/vcgen/*.dfy` without loops must verify with `-teq -z3`.
 - [TEQ.scala](../test/src/cuvee/test/dafny/TEQ.scala) checks the goals of
   `-teq`, the injection of the database, and the lemmas on core terms
-  (`Rules.from(TEQ.lemmas)` with `Rewrite`).
+  (`Rules.from(State.empty, TEQ.lemmas)` with `Rewrite`).
 - [RewriteTraces.scala](../test/src/cuvee/test/simplify/RewriteTraces.scala)
   tests the rewrite engine with the examples of the paper (counters,
   summations, `selects`); `examples/simplify/traces.smt2` the simplifier.

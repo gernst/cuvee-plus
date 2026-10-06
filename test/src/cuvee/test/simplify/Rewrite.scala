@@ -66,7 +66,7 @@ object Rewrite extends TestSuite:
       val lemmas = "lemma length(Cons(1, Cons(2, Nil))) == 2\nlemma forall x: int, xs: List<int> :: length(Cons(x, xs)) == length(xs) + 1\n"
 
       val file = os.temp(list + length + lemmas, suffix = ".dfy")
-      val rules = cuvee.simplify.Rules.from(Examples.input(file.toString))
+      val rules = cuvee.simplify.Rules.from(State.empty, Examples.input(file.toString))
       rules.collect { case Rule(_, App(fun, _, _, List(App(constr, _, _, _))), _, True) => (fun.name.name, constr.name.name) } ==>
         List(("length", "Nil"), ("length", "Cons"))
 

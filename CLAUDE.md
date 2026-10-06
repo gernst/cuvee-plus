@@ -67,8 +67,8 @@ or solvers consume.
 - **Polymorphic assertions** need `lemma <a> ...`. Never run z3 or
   `-monomorph` on polymorphic input; such tests only generate goals
   (`-print null`).
-- **Testing teq.dfy lemmas:** on core terms with `Rules.from(TEQ.lemmas)` and
-  `Rewrite`.
+- **Testing teq.dfy lemmas:** on core terms with
+  `Rules.from(State.empty, TEQ.lemmas)` and `Rewrite`.
 - **Preludes** are injected into the stream; transforms see them, tests that
   call a `Source` directly drop `Examples.prelude(...)`.
 - **Stages buffer declarations**, losing the sink's answers to them; filters
