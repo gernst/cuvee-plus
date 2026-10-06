@@ -115,9 +115,9 @@ object Globals extends TestSuite:
       errors(p + "method m() { while true modifies g { } }") ==>
         List("modifies clause of loop lists global variables that are not modifiable")
 
+    // the precondition is evaluated at the entry, where old(e) is e
     test("old in precondition"):
-      errors("var g: int; method m() modifies g requires old(g) == 0 { g := g + 1; }") ==>
-        List("precondition refers to old values")
+      Examples.check("dfy", "var g: int; method m() modifies g requires old(g) == 0 ensures g == 1 { g := g + 1; }", "-verify", "-z3") ==> Nil
 
 // testers x.C? on variables and type annotations e as T
 object Datatypes extends TestSuite:

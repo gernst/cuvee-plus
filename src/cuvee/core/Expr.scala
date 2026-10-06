@@ -13,7 +13,7 @@ sealed trait Expr:
 
   // apply `f` to the immediate subexpressions point-wise,
   // the bound variables of binders and combinators are kept, i.e., `f` must avoid capture itself
-  // the subexpressions are visited from left to right, such that `f` may be used for its side effects only (see Old.occurs)
+  // the subexpressions are visited from left to right, such that `f` may be used for its side effects only
   def map(f: Expr => Expr): Expr =
     this match
       case _: Var | _: Lit                      => this
@@ -115,30 +115,17 @@ case class Old(expr: Expr) extends Expr:
   def typ = expr.typ
 
 object Old:
-  // whether `expr` refers to old values
-  def occurs(expr: Expr): Boolean =
-    expr match
-      case Old(_) =>
-        true
-
-      case _ =>
-        var found = false
-        expr.map: arg =>
-          found ||= occurs(arg)
-          arg
-        found
-
   // replace old(e) by e[gs := gs_], where gs_ are the values of the global variables gs at the entry,
   // nested occurrences of old refer to the same values
   def elim(gs: List[Var], gs_ : List[Expr], expr: Expr): Expr =
-    instance(Subst.empty, Subst[Type, Expr](Map(), Map((gs zip gs_)*)), expr)
+    instance(Subst.empty, Subst.from(gs, gs_), expr)
 
   // a single traversal that replaces the free variables by `now`, and inside of old(e) by `before`, and strips old,
   // e.g. for the postcondition of a call, whose modified global variables refer to their new values outside of old
   // and to their values before the call inside of it (see Verify.instance); `Subst` substitutes inside old(e) as well;
   // the type parameters are instantiated by `now`
-  def instance(now: Subst[Type, Expr], before: Subst[Type, Expr], expr: Expr): Expr =
-    instance(now, before, false, expr)
+  def instance(now: Subst[? <: Type, ? <: Expr], before: Subst[? <: Type, ? <: Expr], expr: Expr): Expr =
+    instance(Subst(now.params, now.vars), Subst(before.params, before.vars), false, expr)
 
   // `old` holds inside of old(e)
   def instance(now: Subst[Type, Expr], before: Subst[Type, Expr], old: Boolean, expr: Expr): Expr =

@@ -169,12 +169,16 @@ case class State(
       Error.report("procedure already declared", name):
         require(!procs.contains(name))
 
-      // the precondition is evaluated at the entry, where there are no other values to refer to
-      Error.report("precondition refers to old values", name):
-        require(!Old.occurs(attrs.requires))
+      // the precondition is evaluated at the entry, where the old values are the current ones
+      val attrs_ =
+        Attrs:
+          for (kw, arg) <- attrs.attrs
+          yield arg match
+            case Some(pre: Expr) if kw == "requires" => (kw, Some(Old.elim(Nil, Nil, pre)))
+            case _                                   => (kw, arg)
 
       val proc = Proc(name, params, in, out)
-      copy(procs = procs + (name -> proc), procattrs = procattrs + (name -> attrs))
+      copy(procs = procs + (name -> proc), procattrs = procattrs + (name -> attrs_))
 
   def define(name: Name, body: Prog): State =
     unless(procdefs.get(name) == Some(body)):
