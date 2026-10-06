@@ -129,9 +129,8 @@ lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
 // maps
 
 lemma <a> {:rw} {:free} forall n: int, xs: seq<a> ::
-  if length(xs) == n
-  then maps(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs))
-         == xs
+  maps(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs))
+    == xs
 
 lemma {:rw} {:free} forall a: int, b: int, i: int, c: int, n: int ::
   maps(for ⌊counter(i, c, n)⌋ yield v => a + b * v)
@@ -273,39 +272,32 @@ lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a> ::
 // earlier
 
 lemma {:rw} {:free} forall k: int, i: int, c: int, n: int ::
-  if 0 <= k < n
-  then earlier(k, ⌊counter(i, c, n)⌋)
-         == i + k * c
+  earlier(k, ⌊counter(i, c, n)⌋)
+    == i + k * c
 
 lemma <a> {:rw} {:free} forall x: a, xs: seq<a> ::
-  if occurs(x, xs)
-  then earlier(indexof(x, xs), xs)
-         == x
+  earlier(indexof(x, xs), xs)
+    == x
 
 lemma <a> {:rw} {:free} forall k: int, n: int, x: a ::
-  if 0 <= k < n
-  then earlier(k, ⌊consts(n, x)⌋)
-         == x
+  earlier(k, ⌊consts(n, x)⌋)
+    == x
 
 lemma <a, b> {:rw} {:free} forall j: int, a: array<a, b>, keys: seq<a> ::
-  if 0 <= j < length(keys)
-  then earlier(j, selects(a, keys))
-         == a[earlier(j, keys)]
+  earlier(j, selects(a, keys))
+    == a[earlier(j, keys)]
 
 lemma {:rw} {:free} forall j: int, x: int, values: seq<int> ::
-  if 0 <= j < length(values)
-  then earlier(j, ⌊sums(x, values)⌋)
-         == x + sum(prefix(j, values))
+  earlier(j, ⌊sums(x, values)⌋)
+    == x + sum(prefix(j, values))
 
 lemma <a> {:rw} {:free} forall j: int, x: int, e: a, vs: seq<a> ::
-  if 0 <= j < length(vs)
-  then earlier(j, ⌊counts(x, e, vs)⌋)
-         == x + count(e, prefix(j, vs))
+  earlier(j, ⌊counts(x, e, vs)⌋)
+    == x + count(e, prefix(j, vs))
 
 lemma <a> {:rw} {:free} forall j: int, k: int, xs: seq<a> ::
-  if 0 <= j < k <= length(xs)
-  then earlier(j, prefix(k, xs))
-         == earlier(j, xs)
+  earlier(j, prefix(k, xs))
+    == earlier(j, xs)
 
 // prefix
 
@@ -423,18 +415,17 @@ lemma <a, b> {:rw} {:free} forall k: a, a: array<a, b>, keys: seq<a>, values: se
 // not a rewrite rule, since it loops: the index k may be rewritten to earlier(j, ...) by the assumptions,
 // instead, the two lemmas below distinguish whether k occurs among the first j keys
 lemma <a, b> {:free} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if 0 <= j < length(keys)
-  then earlier(j, ⌊stores(a, keys, values)⌋)[k]
-         == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
+  earlier(j, ⌊stores(a, keys, values)⌋)[k]
+    == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
 
 // Note, indexof(k, prefix(j, keys)) <= indexof(k, keys) but not equal, since indexof is the *last* occurrence
 lemma <a, b> {:rw} {:free} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if 0 <= j < length(keys) && occurs(k, prefix(j, keys))
+  if occurs(k, prefix(j, keys))
   then earlier(j, ⌊stores(a, keys, values)⌋)[k]
          == earlier(indexof(k, prefix(j, keys)), values)
 
 lemma <a, b> {:rw} {:free} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if 0 <= j < length(keys) && !occurs(k, prefix(j, keys))
+  if !occurs(k, prefix(j, keys))
   then earlier(j, ⌊stores(a, keys, values)⌋)[k]
          == a[k]
 
@@ -532,12 +523,10 @@ lemma {:rw} {:free} forall x: int, values: seq<int> ::
   x <= current(maxs(x, values))
 
 lemma {:rw} {:free} forall k: int, x: int, values: seq<int> ::
-  if 0 <= k < length(values)
-  then earlier(k, values) <= current(maxs(x, values))
+  earlier(k, values) <= current(maxs(x, values))
 
 lemma {:rw} {:free} forall x: int, values: seq<int> ::
   current(mins(x, values)) <= x
 
 lemma {:rw} {:free} forall k: int, x: int, values: seq<int> ::
-  if 0 <= k < length(values)
-  then current(mins(x, values)) <= earlier(k, values)
+  current(mins(x, values)) <= earlier(k, values)
