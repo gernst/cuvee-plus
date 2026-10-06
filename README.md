@@ -50,8 +50,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
   assertions and lemmas with the attribute `:rw` (`axiom {:rw} φ`,
   `lemma {:rw} φ` in Dafny and Boogie, `(assert (! φ :rw))` in SMT-LIB), where
   `φ` is a universally quantified equation, equivalence, negation, or boolean
-  atom, optionally with a premise as condition, applied by `-simplify` after
-  each round,
+  atom, optionally with a premise as condition, and from function definitions
+  with `:rw` whose body is a match on a parameter (one rule per case),
+  applied by `-simplify` after each round,
   matching modulo associativity, commutativity, and 0 of `+` and `-`, and the
   binding structure of the trace combinators `trace`, `maps`, and `invs` from
   *Trace Equation Systems for Program Verification*; and Fourier-Motzkin

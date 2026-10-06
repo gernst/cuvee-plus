@@ -118,8 +118,10 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   binders, derivatives, and `old` inside of `A`; `Split` uses it.
   - All methods take `(config, state, ctx, ...)`. The context `Ctx` holds the
     facts known at the current position and the rewrite rules, which are
-    extracted from the assertions and lemmas with the attribute `:rw`
-    (`Rules.from`) and are kept as they are.
+    extracted from the assertions, lemmas, and function definitions with the
+    attribute `:rw` (`Rules.from`) and are kept as they are; a definition
+    whose body is a match on a parameter gives one rule per case, with the
+    pattern in place of the parameter (overlapping patterns are not handled).
   - Each round (`once`) simplifies the subterms first and dispatches on the
     built-in functions; afterwards, one rewrite step with the rules of the
     context is tried at the top (`Rewrite.step`), until a fixpoint.

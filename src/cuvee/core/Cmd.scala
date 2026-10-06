@@ -57,6 +57,7 @@ sealed trait Cmd:
   def isRule: Boolean =
     this match
       case Assert(Axiom | Lemma, _, _, attrs) => attrs.contains("rw")
+      case DefineFun(_, _, attrs)             => attrs.contains("rw")
       case _                                  => false
 
 sealed trait Ctrl extends Cmd

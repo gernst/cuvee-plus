@@ -52,15 +52,41 @@ object Rule:
       case _ =>
         Error.raise("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom", phi)
 
+  // the rules of a function definition whose body is a match on one of the formal parameters, one for each case,
+  // where the pattern replaces the parameter in the left-hand side, and pattern variables that shadow
+  // other parameters are renamed apart; overlapping patterns are not treated specially,
+  // although the cases of a match apply in sequence
+  def from(fun: Fun, body: Expr): List[Rule] =
+    body match
+      case Match(x: Var, cases) if fun.formals.contains(x) =>
+        val others = fun.formals.filterNot(_ == x)
+
+        for Case(pat, rhs, cond) <- cases
+        yield
+          val re = Subst.fresh(others.filter(pat.free.contains))
+          val pat_ = re(pat)
+
+          val args = fun.formals.map(y => if y == x then pat_ else y)
+          Rule(others ++ pat_.free.toList, App(fun, args), re(rhs), re(cond))
+
+      case _ =>
+        Error.raise("rewrite rules of a definition need a match on a parameter", fun, body)
+
   // the logical connectives, which are not boolean atoms
   val connectives = Set("and", "or", "=>", "<=>", "not", "ite", "true", "false")
 
 object Rules:
-  // the rewrite rules of the assertions and lemmas with the attribute :rw
+  // the rewrite rules of the assertions, lemmas, and function definitions with the attribute :rw
   def from(cmds: List[Cmd]): List[Rule] =
-    for case cmd @ Assert(_, _, phi, _) <- cmds if cmd.isRule
-    yield
-      val Rule(xs, lhs, rhs, cond) = Rule.from(Nil, phi)
-      // type annotations e as T are dropped from the left-hand sides of rules, they are needed for typing only,
-      // and matching would compare their types literally, which may contain the type parameters of the rule
-      Rule.check(Rule(xs, lhs.removeAs, rhs, cond))
+    for
+      cmd <- cmds if cmd.isRule
+      Rule(xs, lhs, rhs, cond) <- from(cmd)
+    // type annotations e as T are dropped from the left-hand sides of rules, they are needed for typing only,
+    // and matching would compare their types literally, which may contain the type parameters of the rule
+    yield Rule.check(Rule(xs, lhs.removeAs, rhs, cond))
+
+  def from(cmd: Cmd): List[Rule] =
+    cmd match
+      case Assert(_, _, phi, _)   => List(Rule.from(Nil, phi))
+      case DefineFun(fun, body, _) => Rule.from(fun, body)
+      case _                       => Nil

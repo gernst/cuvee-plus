@@ -58,6 +58,32 @@ object Rewrite extends TestSuite:
       val expr = app(length, app(cons, a, app(cons, b, nil_)))
       R(rules, expr) ==> Plus.int(Plus.int(Zero.int, One.int), One.int)
 
+    // function definitions with :rw whose body is a match on a parameter give one rule per case,
+    // with disjoint patterns here, since overlapping ones are not treated specially
+    test("definitions"):
+      val list = "datatype List<a> = Nil | Cons(head: a, tail: List<a>)\n"
+      val length = "function {:rw} length<a>(xs: List<a>): int { match xs case Nil => 0 case Cons(_, ys) => 1 + length(ys) }\n"
+      val lemmas = "lemma length(Cons(1, Cons(2, Nil))) == 2\nlemma forall x: int, xs: List<int> :: length(Cons(x, xs)) == length(xs) + 1\n"
+
+      val file = os.temp(list + length + lemmas, suffix = ".dfy")
+      val rules = cuvee.simplify.Rules.from(Examples.input(file.toString))
+      rules.collect { case Rule(_, App(fun, _, _, List(App(constr, _, _, _))), _, True) => (fun.name.name, constr.name.name) } ==>
+        List(("length", "Nil"), ("length", "Cons"))
+
+      val (cmds, errors) = Examples.output("-simplify", file.toString)
+      errors ==> Nil
+      cmds.collect { case cmd: Assert => cmd } ==> Nil
+
+      // the pattern variable ys shadows the parameter ys, the second argument is not the tail
+      val sum = "function {:rw} sum(xs: List<int>, ys: List<int>): int { match xs case Nil => 0 case Cons(y, ys) => y + sum(ys, ys) }\n"
+      val shadowed = os.temp(list + sum + "lemma sum(Cons(1, Cons(2, Nil)), Nil) == 3\n", suffix = ".dfy")
+      val (cmds_, errors_) = Examples.output("-simplify", shadowed.toString)
+      errors_ ==> Nil
+      cmds_.collect { case cmd: Assert => cmd } ==> Nil
+
+      Examples.check("dfy", list + "function {:rw} f(xs: List<int>): int { 0 }", "-simplify") ==>
+        List("rewrite rules of a definition need a match on a parameter")
+
     // annotations e as T of the expression are skipped when matching, e.g. [] as List<int>
     test("annotated"):
       val ints = Sort(Con("List", 1), List(Sort.int))
