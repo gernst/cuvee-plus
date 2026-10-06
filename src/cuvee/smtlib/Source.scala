@@ -2,6 +2,7 @@ package cuvee.smtlib
 
 import java.io.Reader
 
+import cuvee.Config
 import cuvee.core.Cmd
 import cuvee.core.State
 import cuvee.pipe.Scanner
@@ -17,7 +18,7 @@ object Source extends cuvee.pipe.Source:
 
   // the input is parsed starting from the predefined sorts and functions,
   // which is also the state that reset returns to
-  def newParser(): (State, easyparse.Parser[List[Cmd]], List[Cmd]) =
+  def newParser(config: Config): (State, easyparse.Parser[List[Cmd]], List[Cmd]) =
     val parser = new Parser(State.empty)
     val lifted = lift(parser)
 

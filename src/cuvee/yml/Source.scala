@@ -16,8 +16,8 @@ object Source extends cuvee.pipe.Source:
   def newScanner(reader: Reader) =
     cuvee.c.Source.newScanner(reader)
 
-  def newParser() =
-    cuvee.c.Source.newParser()
+  def newParser(config: Config) =
+    cuvee.c.Source.newParser(config)
 
   override def input(config: Config, reader: Reader, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
     val task = Task.load(reader)
@@ -38,4 +38,7 @@ object Source extends cuvee.pipe.Source:
         case Some(model)   => Error.raise("unsupported data model", model)
         case None          => config.arch
 
-    cuvee.c.Source.input(config.copy(arch = arch), new FileReader(input), parser)
+    // the parser of the C frontend for the data model of the task, whose state and prelude are those of `parser`
+    val config_ = config.copy(arch = arch)
+    val (_, parser_, _) = cuvee.c.Source.newParser(config_)
+    cuvee.c.Source.input(config_, new FileReader(input), parser_)

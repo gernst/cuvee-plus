@@ -14,7 +14,7 @@ import cuvee.core.{Plus, Minus, Times, UMinus, DivBy, Mod, Lt, Le, Gt, Ge, Eq, N
 // and whose global variables modified, directly or by calls, are inferred;
 // calls inside expressions are evaluated before the statement that contains them, in order
 // `arch` is the data model, 32 or 64 bit Linux (ILP32 or LP64), see Config.arch
-class Parser(var state: State, var arch: Int = 64):
+class Parser(var state: State, arch: Int):
   // the signatures of the functions by name
   val functions = mutable.Map[String, Function]()
 

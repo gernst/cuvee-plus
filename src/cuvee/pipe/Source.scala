@@ -20,8 +20,9 @@ import cuvee.smtlib.Parser
 trait Source:
   def newScanner(reader: Reader): Scanner
 
-  // a parser whose state holds the declarations of the prelude, and these declarations
-  def newParser(): (State, easyparse.Parser[List[Cmd]], List[Cmd])
+  // a parser whose state holds the declarations of the prelude, and these declarations,
+  // where the configuration may affect parsing, e.g. the data model of C
+  def newParser(config: Config): (State, easyparse.Parser[List[Cmd]], List[Cmd])
 
   // the resources with further definitions that are injected after the prelude, in order,
   // which may depend on the configuration
@@ -40,7 +41,7 @@ trait Source:
     apply(Config.default, reader)
 
   def apply(config: Config, reader: Reader): (State, LazyList[Cmd]) =
-    val (init, parser, prelude) = newParser()
+    val (init, parser, prelude) = newParser(config)
 
     val injected =
       for path <- preludes(config); cmd <- parse(path, parser)

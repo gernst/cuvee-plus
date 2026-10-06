@@ -9,7 +9,7 @@ object Source extends cuvee.pipe.Source:
   def newScanner(reader: Reader) =
     new Scanner(reader)
 
-  def newParser() =
+  def newParser(config: Config) =
     val parser = new Parser(State.empty)
 
     val lifted =
