@@ -30,6 +30,12 @@ sealed trait Expr:
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
       case Match(arg, cases)                    => Match(f(arg), cases.map(_.map(f)))
 
+  // the expression without type annotations e as T
+  def removeAs: Expr =
+    this match
+      case As(arg, _) => arg.removeAs
+      case _          => map(_.removeAs)
+
 object Expr:
   // TODO: structural ordering, for now by the printed representation
   given Ordering[Expr] = Ordering.by(_.toString)
