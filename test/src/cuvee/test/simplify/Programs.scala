@@ -97,3 +97,10 @@ object Dependencies extends TestSuite:
       // not for other dependencies
       val other = Invs(List(K), List(k), Lt.int(Zero.int, k))
       simplify(other) ==> other
+
+    // the result of a case assumes that the guards of the other cases are false, not so its guard
+    test("other guards"):
+      val b = Var("b", Sort.bool)
+      val c = Var("c", Sort.bool)
+      val upds = List(Upd(b, Ite(c, One.int, j)), Upd(c, Ite(b, One.int, j)))
+      simplify(Maps(List(J), List(j), upds)) ==> Maps(List(J), List(j), List(Upd(b, j), Upd(c, j)))

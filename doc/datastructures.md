@@ -100,7 +100,8 @@ case class Trace(...); case class Maps(...); case class Invs(...)
 - **`Old(e)`** never reaches the solver. `Old.elim(gs, gs_, ...)` replaces
   it by `e[gs := gs_]` before verification.
 - **Trace combinators** `Trace`, `Maps`, `Invs` with guarded updates `Upd`
-  are described in [teq.md](teq.md).
+  are described in [teq.md](teq.md). The guards of an update are disjoint
+  and complete, which transformations may rely on.
 - **Sugar.** [Builtin.scala](../src/cuvee/core/Builtin.scala) provides
   objects that both build and match applications of built-in functions:
   - `True`, `False`, `Eq`, `Ite`, `Not`, `And`, `Or`, `Imp`, `All`, `Ex`,

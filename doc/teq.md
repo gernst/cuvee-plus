@@ -94,7 +94,10 @@ after section 4 of the paper.
   `⌊counter(...)⌋`; the first one is kept if none remains, since the
   dependencies must be nonempty. `invs` with a constant body is `true` or
   `len(dep) == 0`. Guards and results of updates are simplified, results
-  under their guard, and cases with guard `false` are dropped.
+  under their guard and, since the guards are disjoint, the negations of the
+  other guards, and cases with guard `false` are dropped. The guards are not
+  simplified under the negations of the others: as the guards are also
+  complete, each would become `true`.
 - `invs` distributes over conjunctions, `invs(for Y check y => φ && ψ)` is
   `invs(for Y check y => φ) && invs(for Y check y => ψ)`, each with the
   dependencies it uses.
