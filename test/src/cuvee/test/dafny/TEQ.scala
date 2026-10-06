@@ -207,3 +207,23 @@ object TEQ extends TestSuite:
       assert(goals.nonEmpty)
       for goal <- goals; case App(_, inst, typ, _) <- subexprs(goal)
       do (inst :+ typ).params ==> Set()
+
+    // calls of procedures without a contract are inlined, such that the results are known to the caller,
+    // also through a return inside of a branch, and the variables of the caller with the names of the formals are restored
+    test("inlining"):
+      val text =
+        """int inc(int x) { if (x < 0) return 0; return x + 1; }
+          |int main(void) { int x = 5; int y = inc(1); int z = inc(-3); assert(x == 5 && y == 2 && z == 0); return 0; }
+          |""".stripMargin
+      val file = os.temp(text, suffix = ".c")
+      val (cmds, errors) = Examples.output("-teq", "-simplify", "-print", "null", file.toString)
+      errors ==> Nil
+      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
+
+    // a procedure without a contract and without a body cannot be inlined
+    test("inlining without body"):
+      val text =
+        """method f(x: int) returns (y: int)
+          |method g() returns (z: int) { z := f(1); }
+          |""".stripMargin
+      Examples.check("dfy", text, "-teq") ==> List("procedure without contract and without body")

@@ -80,12 +80,12 @@ object Path:
       yield
         val rest = formula(paths.collect { case `head` :: tail => tail })
         head match
-          case Step.Fresh(zs)   => if rest == True then True else All(zs, rest)
-          case Step.Assume(phi) => if rest == True then True else Imp(phi, rest)
-          case Step.When(phi)   => if rest == True then True else Imp(phi, rest)
-          case Step.Check(phi)  => And(phi :: And.flattenStrong(rest))
+          case Step.Fresh(zs)   => All(zs, rest)
+          case Step.Assume(phi) => Imp(phi, rest)
+          case Step.When(phi)   => Imp(phi, rest)
+          case Step.Check(phi)  => And(List(phi, rest))
 
-    And(conjuncts.flatMap(And.flattenStrong))
+    And(conjuncts)
 
 // verification by symbolic execution, where loops are summarized by trace equation systems
 // (after Trace Equation Systems for Program Verification):
@@ -163,7 +163,7 @@ object TEQ extends Transform:
           List(p.assign(xs, rhs.map(p(_))))
 
         case call: Call =>
-          List(this.call(state, proc, call, p))
+          this.call(state, proc, call, p)
 
         // locals have arbitrary initial values, the values of variables they shadow are restored afterwards
         case Block(locals, progs) =>
@@ -206,13 +206,43 @@ object TEQ extends Transform:
         val p_ = p.fresh(List(z))
         symex(state, proc, prog, p_.when(z)) ++ choice(state, proc, rest, p_.when(Not(z)))
 
+  // calls of procedures with a contract are by contract, those without are inlined, e.g. functions in C
+  def call(state: State, proc: Name, call: Call, p: Path): List[Path] =
+    val attrs = state.procattrs(call.proc)
+    if attrs.requires == True && attrs.ensures == True
+    then inlined(state, call, p)
+    else List(contract(state, proc, call, p))
+
   // calls by contract (see Verify.instance): the precondition is checked, as well as the measure for recursive calls,
   // the results and modified global variables are fresh, and the postcondition is assumed,
   // where both refer to the values before the call, which are those of the path
-  def call(state: State, proc: Name, call: Call, p: Path): Path =
+  def contract(state: State, proc: Name, call: Call, p: Path): Path =
     val (pre, fresh, post, _) = Verify.instance(state, proc, call)
     val mod = Type.expand(state, state.procattrs(call.proc).modifies)
     p.check(p(pre)).fresh(fresh).assign(call.res ++ mod, fresh).assume(p(post))
+
+  // the paths through the body of the callee, like a block whose locals are the formal parameters:
+  // the inputs are the values of the arguments, the outputs are arbitrary initially, a return leaves the callee only,
+  // and the variables of the caller with the same names are restored afterwards, before the results are assigned;
+  // calls of recursive procedures without a contract do not terminate
+  def inlined(state: State, call: Call, p: Path): List[Path] =
+    val Call(name, args, res) = call
+    val (in, out, _, _) = Verify.contract(state, name)
+
+    Error.report("procedure without contract and without body", name):
+      require(state.procdefs contains name)
+
+    val zs = out.fresh
+    val outer = (in ++ out).map(x => x -> p.su.get(x))
+    val entry = p.fresh(zs).assign(in ++ out, args.map(p(_)) ++ zs)
+
+    for q <- symex(state, name, state.procdefs(name), entry)
+    yield
+      val values = out.map(q(_))
+      val su = outer.foldLeft(q.su):
+        case (su, (x, Some(e))) => su + (x -> e)
+        case (su, (x, None))    => su - x
+      q.copy(su = su, jump = None).assign(res, values)
 
   // the variables modified by a loop body, the global ones are those in the modifies clause of the loop (see Type.check)
   def modified(body: Prog, attrs: Attrs): List[Var] =
