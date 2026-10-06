@@ -206,35 +206,13 @@ object TEQ extends Transform:
         val p_ = p.fresh(List(z))
         symex(state, proc, prog, p_.when(z)) ++ choice(state, proc, rest, p_.when(Not(z)))
 
-  // calls by contract: the precondition is checked, as well as the measure for recursive calls,
-  // the results and modified global variables are fresh,
-  // and the postcondition is assumed, where old(e) refers to the values before the call
+  // calls by contract (see Verify.instance): the precondition is checked, as well as the measure for recursive calls,
+  // the results and modified global variables are fresh, and the postcondition is assumed,
+  // where both refer to the values before the call, which are those of the path
   def call(state: State, proc: Name, call: Call, p: Path): Path =
-    val Call(name, args, res) = call
-    val (in, out, pre, post) = Verify.contract(state, name)
-
-    Error.report("wrong number of arguments or results in call", name, args, res):
-      require(in.length == args.length && out.length == res.length)
-
-    val mod = state.procattrs(name).modifies
-    val args_ = args.map(p(_))
-    val res_ = res.fresh
-    val mod_ = mod.fresh
-
-    val before = Subst.from(in ++ mod, args_ ++ mod.map(p(_)))
-    val after = Subst.from(in ++ out ++ mod, args_ ++ res_ ++ mod_)
-    val mod0 = mod.fresh
-    val post_ = Subst.from(mod0, mod.map(p(_)))(after(Old.elim(mod, mod0, post)))
-
-    // recursive calls must decrease the measure, whose values at the entry of `proc` are those of its inputs
-    val dec =
-      if name == proc
-      then
-        val dec = Verify.measure(state, proc)
-        Verify.decreases(dec.map(before(_)), dec)
-      else True
-
-    p.check(And(before(pre), dec)).fresh(res_ ++ mod_).assign(res ++ mod, res_ ++ mod_).assume(post_)
+    val (pre, fresh, post, _) = Verify.instance(state, proc, call)
+    val mod = state.procattrs(call.proc).modifies
+    p.check(p(pre)).fresh(fresh).assign(call.res ++ mod, fresh).assume(p(post))
 
   // the variables modified by a loop body, the global ones are those in the modifies clause of the loop (see Type.check)
   def modified(body: Prog, attrs: Attrs): List[Var] =

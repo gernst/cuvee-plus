@@ -123,3 +123,13 @@ object TEQ extends TestSuite:
       val vs = Var("vs", Sort.seq(Sort.int))
 
       Rewrite(rules, App(fun("sum"), List(App(fun("prefix"), List(Zero.int, vs))))) ==> Zero.int
+
+    // calls of polymorphic methods instantiate the type parameters of their contract, as with -verify
+    test("polymorphic calls"):
+      val file = Examples.root / "dafny" / "horn" / "contract.dfy"
+      val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
+      errors ==> Nil
+      val goals = cmds.collect { case Assert(Goal, Nil, phi, _) => phi }
+      assert(goals.nonEmpty)
+      for goal <- goals; case App(_, inst, typ, _) <- subexprs(goal)
+      do (inst :+ typ).params ==> Set()
