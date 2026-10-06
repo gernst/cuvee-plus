@@ -177,9 +177,9 @@ lemma {:rw} {:free} forall i: int, c: int, n: int ::
   current(counter(i, c, n))
     == i + n * c
 
-lemma <a, b> {:rw} {:free} forall x: a, y: a, xs: seq<b> ::
-  current(trace(x, for xs do z, v => y))
-    == if length(xs) == 0 then x else y
+lemma <a> {:rw} {:free} forall x: a, y: a, i: int, c: int, n: int ::
+  current(trace(x, for ⌊counter(i, c, n)⌋ do z, v => y))
+    == if n == 0 then x else y
 
 lemma <a> {:rw} {:free} forall n: int, x: a ::
   current(consts(n, x))
