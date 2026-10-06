@@ -151,5 +151,7 @@ object Grammar:
   val top: Parser[Top] =
     P(function | global)
 
+  // at least one declaration, such that a declaration that is not supported is a parse error,
+  // where top.* would succeed without consuming input, which the pipeline then parses again forever
   val unit =
-    P(top.*)
+    P(top.+)
