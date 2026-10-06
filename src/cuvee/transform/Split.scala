@@ -26,7 +26,7 @@ object Split extends Transform:
 
   def split(cmd: Cmd): List[Cmd] =
     cmd match
-      case Assert(justify @ (Goal | Lemma), params, phi, attrs) =>
+      case Assert(justify, params, phi, attrs) =>
         for phi_ <- split(Nil, Nil, Normalize.lift(phi))
         yield Assert(justify, params, phi_, attrs)
 
