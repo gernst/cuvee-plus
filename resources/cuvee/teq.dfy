@@ -16,8 +16,7 @@ function current<a₀>(x₀: Trace<a₀>): a₀
 function steps<a₀>(x₀: Trace<a₀>): int
 // the length of a sequence
 function length<a₀>(x₀: seq<a₀>): int
-// the elements of traces and sequences
-function nth<a₀>(x₀: int, x₁: Trace<a₀>): a₀
+// the elements of sequences
 function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
 
 // a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)
@@ -357,32 +356,20 @@ lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
 // =====================================================================================================================
 // FURTHER LEMMAS THAT NEED TO BE CHECKED MANUALLY
 //
-// not from teq.bpl, which fit the approach: the elements and lengths of the functions above, which relate
-// earlier and nth, the lengths of prefixes, and the facts that are needed for inductive invariants over prefixes
+// not from teq.bpl, which fit the approach: the lengths of the functions above, the lengths of prefixes, and the facts that are needed for inductive invariants over prefixes
 // =====================================================================================================================
 
 // the number of occurrences of a value in a sequence
 function count<a₀>(x₀: a₀, x₁: seq<a₀>): int
-
-// the elements of a trace and of all but its last element coincide
-lemma <a> {:rw} {:free} forall k: int, X: Trace<a> ::
-  if 0 <= k < steps(X)
-  then earlier(k, ⌊X⌋) == nth(k, X)
-
-lemma <a> {:free} forall X: Trace<a> ::
-  current(X) == nth(steps(X), X)
-
-// counters
-
-lemma {:rw} {:free} forall k: int, i: int, c: int, n: int ::
-  if 0 <= k <= n
-  then nth(k, counter(i, c, n)) == i + k * c
 
 // prefixes
 
 lemma <a> {:rw} {:free} forall k: int, xs: seq<a> ::
   if 0 <= k <= length(xs)
   then length(prefix(k, xs)) == k
+
+lemma <a> {:rw} {:free} forall xs: seq<a> ::
+  prefix(0, xs) == []
 
 lemma <a> {:rw} {:free} forall xs: seq<a> ::
   prefix(length(xs), xs) == xs
@@ -399,9 +386,9 @@ lemma <a> {:free} forall x: a, k: int, xs: seq<a> ::
   if 0 <= k <= length(xs) && occurs(x, prefix(k, xs))
   then occurs(x, xs)
 
-lemma <a> {:free} forall xs: seq<a> ::
-  if distincts(xs)
-  then forall k: int :: 0 <= k <= length(xs) ==> distincts(prefix(k, xs))
+lemma <a> {:free} forall k: int, xs: seq<a> ::
+  if 0 <= k <= length(xs) && distincts(xs)
+  then distincts(prefix(k, xs))
 
 // the lengths and number of steps of the functions above
 
@@ -433,8 +420,7 @@ lemma {:free} forall k: int, values: seq<int> ::
   if 0 <= k < length(values)
   then sum(prefix(k + 1, values)) == sum(prefix(k, values)) + earlier(k, values)
 
-lemma {:rw} {:free} forall values: seq<int> ::
-  sum(prefix(0, values)) == 0
+lemma {:rw} {:free} sum([]) == 0
 
 // the initial value is a bound of the prefix maxima and minima, which are attained by some value otherwise
 lemma {:free} forall x: int, values: seq<int> ::

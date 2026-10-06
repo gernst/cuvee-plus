@@ -28,8 +28,8 @@ After section 3 of the paper:
 - The dependencies are always sequences (`Seq(T)`), at least one, all of the
   same length (`Type.dependencies`), e.g. `⌊K⌋` of a trace `K`. Their length
   is `Seqs.len` of the theory of sequences (not `Fun.trace.length`). A trace
-  with `n` steps has `n + 1` elements (`nth(0..n, X)`), `⌊X⌋` has `n`
-  (`earlier(0..n-1, ⌊X⌋)`), and `current(X)` is `nth(n, X)`.
+  with `n` steps has `n + 1` elements: the `n` of `⌊X⌋`
+  (`earlier(0..n-1, ⌊X⌋)`) and `current(X)`.
 - An update is a list of guarded cases `Upd(φᵢ, eᵢ)` with disjoint and
   complete guards; a single case has the guard `true`. `List[Upd]` has
   `free`, `params`, and `exprs` like lists of expressions.

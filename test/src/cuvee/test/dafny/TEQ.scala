@@ -115,3 +115,11 @@ object TEQ extends TestSuite:
 
       val occurrences = Trace(x, List(vs), y, List(v), List(Upd(Eq(v, e), Plus.int(y, One.int)), Upd(Not(Eq(v, e)), y)))
       Rewrite(rules, occurrences) ==> App(counts, List(x, e, vs))
+
+    // the empty prefix is the empty sequence, whose sum is 0
+    test("empty prefix"):
+      val rules = cuvee.simplify.Rules.from(cuvee.verify.TEQ.lemmas)
+      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun }.get
+      val vs = Var("vs", Sort.seq(Sort.int))
+
+      Rewrite(rules, App(fun("sum"), List(App(fun("prefix"), List(Zero.int, vs))))) ==> Zero.int
