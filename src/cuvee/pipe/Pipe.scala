@@ -1,6 +1,7 @@
 package cuvee.pipe
 
 import scala.util.control.Breaks
+import scala.util.control.NonFatal
 import scala.collection.mutable
 
 import cuvee.Error
@@ -10,11 +11,32 @@ import cuvee.sexpr.Id
 // runs the commands through the chain of sinks, reporting each result:
 // print-success is handled here, since it concerns the reports, not the sinks;
 // errors are reported and stop the run unless it is incremental, which continues with the next command;
+// other exceptions are reported as internal errors and always stop the run;
+// with `exit`, stopping exits the process with the codes below, otherwise
 // returns the commands that were processed and the results
 object Pipe:
-  def run(source: Iterable[Cmd], init: Sink, report: Report, incremental: Boolean) =
+  val errorCode = 1
+  val internalCode = 2
+
+  // exceptions other than Error, whose stack trace is printed with -debug internal
+  def internal(cause: Throwable): Error =
+    if cuvee.Debug.modules.contains("internal")
+    then cause.printStackTrace()
+
+    val result = new Error("internal error", cause.getClass.getSimpleName, String.valueOf(cause.getMessage))
+    result.initCause(cause)
+    result
+
+  def run(source: Iterable[Cmd], init: Sink, report: Report, incremental: Boolean, exit: Boolean = false) =
     var sink = init
     var printSuccess = false
+
+    def stop(code: Int) =
+      if exit then
+        System.out.flush()
+        System.err.flush()
+        sys.exit(code)
+      Breaks.break()
 
     val done = mutable.ListBuffer[Cmd]()
     val results = mutable.ListBuffer[Result]()
@@ -57,12 +79,28 @@ object Pipe:
                   results.append(result)
 
                   if (!incremental)
-                    Breaks.break()
+                    stop(errorCode)
+
+                case NonFatal(cause) =>
+                  val result = internal(cause)
+                  report.report(result, printSuccess)
+
+                  if cmd != Done then
+                    done.append(cmd)
+                  results.append(result)
+                  stop(internalCode)
 
     catch
       // catches parse errors, which have no command
       case result: Error =>
         report.report(result, printSuccess)
         results.append(result)
+        if exit && !incremental then stop(errorCode)
+
+      case NonFatal(cause) =>
+        val result = internal(cause)
+        report.report(result, printSuccess)
+        results.append(result)
+        if exit then stop(internalCode)
 
     (done.toList, results.toList)

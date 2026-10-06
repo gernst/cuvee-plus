@@ -52,3 +52,9 @@ object BitVectors extends TestSuite:
       val file = Examples.root / "smtlib" / "bitvectors.smt2"
       val (_, results) = cuvee.Cuvee.run("-z3", file.toString)
       Examples.status(results) ==> Status.Unsat
+
+// exceptions other than cuvee.Error are reported as internal errors, which stop the run
+object Internal extends TestSuite:
+  val tests = Tests:
+    test("reported"):
+      Examples.check("smt2", "(push 99999999999999999999999)\n(check-sat)") ==> List("internal error")

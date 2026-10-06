@@ -10,10 +10,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## General
 
-- Exceptions other than `cuvee.Error` (`MatchError`, `NoSuchElementException`,
-  `NumberFormatException`, ...) crash the run instead of being reported
-  ([pipe/Pipe.scala](src/cuvee/pipe/Pipe.scala)).
-- The exit status is always 0, even when goals fail or errors are reported.
 - Readers of input files and the stream of `-o` are never closed.
 - `Match`: parsed and printed only in Dafny (expressions, without case
   conditions, not statements), no reduction on constructors, no rewriting
@@ -88,12 +84,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## Dafny frontend
 
-- Lemmas and goals are single formulas (`lemma <a> {:rw} φ`, `goal φ`), not
-  Dafny's lemmas with parameters and contracts.
-- Sets and multisets use cvc5's theories (not z3); missing comprehensions,
-  `multiset(s)`, `m[x := n]`, `>=`, `>`, `!!`. `map` is a sort without
-  functions. Sequences: no `seq(n, f)`, no multi-dimensional updates;
-  `s[i := v]` is cvc5's `seq.update`; z3's `HORN` has no sequences.
+- Containers: missing comprehensions, `multiset(s)`, the multiset update
+  `m[x := n]`, `>=` and `>`, disjointness `!!`, `seq(n, f)`, and
+  multi-dimensional updates.
 - `x.f` and `x.C?` on variables only; members inside `type`/`datatype` bodies
   need `this.` ([examples/dafny/stack.dfy](examples/dafny/stack.dfy)).
 - `var` declarations before statements; contract clauses in the fixed order
