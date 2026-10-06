@@ -723,10 +723,11 @@ class Parser(var state: State, var arch: Int = 64):
 
     val cmds = mutable.ListBuffer[core.Cmd]()
 
-    // the initial values of the global variables, which may refer to those declared before,
-    // are the precondition of main, the entry point of the program;
-    // global variables without initializer are zero, as in C
-    val inits = mutable.ListBuffer[core.Expr]()
+    // global variables are zero, as in C, which is the precondition of main, the entry point of the program,
+    // and their initializers, which may refer to those declared before, are assignments at the beginning of main,
+    // such that the program can be printed as C without annotations
+    val zeros = mutable.ListBuffer[core.Expr]()
+    val inits = mutable.ListBuffer[core.Prog]()
 
     for case Global(Decl(t, decls)) <- tops; Declarator(pointer, x, sizes, init) <- decls
     do
@@ -744,15 +745,14 @@ class Parser(var state: State, var arch: Int = 64):
         Error.report("initial value of global variable must not call functions", x, e):
           require(progs.isEmpty)
 
-        inits += Eq(core.Var(x, typ(t_)), e_)
+        inits += core.Assign(List(core.Var(x, typ(t_))), List(e_))
 
-      if init.isEmpty
-      then inits += Eq(core.Var(x, typ(t_)), zero(t_))
-
+      zeros += Eq(core.Var(x, typ(t_)), zero(t_))
       state = state.declare(x, typ(t_), Attrs.empty)
       globals(x) = (state.vars(x), t_)
 
-    val mod = modifies(defs.values.toList)
+    val initialized = inits.toSet.flatMap(_.mod).map(_.name.name)
+    val mod = modifies(defs.values.toList).map((f, xs) => if f == "main" then f -> (xs ++ initialized) else f -> xs)
 
     // procedures are declared before the bodies are resolved, since they may call each other
     for (name, Function(ret, _, params, _)) <- defs
@@ -761,7 +761,7 @@ class Parser(var state: State, var arch: Int = 64):
       val out = if ret == VoidType then Nil else List(core.Var("result", typ(ret)))
       val mod_ = mod(name).toList.sorted.map(globals(_)._1)
       val modifies = if mod_.isEmpty then Nil else List("modifies" -> Some(mod_))
-      val requires = if name == "main" && inits.nonEmpty then List("requires" -> Some(And(inits.toList))) else Nil
+      val requires = if name == "main" && zeros.nonEmpty then List("requires" -> Some(And(zeros.toList))) else Nil
       val attrs = Attrs(modifies ++ requires)
 
       Error.report("parameter named result", name):
@@ -783,7 +783,8 @@ class Parser(var state: State, var arch: Int = 64):
               cmds += state.cmds.declareProc(name)
 
             case Some(body) =>
-              val body_ = define(f, body, mod(name))
+              val entry = if name == "main" then inits.toList else Nil
+              val body_ = define(f, body, mod(name), entry)
               state = state.define(name, body_)
               cmds += state.cmds.defineProc(name)
 
@@ -791,8 +792,9 @@ class Parser(var state: State, var arch: Int = 64):
 
     cmds.toList
 
-  // parameters that are assigned are copied into fresh locals, since the inputs of procedures are fixed
-  def define(f: Function, body: Block, mod: Set[String]): core.Prog =
+  // parameters that are assigned are copied into fresh locals, since the inputs of procedures are fixed,
+  // followed by the statements on entry, i.e. the initializers of the global variables for main
+  def define(f: Function, body: Block, mod: Set[String], entry: List[core.Prog]): core.Prog =
     val Function(ret, name, params, _) = f
     val core.Proc(_, _, in, out) = state.procs(name)
 
@@ -810,7 +812,7 @@ class Parser(var state: State, var arch: Int = 64):
 
     val body_ = block(scope, ctx, body.stmts)
     val init = for (_, v, copy, _) <- copies yield core.Assign(List(copy), List(v))
-    val prog = core.Block(copies.map(_._3) ++ ctx.temps.toList, init :+ body_)
+    val prog = core.Block(copies.map(_._3) ++ ctx.temps.toList, init ++ entry :+ body_)
 
     val fixed = in.toSet ++ (globals.values.map(_._1).toSet -- mod.map(globals(_)._1))
     val scope_ = core.Scope.empty ++ globals.values.map(_._1).toList ++ in ++ out

@@ -15,12 +15,9 @@ import easyparse.Assoc
 // prints procedures as C functions, as far as they are C programs: integers are int, Bool is _Bool,
 // arrays Array Int T are T a[] (as values); assertions and assumptions are written with the conventions of SV-COMP;
 // div and mod of SMT-LIB are written as / and %, which C's / and % are translated to (see TODO.md);
-// formulas that are not C are written in a notation after ACSL, \forall int x; φ and \exists int x; φ,
-// the combinators \trace(e, for Y do x, y => u), \map(for Y yield y => u), \all(for Y check y => φ),
-// where the types that are not C are written like sorts, e.g. Seq<int>, and other functions are calls;
-// assertions are annotations /*@ axiom φ; */, /*@ goal φ; */, /*@ lemma φ; */,
-// and other commands that are not part of C, e.g. check-sat, are printed by the SMT-LIB printer,
-// as are the declarations and definitions whose types are not C
+// uninterpreted functions are prototypes, and their applications calls;
+// everything else is omitted, e.g. contracts, assertions of formulas, quantifiers, and commands such as check-sat,
+// such that the output is C; results, e.g. models, are not programs, they are printed in SMT-LIB where not C
 object Printer extends cuvee.pipe.Printer:
 
   // the result of the procedure that is printed, which return writes
@@ -50,28 +47,29 @@ object Printer extends cuvee.pipe.Printer:
         for
           decl <- decls
           line <-
-            try lines(decl)
+            try c(decl)
             catch case _: Error => cuvee.smtlib.Printer.lines(decl)
         yield line
 
       case _ =>
         cuvee.smtlib.Printer.lines(res)
 
-  // each command is followed by an empty line, as by the SMT-LIB printer
+  // commands that are not C are omitted
   def lines(cmd: Cmd): List[String] =
-    cmd match
-      case _: DeclareVar | _: DeclareProc | _: DefineProc | _: DeclareFun | _: DefineFun | _: Assert =>
-        try render(doc(cmd), width) :+ ""
-        catch case _: Error => cuvee.smtlib.Printer.lines(cmd)
+    try c(cmd)
+    catch case _: Error => Nil
 
-      case _ =>
-        cuvee.smtlib.Printer.lines(cmd)
+  // each command is followed by an empty line, as by the SMT-LIB printer
+  def c(cmd: Cmd): List[String] =
+    render(doc(cmd), width) :+ ""
 
   def lines(typ: Type): List[String] =
     render(doc(typ), width)
 
+  // expressions occur in reports, e.g. of goals that do not hold, which are printed in SMT-LIB where not C
   def lines(expr: Expr): List[String] =
-    render(doc(expr), width)
+    try render(doc(expr), width)
+    catch case _: Error => cuvee.smtlib.Printer.lines(expr)
 
   def lines(prog: Prog): List[String] =
     render(doc(prog), width)
@@ -81,35 +79,6 @@ object Printer extends cuvee.pipe.Printer:
       case Sort.int  => text("int")
       case Sort.bool => text("_Bool")
       case _         => Error.raise("type not supported in C", typ)
-
-  // the types of the bound variables of quantifiers and combinators, which need not be C
-  def logic(typ: Type): Doc =
-    typ match
-      case Sort.int | Sort.bool => doc(typ)
-      case Param(name_)         => text(name(name_))
-      case BitVec(n)            => text("bv" + n)
-      case Sort(con, Nil)       => text(name(con.name))
-      case Sort(con, args)      => text(name(con.name)) ~ text("<") ~ join(args.map(logic), text(",") ~ space) ~ text(">")
-
-  // the declaration of a bound variable, int x
-  def bound(x: Var): Doc =
-    logic(x.typ) ~~ text(name(x.name))
-
-  // the dependencies of a combinator, and its update with guarded cases, if guard then result, ...
-  def combinator(head: Doc, deps: List[Expr], keyword: String, bound: List[Var], updates: List[Upd]): Doc =
-    val updates_ =
-      updates match
-        case List(Upd(True, rhs)) =>
-          doc(rhs)
-
-        case _ =>
-          Group(commas(for Upd(cond, rhs) <- updates yield text("if") ~~ doc(cond) ~~ text("then") ~~ doc(rhs)))
-
-    // as in Dafny, the keyword goes below for and the update below the keyword if it does not fit
-    val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
-    val deps_ = Group(Align(commas(deps.map(doc(_)))))
-    val body = text("for") ~~ deps_ ~ line ~ text(keyword) ~~ binders ~ Nest(2, line ~ updates_)
-    Group(head ~ Align(body) ~ text(")"))
 
   // a declaration of a variable, where arrays have their brackets after the name
   def decl(x: Var): Doc =
@@ -134,40 +103,26 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareVar(x, _) =>
         decl(x) ~ text(";")
 
-      case DeclareProc(Proc(name_, Nil, in, out), attrs) =>
-        contract(attrs) ~ signature(name_, in, out) ~ text(";")
+      case DeclareProc(Proc(name_, Nil, in, out), _) =>
+        signature(name_, in, out) ~ text(";")
 
       // uninterpreted functions, e.g. the predicates of Horn clauses
       case DeclareFun(Fun(name_, Nil, formals, res), _) =>
         doc(res) ~~ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) ~ text(";")
-
-      case Assert(justify, Nil, phi, _) =>
-        val keyword = justify.toString.toLowerCase
-        Group(text("/*@") ~~ text(keyword) ~ Nest(2, line ~ doc(phi)) ~ text(";") ~~ text("*/"))
 
       // functions, e.g. the predicates of models of Horn clauses
       case DefineFun(Fun(name_, Nil, formals, res), body, _) =>
         val ret = Group(text("return") ~ Nest(2, line ~ doc(body))) ~ text(";")
         doc(res) ~~ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) ~~ braces(List(ret))
 
-      case DefineProc(Proc(name_, Nil, in, out), body, attrs) =>
+      // contracts are omitted, e.g. the zero values of global variables as the precondition of main
+      case DefineProc(Proc(name_, Nil, in, out), body, _) =>
         result = out.headOption
-        try contract(attrs) ~ signature(name_, in, out) ~~ block(body)
+        try signature(name_, in, out) ~~ block(body)
         finally result = None
 
       case _ =>
         Error.raise("command not supported in C", cmd)
-
-  // the precondition and postcondition of a function as an annotation before its signature, as in ACSL,
-  // e.g. the initial values of the global variables as the precondition of main
-  def contract(attrs: Attrs): Doc =
-    val clauses =
-      for case (kw @ ("requires" | "ensures"), Some(phi: Expr)) <- attrs.attrs
-      yield Group(text(kw) ~ Nest(2, line ~ doc(phi))) ~ text(";")
-
-    if clauses.isEmpty
-    then empty
-    else text("/*@") ~~ join(clauses, hardline ~ text("    ")) ~~ text("*/") ~ hardline
 
   def braces(docs: List[Doc]): Doc =
     if docs.isEmpty
@@ -288,8 +243,6 @@ object Printer extends cuvee.pipe.Printer:
       case Le.int(a, b)        => op("<=", List(a, b))
       case Gt.int(a, b)        => op(">", List(a, b))
       case Ge.int(a, b)        => op(">=", List(a, b))
-      // implications occur in annotations only, as in ACSL
-      case Imp(a, b)           => Some(("==>", Assoc.Right, 1, List(a, b)))
       case _                   => None
 
   def level(expr: Expr): (Int, Option[Assoc]) =
@@ -298,10 +251,6 @@ object Printer extends cuvee.pipe.Printer:
         (Grammar.prefix_ops("-"), None)
 
       case Ite(_, _, _) if infix(expr).isEmpty =>
-        (lowest, None)
-
-      // quantifiers extend as far to the right as possible
-      case Bind(_, _, _) =>
         (lowest, None)
 
       case _ =>
@@ -363,28 +312,11 @@ object Printer extends cuvee.pipe.Printer:
       case Let(bound, args, body) =>
         doc(Subst.from(bound, args)(body))
 
-      case Bind(quant, bound_, body) =>
-        val bound__ = Align(Doc.fill(bound_.map(bound), text(",")))
-        Group(text("\\" + name(quant)) ~~ bound__ ~ text(";") ~ Nest(2, line ~ doc(body)))
-
-      case Trace(init, deps, acc, bound_, updates) =>
-        combinator(text("\\trace(") ~ doc(init) ~ text(",") ~ space, deps, "do", acc :: bound_, updates)
-
-      case Maps(deps, bound_, updates) =>
-        combinator(text("\\map("), deps, "yield", bound_, updates)
-
-      case Invs(deps, bound_, body) =>
-        combinator(text("\\all("), deps, "check", bound_, List(Upd(True, body)))
-
-      // all but the last element of a trace, as in Dafny
-      case Butlast(arg) =>
-        text("⌊") ~ doc(arg) ~ text("⌋")
-
-      // other functions, e.g. predicates in models, and those on sequences and traces
-      case App(fun, _, _, Nil) =>
+      // other functions, e.g. predicates in models
+      case App(fun, Nil, _, Nil) =>
         text(name(fun.name))
 
-      case App(fun, _, _, args) =>
+      case App(fun, Nil, _, args) =>
         call(name(fun.name), args.map(doc(_)))
 
       case _ =>

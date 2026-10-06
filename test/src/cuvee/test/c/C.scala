@@ -180,15 +180,27 @@ object Translation extends TestSuite:
       Examples.check("c", "void __VERIFIER_assert(int c); int main(void) { __VERIFIER_assert(0); return 0; }", "-verify", "-z3") ==>
         List("goal does not hold")
 
-// formulas that are not C are written in a notation after ACSL
-object Annotations extends TestSuite:
+// the output is C: what is not C is omitted, e.g. contracts, assertions, and quantifiers
+object Printing extends TestSuite:
   val x = Var("x", Sort.int)
+  val g = Var("g", Sort.int)
   val p = Fun("p", Nil, Fun.formals(Sort.int), Sort.bool)
 
+  def print(cmd: Cmd) =
+    cuvee.c.Printer.lines(cmd)
+
   val tests = Tests:
-    test("quantifiers"):
-      val phi = All(List(x), Imp(App(p, List(x)), Lt.int(x, One.int)))
-      cuvee.c.Printer.lines(Assert(Axiom, Nil, phi, Attrs.empty)) ==> List("/*@ axiom \\forall int x; p(x) ==> x < 1; */", "")
+    test("assertions"):
+      print(Assert(Axiom, Nil, All(List(x), Imp(App(p, List(x)), Lt.int(x, One.int))), Attrs.empty)) ==> Nil
 
     test("declarations"):
-      cuvee.c.Printer.lines(DeclareFun(p, Attrs.empty)) ==> List("_Bool p(int x_0);", "")
+      print(DeclareFun(p, Attrs.empty)) ==> List("_Bool p(int x_0);", "")
+      print(DefineFun(p, Ex(List(x), Lt.int(x, One.int)), Attrs.empty)) ==> Nil
+      print(CheckSat) ==> Nil
+
+    // global variables are zero in C, initializers are assignments at the beginning of main
+    test("contracts"):
+      val file = os.temp("int g = 1; int main(void) { return g; }", suffix = ".c")
+      val out = os.temp(suffix = ".c")
+      Examples.errors(file.toString, "-o", out.toString) ==> Nil
+      os.read(out) ==> "int g;\n\nint main(void) {\n  g = 1;\n  return g;\n}\n\n"

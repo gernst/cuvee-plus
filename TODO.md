@@ -148,11 +148,14 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   for a positive divisor, whereas C truncates towards zero
   ([examples/c/div.c](examples/c/div.c)); introduce C's division and
   remainder as proper functions in a C prelude.
-- Calls inside loop conditions, right operands of `&&`/`||`, and branches of
-  `?:` are not supported; temporaries `tmp_1, ...` may clash with input names.
-- Initial values of globals become a `requires` annotation of `main` that is
-  not parsed; arrays cannot be initialized.
-- No `switch`, `goto`, pointers, structs, strings, preprocessor.
+- Calls and increments in the branches of `?:` are not supported;
+  temporaries `tmp_1, ...` may clash with input names.
+- Globals are zero, the `requires` of `main`, and their initializers are
+  assignments at the beginning of `main`; the printer omits contracts and
+  everything else that is not C (no ACSL).
+- No `switch`, `goto`, structs, floating point, bitwise operators,
+  preprocessor; pointers only as arrays allocated by `malloc`, `alloca`,
+  `calloc` (see [SV-COMP.md](SV-COMP.md)).
 - The modifies clause of a loop is inferred from the core program, where a
   local variable that shadows a global one of the same type counts as global.
 - z3 answers `unknown` for Horn clauses with division by variables
