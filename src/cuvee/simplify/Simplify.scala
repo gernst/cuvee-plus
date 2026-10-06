@@ -245,6 +245,11 @@ object Simplify extends Transform:
       case Ge.real(left, right) =>
         Le.real(right, left)
 
+      case Earlier(j, arg) =>
+        val j_ = simplify(config, state, ctx, j)
+        val arg_ = simplify(config, state, ctx, arg)
+        earlier(config, state, ctx, j_, arg_)
+
       case App(fun, inst, typ, args) =>
         val args_ = simplify(config, state, ctx.neutral, args)
         app(config, state, ctx, fun, inst, typ, args_)
@@ -744,20 +749,25 @@ object Simplify extends Transform:
         case _ =>
           op(left_, right_)
 
+  def earlier(config: Config, state: State, ctx: Ctx, j: Expr, arg: Expr): Expr =
+    (j, arg) match
+      case (j, ctx.↑(Maps(deps, bound, List(Upd(True, result))))) =>
+        // TODO: to apply this idea to all lists of updates,
+        //       one could generate a nested if-then-else chain,
+        //       or preferably introduce a choice operator into the expressions
+        //       so that List[Upd] is not special any more
+        val su = Subst.from(bound, deps.map(Earlier(j, _)))
+        su(result)
+
+      case _ =>
+        Earlier(j, arg)
+
   // applications of other functions, e.g. user-defined ones;
   // earlier and maps commute: the element k of a map is its update for the elements k of the dependencies,
   // e.g. earlier(k, maps(for xs yield v => v + 1)) is earlier(k, xs) + 1, where the cases become conditionals
   // (the guards are complete, the last one is not tested); the indices of earlier are valid by construction
   def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
-    App(fun, inst, typ, args) match
-      case Earlier(j, ctx.↑(Maps(deps, bound, updates))) =>
-        val su = Subst.from(bound, deps.map(Earlier(j, _)))
-        val cases = updates.map(upd => (su(upd.cond), su(upd.rhs)))
-        cases.init.foldRight(cases.last._2):
-          case ((cond, rhs), rest) => Ite(cond, rhs, rest)
-
-      case expr =>
-        expr
+    App(fun, inst, typ, args)
 
   // forall distributes over and, where each conjunct binds the variables that it uses
   def all(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr): Expr =
