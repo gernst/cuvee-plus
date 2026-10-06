@@ -81,7 +81,8 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
   // the first solution of an arithmetic equation for a variable that is an arithmetic expression (see Poly.solutions),
   // single variables and literals are replaced above, other terms are chained below;
   // the substitution stays acyclic and is applied in one step (see Simplify.var_), since the solution contains no
-  // variable that is replaced, and the variable occurs in no replacement
+  // variable that is replaced, and the variable occurs in no replacement, nor in a definition the solution depends on,
+  // e.g. n by an expression over a trace K with K == counter(0, 1, n), which would loop (see Simplify.iterations)
   def solve(left: Expr, right: Expr): Option[(Var, Expr)] =
     Ring(left.typ) match
       case Some(ring) =>
@@ -91,7 +92,7 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
             (x, rest) <- poly.solutions
             e = rest.toExpr(ring)
             if Ctx.arithmetic(e) && replaces(x, e)
-            if (e.free intersect replace.keySet).isEmpty && !(replace.values.free contains x)
+            if (e.free intersect replace.keySet).isEmpty && !(replace.values.free contains x) && acyclic(x, e)
           yield (x, e)
         solutions.headOption
 
@@ -100,7 +101,19 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
 
   // whether x == e can be recorded in the chain
   def chains(x: Var, e: Expr): Boolean =
-    !(chain contains x) && !(e.free contains x) && !Ctx.arithmetic(e)
+    !(chain contains x) && !(e.free contains x) && !Ctx.arithmetic(e) && acyclic(x, e)
+
+  // whether e does not depend on x through the substitution and the chain, transitively
+  def acyclic(x: Var, e: Expr): Boolean =
+    def reach(todo: List[Var], seen: Set[Var]): Set[Var] =
+      todo match
+        case Nil => seen
+        case y :: rest if seen contains y => reach(rest, seen)
+        case y :: rest =>
+          val next = (replace.get(y) ++ chain.get(y)).flatMap(_.free).toList
+          reach(next ++ rest, seen + y)
+
+    !reach(e.free.toList, Set()).contains(x)
 
   // the variables of the substitution, whose equations are not among the facts
   def free: Set[Var] =

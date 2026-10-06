@@ -313,14 +313,16 @@ object Simplify extends Transform:
 
   // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),
   // then 0 <= k < n, since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
-  // is its value in iteration k, i.e., z == earlier(k, ⌊Z⌋)
+  // is its value in iteration k, i.e., z == earlier(k, ⌊Z⌋), which is simplified within the range,
+  // e.g. z == k for ⌊Z⌋ with Z == counter(0, 1, n), which then bounds z as well
   def iterations(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var]): List[Expr] =
     (deps, bound) match
       case (Butlast(ctx.↑(Counter(Zero.int, One.int, n))) :: deps_, k :: bound_) =>
         val ctx_ = ctx.neutral.bind(bound)
         val bounds = List(Le.int(Zero.int, k), Lt.int(k, n))
         val range = simplify(config, state, ctx_, bounds)
-        val values = (deps_ zip bound_).map((dep, z) => Eq(z, Earlier(k, dep)))
+        val inside = ctx_.assume(range, Nil)
+        val values = (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(k, dep))))
         range ++ values
 
       case _ =>

@@ -530,6 +530,16 @@ lemma {:rw} {:free} forall m: int, i: int, n: int ::
   then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k => k < m))
          == i + n - m
 
+lemma {:rw} {:free} forall m: int, i: int, n: int ::
+  if 0 <= n && i <= m <= i + n
+  then count(true, maps(for ⌊counter(i, 1, n)⌋ yield k => m <= k))
+         == i + n - m
+
+lemma {:rw} {:free} forall m: int, i: int, n: int ::
+  if 0 <= n && i <= m <= i + n
+  then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k => m <= k))
+         == m - i
+
 lemma <a> {:rw} {:free} forall e: a, vs: seq<a> ::
   0 <= count(e, vs)
 

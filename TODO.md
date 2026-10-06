@@ -156,12 +156,14 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 `BitVec(n)` with the SMT-LIB literals and functions (`BitVecs`). Open: no
 simplifier rules; widths cannot be parameters.
 
-- Return to the bitvectors of Dafny: `SimplifyPrograms.examples` reported
-  "goal does not hold" for [bitvectors.dfy](examples/dafny/vcgen/bitvectors.dfy)
+- Return to the bitvectors of Dafny: the test suites over
+  `examples/dafny/vcgen` (`SimplifyPrograms`, `Verify`, `Split`) reported
+  "goal does not hold" for [bitvectors.dfy](examples/dafny/bitvectors/bitvectors.dfy)
   sometimes in the full test run, depending on the tests run before it in the
   same JVM; alone, and with `java -jar cuvee.jar -simplify -verify -z3`, it
   passes. The fresh-name counters are reset per run (`Cuvee.pipe`), so some
-  other state persists across runs. The example is left out of that test.
+  other state persists across runs. The example is moved out of `vcgen`,
+  hence no suite runs it.
 
 - Dafny: no `<<`, `>>` (as a token, `>>` would close nested type arguments
   `seq<seq<int>>`), no infix `|` (which clashes with `|s|`), no

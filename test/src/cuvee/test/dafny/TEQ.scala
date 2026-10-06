@@ -261,3 +261,32 @@ object TEQ extends TestSuite:
       val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
       errors ==> Nil
       cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
+
+    // the iterations from a bound on, counted for an increment in the body (Mono6_1), where solving z == x for the
+    // number of iterations would be cyclic, since the count depends on the counter of the iterations
+    test("counters from a bound"):
+      def goals(assertion: String) =
+        val text =
+          s"""int main(void) { unsigned int x = 0; unsigned int z = 5;
+             |  while (x < 10) { if (x >= 5) z++; x++; }
+             |  assert($assertion); return 0; }
+             |""".stripMargin
+        val file = os.temp(text, suffix = ".c")
+        val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
+        errors ==> Nil
+        cmds.collect { case Assert(Goal, _, phi, _) => phi }
+      goals("z == x") ==> Nil
+      goals("z != x") ==> List(False)
+
+    // the variable of a counter that runs in parallel to the iterations is bounded like them,
+    // since its value earlier(k, ⌊I⌋) is k within the range of k
+    test("bounds of counters"):
+      val text =
+        """int main(void) { int s = 0; int i;
+          |  for (i = 0; i < 10; i++) { if (0 <= i && i < 10) s = s + 1; else s = s + 2; }
+          |  assert(s == 10); return 0; }
+          |""".stripMargin
+      val file = os.temp(text, suffix = ".c")
+      val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
+      errors ==> Nil
+      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil

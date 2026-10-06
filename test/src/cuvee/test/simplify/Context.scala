@@ -60,6 +60,14 @@ object Context extends TestSuite:
       // y occurs in a replacement, y == z + 2 is solved for z instead
       ctx.assume(Eq(y, Plus.int(z, two))).chains.replace ==> ctx.chains.replace + (z -> Plus.int(y, Lit(BigInt(-2), Sort.int)))
 
+    // a solution must not depend on the variable through definitions in the chain, e.g. n by k + 1 where k == f(n)
+    test("cycles"):
+      val k = Var("k", Sort.int)
+      val n = Var("n", Sort.int)
+      val ctx = Ctx.empty.assume(Eq(k, App(f, List(n))))
+      ctx.chains.chain ==> Map(k -> App(f, List(n)))
+      assert(!ctx.assume(Eq(n, Plus.int(k, One.int))).chains.replace.contains(n))
+
 // one-point rule: an equation x == e of a quantified variable x that occurs nowhere else is true,
 // negatively below forall and positively below exists
 object OnePoint extends TestSuite:
