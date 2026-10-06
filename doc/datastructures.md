@@ -283,9 +283,14 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     the simplifier substitutes eagerly (`var_`);
   - the non-recursive equations `x == e` among the assumptions whose `e` is
     not an arithmetic operation (`+`, `-`, `*`), as a map `eq` from variables
-    to expressions (the equation remains an assumption); rewriting matches a
-    variable inside of the expression like its `e` (`Rewrite.matches`), but
-    never rewrites a variable on its own;
+    to expressions (the equation remains an assumption); the variables are not
+    substituted, but the extractor `ctx.↑(e)` sees a variable as its
+    definition, otherwise as itself, by which rewriting matches a variable
+    inside of the expression like its `e` (`Rewrite.matches`), and the helpers
+    of the simplifier look through definitions, e.g. read over write of
+    `a == b[i := v]`, testers of `xs == cons(x, ys)`, counters
+    `K == counter(0, 1, n)` among the dependencies, and equal definitions in
+    `eq_`; a variable is never rewritten on its own;
   - the bound variables in the order of binding (`bound`), and among them
     those that are universal and existential at the current position
     (`universal`, `existential`, added by `forall` and `exists`, while `bind`

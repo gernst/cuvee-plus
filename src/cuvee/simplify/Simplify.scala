@@ -404,6 +404,10 @@ object Simplify extends Transform:
       case _ if left == right =>
         True
 
+      // variables with the same definition among the assumptions, or a variable and its definition (see Ctx.↑)
+      case (ctx.↑(left_), ctx.↑(right_)) if left_ == right_ =>
+        True
+
       case (x: Var, e) if point(ctx, x, e) =>
         True
 
@@ -455,9 +459,11 @@ object Simplify extends Transform:
         case List(a, b) => not(config, state, ctx, Eq(a, b))
         case _          => Distinct(exprs)
 
-  // testers on constructor applications
+  // testers on constructor applications, also of variables defined by one (see Ctx.↑),
+  // which is looked up once only here, not in constr, since definitions through annotations may be cyclic
   def is(config: Config, state: State, ctx: Ctx, arg: Expr, fun: Fun): Expr =
-    constr(config, state, arg) match
+    val ctx.↑(arg_) = arg: @unchecked
+    constr(config, state, arg_) match
       case Some(constr) if constr.name == fun.name => True
       case Some(constr)                            => False
       case None                                    => Is(arg, fun)
@@ -483,13 +489,13 @@ object Simplify extends Transform:
       case (_, False, True)      => not(config, state, ctx, test)
       case _                     => Ite(test, left, right)
 
-  // read over write
+  // read over write, also of arrays defined by a write (see Ctx.↑)
   def select(config: Config, state: State, ctx: Ctx, base: Expr, index: Expr): Expr =
     base match
-      case Store(_, index_, value) if index_ == index =>
+      case ctx.↑(Store(_, index_, value)) if index_ == index =>
         value
 
-      case Store(base_, index_, _) if eq_(config, state, ctx.neutral, index_, index) == False =>
+      case ctx.↑(Store(base_, index_, _)) if eq_(config, state, ctx.neutral, index_, index) == False =>
         Select(base_, index)
 
       case _ =>
@@ -497,8 +503,8 @@ object Simplify extends Transform:
 
   def store(config: Config, state: State, ctx: Ctx, base: Expr, index: Expr, value: Expr): Expr =
     (base, value) match
-      // overwritten
-      case (Store(base_, index_, _), _) if index_ == index =>
+      // overwritten, also arrays defined by a write (see Ctx.↑)
+      case (ctx.↑(Store(base_, index_, _)), _) if index_ == index =>
         Store(base_, index, value)
 
       // writes back what is already stored
@@ -663,8 +669,8 @@ object Simplify extends Transform:
     else
       val (left, right) = poly.sides
       (ring, right.toExpr(ring)) match
-        case (Ring.int, Succ(right_)) => Le.int(left.toExpr(ring), right_)
-        case (_, right_)              => op(left.toExpr(ring), right_)
+        case (Ring.int, ctx.↑(Succ(right_))) => Le.int(left.toExpr(ring), right_)
+        case (_, right_)                     => op(left.toExpr(ring), right_)
 
   // equations 0 == p on Int or Real are constants if p is, otherwise they are re-arranged like comparisons,
   // the result is an equation as built by eq_, e.g. by the one-point rule
@@ -682,8 +688,8 @@ object Simplify extends Transform:
     else
       val (left, right) = poly.sides
       (ring, left.toExpr(ring)) match
-        case (Ring.int, Succ(left_)) => Lt.int(left_, right.toExpr(ring))
-        case (_, left_)              => op(left_, right.toExpr(ring))
+        case (Ring.int, ctx.↑(Succ(left_))) => Lt.int(left_, right.toExpr(ring))
+        case (_, left_)                     => op(left_, right.toExpr(ring))
 
   // applications of other functions, e.g. user-defined ones
   def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
@@ -747,7 +753,8 @@ object Simplify extends Transform:
 
   // the dependencies of a combinator, whose bound variables are `bound`, and of whose body `used` are the free variables:
   // equal dependencies are collapsed, whose bound variables are renamed to the first one by the substitution,
-  // and those whose bound variables are not used are dropped, except counters, which keep the dependencies nonempty
+  // and those whose bound variables are not used are dropped, except counters, which keep the dependencies nonempty,
+  // also variables that denote one by an assumption, e.g. K == counter(0, 1, n) of TEQ.loop (see Ctx.↑)
   // (if there is none, the first dependency is kept)
   def deps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], used: Set[Var]): (List[Expr], List[Var], Subst[Nothing, Var]) =
     val (distinct, re) =
@@ -760,8 +767,8 @@ object Simplify extends Transform:
     val used_ = used.map(x => re.vars.getOrElse(x, x))
     val kept =
       distinct.filter:
-        case (Butlast(Counter(_, _, _)), _) => true
-        case (_, x)                         => used_ contains x
+        case (Butlast(ctx.↑(Counter(_, _, _))), _) => true
+        case (_, x)                                => used_ contains x
 
     val pairs = if kept.isEmpty then distinct.take(1) else kept
     (pairs.map(_._1), pairs.map(_._2), re)

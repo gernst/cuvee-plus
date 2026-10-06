@@ -134,11 +134,11 @@ object Rewrite:
       case _ if pat == expr =>
         List(m)
 
-      // a variable x of the expression with an equation x == e in the context is matched like e,
+      // a variable x of the expression with an equation x == e in the context is matched like e (see Ctx.↑),
       // only if the pattern is not a variable, which binds x itself (see above);
       // equations between variables are not followed, since they may be cyclic
-      case (_, x: Var) if ctx.eq.get(x).exists(!_.isInstanceOf[Var]) =>
-        matches(config, state, ctx, b, pat, ctx.eq(x), m)
+      case (_, x @ ctx.↑(e)) if e != x && !e.isInstanceOf[Var] =>
+        matches(config, state, ctx, b, pat, e, m)
 
       case _ =>
         Nil
@@ -316,7 +316,7 @@ object Rewrite:
     if guard == True
     then true
     else
-      val su = Subst[Type, Expr](m.params, m.vars ++ b.local)
+      val su = m ++ Subst.from(b.local.keys.toList, b.local.values.toList)
       val guard__ = su(guard)
       val open = guard__.free.exists(x => b.isPattern(x) && !m.vars.contains(x))
       !open && holds(config, state, ctx, Imp(guard_, guard__))

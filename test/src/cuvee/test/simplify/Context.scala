@@ -121,3 +121,43 @@ object OnePoint extends TestSuite:
       val k = Var("k", Sort.int)
       val invs = All(List(x), Invs(List(App(f, List(x))), List(k), Imp(Eq(x, y), P(k))))
       simplify(invs) ==> invs
+
+// the helpers of the simplifier see variables through their definitions among the assumptions (Ctx.↑)
+object Definitions extends TestSuite:
+  import cuvee.Config
+  import cuvee.simplify.Simplify
+
+  val x = Var("x", Sort.int)
+  val y = Var("y", Sort.int)
+  val z = Var("z", Sort.int)
+  val a = Var("a", Sort.array(Sort.int, Sort.int))
+  val b = Var("b", Sort.array(Sort.int, Sort.int))
+  val f = Fun("f", Nil, Fun.formals(Sort.int), Sort.int)
+
+  def simplify(ctx: Ctx, expr: Expr, state: State = State.empty) =
+    Simplify.simplify(Config.default, state, ctx, expr)
+
+  val tests = Tests:
+    // read over write and overwriting of an array defined by a write
+    test("arrays"):
+      val ctx = Ctx.empty.assume(Eq(a, Store(b, x, y)))
+      simplify(ctx, Select(a, x)) ==> y
+      simplify(ctx, Store(a, x, z)) ==> Store(b, x, z)
+      // other indices only if they are known to differ
+      simplify(ctx, Select(a, z)) ==> Select(a, z)
+      val ctx_ = Ctx.empty.assume(Eq(a, Store(b, Zero.int, y)))
+      simplify(ctx_, Select(a, One.int)) ==> Select(b, One.int)
+
+    // testers of a variable defined by a constructor application, also with a type annotation
+    test("testers"):
+      import cuvee.test.Matching.{state, list, nil, cons, xs, ys}
+      val ctx = Ctx.empty.assume(Eq(xs, App(cons, List(x, ys))))
+      simplify(ctx, Is(xs, cons), state) ==> True
+      simplify(ctx, Is(xs, nil), state) ==> False
+      val ctx_ = Ctx.empty.assume(Eq(xs, As(App(cons, List(x, ys)), list)))
+      simplify(ctx_, Is(xs, cons), state) ==> True
+
+    // variables with the same definition are equal
+    test("equations"):
+      val ctx = Ctx.empty.assume(Eq(x, App(f, List(y)))).assume(Eq(z, App(f, List(y))))
+      simplify(ctx, Eq(x, z)) ==> True

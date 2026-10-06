@@ -41,6 +41,14 @@ case class Ctx(
   def withRules(rules: List[Rule], steps: Int = 1000) =
     copy(rules = rules, steps = util.Ref(steps))
 
+  // an expression seen through the equations of eq, otherwise itself,
+  // e.g. ctx.↑(Counter(i, c, n)) matches a variable K with K == counter(i, c, n) among the assumptions
+  object ↑ :
+    def unapply(expr: Expr): Some[Expr] =
+      expr match
+        case x: Var => Some(Ctx.this.eq.getOrElse(x, x))
+        case _      => Some(expr)
+
   // variables bound by let, match, and the combinators, which are neither universal nor existential
   def bind(xs: List[Var]) =
     copy(bound = xs ++ bound)

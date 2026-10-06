@@ -57,8 +57,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def +(pair: (Var, E)) =
     Subst(params, vars + pair)
 
-  // the bindings of both substitutions, where those of `that` take precedence
-  def ++(that: Subst[T, E]) =
+  // the bindings of both substitutions, where those of `that` take precedence,
+  // which may be narrower, e.g. a renaming Subst[Nothing, Var] added to a match Subst[Type, Expr]
+  def ++[T_ <: T, E_ <: E](that: Subst[T_, E_]): Subst[T, E] =
     Subst(params ++ that.params, vars ++ that.vars)
 
   // the substitution without the binding of `x`, which is kept as it is
