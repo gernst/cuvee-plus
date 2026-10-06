@@ -164,6 +164,28 @@ object Bags:
   object subbag extends Sugar.binary(Fun.bag.subbag)
   object card extends Sugar.unary(Fun.bag.card)
 
+// the functions on finite maps, as in Fun.map
+object FinMaps:
+  // the empty map needs the types of its keys and values
+  object empty:
+    def apply(key: Type, value: Type): Expr =
+      App(Fun.map.empty, Nil, Sort.map(key, value), Nil)
+
+    def unapply(expr: Expr): Boolean =
+      expr match
+        case App(fun, _, _, Nil) => fun == Fun.map.empty
+        case _                   => false
+
+  object singleton extends Sugar.binary(Fun.map.singleton)
+  object card extends Sugar.unary(Fun.map.card)
+  object member extends Sugar.binary(Fun.map.member)
+  object keys extends Sugar.unary(Fun.map.keys)
+  object values extends Sugar.unary(Fun.map.values)
+  object subset extends Sugar.binary(Fun.map.subset)
+  object get extends Sugar.binary(Fun.map.get)
+  object update extends Sugar.associative(Fun.map.update, Assoc.Left)
+  object minus extends Sugar.binary(Fun.map.minus)
+
 // the functions on bitvectors of SMT-LIB, which are instantiated for the widths of their arguments,
 // where indexed functions are named by their indexed identifier, e.g. "_ extract 7 0" for (_ extract 7 0)
 object BitVecs:

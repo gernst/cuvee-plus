@@ -21,7 +21,7 @@ object Preludes extends TestSuite:
   val tests = Tests:
     test("smtlib"):
       val state = init(cuvee.smtlib.Source)
-      for fun <- core ++ List(Fun.select, Fun.store, Fun.const, Fun.int.div, Fun.int.mod, Fun.real.div) ++ Fun.seq.all
+      for fun <- core ++ List(Fun.select, Fun.store, Fun.const, Fun.int.div, Fun.int.mod, Fun.real.div) ++ Fun.seq.all ++ Fun.set.all ++ Fun.map.all
       do same(state, fun)
 
     test("boogie"):
@@ -50,3 +50,26 @@ object Preludes extends TestSuite:
       val state = init(cuvee.boogie.Source)
       for fun <- List(Fun.int.uminus, Fun.int.plus, Fun.int.minus, Fun.int.times, Fun.int.lt, Fun.int.le, Fun.int.gt, Fun.int.ge)
       do assert(Overload.isGeneric(state.funs((fun.name, fun.arity))))
+
+    // indexing, updates, membership, cardinality, merge, and removal of keys on maps
+    test("maps"):
+      val state = init(cuvee.smtlib.Source)
+      val typ = Sort.map(Sort.int, Sort.bool)
+      val m = Var("m", typ)
+      val n = Var("n", typ)
+      val k = Var("k", Sort.int)
+      val v = Var("v", Sort.bool)
+      val ks = Var("ks", Sort.set(Sort.int))
+
+      def resolve(name: String, args: Expr*) =
+        val name_ = _root_.util.Name(name, None)
+        val impl = Overload.impl(name_, args.length, args(Overload.dispatch(name_, args.length)).typ)
+        impl.get.build(state, args.toList)
+
+      resolve("select", m, k) ==> FinMaps.get(m, k)
+      resolve("store", m, k, v) ==> FinMaps.update(m, FinMaps.singleton(k, v))
+      resolve("in", k, m) ==> FinMaps.member(k, m)
+      resolve("|_|", m) ==> FinMaps.card(m)
+      resolve("+", m, n) ==> FinMaps.update(m, n)
+      resolve("-", m, ks) ==> FinMaps.minus(m, ks)
+      resolve("<=", m, n) ==> FinMaps.subset(m, n)

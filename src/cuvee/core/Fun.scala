@@ -95,6 +95,22 @@ object Fun:
 
     val all = List(empty, make, union, inter, minus, count, subbag, card)
 
+  // finite maps, named like the sets of cvc5, which however has no such theory, where map.empty needs its type,
+  // map.get is unspecified outside of the keys, map.update(m, n) overwrites m by n, and map.minus removes keys
+  object map:
+    val empty = Fun("map.empty", List(a, b), Nil, Sort.map(a, b))
+    val singleton = Fun("map.singleton", List(a, b), formals(a, b), Sort.map(a, b))
+    val card = Fun("map.card", List(a, b), formals(Sort.map(a, b)), Sort.int)
+    val member = Fun("map.member", List(a, b), formals(a, Sort.map(a, b)), bool)
+    val keys = Fun("map.keys", List(a, b), formals(Sort.map(a, b)), Sort.set(a))
+    val values = Fun("map.values", List(a, b), formals(Sort.map(a, b)), Sort.set(b))
+    val subset = Fun("map.subset", List(a, b), formals(Sort.map(a, b), Sort.map(a, b)), bool)
+    val get = Fun("map.get", List(a, b), formals(Sort.map(a, b), a), b)
+    val update = Fun("map.update", List(a, b), formals(Sort.map(a, b), Sort.map(a, b)), Sort.map(a, b))
+    val minus = Fun("map.minus", List(a, b), formals(Sort.map(a, b), Sort.set(a)), Sort.map(a, b))
+
+    val all = List(empty, singleton, card, member, keys, values, subset, get, update, minus)
+
   // the functions on traces and sequences of trace equation systems: counter(i, c, n) is the trace i, i + c, ..., i + n c,
   // current the last element of a trace, butlast (written ⌊X⌋) all but the last element, steps the number of iterations,
   // length the length of a sequence, nth and earlier the elements of traces and sequences

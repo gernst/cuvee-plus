@@ -56,6 +56,7 @@ object Grammar:
     "seq" -> "Seq",
     "set" -> "Set",
     "multiset" -> "Bag",
+    "map" -> "Map",
     "array" -> "Array"
   )
 
@@ -217,11 +218,15 @@ object Grammar:
   val bag =
     BagLit(P((sym.filter(_ == "multiset") ?~ "{") ~ (expr ~* ",") ~ "}").map(_._2))
 
+  // backtracks if there is no bracket after map, which is then the combinator map(for ...)
+  val map =
+    MapLit(P((sym.filter(_ == "map") ?~ "[") ~ ((expr ~ ":=" ~ expr) ~* ",") ~ "]").map(_._2))
+
   val butlast =
     Butlast(P("⌊" ~ expr ~ "⌋"))
 
   val atom: Parser[Expr] =
-    P(diff | tuple | seq | set | bag | len | butlast | lit | bind | let | ite | combinator | app)
+    P(diff | tuple | seq | set | bag | map | len | butlast | lit | bind | let | ite | combinator | app)
 
   // indexing and slices of other atoms than names and calls, which take their accesses themselves,
   // members and testers are accessed on variables only
@@ -251,7 +256,7 @@ object Grammar:
       case ((((((_, init), _), deps), bound), update)) => Combinator("trace", Some(init), deps, bound, update)
 
   val map_ =
-    P((word("map") ?~ "(" ?~ word("for")) ~ exprs ~ word("yield").asScanner ~ ids ~ arrow ~ update).map:
+    P((sym.filter(_ == "map") ?~ "(" ?~ word("for")) ~ exprs ~ word("yield").asScanner ~ ids ~ arrow ~ update).map:
       case ((((_, deps), bound), update)) => Combinator("map", None, deps, bound, update)
 
   val all_ =

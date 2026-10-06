@@ -1,0 +1,17 @@
+// finite maps, which no solver supports, hence parsed and printed only;
+// m <= n (submap) is not part of Dafny, but of the dialect of Cuvée
+
+method maps(m: map<int, bool>, n: map<int, bool>, s: set<int>, k: int, v: bool) returns (r: map<int, bool>)
+  requires k in m && k !in n
+  ensures k in r && r[k] == v
+  ensures r.Keys == m.Keys + n.Keys && |r| <= |m| + |n|
+{
+  var x: bool := m[k];
+  var t: map<int, bool>;
+  r := map[1 := true, k := x];
+  r := m[k := v] + n;
+  assert v in r.Values;
+  t := r - s;
+  assert k !in t.Keys || k !in s;
+  assert t <= r;
+}

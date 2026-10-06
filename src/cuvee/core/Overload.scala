@@ -15,7 +15,7 @@ object Impl:
 // overloaded operators, which are implemented by different functions depending on the type of the first argument:
 // arithmetic and comparisons on Int and Real, e.g. + by Fun.int.plus on Int and by Fun.real.plus on Real,
 // + and <= on sequences, which are concatenation and prefix,
-// and select and store, which index and update arrays and sequences;
+// and select and store, which index and update arrays, sequences, and maps;
 // the frontends declare them generically in their preludes, the type checker determines the implementation
 // once the type of the first argument is known and checks the application against its signature (see Type.check),
 // and afterwards, each application is replaced by its implementation (see apply),
@@ -27,6 +27,11 @@ object Overload:
   val seqStore =
     val sig = Fun("store", List(a), Fun.formals(Sort.seq(a), Sort.int, a), Sort.seq(a))
     Impl(sig, { case (state, List(s, i, v)) => app(state, Fun.seq.update, List(s, i, Seqs.unit(v))) })
+
+  // the update m[k := v] of a map overwrites it by the singleton map
+  val mapStore =
+    val sig = Fun("store", List(a, Param.b), Fun.formals(Sort.map(a, Param.b), a, Param.b), Sort.map(a, Param.b))
+    Impl(sig, { case (state, List(m, k, v)) => app(state, Fun.map.update, List(m, FinMaps.singleton(k, v))) })
 
   // membership x in s and the cardinality |s| of sequences, sets, and multisets, which the frontends build directly,
   // where membership is resolved by the type of its second argument (see dispatch)
@@ -75,26 +80,34 @@ object Overload:
       (Name("+", None), 2, Con.seq) -> Impl(Fun.seq.concat),
       (Name("+", None), 2, Con.set) -> Impl(Fun.set.union),
       (Name("+", None), 2, Con.bag) -> Impl(Fun.bag.union),
+      (Name("+", None), 2, Con.map) -> Impl(Fun.map.update),
       (Name("-", None), 2, Con.set) -> Impl(Fun.set.minus),
       (Name("-", None), 2, Con.bag) -> Impl(Fun.bag.minus),
+      (Name("-", None), 2, Con.map) -> Impl(Fun.map.minus),
       (Name("<", None), 2, Con.seq) -> proper(Con.seq, Fun.seq.prefixof),
       (Name("<", None), 2, Con.set) -> proper(Con.set, Fun.set.subset),
       (Name("<", None), 2, Con.bag) -> proper(Con.bag, Fun.bag.subbag),
       (Name("<=", None), 2, Con.seq) -> Impl(Fun.seq.prefixof),
       (Name("<=", None), 2, Con.set) -> Impl(Fun.set.subset),
       (Name("<=", None), 2, Con.bag) -> Impl(Fun.bag.subbag),
+      // submaps, which are not strict, there is no < on maps
+      (Name("<=", None), 2, Con.map) -> Impl(Fun.map.subset),
       (Name("div", None), 2, Con.real) -> Impl(Fun.real.div),
       (Name("in", None), 2, Con.seq) -> seqMember,
       (Name("in", None), 2, Con.set) -> Impl(Fun.set.member),
       (Name("in", None), 2, Con.bag) -> bagMember,
+      (Name("in", None), 2, Con.map) -> Impl(Fun.map.member),
       (Name("select", None), 2, Con.array) -> Impl(Fun.select),
       (Name("select", None), 2, Con.seq) -> Impl(Fun.seq.nth),
       (Name("select", None), 2, Con.bag) -> bagSelect,
+      (Name("select", None), 2, Con.map) -> Impl(Fun.map.get),
       (Name("store", None), 3, Con.array) -> Impl(Fun.store),
       (Name("store", None), 3, Con.seq) -> seqStore,
+      (Name("store", None), 3, Con.map) -> mapStore,
       (Name("|_|", None), 1, Con.seq) -> Impl(Fun.seq.len),
       (Name("|_|", None), 1, Con.set) -> Impl(Fun.set.card),
-      (Name("|_|", None), 1, Con.bag) -> Impl(Fun.bag.card)
+      (Name("|_|", None), 1, Con.bag) -> Impl(Fun.bag.card),
+      (Name("|_|", None), 1, Con.map) -> Impl(Fun.map.card)
     )
 
     Map(arith ++ other*)

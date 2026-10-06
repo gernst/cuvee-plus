@@ -15,9 +15,8 @@ const {:dfy} {:bpl} {:smt2} {:c} false: bool
 
 // finite container types
 type {:dfy} {:bpl} {:smt2} {:c} seq<a₀>
-type {:dfy} {:smt2} {:c} set<a₀>
-type {:dfy} {:smt2} {:c} multiset<a₀>
-// maps have no theory in the solvers
+type {:dfy} set<a₀>
+type {:dfy} multiset<a₀>
 type {:dfy} map<a₀, a₁>
 
 // SMT-LIB array, not Dafny array
@@ -43,7 +42,8 @@ function {:dfy} {:bpl} {:smt2} {:c} <==>(x₀: bool, x₁: bool): bool
 
 function {:dfy} {:bpl} {:smt2} {:c} - <a₀>(x₀: a₀): a₀
 function {:dfy} {:bpl} {:smt2} {:c} + <a₀>(x₀: a₀, x₁: a₀): a₀
-function {:dfy} {:bpl} {:smt2} {:c} - <a₀>(x₀: a₀, x₁: a₀): a₀
+// the second argument of - may differ, m - s removes the keys s from a map m (see cuvee.core.Overload)
+function {:dfy} {:bpl} {:smt2} {:c} - <a₀,a₁>(x₀: a₀, x₁: a₁): a₀
 function {:dfy} {:bpl} {:smt2} {:c} * <a₀>(x₀: a₀, x₁: a₀): a₀
 function {:dfy} {:bpl} {:smt2} {:c} / <a₀>(x₀: a₀, x₁: a₀): a₀
 function {:dfy} {:bpl} {:smt2} {:c} % <a₀>(x₀: a₀, x₁: a₀): a₀

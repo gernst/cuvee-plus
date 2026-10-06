@@ -63,6 +63,8 @@ object Con:
   // finite sets and multisets as in cvc5
   val set = Con("Set", 1)
   val bag = Con("Bag", 1)
+  // finite maps, which no solver supports (see Fun.map)
+  val map = Con("Map", 2)
   val trace = Con("Trace", 1)
 
 object Sort:
@@ -82,6 +84,9 @@ object Sort:
 
   def bag(elem: Type) =
     Sort(Con.bag, List(elem))
+
+  def map(key: Type, value: Type) =
+    Sort(Con.map, List(key, value))
 
   // the non-empty sequences of values of a variable at the loop head, see Trace
   def trace(elem: Type) =

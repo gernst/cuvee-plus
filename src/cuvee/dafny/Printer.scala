@@ -443,7 +443,7 @@ object Printer extends cuvee.pipe.Printer:
   def prefix(expr: Expr): Option[(String, Int, Expr)] =
     expr match
       // a != b and x !in s, see infix
-      case Not(Eq(_, _)) | Not(Sets.member(_, _)) | Not(Seqs.contains(_, Seqs.unit(_))) =>
+      case Not(Eq(_, _)) | Not(Sets.member(_, _)) | Not(FinMaps.member(_, _)) | Not(Seqs.contains(_, Seqs.unit(_))) =>
         None
 
       case App(fun, _, _, List(arg)) if Grammar.prefix_ops.contains(name(fun.name)) =>
@@ -460,7 +460,7 @@ object Printer extends cuvee.pipe.Printer:
   def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =
     expr match
       // sequence, set, and multiset literals are atoms
-      case _ if elems(expr).isDefined || members(expr).isDefined || multiset(expr).isDefined =>
+      case _ if elems(expr).isDefined || members(expr).isDefined || multiset(expr).isDefined || pairs(expr).isDefined =>
         None
 
       // concatenation and prefix of sequences are overloaded in Dafny, x in s is containment of [x]
@@ -487,6 +487,15 @@ object Printer extends cuvee.pipe.Printer:
       case Bags.inter(left, right)      => operator("*", List(left, right))
       case Bags.minus(left, right)      => operator("-", List(left, right))
       case Bags.subbag(left, right)     => operator("<=", List(left, right))
+
+      // the update m[k := v] of a map is printed as an access, see doc
+      case FinMaps.update(_, FinMaps.singleton(_, _)) => None
+      case FinMaps.member(key, map)                   => operator("in", List(key, map))
+      case Not(FinMaps.member(key, map))              => operator("!in", List(key, map))
+      case FinMaps.update(left, right)                => operator("+", List(left, right))
+      case FinMaps.minus(left, right)                 => operator("-", List(left, right))
+      // submaps, which this dialect adds to Dafny, without a strict version
+      case FinMaps.subset(left, right)                => operator("<=", List(left, right))
 
       case App(fun, _, _, args) if Grammar.infix_ops.contains(name(fun.name)) =>
         val op = name(fun.name)
@@ -571,6 +580,16 @@ object Printer extends cuvee.pipe.Printer:
       case Bags.make(elem, One.int)       => Some(List(elem))
       case Bags.union(left, right) =>
         for left_ <- multiset(left); right_ <- multiset(right)
+        yield left_ ++ right_
+      case _ => None
+
+  // the pairs of map literals, map[], map[k := v], and updates of these
+  def pairs(expr: Expr): Option[List[(Expr, Expr)]] =
+    expr match
+      case FinMaps.empty()                => Some(Nil)
+      case FinMaps.singleton(key, value)  => Some(List((key, value)))
+      case FinMaps.update(left, right) =>
+        for left_ <- pairs(left); right_ <- pairs(right)
         yield left_ ++ right_
       case _ => None
 
@@ -718,6 +737,26 @@ object Printer extends cuvee.pipe.Printer:
       case _ if multiset(expr).isDefined =>
         val Some(elems_) = multiset(expr): @unchecked
         Group(text("multiset{") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("}"))
+
+      case _ if pairs(expr).isDefined =>
+        val Some(pairs_) = pairs(expr): @unchecked
+        val docs = for (key, value) <- pairs_ yield doc(key) +:+ text(":=") +:+ doc(value)
+        Group(text("map[") ++ Nest(2, linebreak ++ commas(docs)) ++ text("]"))
+
+      case FinMaps.card(arg) =>
+        text("|") ++ doc(arg) ++ text("|")
+
+      case FinMaps.get(map, key) =>
+        doc(map, operand) ++ text("[") ++ doc(key) ++ text("]")
+
+      case FinMaps.update(map, FinMaps.singleton(key, value)) =>
+        Group(doc(map, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(key) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
+
+      case FinMaps.keys(map) =>
+        doc(map, operand) ++ text(".Keys")
+
+      case FinMaps.values(map) =>
+        doc(map, operand) ++ text(".Values")
 
       case Seqs.len(arg) =>
         text("|") ++ doc(arg) ++ text("|")

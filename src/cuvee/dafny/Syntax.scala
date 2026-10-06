@@ -46,6 +46,8 @@ case class Len(arg: Expr) extends Expr
 // set literals {a, b, c} and multiset literals multiset{a, b, c}
 case class SetLit(args: List[Expr]) extends Expr
 case class BagLit(args: List[Expr]) extends Expr
+// map literals map[k := v, ...]
+case class MapLit(args: List[(Expr, Expr)]) extends Expr
 // all but the last element ⌊X⌋ of a trace
 case class Butlast(arg: Expr) extends Expr
 // the derivative (x, y :: e)' of e with respect to x and y
@@ -68,6 +70,7 @@ object SeqLit extends (List[Expr] => Expr)
 object Len extends (Expr => Expr)
 object SetLit extends (List[Expr] => Expr)
 object BagLit extends (List[Expr] => Expr)
+object MapLit extends (List[(Expr, Expr)] => Expr)
 object Butlast extends (Expr => Expr)
 object Diff extends ((List[String], Expr) => Expr)
 object App extends ((String, List[Expr], List[Access]) => Expr)

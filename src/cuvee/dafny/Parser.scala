@@ -348,6 +348,13 @@ class Parser(var state: State):
         val base_ = state.exprs.app(core.Fun.seq.extract, List(base, from_, len_))
         resolve(scope, base_, rest)
 
+      // the keys and values m.Keys and m.Values of maps, which are sets
+      case Member("Keys", Nil) :: rest if isMap(base) =>
+        resolve(scope, state.exprs.app(core.Fun.map.keys, List(base)), rest)
+
+      case Member("Values", Nil) :: rest if isMap(base) =>
+        resolve(scope, state.exprs.app(core.Fun.map.values, List(base)), rest)
+
       // testers x.C? of the constructors of datatypes, on variables only like members
       case Member(tester, Nil) :: rest if tester.endsWith("?") && state.constrs.contains(tester.dropRight(1)) =>
         Error.report("tester on an expression that is not a variable", base, tester):
@@ -375,6 +382,11 @@ class Parser(var state: State):
 
           case _ =>
             Error.raise("invalid access", self, qname, access, scope, state.funs.keys, state.procs.keys)
+
+  def isMap(expr: core.Expr): Boolean =
+    expr.typ match
+      case core.Sort(con, _) => con == core.Con.map
+      case _                 => false
 
   def resolve(scope: Scope, expr: Expr): core.Expr =
     expr match
@@ -429,6 +441,16 @@ class Parser(var state: State):
           for arg <- args
           yield state.exprs.app(core.Fun.bag.make, List(resolve(scope, arg), state.exprs.num(1)))
         elems_.reduceLeft((left, right) => state.exprs.app(core.Fun.bag.union, List(left, right)))
+
+      // map[k := v, ...] overwrites the singleton maps from left to right, such that later keys win, as in Dafny
+      case MapLit(Nil) =>
+        state.exprs.app(core.Fun.map.empty, Nil)
+
+      case MapLit(args) =>
+        val singletons_ =
+          for (key, value) <- args
+          yield state.exprs.app(core.Fun.map.singleton, List(resolve(scope, key), resolve(scope, value)))
+        singletons_.reduceLeft((left, right) => state.exprs.app(core.Fun.map.update, List(left, right)))
 
       // chained comparisons x < y <= z are the conjunction x < y && y <= z, which must not mix directions, as in Dafny
       case Chain(ops, args) =>

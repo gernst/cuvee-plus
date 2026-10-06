@@ -141,6 +141,11 @@ object Solver:
 
           (Ack.Success, this)
 
+        // declarations of the sorts that the solvers know, e.g. those of the preludes of other languages,
+        // which would be rejected as redefinitions
+        case DeclareSort(con, _) if known contains con.name =>
+          (Ack.Success, this)
+
         case CheckSat =>
           val status_ = solver.check()
           status = Some(status_)

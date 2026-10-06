@@ -118,8 +118,11 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   - `seq.++` for `+`, and `seq.prefixof` for `<=`, on sequences.
 
   `select` and `store` (Dafny's `s[i]` and `s[i := v]`) are overloaded in
-  the same way for arrays and sequences, membership `in` for sequences, sets,
-  and multisets (dispatched by its second argument). `Type.check` records the
+  the same way for arrays, sequences, and maps, membership `in` for sequences,
+  sets, multisets, and maps (dispatched by its second argument). Maps
+  (`Fun.map`, sugar `FinMaps`) are not expected to be supported by the
+  solvers; `m[k := v]` is `map.update(m, map.singleton(k, v))`, and the
+  generic `-` takes a second argument of another type for `m - s`. `Type.check` records the
   applications of overloaded operators as pending constraints (a `Ref`
   threaded through checking), which are decided once the dispatch type is
   known, each exactly once, until no further one is decided; the remaining

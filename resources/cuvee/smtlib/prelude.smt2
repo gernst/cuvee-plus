@@ -57,6 +57,19 @@
 (declare-fun bag.subbag (par (a$0) ((Bag a$0) (Bag a$0)) Bool :smt2 :dfy :c))
 (declare-fun bag.card (par (a$0) ((Bag a$0)) Int :smt2 :dfy :c))
 
+; finite maps (see cuvee.core.Fun.map), which the solvers are not expected to support
+(declare-sort Map 2 :smt2 :dfy :c)
+(declare-fun map.empty (par (a$0 a$1) () (Map a$0 a$1) :smt2 :dfy :c))
+(declare-fun map.singleton (par (a$0 a$1) (a$0 a$1) (Map a$0 a$1) :smt2 :dfy :c))
+(declare-fun map.card (par (a$0 a$1) ((Map a$0 a$1)) Int :smt2 :dfy :c))
+(declare-fun map.member (par (a$0 a$1) (a$0 (Map a$0 a$1)) Bool :smt2 :dfy :c))
+(declare-fun map.keys (par (a$0 a$1) ((Map a$0 a$1)) (Set a$0) :smt2 :dfy :c))
+(declare-fun map.values (par (a$0 a$1) ((Map a$0 a$1)) (Set a$1) :smt2 :dfy :c))
+(declare-fun map.subset (par (a$0 a$1) ((Map a$0 a$1) (Map a$0 a$1)) Bool :smt2 :dfy :c))
+(declare-fun map.get (par (a$0 a$1) ((Map a$0 a$1) a$0) a$1 :smt2 :dfy :c))
+(declare-fun map.update (par (a$0 a$1) ((Map a$0 a$1) (Map a$0 a$1)) (Map a$0 a$1) :smt2 :dfy :c))
+(declare-fun map.minus (par (a$0 a$1) ((Map a$0 a$1) (Set a$0)) (Map a$0 a$1) :smt2 :dfy :c))
+
 (declare-fun not (Bool) Bool :smt2 :dfy :bpl :c)
 (declare-fun => (Bool Bool) Bool :smt2 :dfy :bpl :c)
 
