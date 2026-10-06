@@ -128,7 +128,7 @@ object Grammar:
     P(cast | postfix | App(sym.filter(prefix_ops.contains) ~ unary.map(List(_))))
 
   val cast: Parser[Expr] =
-    Cast(P("(" ?~ typ ~ ")" ~ unary))
+    Cast(P("(" ?~ pointer ~ ")" ~ unary))
 
   val intwords =
     P((J("int") | J("long") | J("short") | J("char") | J("unsigned") | J("signed") | J("_Bool") | J("bool")).+)
@@ -180,7 +180,7 @@ object Grammar:
     P(Items(braces(init ~* ",")) | expr)
 
   val declarator =
-    Declarator(P(id ~ brackets(expr.?).* ~ ("=" ~ init).?))
+    Declarator(P(star.?.map(_.isDefined) ~ id ~ brackets(expr.?).* ~ ("=" ~ init).?))
 
   val decl =
     Decl(P(typ ~ (declarator ~+ ",")))

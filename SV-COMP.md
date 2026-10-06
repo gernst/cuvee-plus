@@ -184,6 +184,11 @@ inputs, after the harness), with where they occurred in the sample.
    now fail later, at structs and pointers (6.), or at functions of the
    headers that are never called, e.g. `__bswap_32` with
    `__builtin_bswap32`, and prototypes with pointers.
+   **Also done:** allocations of arrays, i.e. local pointers initialized
+   by `malloc`/`alloca` of `sizeof(T) * n` or `calloc(n, sizeof(T))`, with
+   optional casts, are arrays of `T`, whose elements are arbitrary, or zero
+   for `calloc`; `free` is skipped; other pointers are rejected. This covers
+   e.g. `array-fpi`.
 6. Beyond integer programs with arrays: structs, pointers and `malloc`,
    floats, bitwise operators, `goto`; these need decisions about the
    semantics, not only the grammar.

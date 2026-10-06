@@ -154,6 +154,16 @@ object Translation extends TestSuite:
       errors("int main(void) { return sizeof(long); }") ==> List("the size of long depends on the data model")
       errors("int main(void) { int a[2]; return sizeof(a); }") ==> List("sizeof of an expression is not supported")
 
+    // memory for n elements is an array, whose elements are arbitrary, or zero for calloc
+    test("allocations"):
+      valid("void *malloc(unsigned int size); void *calloc(unsigned int n, unsigned int size); void free(void *p); " +
+        "int main(void) { int n = 3; int *a = malloc(sizeof(int) * n); a[1] = 2; assert(a[1] == 2); free(a); " +
+        "long *b = (long *) malloc(n * sizeof(long)); b[0] = 1; int *c = calloc(n, sizeof(int)); assert(c[2] == 0); return 0; }")
+      Examples.check("c", "void *malloc(unsigned int size); int main(void) { int *a = malloc(sizeof(int) * 2); assert(a[0] == 0); return 0; }", "-verify", "-z3") ==>
+        List("goal does not hold")
+      errors("int main(void) { int *p = 0; return 0; }") ==> List("pointers are not supported")
+      errors("int *g; int main(void) { return 0; }") ==> List("pointers are not supported")
+
     test("unexpected character"):
       errors("int f(int x) { return x @ 1; }") ==> List("unexpected character '@' at 0:24")
 

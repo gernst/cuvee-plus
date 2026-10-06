@@ -39,6 +39,30 @@ class Parser(var state: State):
   def array(t: Type, sizes: List[Option[Expr]]): Type =
     sizes.foldLeft(t)((elem, _) => ArrayType(elem))
 
+  // pointers to memory for elements of type t, e.g. int *a = malloc(sizeof(int) * n), are arrays,
+  // whose elements are arbitrary, or zero for calloc; the size is not used, as arrays are unbounded
+  def allocation(x: String, t: Type, sizes: List[Option[Expr]], init: Option[Expr]): (Type, Option[Expr]) =
+    def strip(e: Expr): Expr =
+      e match
+        case Cond(e, None)           => strip(e)
+        case Cast(PointerType(_), e) => strip(e)
+        case _                       => e
+
+    def elements(size: Expr) =
+      strip(size) match
+        case App("*", List(SizeofType(_), _) | List(_, SizeofType(_))) => true
+        case _                                                          => false
+
+    init.map(strip) match
+      case Some(Call("malloc" | "alloca", List(size))) if sizes.isEmpty && elements(size) =>
+        (ArrayType(t), None)
+
+      case Some(Call("calloc", List(_, size))) if sizes.isEmpty && strip(size).isInstanceOf[SizeofType] =>
+        (ArrayType(t), Some(Items(Nil)))
+
+      case _ =>
+        Error.raise("pointers are not supported", x)
+
   def zero(t: Type): core.Expr =
     t match
       case IntType      => Zero.int
@@ -295,9 +319,9 @@ class Parser(var state: State):
       yield stmt match
         case Decl(t, decls) =>
           for
-            Declarator(x, sizes, init) <- decls
+            Declarator(pointer, x, sizes, init_) <- decls
             prog <-
-              val t_ = array(t, sizes)
+              val (t_, init) = if pointer then allocation(x, t, sizes, init_) else (array(t, sizes), init_)
               val v = core.Var(x, typ(t_))
               val v_ = if scope_.values.exists(_._1.name == v.name) then v.fresh else v
               locals += v_
@@ -356,6 +380,10 @@ class Parser(var state: State):
 
       case ExprStmt(Call("reach_error" | "__VERIFIER_error", Nil)) =>
         List(Spec.assert(False))
+
+      // allocations are arrays, which are values
+      case ExprStmt(Call("free", List(_))) =>
+        Nil
 
       case ExprStmt(Call("abort", Nil)) =>
         List(Spec.assume(False))
@@ -664,8 +692,11 @@ class Parser(var state: State):
     // global variables without initializer are zero, as in C
     val inits = mutable.ListBuffer[core.Expr]()
 
-    for case Global(Decl(t, decls)) <- tops; Declarator(x, sizes, init) <- decls
+    for case Global(Decl(t, decls)) <- tops; Declarator(pointer, x, sizes, init) <- decls
     do
+      Error.report("pointers are not supported", x):
+        require(!pointer)
+
       val t_ = array(t, sizes)
 
       for e <- init
@@ -707,7 +738,7 @@ class Parser(var state: State):
     do
       top match
         case Global(Decl(_, decls)) =>
-          for Declarator(x, _, _) <- decls
+          for Declarator(_, x, _, _) <- decls
           do cmds += state.cmds.declareVar(x)
 
         case f @ Function(_, name, _, _) if defs(name) eq f =>

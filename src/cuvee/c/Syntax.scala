@@ -17,7 +17,12 @@ object Syntax:
   // the functions of the verification conventions of SV-COMP and of assert.h, which are not procedures,
   // hence their bodies are skipped by the grammar and their declarations are dropped by the parser
   def builtin(name: String) =
-    name == "assert" || name == "reach_error" || name == "abort" || name.startsWith("__assert") || name.startsWith("__VERIFIER_")
+    name == "assert" || name == "reach_error" || name == "abort" || name.startsWith("__assert") || name.startsWith("__VERIFIER_") ||
+      allocation(name)
+
+  // allocations of arrays (see Parser.allocation)
+  def allocation(name: String) =
+    name == "malloc" || name == "calloc" || name == "alloca" || name == "free"
 
 sealed trait Type
 case object IntType extends Type
@@ -52,9 +57,9 @@ object SizeofType extends (List[String] => Expr)
 object SizeofExpr extends (Expr => Expr)
 object Items extends (List[Expr] => Expr)
 
-// the sizes of arrays, one per dimension, which are optional, e.g. int a[] = { 1, 2 }
-case class Declarator(name: String, sizes: List[Option[Expr]], init: Option[Expr])
-object Declarator extends ((String, List[Option[Expr]], Option[Expr]) => Declarator)
+// pointers, and the sizes of arrays, one per dimension, which are optional, e.g. int a[] = { 1, 2 }
+case class Declarator(pointer: Boolean, name: String, sizes: List[Option[Expr]], init: Option[Expr])
+object Declarator extends ((Boolean, String, List[Option[Expr]], Option[Expr]) => Declarator)
 
 sealed trait Stmt
 case class Decl(typ: Type, decls: List[Declarator]) extends Stmt
