@@ -37,8 +37,41 @@ object Grammar:
 
   val nil = R(Nil)
 
+  val star = sym.filter(_ == "*")
+
+  // a balanced sequence of tokens in brackets, which is skipped
+  case class Balanced(open: String, close: String) extends Scanner:
+    def scan(in: Input, cm: Boolean): Input =
+      in match
+        case Token.Keyword(`open`) #:: rest =>
+          var depth = 1
+          var in_ = rest
+
+          while depth > 0
+          do
+            in_ match
+              case Token.Keyword(`open`) #:: rest  => depth += 1; in_ = rest
+              case Token.Keyword(`close`) #:: rest => depth -= 1; in_ = rest
+              case _ #:: rest                      => in_ = rest
+              case _                               => Input.fail("'" + close + "'", in_, true)
+
+          in_
+
+        case _ =>
+          Input.fail("'" + open + "'", in, cm)
+
+  // the parser `next(a)` after `first` has parsed `a`, committed as with ~
+  case class Dependent[A, B](first: Parser[A], next: A => Parser[B]) extends Parser[B]:
+    def parse(in: Input, cm: Boolean) =
+      val (a, in_) = first.parse(in, cm)
+      next(a).parse(in_, true)
+
+  // __attribute__((...)) of GCC, which is ignored
+  val attribute: Scanner =
+    "__attribute__" ~ Balanced("(", ")")
+
   val qualifier: Scanner =
-    "const" | "static" | "extern" | "volatile"
+    "const" | "static" | "extern" | "volatile" | "inline" | "restrict" | attribute
 
   val intword: Scanner =
     "int" | "long" | "short" | "char" | "unsigned" | "signed"
@@ -57,6 +90,11 @@ object Grammar:
 
   val typ: Parser[Type] =
     P(qualifier.* ?~ base ~ qualifier.*)
+
+  // pointers occur in the signatures of the builtins of the harness of SV-COMP, e.g. __assert_fail
+  val pointer: Parser[Type] =
+    P(typ ~ (star ~ qualifier.*).*).map:
+      case (typ, stars) => stars.foldLeft(typ)((elem, _) => PointerType(elem))
 
   val args =
     P(parens(expr ~* ","))
@@ -131,19 +169,37 @@ object Grammar:
   val empty =
     Empty(";")
 
+  val labeled =
+    Labeled(P(id ?~ ":" ~ stmt))
+
   val stmt: Parser[Stmt] =
-    P(block | if_ | while_ | dowhile | for_ | return_ | break_ | continue_ | empty | (simple ~ ";"))
+    P(block | if_ | while_ | dowhile | for_ | return_ | break_ | continue_ | empty | labeled | (simple ~ ";"))
 
   val param =
-    P(typ ~ id ~ (brackets(expr.?).map(_ => true) | R(false))).map:
+    P(pointer ~ id.? ~ (brackets(expr.?).map(_ => true) | R(false))).map:
       case ((typ, name), true)  => (ArrayType(typ), name)
       case ((typ, name), false) => (typ, name)
 
+  // parameters without names, as in declarations, are named by their position
   val params =
-    P(parens("void".map(Nil) | (param ~* ",")))
+    P(parens(param ~* ",")).map:
+      case List((VoidType, None)) => Nil
+      case params =>
+        for ((typ, name), i) <- params.zipWithIndex
+        yield (typ, name.getOrElse("_" + i))
 
-  val function =
-    Function(P(typ ~ id ?~ params ~ (block.map(Some(_)) | ";".map(None))))
+  val header =
+    P(pointer ~ id ?~ params ~ attribute.*)
+
+  // the bodies of builtins are skipped, as they are not resolved (see Syntax.builtin),
+  // which spares the grammar the constructs of the preprocessed assert.h, e.g. ({ ... }) and sizeof
+  def body(name: String): Parser[Option[Block]] =
+    if Syntax.builtin(name)
+    then Balanced("{", "}").map(Some(Block(Nil))) | ";".map(None)
+    else block.map(Some(_)) | ";".map(None)
+
+  val function: Parser[Top] =
+    P(Dependent(header, { case ((typ, name), params) => body(name).map(Function(typ, name, params, _)) }))
 
   val global =
     Global(Decl(P(typ ~ (declarator ~+ ",") ~ ";")))

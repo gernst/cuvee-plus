@@ -20,10 +20,6 @@ class Parser(var state: State):
   // the global variables with their C types
   val globals = mutable.Map[String, (core.Var, Type)]()
 
-  // the functions of the verification conventions of SV-COMP, which are not procedures
-  def builtin(name: String) =
-    name == "assert" || name == "reach_error" || name == "abort" || name == "__assert_fail" || name.startsWith("__VERIFIER_")
-
   // the context of a function body: its result, and the temporary variables for the results of calls
   case class Ctx(result: Option[(core.Var, Type)], temps: mutable.ListBuffer[core.Var])
 
@@ -35,6 +31,7 @@ class Parser(var state: State):
       case BoolType     => Sort.bool
       case ArrayType(e) => Sort.array(Sort.int, typ(e))
       case VoidType     => Error.raise("void is not a type of values")
+      case PointerType(_) => Error.raise("pointers are not supported", t)
 
   // the value of global variables without initializer, where arrays are constant
   def zero(t: Type): core.Expr =
@@ -43,6 +40,7 @@ class Parser(var state: State):
       case BoolType     => False
       case ArrayType(e) => core.App(core.Fun.const, List(typ(e)), typ(t), List(zero(e)))
       case VoidType     => Error.raise("void is not a type of values")
+      case PointerType(_) => Error.raise("pointers are not supported", t)
 
   def temp(ctx: Ctx, t: Type): core.Var =
     val x = core.Var("tmp", typ(t)).fresh
@@ -258,6 +256,9 @@ class Parser(var state: State):
       case Block(stmts) =>
         List(block(scope, ctx, stmts))
 
+      case Labeled(_, stmt) =>
+        this.stmt(scope, ctx, stmt)
+
       // expressions without ?: (see Grammar.expr), which are matched against calls below
       case ExprStmt(Cond(e, None)) =>
         stmt(scope, ctx, ExprStmt(e))
@@ -268,7 +269,8 @@ class Parser(var state: State):
       case Assign(lhs, op, rhs) =>
         assign(scope, ctx, lhs, compound.getOrElse(op, op), rhs)
 
-      case ExprStmt(Call("assert", List(phi))) =>
+      // __VERIFIER_assert is defined in the harness of SV-COMP by a call of reach_error
+      case ExprStmt(Call("assert" | "__VERIFIER_assert", List(phi))) =>
         val (pre, phi_) = cond(scope, ctx, phi)
         pre :+ Spec.assert(phi_)
 
@@ -462,6 +464,7 @@ class Parser(var state: State):
       case For(init, _, step, body)      => init.toSet.flatMap(assigned) ++ step.toSet.flatMap(assigned) ++ assigned(body)
       case Loop(_, body, step)           => step.toSet.flatMap(assigned) ++ assigned(body)
       case Block(stmts)                  => stmts.toSet.flatMap(assigned)
+      case Labeled(_, stmt)              => assigned(stmt)
       case _                             => Set()
 
   // the global variables assigned in a function body directly, respecting local declarations that shadow them,
@@ -504,6 +507,7 @@ class Parser(var state: State):
       case For(init, test, step, body)         => all(scope, init.toList ++ test.map(ExprStmt(_)).toList ++ step.toList :+ body)
       case Loop(test, body, step)              => all(scope, test.map(ExprStmt(_)).toList ++ step.toList :+ body)
       case Block(stmts)                        => all(scope, stmts)
+      case Labeled(_, stmt)                    => all(scope, List(stmt))
       case decl: Decl                          => all(scope, List(decl))
       case _                                   => (Set(), Set())
 
@@ -528,7 +532,7 @@ class Parser(var state: State):
 
   def resolve(unit: List[Top]): List[core.Cmd] =
     val tops = unit.filter:
-      case Function(_, name, _, _) => !builtin(name)
+      case Function(_, name, _, _) => !Syntax.builtin(name)
       case _                       => true
 
     // the signatures of all functions are known before any body is resolved

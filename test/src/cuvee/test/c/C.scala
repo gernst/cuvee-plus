@@ -84,6 +84,22 @@ object Translation extends TestSuite:
     test("unknown variable"):
       errors("int f(void) { return y; }") ==> List("unknown variable")
 
+    // the harness of SV-COMP (see examples/c/harness.c): pointers only in the signatures of builtins
+    test("pointers"):
+      errors("extern void __assert_fail(const char *, const char *, unsigned int, const char *);") ==> Nil
+      errors("int f(int *p);") ==> List("pointers are not supported")
+
+    test("unnamed parameters"):
+      errors("int f(int, int); int main(void) { return f(1, 2); }") ==> Nil
+
+    test("labels"):
+      val cmds = parse("int g; void f(void) { L: g = 1; }")
+      modifies(cmds, "f") ==> Some(List("g"))
+
+    test("__VERIFIER_assert"):
+      Examples.check("c", "void __VERIFIER_assert(int c); int main(void) { __VERIFIER_assert(0); return 0; }", "-verify", "-z3") ==>
+        List("goal does not hold")
+
 // formulas that are not C are written in a notation after ACSL
 object Annotations extends TestSuite:
   val x = Var("x", Sort.int)

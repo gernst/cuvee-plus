@@ -9,11 +9,18 @@ object Syntax:
   def apply(name: String, text: String) =
     Token.Value(name, text)
 
+  // the functions of the verification conventions of SV-COMP and of assert.h, which are not procedures,
+  // hence their bodies are skipped by the grammar and their declarations are dropped by the parser
+  def builtin(name: String) =
+    name == "assert" || name == "reach_error" || name == "abort" || name.startsWith("__assert") || name.startsWith("__VERIFIER_")
+
 sealed trait Type
 case object IntType extends Type
 case object BoolType extends Type
 case object VoidType extends Type
 case class ArrayType(elem: Type) extends Type
+// only in the signatures of builtins, the parser rejects them otherwise
+case class PointerType(elem: Type) extends Type
 
 sealed trait Expr
 case class Num(value: String) extends Expr
@@ -45,6 +52,8 @@ case class Block(stmts: List[Stmt]) extends Stmt
 case object Break extends Stmt
 case object Continue extends Stmt
 case object Empty extends Stmt
+// labels are dropped, as there is no goto
+case class Labeled(label: String, stmt: Stmt) extends Stmt
 
 object Decl extends ((Type, List[Declarator]) => Decl)
 object Assign extends ((Expr, String, Expr) => Stmt)
@@ -55,6 +64,7 @@ object DoWhile extends ((Stmt, Expr) => Stmt)
 object For extends ((Option[Stmt], Option[Expr], Option[Stmt], Stmt) => Stmt)
 object Return extends (Option[Expr] => Stmt)
 object Block extends (List[Stmt] => Block)
+object Labeled extends ((String, Stmt) => Stmt)
 
 sealed trait Top
 case class Global(decl: Decl) extends Top
