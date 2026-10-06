@@ -79,10 +79,9 @@ after section 4 of the paper.
 - `Trace` is in no prelude: it exists only with `-teq`. Inputs that use
   traces without `-teq` declare `Trace` themselves, and inputs cannot use the
   functions of the database, which is injected after parsing.
-- The lemmas after the first section are taken from `teq.bpl` of the earlier
-  Boogie implementation or added later, and need to be checked manually. In
-  `teq.bpl`, `counter(n)` and `range(i, c, n)` are `counter(0, 1, n)` and
-  `counter(i, c, n)` here.
+- All function declarations come first, then the lemmas, grouped by the
+  function of their left-hand side (the combinator, `current`, `prefix`, ...).
+  Lemmas whose order matters as rewrite rules keep it within their group.
 - Functions that produce traces are plural (`sums`, `maxs`, `counts`), their
   scalar counterparts singular (`sum`, `max`, `count`).
 
