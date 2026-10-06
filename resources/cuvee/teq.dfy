@@ -213,12 +213,6 @@ lemma {:rw} {:free} forall x: int, y: int, n: int ::
   current(mins(x, ⌊consts(n, y)⌋))
     == if n == 0 then x else min(x, y)
 
-// the minima are the negated maxima of the negated values,
-// not a rewrite rule, which would replace mins by maxs everywhere
-lemma {:free} forall x: int, values: seq<int> ::
-  current(mins(x, values))
-    == -current(maxs(-x, maps(for values yield v => -v)))
-
 lemma <a> {:rw} {:free} forall x: int, e: a, vs: seq<a> ::
   current(counts(x, e, vs))
     == x + count(e, vs)
@@ -276,8 +270,9 @@ lemma {:rw} {:free} forall k: int, i: int, c: int, n: int ::
     == i + k * c
 
 lemma <a> {:rw} {:free} forall x: a, xs: seq<a> ::
-  earlier(indexof(x, xs), xs)
-    == x
+  if occurs(x, xs)
+  then earlier(indexof(x, xs), xs)
+         == x
 
 lemma <a> {:rw} {:free} forall k: int, n: int, x: a ::
   earlier(k, ⌊consts(n, x)⌋)
