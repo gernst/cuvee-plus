@@ -66,6 +66,23 @@ object Grammar:
       val (a, in_) = first.parse(in, cm)
       next(a).parse(in_, true)
 
+  // the tokens up to `end`, outside of braces, which are skipped
+  case class Until(end: String) extends Scanner:
+    def scan(in: Input, cm: Boolean): Input =
+      var depth = 0
+      var in_ = in
+
+      while true
+      do
+        in_ match
+          case Token.Keyword(`end`) #:: rest if depth == 0 => return rest
+          case Token.Keyword("{") #:: rest                 => depth += 1; in_ = rest
+          case Token.Keyword("}") #:: rest                 => depth -= 1; in_ = rest
+          case _ #:: rest                                  => in_ = rest
+          case _                                           => Input.fail("'" + end + "'", in_, true)
+
+      in_
+
   // __attribute__((...)) of GCC, which is ignored
   val attribute: Scanner =
     "__attribute__" ~ Balanced("(", ")")
@@ -113,8 +130,14 @@ object Grammar:
   val cast: Parser[Expr] =
     Cast(P("(" ?~ typ ~ ")" ~ unary))
 
+  val intwords =
+    P((J("int") | J("long") | J("short") | J("char") | J("unsigned") | J("signed") | J("_Bool") | J("bool")).+)
+
+  val sizeof: Parser[Expr] =
+    P("sizeof" ~ (SizeofType("(" ?~ (qualifier.* ?~ intwords) ~ qualifier.* ~ ")") | SizeofExpr(unary)))
+
   val atom: Parser[Expr] =
-    P(Num(num) | call | Id(id) | cast | parens(expr))
+    P(Num(num) | sizeof | call | Id(id) | cast | parens(expr))
 
   val postfix: Parser[Expr] =
     P(atom ~ brackets(expr).*).map:
@@ -227,8 +250,11 @@ object Grammar:
   val global =
     Global(Decl(P(typ ~ (declarator ~+ ",") ~ ";")))
 
+  val typedef_ =
+    Typedef("typedef" ~ Until(";"))
+
   val top: Parser[Top] =
-    P(function | global)
+    P(typedef_ | function | global)
 
   // at least one declaration, such that a declaration that is not supported is a parse error,
   // where top.* would succeed without consuming input, which the pipeline then parses again forever

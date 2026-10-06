@@ -141,6 +141,19 @@ object Translation extends TestSuite:
     test("chained assignments"):
       valid("int main(void) { int i; int k; i = k = 2; assert(i == 2 && k == 2); return 0; }")
 
+    // the names of types are replaced by their definitions, which fail only where they are used
+    test("typedefs"):
+      valid("typedef unsigned int size_t; typedef size_t index; __extension__ typedef long long int big; " +
+        "int main(void) { index i = 3; big b = (big) i * 2; assert(b == 6); return 0; }")
+      errors("typedef struct { int n; } S; int main(void) { return 0; }") ==> Nil
+      errors("typedef struct { int n; } S; int main(void) { S s; return 0; }") ==> List("parse error")
+
+    // the sizes of integer types are those of the data models ILP32 and LP64, which differ for long
+    test("sizeof"):
+      valid("typedef unsigned int size_t; int main(void) { assert(sizeof(int) == 4 && sizeof(unsigned long long) == 8 && sizeof(char) == 1 && sizeof(short int) == 2 && sizeof(size_t) == 4); return 0; }")
+      errors("int main(void) { return sizeof(long); }") ==> List("the size of long depends on the data model")
+      errors("int main(void) { int a[2]; return sizeof(a); }") ==> List("sizeof of an expression is not supported")
+
     test("unexpected character"):
       errors("int f(int x) { return x @ 1; }") ==> List("unexpected character '@' at 0:24")
 

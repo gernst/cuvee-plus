@@ -176,7 +176,14 @@ inputs, after the harness), with where they occurred in the sample.
    iteration, which is left if the condition is false (`Parser.guard`); the
    right operand of `&&`/`||` is evaluated in an `if` into a temporary.
 5. `typedef` of integer types (the `.i` headers), `sizeof` as a constant of
-   the data model.
+   the data model. **Done:** the scanner replaces the names of types by
+   their definitions (`Typedefs`), the grammar skips typedef declarations,
+   so a typedef of e.g. a struct fails only where it is used; `sizeof` of
+   integer types, where `long` is an error, as its size depends on the data
+   model, which the yml frontend does not pass on. The tasks with typedefs
+   now fail later, at structs and pointers (6.), or at functions of the
+   headers that are never called, e.g. `__bswap_32` with
+   `__builtin_bswap32`, and prototypes with pointers.
 6. Beyond integer programs with arrays: structs, pointers and `malloc`,
    floats, bitwise operators, `goto`; these need decisions about the
    semantics, not only the grammar.

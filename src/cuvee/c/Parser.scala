@@ -88,6 +88,15 @@ class Parser(var state: State):
       else if digits.length > 1 && digits.startsWith("0") then BigInt(digits.drop(1), 8)
       else BigInt(digits)
 
+  // the size of an integer type in bytes, which is the same in the data models ILP32 and LP64, except for long
+  def sizeof(words: List[String]): BigInt =
+    val longs = words.count(_ == "long")
+    if words.contains("char") || words.contains("_Bool") || words.contains("bool") then 1
+    else if words.contains("short") then 2
+    else if longs == 0 then 4
+    else if longs == 2 then 8
+    else Error.raise("the size of long depends on the data model", words.mkString(" "))
+
   // the simple escape sequences of C
   val escapes = Map('a' -> 7, 'b' -> 8, 't' -> 9, 'n' -> 10, 'v' -> 11, 'f' -> 12, 'r' -> 13, '\\' -> 92, '\'' -> 39, '"' -> 34, '?' -> 63)
 
@@ -209,6 +218,12 @@ class Parser(var state: State):
 
       case Items(_) =>
         Error.raise("initializer list outside of a declaration", e)
+
+      case SizeofType(words) =>
+        (Nil, core.Lit(sizeof(words), Sort.int), IntType)
+
+      case SizeofExpr(_) =>
+        Error.raise("sizeof of an expression is not supported", e)
 
       case Cond(test, Some((left, right))) =>
         val (pre0, test_) = cond(scope, ctx, test)
@@ -572,6 +587,7 @@ class Parser(var state: State):
         case Index(base, index)   => calls(base) ++ calls(index)
         case App(_, args)         => args.toSet.flatMap(calls)
         case Cast(_, e)           => calls(e)
+        case SizeofExpr(e)        => calls(e)
         case Items(items)         => items.toSet.flatMap(calls)
         case Cond(test, branches) => calls(test) ++ branches.toSet.flatMap((left, right) => calls(left) ++ calls(right))
         case _                    => Set()

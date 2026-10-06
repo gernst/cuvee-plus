@@ -7,7 +7,7 @@ import java.io.Reader
 // the whole translation unit is parsed at once, such that the modified global variables can be inferred
 object Source extends cuvee.pipe.Source:
   def newScanner(reader: Reader) =
-    new Scanner(reader)
+    new Typedefs(new Scanner(reader))
 
   def newParser() =
     val (init, _, prelude) = cuvee.smtlib.Source.newParser()

@@ -31,6 +31,7 @@ num  = ({dec} | {oct} | {hex}) {suffix} | {chr}
 // type qualifiers and storage classes are ignored by the grammar, as are attributes of GCC
 kw  = "int" | "long" | "short" | "char" | "unsigned" | "signed" | "_Bool" | "bool" | "void" | "float" | "double"
     | "const" | "static" | "extern" | "volatile" | "inline" | "restrict" | "__attribute__"
+    | "typedef" | "sizeof"
     | "if" | "else" | "while" | "do" | "for" | "break" | "continue" | "return"
     | "(" | ")" | "[" | "]" | [;,{}?:]
     | "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "++" | "--"

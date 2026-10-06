@@ -36,6 +36,9 @@ case class Call(fun: String, args: List[Expr]) extends Expr
 case class App(op: String, args: List[Expr]) extends Expr
 case class Cond(test: Expr, branches: Option[(Expr, Expr)]) extends Expr
 case class Cast(typ: Type, expr: Expr) extends Expr
+// the words of an integer type, e.g. unsigned long, or an expression
+case class SizeofType(words: List[String]) extends Expr
+case class SizeofExpr(expr: Expr) extends Expr
 // initializer lists of arrays, only in declarations
 case class Items(items: List[Expr]) extends Expr
 
@@ -45,6 +48,8 @@ object Call extends ((String, List[Expr]) => Expr)
 object App extends ((String, List[Expr]) => Expr)
 object Cond extends ((Expr, Option[(Expr, Expr)]) => Expr)
 object Cast extends ((Type, Expr) => Expr)
+object SizeofType extends (List[String] => Expr)
+object SizeofExpr extends (Expr => Expr)
 object Items extends (List[Expr] => Expr)
 
 // the sizes of arrays, one per dimension, which are optional, e.g. int a[] = { 1, 2 }
@@ -80,6 +85,8 @@ object Labeled extends ((String, Stmt) => Stmt)
 
 sealed trait Top
 case class Global(decl: Decl) extends Top
+// the names of types are replaced by their definitions by the scanner (see Typedefs)
+case object Typedef extends Top
 case class Function(typ: Type, name: String, params: List[(Type, String)], body: Option[Block]) extends Top
 
 object Global extends (Decl => Top)
