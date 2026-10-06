@@ -14,8 +14,8 @@ const {:dfy} {:bpl} {:smt2} {:c} true: bool
 const {:dfy} {:bpl} {:smt2} {:c} false: bool
 
 // finite container types
-type {:dfy} {:bpl} {:smt2} {:c} seq<a₀>
-type {:dfy} set<a₀>
+type {:dfy} {:bpl} {:smt2} seq<a₀>
+type {:dfy} {:smt2} set<a₀>
 type {:dfy} multiset<a₀>
 type {:dfy} map<a₀, a₁>
 

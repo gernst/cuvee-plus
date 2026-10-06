@@ -105,9 +105,6 @@ object Solver:
   def cvc5(timeout: Int = 1000) =
     new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
 
-  // the sorts that the solvers know
-  val known = Set(Con.bool, Con.int, Con.real, Con.string, Con.array, Con.seq, Con.set, Con.bag).map(_.name)
-
   // a sink that passes commands to the solver,
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
@@ -139,11 +136,6 @@ object Solver:
           if justify == Lemma
           then solver.ack(Assert(Axiom, params, phi, named(attrs)))
 
-          (Ack.Success, this)
-
-        // declarations of the sorts that the solvers know, e.g. those of the preludes of other languages,
-        // which would be rejected as redefinitions
-        case DeclareSort(con, _) if known contains con.name =>
           (Ack.Success, this)
 
         case CheckSat =>
