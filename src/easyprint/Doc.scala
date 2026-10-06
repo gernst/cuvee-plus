@@ -6,12 +6,12 @@ import scala.collection.mutable
 // a group is laid out on a single line if it fits into the remaining width,
 // otherwise its line breaks become newlines, indented by the enclosing nesting
 sealed trait Doc:
-  infix def ++(that: Doc): Doc =
+  infix def ~(that: Doc): Doc =
     Concat(this, that)
 
   // concatenation with a space in between
-  infix def +:+(that: Doc): Doc =
-    this ++ Doc.space ++ that
+  infix def ~~(that: Doc): Doc =
+    this ~ Doc.space ~ that
 
 case class Text(text: String) extends Doc
 // `flat` is printed instead of the newline when laid out flat, a hard line has no flat alternative
@@ -42,18 +42,18 @@ object Doc:
   val hardline: Doc = Line(None)
 
   def concat(docs: Iterable[Doc]): Doc =
-    docs.foldLeft(empty)(_ ++ _)
+    docs.foldLeft(empty)(_ ~ _)
 
   // docs with `sep` in between
   def join(docs: Iterable[Doc], sep: Doc): Doc =
     if docs.isEmpty
     then empty
-    else docs.reduceLeft(_ ++ sep ++ _)
+    else docs.reduceLeft(_ ~ sep ~ _)
 
   // docs with `sep` in between, followed by a space or a newline, which flow up to the width of the line:
   // each separator is a group of its own, which breaks only if the next doc does not fit on the line anymore
   def fill(docs: Iterable[Doc], sep: Doc): Doc =
-    join(docs, sep ++ Group(line))
+    join(docs, sep ~ Group(line))
 
   // lines that are already laid out, e.g. by another printer, separated by hard lines
   def lines(lines: Iterable[String]): Doc =

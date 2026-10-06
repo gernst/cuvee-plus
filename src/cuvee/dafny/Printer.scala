@@ -35,7 +35,7 @@ object Printer extends cuvee.pipe.Printer:
 
   // elements separated by commas, which go on separate lines if the enclosing group does not fit
   def commas(docs: List[Doc]): Doc =
-    join(docs, text(",") ++ line)
+    join(docs, text(",") ~ line)
 
   // elements separated by commas, which flow up to the width of the line, aligned after a line break
   def flow(docs: List[Doc]): Doc =
@@ -43,7 +43,7 @@ object Printer extends cuvee.pipe.Printer:
 
   // a call f(a, b, ...) whose arguments flow up to the width of the line, aligned after the opening parenthesis
   def call(fun: String, args: List[Doc]): Doc =
-    text(fun + "(") ++ flow(args) ++ text(")")
+    text(fun + "(") ~ flow(args) ~ text(")")
 
   // string literals escape backslashes and double quotes
   def str(value: String): Doc =
@@ -101,7 +101,7 @@ object Printer extends cuvee.pipe.Printer:
         text("unsat")
 
       case Labels(labels) =>
-        Group(text("labels") ++ Nest(2, line ++ commas(labels.map(text))))
+        Group(text("labels") ~ Nest(2, line ~ commas(labels.map(text))))
 
       case Info(attrs) =>
         Group(join(attrs.attrs.map(attribute), line))
@@ -114,7 +114,7 @@ object Printer extends cuvee.pipe.Printer:
 
       case error: Error =>
         val info = error.info.toList.map(value => str(value.toString))
-        Group(text("error") +:+ str(error.msg) ++ Nest(2, concat(info.map(line ++ _))))
+        Group(text("error") ~~ str(error.msg) ~ Nest(2, concat(info.map(line ~ _))))
 
   // top-level commands end without semicolon, also those that are not part of Dafny,
   // options and infos are named like attributes
@@ -136,35 +136,35 @@ object Printer extends cuvee.pipe.Printer:
         Error.raise("internal command cannot be printed", cmd)
 
       case Push(depth) =>
-        text("push") +:+ text(depth.toString)
+        text("push") ~~ text(depth.toString)
 
       case Pop(depth) =>
-        text("pop") +:+ text(depth.toString)
+        text("pop") ~~ text(depth.toString)
 
       case Reset =>
         text("reset")
 
       case SetLogic(name) =>
-        text("logic") +:+ text(name)
+        text("logic") ~~ text(name)
 
       case GetOption(name) =>
-        text("option") +:+ text(":" + name)
+        text("option") ~~ text(":" + name)
 
       case SetOption(name, value) =>
-        Group(text("option") +:+ text(":" + name) +:+ text(":=") ++ Nest(2, line ++ any(value)))
+        Group(text("option") ~~ text(":" + name) ~~ text(":=") ~ Nest(2, line ~ any(value)))
 
       case GetInfo(name) =>
-        text("info") +:+ text(":" + name)
+        text("info") ~~ text(":" + name)
 
       case SetInfo(name, value) =>
-        Group(text("info") +:+ text(":" + name) +:+ text(":=") ++ Nest(2, line ++ any(value)))
+        Group(text("info") ~~ text(":" + name) ~~ text(":=") ~ Nest(2, line ~ any(value)))
 
       // the parameters of declared sorts are anonymous
       case DeclareSort(Con(name_, arity), attrs) =>
-        text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(Type.params("a", arity))
+        text("type") ~ attributes(attrs) ~~ text(name(name_)) ~ params(Type.params("a", arity))
 
       case DefineSort(Con(name_, _), params_, body, attrs) =>
-        text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(params_) +:+ text("=") +:+ doc(body)
+        text("type") ~ attributes(attrs) ~~ text(name(name_)) ~ params(params_) ~~ text("=") ~~ doc(body)
 
       // mutually recursive datatypes are declared one after another
       case DeclareDatatypes(cons, datas, attrs) =>
@@ -175,33 +175,33 @@ object Printer extends cuvee.pipe.Printer:
         join(datas_, hardline)
 
       case DeclareFun(Fun(name_, params_, Nil, res), attrs) =>
-        header(text("const") ++ attributes(attrs) +:+ text(name(name_)) ++ params(params_) ++ text(":") +:+ doc(res), attrs, None)
+        header(text("const") ~ attributes(attrs) ~~ text(name(name_)) ~ params(params_) ~ text(":") ~~ doc(res), attrs, None)
 
       case DeclareFun(Fun(name_, params_, formals_, res), attrs) =>
-        val sig = signature(name(name_), params_, formals_) ++ text(":") +:+ doc(res)
-        header(text("function") ++ attributes(attrs) +:+ sig, attrs, None)
+        val sig = signature(name(name_), params_, formals_) ~ text(":") ~~ doc(res)
+        header(text("function") ~ attributes(attrs) ~~ sig, attrs, None)
 
       case DefineFun(Fun(name_, params_, Nil, res), body, attrs) =>
-        val head = text("const") ++ attributes(attrs) +:+ text(name(name_)) ++ params(params_) ++ text(":") +:+ doc(res)
-        Group(head +:+ text(":=") ++ Nest(2, line ++ doc(body)))
+        val head = text("const") ~ attributes(attrs) ~~ text(name(name_)) ~ params(params_) ~ text(":") ~~ doc(res)
+        Group(head ~~ text(":=") ~ Nest(2, line ~ doc(body)))
 
       case DefineFun(Fun(name_, params_, formals_, res), body, attrs) =>
-        val sig = signature(name(name_), params_, formals_) ++ text(":") +:+ doc(res)
-        header(text("function") ++ attributes(attrs) +:+ sig, attrs, Some(braces(List(doc(body)))))
+        val sig = signature(name(name_), params_, formals_) ~ text(":") ~~ doc(res)
+        header(text("function") ~ attributes(attrs) ~~ sig, attrs, Some(braces(List(doc(body)))))
 
       // with type parameters, lemma <a> {:rw} forall x: a :: φ
       case Assert(justify, params_, phi, attrs) =>
-        Group(text(format(justify)) ++ (if params_.isEmpty then empty else space ++ params(params_)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi)))
+        Group(text(format(justify)) ~ (if params_.isEmpty then empty else space ~ params(params_)) ~ attributes(attrs) ~ Nest(2, line ~ doc(phi)))
 
       // global variables are not Dafny, which has fields of objects instead
       case DeclareVar(Var(name_, typ), attrs) =>
-        text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ)
+        text("var") ~ attributes(attrs) ~~ text(name(name_)) ~ text(":") ~~ doc(typ)
 
       case DeclareProc(Proc(name_, params_, in, out), attrs) =>
-        header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, None)
+        header(text("method") ~ attributes(attrs) ~~ signature(name(name_), params_, in) ~ returns(out), attrs, None)
 
       case DefineProc(Proc(name_, params_, in, out), body, attrs) =>
-        header(text("method") ++ attributes(attrs) +:+ signature(name(name_), params_, in) ++ returns(out), attrs, Some(block(body)))
+        header(text("method") ~ attributes(attrs) ~~ signature(name(name_), params_, in) ~ returns(out), attrs, Some(block(body)))
 
   // goals and lemmas are not part of Dafny, they are printed like axioms with their own keyword
   def format(justify: Justify) =
@@ -214,17 +214,17 @@ object Printer extends cuvee.pipe.Printer:
   def params(params: List[Param]): Doc =
     if params.isEmpty
     then empty
-    else text("<") ++ join(params.map(doc(_)), text(",") ++ space) ++ text(">")
+    else text("<") ~ join(params.map(doc(_)), text(",") ~ space) ~ text(">")
 
   // the name of a function or method with its type parameters and formal parameters
   // the formal parameters flow up to the width of the line, aligned after the opening parenthesis
   def signature(name: String, params_ : List[Param], formals_ : List[Var]): Doc =
-    text(name) ++ params(params_) ++ text("(") ++ flow(formals_.map(formal)) ++ text(")")
+    text(name) ~ params(params_) ~ text("(") ~ flow(formals_.map(formal)) ~ text(")")
 
   def returns(out: List[Var]): Doc =
     if out.isEmpty
     then empty
-    else space ++ text("returns (") ++ flow(out.map(formal)) ++ text(")")
+    else space ~ text("returns (") ~ flow(out.map(formal)) ~ text(")")
 
   // selectors are declared without the qualification with the datatype, which the parser adds again
   def selector(con: Con, sel: Fun): String =
@@ -238,15 +238,15 @@ object Printer extends cuvee.pipe.Printer:
       yield
         val sels_ =
           for sel <- sels
-          yield text(selector(con, sel) + ":") +:+ doc(sel.res)
+          yield text(selector(con, sel) + ":") ~~ doc(sel.res)
 
         if sels.isEmpty
         then text(name(constr.name))
         else call(name(constr.name), sels_)
 
     // the = always goes on the next line, the constructors stay on its line if they fit, aligned by | otherwise
-    val head = text("datatype") ++ attributes(attrs) +:+ text(name(con.name)) ++ params(params_)
-    head ++ Nest(2, hardline ++ Group(text("=") +:+ join(constrs_, line ++ text("| "))))
+    val head = text("datatype") ~ attributes(attrs) ~~ text(name(con.name)) ~ params(params_)
+    head ~ Nest(2, hardline ~ Group(text("=") ~~ join(constrs_, line ~ text("| "))))
 
   // attributes that are printed as contract clauses of functions, methods, and loops,
   // provided that they have been resolved
@@ -262,13 +262,13 @@ object Printer extends cuvee.pipe.Printer:
         text("{:" + name + "}")
 
       case Some(arg) =>
-        Group(text("{:" + name) ++ Nest(2, line ++ any(arg)) ++ text("}"))
+        Group(text("{:" + name) ~ Nest(2, line ~ any(arg)) ~ text("}"))
 
   // the remaining attributes, each preceded by a space, written after the keyword of a declaration
   def attributes(attrs: Attrs): Doc =
     val attrs_ =
       for (name, arg) <- attrs.attrs if !isClause(name, arg)
-      yield space ++ attribute(name, arg)
+      yield space ~ attribute(name, arg)
 
     concat(attrs_)
 
@@ -276,35 +276,35 @@ object Printer extends cuvee.pipe.Printer:
   def clauses(attrs: Attrs): List[Doc] =
     val clauses_ =
       for case (name, Some(arg)) <- attrs.attrs if isClause(name, Some(arg)) && name != "decreases"
-      yield Group(text(name) ++ Nest(2, line ++ any(arg)))
+      yield Group(text(name) ~ Nest(2, line ~ any(arg)))
 
     val dec = attrs.decreases
 
     if dec.isEmpty
     then clauses_
-    else clauses_ :+ Group(text("decreases") ++ Nest(2, line ++ commas(dec.map(doc(_)))))
+    else clauses_ :+ Group(text("decreases") ~ Nest(2, line ~ commas(dec.map(doc(_)))))
 
   // a declaration or loop followed by its contract clauses on separate lines,
   // the body starts on the same line only if there are no clauses
   def header(head: Doc, attrs: Attrs, body: Option[Doc]): Doc =
     val clauses_ = clauses(attrs)
-    val head_ = head ++ Nest(2, concat(clauses_.map(hardline ++ _)))
+    val head_ = head ~ Nest(2, concat(clauses_.map(hardline ~ _)))
 
     body match
       case None =>
         head_
 
       case Some(body) if clauses_.isEmpty =>
-        head_ +:+ body
+        head_ ~~ body
 
       case Some(body) =>
-        head_ ++ hardline ++ body
+        head_ ~ hardline ~ body
 
   // statements in braces on separate lines
   def braces(docs: List[Doc]): Doc =
     if docs.isEmpty
     then text("{}")
-    else text("{") ++ Nest(2, hardline ++ join(docs, hardline)) ++ hardline ++ text("}")
+    else text("{") ~ Nest(2, hardline ~ join(docs, hardline)) ~ hardline ~ text("}")
 
   // the statements of a block, local variables are declared first
   def statements(prog: Prog): List[Doc] =
@@ -313,7 +313,7 @@ object Printer extends cuvee.pipe.Printer:
         progs.map(doc(_))
 
       case Block(locals, progs) =>
-        val locals_ = Group(text("var") ++ Nest(2, line ++ formals(locals))) ++ text(";")
+        val locals_ = Group(text("var") ~ Nest(2, line ~ formals(locals))) ~ text(";")
         locals_ :: progs.map(doc(_))
 
       case _ =>
@@ -341,28 +341,28 @@ object Printer extends cuvee.pipe.Printer:
         text("return;")
 
       case Spec(Nil, True, phi) =>
-        Group(text("assume") ++ Nest(2, line ++ doc(phi))) ++ text(";")
+        Group(text("assume") ~ Nest(2, line ~ doc(phi))) ~ text(";")
 
       case Spec(Nil, phi, True) =>
-        Group(text("assert") ++ Nest(2, line ++ doc(phi))) ++ text(";")
+        Group(text("assert") ~ Nest(2, line ~ doc(phi))) ~ text(";")
 
       case Spec(xs, True, True) =>
-        Group(text("havoc") ++ Nest(2, line ++ commas(xs.map(doc(_))))) ++ text(";")
+        Group(text("havoc") ~ Nest(2, line ~ commas(xs.map(doc(_))))) ~ text(";")
 
       case Spec(xs, pre, post) =>
-        val head = if xs.isEmpty then text("spec") else text("spec") +:+ commas(xs.map(doc(_)))
-        val pre_ = Group(text("requires") ++ Nest(2, line ++ doc(pre)))
-        val post_ = Group(text("ensures") ++ Nest(2, line ++ doc(post)))
-        Group(head ++ Nest(2, line ++ pre_ ++ line ++ post_)) ++ text(";")
+        val head = if xs.isEmpty then text("spec") else text("spec") ~~ commas(xs.map(doc(_)))
+        val pre_ = Group(text("requires") ~ Nest(2, line ~ doc(pre)))
+        val post_ = Group(text("ensures") ~ Nest(2, line ~ doc(post)))
+        Group(head ~ Nest(2, line ~ pre_ ~ line ~ post_)) ~ text(";")
 
       case Assign(lhs, rhs) =>
-        Group(commas(lhs.map(doc(_))) +:+ text(":=") ++ Nest(2, line ++ commas(rhs.map(doc(_))))) ++ text(";")
+        Group(commas(lhs.map(doc(_))) ~~ text(":=") ~ Nest(2, line ~ commas(rhs.map(doc(_))))) ~ text(";")
 
       case Call(proc, args, Nil) =>
-        call(name(proc), args.map(doc(_))) ++ text(";")
+        call(name(proc), args.map(doc(_))) ~ text(";")
 
       case Call(proc, args, res) =>
-        Group(commas(res.map(doc(_))) +:+ text(":=") +:+ call(name(proc), args.map(doc(_)))) ++ text(";")
+        Group(commas(res.map(doc(_))) ~~ text(":=") ~~ call(name(proc), args.map(doc(_)))) ~ text(";")
 
       case Block(_, _) =>
         block(prog)
@@ -374,35 +374,35 @@ object Printer extends cuvee.pipe.Printer:
         doc(prog)
 
       case Choice(progs) =>
-        val branches = progs.init.map(text("if *") +:+ block(_)) :+ block(progs.last)
+        val branches = progs.init.map(text("if *") ~~ block(_)) :+ block(progs.last)
         join(branches, text(" else "))
 
       case If(test, left, `skip`) =>
-        text("if") +:+ doc(test) +:+ block(left)
+        text("if") ~~ doc(test) ~~ block(left)
 
       // else if chains
       case If(test, left, right: If) =>
-        text("if") +:+ doc(test) +:+ block(left) +:+ text("else") +:+ doc(right)
+        text("if") ~~ doc(test) ~~ block(left) ~~ text("else") ~~ doc(right)
 
       case If(test, left, right) =>
-        text("if") +:+ doc(test) +:+ block(left) +:+ text("else") +:+ block(right)
+        text("if") ~~ doc(test) ~~ block(left) ~~ text("else") ~~ block(right)
 
       case While(test, body, attrs) =>
-        header(text("while") ++ attributes(attrs) +:+ doc(test), attrs, Some(block(body)))
+        header(text("while") ~ attributes(attrs) ~~ doc(test), attrs, Some(block(body)))
 
       case Iter(body, attrs) =>
-        header(text("while") ++ attributes(attrs) +:+ text("*"), attrs, Some(block(body)))
+        header(text("while") ~ attributes(attrs) ~~ text("*"), attrs, Some(block(body)))
 
       // the evolution constraint follows the keyword while
       case Ode(time, xs, rhs, dom, attrs) =>
-        val lhs_ = text("ode") +:+ text(name(time.name)) +:+ text("::") +:+ commas(xs.map(x => text(name(x.name) + "'")))
+        val lhs_ = text("ode") ~~ text(name(time.name)) ~~ text("::") ~~ commas(xs.map(x => text(name(x.name) + "'")))
         val rhs_ = commas(rhs.map(doc(_)))
-        val dom_ = if dom == True then Nil else List(line ++ text("while") +:+ doc(dom))
-        val ode = Group(lhs_ +:+ text("==") ++ Nest(2, line ++ rhs_ ++ concat(dom_)))
-        header(ode, attrs, None) ++ text(";")
+        val dom_ = if dom == True then Nil else List(line ~ text("while") ~~ doc(dom))
+        val ode = Group(lhs_ ~~ text("==") ~ Nest(2, line ~ rhs_ ~ concat(dom_)))
+        header(ode, attrs, None) ~ text(";")
 
       case Par(calls) =>
-        text("parallel {") ++ Nest(2, concat(calls.map(hardline ++ doc(_)))) ++ hardline ++ text("}")
+        text("parallel {") ~ Nest(2, concat(calls.map(hardline ~ doc(_)))) ~ hardline ~ text("}")
 
   // the tuple types and their constructors, which are declared in the prelude as tuple2, tuple3, ...
   def isTuple(name: Name, arity: Int): Boolean =
@@ -412,7 +412,7 @@ object Printer extends cuvee.pipe.Printer:
   def doc(typ: Type): Doc =
     typ match
       case Sort(Con(name_, arity), args) if isTuple(name_, arity) =>
-        text("(") ++ join(args.map(doc(_)), text(",") ++ space) ++ text(")")
+        text("(") ~ join(args.map(doc(_)), text(",") ~ space) ~ text(")")
 
       case BitVec(n) =>
         text("bv" + n)
@@ -424,10 +424,10 @@ object Printer extends cuvee.pipe.Printer:
         text(name(name_))
 
       case Sort(Con(name_, _), args) =>
-        text(name(name_)) ++ text("<") ++ join(args.map(doc(_)), text(",") ++ space) ++ text(">")
+        text(name(name_)) ~ text("<") ~ join(args.map(doc(_)), text(",") ~ space) ~ text(">")
 
   def formal(x: Var): Doc =
-    text(name(x.name) + ":") +:+ doc(x.typ)
+    text(name(x.name) + ":") ~~ doc(x.typ)
 
   def formals(vars: List[Var]): Doc =
     commas(vars.map(formal))
@@ -651,7 +651,7 @@ object Printer extends cuvee.pipe.Printer:
         text("_")
 
       case App(fun, _, _, args) if args.nonEmpty =>
-        text(name(fun.name)) ++ text("(") ++ commas(args.map(pattern)) ++ text(")")
+        text(name(fun.name)) ~ text("(") ~ commas(args.map(pattern)) ~ text(")")
 
       case _ =>
         doc(pat)
@@ -664,7 +664,7 @@ object Printer extends cuvee.pipe.Printer:
 
     if prec > min || (prec == min && assoc.isDefined && assoc == same)
     then doc(expr)
-    else text("(") ++ Align(doc(expr)) ++ text(")")
+    else text("(") ~ Align(doc(expr)) ~ text(")")
 
   // the dependencies of a combinator, which are broken across lines as a group of their own, aligned
   def dependencies(deps: List[Expr]): Doc =
@@ -681,12 +681,12 @@ object Printer extends cuvee.pipe.Printer:
           doc(rhs, (lowest, None))
 
         case _ =>
-          Group(commas(for Upd(cond, rhs) <- updates yield text("if") +:+ doc(cond) +:+ text("then") +:+ doc(rhs)))
+          Group(commas(for Upd(cond, rhs) <- updates yield text("if") ~~ doc(cond) ~~ text("then") ~~ doc(rhs)))
 
     // the bound variables are never broken across lines
     val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
-    val body = text("for") +:+ dependencies(deps) ++ line ++ text(keyword) +:+ binders ++ Nest(2, line ++ updates_)
-    Group(head ++ Align(body) ++ text(")"))
+    val body = text("for") ~~ dependencies(deps) ~ line ~ text(keyword) ~~ binders ~ Nest(2, line ~ updates_)
+    Group(head ~ Align(body) ~ text(")"))
 
   // chains of the same operator are flattened in the direction of its associativity, a && b && c,
   // such that the operators are aligned when they are broken across lines
@@ -726,69 +726,69 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: Rational, typ) if value.isNegative =>
         (-value).decimal match
           case Some(digits) => text("-" + digits)
-          case None         => text("-") ++ doc(Lit(-value, typ))
+          case None         => text("-") ~ doc(Lit(-value, typ))
 
       case Lit(value: Rational, typ) =>
         value.decimal match
           case Some(digits) => text(digits)
-          case None         => doc(Lit(Rational(value.num), typ)) +:+ text("/") +:+ doc(Lit(Rational(value.den), typ))
+          case None         => doc(Lit(Rational(value.num), typ)) ~~ text("/") ~~ doc(Lit(Rational(value.den), typ))
 
       case Lit(value, _) =>
         Error.raise("unprintable literal", expr)
 
       case Ite(test, left, right) =>
-        Group(text("if") +:+ doc(test) ++ line ++ text("then") +:+ doc(left) ++ line ++ text("else") +:+ doc(right))
+        Group(text("if") ~~ doc(test) ~ line ~ text("then") ~~ doc(left) ~ line ~ text("else") ~~ doc(right))
 
       case _ if elems(expr).isDefined =>
         val Some(elems_) = elems(expr): @unchecked
-        Group(text("[") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("]"))
+        Group(text("[") ~ Nest(2, linebreak ~ commas(elems_.map(doc(_)))) ~ text("]"))
 
       case _ if members(expr).isDefined =>
         val Some(elems_) = members(expr): @unchecked
-        Group(text("{") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("}"))
+        Group(text("{") ~ Nest(2, linebreak ~ commas(elems_.map(doc(_)))) ~ text("}"))
 
       case _ if multiset(expr).isDefined =>
         val Some(elems_) = multiset(expr): @unchecked
-        Group(text("multiset{") ++ Nest(2, linebreak ++ commas(elems_.map(doc(_)))) ++ text("}"))
+        Group(text("multiset{") ~ Nest(2, linebreak ~ commas(elems_.map(doc(_)))) ~ text("}"))
 
       case _ if pairs(expr).isDefined =>
         val Some(pairs_) = pairs(expr): @unchecked
-        val docs = for (key, value) <- pairs_ yield doc(key) +:+ text(":=") +:+ doc(value)
-        Group(text("map[") ++ Nest(2, linebreak ++ commas(docs)) ++ text("]"))
+        val docs = for (key, value) <- pairs_ yield doc(key) ~~ text(":=") ~~ doc(value)
+        Group(text("map[") ~ Nest(2, linebreak ~ commas(docs)) ~ text("]"))
 
       case FinMaps.card(arg) =>
-        text("|") ++ doc(arg) ++ text("|")
+        text("|") ~ doc(arg) ~ text("|")
 
       case FinMaps.get(map, key) =>
-        doc(map, operand) ++ text("[") ++ doc(key) ++ text("]")
+        doc(map, operand) ~ text("[") ~ doc(key) ~ text("]")
 
       case FinMaps.update(map, FinMaps.singleton(key, value)) =>
-        Group(doc(map, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(key) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
+        Group(doc(map, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(key) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
 
       case FinMaps.keys(map) =>
-        doc(map, operand) ++ text(".Keys")
+        doc(map, operand) ~ text(".Keys")
 
       case FinMaps.values(map) =>
-        doc(map, operand) ++ text(".Values")
+        doc(map, operand) ~ text(".Values")
 
       case Seqs.len(arg) =>
-        text("|") ++ doc(arg) ++ text("|")
+        text("|") ~ doc(arg) ~ text("|")
 
       case Sets.card(arg) =>
-        text("|") ++ doc(arg) ++ text("|")
+        text("|") ~ doc(arg) ~ text("|")
 
       case Bags.card(arg) =>
-        text("|") ++ doc(arg) ++ text("|")
+        text("|") ~ doc(arg) ~ text("|")
 
       // the multiplicity of an element of a multiset
       case Bags.count(elem, bag) =>
-        doc(bag, operand) ++ text("[") ++ doc(elem) ++ text("]")
+        doc(bag, operand) ~ text("[") ~ doc(elem) ~ text("]")
 
       case Seqs.nth(seq, index) =>
-        doc(seq, operand) ++ text("[") ++ doc(index) ++ text("]")
+        doc(seq, operand) ~ text("[") ~ doc(index) ~ text("]")
 
       case Seqs.update(seq, index, Seqs.unit(value)) =>
-        Group(doc(seq, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(index) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
+        Group(doc(seq, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
 
       // the length is the difference of the bounds, s[i..j] is extract(s, i, j - i)
       case Seqs.extract(seq, from, len) =>
@@ -796,27 +796,27 @@ object Printer extends cuvee.pipe.Printer:
           case Minus.int(to, `from`)       => to
           case _ if from == Lit(BigInt(0), Sort.int) => len
           case _                           => Plus.int(from, len)
-        doc(seq, operand) ++ text("[") ++ doc(from) ++ text("..") ++ doc(to) ++ text("]")
+        doc(seq, operand) ~ text("[") ~ doc(from) ~ text("..") ~ doc(to) ~ text("]")
 
       case App(fun, _, _, _) if (Fun.seq.all contains fun) && infix(expr).isEmpty =>
         Error.raise("not supported in Dafny", expr)
 
       case Select(base, index) =>
-        doc(base, operand) ++ text("[") ++ doc(index) ++ text("]")
+        doc(base, operand) ~ text("[") ~ doc(index) ~ text("]")
 
       case Store(base, index, value) =>
-        Group(doc(base, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(index) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
+        Group(doc(base, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
 
       case _ if prefix(expr).isDefined =>
         val Some((op, prec, arg)) = prefix(expr): @unchecked
-        text(op) ++ doc(arg, (prec, None))
+        text(op) ~ doc(arg, (prec, None))
 
       // x < y <= z, which breaks before the operators if it does not fit
       case _ if comparisons(expr).isDefined =>
         val Some((ops, args)) = comparisons(expr): @unchecked
         val inner = (Grammar.infix_ops("<")._2, None)
         val args_ = args.map(doc(_, inner))
-        Group(args_.head ++ Nest(2, concat(ops.zip(args_.tail).map((op, arg) => line ++ text(op) +:+ arg))))
+        Group(args_.head ~ Nest(2, concat(ops.zip(args_.tail).map((op, arg) => line ~ text(op) ~~ arg))))
 
       // a op b op c, which breaks before the operators if it does not fit,
       // consecutive comparisons of conjunctions are chained, x < y <= z && b
@@ -835,11 +835,11 @@ object Printer extends cuvee.pipe.Printer:
             else if i == args.length - 1 then doc(arg, last)
             else doc(arg, inner)
 
-        Group(args_.head ++ Nest(2, concat(args_.tail.map(line ++ text(op) +:+ _))))
+        Group(args_.head ~ Nest(2, concat(args_.tail.map(line ~ text(op) ~~ _))))
 
       // all but the last element of a trace
       case Butlast(arg) =>
-        text("⌊") ++ doc(arg) ++ text("⌋")
+        text("⌊") ~ doc(arg) ~ text("⌋")
 
       case App(fun, _, _, Nil) =>
         text(name(fun.name))
@@ -856,7 +856,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // the combinators of trace equation systems
       case Trace(init, deps, acc, bound, updates) =>
-        combinator(text("trace(") ++ doc(init) ++ text(",") ++ space, deps, "do", acc :: bound, updates)
+        combinator(text("trace(") ~ doc(init) ~ text(",") ~ space, deps, "do", acc :: bound, updates)
 
       case Maps(deps, bound, updates) =>
         combinator(text("maps("), deps, "yield", bound, updates)
@@ -868,21 +868,21 @@ object Printer extends cuvee.pipe.Printer:
         call("old", List(doc(arg)))
 
       case Diff(xs, arg) =>
-        Group(text("(") ++ Align(commas(xs.map(doc(_))) +:+ text("::") ++ Nest(2, line ++ doc(arg))) ++ text(")'"))
+        Group(text("(") ~ Align(commas(xs.map(doc(_))) ~~ text("::") ~ Nest(2, line ~ doc(arg))) ~ text(")'"))
 
       // testers are parsed on variables only
       case Is(x: Var, fun) =>
-        doc(x) ++ text("." + name(fun.name) + "?")
+        doc(x) ~ text("." + name(fun.name) + "?")
 
       case Is(_, _) =>
         Error.raise("tester on an expression that is not a variable not supported in Dafny", expr)
 
       case As(arg, typ) =>
-        doc(arg, operand) +:+ text("as") +:+ doc(typ)
+        doc(arg, operand) ~~ text("as") ~~ doc(typ)
 
       case Bind(quant, bound, body) =>
         // the bound variables flow up to the width of the line, aligned after the quantifier
-        Group(text(name(quant)) +:+ flow(bound.map(formal)) +:+ text("::") ++ Nest(2, line ++ doc(body)))
+        Group(text(name(quant)) ~~ flow(bound.map(formal)) ~~ text("::") ~ Nest(2, line ~ doc(body)))
 
       // the bodies of all but the last case are parenthesized if they would extend over the following cases
       case Match(arg, cases) =>
@@ -893,9 +893,9 @@ object Printer extends cuvee.pipe.Printer:
           for (Case(pat, body, _), i) <- cases.zipWithIndex
           yield
             val body_ = if i < cases.length - 1 then doc(body, (lowest, None)) else doc(body)
-            Group(text("case") +:+ pattern(pat) +:+ text("=>") ++ Nest(2, line ++ body_))
+            Group(text("case") ~~ pattern(pat) ~~ text("=>") ~ Nest(2, line ~ body_))
 
-        Group(text("match") +:+ doc(arg) ++ Nest(2, concat(cases_.map(line ++ _))))
+        Group(text("match") ~~ doc(arg) ~ Nest(2, concat(cases_.map(line ~ _))))
 
       case Let(bound, args, body) =>
-        Group(text("var") +:+ formals(bound) +:+ text(":=") +:+ commas(args.map(doc(_))) ++ text(";") ++ line ++ doc(body))
+        Group(text("var") ~~ formals(bound) ~~ text(":=") ~~ commas(args.map(doc(_))) ~ text(";") ~ line ~ doc(body))

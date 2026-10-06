@@ -7,15 +7,15 @@ import Doc._
 object DocTests extends TestSuite:
   // a call f(a, b, ...) whose arguments go on separate lines if it does not fit
   def call(fun: String, args: Doc*): Doc =
-    Group(text(fun + "(") ++ Nest(2, linebreak ++ join(args, text(",") ++ line)) ++ text(")"))
+    Group(text(fun + "(") ~ Nest(2, linebreak ~ join(args, text(",") ~ line)) ~ text(")"))
 
   val tests = Tests:
     test("text"):
-      render(text("a") ++ text("b") +:+ text("c"), 80) ==> List("ab c")
+      render(text("a") ~ text("b") ~~ text("c"), 80) ==> List("ab c")
 
     test("empty"):
       render(empty, 80) ==> List("")
-      render(empty ++ text("a") ++ empty, 80) ==> List("a")
+      render(empty ~ text("a") ~ empty, 80) ==> List("a")
 
     test("group fits"):
       render(call("f", "x", "y"), 80) ==> List("f(x, y)")
@@ -38,21 +38,21 @@ object DocTests extends TestSuite:
 
     // the rest of the line after a group counts for whether it fits
     test("text after group"):
-      render(call("f", "x") ++ text(" + something"), 10) ==> List("f(", "  x) + something")
+      render(call("f", "x") ~ text(" + something"), 10) ==> List("f(", "  x) + something")
 
     test("hard line"):
-      render(text("a") ++ hardline ++ text("b"), 80) ==> List("a", "b")
-      render(text("a") ++ Nest(2, hardline ++ text("b")), 80) ==> List("a", "  b")
+      render(text("a") ~ hardline ~ text("b"), 80) ==> List("a", "b")
+      render(text("a") ~ Nest(2, hardline ~ text("b")), 80) ==> List("a", "  b")
 
     test("hard line breaks enclosing group"):
-      render(Group(text("a") ++ line ++ text("b") ++ hardline ++ text("c")), 80) ==>
+      render(Group(text("a") ~ line ~ text("b") ~ hardline ~ text("c")), 80) ==>
         List("a", "b", "c")
 
     test("linebreak is empty when flat"):
-      render(Group(text("a") ++ linebreak ++ text("b")), 80) ==> List("ab")
+      render(Group(text("a") ~ linebreak ~ text("b")), 80) ==> List("ab")
 
     test("trailing spaces are dropped"):
-      render(text("a ") ++ hardline ++ text("b"), 80) ==> List("a", "b")
+      render(text("a ") ~ hardline ~ text("b"), 80) ==> List("a", "b")
 
     test("lines"):
       render(Nest(2, Doc.lines(List("x", "y"))), 80) ==> List("x", "  y")
@@ -63,6 +63,6 @@ object DocTests extends TestSuite:
       render(Group(doc), 80).length ==> 100000
 
     test("fill"):
-      val doc = text("f(") ++ Align(Doc.fill(List("aa", "bb", "cc", "dd").map(text), text(","))) ++ text(")")
+      val doc = text("f(") ~ Align(Doc.fill(List("aa", "bb", "cc", "dd").map(text), text(","))) ~ text(")")
       render(doc, 80) ==> List("f(aa, bb, cc, dd)")
       render(doc, 10) ==> List("f(aa, bb,", "  cc, dd)")

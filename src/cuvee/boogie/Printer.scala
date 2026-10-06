@@ -36,11 +36,11 @@ object Printer extends cuvee.pipe.Printer:
 
   // elements separated by commas, which go on separate lines if the enclosing group does not fit
   def commas(docs: List[Doc]): Doc =
-    join(docs, text(",") ++ line)
+    join(docs, text(",") ~ line)
 
   // a call f(a, b, ...) whose arguments go on separate lines if it does not fit
   def call(fun: String, args: List[Doc]): Doc =
-    Group(text(fun + "(") ++ Nest(2, linebreak ++ commas(args)) ++ text(")"))
+    Group(text(fun + "(") ~ Nest(2, linebreak ~ commas(args)) ~ text(")"))
 
   // string literals escape backslashes and double quotes, as in Dafny
   def str(value: String): Doc =
@@ -99,7 +99,7 @@ object Printer extends cuvee.pipe.Printer:
         text("unsat")
 
       case Labels(labels) =>
-        Group(text("labels") ++ Nest(2, line ++ commas(labels.map(text)))) ++ text(";")
+        Group(text("labels") ~ Nest(2, line ~ commas(labels.map(text)))) ~ text(";")
 
       case Info(attrs) =>
         Group(join(attrs.attrs.map(attribute), line))
@@ -112,7 +112,7 @@ object Printer extends cuvee.pipe.Printer:
 
       case error: Error =>
         val info = error.info.toList.map(value => text("\"" + value.toString.replace("\"", "'") + "\""))
-        Group(text("error") +:+ text("\"" + error.msg + "\"") ++ Nest(2, concat(info.map(line ++ _))))
+        Group(text("error") ~~ text("\"" + error.msg + "\"") ~ Nest(2, concat(info.map(line ~ _))))
 
   // commands that are not part of Boogie are statements ending with a semicolon,
   // options and infos are named like attributes
@@ -134,71 +134,71 @@ object Printer extends cuvee.pipe.Printer:
         Error.raise("internal command cannot be printed", cmd)
 
       case Push(depth) =>
-        text("push") +:+ text(depth.toString) ++ text(";")
+        text("push") ~~ text(depth.toString) ~ text(";")
 
       case Pop(depth) =>
-        text("pop") +:+ text(depth.toString) ++ text(";")
+        text("pop") ~~ text(depth.toString) ~ text(";")
 
       case Reset =>
         text("reset;")
 
       case SetLogic(name) =>
-        text("logic") +:+ text(name) ++ text(";")
+        text("logic") ~~ text(name) ~ text(";")
 
       case GetOption(name) =>
-        text("option") +:+ text(":" + name) ++ text(";")
+        text("option") ~~ text(":" + name) ~ text(";")
 
       case SetOption(name, value) =>
-        Group(text("option") +:+ text(":" + name) +:+ text(":=") ++ Nest(2, line ++ any(value)) ++ text(";"))
+        Group(text("option") ~~ text(":" + name) ~~ text(":=") ~ Nest(2, line ~ any(value)) ~ text(";"))
 
       case GetInfo(name) =>
-        text("info") +:+ text(":" + name) ++ text(";")
+        text("info") ~~ text(":" + name) ~ text(";")
 
       case SetInfo(name, value) =>
-        Group(text("info") +:+ text(":" + name) +:+ text(":=") ++ Nest(2, line ++ any(value)) ++ text(";"))
+        Group(text("info") ~~ text(":" + name) ~~ text(":=") ~ Nest(2, line ~ any(value)) ~ text(";"))
 
       // the parameters of declared sorts are anonymous
       case DeclareSort(Con(name_, arity), attrs) =>
-        text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(Type.params("a", arity)) ++ text(";")
+        text("type") ~ attributes(attrs) ~~ text(name(name_)) ~ params(Type.params("a", arity)) ~ text(";")
 
       case DefineSort(Con(name_, _), params_, body, attrs) =>
-        text("type") ++ attributes(attrs) +:+ text(name(name_)) ++ params(params_) +:+ text("=") +:+ doc(body) ++ text(";")
+        text("type") ~ attributes(attrs) ~~ text(name(name_)) ~ params(params_) ~~ text("=") ~~ doc(body) ~ text(";")
 
       // not Boogie, datatypes as in Dafny with the keyword data, mutually recursive ones joined by and
       case DeclareDatatypes(cons, datas, attrs) =>
         val datas_ = for (con, data) <- cons zip datas yield datatype(con, data)
-        text("data") ++ attributes(attrs) +:+ join(datas_, hardline ++ text("and") ++ space) ++ text(";")
+        text("data") ~ attributes(attrs) ~~ join(datas_, hardline ~ text("and") ~ space) ~ text(";")
 
       // constants have no type parameters in Boogie, polymorphic ones are functions without arguments
       case DeclareFun(Fun(name_, Nil, Nil, res), attrs) =>
-        text("const") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(res) ++ text(";")
+        text("const") ~ attributes(attrs) ~~ text(name(name_)) ~ text(":") ~~ doc(res) ~ text(";")
 
       case DeclareFun(Fun(name_, params_, formals_, res), attrs) =>
-        signature(text("function") ++ attributes(attrs), name(name_), params_, formals_) ++ text(":") +:+ doc(res) ++ text(";")
+        signature(text("function") ~ attributes(attrs), name(name_), params_, formals_) ~ text(":") ~~ doc(res) ~ text(";")
 
       // constants are defined as functions without arguments
       case DefineFun(Fun(name_, params_, formals_, res), body, attrs) =>
-        val sig = signature(text("function") ++ attributes(attrs), name(name_), params_, formals_) ++ text(":") +:+ doc(res)
-        Group(sig +:+ text("{") ++ Nest(2, line ++ doc(body)) ++ line ++ text("}"))
+        val sig = signature(text("function") ~ attributes(attrs), name(name_), params_, formals_) ~ text(":") ~~ doc(res)
+        Group(sig ~~ text("{") ~ Nest(2, line ~ doc(body)) ~ line ~ text("}"))
 
       // with type parameters, axiom <a> {:rw} (forall x: a :: φ);
       case Assert(Axiom, params_, phi, attrs) =>
-        Group(text("axiom") ++ (if params_.isEmpty then empty else space ++ params(params_)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi))) ++ text(";")
+        Group(text("axiom") ~ (if params_.isEmpty then empty else space ~ params(params_)) ~ attributes(attrs) ~ Nest(2, line ~ doc(phi))) ~ text(";")
 
       // goals and lemmas are not part of Boogie, they are printed like axioms with their own keyword
       case Assert(justify, params_, phi, attrs) =>
-        Group(text(format(justify)) ++ (if params_.isEmpty then empty else space ++ params(params_)) ++ attributes(attrs) ++ Nest(2, line ++ doc(phi))) ++ text(";")
+        Group(text(format(justify)) ~ (if params_.isEmpty then empty else space ~ params(params_)) ~ attributes(attrs) ~ Nest(2, line ~ doc(phi))) ~ text(";")
 
       case DeclareVar(Var(name_, typ), attrs) =>
-        text("var") ++ attributes(attrs) +:+ text(name(name_)) ++ text(":") +:+ doc(typ) ++ text(";")
+        text("var") ~ attributes(attrs) ~~ text(name(name_)) ~ text(":") ~~ doc(typ) ~ text(";")
 
       // the signature of a procedure without body ends with a semicolon
       case DeclareProc(Proc(name_, params_, in, out), attrs) =>
-        val head = signature(text("procedure") ++ attributes(attrs), name(name_), params_, in) ++ returns(out) ++ text(";")
+        val head = signature(text("procedure") ~ attributes(attrs), name(name_), params_, in) ~ returns(out) ~ text(";")
         header(head, clauses(attrs), None)
 
       case DefineProc(Proc(name_, params_, in, out), body, attrs) =>
-        val head = signature(text("procedure") ++ attributes(attrs), name(name_), params_, in) ++ returns(out)
+        val head = signature(text("procedure") ~ attributes(attrs), name(name_), params_, in) ~ returns(out)
         header(head, clauses(attrs), Some(block(body)))
 
   def format(justify: Justify) =
@@ -216,29 +216,29 @@ object Printer extends cuvee.pipe.Printer:
       yield
         val sels_ =
           for sel <- sels
-          yield text(name(sel.name) + ":") +:+ doc(sel.res)
+          yield text(name(sel.name) + ":") ~~ doc(sel.res)
 
         if sels.isEmpty
         then text(name(constr.name))
-        else Group(text(name(constr.name) + "(") ++ Align(join(sels_, text(",") ++ line)) ++ text(")"))
+        else Group(text(name(constr.name) + "(") ~ Align(join(sels_, text(",") ~ line)) ~ text(")"))
 
     // the = always goes on the next line, the constructors stay on its line if they fit, aligned by | otherwise
-    val head = text(name(con.name)) ++ params(params_)
-    head ++ Nest(2, hardline ++ Group(text("=") +:+ join(constrs_, line ++ text("| "))))
+    val head = text(name(con.name)) ~ params(params_)
+    head ~ Nest(2, hardline ~ Group(text("=") ~~ join(constrs_, line ~ text("| "))))
 
   def params(params: List[Param]): Doc =
     if params.isEmpty
     then empty
-    else text("<") ++ join(params.map(doc(_)), text(",") ++ space) ++ text(">")
+    else text("<") ~ join(params.map(doc(_)), text(",") ~ space) ~ text(">")
 
   // the keyword and name of a function or procedure with its type parameters and formal parameters
   def signature(head: Doc, name: String, params_ : List[Param], formals_ : List[Var]): Doc =
-    Group(head +:+ text(name) ++ params(params_) ++ text("(") ++ Nest(2, linebreak ++ formals(formals_)) ++ text(")"))
+    Group(head ~~ text(name) ~ params(params_) ~ text("(") ~ Nest(2, linebreak ~ formals(formals_)) ~ text(")"))
 
   def returns(out: List[Var]): Doc =
     if out.isEmpty
     then empty
-    else space ++ Group(text("returns (") ++ Nest(2, linebreak ++ formals(out)) ++ text(")"))
+    else space ~ Group(text("returns (") ~ Nest(2, linebreak ~ formals(out)) ~ text(")"))
 
   // attributes that are printed as specification clauses of procedures and loops,
   // provided that they have been resolved
@@ -255,13 +255,13 @@ object Printer extends cuvee.pipe.Printer:
         text("{:" + name + "}")
 
       case Some(arg) =>
-        Group(text("{:" + name) ++ Nest(2, line ++ any(arg)) ++ text("}"))
+        Group(text("{:" + name) ~ Nest(2, line ~ any(arg)) ~ text("}"))
 
   // the remaining attributes, each preceded by a space, written after the keyword of a declaration
   def attributes(attrs: Attrs): Doc =
     val attrs_ =
       for (name, arg) <- attrs.attrs if !isClause(name, arg)
-      yield space ++ attribute(name, arg)
+      yield space ~ attribute(name, arg)
 
     concat(attrs_)
 
@@ -270,34 +270,34 @@ object Printer extends cuvee.pipe.Printer:
   def clauses(attrs: Attrs): List[Doc] =
     val clauses_ =
       for case (name, Some(arg)) <- attrs.attrs if isClause(name, Some(arg)) && name != "decreases"
-      yield Group(text(name) ++ Nest(2, line ++ any(arg))) ++ text(";")
+      yield Group(text(name) ~ Nest(2, line ~ any(arg))) ~ text(";")
 
     val dec = attrs.decreases
 
     if dec.isEmpty
     then clauses_
-    else clauses_ :+ (Group(text("decreases") ++ Nest(2, line ++ commas(dec.map(doc(_))))) ++ text(";"))
+    else clauses_ :+ (Group(text("decreases") ~ Nest(2, line ~ commas(dec.map(doc(_))))) ~ text(";"))
 
   // a declaration or loop followed by its specification clauses on separate lines,
   // the body starts on the same line only if there are no clauses
   def header(head: Doc, clauses_ : List[Doc], body: Option[Doc]): Doc =
-    val head_ = head ++ Nest(2, concat(clauses_.map(hardline ++ _)))
+    val head_ = head ~ Nest(2, concat(clauses_.map(hardline ~ _)))
 
     body match
       case None =>
         head_
 
       case Some(body) if clauses_.isEmpty =>
-        head_ +:+ body
+        head_ ~~ body
 
       case Some(body) =>
-        head_ ++ hardline ++ body
+        head_ ~ hardline ~ body
 
   // statements in braces on separate lines
   def braces(docs: List[Doc]): Doc =
     if docs.isEmpty
     then text("{}")
-    else text("{") ++ Nest(2, hardline ++ join(docs, hardline)) ++ hardline ++ text("}")
+    else text("{") ~ Nest(2, hardline ~ join(docs, hardline)) ~ hardline ~ text("}")
 
   // the statements of a block, local variables are declared first
   def statements(prog: Prog): List[Doc] =
@@ -306,7 +306,7 @@ object Printer extends cuvee.pipe.Printer:
         progs.map(doc(_))
 
       case Block(locals, progs) =>
-        val locals_ = Group(text("var") ++ Nest(2, line ++ formals(locals))) ++ text(";")
+        val locals_ = Group(text("var") ~ Nest(2, line ~ formals(locals))) ~ text(";")
         locals_ :: progs.map(doc(_))
 
       case _ =>
@@ -318,13 +318,13 @@ object Printer extends cuvee.pipe.Printer:
   val skip: Prog = Block(Nil, Nil)
 
   def assume(phi: Expr): Doc =
-    Group(text("assume") ++ Nest(2, line ++ doc(phi))) ++ text(";")
+    Group(text("assume") ~ Nest(2, line ~ doc(phi))) ~ text(";")
 
   def assert(phi: Expr): Doc =
-    Group(text("assert") ++ Nest(2, line ++ doc(phi))) ++ text(";")
+    Group(text("assert") ~ Nest(2, line ~ doc(phi))) ~ text(";")
 
   def havoc(xs: List[Var]): Doc =
-    Group(text("havoc") ++ Nest(2, line ++ commas(xs.map(doc(_))))) ++ text(";")
+    Group(text("havoc") ~ Nest(2, line ~ commas(xs.map(doc(_))))) ~ text(";")
 
   // choices are nondeterministic if statements, if (*) { ... } else { ... },
   // nondeterministic iterations are loops without test, while (*) { ... }
@@ -357,13 +357,13 @@ object Printer extends cuvee.pipe.Printer:
         join(pre_ ++ xs_ ++ post_, hardline)
 
       case Assign(lhs, rhs) =>
-        Group(commas(lhs.map(doc(_))) +:+ text(":=") ++ Nest(2, line ++ commas(rhs.map(doc(_))))) ++ text(";")
+        Group(commas(lhs.map(doc(_))) ~~ text(":=") ~ Nest(2, line ~ commas(rhs.map(doc(_))))) ~ text(";")
 
       case Call(proc, args, Nil) =>
-        text("call") +:+ call(name(proc), args.map(doc(_))) ++ text(";")
+        text("call") ~~ call(name(proc), args.map(doc(_))) ~ text(";")
 
       case Call(proc, args, res) =>
-        Group(text("call") +:+ commas(res.map(doc(_))) +:+ text(":=") +:+ call(name(proc), args.map(doc(_)))) ++ text(";")
+        Group(text("call") ~~ commas(res.map(doc(_))) ~~ text(":=") ~~ call(name(proc), args.map(doc(_)))) ~ text(";")
 
       case Block(_, _) =>
         block(prog)
@@ -379,18 +379,18 @@ object Printer extends cuvee.pipe.Printer:
         val last = progs.last match
           case prog: If => doc(prog)
           case prog     => block(prog)
-        val branches = progs.init.map(text("if (*)") +:+ block(_)) :+ last
+        val branches = progs.init.map(text("if (*)") ~~ block(_)) :+ last
         join(branches, text(" else "))
 
       case If(test, left, `skip`) =>
-        text("if") +:+ parens(test) +:+ block(left)
+        text("if") ~~ parens(test) ~~ block(left)
 
       // else if chains
       case If(test, left, right: If) =>
-        text("if") +:+ parens(test) +:+ block(left) +:+ text("else") +:+ doc(right)
+        text("if") ~~ parens(test) ~~ block(left) ~~ text("else") ~~ doc(right)
 
       case If(test, left, right) =>
-        text("if") +:+ parens(test) +:+ block(left) +:+ text("else") +:+ block(right)
+        text("if") ~~ parens(test) ~~ block(left) ~~ text("else") ~~ block(right)
 
       case While(test, body, attrs) =>
         loop(parens(test), body, attrs)
@@ -410,10 +410,10 @@ object Printer extends cuvee.pipe.Printer:
     Error.report("attributes of loops not supported in Boogie", other):
       require(other.isEmpty)
 
-    header(text("while") +:+ test, clauses(attrs), Some(block(body)))
+    header(text("while") ~~ test, clauses(attrs), Some(block(body)))
 
   def parens(expr: Expr): Doc =
-    Group(text("(") ++ Align(doc(expr)) ++ text(")"))
+    Group(text("(") ~ Align(doc(expr)) ~ text(")"))
 
   // types are not broken across lines, arrays are written as maps [k]v
   def doc(typ: Type): Doc =
@@ -425,18 +425,18 @@ object Printer extends cuvee.pipe.Printer:
         text("bv" + n)
 
       case Sort(Con.array, List(index, value)) =>
-        text("[") ++ doc(index) ++ text("]") ++ doc(value)
+        text("[") ~ doc(index) ~ text("]") ~ doc(value)
 
       case Sort(Con(name_, _), Nil) =>
         text(name(name_))
 
       case Sort(Con(name_, _), args) =>
-        text(name(name_)) ++ text("<") ++ join(args.map(doc(_)), text(",") ++ space) ++ text(">")
+        text(name(name_)) ~ text("<") ~ join(args.map(doc(_)), text(",") ~ space) ~ text(">")
 
   def formals(vars: List[Var]): Doc =
     val formals_ =
       for Var(name_, typ) <- vars
-      yield text(name(name_) + ":") +:+ doc(typ)
+      yield text(name(name_) + ":") ~~ doc(typ)
 
     commas(formals_)
 
@@ -532,7 +532,7 @@ object Printer extends cuvee.pipe.Printer:
 
     if prec > min || (prec == min && assoc.isDefined && assoc == same)
     then doc(expr)
-    else text("(") ++ Align(doc(expr)) ++ text(")")
+    else text("(") ~ Align(doc(expr)) ~ text(")")
 
   // the dependencies of a combinator, which are broken across lines as a group of their own, aligned
   def dependencies(deps: List[Expr]): Doc =
@@ -548,12 +548,12 @@ object Printer extends cuvee.pipe.Printer:
           doc(rhs, (lowest, None))
 
         case _ =>
-          Group(commas(for Upd(cond, rhs) <- updates yield text("if") +:+ doc(cond) +:+ text("then") +:+ doc(rhs)))
+          Group(commas(for Upd(cond, rhs) <- updates yield text("if") ~~ doc(cond) ~~ text("then") ~~ doc(rhs)))
 
     // the bound variables are never broken across lines
     val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
-    val body = text("for") +:+ dependencies(deps) ++ line ++ text(keyword) +:+ binders ++ Nest(2, line ++ updates_)
-    Group(head ++ Align(body) ++ text(")"))
+    val body = text("for") ~~ dependencies(deps) ~ line ~ text(keyword) ~~ binders ~ Nest(2, line ~ updates_)
+    Group(head ~ Align(body) ~ text(")"))
 
   // chains of the same operator are flattened in the direction of its associativity, a && b && c,
   // such that the operators are aligned when they are broken across lines
@@ -593,28 +593,28 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: util.Rational, typ) if value.isNegative =>
         (-value).decimal match
           case Some(digits) => text("-" + digits)
-          case None         => text("-") ++ doc(Lit(-value, typ))
+          case None         => text("-") ~ doc(Lit(-value, typ))
 
       case Lit(value: util.Rational, typ) =>
         value.decimal match
           case Some(digits) => text(digits)
-          case None         => doc(Lit(util.Rational(value.num), typ)) +:+ text("/") +:+ doc(Lit(util.Rational(value.den), typ))
+          case None         => doc(Lit(util.Rational(value.num), typ)) ~~ text("/") ~~ doc(Lit(util.Rational(value.den), typ))
 
       case Lit(value, _) =>
         Error.raise("literal not supported in Boogie", expr)
 
       case Ite(test, left, right) =>
-        Group(text("if") +:+ doc(test) ++ line ++ text("then") +:+ doc(left) ++ line ++ text("else") +:+ doc(right))
+        Group(text("if") ~~ doc(test) ~ line ~ text("then") ~~ doc(left) ~ line ~ text("else") ~~ doc(right))
 
       case Select(base, index) =>
-        doc(base, operand) ++ text("[") ++ doc(index) ++ text("]")
+        doc(base, operand) ~ text("[") ~ doc(index) ~ text("]")
 
       case Store(base, index, value) =>
-        Group(doc(base, operand) ++ text("[") ++ Nest(2, linebreak ++ doc(index) +:+ text(":=") ++ line ++ doc(value)) ++ text("]"))
+        Group(doc(base, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
 
       case _ if prefix(expr).isDefined =>
         val Some((op, prec, arg)) = prefix(expr): @unchecked
-        text(op) ++ doc(arg, (prec, None))
+        text(op) ~ doc(arg, (prec, None))
 
       // a op b op c, which breaks before the operators if it does not fit
       case _ if infix(expr).isDefined =>
@@ -631,11 +631,11 @@ object Printer extends cuvee.pipe.Printer:
             else if i == args.length - 1 then doc(arg, last)
             else doc(arg, inner)
 
-        Group(args_.head ++ Nest(2, concat(args_.tail.map(line ++ text(op) +:+ _))))
+        Group(args_.head ~ Nest(2, concat(args_.tail.map(line ~ text(op) ~~ _))))
 
       // all but the last element of a trace
       case Butlast(arg) =>
-        text("⌊") ++ doc(arg) ++ text("⌋")
+        text("⌊") ~ doc(arg) ~ text("⌋")
 
       case App(fun, _, _, Nil) =>
         text(name(fun.name))
@@ -648,7 +648,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // the combinators of trace equation systems
       case Trace(init, deps, acc, bound, updates) =>
-        combinator(text("trace(") ++ doc(init) ++ text(",") ++ space, deps, "do", acc :: bound, updates)
+        combinator(text("trace(") ~ doc(init) ~ text(",") ~ space, deps, "do", acc :: bound, updates)
 
       case Maps(deps, bound, updates) =>
         combinator(text("map("), deps, "yield", bound, updates)
@@ -664,7 +664,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // quantifiers are always in parentheses
       case Bind(quant @ Name("forall" | "exists", None), bound, body) =>
-        Group(text("(") ++ Align(text(name(quant)) +:+ Group(Align(formals(bound))) +:+ text("::") ++ Nest(2, line ++ doc(body))) ++ text(")"))
+        Group(text("(") ~ Align(text(name(quant)) ~~ Group(Align(formals(bound))) ~~ text("::") ~ Nest(2, line ~ doc(body))) ~ text(")"))
 
       case Bind(_, _, _) =>
         Error.raise("binder not supported in Boogie", expr)
