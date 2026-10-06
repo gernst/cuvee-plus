@@ -4,6 +4,7 @@ import scala.util.control.Breaks
 import scala.util.control.NonFatal
 import scala.collection.mutable
 
+import cuvee.Debug
 import cuvee.Error
 import cuvee.core._
 import cuvee.sexpr.Id
@@ -20,7 +21,7 @@ object Pipe:
 
   // exceptions other than Error, whose stack trace is printed with -debug internal
   def internal(cause: Throwable): Error =
-    if cuvee.Debug.modules.contains("internal")
+    if Debug.modules.contains("internal")
     then cause.printStackTrace()
 
     val result = new Error("internal error", cause.getClass.getSimpleName, String.valueOf(cause.getMessage))
