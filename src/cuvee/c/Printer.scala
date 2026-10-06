@@ -30,9 +30,12 @@ object Printer extends cuvee.pipe.Printer:
     "or" -> "||"
   )
 
-  // C has no $ in names, the index follows an underscore
+  // C has no $ in names, the index follows an underscore,
+  // names without index that end like that get another underscore, e.g. tmp_1 of the input is not the temporary tmp₁
   def name(name: Name): String =
-    name.suffixed("_")
+    if name.index.isEmpty && name.name.matches(".*_[0-9]+")
+    then name.name + "_"
+    else name.suffixed("_")
 
   def commas(docs: List[Doc]): Doc =
     join(docs, text(",") ~ line)

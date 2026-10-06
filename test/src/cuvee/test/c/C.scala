@@ -83,6 +83,12 @@ object Translation extends TestSuite:
       horn(f + "int main(void) { int r; r = 0 && f(); assert(c == 0); r = 1 || f(); assert(c == 0); r = 1 && f(); assert(c == 1 && r); return 0; }") ==> Status.Sat
       horn(f + "int main(void) { int r; r = 0 || f(); assert(c == 0); return 0; }") ==> Status.Unsat
 
+    // only the branch of ?: that is taken makes its calls and updates
+    test("calls in conditional expressions"):
+      val f = "int c; int f(void) { c = c + 1; return 1; } "
+      horn(f + "int main(void) { int i = 0; int r = 1 ? f() : i++; assert(c == 1 && i == 0 && r == 1); r = 0 ? f() : i++; assert(c == 1 && i == 1 && r == 0); return 0; }") ==> Status.Sat
+      horn(f + "int main(void) { int r = 0 ? f() : 2; assert(c == 1); return 0; }") ==> Status.Unsat
+
     // calls in the conditions of loops are evaluated before each iteration, also after continue
     test("calls in loop conditions"):
       val nondet = "extern _Bool __VERIFIER_nondet_bool(void); "
@@ -207,6 +213,15 @@ object Printing extends TestSuite:
     test("models"):
       val model = Model(List(DefineFun(p, Lt.int(Var("x", Sort.int), One.int), Attrs.empty)))
       cuvee.c.Printer.lines(model) ==> cuvee.smtlib.Printer.lines(model)
+
+    // names of the input that end like those of temporaries are kept apart from them
+    test("names"):
+      val file = os.temp("int f(void); int main(void) { int tmp_1 = 2; int r = tmp_1 + f(); return r; }", suffix = ".c")
+      val out = os.temp(suffix = ".c")
+      Examples.errors(file.toString, "-o", out.toString) ==> Nil
+      val text = os.read(out)
+      assert(text.contains("tmp_1_ = 2"))
+      assert(text.contains("tmp_1 = f()"))
 
     // global variables are zero in C, initializers are assignments at the beginning of main
     test("contracts"):

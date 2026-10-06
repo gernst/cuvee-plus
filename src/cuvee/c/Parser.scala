@@ -267,12 +267,23 @@ class Parser(var state: State, arch: Int):
         val (pre1, left_, lt) = expr(scope, ctx, left)
         val (pre2, right_, rt) = expr(scope, ctx, right)
 
-        Error.report("calls in the branches of ?: are not supported", left, right):
-          require(pre1.isEmpty && pre2.isEmpty)
+        val (t, left__, right__) =
+          if lt == BoolType && rt == BoolType
+          then (BoolType, left_, right_)
+          else (IntType, toInt(left_, lt), toInt(right_, rt))
 
-        if lt == BoolType && rt == BoolType
-        then (pre0, Ite(test_, left_, right_), BoolType)
-        else (pre0, Ite(test_, toInt(left_, lt), toInt(right_, rt)), IntType)
+        if pre1.isEmpty && pre2.isEmpty
+        then (pre0, Ite(test_, left__, right__), t)
+        else
+          // the calls and updates of a branch are made only if it is taken
+          val x = temp(ctx, t)
+          val prog =
+            core.If(
+              test_,
+              core.Block(Nil, pre1 :+ core.Assign(List(x), List(left__))),
+              core.Block(Nil, pre2 :+ core.Assign(List(x), List(right__)))
+            )
+          (pre0 :+ prog, x, t)
 
       case App(op, args) =>
         Error.raise("unknown operator", op, args)
