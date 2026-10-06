@@ -20,6 +20,7 @@ object FlatHorn extends TestSuite:
 object Flat extends TestSuite:
   val file = (Examples.root / "transform" / "flat.smt2").toString
   val poly = (Examples.root / "transform" / "flat_poly.smt2").toString
+  val funs = (Examples.root / "transform" / "flat_funs.smt2").toString
 
   def output(args: String*): List[Cmd] =
     val (cmds, errors) = Examples.output(args*)
@@ -103,3 +104,44 @@ object Flat extends TestSuite:
       val bound_ = cmds.collect { case Assert(_, _, All(xs, Imp(ante, _)), _) => (xs.toSet, And.flatten(ante)) }
       for (xs, phis) <- bound_ do
         assert(!phis.exists { case Eq(x: Var, _) => xs.contains(x); case Eq(_, x: Var) => xs.contains(x); case _ => false })
+
+    // the declarations of records are dropped, other datatypes are kept
+    test("records dropped"):
+      val cmds = output("-flat", "-print", "null", file)
+      cmds.collect { case DeclareDatatypes(cons, _, _) => cons.map(_.name.name) } ==> List(List("Stack"))
+
+    // functions take the fields of records, those with records as results are split by the fields,
+    // also definitions, whose bodies are split likewise
+    test("functions"):
+      val cmds = output("-flat", "-print", "null", funs)
+      val decls = cmds.collect { case DeclareFun(fun, _) => fun.name.name -> fun.args }
+      decls ==> List("origin_fst" -> Nil, "origin_snd" -> Nil, "step_fst" -> List(Sort.int, Sort.int), "step_snd" -> List(Sort.int, Sort.int))
+
+      val defs = cmds.collect { case DefineFun(fun, body, _) => (fun.name.name, fun.args.length, body) }
+      defs.map(_._1) ==> List("swap_fst", "swap_snd", "norm")
+      defs.map(_._2) ==> List(2, 2, 3)
+
+      // no records remain, in particular no selectors, constructors, testers, or bound variables
+      val phis = cmds.collect { case Assert(_, _, phi, _) => phi } ++ defs.map(_._3)
+      assert(phis.flatMap(types).forall { case Sort(Con(_root_.util.Name("Pair", _), _), _) => false; case _ => true })
+
+    // ite on records is split by the fields, distinct becomes pairwise disequalities of the fields
+    test("ite and distinct"):
+      val cmds = output("-flat", "-print", "null", funs)
+      val phis = cmds.collect { case Assert(_, _, phi, _) => phi }
+      val ex = phis.collectFirst { case Ex(xs, body) => (xs.map(_.name.name), body) }
+      val Some((xs, And(conjuncts))) = ex: @unchecked
+      xs ==> List("p_fst", "p_snd", "b")
+      conjuncts.length ==> 3
+      assert(conjuncts.take(2).forall { case Eq(_, Ite(_, _, _)) => true; case _ => false })
+
+    // unsupported: records that instantiate type parameters, also of arrays, and other terms of records
+    test("unsupported"):
+      val pair = "(declare-datatype Pair ((pair (fst Int) (snd Int))))\n"
+      Examples.check("smt2", pair + "(declare-fun p (par (a) (a) Bool))\n(assert (forall ((x Pair)) (p x)))", "-flat") ==>
+        List("record instantiates a type parameter")
+      Examples.check("smt2", pair + "(declare-fun a () (Array Int Pair))\n(assert (forall ((x Pair)) (= (store a 0 x) a)))", "-flat") ==>
+        List("record instantiates a type parameter")
+      Examples.check("smt2", pair + "(declare-fun x () Int)\n(assert (= (fst (let ((y (pair x x))) y)) x))", "-flat") ==>
+        List("term of a record not supported")
+
