@@ -158,6 +158,17 @@ lemma {:rw} {:free} forall m: int, i: int, c: int, n: int ::
   then invs(for ⌊counter(i, c, n)⌋ check k => k < m)
          <==> n == 0 || i < m && i + (n - 1) * c < m
 
+// a counter by 1 or -1 avoids m if m lies outside of its range, e.g. for loops i != N
+lemma {:rw} {:free} forall m: int, i: int, n: int ::
+  if 0 <= n
+  then invs(for ⌊counter(i, 1, n)⌋ check k => k != m)
+         <==> m < i || i + n <= m
+
+lemma {:rw} {:free} forall m: int, i: int, n: int ::
+  if 0 <= n
+  then invs(for ⌊counter(i, -1, n)⌋ check k => k != m)
+         <==> i < m || m <= i - n
+
 lemma <a> {:rw} {:free} forall x: a, xs: seq<a> ::
   invs(for xs check v => v == x)
     <==> xs == ⌊consts(length(xs), x)⌋

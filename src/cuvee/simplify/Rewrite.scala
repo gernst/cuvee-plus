@@ -268,6 +268,10 @@ object Rewrite:
   // the variables of the rule among the dependencies, from the values of their bound variables,
   // which must not depend on the accumulator
   def instantiate(config: Config, state: State, ctx: Ctx, b: Binding, zs: List[(Expr, Var)], deps_ : List[Expr], bound_ : List[Var], accs: Set[Var], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+    // the first counter of the iterations, and if there is none, the first dependency of the expression
+    val pairs = deps_ zip bound_
+    val front = pairs.find((dep_, _) => iterations(ctx, dep_)).getOrElse(pairs.head)
+
     zs match
       case Nil =>
         List(m)
@@ -280,16 +284,18 @@ object Rewrite:
                 case k if k >= 0 =>
                   deps_(k)
 
+                // the front comes first, also if the value does not use it, followed by the used ones
                 case _ =>
-                  // the first counter of the iterations comes first, also if the value does not use it,
-                  // and if there is none, the first dependency of the expression, followed by the used ones
-                  val pairs = deps_ zip bound_
-                  val front = pairs.find((dep_, _) => iterations(ctx, dep_)).getOrElse(pairs.head)
                   val used = pairs.filter((_, y_) => value.free.contains(y_))
                   val (deps__, bound__) = (front :: used.filter(_ != front)).unzip
                   Maps(deps__, bound__, List(Upd(True, value)))
 
             matches(config, state, ctx, b, z, seq, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
+
+          // the bound variable is unused by the pattern, e.g. in for xs do z, v => y,
+          // then any dependency of the expression has the length of the iterations, which are all equal
+          case None =>
+            matches(config, state, ctx, b, z, front._1, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
 
           case _ =>
             Nil

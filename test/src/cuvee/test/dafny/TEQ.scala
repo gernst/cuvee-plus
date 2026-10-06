@@ -40,7 +40,8 @@ object TEQ extends TestSuite:
           assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
 
     // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy;
-    // that of s, which the lemma on sums rewrites, is unused, its equation vanishes by the one-point rule
+    // that of s, which the lemma on sums rewrites, is unused, its equation vanishes by the one-point rule;
+    // the invariant over the counter is rewritten as well, such that only arithmetic remains
     test("lemmas"):
       val sum = Examples.root / "dafny" / "vcgen" / "sum.dfy"
       val (cmds, errors) = Examples.output("-teq", "-simplify", "-print", "null", sum.toString)
@@ -48,7 +49,7 @@ object TEQ extends TestSuite:
       assert(cmds.exists { case DeclareFun(fun, _) => fun == Fun.trace.counter; case _ => false })
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked
       assert(subexprs(phi).collect { case t: Trace => t }.isEmpty)
-      assert(subexprs(phi).exists { case App(fun, _, _, _) => fun == Fun.trace.counter; case _ => false })
+      assert(!subexprs(phi).exists { case App(fun, _, _, _) => fun == Fun.trace.counter; case _ => false })
       assert(!subexprs(phi).exists { case App(fun, _, _, _) => fun.name.name == "sums"; case _ => false })
 
       // also without loops, once at the beginning
@@ -224,3 +225,27 @@ object TEQ extends TestSuite:
           |method g() returns (z: int) { z := f(1); }
           |""".stripMargin
       Examples.check("dfy", text, "-teq") ==> List("procedure without body")
+
+    // a loop that assigns a constant: the dependency of the lemma whose bound variable the update does not use
+    // is instantiated by a dependency of the expression, here the counter defined in the context
+    test("constant updates"):
+      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
+      val n = Var("n", Sort.int)
+      val trace = Sort(Con("Trace", 1), List(Sort.int))
+      val K = Var("K", trace)
+      val X = Var("X", trace)
+      val x = Var("x", Sort.int)
+      val k = Var("k", Sort.int)
+      val loop = Trace(One.int, List(Butlast(K)), x, List(k), List(Upd(True, Zero.int)))
+      val ctx = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, n)).assume(Eq(K, Counter(Zero.int, One.int, n))).assume(Eq(X, loop)).withRules(rules)
+      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Zero.int), One.int, Zero.int)
+
+    // the loop for (i = 0; i != N; i++) runs N times, from the lemma on counters that avoid a value
+    test("counters that avoid a value"):
+      val text =
+        """int main(void) { int i; for (i = 0; i != 100; i++) { assert(i <= 100); } assert(i == 100); return 0; }
+          |""".stripMargin
+      val file = os.temp(text, suffix = ".c")
+      val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
+      errors ==> Nil
+      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
