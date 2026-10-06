@@ -719,7 +719,8 @@ object Simplify extends Transform:
       eq_(config, state, ctx, left.toExpr(ring), right.toExpr(ring))
 
   // on Int, n + 1 <= m is n < m, 0 <= p is rounded (see Poly.floor), e.g. 2 * n + 1 <= 52 is n <= 25,
-  // and n <= m is n < m if n != m is known (the decision is neutral)
+  // n <= m is n == m if m <= n is known, e.g. for 0 <= x <= 0, whose equation is then substituted,
+  // and n < m if n != m is known (the decisions are neutral)
   def le(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isNegative then False else True
@@ -731,6 +732,9 @@ object Simplify extends Transform:
       (ring, left_) match
         case (Ring.int, ctx.↑(Succ(left__))) =>
           Lt.int(left__, right_)
+
+        case (Ring.int, _) if implied(config, state, ctx.neutral, Le.int(right_, left_)) =>
+          eq_(config, state, ctx, left_, right_)
 
         case (Ring.int, _) if denied(config, state, ctx.neutral, Eq(left_, right_)) || denied(config, state, ctx.neutral, Eq(right_, left_)) =>
           Lt.int(left_, right_)

@@ -249,3 +249,15 @@ object TEQ extends TestSuite:
       val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
       errors ==> Nil
       cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
+
+    // the iterations of a counter before and from a bound, counted for a branch on it in the body (gj2007)
+    test("counters before a bound"):
+      val text =
+        """int main(void) { int x = 0; int y = 50; int z = 0;
+          |  while (x < 100) { if (x < 50) { x = x + 1; z = z + 1; } else { x = x + 1; y = y + 1; } }
+          |  assert(y == 100 && z == 50); return 0; }
+          |""".stripMargin
+      val file = os.temp(text, suffix = ".c")
+      val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
+      errors ==> Nil
+      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil

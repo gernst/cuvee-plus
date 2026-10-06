@@ -519,6 +519,17 @@ lemma <a, b> {:rw} {:free} forall a: array<a, b>, k: a, w: b, e: b, keys: seq<a>
             then count(e, selects(a, keys)) + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
             else count(e, selects(a, keys))
 
+// the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body
+lemma {:rw} {:free} forall m: int, i: int, n: int ::
+  if 0 <= n && i <= m <= i + n
+  then count(true, maps(for ⌊counter(i, 1, n)⌋ yield k => k < m))
+         == m - i
+
+lemma {:rw} {:free} forall m: int, i: int, n: int ::
+  if 0 <= n && i <= m <= i + n
+  then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k => k < m))
+         == i + n - m
+
 lemma <a> {:rw} {:free} forall e: a, vs: seq<a> ::
   0 <= count(e, vs)
 

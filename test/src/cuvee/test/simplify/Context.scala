@@ -220,6 +220,13 @@ object Decisions extends TestSuite:
       simplify(Ctx.empty, Lt.int(twice, lit(52))) ==> Lt.int(n, lit(26))
       simplify(Ctx.empty, Le.int(lit(1000000), twice)) ==> Le.int(lit(500000), n)
 
+    // a bound n <= m is an equation if m <= n is known, which is then substituted
+    test("bounds to equations"):
+      simplify(Ctx.empty.assume(Le.int(n, Zero.int)), Le.int(Zero.int, n)) ==> Eq(Zero.int, n)
+      val x = Var("x", Sort.int)
+      val goal = All(List(x), Not(And(List(Le.int(Zero.int, x), Le.int(x, Zero.int), Not(Eq(Mod.int(x, lit(2)), Zero.int))))))
+      simplify(Ctx.pos, goal) ==> True
+
     // a bound n <= m becomes strict if n != m is known
     test("disequations"):
       val ctx = Ctx.empty.deny(Eq(n, lit(40)))
