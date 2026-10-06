@@ -14,6 +14,8 @@ object Parser:
         Ack.Success
       case Id("unsupported") =>
         Ack.Unsupported
+      case List(Id("error"), Str(msg)) =>
+        Error.raise("solver error", msg)
       case _ =>
         Error.raise("invalid response", from)
 
@@ -25,6 +27,8 @@ object Parser:
         Status.Unsat
       case Id("unknown") =>
         Status.Unknown
+      case List(Id("error"), Str(msg)) =>
+        Error.raise("solver error", msg)
       case _ =>
         Error.raise("invalid status", from)
 
@@ -37,6 +41,8 @@ object Parser:
             case Id(name) => name
             case _        => Error.raise("invalid label", id)
         Labels(names)
+      case List(Id("error"), Str(msg)) =>
+        Error.raise("solver error", msg)
       case _ =>
         Error.raise("invalid labels", from)
 

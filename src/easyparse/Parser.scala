@@ -1,5 +1,7 @@
 package easyparse
 
+import scala.collection.IterableFactory
+
 import util.or
 
 // parsers over token streams, where `cm` (committed) states whether a failure is an error
@@ -65,6 +67,14 @@ trait Parser[+A]:
 
   def ~+(sep: Scanner): Parser[List[A]] =
     Parser.Intersperse(this, sep, true)
+
+  def unfold[CC[+_]](factory: IterableFactory[CC])(in: Input): CC[A] =
+    val p = this.?
+    val b = factory.newBuilder[(A, Input)]
+
+    factory.unfold(in): in0 =>
+      val (a, in1) = p.parse(in0)
+      a map { (_, in1) }
 
 object Parser:
   case class Recursive[A](name: String, p: () => Parser[A]) extends Parser[A]:

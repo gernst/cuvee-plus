@@ -73,6 +73,13 @@ object Malformed extends TestSuite:
       cuvee.smtlib.Parser.labels(List(Id("labels"), Id("a"))) ==> Labels(List("a"))
       message(cuvee.smtlib.Parser.labels(List(Id("labels"), Str("a")))) ==> Some("invalid label")
 
+    // errors of the solver are raised, which the pipe reports
+    test("solver errors"):
+      val error = List(Id("error"), Str("oops"))
+      message(cuvee.smtlib.Parser.ack(error)) ==> Some("solver error")
+      message(cuvee.smtlib.Parser.issat(error)) ==> Some("solver error")
+      message(cuvee.smtlib.Parser.labels(error)) ==> Some("solver error")
+
     // associative operators have no neutral element
     test("no arguments"):
       message(Minus.int(Nil)) ==> Some("no arguments")
