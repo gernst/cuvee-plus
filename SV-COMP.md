@@ -73,6 +73,16 @@ The sizes of integer types follow the data model: `-arch 32|64` (ILP32 or
 LP64, by default 64), which the yml frontend sets from the `data_model` of
 the task.
 
+### Trace equation systems
+
+`-teq` succeeds on all C examples and on ten tasks that use the new
+constructs (calls in loop conditions, multidimensional arrays, `malloc`,
+increments in expressions, `continue`, hexadecimal constants), in about
+3 s each, e.g. `array-fpi/brs1`, `nla-digbench-scaling/ps6-ll_unwindbound20`,
+`array-multidimensional/copy-3-n-u`, `loop-zilu/benchmark01_conjunctive`.
+Its output is not C, so `-print c` omits it; use `-print smt2` or
+`-print dfy` to see it.
+
 ## The SV-COMP harness (blocks every task)
 
 Every input starts with the same declarations and definitions, which already

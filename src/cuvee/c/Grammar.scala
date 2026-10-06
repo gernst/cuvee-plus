@@ -195,8 +195,15 @@ object Grammar:
   val decl =
     Decl(P(typ ~ (declarator ~+ ",")))
 
+  // the comma operator, e.g. i = 0, j = 0 in for loops, as a sequence of statements
   val simple: Parser[Stmt] =
-    P(decl | assign | postincr | preincr | ExprStmt(expr))
+    P(decl | P(single ~+ ",").map {
+      case List(stmt) => stmt
+      case stmts      => Block(stmts)
+    })
+
+  val single: Parser[Stmt] =
+    P(assign | postincr | preincr | ExprStmt(expr))
 
   val block =
     Block(P(braces(stmt.*)))

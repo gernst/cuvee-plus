@@ -173,6 +173,11 @@ object Translation extends TestSuite:
       errors("int f(int n) { while (n-- > 0) ; return n; }") ==> Nil
       modifies(parse("int g; int f(void) { return g++; }"), "f") ==> Some(List("g"))
 
+    // the comma operator in expression statements and in for loops
+    test("comma"):
+      valid("int main(void) { int i; int j; i = 0, j = 1; assert(i == 0 && j == 1); return 0; }")
+      horn("int main(void) { int i; int j; for (i = 0, j = 4; i < j; i++, j--) ; assert(i == j); return 0; }") ==> Status.Sat
+
     test("unexpected character"):
       errors("int f(int x) { return x @ 1; }") ==> List("unexpected character '@' at 0:24")
 
