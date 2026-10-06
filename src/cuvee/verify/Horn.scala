@@ -9,12 +9,16 @@ import cuvee.core._
 import cuvee.core.Attrs
 
 // constrained Horn clauses, where pre-/postconditions and the program points are uninterpreted predicates:
-// each procedure p(in) returns (out) has predicates p_pre(in, gs) and p_post(in, gs_, out, gs),
-// where gs are the global variables and gs_ their values at the entry of p,
+// each procedure p(in) returns (out) with a body has predicates p_pre(in, gs) and p_post(in, gs_, out, gs),
+// where gs are the global variables and gs_ their values at the entry of p, and has no contract, which the predicates infer,
+// except for a precondition of main;
+// procedures without body have a contract, which is instantiated at each call, and no predicates,
+// such that polymorphic procedures that are only specified lead to monomorphic clauses for monomorphic callers;
 // the program points in the body of p have predicates p_assign_1, p_call_2, ..., generated on the fly,
 // whose formal parameters are the variables in scope, including the global variables;
 // each statement contributes the transitions from the facts before it to the predicates after it,
-// the annotations requires, ensures, invariant, and decreases, as well as assertions, are goals in the head of clauses
+// the preconditions of procedures without body, the annotations invariant and decreases, as well as assertions,
+// are goals in the head of clauses
 object Horn extends Transform:
   // the logic is HORN, which replaces the one given in the input,
   // or is set at the beginning, i.e., when nothing has been passed through so far;
@@ -44,9 +48,9 @@ object Horn extends Transform:
     logic ++ cmds_ ++ check
 
   // a procedure is either declared or defined, never both (see State.declare),
-  // therefore its predicates p_pre and p_post are declared exactly once;
-  // every procedure is an entry point: requires ⇒ p_pre,
-  // and the callers must establish the precondition: p_pre ⇒ requires
+  // therefore the predicates p_pre and p_post of a defined procedure are declared exactly once;
+  // the defined procedures that no defined procedure calls are the entry points: requires ⇒ p_pre,
+  // where only main may have a precondition
   def horn(state: State, cmd: Cmd): List[Cmd] =
     cmd match
       case SetLogic(_) =>
@@ -56,55 +60,50 @@ object Horn extends Transform:
       case DeclareVar(_, _) =>
         Nil
 
-      // procedures without body are trusted: p_pre ∧ ensures ⇒ p_post,
-      // where the global variables that are not modified keep their values
-      case DeclareProc(Proc(name, params, in, out), attrs) =>
-        val (pre, post, decls) = declare(state, name)
-        val (_, _, requires, ensures) = Verify.contract(state, name)
-
-        val gs = state.globals
-        val gs_ = gs.fresh
-        val ensures_ = Old.elim(gs, gs_, ensures)
-        val mod = attrs.modifies
-        val frame = for (g, g_) <- gs zip gs_ if !mod.contains(g) yield Eq(g, g_)
-
-        val clauses = Ref[List[Expr]](Nil)
-        clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
-        clause(in ++ gs, List(App(state, pre, in ++ gs)), requires, clauses)
-        clause(in ++ gs_ ++ out ++ gs, App(state, pre, in ++ gs_) :: ensures_ :: frame, App(state, post, in ++ gs_ ++ out ++ gs), clauses)
-
-        decls ++ clauses.value.map(axiom)
+      // procedures without body are trusted, their contracts are instantiated at the calls
+      case DeclareProc(_, _) =>
+        Nil
 
       // the body starts from the precondition p_pre with the global variables gs at their values gs_ at the entry,
-      // which are never modified, and leads to p_post; the postcondition is the goal of p_pre ∧ p_post;
+      // which are never modified, and leads to p_post;
       // gs_ are fresh copies of the global variables, which cannot clash with other names in the clauses
       case DefineProc(Proc(name, params, in, out), body, _) =>
-        val (pre, post, decls) = declare(state, name)
+        // except for the precondition of main, e.g. the initial values of the global variables in C
         val (_, _, requires, ensures) = Verify.contract(state, name)
+        Error.report("procedure with body has a contract", name, requires, ensures):
+          require((requires == True || name.name == "main") && ensures == True)
+
+        val (pre, post, decls) = declare(state, name)
 
         val gs = state.globals
         val gs_ = gs.fresh
         val scope = in ++ gs_ ++ out ++ gs
         // old(e) refers to the values gs_ at the entry
         val body_ = Old.elim(gs, gs_, body)
-        val ensures_ = Old.elim(gs, gs_, ensures)
         val decls_ = Ref[List[DeclareFun]](Nil)
         val clauses = Ref[List[Expr]](Nil)
 
-        clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
-        clause(in ++ gs, List(App(state, pre, in ++ gs)), requires, clauses)
+        if !called(state, name) then
+          clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
 
         // the outputs are unconstrained initially
         val entry = App(state, pre, in ++ gs_) :: Eq(gs, gs_)
         val exit = List(App(state, post, scope))
         wp(state, name, scope, List(body_), entry, exit, None, None, exit, decls_, clauses)
 
-        clause(scope, List(App(state, pre, in ++ gs_), App(state, post, scope)), ensures_, clauses)
-
         decls ++ decls_.value ++ clauses.value.map(axiom)
 
       case _ =>
         List(cmd)
+
+  // whether some defined procedure calls `name`
+  def called(state: State, name: Name): Boolean =
+    def calls(prog: Prog): Boolean =
+      prog match
+        case Call(`name`, _, _) => true
+        case _                  => prog.subprogs.exists(calls)
+
+    state.procdefs.values.exists(calls)
 
   // the predicates p_pre and p_post of procedure `name` together with their declarations,
   // Horn solvers do not support polymorphism, therefore procedures must not have type parameters
@@ -216,6 +215,17 @@ object Horn extends Transform:
         val next = predicate(proc, "assign", scope, decls)
         val su = Subst.from(xs, rhs)
         clause(scope, pre, App(state, next, su(scope)), clauses)
+        wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)
+
+      // a procedure without body: the goals pre ⇒ φ for the conjuncts φ of its precondition,
+      // and pre ∧ ψ ⇒ next(scope[res, mod := res_, mod_]) for the conjuncts ψ of its postcondition,
+      // both instantiated for the call, which also instantiates the type parameters by the types of the arguments
+      case (call @ Call(name, args, res)) :: rest if !state.procdefs.contains(name) =>
+        val (requires, fresh, ensures, rename) = Verify.instance(state, proc, call)
+        val next = predicate(proc, "call", scope, decls)
+
+        this.clauses(scope, pre, And.flattenStrong(requires), clauses)
+        clause(scope ++ fresh, pre ++ And.flattenStrong(ensures), App(state, next, rename(scope)), clauses)
         wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)
 
       // pre ⇒ name_pre(args, gs), which collects the states in which `name` is called,

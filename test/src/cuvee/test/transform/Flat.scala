@@ -8,14 +8,14 @@ import cuvee.core._
 
 // the Horn clauses of the Dafny examples have the same result with -flat as without
 object FlatHorn extends TestSuite:
-  import cuvee.test.dafny.Horn.{expected, differs, skip}
+  import cuvee.test.dafny.Horn.expected
 
   val tests =
-    Examples.tests(Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(file => skip.contains(file.last))): file =>
+    Examples.tests(Examples.find(os.sub / "dafny" / "horn", "dfy")): file =>
       val first = os.read.lines(file).head
       val (_, results) = cuvee.Cuvee.run("-chc", "-flat", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
-      Examples.status(results) ==> differs.getOrElse(file.last, expected(first))
+      Examples.status(results) ==> expected(first)
 
 object Flat extends TestSuite:
   val file = (Examples.root / "transform" / "flat.smt2").toString

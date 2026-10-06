@@ -101,12 +101,24 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   per program point after assignments, calls, loop heads, and joins, followed
   by `check-sat` and `get-model`, whose model is printed in the language of the
   input.
+  - Procedures with a body have predicates and no contract, which is an
+    error, except for `requires` of `main` (the initial values of globals in
+    C). Those that no procedure calls are entry points, `requires ⇒ p_pre`.
+  - Procedures without body have no predicates; calls instantiate their
+    contract (`Verify.instance`, also the type parameters), whose
+    precondition's conjuncts are goals and whose postcondition's conjuncts
+    are facts. Polymorphic procedures that are only specified thus yield
+    monomorphic clauses.
   - The body starts from `p_pre`; branches extend the facts of the first
     clause by the test, and `break`, `continue`, `return`, and the end of a
     block lead directly to the predicate of their target, whose variables are
     those in scope there.
-  - Annotations (`requires`, `ensures`, `invariant`, `decreases`) and
-    assertions are goals in the head of clauses, `facts ⇒ φ`.
+  - Annotations (`invariant`, `decreases`), preconditions of procedures
+    without body, and assertions are goals in the head of clauses,
+    `facts ⇒ φ`.
+  - The `-chc` tests use [examples/dafny/horn](../examples/dafny/horn) and
+    [examples/boogie/horn](../examples/boogie/horn), whose procedures with a
+    body have no contracts.
 - [`Simplify`](../src/cuvee/simplify/Simplify.scala) rewrites assertions and
   function definitions to a fixpoint, and simplifies procedures statement by
   statement. Assertions are normalized into clauses (`Normalize`) before

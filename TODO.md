@@ -5,8 +5,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New TODOs
 
-- in Horn, if a method has only a contract but no implementation, don't generate pre/post predicates, just inline. the reason is that we want to instantiate data types that are specified only, and if they are polymorphic, inlining the requires and ensures does not produce polymorphic clauses if the caller is monomorphic,
-  the precondition would this be split into its conjuncts, simiplarly, the postcondition is as a conjunction, use And.flattenStrong for that
 - make a plan to resolve calls and selectors on this as well as on arbitrary terms, don't implement it
 - check for stray references of Fun.... that are not goverened by syntactic sugar objects
 
@@ -107,8 +105,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - Datatypes (`data`, not Boogie) have no testers and no `match`; `data`,
   `and`, and `|` are keywords.
 - z3 answers `unknown` for Horn clauses over recursive datatypes
-  ([examples/boogie/data.bpl](examples/boogie/data.bpl) is skipped by the
-  `-chc` test).
+  ([examples/boogie/data.bpl](examples/boogie/data.bpl)).
+- The `-chc` tests cover only [examples/boogie/horn](examples/boogie/horn),
+  since the procedures of the other examples have contracts.
 - The printer rejects loop attributes other than `invariant`,
   `modifies`, `decreases`, other binders, derivatives, ODEs, and `par`;
   `goal`, `lemma`, `decreases`, `continue` are printed although not Boogie.
@@ -138,7 +137,10 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 - The modifies clause of a loop is inferred from the core program, where a
   local variable that shadows a global one of the same type counts as global.
 - z3 answers `unknown` for Horn clauses with division by variables
-  ([examples/c/div.c](examples/c/div.c)).
+  ([examples/c/div.c](examples/c/div.c)), and for
+  [examples/c/count.c](examples/c/count.c) since `incr_pre` is no longer
+  `true` but inferred from the calls (only uncalled procedures are entry
+  points).
 
 ## Bitvectors
 

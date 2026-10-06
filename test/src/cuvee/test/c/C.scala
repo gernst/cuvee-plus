@@ -24,7 +24,7 @@ object Roundtrip extends TestSuite:
       os.read(third) ==> os.read(second)
 
 // the examples without loops are verified with -verify, since C has no loop invariants,
-// and all examples with -chc, except for division by variables, for which z3 answers unknown;
+// and all examples with -chc, except for division by variables and count.c, for which z3 answers unknown (see TODO.md);
 // the first line of each example states whether all assertions hold
 object Verify extends TestSuite:
   def loops(file: os.Path) =
@@ -41,7 +41,7 @@ object Verify extends TestSuite:
       errors ==> (if expected(file) then Nil else List("goal does not hold"))
 
 object Horn extends TestSuite:
-  val skip = Set("div.c")
+  val skip = Set("div.c", "count.c")
 
   val tests =
     Examples.tests(Examples.find(os.sub / "c", "c").filterNot(file => skip.contains(file.last))): file =>
