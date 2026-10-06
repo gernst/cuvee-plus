@@ -230,6 +230,14 @@ object Printing extends TestSuite:
       assert(text.contains("tmp_1_ = 2"))
       assert(text.contains("tmp_1 = f()"))
 
+    // nondeterministic values of unsigned types are nonnegative, which is assumed after the value
+    test("unsigned nondeterministic values"):
+      val file = os.temp("int main(void) { unsigned int x = __VERIFIER_nondet_uint(); return x; }", suffix = ".c")
+      val out = os.temp(suffix = ".c")
+      Examples.errors(file.toString, "-o", out.toString) ==> Nil
+      val text = os.read(out)
+      assert(text.contains("tmp_1 = __VERIFIER_nondet_int();\n  __VERIFIER_assume(0 <= tmp_1);"))
+
     // global variables are zero in C, initializers are assignments at the beginning of main
     test("contracts"):
       val file = os.temp("int g = 1; int main(void) { return g; }", suffix = ".c")

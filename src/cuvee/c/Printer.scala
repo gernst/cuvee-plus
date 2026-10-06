@@ -162,6 +162,10 @@ object Printer extends cuvee.pipe.Printer:
       case Spec(xs, True, True) =>
         join(xs.map(nondet), hardline)
 
+      // nondeterministic values with a postcondition, e.g. 0 <= x for __VERIFIER_nondet_uint (see Parser.havoc)
+      case Spec(xs, True, phi) =>
+        join(xs.map(nondet), hardline) ~ hardline ~ call("__VERIFIER_assume", List(doc(phi))) ~ text(";")
+
       case Assign(List(x), List(Store(y, index, value))) if x == y =>
         Group(text(name(x.name)) ~ text("[") ~ doc(index) ~ text("]") ~~ text("=") ~ Nest(2, line ~ doc(value))) ~ text(";")
 
