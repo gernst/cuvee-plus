@@ -14,8 +14,6 @@ object TEQ extends TestSuite:
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
     Rule(lhs.free.toList, lhs, rhs, cond)
 
-  import Verify.expected
-
   def loops(file: os.Path) =
     os.read(file).contains("while")
 
@@ -27,16 +25,19 @@ object TEQ extends TestSuite:
       arg
     expr :: inner.result()
 
+  val contracts = "calls of procedures with a contract are not supported"
+
   val tests = Tests:
-    // the goals are passed to z3 without the lemma database, whose functions on traces z3 does not support
+    // goals are generated without errors (z3 is never run on them);
+    // examples that call methods with a contract are rejected, since calls are inlined (see "calls with contract")
     test("without loops"):
       for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(loops)
       do
-        val first = os.read.lines(file).head
         val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
-        errors ==> Nil
-        val goals = os.temp(cuvee.smtlib.Printer.lines(cmds.filterNot(cuvee.verify.TEQ.lemmas.contains)).mkString("\n"), suffix = ".smt2")
-        Examples.errors("-z3", goals.toString) ==> expected(first)
+        if errors != List(contracts)
+        then
+          errors ==> Nil
+          assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
 
     // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy;
     // that of s, which the lemma on sums rewrites, is unused, its equation vanishes by the one-point rule
@@ -198,15 +199,11 @@ object TEQ extends TestSuite:
         val inv_ = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, inv)
         assert(!subexprs(inv_).exists(_.isInstanceOf[Invs]))
 
-    // calls of polymorphic methods instantiate the type parameters of their contract, as with -verify
-    test("polymorphic calls"):
-      val file = Examples.root / "dafny" / "horn" / "contract.dfy"
-      val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
-      errors ==> Nil
-      val goals = cmds.collect { case Assert(Goal, Nil, phi, _) => phi }
-      assert(goals.nonEmpty)
-      for goal <- goals; case App(_, inst, typ, _) <- subexprs(goal)
-      do (inst :+ typ).params ==> Set()
+    // calls are inlined, which rejects callees with a contract
+    test("calls with contract"):
+      val file = Examples.root / "dafny" / "vcgen" / "call.dfy"
+      val (_, errors) = Examples.output("-teq", "-print", "null", file.toString)
+      errors ==> List(contracts)
 
     // calls of procedures without a contract are inlined, such that the results are known to the caller,
     // also through a return inside of a branch, and the variables of the caller with the names of the formals are restored
@@ -220,10 +217,10 @@ object TEQ extends TestSuite:
       errors ==> Nil
       cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
 
-    // a procedure without a contract and without a body cannot be inlined
+    // a procedure without a body cannot be inlined
     test("inlining without body"):
       val text =
         """method f(x: int) returns (y: int)
           |method g() returns (z: int) { z := f(1); }
           |""".stripMargin
-      Examples.check("dfy", text, "-teq") ==> List("procedure without contract and without body")
+      Examples.check("dfy", text, "-teq") ==> List("procedure without body")

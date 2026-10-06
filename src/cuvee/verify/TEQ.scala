@@ -206,30 +206,19 @@ object TEQ extends Transform:
         val p_ = p.fresh(List(z))
         symex(state, proc, prog, p_.when(z)) ++ choice(state, proc, rest, p_.when(Not(z)))
 
-  // calls of procedures with a contract are by contract, those without are inlined, e.g. functions in C
-  def call(state: State, proc: Name, call: Call, p: Path): List[Path] =
-    val attrs = state.procattrs(call.proc)
-    if attrs.requires == True && attrs.ensures == True
-    then inlined(state, call, p)
-    else List(contract(state, proc, call, p))
-
-  // calls by contract (see Verify.instance): the precondition is checked, as well as the measure for recursive calls,
-  // the results and modified global variables are fresh, and the postcondition is assumed,
-  // where both refer to the values before the call, which are those of the path
-  def contract(state: State, proc: Name, call: Call, p: Path): Path =
-    val (pre, fresh, post, _) = Verify.instance(state, proc, call)
-    val mod = Type.expand(state, state.procattrs(call.proc).modifies)
-    p.check(p(pre)).fresh(fresh).assign(call.res ++ mod, fresh).assume(p(post))
-
+  // calls are inlined, which requires procedures without a contract, e.g. functions in C:
   // the paths through the body of the callee, like a block whose locals are the formal parameters:
   // the inputs are the values of the arguments, the outputs are arbitrary initially, a return leaves the callee only,
   // and the variables of the caller with the same names are restored afterwards, before the results are assigned;
-  // calls of recursive procedures without a contract do not terminate
-  def inlined(state: State, call: Call, p: Path): List[Path] =
+  // calls of recursive procedures do not terminate
+  def call(state: State, proc: Name, call: Call, p: Path): List[Path] =
     val Call(name, args, res) = call
-    val (in, out, _, _) = Verify.contract(state, name)
+    val (in, out, pre, post) = Verify.contract(state, name)
 
-    Error.report("procedure without contract and without body", name):
+    Error.report("calls of procedures with a contract are not supported", name):
+      require(pre == True && post == True)
+
+    Error.report("procedure without body", name):
       require(state.procdefs contains name)
 
     val zs = out.fresh

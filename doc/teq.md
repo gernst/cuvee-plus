@@ -59,8 +59,8 @@ after section 4 of the paper.
 - A `Path` holds the fresh variables for nondeterministic choices, the values
   of the variables as a substitution, and the assumptions, branch conditions,
   and checks along the way. Choices `if *` become branches on fresh booleans,
-  calls go by contract, and calls of procedures without a contract (e.g. C
-  functions) are inlined, which does not terminate for recursive ones.
+  calls are inlined, which requires procedures without a contract (e.g. C
+  functions) and does not terminate for recursive ones.
 - Each loop yields a single path (theorem 4.8), which assumes its trace
   equation system (definition 4.4): one `Trace` per modified variable, whose
   update has a case per path through the body, the counter
