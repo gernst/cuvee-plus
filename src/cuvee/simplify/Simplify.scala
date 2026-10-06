@@ -760,8 +760,8 @@ object Simplify extends Transform:
     val used_ = used.map(x => re.vars.getOrElse(x, x))
     val kept =
       distinct.filter:
-        case (Butlast(Counter(_, _, _)) | Counter(_, _, _), _) => true
-        case (_, x)                                           => used_ contains x
+        case (Butlast(Counter(_, _, _)), _) => true
+        case (_, x)                         => used_ contains x
 
     val pairs = if kept.isEmpty then distinct.take(1) else kept
     (pairs.map(_._1), pairs.map(_._2), re)
