@@ -25,9 +25,9 @@ object Printing extends TestSuite:
       Printer.lines(Assign(List(x, y), List(y, x))) ==> List("x, y := y, x;")
 
     test("specs"):
-      Printer.lines(Spec.assume(App(Fun.int.lt, List(x, y)))) ==> List("assume x < y;")
+      Printer.lines(Spec.assume(Lt.int(x, y))) ==> List("assume x < y;")
       Printer.lines(Spec.havoc(List(x, y))) ==> List("havoc x, y;")
-      Printer.lines(Spec(List(x), App(Fun.int.lt, List(zero, x)), App(Fun.int.lt, List(x, y)))) ==>
+      Printer.lines(Spec(List(x), Lt.int(zero, x), Lt.int(x, y))) ==>
         List("spec x requires 0 < x ensures x < y;")
 
     test("choice"):
@@ -35,54 +35,55 @@ object Printing extends TestSuite:
       Printer.lines(Choice(progs)) ==> List("if * {", "  x := 0;", "} else {", "  x := y;", "}")
 
     test("else if"):
-      val prog = If(App(Fun.int.lt, List(x, y)), Break, If(App(Fun.int.lt, List(y, x)), Continue, Block(Nil, Nil)))
+      val prog = If(Lt.int(x, y), Break, If(Lt.int(y, x), Continue, Block(Nil, Nil)))
       Printer.lines(prog) ==> List("if x < y {", "  break;", "} else if y < x {", "  continue;", "}")
 
     test("iter"):
-      val attrs = cuvee.core.Attrs(List("invariant" -> Some(App(Fun.int.le, List(x, y)))))
+      val attrs = cuvee.core.Attrs(List("invariant" -> Some(Le.int(x, y))))
       Printer.lines(Iter(Assign(List(x), List(y)), attrs)) ==>
         List("while *", "  invariant x <= y", "{", "  x := y;", "}")
 
     // the evolution constraint follows while, the right hand sides need no parentheses
     test("ode"):
-      val dom = app(Fun.int.le, zero, x)
-      val inv = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
+      val dom = Le.int(zero, x)
+      val inv = cuvee.core.Attrs(List("invariant" -> Some(Le.int(x, y))))
       val t = Var("t", Sort.real)
-      Printer.lines(Ode(t, List(x, y), List(y, app(Fun.int.uminus, x)), True, cuvee.core.Attrs.empty)) ==>
+      Printer.lines(Ode(t, List(x, y), List(y, UMinus.int(x)), True, cuvee.core.Attrs.empty)) ==>
         List("ode t :: x', y' == y, -x;")
-      Printer.lines(Ode(t, List(p), List(app(Fun.and, p, q)), dom, inv)) ==>
+      Printer.lines(Ode(t, List(p), List(And(p, q)), dom, inv)) ==>
         List("ode t :: p' == p && q while 0 <= x", "  invariant x <= y;")
 
     test("diff"):
       expr(Diff(List(x), x)) ==> "(x :: x)'"
-      expr(Diff(List(x, y), app(Fun.int.times, x, y))) ==> "(x, y :: x * y)'"
-      expr(app(Fun.int.uminus, Diff(List(x), x))) ==> "-(x :: x)'"
+      expr(Diff(List(x, y), Times.int(x, y))) ==> "(x, y :: x * y)'"
+      expr(UMinus.int(Diff(List(x), x))) ==> "-(x :: x)'"
 
     // real literals have a decimal point, fractions without finite decimal expansion are divisions
     test("real literals"):
       val real = (r: _root_.util.Rational) => Lit(r, Sort.real)
+      val x = Var("x", Sort.real)
       expr(real(_root_.util.Rational(2))) ==> "2.0"
       expr(real(_root_.util.Rational(-3, 2))) ==> "-1.5"
       expr(real(_root_.util.Rational(1, 3))) ==> "1.0 / 3.0"
       expr(real(_root_.util.Rational(-1, 3))) ==> "-1.0 / 3.0"
-      expr(app(Fun.real.times, real(_root_.util.Rational(1, 3)), x)) ==> "1.0 / 3.0 * x"
-      expr(app(Fun.real.times, x, real(_root_.util.Rational(1, 3)))) ==> "x * (1.0 / 3.0)"
+      expr(Times.real(real(_root_.util.Rational(1, 3)), x)) ==> "1.0 / 3.0 * x"
+      expr(Times.real(x, real(_root_.util.Rational(1, 3)))) ==> "x * (1.0 / 3.0)"
 
     // sequence literals are concatenations of units, + and <= are overloaded, x in s is containment of [x]
     test("sequences"):
       val s = Var("s", Sort.seq(Sort.int))
       val one = Lit(BigInt(1), Sort.int)
-      val unit = (e: Expr) => app(Fun.seq.unit, e)
-      expr(app(Fun.seq.empty)) ==> "[]"
-      expr(app(Fun.seq.concat, unit(x), unit(y))) ==> "[x, y]"
-      expr(app(Fun.seq.concat, s, unit(x))) ==> "s + [x]"
-      expr(app(Fun.seq.prefixof, unit(x), s)) ==> "[x] <= s"
-      expr(app(Fun.seq.contains, s, unit(x))) ==> "x in s"
-      expr(app(Fun.seq.len, s)) ==> "|s|"
-      expr(app(Fun.seq.nth, s, zero)) ==> "s[0]"
-      expr(app(Fun.seq.update, s, zero, unit(x))) ==> "s[0 := x]"
-      expr(app(Fun.seq.extract, s, one, app(Fun.int.minus, x, one))) ==> "s[1..x]"
-      expr(app(Fun.seq.extract, s, zero, x)) ==> "s[0..x]"
+      val unit = (e: Expr) => Seqs.unit(e)
+      expr(Seqs.empty(Sort.int)) ==> "[]"
+      expr(Seqs.concat(unit(x), unit(y))) ==> "[x, y]"
+      expr(Seqs.concat(s, unit(x))) ==> "s + [x]"
+      expr(Seqs.prefixof(unit(x), s)) ==> "[x] <= s"
+      expr(Seqs.contains(s, unit(x))) ==> "x in s"
+      expr(Seqs.len(s)) ==> "|s|"
+      expr(Seqs.nth(s, zero)) ==> "s[0]"
+      expr(Seqs.update(s, zero, unit(x))) ==> "s[0 := x]"
+      expr(Seqs.extract(s, one, Minus.int(x, one))) ==> "s[1..x]"
+      expr(Seqs.extract(s, zero, x)) ==> "s[0..x]"
 
     // the parser reads a != b as !(a == b)
     test("disequality"):
@@ -96,28 +97,28 @@ object Printing extends TestSuite:
       val s = Var("s", Seq)
       val nil = Fun("nil", Nil, Nil, Seq)
       expr(Is(s, nil)) ==> "s.nil?"
-      expr(app(Fun.int.plus, As(x, Sort.int), y)) ==> "x as int + y"
-      expr(app(Fun.seq.nth, As(s, Seq), zero)) ==> "(s as seq<int>)[0]"
+      expr(Plus.int(As(x, Sort.int), y)) ==> "x as int + y"
+      expr(Seqs.nth(As(s, Seq), zero)) ==> "(s as seq<int>)[0]"
 
     test("mixfix"):
-      expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
-      expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"
+      expr(Plus.int(Plus.int(x, y), zero)) ==> "x + y + 0"
+      expr(Plus.int(x, Plus.int(y, zero))) ==> "x + (y + 0)"
       expr(app(Fun.int.plus, x, y, zero)) ==> "x + y + 0"
-      expr(app(Fun.int.times, app(Fun.int.plus, x, y), app(Fun.int.minus, x, y))) ==> "(x + y) * (x - y)"
-      expr(app(Fun.int.minus, x, app(Fun.int.times, y, Lit(BigInt(-1), Sort.int)))) ==> "x - y * -1"
-      expr(app(Fun.imp, p, app(Fun.imp, q, p))) ==> "p ==> q ==> p"
-      expr(app(Fun.imp, app(Fun.imp, p, q), p)) ==> "(p ==> q) ==> p"
-      expr(app(Fun.and, app(Fun.or, p, q), app(Fun.int.lt, x, y))) ==> "(p || q) && x < y"
+      expr(Times.int(Plus.int(x, y), Minus.int(x, y))) ==> "(x + y) * (x - y)"
+      expr(Minus.int(x, Times.int(y, Lit(BigInt(-1), Sort.int)))) ==> "x - y * -1"
+      expr(Imp(p, Imp(q, p))) ==> "p ==> q ==> p"
+      expr(Imp(Imp(p, q), p)) ==> "(p ==> q) ==> p"
+      expr(And(Or(p, q), Lt.int(x, y))) ==> "(p || q) && x < y"
 
     test("mixfix non-associative"):
-      expr(app(Fun.eq_, app(Fun.int.lt, x, y), p)) ==> "(x < y) == p"
-      expr(app(Fun.eq_, p, app(Fun.eq_, q, p))) ==> "p == (q == p)"
+      expr(Eq(Lt.int(x, y), p)) ==> "(x < y) == p"
+      expr(Eq(p, Eq(q, p))) ==> "p == (q == p)"
       expr(app(Fun.eq_, x, y, zero)) ==> "==(x, y, 0)"
 
     // the operators inside of parentheses are indented beyond the opening parenthesis
     test("parentheses align"):
-      val long = (1 to 8).map(i => app(Fun.int.lt, x, Lit(BigInt(1000000 * i), Sort.int))).reduce((phi, psi) => app(Fun.and, phi, psi))
-      val lines = Printer.lines(app(Fun.imp, p, app(Fun.and, app(Fun.imp, app(Fun.int.lt, x, y), long), q)))
+      val long = (1 to 8).map(i => Lt.int(x, Lit(BigInt(1000000 * i), Sort.int))).reduce((phi, psi) => And(phi, psi))
+      val lines = Printer.lines(Imp(p, And(Imp(Lt.int(x, y), long), q)))
       val open = lines.find(_.contains("(x < y")).get.indexOf("(")
       val inner = lines.dropWhile(!_.contains("(x < y")).tail.takeWhile(!_.contains("q"))
       assert(inner.nonEmpty && inner.forall(_.indexWhere(_ != ' ') > open))
@@ -125,22 +126,22 @@ object Printing extends TestSuite:
     // conjunctions of comparisons that are linked by their operands in one direction are chained,
     // comparisons as operands of comparisons are parenthesized
     test("chained comparisons"):
-      expr(app(Fun.and, app(Fun.int.le, zero, x), app(Fun.int.lt, x, y))) ==> "0 <= x < y"
-      expr(app(Fun.and, app(Fun.and, app(Fun.int.le, zero, x), app(Fun.int.lt, x, y)), p)) ==> "0 <= x < y && p"
-      expr(app(Fun.and, app(Fun.int.lt, zero, x), app(Fun.int.lt, y, x))) ==> "0 < x && y < x"
-      expr(app(Fun.and, app(Fun.int.lt, zero, x), app(Fun.int.gt, x, y))) ==> "0 < x && x > y"
-      expr(app(Fun.eq_, app(Fun.eq_, x, y), p)) ==> "(x == y) == p"
+      expr(And(Le.int(zero, x), Lt.int(x, y))) ==> "0 <= x < y"
+      expr(And(And(Le.int(zero, x), Lt.int(x, y)), p)) ==> "0 <= x < y && p"
+      expr(And(Lt.int(zero, x), Lt.int(y, x))) ==> "0 < x && y < x"
+      expr(And(Lt.int(zero, x), Gt.int(x, y))) ==> "0 < x && x > y"
+      expr(Eq(Eq(x, y), p)) ==> "(x == y) == p"
 
     test("mixfix prefix"):
-      expr(app(Fun.not, app(Fun.and, p, q))) ==> "!(p && q)"
-      expr(app(Fun.and, app(Fun.not, p), q)) ==> "!p && q"
-      expr(app(Fun.eq_, app(Fun.not, p), q)) ==> "!p == q"
-      expr(app(Fun.int.uminus, app(Fun.int.uminus, x))) ==> "-(-x)"
-      expr(app(Fun.int.plus, app(Fun.int.uminus, x), y)) ==> "-x + y"
+      expr(Not(And(p, q))) ==> "!(p && q)"
+      expr(And(Not(p), q)) ==> "!p && q"
+      expr(Eq(Not(p), q)) ==> "!p == q"
+      expr(UMinus.int(UMinus.int(x))) ==> "-(-x)"
+      expr(Plus.int(UMinus.int(x), y)) ==> "-x + y"
 
     test("mixfix binders"):
-      val all = Bind("forall", List(x), app(Fun.int.lt, x, y))
-      expr(app(Fun.and, all, p)) ==> "(forall x: int :: x < y) && p"
+      val all = Bind("forall", List(x), Lt.int(x, y))
+      expr(And(all, p)) ==> "(forall x: int :: x < y) && p"
 
     // combinators that do not fit have the keyword below for and the update below the keyword
     test("combinator breaks"):

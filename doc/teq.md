@@ -35,7 +35,7 @@ After section 3 of the paper:
   `free`, `params`, and `exprs` like lists of expressions.
 - The functions on traces are in `Fun.trace`: `counter`, `current`, `butlast`
   (the paper's `⌊X⌋`), `steps`, `length`, `earlier`; `Counter`, `Current`,
-  `Butlast`, `Earlier`, and `Length` in
+  `Butlast`, `Steps`, `Earlier`, and `Length` in
   [Builtin.scala](../src/cuvee/core/Builtin.scala) are their sugar. The sort is `Sort.trace(elem)`.
 - `state.exprs.trace`, `map`, and `all` create the bound variables with the
   element types of the dependencies (`Type.elem`).

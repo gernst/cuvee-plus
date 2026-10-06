@@ -54,10 +54,10 @@ object Printing extends TestSuite:
       Printer.lines(Sort(Con("Stack", 1), List(Param("a")))) ==> List("Stack<a>")
 
     test("specs"):
-      prog(Spec.assume(app(Fun.int.lt, x, y))) ==> List("assume x < y;")
-      prog(Spec.assert(app(Fun.int.lt, x, y))) ==> List("assert x < y;")
+      prog(Spec.assume(Lt.int(x, y))) ==> List("assume x < y;")
+      prog(Spec.assert(Lt.int(x, y))) ==> List("assert x < y;")
       prog(Spec.havoc(List(x, y))) ==> List("havoc x, y;")
-      prog(Spec(List(x), app(Fun.int.lt, zero, x), app(Fun.int.lt, x, y))) ==>
+      prog(Spec(List(x), Lt.int(zero, x), Lt.int(x, y))) ==>
         List("assert 0 < x;", "havoc x;", "assume x < y;")
 
     test("assign and call"):
@@ -71,21 +71,21 @@ object Printing extends TestSuite:
       prog(Choice(progs)) ==> List("if (*) {", "  x := 0;", "} else {", "  x := y;", "}")
 
     test("else if"):
-      val prog_ = If(app(Fun.int.lt, x, y), Break, If(app(Fun.int.lt, y, x), Return, Block(Nil, Nil)))
+      val prog_ = If(Lt.int(x, y), Break, If(Lt.int(y, x), Return, Block(Nil, Nil)))
       prog(prog_) ==> List("if (x < y) {", "  break;", "} else if (y < x) {", "  return;", "}")
 
     // continue is not Boogie, but part of the dialect
     test("continue"):
-      prog(While(app(Fun.int.lt, x, y), Block(Nil, List(Continue)), cuvee.core.Attrs(Nil))) ==>
+      prog(While(Lt.int(x, y), Block(Nil, List(Continue)), cuvee.core.Attrs(Nil))) ==>
         List("while (x < y) {", "  continue;", "}")
 
     test("loop"):
-      val attrs = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y)), "modifies" -> Some(List(a))))
-      prog(While(app(Fun.int.lt, x, y), Block(Nil, Nil), attrs)) ==>
+      val attrs = cuvee.core.Attrs(List("invariant" -> Some(Le.int(x, y)), "modifies" -> Some(List(a))))
+      prog(While(Lt.int(x, y), Block(Nil, Nil), attrs)) ==>
         List("while (x < y)", "  invariant x <= y;", "  modifies a;", "{}")
 
     test("iter"):
-      val attrs = cuvee.core.Attrs(List("invariant" -> Some(app(Fun.int.le, x, y))))
+      val attrs = cuvee.core.Attrs(List("invariant" -> Some(Le.int(x, y))))
       prog(Iter(Assign(List(x), List(y)), attrs)) ==>
         List("while (*)", "  invariant x <= y;", "{", "  x := y;", "}")
 
@@ -99,21 +99,21 @@ object Printing extends TestSuite:
       prog(While(True, Block(Nil, Nil), dec)) ==> List("while (true)", "  decreases x, y;", "{}")
 
     test("mixfix"):
-      expr(app(Fun.int.plus, app(Fun.int.plus, x, y), zero)) ==> "x + y + 0"
-      expr(app(Fun.int.plus, x, app(Fun.int.plus, y, zero))) ==> "x + (y + 0)"
-      expr(app(Fun.int.times, app(Fun.int.plus, x, y), app(Fun.int.minus, x, y))) ==> "(x + y) * (x - y)"
-      expr(app(Fun.imp, p, app(Fun.imp, q, p))) ==> "p ==> q ==> p"
-      expr(app(Fun.imp, app(Fun.imp, p, q), p)) ==> "(p ==> q) ==> p"
-      expr(app(Fun.and, app(Fun.or, p, q), app(Fun.int.lt, x, y))) ==> "(p || q) && x < y"
+      expr(Plus.int(Plus.int(x, y), zero)) ==> "x + y + 0"
+      expr(Plus.int(x, Plus.int(y, zero))) ==> "x + (y + 0)"
+      expr(Times.int(Plus.int(x, y), Minus.int(x, y))) ==> "(x + y) * (x - y)"
+      expr(Imp(p, Imp(q, p))) ==> "p ==> q ==> p"
+      expr(Imp(Imp(p, q), p)) ==> "(p ==> q) ==> p"
+      expr(And(Or(p, q), Lt.int(x, y))) ==> "(p || q) && x < y"
 
     test("disequalities and chains"):
       expr(Not(Eq(x, y))) ==> "x != y"
-      expr(Not(app(Fun.and, p, q))) ==> "!(p && q)"
+      expr(Not(And(p, q))) ==> "!(p && q)"
       expr(Distinct(List(x, y))) ==> "x != y"
       expr(Distinct(List(x, y, zero))) ==> "x != y && x != 0 && y != 0"
       expr(app(Fun.int.lt, x, y, zero)) ==> "x < y && y < 0"
 
     test("quantifiers and conditionals"):
-      expr(app(Fun.and, All(List(x), app(Fun.int.lt, x, y)), p)) ==> "(forall x: int :: x < y) && p"
-      expr(app(Fun.int.plus, Ite(p, x, y), zero)) ==> "(if p then x else y) + 0"
-      expr(Let(List(x), List(y), app(Fun.int.plus, x, x))) ==> "y + y"
+      expr(And(All(List(x), Lt.int(x, y)), p)) ==> "(forall x: int :: x < y) && p"
+      expr(Plus.int(Ite(p, x, y), zero)) ==> "(if p then x else y) + 0"
+      expr(Let(List(x), List(y), Plus.int(x, x))) ==> "y + y"

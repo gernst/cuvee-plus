@@ -3,10 +3,6 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
-## New TODOs
-
-- check for stray references of Fun.... that are not goverened by syntactic sugar objects
-
 ## General
 
 - Readers of input files and the stream of `-o` are never closed.

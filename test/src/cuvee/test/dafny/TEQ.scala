@@ -82,16 +82,16 @@ object TEQ extends TestSuite:
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val K = Var("K", Sort.trace(Sort.int))
-      val butlast = App(Fun.trace.butlast, List(K))
+      val butlast = Butlast(K)
       val rule = rw(
         Trace(i, List(butlast), x, List(k), List(Upd(True, Plus.int(x, c)))),
-        App(Fun.trace.counter, List(i, c, App(Fun.trace.steps, List(K))))
+        Counter(i, c, Steps(K))
       )
 
       val phi_ = Rewrite(List(rule), phi)
-      val counters = subexprs(phi_).collect { case app @ App(fun, _, _, List(Zero.int, One.int, _)) if fun == Fun.trace.counter => app }
+      val counters = subexprs(phi_).collect { case app @ Counter(Zero.int, One.int, _) => app }
       // the synthetic counter K = counter(0, 1, n) and the loop variable i = counter(0, 1, steps(K))
-      assert(counters.exists { case App(_, _, _, List(_, _, App(fun, _, _, _))) => fun == Fun.trace.steps; case _ => false })
+      assert(counters.exists { case Counter(_, _, Steps(_)) => true; case _ => false })
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
 
     // a variable that is increased where the values are equal to e counts the occurrences of e,
