@@ -1,36 +1,31 @@
-type pair<a,b>
-type option<a>
-
-datatype stack<a>
-  = stack(counter: int, size: int, elem: a, offset: int)
+datatype Stack<a>
+  = Stack(xs: seq<a>)
 {
-  predicate valid() {
-    0 <= this.counter &&
-    0 <= this.offset && this.offset < this.size
-  }
-
   predicate isEmpty()
-    requires this.valid()
   {
-    this.counter == 0
+    |this.xs| == 0
   }
 
-  method top()
-    returns (result: a)
-    requires this.valid()
-
-  method pop()
-    returns (this_: stack<a>)
-    requires this.valid()
+  method Top()
+    returns (x: a)
     requires !this.isEmpty()
+    ensures x == this.xs[|this.xs| - 1]
+  {
+    x := this.xs[|this.xs| - 1];
+  }
 
-  method push(elem: a)
-    returns (this_: stack<a>)
-    requires this.valid()
-    ensures  this_.valid()
-}
+  method Push(x: a)
+    returns (that: Stack<a>)
+    ensures that.xs == this.xs + [x]
+  {
+    that := Stack(this.xs + [x]);
+  }
 
-method test(s: stack<int>, t: stack<int>)
-{
-  var x: int;
+  method Pop()
+    returns (that: Stack<a>)
+    requires !this.isEmpty()
+    ensures that.xs == this.xs[..|this.xs| - 1]
+  {
+    that := Stack(this.xs[..|this.xs| - 1]);
+  }
 }

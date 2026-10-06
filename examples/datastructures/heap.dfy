@@ -1,25 +1,25 @@
-type pair<a,b>
-type option<a>
-
-type object = int
-datatype context = context(x: int, y: int)
-
-datatype heap
-    = heap(rcount: int, size: int, laddr: int, lobj: object, ctx: context)
+datatype Heap<a,b>
+    = Heap(h: map<a,b>)
 {
-    method alloc(obj: object)
-        returns (addr: int, that: heap)
-        ensures that.rcount == this.rcount
-        ensures that.size   == this.size + 1
-        ensures that.laddr  == this.laddr
-        ensures that.lobj   == if addr == this.laddr then obj else this.lobj
-        ensures that.ctx    == this.ctx
+    method isEmpty()
+        returns (result: bool)
+        ensures result == (this.h == map[])
+    {
+        result := this.h == map[];
+    }
 
-        ensures addr == that.size
-}
+    method Store(key: a, value: b)
+        returns (that: Heap<a,b>)
+        ensures that.h == this.h[key := value]
+    {
+        that := Heap(this.h[key := value]);
+    }
 
-method test(x: int, y: int)
-{
-    var laddr: int, lobj: int;
-    var h1: heap := heap(0, 0, laddr, lobj, context(x, y));
+    method Load(key: a)
+        returns (value: b)
+        requires key in this.h
+        ensures value == this.h[key]
+    {
+        value := this.h[key];
+    }
 }
