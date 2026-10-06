@@ -459,7 +459,7 @@ object Simplify extends Transform:
   def point(ctx: Ctx, x: Var, e: Expr): Boolean =
     (ctx.existential contains x)
       && !(e.free contains x)
-      && !(Ctx.primed(e) contains x)
+      && !(e.primes contains x)
       && !(ctx.used contains x)
       && (e.free intersect ctx.bound.takeWhile(_ != x).toSet).isEmpty
 

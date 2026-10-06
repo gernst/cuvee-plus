@@ -268,7 +268,7 @@ object Verify extends Transform:
         All(xs_, Imp(dom_, su(post)))
 
       case inv :: rest =>
-        val dxs_ = xs_.map(_.primed)
+        val dxs_ = xs_.primed
         val evolve = And(dom_ :: Eq(dxs_, su(rhs)))
         val cut = All(xs_ ++ dxs_, Imp(evolve, Diff(xs_, su(inv))))
         And(List(inv, cut, ode(xs, rhs, And(dom, inv), rest, post)))

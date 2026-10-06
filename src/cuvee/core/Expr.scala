@@ -30,6 +30,17 @@ sealed trait Expr:
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
       case Match(arg, cases)                    => Match(f(arg), cases.map(_.map(f)))
 
+  // the primed variables x' of the derivatives (xs :: e)' in this expression,
+  // which are not free in Diff (see Ctx.used)
+  def primes: Set[Var] =
+    val inner = Set.newBuilder[Var]
+    map: arg =>
+      inner ++= arg.primes
+      arg
+    this match
+      case Diff(xs, _) => inner.result() ++ xs.primed
+      case _           => inner.result()
+
   // the expression without type annotations e as T
   def removeAs: Expr =
     this match

@@ -78,7 +78,7 @@ case class Ctx(
   // the equations in eq remain among the assumptions, unlike those in su
   def used: Set[Var] =
     val facts = assms ++ concls
-    facts.free ++ facts.flatMap(Ctx.primed) ++ su.keys ++ su.values.free
+    facts.free ++ facts.flatMap(_.primes) ++ su.keys ++ su.values.free
 
   // equations of variables with variables and literals are recorded in the substitution;
   // facts are stored as given and not normalized under the substitution,
@@ -177,16 +177,6 @@ object Ctx:
 
       case None =>
         false
-
-  // the primed variables x' of the derivatives (xs :: e)' in `expr`
-  def primed(expr: Expr): Set[Var] =
-    val inner = Set.newBuilder[Var]
-    expr.map: arg =>
-      inner ++= primed(arg)
-      arg
-    expr match
-      case Diff(xs, _) => inner.result() ++ xs.map(_.primed)
-      case _           => inner.result()
 
   val empty = Ctx(Nil, Set(), Set(), Nil, Nil, Map(), Map(), None)
 

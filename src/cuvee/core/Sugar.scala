@@ -21,6 +21,10 @@ extension (self: List[Var])
   @targetName("Vars.asIndex")
   def asIndex = self.map(_.asIndex)
 
+  // the variables for the derivatives, x'
+  @targetName("Vars.primed")
+  def primed = self.map(_.primed)
+
 extension (self: Iterable[Type])
   @targetName("Types.params")
   def params = self.flatMap(_.params).toSet
