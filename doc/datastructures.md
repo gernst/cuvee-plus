@@ -101,6 +101,11 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   curries; the Boogie frontend reads and prints maps of several indices this
   way, SMT-LIB rejects lambdas of several variables (z3's multi-index arrays
   are not curried), Dafny does not print lambdas.
+  The simplifier binds the variable of a lambda like that of `let`
+  (renamed apart, without polarity), reduces `(λx. e)[t]` to `e[x := t]`
+  (`select`), `λx. a[x]` to `a` (`lam`, eta), and an equation of two
+  lambdas to `forall x :: e == e'` (`eq_`, extensionality); the equation of
+  an array and a lambda is kept, since it defines the array.
 
 - **Traversals:** `expr.map(f)` applies `f` to the immediate subexpressions
   point-wise and keeps bound variables, likewise `upd.map(f)`,
@@ -329,7 +334,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     definition, otherwise as itself, by which rewriting matches a variable
     inside of the expression like its `e` (`Rewrite.matches`), and the helpers
     of the simplifier look through definitions, e.g. read over write of
-    `a == b[i := v]`, testers of `xs == cons(x, ys)`, counters
+    `a == b[i := v]`, beta reduction of `a == (λx. e)` in `a[t]`,
+    testers of `xs == cons(x, ys)`, counters
     `K == counter(0, 1, n)` among the dependencies, and equal definitions in
     `eq_`; a variable is never rewritten on its own;
   - the bound variables in the order of binding (`bound`), and among them

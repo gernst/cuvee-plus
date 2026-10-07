@@ -172,6 +172,23 @@ object Definitions extends TestSuite:
       val ctx_ = Ctx.empty.assume(Eq(a, Store(b, Zero.int, y)))
       simplify(ctx_, Select(a, One.int)) ==> Select(b, One.int)
 
+    // lambdas bind their variable, which is renamed apart from the context, are reduced when applied (beta),
+    // also when an array is defined by one, and are an array whose elements they select (eta)
+    test("lambdas"):
+      val typ = Sort.array(Sort.int, Sort.int)
+      val ctx = Ctx.empty.assume(Eq(x, One.int))
+      val Lam(List(x_), body, _) = simplify(ctx, Lam(List(x), Plus.int(x, y), typ)): @unchecked
+      assert(x_ != x)
+      body ==> Plus.int(x_, y)
+      simplify(Ctx.empty, Lam(List(x), Plus.int(x, Zero.int), typ)) ==> Lam(List(x), x, typ)
+      simplify(Ctx.empty, Lam(List(x), Select(a, x), typ)) ==> a
+      simplify(Ctx.empty, Select(Lam(List(x), Plus.int(x, y), typ), z)) ==> Plus.int(y, z)
+      simplify(Ctx.empty.assume(Eq(a, Lam(List(x), Plus.int(x, y), typ))), Select(a, z)) ==> Plus.int(y, z)
+      // extensionality: equal lambdas have equal bodies, the equation of an array and a lambda is kept
+      simplify(Ctx.empty, Eq(Lam(List(x), Plus.int(x, y), typ), Lam(List(z), Plus.int(y, z), typ))) ==> True
+      simplify(Ctx.empty, Eq(Lam(List(x), x, typ), Lam(List(z), y, typ))) ==> All(List(x), Eq(x, y))
+      simplify(Ctx.empty, Eq(a, Lam(List(x), x, typ))) ==> Eq(a, Lam(List(x), x, typ))
+
     // testers of a variable defined by a constructor application, also with a type annotation
     test("testers"):
       import cuvee.test.Matching.{state, list, nil, cons, xs, ys}

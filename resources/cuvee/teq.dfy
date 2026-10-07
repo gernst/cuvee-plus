@@ -8,7 +8,7 @@
 // the type and the functions of Fun.trace, whose type parameters and formals are numbered as there (Fun.formals)
 
 // the traces of trace equation systems, the values of a variable at the loop head
-type Trace<a₀>
+type {:teq} Trace<a₀>
 // all but the last element of a trace, written ⌊X⌋
 function {:teq} butlast<a₀>(x₀: Trace<a₀>): seq<a₀>
 // counter(i, c, n) is the trace i, i + c, ..., i + n c of n steps

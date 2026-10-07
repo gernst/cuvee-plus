@@ -3,8 +3,6 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
-## NEW
-
 ## General
 
 - The implementations of overloaded operators that are not part of cvc5
