@@ -23,12 +23,12 @@ sealed trait Expr:
       case As(arg, typ)                         => As(f(arg), typ)
       case Diff(xs, arg)                        => Diff(xs, f(arg))
       case Old(arg)                             => Old(f(arg))
-      case Trace(init, deps, acc, bound, upds)  => Trace(f(init), deps.map(f), acc, bound, upds.map(_.map(f)))
-      case Maps(deps, bound, upds)              => Maps(deps.map(f), bound, upds.map(_.map(f)))
+      case Trace(init, deps, acc, bound, upds)  => Trace(f(init), deps.map(f), acc, bound, upds.map(f))
+      case Maps(deps, bound, upds)              => Maps(deps.map(f), bound, upds.map(f))
       case Invs(deps, bound, body)              => Invs(deps.map(f), bound, f(body))
       case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
-      case Match(arg, cases)                    => Match(f(arg), cases.map(_.map(f)))
+      case Match(arg, cases)                    => Match(f(arg), cases.map(f))
 
   // the expression without type annotations e as T
   def removeAs: Expr =
@@ -158,11 +158,11 @@ object Old:
 
       case Trace(init, deps, acc, bound, updates) =>
         val (acc_ :: bound_, inner) = bind(acc :: bound): @unchecked
-        Trace(e(init), deps.map(e), acc_, bound_, updates.map(_.map(inner)))
+        Trace(e(init), deps.map(e), acc_, bound_, updates.map(inner))
 
       case Maps(deps, bound, updates) =>
         val (bound_, inner) = bind(bound)
-        Maps(deps.map(e), bound_, updates.map(_.map(inner)))
+        Maps(deps.map(e), bound_, updates.map(inner))
 
       case Invs(deps, bound, body) =>
         val (bound_, inner) = bind(bound)

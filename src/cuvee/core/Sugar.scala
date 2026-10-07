@@ -48,12 +48,22 @@ extension (self: Iterable[Upd])
 
   def guards = self.map(_.cond).toList
 
+extension (self: List[Upd])
+  // apply `f` to the conditions and right-hand sides of the updates (see Upd.map)
+  @targetName("Upds.map")
+  def map(f: Expr => Expr): List[Upd] = self.map(_.map(f))
+
 extension (self: Iterable[Case])
   @targetName("Cases.free")
   def free = self.flatMap(_.free).toSet
 
   @targetName("Cases.params")
   def params = self.flatMap(_.params).toSet
+
+extension (self: List[Case])
+  // apply `f` to the bodies and conditions of the cases, the patterns are kept (see Case.map)
+  @targetName("Cases.map")
+  def map(f: Expr => Expr): List[Case] = self.map(_.map(f))
 
 extension (self: Iterable[Prog])
   @targetName("Progs.mod")
