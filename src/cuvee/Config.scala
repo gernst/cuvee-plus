@@ -68,6 +68,10 @@ case class Config(
   def using(transform: Transform) =
     copy(transforms = transforms :+ transform)
 
+  // the configuration with `feature` among the features expected from the input
+  def having(feature: String) =
+    copy(features = features + feature)
+
   def reader =
     file match
       case None =>
@@ -109,7 +113,7 @@ object Config:
   val teq =
     flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems"):
       case (config, rest) =>
-        val config_ = config.using(TEQ).copy(features = config.features + "teq")
+        val config_ = config.using(TEQ).having("teq")
         (config_, rest)
 
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
@@ -148,7 +152,7 @@ object Config:
   val hybrid =
     flag("-hybrid", "inject the definitions of parallel composition into Dafny input: chan, event, history, send, receive"):
       case (config, rest) =>
-        val config_ = config.copy(features = config.features + "hybrid")
+        val config_ = config.having("hybrid")
         (config_, rest)
 
   val arch =
@@ -262,7 +266,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.22.2")
+    println("Cuvée 0.22.3")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
