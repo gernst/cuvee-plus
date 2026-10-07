@@ -40,6 +40,13 @@ object Rewrite extends TestSuite:
       R(rules, Minus.int(a, a)) ==> Zero.int
       R(rules, Minus.int(a, b)) ==> Minus.int(a, b)
 
+    // equations match in either orientation
+    test("symmetric equations"):
+      val rules = List(rw(Eq(app(f, x), y), True))
+      R(rules, Eq(app(f, a), b)) ==> True
+      R(rules, Eq(b, app(f, a))) ==> True
+      R(rules, Eq(a, b)) ==> Eq(a, b)
+
     // innermost first, the first rule that applies is used
     test("order"):
       val rules = List(rw(app(f, x), app(g, x)), rw(app(f, x), x))

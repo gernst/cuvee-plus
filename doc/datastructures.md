@@ -353,7 +353,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   match is a `Subst` of the type parameters and variables of the rule,
   modulo type instantiation, A/C and 0 of `+` and `-`, comparisons modulo
   moving summands between the sides (as normalized polynomials of the
-  difference, where `<` on `Int` is `<=` with 1 added), and the binding
+  difference, where `<` on `Int` is `<=` with 1 added), equations modulo
+  symmetry (`a == b` matches `b == a`), and the binding
   structure of `Trace`, `Maps`, and `Invs` ([teq.md](teq.md)).
   A function definition with `:rw` whose body is a match on a parameter
   gives one rule per case, the pattern in place of the parameter, and

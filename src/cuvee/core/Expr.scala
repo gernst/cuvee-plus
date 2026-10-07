@@ -26,6 +26,7 @@ sealed trait Expr:
       case Eps(upds)                            => Eps(upds.map(f))
       case Invs(deps, bound, body)              => Invs(deps.map(f), bound, f(body))
       case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
+      case Lam(bound, body, typ)                => Lam(bound, f(body), typ)
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
       case Match(arg, cases)                    => Match(f(arg), cases.map(f))
 
@@ -149,6 +150,10 @@ object Old:
         val (bound_, inner) = bind(bound)
         Bind(quant, bound_, inner(body))
 
+      case Lam(bound, body, typ) =>
+        val (bound_, inner) = bind(bound)
+        Lam(bound_, inner(body), now(typ))
+
       case Trace(init, deps, acc, bound, update) =>
         val (acc_ :: bound_, inner) = bind(acc :: bound): @unchecked
         Trace(instance(now, before, old, init), deps.map(instance(now, before, old, _)), acc_, bound_, inner(update))
@@ -238,6 +243,12 @@ case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params
   def free = body.free -- bound
   def typ = body.typ
+
+// an anonymous function, whose type is explicit, since it is not determined by the bound variables and the body:
+// for now an array, as the lambda of SMT-LIB, of a single bound variable (see Type.check)
+case class Lam(bound: List[Var], body: Expr, typ: Type) extends Expr:
+  def params = bound.params ++ body.params ++ typ.params
+  def free = body.free -- bound
 
 case class Let(bound: List[Var], args: List[Expr], body: Expr) extends Expr:
   def params = bound.params ++ args.params ++ body.params

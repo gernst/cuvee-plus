@@ -120,6 +120,16 @@ object Rewrite:
         then matches(config, state, ctx, b, ring, Rewrite.summands(ring, pat), Rewrite.summands(ring, expr), Rewrite.arithmetic(expr), m)
         else Nil
 
+      // equations modulo symmetry, e.g. the pattern a[k] == x matches x == a[i]
+      case (App(Fun.eq_, inst, typ, args), App(Fun.eq_, inst_, typ_, args_)) =>
+        val ms =
+          for
+            m1 <- Rewrite.matches(state, inst, inst_, m)
+            m2 <- Rewrite.matches(state, typ, typ_, m1)
+            m3 <- matches(config, state, ctx, b, args, args_, m2) ++ matches(config, state, ctx, b, args, args_.reverse, m2)
+          yield m3
+        ms.distinct
+
       case (App(fun, inst, typ, args), App(fun_, inst_, typ_, args_)) if fun == fun_ && args.length == args_.length =>
         for
           m1 <- Rewrite.matches(state, inst, inst_, m)

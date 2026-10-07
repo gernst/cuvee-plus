@@ -21,8 +21,9 @@ or solvers consume.
 ## Workflow
 
 - New algorithms need not close every goal: report which remain and why.
-- Commit each finished item once it compiles and all tests pass, without
-  being asked: one line `area: what changed; ...; version X.Y.Z`.
+- Commit only when the user explicitly says so, never on your own; when an
+  item is finished (compiles, all tests pass), report and wait. Messages are
+  one line `area: what changed; ...; version X.Y.Z`.
 - Bump `Config.version` ([src/cuvee/Config.scala](src/cuvee/Config.scala))
   in every commit: second digit for major features, third for minor ones.
 - After each commit: `mill -i assembly; cp out/assembly.dest/out.jar cuvee.jar`.
@@ -76,6 +77,8 @@ or solvers consume.
 - **Pretty printing:** wrap parenthesized documents in `Align(...)`.
 - **Imports:** import `cuvee.Error` and `cuvee.Debug` instead of using
   qualified names.
+- **No local shorthand helpers** like `def e(expr: Expr) = expand(state, expr)`;
+  write the call inline, e.g. `args.map(expand(state, _))`.
 - **Dafny output need not be valid Dafny,** e.g. tuple selectors print as
   `tuple2_1(p)`, not `p.1`; do not fix such cases unless asked.
 - **Test catches the bug?** Stash only the fix, run

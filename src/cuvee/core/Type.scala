@@ -157,23 +157,22 @@ object Type:
     xs.map(expand(state, _))
 
   def expand(state: State, expr: Expr): Expr =
-    def e(expr: Expr) = expand(state, expr)
-    def xs(xs: List[Var]) = expand(state, xs)
-    def t(typ: Type) = expand(state, typ)
-
     expr match
-      case x: Var                              => expand(state, x)
-      case Lit(value, typ)                     => Lit(value, t(typ))
-      case App(fun, inst, typ, args)           => App(fun, inst.map(t), t(typ), args.map(e))
-      case As(arg, typ)                        => As(e(arg), t(typ))
-      case Diff(ys, arg)                       => Diff(xs(ys), e(arg))
-      case Trace(init, deps, acc, bound, upd)  => Trace(e(init), deps.map(e), expand(state, acc), xs(bound), e(upd))
-      case Maps(deps, bound, upd)              => Maps(deps.map(e), xs(bound), e(upd))
-      case Invs(deps, bound, body)             => Invs(deps.map(e), xs(bound), e(body))
-      case Bind(quant, bound, body)            => Bind(quant, xs(bound), e(body))
-      case Let(bound, args, body)              => Let(xs(bound), args.map(e), e(body))
-      case Match(arg, cases)                   => Match(e(arg), cases.map(c => Case(e(c.pat), e(c.body), e(c.cond))))
-      case _                                   => expr.map(e)
+      case x: Var                             => expand(state, x)
+      case Lit(value, typ)                    => Lit(value, expand(state, typ))
+      case App(fun, inst, typ, args)          => App(fun, inst.map(expand(state, _)), expand(state, typ), args.map(expand(state, _)))
+      case As(arg, typ)                       => As(expand(state, arg), expand(state, typ))
+      case Diff(ys, arg)                      => Diff(expand(state, ys), expand(state, arg))
+      case Trace(init, deps, acc, bound, upd) =>
+        Trace(expand(state, init), deps.map(expand(state, _)), expand(state, acc), expand(state, bound), expand(state, upd))
+      case Maps(deps, bound, upd)             => Maps(deps.map(expand(state, _)), expand(state, bound), expand(state, upd))
+      case Invs(deps, bound, body)            => Invs(deps.map(expand(state, _)), expand(state, bound), expand(state, body))
+      case Bind(quant, bound, body)           => Bind(quant, expand(state, bound), expand(state, body))
+      case Lam(bound, body, typ)              => Lam(expand(state, bound), expand(state, body), expand(state, typ))
+      case Let(bound, args, body)             => Let(expand(state, bound), args.map(expand(state, _)), expand(state, body))
+      case Match(arg, cases) =>
+        Match(expand(state, arg), cases.map(c => Case(expand(state, c.pat), expand(state, c.body), expand(state, c.cond))))
+      case _ => expr.map(expand(state, _))
 
   // the attributes, whose values are expressions and lists of variables (modifies)
   def expand(state: State, attrs: Attrs): Attrs =
@@ -187,21 +186,15 @@ object Type:
     Attrs(attrs_)
 
   def expand(state: State, prog: Prog): Prog =
-    def e(expr: Expr) = expand(state, expr)
-    def p(prog: Prog) = expand(state, prog)
-    def xs(xs: List[Var]) = expand(state, xs)
-    def a(attrs: Attrs) = expand(state, attrs)
-    def call(c: Call) = Call(c.proc, c.args.map(e), xs(c.res))
-
     prog match
-      case Spec(ys, pre, post)         => Spec(xs(ys), e(pre), e(post))
-      case Assign(lhs, rhs)            => Assign(xs(lhs), rhs.map(e))
-      case c: Call                     => call(c)
-      case Block(locals, progs)        => Block(xs(locals), progs.map(p))
-      case While(test, body, attrs)    => While(e(test), p(body), a(attrs))
-      case Iter(body, attrs)           => Iter(p(body), a(attrs))
-      case Ode(t, ys, rhs, dom, attrs) => Ode(expand(state, t), xs(ys), rhs.map(e), e(dom), a(attrs))
-      case _                           => prog.map(e, p)
+      case Spec(ys, pre, post)         => Spec(expand(state, ys), expand(state, pre), expand(state, post))
+      case Assign(lhs, rhs)            => Assign(expand(state, lhs), rhs.map(expand(state, _)))
+      case Call(proc, args, res)       => Call(proc, args.map(expand(state, _)), expand(state, res))
+      case Block(locals, progs)        => Block(expand(state, locals), progs.map(expand(state, _)))
+      case While(test, body, attrs)    => While(expand(state, test), expand(state, body), expand(state, attrs))
+      case Iter(body, attrs)           => Iter(expand(state, body), expand(state, attrs))
+      case Ode(t, ys, rhs, dom, attrs) => Ode(expand(state, t), expand(state, ys), rhs.map(expand(state, _)), expand(state, dom), expand(state, attrs))
+      case _                           => prog.map(expand(state, _), expand(state, _))
 
   // extend `subst` such that the types become equal, backtracks if they cannot be unified;
   // the parameters of the scope are rigid, defined sorts are unfolded as needed
@@ -396,6 +389,19 @@ object Type:
 
         Error.report("type mismatch", expr, Sort.bool, res):
           unify(state, scope, Sort.bool, res, subst)
+
+      // a lambda of SMT-LIB is an array, whose index is the type of the single bound variable,
+      // and whose values are of the type of the body
+      case Lam(bound, body, typ) =>
+        unfold(state, resolve(subst.value, typ)) match
+          case Sort(Con.array, List(index, value)) if bound.length == 1 =>
+            Error.report("type mismatch", expr, typ, res):
+              unify(state, scope, index, bound.head.typ, subst)
+              unify(state, scope, typ, res, subst)
+            check(state, scope, body, value, subst, pending)
+
+          case _ =>
+            Error.raise("lambda must be an array of a single variable", expr, typ)
 
       case Let(bound, args, body) =>
         check(state, scope, args, bound.types, subst, pending)
