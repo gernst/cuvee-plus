@@ -220,9 +220,13 @@ of `a[0..n)`. With `-teq -split -simplify`, no goal remains:
   is `consts(n, -1)`;
 - **not found**: the traces of `lo` and `hi` match `incs` and `decs`,
   monotonically increasing and decreasing values. In each iteration, they
-  either keep their value (`case C(x, h) => x`) or change under the guard of
-  the program (`case D(x, h) => F(x, h)`), where the increase
-  `D(x, h) ⟹ x < F(x, h)` is a condition of the lemma. The bounds
+  either keep their value (`case C(x, h) => x`) or increase under the guard
+  of the program (`case D(x, h) && x < F(x, h) => F(x, h)`), where `D` is
+  bound to the whole guard, from which the increase must follow. Without the
+  branch on the loop test (see below), the increase does not follow, since
+  the matching decides the guards outside of the trace, where the invariants
+  of the trace itself are not assumed; that would need the context of a
+  partial match. The bounds
   `current(incs(...)) <= b` and `b <= current(decs(...))` follow if the
   initial value and every change are bounded. At the cut after the loop,
   `assert lo <= p && q <= hi; assume lo <= p && q <= hi;`, they prove

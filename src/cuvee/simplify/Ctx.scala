@@ -4,13 +4,7 @@ import cuvee.core._
 
 // a sequent at the current position of the simplifier
 //
-// bound: the variables bound by enclosing binders, one list per binder, innermost first;
-// the variables of one binder are not nested, e.g. in forall x, y. phi, y is not in the scope of x (see Simplify.point)
-//
-// universal, existential: those of the bound variables that are quantified universally and existentially,
-// seen from the current position, i.e., swapped below negations and premises (see flip);
-// the equations x == e of the existential ones are true (one-point rule, see Simplify.point),
-// which is only sound if the context records all siblings between the binder and the current position
+// bound: the variables bound by enclosing binders, one list per binder, innermost first
 //
 // facts: the assumptions, known to hold, and the conclusions, known not to hold (see Facts)
 //
@@ -27,8 +21,6 @@ import cuvee.core._
 // and the remaining number of steps
 case class Ctx(
     bound: List[List[Var]],
-    universal: Set[Var],
-    existential: Set[Var],
     facts: Facts,
     chains: Chains,
     diffs: Diffs,
@@ -49,25 +41,17 @@ case class Ctx(
         case x: Var => Some(chains.chain.getOrElse(x, x))
         case _      => Some(expr)
 
-  // variables bound by let, match, and the combinators, which are neither universal nor existential
+  // variables bound by quantifiers, let, match, lambdas, and the combinators
   def bind(xs: List[Var]) =
     copy(bound = xs :: bound)
 
-  def forall(xs: List[Var]) =
-    copy(bound = xs :: bound, universal = universal ++ xs)
-
-  def exists(xs: List[Var]) =
-    copy(bound = xs :: bound, existential = existential ++ xs)
-
-  // below a negation or in the premise of an implication, where universal variables become existential
-  // and vice versa, since forall x. !phi is !exists x. !!phi
+  // below a negation or in the premise of an implication
   def flip =
-    copy(universal = existential, existential = universal, polarity = polarity.map(!_))
+    copy(polarity = polarity.map(!_))
 
-  // in a position without polarity, also below positions whose siblings are not recorded in the context,
-  // e.g. the other branch of ite, where the one-point rule must not apply
+  // in a position without polarity, e.g. below an equation or in the argument of a function
   def neutral =
-    copy(universal = Set(), existential = Set(), polarity = None)
+    copy(polarity = None)
 
   // variables that occur in the context
   def free: Set[Var] =
@@ -174,7 +158,7 @@ object Ctx:
   def rule(lhs: Expr, rhs: Expr): Boolean =
     !lhs.isInstanceOf[Var] && !lhs.isArith && lhs.free.nonEmpty && rhs.free.isEmpty
 
-  val empty = Ctx(Nil, Set(), Set(), Facts.empty, Chains.empty, Diffs.empty, None)
+  val empty = Ctx(Nil, Facts.empty, Chains.empty, Diffs.empty, None)
 
   // at the top of an asserted formula
   val pos = empty.copy(polarity = Some(true))

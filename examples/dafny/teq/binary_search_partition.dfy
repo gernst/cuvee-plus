@@ -35,17 +35,16 @@ type Trace<a₀>
 function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 function current<a₀>(x₀: Trace<a₀>): a₀
 
-// a value that increases monotonically: in each iteration, it either keeps its value, case C, or changes to F(x, h)
-// under the guard D(x, h), where the guard of the program is bound as a whole, and the increase x < F(x, h) is a
-// condition, decided once C, D, and F are bound
+// a value that increases monotonically: in each iteration, it either keeps its value, case C, or increases to F(x, h)
+// under the guard D(x, h) && x < F(x, h), where D is bound to the whole guard of the program,
+// from which the increase must follow (see Rewrite.guard)
 function incs(x0: int, ks: seq<int>, hs: seq<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
 lemma {:rw} {:free} forall x0: int, i: int, c: int, m: int, hs: seq<int>,
                           C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
-  if forall x: int, h: int :: D(x, h) ==> x < F(x, h)
-  then trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h :: case C(x, h) => x case D(x, h) => F(x, h))
-         == incs(x0, ⌊counter(i, c, m)⌋, hs, D, C, F)
+  trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h :: case C(x, h) => x case D(x, h) && x < F(x, h) => F(x, h))
+    == incs(x0, ⌊counter(i, c, m)⌋, hs, D, C, F)
 
 // the value stays below every bound of the initial value and of each change
 lemma {:rw} {:free} forall x0: int, ks: seq<int>, hs: seq<int>,
@@ -59,9 +58,8 @@ function decs(x0: int, ks: seq<int>, ls: seq<int>,
 
 lemma {:rw} {:free} forall x0: int, i: int, c: int, m: int, ls: seq<int>,
                           C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
-  if forall x: int, l: int :: D(x, l) ==> F(x, l) < x
-  then trace(x0, for ⌊counter(i, c, m)⌋, ls do x, k, l :: case C(x, l) => x case D(x, l) => F(x, l))
-         == decs(x0, ⌊counter(i, c, m)⌋, ls, D, C, F)
+  trace(x0, for ⌊counter(i, c, m)⌋, ls do x, k, l :: case C(x, l) => x case D(x, l) && F(x, l) < x => F(x, l))
+    == decs(x0, ⌊counter(i, c, m)⌋, ls, D, C, F)
 
 // the value stays above every bound of the initial value and of each change
 lemma {:rw} {:free} forall x0: int, ks: seq<int>, ls: seq<int>,

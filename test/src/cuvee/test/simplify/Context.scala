@@ -43,30 +43,36 @@ object Context extends TestSuite:
       val e = App(f, List(x))
       Ctx.empty.assume(Eq(x, e)).chains.chain ==> Map()
 
-    // arithmetic equations are solved for a variable with coefficient 1 or -1 and substituted, the substitution stays acyclic
+    // arithmetic equations are solved for a variable with coefficient 1 or -1, which is not solved yet,
+    // the solutions are inlined into polynomials (see Simplify.poly), the equations remain facts
     test("arithmetic"):
       val e = Plus.int(y, One.int)
       val two = Lit(BigInt(2), Sort.int)
       val forty = Lit(BigInt(40), Sort.int)
       Ctx.empty.assume(Eq(x, e)).chains.chain ==> Map()
-      Ctx.empty.assume(Eq(x, e)).chains.replace ==> Map(x -> e)
-      Ctx.empty.assume(Eq(x, e)).facts.assms ==> Nil
-      Ctx.empty.assume(Eq(Plus.int(x, y), forty)).chains.replace ==> Map(x -> Plus.int(UMinus.int(y), forty))
+      Ctx.empty.assume(Eq(x, e)).chains.solved ==> Map(x -> e)
+      Ctx.empty.assume(Eq(x, e)).facts.assms ==> List(Eq(x, e))
+      Ctx.empty.assume(Eq(Plus.int(x, y), forty)).chains.solved ==> Map(x -> Plus.int(UMinus.int(y), forty))
       // the first variable in the order of the monomials is solved for
       val ctx = Ctx.empty.assume(Eq(y, Plus.int(x, One.int)))
-      ctx.chains.replace ==> Map(x -> Plus.int(y, Lit(BigInt(-1), Sort.int)))
-      // x is replaced already, z == x + 2 is solved neither for x nor for z, whose solution contains x
-      ctx.assume(Eq(z, Plus.int(x, two))).chains.replace ==> ctx.chains.replace
-      // y occurs in a replacement, y == z + 2 is solved for z instead
-      ctx.assume(Eq(y, Plus.int(z, two))).chains.replace ==> ctx.chains.replace + (z -> Plus.int(y, Lit(BigInt(-2), Sort.int)))
+      ctx.chains.solved ==> Map(x -> Plus.int(y, Lit(BigInt(-1), Sort.int)))
+      // x is solved already, z == x + 2 is solved for z
+      ctx.assume(Eq(z, Plus.int(x, two))).chains.solved ==> ctx.chains.solved + (z -> Plus.int(x, two))
+      // the simplifier inlines the solutions
+      val phi = Le.int(z, Plus.int(y, One.int))
+      cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, ctx.assume(Eq(z, Plus.int(x, two))), phi) ==> True
 
-    // a solution must not depend on the variable through definitions in the chain, e.g. n by k + 1 where k == f(n)
+    // a solution may depend on the variable through definitions in the chain, e.g. n by 1 - 2 k where k == f(n),
+    // and is then not inlined, which would loop
     test("cycles"):
       val k = Var("k", Sort.int)
       val n = Var("n", Sort.int)
       val ctx = Ctx.empty.assume(Eq(k, App(f, List(n))))
       ctx.chains.chain ==> Map(k -> App(f, List(n)))
-      assert(!ctx.assume(Eq(n, Plus.int(k, One.int))).chains.replace.contains(n))
+      val ctx_ = ctx.assume(Eq(Plus.int(n, Times.int(Lit(BigInt(2), Sort.int), k)), One.int))
+      assert(ctx_.chains.solved.contains(n))
+      assert(!ctx_.chains.acyclic(n, ctx_.chains.solved(n)))
+      cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, ctx_, Lt.int(Zero.int, n)) ==> Lt.int(Zero.int, n)
 
 // one-point rule: an equation x == e of a quantified variable x that occurs nowhere else is true,
 // negatively below forall and positively below exists
@@ -100,8 +106,8 @@ object OnePoint extends TestSuite:
 
     // the variable occurs elsewhere, or twice in equations; an arithmetic definition is substituted first
     test("used"):
-      val used = All(List(x), Imp(Eq(x, App(f, List(y))), P(x)))
-      simplify(used) ==> used
+      // the definition is substituted at the binder (see Simplify.bind), also if it is no arithmetic expression
+      simplify(All(List(x), Imp(Eq(x, App(f, List(y))), P(x)))) ==> P(App(f, List(y)))
       simplify(All(List(x), Imp(Eq(x, Plus.int(y, One.int)), P(x)))) ==> P(Plus.int(y, One.int))
       // equations between variables substitute first, after which the equation is unused
       simplify(All(List(x), Imp(Eq(x, y), P(x)))) ==> P(y)

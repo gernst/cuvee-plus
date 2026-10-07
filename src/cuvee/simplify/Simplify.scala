@@ -274,12 +274,12 @@ object Simplify extends Transform:
       // bound variables are renamed apart from the context before entering the body
       case All(bound, body) =>
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val body_ = simplify(config, state, ctx.forall(bound_), re(body))
+        val body_ = simplify(config, state, ctx.bind(bound_), re(body))
         all(config, state, ctx, bound_, body_)
 
       case Ex(bound, body) =>
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val body_ = simplify(config, state, ctx.exists(bound_), re(body))
+        val body_ = simplify(config, state, ctx.bind(bound_), re(body))
         ex(config, state, ctx, bound_, body_)
 
       // the body has no polarity, since the context does not record the bindings
@@ -427,7 +427,9 @@ object Simplify extends Transform:
   // simplify an integer- or real-valued term into a polynomial (not normalized):
   // descend through +, -, * and literals, simplify the leaves,
   // which may in turn become arithmetic expressions, and combine the results;
-  // on Real, division by a term that simplifies to a nonzero literal is multiplication by its inverse
+  // on Real, division by a term that simplifies to a nonzero literal is multiplication by its inverse;
+  // variables with the solution of an arithmetic equation in the context are inlined (see Chains.solved),
+  // unless the solution depends on the variable through the equations of the context, which would loop
   def poly(config: Config, state: State, ctx: Ctx, ring: Ring, expr: Expr): Poly =
     expr match
       case ring.num(n: BigInt) =>
@@ -461,16 +463,18 @@ object Simplify extends Transform:
           case _                                  => Poly.atom(DivBy.real(left_.normalize.toExpr(ring), right_))
 
       case _ =>
-        val expr_ = simplify(config, state, ctx, expr)
-        Arith.toPoly(ring, expr_)
+        simplify(config, state, ctx, expr) match
+          case x: Var if ctx.chains.solved.get(x).exists(ctx.chains.acyclic(x, _)) =>
+            poly(config, state, ctx, ring, ctx.chains.solved(x))
 
-  // variables known to be equal to another one, to a literal, or to the solution of an arithmetic equation are replaced,
-  // unless the replacement depends on the variable through the equations of the context, which would loop,
-  // e.g. n by an expression over a trace K with K == counter(0, 1, n) (see Simplify.iterations)
+          case expr_ =>
+            Arith.toPoly(ring, expr_)
+
+  // variables known to be equal to another one or to a literal are replaced
   def var_(config: Config, state: State, ctx: Ctx, x: Var): Expr =
     ctx.chains.replace.get(x) match
-      case Some(e) if ctx.chains.acyclic(x, e) => e
-      case _                                   => x
+      case Some(e) => e
+      case None    => x
 
   def eq_(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     (left, right) match
@@ -479,12 +483,6 @@ object Simplify extends Transform:
 
       // variables with the same definition among the assumptions, or a variable and its definition (see Ctx.↑)
       case (ctx.↑(left_), ctx.↑(right_)) if left_ == right_ =>
-        True
-
-      case (x: Var, e) if point(ctx, x, e) =>
-        True
-
-      case (e, x: Var) if point(ctx, x, e) =>
         True
 
       case (Lit(a, _), Lit(b, _)) =>
@@ -508,20 +506,6 @@ object Simplify extends Transform:
 
       case _ =>
         Eq(left, right)
-
-  // one-point rule: forall x. C[x == e] is C[true] if x == e occurs negatively in C, and exists x. C[x == e] likewise
-  // if it occurs positively, i.e., x is existential seen from the current position (see Ctx.flip),
-  // which neutral positions forget, provided that x does not occur elsewhere, i.e., neither in e nor in the context,
-  // and e does not depend on variables bound inside the scope of x, otherwise x cannot be instantiated by e,
-  // e.g. not in forall x. exists y. !(x == y)
-  def point(ctx: Ctx, x: Var, e: Expr): Boolean =
-    // the variables of the binders inside that of x, those of the binder of x are not nested
-    val inner = ctx.bound.takeWhile(!_.contains(x)).flatten.toSet
-    val existential = ctx.existential contains x
-    val recursive = e.free contains x
-    val used = ctx.used contains x
-    val dependent = (e.free intersect inner).nonEmpty
-    existential && !recursive && !used && !dependent
 
   // equivalences are equations on Bool, the normal form, such that both are known from the context alike,
   // and as which SMT-LIB writes them
@@ -767,13 +751,10 @@ object Simplify extends Transform:
         case (_, right_)                     => op(left.toExpr(ring), right_)
 
   // equations 0 == p on Int or Real are constants if p is, otherwise they are re-arranged like comparisons,
-  // the result is an equation as built by eq_, e.g. by the one-point rule,
-  // which applies also to a variable for which the equation can be solved, e.g. n + x == 40 for x (see Poly.solutions)
+  // the result is an equation as built by eq_
   def eq(config: Config, state: State, ctx: Ctx, ring: Ring, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isZero then True else False
-    else if poly.solutions.exists((x, rest) => point(ctx, x, rest.toExpr(ring)))
-    then True
     else
       val (left, right) = poly.sides
       eq_(config, state, ctx, left.toExpr(ring), right.toExpr(ring))
@@ -843,13 +824,32 @@ object Simplify extends Transform:
       case Or(phis) => or(config, state, ctx, phis.map(bind(config, state, ctx, Ex.name, bound, _)))
       case _        => bind(config, state, ctx, Ex.name, bound, body)
 
-  // unused bound variables are dropped,
-  // the binder vanishes when none remain (sorts are nonempty in SMT-LIB)
+  // one-point rule at the binder: a bound variable x defined by an equation x == e among the antecedents of forall,
+  // or among the conjuncts of exists, where x does not occur in e, is replaced by e, which is then dropped,
+  // e.g. forall x. x == y + 1 ==> p(x) is p(y + 1), since the equation becomes y + 1 == y + 1;
+  // unused bound variables are dropped, the binder vanishes when none remain (sorts are nonempty in SMT-LIB)
   def bind(config: Config, state: State, ctx: Ctx, quant: Name, bound: List[Var], body: Expr): Expr =
-    val bound_ = bound.filter(body.free.contains)
-    if bound_.isEmpty
-    then body
-    else Bind(quant, bound_, body)
+    val candidates =
+      (quant, body) match
+        case (All.name, Imp(phi, _)) => And.flatten(phi)
+        case (All.name, Not(phi))    => And.flatten(phi)
+        case (Ex.name, _)            => And.flatten(body)
+        case _                       => Nil
+
+    val definition =
+      candidates.collectFirst:
+        case Eq(x: Var, e) if bound.contains(x) && !e.free.contains(x) => (x, e)
+        case Eq(e, x: Var) if bound.contains(x) && !e.free.contains(x) => (x, e)
+
+    definition match
+      case Some((x, e)) =>
+        bind(config, state, ctx, quant, bound.filter(_ != x), Subst.from(List(x), List(e))(body))
+
+      case None =>
+        val bound_ = bound.filter(body.free.contains)
+        if bound_.isEmpty
+        then body
+        else Bind(quant, bound_, body)
 
   // eta reduction, the lambda that selects the elements of an array is that array,
   // and the lambda that applies a function value to its variables is that function value

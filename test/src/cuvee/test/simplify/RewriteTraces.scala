@@ -191,3 +191,24 @@ object RewriteTraces extends TestSuite:
       val update = Plus.int(Times.int(s, j), One.int)
       val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), update)
       R(List(rule), expr) ==> app(fold, Zero.int, Butlast(J), Lam(List(s, j), update, Arrow(List(int, int), int)))
+
+    // a guard D(x, v) && φ of the pattern binds D to the whole guard of the expression, from which φ must follow
+    test("higher-order guards"):
+      val Xs = Var("Xs", ints)
+      val D = Var("D", Arrow(List(int, int), Sort.bool))
+      val F = Var("F", Arrow(List(int, int), int))
+      val incs = Fun("incs", Nil, Fun.formals(int, ints, Arrow(List(int, int), Sort.bool), Arrow(List(int, int), int)), trace)
+      val rule = rw(
+        Trace(i, List(Xs), x, List(v), Eps(List(Upd(And(Apply(D, List(x, v)), Lt.int(x, Apply(F, List(x, v)))), Apply(F, List(x, v)))))),
+        app(incs, i, Xs, D, F)
+      )
+
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(Zero.int, j), Plus.int(s, j)))))
+      val App(fun, _, _, List(_, _, d, f)) = R(List(rule), expr): @unchecked
+      fun ==> incs
+      d ==> Lam(List(s, j), Lt.int(Zero.int, j), Arrow(List(int, int), Sort.bool))
+      f ==> Lam(List(s, j), Plus.int(s, j), Arrow(List(int, int), int))
+
+      // the increase does not follow from the guard
+      val other = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(j, Zero.int), Plus.int(s, j)))))
+      R(List(rule), other) ==> other

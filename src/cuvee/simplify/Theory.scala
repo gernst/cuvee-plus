@@ -34,17 +34,20 @@ case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) e
     assms.free ++ concls.free
 
 object Chains:
-  val empty = Chains(Map(), Map())
+  val empty = Chains(Map(), Map(), Map())
 
 // equations of variables, which are never inconsistent, since conflicting equations are not recorded:
 // replace: a substitution that replaces variables by others or by literals known to be equal,
-// or by the solution of an arithmetic equation, e.g. x by 40 - n for n + x == 40,
 // whose equations are no facts of the context (see Ctx.assume);
 // chain: the equations x == e that are not recursive, i.e., where x is not free in e,
 // which remain facts of the context, such that they are still found by Simplify.implied;
-// equations whose right-hand side is a sum, difference, negation, or product are not recorded,
-// since rewriting follows the equations (see Rewrite.matches), whereas arithmetic is normalized instead
-case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory:
+// equations whose right-hand side is a sum, difference, negation, or product are not recorded there,
+// since rewriting follows the equations (see Rewrite.matches), whereas arithmetic is normalized instead;
+// solved: the solutions of arithmetic equations for a variable, e.g. x by 40 - n for n + x == 40,
+// which are inlined into polynomials (see Simplify.poly), and whose equations remain facts of the context;
+// the equations of chain and solved may depend on each other cyclically, since they are looked up one variable
+// at a time (see Ctx.↑), and a solution is inlined only if it does not depend on its variable (see acyclic)
+case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr], solved: Map[Var, Expr]) extends Theory:
   def inconsistent =
     false
 
@@ -59,14 +62,19 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
       case Eq(l: Lit, x: Var) if replaces(x, l) =>
         copy(replace = replace + (x -> l))
 
-      case Eq(left, right) if solve(left, right).nonEmpty =>
-        copy(replace = replace + solve(left, right).get)
+      case Eq(left, right) =>
+        (solve(left, right), left, right) match
+          case (Some(solution), _, _) =>
+            copy(solved = solved + solution)
 
-      case Eq(x: Var, e) if chains(x, e) =>
-        copy(chain = chain + (x -> e))
+          case (None, x: Var, e) if chains(x, e) =>
+            copy(chain = chain + (x -> e))
 
-      case Eq(e, x: Var) if chains(x, e) =>
-        copy(chain = chain + (x -> e))
+          case (None, e, x: Var) if chains(x, e) =>
+            copy(chain = chain + (x -> e))
+
+          case _ =>
+            this
 
       case _ =>
         this
@@ -78,24 +86,18 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
   def replaces(x: Var, e: Expr): Boolean =
     x != e && !(replace contains x)
 
-  // the first solution of an arithmetic equation for a variable that is an arithmetic expression (see Poly.solutions),
-  // single variables and literals are replaced above, other terms are chained below;
-  // the substitution is applied in one step (see Simplify.var_), since the solution contains no variable that is
-  // replaced, and the variable occurs in no replacement; a definition of the chain that the solution depends on
-  // may be added later, e.g. K == counter(0, 1, n) after n is solved by an expression over the trace K,
-  // hence cycles are detected when the replacement is applied (see acyclic)
+  // the first solution of an arithmetic equation for a variable that is not solved or replaced yet,
+  // if it is an arithmetic expression (see Poly.solution); single variables and literals are replaced above,
+  // other terms are chained below
   def solve(left: Expr, right: Expr): Option[(Var, Expr)] =
     Ring(left.typ) match
       case Some(ring) =>
         val poly = (Arith.toPoly(ring, left) - Arith.toPoly(ring, right)).normalize
-        val solutions =
-          for
-            (x, rest) <- poly.solutions
-            e = rest.toExpr(ring)
-            if e.isArith && replaces(x, e)
-            if (e.free intersect replace.keySet).isEmpty && !(replace.values.free contains x)
-          yield (x, e)
-        solutions.headOption
+        for
+          (x, rest) <- poly.solution(x => !(replace contains x) && !(solved contains x))
+          e = rest.toExpr(ring)
+          if e.isArith
+        yield (x, e)
 
       case None =>
         None
@@ -105,14 +107,15 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
   def chains(x: Var, e: Expr): Boolean =
     !(chain contains x) && !(e.free contains x) && !e.isArith
 
-  // whether e does not depend on x through the substitution and the chain, transitively
+  // whether e does not depend on x through the equations, transitively, e.g. the solution of n by an expression
+  // over a trace K with K == counter(0, 1, n), whose inlining would loop (see Simplify.iterations)
   def acyclic(x: Var, e: Expr): Boolean =
     def reach(todo: List[Var], seen: Set[Var]): Set[Var] =
       todo match
         case Nil => seen
         case y :: rest if seen contains y => reach(rest, seen)
         case y :: rest =>
-          val next = (replace.get(y) ++ chain.get(y)).flatMap(_.free).toList
+          val next = (replace.get(y) ++ chain.get(y) ++ solved.get(y)).flatMap(_.free).toList
           reach(next ++ rest, seen + y)
 
     !reach(e.free.toList, Set()).contains(x)

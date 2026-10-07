@@ -500,11 +500,29 @@ object Rewrite:
       case _                                             => false
 
   // the guard of the pattern matches that of the expression, which instantiates the bound variables of the pattern
-  // that do not occur in its result, e.g. b in if b then y + 1, and otherwise it must follow from that of the expression
+  // that do not occur in its result, e.g. b in if b then y + 1, and otherwise it must follow from that of the expression;
+  // a guard D(x, h) && φ of the pattern, whose first conjunct is a higher-order pattern, binds D to the whole guard
+  // of the expression, from which φ must follow, e.g. the increase x < F(x, h) of a case D(x, h) && x < F(x, h) => F(x, h)
   def guard(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     matches(config, state, ctx, b, guard, guard_, m) match
-      case Nil if implies(config, state, ctx, b, guard_, guard, m) => List(m)
-      case ms                                                      => ms
+      case Nil =>
+        val whole =
+          guard match
+            case And((first @ Apply(f: Var, _)) :: rest) if b.isPattern(f) =>
+              for
+                m_ <- matches(config, state, ctx, b, first, guard_, m)
+                if implies(config, state, ctx, b, guard_, And(rest), m_)
+              yield m_
+
+            case _ =>
+              Nil
+
+        if whole.nonEmpty then whole
+        else if implies(config, state, ctx, b, guard_, guard, m) then List(m)
+        else Nil
+
+      case ms =>
+        ms
 
   def implies(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): Boolean =
     if guard == True

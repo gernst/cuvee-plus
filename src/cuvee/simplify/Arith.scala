@@ -101,18 +101,21 @@ case class Poly(const: Rational, monos: List[Mono]):
     def mod(r: Rational) = Rational(r.num mod n.abs)
     Poly(mod(normalize.const), normalize.monos.map(m => Mono(mod(m.factor), m.atoms))).normalize
 
-  // the variables x with coefficient 1 or -1 together with the solution of this == 0 for x, which does not contain x,
-  // e.g. n + x - 40 for x is 40 - n; in the order of the monomials, which is canonical for normalized polynomials
-  def solutions: List[(Var, Poly)] =
-    for
-      mono <- monos
-      x <- mono.atoms match
-        case List((x: Var, e)) if e == 1 => List(x)
-        case _                           => Nil
-      if mono.factor == Rational(1) || mono.factor == Rational(-1)
-      rest = Poly(const, monos.filterNot(_ == mono)) * (-mono.factor)
-      if !rest.monos.exists(_.atoms.exists((atom, _) => atom.free contains x))
-    yield (x, rest)
+  // the first variable x with coefficient 1 or -1 that is `admissible`, together with the solution of this == 0 for x,
+  // which does not contain x, e.g. n + x - 40 for x is 40 - n; in the order of the monomials,
+  // which is canonical for normalized polynomials
+  def solution(admissible: Var => Boolean): Option[(Var, Poly)] =
+    val solutions =
+      for
+        mono <- monos.iterator
+        x <- mono.atoms match
+          case List((x: Var, e)) if e == 1 => List(x)
+          case _                           => Nil
+        if admissible(x) && (mono.factor == Rational(1) || mono.factor == Rational(-1))
+        rest = Poly(const, monos.filterNot(_ == mono)) * (-mono.factor)
+        if !rest.monos.exists(_.atoms.exists((atom, _) => atom.free contains x))
+      yield (x, rest)
+    solutions.nextOption()
 
   // the parts with negative and with positive coefficients, negated and as they are,
   // i.e., (neg, pos) with this = pos - neg, where both have positive coefficients only

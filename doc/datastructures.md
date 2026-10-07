@@ -341,13 +341,14 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     difference constraints on `Int`, closed by incremental Floyd-Warshall
     (`Diffs`), whose negative cycles make the context inconsistent;
   - bound variables;
-  - in `Chains`, equations of variables with variables or literals, and
-    solutions of arithmetic equations for a variable (`solve`), as a map
-    `replace`, which the simplifier substitutes eagerly (`var_`), unless the
-    replacement depends on the variable through the equations of the context
-    at that point, e.g. `n` by an expression over a trace `K` with
-    `K == counter(0, 1, n)`, which would loop; such cycles are detected when
-    the replacement is applied, not when an equation is recorded;
+  - in `Chains`, equations of variables with variables or literals, as a map
+    `replace`, which the simplifier substitutes eagerly (`var_`);
+  - in `Chains`, the solutions of arithmetic equations for a variable
+    (`solve`), e.g. `x` by `40 - n` for `n + x == 40`, as a map `solved`,
+    which `poly` inlines into polynomials, unless the solution depends on the
+    variable through the equations of the context (`acyclic`), e.g. `n` by an
+    expression over a trace `K` with `K == counter(0, 1, n)`, which would
+    loop; the equation remains an assumption;
   - in `Chains`, the non-recursive equations `x == e` among the assumptions whose `e` is
     not an arithmetic operation (`+`, `-`, `*`), as a map `chain` from variables
     to expressions (the equation remains an assumption), also if they depend
@@ -361,11 +362,7 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     testers of `xs == cons(x, ys)`, counters
     `K == counter(0, 1, n)` among the dependencies, and equal definitions in
     `eq_`; a variable is never rewritten on its own;
-  - the bound variables in the order of binding (`bound`), and among them
-    those that are universal and existential at the current position
-    (`universal`, `existential`, added by `forall` and `exists`, while `bind`
-    adds to neither), which `flip` swaps; the equations of the
-    existential ones are true (the one-point rule);
+  - the bound variables in the order of binding (`bound`);
   - the polarity of the position, and whether the context is inconsistent;
   - the rewrite rules and their remaining number of steps
     (`ctx.withRules(rules, steps)`), which all copies share; `Ctx.assume`
@@ -409,7 +406,10 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   the accumulator; for a variable of a dependency, `instantiate` excludes the
   accumulator. A bound variable of a dependency that is a rule variable is
   chosen among those of the expression. The simplifier beta-reduces the
-  instantiated right-hand side.
+  instantiated right-hand side. A guard `D(x, h) && φ` of a case of the
+  pattern, whose first conjunct is a higher-order pattern, binds `D` to the
+  whole guard of the expression, from which `φ` must follow
+  (`Rewrite.guard`), e.g. the increase `x < F(x, h)` of a monotonic trace.
   A function definition with `:rw` whose body is a match on a parameter
   gives one rule per case, the pattern in place of the parameter, and
   pattern variables that shadow other parameters renamed apart
