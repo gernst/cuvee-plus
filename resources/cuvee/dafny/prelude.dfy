@@ -1,14 +1,14 @@
 // the prelude of Dafny, which is parsed into the initial state and injected at the beginning of the commands,
 // where each declaration names the languages that it is part of by their file extensions, {:dfy}, {:bpl}, {:smt2}, {:c},
-// and the output in one of these languages drops it (see cuvee.transform.Language),
+// and the output in one of these languages drops it (see cuvee.pipe.Printer.filter),
 // e.g. the tuples are part of Dafny, but must be declared as datatypes in SMT-LIB;
 // the definitions of parallel composition are injected with the option -hybrid (see hybrid.dfy)
 
 // base types
 type {:dfy} {:bpl} {:smt2} {:c} bool
 type {:dfy} {:bpl} {:smt2} {:c} int
-type {:dfy} {:bpl} {:smt2} {:c} real
-type {:dfy} {:smt2} {:c} string
+type {:dfy} {:bpl} {:smt2} real
+type {:dfy} {:smt2} string
 
 const {:dfy} {:bpl} {:smt2} {:c} true: bool
 const {:dfy} {:bpl} {:smt2} {:c} false: bool
@@ -50,12 +50,12 @@ function {:dfy} {:bpl} {:smt2} {:c} / <a₀>(x₀: a₀, x₁: a₀): a₀
 function {:dfy} {:bpl} {:smt2} {:c} % <a₀>(x₀: a₀, x₁: a₀): a₀
 
 // bitwise and and exclusive or of bitvectors, which never leave the frontend, like the other generic operators
-function {:dfy} {:bpl} {:smt2} {:c} & <a₀>(x₀: a₀, x₁: a₀): a₀
-function {:dfy} {:bpl} {:smt2} {:c} ^ <a₀>(x₀: a₀, x₁: a₀): a₀
+function {:dfy} {:bpl} {:smt2} & <a₀>(x₀: a₀, x₁: a₀): a₀
+function {:dfy} {:bpl} {:smt2} ^ <a₀>(x₀: a₀, x₁: a₀): a₀
 
 // the conversions e as int and e as bv8 of integers and bitvectors, whose result type is the target
 function {:dfy} {:bpl} {:smt2} {:c} as_int<a₀>(x₀: a₀): int
-function {:dfy} {:bpl} {:smt2} {:c} as_bv<a₀, a₁>(x₀: a₀): a₁
+function {:dfy} {:bpl} {:smt2} as_bv<a₀, a₁>(x₀: a₀): a₁
 
 function {:dfy} {:bpl} {:smt2} {:c} < <a₀>(x₀: a₀, x₁: a₀): bool
 function {:dfy} {:bpl} {:smt2} {:c} <= <a₀>(x₀: a₀, x₁: a₀): bool

@@ -72,7 +72,8 @@ object Grammar:
   val dec = T("dec")
   val str = T("str")
 
-  val op = P(sym | J("<") | J(">") | J("*"))
+  // const names constant arrays, too, e.g. in the prelude of C
+  val op = P(sym | J("<") | J(">") | J("*") | J("const"))
   val id = Sym(op)
 
   val nil = R(Nil)

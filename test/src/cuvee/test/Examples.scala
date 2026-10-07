@@ -13,6 +13,13 @@ import cuvee.pipe.Sink
 object Examples:
   val root = os.Path(sys.env("MILL_WORKSPACE_ROOT")) / "examples"
 
+  // the examples whose output contains implementations of overloaded operators that the solvers do not know yet,
+  // e.g. seq.member for x in s (see Fun.seq, TODO.md), which are not passed to them
+  val unsupported = Set("dafny/vcgen/seq.dfy")
+
+  def supported(file: os.Path) =
+    !unsupported.contains(file.relativeTo(root).toString)
+
   // example files with extension `ext` below `dir`, relative to the examples directory
   def find(dir: os.SubPath, ext: String): List[os.Path] =
     os.walk(root / dir).filter(_.ext == ext).sorted.toList

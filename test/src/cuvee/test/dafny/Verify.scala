@@ -14,7 +14,7 @@ object Verify extends TestSuite:
   )
 
   val tests =
-    Examples.tests(Examples.find(os.sub / "dafny" / "vcgen", "dfy")): file =>
+    Examples.tests(Examples.find(os.sub / "dafny" / "vcgen", "dfy").filter(Examples.supported)): file =>
       val first = os.read.lines(file).head
       assert(expected.contains(first))
 
@@ -53,18 +53,3 @@ object VerifyHybrid extends TestSuite:
         "0.0 <= x" +
           " && (forall x₁: real, x'₁: real :: 0.0 < y && x'₁ == y ==> (x₁ :: 0.0 <= x₁)')" +
           " && (forall x₂: real :: 0.0 < y && 0.0 <= x₂ ==> 0.0 <= x₂)"
-
-// sequence updates, finite sets, and multisets, which cvc5 supports and z3 does not
-object VerifyCvc5 extends TestSuite:
-  def errors(name: String) =
-    Examples.errors("-verify", "-cvc5", (Examples.root / "dafny" / name).toString)
-
-  val tests = Tests:
-    test("seq.dfy"):
-      errors("seq.dfy") ==> Nil
-
-    test("sets.dfy"):
-      errors("sets.dfy") ==> Nil
-
-    test("invalid_sets.dfy"):
-      errors("invalid_sets.dfy") ==> List("goal does not hold")

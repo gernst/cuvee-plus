@@ -476,7 +476,7 @@ object Type:
       val first = dispatch(state, subst, app)
 
       Overload.impl(op.name, op.arity, first, unfold(state, resolve(subst.value, typ))) match
-        case Some(Impl(sig, _)) =>
+        case Some((sig, _)) =>
           val su = Subst.fresh(sig.params)
           Error.report("type mismatch", app, sig):
             unify(state, scope, su(sig.args), inst, subst)

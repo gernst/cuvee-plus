@@ -1,16 +1,16 @@
 // the prelude of Boogie, which is parsed into the initial state and injected at the beginning of the commands,
 // where each declaration names the languages that it is part of by their file extensions, {:bpl}, {:dfy}, {:smt2}, {:c},
-// and the output in one of these languages drops it (see cuvee.transform.Language)
+// and the output in one of these languages drops it (see cuvee.pipe.Printer.filter)
 // base types
 type {:bpl} {:dfy} {:smt2} {:c} bool;
 type {:bpl} {:dfy} {:smt2} {:c} int;
-type {:bpl} {:dfy} {:smt2} {:c} real;
+type {:bpl} {:dfy} {:smt2} real;
 
 // SMT-LIB array, written [a]b in Boogie
 type {:bpl} {:dfy} {:smt2} {:c} array<a₀, a₁>;
 
 // sequences, e.g. the dependencies of the combinators of trace equation systems
-type {:bpl} {:dfy} {:smt2} {:c} Seq<a₀>;
+type {:bpl} {:dfy} {:smt2} Seq<a₀>;
 
 const {:bpl} {:dfy} {:smt2} {:c} true: bool;
 const {:bpl} {:dfy} {:smt2} {:c} false: bool;
@@ -44,4 +44,4 @@ function {:bpl} {:dfy} {:smt2} {:c} >= <a₀>(x₀: a₀, x₁: a₀): bool;
 
 function {:bpl} {:dfy} {:smt2} {:c} div(x₀: int, x₁: int): int;
 function {:bpl} {:dfy} {:smt2} {:c} mod(x₀: int, x₁: int): int;
-function {:bpl} {:dfy} {:smt2} {:c} /(x₀: real, x₁: real): real;
+function {:bpl} {:dfy} {:smt2} /(x₀: real, x₁: real): real;

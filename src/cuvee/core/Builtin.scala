@@ -136,6 +136,9 @@ object Seqs:
   object extract extends Sugar.ternary(Fun.seq.extract)
   object contains extends Sugar.binary(Fun.seq.contains)
   object prefixof extends Sugar.binary(Fun.seq.prefixof)
+  object store extends Sugar.ternary(Fun.seq.store)
+  object member extends Sugar.binary(Fun.seq.member)
+  object proper extends Sugar.binary(Fun.seq.proper)
 
 // the functions on finite sets, as in Fun.set
 object Sets:
@@ -155,6 +158,7 @@ object Sets:
   object member extends Sugar.binary(Fun.set.member)
   object subset extends Sugar.binary(Fun.set.subset)
   object card extends Sugar.unary(Fun.set.card)
+  object proper extends Sugar.binary(Fun.set.proper)
 
 // the functions on finite multisets, as in Fun.bag
 object Bags:
@@ -174,6 +178,9 @@ object Bags:
   object count extends Sugar.binary(Fun.bag.count)
   object subbag extends Sugar.binary(Fun.bag.subbag)
   object card extends Sugar.unary(Fun.bag.card)
+  object member extends Sugar.binary(Fun.bag.member)
+  object select extends Sugar.binary(Fun.bag.select)
+  object proper extends Sugar.binary(Fun.bag.proper)
 
 // the functions on finite maps, as in Fun.map
 object FinMaps:
@@ -196,6 +203,7 @@ object FinMaps:
   object get extends Sugar.binary(Fun.map.get)
   object update extends Sugar.associative(Fun.map.update, Assoc.Left)
   object minus extends Sugar.binary(Fun.map.minus)
+  object store extends Sugar.ternary(Fun.map.store)
 
 // the functions on bitvectors of SMT-LIB, which are instantiated for the widths of their arguments,
 // where indexed functions are named by their indexed identifier, e.g. "_ extract 7 0" for (_ extract 7 0)

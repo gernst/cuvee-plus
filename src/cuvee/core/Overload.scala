@@ -3,15 +3,6 @@ package cuvee.core
 import util.Name
 import cuvee.Error
 
-// an implementation of an overloaded operator for one sort constructor of its first argument:
-// its signature, against which the application is type checked, and the expression that replaces the application
-case class Impl(sig: Fun, build: (State, List[Expr]) => Expr)
-
-object Impl:
-  // the application of a function with the same signature
-  def apply(fun: Fun): Impl =
-    Impl(fun, (state, args) => Overload.app(state, fun, args))
-
 // overloaded operators, which are implemented by different functions depending on the type of the first argument:
 // arithmetic and comparisons on Int and Real, e.g. + by Fun.int.plus on Int and by Fun.real.plus on Real,
 // + and <= on sequences, which are concatenation and prefix,
@@ -19,43 +10,111 @@ object Impl:
 // the frontends declare them generically in their preludes, the type checker determines the implementation
 // once the type of the first argument is known and checks the application against its signature (see Type.check),
 // and afterwards, each application is replaced by its implementation (see apply),
-// such that the generic operators never leave the frontend
+// such that the generic operators never leave the frontend;
+// the implementations are grouped by sort constructor like the functions (see Fun), each a pair of
+// the signature, which carries the name of the operator as in Dafny after translation (see dafny.Grammar.translate),
+// e.g. + for the concatenation of sequences, and select and store for indexing and updates s[i] and s[i := v],
+// against which the application is type checked, and the function that replaces the application
 object Overload:
   import Param.a
+  import Param.b
 
-  // the update s[i := v] of a sequence replaces the subsequence of length 1 at index i
-  val seqStore =
-    val sig = Fun("store", List(a), Fun.formals(Sort.seq(a), Sort.int, a), Sort.seq(a))
-    Impl(sig, { case (state, List(s, i, v)) => app(state, Fun.seq.update, List(s, i, Seqs.unit(v))) })
+  // the implementation of operator `op` by `fun`, whose signature is that of `fun`
+  def overload(op: Name, fun: Fun): (Fun, Fun) =
+    (fun.copy(name = op), fun)
 
-  // the update m[k := v] of a map overwrites it by the singleton map
-  val mapStore =
-    val sig = Fun("store", List(a, Param.b), Fun.formals(Sort.map(a, Param.b), a, Param.b), Sort.map(a, Param.b))
-    Impl(sig, { case (state, List(m, k, v)) => app(state, Fun.map.update, List(m, FinMaps.singleton(k, v))) })
-
-  // membership x in s and the cardinality |s| of sequences, sets, and multisets, which the frontends build directly,
+  // membership x in s and the cardinality |s| of sequences, sets, multisets, and maps, which the frontends build directly,
   // where membership is resolved by the type of its second argument (see dispatch)
-  val member = Fun("in", List(a, Param.b), Fun.formals(a, Param.b), Sort.bool)
+  val member = Fun("in", List(a, b), Fun.formals(a, b), Sort.bool)
   val card = Fun("|_|", List(a), Fun.formals(a), Sort.int)
 
-  // x in s for a sequence holds if s contains the sequence [x] of length 1, for a multiset if x occurs in it
-  val seqMember =
-    val sig = Fun("in", List(a), Fun.formals(a, Sort.seq(a)), Sort.bool)
-    Impl(sig, { case (state, List(x, s)) => app(state, Fun.seq.contains, List(s, Seqs.unit(x))) })
+  // negation is generic in Dafny, where it is also the complement of bitvectors
+  object bool:
+    val not = overload("not", Fun.not)
 
-  val bagMember =
-    val sig = Fun("in", List(a), Fun.formals(a, Sort.bag(a)), Sort.bool)
-    Impl(sig, { case (state, List(x, s)) => Lt.int(Zero.int, app(state, Fun.bag.count, List(x, s))) })
+    val all = List(not)
 
-  // the multiplicity s[x] of an element of a multiset
-  val bagSelect =
-    val sig = Fun("select", List(a), Fun.formals(Sort.bag(a), a), Sort.int)
-    Impl(sig, { case (state, List(s, x)) => app(state, Fun.bag.count, List(x, s)) })
+  // arithmetic and comparisons, named as in SMT-LIB, where div and mod are on Int only
+  object int:
+    val uminus = overload("-", Fun.int.uminus)
+    val plus = overload("+", Fun.int.plus)
+    val minus = overload("-", Fun.int.minus)
+    val times = overload("*", Fun.int.times)
+    val div = overload("div", Fun.int.div)
+    val mod = overload("mod", Fun.int.mod)
+    val lt = overload("<", Fun.int.lt)
+    val le = overload("<=", Fun.int.le)
+    val gt = overload(">", Fun.int.gt)
+    val ge = overload(">=", Fun.int.ge)
 
-  // proper prefixes, subsets, and submultisets s < t, which are different
-  def proper(con: Con, fun: Fun) =
-    val sig = Fun("<", List(a), Fun.formals(Sort(con, List(a)), Sort(con, List(a))), Sort.bool)
-    Impl(sig, { case (state, List(s, t)) => And(app(state, fun, List(s, t)), Not(Eq(s, t))) })
+    val all = List(uminus, plus, minus, times, div, mod, lt, le, gt, ge)
+
+  // / is real division, as is div, since Dafny's / translates to div on both types
+  object real:
+    val uminus = overload("-", Fun.real.uminus)
+    val plus = overload("+", Fun.real.plus)
+    val minus = overload("-", Fun.real.minus)
+    val times = overload("*", Fun.real.times)
+    val div = overload("/", Fun.real.div)
+    val div_ = overload("div", Fun.real.div)
+    val lt = overload("<", Fun.real.lt)
+    val le = overload("<=", Fun.real.le)
+    val gt = overload(">", Fun.real.gt)
+    val ge = overload(">=", Fun.real.ge)
+
+    val all = List(uminus, plus, minus, times, div, div_, lt, le, gt, ge)
+
+  object array:
+    val select = overload("select", Fun.select)
+    val store = overload("store", Fun.store)
+
+    val all = List(select, store)
+
+  object seq:
+    val concat = overload("+", Fun.seq.concat)
+    val prefix = overload("<=", Fun.seq.prefixof)
+    val proper = overload("<", Fun.seq.proper)
+    val member = overload("in", Fun.seq.member)
+    val select = overload("select", Fun.seq.nth)
+    val store = overload("store", Fun.seq.store)
+    val card = overload("|_|", Fun.seq.len)
+
+    val all = List(concat, prefix, proper, member, select, store, card)
+
+  object set:
+    val inter = overload("*", Fun.set.inter)
+    val union = overload("+", Fun.set.union)
+    val minus = overload("-", Fun.set.minus)
+    val subset = overload("<=", Fun.set.subset)
+    val proper = overload("<", Fun.set.proper)
+    val member = overload("in", Fun.set.member)
+    val card = overload("|_|", Fun.set.card)
+
+    val all = List(inter, union, minus, subset, proper, member, card)
+
+  object bag:
+    val inter = overload("*", Fun.bag.inter)
+    val union = overload("+", Fun.bag.union)
+    val minus = overload("-", Fun.bag.minus)
+    val subbag = overload("<=", Fun.bag.subbag)
+    val proper = overload("<", Fun.bag.proper)
+    val member = overload("in", Fun.bag.member)
+    val select = overload("select", Fun.bag.select)
+    val card = overload("|_|", Fun.bag.card)
+
+    val all = List(inter, union, minus, subbag, proper, member, select, card)
+
+  // submaps are not strict, there is no < on maps
+  object map:
+    val update = overload("+", Fun.map.update)
+    val minus = overload("-", Fun.map.minus)
+    val subset = overload("<=", Fun.map.subset)
+    val member = overload("in", Fun.map.member)
+    val select = overload("select", Fun.map.get)
+    val store = overload("store", Fun.map.store)
+    val card = overload("|_|", Fun.map.card)
+
+    val all = List(update, minus, subset, member, select, store, card)
 
   // the application of an implementation, whose signature is matched against the argument types,
   // in which defined sorts are expanded already (see Type.expand)
@@ -64,55 +123,20 @@ object Overload:
     val su = Type.bind(state, fun.args, inst)
     App(fun, inst, su(fun.res), args)
 
-  // the implementation of each operator (name and arity) for the sort constructor of its first argument,
-  // named as in SMT-LIB, where div and mod are on Int only and / on Real only,
-  // except that div on Real is real division, since Dafny's / translates to div on both types
-  val table: Map[(Name, Int, Con), Impl] =
-    val arith =
-      for fun <- Fun.int.all ++ Fun.real.all
+  // the implementation of each operator (name and arity) for the sort constructor of the argument that determines it,
+  // by its signature
+  val table: Map[(Name, Int, Con), (Fun, Fun)] =
+    val impls = bool.all ++ int.all ++ real.all ++ array.all ++ seq.all ++ set.all ++ bag.all ++ map.all
+    val entries =
+      for (sig, fun) <- impls
       yield
-        val Sort(con, _) = fun.args.head: @unchecked
-        (fun.name, fun.arity, con) -> Impl(fun)
+        val Sort(con, _) = sig.args(dispatch(sig.name, sig.arity)): @unchecked
+        (sig.name, sig.arity, con) -> (sig, fun)
 
-    val other = List(
-      // negation is generic in Dafny, where it is also the complement of bitvectors
-      (Name("not", None), 1, Con.bool) -> Impl(Fun.not),
-      (Name("*", None), 2, Con.set) -> Impl(Fun.set.inter),
-      (Name("*", None), 2, Con.bag) -> Impl(Fun.bag.inter),
-      (Name("+", None), 2, Con.seq) -> Impl(Fun.seq.concat),
-      (Name("+", None), 2, Con.set) -> Impl(Fun.set.union),
-      (Name("+", None), 2, Con.bag) -> Impl(Fun.bag.union),
-      (Name("+", None), 2, Con.map) -> Impl(Fun.map.update),
-      (Name("-", None), 2, Con.set) -> Impl(Fun.set.minus),
-      (Name("-", None), 2, Con.bag) -> Impl(Fun.bag.minus),
-      (Name("-", None), 2, Con.map) -> Impl(Fun.map.minus),
-      (Name("<", None), 2, Con.seq) -> proper(Con.seq, Fun.seq.prefixof),
-      (Name("<", None), 2, Con.set) -> proper(Con.set, Fun.set.subset),
-      (Name("<", None), 2, Con.bag) -> proper(Con.bag, Fun.bag.subbag),
-      (Name("<=", None), 2, Con.seq) -> Impl(Fun.seq.prefixof),
-      (Name("<=", None), 2, Con.set) -> Impl(Fun.set.subset),
-      (Name("<=", None), 2, Con.bag) -> Impl(Fun.bag.subbag),
-      // submaps, which are not strict, there is no < on maps
-      (Name("<=", None), 2, Con.map) -> Impl(Fun.map.subset),
-      (Name("div", None), 2, Con.real) -> Impl(Fun.real.div),
-      (Name("in", None), 2, Con.seq) -> seqMember,
-      (Name("in", None), 2, Con.set) -> Impl(Fun.set.member),
-      (Name("in", None), 2, Con.bag) -> bagMember,
-      (Name("in", None), 2, Con.map) -> Impl(Fun.map.member),
-      (Name("select", None), 2, Con.array) -> Impl(Fun.select),
-      (Name("select", None), 2, Con.seq) -> Impl(Fun.seq.nth),
-      (Name("select", None), 2, Con.bag) -> bagSelect,
-      (Name("select", None), 2, Con.map) -> Impl(Fun.map.get),
-      (Name("store", None), 3, Con.array) -> Impl(Fun.store),
-      (Name("store", None), 3, Con.seq) -> seqStore,
-      (Name("store", None), 3, Con.map) -> mapStore,
-      (Name("|_|", None), 1, Con.seq) -> Impl(Fun.seq.len),
-      (Name("|_|", None), 1, Con.set) -> Impl(Fun.set.card),
-      (Name("|_|", None), 1, Con.bag) -> Impl(Fun.bag.card),
-      (Name("|_|", None), 1, Con.map) -> Impl(Fun.map.card)
-    )
+    Error.report("ambiguous implementations of overloaded operators", entries.map(_._1).diff(entries.map(_._1).distinct)):
+      require(entries.map(_._1).distinct.length == entries.length)
 
-    Map(arith ++ other*)
+    entries.toMap
 
   // the operators on bitvectors, as named by the frontends, by the functions of SMT-LIB for the width of the arguments,
   // where division, remainder, and the comparisons are unsigned, as in Dafny
@@ -141,17 +165,17 @@ object Overload:
 
   // the conversions of integers and bitvectors from the type `typ` to the type `res`, the identity on equal types;
   // bitvectors are extended by zeros or truncated to the lower bits
-  def conversion(name: Name, typ: Type, res: Type): Option[Impl] =
-    def id = Impl(Fun(name, Nil, Fun.formals(typ), res), { case (_, List(arg)) => arg })
-    def impl(fun: Fun) = Impl(fun.copy(name = name), { case (state, List(arg)) => app(state, fun, List(arg)) })
+  // where the identity is implemented by the conversion itself (see resolve)
+  def conversion(name: Name, typ: Type, res: Type): Option[(Fun, Fun)] =
+    def id = overload(name, Fun(name, Nil, Fun.formals(typ), res))
 
     (name, typ, res) match
       case (`toInt`, Sort.int, Sort.int)               => Some(id)
-      case (`toInt`, BitVec(n), Sort.int)              => BitVecs.fun("bv2nat", Nil, List(n)).map(impl)
-      case (`toBitVec`, Sort.int, BitVec(m))           => Some(impl(BitVecs.int2bv(m)))
+      case (`toInt`, BitVec(n), Sort.int)              => BitVecs.fun("bv2nat", Nil, List(n)).map(overload(name, _))
+      case (`toBitVec`, Sort.int, BitVec(m))           => Some(overload(name, BitVecs.int2bv(m)))
       case (`toBitVec`, BitVec(n), BitVec(m)) if n == m => Some(id)
-      case (`toBitVec`, BitVec(n), BitVec(m)) if n < m  => BitVecs.fun("zero_extend", List(m - n), List(n)).map(impl)
-      case (`toBitVec`, BitVec(n), BitVec(m))           => BitVecs.fun("extract", List(m - 1, 0), List(n)).map(impl)
+      case (`toBitVec`, BitVec(n), BitVec(m)) if n < m  => BitVecs.fun("zero_extend", List(m - n), List(n)).map(overload(name, _))
+      case (`toBitVec`, BitVec(n), BitVec(m))           => BitVecs.fun("extract", List(m - 1, 0), List(n)).map(overload(name, _))
       case _                                            => None
 
   // the position of the argument whose type determines the implementation, the first one except for membership
@@ -169,7 +193,7 @@ object Overload:
   // which only the conversions depend on, if any, where `typ` must be unfolded already;
   // the functions on bitvectors are those of the width of `typ`, whose signatures carry the name of the operator,
   // such that the type checker can match them against the application
-  def impl(name: Name, arity: Int, typ: Type, res: Type): Option[Impl] =
+  def impl(name: Name, arity: Int, typ: Type, res: Type): Option[(Fun, Fun)] =
     typ match
       case _ if name == toInt || name == toBitVec =>
         conversion(name, typ, res)
@@ -178,7 +202,7 @@ object Overload:
         for
           op <- bitvectors.get((name, arity))
           fun <- BitVecs.fun(op, Nil, List.fill(arity)(n))
-        yield Impl(fun.copy(name = name), (state, args) => app(state, fun, args))
+        yield overload(name, fun)
 
       case Sort(con, _) =>
         table.get((name, arity, con))
@@ -211,5 +235,6 @@ object Overload:
     val typ_ = args(dispatch(op.name, op.arity)).typ
 
     impl(op.name, op.arity, typ_, typ) match
-      case Some(Impl(_, build)) => build(state, args)
-      case None                 => Error.raise("operator not defined for type", op.name, typ_)
+      case Some((_, fun)) if fun.name == toInt || fun.name == toBitVec => args.head
+      case Some((_, fun))                                               => Overload.app(state, fun, args)
+      case None                                                         => Error.raise("operator not defined for type", op.name, typ_)

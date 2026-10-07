@@ -21,12 +21,18 @@ object Preludes extends TestSuite:
   val tests = Tests:
     test("smtlib"):
       val state = init(cuvee.smtlib.Source)
-      for fun <- core ++ List(Fun.select, Fun.store, Fun.const, Fun.int.div, Fun.int.mod, Fun.real.div) ++ Fun.seq.all ++ Fun.set.all ++ Fun.map.all
+      for fun <- core ++ List(Fun.select, Fun.store, Fun.const, Fun.int.div, Fun.int.mod, Fun.real.div) ++ Fun.seq.all ++ Fun.set.all ++ Fun.bag.all ++ Fun.map.all
       do same(state, fun)
 
     test("boogie"):
       val state = init(cuvee.boogie.Source)
       for fun <- core ++ List(Fun.select, Fun.store, Fun.int.div, Fun.int.mod, Fun.real.div)
+      do same(state, fun)
+
+    // the core theory with integers and arrays, including constant arrays, where arithmetic is on Int only
+    test("c"):
+      val state = init(cuvee.c.Source)
+      for fun <- core ++ List(Fun.select, Fun.store, Fun.const) ++ Fun.int.all
       do same(state, fun)
 
     // indexing and updates are generic in Dafny, for arrays and sequences, and so is negation, for bitvectors
@@ -66,10 +72,10 @@ object Preludes extends TestSuite:
         val name_ = _root_.util.Name(name, None)
         // the result type determines the implementation of conversions only
         val impl = Overload.impl(name_, args.length, args(Overload.dispatch(name_, args.length)).typ, Param("r"))
-        impl.get.build(state, args.toList)
+        Overload.app(state, impl.get._2, args.toList)
 
       resolve("select", m, k) ==> FinMaps.get(m, k)
-      resolve("store", m, k, v) ==> FinMaps.update(m, FinMaps.singleton(k, v))
+      resolve("store", m, k, v) ==> FinMaps.store(m, k, v)
       resolve("in", k, m) ==> FinMaps.member(k, m)
       resolve("|_|", m) ==> FinMaps.card(m)
       resolve("+", m, n) ==> FinMaps.update(m, n)

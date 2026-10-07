@@ -65,7 +65,12 @@ object Fun:
     val contains = Fun("seq.contains", List(a), formals(Sort.seq(a), Sort.seq(a)), bool)
     val prefixof = Fun("seq.prefixof", List(a), formals(Sort.seq(a), Sort.seq(a)), bool)
 
-    val all = List(empty, unit, concat, len, nth, update, extract, contains, prefixof)
+    // not part of cvc5: the update s[i := v] of a single element, membership x in s, and proper prefixes s < t
+    val store = Fun("seq.store", List(a), formals(Sort.seq(a), Sort.int, a), Sort.seq(a))
+    val member = Fun("seq.member", List(a), formals(a, Sort.seq(a)), bool)
+    val proper = Fun("seq.proper_prefixof", List(a), formals(Sort.seq(a), Sort.seq(a)), bool)
+
+    val all = List(empty, unit, concat, len, nth, update, extract, contains, prefixof, store, member, proper)
 
   // finite sets as in cvc5, where set.empty needs its type, (as set.empty (Set a)), and member takes the element first
   object set:
@@ -78,7 +83,10 @@ object Fun:
     val subset = Fun("set.subset", List(a), formals(Sort.set(a), Sort.set(a)), bool)
     val card = Fun("set.card", List(a), formals(Sort.set(a)), Sort.int)
 
-    val all = List(empty, singleton, union, inter, minus, member, subset, card)
+    // not part of cvc5: proper subsets s < t
+    val proper = Fun("set.proper_subset", List(a), formals(Sort.set(a), Sort.set(a)), bool)
+
+    val all = List(empty, singleton, union, inter, minus, member, subset, card, proper)
 
   // finite multisets (bags) as in cvc5, where bag(x, n) holds x with multiplicity n,
   // the union adds multiplicities, the intersection takes the minimum, and the difference subtracts them
@@ -91,8 +99,14 @@ object Fun:
     val count = Fun("bag.count", List(a), formals(a, Sort.bag(a)), Sort.int)
     val subbag = Fun("bag.subbag", List(a), formals(Sort.bag(a), Sort.bag(a)), bool)
     val card = Fun("bag.card", List(a), formals(Sort.bag(a)), Sort.int)
+    val member = Fun("bag.member", List(a), formals(a, Sort.bag(a)), bool)
 
-    val all = List(empty, make, union, inter, minus, count, subbag, card)
+    // not part of cvc5: the multiplicity s[x] of an element, i.e., bag.count with the arguments swapped,
+    // and proper submultisets s < t
+    val select = Fun("bag.select", List(a), formals(Sort.bag(a), a), Sort.int)
+    val proper = Fun("bag.proper_subbag", List(a), formals(Sort.bag(a), Sort.bag(a)), bool)
+
+    val all = List(empty, make, union, inter, minus, count, subbag, card, member, select, proper)
 
   // finite maps, named like the sets of cvc5, which however has no such theory, where map.empty needs its type,
   // map.get is unspecified outside of the keys, map.update(m, n) overwrites m by n, and map.minus removes keys
@@ -107,8 +121,10 @@ object Fun:
     val get = Fun("map.get", List(a, b), formals(Sort.map(a, b), a), b)
     val update = Fun("map.update", List(a, b), formals(Sort.map(a, b), Sort.map(a, b)), Sort.map(a, b))
     val minus = Fun("map.minus", List(a, b), formals(Sort.map(a, b), Sort.set(a)), Sort.map(a, b))
+    // the update m[k := v] of a single key
+    val store = Fun("map.store", List(a, b), formals(Sort.map(a, b), a, b), Sort.map(a, b))
 
-    val all = List(empty, singleton, card, member, keys, values, subset, get, update, minus)
+    val all = List(empty, singleton, card, member, keys, values, subset, get, update, minus, store)
 
   // the functions on traces and sequences of trace equation systems: counter(i, c, n) is the trace i, i + c, ..., i + n c,
   // current the last element of a trace, butlast (written ⌊X⌋) all but the last element,

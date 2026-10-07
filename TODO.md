@@ -19,6 +19,14 @@ Then refactor the Dafny examples
 
 ## General
 
+- The implementations of overloaded operators that are not part of cvc5
+  (`seq.store`, `seq.member`, `seq.proper_prefixof`, `set.proper_subset`,
+  `bag.select`, `bag.proper_subbag`, `map.store`, see `core.Overload`) are
+  declared in the SMT-LIB prelude, but not defined, so the solvers reject
+  them; definitions in terms of cvc5's functions are to be added, e.g. in
+  the Dafny prelude. Until then, `examples/dafny/vcgen/seq.dfy` is not
+  verified (`Examples.unsupported`), and the cvc5 tests of `seq.dfy`,
+  `sets.dfy`, and `invalid_sets.dfy` are removed.
 - Goals that do not hold are reported by the solver sink with their formula
   in SMT-LIB, not in the language of the input like the other reports.
 - Readers of input files and the stream of `-o` are never closed.

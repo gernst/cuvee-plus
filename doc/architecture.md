@@ -288,8 +288,9 @@ The syntax of the combinators of trace equation systems is in
 
 The SMT-LIB frontend is an exception: it reads s-expressions with the shared
 `sexpr` scanner and turns them into core directly. The C frontend is another:
-it starts from the SMT-LIB prelude, builds expressions on `Int` and `Bool`
-with the sugar directly, and parses the whole translation unit at once, so
+it starts from its own prelude (`resources/cuvee/c/prelude.bpl`, in Boogie),
+which declares the core theory with arithmetic on `Int` only, arrays, and the
+background theory of C, builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
 that it can infer the global variables that each function and each loop
 modifies. SV-COMP task definitions (`.yml`) defer to the C frontend: their
 `Source` overrides `input`, which reads the input on demand, to load the task

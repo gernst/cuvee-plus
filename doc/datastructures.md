@@ -137,13 +137,24 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   the same way for arrays, sequences, and maps, membership `in` for sequences,
   sets, multisets, and maps (dispatched by its second argument). Maps
   (`Fun.map`, sugar `FinMaps`) are not expected to be supported by the
-  solvers; `m[k := v]` is `map.update(m, map.singleton(k, v))`, and the
-  generic `-` takes a second argument of another type for `m - s`. `Type.check` records the
+  solvers, and the
+  generic `-` takes a second argument of another type for `m - s`.
+  Each implementation is a single function of `Fun`, where those that are
+  not part of cvc5 are added, e.g. `seq.member` for `x in s`, `seq.store`
+  for `s[i := v]`, `map.store` for `m[k := v]`, and the proper orders
+  `seq.proper_prefixof`, `set.proper_subset`, `bag.proper_subbag`; the
+  solvers do not accept these yet (see TODO.md). `Type.check` records the
   applications of overloaded operators as pending constraints (a `Ref`
   threaded through checking), which are decided once the dispatch type is
   known, each exactly once, until no further one is decided; the remaining
-  ones are reported as ambiguous. The implementations are in the table
-  `Overload.table`, keyed by operator name, arity, and sort constructor. The generic
+  ones are reported as ambiguous. The implementations are pairs of a
+  signature and a function, grouped by sort constructor like the functions,
+  `Overload.bool`, `.int`, `.real`, `.array`, `.seq`, `.set`, `.bag`, and
+  `.map`. Their signatures carry the name of the operator as in Dafny, e.g.
+  `Overload.seq.concat` has the signature `+(Seq a, Seq a): Seq a` and the
+  function `seq.++` (`Overload.overload`).
+  `Overload.table` is derived from the signatures, keyed by operator name,
+  arity, and the sort constructor of the dispatch argument. The generic
   operators never leave the frontend.
 
 ## Programs ([Prog.scala](../src/cuvee/core/Prog.scala))

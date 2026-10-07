@@ -517,6 +517,10 @@ object Printer extends cuvee.pipe.Printer:
       case Not(Seqs.contains(seq, Seqs.unit(elem))) =>
         operator("!in", List(elem, seq))
 
+      case Seqs.member(elem, seq)      => operator("in", List(elem, seq))
+      case Not(Seqs.member(elem, seq)) => operator("!in", List(elem, seq))
+      case Seqs.proper(left, right)    => operator("<", List(left, right))
+
       // the operations on sets and multisets are overloaded as well
       case Sets.member(elem, set)       => operator("in", List(elem, set))
       case Not(Sets.member(elem, set))  => operator("!in", List(elem, set))
@@ -524,13 +528,18 @@ object Printer extends cuvee.pipe.Printer:
       case Sets.inter(left, right)      => operator("*", List(left, right))
       case Sets.minus(left, right)      => operator("-", List(left, right))
       case Sets.subset(left, right)     => operator("<=", List(left, right))
+      case Sets.proper(left, right)     => operator("<", List(left, right))
+      case Bags.member(elem, bag)       => operator("in", List(elem, bag))
+      case Not(Bags.member(elem, bag))  => operator("!in", List(elem, bag))
       case Bags.union(left, right)      => operator("+", List(left, right))
       case Bags.inter(left, right)      => operator("*", List(left, right))
       case Bags.minus(left, right)      => operator("-", List(left, right))
       case Bags.subbag(left, right)     => operator("<=", List(left, right))
+      case Bags.proper(left, right)     => operator("<", List(left, right))
 
       // the update m[k := v] of a map is printed as an access, see doc
       case FinMaps.update(_, FinMaps.singleton(_, _)) => None
+      case FinMaps.store(_, _, _)                     => None
       case FinMaps.member(key, map)                   => operator("in", List(key, map))
       case Not(FinMaps.member(key, map))              => operator("!in", List(key, map))
       case FinMaps.update(left, right)                => operator("+", List(left, right))
@@ -819,6 +828,9 @@ object Printer extends cuvee.pipe.Printer:
       case FinMaps.update(map, FinMaps.singleton(key, value)) =>
         Group(doc(map, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(key) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
 
+      case FinMaps.store(map, key, value) =>
+        Group(doc(map, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(key) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
+
       case FinMaps.keys(map) =>
         doc(map, operand) ~ text(".Keys")
 
@@ -838,10 +850,16 @@ object Printer extends cuvee.pipe.Printer:
       case Bags.count(elem, bag) =>
         doc(bag, operand) ~ text("[") ~ doc(elem) ~ text("]")
 
+      case Bags.select(bag, elem) =>
+        doc(bag, operand) ~ text("[") ~ doc(elem) ~ text("]")
+
       case Seqs.nth(seq, index) =>
         doc(seq, operand) ~ text("[") ~ doc(index) ~ text("]")
 
       case Seqs.update(seq, index, Seqs.unit(value)) =>
+        Group(doc(seq, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
+
+      case Seqs.store(seq, index, value) =>
         Group(doc(seq, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
 
       // the length is the difference of the bounds, s[i..j] is extract(s, i, j - i)
