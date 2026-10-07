@@ -832,7 +832,7 @@ object Simplify extends Transform:
   // (if there is none, the first dependency is kept)
   def deps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], used: Set[Var]): (List[Expr], List[Var], Subst[Nothing, Var]) =
     val (distinct, re) =
-      (deps zip bound).foldLeft((List.empty[(Expr, Var)], Subst.empty[Nothing, Var])):
+      (deps zip bound).foldLeft[(List[(Expr, Var)], Subst[Nothing, Var])]((Nil, Subst.empty)):
         case ((done, re), (dep, x)) =>
           done.find((dep_, x_) => x_.typ == x.typ && eq_(config, state, ctx.neutral, dep_, dep) == True) match
             case Some((_, x_)) => (done, re + (x -> x_))

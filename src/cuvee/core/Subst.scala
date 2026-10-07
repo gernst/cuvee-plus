@@ -7,7 +7,8 @@ import cuvee.Error
 // substitutions of type parameters by types and of variables by expressions,
 // built from lists of the same length, or as fresh renamings
 object Subst:
-  def empty[T <: Type, E <: Expr] = Subst[T, E](Map(), Map())
+  val empty =
+    Subst(Map(), Map())
 
   @targetName("Subst.freshParams")
   def fresh(params: List[Param]): Subst[Param, Nothing] =
@@ -28,11 +29,9 @@ object Subst:
     val xs_ = xs.fresh
     (xs_, from(xs, xs_))
 
-  // fresh variables for those of `xs` that clash with `avoid` (compared by name, since types may differ),
-  // the others are kept, and the renaming to them
+  // fresh variables for those of `xs` that clash with `avoid`, the others are kept, and the renaming to them
   def rename(xs: List[Var], avoid: Set[Var]): (List[Var], Subst[Nothing, Var]) =
-    val names = avoid.map(_.name)
-    val (_, re) = rename(xs.filter(x => names.contains(x.name)))
+    val (_, re) = rename(xs.filter(avoid))
     (re.lhs(xs), re)
 
   @targetName("Subst.fromVars")
@@ -42,24 +41,25 @@ object Subst:
     Subst(Map(), Map(vars zip exprs*))
 
 // a simultaneous substitution, applied to types, expressions, attributes, and programs,
-// which renames bound variables that would capture the free variables of its range (see avoid)
-case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E]):
+// which renames bound variables that would capture the free variables of its range (see avoid);
+// covariant, since T and E occur only in results, e.g. a renaming Subst[Nothing, Var] is a Subst[Type, Expr]
+case class Subst[+T <: Type, +E <: Expr](params: Map[Param, T], vars: Map[Var, E]):
   // the instantiated type parameters, the substituted variables, and the free variables of the range
   def inst = params.keySet
   def bound = vars.keySet
   def free = vars.values.free
 
   @targetName("Subst.updateParam")
-  def +(pair: (Param, T)) =
+  def +[T_ >: T <: Type](pair: (Param, T_)): Subst[T_, E] =
     Subst(params + pair, vars)
 
   @targetName("Subst.updateVar")
-  def +(pair: (Var, E)) =
+  def +[E_ >: E <: Expr](pair: (Var, E_)): Subst[T, E_] =
     Subst(params, vars + pair)
 
   // the bindings of both substitutions, where those of `that` take precedence,
-  // which may be narrower, e.g. a renaming Subst[Nothing, Var] added to a match Subst[Type, Expr]
-  def ++[T_ <: T, E_ <: E](that: Subst[T_, E_]): Subst[T, E] =
+  // the result is the common supertype, e.g. a match Subst[Type, Expr] for a renaming Subst[Nothing, Var] added to it
+  def ++[T_ >: T <: Type, E_ >: E <: Expr](that: Subst[T_, E_]): Subst[T_, E_] =
     Subst(params ++ that.params, vars ++ that.vars)
 
   // the substitution without the binding of `x`, which is kept as it is
@@ -70,16 +70,12 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   def --(xs: Iterable[Var]) =
     Subst(params, vars -- xs)
 
-  // the renaming of those of `bound` that would capture a free variable of the range,
+  // the renaming of those of `bound` that would capture a free variable of the range, or one of `clash`,
   // and this substitution for the scope of `bound`, where `bound` is no longer substituted but renamed
-  def avoid(bound: List[Var]) =
-    // compare by name since bound variables may change their type
-    val names = free.map(_.name)
-    val captured = bound.filter(x => names.contains(x.name))
-    val alpha = Map(captured zip captured.fresh.map(retype)*)
-
-    val rename = Subst(params, alpha)
-    val that = Subst(params, vars -- bound ++ alpha)
+  def avoid(bound: List[Var], clash: Set[Var] = free) =
+    val (_, re) = Subst.rename(bound, clash)
+    val rename = Subst(params, re.vars.map((x, x_) => (x, retype(x_))))
+    val that = Subst(params, vars -- bound ++ rename.vars)
 
     (rename, that)
 

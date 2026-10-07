@@ -253,7 +253,7 @@ object Type:
   // one-sided matching: instantiate the parameters in `pats` such that they become equal to `types`,
   // parameters occurring in `types` are treated as rigid, defined sorts are unfolded as needed
   def bind(state: State, pats: List[Type], types: List[Type]): Subst[Type, Nothing] =
-    val subst = Ref[Subst[Type, Nothing]](Subst(Map(), Map()))
+    val subst = Ref[Subst[Type, Nothing]](Subst.empty)
     bind(state, pats, types, subst)
     subst.value
 

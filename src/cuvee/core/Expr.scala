@@ -118,7 +118,7 @@ object Old:
   // replace old(e) by e[gs := gs_], where gs_ are the values of the global variables gs at the entry,
   // nested occurrences of old refer to the same values
   def elim(gs: List[Var], gs_ : List[Expr], expr: Expr): Expr =
-    instance(Subst.empty, Subst.empty ++ Subst.from(gs, gs_), expr)
+    instance(Subst.empty, Subst.from(gs, gs_), expr)
 
   // a single traversal that replaces the free variables by `now`, and inside of old(e) by `before`, and strips old,
   // e.g. for the postcondition of a call, whose modified global variables refer to their new values outside of old
@@ -129,27 +129,21 @@ object Old:
 
   // `old` holds inside of old(e)
   def instance(now: Subst[Type, Expr], before: Subst[Type, Expr], old: Boolean, expr: Expr): Expr =
-    def e(expr: Expr) = instance(now, before, old, expr)
-    def t(typ: Type) = now(typ)
     val su = if old then before else now
 
     // the variables bound in the context are no longer replaced, those that would capture
     // a free variable of the replacements are renamed, also in the patterns of cases
     def bind(xs: List[Var]): (List[Var], Expr => Expr) =
-      val names = (now.free ++ before.free).map(_.name)
-      val captured = xs.filter(x => names.contains(x.name))
-      val alpha = Map(captured zip captured.fresh.map(now.retype)*)
-      val xs_ = xs.map(x => alpha.getOrElse(x, now.retype(x)))
-      val now_ = Subst(now.params, now.vars -- xs ++ alpha)
-      val before_ = Subst(before.params, before.vars -- xs ++ alpha)
-      (xs_, instance(now_, before_, old, _))
+      val (rename, now_) = now.avoid(xs, now.free ++ before.free)
+      val before_ = Subst(before.params, before.vars -- xs ++ rename.vars)
+      (rename.lhs(xs), instance(now_, before_, old, _))
 
     expr match
       case x: Var                    => su(x)
-      case Lit(value, typ)           => Lit(value, t(typ))
-      case App(fun, inst, typ, args) => App(fun, inst.map(t), t(typ), args.map(e))
-      case As(arg, typ)              => As(e(arg), t(typ))
-      case Diff(xs, arg)             => Diff(su.lhs(xs), e(arg))
+      case Lit(value, typ)           => Lit(value, now(typ))
+      case App(fun, inst, typ, args) => App(fun, now(inst), now(typ), args.map(instance(now, before, old, _)))
+      case As(arg, typ)              => As(instance(now, before, old, arg), now(typ))
+      case Diff(xs, arg)             => Diff(su.lhs(xs), instance(now, before, old, arg))
       case Old(arg)                  => instance(now, before, true, arg)
 
       case Bind(quant, bound, body) =>
@@ -158,19 +152,19 @@ object Old:
 
       case Trace(init, deps, acc, bound, updates) =>
         val (acc_ :: bound_, inner) = bind(acc :: bound): @unchecked
-        Trace(e(init), deps.map(e), acc_, bound_, updates.map(inner))
+        Trace(instance(now, before, old, init), deps.map(instance(now, before, old, _)), acc_, bound_, updates.map(inner))
 
       case Maps(deps, bound, updates) =>
         val (bound_, inner) = bind(bound)
-        Maps(deps.map(e), bound_, updates.map(inner))
+        Maps(deps.map(instance(now, before, old, _)), bound_, updates.map(inner))
 
       case Invs(deps, bound, body) =>
         val (bound_, inner) = bind(bound)
-        Invs(deps.map(e), bound_, inner(body))
+        Invs(deps.map(instance(now, before, old, _)), bound_, inner(body))
 
       case Let(bound, args, body) =>
         val (bound_, inner) = bind(bound)
-        Let(bound_, args.map(e), inner(body))
+        Let(bound_, args.map(instance(now, before, old, _)), inner(body))
 
       case Match(arg, cases) =>
         val cases_ =
@@ -178,10 +172,10 @@ object Old:
           yield
             val (_, inner) = bind(pat.free.toList)
             Case(inner(pat), inner(body), inner(cond))
-        Match(e(arg), cases_)
+        Match(instance(now, before, old, arg), cases_)
 
       case _ =>
-        expr.map(e)
+        expr.map(instance(now, before, old, _))
 
   // in all expressions and attributes of a program, e.g. assertions and loop invariants
   def elim(gs: List[Var], gs_ : List[Expr], prog: Prog): Prog =

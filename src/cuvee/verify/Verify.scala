@@ -190,7 +190,7 @@ object Verify extends Transform:
     // the substitutions replace the formal parameters and instantiate the type parameters of a polymorphic procedure
     // by the types of the arguments, and those of the results, which su_ replaces in addition,
     // except for the modified global variables inside of old(e)
-    val su = Ref(Subst.empty[Type, Expr])
+    val su = Ref[Subst[Type, Expr]](Subst.empty)
     Type.bind(state, in, args, su)
     val su_ = su.copy
     Type.bind(state, out ++ mod, vars_, su_)
@@ -216,7 +216,7 @@ object Verify extends Transform:
     val Proc(_, _, in, _) = state.procs(name)
     val attrs = state.procattrs(name)
     // the formal parameters are replaced and the type parameters instantiated by the arguments
-    val su = Ref(Subst.empty[Type, Expr])
+    val su = Ref[Subst[Type, Expr]](Subst.empty)
     Type.bind(state, Type.expand(state, in), args, su)
     (su(attrs.assumes), su(attrs.commits))
 
@@ -247,7 +247,7 @@ object Verify extends Transform:
     val pres = instances.map(_._1)
     val fresh = instances.flatMap(_._2)
     val phis = instances.map(_._3)
-    val renamed = instances.map(_._4).foldLeft(Subst.empty[Nothing, Var])(_ ++ _)
+    val renamed = instances.map(_._4).foldLeft[Subst[Nothing, Var]](Subst.empty)(_ ++ _)
     val rename = renamed - h
     val effect = All(fresh, havoc(h, Imp(And(phis ++ commits), rename(post))))
 
