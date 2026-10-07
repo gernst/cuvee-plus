@@ -18,13 +18,12 @@ enum Step:
 // the values of the program variables as a substitution and the steps taken, where each check
 // is conditional on the assumptions and branch conditions before it;
 // a path that has left by a jump (break, continue, or return) skips the remaining statements
-case class Path(su: Map[Var, Expr], steps: List[Step], jump: Option[Prog]):
-  // TODO: rewrite path in terms of Subst
+case class Path(su: Subst[Nothing, Expr], steps: List[Step], jump: Option[Prog]):
   def apply(expr: Expr): Expr =
-    Subst[Type, Expr](Map(), su)(expr)
+    su(expr)
 
   def apply(x: Var): Expr =
-    su.getOrElse(x, x)
+    su(x)
 
   def zs = steps.collect { case Step.Fresh(zs) => zs }.flatten
   def assms = steps.collect { case Step.Assume(phi) => phi }
@@ -32,14 +31,16 @@ case class Path(su: Map[Var, Expr], steps: List[Step], jump: Option[Prog]):
 
   // the checks, each conditional on the assumptions and branch conditions before it
   def checks: List[Expr] =
-    // TODO: write this function as a recursion instead
-    val (_, checks) =
-      steps.foldLeft((List[Expr](), List[Expr]())):
-        case ((ctx, checks), Step.Assume(phi) ) => (ctx :+ phi, checks)
-        case ((ctx, checks), Step.When(phi))    => (ctx :+ phi, checks)
-        case ((ctx, checks), Step.Check(phi))   => (ctx, checks :+ Imp(And(ctx), phi))
-        case ((ctx, checks), Step.Fresh(_))     => (ctx, checks)
-    checks
+    checks(Nil, steps)
+
+  // the checks among `steps`, each conditional on `ctx` and the assumptions and branch conditions before it
+  def checks(ctx: List[Expr], steps: List[Step]): List[Expr] =
+    steps match
+      case Nil                      => Nil
+      case Step.Assume(phi) :: rest => checks(ctx :+ phi, rest)
+      case Step.When(phi) :: rest   => checks(ctx :+ phi, rest)
+      case Step.Check(phi) :: rest  => Imp(And(ctx), phi) :: checks(ctx, rest)
+      case Step.Fresh(_) :: rest    => checks(ctx, rest)
 
   // the assumptions and branch conditions, under which the path is taken
   def context: Expr =
@@ -59,7 +60,7 @@ case class Path(su: Map[Var, Expr], steps: List[Step], jump: Option[Prog]):
     copy(steps = steps :+ Step.Fresh(zs_))
 
   def assign(xs: List[Var], es: List[Expr]) =
-    copy(su = su ++ (xs zip es))
+    copy(su = su ++ Subst.from(xs, es))
 
   // the assumptions A, the branch conditions B, and the checks C of this path as formulas
   def A = And(assms)
@@ -67,7 +68,7 @@ case class Path(su: Map[Var, Expr], steps: List[Step], jump: Option[Prog]):
   def C = And(checks)
 
 object Path:
-  def apply(su: Map[Var, Expr]): Path =
+  def apply(su: Subst[Nothing, Expr]): Path =
     Path(su, Nil, None)
 
   // the formula that the steps of all paths hold, where the paths share their common prefixes,
@@ -132,7 +133,7 @@ object TEQ extends Transform:
         val post_ = Old.elim(gs, gs_, post)
 
         // the postcondition is the last check of each path
-        val paths = symex(state, name, body_, Path(Map()))
+        val paths = symex(state, name, body_, Path(Subst.empty))
         val goal = Path.formula(for p <- paths yield p.check(p(post_)).steps)
 
         val phi = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(goal)))
@@ -170,7 +171,7 @@ object TEQ extends Transform:
         // locals have arbitrary initial values, the values of variables they shadow are restored afterwards
         case Block(locals, progs) =>
           val zs = locals.fresh
-          val outer = locals.map(x => x -> p.su.get(x))
+          val outer = locals.map(x => x -> p.su.vars.get(x))
           for p_ <- symex(state, proc, progs, p.fresh(zs).assign(locals, zs))
           yield
             val su = outer.foldLeft(p_.su):
@@ -224,7 +225,7 @@ object TEQ extends Transform:
       require(state.procdefs contains name)
 
     val zs = out.fresh
-    val outer = (in ++ out).map(x => x -> p.su.get(x))
+    val outer = (in ++ out).map(x => x -> p.su.vars.get(x))
     val entry = p.fresh(zs).assign(in ++ out, args.map(p(_)) ++ zs)
 
     for q <- symex(state, name, state.procdefs(name), entry)
@@ -249,7 +250,7 @@ object TEQ extends Transform:
 
     // the body from an arbitrary state x♯ of the loop variables, the other variables keep their values
     val sharp = xs.fresh
-    val inner = Path(p.su ++ (xs zip sharp))
+    val inner = Path(p.su ++ Subst.from(xs, sharp))
     val paths = symex(state, proc, body, inner).filter(iterates)
 
     // the nondeterministic choices of the body are ranged over by sequences, named after them with a final ?, e.g. Choice?
