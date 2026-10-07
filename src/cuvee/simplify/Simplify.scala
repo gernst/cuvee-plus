@@ -431,11 +431,13 @@ object Simplify extends Transform:
         val expr_ = simplify(config, state, ctx, expr)
         Arith.toPoly(ring, expr_)
 
-  // variables known to be equal to another one or to a literal are replaced
+  // variables known to be equal to another one, to a literal, or to the solution of an arithmetic equation are replaced,
+  // unless the replacement depends on the variable through the equations of the context, which would loop,
+  // e.g. n by an expression over a trace K with K == counter(0, 1, n) (see Simplify.iterations)
   def var_(config: Config, state: State, ctx: Ctx, x: Var): Expr =
     ctx.chains.replace.get(x) match
-      case Some(y) => y
-      case None    => x
+      case Some(e) if ctx.chains.acyclic(x, e) => e
+      case _                                   => x
 
   def eq_(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
     (left, right) match

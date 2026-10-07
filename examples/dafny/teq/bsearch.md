@@ -1,16 +1,19 @@
-# Why binary search is not yet verified with `-teq -simplify`
+# Binary search with `-teq -simplify`
 
-Two versions of the same search are in this directory:
+Three versions of the same search are in this directory:
 
 - [binary_search.dfy](binary_search.dfy) computes the probe at the top of the
   body, `mid := (lo + hi) / 2`, so `mid` is local to an iteration;
 - [binary_search_solution.dfy](binary_search_solution.dfy) makes the probe a
   variable of the loop, computed before the loop and at the end of the body,
   and adds the abstractions `lows`, `highs`, `lts`, `gts`, `eqs` with their
-  lemmas.
+  lemmas;
+- [binary_search_partition.dfy](binary_search_partition.dfy) uses partition
+  points instead, with `break` in the found case. It is verified, given a cut
+  after the loop (see the last section).
 
-Neither is verified. Two goals remain, one for each way the loop can
-terminate:
+The first two are not verified. Two goals remain, one for each way the loop
+can terminate:
 
 - **found**, `0 <= i`: then `i < n && a[i] == x`;
 - **not found**, `!(lo < hi)` with `i < 0`: then `forall k :: 0 <= k < n ==> a[k] != x`.
@@ -200,10 +203,58 @@ where reads become indices, instead of between pairs of reads. The cost:
   guarantee that partition points exist;
 - `lo <= p` and `q <= hi` must again be facts in the context.
 
+## Partition points, verified with a cut
+
+[binary_search_partition.dfy](binary_search_partition.dfy) follows the
+partition points above. The array, its bound, `x`, `p`, and `q` are global
+constants, such that the lemmas `a[m] < x ⟺ m < p`, `x < a[m] ⟺ q <= m`, and
+`a[m] == x ⟺ p <= m < q` are rewrite rules without further variables. They
+assume partition points for all indices, which is stronger than sortedness
+of `a[0..n)`. With `-teq -split -simplify`, no goal remains:
+
+- **found**: the branch with `break` leaves the loop with `i == mid` under
+  `p <= mid < q`, which together with `q <= n` gives `i < n` and `a[i] == x`
+  by the difference constraints;
+- **the exit by the loop test**: `i` keeps its value `-1`, since the
+  simplifier merges the cases of its update, which are all `i`, and the trace
+  is `consts(n, -1)`;
+- **not found**: the traces of `lo` and `hi` match `incs` and `decs`,
+  monotonically increasing and decreasing values. In each iteration, they
+  either keep their value (`case C(x, h) => x`) or change under the guard of
+  the program (`case D(x, h) => F(x, h)`), where the increase
+  `D(x, h) ⟹ x < F(x, h)` is a condition of the lemma. The bounds
+  `current(incs(...)) <= b` and `b <= current(decs(...))` follow if the
+  initial value and every change are bounded. At the cut after the loop,
+  `assert lo <= p && q <= hi; assume lo <= p && q <= hi;`, they prove
+  `lo <= p` and `q <= hi`, which close the cycle `p <= k < q <= hi <= lo <= p`
+  for `a[k] == x` by the difference constraints.
+
+What it needed, and what remains to do in the code instead:
+
+- **The cut.** The bounds are facts about the terms `current(Lo)` and
+  `current(Hi)`, which only occur in the goal through the cut. Facts about
+  terms that occur would make it unnecessary (see
+  [forward.md](../../../forward.md)).
+- **The loop test as a branch.** `-teq` makes only the branch conditions of
+  the body the guards of the updates of the traces; the loop test and
+  assumptions in the body are recorded in `invs` only. The body is therefore
+  wrapped in `if lo < hi`. Inside of a trace, the simplifier assumes the
+  `invs` facts only if their dependencies are among those of the trace
+  (`Simplify.invariants`), which excludes `⌊Lo⌋` in the trace of `lo`, whose
+  values are its accumulator; and the matching decides the guards of a
+  pattern in the context outside of the trace (`Rewrite.implies`).
+- **The midpoint.** The simplifier does not know division, hence
+  `l <= (h + l) / 2` and `(h + l) / 2 < h` for `l < h` are lemmas.
+- **Cycles among the equations.** `Lo == incs(..., ⌊Hi⌋, ...)` and
+  `Hi == decs(..., ⌊Lo⌋, ...)` depend on each other. The matching follows both
+  (`Ctx.↑`), since cycles are excluded only where a replacement of a variable
+  is applied (`Simplify.var_`), not when an equation is recorded.
+
 ## To reproduce
 
 ```
 cuvee -teq examples/dafny/teq/binary_search.dfy                        # the trace equations
 cuvee -teq -simplify -split -simplify examples/dafny/teq/binary_search.dfy
 cuvee -teq -simplify -split -simplify examples/dafny/teq/binary_search_solution.dfy
+cuvee -teq -split -simplify examples/dafny/teq/binary_search_partition.dfy  # no goals remain
 ```

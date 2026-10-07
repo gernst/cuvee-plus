@@ -341,11 +341,18 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     difference constraints on `Int`, closed by incremental Floyd-Warshall
     (`Diffs`), whose negative cycles make the context inconsistent;
   - bound variables;
-  - in `Chains`, equations of variables with variables or literals, as a map `replace`, which
-    the simplifier substitutes eagerly (`var_`);
+  - in `Chains`, equations of variables with variables or literals, and
+    solutions of arithmetic equations for a variable (`solve`), as a map
+    `replace`, which the simplifier substitutes eagerly (`var_`), unless the
+    replacement depends on the variable through the equations of the context
+    at that point, e.g. `n` by an expression over a trace `K` with
+    `K == counter(0, 1, n)`, which would loop; such cycles are detected when
+    the replacement is applied, not when an equation is recorded;
   - in `Chains`, the non-recursive equations `x == e` among the assumptions whose `e` is
     not an arithmetic operation (`+`, `-`, `*`), as a map `chain` from variables
-    to expressions (the equation remains an assumption); the variables are not
+    to expressions (the equation remains an assumption), also if they depend
+    on each other, e.g. of mutually dependent traces, since the chain is looked
+    up one variable at a time; the variables are not
     substituted, but the extractor `ctx.↑(e)` sees a variable as its
     definition, otherwise as itself, by which rewriting matches a variable
     inside of the expression like its `e` (`Rewrite.matches`), and the helpers

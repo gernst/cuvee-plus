@@ -95,6 +95,27 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - The functions on traces are declared only by the lemma database
   ([teq.dfy](resources/cuvee/teq.dfy)), whose names may clash with the input,
   and which inputs cannot use before `-teq` injects it.
+- The guards of the updates of traces are the branch conditions of the body
+  only; the loop test and assumptions in the body are recorded in `invs`
+  (`TEQ.loop`), and inside of a trace, `Simplify.invariants` assumes `invs`
+  facts only if their dependencies are among those of the trace, which
+  excludes the trace's own values, its accumulator. The guards of patterns
+  are decided outside of the trace (`Rewrite.implies`). See
+  [bsearch.md](examples/dafny/teq/bsearch.md), which wraps the body in a
+  branch on the loop test.
+- The guarded cases of an expression are matched in their order, each against
+  some case of the pattern, such that a higher-order guard bound by a later
+  case of the pattern is still open when an earlier case of the expression
+  needs it.
+- Facts about terms are not derived (see [forward.md](forward.md));
+  binary_search_partition.dfy needs a cut, `assert φ; assume φ;`, and `-teq`
+  does not assume assertions.
+- The simplifier knows nothing about division, e.g. `l <= (h + l) / 2` for
+  `l <= h` is a lemma in binary_search_partition.dfy.
+- A replacement by the solution of an arithmetic equation is not applied if
+  it depends on its variable through the equations of the context
+  (`Simplify.var_`); the equation is then lost, since solved equations are no
+  facts of the context.
 - Higher-order patterns (`Rewrite`) take distinct bound variables or terms
   instantiated already as arguments; other arguments match only if an
   earlier occurrence instantiated the variable, and a single bound variable

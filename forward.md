@@ -79,11 +79,16 @@ facts, or side conditions, which are decided by `holds`. Their conclusions
 are simplified and assumed in turn. This allows:
 
 - **General lemmas on sortedness.** `lastlt < k` and `k < lastgt` are derived
-  separately and combined by the context. The combination needs linear
-  arithmetic over the facts of the context, i.e. step 1 of the
-  Fourier–Motzkin proposal in [TODO.md](TODO.md) (deciding comparisons
-  against the linear facts in `Simplify.implied`). Without it,
-  `lastlt < k && k < lastgt` does not give `lastlt + 1 < lastgt`.
+  separately and combined by the context. The difference constraints of the
+  context (`Diffs`) suffice for that: `x - y <= c` over arbitrary atoms,
+  closed under shortest paths, where a negative cycle makes the context
+  inconsistent, e.g. `lastlt + 1 <= k`, `k + 1 <= lastgt`, and
+  `lastgt <= lastlt + 1`. Fourier–Motzkin is not needed for these.
+- **Facts about terms that occur.** The simplest kind of trigger is a term:
+  when `t` occurs, assume a conclusion all of whose variables occur in `t`,
+  e.g. the bounds `current(incs(x0, ...)) <= b` of a monotonic trace (see
+  [binary_search_partition.dfy](examples/dafny/teq/binary_search_partition.dfy)),
+  where `b` is bound by matching the guard of the trace.
 - **Instantiation of `invs` at relevant points**, by term triggers:
 
   ```
@@ -112,10 +117,21 @@ This fits the existing design. `Ctx` holds the facts, the helpers of the
 simplifier stay local (see CLAUDE.md), and conclusions enter as assumptions,
 not as a normal form.
 
+## A manual version: cuts
+
+Until facts are derived, a cut in the program states them:
+`assert φ; assume φ;` after the loop. The assertion is a goal in which the
+atoms of `φ` occur, such that rewrite rules apply to them, and the
+assumption makes `φ` a hypothesis of the later goals (`-teq` checks
+assertions but does not assume them). With the bounds of `incs` and `decs`
+as rewrite rules and `φ` as `lo <= p && q <= hi`, this verifies
+[binary_search_partition.dfy](examples/dafny/teq/binary_search_partition.dfy).
+Option B with facts about terms would make the cut unnecessary.
+
 ## Plan
 
-1. Option A, with the lemma above in `binary_search_solution.dfy`, to check
-   that it closes the not-found cases. It needs no new pass.
-2. Step 1 of Fourier–Motzkin, so that the context combines linear facts.
-3. Option B, starting with fact triggers (sortedness), then term triggers
-   (`invs`, quantified hypotheses).
+1. Facts about terms (option B with term triggers only), with the bounds of
+   monotonic traces, to replace the cut in binary_search_partition.dfy.
+2. Fact triggers (sortedness), then term triggers that instantiate `invs` and
+   quantified hypotheses.
+3. Option A remains the smaller alternative for single goals.

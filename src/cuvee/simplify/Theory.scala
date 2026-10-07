@@ -80,9 +80,10 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
 
   // the first solution of an arithmetic equation for a variable that is an arithmetic expression (see Poly.solutions),
   // single variables and literals are replaced above, other terms are chained below;
-  // the substitution stays acyclic and is applied in one step (see Simplify.var_), since the solution contains no
-  // variable that is replaced, and the variable occurs in no replacement, nor in a definition the solution depends on,
-  // e.g. n by an expression over a trace K with K == counter(0, 1, n), which would loop (see Simplify.iterations)
+  // the substitution is applied in one step (see Simplify.var_), since the solution contains no variable that is
+  // replaced, and the variable occurs in no replacement; a definition of the chain that the solution depends on
+  // may be added later, e.g. K == counter(0, 1, n) after n is solved by an expression over the trace K,
+  // hence cycles are detected when the replacement is applied (see acyclic)
   def solve(left: Expr, right: Expr): Option[(Var, Expr)] =
     Ring(left.typ) match
       case Some(ring) =>
@@ -92,16 +93,17 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
             (x, rest) <- poly.solutions
             e = rest.toExpr(ring)
             if e.isArith && replaces(x, e)
-            if (e.free intersect replace.keySet).isEmpty && !(replace.values.free contains x) && acyclic(x, e)
+            if (e.free intersect replace.keySet).isEmpty && !(replace.values.free contains x)
           yield (x, e)
         solutions.headOption
 
       case None =>
         None
 
-  // whether x == e can be recorded in the chain
+  // whether x == e can be recorded in the chain, also if e depends on x through other equations,
+  // e.g. of mutually dependent traces, since the chain is only looked up one variable at a time (see Ctx.↑)
   def chains(x: Var, e: Expr): Boolean =
-    !(chain contains x) && !(e.free contains x) && !e.isArith && acyclic(x, e)
+    !(chain contains x) && !(e.free contains x) && !e.isArith
 
   // whether e does not depend on x through the substitution and the chain, transitively
   def acyclic(x: Var, e: Expr): Boolean =

@@ -37,8 +37,9 @@ After section 3 of the paper:
 - An update is an expression: a single result, or guarded cases
   `Eps(List(Upd(φᵢ, eᵢ), ...))` with disjoint and complete guards, a variant
   of Hilbert's choice. The parsers build `Eps` only for written guards, the
-  simplifier flattens nested `Eps` (`Eps.flatten`) and replaces a single case
-  with guard `true` by its result. `List[Upd]` has `free`, `params`, and
+  simplifier flattens nested `Eps` (`Eps.flatten`), merges cases with equal
+  results by the disjunction of their guards, and replaces a single case by
+  its result, since the guards are complete. `List[Upd]` has `free`, `params`, and
   `map` like lists of expressions.
 - The functions on traces are in `Fun.trace`: `counter`, `current`, `butlast`
   (the paper's `⌊X⌋`), `length`, `earlier`; `Counter`, `Current`,
