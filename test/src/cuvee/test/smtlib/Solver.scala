@@ -31,7 +31,7 @@ object Solver extends TestSuite:
     try
       val (init, _, _) = cuvee.smtlib.Source.newParser(cuvee.Config.default)
       val sink = cuvee.smtlib.Solver.sink(solver, init)
-      val (result, _) = sink.exec(cmds.init.toList).query(cmds.last)
+      val (result, _, _) = sink.exec(cmds.init.toList).query(cmds.last)
       result
     finally solver.destroy()
 
@@ -153,7 +153,7 @@ object Solver extends TestSuite:
       try
         val (init, _, _) = cuvee.smtlib.Source.newParser(cuvee.Config.default)
         val sink = cuvee.smtlib.Solver.sink(solver, init)
-        val (ack, _) = sink.query(DefineFun(f, y, attrs))
+        val (ack, _, _) = sink.query(DefineFun(f, y, attrs))
 
         ack ==> Ack.Success
         sink.parser.state.funattrs(("f", 1)) ==> attrs

@@ -13,10 +13,10 @@ object Language:
   case class sink(features: Set[String], next: Sink) extends Sink:
     def query(cmd: Cmd) =
       if isPart(features, cmd)
-      then (Ack.Success, this)
+      then (Ack.Success, Nil, this)
       else
-        val (result, next_) = next.query(cmd)
-        (result, copy(next = next_))
+        val (result, added, next_) = next.query(cmd)
+        (result, added, copy(next = next_))
 
   // whether `cmd` is a declaration that has one of `features`
   def isPart(features: Set[String], cmd: Cmd): Boolean =

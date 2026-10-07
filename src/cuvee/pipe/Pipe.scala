@@ -48,14 +48,18 @@ object Pipe:
 
             case _ =>
               try
-                val (result, next) = sink.query(cmd)
+                val (result, added, next) = sink.query(cmd)
                 sink = next
 
-                // Done is not part of the input, its answer is reported only if it has one,
-                // e.g. to a query added by a transform at the end of the input;
-                // several answers to queries added by a transform are reported one by one
-                if cmd != Done || result != Ack.Done then
-                  for result <- Answers.flatten(result)
+                // the answers to queries added by a transform are reported only if the command has no answer,
+                // e.g. Done, which is not part of the input, and whose own answer is never reported
+                val answers =
+                  if result == Ack.Done && added.nonEmpty then added
+                  else if cmd == Done && result == Ack.Done then Nil
+                  else List(result)
+
+                if answers.nonEmpty then
+                  for result <- answers
                   do
                     report.report(result, printSuccess)
                     results.append(result)

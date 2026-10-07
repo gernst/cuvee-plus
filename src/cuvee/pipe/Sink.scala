@@ -7,32 +7,29 @@ import cuvee.Error
 import cuvee.core._
 import java.io.FileOutputStream
 
+// the answer to a command, and separately the answers to the queries that transforms add in front of it,
+// e.g. check-sat and get-model added at the end of the input (see Stage),
+// which are reported only if the command has no answer of its own (Ack.Done, see Pipe.run)
 trait Sink:
-  def query(cmd: Cmd): (Result, Sink)
+  def query(cmd: Cmd): (Result, List[Result], Sink)
 
-  // the answer to `last`, where Done has no answer of its own (Ack.Done),
-  // then the answers to the queries among `cmds` are passed on instead,
-  // e.g. to check-sat and get-model added by a transform at the end of the input,
-  // where queries without answer (Ack.Done) are skipped
-  def query(cmds: List[Cmd], last: Cmd): (Result, Sink) =
+  // the answer to `last`, and the answers to the queries among `cmds` together with those added in front of `last`,
+  // where the answers to each query follow the same rule as in Pipe.run, and queries without answer are skipped
+  def query(cmds: List[Cmd], last: Cmd): (Result, List[Result], Sink) =
     val (answers, sink) =
       cmds.foldLeft((Nil: List[Result], this)):
         case ((answers, sink), cmd: Query) =>
-          val (result, sink_) = sink.query(cmd)
-          (if result == Ack.Done then answers else answers :+ result, sink_)
+          val (result, added, sink_) = sink.query(cmd)
+          (if result == Ack.Done then answers ++ added else answers :+ result, sink_)
 
         case ((answers, sink), cmd) =>
           (answers, sink.exec(cmd))
 
-    val (result, sink_) = sink.query(last)
-
-    (result, answers) match
-      case (Ack.Done, List(answer)) => (answer, sink_)
-      case (Ack.Done, answers @ (_ :: _)) => (Answers(answers), sink_)
-      case _                        => (result, sink_)
+    val (result, added, sink_) = sink.query(last)
+    (result, answers ++ added, sink_)
 
   def exec(cmd: Cmd) =
-    val (result, sink) = query(cmd)
+    val (_, _, sink) = query(cmd)
     sink
 
   def exec(cmds: List[Cmd]): Sink =
@@ -92,7 +89,7 @@ object Sink:
         for (line <- printer.lines(cmd))
           stream.println(line)
 
-      (passive(cmd), this)
+      (passive(cmd), Nil, this)
 
   // appends all commands to `buffer`, e.g. to inspect the output of transforms in tests
   class Collect(buffer: mutable.ListBuffer[Cmd]) extends Sink:
@@ -100,15 +97,15 @@ object Sink:
       if cmd != Done then
         buffer.append(cmd)
 
-      (passive(cmd), this)
+      (passive(cmd), Nil, this)
 
   class Tee(primary: Sink, secondary: List[Sink]) extends Sink:
     def query(cmd: Cmd) =
       val secondary_ =
         for sink <- secondary
         yield
-          val (_, sink_) = sink.query(cmd)
+          val (_, _, sink_) = sink.query(cmd)
           sink_
 
-      val (res, primary_) = primary.query(cmd)
-      (res, Tee(primary_, secondary_))
+      val (result, added, primary_) = primary.query(cmd)
+      (result, added, Tee(primary_, secondary_))

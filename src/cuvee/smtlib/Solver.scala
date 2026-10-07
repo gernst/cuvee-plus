@@ -124,12 +124,12 @@ object Solver:
       cmd match
         // only the attribute :named is passed on, the solvers reject unknown ones, e.g. :rw
         case Assert(Axiom, params, phi, attrs) =>
-          (solver.ack(Assert(Axiom, params, phi, named(attrs))), this)
+          (solver.ack(Assert(Axiom, params, phi, named(attrs))), Nil, this)
 
         // lemmas with the attribute :free are assumed without proof, like axioms,
         // although they are meant to follow from the theory, e.g. lemmas whose proof is left to another tool
         case Assert(Lemma, params, phi, attrs) if attrs.contains("free") =>
-          (solver.ack(Assert(Axiom, params, phi, named(attrs))), this)
+          (solver.ack(Assert(Axiom, params, phi, named(attrs))), Nil, this)
 
         // the solver's answer is reported if the goal is not valid, i.e., sat or unknown
         case Assert(justify, params, phi, attrs) =>
@@ -140,46 +140,46 @@ object Solver:
           if justify == Lemma
           then solver.ack(Assert(Axiom, params, phi, named(attrs)))
 
-          (Ack.Success, this)
+          (Ack.Success, Nil, this)
 
         case CheckSat =>
           val status_ = solver.check()
           status = Some(status_)
-          (status_, this)
+          (status_, Nil, this)
 
         // procedures and global variables are not understood by SMT solvers and must have been eliminated, e.g. with -verify,
         // in particular, z3 accepts declare-var but does not acknowledge it with print-success
         case _: DeclareProc | _: DefineProc | _: DeclareVar =>
-          (Ack.Unsupported, this)
+          (Ack.Unsupported, Nil, this)
 
         case _: GetInfo =>
-          (Parser.info(solver.query(cmd)), this)
+          (Parser.info(solver.query(cmd)), Nil, this)
 
         case _: GetOption =>
-          (Parser.value(solver.query(cmd)), this)
+          (Parser.value(solver.query(cmd)), Nil, this)
 
         case Labels =>
-          (Parser.labels(solver.query(cmd)), this)
+          (Parser.labels(solver.query(cmd)), Nil, this)
 
         // no answer if there is no model, e.g. to the get-model added by Horn when the clauses are unsat
         case GetModel if status != Some(Status.Sat) =>
-          (Ack.Done, this)
+          (Ack.Done, Nil, this)
 
         // a model that cannot be read is reported as an error, which keeps the answer to check-sat before it
         case GetModel =>
           val model =
             try parser.model(solver.query(cmd))
             catch case error: Error => error
-          (model, this)
+          (model, Nil, this)
 
         case Exit =>
           val ack = solver.ack(cmd)
           solver.destroy()
-          (ack, this)
+          (ack, Nil, this)
 
         case Done =>
           solver.destroy()
-          (Ack.Done, this)
+          (Ack.Done, Nil, this)
 
         // the state is updated only once the solver has accepted the declaration,
         // attributes are kept in the state but not sent to the solver
@@ -187,22 +187,22 @@ object Solver:
           val state_ = parser.state.add(decl)
           val ack = solver.ack(noAttrs(decl))
           parser.state = state_
-          (ack, this)
+          (ack, Nil, this)
 
         case Push(depth) =>
           val ack = solver.ack(cmd)
           parser.push(depth)
-          (ack, this)
+          (ack, Nil, this)
 
         // the parser checks first that there are enough levels to pop
         case Pop(depth) =>
           parser.pop(depth)
-          (solver.ack(cmd), this)
+          (solver.ack(cmd), Nil, this)
 
         case Reset =>
           val ack = solver.ack(cmd)
           parser.reset()
-          (ack, this)
+          (ack, Nil, this)
 
     // the names of assertions, e.g. for labels
     def named(attrs: Attrs): Attrs =

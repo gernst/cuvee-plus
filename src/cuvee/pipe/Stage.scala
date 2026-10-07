@@ -46,17 +46,17 @@ case class Stage(
     cmd match
       case decl: Assert =>
         val stage_ = copy(rpending = decl :: rpending)
-        (Ack.Success, stage_)
+        (Ack.Success, Nil, stage_)
 
       case decl: Decl =>
         val stage_ = copy(rpending = decl :: rpending, state = state.add(decl))
-        (Ack.Success, stage_)
+        (Ack.Success, Nil, stage_)
 
       case last =>
         val pending = rpending.reverse
 
         val cmds = transform(config, state, prefix, pending, last)
-        val (result, next_) = next.query(cmds, last)
+        val (result, added, next_) = next.query(cmds, last)
 
         val prefix_ = prefix ++ pending
         val rpending_ = Nil
@@ -64,7 +64,7 @@ case class Stage(
         val stage_ = copy(prefix = prefix_, rpending = rpending_, next = next_)
 
         last match
-          case Push(depth) => (result, stage_.push(depth))
-          case Pop(depth)  => (result, stage_.pop(depth))
-          case Reset       => (result, stage_.reset)
-          case _           => (result, stage_)
+          case Push(depth) => (result, added, stage_.push(depth))
+          case Pop(depth)  => (result, added, stage_.pop(depth))
+          case Reset       => (result, added, stage_.reset)
+          case _           => (result, added, stage_)
