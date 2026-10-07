@@ -293,8 +293,11 @@ object Grammar:
   val local =
     Local(P("var" ~ vars ~ (":=" ~ exprs).? ~ ";"))
 
+  val lhs =
+    Lhs(P(id ~ brackets(expr).*))
+
   val assign =
-    Assign(P(ids ?~ ":=" ~ exprs ~ ";"))
+    Assign(P((lhs ~+ ",") ?~ ":=" ~ exprs ~ ";"))
 
   val call =
     Assign(P(nil ?~ list(inner) ~ ";"))

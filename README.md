@@ -82,7 +82,7 @@ languages or passes it to an SMT solver (z3 or cvc5).
   - nondeterministic repetition, `while * { ... }`.
 
   Verification uses differential cuts and differential weakening (see
-  [examples/dafny/hybrid.dfy](examples/dafny/hybrid.dfy)).
+  [examples/hybrid/ball.dfy](examples/hybrid/ball.dfy)).
 - **Parallel composition:**
   - methods may have assumption-commitment contracts (`assumes`, `commits`)
     over a global history of events, which `send` and `receive` extend;
@@ -91,7 +91,7 @@ languages or passes it to an SMT solver (z3 or cvc5).
   - `-hybrid` declares the channels, events, the history, `send`, and
     `receive` ([resources/cuvee/dafny/hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)).
 
-  See [examples/dafny/par.dfy](examples/dafny/par.dfy).
+  See [examples/hybrid/par.dfy](examples/hybrid/par.dfy).
 
 Known limitations and planned work are listed in [TODO.md](TODO.md).
 
@@ -117,7 +117,7 @@ appear. For example:
 ```sh
 mill -i run -verify -z3 examples/dafny/vcgen/max.dfy          # verify methods
 mill -i run -chc -z3 examples/dafny/vcgen/max.dfy             # infer invariants
-mill -i run -verify -simplify -z3 examples/dafny/hybrid.dfy   # hybrid programs
+mill -i run -verify -simplify -z3 examples/hybrid/ball.dfy    # hybrid programs
 mill -i run -verify -print smt2 examples/dafny/vcgen/max.dfy  # show the goals
 mill -i run -teq examples/dafny/vcgen/sum.dfy                 # trace equation systems
 mill -i run -teq -z3 examples/dafny/vcgen/max.dfy             # loop-free, by symbolic execution

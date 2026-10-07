@@ -322,8 +322,11 @@ A single run is `mill -i run <options> <file>`, e.g.
   solvers; their tests generate the goals only (`-print null`).
 - Example tests run `cuvee.Cuvee.run` on the files in `examples/`, which has
   a subfolder per language (`dafny`, `boogie`, `c`, `smtlib`, `yml`) and per
-  transformation (`dafny/vcgen`, `hybrid`, `simplify`, `transform`), through
-  `Examples.find` and `Examples.tests`:
+  transformation (`dafny/vcgen`, `dafny/horn`, `hybrid`, `simplify`,
+  `transform`), through `Examples.find` and `Examples.tests`; the Dafny
+  examples are all in subfolders, the language features in `dafny/language`,
+  and the loops for trace equation systems in `dafny/teq` (parsed only, not
+  verified yet):
   - every file must parse;
   - the Dafny printer must roundtrip;
   - `examples/simplify/*.smt2` must produce `*.expected.smt2`;

@@ -24,7 +24,7 @@ object Language extends TestSuite:
       case DeclareDatatypes(List(con), _, _) => con.name.name
     .toSet
 
-  val file = (Examples.root / "dafny" / "count.dfy").toString
+  val file = (Examples.root / "dafny" / "language" / "count.dfy").toString
 
   val tests = Tests:
     test("smt2"):

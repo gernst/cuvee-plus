@@ -86,7 +86,9 @@ case object Continue extends Prog
 case object Return extends Prog
 case class Assume(phi: Expr) extends Prog
 case class Assert(phi: Expr) extends Prog
-case class Assign(lhs: List[String], rhs: List[Expr]) extends Prog
+// the left-hand sides of assignments are variables or their elements, a[i][j] := v (see Parser.update)
+case class Lhs(name: String, indices: List[Expr])
+case class Assign(lhs: List[Lhs], rhs: List[Expr]) extends Prog
 case object Skip extends Prog
 case class Block(locals: List[Local], progs: List[Prog]) extends Prog
 case class If(test: Option[Expr], left: Prog, right: Prog) extends Prog
@@ -98,7 +100,8 @@ object Local extends ((List[(String, Type)], Option[List[Expr]]) => Local)
 
 object Assume extends (Expr => Prog)
 object Assert extends (Expr => Prog)
-object Assign extends ((List[String], List[Expr]) => Prog)
+object Lhs extends ((String, List[Expr]) => Lhs)
+object Assign extends ((List[Lhs], List[Expr]) => Prog)
 object Block extends ((List[Local], List[Prog]) => Prog)
 object If extends ((Option[Expr], Prog, Prog) => Prog)
 object While extends ((Option[Expr], List[List[String]], List[Expr], List[List[Expr]], Prog) => Prog)

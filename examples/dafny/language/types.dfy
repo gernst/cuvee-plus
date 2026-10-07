@@ -1,3 +1,4 @@
+// types with members, and datatypes with members, accessed on variables
 type foo {
   function f(x: int): int
   method m(x: int) returns (y: int)

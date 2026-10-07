@@ -1,3 +1,4 @@
+// expected: valid
 // decreases clauses on predicates, methods, and loops,
 // stored as :decreases attributes in order, one per component of the lexicographic measure
 predicate pos(n: int)

@@ -5,18 +5,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## NEW
 
-Then refactor the Dafny examples
-- none should be top-level, all to be in sub-folders
-- I suggest to rename the `bitvectors` subfolder to something like `language` and move all language-feature related tests there.
-  The `decreases` test seems to be related to the vcgen.
-- introduce a subfolder `teq` with the following examples, with correctness formulated as pre-/postconditions;
-  don't attempt to solve/verify them in any way, don't produce tests yet, just the dafny files, don't add loop invariants, use explicit length variables, don't check array bounds, don't use `.Length` on arrays
-  - simple counter loop, correctness: that the counter is n at the end
-  - an array initialization loop with a symbolic value given as method input, asserting that all elements have that value
-  - an array copy loop asserting copy
-  - linear and binary search
-  - swapping the contents of two arrays in a loop
-
 ## General
 
 - The implementations of overloaded operators that are not part of cvc5
@@ -110,7 +98,7 @@ Then refactor the Dafny examples
   `m[x := n]`, `>=` and `>`, disjointness `!!`, `seq(n, f)`, and
   multi-dimensional updates.
 - `x.f` and `x.C?` on variables only; members inside `type`/`datatype` bodies
-  need `this.` ([examples/dafny/stack.dfy](examples/dafny/stack.dfy)). The
+  need `this.` ([examples/datastructures/stack.dfy](examples/datastructures/stack.dfy)). The
   qualified name `T_f` comes from the declared sort of the variable, before
   type checking. Plan:
   1. testers `e.C?` on terms: the constructor determines the datatype
@@ -126,7 +114,7 @@ Then refactor the Dafny examples
   4. method calls on terms (`y := f(x).m()`) need the receiver's sort when
      the statement is built: type check the receiver on its own, otherwise
      keep the restriction; last;
-  5. tests: [stack.dfy](examples/dafny/stack.dfy) without `this.`, nested
+  5. tests: [stack.dfy](examples/datastructures/stack.dfy) without `this.`, nested
      accesses `f(x).g()`, errors for unknown receivers.
 - `var` declarations before statements; contract clauses in the fixed order
   `modifies`, `requires`, `ensures`, `assumes`, `commits`, `decreases`, for
@@ -182,7 +170,7 @@ simplifier rules; widths cannot be parameters.
 
 - Return to the bitvectors of Dafny: the test suites over
   `examples/dafny/vcgen` (`SimplifyPrograms`, `Verify`, `Split`) reported
-  "goal does not hold" for [bitvectors.dfy](examples/dafny/bitvectors/bitvectors.dfy)
+  "goal does not hold" for [bitvectors.dfy](examples/dafny/language/bitvectors.dfy)
   sometimes in the full test run, depending on the tests run before it in the
   same JVM; alone, and with `java -jar cuvee.jar -simplify -verify -z3`, it
   passes. The fresh-name counters are reset per run (`Cuvee.pipe`), so some

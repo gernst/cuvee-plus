@@ -55,6 +55,35 @@ class Parser(var state: State):
       require(unknown.isEmpty)
     names.map(scope.vars(_))
 
+  // the variables that receive the results of a call, which are not updated at indices
+  def results(scope: Scope, lhs: List[Lhs]): List[core.Var] =
+    Error.report("results of calls must be assigned to variables", lhs):
+      require(lhs.forall(_.indices.isEmpty))
+    vars(scope, lhs.map(_.name), "unknown local variables")
+
+  // the update of `base` at `indices` by `value`, a[i][j] := v is a := a[i := a[i][j := v]],
+  // resolved by overloading for arrays, sequences, and maps
+  def update(base: core.Expr, indices: List[core.Expr], value: core.Expr): core.Expr =
+    indices match
+      case Nil =>
+        value
+
+      case index :: rest =>
+        val inner = state.exprs.app("select", List(base, index))
+        val value_ = update(inner, rest, value)
+        state.exprs.app("store", List(base, index, value_))
+
+  // the assignment of `rhs` to the variables `lhs` or their elements, which are updated (see update)
+  def assign(scope: Scope, lhs: List[Lhs], rhs: List[core.Expr]): core.Prog =
+    Error.report("mismatching assignment", lhs, rhs):
+      require(lhs.length == rhs.length)
+
+    val lhs_ = vars(scope, lhs.map(_.name), "unknown local variables")
+    val rhs_ =
+      for (Lhs(_, indices), (x_, expr_)) <- lhs zip (lhs_ zip rhs)
+      yield update(x_, indices.map(resolve(scope, _)), expr_)
+    state.progs.assign(lhs_, rhs_)
+
   // the qualified name of member `fun` of the type of `self`, e.g. pair_fst
   def member(self: core.Var, fun: String) =
     self.typ.name.name + "_" + fun
@@ -641,7 +670,7 @@ class Parser(var state: State):
 
       // calls to top-level methods, with or without results
       case Assign(lhs, List(Inner(App(name, args), Nil))) if state.procs.contains(name) =>
-        val lhs_ = vars(scope, lhs, "unknown local variables")
+        val lhs_ = results(scope, lhs)
         val args_ = args.map(resolve(scope, _))
         state.progs.call(name, args_, lhs_)
 
@@ -651,23 +680,20 @@ class Parser(var state: State):
 
       // all method calls must be top-level on variables, other members are functions (see the access of members)
       case Assign(lhs, List(rhs @ Inner(App(base, Nil), List(Member(fun, args))))) =>
-        val lhs_ = vars(scope, lhs, "unknown local variables")
-
         resolve(scope, App(base, Nil)) match
           case self: core.Var if state.procs.contains(member(self, fun)) =>
+            val lhs_ = results(scope, lhs)
             val args_ = args.map(resolve(scope, _))
             state.progs.call(member(self, fun), self :: args_, lhs_)
 
           case _ =>
-            state.progs.assign(lhs_, List(resolve(scope, rhs)))
+            assign(scope, lhs, List(resolve(scope, rhs)))
 
       case Assign(Nil, rhs) =>
         Error.raise("statement must be a method call", rhs)
 
       case Assign(lhs, rhs) =>
-        val lhs_ = vars(scope, lhs, "unknown local variables")
-        val rhs_ = rhs.map(resolve(scope, _))
-        state.progs.assign(lhs_, rhs_)
+        assign(scope, lhs, rhs.map(resolve(scope, _)))
 
       // locals must not shadow variables in scope, therefore their initial values
       // can be resolved together with the block as assignments at its beginning
@@ -680,7 +706,7 @@ class Parser(var state: State):
 
         val inits =
           for case Local(vars, Some(rhs)) <- locals
-          yield Assign(vars.map(_._1), rhs)
+          yield Assign(vars.map((x, _) => Lhs(x, Nil)), rhs)
 
         val scope_ = scope ++ locals_
         val progs_ = (inits ++ progs).map(resolve(scope_, _))

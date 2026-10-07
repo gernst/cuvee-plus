@@ -57,6 +57,41 @@ object Hybrid extends TestSuite:
       errors(text) ==> Nil
       Examples.check("dfy", text, "-hybrid", "-verify") ==> List("parallel composition of statements that are not calls")
 
+// assignments to elements a[i][j] := v are updates a := a[i := a[i][j := v]] of arrays, sequences, and maps
+object Assignments extends TestSuite:
+  def errors(text: String) =
+    Examples.check("dfy", text)
+
+  // the output printed in Dafny, without errors
+  def printed(text: String): String =
+    val file = os.temp(text, suffix = ".dfy")
+    val out = os.temp(suffix = ".dfy")
+    Examples.errors(file.toString, "-o", out.toString) ==> Nil
+    os.read(out)
+
+  val array = "method m(a: array<int, int>) returns (b: array<int, int>) { b := a; "
+
+  val tests = Tests:
+    test("array"):
+      printed(array + "b[0] := 1; }") ==> printed(array + "b := b[0 := 1]; }")
+
+    test("nested"):
+      val nested = "method m(a: array<int, array<int, int>>) returns (b: array<int, array<int, int>>) { b := a; "
+      printed(nested + "b[0][1] := 2; }") ==> printed(nested + "b := b[0 := b[0][1 := 2]]; }")
+
+    test("sequences and maps"):
+      errors("method m(s: seq<int>) returns (t: seq<int>) { t := s; t[0] := 1; }") ==> Nil
+      errors("method m(n: map<int, bool>) returns (o: map<int, bool>) { o := n; o[0] := true; }") ==> Nil
+
+    // elements of the same variable cannot be assigned at once, since the variable would be assigned twice
+    test("parallel"):
+      val two = "method m(a: array<int, int>) returns (b: array<int, int>, c: int) { b := a; "
+      printed(two + "b[0], c := 1, 2; }") ==> printed(two + "b, c := b[0 := 1], 2; }")
+      errors(array + "b[0], b[1] := b[1], b[0]; }") ==> List("duplicate variables")
+
+    test("results of calls"):
+      errors("method p() returns (x: int) " + array + "b[0] := p(); }") ==> List("results of calls must be assigned to variables")
+
 // slices and updates are on sequences only, indexing falls back to arrays
 object Sequences extends TestSuite:
   def errors(text: String) =
@@ -264,7 +299,7 @@ object Commands extends TestSuite:
 object MutualDatatypes extends TestSuite:
   val tests = Tests:
     test("groups"):
-      val file = Examples.root / "dafny" / "mutual.dfy"
+      val file = Examples.root / "dafny" / "language" / "mutual.dfy"
       val (cmds, errors) = Examples.output("-print", "null", file.toString)
       errors ==> Nil
       val groups =
