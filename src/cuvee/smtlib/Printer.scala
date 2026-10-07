@@ -306,6 +306,11 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(_, _) =>
         Error.raise("unprintable literal", expr)
 
+      // applications of function values (see Apply) as in higher-order SMT-LIB, (f a b),
+      // whose lambdas of several variables are those of function type (see Lam)
+      case Apply(f, args) =>
+        apps(lines(f), lines(args))
+
       // constant arrays need their type, which is not determined by the argument
       case App(Fun.const, inst, typ, List(arg)) =>
         apps(apps(atom("as"), atom("const"), lines(typ)), lines(arg))

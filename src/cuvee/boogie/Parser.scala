@@ -364,7 +364,7 @@ class Parser(var state: State):
         val bound_ = flatten(bound).map(resolve(scope, _))
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
-        state.exprs.lam(bound_, body_)
+        state.exprs.lams(bound_, body_)
 
       case _ =>
         Error.raise("unknown expression", expr)

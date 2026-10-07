@@ -787,7 +787,7 @@ class Parser(private var init: State):
           require(bound_.length == 1)
         val scope_ = scope ++ bound_
         val body_ = expr(scope_, body)
-        state.exprs.lam(bound_, body_)
+        state.exprs.lams(bound_, body_)
 
       // not part of SMT-LIB, the choice of a result whose guard holds, (eps (guard result) ...)
       case List(Id("eps"), cases*) =>

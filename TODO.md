@@ -5,6 +5,13 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## General
 
+- Function types of Dafny (`arrow₁`, ...) and their applications (`apply₁`,
+  ...) are printed in SMT-LIB like those of higher-order SMT-LIB, `(f a b)`
+  and `(lambda ((x Int) (y Int)) e)`, but with the declared sorts `arrow$n`
+  instead of `(-> A B)`; their declarations are marked `{:ho}` and not
+  passed to solvers, and SMT-LIB reads `lambda` as an array and `(f a b)`
+  only for declared functions. To decide: SMT-LIB 2.7 (`->`, `@`) also for
+  reading and solvers, translation to arrays, or rejection.
 - The implementations of overloaded operators that are not part of cvc5
   (`seq.store`, `seq.member`, `seq.proper_prefixof`, `set.proper_subset`,
   `bag.select`, `bag.proper_subbag`, `map.store`, see `core.Overload`) are

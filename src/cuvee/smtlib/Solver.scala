@@ -116,7 +116,8 @@ object Solver:
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
   // and interprets the answers to queries in that state
-  // the declarations that SMT-LIB has built in ({:smt2}, see the preludes) are not passed to the solver,
+  // the declarations that SMT-LIB has built in ({:smt2}, see the preludes) and those of higher-order features ({:ho})
+  // are not passed to the solver,
   // goals that do not hold are reported in SMT-LIB
   class Sink(init: State, solver: Solver) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
@@ -186,7 +187,9 @@ object Solver:
           solver.destroy()
           (Ack.Done, Nil, this)
 
-        case decl: Decl if decl.attrs.contains("smt2") =>
+        // the declarations of higher-order features ({:ho}, e.g. the applications of function values of Dafny)
+        // are not passed either, since the solvers do not support them (polymorphic declarations)
+        case decl: Decl if decl.attrs.contains("smt2") || decl.attrs.contains("ho") =>
           (Ack.Success, Nil, this)
 
         // the state is updated only once the solver has accepted the declaration,

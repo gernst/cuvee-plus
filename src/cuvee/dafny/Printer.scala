@@ -412,9 +412,9 @@ object Printer extends cuvee.pipe.Printer:
       case Par(progs) =>
         text("parallel {") ~ Nest(2, concat(progs.map(hardline ~ doc(_)))) ~ hardline ~ text("}")
 
-  // the tuple types and their constructors, which are declared in the prelude as tuple2, tuple3, ...
+  // the tuple types and their constructors, which are declared in the prelude as tuple₂, tuple₃, ...
   def isTuple(name: Name, arity: Int): Boolean =
-    arity >= 2 && name == Name("tuple" + arity, None)
+    arity >= 2 && name == Name("tuple", Some(arity))
 
   def isTupleType(typ: Type): Boolean =
     typ match
@@ -934,6 +934,13 @@ object Printer extends cuvee.pipe.Printer:
 
       case App(fun, _, _, args) if isTuple(fun.name, args.length) =>
         call("", args.map(doc(_)))
+
+      // applications of function values, as calls of variables and constants, otherwise of the parenthesized value
+      case Apply(f @ (_: Var | App(_, _, _, Nil)), args) =>
+        doc(f) ~ text("(") ~ flow(args.map(doc(_))) ~ text(")")
+
+      case Apply(f, args) =>
+        text("(") ~ Align(doc(f)) ~ text(")") ~ text("(") ~ flow(args.map(doc(_))) ~ text(")")
 
       case App(fun, _, _, args) =>
         call(name(fun.name), args.map(doc(_)))

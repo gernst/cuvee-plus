@@ -292,11 +292,11 @@ case class State(
 
     // lambdas are arrays of a single index, those of several variables are nested (see Lams),
     // the type of the values is resolved by type checking
-    def lam(bound: List[Var], body: Expr) =
+    def lams(bound: List[Var], body: Expr) =
       Lams(bound, body)
 
     // lambdas of function type (see Arrow), which must be declared for the number of variables
-    def lambda(bound: List[Var], body: Expr) =
+    def lam(bound: List[Var], body: Expr) =
       val name = Arrow.con(bound.length).name
       Error.report("function type not declared", name):
         require(sorts.contains(name))

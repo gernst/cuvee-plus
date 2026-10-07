@@ -103,11 +103,11 @@ class Quant(val name: Name):
 object All extends Quant("forall")
 object Ex extends Quant("exists")
 
-// function types (A₁, ..., Aₙ) -> R of Dafny, the sorts arrow1, arrow2, ... of its prelude,
+// function types (A₁, ..., Aₙ) -> R of Dafny, the sorts arrow₁, arrow₂, ... of its prelude,
 // whose last argument is the result
 object Arrow:
   def con(arity: Int) =
-    Con(Name("arrow" + arity, None), arity + 1)
+    Con(Name("arrow", Some(arity)), arity + 1)
 
   def apply(args: List[Type], res: Type): Type =
     Sort(con(args.length), args :+ res)
@@ -116,6 +116,21 @@ object Arrow:
     typ match
       case Sort(con_, args) if args.nonEmpty && con_ == con(args.length - 1) => Some((args.init, args.last))
       case _                                                                  => None
+
+// applications f(a₁, ..., aₙ) of function values (see Arrow), by the functions apply₁, apply₂, ... of the prelude of Dafny,
+// whose type parameters are those of the function type
+object Apply:
+  def fun(arity: Int): Fun =
+    val params = List.tabulate(arity + 1)(i => Param(Name("a", Some(i))))
+    Fun(Name("apply", Some(arity)), params, Fun.formals(Arrow(params.init, params.last) :: params.init*), params.last)
+
+  def apply(f: Expr, args: List[Expr]): Expr =
+    App(fun(args.length), f :: args)
+
+  def unapply(expr: Expr): Option[(Expr, List[Expr])] =
+    expr match
+      case App(fun_, _, _, f :: args) if fun_ == fun(args.length) => Some((f, args))
+      case _                                                     => None
 
 // lambdas of several variables as nested lambdas of a single variable, which are arrays (see Lam),
 // e.g. (lambda x: int, y: int :: e) of Boogie; unapply collects all nested lambdas of array type

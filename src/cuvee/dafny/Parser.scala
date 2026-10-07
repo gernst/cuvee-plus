@@ -84,9 +84,17 @@ class Parser(var state: State):
       yield update(x_, indices.map(resolve(scope, _)), expr_)
     state.progs.assign(lhs_, rhs_)
 
-  // the qualified name of member `fun` of the type of `self`, e.g. pair_fst
+  // the application of a function value by the application function of the prelude for the number of arguments
+  // (see core.Apply), whose type is resolved by type checking
+  def apply(scope: Scope, f: core.Expr, args: List[Expr]): core.Expr =
+    Error.report("application of a value that is not a function", f):
+      require(core.Arrow.unapply(f.typ).isDefined)
+    state.exprs.app(Name("apply", Some(args.length)), f :: args.map(resolve(scope, _)))
+
+  // the qualified name of member `fun` of the type of `self`, e.g. pair_fst, as declared with the name of the type
+  // written with its subscripts, e.g. tuple₂_0
   def member(self: core.Var, fun: String) =
-    self.typ.name.name + "_" + fun
+    self.typ.name.subscripted + "_" + fun
 
   // whether `fun` with `arity` arguments is a function or method of the type of `this` in scope,
   // i.e., inside the members of a type
@@ -177,7 +185,8 @@ class Parser(var state: State):
         for data <- datas
         do datatype(data)
 
-        val names = datas.map(data => Name(data.name, None))
+        // names with subscripts are indexed, e.g. tuple₂
+        val names = datas.map(data => data.name: Name)
         val decls = groups(names).map(state.cmds.declareDatatypes)
 
         val members =
@@ -326,7 +335,7 @@ class Parser(var state: State):
       // the tuple types are declared in the prelude
       case Product(args) =>
         val args_ = args.map(resolve(scope, _))
-        state.types.sort("tuple" + args.length, args_)
+        state.types.sort(Name("tuple", Some(args.length)), args_)
 
       // the function types are declared in the prelude, (A, B) -> C has two arguments, ((A, B)) -> C a tuple
       case Arrow(arg, res) =>
@@ -335,7 +344,7 @@ class Parser(var state: State):
           case _             => List(arg)
         val args_ = args.map(resolve(scope, _))
         val res_ = resolve(scope, res)
-        state.types.sort("arrow" + args.length, args_ :+ res_)
+        state.types.sort(Name("arrow", Some(args.length)), args_ :+ res_)
 
       case Sort(name, Nil) if scope.params.contains(name) =>
         scope.params(name)
@@ -462,7 +471,7 @@ class Parser(var state: State):
       // the constructors of tuples are declared in the prelude
       case Tuple(args) =>
         val args_ = args.map(resolve(scope, _))
-        state.exprs.app("tuple" + args.length, args_)
+        state.exprs.app(Name("tuple", Some(args.length)), args_)
 
       // [a, b, c] is the concatenation of the sequences of length 1, [a] + [b] + [c]
       case SeqLit(Nil) =>
@@ -581,10 +590,17 @@ class Parser(var state: State):
       case App(name, Nil) if scope.vars.contains(name) =>
         scope.vars(name)
 
-      // functions, otherwise the members of the enclosing type, with `this` implicit, e.g. its fields
+      // variables of function type applied to arguments, which shadow functions of the same name
+      case App(name, args) if scope.vars.contains(name) =>
+        apply(scope, scope.vars(name), args)
+
+      // functions, then constants of function type applied to arguments, e.g. f(x) for function f(): int -> int,
+      // otherwise the members of the enclosing type, with `this` implicit, e.g. its fields
       case App(fun, args) =>
         if state.funs.contains((fun, args.length))
         then state.exprs.app(fun, args.map(resolve(scope, _)))
+        else if state.funs.contains((fun, 0))
+        then apply(scope, state.exprs.app(fun, Nil), args)
         else if isMember(scope, fun, args.length)
         then resolve(scope, Inner(App("this", Nil), List(Member(fun, args))))
         else Error.raise("unresolved identifier", fun)
@@ -645,7 +661,7 @@ class Parser(var state: State):
         val bound_ = bound.map(resolve(scope, _))
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
-        state.exprs.lambda(bound_, body_)
+        state.exprs.lam(bound_, body_)
 
       case Let(bound, args, body) =>
         Error.report("mismatching let", bound, args):

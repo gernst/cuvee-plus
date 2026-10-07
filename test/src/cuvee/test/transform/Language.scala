@@ -32,12 +32,12 @@ object Language extends TestSuite:
       val (_, cmds) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader(text))
       val (_, prelude) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader(""))
       val sorts_ = sorts(cmds.toList.filterNot(prelude.contains))
-      assert(sorts_.contains("tuple2") && sorts_.contains("Bag") && sorts_.contains("Map"))
+      assert(sorts_.contains("tuple") && sorts_.contains("Bag") && sorts_.contains("Map"))
       assert(!sorts_.contains("Int") && !sorts_.contains("Seq") && !sorts_.contains("Set") && !sorts_.contains("Trace"))
 
     test("dfy"):
       val text = output(file)
-      assert(!text.contains("tuple2") && !text.contains("{:dfy}"))
+      assert(!text.contains("tuple₂") && !text.contains("{:dfy}"))
 
     test("teq"):
       assert(!output("-teq", file).contains("{:teq}"))

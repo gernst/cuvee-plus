@@ -109,6 +109,15 @@ object Functions extends TestSuite:
       errors("function f(g: " + ten + " -> int): bool { true }") ==> Nil
       errors("function f(g: " + List.fill(11)("int").mkString("(", ", ", ")") + " -> int): bool { true }") ==> List("sort not declared")
 
+    // variables of function type before functions of the same name, then constants of function type, then members
+    test("applications"):
+      errors("function f(g: (int, bool) -> int): int { g(1, true) }") ==> Nil
+      errors("function c(): int -> int function f(): int { c(1) }") ==> Nil
+      errors("function g(x: int): bool function f(g: int -> int): int { g(1) }") ==> Nil
+      errors("function f(x: int): int { x(1) }") ==> List("application of a value that is not a function")
+      errors("function f(g: int -> int): int { g(1, 2) }") ==> List("type mismatch")
+      errors("function f(g: int -> int): bool { g(1) }") ==> List("type mismatch")
+
     // the variables of lambdas must be annotated with their types
     test("annotations"):
       errors("function f(): int -> int { x => x }") ==> List("parse error")
@@ -116,6 +125,16 @@ object Functions extends TestSuite:
     test("boogie"):
       val file = os.temp("function f(): int -> int { (x: int) => x }", suffix = ".dfy")
       Examples.errors("-print", "bpl", file.toString) ==> List("lambda of function type not supported in Boogie")
+
+    // applications and lambdas are printed as in higher-order SMT-LIB, and the declarations of the function types
+    // and the application functions ({:ho}) are not passed to solvers
+    test("smtlib"):
+      val file = os.temp("function f(g: (int, int) -> int): int { g(1, 2) } function h(): (int, int) -> int { (x: int, y: int) => x }", suffix = ".dfy")
+      val out = os.temp(suffix = ".smt2")
+      Examples.errors("-print", "smt2", "-o", out.toString, file.toString) ==> Nil
+      val text = os.read(out).replaceAll("\\s+", " ")
+      assert(text.contains("(g 1 2)") && text.contains("(lambda ((x Int) (y Int)) x)"))
+      Examples.check("dfy", "var g: int; method m() modifies g ensures g == 1 { g := 1; }", "-verify", "-z3") ==> Nil
 
 // slices and updates are on sequences only, indexing falls back to arrays
 object Sequences extends TestSuite:

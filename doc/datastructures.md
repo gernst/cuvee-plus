@@ -92,19 +92,25 @@ case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bou
 case class Trace(...); case class Maps(...); case class Invs(...)
 ```
 
-- **Function types** `(A₁, ..., Aₙ) -> R` of Dafny are the sorts `arrow1`,
-  ..., `arrow10` of its prelude, whose last argument is the result
+- **Function types** `(A₁, ..., Aₙ) -> R` of Dafny are the sorts `arrow₁`,
+  ..., `arrow₁₀` of its prelude, whose last argument is the result
   (`Arrow(args, res)` builds and matches them). Their lambdas
   `(x: A, y: B) => e` always annotate the variables and are built by
-  `state.exprs.lambda`; Boogie does not print them, SMT-LIB prints them as
-  `lambda` of the declared sort but does not read them back. There is no
-  application of function values yet.
+  `state.exprs.lam`; Boogie does not print them, SMT-LIB prints them as
+  `lambda` of the declared sort but does not read them back. Function values
+  are applied by `apply₁`, ..., `apply₁₀` of the prelude (`Apply(f, args)`);
+  Dafny resolves `f(a)` as the application of a variable of function type,
+  then of a function, then of a constant of function type, then of a member.
+  Tuples, function types, and applications are indexed names, `tuple₂`
+  (`tuple$2` in SMT-LIB). The declarations of the function types and the
+  applications are higher-order (`{:ho}`) and not passed to solvers; SMT-LIB
+  prints applications as `(f a b)` (see TODO.md).
 - **Lambdas and arrays of several indices.** `Lam` has an explicit type, an
   array of a single index or a function of its variables (`Type.check`). Several variables and indices are
   nested (curried): `Lams(xs, e)` builds and collects nested lambdas,
   `Arrays(indices, value)` nested array types, and `Arrays.select` and
   `Arrays.store` the selections `a[i][j]` and updates
-  `a[i := a[i][j := v]]` of `a[i, j]` and `a[i, j := v]`. `state.exprs.lam`
+  `a[i := a[i][j := v]]` of `a[i, j]` and `a[i, j := v]`. `state.exprs.lams`
   curries; the Boogie frontend reads and prints maps of several indices this
   way, SMT-LIB rejects lambdas of several variables (z3's multi-index arrays
   are not curried), Dafny does not print lambdas.
