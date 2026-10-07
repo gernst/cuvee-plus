@@ -103,6 +103,61 @@ class Quant(val name: Name):
 object All extends Quant("forall")
 object Ex extends Quant("exists")
 
+// lambdas of several variables as nested lambdas of a single variable, which are arrays (see Lam),
+// e.g. (lambda x: int, y: int :: e) of Boogie; unapply collects all nested lambdas
+object Lams:
+  def apply(bound: List[Var], body: Expr): Expr =
+    Error.report("lambda without variables", body):
+      require(bound.nonEmpty)
+    bound.foldRight(body): (x, inner) =>
+      Lam(List(x), inner, Sort.array(x.typ, inner.typ))
+
+  def unapply(expr: Expr): Option[(List[Var], Expr)] =
+    expr match
+      case Lam(List(x), Lams(xs, body), _) => Some((x :: xs, body))
+      case Lam(List(x), body, _)           => Some((List(x), body))
+      case _                               => None
+
+// arrays of several indices as nested arrays of a single index, e.g. [int, bool]T of Boogie,
+// with their selections a[i, j] and updates a[i, j := v], which are those of the nested arrays,
+// a[i][j] and a[i := a[i][j := v]]; unapply collects all nested arrays, selections, and updates
+object Arrays:
+  def apply(indices: List[Type], value: Type): Type =
+    Error.report("array without indices", value):
+      require(indices.nonEmpty)
+    indices.foldRight(value)(Sort.array(_, _))
+
+  def unapply(typ: Type): Option[(List[Type], Type)] =
+    typ match
+      case Sort(Con.array, List(index, Arrays(indices, value))) => Some((index :: indices, value))
+      case Sort(Con.array, List(index, value))                  => Some((List(index), value))
+      case _                                                    => None
+
+  object select:
+    def apply(base: Expr, indices: List[Expr]): Expr =
+      Select(base, indices)
+
+    def unapply(expr: Expr): Option[(Expr, List[Expr])] =
+      expr match
+        case Select(select(base, indices), index) => Some((base, indices :+ index))
+        case Select(base, index)                  => Some((base, List(index)))
+        case _                                    => None
+
+  object store:
+    def apply(base: Expr, indices: List[Expr], value: Expr): Expr =
+      indices match
+        case Nil           => value
+        case index :: rest => Store(base, index, apply(Select(base, index), rest, value))
+
+    def unapply(expr: Expr): Option[(Expr, List[Expr], Expr)] =
+      expr match
+        case Store(base, index, store(Select(base_, index_), indices, value)) if base_ == base && index_ == index =>
+          Some((base, index :: indices, value))
+        case Store(base, index, value) =>
+          Some((base, List(index), value))
+        case _ =>
+          None
+
 enum Assoc:
   case Left, Right
 

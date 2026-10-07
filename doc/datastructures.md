@@ -83,6 +83,7 @@ case class As(expr: Expr, typ: Type)           // type annotation
 case class Diff(xs: List[Var], expr: Expr)     // derivative (xs :: expr)'
 case class Old(expr: Expr)                     // value at the entry of the procedure
 case class Bind(quant: Name, bound: List[Var], body: Expr)   // forall, exists
+case class Lam(bound: List[Var], body: Expr, typ: Type)      // lambda of SMT-LIB, an array of one index
 case class Let(bound: List[Var], args: List[Expr], body: Expr)
 case class Match(arg: Expr, cases: List[Case])  // the first case that matches and whose condition holds
 case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bound in body and cond
@@ -90,6 +91,16 @@ case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bou
 // the combinators of trace equation systems, see teq.md
 case class Trace(...); case class Maps(...); case class Invs(...)
 ```
+
+- **Lambdas and arrays of several indices.** `Lam` has an explicit type, an
+  array of a single index (`Type.check`). Several variables and indices are
+  nested (curried): `Lams(xs, e)` builds and collects nested lambdas,
+  `Arrays(indices, value)` nested array types, and `Arrays.select` and
+  `Arrays.store` the selections `a[i][j]` and updates
+  `a[i := a[i][j := v]]` of `a[i, j]` and `a[i, j := v]`. `state.exprs.lam`
+  curries; the Boogie frontend reads and prints maps of several indices this
+  way, SMT-LIB rejects lambdas of several variables (z3's multi-index arrays
+  are not curried), Dafny does not print lambdas.
 
 - **Traversals:** `expr.map(f)` applies `f` to the immediate subexpressions
   point-wise and keeps bound variables, likewise `upd.map(f)`,

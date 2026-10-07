@@ -290,6 +290,11 @@ case class State(
     def all(bound: List[Var], body: Expr) =
       All(bound, body)
 
+    // lambdas are arrays of a single index, those of several variables are nested (see Lams),
+    // the type of the values is resolved by type checking
+    def lam(bound: List[Var], body: Expr) =
+      Lams(bound, body)
+
     def ex(bound: List[Var], body: Expr) =
       Ex(bound, body)
 

@@ -413,7 +413,7 @@ object Printer extends cuvee.pipe.Printer:
   def parens(expr: Expr): Doc =
     Group(text("(") ~ Align(doc(expr)) ~ text(")"))
 
-  // types are not broken across lines, arrays are written as maps [k]v
+  // types are not broken across lines, arrays are written as maps [k]v, nested ones as maps of several indices [k, l]v
   def doc(typ: Type): Doc =
     typ match
       case Param(name_) =>
@@ -422,8 +422,8 @@ object Printer extends cuvee.pipe.Printer:
       case BitVec(n) =>
         text("bv" + n)
 
-      case Sort(Con.array, List(index, value)) =>
-        text("[") ~ doc(index) ~ text("]") ~ doc(value)
+      case Arrays(indices, value) =>
+        text("[") ~ join(indices.map(doc), text(", ")) ~ text("]") ~ doc(value)
 
       case Sort(Con(name_, _), Nil) =>
         text(name(name_))
@@ -615,11 +615,12 @@ object Printer extends cuvee.pipe.Printer:
           yield line ~ text("case") ~~ doc(cond) ~~ text("=>") ~~ doc(rhs)
         Group(text("if {") ~ Nest(2, concat(cases)) ~ line ~ text("}"))
 
-      case Select(base, index) =>
-        doc(base, operand) ~ text("[") ~ doc(index) ~ text("]")
+      // like the types, nested selections and updates are those of several indices, a[i, j] and a[i, j := v]
+      case Arrays.select(base, indices) =>
+        doc(base, operand) ~ text("[") ~ commas(indices.map(doc)) ~ text("]")
 
-      case Store(base, index, value) =>
-        Group(doc(base, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
+      case Arrays.store(base, indices, value) =>
+        Group(doc(base, operand) ~ text("[") ~ Nest(2, linebreak ~ commas(indices.map(doc)) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
 
       case _ if prefix(expr).isDefined =>
         val Some((op, prec, arg)) = prefix(expr): @unchecked
@@ -677,6 +678,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case Bind(_, _, _) =>
         Error.raise("binder not supported in Boogie", expr)
+
+      // lambdas are always in parentheses, like quantifiers, nested ones are maps of several indices
+      case Lams(bound, body) =>
+        Group(text("(") ~ Align(text("lambda") ~~ Group(Align(formals(bound))) ~~ text("::") ~ Nest(2, line ~ doc(body))) ~ text(")"))
 
       // Boogie has no let, the bound variables are substituted
       case Let(bound, args, body) =>

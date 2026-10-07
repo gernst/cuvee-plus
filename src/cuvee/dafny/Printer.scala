@@ -955,6 +955,10 @@ object Printer extends cuvee.pipe.Printer:
       case As(arg, typ) =>
         doc(arg, operand) ~~ text("as") ~~ doc(typ)
 
+      // the lambdas of SMT-LIB are arrays, which Dafny has no syntax for
+      case Lam(_, _, _) =>
+        Error.raise("lambda not supported in Dafny", expr)
+
       case Bind(quant, bound, body) =>
         // the bound variables flow up to the width of the line, aligned after the quantifier
         Group(text(name(quant)) ~~ flow(bound.map(formal)) ~~ text("::") ~ Nest(2, line ~ doc(body)))

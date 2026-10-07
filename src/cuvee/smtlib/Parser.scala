@@ -780,6 +780,15 @@ class Parser(private var init: State):
         val body_ = expr(scope_, body)
         Ex(bound_, body_)
 
+      // an array of a single index, since those of several indices are not curried in SMT-LIB (unlike Boogie)
+      case List(Id("lambda"), List(bound*), body) =>
+        val bound_ = list(bound) { formal(scope, _) }
+        Error.report("lambda of several variables not supported", from):
+          require(bound_.length == 1)
+        val scope_ = scope ++ bound_
+        val body_ = expr(scope_, body)
+        state.exprs.lam(bound_, body_)
+
       // not part of SMT-LIB, the choice of a result whose guard holds, (eps (guard result) ...)
       case List(Id("eps"), cases*) =>
         val updates =

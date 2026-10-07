@@ -83,3 +83,43 @@ object Malformed extends TestSuite:
     // associative operators have no neutral element
     test("no arguments"):
       message(Minus.int(Nil)) ==> Some("no arguments")
+
+// lambdas are arrays of a single index, which Dafny cannot print
+object Lambdas extends TestSuite:
+  import cuvee.core._
+
+  val tests = Tests:
+    test("array"):
+      val (_, cmds) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader("(assert (= (select (lambda ((x Int)) (+ x 1)) 0) 1))"))
+      val Assert(_, _, Eq(App(_, _, _, List(lam: Lam, _)), _), _) = cmds.last: @unchecked
+      lam.typ ==> Sort.array(Sort.int, Sort.int)
+
+    // multi-index arrays of SMT-LIB are not curried, unlike the maps of several indices of Boogie
+    test("several variables"):
+      Examples.check("smt2", "(assert (= (lambda ((x Int) (y Int)) x) (lambda ((x Int) (y Int)) y)))") ==>
+        List("lambda of several variables not supported")
+      Examples.check("bpl", "axiom (lambda x: int, y: int :: x)[0, 1] == 0;") ==> Nil
+
+    // the sugar of nested lambdas and arrays collects all of them
+    test("sugar"):
+      val x = Var("x", Sort.int)
+      val y = Var("y", Sort.bool)
+      val typ = Arrays(List(Sort.int, Sort.bool), Sort.int)
+      typ ==> Sort.array(Sort.int, Sort.array(Sort.bool, Sort.int))
+      val Arrays(indices, value) = typ: @unchecked
+      (indices, value) ==> (List(Sort.int, Sort.bool), Sort.int)
+
+      val lam = Lams(List(x, y), x)
+      lam.typ ==> typ
+      val Lams(bound, body) = lam: @unchecked
+      (bound, body) ==> (List(x, y), x)
+
+      val m = Var("m", typ)
+      val Arrays.select(base, args) = Arrays.select(m, List(x, y)): @unchecked
+      (base, args) ==> (m, List(x, y))
+      val Arrays.store(base_, args_, value_) = Arrays.store(m, List(x, y), x): @unchecked
+      (base_, args_, value_) ==> (m, List(x, y), x)
+
+    test("dafny"):
+      val file = os.temp("(assert (= (lambda ((x Int)) x) (lambda ((y Int)) y)))", suffix = ".smt2")
+      Examples.errors("-print", "dfy", file.toString) ==> List("lambda not supported in Dafny")

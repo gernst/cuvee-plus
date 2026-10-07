@@ -243,10 +243,11 @@ class Parser(var state: State):
         val args_ = args.map(resolve(scope, _))
         state.types.sort(name, args_)
 
-      case Array(index, value) =>
-        val index_ = resolve(scope, index)
+      // the nested arrays of the indices (see core.Arrays)
+      case Array(indices, value) =>
+        val indices_ = indices.map(resolve(scope, _))
         val value_ = resolve(scope, value)
-        state.types.sort("Array", List(index_, value_))
+        indices_.foldRight(value_)((index_, inner) => state.types.sort("Array", List(index_, inner)))
 
       case _ =>
         Error.raise("unknown type", typ)
@@ -257,15 +258,17 @@ class Parser(var state: State):
       case Nil =>
         base
 
-      case Access(index, None) :: rest =>
-        val index_ = resolve(scope, index)
-        val base_ = state.exprs.app("select", List(base, index_))
+      // a[i, j] is a[i][j] of the nested arrays (see core.Arrays)
+      case Access(indices, None) :: rest =>
+        val indices_ = indices.map(resolve(scope, _))
+        val base_ = indices_.foldLeft(base)((inner, index_) => state.exprs.app("select", List(inner, index_)))
         resolve(scope, base_, rest)
 
-      case Access(index, Some(value)) :: rest =>
-        val index_ = resolve(scope, index)
+      // a[i, j := v] is a[i := a[i][j := v]] (see update)
+      case Access(indices, Some(value)) :: rest =>
+        val indices_ = indices.map(resolve(scope, _))
         val value_ = resolve(scope, value)
-        val base_ = state.exprs.app("store", List(base, index_, value_))
+        val base_ = update(base, indices_, value_)
         resolve(scope, base_, rest)
 
   // groups of variables with a common type, x, y: int, b: bool
@@ -356,6 +359,13 @@ class Parser(var state: State):
         val body_ = resolve(scope_, body)
         state.exprs.all(bound_, body_)
 
+      // a map of several indices, which are nested lambdas of a single variable (see core.Lams)
+      case Lam(bound, body) =>
+        val bound_ = flatten(bound).map(resolve(scope, _))
+        val scope_ = scope ++ bound_
+        val body_ = resolve(scope_, body)
+        state.exprs.lam(bound_, body_)
+
       case _ =>
         Error.raise("unknown expression", expr)
 
@@ -408,7 +418,7 @@ class Parser(var state: State):
         val lhs_ = variables(scope, lhs.map(_.name))
         val rhs_ =
           for (Lhs(_, indices), (x_, expr)) <- lhs zip (lhs_ zip rhs)
-          yield update(x_, indices.map(resolve(scope, _)), resolve(scope, expr))
+          yield update(x_, indices.flatten.map(resolve(scope, _)), resolve(scope, expr))
 
         state.progs.assign(lhs_, rhs_)
 

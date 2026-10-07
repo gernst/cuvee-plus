@@ -100,7 +100,7 @@ object Grammar:
     P(angle(ids) | nil)
 
   val array =
-    Array(P(brackets(typ) ~ typ))
+    Array(P(brackets(types) ~ typ))
 
   val types =
     P(typ ~+ ",")
@@ -124,7 +124,7 @@ object Grammar:
     P(Num(num) | Dec(dec) | Str(str))
 
   val access =
-    Access(P(brackets(expr ~ (":=" ~ expr).?)))
+    Access(P(brackets(exprs ~ (":=" ~ expr).?)))
 
   val app =
     App(P(id ~ (args | nil)))
@@ -141,8 +141,12 @@ object Grammar:
   val exists =
     Ex(P("exists" ~ binding))
 
+  // a map of a single index, written (lambda x: T :: e)
+  val lambda =
+    Lam(P("lambda" ~ typed ~ "::" ~ expr))
+
   val parenthesized =
-    P("(" ~ (forall | exists | expr) ~ ")")
+    P("(" ~ (forall | exists | lambda | expr) ~ ")")
 
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ "else" ~ expr))
@@ -215,7 +219,7 @@ object Grammar:
     Call(P("call" ~ ((ids ?~ ":=") | nil) ~ id ~ args ~ ";"))
 
   val lhs =
-    Lhs(P(id ~ brackets(expr).*))
+    Lhs(P(id ~ brackets(exprs).*))
 
   val assign =
     Assign(P((lhs ~+ ",") ~ ":=" ~ exprs ~ ";"))

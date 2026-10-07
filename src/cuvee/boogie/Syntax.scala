@@ -19,13 +19,14 @@ sealed trait Prog
 sealed trait Cmd
 
 case class Sort(con: String, args: List[Type]) extends Type
-case class Array(index: Type, value: Type) extends Type
+// maps of several indices [T, U]V, which are nested arrays (see core.Arrays)
+case class Array(indices: List[Type], value: Type) extends Type
 
 object Sort extends ((String, List[Type]) => Type)
-object Array extends ((Type, Type) => Type)
+object Array extends ((List[Type], Type) => Type)
 
-case class Access(index: Expr, value: Option[Expr])
-object Access extends ((Expr, Option[Expr]) => Access)
+case class Access(indices: List[Expr], value: Option[Expr])
+object Access extends ((List[Expr], Option[Expr]) => Access)
 
 case class Num(value: String) extends Expr
 case class Dec(value: String) extends Expr
@@ -36,6 +37,7 @@ case class Inner(base: Expr, access: List[Access]) extends Expr
 case class Ite(test: Expr, left: Expr, right: Expr) extends Expr
 case class Ex(bound: Typed, triggers: List[List[Expr]], body: Expr) extends Expr
 case class All(bound: Typed, triggers: List[List[Expr]], body: Expr) extends Expr
+case class Lam(bound: Typed, body: Expr) extends Expr
 
 object Num extends (String => Expr)
 object Dec extends (String => Expr)
@@ -50,9 +52,10 @@ object Combinator extends ((String, Option[Expr], List[Expr], List[String], List
 object Ite extends ((Expr, Expr, Expr) => Expr)
 object Ex extends ((Typed, List[List[Expr]], Expr) => Expr)
 object All extends ((Typed, List[List[Expr]], Expr) => Expr)
+object Lam extends ((Typed, Expr) => Expr)
 
-case class Lhs(name: String, indices: List[Expr])
-object Lhs extends ((String, List[Expr]) => Lhs)
+case class Lhs(name: String, indices: List[List[Expr]])
+object Lhs extends ((String, List[List[Expr]]) => Lhs)
 
 case object Skip extends Prog
 case object Break extends Prog

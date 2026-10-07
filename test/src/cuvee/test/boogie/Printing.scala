@@ -50,7 +50,7 @@ object Printing extends TestSuite:
 
   val tests = Tests:
     test("types"):
-      Printer.lines(Sort.array(Sort.int, Sort.array(Sort.bool, Sort.int))) ==> List("[int][bool]int")
+      Printer.lines(Sort.array(Sort.int, Sort.array(Sort.bool, Sort.int))) ==> List("[int, bool]int")
       Printer.lines(Sort(Con("Stack", 1), List(Param("a")))) ==> List("Stack<a>")
 
     test("specs"):
@@ -120,6 +120,16 @@ object Printing extends TestSuite:
       expr(one) ==> "if { case p => x }"
       expr(Plus.int(two, zero)) ==> "if { case p => x case q => y } + 0"
       expr(Eps(List(Upd(p, one), Upd(q, y)))) ==> "if { case p => if { case p => x } case q => y }"
+
+    // nested arrays are maps of several indices, with their selections, updates, and lambdas
+    test("several indices"):
+      val m = Var("m", Arrays(List(Sort.int, Sort.int), Sort.int))
+      expr(Arrays.select(m, List(x, y))) ==> "m[x, y]"
+      expr(Arrays.store(m, List(x, y), zero)) ==> "m[x, y := 0]"
+      expr(Lams(List(x, y), Plus.int(x, y))) ==> "(lambda x: int, y: int :: x + y)"
+      expr(Lam(List(x), y, Sort.array(Sort.int, Sort.int))) ==> "(lambda x: int :: y)"
+      // successive updates of different elements are not nested
+      expr(Store(Store(a, x, zero), y, zero)) ==> "a[x := 0][y := 0]"
 
     test("quantifiers and conditionals"):
       expr(And(All(List(x), Lt.int(x, y)), p)) ==> "(forall x: int :: x < y) && p"

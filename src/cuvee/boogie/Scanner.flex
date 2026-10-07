@@ -31,7 +31,7 @@ dec  = {num} "." [0-9]+
 kw  = "type" | "data" | "and" | "const" | "function" | "axiom" | "lemma" | "var" | "procedure"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "if" | "then" | "else" | "while" | "break" | "continue" | "return"
-    | "assert" | "assume" | "havoc" | "call" | "forall" | "exists"
+    | "assert" | "assume" | "havoc" | "call" | "forall" | "exists" | "lambda"
     | "trace" | "map" | "all" | "for" | "do" | "yield" | "check" | "case"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}|] | "{:" | ":=" | "=" | "=>" | "<" | ">" | "*" | "⌊" | "⌋"
 
