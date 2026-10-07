@@ -136,6 +136,7 @@ case class FunDef(
 ) extends Cmd
 
 case class MethodDef(
+    attrs: List[String],
     name: String,
     params: List[String],
     formals: List[(String, Type)],
@@ -161,6 +162,7 @@ object FunDef extends ((List[String], String, List[String], List[(String, Type)]
 object MethodDef
     extends (
         (
+            List[String],
             String,
             List[String],
             List[(String, Type)],

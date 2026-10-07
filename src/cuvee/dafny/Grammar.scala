@@ -387,7 +387,7 @@ object Grammar:
     P("commits" ~ expr)
 
   val procdef =
-    MethodDef(P("method" ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ assumes.* ~ commits.* ~ decreases.* ~ block.?))
+    MethodDef(P("method" ~ annotation.* ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ assumes.* ~ commits.* ~ decreases.* ~ block.?))
 
   val check =
     Check("check")

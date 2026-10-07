@@ -258,7 +258,7 @@ class Parser(var state: State):
             val cmd_ = state.cmds.defineFun(qname, arity)
             List(cmd_)
 
-      case MethodDef(meth, inner, formals, rets, mod, req, ens, assumes, commits, dec, body) =>
+      case MethodDef(attrs, meth, inner, formals, rets, mod, req, ens, assumes, commits, dec, body) =>
         val qname = prefix + meth
 
         val inner_ = inner.map(resolve(scope, _))
@@ -275,7 +275,7 @@ class Parser(var state: State):
         val ac_ =
           assumes.map(phi => "assumes" -> Some(formula(scope__, phi))) ++
             commits.map(phi => "commits" -> Some(formula(scope__, phi)))
-        val attrs_ = Attrs(contract(scope__, mod, req, ens, dec).attrs ++ ac_)
+        val attrs_ = Attrs(attrs.map(_ -> None) ++ contract(scope__, mod, req, ens, dec).attrs ++ ac_)
         state = state.declare(qname, params_, formals_, rets_, attrs_)
 
         val mod_ = attrs_.modifies
