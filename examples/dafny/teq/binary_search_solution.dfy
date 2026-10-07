@@ -4,7 +4,8 @@
 // status: with the probe mid as a variable of the loop, Lo, Hi, and I become
 //   lows(0, ⌊Mid⌋, lts(a, ⌊Mid⌋, x)), highs(n, ⌊Mid⌋, gts(a, ⌊Mid⌋, x)), highs(-1, ⌊Mid⌋, eqs(a, ⌊Mid⌋, x)),
 // the mutual dependency remains in Mid only, whose update reads Lo, Hi, and itself;
-// with -teq -simplify -split -simplify, 14 of 40 goals remain (a[i] == x is closed by the lemmas on the guards),
+// the goals of the two exits remain, found and not found (a[i] == x is closed by the lemmas on the guards);
+// with -teq -simplify -split -simplify, they are split into 14 cases,
 // which need bounds of the probes, 0 <= m < n, and the order of the probes that sortedness implies;
 // the rules on sorted below are accepted but do not fire: the goals of the case not found are lastlt + 1 < hi
 // under a[k] == x, which follows from lastlt < k and k < lastgt, atoms that do not occur in the goal,
@@ -13,7 +14,9 @@
 // (case 0 < i && b => y + i case 0 < j && c => y - j case d => y): its guards a[mid] < x and its results
 // mention the accumulator mid, and variables of the pattern bound to dependencies must not (Rewrite.instantiate);
 // it matches only if the guards are spelled out with the accumulator, case a[y] < x => (h + y + 1) / 2 ...,
-// so abstracting them needs higher-order patterns, e.g. b(y) and v(y, l, h)
+// so abstracting them needs higher-order patterns, e.g. b(y) and v(y, l, h);
+// with higher-order patterns, Mid matches the lemma on mids below, which abstracts the guards and the results
+// over the accumulator, but mids has no lemmas yet, so the same goals remain (see bsearch.md)
 
 type Trace<a₀>
 function current<a₀>(x₀: Trace<a₀>): a₀
@@ -97,6 +100,18 @@ lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int, k: int ::
 lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int, k: int ::
   if sorted(a) && occurs(true, gts(a, ms, x)) && a[k] == x
   then k < earlier(indexof(true, gts(a, ms, x)), ms)
+
+// the probes, abstracted over the guards and the results of the cases by higher-order variables,
+// which may read the accumulator y, the previous probe, unlike first-order variables of a rule
+function mids(m0: int, ks: seq<int>, ls: seq<int>, hs: seq<int>,
+              B: int -> bool, C: int -> bool, D: int -> bool,
+              V: (int, int) -> int, W: (int, int) -> int, U: (int, int) -> int): Trace<int>
+
+lemma {:rw} {:free} forall m0: int, K: Trace<int>, ls: seq<int>, hs: seq<int>,
+                          B: int -> bool, C: int -> bool, D: int -> bool,
+                          V: (int, int) -> int, W: (int, int) -> int, U: (int, int) -> int ::
+  trace(m0, for ⌊K⌋, ls, hs do y, k, l, h :: case B(y) => V(y, h) case C(y) => W(l, y) case D(y) => U(l, h))
+    == mids(m0, ⌊K⌋, ls, hs, B, C, D, V, W, U)
 
 // an index of x among the first n elements of a sorted array, -1 if there is none,
 // where the probe mid is a variable of the loop, the midpoint of the remaining range, chosen after each step

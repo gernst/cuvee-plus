@@ -59,8 +59,8 @@ Mid == trace(n / 2, for ⌊K⌋, ⌊Lo⌋, ⌊Hi⌋ do mid, k, lo, hi ::
 
 - The found case, `a[i] == x`, is closed by the lemmas on `eqs`.
 - Since higher-order patterns (version 0.26.0), `Mid` matches a lemma that
-  abstracts the guards and the results over the accumulator, when it is added
-  to the solution:
+  abstracts the guards and the results over the accumulator, which is part of
+  the solution:
 
   ```
   trace(m0, for ⌊K⌋, ls, hs do y, k, l, h :: case B(y) => V(y, h) case C(y) => W(l, y) case D(y) => U(l, h))
