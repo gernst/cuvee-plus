@@ -112,11 +112,14 @@ object Config:
         val config_ = config.using(TEQ).copy(features = config.features + "teq")
         (config_, rest)
 
+  // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
   val chc =
     flag("-chc", "generate constrained Horn clauses for procedures"):
       case (config, rest) =>
         val config_ = config.using(Horn)
-        (config_, rest)
+        if config.input == Lang.c || config.input == Lang.yml
+        then (config_.copy(output = Lang.smtlib), rest)
+        else (config_, rest)
 
   val flat =
     flag("-flat", "replace arguments of predicates that are records by their fields, e.g. after -chc"):
@@ -259,7 +262,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.22.1")
+    println("Cuvée 0.22.2")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
