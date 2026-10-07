@@ -133,7 +133,8 @@ object Functions extends TestSuite:
       val out = os.temp(suffix = ".smt2")
       Examples.errors("-print", "smt2", "-o", out.toString, file.toString) ==> Nil
       val text = os.read(out).replaceAll("\\s+", " ")
-      assert(text.contains("(g 1 2)") && text.contains("(lambda ((x Int) (y Int)) x)"))
+      assert(text.contains("(@ g 1 2)") && text.contains("(-> Int Int Int)") && text.contains("(lambda ((x Int) (y Int)) x)"))
+      assert(!text.contains("arrow") && !text.contains("apply"))
       Examples.check("dfy", "var g: int; method m() modifies g ensures g == 1 { g := 1; }", "-verify", "-z3") ==> Nil
 
 // slices and updates are on sequences only, indexing falls back to arrays

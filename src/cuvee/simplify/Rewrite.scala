@@ -13,9 +13,10 @@ case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound
   def isPattern(x: Var) =
     vars.contains(x) || locals.contains(x)
 
-// a simple rewrite engine with the rules of the context (Ctx.rules): expressions are rewritten innermost first,
-// at each position the first rule whose left hand side matches and whose instantiated condition holds is applied,
-// and the result is rewritten again, up to the maximal number of steps of the context (Ctx.withRules);
+// a simple rewrite engine with the rules of the context (Ctx.rules), a single step at the top of an expression:
+// the first rule whose left hand side matches and whose instantiated condition holds is applied,
+// the simplifier traverses the subexpressions and iterates, up to the maximal number of steps of the context
+// (Ctx.withRules), which all rewrites with the context share;
 // matching is syntactic modulo
 //   the instantiation of the type parameters of the rules,
 //   associativity and commutativity of + and - on Int and Real, and their neutral element 0,
@@ -210,7 +211,9 @@ object Rewrite:
   // and the remaining summands are distributed over the variables of the pattern,
   // where all but the last variable take a single summand or none, and the last one takes the rest;
   // variables take the empty sum 0 only if the expression is a sum itself,
-  // otherwise e.g. x + 1 would match 1 with x = 0, which rewrites literals inside of sums first
+  // otherwise e.g. x + 1 would match 1 with x = 0, which rewrites literals inside of sums first,
+  // and only if there are fewer summands than variables left, otherwise e.g. v + w would match k + 1
+  // also with v = 0 and w = k + 1
   @scala.annotation.targetName("matchesSums")
   def matches(
       config: Config,
@@ -272,7 +275,7 @@ object Rewrite:
 
           val none =
             for
-              m_ <- if sum then matches(config, state, ctx, b, x, ring.lit(util.Rational(0)), m) else Nil
+              m_ <- if sum && exprs.length < flex.length then matches(config, state, ctx, b, x, ring.lit(util.Rational(0)), m) else Nil
               result <- distribute(flex_, exprs, m_)
             yield result
 

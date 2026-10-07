@@ -3,21 +3,15 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
-## NEW
-
-- implement parse and print to change for SMT LIB 2.7 for functions using `->` and `@`, this requires a minor change the the SMTLIB printer and a more substantial change to the parser
-- the ho flag in the dafny prelude stays, because current solvers don't really implement that feature
-- SMT parser for lambdas should type it as array, not arrow
-
 ## General
 
-- Function types of Dafny (`arrow₁`, ...) and their applications (`apply₁`,
-  ...) are printed in SMT-LIB like those of higher-order SMT-LIB, `(f a b)`
-  and `(lambda ((x Int) (y Int)) e)`, but with the declared sorts `arrow$n`
-  instead of `(-> A B)`; their declarations are marked `{:ho}` and not
-  passed to solvers, and SMT-LIB reads `lambda` as an array and `(f a b)`
-  only for declared functions. To decide: SMT-LIB 2.7 (`->`, `@`) also for
-  reading and solvers, translation to arrays, or rejection.
+- Function types (`arrow₁`, ...) and their applications (`apply₁`, ...)
+  are printed and parsed in SMT-LIB as those of SMT-LIB 2.7, `(-> A B C)`
+  and `(@ f a b)`; they are marked `{:ho}` and their declarations are not
+  passed to solvers, which hardly support them.
+  Lambdas of SMT-LIB are arrays of a single variable, since solvers support
+  only those, hence lambdas of function type printed in SMT-LIB are not read
+  back.
 - The implementations of overloaded operators that are not part of cvc5
   (`seq.store`, `seq.member`, `seq.proper_prefixof`, `set.proper_subset`,
   `bag.select`, `bag.proper_subbag`, `map.store`, see `core.Overload`) are

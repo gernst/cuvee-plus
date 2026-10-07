@@ -105,3 +105,27 @@
 (declare-fun div (Int Int) Int :smt2 :dfy :bpl :c)
 (declare-fun mod (Int Int) Int :smt2 :dfy :bpl :c)
 (declare-fun / (Real Real) Real :smt2 :dfy :bpl)
+
+; the function types (-> A$1 ... A$n R) and their applications (@ f x$1 ... x$n) of SMT-LIB 2.7, of 1 to 10 arguments,
+; as the sorts arrow$n, whose last argument is the result, and the functions apply$n (see cuvee.core.Arrow and cuvee.core.Apply),
+; which are higher-order (:ho), whose declarations are not passed to solvers
+(declare-sort arrow$1 2 :smt2 :dfy :ho)
+(declare-sort arrow$2 3 :smt2 :dfy :ho)
+(declare-sort arrow$3 4 :smt2 :dfy :ho)
+(declare-sort arrow$4 5 :smt2 :dfy :ho)
+(declare-sort arrow$5 6 :smt2 :dfy :ho)
+(declare-sort arrow$6 7 :smt2 :dfy :ho)
+(declare-sort arrow$7 8 :smt2 :dfy :ho)
+(declare-sort arrow$8 9 :smt2 :dfy :ho)
+(declare-sort arrow$9 10 :smt2 :dfy :ho)
+(declare-sort arrow$10 11 :smt2 :dfy :ho)
+(declare-fun apply$1 (par (a$0 a$1) ((arrow$1 a$0 a$1) a$0) a$1 :smt2 :dfy :ho))
+(declare-fun apply$2 (par (a$0 a$1 a$2) ((arrow$2 a$0 a$1 a$2) a$0 a$1) a$2 :smt2 :dfy :ho))
+(declare-fun apply$3 (par (a$0 a$1 a$2 a$3) ((arrow$3 a$0 a$1 a$2 a$3) a$0 a$1 a$2) a$3 :smt2 :dfy :ho))
+(declare-fun apply$4 (par (a$0 a$1 a$2 a$3 a$4) ((arrow$4 a$0 a$1 a$2 a$3 a$4) a$0 a$1 a$2 a$3) a$4 :smt2 :dfy :ho))
+(declare-fun apply$5 (par (a$0 a$1 a$2 a$3 a$4 a$5) ((arrow$5 a$0 a$1 a$2 a$3 a$4 a$5) a$0 a$1 a$2 a$3 a$4) a$5 :smt2 :dfy :ho))
+(declare-fun apply$6 (par (a$0 a$1 a$2 a$3 a$4 a$5 a$6) ((arrow$6 a$0 a$1 a$2 a$3 a$4 a$5 a$6) a$0 a$1 a$2 a$3 a$4 a$5) a$6 :smt2 :dfy :ho))
+(declare-fun apply$7 (par (a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7) ((arrow$7 a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7) a$0 a$1 a$2 a$3 a$4 a$5 a$6) a$7 :smt2 :dfy :ho))
+(declare-fun apply$8 (par (a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8) ((arrow$8 a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8) a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7) a$8 :smt2 :dfy :ho))
+(declare-fun apply$9 (par (a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8 a$9) ((arrow$9 a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8 a$9) a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8) a$9 :smt2 :dfy :ho))
+(declare-fun apply$10 (par (a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8 a$9 a$10) ((arrow$10 a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8 a$9 a$10) a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8 a$9) a$10 :smt2 :dfy :ho))

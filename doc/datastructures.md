@@ -97,14 +97,15 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   (`Arrow(args, res)` builds and matches them). Their lambdas
   `(x: A, y: B) => e` always annotate the variables and are built by
   `state.exprs.lam`; Boogie does not print them, SMT-LIB prints them as
-  `lambda` of the declared sort but does not read them back. Function values
+  `lambda` of function type but does not read them back. Function values
   are applied by `apply₁`, ..., `apply₁₀` of the prelude (`Apply(f, args)`);
   Dafny resolves `f(a)` as the application of a variable of function type,
   then of a function, then of a constant of function type, then of a member.
   Tuples, function types, and applications are indexed names, `tuple₂`
   (`tuple$2` in SMT-LIB). The declarations of the function types and the
   applications are higher-order (`{:ho}`) and not passed to solvers; SMT-LIB
-  prints applications as `(f a b)` (see TODO.md).
+  prints and parses them as in SMT-LIB 2.7, `(-> A B C)` and `(@ f a b)`,
+  where `@` is left-associative (see TODO.md).
 - **Lambdas and arrays of several indices.** `Lam` has an explicit type, an
   array of a single index or a function of its variables (`Type.check`). Several variables and indices are
   nested (curried): `Lams(xs, e)` builds and collects nested lambdas,

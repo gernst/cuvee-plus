@@ -6,6 +6,8 @@ import util.Name
 import util.Rational
 import cuvee.sexpr._
 import cuvee.core._
+// the numerals of s-expressions, not the literals of the core (core.Num)
+import cuvee.sexpr.Num
 
 object Parser:
   def ack(from: Any): Ack =
@@ -617,6 +619,14 @@ class Parser(private var init: State):
       case List(Id("_"), Id("BitVec"), Num(digits)) if BigInt(digits) > 0 =>
         BitVec(digits.toInt)
 
+      // function types of SMT-LIB 2.7, (-> A B C) of two arguments, not curried (see Arrow)
+      case List(Id("->"), args*) if args.length >= 2 =>
+        val args_ = list(args) { typ(scope, _) }
+        val name = Arrow.con(args_.length - 1).name
+        Error.report("function type not declared", from):
+          require(state.sorts contains name)
+        state.types.sort(name, args_)
+
       case _ =>
         Error.raise("not a type", from)
 
@@ -645,6 +655,19 @@ class Parser(private var init: State):
     BitVecs.fun(name, indices, widths) match
       case Some(fun) => App(fun, fun.args, fun.res, args_)
       case None      => Error.raise("invalid application of bitvector function", from, widths)
+
+  // the application of a function value to `args`, of the arity of its type if that is known already
+  def apply(f: Expr, args: List[Expr], from: Any): Expr =
+    f.typ match
+      case Arrow(params, _) if params.length < args.length =>
+        val (first, rest) = args.splitAt(params.length)
+        apply(apply(f, first, from), rest, from)
+
+      case _ =>
+        val name = Name("apply", Some(args.length))
+        Error.report("function type not declared", from):
+          require(state.funs contains (name, args.length + 1))
+        app(name, f :: args)
 
   // applications of binary functions to more than two arguments
   def nary(name: Name, args: List[Expr]): Expr =
@@ -780,7 +803,15 @@ class Parser(private var init: State):
         val body_ = expr(scope_, body)
         Ex(bound_, body_)
 
-      // an array of a single index, since those of several indices are not curried in SMT-LIB (unlike Boogie)
+      // applications of function values of SMT-LIB 2.7, (@ f a b), which is left-associative:
+      // a function of fewer arguments is applied to the first ones, and its result to the rest
+      case List(Id("@"), f, args*) if args.nonEmpty =>
+        val f_ = expr(scope, f)
+        val args_ = list(args) { expr(scope, _) }
+        apply(f_, args_, from)
+
+      // an array of a single index, since those of several indices are not curried in SMT-LIB (unlike Boogie),
+      // and not a function (see Lam), since solvers support lambdas of array type only
       case List(Id("lambda"), List(bound*), body) =>
         val bound_ = list(bound) { formal(scope, _) }
         Error.report("lambda of several variables not supported", from):

@@ -193,6 +193,11 @@ object Rewrite extends TestSuite:
       R(rules, app(f, Plus.int(a, Zero.int))) ==> app(g, Zero.int)
       R(rules, app(f, a)) ==> app(f, a)
 
+      // but only if there are fewer summands than variables, x + y matches a + b with x = a or x = b, not x = 0
+      val binding = cuvee.simplify.Binding(Set(x, y), Set(), Map(), Set())
+      val ms = cuvee.simplify.Rewrite.matches(cuvee.Config.default, State.empty, Ctx.empty, binding, Plus.int(x, y), Plus.int(a, b), Subst.empty)
+      ms.map(_.vars(x)) ==> List(a, b)
+
 // the simplifier applies the rewrite rules of its context after each round of simplification
 object SimplifyRules extends TestSuite:
   import Rewrite.rw

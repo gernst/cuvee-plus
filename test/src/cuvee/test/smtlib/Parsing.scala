@@ -100,6 +100,10 @@ object Lambdas extends TestSuite:
         List("lambda of several variables not supported")
       Examples.check("bpl", "axiom (lambda x: int, y: int :: x)[0, 1] == 0;") ==> Nil
 
+    // lambdas are arrays also when function types are declared, since solvers support lambdas of array type only
+    test("not functions"):
+      Examples.check("smt2", "(declare-const f (-> Int Int)) (assert (= f (lambda ((x Int)) x)))") ==> List("type mismatch")
+
     // the sugar of nested lambdas and arrays collects all of them
     test("sugar"):
       val x = Var("x", Sort.int)
@@ -123,3 +127,38 @@ object Lambdas extends TestSuite:
     test("dafny"):
       val file = os.temp("(assert (= (lambda ((x Int)) x) (lambda ((y Int)) y)))", suffix = ".smt2")
       Examples.errors("-print", "dfy", file.toString) ==> List("lambda of array type not supported in Dafny")
+
+// function types (-> A B C) and applications (@ f a b) of SMT-LIB 2.7, of the sorts arrow$n and the functions apply$n
+// of the prelude (see Arrow and Apply)
+object Functions extends TestSuite:
+  import cuvee.core._
+
+  def parse(text: String) =
+    val (_, cmds) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader(text))
+    cmds
+
+  val tests = Tests:
+    test("types"):
+      val cmds = parse("(declare-const f (-> Int Bool Int))")
+      val DeclareFun(f, _) = cmds.last: @unchecked
+      f.res ==> Arrow(List(Sort.int, Sort.bool), Sort.int)
+
+    test("applications"):
+      val cmds = parse("(declare-const f (-> Int Bool Int)) (assert (= (@ f 1 true) 2))")
+      val Assert(_, _, Eq(Apply(_, args), _), _) = cmds.last: @unchecked
+      args ==> List(Lit(BigInt(1), Sort.int), True)
+
+    // a function of fewer arguments is applied to the first ones, and its result to the rest
+    test("left associative"):
+      val cmds = parse("(declare-const g (-> Int (-> Int Int))) (assert (= (@ g 1 2) 0))")
+      val Assert(_, _, Eq(Apply(Apply(_, List(a)), List(b)), _), _) = cmds.last: @unchecked
+      (a, b) ==> (Lit(BigInt(1), Sort.int), Lit(BigInt(2), Sort.int))
+
+    test("errors"):
+      Examples.check("smt2", "(declare-const f (-> Int Int)) (assert (= (@ f true) 0))") ==> List("type mismatch")
+      Examples.check("smt2", "(declare-const f Int) (assert (= (@ f 1) 0))") ==> List("type mismatch")
+
+    test("printing"):
+      val cmds = parse("(declare-const f (-> Int Bool Int)) (assert (= (@ f 1 true) 2))")
+      cuvee.smtlib.Printer.lines(cmds.init.last) ==> List("(declare-fun f () (-> Int Bool Int))", "")
+      cuvee.smtlib.Printer.lines(cmds.last) ==> List("(assert (= (@ f 1 true) 2))", "")

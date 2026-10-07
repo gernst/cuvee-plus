@@ -261,6 +261,10 @@ object Printer extends cuvee.pipe.Printer:
       case Param(name) =>
         mangle(name)
 
+      // function types of SMT-LIB 2.7 (see Arrow)
+      case Arrow(args, res) =>
+        apps(atom("->"), lines(args), lines(res))
+
       case Sort(Con(name, arity), Nil) =>
         mangle(name)
 
@@ -317,10 +321,10 @@ object Printer extends cuvee.pipe.Printer:
       case App(Fun.const, inst, typ, List(arg)) =>
         apps(apps(atom("as"), atom("const"), lines(typ)), lines(arg))
 
-      // applications of function values (see Apply) as in higher-order SMT-LIB, (f a b),
+      // applications of function values (see Apply) of SMT-LIB 2.7, (@ f a b),
       // whose lambdas of several variables are those of function type (see Lam)
       case Apply(f, args) =>
-        apps(lines(f), lines(args))
+        apps(atom("@"), lines(f), lines(args))
 
       // nested conjunctions, disjunctions, sums, and products are flattened into a single application,
       // which the parser reads back as left-nested applications

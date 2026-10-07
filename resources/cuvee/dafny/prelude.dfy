@@ -76,27 +76,28 @@ datatype {:dfy} tuple₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈> = tuple�
 datatype {:dfy} tuple₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉> = tuple₁₀(0: a₀, 1: a₁, 2: a₂, 3: a₃, 4: a₄, 5: a₅, 6: a₆, 7: a₇, 8: a₈, 9: a₉)
 
 // function types (A₁, ..., Aₙ) -> R of 1 to 10 arguments, whose last type parameter is the result (see cuvee.core.Arrow),
-// which are higher-order ({:ho}), whose declarations are not passed to solvers
-type {:dfy} {:ho} arrow₁<a₀,a₁>
-type {:dfy} {:ho} arrow₂<a₀,a₁,a₂>
-type {:dfy} {:ho} arrow₃<a₀,a₁,a₂,a₃>
-type {:dfy} {:ho} arrow₄<a₀,a₁,a₂,a₃,a₄>
-type {:dfy} {:ho} arrow₅<a₀,a₁,a₂,a₃,a₄,a₅>
-type {:dfy} {:ho} arrow₆<a₀,a₁,a₂,a₃,a₄,a₅,a₆>
-type {:dfy} {:ho} arrow₇<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇>
-type {:dfy} {:ho} arrow₈<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈>
-type {:dfy} {:ho} arrow₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉>
-type {:dfy} {:ho} arrow₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀>
+// which are (-> A₁ ... Aₙ R) of SMT-LIB 2.7, and higher-order ({:ho}), whose declarations are not passed to solvers,
+// since current solvers hardly support them
+type {:dfy} {:smt2} {:ho} arrow₁<a₀,a₁>
+type {:dfy} {:smt2} {:ho} arrow₂<a₀,a₁,a₂>
+type {:dfy} {:smt2} {:ho} arrow₃<a₀,a₁,a₂,a₃>
+type {:dfy} {:smt2} {:ho} arrow₄<a₀,a₁,a₂,a₃,a₄>
+type {:dfy} {:smt2} {:ho} arrow₅<a₀,a₁,a₂,a₃,a₄,a₅>
+type {:dfy} {:smt2} {:ho} arrow₆<a₀,a₁,a₂,a₃,a₄,a₅,a₆>
+type {:dfy} {:smt2} {:ho} arrow₇<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇>
+type {:dfy} {:smt2} {:ho} arrow₈<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈>
+type {:dfy} {:smt2} {:ho} arrow₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉>
+type {:dfy} {:smt2} {:ho} arrow₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀>
 
-// the applications f(x₁, ..., xₙ) of function values (see cuvee.core.Apply), which are higher-order ({:ho}),
-// whose declarations are not passed to solvers, since SMT-LIB has no representation of function types yet (see TODO.md)
-function {:dfy} {:ho} apply₁<a₀,a₁>(x₀: arrow₁<a₀,a₁>, x₁: a₀): a₁
-function {:dfy} {:ho} apply₂<a₀,a₁,a₂>(x₀: arrow₂<a₀,a₁,a₂>, x₁: a₀, x₂: a₁): a₂
-function {:dfy} {:ho} apply₃<a₀,a₁,a₂,a₃>(x₀: arrow₃<a₀,a₁,a₂,a₃>, x₁: a₀, x₂: a₁, x₃: a₂): a₃
-function {:dfy} {:ho} apply₄<a₀,a₁,a₂,a₃,a₄>(x₀: arrow₄<a₀,a₁,a₂,a₃,a₄>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃): a₄
-function {:dfy} {:ho} apply₅<a₀,a₁,a₂,a₃,a₄,a₅>(x₀: arrow₅<a₀,a₁,a₂,a₃,a₄,a₅>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄): a₅
-function {:dfy} {:ho} apply₆<a₀,a₁,a₂,a₃,a₄,a₅,a₆>(x₀: arrow₆<a₀,a₁,a₂,a₃,a₄,a₅,a₆>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅): a₆
-function {:dfy} {:ho} apply₇<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇>(x₀: arrow₇<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆): a₇
-function {:dfy} {:ho} apply₈<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈>(x₀: arrow₈<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇): a₈
-function {:dfy} {:ho} apply₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉>(x₀: arrow₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇, x₉: a₈): a₉
-function {:dfy} {:ho} apply₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀>(x₀: arrow₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇, x₉: a₈, x₁₀: a₉): a₁₀
+// the applications f(x₁, ..., xₙ) of function values (see cuvee.core.Apply), which are (@ f x₁ ... xₙ) of SMT-LIB 2.7,
+// and higher-order ({:ho}) like the function types
+function {:dfy} {:smt2} {:ho} apply₁<a₀,a₁>(x₀: arrow₁<a₀,a₁>, x₁: a₀): a₁
+function {:dfy} {:smt2} {:ho} apply₂<a₀,a₁,a₂>(x₀: arrow₂<a₀,a₁,a₂>, x₁: a₀, x₂: a₁): a₂
+function {:dfy} {:smt2} {:ho} apply₃<a₀,a₁,a₂,a₃>(x₀: arrow₃<a₀,a₁,a₂,a₃>, x₁: a₀, x₂: a₁, x₃: a₂): a₃
+function {:dfy} {:smt2} {:ho} apply₄<a₀,a₁,a₂,a₃,a₄>(x₀: arrow₄<a₀,a₁,a₂,a₃,a₄>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃): a₄
+function {:dfy} {:smt2} {:ho} apply₅<a₀,a₁,a₂,a₃,a₄,a₅>(x₀: arrow₅<a₀,a₁,a₂,a₃,a₄,a₅>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄): a₅
+function {:dfy} {:smt2} {:ho} apply₆<a₀,a₁,a₂,a₃,a₄,a₅,a₆>(x₀: arrow₆<a₀,a₁,a₂,a₃,a₄,a₅,a₆>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅): a₆
+function {:dfy} {:smt2} {:ho} apply₇<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇>(x₀: arrow₇<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆): a₇
+function {:dfy} {:smt2} {:ho} apply₈<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈>(x₀: arrow₈<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇): a₈
+function {:dfy} {:smt2} {:ho} apply₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉>(x₀: arrow₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇, x₉: a₈): a₉
+function {:dfy} {:smt2} {:ho} apply₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀>(x₀: arrow₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇, x₉: a₈, x₁₀: a₉): a₁₀
