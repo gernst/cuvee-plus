@@ -25,7 +25,7 @@ object Tasks extends TestSuite:
 
       // the expected verdict of the property
       val List(prop) = task(file).properties: @unchecked
-      val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
+      val (_, results) = cuvee.Cuvee.run("-simplify", "-chc", "-z3", file.toString)
       Examples.status(results) ==> (if prop.expected == Some(true) then Status.Sat else Status.Unsat)
 
 // the task definition is read with SnakeYAML, the input files may be a single string or a list

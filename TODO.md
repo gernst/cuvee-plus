@@ -130,17 +130,15 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 
 - Unbounded integers, no overflow; arrays are values, sizes are ignored.
-- `/` and `%` are translated to `div` and `mod` of SMT-LIB, which round down
-  for a positive divisor, whereas C truncates towards zero
-  ([examples/c/div.c](examples/c/div.c)); introduce C's division and
-  remainder as proper functions in a C prelude.
 - [c/Parser.scala](src/cuvee/c/Parser.scala) (about 830 lines) mixes the
   resolution of expressions and statements, the inference of modifies
   (`assigned`, `effects`, `calls`, `writes`), and that of the translation
   unit, which could be split.
 - No `switch`, `goto`, structs, floating point, bitwise operators,
   preprocessor; pointers only as arrays allocated by `malloc`, `alloca`,
-  `calloc` (see [SV-COMP.md](SV-COMP.md)).
+  `calloc` (see [SV-COMP.md](SV-COMP.md)), and otherwise as values of `Ptr`
+  in the prelude of C ([prelude.bpl](resources/cuvee/c/prelude.bpl)), which
+  are compared but not dereferenced; no `&`, `*p`, or pointer arithmetic.
 - The modifies clause of a loop is inferred from the core program, where a
   local variable that shadows a global one of the same type counts as global.
 - z3 answers `unknown` for Horn clauses with division by variables

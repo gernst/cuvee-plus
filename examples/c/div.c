@@ -1,6 +1,6 @@
-// expected: invalid
-// division and remainder are translated to div and mod of SMT-LIB (see TODO.md),
-// which round down for a positive divisor, whereas C truncates towards zero
+// expected: valid
+// division and remainder truncate towards zero in C, unlike div and mod of SMT-LIB,
+// whose remainder is nonnegative (see quotient and remainder in resources/cuvee/c/prelude.bpl)
 
 int main(void)
 {

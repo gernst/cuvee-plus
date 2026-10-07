@@ -81,8 +81,11 @@ object Rewrite extends TestSuite:
       errors_ ==> Nil
       cmds_.collect { case cmd: Assert => cmd } ==> Nil
 
-      Examples.check("dfy", list + "function {:rw} f(xs: List<int>): int { 0 }", "-simplify") ==>
-        List("rewrite rules of a definition need a match on a parameter")
+      // other definitions are unfolded
+      val unfolded = os.temp(list + "function {:rw} f(xs: List<int>): int { 0 }\nlemma f(Nil) == 0\n", suffix = ".dfy")
+      val (cmds__, errors__) = Examples.output("-simplify", unfolded.toString)
+      errors__ ==> Nil
+      cmds__.collect { case cmd: Assert => cmd } ==> Nil
 
     // annotations e as T of the expression are skipped when matching, e.g. [] as List<int>
     test("annotated"):

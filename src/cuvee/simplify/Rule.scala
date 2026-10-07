@@ -55,7 +55,8 @@ object Rule:
   // the rules of a function definition whose body is a match on one of the formal parameters, one for each case,
   // where the pattern replaces the parameter in the left-hand side, and pattern variables that shadow
   // other parameters are renamed apart; overlapping patterns are not treated specially,
-  // although the cases of a match apply in sequence
+  // although the cases of a match apply in sequence;
+  // other definitions are unfolded by a single rule, which terminates for definitions that are not recursive
   def from(state: State, fun: Fun, body: Expr): List[Rule] =
     // the body refers to the formal parameters with the defined sorts expanded (see Type.expand)
     val formals = Type.expand(state, fun.formals)
@@ -73,7 +74,7 @@ object Rule:
           Rule(others ++ pat_.free.toList, App(state, fun, args), re(rhs), re(cond))
 
       case _ =>
-        Error.raise("rewrite rules of a definition need a match on a parameter", fun)
+        List(Rule(formals, App(state, fun, formals), body, True))
 
   // the logical connectives, which are not boolean atoms
   val connectives = Set("and", "or", "=>", "<=>", "not", "ite", "true", "false")

@@ -45,7 +45,7 @@ object Horn extends TestSuite:
 
   val tests =
     Examples.tests(Examples.find(os.sub / "c", "c").filterNot(file => skip.contains(file.last))): file =>
-      val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
+      val (_, results) = cuvee.Cuvee.run("-simplify", "-chc", "-z3", file.toString)
       Examples.status(results) ==> (if Verify.expected(file) then Status.Sat else Status.Unsat)
 
 // the translation of C: conversions between integers and truth values, the inferred modifies attributes,
@@ -74,7 +74,7 @@ object Translation extends TestSuite:
     // the status of the Horn clauses of a program, sat if its assertions hold
     def horn(text: String) =
       val file = os.temp(text, suffix = ".c")
-      val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
+      val (_, results) = cuvee.Cuvee.run("-simplify", "-chc", "-z3", file.toString)
       Examples.status(results)
 
     // the right operand is evaluated only if the left one does not determine the result

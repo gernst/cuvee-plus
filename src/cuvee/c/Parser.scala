@@ -96,13 +96,13 @@ class Parser(var state: State, arch: Int):
   def toInt(expr: core.Expr, t: Type): core.Expr =
     t match
       case IntType  => expr
-      case BoolType => state.exprs.app("ite", List(expr, state.exprs.num(1), state.exprs.num(0)))
+      case BoolType => state.exprs.app("number", List(expr))
       case _        => Error.raise("not an integer", expr)
 
   def toBool(expr: core.Expr, t: Type): core.Expr =
     t match
       case BoolType => expr
-      case IntType  => state.exprs.app("not", List(state.exprs.app("=", List(expr, state.exprs.num(0)))))
+      case IntType  => state.exprs.app("truth", List(expr))
       case PointerType(_) => state.exprs.app("not", List(state.exprs.app("=", List(expr, state.exprs.const("null")))))
       case _        => Error.raise("not a truth value", expr)
 
@@ -111,9 +111,9 @@ class Parser(var state: State, arch: Int):
       case "+" => state.exprs.app("+", List(a, b))
       case "-" => state.exprs.app("-", List(a, b))
       case "*" => state.exprs.app("*", List(a, b))
-      // division and remainder truncate towards zero in C, unlike div and mod in SMT-LIB (see TODO.md)
-      case "/" => state.exprs.app("div", List(a, b))
-      case "%" => state.exprs.app("mod", List(a, b))
+      // division and remainder truncate towards zero in C (see resources/cuvee/c/prelude.bpl)
+      case "/" => state.exprs.app("quotient", List(a, b))
+      case "%" => state.exprs.app("remainder", List(a, b))
       case _   => Error.raise("unknown arithmetic operator", op)
 
   // an expression together with the statements that evaluate the calls in it first, and its C type

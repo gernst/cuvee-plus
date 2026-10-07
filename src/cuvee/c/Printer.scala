@@ -14,7 +14,7 @@ import easyparse.Assoc
 
 // prints procedures as C functions, as far as they are C programs: integers are int, Bool is _Bool,
 // arrays Array Int T are T a[] (as values); assertions and assumptions are written with the conventions of SV-COMP;
-// div and mod of SMT-LIB are written as / and %, which C's / and % are translated to (see TODO.md);
+// the functions of the prelude of C (resources/cuvee/c/prelude.bpl) are written as the C they stand for;
 // uninterpreted functions are prototypes, and their applications calls;
 // everything else is printed in SMT-LIB, wrapped such that it looks like a macro, SMT_LIB(...),
 // e.g. assertions of formulas, quantifiers, and commands such as check-sat, as far down as possible,
@@ -240,8 +240,9 @@ object Printer extends cuvee.pipe.Printer:
       case Plus.int(args)      => op("+", args)
       case Minus.int(a, b)     => op("-", List(a, b))
       case Times.int(args)     => op("*", args)
-      case DivBy.int(a, b)     => op("/", List(a, b))
-      case Mod.int(a, b)       => op("%", List(a, b))
+      // the division and remainder of C (see resources/cuvee/c/prelude.bpl), unlike div and mod of SMT-LIB
+      case App(Fun(Name("quotient", None), Nil, _, _), _, _, List(a, b))  => op("/", List(a, b))
+      case App(Fun(Name("remainder", None), Nil, _, _), _, _, List(a, b)) => op("%", List(a, b))
       case Lt.int(a, b)        => op("<", List(a, b))
       case Le.int(a, b)        => op("<=", List(a, b))
       case Gt.int(a, b)        => op(">", List(a, b))
@@ -250,6 +251,9 @@ object Printer extends cuvee.pipe.Printer:
 
   def level(expr: Expr): (Int, Option[Assoc]) =
     expr match
+      case prelude(expr_) =>
+        level(expr_)
+
       case Lit(value: BigInt, _) if value < 0 =>
         (Grammar.prefix_ops("-"), None)
 
@@ -274,8 +278,19 @@ object Printer extends cuvee.pipe.Printer:
     then doc(expr)
     else text("(") ~ Align(doc(expr)) ~ text(")")
 
+  // the functions of the prelude of C (resources/cuvee/c/prelude.bpl) as C, truth(x) is x != 0, number(b) is b ? 1 : 0
+  object prelude:
+    def unapply(expr: Expr): Option[Expr] =
+      expr match
+        case App(Fun(Name("truth", None), Nil, _, _), _, _, List(arg))  => Some(Not(Eq(arg, Zero.int)))
+        case App(Fun(Name("number", None), Nil, _, _), _, _, List(arg)) => Some(Ite(arg, One.int, Zero.int))
+        case _                                                        => None
+
   def doc(expr: Expr): Doc =
     expr match
+      case prelude(expr_) =>
+        doc(expr_)
+
       case Var(name_, _) =>
         text(name(name_))
 
