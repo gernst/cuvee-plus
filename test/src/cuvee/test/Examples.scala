@@ -57,7 +57,7 @@ object Examples:
   // the commands of the prelude of the frontend of the input file in `args`
   def prelude(args: String*): List[Cmd] =
     val config = cuvee.Config.parse(cuvee.Config.default, args.toList)
-    val (_, cmds) = config.source(config, new java.io.StringReader(""))
+    val (_, cmds) = config.input.source(config, new java.io.StringReader(""))
     cmds.toList
 
   // the errors reported for `text` as input in the language of `ext`, parsed and checked only

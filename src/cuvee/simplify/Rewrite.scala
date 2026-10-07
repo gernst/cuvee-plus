@@ -61,7 +61,7 @@ object Rewrite:
         Error.report("rewriting does not terminate", rule):
           require(ctx.steps.value > 0)
         ctx.steps := ctx.steps.value - 1
-        Debug.step("rewrite", Simplify.show(config.printer, expr), Simplify.show(config.printer, rhs))
+        Debug.step("rewrite", Simplify.show(config.output.printer, expr), Simplify.show(config.output.printer, rhs))
         rhs
 
   // side conditions and the guards of updates are decided by the simplifier in the context

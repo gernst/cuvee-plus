@@ -42,7 +42,7 @@ transformation and any output.
    - the transforms in order (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-simplify`);
    - the printer (`-print`);
    - the sink (stdout, `-o`, `-z3`, `-cvc5`).
-2. `config.source(reader)` parses the frontend's prelude first
+2. `config.input.source(reader)` parses the frontend's prelude first
    (`prelude.*`). It returns the initial `State`, which holds its
    declarations, and a lazy `LazyList[Cmd]`, which begins with these
    declarations and those that depend on the configuration (`hybrid.dfy`
@@ -51,12 +51,17 @@ transformation and any output.
    printed output is parsed again.
 3. `config.stages(init, sink)` chains one `Stage` per transform in front of
    the sink. All stages start from the same initial state, and know the
-   configuration. The implicit last step is `Language.sink`, which drops
-   the declarations that are part of the language of the output,
-   `config.language`: that of `-print`, `smt2` for the solvers, and that of
-   the input otherwise. It filters the commands one by one instead of
-   buffering them like a stage, so the sink's answer to each remaining
-   declaration is reported.
+   configuration. Each sink is wrapped in `Language.sink`, which drops
+   the declarations with the features (attributes) that its receiver knows:
+   `smt2` for the solvers, and `config.output.builtin` for printing, the
+   features built into the language of `-print` or that of the input (C for
+   SV-COMP tasks). It
+   filters the commands one by one instead of buffering them like a stage,
+   so the sink's answer to each remaining declaration is reported.
+   `Monomorph` keeps the polymorphic functions of `config.output.builtin`.
+   `config.input` and `config.output` are `Lang`s; `-print null` and
+   `-print scala` replace only the printer of the output. `config.features`
+   are the features expected from the input, those built into its language.
 4. `Pipe.run` feeds the commands, followed by the internal `Done`, through
    the chain. It reports each result (`Ack`, `Status`, `Model`, `Error`, ...)
    through `Report`. An `Error` stops the run unless the pipe is incremental;

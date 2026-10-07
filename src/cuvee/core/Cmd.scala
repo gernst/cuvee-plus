@@ -61,7 +61,8 @@ sealed trait Cmd:
       case _                                  => false
 
 sealed trait Ctrl extends Cmd
-sealed trait Decl extends Cmd
+sealed trait Decl extends Cmd:
+  def attrs: Attrs
 sealed trait Query extends Cmd
 
 case object CheckSat extends Query
@@ -82,13 +83,16 @@ case class Push(depth: Int) extends Ctrl
 case class Pop(depth: Int) extends Ctrl
 case object Reset extends Ctrl
 
-case class SetLogic(name: String) extends Decl
+case class SetLogic(name: String) extends Decl:
+  def attrs = Attrs.empty
 
 case class GetOption(name: String) extends Query
-case class SetOption(name: String, value: Any) extends Decl
+case class SetOption(name: String, value: Any) extends Decl:
+  def attrs = Attrs.empty
 
 case class GetInfo(name: String) extends Query
-case class SetInfo(name: String, value: Any) extends Decl
+case class SetInfo(name: String, value: Any) extends Decl:
+  def attrs = Attrs.empty
 
 case class DeclareSort(con: Con, attrs: Attrs) extends Decl
 case class DefineSort(con: Con, params: List[Param], body: Type, attrs: Attrs) extends Decl

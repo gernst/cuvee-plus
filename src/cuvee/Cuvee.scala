@@ -35,10 +35,11 @@ object Cuvee extends util.Main:
     Param.reset()
 
     val reader = config.reader
-    val (init, cmds) = config.source(config, reader)
+    val (init, cmds) = config.input.source(config, reader)
 
-    val printer = config.printer
-    val sink = Sink.tee(config.sink(init, config), sinks*)
+    val printer = config.output.printer
+    // further sinks, e.g. of tests, receive the output like the sink of the configuration
+    val sink = Sink.tee(config.sink(init, config), sinks.map(cuvee.transform.Language.sink(config.output.builtin, _))*)
     val report = config.report(printer)
     val stages = config.stages(init, sink)
 

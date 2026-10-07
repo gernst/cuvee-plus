@@ -19,7 +19,7 @@ object Monomorph extends Transform:
   // poly: the polymorphic functions of the input with their declaration or definition,
   // instances: the instances emitted so far, out: the output
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    val poly = polymorphic(config.language, prefix ++ cmds)
+    val poly = polymorphic(config.output.builtin, prefix ++ cmds)
     val instances = Ref(Map[(Name, Int, List[Type]), Fun]())
     val out = mutable.ListBuffer[Cmd]()
 
@@ -31,10 +31,10 @@ object Monomorph extends Transform:
     out.toList
 
   // the polymorphic functions of `cmds` with their declaration or definition,
-  // except those that are part of the language of the output, e.g. = and select of SMT-LIB (see Language)
-  def polymorphic(language: String, cmds: List[Cmd]): Map[(Name, Int), Cmd] =
+  // except those that the receiver of the output knows, e.g. = and select of SMT-LIB (see Language)
+  def polymorphic(features: Set[String], cmds: List[Cmd]): Map[(Name, Int), Cmd] =
     val decls =
-      cmds.filterNot(Language.isPart(language, _)).collect:
+      cmds.filterNot(Language.isPart(features, _)).collect:
         case cmd @ DeclareFun(fun, _) if fun.params.nonEmpty    => (fun.name, fun.arity) -> cmd
         case cmd @ DefineFun(fun, _, _) if fun.params.nonEmpty  => (fun.name, fun.arity) -> cmd
     decls.toMap

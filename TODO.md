@@ -9,8 +9,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `Match`: parsed and printed only in Dafny (expressions, without case
   conditions, not statements), no reduction on constructors, no rewriting
   modulo matches; SMT-LIB prints it only without case conditions.
-- Flaky test: rarely, `c.Translation.increments in expressions` (Horn clauses
-  of a loop with `-chc -z3`, without the simplifier), which passes alone.
+- Tests that run z3 have its default timeout of 1 s per query, which a
+  loaded machine may exceed: `c.Translation.increments in expressions` failed
+  with `unknown` while z3 unrolled a loop with the constant bound 10 (about
+  0.17 s alone); with a symbolic bound it finds a linear invariant (0.035 s).
 
 ## Code structure
 

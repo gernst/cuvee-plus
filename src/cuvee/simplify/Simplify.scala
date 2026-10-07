@@ -77,7 +77,7 @@ object Simplify extends Transform:
     else
       val once_ = once(config, state, ctx, expr)
       if once_ != expr
-      then Debug.step("simplify", show(config.printer, expr), show(config.printer, once_))
+      then Debug.step("simplify", show(config.output.printer, expr), show(config.output.printer, once_))
 
       val expr_ = rewrite(config, state, ctx, once_)
       if expr_ == expr

@@ -21,7 +21,7 @@ object Source extends cuvee.pipe.Source:
 
   override def input(config: Config, reader: Reader, parser: easyparse.Parser[List[Cmd]]): LazyList[Cmd] =
     val task = Task.load(reader)
-    val dir = config.input.map(file => new File(file).getAbsoluteFile.getParentFile)
+    val dir = config.file.map(file => new File(file).getAbsoluteFile.getParentFile)
     val input =
       if new File(task.input).isAbsolute
       then new File(task.input)
