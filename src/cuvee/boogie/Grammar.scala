@@ -146,20 +146,21 @@ object Grammar:
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ "else" ~ expr))
 
+  // guarded cases case p => x case q => y, or a single result
   val guarded =
-    P(("if" ~ expr ~ "then" ~ expr) | (true_ ~ expr))
+    P("case" ~ expr ~ "=>" ~ expr)
 
   val update: Parser[List[(Expr, Expr)]] =
-    P(guarded ~+ ",")
+    P(guarded.+ | list(true_ ~ expr))
 
   val trace_ =
-    Combinator(P(J("trace") ~ "(" ~ some(expr) ~ "," ~ "for" ~ exprs ~ "do" ~ ids ~ "=>" ~ update ~ ")"))
+    Combinator(P(J("trace") ~ "(" ~ some(expr) ~ "," ~ "for" ~ exprs ~ "do" ~ ids ~ "::" ~ update ~ ")"))
 
   val map_ =
-    Combinator(P(J("map") ~ none ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "=>" ~ update ~ ")"))
+    Combinator(P(J("map") ~ none ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "::" ~ update ~ ")"))
 
   val all_ =
-    Combinator(P(J("all") ~ none ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "=>" ~ list(true_ ~ expr) ~ ")"))
+    Combinator(P(J("all") ~ none ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "::" ~ list(true_ ~ expr) ~ ")"))
 
   val combinator =
     P(trace_ | map_ | all_)

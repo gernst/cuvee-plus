@@ -247,8 +247,8 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      `lemma <a> {:rw} φ;`). The formula is resolved and checked in the scope
      of the type parameters (`assertion`). In Dafny, `if φ then ψ` without
      `else` is `φ ==> ψ` anywhere (the parser translates `Ite` whose else
-     branch is `true`); the updates of combinators admit only guarded cases,
-     so an if-then-else there needs parentheses.
+     branch is `true`); the guarded cases of the updates of combinators begin
+     with `case`, `case φ => e`, so an if-then-else there needs no parentheses.
    - Dafny's chained comparisons `0 <= i < n` and `x == y == z` are
      conjunctions: the comparison operators associate to the left in the
      grammar, and the parser expands a comparison whose left operand is

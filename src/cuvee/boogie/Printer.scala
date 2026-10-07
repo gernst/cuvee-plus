@@ -537,19 +537,22 @@ object Printer extends cuvee.pipe.Printer:
     Group(Align(commas(deps.map(doc(_)))))
 
   // a combinator, whose head is followed by the dependencies after for, the keyword with the bound variables,
-  // and the update, a single expression or guarded cases, if guard then result, ...;
+  // and the update, a single expression or guarded cases, case guard => result ...;
   // if it does not fit, the keyword goes below for and the update below the keyword, indented
   def combinator(head: Doc, deps: List[Expr], keyword: String, bound: List[Var], update: Expr): Doc =
     val updates_ =
       update match
         case Eps(updates) =>
-          Group(commas(for Upd(cond, rhs) <- updates yield text("if") ~~ doc(cond) ~~ text("then") ~~ doc(rhs)))
+          val cases =
+            for Upd(cond, rhs) <- updates
+            yield text("case") ~~ doc(cond) ~~ text("=>") ~~ doc(rhs)
+          Group(cases.reduce(_ ~ line ~ _))
 
         case _ =>
-          doc(update, (lowest, None))
+          doc(update)
 
     // the bound variables are never broken across lines
-    val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
+    val binders = text(bound.map(x => name(x.name)).mkString(", ") + " ::")
     val body = text("for") ~~ dependencies(deps) ~ line ~ text(keyword) ~~ binders ~ Nest(2, line ~ updates_)
     Group(head ~ Align(body) ~ text(")"))
 

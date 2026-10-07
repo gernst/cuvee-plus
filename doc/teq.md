@@ -51,10 +51,10 @@ After section 3 of the paper:
 
 | Combinator | Dafny and Boogie | SMT-LIB |
 |---|---|---|
-| `Trace` | `trace(e, for Y, Z do x, y, z => u)` | `(trace (x e) ((y Y) (z Z)) u)` |
-| `Maps` | `maps(for Y yield y => u)` (Boogie: `map(...)`) | `(map ((y Y)) u)` |
-| `Invs` | `invs(for Y check y => φ)` (Boogie: `all(...)`) | `(all ((y Y)) φ)` |
-| update | `if φ₁ then e₁, if φ₂ then e₂` | `(cases (φ₁ e₁) (φ₂ e₂))` |
+| `Trace` | `trace(e, for Y, Z do x, y, z :: u)` | `(trace (x e) ((y Y) (z Z)) u)` |
+| `Maps` | `maps(for Y yield y :: u)` (Boogie: `map(...)`) | `(map ((y Y)) u)` |
+| `Invs` | `invs(for Y check y :: φ)` (Boogie: `all(...)`) | `(all ((y Y)) φ)` |
+| update | `case φ₁ => e₁ case φ₂ => e₂` | `(eps (φ₁ e₁) (φ₂ e₂))` |
 
 `⌊X⌋` is `butlast(X)` in Dafny and Boogie.
 
@@ -106,8 +106,8 @@ after section 4 of the paper.
   other guards, and cases with guard `false` are dropped. The guards are not
   simplified under the negations of the others: as the guards are also
   complete, each would become `true`.
-- `invs` distributes over conjunctions, `invs(for Y check y => φ && ψ)` is
-  `invs(for Y check y => φ) && invs(for Y check y => ψ)`, each with the
+- `invs` distributes over conjunctions, `invs(for Y check y :: φ && ψ)` is
+  `invs(for Y check y :: φ) && invs(for Y check y :: ψ)`, each with the
   dependencies it uses.
 - The updates of `trace` and `maps` and the body of `invs` assume the
   invariants among the assumptions of the context whose dependencies are

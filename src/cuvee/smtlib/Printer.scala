@@ -41,15 +41,6 @@ object Printer extends cuvee.pipe.Printer:
     for Var(name, typ) <- vars; line <- apps(mangle(name), lines(typ))
     yield line
 
-  // the update of a combinator, a single expression or guarded cases
-  def cases(update: Expr): List[String] =
-    update match
-      case Eps(updates) =>
-        apps(atom("cases"), updates.flatMap(upd => apps(lines(upd.cond), lines(upd.rhs))))
-
-      case _ =>
-        lines(update)
-
   def eqs(vars: List[Var], args: List[Expr]) =
     for (x, e) <- vars.zip(args); line <- apps(lines(x), lines(e))
     yield line
@@ -365,10 +356,10 @@ object Printer extends cuvee.pipe.Printer:
 
       // not part of SMT-LIB, the combinators of trace equation systems, whose dependencies are bound like let
       case Trace(init, deps, acc, bound, update) =>
-        apps(atom("trace"), apps(lines(acc), lines(init)), list(eqs(bound, deps)), cases(update))
+        apps(atom("trace"), apps(lines(acc), lines(init)), list(eqs(bound, deps)), lines(update))
 
       case Maps(deps, bound, update) =>
-        apps(atom("map"), list(eqs(bound, deps)), cases(update))
+        apps(atom("map"), list(eqs(bound, deps)), lines(update))
 
       case Invs(deps, bound, body) =>
         apps(atom("all"), list(eqs(bound, deps)), lines(body))

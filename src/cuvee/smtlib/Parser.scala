@@ -780,19 +780,26 @@ class Parser(private var init: State):
         val body_ = expr(scope_, body)
         Ex(bound_, body_)
 
+      // not part of SMT-LIB, the choice of a result whose guard holds, (eps (guard result) ...)
+      case List(Id("eps"), cases*) =>
+        val updates =
+          list(cases):
+            case List(cond, rhs) => Upd(expr(scope, cond), expr(scope, rhs))
+            case from            => Error.raise("not a case of a choice", from)
+        Eps(updates)
+
       // not part of SMT-LIB, the combinators of trace equation systems, whose dependencies are bound like let,
-      // (trace (x init) ((y Y) ...) update), (map ((y Y) ...) update), (all ((y Y) ...) body),
-      // where the update is an expression or guarded cases (cases (guard result) ...)
+      // (trace (x init) ((y Y) ...) update), (map ((y Y) ...) update), (all ((y Y) ...) body)
       case List(Id("trace"), List(Id(acc), init), List(bindings*), update) =>
         val init_ = expr(scope, init)
         val (bound_, deps_) = leteqs(scope, bindings)
         state.exprs.trace(init_, deps_, acc, bound_.map(_.name)): (acc_, bound__) =>
-          cases(scope ++ (acc_ :: bound__), update)
+          expr(scope ++ (acc_ :: bound__), update)
 
       case List(Id("map"), List(bindings*), update) =>
         val (bound_, deps_) = leteqs(scope, bindings)
         state.exprs.map(deps_, bound_.map(_.name)): bound__ =>
-          cases(scope ++ bound__, update)
+          expr(scope ++ bound__, update)
 
       case List(Id("all"), List(bindings*), body) =>
         val (bound_, deps_) = leteqs(scope, bindings)
@@ -808,19 +815,6 @@ class Parser(private var init: State):
 
       case _ =>
         Error.raise("not an expression", from)
-
-  // the update of a combinator, an expression or guarded cases (cases (guard result) ...)
-  def cases(scope: Scope, from: Any): Expr =
-    from match
-      case List(Id("cases"), cases*) =>
-        val updates =
-          list(cases):
-            case List(cond, rhs) => Upd(expr(scope, cond), expr(scope, rhs))
-            case from            => Error.raise("not a case of an update", from)
-        Eps(updates)
-
-      case _ =>
-        expr(scope, from)
 
   def leteqs(scope: Scope, from: Seq[Any]): (List[Var], List[Expr]) =
     val eqs = list(from) { leteq(scope, _) }

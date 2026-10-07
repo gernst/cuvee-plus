@@ -6,7 +6,7 @@
 (declare-const n Int)
 (declare-fun f (Int) Int)
 (declare-const K (Seq Int))
-(assert (= (trace (s 0) ((j J)) (cases ((< j n) (+ s (* 2 j) (- j))) ((and (< j n) (not (< j n))) s) ((not (< j n)) (ite (< j n) 1 s)))) (trace (s 0) ((j J)) (+ s 0))))
+(assert (= (trace (s 0) ((j J)) (eps ((< j n) (+ s (* 2 j) (- j))) ((and (< j n) (not (< j n))) s) ((not (< j n)) (ite (< j n) 1 s)))) (trace (s 0) ((j J)) (+ s 0))))
 (assert (all ((j J)) (=> (< j n) (or (< j n) (= (f j) 0)))))
 (assert (= (map ((j J)) (+ j 1 (- 1))) J))
 (assert (all ((k K) (j J) (i J)) (< (+ i j) n)))

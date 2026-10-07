@@ -15,7 +15,7 @@
     (trace
       (s 0)
       ((j J))
-      (cases ((< j n) (+ j s)) ((<= n j) s)))
+      (eps ((< j n) (+ j s)) ((<= n j) s)))
     (trace (s 0) ((j J)) s)))
 
 (assert

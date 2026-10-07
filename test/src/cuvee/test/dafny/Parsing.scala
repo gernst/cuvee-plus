@@ -169,11 +169,12 @@ object Conditionals extends TestSuite:
     test("inside expressions"):
       val cuvee.core.Eq(Imp(_, _), _) = formula("axiom (if p(0) then q(0)) == q(1)"): @unchecked
 
-    // the cases of updates are guarded, if-then-else expressions need parentheses there
-    test("updates have no else"):
-      val update = "type Trace<a>\nfunction f(J: seq<int>): bool { trace(0, for J do s, j => %s) == trace(0, for J do s, j => s) }"
-      errors(update.format("if j < 0 then s else s + 1")) ==> List("parse error")
-      errors(update.format("(if j < 0 then s else s + 1)")) ==> Nil
+    // the cases of updates begin with case, if-then-else expressions need no parentheses there
+    test("updates are cases"):
+      val update = "type Trace<a>\nfunction f(J: seq<int>): bool { trace(0, for J do s, j :: %s) == trace(0, for J do s, j :: s) }"
+      errors(update.format("if j < 0 then s else s + 1")) ==> Nil
+      errors(update.format("case j < 0 => s case 0 <= j => s + 1")) ==> Nil
+      errors(update.format("if j < 0 then s, if 0 <= j then s + 1")) ==> List("parse error")
 
 // chained comparisons x < y <= z are the conjunctions x < y && y <= z, which must not mix directions,
 // parenthesized comparisons do not chain

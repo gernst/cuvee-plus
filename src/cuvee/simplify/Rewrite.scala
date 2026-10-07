@@ -303,7 +303,7 @@ object Rewrite:
 
             matches(config, state, ctx, b, z, seq, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
 
-          // the bound variable is unused by the pattern, e.g. in for xs do z, v => y,
+          // the bound variable is unused by the pattern, e.g. in for xs do z, v :: y,
           // then any dependency of the expression has the length of the iterations, which are all equal
           case None =>
             matches(config, state, ctx, b, z, front._1, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))

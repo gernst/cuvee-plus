@@ -71,97 +71,97 @@ function count<a>(e: a, vs: seq<a>): int
 
 // a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)
 lemma {:rw} {:free} forall i: int, c: int, n: int ::
-  trace(i, for ⌊counter(0, 1, n)⌋ do x, k => x + c)
+  trace(i, for ⌊counter(0, 1, n)⌋ do x, k :: x + c)
     == counter(i, c, n)
 
 // a variable that keeps its value in each iteration
 lemma <a> {:rw} {:free} forall x: a, i: int, c: int, n: int ::
-  trace(x, for ⌊counter(i, c, n)⌋ do y, v => y)
+  trace(x, for ⌊counter(i, c, n)⌋ do y, v :: y)
     == consts(n, x)
 
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  trace(a, for keys, values do b, k, v => b[k := v])
+  trace(a, for keys, values do b, k, v :: b[k := v])
     == stores(a, keys, values)
 
 // each key is visited once only if they are distinct, hence a[k] is still the initial value
 lemma <a> {:rw} {:free} forall a: array<a, int>, keys: seq<a>, bs: seq<int>, cs: seq<int> ::
   if distincts(keys)
-  then trace(a, for keys, bs, cs do b, k, x, y => b[k := x * b[k] + y])
-         == trace(a, for keys, bs, cs do b, k, x, y => b[k := x * a[k] + y])
+  then trace(a, for keys, bs, cs do b, k, x, y :: b[k := x * b[k] + y])
+         == trace(a, for keys, bs, cs do b, k, x, y :: b[k := x * a[k] + y])
 
 lemma {:rw} {:free} forall a: array<int, int>, keys: seq<int>, d: int ::
-  trace(a, for keys do b, k => b[k := b[k + d]])
+  trace(a, for keys do b, k :: b[k := b[k + d]])
     == shifts(a, keys, d)
 
 lemma {:rw} {:free} forall x: int, values: seq<int> ::
-  trace(x, for values do s, v => s + v)
+  trace(x, for values do s, v :: s + v)
     == sums(x, values)
 
 lemma {:rw} {:free} forall x: int, values: seq<int> ::
-  trace(x, for values do s, v => if v % 2 == 0 then s + 1, if v % 2 != 0 then s - 1)
+  trace(x, for values do s, v :: case v % 2 == 0 => s + 1 case v % 2 != 0 => s - 1)
     == parities(x, values)
 
 lemma {:rw} {:free} forall x: int, values: seq<int> ::
-  trace(x, for values do m, v => if m < v then v, if v <= m then m)
+  trace(x, for values do m, v :: case m < v => v case v <= m => m)
     == maxs(x, values)
 
 lemma {:rw} {:free} forall x: int, values: seq<int> ::
-  trace(x, for values do m, v => if m > v then v, if v >= m then m)
+  trace(x, for values do m, v :: case m > v => v case v >= m => m)
     == mins(x, values)
 
 lemma <a> {:rw} {:free} forall x: int, e: a, vs: seq<a> ::
-  trace(x, for vs do y, v => if v == e then y + 1, if v != e then y)
+  trace(x, for vs do y, v :: case v == e => y + 1 case v != e => y)
     == counts(x, e, vs)
 
 // on booleans, the guards are the values themselves; the occurrences of false come first,
 // since the guard b of the other lemma also matches !b, which counts the occurrences of true among the negations
 lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
-  trace(x, for bs do y, b => if !b then y + 1, if b then y)
+  trace(x, for bs do y, b :: case !b => y + 1 case b => y)
     == counts(x, false, bs)
 
 lemma {:rw} {:free} forall x: int, bs: seq<bool> ::
-  trace(x, for bs do y, b => if b then y + 1, if !b then y)
+  trace(x, for bs do y, b :: case b => y + 1 case !b => y)
     == counts(x, true, bs)
 
 // maps
 
 lemma <a> {:rw} {:free} forall x: a, i: int, c: int, n: int ::
-  maps(for ⌊counter(i, c, n)⌋ yield v => x)
+  maps(for ⌊counter(i, c, n)⌋ yield v :: x)
     == ⌊consts(n, x)⌋
 
 lemma <a> {:rw} {:free} forall n: int, xs: seq<a> ::
-  maps(for ⌊counter(0, 1, n)⌋ yield k => earlier(k, xs))
+  maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(k, xs))
     == xs
 
 lemma {:rw} {:free} forall a: int, b: int, i: int, c: int, n: int ::
-  maps(for ⌊counter(i, c, n)⌋ yield v => a + b * v)
+  maps(for ⌊counter(i, c, n)⌋ yield v :: a + b * v)
     == ⌊counter(a + b * i, b * c, n)⌋
 
 lemma <a, b> {:rw} {:free} forall a: array<a, b>, keys: seq<a> ::
-  maps(for keys yield k => a[k])
+  maps(for keys yield k :: a[k])
     == selects(a, keys)
 
 // invs
 
 lemma {:rw} {:free} forall b: bool, i: int, c: int, n: int ::
-  invs(for ⌊counter(i, c, n)⌋ check v => b)
+  invs(for ⌊counter(i, c, n)⌋ check v :: b)
     <==> n == 0 || b
 
 lemma {:rw} {:free} forall m: int, i: int, c: int, n: int ::
-  invs(for ⌊counter(i, c, n)⌋ check k => m <= k)
+  invs(for ⌊counter(i, c, n)⌋ check k :: m <= k)
     <==> n == 0 || m <= i && m <= i + (n - 1) * c
 
 lemma {:rw} {:free} forall m: int, i: int, c: int, n: int ::
-  invs(for ⌊counter(i, c, n)⌋ check k => k < m)
+  invs(for ⌊counter(i, c, n)⌋ check k :: k < m)
     <==> n == 0 || i < m && i + (n - 1) * c < m
 
 // a counter by 1 or -1 avoids m if m lies outside of its range, e.g. for loops i != N
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
-  invs(for ⌊counter(i, 1, n)⌋ check k => k != m)
+  invs(for ⌊counter(i, 1, n)⌋ check k :: k != m)
     <==> m < i || i + n <= m
 
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
-  invs(for ⌊counter(i, -1, n)⌋ check k => k != m)
+  invs(for ⌊counter(i, -1, n)⌋ check k :: k != m)
     <==> i < m || m <= i - n
 
 // current
@@ -171,7 +171,7 @@ lemma {:rw} {:free} forall i: int, c: int, n: int ::
     == i + n * c
 
 lemma <a> {:rw} {:free} forall x: a, y: a, i: int, c: int, n: int ::
-  current(trace(x, for ⌊counter(i, c, n)⌋ do z, v => y))
+  current(trace(x, for ⌊counter(i, c, n)⌋ do z, v :: y))
     == if n == 0 then x else y
 
 lemma <a> {:rw} {:free} forall n: int, x: a ::
@@ -179,7 +179,7 @@ lemma <a> {:rw} {:free} forall n: int, x: a ::
     == x
 
 lemma <a> {:rw} {:free} forall a: array<a, int>, k: a, values: seq<int> ::
-  current(trace(a, for values do b, v => b[k := b[k] + v]))
+  current(trace(a, for values do b, v :: b[k := b[k] + v]))
     == a[k := a[k] + sum(values)]
 
 lemma {:rw} {:free} forall x: int, values: seq<int> ::
@@ -384,15 +384,15 @@ lemma {:rw} {:free} forall n: int, x: int ::
     == x * n
 
 lemma {:rw} {:free} forall values: seq<int> ::
-  sum(maps(for values yield v => -v))
+  sum(maps(for values yield v :: -v))
     == -sum(values)
 
 lemma {:rw} {:free} forall values: seq<int>, a: int ::
-  sum(maps(for values yield v => a * v))
+  sum(maps(for values yield v :: a * v))
     == a * sum(values)
 
 lemma {:rw} {:free} forall xs: seq<int>, ys: seq<int> ::
-  sum(maps(for xs, ys yield v, w => v + w))
+  sum(maps(for xs, ys yield v, w :: v + w))
     == sum(xs) + sum(ys)
 
 // the arithmetic series, which is exact, since n * (n - 1) is even
@@ -431,22 +431,22 @@ lemma <a, b> {:rw} {:free} forall a: array<a, b>, k: a, w: b, e: b, keys: seq<a>
 // the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
   if i <= m <= i + n
-  then count(true, maps(for ⌊counter(i, 1, n)⌋ yield k => k < m))
+  then count(true, maps(for ⌊counter(i, 1, n)⌋ yield k :: k < m))
          == m - i
 
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
   if i <= m <= i + n
-  then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k => k < m))
+  then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k :: k < m))
          == i + n - m
 
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
   if i <= m <= i + n
-  then count(true, maps(for ⌊counter(i, 1, n)⌋ yield k => m <= k))
+  then count(true, maps(for ⌊counter(i, 1, n)⌋ yield k :: m <= k))
          == i + n - m
 
 lemma {:rw} {:free} forall m: int, i: int, n: int ::
   if i <= m <= i + n
-  then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k => m <= k))
+  then count(false, maps(for ⌊counter(i, 1, n)⌋ yield k :: m <= k))
          == m - i
 
 lemma <a> {:rw} {:free} forall e: a, vs: seq<a> ::

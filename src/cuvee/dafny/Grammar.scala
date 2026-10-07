@@ -232,20 +232,21 @@ object Grammar:
   val inner: Parser[Expr] =
     Inner(P(atom ~ access.*))
 
+  // guarded cases case p => x case q => y, or a single result
   val guarded =
-    P(("if" ~ expr ~ "then" ~ expr) | (true_ ~ expr))
+    P("case" ~ expr ~ "=>" ~ expr)
 
   val update: Parser[List[(Expr, Expr)]] =
-    P(guarded ~+ ",")
+    P(guarded.+ | list(true_ ~ expr))
 
   val trace_ =
-    Combinator(P(J("trace") ~ "(" ~ some(expr) ~ "," ~ "for" ~ exprs ~ "do" ~ ids ~ "=>" ~ update ~ ")"))
+    Combinator(P(J("trace") ~ "(" ~ some(expr) ~ "," ~ "for" ~ exprs ~ "do" ~ ids ~ "::" ~ update ~ ")"))
 
   val map_ =
-    Combinator(P(J("maps") ~ none ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "=>" ~ update ~ ")"))
+    Combinator(P(J("maps") ~ none ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "::" ~ update ~ ")"))
 
   val all_ =
-    Combinator(P(J("invs") ~ none ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "=>" ~ list(true_ ~ expr) ~ ")"))
+    Combinator(P(J("invs") ~ none ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "::" ~ list(true_ ~ expr) ~ ")"))
 
   val combinator =
     P(trace_ | map_ | all_)
