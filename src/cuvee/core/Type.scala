@@ -167,8 +167,8 @@ object Type:
       case App(fun, inst, typ, args)           => App(fun, inst.map(t), t(typ), args.map(e))
       case As(arg, typ)                        => As(e(arg), t(typ))
       case Diff(ys, arg)                       => Diff(xs(ys), e(arg))
-      case Trace(init, deps, acc, bound, upds) => Trace(e(init), deps.map(e), expand(state, acc), xs(bound), upds.map(e))
-      case Maps(deps, bound, upds)             => Maps(deps.map(e), xs(bound), upds.map(e))
+      case Trace(init, deps, acc, bound, upd)  => Trace(e(init), deps.map(e), expand(state, acc), xs(bound), e(upd))
+      case Maps(deps, bound, upd)              => Maps(deps.map(e), xs(bound), e(upd))
       case Invs(deps, bound, body)             => Invs(deps.map(e), xs(bound), e(body))
       case Bind(quant, bound, body)            => Bind(quant, xs(bound), e(body))
       case Let(bound, args, body)              => Let(xs(bound), args.map(e), e(body))
@@ -355,26 +355,29 @@ object Type:
       case Old(arg) =>
         check(state, scope, arg, res, subst, pending)
 
-      // the accumulator starts with the initial value and is updated by the results
-      case Trace(init, deps, acc, bound, updates) =>
+      // the accumulator starts with the initial value and is updated by the result
+      case Trace(init, deps, acc, bound, update) =>
         check(state, scope, init, acc.typ, subst, pending)
         dependencies(state, scope, expr, deps, bound, subst, pending)
-        this.updates(state, scope, updates, acc.typ, subst, pending)
+        check(state, scope, update, acc.typ, subst, pending)
 
         Error.report("type mismatch", expr, Sort.trace(acc.typ), res):
           unify(state, scope, Sort.trace(acc.typ), res, subst)
 
-      // the results have the same type as the first one
-      case Maps(deps, bound, updates) =>
-        Error.report("map without update", expr):
-          require(updates.nonEmpty)
-
-        val typ = updates.head.rhs.typ
+      case Maps(deps, bound, update) =>
+        val typ = update.typ
         dependencies(state, scope, expr, deps, bound, subst, pending)
-        this.updates(state, scope, updates, typ, subst, pending)
+        check(state, scope, update, typ, subst, pending)
 
         Error.report("type mismatch", expr, Sort.seq(typ), res):
           unify(state, scope, Sort.seq(typ), res, subst)
+
+      // the results have the type of the expression
+      case Eps(updates) =>
+        Error.report("choice without cases", expr):
+          require(updates.nonEmpty)
+
+        this.updates(state, scope, updates, res, subst, pending)
 
       case Invs(deps, bound, body) =>
         dependencies(state, scope, expr, deps, bound, subst, pending)

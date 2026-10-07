@@ -810,15 +810,17 @@ class Parser(private var init: State):
         Error.raise("not an expression", from)
 
   // the update of a combinator, an expression or guarded cases (cases (guard result) ...)
-  def cases(scope: Scope, from: Any): List[Upd] =
+  def cases(scope: Scope, from: Any): Expr =
     from match
       case List(Id("cases"), cases*) =>
-        list(cases):
-          case List(cond, rhs) => Upd(expr(scope, cond), expr(scope, rhs))
-          case from            => Error.raise("not a case of an update", from)
+        val updates =
+          list(cases):
+            case List(cond, rhs) => Upd(expr(scope, cond), expr(scope, rhs))
+            case from            => Error.raise("not a case of an update", from)
+        Eps(updates)
 
       case _ =>
-        List(Upd(True, expr(scope, from)))
+        expr(scope, from)
 
   def leteqs(scope: Scope, from: Seq[Any]): (List[Var], List[Expr]) =
     val eqs = list(from) { leteq(scope, _) }

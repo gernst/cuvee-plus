@@ -139,9 +139,3 @@ object Par:
       yield modifies(state, left) intersect (right.free -- state.vars.get("history") ++ modifies(state, right))
 
     pairs.flatten.toSet
-
-// calls h_ := h.send(c, v), x, h_ := h.receive(c), and h_ := h.tick(t) of the methods of the type history
-// (see hybrid.dfy), which return the history extended by an event, where the enclosing procedure must keep its commitment
-object Send extends Sugar.call(Name("history_send", None), 3, 1)
-object Recv extends Sugar.call(Name("history_receive", None), 2, 2)
-object Tick extends Sugar.call(Name("history_tick", None), 2, 1)

@@ -19,6 +19,7 @@ enum Step:
 // is conditional on the assumptions and branch conditions before it;
 // a path that has left by a jump (break, continue, or return) skips the remaining statements
 case class Path(su: Map[Var, Expr], steps: List[Step], jump: Option[Prog]):
+  // TODO: rewrite path in terms of Subst
   def apply(expr: Expr): Expr =
     Subst[Type, Expr](Map(), su)(expr)
 
@@ -31,6 +32,7 @@ case class Path(su: Map[Var, Expr], steps: List[Step], jump: Option[Prog]):
 
   // the checks, each conditional on the assumptions and branch conditions before it
   def checks: List[Expr] =
+    // TODO: write this function as a recursion instead
     val (_, checks) =
       steps.foldLeft((List[Expr](), List[Expr]())):
         case ((ctx, checks), Step.Assume(phi) ) => (ctx :+ phi, checks)
@@ -271,7 +273,11 @@ object TEQ extends Transform:
         val choices = (zs zip Zs).filter((z, _) => used.contains(z))
         val deps = Butlast(K) :: others.map((_, tr_) => Butlast(tr_)) ++ choices.map(_._2)
         val bound = k :: others.map(_._1) ++ choices.map(_._1)
-        Eq(tr, Trace(p(x), deps, x_, bound, updates))
+        val update =
+          updates match
+            case List(Upd(True, rhs)) => rhs
+            case _                    => Eps(updates)
+        Eq(tr, Trace(p(x), deps, x_, bound, update))
 
     val counter = Eq(K, Counter(Zero.int, One.int, n))
     val current = for (x, tr) <- cur zip Xs yield Eq(x, Current(tr))

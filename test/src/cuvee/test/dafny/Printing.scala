@@ -21,6 +21,14 @@ object Printing extends TestSuite:
     Printer.lines(expr).mkString(" ")
 
   val tests = Tests:
+    // delimited by braces, never parenthesized
+    test("eps"):
+      val one = Eps(List(Upd(p, x)))
+      val two = Eps(List(Upd(p, x), Upd(q, y)))
+      expr(one) ==> "if { case p => x }"
+      expr(Plus.int(two, zero)) ==> "if { case p => x case q => y } + 0"
+      expr(Eps(List(Upd(p, one), Upd(q, y)))) ==> "if { case p => if { case p => x } case q => y }"
+
     test("assign"):
       Printer.lines(Assign(List(x, y), List(y, x))) ==> List("x, y := y, x;")
 

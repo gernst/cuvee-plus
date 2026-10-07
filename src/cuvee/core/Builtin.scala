@@ -18,6 +18,12 @@ object False extends App(Fun.false_, Nil, Sort.bool, Nil)
 
 object Skip extends Block(Nil, Nil)
 
+// calls h_ := h.send(c, v), x, h_ := h.receive(c), and h_ := h.tick(t) of the methods of the type history
+// (see hybrid.dfy), which return the history extended by an event, where the enclosing procedure must keep its commitment
+object Send extends Sugar.call("history_send", 3, 1)
+object Recv extends Sugar.call("history_receive", 2, 2)
+object Tick extends Sugar.call("history_tick", 2, 1)
+
 object Eq extends Sugar.binary(Fun.eq_):
   def apply(left: List[Expr], right: List[Expr]): List[Expr] =
     Error.report("invalid equation between mismatching arguments", left, right):

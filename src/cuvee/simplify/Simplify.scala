@@ -278,18 +278,37 @@ object Simplify extends Transform:
 
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see combinator)
-      case Trace(init, deps, acc, bound, updates) =>
+      case Trace(init, deps, acc, bound, update) =>
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
-        val updates_ = this.updates(config, state, ctx.bind(List(vars_.head)), deps_, vars_.tail, re(updates))
-        trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, updates_)
+        val update_ = simplify(config, state, combinator(config, state, ctx.bind(List(vars_.head)), deps_, vars_.tail), re(update))
+        trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, update_)
 
-      case Maps(deps, bound, updates) =>
+      case Maps(deps, bound, update) =>
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val updates_ = this.updates(config, state, ctx, deps_, bound_, re(updates))
-        maps(config, state, ctx, deps_, bound_, updates_)
+        val update_ = simplify(config, state, combinator(config, state, ctx, deps_, bound_), re(update))
+        maps(config, state, ctx, deps_, bound_, update_)
+
+      // the guards of the cases are simplified, cases whose guard is false are dropped,
+      // and the results are simplified assuming their guard and, since the guards are disjoint, that the others are false;
+      // not so the guards themselves, which would become true, as the guards are also complete
+      case Eps(updates) =>
+        val updates_ =
+          for
+            Upd(cond, rhs) <- updates
+            cond_ = simplify(config, state, ctx.neutral, cond)
+            if cond_ != False
+          yield Upd(cond_, rhs)
+
+        val updates__ =
+          for (Upd(cond_, rhs), i) <- updates_.zipWithIndex
+          yield
+            val others = updates_.guards.patch(i, Nil, 1)
+            upd(config, state, ctx, cond_, simplify(config, state, ctx.neutral.assume(List(cond_), others), rhs))
+
+        eps(config, state, ctx, updates__)
 
       // the body holds for all values of the dependencies, like the body of a universal quantifier,
       // but without polarity, since the dependencies are not recorded in the context
@@ -332,24 +351,6 @@ object Simplify extends Transform:
 
       case _ =>
         Nil
-
-  // the guards of the cases of an update are simplified, cases whose guard is false are dropped,
-  // and the results are simplified assuming their guard and, since the guards are disjoint, that the others are false;
-  // not so the guards themselves, which would become true, as the guards are also complete;
-  // `bound` are the variables for the dependencies `deps` (see combinator)
-  def updates(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], updates: List[Upd]): List[Upd] =
-    val ctx_ = combinator(config, state, ctx, deps, bound)
-    val updates_ =
-      for
-        Upd(cond, rhs) <- updates
-        cond_ = simplify(config, state, ctx_, cond)
-        if cond_ != False
-      yield Upd(cond_, rhs)
-
-    for (Upd(cond_, rhs), i) <- updates_.zipWithIndex
-    yield
-      val others = updates_.guards.patch(i, Nil, 1)
-      upd(config, state, ctx, cond_, simplify(config, state, ctx_.assume(List(cond_), others), rhs))
 
   // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,
   // without polarity, since the context does not record the argument
@@ -749,23 +750,25 @@ object Simplify extends Transform:
         case _ =>
           op(left_, right_)
 
+  // earlier moves inward: into maps, whose element j is its update for the elements j of the dependencies,
+  // into both branches of ite, and into the body of let, whose bound variables are renamed apart from j
   def earlier(config: Config, state: State, ctx: Ctx, j: Expr, arg: Expr): Expr =
     (j, arg) match
-      case (j, ctx.↑(Maps(deps, bound, List(Upd(True, result))))) =>
-        // TODO: to apply this idea to all lists of updates,
-        //       one could generate a nested if-then-else chain,
-        //       or preferably introduce a choice operator into the expressions
-        //       so that List[Upd] is not special any more
-        val su = Subst.from(bound, deps.map(Earlier(j, _)))
-        su(result)
+      case (j, ctx.↑(Maps(deps, bound, update))) =>
+        val su = Subst.from(bound, deps.map(earlier(config, state, ctx, j, _)))
+        su(update)
+
+      case (j, Ite(test, left, right)) =>
+        ite(config, state, ctx, test, earlier(config, state, ctx, j, left), earlier(config, state, ctx, j, right))
+
+      case (j, Let(bound, args, body)) =>
+        val (bound_, re) = Subst.rename(bound, ctx.free ++ j.free)
+        let(config, state, ctx, bound_, args, earlier(config, state, ctx.bind(bound_), j, re(body)))
 
       case _ =>
         Earlier(j, arg)
 
-  // applications of other functions, e.g. user-defined ones;
-  // earlier and maps commute: the element k of a map is its update for the elements k of the dependencies,
-  // e.g. earlier(k, maps(for xs yield v => v + 1)) is earlier(k, xs) + 1, where the cases become conditionals
-  // (the guards are complete, the last one is not tested); the indices of earlier are valid by construction
+  // applications of other functions, e.g. user-defined ones
   def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
     App(fun, inst, typ, args)
 
@@ -805,13 +808,19 @@ object Simplify extends Transform:
   def upd(config: Config, state: State, ctx: Ctx, cond: Expr, rhs: Expr): Upd =
     Upd(cond, rhs)
 
-  def trace(config: Config, state: State, ctx: Ctx, init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd]): Expr =
-    val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, updates.free - acc)
-    Trace(init, deps_, acc, bound_, re(updates))
+  // nested choices are flattened, a single case whose guard is true is its result
+  def eps(config: Config, state: State, ctx: Ctx, updates: List[Upd]): Expr =
+    Eps.flatten(updates) match
+      case List(Upd(True, rhs)) => rhs
+      case updates_             => Eps(updates_)
 
-  def maps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], updates: List[Upd]): Expr =
-    val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, updates.free)
-    Maps(deps_, bound_, re(updates))
+  def trace(config: Config, state: State, ctx: Ctx, init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr): Expr =
+    val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free - acc)
+    Trace(init, deps_, acc, bound_, re(update))
+
+  def maps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], update: Expr): Expr =
+    val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free)
+    Maps(deps_, bound_, re(update))
 
   // invariants distribute over conjunctions, where each part keeps the dependencies that it uses;
   // with a constant body: true holds trivially,

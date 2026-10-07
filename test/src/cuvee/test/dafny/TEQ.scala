@@ -86,7 +86,7 @@ object TEQ extends TestSuite:
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val rule = rw(
-        Trace(i, List(Butlast(Counter(Zero.int, One.int, n))), x, List(k), List(Upd(True, Plus.int(x, c)))),
+        Trace(i, List(Butlast(Counter(Zero.int, One.int, n))), x, List(k), Plus.int(x, c)),
         Counter(i, c, n)
       )
 
@@ -108,13 +108,13 @@ object TEQ extends TestSuite:
       val b = Var("b", Sort.bool)
       val bs = Var("bs", Sort.seq(Sort.bool))
 
-      val trues = Trace(x, List(bs), y, List(b), List(Upd(b, Plus.int(y, One.int)), Upd(Not(b), y)))
+      val trues = Trace(x, List(bs), y, List(b), Eps(List(Upd(b, Plus.int(y, One.int)), Upd(Not(b), y))))
       Rewrite(rules, trues) ==> App(counts, List(x, True, bs))
 
-      val falses = Trace(x, List(bs), y, List(b), List(Upd(Not(b), Plus.int(y, One.int)), Upd(b, y)))
+      val falses = Trace(x, List(bs), y, List(b), Eps(List(Upd(Not(b), Plus.int(y, One.int)), Upd(b, y))))
       Rewrite(rules, falses) ==> App(counts, List(x, False, bs))
 
-      val occurrences = Trace(x, List(vs), y, List(v), List(Upd(Eq(v, e), Plus.int(y, One.int)), Upd(Not(Eq(v, e)), y)))
+      val occurrences = Trace(x, List(vs), y, List(v), Eps(List(Upd(Eq(v, e), Plus.int(y, One.int)), Upd(Not(Eq(v, e)), y))))
       Rewrite(rules, occurrences) ==> App(counts, List(x, e, vs))
 
     // an update of a visited key replaces its contribution to the count, and the prefix counts are counts of prefixes;
@@ -233,7 +233,7 @@ object TEQ extends TestSuite:
       val X = Var("X", trace)
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
-      val loop = Trace(One.int, List(Butlast(K)), x, List(k), List(Upd(True, Zero.int)))
+      val loop = Trace(One.int, List(Butlast(K)), x, List(k), Zero.int)
       val ctx = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, n)).assume(Eq(K, Counter(Zero.int, One.int, n))).assume(Eq(X, loop)).withRules(rules)
       Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Zero.int), One.int, Zero.int)
 

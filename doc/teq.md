@@ -11,18 +11,19 @@ monomorphization, and no implicit introduction of TEQ concepts to the solvers.
 
 ```scala
 case class Upd(cond: Expr, rhs: Expr)                         // if cond then rhs
-case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd])
-case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd])
+case class Eps(updates: List[Upd])                            // some rhs whose cond holds
+case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr)
+case class Maps(deps: List[Expr], bound: List[Var], update: Expr)
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
 ```
 
 After section 3 of the paper:
 
-- `Trace(init, deps, acc, bound, updates)` is the trace of the accumulator
+- `Trace(init, deps, acc, bound, update)` is the trace of the accumulator
   `acc`, of type `Trace(T)`. It starts with `init`; each further value is the
   update of the previous one and the next values of the dependencies, which
   `bound` ranges over point-wise.
-- `Maps(deps, bound, updates)` is the sequence of the updates, of type
+- `Maps(deps, bound, update)` is the sequence of the updates, of type
   `Seq(T)`.
 - `Invs(deps, bound, φ)` states `φ` for all values of the dependencies.
 - The dependencies are always sequences (`Seq(T)`), at least one, all of the
@@ -33,9 +34,12 @@ After section 3 of the paper:
   the number of iterations `n` is that of the counter `K == counter(0, 1, n)`
   of the iterations, and the lemmas iterate over counters, whose length `n`
   they use directly.
-- An update is a list of guarded cases `Upd(φᵢ, eᵢ)` with disjoint and
-  complete guards; a single case has the guard `true`. `List[Upd]` has
-  `free`, `params`, and `exprs` like lists of expressions.
+- An update is an expression: a single result, or guarded cases
+  `Eps(List(Upd(φᵢ, eᵢ), ...))` with disjoint and complete guards, a variant
+  of Hilbert's choice. The parsers build `Eps` only for written guards, the
+  simplifier flattens nested `Eps` (`Eps.flatten`) and replaces a single case
+  with guard `true` by its result. `List[Upd]` has `free`, `params`, and
+  `map` like lists of expressions.
 - The functions on traces are in `Fun.trace`: `counter`, `current`, `butlast`
   (the paper's `⌊X⌋`), `length`, `earlier`; `Counter`, `Current`,
   `Butlast`, `Earlier`, and `Length` in
@@ -97,7 +101,7 @@ after section 4 of the paper.
   and drop dependencies whose bound variables are unused, except counters
   `⌊counter(...)⌋`; the first one is kept if none remains, since the
   dependencies must be nonempty. `invs` with a constant body is `true` or
-  `len(dep) == 0`. Guards and results of updates are simplified, results
+  `len(dep) == 0`. Guards and results of `Eps` are simplified, results
   under their guard and, since the guards are disjoint, the negations of the
   other guards, and cases with guard `false` are dropped. The guards are not
   simplified under the negations of the others: as the guards are also

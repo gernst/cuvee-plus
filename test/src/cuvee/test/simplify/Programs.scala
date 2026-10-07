@@ -71,9 +71,9 @@ object Dependencies extends TestSuite:
 
   val tests = Tests:
     test("unused"):
-      simplify(Maps(List(K, J), List(k, j), List(Upd(True, j)))) ==> Maps(List(J), List(j), List(Upd(True, j)))
+      simplify(Maps(List(K, J), List(k, j), j)) ==> Maps(List(J), List(j), j)
       // the counter is kept
-      simplify(Maps(List(C, J), List(k, j), List(Upd(True, j)))) ==> Maps(List(C, J), List(k, j), List(Upd(True, j)))
+      simplify(Maps(List(C, J), List(k, j), j)) ==> Maps(List(C, J), List(k, j), j)
       // the first dependency is kept if none remains
       simplify(Invs(List(K, J), List(k, j), Lt.int(Zero.int, n))) ==> Invs(List(K), List(k), Lt.int(Zero.int, n))
 
@@ -92,8 +92,8 @@ object Dependencies extends TestSuite:
       val ctx = Ctx.empty.assume(List(Invs(List(J), List(l), Lt.int(Zero.int, l))), Nil)
       def simplify(expr: Expr) = Simplify.simplify(Config.default, State.empty, ctx, expr)
       simplify(Invs(List(K, J), List(k, j), Lt.int(Zero.int, j))) ==> True
-      val upds = List(Upd(Lt.int(Zero.int, j), j), Upd(Le.int(j, Zero.int), Zero.int))
-      simplify(Maps(List(J), List(j), upds)) ==> Maps(List(J), List(j), List(Upd(True, j)))
+      val upds = Eps(List(Upd(Lt.int(Zero.int, j), j), Upd(Le.int(j, Zero.int), Zero.int)))
+      simplify(Maps(List(J), List(j), upds)) ==> Maps(List(J), List(j), j)
       // not for other dependencies
       val other = Invs(List(K), List(k), Lt.int(Zero.int, k))
       simplify(other) ==> other
@@ -104,8 +104,8 @@ object Dependencies extends TestSuite:
       simplify(Invs(List(C), List(k), Le.int(Zero.int, k))) ==> True
       simplify(Invs(List(C), List(k), Lt.int(k, n))) ==> True
       simplify(Invs(List(C, J), List(k, j), Eq(j, Earlier(k, J)))) ==> True
-      val upds = List(Upd(Lt.int(k, n), j), Upd(Le.int(n, k), Zero.int))
-      simplify(Maps(List(C, J), List(k, j), upds)) ==> Maps(List(C, J), List(k, j), List(Upd(True, j)))
+      val upds = Eps(List(Upd(Lt.int(k, n), j), Upd(Le.int(n, k), Zero.int)))
+      simplify(Maps(List(C, J), List(k, j), upds)) ==> Maps(List(C, J), List(k, j), j)
       // also for a variable that denotes the counter by an assumption
       val I = Var("I", Sort.trace(Sort.int))
       val ctx = Ctx.empty.assume(List(Eq(I, Counter(Zero.int, One.int, n))), Nil)
@@ -118,5 +118,5 @@ object Dependencies extends TestSuite:
     test("other guards"):
       val b = Var("b", Sort.bool)
       val c = Var("c", Sort.bool)
-      val upds = List(Upd(b, Ite(c, One.int, j)), Upd(c, Ite(b, One.int, j)))
-      simplify(Maps(List(J), List(j), upds)) ==> Maps(List(J), List(j), List(Upd(b, j), Upd(c, j)))
+      val upds = Eps(List(Upd(b, Ite(c, One.int, j)), Upd(c, Ite(b, One.int, j))))
+      simplify(Maps(List(J), List(j), upds)) ==> Maps(List(J), List(j), Eps(List(Upd(b, j), Upd(c, j))))

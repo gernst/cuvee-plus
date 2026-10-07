@@ -249,16 +249,40 @@ object Decisions extends TestSuite:
       simplify(Ctx.empty, Mod.int(Plus.int(Times.int(lit(3), n), One.int), lit(2))) ==> Mod.int(Plus.int(n, One.int), lit(2))
       simplify(Ctx.empty, Mod.int(n, lit(2))) ==> Mod.int(n, lit(2))
 
-    // earlier and maps commute, the cases of the update become conditionals
+    // earlier and maps commute, also for the cases of an update
     test("earlier of maps"):
       val k = Var("k", Sort.int)
       val v = Var("v", Sort.int)
       val xs = Var("xs", Sort.seq(Sort.int))
-      simplify(Ctx.empty, Earlier(k, Maps(List(xs), List(v), List(Upd(True, Plus.int(v, One.int)))))) ==>
+      simplify(Ctx.empty, Earlier(k, Maps(List(xs), List(v), Plus.int(v, One.int)))) ==>
         Plus.int(Earlier(k, xs), One.int)
-      val cases = List(Upd(Lt.int(v, Zero.int), Zero.int), Upd(Le.int(Zero.int, v), v))
+      val cases = Eps(List(Upd(Lt.int(v, Zero.int), Zero.int), Upd(Le.int(Zero.int, v), v)))
       simplify(Ctx.empty, Earlier(k, Maps(List(xs), List(v), cases))) ==>
-        Ite(Lt.int(Earlier(k, xs), Zero.int), Zero.int, Earlier(k, xs))
+        Eps(List(Upd(Lt.int(Earlier(k, xs), Zero.int), Zero.int), Upd(Le.int(Zero.int, Earlier(k, xs)), Earlier(k, xs))))
+
+    // earlier moves into both branches of ite and into the body of let, whose bound variables avoid capture
+    test("earlier of ite and let"):
+      val j = Var("j", Sort.int)
+      val p = Var("p", Sort.bool)
+      val xs = Var("xs", Sort.seq(Sort.int))
+      val ys = Var("ys", Sort.seq(Sort.int))
+      simplify(Ctx.empty, Earlier(j, Ite(p, xs, ys))) ==> Ite(p, Earlier(j, xs), Earlier(j, ys))
+      val k = Var("k", Sort.int)
+      val inner = Let(List(j), List(k), Ite(Lt.int(j, Zero.int), xs, ys))
+      val Let(List(j_), List(k_), body) = simplify(Ctx.empty, Earlier(j, inner)): @unchecked
+      assert(j_ != j)
+      k_ ==> k
+      body ==> Ite(Lt.int(j_, Zero.int), Earlier(j, xs), Earlier(j, ys))
+
+    // the guards of nested choices are combined
+    test("nested choices"):
+      val x = Var("x", Sort.int)
+      val y = Var("y", Sort.int)
+      val p = Var("p", Sort.bool)
+      val q = Var("q", Sort.bool)
+      val inner = Eps(List(Upd(q, x), Upd(Not(q), y)))
+      simplify(Ctx.empty, Eps(List(Upd(p, inner), Upd(Not(p), y)))) ==>
+        Eps(List(Upd(And(p, q), x), Upd(And(p, Not(q)), y), Upd(Not(p), y)))
 
     // an inconsistent context decides formulas by polarity only, not by the theories
     test("inconsistent"):

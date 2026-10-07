@@ -91,6 +91,17 @@ object Rewrite:
       case (_, As(arg, _)) =>
         matches(config, state, ctx, b, pat, arg, m)
 
+      // guarded cases, where a result that is not Eps is a single case whose guard is true,
+      // e.g. the update y + 1 of a pattern covers both cases if b then y + 1, if !b then y + 1
+      case (Eps(updates), Eps(updates_)) =>
+        matches(config, state, ctx, b, updates, updates_, m)
+
+      case (Eps(updates), _) =>
+        matches(config, state, ctx, b, updates, List(Upd(True, expr)), m)
+
+      case (_, Eps(updates_)) =>
+        matches(config, state, ctx, b, List(Upd(True, pat)), updates_, m)
+
       // comparisons modulo moving summands between the sides, and < and <= on Int;
       // the constant of the pattern is moved to the expression, whose constants are folded,
       // e.g. k < m is m - k - 1 and matches i < 1024, which is 1023 - i, as m - k against 1024 - i
@@ -119,16 +130,16 @@ object Rewrite:
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
         Rewrite.matches(state, typ, typ_, m)
 
-      case (Trace(init, deps, acc, bound, updates), Trace(init_, deps_, acc_, bound_, updates_)) =>
+      case (Trace(init, deps, acc, bound, update), Trace(init_, deps_, acc_, bound_, update_)) =>
         for
           m1 <- matches(config, state, ctx, b, init, init_, m)
           m2 <- combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(acc -> acc_), m1): (b_, m) =>
-            matches(config, state, ctx, b_, updates, updates_, m)
+            matches(config, state, ctx, b_, update, update_, m)
         yield m2
 
-      case (Maps(deps, bound, updates), Maps(deps_, bound_, updates_)) =>
+      case (Maps(deps, bound, update), Maps(deps_, bound_, update_)) =>
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
-          matches(config, state, ctx, b_, updates, updates_, m)
+          matches(config, state, ctx, b_, update, update_, m)
 
       case (Invs(deps, bound, body), Invs(deps_, bound_, body_)) =>
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
@@ -288,7 +299,7 @@ object Rewrite:
                 case _ =>
                   val used = pairs.filter((_, y_) => value.free.contains(y_))
                   val (deps__, bound__) = (front :: used.filter(_ != front)).unzip
-                  Maps(deps__, bound__, List(Upd(True, value)))
+                  Maps(deps__, bound__, value)
 
             matches(config, state, ctx, b, z, seq, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
 

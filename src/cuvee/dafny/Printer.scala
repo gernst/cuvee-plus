@@ -716,14 +716,14 @@ object Printer extends cuvee.pipe.Printer:
   // and the update, a single expression or guarded cases, if guard then result, ...,
   // where a single if-then-else expression is parenthesized, since an if begins a guard;
   // if it does not fit, the keyword goes below for and the update below the keyword, indented
-  def combinator(head: Doc, deps: List[Expr], keyword: String, bound: List[Var], updates: List[Upd]): Doc =
+  def combinator(head: Doc, deps: List[Expr], keyword: String, bound: List[Var], update: Expr): Doc =
     val updates_ =
-      updates match
-        case List(Upd(True, rhs)) =>
-          doc(rhs, (lowest, None))
+      update match
+        case Eps(updates) =>
+          Group(commas(for Upd(cond, rhs) <- updates yield text("if") ~~ doc(cond) ~~ text("then") ~~ doc(rhs)))
 
         case _ =>
-          Group(commas(for Upd(cond, rhs) <- updates yield text("if") ~~ doc(cond) ~~ text("then") ~~ doc(rhs)))
+          doc(update, (lowest, None))
 
     // the bound variables are never broken across lines
     val binders = text(bound.map(x => name(x.name)).mkString(", ") + " =>")
@@ -780,6 +780,14 @@ object Printer extends cuvee.pipe.Printer:
 
       case Ite(test, left, right) =>
         Group(text("if") ~~ doc(test) ~ line ~ text("then") ~~ doc(left) ~ line ~ text("else") ~~ doc(right))
+
+      // like the alternatives of Dafny's if statement, if { case p => x case q => y },
+      // which is delimited by the braces and never parenthesized
+      case Eps(updates) =>
+        val cases =
+          for Upd(cond, rhs) <- updates
+          yield line ~ text("case") ~~ doc(cond) ~~ text("=>") ~~ doc(rhs)
+        Group(text("if {") ~ Nest(2, concat(cases)) ~ line ~ text("}"))
 
       case _ if elems(expr).isDefined =>
         val Some(elems_) = elems(expr): @unchecked
@@ -900,14 +908,14 @@ object Printer extends cuvee.pipe.Printer:
         Error.raise("unprintable distinct", expr)
 
       // the combinators of trace equation systems
-      case Trace(init, deps, acc, bound, updates) =>
-        combinator(text("trace(") ~ doc(init) ~ text(",") ~ space, deps, "do", acc :: bound, updates)
+      case Trace(init, deps, acc, bound, update) =>
+        combinator(text("trace(") ~ doc(init) ~ text(",") ~ space, deps, "do", acc :: bound, update)
 
-      case Maps(deps, bound, updates) =>
-        combinator(text("maps("), deps, "yield", bound, updates)
+      case Maps(deps, bound, update) =>
+        combinator(text("maps("), deps, "yield", bound, update)
 
       case Invs(deps, bound, body) =>
-        combinator(text("invs("), deps, "check", bound, List(Upd(True, body)))
+        combinator(text("invs("), deps, "check", bound, body)
 
       case Old(arg) =>
         call("old", List(doc(arg)))

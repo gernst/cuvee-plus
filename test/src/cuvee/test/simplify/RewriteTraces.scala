@@ -52,38 +52,38 @@ object RewriteTraces extends TestSuite:
 
   // trace(i, for ⌊K⌋ do i, k ↦ i + c) = counter(i, c, steps(⌊K⌋))
   val counterRule =
-    rw(Trace(i, List(Butlast(K)), x, List(k), List(Upd(True, Plus.int(x, c)))), Counter(i, c, app(steps, Butlast(K))))
+    rw(Trace(i, List(Butlast(K)), x, List(k), Plus.int(x, c)), Counter(i, c, app(steps, Butlast(K))))
 
   // trace(i, for V do x, v ↦ x + v) = sums(i, V)
   val sumsRule =
-    rw(Trace(i, List(V), x, List(v), List(Upd(True, Plus.int(x, v)))), app(sums, i, V))
+    rw(Trace(i, List(V), x, List(v), Plus.int(x, v)), app(sums, i, V))
 
   // map(for K yield k ↦ a[k]) = selects(a, K)
   val selectsRule =
-    rw(Maps(List(Ks), List(k), List(Upd(True, Select(a, k)))), app(selects, a, Ks))
+    rw(Maps(List(Ks), List(k), Select(a, k)), app(selects, a, Ks))
 
   val tests = Tests:
     // example 2.3, the counter is matched modulo commutativity
     test("counter"):
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), List(Upd(True, Plus.int(One.int, s))))
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Plus.int(One.int, s))
       R(List(counterRule), expr) ==> Counter(Zero.int, One.int, app(steps, Butlast(J)))
 
     // example 2.6, the dependency V is instantiated by a map over the dependencies of the expression
     test("sums"):
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), List(Upd(True, Plus.int(s, Select(arr, j)))))
-      val values = Maps(List(Butlast(J)), List(j), List(Upd(True, Select(arr, j))))
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Plus.int(s, Select(arr, j)))
+      val values = Maps(List(Butlast(J)), List(j), Select(arr, j))
       R(List(sumsRule), expr) ==> app(sums, Zero.int, values)
 
     // ... which is then recognized as selects, example 6.2
     test("sums of selects"):
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), List(Upd(True, Plus.int(s, Select(arr, j)))))
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Plus.int(s, Select(arr, j)))
       R(List(sumsRule, selectsRule), expr) ==> app(sums, Zero.int, app(selects, arr, Butlast(J)))
 
     // a bound variable that is the value directly yields the dependency itself
     test("dependency"):
       val W = Var("W", ints)
       val w = Var("w", int)
-      val expr = Trace(Zero.int, List(Butlast(J), W), s, List(j, w), List(Upd(True, Plus.int(w, s))))
+      val expr = Trace(Zero.int, List(Butlast(J), W), s, List(j, w), Plus.int(w, s))
       R(List(sumsRule), expr) ==> app(sums, Zero.int, W)
 
     // the counter of the iterations is kept in the map in front, also if the value does not use it,
@@ -96,43 +96,43 @@ object RewriteTraces extends TestSuite:
       val ctx_ = ctx.assume(Eq(L, Counter(One.int, Plus.int(One.int, One.int), n)))
       val square = Times.int(w, w)
 
-      val expr = Trace(Zero.int, List(Butlast(J), W), s, List(j, w), List(Upd(True, Plus.int(s, square))))
-      R(List(sumsRule), expr) ==> app(sums, Zero.int, Maps(List(Butlast(J), W), List(j, w), List(Upd(True, square))))
+      val expr = Trace(Zero.int, List(Butlast(J), W), s, List(j, w), Plus.int(s, square))
+      R(List(sumsRule), expr) ==> app(sums, Zero.int, Maps(List(Butlast(J), W), List(j, w), square))
 
       // other counters are dropped if they are not used
-      val other = Trace(Zero.int, List(Butlast(L), W, Butlast(J)), s, List(l, w, j), List(Upd(True, Plus.int(s, square))))
+      val other = Trace(Zero.int, List(Butlast(L), W, Butlast(J)), s, List(l, w, j), Plus.int(s, square))
       R(List(sumsRule), other, ctx_) ==>
-        app(sums, Zero.int, Maps(List(Butlast(J), W), List(j, w), List(Upd(True, square))))
+        app(sums, Zero.int, Maps(List(Butlast(J), W), List(j, w), square))
 
       // and kept behind the counter of the iterations if they are
-      val used = Trace(Zero.int, List(Butlast(L), W, Butlast(J)), s, List(l, w, j), List(Upd(True, Plus.int(s, Times.int(l, w)))))
+      val used = Trace(Zero.int, List(Butlast(L), W, Butlast(J)), s, List(l, w, j), Plus.int(s, Times.int(l, w)))
       R(List(sumsRule), used, ctx_) ==>
-        app(sums, Zero.int, Maps(List(Butlast(J), Butlast(L), W), List(j, l, w), List(Upd(True, Times.int(l, w)))))
+        app(sums, Zero.int, Maps(List(Butlast(J), Butlast(L), W), List(j, l, w), Times.int(l, w)))
 
       // without a counter of the iterations, the first dependency of the expression comes first
-      val none = Trace(Zero.int, List(W, Butlast(L)), s, List(w, l), List(Upd(True, Plus.int(s, Times.int(l, l)))))
+      val none = Trace(Zero.int, List(W, Butlast(L)), s, List(w, l), Plus.int(s, Times.int(l, l)))
       R(List(sumsRule), none, Ctx.empty.assume(Eq(L, Counter(One.int, Plus.int(One.int, One.int), n)))) ==>
-        app(sums, Zero.int, Maps(List(W, Butlast(L)), List(w, l), List(Upd(True, Times.int(l, l)))))
+        app(sums, Zero.int, Maps(List(W, Butlast(L)), List(w, l), Times.int(l, l)))
 
     // the value must not depend on the accumulator
     test("accumulator"):
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), List(Upd(True, Plus.int(s, Times.int(s, j)))))
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Plus.int(s, Times.int(s, j)))
       R(List(sumsRule), expr) ==> expr
 
     // every case of the update of the expression is covered by the single case of the pattern
     test("cases"):
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), List(
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(
         Upd(Lt.int(j, n), Plus.int(s, One.int)),
         Upd(Not(Lt.int(j, n)), Plus.int(s, One.int))
-      ))
+      )))
       R(List(counterRule), expr) ==> Counter(Zero.int, One.int, app(steps, Butlast(J)))
 
     // different increments in the cases are not a counter
     test("different cases"):
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), List(
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(
         Upd(Lt.int(j, n), Plus.int(s, One.int)),
         Upd(Not(Lt.int(j, n)), Plus.int(s, Plus.int(One.int, One.int)))
-      ))
+      )))
       R(List(counterRule), expr) ==> expr
 
     // all(for ⌊K⌋ check k ↦ k < len) with the bound variable related to that of the expression

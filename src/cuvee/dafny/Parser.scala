@@ -518,13 +518,21 @@ class Parser(var state: State):
         val deps_ = deps.map(resolve(scope, _))
         state.exprs.trace(init_, deps_, acc, bound.map(util.Name(_, None))): (acc_, bound_) =>
           val scope_ = scope ++ (acc_ :: bound_)
-          update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result)))
+          update match
+            case List((True, result)) =>
+              resolve(scope_, result)
+            case _ =>
+              core.Eps(update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result))))
 
       case Combinator("maps", None, deps, bound, update) =>
         val deps_ = deps.map(resolve(scope, _))
         state.exprs.map(deps_, bound.map(util.Name(_, None))): bound_ =>
           val scope_ = scope ++ bound_
-          update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result)))
+          update match
+            case List((True, result)) =>
+              resolve(scope_, result)
+            case _ =>
+              core.Eps(update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result))))
 
       case Combinator("invs", None, deps, bound, List((_, body))) =>
         val deps_ = deps.map(resolve(scope, _))

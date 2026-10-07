@@ -304,18 +304,18 @@ case class State(
 
     // the combinators of trace equation systems, whose bound variables have the types of the elements of the dependencies,
     // and the accumulator that of the initial value; the update or body is resolved with the bound variables
-    def trace(init: Expr, deps: List[Expr], acc: Name, bound: List[Name])(updates: (Var, List[Var]) => List[Upd]): Trace =
+    def trace(init: Expr, deps: List[Expr], acc: Name, bound: List[Name])(update: (Var, List[Var]) => Expr): Trace =
       Error.report("mismatching dependencies and bound variables", deps, bound):
         require(deps.length == bound.length)
       val acc_ = Var(acc, init.typ)
       val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
-      Trace(init, deps, acc_, bound_, updates(acc_, bound_))
+      Trace(init, deps, acc_, bound_, update(acc_, bound_))
 
-    def map(deps: List[Expr], bound: List[Name])(updates: List[Var] => List[Upd]): Maps =
+    def map(deps: List[Expr], bound: List[Name])(update: List[Var] => Expr): Maps =
       Error.report("mismatching dependencies and bound variables", deps, bound):
         require(deps.length == bound.length)
       val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
-      Maps(deps, bound_, updates(bound_))
+      Maps(deps, bound_, update(bound_))
 
     def all(deps: List[Expr], bound: List[Name])(body: List[Var] => Expr): Invs =
       Error.report("mismatching dependencies and bound variables", deps, bound):

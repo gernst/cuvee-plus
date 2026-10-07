@@ -113,6 +113,14 @@ object Printing extends TestSuite:
       expr(Distinct(List(x, y, zero))) ==> "x != y && x != 0 && y != 0"
       expr(app(Fun.int.lt, x, y, zero)) ==> "x < y && y < 0"
 
+    // delimited by braces, never parenthesized
+    test("eps"):
+      val one = Eps(List(Upd(p, x)))
+      val two = Eps(List(Upd(p, x), Upd(q, y)))
+      expr(one) ==> "if { case p => x }"
+      expr(Plus.int(two, zero)) ==> "if { case p => x case q => y } + 0"
+      expr(Eps(List(Upd(p, one), Upd(q, y)))) ==> "if { case p => if { case p => x } case q => y }"
+
     test("quantifiers and conditionals"):
       expr(And(All(List(x), Lt.int(x, y)), p)) ==> "(forall x: int :: x < y) && p"
       expr(Plus.int(Ite(p, x, y), zero)) ==> "(if p then x else y) + 0"

@@ -23,8 +23,9 @@ sealed trait Expr:
       case As(arg, typ)                         => As(f(arg), typ)
       case Diff(xs, arg)                        => Diff(xs, f(arg))
       case Old(arg)                             => Old(f(arg))
-      case Trace(init, deps, acc, bound, upds)  => Trace(f(init), deps.map(f), acc, bound, upds.map(f))
-      case Maps(deps, bound, upds)              => Maps(deps.map(f), bound, upds.map(f))
+      case Trace(init, deps, acc, bound, upd)   => Trace(f(init), deps.map(f), acc, bound, f(upd))
+      case Maps(deps, bound, upd)               => Maps(deps.map(f), bound, f(upd))
+      case Eps(upds)                            => Eps(upds.map(f))
       case Invs(deps, bound, body)              => Invs(deps.map(f), bound, f(body))
       case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
       case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
@@ -150,13 +151,13 @@ object Old:
         val (bound_, inner) = bind(bound)
         Bind(quant, bound_, inner(body))
 
-      case Trace(init, deps, acc, bound, updates) =>
+      case Trace(init, deps, acc, bound, update) =>
         val (acc_ :: bound_, inner) = bind(acc :: bound): @unchecked
-        Trace(instance(now, before, old, init), deps.map(instance(now, before, old, _)), acc_, bound_, updates.map(inner))
+        Trace(instance(now, before, old, init), deps.map(instance(now, before, old, _)), acc_, bound_, inner(update))
 
-      case Maps(deps, bound, updates) =>
+      case Maps(deps, bound, update) =>
         val (bound_, inner) = bind(bound)
-        Maps(deps.map(instance(now, before, old, _)), bound_, updates.map(inner))
+        Maps(deps.map(instance(now, before, old, _)), bound_, inner(update))
 
       case Invs(deps, bound, body) =>
         val (bound_, inner) = bind(bound)
@@ -183,8 +184,9 @@ object Old:
 
 // the combinators of trace equation systems, which describe the computation of a loop per variable;
 // their dependencies `deps` are sequences of the same length, over which the variables `bound` range point-wise,
-// and their updates are guarded results, if φ₁ then e₁, ..., if φₚ then eₚ, with disjoint and complete guards,
-// each case of which is an Upd(φᵢ, eᵢ)
+// and their updates are expressions, a single result or guarded results Eps(...) with disjoint and complete guards
+//
+// a case of Eps, if φ then e, as Upd(φ, e)
 case class Upd(cond: Expr, rhs: Expr):
   def params = cond.params ++ rhs.params
   def free = cond.free ++ rhs.free
@@ -192,22 +194,41 @@ case class Upd(cond: Expr, rhs: Expr):
   def map(f: Expr => Expr) =
     Upd(f(cond), f(rhs))
 
+// a variant of Hilbert's choice over guarded results, if φ₁ then e₁, ..., if φₚ then eₚ:
+// some eᵢ whose guard φᵢ holds
+case class Eps(updates: List[Upd]) extends Expr:
+  def params = updates.params
+  def free = updates.free
+
+  // there is at least one case, see Type.check
+  def typ = updates.head.rhs.typ
+
+object Eps:
+  // the cases of nested choices as one list, whose guards are the conjunctions of the guards along the way,
+  // e.g. if p then (if q then x, if !q then y), if !p then y is if p && q then x, if p && !q then y, if !p then y
+  def flatten(updates: List[Upd]): List[Upd] =
+    for
+      Upd(cond, rhs) <- updates
+      upd <-
+        rhs match
+          case Eps(inner) => flatten(inner).map(upd => Upd(And(List(cond, upd.cond).conjuncts), upd.rhs))
+          case _          => List(Upd(cond, rhs))
+    yield upd
+
 // trace(init, for deps do acc, bound ↦ update): the trace of the values of the accumulator `acc`,
 // starting from `init`, where each subsequent value is computed by the update from the previous one
 // and the corresponding values of the dependencies, one entry longer than the dependencies
-case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updates: List[Upd]) extends Expr:
-  def params = init.params ++ deps.params ++ (acc :: bound).params ++ updates.params
-  def free = init.free ++ deps.free ++ (updates.free -- (acc :: bound))
+case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr) extends Expr:
+  def params = init.params ++ deps.params ++ (acc :: bound).params ++ update.params
+  def free = init.free ++ deps.free ++ (update.free -- (acc :: bound))
   def typ = Sort.trace(acc.typ)
 
 // map(for deps yield bound ↦ update): the sequence of the results of the update for the values of the dependencies,
 // point-wise, which has the same length as the dependencies
-case class Maps(deps: List[Expr], bound: List[Var], updates: List[Upd]) extends Expr:
-  def params = deps.params ++ bound.params ++ updates.params
-  def free = deps.free ++ (updates.free -- bound)
-
-  // there is at least one case, see Type.check
-  def typ = Sort.seq(updates.head.rhs.typ)
+case class Maps(deps: List[Expr], bound: List[Var], update: Expr) extends Expr:
+  def params = deps.params ++ bound.params ++ update.params
+  def free = deps.free ++ (update.free -- bound)
+  def typ = Sort.seq(update.typ)
 
 // all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:
