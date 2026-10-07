@@ -103,8 +103,22 @@ class Quant(val name: Name):
 object All extends Quant("forall")
 object Ex extends Quant("exists")
 
+// function types (A₁, ..., Aₙ) -> R of Dafny, the sorts arrow1, arrow2, ... of its prelude,
+// whose last argument is the result
+object Arrow:
+  def con(arity: Int) =
+    Con(Name("arrow" + arity, None), arity + 1)
+
+  def apply(args: List[Type], res: Type): Type =
+    Sort(con(args.length), args :+ res)
+
+  def unapply(typ: Type): Option[(List[Type], Type)] =
+    typ match
+      case Sort(con_, args) if args.nonEmpty && con_ == con(args.length - 1) => Some((args.init, args.last))
+      case _                                                                  => None
+
 // lambdas of several variables as nested lambdas of a single variable, which are arrays (see Lam),
-// e.g. (lambda x: int, y: int :: e) of Boogie; unapply collects all nested lambdas
+// e.g. (lambda x: int, y: int :: e) of Boogie; unapply collects all nested lambdas of array type
 object Lams:
   def apply(bound: List[Var], body: Expr): Expr =
     Error.report("lambda without variables", body):
@@ -114,9 +128,9 @@ object Lams:
 
   def unapply(expr: Expr): Option[(List[Var], Expr)] =
     expr match
-      case Lam(List(x), Lams(xs, body), _) => Some((x :: xs, body))
-      case Lam(List(x), body, _)           => Some((List(x), body))
-      case _                               => None
+      case Lam(List(x), Lams(xs, body), Sort(Con.array, _)) => Some((x :: xs, body))
+      case Lam(List(x), body, Sort(Con.array, _))           => Some((List(x), body))
+      case _                                                => None
 
 // arrays of several indices as nested arrays of a single index, e.g. [int, bool]T of Boogie,
 // with their selections a[i, j] and updates a[i, j := v], which are those of the nested arrays,

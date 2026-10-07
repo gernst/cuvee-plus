@@ -136,8 +136,12 @@ object Grammar:
   val product =
     Product(P(parens(types)))
 
+  // function types associate to the right, A -> B -> C is A -> (B -> C)
+  val arrow =
+    Arrow(P((product | sort) ?~ "->" ~ typ))
+
   val typ: Parser[Type] =
-    P(product | sort)
+    P(arrow | product | sort)
 
   val formal =
     P(id ~ ":" ~ typ)
@@ -199,6 +203,14 @@ object Grammar:
   val bind =
     P(forall | exists)
 
+  // lambdas (x: A, y: B) => e, whose body extends as far as possible like those of the quantifiers,
+  // committed to by the first annotated variable, unlike tuples and parenthesized expressions
+  val annotated =
+    P(id ?~ ":" ~ typ)
+
+  val lambda =
+    Lam(P(("(" ?~ (annotated ~+ ",") ?~ ")") ~ "=>" ~ expr))
+
   val let =
     Let(P("var" ~ vars ~ ":=" ~ exprs ~ ";" ~ expr))
 
@@ -227,7 +239,7 @@ object Grammar:
     Butlast(P("⌊" ~ expr ~ "⌋"))
 
   val atom: Parser[Expr] =
-    P(diff | tuple | seq | set | bag | map | len | butlast | lit | bind | let | ite | match_ | combinator | app)
+    P(lambda | diff | tuple | seq | set | bag | map | len | butlast | lit | bind | let | ite | match_ | combinator | app)
 
   val inner: Parser[Expr] =
     Inner(P(atom ~ access.*))

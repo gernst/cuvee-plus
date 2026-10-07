@@ -416,11 +416,24 @@ object Printer extends cuvee.pipe.Printer:
   def isTuple(name: Name, arity: Int): Boolean =
     arity >= 2 && name == Name("tuple" + arity, None)
 
+  def isTupleType(typ: Type): Boolean =
+    typ match
+      case Sort(Con(name_, arity), _) => isTuple(name_, arity)
+      case _                          => false
+
   // types are not broken across lines
   def doc(typ: Type): Doc =
     typ match
       case Sort(Con(name_, arity), args) if isTuple(name_, arity) =>
         text("(") ~ join(args.map(doc(_)), text(",") ~ space) ~ text(")")
+
+      // the arguments of a function type are parenthesized unless there is a single one that is no function or tuple,
+      // e.g. int -> int, (int, bool) -> int, (int -> int) -> int, ((int, bool)) -> int
+      case Arrow(List(arg), res) if Arrow.unapply(arg).isEmpty && !isTupleType(arg) =>
+        doc(arg) ~~ text("->") ~~ doc(res)
+
+      case Arrow(args, res) =>
+        text("(") ~ join(args.map(doc(_)), text(",") ~ space) ~ text(")") ~~ text("->") ~~ doc(res)
 
       case BitVec(n) =>
         text("bv" + n)
@@ -676,7 +689,7 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: Rational, _) if value.isNegative =>
         (Grammar.prefix_ops("-"), None)
 
-      case Ite(_, _, _) | Bind(_, _, _) | Let(_, _, _) | Match(_, _) =>
+      case Ite(_, _, _) | Bind(_, _, _) | Lam(_, _, _) | Let(_, _, _) | Match(_, _) =>
         (lowest, None)
 
       case _ =>
@@ -955,9 +968,13 @@ object Printer extends cuvee.pipe.Printer:
       case As(arg, typ) =>
         doc(arg, operand) ~~ text("as") ~~ doc(typ)
 
+      // the variables of lambdas are annotated with their types, the body extends as far as possible
+      case Lam(bound, body, Arrow(_, _)) =>
+        Group(text("(") ~ flow(bound.map(formal)) ~ text(")") ~~ text("=>") ~ Nest(2, line ~ doc(body)))
+
       // the lambdas of SMT-LIB are arrays, which Dafny has no syntax for
       case Lam(_, _, _) =>
-        Error.raise("lambda not supported in Dafny", expr)
+        Error.raise("lambda of array type not supported in Dafny", expr)
 
       case Bind(quant, bound, body) =>
         // the bound variables flow up to the width of the line, aligned after the quantifier

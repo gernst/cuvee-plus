@@ -122,4 +122,4 @@ object Lambdas extends TestSuite:
 
     test("dafny"):
       val file = os.temp("(assert (= (lambda ((x Int)) x) (lambda ((y Int)) y)))", suffix = ".smt2")
-      Examples.errors("-print", "dfy", file.toString) ==> List("lambda not supported in Dafny")
+      Examples.errors("-print", "dfy", file.toString) ==> List("lambda of array type not supported in Dafny")

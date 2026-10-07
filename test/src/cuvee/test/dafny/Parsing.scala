@@ -92,6 +92,31 @@ object Assignments extends TestSuite:
     test("results of calls"):
       errors("method p() returns (x: int) " + array + "b[0] := p(); }") ==> List("results of calls must be assigned to variables")
 
+// function types of 1 to 10 arguments, declared in the prelude, and lambdas, whose variables are annotated
+object Functions extends TestSuite:
+  def errors(text: String) =
+    Examples.check("dfy", text)
+
+  val tests = Tests:
+    test("lambdas"):
+      errors("function f(): (int, bool) -> int { (x: int, b: bool) => if b then x else 0 }") ==> Nil
+      errors("function f(): int -> bool -> int { (x: int) => (b: bool) => x }") ==> Nil
+      errors("function f(): int -> int { (x: bool) => 0 }") ==> List("type mismatch")
+      errors("function f(): int -> int { (x: int, y: int) => x }") ==> List("type mismatch")
+
+    test("arguments"):
+      val ten = List.fill(10)("int").mkString("(", ", ", ")")
+      errors("function f(g: " + ten + " -> int): bool { true }") ==> Nil
+      errors("function f(g: " + List.fill(11)("int").mkString("(", ", ", ")") + " -> int): bool { true }") ==> List("sort not declared")
+
+    // the variables of lambdas must be annotated with their types
+    test("annotations"):
+      errors("function f(): int -> int { x => x }") ==> List("parse error")
+
+    test("boogie"):
+      val file = os.temp("function f(): int -> int { (x: int) => x }", suffix = ".dfy")
+      Examples.errors("-print", "bpl", file.toString) ==> List("lambda of function type not supported in Boogie")
+
 // slices and updates are on sequences only, indexing falls back to arrays
 object Sequences extends TestSuite:
   def errors(text: String) =

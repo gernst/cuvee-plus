@@ -295,6 +295,13 @@ case class State(
     def lam(bound: List[Var], body: Expr) =
       Lams(bound, body)
 
+    // lambdas of function type (see Arrow), which must be declared for the number of variables
+    def lambda(bound: List[Var], body: Expr) =
+      val name = Arrow.con(bound.length).name
+      Error.report("function type not declared", name):
+        require(sorts.contains(name))
+      Lam(bound, body, Arrow(bound.types, body.typ))
+
     def ex(bound: List[Var], body: Expr) =
       Ex(bound, body)
 

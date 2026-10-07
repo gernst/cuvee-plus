@@ -328,6 +328,15 @@ class Parser(var state: State):
         val args_ = args.map(resolve(scope, _))
         state.types.sort("tuple" + args.length, args_)
 
+      // the function types are declared in the prelude, (A, B) -> C has two arguments, ((A, B)) -> C a tuple
+      case Arrow(arg, res) =>
+        val args = arg match
+          case Product(args) => args
+          case _             => List(arg)
+        val args_ = args.map(resolve(scope, _))
+        val res_ = resolve(scope, res)
+        state.types.sort("arrow" + args.length, args_ :+ res_)
+
       case Sort(name, Nil) if scope.params.contains(name) =>
         scope.params(name)
 
@@ -631,6 +640,12 @@ class Parser(var state: State):
         val scope_ = scope ++ bound_
         val body_ = resolve(scope_, body)
         state.exprs.all(bound_, body_)
+
+      case Lam(bound, body) =>
+        val bound_ = bound.map(resolve(scope, _))
+        val scope_ = scope ++ bound_
+        val body_ = resolve(scope_, body)
+        state.exprs.lambda(bound_, body_)
 
       case Let(bound, args, body) =>
         Error.report("mismatching let", bound, args):

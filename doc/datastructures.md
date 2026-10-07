@@ -83,7 +83,7 @@ case class As(expr: Expr, typ: Type)           // type annotation
 case class Diff(xs: List[Var], expr: Expr)     // derivative (xs :: expr)'
 case class Old(expr: Expr)                     // value at the entry of the procedure
 case class Bind(quant: Name, bound: List[Var], body: Expr)   // forall, exists
-case class Lam(bound: List[Var], body: Expr, typ: Type)      // lambda of SMT-LIB, an array of one index
+case class Lam(bound: List[Var], body: Expr, typ: Type)      // an array of one index, or a function (Arrow)
 case class Let(bound: List[Var], args: List[Expr], body: Expr)
 case class Match(arg: Expr, cases: List[Case])  // the first case that matches and whose condition holds
 case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bound in body and cond
@@ -92,8 +92,15 @@ case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bou
 case class Trace(...); case class Maps(...); case class Invs(...)
 ```
 
+- **Function types** `(A₁, ..., Aₙ) -> R` of Dafny are the sorts `arrow1`,
+  ..., `arrow10` of its prelude, whose last argument is the result
+  (`Arrow(args, res)` builds and matches them). Their lambdas
+  `(x: A, y: B) => e` always annotate the variables and are built by
+  `state.exprs.lambda`; Boogie does not print them, SMT-LIB prints them as
+  `lambda` of the declared sort but does not read them back. There is no
+  application of function values yet.
 - **Lambdas and arrays of several indices.** `Lam` has an explicit type, an
-  array of a single index (`Type.check`). Several variables and indices are
+  array of a single index or a function of its variables (`Type.check`). Several variables and indices are
   nested (curried): `Lams(xs, e)` builds and collects nested lambdas,
   `Arrays(indices, value)` nested array types, and `Arrays.select` and
   `Arrays.store` the selections `a[i][j]` and updates

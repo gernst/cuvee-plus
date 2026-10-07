@@ -18,9 +18,12 @@ sealed trait Cmd
 
 case class Sort(con: String, args: List[Type]) extends Type
 case class Product(args: List[Type]) extends Type
+// a function type A -> R, whose argument is a product (A₁, ..., Aₙ) for several arguments
+case class Arrow(arg: Type, res: Type) extends Type
 
 object Sort extends ((String, List[Type]) => Type)
 object Product extends (List[Type] => Type)
+object Arrow extends ((Type, Type) => Type)
 
 object True extends App("true", Nil)
 
@@ -57,6 +60,8 @@ case class Match(arg: Expr, cases: List[(Expr, Expr)]) extends Expr
 case class Inner(base: Expr, access: List[Access]) extends Expr
 case class Ex(bound: List[(String, Type)], body: Expr) extends Expr
 case class All(bound: List[(String, Type)], body: Expr) extends Expr
+// the variables of lambdas are always annotated with their types
+case class Lam(bound: List[(String, Type)], body: Expr) extends Expr
 case class Let(bound: List[(String, Type)], args: List[Expr], body: Expr) extends Expr
 
 object Num extends (String => Expr)
@@ -79,6 +84,7 @@ object Match extends ((Expr, List[(Expr, Expr)]) => Expr)
 object Inner extends ((Expr, List[Access]) => Expr)
 object Ex extends ((List[(String, Type)], Expr) => Expr)
 object All extends ((List[(String, Type)], Expr) => Expr)
+object Lam extends ((List[(String, Type)], Expr) => Expr)
 object Let extends ((List[(String, Type)], List[Expr], Expr) => Expr)
 
 case object Break extends Prog

@@ -683,6 +683,9 @@ object Printer extends cuvee.pipe.Printer:
       case Lams(bound, body) =>
         Group(text("(") ~ Align(text("lambda") ~~ Group(Align(formals(bound))) ~~ text("::") ~ Nest(2, line ~ doc(body))) ~ text(")"))
 
+      case Lam(_, _, _) =>
+        Error.raise("lambda of function type not supported in Boogie", expr)
+
       // Boogie has no let, the bound variables are substituted
       case Let(bound, args, body) =>
         doc(Subst.from(bound, args)(body))

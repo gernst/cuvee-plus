@@ -391,6 +391,7 @@ object Type:
           unify(state, scope, Sort.bool, res, subst)
 
       // a lambda of SMT-LIB is an array, whose index is the type of the single bound variable,
+      // and one of Dafny a function, whose arguments are the types of the bound variables,
       // and whose values are of the type of the body
       case Lam(bound, body, typ) =>
         unfold(state, resolve(subst.value, typ)) match
@@ -400,8 +401,15 @@ object Type:
               unify(state, scope, typ, res, subst)
             check(state, scope, body, value, subst, pending)
 
+          case Arrow(args, value) if bound.length == args.length =>
+            Error.report("type mismatch", expr, typ, res):
+              for (arg, x) <- args zip bound
+              do unify(state, scope, arg, x.typ, subst)
+              unify(state, scope, typ, res, subst)
+            check(state, scope, body, value, subst, pending)
+
           case _ =>
-            Error.raise("lambda must be an array of a single variable", expr, typ)
+            Error.raise("lambda must be an array of a single variable or a function of its variables", expr, typ)
 
       case Let(bound, args, body) =>
         check(state, scope, args, bound.types, subst, pending)

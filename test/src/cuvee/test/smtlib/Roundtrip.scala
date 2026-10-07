@@ -17,7 +17,8 @@ object Roundtrip extends TestSuite:
 // the programs of the Dafny and Boogie examples printed as SMT-LIB can be read back, and printing them again is stable;
 // the sorts and datatypes of the preludes of the frontends are not printed (see TODO.md), hence only examples without
 object Programs extends TestSuite:
-  val prelude = List("tuple", "event", "chan", "seq<", "datatype", "type ")
+  // function types are not read back, since lambdas of SMT-LIB are arrays
+  val prelude = List("tuple", "event", "chan", "seq<", "datatype", "type ", "->")
 
   def plain(file: os.Path) =
     !prelude.exists(os.read(file).contains)
