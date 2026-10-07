@@ -118,5 +118,5 @@ object Dependencies extends TestSuite:
     test("other guards"):
       val b = Var("b", Sort.bool)
       val c = Var("c", Sort.bool)
-      val upds = Eps(List(Upd(b, Ite(c, One.int, j)), Upd(c, Ite(b, One.int, j))))
-      simplify(Maps(List(J), List(j), upds)) ==> Maps(List(J), List(j), Eps(List(Upd(b, j), Upd(c, j))))
+      val upds = Eps(List(Upd(b, Ite(c, One.int, j)), Upd(c, Ite(b, Zero.int, Plus.int(j, One.int)))))
+      simplify(Maps(List(J), List(j), upds)) ==> Maps(List(J), List(j), Eps(List(Upd(b, j), Upd(c, Plus.int(j, One.int)))))

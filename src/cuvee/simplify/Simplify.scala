@@ -845,11 +845,23 @@ object Simplify extends Transform:
   def upd(config: Config, state: State, ctx: Ctx, cond: Expr, rhs: Expr): Upd =
     Upd(cond, rhs)
 
-  // nested choices are flattened, a single case whose guard is true is its result
+  // nested choices are flattened, cases with equal results are merged by the disjunction of their guards,
+  // and a single case is its result, since the guards are complete,
+  // e.g. case b => y case c => y is y, which is a trace that keeps its value
   def eps(config: Config, state: State, ctx: Ctx, updates: List[Upd]): Expr =
-    Eps.flatten(updates) match
-      case List(Upd(True, rhs)) => rhs
-      case updates_             => Eps(updates_)
+    val merged =
+      Eps.flatten(updates).foldLeft(List.empty[Upd]): (merged, update) =>
+        merged.indexWhere(other => eq_(config, state, ctx.neutral, other.rhs, update.rhs) == True) match
+          case -1 =>
+            merged :+ update
+
+          case i =>
+            val Upd(cond, rhs) = merged(i)
+            merged.updated(i, Upd(or(config, state, ctx.neutral, List(cond, update.cond)), rhs))
+
+    merged match
+      case List(Upd(_, rhs)) => rhs
+      case _                 => Eps(merged)
 
   def trace(config: Config, state: State, ctx: Ctx, init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr): Expr =
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free - acc)

@@ -310,9 +310,21 @@ object Decisions extends TestSuite:
       val y = Var("y", Sort.int)
       val p = Var("p", Sort.bool)
       val q = Var("q", Sort.bool)
+      val z = Var("z", Sort.int)
       val inner = Eps(List(Upd(q, x), Upd(Not(q), y)))
-      simplify(Ctx.empty, Eps(List(Upd(p, inner), Upd(Not(p), y)))) ==>
-        Eps(List(Upd(And(p, q), x), Upd(And(p, Not(q)), y), Upd(Not(p), y)))
+      simplify(Ctx.empty, Eps(List(Upd(p, inner), Upd(Not(p), z)))) ==>
+        Eps(List(Upd(And(p, q), x), Upd(And(p, Not(q)), y), Upd(Not(p), z)))
+
+    // cases with equal results are merged by the disjunction of their guards,
+    // and a single case is its result, since the guards are complete
+    test("equal results"):
+      val x = Var("x", Sort.int)
+      val y = Var("y", Sort.int)
+      val p = Var("p", Sort.bool)
+      val q = Var("q", Sort.bool)
+      val r = Var("r", Sort.bool)
+      simplify(Ctx.empty, Eps(List(Upd(p, x), Upd(q, y), Upd(r, x)))) ==> Eps(List(Upd(Or(p, r), x), Upd(q, y)))
+      simplify(Ctx.empty, Eps(List(Upd(p, x), Upd(q, x)))) ==> x
 
     // an inconsistent context decides formulas by polarity only, not by the theories
     test("inconsistent"):
