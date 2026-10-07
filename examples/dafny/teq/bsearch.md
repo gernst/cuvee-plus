@@ -221,14 +221,14 @@ of `a[0..n)`. With `-teq -split -simplify`, no goal remains:
 - **not found**: the traces of `lo` and `hi` match `incs` and `decs`,
   monotonically increasing and decreasing values. In each iteration, they
   either keep their value (`case C(x, h) => x`) or increase under the guard
-  of the program (`case D(x, h) && x < F(x, h) => F(x, h)`), where `D` is
-  bound to the whole guard, from which the increase must follow. Without the
-  branch on the loop test (see below), the increase does not follow, since
-  the matching decides the guards outside of the trace, where the invariants
-  of the trace itself are not assumed; that would need the context of a
-  partial match. The bounds
-  `current(incs(...)) <= b` and `b <= current(decs(...))` follow if the
-  initial value and every change are bounded. At the cut after the loop,
+  of the program up to a bound
+  (`case D(x, h) && x < F(x, h) && F(x, h) <= b => F(x, h)`), where `D` is
+  bound to the whole guard, `b` by matching `F(x, h) <= b`, i.e.
+  `(hi + lo) / 2 + 1 <= b`, against the guard `(hi + lo) / 2 < p`, and the
+  increase follows from the guard and the loop test `lo < hi`, which holds in
+  the update of `Lo == trace(...)`. The bounds `current(incs(x0, b, ...)) <= b`
+  and `b <= current(decs(x0, b, ...))` follow if the initial value is bounded.
+  At the cut after the loop,
   `assert lo <= p && q <= hi; assume lo <= p && q <= hi;`, they prove
   `lo <= p` and `q <= hi`, which close the cycle `p <= k < q <= hi <= lo <= p`
   for `a[k] == x` by the difference constraints.
@@ -239,20 +239,21 @@ What it needed, and what remains to do in the code instead:
   `current(Hi)`, which only occur in the goal through the cut. Facts about
   terms that occur would make it unnecessary (see
   [forward.md](../../../forward.md)).
-- **The loop test as a branch.** `-teq` makes only the branch conditions of
-  the body the guards of the updates of the traces; the loop test and
-  assumptions in the body are recorded in `invs` only. The body is therefore
-  wrapped in `if lo < hi`. Inside of a trace, the simplifier assumes the
-  `invs` facts only if their dependencies are among those of the trace
-  (`Simplify.invariants`), which excludes `⌊Lo⌋` in the trace of `lo`, whose
-  values are its accumulator; and the matching decides the guards of a
-  pattern in the context outside of the trace (`Rewrite.implies`).
+- **The loop test in the updates.** `-teq` makes only the branch conditions
+  of the body the guards of the updates of the traces; the loop test is
+  recorded in `invs` over `⌊K⌋, ⌊Lo⌋, ⌊Hi⌋`. For the equation
+  `Lo == trace(...)`, the simplifier and the matching assume it in the update
+  with `⌊Lo⌋` as the accumulator (`Simplify.invariants` with `self`), and the
+  matching decides the guards of a pattern in the context of the update
+  (`Rewrite.matches`). An earlier version wrapped the body in `if lo < hi`
+  instead.
 - **The midpoint.** The simplifier does not know division, hence
   `l <= (h + l) / 2` and `(h + l) / 2 < h` for `l < h` are lemmas.
 - **Cycles among the equations.** `Lo == incs(..., ⌊Hi⌋, ...)` and
   `Hi == decs(..., ⌊Lo⌋, ...)` depend on each other. The matching follows both
-  (`Ctx.↑`), since cycles are excluded only where a replacement of a variable
-  is applied (`Simplify.var_`), not when an equation is recorded.
+  (`Ctx.↑`), since cycles are excluded only where a solution of an
+  arithmetic equation is inlined (`Simplify.poly`), not when an equation is
+  recorded.
 
 ## To reproduce
 

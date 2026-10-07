@@ -181,12 +181,11 @@ object Rewrite:
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
         matches(state, typ, typ_, m)
 
-      // the updates and bodies are matched assuming the invariants of the context over the dependencies of the expression
-      // (see Simplify.invariants), e.g. guards follow from the test of the loop; not so the iterations of loops
-      // (see Simplify.iterations), which are simplified, and which would be costly for each match
+      // the updates and bodies are matched in the context that the simplifier has there (see Simplify.combinator),
+      // which is determined by the expression, e.g. guards follow from the test of the loop
       case (Trace(init, deps, acc, bound, update), Trace(init_, deps_, acc_, bound_, update_)) =>
         val self = b.self.map(x => (Butlast(x), acc_))
-        val inner = ctx.neutral.bind(acc_ :: bound_).assume(Simplify.invariants(ctx, deps_, bound_, self), Nil)
+        val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)), deps_, bound_, self)
         for
           m1 <- matches(config, state, ctx, b, init, init_, m)
           m2 <- combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(acc -> acc_), m1): (b_, m) =>
@@ -195,12 +194,12 @@ object Rewrite:
 
       case (Maps(deps, bound, update), Maps(deps_, bound_, update_)) =>
         val self = b.self.map(y => (y, update_))
-        val inner = ctx.neutral.bind(bound_).assume(Simplify.invariants(ctx, deps_, bound_, self), Nil)
+        val inner = Simplify.combinator(config, state, ctx, deps_, bound_, self)
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
           matches(config, state, inner, b_, update, update_, m)
 
       case (Invs(deps, bound, body), Invs(deps_, bound_, body_)) =>
-        val inner = ctx.neutral.bind(bound_).assume(Simplify.invariants(ctx, deps_, bound_), Nil)
+        val inner = Simplify.combinator(config, state, ctx, deps_, bound_)
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
           matches(config, state, inner, b_, body, body_, m)
 
@@ -537,7 +536,10 @@ object Rewrite:
 
   // the conjuncts `phis` of the guard of a pattern follow from the guard of the expression: each is matched against one
   // of its conjuncts, which may instantiate further variables, e.g. the bound b of F(x, h) <= b against mid < p,
-  // which is mid + 1 <= p on Int, and otherwise it must follow from the guard of the expression
+  // which is mid + 1 <= p on Int, and otherwise it must follow from the guard of the expression;
+  // the variables instantiated so far are substituted and the result simplified before it is matched,
+  // such that e.g. F(x, h) <= b with F = (lo, hi) => (hi + lo) / 2 + 1 is (hi + lo) / 2 + 1 <= b,
+  // whose summands are matched as such
   def conjuncts(
       config: Config,
       state: State,
@@ -552,10 +554,12 @@ object Rewrite:
         List(m)
 
       case phi :: rest =>
+        val su = m ++ Subst.from(b.local.keys.toList, b.local.values.toList)
+        val instance = Simplify.simplify(config, state, ctx.neutral, su(phi))
         val matched =
           for
             phi_ <- And.flatten(guard_)
-            m_ <- matches(config, state, ctx, b, phi, phi_, m)
+            m_ <- matches(config, state, ctx, b, instance, phi_, m)
           yield m_
 
         val ms =

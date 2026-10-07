@@ -209,6 +209,7 @@ object RewriteTraces extends TestSuite:
       d ==> Lam(List(s, j), Lt.int(Zero.int, j), Arrow(List(int, int), Sort.bool))
       f ==> Lam(List(s, j), Plus.int(s, j), Arrow(List(int, int), int))
 
-      // the increase does not follow from the guard
-      val other = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(j, Zero.int), Plus.int(s, j)))))
+      // the increase does not follow from the guard, here with the bounds 0 <= j < n of the counter of the iterations,
+      // whereas a guard j < 0 contradicts them, such that the case is unreachable and any increase follows
+      val other = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(j, n), Plus.int(s, j)))))
       R(List(rule), other) ==> other

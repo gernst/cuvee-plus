@@ -5,19 +5,17 @@
 // this assumes partition points for all indices, which is stronger than sortedness of a[0..n)
 // (all elements of a sorted array may be below x, then no index p exists)
 //
-// status: two goals remain, lo <= p at the cut after the loop, on both exits;
-// the trace of hi is abstracted by decs, a monotonically decreasing value with the bound q, which is bound by
-// matching the guard; its decrease follows from the guard together with the loop test lo < hi, which holds in the
-// update (see Simplify.invariants), where the matching decides guards in the context of the update
-// (see Rewrite.matches); the trace of lo does not match incs: the conjunct F(x, h) <= b of the pattern,
-// whose F is (hi + lo) / 2 + 1, is a single summand, which does not match the summands of (hi + lo) / 2 < p,
-// i.e., (hi + lo) / 2 + 1 <= p; the instance of F would have to be inlined before the comparison is matched;
-// with both bounds, lo <= p and q <= hi, the cut closes the exit when x is not found with hi <= lo and
-// p <= k < q for a[k] == x;
-// the equations Lo == ...(..., ⌊Hi⌋, ...) and Hi == decs(..., ⌊Lo⌋, ...) depend on each other, which the matching
+// status: verified with -teq -split -simplify, given the cut after the loop;
+// the traces of lo and hi are abstracted by incs and decs, monotonically increasing and decreasing values with
+// the bounds p and q, which are bound by matching the guards (see Rewrite.conjuncts); the increase and decrease
+// follow from the guards together with the loop test lo < hi, which holds in the updates (see Simplify.invariants),
+// where the matching decides guards in the context of the update (see Rewrite.matches);
+// the bounds lo <= p and q <= hi are proved at the cut by the lemmas on incs and decs, and then assumed,
+// which closes the exit when x is not found with hi <= lo and p <= k < q for a[k] == x;
+// the equations Lo == incs(..., ⌊Hi⌋, ...) and Hi == decs(..., ⌊Lo⌋, ...) depend on each other, which the matching
 // follows (Ctx.↑), since cycles among the equations are only excluded where a solution is inlined (Simplify.poly);
-// without the cut, the bounds would be facts about the terms current(...), which the simplifier does not derive
-// (see forward.md);
+// without the cut, one goal remains, as the bounds are facts about the terms current(incs(0, p, ...)) and
+// current(decs(n, q, ...)), which the simplifier does not derive (see forward.md);
 // the found case is closed by the test of the branch with break, mid < n and a[mid] == x from p <= mid < q <= n;
 // the exit of the loop by its test closes once i is known to keep its value -1: the simplifier merges the cases
 // of its update, which are all i, and the trace that keeps its value is consts(n, -1) by the lemma of teq.dfy

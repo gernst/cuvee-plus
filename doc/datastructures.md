@@ -412,8 +412,15 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   chosen among those of the expression. The simplifier beta-reduces the
   instantiated right-hand side. A guard `D(x, h) && φ` of a case of the
   pattern, whose first conjunct is a higher-order pattern, binds `D` to the
-  whole guard of the expression, from which `φ` must follow
-  (`Rewrite.guard`), e.g. the increase `x < F(x, h)` of a monotonic trace.
+  whole guard of the expression; each conjunct of `φ`, instantiated so far
+  and simplified, is matched against a conjunct of that guard, which may bind
+  further variables, e.g. the bound `b` of `F(x, h) <= b`, or else must follow
+  from it (`Rewrite.guard`, `Rewrite.conjuncts`), e.g. the increase
+  `x < F(x, h)` of a monotonic trace. The updates and bodies of combinators
+  are matched in the context of the simplifier there (`Simplify.combinator`),
+  i.e. assuming the invariants over their dependencies and the iterations of
+  loops, and for the right-hand side of `X == trace(...)` also the invariants
+  over `⌊X⌋` (`Binding.self`), e.g. the test of a loop.
   A function definition with `:rw` whose body is a match on a parameter
   gives one rule per case, the pattern in place of the parameter, and
   pattern variables that shadow other parameters renamed apart
