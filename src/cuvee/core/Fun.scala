@@ -1,7 +1,6 @@
 package cuvee.core
 
 import util.Name
-import scala.annotation.targetName
 
 case class Sig(name: Name, sorts: List[Option[Sig]]):
   infix def <=(that: Sig): Boolean =

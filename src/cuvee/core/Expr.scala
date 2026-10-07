@@ -1,10 +1,8 @@
 package cuvee.core
 
-import scala.annotation.targetName
 
 import util.Name
 import util.Counter
-import cuvee.Error
 
 sealed trait Expr:
   def params: Set[Param]

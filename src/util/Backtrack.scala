@@ -1,6 +1,5 @@
 package util
 
-import scala.annotation.targetName
 import scala.util.control.NoStackTrace
 
 // control flow only, a stack trace would be meaningless since there is a single instance

@@ -1,18 +1,14 @@
 package cuvee
 
-import java.io.IOException
-import java.io.File
-import java.io.Reader
 import java.io.InputStreamReader
 import java.io.FileReader
 
-import scala.annotation.targetName
 
 import cuvee.core._
 import cuvee.pipe._
 import cuvee.smtlib.Solver
 import cuvee.simplify.Simplify
-import cuvee.transform.{Flat, Language, Monomorph, Split}
+import cuvee.transform.{Flat, Monomorph, Split}
 import cuvee.verify.{Horn, TEQ, Verify}
 
 case class Flag(
@@ -22,7 +18,7 @@ case class Flag(
 )
 
 // a language with the source that reads it and the printer that writes it,
-// builtin: the features that it has built in, whose declarations the output drops (see transform.Language)
+// builtin: the features that it has built in, whose declarations the output drops (see Sink.filter)
 case class Lang(
     help: String,
     source: Source,
@@ -51,7 +47,7 @@ object Lang:
 // hybrid for the definitions of parallel composition in Dafny (resources/cuvee/dafny/hybrid.dfy, see -hybrid),
 // and teq for trace equation systems (resources/cuvee/teq.dfy, see -teq)
 // input, output: the languages of the input file and of the output, whose printer also prints the reports
-// of solvers and debug output, and whose declarations a printing sink drops (see transform.Language)
+// of solvers and debug output, and whose declarations a printing sink drops (see Sink.filter)
 case class Config(
     features: Set[String],
     file: Option[String],
@@ -89,7 +85,7 @@ case class Config(
 
 object Config:
   val default =
-    Config(Lang.smtlib.builtin, None, Lang.smtlib, Lang.smtlib, (_, config) => Language.sink(config.output.builtin, Sink.stdout(config.output.printer)), Report.stderr)
+    Config(Lang.smtlib.builtin, None, Lang.smtlib, Lang.smtlib, (_, config) => Sink.filter(config.output.builtin, Sink.stdout(config.output.printer)), Report.stderr)
 
   def flag(key: String, help: String)(action: PartialFunction[(Config, List[String]), (Config, List[String])]) =
     key -> Flag(None, help, action)
@@ -161,13 +157,13 @@ object Config:
   val z3 =
     flag("-z3", "pass output to z3"):
       case (config, rest) =>
-        val config_ = config.copy(sink = (init, config) => Language.sink(Lang.smtlib.builtin, Solver.sink(Solver.z3(config.timeout), init, config.output.printer)))
+        val config_ = config.copy(sink = (init, config) => Sink.filter(Lang.smtlib.builtin, Solver.sink(Solver.z3(config.timeout), init, config.output.printer)))
         (config_, rest)
 
   val cvc5 =
     flag("-cvc5", "pass output to cvc5"):
       case (config, rest) =>
-        val config_ = config.copy(sink = (init, config) => Language.sink(Lang.smtlib.builtin, Solver.sink(Solver.cvc5(config.timeout), init, config.output.printer)))
+        val config_ = config.copy(sink = (init, config) => Sink.filter(Lang.smtlib.builtin, Solver.sink(Solver.cvc5(config.timeout), init, config.output.printer)))
         (config_, rest)
 
   val timeout_ =
@@ -179,7 +175,7 @@ object Config:
   val output =
     flag("-o", "<file>", "redirect output to <file> and report to stdout"):
       case (config, name :: rest) =>
-        val config_ = config.copy(sink = (_, config) => Language.sink(config.output.builtin, Sink.file(name)(config.output.printer)), report = Report.stdout)
+        val config_ = config.copy(sink = (_, config) => Sink.filter(config.output.builtin, Sink.file(name)(config.output.printer)), report = Report.stdout)
         (config_, rest)
 
   // the printers are objects, all of which are set, such that the order of the options does not matter
@@ -263,7 +259,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.21.4")
+    println("Cuvée 0.21.5")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

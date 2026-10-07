@@ -1,6 +1,5 @@
 package cuvee.simplify
 
-import scala.math.Ordering.Implicits.seqOrdering
 import util.Rational
 import cuvee.Error
 import cuvee.core._

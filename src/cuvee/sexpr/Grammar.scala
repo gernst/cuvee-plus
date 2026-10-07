@@ -1,7 +1,6 @@
 package cuvee.sexpr
 
 import cuvee.sexpr._
-import cuvee.core.State
 
 object Grammar:
   import easyparse._

@@ -1,7 +1,6 @@
 package cuvee.pipe
 
 import java.io.IOException
-import cuvee.core.State
 
 trait Scanner:
   import easyparse._

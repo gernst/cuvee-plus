@@ -57,6 +57,9 @@ object Sink:
   def tee(primary: Sink, secondary: Sink*) =
     Tee(primary, secondary.toList)
 
+  def filter(features: Set[String], next: Sink) =
+    Filter(features, next)
+
   // the answer of sinks that only pass on commands without solving
   def passive(cmd: Cmd): Result =
     cmd match
@@ -109,3 +112,19 @@ object Sink:
 
       val (result, added, primary_) = primary.query(cmd)
       (result, added, Tee(primary_, secondary_))
+
+  // the last step in front of each sink, which drops the declarations that its receiver knows by their features:
+  // those of the preludes (resources/cuvee/*/prelude.*) name the languages that they are part of by attributes,
+  // the file extensions smt2, dfy, bpl, and c, e.g. the tuples of Dafny are part of Dafny only,
+  // and are therefore declared as datatypes in SMT-LIB;
+  // it filters the commands in front of the sink one by one, unlike a stage, which buffers declarations,
+  // such that the answers of the sink to the remaining declarations are reported, e.g. unsupported by solvers
+  case class Filter(features: Set[String], next: Sink) extends Sink:
+    def query(cmd: Cmd) =
+      cmd match
+        case decl: Decl if features.exists(decl.attrs.contains) =>
+          (Ack.Success, Nil, this)
+
+        case _ =>
+          val (result, added, next_) = next.query(cmd)
+          (result, added, copy(next = next_))

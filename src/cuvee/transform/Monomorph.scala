@@ -31,12 +31,12 @@ object Monomorph extends Transform:
     out.toList
 
   // the polymorphic functions of `cmds` with their declaration or definition,
-  // except those that the receiver of the output knows, e.g. = and select of SMT-LIB (see Language)
+  // except those that the receiver of the output knows, e.g. = and select of SMT-LIB (see Sink.filter)
   def polymorphic(features: Set[String], cmds: List[Cmd]): Map[(Name, Int), Cmd] =
     val decls =
-      cmds.filterNot(Language.isPart(features, _)).collect:
-        case cmd @ DeclareFun(fun, _) if fun.params.nonEmpty    => (fun.name, fun.arity) -> cmd
-        case cmd @ DefineFun(fun, _, _) if fun.params.nonEmpty  => (fun.name, fun.arity) -> cmd
+      cmds.collect:
+        case cmd @ DeclareFun(fun, attrs) if fun.params.nonEmpty && !features.exists(attrs.contains)   => (fun.name, fun.arity) -> cmd
+        case cmd @ DefineFun(fun, _, attrs) if fun.params.nonEmpty && !features.exists(attrs.contains) => (fun.name, fun.arity) -> cmd
     decls.toMap
 
   // the name of an instance, e.g. length<Elem> and select<Int,Array<Int,Bool>>

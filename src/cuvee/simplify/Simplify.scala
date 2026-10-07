@@ -1,7 +1,6 @@
 package cuvee.simplify
 
 import util.Name
-import cuvee.Error
 import cuvee.Debug
 import cuvee.Config
 import cuvee.pipe.Transform

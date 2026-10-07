@@ -39,7 +39,7 @@ object Cuvee extends util.Main:
 
     val printer = config.output.printer
     // further sinks, e.g. of tests, receive the output like the sink of the configuration
-    val sink = Sink.tee(config.sink(init, config), sinks.map(cuvee.transform.Language.sink(config.output.builtin, _))*)
+    val sink = Sink.tee(config.sink(init, config), sinks.map(Sink.filter(config.output.builtin, _))*)
     val report = config.report(printer)
     val stages = config.stages(init, sink)
 

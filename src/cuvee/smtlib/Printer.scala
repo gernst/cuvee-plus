@@ -10,7 +10,6 @@ object Printer extends cuvee.pipe.Printer:
   import cuvee.sexpr.Printer.escape
   import cuvee.sexpr.Printer.atom
   import cuvee.sexpr.Printer.list
-  import cuvee.sexpr.Printer.flat
   import cuvee.sexpr.Printer.{lines => sexpr}
 
   def mangle(name: Name) =

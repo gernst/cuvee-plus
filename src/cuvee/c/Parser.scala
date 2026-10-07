@@ -2,7 +2,6 @@ package cuvee.c
 
 import scala.collection.mutable
 
-import util.Name
 import cuvee.Error
 import cuvee.core
 import cuvee.core.{State, Attrs, Sort, Spec, True, False, Zero, One}

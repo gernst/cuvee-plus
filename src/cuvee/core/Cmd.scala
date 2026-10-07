@@ -1,6 +1,5 @@
 package cuvee.core
 
-import util.Name
 import cuvee.core._
 
 trait Result

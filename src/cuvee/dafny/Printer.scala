@@ -5,7 +5,6 @@ import util.Rational
 import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib._
-import cuvee.sexpr.Atom
 import cuvee.core.Attrs
 
 import easyprint.Doc

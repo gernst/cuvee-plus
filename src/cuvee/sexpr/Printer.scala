@@ -1,6 +1,5 @@
 package cuvee.sexpr
 
-import util.Name
 import java.util.regex.Pattern
 
 object Printer:

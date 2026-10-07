@@ -5,7 +5,7 @@ import cuvee.Error
 import cuvee.core._
 
 import easyprint.Doc
-import easyprint.Doc.{text, space, line, linebreak, hardline, empty, concat, join, render}
+import easyprint.Doc.{text, line, linebreak, hardline, empty, concat, join, render}
 import easyprint.Group
 import easyprint.Nest
 import easyprint.Align

@@ -51,7 +51,7 @@ transformation and any output.
    printed output is parsed again.
 3. `config.stages(init, sink)` chains one `Stage` per transform in front of
    the sink. All stages start from the same initial state, and know the
-   configuration. Each sink is wrapped in `Language.sink`, which drops
+   configuration. Each sink is wrapped in `Sink.filter`, which drops
    the declarations with the features (attributes) that its receiver knows:
    `smt2` for the solvers, and `config.output.builtin` for printing, the
    features built into the language of `-print` or that of the input (C for
