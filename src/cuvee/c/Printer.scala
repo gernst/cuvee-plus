@@ -16,8 +16,11 @@ import easyparse.Assoc
 // arrays Array Int T are T a[] (as values); assertions and assumptions are written with the conventions of SV-COMP;
 // div and mod of SMT-LIB are written as / and %, which C's / and % are translated to (see TODO.md);
 // uninterpreted functions are prototypes, and their applications calls;
-// everything else is omitted, e.g. contracts, assertions of formulas, quantifiers, and commands such as check-sat,
-// such that the output is C; results, e.g. models, are not programs, they are printed in SMT-LIB
+// everything else is printed in SMT-LIB, wrapped such that it looks like a macro, SMT_LIB(...),
+// e.g. assertions of formulas, quantifiers, and commands such as check-sat, as far down as possible,
+// e.g. a quantifier in an assertion of a procedure; contracts are omitted, which C input has only implicitly,
+// e.g. the zero values of global variables as the precondition of main;
+// results, e.g. models, are not programs, they are printed in SMT-LIB
 object Printer extends cuvee.pipe.Printer:
 
   // the result of the procedure that is printed, which return writes
@@ -46,18 +49,21 @@ object Printer extends cuvee.pipe.Printer:
   def lines(res: Result): List[String] =
     cuvee.smtlib.Printer.lines(res)
 
-  // commands that are not C are omitted, each other command is followed by an empty line, as by the SMT-LIB printer
+  // what is not C in SMT-LIB, whose lines are aligned after SMT_LIB(
+  def smtlib(lines: List[String]): Doc =
+    val lines_ = lines.reverse.dropWhile(_.isEmpty).reverse
+    text("SMT_LIB(") ~ Align(join(lines_.map(text), hardline)) ~ text(")")
+
+  // each command is followed by an empty line, as by the SMT-LIB printer
   def lines(cmd: Cmd): List[String] =
-    try render(doc(cmd), width) :+ ""
-    catch case _: Error => Nil
+    render(doc(cmd), width) :+ ""
 
   def lines(typ: Type): List[String] =
     render(doc(typ), width)
 
-  // expressions occur in reports, e.g. of goals that do not hold, which are printed in SMT-LIB where not C
+  // expressions occur in reports, e.g. of goals that do not hold
   def lines(expr: Expr): List[String] =
-    try render(doc(expr), width)
-    catch case _: Error => cuvee.smtlib.Printer.lines(expr)
+    render(doc(expr), width)
 
   def lines(prog: Prog): List[String] =
     render(doc(prog), width)
@@ -66,13 +72,19 @@ object Printer extends cuvee.pipe.Printer:
     typ match
       case Sort.int  => text("int")
       case Sort.bool => text("_Bool")
-      case _         => Error.raise("type not supported in C", typ)
+      // the pointers of the background theory of C (resources/cuvee/c/prelude.bpl)
+      case Sort(Con(Name("Void", None), 0), Nil)            => text("void")
+      case Sort(Con(Name("Ptr", None), 1), List(elem))      => doc(elem) ~ text(" *")
+      case _         => smtlib(cuvee.smtlib.Printer.lines(typ))
 
   // a declaration of a variable, where arrays have their brackets after the name
   def decl(x: Var): Doc =
     x.typ match
       case Sort(Con.array, List(Sort.int, elem)) =>
         doc(elem) ~~ text(name(x.name) + "[]")
+
+      case Sort(Con(Name("Ptr", None), 1), List(elem)) =>
+        doc(elem) ~~ text("*" + name(x.name))
 
       case typ =>
         doc(typ) ~~ text(name(x.name))
@@ -87,6 +99,10 @@ object Printer extends cuvee.pipe.Printer:
     returns(out) ~~ call(name(name_), if in.isEmpty then List(text("void")) else in.map(decl))
 
   def doc(cmd: Cmd): Doc =
+    try c(cmd)
+    catch case _: Error => smtlib(cuvee.smtlib.Printer.lines(cmd))
+
+  def c(cmd: Cmd): Doc =
     cmd match
       case DeclareVar(x, _) =>
         decl(x) ~ text(";")
@@ -194,7 +210,7 @@ object Printer extends cuvee.pipe.Printer:
         text("while") ~~ parens(test) ~~ block(body)
 
       case _ =>
-        Error.raise("statement not supported in C", prog)
+        smtlib(cuvee.smtlib.Printer.lines(prog)) ~ text(";")
 
   def parens(expr: Expr): Doc =
     Group(text("(") ~ Align(doc(expr)) ~ text(")"))
@@ -272,6 +288,10 @@ object Printer extends cuvee.pipe.Printer:
       case False =>
         text("false")
 
+      // the null pointer constant
+      case App(Fun(Name("null", None), _, Nil, _), _, _, Nil) =>
+        text("0")
+
       case Ite(test, left, right) if infix(expr).isEmpty =>
         Group(doc(test, (0, None)) ~~ text("?") ~~ doc(left, (0, None)) ~~ text(":") ~~ doc(right, (lowest, None)))
 
@@ -307,4 +327,4 @@ object Printer extends cuvee.pipe.Printer:
         call(name(fun.name), args.map(doc(_)))
 
       case _ =>
-        Error.raise("expression not supported in C", expr)
+        smtlib(cuvee.smtlib.Printer.lines(expr))

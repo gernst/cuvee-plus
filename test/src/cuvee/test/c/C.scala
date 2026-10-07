@@ -107,10 +107,10 @@ object Translation extends TestSuite:
     test("unknown variable"):
       errors("int f(void) { return y; }") ==> List("unknown variable")
 
-    // the harness of SV-COMP (see examples/c/harness.c): pointers only in the signatures of builtins
+    // the harness of SV-COMP (see examples/c/harness.c): pointers in the signatures of builtins
     test("pointers"):
       errors("extern void __assert_fail(const char *, const char *, unsigned int, const char *);") ==> Nil
-      errors("int f(int *p);") ==> List("pointers are not supported")
+      errors("int f(int *p);") ==> Nil
       errors("extern double __VERIFIER_nondet_double(void);") ==> Nil
       errors("double f(void);") ==> List("floating point numbers are not supported")
 
@@ -168,8 +168,21 @@ object Translation extends TestSuite:
         "long *b = (long *) malloc(n * sizeof(long)); b[0] = 1; int *c = calloc(n, sizeof(int)); assert(c[2] == 0); return 0; }")
       Examples.check("c", "void *malloc(unsigned int size); int main(void) { int *a = malloc(sizeof(int) * 2); assert(a[0] == 0); return 0; }", "-verify", "-z3") ==>
         List("goal does not hold")
-      errors("int main(void) { int *p = 0; return 0; }") ==> List("pointers are not supported")
-      errors("int *g; int main(void) { return 0; }") ==> List("pointers are not supported")
+
+    // pointers that are not allocations are values, which are compared and tested but not dereferenced,
+    // null pointer constants are 0 and its casts to pointer types, global pointers are null initially
+    test("pointer values"):
+      val program =
+        "int *g; int *id(int *p) { return p; } int isnull(int *p) { if (p == 0) return 1; return 0; } " +
+          "int main(void) { int *q = (void *) 0; void *v = 0; assert(g == 0 && !q && v == (void *) 0); " +
+          "assert(isnull(id(q)) == 1); assert(q == g); %s return 0; }"
+      horn(program.format("")) ==> Status.Sat
+      horn(program.format("assert(q != 0);")) ==> Status.Unsat
+      errors("int main(void) { void *v = 0; int *p = (int *) v; return 0; }") ==> List("unsupported cast")
+      errors("int main(void) { int *p = 0; long *q = 0; char *r = 0; return p == q; }") ==> Nil
+      errors("int main(void) { int *p = 0; p = p + 1; return 0; }") ==> List("not an integer")
+      errors("int main(void) { int *p = 0; int x = *p; return 0; }") ==> List("parse error")
+      errors("int *g[2]; int main(void) { return 0; }") ==> List("arrays of pointers are not supported")
 
     // nondeterministic values of unsigned types are nonnegative, those of signed types are not
     test("unsigned nondeterministic values"):
@@ -198,7 +211,8 @@ object Translation extends TestSuite:
       Examples.check("c", "void __VERIFIER_assert(int c); int main(void) { __VERIFIER_assert(0); return 0; }", "-verify", "-z3") ==>
         List("goal does not hold")
 
-// the output is C: what is not C is omitted, e.g. contracts, assertions, and quantifiers
+// the output is C: what is not C is printed in SMT-LIB as SMT_LIB(...), e.g. assertions and quantifiers,
+// contracts are omitted
 object Printing extends TestSuite:
   val x = Var("x", Sort.int)
   val g = Var("g", Sort.int)
@@ -209,12 +223,13 @@ object Printing extends TestSuite:
 
   val tests = Tests:
     test("assertions"):
-      print(Assert(Axiom, Nil, All(List(x), Imp(App(p, List(x)), Lt.int(x, One.int))), Attrs.empty)) ==> Nil
+      print(Assert(Axiom, Nil, All(List(x), Imp(App(p, List(x)), Lt.int(x, One.int))), Attrs.empty)) ==>
+        List("SMT_LIB((assert", "          (forall ((x Int)) (=> (p x) (< x 1)))))", "")
 
     test("declarations"):
       print(DeclareFun(p, Attrs.empty)) ==> List("_Bool p(int x_0);", "")
-      print(DefineFun(p, Ex(List(x), Lt.int(x, One.int)), Attrs.empty)) ==> Nil
-      print(CheckSat) ==> Nil
+      print(DefineFun(p, Ex(List(x), Lt.int(x, One.int)), Attrs.empty)).head ==> "SMT_LIB((define-fun"
+      print(CheckSat) ==> List("SMT_LIB((check-sat))", "")
 
     // models are not programs, they are SMT-LIB
     test("models"):
@@ -237,6 +252,17 @@ object Printing extends TestSuite:
       Examples.errors(file.toString, "-o", out.toString) ==> Nil
       val text = os.read(out)
       assert(text.contains("tmp_1 = __VERIFIER_nondet_int();\n  __VERIFIER_assume(0 <= tmp_1);"))
+
+    // pointers are printed with the star at the variable, the null pointer as 0
+    test("pointers"):
+      val file = os.temp("int *g; void *f(int *p) { return 0; } int main(void) { int *q = g; return q == 0; }", suffix = ".c")
+      val out = os.temp(suffix = ".c")
+      Examples.errors(file.toString, "-o", out.toString) ==> Nil
+      val text = os.read(out)
+      assert(text.contains("int *g;"))
+      assert(text.contains("void * f(int *p) {\n  return 0;"))
+      assert(text.contains("q = g;"))
+      assert(text.contains("return q == 0 ? 1 : 0;"))
 
     // global variables are zero in C, initializers are assignments at the beginning of main
     test("contracts"):

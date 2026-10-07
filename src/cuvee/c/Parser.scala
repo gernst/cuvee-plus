@@ -30,8 +30,20 @@ class Parser(var state: State, arch: Int):
       case BoolType     => state.types.sort("Bool")
       case ArrayType(e) => state.types.sort("Array", List(state.types.sort("Int"), typ(e)))
       case VoidType     => Error.raise("void is not a type of values")
-      case PointerType(_) => Error.raise("pointers are not supported", t)
       case FloatType    => Error.raise("floating point numbers are not supported", t)
+
+      // pointers are values of the background theory of C (resources/cuvee/c/prelude.bpl), which cannot be dereferenced,
+      // where void * points to Void
+      case PointerType(VoidType) => state.types.sort("Ptr", List(state.types.sort("Void")))
+      case PointerType(e)        => state.types.sort("Ptr", List(typ(e)))
+
+  // the null pointer constants of C, 0 and casts of it to pointer types, e.g. (void *) 0 for NULL
+  def isNull(e: Expr): Boolean =
+    e match
+      case Num(text)               => literal(text) == 0
+      case Cond(e, None)           => isNull(e)
+      case Cast(PointerType(_), e) => isNull(e)
+      case _                       => false
 
   // the value of global variables without initializer, where arrays are constant
   // the type of a declared variable with the sizes of its dimensions, e.g. int a[2][3]
@@ -39,7 +51,8 @@ class Parser(var state: State, arch: Int):
     sizes.foldLeft(t)((elem, _) => ArrayType(elem))
 
   // pointers to memory for elements of type t, e.g. int *a = malloc(sizeof(int) * n), are arrays,
-  // whose elements are arbitrary, or zero for calloc; the size is not used, as arrays are unbounded
+  // whose elements are arbitrary, or zero for calloc; the size is not used, as arrays are unbounded;
+  // other pointers are values of type Ptr
   def allocation(x: String, t: Type, sizes: List[Option[Expr]], init: Option[Expr]): (Type, Option[Expr]) =
     def strip(e: Expr): Expr =
       e match
@@ -59,16 +72,19 @@ class Parser(var state: State, arch: Int):
       case Some(Call("calloc", List(_, size))) if sizes.isEmpty && strip(size).isInstanceOf[SizeofType] =>
         (ArrayType(t), Some(Items(Nil)))
 
+      // other pointers are values, e.g. int *p = NULL, which cannot be dereferenced
       case _ =>
-        Error.raise("pointers are not supported", x)
+        Error.report("arrays of pointers are not supported", x):
+          require(sizes.isEmpty)
+        (PointerType(t), init)
 
   def zero(t: Type): core.Expr =
     t match
       case IntType      => state.exprs.num(0)
       case BoolType     => state.exprs.const("false")
       case ArrayType(e) => state.exprs.app("const", List(zero(e)))
+      case PointerType(_) => state.exprs.const("null")
       case VoidType     => Error.raise("void is not a type of values")
-      case PointerType(_) => Error.raise("pointers are not supported", t)
       case FloatType    => Error.raise("floating point numbers are not supported", t)
 
   def temp(ctx: Ctx, t: Type): core.Var =
@@ -87,6 +103,7 @@ class Parser(var state: State, arch: Int):
     t match
       case BoolType => expr
       case IntType  => state.exprs.app("not", List(state.exprs.app("=", List(expr, state.exprs.num(0)))))
+      case PointerType(_) => state.exprs.app("not", List(state.exprs.app("=", List(expr, state.exprs.const("null")))))
       case _        => Error.raise("not a truth value", expr)
 
   def arith(op: String, a: core.Expr, b: core.Expr): core.Expr =
@@ -196,6 +213,16 @@ class Parser(var state: State, arch: Int):
             else state.progs.if_(left_, state.progs.assign(List(x), List(state.exprs.const("true"))), right__)
           (pre1 :+ prog, x, BoolType)
 
+      // a pointer compared with a null pointer constant, which has the type of the pointer
+      case App(op @ ("==" | "!="), List(left, right)) if isNull(right) && !isNull(left) || isNull(left) && !isNull(right) =>
+        val (nonnull, _) = if isNull(right) then (left, right) else (right, left)
+        val (pre, e_, t) = expr(scope, ctx, nonnull)
+        val eq =
+          t match
+            case PointerType(_) => state.exprs.app("=", List(e_, state.exprs.const("null")))
+            case _              => state.exprs.app("=", List(toInt(e_, t), state.exprs.num(0)))
+        (pre, if op == "==" then eq else state.exprs.app("not", List(eq)), BoolType)
+
       case App(op @ ("==" | "!="), List(left, right)) =>
         val (pre1, left_, lt) = expr(scope, ctx, left)
         val (pre2, right_, rt) = expr(scope, ctx, right)
@@ -203,6 +230,10 @@ class Parser(var state: State, arch: Int):
         val eq = (lt, rt) match
           case (BoolType, BoolType)                 => state.exprs.app("=", List(left_, right_))
           case (ArrayType(_), _) | (_, ArrayType(_)) => state.exprs.app("=", List(left_, right_))
+          case (PointerType(_), _) | (_, PointerType(_)) =>
+            Error.report("comparison of pointers of different types", left, right):
+              require(lt == rt)
+            state.exprs.app("=", List(left_, right_))
           case _                                    => state.exprs.app("=", List(toInt(left_, lt), toInt(right_, rt)))
 
         (pre1 ++ pre2, if op == "==" then eq else state.exprs.app("not", List(eq)), BoolType)
@@ -235,6 +266,15 @@ class Parser(var state: State, arch: Int):
       case Cast(BoolType, e) =>
         val (pre, e_) = cond(scope, ctx, e)
         (pre, e_, BoolType)
+
+      case Cast(t @ PointerType(_), e) if isNull(e) =>
+        (Nil, state.exprs.const("null"), t)
+
+      case Cast(t @ PointerType(_), e) =>
+        val (pre, e_, t_) = expr(scope, ctx, e)
+        Error.report("unsupported cast", t, e):
+          require(t == t_)
+        (pre, e_, t)
 
       case Cast(t, e) =>
         Error.raise("unsupported cast", t, e)
@@ -299,6 +339,7 @@ class Parser(var state: State, arch: Int):
     t match
       case IntType  => int(scope, ctx, e)
       case BoolType => cond(scope, ctx, e)
+      case PointerType(_) if isNull(e) => (Nil, state.exprs.const("null"))
 
       // the elements that are not given are zero, as in C
       case ArrayType(elem) if e.isInstanceOf[Items] =>
@@ -749,10 +790,11 @@ class Parser(var state: State, arch: Int):
 
     for case Global(Decl(t, decls)) <- tops; Declarator(pointer, x, sizes, init) <- decls
     do
-      Error.report("pointers are not supported", x):
-        require(!pointer)
+      // global pointers are values, which are null without initializer
+      Error.report("arrays of pointers are not supported", x):
+        require(!pointer || sizes.isEmpty)
 
-      val t_ = array(t, sizes)
+      val t_ = if pointer then PointerType(t) else array(t, sizes)
 
       for e <- init
       do
