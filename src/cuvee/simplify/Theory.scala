@@ -94,7 +94,7 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr], solved: Map[Va
       case Some(ring) =>
         val poly = (Arith.toPoly(ring, left) - Arith.toPoly(ring, right)).normalize
         for
-          (x, rest) <- poly.solution(x => !(replace contains x) && !(solved contains x))
+          (x, rest) <- poly.solution((x, _) => !(replace contains x) && !(solved contains x))
           e = rest.toExpr(ring)
           if e.isArith
         yield (x, e)

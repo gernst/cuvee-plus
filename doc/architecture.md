@@ -154,11 +154,19 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     outer loop already decides. E.g. complementary conjuncts are found by
     `nary`, which simplifies each argument of `and` and `or` assuming the
     others, not by `and` itself.
-  - One-point rule at the binder (`bind`): a bound variable `x` defined by an
-    equation `x == e` among the antecedents of `forall`, or among the
-    conjuncts of `exists`, where `x` does not occur in `e`, is replaced by `e`,
-    e.g. `forall x. x == f(y) ==> p(x)` is `p(f(y))`; the equation becomes
-    `e == e`, which the next round drops. It needs no context.
+  - One-point rule: `eq_` turns `x == e` into `true` if `x` is existential
+    seen from the current position (`Ctx.existential`): bound by `exists`
+    (`Ctx.exists`), or by `forall` (`Ctx.forall`) below an odd number of
+    negations and premises (`Ctx.flip` swaps `universal` and `existential`),
+    and `x` occurs nowhere else: not in `e`, not in the facts of the context (`Ctx.used`,
+    which includes the primed variables of derivatives), and `e` has no
+    variables bound inside the scope of `x`. `bind` then drops `x`. This
+    relies on the context recording all siblings between the binder and the
+    equation, which holds for `and`, `or`, `not`, `==>`, and binders only;
+    the branches of `ite`, the bodies of `let`, `match`, and `invs`, and
+    neutral positions forget which variables are universal and existential
+    (`Ctx.neutral`); the variables of `let`, `match`, and the combinators are
+    neither (`Ctx.bind`).
     Callers that use `eq_` as a decision (`distinct`, `select`, `deps`)
     pass `ctx.neutral`.
   - `trace`, `maps`, and `invs` normalize their dependencies, see

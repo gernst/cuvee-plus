@@ -8,8 +8,9 @@ import cuvee.core._
 // the variables while matching below the combinators trace, map, and all:
 // `vars` are the variables of the rule, `locals` are the bound variables of the pattern that range over dependencies
 // that are variables of the rule, which are instantiated like those, `local` relates the other bound variables
-// of the pattern to those of the expression, which are `bound`, and which the variables of the rule must not capture
-case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound: Set[Var]):
+// of the pattern to those of the expression, which are `bound`, and which the variables of the rule must not capture;
+// `self` is the variable that the expression defines, X in X == trace(...) or Y == maps(...), if it is a combinator
+case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound: Set[Var], self: Option[Var] = None):
   def isPattern(x: Var) =
     vars.contains(x) || locals.contains(x)
 
@@ -29,33 +30,34 @@ case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound
 //   the binding structure of the combinators trace, map, and all
 // a match is a substitution of the type parameters and variables of the rule
 object Rewrite:
-  def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  // `self` is the variable that `expr` defines, if it is the right-hand side of an equation (see Binding)
+  def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr, self: Option[Var] = None): Expr =
     // note, do not recurse here, the main traversal is in simplify
     expr match
       case _: Var => expr
-      case _      => apply(config, state, ctx, ctx.rules, expr)
+      case _      => apply(config, state, ctx, ctx.rules, expr, self)
 
   // a single application of the first rule of the context that applies at the top of `expr`,
   // `expr` itself if none applies (an application always changes the expression)
-  def apply(config: Config, state: State, ctx: Ctx, rules: List[Rule], expr: Expr): Expr =
+  def apply(config: Config, state: State, ctx: Ctx, rules: List[Rule], expr: Expr, self: Option[Var]): Expr =
     rules match
       case Nil =>
         expr
 
       case rule :: rest =>
         // pick the first rule that matches
-        val expr_ = apply(config, state, ctx, rule, expr)
+        val expr_ = apply(config, state, ctx, rule, expr, self)
         if expr_ != expr
         then expr_
-        else apply(config, state, ctx, rest, expr)
+        else apply(config, state, ctx, rest, expr, self)
 
   // the result of the first match whose instantiated condition holds, `expr` itself if there is none;
   // matching modulo associativity and commutativity may find several matches with different results,
   // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
-  def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): Expr =
+  def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr, self: Option[Var] = None): Expr =
     val results =
       for
-        su <- matches(config, state, ctx, Binding(rule.xs.toSet, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
+        su <- matches(config, state, ctx, Binding(rule.xs.toSet, Set(), Map(), Set(), self), rule.lhs, expr, Subst.empty)
         rhs = su(rule.rhs)
         // steps that do not change the expression are not applications, e.g. x + 0 = x for x without +
         if rhs != expr && holds(config, state, ctx, su(rule.cond))
@@ -179,20 +181,28 @@ object Rewrite:
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
         matches(state, typ, typ_, m)
 
+      // the updates and bodies are matched assuming the invariants of the context over the dependencies of the expression
+      // (see Simplify.invariants), e.g. guards follow from the test of the loop; not so the iterations of loops
+      // (see Simplify.iterations), which are simplified, and which would be costly for each match
       case (Trace(init, deps, acc, bound, update), Trace(init_, deps_, acc_, bound_, update_)) =>
+        val self = b.self.map(x => (Butlast(x), acc_))
+        val inner = ctx.neutral.bind(acc_ :: bound_).assume(Simplify.invariants(ctx, deps_, bound_, self), Nil)
         for
           m1 <- matches(config, state, ctx, b, init, init_, m)
           m2 <- combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(acc -> acc_), m1): (b_, m) =>
-            matches(config, state, ctx, b_, update, update_, m)
+            matches(config, state, inner, b_, update, update_, m)
         yield m2
 
       case (Maps(deps, bound, update), Maps(deps_, bound_, update_)) =>
+        val self = b.self.map(y => (y, update_))
+        val inner = ctx.neutral.bind(bound_).assume(Simplify.invariants(ctx, deps_, bound_, self), Nil)
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
-          matches(config, state, ctx, b_, update, update_, m)
+          matches(config, state, inner, b_, update, update_, m)
 
       case (Invs(deps, bound, body), Invs(deps_, bound_, body_)) =>
+        val inner = ctx.neutral.bind(bound_).assume(Simplify.invariants(ctx, deps_, bound_), Nil)
         combinator(config, state, ctx, b, deps, bound, deps_, bound_, Map(), m): (b_, m) =>
-          matches(config, state, ctx, b_, body, body_, m)
+          matches(config, state, inner, b_, body, body_, m)
 
       case _ if pat == expr =>
         List(m)
@@ -502,7 +512,8 @@ object Rewrite:
   // the guard of the pattern matches that of the expression, which instantiates the bound variables of the pattern
   // that do not occur in its result, e.g. b in if b then y + 1, and otherwise it must follow from that of the expression;
   // a guard D(x, h) && φ of the pattern, whose first conjunct is a higher-order pattern, binds D to the whole guard
-  // of the expression, from which φ must follow, e.g. the increase x < F(x, h) of a case D(x, h) && x < F(x, h) => F(x, h)
+  // of the expression, from which the conjuncts of φ must follow (see conjuncts),
+  // e.g. the increase x < F(x, h) of a case D(x, h) && x < F(x, h) => F(x, h)
   def guard(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     matches(config, state, ctx, b, guard, guard_, m) match
       case Nil =>
@@ -510,9 +521,9 @@ object Rewrite:
           guard match
             case And((first @ Apply(f: Var, _)) :: rest) if b.isPattern(f) =>
               for
-                m_ <- matches(config, state, ctx, b, first, guard_, m)
-                if implies(config, state, ctx, b, guard_, And(rest), m_)
-              yield m_
+                m1 <- matches(config, state, ctx, b, first, guard_, m)
+                m2 <- conjuncts(config, state, ctx, b, guard_, rest, m1)
+              yield m2
 
             case _ =>
               Nil
@@ -523,6 +534,36 @@ object Rewrite:
 
       case ms =>
         ms
+
+  // the conjuncts `phis` of the guard of a pattern follow from the guard of the expression: each is matched against one
+  // of its conjuncts, which may instantiate further variables, e.g. the bound b of F(x, h) <= b against mid < p,
+  // which is mid + 1 <= p on Int, and otherwise it must follow from the guard of the expression
+  def conjuncts(
+      config: Config,
+      state: State,
+      ctx: Ctx,
+      b: Binding,
+      guard_ : Expr,
+      phis: List[Expr],
+      m: Subst[Type, Expr]
+  ): List[Subst[Type, Expr]] =
+    phis match
+      case Nil =>
+        List(m)
+
+      case phi :: rest =>
+        val matched =
+          for
+            phi_ <- And.flatten(guard_)
+            m_ <- matches(config, state, ctx, b, phi, phi_, m)
+          yield m_
+
+        val ms =
+          if matched.nonEmpty then matched
+          else if implies(config, state, ctx, b, guard_, phi, m) then List(m)
+          else Nil
+
+        ms.flatMap(conjuncts(config, state, ctx, b, guard_, rest, _))
 
   def implies(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): Boolean =
     if guard == True

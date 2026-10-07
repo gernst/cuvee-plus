@@ -106,9 +106,11 @@ object OnePoint extends TestSuite:
 
     // the variable occurs elsewhere, or twice in equations; an arithmetic definition is substituted first
     test("used"):
-      // the definition is substituted at the binder (see Simplify.bind), also if it is no arithmetic expression
-      simplify(All(List(x), Imp(Eq(x, App(f, List(y))), P(x)))) ==> P(App(f, List(y)))
-      simplify(All(List(x), Imp(Eq(x, Plus.int(y, One.int)), P(x)))) ==> P(Plus.int(y, One.int))
+      val used = All(List(x), Imp(Eq(x, App(f, List(y))), P(x)))
+      simplify(used) ==> used
+      // an arithmetic definition is not substituted, it is inlined into polynomials only (see Chains.solved)
+      val arithmetic = All(List(x), Imp(Eq(x, Plus.int(y, One.int)), P(x)))
+      simplify(arithmetic) ==> arithmetic
       // equations between variables substitute first, after which the equation is unused
       simplify(All(List(x), Imp(Eq(x, y), P(x)))) ==> P(y)
       val twice = All(List(x), Imp(And(Eq(x, Plus.int(y, One.int)), Eq(x, z)), q))

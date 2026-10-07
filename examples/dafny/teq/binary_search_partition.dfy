@@ -5,13 +5,18 @@
 // this assumes partition points for all indices, which is stronger than sortedness of a[0..n)
 // (all elements of a sorted array may be below x, then no index p exists)
 //
-// status: verified with -teq -split -simplify, given the cut after the loop;
-// the traces of lo and hi are abstracted by incs and decs, monotonically increasing and decreasing values,
-// whose bounds lo <= p and q <= hi are proved at the cut by the lemmas on incs and decs, and then assumed,
-// which closes the exit when x is not found with hi <= lo and p <= k < q for a[k] == x;
-// the equations Lo == incs(..., ⌊Hi⌋, ...) and Hi == decs(..., ⌊Lo⌋, ...) depend on each other, which the matching
-// follows (Ctx.↑), since cycles among the equations are only excluded where a replacement is applied (Simplify.var_);
-// without the cut, one goal remains, as the bounds are facts about terms, which the rewriter does not derive
+// status: two goals remain, lo <= p at the cut after the loop, on both exits;
+// the trace of hi is abstracted by decs, a monotonically decreasing value with the bound q, which is bound by
+// matching the guard; its decrease follows from the guard together with the loop test lo < hi, which holds in the
+// update (see Simplify.invariants), where the matching decides guards in the context of the update
+// (see Rewrite.matches); the trace of lo does not match incs: the conjunct F(x, h) <= b of the pattern,
+// whose F is (hi + lo) / 2 + 1, is a single summand, which does not match the summands of (hi + lo) / 2 < p,
+// i.e., (hi + lo) / 2 + 1 <= p; the instance of F would have to be inlined before the comparison is matched;
+// with both bounds, lo <= p and q <= hi, the cut closes the exit when x is not found with hi <= lo and
+// p <= k < q for a[k] == x;
+// the equations Lo == ...(..., ⌊Hi⌋, ...) and Hi == decs(..., ⌊Lo⌋, ...) depend on each other, which the matching
+// follows (Ctx.↑), since cycles among the equations are only excluded where a solution is inlined (Simplify.poly);
+// without the cut, the bounds would be facts about the terms current(...), which the simplifier does not derive
 // (see forward.md);
 // the found case is closed by the test of the branch with break, mid < n and a[mid] == x from p <= mid < q <= n;
 // the exit of the loop by its test closes once i is known to keep its value -1: the simplifier merges the cases
@@ -35,37 +40,40 @@ type Trace<a₀>
 function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 function current<a₀>(x₀: Trace<a₀>): a₀
 
-// a value that increases monotonically: in each iteration, it either keeps its value, case C, or increases to F(x, h)
-// under the guard D(x, h) && x < F(x, h), where D is bound to the whole guard of the program,
-// from which the increase must follow (see Rewrite.guard)
-function incs(x0: int, ks: seq<int>, hs: seq<int>,
+// a value that increases monotonically up to a bound b: in each iteration, it either keeps its value, case C,
+// or increases to F(x, h) under the guard D(x, h) && x < F(x, h) && F(x, h) <= b, where D is bound to the whole guard
+// of the program, the bound b by matching F(x, h) <= b against a conjunct of the guard, and the increase must follow
+// from the guard (see Rewrite.guard)
+function incs(x0: int, b: int, ks: seq<int>, hs: seq<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} {:free} forall x0: int, i: int, c: int, m: int, hs: seq<int>,
+lemma {:rw} {:free} forall x0: int, b: int, i: int, c: int, m: int, hs: seq<int>,
                           C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
-  trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h :: case C(x, h) => x case D(x, h) && x < F(x, h) => F(x, h))
-    == incs(x0, ⌊counter(i, c, m)⌋, hs, D, C, F)
+  trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h ::
+          case C(x, h) => x case D(x, h) && x < F(x, h) && F(x, h) <= b => F(x, h))
+    == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
 
-// the value stays below every bound of the initial value and of each change
-lemma {:rw} {:free} forall x0: int, ks: seq<int>, hs: seq<int>,
-                          D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int, b: int ::
-  if x0 <= b && (forall x: int, h: int :: D(x, h) ==> F(x, h) <= b)
-  then (current(incs(x0, ks, hs, D, C, F)) <= b) <==> true
+// the value stays below the bound if the initial value does
+lemma {:rw} {:free} forall x0: int, b: int, ks: seq<int>, hs: seq<int>,
+                          D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
+  if x0 <= b
+  then (current(incs(x0, b, ks, hs, D, C, F)) <= b) <==> true
 
-// a value that decreases monotonically, dually
-function decs(x0: int, ks: seq<int>, ls: seq<int>,
+// a value that decreases monotonically down to a bound b, dually
+function decs(x0: int, b: int, ks: seq<int>, ls: seq<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} {:free} forall x0: int, i: int, c: int, m: int, ls: seq<int>,
+lemma {:rw} {:free} forall x0: int, b: int, i: int, c: int, m: int, ls: seq<int>,
                           C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
-  trace(x0, for ⌊counter(i, c, m)⌋, ls do x, k, l :: case C(x, l) => x case D(x, l) && F(x, l) < x => F(x, l))
-    == decs(x0, ⌊counter(i, c, m)⌋, ls, D, C, F)
+  trace(x0, for ⌊counter(i, c, m)⌋, ls do x, k, l ::
+          case C(x, l) => x case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
+    == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
 
-// the value stays above every bound of the initial value and of each change
-lemma {:rw} {:free} forall x0: int, ks: seq<int>, ls: seq<int>,
-                          D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int, b: int ::
-  if b <= x0 && (forall x: int, l: int :: D(x, l) ==> b <= F(x, l))
-  then (b <= current(decs(x0, ks, ls, D, C, F))) <==> true
+// the value stays above the bound if the initial value does
+lemma {:rw} {:free} forall x0: int, b: int, ks: seq<int>, ls: seq<int>,
+                          D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
+  if b <= x0
+  then (b <= current(decs(x0, b, ks, ls, D, C, F))) <==> true
 
 // the midpoint lies in the interval, for division that rounds down, which the simplifier does not know otherwise,
 // needed for the increase lo < (hi + lo) / 2 + 1 and the decrease (hi + lo) / 2 < hi
@@ -85,18 +93,14 @@ method search() returns (i: int)
   i := -1;
   while lo < hi
   {
-    // the loop test is repeated as a branch, such that it is part of the guards of the updates of the traces
-    // (the test of the loop and assumptions in the body are recorded in invs only)
-    if lo < hi {
-      mid := (lo + hi) / 2;
-      if a[mid] < x {
-        lo := mid + 1;
-      } else if x < a[mid] {
-        hi := mid;
-      } else {
-        i := mid;
-        break;
-      }
+    mid := (lo + hi) / 2;
+    if a[mid] < x {
+      lo := mid + 1;
+    } else if x < a[mid] {
+      hi := mid;
+    } else {
+      i := mid;
+      break;
     }
   }
   // a cut, until facts about terms are derived (see forward.md): the bounds are proved by the lemmas on incs and decs,

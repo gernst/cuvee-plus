@@ -7,7 +7,7 @@
   (forall ((y Int)) (< 1 y)))
 
 (assert
-  (forall ((y Int)) (p y)))
+  (forall ((x$3 Int)) (p x$3)))
 
 (assert
   (forall ((x$4 Int)) (p x$4)))

@@ -362,7 +362,11 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     testers of `xs == cons(x, ys)`, counters
     `K == counter(0, 1, n)` among the dependencies, and equal definitions in
     `eq_`; a variable is never rewritten on its own;
-  - the bound variables in the order of binding (`bound`);
+  - the bound variables in the order of binding (`bound`), and among them
+    those that are universal and existential at the current position
+    (`universal`, `existential`, added by `forall` and `exists`, while `bind`
+    adds to neither), which `flip` swaps; the equations of the
+    existential ones are true (the one-point rule);
   - the polarity of the position, and whether the context is inconsistent;
   - the rewrite rules and their remaining number of steps
     (`ctx.withRules(rules, steps)`), which all copies share; `Ctx.assume`
