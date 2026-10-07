@@ -88,29 +88,30 @@ lemma, the rewriter looks through such equations (`Ctx.↑`, see
 
 ## Step 3: the interdependence is cut (the key step)
 
-The relevant lemma is about reading an earlier state of a stores trace at an
-index that has not been written so far:
+The relevant lemma is about reading an earlier state of a stores trace. It
+reads the value stored last at `k` among the keys stored so far, and the
+initial value if `k` has not been written so far:
 
 ```
-if !occurs(k, prefix(j, keys))
-then earlier(j, ⌊stores(a, keys, values)⌋)[k] == a[k]
+earlier(j, ⌊stores(a, keys, values)⌋)[k]
+  == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
 ```
 
-Here `j` and `k` are both the iteration `k₈`, and the keys are `⌊I⌋`. Its
+Here `j` and `k` are both the iteration `k₈`, and the keys are `⌊I⌋`. The
 condition is decided by two more lemmas. The first `k₈` keys of the counter
 are `0, ..., k₈ - 1`, and `k₈` is not among them:
 
 ```
+[rewrite] a_₄[k₈]
+       ~> if occurs(k₈, prefix(k₈, ⌊I₁₃⌋)) then earlier(..., maps(...)) else a[k₈]
 [rewrite] prefix(k₈, ⌊I₁₃⌋)
        ~> ⌊counter(0, 1, k₈)⌋
 [rewrite] occurs(k₈, ⌊counter(0, 1, k₈)⌋)
        ~> 0 <= k₈ < 0 + k₈
 [simplify] 0 <= k₈ < 0 + k₈
         ~> false
-[simplify] !occurs(k₈, prefix(k₈, ⌊I₁₃⌋))
-        ~> true
-[rewrite] a_₄[k₈]
-       ~> a[k₈]
+[simplify] if occurs(k₈, prefix(k₈, ⌊I₁₃⌋)) then ... else a[k₈]
+        ~> a[k₈]
 ```
 
 In the trace of `t`, and in the values stored into `B_`, the read `a_₄[k₈]` of
@@ -122,7 +123,8 @@ same way, `b_₅[k₈]` in the values stored into `A_` becomes `b[k₈]`:
        ~> b[k₈]
 ```
 
-The lemma only needs the keys of the other trace, never its stored values.
+Only the keys of the other trace are needed to decide the condition, and the
+branch with its stored values is dropped.
 Those values are exactly where the reference back to the first trace sits, so
 the cycle is never followed. The reason is plain: in iteration `k`, the loop
 has written only the indices `0, ..., k - 1`. Element `k` of both arrays still
@@ -184,14 +186,14 @@ current(stores(a, keys, values))[k] == if occurs(k, keys) then earlier(indexof(k
 - The arrays are only updated at the loop index, and the index is a counter
   with step 1. So the keys of both `stores` traces are known, and distinct.
 - Each iteration reads the other array at the index it is about to write,
-  which no earlier iteration has written. The lemma for unwritten indices
-  (`!occurs(k, prefix(j, keys))`) applies, and it replaces the read by one of
-  the initial array without looking at the stored values. That is what removes
-  the mutual dependency between `A_` and `B_`.
+  which no earlier iteration has written. The condition
+  `occurs(k, prefix(j, keys))` of the lemma is false, so the read becomes one
+  of the initial array, and the branch with the stored values is dropped.
+  That is what removes the mutual dependency between `A_` and `B_`.
 - If the loop read an index that an earlier iteration had written, e.g.
-  `a_[i - 1]`, the other lemma (`occurs(k, prefix(j, keys))`) would apply
-  instead. It returns an earlier stored value, which still refers to the
-  other trace, and the dependency would not be resolved this way.
+  `a_[i - 1]`, the condition would be true instead. The read would become an
+  earlier stored value, which still refers to the other trace, and the
+  dependency would not be resolved this way.
 
 To reproduce:
 

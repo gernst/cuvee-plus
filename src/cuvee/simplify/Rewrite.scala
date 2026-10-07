@@ -13,6 +13,12 @@ case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound
   def isPattern(x: Var) =
     vars.contains(x) || locals.contains(x)
 
+  // bound variables of the pattern, the arguments of higher-order patterns
+  def isBound(expr: Expr) =
+    expr match
+      case x: Var => local.contains(x) || locals.contains(x)
+      case _      => false
+
 // a simple rewrite engine with the rules of the context (Ctx.rules), a single step at the top of an expression:
 // the first rule whose left hand side matches and whose instantiated condition holds is applied,
 // the simplifier traverses the subexpressions and iterates, up to the maximal number of steps of the context
@@ -100,6 +106,19 @@ object Rewrite:
       // annotations e as T of the expression are skipped, the left-hand sides of rules have none (see Rules.from)
       case (_, As(arg, _)) =>
         matches(config, state, ctx, b, pat, arg, m)
+
+      // higher-order patterns F(t₁, ..., tₙ) of a variable of function type, of the rule or of a dependency (Binding.locals),
+      // applied to distinct bound variables of the pattern (Miller's fragment), or to terms whose variables are instantiated
+      // already, e.g. a[k] in a[k := f(a[k])]; they match by abstraction, F = (y₁, ..., yₙ) => expr for the corresponding
+      // bound variables of the expression, where all occurrences of the instances of the terms are abstracted, too
+      // (see abstraction); the applications in the instantiated right-hand side are beta-reduced by the simplifier
+      // (see Simplify.app)
+      case (Apply(f: Var, args), _) if b.isPattern(f) && args.distinct == args =>
+        for
+          (terms, m1) <- arguments(state, b, args, m)
+          if terms.distinct == terms
+          m2 <- abstraction(state, b, f, terms, expr, m1)
+        yield m2
 
       // guarded cases, where a result that is not Eps is a single case whose guard is true,
       // e.g. the update y + 1 of a pattern covers both cases if b then y + 1, if !b then y + 1
@@ -329,6 +348,73 @@ object Rewrite:
       m2 <- body(b_, m1)
       m3 <- instantiate(config, state, ctx, b, zs, deps_, bound_, local.values.toSet, m2)
     yield Subst(m3.params, m3.vars -- zs.map(_._2))
+
+  // the instances of the arguments of a higher-order pattern: the bound variables of the expression
+  // that correspond to the bound variables of the pattern, where those of the variables of the rule
+  // among the dependencies (Binding.locals) that are not instantiated yet are chosen among the bound variables
+  // of the expression, from which the dependency follows (see instantiate); other arguments must be instantiated already
+  def arguments(state: State, b: Binding, args: List[Expr], m: Subst[Type, Expr]): List[(List[Expr], Subst[Type, Expr])] =
+    args match
+      case Nil =>
+        List((Nil, m))
+
+      case arg :: rest =>
+        val choices =
+          arg match
+            case x: Var if b.local.contains(x) =>
+              List((b.local(x), m))
+
+            case x: Var if b.locals.contains(x) && !m.vars.contains(x) =>
+              for
+                y <- b.bound.toList
+                m_ <- matches(state, x.typ, y.typ, m)
+              yield (y, m_ + (x -> y))
+
+            case _ if arg.free.forall(x => b.local.contains(x) || m.vars.contains(x) || !b.isPattern(x)) =>
+              List(((m ++ Subst(Map(), b.local))(arg), m))
+
+            case _ =>
+              Nil
+
+        for
+          (term, m1) <- choices
+          (terms, m2) <- arguments(state, b, rest, m1)
+        yield (term :: terms, m2)
+
+  // F = (z₁, ..., zₙ) => expr', where expr' abstracts the instances `terms` of the arguments in `expr`:
+  // bound variables of the expression are bound by the lambda, other terms are replaced by fresh variables
+  // and must occur in `expr`, otherwise e.g. a[k := f(a[k])] would also match its own result a[k := f(a0[k])];
+  // a variable of the rule must not capture other bound variables of the expression, for one of a dependency,
+  // the accumulator is excluded by instantiate
+  def abstraction(state: State, b: Binding, f: Var, terms: List[Expr], expr: Expr, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+    val zs =
+      for term <- terms
+      yield term match
+        case y: Var if b.bound.contains(y) => y
+        case _                             => Var("z", term.typ).fresh
+
+    val replaced = (terms zip zs).filter((term, z) => term != z)
+
+    def replace(expr: Expr): Expr =
+      replaced.collectFirst { case (term, z) if term == expr => z }.getOrElse(expr.map(replace))
+
+    val body = replace(expr)
+
+    m.vars.get(f) match
+      case Some(Lam(xs, body_, _)) =>
+        if Subst.from(xs, terms)(body_) == expr then List(m) else Nil
+
+      case Some(value) =>
+        if Apply(value, terms) == expr then List(m) else Nil
+
+      case None if replaced.forall((_, z) => body.free.contains(z))
+          && (!b.vars.contains(f) || (body.free intersect b.bound).subsetOf(zs.toSet)) =>
+        val lam = Lam(zs, body, Arrow(zs.types, body.typ))
+        for m_ <- matches(state, f.typ, lam.typ, m)
+        yield m_ + (f -> lam)
+
+      case None =>
+        Nil
 
   // the variables of the rule among the dependencies, from the values of their bound variables,
   // which must not depend on the accumulator

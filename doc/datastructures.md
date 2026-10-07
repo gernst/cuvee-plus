@@ -382,13 +382,27 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 - **`Rule(xs, lhs, rhs, cond)`** is a conditional rewrite rule with the
   variables `xs`, the quantified variables of a lemma (`Rule.from`), which
   must occur in `lhs` if they occur in `rhs` or `cond`; other free variables
-  are constants. `Rewrite` rewrites innermost first; a
+  are constants. `Rewrite` applies the first rule that matches at the top of
+  an expression, a single step, the simplifier traverses and iterates; a
   match is a `Subst` of the type parameters and variables of the rule,
   modulo type instantiation, A/C and 0 of `+` and `-`, comparisons modulo
   moving summands between the sides (as normalized polynomials of the
   difference, where `<` on `Int` is `<=` with 1 added), equations modulo
   symmetry (`a == b` matches `b == a`), and the binding
   structure of `Trace`, `Maps`, and `Invs` ([teq.md](teq.md)).
+  Higher-order patterns `F(t₁, ..., tₙ)`, a variable of function type of the
+  rule or of a dependency that is a rule variable, applied to distinct bound
+  variables of the pattern (Miller's fragment) or to terms whose variables
+  are instantiated already, match by abstraction: `F = (z₁, ..., zₙ) => e'`,
+  where the bound variables of the expression that correspond to those of
+  the pattern are bound, and all occurrences of the instances of the terms
+  are replaced by fresh variables, which must occur, e.g. `f = z => z * c + k`
+  for `b[k := f(b[k])]` against `b[k := b[k] * c + k]`. A rule variable `F`
+  must not capture other bound variables of the expression, but may abstract
+  the accumulator; for a variable of a dependency, `instantiate` excludes the
+  accumulator. A bound variable of a dependency that is a rule variable is
+  chosen among those of the expression. The simplifier beta-reduces the
+  instantiated right-hand side.
   A function definition with `:rw` whose body is a match on a parameter
   gives one rule per case, the pattern in place of the parameter, and
   pattern variables that shadow other parameters renamed apart

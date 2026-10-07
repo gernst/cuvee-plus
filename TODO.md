@@ -94,8 +94,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 - The functions on traces are declared only by the lemma database
   ([teq.dfy](resources/cuvee/teq.dfy)), whose names may clash with the input,
-  and which inputs cannot use before `-teq` injects it. Lemmas about `invs`
-  over a formula would need higher-order patterns.
+  and which inputs cannot use before `-teq` injects it.
+- Higher-order patterns (`Rewrite`) take distinct bound variables or terms
+  instantiated already as arguments; other arguments match only if an
+  earlier occurrence instantiated the variable, and a single bound variable
+  of the pattern cannot abstract several of the expression (no tuples).
+  Terms are abstracted at all of their occurrences.
 
 ## Dafny frontend
 

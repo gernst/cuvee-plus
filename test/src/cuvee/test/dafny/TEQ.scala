@@ -222,6 +222,13 @@ object TEQ extends TestSuite:
       goals("z == x") ==> Nil
       goals("z != x") ==> List(False)
 
+    // an update b[i] := c * b[i] + i reads the initial value, since the keys are distinct, by the higher-order lemma
+    // whose variable f abstracts the context of the read, f = z => z * c + k
+    test("contexts of reads"):
+      val (cmds, errors) = Examples.output("-teq", "-simplify", "-print", "null", (Examples.root / "dafny" / "teq" / "affine.dfy").toString)
+      errors ==> Nil
+      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
+
     // the variable of a counter that runs in parallel to the iterations is bounded like them,
     // since its value earlier(k, ⌊I⌋) is k within the range of k
     test("bounds of counters"):

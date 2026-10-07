@@ -83,11 +83,12 @@ lemma <a, b> {:rw} {:free} {:teq} forall a: array<a, b>, keys: seq<a>, values: s
   trace(a, for keys, values do b, k, v :: b[k := v])
     == stores(a, keys, values)
 
-// each key is visited once only if they are distinct, hence a[k] is still the initial value
-lemma <a> {:rw} {:free} {:teq} forall a: array<a, int>, keys: seq<a>, bs: seq<int>, cs: seq<int> ::
+// each key is visited once only if they are distinct, hence b[k] is still the initial value a[k],
+// in any context f of the read, which may depend on the other dependencies, but not on the accumulator otherwise
+lemma <a, b> {:rw} {:free} {:teq} forall a: array<a, b>, keys: seq<a>, fs: seq<b -> b> ::
   if distincts(keys)
-  then trace(a, for keys, bs, cs do b, k, x, y :: b[k := x * b[k] + y])
-         == trace(a, for keys, bs, cs do b, k, x, y :: b[k := x * a[k] + y])
+  then trace(a, for keys, fs do b, k, f :: b[k := f(b[k])])
+         == trace(a, for keys, fs do b, k, f :: b[k := f(a[k])])
 
 lemma {:rw} {:free} {:teq} forall a: array<int, int>, keys: seq<int>, d: int ::
   trace(a, for keys do b, k :: b[k := b[k + d]])
@@ -351,22 +352,11 @@ lemma <a, b> {:rw} {:free} {:teq} forall k: a, a: array<a, b>, keys: seq<a>, val
   current(stores(a, keys, values))[k]
     == if occurs(k, keys) then earlier(indexof(k, keys), values) else a[k]
 
-// not a rewrite rule, since it loops: the index k may be rewritten to earlier(j, ...) by the assumptions,
-// instead, the two lemmas below distinguish whether k occurs among the first j keys
-lemma <a, b> {:free} {:teq} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
+// an earlier state reads the value stored last at k among the keys stored so far, the initial value otherwise
+// (indexof is the *last* occurrence, hence indexof(k, prefix(j, keys)) <= indexof(k, keys) but not equal)
+lemma <a, b> {:rw} {:free} {:teq} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
   earlier(j, ⌊stores(a, keys, values)⌋)[k]
     == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
-
-// Note, indexof(k, prefix(j, keys)) <= indexof(k, keys) but not equal, since indexof is the *last* occurrence
-lemma <a, b> {:rw} {:free} {:teq} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if occurs(k, prefix(j, keys))
-  then earlier(j, ⌊stores(a, keys, values)⌋)[k]
-         == earlier(indexof(k, prefix(j, keys)), values)
-
-lemma <a, b> {:rw} {:free} {:teq} forall k: a, j: int, a: array<a, b>, keys: seq<a>, values: seq<b> ::
-  if !occurs(k, prefix(j, keys))
-  then earlier(j, ⌊stores(a, keys, values)⌋)[k]
-         == a[k]
 
 lemma {:rw} {:free} {:teq} forall a: array<int, int>, n: int, i: int, d: int, k: int ::
   if 0 <= d

@@ -142,3 +142,52 @@ object RewriteTraces extends TestSuite:
       val rule = rw(Invs(List(Butlast(K)), List(k), Lt.int(c, k)), True)
       val expr = Invs(List(Butlast(J)), List(j), Lt.int(j, j))
       R(List(rule), expr) ==> expr
+
+    // higher-order patterns P(x) of variables of function type applied to bound variables (Miller's fragment),
+    // where the dependency Xs follows from the bound variable of the expression that x corresponds to
+    test("higher-order"):
+      val Xs = Var("Xs", ints)
+      val P = Var("P", Arrow(List(int), Sort.bool))
+      val Q = Var("Q", Arrow(List(int), Sort.bool))
+      val rule = rw(
+        Invs(List(Xs), List(x), And(Apply(P, List(x)), Apply(Q, List(x)))),
+        And(Invs(List(Xs), List(x), Apply(P, List(x))), Invs(List(Xs), List(x), Apply(Q, List(x))))
+      )
+
+      val expr = Invs(List(Butlast(J)), List(j), And(Lt.int(j, n), Le.int(Zero.int, j)))
+      val p = Lam(List(j), Lt.int(j, n), Arrow(List(int), Sort.bool))
+      val q = Lam(List(j), Le.int(Zero.int, j), Arrow(List(int), Sort.bool))
+      R(List(rule), expr) ==>
+        And(Invs(List(Butlast(J)), List(x), Apply(p, List(x))), Invs(List(Butlast(J)), List(x), Apply(q, List(x))))
+
+      // the simplifier beta-reduces the instantiated right-hand side, here without the counter,
+      // whose bounds would decide both
+      val phi = cuvee.simplify.Simplify.simplify(Config.default, State.empty, Ctx.pos.withRules(List(rule)), expr)
+      phi ==> And(Invs(List(Butlast(J)), List(j), Lt.int(j, n)), Invs(List(Butlast(J)), List(j), Le.int(Zero.int, j)))
+
+      // a single bound variable of the pattern cannot abstract two of the expression
+      val W = Var("W", ints)
+      val w = Var("w", int)
+      val two = Invs(List(Butlast(J), W), List(j, w), And(Lt.int(j, n), Lt.int(w, j)))
+      R(List(rule), two) ==> two
+
+    // repeated occurrences of a higher-order variable must agree
+    test("higher-order repeated"):
+      val Xs = Var("Xs", ints)
+      val P = Var("P", Arrow(List(int), Sort.bool))
+      val rule = rw(Invs(List(Xs), List(x), And(Apply(P, List(x)), Not(Apply(P, List(x))))), False)
+
+      R(List(rule), Invs(List(Butlast(J)), List(j), And(Lt.int(j, n), Not(Lt.int(j, n))))) ==> False
+      val other = Invs(List(Butlast(J)), List(j), And(Lt.int(j, n), Not(Lt.int(j, s))))
+      R(List(rule), other) ==> other
+
+    // the accumulator may be abstracted as well, unlike by first-order variables of the rule
+    test("higher-order accumulator"):
+      val Xs = Var("Xs", ints)
+      val F = Var("F", Arrow(List(int, int), int))
+      val fold = Fun("fold", Nil, Fun.formals(int, ints, Arrow(List(int, int), int)), trace)
+      val rule = rw(Trace(i, List(Xs), x, List(v), Apply(F, List(x, v))), app(fold, i, Xs, F))
+
+      val update = Plus.int(Times.int(s, j), One.int)
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), update)
+      R(List(rule), expr) ==> app(fold, Zero.int, Butlast(J), Lam(List(s, j), update, Arrow(List(int, int), int)))
