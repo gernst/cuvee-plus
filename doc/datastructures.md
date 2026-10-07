@@ -114,11 +114,13 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   curries; the Boogie frontend reads and prints maps of several indices this
   way, SMT-LIB rejects lambdas of several variables (z3's multi-index arrays
   are not curried), Dafny does not print lambdas.
-  The simplifier binds the variable of a lambda like that of `let`
+  The simplifier binds the variables of a lambda like those of `let`
   (renamed apart, without polarity), reduces `(λx. e)[t]` to `e[x := t]`
-  (`select`), `λx. a[x]` to `a` (`lam`, eta), and an equation of two
-  lambdas to `forall x :: e == e'` (`eq_`, extensionality); the equation of
-  an array and a lambda is kept, since it defines the array.
+  (`select`) and the application of a function lambda likewise (`app`), also
+  of arrays and function values defined by a lambda, `λx. a[x]` to `a` and
+  `(x, y) => f(x, y)` to `f` (`lam`, eta), and an equation of two lambdas
+  to `forall x, y :: e == e'` (`eq_`, extensionality); the equation of an
+  array or function value and a lambda is kept, since it defines it.
 
 - **Traversals:** `expr.map(f)` applies `f` to the immediate subexpressions
   point-wise and keeps bound variables, likewise `upd.map(f)`,

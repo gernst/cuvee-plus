@@ -189,6 +189,19 @@ object Definitions extends TestSuite:
       simplify(Ctx.empty, Eq(Lam(List(x), x, typ), Lam(List(z), y, typ))) ==> All(List(x), Eq(x, y))
       simplify(Ctx.empty, Eq(a, Lam(List(x), x, typ))) ==> Eq(a, Lam(List(x), x, typ))
 
+    // lambdas of function type are reduced when applied (beta), also when a function value is defined by one,
+    // are the function value that they apply (eta), and are equal if their bodies are, for several variables
+    test("functions"):
+      val fun = Arrow(List(Sort.int, Sort.int), Sort.int)
+      val g = Var("g", fun)
+      val add = Lam(List(x, y), Plus.int(x, y), fun)
+      simplify(Ctx.empty, Apply(add, List(z, One.int))) ==> Plus.int(z, One.int)
+      simplify(Ctx.empty.assume(Eq(g, add)), Apply(g, List(z, z))) ==> Times.int(Lit(BigInt(2), Sort.int), z)
+      simplify(Ctx.empty, Lam(List(x, y), Apply(g, List(x, y)), fun)) ==> g
+      simplify(Ctx.empty, Lam(List(x, y), Apply(g, List(y, x)), fun)) ==> Lam(List(x, y), Apply(g, List(y, x)), fun)
+      simplify(Ctx.empty, Eq(add, Lam(List(y, z), Plus.int(z, y), fun))) ==> True
+      simplify(Ctx.empty, Eq(add, Lam(List(y, z), y, fun))) ==> All(List(y), Eq(y, Zero.int))
+
     // testers of a variable defined by a constructor application, also with a type annotation
     test("testers"):
       import cuvee.test.Matching.{state, list, nil, cons, xs, ys}

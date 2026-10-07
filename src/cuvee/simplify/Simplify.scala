@@ -462,13 +462,13 @@ object Simplify extends Transform:
       case (_, False) => not(config, state, ctx, left)
       case (False, _) => not(config, state, ctx, right)
 
-      // extensionality: lambdas are equal if their bodies are for all values of the variable, which is renamed apart,
-      // the equation of an array and a lambda is kept, which defines the array (see select)
-      case (Lam(List(x), body, _), Lam(List(y), body_, _)) =>
-        val clash = (body.free - x) ++ (body_.free - y) ++ ctx.free
-        val (List(z), re) = Subst.rename(List(x), clash): @unchecked
-        val eq = eq_(config, state, ctx.neutral.bind(List(z)), re(body), Subst.from(List(y), List(z))(body_))
-        all(config, state, ctx, List(z), eq)
+      // extensionality: lambdas are equal if their bodies are for all values of the variables, which are renamed apart,
+      // the equation of an array or function value and a lambda is kept, which defines it (see select and app)
+      case (Lam(xs, body, _), Lam(ys, body_, _)) if xs.length == ys.length =>
+        val clash = (body.free -- xs) ++ (body_.free -- ys) ++ ctx.free
+        val (zs, re) = Subst.rename(xs, clash)
+        val eq = eq_(config, state, ctx.neutral.bind(zs), re(body), Subst.from(ys, zs)(body_))
+        all(config, state, ctx, zs, eq)
 
       case _ =>
         Eq(left, right)
@@ -784,9 +784,15 @@ object Simplify extends Transform:
       case _ =>
         Earlier(j, arg)
 
-  // applications of other functions, e.g. user-defined ones
+  // applications of other functions, e.g. user-defined ones, and beta reduction of function values,
+  // also of those defined by a lambda (see Ctx.↑)
   def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
-    App(fun, inst, typ, args)
+    App(fun, inst, typ, args) match
+      case Apply(ctx.↑(Lam(bound, body, _)), args_) if bound.length == args_.length =>
+        Subst.from(bound, args_)(body)
+
+      case expr =>
+        expr
 
   // forall distributes over and, where each conjunct binds the variables that it uses
   def all(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr): Expr =
@@ -808,11 +814,15 @@ object Simplify extends Transform:
     then body
     else Bind(quant, bound_, body)
 
-  // eta reduction, the lambda that selects the elements of an array is that array
+  // eta reduction, the lambda that selects the elements of an array is that array,
+  // and the lambda that applies a function value to its variables is that function value
   def lam(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr, typ: Type): Expr =
     (bound, body) match
       case (List(x), Select(base, index)) if index == x && !base.free.contains(x) =>
         base
+
+      case (_, Apply(f, args)) if args == bound && (f.free intersect bound.toSet).isEmpty =>
+        f
 
       case _ =>
         Lam(bound, body, typ)
