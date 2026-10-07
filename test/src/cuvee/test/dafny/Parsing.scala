@@ -39,7 +39,7 @@ object Hybrid extends TestSuite:
 
     test("shared"):
       errors(history + p + "method m() returns (x: int) modifies history { parallel { x := p(1); x := p(2); } }") ==>
-        List("parallel calls share modified variables")
+        List("parallel programs share modified variables")
 
     // the history ticks after a differential equation
     test("tick"):
@@ -49,7 +49,13 @@ object Hybrid extends TestSuite:
 
     test("read"):
       errors(history + p + "method m() returns (x: int, y: int) modifies history { parallel { x := p(1); y := p(x); } }") ==>
-        List("parallel calls share modified variables")
+        List("parallel programs share modified variables")
+
+    // parallel composition of other statements is parsed, but not verified
+    test("not calls"):
+      val text = "method m() returns (x: int, y: int) { parallel { x := 1; y := 2; } }"
+      errors(text) ==> Nil
+      Examples.check("dfy", text, "-hybrid", "-verify") ==> List("parallel composition of statements that are not calls")
 
 // slices and updates are on sequences only, indexing falls back to arrays
 object Sequences extends TestSuite:
@@ -133,6 +139,21 @@ object Datatypes extends TestSuite:
     test("tester on a call"):
       errors(list + "function g(): list<int> function f(): bool { g().nil? }") ==>
         List("tester on an expression that is not a variable")
+
+    test("unknown tester"):
+      errors(list + "function f(xs: list<int>): bool { xs.none? }") ==> List("constructor not declared")
+
+    // m.Keys and m.Values on other types than maps are rejected by type checking
+    test("keys"):
+      errors("function f(m: map<int, bool>): set<int> { m.Keys }") ==> Nil
+      errors("function f(s: set<int>): set<int> { s.Keys }") ==> List("type mismatch")
+
+    // inside the members of a type, its fields, functions, and methods are accessible without this
+    test("implicit this"):
+      val pair = "datatype pair = pair(fst: int, snd: int) { "
+      errors(pair + "function sum(): int { fst + snd } function twice(): int { sum() + this.sum() } }") ==> Nil
+      errors(pair + "method get() returns (x: int) { x := fst; } method get2() returns (y: int) { y := get(); } }") ==> Nil
+      errors("function f(): int { g(1) }") ==> List("unresolved identifier")
 
     test("annotation"):
       errors(list + "function f(xs: list<int>): bool { xs != nil as list<int> }") ==> Nil

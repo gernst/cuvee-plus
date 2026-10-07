@@ -161,7 +161,7 @@ case class If(test: Expr, left: Prog, right: Prog)
 case class While(test: Expr, body: Prog, attrs: Attrs)  // invariant, decreases, modifies
 case class Iter(body: Prog, attrs: Attrs)               // while * { body }
 case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs)
-case class Par(calls: List[Call])                       // parallel composition of calls
+case class Par(progs: List[Prog])                       // parallel composition
 ```
 
 - **`Spec`** covers `assert`, `assume` and `havoc`, through

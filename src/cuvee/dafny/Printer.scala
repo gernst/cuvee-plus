@@ -409,8 +409,8 @@ object Printer extends cuvee.pipe.Printer:
         val ode = Group(lhs_ ~~ text("==") ~ Nest(2, line ~ rhs_ ~ concat(dom_)))
         header(ode, attrs, None) ~ text(";")
 
-      case Par(calls) =>
-        text("parallel {") ~ Nest(2, concat(calls.map(hardline ~ doc(_)))) ~ hardline ~ text("}")
+      case Par(progs) =>
+        text("parallel {") ~ Nest(2, concat(progs.map(hardline ~ doc(_)))) ~ hardline ~ text("}")
 
   // the tuple types and their constructors, which are declared in the prelude as tuple2, tuple3, ...
   def isTuple(name: Name, arity: Int): Boolean =

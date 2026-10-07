@@ -5,8 +5,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## NEW
 
-Separately, address the TODOs in the Dafny parser
-
 Then refactor the Dafny examples
 - none should be top-level, all to be in sub-folders
 - I suggest to rename the `bitvectors` subfolder to something like `language` and move all language-feature related tests there.

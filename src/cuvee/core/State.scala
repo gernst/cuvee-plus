@@ -411,8 +411,8 @@ case class State(
         require(xs.length == rhs.length)
       Ode(time, xs, rhs, dom, attrs)
 
-    def par(calls: List[Call]) =
-      Par(calls)
+    def par(progs: List[Prog]) =
+      Par(progs)
 
   // the commands for the declarations and definitions of the state by name, with their attributes
   object cmds:

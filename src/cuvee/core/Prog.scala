@@ -20,7 +20,7 @@ sealed trait Prog:
       case If(_, left, right) => List(left, right)
       case While(_, body, _)  => List(body)
       case Iter(body, _)      => List(body)
-      case Par(calls)         => calls
+      case Par(progs)         => progs
       case _                  => Nil
 
   // apply `e` to the immediate expressions, including those in attributes, and `p` to the immediate subprograms,
@@ -37,7 +37,7 @@ sealed trait Prog:
       case While(test, body, attrs)    => While(e(test), p(body), attrs.map(e))
       case Iter(body, attrs)           => Iter(p(body), attrs.map(e))
       case Ode(t, xs, rhs, dom, attrs) => Ode(t, xs, rhs.map(e), e(dom), attrs.map(e))
-      case Par(calls)                  => Par(for Call(proc, args, res) <- calls yield Call(proc, args.map(e), res))
+      case Par(progs)                  => Par(progs.map(p))
 
 case object Break extends Prog:
   def mod = Set()
@@ -114,27 +114,29 @@ case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attr
   def mod = Set(xs*)
   def free = rhs.free ++ dom.free ++ attrs.free - time ++ xs
 
-// parallel composition of calls to procedures, whose assumption-commitment contracts
-// over the global history of events are in their attributes, "assumes" and "commits";
-// the calls must not share the variables that they modify, other than the history
-case class Par(calls: List[Call]) extends Prog:
-  def mod = calls.mod
-  def free = calls.flatMap(_.free).toSet
+// parallel composition of programs, of which verification supports calls to procedures only (see Verify),
+// whose assumption-commitment contracts over the global history of events are in their attributes,
+// "assumes" and "commits"; the programs must not share the variables that they modify, other than the history
+case class Par(progs: List[Prog]) extends Prog:
+  def mod = progs.mod
+  def free = progs.flatMap(_.free).toSet
 
 object Par:
-  // the variables modified by a call, including the global variables modified by the procedure,
+  // the variables modified by a program, including the global variables modified by the procedures it calls,
   // except for the global history of events, if it is declared (see State.history)
-  def modifies(state: State, call: Call): Set[Var] =
-    val Call(name, _, res) = call
-    val mod = state.procattrs(name).modifies
-    (res ++ mod).toSet -- state.vars.get("history")
+  def modifies(state: State, prog: Prog): Set[Var] =
+    val mod = prog match
+      case Call(name, _, res)   => (res ++ state.procattrs(name).modifies).toSet
+      case Block(locals, progs) => progs.flatMap(modifies(state, _)).toSet -- locals
+      case _                    => prog.mod ++ prog.subprogs.flatMap(modifies(state, _))
+    mod -- state.vars.get("history")
 
-  // the variables modified by one call and used by another, other than the history
-  def shared(state: State, calls: List[Call]): Set[Var] =
+  // the variables modified by one program and used by another, other than the history
+  def shared(state: State, progs: List[Prog]): Set[Var] =
     val pairs =
       for
-        (left, i) <- calls.zipWithIndex
-        (right, j) <- calls.zipWithIndex
+        (left, i) <- progs.zipWithIndex
+        (right, j) <- progs.zipWithIndex
         if i != j
       yield modifies(state, left) intersect (right.free -- state.vars.get("history") ++ modifies(state, right))
 

@@ -907,11 +907,9 @@ object Simplify extends Transform:
         val attrs_ = simplify(config, state, ctx, attrs)
         ode(config, state, ctx, time, xs, rhs_, dom_, attrs_)
 
-      case Par(calls) =>
-        val calls_ =
-          for Call(name, args, res) <- calls
-          yield Call(name, simplify(config, state, ctx, args), res)
-        par(config, state, ctx, calls_)
+      case Par(progs) =>
+        val progs_ = progs.map(simplify(config, state, ctx, _))
+        par(config, state, ctx, progs_)
 
   // havoc of no variables under the trivial contract has no effect
   def spec(config: Config, state: State, ctx: Ctx, xs: List[Var], pre: Expr, post: Expr): Prog =
@@ -982,5 +980,5 @@ object Simplify extends Transform:
   def ode(config: Config, state: State, ctx: Ctx, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): Prog =
     Ode(time, xs, rhs, dom, attrs)
 
-  def par(config: Config, state: State, ctx: Ctx, calls: List[Call]): Prog =
-    Par(calls)
+  def par(config: Config, state: State, ctx: Ctx, progs: List[Prog]): Prog =
+    Par(progs)

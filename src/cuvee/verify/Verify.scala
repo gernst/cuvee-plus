@@ -163,9 +163,14 @@ object Verify extends Transform:
         val phi = ode(t :: xs, One.real :: su(rhs), And(Le.real(Zero.real, t), su(dom)), attrs.invariants.map(su(_)), after)
         Subst.from(List(t), List(Zero.real))(phi)
 
-      // the parallel composition relies on the assumption of the enclosing procedure
+      // the parallel composition of calls relies on the assumption of the enclosing procedure
       // and must establish its commitment (see par)
-      case Par(calls) =>
+      case Par(progs) =>
+        val calls =
+          for prog <- progs
+          yield prog match
+            case call: Call => call
+            case _          => Error.raise("parallel composition of statements that are not calls", prog)
         par(state, gs, proc, assume, commit, calls, post)
 
   // calls by the contract of the procedure, where the measure of `proc` must decrease on recursive calls

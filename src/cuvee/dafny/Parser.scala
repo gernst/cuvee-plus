@@ -9,8 +9,6 @@ import cuvee.core.types
 import cuvee.core.Attrs
 
 class Parser(var state: State):
-  // val attrs_ = Attrs.empty
-
   // the constructors and selectors of a datatype whose sort is declared already
   def datatype(data: DataDef) =
     val DataDef(_, name, params, constrs, _) = data
@@ -46,32 +44,26 @@ class Parser(var state: State):
   // the strongly connected components of the datatypes `names` by the sorts of their selectors,
   // each after those that it refers to, and otherwise in the given order
   def groups(names: List[Name]): List[List[Name]] =
-    val refs =
-      names.map: name =>
-        val core.Datatype(_, constrs) = state.datatypes(name)
-        val cons = constrs.flatMap(_._2).flatMap(_.res.cons).map(_.name).toSet
-        name -> names.filter(cons.contains).toSet
-      .toMap
+    util.SCC(names, name =>
+      val core.Datatype(_, constrs) = state.datatypes(name)
+      constrs.flatMap(_._2).flatMap(_.res.cons).map(_.name).toSet)
 
-    // the datatypes reachable from each one
-    def reach(todo: List[Name], seen: Set[Name]): Set[Name] =
-      todo match
-        case Nil                         => seen
-        case n :: rest if seen contains n => reach(rest, seen)
-        case n :: rest                   => reach(refs(n).toList ++ rest, seen + n)
+  // the variables `names` in scope, unknown ones are reported with `msg`
+  def vars(scope: Scope, names: List[String], msg: String): List[core.Var] =
+    val unknown = names.filterNot(scope.vars.contains(_))
+    Error.report(msg, unknown):
+      require(unknown.isEmpty)
+    names.map(scope.vars(_))
 
-    val reachable = names.map(n => n -> reach(refs(n).toList, Set())).toMap
-    val components = names.map(n => names.filter(m => m == n || reachable(n)(m) && reachable(m)(n))).distinct
+  // the qualified name of member `fun` of the type of `self`, e.g. pair_fst
+  def member(self: core.Var, fun: String) =
+    self.typ.name.name + "_" + fun
 
-    def order(todo: List[List[Name]], done: List[List[Name]]): List[List[Name]] =
-      todo match
-        case Nil => done
-        case _ =>
-          val emitted = done.flatten.toSet
-          val next = todo.find(c => c.forall(n => (reachable(n) -- c).subsetOf(emitted))).get
-          order(todo.filterNot(_ == next), done :+ next)
-
-    order(components, Nil)
+  // whether `fun` with `arity` arguments is a function or method of the type of `this` in scope,
+  // i.e., inside the members of a type
+  def isMember(scope: Scope, fun: String, arity: Int) =
+    scope.vars.get("this").exists: self =>
+      state.funs.contains((member(self, fun), 1 + arity)) || state.procs.contains(member(self, fun))
 
   // type checking resolves the overloaded operators, see core.Overload
   def check(scope: Scope, expr: core.Expr, typ: core.Type): core.Expr =
@@ -193,13 +185,9 @@ class Parser(var state: State):
     check(scope, expr_, typ_)
 
   def contract(scope: Scope, mod: List[List[String]], req: List[Expr], ens: List[Expr], dec: List[List[Expr]]) =
-    val unknown = mod.flatten.filterNot(scope.vars.contains(_))
-    Error.report("unknown variables in modifies clause", unknown):
-      require(unknown.isEmpty)
-
     val mod_ =
       for xs <- mod
-      yield "modifies" -> Some(xs.map(scope.vars(_)))
+      yield "modifies" -> Some(vars(scope, xs, "unknown variables in modifies clause"))
 
     val req_ =
       for phi <- req
@@ -368,15 +356,16 @@ class Parser(var state: State):
           case _              => state.exprs.as(base, typ_)
         resolve(scope, base_, rest)
 
-      // the keys and values m.Keys and m.Values of maps, which are sets
-      case Member("Keys", Nil) :: rest if isMap(base) =>
+      // the keys and values m.Keys and m.Values of maps, which are sets, other types are rejected by type checking
+      case Member("Keys", Nil) :: rest =>
         resolve(scope, state.exprs.app(core.Fun.map.keys, List(base)), rest)
 
-      case Member("Values", Nil) :: rest if isMap(base) =>
+      case Member("Values", Nil) :: rest =>
         resolve(scope, state.exprs.app(core.Fun.map.values, List(base)), rest)
 
-      // testers x.C? of the constructors of datatypes, on variables only like members
-      case Member(tester, Nil) :: rest if tester.endsWith("?") && state.constrs.contains(tester.dropRight(1)) =>
+      // testers x.C? of the constructors of datatypes, on variables only like members,
+      // where state.exprs.is rejects unknown constructors
+      case Member(tester, Nil) :: rest if tester.endsWith("?") =>
         Error.report("tester on an expression that is not a variable", base, tester):
           require(base.isInstanceOf[core.Var])
 
@@ -389,7 +378,7 @@ class Parser(var state: State):
           case self: core.Var => self
           case _              => Error.raise("member access on an expression that is not a variable", base, fun)
 
-        val qname = self.typ.name.name + "_" + fun
+        val qname = member(self, fun)
 
         args match
           case _ if state.funs.contains((qname, 1 + args.length)) =>
@@ -402,11 +391,6 @@ class Parser(var state: State):
 
           case _ =>
             Error.raise("invalid access", self, qname, access)
-
-  def isMap(expr: core.Expr): Boolean =
-    expr.typ match
-      case core.Sort(con, _) => con == core.Con.map
-      case _                 => false
 
   // the comparisons that can be chained, with the translated operators
   val chainable = Grammar.chainable.map(op => Grammar.translate.getOrElse(op, op))
@@ -552,20 +536,20 @@ class Parser(var state: State):
         resolve(scope, expr_)
 
       case Diff(xs, arg) =>
-        val unknown = xs.filterNot(scope.vars.contains(_))
-        Error.report("unknown variables of derivative", unknown):
-          require(unknown.isEmpty)
-
-        val xs_ = xs.map(scope.vars(_))
+        val xs_ = vars(scope, xs, "unknown variables of derivative")
         val arg_ = resolve(scope, arg)
         state.exprs.diff(xs_, arg_)
 
       case App(name, Nil) if scope.vars.contains(name) =>
         scope.vars(name)
 
-      case App(fun, args) if state.funs.contains((fun, args.length)) =>
-        val args_ = args.map(resolve(scope, _))
-        state.exprs.app(fun, args_)
+      // functions, otherwise the members of the enclosing type, with `this` implicit, e.g. its fields
+      case App(fun, args) =>
+        if state.funs.contains((fun, args.length))
+        then state.exprs.app(fun, args.map(resolve(scope, _)))
+        else if isMember(scope, fun, args.length)
+        then resolve(scope, Inner(App("this", Nil), List(Member(fun, args))))
+        else Error.raise("unresolved identifier", fun)
 
       case Inner(base, access) =>
         val base_ = resolve(scope, base)
@@ -657,46 +641,31 @@ class Parser(var state: State):
 
       // calls to top-level methods, with or without results
       case Assign(lhs, List(Inner(App(name, args), Nil))) if state.procs.contains(name) =>
-        val unknown = lhs.filterNot(scope.vars.contains(_))
-        Error.report("unknown local variables", unknown):
-          require(unknown.isEmpty)
-
-        val lhs_ = lhs.map(scope.vars(_))
+        val lhs_ = vars(scope, lhs, "unknown local variables")
         val args_ = args.map(resolve(scope, _))
         state.progs.call(name, args_, lhs_)
 
-      // all method calls must be top-level on variables
-      case Assign(lhs, List(Inner(App(base, Nil), List(Member(fun, args))))) =>
-        val unknown = (base :: lhs).filterNot(scope.vars.contains(_))
-        Error.report("unknown local variables", unknown):
-          require(unknown.isEmpty)
+      // calls to the methods of the enclosing type, with `this` implicit
+      case Assign(lhs, List(Inner(App(name, args), Nil))) if isMember(scope, name, args.length) =>
+        resolve(scope, Assign(lhs, List(Inner(App("this", Nil), List(Member(name, args))))))
 
-        val lhs_ = lhs.map(scope.vars(_))
-        val base_ = scope.vars(base)
-        val qname = base_.typ.name.name + "_" + fun
+      // all method calls must be top-level on variables, other members are functions (see the access of members)
+      case Assign(lhs, List(rhs @ Inner(App(base, Nil), List(Member(fun, args))))) =>
+        val lhs_ = vars(scope, lhs, "unknown local variables")
 
-        args match
-          case _ if state.funs.contains((qname, 1 + args.length)) =>
+        resolve(scope, App(base, Nil)) match
+          case self: core.Var if state.procs.contains(member(self, fun)) =>
             val args_ = args.map(resolve(scope, _))
-            val rhs_ = List(state.exprs.app(qname, base_ :: args_))
-            state.progs.assign(lhs_, rhs_)
-
-          case _ if state.procs.contains(qname) =>
-            val args_ = args.map(resolve(scope, _))
-            state.progs.call(qname, base_ :: args_, lhs_)
+            state.progs.call(member(self, fun), self :: args_, lhs_)
 
           case _ =>
-            Error.raise("invalid access", base, qname, fun)
+            state.progs.assign(lhs_, List(resolve(scope, rhs)))
 
       case Assign(Nil, rhs) =>
         Error.raise("statement must be a method call", rhs)
 
       case Assign(lhs, rhs) =>
-        val unknown = lhs.filterNot(scope.vars.contains(_))
-        Error.report("unknown local variables", unknown):
-          require(unknown.isEmpty)
-
-        val lhs_ = lhs.map(scope.vars(_))
+        val lhs_ = vars(scope, lhs, "unknown local variables")
         val rhs_ = rhs.map(resolve(scope, _))
         state.progs.assign(lhs_, rhs_)
 
@@ -739,24 +708,17 @@ class Parser(var state: State):
         val attrs_ = loop(scope, mod, invs, dec)
         state.progs.iter(body_, attrs_)
 
-      case Par(calls) =>
-        val calls_ =
-          for call <- calls
-          yield resolve(scope, call) match
-            case call_ : core.Call => call_
-            case prog_             => Error.raise("parallel composition of statements that are not calls", prog_)
-        state.progs.par(calls_)
+      // verification supports calls only (see Verify)
+      case Par(progs) =>
+        val progs_ = progs.map(resolve(scope, _))
+        state.progs.par(progs_)
 
       // the evolution constraint defaults to true
       // the time is bound on real in the right hand sides, the evolution constraint, and the invariants
       case Ode(time, xs, rhs, dom, invs) =>
-        val unknown = xs.filterNot(scope.vars.contains(_))
-        Error.report("unknown local variables", unknown):
-          require(unknown.isEmpty)
-
+        val xs_ = vars(scope, xs, "unknown local variables")
         val time_ = core.Var(time, core.Sort.real)
         val scope_ = scope ++ List(time_)
-        val xs_ = xs.map(scope.vars(_))
         val rhs_ = rhs.map(resolve(scope_, _))
         val dom_ = dom.map(resolve(scope_, _)).getOrElse(core.True)
         val attrs_ = invariants(scope_, invs, Nil)

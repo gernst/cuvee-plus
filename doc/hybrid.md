@@ -44,8 +44,8 @@ and nothing for `t == 0`. `history.tick(t)` extends the history by
 - In a derivative `(xs :: e)'`, the variables `xs` are those that `e` is
   differentiated with respect to; the result refers to their primed versions
   `x'`.
-- `parallel { ... }` composes calls, written as call statements or as
-  assignments of their results.
+- `parallel { ... }` composes statements, of which verification supports
+  calls only, written as call statements or as assignments of their results.
 
 ## Derivatives
 
@@ -86,14 +86,16 @@ case class Iter(body: Prog, attrs: Attrs)               // while * { body }
 ## Parallel composition
 
 ```scala
-case class Par(calls: List[Call])                       // parallel composition of calls
+case class Par(progs: List[Prog])                       // parallel composition
 ```
+
+- `-verify` supports calls only and rejects other statements (`Verify`).
 
 - The callees' contracts `assumes` and `commits` (procedure attributes) are
   formulas over the shared history, the global variable named `history`
   (`State.history`), whose events are `history.events`.
-- The calls must not share modified variables other than the history
-  (`Par.shared`).
+- The programs must not share modified variables other than the history
+  (`Par.shared`, type checking).
 - `history := history.send(c, v)`, `x, history := history.receive(c)`, and
   `history := history.tick(t)` call the methods of the datatype, i.e. the
   procedures `history_send`, `history_receive`, and `history_tick` with the

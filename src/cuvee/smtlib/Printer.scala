@@ -437,6 +437,6 @@ object Printer extends cuvee.pipe.Printer:
       case Ode(time, xs, rhs, dom, attrs) =>
         apps(atom("ode"), lines(time), list(eqs(xs, rhs)), lines(dom), lines(attrs))
 
-      // not part of SMT-LIB, the calls in parallel, (par (call ...) ...)
-      case Par(calls) =>
-        apps(atom("par"), lines(calls))
+      // not part of SMT-LIB, the programs in parallel, e.g. (par (call ...) ...)
+      case Par(progs) =>
+        apps(atom("par"), lines(progs))

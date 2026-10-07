@@ -208,8 +208,8 @@ case class Subst[+T <: Type, +E <: Expr](params: Map[Param, T], vars: Map[Var, E
         val (rename, that) = avoid(List(time))
         Ode(rename.lhs(time), lhs(xs), that(rhs), that(dom), that(attrs))
 
-      case Par(calls) =>
-        Par(for Call(proc, args, res) <- calls yield Call(proc, this(args), lhs(res)))
+      case Par(progs) =>
+        Par(this(progs))
 
   @targetName("Subst.applyParams")
   def apply(params: List[Param]): List[Param | T] =

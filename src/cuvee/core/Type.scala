@@ -201,7 +201,6 @@ object Type:
       case While(test, body, attrs)    => While(e(test), p(body), a(attrs))
       case Iter(body, attrs)           => Iter(p(body), a(attrs))
       case Ode(t, ys, rhs, dom, attrs) => Ode(expand(state, t), xs(ys), rhs.map(e), e(dom), a(attrs))
-      case Par(calls)                  => Par(calls.map(call))
       case _                           => prog.map(e, p)
 
   // extend `subst` such that the types become equal, backtracks if they cannot be unified;
@@ -662,16 +661,13 @@ object Type:
         val dom_ = formula(state, scope, dom)
         Ode(time, xs, rhs_, dom_, attrs)
 
-      case Par(calls) =>
-        val shared = Par.shared(state, calls)
-        Error.report("parallel calls share modified variables", shared):
+      case Par(progs) =>
+        val shared = Par.shared(state, progs)
+        Error.report("parallel programs share modified variables", shared):
           require(shared.isEmpty)
 
-        val calls_ =
-          for call <- calls
-          yield (check(state, scope, fixed, mod, call, loop): @unchecked) match
-            case call_ : Call => call_
-        Par(calls_)
+        val progs_ = progs.map(check(state, scope, fixed, mod, _, loop))
+        Par(progs_)
 
   // the body of a loop modifies the global variables in the modifies clause of the loop only, directly or by calls,
   // which must be global variables that are modifiable outside of the loop
