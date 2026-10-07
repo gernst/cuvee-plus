@@ -4,8 +4,7 @@ import scala.collection.mutable
 
 import cuvee.Error
 import cuvee.core
-import cuvee.core.{State, Attrs, Sort, Spec, True, False, Zero, One}
-import cuvee.core.{Plus, Minus, Times, UMinus, DivBy, Mod, Lt, Le, Gt, Ge, Eq, Not, And, Or, Ite, Select, Store}
+import cuvee.core.{State, Attrs}
 
 // resolution of a C translation unit into core procedures:
 // integer types are Int (unbounded), _Bool is Bool, arrays are values of type Array Int T;
@@ -27,9 +26,9 @@ class Parser(var state: State, arch: Int):
 
   def typ(t: Type): core.Type =
     t match
-      case IntType      => Sort.int
-      case BoolType     => Sort.bool
-      case ArrayType(e) => Sort.array(Sort.int, typ(e))
+      case IntType      => state.types.sort("Int")
+      case BoolType     => state.types.sort("Bool")
+      case ArrayType(e) => state.types.sort("Array", List(state.types.sort("Int"), typ(e)))
       case VoidType     => Error.raise("void is not a type of values")
       case PointerType(_) => Error.raise("pointers are not supported", t)
       case FloatType    => Error.raise("floating point numbers are not supported", t)
@@ -65,15 +64,15 @@ class Parser(var state: State, arch: Int):
 
   def zero(t: Type): core.Expr =
     t match
-      case IntType      => Zero.int
-      case BoolType     => False
-      case ArrayType(e) => core.App(core.Fun.const, List(typ(e)), typ(t), List(zero(e)))
+      case IntType      => state.exprs.num(0)
+      case BoolType     => state.exprs.const("false")
+      case ArrayType(e) => state.exprs.app("const", List(zero(e)))
       case VoidType     => Error.raise("void is not a type of values")
       case PointerType(_) => Error.raise("pointers are not supported", t)
       case FloatType    => Error.raise("floating point numbers are not supported", t)
 
   def temp(ctx: Ctx, t: Type): core.Var =
-    val x = core.Var("tmp", typ(t)).fresh
+    val x = state.exprs.formal("tmp", typ(t)).fresh
     ctx.temps += x
     x
 
@@ -81,23 +80,23 @@ class Parser(var state: State, arch: Int):
   def toInt(expr: core.Expr, t: Type): core.Expr =
     t match
       case IntType  => expr
-      case BoolType => Ite(expr, One.int, Zero.int)
+      case BoolType => state.exprs.app("ite", List(expr, state.exprs.num(1), state.exprs.num(0)))
       case _        => Error.raise("not an integer", expr)
 
   def toBool(expr: core.Expr, t: Type): core.Expr =
     t match
       case BoolType => expr
-      case IntType  => Not(Eq(expr, Zero.int))
+      case IntType  => state.exprs.app("not", List(state.exprs.app("=", List(expr, state.exprs.num(0)))))
       case _        => Error.raise("not a truth value", expr)
 
   def arith(op: String, a: core.Expr, b: core.Expr): core.Expr =
     op match
-      case "+" => Plus.int(a, b)
-      case "-" => Minus.int(a, b)
-      case "*" => Times.int(a, b)
+      case "+" => state.exprs.app("+", List(a, b))
+      case "-" => state.exprs.app("-", List(a, b))
+      case "*" => state.exprs.app("*", List(a, b))
       // division and remainder truncate towards zero in C, unlike div and mod in SMT-LIB (see TODO.md)
-      case "/" => DivBy.int(a, b)
-      case "%" => Mod.int(a, b)
+      case "/" => state.exprs.app("div", List(a, b))
+      case "%" => state.exprs.app("mod", List(a, b))
       case _   => Error.raise("unknown arithmetic operator", op)
 
   // an expression together with the statements that evaluate the calls in it first, and its C type
@@ -135,13 +134,13 @@ class Parser(var state: State, arch: Int):
   def expr(scope: Scope, ctx: Ctx, e: Expr): (List[core.Prog], core.Expr, Type) =
     e match
       case Num(text) =>
-        (Nil, core.Lit(literal(text), Sort.int), IntType)
+        (Nil, state.exprs.num(literal(text)), IntType)
 
       case Id("true") if !scope.contains("true") =>
-        (Nil, True, BoolType)
+        (Nil, state.exprs.const("true"), BoolType)
 
       case Id("false") if !scope.contains("false") =>
-        (Nil, False, BoolType)
+        (Nil, state.exprs.const("false"), BoolType)
 
       case Id(x) =>
         Error.report("unknown variable", x):
@@ -153,7 +152,7 @@ class Parser(var state: State, arch: Int):
         val (pre1, base_, t) = expr(scope, ctx, base)
         val (pre2, index_) = int(scope, ctx, index)
         t match
-          case ArrayType(elem) => (pre1 ++ pre2, Select(base_, index_), elem)
+          case ArrayType(elem) => (pre1 ++ pre2, state.exprs.app("select", List(base_, index_)), elem)
           case _               => Error.raise("indexing of an expression that is not an array", base)
 
       case Call(f, Nil) if f.startsWith("__VERIFIER_nondet_") =>
@@ -169,15 +168,15 @@ class Parser(var state: State, arch: Int):
           require(ret != VoidType)
 
         val x = temp(ctx, ret)
-        (pre :+ core.Call(f, args_, List(x)), x, ret)
+        (pre :+ state.progs.call(f, args_, List(x)), x, ret)
 
       case App("-", List(arg)) =>
         val (pre, arg_) = int(scope, ctx, arg)
-        (pre, UMinus.int(arg_), IntType)
+        (pre, state.exprs.app("-", List(arg_)), IntType)
 
       case App("!", List(arg)) =>
         val (pre, arg_) = cond(scope, ctx, arg)
-        (pre, Not(arg_), BoolType)
+        (pre, state.exprs.app("not", List(arg_)), BoolType)
 
       case App(op @ ("&&" | "||"), List(left, right)) =>
         val (pre1, left_) = cond(scope, ctx, left)
@@ -185,16 +184,16 @@ class Parser(var state: State, arch: Int):
 
         if pre2.isEmpty
         then
-          val phi = if op == "&&" then And(left_, right_) else Or(left_, right_)
+          val phi = if op == "&&" then state.exprs.app("and", List(left_, right_)) else state.exprs.app("or", List(left_, right_))
           (pre1, phi, BoolType)
         else
           // the calls of the right operand are made only if the left one does not determine the result
           val x = temp(ctx, BoolType)
-          val right__ = core.Block(Nil, pre2 :+ core.Assign(List(x), List(right_)))
+          val right__ = state.progs.block(Nil, pre2 :+ state.progs.assign(List(x), List(right_)))
           val prog =
             if op == "&&"
-            then core.If(left_, right__, core.Assign(List(x), List(False)))
-            else core.If(left_, core.Assign(List(x), List(True)), right__)
+            then state.progs.if_(left_, right__, state.progs.assign(List(x), List(state.exprs.const("false"))))
+            else state.progs.if_(left_, state.progs.assign(List(x), List(state.exprs.const("true"))), right__)
           (pre1 :+ prog, x, BoolType)
 
       case App(op @ ("==" | "!="), List(left, right)) =>
@@ -202,21 +201,21 @@ class Parser(var state: State, arch: Int):
         val (pre2, right_, rt) = expr(scope, ctx, right)
 
         val eq = (lt, rt) match
-          case (BoolType, BoolType)                 => Eq(left_, right_)
-          case (ArrayType(_), _) | (_, ArrayType(_)) => Eq(left_, right_)
-          case _                                    => Eq(toInt(left_, lt), toInt(right_, rt))
+          case (BoolType, BoolType)                 => state.exprs.app("=", List(left_, right_))
+          case (ArrayType(_), _) | (_, ArrayType(_)) => state.exprs.app("=", List(left_, right_))
+          case _                                    => state.exprs.app("=", List(toInt(left_, lt), toInt(right_, rt)))
 
-        (pre1 ++ pre2, if op == "==" then eq else Not(eq), BoolType)
+        (pre1 ++ pre2, if op == "==" then eq else state.exprs.app("not", List(eq)), BoolType)
 
       case App(op @ ("<" | "<=" | ">" | ">="), List(left, right)) =>
         val (pre1, left_) = int(scope, ctx, left)
         val (pre2, right_) = int(scope, ctx, right)
 
         val phi = op match
-          case "<"  => Lt.int(left_, right_)
-          case "<=" => Le.int(left_, right_)
-          case ">"  => Gt.int(left_, right_)
-          case _    => Ge.int(left_, right_)
+          case "<"  => state.exprs.app("<", List(left_, right_))
+          case "<=" => state.exprs.app("<=", List(left_, right_))
+          case ">"  => state.exprs.app(">", List(left_, right_))
+          case _    => state.exprs.app(">=", List(left_, right_))
 
         (pre1 ++ pre2, phi, BoolType)
 
@@ -252,11 +251,11 @@ class Parser(var state: State, arch: Int):
         if post
         then
           val old = temp(ctx, t)
-          (pre ++ (core.Assign(List(old), List(now)) :: update), old, t)
+          (pre ++ (state.progs.assign(List(old), List(now)) :: update), old, t)
         else (pre ++ update, now, t)
 
       case SizeofType(words) =>
-        (Nil, core.Lit(sizeof(words), Sort.int), IntType)
+        (Nil, state.exprs.num(sizeof(words)), IntType)
 
       case SizeofExpr(_) =>
         Error.raise("sizeof of an expression is not supported", e)
@@ -272,15 +271,15 @@ class Parser(var state: State, arch: Int):
           else (IntType, toInt(left_, lt), toInt(right_, rt))
 
         if pre1.isEmpty && pre2.isEmpty
-        then (pre0, Ite(test_, left__, right__), t)
+        then (pre0, state.exprs.app("ite", List(test_, left__, right__)), t)
         else
           // the calls and updates of a branch are made only if it is taken
           val x = temp(ctx, t)
           val prog =
-            core.If(
+            state.progs.if_(
               test_,
-              core.Block(Nil, pre1 :+ core.Assign(List(x), List(left__))),
-              core.Block(Nil, pre2 :+ core.Assign(List(x), List(right__)))
+              state.progs.block(Nil, pre1 :+ state.progs.assign(List(x), List(left__))),
+              state.progs.block(Nil, pre2 :+ state.progs.assign(List(x), List(right__)))
             )
           (pre0 :+ prog, x, t)
 
@@ -307,7 +306,7 @@ class Parser(var state: State, arch: Int):
         val results = items.map(value(scope, ctx, _, elem))
         val array =
           results.zipWithIndex.foldLeft(zero(t)):
-            case (array, ((_, item), i)) => Store(array, core.Lit(BigInt(i), Sort.int), item)
+            case (array, ((_, item), i)) => state.exprs.app("store", List(array, state.exprs.num(BigInt(i)), item))
         (results.flatMap(_._1), array)
 
       case _ =>
@@ -345,7 +344,7 @@ class Parser(var state: State, arch: Int):
             Declarator(pointer, x, sizes, init_) <- decls
             prog <-
               val (t_, init) = if pointer then allocation(x, t, sizes, init_) else (array(t, sizes), init_)
-              val v = core.Var(x, typ(t_))
+              val v = state.exprs.formal(x, typ(t_))
               val v_ = if scope_.values.exists(_._1.name == v.name) then v.fresh else v
               locals += v_
               scope_ = scope_ + (x -> (v_, t_))
@@ -355,12 +354,12 @@ class Parser(var state: State, arch: Int):
         case _ =>
           this.stmt(scope_, ctx, stmt)
 
-    core.Block(locals.toList, progs.flatten)
+    state.progs.block(locals.toList, progs.flatten)
 
   def wrap(progs: List[core.Prog]): core.Prog =
     progs match
       case List(prog) => prog
-      case _          => core.Block(Nil, progs)
+      case _          => state.progs.block(Nil, progs)
 
   def stmt(scope: Scope, ctx: Ctx, s: Stmt): List[core.Prog] =
     s match
@@ -368,10 +367,10 @@ class Parser(var state: State, arch: Int):
         Nil
 
       case Break =>
-        List(core.Break)
+        List(state.progs.break)
 
       case Continue =>
-        List(core.Continue)
+        List(state.progs.continue)
 
       case _: Decl =>
         List(block(scope, ctx, List(s)))
@@ -395,28 +394,28 @@ class Parser(var state: State, arch: Int):
       // __VERIFIER_assert is defined in the harness of SV-COMP by a call of reach_error
       case ExprStmt(Call("assert" | "__VERIFIER_assert", List(phi))) =>
         val (pre, phi_) = cond(scope, ctx, phi)
-        pre :+ Spec.assert(phi_)
+        pre :+ state.progs.assert(phi_)
 
       case ExprStmt(Call("__VERIFIER_assume", List(phi))) =>
         val (pre, phi_) = cond(scope, ctx, phi)
-        pre :+ Spec.assume(phi_)
+        pre :+ state.progs.assume(phi_)
 
       case ExprStmt(Call("reach_error" | "__VERIFIER_error", Nil)) =>
-        List(Spec.assert(False))
+        List(state.progs.assert(state.exprs.const("false")))
 
       // allocations are arrays, which are values
       case ExprStmt(Call("free", List(_))) =>
         Nil
 
       case ExprStmt(Call("abort", Nil)) =>
-        List(Spec.assume(False))
+        List(state.progs.assume(state.exprs.const("false")))
 
       // calls as statements, whose result is discarded
       case ExprStmt(Call(f, args)) if functions.contains(f) =>
         val (pre, args_) = arguments(scope, ctx, f, args)
         val ret = functions(f).typ
         val res = if ret == VoidType then Nil else List(temp(ctx, ret))
-        pre :+ core.Call(f, args_, res)
+        pre :+ state.progs.call(f, args_, res)
 
       case ExprStmt(e) =>
         val (pre, _, _) = expr(scope, ctx, e)
@@ -426,7 +425,7 @@ class Parser(var state: State, arch: Int):
         val (pre, test_) = cond(scope, ctx, test)
         val left_ = wrap(stmt(scope, ctx, left))
         val right_ = wrap(right.toList.flatMap(stmt(scope, ctx, _)))
-        pre :+ core.If(test_, left_, right_)
+        pre :+ state.progs.if_(test_, left_, right_)
 
       case While(test, body) =>
         val (test_, check) = guard(scope, ctx, test)
@@ -439,10 +438,10 @@ class Parser(var state: State, arch: Int):
 
         val body_ =
           if check.isEmpty
-          then core.Block(Nil, core.Assign(List(first), List(False)) :: stmt(scope, ctx, body))
-          else core.Block(Nil, core.If(Not(first), core.Block(Nil, check), skip) :: core.Assign(List(first), List(False)) :: stmt(scope, ctx, body))
+          then state.progs.block(Nil, state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx, body))
+          else state.progs.block(Nil, state.progs.if_(state.exprs.app("not", List(first)), state.progs.block(Nil, check), skip) :: state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx, body))
 
-        List(core.Assign(List(first), List(True)), while_(Or(first, test_), body_))
+        List(state.progs.assign(List(first), List(state.exprs.const("true"))), while_(state.exprs.app("or", List(first, test_)), body_))
 
       // the initialization may declare variables, whose scope is the loop
       case For(init, test, step, body) =>
@@ -451,23 +450,23 @@ class Parser(var state: State, arch: Int):
       // continue must execute the step: the body is an inner loop that is left by break instead of continue,
       // and a break of the body sets a flag that leaves the outer loop
       case Loop(test, body, step) =>
-        val (test_, check) = test.map(guard(scope, ctx, _)).getOrElse((True, Nil))
+        val (test_, check) = test.map(guard(scope, ctx, _)).getOrElse((state.exprs.const("true"), Nil))
         val body_ = stmt(scope, ctx, body)
         val step_ = step.toList.flatMap(stmt(scope, ctx, _))
 
         if !body_.exists(continues)
-        then List(while_(test_, core.Block(Nil, check ++ body_ ++ step_)))
+        then List(while_(test_, state.progs.block(Nil, check ++ body_ ++ step_)))
         else
           val brk = temp(ctx, BoolType)
-          val inner = while_(True, core.Block(Nil, body_.map(exits(brk, _)) :+ core.Break))
-          val leave = core.If(brk, core.Break, skip)
-          val outer = while_(test_, core.Block(Nil, check ++ List(inner, leave) ++ step_))
-          List(core.Assign(List(brk), List(False)), outer)
+          val inner = while_(state.exprs.const("true"), state.progs.block(Nil, body_.map(exits(brk, _)) :+ state.progs.break))
+          val leave = state.progs.if_(brk, state.progs.break, skip)
+          val outer = while_(test_, state.progs.block(Nil, check ++ List(inner, leave) ++ step_))
+          List(state.progs.assign(List(brk), List(state.exprs.const("false"))), outer)
 
       case Return(None) =>
         Error.report("return without value from a function with result"):
           require(ctx.result.isEmpty)
-        List(core.Return)
+        List(state.progs.return_)
 
       case Return(Some(e)) =>
         Error.report("return with value from a void function", e):
@@ -475,9 +474,9 @@ class Parser(var state: State, arch: Int):
 
         val Some((result, t)) = ctx.result: @unchecked
         val (pre, e_) = value(scope, ctx, e, t)
-        pre ++ List(core.Assign(List(result), List(e_)), core.Return)
+        pre ++ List(state.progs.assign(List(result), List(e_)), state.progs.return_)
 
-  val skip = core.Block(Nil, Nil)
+  val skip = state.progs.skip
 
   // the condition of a loop, whose calls are evaluated at the beginning of each iteration (`check`),
   // which then leaves the loop if the condition is false, and the loop itself runs while true;
@@ -486,7 +485,7 @@ class Parser(var state: State, arch: Int):
     val (pre, test_) = cond(scope, ctx, test)
     if pre.isEmpty
     then (test_, Nil)
-    else (True, pre :+ core.If(Not(test_), core.Break, skip))
+    else (state.exprs.const("true"), pre :+ state.progs.if_(state.exprs.app("not", List(test_)), state.progs.break, skip))
 
   // whether continue occurs in `prog` outside of nested loops
   def continues(prog: core.Prog): Boolean =
@@ -500,11 +499,11 @@ class Parser(var state: State, arch: Int):
   // continue leaves the inner loop of a for statement, break additionally sets the flag `brk`
   def exits(brk: core.Var, prog: core.Prog): core.Prog =
     prog match
-      case core.Continue            => core.Break
-      case core.Break               => core.Block(Nil, List(core.Assign(List(brk), List(True)), core.Break))
-      case core.Block(locals, progs) => core.Block(locals, progs.map(exits(brk, _)))
-      case core.If(test, left, right) => core.If(test, exits(brk, left), exits(brk, right))
-      case core.Choice(progs)       => core.Choice(progs.map(exits(brk, _)))
+      case core.Continue            => state.progs.break
+      case core.Break               => state.progs.block(Nil, List(state.progs.assign(List(brk), List(state.exprs.const("true"))), state.progs.break))
+      case core.Block(locals, progs) => state.progs.block(locals, progs.map(exits(brk, _)))
+      case core.If(test, left, right) => state.progs.if_(test, exits(brk, left), exits(brk, right))
+      case core.Choice(progs)       => progs.map(exits(brk, _)).reduceRight(state.progs.choice)
       case _                        => prog
 
   // assignments x op= e and a[i] op= e, where arrays are values that are updated as a whole
@@ -522,7 +521,7 @@ class Parser(var state: State, arch: Int):
       case Id(x) if op == "=" && scope.contains(x) && direct(rhs, scope(x)._2) =>
         val Call(f, args) = rhs: @unchecked
         val (pre, args_) = arguments(scope, ctx, f, args)
-        pre :+ core.Call(f, args_, List(scope(x)._1))
+        pre :+ state.progs.call(f, args_, List(scope(x)._1))
 
       case Id(x) =>
         Error.report("unknown variable", x):
@@ -536,7 +535,7 @@ class Parser(var state: State, arch: Int):
             val (pre, rhs_) = int(scope, ctx, rhs)
             (pre, arith(op, toInt(v, t), rhs_))
 
-        pre :+ core.Assign(List(v), List(rhs_))
+        pre :+ state.progs.assign(List(v), List(rhs_))
 
       case Index(_, _) =>
         val elem = lvalue(scope, lhs)
@@ -548,7 +547,7 @@ class Parser(var state: State, arch: Int):
         val (pre1, v, array) =
           store(scope, ctx, lhs, old => if op == "=" then rhs_ else arith(op, toInt(old, elem), rhs_))
 
-        pre1 ++ pre2 :+ core.Assign(List(v), List(array))
+        pre1 ++ pre2 :+ state.progs.assign(List(v), List(array))
 
       case _ =>
         Error.raise("invalid left hand side of assignment", lhs)
@@ -579,7 +578,7 @@ class Parser(var state: State, arch: Int):
 
       case Index(base, index) =>
         val (pre, index_) = int(scope, ctx, index)
-        val (pre_, v, array) = store(scope, ctx, base, base_ => Store(base_, index_, rhs(Select(base_, index_))))
+        val (pre_, v, array) = store(scope, ctx, base, base_ => state.exprs.app("store", List(base_, index_, rhs(state.exprs.app("select", List(base_, index_))))))
         (pre_ ++ pre, v, array)
 
       case _ =>
@@ -597,8 +596,8 @@ class Parser(var state: State, arch: Int):
   def havoc(f: String, x: core.Var): core.Prog =
     val typ = f.stripPrefix("__VERIFIER_nondet_")
     if typ.startsWith("u") || typ == "size_t"
-    then Spec(List(x), True, Le.int(Zero.int, x))
-    else Spec.havoc(List(x))
+    then state.progs.spec(List(x), state.exprs.const("true"), state.exprs.app("<=", List(state.exprs.num(0), x)))
+    else state.progs.havoc(List(x))
 
   def nondet(rhs: Expr, t: Type) =
     rhs match
@@ -617,7 +616,7 @@ class Parser(var state: State, arch: Int):
     val vars = globals.values.map(_._1).toSet
     val mod = (body.mod.toSet intersect vars) ++ calls(body)
     val attrs = if mod.isEmpty then Attrs.empty else Attrs(List("modifies" -> Some(mod.toList.sortBy(_.name.toString))))
-    core.While(test, body, attrs)
+    state.progs.while_(test, body, attrs)
 
   // calls of functions whose result has the type of the variable, which needs no conversion
   def direct(rhs: Expr, t: Type) =
@@ -764,23 +763,32 @@ class Parser(var state: State, arch: Int):
         Error.report("initial value of global variable must not call functions", x, e):
           require(progs.isEmpty)
 
-        inits += core.Assign(List(core.Var(x, typ(t_))), List(e_))
+        inits += state.progs.assign(List(state.exprs.formal(x, typ(t_))), List(e_))
 
-      zeros += Eq(core.Var(x, typ(t_)), zero(t_))
+      zeros += state.exprs.app("=", List(state.exprs.formal(x, typ(t_)), zero(t_)))
       state = state.declare(x, typ(t_), Attrs.empty)
       globals(x) = (state.vars(x), t_)
 
     val initialized = inits.toSet.flatMap(_.mod).map(_.name.name)
     val mod = modifies(defs.values.toList).map((f, xs) => if f == "main" then f -> (xs ++ initialized) else f -> xs)
 
+    // the precondition of main that the global variables without initializer are zero,
+    // which is type checked here, since the attributes of procedures are not checked with their bodies
+    val zeros_ =
+      if zeros.isEmpty
+      then state.exprs.const("true")
+      else
+        val phi = zeros.reduce((phi, psi) => state.exprs.app("and", List(phi, psi)))
+        state.exprs.check(core.Scope.empty ++ globals.values.map(_._1).toList, phi, state.types.sort("Bool"))
+
     // procedures are declared before the bodies are resolved, since they may call each other
     for (name, Function(ret, _, params, _)) <- defs
     do
-      val in = params.map((t, x) => core.Var(x, typ(t)))
-      val out = if ret == VoidType then Nil else List(core.Var("result", typ(ret)))
+      val in = params.map((t, x) => state.exprs.formal(x, typ(t)))
+      val out = if ret == VoidType then Nil else List(state.exprs.formal("result", typ(ret)))
       val mod_ = mod(name).toList.sorted.map(globals(_)._1)
       val modifies = if mod_.isEmpty then Nil else List("modifies" -> Some(mod_))
-      val requires = if name == "main" && zeros.nonEmpty then List("requires" -> Some(And(zeros.toList))) else Nil
+      val requires = if name == "main" && zeros.nonEmpty then List("requires" -> Some(zeros_)) else Nil
       val attrs = Attrs(modifies ++ requires)
 
       Error.report("parameter named result", name):
@@ -830,8 +838,8 @@ class Parser(var state: State, arch: Int):
         (for (x, _, copy, t) <- copies yield x -> (copy, t))
 
     val body_ = block(scope, ctx, body.stmts)
-    val init = for (_, v, copy, _) <- copies yield core.Assign(List(copy), List(v))
-    val prog = core.Block(copies.map(_._3) ++ ctx.temps.toList, init ++ entry :+ body_)
+    val init = for (_, v, copy, _) <- copies yield state.progs.assign(List(copy), List(v))
+    val prog = state.progs.block(copies.map(_._3) ++ ctx.temps.toList, init ++ entry :+ body_)
 
     val fixed = in.toSet ++ (globals.values.map(_._1).toSet -- mod.map(globals(_)._1))
     val scope_ = core.Scope.empty ++ globals.values.map(_._1).toList ++ in ++ out

@@ -369,6 +369,10 @@ case class State(
     def continue = Continue
     def return_ = Return
 
+    // the variables `xs` change such that `post` holds, if `pre` holds before
+    def spec(xs: List[Var], pre: Expr, post: Expr) =
+      Spec(xs, pre, post)
+
     def havoc(xs: List[Var]) =
       Spec.havoc(xs)
 
