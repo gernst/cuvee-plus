@@ -51,17 +51,19 @@ transformation and any output.
    printed output is parsed again.
 3. `config.stages(init, sink)` chains one `Stage` per transform in front of
    the sink. All stages start from the same initial state, and know the
-   configuration. Each sink is wrapped in `Sink.filter`, which drops
-   the declarations with the features (attributes) that its receiver knows:
-   `smt2` for the solvers, and `config.output.builtin` for printing, the
-   features built into the language of `-print` or that of the input (C for
-   SV-COMP tasks). It
-   filters the commands one by one instead of buffering them like a stage,
-   so the sink's answer to each remaining declaration is reported.
-   `Monomorph` keeps the polymorphic functions of `config.output.builtin`.
-   `config.input` and `config.output` are `Lang`s; `-print null` and
-   `-print scala` replace only the printer of the output. `config.features`
-   are the features expected from the input, those built into its language.
+   configuration. `config.input` and `config.output` are `Lang`s, each
+   with the features (attributes) that it knows: its file extension, plus
+   `teq` and `hybrid` added to the input by `-teq` and `-hybrid`, and to the
+   output when it is printed in the language of the input. `Cuvee.pipe`
+   wraps the printers in `Printer.filter`, which drops the top-level
+   declarations with these features: the output printer of the sink by
+   `config.output.features`, the printer of the reports, which is that of the
+   input language, by `config.input.features`. The solver sink skips the
+   declarations of `smt2` itself; further sinks, e.g. of tests, receive all
+   commands. `Monomorph` keeps the polymorphic functions of
+   `config.output.features`. `-print null` and `-print scala` replace only
+   the printer of the output; transforms whose output a language cannot
+   express (`hasMath`, e.g. `-chc` of C) print SMT-LIB instead.
 4. `Pipe.run` feeds the commands, followed by the internal `Done`, through
    the chain. It reports each result (`Ack`, `Status`, `Model`, `Error`, ...)
    through `Report`. An `Error` stops the run unless the pipe is incremental;

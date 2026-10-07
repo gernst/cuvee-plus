@@ -37,10 +37,11 @@ object Cuvee extends util.Main:
     val reader = config.reader
     val (init, cmds) = config.input.source(config, reader)
 
-    val printer = config.output.printer
-    // further sinks, e.g. of tests, receive the output like the sink of the configuration
-    val sink = Sink.tee(config.sink(init, config), sinks.map(Sink.filter(config.output.builtin, _))*)
-    val report = config.report(printer)
+    // the printers drop the declarations known to their language, the reports are in the language of the input,
+    // further sinks, e.g. of tests, receive all commands
+    val output = Printer.filter(config.output.features, config.output.printer)
+    val sink = Sink.tee(config.sink(config, output, init), sinks*)
+    val report = config.report(Printer.filter(config.input.features, config.input.printer))
     val stages = config.stages(init, sink)
 
     // stages flush pending declarations only on control commands and queries,

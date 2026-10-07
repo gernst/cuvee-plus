@@ -109,13 +109,18 @@ object Solver:
   def cvc5(timeout: Int = 1000) =
     new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
 
+  def sink(solver: Solver, init: State) =
+    Sink(init, solver)
+
   // a sink that passes commands to the solver,
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
   // and interprets the answers to queries in that state
-  // goals that do not hold are reported with `printer`, e.g. that of the language of the input
-  class sink(solver: Solver, init: State, printer: cuvee.pipe.Printer = Printer) extends cuvee.pipe.Sink:
+  // the declarations that SMT-LIB has built in ({:smt2}, see the preludes) are not passed to the solver,
+  // goals that do not hold are reported in SMT-LIB
+  class Sink(init: State, solver: Solver) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
+    val printer = Printer
 
     // the answer to the last check-sat, a model is available only if it is sat
     var status: Option[Status] = None
@@ -180,6 +185,9 @@ object Solver:
         case Done =>
           solver.destroy()
           (Ack.Done, Nil, this)
+
+        case decl: Decl if decl.attrs.contains("smt2") =>
+          (Ack.Success, Nil, this)
 
         // the state is updated only once the solver has accepted the declaration,
         // attributes are kept in the state but not sent to the solver

@@ -20,7 +20,8 @@ trait Sink:
       cmds.foldLeft((Nil: List[Result], this)):
         case ((answers, sink), cmd: Query) =>
           val (result, added, sink_) = sink.query(cmd)
-          (if result == Ack.Done then answers ++ added else answers :+ result, sink_)
+          val result_ = if result == Ack.Done then answers ++ added else answers :+ result
+          (result_, sink_)
 
         case ((answers, sink), cmd) =>
           (answers, sink.exec(cmd))
@@ -47,7 +48,7 @@ object Sink:
   def stderr(printer: Printer) =
     Print(System.err, printer)
 
-  def file(name: String)(printer: Printer) =
+  def file(name: String, printer: Printer) =
     val stream = new PrintStream(new FileOutputStream(name))
     Print(stream, printer)
 
@@ -56,9 +57,6 @@ object Sink:
 
   def tee(primary: Sink, secondary: Sink*) =
     Tee(primary, secondary.toList)
-
-  def filter(features: Set[String], next: Sink) =
-    Filter(features, next)
 
   // the answer of sinks that only pass on commands without solving
   def passive(cmd: Cmd): Result =
@@ -97,8 +95,7 @@ object Sink:
   // appends all commands to `buffer`, e.g. to inspect the output of transforms in tests
   class Collect(buffer: mutable.ListBuffer[Cmd]) extends Sink:
     def query(cmd: Cmd) =
-      if cmd != Done then
-        buffer.append(cmd)
+      if cmd != Done then buffer.append(cmd)
 
       (passive(cmd), Nil, this)
 
@@ -112,19 +109,3 @@ object Sink:
 
       val (result, added, primary_) = primary.query(cmd)
       (result, added, Tee(primary_, secondary_))
-
-  // the last step in front of each sink, which drops the declarations that its receiver knows by their features:
-  // those of the preludes (resources/cuvee/*/prelude.*) name the languages that they are part of by attributes,
-  // the file extensions smt2, dfy, bpl, and c, e.g. the tuples of Dafny are part of Dafny only,
-  // and are therefore declared as datatypes in SMT-LIB;
-  // it filters the commands in front of the sink one by one, unlike a stage, which buffers declarations,
-  // such that the answers of the sink to the remaining declarations are reported, e.g. unsupported by solvers
-  case class Filter(features: Set[String], next: Sink) extends Sink:
-    def query(cmd: Cmd) =
-      cmd match
-        case decl: Decl if features.exists(decl.attrs.contains) =>
-          (Ack.Success, Nil, this)
-
-        case _ =>
-          val (result, added, next_) = next.query(cmd)
-          (result, added, copy(next = next_))

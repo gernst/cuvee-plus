@@ -25,6 +25,6 @@ object Source extends cuvee.pipe.Source:
 
   // with -hybrid, the definitions of parallel composition
   override def preludes(config: Config) =
-    if config.features.contains("hybrid")
+    if config.input.features.contains("hybrid")
     then List("/cuvee/dafny/hybrid.dfy")
     else Nil

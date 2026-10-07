@@ -3,8 +3,26 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
+## NEW
+
+Separately, address the TODOs in the Dafny parser
+
+Then refactor the Dafny examples
+- none should be top-level, all to be in sub-folders
+- I suggest to rename the `bitvectors` subfolder to something like `language` and move all language-feature related tests there.
+  The `decreases` test seems to be related to the vcgen.
+- introduce a subfolder `teq` with the following examples, with correctness formulated as pre-/postconditions;
+  don't attempt to solve/verify them in any way, don't produce tests yet, just the dafny files, don't add loop invariants, use explicit length variables, don't check array bounds, don't use `.Length` on arrays
+  - simple counter loop, correctness: that the counter is n at the end
+  - an array initialization loop with a symbolic value given as method input, asserting that all elements have that value
+  - an array copy loop asserting copy
+  - linear and binary search
+  - swapping the contents of two arrays in a loop
+
 ## General
 
+- Goals that do not hold are reported by the solver sink with their formula
+  in SMT-LIB, not in the language of the input like the other reports.
 - Readers of input files and the stream of `-o` are never closed.
 - `Match`: parsed and printed only in Dafny (expressions, without case
   conditions, not statements), no reduction on constructors, no rewriting

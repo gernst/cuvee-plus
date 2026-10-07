@@ -3,7 +3,6 @@ package cuvee
 import java.io.InputStreamReader
 import java.io.FileReader
 
-
 import cuvee.core._
 import cuvee.pipe._
 import cuvee.smtlib.Solver
@@ -18,13 +17,19 @@ case class Flag(
 )
 
 // a language with the source that reads it and the printer that writes it,
-// builtin: the features that it has built in, whose declarations the output drops (see Sink.filter)
+// features: the features that it has built in, whose declarations its printer drops (see Printer.filter),
+// beyond its file extension e.g. hybrid for the definitions of parallel composition in Dafny
+// (resources/cuvee/dafny/hybrid.dfy, see -hybrid) and teq for trace equation systems (resources/cuvee/teq.dfy, see -teq),
+// hasMath: whether it can express the output of transforms like -teq and -chc, otherwise the output is SMT-LIB
 case class Lang(
     help: String,
     source: Source,
     printer: Printer,
-    builtin: Set[String]
-)
+    features: Set[String],
+    hasMath: Boolean = true
+):
+  def having(feature: String) =
+    copy(features = features + feature)
 
 object Lang:
   val smtlib =
@@ -37,24 +42,20 @@ object Lang:
     Lang("Boogie", cuvee.boogie.Source, cuvee.boogie.Printer, Set("bpl"))
 
   val c =
-    Lang("C", cuvee.c.Source, cuvee.c.Printer, Set("c"))
+    Lang("C", cuvee.c.Source, cuvee.c.Printer, Set("c"), false)
 
   // its output is C (see Config.parse)
   val yml =
-    Lang("SV-COMP task definition", cuvee.yml.Source, cuvee.c.Printer, Set("c"))
+    Lang("SV-COMP task definition", cuvee.yml.Source, cuvee.c.Printer, Set("c"), false)
 
-// features: the features expected from the input, those built into its language,
-// hybrid for the definitions of parallel composition in Dafny (resources/cuvee/dafny/hybrid.dfy, see -hybrid),
-// and teq for trace equation systems (resources/cuvee/teq.dfy, see -teq)
-// input, output: the languages of the input file and of the output, whose printer also prints the reports
-// of solvers and debug output, and whose declarations a printing sink drops (see Sink.filter)
+// input, output: the languages of the input file, whose printer prints the reports, and of the output,
+// each of which drops the declarations of its features (see Printer.filter and Cuvee.pipe)
 case class Config(
-    features: Set[String],
     file: Option[String],
     input: Lang,
     output: Lang,
     // built from the final configuration, such that the order of the command line options does not matter
-    sink: (State, Config) => Sink,
+    sink: (Config, Printer, State) => Sink,
     report: Printer => Report,
     transforms: List[Transform] = Nil,
     // per query, in milliseconds
@@ -64,13 +65,19 @@ case class Config(
     // keep last
     debug: Set[String] = Set()
 ):
-  // the configuration with `transform` as the last transform
   def using(transform: Transform) =
     copy(transforms = transforms :+ transform)
 
-  // the configuration with `feature` among the features expected from the input
+  // the configuration with `feature` known to the input language,
+  // and to the output if it is printed in the language of the input
   def having(feature: String) =
-    copy(features = features + feature)
+    if output.printer == input.printer
+    then copy(input = input.having(feature), output = output.having(feature))
+    else copy(input = input.having(feature))
+
+  // the output in SMT-LIB if its language cannot express the output of a transform, e.g. C
+  def usingMath =
+    if output.hasMath then this else copy(output = Lang.smtlib)
 
   def reader =
     file match
@@ -89,7 +96,7 @@ case class Config(
 
 object Config:
   val default =
-    Config(Lang.smtlib.builtin, None, Lang.smtlib, Lang.smtlib, (_, config) => Sink.filter(config.output.builtin, Sink.stdout(config.output.printer)), Report.stderr)
+    Config(None, Lang.smtlib, Lang.smtlib, (_, printer, _) => Sink.stdout(printer), Report.stderr)
 
   def flag(key: String, help: String)(action: PartialFunction[(Config, List[String]), (Config, List[String])]) =
     key -> Flag(None, help, action)
@@ -113,17 +120,15 @@ object Config:
   val teq =
     flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems"):
       case (config, rest) =>
-        val config_ = config.using(TEQ).having("teq")
+        val config_ = config.usingMath.having("teq").using(TEQ)
         (config_, rest)
 
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
   val chc =
     flag("-chc", "generate constrained Horn clauses for procedures"):
       case (config, rest) =>
-        val config_ = config.using(Horn)
-        if config.input == Lang.c || config.input == Lang.yml
-        then (config_.copy(output = Lang.smtlib), rest)
-        else (config_, rest)
+        val config_ = config.usingMath.using(Horn)
+        (config_, rest)
 
   val flat =
     flag("-flat", "replace arguments of predicates that are records by their fields, e.g. after -chc"):
@@ -152,7 +157,7 @@ object Config:
   val hybrid =
     flag("-hybrid", "inject the definitions of parallel composition into Dafny input: chan, event, history, send, receive"):
       case (config, rest) =>
-        val config_ = config.having("hybrid")
+        val config_ = config.usingMath.having("hybrid")
         (config_, rest)
 
   val arch =
@@ -164,13 +169,13 @@ object Config:
   val z3 =
     flag("-z3", "pass output to z3"):
       case (config, rest) =>
-        val config_ = config.copy(sink = (init, config) => Sink.filter(Lang.smtlib.builtin, Solver.sink(Solver.z3(config.timeout), init, config.output.printer)))
+        val config_ = config.copy(sink = (config, _, init) => Solver.sink(Solver.z3(config.timeout), init))
         (config_, rest)
 
   val cvc5 =
     flag("-cvc5", "pass output to cvc5"):
       case (config, rest) =>
-        val config_ = config.copy(sink = (init, config) => Sink.filter(Lang.smtlib.builtin, Solver.sink(Solver.cvc5(config.timeout), init, config.output.printer)))
+        val config_ = config.copy(sink = (config, _, init) => Solver.sink(Solver.cvc5(config.timeout), init))
         (config_, rest)
 
   val timeout_ =
@@ -182,7 +187,7 @@ object Config:
   val output =
     flag("-o", "<file>", "redirect output to <file> and report to stdout"):
       case (config, name :: rest) =>
-        val config_ = config.copy(sink = (_, config) => Sink.filter(config.output.builtin, Sink.file(name)(config.output.printer)), report = Report.stdout)
+        val config_ = config.copy(sink = (_, printer, _) => Sink.file(name, printer), report = Report.stdout)
         (config_, rest)
 
   // the printers are objects, all of which are set, such that the order of the options does not matter
@@ -195,9 +200,15 @@ object Config:
         (config, rest)
 
   val print_ =
-    flag("-print", "<lang>", "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), scala (the internal representation), or null (nothing)"):
+    flag(
+      "-print",
+      "<lang>",
+      "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), scala (the internal representation), or null (nothing)"
+    ):
+      // the language of the input keeps the features added to it, e.g. by -teq
       case (config, name :: rest) if langs.contains(name) =>
-        val config_ = config.copy(output = langs(name))
+        val output = if langs(name).printer == config.input.printer then config.input else langs(name)
+        val config_ = config.copy(output = output)
         (config_, rest)
 
       // the declarations that the output drops remain those of the language of the output so far
@@ -266,7 +277,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.22.3")
+    println("Cuvée 0.22.4")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
@@ -312,7 +323,7 @@ object Config:
       case file :: rest if langs.contains(file.suffix) =>
         val input = langs(file.suffix)
         val output = if input == Lang.yml then Lang.c else input
-        val config_ = config.copy(features = input.builtin, file = Some(file), input = input, output = output)
+        val config_ = config.copy(file = Some(file), input = input, output = output)
         arguments(config_, rest)
 
       case _ =>
