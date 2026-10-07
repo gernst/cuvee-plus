@@ -98,6 +98,28 @@ object Dependencies extends TestSuite:
       val other = Invs(List(K), List(k), Lt.int(Zero.int, k))
       simplify(other) ==> other
 
+    // the invariants that mention the combinator itself hold in its update: in X == trace(...), ⌊X⌋ is the accumulator,
+    // and in Y == maps(...), Y is the update, e.g. the test of a loop lo < hi in the trace of lo
+    test("invariants of the defined combinator"):
+      val X = Var("X", Sort.trace(Sort.int))
+      val Y = Var("Y", Sort.seq(Sort.int))
+      val x = Var("x", Sort.int)
+      val y = Var("y", Sort.int)
+      val loop = Invs(List(Butlast(X), J), List(x, j), Lt.int(x, j))
+      val ctx = Ctx.empty.assume(List(loop), Nil)
+      def simplify(expr: Expr) = Simplify.simplify(Config.default, State.empty, ctx, expr)
+
+      val update = Ite(Lt.int(x, j), One.int, Zero.int)
+      val trace = Trace(Zero.int, List(J), x, List(j), update)
+      simplify(Eq(X, trace)) ==> Eq(X, Trace(Zero.int, List(J), x, List(j), One.int))
+      // not without the equation
+      simplify(trace) ==> trace
+
+      val positive = Invs(List(Y, J), List(y, j), Lt.int(Zero.int, j))
+      val ctx_ = Ctx.empty.assume(List(positive), Nil)
+      val abs = Maps(List(J), List(j), Ite(Lt.int(Zero.int, j), j, UMinus.int(j)))
+      Simplify.simplify(Config.default, State.empty, ctx_, Eq(Y, abs)) ==> Eq(Y, Maps(List(J), List(j), j))
+
     // the iterations of a loop, counted by the first dependency, are 0 <= k < n,
     // and the other dependencies have their values in iteration k
     test("iterations"):

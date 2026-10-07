@@ -129,6 +129,30 @@ object Simplify extends Transform:
         val poly_ = difference(config, state, ctx.neutral, Ring.real, left, right)
         eq(config, state, ctx, Ring.real, poly_)
 
+      // the equation of a trace, X == trace(...), whose accumulator is the value of ⌊X⌋ in each iteration,
+      // and of a map, Y == maps(...), whose update is the value of Y at each position, such that the update
+      // assumes also the invariants of the context that mention ⌊X⌋ or Y (see invariants), e.g. the test of a loop;
+      // the right-hand side is simplified like the combinator below, and then rewritten at the top (see simplify)
+      case Eq(x: Var, Trace(init, deps, acc, bound, update)) =>
+        val left_ = simplify(config, state, ctx.neutral, x)
+        val init_ = simplify(config, state, ctx.neutral, init)
+        val deps_ = simplify(config, state, ctx.neutral, deps)
+        val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
+        val self = (Butlast(x), vars_.head)
+        val inner = combinator(config, state, ctx.bind(List(vars_.head)), deps_, vars_.tail, Some(self))
+        val update_ = simplify(config, state, inner, re(update))
+        val right_ = trace(config, state, ctx.neutral, init_, deps_, vars_.head, vars_.tail, update_)
+        eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_))
+
+      case Eq(y: Var, Maps(deps, bound, update)) =>
+        val left_ = simplify(config, state, ctx.neutral, y)
+        val deps_ = simplify(config, state, ctx.neutral, deps)
+        val (bound_, re) = Subst.rename(bound, ctx.free)
+        val self = (y, re(update))
+        val update_ = simplify(config, state, combinator(config, state, ctx, deps_, bound_, Some(self)), re(update))
+        val right_ = maps(config, state, ctx.neutral, deps_, bound_, update_)
+        eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_))
+
       case Eq(left, right) =>
         val left_ = simplify(config, state, ctx.neutral, left)
         val right_ = simplify(config, state, ctx.neutral, right)
@@ -318,20 +342,29 @@ object Simplify extends Transform:
         invs(config, state, ctx, deps_, bound_, body_)
 
   // the context of the updates and bodies of combinators, which binds the variables for the dependencies,
-  // and which assumes the invariants of the context over the same dependencies and the iterations of loops
-  def combinator(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var]): Ctx =
-    ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound), Nil)
+  // and which assumes the invariants of the context over the same dependencies and the iterations of loops;
+  // `self` is the dependency that the combinator defines and its value in the update, if known (see once)
+  def combinator(
+      config: Config,
+      state: State,
+      ctx: Ctx,
+      deps: List[Expr],
+      bound: List[Var],
+      self: Option[(Expr, Expr)] = None
+  ): Ctx =
+    ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound, self) ++ iterations(config, state, ctx, deps, bound), Nil)
 
-  // the bodies of the invariants among the assumptions whose dependencies are among `deps`,
-  // with their bound variables renamed to those of the corresponding dependencies in `bound`,
+  // the bodies of the invariants among the assumptions whose dependencies are among `deps` and `self`,
+  // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of `self`,
   // which hold at each position of the dependencies, hence also for the values bound there;
   // the dependencies of a combinator have equal length, such that the positions coincide
-  def invariants(ctx: Ctx, deps: List[Expr], bound: List[Var]): List[Expr] =
+  def invariants(ctx: Ctx, deps: List[Expr], bound: List[Var], self: Option[(Expr, Expr)] = None): List[Expr] =
+    val values = (deps zip bound).toMap[Expr, Expr] ++ self
     for
       case Invs(deps_, bound_, body) <- ctx.facts.assms
-      if deps_.forall(deps.contains)
+      if deps_.forall(values.contains)
     yield
-      val re = Subst.from(bound_, deps_.map(dep => bound(deps.indexOf(dep))))
+      val re = Subst.from(bound_, deps_.map(values))
       re(body)
 
   // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),
