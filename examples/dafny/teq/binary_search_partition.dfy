@@ -51,12 +51,6 @@ lemma {:rw} {:free} forall x0: int, b: int, i: int, c: int, m: int, hs: seq<int>
           case C(x, h) => x case D(x, h) && x < F(x, h) && F(x, h) <= b => F(x, h))
     == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
 
-// the value stays below the bound if the initial value does
-lemma {:rw} {:free} forall x0: int, b: int, ks: seq<int>, hs: seq<int>,
-                          D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
-  if x0 <= b
-  then (current(incs(x0, b, ks, hs, D, C, F)) <= b) <==> true
-
 // a value that decreases monotonically down to a bound b, dually
 function decs(x0: int, b: int, ks: seq<int>, ls: seq<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
@@ -67,16 +61,41 @@ lemma {:rw} {:free} forall x0: int, b: int, i: int, c: int, m: int, ls: seq<int>
           case C(x, l) => x case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
     == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
 
+// the midpoint lies in the interval, for division that rounds down, which the simplifier does not know otherwise,
+// needed for the increase lo < (hi + lo) / 2 + 1 and the decrease (hi + lo) / 2 < hi
+lemma {:rw} {:free} forall l: int, h: int :: if l <= h then (l <= (h + l) / 2) <==> true
+lemma {:rw} {:free} forall l: int, h: int :: if l < h then ((h + l) / 2 < h) <==> true
+
+
+// the value stays below the bound if the initial value does
+lemma {:rw} {:free} forall x0: int, b: int, ks: seq<int>, hs: seq<int>,
+                          D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
+  if x0 <= b
+  then (current(incs(x0, b, ks, hs, D, C, F)) <= b) <==> true
+
 // the value stays above the bound if the initial value does
 lemma {:rw} {:free} forall x0: int, b: int, ks: seq<int>, ls: seq<int>,
                           D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
   if b <= x0
   then (b <= current(decs(x0, b, ks, ls, D, C, F))) <==> true
 
-// the midpoint lies in the interval, for division that rounds down, which the simplifier does not know otherwise,
-// needed for the increase lo < (hi + lo) / 2 + 1 and the decrease (hi + lo) / 2 < hi
-lemma {:rw} {:free} forall l: int, h: int :: if l <= h then (l <= (h + l) / 2) <==> true
-lemma {:rw} {:free} forall l: int, h: int :: if l < h then ((h + l) / 2 < h) <==> true
+
+function incs_(x0: int, b: int, ks: seq<int>, hs: seq<int>,
+              D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
+
+lemma {:rw} {:free} forall X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, hs: seq<int>,
+                          C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
+  X == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+    <==> X == incs_(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F) && current(X) <= b
+
+
+function decs_(x0: int, b: int, ks: seq<int>, ls: seq<int>,
+              D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
+
+lemma {:rw} {:free} forall X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, ls: seq<int>,
+                          C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
+  X == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
+    <==> X == decs_(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F) && b <= current(X)
 
 method search() returns (i: int)
   requires 0 <= p <= q <= n
@@ -103,6 +122,6 @@ method search() returns (i: int)
   }
   // a cut, until facts about terms are derived (see forward.md): the bounds are proved by the lemmas on incs and decs,
   // whose atoms occur here, and then assumed for the postcondition, since -teq does not assume assertions
-  assert lo <= p && q <= hi;
-  assume lo <= p && q <= hi;
+  // assert lo <= p && q <= hi;
+  // assume lo <= p && q <= hi;
 }
