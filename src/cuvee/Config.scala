@@ -68,16 +68,18 @@ case class Config(
   def using(transform: Transform) =
     copy(transforms = transforms :+ transform)
 
-  // the configuration with `feature` known to the input language,
-  // and to the output if it is printed in the language of the input
+  // the configuration with `feature` known to the languages of the input and of the output
   def having(feature: String) =
-    if output.printer == input.printer
-    then copy(input = input.having(feature), output = output.having(feature))
-    else copy(input = input.having(feature))
+    copy(input = input.having(feature), output = output.having(feature))
+
+  // the configuration with the output in `lang`, which knows the features added to the input, e.g. by -teq,
+  // i.e., those that are not languages
+  def printing(lang: Lang) =
+    copy(output = lang.copy(features = lang.features ++ (input.features -- Config.langs.keySet)))
 
   // the output in SMT-LIB if its language cannot express the output of a transform, e.g. C
   def usingMath =
-    if output.hasMath then this else copy(output = Lang.smtlib)
+    if output.hasMath then this else printing(Lang.smtlib)
 
   def reader =
     file match
@@ -205,10 +207,8 @@ object Config:
       "<lang>",
       "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), scala (the internal representation), or null (nothing)"
     ):
-      // the language of the input keeps the features added to it, e.g. by -teq
       case (config, name :: rest) if langs.contains(name) =>
-        val output = if langs(name).printer == config.input.printer then config.input else langs(name)
-        val config_ = config.copy(output = output)
+        val config_ = config.printing(langs(name))
         (config_, rest)
 
       // the declarations that the output drops remain those of the language of the output so far
@@ -277,7 +277,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.22.4")
+    println("Cuvée 0.22.5")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

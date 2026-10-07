@@ -53,8 +53,8 @@ transformation and any output.
    the sink. All stages start from the same initial state, and know the
    configuration. `config.input` and `config.output` are `Lang`s, each
    with the features (attributes) that it knows: its file extension, plus
-   `teq` and `hybrid` added to the input by `-teq` and `-hybrid`, and to the
-   output when it is printed in the language of the input. `Cuvee.pipe`
+   `teq` and `hybrid` added to both by `-teq` and `-hybrid`, also when the
+   output is in another language (`Config.printing`). `Cuvee.pipe`
    wraps the printers in `Printer.filter`, which drops the top-level
    declarations with these features: the output printer of the sink by
    `config.output.features`, the printer of the reports, which is that of the

@@ -10,7 +10,7 @@ import cuvee.core._
 // the printers drop the declarations of the preludes that are part of the language of the output:
 // Dafny printed as SMT-LIB declares the tuples and the containers of Dafny other than sequences and sets, but not Int,
 // Dafny printed as Dafny none of these;
-// the features added by -teq are part of the input language, and hence of Dafny output, but not of SMT-LIB output
+// the features added by -teq are part of the languages of the input and of the output, regardless of -print
 object Language extends TestSuite:
   // the printed output, written with -o
   def output(args: String*): String =
@@ -42,7 +42,8 @@ object Language extends TestSuite:
     test("teq"):
       assert(!output("-teq", file).contains("{:teq}"))
       assert(!output("-teq", "-print", "dfy", file).contains("{:teq}"))
-      assert(output("-teq", "-print", "smt2", file).contains(":teq"))
+      assert(!output("-teq", "-print", "smt2", file).contains(":teq"))
+      assert(!output("-print", "smt2", "-teq", file).contains(":teq"))
 
     test("filter"):
       val printer = cuvee.pipe.Printer.filter(Set("dfy"), cuvee.pipe.Printer.default)
