@@ -91,7 +91,7 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
           for
             (x, rest) <- poly.solutions
             e = rest.toExpr(ring)
-            if Ctx.arithmetic(e) && replaces(x, e)
+            if e.isArith && replaces(x, e)
             if (e.free intersect replace.keySet).isEmpty && !(replace.values.free contains x) && acyclic(x, e)
           yield (x, e)
         solutions.headOption
@@ -101,7 +101,7 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr]) extends Theory
 
   // whether x == e can be recorded in the chain
   def chains(x: Var, e: Expr): Boolean =
-    !(chain contains x) && !(e.free contains x) && !Ctx.arithmetic(e) && acyclic(x, e)
+    !(chain contains x) && !(e.free contains x) && !e.isArith && acyclic(x, e)
 
   // whether e does not depend on x through the substitution and the chain, transitively
   def acyclic(x: Var, e: Expr): Boolean =

@@ -5,6 +5,7 @@ import cuvee.Debug
 import cuvee.Config
 import cuvee.pipe.Transform
 import cuvee.core._
+import util.Rational
 
 // contextual simplification of the formulas in assertions and function definitions,
 // where each subterm is simplified under the facts known to hold at its position
@@ -87,17 +88,15 @@ object Simplify extends Transform:
   // (see Ctx.implied), and in an inconsistent context at positive positions,
   // where any formula may be chosen (polarity is only defined for formulas); false for expressions that are no formulas
   def implied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
-    phi.typ == Sort.bool && (
-      phi == True
-        || (ctx.inconsistent && ctx.polarity == Some(true))
-        || ctx.implied(phi, not(config, state, ctx, phi)))
+    phi.typ == Sort.bool && (phi == True
+      || (ctx.inconsistent && ctx.polarity == Some(true))
+      || ctx.implied(phi, not(config, state, ctx, phi)))
 
   // whether `phi` is known not to hold in `ctx`, dually, e.g. a < b if b <= a is known
   def denied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
-    phi.typ == Sort.bool && (
-      phi == False
-        || (ctx.inconsistent && ctx.polarity == Some(false))
-        || ctx.denied(phi, not(config, state, ctx, phi)))
+    phi.typ == Sort.bool && (phi == False
+      || (ctx.inconsistent && ctx.polarity == Some(false))
+      || ctx.denied(phi, not(config, state, ctx, phi)))
 
   // expressions in debug output, on a single line
   def show(printer: cuvee.pipe.Printer, expr: Expr): String =
@@ -106,7 +105,7 @@ object Simplify extends Transform:
   // a single step with the rewrite rules of the context at the top of `expr`,
   // where the conditions of the rules are decided by simplification in the context (see Rewrite)
   def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    Rewrite.step(config, state, ctx, expr)
+    Rewrite.rewrite(config, state, ctx, expr)
 
   // a single round of simplification, dispatching on the builtin functions,
   // subterms are simplified first, where ite and the boolean connectives
@@ -148,7 +147,6 @@ object Simplify extends Transform:
         val arg_ = simplify(config, state, ctx.neutral, arg)
         is(config, state, ctx, arg_, fun)
 
-      // the derivative is taken of the simplified argument, e.g. after > is turned into <
       case Diff(xs, arg) =>
         val arg_ = simplify(config, state, ctx.neutral, arg)
         diff(config, state, xs, arg_)
@@ -156,7 +154,6 @@ object Simplify extends Transform:
       case Old(arg) =>
         Old(simplify(config, state, ctx.neutral, arg))
 
-      // the annotation does not change the value, hence the polarity is kept
       case As(arg, typ) =>
         val arg_ = simplify(config, state, ctx, arg)
         As(arg_, typ)
@@ -184,9 +181,6 @@ object Simplify extends Transform:
         not(config, state, ctx, phi_)
 
       case Imp(phi, psi) =>
-        // like a disjunction of not phi and psi:
-        // the premise is simplified assuming that the conclusion does not hold,
-        // and the conclusion is simplified assuming the simplified premise
         val phi_ = simplify(config, state, ctx.flip.assume(Nil, List(psi)), phi)
         val psi_ = simplify(config, state, ctx.assume(List(phi_), Nil), psi)
         imp(config, state, ctx, phi_, psi_)
@@ -388,47 +382,54 @@ object Simplify extends Transform:
   // terms of other types, e.g. of defined sorts, are simplified only
   def arith(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
     Ring(expr.typ) match
-      case Some(ring) => poly(config, state, ctx, ring, expr).normalize.toExpr(ring)
-      case None       => simplify(config, state, ctx, expr)
+      case Some(ring) => 
+        val poly_ = poly(config, state, ctx, ring, expr)
+        val norm_ = poly_.normalize
+        val expr_ = norm_.toExpr(ring)
+        expr_
+
+      case None       => 
+        simplify(config, state, ctx, expr)
 
   // simplify an integer- or real-valued term into a polynomial (not normalized):
   // descend through +, -, * and literals, simplify the leaves,
   // which may in turn become arithmetic expressions, and combine the results;
   // on Real, division by a term that simplifies to a nonzero literal is multiplication by its inverse
   def poly(config: Config, state: State, ctx: Ctx, ring: Ring, expr: Expr): Poly =
-    ring.num(expr) match
-      case Some(n) =>
+    expr match
+      case ring.num(n: BigInt) =>
+        Poly.const(Rational(n))
+
+      case ring.num(n: Rational) =>
         Poly.const(n)
 
-      case None =>
-        expr match
-          case ring.uminus(arg) =>
-            val arg_ = poly(config, state, ctx, ring, arg)
-            -arg_
+      case ring.uminus(arg) =>
+        val arg_ = poly(config, state, ctx, ring, arg)
+        -arg_
 
-          case ring.plus(args) =>
-            val args_ = args.map(poly(config, state, ctx, ring, _))
-            args_.foldLeft(Poly.zero)(_ + _)
+      case ring.plus(args) =>
+        val args_ = args.map(poly(config, state, ctx, ring, _))
+        args_.foldLeft(Poly.zero)(_ + _)
 
-          case ring.minus(left, right) =>
-            val left_ = poly(config, state, ctx, ring, left)
-            val right_ = poly(config, state, ctx, ring, right)
-            left_ - right_
+      case ring.minus(left, right) =>
+        val left_ = poly(config, state, ctx, ring, left)
+        val right_ = poly(config, state, ctx, ring, right)
+        left_ - right_
 
-          case ring.times(args) =>
-            val args_ = args.map(poly(config, state, ctx, ring, _))
-            args_.foldLeft(Poly.one)(_ * _)
+      case ring.times(args) =>
+        val args_ = args.map(poly(config, state, ctx, ring, _))
+        args_.foldLeft(Poly.one)(_ * _)
 
-          case DivBy.real(left, right) =>
-            val left_ = poly(config, state, ctx, ring, left)
-            val right_ = simplify(config, state, ctx, right)
-            ring.num(right_) match
-              case Some(r) if !r.isZero => left_ * (util.Rational(1) / r)
-              case _                    => Poly.atom(DivBy.real(left_.normalize.toExpr(ring), right_))
+      case DivBy.real(left, right) =>
+        val left_ = poly(config, state, ctx, ring, left)
+        val right_ = simplify(config, state, ctx, right)
+        right_ match
+          case ring.num(r: Rational) if !r.isZero => left_ * (Rational(1) / r)
+          case _                                  => Poly.atom(DivBy.real(left_.normalize.toExpr(ring), right_))
 
-          case _ =>
-            val expr_ = simplify(config, state, ctx, expr)
-            Arith.toPoly(ring, expr_)
+      case _ =>
+        val expr_ = simplify(config, state, ctx, expr)
+        Arith.toPoly(ring, expr_)
 
   // variables known to be equal to another one or to a literal are replaced
   def var_(config: Config, state: State, ctx: Ctx, x: Var): Expr =
@@ -457,8 +458,8 @@ object Simplify extends Transform:
       case (True, False) | (False, True) =>
         False
 
-      case (_, True) => left
-      case (True, _) => right
+      case (_, True)  => left
+      case (True, _)  => right
       case (_, False) => not(config, state, ctx, left)
       case (False, _) => not(config, state, ctx, right)
 
@@ -529,12 +530,12 @@ object Simplify extends Transform:
 
   def ite(config: Config, state: State, ctx: Ctx, test: Expr, left: Expr, right: Expr): Expr =
     (test, left, right) match
-      case (True, _, _)          => left
-      case (False, _, _)         => right
-      case _ if left == right    => left
-      case (_, True, False)      => test
-      case (_, False, True)      => not(config, state, ctx, test)
-      case _                     => Ite(test, left, right)
+      case (True, _, _)       => left
+      case (False, _, _)      => right
+      case _ if left == right => left
+      case (_, True, False)   => test
+      case (_, False, True)   => not(config, state, ctx, test)
+      case _                  => Ite(test, left, right)
 
   // read over write, also of arrays defined by a write (see Ctx.↑), and beta reduction of lambdas
   def select(config: Config, state: State, ctx: Ctx, base: Expr, index: Expr): Expr =
@@ -567,23 +568,23 @@ object Simplify extends Transform:
   // negated comparisons are the other comparison with the arguments swapped, !(a < b) is b <= a
   def not(config: Config, state: State, ctx: Ctx, phi: Expr): Expr =
     phi match
-      case True             => False
-      case False            => True
-      case Not(psi)         => psi
-      case Lt.int(a, b)     => Le.int(b, a)
-      case Le.int(a, b)     => Lt.int(b, a)
-      case Lt.real(a, b)    => Le.real(b, a)
-      case Le.real(a, b)    => Lt.real(b, a)
-      case _                => Not(phi)
+      case True          => False
+      case False         => True
+      case Not(psi)      => psi
+      case Lt.int(a, b)  => Le.int(b, a)
+      case Le.int(a, b)  => Lt.int(b, a)
+      case Lt.real(a, b) => Le.real(b, a)
+      case Le.real(a, b) => Lt.real(b, a)
+      case _             => Not(phi)
 
   def imp(config: Config, state: State, ctx: Ctx, phi: Expr, psi: Expr): Expr =
     (phi, psi) match
-      case (True, _)          => psi
-      case (False, _)         => True
-      case (_, True)          => True
-      case (_, False)         => not(config, state, ctx, phi)
-      case _ if phi == psi    => True
-      case _                  => Imp(phi, psi)
+      case (True, _)       => psi
+      case (False, _)      => True
+      case (_, True)       => True
+      case (_, False)      => not(config, state, ctx, phi)
+      case _ if phi == psi => True
+      case _               => Imp(phi, psi)
 
   // flatten nested conjunctions, drop true and duplicates, false makes the whole conjunction false;
   // complementary pairs are decided already, since each conjunct is simplified assuming the others (see nary);
@@ -760,7 +761,8 @@ object Simplify extends Transform:
         case (Ring.int, _) if implied(config, state, ctx.neutral, Le.int(right_, left_)) =>
           eq_(config, state, ctx, left_, right_)
 
-        case (Ring.int, _) if denied(config, state, ctx.neutral, Eq(left_, right_)) || denied(config, state, ctx.neutral, Eq(right_, left_)) =>
+        case (Ring.int, _)
+            if denied(config, state, ctx.neutral, Eq(left_, right_)) || denied(config, state, ctx.neutral, Eq(right_, left_)) =>
           Lt.int(left_, right_)
 
         case _ =>
@@ -862,10 +864,10 @@ object Simplify extends Transform:
   // false holds exactly if there are no values, i.e., the dependencies, which have the same length, are empty
   def invs(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], body: Expr): Expr =
     (deps, body) match
-      case (_, And(phis))     => and(config, state, ctx, phis.map(invs(config, state, ctx, deps, bound, _)))
-      case (_, True)          => True
-      case (dep :: _, False)  => Eq(Seqs.len(dep), Zero.int)
-      case _ =>
+      case (_, And(phis))    => and(config, state, ctx, phis.map(invs(config, state, ctx, deps, bound, _)))
+      case (_, True)         => True
+      case (dep :: _, False) => Eq(Seqs.len(dep), Zero.int)
+      case _                 =>
         val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, body.free)
         Invs(deps_, bound_, re(body))
 
@@ -874,7 +876,14 @@ object Simplify extends Transform:
   // and those whose bound variables are not used are dropped, except counters, which keep the dependencies nonempty,
   // also variables that denote one by an assumption, e.g. K == counter(0, 1, n) of TEQ.loop (see Ctx.↑)
   // (if there is none, the first dependency is kept)
-  def deps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], used: Set[Var]): (List[Expr], List[Var], Subst[Nothing, Var]) =
+  def deps(
+      config: Config,
+      state: State,
+      ctx: Ctx,
+      deps: List[Expr],
+      bound: List[Var],
+      used: Set[Var]
+  ): (List[Expr], List[Var], Subst[Nothing, Var]) =
     val (distinct, re) =
       (deps zip bound).foldLeft[(List[(Expr, Var)], Subst[Nothing, Var])]((Nil, Subst.empty)):
         case ((done, re), (dep, x)) =>
@@ -998,11 +1007,11 @@ object Simplify extends Transform:
   // and a negated test swaps the branches
   def if_(config: Config, state: State, ctx: Ctx, test: Expr, left: Prog, right: Prog): Prog =
     test match
-      case True                => left
-      case False               => right
-      case _ if left == right  => left
-      case Not(test_)          => If(test_, right, left)
-      case _                   => If(test, left, right)
+      case True               => left
+      case False              => right
+      case _ if left == right => left
+      case Not(test_)         => If(test_, right, left)
+      case _                  => If(test, left, right)
 
   // a loop that is never entered has no effect
   def while_(config: Config, state: State, ctx: Ctx, test: Expr, body: Prog, attrs: Attrs): Prog =

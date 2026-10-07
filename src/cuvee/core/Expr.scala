@@ -1,6 +1,5 @@
 package cuvee.core
 
-
 import util.Name
 import util.Counter
 
@@ -14,27 +13,58 @@ sealed trait Expr:
   // the subexpressions are visited from left to right, such that `f` may be used for its side effects only
   def map(f: Expr => Expr): Expr =
     this match
-      case _: Var | _: Lit                      => this
-      case App(fun, inst, typ, args)            => App(fun, inst, typ, args.map(f))
-      case Distinct(exprs)                      => Distinct(exprs.map(f))
-      case Is(arg, fun)                         => Is(f(arg), fun)
-      case As(arg, typ)                         => As(f(arg), typ)
-      case Diff(xs, arg)                        => Diff(xs, f(arg))
-      case Old(arg)                             => Old(f(arg))
-      case Trace(init, deps, acc, bound, upd)   => Trace(f(init), deps.map(f), acc, bound, f(upd))
-      case Maps(deps, bound, upd)               => Maps(deps.map(f), bound, f(upd))
-      case Eps(upds)                            => Eps(upds.map(f))
-      case Invs(deps, bound, body)              => Invs(deps.map(f), bound, f(body))
-      case Bind(quant, bound, body)             => Bind(quant, bound, f(body))
-      case Lam(bound, body, typ)                => Lam(bound, f(body), typ)
-      case Let(bound, args, body)               => Let(bound, args.map(f), f(body))
-      case Match(arg, cases)                    => Match(f(arg), cases.map(f))
+      case _: Var | _: Lit                    => this
+      case App(fun, inst, typ, args)          => App(fun, inst, typ, args.map(f))
+      case Distinct(exprs)                    => Distinct(exprs.map(f))
+      case Is(arg, fun)                       => Is(f(arg), fun)
+      case As(arg, typ)                       => As(f(arg), typ)
+      case Diff(xs, arg)                      => Diff(xs, f(arg))
+      case Old(arg)                           => Old(f(arg))
+      case Trace(init, deps, acc, bound, upd) => Trace(f(init), deps.map(f), acc, bound, f(upd))
+      case Maps(deps, bound, upd)             => Maps(deps.map(f), bound, f(upd))
+      case Eps(upds)                          => Eps(upds.map(f))
+      case Invs(deps, bound, body)            => Invs(deps.map(f), bound, f(body))
+      case Bind(quant, bound, body)           => Bind(quant, bound, f(body))
+      case Lam(bound, body, typ)              => Lam(bound, f(body), typ)
+      case Let(bound, args, body)             => Let(bound, args.map(f), f(body))
+      case Match(arg, cases)                  => Match(f(arg), cases.map(f))
 
   // the expression without type annotations e as T
   def removeAs: Expr =
     this match
       case As(arg, _) => arg.removeAs
       case _          => map(_.removeAs)
+
+  def isSum =
+    this match
+      case App(fun, _, Sort.int, _) =>
+        fun == Fun.int.uminus || fun == Fun.int.plus || fun == Fun.int.minus
+
+      case App(fun, _, Sort.real, _) =>
+        fun == Fun.real.uminus || fun == Fun.real.plus || fun == Fun.real.minus
+
+      case _ =>
+        false
+
+  def isArith =
+    this match
+      case App(fun, _, Sort.int, _) =>
+        fun == Fun.int.uminus || fun == Fun.int.plus || fun == Fun.int.minus || fun == Fun.int.times
+
+      case App(fun, _, Sort.real, _) =>
+        fun == Fun.real.uminus || fun == Fun.real.plus || fun == Fun.real.minus || fun == Fun.real.times
+
+      case _ =>
+        false
+
+  // the type of a comparison is Bool, the functions determine Int or Real
+  def isComparison =
+    this match
+      case App(fun, _, _, _) =>
+        fun == Fun.int.le || fun == Fun.int.lt || fun == Fun.real.le || fun == Fun.real.lt
+
+      case _ =>
+        false
 
 object Expr:
   // TODO: structural ordering, for now by the printed representation
@@ -51,7 +81,7 @@ case class Var(name: Name, typ: Type) extends Expr:
   def asPair = (name, typ)
   def asIndex = (name, this)
 
-  def fresh = 
+  def fresh =
     Var(name.withIndex(Var.next()), typ)
 
   // the variable for the derivative of this one, x'

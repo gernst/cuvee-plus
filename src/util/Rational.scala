@@ -6,6 +6,10 @@ implicit def toRational(n: Int): Rational =
 case class Rational private (num: BigInt, den: BigInt):
   require(den > 0)
 
+  def toBigInt =
+    require(den == 1)
+    num
+
   def isZero =
     num == 0
 

@@ -58,6 +58,10 @@ object Eqv extends Sugar.binary(Fun.eqv)
 object And extends Sugar.commutative(Fun.and, True, Assoc.Left)
 object Or extends Sugar.commutative(Fun.or, False, Assoc.Left)
 
+object Num:
+  object int extends  Sugar.lit(Sort.int)
+  object real extends Sugar.lit(Sort.real)
+
 object UMinus:
   object int extends Sugar.unary(Fun.int.uminus)
   object real extends Sugar.unary(Fun.real.uminus)

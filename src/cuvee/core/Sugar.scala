@@ -3,6 +3,7 @@ package cuvee.core
 import scala.annotation.targetName
 import util.Name
 import cuvee.Error
+import scala.reflect.ClassTag
 
 extension (self: List[Param])
   @targetName("Params.fresh")
@@ -114,14 +115,16 @@ object Arrow:
 
   def unapply(typ: Type): Option[(List[Type], Type)] =
     typ match
-      case Sort(con_, args) if args.nonEmpty && con_ == con(args.length - 1) => Some((args.init, args.last))
-      case _                                                                  => None
+      case Sort(con_, args) if args.nonEmpty && con_ == con(args.length - 1) =>
+        Some((args.init, args.last))
+      case _ =>
+        None
 
 // applications f(a₁, ..., aₙ) of function values (see Arrow), by the functions apply₁, apply₂, ... of the prelude of Dafny,
 // whose type parameters are those of the function type
 object Apply:
   def fun(arity: Int): Fun =
-    val params = List.tabulate(arity + 1)(i => Param(Name("a", Some(i))))
+    val params = Type.params("a", arity + 1)
     Fun(Name("apply", Some(arity)), params, Fun.formals(Arrow(params.init, params.last) :: params.init*), params.last)
 
   def apply(f: Expr, args: List[Expr]): Expr =
@@ -129,8 +132,10 @@ object Apply:
 
   def unapply(expr: Expr): Option[(Expr, List[Expr])] =
     expr match
-      case App(fun_, _, _, f :: args) if fun_ == fun(args.length) => Some((f, args))
-      case _                                                     => None
+      case App(fun_, _, _, f :: args) if fun_ == fun(args.length) =>
+        Some((f, args))
+      case _ =>
+        None
 
 // lambdas of several variables as nested lambdas of a single variable, which are arrays (see Lam),
 // e.g. (lambda x: int, y: int :: e) of Boogie; unapply collects all nested lambdas of array type
@@ -207,6 +212,18 @@ object Sugar:
       prog match
         case call @ Call(`name`, args, res) if args.length == in && res.length == out =>
           Some(call)
+
+        case _ =>
+          None
+
+  class lit(typ: Type):
+    def apply(value: Any): Expr =
+      Lit(value, typ)
+
+    def unapply(expr: Expr) =
+      expr match
+        case Lit(value, `typ`) =>
+          Some(value)
 
         case _ =>
           None

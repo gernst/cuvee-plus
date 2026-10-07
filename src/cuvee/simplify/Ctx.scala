@@ -172,18 +172,7 @@ object Ctx:
   // whether lhs == rhs is a rule of the context: rhs is ground and lhs is not;
   // equations of variables are recorded in chains, those of arithmetic are normalized instead
   def rule(lhs: Expr, rhs: Expr): Boolean =
-    !lhs.isInstanceOf[Var] && !arithmetic(lhs) && lhs.free.nonEmpty && rhs.free.isEmpty
-
-  // applications of the basic arithmetic operators on Int or Real
-  def arithmetic(expr: Expr): Boolean =
-    Ring(expr.typ) match
-      case Some(ring) =>
-        expr match
-          case ring.plus(_) | ring.minus(_, _) | ring.uminus(_) | ring.times(_) => true
-          case _                                                                => false
-
-      case None =>
-        false
+    !lhs.isInstanceOf[Var] && !lhs.isArith && lhs.free.nonEmpty && rhs.free.isEmpty
 
   val empty = Ctx(Nil, Set(), Set(), Facts.empty, Chains.empty, Diffs.empty, None)
 

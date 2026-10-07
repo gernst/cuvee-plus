@@ -3,6 +3,12 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
+## NEW
+
+- implement parse and print to change for SMT LIB 2.7 for functions using `->` and `@`, this requires a minor change the the SMTLIB printer and a more substantial change to the parser
+- the ho flag in the dafny prelude stays, because current solvers don't really implement that feature
+- SMT parser for lambdas should type it as array, not arrow
+
 ## General
 
 - Function types of Dafny (`arrow₁`, ...) and their applications (`apply₁`,

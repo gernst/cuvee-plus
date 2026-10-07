@@ -106,7 +106,7 @@ lemma {:rw} {:free} {:teq} forall x: int, values: seq<int> ::
     == maxs(x, values)
 
 lemma {:rw} {:free} {:teq} forall x: int, values: seq<int> ::
-  trace(x, for values do m, v :: case m > v => v case v >= m => m)
+  trace(x, for values do m, v :: case v < m => v case m <= v => m)
     == mins(x, values)
 
 lemma <a> {:rw} {:free} {:teq} forall x: int, e: a, vs: seq<a> ::

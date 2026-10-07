@@ -19,34 +19,33 @@ case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound
 // matching is syntactic modulo
 //   the instantiation of the type parameters of the rules,
 //   associativity and commutativity of + and - on Int and Real, and their neutral element 0,
-//   the binding structure of the combinators trace, map, and all (see Trace Equation Systems, section 5.2);
+//   the binding structure of the combinators trace, map, and all
 // a match is a substitution of the type parameters and variables of the rule
 object Rewrite:
-  // rewrite `expr` with `rules` until no rule applies
-  def apply(rules: List[Rule], expr: Expr): Expr =
-    rewrite(Config.default, State.empty, Ctx.empty.withRules(rules), expr)
-
   def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    val expr_ = expr.map(rewrite(config, state, ctx, _))
-    val next = step(config, state, ctx, expr_)
-    if next == expr_
-    then expr_
-    else rewrite(config, state, ctx, next)
+    // note, do not recurse here, the main traversal is in simplify
+    expr match
+      case _: Var => expr
+      case _      => apply(config, state, ctx, ctx.rules, expr)
 
   // a single application of the first rule of the context that applies at the top of `expr`,
   // `expr` itself if none applies (an application always changes the expression)
-  def step(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
-    ctx.rules.iterator
-      .map(rule => apply(config, state, ctx, rule, expr))
-      .find(_ != expr)
-      .getOrElse(expr)
+  def apply(config: Config, state: State, ctx: Ctx, rules: List[Rule], expr: Expr): Expr =
+    rules match
+      case Nil =>
+        expr
+
+      case rule :: rest =>
+        // pick the first rule that matches
+        val expr_ = apply(config, state, ctx, rule, expr)
+        if expr_ != expr
+        then expr_
+        else apply(config, state, ctx, rest, expr)
 
   // the result of the first match whose instantiated condition holds, `expr` itself if there is none;
   // matching modulo associativity and commutativity may find several matches with different results,
   // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
   def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr): Expr =
-    // variables are not rewritten by following their equations, only inside of expressions
-    if expr.isInstanceOf[Var] then return expr
     val results =
       for
         su <- matches(config, state, ctx, Binding(rule.xs.toSet, Set(), Map(), Set()), rule.lhs, expr, Subst.empty)
@@ -55,14 +54,24 @@ object Rewrite:
         if rhs != expr && holds(config, state, ctx, su(rule.cond))
       yield rhs
 
-    results.headOption match
-      case None => expr
-      case Some(rhs) =>
+    results match
+      case Nil =>
+        expr
+
+      case rhs :: rest =>
         Error.report("rewriting does not terminate", rule):
           require(ctx.steps.value > 0)
+
+        // if rest.nonempty
+        // for expr <- results
+        // do println(Simplify.show(config.input.printer, expr))
+
+        // Error.raise("rewriting with multiple result")
+
         ctx.steps := ctx.steps.value - 1
         Debug.step("rewrite", Simplify.show(config.output.printer, expr), Simplify.show(config.output.printer, rhs))
         rhs
+
 
   // side conditions and the guards of updates are decided by the simplifier in the context
   def holds(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
@@ -84,7 +93,7 @@ object Rewrite:
             Nil
 
           case None =>
-            for m_ <- Rewrite.matches(state, x.typ, expr.typ, m)
+            for m_ <- matches(state, x.typ, expr.typ, m)
             yield m_ + (x -> expr)
 
       // annotations e as T of the expression are skipped, the left-hand sides of rules have none (see Rules.from)
@@ -105,40 +114,50 @@ object Rewrite:
       // comparisons modulo moving summands between the sides, and < and <= on Int;
       // the constant of the pattern is moved to the expression, whose constants are folded,
       // e.g. k < m is m - k - 1 and matches i < 1024, which is 1023 - i, as m - k against 1024 - i
-      case _ if Rewrite.comparison(pat).nonEmpty =>
+      case _ if pat.isComparison =>
         for
-          (ring, strict, poly) <- Rewrite.comparison(pat)
-          (ring_, strict_, poly_) <- Rewrite.comparison(expr)
+          (ring, strict, poly) <- comparison(pat)
+          (ring_, strict_, poly_) <- comparison(expr)
           if ring == ring_ && strict == strict_
           const = Poly.const(poly.const)
-          m_ <- matches(config, state, ctx, b, ring, Rewrite.signed(ring, (poly - const).normalize), Rewrite.signed(ring, (poly_ - const).normalize), true, m)
+          m_ <- matches(
+            config,
+            state,
+            ctx,
+            b,
+            ring,
+            signed(ring, (poly - const).normalize),
+            signed(ring, (poly_ - const).normalize),
+            true,
+            m
+          )
         yield m_
 
-      case _ if Rewrite.arithmetic(pat) =>
+      case _ if pat.isSum =>
         val Some(ring) = Ring(pat.typ): @unchecked
         if expr.typ == ring.typ
-        then matches(config, state, ctx, b, ring, Rewrite.summands(ring, pat), Rewrite.summands(ring, expr), Rewrite.arithmetic(expr), m)
+        then matches(config, state, ctx, b, ring, summands(ring, pat), summands(ring, expr), expr.isSum, m)
         else Nil
 
       // equations modulo symmetry, e.g. the pattern a[k] == x matches x == a[i]
       case (App(Fun.eq_, inst, typ, args), App(Fun.eq_, inst_, typ_, args_)) =>
         val ms =
           for
-            m1 <- Rewrite.matches(state, inst, inst_, m)
-            m2 <- Rewrite.matches(state, typ, typ_, m1)
+            m1 <- matches(state, inst, inst_, m)
+            m2 <- matches(state, typ, typ_, m1)
             m3 <- matches(config, state, ctx, b, args, args_, m2) ++ matches(config, state, ctx, b, args, args_.reverse, m2)
           yield m3
         ms.distinct
 
       case (App(fun, inst, typ, args), App(fun_, inst_, typ_, args_)) if fun == fun_ && args.length == args_.length =>
         for
-          m1 <- Rewrite.matches(state, inst, inst_, m)
-          m2 <- Rewrite.matches(state, typ, typ_, m1)
+          m1 <- matches(state, inst, inst_, m)
+          m2 <- matches(state, typ, typ_, m1)
           m3 <- matches(config, state, ctx, b, args, args_, m2)
         yield m3
 
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
-        Rewrite.matches(state, typ, typ_, m)
+        matches(state, typ, typ_, m)
 
       case (Trace(init, deps, acc, bound, update), Trace(init_, deps_, acc_, bound_, update_)) =>
         for
@@ -167,7 +186,15 @@ object Rewrite:
       case _ =>
         Nil
 
-  def matches(config: Config, state: State, ctx: Ctx, b: Binding, pats: List[Expr], exprs: List[Expr], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+  def matches(
+      config: Config,
+      state: State,
+      ctx: Ctx,
+      b: Binding,
+      pats: List[Expr],
+      exprs: List[Expr],
+      m: Subst[Type, Expr]
+  ): List[Subst[Type, Expr]] =
     (pats, exprs) match
       case (Nil, Nil) =>
         List(m)
@@ -185,7 +212,17 @@ object Rewrite:
   // variables take the empty sum 0 only if the expression is a sum itself,
   // otherwise e.g. x + 1 would match 1 with x = 0, which rewrites literals inside of sums first
   @scala.annotation.targetName("matchesSums")
-  def matches(config: Config, state: State, ctx: Ctx, b: Binding, ring: Ring, pats: List[(Boolean, Expr)], exprs: List[(Boolean, Expr)], sum: Boolean, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+  def matches(
+      config: Config,
+      state: State,
+      ctx: Ctx,
+      b: Binding,
+      ring: Ring,
+      pats: List[(Boolean, Expr)],
+      exprs: List[(Boolean, Expr)],
+      sum: Boolean,
+      m: Subst[Type, Expr]
+  ): List[Subst[Type, Expr]] =
     def flexible(summand: (Boolean, Expr)) =
       summand match
         case (_, x: Var) => b.isPattern(x) && !m.vars.contains(x)
@@ -193,7 +230,11 @@ object Rewrite:
 
     val (flex, fixed) = pats.partition(flexible)
 
-    def fix(fixed: List[(Boolean, Expr)], exprs: List[(Boolean, Expr)], m: Subst[Type, Expr]): List[(List[(Boolean, Expr)], Subst[Type, Expr])] =
+    def fix(
+        fixed: List[(Boolean, Expr)],
+        exprs: List[(Boolean, Expr)],
+        m: Subst[Type, Expr]
+    ): List[(List[(Boolean, Expr)], Subst[Type, Expr])] =
       fixed match
         case Nil =>
           List((exprs, m))
@@ -214,7 +255,7 @@ object Rewrite:
         // a negated variable -x takes negative summands only, otherwise -x would match every sum,
         // e.g. y + 1 with x = -y - 1, whose result matches again with x = y + 1
         case List((sign, x)) if (exprs.nonEmpty || sum) && (sign || exprs.forall(!_._1)) =>
-          val rest = if sign then exprs else Rewrite.negate(exprs)
+          val rest = if sign then exprs else negate(exprs)
           matches(config, state, ctx, b, x, Rewrite.sum(ring, rest), m)
 
         case List(_) =>
@@ -288,7 +329,17 @@ object Rewrite:
 
   // the variables of the rule among the dependencies, from the values of their bound variables,
   // which must not depend on the accumulator
-  def instantiate(config: Config, state: State, ctx: Ctx, b: Binding, zs: List[(Expr, Var)], deps_ : List[Expr], bound_ : List[Var], accs: Set[Var], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+  def instantiate(
+      config: Config,
+      state: State,
+      ctx: Ctx,
+      b: Binding,
+      zs: List[(Expr, Var)],
+      deps_ : List[Expr],
+      bound_ : List[Var],
+      accs: Set[Var],
+      m: Subst[Type, Expr]
+  ): List[Subst[Type, Expr]] =
     // the first counter of the iterations, and if there is none, the first dependency of the expression
     val pairs = deps_ zip bound_
     val front = pairs.find((dep_, _) => iterations(ctx, dep_)).getOrElse(pairs.head)
@@ -297,36 +348,49 @@ object Rewrite:
       case Nil =>
         List(m)
 
+      case (z: Var, y) :: rest if m.vars.contains(y) =>
+        val value = m.vars(y)
+        val seq =
+          bound_.indexOf(value) match
+            case k if k >= 0 =>
+              deps_(k)
+
+            // the front comes first, also if the value does not use it, followed by the used ones
+            case _ =>
+              val used = pairs.filter((_, y_) => value.free.contains(y_))
+              val (deps__, bound__) = (front :: used.filter(_ != front)).unzip
+              Maps(deps__, bound__, value)
+
+        if (value.free intersect accs).nonEmpty
+        then Nil
+        else
+          for
+            m1 <- matches(config, state, ctx, b, z, seq, m)
+            m2 <- instantiate(config, state, ctx, b, rest, deps_, bound_, accs, m1)
+          yield m2
+
+      // the bound variable is unused by the pattern, e.g. in for xs do z, v :: y,
+      // then any dependency of the expression has the length of the iterations, which are all equal
       case (z: Var, y) :: rest =>
-        m.vars.get(y) match
-          case Some(value) if (value.free intersect accs).isEmpty =>
-            val seq =
-              bound_.indexOf(value) match
-                case k if k >= 0 =>
-                  deps_(k)
-
-                // the front comes first, also if the value does not use it, followed by the used ones
-                case _ =>
-                  val used = pairs.filter((_, y_) => value.free.contains(y_))
-                  val (deps__, bound__) = (front :: used.filter(_ != front)).unzip
-                  Maps(deps__, bound__, value)
-
-            matches(config, state, ctx, b, z, seq, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
-
-          // the bound variable is unused by the pattern, e.g. in for xs do z, v :: y,
-          // then any dependency of the expression has the length of the iterations, which are all equal
-          case None =>
-            matches(config, state, ctx, b, z, front._1, m).flatMap(instantiate(config, state, ctx, b, rest, deps_, bound_, accs, _))
-
-          case _ =>
-            Nil
+        for
+          m1 <- matches(config, state, ctx, b, z, front._1, m)
+          m2 <- instantiate(config, state, ctx, b, rest, deps_, bound_, accs, m1)
+        yield m2
 
       case _ =>
         Nil
 
   // each case of the update of the expression is covered by some case of the pattern, whose guard follows from its own
   @scala.annotation.targetName("matchesUpdates")
-  def matches(config: Config, state: State, ctx: Ctx, b: Binding, updates: List[Upd], updates_ : List[Upd], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+  def matches(
+      config: Config,
+      state: State,
+      ctx: Ctx,
+      b: Binding,
+      updates: List[Upd],
+      updates_ : List[Upd],
+      m: Subst[Type, Expr]
+  ): List[Subst[Type, Expr]] =
     updates_ match
       case Nil =>
         List(m)
@@ -344,14 +408,14 @@ object Rewrite:
   def iterations(ctx: Ctx, dep: Expr): Boolean =
     dep match
       case Butlast(ctx.↑(Counter(Zero.int, One.int, _))) => true
-      case _                                            => false
+      case _                                             => false
 
   // the guard of the pattern matches that of the expression, which instantiates the bound variables of the pattern
   // that do not occur in its result, e.g. b in if b then y + 1, and otherwise it must follow from that of the expression
   def guard(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     matches(config, state, ctx, b, guard, guard_, m) match
       case Nil if implies(config, state, ctx, b, guard_, guard, m) => List(m)
-      case ms                                                     => ms
+      case ms                                                      => ms
 
   def implies(config: Config, state: State, ctx: Ctx, b: Binding, guard_ : Expr, guard: Expr, m: Subst[Type, Expr]): Boolean =
     if guard == True
@@ -362,21 +426,9 @@ object Rewrite:
       val open = guard__.free.exists(x => b.isPattern(x) && !m.vars.contains(x))
       !open && holds(config, state, ctx, Imp(guard_, guard__))
 
-
-  // patterns that are sums on Int or Real
-  def arithmetic(pat: Expr): Boolean =
-    Ring(pat.typ) match
-      case Some(ring) =>
-        pat match
-          case ring.plus(_) | ring.minus(_, _) | ring.uminus(_) => true
-          case _                                                => false
-
-      case None =>
-        false
-
   // comparisons on Int and Real as the difference right - left as a normalized polynomial,
-  // which is nonnegative, or positive if strict; on Int, left < right is left + 1 <= right, hence never strict,
-  // and > and >= are < and <= with the sides swapped
+  // which is nonnegative, or positive if strict; on Int, left < right is left + 1 <= right, hence never strict;
+  // > and >= do not occur, the simplifier turns them into < and <= before rewriting
   def comparison(expr: Expr): List[(Ring, Boolean, Poly)] =
     def difference(ring: Ring, left: Expr, right: Expr, offset: Int) =
       (Arith.toPoly(ring, right) - Arith.toPoly(ring, left) - Poly.const(util.Rational(offset))).normalize
@@ -384,12 +436,8 @@ object Rewrite:
     expr match
       case Lt.int(left, right)  => List((Ring.int, false, difference(Ring.int, left, right, 1)))
       case Le.int(left, right)  => List((Ring.int, false, difference(Ring.int, left, right, 0)))
-      case Gt.int(left, right)  => List((Ring.int, false, difference(Ring.int, right, left, 1)))
-      case Ge.int(left, right)  => List((Ring.int, false, difference(Ring.int, right, left, 0)))
       case Lt.real(left, right) => List((Ring.real, true, difference(Ring.real, left, right, 0)))
       case Le.real(left, right) => List((Ring.real, false, difference(Ring.real, left, right, 0)))
-      case Gt.real(left, right) => List((Ring.real, true, difference(Ring.real, right, left, 0)))
-      case Ge.real(left, right) => List((Ring.real, false, difference(Ring.real, right, left, 0)))
       case _                    => Nil
 
   // the summands of a polynomial with their signs, whose factors and constant are positive
@@ -411,10 +459,10 @@ object Rewrite:
   // the summands of a sum with their signs, where 0 is dropped
   def summands(ring: Ring, expr: Expr): List[(Boolean, Expr)] =
     expr match
+      case ring.zero               => Nil
       case ring.plus(args)         => args.flatMap(summands(ring, _))
       case ring.minus(left, right) => summands(ring, left) ++ negate(summands(ring, right))
       case ring.uminus(arg)        => negate(summands(ring, arg))
-      case _ if ring.num(expr).exists(_.isZero) => Nil
       case _                       => List((true, expr))
 
   def negate(summands: List[(Boolean, Expr)]): List[(Boolean, Expr)] =
@@ -427,9 +475,9 @@ object Rewrite:
     val neg = summands.filterNot(_._1).map(_._2)
 
     (pos, neg) match
-      case (Nil, Nil)        => ring.lit(util.Rational(0))
-      case (Nil, n :: ns)    => ns.foldLeft(ring.uminus(n))(ring.minus(_, _))
-      case (_, _)            => neg.foldLeft(ring.plus(pos))(ring.minus(_, _))
+      case (Nil, Nil)     => ring.lit(util.Rational(0))
+      case (Nil, n :: ns) => ns.foldLeft(ring.uminus(n))(ring.minus(_, _))
+      case (_, _)         => neg.foldLeft(ring.plus(pos))(ring.minus(_, _))
 
   // the type parameters of the pattern are instantiated consistently, a single match or none;
   // defined sorts are expanded in both already (see Type.expand)

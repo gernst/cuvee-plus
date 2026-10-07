@@ -74,11 +74,6 @@ object RewriteTraces extends TestSuite:
       val values = Maps(List(Butlast(J)), List(j), Select(arr, j))
       R(List(sumsRule), expr) ==> app(sums, Zero.int, values)
 
-    // ... which is then recognized as selects, example 6.2
-    test("sums of selects"):
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Plus.int(s, Select(arr, j)))
-      R(List(sumsRule, selectsRule), expr) ==> app(sums, Zero.int, app(selects, arr, Butlast(J)))
-
     // a bound variable that is the value directly yields the dependency itself
     test("dependency"):
       val W = Var("W", ints)

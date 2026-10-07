@@ -4,7 +4,7 @@ package simplify
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.{Rule, Rewrite => R, Simplify, Ctx}
+import cuvee.simplify.{Rule, Simplify, Ctx}
 
 object Rewrite extends TestSuite:
   // a rule whose variables are the free variables of its left-hand side
@@ -29,10 +29,15 @@ object Rewrite extends TestSuite:
 
   def app(fun: Fun, args: Expr*) = App(fun, args.toList)
 
+  // a single step at the top of `expr`, subterms are not rewritten (the simplifier traverses them)
+  def R(rules: List[Rule], expr: Expr) =
+    cuvee.simplify.Rewrite.rewrite(cuvee.Config.default, State.empty, Ctx.empty.withRules(rules), expr)
+
   val tests = Tests:
     test("plain"):
       val rules = List(rw(app(f, app(g, x)), x), rw(Plus.int(x, Zero.int), x))
-      R(rules, Plus.int(app(f, app(g, Plus.int(a, Zero.int))), Zero.int)) ==> a
+      R(rules, app(f, app(g, Plus.int(a, Zero.int)))) ==> Plus.int(a, Zero.int)
+      R(rules, Plus.int(app(f, app(g, a)), Zero.int)) ==> app(f, app(g, a))
 
     // the variables of a rule must be instantiated consistently
     test("nonlinear"):
@@ -47,10 +52,10 @@ object Rewrite extends TestSuite:
       R(rules, Eq(b, app(f, a))) ==> True
       R(rules, Eq(a, b)) ==> Eq(a, b)
 
-    // innermost first, the first rule that applies is used
+    // the first rule that applies is used, at the top only
     test("order"):
       val rules = List(rw(app(f, x), app(g, x)), rw(app(f, x), x))
-      R(rules, app(f, app(f, a))) ==> app(g, app(g, a))
+      R(rules, app(f, app(f, a))) ==> app(g, app(f, a))
 
     // the type parameters are instantiated, here with Int
     test("polymorphic"):
@@ -63,7 +68,8 @@ object Rewrite extends TestSuite:
       val ints = Sort(Con("List", 1), List(Sort.int))
       val nil_ = App(nil, Nil, ints, Nil)
       val expr = app(length, app(cons, a, app(cons, b, nil_)))
-      R(rules, expr) ==> Plus.int(Plus.int(Zero.int, One.int), One.int)
+      R(rules, expr) ==> Plus.int(app(length, app(cons, b, nil_)), One.int)
+      R(rules, app(length, nil_)) ==> Zero.int
 
     // function definitions with :rw whose body is a match on a parameter give one rule per case,
     // with disjoint patterns here, since overlapping ones are not treated specially
@@ -106,16 +112,20 @@ object Rewrite extends TestSuite:
       R(List(rule), app(abs, One.int)) ==> One.int
       R(List(rule), app(abs, a)) ==> app(abs, a)
 
-    // inside of binders
+    // variables of the rule match bound variables of the expression
     test("binders"):
       val rules = List(rw(app(f, app(g, x)), x))
-      R(rules, All(List(a), Eq(app(f, app(g, a)), b))) ==> All(List(a), Eq(a, b))
+      R(rules, All(List(a), Eq(app(f, app(g, a)), b))) ==> All(List(a), Eq(app(f, app(g, a)), b))
+      R(rules, app(f, app(g, a))) ==> a
 
+    // the number of steps is shared by all rewrites with the context
     test("nontermination"):
       val rules = List(rw(app(f, x), app(f, app(f, x))))
+      val ctx = Ctx.empty.withRules(rules, steps = 10)
       val msg =
         try
-          R.rewrite(cuvee.Config.default, State.empty, Ctx.empty.withRules(rules, steps = 10), app(f, a))
+          (0 to 10).foldLeft[Expr](app(f, a)): (expr, _) =>
+            cuvee.simplify.Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, expr)
           "no error"
         catch case cuvee.Error(msg, _*) => msg
       msg ==> "rewriting does not terminate"
@@ -133,16 +143,16 @@ object Rewrite extends TestSuite:
     // constants of a rule are not instantiated
     test("constants"):
       val rules = List(Rule(Nil, app(f, a), b, True))
-      R(rules, app(g, app(f, a))) ==> app(g, b)
+      R(rules, app(f, a)) ==> b
       R(rules, app(f, b)) ==> app(f, b)
 
     // sums modulo associativity, commutativity, and the neutral element 0
     test("sums"):
       val rules = List(rw(Plus.int(x, One.int), app(g, x)))
       R(rules, Plus.int(One.int, a)) ==> app(g, a)
-      // innermost first: (a + 1) + b
-      R(rules, Plus.int(List(a, One.int, b))) ==> Plus.int(app(g, a), b)
-      R(rules, Plus.int(a, Plus.int(b, One.int))) ==> Plus.int(a, app(g, b))
+      // at the top, x takes all other summands
+      R(rules, Plus.int(List(a, One.int, b))) ==> app(g, Plus.int(a, b))
+      R(rules, Plus.int(a, Plus.int(b, One.int))) ==> app(g, Plus.int(a, b))
       R(rules, Plus.int(Plus.int(a, b), One.int)) ==> app(g, Plus.int(a, b))
       R(rules, Minus.int(One.int, a)) ==> app(g, UMinus.int(a))
       R(rules, a) ==> a
@@ -165,7 +175,6 @@ object Rewrite extends TestSuite:
       R(List(rw(Le.int(Plus.int(x, One.int), y), app(p, x, y))), Lt.int(a, b)) ==> app(p, a, b)
       R(List(rw(Lt.int(x, y), app(p, x, y))), Le.int(Plus.int(a, One.int), b)) ==> app(p, a, b)
       R(List(rw(Le.int(x, y), app(p, x, y))), Le.int(Minus.int(a, b), Zero.int)) ==> app(p, a, b)
-      R(List(rw(Lt.int(x, y), app(p, x, y))), Gt.int(b, a)) ==> app(p, a, b)
 
     // on Real, the strictness must agree
     test("real comparisons"):

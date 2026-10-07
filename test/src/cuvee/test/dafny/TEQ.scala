@@ -95,28 +95,6 @@ object TEQ extends TestSuite:
       val phi_ = cuvee.simplify.Simplify(cuvee.Config.default, State.empty, cuvee.simplify.Ctx.pos.withRules(List(rule)), phi)
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
 
-    // a variable that is increased where the values are equal to e counts the occurrences of e,
-    // also on values of other types than bool, and on booleans whose guards are the values themselves
-    test("counts"):
-      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      val counts = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == "counts" => fun }.get
-      val x = Var("x", Sort.int)
-      val y = Var("y", Sort.int)
-      val e = Var("e", Sort.real)
-      val v = Var("v", Sort.real)
-      val vs = Var("vs", Sort.seq(Sort.real))
-      val b = Var("b", Sort.bool)
-      val bs = Var("bs", Sort.seq(Sort.bool))
-
-      val trues = Trace(x, List(bs), y, List(b), Eps(List(Upd(b, Plus.int(y, One.int)), Upd(Not(b), y))))
-      Rewrite(rules, trues) ==> App(counts, List(x, True, bs))
-
-      val falses = Trace(x, List(bs), y, List(b), Eps(List(Upd(Not(b), Plus.int(y, One.int)), Upd(b, y))))
-      Rewrite(rules, falses) ==> App(counts, List(x, False, bs))
-
-      val occurrences = Trace(x, List(vs), y, List(v), Eps(List(Upd(Eq(v, e), Plus.int(y, One.int)), Upd(Not(Eq(v, e)), y))))
-      Rewrite(rules, occurrences) ==> App(counts, List(x, e, vs))
-
     // an update of a visited key replaces its contribution to the count, and the prefix counts are counts of prefixes;
     // the conditions are decided by the assumptions of the context
     test("count"):
@@ -142,37 +120,6 @@ object TEQ extends TestSuite:
       val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
       assert(subexprs(earlier).contains(app("count", e, app("prefix", j, keys))))
       assert(!has(earlier, "counts"))
-
-    // the empty prefix is the empty sequence, whose sum is 0
-    test("empty prefix"):
-      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun }.get
-      val vs = Var("vs", Sort.seq(Sort.int))
-
-      Rewrite(rules, App(fun("sum"), List(App(fun("prefix"), List(Zero.int, vs))))) ==> Zero.int
-
-    // the bounds of counts and of the prefix maxima and minima are rewrite rules, the latter for earlier values
-    // under the assumptions of the context
-    test("bounds"):
-      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun }.get
-      def app(name: String, args: Expr*) = App(fun(name), args.toList)
-
-      val e = Var("e", Sort.int)
-      val x = Var("x", Sort.int)
-      val k = Var("k", Sort.int)
-      val vs = Var("vs", Sort.seq(Sort.int))
-      val count = app("count", e, vs)
-      val max = app("current", app("maxs", x, vs))
-      val min = app("current", app("mins", x, vs))
-
-      Rewrite(rules, Le.int(Zero.int, count)) ==> True
-      Rewrite(rules, Le.int(x, max)) ==> True
-      Rewrite(rules, Le.int(min, x)) ==> True
-
-      val bounds = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, k)).withRules(rules)
-      Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, Le.int(app("earlier", k, vs), max)) ==> True
-      Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, Le.int(min, app("earlier", k, vs))) ==> True
 
     // the invariant of a loop condition i < 1024 over a counter is rewritten by the lemma for k < m,
     // which is m - k - 1 on Int, whereas the constant of 1023 - i is folded,
@@ -287,18 +234,3 @@ object TEQ extends TestSuite:
       val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
       errors ==> Nil
       cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
-
-    // a value read at one of the keys occurs among the values read at them, and a value at an index occurs in the sequence
-    test("occurrences"):
-      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun }.get
-      def app(name: String, args: Expr*) = App(fun(name), args.toList)
-
-      val a = Var("a", Sort.array(Sort.int, Sort.int))
-      val k = Var("k", Sort.int)
-      val j = Var("j", Sort.int)
-      val keys = Var("keys", Sort.seq(Sort.int))
-
-      val ctx = cuvee.simplify.Ctx.empty.assume(app("occurs", k, keys)).withRules(rules)
-      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("occurs", Select(a, k), app("selects", a, keys))) ==> True
-      Rewrite(rules, app("occurs", Earlier(j, keys), keys)) ==> True

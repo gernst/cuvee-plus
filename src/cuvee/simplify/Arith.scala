@@ -149,39 +149,29 @@ object Poly:
 // where the integral coefficients on Int become integer literals
 case class Ring(
     typ: Type,
+    zero: Expr,
+    num: Sugar.lit,
     uminus: Sugar.unary,
     plus: Sugar.commutative,
     minus: Sugar.associative,
     times: Sugar.commutative,
     lit: Rational => Expr
-):
-  // the value of a literal of this type
-  def num(expr: Expr): Option[Rational] =
-    expr match
-      case Lit(n: BigInt, `typ`)   => Some(Rational(n))
-      case Lit(r: Rational, `typ`) => Some(r)
-      case _                       => None
+)
 
 // the rings Int and Real, where the coefficients on Int must be integral
 object Ring:
   val int =
-    Ring(Sort.int, UMinus.int, Plus.int, Minus.int, Times.int, n =>
-      Error.report("non-integral coefficient in integer arithmetic", n):
-        require(n.den == 1)
-      Lit(n.num, Sort.int))
+    Ring(Sort.int, Zero.int, Num.int, UMinus.int, Plus.int, Minus.int, Times.int, n => Lit(n.toBigInt, Sort.int))
 
   val real =
-    Ring(Sort.real, UMinus.real, Plus.real, Minus.real, Times.real, r => Lit(r, Sort.real))
+    Ring(Sort.real, Zero.real, Num.real, UMinus.real, Plus.real, Minus.real, Times.real, r => Lit(r, Sort.real))
 
   // the ring of `typ`, if it is Int or Real
   def apply(typ: Type): Option[Ring] =
-    if typ == Sort.int then Some(int)
-    else if typ == Sort.real then Some(real)
-    else None
-
-  // the value of a literal on Int or Real
-  def num(expr: Expr): Option[Rational] =
-    int.num(expr) orElse real.num(expr)
+    typ match
+      case Sort.int  => Some(int)
+      case Sort.real => Some(real)
+      case _         => None
 
 // normal form of arithmetic on Int and Real as polynomials over atoms,
 // where atoms are all subterms that are not built from +, -, * and literals,
@@ -197,17 +187,16 @@ object Arith:
 
   // interpret an expression as a polynomial, flattening sums and products
   def toPoly(ring: Ring, expr: Expr): Poly =
-    ring.num(expr) match
-      case Some(n) =>
-        Poly.const(n)
+    expr match
+      case ring.num(n: BigInt)     => Poly.const(Rational(n))
+      case ring.num(n: Rational)   => Poly.const(n)
+      case ring.uminus(arg)        => -toPoly(ring, arg)
+      case ring.plus(args)         => args.map(toPoly(ring, _)).foldLeft(Poly.zero)(_ + _)
+      case ring.minus(left, right) => toPoly(ring, left) - toPoly(ring, right)
+      case ring.times(args)        => args.map(toPoly(ring, _)).foldLeft(Poly.one)(_ * _)
 
-      case None =>
-        expr match
-          case ring.uminus(arg)        => -toPoly(ring, arg)
-          case ring.plus(args)         => args.map(toPoly(ring, _)).foldLeft(Poly.zero)(_ + _)
-          case ring.minus(left, right) => toPoly(ring, left) - toPoly(ring, right)
-          case ring.times(args)        => args.map(toPoly(ring, _)).foldLeft(Poly.one)(_ * _)
-          case DivBy.real(left, Lit(r: Rational, _)) if ring == Ring.real && !r.isZero =>
-            toPoly(ring, left) * (Rational(1) / r)
-          case _ =>
-            Poly.atom(expr)
+      case DivBy.real(left, Lit(r: Rational, _)) if ring == Ring.real && !r.isZero =>
+        toPoly(ring, left) * (Rational(1) / r)
+
+      case _ =>
+        Poly.atom(expr)
