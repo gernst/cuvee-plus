@@ -62,6 +62,8 @@ case class Config(
     timeout: Int = 1000,
     // the data model of C for 32 or 64 bit Linux, ILP32 or LP64, i.e., the sizes of the integer types
     arch: Int = 64,
+    // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print
+    features: Set[String] = Set(),
     // keep last
     debug: Set[String] = Set()
 ):
@@ -70,12 +72,11 @@ case class Config(
 
   // the configuration with `feature` known to the languages of the input and of the output
   def having(feature: String) =
-    copy(input = input.having(feature), output = output.having(feature))
+    copy(input = input.having(feature), output = output.having(feature), features = features + feature)
 
-  // the configuration with the output in `lang`, which knows the features added to the input, e.g. by -teq,
-  // i.e., those that are not languages
+  // the configuration with the output in `lang`, which knows the features added so far
   def printing(lang: Lang) =
-    copy(output = lang.copy(features = lang.features ++ (input.features -- Config.langs.keySet)))
+    copy(output = lang.copy(features = lang.features ++ features))
 
   // the output in SMT-LIB if its language cannot express the output of a transform, e.g. C
   def usingMath =
@@ -277,7 +278,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.22.5")
+    println("Cuvée 0.22.6")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
