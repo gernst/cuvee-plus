@@ -9,7 +9,7 @@ import cuvee.simplify.{Rule, Simplify, Ctx}
 object Rewrite extends TestSuite:
   // a rule whose variables are the free variables of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
-    Rule(lhs.free.toList, lhs, rhs, cond)
+    Rule(Set(), lhs.free, lhs, rhs, cond)
 
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)
@@ -80,7 +80,7 @@ object Rewrite extends TestSuite:
 
       val file = os.temp(list + length + lemmas, suffix = ".dfy")
       val rules = cuvee.simplify.Rules.from(State.empty, Examples.input(file.toString))
-      rules.collect { case Rule(_, App(fun, _, _, List(App(constr, _, _, _))), _, True) => (fun.name.name, constr.name.name) } ==>
+      rules.collect { case Rule(_, _, App(fun, _, _, List(App(constr, _, _, _))), _, True) => (fun.name.name, constr.name.name) } ==>
         List(("length", "Nil"), ("length", "Cons"))
 
       val (cmds, errors) = Examples.output("-simplify", file.toString)
@@ -134,15 +134,15 @@ object Rewrite extends TestSuite:
     test("invalid rule"):
       val msg =
         try
-          Rule.check(Rule(List(x, y), app(f, x), y, True))
+          Rule.check(Rule(Set(), Set(x, y), app(f, x), y, True))
           "no error"
         catch case cuvee.Error(msg, _*) => msg
       msg ==> "variables of right hand side or condition do not occur in left hand side"
-      Rule.check(Rule(List(x), app(f, x), y, True))
+      Rule.check(Rule(Set(), Set(x), app(f, x), y, True))
 
     // constants of a rule are not instantiated
     test("constants"):
-      val rules = List(Rule(Nil, app(f, a), b, True))
+      val rules = List(Rule(Set(), Set(), app(f, a), b, True))
       R(rules, app(f, a)) ==> b
       R(rules, app(f, b)) ==> app(f, b)
 

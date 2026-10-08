@@ -191,6 +191,9 @@ object Printer extends cuvee.pipe.Printer:
       case DefineSort(Con(name, arity), params, body, _) =>
         apps(atom("define-sort"), mangle(name), list(lines(params)), lines(body))
 
+      case DeclareFun(Fun(name, Nil, Nil, res), _) =>
+        apps(atom("declare-const"), mangle(name), lines(res))
+
       // SMT-LIB declarations do not name the formal parameters
       case DeclareFun(Fun(name, Nil, formals, res), _) =>
         apps(atom("declare-fun"), mangle(name), list(lines(formals.types)), lines(res))

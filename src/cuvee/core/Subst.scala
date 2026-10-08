@@ -11,8 +11,9 @@ object Subst:
     Subst(Map(), Map())
 
   @targetName("Subst.freshParams")
-  def fresh(params: List[Param]): Subst[Param, Nothing] =
-    from(params, params.fresh)
+  def fresh(params: Iterable[Param]): Subst[Param, Nothing] =
+    val params_ = params.toList
+    from(params_, params_.fresh)
 
   @targetName("Subst.fromParams")
   def from[T <: Type](params: List[Param], types: List[T]): Subst[T, Nothing] =
@@ -21,8 +22,9 @@ object Subst:
     Subst(Map(params zip types*), Map())
 
   @targetName("Subst.freshVars")
-  def fresh(vars: List[Var]): Subst[Nothing, Expr] =
-    from(vars, vars.fresh)
+  def fresh(vars: Iterable[Var]): Subst[Nothing, Expr] =
+    val vars_ = vars.toList
+    from(vars_, vars_.fresh)
 
   // fresh variables for `xs`, and the renaming to them
   def rename(xs: List[Var]): (List[Var], Subst[Nothing, Var]) =

@@ -3,6 +3,7 @@ package cuvee.pipe
 import scala.annotation.targetName
 
 import cuvee.core._
+import cuvee.simplify.Rule
 
 trait Printer:
   // the width of the lines that the output is laid out for, set by -linewidth (see Config)
@@ -13,6 +14,11 @@ trait Printer:
   def lines(typ: Type): List[String]
   def lines(expr: Expr): List[String]
   def lines(prog: Prog): List[String]
+
+  def lines(rule: Rule): List[String] =
+    val Rule(params, vars, lhs, rhs, cond) = rule
+    val cmd = Assert(Lemma, params.toList, All(vars.toList, Imp(cond, Eq(lhs, rhs))), Attrs.from("rw"))
+    lines(cmd)
 
   @targetName("Printer.linesOfCmds")
   def lines(cmds: List[Cmd]): List[String] =

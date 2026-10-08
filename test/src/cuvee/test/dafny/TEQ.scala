@@ -12,7 +12,7 @@ import cuvee.simplify.{Rule, Rewrite}
 object TEQ extends TestSuite:
   // a rule whose variables are the free variables of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
-    Rule(lhs.free.toList, lhs, rhs, cond)
+    Rule(Set(), lhs.free, lhs, rhs, cond)
 
   def loops(file: os.Path) =
     os.read(file).contains("while")

@@ -165,8 +165,8 @@ object Ctx:
   // neither side is a variable, hence the equation is not among the chains
   def rules(phi: Expr): List[Rule] =
     phi match
-      case Eq(lhs, rhs) if rule(lhs, rhs) => List(Rule(Nil, lhs, rhs, True))
-      case Eq(rhs, lhs) if rule(lhs, rhs) => List(Rule(Nil, lhs, rhs, True))
+      case Eq(lhs, rhs) if rule(lhs, rhs) => List(Rule(Set(), Set(), lhs, rhs, True))
+      case Eq(rhs, lhs) if rule(lhs, rhs) => List(Rule(Set(), Set(), lhs, rhs, True))
       case _                              => Nil
 
   // whether lhs == rhs is a rule of the context: rhs is ground and lhs is not;

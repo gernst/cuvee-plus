@@ -13,7 +13,7 @@ import cuvee.simplify.{Ctx, Rule, Rewrite}
 object RewriteTraces extends TestSuite:
   // a rule whose variables are the free variables of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
-    Rule(lhs.free.toList, lhs, rhs, cond)
+    Rule(Set(), lhs.free, lhs, rhs, cond)
 
   val int = Sort.int
   val ints = Sort.seq(int)

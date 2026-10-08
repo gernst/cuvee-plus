@@ -102,6 +102,10 @@ object Simplify extends Transform:
   def show(printer: cuvee.pipe.Printer, expr: Expr): String =
     printer.lines(expr).map(_.trim).mkString(" ")
 
+  // expressions in debug output, on a single line
+  def show(printer: cuvee.pipe.Printer, rule: Rule): String =
+    printer.lines(rule).map(_.trim).mkString(" ")
+
   // a single step with the rewrite rules of the context at the top of `expr`,
   // where the conditions of the rules are decided by simplification in the context (see Rewrite)
   def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr, self: Option[Var] = None): Expr =

@@ -21,8 +21,8 @@ case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound
       case _      => false
 
 object Binding:
-  def from(xs: List[Var], self: Option[Var]) =
-    Binding(xs.toSet, Set(), Map(), Set(), self)
+  def from(xs: Set[Var], self: Option[Var]) =
+    Binding(xs, Set(), Map(), Set(), self)
 
 // a simple rewrite engine with the rules of the context (Ctx.rules), a single step at the top of an expression:
 // the first rule whose left hand side matches and whose instantiated condition holds is applied,
@@ -59,7 +59,7 @@ object Rewrite:
   // matching modulo associativity and commutativity may find several matches with different results,
   // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
   def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr, self: Option[Var] = None): Expr =
-    val b = Binding.from(rule.xs, self)
+    val b = Binding.from(rule.vars, self)
 
     val results =
       for
@@ -88,20 +88,25 @@ object Rewrite:
   def holds(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
     phi == True || Simplify.simplify(config, state, ctx.neutral, phi) == True
 
+  def unmatched =
+    Nil
+
   // all matches of the pattern `pat` to `expr` that extend `m`
   def matches(config: Config, state: State, ctx: Ctx, b: Binding, pat: Expr, expr: Expr, m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     (pat, expr) match
       case (x: Var, _) if b.local.contains(x) =>
-        if expr == b.local(x) then List(m) else Nil
+        if expr == b.local(x) then List(m) else unmatched
 
       case (x: Var, _) if b.isPattern(x) =>
         m.vars.get(x) match
           case Some(e) =>
-            if e == expr then List(m) else Nil
+            if e == expr
+            then List(m)
+            else unmatched
 
           // the variables of the rule must not capture variables bound in the expression
           case None if b.vars.contains(x) && (expr.free intersect b.bound).nonEmpty =>
-            Nil
+            unmatched
 
           case None =>
             for m_ <- matches(state, x.typ, expr.typ, m)
@@ -161,7 +166,7 @@ object Rewrite:
         val Some(ring) = Ring(pat.typ): @unchecked
         if expr.typ == ring.typ
         then matches(config, state, ctx, b, ring, summands(ring, pat), summands(ring, expr), expr.isSum, m)
-        else Nil
+        else unmatched
 
       // equations modulo symmetry, e.g. the pattern a[k] == x matches x == a[i]
       case (App(Fun.eq_, inst, typ, args), App(Fun.eq_, inst_, typ_, args_)) =>
@@ -215,7 +220,7 @@ object Rewrite:
         matches(config, state, ctx, b, pat, e, m)
 
       case _ =>
-        Nil
+        unmatched
 
   def matches(
       config: Config,
@@ -234,7 +239,7 @@ object Rewrite:
         matches(config, state, ctx, b, pat, expr, m).flatMap(matches(config, state, ctx, b, pats_, exprs_, _))
 
       case _ =>
-        Nil
+        unmatched
 
   // sums modulo associativity, commutativity, and the neutral element 0:
   // the summands that are not variables of the pattern are matched to some summand of the same sign first,
@@ -277,13 +282,13 @@ object Rewrite:
             ((sign_, expr), i) <- exprs.zipWithIndex
             if sign == sign_
             m_ <- matches(config, state, ctx, b, pat, expr, m)
-            result <- fix(rest, exprs.patch(i, Nil, 1), m_)
+            result <- fix(rest, exprs.patch(i, unmatched, 1), m_)
           yield result
 
     def distribute(flex: List[(Boolean, Expr)], exprs: List[(Boolean, Expr)], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
       flex match
         case Nil =>
-          if exprs.isEmpty then List(m) else Nil
+          if exprs.isEmpty then List(m) else unmatched
 
         // a negated variable -x takes negative summands only, otherwise -x would match every sum,
         // e.g. y + 1 with x = -y - 1, whose result matches again with x = y + 1
@@ -292,7 +297,7 @@ object Rewrite:
           matches(config, state, ctx, b, x, Rewrite.sum(ring, rest), m)
 
         case List(_) =>
-          Nil
+          unmatched
 
         case (sign, x) :: flex_ =>
           val single =
@@ -385,7 +390,7 @@ object Rewrite:
               List(((m ++ Subst(Map(), b.local))(arg), m))
 
             case _ =>
-              Nil
+              unmatched
 
         for
           (term, m1) <- choices
@@ -413,10 +418,10 @@ object Rewrite:
 
     m.vars.get(f) match
       case Some(Lam(xs, body_, _)) =>
-        if Subst.from(xs, terms)(body_) == expr then List(m) else Nil
+        if Subst.from(xs, terms)(body_) == expr then List(m) else unmatched
 
       case Some(value) =>
-        if Apply(value, terms) == expr then List(m) else Nil
+        if Apply(value, terms) == expr then List(m) else unmatched
 
       case None if replaced.forall((_, z) => body.free.contains(z))
           && (!b.vars.contains(f) || (body.free intersect b.bound).subsetOf(zs.toSet)) =>
@@ -425,7 +430,7 @@ object Rewrite:
         yield m_ + (f -> lam)
 
       case None =>
-        Nil
+        unmatched
 
   // the variables of the rule among the dependencies, from the values of their bound variables,
   // which must not depend on the accumulator
@@ -462,7 +467,7 @@ object Rewrite:
               Maps(deps__, bound__, value)
 
         if (value.free intersect accs).nonEmpty
-        then Nil
+        then unmatched
         else
           for
             m1 <- matches(config, state, ctx, b, z, seq, m)
@@ -478,7 +483,7 @@ object Rewrite:
         yield m2
 
       case _ =>
-        Nil
+        unmatched
 
   // each case of the update of the expression is covered by some case of the pattern, whose guard follows from its own
   @scala.annotation.targetName("matchesUpdates")
@@ -527,11 +532,11 @@ object Rewrite:
               yield m2
 
             case _ =>
-              Nil
+              unmatched
 
         if whole.nonEmpty then whole
         else if implies(config, state, ctx, b, guard_, guard, m) then List(m)
-        else Nil
+        else unmatched
 
       case ms =>
         ms
@@ -567,7 +572,7 @@ object Rewrite:
         val ms =
           if matched.nonEmpty then matched
           else if implies(config, state, ctx, b, guard_, phi, m) then List(m)
-          else Nil
+          else unmatched
 
         ms.flatMap(conjuncts(config, state, ctx, b, guard_, rest, _))
 
@@ -639,19 +644,19 @@ object Rewrite:
     (pat, typ) match
       case (p: Param, _) =>
         m.params.get(p) match
-          case Some(t) => if t == typ then List(m) else Nil
+          case Some(t) => if t == typ then List(m) else unmatched
           case None    => List(m + (p -> typ))
 
       case (Sort(con, args), Sort(con_, args_)) if con == con_ =>
         matches(state, args, args_, m)
 
       case _ =>
-        Nil
+        unmatched
 
   @scala.annotation.targetName("matchesTypes")
   def matches(state: State, pats: List[Type], types_ : List[Type], m: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     if pats.length != types_.length
-    then Nil
+    then unmatched
     else
       (pats zip types_).foldLeft(List(m)):
         case (ms, (pat, typ)) => ms.flatMap(matches(state, pat, typ, _))

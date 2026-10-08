@@ -160,5 +160,5 @@ object Functions extends TestSuite:
 
     test("printing"):
       val cmds = parse("(declare-const f (-> Int Bool Int)) (assert (= (@ f 1 true) 2))")
-      cuvee.smtlib.Printer.lines(cmds.init.last) ==> List("(declare-fun f () (-> Int Bool Int))", "")
+      cuvee.smtlib.Printer.lines(cmds.init.last) ==> List("(declare-const f (-> Int Bool Int))", "")
       cuvee.smtlib.Printer.lines(cmds.last) ==> List("(assert (= (@ f 1 true) 2))", "")

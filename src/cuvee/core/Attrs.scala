@@ -7,6 +7,9 @@ import cuvee.sexpr.Kw
 object Attrs:
   def empty = Attrs(Nil)
 
+  def from(kw: String) =
+    Attrs(List(kw -> None))
+
 // the attributes of declarations, loops, and differential equations as keywords with optional values,
 // as SMT-LIB annotations; the frontends store resolved values, e.g. expressions for contracts
 case class Attrs(attrs: List[(String, Option[Any])]):
