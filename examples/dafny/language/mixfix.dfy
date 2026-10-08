@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/mixfix.dfy
 // operators of different precedence and associativity, and if-then-else expressions
 function abs(x: int): int { if x < 0 then -x else x }
 

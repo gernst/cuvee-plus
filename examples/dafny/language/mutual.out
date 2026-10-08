@@ -1,0 +1,12 @@
+datatype Tree<a>
+  = node(value: a, children: Forest<a>)
+datatype Forest<a>
+  = leaf | grow(first: Tree<a>, rest: Forest<a>)
+
+datatype Box
+  = box(t: Tree<int>)
+
+function root(b: Box): int {
+  Tree_value(Box_t(b))
+}
+

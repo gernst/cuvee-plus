@@ -1,0 +1,3 @@
+(error
+  "term of a record not supported"
+  "Let(List(Var(Name(y,None),Sort(Con(Name(Pair,None),0),List()))),List(App(Fun(Name(pair,None),List(),List(Var(Name(x,Some(0)),Sort(Con(Name(Int,None),0),List())), Var(Name(x,Some(1)),Sort(Con(Name(Int,None),0),List()))),Sort(Con(Name(Pair,None),0),List())),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List())),Sort(Con(Name(Pair,None),0),List()),List(App(Fun(Name(x,None),List(),List(),Sort(Con(Name(Int,None),0),List())),List(),Sort(Con(Name(Int,None),0),List()),List()), App(Fun(Name(x,None),List(),List(),Sort(Con(Name(Int,None),0),List())),List(),Sort(Con(Name(Int,None),0),List()),List())))),Var(Name(y,None),Sort(Con(Name(Pair,None),0),List())))")

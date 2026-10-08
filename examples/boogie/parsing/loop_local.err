@@ -1,0 +1,2 @@
+error "modifies clause of loop lists variables that are not global"
+  "Set(Var(Name(x,None),Sort(Con(Name(Int,None),0),List())))"

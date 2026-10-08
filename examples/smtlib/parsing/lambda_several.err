@@ -1,0 +1,3 @@
+(error
+  "lambda of several variables not supported"
+  "List(Id(lambda), List(List(Id(x), Id(Int)), List(Id(y), Id(Int))), Id(x))")

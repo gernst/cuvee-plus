@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/teq/swap.dfy
 // the exchange of the first n elements of two arrays, element by element
 
 method swap(a: array<int, int>, b: array<int, int>, n: int) returns (a_: array<int, int>, b_: array<int, int>)

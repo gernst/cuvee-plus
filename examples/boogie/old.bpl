@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/old.bpl
 // expected: valid
 // old(e) refers to the values of the global variables at the entry of the procedure
 

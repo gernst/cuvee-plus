@@ -1,0 +1,25 @@
+(declare-fun p (Int Int) Bool)
+
+(declare-const g Int)
+
+(declare-const x Int)
+
+(declare-const y Int)
+
+(assert
+  (forall
+    ((y Int))
+    (=> (p (+ y 1) y) (p y (+ y 1)))))
+
+(assert
+  (forall ((x Int)) (=> (p x x) (p x 0))))
+
+(assert
+  (forall
+    ((z Int))
+    (=>
+      (and (= g (+ z 1)) (= z (+ z 1)) (p z z))
+      (p g z))))
+
+(assert (=> (= x y) (p x y)))
+

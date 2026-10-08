@@ -16,7 +16,7 @@ import cuvee.smtlib.Parser
 // the commands begin with these and further definitions that depend on the configuration (e.g. hybrid.dfy),
 // where the commands of the input that coincide with them are dropped, e.g. when printed output is parsed again;
 // the declarations of the prelude name the languages that they are part of,
-// which the output drops (see Printer.filter)
+// which the output drops (see Sink.known)
 trait Source:
   def newScanner(reader: Reader): Scanner
 

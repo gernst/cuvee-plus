@@ -4,7 +4,7 @@ package simplify
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.{Normalize => N}
+import cuvee.simplify.Normalize as N
 
 // formulas are normalized into equivalent clauses forall xs. antecedents ==> succedents
 object Normalize extends TestSuite:

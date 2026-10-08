@@ -1,0 +1,16 @@
+type Trace<a₀>;
+
+function f(J: Seq<int>, a: [int]int, n: int): bool {
+  trace(0, for J do s, j :: case j < n => s + a[j] case !(j < n) => s)
+    == trace(0, for J do s, j :: s)
+    && all(for J check j :: j < n)
+}
+
+function g(K: Trace<int>, n: int): bool { all(for ⌊K⌋ check k :: k < n) }
+
+function current<a>(X: Trace<a>): a;
+
+function consts<a>(n: int, v: a): Trace<a>;
+
+lemma <a> {:rw} (forall n: int, v: a :: 0 <= n ==> current(consts(n, v)) == v);
+

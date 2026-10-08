@@ -1,0 +1,1 @@
+error "parse error" "List(cmd, procdef, contract, block, '{')" " ... "

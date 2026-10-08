@@ -1,0 +1,105 @@
+const a: array<int, int>
+
+const n: int
+
+const x: int
+
+const p: int
+
+const q: int
+
+lemma {:rw} {:free} forall m: int :: a[m] < x <==> m < p
+
+lemma {:rw} {:free} forall m: int :: x < a[m] <==> q <= m
+
+lemma {:rw} {:free} forall m: int :: a[m] == x <==> p <= m < q
+
+type Trace<a₀>
+
+function counter(x₀: int, x₁: int, x₂: int): Trace<int>
+
+function current<a₀>(x₀: Trace<a₀>): a₀
+
+function incs(x0: int, b: int, ks: seq<int>, hs: seq<int>,
+              D: (int, int) -> bool, C: (int, int) -> bool,
+              F: (int, int) -> int): Trace<int>
+
+lemma {:rw} {:free}
+  forall x0: int, b: int, i: int, c: int, m: int, hs: seq<int>,
+         C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
+    trace(x0, for ⌊counter(i, c, m)⌋, hs
+              do x, k, h ::
+                case C(x, h) => x case D(x, h) && x < F(x, h) <= b => F(x, h))
+      == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+
+function decs(x0: int, b: int, ks: seq<int>, ls: seq<int>,
+              D: (int, int) -> bool, C: (int, int) -> bool,
+              F: (int, int) -> int): Trace<int>
+
+lemma {:rw} {:free}
+  forall x0: int, b: int, i: int, c: int, m: int, ls: seq<int>,
+         C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
+    trace(x0, for ⌊counter(i, c, m)⌋, ls
+              do x, k, l ::
+                case C(x, l) => x
+                case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
+      == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
+
+lemma {:rw} {:free}
+  forall l: int, h: int :: l <= h ==> (l <= (h + l) / 2 <==> true)
+
+lemma {:rw} {:free}
+  forall l: int, h: int :: l < h ==> ((h + l) / 2 < h <==> true)
+
+lemma {:free}
+  forall x0: int, b: int, ks: seq<int>, hs: seq<int>, D: (int, int) -> bool,
+         C: (int, int) -> bool, F: (int, int) -> int ::
+    x0 <= b ==> (current(incs(x0, b, ks, hs, D, C, F)) <= b <==> true)
+
+lemma {:free}
+  forall x0: int, b: int, ks: seq<int>, ls: seq<int>, D: (int, int) -> bool,
+         C: (int, int) -> bool, F: (int, int) -> int ::
+    b <= x0 ==> (b <= current(decs(x0, b, ks, ls, D, C, F)) <==> true)
+
+function incs_(x0: int, b: int, ks: seq<int>, hs: seq<int>,
+               D: (int, int) -> bool, C: (int, int) -> bool,
+               F: (int, int) -> int): Trace<int>
+
+lemma {:rw} {:free}
+  forall X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, hs: seq<int>,
+         C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
+    X == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+      <==> X == incs_(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F) && current(X) <= b
+
+function decs_(x0: int, b: int, ks: seq<int>, ls: seq<int>,
+               D: (int, int) -> bool, C: (int, int) -> bool,
+               F: (int, int) -> int): Trace<int>
+
+lemma {:rw} {:free}
+  forall X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, ls: seq<int>,
+         C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
+    X == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
+      <==> X == decs_(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F) && b <= current(X)
+
+method search() returns (i: int)
+  requires 0 <= p <= q <= n
+  ensures 0 <= i ==> i < n && a[i] == x
+  ensures i < 0 ==> (forall k: int :: 0 <= k < n ==> a[k] != x)
+{
+  var lo: int, hi: int, mid: int;
+  lo := 0;
+  hi := n;
+  i := -1;
+  while lo < hi {
+    mid := (lo + hi) / 2;
+    if a[mid] < x {
+      lo := mid + 1;
+    } else if x < a[mid] {
+      hi := mid;
+    } else {
+      i := mid;
+      break;
+    }
+  }
+}
+

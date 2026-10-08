@@ -1,0 +1,5 @@
+# ./Cuvee.sh -arch 64 -verify -z3 examples/yml/parsing/ilp32.yml
+# the data model of the task determines the sizes of the integer types, regardless of -arch
+input_files: long.c
+options:
+  data_model: ILP32

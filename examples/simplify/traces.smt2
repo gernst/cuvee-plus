@@ -1,3 +1,4 @@
+; ./Cuvee.sh -simplify examples/simplify/traces.smt2
 ; the combinators of trace equation systems: guards and results are simplified, cases with guard false are dropped,
 ; results are simplified under their guard, and all is true if its body is;
 ; dependencies whose bound variables are unused are dropped, except counters and the first one if none remains,

@@ -1,0 +1,4 @@
+(error
+  "goal does not hold"
+  "Sat"
+  "(forall ((result Int)) (=> (and true true) (and (truth 0) (=> true true))))")

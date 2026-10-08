@@ -1,4 +1,4 @@
-// options: -hybrid
+// ./Cuvee.sh -hybrid -verify -simplify examples/hybrid/par.dfy
 // methods with assumption-commitment contracts over the global history of events,
 // composed in parallel, verified with -hybrid -verify,
 // where -hybrid declares the type of histories with the methods send and receive,

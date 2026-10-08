@@ -1,0 +1,4 @@
+# ./Cuvee.sh -print null examples/yml/parsing/language.yml
+input_files: a.c
+options:
+  language: Java

@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/invalid_sets.dfy
 // expected: invalid
 // finite sets and multisets, verified with cvc5
 

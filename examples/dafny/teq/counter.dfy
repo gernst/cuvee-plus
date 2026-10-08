@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/teq/counter.dfy
 // a counter that runs up to n, which it reaches at the end
 
 method counter(n: int) returns (i: int)

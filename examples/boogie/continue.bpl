@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/continue.bpl
 // expected: valid
 // continue (not Boogie) must re-establish the invariant
 

@@ -1,0 +1,4 @@
+# ./Cuvee.sh -arch 64 -verify -z3 examples/yml/parsing/lp64.yml
+input_files: long.c
+options:
+  data_model: LP64

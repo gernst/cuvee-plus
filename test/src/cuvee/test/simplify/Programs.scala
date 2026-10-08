@@ -5,7 +5,8 @@ import utest._
 
 import cuvee.Config
 import cuvee.core._
-import cuvee.simplify.{Context, Simplify}
+import cuvee.simplify.Context
+import cuvee.simplify.Simplify
 
 // programs are simplified statement by statement, each helper normalizes its own constructor
 object Programs extends TestSuite:

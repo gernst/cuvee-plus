@@ -3,22 +3,16 @@ package dafny
 
 import utest._
 
-// runs the examples with -verify against z3,
-// the first line of each example states whether all goals are valid:
-//   "// expected: valid" or "// expected: invalid"
+// the examples in dafny/vcgen, each with its command line in the first line, e.g. ./Cuvee.sh -verify -z3 ...,
+// whose expected reports state whether the goals hold
 object Verify extends TestSuite:
-  // errors reported for each expected result
-  val expected = Map(
-    "// expected: valid" -> Nil,
-    "// expected: invalid" -> List("goal does not hold")
-  )
-
   val tests =
-    Examples.tests(Examples.find(os.sub / "dafny" / "vcgen", "dfy").filter(Examples.supported)): file =>
-      val first = os.read.lines(file).head
-      assert(expected.contains(first))
+    Examples.checked(os.sub / "dafny" / "vcgen", "dfy")
 
-      Examples.errors("-verify", "-z3", file.toString) ==> expected(first)
+// the examples in hybrid, each with its command line in the first line, e.g. ./Cuvee.sh -hybrid -verify -simplify ...
+object HybridExamples extends TestSuite:
+  val tests =
+    Examples.checked(os.sub / "hybrid", "dfy")
 
 // hybrid programs, whose goals are generated without errors, not passed to a solver:
 // differential cuts for each invariant in sequence, followed by differential weakening,
@@ -37,14 +31,6 @@ object VerifyHybrid extends TestSuite:
     cuvee.dafny.Printer.lines(phi).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:
-    test("examples"):
-      for file <- Examples.find(os.sub / "hybrid", "dfy")
-      do Examples.errors(List("-verify", "-simplify", "-print", "null") ++ Examples.options(file) :+ file.toString*) ==> Nil
-
-    test("no history"):
-      Examples.check("dfy", "method p() { } method m() { parallel { p(); } }", "-verify") ==>
-        List("parallel composition requires a global variable history")
-
     test("weakening"):
       ode(Nil, Le.real(zero, x)) ==> "forall x₁: real :: 0.0 < y ==> 0.0 <= x₁"
 

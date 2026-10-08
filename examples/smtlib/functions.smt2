@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/functions.smt2
 ; function types and applications of SMT-LIB 2.7, (-> A B C) and (@ f a b), where @ is left-associative,
 ; (@ g 1 2) applies g to 1 and its result to 2
 (declare-const f (-> Int Bool Int))

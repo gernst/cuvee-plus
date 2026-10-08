@@ -1,0 +1,4 @@
+(error
+  "initial value of global variable must not call functions"
+  "g"
+  "Cond(Call(f,List()),None)")

@@ -1,0 +1,12 @@
+function {:smt2} {:c} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>
+
+const c: int
+
+push 1
+
+check
+
+model
+
+pop 1
+

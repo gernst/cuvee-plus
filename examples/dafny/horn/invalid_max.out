@@ -1,0 +1,50 @@
+logic HORN
+
+function max_pre(x: int, y: int): bool
+
+function max_post(x: int, y: int, m: int): bool
+
+function max_assign_1(x: int, y: int, m: int): bool
+
+function max_assign_2(x: int, y: int, m: int): bool
+
+axiom forall x: int, y: int :: max_pre(x, y) && x <= y ==> max_assign_1(x, y, y)
+
+axiom
+  forall x: int, y: int, m: int :: max_assign_1(x, y, m) ==> max_post(x, y, m)
+
+axiom
+  forall x: int, y: int :: max_pre(x, y) && !(x <= y) ==> max_assign_2(x, y, x)
+
+axiom
+  forall x: int, y: int, m: int :: max_assign_2(x, y, m) ==> max_post(x, y, m)
+
+function main_pre(x: int, y: int): bool
+
+function main_post(x: int, y: int): bool
+
+function main_call_1(x: int, y: int, m₁: int): bool
+
+function main_spec_2(x: int, y: int, m₁: int): bool
+
+axiom forall x: int, y: int :: true ==> main_pre(x, y)
+
+axiom forall x: int, y: int :: main_pre(x, y) ==> max_pre(x, y)
+
+axiom
+  forall x: int, y: int, m₂: int ::
+    main_pre(x, y) && max_post(x, y, m₂) ==> main_call_1(x, y, m₂)
+
+axiom forall x: int, y: int, m₁: int :: main_call_1(x, y, m₁) ==> m₁ == x
+
+axiom
+  forall x: int, y: int, m₁: int ::
+    main_call_1(x, y, m₁) && true ==> main_spec_2(x, y, m₁)
+
+axiom
+  forall x: int, y: int, m₁: int :: main_spec_2(x, y, m₁) ==> main_post(x, y)
+
+check
+
+model
+

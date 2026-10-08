@@ -1,0 +1,3 @@
+(error
+  "lambda of array type not supported in Dafny"
+  "Lam(List(Var(Name(x,None),Sort(Con(Name(Int,None),0),List()))),Var(Name(x,None),Sort(Con(Name(Int,None),0),List())),Sort(Con(Name(Array,None),2),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List()))))")

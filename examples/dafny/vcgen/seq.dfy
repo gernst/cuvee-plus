@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify examples/dafny/vcgen/seq.dfy
 // expected: valid
 // sequences: literals, concatenation, length, indexing, slices, membership and prefix
 

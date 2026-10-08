@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/array.dfy
 // expected: valid
 // SMT-LIB arrays
 

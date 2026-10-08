@@ -1,3 +1,4 @@
+// ./Cuvee.sh -chc -monomorph examples/boogie/horn/max.bpl
 // expected: valid
 // conditionals, the postcondition of max is inferred
 

@@ -1,0 +1,2 @@
+error "differential equation ticks the history, which is not in the modifies clause"
+  "List(Var(Name(history,None),Sort(Con(Name(history,None),1),List(Sort(Con(Name(Int,None),0),List())))))"

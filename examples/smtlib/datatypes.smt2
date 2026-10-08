@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/datatypes.smt2
 ; generic, recursive, and mutually recursive datatypes
 
 (declare-datatype Color ((red) (green) (blue)))

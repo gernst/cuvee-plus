@@ -1,0 +1,4 @@
+(error
+  "goal does not hold"
+  "Sat"
+  "(forall ((result Int)) (=> (and true true) (forall ((a$1 (Array Int Int))) (and (= (select a$1 0) 0) (=> true true)))))")

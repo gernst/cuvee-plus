@@ -1,3 +1,4 @@
+; ./Cuvee.sh -simplify examples/simplify/annotations.smt2
 ; testers on constructor applications are evaluated, type annotations are kept
 (declare-datatype Stack (par (a) ((nil) (cons (head a) (tail (Stack a))))))
 (declare-const xs (Stack Int))

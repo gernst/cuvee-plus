@@ -1,0 +1,104 @@
+logic HORN;
+
+function incr_pre(counter: int, limit: int): bool;
+
+function incr_post(g₀: int, g₁: int, counter: int, limit: int): bool;
+
+function incr_assign_1(
+  counter₁: int,
+  limit₂: int,
+  counter: int,
+  limit: int): bool;
+
+axiom
+  (forall counter₁: int, limit₂: int, counter: int, limit: int ::
+     incr_pre(counter₁, limit₂) && counter == counter₁ && limit == limit₂
+       ==> incr_assign_1(counter₁, limit₂, counter + 1, limit));
+
+axiom
+  (forall counter₁: int, limit₂: int, counter: int, limit: int ::
+     incr_assign_1(counter₁, limit₂, counter, limit)
+       ==> incr_post(counter₁, limit₂, counter, limit));
+
+function main_pre(counter: int, limit: int): bool;
+
+function main_post(g₀: int, g₁: int, counter: int, limit: int): bool;
+
+function main_inv_1(counter₃: int, limit₄: int, counter: int, limit: int): bool;
+
+function main_exit_2(
+  counter₃: int,
+  limit₄: int,
+  counter: int,
+  limit: int): bool;
+
+function main_call_3(
+  counter₃: int,
+  limit₄: int,
+  counter: int,
+  limit: int): bool;
+
+function main_spec_4(
+  counter₃: int,
+  limit₄: int,
+  counter: int,
+  limit: int): bool;
+
+axiom (forall counter: int, limit: int :: true ==> main_pre(counter, limit));
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int ::
+     main_pre(counter₃, limit₄)
+       && counter == counter₃
+       && limit == limit₄
+       && (0 <= counter && counter <= limit)
+       ==> main_inv_1(counter₃, limit₄, counter, limit));
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int ::
+     main_inv_1(counter₃, limit₄, counter, limit) && counter < limit
+       ==> incr_pre(counter, limit));
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int, counter₅: int ::
+     main_inv_1(counter₃, limit₄, counter, limit)
+       && counter < limit
+       && incr_post(counter, limit, counter₅, limit)
+       ==> main_call_3(counter₃, limit₄, counter₅, limit));
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int ::
+     main_call_3(counter₃, limit₄, counter, limit)
+       ==> main_inv_1(counter₃, limit₄, counter, limit));
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int ::
+     main_inv_1(counter₃, limit₄, counter, limit) && !(counter < limit)
+       ==> main_exit_2(counter₃, limit₄, counter, limit));
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int ::
+     main_exit_2(counter₃, limit₄, counter, limit) ==> counter == limit);
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int ::
+     main_exit_2(counter₃, limit₄, counter, limit) && true
+       ==> main_spec_4(counter₃, limit₄, counter, limit));
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int ::
+     main_spec_4(counter₃, limit₄, counter, limit)
+       ==> main_post(counter₃, limit₄, counter, limit));
+
+axiom
+  (forall counter₃: int, limit₄: int, counter: int, limit: int ::
+     main_pre(counter₃, limit₄)
+       && counter == counter₃
+       && limit == limit₄
+       && !(0 <= counter && counter <= limit)
+       ==> main_post(counter₃, limit₄, counter, limit));
+
+check;
+
+model;
+

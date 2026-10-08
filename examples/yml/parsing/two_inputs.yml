@@ -1,0 +1,2 @@
+# ./Cuvee.sh -print null examples/yml/parsing/two_inputs.yml
+input_files: [a.c, b.c]

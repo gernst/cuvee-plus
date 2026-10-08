@@ -1,0 +1,70 @@
+logic HORN
+
+type T = int
+
+function incr_pre(y: int, count: int): bool
+
+function incr_post(y: int, g₀: int, z: int, count: int): bool
+
+function incr_assign_1(y: int, count₁: int, z: int, count: int): bool
+
+function incr_assign_2(y: int, count₁: int, z: int, count: int): bool
+
+axiom
+  forall y: int, count₁: int, count: int ::
+    incr_pre(y, count₁) && count == count₁
+      ==> incr_assign_1(y, count₁, y + 1, count)
+
+axiom
+  forall y: int, count₁: int, z: int, count: int ::
+    incr_assign_1(y, count₁, z, count)
+      ==> incr_assign_2(y, count₁, z, count + 1)
+
+axiom
+  forall y: int, count₁: int, z: int, count: int ::
+    incr_assign_2(y, count₁, z, count) ==> incr_post(y, count₁, z, count)
+
+function main_pre(a: int, count: int): bool
+
+function main_post(a: int, g₀: int, b: int, count: int): bool
+
+function main_assign_1(a: int, count₂: int, b: int, count: int, c₃: int): bool
+
+function main_call_2(a: int, count₂: int, b: int, count: int, c₃: int): bool
+
+function main_spec_3(a: int, count₂: int, b: int, count: int, c₃: int): bool
+
+axiom forall a: int, count: int :: true ==> main_pre(a, count)
+
+axiom
+  forall a: int, count₂: int, b: int, count: int ::
+    main_pre(a, count₂) && count == count₂
+      ==> main_assign_1(a, count₂, b, count, count)
+
+axiom
+  forall a: int, count₂: int, b: int, count: int, c₃: int ::
+    main_assign_1(a, count₂, b, count, c₃) ==> incr_pre(a, count)
+
+axiom
+  forall a: int, count₂: int, b: int, count: int, c₃: int, b₄: int,
+         count₅: int ::
+    main_assign_1(a, count₂, b, count, c₃) && incr_post(a, count, b₄, count₅)
+      ==> main_call_2(a, count₂, b₄, count₅, c₃)
+
+axiom
+  forall a: int, count₂: int, b: int, count: int, c₃: int ::
+    main_call_2(a, count₂, b, count, c₃) ==> b == a + 1 && count == c₃ + 1
+
+axiom
+  forall a: int, count₂: int, b: int, count: int, c₃: int ::
+    main_call_2(a, count₂, b, count, c₃) && true
+      ==> main_spec_3(a, count₂, b, count, c₃)
+
+axiom
+  forall a: int, count₂: int, b: int, count: int, c₃: int ::
+    main_spec_3(a, count₂, b, count, c₃) ==> main_post(a, count₂, b, count)
+
+check
+
+model
+

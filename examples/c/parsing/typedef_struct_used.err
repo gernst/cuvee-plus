@@ -1,0 +1,4 @@
+(error
+  "parse error"
+  "List(unit, top, function, block, stmt, ';')"
+  "{ int n ; } s ; return 0 ; ... ")

@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/types.dfy
 // types with members, and datatypes with members, accessed on variables
 type foo {
   function f(x: int): int

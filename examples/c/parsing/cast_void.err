@@ -1,0 +1,1 @@
+(error "unsupported cast" "VoidType" "Num(0)")

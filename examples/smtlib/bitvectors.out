@@ -1,0 +1,29 @@
+(declare-const x (_ BitVec 8))
+
+(declare-const y (_ BitVec 8))
+
+(declare-const
+  a
+  (Array Int (_ BitVec 8)))
+
+(assert
+  (= (bvadd x #b00000001) (bvsub y #b00000001)))
+
+(assert
+  (bvult x (select a 0)))
+
+(assert
+  (=
+    ((_ extract 3 0) (concat x y))
+    ((_ extract 3 0) y)))
+
+(assert
+  (=
+    ((_ zero_extend 8) x)
+    (concat #b00000000 x)))
+
+(assert
+  (= #b00000101 (bvand x (bvnot y))))
+
+(check-sat)
+

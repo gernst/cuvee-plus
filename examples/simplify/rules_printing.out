@@ -1,0 +1,4 @@
+function f(x: int): int
+
+axiom {:rw} forall x: int :: f(f(x)) == x
+

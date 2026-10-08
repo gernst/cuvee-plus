@@ -1,0 +1,2 @@
+error "parallel composition of statements that are not calls"
+  "Assign(List(Var(Name(x,None),Sort(Con(Name(Int,None),0),List()))),List(Lit(1,Sort(Con(Name(Int,None),0),List()))))"

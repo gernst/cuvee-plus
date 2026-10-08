@@ -1,3 +1,4 @@
+; ./Cuvee.sh -simplify examples/simplify/real.smt2
 ; arithmetic on Real is normalized into polynomials with rational coefficients,
 ; division by a nonzero literal is multiplication by its inverse,
 ; comparisons have integral coefficients without a common divisor

@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/real.bpl
 // expected: valid
 // arithmetic and comparison are overloaded for int and real
 

@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/bitvectors.smt2
 ; bitvectors of fixed width, whose functions are instantiated for the widths of their arguments
 (declare-const x (_ BitVec 8))
 (declare-const y (_ BitVec 8))

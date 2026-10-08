@@ -1,0 +1,3 @@
+error "operator not defined for type"
+  "Name(as_int,None)"
+  "Sort(Con(Name(Bool,None),0),List())"

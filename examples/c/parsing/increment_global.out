@@ -1,0 +1,38 @@
+function {:c} {:smt2} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>
+
+datatype {:c} Ptr<a>
+  = null | ptr(addr: int)
+
+datatype {:c} Void
+  = void
+
+function {:c} {:rw} truth(x: int): bool {
+  x != 0
+}
+
+function {:c} {:rw} number(b: bool): int {
+  if b then 1 else 0
+}
+
+function {:c} {:rw} quotient(a: int, b: int): int {
+  if 0 <= a then a / b else -(-a / b)
+}
+
+function {:c} {:rw} remainder(a: int, b: int): int {
+  if 0 <= a then a % b else -(-a % b)
+}
+
+var g: int
+
+method f() returns (result: int)
+  modifies g
+{
+  var tmp₁: int;
+  {
+    tmp₁ := g;
+    g := g + 1;
+    result := tmp₁;
+    return;
+  }
+}
+

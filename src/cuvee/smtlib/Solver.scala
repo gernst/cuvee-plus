@@ -116,26 +116,29 @@ object Solver:
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
   // and interprets the answers to queries in that state
-  // the declarations that SMT-LIB has built in ({:smt2}, see the preludes) and those of higher-order features ({:ho})
-  // are not passed to the solver,
+  // the declarations that SMT-LIB has built in ({:smt2}, see the preludes) are not passed to the solver,
+  // all others are, without their attributes, e.g. those of higher-order features ({:ho}), which a solver may reject;
   // goals that do not hold are reported in SMT-LIB
   class Sink(init: State, solver: Solver) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
     val printer = Printer
+
+    override def knows =
+      Set("smt2")
 
     // the answer to the last check-sat, a model is available only if it is sat
     var status: Option[Status] = None
 
     def query(cmd: Cmd) =
       cmd match
-        // only the attribute :named is passed on, the solvers reject unknown ones, e.g. :rw
+        // only the attributes :named and :pattern are passed on, the solvers reject unknown ones, e.g. :rw
         case Assert(Axiom, params, phi, attrs) =>
-          (solver.ack(Assert(Axiom, params, phi, named(attrs))), Nil, this)
+          (solver.ack(Assert(Axiom, params, phi, attrs.retain("named", "pattern"))), Nil, this)
 
         // lemmas with the attribute :free are assumed without proof, like axioms,
         // although they are meant to follow from the theory, e.g. lemmas whose proof is left to another tool
         case Assert(Lemma, params, phi, attrs) if attrs.contains("free") =>
-          (solver.ack(Assert(Axiom, params, phi, named(attrs))), Nil, this)
+          (solver.ack(Assert(Axiom, params, phi, attrs.retain("named", "pattern"))), Nil, this)
 
         // the solver's answer is reported if the goal is not valid, i.e., sat or unknown
         case Assert(justify, params, phi, attrs) =>
@@ -144,7 +147,7 @@ object Solver:
             Error.raise(justify.toString.toLowerCase + " does not hold", status, printer.lines(phi).map(_.trim).mkString(" "))
 
           if justify == Lemma
-          then solver.ack(Assert(Axiom, params, phi, named(attrs)))
+          then solver.ack(Assert(Axiom, params, phi, attrs.retain("named", "pattern")))
 
           (Ack.Success, Nil, this)
 
@@ -171,12 +174,10 @@ object Solver:
         case GetModel if status != Some(Status.Sat) =>
           (Ack.Done, Nil, this)
 
-        // a model that cannot be read is reported as an error, which keeps the answer to check-sat before it
+        // a model that cannot be read is an error of the pipeline (see Pipe.run), the answer to check-sat before it
+        // has been reported already
         case GetModel =>
-          val model =
-            try parser.model(solver.query(cmd))
-            catch case error: Error => error
-          (model, Nil, this)
+          (parser.model(solver.query(cmd)), Nil, this)
 
         case Exit =>
           val ack = solver.ack(cmd)
@@ -186,11 +187,6 @@ object Solver:
         case Done =>
           solver.destroy()
           (Ack.Done, Nil, this)
-
-        // the declarations of higher-order features ({:ho}, e.g. the applications of function values of Dafny)
-        // are not passed either, since the solvers do not support them (polymorphic declarations)
-        case decl: Decl if decl.attrs.contains("smt2") || decl.attrs.contains("ho") =>
-          (Ack.Success, Nil, this)
 
         // the state is updated only once the solver has accepted the declaration,
         // attributes are kept in the state but not sent to the solver
@@ -214,10 +210,6 @@ object Solver:
           val ack = solver.ack(cmd)
           parser.reset()
           (ack, Nil, this)
-
-    // the names of assertions, e.g. for labels
-    def named(attrs: Attrs): Attrs =
-      Attrs(attrs.attrs.filter(_._1 == "named"))
 
     // SMT-LIB does not admit attributes on declarations and definitions,
     // assertions are handled separately and keep their names

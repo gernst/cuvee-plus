@@ -1,0 +1,2 @@
+error "application of a value that is not a function"
+  "Var(Name(x,None),Sort(Con(Name(Int,None),0),List()))"

@@ -1,0 +1,34 @@
+(declare-sort Lst 1)
+
+(declare-const b Bool)
+
+(declare-fun cons<Int> (Int (Lst Int)) (Lst Int))
+
+(declare-const nil<Int> (Lst Int))
+
+(define-fun
+  single<Int>
+  ((x Int))
+  (Lst Int)
+  (cons<Int> x nil<Int>))
+
+(assert
+  (=
+    (single<Int> 1)
+    (cons<Int> 1 nil<Int>)))
+
+(declare-fun cons<Bool> (Bool (Lst Bool)) (Lst Bool))
+
+(declare-const nil<Bool> (Lst Bool))
+
+(define-fun
+  single<Bool>
+  ((x Bool))
+  (Lst Bool)
+  (cons<Bool> x nil<Bool>))
+
+(assert
+  (= (single<Bool> b) (single<Bool> true)))
+
+(check-sat)
+

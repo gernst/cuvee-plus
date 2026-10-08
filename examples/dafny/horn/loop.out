@@ -1,0 +1,45 @@
+logic HORN
+
+function main_pre(n: int): bool
+
+function main_post(n: int): bool
+
+function main_assign_1(n: int, i₁: int): bool
+
+function main_inv_2(n: int, i₁: int): bool
+
+function main_exit_3(n: int, i₁: int): bool
+
+function main_assign_4(n: int, i₁: int): bool
+
+function main_spec_5(n: int, i₁: int): bool
+
+axiom forall n: int :: true ==> main_pre(n)
+
+axiom forall n: int :: main_pre(n) && 0 <= n ==> main_assign_1(n, 0)
+
+axiom forall n: int, i₁: int :: main_assign_1(n, i₁) ==> main_inv_2(n, i₁)
+
+axiom
+  forall n: int, i₁: int ::
+    main_inv_2(n, i₁) && i₁ < n ==> main_assign_4(n, i₁ + 1)
+
+axiom forall n: int, i₁: int :: main_assign_4(n, i₁) ==> main_inv_2(n, i₁)
+
+axiom
+  forall n: int, i₁: int ::
+    main_inv_2(n, i₁) && !(i₁ < n) ==> main_exit_3(n, i₁)
+
+axiom forall n: int, i₁: int :: main_exit_3(n, i₁) ==> i₁ == n
+
+axiom
+  forall n: int, i₁: int :: main_exit_3(n, i₁) && true ==> main_spec_5(n, i₁)
+
+axiom forall n: int, i₁: int :: main_spec_5(n, i₁) ==> main_post(n)
+
+axiom forall n: int :: main_pre(n) && !(0 <= n) ==> main_post(n)
+
+check
+
+model
+

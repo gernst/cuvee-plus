@@ -1,3 +1,4 @@
+; ./Cuvee.sh -flat examples/transform/flat_funs.smt2
 ; records in the signatures of functions, which are split by the fields of their results,
 ; constants of records, existential quantifiers, ite and distinct on records
 (declare-datatype Pair (par (a b) ((pair (fst a) (snd b)))))

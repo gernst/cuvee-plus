@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/lambda.bpl
 // expected: valid
 // lambdas, which are maps, applied like maps, also as the value of a function,
 // and maps of several indices, which are nested maps, also lambdas of several variables

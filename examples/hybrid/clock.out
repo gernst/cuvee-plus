@@ -1,0 +1,9 @@
+goal
+  forall history: history<int>, t₆: real, history₃: history<int> ::
+    history_events(history) == []
+      && 0.0 <= t₆ <= 2.0
+      && history_events(history₃) == (if t₆ == 0.0 then [] else [time(t₆)])
+      ==> history_events(history₃) == []
+        || (exists s: real ::
+              0.0 < s <= 2.0 && history_events(history₃) == [time(s)])
+

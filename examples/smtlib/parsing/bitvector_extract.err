@@ -1,0 +1,4 @@
+(error
+  "invalid application of bitvector function"
+  "List(List(Id(_), Id(extract), Num(8), Num(0)), Id(x))"
+  "List(8)")

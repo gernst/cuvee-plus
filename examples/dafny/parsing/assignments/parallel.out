@@ -1,0 +1,5 @@
+method m(a: array<int, int>) returns (b: array<int, int>, c: int) {
+  b := a;
+  b, c := b[0 := 1], 2;
+}
+

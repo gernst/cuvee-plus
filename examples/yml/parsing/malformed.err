@@ -1,0 +1,11 @@
+(error
+  "malformed task definition"
+  "while parsing a flow sequence
+ in reader, line 2, column 14:
+    input_files: [a.c
+                 ^
+expected ',' or ']', but got <stream end>
+ in reader, line 3, column 1:
+    
+    ^
+")

@@ -6,7 +6,8 @@ import cuvee.Config
 import cuvee.pipe.Transform
 import cuvee.core._
 import util.Rational
-import util.{disjoint, intersects}
+import util.disjoint
+import util.intersects
 
 // contextual simplification of the formulas in assertions and function definitions,
 // where each subterm is simplified under the facts known to hold at its position

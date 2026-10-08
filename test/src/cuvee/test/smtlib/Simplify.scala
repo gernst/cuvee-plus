@@ -3,19 +3,10 @@ package smtlib
 
 import utest._
 
-// runs the examples in simplify/ with -simplify,
-// the expected output of each example `name.smt2` is given in `name.expected.smt2`
+// the examples in simplify/, each with its command line in the first line, e.g. ./Cuvee.sh -simplify ...
 object Simplify extends TestSuite:
-  val inputs =
-    Examples.find(os.sub / "simplify", "smt2").filterNot(_.last.endsWith(".expected.smt2"))
-
   val tests =
-    Examples.tests(inputs): file =>
-      val expected = file / os.up / (file.baseName + ".expected.smt2")
-
-      val (actual, errors) = Examples.output("-print", "null", "-simplify", file.toString)
-      errors ==> Nil
-      actual ==> Examples.input("-print", "null", expected.toString)
+    Examples.checked(List("smt2", "dfy", "bpl").flatMap(Examples.find(os.sub / "simplify", _)))
 
 // derivatives (x, y :: e)' by the rules of dL, printed in Dafny syntax
 object Derivatives extends TestSuite:
@@ -61,36 +52,10 @@ object Derivatives extends TestSuite:
     test("other functions"):
       diff(App(f, List(x)), x) ==> "(x :: f(x))'"
 
-// programs are simplified statement by statement, before verification the verdicts are the same
+// programs are simplified statement by statement (see examples/simplify/statements.dfy),
+// before verification the verdicts are the same
 object SimplifyPrograms extends TestSuite:
-  import cuvee.test.dafny.Verify.expected
-
   val tests = Tests:
-    test("statements"):
-      val text = """
-        method m(x: int) returns (y: int)
-          requires 0 <= x + 0
-        {
-          var z: int;
-          y := y;
-          if 1 < 2 { y := (x + 1) * 1; } else { y := 0; }
-          while false { y := 2; }
-        }
-      """
-      val file = os.temp(text, suffix = ".dfy")
-      val (cmds, errors) = Examples.output("-simplify", file.toString)
-      errors ==> Nil
-      cuvee.dafny.Printer.lines(cmds) ==> List(
-        "method m(x: int) returns (y: int)",
-        "  requires 0 <= x",
-        "{",
-        "  y := x + 1;",
-        "}",
-        ""
-      )
-
     test("examples"):
       for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filter(Examples.supported)
-      do
-        val first = os.read.lines(file).head
-        Examples.errors("-simplify", "-verify", "-z3", file.toString) ==> expected(first)
+      do Examples.errors("-simplify", "-verify", "-z3", file.toString) ==> Examples.reported(file)

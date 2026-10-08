@@ -1,0 +1,28 @@
+void clear(int a[], int n) {
+  int a_1[];
+  a_1 = a;
+  int i;
+  i = 0;
+  while (i < n) {
+    a_1[i] = 0;
+    i = i + 1;
+  }
+}
+
+int main(void) {
+  _Bool tmp_2;
+  int a[];
+  _Bool b;
+  a[0] = 1;
+  clear(a, 10);
+  assert(a[0] == 1);
+  b = a[0] > 0;
+  tmp_2 = true;
+  while (tmp_2 || a[0] > 0 && b) {
+    tmp_2 = false;
+    a[0] = a[0] - 1;
+  }
+  assert(a[0] == 0);
+  return 0;
+}
+

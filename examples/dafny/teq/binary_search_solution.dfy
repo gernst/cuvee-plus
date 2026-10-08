@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/teq/binary_search_solution.dfy
 // experiment: an abstraction of bisection for -teq, independent of how the probe is chosen (not only the midpoint);
 // the declarations of teq.dfy that the lemmas refer to are repeated here, since Trace exists only with -teq
 //

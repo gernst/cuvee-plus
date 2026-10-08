@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/return.dfy
 // expected: valid
 // return must establish the postcondition, also from within a loop
 

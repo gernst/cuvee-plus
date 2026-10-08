@@ -1,0 +1,3 @@
+error "goal does not hold"
+  "Sat"
+  "(forall ((n Int) (k Int)) (=> (and (<= 0 n) true) (and (<= 0 n) (forall ((k Int)) (=> (<= k n) (and (=> (< k n) (and (<= (+ k 1) n) true)) (=> (not (< k n)) (and (<= k n) true)) (= k n)))))))"

@@ -1,0 +1,376 @@
+(set-logic HORN)
+
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quotient
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  remainder
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(declare-fun
+  id_pre
+  ((Ptr Int) (Ptr Int))
+  Bool)
+
+(declare-fun
+  id_post
+  ((Ptr Int) (Ptr Int) (Ptr Int) (Ptr Int))
+  Bool)
+
+(declare-fun
+  id_assign_1
+  ((Ptr Int) (Ptr Int) (Ptr Int) (Ptr Int))
+  Bool)
+
+(assert
+  (forall
+    ((p (Ptr Int)) (g$3 (Ptr Int)) (g (Ptr Int)))
+    (=>
+      (and (id_pre p g$3) (= g g$3))
+      (id_assign_1 p g$3 p g))))
+
+(assert
+  (forall
+    ((p (Ptr Int)) (g$3 (Ptr Int)) (result (Ptr Int)) (g (Ptr Int)))
+    (=>
+      (id_assign_1 p g$3 result g)
+      (id_post p g$3 result g))))
+
+(declare-fun
+  isnull_pre
+  ((Ptr Int) (Ptr Int))
+  Bool)
+
+(declare-fun
+  isnull_post
+  ((Ptr Int) (Ptr Int) Int (Ptr Int))
+  Bool)
+
+(declare-fun
+  isnull_join_1
+  ((Ptr Int) (Ptr Int) Int (Ptr Int))
+  Bool)
+
+(declare-fun
+  isnull_assign_2
+  ((Ptr Int) (Ptr Int) Int (Ptr Int))
+  Bool)
+
+(declare-fun
+  isnull_assign_3
+  ((Ptr Int) (Ptr Int) Int (Ptr Int))
+  Bool)
+
+(assert
+  (forall
+    ((p (Ptr Int)) (g$4 (Ptr Int)) (g (Ptr Int)))
+    (=>
+      (and
+        (isnull_pre p g$4)
+        (= g g$4)
+        (= p (as null (Ptr Int))))
+      (isnull_assign_2 p g$4 1 g))))
+
+(assert
+  (forall
+    ((p (Ptr Int)) (g$4 (Ptr Int)) (result Int) (g (Ptr Int)))
+    (=>
+      (isnull_assign_2 p g$4 result g)
+      (isnull_post p g$4 result g))))
+
+(assert
+  (forall
+    ((p (Ptr Int)) (g$4 (Ptr Int)) (result Int) (g (Ptr Int)))
+    (=>
+      (and
+        (isnull_pre p g$4)
+        (= g g$4)
+        (not
+          (= p (as null (Ptr Int)))))
+      (isnull_join_1 p g$4 result g))))
+
+(assert
+  (forall
+    ((p (Ptr Int)) (g$4 (Ptr Int)) (result Int) (g (Ptr Int)))
+    (=>
+      (isnull_join_1 p g$4 result g)
+      (isnull_assign_3 p g$4 0 g))))
+
+(assert
+  (forall
+    ((p (Ptr Int)) (g$4 (Ptr Int)) (result Int) (g (Ptr Int)))
+    (=>
+      (isnull_assign_3 p g$4 result g)
+      (isnull_post p g$4 result g))))
+
+(declare-fun main_pre ((Ptr Int)) Bool)
+
+(declare-fun
+  main_post
+  ((Ptr Int) Int (Ptr Int))
+  Bool)
+
+(declare-fun
+  main_assign_1
+  ((Ptr Int) Int (Ptr Int) (Ptr Int) Int (Ptr Int) (Ptr Void))
+  Bool)
+
+(declare-fun
+  main_assign_2
+  ((Ptr Int) Int (Ptr Int) (Ptr Int) Int (Ptr Int) (Ptr Void))
+  Bool)
+
+(declare-fun
+  main_spec_3
+  ((Ptr Int) Int (Ptr Int) (Ptr Int) Int (Ptr Int) (Ptr Void))
+  Bool)
+
+(declare-fun
+  main_call_4
+  ((Ptr Int) Int (Ptr Int) (Ptr Int) Int (Ptr Int) (Ptr Void))
+  Bool)
+
+(declare-fun
+  main_call_5
+  ((Ptr Int) Int (Ptr Int) (Ptr Int) Int (Ptr Int) (Ptr Void))
+  Bool)
+
+(declare-fun
+  main_spec_6
+  ((Ptr Int) Int (Ptr Int) (Ptr Int) Int (Ptr Int) (Ptr Void))
+  Bool)
+
+(declare-fun
+  main_spec_7
+  ((Ptr Int) Int (Ptr Int) (Ptr Int) Int (Ptr Int) (Ptr Void))
+  Bool)
+
+(declare-fun
+  main_assign_8
+  ((Ptr Int) Int (Ptr Int) (Ptr Int) Int (Ptr Int) (Ptr Void))
+  Bool)
+
+(assert
+  (forall
+    ((g (Ptr Int)))
+    (=>
+      (= g (as null (Ptr Int)))
+      (main_pre g))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (v$9 (Ptr Void)))
+    (=>
+      (and (main_pre g$5) (= g g$5))
+      (main_assign_1 g$5 result g tmp$6 tmp$7 (as null (Ptr Int)) v$9))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (main_assign_1 g$5 result g tmp$6 tmp$7 q$8 v$9)
+      (main_assign_2 g$5 result g tmp$6 tmp$7 q$8 (as null (Ptr Void))))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (main_assign_2 g$5 result g tmp$6 tmp$7 q$8 v$9)
+      (and
+        (= g (as null (Ptr Int)))
+        (= q$8 (as null (Ptr Int)))
+        (= v$9 (as null (Ptr Void)))))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (and
+        (main_assign_2 g$5 result g tmp$6 tmp$7 q$8 v$9)
+        true)
+      (main_spec_3 g$5 result g tmp$6 tmp$7 q$8 v$9))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (main_spec_3 g$5 result g tmp$6 tmp$7 q$8 v$9)
+      (id_pre q$8 g))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void))
+      (tmp$10 (Ptr Int)))
+    (=>
+      (and
+        (main_spec_3 g$5 result g tmp$6 tmp$7 q$8 v$9)
+        (id_post q$8 g tmp$10 g))
+      (main_call_4 g$5 result g tmp$10 tmp$7 q$8 v$9))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (main_call_4 g$5 result g tmp$6 tmp$7 q$8 v$9)
+      (isnull_pre tmp$6 g))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void))
+      (tmp$11 Int))
+    (=>
+      (and
+        (main_call_4 g$5 result g tmp$6 tmp$7 q$8 v$9)
+        (isnull_post tmp$6 g tmp$11 g))
+      (main_call_5 g$5 result g tmp$6 tmp$11 q$8 v$9))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (main_call_5 g$5 result g tmp$6 tmp$7 q$8 v$9)
+      (= tmp$7 1))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (and
+        (main_call_5 g$5 result g tmp$6 tmp$7 q$8 v$9)
+        true)
+      (main_spec_6 g$5 result g tmp$6 tmp$7 q$8 v$9))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (main_spec_6 g$5 result g tmp$6 tmp$7 q$8 v$9)
+      (= q$8 g))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (and
+        (main_spec_6 g$5 result g tmp$6 tmp$7 q$8 v$9)
+        true)
+      (main_spec_7 g$5 result g tmp$6 tmp$7 q$8 v$9))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (main_spec_7 g$5 result g tmp$6 tmp$7 q$8 v$9)
+      (main_assign_8 g$5 0 g tmp$6 tmp$7 q$8 v$9))))
+
+(assert
+  (forall
+    ((g$5 (Ptr Int))
+      (result Int)
+      (g (Ptr Int))
+      (tmp$6 (Ptr Int))
+      (tmp$7 Int)
+      (q$8 (Ptr Int))
+      (v$9 (Ptr Void)))
+    (=>
+      (main_assign_8 g$5 result g tmp$6 tmp$7 q$8 v$9)
+      (main_post g$5 result g))))
+
+(check-sat)
+
+(get-model)
+

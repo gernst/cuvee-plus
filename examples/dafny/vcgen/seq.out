@@ -1,0 +1,9 @@
+goal
+  forall s: seq<int>, x: int, t: seq<int> ::
+    true && true
+      ==> x in [x] + s
+        && |[x] + s| == |s| + 1
+        && ([x] + s)[1..|[x] + s|] == s
+        && ([x] + s)[0] == x
+        && ([x] <= [x] + s && ([x] + s)[0..1] == [x])
+

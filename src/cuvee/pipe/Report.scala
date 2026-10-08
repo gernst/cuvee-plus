@@ -8,11 +8,9 @@ trait Report:
   def report(result: Result, printSuccess: Boolean): Unit
 
 object Report:
-  def stdout(printer: Printer) =
-    new print(System.out, printer)
-
-  def stderr(printer: Printer) =
-    new print(System.err, printer)
+  // the reports printed to `stream`, e.g. stderr (see Config.stderr)
+  def stream(stream: PrintStream, printer: Printer) =
+    new print(stream, printer)
 
   class print(stream: PrintStream, printer: Printer) extends Report:
     def report(result: Result, printSuccess: Boolean) =

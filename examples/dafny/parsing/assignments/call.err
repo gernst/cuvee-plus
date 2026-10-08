@@ -1,0 +1,2 @@
+error "results of calls must be assigned to variables"
+  "List(Lhs(b,List(Inner(Num(0),List()))))"

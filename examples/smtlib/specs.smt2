@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/specs.smt2
 ; specifications in procedures, printed as assert, assume, havoc, and abort in these special cases, and spec otherwise
 
 (define-proc p ((x Int)) ((y Int))

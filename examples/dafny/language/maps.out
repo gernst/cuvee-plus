@@ -1,0 +1,16 @@
+method finmaps(m: map<int, bool>, n: map<int, bool>, s: set<int>, k: int,
+               v: bool) returns (r: map<int, bool>)
+  requires k in m && k !in n
+  ensures k in r && r[k] == v
+  ensures r.Keys == m.Keys + n.Keys && |r| <= |m| + |n|
+{
+  var x: bool, t: map<int, bool>;
+  x := m[k];
+  r := map[1 := true, k := x];
+  r := m[k := v] + n;
+  assert v in r.Values;
+  t := r - s;
+  assert k !in t.Keys || k !in s;
+  assert t <= r;
+}
+

@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/abs.dfy
 // expected: valid
 // conditional without else branch, statement-level assertion
 

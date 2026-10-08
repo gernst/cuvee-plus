@@ -1,3 +1,4 @@
+; ./Cuvee.sh -simplify examples/simplify/rules.smt2
 ; rewrite rules are assertions and lemmas with the attribute :rw,
 ; whose universally quantified variables are the variables of the rule and whose premise is the condition
 (declare-fun f (Int) Int)

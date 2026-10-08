@@ -1,0 +1,68 @@
+(declare-const origin_fst Int)
+
+(declare-const origin_snd Int)
+
+(declare-fun step_fst (Int Int) Int)
+
+(declare-fun step_snd (Int Int) Int)
+
+(define-fun
+  swap_fst
+  ((p_fst Int) (p_snd Int))
+  Int
+  p_snd)
+
+(define-fun
+  swap_snd
+  ((p_fst Int) (p_snd Int))
+  Int
+  p_fst)
+
+(define-fun
+  norm
+  ((p_fst Int) (p_snd_fst Int) (p_snd_snd Int))
+  Int
+  (+ p_fst p_snd_fst p_snd_snd))
+
+(assert (= origin_fst 0))
+
+(assert
+  (forall
+    ((p_fst Int) (p_snd Int))
+    (and
+      (=
+        (step_fst p_fst p_snd)
+        (+ p_fst 1))
+      (=
+        (step_snd p_fst p_snd)
+        p_snd))))
+
+(assert
+  (exists
+    ((p_fst Int) (p_snd Int) (b Bool))
+    (and
+      (=
+        (swap_fst p_fst p_snd)
+        (ite
+          b
+          origin_fst
+          (step_fst origin_fst origin_snd)))
+      (=
+        (swap_snd p_fst p_snd)
+        (ite
+          b
+          origin_snd
+          (step_snd origin_fst origin_snd)))
+      (not
+        (and (= p_fst origin_fst) (= p_snd origin_snd))))))
+
+(assert
+  (=
+    (norm
+      1
+      (swap_fst origin_fst origin_snd)
+      (swap_snd origin_fst origin_snd))
+    1))
+
+(check-sat)
+

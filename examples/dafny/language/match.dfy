@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/match.dfy
 // match expressions, with constructor patterns, nested ones, variables, and wildcards,
 // with and without braces around the cases
 datatype List<a> = Nil | Cons(head: a, tail: List<a>)

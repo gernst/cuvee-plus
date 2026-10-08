@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/sorts.smt2
 ; defined sorts are unfolded during type checking,
 ; also when the definition does not use all parameters
 (define-sort Set (T) (Array T Bool))

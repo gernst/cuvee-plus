@@ -1,0 +1,4 @@
+(error
+  "parse error"
+  "List(unit, top, function, block, stmt, simple, decl, declarator, init, expr, operand, operand, postfix, atom, '(')"
+  "* p ; return 0 ; } ... ")

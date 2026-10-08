@@ -1,0 +1,2 @@
+axiom "a \"quoted\" \\ string" == "x";
+

@@ -1,0 +1,3 @@
+(error
+  "only a single input file is supported"
+  "[a.c, b.c]")

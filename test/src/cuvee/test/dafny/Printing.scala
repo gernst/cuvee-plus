@@ -164,15 +164,11 @@ object Printing extends TestSuite:
         do lang.printer.width = 160
         cuvee.sexpr.Printer.width = 160
 
-    // names that are neither identifiers nor operators are escaped by backticks, which the scanner reads back,
-    // e.g. the instances of Monomorph
+    // names that are neither identifiers nor operators are escaped by backticks, which the scanner reads back
+    // (see examples/dafny/printing/escaped.dfy), e.g. the instances of Monomorph
     test("escaped names"):
       val f = Fun("f<pair<Int>>", Nil, Fun.formals(Sort.int), Sort.int)
       expr(App(f, List(x))) ==> "`f<pair<Int>>`(x)"
       expr(Lt.int(x, y)) ==> "x < y"
 
-      val text = "function `f<Int>`(x: int): int\nlemma forall x: int :: `f<Int>`(x) == x\n"
-      val (cmds, errors) = Examples.output("-print", "null", os.temp(text, suffix = ".dfy").toString)
-      errors ==> Nil
-      cmds.collect { case DeclareFun(fun, _) => fun.name.name } ==> List("f<Int>")
 

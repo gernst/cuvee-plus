@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/c/harness.c
 // expected: valid
 // the harness of SV-COMP as in preprocessed tasks (.i), whose builtins are skipped, and __VERIFIER_assert is an assertion
 extern void abort(void);

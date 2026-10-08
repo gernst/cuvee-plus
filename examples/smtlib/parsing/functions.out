@@ -1,0 +1,10 @@
+(declare-const f (-> Int Bool Int))
+
+(assert (= (@ f 1 true) 2))
+
+(declare-const
+  g
+  (-> Int (-> Int Int)))
+
+(assert (= (@ (@ g 1) 2) 0))
+

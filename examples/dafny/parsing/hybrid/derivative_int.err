@@ -1,0 +1,3 @@
+error "derivative with respect to variables that are not real"
+  "Diff(List(Var(Name(n,None),Sort(Con(Name(Int,None),0),List()))),App(Fun(Name(*,None),List(Param(Name(a,Some(0)))),List(Var(Name(x,Some(0)),Param(Name(a,Some(0)))), Var(Name(x,Some(1)),Param(Name(a,Some(0))))),Param(Name(a,Some(0)))),List(Param(Name(a,Some(78))), Param(Name(a,Some(78)))),Param(Name(a,Some(78))),List(Var(Name(n,None),Sort(Con(Name(Int,None),0),List())), Var(Name(n,None),Sort(Con(Name(Int,None),0),List())))))"
+  "List(Var(Name(n,None),Sort(Con(Name(Int,None),0),List())))"

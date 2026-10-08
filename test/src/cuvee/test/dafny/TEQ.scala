@@ -4,11 +4,13 @@ package dafny
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.{Rule, Rewrite}
+import cuvee.simplify.Rule
+import cuvee.simplify.Rewrite
 
 // verification by symbolic execution and trace equation systems:
 // for programs without loops, the verdicts coincide with -verify,
-// loops are summarized by trace equation systems, which the rewrite engine simplifies with lemmas
+// loops are summarized by trace equation systems, which the rewrite engine simplifies with lemmas;
+// the programs whose goals vanish are in examples/c/teq, examples/dafny/teq, and examples/dafny/parsing/teq
 object TEQ extends TestSuite:
   // a rule whose type parameters and variables are the free ones of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
@@ -44,7 +46,7 @@ object TEQ extends TestSuite:
     // the invariant over the counter is rewritten as well, such that only arithmetic remains
     test("lemmas"):
       val sum = Examples.root / "dafny" / "vcgen" / "sum.dfy"
-      val (cmds, errors) = Examples.output("-teq", "-simplify", "-print", "null", sum.toString)
+      val (cmds, errors) = Examples.stream("-teq", "-simplify", "-print", "null", sum.toString)
       errors ==> Nil
       assert(cmds.exists { case DeclareFun(fun, _) => fun == Fun.trace.counter; case _ => false })
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked
@@ -54,8 +56,9 @@ object TEQ extends TestSuite:
 
       // also without loops, once at the beginning
       val abs = Examples.root / "dafny" / "vcgen" / "abs.dfy"
-      val (cmds_, _) = Examples.output("-teq", "-print", "null", abs.toString)
-      cmds_.take(cuvee.verify.TEQ.lemmas.length) ==> cuvee.verify.TEQ.lemmas
+      val (cmds_, _) = Examples.stream("-teq", "-print", "null", abs.toString)
+      val prelude = Examples.prelude("-teq", "-print", "null", abs.toString)
+      cmds_.filterNot(prelude.contains).take(cuvee.verify.TEQ.lemmas.length) ==> cuvee.verify.TEQ.lemmas
       cmds_.count(cuvee.verify.TEQ.lemmas.contains) ==> cuvee.verify.TEQ.lemmas.length
 
     // break, continue, and return inside of loops: the loop is left by a path that ends by break or return,
@@ -150,26 +153,6 @@ object TEQ extends TestSuite:
       val (_, errors) = Examples.output("-teq", "-print", "null", file.toString)
       errors ==> List(contracts)
 
-    // calls of procedures without a contract are inlined, such that the results are known to the caller,
-    // also through a return inside of a branch, and the variables of the caller with the names of the formals are restored
-    test("inlining"):
-      val text =
-        """int inc(int x) { if (x < 0) return 0; return x + 1; }
-          |int main(void) { int x = 5; int y = inc(1); int z = inc(-3); assert(x == 5 && y == 2 && z == 0); return 0; }
-          |""".stripMargin
-      val file = os.temp(text, suffix = ".c")
-      val (cmds, errors) = Examples.output("-teq", "-simplify", "-print", "null", file.toString)
-      errors ==> Nil
-      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
-
-    // a procedure without a body cannot be inlined
-    test("inlining without body"):
-      val text =
-        """method f(x: int) returns (y: int)
-          |method g() returns (z: int) { z := f(1); }
-          |""".stripMargin
-      Examples.check("dfy", text, "-teq") ==> List("procedure without body")
-
     // a loop that assigns a constant: the dependency of the lemma whose bound variable the update does not use
     // is instantiated by a dependency of the expression, here the counter defined in the context
     test("constant updates"):
@@ -183,61 +166,3 @@ object TEQ extends TestSuite:
       val loop = Trace(One.int, List(Butlast(K)), x, List(k), Zero.int)
       val ctx = cuvee.simplify.Context.empty.assume(Le.int(Zero.int, n)).assume(Eq(K, Counter(Zero.int, One.int, n))).assume(Eq(X, loop)).withRules(rules)
       Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Zero.int), One.int, Zero.int)
-
-    // the loop for (i = 0; i != N; i++) runs N times, from the lemma on counters that avoid a value
-    test("counters that avoid a value"):
-      val text =
-        """int main(void) { int i; for (i = 0; i != 100; i++) { assert(i <= 100); } assert(i == 100); return 0; }
-          |""".stripMargin
-      val file = os.temp(text, suffix = ".c")
-      val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
-      errors ==> Nil
-      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
-
-    // the iterations of a counter before and from a bound, counted for a branch on it in the body (gj2007)
-    test("counters before a bound"):
-      val text =
-        """int main(void) { int x = 0; int y = 50; int z = 0;
-          |  while (x < 100) { if (x < 50) { x = x + 1; z = z + 1; } else { x = x + 1; y = y + 1; } }
-          |  assert(y == 100 && z == 50); return 0; }
-          |""".stripMargin
-      val file = os.temp(text, suffix = ".c")
-      val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
-      errors ==> Nil
-      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
-
-    // the iterations from a bound on, counted for an increment in the body (Mono6_1), where solving z == x for the
-    // number of iterations would be cyclic, since the count depends on the counter of the iterations
-    test("counters from a bound"):
-      def goals(assertion: String) =
-        val text =
-          s"""int main(void) { unsigned int x = 0; unsigned int z = 5;
-             |  while (x < 10) { if (x >= 5) z++; x++; }
-             |  assert($assertion); return 0; }
-             |""".stripMargin
-        val file = os.temp(text, suffix = ".c")
-        val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
-        errors ==> Nil
-        cmds.collect { case Assert(Goal, _, phi, _) => phi }
-      goals("z == x") ==> Nil
-      goals("z != x") ==> List(False)
-
-    // an update b[i] := c * b[i] + i reads the initial value, since the keys are distinct, by the higher-order lemma
-    // whose variable f abstracts the context of the read, f = z => z * c + k
-    test("contexts of reads"):
-      val (cmds, errors) = Examples.output("-teq", "-simplify", "-print", "null", (Examples.root / "dafny" / "teq" / "affine.dfy").toString)
-      errors ==> Nil
-      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil
-
-    // the variable of a counter that runs in parallel to the iterations is bounded like them,
-    // since its value earlier(k, ⌊I⌋) is k within the range of k
-    test("bounds of counters"):
-      val text =
-        """int main(void) { int s = 0; int i;
-          |  for (i = 0; i < 10; i++) { if (0 <= i && i < 10) s = s + 1; else s = s + 2; }
-          |  assert(s == 10); return 0; }
-          |""".stripMargin
-      val file = os.temp(text, suffix = ".c")
-      val (cmds, errors) = Examples.output("-teq", "-split", "-simplify", "-print", "null", file.toString)
-      errors ==> Nil
-      cmds.collect { case Assert(Goal, _, phi, _) => phi } ==> Nil

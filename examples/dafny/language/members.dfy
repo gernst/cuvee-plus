@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/members.dfy
 // member access on variables, results of functions must be bound first
 datatype pair<a> = pair(fst: a, snd: a)
 {

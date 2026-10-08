@@ -1,3 +1,4 @@
+; ./Cuvee.sh -flat examples/transform/flat_poly.smt2
 ; polymorphic predicates over generic records, where Box has a parameter that none of its fields refers to
 (declare-datatype Pair (par (a b) ((pair (fst a) (snd b)))))
 (declare-datatype Box (par (a) ((box (size Int)))))

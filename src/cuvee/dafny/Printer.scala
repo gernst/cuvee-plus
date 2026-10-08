@@ -8,7 +8,7 @@ import cuvee.smtlib._
 import cuvee.core.Attrs
 
 import easyprint.Doc
-import easyprint.Doc.{text, space, line, linebreak, hardline, empty, concat, join, render}
+import easyprint.Doc._
 import easyprint.Group
 import easyprint.Nest
 import easyprint.Align

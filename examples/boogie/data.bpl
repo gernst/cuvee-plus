@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/data.bpl
 // expected: valid
 // datatypes as in Dafny with the keyword data, which is not Boogie,
 // whose constructors and selectors are functions

@@ -1,0 +1,25 @@
+type pred<a> = array<a, bool>
+
+function mem<a>(s: pred<a>, x: a): bool {
+  s[x]
+}
+
+axiom <a> {:rw} forall s: array<a, bool>, x: a :: mem(s, x) == s[x]
+
+datatype d
+  = d(f: int)
+
+method d_id<b>(this: d, x: b) returns (y: b)
+
+method m(s: d) returns (y: int) {
+  y := d_id(s, 1);
+}
+
+function swap(p: (int, bool)): (bool, int) {
+  (tuple₂_1(p), tuple₂_0(p))
+}
+
+function greeting(name: string): string {
+  if name == "" then "hello" else name
+}
+

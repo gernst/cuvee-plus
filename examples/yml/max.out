@@ -1,0 +1,26 @@
+int max(int x, int y) {
+  if (x < y) {
+    return y;
+  } else {
+    return x;
+  }
+}
+
+int main(void) {
+  int tmp_1;
+  int tmp_2;
+  int tmp_3;
+  int a;
+  int b;
+  int m;
+  tmp_1 = __VERIFIER_nondet_int();
+  a = tmp_1;
+  tmp_2 = __VERIFIER_nondet_int();
+  b = tmp_2;
+  tmp_3 = max(a, b);
+  m = tmp_3;
+  m = a < b ? b : a;
+  assert(m >= a && m >= b);
+  return 0;
+}
+

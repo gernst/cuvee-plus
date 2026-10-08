@@ -1,0 +1,2 @@
+function {:smt2} {:c} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>
+

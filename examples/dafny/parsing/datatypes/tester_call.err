@@ -1,0 +1,3 @@
+error "tester on an expression that is not a variable"
+  "App(Fun(Name(g,None),List(),List(),Sort(Con(Name(list,None),1),List(Sort(Con(Name(Int,None),0),List())))),List(),Sort(Con(Name(list,None),1),List(Sort(Con(Name(Int,None),0),List()))),List())"
+  "nil?"

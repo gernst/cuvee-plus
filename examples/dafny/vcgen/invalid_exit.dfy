@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_exit.dfy
 // expected: invalid
 // the invariant is too weak to establish i == n after the loop
 

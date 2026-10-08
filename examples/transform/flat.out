@@ -1,0 +1,39 @@
+(set-logic HORN)
+
+(declare-datatype
+  Stack
+  (par
+    (a)
+    ((nil)
+      (cons (head a) (tail (Stack a))))))
+
+(declare-fun
+  p
+  (Int Int Bool (Stack Int))
+  Bool)
+
+(assert
+  (forall
+    ((x_snd_fst Int) (x_snd_snd Bool) (s (Stack Int)))
+    (=>
+      x_snd_snd
+      (p 0 x_snd_fst x_snd_snd s))))
+
+(assert
+  (forall
+    ((x_fst Int) (x_snd_fst Int) (x_snd_snd Bool) (s (Stack Int)))
+    (=>
+      (p x_fst x_snd_fst x_snd_snd s)
+      (p (+ x_fst 1) x_snd_fst x_snd_snd (cons (+ x_fst 1) s)))))
+
+(assert
+  (forall
+    ((x_fst Int) (x_snd_fst Int) (x_snd_snd Bool) (s (Stack Int)))
+    (=>
+      (and
+        (p x_fst x_snd_fst x_snd_snd s)
+        (< x_fst 0))
+      false)))
+
+(check-sat)
+

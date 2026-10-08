@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/syntax.bpl
 // expected: valid
 // declarations: sorts, constants, polymorphic functions, axioms, quantifiers;
 // statements: havoc, nondeterministic choice, break, return

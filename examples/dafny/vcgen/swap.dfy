@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/swap.dfy
 // expected: valid
 // simultaneous assignment
 

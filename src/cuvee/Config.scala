@@ -1,5 +1,6 @@
 package cuvee
 
+import java.io.PrintStream
 import java.io.InputStreamReader
 import java.io.FileReader
 
@@ -7,8 +8,12 @@ import cuvee.core._
 import cuvee.pipe._
 import cuvee.smtlib.Solver
 import cuvee.simplify.Simplify
-import cuvee.transform.{Flat, Monomorph, Split}
-import cuvee.verify.{Horn, TEQ, Verify}
+import cuvee.transform.Flat
+import cuvee.transform.Monomorph
+import cuvee.transform.Split
+import cuvee.verify.Horn
+import cuvee.verify.TEQ
+import cuvee.verify.Verify
 
 case class Flag(
     args: Option[String],
@@ -17,7 +22,7 @@ case class Flag(
 )
 
 // a language with the source that reads it and the printer that writes it,
-// features: the features that it has built in, whose declarations its printer drops (see Printer.filter),
+// features: the features that it has built in, whose declarations are not printed (see Sink.known),
 // beyond its file extension e.g. hybrid for the definitions of parallel composition in Dafny
 // (resources/cuvee/dafny/hybrid.dfy, see -hybrid) and teq for trace equation systems (resources/cuvee/teq.dfy, see -teq),
 // hasMath: whether it can express the output of transforms like -teq and -chc, otherwise the output is SMT-LIB
@@ -49,14 +54,14 @@ object Lang:
     Lang("SV-COMP task definition", cuvee.yml.Source, cuvee.c.Printer, Set("c"), false)
 
 // input, output: the languages of the input file, whose printer prints the reports, and of the output,
-// each of which drops the declarations of its features (see Printer.filter and Cuvee.pipe)
+// the output does not contain the declarations of its features (see Sink.known and Cuvee.pipe)
 case class Config(
     file: Option[String],
     input: Lang,
     output: Lang,
     // built from the final configuration, such that the order of the command line options does not matter
     sink: (Config, Printer, State) => Sink,
-    report: Printer => Report,
+    report: (Config, Printer) => Report,
     transforms: List[Transform] = Nil,
     // per query, in milliseconds
     timeout: Int = 1000,
@@ -64,6 +69,9 @@ case class Config(
     arch: Int = 64,
     // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print
     features: Set[String] = Set(),
+    // the lines of stdout and stderr, which tests capture instead (see test.Expected)
+    stdout: PrintStream = System.out,
+    stderr: PrintStream = System.err,
     // keep last
     debug: Set[String] = Set()
 ):
@@ -99,7 +107,7 @@ case class Config(
 
 object Config:
   val default =
-    Config(None, Lang.smtlib, Lang.smtlib, (_, printer, _) => Sink.stdout(printer), Report.stderr)
+    Config(None, Lang.smtlib, Lang.smtlib, (config, printer, _) => Sink.stream(config.stdout, printer, config.output.features), (config, printer) => Report.stream(config.stderr, printer))
 
   def flag(key: String, help: String)(action: PartialFunction[(Config, List[String]), (Config, List[String])]) =
     key -> Flag(None, help, action)
@@ -190,7 +198,7 @@ object Config:
   val output =
     flag("-o", "<file>", "redirect output to <file> and report to stdout"):
       case (config, name :: rest) =>
-        val config_ = config.copy(sink = (_, printer, _) => Sink.file(name, printer), report = Report.stdout)
+        val config_ = config.copy(sink = (config, printer, _) => Sink.file(name, printer, config.output.features), report = (config, printer) => Report.stream(config.stdout, printer))
         (config_, rest)
 
   // the printers are objects, all of which are set, such that the order of the options does not matter
@@ -278,7 +286,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.28.1")
+    println("Cuvée 0.29.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

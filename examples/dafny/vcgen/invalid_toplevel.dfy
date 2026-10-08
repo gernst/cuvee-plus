@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_toplevel.dfy
 // expected: invalid
 // the precondition of a call statement does not hold
 datatype counter = counter(n: int)

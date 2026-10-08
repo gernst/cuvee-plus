@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/decreases.bpl
 // expected: valid
 // termination measures of procedures and loops, which are not Boogie
 

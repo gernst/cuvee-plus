@@ -1,0 +1,9 @@
+int main(void) {
+  int tmp_1;
+  int x;
+  tmp_1 = __VERIFIER_nondet_int();
+  __VERIFIER_assume(0 <= tmp_1);
+  x = tmp_1;
+  return x;
+}
+

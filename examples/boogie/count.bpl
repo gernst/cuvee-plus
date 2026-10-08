@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/count.bpl
 // expected: valid
 // loops with invariants, calls with and without results
 

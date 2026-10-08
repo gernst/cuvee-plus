@@ -1,3 +1,4 @@
+; ./Cuvee.sh -flat examples/transform/flat.smt2
 ; records, also generic and nested ones, are flattened in the arguments of predicates,
 ; recursive datatypes and those with several constructors are not
 (set-logic HORN)

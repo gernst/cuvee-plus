@@ -1,0 +1,5 @@
+(error
+  "type mismatch"
+  "App(Fun(Name(f,None),List(),List(),Sort(Con(Name(Int,None),0),List())),List(),Sort(Con(Name(Int,None),0),List()),List())"
+  "Sort(Con(Name(Int,None),0),List())"
+  "Sort(Con(Name(arrow,Some(1)),2),List(Param(Name(a,Some(1))), Param(Name(a,Some(2)))))")

@@ -1,0 +1,135 @@
+(set-logic HORN)
+
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quotient
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  remainder
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(declare-fun f_pre (Int) Bool)
+
+(declare-fun f_post (Int Int Int) Bool)
+
+(declare-fun f_assign_1 (Int Int Int) Bool)
+
+(declare-fun f_assign_2 (Int Int Int) Bool)
+
+(assert
+  (forall ((c Int)) (=> true (f_pre c))))
+
+(assert
+  (forall
+    ((c$3 Int) (result Int) (c Int))
+    (=>
+      (and (f_pre c$3) (= c c$3))
+      (f_assign_1 c$3 result (+ c 1)))))
+
+(assert
+  (forall
+    ((c$3 Int) (result Int) (c Int))
+    (=>
+      (f_assign_1 c$3 result c)
+      (f_assign_2 c$3 1 c))))
+
+(assert
+  (forall
+    ((c$3 Int) (result Int) (c Int))
+    (=>
+      (f_assign_2 c$3 result c)
+      (f_post c$3 result c))))
+
+(declare-fun main_pre (Int) Bool)
+
+(declare-fun main_post (Int Int Int) Bool)
+
+(declare-fun
+  main_assign_1
+  (Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_2
+  (Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_spec_3
+  (Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_4
+  (Int Int Int Int Int)
+  Bool)
+
+(assert
+  (forall
+    ((c Int))
+    (=> (= c 0) (main_pre c))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (r$6 Int))
+    (=>
+      (and (main_pre c$4) (= c c$4))
+      (main_assign_1 c$4 result c 2 r$6))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    (=>
+      (main_assign_1 c$4 result c tmp$5 r$6)
+      (main_assign_2 c$4 result c tmp$5 tmp$5))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    (=>
+      (main_assign_2 c$4 result c tmp$5 r$6)
+      (= c 1))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    (=>
+      (and
+        (main_assign_2 c$4 result c tmp$5 r$6)
+        true)
+      (main_spec_3 c$4 result c tmp$5 r$6))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    (=>
+      (main_spec_3 c$4 result c tmp$5 r$6)
+      (main_assign_4 c$4 0 c tmp$5 r$6))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    (=>
+      (main_assign_4 c$4 result c tmp$5 r$6)
+      (main_post c$4 result c))))
+
+(check-sat)
+
+(get-model)
+

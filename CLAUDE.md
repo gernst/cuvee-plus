@@ -28,8 +28,12 @@ or solvers consume.
   in every commit: second digit for major features, third for minor ones.
 - After each commit: `mill -i assembly; cp out/assembly.dest/out.jar cuvee.jar`.
 - Never commit the user's untracked scratch files (e.g. `*.dfy` at the root).
-- Every feature gets tests (unit tests and/or `examples/<language>/`). Update
-  changed expected outputs deliberately and say so.
+- Every feature gets tests, preferably example files whose first line is
+  their command line (`// ./Cuvee.sh <options> <file>`) with the expected
+  `name.out`/`name.err`; unit tests only where the command line cannot observe
+  it. Tests never write files. Regenerate changed expected outputs by hand
+  (`./Cuvee.sh <options> <file> > name.out 2> name.err`, after the assembly)
+  deliberately and say so; `./Cuvee.sh -test <file>` checks one.
 
 ## Commands
 

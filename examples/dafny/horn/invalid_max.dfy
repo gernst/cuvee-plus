@@ -1,3 +1,4 @@
+// ./Cuvee.sh -chc examples/dafny/horn/invalid_max.dfy
 // expected: invalid
 // the inferred postcondition of max does not imply that the result is the first argument
 

@@ -1,0 +1,3 @@
+(error
+  "arrays of pointers are not supported"
+  "g")

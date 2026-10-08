@@ -1,0 +1,2 @@
+goal forall a: real, t₅: real :: 0.0 <= t₅ ==> a * t₅ == 0.0
+

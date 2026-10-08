@@ -1,0 +1,2 @@
+error "assignment to variables that must not be modified"
+  "List(Var(Name(g,None),Sort(Con(Name(Int,None),0),List())))"

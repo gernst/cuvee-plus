@@ -132,7 +132,11 @@ after section 4 of the paper.
 
 ## Tests
 
-- `examples/dafny/vcgen/*.dfy` without loops must verify with `-teq -z3`.
+- `examples/dafny/vcgen/*.dfy` without loops must generate their goals with
+  `-teq` (never passed to a solver).
+- `examples/c/teq/*.c` and `examples/dafny/teq/affine.dfy` state their command
+  line, e.g. `-teq -split -simplify`, and the goals that remain in their
+  expected output (none if they are proved).
 - [TEQ.scala](../test/src/cuvee/test/dafny/TEQ.scala) checks the goals of
   `-teq`, the injection of the database, and the lemmas on core terms
   (`Rules.from(State.empty, TEQ.lemmas)` with `Rewrite`).

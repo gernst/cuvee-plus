@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/maps.dfy
 // finite maps, which no solver supports, hence parsed and printed only;
 // m <= n (submap) is not part of Dafny, but of the dialect of Cuvée
 

@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/c/invalid_count.c
 // expected: invalid
 // the loop counts only every second iteration
 

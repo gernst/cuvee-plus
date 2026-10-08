@@ -1,0 +1,4 @@
+function `f<Int>`(x: int): int
+
+lemma forall x: int :: `f<Int>`(x) == x
+

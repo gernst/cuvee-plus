@@ -13,6 +13,11 @@ import java.io.FileOutputStream
 trait Sink:
   def query(cmd: Cmd): (Result, List[Result], Sink)
 
+  // the features of the declarations that the receiver of the commands knows already, which are dropped before it
+  // (see Sink.filter and Cuvee.pipe), e.g. the prelude of the language of the output for a printer
+  def knows: Set[String] =
+    Set()
+
   // the answer to `last`, and the answers to the queries among `cmds` together with those added in front of `last`,
   // where the answers to each query follow the same rule as in Pipe.run, and queries without answer are skipped
   def query(cmds: List[Cmd], last: Cmd): (Result, List[Result], Sink) =
@@ -42,15 +47,25 @@ trait Sink:
         exec(first).exec(rest)
 
 object Sink:
-  def stdout(printer: Printer) =
-    Print(System.out, printer)
+  // the output printed to `stream`, e.g. stdout (see Config.stdout), for a receiver that knows `knows`
+  def stream(stream: PrintStream, printer: Printer, knows: Set[String]) =
+    Print(stream, printer, knows)
 
-  def stderr(printer: Printer) =
-    Print(System.err, printer)
+  def file(name: String, printer: Printer, knows: Set[String]) =
+    Print(new PrintStream(new FileOutputStream(name)), printer, knows)
 
-  def file(name: String, printer: Printer) =
-    val stream = new PrintStream(new FileOutputStream(name))
-    Print(stream, printer)
+  // drops the declarations whose features the receiver knows, which it acknowledges like a printer
+  def filter(features: Set[String], next: Sink) =
+    Filter(features, next)
+
+  // whether the declaration `cmd` is known to a receiver that knows `features`: the declarations of the preludes
+  // (resources/cuvee/*/prelude.*) name the languages that they are part of by attributes, the file extensions smt2,
+  // dfy, bpl, and c, e.g. the tuples of Dafny are part of Dafny only, and are therefore declared in SMT-LIB,
+  // and those injected with -teq and -hybrid are known to the input language (see Config.having)
+  def known(features: Set[String], cmd: Cmd): Boolean =
+    cmd match
+      case decl: Decl => features.exists(decl.attrs.contains)
+      case _          => false
 
   def collect(buffer: mutable.ListBuffer[Cmd]) =
     Collect(buffer)
@@ -84,13 +99,23 @@ object Sink:
       case Labels =>
         Error.raise("no labels available")
 
-  class Print(stream: PrintStream, printer: Printer) extends Sink:
+  class Print(stream: PrintStream, printer: Printer, override val knows: Set[String]) extends Sink:
     def query(cmd: Cmd) =
       if cmd != Done then
         for (line <- printer.lines(cmd))
           stream.println(line)
 
       (passive(cmd), Nil, this)
+
+  class Filter(features: Set[String], next: Sink) extends Sink:
+    override def knows = next.knows
+
+    def query(cmd: Cmd) =
+      if known(features, cmd)
+      then (Ack.Success, Nil, this)
+      else
+        val (result, added, next_) = next.query(cmd)
+        (result, added, Filter(features, next_))
 
   // appends all commands to `buffer`, e.g. to inspect the output of transforms in tests
   class Collect(buffer: mutable.ListBuffer[Cmd]) extends Sink:
@@ -99,7 +124,10 @@ object Sink:
 
       (passive(cmd), Nil, this)
 
+  // the answers are those of the primary sink, which is the receiver
   class Tee(primary: Sink, secondary: List[Sink]) extends Sink:
+    override def knows = primary.knows
+
     def query(cmd: Cmd) =
       val secondary_ =
         for sink <- secondary

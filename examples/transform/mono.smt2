@@ -1,3 +1,4 @@
+; ./Cuvee.sh -monomorph examples/transform/mono.smt2
 ; polymorphic functions are replaced by their instances, also inside the definitions of other instances
 (declare-sort Lst 1)
 (declare-fun nil (par (a) () (Lst a)))

@@ -1,0 +1,10 @@
+function f(x: int): int;
+
+function g(x: int): int;
+
+axiom {:rw} (forall x: int :: f(g(x)) == x);
+
+lemma {:rw} (forall x: int :: !(f(x) < 0));
+
+function h(a: int): bool { true }
+

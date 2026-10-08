@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/globals.bpl
 // expected: valid
 // global variables, which procedures and loops declare as modified
 

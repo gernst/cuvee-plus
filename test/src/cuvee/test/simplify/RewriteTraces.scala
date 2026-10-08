@@ -5,7 +5,9 @@ import utest._
 
 import cuvee.Config
 import cuvee.core._
-import cuvee.simplify.{Context, Rule, Rewrite}
+import cuvee.simplify.Context
+import cuvee.simplify.Rule
+import cuvee.simplify.Rewrite
 
 // patterns with the combinators trace, map, and all, as in the examples of Trace Equation Systems,
 // where the first dependency of the expressions is the counter ⌊J⌋ of the iterations, J == counter(0, 1, n),

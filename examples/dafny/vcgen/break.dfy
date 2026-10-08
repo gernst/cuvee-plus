@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/break.dfy
 // expected: valid
 // leaving a loop with break, the loop condition is not known afterwards
 

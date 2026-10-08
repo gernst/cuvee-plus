@@ -1,3 +1,4 @@
+; ./Cuvee.sh -simplify examples/simplify/binders.smt2
 (declare-fun p (Int) Bool)
 
 ; the inner x must not be replaced by y via the equation on the outer x

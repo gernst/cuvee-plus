@@ -1,0 +1,7 @@
+datatype List<a>
+  = Nil | Cons(head: a, tail: List<a>)
+
+function {:rw} sum(xs: List<int>, ys: List<int>): int {
+  match xs case Nil => 0 case Cons(y, ys) => y + sum(ys, ys)
+}
+

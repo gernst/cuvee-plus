@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/sorts.dfy
 // type aliases are unfolded during type checking
 type pred<a> = array<a, bool>
 

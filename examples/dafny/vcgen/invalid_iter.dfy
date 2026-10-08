@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_iter.dfy
 // expected: invalid
 // nondeterministic iterations may stop before the loop has reached its goal
 

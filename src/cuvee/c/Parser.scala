@@ -4,7 +4,8 @@ import scala.collection.mutable
 
 import cuvee.Error
 import cuvee.core
-import cuvee.core.{State, Attrs}
+import cuvee.core.State
+import cuvee.core.Attrs
 
 // resolution of a C translation unit into core procedures:
 // integer types are Int (unbounded), _Bool is Bool, arrays are values of type Array Int T;

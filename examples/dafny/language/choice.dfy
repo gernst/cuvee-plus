@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/choice.dfy
 // nondeterministic choices are if statements with guard *,
 // chains of choices if * { ... } else if * { ... } else { ... } are a single choice
 method pick(n: int) returns (k: int)

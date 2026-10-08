@@ -1,3 +1,4 @@
+// ./Cuvee.sh -chc examples/dafny/horn/contract.dfy
 // expected: valid
 // a polymorphic method without body is used by its contract, instantiated for the monomorphic caller
 

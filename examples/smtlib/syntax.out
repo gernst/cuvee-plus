@@ -1,0 +1,2 @@
+(declare-fun abs (Int) Int)
+

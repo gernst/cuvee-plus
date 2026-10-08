@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/c/max.c
 // expected: valid
 // the maximum of two numbers, without loops
 

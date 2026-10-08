@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/seq.dfy
 // updates of sequences s[i := v] are seq.update in cvc5, which z3 does not support,
 // verified with -verify -cvc5
 

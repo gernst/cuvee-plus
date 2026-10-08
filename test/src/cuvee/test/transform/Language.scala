@@ -12,11 +12,11 @@ import cuvee.core._
 // Dafny printed as Dafny none of these;
 // the features added by -teq are part of the languages of the input and of the output, regardless of -print
 object Language extends TestSuite:
-  // the printed output, written with -o
+  // the printed output of `args` on count.dfy, as stdout shows it
   def output(args: String*): String =
-    val file = os.temp(suffix = ".out")
-    cuvee.Cuvee.run(List("-o", file.toString) ++ args)
-    os.read(file)
+    Examples.show(args :+ file)
+    val (out, _, _) = cuvee.test.Expected.run(args.toList :+ file, java.nio.file.Path.of(file))
+    out.mkString("\n")
 
   def sorts(cmds: List[Cmd]): Set[String] =
     cmds.collect:
@@ -28,7 +28,7 @@ object Language extends TestSuite:
 
   val tests = Tests:
     test("smt2"):
-      val text = output("-print", "smt2", file)
+      val text = output("-print", "smt2")
       val (_, cmds) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader(text))
       val (_, prelude) = Examples.source(cuvee.smtlib.Source, new java.io.StringReader(""))
       val sorts_ = sorts(cmds.toList.filterNot(prelude.contains))
@@ -36,17 +36,22 @@ object Language extends TestSuite:
       assert(!sorts_.contains("Int") && !sorts_.contains("Seq") && !sorts_.contains("Set") && !sorts_.contains("Trace"))
 
     test("dfy"):
-      val text = output(file)
+      val text = output()
       assert(!text.contains("tuple₂") && !text.contains("{:dfy}"))
 
     test("teq"):
-      assert(!output("-teq", file).contains("{:teq}"))
-      assert(!output("-teq", "-print", "dfy", file).contains("{:teq}"))
-      assert(!output("-teq", "-print", "smt2", file).contains(":teq"))
-      assert(!output("-print", "smt2", "-teq", file).contains(":teq"))
+      assert(!output("-teq").contains("{:teq}"))
+      assert(!output("-teq", "-print", "dfy").contains("{:teq}"))
+      assert(!output("-teq", "-print", "smt2").contains(":teq"))
+      assert(!output("-print", "smt2", "-teq").contains(":teq"))
 
+    // the declarations that the receiver knows are acknowledged and dropped before it
     test("filter"):
-      val printer = cuvee.pipe.Printer.filter(Set("dfy"), cuvee.pipe.Printer.default)
+      val buffer = scala.collection.mutable.ListBuffer[Cmd]()
       val a = DeclareSort(Con("A", 0), Attrs(List("dfy" -> None)))
       val b = DeclareSort(Con("B", 0), Attrs.empty)
-      printer.lines(List[Cmd](a, b)) ==> List(b.toString)
+      val sink = cuvee.pipe.Sink.filter(Set("dfy"), cuvee.pipe.Sink.collect(buffer))
+      val (result, _, _) = sink.query(a)
+      result ==> Ack.Success
+      sink.exec(b)
+      buffer.toList ==> List(b)

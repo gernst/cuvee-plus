@@ -1,0 +1,3 @@
+error "goal does not hold"
+  "Sat"
+  "(forall ((s (Seq Int)) (x Int) (t (Seq Int))) (=> (and (< 0 (seq.len s)) true) (= (seq.nth (seq.++ (seq.unit x) s) (- (seq.len (seq.++ (seq.unit x) s)) 1)) x)))"

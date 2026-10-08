@@ -5,7 +5,7 @@ import cuvee.Error
 import cuvee.core._
 
 import easyprint.Doc
-import easyprint.Doc.{text, line, linebreak, hardline, empty, concat, join, render}
+import easyprint.Doc._
 import easyprint.Group
 import easyprint.Nest
 import easyprint.Align
@@ -51,8 +51,7 @@ object Printer extends cuvee.pipe.Printer:
 
   // what is not C in SMT-LIB, whose lines are aligned after SMT_LIB(
   def smtlib(lines: List[String]): Doc =
-    val lines_ = lines.reverse.dropWhile(_.isEmpty).reverse
-    text("SMT_LIB(") ~ Align(join(lines_.map(text), hardline)) ~ text(")")
+    text("SMT_LIB(") ~ Align(join(lines.map(text), hardline)) ~ text(")")
 
   // each command is followed by an empty line, as by the SMT-LIB printer
   def lines(cmd: Cmd): List[String] =
@@ -98,16 +97,13 @@ object Printer extends cuvee.pipe.Printer:
   def signature(name_ : Name, in: List[Var], out: List[Var]): Doc =
     returns(out) ~~ call(name(name_), if in.isEmpty then List(text("void")) else in.map(decl))
 
+  // the commands that are not C, e.g. assertions, and procedures of several results, are printed in SMT-LIB
   def doc(cmd: Cmd): Doc =
-    try c(cmd)
-    catch case _: Error => smtlib(cuvee.smtlib.Printer.lines(cmd))
-
-  def c(cmd: Cmd): Doc =
     cmd match
       case DeclareVar(x, _) =>
         decl(x) ~ text(";")
 
-      case DeclareProc(Proc(name_, Nil, in, out), _) =>
+      case DeclareProc(Proc(name_, Nil, in, out), _) if out.length <= 1 =>
         signature(name_, in, out) ~ text(";")
 
       // uninterpreted functions, e.g. the predicates of Horn clauses
@@ -115,13 +111,13 @@ object Printer extends cuvee.pipe.Printer:
         doc(res) ~~ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) ~ text(";")
 
       // contracts are omitted, e.g. the zero values of global variables as the precondition of main
-      case DefineProc(Proc(name_, Nil, in, out), body, _) =>
+      case DefineProc(Proc(name_, Nil, in, out), body, _) if out.length <= 1 =>
         result = out.headOption
         try signature(name_, in, out) ~~ block(body)
         finally result = None
 
       case _ =>
-        Error.raise("command not supported in C", cmd)
+        smtlib(cuvee.smtlib.Printer.command(cmd))
 
   def braces(docs: List[Doc]): Doc =
     if docs.isEmpty

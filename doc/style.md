@@ -6,6 +6,8 @@
   functions and lambdas passed as the last argument, `xs.map: x =>` and
   `xs.collect:` followed by `case` lines; companion objects and classes end
   without braces as well
+- imports name one member per line or use a wildcard, no braces
+  (`import cuvee.verify.Horn`, `import easyprint.Doc._`), renames with `as`
 - always add newline after `def f(...) =`
 - add blank line between cases unless very compact
 - introduce updated variables `x_` before constructing new objects
@@ -92,7 +94,11 @@
 
 - every feature comes with tests: unit tests on core terms, and examples in
   `examples/<language>/` that the tests run through `cuvee.Cuvee.run`
-- verification examples state their expected verdict in the first line,
+- every example states its command line in its first line, e.g.
+  `// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/abs.dfy`, with its expected
+  output in `name.out` and `name.err` (see [architecture.md](architecture.md));
+  tests never write files
+- verification examples state their expected verdict in the second line,
   `// expected: valid` or `// expected: invalid`
 - an error test checks the exact message of the error
 

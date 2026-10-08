@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/functions.dfy
 // function types (A, B) -> C, which associate to the right, and lambdas, whose variables are annotated with their types,
 // also as arguments and results of other lambdas, and tuples as the single argument of a function type
 

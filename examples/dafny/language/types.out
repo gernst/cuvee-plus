@@ -1,0 +1,22 @@
+type foo
+
+function foo_f(this: foo, x: int): int
+
+method foo_m(this: foo, x: int) returns (y: int)
+
+datatype color
+  = red | green | blue
+
+datatype baz<a>
+  = good(that: a) | bad
+
+function baz_isGood<a>(this: baz<a>): bool {
+  this != bad
+}
+
+method test(b: foo) {
+  var y: int;
+  y := foo_f(b, 1);
+  y := foo_m(b, 1);
+}
+

@@ -4,12 +4,10 @@ package transform
 import utest._
 
 import cuvee.core._
-import cuvee.transform.{Split => S}
+import cuvee.transform.Split as S
 
 // the obligations of -split hold if and only if the goals do, for the examples verified with -verify
 object Split extends TestSuite:
-  import cuvee.test.dafny.Verify.expected
-
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)
   val p = Var("p", Sort.bool)
@@ -59,8 +57,7 @@ object Split extends TestSuite:
     test("examples"):
       for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filter(Examples.supported)
       do
-        val first = os.read.lines(file).head
         val errors = Examples.errors("-verify", "-split", "-z3", file.toString)
-        if expected(first).isEmpty
+        if Examples.reported(file).isEmpty
         then assert(errors.isEmpty)
         else assert(errors.nonEmpty && errors.forall(_ == "goal does not hold"))

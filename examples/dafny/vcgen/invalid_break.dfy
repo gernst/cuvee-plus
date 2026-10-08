@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_break.dfy
 // expected: invalid
 // break leaves the loop before i == n
 

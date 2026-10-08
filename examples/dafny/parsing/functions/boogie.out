@@ -1,0 +1,180 @@
+type {:dfy} {:smt2} String;
+
+type {:dfy} {:smt2} Set<a₀>;
+
+type {:dfy} Bag<a₀>;
+
+type {:dfy} Map<a₀, a₁>;
+
+data {:dfy} tuple₁<a₀>
+  = tuple₁(tuple₁_0: a₀);
+
+data {:dfy} tuple₂<a₀, a₁>
+  = tuple₂(tuple₂_0: a₀, tuple₂_1: a₁);
+
+data {:dfy} tuple₃<a₀, a₁, a₂>
+  = tuple₃(tuple₃_0: a₀, tuple₃_1: a₁, tuple₃_2: a₂);
+
+data {:dfy} tuple₄<a₀, a₁, a₂, a₃>
+  = tuple₄(tuple₄_0: a₀, tuple₄_1: a₁, tuple₄_2: a₂, tuple₄_3: a₃);
+
+data {:dfy} tuple₅<a₀, a₁, a₂, a₃, a₄>
+  = tuple₅(tuple₅_0: a₀,
+           tuple₅_1: a₁,
+           tuple₅_2: a₂,
+           tuple₅_3: a₃,
+           tuple₅_4: a₄);
+
+data {:dfy} tuple₆<a₀, a₁, a₂, a₃, a₄, a₅>
+  = tuple₆(tuple₆_0: a₀,
+           tuple₆_1: a₁,
+           tuple₆_2: a₂,
+           tuple₆_3: a₃,
+           tuple₆_4: a₄,
+           tuple₆_5: a₅);
+
+data {:dfy} tuple₇<a₀, a₁, a₂, a₃, a₄, a₅, a₆>
+  = tuple₇(tuple₇_0: a₀,
+           tuple₇_1: a₁,
+           tuple₇_2: a₂,
+           tuple₇_3: a₃,
+           tuple₇_4: a₄,
+           tuple₇_5: a₅,
+           tuple₇_6: a₆);
+
+data {:dfy} tuple₈<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇>
+  = tuple₈(tuple₈_0: a₀,
+           tuple₈_1: a₁,
+           tuple₈_2: a₂,
+           tuple₈_3: a₃,
+           tuple₈_4: a₄,
+           tuple₈_5: a₅,
+           tuple₈_6: a₆,
+           tuple₈_7: a₇);
+
+data {:dfy} tuple₉<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈>
+  = tuple₉(tuple₉_0: a₀,
+           tuple₉_1: a₁,
+           tuple₉_2: a₂,
+           tuple₉_3: a₃,
+           tuple₉_4: a₄,
+           tuple₉_5: a₅,
+           tuple₉_6: a₆,
+           tuple₉_7: a₇,
+           tuple₉_8: a₈);
+
+data {:dfy} tuple₁₀<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉>
+  = tuple₁₀(tuple₁₀_0: a₀,
+            tuple₁₀_1: a₁,
+            tuple₁₀_2: a₂,
+            tuple₁₀_3: a₃,
+            tuple₁₀_4: a₄,
+            tuple₁₀_5: a₅,
+            tuple₁₀_6: a₆,
+            tuple₁₀_7: a₇,
+            tuple₁₀_8: a₈,
+            tuple₁₀_9: a₉);
+
+type {:dfy} {:smt2} {:ho} arrow₁<a₀, a₁>;
+
+type {:dfy} {:smt2} {:ho} arrow₂<a₀, a₁, a₂>;
+
+type {:dfy} {:smt2} {:ho} arrow₃<a₀, a₁, a₂, a₃>;
+
+type {:dfy} {:smt2} {:ho} arrow₄<a₀, a₁, a₂, a₃, a₄>;
+
+type {:dfy} {:smt2} {:ho} arrow₅<a₀, a₁, a₂, a₃, a₄, a₅>;
+
+type {:dfy} {:smt2} {:ho} arrow₆<a₀, a₁, a₂, a₃, a₄, a₅, a₆>;
+
+type {:dfy} {:smt2} {:ho} arrow₇<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇>;
+
+type {:dfy} {:smt2} {:ho} arrow₈<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈>;
+
+type {:dfy} {:smt2} {:ho} arrow₉<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉>;
+
+type {:dfy} {:smt2} {:ho} arrow₁₀<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉, a₁₀>;
+
+function {:dfy} {:smt2} {:ho} apply₁<a₀, a₁>(x₀: arrow₁<a₀, a₁>, x₁: a₀): a₁;
+
+function {:dfy} {:smt2} {:ho} apply₂<a₀, a₁, a₂>(
+  x₀: arrow₂<a₀, a₁, a₂>,
+  x₁: a₀,
+  x₂: a₁): a₂;
+
+function {:dfy} {:smt2} {:ho} apply₃<a₀, a₁, a₂, a₃>(
+  x₀: arrow₃<a₀, a₁, a₂, a₃>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂): a₃;
+
+function {:dfy} {:smt2} {:ho} apply₄<a₀, a₁, a₂, a₃, a₄>(
+  x₀: arrow₄<a₀, a₁, a₂, a₃, a₄>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃): a₄;
+
+function {:dfy} {:smt2} {:ho} apply₅<a₀, a₁, a₂, a₃, a₄, a₅>(
+  x₀: arrow₅<a₀, a₁, a₂, a₃, a₄, a₅>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄): a₅;
+
+function {:dfy} {:smt2} {:ho} apply₆<a₀, a₁, a₂, a₃, a₄, a₅, a₆>(
+  x₀: arrow₆<a₀, a₁, a₂, a₃, a₄, a₅, a₆>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅): a₆;
+
+function {:dfy} {:smt2} {:ho} apply₇<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇>(
+  x₀: arrow₇<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅,
+  x₇: a₆): a₇;
+
+function {:dfy} {:smt2} {:ho} apply₈<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈>(
+  x₀: arrow₈<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅,
+  x₇: a₆,
+  x₈: a₇): a₈;
+
+function {:dfy} {:smt2} {:ho} apply₉<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉>(
+  x₀: arrow₉<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅,
+  x₇: a₆,
+  x₈: a₇,
+  x₉: a₈): a₉;
+
+function {:dfy} {:smt2} {:ho} apply₁₀<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉, a₁₀>(
+  x₀: arrow₁₀<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉, a₁₀>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅,
+  x₇: a₆,
+  x₈: a₇,
+  x₉: a₈,
+  x₁₀: a₉): a₁₀;
+

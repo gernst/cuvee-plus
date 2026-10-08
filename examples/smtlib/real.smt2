@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/real.smt2
 ; arithmetic and comparison are overloaded for Int and Real,
 ; resolved by the type of the arguments after type checking
 

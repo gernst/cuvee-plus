@@ -1,3 +1,4 @@
+// ./Cuvee.sh -chc -monomorph examples/boogie/horn/invalid_globals.bpl
 // expected: invalid
 // the loop may not be entered, then counter exceeds limit
 

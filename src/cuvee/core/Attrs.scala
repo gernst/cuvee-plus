@@ -20,6 +20,10 @@ case class Attrs(attrs: List[(String, Option[Any])]):
     attrs.exists:
       case (kw_, _) => kw == kw_
 
+  // the attributes with one of the keywords `kws`, e.g. those that solvers understand
+  def retain(kws: String*): Attrs =
+    Attrs(attrs.filter((kw, _) => kws.contains(kw)))
+
   def get(kw: String) =
     attrs.collect:
       case (`kw`, arg) => arg

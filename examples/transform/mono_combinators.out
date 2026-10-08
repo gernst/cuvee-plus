@@ -1,0 +1,13 @@
+(declare-sort Lst 1)
+
+(declare-const J (Seq Int))
+
+(declare-fun single<Int> (Int) (Lst Int))
+
+(assert
+  (=
+    (map ((j J)) (single<Int> j))
+    (map
+      ((j J))
+      (single<Int> (+ j 0)))))
+

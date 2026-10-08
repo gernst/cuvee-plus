@@ -1,0 +1,2 @@
+error "duplicate variables"
+  "List(Var(Name(b,None),Sort(Con(Name(Array,None),2),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List())))), Var(Name(b,None),Sort(Con(Name(Array,None),2),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List())))))"

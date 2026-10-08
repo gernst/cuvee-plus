@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/traces.dfy
 // the combinators of trace equation systems: trace, map, and all,
 // the type of traces is declared explicitly, since it exists only with -teq otherwise
 type Trace<a>

@@ -1,0 +1,21 @@
+logic HORN
+
+function main_pre(x: int): bool
+
+function main_post(x: int): bool
+
+function main_call_1(x: int, y₁: int): bool
+
+axiom forall x: int :: true ==> main_pre(x)
+
+axiom forall x: int :: main_pre(x) ==> 0 < x
+
+axiom
+  forall x: int, y₂: int :: main_pre(x) && y₂ == x - 1 ==> main_call_1(x, y₂)
+
+axiom forall x: int, y₁: int :: main_call_1(x, y₁) ==> main_post(x)
+
+check
+
+model
+

@@ -10,19 +10,11 @@ import cuvee.core._
 import cuvee.boogie.Printer
 import cuvee.boogie.Source
 
-// printing the internal representation of the Boogie examples must be stable
-// when the output is parsed again, the original file is not compared
+// printing the Boogie examples is stable when the output is parsed again, the original file is not compared
 object Roundtrip extends TestSuite:
   val tests =
-    Examples.tests(Examples.find(os.sub / "boogie", "bpl")): file =>
-      val args = List("-print", "null", file.toString)
-      val (cmds, errors) = Examples.output(args*)
-      errors ==> Nil
-
-      val first = Printer.lines(cmds)
-      val (_, cmds_) = Examples.source(Source, new StringReader(first.mkString("\n")))
-      val second = Printer.lines(cmds_.toList.filterNot(Examples.prelude(args*).contains))
-      second ==> first
+    Examples.tests(Examples.valid(os.sub / "boogie", "bpl")): file =>
+      Examples.roundtrip(file, Nil)
 
 object Printing extends TestSuite:
   val x = Var("x", Sort.int)

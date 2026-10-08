@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/decreases.dfy
 // expected: valid
 // loops and recursive calls decrease their termination measure
 

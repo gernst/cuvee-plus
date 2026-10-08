@@ -1,0 +1,13 @@
+datatype pair<a>
+  = pair(fst: a, snd: a)
+
+function pair_same<a>(this: pair<a>): bool {
+  pair_fst(this) == pair_snd(this)
+}
+
+function id<b>(x: b): b
+
+function both(p: pair<int>): bool {
+  var q: pair<int> := id(p); pair_same(q) && pair_fst(q) == pair_snd(p)
+}
+

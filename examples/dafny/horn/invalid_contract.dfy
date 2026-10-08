@@ -1,3 +1,4 @@
+// ./Cuvee.sh -chc examples/dafny/horn/invalid_contract.dfy
 // expected: invalid
 // the precondition of a method without body is a goal at the call
 

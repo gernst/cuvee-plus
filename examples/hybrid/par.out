@@ -1,0 +1,24 @@
+function positive(h: seq<event<int>>, c: chan): bool {
+  forall e: event<int> ::
+    e in h && e.message? && event_chan(e) == c ==> 0 < event_value(e)
+}
+
+goal
+  forall c: chan, n: int, history: history<int>, history₃: history<int> ::
+    0 < n
+      && positive(history_events(history), c)
+      && history_events(history₃) == history_events(history) + [message(c, n)]
+      ==> positive(history_events(history₃), c)
+        && (forall history₂: history<int> ::
+              history_events(history₂)
+                == history_events(history₃) + [message(c, n + 1)]
+                ==> positive(history_events(history₂), c))
+
+goal
+  forall c: chan, d: chan, history: history<int>, x₅: int,
+         history₆: history<int> ::
+    c != d
+      && positive(history_events(history), c)
+      && history_events(history₆) == history_events(history) + [message(d, x₅)]
+      ==> positive(history_events(history₆), c)
+

@@ -1,0 +1,4 @@
+error "type mismatch"
+  "Var(Name(a,None),Sort(Con(Name(Array,None),2),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List()))))"
+  "Sort(Con(Name(Array,None),2),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List())))"
+  "Sort(Con(Name(Seq,None),1),List(Param(Name(a,Some(5)))))"

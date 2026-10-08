@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/c/count.c
 // expected: valid
 // loops, for with continue, and global variables, verified with -chc
 

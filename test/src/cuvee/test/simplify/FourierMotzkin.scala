@@ -5,7 +5,9 @@ import utest._
 
 import _root_.util.Rational
 import cuvee.core._
-import cuvee.simplify.{Poly, Constraint, FourierMotzkin => FM}
+import cuvee.simplify.Poly
+import cuvee.simplify.Constraint
+import cuvee.simplify.FourierMotzkin as FM
 
 object FourierMotzkin extends TestSuite:
   val x = Var("x", Sort.real)

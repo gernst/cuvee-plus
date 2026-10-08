@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/iter.dfy
 // expected: valid
 // nondeterministic iterations, while * { ... }, may stop after any number of iterations,
 // the body may leave the loop by break as well

@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -simplify examples/hybrid/ball.dfy
 // hybrid programs: nondeterministic iterations, differential equations over a local time t with evolution constraints and
 // differential invariants, and derivatives (x, y :: e)' of e with respect to x and y, which are on real
 

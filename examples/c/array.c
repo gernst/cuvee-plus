@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/c/array.c
 // expected: valid
 // arrays are values, which are copied when passed
 

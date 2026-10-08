@@ -41,28 +41,6 @@ trait Printer:
     yield line
 
 object Printer:
-  def filter(features: Set[String], printer: Printer) =
-    Filter(features, printer)
-
-  // drops the top-level declarations that the receiver of the output knows by their features:
-  // those of the preludes (resources/cuvee/*/prelude.*) name the languages that they are part of by attributes,
-  // the file extensions smt2, dfy, bpl, and c, e.g. the tuples of Dafny are part of Dafny only,
-  // and are therefore declared as datatypes in SMT-LIB,
-  // and those injected with -teq and -hybrid are known to the input language (see Config.having)
-  class Filter(features: Set[String], printer: Printer) extends Printer:
-    def lines(res: Result) = printer.lines(res)
-    def lines(typ: Type) = printer.lines(typ)
-    def lines(expr: Expr) = printer.lines(expr)
-    def lines(prog: Prog) = printer.lines(prog)
-
-    def lines(cmd: Cmd) =
-      cmd match
-        case decl: Decl if features.exists(decl.attrs.contains) =>
-          Nil
-
-        case _ =>
-          printer.lines(cmd)
-
   object default extends Printer:
     def lines(res: Result) = List(res.toString)
     def lines(cmd: Cmd) = List(cmd.toString)

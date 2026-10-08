@@ -1,0 +1,4 @@
+error "type mismatch"
+  "Var(Name(y,None),BitVec(16))"
+  "BitVec(16)"
+  "Param(Name(a,Some(1)))"

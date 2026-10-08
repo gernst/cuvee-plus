@@ -1,0 +1,2 @@
+error "differential equations for variables that are not real"
+  "List(Var(Name(x,None),Sort(Con(Name(Int,None),0),List())))"

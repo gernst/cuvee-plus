@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/count.dfy
 // a counter, whose loop is summarized by a trace equation system with -teq
 
 method count(n: int) returns (i: int)

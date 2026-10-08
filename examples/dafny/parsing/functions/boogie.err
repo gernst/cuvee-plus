@@ -1,0 +1,2 @@
+error "lambda of function type not supported in Boogie"
+  "Lam(List(Var(Name(x,None),Sort(Con(Name(Int,None),0),List()))),Var(Name(x,None),Sort(Con(Name(Int,None),0),List())),Sort(Con(Name(arrow,Some(1)),2),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List()))))"

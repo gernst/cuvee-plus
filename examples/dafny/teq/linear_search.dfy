@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/teq/linear_search.dfy
 // the first index of x among the first n elements of an array, n if there is none
 
 method find(a: array<int, int>, n: int, x: int) returns (i: int)

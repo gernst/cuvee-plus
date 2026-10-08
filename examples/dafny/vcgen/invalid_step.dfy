@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_step.dfy
 // expected: invalid
 // the invariant is not preserved
 

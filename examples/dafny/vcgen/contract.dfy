@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/contract.dfy
 // expected: valid
 // calls to methods without body rely on their contract only
 

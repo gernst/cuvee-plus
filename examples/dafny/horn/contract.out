@@ -1,0 +1,38 @@
+logic HORN
+
+datatype pair<a>
+  = pair(fst: a, snd: a)
+
+function main_pre(x: int, y: int): bool
+
+function main_post(x: int, y: int): bool
+
+function main_call_1(x: int, y: int, p₁: pair<int>): bool
+
+function main_spec_2(x: int, y: int, p₁: pair<int>): bool
+
+axiom forall x: int, y: int :: true ==> main_pre(x, y)
+
+axiom
+  forall x: int, y: int, p₂: pair<int> ::
+    main_pre(x, y)
+      && pair_fst(p₂) == pair_snd(pair(x, y))
+      && pair_snd(p₂) == pair_fst(pair(x, y))
+      ==> main_call_1(x, y, p₂)
+
+axiom
+  forall x: int, y: int, p₁: pair<int> ::
+    main_call_1(x, y, p₁) ==> pair_fst(p₁) == y
+
+axiom
+  forall x: int, y: int, p₁: pair<int> ::
+    main_call_1(x, y, p₁) && true ==> main_spec_2(x, y, p₁)
+
+axiom
+  forall x: int, y: int, p₁: pair<int> ::
+    main_spec_2(x, y, p₁) ==> main_post(x, y)
+
+check
+
+model
+

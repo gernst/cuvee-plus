@@ -1,3 +1,4 @@
+; ./Cuvee.sh -simplify examples/simplify/compare.smt2
 ; negated comparisons are the other comparison with the arguments swapped,
 ; which the context relates to the original comparison
 (declare-const x Int)

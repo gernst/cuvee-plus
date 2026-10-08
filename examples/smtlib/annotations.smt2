@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/annotations.smt2
 ; testers of constructors and explicit type annotations
 
 (declare-datatype Stack (par (a) ((nil) (cons (head a) (tail (Stack a))))))

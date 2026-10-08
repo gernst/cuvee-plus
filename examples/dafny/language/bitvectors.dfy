@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/bitvectors.dfy
 // expected: valid
 // bitvectors, whose arithmetic wraps around, and whose division and comparisons are unsigned;
 // numeric literals are bitvectors where the context requires it, and integers otherwise

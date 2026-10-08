@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/real.dfy
 // expected: valid
 // real arithmetic and decimal literals
 

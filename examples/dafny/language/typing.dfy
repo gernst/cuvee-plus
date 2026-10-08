@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/typing.dfy
 // type inference for polymorphic functions such as == and array access
 
 method id<a>(x: a) returns (y: a)

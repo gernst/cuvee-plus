@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/traces.smt2
 ; the combinators of trace equation systems, whose dependencies are bound like let
 (declare-const J (Seq Int))
 (declare-const a (Array Int Int))

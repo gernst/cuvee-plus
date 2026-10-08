@@ -1,3 +1,4 @@
+// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/invalid_decreases.bpl
 // expected: invalid
 // the measure of the loop does not decrease
 

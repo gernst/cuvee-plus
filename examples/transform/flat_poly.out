@@ -1,0 +1,9 @@
+(declare-fun
+  q
+  (par (a) (a Int) Bool))
+
+(assert
+  (par
+    (a)
+    (forall ((y a)) (=> (= 0 1) (q y 0)))))
+

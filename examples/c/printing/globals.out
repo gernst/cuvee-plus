@@ -1,0 +1,7 @@
+int g;
+
+int main(void) {
+  g = 1;
+  return g;
+}
+

@@ -1,3 +1,4 @@
+; ./Cuvee.sh examples/smtlib/basic.smt2
 ; declarations, n-ary operators, annotations, push/pop
 
 (set-logic ALL)

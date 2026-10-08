@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/language/mutual.dfy
 // consecutive datatypes may refer to each other, also to later ones, as in Dafny;
 // each group of mutually recursive ones is declared together, after those that it refers to
 datatype Box = box(t: Tree<int>)

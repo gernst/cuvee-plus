@@ -29,15 +29,10 @@ trait Debug:
       case cause: Throwable =>
         throw apply(msg, info*).initCause(cause)
 
-case class Fatal(msg: String, info: Any*) extends Throwable:
-  override def toString =
-    "Fatal(" + msg + "," + info.mkString(",") + ")"
-
 case class Error(msg: String, info: Any*) extends Throwable with core.Result:
   override def toString =
     "Error(" + msg + "," + info.mkString(",") + ")"
 
-object Fatal extends Debug
 object Error extends Debug:
   // the error itself, not just a Throwable, so it can also be reported as a result
   override def apply(msg: String, info: Any*): Error =

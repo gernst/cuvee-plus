@@ -1,0 +1,8 @@
+const c: int
+
+check
+
+axiom c == 0
+
+goal {:rw} forall x: int :: x < x + 1
+

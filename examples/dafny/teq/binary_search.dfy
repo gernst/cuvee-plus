@@ -1,3 +1,4 @@
+// ./Cuvee.sh examples/dafny/teq/binary_search.dfy
 // an index of x among the first n elements of a sorted array, -1 if there is none
 
 method search(a: array<int, int>, n: int, x: int) returns (i: int)

@@ -1,0 +1,4 @@
+error "type mismatch"
+  "Lam(List(Var(Name(x,None),Sort(Con(Name(Bool,None),0),List()))),Lit(0,Param(Name(n,Some(1)))),Sort(Con(Name(arrow,Some(1)),2),List(Sort(Con(Name(Bool,None),0),List()), Param(Name(n,Some(1))))))"
+  "Sort(Con(Name(arrow,Some(1)),2),List(Sort(Con(Name(Bool,None),0),List()), Param(Name(n,Some(1)))))"
+  "Sort(Con(Name(arrow,Some(1)),2),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List())))"

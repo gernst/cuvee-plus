@@ -4,7 +4,9 @@ package simplify
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.{Rule, Simplify, Context}
+import cuvee.simplify.Rule
+import cuvee.simplify.Simplify
+import cuvee.simplify.Context
 
 object Rewrite extends TestSuite:
   // a rule whose type parameters and variables are the free ones of its left-hand side
@@ -75,34 +77,13 @@ object Rewrite extends TestSuite:
       R(rules, expr) ==> Plus.int(app(length, app(cons, b, nil_)), One.int)
       R(rules, app(length, nil_)) ==> Zero.int
 
-    // function definitions with :rw whose body is a match on a parameter give one rule per case,
-    // with disjoint patterns here, since overlapping ones are not treated specially
+    // function definitions with :rw whose body is a match on a parameter give one rule per case
+    // (see examples/simplify/definitions*.dfy for their application)
     test("definitions"):
-      val list = "datatype List<a> = Nil | Cons(head: a, tail: List<a>)\n"
-      val length = "function {:rw} length<a>(xs: List<a>): int { match xs case Nil => 0 case Cons(_, ys) => 1 + length(ys) }\n"
-      val lemmas = "lemma length(Cons(1, Cons(2, Nil))) == 2\nlemma forall x: int, xs: List<int> :: length(Cons(x, xs)) == length(xs) + 1\n"
-
-      val file = os.temp(list + length + lemmas, suffix = ".dfy")
+      val file = Examples.root / "simplify" / "definitions.dfy"
       val rules = cuvee.simplify.Rules.from(State.empty, Examples.input(file.toString))
       rules.collect { case Rule(_, _, App(fun, _, _, List(App(constr, _, _, _))), _, True) => (fun.name.name, constr.name.name) } ==>
         List(("length", "Nil"), ("length", "Cons"))
-
-      val (cmds, errors) = Examples.output("-simplify", file.toString)
-      errors ==> Nil
-      cmds.collect { case cmd: Assert => cmd } ==> Nil
-
-      // the pattern variable ys shadows the parameter ys, the second argument is not the tail
-      val sum = "function {:rw} sum(xs: List<int>, ys: List<int>): int { match xs case Nil => 0 case Cons(y, ys) => y + sum(ys, ys) }\n"
-      val shadowed = os.temp(list + sum + "lemma sum(Cons(1, Cons(2, Nil)), Nil) == 3\n", suffix = ".dfy")
-      val (cmds_, errors_) = Examples.output("-simplify", shadowed.toString)
-      errors_ ==> Nil
-      cmds_.collect { case cmd: Assert => cmd } ==> Nil
-
-      // other definitions are unfolded
-      val unfolded = os.temp(list + "function {:rw} f(xs: List<int>): int { 0 }\nlemma f(Nil) == 0\n", suffix = ".dfy")
-      val (cmds__, errors__) = Examples.output("-simplify", unfolded.toString)
-      errors__ ==> Nil
-      cmds__.collect { case cmd: Assert => cmd } ==> Nil
 
     // annotations e as T of the expression are skipped when matching, e.g. [] as List<int>
     test("annotated"):
@@ -254,66 +235,3 @@ object SimplifyRules extends TestSuite:
     test("further"):
       val rules = List(rw(app(f, x), Plus.int(x, Minus.int(x, x))))
       simplify(rules, Eq(app(f, a), a)) ==> True
-
-// rewrite rules are assertions and lemmas with the attribute :rw in Dafny, Boogie, and SMT-LIB (see examples/simplify)
-object Rules extends TestSuite:
-  def simplify(text: String, suffix: String) =
-    val file = os.temp(text, suffix = suffix)
-    Examples.output("-simplify", file.toString)
-
-  val tests = Tests:
-    test("dafny"):
-      val (cmds, errors) = simplify("""
-        function f(x: int): int
-        function g(x: int): int
-        predicate p(x: int)
-        axiom {:rw} forall x: int :: f(g(x)) == x
-        lemma {:rw} forall x: int :: 0 <= x ==> p(x)
-        function h(a: int): bool { f(g(a)) == a && p(1) }
-      """, ".dfy")
-      errors ==> Nil
-      cuvee.dafny.Printer.lines(cmds.last) ==> List("function h(a: int): bool {", "  true", "}", "")
-
-    test("boogie"):
-      val (cmds, errors) = simplify("""
-        function f(x: int): int;
-        function g(x: int): int;
-        axiom {:rw} (forall x: int :: f(g(x)) == x);
-        lemma {:rw} (forall x: int :: !(f(x) < 0));
-        function h(a: int): bool { f(g(a)) == a && !(f(a) < 0) }
-      """, ".bpl")
-      errors ==> Nil
-      cuvee.boogie.Printer.lines(cmds.last) ==> List("function h(a: int): bool { true }", "")
-
-    // a variable of the expression is matched like the right-hand side of its equation in the context
-    test("equations"):
-      val (cmds, errors) = simplify("""
-        function f(x: int): int
-        function g(x: int): int
-        axiom {:rw} forall x: int :: f(g(x)) == x
-        function h(y: int, z: int): bool { y == g(z) ==> f(y) == z }
-      """, ".dfy")
-      errors ==> Nil
-      cuvee.dafny.Printer.lines(cmds.last) ==> List("function h(y: int, z: int): bool {", "  true", "}", "")
-
-    // an equation of the context with a ground side is a rule without variables, in either direction
-    test("ground"):
-      val (cmds, errors) = simplify("""
-        datatype box = box(v: int)
-        function f(x: int): int
-        function g(x: int): int
-        function h(b: box, c: box, x: int): bool { b.v == 0 && 1 == f(x) ==> g(b.v) == g(0) && g(f(x)) == g(1) && g(c.v) == g(0) }
-      """, ".dfy")
-      errors ==> Nil
-      cuvee.dafny.Printer.lines(cmds.last).mkString(" ").replaceAll(" +", " ") ==>
-        "function h(b: box, c: box, x: int): bool { box_v(b) == 0 && 1 == f(x) ==> g(box_v(c)) == g(0) } "
-
-    // the rules are printed with their attribute, which parses back
-    test("printing"):
-      val (cmds, errors) = simplify("function f(x: int): int axiom {:rw} forall x: int :: f(f(x)) == x", ".dfy")
-      errors ==> Nil
-      cuvee.dafny.Printer.lines(cmds.last) ==> List("axiom {:rw} forall x: int :: f(f(x)) == x", "")
-
-    test("invalid"):
-      val (_, errors) = simplify("predicate p(x: int) axiom {:rw} forall x: int :: p(x) && p(x + 1)", ".dfy")
-      errors ==> List("rewrite rule is not an equation, an equivalence, a negation, or a boolean atom")

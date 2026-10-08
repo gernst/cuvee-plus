@@ -1,0 +1,3 @@
+error "modifies clause of procedure lists variables that are not global"
+  "p"
+  "Set(Var(Name(x,None),Sort(Con(Name(Int,None),0),List())))"

@@ -1,0 +1,7 @@
+(assert
+  (=
+    (select
+      (lambda ((x Int)) (+ x 1))
+      0)
+    1))
+
