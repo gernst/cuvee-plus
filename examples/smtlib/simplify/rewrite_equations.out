@@ -1,0 +1,15 @@
+(declare-fun f (Int) Int)
+
+(declare-const a Int)
+
+(declare-const b Int)
+
+(assert
+  (!
+    (forall
+      ((x Int) (y Int))
+      (= (= (f x) y) false))
+    :rw))
+
+(assert (not (= a b)))
+

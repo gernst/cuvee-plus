@@ -4,13 +4,7 @@ package c
 import utest._
 
 import cuvee.core._
-
-// the C examples, each with its command line in the first line: those without loops are verified with -verify,
-// since C has no loop invariants, the others are printed; the cases of the translation are in c/parsing,
-// those of the clauses in c/horn, and those of the printer in c/printing
-object Checked extends TestSuite:
-  val tests =
-    Examples.checked(os.sub / "c", "c")
+import cuvee.Cuvee
 
 // printing the C examples is stable after a first round of parsing and printing again
 object Roundtrip extends TestSuite:
@@ -29,7 +23,7 @@ object Horn extends TestSuite:
   val tests =
     Examples.tests(Examples.find(os.sub / "c", "c").filter(stated).filterNot(file => skip.contains(file.last))): file =>
       Examples.show(List("-simplify", "-chc", "-z3", file.toString))
-      val (_, results) = cuvee.Cuvee.run("-simplify", "-chc", "-z3", file.toString)
+      val (_, results) = Cuvee.run("-simplify", "-chc", "-z3", file.toString)
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
 // the output is C: what is not C is printed in SMT-LIB as SMT_LIB(...), e.g. assertions and quantifiers,

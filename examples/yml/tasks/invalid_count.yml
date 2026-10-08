@@ -1,0 +1,14 @@
+# ./Cuvee.sh examples/yml/tasks/invalid_count.yml
+format_version: '2.0'
+
+# the loop counts only every second iteration
+input_files:
+  - '../../c/horn/invalid_count.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: LP64

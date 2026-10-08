@@ -252,7 +252,7 @@ inputs, after the harness), with where they occurred in the sample.
    string literals in the scanner, `__attribute__`, the GCC spellings
    `__const`, `__inline`, `__restrict`, `__extension__`, the bodies of
    builtins skipped, labels dropped, `__VERIFIER_assert` as `assert`
-   (example `examples/c/harness.c`).
+   (example `examples/c/vcgen/harness.c`).
 2. Literals: hex, integer suffixes, chars; scanner errors as parse errors.
    **Done:** decimal, octal and hexadecimal constants with suffixes,
    character constants with escapes (`Parser.literal`), unexpected

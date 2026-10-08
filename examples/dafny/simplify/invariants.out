@@ -1,0 +1,27 @@
+type Trace<a₀>
+
+function p(s: seq<int>): bool
+
+function pt(t: Trace<int>): bool
+
+const J: seq<int>
+
+const K: seq<int>
+
+const Y: seq<int>
+
+axiom invs(for J check l :: 0 < l) ==> p(maps(for J yield j :: j))
+
+axiom invs(for J check l :: 0 < l) ==> invs(for K check k :: 0 < k)
+
+axiom
+  forall X: Trace<int> ::
+    invs(for ⌊X⌋, J check x, j :: x < j) ==> X == trace(0, for J do x, j :: 1)
+
+axiom
+  forall X: Trace<int> ::
+    invs(for ⌊X⌋, J check x, j :: x < j)
+      ==> pt(trace(0, for J do x, j :: if x < j then 1 else 0))
+
+axiom invs(for J check j :: 0 < j) ==> Y == maps(for J yield j :: j)
+

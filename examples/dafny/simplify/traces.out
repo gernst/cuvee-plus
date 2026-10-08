@@ -1,0 +1,20 @@
+type Trace<a₀>
+
+function f(x: int): int
+
+const J: seq<int>
+
+const K: seq<int>
+
+const n: int
+
+axiom
+  trace(0, for J do s, j :: case j < n => j + s case n <= j => s)
+    == trace(0, for J do s, j :: s)
+
+axiom maps(for J yield j :: j) == J
+
+axiom invs(for J check j :: 2 * j < n)
+
+axiom invs(for K check k :: 0 < n)
+

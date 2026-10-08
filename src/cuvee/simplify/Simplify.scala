@@ -2,6 +2,7 @@ package cuvee.simplify
 
 import util.Name
 import cuvee.Debug
+import cuvee.Error
 import cuvee.Config
 import cuvee.pipe.Transform
 import cuvee.core._
@@ -31,23 +32,29 @@ object Simplify extends Transform:
       case _                     => false
 
   // `ctx` is an empty context, which provides the rewrite rules;
-  // the antecedents of assertions are assumed in the context of their succedents during simplification
+  // the antecedents of assertions are assumed in the context of their succedents during simplification;
+  // rules whose results grow, e.g. f(x) = f(f(x)), may exhaust the stack before the bound on the steps of the context
+  // is reached (see Rewrite.apply), which is reported in the same way
   def simplify(config: Config, state: State, ctx: Context, cmd: Cmd): Cmd =
-    cmd match
-      case Assert(justify, params, phi, attrs) =>
-        Assert(justify, params, apply(config, state, ctx.copy(polarity = Some(true)), Normalize(phi)), attrs)
+    try
+      cmd match
+        case Assert(justify, params, phi, attrs) =>
+          Assert(justify, params, apply(config, state, ctx.copy(polarity = Some(true)), Normalize(phi)), attrs)
 
-      case DefineFun(fun, body, attrs) =>
-        DefineFun(fun, simplify(config, state, ctx, body), attrs)
+        case DefineFun(fun, body, attrs) =>
+          DefineFun(fun, simplify(config, state, ctx, body), attrs)
 
-      case DeclareProc(proc, attrs) =>
-        DeclareProc(proc, simplify(config, state, ctx, attrs))
+        case DeclareProc(proc, attrs) =>
+          DeclareProc(proc, simplify(config, state, ctx, attrs))
 
-      case DefineProc(proc, body, attrs) =>
-        DefineProc(proc, simplify(config, state, ctx, body), simplify(config, state, ctx, attrs))
+        case DefineProc(proc, body, attrs) =>
+          DefineProc(proc, simplify(config, state, ctx, body), simplify(config, state, ctx, attrs))
 
-      case _ =>
-        cmd
+        case _ =>
+          cmd
+    catch
+      case _: StackOverflowError if ctx.rules.nonEmpty =>
+        Error.raise("rewriting does not terminate")
 
   // the formulas and terms in attributes, e.g. contracts and invariants, are simplified without context
   def simplify(config: Config, state: State, ctx: Context, attrs: Attrs): Attrs =

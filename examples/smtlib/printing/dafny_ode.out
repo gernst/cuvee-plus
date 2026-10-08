@@ -1,0 +1,8 @@
+function {:smt2} {:c} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>
+
+method m() returns (x: real, y: real) {
+  ode t :: x', y' == y, -x;
+  ode t :: x' == y while 0.0 <= x
+    invariant x <= y;
+}
+

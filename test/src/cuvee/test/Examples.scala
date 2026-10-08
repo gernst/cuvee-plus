@@ -10,6 +10,7 @@ import scala.collection.mutable
 import cuvee.Error
 import cuvee.core.Cmd
 import cuvee.pipe.Sink
+import cuvee.Cuvee
 
 object Examples:
   val workspace = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
@@ -58,10 +59,10 @@ object Examples:
       case "// expected: invalid" => false
 
   // the examples below `dir` with extension `ext` that are accepted, i.e., whose expected reports contain no errors
-  // other than goals that do not hold, except for the cases of the frontends and printers in directories named
-  // parsing and printing, whose output is checked by its expected output
+  // other than goals that do not hold, except for the cases of the frontends and printers in the modules parsing
+  // and printing, whose output is checked by its expected output, and the scripts of the module solver, which need one
   def valid(dir: os.SubPath, ext: String): List[os.Path] =
-    def cases(file: os.Path) = file.segments.exists(Set("parsing", "printing"))
+    def cases(file: os.Path) = file.segments.exists(Set("parsing", "printing", "solver"))
     find(dir, ext).filter(file => !cases(file) && reported(file).forall(_ == "goal does not hold"))
 
   // printing is stable: the output of `args` on `file`, parsed in the language of the output and printed again,
@@ -91,7 +92,7 @@ object Examples:
   // runs Cuvee on `args` and returns the messages of all errors that are reported
   def errors(args: String*): List[String] =
     show(args)
-    val (_, results) = cuvee.Cuvee.run(args*)
+    val (_, results) = Cuvee.run(args*)
     results.collect { case error: Error => error.msg }
 
   // runs Cuvee on `args` and returns the commands that reach the sink, i.e., after all transforms,
@@ -99,7 +100,7 @@ object Examples:
   def output(args: String*): (List[Cmd], List[String]) =
     show(args)
     val buffer = mutable.ListBuffer[Cmd]()
-    val (_, results) = cuvee.Cuvee.run(args.toList, List(Sink.collect(buffer)))
+    val (_, results) = Cuvee.run(args.toList, List(Sink.collect(buffer)))
     (buffer.toList.filterNot(prelude(args*).contains), results.collect { case error: Error => error.msg })
 
   // the commands that the stages pass on, before the declarations known to the receiver are dropped (see Cuvee.pipe),
@@ -124,7 +125,7 @@ object Examples:
   // runs Cuvee on `args` and returns the parsed input commands, without the prelude of the frontend
   def input(args: String*): List[Cmd] =
     show(args)
-    val (cmds, _) = cuvee.Cuvee.run(args*)
+    val (cmds, _) = Cuvee.run(args*)
     cmds.filterNot(prelude(args*).contains)
 
   // the examples below `dir` with the extension `ext`, each a test of the command line in its first line,

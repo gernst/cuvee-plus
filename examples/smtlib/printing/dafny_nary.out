@@ -1,0 +1,12 @@
+function {:smt2} {:c} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>
+
+const x: int
+
+const y: int
+
+axiom x + y + 0 == 0
+
+axiom x == y == 0
+
+axiom x - y * -1 == 0
+

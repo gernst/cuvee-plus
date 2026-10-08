@@ -1,0 +1,379 @@
+(set-logic HORN)
+
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quotient
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  remainder
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(declare-fun
+  clear_pre
+  ((Array Int Int) Int)
+  Bool)
+
+(declare-fun
+  clear_post
+  ((Array Int Int) Int)
+  Bool)
+
+(declare-fun
+  clear_assign_1
+  ((Array Int Int) Int (Array Int Int) Int)
+  Bool)
+
+(declare-fun
+  clear_assign_2
+  ((Array Int Int) Int (Array Int Int) Int)
+  Bool)
+
+(declare-fun
+  clear_inv_3
+  ((Array Int Int) Int (Array Int Int) Int)
+  Bool)
+
+(declare-fun
+  clear_assign_4
+  ((Array Int Int) Int (Array Int Int) Int)
+  Bool)
+
+(declare-fun
+  clear_assign_5
+  ((Array Int Int) Int (Array Int Int) Int)
+  Bool)
+
+(assert
+  (forall
+    ((a (Array Int Int)) (n Int) (i$4 Int))
+    (=>
+      (clear_pre a n)
+      (clear_assign_1 a n a i$4))))
+
+(assert
+  (forall
+    ((a (Array Int Int))
+      (n Int)
+      (a$3 (Array Int Int))
+      (i$4 Int))
+    (=>
+      (clear_assign_1 a n a$3 i$4)
+      (clear_assign_2 a n a$3 0))))
+
+(assert
+  (forall
+    ((a (Array Int Int))
+      (n Int)
+      (a$3 (Array Int Int))
+      (i$4 Int))
+    (=>
+      (clear_assign_2 a n a$3 i$4)
+      (clear_inv_3 a n a$3 i$4))))
+
+(assert
+  (forall
+    ((a (Array Int Int))
+      (n Int)
+      (a$3 (Array Int Int))
+      (i$4 Int))
+    (=>
+      (and
+        (clear_inv_3 a n a$3 i$4)
+        (< i$4 n))
+      (clear_assign_4 a n (store a$3 i$4 0) i$4))))
+
+(assert
+  (forall
+    ((a (Array Int Int))
+      (n Int)
+      (a$3 (Array Int Int))
+      (i$4 Int))
+    (=>
+      (clear_assign_4 a n a$3 i$4)
+      (clear_assign_5 a n a$3 (+ i$4 1)))))
+
+(assert
+  (forall
+    ((a (Array Int Int))
+      (n Int)
+      (a$3 (Array Int Int))
+      (i$4 Int))
+    (=>
+      (clear_assign_5 a n a$3 i$4)
+      (clear_inv_3 a n a$3 i$4))))
+
+(assert
+  (forall
+    ((a (Array Int Int))
+      (n Int)
+      (a$3 (Array Int Int))
+      (i$4 Int))
+    (=>
+      (and
+        (clear_inv_3 a n a$3 i$4)
+        (not (< i$4 n)))
+      (clear_post a n))))
+
+(declare-const main_pre Bool)
+
+(declare-fun main_post (Int) Bool)
+
+(declare-fun
+  main_assign_1
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_call_2
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_spec_3
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_assign_4
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_assign_5
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_inv_6
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_exit_7
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_assign_8
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_assign_9
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_spec_10
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(declare-fun
+  main_assign_11
+  (Int Bool (Array Int Int) Bool)
+  Bool)
+
+(assert (=> true main_pre))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      main_pre
+      (main_assign_1 result tmp$5 (store a$6 0 1) b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_assign_1 result tmp$5 a$6 b$7)
+      (clear_pre a$6 10))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (and
+        (main_assign_1 result tmp$5 a$6 b$7)
+        (clear_post a$6 10))
+      (main_call_2 result tmp$5 a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_call_2 result tmp$5 a$6 b$7)
+      (= (select a$6 0) 1))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (and
+        (main_call_2 result tmp$5 a$6 b$7)
+        true)
+      (main_spec_3 result tmp$5 a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_spec_3 result tmp$5 a$6 b$7)
+      (main_assign_4 result tmp$5 a$6 (< 0 (select a$6 0))))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_assign_4 result tmp$5 a$6 b$7)
+      (main_assign_5 result true a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_assign_5 result tmp$5 a$6 b$7)
+      (main_inv_6 result tmp$5 a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (and
+        (main_inv_6 result tmp$5 a$6 b$7)
+        (or
+          tmp$5
+          (and (< 0 (select a$6 0)) b$7)))
+      (main_assign_8 result false a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_assign_8 result tmp$5 a$6 b$7)
+      (main_assign_9
+        result
+        tmp$5
+        (store
+          a$6
+          0
+          (+ (select a$6 0) (- 1)))
+        b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_assign_9 result tmp$5 a$6 b$7)
+      (main_inv_6 result tmp$5 a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (and
+        (main_inv_6 result tmp$5 a$6 b$7)
+        (not
+          (or
+            tmp$5
+            (and (< 0 (select a$6 0)) b$7))))
+      (main_exit_7 result tmp$5 a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_exit_7 result tmp$5 a$6 b$7)
+      (= (select a$6 0) 0))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (and
+        (main_exit_7 result tmp$5 a$6 b$7)
+        true)
+      (main_spec_10 result tmp$5 a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_spec_10 result tmp$5 a$6 b$7)
+      (main_assign_11 0 tmp$5 a$6 b$7))))
+
+(assert
+  (forall
+    ((result Int)
+      (tmp$5 Bool)
+      (a$6 (Array Int Int))
+      (b$7 Bool))
+    (=>
+      (main_assign_11 result tmp$5 a$6 b$7)
+      (main_post result))))
+
+(check-sat)
+
+(get-model)
+

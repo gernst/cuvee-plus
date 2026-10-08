@@ -5,11 +5,7 @@ import utest._
 
 import cuvee.core._
 import cuvee.yml.Task
-
-// the examples in yml, each with its command line in the first line, among them the cases of the frontend in yml/parsing
-object Checked extends TestSuite:
-  val tests =
-    Examples.checked(os.sub / "yml", "yml")
+import cuvee.Cuvee
 
 // SV-COMP task definitions defer to the C frontend for their single input file, relative to the task
 object Tasks extends TestSuite:
@@ -25,15 +21,15 @@ object Tasks extends TestSuite:
     Examples.tests(Examples.valid(os.sub / "yml", "yml")): file =>
       // the same commands as for the input file
       Examples.show(List("-print", "null", file.toString))
-      val (cmds, _) = cuvee.Cuvee.run("-print", "null", file.toString)
+      val (cmds, _) = Cuvee.run("-print", "null", file.toString)
       Examples.show(List("-print", "null", input(file).toString))
-      val (cmds_, _) = cuvee.Cuvee.run("-print", "null", input(file).toString)
+      val (cmds_, _) = Cuvee.run("-print", "null", input(file).toString)
       cmds ==> cmds_
 
       // the expected verdict of the property
       val List(prop) = task(file).properties: @unchecked
       Examples.show(List("-simplify", "-chc", "-z3", file.toString))
-      val (_, results) = cuvee.Cuvee.run("-simplify", "-chc", "-z3", file.toString)
+      val (_, results) = Cuvee.run("-simplify", "-chc", "-z3", file.toString)
       Examples.status(results) ==> (if prop.expected == Some(true) then Status.Sat else Status.Unsat)
 
 // the task definition is read with SnakeYAML, the input files may be a single string or a list

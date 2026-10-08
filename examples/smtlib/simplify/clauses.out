@@ -1,0 +1,26 @@
+(declare-const p Bool)
+
+(declare-const q Bool)
+
+(declare-const r Bool)
+
+(declare-const x Int)
+
+(declare-const y Int)
+
+(declare-const z Int)
+
+(assert
+  (=> (and p q r) (< x y)))
+
+(assert (=> (and p q) r))
+
+(assert (or p q r))
+
+(assert
+  (forall
+    ((x Int) (y Int))
+    (=> (< x z) (<= z y))))
+
+(assert (=> p (and q r)))
+

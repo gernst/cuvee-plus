@@ -1,0 +1,10 @@
+success
+success
+(:name "Z3")
+unsupported
+true
+sat
+(labels)
+success
+sat
+((define-fun x () Int 1))

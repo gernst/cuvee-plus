@@ -5,13 +5,7 @@ import utest._
 
 import cuvee.Error
 import cuvee.core._
-
-// the examples in boogie, each with its command line in the first line, e.g. ./Cuvee.sh -verify -monomorph -z3 ...,
-// where traces.bpl, whose combinators the solvers do not support, is printed only,
-// and the examples of horn are for -chc only, their procedures with a body have no contracts
-object Verify extends TestSuite:
-  val tests =
-    Examples.checked(os.sub / "boogie", "bpl")
+import cuvee.Cuvee
 
 // runs the examples with -chc against z3, which checks the clauses for satisfiability:
 // sat if all queries hold, unsat if one of them fails
@@ -20,13 +14,13 @@ object Horn extends TestSuite:
   val tests =
     Examples.tests(Examples.find(os.sub / "boogie" / "horn", "bpl")): file =>
       Examples.show(List("-chc", "-monomorph", "-z3", file.toString))
-      val (_, results) = cuvee.Cuvee.run("-chc", "-monomorph", "-z3", file.toString)
+      val (_, results) = Cuvee.run("-chc", "-monomorph", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
 // global variables are eliminated by -verify and -chc, and are not passed to solvers
 object Globals extends TestSuite:
-  val globals = Examples.root / "boogie" / "globals.bpl"
+  val globals = Examples.root / "boogie" / "vcgen" / "globals.bpl"
   val horn = Examples.root / "boogie" / "horn" / "globals.bpl"
 
   def output(args: String*): List[Cmd] =
@@ -58,5 +52,5 @@ object Globals extends TestSuite:
     test("unsupported by solvers"):
       val file = Examples.root / "boogie" / "parsing" / "unsupported.bpl"
       Examples.show(List("-z3", file.toString))
-      val (_, results) = cuvee.Cuvee.run("-z3", file.toString)
+      val (_, results) = Cuvee.run("-z3", file.toString)
       assert(results.contains(Ack.Unsupported))

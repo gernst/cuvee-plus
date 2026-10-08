@@ -1,0 +1,7 @@
+datatype list
+  = nil | cons(head: int, tail: list)
+
+function f(xs: list, s: seq<int>): bool {
+  xs.nil? && [] as seq<int> + s == s && (s as seq<int>)[0] == 0
+}
+

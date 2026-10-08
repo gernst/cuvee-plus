@@ -5,6 +5,7 @@ import utest._
 
 import cuvee.Error
 import cuvee.core._
+import cuvee.Cuvee
 
 // runs the examples with -chc against z3, which checks the clauses for satisfiability:
 // sat if all queries hold, unsat if one of them fails,
@@ -15,18 +16,18 @@ object Horn extends TestSuite:
     Examples.tests(Examples.find(os.sub / "dafny" / "horn", "dfy")): file =>
       // the answer to the check-sat at the end is the last result
       Examples.show(List("-chc", "-z3", file.toString))
-      val (_, results) = cuvee.Cuvee.run("-chc", "-z3", file.toString)
+      val (_, results) = Cuvee.run("-chc", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
-// the models of -chc (the commands are those of the examples in dafny/horn and dafny/parsing/horn)
+// the models of -chc (the commands are those of the examples in dafny/horn and dafny/parsing/horn_*.dfy)
 object HornCmds extends TestSuite:
   val tests = Tests:
     // the model of the predicates is read back from the solver and printed in the language of the input
     test("model"):
       val max = Examples.root / "dafny" / "horn" / "max.dfy"
       Examples.show(List("-chc", "-z3", max.toString))
-      val (_, results) = cuvee.Cuvee.run("-chc", "-z3", max.toString)
+      val (_, results) = Cuvee.run("-chc", "-z3", max.toString)
       val List(Status.Sat, Model(decls)) = results.filterNot(_ == Ack.Success): @unchecked
       assert(decls.nonEmpty && decls.forall(_.isInstanceOf[DefineFun]))
       assert(cuvee.dafny.Printer.lines(Model(decls)).exists(_.startsWith("function max_")))
@@ -35,5 +36,5 @@ object HornCmds extends TestSuite:
     test("no model"):
       val invalid = Examples.root / "dafny" / "horn" / "invalid_max.dfy"
       Examples.show(List("-chc", "-z3", invalid.toString))
-      val (_, results) = cuvee.Cuvee.run("-chc", "-z3", invalid.toString)
+      val (_, results) = Cuvee.run("-chc", "-z3", invalid.toString)
       results.filterNot(_ == Ack.Success) ==> List(Status.Unsat)

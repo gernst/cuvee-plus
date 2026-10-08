@@ -3,17 +3,6 @@ package dafny
 
 import utest._
 
-// the examples in dafny/vcgen, each with its command line in the first line, e.g. ./Cuvee.sh -verify -z3 ...,
-// whose expected reports state whether the goals hold
-object Verify extends TestSuite:
-  val tests =
-    Examples.checked(os.sub / "dafny" / "vcgen", "dfy")
-
-// the examples in hybrid, each with its command line in the first line, e.g. ./Cuvee.sh -hybrid -verify -simplify ...
-object HybridExamples extends TestSuite:
-  val tests =
-    Examples.checked(os.sub / "hybrid", "dfy")
-
 // hybrid programs, whose goals are generated without errors, not passed to a solver:
 // differential cuts for each invariant in sequence, followed by differential weakening,
 // and methods with assumption-commitment contracts composed in parallel

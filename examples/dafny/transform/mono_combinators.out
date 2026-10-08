@@ -1,0 +1,10 @@
+type Lst<a₀>
+
+const J: seq<int>
+
+function `single<Int>`(x: int): Lst<int>
+
+axiom
+  maps(for J yield j :: `single<Int>`(j))
+    == maps(for J yield j :: `single<Int>`(j + 0))
+

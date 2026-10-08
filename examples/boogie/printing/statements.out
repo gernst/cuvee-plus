@@ -1,0 +1,49 @@
+type Stack<a₀>;
+
+var m: [int, bool]int;
+
+function empty<a>(): Stack<a>;
+
+procedure p(x: int);
+
+procedure q(x: int) returns (y: int);
+
+procedure r(i: int, j: int) returns (x: int, y: int, a: [int]int)
+  modifies m;
+{
+  assume x < y;
+  assert x < y;
+  havoc x, y;
+  x, y := y, x;
+  a := a[x := a[y]];
+  call p(x);
+  call y := q(x);
+  if (*) {
+    x := 0;
+  } else {
+    x := y;
+  }
+  while (true) {
+    if (x < y) {
+      break;
+    } else if (y < x) {
+      return;
+    }
+  }
+  while (x < y) {
+    continue;
+  }
+  while (x < y)
+    invariant x <= y;
+    modifies m;
+  {}
+  while (*)
+    invariant x <= y;
+  {
+    x := y;
+  }
+  while (true)
+    decreases x, y;
+  {}
+}
+

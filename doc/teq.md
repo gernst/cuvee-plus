@@ -142,5 +142,7 @@ after section 4 of the paper.
   (`Rules.from(State.empty, TEQ.lemmas)` with `Rewrite`).
 - [RewriteTraces.scala](../test/src/cuvee/test/simplify/RewriteTraces.scala)
   tests the rewrite engine with the examples of the paper (counters,
-  summations, `selects`); `examples/simplify/traces.smt2` the simplifier.
+  summations, `selects`) in single steps; `examples/dafny/simplify/traces*.dfy`,
+  `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
+  traces, which declare `Trace` and the functions on traces as in `teq.dfy`.
 - E.g. `mill -i run -teq -simplify examples/dafny/vcgen/sum.dfy`.

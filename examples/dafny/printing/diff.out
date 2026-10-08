@@ -1,0 +1,4 @@
+function f(x: real, y: real): bool {
+  (x :: x)' == (x, y :: x * y)' && -(x :: x)' == 0.0
+}
+

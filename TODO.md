@@ -3,6 +3,14 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
+## Bugs
+
+- A bound variable may capture a constant of the same name in the output of
+  SMT-LIB: normalization renames bound variables apart from free variables,
+  but constants (`declare-const x`) are functions, e.g.
+  `(=> (exists ((x Int)) (< x y)) (<= x y))` becomes
+  `(forall ((x Int)) (=> (< x y) (<= x y)))` with `-simplify`.
+
 ## General
 
 - Function types (`arrow₁`, ...) and their applications (`apply₁`, ...)
@@ -51,7 +59,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - The stderr of a solver is never read, which can block it.
 - Axiomatization of data types: sequences are left to the solvers' theory,
   where quantified specifications often end in `unknown` (e.g. `positive` in
-  [examples/hybrid/par.dfy](examples/hybrid/par.dfy)), whereas inductive
+  [examples/dafny/hybrid/par.dfy](examples/dafny/hybrid/par.dfy)), whereas inductive
   axioms, as for datatypes, work better; sequences could be axiomatized
   inductively instead.
 
@@ -67,7 +75,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   variables inside of the expression (`Chains.chain`, rule `Subst` of the paper),
   not for terms such as `history.events == []`; innermost first, which may
   rewrite subterms before a rule for the whole term applies.
-- The goal of [clock.dfy](examples/hybrid/clock.dfy) remains after
+- The goal of [clock.dfy](examples/dafny/hybrid/clock.dfy) remains after
   `-simplify`: the rules of `delay` would need the fact `history.events == []`,
   and `exists s` would need to be instantiated by the time. Plan: replace
   quantified variables of record types, whose selectors occur in the body, by
@@ -165,7 +173,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - Datatypes (`data`, not Boogie) have no testers and no `match`; `data`,
   `and`, and `|` are keywords.
 - z3 answers `unknown` for Horn clauses over recursive datatypes
-  ([examples/boogie/data.bpl](examples/boogie/data.bpl)).
+  ([examples/boogie/vcgen/data.bpl](examples/boogie/vcgen/data.bpl)).
 - The printer rejects loop attributes other than `invariant`,
   `modifies`, `decreases`, other binders, derivatives, ODEs, and `par`;
   `goal`, `lemma`, `decreases`, `continue` are printed although not Boogie.
@@ -187,7 +195,7 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 - The modifies clause of a loop is inferred from the core program, where a
   local variable that shadows a global one of the same type counts as global.
 - z3 answers `unknown` for Horn clauses with division by variables
-  ([examples/c/div.c](examples/c/div.c)), and for calls in loops whose
+  ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
   (only uncalled procedures are entry points).
 

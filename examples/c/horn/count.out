@@ -1,0 +1,433 @@
+(set-logic HORN)
+
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quotient
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  remainder
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(declare-fun main_pre (Int) Bool)
+
+(declare-fun main_post (Int Int Int) Bool)
+
+(declare-fun
+  main_spec_1
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_2
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_spec_3
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_4
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_5
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_6
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_inv_7
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_exit_8
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_inv_9
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_exit_10
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_join_11
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_12
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_join_13
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_14
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_spec_15
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_16
+  (Int Int Int Int Bool Int Int)
+  Bool)
+
+(assert
+  (forall
+    ((counter Int))
+    (=> (= counter 0) (main_pre counter))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int)
+      (tmp$8 Int))
+    (=>
+      (and
+        (main_pre counter$3)
+        (= counter counter$3)
+        true)
+      (main_spec_1 counter$3 result counter tmp$8 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_spec_1 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_assign_2 counter$3 result counter tmp$4 tmp$5 tmp$4 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_assign_2 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        (<= 0 n$6))
+      (main_spec_3 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_spec_3 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_assign_4 counter$3 result 0 tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_assign_4 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_assign_5 counter$3 result counter tmp$4 tmp$5 n$6 0))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_assign_5 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_assign_6 counter$3 result counter tmp$4 false n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_assign_6 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_inv_7 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_inv_7 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        (< i$7 n$6))
+      (main_inv_9 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_inv_9 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        true
+        (=
+          (ite (<= 0 i$7) (mod i$7 2) (- (mod i$7 2)))
+          1))
+      (main_exit_10 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_inv_9 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        true
+        (not
+          (=
+            (ite (<= 0 i$7) (mod i$7 2) (- (mod i$7 2)))
+            1)))
+      (main_join_11 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_join_11 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_assign_12 counter$3 result (+ counter 1) tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_assign_12 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_exit_10 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_inv_9 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        (not true))
+      (main_exit_10 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_exit_10 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        tmp$5)
+      (main_exit_8 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_exit_10 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        (not tmp$5))
+      (main_join_13 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_join_13 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_assign_14 counter$3 result counter tmp$4 tmp$5 n$6 (+ i$7 1)))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_assign_14 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_inv_7 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_inv_7 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        (not (< i$7 n$6)))
+      (main_exit_8 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_exit_8 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (<= counter n$6))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (and
+        (main_exit_8 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+        true)
+      (main_spec_15 counter$3 result counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_spec_15 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_assign_16 counter$3 0 counter tmp$4 tmp$5 n$6 i$7))))
+
+(assert
+  (forall
+    ((counter$3 Int)
+      (result Int)
+      (counter Int)
+      (tmp$4 Int)
+      (tmp$5 Bool)
+      (n$6 Int)
+      (i$7 Int))
+    (=>
+      (main_assign_16 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
+      (main_post counter$3 result counter))))
+
+(check-sat)
+
+(get-model)
+

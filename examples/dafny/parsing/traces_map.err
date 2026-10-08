@@ -1,0 +1,4 @@
+error "type mismatch"
+  "App(Fun(Name(true,None),List(),List(),Sort(Con(Name(Bool,None),0),List())),List(),Sort(Con(Name(Bool,None),0),List()),List())"
+  "Sort(Con(Name(Bool,None),0),List())"
+  "Sort(Con(Name(Int,None),0),List())"

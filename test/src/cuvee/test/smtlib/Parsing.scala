@@ -2,12 +2,7 @@ package cuvee.test
 package smtlib
 
 import utest._
-
-// the examples in smtlib and transform, each with its command line in the first line,
-// among them the cases of the frontend in smtlib/parsing and of the printer in smtlib/printing
-object Parsing extends TestSuite:
-  val tests =
-    Examples.checked(Examples.find(os.sub / "smtlib", "smt2") ++ Examples.find(os.sub / "transform", "smt2"))
+import cuvee.Cuvee
 
 // bitvectors are passed to the solver
 object BitVectors extends TestSuite:
@@ -15,9 +10,9 @@ object BitVectors extends TestSuite:
 
   val tests = Tests:
     test("solver"):
-      val file = Examples.root / "smtlib" / "bitvectors.smt2"
+      val file = Examples.root / "smtlib" / "language" / "bitvectors.smt2"
       Examples.show(List("-z3", file.toString))
-      val (_, results) = cuvee.Cuvee.run("-z3", file.toString)
+      val (_, results) = Cuvee.run("-z3", file.toString)
       Examples.status(results) ==> Status.Unsat
 
 // malformed answers of solvers and malformed applications of sugar are errors, not internal errors

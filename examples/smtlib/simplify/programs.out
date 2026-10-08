@@ -1,0 +1,65 @@
+(define-proc skip1 ((p Bool)) ((x Int) (y Int)) (assign (y 0)))
+
+(define-proc skip2 ((p Bool)) ((x Int) (y Int)) (block (locals)))
+
+(define-proc skip3 ((p Bool)) ((x Int) (y Int)) (block (locals)))
+
+(define-proc
+  blocks1
+  ((p Bool))
+  ((x Int) (y Int))
+  (block (locals) (assign (x (+ x 1))) (assign (x 0))))
+
+(define-proc blocks2 ((p Bool)) ((x Int) (y Int)) (assign (x (+ x 1))))
+
+(define-proc
+  blocks3
+  ((p Bool))
+  ((x Int) (y Int))
+  (block (locals (z Int)) (assign (z x)) (assign (x z))))
+
+(define-proc
+  blocks4
+  ((p Bool))
+  ((x Int) (y Int))
+  (block
+    (locals (z Int))
+    (block (locals (z Int)) (assign (z x)))
+    (assign (x z))))
+
+(define-proc
+  blocks5
+  ((p Bool))
+  ((x Int) (y Int))
+  (block (locals) (assign (x (+ x 1))) (assign (x 0))))
+
+(define-proc
+  jumps
+  ((p Bool))
+  ((x Int) (y Int))
+  (while
+    true
+    (block (locals) (assign (x (+ x 1))) (break))))
+
+(define-proc if1 ((p Bool)) ((x Int) (y Int)) (assign (x (+ x 1))))
+
+(define-proc if2 ((p Bool)) ((x Int) (y Int)) (assign (x 0)))
+
+(define-proc if3 ((p Bool)) ((x Int) (y Int)) (assign (x (+ x 1))))
+
+(define-proc
+  if4
+  ((p Bool))
+  ((x Int) (y Int))
+  (if p (assign (x 0)) (assign (x (+ x 1)))))
+
+(define-proc while ((p Bool)) ((x Int) (y Int)) (block (locals)))
+
+(define-proc
+  choice1
+  ((p Bool))
+  ((x Int) (y Int))
+  (choose (assign (x (+ x 1))) (assign (x 0))))
+
+(define-proc choice2 ((p Bool)) ((x Int) (y Int)) (assign (x (+ x 1))))
+

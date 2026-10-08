@@ -6,6 +6,7 @@ import utest._
 import cuvee.core._
 import cuvee.smtlib.Printer
 
+// attributes of declarations come from other languages (see examples/smtlib/printing for the cases of the printer)
 object Printing extends TestSuite:
   val x = Var("x", Sort.int)
   val f = Fun("f", Nil, List(x), Sort.int)
@@ -21,9 +22,3 @@ object Printing extends TestSuite:
       show(DefineFun(f, x, rw)) ==> "(define-fun f ((x Int)) Int x)"
       show(DeclareSort(Con("S", 0), rw)) ==> "(declare-sort S 0)"
       show(Assert(Axiom, Nil, Eq(App(f, List(x)), x), rw)) ==> "(assert (! (= (f x) x) :rw))"
-
-    // not part of SMT-LIB
-    test("eps"):
-      val p = Var("p", Sort.bool)
-      val zero = Lit(BigInt(0), Sort.int)
-      Printer.lines(Eps(List(Upd(p, x), Upd(True, zero)))).mkString(" ") ==> "(eps (p x) (true 0))"

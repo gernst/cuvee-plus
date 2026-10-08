@@ -1,0 +1,32 @@
+(declare-const y Int)
+
+(declare-const p Bool)
+
+(declare-const q Bool)
+
+(goal
+  (forall ((x Int)) (=> p (< x y))))
+
+(goal
+  (forall ((x Int) (y Int)) (=> p (<= x y))))
+
+(goal
+  (forall ((x Int)) (=> p (< x x))))
+
+(goal (=> p q))
+
+(goal (=> p (< y 0)))
+
+(goal (=> (not p) (< 0 0)))
+
+(goal (=> p (< 0 y)))
+
+(goal (=> q (< 0 y)))
+
+(goal (=> p q))
+
+(goal (=> (not p) (< 0 y)))
+
+(goal
+  (forall ((x Int)) (=> (< x y) (< 0 y))))
+

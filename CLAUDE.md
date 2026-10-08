@@ -52,6 +52,11 @@ or solvers consume.
 - `Trace` exists only with `-teq` (defined in
   [teq.dfy](resources/cuvee/teq.dfy)); never include it implicitly or in
   preludes.
+- Tests of trace equation systems are Dafny examples only, not SMT-LIB or
+  Boogie. Those that should not pull in the lemma database of `-teq` duplicate
+  the declarations of `teq.dfy` that they need, with its indexed names (e.g.
+  `type Trace<a₀>`, `function counter(x₀: int, x₁: int, x₂: int): Trace<int>`),
+  and bind the variables of their context with `forall`, not as constants.
 - The don't have to prove `-teq` goals on their own: no trace special cases
   in the solver interface, no implicit monomorphization, no implicit TEQ
   concepts passed to the solver.

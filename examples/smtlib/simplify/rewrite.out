@@ -1,0 +1,70 @@
+(declare-fun p (Int) Bool)
+
+(declare-fun f (Int) Int)
+
+(declare-fun g (Int) Int)
+
+(declare-fun h (Int Int) Int)
+
+(declare-fun k (Int) Int)
+
+(declare-fun l (Int) Int)
+
+(declare-fun abs (Int) Int)
+
+(declare-fun m (Int) Int)
+
+(declare-const a Int)
+
+(declare-const b Int)
+
+(assert
+  (!
+    (forall ((x Int)) (= (f (g x)) x))
+    :rw))
+
+(assert (p a))
+
+(assert
+  (!
+    (forall ((x Int)) (= (h x x) 0))
+    :rw))
+
+(assert (p 0))
+
+(assert (p (h a b)))
+
+(assert
+  (!
+    (forall ((x Int)) (= (k x) (l x)))
+    :rw))
+
+(assert
+  (!
+    (forall ((x Int)) (= (k x) x))
+    :rw))
+
+(assert (p (l a)))
+
+(assert
+  (!
+    (forall
+      ((x Int))
+      (=> (<= 0 x) (= (abs x) x)))
+    :rw))
+
+(assert (p 1))
+
+(assert (p (abs a)))
+
+(assert (=> (<= 0 a) (p a)))
+
+(assert
+  (forall ((c Int)) (p c)))
+
+(assert (! (= (m a) b) :rw))
+
+(assert (p b))
+
+(assert (p (m b)))
+

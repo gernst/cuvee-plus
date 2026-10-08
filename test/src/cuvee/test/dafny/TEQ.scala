@@ -10,7 +10,7 @@ import cuvee.simplify.Rewrite
 // verification by symbolic execution and trace equation systems:
 // for programs without loops, the verdicts coincide with -verify,
 // loops are summarized by trace equation systems, which the rewrite engine simplifies with lemmas;
-// the programs whose goals vanish are in examples/c/teq, examples/dafny/teq, and examples/dafny/parsing/teq
+// the programs whose goals vanish are in examples/c/teq, examples/dafny/teq, and examples/dafny/parsing/teq_*.dfy
 object TEQ extends TestSuite:
   // a rule whose type parameters and variables are the free ones of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =

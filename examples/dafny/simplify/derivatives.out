@@ -1,0 +1,42 @@
+function f(x: real): real
+
+function d1(x: real, y: real, c: real): real {
+  0.0
+}
+
+function d2(x: real, y: real, c: real): real {
+  x'
+}
+
+function d3(x: real, y: real, c: real): real {
+  x' + y'
+}
+
+function d4(x: real, y: real, c: real): real {
+  x'
+}
+
+function d5(x: real, y: real, c: real): real {
+  x' * y + x * y'
+}
+
+function d6(x: real, y: real, c: real): real {
+  c * x'
+}
+
+function d7(x: real, y: real, c: real): bool {
+  x' <= 0.0
+}
+
+function d8(x: real, y: real, c: real): bool {
+  x' == c * y'
+}
+
+function d9(x: real, y: real, c: real): bool {
+  0.0 <= x' <= y'
+}
+
+function d10(x: real, y: real, c: real): real {
+  (x :: f(x))'
+}
+

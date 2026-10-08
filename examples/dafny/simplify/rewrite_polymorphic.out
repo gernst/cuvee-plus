@@ -1,0 +1,14 @@
+datatype List<a>
+  = nil | cons(head: a, tail: List<a>)
+
+function length<a>(xs: List<a>): int
+
+function p(n: int): bool
+
+lemma <a> {:rw} length(nil as List<a>) == 0
+
+lemma <a> {:rw}
+  forall y: a, xs: List<a> :: length(cons(y, xs)) == length(xs) + 1
+
+axiom p(2)
+

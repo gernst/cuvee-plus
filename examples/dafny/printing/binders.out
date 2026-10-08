@@ -1,0 +1,4 @@
+function f(x: int, y: int, p: bool, q: bool, s: seq<int>): bool {
+  (forall z: int :: z < y) && p
+}
+
