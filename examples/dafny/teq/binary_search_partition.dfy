@@ -68,13 +68,13 @@ lemma {:rw} {:free} forall l: int, h: int :: if l < h then ((h + l) / 2 < h) <==
 
 
 // the value stays below the bound if the initial value does
-lemma {:rw} {:free} forall x0: int, b: int, ks: seq<int>, hs: seq<int>,
+lemma {:free} forall x0: int, b: int, ks: seq<int>, hs: seq<int>,
                           D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
   if x0 <= b
   then (current(incs(x0, b, ks, hs, D, C, F)) <= b) <==> true
 
 // the value stays above the bound if the initial value does
-lemma {:rw} {:free} forall x0: int, b: int, ks: seq<int>, ls: seq<int>,
+lemma {:free} forall x0: int, b: int, ks: seq<int>, ls: seq<int>,
                           D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
   if b <= x0
   then (b <= current(decs(x0, b, ks, ls, D, C, F))) <==> true

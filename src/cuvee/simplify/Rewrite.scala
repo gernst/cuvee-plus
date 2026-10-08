@@ -20,6 +20,10 @@ case class Binding(vars: Set[Var], locals: Set[Var], local: Map[Var, Var], bound
       case x: Var => local.contains(x) || locals.contains(x)
       case _      => false
 
+object Binding:
+  def from(xs: List[Var], self: Option[Var]) =
+    Binding(xs.toSet, Set(), Map(), Set(), self)
+
 // a simple rewrite engine with the rules of the context (Ctx.rules), a single step at the top of an expression:
 // the first rule whose left hand side matches and whose instantiated condition holds is applied,
 // the simplifier traverses the subexpressions and iterates, up to the maximal number of steps of the context
@@ -55,9 +59,11 @@ object Rewrite:
   // matching modulo associativity and commutativity may find several matches with different results,
   // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
   def apply(config: Config, state: State, ctx: Ctx, rule: Rule, expr: Expr, self: Option[Var] = None): Expr =
+    val b = Binding.from(rule.xs, self)
+
     val results =
       for
-        su <- matches(config, state, ctx, Binding(rule.xs.toSet, Set(), Map(), Set(), self), rule.lhs, expr, Subst.empty)
+        su <- matches(config, state, ctx, b, rule.lhs, expr, Subst.empty)
         rhs = su(rule.rhs)
         // steps that do not change the expression are not applications, e.g. x + 0 = x for x without +
         if rhs != expr && holds(config, state, ctx, su(rule.cond))
@@ -71,16 +77,12 @@ object Rewrite:
         Error.report("rewriting does not terminate", rule):
           require(ctx.steps.value > 0)
 
-        // if rest.nonempty
-        // for expr <- results
-        // do println(Simplify.show(config.input.printer, expr))
-
-        // Error.raise("rewriting with multiple result")
+        // Error.report("rewriting with multiple result"):
+        //    require(rest.isEmpty)
 
         ctx.steps := ctx.steps.value - 1
         Debug.step("rewrite", Simplify.show(config.output.printer, expr), Simplify.show(config.output.printer, rhs))
         rhs
-
 
   // side conditions and the guards of updates are decided by the simplifier in the context
   def holds(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
