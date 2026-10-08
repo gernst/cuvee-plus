@@ -1,5 +1,5 @@
 // ./Cuvee.sh examples/dafny/teq/binary_search_partition.dfy
-// experiment: binary search with partition points, for -teq -split -simplify (see bsearch.md);
+// experiment: binary search with partition points, for -teq -split -simplify (see ideas/binary-search.md);
 // the comparisons of the array with x are those of the indices with the partition points p and q,
 // a[m] < x iff m < p, x < a[m] iff q <= m, a[m] == x iff p <= m < q, given by lemmas on global constants,
 // such that the rules need no variables for the array, the bound, and x;
@@ -16,7 +16,7 @@
 // the equations Lo == incs(..., ⌊Hi⌋, ...) and Hi == decs(..., ⌊Lo⌋, ...) depend on each other, which the matching
 // follows (Ctx.↑), since cycles among the equations are only excluded where a solution is inlined (Simplify.poly);
 // without the cut, one goal remains, as the bounds are facts about the terms current(incs(0, p, ...)) and
-// current(decs(n, q, ...)), which the simplifier does not derive (see forward.md);
+// current(decs(n, q, ...)), which the simplifier does not derive (see doc/simplifier.md);
 // the found case is closed by the test of the branch with break, mid < n and a[mid] == x from p <= mid < q <= n;
 // the exit of the loop by its test closes once i is known to keep its value -1: the simplifier merges the cases
 // of its update, which are all i, and the trace that keeps its value is consts(n, -1) by the lemma of teq.dfy
@@ -121,8 +121,9 @@ method search() returns (i: int)
       break;
     }
   }
-  // a cut, until facts about terms are derived (see forward.md): the bounds are proved by the lemmas on incs and decs,
-  // whose atoms occur here, and then assumed for the postcondition, since -teq does not assume assertions
+  // a cut, until facts about terms are derived (see doc/simplifier.md): the bounds are proved by the lemmas on
+  // incs and decs, whose atoms occur here, and then assumed for the postcondition, since -teq does not assume
+  // assertions
   // assert lo <= p && q <= hi;
   // assume lo <= p && q <= hi;
 }

@@ -50,6 +50,15 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   [ifcomp.dfy](examples/sv-comp/array-fpi/ifcomp.dfy)), only those whose
   index is a dependency, e.g. `⌊counter(1, 1, n)⌋` (see
   [eqn1.dfy](examples/sv-comp/array-fpi/eqn1.dfy)).
+- Rewriting does not terminate on
+  [sanfoundry_02_ground.dfy](examples/sv-comp/array-examples/sanfoundry_02_ground.dfy)
+  with the lemmas of teq.dfy alone, with the rule for
+  `earlier(k, ⌊counter(i, c, n)⌋)`, on the trace of the two largest elements,
+  whose updates read the array at the counter from 2.
+- `-teq` fails with an internal error on a loop that is always left by
+  `break` in its first iteration, e.g. `while true { x := 0; break; }`:
+  `empty.reduceLeft`, and `head of empty list` with `-simplify` (see
+  [while_infinite_loop_3.dfy](examples/sv-comp/loops/while_infinite_loop_3.dfy)).
 - `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on
   a loop body with ten conditionals in sequence, presumably from the 2^10
   paths of its symbolic execution (see
@@ -74,29 +83,249 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   `sets.dfy`, and `invalid_sets.dfy` are removed.
 - Goals that do not hold are reported by the solver sink with their formula
   in SMT-LIB, not in the language of the input like the other reports.
+- An input file with an unknown extension, e.g. a preprocessed C file
+  `.i`, ends in an uncaught exception with a stack trace
+  ("unsupported command line option or input file"), since `Config.parse`
+  raises outside of the pipeline; the task definitions (`.yml`) of such
+  files are read.
 - Readers of input files and the stream of `-o` are never closed.
-- `Match`: parsed and printed only in Dafny (expressions, without case
-  conditions, not statements), no reduction on constructors, no rewriting
-  modulo matches; SMT-LIB prints it only without case conditions.
+- `Match`: parsed only in Dafny (expressions, without case conditions, not
+  statements), printed in Dafny and SMT-LIB without case conditions; the
+  simplifier does not reduce it on constructors (only `Fuse` selects cases),
+  no rewriting modulo matches.
 - Tests that run z3 have its default timeout of 1 s per query, which a
   loaded machine may exceed: `c.Translation.increments in expressions` failed
   with `unknown` while z3 unrolled a loop with the constant bound 10 (about
   0.17 s alone); with a symbolic bound it finds a linear invariant (0.035 s).
 
+## Printers
+
+- A Lean printer for the logic only: sorts, datatypes, functions and their
+  definitions, assertions, goals, and lemmas, but not programs, procedures,
+  global variables, or other procedure-related commands, which it rejects.
+
 ## Code structure
 
-- The printers of C, Dafny, and Boogie duplicate `commas`, `braces`,
-  `parens`, `atomic`, `level`, `doc(expr, context)`, `combinator`, and the
-  mixfix logic; a shared trait for precedence-based printing would remove
-  them. Their pattern `case _ if f(expr).isDefined => val Some(...) =
-  f(expr): @unchecked` computes `f` twice; extractor objects would avoid it.
-- `Monomorph` replays the whole prefix on every flush, quadratic for long
-  incremental inputs; keeping the instances across flushes needs a
-  transform with state, which `Stage` does not provide.
+Opportunities for cleaning up, making the code uniform, and merging common
+concepts, found by reading the whole code base; none is a bug.
+
+### Core
+
+- One generic traversal with binders: `Subst.apply`, `Old.instance`,
+  `Type.expand(expr)` and `Rec.calls` each repeat the list of binders
+  (`Bind`, `Lam`, `Trace`, `Maps`, `Invs`, `Let`, `Match`, `Rec`); the `Match`
+  and `Rec` loops of `Old.instance` are the same. `Type.numerals` uses
+  `expr.map` for its side effect, which a fold over the children would serve.
+  `Type.expand(prog)` repeats the cases of `Prog.map`.
+- Numeric sorts: Int and Real are twins in `Fun.int`/`Fun.real`, in
+  `Builtin` (`UMinus`, `Plus`, `Minus`, `Times`, `DivBy`, `Lt`, `Le`, `Gt`,
+  `Ge`), in `Overload.int`/`Overload.real`, and in `Arith.Ring`.
+  - `isSum`, `isArith` and `isComparison` enumerate the functions by hand.
+  - `Ring` lacks `lt`, `le` and `div`, hence `Simplify.once` (`Eq`, `Lt`, `Le`,
+    `Gt`, `Ge`, `not`, `diff`), `Rewrite.comparison`, `Diffs` and the
+    printers spell out both sorts.
+  - One object per numeric sort, with its functions, sugar and literals,
+    could be the `Ring`.
+- Builders of applications: `Overload.app` binds types without expanding,
+  `App.apply(state, ...)` expands, `State.exprs.app` instantiates fresh type
+  parameters, and `smtlib.Parser.app` does the same again. Two builders with
+  clear roles would do.
+- Sugar: `Seqs`, `Sets`, `Bags` and `FinMaps.empty` are copies
+  (→ `Sugar.empty`). `Sugar.unary/binary/ternary` are one class for three
+  arities. `associative` and `commutative` overlap in `flatten`. The `all`
+  lists of `Fun.seq`, `set`, ... are written by hand.
+- `Rec.from` and `Rule.from(state, fun, body)` both turn a definition that
+  matches on a formal into cases. `Rule.from` does not substitute the pattern
+  for the formal; it could use `Rec.from`. `Rule.from` accumulates premises
+  with `if cond == True then ... else And(...)`.
+- `Subst.apply(attrs)` maps expressions only, so `modifies` lists are neither
+  renamed nor retyped, while `Type.expand(attrs)` handles them
+  (→ `Attrs.map` with a function for variables).
+- `State` keeps a declaration, attribute and definition map per kind (sorts,
+  functions, variables, procedures). Each repeats the checks "already
+  declared" and "not declared" (→ one generic table). `exprs.trace`, `map`
+  and `all` repeat the creation of the bound variables.
+- `history`: `State.history` exists, but `Prog.Par`, `Type.check(Ode)` and
+  `Verify.tick` look up `state.vars.get("history")`.
+- `Type`:
+  - `unify` and `bind` repeat the unfolding of defined sorts;
+  - `Error.report("type mismatch", ...): unify(...)` occurs about ten times;
+  - the checks of `Match` and `Rec` repeat those of the cases;
+  - the comment above `BitVec` belongs to `object Param`.
+- The ordering of expressions is by `toString` (a TODO in `Expr`).
+- `Justify` is mapped to its keyword in four places:
+  `smtlib.Parser.justification`, `smtlib.Printer.command`,
+  `dafny.Printer.format` and `boogie.Printer.format`.
+- `Attrs(attrs.map(_ -> None))` for flag attributes occurs six times in the
+  Dafny parser (→ `Attrs.flags`).
+
+### Simplifier
+
+- `Simplify`, `Rewrite` and `Fuse` thread `(config, state, ctx)` through
+  every method (→ a class `Simplifier(config, state)`). Programs are
+  simplified without context, yet `ctx` is passed.
+- The matching functions of `Rewrite` take 12 to 15 parameters.
+  - `config`, `state`, `ctx`, `params` and `vars` are fixed per rule; `locals`,
+    `self`, `bound` and `avoid` change below combinators
+    (→ a matcher object per rule and a record for the binding).
+  - The three combinator cases repeat the construction of the inner context.
+- Matchers:
+  - three on types: `Type.bind`, `Type.unify` and the one-sided
+    `Rewrite.matches` on types;
+  - two on constructor patterns: `Rewrite` and `Fuse.matches` (`Outcome`).
+  - The simplifier does not select the cases of a `Match` on constructors.
+- `Subst.rename(bound, ctx.free)` followed by `ctx.bind`/`forall`/`exists`
+  and the renaming of the body occurs about ten times
+  (→ `Context.enter(bound)`).
+- The counter of the iterations, `Butlast(ctx.↑(Counter(Zero, One, n)))`, is
+  extracted in `Rewrite.iterations`, `Simplify.iterations` and
+  `Simplify.deps` (→ one extractor).
+- In `Simplify.once`, `Eq(x, Trace(...))` repeats the case `Trace(...)` and
+  `Eq(y, Maps(...))` the case `Maps(...)`.
+- Polynomials:
+  - `Arith.toPoly` and `Simplify.poly` are the same descent;
+  - `Rewrite.comparison` recomputes `Simplify.difference`;
+  - `Rewrite.signed`, `summands`, `negate` and `sum` belong in `Poly`;
+  - `Arith.normalize` is unused.
+- Sequent decomposition along the connectives is done three times:
+  `Split.assert/assume` (obligations), `Normalize.flatten` (one clause) and
+  `Context.assume(pos, neg)` (facts). `Split.avoid` equals `Normalize.avoid`.
+- Naming and leftovers:
+  - `Context.not` (double negation) and `Simplify.not` (normal form) have the
+    same name but different contracts;
+  - `Simplify.show(expr)` and `show(rule)` duplicate the one-line rendering;
+  - `Rewrite.unmatched` is an alias of `Nil`;
+  - commented-out code in `Rewrite.apply`;
+  - trailing spaces in `Simplify.arith`.
+- `FourierMotzkin` is used only by its test (see below).
+
+### Transforms and verification
+
+- `Verify`, `TEQ` and `Horn` repeat the setup of a procedure (→ one helper):
+  - the contract and the globals `gs` with fresh copies `gs_`;
+  - `Old.elim` of the body and the postcondition;
+  - the goal `All(in ++ out ++ gs, Imp(pre, ...))`;
+  - dropping `DeclareProc`/`DeclareVar`.
+- `Verify.wp` and `Horn.wp` pass the four exits (normal, break, continue,
+  return) separately (→ a record). Horn's `decls`/`clauses` and Verify's
+  `gs`/`proc`/`assume`/`commit` are threaded (→ a class per procedure).
+- Duplicated helpers:
+  - the loop variables `(body.mod ++ attrs.modifies).toList.distinct`
+    (`Verify.loop`, `TEQ.modified`);
+  - the fresh measures `Expr.vars("m", ...)` (`Verify`, `Horn`);
+  - the save and restore of shadowed variables (`TEQ` `Block` and `call`).
+- `Monomorph` threads `(state, poly, instances, out)` (→ a class per run). Its
+  comment refers to `Sink.known`, which is `Sink.knows`. It replays the whole
+  prefix on every flush, which is quadratic for long incremental inputs.
+  Keeping the instances across flushes needs a transform with state, which
+  `Stage` does not provide.
+- `Flat` looks up `datatype(state, ...)` repeatedly with
+  `Some(...) = ...: @unchecked`.
+
+### Frontends
+
+- The checks of a procedure are written three times:
+  `smtlib.Parser.procedure`, Dafny `MethodDef` and Boogie `ProcDef` (→ one
+  helper on `State`). Each checks that it modifies only globals, fixes the
+  inputs and the unmodified globals, then calls `progs.check`.
+- Dafny and Boogie:
+  - Syntax: they share most nodes (literals, `App`, `Inner`, `Ite`,
+    quantifiers, `Lam`, `Combinator`, `Sel`, `Constr`, the statements, `Lhs`,
+    `Axiom`/`Lemma`, the `Syntax` token object).
+  - Resolvers: they repeat the datatype declaration, the update
+    `a[i][j] := v` (a verbatim copy), the combinator update with `Eps`
+    (written twice in each), the assertion with its remaining type parameters,
+    `formula`/`measure`, the statements from `Skip` to `While`, and `Ex`/`All`/`Lam`.
+  - Grammars: they repeat `translate`/`avoid`/`Sym`, `nil`/`none`/`true_`/`skip`,
+    `some`/`list`/`angle`, and the combinator grammar.
+  - (→ a shared syntax, or at least shared resolution and grammar traits.)
+- Dafny contracts are separate fields (`mod`, `req`, `ens`, `assumes`,
+  `commits`, `dec`) in `FunDef`, `MethodDef` (12 fields) and `While`.
+  Boogie's are a list of `Spec` clauses, which Dafny could use too. Dafny
+  attributes are names only, Boogie's have arguments.
+- Dafny `SeqLit`/`SetLit`/`BagLit`/`MapLit` are four folds of "empty, unit,
+  join", mirrored by the four recognizers `elems`/`members`/`multiset`/`pairs`
+  of the printer (→ one table of collection literals).
+- SMT-LIB parser and printer: the polymorphic (`par`) and monomorphic forms
+  of `declare-const`, `declare-fun`, `define-fun`, `assert`, `declare-proc`
+  and `define-proc` are separate cases with the same body (→ parse and print
+  `par` once). `forall` and `exists` are copies.
+- `Source.newParser` of Dafny and Boogie are identical up to the package, and
+  `c.Source` repeats Boogie's inline. `yml.Source` parses the C prelude twice.
+- Subscripts: `boogie.Grammar.index` turns `a₃` into the string `a$3`, which
+  the conversion to `Name` parses again. Dafny relies on that conversion
+  alone.
+- `c.Parser`:
+  - `typ` and `zero` repeat the errors for `void` and `float`;
+  - the comment on global variables without initializer sits above `array`
+    instead of `zero`;
+  - at 889 lines, it mixes the resolution of expressions and statements, the
+    inference of modifies (`assigned`, `effects`, `calls`, `writes`) and the
+    translation unit, which could be split.
+- The flex scanners throw `RuntimeException` on unexpected characters
+  instead of `Error`.
+
+### Printers and pipeline
+
+- The mixfix printers of Dafny, Boogie and C share many methods
+  (→ a base trait with the operator tables and the terminator as parameters):
+  - `name`, `commas`, `call`, `str`, `any`, the five `lines`;
+  - `doc(Result)`, the control commands, `format`;
+  - `params`, `attribute(s)`, `isClause`, `clauses`, `header`;
+  - `braces`, `statements`, `block`, `level`, `doc(expr, context)`;
+  - `dependencies`, `combinator`.
+- Differences between them:
+  - Boogie's error strings replace quotes instead of escaping them;
+  - its `isClause` lacks `assumes`/`commits`.
+- Recomputed guards: the pattern `case _ if f(expr).isDefined => val Some(...)
+  = f(expr): @unchecked` (Dafny `elems`, `members`, `multiset`, `pairs`,
+  `prefix`, `comparisons`, `infix`, and the same in Boogie and C) computes `f`
+  twice (→ extractor objects, as for `bitvector`/`conversion`).
+- Repeated printer cases in Dafny:
+  - the update `base[index := value]` is printed by five identical cases;
+  - the read `base[index]` by four, `|x|` by four;
+  - the operator tables of `Sets` and `Bags` are the same list.
+- `smtlib.Printer.attr` and the `any` of the mixfix printers both print
+  resolved attribute values.
+- `pipe.Printer` has four `lines` overloads for lists.
+- `Solver.Sink`:
+  - `attrs.retain("named", "pattern")` occurs three times;
+  - every case returns `(x, Nil, this)`.
+- `util.Tool.pipe` returns `(in, out, ...)` from the process's view, which
+  `Solver` binds as `(out, in, ...)`. `Tool.run` and `util.Run` are unused.
+- `Pipe.run`:
+  - it handles `Error` and `NonFatal` twice, inside the loop and around it;
+  - a `StackOverflowError` is not `NonFatal` and escapes as a crash (see
+    Bugs);
+  - `if (!incremental)` is parenthesized.
+- `Config`: every transform flag repeats `config.using(X)`. `flags` is an
+  unordered map, so `-help` lists the options in arbitrary order. `suffix`
+  returns `null`.
+- Global mutable state: the fresh-name counters of `Var` and `Param` (reset
+  in `Cuvee.pipe` and `test.Expected`), the printer widths set by
+  `-linewidth`, including `sexpr.Printer.width` (hence `-linewidth 80` in
+  `Expected`), and `Debug.modules` (→ one context per run).
+- `object Debug` (debug output) and `trait Debug` (raising errors, implemented
+  by `Error` only) share a name. `raise[A]` has an unused type parameter.
+- `easyparse/Sugar.scala` has commented-out extensions; `Mixfix` writes
+  `if (...)`.
+- Remove `src/cuvee/boogie/Scanner.java~`, an editor backup tracked by git,
+  and add `*~` to `.gitignore`.
+
+### Tests
+
+- `rw`, `app` and `R` are defined in `simplify/Rewrite`,
+  `simplify/RewriteTraces` and `dafny/TEQ`. `Contexts` defines `simplify`
+  three times and shorthands such as `v`, `c`, `P`, `lit`.
+- `test.Examples` (`output`, `errors`, `stream`) and `cuvee.test.Expected.run`
+  are two harnesses that run a command line in memory.
 - No direct tests of easyparse (`Mixfix` precedences and associativity,
   `Repeat`, `Intersperse`) and of `simplify/Arith`.
-- Warnings: the implicit conversion `String => Name` without
-  `-language:implicitConversions`.
+- Warnings of `mill -i compile`:
+  - 444 feature warnings (the implicit conversion `String => Name` without
+    `-language:implicitConversions`);
+  - 2 deprecations;
+  - a possibly non-exhaustive match on `Bind` in `Simplify.scala:129`.
 
 ## Solvers
 
@@ -178,11 +407,84 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   their bound variables: `count(0, maps(for ⌊K⌋, ⌊L⌋ yield k₁₀, l₈ :: k₁₀ % 2))`
   and the same with `k, h`, which the right-hand side of a rule introduces,
   are not found equal (see [sumt2.dfy](examples/sv-comp/loops-crafted-1/sumt2.dfy)).
+- Expressions are compared literally, also modulo the definitions of the
+  context: `sum(selects(x, ⌊K⌋))` and `sum(selects(x, ⌊counter(0, 1, 100)⌋))`
+  with `K == counter(0, 1, 100)` are not found equal, since definitions are
+  followed in matching only (`Context.↑`), and a side condition
+  `ks == ⌊counter(0, 1, m + 1)⌋` with `ks := ⌊K⌋` is not decided (see
+  [mapsum1.dfy](examples/sv-comp/array-crafted/mapsum1.dfy)).
+- The branches of a conditional formula are not simplified under the facts
+  of the context: `r != 0 ==> if a then 1 == r else 0 == r` stays, while
+  `r != 0 && 0 == r ==> p` is closed; nor is a disjunction among the
+  hypotheses, `(a && 1 == r || !a && 0 == r) && r != 0` (see
+  [standard_password_ground.dfy](examples/sv-comp/array-examples/standard_password_ground.dfy)).
+- `-split` also splits lemmas marked `{:rw}`, e.g. an equivalence with a
+  conditional on its right-hand side, into parts that are no valid rules, on
+  which a following `-simplify` fails with "variables of right hand side do
+  not occur in left hand side or condition".
+- Reads over writes at a different position are decided in the neutral
+  context (`Simplify.select` with `ctx.neutral`), without the facts: `j != 3`
+  among the hypotheses does not reduce `a[3 := w][j]` to `a[j]`; a lemma
+  `if j != i then a[i := v][j] == a[j]`, whose side condition is decided
+  against the facts, does (see
+  [single_elem_safe.dfy](examples/sv-comp/array-lopstr16/single_elem_safe.dfy)).
+- Conditionals inside equations and products are not lifted, e.g.
+  `(if c then x else n) == (if c then x * x else n)`; a lemma for equations of
+  conditionals with the same test applies, but one for the product
+  `(if c then x else y) * (if c then x else y)` does not match, presumably
+  since products of conditionals are monomials of the polynomial (see
+  [motivex.dfy](examples/sv-comp/array-lopstr16/motivex.dfy)).
+- Facts with coefficients are not combined: `n₁₄ <= 200000` and
+  `100000 < n₆` do not give `n₁₄ < 2 * n₆`, since difference constraints
+  have unit coefficients; nor is an interval `100000 < n₆ < 100002` on Int
+  narrowed to `n₆ == 100001` (see
+  [array_doub_access_init_const.dfy](examples/sv-comp/array-cav19/array_doub_access_init_const.dfy)).
+- A pattern sum of a rule variable and a bound variable, e.g. the position
+  `c - k` of a store in an update, matches only if the variable takes a single
+  summand: `S + -k` matches, `2 * S + -k + -1` and `S + -k + -1` do not, nor
+  does the pattern `c - 1 - k` (see
+  [array_tiling_tcpy.dfy](examples/sv-comp/array-cav19/array_tiling_tcpy.dfy)).
+- A lemma for a monomial with a coefficient, e.g.
+  `2 * ((-x + x * x) / 2) == -x + x * x`, does not match that monomial inside
+  an equation, `n * n == 2 * ((-n + n * n) / 2) + n`, presumably since
+  equations are normalized as differences of polynomials (see
+  [ps2-ll.dfy](examples/sv-comp/nla-digbench/ps2-ll.dfy)).
 - No integer rounding: `2 * n <= 2 * k + 1` does not give `n <= k`; no
   cancellation of a factor, e.g. `k * j < 1000000 * k`, and a lemma
   `if 0 <= k then (k * a < k * b) <==> (0 < k && a < b)` does not match it,
   since a variable of a pattern does not match the coefficient 1000000 of the
   monomial `1000000 * k` (see [count_by_k.dfy](examples/sv-comp/loop-new/count_by_k.dfy)).
+
+## Performance
+
+Measured on binary search with forward rules (branch `forward`) and on the
+SV-COMP examples (`examples/sv-comp`):
+
+- Guards of updates are decided by the simplifier with all rules
+  (`Rewrite.guard`, `Rewrite.holds`), about 20 ms each. Failing decisions
+  are the expensive ones, and identical decisions are repeated without a
+  cache: 864 decisions, 15 of them distinct, in one run of binary search.
+- `Rewrite.conditions` simplifies each conjunct of a side condition, also
+  one in which no variable is instantiated yet. Then it rewrites the open
+  pattern with all rules, e.g. `X == trace(...)` as the premise of a forward
+  rule. This is fixed on `forward` only.
+- Matching an equation tries both orders. With the definition of a variable
+  (`Context.↑`), `X == trace(...)` matches `Lo == trace(...)` twice, the
+  second time with `X` bound to the trace. This is fixed on `forward` only.
+- Matching a combinator in a pattern builds the context of its updates
+  (`Simplify.combinator`) for each candidate, and simplifies the iteration
+  facts there (`Simplify.iterations`), also when the match fails afterwards.
+- `Simplify.nary` simplifies each conjunct under all others. With forward
+  rules in `Context.assume`, every sibling context derives the same
+  conclusions again, which took binary search beyond 10 minutes; on
+  `forward`, siblings are recorded without forward rules.
+- Each round of the fixpoint of `Simplify.apply` simplifies the whole
+  formula again. Programs with many loops grow accordingly, e.g.
+  [standard_copy9_ground-2.dfy](examples/sv-comp/array-examples/standard_copy9_ground-2.dfy)
+  takes about 20 s for a chain of nine copies, against about 2 s for one copy.
+- Non-termination is detected by a stack overflow only, after 8 to 13 s,
+  e.g. on counts over prefixes (see Bugs). The symbolic execution of `-teq`
+  is exponential in sequences of conditionals and overflows at ten (see Bugs).
 
 ## Trace equation systems (`-teq`)
 
@@ -198,11 +500,15 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   some case of the pattern, such that a higher-order guard bound by a later
   case of the pattern is still open when an earlier case of the expression
   needs it.
-- Facts about terms are not derived (see [forward.md](forward.md));
+- Facts about terms are not derived (see [doc/simplifier.md](doc/simplifier.md#forward-reasoning));
   binary_search_partition.dfy needs a cut, `assert φ; assume φ;`, and `-teq`
   does not assume assertions.
-- The simplifier knows nothing about division, e.g. `l <= (h + l) / 2` for
-  `l <= h` is a lemma in binary_search_partition.dfy.
+- The simplifier evaluates integer division on literals and divides by
+  literals on Real, but knows no bounds of division, e.g. `l <= (h + l) / 2`
+  for `l <= h` is a lemma in binary_search_partition.dfy, nor cancels factors,
+  e.g. `2 * n / 2` (see
+  [mlceu2.dfy](examples/sv-comp/array-tiling/mlceu2.dfy),
+  [array_of_struct_ptr_monotonic.dfy](examples/sv-comp/array-industry-pattern/array_of_struct_ptr_monotonic.dfy)).
 - Solutions of arithmetic equations are inlined into polynomials only
   (`Chains.solved`), not substituted elsewhere, e.g. `forall x. x == y + 1
   ==> p(x)` stays; a solution that depends on its variable through the
@@ -283,10 +589,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 
 - Unbounded integers, no overflow; arrays are values, sizes are ignored.
-- [c/Parser.scala](src/cuvee/c/Parser.scala) (about 830 lines) mixes the
-  resolution of expressions and statements, the inference of modifies
-  (`assigned`, `effects`, `calls`, `writes`), and that of the translation
-  unit, which could be split.
 - No `switch`, `goto`, structs, floating point, bitwise operators,
   preprocessor; pointers only as arrays allocated by `malloc`, `alloca`,
   `calloc` (see [SV-COMP.md](SV-COMP.md)), and otherwise as values of `Ptr`

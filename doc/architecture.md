@@ -130,71 +130,9 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     [examples/boogie/horn](../examples/boogie/horn), whose procedures with a
     body have no contracts.
 - [`Simplify`](../src/cuvee/simplify/Simplify.scala) rewrites assertions and
-  function definitions to a fixpoint, and simplifies procedures statement by
-  statement. Assertions are normalized into clauses (`Normalize`) before
-  simplification and after each round of it, which repeats while they change
-  (`Simplify.apply`), such that e.g. the equations of `let` are simplified in
-  the context; they are dropped if they simplify to `true`.
-  `Normalize.lift` lifts `ite` out of the terms of atoms to the level of
-  formulas, `A[ite(c, a, b)]` to `ite(c, A[a], A[b])`, but not out of
-  binders, derivatives, and `old` inside of `A`; `Split` uses it.
-  - All methods take `(config, state, ctx, ...)`. The context `Context` holds the
-    facts known at the current position and the rewrite rules, which are
-    extracted from the assertions, lemmas, and function definitions with the
-    attribute `:rw` (`Rules.from`) and are kept as they are; a definition
-    whose body is a match on a parameter gives one rule per case, with the
-    pattern in place of the parameter (overlapping patterns are not handled).
-  - Each round (`once`) simplifies the subterms first and dispatches on the
-    built-in functions; afterwards, one rewrite step with the rules of the
-    context is tried at the top (`Rewrite.step`), until a fixpoint.
-  - Every kind of expression has a helper that takes the simplified
-    subterms and builds the result, `and`, `or`, `not`, `imp`, `eq_`,
-    `distinct`, `ite`, `upd`, `case_`, `match_`, `trace`, `maps`, `invs`, ...
-    The helpers are local normalizations of one constructor: they call each
-    other where they build further formulas (e.g. `not` instead of `Not`,
-    except in the fallthrough case of `not` itself), and leave out what the
-    outer loop already decides. E.g. complementary conjuncts are found by
-    `nary`, which simplifies each argument of `and` and `or` assuming the
-    others, not by `and` itself.
-  - One-point rule: `eq_` turns `x == e` into `true` if `x` is existential
-    seen from the current position (`Context.existential`): bound by `exists`
-    (`Context.exists`), or by `forall` (`Context.forall`) below an odd number of
-    negations and premises (`Context.flip` swaps `universal` and `existential`),
-    and `x` occurs nowhere else: not in `e`, not in the facts of the context (`Context.used`,
-    which includes the primed variables of derivatives), and `e` has no
-    variables bound inside the scope of `x`. `bind` then drops `x`. This
-    relies on the context recording all siblings between the binder and the
-    equation, which holds for `and`, `or`, `not`, `==>`, and binders only;
-    the branches of `ite`, the bodies of `let`, `match`, and `invs`, and
-    neutral positions forget which variables are universal and existential
-    (`Context.neutral`); the variables of `let`, `match`, and the combinators are
-    neither (`Context.bind`).
-    Callers that use `eq_` as a decision (`distinct`, `select`, `deps`)
-    pass `ctx.neutral`.
-  - `trace`, `maps`, and `invs` normalize their dependencies, see
-    [teq.md](teq.md).
-  - Statements have helpers likewise, `spec`, `assign`, `block`, `choice`,
-    `if_`, `while_`, ...: statements without effect are the empty block
-    `skip`, `block` merges nested blocks (hoisting locals unless they
-    capture), drops `skip`, statements after a jump, and unused locals, and
-    `if_` reduces constant tests, equal branches, and negated tests.
-  - `and` extracts the disjuncts that are common to all conjuncts,
-    `(A ∨ C) ∧ (A ∨ B)` is `A ∨ (C ∧ B)`, and `or` dually the common
-    conjuncts; this is a local transformation, not a conversion to CNF or
-    DNF.
-  - The rewrite rules are extracted from formulas
-    `∀ xs. if φ then l == r` (also `<==>`, `!p` for `p == false`, and a
-    boolean atom `p` for `p == true`); the variables of `r` and `φ` must occur
-    in `l` (`Rule.check`).
-  - Arithmetic is normalised into polynomials (`Arith`); comparisons and
-    equations on `Int` and `Real` become `0 < p`, `0 <= p`, and `0 == p`,
-    with `p` primitive, printed with positive coefficients on both sides.
-  - Derivatives are computed by the rules of dL ([hybrid.md](hybrid.md)).
-- [`Rewrite`](../src/cuvee/simplify/Rewrite.scala) applies conditional rules
-  innermost first, also as a library. Its methods take
-  `(config, state, ctx, ...)` as well; matches are substitutions, and side
-  conditions are decided by `Simplify.simplify` in the context. Matching
-  below the combinators of TEQs is described in [teq.md](teq.md).
+  function definitions to a fixpoint under the facts of the context, with
+  conditional rewrite rules ([`Rewrite`](../src/cuvee/simplify/Rewrite.scala)),
+  see [simplifier.md](simplifier.md).
 - [`Flat`](../src/cuvee/transform/Flat.scala) eliminates records
   (non-recursive datatypes with one constructor), whose declarations are
   dropped: functions take their fields, functions with records as results are
@@ -338,6 +276,13 @@ A single run is `mill -i run <options> <file>`, e.g.
   `-print null` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
   `simplify`, `hybrid`, and `transform`; one suite per language checks all of
   its examples ([Checked.scala](../test/src/cuvee/test/Checked.scala)).
+  The translations of SV-COMP tasks (`examples/sv-comp`) instead share one
+  database of expected results, `examples/sv-comp/expected.csv`, with the
+  verdict of each task (safe or unsafe) and the number of remaining goals
+  ([test/Database.scala](../src/cuvee/test/Database.scala)):
+  `./Cuvee.sh -record <file> ...` prints rows, `./Cuvee.sh -test <db>.csv`
+  checks all of them, and the suite `SVComp` runs only if the environment
+  variable `CUVEE_SVCOMP` is set.
   The examples verified against a solver state `// expected: valid` or
   `// expected: invalid` in their second line.
 - Relational tests run further commands on the accepted examples and print

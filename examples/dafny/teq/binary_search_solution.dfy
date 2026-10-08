@@ -17,7 +17,7 @@
 // it matches only if the guards are spelled out with the accumulator, case a[y] < x => (h + y + 1) / 2 ...,
 // so abstracting them needs higher-order patterns, e.g. b(y) and v(y, l, h);
 // with higher-order patterns, Mid matches the lemma on mids below, which abstracts the guards and the results
-// over the accumulator, but mids has no lemmas yet, so the same goals remain (see bsearch.md)
+// over the accumulator, but mids has no lemmas yet, so the same goals remain (see ideas/binary-search.md)
 
 type Trace<a₀>
 function current<a₀>(x₀: Trace<a₀>): a₀

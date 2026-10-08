@@ -12,6 +12,15 @@ object Cuvee extends util.Main:
       case Array("-v") | Array("-version") | Array("--version") =>
         Config.version()
 
+      // a database of expected results, e.g. examples/sv-comp/expected.csv (see test.Database)
+      case Array("-test", file) if file.endsWith(".csv") =>
+        System.out.flush()
+        sys.exit(cuvee.test.Database.test(file))
+
+      case Array("-record", files*) =>
+        System.out.flush()
+        sys.exit(cuvee.test.Database.main(files.toList))
+
       // the example `file` as a test of the command line in its first line (see test.Expected)
       case Array("-test", file) =>
         System.out.flush()

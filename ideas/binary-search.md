@@ -1,14 +1,14 @@
 # Binary search with `-teq -simplify`
 
-Three versions of the same search are in this directory:
+Three versions of the same search are in `examples/dafny/teq`:
 
-- [binary_search.dfy](binary_search.dfy) computes the probe at the top of the
+- [binary_search.dfy](../examples/dafny/teq/binary_search.dfy) computes the probe at the top of the
   body, `mid := (lo + hi) / 2`, so `mid` is local to an iteration;
-- [binary_search_solution.dfy](binary_search_solution.dfy) makes the probe a
+- [binary_search_solution.dfy](../examples/dafny/teq/binary_search_solution.dfy) makes the probe a
   variable of the loop, computed before the loop and at the end of the body,
   and adds the abstractions `lows`, `highs`, `lts`, `gts`, `eqs` with their
   lemmas;
-- [binary_search_partition.dfy](binary_search_partition.dfy) uses partition
+- [binary_search_partition.dfy](../examples/dafny/teq/binary_search_partition.dfy) uses partition
   points instead, with `break` in the found case. It is verified, given a cut
   after the loop (see the last section).
 
@@ -140,12 +140,12 @@ The two exits need different things:
 ## Paths to a proof
 
 The arithmetic is not the problem. The context keeps difference constraints
-(`Diffs` in [Theory.scala](../../../src/cuvee/simplify/Theory.scala)),
+(`Diffs` in [Theory.scala](../src/cuvee/simplify/Theory.scala)),
 `x - y <= c` over arbitrary non-arithmetic atoms, closed under shortest paths,
 where a negative cycle makes the context inconsistent. All comparisons above
 have this form, e.g. `lastlt + 1 <= k`, `k + 1 <= lastgt`, and the exit
 `lastgt <= lastlt + 1`, which form a negative cycle. What is missing is
-getting such facts into the context (see [forward.md](../../../forward.md)).
+getting such facts into the context (see [simplifier.md](../doc/simplifier.md#forward-reasoning)).
 
 **Not found: facts about terms, and one generic rule for sortedness.**
 
@@ -205,7 +205,7 @@ where reads become indices, instead of between pairs of reads. The cost:
 
 ## Partition points, verified with a cut
 
-[binary_search_partition.dfy](binary_search_partition.dfy) follows the
+[binary_search_partition.dfy](../examples/dafny/teq/binary_search_partition.dfy) follows the
 partition points above. The array, its bound, `x`, `p`, and `q` are global
 constants, such that the lemmas `a[m] < x ⟺ m < p`, `x < a[m] ⟺ q <= m`, and
 `a[m] == x ⟺ p <= m < q` are rewrite rules without further variables. They
@@ -238,7 +238,7 @@ What it needed, and what remains to do in the code instead:
 - **The cut.** The bounds are facts about the terms `current(Lo)` and
   `current(Hi)`, which only occur in the goal through the cut. Facts about
   terms that occur would make it unnecessary (see
-  [forward.md](../../../forward.md)).
+  [simplifier.md](../doc/simplifier.md#forward-reasoning)).
 - **The loop test in the updates.** `-teq` makes only the branch conditions
   of the body the guards of the updates of the traces; the loop test is
   recorded in `invs` over `⌊K⌋, ⌊Lo⌋, ⌊Hi⌋`. For the equation

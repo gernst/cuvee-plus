@@ -9,7 +9,9 @@ or solvers consume.
 
 - [doc/architecture.md](doc/architecture.md): pipeline, packages, stages,
   frontends, tests.
-- [doc/datastructures.md](doc/datastructures.md): the core and the simplifier.
+- [doc/datastructures.md](doc/datastructures.md): the core.
+- [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion,
+  forward reasoning.
 - [doc/teq.md](doc/teq.md): trace equation systems (`-teq`), combinators,
   lemma database.
 - [doc/hybrid.md](doc/hybrid.md): derivatives, ODEs, parallel composition
@@ -17,6 +19,7 @@ or solvers consume.
 - [doc/style.md](doc/style.md): coding style, incl. lowercase comments that
   explain why.
 - [TODO.md](TODO.md): open problems and the user's instructions.
+- [ideas/](ideas): proposals and experiments, not implemented.
 
 ## Workflow
 
