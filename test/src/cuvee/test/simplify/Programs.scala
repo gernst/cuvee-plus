@@ -5,7 +5,7 @@ import utest._
 
 import cuvee.Config
 import cuvee.core._
-import cuvee.simplify.{Ctx, Simplify}
+import cuvee.simplify.{Context, Simplify}
 
 // programs are simplified statement by statement, each helper normalizes its own constructor
 object Programs extends TestSuite:
@@ -18,7 +18,7 @@ object Programs extends TestSuite:
   val dec = Assign(List(x), List(Zero.int))
 
   def simplify(prog: Prog) =
-    Simplify.simplify(Config.default, State.empty, Ctx.empty, prog)
+    Simplify.simplify(Config.default, State.empty, Context.empty, prog)
 
   val tests = Tests:
     // assignments of variables to themselves and trivial specifications have no effect
@@ -67,7 +67,7 @@ object Dependencies extends TestSuite:
   val C = Butlast(Counter(Zero.int, One.int, n))
 
   def simplify(expr: Expr) =
-    Simplify.simplify(Config.default, State.empty, Ctx.empty, expr)
+    Simplify.simplify(Config.default, State.empty, Context.empty, expr)
 
   val tests = Tests:
     test("unused"):
@@ -89,7 +89,7 @@ object Dependencies extends TestSuite:
 
     // the invariants of the context over some of the dependencies hold in the bodies and updates
     test("invariants"):
-      val ctx = Ctx.empty.assume(List(Invs(List(J), List(l), Lt.int(Zero.int, l))), Nil)
+      val ctx = Context.empty.assume(List(Invs(List(J), List(l), Lt.int(Zero.int, l))), Nil)
       def simplify(expr: Expr) = Simplify.simplify(Config.default, State.empty, ctx, expr)
       simplify(Invs(List(K, J), List(k, j), Lt.int(Zero.int, j))) ==> True
       val upds = Eps(List(Upd(Lt.int(Zero.int, j), j), Upd(Le.int(j, Zero.int), Zero.int)))
@@ -106,7 +106,7 @@ object Dependencies extends TestSuite:
       val x = Var("x", Sort.int)
       val y = Var("y", Sort.int)
       val loop = Invs(List(Butlast(X), J), List(x, j), Lt.int(x, j))
-      val ctx = Ctx.empty.assume(List(loop), Nil)
+      val ctx = Context.empty.assume(List(loop), Nil)
       def simplify(expr: Expr) = Simplify.simplify(Config.default, State.empty, ctx, expr)
 
       val update = Ite(Lt.int(x, j), One.int, Zero.int)
@@ -116,7 +116,7 @@ object Dependencies extends TestSuite:
       simplify(trace) ==> trace
 
       val positive = Invs(List(Y, J), List(y, j), Lt.int(Zero.int, j))
-      val ctx_ = Ctx.empty.assume(List(positive), Nil)
+      val ctx_ = Context.empty.assume(List(positive), Nil)
       val abs = Maps(List(J), List(j), Ite(Lt.int(Zero.int, j), j, UMinus.int(j)))
       Simplify.simplify(Config.default, State.empty, ctx_, Eq(Y, abs)) ==> Eq(Y, Maps(List(J), List(j), j))
 
@@ -130,7 +130,7 @@ object Dependencies extends TestSuite:
       simplify(Maps(List(C, J), List(k, j), upds)) ==> Maps(List(C, J), List(k, j), j)
       // also for a variable that denotes the counter by an assumption
       val I = Var("I", Sort.trace(Sort.int))
-      val ctx = Ctx.empty.assume(List(Eq(I, Counter(Zero.int, One.int, n))), Nil)
+      val ctx = Context.empty.assume(List(Eq(I, Counter(Zero.int, One.int, n))), Nil)
       Simplify.simplify(Config.default, State.empty, ctx, Invs(List(Butlast(I)), List(k), Lt.int(k, n))) ==> True
       // not for other dependencies
       val other = Invs(List(J), List(j), Le.int(Zero.int, j))

@@ -25,7 +25,7 @@ import cuvee.core._
 //
 // rules, steps: the rewrite rules, which are applied after each round of simplification (see Simplify.simplify),
 // and the remaining number of steps
-case class Ctx(
+case class Context(
     bound: List[List[Var]],
     universal: Set[Var],
     existential: Set[Var],
@@ -73,6 +73,11 @@ case class Ctx(
   def free: Set[Var] =
     bound.flatten.toSet ++ used
 
+  // the facts known to hold as given, the assumptions and the negations of the conclusions (see Context.negate);
+  // side conditions of rules are matched against them (see Rewrite.conditions)
+  def known: List[Expr] =
+    facts.assms ++ facts.concls.map(Context.negate)
+
   // variables that occur in the facts of the context, including the primed variables of derivatives (see Diff);
   // the equations of chains.chain remain among the assumptions, unlike those of chains.replace
   def used: Set[Var] =
@@ -84,7 +89,7 @@ case class Ctx(
   // e.g. Simplify.implied misses (p y) when the fact is stored as (p x);
   // this is done at the top level instead: Simplify.simplify iterates to a fixpoint,
   // where the facts are the simplified siblings, which are already rewritten under the substitution
-  def assume(phi: Expr): Ctx =
+  def assume(phi: Expr): Context =
     val chains_ = chains.assume(phi)
     val diffs_ = diffs.assume(phi)
 
@@ -97,9 +102,9 @@ case class Ctx(
         copy(facts = facts.check(phi), chains = chains_, diffs = diffs_)
 
       case _ =>
-        copy(facts = facts.assume(phi), chains = chains_, diffs = diffs_, rules = Ctx.rules(phi) ++ rules)
+        copy(facts = facts.assume(phi), chains = chains_, diffs = diffs_, rules = Context.rules(phi) ++ rules)
 
-  def deny(phi: Expr): Ctx =
+  def deny(phi: Expr): Context =
     copy(facts = facts.deny(phi), chains = chains.deny(phi), diffs = diffs.deny(phi))
 
   def theories: List[Theory] =
@@ -126,7 +131,7 @@ case class Ctx(
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
-  def assume(pos: List[Expr], neg: List[Expr]): Ctx =
+  def assume(pos: List[Expr], neg: List[Expr]): Context =
     (pos, neg) match
       case (Nil, Nil) =>
         this
@@ -158,7 +163,7 @@ case class Ctx(
       case (Nil, phi :: neg) =>
         deny(phi).assume(Nil, neg)
 
-object Ctx:
+object Context:
   // an equation of a term with variables and a ground term is a rewrite rule without instantiable variables,
   // whose free variables are constants, e.g. history.events == [] for delay(history.events, t);
   // it terminates, since each step removes occurrences of variables, which no other such rule matches;
@@ -174,7 +179,13 @@ object Ctx:
   def rule(lhs: Expr, rhs: Expr): Boolean =
     !lhs.isInstanceOf[Var] && !lhs.isArith && lhs.free.nonEmpty && rhs.free.isEmpty
 
-  val empty = Ctx(Nil, Set(), Set(), Facts.empty, Chains.empty, Diffs.empty, None)
+  // the negation of a conclusion, where only a double negation is removed, not the normal form of Simplify.not
+  def negate(phi: Expr): Expr =
+    phi match
+      case Not(psi) => psi
+      case _        => Not(phi)
+
+  val empty = Context(Nil, Set(), Set(), Facts.empty, Chains.empty, Diffs.empty, None)
 
   // at the top of an asserted formula
   val pos = empty.copy(polarity = Some(true))

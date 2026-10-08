@@ -14,7 +14,7 @@ object Facts:
 
 // the facts as given, the assumptions are known to hold, the conclusions are known not to hold;
 // they are inconsistent if false is among the assumptions, true among the conclusions, or a fact among both,
-// which is recorded as the facts are added, such that a query (see Ctx.implied) needs a single pass over them
+// which is recorded as the facts are added, such that a query (see Context.implied) needs a single pass over them
 case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) extends Theory:
   def assume(expr: Expr): Facts =
     val conflict = expr == False || (concls contains expr)
@@ -24,7 +24,7 @@ case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) e
     val conflict = expr == True || (assms contains expr)
     Facts(assms, expr :: concls, inconsistent || conflict)
 
-  // a fact that is not recorded, e.g. an equation in the substitution (see Ctx.assume), still conflicts with the conclusions
+  // a fact that is not recorded, e.g. an equation in the substitution (see Context.assume), still conflicts with the conclusions
   def check(expr: Expr): Facts =
     val conflict = expr == False || (concls contains expr)
     Facts(assms, concls, inconsistent || conflict)
@@ -38,7 +38,7 @@ object Chains:
 
 // equations of variables, which are never inconsistent, since conflicting equations are not recorded:
 // replace: a substitution that replaces variables by others or by literals known to be equal,
-// whose equations are no facts of the context (see Ctx.assume);
+// whose equations are no facts of the context (see Context.assume);
 // chain: the equations x == e that are not recursive, i.e., where x is not free in e,
 // which remain facts of the context, such that they are still found by Simplify.implied;
 // equations whose right-hand side is a sum, difference, negation, or product are not recorded there,
@@ -46,7 +46,7 @@ object Chains:
 // solved: the solutions of arithmetic equations for a variable, e.g. x by 40 - n for n + x == 40,
 // which are inlined into polynomials (see Simplify.poly), and whose equations remain facts of the context;
 // the equations of chain and solved may depend on each other cyclically, since they are looked up one variable
-// at a time (see Ctx.↑), and a solution is inlined only if it does not depend on its variable (see acyclic)
+// at a time (see Context.↑), and a solution is inlined only if it does not depend on its variable (see acyclic)
 case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr], solved: Map[Var, Expr]) extends Theory:
   def inconsistent =
     false
@@ -103,7 +103,7 @@ case class Chains(replace: Map[Var, Expr], chain: Map[Var, Expr], solved: Map[Va
         None
 
   // whether x == e can be recorded in the chain, also if e depends on x through other equations,
-  // e.g. of mutually dependent traces, since the chain is only looked up one variable at a time (see Ctx.↑)
+  // e.g. of mutually dependent traces, since the chain is only looked up one variable at a time (see Context.↑)
   def chains(x: Var, e: Expr): Boolean =
     !(chain contains x) && !(e.free contains x) && !e.isArith
 

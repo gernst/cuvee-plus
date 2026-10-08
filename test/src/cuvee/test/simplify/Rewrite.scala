@@ -4,12 +4,12 @@ package simplify
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.{Rule, Simplify, Ctx}
+import cuvee.simplify.{Rule, Simplify, Context}
 
 object Rewrite extends TestSuite:
-  // a rule whose variables are the free variables of its left-hand side
+  // a rule whose type parameters and variables are the free ones of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
-    Rule(Set(), lhs.free, lhs, rhs, cond)
+    Rule(lhs.params, lhs.free, lhs, rhs, cond)
 
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)
@@ -19,6 +19,7 @@ object Rewrite extends TestSuite:
   val f = Fun("f", Nil, Fun.formals(Sort.int), Sort.int)
   val g = Fun("g", Nil, Fun.formals(Sort.int), Sort.int)
   val abs = Fun("abs", Nil, Fun.formals(Sort.int), Sort.int)
+  val q = Fun("q", Nil, Fun.formals(Sort.int, Sort.int), Sort.bool)
 
   // polymorphic lists, length(cons(x, xs)) = length(xs) + 1
   val p = Param.a
@@ -30,8 +31,11 @@ object Rewrite extends TestSuite:
   def app(fun: Fun, args: Expr*) = App(fun, args.toList)
 
   // a single step at the top of `expr`, subterms are not rewritten (the simplifier traverses them)
-  def R(rules: List[Rule], expr: Expr) =
-    cuvee.simplify.Rewrite.rewrite(cuvee.Config.default, State.empty, Ctx.empty.withRules(rules), expr)
+  def R(rules: List[Rule], expr: Expr): Expr =
+    R(Context.empty.withRules(rules), expr)
+
+  def R(ctx: Context, expr: Expr): Expr =
+    cuvee.simplify.Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, expr)
 
   val tests = Tests:
     test("plain"):
@@ -112,6 +116,27 @@ object Rewrite extends TestSuite:
       R(List(rule), app(abs, One.int)) ==> One.int
       R(List(rule), app(abs, a)) ==> app(abs, a)
 
+    // variables that occur only in the condition are instantiated by matching it against the facts of the context,
+    // the assumptions and the negated conclusions
+    test("conditions bind variables"):
+      val rule = Rule(Set(), Set(x, y), app(f, x), app(g, y), app(q, x, y))
+      val ctx = Context.empty.assume(app(q, a, b)).withRules(List(rule))
+      R(ctx, app(f, a)) ==> app(g, b)
+      R(ctx, app(f, b)) ==> app(f, b)
+      R(List(rule), app(f, a)) ==> app(f, a)
+
+      val negated = Rule(Set(), Set(x, y), app(f, x), app(g, y), Not(app(q, x, y)))
+      R(Context.empty.deny(app(q, a, b)).withRules(List(negated)), app(f, a)) ==> app(g, b)
+
+    // closed conjuncts are decided first, conjuncts without any instantiated variable are not searched
+    test("conditions closed and open"):
+      val rule = Rule(Set(), Set(x, y), app(f, x), app(g, y), And(Le.int(Zero.int, x), app(q, x, y)))
+      R(Context.empty.assume(app(q, a, b)).withRules(List(rule)), app(f, a)) ==> app(f, a)
+      R(Context.empty.assume(app(q, a, b)).assume(Le.int(Zero.int, a)).withRules(List(rule)), app(f, a)) ==> app(g, b)
+
+      val unrelated = Rule(Set(), Set(x, y), app(f, x), app(g, y), app(q, y, y))
+      R(Context.empty.assume(app(q, b, b)).withRules(List(unrelated)), app(f, a)) ==> app(f, a)
+
     // variables of the rule match bound variables of the expression
     test("binders"):
       val rules = List(rw(app(f, app(g, x)), x))
@@ -121,7 +146,7 @@ object Rewrite extends TestSuite:
     // the number of steps is shared by all rewrites with the context
     test("nontermination"):
       val rules = List(rw(app(f, x), app(f, app(f, x))))
-      val ctx = Ctx.empty.withRules(rules, steps = 10)
+      val ctx = Context.empty.withRules(rules, steps = 10)
       val msg =
         try
           (0 to 10).foldLeft[Expr](app(f, a)): (expr, _) =>
@@ -137,7 +162,7 @@ object Rewrite extends TestSuite:
           Rule.check(Rule(Set(), Set(x, y), app(f, x), y, True))
           "no error"
         catch case cuvee.Error(msg, _*) => msg
-      msg ==> "variables of right hand side or condition do not occur in left hand side"
+      msg ==> "variables of right hand side do not occur in left hand side or condition"
       Rule.check(Rule(Set(), Set(x), app(f, x), y, True))
 
     // constants of a rule are not instantiated
@@ -194,14 +219,13 @@ object Rewrite extends TestSuite:
       R(rules, app(f, a)) ==> app(f, a)
 
       // but only if there are fewer summands than variables, x + y matches a + b with x = a or x = b, not x = 0
-      val binding = cuvee.simplify.Binding(Set(x, y), Set(), Map(), Set())
-      val ms = cuvee.simplify.Rewrite.matches(cuvee.Config.default, State.empty, Ctx.empty, binding, Plus.int(x, y), Plus.int(a, b), Subst.empty)
+      val ms = cuvee.simplify.Rewrite.matches(cuvee.Config.default, State.empty, Context.empty, Set(), Set(x, y), Set(), Plus.int(x, y), None, Map(), Set(), Plus.int(a, b), Subst.empty)
       ms.map(_.vars(x)) ==> List(a, b)
 
 // the simplifier applies the rewrite rules of its context after each round of simplification
 object SimplifyRules extends TestSuite:
   import Rewrite.rw
-  import cuvee.simplify.{Ctx, Simplify}
+  import cuvee.simplify.{Context, Simplify}
 
   val a = Var("a", Sort.int)
   val x = Var("x", Sort.int)
@@ -212,7 +236,7 @@ object SimplifyRules extends TestSuite:
   def app(fun: Fun, args: Expr*) = App(fun, args.toList)
 
   def simplify(rules: List[Rule], expr: Expr) =
-    Simplify.simplify(cuvee.Config.default, State.empty, Ctx.pos.withRules(rules), expr)
+    Simplify.simplify(cuvee.Config.default, State.empty, Context.pos.withRules(rules), expr)
 
   val tests = Tests:
     // the argument is simplified first, then the rule applies to the result

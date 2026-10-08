@@ -77,6 +77,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   variable that occurs only in guards may match any formula, e.g. `b` matches
   `!b`; lemmas whose guards are more specific must come first (as for
   `counts` in [teq.dfy](resources/cuvee/teq.dfy)).
+- Variables that occur only in side conditions of rules or in guards of
+  patterns are instantiated by matching the conjuncts against the facts of the
+  context (`Context.known`, assumptions and negated conclusions as given, not
+  chains or differences) or the conjuncts of the guard of the expression
+  (`Rewrite.conditions`); conjuncts without any instantiated variable are not
+  searched, and the first match is taken among several.
 - Fourier-Motzkin ([simplify/FourierMotzkin.scala](src/cuvee/simplify/FourierMotzkin.scala))
   is not used yet. Proposal, in this order:
   1. decide `0 <= p`/`0 < p` against the linear facts of the context (the

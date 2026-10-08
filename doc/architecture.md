@@ -29,7 +29,7 @@ transformation and any output.
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `Verify` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
-| `cuvee.simplify` | `Simplify` (contextual simplification under a `Ctx`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), and `FourierMotzkin` (linear constraints over the rationals). |
+| `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), and `FourierMotzkin` (linear constraints over the rationals). |
 | `cuvee.transform` | `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), and `Monomorph` (instances of polymorphic functions). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
@@ -136,7 +136,7 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   `Normalize.lift` lifts `ite` out of the terms of atoms to the level of
   formulas, `A[ite(c, a, b)]` to `ite(c, A[a], A[b])`, but not out of
   binders, derivatives, and `old` inside of `A`; `Split` uses it.
-  - All methods take `(config, state, ctx, ...)`. The context `Ctx` holds the
+  - All methods take `(config, state, ctx, ...)`. The context `Context` holds the
     facts known at the current position and the rewrite rules, which are
     extracted from the assertions, lemmas, and function definitions with the
     attribute `:rw` (`Rules.from`) and are kept as they are; a definition
@@ -155,18 +155,18 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     `nary`, which simplifies each argument of `and` and `or` assuming the
     others, not by `and` itself.
   - One-point rule: `eq_` turns `x == e` into `true` if `x` is existential
-    seen from the current position (`Ctx.existential`): bound by `exists`
-    (`Ctx.exists`), or by `forall` (`Ctx.forall`) below an odd number of
-    negations and premises (`Ctx.flip` swaps `universal` and `existential`),
-    and `x` occurs nowhere else: not in `e`, not in the facts of the context (`Ctx.used`,
+    seen from the current position (`Context.existential`): bound by `exists`
+    (`Context.exists`), or by `forall` (`Context.forall`) below an odd number of
+    negations and premises (`Context.flip` swaps `universal` and `existential`),
+    and `x` occurs nowhere else: not in `e`, not in the facts of the context (`Context.used`,
     which includes the primed variables of derivatives), and `e` has no
     variables bound inside the scope of `x`. `bind` then drops `x`. This
     relies on the context recording all siblings between the binder and the
     equation, which holds for `and`, `or`, `not`, `==>`, and binders only;
     the branches of `ite`, the bodies of `let`, `match`, and `invs`, and
     neutral positions forget which variables are universal and existential
-    (`Ctx.neutral`); the variables of `let`, `match`, and the combinators are
-    neither (`Ctx.bind`).
+    (`Context.neutral`); the variables of `let`, `match`, and the combinators are
+    neither (`Context.bind`).
     Callers that use `eq_` as a decision (`distinct`, `select`, `deps`)
     pass `ctx.neutral`.
   - `trace`, `maps`, and `invs` normalize their dependencies, see

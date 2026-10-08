@@ -6,6 +6,7 @@ import cuvee.Config
 import cuvee.pipe.Transform
 import cuvee.core._
 import util.Rational
+import util.{disjoint, intersects}
 
 // contextual simplification of the formulas in assertions and function definitions,
 // where each subterm is simplified under the facts known to hold at its position
@@ -19,7 +20,7 @@ object Simplify extends Transform:
 
     for
       cmd <- cmds
-      cmd_ = if cmd.isRule then cmd else simplify(config, state, Ctx.empty.withRules(rules), cmd)
+      cmd_ = if cmd.isRule then cmd else simplify(config, state, Context.empty.withRules(rules), cmd)
       if !isTrivial(cmd_)
     yield cmd_
 
@@ -30,7 +31,7 @@ object Simplify extends Transform:
 
   // `ctx` is an empty context, which provides the rewrite rules;
   // the antecedents of assertions are assumed in the context of their succedents during simplification
-  def simplify(config: Config, state: State, ctx: Ctx, cmd: Cmd): Cmd =
+  def simplify(config: Config, state: State, ctx: Context, cmd: Cmd): Cmd =
     cmd match
       case Assert(justify, params, phi, attrs) =>
         Assert(justify, params, apply(config, state, ctx.copy(polarity = Some(true)), Normalize(phi)), attrs)
@@ -48,28 +49,28 @@ object Simplify extends Transform:
         cmd
 
   // the formulas and terms in attributes, e.g. contracts and invariants, are simplified without context
-  def simplify(config: Config, state: State, ctx: Ctx, attrs: Attrs): Attrs =
+  def simplify(config: Config, state: State, ctx: Context, attrs: Attrs): Attrs =
     attrs.map(simplify(config, state, ctx, _))
 
   // the outer loop for assertions, which are normalized into clauses (see Normalize) before and after each round,
   // since simplification may produce nested implications and negations again,
   // and which are simplified again as long as they change, e.g. the equations of let are then known in the context;
   // normalizing before simplification removes let at positions with a polarity, whose body is neutral otherwise
-  def apply(config: Config, state: State, ctx: Ctx, phi: Expr): Expr =
+  def apply(config: Config, state: State, ctx: Context, phi: Expr): Expr =
     val phi_ = Normalize(simplify(config, state, ctx, phi))
     if phi_ == phi
     then phi
     else apply(config, state, ctx, phi_)
 
   // each of `exprs` on its own in the same context, e.g. the arguments of a function
-  def simplify(config: Config, state: State, ctx: Ctx, exprs: List[Expr]): List[Expr] =
+  def simplify(config: Config, state: State, ctx: Context, exprs: List[Expr]): List[Expr] =
     exprs.map(simplify(config, state, ctx, _))
 
   // simplify `expr` assuming that all facts in `ctx` hold
   // by repeated rounds of simplification until a fixpoint is reached,
   // a formula that is known from the context is replaced by its truth value (only formulas, which not applies to);
   // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
-  def simplify(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  def simplify(config: Config, state: State, ctx: Context, expr: Expr): Expr =
     if implied(config, state, ctx, expr)
     then True
     else if denied(config, state, ctx, expr)
@@ -85,15 +86,15 @@ object Simplify extends Transform:
       else simplify(config, state, ctx, expr_)
 
   // whether `phi` is known to hold in `ctx`, also by its negation in normal form, e.g. a < b if !(b <= a) is known
-  // (see Ctx.implied), and in an inconsistent context at positive positions,
+  // (see Context.implied), and in an inconsistent context at positive positions,
   // where any formula may be chosen (polarity is only defined for formulas); false for expressions that are no formulas
-  def implied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
+  def implied(config: Config, state: State, ctx: Context, phi: Expr): Boolean =
     phi.typ == Sort.bool && (phi == True
       || (ctx.inconsistent && ctx.polarity == Some(true))
       || ctx.implied(phi, not(config, state, ctx, phi)))
 
   // whether `phi` is known not to hold in `ctx`, dually, e.g. a < b if b <= a is known
-  def denied(config: Config, state: State, ctx: Ctx, phi: Expr): Boolean =
+  def denied(config: Config, state: State, ctx: Context, phi: Expr): Boolean =
     phi.typ == Sort.bool && (phi == False
       || (ctx.inconsistent && ctx.polarity == Some(false))
       || ctx.denied(phi, not(config, state, ctx, phi)))
@@ -108,7 +109,7 @@ object Simplify extends Transform:
 
   // a single step with the rewrite rules of the context at the top of `expr`,
   // where the conditions of the rules are decided by simplification in the context (see Rewrite)
-  def rewrite(config: Config, state: State, ctx: Ctx, expr: Expr, self: Option[Var] = None): Expr =
+  def rewrite(config: Config, state: State, ctx: Context, expr: Expr, self: Option[Var] = None): Expr =
     Rewrite.rewrite(config, state, ctx, expr, self)
 
   // a single round of simplification, dispatching on the builtin functions,
@@ -116,7 +117,7 @@ object Simplify extends Transform:
   // extend the context by the facts known at the position of each subterm,
   // negation and the premise of implication flip the polarity,
   // and the arguments of other functions have none
-  def once(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  def once(config: Config, state: State, ctx: Context, expr: Expr): Expr =
     expr match
       case x: Var =>
         var_(config, state, ctx, x)
@@ -186,7 +187,7 @@ object Simplify extends Transform:
         val arg_ = simplify(config, state, ctx, arg)
         As(arg_, typ)
 
-      // the branches have no polarity, since the context does not record the other branch (see Ctx.neutral)
+      // the branches have no polarity, since the context does not record the other branch (see Context.neutral)
       case Ite(test, left, right) =>
         val test_ = simplify(config, state, ctx.neutral, test)
         val left_ = simplify(config, state, ctx.neutral.assume(List(test_), Nil), left)
@@ -351,18 +352,18 @@ object Simplify extends Transform:
   def combinator(
       config: Config,
       state: State,
-      ctx: Ctx,
+      ctx: Context,
       deps: List[Expr],
       bound: List[Var],
       self: Option[(Expr, Expr)] = None
-  ): Ctx =
+  ): Context =
     ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound, self) ++ iterations(config, state, ctx, deps, bound), Nil)
 
   // the bodies of the invariants among the assumptions whose dependencies are among `deps` and `self`,
   // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of `self`,
   // which hold at each position of the dependencies, hence also for the values bound there;
   // the dependencies of a combinator have equal length, such that the positions coincide
-  def invariants(ctx: Ctx, deps: List[Expr], bound: List[Var], self: Option[(Expr, Expr)] = None): List[Expr] =
+  def invariants(ctx: Context, deps: List[Expr], bound: List[Var], self: Option[(Expr, Expr)] = None): List[Expr] =
     val values = (deps zip bound).toMap[Expr, Expr] ++ self
     for
       case Invs(deps_, bound_, body) <- ctx.facts.assms
@@ -375,7 +376,7 @@ object Simplify extends Transform:
   // then 0 <= k < n, since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
   // is its value in iteration k, i.e., z == earlier(k, ⌊Z⌋), which is simplified within the range,
   // e.g. z == k for ⌊Z⌋ with Z == counter(0, 1, n), which then bounds z as well
-  def iterations(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var]): List[Expr] =
+  def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     (deps, bound) match
       case (Butlast(ctx.↑(Counter(Zero.int, One.int, n))) :: deps_, k :: bound_) =>
         val ctx_ = ctx.neutral.bind(bound)
@@ -390,7 +391,7 @@ object Simplify extends Transform:
 
   // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,
   // without polarity, since the context does not record the argument
-  def cases(config: Config, state: State, ctx: Ctx, cs: Case): Case =
+  def cases(config: Config, state: State, ctx: Context, cs: Case): Case =
     val Case(pat, body, cond) = cs
     val (bound_, re) = Subst.rename(pat.free.toList, ctx.free)
     val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
@@ -401,7 +402,7 @@ object Simplify extends Transform:
   // and do not hold otherwise (disjunction);
   // propositions in `done` are already processed (in reverse) and assumed in their simplified form,
   // otherwise e.g. both copies in `a and a` would simplify to true
-  def nary(config: Config, state: State, ctx: Ctx, done: List[Expr], phis: List[Expr], pos: Boolean): List[Expr] =
+  def nary(config: Config, state: State, ctx: Context, done: List[Expr], phis: List[Expr], pos: Boolean): List[Expr] =
     phis match
       case Nil =>
         done.reverse
@@ -417,7 +418,7 @@ object Simplify extends Transform:
 
   // simplify an integer- or real-valued term into the normal form of polynomials,
   // terms of other types, e.g. of defined sorts, are simplified only
-  def arith(config: Config, state: State, ctx: Ctx, expr: Expr): Expr =
+  def arith(config: Config, state: State, ctx: Context, expr: Expr): Expr =
     Ring(expr.typ) match
       case Some(ring) => 
         val poly_ = poly(config, state, ctx, ring, expr)
@@ -434,7 +435,7 @@ object Simplify extends Transform:
   // on Real, division by a term that simplifies to a nonzero literal is multiplication by its inverse;
   // variables with the solution of an arithmetic equation in the context are inlined (see Chains.solved),
   // unless the solution depends on the variable through the equations of the context, which would loop
-  def poly(config: Config, state: State, ctx: Ctx, ring: Ring, expr: Expr): Poly =
+  def poly(config: Config, state: State, ctx: Context, ring: Ring, expr: Expr): Poly =
     expr match
       case ring.num(n: BigInt) =>
         Poly.const(Rational(n))
@@ -475,17 +476,17 @@ object Simplify extends Transform:
             Arith.toPoly(ring, expr_)
 
   // variables known to be equal to another one or to a literal are replaced
-  def var_(config: Config, state: State, ctx: Ctx, x: Var): Expr =
+  def var_(config: Config, state: State, ctx: Context, x: Var): Expr =
     ctx.chains.replace.get(x) match
       case Some(e) => e
       case None    => x
 
-  def eq_(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
+  def eq_(config: Config, state: State, ctx: Context, left: Expr, right: Expr): Expr =
     (left, right) match
       case _ if left == right =>
         True
 
-      // variables with the same definition among the assumptions, or a variable and its definition (see Ctx.↑)
+      // variables with the same definition among the assumptions, or a variable and its definition (see Context.↑)
       case (ctx.↑(left_), ctx.↑(right_)) if left_ == right_ =>
         True
 
@@ -518,27 +519,27 @@ object Simplify extends Transform:
         Eq(left, right)
 
   // one-point rule: forall x. C[x == e] is C[true] if x == e occurs negatively in C, and exists x. C[x == e] likewise
-  // if it occurs positively, i.e., x is existential seen from the current position (see Ctx.flip),
+  // if it occurs positively, i.e., x is existential seen from the current position (see Context.flip),
   // which neutral positions forget, provided that x does not occur elsewhere, i.e., neither in e nor in the context,
   // and e does not depend on variables bound inside the scope of x, otherwise x cannot be instantiated by e,
   // e.g. not in forall x. exists y. !(x == y)
-  def point(ctx: Ctx, x: Var, e: Expr): Boolean =
+  def point(ctx: Context, x: Var, e: Expr): Boolean =
     // the variables of the binders inside that of x, those of the binder of x are not nested
     val inner = ctx.bound.takeWhile(!_.contains(x)).flatten.toSet
     val existential = ctx.existential contains x
     val recursive = e.free contains x
     val used = ctx.used contains x
-    val dependent = (e.free intersect inner).nonEmpty
+    val dependent = e.free intersects inner
     existential && !recursive && !used && !dependent
 
   // equivalences are equations on Bool, the normal form, such that both are known from the context alike,
   // and as which SMT-LIB writes them
-  def eqv(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
+  def eqv(config: Config, state: State, ctx: Context, left: Expr, right: Expr): Expr =
     eq_(config, state, ctx, left, right)
 
   // false if two of the expressions are equal, true if all of them are pairwise different,
   // e.g. literals, two expressions are distinct exactly if they are not equal
-  def distinct(config: Config, state: State, ctx: Ctx, exprs: List[Expr]): Expr =
+  def distinct(config: Config, state: State, ctx: Context, exprs: List[Expr]): Expr =
     val eqs = for case a :: rest <- exprs.tails.toList; b <- rest yield eq_(config, state, ctx.neutral, a, b)
 
     if eqs contains True
@@ -550,9 +551,9 @@ object Simplify extends Transform:
         case List(a, b) => not(config, state, ctx, Eq(a, b))
         case _          => Distinct(exprs)
 
-  // testers on constructor applications, also of variables defined by one (see Ctx.↑),
+  // testers on constructor applications, also of variables defined by one (see Context.↑),
   // which is looked up once only here, not in constr, since definitions through annotations may be cyclic
-  def is(config: Config, state: State, ctx: Ctx, arg: Expr, fun: Fun): Expr =
+  def is(config: Config, state: State, ctx: Context, arg: Expr, fun: Fun): Expr =
     val ctx.↑(arg_) = arg: @unchecked
     constr(config, state, arg_) match
       case Some(constr) if constr.name == fun.name => True
@@ -571,7 +572,7 @@ object Simplify extends Transform:
       case _ =>
         None
 
-  def ite(config: Config, state: State, ctx: Ctx, test: Expr, left: Expr, right: Expr): Expr =
+  def ite(config: Config, state: State, ctx: Context, test: Expr, left: Expr, right: Expr): Expr =
     (test, left, right) match
       case (True, _, _)       => left
       case (False, _, _)      => right
@@ -580,8 +581,8 @@ object Simplify extends Transform:
       case (_, False, True)   => not(config, state, ctx, test)
       case _                  => Ite(test, left, right)
 
-  // read over write, also of arrays defined by a write (see Ctx.↑), and beta reduction of lambdas
-  def select(config: Config, state: State, ctx: Ctx, base: Expr, index: Expr): Expr =
+  // read over write, also of arrays defined by a write (see Context.↑), and beta reduction of lambdas
+  def select(config: Config, state: State, ctx: Context, base: Expr, index: Expr): Expr =
     base match
       case ctx.↑(Store(_, index_, value)) if index_ == index =>
         value
@@ -595,9 +596,9 @@ object Simplify extends Transform:
       case _ =>
         Select(base, index)
 
-  def store(config: Config, state: State, ctx: Ctx, base: Expr, index: Expr, value: Expr): Expr =
+  def store(config: Config, state: State, ctx: Context, base: Expr, index: Expr, value: Expr): Expr =
     (base, value) match
-      // overwritten, also arrays defined by a write (see Ctx.↑)
+      // overwritten, also arrays defined by a write (see Context.↑)
       case (ctx.↑(Store(base_, index_, _)), _) if index_ == index =>
         Store(base_, index, value)
 
@@ -609,7 +610,7 @@ object Simplify extends Transform:
         Store(base, index, value)
 
   // negated comparisons are the other comparison with the arguments swapped, !(a < b) is b <= a
-  def not(config: Config, state: State, ctx: Ctx, phi: Expr): Expr =
+  def not(config: Config, state: State, ctx: Context, phi: Expr): Expr =
     phi match
       case True          => False
       case False         => True
@@ -620,7 +621,7 @@ object Simplify extends Transform:
       case Le.real(a, b) => Lt.real(b, a)
       case _             => Not(phi)
 
-  def imp(config: Config, state: State, ctx: Ctx, phi: Expr, psi: Expr): Expr =
+  def imp(config: Config, state: State, ctx: Context, phi: Expr, psi: Expr): Expr =
     (phi, psi) match
       case (True, _)       => psi
       case (False, _)      => True
@@ -632,7 +633,7 @@ object Simplify extends Transform:
   // flatten nested conjunctions, drop true and duplicates, false makes the whole conjunction false;
   // complementary pairs are decided already, since each conjunct is simplified assuming the others (see nary);
   // disjuncts common to all conjuncts are extracted, e.g. (A or C) and (A or B) is A or (C and B)
-  def and(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
+  def and(config: Config, state: State, ctx: Context, phis: List[Expr]): Expr =
     val phis_ = phis.conjuncts
     if phis_.contains(False)
     then False
@@ -643,7 +644,7 @@ object Simplify extends Transform:
       else or(config, state, ctx, common :+ and(config, state, ctx, rests.map(Or(_))))
 
   // dual to and
-  def or(config: Config, state: State, ctx: Ctx, phis: List[Expr]): Expr =
+  def or(config: Config, state: State, ctx: Context, phis: List[Expr]): Expr =
     val phis_ = phis.disjuncts
     if phis_.contains(True)
     then True
@@ -660,7 +661,7 @@ object Simplify extends Transform:
 
   // SMT-LIB semantics: for n != 0, m = n * (m div n) + (m mod n) with 0 <= m mod n < |n|,
   // division by zero is unspecified and therefore left alone
-  def div(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
+  def div(config: Config, state: State, ctx: Context, left: Expr, right: Expr): Expr =
     (left, right) match
       case (Lit(m: BigInt, _), Lit(n: BigInt, _)) if n != 0 =>
         val r = m mod n.abs
@@ -676,7 +677,7 @@ object Simplify extends Transform:
       case _ =>
         DivBy.int(left, right)
 
-  def mod(config: Config, state: State, ctx: Ctx, left: Expr, right: Expr): Expr =
+  def mod(config: Config, state: State, ctx: Context, left: Expr, right: Expr): Expr =
     (left, right) match
       case (Lit(m: BigInt, _), Lit(n: BigInt, _)) if n != 0 =>
         Lit(m mod n.abs, Sort.int)
@@ -685,8 +686,12 @@ object Simplify extends Transform:
         Zero.int
 
       // the coefficients and the constant of a polynomial are taken modulo n, e.g. (2 * x + 3) % 2 is 1
-      case (_, Lit(n: BigInt, _)) if n != 0 && Arith.toPoly(Ring.int, left).modulo(n) != Arith.toPoly(Ring.int, left).normalize =>
-        mod(config, state, ctx, Arith.toPoly(Ring.int, left).modulo(n).toExpr(Ring.int), right)
+      case (_, Lit(n: BigInt, _)) if n != 0 =>
+        val poly = Arith.toPoly(Ring.int, left)
+        val reduced = poly.modulo(n)
+        if reduced != poly.normalize
+        then mod(config, state, ctx, reduced.toExpr(Ring.int), right)
+        else Mod.int(left, right)
 
       case _ =>
         Mod.int(left, right)
@@ -699,7 +704,7 @@ object Simplify extends Transform:
   // derivatives of other expressions are kept, e.g. of applications of other functions and of division
   def diff(config: Config, state: State, xs: List[Var], expr: Expr): Expr =
     expr match
-      case _ if expr.typ == Sort.real && (expr.free intersect xs.toSet).isEmpty =>
+      case _ if expr.typ == Sort.real && (xs disjoint expr.free) =>
         Zero.real
 
       case x: Var if x.typ == Sort.real =>
@@ -752,7 +757,7 @@ object Simplify extends Transform:
 
   // the difference right - left of the sides of a comparison as a normalized polynomial,
   // whose sign is all that matters, hence with integral coefficients without a common divisor
-  def difference(config: Config, state: State, ctx: Ctx, ring: Ring, left: Expr, right: Expr): Poly =
+  def difference(config: Config, state: State, ctx: Context, ring: Ring, left: Expr, right: Expr): Poly =
     val left_ = poly(config, state, ctx, ring, left)
     val right_ = poly(config, state, ctx, ring, right)
     (right_ - left_).normalize.primitive
@@ -762,7 +767,7 @@ object Simplify extends Transform:
   // e.g. 0 < y - x + 1 becomes x < y + 1
   // on Int, n < m + 1 is n <= m, and 0 < p is 0 < q + 1 where 0 <= q is 0 <= p - 1 rounded (see Poly.floor),
   // e.g. 2 * n < 52 is n < 26
-  def lt(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
+  def lt(config: Config, state: State, ctx: Context, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     val tight = (poly - Poly.one).floor + Poly.one
     if poly.monos.isEmpty
     then if poly.const.isPositive then True else False
@@ -777,7 +782,7 @@ object Simplify extends Transform:
   // equations 0 == p on Int or Real are constants if p is, otherwise they are re-arranged like comparisons,
   // the result is an equation as built by eq_, e.g. by the one-point rule,
   // which applies also to a variable for which the equation can be solved, e.g. n + x == 40 for x (see Poly.solution)
-  def eq(config: Config, state: State, ctx: Ctx, ring: Ring, poly: Poly): Expr =
+  def eq(config: Config, state: State, ctx: Context, ring: Ring, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isZero then True else False
     else if poly.solution((x, rest) => point(ctx, x, rest.toExpr(ring))).nonEmpty
@@ -789,7 +794,7 @@ object Simplify extends Transform:
   // on Int, n + 1 <= m is n < m, 0 <= p is rounded (see Poly.floor), e.g. 2 * n + 1 <= 52 is n <= 25,
   // n <= m is n == m if m <= n is known, e.g. for 0 <= x <= 0, whose equation is then substituted,
   // and n < m if n != m is known (the decisions are neutral)
-  def le(config: Config, state: State, ctx: Ctx, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
+  def le(config: Config, state: State, ctx: Context, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isNegative then False else True
     else if ring == Ring.int && poly.floor != poly
@@ -813,7 +818,7 @@ object Simplify extends Transform:
 
   // earlier moves inward: into maps, whose element j is its update for the elements j of the dependencies,
   // into both branches of ite, and into the body of let, whose bound variables are renamed apart from j
-  def earlier(config: Config, state: State, ctx: Ctx, j: Expr, arg: Expr): Expr =
+  def earlier(config: Config, state: State, ctx: Context, j: Expr, arg: Expr): Expr =
     (j, arg) match
       case (j, ctx.↑(Maps(deps, bound, update))) =>
         val su = Subst.from(bound, deps.map(earlier(config, state, ctx, j, _)))
@@ -830,8 +835,8 @@ object Simplify extends Transform:
         Earlier(j, arg)
 
   // applications of other functions, e.g. user-defined ones, and beta reduction of function values,
-  // also of those defined by a lambda (see Ctx.↑)
-  def app(config: Config, state: State, ctx: Ctx, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
+  // also of those defined by a lambda (see Context.↑)
+  def app(config: Config, state: State, ctx: Context, fun: Fun, inst: List[Type], typ: Type, args: List[Expr]): Expr =
     App(fun, inst, typ, args) match
       case Apply(ctx.↑(Lam(bound, body, _)), args_) if bound.length == args_.length =>
         Subst.from(bound, args_)(body)
@@ -840,20 +845,20 @@ object Simplify extends Transform:
         expr
 
   // forall distributes over and, where each conjunct binds the variables that it uses
-  def all(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr): Expr =
+  def all(config: Config, state: State, ctx: Context, bound: List[Var], body: Expr): Expr =
     body match
       case And(phis) => and(config, state, ctx, phis.map(bind(config, state, ctx, All.name, bound, _)))
       case _         => bind(config, state, ctx, All.name, bound, body)
 
   // exists distributes over or, where each disjunct binds the variables that it uses
-  def ex(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr): Expr =
+  def ex(config: Config, state: State, ctx: Context, bound: List[Var], body: Expr): Expr =
     body match
       case Or(phis) => or(config, state, ctx, phis.map(bind(config, state, ctx, Ex.name, bound, _)))
       case _        => bind(config, state, ctx, Ex.name, bound, body)
 
   // unused bound variables are dropped,
   // the binder vanishes when none remain (sorts are nonempty in SMT-LIB)
-  def bind(config: Config, state: State, ctx: Ctx, quant: Name, bound: List[Var], body: Expr): Expr =
+  def bind(config: Config, state: State, ctx: Context, quant: Name, bound: List[Var], body: Expr): Expr =
     val bound_ = bound.filter(body.free.contains)
     if bound_.isEmpty
     then body
@@ -861,37 +866,37 @@ object Simplify extends Transform:
 
   // eta reduction, the lambda that selects the elements of an array is that array,
   // and the lambda that applies a function value to its variables is that function value
-  def lam(config: Config, state: State, ctx: Ctx, bound: List[Var], body: Expr, typ: Type): Expr =
+  def lam(config: Config, state: State, ctx: Context, bound: List[Var], body: Expr, typ: Type): Expr =
     (bound, body) match
       case (List(x), Select(base, index)) if index == x && !base.free.contains(x) =>
         base
 
-      case (_, Apply(f, args)) if args == bound && (f.free intersect bound.toSet).isEmpty =>
+      case (_, Apply(f, args)) if args == bound && (bound disjoint f.free) =>
         f
 
       case _ =>
         Lam(bound, body, typ)
 
   // unused bindings are dropped
-  def let(config: Config, state: State, ctx: Ctx, bound: List[Var], args: List[Expr], body: Expr): Expr =
+  def let(config: Config, state: State, ctx: Context, bound: List[Var], args: List[Expr], body: Expr): Expr =
     val pairs = (bound zip args).filter((x, _) => body.free contains x)
     if pairs.isEmpty
     then body
     else Let(pairs.map(_._1), pairs.map(_._2), body)
 
-  def case_(config: Config, state: State, ctx: Ctx, pat: Expr, body: Expr, cond: Expr): Case =
+  def case_(config: Config, state: State, ctx: Context, pat: Expr, body: Expr, cond: Expr): Case =
     Case(pat, body, cond)
 
-  def match_(config: Config, state: State, ctx: Ctx, arg: Expr, cases: List[Case]): Expr =
+  def match_(config: Config, state: State, ctx: Context, arg: Expr, cases: List[Case]): Expr =
     Match(arg, cases)
 
-  def upd(config: Config, state: State, ctx: Ctx, cond: Expr, rhs: Expr): Upd =
+  def upd(config: Config, state: State, ctx: Context, cond: Expr, rhs: Expr): Upd =
     Upd(cond, rhs)
 
   // nested choices are flattened, cases with equal results are merged by the disjunction of their guards,
   // and a single case is its result, since the guards are complete,
   // e.g. case b => y case c => y is y, which is a trace that keeps its value
-  def eps(config: Config, state: State, ctx: Ctx, updates: List[Upd]): Expr =
+  def eps(config: Config, state: State, ctx: Context, updates: List[Upd]): Expr =
     val merged =
       Eps.flatten(updates).foldLeft(List.empty[Upd]): (merged, update) =>
         merged.indexWhere(other => eq_(config, state, ctx.neutral, other.rhs, update.rhs) == True) match
@@ -906,18 +911,18 @@ object Simplify extends Transform:
       case List(Upd(_, rhs)) => rhs
       case _                 => Eps(merged)
 
-  def trace(config: Config, state: State, ctx: Ctx, init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr): Expr =
+  def trace(config: Config, state: State, ctx: Context, init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr): Expr =
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free - acc)
     Trace(init, deps_, acc, bound_, re(update))
 
-  def maps(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], update: Expr): Expr =
+  def maps(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var], update: Expr): Expr =
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free)
     Maps(deps_, bound_, re(update))
 
   // invariants distribute over conjunctions, where each part keeps the dependencies that it uses;
   // with a constant body: true holds trivially,
   // false holds exactly if there are no values, i.e., the dependencies, which have the same length, are empty
-  def invs(config: Config, state: State, ctx: Ctx, deps: List[Expr], bound: List[Var], body: Expr): Expr =
+  def invs(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var], body: Expr): Expr =
     (deps, body) match
       case (_, And(phis))    => and(config, state, ctx, phis.map(invs(config, state, ctx, deps, bound, _)))
       case (_, True)         => True
@@ -929,12 +934,12 @@ object Simplify extends Transform:
   // the dependencies of a combinator, whose bound variables are `bound`, and of whose body `used` are the free variables:
   // equal dependencies are collapsed, whose bound variables are renamed to the first one by the substitution,
   // and those whose bound variables are not used are dropped, except counters, which keep the dependencies nonempty,
-  // also variables that denote one by an assumption, e.g. K == counter(0, 1, n) of TEQ.loop (see Ctx.↑)
+  // also variables that denote one by an assumption, e.g. K == counter(0, 1, n) of TEQ.loop (see Context.↑)
   // (if there is none, the first dependency is kept)
   def deps(
       config: Config,
       state: State,
-      ctx: Ctx,
+      ctx: Context,
       deps: List[Expr],
       bound: List[Var],
       used: Set[Var]
@@ -958,7 +963,7 @@ object Simplify extends Transform:
   // programs are simplified statement by statement, where the expressions are simplified without context,
   // since the facts known before an assignment may not hold afterwards;
   // the helpers below normalize their own constructor, as those of expressions
-  def simplify(config: Config, state: State, ctx: Ctx, prog: Prog): Prog =
+  def simplify(config: Config, state: State, ctx: Context, prog: Prog): Prog =
     prog match
       case Break | Continue | Return =>
         prog
@@ -1012,25 +1017,25 @@ object Simplify extends Transform:
         par(config, state, ctx, progs_)
 
   // havoc of no variables under the trivial contract has no effect
-  def spec(config: Config, state: State, ctx: Ctx, xs: List[Var], pre: Expr, post: Expr): Prog =
+  def spec(config: Config, state: State, ctx: Context, xs: List[Var], pre: Expr, post: Expr): Prog =
     (xs, pre, post) match
       case (Nil, True, True) => Skip
       case _                 => Spec(xs, pre, post)
 
   // assignments of variables to themselves are dropped, and no assignment has no effect
-  def assign(config: Config, state: State, ctx: Ctx, lhs: List[Var], rhs: List[Expr]): Prog =
+  def assign(config: Config, state: State, ctx: Context, lhs: List[Var], rhs: List[Expr]): Prog =
     val (lhs_, rhs_) = (lhs zip rhs).filterNot((x, e) => x == e).unzip
     if lhs_.isEmpty
     then Skip
     else Assign(lhs_, rhs_)
 
-  def call(config: Config, state: State, ctx: Ctx, name: Name, args: List[Expr], res: List[Var]): Prog =
+  def call(config: Config, state: State, ctx: Context, name: Name, args: List[Expr], res: List[Var]): Prog =
     Call(name, args, res)
 
   // nested blocks are merged, which drops Skip, the empty block, and whose locals are hoisted unless that captures
   // variables of the other statements; statements after a jump and locals that are not used are dropped;
   // a block of a single statement without locals is that statement
-  def block(config: Config, state: State, ctx: Ctx, locals: List[Var], progs: List[Prog]): Prog =
+  def block(config: Config, state: State, ctx: Context, locals: List[Var], progs: List[Prog]): Prog =
     def flatten(locals: List[Var], done: List[Prog], progs: List[Prog]): (List[Var], List[Prog]) =
       progs match
         case Nil =>
@@ -1040,7 +1045,7 @@ object Simplify extends Transform:
           (locals, done :+ jump)
 
         case Block(inner, progs_) :: rest
-            if (inner intersect locals).isEmpty && !(done ++ rest).exists(p => inner.exists(p.free.contains)) =>
+            if (inner disjoint locals.toSet) && !(done ++ rest).exists(p => inner intersects p.free) =>
           flatten(locals ++ inner, done, progs_ ++ rest)
 
         case prog :: rest =>
@@ -1053,14 +1058,14 @@ object Simplify extends Transform:
       case _                 => Block(used, progs_)
 
   // nested choices are merged, duplicates are dropped, and a choice of a single statement is that statement
-  def choice(config: Config, state: State, ctx: Ctx, progs: List[Prog]): Prog =
+  def choice(config: Config, state: State, ctx: Context, progs: List[Prog]): Prog =
     Choice.flatten(progs).distinct match
       case List(prog) => prog
       case progs__    => Choice(progs__)
 
   // constant tests select a branch, equal branches make the test irrelevant,
   // and a negated test swaps the branches
-  def if_(config: Config, state: State, ctx: Ctx, test: Expr, left: Prog, right: Prog): Prog =
+  def if_(config: Config, state: State, ctx: Context, test: Expr, left: Prog, right: Prog): Prog =
     test match
       case True               => left
       case False              => right
@@ -1069,16 +1074,16 @@ object Simplify extends Transform:
       case _                  => If(test, left, right)
 
   // a loop that is never entered has no effect
-  def while_(config: Config, state: State, ctx: Ctx, test: Expr, body: Prog, attrs: Attrs): Prog =
+  def while_(config: Config, state: State, ctx: Context, test: Expr, body: Prog, attrs: Attrs): Prog =
     test match
       case False => Skip
       case _     => While(test, body, attrs)
 
-  def iter(config: Config, state: State, ctx: Ctx, body: Prog, attrs: Attrs): Prog =
+  def iter(config: Config, state: State, ctx: Context, body: Prog, attrs: Attrs): Prog =
     Iter(body, attrs)
 
-  def ode(config: Config, state: State, ctx: Ctx, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): Prog =
+  def ode(config: Config, state: State, ctx: Context, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): Prog =
     Ode(time, xs, rhs, dom, attrs)
 
-  def par(config: Config, state: State, ctx: Ctx, progs: List[Prog]): Prog =
+  def par(config: Config, state: State, ctx: Context, progs: List[Prog]): Prog =
     Par(progs)

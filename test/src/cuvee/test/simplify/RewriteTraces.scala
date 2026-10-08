@@ -5,15 +5,15 @@ import utest._
 
 import cuvee.Config
 import cuvee.core._
-import cuvee.simplify.{Ctx, Rule, Rewrite}
+import cuvee.simplify.{Context, Rule, Rewrite}
 
 // patterns with the combinators trace, map, and all, as in the examples of Trace Equation Systems,
 // where the first dependency of the expressions is the counter ⌊J⌋ of the iterations, J == counter(0, 1, n),
 // as in TEQ.loop
 object RewriteTraces extends TestSuite:
-  // a rule whose variables are the free variables of its left-hand side
+  // a rule whose type parameters and variables are the free ones of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
-    Rule(Set(), lhs.free, lhs, rhs, cond)
+    Rule(lhs.params, lhs.free, lhs, rhs, cond)
 
   val int = Sort.int
   val ints = Sort.seq(int)
@@ -45,9 +45,9 @@ object RewriteTraces extends TestSuite:
   val n = Var("n", int)
 
   // the counter of the iterations
-  val ctx = Ctx.empty.assume(Eq(J, Counter(Zero.int, One.int, n)))
+  val ctx = Context.empty.assume(Eq(J, Counter(Zero.int, One.int, n)))
 
-  def R(rules: List[Rule], expr: Expr, ctx: Ctx = ctx) =
+  def R(rules: List[Rule], expr: Expr, ctx: Context = ctx) =
     Rewrite.rewrite(Config.default, State.empty, ctx.withRules(rules), expr)
 
   // trace(i, for ⌊K⌋ do i, k ↦ i + c) = counter(i, c, steps(⌊K⌋))
@@ -106,7 +106,7 @@ object RewriteTraces extends TestSuite:
 
       // without a counter of the iterations, the first dependency of the expression comes first
       val none = Trace(Zero.int, List(W, Butlast(L)), s, List(w, l), Plus.int(s, Times.int(l, l)))
-      R(List(sumsRule), none, Ctx.empty.assume(Eq(L, Counter(One.int, Plus.int(One.int, One.int), n)))) ==>
+      R(List(sumsRule), none, Context.empty.assume(Eq(L, Counter(One.int, Plus.int(One.int, One.int), n)))) ==>
         app(sums, Zero.int, Maps(List(W, Butlast(L)), List(w, l), Times.int(l, l)))
 
     // the value must not depend on the accumulator
@@ -162,7 +162,7 @@ object RewriteTraces extends TestSuite:
 
       // the simplifier beta-reduces the instantiated right-hand side, here without the counter,
       // whose bounds would decide both
-      val phi = cuvee.simplify.Simplify.simplify(Config.default, State.empty, Ctx.pos.withRules(List(rule)), expr)
+      val phi = cuvee.simplify.Simplify.simplify(Config.default, State.empty, Context.pos.withRules(List(rule)), expr)
       phi ==> And(Invs(List(Butlast(J)), List(j), Lt.int(j, n)), Invs(List(Butlast(J)), List(j), Le.int(Zero.int, j)))
 
       // a single bound variable of the pattern cannot abstract two of the expression
@@ -212,4 +212,22 @@ object RewriteTraces extends TestSuite:
       // the increase does not follow from the guard, here with the bounds 0 <= j < n of the counter of the iterations,
       // whereas a guard j < 0 contradicts them, such that the case is unreachable and any increase follows
       val other = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(j, n), Plus.int(s, j)))))
+      R(List(rule), other) ==> other
+
+    // the conjuncts of a guard that does not match the guard of the expression as a whole follow from it,
+    // or are matched against its conjuncts, which instantiates variables that occur only in the guard, here b = n
+    test("guard conjuncts"):
+      val Xs = Var("Xs", ints)
+      val b = Var("b", int)
+      val capped = Fun("capped", Nil, Fun.formals(int, ints, int), trace)
+      val rule = rw(
+        Trace(i, List(Xs), x, List(v), Eps(List(Upd(And(Lt.int(Zero.int, v), Le.int(x, b)), Plus.int(x, v))))),
+        app(capped, i, Xs, b)
+      )
+
+      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(And(Le.int(s, n), Lt.int(Zero.int, j)), Plus.int(s, j)))))
+      R(List(rule), expr) ==> app(capped, Zero.int, Butlast(J), n)
+
+      // the bound must be among the conjuncts of the guard of the expression
+      val other = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(Zero.int, j), Plus.int(s, j)))))
       R(List(rule), other) ==> other

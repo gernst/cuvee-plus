@@ -8,7 +8,7 @@ search ([examples/dafny/teq/bsearch.md](examples/dafny/teq/bsearch.md)).
 `Simplify` and `Rewrite` reason backwards from the goal. A subterm of the goal
 is rewritten when the left-hand side of a rule matches it and the rule's
 condition holds in the context. The context is consulted only for decisions
-(`Ctx.implied`, `Ctx.denied`, `Rewrite.holds`). New facts are never derived
+(`Context.implied`, `Context.denied`, `Rewrite.holds`). New facts are never derived
 from it.
 
 Some goals hold only because of facts that the goal does not mention. In the
@@ -64,7 +64,7 @@ and `lastgt` is defined likewise with `gts`. The left-hand side is the
 comparison of the goal, matched modulo moving summands. `k` is found by matching `a[k] == x` against the hypothesis.
 
 - Changes: `Rewrite.apply` matches such conditions against the facts, which
-  `Ctx` must be able to enumerate. `Rule.check` accepts variables that occur
+  `Context` must be able to enumerate. `Rule.check` accepts variables that occur
   in a condition atom chosen for matching. Which atoms are matched could be
   marked, or follow a fixed rule, e.g. the first atom that binds the variable.
 - Limitation: derived facts are not combined. The lemma must state the
@@ -73,7 +73,7 @@ comparison of the goal, matched modulo moving summands. `k` is found by matching
 
 ## Option B: forward rules (saturation)
 
-Lemmas with an attribute such as `{:fw}` are applied when `Ctx.assume` records
+Lemmas with an attribute such as `{:fw}` are applied when `Context.assume` records
 facts. Their premises are either triggers, which are matched against the
 facts, or side conditions, which are decided by `holds`. Their conclusions
 are simplified and assumed in turn. This allows:
@@ -113,7 +113,7 @@ Guards against blow-up:
   one round of term triggers, since rules that keep producing new
   `earlier(...)` terms would not terminate.
 
-This fits the existing design. `Ctx` holds the facts, the helpers of the
+This fits the existing design. `Context` holds the facts, the helpers of the
 simplifier stay local (see CLAUDE.md), and conclusions enter as assumptions,
 not as a normal form.
 

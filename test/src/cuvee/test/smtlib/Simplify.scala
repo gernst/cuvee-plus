@@ -20,7 +20,7 @@ object Simplify extends TestSuite:
 // derivatives (x, y :: e)' by the rules of dL, printed in Dafny syntax
 object Derivatives extends TestSuite:
   import cuvee.core._
-  import cuvee.simplify.Ctx
+  import cuvee.simplify.Context
   import _root_.util.Rational
 
   val x = Var("x", Sort.real)
@@ -31,7 +31,7 @@ object Derivatives extends TestSuite:
   val f = Fun("f", Nil, List(Var("a", Sort.real)), Sort.real)
 
   def diff(expr: Expr, xs: Var*) =
-    val expr_ = cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, Ctx.empty, Diff(xs.toList, expr))
+    val expr_ = cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, Context.empty, Diff(xs.toList, expr))
     cuvee.dafny.Printer.lines(expr_).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:

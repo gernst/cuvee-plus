@@ -122,12 +122,13 @@ after section 4 of the paper.
   bound to `z` (`Simplify.iterations`).
 - The rewrite engine ([Rewrite.scala](../src/cuvee/simplify/Rewrite.scala))
   matches the binding structure of the combinators: dependencies of the
-  pattern are selected among those of the expression (`Binding` relates the
-  bound variables), and dependencies that are variables of the rule are
-  instantiated by `Maps` expressions. Each case of the expression's update is
+  pattern are selected among those of the expression (`bound` of
+  `Rewrite.matches` relates the bound variables), and dependencies that are
+  variables of the rule are instantiated by `Maps` expressions. Each case of the expression's update is
   covered by a case of the pattern, whose guard matches syntactically (which
   instantiates bound variables that occur only in guards, e.g. `b` in
-  `if b then y + 1`) or follows from the guard of the expression.
+  `if b then y + 1`) or whose conjuncts follow from the guard of the
+  expression or match its conjuncts (`Rewrite.conditions`).
 
 ## Tests
 

@@ -10,9 +10,9 @@ import cuvee.simplify.{Rule, Rewrite}
 // for programs without loops, the verdicts coincide with -verify,
 // loops are summarized by trace equation systems, which the rewrite engine simplifies with lemmas
 object TEQ extends TestSuite:
-  // a rule whose variables are the free variables of its left-hand side
+  // a rule whose type parameters and variables are the free ones of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
-    Rule(Set(), lhs.free, lhs, rhs, cond)
+    Rule(lhs.params, lhs.free, lhs, rhs, cond)
 
   def loops(file: os.Path) =
     os.read(file).contains("while")
@@ -90,9 +90,9 @@ object TEQ extends TestSuite:
         Counter(i, c, n)
       )
 
-      // the synthetic counter K == counter(0, 1, n) is followed from the premises (see Ctx.↑),
+      // the synthetic counter K == counter(0, 1, n) is followed from the premises (see Context.↑),
       // the trace of the loop variable i becomes counter(0, 1, n), only that of s remains
-      val phi_ = cuvee.simplify.Simplify(cuvee.Config.default, State.empty, cuvee.simplify.Ctx.pos.withRules(List(rule)), phi)
+      val phi_ = cuvee.simplify.Simplify(cuvee.Config.default, State.empty, cuvee.simplify.Context.pos.withRules(List(rule)), phi)
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
 
     // an update of a visited key replaces its contribution to the count, and the prefix counts are counts of prefixes;
@@ -111,12 +111,12 @@ object TEQ extends TestSuite:
       val x = Var("x", Sort.int)
       val keys = Var("keys", Sort.seq(Sort.int))
 
-      val ctx = cuvee.simplify.Ctx.empty.assume(app("distincts", keys)).withRules(rules)
+      val ctx = cuvee.simplify.Context.empty.assume(app("distincts", keys)).withRules(rules)
       val updated = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("count", e, app("selects", Store(a, k, w), keys)))
       assert(subexprs(updated).contains(app("count", e, app("selects", a, keys))))
       assert(!subexprs(updated).exists { case Store(_, _, _) => true; case _ => false })
 
-      val bounds = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, j)).withRules(rules)
+      val bounds = cuvee.simplify.Context.empty.assume(Le.int(Zero.int, j)).withRules(rules)
       val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
       assert(subexprs(earlier).contains(app("count", e, app("prefix", j, keys))))
       assert(!has(earlier, "counts"))
@@ -134,7 +134,7 @@ object TEQ extends TestSuite:
       val k = Var("k", Sort.int)
       val bound = Lit(BigInt(1024), Sort.int)
       val counter = Counter(Zero.int, One.int, n)
-      val ctx = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, n)).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
+      val ctx = cuvee.simplify.Context.empty.assume(Le.int(Zero.int, n)).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
 
       for inv <- List(
           Invs(List(Butlast(counter)), List(i), Lt.int(i, bound)),
@@ -181,7 +181,7 @@ object TEQ extends TestSuite:
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val loop = Trace(One.int, List(Butlast(K)), x, List(k), Zero.int)
-      val ctx = cuvee.simplify.Ctx.empty.assume(Le.int(Zero.int, n)).assume(Eq(K, Counter(Zero.int, One.int, n))).assume(Eq(X, loop)).withRules(rules)
+      val ctx = cuvee.simplify.Context.empty.assume(Le.int(Zero.int, n)).assume(Eq(K, Counter(Zero.int, One.int, n))).assume(Eq(X, loop)).withRules(rules)
       Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Zero.int), One.int, Zero.int)
 
     // the loop for (i = 0; i != N; i++) runs N times, from the lemma on counters that avoid a value

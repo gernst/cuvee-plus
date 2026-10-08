@@ -334,7 +334,7 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 
 ## Simplifier ([simplify/](../src/cuvee/simplify))
 
-- **`Ctx`** is a sequent at the current position:
+- **`Context`** is a sequent at the current position:
   - three theories (`Theory`: immutable facts that detect inconsistency), to
     which `assume` and `deny` pass each fact: the assumptions and conclusions
     as given (`Facts`), the equations of variables (`Chains`), and the
@@ -369,9 +369,9 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     existential ones are true (the one-point rule);
   - the polarity of the position, and whether the context is inconsistent;
   - the rewrite rules and their remaining number of steps
-    (`ctx.withRules(rules, steps)`), which all copies share; `Ctx.assume`
+    (`ctx.withRules(rules, steps)`), which all copies share; `Context.assume`
     adds an equation `l == r` of the assumptions with a ground `r` as a rule
-    without variables (`Ctx.rule`), if `l` has free variables and is neither a
+    without variables (`Context.rule`), if `l` has free variables and is neither a
     variable nor an application of an arithmetic operator. The rules terminate,
     since each step removes occurrences of variables.
 - **`Poly(const, monos)`** with `Mono(factor, atoms)` is the normal form of
@@ -387,10 +387,17 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 - **`Constraint(poly, strict)`** is a linear constraint `0 <= poly` or
   `0 < poly`. `FourierMotzkin` eliminates atoms from conjunctions of these and
   decides their satisfiability over the rationals.
-- **`Rule(xs, lhs, rhs, cond)`** is a conditional rewrite rule with the
-  variables `xs`, the quantified variables of a lemma (`Rule.from`), which
-  must occur in `lhs` if they occur in `rhs` or `cond`; other free variables
-  are constants. `Rewrite` applies the first rule that matches at the top of
+- **`Rule(params, vars, lhs, rhs, cond)`** is a conditional rewrite rule with
+  the type parameters `params` and the variables `vars`, the quantified
+  variables of a lemma (`Rule.from`), which must occur in `lhs` or `cond` if
+  they occur in `rhs`; other free variables and type parameters are
+  constants. The conjuncts of `cond`, instantiated so far and simplified, are
+  decided by the simplifier once closed; otherwise the partially instantiated
+  one with the fewest open variables is matched against the facts of the
+  context (`Context.known`: the assumptions and the negated conclusions as
+  given, only double negations removed), which instantiates the variables that occur only in `cond`;
+  conjuncts without any instantiated variable are not searched
+  (`Rewrite.conditions`). `Rewrite` applies the first rule that matches at the top of
   an expression, a single step, the simplifier traverses and iterates; a
   match is a `Subst` of the type parameters and variables of the rule,
   modulo type instantiation, A/C and 0 of `+` and `-`, comparisons modulo
@@ -412,17 +419,18 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   chosen among those of the expression. The simplifier beta-reduces the
   instantiated right-hand side. A guard `D(x, h) && φ` of a case of the
   pattern, whose first conjunct is a higher-order pattern, binds `D` to the
-  whole guard of the expression; each conjunct of `φ`, instantiated so far
-  and simplified, is matched against a conjunct of that guard, which may bind
-  further variables, e.g. the bound `b` of `F(x, h) <= b`, or else must follow
-  from it (`Rewrite.guard`, `Rewrite.conjuncts`), e.g. the increase
-  `x < F(x, h)` of a monotonic trace. The updates and bodies of combinators
+  whole guard of the expression; the conjuncts of `φ` are treated like side
+  conditions, against the conjuncts of that guard instead of the facts, which
+  may bind further variables, e.g. the bound `b` of `F(x, h) <= b`, and the
+  closed ones must follow from it (`Rewrite.guard`, `Rewrite.conditions`),
+  e.g. the increase `x < F(x, h)` of a monotonic trace; so do the conjuncts of
+  other guards that do not match the guard of the expression as a whole. The updates and bodies of combinators
   are matched in the context of the simplifier there (`Simplify.combinator`),
   i.e. assuming the invariants over their dependencies and the iterations of
   loops, and for the right-hand side of `X == trace(...)` also the invariants
-  over `⌊X⌋` (`Binding.self`), e.g. the test of a loop.
+  over `⌊X⌋` (`self` of `Rewrite.matches`), e.g. the test of a loop.
   A function definition with `:rw` whose body is a match on a parameter
   gives one rule per case, the pattern in place of the parameter, and
-  pattern variables that shadow other parameters renamed apart
+  the other parameters that clash with pattern variables renamed apart
   (`Rule.from(state, fun, body)`). Overlapping patterns are not handled: a later
   case's rule also fires on arguments that an earlier case matches.

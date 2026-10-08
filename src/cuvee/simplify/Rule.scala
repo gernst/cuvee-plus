@@ -5,7 +5,9 @@ import cuvee.core._
 
 // a conditional rewrite rule lhs = rhs if cond, whose variables vars may be instantiated by arbitrary expressions
 // of the same type, and whose type parameters may be instantiated by arbitrary types;
-// the other free variables are constants, e.g. those of the facts of the context (see Ctx.assume)
+// variables that occur only in the condition are instantiated by matching it against the facts of the context
+// (see Rewrite.conditions);
+// the other free variables are constants, e.g. those of the facts of the context (see Context.assume)
 case class Rule(params: Set[Param], vars: Set[Var], lhs: Expr, rhs: Expr, cond: Expr):
   def removeAs =
     Rule(params, vars, lhs.removeAs, rhs, cond)
@@ -15,8 +17,8 @@ object Rule:
   def check(rule: Rule): Rule =
     val Rule(params, vars, lhs, rhs, cond) = rule
 
-    Error.report("variables of right hand side or condition do not occur in left hand side", rule):
-      require(((rhs.free ++ cond.free) intersect vars) subsetOf lhs.free)
+    Error.report("variables of right hand side do not occur in left hand side or condition", rule):
+      require((rhs.free intersect vars) subsetOf (lhs.free ++ cond.free))
 
     Error.report("left hand side of rule is a variable", rule):
       require(!lhs.isInstanceOf[Var])

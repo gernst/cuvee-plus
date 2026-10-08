@@ -40,7 +40,7 @@
 - recursion threads the context explicitly instead of global or mutable state;
   mutable state is local to a class that represents a pass, e.g. the `state`
   of a parser, or shared deliberately, e.g. the step budget of the rewrite
-  rules (`Ctx.steps`)
+  rules (`Context.steps`)
 - overloaded methods of the same name for the different syntactic categories,
   e.g. `simplify` for commands, attributes, programs, and expressions, or
   `lines` and `doc` in the printers
