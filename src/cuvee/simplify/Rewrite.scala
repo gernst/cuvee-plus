@@ -246,7 +246,7 @@ object Rewrite:
       // a variable x of the expression with an equation x == e in the context is matched like e (see Context.↑),
       // only if the pattern is not a variable, which binds x itself (see above);
       // equations between variables are not followed, since they may be cyclic
-      case (_, x @ ctx.↑(e)) if x.isInstanceOf[Var] && !e.isInstanceOf[Var] =>
+      case (_, x @ ctx.↑(e)) if x.isInstanceOf[Var] =>
         matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
 
       case _ =>

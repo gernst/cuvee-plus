@@ -355,7 +355,8 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
     on each other, e.g. of mutually dependent traces, since the chain is looked
     up one variable at a time; the variables are not
     substituted, but the extractor `ctx.↑(e)` sees a variable as its
-    definition, otherwise as itself, by which rewriting matches a variable
+    definition if that is not a variable, and does not match it otherwise,
+    and any other expression as itself, by which rewriting matches a variable
     inside of the expression like its `e` (`Rewrite.matches`), and the helpers
     of the simplifier look through definitions, e.g. read over write of
     `a == b[i := v]`, beta reduction of `a == (λx. e)` in `a[t]`,

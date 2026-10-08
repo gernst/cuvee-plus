@@ -41,12 +41,13 @@ case class Context(
   def withRules(rules: List[Rule], steps: Int = 1000) =
     copy(rules = rules, steps = util.Ref(steps))
 
-  // an expression seen through the equations of chains.chain, otherwise itself,
+  // an expression seen through the equations of chains.chain, never a variable: a variable matches only by
+  // a definition that is not a variable, any other expression as itself,
   // e.g. ctx.↑(Counter(i, c, n)) matches a variable K with K == counter(i, c, n) among the assumptions
   object ↑ :
-    def unapply(expr: Expr): Some[Expr] =
+    def unapply(expr: Expr): Option[Expr] =
       expr match
-        case x: Var => Some(chains.chain.getOrElse(x, x))
+        case x: Var => chains.chain.get(x).filterNot(_.isInstanceOf[Var])
         case _      => Some(expr)
 
   // variables bound by let, match, and the combinators, which are neither universal nor existential
@@ -73,10 +74,10 @@ case class Context(
   def free: Set[Var] =
     bound.flatten.toSet ++ used
 
-  // the facts known to hold as given, the assumptions and the negations of the conclusions (see Context.negate);
+  // the facts known to hold as given, the assumptions and the negations of the conclusions (see Context.not);
   // side conditions of rules are matched against them (see Rewrite.conditions)
   def known: List[Expr] =
-    facts.assms ++ facts.concls.map(Context.negate)
+    facts.assms ++ facts.concls.map(Context.not)
 
   // variables that occur in the facts of the context, including the primed variables of derivatives (see Diff);
   // the equations of chains.chain remain among the assumptions, unlike those of chains.replace
@@ -180,7 +181,7 @@ object Context:
     !lhs.isInstanceOf[Var] && !lhs.isArith && lhs.free.nonEmpty && rhs.free.isEmpty
 
   // the negation of a conclusion, where only a double negation is removed, not the normal form of Simplify.not
-  def negate(phi: Expr): Expr =
+  def not(phi: Expr): Expr =
     phi match
       case Not(psi) => psi
       case _        => Not(phi)

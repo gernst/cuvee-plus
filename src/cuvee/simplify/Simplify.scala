@@ -554,8 +554,12 @@ object Simplify extends Transform:
   // testers on constructor applications, also of variables defined by one (see Context.↑),
   // which is looked up once only here, not in constr, since definitions through annotations may be cyclic
   def is(config: Config, state: State, ctx: Context, arg: Expr, fun: Fun): Expr =
-    val ctx.↑(arg_) = arg: @unchecked
-    constr(config, state, arg_) match
+    val constr_ =
+      arg match
+        case ctx.↑(arg_) => constr(config, state, arg_)
+        case _           => None
+
+    constr_ match
       case Some(constr) if constr.name == fun.name => True
       case Some(constr)                            => False
       case None                                    => Is(arg, fun)
