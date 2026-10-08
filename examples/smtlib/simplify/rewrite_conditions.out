@@ -12,6 +12,8 @@
 
 (declare-fun f3 (Int) Int)
 
+(declare-fun f4 (Int) Int)
+
 (declare-const a Int)
 
 (declare-const b Int)
@@ -66,5 +68,15 @@
     :rw))
 
 (assert
-  (=> (q b b) (p (f3 a))))
+  (=> (q b b) (p (g b))))
+
+(assert
+  (!
+    (forall
+      ((x Int) (y Int))
+      (=> (< y x) (= (f4 x) (g y))))
+    :rw))
+
+(assert
+  (=> (< b a) (p (f4 a))))
 

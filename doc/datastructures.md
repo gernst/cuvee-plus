@@ -392,13 +392,14 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
   the type parameters `params` and the variables `vars`, the quantified
   variables of a lemma (`Rule.from`), which must occur in `lhs` or `cond` if
   they occur in `rhs`; other free variables and type parameters are
-  constants. The conjuncts of `cond`, instantiated so far and simplified, are
-  decided by the simplifier once closed; otherwise the partially instantiated
-  one with the fewest open variables is matched against the facts of the
-  context (`Context.known`: the assumptions and the negated conclusions as
-  given, only double negations removed), which instantiates the variables that occur only in `cond`;
-  conjuncts without any instantiated variable are not searched
-  (`Rewrite.conditions`). `Rewrite` applies the first rule that matches at the top of
+  constants. The conjuncts of `cond` are taken in their order, instantiated
+  so far and simplified: a closed one is decided by the simplifier, an open
+  one is matched against the facts of the context (`Context.known`: the
+  assumptions and the negated conclusions as given, only double negations
+  removed), which instantiates the variables that occur only in `cond`, e.g.
+  `n` of `sorted(a, n)`; open comparisons and equations are not searched, since
+  there are many arithmetic facts, hence the conjuncts that bind variables
+  come first in a lemma (`Rewrite.conditions`). `Rewrite` applies the first rule that matches at the top of
   an expression, a single step, the simplifier traverses and iterates; a
   match is a `Subst` of the type parameters and variables of the rule,
   modulo type instantiation, A/C and 0 of `+` and `-`, comparisons modulo

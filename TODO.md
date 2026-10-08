@@ -89,8 +89,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   patterns are instantiated by matching the conjuncts against the facts of the
   context (`Context.known`, assumptions and negated conclusions as given, not
   chains or differences) or the conjuncts of the guard of the expression
-  (`Rewrite.conditions`); conjuncts without any instantiated variable are not
-  searched, and the first match is taken among several.
+  (`Rewrite.conditions`), in the order of the conjuncts; open comparisons and
+  equations of side conditions are not searched, and the first match is taken
+  among several.
 - Fourier-Motzkin ([simplify/FourierMotzkin.scala](src/cuvee/simplify/FourierMotzkin.scala))
   is not used yet. Proposal, in this order:
   1. decide `0 <= p`/`0 < p` against the linear facts of the context (the
