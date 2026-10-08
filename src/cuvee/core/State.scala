@@ -236,8 +236,8 @@ case class State(
       case DefineProc(Proc(name, params, in, out), body, attrs) =>
         declare(name, params, in, out, attrs).define(name, body)
 
-      // assertions declare nothing
-      case _: Assert =>
+      // assertions and requests of fusion declare nothing
+      case _: Assert | _: FuseFuns =>
         this
 
   // types, where sorts must be declared with the right number of arguments

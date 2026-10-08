@@ -141,6 +141,25 @@ class Parser(var state: State):
         val (params_, phi_, attrs_) = assertion(params, attrs, expr)
         List(state.cmds.goal(params_, phi_, attrs_))
 
+      // the variables of the composition g(f(xs), ys) are typed by the formal parameters of g and f,
+      // whose type parameters are in scope; terms are accesses without selectors here
+      case Fuse(attrs, term @ Inner(App(g, Inner(App(f, args), Nil) :: rest), Nil)) =>
+        val names = (args ++ rest).collect { case Inner(App(name, Nil), Nil) => name }
+        Error.report("fuse needs variables as the arguments", term):
+          require(names.length == args.length + rest.length)
+        Error.report("unknown functions", g, f):
+          require(state.funs.contains((g, 1 + rest.length)) && state.funs.contains((f, args.length)))
+
+        val gf = state.funs((g, 1 + rest.length))
+        val ff = state.funs((f, args.length))
+        val xs = (names zip (ff.args ++ gf.args.tail)).map(state.exprs.formal(_, _))
+        val scope = Scope((ff.params ++ gf.params).distinct, xs)
+        val term_ = check(scope, resolve(scope, term), gf.res)
+        List(core.FuseFuns(term_, None, Attrs(attrs.map(_ -> None))))
+
+      case Fuse(_, term) =>
+        Error.raise("fuse needs a composition g(f(x₁, ..., xₙ), y₁, ..., yₘ) of two defined functions", term)
+
       case SortDef(attrs, name, params, impl) =>
         val scope = Scope.empty
         val params_ = params.map(resolve(scope, _))

@@ -1,0 +1,43 @@
+datatype List
+  = Nil | Cons(head: int, tail: List)
+
+function dbl(xs: List): List {
+  match xs case Nil => Nil case Cons(y, ys) => Cons(y + y, dbl(ys))
+}
+
+function sum(xs: List): int {
+  match xs case Nil => 0 case Cons(y, ys) => y + sum(ys)
+}
+
+function take(xs: List, k: int): int {
+  match xs
+    case Nil => 0
+    case Cons(y, ys) => if 0 < k then y + take(ys, k - 1) else 0
+}
+
+function id(xs: List): List {
+  xs
+}
+
+fuse sum(dbl(xs)) =
+  rec sum_dbl(xs: List): int {
+    case sum_dbl(Nil) => 0
+    case sum_dbl(Cons(y, ys)) => y + y + sum_dbl(ys)
+  }
+
+fuse take(dbl(xs), k) =
+  rec take_dbl(xs: List, k: int): int {
+    case take_dbl(Nil, k) => 0
+    case take_dbl(Cons(y, ys), k) =>
+      if 0 < k then y + y + take_dbl(ys, k - 1) else 0
+  }
+
+fuse sum(id(xs)) =
+  rec sum_id(xs: List): int {
+    case sum_id(xs) =>
+      (rec sum(xs: List): int {
+         case sum(Nil) => 0
+         case sum(Cons(y, ys)) => y + sum(ys)
+       })(xs)
+  }
+

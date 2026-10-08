@@ -172,6 +172,8 @@ object Type:
       case Let(bound, args, body)             => Let(expand(state, bound), args.map(expand(state, _)), expand(state, body))
       case Match(arg, cases) =>
         Match(expand(state, arg), cases.map(c => Case(expand(state, c.pat), expand(state, c.body), expand(state, c.cond))))
+      case Rec(fun, cases) =>
+        Rec.retype(fun, expand(state, _: Type), cases.map(c => Case(expand(state, c.pat), expand(state, c.body), expand(state, c.cond))))
       case _ => expr.map(expand(state, _))
 
   // the attributes, whose values are expressions and lists of variables (modifies)
@@ -433,21 +435,54 @@ object Type:
           check(state, scope, cond, Sort.bool, subst, pending)
           check(state, scope, body, res, subst, pending)
 
+      // the patterns apply the function to patterns of its arguments, the bodies have the type of its result,
+      // where its type parameters are rigid, and they are instantiated freshly for the type of the expression
+      case Rec(fun, cases) =>
+        Error.report("recursive function without cases", expr):
+          require(cases.nonEmpty)
+
+        val inner = scope ++ fun.params
+
+        for Case(pat, body, cond) <- cases
+        do
+          pat match
+            case App(`fun`, _, _, args) =>
+              Error.report("invalid pattern", pat):
+                require(patterns(state, args))
+              check(state, inner, args, fun.args, subst, pending)
+
+            case _ =>
+              Error.raise("pattern does not apply the recursive function", pat, fun)
+
+          check(state, inner, cond, Sort.bool, subst, pending)
+          check(state, inner, body, fun.res, subst, pending)
+
+        val su = Subst.fresh(fun.params)
+        Error.report("type mismatch", expr, expr.typ, res):
+          unify(state, scope, su(expr.typ), res, subst)
+
   // patterns consist of variables and constructors applied to patterns, where each variable occurs at most once
   def pattern(state: State, pat: Expr): Boolean =
+    patterns(state, List(pat))
+
+  // the same for several patterns together, e.g. those of the arguments of a recursive function (see Rec)
+  def patterns(state: State, pats: List[Expr]): Boolean =
     def vars(pat: Expr): Option[List[Var]] =
       pat match
         case x: Var =>
           Some(List(x))
 
         case App(fun, _, _, args) if state.constrs.get(fun.name) == Some(fun) =>
-          val xs = args.map(vars)
-          if xs.forall(_.isDefined) then Some(xs.flatten.flatten) else None
+          all(args)
 
         case _ =>
           None
 
-    vars(pat).exists(xs => xs.distinct.length == xs.length)
+    def all(pats: List[Expr]): Option[List[Var]] =
+      val xs = pats.map(vars)
+      if xs.forall(_.isDefined) then Some(xs.flatten.flatten) else None
+
+    all(pats).exists(xs => xs.distinct.length == xs.length)
 
   // the dependencies of the combinators are sequences over the types of the bound variables, of which there is at least one
   def dependencies(state: State, scope: Scope, expr: Expr, deps: List[Expr], bound: List[Var], subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]]): Unit =

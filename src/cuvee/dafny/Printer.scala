@@ -197,6 +197,11 @@ object Printer extends cuvee.pipe.Printer:
         val sig = signature(name(name_), params_, formals_) ~ text(":") ~~ doc(res)
         header(text("function") ~ attributes(attrs) ~~ sig, attrs, Some(braces(List(doc(body)))))
 
+      // fuse g(f(xs), ys) = h, where h is ??? until the stage Fuse has processed it
+      case FuseFuns(term, rhs, attrs) =>
+        val rhs_ = rhs.map(doc(_)).getOrElse(text("???"))
+        Group(text("fuse") ~ attributes(attrs) ~~ doc(term) ~~ text("=") ~ Nest(2, line ~ rhs_))
+
       // with type parameters, lemma <a> {:rw} forall x: a :: φ
       case Assert(justify, params_, phi, attrs) =>
         Group(text(format(justify)) ~ (if params_.isEmpty then empty else space ~ params(params_)) ~ attributes(attrs) ~ Nest(2, line ~ doc(phi)))
@@ -982,6 +987,18 @@ object Printer extends cuvee.pipe.Printer:
       // the lambdas of SMT-LIB are arrays, which Dafny has no syntax for
       case Lam(_, _, _) =>
         Error.raise("lambda of array type not supported in Dafny", expr)
+
+      // recursive functions are internal, printed for fuse only, like a function with a match whose cases are
+      // patterns of all arguments with guards, rec h(x: T): R { case h(p) if φ => e ... }, which is not parsed
+      case Rec(Fun(name_, params_, formals_, res), cases) =>
+        val cases_ =
+          for Case(pat, body, cond) <- cases
+          yield
+            val guard = if cond == True then empty else space ~ text("if") ~~ doc(cond)
+            Group(text("case") ~~ doc(pat) ~ guard ~~ text("=>") ~ Nest(2, line ~ doc(body)))
+
+        val sig = signature(name(name_), params_, formals_) ~ text(":") ~~ doc(res)
+        Group(text("rec") ~~ sig ~~ text("{") ~ Nest(2, concat(cases_.map(line ~ _))) ~ line ~ text("}"))
 
       case Bind(quant, bound, body) =>
         // the bound variables flow up to the width of the line, aligned after the quantifier

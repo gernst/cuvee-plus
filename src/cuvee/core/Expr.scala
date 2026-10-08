@@ -3,6 +3,8 @@ package cuvee.core
 import util.Name
 import util.Counter
 
+import cuvee.Error
+
 sealed trait Expr:
   def params: Set[Param]
   def free: Set[Var]
@@ -28,6 +30,7 @@ sealed trait Expr:
       case Lam(bound, body, typ)              => Lam(bound, f(body), typ)
       case Let(bound, args, body)             => Let(bound, args.map(f), f(body))
       case Match(arg, cases)                  => Match(f(arg), cases.map(f))
+      case Rec(fun, cases)                    => Rec(fun, cases.map(f))
 
   // the expression without type annotations e as T
   def removeAs: Expr =
@@ -208,6 +211,20 @@ object Old:
             Case(inner(pat), inner(body), inner(cond))
         Match(instance(now, before, old, arg), cases_)
 
+      // the type parameters of the function are bound, hence not instantiated
+      case Rec(fun, _) if fun.params.exists(p => now.params.contains(p) || before.params.contains(p)) =>
+        val now_ = Subst(now.params -- fun.params, now.vars)
+        val before_ = Subst(before.params -- fun.params, before.vars)
+        instance(now_, before_, old, expr)
+
+      case Rec(fun, cases) =>
+        val cases_ =
+          for Case(pat, body, cond) <- cases
+          yield
+            val (_, inner) = bind(pat.free.toList)
+            Case(inner(pat), inner(body), inner(cond))
+        Rec.retype(fun, now(_: Type), cases_)
+
       case _ =>
         expr.map(instance(now, before, old, _))
 
@@ -304,3 +321,72 @@ case class Match(arg: Expr, cases: List[Case]) extends Expr:
 
   // there is at least one case, see Type.check
   def typ = cases.head.body.typ
+
+// a recursive function, like a lambda that may call itself: `fun` is bound in the cases, whose patterns are
+// applications fun(p₁, ..., pₙ) to patterns of the arguments, and whose conditions are guards; applied to arguments,
+// the result is that of the first case whose pattern matches and whose condition holds, recursive calls are
+// applications of `fun`; the type parameters of `fun` are bound as well, rigid in the cases and instantiated
+// freshly at each use, like those of a declared function, and its types may refer to those of the context
+case class Rec(fun: Fun, cases: List[Case]) extends Expr:
+  def params = (fun.args.params ++ fun.res.params ++ cases.params) -- fun.params
+  def free = cases.free
+
+  // generic in the type parameters of `fun`, see Type.check
+  def typ = Arrow(fun.args, fun.res)
+
+object Rec:
+  // the function with its types mapped by `su`, also its type parameters, which must be mapped to type parameters,
+  // and the recursive calls in the cases, whose types are mapped already, to the new function, since a function
+  // is identified by its types (see Fun.equals)
+  def retype(fun: Fun, su: Type => Type, cases: List[Case]): Rec =
+    val params_ =
+      for p <- fun.params
+      yield su(p) match
+        case p_ : Param => p_
+        case typ        => Error.raise("type parameter of a recursive function mapped to a type", fun, p, typ)
+
+    val fun_ = Fun(fun.name, params_, fun.formals.map(x => Var(x.name, su(x.typ))), su(fun.res))
+
+    if fun_ == fun
+    then Rec(fun, cases)
+    else
+      val cases_ =
+        for Case(pat, body, cond) <- cases
+        yield Case(calls(fun, fun_, pat), calls(fun, fun_, body), calls(fun, fun_, cond))
+      Rec(fun_, cases_)
+
+  // the definition fun(x₁, ..., xₙ) = body as a recursive function: a match on one of the formal parameters, xᵢ,
+  // gives one case per case of the match, with its pattern in place of xᵢ, its condition as the guard, and the pattern
+  // in place of xᵢ in its body and guard, unless the pattern binds xᵢ itself; the other parameters are renamed apart
+  // from the variables of the pattern, which shadow them; other bodies give a single case fun(x₁, ..., xₙ) => body
+  def from(state: State, fun: Fun, body: Expr): Rec =
+    // the body refers to the formal parameters with the defined sorts expanded (see Type.expand)
+    val formals = Type.expand(state, fun.formals)
+
+    body match
+      case Match(x: Var, cases) if formals.contains(x) =>
+        val index = formals.indexOf(x)
+        val cases_ =
+          for Case(pat, rhs, cond) <- cases
+          yield
+            val (formals_, _) = Subst.rename(formals, pat.free)
+            val args = formals_.patch(index, List(pat), 1)
+            val inst = if pat.free.contains(x) then Subst.empty else Subst.from(List(x), List(pat))
+            Case(App(fun, args.types, fun.res, args), inst(rhs), inst(cond))
+        Rec(fun, cases_)
+
+      case _ =>
+        Rec(fun, List(Case(App(fun, formals.types, fun.res, formals), body, True)))
+
+  // the definition of `fun` in `state` as a recursive function
+  def from(state: State, fun: Fun): Rec =
+    val key = (fun.name, fun.arity)
+    Error.report("function not defined", fun):
+      require(state.fundefs.contains(key))
+    from(state, fun, state.fundefs(key))
+
+  // the applications of `fun` replaced by those of `fun_`
+  def calls(fun: Fun, fun_ : Fun, expr: Expr): Expr =
+    expr match
+      case App(`fun`, inst, typ, args) => App(fun_, inst, typ, args.map(calls(fun, fun_, _)))
+      case _                           => expr.map(calls(fun, fun_, _))

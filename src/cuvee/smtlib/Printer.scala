@@ -215,6 +215,9 @@ object Printer extends cuvee.pipe.Printer:
       case Assert(justify, params, phi, attrs) =>
         apps(atom(command(justify)), apps(atom("par"), list(lines(params)), note(phi, attrs)))
 
+      case _: FuseFuns =>
+        Error.raise("fuse not supported in SMT-LIB", cmd)
+
       // not part of SMT-LIB, but understood by z3
       case DeclareVar(Var(name, typ), _) =>
         apps(atom("declare-var"), mangle(name), lines(typ))
@@ -395,6 +398,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case Let(bound, args, body) =>
         apps(atom("let"), list(eqs(bound, args)), lines(body))
+
+      // recursive functions are internal, without syntax
+      case Rec(_, _) =>
+        Error.raise("recursive function not supported in SMT-LIB", expr)
 
       // conditions of the cases are not part of SMT-LIB
       case Match(arg, cases) =>

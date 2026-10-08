@@ -1,0 +1,2 @@
+error "fuse needs variables as the arguments"
+  "Inner(App(inc,List(Inner(App(inc,List(Inner(Num(1),List()))),List()))),List())"

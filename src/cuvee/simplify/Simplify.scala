@@ -312,6 +312,10 @@ object Simplify extends Transform:
         val arg_ = simplify(config, state, ctx.neutral, arg)
         match_(config, state, ctx, arg_, cases.map(this.cases(config, state, ctx, _)))
 
+      // the cases like those of match, the function is not unfolded
+      case Rec(fun, cases) =>
+        rec(config, state, ctx, fun, cases.map(this.cases(config, state, ctx, _)))
+
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see combinator)
       case Trace(init, deps, acc, bound, update) =>
@@ -901,6 +905,9 @@ object Simplify extends Transform:
 
   def match_(config: Config, state: State, ctx: Context, arg: Expr, cases: List[Case]): Expr =
     Match(arg, cases)
+
+  def rec(config: Config, state: State, ctx: Context, fun: Fun, cases: List[Case]): Expr =
+    Rec(fun, cases)
 
   def upd(config: Config, state: State, ctx: Context, cond: Expr, rhs: Expr): Upd =
     Upd(cond, rhs)

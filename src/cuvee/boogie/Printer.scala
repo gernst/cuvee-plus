@@ -187,6 +187,9 @@ object Printer extends cuvee.pipe.Printer:
       case Assert(justify, params_, phi, attrs) =>
         Group(text(format(justify)) ~ (if params_.isEmpty then empty else space ~ params(params_)) ~ attributes(attrs) ~ Nest(2, line ~ doc(phi))) ~ text(";")
 
+      case _: FuseFuns =>
+        Error.raise("fuse not supported in Boogie", cmd)
+
       case DeclareVar(Var(name_, typ), attrs) =>
         text("var") ~ attributes(attrs) ~~ text(name(name_)) ~ text(":") ~~ doc(typ) ~ text(";")
 
@@ -685,6 +688,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case Lam(_, _, _) =>
         Error.raise("lambda of function type not supported in Boogie", expr)
+
+      // recursive functions are internal, without syntax
+      case Rec(_, _) =>
+        Error.raise("recursive function not supported in Boogie", expr)
 
       // Boogie has no let, the bound variables are substituted
       case Let(bound, args, body) =>

@@ -162,6 +162,16 @@ case class Subst[+T <: Type, +E <: Expr](params: Map[Param, T], vars: Map[Var, E
       case Match(arg, cases) =>
         Match(this(arg), this(cases))
 
+      // the variables of each pattern likewise, and the types of the function are substituted, except for its
+      // type parameters, which are renamed if they would capture a type parameter of the range
+      case Rec(fun, cases) =>
+        val range = params.values.flatMap(_.params).toSet ++ vars.values.flatMap(_.params)
+        val clash = fun.params.filter(range.contains)
+        val rename = Subst.fresh(clash)
+        val Rec(fun_, cases_) = Rec.retype(fun, rename(_: Type), rename(cases)): @unchecked
+        val that = Subst(params -- fun_.params, vars)
+        Rec.retype(fun_, that(_: Type), that(cases_))
+
   // assigned variables can only be renamed
   def lhs(x: Var): Var =
     this(x) match

@@ -40,6 +40,7 @@ sealed trait Cmd:
       case DeclareProc(proc, attrs)               => DeclareProc(proc, attrs.map(e))
       case DefineProc(proc, body, attrs)          => DefineProc(proc, p(body), attrs.map(e))
       case Assert(justify, params, phi, attrs)    => Assert(justify, params, e(phi), attrs.map(e))
+      case FuseFuns(term, rhs, attrs)             => FuseFuns(e(term), rhs.map(e), attrs.map(e))
       case _                                      => this
 
   // axioms and lemmas with the attribute :rw, which are rewrite rules of -simplify
@@ -109,3 +110,8 @@ case object Goal extends Justify
 case object Lemma extends Justify
 
 case class Assert(justify: Justify, params: List[Param], phi: Expr, attrs: Attrs) extends Decl
+
+// the request to fuse the composition `term` = g(f(x₁, ..., xₙ), y₁, ..., yₘ) of two defined functions into a single
+// recursive function, whose variables are distinct, and which is the right-hand side `rhs` once the stage Fuse
+// has processed it (see simplify.Fuse); Dafny only, written fuse term = ???
+case class FuseFuns(term: Expr, rhs: Option[Expr], attrs: Attrs) extends Decl

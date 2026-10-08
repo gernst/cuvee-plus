@@ -407,8 +407,11 @@ object Grammar:
   val check =
     Check("check")
 
+  val fuse =
+    Fuse(P("fuse" ~ annotation.* ~ expr ~ "=" ~ "???"))
+
   val cmd: Parser[Cmd] =
-    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check)
+    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check | fuse)
 
   val script =
     P(cmd.*)

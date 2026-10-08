@@ -127,6 +127,8 @@ case class Axiom(params: List[String], attrs: List[String], phi: Expr) extends C
 case class Lemma(params: List[String], attrs: List[String], phi: Expr) extends Cmd
 case class Goal(params: List[String], attrs: List[String], phi: Expr) extends Cmd
 case object Check extends Cmd
+// fuse term = ???, where term is the composition of two defined functions (see core.FuseFuns)
+case class Fuse(attrs: List[String], term: Expr) extends Cmd
 case class VarDef(vars: List[(String, Type)]) extends Cmd
 case class SortDef(attrs: List[String], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
 case class DataDef(attrs: List[String], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
@@ -162,6 +164,7 @@ case class MethodDef(
 object Axiom extends ((List[String], List[String], Expr) => Cmd)
 object Lemma extends ((List[String], List[String], Expr) => Cmd)
 object Goal extends ((List[String], List[String], Expr) => Cmd)
+object Fuse extends ((List[String], Expr) => Cmd)
 object VarDef extends (List[(String, Type)] => Cmd)
 object SortDef extends ((List[String], String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
 object DataDef extends ((List[String], String, List[String], List[Constr], Option[List[Cmd]]) => DataDef)

@@ -7,6 +7,7 @@ import java.io.FileReader
 import cuvee.core._
 import cuvee.pipe._
 import cuvee.smtlib.Solver
+import cuvee.simplify.Fuse
 import cuvee.simplify.Simplify
 import cuvee.transform.Flat
 import cuvee.transform.Monomorph
@@ -159,6 +160,12 @@ object Config:
         val config_ = config.using(Monomorph)
         (config_, rest)
 
+  val fuse =
+    flag("-fuse", "fuse the compositions of defined functions in the requests fuse g(f(xs), ys) = ??? of Dafny input"):
+      case (config, rest) =>
+        val config_ = config.using(Fuse)
+        (config_, rest)
+
   val simplify =
     flag("-simplify", "simplify formulas and function definitions"):
       case (config, rest) =>
@@ -237,6 +244,7 @@ object Config:
     flat,
     split,
     monomorph,
+    fuse,
     simplify,
     hybrid,
     arch,
@@ -286,7 +294,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.29.2")
+    println("Cuvée 0.31.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

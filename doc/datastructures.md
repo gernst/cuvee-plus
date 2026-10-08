@@ -87,6 +87,7 @@ case class Lam(bound: List[Var], body: Expr, typ: Type)      // an array of one 
 case class Let(bound: List[Var], args: List[Expr], body: Expr)
 case class Match(arg: Expr, cases: List[Case])  // the first case that matches and whose condition holds
 case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bound in body and cond
+case class Rec(fun: Fun, cases: List[Case])     // recursive function, cases fun(p₁, ..., pₙ) if cond => body
 
 // the combinators of trace equation systems, see teq.md
 case class Trace(...); case class Maps(...); case class Invs(...)
@@ -134,6 +135,34 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   (checked by `Type.check`); the patterns are not visited by `map` and not
   substituted, their variables are renamed if they would capture. Conditions
   of cases are not SMT-LIB, where they are `true`.
+- **`Rec`** is a recursive function value of type `Arrow(fun.args, fun.res)`,
+  like a lambda that may call itself, internal only (no syntax, the printers
+  reject it). `fun` is bound in the cases; recursive calls are `App(fun, ...)`.
+  Each pattern applies `fun` to linear patterns of its arguments, the
+  conditions are guards, and the first case that matches and whose guard holds
+  applies. The type parameters of `fun` are bound too: rigid in the cases and
+  instantiated freshly at each use (`Type.check`), excluded from `Rec.params`,
+  not substituted, and renamed if they would capture. The other types of `fun`
+  may refer to those of the context, hence `Subst`, `Old.instance`, and
+  `Type.expand` map them and the recursive calls with them (`Rec.retype`),
+  since a function is identified by its types. The simplifier simplifies the
+  cases like those of `Match` and does not unfold the function.
+  `Rec.from(state, fun, body)` translates a definition: a body that matches
+  on a formal parameter gives one case per case of the match, with the pattern
+  in place of the parameter, also in the body and guard, and the other
+  parameters renamed apart from the pattern variables; another body gives
+  the single case `fun(xs) => body`. `Rec.from(state, fun)` looks up the
+  definition in the state.
+- **`Fuse(state, g, f)`** fuses the composition `g(f(xs), ys)` of two `Rec`s
+  into one `h(xs, ys)` (fixpoint fusion, deforestation): one case per case of
+  `f`, whose body `e` becomes `g(e, ys)` with `g` driven into it. A recursive
+  call of `f` becomes one of `h`, conditionals are driven into their branches,
+  and a constructor application selects the cases of `g` statically in their
+  order, with their guards as tests (`Ite`). Inside the selected bodies,
+  `g(f(t), z)` becomes `h(t, z)`. If a pattern is undecided, i.e. it has a
+  constructor where the expression has none, `g` is applied as a value
+  (`Apply`), as are the remaining calls of `g` and `f`. The result is equivalent if
+  both are total and their recursion is monomorphic.
 - **`App.inst`** holds the expected types of the arguments, not the
   instances of the type parameters. `App(fun, args)` computes `inst` and
   `typ` from the arguments.
@@ -264,7 +293,12 @@ sealed trait Ctrl extends Cmd     // Push, Pop, Reset, Exit, Done
   - `DeclareProc`, `DefineProc`;
   - `Assert(justify, params, phi, attrs)`, where `justify` is `Axiom`,
     `Goal` or `Lemma`, and `params` are the type parameters, those declared
-    by `lemma <a> ...` followed by those that remain in `phi`.
+    by `lemma <a> ...` followed by those that remain in `phi`;
+  - `FuseFuns(term, rhs, attrs)`, the request `fuse g(f(xs), ys) = ???` of
+    Dafny input to fuse two defined functions, whose `rhs` the stage `Fuse`
+    (`-fuse`) sets to the fused `Rec` with the parameters `xs` and `ys`; it
+    declares nothing, the Dafny printer prints the `Rec` as `rec h(...) { case ... }`,
+    which is not parsed, the other printers reject it.
 - `Datatype(params, constrs)` lists each constructor with its selectors.
   Dafny qualifies the selectors with the datatype, e.g. `event_chan`;
   Boogie, whose datatypes are written like Dafny's with the keyword `data`
