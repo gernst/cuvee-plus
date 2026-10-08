@@ -92,6 +92,8 @@ case object Continue extends Prog
 case object Return extends Prog
 case class Assume(phi: Expr) extends Prog
 case class Assert(phi: Expr) extends Prog
+// not Dafny, arbitrary values of the variables, as printed for Spec(xs, true, true)
+case class Havoc(xs: List[String]) extends Prog
 // the left-hand sides of assignments are variables or their elements, a[i][j] := v (see Parser.update)
 case class Lhs(name: String, indices: List[Expr])
 case class Assign(lhs: List[Lhs], rhs: List[Expr]) extends Prog
@@ -106,6 +108,7 @@ object Local extends ((List[(String, Type)], Option[List[Expr]]) => Local)
 
 object Assume extends (Expr => Prog)
 object Assert extends (Expr => Prog)
+object Havoc extends (List[String] => Prog)
 object Lhs extends ((String, List[Expr]) => Lhs)
 object Assign extends ((List[Lhs], List[Expr]) => Prog)
 object Block extends ((List[Local], List[Prog]) => Prog)

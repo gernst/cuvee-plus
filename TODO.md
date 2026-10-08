@@ -10,6 +10,50 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   but constants (`declare-const x`) are functions, e.g.
   `(=> (exists ((x Int)) (< x y)) (<= x y))` becomes
   `(forall ((x Int)) (=> (< x y) (<= x y)))` with `-simplify`.
+- Rewriting does not terminate on
+  [standard_partial_init_ground.dfy](examples/sv-comp/array-examples/standard_partial_init_ground.dfy)
+  with the lemmas of teq.dfy alone (a stack overflow, reported as such): the
+  counter `j` of the agreeing indices is a `count` over a `maps` with the
+  dependency `⌊I⌋`, the read `earlier(k, ⌊J⌋)` becomes a `count` over a
+  `prefix` of it, whose simplification builds the context of the iterations
+  again (`Simplify.iterations`), in which `earlier(k', ⌊I⌋)` is simplified,
+  with fresh `k` each time.
+- A rule whose left-hand side is a comparison of two open variables, e.g.
+  `j < n` with a side condition `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: P(k, h))`,
+  overflows the stack before any step: it matches every comparison, also
+  the bounds `0 <= k < n` of the iterations that matching the `invs` of the
+  side condition assumes in the context of its body (`Simplify.combinator`),
+  where the rule is tried again (see
+  [standard_find_ground-1.dfy](examples/sv-comp/array-examples/standard_find_ground-1.dfy)).
+- A side condition that is an equation between applications with a variable
+  that is not instantiated yet, e.g. `prefix(n, xs) == prefix(n, ys)` with `n`
+  open, is not matched against an equal hypothesis
+  `prefix(N, t) == prefix(N, u)`, while `q(prefix(n, xs), prefix(n, ys))` and
+  `xs == ys` are; reproduced with `-simplify` alone on a lemma
+  `if prefix(n, xs) == prefix(n, ys) then (earlier(j, xs) == earlier(j, ys)) <==> true`
+  (see [standard_compare_ground.dfy](examples/sv-comp/array-examples/standard_compare_ground.dfy),
+  which uses the predicate `agree` instead).
+- A pattern with two cases matches an update with a single case, which one
+  case of the pattern covers (`Rewrite.matchesUpdates`); variables of the rule
+  that occur only in the other case stay uninstantiated, and the rule is
+  applied anyway: the lemma
+  `trace(x0, ... :: case c => F(x, k, h) case !c => G(x, k, h)) == if c then trace(... F ...) else trace(... G ...)`
+  rewrites `trace(a, ... :: x[h := x[h] + 2])` to
+  `if true then trace(... F ...) else trace(... G ...)` with `G` free, which
+  does not terminate (see [condm.dfy](examples/sv-comp/array-fpi/condm.dfy)).
+- A sum that contains a bound variable of a combinator in a pattern is not
+  matched, even against the same sum: the lemma
+  `current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: a[k := a[k + -1]])) == hit(a0)`
+  does not rewrite `current(trace(a2, for ⌊counter(0, 1, N)⌋ do a, k :: a[k := a[k + -1]]))`
+  with `-simplify`, while `a[k := a[k] + d]` matches `a[k := a[k] + 6]`;
+  recurrences over the previous element are not matched (see
+  [ifcomp.dfy](examples/sv-comp/array-fpi/ifcomp.dfy)), only those whose
+  index is a dependency, e.g. `⌊counter(1, 1, n)⌋` (see
+  [eqn1.dfy](examples/sv-comp/array-fpi/eqn1.dfy)).
+- `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on
+  a loop body with ten conditionals in sequence, presumably from the 2^10
+  paths of its symbolic execution (see
+  [diamond_2-2.dfy](examples/sv-comp/loop-acceleration/diamond_2-2.dfy)).
 
 ## General
 
@@ -104,6 +148,41 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
      constraints does not grow (`l <= 1` or `u <= 1` bounds), exact on `Real`,
      on `Int` for coefficients ±1;
   5. limit the number of constraints (e.g. 20).
+- A lemma that is an equation of integers, e.g. `2 * s == n + n * n`, is a
+  rule on its left-hand side as a term, not on the atom; equivalences of atoms
+  work (see [gauss_sum.dfy](examples/sv-comp/loop-new/gauss_sum.dfy)). A
+  monomial such as `2 * s` inside a polynomial is not matched against the
+  definition `s == e` of the context.
+- A comparison pattern `b < x` with `b` open does not match `k < x + n`,
+  where `b` would be the difference `k - n`, while `0 < x + c` matches with
+  `c := n - k` (see
+  [benchmark04_conjunctive.dfy](examples/sv-comp/loop-zilu/benchmark04_conjunctive.dfy)).
+- A higher-order pattern as a summand, e.g. `G(k)` in `G(k) + b[k]`, matches
+  a single summand of the expression, not several, e.g. not `2 * k + 3` in
+  `b[k] + 2 * k + 3`, and a variable as the coefficient of a monomial does not
+  match a literal coefficient, such that affine updates are not matched
+  generically (see [sqm.dfy](examples/sv-comp/array-fpi/sqm.dfy)).
+- Rules on a comparison do not match its negation, e.g. a rule for
+  `0 <= e` does not apply to `e < 0` (on `Int`, `e + 1 <= 0`), such that
+  lemmas are stated in both forms.
+- Hypotheses are not split into cases: `X == (if c then A else B)` and
+  disjunctions among the hypotheses remain, `-split` followed by another
+  `-simplify` splits them (see
+  [diamond_1-1.dfy](examples/sv-comp/loop-acceleration/diamond_1-1.dfy),
+  [half.dfy](examples/sv-comp/loop-new/half.dfy)).
+- Linear facts over more than two variables are not combined: the context
+  `n0 <= 0`, `n1 <= 0`, `0 < n0 + n1` is not found inconsistent, since
+  `n0 + n1` is no difference constraint (`Diffs`), while `FourierMotzkin`
+  would decide it (see [seq-3.dfy](examples/sv-comp/loop-invgen/seq-3.dfy)).
+- Expressions with binders are compared literally, not modulo the names of
+  their bound variables: `count(0, maps(for ⌊K⌋, ⌊L⌋ yield k₁₀, l₈ :: k₁₀ % 2))`
+  and the same with `k, h`, which the right-hand side of a rule introduces,
+  are not found equal (see [sumt2.dfy](examples/sv-comp/loops-crafted-1/sumt2.dfy)).
+- No integer rounding: `2 * n <= 2 * k + 1` does not give `n <= k`; no
+  cancellation of a factor, e.g. `k * j < 1000000 * k`, and a lemma
+  `if 0 <= k then (k * a < k * b) <==> (0 < k && a < b)` does not match it,
+  since a variable of a pattern does not match the coefficient 1000000 of the
+  monomial `1000000 * k` (see [count_by_k.dfy](examples/sv-comp/loop-new/count_by_k.dfy)).
 
 ## Trace equation systems (`-teq`)
 
@@ -133,6 +212,21 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   earlier occurrence instantiated the variable, and a single bound variable
   of the pattern cannot abstract several of the expression (no tuples).
   Terms are abstracted at all of their occurrences.
+- The prelude teq.dfy is injected after parsing, hence Dafny files with
+  lemmas about `counter`, `current`, `earlier`, `count`, ... repeat their
+  declarations, also with `-teq`.
+- No instantiation of the iteration constraint at a witness, e.g. a search
+  whose constraint states that `P` holds before the exit `n`, and `!P(j)`,
+  which gives `n <= j`; the examples abstract the constraint by an atom first,
+  e.g. `absent(n, a, e)`, which a second lemma takes as its side condition (see
+  [standard_sentinel-2.dfy](examples/sv-comp/array-examples/standard_sentinel-2.dfy)),
+  since a side condition that is an iteration constraint does not terminate;
+  a forward rule on branch `forward` would instantiate it directly.
+- teq.dfy has no rule for the length of the iterations of a counter,
+  `|⌊counter(i, c, n)⌋| == n` (see [sumt2.dfy](examples/sv-comp/loops-crafted-1/sumt2.dfy)).
+- Nested loops: the outer trace takes the values of summarized inner traces,
+  whose composition, e.g. `k == n * m`, is not accelerated (see
+  [nested-1.dfy](examples/sv-comp/loop-new/nested-1.dfy)).
 
 ## Dafny frontend
 
@@ -166,6 +260,11 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - Names that are neither identifiers nor operators, e.g. the instances
   `f<Int>` of `-monomorph`, are escaped by backticks, which the scanner reads
   back but Dafny does not have; names containing backticks are not handled.
+- Dafny printed from C input (`-print dfy`) is not parsed back: the prelude
+  declares a function named `const` with type parameters,
+  `function {:c} {:smt2} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>`.
+- Parse errors of `fuse` show the term in the internal syntax of the parser
+  (`Inner(App(...))`).
 
 ## Boogie frontend
 

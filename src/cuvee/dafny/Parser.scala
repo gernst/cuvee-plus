@@ -718,6 +718,9 @@ class Parser(var state: State):
         val phi_ = resolve(scope, phi)
         state.progs.assert(phi_)
 
+      case Havoc(names) =>
+        state.progs.havoc(vars(scope, names, "unknown variables"))
+
       // calls to top-level methods, with or without results
       case Assign(lhs, List(Inner(App(name, args), Nil))) if state.procs.contains(name) =>
         val lhs_ = results(scope, lhs)

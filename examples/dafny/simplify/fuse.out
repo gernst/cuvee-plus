@@ -16,28 +16,25 @@ function take(xs: List, k: int): int {
 }
 
 function id(xs: List): List {
-  xs
+  match xs case Nil => Nil case Cons(y, ys) => Cons(y, id(ys))
 }
 
 fuse sum(dbl(xs)) =
-  rec sum_dbl(xs: List): int {
+  function sum_dbl(xs: List): int {
     case sum_dbl(Nil) => 0
     case sum_dbl(Cons(y, ys)) => y + y + sum_dbl(ys)
   }
 
 fuse take(dbl(xs), k) =
-  rec take_dbl(xs: List, k: int): int {
+  function take_dbl(xs: List, k: int): int {
     case take_dbl(Nil, k) => 0
     case take_dbl(Cons(y, ys), k) =>
       if 0 < k then y + y + take_dbl(ys, k - 1) else 0
   }
 
 fuse sum(id(xs)) =
-  rec sum_id(xs: List): int {
-    case sum_id(xs) =>
-      (rec sum(xs: List): int {
-         case sum(Nil) => 0
-         case sum(Cons(y, ys)) => y + sum(ys)
-       })(xs)
+  function sum_id(xs: List): int {
+    case sum_id(Nil) => 0
+    case sum_id(Cons(y, ys)) => y + sum_id(ys)
   }
 

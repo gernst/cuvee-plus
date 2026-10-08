@@ -297,7 +297,7 @@ sealed trait Ctrl extends Cmd     // Push, Pop, Reset, Exit, Done
   - `FuseFuns(term, rhs, attrs)`, the request `fuse g(f(xs), ys) = ???` of
     Dafny input to fuse two defined functions, whose `rhs` the stage `Fuse`
     (`-fuse`) sets to the fused `Rec` with the parameters `xs` and `ys`; it
-    declares nothing, the Dafny printer prints the `Rec` as `rec h(...) { case ... }`,
+    declares nothing, the Dafny printer prints the `Rec` as `function h(...) { case ... }`,
     which is not parsed, the other printers reject it.
 - `Datatype(params, constrs)` lists each constructor with its selectors.
   Dafny qualifies the selectors with the datatype, e.g. `event_chan`;

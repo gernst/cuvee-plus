@@ -299,8 +299,11 @@ object Grammar:
   val assert =
     Assert(P("assert" ~ expr ~ ";"))
 
+  val havoc =
+    Havoc(P("havoc" ~ (id ~+ ",") ~ ";"))
+
   val spec =
-    P(assume | assert)
+    P(assume | assert | havoc)
 
   val local =
     Local(P("var" ~ vars ~ (":=" ~ exprs).? ~ ";"))

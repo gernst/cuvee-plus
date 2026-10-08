@@ -989,7 +989,8 @@ object Printer extends cuvee.pipe.Printer:
         Error.raise("lambda of array type not supported in Dafny", expr)
 
       // recursive functions are internal, printed for fuse only, like a function with a match whose cases are
-      // patterns of all arguments with guards, rec h(x: T): R { case h(p) if φ => e ... }, which is not parsed
+      // patterns of all arguments with guards, function h(x: T): R { case h(p) if φ => e ... }, which is not parsed;
+      // unambiguous, since function begins no expression, and case begins no body of a definition
       case Rec(Fun(name_, params_, formals_, res), cases) =>
         val cases_ =
           for Case(pat, body, cond) <- cases
@@ -998,7 +999,7 @@ object Printer extends cuvee.pipe.Printer:
             Group(text("case") ~~ doc(pat) ~ guard ~~ text("=>") ~ Nest(2, line ~ doc(body)))
 
         val sig = signature(name(name_), params_, formals_) ~ text(":") ~~ doc(res)
-        Group(text("rec") ~~ sig ~~ text("{") ~ Nest(2, concat(cases_.map(line ~ _))) ~ line ~ text("}"))
+        Group(text("function") ~~ sig ~~ text("{") ~ Nest(2, concat(cases_.map(line ~ _))) ~ line ~ text("}"))
 
       case Bind(quant, bound, body) =>
         // the bound variables flow up to the width of the line, aligned after the quantifier

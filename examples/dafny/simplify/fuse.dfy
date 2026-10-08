@@ -1,7 +1,8 @@
 // ./Cuvee.sh -fuse examples/dafny/simplify/fuse.dfy
 // fixpoint fusion of two defined functions, whose definitions match on a list, into a single recursive function,
-// printed as rec, which constructs no intermediate list: the doubled list is summed, and taken up to k, whose test
-// stays in the fused function; id produces no constructor, such that sum is applied to its result as a function value
+// printed as a function whose cases match all arguments, which constructs no intermediate list: the doubled list
+// is summed, and taken up to k, whose test stays in the fused function; id produces no constructor, such that sum
+// is applied to its result as a function value
 datatype List = Nil | Cons(head: int, tail: List)
 
 function dbl(xs: List): List {
@@ -23,7 +24,9 @@ function take(xs: List, k: int): int {
 }
 
 function id(xs: List): List {
-  xs
+  match xs
+  case Nil => Nil
+  case Cons(y, ys) => Cons(y, id(ys))
 }
 
 fuse sum(dbl(xs)) = ???
