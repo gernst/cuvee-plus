@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/string_concat-noarr.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/string_concat-noarr.yml (expected: safe), translated from the C program by
+// SV-COMP loop-invgen/string_concat-noarr.yml (expected: safe), translated from the C program by
 // hand: i counts nondeterministically, at most 100 times (else the program is stuck, i.e., assume false), then i
 // and j count together, j at most 100 times, and i < 200 is checked
 //

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/skippedu.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/skippedu.yml (expected: unsafe), translated from the C program by hand:
+// SV-COMP array-tiling/skippedu.yml (expected: unsafe), translated from the C program by hand:
 // as skipped, but the elements are clamped to i instead of their position, which is below the positions 2 i - 1
 // for i > 1
 //

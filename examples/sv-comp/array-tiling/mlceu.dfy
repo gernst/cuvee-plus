@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/mlceu.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/mlceu.yml (expected: unsafe), translated from the C program by hand:
+// SV-COMP array-tiling/mlceu.yml (expected: unsafe), translated from the C program by hand:
 // as mlceu2, but the sizes go up to 66060288 / 4, where i >> 16 > 250 holds for the last positions
 //
 // findings: unsafe: i >> 16 > 250 holds for the positions from 251 * 65536 = 16449536 on, below the bound 66060288

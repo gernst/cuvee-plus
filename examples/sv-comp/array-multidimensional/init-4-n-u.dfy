@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-multidimensional/init-4-n-u.dfy
-// SV-COMP ReachSafety-Arrays/array-multidimensional/init-4-n-u.yml (expected: safe), translated from the C program
+// SV-COMP array-multidimensional/init-4-n-u.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a variant of init-2-n-u with other constants or assertions; checks A[i][j][k][l]==C
 // note: the concrete loop bounds are symbolic, arbitrary positive values: m for 1000, n for 1500, p for 1800, q for
 // 2000

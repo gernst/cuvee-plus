@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/ps3-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/ps3-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/ps3-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: y counts up to k and x accumulates y * y, and 6 x == 2 y^3 + 3 y^2 + y is checked in and after the
 // loop
 //

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/Mono5_1.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/Mono5_1.yml (expected: unsafe), translated from the C program by
+// SV-COMP loops-crafted-1/Mono5_1.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of Mono3_1 with other constants or assertions; checks z!=0
 // note: the concrete loop bounds are symbolic, arbitrary positive values: y for 10000000
 

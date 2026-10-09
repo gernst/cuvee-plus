@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/mapsum5.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/mapsum5.yml (expected: safe), translated from the C program by
+// SV-COMP array-crafted/mapsum5.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of mapsum1 with other constants or assertions
 
 var N: int;

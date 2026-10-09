@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/nested_1-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/nested_1-2.yml (expected: unsafe), translated from the C program by
+// SV-COMP loop-acceleration/nested_1-2.yml (expected: unsafe), translated from the C program by
 // hand: the unsafe variant of nested_1-1, which asserts that the final x, which is odd, is even
 //
 // findings: unsafe, not closed, as expected

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/gj2007b.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/gj2007b.yml (expected: safe), translated from the C program by hand: m takes
+// SV-COMP loop-lit/gj2007b.yml (expected: safe), translated from the C program by hand: m takes
 // some of the values of x = 0, ..., n - 1, and is checked to be in that range if n > 0
 //
 // findings: m is set to the iteration k in some iterations and kept otherwise; two lemmas, whose left-hand sides

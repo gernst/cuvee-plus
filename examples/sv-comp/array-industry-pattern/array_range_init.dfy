@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-industry-pattern/array_range_init.dfy
-// SV-COMP ReachSafety-Arrays/array-industry-pattern/array_range_init.yml (expected: unsafe), translated from the C program by hand:
+// SV-COMP array-industry-pattern/array_range_init.yml (expected: unsafe), translated from the C program by hand:
 // a[i] = 10 for 0 <= i <= 10000 and 0 otherwise, and all are checked to be 10
 //
 // findings: unsafe: the positions above 10000 are 0; open, as expected, the guarded stores are not read without a

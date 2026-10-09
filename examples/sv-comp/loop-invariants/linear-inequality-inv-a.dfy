@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-invariants/linear-inequality-inv-a.dfy
-// SV-COMP ReachSafety-Loops/loop-invariants/linear-inequality-inv-a.yml (expected: safe), translated from the C
+// SV-COMP loop-invariants/linear-inequality-inv-a.yml (expected: safe), translated from the C
 // program by hand: the sum s of n <= 255 values v <= 255 (unsigned char, as int with bounds) is at least the last
 // value and at most 255 * 255
 //

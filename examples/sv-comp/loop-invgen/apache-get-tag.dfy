@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/apache-get-tag.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/apache-get-tag.yml (expected: safe), translated from the C program by
+// SV-COMP loop-invgen/apache-get-tag.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 0 <= t; t <= tagbuf_len; 0 <= t; t <= tagbuf_len; 0 <= t;
 // t <= tagbuf_len; 0 <= t; t <= tagbuf_len; 0 <= t; t <= tagbuf_len; 0 <= t; t <= tagbuf_len; 0 <= t; t <=
 // tagbuf_len; 0 <= t; t <= tagbuf_len

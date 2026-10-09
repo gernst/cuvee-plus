@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_copy1_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_copy1_ground-1.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_copy1_ground-1.yml (expected: safe), translated from the C
 // program by hand: a1 is filled with arbitrary values and copied into a2, which then equals a1
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): the copy is stores at the

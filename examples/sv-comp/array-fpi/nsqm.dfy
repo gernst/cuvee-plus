@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-fpi/nsqm.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/nsqm.yml (expected: safe), translated from the C program by hand: b holds
+// SV-COMP array-fpi/nsqm.yml (expected: safe), translated from the C program by hand: b holds
 // the odd numbers by a recurrence, and a the squares plus N, from N + 1 and the partial sums of b plus 2, as sqm
 //
 // findings: the recurrences of sqm with the first element N + 1, with the same lemmas; closed (no output)

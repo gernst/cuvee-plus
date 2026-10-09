@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/mine2017-ex4.8.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/mine2017-ex4.8.yml (expected: safe), translated from the C program by
+// SV-COMP loop-lit/mine2017-ex4.8.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of mine2017-ex4.10 with other constants or assertions; checks 0 <= v; v <= 1
 
 method main() returns (result: int) {

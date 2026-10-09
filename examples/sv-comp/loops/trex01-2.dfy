@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/trex01-2.dfy
-// SV-COMP ReachSafety-Loops/loops/trex01-2.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/trex01-2.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of trex01-1 with other constants or assertions
 
 method f(d: int) {

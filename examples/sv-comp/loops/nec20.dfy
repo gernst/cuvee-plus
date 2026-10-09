@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/nec20.dfy
-// SV-COMP ReachSafety-Loops/loops/nec20.yml (expected: unsafe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/nec20.yml (expected: unsafe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of nec11 with other constants or assertions; checks j<1025
 
 // the remainder of C, which truncates towards zero

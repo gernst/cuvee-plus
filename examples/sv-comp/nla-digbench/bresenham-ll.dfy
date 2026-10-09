@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/bresenham-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/bresenham-ll.yml (expected: safe), translated from the C program by
+// SV-COMP nla-digbench/bresenham-ll.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 2*yx - 2*xy - X + (long long) 2*Y - v == 0; 2*yx - 2*xy -
 // X + (long long) 2*Y - v + 2*y == 0
 

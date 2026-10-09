@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/pnr4.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/pnr4.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-tiling/pnr4.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of pnr2 with other constants or assertions; checks a[i]!=DEFAULTVAL
 
 // the division of C, which truncates towards zero

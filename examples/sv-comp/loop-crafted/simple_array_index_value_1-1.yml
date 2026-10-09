@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loop-crafted/simple_array_index_value_1-1.yml
+# the Dafny translation of the SV-COMP task loop-crafted/simple_array_index_value_1-1.yml
 input_files: 'simple_array_index_value_1-1.dfy'
 
 properties:

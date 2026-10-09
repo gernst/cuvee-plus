@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/gr2006.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/gr2006.yml (expected: safe), translated from the C program by hand: y counts
+// SV-COMP loop-lit/gr2006.yml (expected: safe), translated from the C program by hand: y counts
 // up while x < 50 and then down, the loop leaves when y becomes negative, at x == 100, which is checked
 //
 // findings: open: y counts up while x < 50 and then down, until it becomes negative, a two-phase counter whose exit

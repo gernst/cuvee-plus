@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/s4lif.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/s4lif.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/s4lif.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of s1lif with other constants or assertions; checks sum[0] == 5*N
 
 // the division of C, which truncates towards zero

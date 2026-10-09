@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-cav19/array_init_var_plus_ind.dfy
-// SV-COMP ReachSafety-Arrays/array-cav19/array_init_var_plus_ind.yml (expected: safe), translated from the C program
+// SV-COMP array-cav19/array_init_var_plus_ind.yml (expected: safe), translated from the C program
 // by hand: a[i] = j, where j accumulates the indices 0 + 1 + ... + (i - 1), in a loop that may stop early (a
 // nondeterministic break), and a[k] >= 0 is checked below the exit
 //

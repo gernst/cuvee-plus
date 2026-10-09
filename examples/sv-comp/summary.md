@@ -1,7 +1,7 @@
 # SV-COMP benchmarks with `-teq`
 
-Tasks from `benchmarks/ReachSafety-Loops` and `benchmarks/ReachSafety-Arrays`
-(see Coverage below),
+Tasks of the categories ReachSafety-Loops and ReachSafety-Arrays, from
+`sv-benchmarks/c/<folder>` (see Coverage below),
 translated by hand to Dafny, in `examples/sv-comp/<folder>/<task>.dfy`. Each
 file states its command line in its first line (`-teq -simplify`, some with
 `-split -simplify`), its findings in its header, and its remaining goals at

@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loop-acceleration/const_1-2.yml
+# the Dafny translation of the SV-COMP task loop-acceleration/const_1-2.yml
 input_files: 'const_1-2.dfy'
 
 properties:

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/bhmr2007.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/bhmr2007.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-lit/bhmr2007.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks a + b == 3*n
 
 method main() returns (result: int) {

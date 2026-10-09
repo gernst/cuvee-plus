@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/bor3.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/bor3.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-crafted/bor3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of bor1 with other constants or assertions
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 10000
 

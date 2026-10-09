@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/mapsum2.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/mapsum2.yml (expected: safe), translated from the C program by
+// SV-COMP array-crafted/mapsum2.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of mapsum1 with other constants or assertions
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000
 

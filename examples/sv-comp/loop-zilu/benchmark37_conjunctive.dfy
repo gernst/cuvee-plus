@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark37_conjunctive.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark37_conjunctive.yml (expected: safe), translated from the C program
+// SV-COMP loop-zilu/benchmark37_conjunctive.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: x and y count down together while x > 0, and y >= 0 is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

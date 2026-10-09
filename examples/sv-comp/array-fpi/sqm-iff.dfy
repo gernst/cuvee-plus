@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/sqm-iff.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/sqm-iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/sqm-iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of sqm-if with other constants or assertions; checks a[i] == i*i
 
 var N: int;

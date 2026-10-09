@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/n.c40.dfy
-// SV-COMP ReachSafety-Loops/loops/n.c40.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/n.c40.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of n.c11 with other constants or assertions
 
 // the constant array of the initializers of C, whose values are all x

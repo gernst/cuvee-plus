@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-industry-pattern/array_monotonic.dfy
-// SV-COMP ReachSafety-Arrays/array-industry-pattern/array_monotonic.yml (expected: safe), translated from the C
+// SV-COMP array-industry-pattern/array_monotonic.yml (expected: safe), translated from the C
 // program by hand: at the even positions, a is arbitrary and b is 20 where a is 10, which is checked at the even
 // positions again
 //

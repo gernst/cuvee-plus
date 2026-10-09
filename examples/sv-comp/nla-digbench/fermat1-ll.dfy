@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/fermat1-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/fermat1-ll.yml (expected: safe), translated from the C program by
+// SV-COMP nla-digbench/fermat1-ll.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 4*(A+r) == u*u - v*v - 2*u + 2*v; 4*(A+r) == u*u - v*v -
 // 2*u + 2*v; 4*(A+r) == u*u - v*v - 2*u + 2*v; ((long long) 4*A) == u*u - v*v - 2*u + 2*v
 

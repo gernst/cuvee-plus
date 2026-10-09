@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark32_linear.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark32_linear.yml (expected: safe), translated from the C program by
+// SV-COMP loop-zilu/benchmark32_linear.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: x alternates between 1 and 2, if it is one of them, and x <= 8 is checked
 //
 // findings: a value that swaps 1 and 2 and keeps all others, a trace with three cases, stays one of them by a lemma

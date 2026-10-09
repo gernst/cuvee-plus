@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/mbpr3.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/mbpr3.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-tiling/mbpr3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of mbpr2 with other constants or assertions; checks volArray[i] >= MINVAL || volArray[i] ==
 // 0
 

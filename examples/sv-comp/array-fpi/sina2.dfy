@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/sina2.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/sina2.yml (expected: safe), translated from the C program by hand: a is set
+// SV-COMP array-fpi/sina2.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, sum is N, and sum is added to each element, which is N + 1 then; sum[0] of the one-element array as a
 // scalar
 //

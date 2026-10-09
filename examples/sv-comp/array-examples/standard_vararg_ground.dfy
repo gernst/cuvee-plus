@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_vararg_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_vararg_ground.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/standard_vararg_ground.yml (expected: safe), translated from the C program by hand:
 // a counts the leading nonnegative elements of an arbitrary array (the C program reads beyond the array if all
 // are nonnegative), and they are checked to be nonnegative
 //

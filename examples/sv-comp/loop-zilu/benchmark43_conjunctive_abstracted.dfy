@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark43_conjunctive_abstracted.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark43_conjunctive_abstracted.yml (expected: safe), translated from the
+// SV-COMP loop-zilu/benchmark43_conjunctive_abstracted.yml (expected: safe), translated from the
 // C program by ./Cuvee.sh -print dfy: a program of the folder; checks x == 100 || y == 100
 
 // the bit operations of C on integers, declared only

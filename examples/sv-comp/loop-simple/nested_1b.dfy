@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-simple/nested_1b.dfy
-// SV-COMP ReachSafety-Loops/loop-simple/nested_1b.yml (expected: unsafe), translated from the C program by
+// SV-COMP loop-simple/nested_1b.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder
 
 method main() returns (result: int) {

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/count_up_down-1.dfy
-// SV-COMP ReachSafety-Loops/loops/count_up_down-1.yml (expected: safe), translated from the C program by hand: x
+// SV-COMP loops/count_up_down-1.yml (expected: safe), translated from the C program by hand: x
 // counts down from n, unsigned, to 0, while y counts up, which is n then
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

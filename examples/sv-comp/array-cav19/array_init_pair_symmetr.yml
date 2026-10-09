@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-cav19/array_init_pair_symmetr.yml
+# the Dafny translation of the SV-COMP task array-cav19/array_init_pair_symmetr.yml
 input_files: 'array_init_pair_symmetr.dfy'
 
 properties:

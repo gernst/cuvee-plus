@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/modnf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/modnf.yml (expected: unsafe), translated from the C program by hand: the
+// SV-COMP array-fpi/modnf.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of modn, which asserts that the elements, which are 0, are 1
 //
 // findings: unsafe, not closed with the lemma of modn, as expected: the elements are 0

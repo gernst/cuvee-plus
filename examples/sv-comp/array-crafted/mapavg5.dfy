@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/mapavg5.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/mapavg5.yml (expected: safe), translated from the C program by
+// SV-COMP array-crafted/mapavg5.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of mapavg1 with other constants or assertions
 
 // the division of C, which truncates towards zero

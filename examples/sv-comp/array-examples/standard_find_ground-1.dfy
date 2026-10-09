@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_find_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_find_ground-1.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_find_ground-1.yml (expected: safe), translated from the C
 // program by hand: a is filled with arbitrary values, the first index i of e is searched, and no element before i
 // is e
 //

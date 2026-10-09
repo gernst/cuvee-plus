@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/bh2017-ex-add.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/bh2017-ex-add.yml (expected: safe), translated from the C program by hand: two
+// SV-COMP loop-lit/bh2017-ex-add.yml (expected: safe), translated from the C program by hand: two
 // counters m and n are incremented nondeterministically up to 60 and reset to 0 there, and are checked to stay at
 // most 60
 //

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/tcpy.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/tcpy.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-tiling/tcpy.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks acopy[i] == a[i]
 
 // the division of C, which truncates towards zero

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-cav19/array_min_and_copy_shift_sum_add.dfy
-// SV-COMP ReachSafety-Arrays/array-cav19/array_min_and_copy_shift_sum_add.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-cav19/array_min_and_copy_shift_sum_add.yml (expected: safe), translated from the C program by hand:
 // j becomes the minimum of an initial value and the elements a[i], which are assumed bounded, b[i] = a[i] - j,
 // and the sum k of b[i] + i is checked to be nonnegative
 //

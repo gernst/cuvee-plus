@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_copy2_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_copy2_ground-1.yml (expected: unsafe), translated from the C program by hand:
+// SV-COMP array-examples/standard_copy2_ground-1.yml (expected: unsafe), translated from the C program by hand:
 // a1 and a2 are arbitrary, a1 is copied into a3, and a3 is then overwritten by a copy of a2, which is checked
 // to agree with a1
 //

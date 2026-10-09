@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/ps5-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/ps5-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/ps5-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ps2-ll with other constants or assertions; checks 6*y*y*y*y*y + 15*y*y*y*y + 10*y*y*y -
 // 30*x - y == 0; 6*y*y*y*y*y + 15*y*y*y*y + 10*y*y*y - 30*x - y == 0; k*y == y*y
 

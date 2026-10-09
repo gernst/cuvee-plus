@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-fpi/sqm.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/sqm.yml (expected: safe), translated from the C program by hand: b holds the
+// SV-COMP array-fpi/sqm.yml (expected: safe), translated from the C program by hand: b holds the
 // odd numbers 1, 3, ..., by a recurrence, and a the squares (i + 1) * (i + 1), from the partial sums of b plus 2
 //
 // findings: the same recurrences as eqn1; the closed form of b appears in the update of a, guarded by k <= n, which

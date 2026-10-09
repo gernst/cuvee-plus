@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/gsv2008.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/gsv2008.yml (expected: safe), translated from the C program by hand: x,
+// SV-COMP loop-lit/gsv2008.yml (expected: safe), translated from the C program by hand: x,
 // initially -50, accumulates y, which counts up from an arbitrary value above -1000, until x is nonnegative, when y
 // is positive
 //

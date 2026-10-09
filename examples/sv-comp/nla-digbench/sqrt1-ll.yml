@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/nla-digbench/sqrt1-ll.yml
+# the Dafny translation of the SV-COMP task nla-digbench/sqrt1-ll.yml
 input_files: 'sqrt1-ll.dfy'
 
 properties:

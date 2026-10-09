@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-invariants64/linear-inequality-inv-d.dfy
-// SV-COMP ReachSafety-Loops/loop-invariants64/linear-inequality-inv-d.yml (expected: safe), translated from the C
+// SV-COMP loop-invariants64/linear-inequality-inv-d.yml (expected: safe), translated from the C
 // program by hand: as loop-invariants/linear-inequality-inv-a for unsigned int, 0 < n <= 2^32 - 1 values v <= 2^32
 // - 1, whose sum (unsigned long) is at most (2^32 - 1)^2
 //

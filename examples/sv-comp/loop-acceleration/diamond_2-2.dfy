@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/diamond_2-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/diamond_2-2.yml (expected: safe), translated from the C program by
+// SV-COMP loop-acceleration/diamond_2-2.yml (expected: safe), translated from the C program by
 // hand: as diamond_1-1, with ten steps per iteration that depend on the parity of y, by 2 each if y is even, and by
 // 1, -2, 2, -2, 2, -4, 4, 2, -4, -4 otherwise, which sum to -5; x is unsigned in C, which wraps around for odd y,
 // while it decreases here, such that the loop does not terminate for odd y, and the assertion holds vacuously

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-lopstr16/sum_multi_array.dfy
-// SV-COMP ReachSafety-Arrays/array-lopstr16/sum_multi_array.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-lopstr16/sum_multi_array.yml (expected: safe), translated from the C program by hand:
 // a[i] and b[i] are arbitrary, c[i] = a[i] + b[i], which is checked (the fields n of structs are the arrays)
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

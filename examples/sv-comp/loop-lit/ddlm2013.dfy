@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/ddlm2013.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/ddlm2013.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-lit/ddlm2013.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks a == b
 
 // the remainder of C, which truncates towards zero

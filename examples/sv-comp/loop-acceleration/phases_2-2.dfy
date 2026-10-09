@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/phases_2-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/phases_2-2.yml (expected: safe), translated from the C program by
+// SV-COMP loop-acceleration/phases_2-2.yml (expected: safe), translated from the C program by
 // hand: x starts at 1 and is squared while that stays below y, then incremented, until it reaches y > 0, which is
 // checked (unsigned int is int)
 //

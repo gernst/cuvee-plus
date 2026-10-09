@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_copy7_ground-2.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_copy7_ground-2.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_copy7_ground-2.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of standard_copy1_ground-1 with other constants or assertions; checks
 // a1[x] == a8[x]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000

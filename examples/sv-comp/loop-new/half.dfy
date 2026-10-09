@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-new/half.dfy
-// SV-COMP ReachSafety-Loops/loop-new/half.yml (expected: safe), translated from the C program by hand: n counts the
+// SV-COMP loop-new/half.yml (expected: safe), translated from the C program by hand: n counts the
 // even numbers below 2 * k, which are k many
 //
 // findings: the loop counts the even iterations, which teq.dfy introduces as count(0, maps(... k % 2)) over the

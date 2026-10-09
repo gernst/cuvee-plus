@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ifeqn5f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ifeqn5f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/ifeqn5f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ifeqn5 with other constants or assertions; checks b[i] == 5*i*i + 5*i + 5
 
 var N: int;

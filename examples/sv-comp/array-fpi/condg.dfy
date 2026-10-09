@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/condg.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/condg.yml (expected: safe), translated from the C program by hand: a is set
+// SV-COMP array-fpi/condg.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, sum is N, and each element is decreased by 1 if sum is N, which gives 0; sum[0] of the one-element array as
 // a scalar
 //

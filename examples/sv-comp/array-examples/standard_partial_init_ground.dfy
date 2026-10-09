@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_partial_init_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_partial_init_ground.yml (expected: safe), translated from the
+// SV-COMP array-examples/standard_partial_init_ground.yml (expected: safe), translated from the
 // C program by hand: A and B are filled with arbitrary values, the indices where they agree are collected in C,
 // counted by j, and each entry C[x] lies between x and x + i - j, i.e., the indices are increasing
 //

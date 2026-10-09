@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/terminator_02-2_abstracted.dfy
-// SV-COMP ReachSafety-Loops/loops/terminator_02-2_abstracted.yml (expected: safe), translated from the C program by
+// SV-COMP loops/terminator_02-2_abstracted.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of terminator_03-2_abstracted with other constants or assertions; checks x>=100
 // || z<=100
 

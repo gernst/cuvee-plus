@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loops-crafted-1/nested3-1_abstracted.yml
+# the Dafny translation of the SV-COMP task loops-crafted-1/nested3-1_abstracted.yml
 input_files: 'nested3-1_abstracted.dfy'
 
 properties:

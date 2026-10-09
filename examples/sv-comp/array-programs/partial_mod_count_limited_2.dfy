@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-programs/partial_mod_count_limited_2.dfy
-// SV-COMP ReachSafety-Arrays/array-programs/partial_mod_count_limited_2.yml (expected: safe), translated from the C
+// SV-COMP array-programs/partial_mod_count_limited_2.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of partial_mod_count_limited_1 with other constants or assertions;
 // checks j < N/(2*R)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000

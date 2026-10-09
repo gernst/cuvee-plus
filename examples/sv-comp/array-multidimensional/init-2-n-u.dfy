@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-multidimensional/init-2-n-u.dfy
-// SV-COMP ReachSafety-Arrays/array-multidimensional/init-2-n-u.yml (expected: safe), translated from the C program by
+// SV-COMP array-multidimensional/init-2-n-u.yml (expected: safe), translated from the C program by
 // hand: a two-dimensional array, an array of rows, is set to C by nested loops, and checked by nested loops
 //
 // findings: the representative of the folder, all of whose 20 tasks are nested loops over arrays of rows (init,

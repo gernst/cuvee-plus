@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/indp2.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/indp2.yml (expected: safe), translated from the C program by hand: a[i] is
+// SV-COMP array-fpi/indp2.yml (expected: safe), translated from the C program by hand: a[i] is
 // set to (i - 1) * (i + 1), then i * i is subtracted and 1 added, which gives 0
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): the three updates at the same

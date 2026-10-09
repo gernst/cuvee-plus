@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-crafted/simple_vardep_1.dfy
-// SV-COMP ReachSafety-Loops/loop-crafted/simple_vardep_1.yml (expected: safe), translated from the C program by
+// SV-COMP loop-crafted/simple_vardep_1.yml (expected: safe), translated from the C program by
 // hand: i, j, k grow by 1, 2, 3 while k < 0x0fffffff, and k == i + j is checked in the loop (unsigned int is int,
 // there is no wrap-around below the bound)
 //

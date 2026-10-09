@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/sumt3.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/sumt3.yml (expected: safe), translated from the C program by hand: l
+// SV-COMP loops-crafted-1/sumt3.yml (expected: safe), translated from the C program by hand: l
 // counts to n, at most SIZE == 20000001, unsigned, and i, j, k count the values of l that are multiples of 3, even
 // otherwise, and the others, which add up to l
 //

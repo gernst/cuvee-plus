@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/sorting_bubblesort_2_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/sorting_bubblesort_2_ground.yml (expected: unsafe), translated from the
+// SV-COMP array-examples/sorting_bubblesort_2_ground.yml (expected: unsafe), translated from the
 // C program by ./Cuvee.sh -print dfy: a program of the folder; checks a[x] <= a[y]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 

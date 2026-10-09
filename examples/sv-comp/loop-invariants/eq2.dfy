@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invariants/eq2.dfy
-// SV-COMP ReachSafety-Loops/loop-invariants/eq2.yml (expected: safe), translated from the C program by hand: y and
+// SV-COMP loop-invariants/eq2.yml (expected: safe), translated from the C program by hand: y and
 // z start at w + 1 and are incremented together, which is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

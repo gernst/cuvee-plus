@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-programs/partial_mod_count_limited_base.dfy
-// SV-COMP ReachSafety-Arrays/array-programs/partial_mod_count_limited_base.yml (expected: safe), translated from
+// SV-COMP array-programs/partial_mod_count_limited_base.yml (expected: safe), translated from
 // the C program by ./Cuvee.sh -print dfy: a program of the folder; checks j < 2
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/egcd2-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/egcd2-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/egcd2-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of egcd-ll with other constants or assertions; checks a == k * b + c; a == y*r + x*p; b ==
 // x * q + y * s; q*xy + s*yy - q*x - b*y - s*y + b == 0; q*x + s*y == 0; p*x + r*y == a
 

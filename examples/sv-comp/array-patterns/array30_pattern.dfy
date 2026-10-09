@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-patterns/array30_pattern.dfy
-// SV-COMP ReachSafety-Arrays/array-patterns/array30_pattern.yml (expected: safe), translated from the C program by
+// SV-COMP array-patterns/array30_pattern.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of array10_pattern with other constants or assertions; checks 3*sum ==
 // (ARR_SIZE*(ARR_SIZE-1)*(ARR_SIZE+1))
 

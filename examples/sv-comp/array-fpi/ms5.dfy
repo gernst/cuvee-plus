@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ms5.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ms5.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP array-fpi/ms5.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of ms1 with other constants or assertions; checks sum[0] <= 4*N
 
 // the remainder of C, which truncates towards zero

@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-tiling/rewnifrev2.yml
+# the Dafny translation of the SV-COMP task array-tiling/rewnifrev2.yml
 input_files: 'rewnifrev2.dfy'
 
 properties:

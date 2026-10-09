@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark11_linear.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark11_linear.yml (expected: safe), translated from the C program by
+// SV-COMP loop-zilu/benchmark11_linear.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: x counts up to n from x <= n, and x == n is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (the _abstracted variant is the

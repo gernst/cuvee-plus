@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/linear_search.dfy
-// SV-COMP ReachSafety-Loops/loops/linear_search.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/linear_search.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks linear_search(a,SIZE,3)
 
 // the constant array of the initializers of C, whose values are all x

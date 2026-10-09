@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/rew.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/rew.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-tiling/rew.yml (expected: safe), translated from the C program by hand:
 // a[i + 1] = 0 (if in bounds) and then a[i] = 3, such that each element is overwritten by 3, which is checked
 // to be at least 2
 //

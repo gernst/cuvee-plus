@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-new/gauss_sum.dfy
-// SV-COMP ReachSafety-Loops/loop-new/gauss_sum.yml (expected: safe), translated from the C program by hand: the sum
+// SV-COMP loop-new/gauss_sum.yml (expected: safe), translated from the C program by hand: the sum
 // of 1, ..., n is n * (n + 1) / 2
 //
 // findings: teq.dfy accelerates the loop of the sum to the closed form (n + n * n) / 2, the remaining goal is

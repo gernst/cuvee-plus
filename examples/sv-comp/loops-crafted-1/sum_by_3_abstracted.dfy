@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/sum_by_3_abstracted.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/sum_by_3_abstracted.yml (expected: safe), translated from the C program
+// SV-COMP loops-crafted-1/sum_by_3_abstracted.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a program of the folder; checks (i+j+k)/3 <= SIZE
 
 // the division of C, which truncates towards zero

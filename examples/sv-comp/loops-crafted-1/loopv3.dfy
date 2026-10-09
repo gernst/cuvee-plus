@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/loopv3.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/loopv3.yml (expected: safe), translated from the C program by
+// SV-COMP loops-crafted-1/loopv3.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of loopv1 with other constants or assertions; checks (j * 4) == i
 // note: the concrete loop bounds are symbolic, arbitrary positive values: SIZE for 50000001
 

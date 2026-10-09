@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_init8_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_init8_ground-1.yml (expected: unsafe), translated from the C
+// SV-COMP array-examples/standard_init8_ground-1.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of standard_init1_ground-1 with other constants or assertions; checks
 // a[x] == 48
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000

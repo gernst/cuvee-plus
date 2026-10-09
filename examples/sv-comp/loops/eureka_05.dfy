@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/eureka_05.dfy
-// SV-COMP ReachSafety-Loops/loops/eureka_05.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/eureka_05.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks array[i]==i
 
 // the constant array of the initializers of C, whose values are all x

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_two_index_01.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_two_index_01.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_two_index_01.yml (expected: safe), translated from the C
 // program by hand: b is filled with arbitrary values, copied into a with a second index j that runs along i, and a
 // and b are compared with both indices again
 //

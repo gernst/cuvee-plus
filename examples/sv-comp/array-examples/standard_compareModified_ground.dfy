@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-examples/standard_compareModified_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_compareModified_ground.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/standard_compareModified_ground.yml (expected: safe), translated from the C program by hand:
 // a flag rv is cleared if a and b differ at some position, while a is copied into c; if rv is still set, a and
 // b are checked to agree, and c is checked to agree with a
 //

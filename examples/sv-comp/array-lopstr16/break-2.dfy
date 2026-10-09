@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-lopstr16/break-2.dfy
-// SV-COMP ReachSafety-Arrays/array-lopstr16/break-2.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-lopstr16/break-2.yml (expected: safe), translated from the C program by hand:
 // the elements are set to 10 up to the middle, where the loop breaks, and they are checked there
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

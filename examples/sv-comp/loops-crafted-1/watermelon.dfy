@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/watermelon.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/watermelon.yml (expected: safe), translated from the C program by
+// SV-COMP loops-crafted-1/watermelon.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks is_divisible1 == is_divisible2
 
 var true: int;

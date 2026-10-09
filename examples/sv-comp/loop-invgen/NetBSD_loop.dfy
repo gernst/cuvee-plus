@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/NetBSD_loop.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/NetBSD_loop.yml (expected: safe), translated from the C program by hand: p
+// SV-COMP loop-invgen/NetBSD_loop.yml (expected: safe), translated from the C program by hand: p
 // counts from 0 to MAXPATHLEN, and stays within 0 and MAXPATHLEN
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

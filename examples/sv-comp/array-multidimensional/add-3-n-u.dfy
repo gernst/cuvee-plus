@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-multidimensional/add-3-n-u.dfy
-// SV-COMP ReachSafety-Arrays/array-multidimensional/add-3-n-u.yml (expected: safe), translated from the C program
+// SV-COMP array-multidimensional/add-3-n-u.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a variant of add-2-n-u with other constants or assertions; checks
 // C[i][j][k]==A[i][j][k]+B[i][j][k]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: m for 1000, n for 1500, p for 1800

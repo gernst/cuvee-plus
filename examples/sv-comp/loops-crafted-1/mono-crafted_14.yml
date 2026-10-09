@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loops-crafted-1/mono-crafted_14.yml
+# the Dafny translation of the SV-COMP task loops-crafted-1/mono-crafted_14.yml
 input_files: 'mono-crafted_14.dfy'
 
 properties:

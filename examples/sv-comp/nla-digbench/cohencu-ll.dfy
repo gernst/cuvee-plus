@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/cohencu-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/cohencu-ll.yml (expected: safe), translated from the C program by
+// SV-COMP nla-digbench/cohencu-ll.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: x == n^3 is computed by finite differences y and z, with the invariants checked in and
 // after the loop
 //

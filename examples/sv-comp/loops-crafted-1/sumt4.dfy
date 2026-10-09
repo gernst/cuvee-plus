@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/sumt4.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/sumt4.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops-crafted-1/sumt4.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: four counters count the remainders of l modulo 4, 3, 2, and their sum is checked to be l
 //
 // findings: the functions truth, quotient, and remainder of the C prelude in the output of -print dfy are written

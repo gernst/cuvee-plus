@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-industry-pattern/array_of_struct_single_elem_init.dfy
-// SV-COMP ReachSafety-Arrays/array-industry-pattern/array_of_struct_single_elem_init.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-industry-pattern/array_of_struct_single_elem_init.yml (expected: safe), translated from the C program by hand:
 // each struct gets a value n and p = 10 if n == 0, else 20; then a[3] gets n = 40 and p = 30; for i != 3, n ==
 // 0 implies p == 10, which is checked (the fields are arrays of their own)
 //

@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loop-invariants/eq2.yml
+# the Dafny translation of the SV-COMP task loop-invariants/eq2.yml
 input_files: 'eq2.dfy'
 
 properties:

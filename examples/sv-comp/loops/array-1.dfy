@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/array-1.dfy
-// SV-COMP ReachSafety-Loops/loops/array-1.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/array-1.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of array-2 with other constants or assertions; checks array[0]>=menor
 
 method main() returns (result: int) {

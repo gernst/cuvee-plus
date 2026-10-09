@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/poly1.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/poly1.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-tiling/poly1.yml (expected: safe), translated from the C program by hand:
 // a[i] = i * i, which is checked (long long is int)
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

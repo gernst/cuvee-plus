@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-crafted/simple_vardep_2.dfy
-// SV-COMP ReachSafety-Loops/loop-crafted/simple_vardep_2.yml (expected: safe), translated from the C program by
+// SV-COMP loop-crafted/simple_vardep_2.yml (expected: safe), translated from the C program by
 // hand: as simple_vardep_1, with k == 3 i and j == 2 i checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-fpi/sina3f.yml
+# the Dafny translation of the SV-COMP task array-fpi/sina3f.yml
 input_files: 'sina3f.dfy'
 
 properties:

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/cggmp2005_variant.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/cggmp2005_variant.yml (expected: safe), translated from the C program by
+// SV-COMP loop-lit/cggmp2005_variant.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks lo == hi
 
 method main() returns (result: int) {

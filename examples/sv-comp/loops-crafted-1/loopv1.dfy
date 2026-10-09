@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/loopv1.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/loopv1.yml (expected: safe), translated from the C program by hand: i
+// SV-COMP loops-crafted-1/loopv1.yml (expected: safe), translated from the C program by hand: i
 // increases by 6 or by 3, chosen arbitrarily, up to n, at most SIZE == 50000001, and is a multiple of 3 then
 //
 // findings: i increases by 6 or 3, chosen arbitrarily; the lemma states that a value whose two increments are

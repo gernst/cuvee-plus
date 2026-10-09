@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/bh2017-ex3.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/bh2017-ex3.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-lit/bh2017-ex3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks m <= 60; n <= 60; m == 60; n == 60
 
 method main() returns (result: int) {

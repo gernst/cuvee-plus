@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/zero_sum_const2.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/zero_sum_const2.yml (expected: safe), translated from the C program by
+// SV-COMP array-crafted/zero_sum_const2.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of zero_sum_const1 with other constants or assertions; checks sum == 0
 
 var SIZE: int;

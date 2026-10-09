@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/string-2.dfy
-// SV-COMP ReachSafety-Loops/loops/string-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/string-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of string-1 with other constants or assertions; checks found == 0 || found == 1
 
 // the bit operations of C on integers, declared only

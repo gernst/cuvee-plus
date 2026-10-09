@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/sendmail-close-angle.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/sendmail-close-angle.yml (expected: safe), translated from the C program by
+// SV-COMP loop-invgen/sendmail-close-angle.yml (expected: safe), translated from the C program by
 // hand: buf and in count up together nondeterministically until buf reaches bufferlen - 2, below inlen and
 // bufferlen, then buf is increased twice, with the bounds checked
 //

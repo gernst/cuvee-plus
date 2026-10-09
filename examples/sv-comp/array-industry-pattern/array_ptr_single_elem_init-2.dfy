@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-industry-pattern/array_ptr_single_elem_init-2.dfy
-// SV-COMP ReachSafety-Arrays/array-industry-pattern/array_ptr_single_elem_init-2.yml (expected: unsafe), translated from the C program by hand:
+// SV-COMP array-industry-pattern/array_ptr_single_elem_init-2.yml (expected: unsafe), translated from the C program by hand:
 // as array_single_elem_init, but a[15000] != 1 is checked after a[15000] = 1
 //
 // findings: unsafe: a[15000] is 1 when checked; -teq -simplify reduces the goal to false, i.e., finds the violation

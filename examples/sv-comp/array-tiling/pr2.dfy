@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/pr2.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/pr2.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-tiling/pr2.yml (expected: safe), translated from the C program by hand:
 // as mbpr2, but both positions in one loop, and MINVAL is not initialized (arbitrary)
 //
 // findings: MINVAL is arbitrary, hence the tests of the stores at 2 k and 2 k + 1 are the same in all iterations,

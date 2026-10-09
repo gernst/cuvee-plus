@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/phases_2-1.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/phases_2-1.yml (expected: unsafe), translated from the C program by
+// SV-COMP loop-acceleration/phases_2-1.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of phases_1-1 with other constants or assertions; checks x != y
 
 // the division of C, which truncates towards zero

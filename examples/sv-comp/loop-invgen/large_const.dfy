@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/large_const.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/large_const.yml (expected: safe), translated from the C program by hand: k
+// SV-COMP loop-invgen/large_const.yml (expected: safe), translated from the C program by hand: k
 // grows by one of the constants 4000, 2000, 10000 in each of n < 10 iterations, chosen by an arbitrary v, then
 // counts down n times and stays positive; the original assumes n < 2 in the loop, kept here, and returns otherwise,
 // which the translation ends the program with by assume false

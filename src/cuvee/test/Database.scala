@@ -25,7 +25,7 @@ object Database:
 
   val header = "file,verdict,goals,time"
 
-  // the task definition named in the header of an example, "SV-COMP <folder>/<task>.yml", below benchmarks/,
+  // the task definition named in the header of an example, "SV-COMP <folder>/<task>.yml", below sv-benchmarks/c/,
   // whose expected verdict for the property unreach-call is safe (true) or unsafe (false)
   // of a task definition itself, its own verdict
   def verdict(root: Path, file: Path): String =
@@ -36,7 +36,7 @@ object Database:
       else
         for
           m <- "SV-COMP (\\S+\\.yml)".r.findFirstMatchIn(text)
-          yml = root.resolve("benchmarks").resolve(m.group(1))
+          yml = root.resolve("sv-benchmarks").resolve("c").resolve(m.group(1))
           if Files.exists(yml)
         yield yml
     val verdict =

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/lcm2.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/lcm2.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/lcm2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of lcm1 with other constants or assertions; checks x*u + y*v == 2*a*b; x*u + y*v == 2*a*b
 
 method main() returns (result: int) {

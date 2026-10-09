@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-industry-pattern/array_shadowinit.yml
+# the Dafny translation of the SV-COMP task array-industry-pattern/array_shadowinit.yml
 input_files: 'array_shadowinit.dfy'
 
 properties:

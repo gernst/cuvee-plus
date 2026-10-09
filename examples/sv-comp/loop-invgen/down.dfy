@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/down.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/down.yml (expected: safe), translated from the C program by hand: k counts
+// SV-COMP loop-invgen/down.yml (expected: safe), translated from the C program by hand: k counts
 // up with i to an arbitrary n, then down with j from n to 0, and is positive before each decrement
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): k is a counter up and then down,

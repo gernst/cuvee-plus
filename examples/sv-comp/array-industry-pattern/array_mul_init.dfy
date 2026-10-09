@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-industry-pattern/array_mul_init.dfy
-// SV-COMP ReachSafety-Arrays/array-industry-pattern/array_mul_init.yml (expected: safe), translated from the C
+// SV-COMP array-industry-pattern/array_mul_init.yml (expected: safe), translated from the C
 // program by hand: a and b are initialized to the index, then at arbitrary positions overwritten by an arbitrary k
 // and its square, such that b is a or its square at all positions
 //

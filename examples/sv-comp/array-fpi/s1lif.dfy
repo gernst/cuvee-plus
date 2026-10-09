@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/s1lif.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/s1lif.yml (expected: safe), translated from the C program by hand: a is set
+// SV-COMP array-fpi/s1lif.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, incremented where it is 1, and summed up, which gives 2 N (s2lif to s5lif are variants)
 //
 // findings: open: as s12if, the update of a[k] by a case split on a[k] itself, which a lemma would need to read at

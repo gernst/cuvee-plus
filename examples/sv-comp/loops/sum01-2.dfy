@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/sum01-2.dfy
-// SV-COMP ReachSafety-Loops/loops/sum01-2.yml (expected: safe), translated from the C program by hand: sn adds 2
+// SV-COMP loops/sum01-2.yml (expected: safe), translated from the C program by hand: sn adds 2
 // for each i from 1 to n, and is 2 * n or 0
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

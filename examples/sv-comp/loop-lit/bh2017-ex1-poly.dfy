@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/bh2017-ex1-poly.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/bh2017-ex1-poly.yml (expected: safe), translated from the C program by
+// SV-COMP loop-lit/bh2017-ex1-poly.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 0 <= j; j <= 2 * i; 2 * i <= j + 6; j <= 4; 0 <= j; j <= 2
 // * i; 2 * i <= j + 6; j <= 4
 

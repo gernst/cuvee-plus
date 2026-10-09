@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/rewnif.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/rewnif.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-tiling/rewnif.yml (expected: safe), translated from the C program by hand:
 // a[i + 1] = i (if in bounds) and then a[i] = i, and a[i] >= i is checked
 //
 // findings: as rew with the stored values k at k + 1 and k at k, by the same lemma; closed (no output)

@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-fpi/modpf.yml
+# the Dafny translation of the SV-COMP task array-fpi/modpf.yml
 input_files: 'modpf.dfy'
 
 properties:

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ss1f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ss1f.yml (expected: unsafe), translated from the C program by hand: the
+// SV-COMP array-fpi/ss1f.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of ss1, whose elements are 2 initially
 //
 // findings: unsafe, not closed with the lemma of ss1, as expected

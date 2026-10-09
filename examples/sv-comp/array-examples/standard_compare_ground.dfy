@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-examples/standard_compare_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_compare_ground.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_compare_ground.yml (expected: safe), translated from the C
 // program by hand: a and b are filled with arbitrary values and compared, a flag rv, initially 1, is reset where
 // they differ, and if it is still set, they are equal
 //

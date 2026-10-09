@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/modn.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/modn.yml (expected: safe), translated from the C program by hand: sum counts
+// SV-COMP array-fpi/modn.yml (expected: safe), translated from the C program by hand: sum counts
 // to N, and a is set to sum % N, which is 0; sum[0] of the one-element array as a scalar
 //
 // findings: teq.dfy accelerates the loops, the remaining goal is N % N == 0, which a lemma of arithmetic states for

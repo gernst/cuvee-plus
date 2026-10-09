@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_partition_original_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_partition_original_ground.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/standard_partition_original_ground.yml (expected: safe), translated from the C program by hand:
 // the nonnegative elements of an arbitrary array are compacted into bb and the negative ones into cc, which are
 // checked
 //

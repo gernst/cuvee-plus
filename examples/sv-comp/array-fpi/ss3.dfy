@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ss3.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ss3.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP array-fpi/ss3.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of ss1 with other constants or assertions; checks sum[0] == (long long)N*(N+1)
 
 var N: int;

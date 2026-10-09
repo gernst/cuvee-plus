@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/rewrev.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/rewrev.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-tiling/rewrev.yml (expected: safe), translated from the C program by hand:
 // backwards from i = S - 2 to -1, a[i] = 7 (if i >= 0) and then a[i + 1] = 3, and each element is checked to be
 // at least 2
 //

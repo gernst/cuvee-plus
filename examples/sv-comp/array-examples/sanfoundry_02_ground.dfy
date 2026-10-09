@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/sanfoundry_02_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/sanfoundry_02_ground.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/sanfoundry_02_ground.yml (expected: safe), translated from the C program by hand:
 // the largest and second largest elements of an arbitrary array are computed, and each element is checked to be
 // at most the largest, and at most the second largest unless it is the largest
 //

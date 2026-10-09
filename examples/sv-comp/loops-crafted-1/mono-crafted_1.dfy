@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/mono-crafted_1.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/mono-crafted_1.yml (expected: safe), translated from the C program by
+// SV-COMP loops-crafted-1/mono-crafted_1.yml (expected: safe), translated from the C program by
 // hand: x counts to 1000000 and y, from 50000, counts along from x == 50000 on, then both count down until y is z,
 // i.e., 0, when x is 0 as well
 //

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/indp2f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/indp2f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/indp2f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of indp2 with other constants or assertions; checks a[i]==0
 
 var N: int;

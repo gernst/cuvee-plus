@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-crafted/simple_array_index_value_2.dfy
-// SV-COMP ReachSafety-Loops/loop-crafted/simple_array_index_value_2.yml (expected: safe), translated from the C
+// SV-COMP loop-crafted/simple_array_index_value_2.yml (expected: safe), translated from the C
 // program by hand: each element is an arbitrary value above its index, which is checked; unsigned in C, which the
 // assumption implies
 //

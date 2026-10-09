@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-acceleration/phases_1-1.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/phases_1-1.yml (expected: safe), translated from the C program by
+// SV-COMP loop-acceleration/phases_1-1.yml (expected: safe), translated from the C program by
 // hand: x counts by 1 up to 65520 (0xfff0), then by 2 up to 268435455 (0x0fffffff), and is even then
 //
 // findings: the update has two phases, by 1 below 65520 and by 2 from there on, which the lemma accelerates for a

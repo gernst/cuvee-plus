@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-new/nested-1.dfy
-// SV-COMP ReachSafety-Loops/loop-new/nested-1.yml (expected: safe), translated from the C program by hand: k counts
+// SV-COMP loop-new/nested-1.yml (expected: safe), translated from the C program by hand: k counts
 // the iterations of two nested loops over n and m, both at least 10, which are at least 100
 //
 // findings: the inner loop is summarized by sequences of traces, whose current values are sums of 1 over counters

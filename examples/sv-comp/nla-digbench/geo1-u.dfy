@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/geo1-u.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/geo1-u.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/geo1-u.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks x*z - x - y + 1 == 0; 1 + x - y == 0
 
 method main() returns (result: int) {

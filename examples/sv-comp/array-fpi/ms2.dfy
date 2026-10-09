@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ms2.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ms2.yml (expected: safe), translated from the C program by hand: a[i] = i %
+// SV-COMP array-fpi/ms2.yml (expected: safe), translated from the C program by hand: a[i] = i %
 // 2, and the sum of all but a[0] is checked to be at most N (ms3 to ms5 are variants)
 //
 // findings: open: the sum resets at i == 0 and then adds i % 2; as brs2, it needs the counter of the loop variable,

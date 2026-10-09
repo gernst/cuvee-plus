@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-fpi/condn.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/condn.yml (expected: safe), translated from the C program by hand: a is
+// SV-COMP array-fpi/condn.yml (expected: safe), translated from the C program by hand: a is
 // filled with arbitrary values, which are capped at N, and are at most N then
 //
 // findings: a clamp of each element to N, a store guarded by a comparison of the element at the position of the

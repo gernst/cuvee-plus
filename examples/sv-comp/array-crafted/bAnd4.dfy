@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/bAnd4.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/bAnd4.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-crafted/bAnd4.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of bAnd1 with other constants or assertions
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 

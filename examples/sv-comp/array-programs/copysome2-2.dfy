@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-programs/copysome2-2.dfy
-// SV-COMP ReachSafety-Arrays/array-programs/copysome2-2.yml (expected: unsafe), translated from the C program by hand:
+// SV-COMP array-programs/copysome2-2.yml (expected: unsafe), translated from the C program by hand:
 // as copysome2-1, but a3 is checked to agree with a2, which differs at z
 //
 // findings: unsafe: a2 and a3 differ at z = 150000; with the lemmas of copysome2-1, the goal is reduced to exactly

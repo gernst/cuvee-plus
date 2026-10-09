@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/sanfoundry_24-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/sanfoundry_24-1.yml (expected: safe), translated from the C program by
+// SV-COMP array-examples/sanfoundry_24-1.yml (expected: safe), translated from the C program by
 // hand: the even and the odd elements of an arbitrary array are printed by procedures that assert their parity
 // (inlined)
 //

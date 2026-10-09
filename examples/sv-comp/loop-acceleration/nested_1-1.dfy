@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/nested_1-1.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/nested_1-1.yml (expected: safe), translated from the C program by
+// SV-COMP loop-acceleration/nested_1-1.yml (expected: safe), translated from the C program by
 // hand: x counts up to 268435455 (0x0fffffff), which is odd, while an inner loop counts y from 0 to 10 in each
 // iteration
 //

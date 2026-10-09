@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-invgen/seq-3.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/seq-3.yml (expected: safe), translated from the C program by hand: k counts
+// SV-COMP loop-invgen/seq-3.yml (expected: safe), translated from the C program by hand: k counts
 // up in two loops, to n0 and n1, both arbitrary and possibly negative, then down in a loop to n0 + n1, and is
 // positive before each decrement
 //

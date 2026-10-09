@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/for_infinite_loop_1.dfy
-// SV-COMP ReachSafety-Loops/loops/for_infinite_loop_1.yml (expected: safe), translated from the C program by
+// SV-COMP loops/for_infinite_loop_1.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: an infinite loop over i checks x == 0, which stays 0, and the unreachable end checks it
 // again
 //

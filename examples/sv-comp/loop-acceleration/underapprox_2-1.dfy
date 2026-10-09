@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/underapprox_2-1.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/underapprox_2-1.yml (expected: unsafe), translated from the C program
+// SV-COMP loop-acceleration/underapprox_2-1.yml (expected: unsafe), translated from the C program
 // by ./Cuvee.sh -print dfy: a variant of underapprox_1-1 with other constants or assertions; checks x != 6
 
 method main() returns (result: int) {

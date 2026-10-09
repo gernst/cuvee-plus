@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_partition_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_partition_ground-1.yml (expected: unsafe), translated from the
+// SV-COMP array-examples/standard_partition_ground-1.yml (expected: unsafe), translated from the
 // C program by ./Cuvee.sh -print dfy: a variant of standard_partition_ground-2 with other constants or assertions;
 // checks bb[ x ] >= 0; cc[ x ] < 0
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000

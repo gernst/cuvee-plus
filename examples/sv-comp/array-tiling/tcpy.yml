@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-tiling/tcpy.yml
+# the Dafny translation of the SV-COMP task array-tiling/tcpy.yml
 input_files: 'tcpy.dfy'
 
 properties:

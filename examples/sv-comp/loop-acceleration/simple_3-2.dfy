@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/simple_3-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/simple_3-2.yml (expected: safe), translated from the C program by
+// SV-COMP loop-acceleration/simple_3-2.yml (expected: safe), translated from the C program by
 // hand: x counts by 2 up to an arbitrary bound N, an unsigned short, and is even then
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): x is counter(0, 2, n), which is

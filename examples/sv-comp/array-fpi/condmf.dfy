@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/condmf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/condmf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/condmf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of condm with other constants or assertions; checks a[i] % 2 == N % 2
 
 // the remainder of C, which truncates towards zero

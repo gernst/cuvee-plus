@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/revcpyswp2.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/revcpyswp2.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-tiling/revcpyswp2.yml (expected: safe), translated from the C program by hand:
 // a and b are reverse copies of arbitrary arrays, swapped twice element by element, and a is checked to be the
 // reverse copy
 //

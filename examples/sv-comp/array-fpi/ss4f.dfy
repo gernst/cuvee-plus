@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ss4f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ss4f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/ss4f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ss4 with other constants or assertions; checks sum[0] == N*(N+1)
 
 var N: int;

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/loopv2.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/loopv2.yml (expected: safe), translated from the C program by
+// SV-COMP loops-crafted-1/loopv2.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: i steps by 4 up to n with j = i + 2, then j and k = i step down by 4 while j is even, and
 // k is checked to be even
 //

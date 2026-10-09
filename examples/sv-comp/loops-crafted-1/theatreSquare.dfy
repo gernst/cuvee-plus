@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/theatreSquare.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/theatreSquare.yml (expected: safe), translated from the C program by
+// SV-COMP loops-crafted-1/theatreSquare.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks n_stones1 == n_stones2
 
 method correct_version(n: int, m: int, a: int) returns (result: int) {

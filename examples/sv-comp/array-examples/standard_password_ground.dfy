@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-examples/standard_password_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_password_ground.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/standard_password_ground.yml (expected: safe), translated from the C program by hand:
 // a flag result is cleared if password and guess differ at some position, and if it is still set, they are
 // checked to agree everywhere
 //

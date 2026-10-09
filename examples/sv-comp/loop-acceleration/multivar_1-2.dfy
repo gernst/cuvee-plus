@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/multivar_1-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/multivar_1-2.yml (expected: unsafe), translated from the C program by
+// SV-COMP loop-acceleration/multivar_1-2.yml (expected: unsafe), translated from the C program by
 // hand: the unsafe variant of multivar_1-1, where y starts at x + 1
 //
 // findings: unsafe, not closed, as expected: x and y are counters from x and x + 1, which differ

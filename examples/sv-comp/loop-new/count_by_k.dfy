@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-new/count_by_k.dfy
-// SV-COMP ReachSafety-Loops/loop-new/count_by_k.yml (expected: safe), translated from the C program by hand: i
+// SV-COMP loop-new/count_by_k.yml (expected: safe), translated from the C program by hand: i
 // counts by k, between 0 and 10, up to 1000000 * k, which it hits exactly, also for k == 0, when the loop does not
 // run
 //

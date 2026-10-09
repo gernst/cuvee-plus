@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-cav19/array_init_pair_symmetr2.dfy
-// SV-COMP ReachSafety-Arrays/array-cav19/array_init_pair_symmetr2.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-cav19/array_init_pair_symmetr2.yml (expected: safe), translated from the C program by hand:
 // a[i] = x and b[i] = y for values x > y chosen in each iteration, c[i] = a[i] - b[i], and c[i] > 0 is checked
 //
 // findings: the pairs x > y chosen in each iteration are an iteration constraint over two dependencies, abstracted

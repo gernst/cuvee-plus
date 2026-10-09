@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/sumt9.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/sumt9.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops-crafted-1/sumt9.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of sumt2 with other constants or assertions; checks (i+j+k+v1+v2+v3+v4+v5+v6) == l
 
 // the remainder of C, which truncates towards zero

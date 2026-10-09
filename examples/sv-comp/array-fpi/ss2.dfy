@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ss2.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ss2.yml (expected: safe), translated from the C program by hand: a is set to
+// SV-COMP array-fpi/ss2.yml (expected: safe), translated from the C program by hand: a is set to
 // 1 and summed up to N, then set to 0 plus N, the sum is increased by N * N, and added to each element, which gives
 // N * (N + 2) (ss3, ss4 are variants)
 //

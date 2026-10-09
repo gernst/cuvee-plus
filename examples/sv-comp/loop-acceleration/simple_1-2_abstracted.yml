@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loop-acceleration/simple_1-2_abstracted.yml
+# the Dafny translation of the SV-COMP task loop-acceleration/simple_1-2_abstracted.yml
 input_files: 'simple_1-2_abstracted.dfy'
 
 properties:

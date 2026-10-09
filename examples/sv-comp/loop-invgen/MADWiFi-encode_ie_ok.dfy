@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/MADWiFi-encode_ie_ok.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/MADWiFi-encode_ie_ok.yml (expected: safe), translated from the C program by
+// SV-COMP loop-invgen/MADWiFi-encode_ie_ok.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 0<=p; p+1<bufsize_0
 
 method main() returns (result: int) {

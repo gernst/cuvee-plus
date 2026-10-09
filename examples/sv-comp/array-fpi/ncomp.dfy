@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ncomp.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ncomp.yml (expected: safe), translated from the C program by hand: as
+// SV-COMP array-fpi/ncomp.yml (expected: safe), translated from the C program by hand: as
 // ifncomp, with the initial elements set before the loops from 1
 //
 // findings: open: three recurrences from 1, whose closed forms are 6 i + 6, 3 i * i + 3 i + 1 summed, and N + i * i

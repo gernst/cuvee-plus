@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/eqn1f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/eqn1f.yml (expected: unsafe), translated from the C program by hand: the
+// SV-COMP array-fpi/eqn1f.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of eqn1, where a increases by 20, such that b is not i * i + i + 1
 //
 // findings: unsafe, not closed with the lemmas of eqn1, as expected: b[i] is 10 * i * i - 8 * i + 1 then, which

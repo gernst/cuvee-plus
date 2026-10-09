@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ssinaf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ssinaf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/ssinaf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ssina with other constants or assertions; checks a[i] == (N+1) * (N+1)
 
 var N: int;

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/mono-crafted_6.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/mono-crafted_6.yml (expected: safe), translated from the C program by
+// SV-COMP loops-crafted-1/mono-crafted_6.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: x counts to 1000000, by 1 below 750000 and by 2 above, and x == 1000000 is checked
 //
 // findings: open: x counts by 1 below 750000 and by 2 above, a two-phase counter whose exit is reached exactly at

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/egcd-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/egcd-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/egcd-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks 1 == p * s - r * q; a == y * r + x * p; b == x * q + y * s; a - b ==
 // 0; p*x + r*y - b == 0; q*r - p*s + 1 == 0; q*x + s*y - b == 0
 

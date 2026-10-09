@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/pr4.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/pr4.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-tiling/pr4.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of pr2 with other constants or assertions; checks volArray[i] >= MINVAL || volArray[i] == 0
 
 // the division of C, which truncates towards zero

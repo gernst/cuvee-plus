@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-fpi/condnf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/condnf.yml (expected: unsafe), translated from the C program by hand: the
+// SV-COMP array-fpi/condnf.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of condn, which keeps the elements above N and caps the others
 //
 // findings: unsafe, not closed with the lemma of condn, as expected: the guard is not the clamp of the lemma

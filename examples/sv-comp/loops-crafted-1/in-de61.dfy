@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/in-de61.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/in-de61.yml (expected: safe), translated from the C program by
+// SV-COMP loops-crafted-1/in-de61.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of in-de20 with other constants or assertions; checks z==n
 
 method main() returns (result: int) {

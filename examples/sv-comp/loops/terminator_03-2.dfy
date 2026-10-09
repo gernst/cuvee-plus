@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/terminator_03-2.dfy
-// SV-COMP ReachSafety-Loops/loops/terminator_03-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/terminator_03-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: x grows by y > 0 until it reaches 100, which is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

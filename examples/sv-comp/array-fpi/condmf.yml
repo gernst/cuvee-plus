@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-fpi/condmf.yml
+# the Dafny translation of the SV-COMP task array-fpi/condmf.yml
 input_files: 'condmf.dfy'
 
 properties:

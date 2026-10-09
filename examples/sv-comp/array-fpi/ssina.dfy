@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ssina.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ssina.yml (expected: safe), translated from the C program by hand: a is set
+// SV-COMP array-fpi/ssina.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, its sum N added to each element, and the new sum N * (N + 1) added again, which gives (N + 1) * (N + 1)
 //
 // findings: the sum over the array after stores of constants at the counter is read at another counter with the

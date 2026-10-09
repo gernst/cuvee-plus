@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/divbin2.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/divbin2.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/divbin2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of divbin with other constants or assertions; checks A == q * b + r; A == q * b + r
 
 // the division of C, which truncates towards zero

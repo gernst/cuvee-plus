@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/count_up_down-2.dfy
-// SV-COMP ReachSafety-Loops/loops/count_up_down-2.yml (expected: unsafe), translated from the C program by
+// SV-COMP loops/count_up_down-2.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of count_up_down-1 with other constants or assertions; checks y!=n
 
 method main() returns (result: int) {

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/sum04-2.dfy
-// SV-COMP ReachSafety-Loops/loops/sum04-2.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/sum04-2.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: sn grows by 2 in 8 iterations, and sn == 16 or sn == 0 is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

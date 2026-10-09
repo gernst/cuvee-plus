@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/res2o.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/res2o.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/res2o.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of res1o with other constants or assertions; checks sum[0] <= 3*N
 
 var N: int;

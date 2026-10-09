@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-patterns/array2_pattern_buggy.yml
+# the Dafny translation of the SV-COMP task array-patterns/array2_pattern_buggy.yml
 input_files: 'array2_pattern_buggy.dfy'
 
 properties:

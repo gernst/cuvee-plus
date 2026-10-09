@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/vnew1.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/vnew1.yml (expected: safe), translated from the C program by hand: k
+// SV-COMP loops-crafted-1/vnew1.yml (expected: safe), translated from the C program by hand: k
 // counts down from n, unsigned and at most SIZE == 20000001, once per step of 3 of i up to n, then once for each of
 // n / 3 iterations, and is positive before each decrement
 //

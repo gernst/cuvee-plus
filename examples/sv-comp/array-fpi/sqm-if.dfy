@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/sqm-if.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/sqm-if.yml (expected: safe), translated from the C program by hand: as
+// SV-COMP array-fpi/sqm-if.yml (expected: safe), translated from the C program by hand: as
 // nsqm-if from 1 instead of N + 1, checked to be (i + 1) * (i + 1)
 //
 // findings: open: as nsqm-if from 1; the variant without the case is sqm

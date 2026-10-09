@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/xor2.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/xor2.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-crafted/xor2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of xor1 with other constants or assertions
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000
 

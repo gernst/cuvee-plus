@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/brs1f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/brs1f.yml (expected: unsafe), translated from the C program by hand: the
+// SV-COMP array-fpi/brs1f.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of brs1, whose sum starts at N / 2 + 10 in the first iteration, such that it exceeds N
 //
 // findings: unsafe, not closed with the lemmas of brs1, as expected

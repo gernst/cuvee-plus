@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/eqn2f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/eqn2f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/eqn2f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of eqn2 with other constants or assertions; checks b[i] == 2*i*i + 2*i + 1
 
 var N: int;

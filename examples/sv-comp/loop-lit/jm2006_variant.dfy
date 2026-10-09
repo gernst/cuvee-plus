@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/jm2006_variant.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/jm2006_variant.yml (expected: safe), translated from the C program by hand: x
+// SV-COMP loop-lit/jm2006_variant.yml (expected: safe), translated from the C program by hand: x
 // counts down from i to 0, y by 2 from j, z up from 0; if i == j, then y == -z is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

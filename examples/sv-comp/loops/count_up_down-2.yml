@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loops/count_up_down-2.yml
+# the Dafny translation of the SV-COMP task loops/count_up_down-2.yml
 input_files: 'count_up_down-2.dfy'
 
 properties:

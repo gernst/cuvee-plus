@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/s1if.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/s1if.yml (expected: safe), translated from the C program by hand: a of
+// SV-COMP array-fpi/s1if.yml (expected: safe), translated from the C program by hand: a of
 // arbitrary size N is set to 1, and the elements that are 1 are summed (the others would multiply), which gives N;
 // sum[0] of the one-element array as a scalar
 //

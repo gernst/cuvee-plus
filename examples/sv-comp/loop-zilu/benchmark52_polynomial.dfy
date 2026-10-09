@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark52_polynomial.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark52_polynomial.yml (expected: safe), translated from the C program by
+// SV-COMP loop-zilu/benchmark52_polynomial.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: i counts up while i * i < 100, and i == 10 is checked
 //
 // findings: open: the loop test i * i < 100 is non-linear; the goal needs that the first i from i0 with i * i >=

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/vnew2.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/vnew2.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops-crafted-1/vnew2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: i, j, k step by 3 up to n, and are checked to be equal and not a multiple of SIZE + 2
 //
 // findings: the functions truth, quotient, and remainder of the C prelude in the output of -print dfy are written

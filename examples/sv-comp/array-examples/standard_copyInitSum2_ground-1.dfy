@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_copyInitSum2_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_copyInitSum2_ground-1.yml (expected: unsafe), translated from
+// SV-COMP array-examples/standard_copyInitSum2_ground-1.yml (expected: unsafe), translated from
 // the C program by ./Cuvee.sh -print dfy: a variant of standard_copyInitSum2_ground-2 with other constants or
 // assertions; checks b[x] == 42 + x
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000

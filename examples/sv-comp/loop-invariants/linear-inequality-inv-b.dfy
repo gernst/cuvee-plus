@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-invariants/linear-inequality-inv-b.dfy
-// SV-COMP ReachSafety-Loops/loop-invariants/linear-inequality-inv-b.yml (expected: unsafe), translated from the C
+// SV-COMP loop-invariants/linear-inequality-inv-b.yml (expected: unsafe), translated from the C
 // program by hand: as linear-inequality-inv-a, but the sum is an unsigned char, which wraps around modulo 256, such
 // that it can be below the last value
 //

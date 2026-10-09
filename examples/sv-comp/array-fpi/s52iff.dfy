@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/s52iff.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/s52iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/s52iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of s52if with other constants or assertions; checks sum[0] == 6*N
 
 // the division of C, which truncates towards zero

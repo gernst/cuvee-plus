@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-patterns/array5_pattern_buggy.dfy
-// SV-COMP ReachSafety-Arrays/array-patterns/array5_pattern_buggy.yml (expected: unsafe), translated from the C
+// SV-COMP array-patterns/array5_pattern_buggy.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of array1_pattern_buggy with other constants or assertions; checks
 // sum == 0
 

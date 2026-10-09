@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/sina1.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/sina1.yml (expected: safe), translated from the C program by hand: sum
+// SV-COMP array-fpi/sina1.yml (expected: safe), translated from the C program by hand: sum
 // counts to N, and a is set to sum, which is N; sum[0] of the one-element array as a scalar
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

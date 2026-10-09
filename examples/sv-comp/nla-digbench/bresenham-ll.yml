@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/nla-digbench/bresenham-ll.yml
+# the Dafny translation of the SV-COMP task nla-digbench/bresenham-ll.yml
 input_files: 'bresenham-ll.dfy'
 
 properties:

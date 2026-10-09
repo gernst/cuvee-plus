@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/res1o.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/res1o.yml (expected: safe), translated from the C program by hand: two
+// SV-COMP array-fpi/res1o.yml (expected: safe), translated from the C program by hand: two
 // arrays of ones are summed up, which gives at most 2 N
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (res2o is a variant)

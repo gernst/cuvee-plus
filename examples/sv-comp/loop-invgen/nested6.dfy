@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/nested6.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/nested6.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-invgen/nested6.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks k>=2*i; k >= n; k <= n
 
 method main() returns (result: int) {

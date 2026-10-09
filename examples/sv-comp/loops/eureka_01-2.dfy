@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/eureka_01-2.dfy
-// SV-COMP ReachSafety-Loops/loops/eureka_01-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/eureka_01-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks distance[i]>=0
 // note: the concrete loop bounds are symbolic, arbitrary positive values: edgecount for 20
 

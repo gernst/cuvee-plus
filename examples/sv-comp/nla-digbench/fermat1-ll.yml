@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/nla-digbench/fermat1-ll.yml
+# the Dafny translation of the SV-COMP task nla-digbench/fermat1-ll.yml
 input_files: 'fermat1-ll.dfy'
 
 properties:

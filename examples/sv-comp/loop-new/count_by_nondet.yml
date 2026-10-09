@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loop-new/count_by_nondet.yml
+# the Dafny translation of the SV-COMP task loop-new/count_by_nondet.yml
 input_files: 'count_by_nondet.dfy'
 
 properties:

@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-lopstr16/sum_multi_array.yml
+# the Dafny translation of the SV-COMP task array-lopstr16/sum_multi_array.yml
 input_files: 'sum_multi_array.dfy'
 
 properties:

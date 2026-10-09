@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/modsf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/modsf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/modsf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of mods with other constants or assertions; checks a[i] == 1
 
 // the remainder of C, which truncates towards zero

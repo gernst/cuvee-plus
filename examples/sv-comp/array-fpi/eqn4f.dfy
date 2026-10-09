@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/eqn4f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/eqn4f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/eqn4f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of eqn4 with other constants or assertions; checks b[i] == 4*i*i + 4*i + 1
 
 var N: int;

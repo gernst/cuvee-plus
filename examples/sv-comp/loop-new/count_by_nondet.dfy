@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-new/count_by_nondet.dfy
-// SV-COMP ReachSafety-Loops/loop-new/count_by_nondet.yml (expected: safe), translated from the C program by hand: i
+// SV-COMP loop-new/count_by_nondet.yml (expected: safe), translated from the C program by hand: i
 // increases by an arbitrary step j between 1 and 999999 until it reaches 1000000, k counts the iterations, which
 // are at most 1000000
 //

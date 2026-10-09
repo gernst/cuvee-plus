@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-examples/standard_seq_init_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_seq_init_ground.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_seq_init_ground.yml (expected: safe), translated from the C
 // program by hand: a[0] is 7 and each further element is its predecessor plus 1, hence a is increasing
 //
 // findings: the array is filled by a recurrence, each element from its predecessor; the lemma gives its closed form

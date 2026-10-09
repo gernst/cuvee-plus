@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-programs/copysome1-2.dfy
-// SV-COMP ReachSafety-Arrays/array-programs/copysome1-2.yml (expected: unsafe), translated from the C program by
+// SV-COMP array-programs/copysome1-2.yml (expected: unsafe), translated from the C program by
 // hand: the unsafe variant of copysome1-1, where z is 150001 in the check, such that the position 150000, which is
 // not copied, is compared
 //

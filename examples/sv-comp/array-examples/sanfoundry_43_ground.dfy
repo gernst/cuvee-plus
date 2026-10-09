@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/sanfoundry_43_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/sanfoundry_43_ground.yml (expected: safe), translated from the C
+// SV-COMP array-examples/sanfoundry_43_ground.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of sanfoundry_02_ground with other constants or assertions
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 

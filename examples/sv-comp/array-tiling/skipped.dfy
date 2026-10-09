@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/skipped.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/skipped.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-tiling/skipped.yml (expected: safe), translated from the C program by hand:
 // the elements are arbitrary, and are clamped to their position at the positions 2 i - 2 and 2 i - 1, and a[i]
 // <= i is checked
 //

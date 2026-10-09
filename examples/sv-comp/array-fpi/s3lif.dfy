@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/s3lif.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/s3lif.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/s3lif.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of s1lif with other constants or assertions; checks sum[0] == 4*N
 
 var N: int;

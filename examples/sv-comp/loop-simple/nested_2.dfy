@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-simple/nested_2.dfy
-// SV-COMP ReachSafety-Loops/loop-simple/nested_2.yml (expected: safe), translated from the C program by hand: two
+// SV-COMP loop-simple/nested_2.yml (expected: safe), translated from the C program by hand: two
 // nested loops count a and b to 6, and both are 6 at the end
 //
 // findings: the inner loop is summarized per iteration of the outer one, by sequences of values and traces with

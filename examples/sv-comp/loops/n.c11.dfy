@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/n.c11.dfy
-// SV-COMP ReachSafety-Loops/loops/n.c11.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/n.c11.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: len counts up to 4 and is reset to 0 there, while a[len] is set to 0, and 0 <= len < 5 is checked
 //
 // findings: len is a counter that is reset to 1 when it reaches 4; two lemmas, generic in the reset value d and the

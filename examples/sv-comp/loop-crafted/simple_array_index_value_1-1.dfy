@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-crafted/simple_array_index_value_1-1.dfy
-// SV-COMP ReachSafety-Loops/loop-crafted/simple_array_index_value_1-1.yml (expected: safe), translated from the C
+// SV-COMP loop-crafted/simple_array_index_value_1-1.yml (expected: safe), translated from the C
 // program by hand: array[i] = i % 2, checked to be 0 at even and not 0 at odd positions (SIZE elements, unsigned
 // int is int)
 //

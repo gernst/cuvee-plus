@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-lopstr16/single_elem_safe.dfy
-// SV-COMP ReachSafety-Arrays/array-lopstr16/single_elem_safe.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-lopstr16/single_elem_safe.yml (expected: safe), translated from the C program by hand:
 // pointers are only compared with null, they are modeled by truth values, whether they are not null, where
 // malloc does not fail; the fields of structs are arrays of their own; each struct is allocated if q == 0, with
 // n = q % 2, and its pointer p is allocated if n == 0; then a[3] is a fresh struct with arbitrary fields; for i

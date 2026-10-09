@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-programs/copysome1-1.dfy
-// SV-COMP ReachSafety-Arrays/array-programs/copysome1-1.yml (expected: safe), translated from the C program by
+// SV-COMP array-programs/copysome1-1.yml (expected: safe), translated from the C program by
 // hand: a1 and a2 are filled with arbitrary values, a1 is copied into a2 except at the position z, and they agree
 // except at z
 //

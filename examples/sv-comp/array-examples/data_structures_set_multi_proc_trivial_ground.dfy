@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/data_structures_set_multi_proc_trivial_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/data_structures_set_multi_proc_trivial_ground.yml (expected: safe),
+// SV-COMP array-examples/data_structures_set_multi_proc_trivial_ground.yml (expected: safe),
 // translated from the C program by ./Cuvee.sh -print dfy: a program of the folder; checks set[ x ] != set[ y ];
 // set[ x ] != set[ y ]; set[ x ] != set[ y ]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000

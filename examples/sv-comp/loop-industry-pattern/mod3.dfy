@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-industry-pattern/mod3.dfy
-// SV-COMP ReachSafety-Loops/loop-industry-pattern/mod3.yml (expected: safe), translated from the C program by hand:
+// SV-COMP loop-industry-pattern/mod3.yml (expected: safe), translated from the C program by hand:
 // x is raised to the next multiple of 3 if it is not one, with y = 0, and otherwise by 4 or 5 with y = 1; if y == 0
 // at the end, x % 3 == 0 is checked; unsigned int is int without wrap-around, which keeps the remainders here, since
 // the additions that end at a multiple of 3 do not exceed 2^32 - 1, itself a multiple of 3

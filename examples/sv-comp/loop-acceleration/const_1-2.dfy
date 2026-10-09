@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/const_1-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/const_1-2.yml (expected: unsafe), translated from the C program by
+// SV-COMP loop-acceleration/const_1-2.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of const_1-1 with other constants or assertions; checks x == 1
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1024
 

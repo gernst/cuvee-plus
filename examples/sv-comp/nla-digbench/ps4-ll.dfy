@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/ps4-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/ps4-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/ps4-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: y counts up to k and x accumulates y^3, and 4 x == y^4 + 2 y^3 + y^2 is checked in and after the loop
 //
 // findings: open: needs the sum of cubes over a counter, as ps3-ll

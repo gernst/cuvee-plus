@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-fpi/pcompf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/pcompf.yml (expected: unsafe), translated from the C program by hand: the
+// SV-COMP array-fpi/pcompf.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of pcomp, which asserts that the cubes are squares
 //
 // findings: unsafe, not closed with the lemmas of pcomp, as expected

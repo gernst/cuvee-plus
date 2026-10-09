@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/sina3.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/sina3.yml (expected: safe), translated from the C program by hand: a and b
+// SV-COMP array-fpi/sina3.yml (expected: safe), translated from the C program by hand: a and b
 // are set to 1, the sum N of a is added to b into a, which is checked to be N + 1 (sina4, sina5 are variants)
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (sina4, sina5 are variants)

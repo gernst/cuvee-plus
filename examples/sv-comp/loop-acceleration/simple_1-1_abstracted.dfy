@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/simple_1-1_abstracted.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/simple_1-1_abstracted.yml (expected: unsafe), translated from the C
+// SV-COMP loop-acceleration/simple_1-1_abstracted.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks x % 2
 
 // the division of C, which truncates towards zero

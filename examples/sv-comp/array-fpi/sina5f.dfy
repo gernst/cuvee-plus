@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/sina5f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/sina5f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/sina5f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of sina5 with other constants or assertions; checks a[i] == 2*N
 
 var N: int;

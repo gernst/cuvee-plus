@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/indp5.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/indp5.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/indp5.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of indp1f with other constants or assertions; checks sum[0] == N
 
 var N: int;

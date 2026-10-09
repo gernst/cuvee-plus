@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loops-crafted-1/sum_by_3.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/sum_by_3.yml (expected: safe), translated from the C program by
+// SV-COMP loops-crafted-1/sum_by_3.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: i, j, k count up to n in three loops, each starting at the previous one, and their average
 // is checked to be at most SIZE
 //

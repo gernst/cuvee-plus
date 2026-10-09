@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_init5_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_init5_ground-1.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/standard_init5_ground-1.yml (expected: safe), translated from the C program by hand:
 // the array is set to 42, 43, 44, 45, 46 by five loops, and checked to be 46
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output), in about the time of the copies

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/sum03-2.dfy
-// SV-COMP ReachSafety-Loops/loops/sum03-2.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/sum03-2.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: sn grows by 2 and x by 1 in an infinite loop, and sn == 2 x or sn == 0 is checked (unsigned int is int)
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

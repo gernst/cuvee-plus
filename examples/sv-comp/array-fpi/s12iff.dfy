@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/s12iff.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/s12iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/s12iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of s12if with other constants or assertions; checks sum[0] == 2*N
 
 var N: int;

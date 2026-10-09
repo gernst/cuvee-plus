@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-multidimensional/add-3-n-u.yml
+# the Dafny translation of the SV-COMP task array-multidimensional/add-3-n-u.yml
 input_files: 'add-3-n-u.dfy'
 
 properties:

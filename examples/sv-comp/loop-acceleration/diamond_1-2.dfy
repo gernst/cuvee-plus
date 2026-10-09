@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-acceleration/diamond_1-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/diamond_1-2.yml (expected: unsafe), translated from the C program by
+// SV-COMP loop-acceleration/diamond_1-2.yml (expected: unsafe), translated from the C program by
 // hand: the unsafe variant of diamond_1-1, which counts by 1 if y is even and by 2 otherwise
 //
 // findings: unsafe, not closed with the lemmas of diamond_1-1, as expected: the cases remain where the parity of x

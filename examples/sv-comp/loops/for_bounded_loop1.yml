@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loops/for_bounded_loop1.yml
+# the Dafny translation of the SV-COMP task loops/for_bounded_loop1.yml
 input_files: 'for_bounded_loop1.dfy'
 
 properties:

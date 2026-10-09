@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-invariants/linear-inequality-inv-c.dfy
-// SV-COMP ReachSafety-Loops/loop-invariants/linear-inequality-inv-c.yml (expected: safe), translated from the C
+// SV-COMP loop-invariants/linear-inequality-inv-c.yml (expected: safe), translated from the C
 // program by hand: as linear-inequality-inv-a for unsigned short, n <= 65535 values v <= 65535, whose sum is at
 // most 65535 * 65535
 //

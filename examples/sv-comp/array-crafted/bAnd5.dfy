@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/bAnd5.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/bAnd5.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-crafted/bAnd5.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of bAnd1 with other constants or assertions
 
 // the bit operations of C on integers, declared only

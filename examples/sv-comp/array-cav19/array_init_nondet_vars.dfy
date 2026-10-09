@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-cav19/array_init_nondet_vars.dfy
-// SV-COMP ReachSafety-Arrays/array-cav19/array_init_nondet_vars.yml (expected: safe), translated from the C program
+// SV-COMP array-cav19/array_init_nondet_vars.yml (expected: safe), translated from the C program
 // by hand: a[i] = i + j + k with positive j and a positive k chosen in each iteration, and a[i] >= i + 2 is checked
 //
 // findings: the values k chosen in each iteration are positive, an iteration constraint, which is abstracted by the

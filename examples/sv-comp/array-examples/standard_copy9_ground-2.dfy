@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_copy9_ground-2.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_copy9_ground-2.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_copy9_ground-2.yml (expected: safe), translated from the C
 // program by hand: a1 is filled with arbitrary values and copied along a chain a2, ..., a9, a0, such that a0 equals
 // a1
 //

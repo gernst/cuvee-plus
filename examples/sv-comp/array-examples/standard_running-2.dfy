@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_running-2.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_running-2.yml (expected: safe), translated from the C program
+// SV-COMP array-examples/standard_running-2.yml (expected: safe), translated from the C program
 // by hand: a is filled with arbitrary values, b records whether each element of a is nonnegative, as 1 or 0, and a
 // flag f, initially 1, is reset if a and b disagree somewhere, which they do not
 //

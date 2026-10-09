@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/trex04_abstracted.dfy
-// SV-COMP ReachSafety-Loops/loops/trex04_abstracted.yml (expected: safe), translated from the C program by
+// SV-COMP loops/trex04_abstracted.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks x<=0
 
 method foo() {

@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Loops/loop-zilu/benchmark20_conjunctive.yml
+# the Dafny translation of the SV-COMP task loop-zilu/benchmark20_conjunctive.yml
 input_files: 'benchmark20_conjunctive.dfy'
 
 properties:

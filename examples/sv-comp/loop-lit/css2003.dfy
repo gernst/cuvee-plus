@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/css2003.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/css2003.yml (expected: safe), translated from the C program by hand: i counts
+// SV-COMP loop-lit/css2003.yml (expected: safe), translated from the C program by hand: i counts
 // up, j accumulates k, which counts down from 0 or 1, and 1 <= i + k <= 2 and i >= 1 are checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

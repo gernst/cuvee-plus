@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ifcompf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ifcompf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/ifcompf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ifcomp with other constants or assertions; checks c[i] == i*i*i
 
 var N: int;

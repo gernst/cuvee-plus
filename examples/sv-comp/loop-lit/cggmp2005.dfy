@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/cggmp2005.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/cggmp2005.yml (expected: safe), translated from the C program by hand: i
+// SV-COMP loop-lit/cggmp2005.yml (expected: safe), translated from the C program by hand: i
 // counts up by 2 from 1, j down by 1 from 10, until they cross, which happens at j == 6
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): i and j are counters with steps

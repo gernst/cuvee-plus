@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-new/count_by_1.dfy
-// SV-COMP ReachSafety-Loops/loop-new/count_by_1.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-new/count_by_1.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: i counts to 1000000, which is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

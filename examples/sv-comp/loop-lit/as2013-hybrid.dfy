@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/as2013-hybrid.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/as2013-hybrid.yml (expected: safe), translated from the C program by
+// SV-COMP loop-lit/as2013-hybrid.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 0 <= i; i <= 10
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 10
 

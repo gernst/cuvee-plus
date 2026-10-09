@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/sumt2.dfy
-// SV-COMP ReachSafety-Loops/loops-crafted-1/sumt2.yml (expected: safe), translated from the C program by hand: l
+// SV-COMP loops-crafted-1/sumt2.yml (expected: safe), translated from the C program by hand: l
 // counts to n, at most SIZE == 20000001, unsigned, and i and j count the even and the odd values of l, which add up
 // to l
 //

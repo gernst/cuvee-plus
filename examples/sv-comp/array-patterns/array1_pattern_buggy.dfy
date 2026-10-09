@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-patterns/array1_pattern_buggy.dfy
-// SV-COMP ReachSafety-Arrays/array-patterns/array1_pattern_buggy.yml (expected: unsafe), translated from the C
+// SV-COMP array-patterns/array1_pattern_buggy.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks sum == 0
 
 var ARR_SIZE: int;

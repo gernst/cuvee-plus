@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/fermat2-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/fermat2-ll.yml (expected: safe), translated from the C program by
+// SV-COMP nla-digbench/fermat2-ll.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of fermat1-ll with other constants or assertions; checks 4*(A+r) == u*u - v*v -
 // 2*u + 2*v; ((long long) 4*A) == u*u - v*v - 2*u + 2*v
 

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/invert_string-3.dfy
-// SV-COMP ReachSafety-Loops/loops/invert_string-3.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/invert_string-3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of invert_string-1 with other constants or assertions; checks str1[i] == str2[j]
 
 method main() returns (result: int) {

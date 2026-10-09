@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invariants/eq1.dfy
-// SV-COMP ReachSafety-Loops/loop-invariants/eq1.yml (expected: safe), translated from the C program by hand: w and
+// SV-COMP loop-invariants/eq1.yml (expected: safe), translated from the C program by hand: w and
 // x, and y and z, start equal and are incremented or decremented together, which is checked; unsigned int is int,
 // its wrap-around affects both alike
 //

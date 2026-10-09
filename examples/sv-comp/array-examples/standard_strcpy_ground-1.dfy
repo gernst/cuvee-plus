@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_strcpy_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_strcpy_ground-1.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/standard_strcpy_ground-1.yml (expected: safe), translated from the C program by hand:
 // src is copied into dst up to the first 0, and the copied prefix is checked to agree
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): the loop test reads the source,

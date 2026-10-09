@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/mods.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/mods.yml (expected: safe), translated from the C program by hand: a is set
+// SV-COMP array-fpi/mods.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, summed up to N, N is added to each element, which is then taken modulo N + 1, and checked to be 0
 //
 // findings: as modp, (N + 1) % (N + 1) == 0, by the same lemma; closed (no output)

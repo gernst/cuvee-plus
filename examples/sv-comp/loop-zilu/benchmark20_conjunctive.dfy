@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark20_conjunctive.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark20_conjunctive.yml (expected: safe), translated from the C program
+// SV-COMP loop-zilu/benchmark20_conjunctive.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: sum accumulates i up to n, from nonnegative values, and sum >= 0 is checked
 //
 // findings: teq.dfy sums i over the counter as (-n + n * n) / 2, which a lemma in the normal form of the simplifier

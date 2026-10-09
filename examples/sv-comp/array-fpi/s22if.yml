@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-fpi/s22if.yml
+# the Dafny translation of the SV-COMP task array-fpi/s22if.yml
 input_files: 's22if.dfy'
 
 properties:

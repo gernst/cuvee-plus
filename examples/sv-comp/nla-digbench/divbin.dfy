@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/divbin.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/divbin.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/divbin.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks A == q * b + r; A == q * b + r
 
 // the division of C, which truncates towards zero

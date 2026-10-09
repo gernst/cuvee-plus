@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-lopstr16/partial_lesser_bound-1.dfy
-// SV-COMP ReachSafety-Arrays/array-lopstr16/partial_lesser_bound-1.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-lopstr16/partial_lesser_bound-1.yml (expected: safe), translated from the C program by hand:
 // the array is set to 0, then the first half to 10, which is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

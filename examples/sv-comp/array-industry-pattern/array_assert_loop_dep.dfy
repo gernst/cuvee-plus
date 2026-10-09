@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-industry-pattern/array_assert_loop_dep.dfy
-// SV-COMP ReachSafety-Arrays/array-industry-pattern/array_assert_loop_dep.yml (expected: unsafe), translated from the C program by hand:
+// SV-COMP array-industry-pattern/array_assert_loop_dep.yml (expected: unsafe), translated from the C program by hand:
 // the array is set to 10, and the second loop checks a[i] == 10 before it sets a[i + 1] to 20, except at 15000,
 // such that a[1] is 20 when checked
 //

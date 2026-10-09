@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/heapsort.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/heapsort.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-invgen/heapsort.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks 1 <= j; j <= n; 1 <= j+1; j+1 <= n; 1 <= j; j <= n; 1 <= i; i <= n; 1
 // <= j; j <= n; 1 <= l; l <= n; 1 <= r; r <= n
 

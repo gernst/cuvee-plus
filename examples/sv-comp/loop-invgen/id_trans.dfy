@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/id_trans.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/id_trans.yml (expected: unsafe), translated from the C program by
+// SV-COMP loop-invgen/id_trans.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 0 <= j; j < material_length; 0 <= j/4; j/4 < nlen
 
 // the division of C, which truncates towards zero

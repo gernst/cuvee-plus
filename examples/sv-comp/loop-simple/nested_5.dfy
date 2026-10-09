@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-simple/nested_5.dfy
-// SV-COMP ReachSafety-Loops/loop-simple/nested_5.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-simple/nested_5.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nested_1 with other constants or assertions
 
 method main() returns (result: int) {

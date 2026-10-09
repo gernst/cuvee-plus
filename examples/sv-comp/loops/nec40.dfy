@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/nec40.dfy
-// SV-COMP ReachSafety-Loops/loops/nec40.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/nec40.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of nec11 with other constants or assertions; checks 0
 
 // the constant array of the initializers of C, whose values are all x

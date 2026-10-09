@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-programs/partial_mod_count_2.dfy
-// SV-COMP ReachSafety-Arrays/array-programs/partial_mod_count_2.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-programs/partial_mod_count_2.yml (expected: safe), translated from the C program by hand:
 // as partial_mod_count_1 with R = 2, where the count of zeros, the even i > N / 2, stays below N / 4
 //
 // findings: as partial_mod_count_1 with R = 2, whose count of zeros additionally counts the even positions above N

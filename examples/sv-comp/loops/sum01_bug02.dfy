@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/sum01_bug02.dfy
-// SV-COMP ReachSafety-Loops/loops/sum01_bug02.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/sum01_bug02.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks sn==((long long) n)*(2) || sn == 0
 
 method main() returns (result: int) {

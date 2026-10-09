@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-cav19/array_tiling_tcpy.dfy
-// SV-COMP ReachSafety-Arrays/array-cav19/array_tiling_tcpy.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-cav19/array_tiling_tcpy.yml (expected: safe), translated from the C program by hand:
 // acopy is a copy of a of length 2 S, filled from both ends at once, and checked to agree with a
 //
 // findings: a copy from both ends, at the positions c - k and k, by a lemma generic in c; open: the lemma does not

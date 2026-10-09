@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-crafted/zero_sum_m2.dfy
-// SV-COMP ReachSafety-Arrays/array-crafted/zero_sum_m2.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-crafted/zero_sum_m2.yml (expected: safe), translated from the C program by hand:
 // the elements of an array of shorts of arbitrary size are added to sum twice and subtracted twice, which is 0 then
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output), as zero_sum1 with two loops of

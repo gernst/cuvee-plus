@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/sina3f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/sina3f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/sina3f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of sina3 with other constants or assertions; checks a[i] == N + 1
 
 var N: int;

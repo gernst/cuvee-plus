@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/terminator_02-2.dfy
-// SV-COMP ReachSafety-Loops/loops/terminator_02-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/terminator_02-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: x is incremented, or x and z are decremented, nondeterministically, while x < 100 and z > 100, and
 // the negation of the test is checked at the end
 //

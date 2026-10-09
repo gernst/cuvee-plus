@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/modp.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/modp.yml (expected: safe), translated from the C program by hand: sum counts
+// SV-COMP array-fpi/modp.yml (expected: safe), translated from the C program by hand: sum counts
 // to N, a is set to it, and a[i] % N == 0 is checked
 //
 // findings: -teq -simplify reduces the goal to N % N == 0, which a lemma for the remainder of a nonzero value

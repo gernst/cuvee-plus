@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-industry-pattern/array_single_elem_init.dfy
-// SV-COMP ReachSafety-Arrays/array-industry-pattern/array_single_elem_init.yml (expected: unsafe), translated from the C program by hand:
+// SV-COMP array-industry-pattern/array_single_elem_init.yml (expected: unsafe), translated from the C program by hand:
 // a[i] = 1 and b[i] = i % 2 if q == 0, else a[i] = 0, and c[i] is set from b[i] if a[i] != 0; then a[15000] =
 // 1, and c[15000] == 0 is checked, which is arbitrary unless q was 0 at 15000
 //

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/multivar_1-1.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/multivar_1-1.yml (expected: safe), translated from the C program by
+// SV-COMP loop-acceleration/multivar_1-1.yml (expected: safe), translated from the C program by
 // hand: x and y start equal and are incremented together up to 1024, unsigned in C, nonnegative here
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): x and y are both counters with

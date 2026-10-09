@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-multidimensional/rev-3-u.dfy
-// SV-COMP ReachSafety-Arrays/array-multidimensional/rev-3-u.yml (expected: safe), translated from the C program by
+// SV-COMP array-multidimensional/rev-3-u.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks A[i][j][k]==B[n-i-1][n-j-1][n-k-1]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: n for 1000
 

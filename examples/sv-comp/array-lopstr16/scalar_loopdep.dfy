@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-lopstr16/scalar_loopdep.dfy
-// SV-COMP ReachSafety-Arrays/array-lopstr16/scalar_loopdep.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-lopstr16/scalar_loopdep.yml (expected: safe), translated from the C program by hand:
 // a[i] = y, where y counts up from 100, and a[i] >= 100 is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

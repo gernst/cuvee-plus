@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-multidimensional/init-non-constant-2-n-u.dfy
-// SV-COMP ReachSafety-Arrays/array-multidimensional/init-non-constant-2-n-u.yml (expected: safe), translated from
+// SV-COMP array-multidimensional/init-non-constant-2-n-u.yml (expected: safe), translated from
 // the C program by ./Cuvee.sh -print dfy: a program of the folder; checks A[i][j]==i+j+C
 
 method main() returns (result: int) {

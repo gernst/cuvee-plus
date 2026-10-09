@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-crafted/zero_sum1.yml
+# the Dafny translation of the SV-COMP task array-crafted/zero_sum1.yml
 input_files: 'zero_sum1.dfy'
 
 properties:

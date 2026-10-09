@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/geo1-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/geo1-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/geo1-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy, where the function number of the C prelude is written as a conditional: a geometric series x
 // accumulates y, which is multiplied by z, and the closed form is checked
 //

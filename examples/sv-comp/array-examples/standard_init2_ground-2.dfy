@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_init2_ground-2.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_init2_ground-2.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/standard_init2_ground-2.yml (expected: safe), translated from the C program by hand:
 // the array is set to 42 and then to 43, which is checked (standard_init3 to _init9 are variants with more
 // loops)
 //

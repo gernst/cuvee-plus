@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark25_linear_abstracted.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark25_linear_abstracted.yml (expected: safe), translated from the C
+// SV-COMP loop-zilu/benchmark25_linear_abstracted.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of benchmark02_linear_abstracted with other constants or assertions;
 // checks x==10
 

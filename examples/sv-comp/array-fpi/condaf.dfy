@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/condaf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/condaf.yml (expected: unsafe), translated from the C program by hand: the
+// SV-COMP array-fpi/condaf.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of conda, which increases the elements that are 0, of which there are none, and decreases the
 // others
 //

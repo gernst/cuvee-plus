@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark14_linear.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark14_linear.yml (expected: safe), translated from the C program by
+// SV-COMP loop-zilu/benchmark14_linear.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: i counts down to 0 from a nonnegative value, and i >= 0 is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-lopstr16/motivex.dfy
-// SV-COMP ReachSafety-Arrays/array-lopstr16/motivex.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-lopstr16/motivex.yml (expected: safe), translated from the C program by hand:
 // the fields p and q of a struct are set to i, and then to k and k * k for some i; p == q or q == p * p is
 // checked; unsigned short is int without wrap-around (the C program writes beyond the 10000 elements)
 //

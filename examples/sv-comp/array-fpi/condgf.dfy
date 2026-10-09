@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/condgf.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/condgf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/condgf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of condg with other constants or assertions; checks a[i] == 0
 
 var N: int;

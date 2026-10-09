@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/simple_3-1.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/simple_3-1.yml (expected: unsafe), translated from the C program by
+// SV-COMP loop-acceleration/simple_3-1.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of simple_1-1 with other constants or assertions; checks x % 2
 
 // the remainder of C, which truncates towards zero

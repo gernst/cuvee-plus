@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-fpi/ms1.yml
+# the Dafny translation of the SV-COMP task array-fpi/ms1.yml
 input_files: 'ms1.dfy'
 
 properties:

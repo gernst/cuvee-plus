@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-acceleration/diamond_1-1.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/diamond_1-1.yml (expected: safe), translated from the C program by
+// SV-COMP loop-acceleration/diamond_1-1.yml (expected: safe), translated from the C program by
 // hand: x counts by 2 if y is even, by 1 otherwise, up to 99, and has the parity of y then, unsigned in C
 //
 // findings: the guard of the update depends only on y, which the loop does not modify; the lemma splits such a

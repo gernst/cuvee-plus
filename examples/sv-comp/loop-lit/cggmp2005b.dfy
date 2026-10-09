@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/cggmp2005b.dfy
-// SV-COMP ReachSafety-Loops/loop-lit/cggmp2005b.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-lit/cggmp2005b.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks k == 4
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100, M for 20
 

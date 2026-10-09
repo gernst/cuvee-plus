@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/rewnifrev.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/rewnifrev.yml (expected: safe), translated from the C program by
+// SV-COMP array-tiling/rewnifrev.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks a[i] >= i
 
 var SIZE: int;

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/sorting_selectionsort_ground-2.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/sorting_selectionsort_ground-2.yml (expected: safe), translated from
+// SV-COMP array-examples/sorting_selectionsort_ground-2.yml (expected: safe), translated from
 // the C program by ./Cuvee.sh -print dfy: a variant of sorting_selectionsort_ground-1 with other constants or
 // assertions; checks a[x] <= a[y]; a[x] >= a[i]; a[x] <= a[y]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000

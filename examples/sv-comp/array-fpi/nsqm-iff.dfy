@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/nsqm-iff.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/nsqm-iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/nsqm-iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nsqm-if with other constants or assertions; checks a[i] == (i+1)*(i+1)
 
 var N: int;

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/nest-if3.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/nest-if3.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-invgen/nest-if3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks 1<=i
 
 method main() returns (result: int) {

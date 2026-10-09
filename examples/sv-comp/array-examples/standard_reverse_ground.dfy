@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_reverse_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_reverse_ground.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_reverse_ground.yml (expected: safe), translated from the C
 // program by hand: a is filled with arbitrary values, b is its reverse, which is checked element by element
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): the reads of the copy at 100000

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/id_build.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/id_build.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-invgen/id_build.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks 0 <= nlen-1-i; nlen-1-i < nlen
 
 method main() returns (result: int) {

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_copy9_ground-1.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_copy9_ground-1.yml (expected: unsafe), translated from the C
+// SV-COMP array-examples/standard_copy9_ground-1.yml (expected: unsafe), translated from the C
 // program by hand: the unsafe variant of standard_copy9_ground-2: a9 is filled with arbitrary values as well, the
 // copy from a8 goes to a0 instead of a9, and the last copy overwrites a0 with a9, which is arbitrary
 //

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loop-zilu/benchmark04_conjunctive.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark04_conjunctive.yml (expected: safe), translated from the C program
+// SV-COMP loop-zilu/benchmark04_conjunctive.yml (expected: safe), translated from the C program
 // by hand: j counts up from 0 to n, k down from at least n, and k is nonnegative then
 //
 // findings: the iteration constraint bounds the values of k, a counter with step -1 among three dependencies, which

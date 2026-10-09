@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/brs3f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/brs3f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP array-fpi/brs3f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of brs3 with other constants or assertions; checks sum[0] <= 3*N
 
 // the remainder of C, which truncates towards zero

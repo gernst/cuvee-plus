@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/array_2-1-simple.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/array_2-1-simple.yml (expected: unsafe), translated from the C
+// SV-COMP loop-acceleration/array_2-1-simple.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks A[2048/2] != B[2048/2]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 2048
 

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ifeqn1.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ifeqn1.yml (expected: safe), translated from the C program by hand: as eqn1,
+// SV-COMP array-fpi/ifeqn1.yml (expected: safe), translated from the C program by hand: as eqn1,
 // with the initial elements set in the first iteration of the loops: a holds 2, 4, ..., b the partial sums of a
 // plus 1, which are checked to be i * i + i + 1 (ifeqn2 to ifeqn5 are variants)
 //

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark05_conjunctive.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark05_conjunctive.yml (expected: safe), translated from the C program
+// SV-COMP loop-zilu/benchmark05_conjunctive.yml (expected: safe), translated from the C program
 // by hand: x counts up to n from below y, and y follows x once x passes it, such that y is n at the end
 //
 // findings: y follows the counter x once x has caught up with it, a follower, whose current value the lemma states

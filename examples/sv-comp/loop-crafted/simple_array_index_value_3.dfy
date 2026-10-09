@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-crafted/simple_array_index_value_3.dfy
-// SV-COMP ReachSafety-Loops/loop-crafted/simple_array_index_value_3.yml (expected: safe), translated from the C
+// SV-COMP loop-crafted/simple_array_index_value_3.yml (expected: safe), translated from the C
 // program by hand: array[i] = 2 i, by a value tmp that grows by 2, checked to be 2 i or 0
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (simple_array_index_value_4

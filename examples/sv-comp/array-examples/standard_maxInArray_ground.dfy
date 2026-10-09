@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_maxInArray_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_maxInArray_ground.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_maxInArray_ground.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy and by hand: the array is filled with arbitrary values, its maximum is computed
 // (starting from 0), and each element is checked to be at most the maximum
 //

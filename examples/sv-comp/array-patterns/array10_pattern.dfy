@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-patterns/array10_pattern.dfy
-// SV-COMP ReachSafety-Arrays/array-patterns/array10_pattern.yml (expected: safe), translated from the C program by
+// SV-COMP array-patterns/array10_pattern.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of array1_pattern with other constants or assertions; checks 4 * sum <=
 // (ARR_SIZE-1)*(ARR_SIZE+1)
 

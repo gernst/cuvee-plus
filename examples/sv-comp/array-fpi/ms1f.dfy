@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/ms1f.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/ms1f.yml (expected: unsafe), translated from the C program by hand: the
+// SV-COMP array-fpi/ms1f.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of ms1, which asserts that the sum, which is 0, is N
 //
 // findings: unsafe, not closed with the lemmas of ms1, as expected

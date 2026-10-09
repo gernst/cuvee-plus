@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_init3_ground-2.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_init3_ground-2.yml (expected: safe), translated from the C
+// SV-COMP array-examples/standard_init3_ground-2.yml (expected: safe), translated from the C
 // program by hand: a is initialized three times, to 42, 43, and 44, and is 44 then
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): the last of the three

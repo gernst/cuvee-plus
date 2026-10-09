@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/matrix-2-2.dfy
-// SV-COMP ReachSafety-Loops/loops/matrix-2-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/matrix-2-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks matriz[j][k]<maior
 
 method main() returns (result: int) {

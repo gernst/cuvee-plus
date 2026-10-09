@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/underapprox_1-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/underapprox_1-2.yml (expected: safe), translated from the C program
+// SV-COMP loop-acceleration/underapprox_1-2.yml (expected: safe), translated from the C program
 // by hand: y is doubled 6 times, starting from 1, and a power of 2 is not divisible by 3
 //
 // findings: y is doubled in each iteration, a geometric sequence, which the lemma accelerates to x0 * pow(c, n)

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/apache-escape-absolute.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/apache-escape-absolute.yml (expected: safe), translated from the C program
+// SV-COMP loop-invgen/apache-escape-absolute.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a program of the folder; checks cp-1 < urilen; 0 <= cp-1; cp < urilen; 0 <= cp; cp <
 // urilen; 0 <= cp; cp < urilen; 0 <= cp; cp+1 < urilen; 0 <= cp+1; cp < urilen; 0<=cp; cp < urilen; 0<=cp; c <
 // tokenlen; 0<=c; cp < urilen; 0<=cp

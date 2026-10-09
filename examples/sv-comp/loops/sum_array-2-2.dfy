@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/sum_array-2-2.dfy
-// SV-COMP ReachSafety-Loops/loops/sum_array-2-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loops/sum_array-2-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks C[i]==A[i]+B[i]
 
 method main() returns (result: int) {

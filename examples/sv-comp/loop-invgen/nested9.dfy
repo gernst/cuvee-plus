@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invgen/nested9.dfy
-// SV-COMP ReachSafety-Loops/loop-invgen/nested9.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP loop-invgen/nested9.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nested6 with other constants or assertions; checks k-i <= 2*n
 
 var __BLAST_NONDET: int;

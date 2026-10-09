@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/trex03-2_abstracted.dfy
-// SV-COMP ReachSafety-Loops/loops/trex03-2_abstracted.yml (expected: safe), translated from the C program by
+// SV-COMP loops/trex03-2_abstracted.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks x1==0 || x2==0 || x3==0
 
 // the bit operations of C on integers, declared only

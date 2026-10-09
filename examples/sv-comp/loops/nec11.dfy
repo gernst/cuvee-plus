@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/nec11.dfy
-// SV-COMP ReachSafety-Loops/loops/nec11.yml (expected: unsafe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/nec11.yml (expected: unsafe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of nec20 with other constants or assertions; checks len==5
 
 method main() returns (result: int) {

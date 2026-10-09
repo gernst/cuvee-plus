@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-multidimensional/init-non-constant-3-u.dfy
-// SV-COMP ReachSafety-Arrays/array-multidimensional/init-non-constant-3-u.yml (expected: safe), translated from the
+// SV-COMP array-multidimensional/init-non-constant-3-u.yml (expected: safe), translated from the
 // C program by ./Cuvee.sh -print dfy: a program of the folder; checks A[i][j][k]==i+j+k+C
 // note: the concrete loop bounds are symbolic, arbitrary positive values: n for 1000
 

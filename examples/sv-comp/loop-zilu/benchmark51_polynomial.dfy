@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-zilu/benchmark51_polynomial.dfy
-// SV-COMP ReachSafety-Loops/loop-zilu/benchmark51_polynomial.yml (expected: safe), translated from the C program by
+// SV-COMP loop-zilu/benchmark51_polynomial.yml (expected: safe), translated from the C program by
 // hand: x between 0 and 50 moves down by 1, or up by 1 from 0, for an arbitrary number of iterations, and stays
 // between 0 and 50; the increment for x > 50 never applies; the nondeterministic test as a variable c that is
 // havocked before each test

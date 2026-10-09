@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-fpi/s12if.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/s12if.yml (expected: safe), translated from the C program by hand: a is set
+// SV-COMP array-fpi/s12if.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, incremented where it is 1, and its elements are added to sum if they are 2, which gives 2 N (s22if to s52if
 // are variants)
 //

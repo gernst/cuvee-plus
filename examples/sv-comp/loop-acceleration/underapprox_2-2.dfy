@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/underapprox_2-2.dfy
-// SV-COMP ReachSafety-Loops/loop-acceleration/underapprox_2-2.yml (expected: safe), translated from the C program
+// SV-COMP loop-acceleration/underapprox_2-2.yml (expected: safe), translated from the C program
 // by hand: as underapprox_1-2, with the assertion on x, which counts to 6
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): the assertion is on the counter

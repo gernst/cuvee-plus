@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/nla-digbench/geo2-ll.dfy
-// SV-COMP ReachSafety-Loops/nla-digbench/geo2-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
+// SV-COMP nla-digbench/geo2-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of geo1-ll with other constants or assertions; checks 1 + x*z - x - z*y == 0; 1 + x*z - x -
 // z*y == 0
 

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-tiling/nr2.dfy
-// SV-COMP ReachSafety-Arrays/array-tiling/nr2.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-tiling/nr2.yml (expected: safe), translated from the C program by hand:
 // as pr2, with MINVAL = 2, where an inner loop j = 2, 1 stores j or 0 at 2 i - j
 //
 // findings: open: the inner loop j = 2, 1 is a nested loop, whose two iterations -teq summarizes by iteration

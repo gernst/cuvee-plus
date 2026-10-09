@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-cav19/array_init_pair_sum_const.dfy
-// SV-COMP ReachSafety-Arrays/array-cav19/array_init_pair_sum_const.yml (expected: safe), translated from the C
+// SV-COMP array-cav19/array_init_pair_sum_const.yml (expected: safe), translated from the C
 // program by hand: a[i] = 1, b[i] = 2, c[i] = a[i] + b[i], and c[i] >= 3 is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)

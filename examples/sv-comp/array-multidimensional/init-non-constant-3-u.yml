@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-multidimensional/init-non-constant-3-u.yml
+# the Dafny translation of the SV-COMP task array-multidimensional/init-non-constant-3-u.yml
 input_files: 'init-non-constant-3-u.dfy'
 
 properties:

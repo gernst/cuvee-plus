@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-cav19/array_init_pair_symmetr.dfy
-// SV-COMP ReachSafety-Arrays/array-cav19/array_init_pair_symmetr.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-cav19/array_init_pair_symmetr.yml (expected: safe), translated from the C program by hand:
 // a[i] = x and b[i] = -x for a value x chosen in each iteration, c[i] = a[i] + b[i], and c[i] == 0 is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): a[i] + b[i] is x + -x

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-programs/partial_mod_count_limited_1.dfy
-// SV-COMP ReachSafety-Arrays/array-programs/partial_mod_count_limited_1.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-programs/partial_mod_count_limited_1.yml (expected: safe), translated from the C program by hand:
 // a[i] = i + 1, overwritten by i % R = 0 with R = 1 while the count k of zeros is below lim < N, and the count
 // j of zeros is checked to stay below N (unsigned R is int)
 //

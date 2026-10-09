@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-examples/standard_copyInitSum3_ground.dfy
-// SV-COMP ReachSafety-Arrays/array-examples/standard_copyInitSum3_ground.yml (expected: safe), translated from the C program by hand:
+// SV-COMP array-examples/standard_copyInitSum3_ground.yml (expected: safe), translated from the C program by hand:
 // a is set to 42 and copied into b, then i is added to b[i] and a[i] subtracted, which leaves b[i] == i
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (standard_copyInitSum2_ground-1

@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loops/vogal-1.dfy
-// SV-COMP ReachSafety-Loops/loops/vogal-1.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
+// SV-COMP loops/vogal-1.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of vogal-2 with other constants or assertions; checks cont_aux==cont
 
 // the constant array of the initializers of C, whose values are all x

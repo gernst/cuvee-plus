@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-invariants/const.dfy
-// SV-COMP ReachSafety-Loops/loop-invariants/const.yml (expected: safe), translated from the C program by hand: s
+// SV-COMP loop-invariants/const.yml (expected: safe), translated from the C program by hand: s
 // stays 0, since it is only incremented if it is not 0, which is checked at nondeterministic points
 //
 // findings: the value s starts at 0 and changes only where it is not 0; a lemma, generic in the change, states that

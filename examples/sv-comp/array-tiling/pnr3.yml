@@ -1,6 +1,6 @@
 format_version: '2.0'
 
-# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-tiling/pnr3.yml
+# the Dafny translation of the SV-COMP task array-tiling/pnr3.yml
 input_files: 'pnr3.dfy'
 
 properties:

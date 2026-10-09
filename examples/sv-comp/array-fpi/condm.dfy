@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/array-fpi/condm.dfy
-// SV-COMP ReachSafety-Arrays/array-fpi/condm.yml (expected: safe), translated from the C program by hand: a of
+// SV-COMP array-fpi/condm.yml (expected: safe), translated from the C program by hand: a of
 // arbitrary size N is set to 0, then 2 or 1 is added to each element, depending on the parity of N, which the
 // elements have then
 //

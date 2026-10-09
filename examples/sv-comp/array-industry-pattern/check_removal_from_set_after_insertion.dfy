@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/array-industry-pattern/check_removal_from_set_after_insertion.dfy
-// SV-COMP ReachSafety-Arrays/array-industry-pattern/check_removal_from_set_after_insertion.yml (expected: unsafe),
+// SV-COMP array-industry-pattern/check_removal_from_set_after_insertion.yml (expected: unsafe),
 // translated from the C program by ./Cuvee.sh -print dfy: a program of the folder; checks set[i] != element
 // note: the concrete loop bounds are symbolic, arbitrary positive values: SIZE for 100000
 
