@@ -246,7 +246,7 @@ theorem current_trace_second_phase (x : Int) (s : Int) (m : Nat) (b c : Int) (hx
   | zero => simp [counter, butlast, trace, current]
   | succ k ih =>
     simp only [butlast_counter_succ, trace, current]
-    rw [if_neg (by omega), ih (x + c) (s + 1) (by omega)]
+    rw [ite_eq_right (by omega), ih (x + c) (s + 1) (by omega)]
     push_cast; grind
 
 -- a map over a counter shifted by one is the map of the shifted function
@@ -777,7 +777,7 @@ theorem current_maxs_consts (x : Int) (y : Int) (n : Nat) :
     cases n with
     | zero => simp [consts, butlast, maxs, trace, current]
     | succ m =>
-      simp only [if_neg (Nat.succ_ne_zero m)]
+      simp only [ite_eq_right (Nat.succ_ne_zero m)]
       simp only [maxs, consts, butlast, trace, current]
       induction m generalizing x with
       | zero => simp [consts, butlast, trace, current]; grind
@@ -804,7 +804,7 @@ theorem current_mins_consts (x : Int) (y : Int) (n : Nat) :
     cases n with
     | zero => simp [consts, butlast, mins, trace, current]
     | succ m =>
-      simp only [if_neg (Nat.succ_ne_zero m)]
+      simp only [ite_eq_right (Nat.succ_ne_zero m)]
       simp only [mins, consts, butlast, trace, current]
       induction m generalizing x with
       | zero => simp [consts, butlast, trace, current]; grind
@@ -843,16 +843,16 @@ theorem current_trace_two_phases (x0 : Int) (n : Nat) (b : Int)
       intro s x hx
       simp only [butlast_counter_succ, trace, current]
       by_cases e : x < b
-      · rw [if_pos e, ih (s + 1) (x + 1) (by omega)]
+      · rw [ite_eq_left e, ih (s + 1) (x + 1) (by omega)]
         push_cast
         by_cases f : (m : Int) ≤ b - (x + 1)
-        · rw [if_pos f, if_pos (by omega)]; omega
-        · rw [if_neg f, if_neg (by omega)]; grind
+        · rw [ite_eq_left f, ite_eq_left (by omega)]; omega
+        · rw [ite_eq_right f, ite_eq_right (by omega)]; grind
       · have : x = b := by omega
         subst this
-        rw [if_neg e, current_trace_second_phase (x + c) (s + 1) m x c (by omega) hc]
+        rw [ite_eq_right e, current_trace_second_phase (x + c) (s + 1) m x c (by omega) hc]
         push_cast
-        rw [if_neg (by omega)]
+        rw [ite_eq_right (by omega)]
         grind
 
 -- a follower: y increases by 1 whenever it does not exceed the value x of a counter with step 1, hence y is the
@@ -877,8 +877,8 @@ theorem current_trace_catch_up (y0 : Int) (x0 : Int) (n : Nat) :
       intro s y x hxy
       simp only [butlast_counter_succ, List.zip_cons_cons, trace, current]
       by_cases e : y ≤ x
-      · rw [if_pos e, ih (s + 1) (y + 1) (x + 1) (by omega)]; push_cast; split <;> split <;> omega
-      · rw [if_neg e, ih (s + 1) y (x + 1) (by omega)]; push_cast; split <;> split <;> omega
+      · rw [ite_eq_left e, ih (s + 1) (y + 1) (x + 1) (by omega)]; push_cast; split <;> split <;> omega
+      · rw [ite_eq_right e, ih (s + 1) y (x + 1) (by omega)]; push_cast; split <;> split <;> omega
 
 -- a flag, initially x0, that is set to c whenever D holds, is x0 at the end iff D never held, otherwise c
 -- (from standard_compare_ground)
@@ -903,7 +903,7 @@ theorem current_trace_flag (x0 : Int) (c : Int) (n : Nat) (hs : List Int)
       simp only [trace, current, invs]
       rw [ih]
       by_cases d : D k h
-      · simp only [d, if_true, not_true, false_and, if_false]
+      · simp only [d, ite_true, not_true, false_and, ite_false]
         -- once set to c, the flag stays c
         clear ih
         induction ps with
@@ -970,7 +970,7 @@ theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
       | zero => simp [counter, butlast, trace, current, maps, sum]
       | succ t ih =>
         simp only [butlast_counter_succ, List.zip_cons_cons, trace, current, maps, sum]
-        rw [if_neg (by omega), ih (s + 1) (G s + x) (by omega)]
+        rw [ite_eq_right (by omega), ih (s + 1) (G s + x) (by omega)]
         omega
     cases n with
     | zero => simp [counter, butlast, trace, current]
@@ -978,7 +978,7 @@ theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
       have h := later 1 c m (by omega)
       rw [integer_eq, natural_eq, show ((↑(m + 1) : Int) - 1).toNat = m by omega, ← maps_counter_shift 0 m G]
       simp only [butlast_counter_succ, List.zip_cons_cons, trace, current, Int.zero_add] at h ⊢
-      simp only [if_true, Nat.succ_ne_zero, if_false]
+      simp only [ite_true, Nat.succ_ne_zero, ite_false]
       rw [h]
 
 -- earlier
@@ -1215,10 +1215,10 @@ theorem indexof_counter_up (j : Int) (i : Int) (n : Nat) :
       have hocc : occurs j (butlast (counter (i + 1) 1 m)) ↔ i + 1 ≤ j := by
         rw [occurs_counter_up, integer_eq]; push_cast at h2; omega
       by_cases e : i + 1 ≤ j
-      · rw [if_pos (hocc.mpr e), ih (i + 1) e (by push_cast at h2; omega), natural_eq, natural_eq]
+      · rw [ite_eq_left (hocc.mpr e), ih (i + 1) e (by push_cast at h2; omega), natural_eq, natural_eq]
         show (j - (i + 1)).toNat + 1 = (j - i).toNat
         omega
-      · rw [if_neg (fun h => e (hocc.mp h)), natural_eq]
+      · rw [ite_eq_right (fun h => e (hocc.mp h)), natural_eq]
         show (0 : Nat) = (j - i).toNat
         omega
 
@@ -1235,10 +1235,10 @@ theorem indexof_counter_down (j : Int) (i : Int) (n : Nat) :
       have hocc : occurs j (butlast (counter (i + -1) (-1) m)) ↔ j ≤ i + -1 := by
         rw [occurs_counter_down, integer_eq]; push_cast at h1; omega
       by_cases e : j ≤ i + -1
-      · rw [if_pos (hocc.mpr e), ih (i + -1) (by push_cast at h1; omega) e, natural_eq, natural_eq]
+      · rw [ite_eq_left (hocc.mpr e), ih (i + -1) (by push_cast at h1; omega) e, natural_eq, natural_eq]
         show (i + -1 - j).toNat + 1 = (i - j).toNat
         omega
-      · rw [if_neg (fun h => e (hocc.mp h)), natural_eq]
+      · rw [ite_eq_right (fun h => e (hocc.mp h)), natural_eq]
         show (0 : Nat) = (i - j).toNat
         omega
 
@@ -1303,7 +1303,7 @@ theorem selects_shifts (a : Int → Int) (n : Nat) (i : Int) (d : Int) :
     apply maps_counter_congr
     intro k hk
     simp only [shifts]
-    rw [shifts_general d hd a k n i a (fun _ _ => rfl), if_pos hk]
+    rw [shifts_general d hd a k n i a (fun _ _ => rfl), ite_eq_left hk]
 
 -- the elements of stores at the positions of a counter, read at the positions of the same counter, are the stored
 -- values; both counters are patterns, since they are different trace variables in programs
@@ -1474,12 +1474,12 @@ theorem current_trace_prefix_sums (b0 : Int → Int) (n : Nat) (j : Int)
       rw [ih (s + 1)]
       push_cast
       by_cases e1 : s + 1 ≤ j ∧ j ≤ s + 1 + m
-      · rw [if_pos e1, if_pos (by omega), show (j - s).toNat = (j - (s + 1)).toNat + 1 by omega, sum_counter_succ]
+      · rw [ite_eq_left e1, ite_eq_left (by omega), show (j - s).toNat = (j - (s + 1)).toNat + 1 by omega, sum_counter_succ]
         grind
-      · rw [if_neg e1]
+      · rw [ite_eq_right e1]
         by_cases e2 : j = s
         · subst e2; (simp [counter, butlast, maps, sum]) <;> omega
-        · rw [if_neg (by omega)]; grind
+        · rw [ite_eq_right (by omega)]; grind
 
 -- the same with two added terms, since a higher-order summand matches a single summand only (see TODO.md)
 -- (from nsqm, nsqmf, pcomp, pcompf, sqm)
@@ -1515,12 +1515,12 @@ theorem current_trace_prefix_sums_add (b0 : Int → Int) (n : Nat) (j : Int)
       rw [ih (s + 1)]
       push_cast
       by_cases e1 : s + 1 ≤ j ∧ j ≤ s + 1 + m
-      · rw [if_pos e1, if_pos (by omega), show (j - s).toNat = (j - (s + 1)).toNat + 1 by omega, sum_counter_succ]
+      · rw [ite_eq_left e1, ite_eq_left (by omega), show (j - s).toNat = (j - (s + 1)).toNat + 1 by omega, sum_counter_succ]
         grind
-      · rw [if_neg e1]
+      · rw [ite_eq_right e1]
         by_cases e2 : j = s
         · subst e2; (simp [counter, butlast, maps, sum]) <;> omega
-        · rw [if_neg (by omega)]; grind
+        · rw [ite_eq_right (by omega)]; grind
 
 -- the special case of a constant added term
 -- (from standard_seq_init_ground)
@@ -1547,7 +1547,7 @@ theorem current_trace_prefix_const (a0 : Int → Int) (n : Nat) (c : Int)
       push_cast
       by_cases e : j = s + 1
       · subst e; simp; (repeat' split) <;> grind
-      · simp only [e, if_false]; (repeat' split) <;> grind
+      · simp only [e, ite_false]; (repeat' split) <;> grind
 
 -- sum, which is linear, and the linear transformations are moved to the outside
 
