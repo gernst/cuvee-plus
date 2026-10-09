@@ -220,7 +220,7 @@ object Rewrite:
       // which is determined by the expression, e.g. guards follow from the test of the loop
       case (Trace(init, deps, acc, ys, update), Trace(init_, deps_, acc_, ys_, update_)) =>
         val self_ = self.map(x => (Butlast(x), acc_))
-        val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)), deps_, ys_, self_)
+        lazy val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)).copy(self = self_), deps_, ys_)
         for
           subst1 <- matches(config, state, ctx, params, vars, locals, init, self, bound, avoid, init_, subst)
           subst2 <- combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(acc -> acc_), subst1):
@@ -230,13 +230,13 @@ object Rewrite:
 
       case (Maps(deps, ys, update), Maps(deps_, ys_, update_)) =>
         val self_ = self.map(y => (y, update_))
-        val inner = Simplify.combinator(config, state, ctx, deps_, ys_, self_)
+        lazy val inner = Simplify.combinator(config, state, ctx.copy(self = self_), deps_, ys_)
         combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(), subst):
           (locals_, bound_, avoid_, subst) =>
             matches(config, state, inner, params, vars, locals_, update, None, bound_, avoid_, update_, subst)
 
       case (Invs(deps, ys, body), Invs(deps_, ys_, body_)) =>
-        val inner = Simplify.combinator(config, state, ctx, deps_, ys_)
+        lazy val inner = Simplify.combinator(config, state, ctx, deps_, ys_)
         combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(), subst):
           (locals_, bound_, avoid_, subst) =>
             matches(config, state, inner, params, vars, locals_, body, None, bound_, avoid_, body_, subst)

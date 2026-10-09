@@ -146,23 +146,21 @@ object Simplify extends Transform:
       // and of a map, Y == maps(...), whose update is the value of Y at each position, such that the update
       // assumes also the invariants of the context that mention ⌊X⌋ or Y (see invariants), e.g. the test of a loop;
       // the right-hand side is simplified like the combinator below, and then rewritten at the top (see simplify)
-      case Eq(x: Var, Trace(init, deps, acc, bound, update)) =>
+      case Eq(x: Var, Trace(init, deps, acc, bound, update)) if ctx.self.isEmpty =>
         val left_ = simplify(config, state, ctx.neutral, x)
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
-        val self = (Butlast(x), vars_.head)
-        val inner = combinator(config, state, ctx.bind(List(vars_.head)), deps_, vars_.tail, Some(self))
+        val inner = combinator(config, state, ctx.bind(List(vars_.head)).copy(self = Some((Butlast(x), vars_.head))), deps_, vars_.tail)
         val update_ = simplify(config, state, inner, re(update))
         val right_ = trace(config, state, ctx.neutral, init_, deps_, vars_.head, vars_.tail, update_)
         eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
 
-      case Eq(y: Var, Maps(deps, bound, update)) =>
+      case Eq(y: Var, Maps(deps, bound, update)) if ctx.self.isEmpty =>
         val left_ = simplify(config, state, ctx.neutral, y)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val self = (y, re(update))
-        val update_ = simplify(config, state, combinator(config, state, ctx, deps_, bound_, Some(self)), re(update))
+        val update_ = simplify(config, state, combinator(config, state, ctx.copy(self = Some((y, re(update)))), deps_, bound_), re(update))
         val right_ = maps(config, state, ctx.neutral, deps_, bound_, update_)
         eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(y)))
 
@@ -322,6 +320,21 @@ object Simplify extends Transform:
 
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see combinator)
+      // within the update of a combinator that defines a dependency, the updates and bodies of further combinators
+      // are kept as they are, since their iterations would be entered again and again (see Context.self)
+      case Trace(init, deps, acc, bound, update) if ctx.self.nonEmpty =>
+        val init_ = simplify(config, state, ctx.neutral, init)
+        val deps_ = simplify(config, state, ctx.neutral, deps)
+        trace(config, state, ctx, init_, deps_, acc, bound, update)
+
+      case Maps(deps, bound, update) if ctx.self.nonEmpty =>
+        val deps_ = simplify(config, state, ctx.neutral, deps)
+        maps(config, state, ctx, deps_, bound, update)
+
+      case Invs(deps, bound, body) if ctx.self.nonEmpty =>
+        val deps_ = simplify(config, state, ctx.neutral, deps)
+        invs(config, state, ctx, deps_, bound, body)
+
       case Trace(init, deps, acc, bound, update) =>
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
@@ -364,23 +377,16 @@ object Simplify extends Transform:
 
   // the context of the updates and bodies of combinators, which binds the variables for the dependencies,
   // and which assumes the invariants of the context over the same dependencies and the iterations of loops;
-  // `self` is the dependency that the combinator defines and its value in the update, if known (see once)
-  def combinator(
-      config: Config,
-      state: State,
-      ctx: Context,
-      deps: List[Expr],
-      bound: List[Var],
-      self: Option[(Expr, Expr)] = None
-  ): Context =
-    ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound, self) ++ iterations(config, state, ctx, deps, bound), Nil)
+  // ctx.self is the dependency that the combinator defines and its value in the update, if known (see once)
+  def combinator(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): Context =
+    ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound), Nil)
 
   // the bodies of the invariants among the assumptions whose dependencies are among `deps` and `self`,
-  // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of `self`,
+  // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of ctx.self,
   // which hold at each position of the dependencies, hence also for the values bound there;
   // the dependencies of a combinator have equal length, such that the positions coincide
-  def invariants(ctx: Context, deps: List[Expr], bound: List[Var], self: Option[(Expr, Expr)] = None): List[Expr] =
-    val values = (deps zip bound).toMap[Expr, Expr] ++ self
+  def invariants(ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
+    val values = (deps zip bound).toMap[Expr, Expr] ++ ctx.self
     for
       case Invs(deps_, bound_, body) <- ctx.facts.assms
       if deps_.forall(values.contains)

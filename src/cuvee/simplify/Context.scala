@@ -25,6 +25,11 @@ import cuvee.core._
 //
 // rules, steps: the rewrite rules, which are applied after each round of simplification (see Simplify.simplify),
 // and the remaining number of steps
+//
+// self: within the update of a combinator that defines a dependency, X == trace(...) or Y == maps(...),
+// that dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants);
+// the updates and bodies of further combinators are then not simplified, which would enter their iterations
+// again and again (see Simplify.once)
 case class Context(
     bound: List[List[Var]],
     universal: Set[Var],
@@ -34,7 +39,8 @@ case class Context(
     diffs: Diffs,
     polarity: Option[Boolean],
     rules: List[Rule] = Nil,
-    steps: util.Ref[Int] = util.Ref(0)
+    steps: util.Ref[Int] = util.Ref(0),
+    self: Option[(Expr, Expr)] = None
 ):
   // the rewrite rules with a fresh number of steps, which is shared by the copies of this context,
   // and which guards against rules that do not terminate
