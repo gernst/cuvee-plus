@@ -21,16 +21,16 @@ lemma {:rw} {:teq} invs_2(n: Nat, hs: List<int>, xs: List<int>)
 
 // the last value of a trace that takes the values xs, and its initial value x0 if there are none
 lemma {:rw} {:teq} current_1(x0: int, n: Nat, xs: List<int>)
-  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, xs do v, k, x :: x)) == match n case zero => x0 case succ(m) => earlier(m, xs)
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, xs do v, k, x :: x)) == if n == zero then x0 else earlier(natural(integer(n) - 1), xs)
 
 // the sum of n values that are at most b is at most n * b, and that of nonnegative ones at least each of them; the left-hand sides are
 // comparisons
 lemma {:rw} {:teq} sum_1(n: Nat, xs: List<int>, b: int, c: int)
   requires below(n, xs, b) && integer(n) * b <= c
   ensures sum(xs) <= c
-lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, b: int, j: int)
-  requires nonneg(n, xs) && 0 <= j < integer(n)
-  ensures earlier(natural(j), xs) <= sum(xs)
+lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, b: int, j: Nat)
+  requires nonneg(n, xs) && integer(j) < integer(n)
+  ensures earlier(j, xs) <= sum(xs)
 
 lemma {:rw} {:teq} sum_2(n: Nat, xs: List<int>)
   requires nonneg(n, xs)

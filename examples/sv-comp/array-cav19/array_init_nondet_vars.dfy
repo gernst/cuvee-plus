@@ -16,9 +16,9 @@ lemma {:rw} {:teq} invs_1(c: int, n: Nat, hs: List<int>, xs: List<int>)
 
 // a value chosen at an iteration j before n, i.e., above c, plus d, is at least b if b <= c + 1 + d; the left-hand
 // side is a comparison, whose side conditions are an atom and closed comparisons
-lemma {:rw} {:teq} earlier_1(c: int, n: Nat, xs: List<int>, j: int, b: int, d: int)
-  requires above(c, n, xs) && 0 <= j < integer(n) && b <= c + 1 + d
-  ensures b <= earlier(natural(j), xs) + d
+lemma {:rw} {:teq} earlier_1(c: int, n: Nat, xs: List<int>, j: Nat, b: int, d: int)
+  requires above(c, n, xs) && integer(j) < integer(n) && b <= c + 1 + d
+  ensures b <= earlier(j, xs) + d
 
 method main() {
   var i: int;

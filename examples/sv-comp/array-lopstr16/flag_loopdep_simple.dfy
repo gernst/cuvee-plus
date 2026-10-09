@@ -21,9 +21,9 @@ lemma {:rw} {:teq} current_1(x0: int, d: int, n: Nat, hs: List<int>, C: (int, in
 // and its instantiation at an iteration j before n, which rewrites the term earlier(j, xs)
 lemma {:rw} {:teq} invs_1(n: Nat, hs: List<int>, xs: List<int>, c: int)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), xs) == c) <==> constant(n, xs, c)
-lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, c: int, j: int)
-  requires constant(n, xs, c) && 0 <= j < integer(n)
-  ensures earlier(natural(j), xs) == c
+lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, c: int, j: Nat)
+  requires constant(n, xs, c) && integer(j) < integer(n)
+  ensures earlier(j, xs) == c
 
 method main() {
   var N: int;

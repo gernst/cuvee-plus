@@ -18,9 +18,9 @@ lemma {:rw} {:teq} invs_1(n: Nat, hs: List<int>, xs: List<int>, ys: List<int>)
 
 // its instantiation at an iteration j before n; the left-hand side is a comparison, whose side conditions are an
 // atom and closed comparisons
-lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, ys: List<int>, j: int)
-  requires greater(n, xs, ys) && 0 <= j < integer(n)
-  ensures earlier(natural(j), ys) < earlier(natural(j), xs)
+lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, ys: List<int>, j: Nat)
+  requires greater(n, xs, ys) && integer(j) < integer(n)
+  ensures earlier(j, ys) < earlier(j, xs)
 
 method main() {
   var N: int;
