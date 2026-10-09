@@ -61,7 +61,6 @@ object Rewrite:
           Set(),
           ctx.known,
           holds(config, state, ctx, _),
-          !arithmetic(_),
           subst
         )
         rhs = subst_(rule.rhs)
@@ -622,14 +621,14 @@ object Rewrite:
             case And((first @ Apply(f: Var, _)) :: rest) if mayBind(vars, locals, f) =>
               for
                 subst1 <- matches(config, state, ctx, params, vars, locals, first, self, bound, avoid, guard_, subst)
-                subst2 <- conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, And.flatten(guard_), decide, _ => true, subst1)
+                subst2 <- conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, And.flatten(guard_), decide, subst1)
               yield subst2
 
             case _ =>
               unmatched
 
         if whole.nonEmpty then whole
-        else conditions(config, state, ctx, params, vars, locals, And.flatten(guard), self, bound, avoid, And.flatten(guard_), decide, _ => true, subst)
+        else conditions(config, state, ctx, params, vars, locals, And.flatten(guard), self, bound, avoid, And.flatten(guard_), decide, subst)
 
       case substs =>
         substs
@@ -637,10 +636,10 @@ object Rewrite:
   // the conjuncts `phis` of a condition of the pattern, the side condition of a rule or a guard, in their order,
   // under `subst`: the variables instantiated so far are substituted and the result simplified, such that
   // e.g. F(x, h) <= b with F = (lo, hi) => (hi + lo) / 2 + 1 is (hi + lo) / 2 + 1 <= b, whose summands are matched
-  // as such; a closed instance is decided, an open one is matched against one of the `facts` if it is `searched`,
-  // which instantiates its variables, e.g. n of sorted(a, n) against a hypothesis, or the bound b of F(x, h) <= b
-  // against the conjunct mid < p of the guard of the expression, which is mid + 1 <= p on Int;
-  // other open instances fail, hence the conjuncts that bind variables come first in a lemma
+  // as such; a closed instance is decided, an open one is matched against one of the `facts`, also comparisons and
+  // equations, which instantiates its variables, e.g. n of sorted(a, n) against a hypothesis, the bound b of
+  // F(x, h) <= b against the conjunct mid < p of the guard of the expression, which is mid + 1 <= p on Int, or a and c
+  // of 2 * a + p <= b + 2 * c && c < a against the premises of a goal
   def conditions(
       config: Config,
       state: State,
@@ -654,7 +653,6 @@ object Rewrite:
       avoid: Set[Var],
       facts: List[Expr],
       decide: Expr => Boolean,
-      searched: Expr => Boolean,
       subst: Subst[Type, Expr]
   ): List[Subst[Type, Expr]] =
     phis match
@@ -667,23 +665,14 @@ object Rewrite:
 
         if !open then
           if decide(instance)
-          then conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, facts, decide, searched, subst)
+          then conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, facts, decide, subst)
           else unmatched
-        else if searched(instance) then
+        else
           for
             fact <- facts
             subst1 <- matches(config, state, ctx, params, vars, locals, instance, self, bound, avoid, fact, subst)
-            subst2 <- conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, facts, decide, searched, subst1)
+            subst2 <- conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, facts, decide, subst1)
           yield subst2
-        else unmatched
-
-  // comparisons and equations, also negated, which are not searched among the facts of the context for the side
-  // conditions of rules, since there are many arithmetic facts, hence they must be closed (see conditions)
-  def arithmetic(phi: Expr): Boolean =
-    phi match
-      case Not(psi) => arithmetic(psi)
-      case Eq(_, _) => true
-      case _        => phi.isComparison
 
   // comparisons on Int and Real as the difference right - left as a normalized polynomial,
   // which is nonnegative, or positive if strict; on Int, left < right is left + 1 <= right, hence never strict;
