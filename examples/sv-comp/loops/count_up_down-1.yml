@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the Dafny translation of the SV-COMP task ReachSafety-Loops/loops/count_up_down-1.yml
+input_files: 'count_up_down-1.dfy'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: Dafny

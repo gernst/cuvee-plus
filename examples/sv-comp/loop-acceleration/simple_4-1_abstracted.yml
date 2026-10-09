@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the Dafny translation of the SV-COMP task ReachSafety-Loops/loop-acceleration/simple_4-1_abstracted.yml
+input_files: 'simple_4-1_abstracted.dfy'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: Dafny

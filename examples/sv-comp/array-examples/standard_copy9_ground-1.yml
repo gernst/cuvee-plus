@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-examples/standard_copy9_ground-1.yml
+input_files: 'standard_copy9_ground-1.dfy'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: Dafny

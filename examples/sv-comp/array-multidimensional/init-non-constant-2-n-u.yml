@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-multidimensional/init-non-constant-2-n-u.yml
+input_files: 'init-non-constant-2-n-u.dfy'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: Dafny

@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the Dafny translation of the SV-COMP task ReachSafety-Arrays/array-industry-pattern/check_removal_from_set_after_insertion.yml
+input_files: 'check_removal_from_set_after_insertion.dfy'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: Dafny
