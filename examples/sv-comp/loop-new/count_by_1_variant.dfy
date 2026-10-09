@@ -7,21 +7,15 @@
 
 method main() returns (result: int) {
   var N: int;
+  var i: int;
   assume 0 < N;
-  {
-    var i: int;
-    {
-      i := 0;
-      while i != N {
-        {
-          assert i <= N;
-        }
-        i := i + 1;
-      }
-    }
-    result := 0;
-    return;
+  i := 0;
+  while i != N {
+    assert i <= N;
+    i := i + 1;
   }
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

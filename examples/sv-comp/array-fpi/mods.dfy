@@ -3,11 +3,7 @@
 // to 1, summed up to N, N is added to each element, which is then taken modulo N + 1, and checked to be 0
 //
 // findings: as modp, (N + 1) % (N + 1) == 0, by the same lemma; closed (no output)
-
-// the remainder of a nonzero value modulo itself (not about traces)
-lemma {:rw} {:teq} lemma_1(x: int)
-  requires x != 0
-  ensures x % x == 0
+// note: its lemma is part of teq.dfy now (mod_self) and is removed here
 
 method main() {
   var N: int;

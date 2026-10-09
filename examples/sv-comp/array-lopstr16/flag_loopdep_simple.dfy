@@ -8,28 +8,22 @@
 // the predicate constant, whose instantiation rewrites earlier(j, xs) to the constant; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-
 // the first n values of xs are c, an auxiliary predicate, which is not defined
-predicate constant(n: int, xs: seq<int>, c: int)
+predicate constant(n: Nat, xs: List<int>, c: int)
 
 // a flag that is set to d whenever C holds, and kept otherwise, keeps its initial value x0 iff it is set to x0 or C
 // never holds (with a further dependency hs)
-lemma {:rw} {:teq} current_1(x0: int, d: int, n: int, hs: seq<int>, C: (int, int) -> bool)
+lemma {:rw} {:teq} current_1(x0: int, d: int, n: Nat, hs: List<int>, C: (int, int) -> bool)
   ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do f, k, h :: case C(k, h) => d case !C(k, h) => f)) == x0
     <==> d == x0 || invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !C(k, h))
 
 // the iteration constraint that the values xs read at the iterations are c, abstracted by the predicate constant,
 // and its instantiation at an iteration j before n, which rewrites the term earlier(j, xs)
-lemma {:rw} {:teq} invs_1(n: int, hs: seq<int>, xs: seq<int>, c: int)
-  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(k, xs) == c) <==> constant(n, xs, c)
-lemma {:rw} {:teq} earlier_1(n: int, xs: seq<int>, c: int, j: int)
-  requires constant(n, xs, c) && 0 <= j < n
-  ensures earlier(j, xs) == c
+lemma {:rw} {:teq} invs_1(n: Nat, hs: List<int>, xs: List<int>, c: int)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), xs) == c) <==> constant(n, xs, c)
+lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, c: int, j: int)
+  requires constant(n, xs, c) && 0 <= j < integer(n)
+  ensures earlier(natural(j), xs) == c
 
 method main() {
   var N: int;

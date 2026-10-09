@@ -6,18 +6,12 @@
 // match the positions 2 * S + -k + -1, since a variable of a pattern in a sum with a bound variable takes a single
 // summand, here not 2 * S + -1, and the variant c - 1 - k does not match either, also not S + -k + -1 (see TODO.md)
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-
 // a loop that copies b into a at the positions c - k and k in the iterations k = 0, ..., n - 1, i.e., from both ends
 // at once, agrees with b at the positions below n and above c - n, up to c, and keeps the others (with a further
 // dependency ys that the update does not use)
-lemma {:rw} {:teq} current_1(a0: array<int, int>, b: array<int, int>, n: int, c: int, j: int, ys: seq<int>)
-  ensures if 0 <= n
-    then current(trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[c - k := b[c - k]][k := b[k]]))[j]
-      == if 0 <= j < n || c - n < j <= c then b[j] else a0[j]
+lemma {:rw} {:teq} current_1(a0: array<int, int>, b: array<int, int>, n: Nat, c: int, j: int, ys: List<int>)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[c - k := b[c - k]][k := b[k]]))[j]
+    == if 0 <= j < integer(n) || c - integer(n) < j <= c then b[j] else a0[j]
 
 method main() {
   var S: int;

@@ -6,56 +6,54 @@ method main() returns (result: int) {
   var tmp₁: int;
   var tmp₂: int;
   var tmp₃: int;
-  {
-    var M: int;
-    var A: array<int, int>;
-    var B: array<int, int>;
-    var C: array<int, int>;
-    var i: int;
-    tmp₁ := *;
-    assume 0 <= tmp₁;
-    M := tmp₁;
-    if M > 1000000 {
+  var M: int;
+  var A: array<int, int>;
+  var B: array<int, int>;
+  var C: array<int, int>;
+  var i: int;
+  tmp₁ := *;
+  assume 0 <= tmp₁;
+  M := tmp₁;
+  if M > 1000000 {
+    result := 0;
+    return;
+  }
+  i := 0;
+  while i < M {
+    tmp₂ := *;
+    A := A[i := tmp₂];
+    if !(A[i] <= 1000000) {
       result := 0;
       return;
     }
-    i := 0;
-    while i < M {
-      tmp₂ := *;
-      A := A[i := tmp₂];
-      if !(A[i] <= 1000000) {
-        result := 0;
-        return;
-      }
-      if !(A[i] >= -1000000) {
-        result := 0;
-        return;
-      }
-      i := i + 1;
+    if !(A[i] >= -1000000) {
+      result := 0;
+      return;
     }
-    i := 0;
-    while i < M {
-      tmp₃ := *;
-      B := B[i := tmp₃];
-      if !(B[i] <= 1000000) {
-        result := 0;
-        return;
-      }
-      if !(B[i] >= -1000000) {
-        result := 0;
-        return;
-      }
-      i := i + 1;
+    i := i + 1;
+  }
+  i := 0;
+  while i < M {
+    tmp₃ := *;
+    B := B[i := tmp₃];
+    if !(B[i] <= 1000000) {
+      result := 0;
+      return;
     }
-    i := 0;
-    while i < M {
-      C := C[i := A[i] + B[i]];
-      i := i + 1;
+    if !(B[i] >= -1000000) {
+      result := 0;
+      return;
     }
-    i := 0;
-    while i < M {
-      assert C[i] == A[i] + B[i];
-      i := i + 1;
-    }
+    i := i + 1;
+  }
+  i := 0;
+  while i < M {
+    C := C[i := A[i] + B[i]];
+    i := i + 1;
+  }
+  i := 0;
+  while i < M {
+    assert C[i] == A[i] + B[i];
+    i := i + 1;
   }
 }

@@ -5,20 +5,14 @@
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
 
 method main() returns (result: int) {
-  {
-    var i: int, sn: int;
-    sn := 0;
-    {
-      i := 1;
-      while i <= 8 {
-        {
-          sn := sn + 2;
-        }
-        i := i + 1;
-      }
-    }
-    assert sn == 8 * 2 || sn == 0;
+  var i: int, sn: int;
+  sn := 0;
+  i := 1;
+  while i <= 8 {
+    sn := sn + 2;
+    i := i + 1;
   }
+  assert sn == 8 * 2 || sn == 0;
 }
 
 // remaining goals of -teq -simplify:

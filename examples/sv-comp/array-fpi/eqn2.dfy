@@ -7,12 +7,7 @@
 // simplifier; closed (no output) (eqn3 to eqn5 are variants, which need further halving lemmas)
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing; the lemmas
 // are those of eqn1, except the arithmetic
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function sum(values: seq<int>): int
 
 // division by 2 of a polynomial with even coefficients, in the normal form of the simplifier (arithmetic, not about
 // traces), see eqn1

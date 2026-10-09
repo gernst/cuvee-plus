@@ -4,31 +4,29 @@
 
 method main() returns (result: int) {
   var tmp₁: int;
-  {
-    var N_LIN: int;
-    var N_COL: int;
-    var j: int;
-    var k: int;
-    var matriz: array<int, array<int, int>>;
-    var maior: int;
-    N_LIN := 1;
-    N_COL := 1;
-    maior := *;
-    j := 0;
-    while j < N_COL {
-      k := 0;
-      while k < N_LIN {
-        tmp₁ := *;
-        matriz := matriz[j := matriz[j][k := tmp₁]];
-        if matriz[j][k] >= maior {
-          maior := matriz[j][k];
-        }
-        k := k + 1;
+  var N_LIN: int;
+  var N_COL: int;
+  var j: int;
+  var k: int;
+  var matriz: array<int, array<int, int>>;
+  var maior: int;
+  N_LIN := 1;
+  N_COL := 1;
+  maior := *;
+  j := 0;
+  while j < N_COL {
+    k := 0;
+    while k < N_LIN {
+      tmp₁ := *;
+      matriz := matriz[j := matriz[j][k := tmp₁]];
+      if matriz[j][k] >= maior {
+        maior := matriz[j][k];
       }
-      j := j + 1;
+      k := k + 1;
     }
-    assert matriz[0][0] <= maior;
-    result := 0;
-    return;
+    j := j + 1;
   }
+  assert matriz[0][0] <= maior;
+  result := 0;
+  return;
 }

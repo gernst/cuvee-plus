@@ -7,21 +7,24 @@
 // constraint b < 6 before); b == 6 at the end needs these constraints combined in each iteration and the last value
 // of the outer trace, which takes the values of the sequence, i.e., the composition of the loops, as in nested-1;
 // no lemma is added
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 6
 
 method main() {
+  var N: int;
   var a: int;
   var b: int;
-  a := 6;
-  b := 6;
+  assume 0 < N;
+  a := N;
+  b := N;
   a := 0;
-  while a < 6 {
+  while a < N {
     b := 0;
-    while b < 6 {
+    while b < N {
       b := b + 1;
     }
     a := a + 1;
   }
-  assert a == 6 && b == 6;
+  assert a == N && b == N;
 }
 
 // remaining goals of -teq -simplify:

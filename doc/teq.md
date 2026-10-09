@@ -84,8 +84,10 @@ after section 4 of the paper.
 
 ## The lemma database ([teq.dfy](../resources/cuvee/teq.dfy))
 
-- Parsed by a fresh Dafny parser and injected once at the beginning of the
-  output (`TEQ.lemmas`). It defines the datatype `Trace`, declares the functions on traces,
+- Injected by the source with `-teq`, after its prelude (`Config.features`):
+  Dafny input parses it with its own parser, such that the input can refer to
+  its declarations, other input with a fresh Dafny parser; the TEQ transform
+  relies on it. It defines the datatype `Trace`, declares the functions on traces,
   and lemmas about them, which are `{:rw}` (rewrite rules of `-simplify`) and
   free, without a body (assumed by the solvers without proof). Lemmas that
   identify a trace with a function of teq.dfy are named after it, e.g.
@@ -93,9 +95,9 @@ after section 4 of the paper.
   `invs`), those about an accessor of such a function after both, e.g.
   `current_sums` or `earlier_prefix`, the others after what they state,
   e.g. `current_trace_two_phases` or `sum_add`.
-- `Trace` is in no prelude: it exists only with `-teq`. Inputs that use
-  traces without `-teq` declare `Trace` themselves, and inputs cannot use the
-  functions of the database, which is injected after parsing.
+- `Trace` exists only with `-teq`. Inputs that use traces without `-teq`
+  declare `Trace` themselves; Dafny inputs with `-teq` use the declarations of
+  the database, inputs in other languages cannot.
 - All function declarations come first, then the lemmas, grouped by the
   function of their left-hand side (the combinator, `current`, `prefix`, ...).
   Rules are tried in the order of the file, lemmas whose order matters keep it

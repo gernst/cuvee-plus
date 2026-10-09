@@ -8,18 +8,16 @@ function bitor(a: int, b: int): int
 var N: int;
 
 method bor(x: array<int, int>) returns (result: int) {
-  {
-    var i: int;
-    var res: int;
-    res := x[0];
-    i := 1;
-    while i < N {
-      res := bitor(res, x[i]);
-      i := i + 1;
-    }
-    result := res;
-    return;
+  var i: int;
+  var res: int;
+  res := x[0];
+  i := 1;
+  while i < N {
+    res := bitor(res, x[i]);
+    i := i + 1;
   }
+  result := res;
+  return;
 }
 
 method main() returns (result: int)
@@ -27,21 +25,19 @@ method main() returns (result: int)
   requires N == 0
 {
   var tmp₁: int;
+  var x: array<int, int>;
+  var temp: int;
+  var ret: int;
+  var ret2: int;
+  var ret5: int;
+  var i: int;
   N := *;
   if N > 1 {
-    var x: array<int, int>;
-    var temp: int;
-    var ret: int;
-    var ret2: int;
-    var ret5: int;
-    {
-      var i: int;
-      i := 0;
-      while i < N {
-        tmp₁ := *;
-        x := x[i := tmp₁];
-        i := i + 1;
-      }
+    i := 0;
+    while i < N {
+      tmp₁ := *;
+      x := x[i := tmp₁];
+      i := i + 1;
     }
     ret := bor(x);
     temp := x[0];
@@ -49,13 +45,10 @@ method main() returns (result: int)
     x := x[1 := temp];
     ret2 := bor(x);
     temp := x[0];
-    {
-      var i: int;
-      i := 0;
-      while i < N - 1 {
-        x := x[i := x[i + 1]];
-        i := i + 1;
-      }
+    i := 0;
+    while i < N - 1 {
+      x := x[i := x[i + 1]];
+      i := i + 1;
     }
     x := x[N - 1 := temp];
     ret5 := bor(x);

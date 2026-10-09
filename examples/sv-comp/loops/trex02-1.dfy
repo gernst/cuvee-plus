@@ -11,9 +11,7 @@ var x: int;
 method foo()
   modifies x
 {
-  {
-    x := x - 1;
-  }
+  x := x - 1;
 }
 
 method main() returns (result: int)
@@ -21,22 +19,20 @@ method main() returns (result: int)
   requires x == 0
 {
   var tmp₁: bool;
+  var c: bool;
+  x := *;
+  while x > 0
+    modifies x
   {
-    x := *;
-    while x > 0
-      modifies x
-    {
-      var c: bool;
-      tmp₁ := *;
-      c := tmp₁;
-      if c {
-        foo();
-      } else {
-        foo();
-      }
+    tmp₁ := *;
+    c := tmp₁;
+    if c {
+      foo();
+    } else {
+      foo();
     }
-    assert x <= 0;
   }
+  assert x <= 0;
 }
 
 // remaining goals of -teq -simplify:

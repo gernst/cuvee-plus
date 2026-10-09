@@ -13,24 +13,22 @@ method main() returns (result: int)
   requires SIZE == 0
 {
   var tmp₁: int;
+  var i: int;
+  var j: int;
   SIZE := *;
   assume 0 < SIZE;
-  {
-    var i: int;
-    var j: int;
-    i := 0;
-    j := 0;
-    while i < SIZE {
-      tmp₁ := *;
-      if (tmp₁ != 0) {
-        i := i + 8;
-      } else {
-        i := i + 4;
-      }
+  i := 0;
+  j := 0;
+  while i < SIZE {
+    tmp₁ := *;
+    if (tmp₁ != 0) {
+      i := i + 8;
+    } else {
+      i := i + 4;
     }
-    j := (quotient(i, 4));
-    assert j * 4 == i;
-    result := 0;
-    return;
   }
+  j := (quotient(i, 4));
+  assert j * 4 == i;
+  result := 0;
+  return;
 }

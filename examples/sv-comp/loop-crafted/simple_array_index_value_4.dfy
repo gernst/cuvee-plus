@@ -7,42 +7,38 @@
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
+  var array: array<int, int>;
+  var index1: int;
+  var index2: int;
+  var loop_entered: int;
+  var i: int;
   assume 0 < N;
-  {
-    var array: array<int, int>;
-    var index1: int;
-    var index2: int;
-    var loop_entered: int;
-    loop_entered := 0;
-    {
-      var i: int;
-      i := 0;
-      while i < N {
-        tmp₁ := *;
-  assume 0 <= tmp₁;
-        array := array[i := tmp₁];
-        i := i + 1;
-      }
-    }
-    index1 := *;
-    assume 0 <= index1;
-    assume index1 < N;
-    index2 := *;
-    assume 0 <= index2;
-    assume index2 < N;
-    while index1 < index2 {
-      assert index1 < N && index2 < N;
-      assume array[index1] == array[index2];
-      index1 := index1 + 1;
-      index2 := index2 - 1;
-      loop_entered := 1;
-    }
-    if (loop_entered != 0) {
-      while index2 < index1 {
-        assert array[index1] == array[index2];
-        index2 := index2 + 1;
-        index1 := index1 - 1;
-      }
+  loop_entered := 0;
+  i := 0;
+  while i < N {
+    tmp₁ := *;
+    assume 0 <= tmp₁;
+    array := array[i := tmp₁];
+    i := i + 1;
+  }
+  index1 := *;
+  assume 0 <= index1;
+  assume index1 < N;
+  index2 := *;
+  assume 0 <= index2;
+  assume index2 < N;
+  while index1 < index2 {
+    assert index1 < N && index2 < N;
+    assume array[index1] == array[index2];
+    index1 := index1 + 1;
+    index2 := index2 - 1;
+    loop_entered := 1;
+  }
+  if (loop_entered != 0) {
+    while index2 < index1 {
+      assert array[index1] == array[index2];
+      index2 := index2 + 1;
+      index1 := index1 - 1;
     }
   }
 }

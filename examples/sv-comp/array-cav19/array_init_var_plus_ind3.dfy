@@ -9,16 +9,10 @@
 // for x, and a variable as a coefficient does not match the literal 7 (see TODO.md)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function prefix<a>(k: int, xs: seq<a>): seq<a>
-function sum(values: seq<int>): int
-
 // a prefix of length m of the values F(k) of n iterations k = 0, ..., n - 1 are the values of the first m iterations
 // (with a further dependency ys that F does not use)
-lemma {:rw} {:teq} prefix_1(m: int, n: int, ys: seq<int>, F: (int) -> int)
-  requires 0 <= m <= n
+lemma {:rw} {:teq} prefix_1(m: Nat, n: Nat, ys: List<int>, F: (int) -> int)
+  requires integer(m) <= integer(n)
   ensures prefix(m, maps(for ⌊counter(0, 1, n)⌋, ys yield k, y :: F(k))) == maps(for ⌊counter(0, 1, m)⌋ yield k :: F(k))
 
 // the sums 0 + 1 + ... + x and 0 + 1 + ... + (x - 1) are nonnegative for all integers x, also plus a nonnegative d, in

@@ -6,29 +6,27 @@ method main() returns (result: int) {
   var tmp₁: int;
   var tmp₂: int;
   var tmp₃: int;
-  {
-    var n: int;
-    var i: int;
-    var l: int;
-    tmp₁ := *;
-    n := tmp₁;
-    tmp₂ := *;
-    i := tmp₂;
-    tmp₃ := *;
-    l := tmp₃;
-    i := l;
-    if !(l > 0) {
-      result := 0;
-      return;
-    }
-    if i < n {
-      i := *;
-    }
-    if i < n {
-      assume false;
-    }
-    assert l >= 1;
+  var n: int;
+  var i: int;
+  var l: int;
+  tmp₁ := *;
+  n := tmp₁;
+  tmp₂ := *;
+  i := tmp₂;
+  tmp₃ := *;
+  l := tmp₃;
+  i := l;
+  if !(l > 0) {
     result := 0;
     return;
   }
+  if i < n {
+    i := *;
+  }
+  if i < n {
+    assume false;
+  }
+  assert l >= 1;
+  result := 0;
+  return;
 }

@@ -8,62 +8,58 @@ method f(d: int) {
   var tmp₃: int;
   var tmp₄: bool;
   var tmp₅: bool;
-  {
-    var x: int;
-    var y: int;
-    var k: int;
-    var z: int;
-    tmp₁ := *;
-    x := tmp₁;
-    tmp₂ := *;
-    y := tmp₂;
-    tmp₃ := *;
-    k := tmp₃;
-    z := 1;
-    if !(k <= 1073741823) {
-      return;
-    }
-    while z < k {
-      z := 2 * z;
-    }
-    assert z >= 1;
-    if !(x <= 1000000 && x >= -1000000) {
-      return;
-    }
-    if !(y <= 1000000 && y >= -1000000) {
-      return;
-    }
-    if !(k <= 1000000 && k >= -1000000) {
-      return;
-    }
-    while x > 0 && y > 0 {
-      var c: bool;
-      tmp₄ := *;
-      c := tmp₄;
-      if c {
-        x := x - d;
-        tmp₅ := *;
-        y := (if tmp₅ then 1 else 0);
-        z := z - 1;
-      } else {
-        y := y - d;
-      }
+  var x: int;
+  var y: int;
+  var k: int;
+  var z: int;
+  var c: bool;
+  tmp₁ := *;
+  x := tmp₁;
+  tmp₂ := *;
+  y := tmp₂;
+  tmp₃ := *;
+  k := tmp₃;
+  z := 1;
+  if !(k <= 1073741823) {
+    return;
+  }
+  while z < k {
+    z := 2 * z;
+  }
+  assert z >= 1;
+  if !(x <= 1000000 && x >= -1000000) {
+    return;
+  }
+  if !(y <= 1000000 && y >= -1000000) {
+    return;
+  }
+  if !(k <= 1000000 && k >= -1000000) {
+    return;
+  }
+  while x > 0 && y > 0 {
+    tmp₄ := *;
+    c := tmp₄;
+    if c {
+      x := x - d;
+      tmp₅ := *;
+      y := (if tmp₅ then 1 else 0);
+      z := z - 1;
+    } else {
+      y := y - d;
     }
   }
 }
 
 method main() returns (result: int) {
   var tmp₆: bool;
-  {
-    var c: bool;
-    tmp₆ := *;
-    c := tmp₆;
-    if c {
-      f(1);
-    } else {
-      f(2);
-    }
-    result := 0;
-    return;
+  var c: bool;
+  tmp₆ := *;
+  c := tmp₆;
+  if c {
+    f(1);
+  } else {
+    f(2);
   }
+  result := 0;
+  return;
 }

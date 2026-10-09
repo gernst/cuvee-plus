@@ -4,32 +4,30 @@
 // - az*y == 0
 
 method main() returns (result: int) {
-  {
-    var z: int;
-    var a: int;
-    var k: int;
-    var x: int;
-    var y: int;
-    var c: int;
-    var az: int;
-    z := *;
-    a := *;
-    k := *;
-    x := a;
-    y := 1;
-    c := 1;
-    az := a * z;
-    while (1 != 0) {
-      assert z * x - x + a - az * y == 0;
-      if !(c < k) {
-        break;
-      }
-      c := c + 1;
-      x := x * z + a;
-      y := y * z;
-    }
+  var z: int;
+  var a: int;
+  var k: int;
+  var x: int;
+  var y: int;
+  var c: int;
+  var az: int;
+  z := *;
+  a := *;
+  k := *;
+  x := a;
+  y := 1;
+  c := 1;
+  az := a * z;
+  while (1 != 0) {
     assert z * x - x + a - az * y == 0;
-    result := x;
-    return;
+    if !(c < k) {
+      break;
+    }
+    c := c + 1;
+    x := x * z + a;
+    y := y * z;
   }
+  assert z * x - x + a - az * y == 0;
+  result := x;
+  return;
 }

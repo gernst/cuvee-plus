@@ -26,7 +26,7 @@ trait Source:
 
   // the resources with further definitions that are injected after the prelude, in order,
   // which may depend on the configuration
-  def preludes(config: Config): List[String] = Nil
+  def preludes(config: Config): List[String]
 
   // files on the classpath, such as the preludes, bundled from resources/
   def resource(path: String): Reader =
@@ -47,7 +47,16 @@ trait Source:
       for path <- preludes(config); cmd <- parse(path, parser)
       yield cmd
 
-    val prelude_ = prelude ++ injected
+    // the files of features, e.g. teq.dfy of -teq, on which the TEQ transform relies, parsed by the parser of the
+    // input if it is in the same language, such that the input can refer to them, otherwise by a fresh parser of
+    // their language
+    val features_ =
+      for
+        (source, path) <- config.features
+        cmd <- if source == this then parse(path, parser) else source.parse(path, source.newParser(config)._2)
+      yield cmd
+
+    val prelude_ = prelude ++ injected ++ features_
 
     // defer reading and parsing such that errors in the first command are reported by the pipeline, too
     (init, LazyList.empty #::: prelude_.to(LazyList) #::: input(config, reader, parser).filterNot(prelude_.contains))

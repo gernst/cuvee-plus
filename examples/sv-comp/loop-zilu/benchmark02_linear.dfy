@@ -7,26 +7,24 @@
 
 method main() returns (result: int) {
   var tmp₁: int, tmp₂: int, tmp₃: int;
-  {
-    var n: int, i: int, l: int;
-    tmp₁ := *;
-    n := tmp₁;
-    tmp₂ := *;
-    i := tmp₂;
-    tmp₃ := *;
-    l := tmp₃;
-    i := l;
-    if !(l > 0) {
-      result := 0;
-      return;
-    }
-    while i < n {
-      i := i + 1;
-    }
-    assert l >= 1;
+  var n: int, i: int, l: int;
+  tmp₁ := *;
+  n := tmp₁;
+  tmp₂ := *;
+  i := tmp₂;
+  tmp₃ := *;
+  l := tmp₃;
+  i := l;
+  if !(l > 0) {
     result := 0;
     return;
   }
+  while i < n {
+    i := i + 1;
+  }
+  assert l >= 1;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

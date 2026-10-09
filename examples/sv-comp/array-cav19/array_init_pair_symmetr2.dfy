@@ -7,25 +7,20 @@
 // closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-
 // the first n values of xs are greater than those of ys at the same iterations, an auxiliary predicate, which is not
 // defined
-predicate greater(n: int, xs: seq<int>, ys: seq<int>)
+predicate greater(n: Nat, xs: List<int>, ys: List<int>)
 
 // the iteration constraint of pairs of values x > y chosen in each of n iterations (with a further dependency hs
 // that the constraint does not use), abstracted by the predicate greater
-lemma {:rw} {:teq} invs_1(n: int, hs: seq<int>, xs: seq<int>, ys: seq<int>)
+lemma {:rw} {:teq} invs_1(n: Nat, hs: List<int>, xs: List<int>, ys: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs, xs, ys check k, h, x, y :: y < x) <==> greater(n, xs, ys)
 
 // its instantiation at an iteration j before n; the left-hand side is a comparison, whose side conditions are an
 // atom and closed comparisons
-lemma {:rw} {:teq} earlier_1(n: int, xs: seq<int>, ys: seq<int>, j: int)
-  requires greater(n, xs, ys) && 0 <= j < n
-  ensures earlier(j, ys) < earlier(j, xs)
+lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, ys: List<int>, j: int)
+  requires greater(n, xs, ys) && 0 <= j < integer(n)
+  ensures earlier(natural(j), ys) < earlier(natural(j), xs)
 
 method main() {
   var N: int;

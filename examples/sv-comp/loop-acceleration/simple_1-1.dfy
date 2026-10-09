@@ -8,13 +8,11 @@ function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a)
 
 method main() returns (result: int) {
   var N: int;
+  var x: int;
   assume 0 < N;
-  {
-    var x: int;
-    x := 0;
-    while x < N {
-      x := x + 2;
-    }
-    assert (((remainder(x, 2))) != 0);
+  x := 0;
+  while x < N {
+    x := x + 2;
   }
+  assert (((remainder(x, 2))) != 0);
 }

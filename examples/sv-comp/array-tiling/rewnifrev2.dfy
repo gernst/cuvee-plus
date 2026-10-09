@@ -10,25 +10,23 @@ method main() returns (result: int)
   modifies MAX, SIZE
   requires SIZE == 0 && MAX == 0
 {
+  var i: int;
+  var a: array<int, int>;
   MAX := 100000;
-  {
-    var i: int;
-    SIZE := *;
-    if SIZE > 1 && SIZE < MAX {
-      var a: array<int, int>;
-      i := SIZE - 2;
-      while i >= 0 {
-        a := a[i := i];
-        a := a[i + 1 := i + 1];
-        i := i - 1;
-      }
-      i := 0;
-      while i < SIZE {
-        assert a[i] >= i;
-        i := i + 1;
-      }
+  SIZE := *;
+  if SIZE > 1 && SIZE < MAX {
+    i := SIZE - 2;
+    while i >= 0 {
+      a := a[i := i];
+      a := a[i + 1 := i + 1];
+      i := i - 1;
     }
-    result := 1;
-    return;
+    i := 0;
+    while i < SIZE {
+      assert a[i] >= i;
+      i := i + 1;
+    }
   }
+  result := 1;
+  return;
 }

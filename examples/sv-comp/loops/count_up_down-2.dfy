@@ -4,19 +4,17 @@
 
 method main() returns (result: int) {
   var tmp₁: int;
-  {
-    var n: int;
-    var x: int;
-    var y: int;
-    tmp₁ := *;
-    assume 0 <= tmp₁;
-    n := tmp₁;
-    x := n;
-    y := 0;
-    while x > 0 {
-      x := x - 1;
-      y := y + 1;
-    }
-    assert y != n;
+  var n: int;
+  var x: int;
+  var y: int;
+  tmp₁ := *;
+  assume 0 <= tmp₁;
+  n := tmp₁;
+  x := n;
+  y := 0;
+  while x > 0 {
+    x := x - 1;
+    y := y + 1;
   }
+  assert y != n;
 }

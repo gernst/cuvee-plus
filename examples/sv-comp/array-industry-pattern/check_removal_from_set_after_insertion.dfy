@@ -38,57 +38,55 @@ method main() returns (result: int)
   var tmp₂: int;
   var tmp₃: int;
   var tmp₄: int;
+  var i: int;
+  var pos: int;
+  var n: int;
+  var found: int;
+  var set: array<int, int>;
+  var values: array<int, int>;
+  var element: int;
+  var v: int;
   SIZE := *;
   assume 0 < SIZE;
-  {
-    var i: int;
-    var pos: int;
-    var n: int;
-    var found: int;
-    var set: array<int, int>;
-    var values: array<int, int>;
-    var element: int;
-    var v: int;
-    n := 0;
-    found := 0;
-    i := 0;
-    while i < SIZE {
-      tmp₂ := *;
-      set := set[i := tmp₂];
-      tmp₃ := *;
-      values := values[i := tmp₃];
+  n := 0;
+  found := 0;
+  i := 0;
+  while i < SIZE {
+    tmp₂ := *;
+    set := set[i := tmp₂];
+    tmp₃ := *;
+    values := values[i := tmp₃];
+    i := i + 1;
+  }
+  element := *;
+  v := 0;
+  while v < SIZE {
+    tmp₄ := elem_exists(set, n, values[v]);
+    if tmp₄ != 1 {
+      n := insert(set, n, values[v]);
+    }
+    v := v + 1;
+  }
+  i := 0;
+  while i < SIZE && found != 1 {
+    if set[i] == element {
+      found := 1;
+      pos := i;
+    }
+    i := i + 1;
+  }
+  if found == 1 {
+    i := pos;
+    while i < SIZE - 1 {
+      set := set[i := set[i + 1]];
       i := i + 1;
     }
-    element := *;
-    v := 0;
-    while v < SIZE {
-      tmp₄ := elem_exists(set, n, values[v]);
-      if tmp₄ != 1 {
-        n := insert(set, n, values[v]);
-      }
-      v := v + 1;
-    }
+  }
+  if found == 1 {
     i := 0;
-    while i < SIZE && found != 1 {
-      if set[i] == element {
-        found := 1;
-        pos := i;
-      }
+    while i < SIZE - 1 {
+      assert set[i] != element;
       i := i + 1;
-    }
-    if found == 1 {
-      i := pos;
-      while i < SIZE - 1 {
-        set := set[i := set[i + 1]];
-        i := i + 1;
-      }
-    }
-    if found == 1 {
-      i := 0;
-      while i < SIZE - 1 {
-        assert set[i] != element;
-        i := i + 1;
-      }
     }
   }
 }

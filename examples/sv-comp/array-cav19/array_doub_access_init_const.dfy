@@ -9,18 +9,12 @@
 // 100000 < n₆ < 100002 is not narrowed to n₆ == 100001 (see TODO.md)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-
 // a loop that stores c at the even position 2 k and d at the odd position 2 k + 1 in the iterations k = 0, ..., n - 1
 // fills the positions below 2 n, alternating between c and d, and keeps the others (with a further dependency ys
 // that the update does not use, e.g. a second counter)
-lemma {:rw} {:teq} current_1(a0: array<int, int>, n: int, j: int, c: int, d: int, ys: seq<int>)
-  ensures if 0 <= n
-    then current(trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[2 * k := c][2 * k + 1 := d]))[j]
-      == if 0 <= j < 2 * n then (if j % 2 == 0 then c else d) else a0[j]
+lemma {:rw} {:teq} current_1(a0: array<int, int>, n: Nat, j: int, c: int, d: int, ys: List<int>)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[2 * k := c][2 * k + 1 := d]))[j]
+    == if 0 <= j < 2 * integer(n) then (if j % 2 == 0 then c else d) else a0[j]
 
 method main() {
   var i: int;

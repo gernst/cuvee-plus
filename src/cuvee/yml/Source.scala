@@ -42,3 +42,7 @@ object Source extends cuvee.pipe.Source:
     val config_ = config.copy(arch = arch)
     val (_, parser_, _) = cuvee.c.Source.newParser(config_)
     cuvee.c.Source.input(config_, new FileReader(input), parser_)
+
+  // no further definitions
+  def preludes(config: Config): List[String] =
+    Nil

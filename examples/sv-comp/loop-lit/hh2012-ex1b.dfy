@@ -5,23 +5,21 @@
 
 method main() returns (result: int) {
   var N: int;
+  var i: int;
+  var j: int;
   assume 0 < N;
-  {
-    var i: int;
-    i := 0;
-    while i < N {
-      var j: int;
-      j := 0;
-      while j < N {
-        j := j + 1;
-        assert j <= N;
-      }
-      assert j == N;
-      i := i + 1;
-      assert i <= N;
+  i := 0;
+  while i < N {
+    j := 0;
+    while j < N {
+      j := j + 1;
+      assert j <= N;
     }
-    assert i == N;
-    result := 0;
-    return;
+    assert j == N;
+    i := i + 1;
+    assert i <= N;
   }
+  assert i == N;
+  result := 0;
+  return;
 }

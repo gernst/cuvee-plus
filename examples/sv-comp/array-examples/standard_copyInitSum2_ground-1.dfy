@@ -6,33 +6,31 @@
 
 method main() returns (result: int) {
   var N: int;
+  var a: array<int, int>;
+  var b: array<int, int>;
+  var i: int;
+  var x: int;
   assume 0 < N;
-  {
-    var a: array<int, int>;
-    var b: array<int, int>;
-    var i: int;
-    var x: int;
-    i := 0;
-    while i < N {
-      a := a[i := 42];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      b := b[i := a[i]];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a := a[i := b[i] + i];
-      i := i + 1;
-    }
-    x := 0;
-    while x < N {
-      assert b[x] == 42 + x;
-      x := x + 1;
-    }
-    result := 0;
-    return;
+  i := 0;
+  while i < N {
+    a := a[i := 42];
+    i := i + 1;
   }
+  i := 0;
+  while i < N {
+    b := b[i := a[i]];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    a := a[i := b[i] + i];
+    i := i + 1;
+  }
+  x := 0;
+  while x < N {
+    assert b[x] == 42 + x;
+    x := x + 1;
+  }
+  result := 0;
+  return;
 }

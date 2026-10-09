@@ -5,15 +5,13 @@
 
 method main() returns (result: int) {
   var N: int;
+  var A: array<int, int>;
+  var i: int;
   assume 0 < N;
-  {
-    var A: array<int, int>;
-    var i: int;
-    i := 0;
-    while i < N {
-      A := A[i := i];
-      i := i + 1;
-    }
-    assert A[1023] != 1023;
+  i := 0;
+  while i < N {
+    A := A[i := i];
+    i := i + 1;
   }
+  assert A[1023] != 1023;
 }

@@ -6,24 +6,19 @@
 // predicate above and then instantiated at the read position by a lemma whose left-hand side is a comparison b <=
 // earlier(j, xs) + d; closed (no output)
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-
 // the first n values of xs are above c, an auxiliary predicate, which is not defined
-predicate above(c: int, n: int, xs: seq<int>)
+predicate above(c: int, n: Nat, xs: List<int>)
 
 // the iteration constraint of values xs that are chosen above c in each of n iterations (with a further dependency
 // hs that the constraint does not use), abstracted by the predicate above
-lemma {:rw} {:teq} invs_1(c: int, n: int, hs: seq<int>, xs: seq<int>)
+lemma {:rw} {:teq} invs_1(c: int, n: Nat, hs: List<int>, xs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs, xs check k, h, x :: c < x) <==> above(c, n, xs)
 
 // a value chosen at an iteration j before n, i.e., above c, plus d, is at least b if b <= c + 1 + d; the left-hand
 // side is a comparison, whose side conditions are an atom and closed comparisons
-lemma {:rw} {:teq} earlier_1(c: int, n: int, xs: seq<int>, j: int, b: int, d: int)
-  requires above(c, n, xs) && 0 <= j < n && b <= c + 1 + d
-  ensures b <= earlier(j, xs) + d
+lemma {:rw} {:teq} earlier_1(c: int, n: Nat, xs: List<int>, j: int, b: int, d: int)
+  requires above(c, n, xs) && 0 <= j < integer(n) && b <= c + 1 + d
+  ensures b <= earlier(natural(j), xs) + d
 
 method main() {
   var i: int;

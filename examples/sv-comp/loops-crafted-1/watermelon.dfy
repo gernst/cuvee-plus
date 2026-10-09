@@ -7,47 +7,43 @@ var true: int;
 var false: int;
 
 method correct_version(w: int) returns (result: int) {
-  {
-    var is_divisible: int;
-    is_divisible := true;
-    if w < 4 {
-      is_divisible := false;
-    } else {
-      var i: int;
-      i := 0;
-      while i < w {
-        {}
-        i := i + 2;
-      }
-      if i != w {
-        is_divisible := false;
-      }
+  var is_divisible: int;
+  var i: int;
+  is_divisible := true;
+  if w < 4 {
+    is_divisible := false;
+  } else {
+    i := 0;
+    while i < w {
+      {}
+      i := i + 2;
     }
-    result := is_divisible;
-    return;
+    if i != w {
+      is_divisible := false;
+    }
   }
+  result := is_divisible;
+  return;
 }
 
 method student_version(w: int) returns (result: int) {
-  {
-    var is_divisible: int;
-    is_divisible := true;
-    if w < 4 {
-      is_divisible := false;
-    } else {
-      var i: int;
-      i := 0;
-      while i < w {
-        {}
-        i := i + 2;
-      }
-      if i != w {
-        is_divisible := false;
-      }
+  var is_divisible: int;
+  var i: int;
+  is_divisible := true;
+  if w < 4 {
+    is_divisible := false;
+  } else {
+    i := 0;
+    while i < w {
+      {}
+      i := i + 2;
     }
-    result := is_divisible;
-    return;
+    if i != w {
+      is_divisible := false;
+    }
   }
+  result := is_divisible;
+  return;
 }
 
 method main() returns (result: int)
@@ -55,23 +51,21 @@ method main() returns (result: int)
   requires true == 0 && false == 0
 {
   var tmp₁: int;
+  var w: int;
+  var is_divisible1: int;
+  var is_divisible2: int;
   true := 1;
   false := 0;
-  {
-    var w: int;
-    var is_divisible1: int;
-    var is_divisible2: int;
-    tmp₁ := *;
-    assume 0 <= tmp₁;
-    w := tmp₁;
-    is_divisible1 := true;
-    is_divisible2 := true;
-    if w > 0 && w < 10000000 {
-      is_divisible1 := correct_version(w);
-      is_divisible2 := student_version(w);
-      assert is_divisible1 == is_divisible2;
-    }
-    result := 0;
-    return;
+  tmp₁ := *;
+  assume 0 <= tmp₁;
+  w := tmp₁;
+  is_divisible1 := true;
+  is_divisible2 := true;
+  if w > 0 && w < 10000000 {
+    is_divisible1 := correct_version(w);
+    is_divisible2 := student_version(w);
+    assert is_divisible1 == is_divisible2;
   }
+  result := 0;
+  return;
 }

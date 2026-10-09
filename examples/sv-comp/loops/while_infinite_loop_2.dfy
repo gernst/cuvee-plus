@@ -5,14 +5,12 @@
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
 
 method main() returns (result: int) {
-  {
-    var x: int;
-    x := 0;
-    while ((1) != 0) {
-      assert x == 0;
-    }
+  var x: int;
+  x := 0;
+  while ((1) != 0) {
     assert x == 0;
   }
+  assert x == 0;
 }
 
 // remaining goals of -teq -simplify:

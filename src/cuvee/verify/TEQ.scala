@@ -100,22 +100,17 @@ object Path:
 // the goals contain the combinators trace and all, which must be rewritten before they are passed to a solver,
 // except for programs without loops
 object TEQ extends Transform:
-  // the lemma database is injected once at the beginning, i.e., when nothing has been passed through so far
+  // the lemma database is injected by the source (see Config.features)
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val gs = Type.expand(state, state.globals)
 
-    val cmds_ =
-      for
-        cmd <- cmds
-        cmd_ <- verify(state, gs, cmd)
-      yield cmd_
-
-    if prefix.isEmpty
-    then lemmas ++ cmds_
-    else cmds_
+    for
+      cmd <- cmds
+      cmd_ <- verify(state, gs, cmd)
+    yield cmd_
 
   // the declarations of the functions on traces and the lemmas about them (resources/cuvee/teq.dfy),
-  // which are parsed by a fresh parser for Dafny
+  // which are parsed by a fresh parser for Dafny, for tests
   lazy val lemmas: List[Cmd] =
     val (_, parser, _) = cuvee.dafny.Source.newParser(Config.default)
     cuvee.dafny.Source.parse("/cuvee/teq.dfy", parser)

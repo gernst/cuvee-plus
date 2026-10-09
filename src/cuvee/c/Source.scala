@@ -25,3 +25,7 @@ object Source extends cuvee.pipe.Source:
 
     val parser = new Parser(boogie.state, config.arch)
     (boogie.state, Grammar.unit.map(parser.resolve), prelude)
+
+  // no further definitions
+  def preludes(config: Config): List[String] =
+    Nil

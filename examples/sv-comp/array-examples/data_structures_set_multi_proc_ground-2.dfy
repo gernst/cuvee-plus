@@ -35,54 +35,52 @@ method main() returns (result: int) {
   var tmp₂: int;
   var tmp₃: int;
   var tmp₄: int;
+  var n: int;
+  var set: array<int, int>;
+  var x: int;
+  var y: int;
+  var values: array<int, int>;
+  var v: int;
   assume 0 < N;
-  {
-    var n: int;
-    var set: array<int, int>;
-    var x: int;
-    var y: int;
-    var values: array<int, int>;
-    var v: int;
-    n := 0;
-    x := 0;
-    while x < N {
-      tmp₂ := *;
-      set := set[x := tmp₂];
-      x := x + 1;
-    }
-    x := 0;
-    while x < n {
-      y := x + 1;
-      while y < n {
-        assert set[x] != set[y];
-        y := y + 1;
-      }
-      x := x + 1;
-    }
-    v := 0;
-    while v < N {
-      tmp₃ := *;
-      values := values[v := tmp₃];
-      v := v + 1;
-    }
-    v := 0;
-    while v < N {
-      tmp₄ := elem_exists(set, n, values[v]);
-      if !(tmp₄ != 0) {
-        n := insert(set, n, values[v]);
-      }
-      v := v + 1;
-    }
-    x := 0;
-    while x < n {
-      y := x + 1;
-      while y < n {
-        assert set[x] != set[y];
-        y := y + 1;
-      }
-      x := x + 1;
-    }
-    result := 0;
-    return;
+  n := 0;
+  x := 0;
+  while x < N {
+    tmp₂ := *;
+    set := set[x := tmp₂];
+    x := x + 1;
   }
+  x := 0;
+  while x < n {
+    y := x + 1;
+    while y < n {
+      assert set[x] != set[y];
+      y := y + 1;
+    }
+    x := x + 1;
+  }
+  v := 0;
+  while v < N {
+    tmp₃ := *;
+    values := values[v := tmp₃];
+    v := v + 1;
+  }
+  v := 0;
+  while v < N {
+    tmp₄ := elem_exists(set, n, values[v]);
+    if !(tmp₄ != 0) {
+      n := insert(set, n, values[v]);
+    }
+    v := v + 1;
+  }
+  x := 0;
+  while x < n {
+    y := x + 1;
+    while y < n {
+      assert set[x] != set[y];
+      y := y + 1;
+    }
+    x := x + 1;
+  }
+  result := 0;
+  return;
 }

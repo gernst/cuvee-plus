@@ -3,20 +3,7 @@
 // unsafe variant of pcomp, which asserts that the cubes are squares
 //
 // findings: unsafe, not closed with the lemmas of pcomp, as expected
-// note: 3 of its lemmas are part of teq.dfy now and are removed here
-
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function sum(values: seq<int>): int
-
-// the differences (k + 1)^3 - k^3 - 1 = 3 * k + 3 * k * k telescope to n^3 - n over 0, ..., n - 1; teq.dfy splits such
-// a sum by linearity first, with the sum of the counter (n * n - n) / 2, hence the lemma states the sum of 3 * k * k
-// as the rest, in the normal form of the simplifier, such that the division atoms cancel; Faulhaber's formula for the
-// squares would leave divisions by 2 and 6, which are not combined
-lemma {:rw} {:teq} sum_1(n: int)
-  ensures sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: 3 * k * k)) == n * n * n - n - 3 * ((-n + n * n) / 2)
+// note: its lemmas are part of teq.dfy now (sum_squares, half_6x_6xx, ...) and are removed here
 
 method main() {
   var N: int;

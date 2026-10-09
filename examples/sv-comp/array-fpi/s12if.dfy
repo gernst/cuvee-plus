@@ -8,14 +8,9 @@
 // and F(a[k]) take a read as their argument, not a bound variable (see TODO.md, higher-order patterns); the
 // variants s22if to s52if are not translated
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-
 // an update at the position k of the iteration k that reads the array at k reads its initial value, which no earlier
 // iteration has overwritten (with a further dependency ys)
-lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, ys: seq<int>, C: (int) -> bool, F: (int) -> int,
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: Nat, ys: List<int>, C: (int) -> bool, F: (int) -> int,
                            G: (int) -> int)
   ensures
     trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: case C(a[k]) => a[k := F(a[k])] case !C(a[k]) => a[k := G(a[k])])

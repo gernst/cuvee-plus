@@ -5,22 +5,20 @@
 
 method main() returns (result: int) {
   var N: int;
+  var x: int;
+  var y: int;
   assume 0 < N;
-  {
-    var x: int;
-    var y: int;
-    x := 0;
-    y := 500000;
-    while x < N {
-      if x < 500000 {
-        x := x + 1;
-      } else {
-        x := x + 1;
-        y := y + 1;
-      }
+  x := 0;
+  y := 500000;
+  while x < N {
+    if x < 500000 {
+      x := x + 1;
+    } else {
+      x := x + 1;
+      y := y + 1;
     }
-    assert y != x;
-    result := 0;
-    return;
   }
+  assert y != x;
+  result := 0;
+  return;
 }

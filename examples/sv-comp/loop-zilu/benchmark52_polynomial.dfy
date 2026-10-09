@@ -9,22 +9,20 @@
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
+  var i: int;
   assume 0 < N;
-  {
-    var i: int;
-    tmp₁ := *;
-    i := tmp₁;
-    if !(i < 10 && i > -10) {
-      result := 0;
-      return;
-    }
-    while i * i < N {
-      i := i + 1;
-    }
-    assert i == 10;
+  tmp₁ := *;
+  i := tmp₁;
+  if !(i < 10 && i > -10) {
     result := 0;
     return;
   }
+  while i * i < N {
+    i := i + 1;
+  }
+  assert i == 10;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

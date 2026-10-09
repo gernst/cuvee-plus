@@ -5,13 +5,8 @@
 // findings: the value s starts at 0 and changes only where it is not 0; a lemma, generic in the change, states that
 // it stays at its initial value c; closed (no output)
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-
 // a value that starts at c and is changed only where it differs from c stays c
-lemma {:rw} {:teq} current_1(c: int, n: int, F: (int) -> int)
+lemma {:rw} {:teq} current_1(c: int, n: Nat, F: (int) -> int)
   ensures current(trace(c, for ⌊counter(0, 1, n)⌋ do s, k :: case s != c => F(s) case s == c => c)) == c
 
 method main() {

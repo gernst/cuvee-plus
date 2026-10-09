@@ -7,41 +7,37 @@
 // whose invariant x1 == q * x2 + r is non-linear; no lemmas tried
 
 method assume_abort_if_not(cond: int) {
-  {
-    if !((cond) != 0) {
-      assume false;
-    }
+  if !((cond) != 0) {
+    assume false;
   }
 }
 
 method main() returns (result: int) {
-  {
-    var x1: int, x2: int, y1: int, y2: int, y3: int;
-    x1 := *;
-    x2 := *;
-    assume_abort_if_not((if x1 >= 0 then 1 else 0));
-    assume_abort_if_not((if x2 != 0 then 1 else 0));
-    y1 := 0;
-    y2 := 0;
-    y3 := x1;
-    while ((1) != 0) {
-      assert y1 * x2 + y2 + y3 == x1;
-      if !(y3 != 0) {
-        break;
-      }
-      if y2 + 1 == x2 {
-        y1 := y1 + 1;
-        y2 := 0;
-        y3 := y3 - 1;
-      } else {
-        y2 := y2 + 1;
-        y3 := y3 - 1;
-      }
+  var x1: int, x2: int, y1: int, y2: int, y3: int;
+  x1 := *;
+  x2 := *;
+  assume_abort_if_not((if x1 >= 0 then 1 else 0));
+  assume_abort_if_not((if x2 != 0 then 1 else 0));
+  y1 := 0;
+  y2 := 0;
+  y3 := x1;
+  while ((1) != 0) {
+    assert y1 * x2 + y2 + y3 == x1;
+    if !(y3 != 0) {
+      break;
     }
-    assert y1 * x2 + y2 == x1;
-    result := 0;
-    return;
+    if y2 + 1 == x2 {
+      y1 := y1 + 1;
+      y2 := 0;
+      y3 := y3 - 1;
+    } else {
+      y2 := y2 + 1;
+      y3 := y3 - 1;
+    }
   }
+  assert y1 * x2 + y2 == x1;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

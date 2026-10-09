@@ -54,11 +54,11 @@ object TEQ extends TestSuite:
       assert(!subexprs(phi).exists { case App(fun, _, _, _) => fun == Fun.trace.counter; case _ => false })
       assert(!subexprs(phi).exists { case App(fun, _, _, _) => fun.name.name == "sums"; case _ => false })
 
-      // also without loops, once at the beginning
+      // also without loops, once, as part of the prelude of the source (see Config.features)
       val abs = Examples.root / "dafny" / "vcgen" / "abs.dfy"
       val (cmds_, _) = Examples.stream("-teq", "-print", "null", abs.toString)
       val prelude = Examples.prelude("-teq", "-print", "null", abs.toString)
-      cmds_.filterNot(prelude.contains).take(cuvee.verify.TEQ.lemmas.length) ==> cuvee.verify.TEQ.lemmas
+      assert(cuvee.verify.TEQ.lemmas.forall(prelude.contains))
       cmds_.count(cuvee.verify.TEQ.lemmas.contains) ==> cuvee.verify.TEQ.lemmas.length
 
     // break, continue, and return inside of loops: the loop is left by a path that ends by break or return,

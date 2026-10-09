@@ -4,31 +4,10 @@
 // are checked to agree everywhere; the return from the loop is a break with the result
 //
 // findings: the comparison breaks at the first difference; -teq turns c == 0 into the iteration constraint that
-// both agree, which the lemmas of standard_compare_ground abstract by agree and instantiate at the position; closed
+// both agree, which the lemmas of teq.dfy abstract by agree_prefix and instantiate at the position; closed
 // (no output)
-// note: 1 of its lemmas are part of teq.dfy now and are removed here
+// note: its lemmas are part of teq.dfy now (agree_prefix_def, earlier_agree_prefix) and are removed here
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
-
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing; the lemmas are
-// those of standard_compare_ground
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-
-// two sequences agree at the positions 0, ..., n - 1, an auxiliary predicate, which is not defined
-predicate agree(n: int, xs: seq<int>, ys: seq<int>)
-
-// two sequences that are equal at all iterations 0, ..., n - 1 agree there, and then at each position j in that range;
-// the instantiation needs agree, since a side condition invs(... earlier(k, xs) == earlier(k, ys)) would be matched
-// in a context, in which the lemma applies to its body, and an equation of prefixes prefix(n, xs) == prefix(n, ys)
-// with n open is not matched against the facts (see TODO.md); the atom is stated as such, since an equation of
-// integers would be a rule on its left-hand side as a term
-lemma {:rw} {:teq} invs_1(n: int, xs: seq<int>, ys: seq<int>, hs: seq<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(k, xs) == earlier(k, ys)) <==> agree(n, xs, ys)
-lemma {:rw} {:teq} earlier_1(n: int, j: int, xs: seq<int>, ys: seq<int>)
-  requires agree(n, xs, ys) && 0 <= j < n
-  ensures (earlier(j, xs) == earlier(j, ys)) <==> true
 
 method main() {
   var N: int;

@@ -6,24 +6,9 @@
 // findings: i and j count the even and odd iterations, which teq.dfy introduces as counts of a map of k % 2 and of
 // k % 2 == 0; lemmas count false as the others than true, the iterations where k % 2 == r as the occurrences of r,
 // and the remainders (see half.dfy), which gives both counts the same closed form, since they differ in the names
-// of their bound variables otherwise (see TODO.md), and the length of the iterations of a counter; the lemmas keep
+// of their bound variables otherwise (see TODO.md); the lemmas keep
 // the dependencies as matched; closed (no output)
-// note: 2 of its lemmas are part of teq.dfy now and are removed here
-
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function count<a>(e: a, vs: seq<a>): int
-
-// the length of the iterations of a counter
-lemma {:rw} {:teq} counter_1(i: int, c: int, n: int)
-  ensures |⌊counter(i, c, n)⌋| == n
-
-// the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m (see half.dfy), which gives both
-// counts the same closed form, since they differ in the names of their bound variables
-lemma {:rw} {:teq} count_1(n: int, m: int, r: int, hs: seq<int>)
-  requires 0 < m && 0 <= r < m
-  ensures count(r, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: k % m)) == (n + m - 1 - r) / m
+// note: its lemmas are part of teq.dfy now (count_remainder, count_false_true, count_true_eq) and are removed here
 
 method main() {
   var n: int;

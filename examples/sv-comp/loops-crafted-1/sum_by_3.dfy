@@ -18,31 +18,29 @@ method main() returns (result: int)
   modifies SIZE
   requires SIZE == 0
 {
+  var n: int, i: int, k: int, j: int;
   SIZE := 20000001;
-  {
-    var n: int, i: int, k: int, j: int;
-    n := *;
-    assume 0 <= n;
-    if !(n <= SIZE) {
-      result := 0;
-      return;
-    }
-    i := 0;
-    while i < n {
-      i := i + 1;
-    }
-    j := i;
-    while j < n {
-      j := j + 1;
-    }
-    k := j;
-    while k < n {
-      k := k + 1;
-    }
-    assert ((i + j + k) / (3)) <= SIZE;
+  n := *;
+  assume 0 <= n;
+  if !(n <= SIZE) {
     result := 0;
     return;
   }
+  i := 0;
+  while i < n {
+    i := i + 1;
+  }
+  j := i;
+  while j < n {
+    j := j + 1;
+  }
+  k := j;
+  while k < n {
+    k := k + 1;
+  }
+  assert ((i + j + k) / (3)) <= SIZE;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify -split -simplify:

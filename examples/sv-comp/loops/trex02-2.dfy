@@ -15,11 +15,11 @@ method main() returns (result: int)
   requires x == 0
 {
   var tmp₁: bool;
+  var c: bool;
   x := *;
   while x > 0
     modifies x
   {
-    var c: bool;
     tmp₁ := *;
     c := tmp₁;
     if c {

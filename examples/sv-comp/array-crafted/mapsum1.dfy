@@ -10,23 +10,16 @@
 // 100)⌋, or ⌊I₁₉⌋, which the definitions of the context make equal, while expressions are compared literally; the
 // lemma variant that keeps the matched positions ks on its right-hand side, with the side condition ks ==
 // ⌊counter(0, 1, m + 1)⌋, does not apply, since that side condition is not decided (see TODO.md)
+// note: merges mapsum2, mapsum3 and mapsum4, which differ only in the bound (1000, 10000, 100000)
 // note: the concrete loop bounds are symbolic, arbitrary values that keep the verdict: N for 100, at least 2, since
 // x[0] and x[1] are swapped
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function shifts(a: array<int, int>, keys: seq<int>, d: int): Trace<array<int, int>>
-function selects<a, b>(a: array<a, b>, keys: seq<a>): seq<b>
-function sum(values: seq<int>): int
-
 // shifting the elements at the positions 1, ..., m down by one keeps the element at m, hence the sum over the
 // positions 0, ..., m loses a[0] and counts a[m] twice
-lemma {:rw} {:teq} sum_1(a: array<int, int>, m: int, n: int)
-  requires 0 <= m && n == m + 1
+lemma {:rw} {:teq} sum_1(a: array<int, int>, m: Nat, n: Nat)
+  requires n == succ(m)
   ensures sum(selects(current(shifts(a, ⌊counter(0, 1, m)⌋, 1)), ⌊counter(0, 1, n)⌋))
-    == sum(selects(a, ⌊counter(0, 1, n)⌋)) - a[0] + a[m]
+    == sum(selects(a, ⌊counter(0, 1, n)⌋)) - a[0] + a[integer(m)]
 
 method main() {
   var N: int;

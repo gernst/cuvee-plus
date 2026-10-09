@@ -3,22 +3,12 @@
 // even numbers below 2 * k, which are k many
 //
 // findings: the loop counts the even iterations, which teq.dfy introduces as count(0, maps(... k % 2)) over the
-// iterations; the lemma on the number of remainders modulo m among 0, ..., n - 1 accelerates it, generic in m and
+// iterations; count_remainder of teq.dfy, the number of remainders modulo m among 0, ..., n
+// - 1, accelerates it, generic in m and
 // r; -split splits the disjunction of the exit (n == 0 or n == 2 * k), and a lemma on the division of m * k + r by
 // m gives k; closed (no output). Attempt: division as linear bounds (2 * s <= x < 2 * s + 2) leaves a goal that
 // needs integer rounding
-// note: 1 of its lemmas are part of teq.dfy now and are removed here
-
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function count<a>(e: a, vs: seq<a>): int
-
-// the numbers 0, ..., n - 1 with the remainder r modulo m, which the iterations of a loop are, number
-// (n + m - 1 - r) / m, here with a further dependency hs, which the update does not use
-lemma {:rw} {:teq} count_1(n: int, m: int, r: int, hs: seq<int>)
-  requires 0 < m && 0 <= r < m
-  ensures count(r, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: k % m)) == (n + m - 1 - r) / m
+// note: its lemmas are part of teq.dfy now (count_remainder, div_quotient_remainder) and are removed here
 
 method main() {
   var i: int;

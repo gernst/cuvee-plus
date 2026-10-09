@@ -10,13 +10,11 @@ function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a)
 
 method ReadFromPort() returns (result: int) {
   var tmp₁: int;
-  {
-    var x: int;
-    tmp₁ := *;
-    x := tmp₁;
-    result := x;
-    return;
-  }
+  var x: int;
+  tmp₁ := *;
+  x := tmp₁;
+  result := x;
+  return;
 }
 
 var SIZE: int;
@@ -27,14 +25,14 @@ method main() returns (result: int)
   modifies MAX, SIZE
   requires SIZE == 0 && MAX == 0
 {
+  var i: int;
+  var value: int;
+  var a: array<int, int>;
+  var DEFAULTVAL: int;
+  var FIXEDVAL: int;
   MAX := 100000;
   SIZE := *;
   if SIZE > 1 && SIZE < MAX {
-    var i: int;
-    var value: int;
-    var a: array<int, int>;
-    var DEFAULTVAL: int;
-    var FIXEDVAL: int;
     DEFAULTVAL := 0;
     FIXEDVAL := 10;
     if (remainder(SIZE, 4)) != 0 {

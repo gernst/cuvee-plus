@@ -8,26 +8,24 @@
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int, tmp₂: int;
+  var x: int, y: int;
   assume 0 < N;
-  {
-    var x: int, y: int;
-    tmp₁ := *;
-    x := tmp₁;
-    tmp₂ := *;
-    y := tmp₂;
-    if !(y <= 1000000) {
-      result := 0;
-      return;
-    }
-    if y > 0 {
-      while x < N {
-        x := x + y;
-      }
-    }
-    assert y <= 0 || y > 0 && x >= N;
+  tmp₁ := *;
+  x := tmp₁;
+  tmp₂ := *;
+  y := tmp₂;
+  if !(y <= 1000000) {
     result := 0;
     return;
   }
+  if y > 0 {
+    while x < N {
+      x := x + y;
+    }
+  }
+  assert y <= 0 || y > 0 && x >= N;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

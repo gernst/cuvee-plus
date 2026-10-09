@@ -5,17 +5,15 @@
 
 method main() returns (result: int) {
   var N: int;
+  var x: int;
   assume 0 < N;
-  {
-    var x: int;
-    x := 0;
-    while x < N {
-      if x < 10000000 {
-        x := x + 1;
-      } else {
-        x := x + 2;
-      }
+  x := 0;
+  while x < N {
+    if x < 10000000 {
+      x := x + 1;
+    } else {
+      x := x + 2;
     }
-    assert x == 100000001;
   }
+  assert x == 100000001;
 }

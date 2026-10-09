@@ -5,47 +5,45 @@
 
 method main() returns (result: int) {
   var tmp₁: int;
-  {
-    var i: int;
-    var k: int;
-    var j: int;
-    var n: int;
-    var m: int;
-    var A: array<int, array<int, int>>;
-    var C: array<int, array<int, int>>;
-    n := *;
-    assume 0 < n;
-    m := 1800;
-    i := 0;
-    while i < n {
-      j := 0;
-      while j < n {
-        tmp₁ := *;
-        A := A[i := A[i][j := tmp₁]];
-        j := j + 1;
-      }
-      i := i + 1;
-    }
-    i := 0;
+  var i: int;
+  var k: int;
+  var j: int;
+  var n: int;
+  var m: int;
+  var A: array<int, array<int, int>>;
+  var C: array<int, array<int, int>>;
+  n := *;
+  assume 0 < n;
+  m := 1800;
+  i := 0;
+  while i < n {
     j := 0;
-    while i < n {
-      j := 0;
-      while j < n {
-        C := C[j := C[j][i := A[i][j]]];
-        j := j + 1;
-      }
-      i := i + 1;
+    while j < n {
+      tmp₁ := *;
+      A := A[i := A[i][j := tmp₁]];
+      j := j + 1;
     }
-    i := 0;
-    while i < n {
-      j := 0;
-      while j < n {
-        assert C[j][i] == A[i][j];
-        j := j + 1;
-      }
-      i := i + 1;
-    }
-    result := 0;
-    return;
+    i := i + 1;
   }
+  i := 0;
+  j := 0;
+  while i < n {
+    j := 0;
+    while j < n {
+      C := C[j := C[j][i := A[i][j]]];
+      j := j + 1;
+    }
+    i := i + 1;
+  }
+  i := 0;
+  while i < n {
+    j := 0;
+    while j < n {
+      assert C[j][i] == A[i][j];
+      j := j + 1;
+    }
+    i := i + 1;
+  }
+  result := 0;
+  return;
 }

@@ -11,40 +11,38 @@ method main() returns (result: int)
   requires b == 0
 {
   var tmp₁: bool;
-  {
-    var k: bool;
-    var i: int;
-    var n: int;
-    var j: int;
-    var a: array<int, int>;
-    tmp₁ := *;
-    k := tmp₁;
-    if k {
-      n := 0;
-    } else {
-      n := 1023;
-    }
-    i := 0;
-    j := *;
-    assume 0 <= j;
-    if j > 10000 {
-      result := 0;
-      return;
-    }
-    while i <= n {
-      i := i + 1;
-      j := j + 2;
-    }
-    a := a[i := 0];
-    assert j < 1025;
-    a := a[j := 0];
-    a := a[b := 0];
-    if b >= 0 && b < 1023 {
-      a := a[b := 1];
-    } else {
-      a := a[(remainder(b, 1023)) := 1];
-    }
-    result := 1;
+  var k: bool;
+  var i: int;
+  var n: int;
+  var j: int;
+  var a: array<int, int>;
+  tmp₁ := *;
+  k := tmp₁;
+  if k {
+    n := 0;
+  } else {
+    n := 1023;
+  }
+  i := 0;
+  j := *;
+  assume 0 <= j;
+  if j > 10000 {
+    result := 0;
     return;
   }
+  while i <= n {
+    i := i + 1;
+    j := j + 2;
+  }
+  a := a[i := 0];
+  assert j < 1025;
+  a := a[j := 0];
+  a := a[b := 0];
+  if b >= 0 && b < 1023 {
+    a := a[b := 1];
+  } else {
+    a := a[(remainder(b, 1023)) := 1];
+  }
+  result := 1;
+  return;
 }

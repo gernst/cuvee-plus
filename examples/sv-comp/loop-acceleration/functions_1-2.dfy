@@ -13,13 +13,11 @@ method f(z: int) returns (result: int) {
 
 method main() returns (result: int) {
   var N: int;
+  var x: int;
   assume 0 < N;
-  {
-    var x: int;
-    x := 0;
-    while x < N {
-      x := f(x);
-    }
-    assert (((remainder(x, 2))) != 0);
+  x := 0;
+  while x < N {
+    x := f(x);
   }
+  assert (((remainder(x, 2))) != 0);
 }

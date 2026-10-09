@@ -10,15 +10,9 @@
 // resulting single-case traces, where one case of the pattern covers the update, with c := true and the function of
 // the other case uninstantiated (see TODO.md); the joined store is accelerated before
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-
 // two cases that store at the same position, the iteration, are one store of a conditional value (see
 // standard_running-2), here with values that read the array itself
-lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, hs: seq<int>, C: (int, int) -> bool,
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: Nat, hs: List<int>, C: (int, int) -> bool,
                            F: (array<int, int>, int, int) -> int, G: (array<int, int>, int, int) -> int)
   ensures
     trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(k, h) => a[k := F(a, k, h)] case !C(k, h) => a[k := G(a, k, h)])

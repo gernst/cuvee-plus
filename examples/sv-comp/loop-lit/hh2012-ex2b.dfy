@@ -4,22 +4,20 @@
 
 method main() returns (result: int) {
   var tmp₁: bool;
-  {
-    var n: int;
-    n := 0;
-    while (1 != 0) {
-      assert n <= 60;
-      tmp₁ := *;
-      if tmp₁ {
-        if n < 60 {
-          n := n + 1;
-        } else {
-          assert n == 60;
-          n := 0;
-        }
+  var n: int;
+  n := 0;
+  while (1 != 0) {
+    assert n <= 60;
+    tmp₁ := *;
+    if tmp₁ {
+      if n < 60 {
+        n := n + 1;
+      } else {
+        assert n == 60;
+        n := 0;
       }
     }
-    result := 0;
-    return;
   }
+  result := 0;
+  return;
 }

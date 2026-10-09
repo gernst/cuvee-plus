@@ -9,38 +9,36 @@ function bitand(a: int, b: int): int
 method main() returns (result: int) {
   var tmp₁: int;
   var tmp₂: int;
-  {
-    var x: int;
-    var z: int;
-    tmp₁ := *;
-    x := tmp₁;
-    tmp₂ := *;
-    z := tmp₂;
-    if !(x > -100) {
-      result := 0;
-      return;
-    }
-    if !(x < 200) {
-      result := 0;
-      return;
-    }
-    if !(z > 100) {
-      result := 0;
-      return;
-    }
-    if !(z < 200) {
-      result := 0;
-      return;
-    }
-    if ((bitand((if z > 100 then 1 else 0), (if x < 100 then 1 else 0))) != 0) {
-      z := *;
-      x := *;
-    }
-    if ((bitand((if z > 100 then 1 else 0), (if x < 100 then 1 else 0))) != 0) {
-      assume false;
-    }
-    assert x >= 100 || z <= 100;
+  var x: int;
+  var z: int;
+  tmp₁ := *;
+  x := tmp₁;
+  tmp₂ := *;
+  z := tmp₂;
+  if !(x > -100) {
     result := 0;
     return;
   }
+  if !(x < 200) {
+    result := 0;
+    return;
+  }
+  if !(z > 100) {
+    result := 0;
+    return;
+  }
+  if !(z < 200) {
+    result := 0;
+    return;
+  }
+  if ((bitand((if z > 100 then 1 else 0), (if x < 100 then 1 else 0))) != 0) {
+    z := *;
+    x := *;
+  }
+  if ((bitand((if z > 100 then 1 else 0), (if x < 100 then 1 else 0))) != 0) {
+    assume false;
+  }
+  assert x >= 100 || z <= 100;
+  result := 0;
+  return;
 }

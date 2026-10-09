@@ -27,3 +27,7 @@ object Source extends cuvee.pipe.Source:
     // the parser's state now contains the declarations of the prelude
     parser.resetPoint()
     (parser.state, lifted, prelude)
+
+  // no further definitions
+  def preludes(config: Config): List[String] =
+    Nil

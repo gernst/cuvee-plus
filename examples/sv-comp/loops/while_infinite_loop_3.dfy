@@ -12,15 +12,13 @@ var x: int;
 method eval()
   modifies x
 {
+  while ((1) != 0)
+    modifies x
   {
-    while ((1) != 0)
-      modifies x
-    {
-      x := 0;
-      break;
-    }
-    return;
+    x := 0;
+    break;
   }
+  return;
 }
 
 method main() returns (result: int)
@@ -28,17 +26,15 @@ method main() returns (result: int)
   requires x == 0
 {
   x := 0;
+  while ((1) != 0)
+    modifies x
   {
-    while ((1) != 0)
-      modifies x
-    {
-      eval();
-      assert x == 0;
-    }
-    assert x != 0;
-    result := 0;
-    return;
+    eval();
+    assert x == 0;
   }
+  assert x != 0;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

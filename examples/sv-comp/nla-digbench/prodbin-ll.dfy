@@ -7,38 +7,34 @@
 // digits of a; no lemmas tried
 
 method assume_abort_if_not(cond: int) {
-  {
-    if !((cond) != 0) {
-      assume false;
-    }
+  if !((cond) != 0) {
+    assume false;
   }
 }
 
 method main() returns (result: int) {
-  {
-    var a: int, b: int, x: int, y: int, z: int;
-    a := *;
-    b := *;
-    assume_abort_if_not((if b >= 1 then 1 else 0));
-    x := a;
-    y := b;
-    z := 0;
-    while ((1) != 0) {
-      assert z + x * y == a * b;
-      if !(y != 0) {
-        break;
-      }
-      if ((y) % (2)) == 1 {
-        z := z + x;
-        y := y - 1;
-      }
-      x := 2 * x;
-      y := ((y) / (2));
+  var a: int, b: int, x: int, y: int, z: int;
+  a := *;
+  b := *;
+  assume_abort_if_not((if b >= 1 then 1 else 0));
+  x := a;
+  y := b;
+  z := 0;
+  while ((1) != 0) {
+    assert z + x * y == a * b;
+    if !(y != 0) {
+      break;
     }
-    assert z == a * b;
-    result := 0;
-    return;
+    if ((y) % (2)) == 1 {
+      z := z + x;
+      y := y - 1;
+    }
+    x := 2 * x;
+    y := ((y) / (2));
   }
+  assert z == a * b;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

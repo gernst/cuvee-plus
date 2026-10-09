@@ -17,12 +17,12 @@ method main() returns (result: int)
   requires SIZE == 0 && MAX == 0
 {
   var tmp₁: int;
+  var i: int;
+  var a: array<int, int>;
+  var acopy: array<int, int>;
   MAX := 100000;
   SIZE := *;
   if SIZE > 1 && SIZE < MAX {
-    var i: int;
-    var a: array<int, int>;
-    var acopy: array<int, int>;
     i := 0;
     while i < SIZE {
       tmp₁ := *;

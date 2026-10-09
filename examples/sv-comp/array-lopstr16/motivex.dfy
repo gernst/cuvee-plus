@@ -10,21 +10,15 @@
 // match the product (see TODO.md)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-
 // a store at the iteration k that is made only if C holds of the values of the iteration, read at j: the value of
 // the iteration j if it is one of the first n and C holds there, otherwise the initial value (with further
 // dependencies hs, cs, vs)
-lemma {:rw} {:teq} current_1<b>(a0: array<int, b>, n: int, j: int, hs: seq<int>, cs: seq<int>, vs: seq<int>,
+lemma {:rw} {:teq} current_1<b>(a0: array<int, b>, n: Nat, j: int, hs: List<int>, cs: List<int>, vs: List<int>,
                                 C: (int, int, int) -> bool, V: (int, int, int) -> b)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs, cs, vs do a, k, h, c, v ::
                   case C(h, c, v) => a[k := V(h, c, v)] case !C(h, c, v) => a))[j]
-    == if 0 <= j < n && C(earlier(j, hs), earlier(j, cs), earlier(j, vs))
-       then V(earlier(j, hs), earlier(j, cs), earlier(j, vs))
+    == if 0 <= j < integer(n) && C(earlier(natural(j), hs), earlier(natural(j), cs), earlier(natural(j), vs))
+       then V(earlier(natural(j), hs), earlier(natural(j), cs), earlier(natural(j), vs))
        else a0[j]
 
 // conditionals with the same test in an equation are a single case split (not about traces)

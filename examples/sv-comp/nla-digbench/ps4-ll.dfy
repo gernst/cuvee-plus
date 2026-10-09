@@ -5,34 +5,30 @@
 // findings: open: needs the sum of cubes over a counter, as ps3-ll
 
 method assume_abort_if_not(cond: int) {
-  {
-    if !((cond) != 0) {
-      assume false;
-    }
+  if !((cond) != 0) {
+    assume false;
   }
 }
 
 method main() returns (result: int) {
-  {
-    var k: int, y: int, x: int, c: int;
-    k := *;
-    y := 0;
-    x := 0;
-    c := 0;
-    while ((1) != 0) {
-      assert 4 * x - y * y * y * y - 2 * y * y * y - y * y == 0;
-      if !(c < k) {
-        break;
-      }
-      c := c + 1;
-      y := y + 1;
-      x := y * y * y + x;
-    }
-    assert k * y - y * y == 0;
+  var k: int, y: int, x: int, c: int;
+  k := *;
+  y := 0;
+  x := 0;
+  c := 0;
+  while ((1) != 0) {
     assert 4 * x - y * y * y * y - 2 * y * y * y - y * y == 0;
-    result := 0;
-    return;
+    if !(c < k) {
+      break;
+    }
+    c := c + 1;
+    y := y + 1;
+    x := y * y * y + x;
   }
+  assert k * y - y * y == 0;
+  assert 4 * x - y * y * y * y - 2 * y * y * y - y * y == 0;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

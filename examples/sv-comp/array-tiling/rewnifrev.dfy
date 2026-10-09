@@ -10,11 +10,11 @@ method main() returns (result: int)
   modifies MAX, SIZE
   requires SIZE == 0 && MAX == 0
 {
+  var i: int;
+  var a: array<int, int>;
   MAX := 100000;
   SIZE := *;
   if SIZE > 1 && SIZE < MAX {
-    var i: int;
-    var a: array<int, int>;
     i := SIZE - 1;
     while i >= 0 {
       if i - 1 >= 0 {

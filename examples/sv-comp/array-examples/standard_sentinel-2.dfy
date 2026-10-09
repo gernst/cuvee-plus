@@ -9,21 +9,17 @@
 // condition is an atom matched against the facts; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-
 // e does not occur in the array a at the positions 0, ..., n - 1, an auxiliary predicate, which is not defined
-predicate absent(n: int, a: array<int, int>, e: int)
+predicate absent(n: Nat, a: array<int, int>, e: int)
 
 // the iteration constraint of a search, the elements of a at the iterations 0, ..., n - 1 differ from e, states that
 // e is absent there; then a position j where e is found is not before n, a comparison as the left-hand side, which
 // terminates, since its side condition is an atom that is matched against the facts, not an iteration constraint
-lemma {:rw} {:teq} invs_1(n: int, e: int, a: array<int, int>, hs: seq<int>)
+lemma {:rw} {:teq} invs_1(n: Nat, e: int, a: array<int, int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[k] != e) <==> absent(n, a, e)
-lemma {:rw} {:teq} lemma_1(n: int, j: int, e: int, a: array<int, int>)
+lemma {:rw} {:teq} lemma_1(n: Nat, j: int, e: int, a: array<int, int>)
   requires absent(n, a, e) && a[j] == e && 0 <= j
-  ensures n <= j
+  ensures integer(n) <= j
 
 method main() {
   var N: int;

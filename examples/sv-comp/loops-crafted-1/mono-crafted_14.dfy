@@ -8,31 +8,29 @@ function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a)
 
 method main() returns (result: int) {
   var N: int;
+  var x: int;
+  var y: int;
+  var z: int;
   assume 0 < N;
-  {
-    var x: int;
-    var y: int;
-    var z: int;
-    x := 0;
-    y := 500000;
-    z := 0;
-    x := 0;
-    while x < N {
-      if x < 500000 {
-        x := x + 1;
-      } else {
-        x := x + 1;
-        y := y + 1;
-      }
+  x := 0;
+  y := 500000;
+  z := 0;
+  x := 0;
+  while x < N {
+    if x < 500000 {
+      x := x + 1;
+    } else {
+      x := x + 1;
+      y := y + 1;
     }
-    while y > 0 {
-      x := x - 1;
-      z := z + 1;
-      y := y - 2;
-    }
-    assert (remainder(z, 2)) == 0;
-    assert (remainder(x, 2)) == 0;
-    result := 0;
-    return;
   }
+  while y > 0 {
+    x := x - 1;
+    z := z + 1;
+    y := y - 2;
+  }
+  assert (remainder(z, 2)) == 0;
+  assert (remainder(x, 2)) == 0;
+  result := 0;
+  return;
 }

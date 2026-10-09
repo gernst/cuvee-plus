@@ -29,8 +29,8 @@ variable `CUVEE_SVCOMP` is set.
 - Unsigned integers are `int` with nonnegative inputs. This is faithful
   except where C wraps around (noted in `diamond_2-2`).
 - Lemmas and auxiliary definitions are in the files; nothing is added to
-  teq.dfy. The declarations of teq.dfy that lemmas refer to are repeated,
-  since its prelude is injected after parsing.
+  teq.dfy. With `-teq`, teq.dfy is injected before the input is parsed, so the
+  lemmas refer to its declarations without repeating them.
 
 ## Results
 

@@ -11,42 +11,40 @@ method main() returns (result: int)
   modifies SIZE
   requires SIZE == 0
 {
+  var n: int;
+  var i: int;
+  var k: int;
+  var j: int;
   SIZE := 20000001;
-  {
-    var n: int;
-    var i: int;
-    var k: int;
-    var j: int;
-    n := *;
-    assume 0 <= n;
-    if !(n <= SIZE) {
-      result := 0;
-      return;
-    }
-    i := 0;
-    if i < n {
-      i := *;
-    assume 0 <= i;
-      if !(i < n) {
-        assume false;
-      }
-      if i < n {
-        i := i + 1;
-      }
-      if i < n {
-        assume false;
-      }
-    }
-    j := i;
-    while j < n {
-      j := j + 1;
-    }
-    k := j;
-    while k < n {
-      k := k + 1;
-    }
-    assert (quotient(i + j + k, 3)) <= SIZE;
+  n := *;
+  assume 0 <= n;
+  if !(n <= SIZE) {
     result := 0;
     return;
   }
+  i := 0;
+  if i < n {
+    i := *;
+  assume 0 <= i;
+    if !(i < n) {
+      assume false;
+    }
+    if i < n {
+      i := i + 1;
+    }
+    if i < n {
+      assume false;
+    }
+  }
+  j := i;
+  while j < n {
+    j := j + 1;
+  }
+  k := j;
+  while k < n {
+    k := k + 1;
+  }
+  assert (quotient(i + j + k, 3)) <= SIZE;
+  result := 0;
+  return;
 }

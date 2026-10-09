@@ -8,19 +8,14 @@
 // note: 2 of its lemmas are part of teq.dfy now and are removed here
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing (the first two
 // lemmas are those of copysome1-1)
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
 
 // stores at the positions of a counter, of V(i) except at the position c, where the store of d is written at the
 // literal c, after the simplifier substituted c for i in that case
-lemma {:rw} {:teq} current_1(a0: array<int, int>, n: int, j: int, c: int, d: int, V: (int) -> int)
+lemma {:rw} {:teq} current_1(a0: array<int, int>, n: Nat, j: int, c: int, d: int, V: (int) -> int)
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case i != c => a[i := V(i)] case i == c => a[c := d]))[j]
-      == if 0 <= j < n then (if j == c then d else V(j)) else a0[j]
+      == if 0 <= j < integer(n) then (if j == c then d else V(j)) else a0[j]
 
 // an equation of a conditional is a case split (not about traces)
 lemma {:rw} {:teq} lemma_1<b>(c: bool, x: b, y: b, z: b)

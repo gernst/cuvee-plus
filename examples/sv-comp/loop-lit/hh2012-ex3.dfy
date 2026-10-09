@@ -4,27 +4,25 @@
 // 4
 
 method main() returns (result: int) {
-  {
-    var i: int;
-    i := 0;
-    while i < 4 {
-      var j: int;
-      j := 0;
-      while j < 4 {
-        i := i + 1;
-        j := j + 1;
-        assert 0 <= j;
-        assert j <= i;
-        assert i <= j + 3;
-        assert j <= 4;
-      }
+  var i: int;
+  var j: int;
+  i := 0;
+  while i < 4 {
+    j := 0;
+    while j < 4 {
+      i := i + 1;
+      j := j + 1;
       assert 0 <= j;
       assert j <= i;
       assert i <= j + 3;
       assert j <= 4;
-      i := i - j + 1;
     }
-    result := 0;
-    return;
+    assert 0 <= j;
+    assert j <= i;
+    assert i <= j + 3;
+    assert j <= 4;
+    i := i - j + 1;
   }
+  result := 0;
+  return;
 }

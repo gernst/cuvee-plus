@@ -12,18 +12,9 @@
 // note: 3 of its lemmas are part of teq.dfy now and are removed here
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-predicate occurs<a>(x: a, xs: seq<a>)
-function indexof<a>(x: a, xs: seq<a>): int
-predicate distincts<a>(xs: seq<a>)
-
 // two cases that store at the same position, here that of a further dependency, are one store of a conditional value
 // (see standard_running-2)
-lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, ps: seq<int>, cs: seq<int>, C: (int, int) -> bool,
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: Nat, ps: List<int>, cs: List<int>, C: (int, int) -> bool,
                            F: (int, int) -> int, G: (int, int) -> int)
   ensures
     trace(a0, for ⌊counter(0, 1, n)⌋, ps, cs do a, k, p, c :: case C(p, c) => a[p := F(p, c)] case !C(p, c) => a[p := G(p, c)])

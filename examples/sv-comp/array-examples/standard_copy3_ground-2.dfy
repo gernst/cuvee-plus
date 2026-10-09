@@ -8,44 +8,42 @@ method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
   var tmp₂: int;
+  var a1: array<int, int>;
+  var a2: array<int, int>;
+  var a3: array<int, int>;
+  var a4: array<int, int>;
+  var a: int;
+  var i: int;
+  var x: int;
   assume 0 < N;
-  {
-    var a1: array<int, int>;
-    var a2: array<int, int>;
-    var a3: array<int, int>;
-    var a4: array<int, int>;
-    var a: int;
-    var i: int;
-    var x: int;
-    a := 0;
-    while a < N {
-      tmp₁ := *;
-      a1 := a1[a := tmp₁];
-      tmp₂ := *;
-      a3 := a3[a := tmp₂];
-      a := a + 1;
-    }
-    i := 0;
-    while i < N {
-      a2 := a2[i := a1[i]];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a4 := a4[i := a2[i]];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a4 := a4[i := a3[i]];
-      i := i + 1;
-    }
-    x := 0;
-    while x < N {
-      assert a1[x] == a4[x];
-      x := x + 1;
-    }
-    result := 0;
-    return;
+  a := 0;
+  while a < N {
+    tmp₁ := *;
+    a1 := a1[a := tmp₁];
+    tmp₂ := *;
+    a3 := a3[a := tmp₂];
+    a := a + 1;
   }
+  i := 0;
+  while i < N {
+    a2 := a2[i := a1[i]];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    a4 := a4[i := a2[i]];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    a4 := a4[i := a3[i]];
+    i := i + 1;
+  }
+  x := 0;
+  while x < N {
+    assert a1[x] == a4[x];
+    x := x + 1;
+  }
+  result := 0;
+  return;
 }

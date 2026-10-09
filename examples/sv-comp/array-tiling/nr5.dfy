@@ -14,13 +14,13 @@ method main() returns (result: int)
   modifies CELLCOUNT
   requires CELLCOUNT == 0
 {
+  var DEFAULTVALUE: int;
+  var MINVAL: int;
+  var i: int;
+  var j: int;
+  var volArray: array<int, int>;
   CELLCOUNT := *;
   if CELLCOUNT > 1 {
-    var DEFAULTVALUE: int;
-    var MINVAL: int;
-    var i: int;
-    var j: int;
-    var volArray: array<int, int>;
     DEFAULTVALUE := 1;
     MINVAL := 2;
     if (remainder(CELLCOUNT, 5)) != 0 {

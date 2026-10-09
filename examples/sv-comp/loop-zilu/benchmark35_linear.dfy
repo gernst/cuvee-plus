@@ -8,22 +8,20 @@
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
+  var x: int;
   assume 0 < N;
-  {
-    var x: int;
-    tmp₁ := *;
-    x := tmp₁;
-    if !(x >= 0) {
-      result := 0;
-      return;
-    }
-    while x >= 0 && x < N {
-      x := x + 1;
-    }
-    assert x >= N;
+  tmp₁ := *;
+  x := tmp₁;
+  if !(x >= 0) {
     result := 0;
     return;
   }
+  while x >= 0 && x < N {
+    x := x + 1;
+  }
+  assert x >= N;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

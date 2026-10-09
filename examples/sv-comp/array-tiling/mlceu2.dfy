@@ -8,13 +8,9 @@
 // false for positions below the size 100000 by a lemma that bounds integer division, whose left-hand side is a
 // comparison of a quotient (not about traces), since the simplifier knows no bounds of division; closed (no output)
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-
 // a store at the iteration k whose value depends on a case split on k is a store of the conditional value (with a
 // further dependency ys)
-lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, ys: seq<int>, C: (int) -> bool, F: (int) -> int,
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: Nat, ys: List<int>, C: (int) -> bool, F: (int) -> int,
                            G: (int) -> int)
   ensures trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: case C(k) => a[k := F(k)] case !C(k) => a[k := G(k)])
     == trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[k := if C(k) then F(k) else G(k)])

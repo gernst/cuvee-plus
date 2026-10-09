@@ -11,21 +11,15 @@
 // lemmas are kept
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function sum(values: seq<int>): int
-
 // an array filled by a recurrence whose first element c is set in the first iteration, under the guard i == 0, and
 // each further element from its predecessor plus G(i), has the closed form c plus the sum of G over 1, ..., j, stated
 // over the iterations as G(k + 1), and keeps the positions from n on; G is applied to the position k, since a term
 // k - 1 as its argument would be no pattern; the position is the iteration k, which the simplifier substitutes for
 // the index i once its trace is a counter
-lemma {:rw} {:teq} current_1(a0: array<int, int>, n: int, j: int, c: int, hs: seq<int>, G: (int) -> int)
+lemma {:rw} {:teq} current_1(a0: array<int, int>, n: Nat, j: int, c: int, hs: List<int>, G: (int) -> int)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h ::
                   case k == 0 => a[0 := c] case k != 0 => a[k := a[k - 1] + G(k)]))[j]
-    == if 0 <= j < n then c + sum(maps(for ⌊counter(0, 1, j)⌋ yield k :: G(k + 1))) else a0[j]
+    == if 0 <= j < integer(n) then c + sum(maps(for ⌊counter(0, 1, natural(j))⌋ yield k :: G(k + 1))) else a0[j]
 
 method main() {
   var N: int;

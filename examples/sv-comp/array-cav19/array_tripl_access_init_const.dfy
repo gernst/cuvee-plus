@@ -7,18 +7,12 @@
 // for the same reason, n₁₄ < 3 * n₆
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-
 // a loop that stores c, d, e at the positions 3 k, 3 k + 1, 3 k + 2 in the iterations k = 0, ..., n - 1 fills the
 // positions below 3 n, by their remainder modulo 3, and keeps the others (with a further dependency ys that the
 // update does not use)
-lemma {:rw} {:teq} current_1(a0: array<int, int>, n: int, j: int, c: int, d: int, e: int, ys: seq<int>)
-  ensures if 0 <= n
-    then current(trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[3 * k := c][3 * k + 1 := d][3 * k + 2 := e]))[j]
-      == if 0 <= j < 3 * n then (if j % 3 == 0 then c else if j % 3 == 1 then d else e) else a0[j]
+lemma {:rw} {:teq} current_1(a0: array<int, int>, n: Nat, j: int, c: int, d: int, e: int, ys: List<int>)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[3 * k := c][3 * k + 1 := d][3 * k + 2 := e]))[j]
+    == if 0 <= j < 3 * integer(n) then (if j % 3 == 0 then c else if j % 3 == 1 then d else e) else a0[j]
 
 method main() {
   var N: int;

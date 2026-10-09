@@ -10,31 +10,26 @@
 // matters, since positive also matches the loop test, with the map of b - i as its sequence; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function sums(x: int, values: seq<int>): Trace<int>
-
 // the first n values of js are at least 1, and the partial sums of js before each of the first n values are below b,
 // auxiliary predicates, which are not defined
-predicate positive(n: int, js: seq<int>)
-predicate below(n: int, js: seq<int>, b: int)
+predicate positive(n: Nat, js: List<int>)
+predicate below(n: Nat, js: List<int>, b: int)
 
 // the iteration constraints of a loop that adds the values js, i.e., its value is sums(0, js), abstracted by these
 // predicates: the loop test, a bound b on the value, held before each iteration, and the values are at least 1;
 // the bound comes first, since rules apply in their order, and the second one matches the bound as well, where the
 // plain dependency js is the map of b - i
-lemma {:rw} {:teq} invs_1(n: int, b: int, js: seq<int>, hs: seq<int>)
+lemma {:rw} {:teq} invs_1(n: Nat, b: int, js: List<int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, ⌊sums(0, js)⌋, hs check k, i, h :: i < b) <==> below(n, js, b)
-lemma {:rw} {:teq} invs_2(n: int, js: seq<int>, hs: seq<int>)
+lemma {:rw} {:teq} invs_2(n: Nat, js: List<int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs, js check k, h, j :: 1 <= j) <==> positive(n, js)
 
 // with steps of at least 1, the partial sum before the last of n iterations is at least n - 1, and below b, hence
 // there are at most b iterations, also none for 0 <= b; the left-hand side is a comparison, whose side conditions
 // are atoms
-lemma {:rw} {:teq} lemma_1(n: int, b: int, js: seq<int>)
+lemma {:rw} {:teq} lemma_1(n: Nat, b: int, js: List<int>)
   requires positive(n, js) && below(n, js, b) && 0 <= b
-  ensures n <= b
+  ensures integer(n) <= b
 
 method main() {
   var N: int;

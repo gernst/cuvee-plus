@@ -6,27 +6,25 @@
 method main() returns (result: int) {
   var tmp₁: int;
   var tmp₂: int;
-  {
-    var x: int;
-    var y: int;
-    tmp₁ := *;
-    x := tmp₁;
-    tmp₂ := *;
-    y := tmp₂;
-    if !(y <= 1000000) {
-      result := 0;
-      return;
-    }
-    if y > 0 {
-      if x < 100 {
-        x := *;
-      }
-      if x < 100 {
-        assume false;
-      }
-    }
-    assert y <= 0 || y > 0 && x >= 100;
+  var x: int;
+  var y: int;
+  tmp₁ := *;
+  x := tmp₁;
+  tmp₂ := *;
+  y := tmp₂;
+  if !(y <= 1000000) {
     result := 0;
     return;
   }
+  if y > 0 {
+    if x < 100 {
+      x := *;
+    }
+    if x < 100 {
+      assume false;
+    }
+  }
+  assert y <= 0 || y > 0 && x >= 100;
+  result := 0;
+  return;
 }

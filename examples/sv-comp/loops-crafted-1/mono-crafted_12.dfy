@@ -7,22 +7,20 @@
 function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
 
 method main() returns (result: int) {
-  {
-    var x: int;
-    var y: int;
-    var z: int;
-    x := 0;
-    y := *;
-    assume 0 < y;
-    z := 0;
-    while x < y {
-      if x >= 5000000 {
-        z := z + 2;
-      }
-      x := x + 1;
+  var x: int;
+  var y: int;
+  var z: int;
+  x := 0;
+  y := *;
+  assume 0 < y;
+  z := 0;
+  while x < y {
+    if x >= 5000000 {
+      z := z + 2;
     }
-    assert !(((remainder(z, 2))) != 0);
-    result := 0;
-    return;
+    x := x + 1;
   }
+  assert !(((remainder(z, 2))) != 0);
+  result := 0;
+  return;
 }

@@ -2,13 +2,9 @@
 // SV-COMP array-fpi/modp.yml (expected: safe), translated from the C program by hand: sum counts
 // to N, a is set to it, and a[i] % N == 0 is checked
 //
-// findings: -teq -simplify reduces the goal to N % N == 0, which a lemma for the remainder of a nonzero value
-// modulo itself closes (no output)
-
-// the remainder of a nonzero value modulo itself (not about traces)
-lemma {:rw} {:teq} lemma_1(x: int)
-  requires x != 0
-  ensures x % x == 0
+// findings: -teq -simplify reduces the goal to N % N == 0, which mod_self of teq.dfy, the remainder of a
+// positive value modulo itself, closes (no output)
+// note: its lemma is part of teq.dfy now (mod_self) and is removed here
 
 method main() {
   var N: int;

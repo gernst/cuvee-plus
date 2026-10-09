@@ -75,7 +75,10 @@ case class Config(
     // the data model of C for 32 or 64 bit Linux, ILP32 or LP64, i.e., the sizes of the integer types
     arch: Int = 64,
     // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print
-    features: Set[String] = Set(),
+    known: Set[String] = Set(),
+    // the files of features that are injected into the input after its prelude, with the sources that parse them,
+    // e.g. teq.dfy by -teq (see Source.apply)
+    features: List[(Source, String)] = Nil,
     // the lines of stdout and stderr, which tests capture instead (see test.Expected)
     stdout: PrintStream = System.out,
     stderr: PrintStream = System.err,
@@ -87,11 +90,15 @@ case class Config(
 
   // the configuration with `feature` known to the languages of the input and of the output
   def having(feature: String) =
-    copy(input = input.having(feature), output = output.having(feature), features = features + feature)
+    copy(input = input.having(feature), output = output.having(feature), known = known + feature)
+
+  // the configuration that injects `file` into the input, parsed by `source`
+  def injecting(source: Source, file: String) =
+    copy(features = features :+ (source, file))
 
   // the configuration with the output in `lang`, which knows the features added so far
   def printing(lang: Lang) =
-    copy(output = lang.copy(features = lang.features ++ features))
+    copy(output = lang.copy(features = lang.features ++ known))
 
   // the output in SMT-LIB if its language cannot express the output of a transform, e.g. C
   def usingMath =
@@ -138,7 +145,7 @@ object Config:
   val teq =
     flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems"):
       case (config, rest) =>
-        val config_ = config.usingMath.having("teq").using(TEQ)
+        val config_ = config.usingMath.having("teq").injecting(cuvee.dafny.Source, "/cuvee/teq.dfy").using(TEQ)
         (config_, rest)
 
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
@@ -306,7 +313,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.34.2")
+    println("Cuvée 0.34.3")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

@@ -648,7 +648,7 @@ SV-COMP examples (`examples/sv-comp`):
 
 - The functions on traces are declared only by the lemma database
   ([teq.dfy](resources/cuvee/teq.dfy)), whose names may clash with the input,
-  and which inputs cannot use before `-teq` injects it.
+  and which only Dafny inputs can use (`Config.features`).
 - The guards of the updates of traces are the branch conditions of the body
   only; the loop test and assumptions in the body are recorded in `invs`
   (`TEQ.loop`), which the simplifier and the matching assume in the update of
@@ -676,9 +676,6 @@ SV-COMP examples (`examples/sv-comp`):
   earlier occurrence instantiated the variable, and a single bound variable
   of the pattern cannot abstract several of the expression (no tuples).
   Terms are abstracted at all of their occurrences.
-- The prelude teq.dfy is injected after parsing, hence Dafny files with
-  lemmas about `counter`, `current`, `earlier`, `count`, ... repeat their
-  declarations, also with `-teq`.
 - No instantiation of the iteration constraint at a witness, e.g. a search
   whose constraint states that `P` holds before the exit `n`, and `!P(j)`,
   which gives `n <= j`; the examples abstract the constraint by an atom first,

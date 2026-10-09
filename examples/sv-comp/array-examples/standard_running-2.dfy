@@ -9,13 +9,9 @@
 // not needed
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-
 // two cases that store at the same position are one store of a conditional value, which teq.dfy introduces as
 // stores; the guard of the second case must follow from the negation of the first
-lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, hs: seq<int>, C: (int, int) -> bool, F: (int, int) -> int,
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: Nat, hs: List<int>, C: (int, int) -> bool, F: (int, int) -> int,
                            G: (int, int) -> int)
   ensures
     trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(k, h) => a[k := F(k, h)] case !C(k, h) => a[k := G(k, h)])

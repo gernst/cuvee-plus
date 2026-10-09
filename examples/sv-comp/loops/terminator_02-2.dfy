@@ -9,44 +9,42 @@
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int, tmp₂: int, tmp₃: bool;
+  var x: int, z: int;
+  var tmp: bool;
   assume 0 < N;
-  {
-    var x: int, z: int;
-    tmp₁ := *;
-    x := tmp₁;
-    tmp₂ := *;
-    z := tmp₂;
-    if !(x > -N) {
-      result := 0;
-      return;
-    }
-    if !(x < 200) {
-      result := 0;
-      return;
-    }
-    if !(z > N) {
-      result := 0;
-      return;
-    }
-    if !(z < 200) {
-      result := 0;
-      return;
-    }
-    while x < N && z > N {
-      var tmp: bool;
-      tmp₃ := *;
-      tmp := tmp₃;
-      if tmp {
-        x := x + 1;
-      } else {
-        x := x - 1;
-        z := z - 1;
-      }
-    }
-    assert x >= N || z <= N;
+  tmp₁ := *;
+  x := tmp₁;
+  tmp₂ := *;
+  z := tmp₂;
+  if !(x > -N) {
     result := 0;
     return;
   }
+  if !(x < 200) {
+    result := 0;
+    return;
+  }
+  if !(z > N) {
+    result := 0;
+    return;
+  }
+  if !(z < 200) {
+    result := 0;
+    return;
+  }
+  while x < N && z > N {
+    tmp₃ := *;
+    tmp := tmp₃;
+    if tmp {
+      x := x + 1;
+    } else {
+      x := x - 1;
+      z := z - 1;
+    }
+  }
+  assert x >= N || z <= N;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

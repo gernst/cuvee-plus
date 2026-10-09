@@ -8,17 +8,13 @@
 // differ; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1024
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-
 // a search for v that runs over an array with v stored at c >= 0 stops at c at the latest: the iteration constraint
 // that the elements differ from v before n holds iff n <= c and the elements of the array without the store differ
 // from v before n (with a further dependency hs)
-lemma {:rw} {:teq} invs_1(a: array<int, int>, c: int, v: int, n: int, hs: seq<int>)
+lemma {:rw} {:teq} invs_1(a: array<int, int>, c: int, v: int, n: Nat, hs: List<int>)
   requires 0 <= c
   ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[c := v][k] != v)
-    <==> n <= c && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[k] != v)
+    <==> integer(n) <= c && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[k] != v)
 
 method main() {
   var N: int;

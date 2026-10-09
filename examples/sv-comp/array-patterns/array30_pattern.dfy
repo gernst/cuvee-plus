@@ -21,38 +21,36 @@ method main() returns (result: int)
 {
   var tmp₁: int;
   var tmp₂: int;
-  {
-    var array: array<int, array<int, int>>;
-    var row: int;
-    var column: int;
-    var sum: int;
-    tmp₁ := *;
-    ARR_SIZE := tmp₁;
-    assume ARR_SIZE > 0;
-    row := 0;
+  var array: array<int, array<int, int>>;
+  var row: int;
+  var column: int;
+  var sum: int;
+  tmp₁ := *;
+  ARR_SIZE := tmp₁;
+  assume ARR_SIZE > 0;
+  row := 0;
+  column := 0;
+  sum := 0;
+  row := 0;
+  while row < ARR_SIZE {
     column := 0;
-    sum := 0;
-    row := 0;
-    while row < ARR_SIZE {
-      column := 0;
-      while column < ARR_SIZE {
-        tmp₂ := diff(row, column);
-        array := array[row := array[row][column := tmp₂]];
-        column := column + 1;
-      }
-      row := row + 1;
+    while column < ARR_SIZE {
+      tmp₂ := diff(row, column);
+      array := array[row := array[row][column := tmp₂]];
+      column := column + 1;
     }
-    row := 0;
-    while row < ARR_SIZE {
-      column := 0;
-      while column < ARR_SIZE {
-        sum := sum + array[row][column];
-        column := column + 1;
-      }
-      row := row + 1;
-    }
-    assert 3 * sum == ARR_SIZE * (ARR_SIZE - 1) * (ARR_SIZE + 1);
-    result := 0;
-    return;
+    row := row + 1;
   }
+  row := 0;
+  while row < ARR_SIZE {
+    column := 0;
+    while column < ARR_SIZE {
+      sum := sum + array[row][column];
+      column := column + 1;
+    }
+    row := row + 1;
+  }
+  assert 3 * sum == ARR_SIZE * (ARR_SIZE - 1) * (ARR_SIZE + 1);
+  result := 0;
+  return;
 }

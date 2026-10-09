@@ -6,15 +6,13 @@
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
+  var x: int;
   assume 0 < N;
-  {
-    var x: int;
-    tmp₁ := *;
-    assume 0 <= tmp₁;
-    x := tmp₁;
-    while x < N {
-      x := x + 1;
-    }
-    assert x > N;
+  tmp₁ := *;
+  assume 0 <= tmp₁;
+  x := tmp₁;
+  while x < N {
+    x := x + 1;
   }
+  assert x > N;
 }

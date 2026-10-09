@@ -5,24 +5,22 @@
 
 method main() returns (result: int) {
   var N: int;
+  var i: int;
+  var j: int;
   assume 0 < N;
-  {
-    var i: int;
-    i := 0;
-    while (1 != 0) {
-      var j: int;
-      i := i + 1;
-      j := 0;
-      while j < N {
-        assert 0 <= i;
-        assert i <= N;
-        j := j + 1;
-      }
-      if i > 9 {
-        i := 0;
-      }
+  i := 0;
+  while (1 != 0) {
+    i := i + 1;
+    j := 0;
+    while j < N {
+      assert 0 <= i;
+      assert i <= N;
+      j := j + 1;
     }
-    result := 0;
-    return;
+    if i > 9 {
+      i := 0;
+    }
   }
+  result := 0;
+  return;
 }

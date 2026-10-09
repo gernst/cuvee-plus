@@ -4,44 +4,42 @@
 // >= 2 * y * a; x == q*y + r
 
 method main() returns (result: int) {
-  {
-    var x: int;
-    var y: int;
-    var q: int;
-    var r: int;
-    var a: int;
-    var b: int;
-    x := *;
-    y := *;
-    assume y >= 1;
-    q := 0;
-    r := x;
-    a := 0;
-    b := 0;
+  var x: int;
+  var y: int;
+  var q: int;
+  var r: int;
+  var a: int;
+  var b: int;
+  x := *;
+  y := *;
+  assume y >= 1;
+  q := 0;
+  r := x;
+  a := 0;
+  b := 0;
+  while (1 != 0) {
+    assert b == y * a;
+    assert x == q * y + r;
+    if !(r >= y) {
+      break;
+    }
+    a := 1;
+    b := y;
     while (1 != 0) {
       assert b == y * a;
       assert x == q * y + r;
-      if !(r >= y) {
+      assert r >= 0;
+      if !(r >= 2 * b) {
         break;
       }
-      a := 1;
-      b := y;
-      while (1 != 0) {
-        assert b == y * a;
-        assert x == q * y + r;
-        assert r >= 0;
-        if !(r >= 2 * b) {
-          break;
-        }
-        assert r >= 2 * y * a;
-        a := 2 * a;
-        b := 2 * b;
-      }
-      r := r - b;
-      q := q + a;
+      assert r >= 2 * y * a;
+      a := 2 * a;
+      b := 2 * b;
     }
-    assert x == q * y + r;
-    result := 0;
-    return;
+    r := r - b;
+    q := q + a;
   }
+  assert x == q * y + r;
+  result := 0;
+  return;
 }

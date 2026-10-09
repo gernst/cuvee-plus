@@ -12,15 +12,9 @@
 // output) (see TODO.md)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function current<a₀>(x₀: Trace<a₀>): a₀
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-
 // a store at the iteration k whose value depends on a case split on the values of the iteration is a store of the
 // conditional value (with two further dependencies hs and xs)
-lemma {:rw} {:teq} trace_1<b>(a0: array<int, b>, n: int, hs: seq<int>, xs: seq<int>, C: (int, int) -> bool,
+lemma {:rw} {:teq} trace_1<b>(a0: array<int, b>, n: Nat, hs: List<int>, xs: List<int>, C: (int, int) -> bool,
                               F: (int, int) -> b, G: (int, int) -> b)
   ensures
     trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: case C(h, x) => a[k := F(h, x)] case !C(h, x) => a[k := G(h, x)])
@@ -29,11 +23,11 @@ lemma {:rw} {:teq} trace_1<b>(a0: array<int, b>, n: int, hs: seq<int>, xs: seq<i
 // a store at the iteration k that is made only if C holds of the values of the iteration, read at j: the value of
 // the iteration j if it is one of the first n and C holds there, otherwise the initial value (with further
 // dependencies hs and xs)
-lemma {:rw} {:teq} current_1<b>(a0: array<int, b>, n: int, j: int, hs: seq<int>, xs: seq<int>, C: (int, int) -> bool,
+lemma {:rw} {:teq} current_1<b>(a0: array<int, b>, n: Nat, j: int, hs: List<int>, xs: List<int>, C: (int, int) -> bool,
                                 V: (int, int) -> b)
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: case C(h, x) => a[k := V(h, x)] case !C(h, x) => a))[j]
-      == if 0 <= j < n && C(earlier(j, hs), earlier(j, xs)) then V(earlier(j, hs), earlier(j, xs)) else a0[j]
+      == if 0 <= j < integer(n) && C(earlier(natural(j), hs), earlier(natural(j), xs)) then V(earlier(natural(j), hs), earlier(natural(j), xs)) else a0[j]
 
 // read over write at a different position, whose side condition is decided against the facts of the context, which
 // the simplifier does not consult for reads over writes (see TODO.md)

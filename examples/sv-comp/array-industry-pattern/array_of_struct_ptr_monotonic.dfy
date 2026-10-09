@@ -13,33 +13,26 @@
 // are variants of array-lopstr16 tasks and are not translated)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-
 // a store at a position given by a dependency ps, e.g. a counter with step 2, whose value depends on a case split on
 // the values of the iteration, is a store of the conditional value (with one or two further dependencies)
-lemma {:rw} {:teq} trace_1<b>(a0: array<int, b>, n: int, ps: seq<int>, xs: seq<int>, C: (int) -> bool, F: (int) -> b,
+lemma {:rw} {:teq} trace_1<b>(a0: array<int, b>, n: Nat, ps: List<int>, xs: List<int>, C: (int) -> bool, F: (int) -> b,
                               G: (int) -> b)
   ensures
     trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs do a, k, p, x :: case C(x) => a[p := F(x)] case !C(x) => a[p := G(x)])
       == trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs do a, k, p, x :: a[p := if C(x) then F(x) else G(x)])
-lemma {:rw} {:teq} trace_2<b>(a0: array<int, b>, n: int, ps: seq<int>, xs: seq<int>, ys: seq<b>, C: (int) -> bool,
+lemma {:rw} {:teq} trace_2<b>(a0: array<int, b>, n: Nat, ps: List<int>, xs: List<int>, ys: List<b>, C: (int) -> bool,
                               F: (int, b) -> b, G: (int, b) -> b)
   ensures trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs, ys do a, k, p, x, y ::
           case C(x) => a[p := F(x, y)] case !C(x) => a[p := G(x, y)])
     == trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs, ys do a, k, p, x, y :: a[p := if C(x) then F(x, y) else G(x, y)])
 
-predicate occurs<a>(x: a, xs: seq<a>)
-function indexof<a>(x: a, xs: seq<a>): int
-
 // the positions of a counter with step 2 from 0 are the even numbers x with 0 <= x < 2 n, at the iteration x / 2;
 // stated for the literal 2, since a variable does not match the coefficient of a monomial (see TODO.md)
-lemma {:rw} {:teq} occurs_1(x: int, n: int)
-  ensures occurs(x, ⌊counter(0, 2, n)⌋) <==> 0 <= x < 2 * n && x % 2 == 0
-lemma {:rw} {:teq} indexof_1(x: int, n: int)
-  requires 0 <= x < 2 * n && x % 2 == 0
-  ensures indexof(x, ⌊counter(0, 2, n)⌋) == x / 2
+lemma {:rw} {:teq} occurs_1(x: int, n: Nat)
+  ensures occurs(x, ⌊counter(0, 2, n)⌋) <==> 0 <= x < 2 * integer(n) && x % 2 == 0
+lemma {:rw} {:teq} indexof_1(x: int, n: Nat)
+  requires 0 <= x < 2 * integer(n) && x % 2 == 0
+  ensures indexof(x, ⌊counter(0, 2, n)⌋) == natural(x / 2)
 
 // cancellation of the factor 2 in a division, and an equation of a conditional as a case split (not about traces)
 lemma {:rw} {:teq} lemma_1(x: int)

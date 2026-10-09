@@ -4,21 +4,19 @@
 // checks tmp < 10000 && array[tmp] == tmp
 
 method main() returns (result: int) {
-  {
-    var array: array<int, int>;
-    var index: int;
-    var tmp: int;
-    index := 0;
-    tmp := 0;
-    while (1 != 0) {
-      index := *;
-    assume 0 <= index;
-      if index >= 10000 {
-        break;
-      }
-      array := array[index := index];
-      tmp := index;
+  var array: array<int, int>;
+  var index: int;
+  var tmp: int;
+  index := 0;
+  tmp := 0;
+  while (1 != 0) {
+    index := *;
+  assume 0 <= index;
+    if index >= 10000 {
+      break;
     }
-    assert tmp < 10000 && array[tmp] == tmp;
+    array := array[index := index];
+    tmp := index;
   }
+  assert tmp < 10000 && array[tmp] == tmp;
 }

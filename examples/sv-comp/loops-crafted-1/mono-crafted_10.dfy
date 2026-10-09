@@ -8,23 +8,21 @@
 // for 10000000
 
 method main() returns (result: int) {
-  {
-    var M: int, x: int, y: int, z: int;
-    x := 0;
-    assume 0 < M;
-    y := *;
-    assume M <= y;
-    z := M;
-    while x < y {
-      if x >= M {
-        z := z + 1;
-      }
-      x := x + 1;
+  var M: int, x: int, y: int, z: int;
+  x := 0;
+  assume 0 < M;
+  y := *;
+  assume M <= y;
+  z := M;
+  while x < y {
+    if x >= M {
+      z := z + 1;
     }
-    assert z == x;
-    result := 0;
-    return;
+    x := x + 1;
   }
+  assert z == x;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

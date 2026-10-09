@@ -5,18 +5,16 @@
 
 method main() returns (result: int) {
   var tmp₁: int;
-  {
-    var x: int;
-    tmp₁ := *;
-    assume 0 <= tmp₁;
-    x := tmp₁;
-    if x < 268435455 {
-      x := *;
-    assume 0 <= x;
-    }
-    if x < 268435455 {
-      assume false;
-    }
-    assert x >= 268435455;
+  var x: int;
+  tmp₁ := *;
+  assume 0 <= tmp₁;
+  x := tmp₁;
+  if x < 268435455 {
+    x := *;
+  assume 0 <= x;
   }
+  if x < 268435455 {
+    assume false;
+  }
+  assert x >= 268435455;
 }

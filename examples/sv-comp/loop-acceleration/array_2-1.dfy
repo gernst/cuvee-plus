@@ -7,26 +7,24 @@ method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
   var tmp₂: int;
+  var A: array<int, int>;
+  var B: array<int, int>;
+  var i: int;
+  var tmp: int;
   assume 0 < N;
-  {
-    var A: array<int, int>;
-    var B: array<int, int>;
-    var i: int;
-    var tmp: int;
-    i := 0;
-    while i < N {
-      tmp₁ := *;
-      A := A[i := tmp₁];
-      tmp₂ := *;
-      B := B[i := tmp₂];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      tmp := A[i];
-      B := B[i := tmp];
-      i := i + 1;
-    }
-    assert A[1024] != B[1024];
+  i := 0;
+  while i < N {
+    tmp₁ := *;
+    A := A[i := tmp₁];
+    tmp₂ := *;
+    B := B[i := tmp₂];
+    i := i + 1;
   }
+  i := 0;
+  while i < N {
+    tmp := A[i];
+    B := B[i := tmp];
+    i := i + 1;
+  }
+  assert A[1024] != B[1024];
 }

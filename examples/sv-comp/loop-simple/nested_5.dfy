@@ -1,44 +1,45 @@
 // ./Cuvee.sh -teq -simplify examples/sv-comp/loop-simple/nested_5.dfy
 // SV-COMP loop-simple/nested_5.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nested_1 with other constants or assertions
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 6
 
 method main() returns (result: int) {
-  {
-    var a: int;
-    var b: int;
-    var c: int;
-    var d: int;
-    var e: int;
-    a := 6;
-    b := 6;
-    c := 6;
-    d := 6;
-    e := 6;
-    a := 0;
-    while a < 6 {
-      b := 0;
-      while b < 6 {
-        c := 0;
-        while c < 6 {
-          d := 0;
-          while d < 6 {
-            e := 0;
-            while e < 6 {
-              {}
-              e := e + 1;
-            }
-            d := d + 1;
+  var N: int;
+  var a: int;
+  var b: int;
+  var c: int;
+  var d: int;
+  var e: int;
+  assume 0 < N;
+  a := N;
+  b := N;
+  c := N;
+  d := N;
+  e := N;
+  a := 0;
+  while a < N {
+    b := 0;
+    while b < N {
+      c := 0;
+      while c < N {
+        d := 0;
+        while d < N {
+          e := 0;
+          while e < N {
+            {}
+            e := e + 1;
           }
-          c := c + 1;
+          d := d + 1;
         }
-        b := b + 1;
+        c := c + 1;
       }
-      a := a + 1;
+      b := b + 1;
     }
-    if !(a == 6 && b == 6 && c == 6 && d == 6 && e == 6) {
-      assert false;
-    }
-    result := 1;
-    return;
+    a := a + 1;
   }
+  if !(a == N && b == N && c == N && d == N && e == N) {
+    assert false;
+  }
+  result := 1;
+  return;
 }

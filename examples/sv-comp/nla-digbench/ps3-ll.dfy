@@ -7,33 +7,29 @@
 // the further ideas of the summary)
 
 method assume_abort_if_not(cond: int) {
-  {
-    if !((cond) != 0) {
-      assume false;
-    }
+  if !((cond) != 0) {
+    assume false;
   }
 }
 
 method main() returns (result: int) {
-  {
-    var k: int, y: int, x: int, c: int;
-    k := *;
-    y := 0;
-    x := 0;
-    c := 0;
-    while ((1) != 0) {
-      assert 6 * x - 2 * y * y * y - 3 * y * y - y == 0;
-      if !(c < k) {
-        break;
-      }
-      c := c + 1;
-      y := y + 1;
-      x := y * y + x;
-    }
+  var k: int, y: int, x: int, c: int;
+  k := *;
+  y := 0;
+  x := 0;
+  c := 0;
+  while ((1) != 0) {
     assert 6 * x - 2 * y * y * y - 3 * y * y - y == 0;
-    result := 0;
-    return;
+    if !(c < k) {
+      break;
+    }
+    c := c + 1;
+    y := y + 1;
+    x := y * y + x;
   }
+  assert 6 * x - 2 * y * y * y - 3 * y * y - y == 0;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

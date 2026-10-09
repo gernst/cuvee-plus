@@ -7,23 +7,21 @@
 
 method main() returns (result: int) {
   var tmp₁: int, tmp₂: int;
-  {
-    var x: int, y: int;
-    tmp₁ := *;
-    x := tmp₁;
-    tmp₂ := *;
-    y := tmp₂;
-    if !(x < y) {
-      result := 0;
-      return;
-    }
-    while x < y {
-      x := x + 1;
-    }
-    assert x == y;
+  var x: int, y: int;
+  tmp₁ := *;
+  x := tmp₁;
+  tmp₂ := *;
+  y := tmp₂;
+  if !(x < y) {
     result := 0;
     return;
   }
+  while x < y {
+    x := x + 1;
+  }
+  assert x == y;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

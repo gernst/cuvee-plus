@@ -6,52 +6,50 @@
 
 method main() returns (result: int) {
   var N: int;
+  var a: array<int, int>;
+  var i: int;
+  var x: int;
   assume 0 < N;
-  {
-    var a: array<int, int>;
-    var i: int;
-    var x: int;
-    i := 0;
-    while i < N {
-      a := a[i := 42];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a := a[i := 43];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a := a[i := 44];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a := a[i := 45];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a := a[i := 46];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a := a[i := 47];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N {
-      a := a[i := 48];
-      i := i + 1;
-    }
-    x := 0;
-    while x < N {
-      assert a[x] == 47;
-      x := x + 1;
-    }
-    result := 0;
-    return;
+  i := 0;
+  while i < N {
+    a := a[i := 42];
+    i := i + 1;
   }
+  i := 0;
+  while i < N {
+    a := a[i := 43];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    a := a[i := 44];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    a := a[i := 45];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    a := a[i := 46];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    a := a[i := 47];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    a := a[i := 48];
+    i := i + 1;
+  }
+  x := 0;
+  while x < N {
+    assert a[x] == 47;
+    x := x + 1;
+  }
+  result := 0;
+  return;
 }

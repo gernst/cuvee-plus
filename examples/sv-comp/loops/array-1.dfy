@@ -4,25 +4,23 @@
 
 method main() returns (result: int) {
   var tmp₁: int;
-  {
-    var SIZE: int;
-    var j: int;
-    var k: int;
-    var array: array<int, int>;
-    var menor: int;
-    SIZE := 1;
-    menor := *;
-    j := 0;
-    while j < SIZE {
-      tmp₁ := *;
-      array := array[j := tmp₁];
-      if array[j] <= menor {
-        menor := array[j];
-      }
-      j := j + 1;
+  var SIZE: int;
+  var j: int;
+  var k: int;
+  var array: array<int, int>;
+  var menor: int;
+  SIZE := 1;
+  menor := *;
+  j := 0;
+  while j < SIZE {
+    tmp₁ := *;
+    array := array[j := tmp₁];
+    if array[j] <= menor {
+      menor := array[j];
     }
-    assert array[0] >= menor;
-    result := 0;
-    return;
+    j := j + 1;
   }
+  assert array[0] >= menor;
+  result := 0;
+  return;
 }

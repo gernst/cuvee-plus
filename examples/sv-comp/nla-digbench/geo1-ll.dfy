@@ -7,37 +7,33 @@
 // only in specific forms (see underapprox_1-2); no lemmas tried
 
 method assume_abort_if_not(cond: int) {
-  {
-    if !((cond) != 0) {
-      assume false;
-    }
+  if !((cond) != 0) {
+    assume false;
   }
 }
 
 method main() returns (result: int) {
-  {
-    var z: int, k: int, x: int, y: int, c: int;
-    z := *;
-    k := *;
-    assume_abort_if_not((if z >= 1 then 1 else 0));
-    assume_abort_if_not((if k >= 1 then 1 else 0));
-    x := 1;
-    y := z;
-    c := 1;
-    while ((1) != 0) {
-      assert x * z - x - y + 1 == 0;
-      if !(c < k) {
-        break;
-      }
-      c := c + 1;
-      x := x * z + 1;
-      y := y * z;
+  var z: int, k: int, x: int, y: int, c: int;
+  z := *;
+  k := *;
+  assume_abort_if_not((if z >= 1 then 1 else 0));
+  assume_abort_if_not((if k >= 1 then 1 else 0));
+  x := 1;
+  y := z;
+  c := 1;
+  while ((1) != 0) {
+    assert x * z - x - y + 1 == 0;
+    if !(c < k) {
+      break;
     }
-    x := x * (z - 1);
-    assert 1 + x - y == 0;
-    result := 0;
-    return;
+    c := c + 1;
+    x := x * z + 1;
+    y := y * z;
   }
+  x := x * (z - 1);
+  assert 1 + x - y == 0;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:

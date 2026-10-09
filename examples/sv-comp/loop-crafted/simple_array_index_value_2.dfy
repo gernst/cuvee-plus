@@ -4,25 +4,11 @@
 // assumption implies
 //
 // findings: the iteration constraint of the first loop, the arbitrary value of each iteration exceeds the
-// iteration, is abstracted by the auxiliary predicate above, and instantiated at the positions of the assertions by
+// iteration, is abstracted by the auxiliary predicate above_iterations of teq.dfy, and
+// instantiated at the positions of the assertions by
 // the atom j < earlier(j, ts) (see standard_find_ground-1); closed (no output)
+// note: its lemmas are part of teq.dfy now (above_iterations_def, earlier_above_iterations) and are removed here
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 10000
-
-// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
-type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
-
-// the first n values of ts exceed their positions, an auxiliary predicate, which is not defined
-predicate above(n: int, ts: seq<int>)
-
-// the iteration constraint that the value of each iteration exceeds the iteration is abstracted by above, which is
-// instantiated at the positions j in the range by the atom j < earlier(j, ts), the left-hand side
-lemma {:rw} {:teq} invs_1(n: int, ts: seq<int>, hs: seq<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋, hs, ts check k, h, t :: k < t) <==> above(n, ts)
-lemma {:rw} {:teq} earlier_1(n: int, j: int, ts: seq<int>)
-  requires above(n, ts) && 0 <= j < n
-  ensures (j < earlier(j, ts)) <==> true
 
 method main() {
   var N: int;

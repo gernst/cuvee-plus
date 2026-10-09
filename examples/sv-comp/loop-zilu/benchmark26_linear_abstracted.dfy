@@ -6,31 +6,29 @@
 method main() returns (result: int) {
   var tmp₁: int;
   var tmp₂: int;
-  {
-    var x: int;
-    var y: int;
-    tmp₁ := *;
-    x := tmp₁;
-    tmp₂ := *;
-    y := tmp₂;
-    if !(x < y) {
-      result := 0;
-      return;
-    }
-    if x < y {
-      x := *;
-      if !(x < y) {
-        assume false;
-      }
-      if x < y {
-        x := x + 1;
-      }
-      if x < y {
-        assume false;
-      }
-    }
-    assert x == y;
+  var x: int;
+  var y: int;
+  tmp₁ := *;
+  x := tmp₁;
+  tmp₂ := *;
+  y := tmp₂;
+  if !(x < y) {
     result := 0;
     return;
   }
+  if x < y {
+    x := *;
+    if !(x < y) {
+      assume false;
+    }
+    if x < y {
+      x := x + 1;
+    }
+    if x < y {
+      assume false;
+    }
+  }
+  assert x == y;
+  result := 0;
+  return;
 }

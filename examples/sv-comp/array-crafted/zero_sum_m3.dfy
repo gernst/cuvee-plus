@@ -9,20 +9,18 @@ method main() returns (result: int)
   requires SIZE == 0
 {
   var tmp₂: int;
+  var i: int;
+  var a: array<int, int>;
+  var sum: int;
+  var i₁: int;
   SIZE := *;
   if SIZE > 1 {
-    var i: int;
-    var a: array<int, int>;
-    var sum: int;
     sum := 0;
-    {
-      var i₁: int;
-      i₁ := 0;
-      while i₁ < SIZE {
-        tmp₂ := *;
-        a := a[i₁ := tmp₂];
-        i₁ := i₁ + 1;
-      }
+    i₁ := 0;
+    while i₁ < SIZE {
+      tmp₂ := *;
+      a := a[i₁ := tmp₂];
+      i₁ := i₁ + 1;
     }
     i := 0;
     while i < SIZE {

@@ -7,16 +7,14 @@
 function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
 
 method main() returns (result: int) {
-  {
-    var x: int;
-    x := 268435440;
-    if x > 0 {
-      x := *;
-    assume 0 <= x;
-    }
-    if x > 0 {
-      assume false;
-    }
-    assert !(((remainder(x, 2))) != 0);
+  var x: int;
+  x := 268435440;
+  if x > 0 {
+    x := *;
+  assume 0 <= x;
   }
+  if x > 0 {
+    assume false;
+  }
+  assert !(((remainder(x, 2))) != 0);
 }

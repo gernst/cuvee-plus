@@ -6,21 +6,19 @@
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
+  var A: array<int, int>;
+  var i: int;
   assume 0 < N;
-  {
-    var A: array<int, int>;
-    var i: int;
-    i := 0;
-    while i < N {
-      tmp₁ := *;
-      A := A[i := tmp₁];
-      i := i + 1;
-    }
-    i := 0;
-    while i < N && A[i] != 0 {
-      {}
-      i := i + 1;
-    }
-    assert i <= 512;
+  i := 0;
+  while i < N {
+    tmp₁ := *;
+    A := A[i := tmp₁];
+    i := i + 1;
   }
+  i := 0;
+  while i < N && A[i] != 0 {
+    {}
+    i := i + 1;
+  }
+  assert i <= 512;
 }

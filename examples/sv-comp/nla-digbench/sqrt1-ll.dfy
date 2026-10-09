@@ -8,37 +8,33 @@
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
 
 method assume_abort_if_not(cond: int) {
-  {
-    if !((cond) != 0) {
-      assume false;
-    }
+  if !((cond) != 0) {
+    assume false;
   }
 }
 
 method main() returns (result: int) {
-  {
-    var n: int, a: int, s: int, t: int;
-    n := *;
-    a := 0;
-    s := 1;
-    t := 1;
-    while ((1) != 0) {
-      assert t == 2 * a + 1;
-      assert s == (a + 1) * (a + 1);
-      assert t * t - 4 * s + 2 * t + 1 == 0;
-      if !(s <= n) {
-        break;
-      }
-      a := a + 1;
-      t := t + 2;
-      s := s + t;
-    }
+  var n: int, a: int, s: int, t: int;
+  n := *;
+  a := 0;
+  s := 1;
+  t := 1;
+  while ((1) != 0) {
     assert t == 2 * a + 1;
     assert s == (a + 1) * (a + 1);
     assert t * t - 4 * s + 2 * t + 1 == 0;
-    result := 0;
-    return;
+    if !(s <= n) {
+      break;
+    }
+    a := a + 1;
+    t := t + 2;
+    s := s + t;
   }
+  assert t == 2 * a + 1;
+  assert s == (a + 1) * (a + 1);
+  assert t * t - 4 * s + 2 * t + 1 == 0;
+  result := 0;
+  return;
 }
 
 // remaining goals of -teq -simplify:
