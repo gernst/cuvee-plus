@@ -51,7 +51,8 @@ languages or passes it to an SMT solver (z3 or cvc5).
   into polynomials, comparisons with positive coefficients, and derivatives.
 - **Rewrite engine**: conditional rules `lhs = rhs if cond` from the
   assertions and lemmas with the attribute `:rw` (`axiom {:rw} φ`,
-  `lemma {:rw} φ` in Dafny and Boogie, `(assert (! φ :rw))` in SMT-LIB), where
+  `lemma {:rw} name(xs) requires ψ ensures φ` in Dafny, `lemma {:rw} φ;` in
+  Boogie, `(assert (! φ :rw))` in SMT-LIB), where
   `φ` is a universally quantified equation, equivalence, negation, or boolean
   atom, optionally with a premise as condition, and from function definitions
   with `:rw` whose body is a match on a parameter (one rule per case),
@@ -62,7 +63,7 @@ languages or passes it to an SMT solver (z3 or cvc5).
   elimination over the rationals.
 - **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`): goals and lemmas are checked
   for validity, and assertions and `check-sat` are passed through. Lemmas
-  with the attribute `free` (`lemma {:free} φ`) are assumed without proof,
+  with the attribute `free` (Dafny lemmas without a body) are assumed without proof,
   like axioms, although they are meant to follow from the theory.
 - **Data types:**
   - integers, exact rationals for `real`;

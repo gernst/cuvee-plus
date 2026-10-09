@@ -11,8 +11,8 @@
 var SIZE: int;
 
 // cancellation of the factor 3 in a division (not about traces)
-lemma {:rw} {:free} {:teq} forall x: int ::
-  (3 * x) / 3 == x
+lemma {:rw} {:teq} lemma_1(x: int)
+  ensures (3 * x) / 3 == x
 
 method main() returns (result: int)
   modifies SIZE

@@ -16,14 +16,14 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 function count<a>(e: a, vs: seq<a>): int
 
 // the length of the iterations of a counter
-lemma {:rw} {:free} {:teq} forall i: int, c: int, n: int ::
-  |⌊counter(i, c, n)⌋| == n
+lemma {:rw} {:teq} counter_1(i: int, c: int, n: int)
+  ensures |⌊counter(i, c, n)⌋| == n
 
 // the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m (see half.dfy), which gives both
 // counts the same closed form, since they differ in the names of their bound variables
-lemma {:rw} {:free} {:teq} forall n: int, m: int, r: int, hs: seq<int> ::
-  if 0 < m && 0 <= r < m
-  then count(r, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: k % m)) == (n + m - 1 - r) / m
+lemma {:rw} {:teq} count_1(n: int, m: int, r: int, hs: seq<int>)
+  requires 0 < m && 0 <= r < m
+  ensures count(r, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: k % m)) == (n + m - 1 - r) / m
 
 method main() {
   var n: int;

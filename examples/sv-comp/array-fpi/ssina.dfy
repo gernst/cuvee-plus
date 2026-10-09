@@ -17,8 +17,8 @@ function selects<a, b>(a: array<a, b>, keys: seq<a>): seq<b>
 // the reads of stores at the positions of a counter, at the positions of a counter of the same length, are the stored
 // values; teq.dfy states this for the same keys, which are compared literally, here ⌊K⌋ and ⌊I⌋ of two counters
 // with the same definition
-lemma {:rw} {:free} {:teq} forall a: array<int, int>, n: int, vs: seq<int> ::
-  selects(current(stores(a, ⌊counter(0, 1, n)⌋, vs)), ⌊counter(0, 1, n)⌋) == vs
+lemma {:rw} {:teq} selects_1(a: array<int, int>, n: int, vs: seq<int>)
+  ensures selects(current(stores(a, ⌊counter(0, 1, n)⌋, vs)), ⌊counter(0, 1, n)⌋) == vs
 
 method main() {
   var N: int;

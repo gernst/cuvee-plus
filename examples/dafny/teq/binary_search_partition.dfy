@@ -30,9 +30,12 @@ const q: int
 // the reads of the array become comparisons of the indices with the partition points: below p, a[m] is less
 // than x, from q on, it is greater, and in between, it is x; the guards a[mid] < x and x < a[mid] of the loop
 // become mid < p and q <= mid, and a[k] == x of the postcondition becomes p <= k < q
-lemma {:rw} {:free} forall m: int :: (a[m] < x) <==> m < p
-lemma {:rw} {:free} forall m: int :: (x < a[m]) <==> q <= m
-lemma {:rw} {:free} forall m: int :: (a[m] == x) <==> p <= m && m < q
+lemma {:rw} lemma_1(m: int)
+  ensures (a[m] < x) <==> m < p
+lemma {:rw} lemma_2(m: int)
+  ensures (x < a[m]) <==> q <= m
+lemma {:rw} lemma_3(m: int)
+  ensures (a[m] == x) <==> p <= m && m < q
 
 // the declarations of teq.dfy that the lemmas refer to are repeated here, since Trace exists only with -teq
 type Trace<a₀>
@@ -46,9 +49,9 @@ function current<a₀>(x₀: Trace<a₀>): a₀
 function incs(x0: int, b: int, ks: seq<int>, hs: seq<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} {:free} forall x0: int, b: int, i: int, c: int, m: int, hs: seq<int>,
-                          C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
-  trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h ::
+lemma {:rw} trace_1(x0: int, b: int, i: int, c: int, m: int, hs: seq<int>, C: (int, int) -> bool,
+                    D: (int, int) -> bool, F: (int, int) -> int)
+  ensures trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h ::
           case C(x, h) => x case D(x, h) && x < F(x, h) && F(x, h) <= b => F(x, h))
     == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
 
@@ -56,46 +59,50 @@ lemma {:rw} {:free} forall x0: int, b: int, i: int, c: int, m: int, hs: seq<int>
 function decs(x0: int, b: int, ks: seq<int>, ls: seq<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} {:free} forall x0: int, b: int, i: int, c: int, m: int, ls: seq<int>,
-                          C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
-  trace(x0, for ⌊counter(i, c, m)⌋, ls do x, k, l ::
+lemma {:rw} trace_2(x0: int, b: int, i: int, c: int, m: int, ls: seq<int>, C: (int, int) -> bool,
+                    D: (int, int) -> bool, F: (int, int) -> int)
+  ensures trace(x0, for ⌊counter(i, c, m)⌋, ls do x, k, l ::
           case C(x, l) => x case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
     == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
 
 // the midpoint lies in the interval, for division that rounds down, which the simplifier does not know otherwise,
 // needed for the increase lo < (hi + lo) / 2 + 1 and the decrease (hi + lo) / 2 < hi
-lemma {:rw} {:free} forall l: int, h: int :: if l <= h then (l <= (h + l) / 2) <==> true
-lemma {:rw} {:free} forall l: int, h: int :: if l < h then ((h + l) / 2 < h) <==> true
+lemma {:rw} lemma_4(l: int, h: int)
+  requires l <= h
+  ensures (l <= (h + l) / 2) <==> true
+lemma {:rw} lemma_5(l: int, h: int)
+  requires l < h
+  ensures ((h + l) / 2 < h) <==> true
 
 
 // the value stays below the bound if the initial value does
-lemma {:free} forall x0: int, b: int, ks: seq<int>, hs: seq<int>,
-                          D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
-  if x0 <= b
-  then (current(incs(x0, b, ks, hs, D, C, F)) <= b) <==> true
+lemma current_1(x0: int, b: int, ks: seq<int>, hs: seq<int>, D: (int, int) -> bool, C: (int, int) -> bool,
+                F: (int, int) -> int)
+  requires x0 <= b
+  ensures (current(incs(x0, b, ks, hs, D, C, F)) <= b) <==> true
 
 // the value stays above the bound if the initial value does
-lemma {:free} forall x0: int, b: int, ks: seq<int>, ls: seq<int>,
-                          D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int ::
-  if b <= x0
-  then (b <= current(decs(x0, b, ks, ls, D, C, F))) <==> true
+lemma current_2(x0: int, b: int, ks: seq<int>, ls: seq<int>, D: (int, int) -> bool, C: (int, int) -> bool,
+                F: (int, int) -> int)
+  requires b <= x0
+  ensures (b <= current(decs(x0, b, ks, ls, D, C, F))) <==> true
 
 
 function incs_(x0: int, b: int, ks: seq<int>, hs: seq<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} {:free} forall X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, hs: seq<int>,
-                          C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
-  X == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+lemma {:rw} incs_1(X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, hs: seq<int>, C: (int, int) -> bool,
+                   D: (int, int) -> bool, F: (int, int) -> int)
+  ensures X == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
     <==> X == incs_(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F) && current(X) <= b
 
 
 function decs_(x0: int, b: int, ks: seq<int>, ls: seq<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} {:free} forall X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, ls: seq<int>,
-                          C: (int, int) -> bool, D: (int, int) -> bool, F: (int, int) -> int ::
-  X == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
+lemma {:rw} decs_1(X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, ls: seq<int>, C: (int, int) -> bool,
+                   D: (int, int) -> bool, F: (int, int) -> int)
+  ensures X == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
     <==> X == decs_(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F) && b <= current(X)
 
 method search() returns (i: int)

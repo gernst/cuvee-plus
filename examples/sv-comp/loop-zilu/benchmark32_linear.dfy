@@ -12,9 +12,10 @@ function current<a₀>(x₀: Trace<a₀>): a₀
 
 // a value that swaps a and b, and keeps all others, stays one of them if it starts as one of them, hence below a
 // common bound c; the left-hand side is a comparison
-lemma {:rw} {:free} {:teq} forall x0: int, n: int, a: int, b: int, c: int ::
-  if (x0 == a || x0 == b) && a <= c && b <= c
-  then current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x == a => b case x == b => a case x != a && x != b => x)) <= c
+lemma {:rw} {:teq} current_1(x0: int, n: int, a: int, b: int, c: int)
+  requires (x0 == a || x0 == b) && a <= c && b <= c
+  ensures
+    current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x == a => b case x == b => a case x != a && x != b => x)) <= c
 
 method main() returns (result: int) {
   var tmp₁: int, tmp₂: bool;

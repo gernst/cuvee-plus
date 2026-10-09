@@ -15,10 +15,11 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 
 // two cases that store at the same position are one store of a conditional value, which teq.dfy introduces as
 // stores; the guard of the second case must follow from the negation of the first
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, hs: seq<int>,
-                           C: (int, int) -> bool, F: (int, int) -> int, G: (int, int) -> int ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(k, h) => a[k := F(k, h)] case !C(k, h) => a[k := G(k, h)])
-    == trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := if C(k, h) then F(k, h) else G(k, h)])
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, hs: seq<int>, C: (int, int) -> bool, F: (int, int) -> int,
+                           G: (int, int) -> int)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(k, h) => a[k := F(k, h)] case !C(k, h) => a[k := G(k, h)])
+      == trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := if C(k, h) then F(k, h) else G(k, h)])
 
 method main() {
   var N: int;

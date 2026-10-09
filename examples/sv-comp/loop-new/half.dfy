@@ -16,9 +16,9 @@ function count<a>(e: a, vs: seq<a>): int
 
 // the numbers 0, ..., n - 1 with the remainder r modulo m, which the iterations of a loop are, number
 // (n + m - 1 - r) / m, here with a further dependency hs, which the update does not use
-lemma {:rw} {:free} {:teq} forall n: int, m: int, r: int, hs: seq<int> ::
-  if 0 < m && 0 <= r < m
-  then count(r, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: k % m)) == (n + m - 1 - r) / m
+lemma {:rw} {:teq} count_1(n: int, m: int, r: int, hs: seq<int>)
+  requires 0 < m && 0 <= r < m
+  ensures count(r, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: k % m)) == (n + m - 1 - r) / m
 
 method main() {
   var i: int;

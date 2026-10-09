@@ -115,7 +115,10 @@
   (=> (p 0) (and (q 0) (q 1))))
 
 (lemma
-  (forall ((x Int)) (=> (p x) (q x))))
+  (!
+    (forall ((x Int)) (=> (p x) (q x)))
+    :named
+    q_1))
 
 (goal
   (=>

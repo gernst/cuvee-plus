@@ -20,8 +20,8 @@ function sum(values: seq<int>): int
 // a sum by linearity first, with the sum of the counter (n * n - n) / 2, hence the lemma states the sum of 3 * k * k
 // as the rest, in the normal form of the simplifier, such that the division atoms cancel; Faulhaber's formula for the
 // squares would leave divisions by 2 and 6, which are not combined
-lemma {:rw} {:free} {:teq} forall n: int ::
-  sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: 3 * k * k)) == n * n * n - n - 3 * ((-n + n * n) / 2)
+lemma {:rw} {:teq} sum_1(n: int)
+  ensures sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: 3 * k * k)) == n * n * n - n - 3 * ((-n + n * n) / 2)
 
 method main() {
   var N: int;

@@ -15,9 +15,9 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 // a search for v that runs over an array with v stored at c >= 0 stops at c at the latest: the iteration constraint
 // that the elements differ from v before n holds iff n <= c and the elements of the array without the store differ
 // from v before n (with a further dependency hs)
-lemma {:rw} {:free} {:teq} forall a: array<int, int>, c: int, v: int, n: int, hs: seq<int> ::
-  if 0 <= c
-  then invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[c := v][k] != v)
+lemma {:rw} {:teq} invs_1(a: array<int, int>, c: int, v: int, n: int, hs: seq<int>)
+  requires 0 <= c
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[c := v][k] != v)
     <==> n <= c && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[k] != v)
 
 method main() {

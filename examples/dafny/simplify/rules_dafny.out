@@ -6,7 +6,10 @@ function p(x: int): bool
 
 axiom {:rw} forall x: int :: f(g(x)) == x
 
-lemma {:rw} forall x: int :: 0 <= x ==> p(x)
+lemma {:rw} p_1(x: int)
+  requires 0 <= x
+  ensures p(x)
+{}
 
 function h(a: int): bool {
   true

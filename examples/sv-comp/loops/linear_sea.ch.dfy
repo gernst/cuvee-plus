@@ -5,8 +5,8 @@
 // the constant array of the initializers of C, whose values are all x
 function constant(x: int): array<int, int>
 
-lemma {:rw} {:free} {:teq} forall x: int, i: int ::
-  constant(x)[i] == x
+lemma {:rw} {:teq} constant_1(x: int, i: int)
+  ensures constant(x)[i] == x
 
 // the division of C, which truncates towards zero
 function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }

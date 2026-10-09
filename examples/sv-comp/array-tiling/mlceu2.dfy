@@ -14,16 +14,16 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 
 // a store at the iteration k whose value depends on a case split on k is a store of the conditional value (with a
 // further dependency ys)
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, ys: seq<int>,
-                           C: (int) -> bool, F: (int) -> int, G: (int) -> int ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: case C(k) => a[k := F(k)] case !C(k) => a[k := G(k)])
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, ys: seq<int>, C: (int) -> bool, F: (int) -> int,
+                           G: (int) -> int)
+  ensures trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: case C(k) => a[k := F(k)] case !C(k) => a[k := G(k)])
     == trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[k := if C(k) then F(k) else G(k)])
 
 // a bound of integer division by a positive d (not about traces): a nonnegative x below d * (b + 1) has a quotient of
 // at most b; the left-hand side is a comparison, whose side conditions are closed once x, d, b are instantiated
-lemma {:rw} {:free} {:teq} forall x: int, d: int, b: int ::
-  if 0 < d && 0 <= x && x < d * (b + 1)
-  then (b < x / d) <==> false
+lemma {:rw} {:teq} lemma_1(x: int, d: int, b: int)
+  requires 0 < d && 0 <= x && x < d * (b + 1)
+  ensures (b < x / d) <==> false
 
 method main() {
   var S: int;

@@ -17,22 +17,22 @@ function sum(values: seq<int>): int
 
 // a prefix of length m of the values F(k) of n iterations k = 0, ..., n - 1 are the values of the first m iterations
 // (with a further dependency ys that F does not use)
-lemma {:rw} {:free} {:teq} forall m: int, n: int, ys: seq<int>, F: (int) -> int ::
-  if 0 <= m <= n
-  then prefix(m, maps(for ⌊counter(0, 1, n)⌋, ys yield k, y :: F(k))) == maps(for ⌊counter(0, 1, m)⌋ yield k :: F(k))
+lemma {:rw} {:teq} prefix_1(m: int, n: int, ys: seq<int>, F: (int) -> int)
+  requires 0 <= m <= n
+  ensures prefix(m, maps(for ⌊counter(0, 1, n)⌋, ys yield k, y :: F(k))) == maps(for ⌊counter(0, 1, m)⌋ yield k :: F(k))
 
 // the sums 0 + 1 + ... + x and 0 + 1 + ... + (x - 1) are nonnegative for all integers x, also plus a nonnegative d, in
 // the normal form of the simplifier (arithmetic, not about traces); the left-hand sides are comparisons
-lemma {:rw} {:free} {:teq} forall x: int ::
-  0 <= (x + x * x) / 2
-lemma {:rw} {:free} {:teq} forall x: int ::
-  0 <= (-x + x * x) / 2
-lemma {:rw} {:free} {:teq} forall x: int, d: int ::
-  if 0 <= d
-  then 0 <= (x + x * x) / 2 + d
-lemma {:rw} {:free} {:teq} forall x: int, d: int ::
-  if 0 <= d
-  then 0 <= (-x + x * x) / 2 + d
+lemma {:rw} {:teq} lemma_1(x: int)
+  ensures 0 <= (x + x * x) / 2
+lemma {:rw} {:teq} lemma_2(x: int)
+  ensures 0 <= (-x + x * x) / 2
+lemma {:rw} {:teq} lemma_3(x: int, d: int)
+  requires 0 <= d
+  ensures 0 <= (x + x * x) / 2 + d
+lemma {:rw} {:teq} lemma_4(x: int, d: int)
+  requires 0 <= d
+  ensures 0 <= (-x + x * x) / 2 + d
 
 method main() {
   var N: int;

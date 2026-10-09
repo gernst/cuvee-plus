@@ -7,6 +7,7 @@ import cuvee.core.State
 import cuvee.core.Scope
 import cuvee.core.types
 import cuvee.core.Attrs
+import cuvee.sexpr
 
 class Parser(var state: State):
   // the constructors and selectors of a datatype whose sort is declared already
@@ -133,9 +134,22 @@ class Parser(var state: State):
         val (params_, phi_, attrs_) = assertion(params, attrs, expr)
         List(state.cmds.axiom(params_, phi_, attrs_))
 
-      case Lemma(params, attrs, expr) =>
+      // lemma name<a>(xs) returns (ys) requires φ ensures ψ is the assertion forall xs :: φ ==> exists ys :: ψ,
+      // with its name as the attribute :named; a lemma without a body is free, one with the empty body needs a proof,
+      // other bodies are not supported yet
+      case Lemma(attrs, name, params, formals, rets, req, ens, body) =>
+        Error.report("only lemmas without a body or with the empty body are supported", name):
+          require(body.forall(_ == Block(Nil, Nil)))
+
+        val post = Ex(rets.getOrElse(Nil), ens.reduceOption((phi, psi) => App("and", List(phi, psi))).getOrElse(True))
+        val expr =
+          req.reduceOption((phi, psi) => App("and", List(phi, psi))) match
+            case None      => All(formals, post)
+            case Some(pre) => All(formals, App("=>", List(pre, post)))
+
         val (params_, phi_, attrs_) = assertion(params, attrs, expr)
-        List(state.cmds.lemma(params_, phi_, attrs_))
+        val free = if body.isEmpty && !attrs.contains("free") then List("free" -> None) else Nil
+        List(state.cmds.lemma(params_, phi_, Attrs(attrs_.attrs ++ free :+ ("named" -> Some(sexpr.Id(name))))))
 
       case Goal(params, attrs, expr) =>
         val (params_, phi_, attrs_) = assertion(params, attrs, expr)

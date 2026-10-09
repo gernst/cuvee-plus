@@ -6,9 +6,9 @@
 // modulo itself closes (no output)
 
 // the remainder of a nonzero value modulo itself (not about traces)
-lemma {:rw} {:free} {:teq} forall x: int ::
-  if x != 0
-  then x % x == 0
+lemma {:rw} {:teq} lemma_1(x: int)
+  requires x != 0
+  ensures x % x == 0
 
 method main() {
   var N: int;

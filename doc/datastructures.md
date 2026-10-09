@@ -283,7 +283,9 @@ sealed trait Ctrl extends Cmd     // Push, Pop, Reset, Exit, Done
   - `DeclareProc`, `DefineProc`;
   - `Assert(justify, params, phi, attrs)`, where `justify` is `Axiom`,
     `Goal` or `Lemma`, and `params` are the type parameters, those declared
-    by `lemma <a> ...` followed by those that remain in `phi`;
+    by `lemma name<a>(...)` (Dafny) or `lemma <a> ...` (Boogie) followed by
+    those that remain in `phi`; Dafny lemmas are named by the attribute
+    `:named`;
   - `FuseFuns(term, rhs, attrs)`, the request `fuse g(f(xs), ys) = ???` of
     Dafny input to fuse two defined functions, whose `rhs` the stage `Fuse`
     (`-fuse`) sets to the fused `Rec` with the parameters `xs` and `ys`; it

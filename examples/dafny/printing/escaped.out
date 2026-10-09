@@ -1,4 +1,6 @@
 function `f<Int>`(x: int): int
 
-lemma forall x: int :: `f<Int>`(x) == x
+lemma lemma_1(x: int)
+  ensures `f<Int>`(x) == x
+{}
 

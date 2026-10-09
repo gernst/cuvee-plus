@@ -107,10 +107,14 @@
         (|tuple₁₀_8| a$8)
         (|tuple₁₀_9| a$9)))))
 
-(lemma (= (+ 1 2) 3))
+(lemma
+  (! (= (+ 1 2) 3) :named lemma_1))
 
 (lemma
-  (forall
-    ((x (_ BitVec 8)))
-    (not (= x #b00101100))))
+  (!
+    (forall
+      ((x (_ BitVec 8)))
+      (not (= x #b00101100)))
+    :named
+    lemma_2))
 

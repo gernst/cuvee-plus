@@ -17,13 +17,14 @@ function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
 
 // stores at the positions of a counter, of V(i) except at the position c, where the store of d is written at the
 // literal c, after the simplifier substituted c for i in that case
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, j: int, c: int, d: int, V: (int) -> int ::
-  current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case i != c => a[i := V(i)] case i == c => a[c := d]))[j]
-    == if 0 <= j < n then (if j == c then d else V(j)) else a0[j]
+lemma {:rw} {:teq} current_1(a0: array<int, int>, n: int, j: int, c: int, d: int, V: (int) -> int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case i != c => a[i := V(i)] case i == c => a[c := d]))[j]
+      == if 0 <= j < n then (if j == c then d else V(j)) else a0[j]
 
 // an equation of a conditional is a case split (not about traces)
-lemma <b> {:rw} {:free} {:teq} forall c: bool, x: b, y: b, z: b ::
-  (if c then x else y) == z <==> if c then x == z else y == z
+lemma {:rw} {:teq} lemma_1<b>(c: bool, x: b, y: b, z: b)
+  ensures (if c then x else y) == z <==> if c then x == z else y == z
 
 method main() {
   var N: int;

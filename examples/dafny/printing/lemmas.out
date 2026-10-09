@@ -1,0 +1,16 @@
+function f(x: int): int
+
+lemma {:rw} f_id(x: int)
+  requires 0 <= x
+  requires x < 10
+  ensures f(x) == x
+
+lemma f_between<a>(x: int, y: a) returns (z: int)
+  ensures f(x) <= z
+  ensures z <= f(x) + 1
+{}
+
+lemma f_zero()
+  ensures f(0) == 0
+{}
+

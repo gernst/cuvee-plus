@@ -15,10 +15,11 @@ function current<a₀>(x₀: Trace<a₀>): a₀
 
 // an update at the position k of the iteration k that reads the array at k reads its initial value, which no earlier
 // iteration has overwritten (with a further dependency ys)
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, ys: seq<int>,
-                           C: (int) -> bool, F: (int) -> int, G: (int) -> int ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: case C(a[k]) => a[k := F(a[k])] case !C(a[k]) => a[k := G(a[k])])
-    == trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[k := if C(a0[k]) then F(a0[k]) else G(a0[k])])
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, ys: seq<int>, C: (int) -> bool, F: (int) -> int,
+                           G: (int) -> int)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: case C(a[k]) => a[k := F(a[k])] case !C(a[k]) => a[k := G(a[k])])
+      == trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[k := if C(a0[k]) then F(a0[k]) else G(a0[k])])
 
 method main() {
   var N: int;

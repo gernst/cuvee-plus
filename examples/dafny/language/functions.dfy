@@ -10,7 +10,9 @@ function constant(): (int -> int) -> int -> int { (f: int -> int) => (x: int) =>
 
 function first(): ((int, bool)) -> (int, bool) { (p: (int, bool)) => p }
 
-lemma inc() == (y: int) => y + 1
+lemma inc_1()
+  ensures inc() == (y: int) => y + 1
+{}
 
 // applications of variables and constants of function type, the parameter g shadows the function g
 function twice(f: int -> int, x: int): int { f(f(x)) }

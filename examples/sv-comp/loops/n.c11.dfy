@@ -13,12 +13,12 @@ function current<a₀>(x₀: Trace<a₀>): a₀
 // a counter that is reset to d when it reaches m, and incremented otherwise, stays above a lower bound of its
 // initial value and d, and, if it starts at most at m and is reset to at most m, below an upper bound above m; the
 // left-hand sides are comparisons
-lemma {:rw} {:free} {:teq} forall x0: int, n: int, m: int, d: int, lo: int ::
-  if lo <= x0 && lo <= d
-  then lo <= current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x == m => d case x != m => x + 1))
-lemma {:rw} {:free} {:teq} forall x0: int, n: int, m: int, d: int, hi: int ::
-  if x0 <= m && d <= m && m < hi
-  then current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x == m => d case x != m => x + 1)) < hi
+lemma {:rw} {:teq} current_1(x0: int, n: int, m: int, d: int, lo: int)
+  requires lo <= x0 && lo <= d
+  ensures lo <= current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x == m => d case x != m => x + 1))
+lemma {:rw} {:teq} current_2(x0: int, n: int, m: int, d: int, hi: int)
+  requires x0 <= m && d <= m && m < hi
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x == m => d case x != m => x + 1)) < hi
 
 method main() returns (result: int) {
   var tmp₁: bool;

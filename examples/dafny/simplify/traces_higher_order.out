@@ -20,18 +20,19 @@ function either(a: bool, b: bool): bool
 
 function fold(i: int, xs: seq<int>, f: (int, int) -> int): Trace<int>
 
-lemma {:rw}
-  forall Xs: seq<int>, P: int -> bool, Q: int -> bool ::
+lemma {:rw} invs_1(Xs: seq<int>, P: int -> bool, Q: int -> bool)
+  ensures
     invs(for Xs check x :: P(x) || Q(x))
       == either(invs(for Xs check x :: P(x)), invs(for Xs check x :: Q(x)))
+{}
 
-lemma {:rw}
-  forall Xs: seq<int>, F: int -> int ::
-    invs(for Xs check x :: r(F(x), F(x))) == done
+lemma {:rw} invs_2(Xs: seq<int>, F: int -> int)
+  ensures invs(for Xs check x :: r(F(x), F(x))) == done
+{}
 
-lemma {:rw}
-  forall i: int, Xs: seq<int>, F: (int, int) -> int ::
-    trace(i, for Xs do x, v :: F(x, v)) == fold(i, Xs, F)
+lemma {:rw} trace_1(i: int, Xs: seq<int>, F: (int, int) -> int)
+  ensures trace(i, for Xs do x, v :: F(x, v)) == fold(i, Xs, F)
+{}
 
 axiom either(invs(for ⌊J⌋ check x :: x < n), invs(for ⌊J⌋ check x :: 0 <= x))
 

@@ -4,7 +4,10 @@
 predicate p(x: int)
 predicate q(x: int)
 axiom if p(0) then q(0) && q(1)
-lemma forall x: int :: if p(x) then q(x)
+lemma q_1(x: int)
+  requires p(x)
+  ensures q(x)
+{}
 goal if p(0) then if q(0) then p(1) else q(1)
 axiom if p(0) then q(0) else q(1)
 axiom (if p(0) then q(0)) == q(1)

@@ -1,0 +1,1 @@
+error "only lemmas without a body or with the empty body are supported" "zero"

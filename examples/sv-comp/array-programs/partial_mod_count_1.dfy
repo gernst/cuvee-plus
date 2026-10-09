@@ -19,9 +19,9 @@ function count<a>(x: a, xs: seq<a>): int
 
 // a store at the iteration k whose value depends on a case split on k is a store of the conditional value (with a
 // further dependency ys)
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, ys: seq<int>,
-                           C: (int) -> bool, F: (int) -> int, G: (int) -> int ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: case C(k) => a[k := F(k)] case !C(k) => a[k := G(k)])
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, ys: seq<int>, C: (int) -> bool, F: (int) -> int,
+                           G: (int) -> int)
+  ensures trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: case C(k) => a[k := F(k)] case !C(k) => a[k := G(k)])
     == trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[k := if C(k) then F(k) else G(k)])
 
 method main() {

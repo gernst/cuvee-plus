@@ -108,22 +108,34 @@
         (|tuple₁₀_9| a$9)))))
 
 (lemma
-  (forall
-    ((i Int) (j Int) (n Int))
-    (and (<= 0 i) (< i n))))
+  (!
+    (forall
+      ((i Int) (j Int) (n Int))
+      (and (<= 0 i) (< i n)))
+    :named
+    lemma_1))
 
 (lemma
-  (forall
-    ((i Int) (j Int) (n Int))
-    (and (= i j) (= j n))))
+  (!
+    (forall
+      ((i Int) (j Int) (n Int))
+      (and (= i j) (= j n)))
+    :named
+    lemma_2))
 
 (lemma
-  (forall
-    ((i Int) (j Int) (n Int))
-    (and (<= i j) (= j n) (< n 1))))
+  (!
+    (forall
+      ((i Int) (j Int) (n Int))
+      (and (<= i j) (= j n) (< n 1)))
+    :named
+    lemma_3))
 
 (lemma
-  (forall
-    ((i Int) (j Int) (b Bool))
-    (= (= i j) b)))
+  (!
+    (forall
+      ((i Int) (j Int) (b Bool))
+      (= (= i j) b))
+    :named
+    lemma_4))
 

@@ -16,10 +16,10 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 function current<a₀>(x₀: Trace<a₀>): a₀
 
 // a counter in two phases: by 1 up to the bound b, from an initial value up to b, then by c
-lemma {:rw} {:free} {:teq} forall x0: int, n: int, b: int, c: int ::
-  if x0 <= b
-  then current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c))
-         == if n <= b - x0 then x0 + n else b + (n - (b - x0)) * c
+lemma {:rw} {:teq} current_1(x0: int, n: int, b: int, c: int)
+  ensures if x0 <= b
+    then current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c))
+           == if n <= b - x0 then x0 + n else b + (n - (b - x0)) * c
 
 method main() {
   var N: int;

@@ -22,4 +22,6 @@ method twice(a: T) returns (b: T)
   b := incr(b);
 }
 
-lemma forall x: T :: x + 1 - 1 == x
+lemma lemma_1(x: T)
+  ensures x + 1 - 1 == x
+{}

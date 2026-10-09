@@ -16,11 +16,11 @@ function indexof<a>(x: a, xs: seq<a>): int
 // the positions c - k of a loop that fills an array from its end, in the iterations k = 0, ..., n - 1, are distinct:
 // x occurs among them iff it is one of c, ..., c - n + 1, and it occurs at the iteration c - x (with a further
 // dependency ys that the positions do not use)
-lemma {:rw} {:free} {:teq} forall x: int, c: int, n: int, ys: seq<int> ::
-  occurs(x, maps(for ⌊counter(0, 1, n)⌋, ys yield k, y :: c - k)) <==> 0 <= c - x < n
-lemma {:rw} {:free} {:teq} forall x: int, c: int, n: int, ys: seq<int> ::
-  if 0 <= c - x < n
-  then indexof(x, maps(for ⌊counter(0, 1, n)⌋, ys yield k, y :: c - k)) == c - x
+lemma {:rw} {:teq} occurs_1(x: int, c: int, n: int, ys: seq<int>)
+  ensures occurs(x, maps(for ⌊counter(0, 1, n)⌋, ys yield k, y :: c - k)) <==> 0 <= c - x < n
+lemma {:rw} {:teq} indexof_1(x: int, c: int, n: int, ys: seq<int>)
+  requires 0 <= c - x < n
+  ensures indexof(x, maps(for ⌊counter(0, 1, n)⌋, ys yield k, y :: c - k)) == c - x
 
 method main() {
   var N: int;

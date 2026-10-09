@@ -108,7 +108,10 @@
         (|tuple₁₀_9| a$9)))))
 
 (lemma
-  (forall
-    ((x (_ BitVec 8)))
-    (bvult x (bvadd x #b00000001))))
+  (!
+    (forall
+      ((x (_ BitVec 8)))
+      (bvult x (bvadd x #b00000001)))
+    :named
+    lemma_1))
 

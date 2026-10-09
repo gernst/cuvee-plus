@@ -87,7 +87,8 @@ after section 4 of the paper.
 - Parsed by a fresh Dafny parser and injected once at the beginning of the
   output (`TEQ.lemmas`). It declares the type `Trace`, the functions on traces,
   and lemmas about them, which are `{:rw}` (rewrite rules of `-simplify`) and
-  `{:free}` (assumed by the solvers without proof).
+  free, without a body (assumed by the solvers without proof). Each lemma is
+  named after the function of its left-hand side, numbered (`trace_1`).
 - `Trace` is in no prelude: it exists only with `-teq`. Inputs that use
   traces without `-teq` declare `Trace` themselves, and inputs cannot use the
   functions of the database, which is injected after parsing.

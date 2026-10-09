@@ -77,7 +77,7 @@ or solvers consume.
 - **Helpers used as decisions** (e.g. `eq_(...) == True`) get
   `ctx.neutral`.
 - **Expected values in unit tests** must be in the simplifier's normal form.
-- **Polymorphic assertions** need `lemma <a> ...`. Never run z3 or
+- **Polymorphic assertions** need `lemma name<a>(...)`. Never run z3 or
   `-monomorph` on polymorphic input; such tests only generate goals
   (`-print null`).
 - **Testing teq.dfy lemmas:** on core terms with

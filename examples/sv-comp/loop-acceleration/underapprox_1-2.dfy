@@ -16,8 +16,8 @@ function current<a₀>(x₀: Trace<a₀>): a₀
 function pow(c: int, n: int): int
 
 // a power of 2 is not divisible by 3, since 3 is a prime other than 2 (number theory, not about traces)
-lemma {:rw} {:free} {:teq} forall n: int ::
-  (pow(2, n) % 3 == 0) <==> false
+lemma {:rw} {:teq} pow_1(n: int)
+  ensures (pow(2, n) % 3 == 0) <==> false
 
 method main() {
   var x: int;

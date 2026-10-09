@@ -16,14 +16,14 @@ predicate above(c: int, n: int, xs: seq<int>)
 
 // the iteration constraint of values xs that are chosen above c in each of n iterations (with a further dependency
 // hs that the constraint does not use), abstracted by the predicate above
-lemma {:rw} {:free} {:teq} forall c: int, n: int, hs: seq<int>, xs: seq<int> ::
-  invs(for ⌊counter(0, 1, n)⌋, hs, xs check k, h, x :: c < x) <==> above(c, n, xs)
+lemma {:rw} {:teq} invs_1(c: int, n: int, hs: seq<int>, xs: seq<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs, xs check k, h, x :: c < x) <==> above(c, n, xs)
 
 // a value chosen at an iteration j before n, i.e., above c, plus d, is at least b if b <= c + 1 + d; the left-hand
 // side is a comparison, whose side conditions are an atom and closed comparisons
-lemma {:rw} {:free} {:teq} forall c: int, n: int, xs: seq<int>, j: int, b: int, d: int ::
-  if above(c, n, xs) && 0 <= j < n && b <= c + 1 + d
-  then b <= earlier(j, xs) + d
+lemma {:rw} {:teq} earlier_1(c: int, n: int, xs: seq<int>, j: int, b: int, d: int)
+  requires above(c, n, xs) && 0 <= j < n && b <= c + 1 + d
+  ensures b <= earlier(j, xs) + d
 
 method main() {
   var i: int;

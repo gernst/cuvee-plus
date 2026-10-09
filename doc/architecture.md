@@ -189,10 +189,17 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      or `state.progs.check`. These call `Type.check` and then
      `Overload.apply`, which replaces the generic arithmetic operators of the
      prelude by their `Int`, `Real` or `Seq` implementations.
-   - Axioms, lemmas, and goals are single formulas with optional type
-     parameters and attributes, `lemma <a> {:rw} φ` (Boogie:
-     `lemma <a> {:rw} φ;`). The formula is resolved and checked in the scope
-     of the type parameters (`assertion`). In Dafny, `if φ then ψ` without
+   - Axioms and goals are single formulas with optional type parameters and
+     attributes, `axiom <a> {:rw} φ`, as are lemmas in Boogie,
+     `lemma <a> {:rw} φ;`. Lemmas in Dafny are written as in Dafny,
+     `lemma {:rw} name<a>(xs) returns (ys) requires φ ensures ψ`, and are the
+     formula `forall xs :: φ ==> exists ys :: ψ` (the conjunctions of the
+     clauses, without the quantifiers if there are no variables and without
+     the implication if there are no `requires`), named by the attribute
+     `:named`; a lemma without a body is free (`:free`), one with the empty
+     body `{}` is to be proved, other bodies are not supported yet. The
+     formula is resolved and checked in the scope of the type parameters
+     (`assertion`). In Dafny, `if φ then ψ` without
      `else` is `φ ==> ψ` anywhere (the parser translates `Ite` whose else
      branch is `true`); the guarded cases of the updates of combinators begin
      with `case`, `case φ => e`, so an if-then-else there needs no parentheses.

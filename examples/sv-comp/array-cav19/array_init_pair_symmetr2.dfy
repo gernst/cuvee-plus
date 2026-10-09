@@ -18,14 +18,14 @@ predicate greater(n: int, xs: seq<int>, ys: seq<int>)
 
 // the iteration constraint of pairs of values x > y chosen in each of n iterations (with a further dependency hs
 // that the constraint does not use), abstracted by the predicate greater
-lemma {:rw} {:free} {:teq} forall n: int, hs: seq<int>, xs: seq<int>, ys: seq<int> ::
-  invs(for ⌊counter(0, 1, n)⌋, hs, xs, ys check k, h, x, y :: y < x) <==> greater(n, xs, ys)
+lemma {:rw} {:teq} invs_1(n: int, hs: seq<int>, xs: seq<int>, ys: seq<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs, xs, ys check k, h, x, y :: y < x) <==> greater(n, xs, ys)
 
 // its instantiation at an iteration j before n; the left-hand side is a comparison, whose side conditions are an
 // atom and closed comparisons
-lemma {:rw} {:free} {:teq} forall n: int, xs: seq<int>, ys: seq<int>, j: int ::
-  if greater(n, xs, ys) && 0 <= j < n
-  then earlier(j, ys) < earlier(j, xs)
+lemma {:rw} {:teq} earlier_1(n: int, xs: seq<int>, ys: seq<int>, j: int)
+  requires greater(n, xs, ys) && 0 <= j < n
+  ensures earlier(j, ys) < earlier(j, xs)
 
 method main() {
   var N: int;

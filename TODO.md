@@ -7,7 +7,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 - make all dafny sv-comp examples unbounded
 - translate the remaining benchmarks to Dafny with unbounded loops
-- switch Dafny lemma syntax
 - look at cyclic rewrite rules
 - support verifying trace lemmas in Dafny
 - add Lean printer

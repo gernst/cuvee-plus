@@ -22,8 +22,8 @@ function sum(values: seq<int>): int
 // over the iterations as G(k + 1), and keeps the positions from n on; G is applied to the position k, since a term
 // k - 1 as its argument would be no pattern; the position is the iteration k, which the simplifier substitutes for
 // the index i once its trace is a counter
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, j: int, c: int, hs: seq<int>, G: (int) -> int ::
-  current(trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h ::
+lemma {:rw} {:teq} current_1(a0: array<int, int>, n: int, j: int, c: int, hs: seq<int>, G: (int) -> int)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h ::
                   case k == 0 => a[0 := c] case k != 0 => a[k := a[k - 1] + G(k)]))[j]
     == if 0 <= j < n then c + sum(maps(for ⌊counter(0, 1, j)⌋ yield k :: G(k + 1))) else a0[j]
 

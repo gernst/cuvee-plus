@@ -9,9 +9,9 @@
 
 // the sum 0 + 1 + ... + x of a nonnegative x is nonnegative, in the normal form of the simplifier (arithmetic, not
 // about traces); the left-hand side is a comparison
-lemma {:rw} {:free} {:teq} forall x: int ::
-  if 0 <= x
-  then 0 <= (x + x * x) / 2
+lemma {:rw} {:teq} lemma_1(x: int)
+  requires 0 <= x
+  ensures 0 <= (x + x * x) / 2
 
 method main() {
   var i: int;

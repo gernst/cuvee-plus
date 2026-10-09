@@ -15,10 +15,11 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 
 // a store at the iteration k whose value depends on a case split on the values of the iteration is a store of the
 // conditional value (with two further dependencies hs and xs)
-lemma <b> {:rw} {:free} {:teq} forall a0: array<int, b>, n: int, hs: seq<int>, xs: seq<int>,
-                               C: (int, int) -> bool, F: (int, int) -> b, G: (int, int) -> b ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: case C(h, x) => a[k := F(h, x)] case !C(h, x) => a[k := G(h, x)])
-    == trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: a[k := if C(h, x) then F(h, x) else G(h, x)])
+lemma {:rw} {:teq} trace_1<b>(a0: array<int, b>, n: int, hs: seq<int>, xs: seq<int>, C: (int, int) -> bool,
+                              F: (int, int) -> b, G: (int, int) -> b)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: case C(h, x) => a[k := F(h, x)] case !C(h, x) => a[k := G(h, x)])
+      == trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: a[k := if C(h, x) then F(h, x) else G(h, x)])
 
 method main() {
   var N: int;

@@ -23,10 +23,11 @@ predicate distincts<a>(xs: seq<a>)
 
 // two cases that store at the same position, here that of a further dependency, are one store of a conditional value
 // (see standard_running-2)
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, ps: seq<int>, cs: seq<int>,
-                           C: (int, int) -> bool, F: (int, int) -> int, G: (int, int) -> int ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, ps, cs do a, k, p, c :: case C(p, c) => a[p := F(p, c)] case !C(p, c) => a[p := G(p, c)])
-    == trace(a0, for ⌊counter(0, 1, n)⌋, ps, cs do a, k, p, c :: a[p := if C(p, c) then F(p, c) else G(p, c)])
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, ps: seq<int>, cs: seq<int>, C: (int, int) -> bool,
+                           F: (int, int) -> int, G: (int, int) -> int)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, ps, cs do a, k, p, c :: case C(p, c) => a[p := F(p, c)] case !C(p, c) => a[p := G(p, c)])
+      == trace(a0, for ⌊counter(0, 1, n)⌋, ps, cs do a, k, p, c :: a[p := if C(p, c) then F(p, c) else G(p, c)])
 
 method main() {
   var N: int;

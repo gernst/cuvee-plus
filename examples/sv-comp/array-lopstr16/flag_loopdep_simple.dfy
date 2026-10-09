@@ -19,17 +19,17 @@ predicate constant(n: int, xs: seq<int>, c: int)
 
 // a flag that is set to d whenever C holds, and kept otherwise, keeps its initial value x0 iff it is set to x0 or C
 // never holds (with a further dependency hs)
-lemma {:rw} {:free} {:teq} forall x0: int, d: int, n: int, hs: seq<int>, C: (int, int) -> bool ::
-  current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do f, k, h :: case C(k, h) => d case !C(k, h) => f)) == x0
+lemma {:rw} {:teq} current_1(x0: int, d: int, n: int, hs: seq<int>, C: (int, int) -> bool)
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do f, k, h :: case C(k, h) => d case !C(k, h) => f)) == x0
     <==> d == x0 || invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !C(k, h))
 
 // the iteration constraint that the values xs read at the iterations are c, abstracted by the predicate constant,
 // and its instantiation at an iteration j before n, which rewrites the term earlier(j, xs)
-lemma {:rw} {:free} {:teq} forall n: int, hs: seq<int>, xs: seq<int>, c: int ::
-  invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(k, xs) == c) <==> constant(n, xs, c)
-lemma {:rw} {:free} {:teq} forall n: int, xs: seq<int>, c: int, j: int ::
-  if constant(n, xs, c) && 0 <= j < n
-  then earlier(j, xs) == c
+lemma {:rw} {:teq} invs_1(n: int, hs: seq<int>, xs: seq<int>, c: int)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(k, xs) == c) <==> constant(n, xs, c)
+lemma {:rw} {:teq} earlier_1(n: int, xs: seq<int>, c: int, j: int)
+  requires constant(n, xs, c) && 0 <= j < n
+  ensures earlier(j, xs) == c
 
 method main() {
   var N: int;

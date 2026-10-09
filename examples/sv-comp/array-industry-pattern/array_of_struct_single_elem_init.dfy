@@ -13,20 +13,21 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 
 // a store at the iteration k whose value depends on a case split on the values of the iteration is a store of the
 // conditional value (with two further dependencies hs and xs)
-lemma <b> {:rw} {:free} {:teq} forall a0: array<int, b>, n: int, hs: seq<int>, xs: seq<int>,
-                               C: (int, int) -> bool, F: (int, int) -> b, G: (int, int) -> b ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: case C(h, x) => a[k := F(h, x)] case !C(h, x) => a[k := G(h, x)])
-    == trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: a[k := if C(h, x) then F(h, x) else G(h, x)])
+lemma {:rw} {:teq} trace_1<b>(a0: array<int, b>, n: int, hs: seq<int>, xs: seq<int>, C: (int, int) -> bool,
+                              F: (int, int) -> b, G: (int, int) -> b)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: case C(h, x) => a[k := F(h, x)] case !C(h, x) => a[k := G(h, x)])
+      == trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: a[k := if C(h, x) then F(h, x) else G(h, x)])
 
 // read over write at a different position, whose side condition is decided against the facts of the context, which
 // the simplifier does not consult for reads over writes (see TODO.md)
-lemma <b> {:rw} {:free} {:teq} forall a: array<int, b>, i: int, j: int, v: b ::
-  if j != i
-  then a[i := v][j] == a[j]
+lemma {:rw} {:teq} lemma_1<b>(a: array<int, b>, i: int, j: int, v: b)
+  requires j != i
+  ensures a[i := v][j] == a[j]
 
 // an equation of a conditional is a case split (not about traces)
-lemma <b> {:rw} {:free} {:teq} forall c: bool, x: b, y: b, z: b ::
-  (if c then x else y) == z <==> if c then x == z else y == z
+lemma {:rw} {:teq} lemma_2<b>(c: bool, x: b, y: b, z: b)
+  ensures (if c then x else y) == z <==> if c then x == z else y == z
 
 method main() {
   var N: int;

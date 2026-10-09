@@ -12,27 +12,29 @@ function lows(lo: int, ms: seq<int>, bs: seq<bool>): Trace<int>
 
 function highs(hi: int, ms: seq<int>, bs: seq<bool>): Trace<int>
 
-lemma {:rw} {:free}
-  forall lo: int, ms: seq<int>, bs: seq<bool>, cs: seq<bool>, ds: seq<bool> ::
+lemma {:rw} trace_1(lo: int, ms: seq<int>, bs: seq<bool>, cs: seq<bool>,
+                    ds: seq<bool>)
+  ensures
     trace(lo, for ms, bs, cs, ds
               do l, m, b, c, d ::
                 case b => m + 1 case c => l case d => l)
       == lows(lo, ms, bs)
 
-lemma {:rw} {:free}
-  forall hi: int, ms: seq<int>, bs: seq<bool>, cs: seq<bool>, ds: seq<bool> ::
+lemma {:rw} trace_2(hi: int, ms: seq<int>, bs: seq<bool>, cs: seq<bool>,
+                    ds: seq<bool>)
+  ensures
     trace(hi, for ms, bs, cs, ds
               do h, m, b, c, d ::
                 case b => h case c => m case d => h)
       == highs(hi, ms, cs)
 
-lemma {:rw} {:free}
-  forall lo: int, ms: seq<int>, bs: seq<bool> ::
+lemma {:rw} current_1(lo: int, ms: seq<int>, bs: seq<bool>)
+  ensures
     current(lows(lo, ms, bs))
       == (if occurs(true, bs) then earlier(indexof(true, bs), ms) + 1 else lo)
 
-lemma {:rw} {:free}
-  forall hi: int, ms: seq<int>, bs: seq<bool> ::
+lemma {:rw} current_2(hi: int, ms: seq<int>, bs: seq<bool>)
+  ensures
     current(highs(hi, ms, bs))
       == (if occurs(true, bs) then earlier(indexof(true, bs), ms) else hi)
 
@@ -42,61 +44,60 @@ function gts(a: array<int, int>, ms: seq<int>, x: int): seq<bool>
 
 function eqs(a: array<int, int>, ms: seq<int>, x: int): seq<bool>
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int ::
-    maps(for ms yield m :: a[m] < x) == lts(a, ms, x)
+lemma {:rw} maps_1(a: array<int, int>, ms: seq<int>, x: int)
+  ensures maps(for ms yield m :: a[m] < x) == lts(a, ms, x)
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int ::
-    maps(for ms yield m :: x < a[m]) == gts(a, ms, x)
+lemma {:rw} maps_2(a: array<int, int>, ms: seq<int>, x: int)
+  ensures maps(for ms yield m :: x < a[m]) == gts(a, ms, x)
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int ::
-    maps(for ms yield m :: x == a[m]) == eqs(a, ms, x)
+lemma {:rw} maps_3(a: array<int, int>, ms: seq<int>, x: int)
+  ensures maps(for ms yield m :: x == a[m]) == eqs(a, ms, x)
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int ::
-    occurs(true, lts(a, ms, x))
-      ==> a[earlier(indexof(true, lts(a, ms, x)), ms)] < x
+lemma {:rw} earlier_1(a: array<int, int>, ms: seq<int>, x: int)
+  requires occurs(true, lts(a, ms, x))
+  ensures a[earlier(indexof(true, lts(a, ms, x)), ms)] < x
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int ::
-    occurs(true, gts(a, ms, x))
-      ==> x < a[earlier(indexof(true, gts(a, ms, x)), ms)]
+lemma {:rw} earlier_2(a: array<int, int>, ms: seq<int>, x: int)
+  requires occurs(true, gts(a, ms, x))
+  ensures x < a[earlier(indexof(true, gts(a, ms, x)), ms)]
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int ::
-    occurs(true, eqs(a, ms, x))
-      ==> (x == a[earlier(indexof(true, eqs(a, ms, x)), ms)] <==> true)
+lemma {:rw} earlier_3(a: array<int, int>, ms: seq<int>, x: int)
+  requires occurs(true, eqs(a, ms, x))
+  ensures x == a[earlier(indexof(true, eqs(a, ms, x)), ms)] <==> true
 
 function sorted(a: array<int, int>): bool {
   forall j: int, k: int :: j <= k ==> a[j] <= a[k]
 }
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int ::
-    sorted(a) && occurs(true, lts(a, ms, x)) && occurs(true, gts(a, ms, x))
-      ==> earlier(indexof(true, lts(a, ms, x)), ms)
-        < earlier(indexof(true, gts(a, ms, x)), ms)
+lemma {:rw} earlier_4(a: array<int, int>, ms: seq<int>, x: int)
+  requires sorted(a)
+  requires occurs(true, lts(a, ms, x))
+  requires occurs(true, gts(a, ms, x))
+  ensures
+    earlier(indexof(true, lts(a, ms, x)), ms)
+      < earlier(indexof(true, gts(a, ms, x)), ms)
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int, k: int ::
-    sorted(a) && occurs(true, lts(a, ms, x)) && a[k] == x
-      ==> earlier(indexof(true, lts(a, ms, x)), ms) < k
+lemma {:rw} earlier_5(a: array<int, int>, ms: seq<int>, x: int, k: int)
+  requires sorted(a)
+  requires occurs(true, lts(a, ms, x))
+  requires a[k] == x
+  ensures earlier(indexof(true, lts(a, ms, x)), ms) < k
 
-lemma {:rw} {:free}
-  forall a: array<int, int>, ms: seq<int>, x: int, k: int ::
-    sorted(a) && occurs(true, gts(a, ms, x)) && a[k] == x
-      ==> k < earlier(indexof(true, gts(a, ms, x)), ms)
+lemma {:rw} earlier_6(a: array<int, int>, ms: seq<int>, x: int, k: int)
+  requires sorted(a)
+  requires occurs(true, gts(a, ms, x))
+  requires a[k] == x
+  ensures k < earlier(indexof(true, gts(a, ms, x)), ms)
 
 function mids(m0: int, ks: seq<int>, ls: seq<int>, hs: seq<int>, B: int -> bool,
               C: int -> bool, D: int -> bool, V: (int, int) -> int,
               W: (int, int) -> int, U: (int, int) -> int): Trace<int>
 
-lemma {:rw} {:free}
-  forall m0: int, K: Trace<int>, ls: seq<int>, hs: seq<int>, B: int -> bool,
-         C: int -> bool, D: int -> bool, V: (int, int) -> int,
-         W: (int, int) -> int, U: (int, int) -> int ::
+lemma {:rw} trace_3(m0: int, K: Trace<int>, ls: seq<int>, hs: seq<int>,
+                    B: int -> bool, C: int -> bool, D: int -> bool,
+                    V: (int, int) -> int, W: (int, int) -> int,
+                    U: (int, int) -> int)
+  ensures
     trace(m0, for ⌊K⌋, ls, hs
               do y, k, l, h ::
                 case B(y) => V(y, h) case C(y) => W(l, y) case D(y) => U(l, h))

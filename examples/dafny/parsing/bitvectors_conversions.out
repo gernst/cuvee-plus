@@ -108,12 +108,18 @@
         (|tuple₁₀_9| a$9)))))
 
 (lemma
-  (forall ((x (_ BitVec 8))) (< (bv2nat x) 256)))
+  (!
+    (forall ((x (_ BitVec 8))) (< (bv2nat x) 256))
+    :named
+    lemma_1))
 
 (lemma
-  (forall
-    ((n Int))
-    (<
-      (bv2nat ((_ int2bv 8) n))
-      256)))
+  (!
+    (forall
+      ((n Int))
+      (<
+        (bv2nat ((_ int2bv 8) n))
+        256))
+    :named
+    lemma_2))
 

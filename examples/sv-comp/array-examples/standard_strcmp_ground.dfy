@@ -24,11 +24,11 @@ predicate agree(n: int, xs: seq<int>, ys: seq<int>)
 // in a context, in which the lemma applies to its body, and an equation of prefixes prefix(n, xs) == prefix(n, ys)
 // with n open is not matched against the facts (see TODO.md); the atom is stated as such, since an equation of
 // integers would be a rule on its left-hand side as a term
-lemma {:rw} {:free} {:teq} forall n: int, xs: seq<int>, ys: seq<int>, hs: seq<int> ::
-  invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(k, xs) == earlier(k, ys)) <==> agree(n, xs, ys)
-lemma {:rw} {:free} {:teq} forall n: int, j: int, xs: seq<int>, ys: seq<int> ::
-  if agree(n, xs, ys) && 0 <= j < n
-  then (earlier(j, xs) == earlier(j, ys)) <==> true
+lemma {:rw} {:teq} invs_1(n: int, xs: seq<int>, ys: seq<int>, hs: seq<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(k, xs) == earlier(k, ys)) <==> agree(n, xs, ys)
+lemma {:rw} {:teq} earlier_1(n: int, j: int, xs: seq<int>, ys: seq<int>)
+  requires agree(n, xs, ys) && 0 <= j < n
+  ensures (earlier(j, xs) == earlier(j, ys)) <==> true
 
 method main() {
   var N: int;

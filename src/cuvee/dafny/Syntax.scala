@@ -127,7 +127,17 @@ object Sel extends ((String, Type) => Sel)
 object Constr extends ((String, List[Sel]) => Constr)
 
 case class Axiom(params: List[String], attrs: List[String], phi: Expr) extends Cmd
-case class Lemma(params: List[String], attrs: List[String], phi: Expr) extends Cmd
+// lemma name<a>(x: A) returns (y: B) requires φ ensures ψ, whose body is absent (free) or empty
+case class Lemma(
+    attrs: List[String],
+    name: String,
+    params: List[String],
+    formals: List[(String, Type)],
+    rets: Option[List[(String, Type)]],
+    req: List[Expr],
+    ens: List[Expr],
+    body: Option[Prog]
+) extends Cmd
 case class Goal(params: List[String], attrs: List[String], phi: Expr) extends Cmd
 case object Check extends Cmd
 // fuse term = ???, where term is the composition of two defined functions (see core.FuseFuns)
@@ -165,7 +175,19 @@ case class MethodDef(
 ) extends Cmd
 
 object Axiom extends ((List[String], List[String], Expr) => Cmd)
-object Lemma extends ((List[String], List[String], Expr) => Cmd)
+object Lemma
+    extends (
+        (
+            List[String],
+            String,
+            List[String],
+            List[(String, Type)],
+            Option[List[(String, Type)]],
+            List[Expr],
+            List[Expr],
+            Option[Prog]
+        ) => Cmd
+    )
 object Goal extends ((List[String], List[String], Expr) => Cmd)
 object Fuse extends ((List[String], Expr) => Cmd)
 object VarDef extends (List[(String, Type)] => Cmd)

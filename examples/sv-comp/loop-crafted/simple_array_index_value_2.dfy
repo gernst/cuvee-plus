@@ -18,11 +18,11 @@ predicate above(n: int, ts: seq<int>)
 
 // the iteration constraint that the value of each iteration exceeds the iteration is abstracted by above, which is
 // instantiated at the positions j in the range by the atom j < earlier(j, ts), the left-hand side
-lemma {:rw} {:free} {:teq} forall n: int, ts: seq<int>, hs: seq<int> ::
-  invs(for ⌊counter(0, 1, n)⌋, hs, ts check k, h, t :: k < t) <==> above(n, ts)
-lemma {:rw} {:free} {:teq} forall n: int, j: int, ts: seq<int> ::
-  if above(n, ts) && 0 <= j < n
-  then (j < earlier(j, ts)) <==> true
+lemma {:rw} {:teq} invs_1(n: int, ts: seq<int>, hs: seq<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs, ts check k, h, t :: k < t) <==> above(n, ts)
+lemma {:rw} {:teq} earlier_1(n: int, j: int, ts: seq<int>)
+  requires above(n, ts) && 0 <= j < n
+  ensures (j < earlier(j, ts)) <==> true
 
 method main() {
   var N: int;

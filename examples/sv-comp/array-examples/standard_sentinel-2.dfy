@@ -19,11 +19,11 @@ predicate absent(n: int, a: array<int, int>, e: int)
 // the iteration constraint of a search, the elements of a at the iterations 0, ..., n - 1 differ from e, states that
 // e is absent there; then a position j where e is found is not before n, a comparison as the left-hand side, which
 // terminates, since its side condition is an atom that is matched against the facts, not an iteration constraint
-lemma {:rw} {:free} {:teq} forall n: int, e: int, a: array<int, int>, hs: seq<int> ::
-  invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[k] != e) <==> absent(n, a, e)
-lemma {:rw} {:free} {:teq} forall n: int, j: int, e: int, a: array<int, int> ::
-  if absent(n, a, e) && a[j] == e && 0 <= j
-  then n <= j
+lemma {:rw} {:teq} invs_1(n: int, e: int, a: array<int, int>, hs: seq<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[k] != e) <==> absent(n, a, e)
+lemma {:rw} {:teq} lemma_1(n: int, j: int, e: int, a: array<int, int>)
+  requires absent(n, a, e) && a[j] == e && 0 <= j
+  ensures n <= j
 
 method main() {
   var N: int;

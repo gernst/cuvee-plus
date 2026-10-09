@@ -18,14 +18,15 @@ function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
 
 // two cases that store at the same position, the iteration, are one store of a conditional value (see
 // standard_running-2), here with values that read the array itself
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, hs: seq<int>, C: (int, int) -> bool,
-                           F: (array<int, int>, int, int) -> int, G: (array<int, int>, int, int) -> int ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(k, h) => a[k := F(a, k, h)] case !C(k, h) => a[k := G(a, k, h)])
-    == trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := if C(k, h) then F(a, k, h) else G(a, k, h)])
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, hs: seq<int>, C: (int, int) -> bool,
+                           F: (array<int, int>, int, int) -> int, G: (array<int, int>, int, int) -> int)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(k, h) => a[k := F(a, k, h)] case !C(k, h) => a[k := G(a, k, h)])
+      == trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := if C(k, h) then F(a, k, h) else G(a, k, h)])
 
 // the remainder modulo 2 is 0 or 1 (arithmetic, not about traces)
-lemma {:rw} {:free} {:teq} forall y: int ::
-  !(y % 2 == 0) <==> y % 2 == 1
+lemma {:rw} {:teq} lemma_1(y: int)
+  ensures !(y % 2 == 0) <==> y % 2 == 1
 
 method main() {
   var N: int;

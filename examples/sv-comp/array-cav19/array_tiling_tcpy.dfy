@@ -14,10 +14,10 @@ function current<a₀>(x₀: Trace<a₀>): a₀
 // a loop that copies b into a at the positions c - k and k in the iterations k = 0, ..., n - 1, i.e., from both ends
 // at once, agrees with b at the positions below n and above c - n, up to c, and keeps the others (with a further
 // dependency ys that the update does not use)
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, b: array<int, int>, n: int, c: int, j: int, ys: seq<int> ::
-  if 0 <= n
-  then current(trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[c - k := b[c - k]][k := b[k]]))[j]
-    == if 0 <= j < n || c - n < j <= c then b[j] else a0[j]
+lemma {:rw} {:teq} current_1(a0: array<int, int>, b: array<int, int>, n: int, c: int, j: int, ys: seq<int>)
+  ensures if 0 <= n
+    then current(trace(a0, for ⌊counter(0, 1, n)⌋, ys do a, k, y :: a[c - k := b[c - k]][k := b[k]]))[j]
+      == if 0 <= j < n || c - n < j <= c then b[j] else a0[j]
 
 method main() {
   var S: int;

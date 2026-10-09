@@ -387,9 +387,6 @@ object Grammar:
   val axiom =
     Axiom(P("axiom" ~ params ~ annotation.* ~ expr))
 
-  val lemma =
-    Lemma(P("lemma" ~ params ~ annotation.* ~ expr))
-
   val goal =
     Goal(P("goal" ~ params ~ annotation.* ~ expr))
 
@@ -407,6 +404,9 @@ object Grammar:
 
   val procdef =
     MethodDef(P("method" ~ annotation.* ~ id ~ params ~ formals ~ returns.? ~ modifies.* ~ requires.* ~ ensures.* ~ assumes.* ~ commits.* ~ decreases.* ~ block.?))
+
+  val lemma =
+    Lemma(P("lemma" ~ annotation.* ~ id ~ params ~ formals ~ returns.? ~ requires.* ~ ensures.* ~ block.?))
 
   val check =
     Check("check")

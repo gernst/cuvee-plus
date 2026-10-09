@@ -11,8 +11,8 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 function current<a₀>(x₀: Trace<a₀>): a₀
 
 // a value that starts at c and is changed only where it differs from c stays c
-lemma {:rw} {:free} {:teq} forall c: int, n: int, F: (int) -> int ::
-  current(trace(c, for ⌊counter(0, 1, n)⌋ do s, k :: case s != c => F(s) case s == c => c)) == c
+lemma {:rw} {:teq} current_1(c: int, n: int, F: (int) -> int)
+  ensures current(trace(c, for ⌊counter(0, 1, n)⌋ do s, k :: case s != c => F(s) case s == c => c)) == c
 
 method main() {
   var s: int;

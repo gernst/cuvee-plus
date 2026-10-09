@@ -19,13 +19,14 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 
 // a store at a position given by a dependency ps, e.g. a counter with step 2, whose value depends on a case split on
 // the values of the iteration, is a store of the conditional value (with one or two further dependencies)
-lemma <b> {:rw} {:free} {:teq} forall a0: array<int, b>, n: int, ps: seq<int>, xs: seq<int>,
-                               C: (int) -> bool, F: (int) -> b, G: (int) -> b ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs do a, k, p, x :: case C(x) => a[p := F(x)] case !C(x) => a[p := G(x)])
-    == trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs do a, k, p, x :: a[p := if C(x) then F(x) else G(x)])
-lemma <b> {:rw} {:free} {:teq} forall a0: array<int, b>, n: int, ps: seq<int>, xs: seq<int>, ys: seq<b>,
-                               C: (int) -> bool, F: (int, b) -> b, G: (int, b) -> b ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs, ys do a, k, p, x, y ::
+lemma {:rw} {:teq} trace_1<b>(a0: array<int, b>, n: int, ps: seq<int>, xs: seq<int>, C: (int) -> bool, F: (int) -> b,
+                              G: (int) -> b)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs do a, k, p, x :: case C(x) => a[p := F(x)] case !C(x) => a[p := G(x)])
+      == trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs do a, k, p, x :: a[p := if C(x) then F(x) else G(x)])
+lemma {:rw} {:teq} trace_2<b>(a0: array<int, b>, n: int, ps: seq<int>, xs: seq<int>, ys: seq<b>, C: (int) -> bool,
+                              F: (int, b) -> b, G: (int, b) -> b)
+  ensures trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs, ys do a, k, p, x, y ::
           case C(x) => a[p := F(x, y)] case !C(x) => a[p := G(x, y)])
     == trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs, ys do a, k, p, x, y :: a[p := if C(x) then F(x, y) else G(x, y)])
 
@@ -34,17 +35,17 @@ function indexof<a>(x: a, xs: seq<a>): int
 
 // the positions of a counter with step 2 from 0 are the even numbers x with 0 <= x < 2 n, at the iteration x / 2;
 // stated for the literal 2, since a variable does not match the coefficient of a monomial (see TODO.md)
-lemma {:rw} {:free} {:teq} forall x: int, n: int ::
-  occurs(x, ⌊counter(0, 2, n)⌋) <==> 0 <= x < 2 * n && x % 2 == 0
-lemma {:rw} {:free} {:teq} forall x: int, n: int ::
-  if 0 <= x < 2 * n && x % 2 == 0
-  then indexof(x, ⌊counter(0, 2, n)⌋) == x / 2
+lemma {:rw} {:teq} occurs_1(x: int, n: int)
+  ensures occurs(x, ⌊counter(0, 2, n)⌋) <==> 0 <= x < 2 * n && x % 2 == 0
+lemma {:rw} {:teq} indexof_1(x: int, n: int)
+  requires 0 <= x < 2 * n && x % 2 == 0
+  ensures indexof(x, ⌊counter(0, 2, n)⌋) == x / 2
 
 // cancellation of the factor 2 in a division, and an equation of a conditional as a case split (not about traces)
-lemma {:rw} {:free} {:teq} forall x: int ::
-  (2 * x) / 2 == x
-lemma <b> {:rw} {:free} {:teq} forall c: bool, x: b, y: b, z: b ::
-  (if c then x else y) == z <==> if c then x == z else y == z
+lemma {:rw} {:teq} lemma_1(x: int)
+  ensures (2 * x) / 2 == x
+lemma {:rw} {:teq} lemma_2<b>(c: bool, x: b, y: b, z: b)
+  ensures (if c then x else y) == z <==> if c then x == z else y == z
 
 method main() {
   var N: int;

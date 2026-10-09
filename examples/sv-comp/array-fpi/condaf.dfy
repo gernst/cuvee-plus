@@ -13,10 +13,11 @@ function current<a₀>(x₀: Trace<a₀>): a₀
 function sum(values: seq<int>): int
 
 // two cases that store at the same position, the iteration, are one store of a conditional value (see condm)
-lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, hs: seq<int>, C: (array<int, int>, int, int) -> bool,
-                           F: (array<int, int>, int, int) -> int, G: (array<int, int>, int, int) -> int ::
-  trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(a, k, h) => a[k := F(a, k, h)] case !C(a, k, h) => a[k := G(a, k, h)])
-    == trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := if C(a, k, h) then F(a, k, h) else G(a, k, h)])
+lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: int, hs: seq<int>, C: (array<int, int>, int, int) -> bool,
+                           F: (array<int, int>, int, int) -> int, G: (array<int, int>, int, int) -> int)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(a, k, h) => a[k := F(a, k, h)] case !C(a, k, h) => a[k := G(a, k, h)])
+      == trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := if C(a, k, h) then F(a, k, h) else G(a, k, h)])
 
 function stores<a, b>(a: array<a, b>, keys: seq<a>, values: seq<b>): Trace<array<a, b>>
 function selects<a, b>(a: array<a, b>, keys: seq<a>): seq<b>

@@ -6,6 +6,7 @@ import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib._
 import cuvee.core.Attrs
+import cuvee.sexpr
 
 import easyprint.Doc
 import easyprint.Doc._
@@ -202,7 +203,33 @@ object Printer extends cuvee.pipe.Printer:
         val rhs_ = rhs.map(doc(_)).getOrElse(text("???"))
         Group(text("fuse") ~ attributes(attrs) ~~ doc(term) ~~ text("=") ~ Nest(2, line ~ rhs_))
 
-      // with type parameters, lemma <a> {:rw} forall x: a :: φ
+      // lemma name<a>(xs) returns (ys) requires φ ensures ψ for forall xs :: φ ==> exists ys :: ψ, named by :named,
+      // the conjunctions are split into clauses; free lemmas have no body, the others the empty body
+      case Assert(Lemma, params_, phi, attrs) =>
+        val name_ = attrs.values[sexpr.Id]("named").map(_.text).headOption.getOrElse("unnamed")
+
+        val (formals_, body) =
+          phi match
+            case All(formals_, body) => (formals_, body)
+            case _                   => (Nil, phi)
+
+        val (req, post) =
+          body match
+            case Imp(pre, post) => (And.flatten(pre), post)
+            case _              => (Nil, body)
+
+        val (rets, ens) =
+          post match
+            case Ex(rets, ens) => (rets, And.flatten(ens))
+            case True          => (Nil, Nil)
+            case _             => (Nil, And.flatten(post))
+
+        val attrs_ = Attrs(attrs.attrs.filterNot((kw, _) => kw == "named" || kw == "free"))
+        val clauses_ = Attrs(req.map("requires" -> Some(_)) ++ ens.map("ensures" -> Some(_)))
+        val head = text("lemma") ~ attributes(attrs_) ~~ signature(name(name_), params_, formals_) ~ returns(rets)
+        header(head, clauses_, if attrs.contains("free") then None else Some(braces(Nil)))
+
+      // with type parameters, axiom <a> {:rw} forall x: a :: φ
       case Assert(justify, params_, phi, attrs) =>
         Group(text(format(justify)) ~ (if params_.isEmpty then empty else space ~ params(params_)) ~ attributes(attrs) ~ Nest(2, line ~ doc(phi)))
 
@@ -216,7 +243,7 @@ object Printer extends cuvee.pipe.Printer:
       case DefineProc(Proc(name_, params_, in, out), body, attrs) =>
         header(text("method") ~ attributes(attrs) ~~ signature(name(name_), params_, in) ~ returns(out), attrs, Some(block(body)))
 
-  // goals and lemmas are not part of Dafny, they are printed like axioms with their own keyword
+  // goals are not part of Dafny, they are printed like axioms with their own keyword
   def format(justify: Justify) =
     justify match
       case Axiom => "axiom"

@@ -19,17 +19,17 @@ function earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
 // a store at the iteration k that is made only if C holds of the values of the iteration, read at j: the value of
 // the iteration j if it is one of the first n and C holds there, otherwise the initial value (with further
 // dependencies hs, cs, vs)
-lemma <b> {:rw} {:free} {:teq} forall a0: array<int, b>, n: int, j: int, hs: seq<int>, cs: seq<int>, vs: seq<int>,
-                               C: (int, int, int) -> bool, V: (int, int, int) -> b ::
-  current(trace(a0, for ⌊counter(0, 1, n)⌋, hs, cs, vs do a, k, h, c, v ::
+lemma {:rw} {:teq} current_1<b>(a0: array<int, b>, n: int, j: int, hs: seq<int>, cs: seq<int>, vs: seq<int>,
+                                C: (int, int, int) -> bool, V: (int, int, int) -> b)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs, cs, vs do a, k, h, c, v ::
                   case C(h, c, v) => a[k := V(h, c, v)] case !C(h, c, v) => a))[j]
     == if 0 <= j < n && C(earlier(j, hs), earlier(j, cs), earlier(j, vs))
        then V(earlier(j, hs), earlier(j, cs), earlier(j, vs))
        else a0[j]
 
 // conditionals with the same test in an equation are a single case split (not about traces)
-lemma <b> {:rw} {:free} {:teq} forall c: bool, x: b, y: b, u: b, v: b ::
-  (if c then x else y) == (if c then u else v) <==> if c then x == u else y == v
+lemma {:rw} {:teq} lemma_1<b>(c: bool, x: b, y: b, u: b, v: b)
+  ensures (if c then x else y) == (if c then u else v) <==> if c then x == u else y == v
 
 method main() {
   var N: int;

@@ -6,7 +6,9 @@ const constant: (int -> int) -> int -> int := (f: int -> int) => (x: int) => x
 
 const first: ((int, bool)) -> (int, bool) := (p: (int, bool)) => p
 
-lemma inc == ((y: int) => y + 1)
+lemma inc_1()
+  ensures inc == ((y: int) => y + 1)
+{}
 
 function twice(f: int -> int, x: int): int {
   f(f(x))

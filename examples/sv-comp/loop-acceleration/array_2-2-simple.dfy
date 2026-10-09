@@ -7,8 +7,8 @@
 // the constant array of the initializers of C, whose values are all x
 function constant(x: int): array<int, int>
 
-lemma {:rw} {:free} {:teq} forall x: int, i: int ::
-  constant(x)[i] == x
+lemma {:rw} {:teq} constant_1(x: int, i: int)
+  ensures constant(x)[i] == x
 
 method main() returns (result: int) {
   var N: int;

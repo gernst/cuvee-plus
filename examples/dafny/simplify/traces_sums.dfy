@@ -11,7 +11,9 @@ const n: int
 function sums(i: int, V: seq<int>): Trace<int>
 const W: seq<int>
 const arr: array<int, int>
-lemma {:rw} forall i: int, V: seq<int> :: trace(i, for V do x, v :: x + v) == sums(i, V)
+lemma {:rw} trace_1(i: int, V: seq<int>)
+  ensures trace(i, for V do x, v :: x + v) == sums(i, V)
+{}
 axiom J == counter(0, 1, n) ==> p(trace(0, for ⌊J⌋ do s, j :: s + arr[j]))
 axiom J == counter(0, 1, n) ==> p(trace(0, for ⌊J⌋, W do s, j, w :: w + s))
 axiom J == counter(0, 1, n) ==> p(trace(0, for ⌊J⌋ do s, j :: s + s * j))

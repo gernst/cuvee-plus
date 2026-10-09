@@ -24,17 +24,17 @@ predicate below(n: int, js: seq<int>, b: int)
 // predicates: the loop test, a bound b on the value, held before each iteration, and the values are at least 1;
 // the bound comes first, since rules apply in their order, and the second one matches the bound as well, where the
 // plain dependency js is the map of b - i
-lemma {:rw} {:free} {:teq} forall n: int, b: int, js: seq<int>, hs: seq<int> ::
-  invs(for ⌊counter(0, 1, n)⌋, ⌊sums(0, js)⌋, hs check k, i, h :: i < b) <==> below(n, js, b)
-lemma {:rw} {:free} {:teq} forall n: int, js: seq<int>, hs: seq<int> ::
-  invs(for ⌊counter(0, 1, n)⌋, hs, js check k, h, j :: 1 <= j) <==> positive(n, js)
+lemma {:rw} {:teq} invs_1(n: int, b: int, js: seq<int>, hs: seq<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, ⌊sums(0, js)⌋, hs check k, i, h :: i < b) <==> below(n, js, b)
+lemma {:rw} {:teq} invs_2(n: int, js: seq<int>, hs: seq<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs, js check k, h, j :: 1 <= j) <==> positive(n, js)
 
 // with steps of at least 1, the partial sum before the last of n iterations is at least n - 1, and below b, hence
 // there are at most b iterations, also none for 0 <= b; the left-hand side is a comparison, whose side conditions
 // are atoms
-lemma {:rw} {:free} {:teq} forall n: int, b: int, js: seq<int> ::
-  if positive(n, js) && below(n, js, b) && 0 <= b
-  then n <= b
+lemma {:rw} {:teq} lemma_1(n: int, b: int, js: seq<int>)
+  requires positive(n, js) && below(n, js, b) && 0 <= b
+  ensures n <= b
 
 method main() {
   var N: int;

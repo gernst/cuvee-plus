@@ -15,14 +15,14 @@ function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 
 // a trace whose cases are decided by a condition c that is the same in all iterations, i.e., c does not depend
 // on the bound variables, which a variable of the lemma cannot capture, is one of two traces, chosen by c
-lemma {:rw} {:free} {:teq} forall x0: int, i: int, d: int, n: int, c: bool, F: (int, int) -> int, G: (int, int) -> int ::
-  trace(x0, for ⌊counter(i, d, n)⌋ do x, k :: case c => F(x, k) case !c => G(x, k))
+lemma {:rw} {:teq} trace_1(x0: int, i: int, d: int, n: int, c: bool, F: (int, int) -> int, G: (int, int) -> int)
+  ensures trace(x0, for ⌊counter(i, d, n)⌋ do x, k :: case c => F(x, k) case !c => G(x, k))
     == if c then trace(x0, for ⌊counter(i, d, n)⌋ do x, k :: F(x, k))
        else trace(x0, for ⌊counter(i, d, n)⌋ do x, k :: G(x, k))
 
 // the remainder modulo 2 is 0 or 1
-lemma {:rw} {:free} {:teq} forall y: int ::
-  !(y % 2 == 0) <==> y % 2 == 1
+lemma {:rw} {:teq} lemma_1(y: int)
+  ensures !(y % 2 == 0) <==> y % 2 == 1
 
 method main() {
   var N: int;

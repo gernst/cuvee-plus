@@ -16,8 +16,8 @@ function sum(values: seq<int>): int
 
 // division by 2 of a polynomial with even coefficients, in the normal form of the simplifier (arithmetic, not about
 // traces), see eqn1
-lemma {:rw} {:free} {:teq} forall x: int ::
-  (4 * x + 4 * x * x) / 2 == 2 * x + 2 * x * x
+lemma {:rw} {:teq} lemma_1(x: int)
+  ensures (4 * x + 4 * x * x) / 2 == 2 * x + 2 * x * x
 
 method main() {
   var N: int;

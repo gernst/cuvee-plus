@@ -32,22 +32,22 @@ function lows(lo: int, ms: seq<int>, bs: seq<bool>): Trace<int>
 function highs(hi: int, ms: seq<int>, bs: seq<bool>): Trace<int>
 
 // the cases of the if-else chain on a[m] < x, x < a[m], and a[m] == x
-lemma {:rw} {:free} forall lo: int, ms: seq<int>, bs: seq<bool>, cs: seq<bool>, ds: seq<bool> ::
-  trace(lo, for ms, bs, cs, ds do l, m, b, c, d :: case b => m + 1 case c => l case d => l)
+lemma {:rw} trace_1(lo: int, ms: seq<int>, bs: seq<bool>, cs: seq<bool>, ds: seq<bool>)
+  ensures trace(lo, for ms, bs, cs, ds do l, m, b, c, d :: case b => m + 1 case c => l case d => l)
     == lows(lo, ms, bs)
 
-lemma {:rw} {:free} forall hi: int, ms: seq<int>, bs: seq<bool>, cs: seq<bool>, ds: seq<bool> ::
-  trace(hi, for ms, bs, cs, ds do h, m, b, c, d :: case b => h case c => m case d => h)
+lemma {:rw} trace_2(hi: int, ms: seq<int>, bs: seq<bool>, cs: seq<bool>, ds: seq<bool>)
+  ensures trace(hi, for ms, bs, cs, ds do h, m, b, c, d :: case b => h case c => m case d => h)
     == highs(hi, ms, cs)
 
 // the current indices are the last probes that moved them, the initial ones if there is none
 // (indexof is the last occurrence)
-lemma {:rw} {:free} forall lo: int, ms: seq<int>, bs: seq<bool> ::
-  current(lows(lo, ms, bs))
+lemma {:rw} current_1(lo: int, ms: seq<int>, bs: seq<bool>)
+  ensures current(lows(lo, ms, bs))
     == if occurs(true, bs) then earlier(indexof(true, bs), ms) + 1 else lo
 
-lemma {:rw} {:free} forall hi: int, ms: seq<int>, bs: seq<bool> ::
-  current(highs(hi, ms, bs))
+lemma {:rw} current_2(hi: int, ms: seq<int>, bs: seq<bool>)
+  ensures current(highs(hi, ms, bs))
     == if occurs(true, bs) then earlier(indexof(true, bs), ms) else hi
 
 // the comparisons of the values of an array at the probes ms with x, the guards of the cases above
@@ -55,31 +55,31 @@ function lts(a: array<int, int>, ms: seq<int>, x: int): seq<bool>
 function gts(a: array<int, int>, ms: seq<int>, x: int): seq<bool>
 function eqs(a: array<int, int>, ms: seq<int>, x: int): seq<bool>
 
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int ::
-  maps(for ms yield m :: a[m] < x)
+lemma {:rw} maps_1(a: array<int, int>, ms: seq<int>, x: int)
+  ensures maps(for ms yield m :: a[m] < x)
     == lts(a, ms, x)
 
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int ::
-  maps(for ms yield m :: x < a[m])
+lemma {:rw} maps_2(a: array<int, int>, ms: seq<int>, x: int)
+  ensures maps(for ms yield m :: x < a[m])
     == gts(a, ms, x)
 
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int ::
-  maps(for ms yield m :: x == a[m])
+lemma {:rw} maps_3(a: array<int, int>, ms: seq<int>, x: int)
+  ensures maps(for ms yield m :: x == a[m])
     == eqs(a, ms, x)
 
 // the comparison holds at the last probe where it holds, if there is one,
 // an equation is stated as an equivalence, since it would be a rule for x otherwise
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int ::
-  if occurs(true, lts(a, ms, x))
-  then a[earlier(indexof(true, lts(a, ms, x)), ms)] < x
+lemma {:rw} earlier_1(a: array<int, int>, ms: seq<int>, x: int)
+  requires occurs(true, lts(a, ms, x))
+  ensures a[earlier(indexof(true, lts(a, ms, x)), ms)] < x
 
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int ::
-  if occurs(true, gts(a, ms, x))
-  then x < a[earlier(indexof(true, gts(a, ms, x)), ms)]
+lemma {:rw} earlier_2(a: array<int, int>, ms: seq<int>, x: int)
+  requires occurs(true, gts(a, ms, x))
+  ensures x < a[earlier(indexof(true, gts(a, ms, x)), ms)]
 
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int ::
-  if occurs(true, eqs(a, ms, x))
-  then (x == a[earlier(indexof(true, eqs(a, ms, x)), ms)]) <==> true
+lemma {:rw} earlier_3(a: array<int, int>, ms: seq<int>, x: int)
+  requires occurs(true, eqs(a, ms, x))
+  ensures (x == a[earlier(indexof(true, eqs(a, ms, x)), ms)]) <==> true
 
 // sortedness, of the whole array, since the variables of the conditions of rules must occur in their left-hand sides,
 // which do not mention the bound n
@@ -90,17 +90,17 @@ predicate sorted(a: array<int, int>)
 
 // the order of the probes that sortedness implies: the last probe below x is before the last probe above x,
 // and before and after, respectively, every index at which x occurs
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int ::
-  if sorted(a) && occurs(true, lts(a, ms, x)) && occurs(true, gts(a, ms, x))
-  then earlier(indexof(true, lts(a, ms, x)), ms) < earlier(indexof(true, gts(a, ms, x)), ms)
+lemma {:rw} earlier_4(a: array<int, int>, ms: seq<int>, x: int)
+  requires sorted(a) && occurs(true, lts(a, ms, x)) && occurs(true, gts(a, ms, x))
+  ensures earlier(indexof(true, lts(a, ms, x)), ms) < earlier(indexof(true, gts(a, ms, x)), ms)
 
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int, k: int ::
-  if sorted(a) && occurs(true, lts(a, ms, x)) && a[k] == x
-  then earlier(indexof(true, lts(a, ms, x)), ms) < k
+lemma {:rw} earlier_5(a: array<int, int>, ms: seq<int>, x: int, k: int)
+  requires sorted(a) && occurs(true, lts(a, ms, x)) && a[k] == x
+  ensures earlier(indexof(true, lts(a, ms, x)), ms) < k
 
-lemma {:rw} {:free} forall a: array<int, int>, ms: seq<int>, x: int, k: int ::
-  if sorted(a) && occurs(true, gts(a, ms, x)) && a[k] == x
-  then k < earlier(indexof(true, gts(a, ms, x)), ms)
+lemma {:rw} earlier_6(a: array<int, int>, ms: seq<int>, x: int, k: int)
+  requires sorted(a) && occurs(true, gts(a, ms, x)) && a[k] == x
+  ensures k < earlier(indexof(true, gts(a, ms, x)), ms)
 
 // the probes, abstracted over the guards and the results of the cases by higher-order variables,
 // which may read the accumulator y, the previous probe, unlike first-order variables of a rule
@@ -108,10 +108,9 @@ function mids(m0: int, ks: seq<int>, ls: seq<int>, hs: seq<int>,
               B: int -> bool, C: int -> bool, D: int -> bool,
               V: (int, int) -> int, W: (int, int) -> int, U: (int, int) -> int): Trace<int>
 
-lemma {:rw} {:free} forall m0: int, K: Trace<int>, ls: seq<int>, hs: seq<int>,
-                          B: int -> bool, C: int -> bool, D: int -> bool,
-                          V: (int, int) -> int, W: (int, int) -> int, U: (int, int) -> int ::
-  trace(m0, for ⌊K⌋, ls, hs do y, k, l, h :: case B(y) => V(y, h) case C(y) => W(l, y) case D(y) => U(l, h))
+lemma {:rw} trace_3(m0: int, K: Trace<int>, ls: seq<int>, hs: seq<int>, B: int -> bool, C: int -> bool,
+                    D: int -> bool, V: (int, int) -> int, W: (int, int) -> int, U: (int, int) -> int)
+  ensures trace(m0, for ⌊K⌋, ls, hs do y, k, l, h :: case B(y) => V(y, h) case C(y) => W(l, y) case D(y) => U(l, h))
     == mids(m0, ⌊K⌋, ls, hs, B, C, D, V, W, U)
 
 // an index of x among the first n elements of a sorted array, -1 if there is none,
