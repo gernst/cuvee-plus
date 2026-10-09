@@ -500,10 +500,19 @@ concepts, found by reading the whole code base; none is a bug.
   an equation, `n * n == 2 * ((-n + n * n) / 2) + n`, presumably since
   equations are normalized as differences of polynomials (see
   [ps2-ll.dfy](examples/sv-comp/nla-digbench/ps2-ll.dfy)).
-- A chain of comparisons in a conjunction, e.g. `0 <= n < ielen`, is matched as a whole: a pattern
-  `R && 2 * a + p <= b + 2 * c && c < a ==> p + 1 < b` does not match a goal whose premise `n < ielen` is part of
-  such a chain, neither does the pattern with the chain `0 <= c < a`, while it matches without the chain (see
-  [MADWiFi-encode_ie_ok.dfy](examples/sv-comp/loop-invgen/MADWiFi-encode_ie_ok.dfy), which needs this lemma).
+- Conjunctions are matched in order, not modulo commutativity: a pattern `R && A && B ==> C`, with a variable `R`
+  for the other premises, matches `u < 3 && A && B ==> C`, but neither `A && u < 3 && B ==> C`, nor
+  `A && B && u < 3 ==> C`, nor `u < 3 && B && A ==> C`; further variables between them, `R1 && A && R2 && B && R3`,
+  do not help. Lemmas that need two premises of a goal therefore depend on the order in which the simplifier
+  emits them (see [MADWiFi-encode_ie_ok.dfy](examples/sv-comp/loop-invgen/MADWiFi-encode_ie_ok.dfy), whose
+  premises `2 * ielen + p <= bufsize + 2 * n` and `n < ielen` give `p + 1 < bufsize` by such a lemma, and
+  [seq-3.dfy](examples/sv-comp/loop-invgen/seq-3.dfy), where the order fits). Chains of comparisons are
+  conjunctions already (the parser resolves them), only printed as chains. Premises are looked up at any position
+  as side conditions (`Rewrite.conditions`), e.g. `requires 2 * a + p <= b + 2 * c && c < a` with
+  `ensures (p + 1 < b) <==> true`, but comparisons are not searched among the facts (`searched` is
+  `!arithmetic(_)` for the side conditions of rules), such that `a` and `c` remain open; with `_ => true` there,
+  MADWiFi-encode_ie_ok closes by that lemma, also without -split (not applied yet, the cost of searching the
+  arithmetic facts is to be measured).
 - No integer rounding: `2 * n <= 2 * k + 1` does not give `n <= k`; no
   cancellation of a factor, e.g. `k * j < 1000000 * k`, and a lemma
   `if 0 <= k then (k * a < k * b) <==> (0 < k && a < b)` does not match it,
