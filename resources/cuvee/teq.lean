@@ -416,6 +416,18 @@ theorem above_iterations_def (n : Nat) (ts : List Int) (hs : List Int) :
     ↔ above_iterations n ts :=
   by sorry
 
+-- butlast
+
+-- a trace of n steps has n values before its last one, hence none if and only if n is zero
+-- (from flag_loopdep)
+theorem butlast_counter_nil (i : Int) (c : Int) (n : Nat) :
+  butlast (counter i c n) = nil ↔ n = zero :=
+  by sorry
+
+theorem butlast_consts_nil {α : Type} [Inhabited α] (n : Nat) (v : α) :
+  butlast (consts n v) = nil ↔ n = zero :=
+  by sorry
+
 -- current
 
 theorem current_counter (i : Int) (c : Int) (n : Nat) :
@@ -536,7 +548,8 @@ theorem current_trace_mod (x0 : Int) (n : Nat) (a : Int) (b : Int)
   by sorry
 
 -- a sum that is set to c in the first iteration and adds G(i) in the others is c plus the sum of G over 1, ..., n - 1,
--- stated as G(k + 1) over 0, ..., n - 2, since the context of a map knows the range of counter(0, 1, n) only
+-- stated as G(k + 1) over 0, ..., n - 2, since the context of a map knows the range of counter(0, 1, n) only;
+-- a conditional rather than a match on n, whose condition the simplifier decides by the value of integer(n)
 -- (from brs1, brs1f, ms1, ms1f)
 theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
                                 (G : Int → Int) :
@@ -545,10 +558,14 @@ theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
        x0
        (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
        (fun x ⟨k, i⟩ => if i = 0 then c else G i + x))
-    = (match n with
-       | .zero => x0
-       | .succ m =>
-         c + sum (maps (butlast (counter 0 1 m)) (fun k => G (k + 1)))) :=
+    = (if n = zero then
+         x0
+       else
+         c
+           + sum
+             (maps
+                (butlast (counter 0 1 (natural (integer n - 1))))
+                (fun k => G (k + 1)))) :=
   by sorry
 
 -- earlier

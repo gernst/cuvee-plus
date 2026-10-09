@@ -150,7 +150,7 @@ object Lists:
   // the empty list needs the type of its elements
   object nil:
     def apply(elem: Type): Expr =
-      App(Fun.list.nil, List(elem), Sort.list(elem), Nil)
+      App(Fun.list.nil, Nil, Sort.list(elem), Nil)
 
     def unapply(expr: Expr): Boolean =
       expr match

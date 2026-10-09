@@ -384,6 +384,16 @@ lemma {:rw} {:teq} not_occurs_prefix_def(n: Nat, e: int, xs: List<int>, hs: List
 lemma {:rw} {:teq} above_iterations_def(n: Nat, ts: List<int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs, ts check k, h, t :: k < t) <==> above_iterations(n, ts)
 
+// butlast
+
+// a trace of n steps has n values before its last one, hence none if and only if n is zero
+// (from flag_loopdep)
+lemma {:rw} {:teq} butlast_counter_nil(i: int, c: int, n: Nat)
+  ensures (⌊counter(i, c, n)⌋ == nil) <==> (n == zero)
+
+lemma {:rw} {:teq} butlast_consts_nil<a>(n: Nat, v: a)
+  ensures (⌊consts(n, v)⌋ == nil) <==> (n == zero)
+
 // current
 
 lemma {:rw} {:teq} current_counter(i: int, c: int, n: Nat)
@@ -465,14 +475,13 @@ lemma {:rw} {:teq} current_trace_mod(x0: int, n: Nat, a: int, b: int, m: int, hs
     == x0 % m
 
 // a sum that is set to c in the first iteration and adds G(i) in the others is c plus the sum of G over 1, ..., n - 1,
-// stated as G(k + 1) over 0, ..., n - 2, since the context of a map knows the range of counter(0, 1, n) only
+// stated as G(k + 1) over 0, ..., n - 2, since the context of a map knows the range of counter(0, 1, n) only;
+// a conditional rather than a match on n, whose condition the simplifier decides by the value of integer(n)
 // (from brs1, brs1f, ms1, ms1f)
 lemma {:rw} {:teq} current_trace_reset_add(x0: int, n: Nat, c: int, G: (int) -> int)
   ensures
     current(trace(x0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do x, k, i :: case i == 0 => c case i != 0 => G(i) + x))
-      == match n
-         case zero => x0
-         case succ(m) => c + sum(maps(for ⌊counter(0, 1, m)⌋ yield k :: G(k + 1)))
+      == if n == zero then x0 else c + sum(maps(for ⌊counter(0, 1, natural(integer(n) - 1))⌋ yield k :: G(k + 1)))
 
 // earlier
 
