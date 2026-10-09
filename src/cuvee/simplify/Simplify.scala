@@ -372,51 +372,21 @@ object Simplify extends Transform:
         inner
 
       case None =>
-        val facts = invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound)
-        // an equation of a term over the bound variables with one over the outer context only is a rewrite rule that
-        // eliminates the bound variables, e.g. integer(earlier(natural(k), N?)) == n for the number of iterations of
-        // an inner loop (see invariants), which an arithmetic solution would orient the other way (see Chains.solve)
-        val oriented =
-          for phi <- facts
-          yield phi match
-            case Eq(lhs, rhs) if eliminates(lhs, rhs, bound.toSet) => Left((lhs, rhs))
-            case Eq(rhs, lhs) if eliminates(lhs, rhs, bound.toSet) => Left((lhs, rhs))
-            case _                                                 => Right(phi)
-        val assumed = ctx.neutral.bind(bound).assume(oriented.collect { case Right(phi) => phi }, Nil)
-        val inner = oriented.collect { case Left((lhs, rhs)) => (lhs, rhs) }.foldLeft(assumed)((ctx_, eq) => ctx_.rule(eq._1, eq._2))
+        val inner = ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound), Nil)
         ctx.combinators := ctx.combinators.value + (key -> inner)
         inner
-
-  // the variable k bound to the first dependency, if it counts the iterations of a loop, ⌊counter(0, 1, n)⌋,
-  // such that k is the position of the iteration (see iterations)
-  def position(ctx: Context, deps: List[Expr], bound: List[Var]): Option[Var] =
-    (deps, bound) match
-      case (Butlast(ctx.↑(Counter(Ints.zero, Ints.one, _))) :: _, k :: _) => Some(k)
-      case _                                                               => None
-
-  // whether lhs == rhs eliminates the variables `bound` (see combinator): lhs is an application other than arithmetic,
-  // which is normalized instead, over some of them, and rhs is over none of them
-  def eliminates(lhs: Expr, rhs: Expr, bound: Set[Var]): Boolean =
-    !lhs.isInstanceOf[Var] && !lhs.isArith && (lhs.free intersects bound) && !(rhs.free intersects bound)
 
   // the bodies of the invariants among the assumptions whose dependencies are among `deps` and `self`,
   // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of ctx.self,
   // which hold at each position of the dependencies, hence also for the values bound there;
-  // the dependencies of a combinator have equal length, such that the positions coincide;
-  // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k, also the bodies of all
-  // invariants over the same first dependency, whose other dependencies Z that are not among `deps` are instantiated
-  // at the position k, earlier(natural(k), Z): the trace equation system of an inner loop is distributed over its
-  // conjuncts, each with the dependencies it uses, and the fragments share their facts in this way only
+  // the dependencies of a combinator have equal length, such that the positions coincide
   def invariants(ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     val values = (deps zip bound).toMap[Expr, Expr] ++ ctx.self
-    val k = position(ctx, deps, bound)
-
     for
       case Invs(deps_, bound_, body) <- ctx.facts.assms
-      if deps_.forall(values.contains) || (k.isDefined && deps_.head == deps.head)
+      if deps_.forall(values.contains)
     yield
-      val values_ = deps_.map(dep => values.getOrElse(dep, Earlier(Nats.natural(k.get), dep)))
-      val re = Subst.from(bound_, values_)
+      val re = Subst.from(bound_, deps_.map(values))
       re(body)
 
   // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),

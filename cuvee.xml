@@ -18,4 +18,14 @@
     <propertyfile>examples/sv-comp/properties/unreach-call.prp</propertyfile>
   </tasks>
 
+  <tasks name="Loops">
+    <includesfile>sv-benchmarks/c/Loops.set</includesfile>
+    <propertyfile>sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+
+  <tasks name="Arrays">
+    <includesfile>sv-benchmarks/c/Arrays.set</includesfile>
+    <propertyfile>sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+
 </benchmark>

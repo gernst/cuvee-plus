@@ -174,18 +174,7 @@ after section 4 of the paper.
   `⌊counter(0, 1, n)⌋` (also through a variable `K == counter(0, 1, n)`)
   bound to `k`, they also assume `0 <= k < n`, since the loop exits when
   `k == n`, and `z == earlier(k, ⌊Z⌋)` for each other dependency `⌊Z⌋`
-  bound to `z` (`Simplify.iterations`). They then also assume the
-  invariants over the same first dependency whose other dependencies are
-  not among their own, instantiated pointwise at the position `k`, with
-  `earlier(natural(k), Z)` for a dependency `Z` not shared: the trace
-  equation system of an inner loop is distributed into fragments with
-  different dependencies, which share their facts in this way only
-  (`Simplify.invariants`, see `examples/dafny/sorting/invs_fragments.dfy`).
-  A shared equation of a term over the bound variables with a term over the
-  outer context only, e.g. `integer(earlier(natural(k), N?)) == n` for the
-  number of iterations of an inner loop, is a rewrite rule of the context
-  that eliminates the bound variables (`Simplify.combinator`,
-  `Context.rule`), since its arithmetic solution would be for `n` instead.
+  bound to `z` (`Simplify.iterations`).
 - The rewrite engine ([Rewrite.scala](../src/cuvee/simplify/Rewrite.scala))
   matches the binding structure of the combinators: dependencies of the
   pattern are selected among those of the expression (`bound` of

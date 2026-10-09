@@ -122,13 +122,6 @@ case class Context(
       case _ =>
         copy(facts = facts.assume(phi), chains = chains_, diffs = diffs_, rules = Context.rules(phi) ++ rules)
 
-  // an equation lhs == rhs that is a rewrite rule of this context, e.g. one that eliminates a variable bound by a
-  // combinator in favor of the outer context (see Simplify.combinator), recorded as a fact and a rule, but not in the
-  // chains, whose solution of an arithmetic equation would be the other orientation
-  def rule(lhs: Expr, rhs: Expr): Context =
-    val phi = Eq(lhs, rhs)
-    copy(facts = facts.assume(phi), diffs = diffs.assume(phi), rules = Rule(Set(), Set(), lhs, rhs, True) :: rules)
-
   def deny(phi: Expr): Context =
     copy(facts = facts.deny(phi), chains = chains.deny(phi), diffs = diffs.deny(phi))
 
