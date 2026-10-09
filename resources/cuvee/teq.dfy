@@ -186,6 +186,11 @@ lemma {:rw} {:teq} integer_natural(x: int)
 lemma {:rw} {:teq} zero_integer(n: Nat)
   ensures (n == zero) <==> (integer(n) == 0)
 
+// loops whose numbers of iterations have the same value, e.g. N for loops in sequence, iterate equally often
+// (from ss1)
+lemma {:rw} {:teq} integer_injective(m: Nat, n: Nat)
+  ensures (integer(m) == integer(n)) <==> (m == n)
+
 // traces
 
 // a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)

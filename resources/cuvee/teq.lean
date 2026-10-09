@@ -170,6 +170,12 @@ theorem integer_natural (x : Int) : 0 ≤ x → integer (natural x) = x :=
 theorem zero_integer (n : Nat) : n = zero ↔ integer n = 0 :=
   by sorry
 
+-- loops whose numbers of iterations have the same value, e.g. N for loops in sequence, iterate equally often
+-- (from ss1)
+theorem integer_injective (m : Nat) (n : Nat) :
+  integer m = integer n ↔ m = n :=
+  by sorry
+
 -- traces
 
 -- a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)
