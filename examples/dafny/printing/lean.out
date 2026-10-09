@@ -4,7 +4,7 @@ inductive List (α : Type) where
 
 open List
 
-noncomputable def length {α : Type} (xs : List α) : Int :=
+noncomputable def length {α : Type} [Inhabited α] (xs : List α) : Int :=
   match xs with
   | .Nil => 0
   | .Cons _ ys => 1 + length ys
@@ -19,7 +19,7 @@ noncomputable def g (s : List Int) (a : Int → Int) (i : Int) : Int :=
 
 axiom ax_f0a4b875 (x : Int) : f x ≥ 0
 
-@[simp] axiom length_nil {α : Type} : length (Nil : List α) = 0
+@[simp] axiom length_nil {α : Type} [Inhabited α] : length (Nil : List α) = 0
 
 theorem f_pos (x : Int) : x > 0 → (∃ (y : Int), f y < x) :=
   by sorry
