@@ -89,7 +89,7 @@ object TEQ extends TestSuite:
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val rule = rw(
-        Trace(i, List(Butlast(Counter(Zero.int, One.int, n))), x, List(k), Plus.int(x, c)),
+        Trace(i, List(Butlast(Counter(Ints.zero, Ints.one, n))), x, List(k), Ints.plus(x, c)),
         Counter(i, c, n)
       )
 
@@ -119,7 +119,7 @@ object TEQ extends TestSuite:
       assert(subexprs(updated).contains(app("count", e, app("selects", a, keys))))
       assert(!subexprs(updated).exists { case Store(_, _, _) => true; case _ => false })
 
-      val bounds = cuvee.simplify.Context.empty.assume(Le.int(Zero.int, j)).withRules(rules)
+      val bounds = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, j)).withRules(rules)
       val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
       assert(subexprs(earlier).contains(app("count", e, app("prefix", j, keys))))
       assert(!has(earlier, "counts"))
@@ -136,13 +136,13 @@ object TEQ extends TestSuite:
       val i = Var("i", Sort.int)
       val k = Var("k", Sort.int)
       val bound = Lit(BigInt(1024), Sort.int)
-      val counter = Counter(Zero.int, One.int, n)
-      val ctx = cuvee.simplify.Context.empty.assume(Le.int(Zero.int, n)).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
+      val counter = Counter(Ints.zero, Ints.one, n)
+      val ctx = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, n)).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
 
       for inv <- List(
-          Invs(List(Butlast(counter)), List(i), Lt.int(i, bound)),
-          Invs(List(Butlast(I)), List(i), Lt.int(i, bound)),
-          Invs(List(Butlast(K), Butlast(I)), List(k, i), Lt.int(i, bound)))
+          Invs(List(Butlast(counter)), List(i), Ints.lt(i, bound)),
+          Invs(List(Butlast(I)), List(i), Ints.lt(i, bound)),
+          Invs(List(Butlast(K), Butlast(I)), List(k, i), Ints.lt(i, bound)))
       do
         val inv_ = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, inv)
         assert(!subexprs(inv_).exists(_.isInstanceOf[Invs]))
@@ -163,6 +163,6 @@ object TEQ extends TestSuite:
       val X = Var("X", trace)
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
-      val loop = Trace(One.int, List(Butlast(K)), x, List(k), Zero.int)
-      val ctx = cuvee.simplify.Context.empty.assume(Le.int(Zero.int, n)).assume(Eq(K, Counter(Zero.int, One.int, n))).assume(Eq(X, loop)).withRules(rules)
-      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Zero.int), One.int, Zero.int)
+      val loop = Trace(Ints.one, List(Butlast(K)), x, List(k), Ints.zero)
+      val ctx = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, n)).assume(Eq(K, Counter(Ints.zero, Ints.one, n))).assume(Eq(X, loop)).withRules(rules)
+      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Ints.zero), Ints.one, Ints.zero)

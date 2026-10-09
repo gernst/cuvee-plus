@@ -93,7 +93,7 @@ object Solver extends TestSuite:
     test("attributes are not sent to the solver"):
       val y = Var("y", Sort.int)
       val f = Fun("f", Nil, List(y), Sort.int)
-      val attrs = Attrs(List("requires" -> Some(Lt.int(Zero.int, y))))
+      val attrs = Attrs(List("requires" -> Some(Ints.lt(Ints.zero, y))))
 
       val solver = cuvee.smtlib.Solver.z3()
       try

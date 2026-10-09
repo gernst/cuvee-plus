@@ -34,10 +34,10 @@ object Rewrite extends TestSuite:
   val tests = Tests:
     // a variable of the pattern may take the neutral element if the expression is a sum, where 0 is dropped
     test("neutral"):
-      val rules = List(rw(app(f, Plus.int(x, y)), app(g, y)))
-      R(rules, app(f, Plus.int(a, Zero.int))) ==> app(g, Zero.int)
+      val rules = List(rw(app(f, Ints.plus(x, y)), app(g, y)))
+      R(rules, app(f, Ints.plus(a, Ints.zero))) ==> app(g, Ints.zero)
       R(rules, app(f, a)) ==> app(f, a)
 
       // but only if there are fewer summands than variables, x + y matches a + b with x = a or x = b, not x = 0
-      val ms = cuvee.simplify.Rewrite.matches(cuvee.Config.default, State.empty, Context.empty, Set(), Set(x, y), Set(), Plus.int(x, y), None, Map(), Set(), Plus.int(a, b), Subst.empty)
+      val ms = cuvee.simplify.Rewrite.matches(cuvee.Config.default, State.empty, Context.empty, Set(), Set(x, y), Set(), Ints.plus(x, y), None, Map(), Set(), Ints.plus(a, b), Subst.empty)
       ms.map(_.vars(x)) ==> List(a, b)

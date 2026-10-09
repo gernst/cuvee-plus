@@ -148,34 +148,6 @@ object Poly:
   def atom(expr: Expr): Poly =
     Poly(Rational(0), List(Mono.atom(expr)))
 
-// the sugar of arithmetic on Int or Real, by which polynomials are read and printed back,
-// where the integral coefficients on Int become integer literals
-case class Ring(
-    typ: Type,
-    zero: Expr,
-    num: Sugar.lit,
-    uminus: Sugar.unary,
-    plus: Sugar.commutative,
-    minus: Sugar.associative,
-    times: Sugar.commutative,
-    lit: Rational => Expr
-)
-
-// the rings Int and Real, where the coefficients on Int must be integral
-object Ring:
-  val int =
-    Ring(Sort.int, Zero.int, Num.int, UMinus.int, Plus.int, Minus.int, Times.int, n => Lit(n.toBigInt, Sort.int))
-
-  val real =
-    Ring(Sort.real, Zero.real, Num.real, UMinus.real, Plus.real, Minus.real, Times.real, r => Lit(r, Sort.real))
-
-  // the ring of `typ`, if it is Int or Real
-  def apply(typ: Type): Option[Ring] =
-    typ match
-      case Sort.int  => Some(int)
-      case Sort.real => Some(real)
-      case _         => None
-
 // normal form of arithmetic on Int and Real as polynomials over atoms,
 // where atoms are all subterms that are not built from +, -, * and literals,
 // e.g. variables, applications of uninterpreted functions, div, mod, ite,
@@ -198,7 +170,7 @@ object Arith:
       case ring.minus(left, right) => toPoly(ring, left) - toPoly(ring, right)
       case ring.times(args)        => args.map(toPoly(ring, _)).foldLeft(Poly.one)(_ * _)
 
-      case DivBy.real(left, Lit(r: Rational, _)) if ring == Ring.real && !r.isZero =>
+      case Reals.div(left, Lit(r: Rational, _)) if ring == Reals.ring && !r.isZero =>
         toPoly(ring, left) * (Rational(1) / r)
 
       case _ =>

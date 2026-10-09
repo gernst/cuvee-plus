@@ -124,15 +124,16 @@ after section 4 of the paper.
 
 ## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
 
-- `Trace` is a datatype of teq.dfy, a first value (`stop`) and further
-  values added at the end (`step`), hence never empty, which teq.lean takes
+- `Trace` is a datatype of teq.dfy, a value followed by the trace of the
+  remaining iterations (`step`) or a last value (`stop`), hence never empty,
+  with `current` and `butlast` defined by recursion; teq.lean takes them
   from the printed teq.dfy. The functions that teq.dfy only declares are
   defined in Lean 4 (core, without Mathlib): `current`, `butlast`, `counter`,
   and `consts` are recursive; sequences are lists;
   the auxiliary predicates (`agree_prefix`, ...) are the iteration
   constraints that they abstract.
 - There is a single combinator of each kind, `trace`, `maps`, and `invs`,
-  defined by recursion over one dependency; the Lean printer zips several
+  defined by recursion over one dependency, `trace` as a right fold; the Lean printer zips several
   dependencies, `List.zip d₁ (List.zip d₂ d₃)`, binds their values by a
   tuple, `fun acc ⟨b₁, b₂, b₃⟩ => ...`, and prints guarded cases as
   conditionals. Zipping truncates to the shortest dependency, the lengths

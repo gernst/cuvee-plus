@@ -589,7 +589,7 @@ object Rewrite:
   // also one defined by an assumption (see Context.↑)
   def iterations(ctx: Context, dep: Expr): Boolean =
     dep match
-      case Butlast(ctx.↑(Counter(Zero.int, One.int, _))) => true
+      case Butlast(ctx.↑(Counter(Ints.zero, Ints.one, _))) => true
       case _                                             => false
 
   // the guard of the pattern matches that of the expression, which instantiates the bound variables of the pattern
@@ -693,10 +693,10 @@ object Rewrite:
       (Arith.toPoly(ring, right) - Arith.toPoly(ring, left) - Poly.const(util.Rational(offset))).normalize
 
     expr match
-      case Lt.int(left, right)  => List((Ring.int, false, difference(Ring.int, left, right, 1)))
-      case Le.int(left, right)  => List((Ring.int, false, difference(Ring.int, left, right, 0)))
-      case Lt.real(left, right) => List((Ring.real, true, difference(Ring.real, left, right, 0)))
-      case Le.real(left, right) => List((Ring.real, false, difference(Ring.real, left, right, 0)))
+      case Ints.lt(left, right)  => List((Ints.ring, false, difference(Ints.ring, left, right, 1)))
+      case Ints.le(left, right)  => List((Ints.ring, false, difference(Ints.ring, left, right, 0)))
+      case Reals.lt(left, right) => List((Reals.ring, true, difference(Reals.ring, left, right, 0)))
+      case Reals.le(left, right) => List((Reals.ring, false, difference(Reals.ring, left, right, 0)))
       case _                    => Nil
 
   // the summands of a polynomial with their signs, whose factors and constant are positive

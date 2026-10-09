@@ -642,7 +642,8 @@ class Parser(var state: State):
         val base_ = resolve(scope, base)
         resolve(scope, base_, access)
 
-      // patterns are constructors applied to patterns, variables, and wildcards _, which are named apart
+      // patterns are constructors applied to patterns, variables, and wildcards _, which are named apart,
+      // and tuples of patterns, those of the constructors of tuples, e.g. of a match on several values
       case Match(arg, cases) =>
         val arg_ = resolve(scope, arg)
         val wildcards = Iterator.from(0)
@@ -651,6 +652,12 @@ class Parser(var state: State):
           pat match
             case App(name, args) if state.constrs.contains(name) =>
               state.exprs.constr(name)(types => (types zip args).map(pattern))
+
+            case Tuple(List(arg)) =>
+              pattern(typ, arg)
+
+            case Tuple(args) =>
+              state.exprs.constr(core.Tuples.name(args.length))(types => (types zip args).map(pattern))
 
             case App("_", Nil) =>
               core.Var(Name("_", Some(wildcards.next())), typ)

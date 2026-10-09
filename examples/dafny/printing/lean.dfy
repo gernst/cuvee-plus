@@ -1,7 +1,7 @@
 // ./Cuvee.sh -print lean examples/dafny/printing/lean.dfy
-// the logic in Lean 4: datatypes with selectors axiomatized by their values on the constructors, declared and defined
-// functions, axioms, free lemmas as axioms, the other lemmas as theorems, rewrite rules as simp lemmas, and goals as
-// examples; booleans are propositions, sequences lists, arrays functions, and tuples products
+// the logic in Lean 4: datatypes as inductive types without their selectors, declared and defined functions,
+// axioms, free lemmas as axioms, the other lemmas as theorems, rewrite rules as simp lemmas, and goals as examples;
+// booleans are propositions, sequences lists, arrays functions, and tuples products
 datatype List<a> = Nil | Cons(head: a, tail: List<a>)
 
 function length<a>(xs: List<a>): int {

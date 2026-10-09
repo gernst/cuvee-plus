@@ -31,7 +31,7 @@ object Fuse extends TestSuite:
       dbl,
       List(
         Case(App(dbl, List(empty)), empty, True),
-        Case(App(dbl, List(App(cons, List(y, ys)))), App(cons, List(Plus.int(y, y), App(dbl, List(ys)))), True)
+        Case(App(dbl, List(App(cons, List(y, ys)))), App(cons, List(Ints.plus(y, y), App(dbl, List(ys)))), True)
       )
     )
 
@@ -41,8 +41,8 @@ object Fuse extends TestSuite:
     Rec(
       sum,
       List(
-        Case(App(sum, List(empty)), Zero.int, True),
-        Case(App(sum, List(App(cons, List(y, ys)))), Plus.int(y, App(sum, List(ys))), True)
+        Case(App(sum, List(empty)), Ints.zero, True),
+        Case(App(sum, List(App(cons, List(y, ys)))), Ints.plus(y, App(sum, List(ys))), True)
       )
     )
 
@@ -54,8 +54,8 @@ object Fuse extends TestSuite:
       h ==> Rec(
         hf,
         List(
-          Case(F.call(hf, List(empty)), Zero.int, True),
-          Case(F.call(hf, List(App(cons, List(y, ys)))), Plus.int(Plus.int(y, y), F.call(hf, List(ys))), True)
+          Case(F.call(hf, List(empty)), Ints.zero, True),
+          Case(F.call(hf, List(App(cons, List(y, ys)))), Ints.plus(Ints.plus(y, y), F.call(hf, List(ys))), True)
         )
       )
       Type.check(state, Scope.empty, h, Arrow(List(list), Sort.int)) ==> h
@@ -67,13 +67,13 @@ object Fuse extends TestSuite:
         Rec(
           take,
           List(
-            Case(App(take, List(empty, k)), Zero.int, True),
+            Case(App(take, List(empty, k)), Ints.zero, True),
             Case(
               App(take, List(App(cons, List(y, ys)), k)),
-              Plus.int(y, App(take, List(ys, Minus.int(k, One.int)))),
-              Lt.int(Zero.int, k)
+              Ints.plus(y, App(take, List(ys, Ints.minus(k, Ints.one)))),
+              Ints.lt(Ints.zero, k)
             ),
-            Case(App(take, List(App(cons, List(y, ys)), k)), Zero.int, True)
+            Case(App(take, List(App(cons, List(y, ys)), k)), Ints.zero, True)
           )
         )
       val h = F(state, takes, dbls)
@@ -82,10 +82,10 @@ object Fuse extends TestSuite:
       h ==> Rec(
         hf,
         List(
-          Case(F.call(hf, List(empty, k_)), Zero.int, True),
+          Case(F.call(hf, List(empty, k_)), Ints.zero, True),
           Case(
             F.call(hf, List(App(cons, List(y, ys)), k_)),
-            Ite(Lt.int(Zero.int, k_), Plus.int(Plus.int(y, y), F.call(hf, List(ys, Minus.int(k_, One.int)))), Zero.int),
+            Ite(Ints.lt(Ints.zero, k_), Ints.plus(Ints.plus(y, y), F.call(hf, List(ys, Ints.minus(k_, Ints.one)))), Ints.zero),
             True
           )
         )
@@ -104,11 +104,11 @@ object Fuse extends TestSuite:
     // where the matched parameter in a body is the pattern, and the variables of a pattern shadow the other parameters
     test("definitions"):
       val sumBody =
-        Match(xs, List(Case(empty, Zero.int, True), Case(App(cons, List(y, ys)), Plus.int(y, App(sum, List(ys))), True)))
+        Match(xs, List(Case(empty, Ints.zero, True), Case(App(cons, List(y, ys)), Ints.plus(y, App(sum, List(ys))), True)))
       val dblBody =
         Match(
           xs,
-          List(Case(empty, xs, True), Case(App(cons, List(y, ys)), App(cons, List(Plus.int(y, y), App(dbl, List(ys)))), True))
+          List(Case(empty, xs, True), Case(App(cons, List(y, ys)), App(cons, List(Ints.plus(y, y), App(dbl, List(ys)))), True))
         )
       Rec.from(state, sum, sumBody) ==> sums
       Rec.from(state, dbl, dblBody) ==> dbls

@@ -186,14 +186,16 @@ object Grammar:
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ (("else" ~ expr) | true_)))
 
+  // constructors applied to patterns, and tuples of patterns, which are parenthesized inside of other patterns
   val pat: Parser[Expr] =
-    App(P(id ~ (parens(pat ~* ",") | nil)))
+    P(Tuple(P(parens(pat ~+ ","))) | App(P(id ~ (parens(pat ~* ",") | nil))))
 
+  // a match on several values, match x, y case p, q => e, is a match on their tuple, whose patterns are tuples
   val case_ =
-    P("case" ~ pat ~ "=>" ~ expr)
+    P("case" ~ Tuple(P(pat ~+ ",")) ~ "=>" ~ expr)
 
   val match_ =
-    Match(P("match" ~ expr ~ (braces(case_.+) | case_.+)))
+    Match(P("match" ~ Tuple(exprs) ~ (braces(case_.+) | case_.+)))
 
   val bound =
     P(formals | vars)

@@ -161,16 +161,16 @@ object Printer extends cuvee.pipe.Printer:
         val params__ = if params_.isEmpty then empty else text(" (" + params_.map(param).mkString(" ") + " : Type)")
         text("abbrev " + name(name_)) ~ params__ ~~ text(":=") ~ Nest(2, hardline ~ doc(body))
 
-      // mutually recursive datatypes in a mutual block
+      // mutually recursive datatypes in a mutual block; the selectors are not declared, Lean has no counterpart of
+      // the partial functions of SMT-LIB, and the main use, the datatype Trace of teq.dfy, does not use them
       case DeclareDatatypes(cons, datas, _) =>
         val inductives = for (con, data) <- cons zip datas yield inductive(con, data)
-        val sels = for (con, data) <- cons zip datas; sel <- selectors(con, data) yield sel
         val opens = for con <- cons yield text("open " + name(con.name))
         val block =
           if cons.length == 1
           then inductives.head
           else text("mutual") ~ Nest(2, concat(inductives.map(hardline ~ _))) ~ hardline ~ text("end")
-        join(block :: opens ++ sels, hardline ~ hardline)
+        join(block :: opens, hardline ~ hardline)
 
       case DeclareFun(Fun(name_, params_, Nil, res), _) =>
         text("axiom") ~~ text(name(name_)) ~ params(params_) ~~ text(":") ~~ doc(res)
@@ -179,9 +179,9 @@ object Printer extends cuvee.pipe.Printer:
         Group(text("axiom") ~~ text(name(name_)) ~ params(params_) ~~ text(":") ~ Nest(2, line ~ curried(formals_.types, res)))
 
       // definitions that use conditionals on propositions are not computable
-      case DefineFun(Fun(name_, params_, formals_, res), body, _) =>
+      case DefineFun(fun @ Fun(name_, params_, formals_, res), body, _) =>
         val head = text("noncomputable def") ~~ signature(name_, params_, formals_) ~~ text(":") ~~ doc(res)
-        head ~~ text(":=") ~ Nest(2, hardline ~ doc(body))
+        head ~~ text(":=") ~ Nest(2, hardline ~ definition(fun, body)) ~ termination(fun, body)
 
       // axioms and free lemmas are assumed, the other lemmas are theorems to be proved
       case Assert(Axiom, params_, phi, attrs) =>
@@ -199,6 +199,50 @@ object Printer extends cuvee.pipe.Printer:
 
       case _: DeclareVar | _: DeclareProc | _: DefineProc | _: FuseFuns =>
         unsupported(cmd)
+
+  // the body of a definition, whose recursion on a sequence, if |xs| == 0 then a else b for a formal parameter xs,
+  // is structural in Lean as a match on the list, whose head and tail replace xs[0] and xs[1..] in b
+  def definition(fun: Fun, body: Expr): Doc =
+    body match
+      case Ite(Eq(Seqs.len(xs: Var), Ints.zero), empty, nonempty) if fun.formals.contains(xs) =>
+        val Sort(_, List(elem)) = xs.typ: @unchecked
+        val used = (body.free ++ fun.formals).map(_.name.subscripted)
+        val names = Iterator.iterate(("hd", "tl"))((hd, tl) => (hd + "'", tl + "'")).find((hd, tl) => !used(hd) && !used(tl)).get
+        val hd = Var(Name(names._1, None), elem)
+        val tl = Var(Name(names._2, None), xs.typ)
+        val cases =
+          List(Group(text("| [] =>") ~ Nest(2, line ~ doc(empty))),
+            Group(text("| " + names._1 + " :: " + names._2 + " =>") ~ Nest(2, line ~ doc(split(xs, hd, tl, nonempty)))))
+        text("match " + name(xs.name) + " with") ~ concat(cases.map(hardline ~ _))
+
+      case _ =>
+        doc(body)
+
+  // the expression with xs[0] replaced by hd and xs[1..] by tl
+  def split(xs: Var, hd: Var, tl: Var, expr: Expr): Expr =
+    expr match
+      case Seqs.nth(`xs`, Ints.zero)        => hd
+      case Seqs.extract(`xs`, Ints.one, _)  => tl
+      case _                               => expr.map(split(xs, hd, tl, _))
+
+  // recursion on an integer, if n <= 0 then a else b for a formal parameter n, terminates by the measure n.toNat,
+  // which decreases at the recursive calls in b, where n > 0
+  def termination(fun: Fun, body: Expr): Doc =
+    body match
+      case Ite(Ints.le(n: Var, Ints.zero), _, _) if fun.formals.contains(n) && calls(fun, body) =>
+        hardline ~ text("termination_by " + name(n.name) + ".toNat") ~ hardline ~ text("decreasing_by all_goals omega")
+
+      case _ =>
+        empty
+
+  // whether `expr` calls `fun`
+  def calls(fun: Fun, expr: Expr): Boolean =
+    expr match
+      case App(fun_, _, _, _) if fun_ == fun => true
+      case _ =>
+        var found = false
+        expr.map { arg => found = found || calls(fun, arg); arg }
+        found
 
   // inductive T (a : Type) where | C (x : A) : T a, whose arguments are named after the selectors
   def inductive(con: Con, data: Datatype): Doc =
@@ -218,24 +262,9 @@ object Printer extends cuvee.pipe.Printer:
   def selector(con: Con, sel: Fun): String =
     name(Name(sel.name.subscripted.stripPrefix(con.name.subscripted + "_"), None))
 
-  // selectors are partial functions, axiomatized like in SMT-LIB by their values on their constructors
-  def selectors(con: Con, data: Datatype): List[Doc] =
-    val Datatype(params_, constrs) = data
-    for
-      (constr, sels) <- constrs
-      sel <- sels
-    yield
-      // the arguments are named apart from the selectors, which are not qualified in SMT-LIB
-      val xs = for (sel_, i) <- sels.zipWithIndex yield Var(Name("x", Some(i)), sel_.res)
-      val x = xs(sels.indexOf(sel))
-      val decl = text("axiom") ~~ text(name(sel.name)) ~ params(params_) ~~ text(":") ~~ curried(sel.args, sel.res)
-      val eq = Eq(App(sel, Nil, sel.res, List(App(constr, Nil, sel.args.head, xs))), x)
-      val head = text("axiom") ~~ text(name(Name(sel.name.subscripted + "_" + constr.name.subscripted, None))) ~ params(params_)
-      decl ~ hardline ~ hardline ~ statement(head, All(xs, eq), None)
-
   // the tuple types and their constructors, which are declared in the prelude of Dafny as tuple₂, tuple₃, ...
   def isTuple(name: Name, arity: Int): Boolean =
-    name == Name("tuple", Some(arity))
+    name == Tuples.name(arity)
 
   // the selectors tupleₙ_i of the components of tuples
   object component:
@@ -404,8 +433,14 @@ object Printer extends cuvee.pipe.Printer:
       case Seqs.len(seq) =>
         text("(") ~ doc(seq, max) ~ text(".length : Int)")
 
+      case Seqs.nth(seq, Lit(index: BigInt, _)) if index >= 0 =>
+        doc(seq, max) ~ text(".getD " + index + " default")
+
       case Seqs.nth(seq, index) =>
         app(doc(seq, max) ~ text(".getD"), Nil) ~~ text("(") ~ doc(index, max) ~ text(".toNat)") ~~ text("default")
+
+      case Seqs.extract(seq, Lit(from: BigInt, _), len) if from >= 0 =>
+        text("((") ~ doc(seq, max) ~ text(".drop " + from + ").take ") ~ doc(len, max) ~ text(".toNat)")
 
       case Seqs.extract(seq, from, len) =>
         text("((") ~ doc(seq, max) ~ text(".drop ") ~ doc(from, max) ~ text(".toNat).take ") ~ doc(len, max) ~ text(".toNat)")
@@ -511,13 +546,28 @@ object Printer extends cuvee.pipe.Printer:
         Error.report("match with conditions not supported in Lean", expr):
           require(cases.forall(_.cond == True))
 
+        // a match on a tuple whose cases are tuples of patterns has several discriminants, match x, y with | p, q
+        val tuples =
+          arg_ match
+            case Tuples(args) => cases.forall { case Case(Tuples(pats), _, _) => pats.length == args.length; case _ => false }
+            case _           => false
+
+        val discriminants =
+          arg_ match
+            case Tuples(args) if tuples => join(args.map(doc(_)), text(",") ~ space)
+            case _                     => doc(arg_)
+
         val cases_ =
           for (Case(pat, body, _), i) <- cases.zipWithIndex
           yield
+            val pat_ =
+              pat match
+                case Tuples(pats) if tuples => join(pats.map(pattern), text(",") ~ space)
+                case _                     => pattern(pat)
             val body_ = if i < cases.length - 1 then doc(body, lowest + 1) else doc(body)
-            Group(text("|") ~~ pattern(pat) ~~ text("=>") ~ Nest(2, line ~ body_))
+            Group(text("|") ~~ pat_ ~~ text("=>") ~ Nest(2, line ~ body_))
 
-        Align(text("match") ~~ doc(arg_) ~~ text("with") ~ concat(cases_.map(hardline ~ _)))
+        Align(text("match") ~~ discriminants ~~ text("with") ~ concat(cases_.map(hardline ~ _)))
 
       // the combinators of trace equation systems, as applications of the functions of teq.lean by the number of
       // their dependencies (trace, trace2, ...) to the dependencies and the update as a function of the bound variables
@@ -561,6 +611,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case App(fun, _, _, Nil) =>
         text("." + name(fun.name))
+
+      // tuples of patterns are pairs, which nest like the tuples (see the selectors tupleₙ_i)
+      case Tuples(args) if args.length > 1 =>
+        text("(") ~ join(args.map(pattern), text(",") ~ space) ~ text(")")
 
       case App(fun, _, _, args) =>
         val args_ =

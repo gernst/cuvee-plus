@@ -30,7 +30,7 @@ object Matching extends TestSuite:
 
   // match ys with nil => n | cons(x, xs) => x + y, under the condition x < n in the second case
   val expr =
-    Match(ys, List(Case(app(nil), n, True), Case(app(cons, x, xs), Plus.int(x, y), Lt.int(x, n))))
+    Match(ys, List(Case(app(nil), n, True), Case(app(cons, x, xs), Ints.plus(x, y), Ints.lt(x, n))))
 
   def check(expr: Expr, typ: Type) =
     Type.check(state, Scope.empty, expr, typ)
@@ -51,21 +51,21 @@ object Matching extends TestSuite:
       expr.map: arg =>
         visited += arg
         arg
-      visited.result() ==> List(ys, n, True, Plus.int(x, y), Lt.int(x, n))
+      visited.result() ==> List(ys, n, True, Ints.plus(x, y), Ints.lt(x, n))
 
     // the variables of the patterns are not substituted, and renamed if they would capture
     test("substitution"):
       Subst.from(List(x, n), List(y, y))(expr) ==>
-        Match(ys, List(Case(app(nil), y, True), Case(app(cons, x, xs), Plus.int(x, y), Lt.int(x, y))))
+        Match(ys, List(Case(app(nil), y, True), Case(app(cons, x, xs), Ints.plus(x, y), Ints.lt(x, y))))
 
       val Match(_, List(_, Case(App(_, _, _, List(x_ : Var, `xs`)), body, cond))) = Subst.from(List(y), List(x))(expr): @unchecked
       assert(x_ != x)
-      body ==> Plus.int(x_, x)
-      cond ==> Lt.int(x_, n)
+      body ==> Ints.plus(x_, x)
+      cond ==> Ints.lt(x_, n)
 
     test("map"):
       expr.map(e => Subst.from(List(x), List(n))(e)) ==>
-        Match(ys, List(Case(app(nil), n, True), Case(app(cons, x, xs), Plus.int(n, y), Lt.int(n, n))))
+        Match(ys, List(Case(app(nil), n, True), Case(app(cons, x, xs), Ints.plus(n, y), Ints.lt(n, n))))
 
     test("typing"):
       check(expr, Sort.int) ==> expr
@@ -76,7 +76,7 @@ object Matching extends TestSuite:
     // patterns are linear and built from constructors and variables
     test("patterns"):
       error(Match(ys, List(Case(app(cons, x, app(cons, x, xs)), x, True))), Sort.int) ==> "invalid pattern"
-      error(Match(ys, List(Case(app(cons, Plus.int(x, y), xs), x, True))), Sort.int) ==> "invalid pattern"
+      error(Match(ys, List(Case(app(cons, Ints.plus(x, y), xs), x, True))), Sort.int) ==> "invalid pattern"
       check(Match(ys, List(Case(app(cons, x, app(cons, y, xs)), x, True), Case(ys, n, True))), Sort.int)
 
     test("printing"):

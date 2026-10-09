@@ -121,7 +121,7 @@ case class Context(
   def implied(phi: Expr, not: Expr): Boolean =
     phi match
       case Eq(left, right) if left.typ == Sort.int =>
-        implied(Le.int(left, right), Lt.int(right, left)) && implied(Le.int(right, left), Lt.int(left, right))
+        implied(Ints.le(left, right), Ints.lt(right, left)) && implied(Ints.le(right, left), Ints.lt(left, right))
 
       case _ =>
         !inconsistent && (deny(phi).inconsistent || assume(not).inconsistent)

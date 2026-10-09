@@ -126,16 +126,30 @@ object Fun:
 
     val all = List(empty, singleton, card, member, keys, values, subset, get, update, minus, store)
 
-  // the functions on traces and sequences of trace equation systems: counter(i, c, n) is the trace i, i + c, ..., i + n c,
-  // current the last element of a trace, butlast (written ⌊X⌋) all but the last element,
-  // earlier the elements of sequences
+  // the functions on traces and lists of trace equation systems: counter(i, c, n) is the trace i, i + c, ..., i + n c
+  // of n steps (a Nat), current the last element of a trace, butlast (written ⌊X⌋) all but the last element,
+  // earlier the elements of lists at a Nat
   object trace:
-    val counter = Fun("counter", Nil, formals(Sort.int, Sort.int, Sort.int), Sort.trace(Sort.int))
+    val counter = Fun("counter", Nil, formals(Sort.int, Sort.int, Sort.nat), Sort.trace(Sort.int))
     val current = Fun("current", List(a), formals(Sort.trace(a)), a)
-    val butlast = Fun("butlast", List(a), formals(Sort.trace(a)), Sort.seq(a))
-    val earlier = Fun("earlier", List(a), formals(Sort.int, Sort.seq(a)), a)
+    val butlast = Fun("butlast", List(a), formals(Sort.trace(a)), Sort.list(a))
+    val earlier = Fun("earlier", List(a), formals(Sort.nat, Sort.list(a)), a)
 
     val all = List(counter, current, butlast, earlier)
+
+    // the constructors of the datatype Trace of teq.dfy, the last value, or a value followed by the remaining trace
+    val stop = Fun("stop", List(a), formals(a), Sort.trace(a))
+    val step = Fun("step", List(a), formals(a, Sort.trace(a)), Sort.trace(a))
+
+  // the constructors of the datatypes Nat and List of teq.dfy, which are equal to those that it declares,
+  // since the type parameters are numbered as there
+  object nat:
+    val zero = Fun("zero", Nil, Nil, Sort.nat)
+    val succ = Fun("succ", Nil, formals(Sort.nat), Sort.nat)
+
+  object list:
+    val nil = Fun("nil", List(a), Nil, Sort.list(a))
+    val cons = Fun("cons", List(a), formals(a, Sort.list(a)), Sort.list(a))
 
   val not = Fun("not", Nil, formals(bool), bool)
   val imp = Fun("=>", Nil, formals(bool, bool), bool)

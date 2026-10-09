@@ -1,17 +1,8 @@
 package cuvee.core
 
+import util.Name
 import util.Rational
 import cuvee.Error
-
-// constants and arithmetic per type, e.g. Plus.int and Plus.real,
-// where DivBy.int is div and DivBy.real is /, and Mod is on Int only
-object Zero:
-  val int = Lit(BigInt(0), Sort.int)
-  val real = Lit(Rational(0), Sort.real)
-
-object One:
-  val int = Lit(BigInt(1), Sort.int)
-  val real = Lit(Rational(1), Sort.real)
 
 object True extends App(Fun.true_, Nil, Sort.bool, Nil)
 object False extends App(Fun.false_, Nil, Sort.bool, Nil)
@@ -58,59 +49,78 @@ object Eqv extends Sugar.binary(Fun.eqv)
 object And extends Sugar.commutative(Fun.and, True, Assoc.Left)
 object Or extends Sugar.commutative(Fun.or, False, Assoc.Left)
 
-object Num:
-  object int extends  Sugar.lit(Sort.int)
-  object real extends Sugar.lit(Sort.real)
+// constants and arithmetic per numeric type, e.g. Ints.plus and Reals.plus, where Ints.div is div and Reals.div is /,
+// and mod and the successor are on Int only
+object Ints:
+  val zero = Lit(BigInt(0), Sort.int)
+  val one = Lit(BigInt(1), Sort.int)
 
-object UMinus:
-  object int extends Sugar.unary(Fun.int.uminus)
-  object real extends Sugar.unary(Fun.real.uminus)
+  object num extends Sugar.lit(Sort.int)
+  object uminus extends Sugar.unary(Fun.int.uminus)
+  object plus extends Sugar.commutative(Fun.int.plus, zero, Assoc.Left)
+  object minus extends Sugar.associative(Fun.int.minus, Assoc.Left)
+  object times extends Sugar.commutative(Fun.int.times, one, Assoc.Left)
+  object div extends Sugar.associative(Fun.int.div, Assoc.Left)
+  // mod is not associative, and unlike div not n-ary in SMT-LIB
+  object mod extends Sugar.binary(Fun.int.mod)
 
-object Plus:
-  object int extends Sugar.commutative(Fun.int.plus, Zero.int, Assoc.Left)
-  object real extends Sugar.commutative(Fun.real.plus, Zero.real, Assoc.Left)
+  object lt extends Sugar.binary(Fun.int.lt)
+  object le extends Sugar.binary(Fun.int.le)
+  object gt extends Sugar.binary(Fun.int.gt)
+  object ge extends Sugar.binary(Fun.int.ge)
 
-object Minus:
-  object int extends Sugar.associative(Fun.int.minus, Assoc.Left)
-  object real extends Sugar.associative(Fun.real.minus, Assoc.Left)
+  // the successor n + 1, which matches sums with a summand 1, e.g. x + y + 1 as the successor of x + y
+  object succ:
+    def apply(expr: Expr) =
+      plus(expr, one)
 
-object Times:
-  object int extends Sugar.commutative(Fun.int.times, One.int, Assoc.Left)
-  object real extends Sugar.commutative(Fun.real.times, One.real, Assoc.Left)
+    def unapply(expr: Expr) =
+      expr match
+        case plus(args) if args.contains(one) => Some(plus(args diff List(one)))
+        case _                                => None
 
-object DivBy:
-  object int extends Sugar.associative(Fun.int.div, Assoc.Left)
-  object real extends Sugar.associative(Fun.real.div, Assoc.Left)
+  // the coefficients must be integral; lazy, since the sugar above needs zero and one, which would build the ring
+  // before the sugar otherwise
+  lazy val ring = Ring(Sort.int, zero, num, uminus, plus, minus, times, n => Lit(n.toBigInt, Sort.int))
 
-// mod is not associative, and unlike div not n-ary in SMT-LIB
-object Mod:
-  object int extends Sugar.binary(Fun.int.mod)
+object Reals:
+  val zero = Lit(Rational(0), Sort.real)
+  val one = Lit(Rational(1), Sort.real)
 
-// the successor n + 1 on Int, which matches sums with a summand 1, e.g. x + y + 1 as the successor of x + y
-object Succ:
-  def apply(expr: Expr) =
-    Plus.int(expr, One.int)
+  object num extends Sugar.lit(Sort.real)
+  object uminus extends Sugar.unary(Fun.real.uminus)
+  object plus extends Sugar.commutative(Fun.real.plus, zero, Assoc.Left)
+  object minus extends Sugar.associative(Fun.real.minus, Assoc.Left)
+  object times extends Sugar.commutative(Fun.real.times, one, Assoc.Left)
+  object div extends Sugar.associative(Fun.real.div, Assoc.Left)
 
-  def unapply(expr: Expr) =
-    expr match
-      case Plus.int(args) if args.contains(One.int) => Some(Plus.int(args diff List(One.int)))
-      case _                                        => None
+  object lt extends Sugar.binary(Fun.real.lt)
+  object le extends Sugar.binary(Fun.real.le)
+  object gt extends Sugar.binary(Fun.real.gt)
+  object ge extends Sugar.binary(Fun.real.ge)
 
-object Lt:
-  object int extends Sugar.binary(Fun.int.lt)
-  object real extends Sugar.binary(Fun.real.lt)
+  lazy val ring = Ring(Sort.real, zero, num, uminus, plus, minus, times, r => Lit(r, Sort.real))
 
-object Le:
-  object int extends Sugar.binary(Fun.int.le)
-  object real extends Sugar.binary(Fun.real.le)
+// the sugar of arithmetic on Int or Real, by which polynomials are read and printed back (see simplify.Arith),
+// where the integral coefficients on Int become integer literals
+case class Ring(
+    typ: Type,
+    zero: Expr,
+    num: Sugar.lit,
+    uminus: Sugar.unary,
+    plus: Sugar.commutative,
+    minus: Sugar.associative,
+    times: Sugar.commutative,
+    lit: Rational => Expr
+)
 
-object Gt:
-  object int extends Sugar.binary(Fun.int.gt)
-  object real extends Sugar.binary(Fun.real.gt)
-
-object Ge:
-  object int extends Sugar.binary(Fun.int.ge)
-  object real extends Sugar.binary(Fun.real.ge)
+object Ring:
+  // the ring of `typ`, if it is Int or Real
+  def apply(typ: Type): Option[Ring] =
+    typ match
+      case Sort.int  => Some(Ints.ring)
+      case Sort.real => Some(Reals.ring)
+      case _         => None
 
 // the functions on traces (see Fun.trace): counter(i, c, n) is the trace i, i + c, ..., i + n c,
 // current(X) is the last element of X, butlast(X), written ⌊X⌋, is the sequence of all but the last element of X,
@@ -119,6 +129,47 @@ object Counter extends Sugar.ternary(Fun.trace.counter)
 object Current extends Sugar.unary(Fun.trace.current)
 object Butlast extends Sugar.unary(Fun.trace.butlast)
 object Earlier extends Sugar.binary(Fun.trace.earlier)
+
+// the constructors of the datatypes of trace equation systems, Nat, List, and Trace of teq.dfy, as in Fun.nat, Fun.list,
+// and Fun.trace, e.g. Lists.nil(elem) and Traces.step(x, xs)
+object Nats:
+  object zero:
+    def apply(): Expr =
+      App(Fun.nat.zero, Nil, Sort.nat, Nil)
+
+    def unapply(expr: Expr): Boolean =
+      expr match
+        case App(fun, _, _, Nil) => fun == Fun.nat.zero
+        case _                   => false
+
+  object succ extends Sugar.unary(Fun.nat.succ)
+
+object Lists:
+  // the empty list needs the type of its elements
+  object nil:
+    def apply(elem: Type): Expr =
+      App(Fun.list.nil, List(elem), Sort.list(elem), Nil)
+
+    def unapply(expr: Expr): Boolean =
+      expr match
+        case App(fun, _, _, Nil) => fun == Fun.list.nil
+        case _                   => false
+
+  object cons extends Sugar.binary(Fun.list.cons)
+
+object Traces:
+  object stop extends Sugar.unary(Fun.trace.stop)
+  object step extends Sugar.binary(Fun.trace.step)
+
+// the tuples of the prelude of Dafny, tupleₙ(x₁, ..., xₙ), e.g. the argument of a match on several values
+object Tuples:
+  def name(arity: Int) =
+    Name("tuple", Some(arity))
+
+  def unapply(expr: Expr): Option[List[Expr]] =
+    expr match
+      case App(fun, _, _, args) if fun.name == name(args.length) => Some(args)
+      case _                                                    => None
 
 // the functions on sequences, as in Fun.seq, e.g. Seqs.len(s) and Seqs.nth(s, i)
 object Seqs:

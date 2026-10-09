@@ -140,10 +140,10 @@ case class Diffs(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) extends 
   def assume(expr: Expr): Diffs =
     expr match
       case Not(phi)                              => deny(phi)
-      case Le.int(left, right)                   => le(left, right)
-      case Lt.int(left, right)                   => lt(left, right)
-      case Ge.int(left, right)                   => le(right, left)
-      case Gt.int(left, right)                   => lt(right, left)
+      case Ints.le(left, right)                   => le(left, right)
+      case Ints.lt(left, right)                   => lt(left, right)
+      case Ints.ge(left, right)                   => le(right, left)
+      case Ints.gt(left, right)                   => lt(right, left)
       case Eq(left, right) if left.typ == Sort.int => le(left, right).le(right, left)
       case _                                     => this
 
@@ -151,19 +151,19 @@ case class Diffs(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) extends 
   def deny(expr: Expr): Diffs =
     expr match
       case Not(phi)            => assume(phi)
-      case Le.int(left, right) => lt(right, left)
-      case Lt.int(left, right) => le(right, left)
-      case Ge.int(left, right) => lt(left, right)
-      case Gt.int(left, right) => le(left, right)
+      case Ints.le(left, right) => lt(right, left)
+      case Ints.lt(left, right) => le(right, left)
+      case Ints.ge(left, right) => lt(left, right)
+      case Ints.gt(left, right) => le(left, right)
       case _                   => this
 
   // left <= right as left - right <= 0
   def le(left: Expr, right: Expr): Diffs =
-    add(Arith.toPoly(Ring.int, left) - Arith.toPoly(Ring.int, right))
+    add(Arith.toPoly(Ints.ring, left) - Arith.toPoly(Ints.ring, right))
 
   // left < right as left - right + 1 <= 0, on Int
   def lt(left: Expr, right: Expr): Diffs =
-    add(Arith.toPoly(Ring.int, left) - Arith.toPoly(Ring.int, right) + Poly.one)
+    add(Arith.toPoly(Ints.ring, left) - Arith.toPoly(Ints.ring, right) + Poly.one)
 
   // poly <= 0, which is a difference constraint if it has at most one atom of either sign;
   // with poly = (c1 + x) - (c2 + y), the constraint is x - y <= c2 - c1, where a missing atom is the node 0,
@@ -173,10 +173,10 @@ case class Diffs(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) extends 
     val c = (neg.const - pos.const).num
 
     (pos.monos, neg.monos) match
-      case (List(x), List(y)) => add(x.toExpr(Ring.int), y.toExpr(Ring.int), c)
-      case (List(x), Nil)     => add(x.toExpr(Ring.int), Zero.int, c)
-      case (Nil, List(y))     => add(Zero.int, y.toExpr(Ring.int), c)
-      case (Nil, Nil)         => if c < 0 then add(Zero.int, Zero.int, c) else this
+      case (List(x), List(y)) => add(x.toExpr(Ints.ring), y.toExpr(Ints.ring), c)
+      case (List(x), Nil)     => add(x.toExpr(Ints.ring), Ints.zero, c)
+      case (Nil, List(y))     => add(Ints.zero, y.toExpr(Ints.ring), c)
+      case (Nil, Nil)         => if c < 0 then add(Ints.zero, Ints.zero, c) else this
       case _                  => this
 
   // from - to <= c, where every path x .. from .. to .. y may become shorter, which is O(n²) in the nodes

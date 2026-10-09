@@ -8,14 +8,6 @@ inductive Stack (α : Type) where
 
 open Stack
 
-axiom top {α : Type} : Stack α → α
-
-axiom top_cons {α : Type} (x₀ : α) (x₁ : Stack α) : top (cons x₀ x₁) = x₀
-
-axiom pop {α : Type} : Stack α → Stack α
-
-axiom pop_cons {α : Type} (x₀ : α) (x₁ : Stack α) : pop (cons x₀ x₁) = x₁
-
 axiom c : U
 
 noncomputable def max (x : Int) (y : Int) : Int :=

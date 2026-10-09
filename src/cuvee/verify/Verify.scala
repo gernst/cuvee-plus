@@ -86,7 +86,7 @@ object Verify extends Transform:
     else
       val cases =
         for i <- prev.indices.toList
-        yield And(Eq(next.take(i), prev.take(i)) ++ List(Le.int(Zero.int, prev(i)), Lt.int(next(i), prev(i))))
+        yield And(Eq(next.take(i), prev.take(i)) ++ List(Ints.le(Ints.zero, prev(i)), Ints.lt(next(i), prev(i))))
       Or(cases)
 
   // weakest preconditions need a separate postcondition for each way a program can terminate:
@@ -160,8 +160,8 @@ object Verify extends Transform:
         val after = tick(state, t) match
           case Some(call) => wp(state, gs, proc, assume, commit, call, post, break, continue, return_)
           case None       => post
-        val phi = ode(t :: xs, One.real :: su(rhs), And(Le.real(Zero.real, t), su(dom)), attrs.invariants.map(su(_)), after)
-        Subst.from(List(t), List(Zero.real))(phi)
+        val phi = ode(t :: xs, Reals.one :: su(rhs), And(Reals.le(Reals.zero, t), su(dom)), attrs.invariants.map(su(_)), after)
+        Subst.from(List(t), List(Reals.zero))(phi)
 
       // the parallel composition of calls relies on the assumption of the enclosing procedure
       // and must establish its commitment (see par)

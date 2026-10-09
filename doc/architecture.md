@@ -71,8 +71,9 @@ transformation and any output.
    all languages: its printer maps them to Lean (booleans to propositions,
    arrays to functions, sequences to lists, tuples to products, Mathlib's
    `ℝ` and `Set`) or rejects them, like multisets, finite maps, bitvectors,
-   the combinators of `-teq`, and programs. Selectors are axiomatized by
-   their values on their constructors, free lemmas and axioms are axioms,
+   and programs; the combinators of `-teq` are the functions of teq.lean.
+   Datatypes are inductive types whose selectors are not declared, free
+   lemmas and axioms are axioms,
    the other lemmas theorems and goals examples, proved `by sorry`, rewrite
    rules `@[simp]`; the output assumes `open Classical`.
 4. `Pipe.run` feeds the commands, followed by the internal `Done`, through

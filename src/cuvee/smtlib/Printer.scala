@@ -340,16 +340,16 @@ object Printer extends cuvee.pipe.Printer:
       case Or(phis) =>
         apps(apply(Fun.or), lines(phis))
 
-      case Plus.int(args) =>
+      case Ints.plus(args) =>
         apps(apply(Fun.int.plus), lines(args))
 
-      case Plus.real(args) =>
+      case Reals.plus(args) =>
         apps(apply(Fun.real.plus), lines(args))
 
-      case Times.int(args) =>
+      case Ints.times(args) =>
         apps(apply(Fun.int.times), lines(args))
 
-      case Times.real(args) =>
+      case Reals.times(args) =>
         apps(apply(Fun.real.times), lines(args))
 
       case App(fun, inst, typ, args) =>

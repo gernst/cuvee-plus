@@ -68,6 +68,9 @@ object Con:
   // finite maps, which no solver supports (see Fun.map)
   val map = Con("Map", 2)
   val trace = Con("Trace", 1)
+  // the naturals and lists of trace equation systems, the datatypes Nat and List of teq.dfy
+  val nat = Con("Nat", 0)
+  val list = Con("List", 1)
 
 object Sort:
   val bool = Sort(Con.bool, Nil)
@@ -93,6 +96,11 @@ object Sort:
   // the non-empty sequences of values of a variable at the loop head, see Trace
   def trace(elem: Type) =
     Sort(Con.trace, List(elem))
+
+  val nat = Sort(Con.nat, Nil)
+
+  def list(elem: Type) =
+    Sort(Con.list, List(elem))
 
 object Type:
   import util.Ref
@@ -127,8 +135,8 @@ object Type:
   // e.g. for the bound variables of the combinators, which is then determined by type checking
   def elem(typ: Type): Type =
     typ match
-      case Sort(Con.seq, List(elem)) => elem
-      case _                         => Param("a").fresh
+      case Sort(Con.list, List(elem)) => elem
+      case _                          => Param("a").fresh
 
   // replace a defined sort by its definition, at the top only
   def unfold(state: State, typ: Type): Type =
@@ -363,8 +371,8 @@ object Type:
         dependencies(state, scope, expr, deps, bound, subst, pending)
         check(state, scope, update, typ, subst, pending)
 
-        Error.report("type mismatch", expr, Sort.seq(typ), res):
-          unify(state, scope, Sort.seq(typ), res, subst)
+        Error.report("type mismatch", expr, Sort.list(typ), res):
+          unify(state, scope, Sort.list(typ), res, subst)
 
       // the results have the type of the expression
       case Eps(updates) =>
@@ -484,7 +492,7 @@ object Type:
 
     all(pats).exists(xs => xs.distinct.length == xs.length)
 
-  // the dependencies of the combinators are sequences over the types of the bound variables, of which there is at least one
+  // the dependencies of the combinators are lists over the types of the bound variables, of which there is at least one
   def dependencies(state: State, scope: Scope, expr: Expr, deps: List[Expr], bound: List[Var], subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]]): Unit =
     Error.report("combinator without dependencies", expr):
       require(deps.nonEmpty)
@@ -492,7 +500,7 @@ object Type:
     Error.report("mismatching dependencies and bound variables", expr, deps, bound):
       require(deps.length == bound.length)
 
-    check(state, scope, deps, bound.map(x => Sort.seq(x.typ)), subst, pending)
+    check(state, scope, deps, bound.map(x => Sort.list(x.typ)), subst, pending)
 
   // the guards of updates are formulas, and the results have type `typ`
   def updates(state: State, scope: Scope, updates: List[Upd], typ: Type, subst: Ref[Subst[Type, Expr]], pending: Ref[List[App]]): Unit =

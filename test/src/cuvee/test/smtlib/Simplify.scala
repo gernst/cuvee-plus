@@ -18,8 +18,8 @@ object Derivatives extends TestSuite:
     // derivatives are on Real only, the type checker rejects these, which are built directly
     // (see examples/dafny/simplify/derivatives.dfy for the others)
     test("integers"):
-      diff(Times.int(n, n), n) ==> "(n :: n * n)'"
-      diff(Lt.int(n, Zero.int), n) ==> "(n :: n < 0)'"
+      diff(Ints.times(n, n), n) ==> "(n :: n * n)'"
+      diff(Ints.lt(n, Ints.zero), n) ==> "(n :: n < 0)'"
 
 // programs are simplified statement by statement (see examples/dafny/simplify/statements.dfy),
 // before verification the verdicts are the same

@@ -172,10 +172,14 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   objects that both build and match applications of built-in functions:
   - `True`, `False`, `Eq`, `Ite`, `Not`, `And`, `Or`, `Imp`, `All`, `Ex`,
     `Select`, `Store`;
-  - arithmetic per type, `Plus.int`, `Plus.real`, `Lt.real`, ...;
-  - constants `Zero.int` and `One.real`.
+  - arithmetic per numeric type, `Ints.plus`, `Reals.plus`, `Reals.lt`, ...,
+    the constants `Ints.zero` and `Reals.one`, and the rings `Ints.ring` and
+    `Reals.ring` (see `Ring`);
+  - the constructors of the datatypes of teq.dfy, `Nats.zero`, `Nats.succ`,
+    `Lists.nil(elem)`, `Lists.cons`, `Traces.stop`, `Traces.step`, and the
+    tuples of the prelude of Dafny, `Tuples(args)`.
 
-  The n-ary objects (`And`, `Plus.int`, ...) flatten nested applications
+  The n-ary objects (`And`, `Ints.plus`, ...) flatten nested applications
   when matching.
 - **Overloading.** The preludes declare arithmetic and comparison
   generically, e.g. `+ <a>(a, a): a`. After type checking,

@@ -51,9 +51,10 @@ object Lang:
     Lang("C", cuvee.c.Source, cuvee.c.Printer, Set("c"), false)
 
   // output only (-print lean), there is no source of Lean, the one given is never used; Lean knows the built-in sorts
-  // and functions of all languages, which its printer maps to their counterparts in Lean, or rejects
+  // and functions of all languages, which its printer maps to their counterparts in Lean, or rejects, and the
+  // declarations with the attribute {:lean}, e.g. the datatypes Nat and List of teq.dfy
   val lean =
-    Lang("Lean", cuvee.smtlib.Source, cuvee.lean.Printer, Set("smt2", "dfy", "bpl", "c"))
+    Lang("Lean", cuvee.smtlib.Source, cuvee.lean.Printer, Set("smt2", "dfy", "bpl", "c", "lean"))
 
   // its output is C (see Config.parse)
   val yml =
@@ -305,7 +306,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.33.3")
+    println("Cuvée 0.34.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

@@ -38,7 +38,7 @@ object Malformed extends TestSuite:
 
     // associative operators have no neutral element
     test("no arguments"):
-      message(Minus.int(Nil)) ==> Some("no arguments")
+      message(Ints.minus(Nil)) ==> Some("no arguments")
 
 // the sugar of nested lambdas and arrays
 object Lambdas extends TestSuite:

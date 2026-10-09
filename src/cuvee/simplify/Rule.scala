@@ -78,6 +78,22 @@ object Rule:
           val args = formals_.patch(index, List(pat), 1)
           Rule(params, vars_ ++ pat.free, App(state, fun, args), rhs, cond)
 
+      // a match on a tuple of distinct formal parameters, match (x, y), whose patterns are tuples of patterns,
+      // whose components replace the parameters in the left-hand side
+      case Match(Tuples(xs), cases)
+          if xs.forall(formals.contains) && xs.distinct == xs
+            && cases.forall { case Case(Tuples(pats), _, _) => pats.length == xs.length; case _ => false } =>
+        for Case(pat, rhs, cond) <- cases
+        yield
+          val Tuples(pats) = pat: @unchecked
+          val (formals_, re) = Subst.rename(formals, pat.free)
+          val args =
+            for (x, x_) <- formals zip formals_
+            yield xs.indexOf(x) match
+              case -1 => x_
+              case i  => pats(i)
+          Rule(params, formals_.toSet ++ pat.free, App(state, fun, args), rhs, cond)
+
       case _ =>
         List(Rule(params, formals.toSet, App(state, fun, formals), body, True))
 

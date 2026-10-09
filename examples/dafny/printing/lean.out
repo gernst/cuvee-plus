@@ -4,16 +4,6 @@ inductive List (α : Type) where
 
 open List
 
-axiom List_head {α : Type} : List α → α
-
-axiom List_head_Cons {α : Type} (x₀ : α) (x₁ : List α) :
-  List_head (Cons x₀ x₁) = x₀
-
-axiom List_tail {α : Type} : List α → List α
-
-axiom List_tail_Cons {α : Type} (x₀ : α) (x₁ : List α) :
-  List_tail (Cons x₀ x₁) = x₁
-
 noncomputable def length {α : Type} (xs : List α) : Int :=
   match xs with
   | .Nil => 0

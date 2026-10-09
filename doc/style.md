@@ -26,10 +26,13 @@
   copies, `mod0` for values kept apart
 - names of core functions follow SMT-LIB where it has them (`select`,
   `seq.nth`, `div`), the frontends translate their own names onto these
-- sugar objects for built-in functions are named after the operation, with one
-  object per type where needed, `Plus.int`, `Lt.real`, `Zero.int`, except
-  for the functions on sequences, which are grouped as in `Fun.seq`,
-  `Seqs.len`, `Seqs.nth`, since e.g. `Unit` would shadow a Scala name
+- sugar objects for built-in functions are named after the operation, except
+  for those of a type, which are grouped in an object named after it in the
+  plural: arithmetic per numeric type, `Ints.plus`, `Reals.lt`, `Ints.zero`,
+  `Ints.ring`, the functions on sequences as in `Fun.seq`, `Seqs.len`,
+  `Seqs.nth`, since e.g. `Unit` would shadow a Scala name, and the
+  constructors of the datatypes of teq.dfy, `Nats.succ`, `Lists.nil`,
+  `Traces.step`, and of tuples, `Tuples(args)`
 - avoid shadowing Scala names in `core`, e.g. no case class `Map` (hence
   `Maps`)
 
@@ -66,7 +69,7 @@
 - build expressions and programs in the frontends through the builders
   `state.exprs`, `state.progs`, `state.types`, and `state.cmds`, which look
   up declarations and instantiate type parameters freshly
-- use the sugar objects (`And`, `Eq`, `Plus.int`, ...) to build and match
+- use the sugar objects (`And`, `Eq`, `Ints.plus`, ...) to build and match
   applications of built-in functions instead of spelling out `App`
 - recurring operations on lists of core terms are extension methods in
   [Sugar.scala](../src/cuvee/core/Sugar.scala), e.g. `phis.conjuncts` and

@@ -153,6 +153,42 @@ does not stop the nesting by itself).
   with `unknown` while z3 unrolled a loop with the constant bound 10 (about
   0.17 s alone); with a symbolic bound it finds a linear invariant (0.035 s).
 
+## Naturals and lists in teq.dfy
+
+teq.dfy defines its own datatypes `Nat` (`zero`, `succ`) and `List` (`nil`, `cons`), with `integer(n)` the value
+of a `Nat` and `unspecified()` the value of reads outside of a list, and defines all its functions by structural
+recursion on them: `counter(i, c, n)` and `consts(n, v)` on the number of steps `n: Nat`, `earlier(k: Nat, xs)`,
+`prefix(k: Nat, xs)`, `indexof` (a `Nat`), `butlast` (a `List`), `occurs`, `distincts`, `sum`, `parity`, `count`,
+`agree_prefix`, `above_iterations`, `pow`; `natural(x)` converts the integer values of counters where they are
+indices, e.g. `earlier(natural(k), xs)`. teq.dfy type checks: the core has `Nat` and `List` (`Sort.nat`,
+`Sort.list`) in the signatures of `Fun.trace` and as the dependencies of combinators (steps 1 and 2), and the lemmas
+are converted (step 5). There is no `length`: `length_counter` is gone, and `count_false_true` is stated over a
+counter `⌊counter(i, c, n)⌋`, whose length is `n`. TEQ and the simplifier still build terms of the old types (steps
+3 and 4), e.g. `Simplify.iterations` with integer `k` and `Seqs.len` of dependencies, which should become
+`dep == nil` for `invs` with a constant body, so -teq does not work until then.
+
+Plan:
+
+1. Core: the signatures of `Fun.trace`, `butlast` to `List<a>`, `earlier(Nat, List<a>)`, `counter(int, int, Nat)`,
+   with `Nat` and `List` as the datatypes of teq.dfy (sorts of the core like `Sort.trace`, not of a prelude); the
+   parsers' `⌊X⌋` unchanged.
+2. Core: the dependencies of combinators are lists (`Type.dependencies`, `Type.elem`), their lengths `length` on
+   lists instead of `Seqs.len`; `state.exprs.trace`, `map`, `all`.
+3. TEQ: the number of iterations `n` is a `Nat`, the counter `K == counter(0, 1, n)`, arithmetic on it through
+   `integer(n)`; `Simplify.iterations` assumes `k` below `n` as naturals (`earlier(k, ⌊Z⌋)` with `k: Nat`), and
+   `Simplify.invariants` the same.
+4. The simplifier: arithmetic on `integer(n)` as an atom with `0 <= integer(n)`; `succ`, `zero`, `nil`, `cons`
+   reduced by the datatype reasoning that exists for constructors and selectors; whether `integer(succ(m))` should
+   be `integer(m) + 1` as a rule.
+5. The lemmas: indices and numbers of iterations `Nat` (e.g. `earlier_counter` with `k: Nat`,
+   `i + integer(k) * c`), sequences `List`, `[]` and `[x]` as `nil` and `cons(x, nil)`, the lemmas on lengths on
+   `length`; the counterexamples for `n < 0` disappear.
+6. The Lean printer maps `Nat`, `List`, `integer`, and `unspecified` of teq.dfy to Lean's `Nat`, `List`,
+   `Int.ofNat`, and `default`, such that the recursion is structural for Lean and `omega` and the lemmas of the
+   library apply; the special cases for recursion on `seq` and `int` (`definition`, `termination`) become unused.
+7. The tests that duplicate declarations of teq.dfy (with `type Trace<a₀>`, `seq<...>`) follow; regenerate
+   teq.lean, then the SV-COMP database (expected changes in goals, since lemmas change).
+
 ## Dependencies of equal length
 
 The combinators assume that their dependencies have equal lengths (an invariant of the core, see
@@ -223,14 +259,14 @@ concepts, found by reading the whole code base; none is a bug.
   `expr.map` for its side effect, which a fold over the children would serve.
   `Type.expand(prog)` repeats the cases of `Prog.map`.
 - Numeric sorts: Int and Real are twins in `Fun.int`/`Fun.real`, in
-  `Builtin` (`UMinus`, `Plus`, `Minus`, `Times`, `DivBy`, `Lt`, `Le`, `Gt`,
-  `Ge`), in `Overload.int`/`Overload.real`, and in `Arith.Ring`.
+  `Builtin` (`Ints` and `Reals`), in `Overload.int`/`Overload.real`, and in
+  their rings `Ints.ring` and `Reals.ring`.
   - `isSum`, `isArith` and `isComparison` enumerate the functions by hand.
   - `Ring` lacks `lt`, `le` and `div`, hence `Simplify.once` (`Eq`, `Lt`, `Le`,
     `Gt`, `Ge`, `not`, `diff`), `Rewrite.comparison`, `Diffs` and the
     printers spell out both sorts.
-  - One object per numeric sort, with its functions, sugar and literals,
-    could be the `Ring`.
+  - `Ints` and `Reals` are the objects per numeric sort with the sugar,
+    literals, and ring; `Ring` could take their comparisons as well.
 - Builders of applications: `Overload.app` binds types without expanding,
   `App.apply(state, ...)` expands, `State.exprs.app` instantiates fresh type
   parameters, and `smtlib.Parser.app` does the same again. Two builders with

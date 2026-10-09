@@ -41,14 +41,14 @@ object RewriteTraces extends TestSuite:
   val n = Var("n", int)
 
   // the counter of the iterations
-  val ctx = Context.empty.assume(Eq(J, Counter(Zero.int, One.int, n)))
+  val ctx = Context.empty.assume(Eq(J, Counter(Ints.zero, Ints.one, n)))
 
   def R(rules: List[Rule], expr: Expr, ctx: Context = ctx) =
     Rewrite.rewrite(Config.default, State.empty, ctx.withRules(rules), expr)
 
   // trace(i, for V do x, v ↦ x + v) = sums(i, V)
   val sumsRule =
-    rw(Trace(i, List(V), x, List(v), Plus.int(x, v)), app(sums, i, V))
+    rw(Trace(i, List(V), x, List(v), Ints.plus(x, v)), app(sums, i, V))
 
 
   val tests = Tests:
@@ -59,26 +59,26 @@ object RewriteTraces extends TestSuite:
       val w = Var("w", int)
       val L = Var("L", trace)
       val l = Var("l", int)
-      val ctx_ = ctx.assume(Eq(L, Counter(One.int, Plus.int(One.int, One.int), n)))
-      val square = Times.int(w, w)
+      val ctx_ = ctx.assume(Eq(L, Counter(Ints.one, Ints.plus(Ints.one, Ints.one), n)))
+      val square = Ints.times(w, w)
 
-      val expr = Trace(Zero.int, List(Butlast(J), W), s, List(j, w), Plus.int(s, square))
-      R(List(sumsRule), expr) ==> app(sums, Zero.int, Maps(List(Butlast(J), W), List(j, w), square))
+      val expr = Trace(Ints.zero, List(Butlast(J), W), s, List(j, w), Ints.plus(s, square))
+      R(List(sumsRule), expr) ==> app(sums, Ints.zero, Maps(List(Butlast(J), W), List(j, w), square))
 
       // other counters are dropped if they are not used
-      val other = Trace(Zero.int, List(Butlast(L), W, Butlast(J)), s, List(l, w, j), Plus.int(s, square))
+      val other = Trace(Ints.zero, List(Butlast(L), W, Butlast(J)), s, List(l, w, j), Ints.plus(s, square))
       R(List(sumsRule), other, ctx_) ==>
-        app(sums, Zero.int, Maps(List(Butlast(J), W), List(j, w), square))
+        app(sums, Ints.zero, Maps(List(Butlast(J), W), List(j, w), square))
 
       // and kept behind the counter of the iterations if they are
-      val used = Trace(Zero.int, List(Butlast(L), W, Butlast(J)), s, List(l, w, j), Plus.int(s, Times.int(l, w)))
+      val used = Trace(Ints.zero, List(Butlast(L), W, Butlast(J)), s, List(l, w, j), Ints.plus(s, Ints.times(l, w)))
       R(List(sumsRule), used, ctx_) ==>
-        app(sums, Zero.int, Maps(List(Butlast(J), Butlast(L), W), List(j, l, w), Times.int(l, w)))
+        app(sums, Ints.zero, Maps(List(Butlast(J), Butlast(L), W), List(j, l, w), Ints.times(l, w)))
 
       // without a counter of the iterations, the first dependency of the expression comes first
-      val none = Trace(Zero.int, List(W, Butlast(L)), s, List(w, l), Plus.int(s, Times.int(l, l)))
-      R(List(sumsRule), none, Context.empty.assume(Eq(L, Counter(One.int, Plus.int(One.int, One.int), n)))) ==>
-        app(sums, Zero.int, Maps(List(W, Butlast(L)), List(w, l), Times.int(l, l)))
+      val none = Trace(Ints.zero, List(W, Butlast(L)), s, List(w, l), Ints.plus(s, Ints.times(l, l)))
+      R(List(sumsRule), none, Context.empty.assume(Eq(L, Counter(Ints.one, Ints.plus(Ints.one, Ints.one), n)))) ==>
+        app(sums, Ints.zero, Maps(List(W, Butlast(L)), List(w, l), Ints.times(l, l)))
 
     // a guard D(x, v) && φ of the pattern binds D to the whole guard of the expression, from which φ must follow
     test("higher-order guards"):
@@ -87,19 +87,19 @@ object RewriteTraces extends TestSuite:
       val F = Var("F", Arrow(List(int, int), int))
       val incs = Fun("incs", Nil, Fun.formals(int, ints, Arrow(List(int, int), Sort.bool), Arrow(List(int, int), int)), trace)
       val rule = rw(
-        Trace(i, List(Xs), x, List(v), Eps(List(Upd(And(Apply(D, List(x, v)), Lt.int(x, Apply(F, List(x, v)))), Apply(F, List(x, v)))))),
+        Trace(i, List(Xs), x, List(v), Eps(List(Upd(And(Apply(D, List(x, v)), Ints.lt(x, Apply(F, List(x, v)))), Apply(F, List(x, v)))))),
         app(incs, i, Xs, D, F)
       )
 
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(Zero.int, j), Plus.int(s, j)))))
+      val expr = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(Ints.lt(Ints.zero, j), Ints.plus(s, j)))))
       val App(fun, _, _, List(_, _, d, f)) = R(List(rule), expr): @unchecked
       fun ==> incs
-      d ==> Lam(List(s, j), Lt.int(Zero.int, j), Arrow(List(int, int), Sort.bool))
-      f ==> Lam(List(s, j), Plus.int(s, j), Arrow(List(int, int), int))
+      d ==> Lam(List(s, j), Ints.lt(Ints.zero, j), Arrow(List(int, int), Sort.bool))
+      f ==> Lam(List(s, j), Ints.plus(s, j), Arrow(List(int, int), int))
 
       // the increase does not follow from the guard, here with the bounds 0 <= j < n of the counter of the iterations,
       // whereas a guard j < 0 contradicts them, such that the case is unreachable and any increase follows
-      val other = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(j, n), Plus.int(s, j)))))
+      val other = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(Ints.lt(j, n), Ints.plus(s, j)))))
       R(List(rule), other) ==> other
 
     // the conjuncts of a guard that does not match the guard of the expression as a whole follow from it,
@@ -109,13 +109,13 @@ object RewriteTraces extends TestSuite:
       val b = Var("b", int)
       val capped = Fun("capped", Nil, Fun.formals(int, ints, int), trace)
       val rule = rw(
-        Trace(i, List(Xs), x, List(v), Eps(List(Upd(And(Lt.int(Zero.int, v), Le.int(x, b)), Plus.int(x, v))))),
+        Trace(i, List(Xs), x, List(v), Eps(List(Upd(And(Ints.lt(Ints.zero, v), Ints.le(x, b)), Ints.plus(x, v))))),
         app(capped, i, Xs, b)
       )
 
-      val expr = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(And(Le.int(s, n), Lt.int(Zero.int, j)), Plus.int(s, j)))))
-      R(List(rule), expr) ==> app(capped, Zero.int, Butlast(J), n)
+      val expr = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(And(Ints.le(s, n), Ints.lt(Ints.zero, j)), Ints.plus(s, j)))))
+      R(List(rule), expr) ==> app(capped, Ints.zero, Butlast(J), n)
 
       // the bound must be among the conjuncts of the guard of the expression
-      val other = Trace(Zero.int, List(Butlast(J)), s, List(j), Eps(List(Upd(Lt.int(Zero.int, j), Plus.int(s, j)))))
+      val other = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(Ints.lt(Ints.zero, j), Ints.plus(s, j)))))
       R(List(rule), other) ==> other

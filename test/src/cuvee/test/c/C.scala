@@ -38,15 +38,15 @@ object Printing extends TestSuite:
 
   val tests = Tests:
     test("assertions"):
-      print(Assert(Axiom, Nil, All(List(x), Imp(App(p, List(x)), Lt.int(x, One.int))), Attrs.empty)) ==>
+      print(Assert(Axiom, Nil, All(List(x), Imp(App(p, List(x)), Ints.lt(x, Ints.one))), Attrs.empty)) ==>
         List("SMT_LIB((assert", "          (forall ((x Int)) (=> (p x) (< x 1)))))", "")
 
     test("declarations"):
       print(DeclareFun(p, Attrs.empty)) ==> List("_Bool p(int x_0);", "")
-      print(DefineFun(p, Ex(List(x), Lt.int(x, One.int)), Attrs.empty)).head ==> "SMT_LIB((define-fun"
+      print(DefineFun(p, Ex(List(x), Ints.lt(x, Ints.one)), Attrs.empty)).head ==> "SMT_LIB((define-fun"
       print(CheckSat) ==> List("SMT_LIB((check-sat))", "")
 
     // models are not programs, they are SMT-LIB
     test("models"):
-      val model = Model(List(DefineFun(p, Lt.int(Var("x", Sort.int), One.int), Attrs.empty)))
+      val model = Model(List(DefineFun(p, Ints.lt(Var("x", Sort.int), Ints.one), Attrs.empty)))
       cuvee.c.Printer.lines(model) ==> cuvee.smtlib.Printer.lines(model)

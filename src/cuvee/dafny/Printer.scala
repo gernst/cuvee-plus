@@ -672,7 +672,7 @@ object Printer extends cuvee.pipe.Printer:
   def multiset(expr: Expr): Option[List[Expr]] =
     expr match
       case Bags.empty()                   => Some(Nil)
-      case Bags.make(elem, One.int)       => Some(List(elem))
+      case Bags.make(elem, Ints.one)       => Some(List(elem))
       case Bags.union(left, right) =>
         for left_ <- multiset(left); right_ <- multiset(right)
         yield left_ ++ right_
@@ -744,6 +744,10 @@ object Printer extends cuvee.pipe.Printer:
     pat match
       case Var(Name("_", Some(_)), _) =>
         text("_")
+
+      // tuples of patterns, e.g. of a match on several values
+      case Tuples(args) if args.length > 1 =>
+        text("(") ~ commas(args.map(pattern)) ~ text(")")
 
       case App(fun, _, _, args) if args.nonEmpty =>
         text(name(fun.name)) ~ text("(") ~ commas(args.map(pattern)) ~ text(")")
@@ -910,9 +914,9 @@ object Printer extends cuvee.pipe.Printer:
       // the length is the difference of the bounds, s[i..j] is extract(s, i, j - i)
       case Seqs.extract(seq, from, len) =>
         val to = len match
-          case Minus.int(to, `from`)       => to
+          case Ints.minus(to, `from`)       => to
           case _ if from == Lit(BigInt(0), Sort.int) => len
-          case _                           => Plus.int(from, len)
+          case _                           => Ints.plus(from, len)
         doc(seq, operand) ~ text("[") ~ doc(from) ~ text("..") ~ doc(to) ~ text("]")
 
       case App(fun, _, _, _) if (Fun.seq.all contains fun) && infix(expr).isEmpty =>
@@ -1037,13 +1041,28 @@ object Printer extends cuvee.pipe.Printer:
         Error.report("match with conditions not supported in Dafny", expr):
           require(cases.forall(_.cond == True))
 
+        // a match on a tuple whose cases are tuples of patterns is a match on several values, match x, y case p, q
+        val tuples =
+          arg match
+            case Tuples(args) => cases.forall { case Case(Tuples(pats), _, _) => pats.length == args.length; case _ => false }
+            case _           => false
+
+        val arg_ =
+          arg match
+            case Tuples(args) if tuples => Group(commas(args.map(doc(_))))
+            case _                     => doc(arg)
+
         val cases_ =
           for (Case(pat, body, _), i) <- cases.zipWithIndex
           yield
+            val pat_ =
+              pat match
+                case Tuples(pats) if tuples => Group(commas(pats.map(pattern)))
+                case _                     => pattern(pat)
             val body_ = if i < cases.length - 1 then doc(body, (lowest, None)) else doc(body)
-            Group(text("case") ~~ pattern(pat) ~~ text("=>") ~ Nest(2, line ~ body_))
+            Group(text("case") ~~ pat_ ~~ text("=>") ~ Nest(2, line ~ body_))
 
-        Group(text("match") ~~ doc(arg) ~ Nest(2, concat(cases_.map(line ~ _))))
+        Group(text("match") ~~ arg_ ~ Nest(2, concat(cases_.map(line ~ _))))
 
       case Let(bound, args, body) =>
         Group(text("var") ~~ formals(bound) ~~ text(":=") ~~ commas(args.map(doc(_))) ~ text(";") ~ line ~ doc(body))

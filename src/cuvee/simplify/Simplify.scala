@@ -135,12 +135,12 @@ object Simplify extends Transform:
 
       // equations on Int and Real are compared as polynomials, like < and <=
       case Eq(left, right) if left.typ == Sort.int =>
-        val poly_ = difference(config, state, ctx.neutral, Ring.int, left, right)
-        eq(config, state, ctx, Ring.int, poly_)
+        val poly_ = difference(config, state, ctx.neutral, Ints.ring, left, right)
+        eq(config, state, ctx, Ints.ring, poly_)
 
       case Eq(left, right) if left.typ == Sort.real =>
-        val poly_ = difference(config, state, ctx.neutral, Ring.real, left, right)
-        eq(config, state, ctx, Ring.real, poly_)
+        val poly_ = difference(config, state, ctx.neutral, Reals.ring, left, right)
+        eq(config, state, ctx, Reals.ring, poly_)
 
       // the equation of a trace, X == trace(...), whose accumulator is the value of ⌊X⌋ in each iteration,
       // and of a map, Y == maps(...), whose update is the value of Y at each position, such that the update
@@ -230,50 +230,50 @@ object Simplify extends Transform:
         val phis_ = nary(config, state, ctx, Nil, phis, false)
         or(config, state, ctx, phis_)
 
-      case UMinus.int(_) | Plus.int(_) | Minus.int(_, _) | Times.int(_) =>
+      case Ints.uminus(_) | Ints.plus(_) | Ints.minus(_, _) | Ints.times(_) =>
         arith(config, state, ctx.neutral, expr)
 
       // on Real, division by a nonzero literal is part of the polynomials
-      case UMinus.real(_) | Plus.real(_) | Minus.real(_, _) | Times.real(_) | DivBy.real(_, _) =>
+      case Reals.uminus(_) | Reals.plus(_) | Reals.minus(_, _) | Reals.times(_) | Reals.div(_, _) =>
         arith(config, state, ctx.neutral, expr)
 
-      case DivBy.int(left, right) =>
+      case Ints.div(left, right) =>
         val left_ = arith(config, state, ctx.neutral, left)
         val right_ = arith(config, state, ctx.neutral, right)
         div(config, state, ctx, left_, right_)
 
-      case Mod.int(left, right) =>
+      case Ints.mod(left, right) =>
         val left_ = arith(config, state, ctx.neutral, left)
         val right_ = arith(config, state, ctx.neutral, right)
         mod(config, state, ctx, left_, right_)
 
-      case Lt.int(left, right) =>
-        val poly_ = difference(config, state, ctx.neutral, Ring.int, left, right)
-        lt(config, state, ctx, Ring.int, Lt.int, poly_)
+      case Ints.lt(left, right) =>
+        val poly_ = difference(config, state, ctx.neutral, Ints.ring, left, right)
+        lt(config, state, ctx, Ints.ring, Ints.lt, poly_)
 
-      case Lt.real(left, right) =>
-        val poly_ = difference(config, state, ctx.neutral, Ring.real, left, right)
-        lt(config, state, ctx, Ring.real, Lt.real, poly_)
+      case Reals.lt(left, right) =>
+        val poly_ = difference(config, state, ctx.neutral, Reals.ring, left, right)
+        lt(config, state, ctx, Reals.ring, Reals.lt, poly_)
 
-      case Le.int(left, right) =>
-        val poly_ = difference(config, state, ctx.neutral, Ring.int, left, right)
-        le(config, state, ctx, Ring.int, Le.int, poly_)
+      case Ints.le(left, right) =>
+        val poly_ = difference(config, state, ctx.neutral, Ints.ring, left, right)
+        le(config, state, ctx, Ints.ring, Ints.le, poly_)
 
-      case Le.real(left, right) =>
-        val poly_ = difference(config, state, ctx.neutral, Ring.real, left, right)
-        le(config, state, ctx, Ring.real, Le.real, poly_)
+      case Reals.le(left, right) =>
+        val poly_ = difference(config, state, ctx.neutral, Reals.ring, left, right)
+        le(config, state, ctx, Reals.ring, Reals.le, poly_)
 
-      case Gt.int(left, right) =>
-        Lt.int(right, left)
+      case Ints.gt(left, right) =>
+        Ints.lt(right, left)
 
-      case Gt.real(left, right) =>
-        Lt.real(right, left)
+      case Reals.gt(left, right) =>
+        Reals.lt(right, left)
 
-      case Ge.int(left, right) =>
-        Le.int(right, left)
+      case Ints.ge(left, right) =>
+        Ints.le(right, left)
 
-      case Ge.real(left, right) =>
-        Le.real(right, left)
+      case Reals.ge(left, right) =>
+        Reals.le(right, left)
 
       case Earlier(j, arg) =>
         val j_ = simplify(config, state, ctx, j)
@@ -390,9 +390,9 @@ object Simplify extends Transform:
   // e.g. z == k for ⌊Z⌋ with Z == counter(0, 1, n), which then bounds z as well
   def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     (deps, bound) match
-      case (Butlast(ctx.↑(Counter(Zero.int, One.int, n))) :: deps_, k :: bound_) =>
+      case (Butlast(ctx.↑(Counter(Ints.zero, Ints.one, n))) :: deps_, k :: bound_) =>
         val ctx_ = ctx.neutral.bind(bound)
-        val bounds = List(Le.int(Zero.int, k), Lt.int(k, n))
+        val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, n))
         val range = simplify(config, state, ctx_, bounds)
         val inside = ctx_.assume(range, Nil)
         val values = (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(k, dep))))
@@ -472,12 +472,12 @@ object Simplify extends Transform:
         val args_ = args.map(poly(config, state, ctx, ring, _))
         args_.foldLeft(Poly.one)(_ * _)
 
-      case DivBy.real(left, right) =>
+      case Reals.div(left, right) =>
         val left_ = poly(config, state, ctx, ring, left)
         val right_ = simplify(config, state, ctx, right)
         right_ match
           case ring.num(r: Rational) if !r.isZero => left_ * (Rational(1) / r)
-          case _                                  => Poly.atom(DivBy.real(left_.normalize.toExpr(ring), right_))
+          case _                                  => Poly.atom(Reals.div(left_.normalize.toExpr(ring), right_))
 
       case _ =>
         simplify(config, state, ctx, expr) match
@@ -631,10 +631,10 @@ object Simplify extends Transform:
       case True          => False
       case False         => True
       case Not(psi)      => psi
-      case Lt.int(a, b)  => Le.int(b, a)
-      case Le.int(a, b)  => Lt.int(b, a)
-      case Lt.real(a, b) => Le.real(b, a)
-      case Le.real(a, b) => Lt.real(b, a)
+      case Ints.lt(a, b)  => Ints.le(b, a)
+      case Ints.le(a, b)  => Ints.lt(b, a)
+      case Reals.lt(a, b) => Reals.le(b, a)
+      case Reals.le(a, b) => Reals.lt(b, a)
       case _             => Not(phi)
 
   def imp(config: Config, state: State, ctx: Context, phi: Expr, psi: Expr): Expr =
@@ -688,10 +688,10 @@ object Simplify extends Transform:
 
       // normalized in the next round
       case (_, Lit(n: BigInt, _)) if n == -1 =>
-        UMinus.int(left)
+        Ints.uminus(left)
 
       case _ =>
-        DivBy.int(left, right)
+        Ints.div(left, right)
 
   def mod(config: Config, state: State, ctx: Context, left: Expr, right: Expr): Expr =
     (left, right) match
@@ -699,18 +699,18 @@ object Simplify extends Transform:
         Lit(m mod n.abs, Sort.int)
 
       case (_, Lit(n: BigInt, _)) if n == 1 || n == -1 =>
-        Zero.int
+        Ints.zero
 
       // the coefficients and the constant of a polynomial are taken modulo n, e.g. (2 * x + 3) % 2 is 1
       case (_, Lit(n: BigInt, _)) if n != 0 =>
-        val poly = Arith.toPoly(Ring.int, left)
+        val poly = Arith.toPoly(Ints.ring, left)
         val reduced = poly.modulo(n)
         if reduced != poly.normalize
-        then mod(config, state, ctx, reduced.toExpr(Ring.int), right)
-        else Mod.int(left, right)
+        then mod(config, state, ctx, reduced.toExpr(Ints.ring), right)
+        else Ints.mod(left, right)
 
       case _ =>
-        Mod.int(left, right)
+        Ints.mod(left, right)
 
   // the derivative of `expr` with respect to `xs` (see Diff), by the rules of dL:
   // derivatives are on Real only, derivatives of terms on Int are kept;
@@ -721,42 +721,42 @@ object Simplify extends Transform:
   def diff(config: Config, state: State, xs: List[Var], expr: Expr): Expr =
     expr match
       case _ if expr.typ == Sort.real && (xs disjoint expr.free) =>
-        Zero.real
+        Reals.zero
 
       case x: Var if x.typ == Sort.real =>
         x.primed
 
-      case UMinus.real(arg) =>
+      case Reals.uminus(arg) =>
         val arg_ = diff(config, state, xs, arg)
-        UMinus.real(arg_)
+        Reals.uminus(arg_)
 
-      case Plus.real(args) =>
+      case Reals.plus(args) =>
         val args_ = args.map(diff(config, state, xs, _))
-        Plus.real(args_)
+        Reals.plus(args_)
 
-      case Minus.real(left, right) =>
+      case Reals.minus(left, right) =>
         val left_ = diff(config, state, xs, left)
         val right_ = diff(config, state, xs, right)
-        Minus.real(left_, right_)
+        Reals.minus(left_, right_)
 
       // (a * b * c)' = a' * b * c + a * b' * c + a * b * c'
-      case Times.real(args) =>
+      case Reals.times(args) =>
         val summands =
           for (arg, i) <- args.zipWithIndex
           yield
             val arg_ = diff(config, state, xs, arg)
-            Times.real(args.updated(i, arg_))
-        Plus.real(summands)
+            Reals.times(args.updated(i, arg_))
+        Reals.plus(summands)
 
-      case Lt.real(left, right) =>
+      case Reals.lt(left, right) =>
         val left_ = diff(config, state, xs, left)
         val right_ = diff(config, state, xs, right)
-        Le.real(left_, right_)
+        Reals.le(left_, right_)
 
-      case Le.real(left, right) =>
+      case Reals.le(left, right) =>
         val left_ = diff(config, state, xs, left)
         val right_ = diff(config, state, xs, right)
-        Le.real(left_, right_)
+        Reals.le(left_, right_)
 
       // equations are invariant if both sides change alike
       case Eq(left, right) if left.typ == Sort.real =>
@@ -787,12 +787,12 @@ object Simplify extends Transform:
     val tight = (poly - Poly.one).floor + Poly.one
     if poly.monos.isEmpty
     then if poly.const.isPositive then True else False
-    else if ring == Ring.int && tight != poly
+    else if ring == Ints.ring && tight != poly
     then lt(config, state, ctx, ring, op, tight)
     else
       val (left, right) = poly.sides
       (ring, right.toExpr(ring)) match
-        case (Ring.int, ctx.↑(Succ(right_))) => Le.int(left.toExpr(ring), right_)
+        case (Ints.ring, ctx.↑(Ints.succ(right_))) => Ints.le(left.toExpr(ring), right_)
         case (_, right_)                     => op(left.toExpr(ring), right_)
 
   // equations 0 == p on Int or Real are constants if p is, otherwise they are re-arranged like comparisons,
@@ -813,21 +813,21 @@ object Simplify extends Transform:
   def le(config: Config, state: State, ctx: Context, ring: Ring, op: Sugar.binary, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isNegative then False else True
-    else if ring == Ring.int && poly.floor != poly
+    else if ring == Ints.ring && poly.floor != poly
     then le(config, state, ctx, ring, op, poly.floor)
     else
       val (left, right) = poly.sides
       val (left_, right_) = (left.toExpr(ring), right.toExpr(ring))
       (ring, left_) match
-        case (Ring.int, ctx.↑(Succ(left__))) =>
-          Lt.int(left__, right_)
+        case (Ints.ring, ctx.↑(Ints.succ(left__))) =>
+          Ints.lt(left__, right_)
 
-        case (Ring.int, _) if implied(config, state, ctx.neutral, Le.int(right_, left_)) =>
+        case (Ints.ring, _) if implied(config, state, ctx.neutral, Ints.le(right_, left_)) =>
           eq_(config, state, ctx, left_, right_)
 
-        case (Ring.int, _)
+        case (Ints.ring, _)
             if denied(config, state, ctx.neutral, Eq(left_, right_)) || denied(config, state, ctx.neutral, Eq(right_, left_)) =>
-          Lt.int(left_, right_)
+          Ints.lt(left_, right_)
 
         case _ =>
           op(left_, right_)
@@ -940,12 +940,12 @@ object Simplify extends Transform:
 
   // invariants distribute over conjunctions, where each part keeps the dependencies that it uses;
   // with a constant body: true holds trivially,
-  // false holds exactly if there are no values, i.e., the dependencies, which have the same length, are empty
+  // false holds exactly if there are no values, i.e., the dependencies, which have the same length, are nil
   def invs(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var], body: Expr): Expr =
     (deps, body) match
       case (_, And(phis))    => and(config, state, ctx, phis.map(invs(config, state, ctx, deps, bound, _)))
       case (_, True)         => True
-      case (dep :: _, False) => Eq(Seqs.len(dep), Zero.int)
+      case (dep :: _, False) => Eq(dep, Lists.nil(Type.elem(dep.typ)))
       case _                 =>
         val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, body.free)
         Invs(deps_, bound_, re(body))

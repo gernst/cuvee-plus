@@ -17,13 +17,13 @@ object Olds extends TestSuite:
     test("call"):
       val now = Subst[Type, Expr](Map(), Map(g -> g1, x -> y))
       val before = Subst[Type, Expr](Map(), Map(x -> y))
-      val phi = Eq(g, Plus.int(Old(g), x))
-      Old.instance(now, before, phi) ==> Eq(g1, Plus.int(g, y))
+      val phi = Eq(g, Ints.plus(Old(g), x))
+      Old.instance(now, before, phi) ==> Eq(g1, Ints.plus(g, y))
 
     // nested occurrences of old refer to the same values
     test("nested"):
       val before = Subst[Type, Expr](Map(), Map(g -> g1))
-      Old.instance(Subst.empty, before, Old(Plus.int(g, Old(g)))) ==> Plus.int(g1, g1)
+      Old.instance(Subst.empty, before, Old(Ints.plus(g, Old(g)))) ==> Ints.plus(g1, g1)
       Old.elim(List(g), List(g1), Eq(g, Old(g))) ==> Eq(g, g1)
 
     // a bound variable shadows the replaced one, inside of old as well, which is stripped

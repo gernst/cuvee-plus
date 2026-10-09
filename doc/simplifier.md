@@ -119,8 +119,9 @@ derivatives in [hybrid.md](hybrid.md).
     variable nor an application of an arithmetic operator. The rules terminate,
     since each step removes occurrences of variables.
 - **`Poly(const, monos)`** with `Mono(factor, atoms)` is the normal form of
-  arithmetic, with `Rational` coefficients. `Ring` bundles the sugar of one
-  type (`Ring.int`, `Ring.real`) to read and print polynomials.
+  arithmetic, with `Rational` coefficients. `Ring` (in `core.Builtin`) bundles
+  the sugar of one type (`Ints.ring`, `Reals.ring`) to read and print
+  polynomials.
 - **`Poly.sides`** splits a polynomial into its negative and positive parts,
   so that comparisons have positive coefficients on both sides.
 - **`Poly.primitive`** scales a polynomial by a positive factor to integral

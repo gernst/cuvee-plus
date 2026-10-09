@@ -1,6 +1,7 @@
 ; ./Cuvee.sh -print lean examples/smtlib/printing/lean.smt2
-; SMT-LIB in Lean 4: the commands without a counterpart are comments, the selectors of SMT-LIB are not qualified,
-; the variables of let are bound in parallel, comparisons of numerals are annotated with their type
+; SMT-LIB in Lean 4: the commands without a counterpart are comments, datatypes are inductive types without their
+; selectors, whose uses are left as they are, the variables of let are bound in parallel, comparisons of numerals are
+; annotated with their type
 (set-logic ALL)
 (declare-sort U 0)
 (declare-datatypes ((Stack 1)) ((par (a) ((nil) (cons (top a) (pop (Stack a)))))))

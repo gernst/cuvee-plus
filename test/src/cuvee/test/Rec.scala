@@ -22,8 +22,8 @@ object Recs extends TestSuite:
     Rec(
       sum,
       List(
-        Case(App(sum, List(n)), Zero.int, Le.int(n, Zero.int)),
-        Case(App(sum, List(n)), Plus.int(n, App(sum, List(Minus.int(n, One.int)))), Lt.int(Zero.int, n))
+        Case(App(sum, List(n)), Ints.zero, Ints.le(n, Ints.zero)),
+        Case(App(sum, List(n)), Ints.plus(n, App(sum, List(Ints.minus(n, Ints.one)))), Ints.lt(Ints.zero, n))
       )
     )
 
@@ -39,7 +39,7 @@ object Recs extends TestSuite:
     test("free"):
       sums.typ ==> int
       sums.free ==> Set()
-      Rec(sum, List(Case(App(sum, List(n)), Plus.int(n, c), True))).free ==> Set(c)
+      Rec(sum, List(Case(App(sum, List(n)), Ints.plus(n, c), True))).free ==> Set(c)
 
     // the patterns apply the function to distinct variables, the bodies have the type of its result
     test("check"):
@@ -51,20 +51,20 @@ object Recs extends TestSuite:
       val add = Fun("add", Nil, List(Var("x", Sort.int), Var("y", Sort.int)), Sort.int)
       val adds = Arrow(List(Sort.int, Sort.int), Sort.int)
       error(Rec(add, List(Case(App(add, List(n, n)), n, True))), adds) ==> "invalid pattern"
-      val pair = Rec(add, List(Case(App(add, List(n, m)), Plus.int(n, m), True)))
+      val pair = Rec(add, List(Case(App(add, List(n, m)), Ints.plus(n, m), True)))
       Type.check(State.empty, Scope.empty, pair, adds) ==> pair
 
     // the pattern variable n would capture the replacement of c, it is renamed in the pattern and the body,
     // by substitution and by the elimination of old, which replaces c inside of old(c)
     test("capture"):
-      val rec = Rec(sum, List(Case(App(sum, List(n)), Plus.int(n, c), True)))
+      val rec = Rec(sum, List(Case(App(sum, List(n)), Ints.plus(n, c), True)))
       val Rec(_, List(Case(App(_, _, _, List(z: Var)), body, _))) = Subst.from(List(c), List(n))(rec): @unchecked
       assert(z != n)
-      body ==> Plus.int(z, n)
-      val old = Rec(sum, List(Case(App(sum, List(n)), Plus.int(n, Old(c)), True)))
+      body ==> Ints.plus(z, n)
+      val old = Rec(sum, List(Case(App(sum, List(n)), Ints.plus(n, Old(c)), True)))
       val Rec(_, List(Case(App(_, _, _, List(z_ : Var)), body_, _))) = Old.elim(List(c), List(n), old): @unchecked
       assert(z_ != n)
-      body_ ==> Plus.int(z_, n)
+      body_ ==> Ints.plus(z_, n)
 
     // the types of the function are substituted, and the recursive calls refer to the function with the new types
     test("types"):
@@ -92,7 +92,7 @@ object Recs extends TestSuite:
       val ids = Rec(id, List(Case(App(id, List(x)), x, True)))
       ids.params ==> Set()
       Type.check(State.empty, Scope.empty, ids, int) ==> ids
-      error(Rec(id, List(Case(App(id, List(x)), Zero.int, True))), int) ==> "type mismatch"
+      error(Rec(id, List(Case(App(id, List(x)), Ints.zero, True))), int) ==> "type mismatch"
       Subst[Type, Expr](Map(a -> Sort.int), Map())(ids) ==> ids
       val z = Var("z", b)
       val rec = Rec(id, List(Case(App(id, List(x)), x, Eq(z, z))))
@@ -103,8 +103,8 @@ object Recs extends TestSuite:
 
     // a definition without a match is a single case, an undefined function has no recursive function
     test("definitions"):
-      Rec.from(State.empty, sum, Plus.int(Var("x", Sort.int), One.int)) ==>
-        Rec(sum, List(Case(App(sum, List(Var("x", Sort.int))), Plus.int(Var("x", Sort.int), One.int), True)))
+      Rec.from(State.empty, sum, Ints.plus(Var("x", Sort.int), Ints.one)) ==>
+        Rec(sum, List(Case(App(sum, List(Var("x", Sort.int))), Ints.plus(Var("x", Sort.int), Ints.one), True)))
       val message =
         try
           Rec.from(State.empty, sum)
@@ -114,7 +114,7 @@ object Recs extends TestSuite:
 
     // the bodies are simplified assuming their guards, the function is not unfolded
     test("simplify"):
-      val body = Ite(Le.int(n, Zero.int), Zero.int, Plus.int(n, Zero.int))
-      val rec = Rec(sum, List(Case(App(sum, List(n)), body, Le.int(n, Zero.int))))
+      val body = Ite(Ints.le(n, Ints.zero), Ints.zero, Ints.plus(n, Ints.zero))
+      val rec = Rec(sum, List(Case(App(sum, List(n)), body, Ints.le(n, Ints.zero))))
       Simplify.simplify(Config.default, State.empty, Context.empty, rec) ==>
-        Rec(sum, List(Case(App(sum, List(n)), Zero.int, Le.int(n, Zero.int))))
+        Rec(sum, List(Case(App(sum, List(n)), Ints.zero, Ints.le(n, Ints.zero))))

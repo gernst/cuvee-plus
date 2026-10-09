@@ -220,7 +220,7 @@ object Printer extends cuvee.pipe.Printer:
     expr match
       case Not(Eq(_, _)) => None
       case Not(arg)      => Some(("!", Grammar.prefix_ops("!"), arg))
-      case UMinus.int(arg) => Some(("-", Grammar.prefix_ops("-"), arg))
+      case Ints.uminus(arg) => Some(("-", Grammar.prefix_ops("-"), arg))
       case App(Fun(Name("bitnot", None), Nil, _, _), _, _, List(arg)) => Some(("~", Grammar.prefix_ops("~"), arg))
       case _             => None
 
@@ -234,9 +234,9 @@ object Printer extends cuvee.pipe.Printer:
       case Eq(a, b)            => op("==", List(a, b))
       case And(args)           => op("&&", args)
       case Or(args)            => op("||", args)
-      case Plus.int(args)      => op("+", args)
-      case Minus.int(a, b)     => op("-", List(a, b))
-      case Times.int(args)     => op("*", args)
+      case Ints.plus(args)      => op("+", args)
+      case Ints.minus(a, b)     => op("-", List(a, b))
+      case Ints.times(args)     => op("*", args)
       // the division and remainder of C (see resources/cuvee/c/prelude.bpl), unlike div and mod of SMT-LIB
       case App(Fun(Name("quotient", None), Nil, _, _), _, _, List(a, b))  => op("/", List(a, b))
       case App(Fun(Name("remainder", None), Nil, _, _), _, _, List(a, b)) => op("%", List(a, b))
@@ -249,10 +249,10 @@ object Printer extends cuvee.pipe.Printer:
       case App(Fun(Name("bitxor", None), Nil, _, _), _, _, List(a, b))    => op("^", List(a, b))
       case App(Fun(Name("shl", None), Nil, _, _), _, _, List(a, b))       => op("<<", List(a, b))
       case App(Fun(Name("shr", None), Nil, _, _), _, _, List(a, b))       => op(">>", List(a, b))
-      case Lt.int(a, b)        => op("<", List(a, b))
-      case Le.int(a, b)        => op("<=", List(a, b))
-      case Gt.int(a, b)        => op(">", List(a, b))
-      case Ge.int(a, b)        => op(">=", List(a, b))
+      case Ints.lt(a, b)        => op("<", List(a, b))
+      case Ints.le(a, b)        => op("<=", List(a, b))
+      case Ints.gt(a, b)        => op(">", List(a, b))
+      case Ints.ge(a, b)        => op(">=", List(a, b))
       case _                   => None
 
   def level(expr: Expr): (Int, Option[Assoc]) =
@@ -288,8 +288,8 @@ object Printer extends cuvee.pipe.Printer:
   object prelude:
     def unapply(expr: Expr): Option[Expr] =
       expr match
-        case App(Fun(Name("truth", None), Nil, _, _), _, _, List(arg))  => Some(Not(Eq(arg, Zero.int)))
-        case App(Fun(Name("number", None), Nil, _, _), _, _, List(arg)) => Some(Ite(arg, One.int, Zero.int))
+        case App(Fun(Name("truth", None), Nil, _, _), _, _, List(arg))  => Some(Not(Eq(arg, Ints.zero)))
+        case App(Fun(Name("number", None), Nil, _, _), _, _, List(arg)) => Some(Ite(arg, Ints.one, Ints.zero))
         case _                                                        => None
 
   def doc(expr: Expr): Doc =
