@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
+<benchmark tool="cuvee" timelimit="1 min" memlimit="7 GB" cpuCores="1">
+
+  <!-- <require cpuModel="Intel Core i7-10700 @ 2.90 GHz"/> -->
+  <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
+
+  <option name="-teq"/>
+  <option name="-simplify"/>
+  <option name="-split"/>
+  <option name="-simplify"/>
+
+  <rundefinition name="SV-COMP27_unreach-call">
+  </rundefinition>
+
+  <tasks name="Dafny">
+    <includesfile>examples/sv-comp/dafny.set</includesfile>
+    <propertyfile>examples/sv-comp/properties/unreach-call.prp</propertyfile>
+  </tasks>
+
+</benchmark>

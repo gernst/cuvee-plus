@@ -11,10 +11,12 @@ import benchexec.tools.template
 
 class Tool(benchexec.tools.template.BaseTool2):
     """
-    Tool info for Cuvée, which proves the property unreach-call of C programs by trace equation systems,
-    whose goals the simplifier closes with a database of lemmas (cuvee-plus.xml passes -teq -simplify).
-    The output is SMT-LIB: no goal left means that the property holds, goals that remain are not refuted,
-    hence the result is unknown, since the tool does not produce witnesses of violations.
+    Tool info for Cuvée, which proves the property unreach-call of C programs and of their Dafny translations
+    (examples/sv-comp) by trace equation systems, whose goals the simplifier closes with a database of lemmas
+    (cuvee.xml passes -teq -simplify).
+    The output is in the language of the input, SMT-LIB for C and Dafny for Dafny: no goal left means that the
+    property holds, goals that remain are not refuted, hence the result is unknown, since the tool does not produce
+    witnesses of violations.
     """
 
     REQUIRED_PATHS = ["Cuvee.sh", "cuvee.jar"]
