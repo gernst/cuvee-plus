@@ -24,8 +24,12 @@ object Split extends Transform:
       cmd_ <- split(cmd)
     yield cmd_
 
+  // rewrite rules are kept as they are, like in Simplify, since their pieces would be rules of their own
   def split(cmd: Cmd): List[Cmd] =
     cmd match
+      case _ if cmd.isRule =>
+        List(cmd)
+
       case Assert(justify, params, phi, attrs) =>
         for phi_ <- split(Nil, Nil, Normalize.lift(phi))
         yield Assert(justify, params, phi_, attrs)
