@@ -27,8 +27,10 @@ import cuvee.core._
 // and the remaining number of steps
 //
 // self: within the update of a combinator that defines a dependency, X == trace(...) or Y == maps(...),
-// that dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants);
-// the updates and bodies of further combinators are then not simplified, which would enter their iterations
+// that dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants)
+//
+// nested: within the update or body of a combinator and the values of its iterations (see Simplify.combinator),
+// where the updates and bodies of further combinators are not simplified, which would enter their iterations
 // again and again (see Simplify.once)
 case class Context(
     bound: List[List[Var]],
@@ -40,7 +42,8 @@ case class Context(
     polarity: Option[Boolean],
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0),
-    self: Option[(Expr, Expr)] = None
+    self: Option[(Expr, Expr)] = None,
+    nested: Boolean = false
 ):
   // the rewrite rules with a fresh number of steps, which is shared by the copies of this context,
   // and which guards against rules that do not terminate

@@ -17,12 +17,12 @@ The simplifier can enter the same iterations again and again, each time
 under fresh names of bound variables, until the budget of 1000 rewrite steps
 is exhausted, which is reported as "rewriting does not terminate".
 
-Mitigated in 0.34.4: within the update of a combinator that defines a
-dependency (`Context.self`), the updates and bodies of further combinators are
-not simplified, and `Rewrite.matches` builds the context of the iterations of a
-combinator only when the update is matched (`lazy val inner`). The iterations
-are still built once per round and per rule whose dependencies match, e.g.
-408 times in geo1-u, which no longer exhausts the budget.
+Mitigated in 0.34.5: within the update or body of a combinator and the values
+of its iterations (`Context.nested`), the updates and bodies of further
+combinators are not simplified, and `Rewrite.matches` builds the context of the
+iterations of a combinator only when the update is matched (`lazy val inner`).
+The iterations are still built once per round and per rule whose dependencies
+match, e.g. 408 times in geo1-u, which no longer exhausts the budget.
 
 Example, [standard_partial_init_ground.dfy](examples/sv-comp/array-examples/standard_partial_init_ground.dfy)
 with `-teq -simplify`, whose second loop compacts the agreeing positions:
