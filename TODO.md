@@ -5,11 +5,64 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New
 
+- make all dafny sv-comp examples unbounded
 - switch Dafny lemma syntax
 - support verifying trace lemmas in Dafny
 - add Lean printer
 - identify performance improvements, notably in the simplifier
 - look at cyclic rewrite rules
+- benchmark.xml and toolinfo module
+
+## Cycle through the contexts of iterations
+
+The simplifier can enter the same iterations again and again, each time
+under fresh names of bound variables, until the budget of 1000 rewrite steps
+is exhausted, which is reported as "rewriting does not terminate".
+
+Example, [standard_partial_init_ground.dfy](examples/sv-comp/array-examples/standard_partial_init_ground.dfy)
+with `-teq -simplify`, whose second loop compacts the agreeing positions:
+
+```
+while i < 100000 {
+  if A[i] == B[i] { C := C[j := i]; j := j + 1; }
+  i := i + 1;
+}
+```
+
+`j` is the trace `J` of the count of agreeing positions, and the reads
+`C[x]` of the later loops become reads `earlier(k, ⌊J⌋)`:
+
+1. The lemma of teq.dfy for counts rewrites such a read into a count over a
+   prefix of a new combinator over the dependencies of the loop:
+
+   ```
+   earlier(k₃₃, ⌊J₃₆⌋)
+     ~> 0 + count(true, prefix(k₃₃, maps(for ⌊K₃₄⌋, ⌊I₃₇⌋ yield k₃₃, i₃₁ :: A[i₃₁] == B[i₃₁])))
+   ```
+
+2. To simplify the `maps`, `Simplify.iterations` builds the context of its
+   iterations, which contains the facts about the traces of the loop, and
+   these again contain reads `earlier(k', ⌊J⌋)`, simplified under a fresh
+   name `k'`, to which step 1 applies again.
+
+With `-debug rewrite`, 916 of the 1000 steps are the same step
+`earlier(k, ⌊I⌋) ~> 0 + k * 1` on 36 different fresh names `k`, and 35 rewrite
+`earlier(k, ⌊J⌋)`. Nothing grows: the same terms are simplified over and
+over, nested, since expressions are compared literally, not modulo the names
+of bound variables.
+
+Proposal: a guard against reentrance in `Simplify.iterations`. While the
+context of the iterations over a list of dependencies is built, these
+dependencies are on a stack in the `Context`; when the same dependencies,
+modulo the names of bound variables, are entered again inside, their facts
+are taken as they are, without simplifying them again. This cuts exactly
+this cycle and changes nothing for terms that do not recurse in this way.
+Weaker alternatives: canonical names of bound variables instead of fresh
+ones (the repetitions become syntactically equal, but the nesting still
+grows); restricting the lemma for counts to indices that are not bound by an
+enclosing combinator (ad hoc, loses legitimate rewrites); comparison modulo
+the names of bound variables in general (needed elsewhere, see below, but it
+does not stop the nesting by itself).
 
 ## Bugs
 
@@ -19,13 +72,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   `(=> (exists ((x Int)) (< x y)) (<= x y))` becomes
   `(forall ((x Int)) (=> (< x y) (<= x y)))` with `-simplify`.
 - Rewriting does not terminate on
-  [standard_partial_init_ground.dfy](examples/sv-comp/array-examples/standard_partial_init_ground.dfy)
-  with the lemmas of teq.dfy alone (a stack overflow, reported as such): the
-  counter `j` of the agreeing indices is a `count` over a `maps` with the
-  dependency `⌊I⌋`, the read `earlier(k, ⌊J⌋)` becomes a `count` over a
-  `prefix` of it, whose simplification builds the context of the iterations
-  again (`Simplify.iterations`), in which `earlier(k', ⌊I⌋)` is simplified,
-  with fresh `k` each time.
+  [standard_partial_init_ground.dfy](examples/sv-comp/array-examples/standard_partial_init_ground.dfy),
+  see the cycle through the contexts of iterations below.
 - A rule whose left-hand side is a comparison of two open variables, e.g.
   `j < n` with a side condition `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: P(k, h))`,
   overflows the stack before any step: it matches every comparison, also

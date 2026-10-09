@@ -262,6 +262,8 @@ object Config:
     "dfy" -> Lang.dafny,
     "bpl" -> Lang.boogie,
     "c" -> Lang.c,
+    // preprocessed C, e.g. of SV-COMP tasks
+    "i" -> Lang.c,
     "yml" -> Lang.yml
   )
 
@@ -294,7 +296,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.32.0")
+    println("Cuvée 0.32.1")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

@@ -26,7 +26,10 @@ object Yml extends TestSuite:
 
 // the translations of SV-COMP tasks (examples/sv-comp), checked against the database of their expected results
 // (see cuvee.test.Database), only if the environment variable CUVEE_SVCOMP is set, since they take minutes;
-// otherwise only the database is read, if it exists (the translations are not part of the repository)
+// otherwise only the database is read, if it exists;
+// a run that is much slower or much faster than recorded fails: then the expected results must NOT be regenerated
+// before the change of performance is understood, a slower run may be a performance degradation of the simplifier or
+// the lemmas, and a run that ends much faster is likely a soundness bug, e.g. goals closed by mistake
 object SVComp extends TestSuite:
   val database = Examples.root / "sv-comp" / "expected.csv"
 
@@ -46,4 +49,4 @@ object SVComp extends TestSuite:
       Tests:
         test("database"):
           for row <- rows
-          do assert(Set("safe", "unsafe").contains(row.verdict), row.goals == "error" || row.goals.toIntOption.isDefined)
+          do assert(Set("safe", "unsafe").contains(row.verdict), row.goals == "error" || row.goals.toIntOption.isDefined, row.time.isDefined)
