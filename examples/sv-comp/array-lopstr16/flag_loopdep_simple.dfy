@@ -38,7 +38,7 @@ method main() {
   flag := 0;
   i := 0;
   while i < 1000000 {
-    havoc v;
+    v := *;
     a := a[i := v];
     i := i + 1;
   }

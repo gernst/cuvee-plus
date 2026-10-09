@@ -21,13 +21,13 @@ method main() {
   c1 := 4000;
   c2 := 2000;
   c3 := 10000;
-  havoc n;
+  n := *;
   assume 0 <= n < 10;
   k := 0;
   i := 0;
   while i < n {
     i := i + 1;
-    havoc v;
+    v := *;
     assume 0 <= v && n < 2;
     if v == 0 {
       k := k + c1;

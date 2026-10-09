@@ -19,7 +19,7 @@ method main() {
   var sum: int;
   var array1: array<int, int>;
   var array2: array<int, int>;
-  havoc N;
+  N := *;
   assume N > 0;
   num := -1;
   sum := 0;
@@ -30,11 +30,11 @@ method main() {
     count := count + 1;
   }
   while true {
-    havoc index;
+    index := *;
     assume index >= 0 && index < N;
     array1 := array1[index := num * (num * index)];
     array2 := array2[N - 1 - index := num * index];
-    havoc temp;
+    temp := *;
     if temp == 0 {
       break;
     }

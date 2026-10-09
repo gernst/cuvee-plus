@@ -28,9 +28,9 @@ method main() {
   var b: int;
   x := 0;
   m := 0;
-  havoc n;
+  n := *;
   while x < n {
-    havoc b;
+    b := *;
     if b != 0 {
       m := x;
     }

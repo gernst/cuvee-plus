@@ -21,7 +21,7 @@ method main() {
   c := 0;
   i := 0;
   while i < 100000 {
-    havoc v;
+    v := *;
     aa := aa[i := v];
     i := i + 1;
   }

@@ -3,7 +3,7 @@ function {:smt2} {:c} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>
 method m(x: int, y: int) returns (a: int, b: int) {
   a, b := y, x;
   assume a < b;
-  havoc a, b;
+  a, b := *, *;
   spec a requires 0 < a ensures a < b;
   if * {
     a := 0;

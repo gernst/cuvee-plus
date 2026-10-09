@@ -44,9 +44,9 @@ method main() {
   }
   i := 0;
   while i < 1000000 {
-    havoc b;
+    b := *;
     if b != 0 {
-      havoc k;
+      k := *;
       p := p[i := k];
       q := q[i := k * k];
     }

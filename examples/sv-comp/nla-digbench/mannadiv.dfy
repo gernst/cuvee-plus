@@ -17,8 +17,8 @@ method assume_abort_if_not(cond: int) {
 method main() returns (result: int) {
   {
     var x1: int, x2: int, y1: int, y2: int, y3: int;
-    havoc x1;
-    havoc x2;
+    x1 := *;
+    x2 := *;
     assume_abort_if_not((if x1 >= 0 then 1 else 0));
     assume_abort_if_not((if x2 != 0 then 1 else 0));
     y1 := 0;

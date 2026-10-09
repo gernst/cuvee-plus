@@ -14,21 +14,21 @@ method main() {
   var b: int;
   k := 0;
   i := 0;
-  havoc pvlen;
-  havoc b;
+  pvlen := *;
+  b := *;
   while b != 0 && i <= 1000000 {
     i := i + 1;
-    havoc b;
+    b := *;
   }
   if i > pvlen {
     pvlen := i;
   }
   i := 0;
-  havoc b;
+  b := *;
   while b != 0 && i <= 1000000 {
     i := i + 1;
     k := k + 1;
-    havoc b;
+    b := *;
   }
   j := 0;
   n := i;

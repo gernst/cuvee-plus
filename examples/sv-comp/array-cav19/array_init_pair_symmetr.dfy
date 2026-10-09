@@ -14,7 +14,7 @@ method main() {
   N := 100000;
   i := 0;
   while i < N {
-    havoc x;
+    x := *;
     assume x > -100000 && x < 100000;
     a := a[i := x];
     b := b[i := -x];

@@ -12,7 +12,7 @@ method main() {
   var i: int;
   var k: int;
   var j: int;
-  havoc n;
+  n := *;
   assume 0 <= n <= 20000001;
   k := n;
   i := 0;

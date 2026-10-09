@@ -23,7 +23,7 @@ method main() returns (result: int)
     j := 0;
     l := 0;
     v4 := 0;
-    havoc n;
+    n := *;
     assume 0 <= n;
     if !(n <= SIZE) {
       result := 0;

@@ -26,7 +26,7 @@ method main() {
   var k: int;
   i := 0;
   n := 0;
-  havoc k;
+  k := *;
   assume -1000000 <= k <= 1000000;
   i := 0;
   while i < 2 * k {

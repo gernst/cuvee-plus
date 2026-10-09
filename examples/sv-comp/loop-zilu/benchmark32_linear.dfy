@@ -20,14 +20,14 @@ method main() returns (result: int) {
   var tmp₁: int, tmp₂: bool;
   {
     var x: int;
-    havoc tmp₁;
+    tmp₁ := *;
     x := tmp₁;
     if !(x == 1 || x == 2) {
       result := 0;
       return;
     }
     while true {
-      havoc tmp₂;
+      tmp₂ := *;
       if !tmp₂ {
         break;
       }

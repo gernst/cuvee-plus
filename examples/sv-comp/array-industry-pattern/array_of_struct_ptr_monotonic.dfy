@@ -53,12 +53,12 @@ method main() {
   var p1: array<int, bool>;
   i := 0;
   while i < 100000 {
-    havoc x;
+    x := *;
     t := t[i := x];
     if x == 10 {
       p1 := p1[i := true];
     } else {
-      havoc y;
+      y := *;
       p1 := p1[i := y];
     }
     i := i + 2;

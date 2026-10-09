@@ -21,7 +21,7 @@ method main() returns (result: int)
   SIZE := 20000001;
   {
     var n: int, i: int, k: int, j: int;
-    havoc n;
+    n := *;
     assume 0 <= n;
     if !(n <= SIZE) {
       result := 0;

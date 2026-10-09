@@ -31,13 +31,13 @@ method main() {
   var n: int;
   var k: int;
   var a: array<int, int>;
-  havoc j;
-  havoc n;
+  j := *;
+  n := *;
   assume n < 100000;
   assume j > 0 && j < 10000;
   i := 1;
   while i < n {
-    havoc k;
+    k := *;
     assume k > 0 && k < 10000;
     a := a[i := i + j + k];
     i := i + 1;

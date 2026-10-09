@@ -12,20 +12,20 @@ method main() {
   var i: int;
   var value: int;
   var a: array<int, int>;
-  havoc S;
+  S := *;
   if S > 1 && S < 100000 {
     if S % 2 != 0 {
       return;
     }
     i := 1;
     while i <= S / 2 {
-      havoc value;
+      value := *;
       if value != 0 {
         a := a[i * 2 - 2 := value];
       } else {
         a := a[i * 2 - 2 := 10];
       }
-      havoc value;
+      value := *;
       if value != 0 {
         a := a[i * 2 - 1 := value];
       } else {

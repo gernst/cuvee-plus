@@ -30,7 +30,7 @@ method main() {
   var i: int;
   var j: int;
   var l: int;
-  havoc n;
+  n := *;
   assume 0 <= n <= 20000001;
   i := 0;
   j := 0;

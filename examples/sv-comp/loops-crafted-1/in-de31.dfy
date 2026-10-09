@@ -11,7 +11,7 @@ method main() returns (result: int) {
   var tmp₁: int;
   {
     var n: int, x: int, y: int, z: int;
-    havoc tmp₁;
+    tmp₁ := *;
     assume 0 <= tmp₁;
     n := tmp₁;
     x := n;

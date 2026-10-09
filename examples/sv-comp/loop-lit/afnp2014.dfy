@@ -15,11 +15,11 @@ method main() {
   var c: int;
   x := 1;
   y := 0;
-  havoc c;
+  c := *;
   while y < 1000 && c != 0 {
     x := x + y;
     y := y + 1;
-    havoc c;
+    c := *;
   }
   assert x >= y;
 }

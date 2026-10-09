@@ -13,9 +13,9 @@ method main() {
   var B: array<int, int>;
   i := 0;
   while i < 2048 {
-    havoc v;
+    v := *;
     A := A[i := v];
-    havoc v;
+    v := *;
     B := B[i := v];
     i := i + 1;
   }

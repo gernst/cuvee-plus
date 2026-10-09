@@ -9,7 +9,7 @@ method main() {
   var N: int;
   var i: int;
   var a: array<int, int>;
-  havoc N;
+  N := *;
   assume 0 < N <= 536870911;
   i := 0;
   while i < N {

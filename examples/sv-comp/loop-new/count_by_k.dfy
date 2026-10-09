@@ -12,7 +12,7 @@
 method main() {
   var i: int;
   var k: int;
-  havoc k;
+  k := *;
   assume 0 <= k <= 10;
   i := 0;
   while i < 1000000 * k {

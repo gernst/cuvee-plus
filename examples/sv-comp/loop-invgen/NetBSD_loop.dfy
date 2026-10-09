@@ -7,7 +7,7 @@
 method main() {
   var M: int;
   var p: int;
-  havoc M;
+  M := *;
   if !(M > 0 && M < 2147483647) {
     return;
   }

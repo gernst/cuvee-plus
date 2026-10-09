@@ -12,7 +12,7 @@ method main() {
   var i: int;
   var k: int;
   var j: int;
-  havoc n;
+  n := *;
   if !(n <= 1000000) {
     return;
   }

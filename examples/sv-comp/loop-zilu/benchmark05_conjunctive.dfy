@@ -11,9 +11,9 @@ method main() {
   var x: int;
   var y: int;
   var n: int;
-  havoc x;
-  havoc y;
-  havoc n;
+  x := *;
+  y := *;
+  n := *;
   assume x >= 0 && x <= y && y < n;
   while x < n {
     x := x + 1;

@@ -11,13 +11,13 @@ method main() {
   var sum: int;
   var i: int;
   var tmp: int;
-  havoc SIZE;
+  SIZE := *;
   assume -32768 <= SIZE <= 32767;
   if SIZE > 1 {
     sum := 0;
     i := 0;
     while i < SIZE {
-      havoc tmp;
+      tmp := *;
       assume -32768 <= tmp <= 32767;
       a := a[i := tmp];
       i := i + 1;

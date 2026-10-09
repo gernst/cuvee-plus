@@ -38,7 +38,7 @@ method main() {
   N := 100;
   i := 0;
   while i < N {
-    havoc v;
+    v := *;
     x := x[i := v];
     i := i + 1;
   }

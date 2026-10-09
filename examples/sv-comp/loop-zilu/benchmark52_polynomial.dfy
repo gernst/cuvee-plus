@@ -9,7 +9,7 @@ method main() returns (result: int) {
   var tmp₁: int;
   {
     var i: int;
-    havoc tmp₁;
+    tmp₁ := *;
     i := tmp₁;
     if !(i < 10 && i > -10) {
       result := 0;

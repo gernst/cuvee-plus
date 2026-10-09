@@ -13,8 +13,8 @@ method main() {
   var k: int;
   var i: int;
   var j: int;
-  havoc n;
-  havoc m;
+  n := *;
+  m := *;
   assume 10 <= n <= 10000;
   assume 10 <= m <= 10000;
   k := 0;

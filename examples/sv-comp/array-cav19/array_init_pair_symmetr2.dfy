@@ -37,8 +37,8 @@ method main() {
   N := 100000;
   i := 0;
   while i < N {
-    havoc x;
-    havoc y;
+    x := *;
+    y := *;
     assume y < 100000 && y > -100000;
     assume x < 100000 && x > -100000;
     assume x > y;

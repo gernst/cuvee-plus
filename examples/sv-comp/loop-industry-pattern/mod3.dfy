@@ -13,10 +13,10 @@ method main() {
   var x: int;
   var y: int;
   var b: int;
-  havoc x;
+  x := *;
   assume x >= 0;
   y := 1;
-  havoc b;
+  b := *;
   while b != 0 {
     if x % 3 == 1 {
       x := x + 2;
@@ -26,7 +26,7 @@ method main() {
         x := x + 1;
         y := 0;
       } else {
-        havoc b;
+        b := *;
         if b != 0 {
           x := x + 4;
           y := 1;
@@ -36,7 +36,7 @@ method main() {
         }
       }
     }
-    havoc b;
+    b := *;
   }
   if y == 0 {
     assert x % 3 == 0;

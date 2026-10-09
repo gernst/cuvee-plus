@@ -1,0 +1,11 @@
+method m(n: int) returns (x: int, y: int) {
+  var z: int;
+  z := *;
+  x := n;
+  {
+    y := x;
+    x := *;
+  }
+  y := *;
+}
+

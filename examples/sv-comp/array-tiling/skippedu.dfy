@@ -11,11 +11,11 @@ method main() {
   var i: int;
   var v: int;
   var a: array<int, int>;
-  havoc S;
+  S := *;
   if S > 1 && S < 100000 {
     i := 0;
     while i < S {
-      havoc v;
+      v := *;
       a := a[i := v];
       i := i + 1;
     }

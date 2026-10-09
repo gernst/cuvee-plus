@@ -15,9 +15,9 @@ method main() {
   var tmp: int;
   a := 0;
   while a < 100000 {
-    havoc tmp;
+    tmp := *;
     a1 := a1[a := tmp];
-    havoc tmp;
+    tmp := *;
     a2 := a2[a := tmp];
     a := a + 1;
   }

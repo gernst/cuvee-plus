@@ -25,7 +25,7 @@ method main() {
   var A: array<int, int>;
   i := 0;
   while i < 1024 - 1 {
-    havoc v;
+    v := *;
     A := A[i := v];
     i := i + 1;
   }

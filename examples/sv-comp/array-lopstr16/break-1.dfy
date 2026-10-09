@@ -10,7 +10,7 @@ method main() {
   var i: int;
   var c: int;
   var s: array<int, bool>;
-  havoc c;
+  c := *;
   i := 0;
   while i < 1000000 {
     if c > 5 {

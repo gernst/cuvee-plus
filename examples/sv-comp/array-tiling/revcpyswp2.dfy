@@ -14,13 +14,13 @@ method main() {
   var b: array<int, int>;
   var ac: array<int, int>;
   var bc: array<int, int>;
-  havoc S;
+  S := *;
   if S > 1 && S < 100000 {
     i := 0;
     while i < S {
-      havoc v;
+      v := *;
       ac := ac[i := v];
-      havoc v;
+      v := *;
       bc := bc[i := v];
       i := i + 1;
     }

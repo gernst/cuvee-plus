@@ -24,7 +24,7 @@ method main() {
   var i: int;
   var a: array<int, int>;
   var acopy: array<int, int>;
-  havoc S;
+  S := *;
   assume S > 1;
   assume S < 1073741823;
   i := 0;

@@ -10,10 +10,10 @@ method main() {
   var x: int;
   var b: int;
   x := 5;
-  havoc b;
+  b := *;
   while b != 0 {
     x := x + 8;
-    havoc b;
+    b := *;
   }
   assert x % 8 == 5;
 }

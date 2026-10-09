@@ -10,8 +10,8 @@ method main() {
   var x: int;
   var y: int;
   var z: int;
-  havoc i;
-  havoc j;
+  i := *;
+  j := *;
   if !(i >= 0 && i <= 1000000) {
     return;
   }

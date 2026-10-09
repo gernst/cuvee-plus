@@ -22,9 +22,9 @@ method main() {
   }
   i := 0;
   while i < 100000 {
-    havoc c;
+    c := *;
     if c != 0 {
-      havoc k;
+      k := *;
       assume -32768 <= k <= 32767;
       a := a[i := k];
       b := b[i := k * k];

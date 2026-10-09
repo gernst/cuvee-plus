@@ -9,7 +9,7 @@ method main() {
   var n: int;
   var x: array<int, int>;
   var i: int;
-  havoc n;
+  n := *;
   assume 0 <= n <= 1000;
   i := 0;
   while i < n {

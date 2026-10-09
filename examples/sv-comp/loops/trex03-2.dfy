@@ -19,21 +19,21 @@ method main() returns (result: int) {
       d3: int,
       c1: bool,
       c2: bool;
-    havoc tmp₁;
+    tmp₁ := *;
     assume 0 <= tmp₁;
     x1 := tmp₁;
-    havoc tmp₂;
+    tmp₂ := *;
     assume 0 <= tmp₂;
     x2 := tmp₂;
-    havoc tmp₃;
+    tmp₃ := *;
     assume 0 <= tmp₃;
     x3 := tmp₃;
     d1 := 1;
     d2 := 1;
     d3 := 1;
-    havoc tmp₄;
+    tmp₄ := *;
     c1 := tmp₄;
-    havoc tmp₅;
+    tmp₅ := *;
     c2 := tmp₅;
     while x1 > 0 && x2 > 0 && x3 > 0 {
       if c1 {
@@ -43,8 +43,8 @@ method main() returns (result: int) {
       } else {
         x3 := x3 - d3;
       }
-      havoc c1;
-      havoc c2;
+      c1 := *;
+      c2 := *;
     }
     assert x1 == 0 || x2 == 0 || x3 == 0;
     result := 0;

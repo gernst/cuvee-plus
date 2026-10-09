@@ -8,9 +8,9 @@ method main() {
   var i: int;
   var k: int;
   var n: int;
-  havoc i;
-  havoc k;
-  havoc n;
+  i := *;
+  k := *;
+  n := *;
   assume i == 0 && k == 0;
   while i < n {
     i := i + 1;

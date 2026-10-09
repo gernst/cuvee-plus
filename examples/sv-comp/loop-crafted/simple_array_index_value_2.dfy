@@ -29,7 +29,7 @@ method main() {
   var tmp: int;
   index := 0;
   while index < 10000 {
-    havoc tmp;
+    tmp := *;
     assume tmp > index;
     array := array[index := tmp];
     index := index + 1;

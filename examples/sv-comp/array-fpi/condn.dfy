@@ -13,11 +13,11 @@ method main() {
   var i: int;
   var a: array<int, int>;
   var tmp: int;
-  havoc N;
+  N := *;
   assume 0 < N <= 536870911;
   i := 0;
   while i < N {
-    havoc tmp;
+    tmp := *;
     a := a[i := tmp];
     i := i + 1;
   }

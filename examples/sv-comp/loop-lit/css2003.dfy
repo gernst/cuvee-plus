@@ -10,7 +10,7 @@ method main() {
   var k: int;
   i := 1;
   j := 1;
-  havoc k;
+  k := *;
   if !(0 <= k && k <= 1) {
     return;
   }

@@ -15,10 +15,10 @@ method main() {
   var k: int;
   var a: array<int, int>;
   var b: array<int, int>;
-  havoc j;
+  j := *;
   assume j < 10000 && j > -10000;
   k := 0;
-  havoc N;
+  N := *;
   assume N < 10000 && N > -10000;
   i := 0;
   while i < N {

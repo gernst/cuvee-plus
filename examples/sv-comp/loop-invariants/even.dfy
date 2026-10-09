@@ -9,10 +9,10 @@ method main() {
   var x: int;
   var b: int;
   x := 0;
-  havoc b;
+  b := *;
   while b != 0 {
     x := x + 2;
-    havoc b;
+    b := *;
   }
   assert x % 2 == 0;
 }

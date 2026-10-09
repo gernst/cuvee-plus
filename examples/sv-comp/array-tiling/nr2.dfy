@@ -12,7 +12,7 @@ method main() {
   var j: int;
   var MINVAL: int;
   var a: array<int, int>;
-  havoc C;
+  C := *;
   if C > 1 {
     MINVAL := 2;
     if C % 2 != 0 {

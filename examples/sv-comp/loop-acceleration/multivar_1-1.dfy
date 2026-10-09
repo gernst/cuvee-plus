@@ -8,7 +8,7 @@
 method main() {
   var x: int;
   var y: int;
-  havoc x;
+  x := *;
   assume 0 <= x;
   y := x;
   while x < 1024 {

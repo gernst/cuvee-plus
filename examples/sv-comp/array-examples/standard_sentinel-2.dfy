@@ -30,11 +30,11 @@ method main() {
   var pos: int;
   var i: int;
   var tmp: int;
-  havoc marker;
-  havoc pos;
+  marker := *;
+  pos := *;
   i := 0;
   while i < 100000 {
-    havoc tmp;
+    tmp := *;
     a := a[i := tmp];
     i := i + 1;
   }

@@ -15,7 +15,7 @@ method main() {
   i := 0;
   j := 0;
   while j < 100000 {
-    havoc v;
+    v := *;
     src := src[j := v];
     j := j + 1;
   }

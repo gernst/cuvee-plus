@@ -10,7 +10,7 @@ method main() {
   var i: int;
   var a: array<int, int>;
   var b: array<int, int>;
-  havoc N;
+  N := *;
   assume 0 < N <= 536870911;
   b := b[0 := 1];
   a := a[0 := 1];

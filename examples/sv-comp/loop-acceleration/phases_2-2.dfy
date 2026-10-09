@@ -11,7 +11,7 @@ method main() {
   var x: int;
   var y: int;
   x := 1;
-  havoc y;
+  y := *;
   assume y >= 0;
   if !(y > 0) {
     return;

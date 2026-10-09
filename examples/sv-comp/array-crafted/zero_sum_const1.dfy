@@ -10,7 +10,7 @@ method main() {
   var i: int;
   var sum: int;
   var a: array<int, int>;
-  havoc S;
+  S := *;
   if S > 1 && S < 100000 {
     sum := 0;
     i := 0;

@@ -38,11 +38,11 @@ method main() {
   z := 150000;
   i := 0;
   while i < N {
-    havoc v;
+    v := *;
     a1 := a1[i := v];
-    havoc v;
+    v := *;
     a2 := a2[i := v];
-    havoc v;
+    v := *;
     a3 := a3[i := v];
     i := i + 1;
   }

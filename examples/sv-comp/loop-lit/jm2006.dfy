@@ -10,8 +10,8 @@ method main() {
   var j: int;
   var x: int;
   var y: int;
-  havoc i;
-  havoc j;
+  i := *;
+  j := *;
   assume i >= 0 && j >= 0;
   x := i;
   y := j;

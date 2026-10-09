@@ -12,8 +12,8 @@
 method main() {
   var x: int;
   var y: int;
-  havoc x;
-  havoc y;
+  x := *;
+  y := *;
   assume x == y && y >= 0;
   while x != 0 {
     x := x - 1;

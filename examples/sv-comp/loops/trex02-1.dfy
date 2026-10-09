@@ -22,12 +22,12 @@ method main() returns (result: int)
 {
   var tmp₁: bool;
   {
-    havoc x;
+    x := *;
     while x > 0
       modifies x
     {
       var c: bool;
-      havoc tmp₁;
+      tmp₁ := *;
       c := tmp₁;
       if c {
         foo();

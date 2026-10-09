@@ -9,9 +9,9 @@ method main() returns (result: int) {
   var tmp₁: int, tmp₂: int, tmp₃: bool;
   {
     var x: int, z: int;
-    havoc tmp₁;
+    tmp₁ := *;
     x := tmp₁;
-    havoc tmp₂;
+    tmp₂ := *;
     z := tmp₂;
     if !(x > -100) {
       result := 0;
@@ -31,7 +31,7 @@ method main() returns (result: int) {
     }
     while x < 100 && z > 100 {
       var tmp: bool;
-      havoc tmp₃;
+      tmp₃ := *;
       tmp := tmp₃;
       if tmp {
         x := x + 1;

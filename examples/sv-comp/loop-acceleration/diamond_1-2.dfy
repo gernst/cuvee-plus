@@ -24,7 +24,7 @@ method main() {
   var x: int;
   var y: int;
   x := 0;
-  havoc y;
+  y := *;
   assume 0 <= y;
   while x < 99 {
     if y % 2 == 0 {

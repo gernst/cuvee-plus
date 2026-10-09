@@ -692,6 +692,9 @@ class Parser(var state: State):
         val body_ = resolve(scope_, body)
         state.exprs.let(bound_, args_, body_)
 
+      case Star =>
+        Error.raise("* outside of the right-hand side of an assignment")
+
       case _ =>
         Error.raise("unknown expression", expr)
 
@@ -718,8 +721,20 @@ class Parser(var state: State):
         val phi_ = resolve(scope, phi)
         state.progs.assert(phi_)
 
-      case Havoc(names) =>
-        state.progs.havoc(vars(scope, names, "unknown variables"))
+      // the variables assigned * are havocked after the parallel assignment of the others,
+      // which are disjoint, such that the other right-hand sides read the values before the assignment
+      case Assign(lhs, rhs) if rhs.contains(Star) =>
+        Error.report("mismatching assignment", lhs, rhs):
+          require(lhs.length == rhs.length)
+
+        val (stars, others) = (lhs zip rhs).partition(_._2 == Star)
+        Error.report("arbitrary values of elements are not supported", stars.map(_._1.name)):
+          require(stars.forall(_._1.indices.isEmpty))
+
+        val havoc = state.progs.havoc(vars(scope, stars.map(_._1.name), "unknown local variables"))
+        if others.isEmpty
+        then havoc
+        else state.progs.block(Nil, List(resolve(scope, Assign(others.map(_._1), others.map(_._2))), havoc))
 
       // calls to top-level methods, with or without results
       case Assign(lhs, List(Inner(App(name, args), Nil))) if state.procs.contains(name) =>

@@ -19,16 +19,16 @@ method main() {
   var b: int;
   var c: int;
   s := 0;
-  havoc b;
+  b := *;
   while b != 0 {
     if s != 0 {
       s := s + 1;
     }
-    havoc c;
+    c := *;
     if c != 0 {
       assert s == 0;
     }
-    havoc b;
+    b := *;
   }
 }
 

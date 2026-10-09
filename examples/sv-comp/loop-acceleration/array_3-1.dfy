@@ -12,7 +12,7 @@ method main() {
   var tmp: int;
   i := 0;
   while i < 1024 {
-    havoc tmp;
+    tmp := *;
     A := A[i := tmp];
     i := i + 1;
   }

@@ -18,7 +18,7 @@ method main() {
   N := 1000000;
   j := 0;
   k := 0;
-  havoc lim;
+  lim := *;
   R := 1;
   assume 0 < lim && lim < N / R;
   i := 0;

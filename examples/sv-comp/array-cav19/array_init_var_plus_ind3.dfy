@@ -44,7 +44,7 @@ method main() {
   j := 0;
   i := 0;
   while i < N {
-    havoc x;
+    x := *;
     if x != 0 {
       break;
     }

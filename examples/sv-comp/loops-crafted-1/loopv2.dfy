@@ -16,7 +16,7 @@ method main() returns (result: int)
   SIZE := 50000001;
   {
     var n: int, i: int, j: int, k: int;
-    havoc n;
+    n := *;
     if !(n <= SIZE) {
       result := 0;
       return;

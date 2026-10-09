@@ -18,11 +18,11 @@ method main() {
   var j: int;
   var x: int;
   var tmp: int;
-  havoc e;
+  e := *;
   i := 0;
   j := 0;
   while j < 100000 {
-    havoc tmp;
+    tmp := *;
     a := a[j := tmp];
     j := j + 1;
   }

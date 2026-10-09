@@ -10,15 +10,15 @@ method main() {
   var y: int;
   var z: int;
   var b: int;
-  havoc w;
+  w := *;
   x := w;
   y := w + 1;
   z := x + 1;
-  havoc b;
+  b := *;
   while b != 0 {
     y := y + 1;
     z := z + 1;
-    havoc b;
+    b := *;
   }
   assert y == z;
 }

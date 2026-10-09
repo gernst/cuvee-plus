@@ -10,7 +10,7 @@ method main() {
   var S: int;
   var i: int;
   var a: array<int, int>;
-  havoc S;
+  S := *;
   if S > 1 && S < 100000 {
     i := S - 2;
     while i >= -1 {

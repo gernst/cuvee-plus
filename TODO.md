@@ -7,11 +7,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 - make all dafny sv-comp examples unbounded
 - switch Dafny lemma syntax
+- look at cyclic rewrite rules
 - support verifying trace lemmas in Dafny
 - add Lean printer
 - identify performance improvements, notably in the simplifier
-- look at cyclic rewrite rules
-- benchmark.xml and toolinfo module
 
 ## Cycle through the contexts of iterations
 

@@ -47,13 +47,13 @@ method main() {
   var v: int;
   var s: int;
   var i: int;
-  havoc n;
+  n := *;
   assume 0 < n <= 4294967295;
   v := 0;
   s := 0;
   i := 0;
   while i < n {
-    havoc v;
+    v := *;
     assume 0 <= v <= 4294967295;
     s := s + v;
     i := i + 1;

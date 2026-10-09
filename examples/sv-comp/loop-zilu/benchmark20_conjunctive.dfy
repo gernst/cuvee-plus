@@ -14,11 +14,11 @@ method main() returns (result: int) {
   var tmp₁: int, tmp₂: int, tmp₃: int;
   {
     var i: int, n: int, sum: int;
-    havoc tmp₁;
+    tmp₁ := *;
     i := tmp₁;
-    havoc tmp₂;
+    tmp₂ := *;
     n := tmp₂;
-    havoc tmp₃;
+    tmp₃ := *;
     sum := tmp₃;
     if !(i == 0 && n >= 0 && n <= 100 && sum == 0) {
       result := 0;

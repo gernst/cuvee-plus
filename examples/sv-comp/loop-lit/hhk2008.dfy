@@ -10,8 +10,8 @@ method main() {
   var b: int;
   var res: int;
   var cnt: int;
-  havoc a;
-  havoc b;
+  a := *;
+  b := *;
   assume a <= 1000000;
   assume 0 <= b <= 1000000;
   res := a;

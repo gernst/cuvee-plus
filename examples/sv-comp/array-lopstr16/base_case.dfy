@@ -26,7 +26,7 @@ method main() {
   var p: array<int, bool>;
   i := 0;
   while i < 1000000 {
-    havoc x;
+    x := *;
     n := n[i := x];
     if x == 0 {
       p := p[i := true];

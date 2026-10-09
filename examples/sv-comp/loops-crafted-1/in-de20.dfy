@@ -10,7 +10,7 @@ method main() {
   var x: int;
   var y: int;
   var z: int;
-  havoc n;
+  n := *;
   assume 0 <= n;
   x := n;
   y := 0;

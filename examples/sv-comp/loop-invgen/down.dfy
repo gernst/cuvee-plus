@@ -12,7 +12,7 @@ method main() {
   var j: int;
   k := 0;
   i := 0;
-  havoc n;
+  n := *;
   while i < n {
     i := i + 1;
     k := k + 1;

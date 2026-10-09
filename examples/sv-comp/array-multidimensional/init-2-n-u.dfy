@@ -19,7 +19,7 @@ method main() {
   var A: array<int, array<int, int>>;
   m := 1000;
   n := 1500;
-  havoc C;
+  C := *;
   i := 0;
   while i < m {
     j := 0;

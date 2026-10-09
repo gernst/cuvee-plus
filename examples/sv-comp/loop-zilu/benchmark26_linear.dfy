@@ -9,9 +9,9 @@ method main() returns (result: int) {
   var tmp₁: int, tmp₂: int;
   {
     var x: int, y: int;
-    havoc tmp₁;
+    tmp₁ := *;
     x := tmp₁;
-    havoc tmp₂;
+    tmp₂ := *;
     y := tmp₂;
     if !(x < y) {
       result := 0;

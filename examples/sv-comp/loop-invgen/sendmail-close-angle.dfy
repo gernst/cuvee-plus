@@ -15,15 +15,15 @@ method main() {
   var buf: int;
   var buflim: int;
   var b: int;
-  havoc inlen;
-  havoc bufferlen;
+  inlen := *;
+  bufferlen := *;
   if !(bufferlen > 1 && inlen > 0 && bufferlen < inlen) {
     return;
   }
   buf := 0;
   inp := 0;
   buflim := bufferlen - 2;
-  havoc b;
+  b := *;
   while b != 0 {
     if buf == buflim {
       break;
@@ -34,7 +34,7 @@ method main() {
     inp := inp + 1;
     assert 0 <= inp;
     assert inp < inlen;
-    havoc b;
+    b := *;
   }
   assert 0 <= buf;
   assert buf < bufferlen;

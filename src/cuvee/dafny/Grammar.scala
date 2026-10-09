@@ -118,6 +118,10 @@ object Grammar:
   val exprs =
     P(expr ~+ ",")
 
+  // the right-hand sides of assignments and initializers, which may be * for arbitrary values
+  val rhss =
+    P(("*".map(Star) | expr) ~+ ",")
+
   val elems =
     P(expr ~* ",")
 
@@ -299,20 +303,17 @@ object Grammar:
   val assert =
     Assert(P("assert" ~ expr ~ ";"))
 
-  val havoc =
-    Havoc(P("havoc" ~ (id ~+ ",") ~ ";"))
-
   val spec =
-    P(assume | assert | havoc)
+    P(assume | assert)
 
   val local =
-    Local(P("var" ~ vars ~ (":=" ~ exprs).? ~ ";"))
+    Local(P("var" ~ vars ~ (":=" ~ rhss).? ~ ";"))
 
   val lhs =
     Lhs(P(id ~ brackets(expr).*))
 
   val assign =
-    Assign(P((lhs ~+ ",") ?~ ":=" ~ exprs ~ ";"))
+    Assign(P((lhs ~+ ",") ?~ ":=" ~ rhss ~ ";"))
 
   val call =
     Assign(P(nil ?~ list(inner) ~ ";"))

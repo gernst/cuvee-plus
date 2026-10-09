@@ -16,7 +16,7 @@ method main() {
   var array: array<int, int>;
   i := 0;
   while i < 100000 {
-    havoc v;
+    v := *;
     array := array[i := v];
     i := i + 1;
   }

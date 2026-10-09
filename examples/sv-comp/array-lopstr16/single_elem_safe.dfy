@@ -48,7 +48,7 @@ method main() {
   var p: array<int, bool>;
   i := 0;
   while i < 1000000 {
-    havoc q;
+    q := *;
     if q == 0 {
       s := s[i := true];
       n := n[i := q % 2];
@@ -62,8 +62,8 @@ method main() {
     }
     i := i + 1;
   }
-  havoc v;
-  havoc w;
+  v := *;
+  w := *;
   s := s[3 := true];
   n := n[3 := v];
   p := p[3 := w];

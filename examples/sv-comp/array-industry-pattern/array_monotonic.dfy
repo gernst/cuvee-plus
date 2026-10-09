@@ -34,7 +34,7 @@ method main() {
   var tmp: int;
   i := 0;
   while i < 100000 {
-    havoc tmp;
+    tmp := *;
     a := a[i := tmp];
     if a[i] == 10 {
       b := b[i := 20];

@@ -42,9 +42,9 @@ method main() {
   result := 1;
   i := 0;
   while i < 100000 {
-    havoc v;
+    v := *;
     password := password[i := v];
-    havoc v;
+    v := *;
     guess := guess[i := v];
     i := i + 1;
   }

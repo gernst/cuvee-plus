@@ -18,11 +18,11 @@ method main() {
   var found: int;
   var vectorx: array<int, int>;
   n := 100000;
-  havoc element;
+  element := *;
   found := 0;
   i := 0;
   while i < n {
-    havoc v;
+    v := *;
     vectorx := vectorx[i := v];
     i := i + 1;
   }

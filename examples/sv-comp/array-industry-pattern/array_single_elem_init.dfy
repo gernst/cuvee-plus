@@ -13,7 +13,7 @@ method main() {
   var c: array<int, int>;
   i := 0;
   while i < 100000 {
-    havoc q;
+    q := *;
     a := a[i := 0];
     if q == 0 {
       a := a[i := 1];

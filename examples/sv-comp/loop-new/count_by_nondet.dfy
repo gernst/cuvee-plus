@@ -42,7 +42,7 @@ method main() {
   i := 0;
   k := 0;
   while i < 1000000 {
-    havoc j;
+    j := *;
     assume 1 <= j < 1000000;
     i := i + j;
     k := k + 1;

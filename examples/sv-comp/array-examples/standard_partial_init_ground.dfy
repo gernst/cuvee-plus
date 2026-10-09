@@ -21,9 +21,9 @@ method main() {
   j := 0;
   i := 0;
   while i < 100000 {
-    havoc tmp;
+    tmp := *;
     A := A[i := tmp];
-    havoc tmp;
+    tmp := *;
     B := B[i := tmp];
     i := i + 1;
   }

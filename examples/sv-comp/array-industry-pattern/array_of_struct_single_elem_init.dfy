@@ -35,8 +35,8 @@ method main() {
   var p: array<int, int>;
   i := 0;
   while i < 100000 {
-    havoc q;
-    havoc x;
+    q := *;
+    x := *;
     if x == 0 {
       p := p[i := 10];
     } else {

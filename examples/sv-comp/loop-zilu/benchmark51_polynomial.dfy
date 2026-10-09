@@ -14,9 +14,9 @@
 method main() {
   var x: int;
   var c: int;
-  havoc x;
+  x := *;
   assume x >= 0 && x <= 50;
-  havoc c;
+  c := *;
   while c != 0 {
     if x > 50 {
       x := x + 1;
@@ -26,7 +26,7 @@ method main() {
     } else {
       x := x - 1;
     }
-    havoc c;
+    c := *;
   }
   assert x >= 0 && x <= 50;
 }

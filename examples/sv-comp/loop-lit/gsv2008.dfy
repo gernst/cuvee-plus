@@ -10,7 +10,7 @@ method main() {
   var x: int;
   var y: int;
   x := -50;
-  havoc y;
+  y := *;
   assume -1000 < y < 1000000;
   while x < 0 {
     x := x + y;

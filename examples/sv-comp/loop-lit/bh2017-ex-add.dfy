@@ -18,8 +18,8 @@ method main() {
   while true {
     assert m <= 60;
     assert n <= 60;
-    havoc b;
-    havoc c;
+    b := *;
+    c := *;
     if b != 0 && c != 0 {
       if m < 60 {
         m := m + 1;
@@ -28,8 +28,8 @@ method main() {
         m := 0;
       }
     }
-    havoc b;
-    havoc c;
+    b := *;
+    c := *;
     if b != 0 && c != 0 {
       if n < 60 {
         n := n + 1;

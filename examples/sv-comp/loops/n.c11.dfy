@@ -26,7 +26,7 @@ method main() returns (result: int) {
     var a: array<int, int>, len: int, i: int;
     len := 0;
     while true {
-      havoc tmp₁;
+      tmp₁ := *;
       if !tmp₁ {
         break;
       }

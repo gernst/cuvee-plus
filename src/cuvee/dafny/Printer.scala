@@ -360,7 +360,7 @@ object Printer extends cuvee.pipe.Printer:
         Group(text("assert") ~ Nest(2, line ~ doc(phi))) ~ text(";")
 
       case Spec(xs, True, True) =>
-        Group(text("havoc") ~ Nest(2, line ~ commas(xs.map(doc(_))))) ~ text(";")
+        Group(commas(xs.map(doc(_))) ~~ text(":=") ~ Nest(2, line ~ commas(xs.map(_ => text("*"))))) ~ text(";")
 
       case Spec(xs, pre, post) =>
         val head = if xs.isEmpty then text("spec") else text("spec") ~~ commas(xs.map(doc(_)))

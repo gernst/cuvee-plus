@@ -12,12 +12,12 @@ method main() {
   var i: int;
   var j: int;
   var c: int;
-  havoc n;
+  n := *;
   assume n <= 50000001;
   i := 0;
   j := 0;
   while i < n {
-    havoc c;
+    c := *;
     if c != 0 {
       i := i + 6;
     } else {

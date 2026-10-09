@@ -9,7 +9,7 @@ method main() {
   var a: array<int, int>;
   var sum: int;
   var i: int;
-  havoc N;
+  N := *;
   assume 0 < N <= 536870911;
   sum := 0;
   i := 0;

@@ -14,7 +14,7 @@ method main() {
   var j: int;
   var k: int;
   var l: int;
-  havoc n;
+  n := *;
   assume 0 <= n <= 20000001;
   i := 0;
   j := 0;

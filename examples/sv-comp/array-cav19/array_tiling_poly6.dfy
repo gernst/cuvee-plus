@@ -8,7 +8,7 @@ method main() {
   var S: int;
   var i: int;
   var a: array<int, int>;
-  havoc S;
+  S := *;
   assume S > 1;
   i := 0;
   while i < S {

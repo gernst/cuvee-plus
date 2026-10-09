@@ -10,10 +10,10 @@ method main() {
   var num: int;
   var v: int;
   var array: array<int, int>;
-  havoc num;
+  num := *;
   i := 0;
   while i < num {
-    havoc v;
+    v := *;
     array := array[i := v];
     i := i + 1;
   }

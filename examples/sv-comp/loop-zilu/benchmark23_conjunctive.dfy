@@ -7,8 +7,8 @@
 method main() {
   var i: int;
   var j: int;
-  havoc i;
-  havoc j;
+  i := *;
+  j := *;
   assume i == 0 && j == 0;
   while i < 100 {
     j := j + 2;

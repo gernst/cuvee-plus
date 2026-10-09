@@ -6,7 +6,7 @@
 
 method main() {
   var x: int;
-  havoc x;
+  x := *;
   assume x >= 0;
   while x < 100 && x >= 0 {
     x := x + 1;

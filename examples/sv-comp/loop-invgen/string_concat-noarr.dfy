@@ -11,20 +11,20 @@ method main() {
   var j: int;
   var b: int;
   i := 0;
-  havoc b;
+  b := *;
   while b != 0 && i < 1000000 {
     i := i + 1;
-    havoc b;
+    b := *;
   }
   if i >= 100 {
     assume false;
   }
   j := 0;
-  havoc b;
+  b := *;
   while b != 0 && i < 1000000 {
     i := i + 1;
     j := j + 1;
-    havoc b;
+    b := *;
   }
   if j >= 100 {
     assume false;

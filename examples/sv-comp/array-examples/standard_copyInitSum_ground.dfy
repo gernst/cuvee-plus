@@ -13,7 +13,7 @@ method main() {
   var incr: int;
   var i: int;
   var x: int;
-  havoc incr;
+  incr := *;
   i := 0;
   while i < 100000 {
     a := a[i := 42];

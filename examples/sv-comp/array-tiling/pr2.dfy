@@ -15,9 +15,9 @@ method main() {
   var V2: int;
   var V1: int;
   var a: array<int, int>;
-  havoc C;
+  C := *;
   if C > 1 {
-    havoc MINVAL;
+    MINVAL := *;
     V2 := 3;
     V1 := 1;
     if C % 2 != 0 {

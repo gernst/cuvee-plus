@@ -33,7 +33,7 @@ method main() {
   var b: array<int, int>;
   var c: array<int, int>;
   var i: int;
-  havoc N;
+  N := *;
   assume 0 < N <= 536870911;
   i := 0;
   while i < N {

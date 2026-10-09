@@ -15,7 +15,7 @@ and the number of remaining goals (`error` if the run reports an error).
 three minutes). The test suite `SVComp` checks them only if the environment
 variable `CUVEE_SVCOMP` is set.
 
-- `__VERIFIER_nondet_*()` is `havoc x;`, which the Dafny frontend now parses.
+- `__VERIFIER_nondet_*()` is `x := *;`, an arbitrary value.
 - Simple integer programs (`loop-new/count_by_1`, `loop-zilu`) are
   translated by the C frontend, `./Cuvee.sh -print dfy <task>.yml`, which
   keeps the temporaries of the nondeterministic values and the result of

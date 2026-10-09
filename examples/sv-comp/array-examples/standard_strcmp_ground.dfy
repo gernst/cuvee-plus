@@ -38,9 +38,9 @@ method main() {
   var b: array<int, int>;
   i := 0;
   while i < 100000 {
-    havoc v;
+    v := *;
     a := a[i := v];
-    havoc v;
+    v := *;
     b := b[i := v];
     i := i + 1;
   }

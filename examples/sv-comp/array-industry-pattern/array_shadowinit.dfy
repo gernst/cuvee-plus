@@ -10,7 +10,7 @@ method main() {
   var a: array<int, int>;
   var i: int;
   var k: int;
-  havoc N;
+  N := *;
   if N > 0 {
     i := 0;
     k := 0;

@@ -12,7 +12,7 @@ method main() returns (result: int) {
     i := 0;
     x := 0;
     y := 0;
-    havoc tmp₁;
+    tmp₁ := *;
     n := tmp₁;
     if !(n > 0) {
       result := 0;

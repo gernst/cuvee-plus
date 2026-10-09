@@ -12,7 +12,7 @@ method main() {
   var n: int;
   var sum: int;
   var i: int;
-  havoc n;
+  n := *;
   assume 1 <= n <= 1000;
   sum := 0;
   i := 1;

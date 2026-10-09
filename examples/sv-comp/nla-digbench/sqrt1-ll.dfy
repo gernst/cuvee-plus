@@ -18,7 +18,7 @@ method assume_abort_if_not(cond: int) {
 method main() returns (result: int) {
   {
     var n: int, a: int, s: int, t: int;
-    havoc n;
+    n := *;
     a := 0;
     s := 1;
     t := 1;

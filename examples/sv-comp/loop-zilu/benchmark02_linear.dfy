@@ -9,11 +9,11 @@ method main() returns (result: int) {
   var tmp₁: int, tmp₂: int, tmp₃: int;
   {
     var n: int, i: int, l: int;
-    havoc tmp₁;
+    tmp₁ := *;
     n := tmp₁;
-    havoc tmp₂;
+    tmp₂ := *;
     i := tmp₂;
-    havoc tmp₃;
+    tmp₃ := *;
     l := tmp₃;
     i := l;
     if !(l > 0) {

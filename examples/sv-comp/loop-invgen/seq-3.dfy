@@ -16,8 +16,8 @@ method main() {
   var k: int;
   i0 := 0;
   k := 0;
-  havoc n0;
-  havoc n1;
+  n0 := *;
+  n1 := *;
   assume -1000000 <= n0 < 1000000;
   assume -1000000 <= n1 < 1000000;
   while i0 < n0 {

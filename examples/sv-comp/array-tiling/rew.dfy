@@ -26,7 +26,7 @@ method main() {
   var S: int;
   var i: int;
   var a: array<int, int>;
-  havoc S;
+  S := *;
   if S > 1 && S < 100000 {
     i := 0;
     while i < S {

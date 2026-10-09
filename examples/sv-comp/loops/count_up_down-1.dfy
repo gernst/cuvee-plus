@@ -8,7 +8,7 @@ method main() {
   var n: int;
   var x: int;
   var y: int;
-  havoc n;
+  n := *;
   assume 0 <= n;
   x := n;
   y := 0;

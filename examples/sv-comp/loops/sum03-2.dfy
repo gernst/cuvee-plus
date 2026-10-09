@@ -9,10 +9,10 @@ method main() returns (result: int) {
   {
     var sn: int, loop1: int, n1: int, x: int;
     sn := 0;
-    havoc tmp₁;
+    tmp₁ := *;
     assume 0 <= tmp₁;
     loop1 := tmp₁;
-    havoc tmp₂;
+    tmp₂ := *;
     assume 0 <= tmp₂;
     n1 := tmp₂;
     x := 0;

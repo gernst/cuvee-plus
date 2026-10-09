@@ -14,13 +14,13 @@ method main() {
   var z: int;
   var b: int;
   var c: int;
-  havoc w;
+  w := *;
   x := w;
-  havoc y;
+  y := *;
   z := y;
-  havoc b;
+  b := *;
   while b != 0 {
-    havoc c;
+    c := *;
     if c != 0 {
       w := w + 1;
       x := x + 1;
@@ -28,7 +28,7 @@ method main() {
       y := y - 1;
       z := z - 1;
     }
-    havoc b;
+    b := *;
   }
   assert w == x && y == z;
 }
