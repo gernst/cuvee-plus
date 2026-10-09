@@ -61,6 +61,31 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   Remedies: prefer to solve for the variable that occurs in fewer definitions (`sum₄₀`), or reject a rewrite whose
   result contains the rewritten term (`Rewrite.apply`). Also non-terminating, not analysed yet:
   [add-3-n-u](examples/sv-comp/array-multidimensional/add-3-n-u.dfy), `copy-partial-3-u`, `diff-3-n-u`.
+- A cycle through a side condition: `sum_invs_const` of teq.dfy has the left-hand side `sum(js)`, which matches
+  every sum, and the side condition `invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)`, open in `n` and `c`,
+  which `Rewrite.conditions` simplifies before it searches the facts. For `js` a term like
+  `prefix(natural(k), maps(...))`, that builds the contexts of combinators with their iterations, whose reads of
+  the dependencies produce new sums, on which `sum_invs_const` is tried again, until the budget is exhausted; e.g.
+  [ps2-ll.dfy](examples/sv-comp/nla-digbench/ps2-ll.dfy) repeats the same reads about 117 times and terminates
+  after 48 steps without the lemma; likewise ps3-ll to ps6-ll, cohencu-ll, cohendiv-ll, for_bounded_loop1,
+  copy-3-n-u, diff-2-n-u (13 of the 16 errors of the Dafny translations at 0.34.22). Remedies:
+  1. A reentrance guard for conditional rules: while the side condition of a rule is decided, the rule is not
+     applied inside, e.g. a set of such rules in the context that `Rewrite.apply` skips; this cuts the recursion
+     for all conditional rules, and loses only side conditions that need the same rule again.
+  2. Open side conditions that contain combinators are only substituted, not simplified, before they are searched
+     among the facts, which are simplified already; simplification is needed for normalization elsewhere, e.g.
+     beta reduction after a higher-order match, hence only for combinators.
+  3. A separate budget for side conditions, whose exhaustion leaves the condition undecided, such that the rule
+     does not apply instead of aborting the command: a safety net, which turns errors into open goals.
+
+  Not remedies, measured on the Dafny translations: stating the lemma as the definition
+  `invs(... j == c) <==> js == ⌊consts(n, c)⌋` rewrites the `invs` facts that `Simplify.invariants` uses
+  pointwise; recording the counters that the context iterates over and not injecting their invariants again
+  (`Context.iterating`) ends bresenham-ll only; not renaming the bound variables of combinators, with binders
+  that shadow those of the context (`Context.bind` hiding the facts about them), makes the terms stable across
+  rounds, but the repetitions above remain, and it closes nothing (241 against 243 true, within the noise).
+  The injection of 7b420a0, all invariants over the counter of a loop pointwise with `earlier(natural(k), Z)`, made
+  the nested reads recurse further (19 errors), and is reverted in 0.34.23.
 - [sanfoundry_02_ground.dfy](examples/sv-comp/array-examples/sanfoundry_02_ground.dfy) times out (60 s), on the trace
   of the two largest elements, whose updates read the array at the counter from 2.
 - `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on

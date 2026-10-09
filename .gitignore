@@ -7,3 +7,7 @@ cuvee.jar
 .metals/
 .vscode/*
 !.vscode/launch.json
+
+# benchmark results and the SV-COMP tasks, which are cloned separately
+results/
+sv-benchmarks

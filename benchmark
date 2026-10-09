@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/home/ernst/Tools/benchexec/contrib/vcloud-benchmark.py --no-container --vcloudMaster localhost "$@"
