@@ -468,17 +468,17 @@ lemma {:rw} {:teq} current_counts<a>(x: int, e: a, vs: List<a>)
 // at least b
 // (from Mono1_1-2, phases_1-1, phases_1-2)
 lemma {:rw} {:teq} current_trace_two_phases(x0: int, n: Nat, b: int, c: int)
-  ensures if x0 <= b && 0 <= c
-    then current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c))
-           == if integer(n) <= b - x0 then x0 + integer(n) else b + (integer(n) - (b - x0)) * c
+  requires x0 <= b && 0 <= c
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c))
+    == if integer(n) <= b - x0 then x0 + integer(n) else b + (integer(n) - (b - x0)) * c
 
 // a follower: y increases by 1 whenever it does not exceed the value x of a counter with step 1, hence y is the
 // larger of its initial value and the final value of x, given that it starts at least at x
 // (from benchmark05_conjunctive)
 lemma {:rw} {:teq} current_trace_catch_up(y0: int, x0: int, n: Nat)
-  ensures if x0 <= y0
-    then current(trace(y0, for ⌊counter(0, 1, n)⌋, ⌊counter(x0, 1, n)⌋ do y, k, x :: case y <= x => y + 1 case x < y => y))
-           == if x0 + integer(n) <= y0 then y0 else x0 + integer(n)
+  requires x0 <= y0
+  ensures current(trace(y0, for ⌊counter(0, 1, n)⌋, ⌊counter(x0, 1, n)⌋ do y, k, x :: case y <= x => y + 1 case x < y => y))
+    == if x0 + integer(n) <= y0 then y0 else x0 + integer(n)
 
 // a flag, initially x0, that is set to c whenever D holds, is x0 at the end iff D never held, otherwise c
 // (from standard_compare_ground)
@@ -499,13 +499,13 @@ lemma {:rw} {:teq} current_trace_mod(x0: int, n: Nat, a: int, b: int, m: int, hs
     == x0 % m
 
 // a sum that is set to c in the first iteration and adds G(i) in the others is c plus the sum of G over 1, ..., n - 1,
-// stated as G(k + 1) over 0, ..., n - 2, since the context of a map knows the range of counter(0, 1, n) only;
-// a conditional rather than a match on n, whose condition the simplifier decides by the value of integer(n)
+// stated over the same iterations 0, ..., n - 1 with G(k) for 0 < k only, which the context of the map decides, rather
+// than over a new length n - 1; a conditional on n, which the simplifier decides by the value of integer(n)
 // (from brs1, brs1f, ms1, ms1f)
 lemma {:rw} {:teq} current_trace_reset_add(x0: int, n: Nat, c: int, G: (int) -> int)
   ensures
     current(trace(x0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do x, k, i :: case i == 0 => c case i != 0 => G(i) + x))
-      == if n == zero then x0 else c + sum(maps(for ⌊counter(0, 1, natural(integer(n) - 1))⌋ yield k :: G(k + 1)))
+      == if n == zero then x0 else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0))
 
 // earlier
 
@@ -681,9 +681,9 @@ lemma {:rw} {:teq} earlier_stores<a, b>(k: a, j: Nat, a: array<a, b>, keys: List
     == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
 
 lemma {:rw} {:teq} current_shifts(a: array<int, int>, n: Nat, i: int, d: int, k: int)
-  ensures if 0 <= d
-    then current(shifts(a, ⌊counter(i, 1, n)⌋, d))[k]
-           == if i <= k < i + integer(n) then a[k + d] else a[k]
+  requires 0 <= d
+  ensures current(shifts(a, ⌊counter(i, 1, n)⌋, d))[k]
+    == if i <= k < i + integer(n) then a[k + d] else a[k]
 
 // stores at the positions of a counter, guarded by C, keep the other positions; a read at j
 // (from copysome1-1, copysome1-2)
@@ -708,12 +708,12 @@ lemma {:rw} {:teq} current_trace_conditional_store_deps(a0: array<int, int>, n: 
 // (from array_monotonic)
 lemma {:rw} {:teq} current_trace_conditional_store_distinct(a0: array<int, int>, n: Nat, j: int, ps: List<int>,
                                                             cs: List<int>, C: (int, int) -> bool, V: (int, int) -> int)
-  ensures if distincts(ps)
-    then current(trace(a0, for ⌊counter(0, 1, n)⌋, ps, cs do a, k, p, c ::
-                         case C(p, c) => a[p := V(p, c)] case !C(p, c) => a))[j]
-           == if occurs(j, ps) && C(j, earlier(indexof(j, ps), cs))
-              then V(j, earlier(indexof(j, ps), cs))
-              else a0[j]
+  requires distincts(ps)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, ps, cs do a, k, p, c ::
+                          case C(p, c) => a[p := V(p, c)] case !C(p, c) => a))[j]
+    == if occurs(j, ps) && C(j, earlier(indexof(j, ps), cs))
+       then V(j, earlier(indexof(j, ps), cs))
+       else a0[j]
 
 // a clamp of each element to b, where the guard reads the initial element, since each position is written in its own
 // iteration only; a generic guard C(a[k], k) is no pattern, and C(a, k) would read other positions
@@ -769,19 +769,33 @@ lemma {:rw} {:teq} sum_counter(i: int, c: int, n: Nat)
   ensures sum(⌊counter(i, c, n)⌋)
     == (2 * i + (integer(n) - 1) * c) * integer(n) / 2
 
+// a sum of indicators, 1 where a condition holds and 0 otherwise, is the number of values where it holds, which the
+// lemmas on counts evaluate; for one dependency and for two, as in loops with a choice
+lemma {:rw} {:teq} sum_indicator_true<a>(xs: List<a>, P: a -> bool)
+  ensures sum(maps(for xs yield x :: if P(x) then 1 else 0)) == count(true, maps(for xs yield x :: P(x)))
+
+lemma {:rw} {:teq} sum_indicator_false<a>(xs: List<a>, P: a -> bool)
+  ensures sum(maps(for xs yield x :: if P(x) then 0 else 1)) == count(false, maps(for xs yield x :: P(x)))
+
+lemma {:rw} {:teq} sum_indicator_true_2<a, b>(xs: List<a>, ys: List<b>, P: (a, b) -> bool)
+  ensures sum(maps(for xs, ys yield x, y :: if P(x, y) then 1 else 0)) == count(true, maps(for xs, ys yield x, y :: P(x, y)))
+
+lemma {:rw} {:teq} sum_indicator_false_2<a, b>(xs: List<a>, ys: List<b>, P: (a, b) -> bool)
+  ensures sum(maps(for xs, ys yield x, y :: if P(x, y) then 0 else 1)) == count(false, maps(for xs, ys yield x, y :: P(x, y)))
+
 lemma {:rw} {:teq} sum_selects_update<a>(a: array<a, int>, k: a, v: int, keys: List<a>)
-  ensures if distincts(keys)
-    then sum(selects(a[k := v], keys))
-           == if occurs(k, keys) then sum(selects(a, keys)) + v - a[k] else sum(selects(a, keys))
+  requires distincts(keys)
+  ensures sum(selects(a[k := v], keys))
+    == if occurs(k, keys) then sum(selects(a, keys)) + v - a[k] else sum(selects(a, keys))
 
 // parity
 
 lemma {:rw} {:teq} parity_selects_update<a>(a: array<a, int>, k: a, v: int, keys: List<a>)
-  ensures if distincts(keys)
-    then parity(selects(a[k := v], keys))
-           == if occurs(k, keys)
-              then parity(selects(a, keys)) + (if v % 2 == 0 then 1 else -1) - (if a[k] % 2 == 0 then 1 else -1)
-              else parity(selects(a, keys))
+  requires distincts(keys)
+  ensures parity(selects(a[k := v], keys))
+    == if occurs(k, keys)
+       then parity(selects(a, keys)) + (if v % 2 == 0 then 1 else -1) - (if a[k] % 2 == 0 then 1 else -1)
+       else parity(selects(a, keys))
 
 // count
 
@@ -791,11 +805,11 @@ lemma {:rw} {:teq} count_consts<a>(n: Nat, e: a, v: a)
 
 // an update of a visited key replaces its contribution, as for sum and parity
 lemma {:rw} {:teq} count_selects_update<a, b>(a: array<a, b>, k: a, w: b, e: b, keys: List<a>)
-  ensures if distincts(keys)
-    then count(e, selects(a[k := w], keys))
-           == if occurs(k, keys)
-              then count(e, selects(a, keys)) + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
-              else count(e, selects(a, keys))
+  requires distincts(keys)
+  ensures count(e, selects(a[k := w], keys))
+    == if occurs(k, keys)
+       then count(e, selects(a, keys)) + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
+       else count(e, selects(a, keys))
 
 // the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body
 lemma {:rw} {:teq} count_true_below(m: int, i: int, n: Nat)

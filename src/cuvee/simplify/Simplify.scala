@@ -197,7 +197,8 @@ object Simplify extends Transform:
       case Ite(test, left, right) =>
         val test_ = simplify(config, state, ctx.neutral, test)
         val left_ = simplify(config, state, ctx.neutral.assume(List(test_), Nil), left)
-        val right_ = simplify(config, state, ctx.neutral.assume(Nil, List(test_)), right)
+        // the negated test, which may be stronger in the context, e.g. a strict comparison (see not)
+        val right_ = simplify(config, state, ctx.neutral.assume(List(not(config, state, ctx, test_)), Nil), right)
         ite(config, state, ctx, test_, left_, right_)
 
       case Select(base, index) =>
@@ -639,6 +640,9 @@ object Simplify extends Transform:
       case Ints.le(a, b)  => Ints.lt(b, a)
       case Reals.lt(a, b) => Reals.le(b, a)
       case Reals.le(a, b) => Reals.lt(b, a)
+      // a disequation on Int is strict in the direction that the context bounds, e.g. k != 0 is 0 < k if 0 <= k
+      case Eq(a, b) if a.typ == Sort.int && implied(config, state, ctx.neutral, Ints.le(a, b)) => Ints.lt(a, b)
+      case Eq(a, b) if a.typ == Sort.int && implied(config, state, ctx.neutral, Ints.le(b, a)) => Ints.lt(b, a)
       case _             => Not(phi)
 
   def imp(config: Config, state: State, ctx: Context, phi: Expr, psi: Expr): Expr =
@@ -693,6 +697,16 @@ object Simplify extends Transform:
       // normalized in the next round
       case (_, Lit(n: BigInt, _)) if n == -1 =>
         Ints.uminus(left)
+
+      // a polynomial whose coefficients are multiples of n, up to the constant c, is divided exactly,
+      // (n * p + c) div n = p + c div n, e.g. 3 * x / 3 is x
+      case (_, Lit(n: BigInt, _)) if n != 0 =>
+        val poly = Arith.toPoly(Ints.ring, left).normalize
+        if poly.monos.nonEmpty && poly.monos.forall(m => m.factor.den == 1 && m.factor.num % n == 0)
+        then
+          val c = poly.const.num
+          Poly(Rational((c - (c mod n.abs)) / n), poly.monos.map(_ * Rational(1, n))).toExpr(Ints.ring)
+        else Ints.div(left, right)
 
       case _ =>
         Ints.div(left, right)

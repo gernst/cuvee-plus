@@ -5,12 +5,14 @@
 // findings: open: x counts by 1 below 750000 and by 2 above, a two-phase counter whose exit is reached exactly at
 // 1000000, which needs the number of iterations of the second phase, (1000000 - 750000) / 2; the lemma of
 // mono-crafted_8 states a phase that changes another value, not the loop variable; no lemmas tried
-// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000 and even, since x counts by
+// 2 from 750000 on, which is even, such that it reaches N exactly, as the original bound 1000000
 
 method main() returns (result: int) {
   var N: int;
   var x: int, y: int, z: int;
   assume 0 < N;
+  assume N % 2 == 0;
   x := 0;
   y := 500000;
   z := 0;

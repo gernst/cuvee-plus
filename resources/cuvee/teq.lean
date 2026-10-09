@@ -944,8 +944,8 @@ theorem current_trace_mod (x0 : Int) (n : Nat) (a : Int) (b : Int)
       split <;> simp [Int.add_emod, ha, hb]
 
 -- a sum that is set to c in the first iteration and adds G(i) in the others is c plus the sum of G over 1, ..., n - 1,
--- stated as G(k + 1) over 0, ..., n - 2, since the context of a map knows the range of counter(0, 1, n) only;
--- a conditional rather than a match on n, whose condition the simplifier decides by the value of integer(n)
+-- stated over the same iterations 0, ..., n - 1 with G(k) for 0 < k only, which the context of the map decides, rather
+-- than over a new length n - 1; a conditional on n, which the simplifier decides by the value of integer(n)
 -- (from brs1, brs1f, ms1, ms1f)
 theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
                                 (G : Int → Int) :
@@ -957,11 +957,7 @@ theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
     = (if n = zero then
          x0
        else
-         c
-           + sum
-             (maps
-                (butlast (counter 0 1 (natural (integer n - 1))))
-                (fun k => G (k + 1)))) :=
+         c + sum (maps (butlast (counter 0 1 n)) (fun k => if 0 < k then G k else 0))) :=
   by
     have later : ∀ (s x : Int) (m : Nat), 1 ≤ s → current (trace x (List.zip (butlast (counter s 1 m)) (butlast (counter s 1 m)))
         (fun x ⟨k, i⟩ => if i = 0 then c else G i + x)) = x + sum (maps (butlast (counter s 1 m)) G) := by
@@ -976,10 +972,13 @@ theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
     | zero => simp [counter, butlast, trace, current]
     | succ m =>
       have h := later 1 c m (by omega)
-      rw [integer_eq, natural_eq, show ((↑(m + 1) : Int) - 1).toNat = m by omega, ← maps_counter_shift 0 m G]
-      simp only [butlast_counter_succ, List.zip_cons_cons, trace, current, Int.zero_add] at h ⊢
+      have e : maps (butlast (counter 1 1 m)) (fun k => if 0 < k then G k else 0) = maps (butlast (counter 1 1 m)) (fun k => G k) :=
+        maps_counter_congr 1 m _ _ (fun k hk => by simp [show 0 < k by omega])
+      rw [sum_counter_succ]
+      simp only [butlast_counter_succ, List.zip_cons_cons, trace, current, Int.zero_add] at h e ⊢
       simp only [ite_true, Nat.succ_ne_zero, ite_false]
-      rw [h]
+      rw [h, e]
+      simp
 
 -- earlier
 
@@ -1588,6 +1587,46 @@ theorem sum_counter (i : Int) (c : Int) (n : Nat) :
       | zero => simp [counter, butlast, sum, integer]
       | succ m ih => simp only [butlast_counter_succ, sum, integer_eq] at *; push_cast; grind
     omega
+
+-- a sum of indicators, 1 where a condition holds and 0 otherwise, is the number of values where it holds, which the
+-- lemmas on counts evaluate; for one dependency and for two, as in loops with a choice
+theorem sum_indicator_true {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) :
+  sum (maps xs (fun x => if P x then 1 else 0))
+    = count True (maps xs (fun x => P x)) :=
+  by
+    induction xs with
+    | nil => simp [maps, sum, count]
+    | cons x xs ih => simp only [maps, sum, count] at *; rw [ih]; by_cases h : P x <;> simp [h]
+
+theorem sum_indicator_false {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) :
+  sum (maps xs (fun x => if P x then 0 else 1))
+    = count False (maps xs (fun x => P x)) :=
+  by
+    induction xs with
+    | nil => simp [maps, sum, count]
+    | cons x xs ih => simp only [maps, sum, count] at *; rw [ih]; by_cases h : P x <;> simp [h]
+
+theorem sum_indicator_true_2 {α β : Type} [Inhabited α] [Inhabited β] (xs : List α) (ys : List β)
+                                                                      (P : α → β → Prop) :
+  sum (maps (List.zip xs ys) (fun ⟨x, y⟩ => if P x y then 1 else 0))
+    = count True (maps (List.zip xs ys) (fun ⟨x, y⟩ => P x y)) :=
+  by
+    induction (List.zip xs ys) with
+    | nil => simp [maps, sum, count]
+    | cons p ps ih =>
+      obtain ⟨x, y⟩ := p
+      simp only [maps, sum, count] at *; rw [ih]; by_cases h : P x y <;> simp [h]
+
+theorem sum_indicator_false_2 {α β : Type} [Inhabited α] [Inhabited β] (xs : List α) (ys : List β)
+                                                                       (P : α → β → Prop) :
+  sum (maps (List.zip xs ys) (fun ⟨x, y⟩ => if P x y then 0 else 1))
+    = count False (maps (List.zip xs ys) (fun ⟨x, y⟩ => P x y)) :=
+  by
+    induction (List.zip xs ys) with
+    | nil => simp [maps, sum, count]
+    | cons p ps ih =>
+      obtain ⟨x, y⟩ := p
+      simp only [maps, sum, count] at *; rw [ih]; by_cases h : P x y <;> simp [h]
 
 theorem sum_selects_update {α : Type} [Inhabited α] (a : α → Int) (k : α) (v : Int)
                                                     (keys : List α) :
