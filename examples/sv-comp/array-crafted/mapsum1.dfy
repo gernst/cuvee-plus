@@ -17,7 +17,7 @@
 // shifting the elements at the positions 1, ..., m down by one keeps the element at m, hence the sum over the
 // positions 0, ..., m loses a[0] and counts a[m] twice
 lemma {:rw} {:teq} sum_1(a: array<int, int>, m: Nat, n: Nat)
-  requires n == succ(m)
+  requires integer(n) == integer(m) + 1
   ensures sum(selects(current(shifts(a, ⌊counter(0, 1, m)⌋, 1)), ⌊counter(0, 1, n)⌋))
     == sum(selects(a, ⌊counter(0, 1, n)⌋)) - a[0] + a[integer(m)]
 

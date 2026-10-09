@@ -312,6 +312,10 @@ theorem integer_injective (m : Nat) (n : Nat) :
   by simp only [integer_eq]; constructor <;> intro h <;> omega
 
 -- small constants as naturals and back, e.g. the iterations of loops with literal bounds, and indices of reads
+-- the natural of a value that is not positive is zero, e.g. the iterations of a loop that does not run
+theorem natural_nonpositive (x : Int) : x ≤ 0 → natural x = zero :=
+  by intro h; simp [natural_eq]; omega
+
 theorem natural_zero : natural 0 = zero :=
   by simp [natural_eq]
 

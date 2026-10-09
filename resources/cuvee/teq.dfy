@@ -192,6 +192,11 @@ lemma {:rw} {:teq} integer_injective(m: Nat, n: Nat)
   ensures (integer(m) == integer(n)) <==> (m == n)
 
 // small constants as naturals and back, e.g. the iterations of loops with literal bounds, and indices of reads
+// the natural of a value that is not positive is zero, e.g. the iterations of a loop that does not run
+lemma {:rw} {:teq} natural_nonpositive(x: int)
+  requires x <= 0
+  ensures natural(x) == zero
+
 lemma {:rw} {:teq} natural_zero()
   ensures natural(0) == zero
 
