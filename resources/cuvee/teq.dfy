@@ -191,6 +191,25 @@ lemma {:rw} {:teq} zero_integer(n: Nat)
 lemma {:rw} {:teq} integer_injective(m: Nat, n: Nat)
   ensures (integer(m) == integer(n)) <==> (m == n)
 
+// small constants as naturals and back, e.g. the iterations of loops with literal bounds, and indices of reads
+lemma {:rw} {:teq} natural_zero()
+  ensures natural(0) == zero
+
+lemma {:rw} {:teq} natural_one()
+  ensures natural(1) == succ(zero)
+
+lemma {:rw} {:teq} natural_two()
+  ensures natural(2) == succ(succ(zero))
+
+lemma {:rw} {:teq} integer_zero()
+  ensures integer(zero) == 0
+
+lemma {:rw} {:teq} integer_one()
+  ensures integer(succ(zero)) == 1
+
+lemma {:rw} {:teq} integer_two()
+  ensures integer(succ(succ(zero))) == 2
+
 // traces
 
 // a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)

@@ -311,6 +311,25 @@ theorem integer_injective (m : Nat) (n : Nat) :
   integer m = integer n ↔ m = n :=
   by simp only [integer_eq]; constructor <;> intro h <;> omega
 
+-- small constants as naturals and back, e.g. the iterations of loops with literal bounds, and indices of reads
+theorem natural_zero : natural 0 = zero :=
+  by simp [natural_eq]
+
+theorem natural_one : natural 1 = succ zero :=
+  by simp [natural_eq]
+
+theorem natural_two : natural 2 = succ (succ zero) :=
+  by simp [natural_eq]
+
+theorem integer_zero : integer zero = 0 :=
+  by rfl
+
+theorem integer_one : integer (succ zero) = 1 :=
+  by rfl
+
+theorem integer_two : integer (succ (succ zero)) = 2 :=
+  by rfl
+
 -- traces
 
 -- a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)
