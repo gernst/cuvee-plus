@@ -148,6 +148,17 @@ after section 4 of the paper.
 - Check with `lean resources/cuvee/teq.lean` (Lean 4.34); teq.lean is built
   from the output of `./Cuvee.sh -print lean resources/cuvee/teq.dfy` and
   the hand-written definitions at its beginning.
+- The dependencies of a combinator have equal lengths, which `zip` in Lean
+  does not assume: `-print lean` adds hypotheses on the lengths to each
+  lemma (`lean.Printer.lengths`), `(hxs : length xs = n)` for each list
+  variable that is a dependency of a combinator, also through a `{:fold}`
+  function, or that is read at the iterations `k` of a counter by
+  `earlier(natural(k), xs)`, where `n` is the number of steps of a counter
+  among the dependencies or a further parameter `(n : Nat)` of the lemma;
+  `length` is declared in teq.dfy with `{:lean}` as `List.length` of Lean.
+  With them, all lemmas of teq.lean are proved; assumptions on indices
+  within the lists are added by hand there as `requires` to be added to
+  teq.dfy.
 
 ## Simplification and rewriting
 

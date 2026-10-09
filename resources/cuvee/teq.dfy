@@ -29,6 +29,10 @@ function {:teq} natural(x: int): Nat
 // lists, the sequences of values of the dependencies of trace equation systems
 datatype {:teq} {:lean} List<a₀> = nil | cons(head: a₀, tail: List<a₀>)
 
+// the length of a list, List.length of Lean ({:lean}), with which the Lean printer states that the dependencies of the
+// combinators of a lemma have the length of the loop (see teq.lean); declared only, the simplifier has no rules on it
+function {:teq} {:lean} length<a>(xs: List<a>): Nat
+
 // a value that is not specified, e.g. of the elements outside of a list
 const {:teq} unspecified<a>: a
 

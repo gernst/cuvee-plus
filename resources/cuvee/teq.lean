@@ -11,18 +11,19 @@ dependency: several dependencies are zipped into a list of tuples, which truncat
 the dependencies of the combinators of Cuvée have equal lengths, which teq.dfy does not state (see TODO.md);
 `case φ => e case ψ => f` updates are conditionals (the guards are disjoint and complete).
 
-The lemmas that hold for dependencies of equal length only carry that assumption as hypotheses in a uniform form,
-which a flag of -print lean is to generate (see TODO.md, dependencies of equal length): each list-typed variable
-that is a dependency of a combinator, also through a function defined by one (stores, selects, sums, ...), or that
-is read at the positions of the iterations, has the length n of the loop, `(hxs : xs.length = n)`, where n is the
-number of steps of a counter among the dependencies, `⌊counter(_, _, n)⌋`, or a further parameter `(n : Nat)` of
-the theorem otherwise; these hypotheses follow the parameters of the lemma. Lemmas that hold for indices within the
-lists only, whose elements are unspecified otherwise, or for complete guards, have these assumptions as further
-premises in the form of requires of teq.dfy, e.g. `integer j < integer n →`, which are to be added there
+The statements of the lemmas are those printed by -print lean: for the lemmas that hold for dependencies of equal
+length only, the printer adds hypotheses on the lengths (see lean.Printer.lengths): each list-typed variable that is
+a dependency of a combinator, also through a function defined by one (stores, selects, sums, ...), or that is read
+at the iterations k of a counter, earlier(natural(k), xs), has the length n of the loop, `(hxs : length xs = n)`,
+where n is the number of steps of a counter among the dependencies, `⌊counter(_, _, n)⌋`, or a further parameter
+`(n : Nat)` of the theorem otherwise, and length is List.length of Lean, declared in teq.dfy with :lean. Lemmas that
+hold for indices within the lists only, whose elements are unspecified otherwise, or for complete guards, have these
+assumptions as further premises by hand, in the form of requires of teq.dfy, which are to be added there
 (earlier_counter, earlier_consts, earlier_selects, earlier_sums, earlier_counts, earlier_prefix, prefix_counter,
-prefix_consts, prefix_prefix, occurs_earlier, earlier_stores, current_maxs_earlier, current_mins_earlier,
-and the completeness of the guards of current_trace_bounded). The counterexamples at the end show that the
-assumptions are needed.
+prefix_consts, prefix_prefix, occurs_earlier, earlier_stores, current_maxs_earlier, current_mins_earlier, the
+completeness of the guards of current_trace_bounded), and two lemmas without a combinator state the length of a list
+read at the iterations by hand (occurs_earlier, earlier_not_occurs_prefix). The counterexamples at the end show that
+the assumptions are needed.
 Check with `lean resources/cuvee/teq.lean` (Lean 4.34).
 -/
 open Classical
@@ -35,7 +36,7 @@ namespace TEQ
 
 -- the constructors of Nat and List, which are those of Lean ({:lean} in teq.dfy)
 open Nat (zero succ)
-open List (nil cons)
+open List (nil cons length)
 
 def integer (n : Nat) : Int :=
   match n with
@@ -365,7 +366,8 @@ theorem counter_def (i : Int) (c : Int) (n : Nat) :
     | succ m ih => intro j d; simp [butlast, counter, trace, ih]
 
 -- a variable that keeps its value in each iteration
-theorem consts_def {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int) (n : Nat) :
+theorem consts_def {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int)
+                                                  (n : Nat) :
   trace x (butlast (counter i c n)) (fun y v => y) = consts n x :=
   by
     induction n generalizing i with
@@ -382,8 +384,12 @@ def stores {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (keys : 
 
 -- each key is visited once only if they are distinct, hence b[k] is still the initial value a[k],
 -- in any context f of the read, which may depend on the other dependencies, but not on the accumulator otherwise
-theorem trace_read_initial {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (keys : List α)
-                                                                    (fs : List (β → β)) :
+theorem trace_read_initial {α β : Type} [Inhabited α] [Inhabited β] (a : α → β)
+                                                                          (keys : List α)
+                                                                          (fs : List (β → β))
+                                                                          (n : Nat)
+                                                                          (hkeys : length keys = n)
+                                                                          (hfs : length fs = n) :
   distincts keys
     → trace
       a
@@ -445,7 +451,8 @@ def counts {α : Type} [Inhabited α] (x : Int) (e : α)
 
 -- on booleans, the guards are the values themselves; the occurrences of false come first,
 -- since the guard b of the other lemma also matches !b, which counts the occurrences of true among the negations
-theorem counts_false_def (x : Int) (bs : List Prop) :
+theorem counts_false_def (x : Int) (bs : List Prop) (n : Nat)
+                               (hbs : length bs = n) :
   trace x bs (fun y b => if ¬b then y + 1 else y) = counts x False bs :=
   by
     simp only [counts]
@@ -453,7 +460,8 @@ theorem counts_false_def (x : Int) (bs : List Prop) :
     funext y b
     by_cases h : b <;> simp [h]
 
-theorem counts_true_def (x : Int) (bs : List Prop) :
+theorem counts_true_def (x : Int) (bs : List Prop) (n : Nat)
+                              (hbs : length bs = n) :
   trace x bs (fun y b => if b then y + 1 else y) = counts x True bs :=
   by
     simp only [counts]
@@ -465,7 +473,7 @@ theorem counts_true_def (x : Int) (bs : List Prop) :
 -- into it, are one; the second result is a variable d, since F(c) would be compared literally
 -- (from copysome1-1, copysome1-2)
 theorem trace_merge_cases_ne (x0 : Int) (n : Nat) (c : Int) (d : Int)
-                             (F : Int → Int) :
+                                   (F : Int → Int) :
   d = F c
     → trace x0 (butlast (counter 0 1 n)) (fun x k => if x ≠ c then F x else d)
       = trace x0 (butlast (counter 0 1 n)) (fun x k => F x) :=
@@ -478,7 +486,7 @@ theorem trace_merge_cases_ne (x0 : Int) (n : Nat) (c : Int) (d : Int)
 -- the same with the guards in the other order
 -- (from brs1, brs1f, ifcomp, ms1, ms1f)
 theorem trace_merge_cases_eq (x0 : Int) (n : Nat) (c : Int) (d : Int)
-                             (F : Int → Int) :
+                                   (F : Int → Int) :
   d = F c
     → trace x0 (butlast (counter 0 1 n)) (fun x k => if x = c then d else F x)
       = trace x0 (butlast (counter 0 1 n)) (fun x k => F x) :=
@@ -492,7 +500,8 @@ theorem trace_merge_cases_eq (x0 : Int) (n : Nat) (c : Int) (d : Int)
 -- array
 -- (from standard_palindrome_ground)
 theorem stores_def_read_unmodified (a0 : Int → Int) (n : Nat)
-                                   (hs : List Int) (F : Int → Int → Int) :
+                                         (hs : List Int) (F : Int → Int → Int)
+                                         (hhs : length hs = n) :
   invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => integer n ≤ F k h)
     → trace
       a0
@@ -530,14 +539,16 @@ theorem stores_def_read_unmodified (a0 : Int → Int) (n : Nat)
 
 -- maps
 
-theorem maps_const {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int) (n : Nat) :
+theorem maps_const {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int)
+                                                  (n : Nat) :
   maps (butlast (counter i c n)) (fun v => x) = butlast (consts n x) :=
   by
     induction n generalizing i with
     | zero => rfl
     | succ m ih => simp [butlast_counter_succ, maps, consts, butlast, ih]
 
-theorem maps_earlier {α : Type} [Inhabited α] (n : Nat) (xs : List α) (hxs : xs.length = n) :
+theorem maps_earlier {α : Type} [Inhabited α] (n : Nat) (xs : List α)
+                                                    (hxs : length xs = n) :
   maps (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs) = xs :=
   by
     subst hxs
@@ -562,7 +573,7 @@ theorem maps_earlier {α : Type} [Inhabited α] (n : Nat) (xs : List α) (hxs : 
     simpa using this
 
 theorem maps_counter_affine (a : Int) (b : Int) (i : Int) (c : Int)
-                            (n : Nat) :
+                                  (n : Nat) :
   maps (butlast (counter i c n)) (fun v => a + b * v)
     = butlast (counter (a + b * i) (b * c) n) :=
   by
@@ -924,8 +935,9 @@ theorem invs_counter_ne_down (m : Int) (i : Int) (n : Nat) :
 -- since b < x does not match k < x + n (see TODO.md)
 -- (from benchmark04_conjunctive, benchmark09_conjunctive)
 theorem invs_counter_positive_last (i : Int) (d : Int) (n : Nat) (c : Int)
-                                   (hs : List Int) (gs : List Int)
-                                   (hhs : hs.length = n) (hgs : gs.length = n) :
+                                         (hs : List Int) (gs : List Int)
+                                         (hhs : length hs = n)
+                                         (hgs : length gs = n) :
   invs
     (List.zip hs (List.zip gs (butlast (counter i d n))))
     (fun ⟨h, g, x⟩ => 0 < x + c)
@@ -937,9 +949,9 @@ theorem invs_counter_positive_last (i : Int) (d : Int) (n : Nat) (c : Int)
 -- the same for a counter as the second of three dependencies
 -- (from benchmark09_conjunctive)
 theorem invs_counter_positive_middle (i : Int) (d : Int) (n : Nat)
-                                     (c : Int) (hs : List Int)
-                                     (gs : List Int)
-                                     (hhs : hs.length = n) (hgs : gs.length = n) :
+                                           (c : Int) (hs : List Int)
+                                           (gs : List Int) (hhs : length hs = n)
+                                           (hgs : length gs = n) :
   invs
     (List.zip hs (List.zip (butlast (counter i d n)) gs))
     (fun ⟨h, x, g⟩ => 0 < x + c)
@@ -951,8 +963,10 @@ theorem invs_counter_positive_middle (i : Int) (d : Int) (n : Nat)
 -- an iteration constraint that is a negated disjunction, as the test of a break, is two of them
 -- (from benchmark09_conjunctive)
 theorem invs_not_or (hs : List Int) (gs : List Int) (fs : List Int)
-                    (P : Int → Int → Int → Prop)
-                    (Q : Int → Int → Int → Prop) :
+                          (P : Int → Int → Int → Prop)
+                          (Q : Int → Int → Int → Prop) (n : Nat)
+                          (hhs : length hs = n) (hgs : length gs = n)
+                          (hfs : length fs = n) :
   invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬(P h g f ∨ Q h g f))
     ↔ invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬P h g f)
       ∧ invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬Q h g f) :=
@@ -964,7 +978,8 @@ theorem invs_not_or (hs : List Int) (gs : List Int) (fs : List Int)
 -- two sequences that are equal at the iterations 0, ..., n - 1 agree there
 -- (from standard_compare_ground)
 theorem agree_prefix_def (n : Nat) (xs : List Int) (ys : List Int)
-                         (hs : List Int) (hhs : hs.length = n) :
+                               (hs : List Int) (hhs : length hs = n)
+                               (hxs : length xs = n) (hys : length ys = n) :
   invs
     (List.zip (butlast (counter 0 1 n)) hs)
     (fun ⟨k, h⟩ => earlier (natural k) xs = earlier (natural k) ys)
@@ -977,7 +992,8 @@ theorem agree_prefix_def (n : Nat) (xs : List Int) (ys : List Int)
 -- a search: the elements before the exit n differ from e, i.e., e does not occur in the prefix of length n
 -- (from standard_find_ground-1)
 theorem not_occurs_prefix_def (n : Nat) (e : Int) (xs : List Int)
-                              (hs : List Int) (hxs : xs.length = n) (hhs : hs.length = n) :
+                                    (hs : List Int) (hhs : length hs = n)
+                                    (hxs : length xs = n) :
   invs
     (List.zip (butlast (counter 0 1 n)) hs)
     (fun ⟨k, h⟩ => earlier (natural k) xs ≠ e)
@@ -990,7 +1006,7 @@ theorem not_occurs_prefix_def (n : Nat) (e : Int) (xs : List Int)
 -- the same for reads of an array at the positions of a counter: x does not occur among the values read there
 -- (from lsearch)
 theorem not_occurs_selects_def (a : Int → Int) (x : Int) (i : Int)
-                               (n : Nat) :
+                                     (n : Nat) :
   invs (butlast (counter i 1 n)) (fun k => a k ≠ x)
     ↔ ¬occurs x (selects a (butlast (counter i 1 n))) :=
   by
@@ -1004,7 +1020,8 @@ theorem not_occurs_selects_def (a : Int → Int) (x : Int) (i : Int)
 
 -- the values of the iterations exceed the iterations
 -- (from simple_array_index_value_2)
-theorem above_iterations_def (n : Nat) (ts : List Int) (hs : List Int) (hts : ts.length = n) (hhs : hs.length = n) :
+theorem above_iterations_def (n : Nat) (ts : List Int) (hs : List Int)
+                                   (hhs : length hs = n) (hts : length ts = n) :
   invs
     (List.zip (butlast (counter 0 1 n)) (List.zip hs ts))
     (fun ⟨k, h, t⟩ => k < t)
@@ -1036,8 +1053,10 @@ theorem current_counter (i : Int) (c : Int) (n : Nat) :
     | zero => simp [counter, current, integer]
     | succ m ih => simp [counter, current, ih, integer]; grind
 
-theorem current_trace_constant {α : Type} [Inhabited α] (x : α) (y : α) (i : Int)
-                                                        (c : Int) (n : Nat) :
+theorem current_trace_constant {α : Type} [Inhabited α] (x : α) (y : α)
+                                                              (i : Int)
+                                                              (c : Int)
+                                                              (n : Nat) :
   current (trace x (butlast (counter i c n)) (fun z v => y))
     = (if n = zero then x else y) :=
   by
@@ -1057,11 +1076,15 @@ theorem current_consts {α : Type} [Inhabited α] (n : Nat) (x : α) :
     | zero => rfl
     | succ m ih => simp [consts, current, ih]
 
-theorem current_trace_add_at {α : Type} [Inhabited α] (a : α → Int) (k : α)
-                                                      (values : List Int) :
+theorem current_trace_add_at {α : Type} [Inhabited α] (a : α → Int)
+                                                            (k : α)
+                                                            (values : List Int)
+                                                            (n : Nat)
+                                                            (hvalues : length values = n) :
   current (trace a values (fun b v => fun j => if j = k then b k + v else b j))
     = (fun j => if j = k then a k + sum values else a j) :=
   by
+    clear hvalues n
     induction values generalizing a with
     | nil => funext j; simp [trace, current, sum]; intro h; rw [h]
     | cons v vs ih =>
@@ -1070,16 +1093,20 @@ theorem current_trace_add_at {α : Type} [Inhabited α] (a : α → Int) (k : α
       funext j
       by_cases h : j = k <;> simp [h]; omega
 
-theorem current_sums (x : Int) (values : List Int) :
+theorem current_sums (x : Int) (values : List Int) (n : Nat)
+                           (hvalues : length values = n) :
   current (sums x values) = x + sum values :=
   by
+    clear hvalues n
     induction values generalizing x with
     | nil => simp [sums, trace, current, sum]
     | cons v vs ih => simp [sums, trace, current, sum] at *; rw [ih]; omega
 
-theorem current_parities (x : Int) (values : List Int) :
+theorem current_parities (x : Int) (values : List Int) (n : Nat)
+                               (hvalues : length values = n) :
   current (parities x values) = x + parity values :=
   by
+    clear hvalues n
     induction values generalizing x with
     | nil => simp [parities, trace, current, parity]
     | cons v vs ih => simp only [parities, trace, current, parity] at *; rw [ih]; split <;> omega
@@ -1138,9 +1165,12 @@ theorem current_mins_consts (x : Int) (y : Int) (n : Nat) :
       | zero => simp [consts, butlast, trace, current]; grind
       | succ k ih => simp only [consts, butlast, trace, current]; rw [ih]; grind
 
-theorem current_counts {α : Type} [Inhabited α] (x : Int) (e : α) (vs : List α) :
+theorem current_counts {α : Type} [Inhabited α] (x : Int) (e : α)
+                                                      (vs : List α) (n : Nat)
+                                                      (hvs : length vs = n) :
   current (counts x e vs) = x + count e vs :=
   by
+    clear hvs n
     induction vs generalizing x with
     | nil => simp [counts, trace, current, count]
     | cons v ws ih => simp only [counts, trace, current, count] at *; rw [ih]; split <;> omega
@@ -1149,7 +1179,7 @@ theorem current_counts {α : Type} [Inhabited α] (x : Int) (e : α) (vs : List 
 -- at least b
 -- (from Mono1_1-2, phases_1-1, phases_1-2)
 theorem current_trace_two_phases (x0 : Int) (n : Nat) (b : Int)
-                                 (c : Int) :
+                                       (c : Int) :
   x0 ≤ b ∧ 0 ≤ c
     → current
       (trace
@@ -1211,7 +1241,7 @@ theorem current_trace_catch_up (y0 : Int) (x0 : Int) (n : Nat) :
 -- a flag, initially x0, that is set to c whenever D holds, is x0 at the end iff D never held, otherwise c
 -- (from standard_compare_ground)
 theorem current_trace_flag (x0 : Int) (c : Int) (n : Nat) (hs : List Int)
-                           (D : Int → Int → Prop) :
+                                 (D : Int → Int → Prop) (hhs : length hs = n) :
   current
     (trace
        x0
@@ -1252,7 +1282,8 @@ theorem current_trace_geometric (x0 : Int) (c : Int) (n : Nat) :
 -- a value whose two increments are multiples of m keeps its remainder modulo m, a modular invariant
 -- (from loopv1)
 theorem current_trace_mod (x0 : Int) (n : Nat) (a : Int) (b : Int)
-                          (m : Int) (hs : List Int) (C : Int → Prop) :
+                                (m : Int) (hs : List Int) (C : Int → Prop)
+                                (hhs : length hs = n) :
   0 < m ∧ a % m = 0 ∧ b % m = 0
     → current
       (trace
@@ -1276,7 +1307,7 @@ theorem current_trace_mod (x0 : Int) (n : Nat) (a : Int) (b : Int)
 -- than over a new length n - 1; a conditional on n, which the simplifier decides by the value of integer(n)
 -- (from brs1, brs1f, ms1, ms1f)
 theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
-                                (G : Int → Int) :
+                                      (G : Int → Int) :
   current
     (trace
        x0
@@ -1285,7 +1316,11 @@ theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
     = (if n = zero then
          x0
        else
-         c + sum (maps (butlast (counter 0 1 n)) (fun k => if 0 < k then G k else 0))) :=
+         c
+           + sum
+             (maps
+                (butlast (counter 0 1 n))
+                (fun k => if 0 < k then G k else 0))) :=
   by
     have later : ∀ (s x : Int) (m : Nat), 1 ≤ s → current (trace x (List.zip (butlast (counter s 1 m)) (butlast (counter s 1 m)))
         (fun x ⟨k, i⟩ => if i = 0 then c else G i + x)) = x + sum (maps (butlast (counter s 1 m)) G) := by
@@ -1335,7 +1370,8 @@ theorem earlier_indexof {α : Type} [Inhabited α] (x : α) (xs : List α) :
       · next h' => simp [earlier, ih h']
       · next h' => simp only [occurs] at h; rcases h with h | h; simp [earlier, h]; exact absurd h h'
 
-theorem earlier_consts {α : Type} [Inhabited α] (k : Nat) (n : Nat) (x : α) :
+theorem earlier_consts {α : Type} [Inhabited α] (k : Nat) (n : Nat)
+                                                      (x : α) :
   integer k < integer n → earlier k (butlast (consts n x)) = x :=
   by
     intro h
@@ -1348,8 +1384,11 @@ theorem earlier_consts {α : Type} [Inhabited α] (k : Nat) (n : Nat) (x : α) :
         have h' : integer j < integer m := by simp only [integer_eq] at h ⊢; omega
         simp [consts, butlast, earlier, ih j h']
 
-theorem earlier_selects {α β : Type} [Inhabited α] [Inhabited β] (j : Nat) (a : α → β)
-                                                                 (keys : List α) (n : Nat) (hkeys : keys.length = n) :
+theorem earlier_selects {α β : Type} [Inhabited α] [Inhabited β] (j : Nat)
+                                                                       (a : α → β)
+                                                                       (keys : List α)
+                                                                       (n : Nat)
+                                                                       (hkeys : length keys = n) :
   integer j < integer n → earlier j (selects a keys) = a (earlier j keys) :=
   by
     intro h
@@ -1362,7 +1401,8 @@ theorem earlier_selects {α β : Type} [Inhabited α] [Inhabited β] (j : Nat) (
         simp only [selects, maps, earlier]
         exact ih i ks.length rfl (by simp at hkeys; simp only [integer_eq] at h ⊢; omega)
 
-theorem earlier_sums (j : Nat) (x : Int) (values : List Int) (n : Nat) (hvalues : values.length = n) :
+theorem earlier_sums (j : Nat) (x : Int) (values : List Int) (n : Nat)
+                           (hvalues : length values = n) :
   integer j < integer n → earlier j (butlast (sums x values)) = x + sum («prefix» j values) :=
   by
     intro h
@@ -1378,8 +1418,10 @@ theorem earlier_sums (j : Nat) (x : Int) (values : List Int) (n : Nat) (hvalues 
         rw [ih i (x + v) vs.length rfl (by simp at hvalues; simp only [integer_eq] at h ⊢; omega)]
         omega
 
-theorem earlier_counts {α : Type} [Inhabited α] (j : Nat) (x : Int) (e : α)
-                                                (vs : List α) (n : Nat) (hvs : vs.length = n) :
+theorem earlier_counts {α : Type} [Inhabited α] (j : Nat) (x : Int)
+                                                      (e : α) (vs : List α)
+                                                      (n : Nat)
+                                                      (hvs : length vs = n) :
   integer j < integer n → earlier j (butlast (counts x e vs)) = x + count e («prefix» j vs) :=
   by
     intro h
@@ -1395,7 +1437,8 @@ theorem earlier_counts {α : Type} [Inhabited α] (j : Nat) (x : Int) (e : α)
         rw [ih i _ vs.length rfl (by simp at hvs; simp only [integer_eq] at h ⊢; omega)]
         by_cases hv : v = e <;> simp [hv] <;> omega
 
-theorem earlier_prefix {α : Type} [Inhabited α] (j : Nat) (k : Nat) (xs : List α) :
+theorem earlier_prefix {α : Type} [Inhabited α] (j : Nat) (k : Nat)
+                                                      (xs : List α) :
   integer j < integer k → earlier j («prefix» k xs) = earlier j xs :=
   by
     intro h
@@ -1412,7 +1455,7 @@ theorem earlier_prefix {α : Type} [Inhabited α] (j : Nat) (k : Nat) (xs : List
 -- agreeing sequences are equal at each position in the range; the atom is the left-hand side
 -- (from standard_compare_ground)
 theorem earlier_agree_prefix (n : Nat) (j : Nat) (xs : List Int)
-                             (ys : List Int) :
+                                   (ys : List Int) :
   agree_prefix n xs ys ∧ integer j < integer n
     → (earlier j xs = earlier j ys ↔ True) :=
   by
@@ -1430,7 +1473,7 @@ theorem earlier_agree_prefix (n : Nat) (j : Nat) (xs : List Int)
 -- which is instantiated at the positions j in that range
 -- (from standard_find_ground-1)
 theorem earlier_not_occurs_prefix (n : Nat) (j : Nat) (e : Int)
-                                  (xs : List Int) (hxs : xs.length = n) :
+                                        (xs : List Int) (hxs : length xs = n) :
   ¬occurs e («prefix» n xs) ∧ integer j < integer n → (earlier j xs = e ↔ False) :=
   by
     intro ⟨h1, h2⟩
@@ -1441,7 +1484,7 @@ theorem earlier_not_occurs_prefix (n : Nat) (j : Nat) (e : Int)
 -- the same for reads of an array, at the positions k of the counter
 -- (from lsearch)
 theorem select_not_occurs_selects (a : Int → Int) (x : Int) (i : Int)
-                                  (n : Nat) (k : Int) :
+                                        (n : Nat) (k : Int) :
   ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + integer n
     → (a k = x ↔ False) :=
   by
@@ -1476,7 +1519,8 @@ theorem prefix_counter (k : Nat) (i : Int) (c : Int) (n : Nat) :
         simp only [butlast_counter_succ, «prefix»]
         rw [ih j (i + c) (by simp only [integer_eq] at h ⊢; omega)]
 
-theorem prefix_consts {α : Type} [Inhabited α] (k : Nat) (n : Nat) (x : α) :
+theorem prefix_consts {α : Type} [Inhabited α] (k : Nat) (n : Nat)
+                                                     (x : α) :
   integer k ≤ integer n → «prefix» k (butlast (consts n x)) = butlast (consts k x) :=
   by
     intro h
@@ -1490,41 +1534,56 @@ theorem prefix_consts {α : Type} [Inhabited α] (k : Nat) (n : Nat) (x : α) :
         simp only [consts, butlast, «prefix»]
         rw [ih j (by simp only [integer_eq] at h ⊢; omega)]
 
-theorem prefix_selects {α β : Type} [Inhabited α] [Inhabited β] (k : Nat) (a : α → β)
-                                                                (keys : List α) :
+theorem prefix_selects {α β : Type} [Inhabited α] [Inhabited β] (k : Nat)
+                                                                      (a : α → β)
+                                                                      (keys : List α)
+                                                                      (n : Nat)
+                                                                      (hkeys : length keys = n) :
   «prefix» k (selects a keys) = selects a («prefix» k keys) :=
   by
+    clear hkeys n
     induction keys generalizing k with
     | nil => cases k <;> simp [selects, maps, «prefix»]
     | cons x xs ih => cases k <;> simp [selects, maps, «prefix»] at * <;> exact ih _
 
-theorem prefix_stores {α β : Type} [Inhabited α] [Inhabited β] (k : Nat) (a : α → β) (keys : List α)
-                                                               (values : List β) :
+theorem prefix_stores {α β : Type} [Inhabited α] [Inhabited β] (k : Nat)
+                                                                     (a : α → β)
+                                                                     (keys : List α)
+                                                                     (values : List β)
+                                                                     (n : Nat)
+                                                                     (hkeys : length keys = n)
+                                                                     (hvalues : length values = n) :
   «prefix» k (butlast (stores a keys values))
     = butlast (stores a («prefix» k keys) («prefix» k values)) :=
   by simp only [stores]; rw [prefix_butlast_trace, prefix_zip]
 
-theorem prefix_sums (k : Nat) (x : Int) (values : List Int) :
+theorem prefix_sums (k : Nat) (x : Int) (values : List Int) (n : Nat)
+                          (hvalues : length values = n) :
   «prefix» k (butlast (sums x values)) = butlast (sums x («prefix» k values)) :=
   by simp only [sums]; exact prefix_butlast_trace k x values _
 
-theorem prefix_maxs (k : Nat) (x : Int) (values : List Int) :
+theorem prefix_maxs (k : Nat) (x : Int) (values : List Int) (n : Nat)
+                          (hvalues : length values = n) :
   «prefix» k (butlast (maxs x values)) = butlast (maxs x («prefix» k values)) :=
   by simp only [maxs]; exact prefix_butlast_trace k x values _
 
-theorem prefix_mins (k : Nat) (x : Int) (values : List Int) :
+theorem prefix_mins (k : Nat) (x : Int) (values : List Int) (n : Nat)
+                          (hvalues : length values = n) :
   «prefix» k (butlast (mins x values)) = butlast (mins x («prefix» k values)) :=
   by simp only [mins]; exact prefix_butlast_trace k x values _
 
 theorem prefix_counts {α : Type} [Inhabited α] (k : Nat) (x : Int) (e : α)
-                                               (vs : List α) :
+                                                     (vs : List α) (n : Nat)
+                                                     (hvs : length vs = n) :
   «prefix» k (butlast (counts x e vs)) = butlast (counts x e («prefix» k vs)) :=
   by simp only [counts]; exact prefix_butlast_trace k x vs _
 
-theorem prefix_zero {α : Type} [Inhabited α] (xs : List α) : «prefix» zero xs = nil :=
+theorem prefix_zero {α : Type} [Inhabited α] (xs : List α) :
+  «prefix» zero xs = nil :=
   by cases xs <;> rfl
 
-theorem prefix_prefix {α : Type} [Inhabited α] (j : Nat) (k : Nat) (xs : List α) :
+theorem prefix_prefix {α : Type} [Inhabited α] (j : Nat) (k : Nat)
+                                                     (xs : List α) :
   integer j ≤ integer k → «prefix» j («prefix» k xs) = «prefix» j xs :=
   by
     intro h
@@ -1544,16 +1603,21 @@ theorem prefix_prefix {α : Type} [Inhabited α] (j : Nat) (k : Nat) (xs : List 
 -- occurs
 
 -- a value read at one of the keys occurs among the values read at them
-theorem occurs_selects {α β : Type} [Inhabited α] [Inhabited β] (k : α) (a : α → β) (keys : List α) :
+theorem occurs_selects {α β : Type} [Inhabited α] [Inhabited β] (k : α)
+                                                                      (a : α → β)
+                                                                      (keys : List α)
+                                                                      (n : Nat)
+                                                                      (hkeys : length keys = n) :
   occurs k keys → occurs (a k) (selects a keys) :=
   by
+    clear hkeys n
     induction keys with
     | nil => simp [occurs]
     | cons y ys ih => simp only [occurs, selects, maps] at *; intro h; rcases h with h | h; exact Or.inl (by rw [h]); exact Or.inr (ih h)
 
 -- a value at an index occurs in the sequence, e.g. a stored value, which current(stores(a, keys, values))[k] reads
 -- as earlier(indexof(k, keys), values) if k occurs among the keys; the indices of earlier are valid by construction
-theorem occurs_earlier {α : Type} [Inhabited α] (j : Nat) (xs : List α) (n : Nat) (hxs : xs.length = n) :
+theorem occurs_earlier {α : Type} [Inhabited α] (j : Nat) (xs : List α) (n : Nat) (hxs : length xs = n) :
   integer j < integer n → occurs (earlier j xs) xs :=
   by
     intro h
@@ -1717,9 +1781,12 @@ theorem distincts_prefix {α : Type} [Inhabited α] (k : Nat) (xs : List α) :
 
 -- selects
 
-theorem selects_stores {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (keys : List α)
-                                                                (values : List β) (n : Nat)
-                                                                (hkeys : keys.length = n) (hvalues : values.length = n) :
+theorem selects_stores {α β : Type} [Inhabited α] [Inhabited β] (a : α → β)
+                                                                      (keys : List α)
+                                                                      (values : List β)
+                                                                      (n : Nat)
+                                                                      (hkeys : length keys = n)
+                                                                      (hvalues : length values = n) :
   distincts keys → selects (current (stores a keys values)) keys = values :=
   by
     intro hd
@@ -1759,7 +1826,8 @@ theorem selects_shifts (a : Int → Int) (n : Nat) (i : Int) (d : Int) :
 -- values; both counters are patterns, since they are different trace variables in programs
 -- (from conda, condaf, ss1, ss1f)
 theorem selects_stores_counter (a : Int → Int) (i : Int) (c : Int)
-                               (n : Nat) (vs : List Int) (hvs : vs.length = n) :
+                                     (n : Nat) (vs : List Int)
+                                     (hvs : length vs = n) :
   c ≠ 0
     → selects
       (current (stores a (butlast (counter i c n)) vs))
@@ -1785,9 +1853,13 @@ theorem sums_consts (x : Int) (n : Nat) (c : Int) :
 
 -- array selects
 
-theorem current_stores {α β : Type} [Inhabited α] [Inhabited β] (k : α) (a : α → β) (keys : List α)
-                                                                (values : List β) (n : Nat)
-                                                                (hkeys : keys.length = n) (hvalues : values.length = n) :
+theorem current_stores {α β : Type} [Inhabited α] [Inhabited β] (k : α)
+                                                                      (a : α → β)
+                                                                      (keys : List α)
+                                                                      (values : List β)
+                                                                      (n : Nat)
+                                                                      (hkeys : length keys = n)
+                                                                      (hvalues : length values = n) :
   current (stores a keys values) k
     = (if occurs k keys then earlier (indexof k keys) values else a k) :=
   by
@@ -1810,15 +1882,19 @@ theorem current_stores {α β : Type} [Inhabited α] [Inhabited β] (k : α) (a 
 
 -- an earlier state reads the value stored last at k among the keys stored so far, the initial value otherwise
 -- (indexof is the *last* occurrence, hence indexof(k, prefix(j, keys)) <= indexof(k, keys) but not equal)
-theorem earlier_stores {α β : Type} [Inhabited α] [Inhabited β] (k : α) (j : Nat) (a : α → β)
-                                                                (keys : List α) (values : List β) (n : Nat)
-                                                                (hkeys : keys.length = n) (hvalues : values.length = n) :
-  integer j < integer n
-    → earlier j (butlast (stores a keys values)) k
-      = (if occurs k («prefix» j keys) then
-           earlier (indexof k («prefix» j keys)) values
-         else
-           a k) :=
+theorem earlier_stores {α β : Type} [Inhabited α] [Inhabited β] (k : α)
+                                                                      (j : Nat)
+                                                                      (a : α → β)
+                                                                      (keys : List α)
+                                                                      (values : List β)
+                                                                      (n : Nat)
+                                                                      (hkeys : length keys = n)
+                                                                      (hvalues : length values = n) :
+  integer j < integer n → earlier j (butlast (stores a keys values)) k
+    = (if occurs k («prefix» j keys) then
+         earlier (indexof k («prefix» j keys)) values
+       else
+         a k) :=
   by
     intro h
     simp only [integer_eq] at h
@@ -1834,7 +1910,7 @@ theorem earlier_stores {α β : Type} [Inhabited α] [Inhabited β] (k : α) (j 
     · simp only [ho, ite_false]
 
 theorem current_shifts (a : Int → Int) (n : Nat) (i : Int) (d : Int)
-                       (k : Int) :
+                             (k : Int) :
   0 ≤ d
     → current (shifts a (butlast (counter i 1 n)) d) k
       = (if i ≤ k ∧ k < i + integer n then a (k + d) else a k) :=
@@ -1846,8 +1922,8 @@ theorem current_shifts (a : Int → Int) (n : Nat) (i : Int) (d : Int)
 -- stores at the positions of a counter, guarded by C, keep the other positions; a read at j
 -- (from copysome1-1, copysome1-2)
 theorem current_trace_conditional_store (a0 : Int → Int) (n : Nat)
-                                        (j : Int) (C : Int → Prop)
-                                        (V : Int → Int) :
+                                              (j : Int) (C : Int → Prop)
+                                              (V : Int → Int) :
   current
     (trace
        a0
@@ -1874,12 +1950,14 @@ theorem current_trace_conditional_store (a0 : Int → Int) (n : Nat)
 -- the same, with the guard and the value on the values of three further dependencies at the iteration of j
 -- (from array_mul_init)
 theorem current_trace_conditional_store_deps (a0 : Int → Int) (n : Nat)
-                                             (j : Int) (hs : List Int)
-                                             (cs : List Int)
-                                             (vs : List Int)
-                                             (C : Int → Int → Int → Prop)
-                                             (V : Int → Int → Int → Int)
-                                             (hhs : hs.length = n) (hcs : cs.length = n) (hvs : vs.length = n) :
+                                                   (j : Int) (hs : List Int)
+                                                   (cs : List Int)
+                                                   (vs : List Int)
+                                                   (C : Int → Int → Int → Prop)
+                                                   (V : Int → Int → Int → Int)
+                                                   (hhs : length hs = n)
+                                                   (hcs : length cs = n)
+                                                   (hvs : length vs = n) :
   current
     (trace
        a0
@@ -1964,12 +2042,13 @@ theorem current_trace_conditional_store_deps (a0 : Int → Int) (n : Nat)
 -- the same, at distinct positions ps, which are kept as matched, read by occurs and indexof
 -- (from array_monotonic)
 theorem current_trace_conditional_store_distinct (a0 : Int → Int)
-                                                 (n : Nat) (j : Int)
-                                                 (ps : List Int)
-                                                 (cs : List Int)
-                                                 (C : Int → Int → Prop)
-                                                 (V : Int → Int → Int)
-                                                 (hps : ps.length = n) (hcs : cs.length = n) :
+                                                       (n : Nat) (j : Int)
+                                                       (ps : List Int)
+                                                       (cs : List Int)
+                                                       (C : Int → Int → Prop)
+                                                       (V : Int → Int → Int)
+                                                       (hps : length ps = n)
+                                                       (hcs : length cs = n) :
   distincts ps
     → current
       (trace
@@ -2023,7 +2102,7 @@ theorem current_trace_conditional_store_distinct (a0 : Int → Int)
 -- iteration only; a generic guard C(a[k], k) is no pattern, and C(a, k) would read other positions
 -- (from condn, condnf)
 theorem current_trace_cap (a0 : Int → Int) (n : Nat) (j : Int) (b : Int)
-                          (hs : List Int) (hhs : hs.length = n) :
+                                (hs : List Int) (hhs : length hs = n) :
   current
     (trace
        a0
@@ -2081,7 +2160,7 @@ theorem current_trace_cap (a0 : Int → Int) (n : Nat) (j : Int) (b : Int)
 -- of the predecessor, is the initial element plus the sum of G over the positions before
 -- (from eqn1, eqn1f, nsqm, nsqmf, pcomp, pcompf, sqm)
 theorem current_trace_prefix_sums (b0 : Int → Int) (n : Nat) (j : Int)
-                                  (G : Int → Int) :
+                                        (G : Int → Int) :
   current
     (trace
        b0
@@ -2121,7 +2200,7 @@ theorem current_trace_prefix_sums (b0 : Int → Int) (n : Nat) (j : Int)
 -- the same with two added terms, since a higher-order summand matches a single summand only (see TODO.md)
 -- (from nsqm, nsqmf, pcomp, pcompf, sqm)
 theorem current_trace_prefix_sums_add (b0 : Int → Int) (n : Nat) (j : Int)
-                                      (G : Int → Int) (H : Int → Int) :
+                                            (G : Int → Int) (H : Int → Int) :
   current
     (trace
        b0
@@ -2162,7 +2241,7 @@ theorem current_trace_prefix_sums_add (b0 : Int → Int) (n : Nat) (j : Int)
 -- the special case of a constant added term
 -- (from standard_seq_init_ground)
 theorem current_trace_prefix_const (a0 : Int → Int) (n : Nat) (c : Int)
-                                   (j : Int) :
+                                         (j : Int) :
   current
     (trace
        a0
@@ -2202,7 +2281,8 @@ theorem sum_consts (n : Nat) (x : Int) :
 -- counter of an inner loop; the iteration constraint is a side condition, since as a left-hand side it would also
 -- match a constraint without the dependency, with the dependency synthesized as a map
 -- (from examples/dafny/sorting/nested_sum.dfy)
-theorem sum_invs_const (n : Nat) (c : Int) (js : List Int) (hjs : js.length = n) :
+theorem sum_invs_const (n : Nat) (c : Int) (js : List Int)
+                             (hjs : length js = n) :
   invs (List.zip (butlast (counter 0 1 n)) js) (fun ⟨k, j⟩ => j = c)
     → sum js = c * integer n :=
   by
@@ -2221,21 +2301,26 @@ theorem sum_invs_const (n : Nat) (c : Int) (js : List Int) (hjs : js.length = n)
       rw [Int.mul_add, Int.mul_one]
       omega
 
-theorem sum_neg (values : List Int) :
+theorem sum_neg (values : List Int) (n : Nat)
+                      (hvalues : length values = n) :
   sum (maps values (fun v => -v)) = -sum values :=
   by
+    clear hvalues n
     induction values with
     | nil => rfl
     | cons v vs ih => simp [maps, sum, ih]; omega
 
-theorem sum_scale (values : List Int) (a : Int) :
+theorem sum_scale (values : List Int) (a : Int) (n : Nat)
+                        (hvalues : length values = n) :
   sum (maps values (fun v => a * v)) = a * sum values :=
   by
+    clear hvalues n
     induction values with
     | nil => simp [maps, sum]
     | cons v vs ih => simp [maps, sum, ih]; grind
 
-theorem sum_add (xs : List Int) (ys : List Int) (n : Nat) (hxs : xs.length = n) (hys : ys.length = n) :
+theorem sum_add (xs : List Int) (ys : List Int) (n : Nat)
+                      (hxs : length xs = n) (hys : length ys = n) :
   sum (maps (List.zip xs ys) (fun ⟨v, w⟩ => v + w)) = sum xs + sum ys :=
   by
     induction xs generalizing ys n with
@@ -2265,24 +2350,36 @@ theorem sum_counter (i : Int) (c : Int) (n : Nat) :
 
 -- a sum of indicators, 1 where a condition holds and 0 otherwise, is the number of values where it holds, which the
 -- lemmas on counts evaluate; for one dependency and for two, as in loops with a choice
-theorem sum_indicator_true {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) :
+theorem sum_indicator_true {α : Type} [Inhabited α] (xs : List α)
+                                                          (P : α → Prop)
+                                                          (n : Nat)
+                                                          (hxs : length xs = n) :
   sum (maps xs (fun x => if P x then 1 else 0))
     = count True (maps xs (fun x => P x)) :=
   by
+    clear hxs n
     induction xs with
     | nil => simp [maps, sum, count]
     | cons x xs ih => simp only [maps, sum, count] at *; rw [ih]; by_cases h : P x <;> simp [h]
 
-theorem sum_indicator_false {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) :
+theorem sum_indicator_false {α : Type} [Inhabited α] (xs : List α)
+                                                           (P : α → Prop)
+                                                           (n : Nat)
+                                                           (hxs : length xs = n) :
   sum (maps xs (fun x => if P x then 0 else 1))
     = count False (maps xs (fun x => P x)) :=
   by
+    clear hxs n
     induction xs with
     | nil => simp [maps, sum, count]
     | cons x xs ih => simp only [maps, sum, count] at *; rw [ih]; by_cases h : P x <;> simp [h]
 
-theorem sum_indicator_true_2 {α β : Type} [Inhabited α] [Inhabited β] (xs : List α) (ys : List β)
-                                                                      (P : α → β → Prop) :
+theorem sum_indicator_true_2 {α β : Type} [Inhabited α] [Inhabited β] (xs : List α)
+                                                                            (ys : List β)
+                                                                            (P : α → β → Prop)
+                                                                            (n : Nat)
+                                                                            (hxs : length xs = n)
+                                                                            (hys : length ys = n) :
   sum (maps (List.zip xs ys) (fun ⟨x, y⟩ => if P x y then 1 else 0))
     = count True (maps (List.zip xs ys) (fun ⟨x, y⟩ => P x y)) :=
   by
@@ -2292,8 +2389,12 @@ theorem sum_indicator_true_2 {α β : Type} [Inhabited α] [Inhabited β] (xs : 
       obtain ⟨x, y⟩ := p
       simp only [maps, sum, count] at *; rw [ih]; by_cases h : P x y <;> simp [h]
 
-theorem sum_indicator_false_2 {α β : Type} [Inhabited α] [Inhabited β] (xs : List α) (ys : List β)
-                                                                       (P : α → β → Prop) :
+theorem sum_indicator_false_2 {α β : Type} [Inhabited α] [Inhabited β] (xs : List α)
+                                                                             (ys : List β)
+                                                                             (P : α → β → Prop)
+                                                                             (n : Nat)
+                                                                             (hxs : length xs = n)
+                                                                             (hys : length ys = n) :
   sum (maps (List.zip xs ys) (fun ⟨x, y⟩ => if P x y then 0 else 1))
     = count False (maps (List.zip xs ys) (fun ⟨x, y⟩ => P x y)) :=
   by
@@ -2303,8 +2404,11 @@ theorem sum_indicator_false_2 {α β : Type} [Inhabited α] [Inhabited β] (xs :
       obtain ⟨x, y⟩ := p
       simp only [maps, sum, count] at *; rw [ih]; by_cases h : P x y <;> simp [h]
 
-theorem sum_selects_update {α : Type} [Inhabited α] (a : α → Int) (k : α) (v : Int)
-                                                    (keys : List α) :
+theorem sum_selects_update {α : Type} [Inhabited α] (a : α → Int) (k : α)
+                                                          (v : Int)
+                                                          (keys : List α)
+                                                          (n : Nat)
+                                                          (hkeys : length keys = n) :
   distincts keys
     → sum (selects (fun j => if j = k then v else a j) keys)
       = (if occurs k keys then
@@ -2312,6 +2416,7 @@ theorem sum_selects_update {α : Type} [Inhabited α] (a : α → Int) (k : α) 
          else
            sum (selects a keys)) :=
   by
+    clear hkeys n
     intro hd
     induction keys with
     | nil => simp [selects, maps, sum, occurs]
@@ -2329,8 +2434,11 @@ theorem sum_selects_update {α : Type} [Inhabited α] (a : α → Int) (k : α) 
 
 -- parity
 
-theorem parity_selects_update {α : Type} [Inhabited α] (a : α → Int) (k : α) (v : Int)
-                                                       (keys : List α) :
+theorem parity_selects_update {α : Type} [Inhabited α] (a : α → Int)
+                                                             (k : α) (v : Int)
+                                                             (keys : List α)
+                                                             (n : Nat)
+                                                             (hkeys : length keys = n) :
   distincts keys
     → parity (selects (fun j => if j = k then v else a j) keys)
       = (if occurs k keys then
@@ -2339,6 +2447,7 @@ theorem parity_selects_update {α : Type} [Inhabited α] (a : α → Int) (k : �
          else
            parity (selects a keys)) :=
   by
+    clear hkeys n
     intro hd
     induction keys with
     | nil => simp [selects, maps, parity, occurs]
@@ -2364,8 +2473,13 @@ theorem count_consts {α : Type} [Inhabited α] (n : Nat) (e : α) (v : α) :
     | succ m ih => simp only [consts, butlast, count, ih, integer]; split <;> omega
 
 -- an update of a visited key replaces its contribution, as for sum and parity
-theorem count_selects_update {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (k : α) (w : β)
-                                                                      (e : β) (keys : List α) :
+theorem count_selects_update {α β : Type} [Inhabited α] [Inhabited β] (a : α → β)
+                                                                            (k : α)
+                                                                            (w : β)
+                                                                            (e : β)
+                                                                            (keys : List α)
+                                                                            (n : Nat)
+                                                                            (hkeys : length keys = n) :
   distincts keys
     → count e (selects (fun j => if j = k then w else a j) keys)
       = (if occurs k keys then
@@ -2374,6 +2488,7 @@ theorem count_selects_update {α β : Type} [Inhabited α] [Inhabited β] (a : �
          else
            count e (selects a keys)) :=
   by
+    clear hkeys n
     intro hd
     induction keys with
     | nil => simp [selects, maps, count, occurs]
@@ -2421,7 +2536,8 @@ theorem count_nonnegative {α : Type} [Inhabited α] (e : α) (vs : List α) :
 
 -- the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m
 -- (from half, sumt2)
-theorem count_remainder (n : Nat) (m : Int) (r : Int) (hs : List Int) (hhs : hs.length = n) :
+theorem count_remainder (n : Nat) (m : Int) (r : Int) (hs : List Int)
+                              (hhs : length hs = n) :
   0 < m ∧ 0 ≤ r ∧ r < m
     → count
       r
@@ -2490,7 +2606,7 @@ theorem count_remainder (n : Nat) (m : Int) (r : Int) (hs : List Int) (hhs : hs.
 -- true; the dependencies are kept as matched, such that the counts are syntactically equal to those of the program
 -- (from sumt2)
 theorem count_false_true (i : Int) (c : Int) (n : Nat) (hs : List Int)
-                         (P : Int → Int → Prop) (hhs : hs.length = n) :
+                               (P : Int → Int → Prop) (hhs : length hs = n) :
   count
     False
     (maps (List.zip (butlast (counter i c n)) hs) (fun ⟨k, h⟩ => P k h))
@@ -2517,7 +2633,8 @@ theorem count_false_true (i : Int) (c : Int) (n : Nat) (hs : List Int)
 -- the iterations where a value is r are counted by the occurrences of r among the values
 -- (from sumt2)
 theorem count_true_eq (ks : List Int) (r : Int) (hs : List Int)
-                      (F : Int → Int → Int) :
+                            (F : Int → Int → Int) (n : Nat)
+                            (hks : length ks = n) (hhs : length hs = n) :
   count True (maps (List.zip ks hs) (fun ⟨k, h⟩ => F k h = r))
     = count r (maps (List.zip ks hs) (fun ⟨k, h⟩ => F k h)) :=
   by
@@ -2528,9 +2645,11 @@ theorem count_true_eq (ks : List Int) (r : Int) (hs : List Int)
 -- bounds
 
 -- the initial value is a bound of the prefix maxima and minima, which are attained by some value otherwise
-theorem current_maxs_initial (x : Int) (values : List Int) :
+theorem current_maxs_initial (x : Int) (values : List Int) (n : Nat)
+                                   (hvalues : length values = n) :
   x ≤ current (maxs x values) :=
   by
+    clear hvalues n
     induction values generalizing x with
     | nil => simp [maxs, trace, current]
     | cons v vs ih =>
@@ -2539,7 +2658,8 @@ theorem current_maxs_initial (x : Int) (values : List Int) :
       have h2 : x ≤ (if x < v then v else x) := by split <;> omega
       omega
 
-theorem current_maxs_earlier (k : Nat) (x : Int) (values : List Int) (n : Nat) (hvalues : values.length = n) :
+theorem current_maxs_earlier (k : Nat) (x : Int) (values : List Int)
+                                   (n : Nat) (hvalues : length values = n) :
   integer k < integer n → earlier k values ≤ current (maxs x values) :=
   by
     intro h
@@ -2552,15 +2672,17 @@ theorem current_maxs_earlier (k : Nat) (x : Int) (values : List Int) (n : Nat) (
       cases k with
       | zero =>
         simp only [earlier]
-        have := current_maxs_initial (if x < v then v else x) vs
+        have := current_maxs_initial (if x < v then v else x) vs vs.length rfl
         by_cases hv : x < v <;> simp only [hv, ite_true, ite_false] at this ⊢ <;> omega
       | succ i =>
         simp only [earlier]
         exact ih i _ vs.length rfl (by simp at hvalues; simp only [integer_eq] at h ⊢; omega)
 
-theorem current_mins_initial (x : Int) (values : List Int) :
+theorem current_mins_initial (x : Int) (values : List Int) (n : Nat)
+                                   (hvalues : length values = n) :
   current (mins x values) ≤ x :=
   by
+    clear hvalues n
     induction values generalizing x with
     | nil => simp [mins, trace, current]
     | cons v vs ih =>
@@ -2569,7 +2691,8 @@ theorem current_mins_initial (x : Int) (values : List Int) :
       have h2 : (if v < x then v else x) ≤ x := by split <;> omega
       omega
 
-theorem current_mins_earlier (k : Nat) (x : Int) (values : List Int) (n : Nat) (hvalues : values.length = n) :
+theorem current_mins_earlier (k : Nat) (x : Int) (values : List Int)
+                                   (n : Nat) (hvalues : length values = n) :
   integer k < integer n → current (mins x values) ≤ earlier k values :=
   by
     intro h
@@ -2582,7 +2705,7 @@ theorem current_mins_earlier (k : Nat) (x : Int) (values : List Int) (n : Nat) (
       cases k with
       | zero =>
         simp only [earlier]
-        have := current_mins_initial (if v < x then v else x) vs
+        have := current_mins_initial (if v < x then v else x) vs vs.length rfl
         by_cases hv : v < x <;> simp only [hv, ite_true, ite_false] at this ⊢ <;> omega
       | succ i =>
         simp only [earlier]
@@ -2592,9 +2715,9 @@ theorem current_mins_earlier (k : Nat) (x : Int) (values : List Int) (n : Nat) (
 -- least one iteration
 -- (from large_const)
 theorem current_trace_increasing (x0 : Int) (n : Nat) (a : Int) (b : Int)
-                                 (c : Int) (hs : List Int)
-                                 (C : Int → Prop) (D : Int → Prop)
-                                 (E : Int → Prop) (hhs : hs.length = n) :
+                                       (c : Int) (hs : List Int)
+                                       (C : Int → Prop) (D : Int → Prop)
+                                       (E : Int → Prop) (hhs : length hs = n) :
   n ≠ zero ∧ 0 < a ∧ 0 < b ∧ 0 < c
     → x0
       < current
@@ -2626,9 +2749,9 @@ theorem current_trace_increasing (x0 : Int) (n : Nat) (a : Int) (b : Int)
 -- current value, an inductive invariant; the left-hand side is the conjunction of both bounds, which binds both
 -- (from benchmark51_polynomial)
 theorem current_trace_bounded (x0 : Int) (n : Nat) (lo : Int) (hi : Int)
-                              (C1 : Int → Prop) (C2 : Int → Prop)
-                              (C3 : Int → Prop) (F1 : Int → Int)
-                              (F2 : Int → Int) (F3 : Int → Int) :
+                                    (C1 : Int → Prop) (C2 : Int → Prop)
+                                    (C3 : Int → Prop) (F1 : Int → Int)
+                                    (F2 : Int → Int) (F3 : Int → Int) :
   lo ≤ x0
     ∧ x0 ≤ hi
     ∧ (∀ (y : Int), lo ≤ y ∧ y ≤ hi ∧ C1 y → lo ≤ F1 y ∧ F1 y ≤ hi)
@@ -2810,7 +2933,7 @@ theorem mul_lt_cancel (k : Int) (a : Int) (b : Int) :
 -- iff it holds at the last of them
 -- (from Mono1_1-2)
 theorem invs_two_phases (x0 : Int) (n : Nat) (b : Int) (c : Int)
-                        (B : Int) :
+                              (B : Int) :
   x0 ≤ b ∧ 0 < c
     → (invs
          (List.zip (butlast (counter 0 1 n)) (butlast

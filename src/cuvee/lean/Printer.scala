@@ -16,6 +16,8 @@ import easyprint.Align
 
 import easyparse.Assoc
 
+import scala.collection.mutable
+
 // the logic in Lean 4: sorts, datatypes, functions and their definitions, axioms, lemmas, and goals,
 // but no programs, procedures, or global variables, which are rejected; the output assumes `open Classical`
 // (conditionals on propositions) and Mathlib for ℝ and Set;
@@ -88,11 +90,12 @@ object Printer extends cuvee.pipe.Printer:
       case error: Error   => text("-- error " + error.msg + error.info.mkString(" ", " ", ""))
       case _              => text("-- " + res)
 
-  // the type parameters of declarations are implicit
+  // the type parameters of declarations are implicit, each with an instance Inhabited, which the functions on traces
+  // and lists need for the elements outside of them (unspecified, earlier, current), as in teq.lean
   def params(params: List[Param]): Doc =
     if params.isEmpty
     then empty
-    else text(" {" + params.map(param).mkString(" ") + " : Type}")
+    else text(" {" + params.map(param).mkString(" ") + " : Type}") ~ concat(params.map(p => text(" [Inhabited " + param(p) + "]")))
 
   def binder(x: Var): Doc =
     text("(" + name(x.name) + " :") ~~ doc(x.typ) ~ text(")")
@@ -117,18 +120,108 @@ object Printer extends cuvee.pipe.Printer:
       case Some(name_) => name(name_)
       case None        => "ax_" + Integer.toHexString(phi.hashCode)
 
-  // the universally quantified variables of a formula become the binders of the declaration,
+  // the universally quantified variables of a formula become the binders of the declaration, followed by the further
+  // variables `fresh` and the hypotheses `hyps` on the lengths of dependencies (see lengths);
   // the proof always starts on the line after :=, like the bodies of definitions
-  def statement(head: Doc, phi: Expr, proof: Option[Doc]): Doc =
+  def statement(head: Doc, phi: Expr, proof: Option[Doc], fresh: List[Var] = Nil, hyps: List[(String, Expr)] = Nil): Doc =
     val (xs, body) =
       phi match
         case All(xs, body) => (xs, body)
         case _             => (Nil, phi)
 
-    val decl = Group(head ~ Nest(4, binders(xs)) ~~ text(":") ~ Nest(2, line ~ doc(body)))
+    // a hypothesis is not broken across lines
+    val hyps_ = for (name_, hyp) <- hyps yield text("(" + name_ + " : " + render(doc(hyp), 1000).mkString(" ") + ")")
+    val binders_ = (xs ++ fresh).map(binder) ++ hyps_
+    val all = if binders_.isEmpty then empty else space ~ Align(Doc.fill(binders_, empty))
+    val decl = Group(head ~ Nest(4, all) ~~ text(":") ~ Nest(2, line ~ doc(body)))
     proof match
       case None        => decl
       case Some(proof) => decl ~~ text(":=") ~ Nest(2, hardline ~ proof)
+
+  // the hypotheses on the lengths of the dependencies of the combinators in a lemma, whose semantics in Lean zips the
+  // dependencies, which truncates them to the shortest one, whereas the dependencies of a combinator of Cuvée have equal
+  // lengths (see resources/cuvee/teq.lean): the lists among the dependencies of each combinator, also of a function
+  // defined by one (:fold, e.g. stores), and the lists read at the iterations k of a counter, earlier(natural(k), xs),
+  // have the length n of the loop, the number of steps of ⌊counter(_, _, n)⌋ or ⌊consts(n, _)⌋ among the dependencies,
+  // or a fresh variable n of the lemma if no counter gives it; the hypotheses `length xs = n` use the function length
+  // of teq.dfy, List.length of Lean, and are named h<xs>
+  def lengths(phi: Expr): (List[Var], List[(String, Expr)]) =
+    val (xs, body) =
+      phi match
+        case All(xs, body) => (xs, body)
+        case _             => (Nil, phi)
+
+    val tagged = dependencies(body, Map())
+    val vars = tagged.map(_._1).distinct
+    val known = tagged.collect { case (x, Some(n)) => (x, n) }.toMap
+
+    val fresh =
+      if vars.forall(known.contains) then None
+      else
+        val used = (body.free ++ xs).map(_.name.subscripted)
+        val name_ = Iterator.from(0).map(i => if i == 0 then "n" else "n" + i).find(!used.contains(_)).get
+        Some(Var(Name(name_, None), Sort.nat))
+
+    val hyps = for x <- vars yield ("h" + name(x.name), Eq(App(length, List(x)), known.getOrElse(x, fresh.get)))
+    (fresh.toList, hyps)
+
+  // the function length of lists, List.length of Lean, declared in teq.dfy with :lean, hence not printed
+  val length = Fun("length", List(Param("a")), List(Var("xs", Sort.list(Param("a")))), Sort.nat)
+
+  // the positions of the formal parameters of the functions defined by a combinator (:fold, e.g. stores) that are
+  // its dependencies, recorded when the definitions are printed
+  val folds = mutable.Map[Name, List[Int]]()
+
+  def positions(fun: Fun, body: Expr): List[Int] =
+    val deps =
+      body match
+        case Trace(_, deps, _, _, _) => deps
+        case Maps(deps, _, _)        => deps
+        case Invs(deps, _, _)        => deps
+        case _                       => Nil
+    deps.collect { case x: Var if fun.formals.contains(x) => fun.formals.indexOf(x) }
+
+  // the lists that are dependencies of combinators in `expr` with the lengths of their loops, if a counter gives them,
+  // where `counters` are the variables bound to the iterations of counters by the enclosing combinators
+  def dependencies(expr: Expr, counters: Map[Var, Expr]): List[(Var, Option[Expr])] =
+    expr match
+      case Trace(init, deps, _, bound, update) =>
+        dependencies(init, counters) ++ loop(deps, bound, update, counters)
+
+      case Maps(deps, bound, update) =>
+        loop(deps, bound, update, counters)
+
+      case Invs(deps, bound, body) =>
+        loop(deps, bound, body, counters)
+
+      case Earlier(Nats.natural(k: Var), xs: Var) if counters.contains(k) =>
+        List((xs, Some(counters(k))))
+
+      case App(fun, _, _, args) if folds.contains(fun.name) =>
+        tag(folds(fun.name).map(args)) ++ args.flatMap(dependencies(_, counters))
+
+      case _ =>
+        val buffer = mutable.ListBuffer[(Var, Option[Expr])]()
+        expr.map { sub => buffer ++= dependencies(sub, counters); sub }
+        buffer.toList
+
+  // the number of steps of a counter among the dependencies, if any
+  def steps(deps: List[Expr]): Option[Expr] =
+    deps.collectFirst {
+      case Butlast(Counter(_, _, n))                                                       => n
+      case Butlast(App(fun, _, _, List(n, _))) if fun.name == Name("consts", None)         => n
+    }
+
+  def tag(deps: List[Expr]): List[(Var, Option[Expr])] =
+    val n = steps(deps)
+    deps.collect { case x: Var => (x, n) }
+
+  def loop(deps: List[Expr], bound: List[Var], body: Expr, counters: Map[Var, Expr]): List[(Var, Option[Expr])] =
+    val counters_ =
+      (deps, bound) match
+        case (Butlast(Counter(Ints.zero, Ints.one, n)) :: _, k :: _) => counters + (k -> n)
+        case _                                                        => counters
+    tag(deps) ++ deps.flatMap(dependencies(_, counters_)) ++ dependencies(body, counters_)
 
   // rewrite rules of -simplify are simp lemmas
   def simp(attrs: Attrs): Doc =
@@ -180,6 +273,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // definitions that use conditionals on propositions are not computable
       case DefineFun(fun @ Fun(name_, params_, formals_, res), body, _) =>
+        if positions(fun, body).nonEmpty then folds(name_) = positions(fun, body)
         val head = text("noncomputable def") ~~ signature(name_, params_, formals_) ~~ text(":") ~~ doc(res)
         head ~~ text(":=") ~ Nest(2, hardline ~ definition(fun, body)) ~ termination(fun, body)
 
@@ -188,10 +282,12 @@ object Printer extends cuvee.pipe.Printer:
         statement(simp(attrs) ~ text("axiom") ~~ text(named(attrs, phi)) ~ params(params_), phi, None)
 
       case Assert(Lemma, params_, phi, attrs) if attrs.contains("free") =>
-        statement(simp(attrs) ~ text("axiom") ~~ text(named(attrs, phi)) ~ params(params_), phi, None)
+        val (fresh, hyps) = lengths(phi)
+        statement(simp(attrs) ~ text("axiom") ~~ text(named(attrs, phi)) ~ params(params_), phi, None, fresh, hyps)
 
       case Assert(Lemma, params_, phi, attrs) =>
-        statement(simp(attrs) ~ text("theorem") ~~ text(named(attrs, phi)) ~ params(params_), phi, Some(text("by sorry")))
+        val (fresh, hyps) = lengths(phi)
+        statement(simp(attrs) ~ text("theorem") ~~ text(named(attrs, phi)) ~ params(params_), phi, Some(text("by sorry")), fresh, hyps)
 
       // goals are anonymous
       case Assert(Goal, params_, phi, _) =>
