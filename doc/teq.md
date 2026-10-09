@@ -74,6 +74,9 @@ after section 4 of the paper.
   update has a case per path through the body, the counter
   `K = counter(0, 1, n)`, and the iteration constraint `Invs`, and which
   checks that the body executes safely from the current state.
+- A loop whose body ends by `break` or `return` on all paths runs it at most
+  once: its body is a conditional on the test, without a trace equation
+  system, where `break` continues after the loop.
 - The goal is that all checks hold and the postcondition follows on every
   path.
 - Differential equations and parallel composition are not supported; loop
@@ -93,6 +96,22 @@ after section 4 of the paper.
   Lemmas whose order matters as rewrite rules keep it within their group.
 - Functions that produce traces are plural (`sums`, `maxs`, `counts`), their
   scalar counterparts singular (`sum`, `max`, `count`).
+- Lemmas found on the SV-COMP examples (`examples/sv-comp`) are merged into
+  the groups, with the examples they come from as `(from ...)`, and two new
+  groups, the length of iterations and arithmetic in the normal form of the
+  simplifier. Left out are lemmas that are no rules in general: the split of
+  a trace on a fixed condition, which loops; `!(y % 2 == 0) <==> y % 2 == 1`,
+  which changes the normal form of guards and loops with the joins of guarded
+  stores; comparisons of two open variables as left-hand sides, e.g.
+  `n <= b`, which match every comparison; the joins of two guarded stores
+  into one store of a conditional value, since a pattern with two cases
+  also matches an update with a single case, leaving the variables of the
+  other case unbound (see TODO.md), and the join at the position of a
+  further dependency also exhausts the rewrite steps; and lemmas that never
+  match. The examples keep these lemmas locally.
+- Auxiliary predicates abstract iteration constraints, e.g. `agree_prefix`,
+  and are only declared; their names avoid those that inputs declare with
+  other meanings, since equal signatures are identified.
 
 ## Simplification and rewriting
 

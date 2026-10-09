@@ -1,0 +1,3 @@
+(error
+  "goto to a label whose statement falls through is not supported"
+  "L")

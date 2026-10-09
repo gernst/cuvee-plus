@@ -294,7 +294,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.31.2")
+    println("Cuvée 0.32.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

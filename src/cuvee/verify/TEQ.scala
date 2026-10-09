@@ -253,66 +253,80 @@ object TEQ extends Transform:
     val inner = Path(p.su ++ Subst.from(xs, sharp))
     val paths = symex(state, proc, body, inner).filter(iterates)
 
-    // the nondeterministic choices of the body are ranged over by sequences, named after them with a final ?, e.g. Choice?
-    val zs = paths.flatMap(_.zs).distinct
-    val Zs = zs.map(z => Var(z.name.name.capitalize + "?", Sort.seq(z.typ)).fresh)
+    // no path through the body leads to another iteration, e.g. a body that ends by break or return on all paths:
+    // the loop runs the body at most once, as a conditional, without a trace equation system, where the paths that
+    // end by break continue after the loop, and loops without test may also be left before the body
+    if paths.isEmpty
+    then
+      val guard_ = p(guard)
+      val once =
+        for q <- symex(state, proc, body, if test.isDefined then p.when(guard_) else p)
+        yield if q.jump == Some(Return) then q else q.copy(jump = None)
 
-    val n = Var("n", Sort.int).fresh
-    val k = Var("k", Sort.int).fresh
-    val K = Var("K", Sort.trace(Sort.int)).fresh
-    // the traces are named after the variables, capitalized, e.g. I for i
-    val Xs = xs.map(x => Var(x.name.name.capitalize, Sort.trace(x.typ)).fresh)
-    val cur = xs.fresh
+      test match
+        case Some(_) => once :+ p.when(Not(guard_))
+        case None    => p :: once
+    else
+      // the nondeterministic choices of the body are ranged over by sequences, named after them with a final ?, e.g. Choice?
+      val zs = paths.flatMap(_.zs).distinct
+      val Zs = zs.map(z => Var(z.name.name.capitalize + "?", Sort.seq(z.typ)).fresh)
 
-    // the update of x_j has a case for each path, the dependencies are the other loop variables and choices it uses
-    val equations =
-      for ((x, x_), tr) <- xs zip sharp zip Xs
-      yield
-        val updates = for q <- paths yield Upd(q.B, q(x))
-        val used = updates.free
-        val others = (sharp zip Xs).filter((y_, _) => y_ != x_ && used.contains(y_))
-        val choices = (zs zip Zs).filter((z, _) => used.contains(z))
-        val deps = Butlast(K) :: others.map((_, tr_) => Butlast(tr_)) ++ choices.map(_._2)
-        val bound = k :: others.map(_._1) ++ choices.map(_._1)
-        val update =
-          updates match
-            case List(Upd(True, rhs)) => rhs
-            case _                    => Eps(updates)
-        Eq(tr, Trace(p(x), deps, x_, bound, update))
+      val n = Var("n", Sort.int).fresh
+      val k = Var("k", Sort.int).fresh
+      val K = Var("K", Sort.trace(Sort.int)).fresh
+      // the traces are named after the variables, capitalized, e.g. I for i
+      val Xs = xs.map(x => Var(x.name.name.capitalize, Sort.trace(x.typ)).fresh)
+      val cur = xs.fresh
 
-    val counter = Eq(K, Counter(Zero.int, One.int, n))
-    val current = for (x, tr) <- cur zip Xs yield Eq(x, Current(tr))
+      // the update of x_j has a case for each path, the dependencies are the other loop variables and choices it uses
+      val equations =
+        for ((x, x_), tr) <- xs zip sharp zip Xs
+        yield
+          val updates = for q <- paths yield Upd(q.B, q(x))
+          val used = updates.free
+          val others = (sharp zip Xs).filter((y_, _) => y_ != x_ && used.contains(y_))
+          val choices = (zs zip Zs).filter((z, _) => used.contains(z))
+          val deps = Butlast(K) :: others.map((_, tr_) => Butlast(tr_)) ++ choices.map(_._2)
+          val bound = k :: others.map(_._1) ++ choices.map(_._1)
+          val update =
+            updates match
+              case List(Upd(True, rhs)) => rhs
+              case _                    => Eps(updates)
+          Eq(tr, Trace(p(x), deps, x_, bound, update))
 
-    // all earlier iterations have taken some path through the body, with the guard holding before each of them
-    val iterations =
-      val deps = Butlast(K) :: Xs.map(Butlast(_)) ++ Zs
-      val bound = k :: sharp ++ zs
-      val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
-      Invs(deps, bound, And(List(inner(guard), paths_).flatMap(And.flattenStrong)))
+      val counter = Eq(K, Counter(Zero.int, One.int, n))
+      val current = for (x, tr) <- cur zip Xs yield Eq(x, Current(tr))
 
-    val teq = And(counter :: current ++ equations ++ List(iterations, Le.int(Zero.int, n)))
+      // all earlier iterations have taken some path through the body, with the guard holding before each of them
+      val iterations =
+        val deps = Butlast(K) :: Xs.map(Butlast(_)) ++ Zs
+        val bound = k :: sharp ++ zs
+        val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
+        Invs(deps, bound, And(List(inner(guard), paths_).flatMap(And.flattenStrong)))
 
-    // the state at the exit, from which the body executes safely if the guard holds,
-    // the paths of the body from there that end by break or return leave the loop as well
-    val exit = p.fresh(cur ++ List(n, K) ++ Xs ++ Zs).assign(xs, cur)
-    val last = symex(state, proc, body, Path(exit.su))
-    val safe = Path.formula(last.map(_.steps))
-    val exit_ = exit.assume(teq)
-    val guard_ = exit_(guard)
-    val checked = if safe == True then exit_ else exit_.check(Imp(guard_, safe))
+      val teq = And(counter :: current ++ equations ++ List(iterations, Le.int(Zero.int, n)))
 
-    val left =
-      for q <- last if !iterates(q)
-      yield
-        val jump = if q.jump == Some(Return) then q.jump else None
-        Path(q.su, checked.steps ++ (Step.Assume(guard_) :: q.steps), jump)
+      // the state at the exit, from which the body executes safely if the guard holds,
+      // the paths of the body from there that end by break or return leave the loop as well
+      val exit = p.fresh(cur ++ List(n, K) ++ Xs ++ Zs).assign(xs, cur)
+      val last = symex(state, proc, body, Path(exit.su))
+      val safe = Path.formula(last.map(_.steps))
+      val exit_ = exit.assume(teq)
+      val guard_ = exit_(guard)
+      val checked = if safe == True then exit_ else exit_.check(Imp(guard_, safe))
 
-    test match
-      case Some(test) =>
-        checked.assume(Not(exit_(test))) :: left
+      val left =
+        for q <- last if !iterates(q)
+        yield
+          val jump = if q.jump == Some(Return) then q.jump else None
+          Path(q.su, checked.steps ++ (Step.Assume(guard_) :: q.steps), jump)
 
-      case None =>
-        checked :: left
+      test match
+        case Some(test) =>
+          checked.assume(Not(exit_(test))) :: left
+
+        case None =>
+          checked :: left
 
   // the paths through a loop body that lead to the next iteration, i.e., that end normally or by continue
   def iterates(q: Path): Boolean =

@@ -8,26 +8,34 @@ object Grammar:
   import Brackets._
 
   val prefix_ops = Map(
-    "-" -> 11,
-    "!" -> 11
+    "-" -> 13,
+    "!" -> 13,
+    "~" -> 13
   )
 
   val postfix_ops = Map[String, Int]()
 
+  // the precedences of C, the bit operations below the comparisons
   val infix_ops = Map(
     "||" -> (Assoc.Left, 2),
     "&&" -> (Assoc.Left, 3),
-    "==" -> (Assoc.Left, 6),
-    "!=" -> (Assoc.Left, 6),
-    "<" -> (Assoc.Left, 7),
-    "<=" -> (Assoc.Left, 7),
-    ">" -> (Assoc.Left, 7),
-    ">=" -> (Assoc.Left, 7),
-    "+" -> (Assoc.Left, 9),
-    "-" -> (Assoc.Left, 9),
-    "*" -> (Assoc.Left, 10),
-    "/" -> (Assoc.Left, 10),
-    "%" -> (Assoc.Left, 10)
+    "|" -> (Assoc.Left, 4),
+    "^" -> (Assoc.Left, 5),
+    "&" -> (Assoc.Left, 6),
+    "==" -> (Assoc.Left, 7),
+    "!=" -> (Assoc.Left, 7),
+    "<" -> (Assoc.Left, 8),
+    "<=" -> (Assoc.Left, 8),
+    ">" -> (Assoc.Left, 8),
+    ">=" -> (Assoc.Left, 8),
+    // shifts, by constants only (see Parser.arith)
+    "<<" -> (Assoc.Left, 9),
+    ">>" -> (Assoc.Left, 9),
+    "+" -> (Assoc.Left, 10),
+    "-" -> (Assoc.Left, 10),
+    "*" -> (Assoc.Left, 11),
+    "/" -> (Assoc.Left, 11),
+    "%" -> (Assoc.Left, 11)
   )
 
   val sym = T("sym")
@@ -160,7 +168,7 @@ object Grammar:
     Cond(P(operators ~ ("?" ~ expr ~ ":" ~ expr).?))
 
   val assignop =
-    P(J("=") | J("+=") | J("-=") | J("*=") | J("/=") | J("%="))
+    P(J("=") | J("+=") | J("-=") | J("*=") | J("/=") | J("%=") | J("&=") | J("|=") | J("^=") | J("<<=") | J(">>="))
 
   val incr =
     P(J("++") | J("--"))
@@ -235,8 +243,20 @@ object Grammar:
   val labeled =
     Labeled(P(id ?~ ":" ~ stmt))
 
+  val goto_ =
+    Goto(P("goto" ~ id ~ ";"))
+
+  val switch_ =
+    Switch(P("switch" ~ parens(expr) ~ braces(stmt.*)))
+
+  val case_ =
+    P("case" ~ expr ~ ":" ~ stmt).map((value, stmt) => Case(Some(value), stmt))
+
+  val default_ =
+    P("default" ~ ":" ~ stmt).map(Case(None, _))
+
   val stmt: Parser[Stmt] =
-    P(block | if_ | while_ | dowhile | for_ | return_ | break_ | continue_ | empty | labeled | (simple ~ ";"))
+    P(block | if_ | while_ | dowhile | for_ | switch_ | case_ | default_ | return_ | break_ | continue_ | goto_ | empty | labeled | (simple ~ ";"))
 
   val param =
     P(pointer ~ id.? ~ (brackets(expr.?).map(_ => true) | R(false))).map:

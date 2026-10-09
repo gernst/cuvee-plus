@@ -22,6 +22,18 @@ function {:c} {:rw} remainder(a: int, b: int): int {
   if 0 <= a then a % b else -(-a % b)
 }
 
+function {:c} bitand(a: int, b: int): int
+
+function {:c} bitor(a: int, b: int): int
+
+function {:c} bitxor(a: int, b: int): int
+
+function {:c} bitnot(a: int): int
+
+function {:c} shl(a: int, b: int): int
+
+function {:c} shr(a: int, b: int): int
+
 var g: int
 
 method f() returns (result: int)

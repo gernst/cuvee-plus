@@ -32,16 +32,17 @@ num  = ({dec} | {oct} | {hex}) {suffix} | {chr}
 kw  = "int" | "long" | "short" | "char" | "unsigned" | "signed" | "_Bool" | "bool" | "void" | "float" | "double"
     | "const" | "static" | "extern" | "volatile" | "inline" | "restrict" | "__attribute__"
     | "typedef" | "sizeof"
-    | "if" | "else" | "while" | "do" | "for" | "break" | "continue" | "return"
+    | "if" | "else" | "while" | "do" | "for" | "break" | "continue" | "return" | "goto"
+    | "switch" | "case" | "default"
     | "(" | ")" | "[" | "]" | [;,{}?:]
-    | "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "++" | "--"
+    | "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "++" | "--"
 
 // string literals, which occur in the harness of SV-COMP, e.g. as arguments of __assert_fail
 str = \" ([^\"\\\n] | \\.)* \"
 
 id  = [a-zA-Z_] [a-zA-Z0-9_]*
 sym = {id}
-    | [+\-*/%!<>] | "&&" | "||" | "==" | "!=" | "<=" | ">="
+    | [+\-*/%!<>&|\^~] | "&&" | "||" | "==" | "!=" | "<=" | ">=" | "<<" | ">>"
 
 %%
 

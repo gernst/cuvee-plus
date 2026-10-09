@@ -1,0 +1,44 @@
+// ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/gj2007b.dfy
+// SV-COMP ReachSafety-Loops/loop-lit/gj2007b.yml (expected: safe), translated from the C program by hand: m takes
+// some of the values of x = 0, ..., n - 1, and is checked to be in that range if n > 0
+//
+// findings: m is set to the iteration k in some iterations and kept otherwise; two lemmas, whose left-hand sides
+// are comparisons, bound such a value by bounds that hold of its initial value and of all iterations; closed (no
+// output)
+
+// the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
+type Trace<a₀>
+function counter(x₀: int, x₁: int, x₂: int): Trace<int>
+function current<a₀>(x₀: Trace<a₀>): a₀
+
+// a value that is set to the iteration k where C holds, and kept otherwise, is its initial value x0 or one of the
+// iterations 0, ..., n - 1, hence within bounds that hold of both (with further dependencies hs and bs); the
+// left-hand sides are comparisons
+lemma {:rw} {:free} {:teq} forall x0: int, n: int, hs: seq<int>, bs: seq<int>, C: (int) -> bool ::
+  if 0 <= x0
+  then 0 <= current(trace(x0, for ⌊counter(0, 1, n)⌋, hs, bs do m, k, h, b :: case C(b) => k case !C(b) => m))
+lemma {:rw} {:free} {:teq} forall x0: int, n: int, hs: seq<int>, bs: seq<int>, C: (int) -> bool ::
+  if x0 < n
+  then current(trace(x0, for ⌊counter(0, 1, n)⌋, hs, bs do m, k, h, b :: case C(b) => k case !C(b) => m)) < n
+
+method main() {
+  var x: int;
+  var m: int;
+  var n: int;
+  var b: int;
+  x := 0;
+  m := 0;
+  havoc n;
+  while x < n {
+    havoc b;
+    if b != 0 {
+      m := x;
+    }
+    x := x + 1;
+  }
+  assert m >= 0 || n <= 0;
+  assert m < n || n <= 0;
+}
+
+// remaining goals of -teq -simplify:
+// none

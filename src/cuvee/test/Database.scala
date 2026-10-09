@@ -8,7 +8,10 @@ import scala.jdk.CollectionConverters._
 // each, for the translations of SV-COMP tasks (examples/sv-comp/expected.csv): each row is an example with its
 // command line in its first line, whether its task is safe or unsafe, and the number of goals that remain,
 // or error if the run reports an error or crashes; the lemmas of the examples are marked {:teq}, such that they are
-// not printed, and only goals are counted
+// not printed, and only goals are counted;
+// SV-COMP task definitions (.yml) themselves have no command line, they are run with -teq -simplify through the C
+// frontend (examples/sv-comp/yml.csv); rows whose goals are timeout record runs that did not end within the time
+// limit of a run by hand, which cannot be enforced in the same JVM, they are not checked
 //   ./Cuvee.sh -record <file> ... > expected.csv   writes the database of the examples (by hand, tests never write)
 //   ./Cuvee.sh -test expected.csv                  checks all rows
 object Database:
@@ -18,13 +21,21 @@ object Database:
 
   // the task definition named in the header of an example, "SV-COMP <folder>/<task>.yml", below benchmarks/,
   // whose expected verdict for the property unreach-call is safe (true) or unsafe (false)
+  // of a task definition itself, its own verdict
   def verdict(root: Path, file: Path): String =
     val text = Files.readString(file).replace("\n// ", " ")
+    val yml =
+      if file.toString.endsWith(".yml")
+      then Some(file)
+      else
+        for
+          m <- "SV-COMP (\\S+\\.yml)".r.findFirstMatchIn(text)
+          yml = root.resolve("benchmarks").resolve(m.group(1))
+          if Files.exists(yml)
+        yield yml
     val verdict =
       for
-        m <- "SV-COMP (\\S+\\.yml)".r.findFirstMatchIn(text)
-        yml = root.resolve("benchmarks").resolve(m.group(1))
-        if Files.exists(yml)
+        yml <- yml
         v <- "unreach-call\\.prp\\s*\\n\\s*expected_verdict:\\s*(\\w+)".r.findFirstMatchIn(Files.readString(yml))
       yield v.group(1)
 
@@ -33,20 +44,27 @@ object Database:
       case Some("false") => "unsafe"
       case _             => "unknown"
 
-  // runs the example `file` below `root` with the command line in its first line
+  // the command line of an example, without ./Cuvee.sh, in its first line, or -teq -simplify for a task definition
+  def command(root: Path, file: Path): Option[List[String]] =
+    if file.toString.endsWith(".yml")
+    then Some(List("-teq", "-simplify", root.relativize(file).toString))
+    else Expected.command(root, file)
+
+  // runs the example `file` below `root` with its command line
   def record(root: Path, file: Path): Row =
     val path = root.relativize(file).toString
     val goals =
-      Expected.command(root, file) match
+      command(root, file) match
         case None =>
           "error"
 
         case Some(args) =>
           try
             val (out, err, _) = Expected.run(args, file)
-            if (out ++ err).exists(_.startsWith("error"))
+            // goals and errors in Dafny, or in SMT-LIB, the output of C input
+            if (out ++ err).exists(line => line.startsWith("error") || line.startsWith("(error"))
             then "error"
-            else out.count(_.startsWith("goal")).toString
+            else out.count(line => line.startsWith("goal") || line.startsWith("(goal")).toString
           catch case _: Throwable => "error"
 
     Row(path, verdict(root, file), goals)
@@ -55,6 +73,7 @@ object Database:
   def check(root: Path, rows: List[Row]): List[String] =
     for
       row <- rows
+      if row.goals != "timeout"
       actual = record(root, root.resolve(row.file))
       if actual != row
     yield s"${row.file}: expected ${row.verdict} with ${row.goals} goals, actual ${actual.verdict} with ${actual.goals} goals"

@@ -20,8 +20,10 @@ class Parser(var state: State, arch: Int):
   // the global variables with their C types
   val globals = mutable.Map[String, (core.Var, Type)]()
 
-  // the context of a function body: its result, and the temporary variables for the results of calls
-  case class Ctx(result: Option[(core.Var, Type)], temps: mutable.ListBuffer[core.Var])
+  // the context of a function body: its result, the temporary variables for the results of calls,
+  // the statements of its labels, which a goto may resolve in its place, and the labels at its end
+  case class Ctx(result: Option[(core.Var, Type)], temps: mutable.ListBuffer[core.Var],
+                 labels: Map[String, Stmt] = Map(), ends: Set[String] = Set())
 
   type Scope = Map[String, (core.Var, Type)]
 
@@ -115,6 +117,19 @@ class Parser(var state: State, arch: Int):
       // division and remainder truncate towards zero in C (see resources/cuvee/c/prelude.bpl)
       case "/" => state.exprs.app("quotient", List(a, b))
       case "%" => state.exprs.app("remainder", List(a, b))
+      // shifts by constants are multiplications and divisions by powers of 2 of the unbounded integers,
+      // where the division rounds down, like the arithmetic shift of negative numbers;
+      // other shifts and the bit operations are declared functions (see resources/cuvee/c/prelude.bpl)
+      case "<<" | ">>" =>
+        b match
+          case core.Lit(n: BigInt, _) if 0 <= n && n < 64 =>
+            val power = state.exprs.num(BigInt(2).pow(n.toInt))
+            if op == "<<" then state.exprs.app("*", List(a, power)) else state.exprs.app("div", List(a, power))
+          case _ =>
+            state.exprs.app(if op == "<<" then "shl" else "shr", List(a, b))
+      case "&" => state.exprs.app("bitand", List(a, b))
+      case "|" => state.exprs.app("bitor", List(a, b))
+      case "^" => state.exprs.app("bitxor", List(a, b))
       case _   => Error.raise("unknown arithmetic operator", op)
 
   // an expression together with the statements that evaluate the calls in it first, and its C type
@@ -195,6 +210,10 @@ class Parser(var state: State, arch: Int):
       case App("!", List(arg)) =>
         val (pre, arg_) = cond(scope, ctx, arg)
         (pre, state.exprs.app("not", List(arg_)), BoolType)
+
+      case App("~", List(arg)) =>
+        val (pre, arg_) = int(scope, ctx, arg)
+        (pre, state.exprs.app("bitnot", List(arg_)), IntType)
 
       case App(op @ ("&&" | "||"), List(left, right)) =>
         val (pre1, left_) = cond(scope, ctx, left)
@@ -372,6 +391,45 @@ class Parser(var state: State, arch: Int):
 
     (results.flatMap(_._1), results.map(_._2))
 
+  // pointer parameters that the body indexes but neither assigns nor writes through, e.g. int linear_search(int *a, ...),
+  // are arrays, which are values, such that the caller passes its array; other pointers are values of type Ptr
+  def readonly(f: Function): Function =
+    f.body match
+      case Some(body) =>
+        val written = assigned(body)
+        val read = indexed(body)
+        val params =
+          for (t, x) <- f.params
+          yield t match
+            case PointerType(e) if e != VoidType && read.contains(x) && !written.contains(x) => (ArrayType(e), x)
+            case _                                                                            => (t, x)
+        f.copy(params = params)
+
+      case None =>
+        f
+
+  // the variables that are indexed in a statement, e.g. a in a[i]
+  def indexed(s: Stmt): Set[String] =
+    s match
+      case Assign(lhs, _, rhs)           => indexed(lhs) ++ indexed(rhs)
+      case ExprStmt(e)                   => indexed(e)
+      case Return(e)                     => e.toSet.flatMap(indexed)
+      case Decl(_, decls)                => decls.flatMap(_.init).toSet.flatMap(indexed)
+      case If(test, left, right)         => indexed(test) ++ indexed(left) ++ right.toSet.flatMap(indexed)
+      case While(test, body)             => indexed(test) ++ indexed(body)
+      case DoWhile(body, test)           => indexed(test) ++ indexed(body)
+      case For(init, test, step, body)   => init.toSet.flatMap(indexed) ++ test.toSet.flatMap(indexed) ++ step.toSet.flatMap(indexed) ++ indexed(body)
+      case Block(stmts)                  => stmts.toSet.flatMap(indexed)
+      case Labeled(_, stmt)              => indexed(stmt)
+      case Switch(test, body)            => indexed(test) ++ body.toSet.flatMap(indexed)
+      case Case(_, stmt)                 => indexed(stmt)
+      case _                             => Set()
+
+  def indexed(e: Expr): Set[String] =
+    e match
+      case Index(Id(x), index) => indexed(index) + x
+      case _                   => parts(e).toSet.flatMap(indexed)
+
   // the statements of a block, whose declarations are the local variables of the core block,
   // which are renamed if they shadow variables in scope
   def block(scope: Scope, ctx: Ctx, stmts: List[Stmt]): core.Prog =
@@ -422,6 +480,15 @@ class Parser(var state: State, arch: Int):
 
       case Labeled(_, stmt) =>
         this.stmt(scope, ctx, stmt)
+
+      case Goto(label) =>
+        goto(scope, ctx, label, Set())
+
+      case Switch(test, body) =>
+        stmt(scope, ctx, switch_(test, body))
+
+      case Case(_, _) =>
+        Error.raise("case outside of a switch", s)
 
       // expressions without ?: (see Grammar.expr), which are matched against calls below
       case ExprStmt(Cond(e, None)) =>
@@ -520,6 +587,136 @@ class Parser(var state: State, arch: Int):
 
   val skip = state.progs.skip
 
+  // a goto whose label marks a statement that does not fall through, e.g. END: return 0; or
+  // ERROR: { reach_error(); abort(); }, is that statement in its place, since control does not come back;
+  // a label that marks a goto to itself, e.g. STUCK: goto STUCK;, is a loop without exit;
+  // other gotos, e.g. those of state machines, are not supported
+  def goto(scope: Scope, ctx: Ctx, label: String, visited: Set[String]): List[core.Prog] =
+    Error.report("unknown label", label):
+      require(ctx.labels.contains(label) || ctx.ends.contains(label))
+
+    // the end of the function body, e.g. END: ; as its last statement
+    if ctx.ends.contains(label)
+    then List(state.progs.return_)
+    else
+      ctx.labels(label) match
+        case Goto(next) if visited.contains(next) || next == label =>
+          List(state.progs.assume(state.exprs.const("false")))
+
+        case Goto(next) =>
+          goto(scope, ctx, next, visited + label)
+
+        case target if stops(target) =>
+          stmt(scope, ctx, target)
+
+        case _ =>
+          Error.raise("goto to a label whose statement falls through is not supported", label)
+
+  // whether a statement never falls through: a return, an abort, or a block that ends with such a statement,
+  // without labels or gotos inside, whose targets would be resolved in the wrong place
+  def stops(s: Stmt): Boolean =
+    s match
+      case Return(_)                                        => true
+      case ExprStmt(Call("abort" | "exit", _))              => true
+      case ExprStmt(Cond(e, None))                          => stops(ExprStmt(e))
+      case Labeled(_, stmt)                                 => stops(stmt)
+      case Block(stmts) if stmts.nonEmpty                   => stmts.forall(unlabeled) && stops(stmts.last)
+      case _                                                => false
+
+  // statements without labels and gotos
+  def unlabeled(s: Stmt): Boolean =
+    s match
+      case Labeled(_, _) | Goto(_)       => false
+      case Block(stmts)                  => stmts.forall(unlabeled)
+      case If(_, left, right)            => unlabeled(left) && right.forall(unlabeled)
+      case While(_, body)                => unlabeled(body)
+      case DoWhile(body, _)              => unlabeled(body)
+      case For(_, _, _, body)            => unlabeled(body)
+      case Switch(_, body)               => body.forall(unlabeled)
+      case Case(_, stmt)                 => unlabeled(stmt)
+      case _                             => true
+
+  // a switch is a chain of conditionals over the value of its test, which is evaluated once, where each case is
+  // followed by the statements of the cases it falls through to, up to the first break, which are copied;
+  // statements before the first case are unreachable; a break nested inside the statements of a case is not
+  // supported, since the copies end at breaks between the statements only
+  def switch_(test: Expr, body: List[Stmt]): Stmt =
+    val groups = mutable.ListBuffer[(List[Option[Expr]], mutable.ListBuffer[Stmt])]()
+    for s <- body
+    do
+      s match
+        case Case(_, _) =>
+          val (values, first) = cases(s)
+          groups += ((values, mutable.ListBuffer(first)))
+        case _ if groups.nonEmpty =>
+          groups.last._2 += s
+        case _ =>
+
+    val cases_ = groups.toList.map((values, stmts) => (values, stmts.toList))
+
+    def falls(i: Int): Stmt =
+      val stmts = cases_.drop(i).flatMap(_._2).takeWhile(_ != Break)
+      Error.report("break nested inside a case of a switch is not supported", test):
+        require(!stmts.exists(breaks))
+      Block(stmts)
+
+    val x = "switch_" + switches.next()
+    val default = cases_.indexWhere(_._1.contains(None))
+
+    val chain =
+      cases_.zipWithIndex.foldRight(if default >= 0 then Some(falls(default)) else None):
+        case (((values, _), i), rest) =>
+          val tests = values.flatten.map(c => App("==", List(Id(x), c)))
+          if tests.isEmpty
+          then rest
+          else Some(If(tests.reduce((a, b) => App("||", List(a, b))), falls(i), rest))
+
+    Block(Decl(IntType, List(Declarator(false, x, Nil, Some(test)))) :: chain.toList)
+
+  // the numbers of the variables of the tests of switches
+  val switches = Iterator.from(1)
+
+  // the values of the labels of a case, case 1: case 2: s, and its statement
+  def cases(s: Stmt): (List[Option[Expr]], Stmt) =
+    s match
+      case Case(value, stmt) =>
+        val (values, stmt_) = cases(stmt)
+        (value :: values, stmt_)
+      case _ =>
+        (Nil, s)
+
+  // whether a statement contains a break of the enclosing loop or switch, not of a nested one
+  def breaks(s: Stmt): Boolean =
+    s match
+      case Break                 => true
+      case If(_, left, right)    => breaks(left) || right.exists(breaks)
+      case Block(stmts)          => stmts.exists(breaks)
+      case Labeled(_, stmt)      => breaks(stmt)
+      case Case(_, stmt)         => breaks(stmt)
+      case _                     => false
+
+  // the labels of an empty statement that is the last of a function body, i.e. of its end
+  def ends(body: Block): Set[String] =
+    body.stmts.lastOption.toList.flatMap(endLabels).toSet
+
+  def endLabels(s: Stmt): List[String] =
+    s match
+      case Labeled(label, Empty) => List(label)
+      case Labeled(label, stmt)  => if endLabels(stmt).nonEmpty then label :: endLabels(stmt) else Nil
+      case _                     => Nil
+
+  def labels(s: Stmt): Map[String, Stmt] =
+    s match
+      case Labeled(label, stmt)          => labels(stmt) + (label -> stmt)
+      case Block(stmts)                  => stmts.flatMap(labels).toMap
+      case If(_, left, right)            => labels(left) ++ right.toList.flatMap(labels)
+      case While(_, body)                => labels(body)
+      case DoWhile(body, _)              => labels(body)
+      case For(_, _, _, body)            => labels(body)
+      case Switch(_, body)               => body.flatMap(labels).toMap
+      case Case(_, stmt)                 => labels(stmt)
+      case _                             => Map()
+
   // the condition of a loop, whose calls are evaluated at the beginning of each iteration (`check`),
   // which then leaves the loop if the condition is false, and the loop itself runs while true;
   // without calls, the condition is that of the loop
@@ -551,7 +748,9 @@ class Parser(var state: State, arch: Int):
   // assignments x op= e and a[i] op= e, where arrays are values that are updated as a whole
   // the arithmetic operators of compound assignments x += e and of increments x++ and decrements x--,
   // which are x = x + e, x = x + 1, and x = x - 1
-  val compound = Map("+=" -> "+", "-=" -> "-", "*=" -> "*", "/=" -> "/", "%=" -> "%", "++" -> "+", "--" -> "-")
+  val compound =
+    Map("+=" -> "+", "-=" -> "-", "*=" -> "*", "/=" -> "/", "%=" -> "%", "&=" -> "&", "|=" -> "|", "^=" -> "^",
+        "<<=" -> "<<", ">>=" -> ">>", "++" -> "+", "--" -> "-")
 
   def assign(scope: Scope, ctx: Ctx, lhs: Expr, op: String, rhs: Expr): List[core.Prog] =
     lhs match
@@ -680,6 +879,8 @@ class Parser(var state: State, arch: Int):
       case Loop(test, body, step)        => test.toSet.flatMap(writes) ++ step.toSet.flatMap(assigned) ++ assigned(body)
       case Block(stmts)                  => stmts.toSet.flatMap(assigned)
       case Labeled(_, stmt)              => assigned(stmt)
+      case Switch(test, body)            => writes(test) ++ body.toSet.flatMap(assigned)
+      case Case(_, stmt)                 => assigned(stmt)
       case _                             => Set()
 
   // the direct subexpressions of an expression
@@ -745,6 +946,8 @@ class Parser(var state: State, arch: Int):
       case Loop(test, body, step)              => all(scope, test.map(ExprStmt(_)).toList ++ step.toList :+ body)
       case Block(stmts)                        => all(scope, stmts)
       case Labeled(_, stmt)                    => all(scope, List(stmt))
+      case Switch(test, body)                  => all(scope, ExprStmt(test) :: body)
+      case Case(_, stmt)                       => all(scope, List(stmt))
       case decl: Decl                          => all(scope, List(decl))
       case _                                   => (Set(), Set())
 
@@ -768,9 +971,10 @@ class Parser(var state: State, arch: Int):
     mod
 
   def resolve(unit: List[Top]): List[core.Cmd] =
-    val tops = unit.filter:
-      case Function(_, name, _, _) => !Syntax.builtin(name)
-      case _                       => true
+    val tops =
+      unit.collect:
+        case f @ Function(_, name, _, _) if !Syntax.builtin(name) => readonly(f)
+        case top if !top.isInstanceOf[Function]                   => top
 
     // the signatures of all functions are known before any body is resolved
     for case f @ Function(_, name, _, _) <- tops if !functions.contains(name)
@@ -868,7 +1072,7 @@ class Parser(var state: State, arch: Int):
     val Function(ret, name, params, _) = f
     val core.Proc(_, _, in, out) = state.procs(name)
 
-    val ctx = Ctx(out.headOption.map((_, ret)), mutable.ListBuffer())
+    val ctx = Ctx(out.headOption.map((_, ret)), mutable.ListBuffer(), labels(body), ends(body))
     val written = assigned(body)
 
     val copies =

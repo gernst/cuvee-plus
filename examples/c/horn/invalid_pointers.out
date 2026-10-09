@@ -24,6 +24,18 @@
   Int
   (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
 
+(declare-fun bitand (Int Int) Int)
+
+(declare-fun bitor (Int Int) Int)
+
+(declare-fun bitxor (Int Int) Int)
+
+(declare-fun bitnot (Int) Int)
+
+(declare-fun shl (Int Int) Int)
+
+(declare-fun shr (Int Int) Int)
+
 (declare-fun
   id_pre
   ((Ptr Int) (Ptr Int))

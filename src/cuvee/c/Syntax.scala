@@ -76,8 +76,12 @@ case class Block(stmts: List[Stmt]) extends Stmt
 case object Break extends Stmt
 case object Continue extends Stmt
 case object Empty extends Stmt
-// labels are dropped, as there is no goto
+// labels are dropped, a goto resolves the statement of its label in its place (see Parser.goto)
 case class Labeled(label: String, stmt: Stmt) extends Stmt
+case class Goto(label: String) extends Stmt
+// a switch, whose cases are labels of the statements of its body, case c: or default: (None)
+case class Switch(test: Expr, body: List[Stmt]) extends Stmt
+case class Case(value: Option[Expr], stmt: Stmt) extends Stmt
 
 object Decl extends ((Type, List[Declarator]) => Decl)
 object Assign extends ((Expr, String, Expr) => Stmt)
@@ -89,6 +93,9 @@ object For extends ((Option[Stmt], Option[Expr], Option[Stmt], Stmt) => Stmt)
 object Return extends (Option[Expr] => Stmt)
 object Block extends (List[Stmt] => Block)
 object Labeled extends ((String, Stmt) => Stmt)
+object Goto extends (String => Stmt)
+object Switch extends ((Expr, List[Stmt]) => Stmt)
+object Case extends ((Option[Expr], Stmt) => Stmt)
 
 sealed trait Top
 case class Global(decl: Decl) extends Top

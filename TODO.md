@@ -3,6 +3,14 @@
 Open problems, limitations, and inconsistencies, grouped by area; the
 architecture is described in [doc/architecture.md](doc/architecture.md).
 
+## New
+
+- switch Dafny lemma syntax
+- support verifying trace lemmas in Dafny
+- add Lean printer
+- identify performance improvements, notably in the simplifier
+- look at cyclic rewrite rules
+
 ## Bugs
 
 - A bound variable may capture a constant of the same name in the output of
@@ -41,6 +49,11 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   rewrites `trace(a, ... :: x[h := x[h] + 2])` to
   `if true then trace(... F ...) else trace(... G ...)` with `G` free, which
   does not terminate (see [condm.dfy](examples/sv-comp/array-fpi/condm.dfy)).
+  This is why the joins of guarded stores are not part of teq.dfy: they
+  match every store with one case, e.g. `a[k := a[-k + 99999]]` of
+  [standard_palindrome_ground.dfy](examples/sv-comp/array-examples/standard_palindrome_ground.dfy),
+  as `if true then ... else G(a, k, h)` with `G` free, which hides the update
+  from other lemmas.
 - A sum that contains a bound variable of a combinator in a pattern is not
   matched, even against the same sum: the lemma
   `current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: a[k := a[k + -1]])) == hit(a0)`
@@ -55,10 +68,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   with the lemmas of teq.dfy alone, with the rule for
   `earlier(k, ⌊counter(i, c, n)⌋)`, on the trace of the two largest elements,
   whose updates read the array at the counter from 2.
-- `-teq` fails with an internal error on a loop that is always left by
-  `break` in its first iteration, e.g. `while true { x := 0; break; }`:
-  `empty.reduceLeft`, and `head of empty list` with `-simplify` (see
-  [while_infinite_loop_3.dfy](examples/sv-comp/loops/while_infinite_loop_3.dfy)).
 - `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on
   a loop body with ten conditionals in sequence, presumably from the 2^10
   paths of its symbolic execution (see
@@ -460,6 +469,14 @@ concepts, found by reading the whole code base; none is a bug.
 Measured on binary search with forward rules (branch `forward`) and on the
 SV-COMP examples (`examples/sv-comp`):
 
+- The rewrite steps per command are limited to 1000 (`Context.withRules`),
+  and an exhausted budget is reported as "rewriting does not terminate",
+  like a stack overflow, although rewriting may terminate: with the lemmas
+  merged from the SV-COMP examples into teq.dfy, `ifcomp`,
+  `init-2-n-u`, and `nr2` exhaust it, which terminate with 10000 steps
+  (after up to 50 s, see also `partial_mod_count_1` before the join at a
+  further dependency was left out); no single lemma is responsible, but
+  the number of rules that apply to large goals.
 - Guards of updates are decided by the simplifier with all rules
   (`Rewrite.guard`, `Rewrite.holds`), about 20 ms each. Failing decisions
   are the expensive ones, and identical decisions are repeated without a

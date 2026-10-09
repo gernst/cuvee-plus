@@ -221,6 +221,7 @@ object Printer extends cuvee.pipe.Printer:
       case Not(Eq(_, _)) => None
       case Not(arg)      => Some(("!", Grammar.prefix_ops("!"), arg))
       case UMinus.int(arg) => Some(("-", Grammar.prefix_ops("-"), arg))
+      case App(Fun(Name("bitnot", None), Nil, _, _), _, _, List(arg)) => Some(("~", Grammar.prefix_ops("~"), arg))
       case _             => None
 
   def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =
@@ -239,6 +240,15 @@ object Printer extends cuvee.pipe.Printer:
       // the division and remainder of C (see resources/cuvee/c/prelude.bpl), unlike div and mod of SMT-LIB
       case App(Fun(Name("quotient", None), Nil, _, _), _, _, List(a, b))  => op("/", List(a, b))
       case App(Fun(Name("remainder", None), Nil, _, _), _, _, List(a, b)) => op("%", List(a, b))
+      // shifts by constants, which are divisions by powers of 2 that round down (see Parser.arith)
+      case App(Fun(Name("div", None), Nil, _, _), _, _, List(a, Lit(n: BigInt, _))) if n > 1 && n.bitCount == 1 =>
+        op(">>", List(a, Lit(BigInt(n.bitLength - 1), Sort.int)))
+      // the bit operations and shifts of the prelude of C
+      case App(Fun(Name("bitand", None), Nil, _, _), _, _, List(a, b))    => op("&", List(a, b))
+      case App(Fun(Name("bitor", None), Nil, _, _), _, _, List(a, b))     => op("|", List(a, b))
+      case App(Fun(Name("bitxor", None), Nil, _, _), _, _, List(a, b))    => op("^", List(a, b))
+      case App(Fun(Name("shl", None), Nil, _, _), _, _, List(a, b))       => op("<<", List(a, b))
+      case App(Fun(Name("shr", None), Nil, _, _), _, _, List(a, b))       => op(">>", List(a, b))
       case Lt.int(a, b)        => op("<", List(a, b))
       case Le.int(a, b)        => op("<=", List(a, b))
       case Gt.int(a, b)        => op(">", List(a, b))

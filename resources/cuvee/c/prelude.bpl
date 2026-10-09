@@ -61,3 +61,12 @@ function {:c} {:rw} number(b: bool): int { if b then 1 else 0 }
 function {:c} {:rw} quotient(a: int, b: int): int { if 0 <= a then a div b else -((-a) div b) }
 
 function {:c} {:rw} remainder(a: int, b: int): int { if 0 <= a then a mod b else -((-a) mod b) }
+
+// the bit operations on integers, &, |, ^, ~, and the shifts << and >> by values that are not constants, which are
+// declared only, since the integers are unbounded (shifts by constants are multiplications and divisions)
+function {:c} bitand(a: int, b: int): int;
+function {:c} bitor(a: int, b: int): int;
+function {:c} bitxor(a: int, b: int): int;
+function {:c} bitnot(a: int): int;
+function {:c} shl(a: int, b: int): int;
+function {:c} shr(a: int, b: int): int;
