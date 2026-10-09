@@ -4,21 +4,17 @@
 // for the marker, which has no bound, stops at pos at the latest
 //
 // findings: as standard_find_ground-1, with reads of the array instead of a sequence: the iteration constraint of
-// the unbounded search is abstracted by the auxiliary predicate absent(n, a, e), and a lemma concludes n <= j from
-// a[j] == e for the marker at pos; its left-hand side n <= j is a comparison, which terminates now, since its side
+// the unbounded search becomes !occurs(e, selects(a, ⌊counter(0, 1, n)⌋)) by not_occurs_selects_def of teq.dfy, and
+// a lemma concludes n <= j from a[j] == e for the marker at pos; its left-hand side n <= j is a comparison, which terminates now, since its side
 // condition is an atom matched against the facts; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// e does not occur in the array a at the positions 0, ..., n - 1, an auxiliary predicate, which is not defined
-predicate absent(n: Nat, a: array<int, int>, e: int)
-
-// the iteration constraint of a search, the elements of a at the iterations 0, ..., n - 1 differ from e, states that
-// e is absent there; then a position j where e is found is not before n, a comparison as the left-hand side, which
-// terminates, since its side condition is an atom that is matched against the facts, not an iteration constraint
-lemma {:rw} {:teq} invs_1(n: Nat, e: int, a: array<int, int>, hs: List<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[k] != e) <==> absent(n, a, e)
+// the iteration constraint of the search, the elements of a at the iterations 0, ..., n - 1 differ from e, is
+// !occurs(e, selects(a, ⌊counter(0, 1, n)⌋)) by not_occurs_selects_def of teq.dfy; then a position j where e is found
+// is not before n, a comparison as the left-hand side, which terminates, since its side condition is an atom that is
+// matched against the facts, not an iteration constraint
 lemma {:rw} {:teq} lemma_1(n: Nat, j: int, e: int, a: array<int, int>)
-  requires absent(n, a, e) && a[j] == e && 0 <= j
+  requires !occurs(e, selects(a, ⌊counter(0, 1, n)⌋)) && a[j] == e && 0 <= j
   ensures integer(n) <= j
 
 method main() {
