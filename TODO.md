@@ -153,22 +153,54 @@ does not stop the nesting by itself).
   with `unknown` while z3 unrolled a loop with the constant bound 10 (about
   0.17 s alone); with a symbolic bound it finds a linear invariant (0.035 s).
 
+## Dependencies of equal length
+
+The combinators assume that their dependencies have equal lengths (an invariant of the core, see
+`Type.dependencies`), which teq.dfy never states: e.g. `current_stores` holds only if `|keys| == |values|`, and
+`current_trace_flag` only if `|hs| == n` for the dependency `⌊counter(0, 1, n)⌋`. In Lean, the dependencies are
+zipped, which truncates to the shortest one, so such lemmas are false without the assumption.
+
+Plan:
+
+1. Make the invariant part of the semantics: a term is well-formed if the dependencies of each combinator in it,
+   also in the definitions of the functions of teq.dfy (`stores(a, keys, values)` is a trace over `keys, values`),
+   have equal lengths. The lemma database is sound for well-formed terms only, which is all that -teq builds: the
+   dependencies of a loop are `⌊X⌋` of its traces, which all have `n` steps.
+2. Rewriting preserves the invariant if each lemma maps well-formed left-hand sides to well-formed right-hand
+   sides, e.g. `prefix_stores` cuts `keys` and `values` to the same length. This is a proof obligation of each
+   lemma, not a check at run time.
+3. In Lean, each lemma gets the hypotheses that the combinators of its left-hand side are well-formed:
+   `d₁.length = d₂.length` for the dependencies, with the lengths of `butlast (counter i c n)` and of the other
+   functions given by lemmas (`length_counter`, the length of `maps` and `butlast (trace ...)`). The generator
+   of teq.lean derives them from the combinators in the statement; a lemma about the right-hand side
+   (well-formedness) is proved along with it.
+4. Nonnegative numbers of iterations are the same kind of invariant: `counter(i, c, n)` of a loop has `n >= 0`.
+   Either it becomes part of well-formedness (then `invs_const` and `current_counter` hold, and the rules
+   that build counters, e.g. `prefix_counter` with `k > n`, must preserve it), or these lemmas get `requires`;
+   the counterexamples at the end of teq.lean decide which lemmas are affected.
+5. Lemmas whose assumptions cannot be derived from well-formedness (`earlier_consts` outside the trace,
+   `prefix_prefix` for `j > k`) get `requires`, which makes them conditional rules; check on the SV-COMP
+   database that the simplifier still discharges them in the contexts of the goals.
+6. Document the invariant and the soundness of the database modulo it in doc/teq.md.
+
 ## Proofs of teq.dfy in Lean
 
-- [teq.lean](resources/cuvee/teq.lean) proves 15 of the 128 lemmas
-  (`counter_def`, `consts_def`, `stores_def`, `shifts_def`, `sums_def`, `parities_def`,
-  `maxs_def`, `counts_def`, `maps_const`, `selects_def`, `invs_not_or`, `current_consts`,
-  `current_sums`, `current_counts`, `prefix_zero`, several by definition); 113 are
-  `sorry`.
+- All 120 lemmas of [teq.lean](resources/cuvee/teq.lean) are `sorry`: the
+  proofs of the earlier model of lists (15, among them `counter_def`,
+  `consts_def`, `maps_const`, `invs_not_or`, `current_consts`,
+  `current_sums`, `current_counts`, `prefix_zero`) are to be redone for the
+  datatype `Trace` and the single combinators over zipped dependencies.
 - Lemmas that are false without assumptions, with checked counterexamples
   at the end of teq.lean: `invs_const` and `current_counter` for `n < 0` (no
   iterations, but `n ≠ 0`), `earlier_consts` for an index outside the trace,
-  `prefix_prefix` for `j > k`, `occurs_earlier` for the empty sequence; likely more of
-  the same kind (`invs_counter_lower`, `invs_counter_upper`, `current_maxs_counter` to `current_mins_consts`,
-  `earlier_counter`, `earlier_prefix`). They are sound in the contexts of the goals of
-  -teq, which provide `0 <= n` and indices within the iterations, but as
-  rewrite rules they apply anywhere; adding the assumptions as `requires`
-  would make them conditional rules.
+  `prefix_prefix` for `j > k`, `occurs_earlier` for the empty sequence, and
+  `current_stores` for keys and values of different lengths; likely more of
+  the same kind (`invs_counter_lower`, `invs_counter_upper`,
+  `current_maxs_counter` to `current_mins_consts`, `earlier_counter`,
+  `earlier_prefix`, and the lemmas of several dependencies). They are sound
+  in the contexts of the goals of -teq, which provide `0 <= n`, indices
+  within the iterations, and dependencies of equal length, but as rewrite
+  rules they apply anywhere (see the plan above).
 
 ## Printers
 

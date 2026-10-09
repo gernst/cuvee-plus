@@ -43,11 +43,12 @@ sealed trait Cmd:
       case FuseFuns(term, rhs, attrs)             => FuseFuns(e(term), rhs.map(e), attrs.map(e))
       case _                                      => this
 
-  // axioms and lemmas with the attribute :rw, which are rewrite rules of -simplify
+  // axioms, lemmas, and function definitions with the attribute :rw, which are rewrite rules of -simplify,
+  // and function definitions with the attribute :fold, whose rules fold their body into a call (see Rules.from)
   def isRule: Boolean =
     this match
       case Assert(Axiom | Lemma, _, _, attrs) => attrs.contains("rw")
-      case DefineFun(_, _, attrs)             => attrs.contains("rw")
+      case DefineFun(_, _, attrs)             => attrs.contains("rw") || attrs.contains("fold")
       case _                                  => false
 
 sealed trait Ctrl extends Cmd

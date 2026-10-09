@@ -117,7 +117,8 @@ object Printer extends cuvee.pipe.Printer:
       case Some(name_) => name(name_)
       case None        => "ax_" + Integer.toHexString(phi.hashCode)
 
-  // the universally quantified variables of a formula become the binders of the declaration
+  // the universally quantified variables of a formula become the binders of the declaration,
+  // the proof always starts on the line after :=, like the bodies of definitions
   def statement(head: Doc, phi: Expr, proof: Option[Doc]): Doc =
     val (xs, body) =
       phi match
@@ -127,7 +128,7 @@ object Printer extends cuvee.pipe.Printer:
     val decl = Group(head ~ Nest(4, binders(xs)) ~~ text(":") ~ Nest(2, line ~ doc(body)))
     proof match
       case None        => decl
-      case Some(proof) => Group(decl ~~ text(":=") ~ Nest(2, line ~ proof))
+      case Some(proof) => decl ~~ text(":=") ~ Nest(2, hardline ~ proof)
 
   // rewrite rules of -simplify are simp lemmas
   def simp(attrs: Attrs): Doc =
@@ -158,7 +159,7 @@ object Printer extends cuvee.pipe.Printer:
 
       case DefineSort(Con(name_, _), params_, body, _) =>
         val params__ = if params_.isEmpty then empty else text(" (" + params_.map(param).mkString(" ") + " : Type)")
-        text("abbrev " + name(name_)) ~ params__ ~~ text(":=") ~~ doc(body)
+        text("abbrev " + name(name_)) ~ params__ ~~ text(":=") ~ Nest(2, hardline ~ doc(body))
 
       // mutually recursive datatypes in a mutual block
       case DeclareDatatypes(cons, datas, _) =>
@@ -180,7 +181,7 @@ object Printer extends cuvee.pipe.Printer:
       // definitions that use conditionals on propositions are not computable
       case DefineFun(Fun(name_, params_, formals_, res), body, _) =>
         val head = text("noncomputable def") ~~ signature(name_, params_, formals_) ~~ text(":") ~~ doc(res)
-        Group(head ~~ text(":=") ~ Nest(2, line ~ doc(body)))
+        head ~~ text(":=") ~ Nest(2, hardline ~ doc(body))
 
       // axioms and free lemmas are assumed, the other lemmas are theorems to be proved
       case Assert(Axiom, params_, phi, attrs) =>
@@ -537,11 +538,20 @@ object Printer extends cuvee.pipe.Printer:
       case _: Old | _: Diff | _: Rec =>
         unsupported(expr)
 
+  // a combinator over its dependencies, which are zipped if there are several, List.zip d₁ (List.zip d₂ d₃), whose
+  // update is a function of the values of the dependencies as a tuple, fun ⟨b₁, b₂, b₃⟩ => ..., after the accumulator
+  // of a trace
   def combinator(name_ : String, args: List[Expr], bound: List[Var], update: Expr): Doc =
-    val deps = if name_ == "trace" then args.length - 1 else args.length
-    val fun = Group(text("fun " + bound.map(x => name(x.name)).mkString(" ") + " =>") ~ Nest(2, line ~ doc(update)))
-    val head = text(if deps == 1 then name_ else name_ + deps)
-    Group(head ~ Nest(2, concat(args.map(line ~ arg(_))) ~ line ~ text("(") ~ Align(fun) ~ text(")")))
+    val (init, deps, acc, vars) =
+      if name_ == "trace"
+      then (List(args.head), args.tail, List(bound.head), bound.tail)
+      else (Nil, args, Nil, bound)
+
+    val zipped = deps.init.foldRight(arg(deps.last))((dep, rest) => text("(List.zip") ~~ arg(dep) ~~ rest ~ text(")"))
+    val tuple = if vars.length == 1 then name(vars.head.name) else vars.map(x => name(x.name)).mkString("⟨", ", ", "⟩")
+    val params_ = (acc.map(x => name(x.name)) :+ tuple).mkString(" ")
+    val fun = Group(text("fun " + params_ + " =>") ~ Nest(2, line ~ doc(update)))
+    Group(text(name_) ~ Nest(2, concat(init.map(line ~ arg(_))) ~ line ~ zipped ~ line ~ text("(") ~ Align(fun) ~ text(")")))
 
   // patterns of constructors, whose wildcards are named apart by indices (see dafny.Parser), which are not printed
   def pattern(pat: Expr): Doc =

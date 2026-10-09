@@ -3,8 +3,11 @@
 // which exist only with -teq, and lemmas about them, which are rewrite rules of the simplifier ({:rw}),
 // the simplifier is expected to prove the goals of -teq on its own, not the solvers,
 // functions that produce traces are plural (sums, counts), their scalar counterparts singular (sum, count),
-// the lemmas are grouped by the function of their left-hand side, and named f_def if they identify a trace with the
-// function f, e.g. stores_def, g_f for an accessor g of f, e.g. current_sums, and otherwise after what they state
+// functions that are traces of trace equation systems are defined by them with the attribute {:fold}, whose rules
+// replace such a trace by the function (see Rules.from), e.g. stores, and which stand among the lemmas, since rules
+// are tried in the order of the file; the lemmas are grouped by the function of their left-hand side, and named f_def
+// if they identify a trace with the function f otherwise, e.g. counter_def, g_f for an accessor g of f, e.g.
+// current_sums, and otherwise after what they state
 
 // the type and the functions of Fun.trace, whose type parameters and formals are numbered as there (Fun.formals)
 
@@ -32,28 +35,13 @@ function {:teq} distincts<a>(xs: seq<a>): bool
 // consts(n, v) is the trace v, ..., v of n steps
 function {:teq} consts<a>(n: int, v: a): Trace<a>
 
-// selects(a, keys) are the values of a at the keys,
-// stores(a, keys, values) is the trace of the successive stores of the values at the keys into a
-function {:teq} selects<a, b>(a: array<a, b>, keys: seq<a>): seq<b>
-function {:teq} stores<a, b>(a: array<a, b>, keys: seq<a>, values: seq<b>): Trace<array<a, b>>
-
-// shifts(a, keys, d) is the trace of the successive copies a[k] := a[k + d] for the keys,
-// which is modeled for increasing keys and nonnegative offsets only, where the entries read are not yet modified
-function {:teq} shifts(a: array<int, int>, keys: seq<int>, d: int): Trace<array<int, int>>
-
-// the prefix sums of a sequence starting with an initial value, and the sum of a sequence
-function {:teq} sums(x: int, values: seq<int>): Trace<int>
+// the sum of a sequence
 function {:teq} sum(values: seq<int>): int
 
-// the prefix parities (the number of even minus the number of odd elements) starting with an initial value,
-// and the parity of a sequence
-function {:teq} parities(x: int, values: seq<int>): Trace<int>
+// the parity of a sequence, the number of even minus the number of odd elements
 function {:teq} parity(values: seq<int>): int
 
-// the prefix maxima and minima starting with an initial value
-function {:teq} maxs(x: int, values: seq<int>): Trace<int>
-function {:teq} mins(x: int, values: seq<int>): Trace<int>
-
+// the maximum and the minimum
 function {:teq} max(m: int, n: int): int
 {
   if m <= n then n else m
@@ -64,8 +52,7 @@ function {:teq} min(m: int, n: int): int
   if m <= n then m else n
 }
 
-// the number of occurrences of a value, counted from an initial value, and in a sequence
-function {:teq} counts<a>(x: int, e: a, vs: seq<a>): Trace<int>
+// the number of occurrences of a value in a sequence
 function {:teq} count<a>(e: a, vs: seq<a>): int
 
 // auxiliary predicates, declared only: abstractions of iteration constraints, which lemmas instantiate at witnesses,
@@ -91,9 +78,12 @@ lemma {:rw} {:teq} consts_def<a>(x: a, i: int, c: int, n: int)
   ensures trace(x, for ⌊counter(i, c, n)⌋ do y, v :: y)
     == consts(n, x)
 
-lemma {:rw} {:teq} stores_def<a, b>(a: array<a, b>, keys: seq<a>, values: seq<b>)
-  ensures trace(a, for keys, values do b, k, v :: b[k := v])
-    == stores(a, keys, values)
+// the trace of the successive stores of the values at the keys into a
+function {:teq} {:fold} stores<a, b>(a: array<a, b>, keys: seq<a>, values: seq<b>): Trace<array<a, b>>
+{
+  trace(a, for keys, values do b, k, v :: b[k := v])
+}
+
 
 // each key is visited once only if they are distinct, hence b[k] is still the initial value a[k],
 // in any context f of the read, which may depend on the other dependencies, but not on the accumulator otherwise
@@ -102,29 +92,47 @@ lemma {:rw} {:teq} trace_read_initial<a, b>(a: array<a, b>, keys: seq<a>, fs: se
   ensures trace(a, for keys, fs do b, k, f :: b[k := f(b[k])])
     == trace(a, for keys, fs do b, k, f :: b[k := f(a[k])])
 
-lemma {:rw} {:teq} shifts_def(a: array<int, int>, keys: seq<int>, d: int)
-  ensures trace(a, for keys do b, k :: b[k := b[k + d]])
-    == shifts(a, keys, d)
+// the trace of the successive copies a[k] := a[k + d] for the keys, which is modeled for increasing keys and
+// nonnegative offsets only, where the entries read are not yet modified
+function {:teq} {:fold} shifts(a: array<int, int>, keys: seq<int>, d: int): Trace<array<int, int>>
+{
+  trace(a, for keys do b, k :: b[k := b[k + d]])
+}
 
-lemma {:rw} {:teq} sums_def(x: int, values: seq<int>)
-  ensures trace(x, for values do s, v :: s + v)
-    == sums(x, values)
+// the prefix sums of a sequence starting with an initial value
+function {:teq} {:fold} sums(x: int, values: seq<int>): Trace<int>
+{
+  trace(x, for values do s, v :: s + v)
+}
 
-lemma {:rw} {:teq} parities_def(x: int, values: seq<int>)
-  ensures trace(x, for values do s, v :: case v % 2 == 0 => s + 1 case v % 2 != 0 => s - 1)
-    == parities(x, values)
+// the prefix parities starting with an initial value
+function {:teq} {:fold} parities(x: int, values: seq<int>): Trace<int>
+{
+  trace(x, for values do s, v :: case v % 2 == 0 => s + 1 case v % 2 != 0 => s - 1)
+}
 
-lemma {:rw} {:teq} maxs_def(x: int, values: seq<int>)
-  ensures trace(x, for values do m, v :: case m < v => v case v <= m => m)
-    == maxs(x, values)
+// the prefix maxima and minima starting with an initial value
+function {:teq} {:fold} maxs(x: int, values: seq<int>): Trace<int>
+{
+  trace(x, for values do m, v :: case m < v => v case v <= m => m)
+}
 
-lemma {:rw} {:teq} mins_def(x: int, values: seq<int>)
-  ensures trace(x, for values do m, v :: case v < m => v case m <= v => m)
-    == mins(x, values)
+function {:teq} {:fold} mins(x: int, values: seq<int>): Trace<int>
+{
+  trace(x, for values do m, v :: case v < m => v case m <= v => m)
+}
 
-lemma {:rw} {:teq} counts_def<a>(x: int, e: a, vs: seq<a>)
-  ensures trace(x, for vs do y, v :: case v == e => y + 1 case v != e => y)
-    == counts(x, e, vs)
+// the number of occurrences of a value, counted from an initial value
+function {:teq} {:fold} counts<a>(x: int, e: a, vs: seq<a>): Trace<int>
+{
+  trace(x, for vs do y, v :: case v == e => y + 1 case v != e => y)
+}
+
+
+
+
+
+
 
 // on booleans, the guards are the values themselves; the occurrences of false come first,
 // since the guard b of the other lemma also matches !b, which counts the occurrences of true among the negations
@@ -173,9 +181,12 @@ lemma {:rw} {:teq} maps_counter_affine(a: int, b: int, i: int, c: int, n: int)
   ensures maps(for ⌊counter(i, c, n)⌋ yield v :: a + b * v)
     == ⌊counter(a + b * i, b * c, n)⌋
 
-lemma {:rw} {:teq} selects_def<a, b>(a: array<a, b>, keys: seq<a>)
-  ensures maps(for keys yield k :: a[k])
-    == selects(a, keys)
+// the values of a at the keys
+function {:teq} {:fold} selects<a, b>(a: array<a, b>, keys: seq<a>): seq<b>
+{
+  maps(for keys yield k :: a[k])
+}
+
 
 // invs
 

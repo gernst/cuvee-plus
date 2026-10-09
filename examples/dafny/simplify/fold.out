@@ -1,0 +1,8 @@
+function g(x: int): int
+
+function {:fold} twice(x: int): int {
+  g(g(x))
+}
+
+goal forall y: int :: 0 < twice(y + 1)
+

@@ -102,7 +102,7 @@ object TEQ extends TestSuite:
     // the conditions are decided by the assumptions of the context
     test("count"):
       val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun }.get
+      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun; case DefineFun(fun, _, _) if fun.name.name == name => fun }.get
       def app(name: String, args: Expr*) = App(fun(name), args.toList)
       def has(expr: Expr, name: String) = subexprs(expr).exists { case App(f, _, _, _) => f.name.name == name; case _ => false }
 

@@ -98,7 +98,11 @@ after section 4 of the paper.
   functions of the database, which is injected after parsing.
 - All function declarations come first, then the lemmas, grouped by the
   function of their left-hand side (the combinator, `current`, `prefix`, ...).
-  Lemmas whose order matters as rewrite rules keep it within their group.
+  Rules are tried in the order of the file, lemmas whose order matters keep it
+  within their group.
+- Functions that are traces are defined by them with `{:fold}`, whose rule
+  folds such a trace into the function (`stores`, `sums`, `selects`, ...);
+  these definitions stand among the lemmas, at the position of their rule.
 - Functions that produce traces are plural (`sums`, `maxs`, `counts`), their
   scalar counterparts singular (`sum`, `max`, `count`).
 - Lemmas found on the SV-COMP examples (`examples/sv-comp`) are merged into
@@ -120,21 +124,26 @@ after section 4 of the paper.
 
 ## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
 
-- The functions that teq.dfy declares are defined in Lean 4 (core, without
-  Mathlib): traces and sequences are lists, a trace of `n` steps has `n + 1`
-  values, `butlast` is `dropLast`, `counter i c n` is `i, i + c, ...,
-  i + n c`, the combinators are `scanl`, `map`, and `∀ x ∈ ...` over the
-  zipped dependencies, named by their number (`trace2`, `maps3`, ...), and
+- The functions that teq.dfy only declares are defined in Lean 4 (core,
+  without Mathlib): `Trace` is a datatype of a first value (`stop`) and
+  further values added at the end (`step`), hence never empty; `current`,
+  `butlast`, `counter`, and `consts` are recursive; sequences are lists;
   the auxiliary predicates (`agree_prefix`, ...) are the iteration
   constraints that they abstract.
-- The lemmas are printed by `-print lean` (the Lean printer prints the
-  combinators as applications of these functions and guarded cases as
-  conditionals), as theorems, of which 15 are proved, the others `sorry`.
+- There is a single combinator of each kind, `trace`, `maps`, and `invs`,
+  defined by recursion over one dependency; the Lean printer zips several
+  dependencies, `List.zip d₁ (List.zip d₂ d₃)`, binds their values by a
+  tuple, `fun acc ⟨b₁, b₂, b₃⟩ => ...`, and prints guarded cases as
+  conditionals. Zipping truncates to the shortest dependency, the lengths
+  are not assumed yet (see TODO.md).
+- The functions that teq.dfy defines with `{:fold}` and the lemmas are
+  printed by `-print lean`, the lemmas as theorems, all `sorry` for now.
 - Checked counterexamples show lemmas that hold only under assumptions that
-  the contexts of the goals provide, e.g. `n ≥ 0` (see TODO.md).
-- Check with `lean resources/cuvee/teq.lean` (Lean 4.34); new lemmas of
-  teq.dfy are added by hand from the output of
-  `./Cuvee.sh -print lean resources/cuvee/teq.dfy`.
+  the contexts of the goals provide, e.g. `n ≥ 0` or dependencies of equal
+  length.
+- Check with `lean resources/cuvee/teq.lean` (Lean 4.34); teq.lean is built
+  from the output of `./Cuvee.sh -print lean resources/cuvee/teq.dfy` and
+  the hand-written definitions at its beginning.
 
 ## Simplification and rewriting
 

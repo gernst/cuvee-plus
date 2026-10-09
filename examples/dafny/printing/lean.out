@@ -31,7 +31,8 @@ axiom ax_f0a4b875 (x : Int) : f x ≥ 0
 
 @[simp] axiom length_nil {α : Type} : length (Nil : List α) = 0
 
-theorem f_pos (x : Int) : x > 0 → (∃ (y : Int), f y < x) := by sorry
+theorem f_pos (x : Int) : x > 0 → (∃ (y : Int), f y < x) :=
+  by sorry
 
 example (x : Int) (b : Prop) :
   (b → f x ≥ 0) ∧ (let p : Int × Prop := (x, b); p.2 ↔ b) ∧ (0 : Int) < 1 :=

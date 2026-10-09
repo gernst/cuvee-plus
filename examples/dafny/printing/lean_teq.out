@@ -8,17 +8,15 @@ axiom current {α₀ : Type} : Trace α₀ → α₀
 
 @[simp] axiom capped (x0 : Int) (n : Int) (b : Int) (hs : List Int) :
   current
-    (trace2
+    (trace
        x0
-       (butlast (counter 0 1 n))
-       hs
-       (fun x k h => if x < b then x + h else x))
+       (List.zip (butlast (counter 0 1 n)) hs)
+       (fun x ⟨k, h⟩ => if x < b then x + h else x))
     = current
-      (trace2
+      (trace
          x0
-         (butlast (counter 0 1 n))
-         hs
-         (fun x k h => if x < b then x + h else x))
+         (List.zip (butlast (counter 0 1 n)) hs)
+         (fun x ⟨k, h⟩ => if x < b then x + h else x))
 
 @[simp] axiom bounded (n : Int) (xs : List Int) (b : Int) :
   invs xs (fun x => x ≤ b)

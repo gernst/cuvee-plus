@@ -81,11 +81,20 @@ object Rule:
       case _ =>
         List(Rule(params, formals.toSet, App(state, fun, formals), body, True))
 
+  // the rule of a definition with :fold, the converse of the unfolding rule: the body is replaced by a call of the
+  // function, which needs all formal parameters in the body (see check), e.g. the traces of teq.dfy, whose
+  // trace combinators become the functions that they define
+  def fold(state: State, fun: Fun, body: Expr): Rule =
+    val formals = Type.expand(state, fun.formals)
+    Rule(fun.params.toSet, formals.toSet, body, App(state, fun, formals), True)
+
   // the logical connectives, which are not boolean atoms
   val connectives = Set("and", "or", "=>", "<=>", "not", "ite", "true", "false")
 
 object Rules:
-  // the rewrite rules of the assertions, lemmas, and function definitions with the attribute :rw
+  // the rewrite rules of the assertions, lemmas, and function definitions with the attribute :rw,
+  // and the folding rules of function definitions with the attribute :fold, in the order of the commands,
+  // which is the order in which they are tried
   def from(state: State, cmds: List[Cmd]): List[Rule] =
     for
       cmd <- cmds if cmd.isRule
@@ -98,6 +107,12 @@ object Rules:
     cmd match
       case Assert(_, params, phi, _) =>
         List(Rule.from(params.toSet, Set(), True, phi))
+
+      // a definition is either unfolded or folded, both would loop
+      case DefineFun(fun, body, attrs) if attrs.contains("fold") =>
+        Error.report("definition with both :rw and :fold", fun.name.subscripted):
+          require(!attrs.contains("rw"))
+        List(Rule.fold(state, fun, body))
 
       case DefineFun(fun, body, _) =>
         Rule.from(state, fun, body)

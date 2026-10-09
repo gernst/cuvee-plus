@@ -1,0 +1,1 @@
+error "definition with both :rw and :fold" "twice"

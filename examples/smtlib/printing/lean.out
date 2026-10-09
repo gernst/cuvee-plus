@@ -18,7 +18,8 @@ axiom pop_cons {α : Type} (x₀ : α) (x₁ : Stack α) : pop (cons x₀ x₁) 
 
 axiom c : U
 
-noncomputable def max (x : Int) (y : Int) : Int := if x < y then y else x
+noncomputable def max (x : Int) (y : Int) : Int :=
+  if x < y then y else x
 
 axiom shift (x : Int) : let (x, y) : Int × Int := (x + 1, x); y < x
 
