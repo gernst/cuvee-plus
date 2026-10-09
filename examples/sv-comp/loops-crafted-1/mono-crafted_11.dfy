@@ -1,20 +1,22 @@
-// ./Cuvee.sh -teq -simplify examples/sv-comp/loops-crafted-1/mono-crafted_11.dfy
+// ./Cuvee.sh -teq -simplify -split -simplify examples/sv-comp/loops-crafted-1/mono-crafted_11.dfy
 // SV-COMP loops-crafted-1/mono-crafted_11.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of mono-crafted_1 with other constants or assertions; checks (x%2)==0
-// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000000 and even, since x counts
-// by 2 from 10000000 on, which is even, and the assertion is x % 2 == 0, as for the original bound 100000000
+// note: the concrete loop bounds are symbolic: N = 20 * K for 100000000, and the threshold that is a fraction of
+// it, 2 * K = N / 10 for 10000000; a multiple of 20, such that the threshold is even and x, which counts by 2 from
+// there, ends at an even value, as for the original bound
 
 // the remainder of C, which truncates towards zero
 function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
 
 method main() returns (result: int) {
   var N: int;
+  var K: int;
   var x: int;
-  assume 0 < N;
-  assume N % 2 == 0;
+  assume 0 < K;
+  assume N == 20 * K;
   x := 0;
   while x < N {
-    if x < 10000000 {
+    if x < 2 * K {
       x := x + 1;
     } else {
       x := x + 2;

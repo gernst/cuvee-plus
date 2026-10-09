@@ -5,72 +5,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New
 
-- look at cyclic rewrite rules
 - support verifying trace lemmas in Dafny
 - identify performance improvements, notably in the simplifier
 - thread config through more code, so that it is usually available
 - error messages should use a nice printer
-
-## Cycle through the contexts of iterations
-
-The simplifier can enter the same iterations again and again, each time
-under fresh names of bound variables, until the budget of 1000 rewrite steps
-is exhausted, which is reported as "rewriting does not terminate".
-
-Mitigated in 0.34.6: `Rewrite.matches` builds the context of the iterations of
-a combinator only when the update is matched (`lazy val inner`), and the
-contexts of combinators are built once per command for the same outer context
-(`Context.combinators`), instead of for each rule that is matched and in each
-round. Open: the nested cycle above, where a read rewrites into a new
-combinator over the same counter, whose iterations are entered under fresh
-names; a remedy is to record the counters that the context iterates over, and
-not to simplify the values of their dependencies again (see
-`Simplify.iterations`).
-
-Example, [standard_partial_init_ground.dfy](examples/sv-comp/array-examples/standard_partial_init_ground.dfy)
-with `-teq -simplify`, whose second loop compacts the agreeing positions:
-
-```
-while i < 100000 {
-  if A[i] == B[i] { C := C[j := i]; j := j + 1; }
-  i := i + 1;
-}
-```
-
-`j` is the trace `J` of the count of agreeing positions, and the reads
-`C[x]` of the later loops become reads `earlier(k, ⌊J⌋)`:
-
-1. The lemma of teq.dfy for counts rewrites such a read into a count over a
-   prefix of a new combinator over the dependencies of the loop:
-
-   ```
-   earlier(k₃₃, ⌊J₃₆⌋)
-     ~> 0 + count(true, prefix(k₃₃, maps(for ⌊K₃₄⌋, ⌊I₃₇⌋ yield k₃₃, i₃₁ :: A[i₃₁] == B[i₃₁])))
-   ```
-
-2. To simplify the `maps`, `Simplify.iterations` builds the context of its
-   iterations, which contains the facts about the traces of the loop, and
-   these again contain reads `earlier(k', ⌊J⌋)`, simplified under a fresh
-   name `k'`, to which step 1 applies again.
-
-With `-debug rewrite`, 916 of the 1000 steps are the same step
-`earlier(k, ⌊I⌋) ~> 0 + k * 1` on 36 different fresh names `k`, and 35 rewrite
-`earlier(k, ⌊J⌋)`. Nothing grows: the same terms are simplified over and
-over, nested, since expressions are compared literally, not modulo the names
-of bound variables.
-
-Proposal: a guard against reentrance in `Simplify.iterations`. While the
-context of the iterations over a list of dependencies is built, these
-dependencies are on a stack in the `Context`; when the same dependencies,
-modulo the names of bound variables, are entered again inside, their facts
-are taken as they are, without simplifying them again. This cuts exactly
-this cycle and changes nothing for terms that do not recurse in this way.
-Weaker alternatives: canonical names of bound variables instead of fresh
-ones (the repetitions become syntactically equal, but the nesting still
-grows); restricting the lemma for counts to indices that are not bound by an
-enclosing combinator (ad hoc, loses legitimate rewrites); comparison modulo
-the names of bound variables in general (needed elsewhere, see below, but it
-does not stop the nesting by itself).
 
 ## Bugs
 
@@ -79,9 +17,6 @@ does not stop the nesting by itself).
   but constants (`declare-const x`) are functions, e.g.
   `(=> (exists ((x Int)) (< x y)) (<= x y))` becomes
   `(forall ((x Int)) (=> (< x y) (<= x y)))` with `-simplify`.
-- Rewriting does not terminate on
-  [standard_partial_init_ground.dfy](examples/sv-comp/array-examples/standard_partial_init_ground.dfy),
-  see the cycle through the contexts of iterations below.
 - A rule whose left-hand side is a comparison of two open variables, e.g.
   `j < n` with a side condition `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: P(k, h))`,
   overflows the stack before any step: it matches every comparison, also
@@ -119,11 +54,15 @@ does not stop the nesting by itself).
   [ifcomp.dfy](examples/sv-comp/array-fpi/ifcomp.dfy)), only those whose
   index is a dependency, e.g. `⌊counter(1, 1, n)⌋` (see
   [eqn1.dfy](examples/sv-comp/array-fpi/eqn1.dfy)).
-- Rewriting does not terminate on
-  [sanfoundry_02_ground.dfy](examples/sv-comp/array-examples/sanfoundry_02_ground.dfy)
-  with the lemmas of teq.dfy alone, with the rule for
-  `earlier(k, ⌊counter(i, c, n)⌋)`, on the trace of the two largest elements,
-  whose updates read the array at the counter from 2.
+- A cycle through the arithmetic: in [ss1.dfy](examples/sv-comp/array-fpi/ss1.dfy), the equation
+  `sum₄₀ == sum₂₂ + sum(selects(a₃₁, ⌊I₃₉⌋))` is solved for `sum₂₂` (`Chains`), whose value is then inlined into
+  `⌊consts(n, sum₂₂ + 1)⌋`, which `selects_stores` returns for `selects(a₃₁, ⌊I₃₉⌋)`, which reappears in the
+  solution; the poly guard against cycles (`Simplify.poly`) sees the equations of the context only, not the rules.
+  Remedies: prefer to solve for the variable that occurs in fewer definitions (`sum₄₀`), or reject a rewrite whose
+  result contains the rewritten term (`Rewrite.apply`). Also non-terminating, not analysed yet:
+  [add-3-n-u](examples/sv-comp/array-multidimensional/add-3-n-u.dfy), `copy-partial-3-u`, `diff-3-n-u`.
+- [sanfoundry_02_ground.dfy](examples/sv-comp/array-examples/sanfoundry_02_ground.dfy) times out (60 s), on the trace
+  of the two largest elements, whose updates read the array at the counter from 2.
 - `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on
   a loop body with ten conditionals in sequence, presumably from the 2^10
   paths of its symbolic execution (see
@@ -163,42 +102,6 @@ does not stop the nesting by itself).
   with `unknown` while z3 unrolled a loop with the constant bound 10 (about
   0.17 s alone); with a symbolic bound it finds a linear invariant (0.035 s).
 
-## Naturals and lists in teq.dfy
-
-teq.dfy defines its own datatypes `Nat` (`zero`, `succ`) and `List` (`nil`, `cons`), with `integer(n)` the value
-of a `Nat` and `unspecified()` the value of reads outside of a list, and defines all its functions by structural
-recursion on them: `counter(i, c, n)` and `consts(n, v)` on the number of steps `n: Nat`, `earlier(k: Nat, xs)`,
-`prefix(k: Nat, xs)`, `indexof` (a `Nat`), `butlast` (a `List`), `occurs`, `distincts`, `sum`, `parity`, `count`,
-`agree_prefix`, `above_iterations`, `pow`; `natural(x)` converts the integer values of counters where they are
-indices, e.g. `earlier(natural(k), xs)`. teq.dfy type checks: the core has `Nat` and `List` (`Sort.nat`,
-`Sort.list`) in the signatures of `Fun.trace` and as the dependencies of combinators (steps 1 and 2), and the lemmas
-are converted (step 5). There is no `length`: `length_counter` is gone, and `count_false_true` is stated over a
-counter `⌊counter(i, c, n)⌋`, whose length is `n`. TEQ and the simplifier still build terms of the old types (steps
-3 and 4), e.g. `Simplify.iterations` with integer `k` and `Seqs.len` of dependencies, which should become
-`dep == nil` for `invs` with a constant body, so -teq does not work until then.
-
-Plan:
-
-1. Core: the signatures of `Fun.trace`, `butlast` to `List<a>`, `earlier(Nat, List<a>)`, `counter(int, int, Nat)`,
-   with `Nat` and `List` as the datatypes of teq.dfy (sorts of the core like `Sort.trace`, not of a prelude); the
-   parsers' `⌊X⌋` unchanged.
-2. Core: the dependencies of combinators are lists (`Type.dependencies`, `Type.elem`), their lengths `length` on
-   lists instead of `Seqs.len`; `state.exprs.trace`, `map`, `all`.
-3. TEQ: the number of iterations `n` is a `Nat`, the counter `K == counter(0, 1, n)`, arithmetic on it through
-   `integer(n)`; `Simplify.iterations` assumes `k` below `n` as naturals (`earlier(k, ⌊Z⌋)` with `k: Nat`), and
-   `Simplify.invariants` the same.
-4. The simplifier: arithmetic on `integer(n)` as an atom with `0 <= integer(n)`; `succ`, `zero`, `nil`, `cons`
-   reduced by the datatype reasoning that exists for constructors and selectors; whether `integer(succ(m))` should
-   be `integer(m) + 1` as a rule.
-5. The lemmas: indices and numbers of iterations `Nat` (e.g. `earlier_counter` with `k: Nat`,
-   `i + integer(k) * c`), sequences `List`, `[]` and `[x]` as `nil` and `cons(x, nil)`, the lemmas on lengths on
-   `length`; the counterexamples for `n < 0` disappear.
-6. The Lean printer maps `Nat`, `List`, `integer`, and `unspecified` of teq.dfy to Lean's `Nat`, `List`,
-   `Int.ofNat`, and `default`, such that the recursion is structural for Lean and `omega` and the lemmas of the
-   library apply; the special cases for recursion on `seq` and `int` (`definition`, `termination`) become unused.
-7. The tests that duplicate declarations of teq.dfy (with `type Trace<a₀>`, `seq<...>`) follow; regenerate
-   teq.lean, then the SV-COMP database (expected changes in goals, since lemmas change).
-
 ## Dependencies of equal length
 
 The combinators assume that their dependencies have equal lengths (an invariant of the core, see
@@ -217,36 +120,24 @@ Plan:
    lemma, not a check at run time.
 3. In Lean, each lemma gets the hypotheses that the combinators of its left-hand side are well-formed:
    `d₁.length = d₂.length` for the dependencies, with the lengths of `butlast (counter i c n)` and of the other
-   functions given by lemmas (`length_counter`, the length of `maps` and `butlast (trace ...)`). The generator
-   of teq.lean derives them from the combinators in the statement; a lemma about the right-hand side
-   (well-formedness) is proved along with it.
-4. Nonnegative numbers of iterations are the same kind of invariant: `counter(i, c, n)` of a loop has `n >= 0`.
-   Either it becomes part of well-formedness (then `invs_const` and `current_counter` hold, and the rules
-   that build counters, e.g. `prefix_counter` with `k > n`, must preserve it), or these lemmas get `requires`;
-   the counterexamples at the end of teq.lean decide which lemmas are affected.
-5. Lemmas whose assumptions cannot be derived from well-formedness (`earlier_consts` outside the trace,
+   functions given by lemmas (the length of `butlast (counter ...)`, of `maps` and of `butlast (trace ...)`),
+   stated by hand in teq.lean; a lemma about the right-hand side (well-formedness) is proved along with it.
+4. Lemmas whose assumptions cannot be derived from well-formedness (`earlier_consts` outside the trace,
    `prefix_prefix` for `j > k`) get `requires`, which makes them conditional rules; check on the SV-COMP
    database that the simplifier still discharges them in the contexts of the goals.
-6. Document the invariant and the soundness of the database modulo it in doc/teq.md.
+5. Document the invariant and the soundness of the database modulo it in doc/teq.md.
 
 ## Proofs of teq.dfy in Lean
 
-- All 120 lemmas of [teq.lean](resources/cuvee/teq.lean) are `sorry`: the
-  proofs of the earlier model of lists (15, among them `counter_def`,
-  `consts_def`, `maps_const`, `invs_not_or`, `current_consts`,
-  `current_sums`, `current_counts`, `prefix_zero`) are to be redone for the
-  datatype `Trace` and the single combinators over zipped dependencies.
-- Lemmas that are false without assumptions, with checked counterexamples
-  at the end of teq.lean: `invs_const` and `current_counter` for `n < 0` (no
-  iterations, but `n ≠ 0`), `earlier_consts` for an index outside the trace,
-  `prefix_prefix` for `j > k`, `occurs_earlier` for the empty sequence, and
-  `current_stores` for keys and values of different lengths; likely more of
-  the same kind (`invs_counter_lower`, `invs_counter_upper`,
-  `current_maxs_counter` to `current_mins_consts`, `earlier_counter`,
-  `earlier_prefix`, and the lemmas of several dependencies). They are sound
-  in the contexts of the goals of -teq, which provide `0 <= n`, indices
-  within the iterations, and dependencies of equal length, but as rewrite
-  rules they apply anywhere (see the plan above).
+- [teq.lean](resources/cuvee/teq.lean) is maintained by hand next to teq.dfy, without a generator: a changed lemma of
+  teq.dfy is changed there too. Of its lemmas, most are proved; the others are `sorry` and fall into three groups,
+  with counterexamples at the end of the file where they are refutable: they hold only for dependencies of equal
+  length (see above, e.g. `sum_add`, `count_false_true`, `agree_prefix_def`, `current_trace_cap`), only for indices
+  within the lists, whose elements are `unspecified` otherwise (`earlier_counter`, `earlier_sums`,
+  `current_stores`, `prefix_counter` for `k > n`), or only for complete guards, which the conditionals of the
+  updates in Lean lose (`current_trace_bounded`). `invs_two_phases` holds but is not proved yet.
+- The Lean check takes about 6 s, mostly `simp` and typeclass inference for the decidability of `if` on generic
+  types under `open Classical`; `simp only` instead of `simp` would speed it up.
 
 ## Printers
 
@@ -609,6 +500,10 @@ concepts, found by reading the whole code base; none is a bug.
   an equation, `n * n == 2 * ((-n + n * n) / 2) + n`, presumably since
   equations are normalized as differences of polynomials (see
   [ps2-ll.dfy](examples/sv-comp/nla-digbench/ps2-ll.dfy)).
+- A chain of comparisons in a conjunction, e.g. `0 <= n < ielen`, is matched as a whole: a pattern
+  `R && 2 * a + p <= b + 2 * c && c < a ==> p + 1 < b` does not match a goal whose premise `n < ielen` is part of
+  such a chain, neither does the pattern with the chain `0 <= c < a`, while it matches without the chain (see
+  [MADWiFi-encode_ie_ok.dfy](examples/sv-comp/loop-invgen/MADWiFi-encode_ie_ok.dfy), which needs this lemma).
 - No integer rounding: `2 * n <= 2 * k + 1` does not give `n <= k`; no
   cancellation of a factor, e.g. `k * j < 1000000 * k`, and a lemma
   `if 0 <= k then (k * a < k * b) <==> (0 < k && a < b)` does not match it,
@@ -622,12 +517,10 @@ SV-COMP examples (`examples/sv-comp`):
 
 - The rewrite steps per command are limited to 1000 (`Context.withRules`),
   and an exhausted budget is reported as "rewriting does not terminate",
-  like a stack overflow, although rewriting may terminate: with the lemmas
-  merged from the SV-COMP examples into teq.dfy, `ifcomp`,
-  `init-2-n-u`, and `nr2` exhaust it, which terminate with 10000 steps
-  (after up to 50 s, see also `partial_mod_count_1` before the join at a
-  further dependency was left out); no single lemma is responsible, but
-  the number of rules that apply to large goals.
+  like a stack overflow, although rewriting may terminate.
+- The negation of an equation on Int asks the context for both bounds (`Simplify.not`), which made 14 SV-COMP tasks
+  time out, one of them closed before (`string-1`); a cheaper check would only look at the bounds that the
+  difference constraints already have.
 - Guards of updates are decided by the simplifier with all rules
   (`Rewrite.guard`, `Rewrite.holds`), about 20 ms each. Failing decisions
   are the expensive ones, and identical decisions are repeated without a
@@ -639,9 +532,6 @@ SV-COMP examples (`examples/sv-comp`):
 - Matching an equation tries both orders. With the definition of a variable
   (`Context.↑`), `X == trace(...)` matches `Lo == trace(...)` twice, the
   second time with `X` bound to the trace. This is fixed on `forward` only.
-- Matching a combinator in a pattern builds the context of its updates
-  (`Simplify.combinator`) for each candidate, and simplifies the iteration
-  facts there (`Simplify.iterations`), also when the match fails afterwards.
 - `Simplify.nary` simplifies each conjunct under all others. With forward
   rules in `Context.assume`, every sibling context derives the same
   conclusions again, which took binary search beyond 10 minutes; on
@@ -689,12 +579,11 @@ SV-COMP examples (`examples/sv-comp`):
 - No instantiation of the iteration constraint at a witness, e.g. a search
   whose constraint states that `P` holds before the exit `n`, and `!P(j)`,
   which gives `n <= j`; the examples abstract the constraint by an atom first,
-  e.g. `absent(n, a, e)`, which a second lemma takes as its side condition (see
+  e.g. `!occurs(e, selects(a, ⌊counter(0, 1, n)⌋))` by `not_occurs_selects_def` of teq.dfy, which a second lemma
+  takes as its side condition (see
   [standard_sentinel-2.dfy](examples/sv-comp/array-examples/standard_sentinel-2.dfy)),
   since a side condition that is an iteration constraint does not terminate;
   a forward rule on branch `forward` would instantiate it directly.
-- teq.dfy has no rule for the length of the iterations of a counter,
-  `|⌊counter(i, c, n)⌋| == n` (see [sumt2.dfy](examples/sv-comp/loops-crafted-1/sumt2.dfy)).
 - Nested loops: the outer trace takes the values of summarized inner traces,
   whose composition, e.g. `k == n * m`, is not accelerated (see
   [nested-1.dfy](examples/sv-comp/loop-new/nested-1.dfy)).
