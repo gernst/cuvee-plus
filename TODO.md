@@ -9,7 +9,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - translate the remaining benchmarks to Dafny with unbounded loops
 - look at cyclic rewrite rules
 - support verifying trace lemmas in Dafny
-- add Lean printer
 - identify performance improvements, notably in the simplifier
 
 ## Cycle through the contexts of iterations
@@ -154,11 +153,29 @@ does not stop the nesting by itself).
   with `unknown` while z3 unrolled a loop with the constant bound 10 (about
   0.17 s alone); with a symbolic bound it finds a linear invariant (0.035 s).
 
+## Proofs of teq.dfy in Lean
+
+- [teq.lean](resources/cuvee/teq.lean) proves 15 of the 128 lemmas
+  (`counter_def`, `consts_def`, `stores_def`, `shifts_def`, `sums_def`, `parities_def`,
+  `maxs_def`, `counts_def`, `maps_const`, `selects_def`, `invs_not_or`, `current_consts`,
+  `current_sums`, `current_counts`, `prefix_zero`, several by definition); 113 are
+  `sorry`.
+- Lemmas that are false without assumptions, with checked counterexamples
+  at the end of teq.lean: `invs_const` and `current_counter` for `n < 0` (no
+  iterations, but `n ≠ 0`), `earlier_consts` for an index outside the trace,
+  `prefix_prefix` for `j > k`, `occurs_earlier` for the empty sequence; likely more of
+  the same kind (`invs_counter_lower`, `invs_counter_upper`, `current_maxs_counter` to `current_mins_consts`,
+  `earlier_counter`, `earlier_prefix`). They are sound in the contexts of the goals of
+  -teq, which provide `0 <= n` and indices within the iterations, but as
+  rewrite rules they apply anywhere; adding the assumptions as `requires`
+  would make them conditional rules.
+
 ## Printers
 
-- A Lean printer for the logic only: sorts, datatypes, functions and their
-  definitions, assertions, goals, and lemmas, but not programs, procedures,
-  global variables, or other procedure-related commands, which it rejects.
+- The Lean printer (`-print lean`) prints no preamble: the output needs
+  `open Classical` and Mathlib (`ℝ`, `Set`), and names of the input that
+  Lean declares already clash, e.g. a datatype `List` or a function `max`,
+  which a namespace around the output would avoid. Not checked with Lean.
 
 ## Code structure
 

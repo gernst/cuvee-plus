@@ -1,0 +1,27 @@
+axiom Trace : Type → Type
+
+axiom butlast {α₀ : Type} : Trace α₀ → List α₀
+
+axiom counter : Int → Int → Int → Trace Int
+
+axiom current {α₀ : Type} : Trace α₀ → α₀
+
+@[simp] axiom capped (x0 : Int) (n : Int) (b : Int) (hs : List Int) :
+  current
+    (trace2
+       x0
+       (butlast (counter 0 1 n))
+       hs
+       (fun x k h => if x < b then x + h else x))
+    = current
+      (trace2
+         x0
+         (butlast (counter 0 1 n))
+         hs
+         (fun x k h => if x < b then x + h else x))
+
+@[simp] axiom bounded (n : Int) (xs : List Int) (b : Int) :
+  invs xs (fun x => x ≤ b)
+    → maps (butlast (counter 0 1 n)) (fun k => k + 1)
+      = maps (butlast (counter 1 1 n)) (fun k => k)
+

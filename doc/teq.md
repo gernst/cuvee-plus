@@ -87,8 +87,12 @@ after section 4 of the paper.
 - Parsed by a fresh Dafny parser and injected once at the beginning of the
   output (`TEQ.lemmas`). It declares the type `Trace`, the functions on traces,
   and lemmas about them, which are `{:rw}` (rewrite rules of `-simplify`) and
-  free, without a body (assumed by the solvers without proof). Each lemma is
-  named after the function of its left-hand side, numbered (`trace_1`).
+  free, without a body (assumed by the solvers without proof). Lemmas that
+  identify a trace with a function of teq.dfy are named after it, e.g.
+  `stores_def` (likewise `selects_def` for `maps`, `agree_prefix_def` for
+  `invs`), those about an accessor of such a function after both, e.g.
+  `current_sums` or `earlier_prefix`, the others after what they state,
+  e.g. `current_trace_two_phases` or `sum_add`.
 - `Trace` is in no prelude: it exists only with `-teq`. Inputs that use
   traces without `-teq` declare `Trace` themselves, and inputs cannot use the
   functions of the database, which is injected after parsing.
@@ -113,6 +117,24 @@ after section 4 of the paper.
 - Auxiliary predicates abstract iteration constraints, e.g. `agree_prefix`,
   and are only declared; their names avoid those that inputs declare with
   other meanings, since equal signatures are identified.
+
+## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
+
+- The functions that teq.dfy declares are defined in Lean 4 (core, without
+  Mathlib): traces and sequences are lists, a trace of `n` steps has `n + 1`
+  values, `butlast` is `dropLast`, `counter i c n` is `i, i + c, ...,
+  i + n c`, the combinators are `scanl`, `map`, and `∀ x ∈ ...` over the
+  zipped dependencies, named by their number (`trace2`, `maps3`, ...), and
+  the auxiliary predicates (`agree_prefix`, ...) are the iteration
+  constraints that they abstract.
+- The lemmas are printed by `-print lean` (the Lean printer prints the
+  combinators as applications of these functions and guarded cases as
+  conditionals), as theorems, of which 15 are proved, the others `sorry`.
+- Checked counterexamples show lemmas that hold only under assumptions that
+  the contexts of the goals provide, e.g. `n ≥ 0` (see TODO.md).
+- Check with `lean resources/cuvee/teq.lean` (Lean 4.34); new lemmas of
+  teq.dfy are added by hand from the output of
+  `./Cuvee.sh -print lean resources/cuvee/teq.dfy`.
 
 ## Simplification and rewriting
 

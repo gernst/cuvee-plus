@@ -1,0 +1,8 @@
+example (x : Int) (y : Int) :
+  True ∧ True → (x < 0 → 0 ≤ -x) ∧ (¬x < 0 → 0 ≤ x) :=
+  by sorry
+
+example (a : Int → Int) (i : Int) (b : Int → Int) :
+  True ∧ True → (fun j => if j = i then 1 else a j) i = 1 :=
+  by sorry
+

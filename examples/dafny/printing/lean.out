@@ -1,0 +1,39 @@
+inductive List (α : Type) where
+  | Nil : List α
+  | Cons (head : α) (tail : List α) : List α
+
+open List
+
+axiom List_head {α : Type} : List α → α
+
+axiom List_head_Cons {α : Type} (x₀ : α) (x₁ : List α) :
+  List_head (Cons x₀ x₁) = x₀
+
+axiom List_tail {α : Type} : List α → List α
+
+axiom List_tail_Cons {α : Type} (x₀ : α) (x₁ : List α) :
+  List_tail (Cons x₀ x₁) = x₁
+
+noncomputable def length {α : Type} (xs : List α) : Int :=
+  match xs with
+  | .Nil => 0
+  | .Cons _ ys => 1 + length ys
+
+axiom f : Int → Int
+
+noncomputable def g (s : List Int) (a : Int → Int) (i : Int) : Int :=
+  if i < (s.length : Int) then
+    s.getD (i.toNat) default + a i
+  else
+    (fun j => if j = i then 0 else a j) i
+
+axiom ax_f0a4b875 (x : Int) : f x ≥ 0
+
+@[simp] axiom length_nil {α : Type} : length (Nil : List α) = 0
+
+theorem f_pos (x : Int) : x > 0 → (∃ (y : Int), f y < x) := by sorry
+
+example (x : Int) (b : Prop) :
+  (b → f x ≥ 0) ∧ (let p : Int × Prop := (x, b); p.2 ↔ b) ∧ (0 : Int) < 1 :=
+  by sorry
+

@@ -50,6 +50,11 @@ object Lang:
   val c =
     Lang("C", cuvee.c.Source, cuvee.c.Printer, Set("c"), false)
 
+  // output only (-print lean), there is no source of Lean, the one given is never used; Lean knows the built-in sorts
+  // and functions of all languages, which its printer maps to their counterparts in Lean, or rejects
+  val lean =
+    Lang("Lean", cuvee.smtlib.Source, cuvee.lean.Printer, Set("smt2", "dfy", "bpl", "c"))
+
   // its output is C (see Config.parse)
   val yml =
     Lang("SV-COMP task definition", cuvee.yml.Source, cuvee.c.Printer, Set("c"), false)
@@ -212,7 +217,7 @@ object Config:
   val linewidth =
     flag("-linewidth", "<n>", "lay out the output for lines of <n> characters (default 80)"):
       case (config, n :: rest) if n.toIntOption.exists(_ > 0) =>
-        for lang <- langs.values
+        for lang <- langs.values.toList :+ Lang.lean
         do lang.printer.width = n.toInt
         cuvee.sexpr.Printer.width = n.toInt
         (config, rest)
@@ -221,10 +226,14 @@ object Config:
     flag(
       "-print",
       "<lang>",
-      "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), scala (the internal representation), or null (nothing)"
+      "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), lean (the logic only), scala (the internal representation), or null (nothing)"
     ):
       case (config, name :: rest) if langs.contains(name) =>
         val config_ = config.printing(langs(name))
+        (config_, rest)
+
+      case (config, "lean" :: rest) =>
+        val config_ = config.printing(Lang.lean)
         (config_, rest)
 
       // the declarations that the output drops remain those of the language of the output so far
@@ -296,7 +305,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.32.4")
+    println("Cuvée 0.33.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

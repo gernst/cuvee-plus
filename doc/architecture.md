@@ -27,6 +27,7 @@ transformation and any output.
 | `cuvee.c` | C frontend and printer, for integer programs with arrays as values. |
 | `cuvee.yml` | SV-COMP task definitions (`Task`, read with SnakeYAML Engine), whose single C input file is read by the C frontend. |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
+| `cuvee.lean` | Printer of the logic in Lean 4 (`-print lean`), output only. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `Verify` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), `FourierMotzkin` (linear constraints over the rationals), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
@@ -65,7 +66,15 @@ transformation and any output.
    the assertions with their attributes `:named` and `:pattern` only. `Monomorph` keeps the polymorphic functions of
    `config.output.features`. `-print null` and `-print scala` replace only
    the printer of the output; transforms whose output a language cannot
-   express (`hasMath`, e.g. `-chc` of C) print SMT-LIB instead.
+   express (`hasMath`, e.g. `-chc` of C) print SMT-LIB instead. Lean
+   (`Lang.lean`) is an output only, which knows the built-in declarations of
+   all languages: its printer maps them to Lean (booleans to propositions,
+   arrays to functions, sequences to lists, tuples to products, Mathlib's
+   `ℝ` and `Set`) or rejects them, like multisets, finite maps, bitvectors,
+   the combinators of `-teq`, and programs. Selectors are axiomatized by
+   their values on their constructors, free lemmas and axioms are axioms,
+   the other lemmas theorems and goals examples, proved `by sorry`, rewrite
+   rules `@[simp]`; the output assumes `open Classical`.
 4. `Pipe.run` feeds the commands, followed by the internal `Done`, through
    the chain. It reports each result (`Ack`, `Status`, `Model`, `Error`, ...)
    through `Report`. An `Error` stops the run unless the pipe is incremental;

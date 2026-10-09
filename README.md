@@ -19,7 +19,9 @@ languages or passes it to an SMT solver (z3 or cvc5).
   quantifiers at the top, where `else` is optional.
 - **Printers:** any input can be printed as SMT-LIB, Boogie, Dafny, or C
   (`-print smt2|bpl|dfy|c`), within the limits of each language, laid out
-  for lines of 80 characters (`-linewidth <n>`).
+  for lines of 80 characters (`-linewidth <n>`), and its logic in Lean 4
+  (`-print lean`, e.g. the goals of `-verify`): sorts, datatypes, functions,
+  axioms, lemmas, and goals, but no programs.
 - **Verification conditions** (`-verify`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;
