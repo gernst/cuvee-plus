@@ -18,6 +18,12 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [inner_loop_flat.dfy](inner_loop_flat.dfy) | verified: the facts of an inner loop at the top level |
 | [invs_counter_equation.dfy](invs_counter_equation.dfy) | open: problem 1, minimal |
 | [invs_fragments.dfy](invs_fragments.dfy) | open: problem 2, minimal |
+| [count_occurrences.dfy](count_occurrences.dfy) | verified: the count named as the normal form |
+| [max_element.dfy](max_element.dfy) | verified with `occurs`; open with `exists` (no witness) |
+| [argmax.dfy](argmax.dfy) | verified: a selection trace with rules on the atoms |
+| [partition.dfy](partition.dfy) | verified: Lomuto partition, conditional swaps at a count |
+| [reverse.dfy](reverse.dfy) | verified: two pointers, `-simplify -split -simplify` |
+| [is_sorted.dfy](is_sorted.dfy) | open by one substitution of the exit into `sorted` |
 
 ## Abstract predicates
 
@@ -138,6 +144,66 @@ no longer closes, since its summary lemma matches the former shape of the
 fragments; it should be dropped once the summary comes from the tool.
 Problem 1 above (the equation of a bound variable in the same body) remains
 in invs_counter_equation.dfy.
+
+## Principles from further standard algorithms (Oct 9, 2026, late)
+
+Single-loop algorithms over arrays, each with its local lemmas: count_occurrences.dfy,
+max_element.dfy, argmax.dfy, partition.dfy (Lomuto), reverse.dfy are verified;
+is_sorted.dfy is open by one substitution. What each needed:
+
+1. **Name the normal form.** The counter `I` of a loop is not inlined into the
+   facts, so `count(x, selects(a, ⌊I⌋))` and `count(x, selects(a, ⌊counter(0, 1, n)⌋))`
+   of the postcondition differ. A lemma that names the count over a counter
+   makes both sides the same term. The same for the count of elements below
+   the pivot in partition.dfy, where the side conditions of the lemmas and the
+   facts of the goal differ in the names of the bound variables of the maps,
+   which are compared literally.
+2. **Facts of a named trace as rules on the atoms of the postcondition.** A
+   selection trace (argmax, the inner loop of selection sort) is named, and
+   its current value is characterized by rules `(a[k] <= a[current(argmaxs(...))]) <==> true`
+   with the range of `k` as a side condition, and by rules for its bounds.
+   The partition is the same with `below`/`above` rules, plus `perm`.
+3. **Join the cases that the postcondition does not split.** `a[k] <= m` for
+   the maximum needs `current_maxs_initial` for `k == 0` and
+   `current_maxs_earlier` for the rest; the simplifier does not split `k`, so
+   one lemma with the disjunction `k == j || i <= k < i + n` as side condition.
+4. **Existential postconditions have no witness.** `exists k :: a[k] == m` is
+   not closed: a rule whose left-hand side is a quantifier is not matched, and
+   `-teq` produces no witness. The postcondition `occurs(m, selects(a, ⌊counter(...)⌋))`
+   in the vocabulary of the database is closed by a lemma on `occurs`.
+5. **Flags are iteration constraints.** `current_trace_flag` turns the flag of
+   is_sorted.dfy into `if invs(...) then true else false`, and the constraint
+   over adjacent positions is the abstract predicate by its definition lemma.
+   The lemma of teq.dfy is typed `int`; a polymorphic version is needed.
+6. **Reads of the position of the iteration are reads of the input** when
+   only positions below it are written before (partition.dfy), stated on the
+   map that reads them with the named trace as a dependency. A lemma that
+   rewrites the read inside the trace itself does not terminate, since it
+   applies again in the update of its own instance.
+7. **Lemmas carry the extra dependencies** that the simplifier keeps in maps
+   (the counter of the loop as `hs`), otherwise their side conditions do not
+   match the facts.
+8. **Two pointers instead of index arithmetic.** `b[n - 1 - i]` in an update
+   is arithmetic on a bound variable, which patterns do not match; the second
+   pointer `j` is a counter down, and the lemma on the trace of swaps matches
+   `⌊counter(c, d, n)⌋` with `d == -1` as a side condition, since the literal
+   `-1` in a pattern is not matched.
+9. **Closed `invs` side conditions fail.** The simplifier drops the unused
+   dependencies of the instance, which makes it closed, and a closed `invs` is
+   decided literally against the facts (see bubble_sort.dfy); iteration
+   constraints that teq.dfy does not resolve, e.g. `2 k + 1 < n`, need a lemma
+   to arithmetic (`invs_pairs`), and the exit over a definition `i == integer(n)`
+   needs a rewrite of the exit atom (`exit_pointers`), since definitions by
+   non-arithmetic terms are followed on demand only, not substituted.
+10. **Degenerate iteration counts need `-split` after `-simplify`.** The exit
+    of a loop is a disjunction with the case of no iteration, which appears
+    only after the first simplification; the pipeline `-teq -simplify -split -simplify`
+    separates it (is_sorted.dfy, reverse.dfy).
+11. **Open in the simplifier:** a solution `n == n' + 1` of the exit is not
+    substituted into `sorted(a, 0, n)` (a bare variable as an argument is not
+    replaced), which is all that remains of is_sorted.dfy; equalities of reads
+    `a[k] == a[m]` whose indices are equal by linear arithmetic with
+    coefficients are beyond the difference constraints.
 
 ## How bubble_sort.dfy is verified nevertheless
 
