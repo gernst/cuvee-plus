@@ -12,13 +12,26 @@
 // the type and the functions of Fun.trace, whose type parameters and formals are numbered as there (Fun.formals)
 
 // the traces of trace equation systems, the values of a variable at the loop head
-type {:teq} Trace<a₀>
-// all but the last element of a trace, written ⌊X⌋
-function {:teq} butlast<a₀>(x₀: Trace<a₀>): seq<a₀>
-// counter(i, c, n) is the trace i, i + c, ..., i + n c of n steps
-function {:teq} counter(x₀: int, x₁: int, x₂: int): Trace<int>
+datatype {:teq} Trace<a₀> = stop(first: a₀) | step(prev: Trace<a₀>, last: a₀)
+
 // the last element of a trace
 function {:teq} current<a₀>(x₀: Trace<a₀>): a₀
+{
+  match x₀
+  case stop(x) => x
+  case step(_, x) => x
+}
+
+// all but the last element of a trace, written ⌊X⌋
+function {:teq} butlast<a₀>(x₀: Trace<a₀>): seq<a₀>
+{
+  match x₀
+  case stop(_) => []
+  case step(xs, _) => butlast(xs) + [current(xs)]
+}
+
+// counter(i, c, n) is the trace i, i + c, ..., i + n c of n steps
+function {:teq} counter(x₀: int, x₁: int, x₂: int): Trace<int>
 // the elements of sequences
 function {:teq} earlier<a₀>(x₀: int, x₁: seq<a₀>): a₀
 

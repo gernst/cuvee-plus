@@ -3,8 +3,8 @@ The semantics of the lemma database of -teq (teq.dfy) in Lean 4, without Mathlib
 declares are defined here, the functions that it defines and its lemmas are printed by
 `./Cuvee.sh -print lean resources/cuvee/teq.dfy`, the lemmas as theorems to be proved, most of them still `sorry`.
 
-Traces are a datatype, which starts with a value and adds a value at its end in each step, hence a trace is never
-empty; sequences are lists, arrays are functions. There is a single combinator of each kind, trace, maps, and
+Traces are the datatype of teq.dfy, which starts with a value (stop) and adds a value at its end in each step
+(step), hence a trace is never empty; sequences are lists, arrays are functions. There is a single combinator of each kind, trace, maps, and
 invs, over a single dependency: several dependencies are zipped into a list of tuples, which truncates them to the
 shortest one, whereas the dependencies of the combinators of Cuvée have equal lengths, which teq.dfy does not state
 (see TODO.md); `case φ => e case ψ => f` updates are conditionals (the guards are disjoint and complete).
@@ -18,29 +18,44 @@ noncomputable section
 
 namespace TEQ
 
--- the traces of trace equation systems, the values of a variable at the loop head: the initial value (stop),
--- and the value after each iteration, added at the end (step)
-inductive Trace (α : Type) where
-  | stop (x : α)
-  | step (xs : Trace α) (x : α)
+-- the traces of trace equation systems, the values of a variable at the loop head (from teq.dfy)
+inductive Trace (α₀ : Type) where
+  | stop (first : α₀) : Trace α₀
+  | step (prev : Trace α₀) (last : α₀) : Trace α₀
+
+open Trace
+
+axiom Trace_first {α₀ : Type} : Trace α₀ → α₀
+
+axiom Trace_first_stop {α₀ : Type} (x₀ : α₀) : Trace_first (stop x₀) = x₀
+
+axiom Trace_prev {α₀ : Type} : Trace α₀ → Trace α₀
+
+axiom Trace_prev_step {α₀ : Type} (x₀ : Trace α₀) (x₁ : α₀) :
+  Trace_prev (step x₀ x₁) = x₀
+
+axiom Trace_last {α₀ : Type} : Trace α₀ → α₀
+
+axiom Trace_last_step {α₀ : Type} (x₀ : Trace α₀) (x₁ : α₀) :
+  Trace_last (step x₀ x₁) = x₁
 
 -- the last element of a trace
-def current {α : Type} : Trace α → α
+def current {α₀ : Type} (x₀ : Trace α₀) : α₀ :=
+  match x₀ with
   | .stop x => x
   | .step _ x => x
 
 -- all but the last element of a trace, written ⌊X⌋
-def butlast {α : Type} : Trace α → List α
+def butlast {α₀ : Type} (x₀ : Trace α₀) : List α₀ :=
+  match x₀ with
   | .stop _ => []
   | .step xs _ => butlast xs ++ [current xs]
 
--- counter(i, c, n) is the trace i, i + c, ..., i + n c of n steps (none if n is negative)
-def counterSteps (i c : Int) : Nat → Trace Int
-  | 0 => .stop i
-  | m + 1 => .step (counterSteps i c m) (i + c * (m + 1 : Nat))
-
+-- counter(i, c, n) is the trace i, i + c, ..., i + n c of n steps (the trace i if n <= 0)
 def counter (i c n : Int) : Trace Int :=
-  counterSteps i c n.toNat
+  if n ≤ 0 then .stop i else .step (counter i c (n - 1)) (i + c * n)
+termination_by n.toNat
+decreasing_by omega
 
 -- the elements of sequences
 def earlier {α : Type} [Inhabited α] (k : Int) (xs : List α) : α :=
@@ -78,13 +93,11 @@ def indexof {α : Type} (x : α) (xs : List α) : Int :=
 def distincts {α : Type} (xs : List α) : Prop :=
   xs.Nodup
 
--- consts(n, v) is the trace v, ..., v of n steps
-def constsSteps {α : Type} (v : α) : Nat → Trace α
-  | 0 => .stop v
-  | m + 1 => .step (constsSteps v m) v
-
+-- consts(n, v) is the trace v, ..., v of n steps (the trace v if n <= 0)
 def consts {α : Type} (n : Int) (v : α) : Trace α :=
-  constsSteps v n.toNat
+  if n ≤ 0 then .stop v else .step (consts (n - 1) v) v
+termination_by n.toNat
+decreasing_by omega
 
 -- the sum, parity (the number of even minus the number of odd elements), and number of occurrences of a value in
 -- a sequence
@@ -1063,15 +1076,15 @@ theorem mul_lt_cancel (k : Int) (a : Int) (b : Int) :
 
 -- invs_const without n ≥ 0: no iterations, but n ≠ 0
 example : ¬ (invs (butlast (counter 0 1 (-1))) (fun _ => False) ↔ (-1 : Int) = 0 ∨ False) :=
-  by simp [invs, butlast, counter, counterSteps]
+  by simp [invs, butlast, counter]
 
 -- current_counter without n ≥ 0: the trace of -1 steps is that of 0 steps
 example : ¬ (current (counter 0 1 (-1)) = 0 + (-1) * 1) :=
-  by simp [current, counter, counterSteps]
+  by simp [current, counter]
 
 -- earlier_consts outside the trace
 example : ¬ (earlier 5 (butlast (consts 0 (1 : Int))) = 1) :=
-  by simp [earlier, butlast, consts, constsSteps]
+  by simp [earlier, butlast, consts]
 
 -- prefix_prefix for j > k
 example : ¬ («prefix» 2 («prefix» 1 [(1 : Int), 2]) = «prefix» 2 [1, 2]) :=

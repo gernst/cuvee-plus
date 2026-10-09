@@ -85,7 +85,7 @@ after section 4 of the paper.
 ## The lemma database ([teq.dfy](../resources/cuvee/teq.dfy))
 
 - Parsed by a fresh Dafny parser and injected once at the beginning of the
-  output (`TEQ.lemmas`). It declares the type `Trace`, the functions on traces,
+  output (`TEQ.lemmas`). It defines the datatype `Trace`, declares the functions on traces,
   and lemmas about them, which are `{:rw}` (rewrite rules of `-simplify`) and
   free, without a body (assumed by the solvers without proof). Lemmas that
   identify a trace with a function of teq.dfy are named after it, e.g.
@@ -124,10 +124,11 @@ after section 4 of the paper.
 
 ## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
 
-- The functions that teq.dfy only declares are defined in Lean 4 (core,
-  without Mathlib): `Trace` is a datatype of a first value (`stop`) and
-  further values added at the end (`step`), hence never empty; `current`,
-  `butlast`, `counter`, and `consts` are recursive; sequences are lists;
+- `Trace` is a datatype of teq.dfy, a first value (`stop`) and further
+  values added at the end (`step`), hence never empty, which teq.lean takes
+  from the printed teq.dfy. The functions that teq.dfy only declares are
+  defined in Lean 4 (core, without Mathlib): `current`, `butlast`, `counter`,
+  and `consts` are recursive; sequences are lists;
   the auxiliary predicates (`agree_prefix`, ...) are the iteration
   constraints that they abstract.
 - There is a single combinator of each kind, `trace`, `maps`, and `invs`,
