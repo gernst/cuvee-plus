@@ -146,7 +146,7 @@ object Simplify extends Transform:
       // and of a map, Y == maps(...), whose update is the value of Y at each position, such that the update
       // assumes also the invariants of the context that mention ⌊X⌋ or Y (see invariants), e.g. the test of a loop;
       // the right-hand side is simplified like the combinator below, and then rewritten at the top (see simplify)
-      case Eq(x: Var, Trace(init, deps, acc, bound, update)) if !ctx.nested =>
+      case Eq(x: Var, Trace(init, deps, acc, bound, update)) =>
         val left_ = simplify(config, state, ctx.neutral, x)
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
@@ -156,7 +156,7 @@ object Simplify extends Transform:
         val right_ = trace(config, state, ctx.neutral, init_, deps_, vars_.head, vars_.tail, update_)
         eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
 
-      case Eq(y: Var, Maps(deps, bound, update)) if !ctx.nested =>
+      case Eq(y: Var, Maps(deps, bound, update)) =>
         val left_ = simplify(config, state, ctx.neutral, y)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (bound_, re) = Subst.rename(bound, ctx.free)
@@ -320,21 +320,6 @@ object Simplify extends Transform:
 
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see combinator)
-      // within the update or body of a combinator, the updates and bodies of further combinators are kept as they
-      // are, since their iterations would be entered again and again (see Context.nested)
-      case Trace(init, deps, acc, bound, update) if ctx.nested =>
-        val init_ = simplify(config, state, ctx.neutral, init)
-        val deps_ = simplify(config, state, ctx.neutral, deps)
-        trace(config, state, ctx, init_, deps_, acc, bound, update)
-
-      case Maps(deps, bound, update) if ctx.nested =>
-        val deps_ = simplify(config, state, ctx.neutral, deps)
-        maps(config, state, ctx, deps_, bound, update)
-
-      case Invs(deps, bound, body) if ctx.nested =>
-        val deps_ = simplify(config, state, ctx.neutral, deps)
-        invs(config, state, ctx, deps_, bound, body)
-
       case Trace(init, deps, acc, bound, update) =>
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
@@ -378,8 +363,17 @@ object Simplify extends Transform:
   // the context of the updates and bodies of combinators, which binds the variables for the dependencies,
   // and which assumes the invariants of the context over the same dependencies and the iterations of loops;
   // ctx.self is the dependency that the combinator defines and its value in the update, if known (see once)
+  // built once per command for the same outer context (see Context.combinators)
   def combinator(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): Context =
-    ctx.neutral.bind(bound).copy(nested = true).assume(invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound), Nil)
+    val key = (deps, bound, ctx.key)
+    ctx.combinators.value.get(key) match
+      case Some(inner) =>
+        inner
+
+      case None =>
+        val inner = ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound), Nil)
+        ctx.combinators := ctx.combinators.value + (key -> inner)
+        inner
 
   // the bodies of the invariants among the assumptions whose dependencies are among `deps` and `self`,
   // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of ctx.self,
@@ -401,7 +395,7 @@ object Simplify extends Transform:
   def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     (deps, bound) match
       case (Butlast(ctx.↑(Counter(Ints.zero, Ints.one, n))) :: deps_, k :: bound_) =>
-        val ctx_ = ctx.neutral.bind(bound).copy(nested = true)
+        val ctx_ = ctx.neutral.bind(bound)
         val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, Nats.integer(n)))
         val range = simplify(config, state, ctx_, bounds)
         val inside = ctx_.assume(range, Nil)

@@ -29,9 +29,11 @@ import cuvee.core._
 // self: within the update of a combinator that defines a dependency, X == trace(...) or Y == maps(...),
 // that dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants)
 //
-// nested: within the update or body of a combinator and the values of its iterations (see Simplify.combinator),
-// where the updates and bodies of further combinators are not simplified, which would enter their iterations
-// again and again (see Simplify.once)
+// combinators: the contexts of the updates and bodies of combinators built so far (see Simplify.combinator),
+// shared by the copies of this context like steps and fresh for each command (see withRules), such that the
+// iterations of a combinator are not simplified again for each rule that is matched and in each round;
+// the key comprises everything that the context depends on, in particular the facts, such that information
+// that becomes available later yields a new context
 case class Context(
     bound: List[List[Var]],
     universal: Set[Var],
@@ -43,12 +45,13 @@ case class Context(
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0),
     self: Option[(Expr, Expr)] = None,
-    nested: Boolean = false
+    combinators: util.Ref[Context.Combinators] = util.Ref(Map())
 ):
-  // the rewrite rules with a fresh number of steps, which is shared by the copies of this context,
+  // the rewrite rules with a fresh number of steps and no contexts of combinators yet, which are shared by the copies
+  // of this context,
   // and which guards against rules that do not terminate
   def withRules(rules: List[Rule], steps: Int = 1000) =
-    copy(rules = rules, steps = util.Ref(steps))
+    copy(rules = rules, steps = util.Ref(steps), combinators = util.Ref(Map()))
 
   // an expression seen through the equations of chains.chain, never a variable: a variable matches only by
   // a definition that is not a variable, any other expression as itself,
@@ -58,6 +61,11 @@ case class Context(
       expr match
         case x: Var => chains.chain.get(x).filterNot(_.isInstanceOf[Var])
         case _      => Some(expr)
+
+  // the parts of this context that determine the contexts of combinators built in it, besides the rules and the
+  // steps, which are fixed for a command (see combinators)
+  def key: Context.Key =
+    (self, bound, facts, chains, diffs)
 
   // variables bound by let, match, and the combinators, which are neither universal nor existential
   def bind(xs: List[Var]) =
@@ -194,6 +202,12 @@ object Context:
     phi match
       case Not(psi) => psi
       case _        => Not(phi)
+
+  // the parts of a context that the contexts of combinators built in it depend on (see key)
+  type Key = (Option[(Expr, Expr)], List[List[Var]], Facts, Chains, Diffs)
+
+  // the contexts of combinators by their dependencies, bound variables, and the key of the outer context
+  type Combinators = Map[(List[Expr], List[Var], Key), Context]
 
   val empty = Context(Nil, Set(), Set(), Facts.empty, Chains.empty, Diffs.empty, None)
 
