@@ -678,6 +678,21 @@ theorem not_occurs_prefix_def (n : Nat) (e : Int) (xs : List Int)
     ↔ ¬occurs e («prefix» n xs) :=
   by sorry
 
+-- the same for reads of an array at the positions of a counter: x does not occur among the values read there
+-- (from lsearch)
+theorem not_occurs_selects_def (a : Int → Int) (x : Int) (i : Int)
+                               (n : Nat) :
+  invs (butlast (counter i 1 n)) (fun k => a k ≠ x)
+    ↔ ¬occurs x (selects a (butlast (counter i 1 n))) :=
+  by
+    induction n generalizing i with
+    | zero => simp [counter, butlast, invs, selects, maps, occurs]
+    | succ m ih =>
+      simp only [selects] at ih ⊢
+      simp only [butlast_counter_succ, invs, maps, occurs]
+      rw [ih]
+      grind
+
 -- the values of the iterations exceed the iterations
 -- (from simple_array_index_value_2)
 theorem above_iterations_def (n : Nat) (ts : List Int) (hs : List Int) :
@@ -1062,6 +1077,28 @@ theorem earlier_not_occurs_prefix (n : Nat) (j : Nat) (e : Int)
                                   (xs : List Int) :
   ¬occurs e («prefix» n xs) ∧ integer j < integer n → (earlier j xs = e ↔ False) :=
   by sorry
+
+-- the same for reads of an array, at the positions k of the counter
+-- (from lsearch)
+theorem select_not_occurs_selects (a : Int → Int) (x : Int) (i : Int)
+                                  (n : Nat) (k : Int) :
+  ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + integer n
+    → (a k = x ↔ False) :=
+  by
+    intro ⟨h, h1, h2⟩
+    simp only [iff_false]
+    intro e
+    apply h
+    rw [integer_eq] at h2
+    clear h
+    simp only [selects]
+    induction n generalizing i with
+    | zero => (simp at h2) <;> omega
+    | succ m ih =>
+      simp only [butlast_counter_succ, maps, occurs]
+      by_cases hk : k = i
+      · left; rw [← hk, e]
+      · right; exact ih (i + 1) (by omega) (by push_cast at h2; omega)
 
 -- prefix
 

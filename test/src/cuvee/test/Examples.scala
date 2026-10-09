@@ -23,9 +23,12 @@ object Examples:
   def supported(file: os.Path) =
     !unsupported.contains(file.relativeTo(root).toString)
 
-  // example files with extension `ext` below `dir`, relative to the examples directory
+  // directories of examples that are no tests, e.g. the experiments with sorting in Dafny, which are worked on
+  val excluded = List(os.sub / "dafny" / "sorting")
+
+  // example files with extension `ext` below `dir`, relative to the examples directory, except the excluded ones
   def find(dir: os.SubPath, ext: String): List[os.Path] =
-    os.walk(root / dir).filter(_.ext == ext).sorted.toList
+    os.walk(root / dir).filter(_.ext == ext).filterNot(file => excluded.exists(sub => file.startsWith(root / sub))).sorted.toList
 
   // utest builds its test tree at compile time with the Tests macro,
   // therefore the tests for example files found at runtime are assembled by hand,

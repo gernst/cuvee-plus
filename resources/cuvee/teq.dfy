@@ -403,6 +403,11 @@ lemma {:rw} {:teq} agree_prefix_def(n: Nat, xs: List<int>, ys: List<int>, hs: Li
 lemma {:rw} {:teq} not_occurs_prefix_def(n: Nat, e: int, xs: List<int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), xs) != e) <==> !occurs(e, prefix(n, xs))
 
+// the same for reads of an array at the positions of a counter: x does not occur among the values read there
+// (from lsearch)
+lemma {:rw} {:teq} not_occurs_selects_def(a: array<int, int>, x: int, i: int, n: Nat)
+  ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x) <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
+
 // the values of the iterations exceed the iterations
 // (from simple_array_index_value_2)
 lemma {:rw} {:teq} above_iterations_def(n: Nat, ts: List<int>, hs: List<int>)
@@ -549,6 +554,12 @@ lemma {:rw} {:teq} earlier_agree_prefix(n: Nat, j: Nat, xs: List<int>, ys: List<
 lemma {:rw} {:teq} earlier_not_occurs_prefix(n: Nat, j: Nat, e: int, xs: List<int>)
   requires !occurs(e, prefix(n, xs)) && integer(j) < integer(n)
   ensures (earlier(j, xs) == e) <==> false
+
+// the same for reads of an array, at the positions k of the counter
+// (from lsearch)
+lemma {:rw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int, n: Nat, k: int)
+  requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋)) && i <= k < i + integer(n)
+  ensures (a[k] == x) <==> false
 
 // prefix
 

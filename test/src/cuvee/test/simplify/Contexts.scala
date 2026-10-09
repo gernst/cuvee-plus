@@ -338,5 +338,5 @@ object Decisions extends TestSuite:
     test("inconsistent"):
       val ctx = Context.empty.assume(Ints.le(Ints.one, n)).assume(Ints.le(n, Ints.zero))
       assert(ctx.inconsistent)
-      assert(!ctx.implied(p, Not(p)))
-      assert(!ctx.denied(p, Not(p)))
+      assert(!ctx.implied(p))
+      assert(!ctx.denied(p))

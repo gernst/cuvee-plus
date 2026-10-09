@@ -131,21 +131,21 @@ case class Context(
   def inconsistent =
     theories exists (_.inconsistent)
 
-  // phi follows from a consistent context if denying it or assuming its negation `not` makes one of the theories inconsistent,
-  // where `not` is the negation in normal form (see Simplify.not), e.g. a < b if b <= a is among the conclusions;
+  // phi follows from a consistent context if denying it or assuming its negation makes one of the theories inconsistent,
+  // where the negation is in normal form (see Context.not), e.g. a < b if b <= a is among the conclusions;
   // in an inconsistent context, any formula would follow, which is decided by polarity instead (see Simplify.implied);
   // an equation on Int follows from both comparisons, since a disequation is no difference constraint (see Diffs)
-  def implied(phi: Expr, not: Expr): Boolean =
+  def implied(phi: Expr): Boolean =
     phi match
       case Eq(left, right) if left.typ == Sort.int =>
-        implied(Ints.le(left, right), Ints.lt(right, left)) && implied(Ints.le(right, left), Ints.lt(left, right))
+        implied(Ints.le(left, right)) && implied(Ints.le(right, left))
 
       case _ =>
-        !inconsistent && (deny(phi).inconsistent || assume(not).inconsistent)
+        !inconsistent && (deny(phi).inconsistent || assume(Context.not(phi)).inconsistent)
 
   // phi fails in a consistent context if assuming it or denying its negation makes one of the theories inconsistent
-  def denied(phi: Expr, not: Expr): Boolean =
-    !inconsistent && (assume(phi).inconsistent || deny(not).inconsistent)
+  def denied(phi: Expr): Boolean =
+    !inconsistent && (assume(phi).inconsistent || deny(Context.not(phi)).inconsistent)
 
   // add facts known to hold (pos) and known not to hold (neg),
   // which are split along the boolean connectives into assumptions and conclusions
@@ -197,11 +197,19 @@ object Context:
   def rule(lhs: Expr, rhs: Expr): Boolean =
     !lhs.isInstanceOf[Var] && !lhs.isArith && lhs.free.nonEmpty && rhs.free.isEmpty
 
-  // the negation of a conclusion, where only a double negation is removed, not the normal form of Simplify.not
+  // the negation in normal form, independent of a context, e.g. of the conclusions among the facts and of the formulas
+  // that the context decides: double negations are removed, and negated comparisons are the other comparison with
+  // the arguments swapped, !(a < b) is b <= a; the simplifier may strengthen it in a context (see Simplify.not)
   def not(phi: Expr): Expr =
     phi match
-      case Not(psi) => psi
-      case _        => Not(phi)
+      case True           => False
+      case False          => True
+      case Not(psi)       => psi
+      case Ints.lt(a, b)  => Ints.le(b, a)
+      case Ints.le(a, b)  => Ints.lt(b, a)
+      case Reals.lt(a, b) => Reals.le(b, a)
+      case Reals.le(a, b) => Reals.lt(b, a)
+      case _              => Not(phi)
 
   // the parts of a context that the contexts of combinators built in it depend on (see key)
   type Key = (Option[(Expr, Expr)], List[List[Var]], Facts, Chains, Diffs)

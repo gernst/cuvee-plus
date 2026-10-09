@@ -99,13 +99,13 @@ object Simplify extends Transform:
   def implied(config: Config, state: State, ctx: Context, phi: Expr): Boolean =
     phi.typ == Sort.bool && (phi == True
       || (ctx.inconsistent && ctx.polarity == Some(true))
-      || ctx.implied(phi, not(config, state, ctx, phi)))
+      || ctx.implied(phi))
 
   // whether `phi` is known not to hold in `ctx`, dually, e.g. a < b if b <= a is known
   def denied(config: Config, state: State, ctx: Context, phi: Expr): Boolean =
     phi.typ == Sort.bool && (phi == False
       || (ctx.inconsistent && ctx.polarity == Some(false))
-      || ctx.denied(phi, not(config, state, ctx, phi)))
+      || ctx.denied(phi))
 
   // expressions in debug output, on a single line
   def show(printer: cuvee.pipe.Printer, expr: Expr): String =
@@ -630,20 +630,13 @@ object Simplify extends Transform:
       case _ =>
         Store(base, index, value)
 
-  // negated comparisons are the other comparison with the arguments swapped, !(a < b) is b <= a
+  // the negation in normal form (see Context.not), strengthened in the context, for terms and for assumptions:
+  // a disequation on Int is strict in the direction that the context bounds, e.g. k != 0 is 0 < k if 0 <= k
   def not(config: Config, state: State, ctx: Context, phi: Expr): Expr =
     phi match
-      case True          => False
-      case False         => True
-      case Not(psi)      => psi
-      case Ints.lt(a, b)  => Ints.le(b, a)
-      case Ints.le(a, b)  => Ints.lt(b, a)
-      case Reals.lt(a, b) => Reals.le(b, a)
-      case Reals.le(a, b) => Reals.lt(b, a)
-      // a disequation on Int is strict in the direction that the context bounds, e.g. k != 0 is 0 < k if 0 <= k
       case Eq(a, b) if a.typ == Sort.int && implied(config, state, ctx.neutral, Ints.le(a, b)) => Ints.lt(a, b)
       case Eq(a, b) if a.typ == Sort.int && implied(config, state, ctx.neutral, Ints.le(b, a)) => Ints.lt(b, a)
-      case _             => Not(phi)
+      case _ => Context.not(phi)
 
   def imp(config: Config, state: State, ctx: Context, phi: Expr, psi: Expr): Expr =
     (phi, psi) match
