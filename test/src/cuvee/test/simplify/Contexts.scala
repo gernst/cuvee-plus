@@ -289,9 +289,9 @@ object Decisions extends TestSuite:
 
     // earlier and maps commute, also for the cases of an update
     test("earlier of maps"):
-      val k = Var("k", Sort.int)
+      val k = Var("k", Sort.nat)
       val v = Var("v", Sort.int)
-      val xs = Var("xs", Sort.seq(Sort.int))
+      val xs = Var("xs", Sort.list(Sort.int))
       simplify(Context.empty, Earlier(k, Maps(List(xs), List(v), Ints.plus(v, Ints.one)))) ==>
         Ints.plus(Earlier(k, xs), Ints.one)
       val cases = Eps(List(Upd(Ints.lt(v, Ints.zero), Ints.zero), Upd(Ints.le(Ints.zero, v), v)))
@@ -300,17 +300,17 @@ object Decisions extends TestSuite:
 
     // earlier moves into both branches of ite and into the body of let, whose bound variables avoid capture
     test("earlier of ite and let"):
-      val j = Var("j", Sort.int)
+      val j = Var("j", Sort.nat)
       val p = Var("p", Sort.bool)
-      val xs = Var("xs", Sort.seq(Sort.int))
-      val ys = Var("ys", Sort.seq(Sort.int))
+      val xs = Var("xs", Sort.list(Sort.int))
+      val ys = Var("ys", Sort.list(Sort.int))
       simplify(Context.empty, Earlier(j, Ite(p, xs, ys))) ==> Ite(p, Earlier(j, xs), Earlier(j, ys))
-      val k = Var("k", Sort.int)
-      val inner = Let(List(j), List(k), Ite(Ints.lt(j, Ints.zero), xs, ys))
+      val k = Var("k", Sort.nat)
+      val inner = Let(List(j), List(k), Ite(Eq(j, Nats.zero()), xs, ys))
       val Let(List(j_), List(k_), body) = simplify(Context.empty, Earlier(j, inner)): @unchecked
       assert(j_ != j)
       k_ ==> k
-      body ==> Ite(Ints.lt(j_, Ints.zero), Earlier(j, xs), Earlier(j, ys))
+      body ==> Ite(Eq(j_, Nats.zero()), Earlier(j, xs), Earlier(j, ys))
 
     // the guards of nested choices are combined
     test("nested choices"):

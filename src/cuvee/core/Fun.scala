@@ -147,6 +147,11 @@ object Fun:
     val zero = Fun("zero", Nil, Nil, Sort.nat)
     val succ = Fun("succ", Nil, formals(Sort.nat), Sort.nat)
 
+    // the value of a natural as an integer, and the natural of an integer, zero for those that are not positive,
+    // e.g. of the values of a counter as indices
+    val integer = Fun("integer", Nil, formals(Sort.nat), Sort.int)
+    val natural = Fun("natural", Nil, formals(Sort.int), Sort.nat)
+
   object list:
     val nil = Fun("nil", List(a), Nil, Sort.list(a))
     val cons = Fun("cons", List(a), formals(a, Sort.list(a)), Sort.list(a))

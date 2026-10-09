@@ -3,11 +3,13 @@
 // matched modulo commutativity, every case of the update is covered by the case of the pattern,
 // different increments in the cases are not a counter
 type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
-function steps(xs: seq<int>): int
+type List<a₀>
+type Nat
+function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
+function steps(xs: List<int>): Nat
 predicate p(t: Trace<int>)
 const J: Trace<int>
-const n: int
+const n: Nat
 lemma {:rw} trace_1(i: int, c: int, K: Trace<int>)
   ensures trace(i, for ⌊K⌋ do x, k :: x + c) == counter(i, c, steps(⌊K⌋))
 {}

@@ -1,8 +1,12 @@
 type Trace<a₀>
 
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
+type List<a₀>
 
-function steps(xs: seq<int>): int
+type Nat
+
+function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
+
+function steps(xs: List<int>): int
 
 function p(t: Trace<int>): bool
 

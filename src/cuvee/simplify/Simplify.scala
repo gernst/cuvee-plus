@@ -284,16 +284,20 @@ object Simplify extends Transform:
         val args_ = simplify(config, state, ctx.neutral, args)
         app(config, state, ctx, fun, inst, typ, args_)
 
-      // bound variables are renamed apart from the context before entering the body
+      // bound variables are renamed apart from the context before entering the body,
+      // naturals that occur as integers only become integers within their range (see integers)
       case All(bound, body) =>
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val body_ = simplify(config, state, ctx.forall(bound_), re(body))
-        all(config, state, ctx, bound_, body_)
+        val (bound__, ranges, body__) = integers(bound_, re(body))
+        val body___ = if ranges.isEmpty then body__ else Imp(And(ranges), body__)
+        val body_ = simplify(config, state, ctx.forall(bound__), body___)
+        all(config, state, ctx, bound__, body_)
 
       case Ex(bound, body) =>
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val body_ = simplify(config, state, ctx.exists(bound_), re(body))
-        ex(config, state, ctx, bound_, body_)
+        val (bound__, ranges, body__) = integers(bound_, re(body))
+        val body_ = simplify(config, state, ctx.exists(bound__), And(ranges :+ body__))
+        ex(config, state, ctx, bound__, body_)
 
       // the body has no polarity, since the context does not record the bindings
       case Let(bound, args, body) =>
@@ -385,17 +389,17 @@ object Simplify extends Transform:
       re(body)
 
   // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),
-  // then 0 <= k < n, since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
-  // is its value in iteration k, i.e., z == earlier(k, ⌊Z⌋), which is simplified within the range,
+  // then 0 <= k < integer(n), since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
+  // is its value in iteration k, i.e., z == earlier(natural(k), ⌊Z⌋), which is simplified within the range,
   // e.g. z == k for ⌊Z⌋ with Z == counter(0, 1, n), which then bounds z as well
   def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     (deps, bound) match
       case (Butlast(ctx.↑(Counter(Ints.zero, Ints.one, n))) :: deps_, k :: bound_) =>
         val ctx_ = ctx.neutral.bind(bound)
-        val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, n))
+        val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, Nats.integer(n)))
         val range = simplify(config, state, ctx_, bounds)
         val inside = ctx_.assume(range, Nil)
-        val values = (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(k, dep))))
+        val values = (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(Nats.natural(k), dep))))
         range ++ values
 
       case _ =>
@@ -859,6 +863,32 @@ object Simplify extends Transform:
 
       case expr =>
         expr
+
+  // a bound natural n that occurs only as its value integer(n) is an integer variable of the same name within its range
+  // 0 <= n, such that arithmetic reasons about it, e.g. forall n: Nat :: integer(n) != 10 is false for n == 10;
+  // the bound variables, the ranges, and the body with the integers
+  def integers(bound: List[Var], body: Expr): (List[Var], List[Expr], Expr) =
+    val naturals = bound.filter(x => x.typ == Sort.nat && asInteger(x, body))
+    val ints = naturals.map(x => Var(x.name, Sort.int))
+    val su = (naturals zip ints).toMap
+    val bound_ = bound.map(x => su.getOrElse(x, x))
+    (bound_, ints.map(Ints.le(Ints.zero, _)), (naturals zip ints).foldLeft(body)((expr, x) => integer(x._1, x._2, expr)))
+
+  // whether `x` occurs in `expr` only as integer(x)
+  def asInteger(x: Var, expr: Expr): Boolean =
+    expr match
+      case Nats.integer(`x`) => true
+      case `x`               => false
+      case _ =>
+        var only = true
+        expr.map { arg => only = only && asInteger(x, arg); arg }
+        only
+
+  // `expr` with integer(x) replaced by `m`
+  def integer(x: Var, m: Var, expr: Expr): Expr =
+    expr match
+      case Nats.integer(`x`) => m
+      case _                 => expr.map(integer(x, m, _))
 
   // forall distributes over and, where each conjunct binds the variables that it uses
   def all(config: Config, state: State, ctx: Context, bound: List[Var], body: Expr): Expr =

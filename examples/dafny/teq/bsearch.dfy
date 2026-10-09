@@ -1,4 +1,4 @@
-// ./Cuvee.sh examples/dafny/teq/binary_search_partition.dfy
+// ./Cuvee.sh examples/dafny/teq/bsearch.dfy
 // experiment: binary search with partition points, for -teq -split -simplify (see ideas/binary-search.md);
 // the comparisons of the array with x are those of the indices with the partition points p and q,
 // a[m] < x iff m < p, x < a[m] iff q <= m, a[m] == x iff p <= m < q, given by lemmas on global constants,
@@ -39,27 +39,29 @@ lemma {:rw} lemma_3(m: int)
 
 // the declarations of teq.dfy that the lemmas refer to are repeated here, since Trace exists only with -teq
 type Trace<a₀>
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
+type List<a₀>
+type Nat
+function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
 function current<a₀>(x₀: Trace<a₀>): a₀
 
 // a value that increases monotonically up to a bound b: in each iteration, it either keeps its value, case C,
 // or increases to F(x, h) under the guard D(x, h) && x < F(x, h) && F(x, h) <= b, where D is bound to the whole guard
 // of the program, the bound b by matching F(x, h) <= b against a conjunct of the guard, and the increase must follow
 // from the guard (see Rewrite.guard)
-function incs(x0: int, b: int, ks: seq<int>, hs: seq<int>,
+function incs(x0: int, b: int, ks: List<int>, hs: List<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} trace_1(x0: int, b: int, i: int, c: int, m: int, hs: seq<int>, C: (int, int) -> bool,
+lemma {:rw} trace_1(x0: int, b: int, i: int, c: int, m: Nat, hs: List<int>, C: (int, int) -> bool,
                     D: (int, int) -> bool, F: (int, int) -> int)
   ensures trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h ::
           case C(x, h) => x case D(x, h) && x < F(x, h) && F(x, h) <= b => F(x, h))
     == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
 
 // a value that decreases monotonically down to a bound b, dually
-function decs(x0: int, b: int, ks: seq<int>, ls: seq<int>,
+function decs(x0: int, b: int, ks: List<int>, ls: List<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} trace_2(x0: int, b: int, i: int, c: int, m: int, ls: seq<int>, C: (int, int) -> bool,
+lemma {:rw} trace_2(x0: int, b: int, i: int, c: int, m: Nat, ls: List<int>, C: (int, int) -> bool,
                     D: (int, int) -> bool, F: (int, int) -> int)
   ensures trace(x0, for ⌊counter(i, c, m)⌋, ls do x, k, l ::
           case C(x, l) => x case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
@@ -76,31 +78,31 @@ lemma {:rw} lemma_5(l: int, h: int)
 
 
 // the value stays below the bound if the initial value does
-lemma current_1(x0: int, b: int, ks: seq<int>, hs: seq<int>, D: (int, int) -> bool, C: (int, int) -> bool,
+lemma current_1(x0: int, b: int, ks: List<int>, hs: List<int>, D: (int, int) -> bool, C: (int, int) -> bool,
                 F: (int, int) -> int)
   requires x0 <= b
   ensures (current(incs(x0, b, ks, hs, D, C, F)) <= b) <==> true
 
 // the value stays above the bound if the initial value does
-lemma current_2(x0: int, b: int, ks: seq<int>, ls: seq<int>, D: (int, int) -> bool, C: (int, int) -> bool,
+lemma current_2(x0: int, b: int, ks: List<int>, ls: List<int>, D: (int, int) -> bool, C: (int, int) -> bool,
                 F: (int, int) -> int)
   requires b <= x0
   ensures (b <= current(decs(x0, b, ks, ls, D, C, F))) <==> true
 
 
-function incs_(x0: int, b: int, ks: seq<int>, hs: seq<int>,
+function incs_(x0: int, b: int, ks: List<int>, hs: List<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} incs_1(X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, hs: seq<int>, C: (int, int) -> bool,
+lemma {:rw} incs_1(X: Trace<int>, x0: int, b: int, i: int, c: int, m: Nat, hs: List<int>, C: (int, int) -> bool,
                    D: (int, int) -> bool, F: (int, int) -> int)
   ensures X == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
     <==> X == incs_(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F) && current(X) <= b
 
 
-function decs_(x0: int, b: int, ks: seq<int>, ls: seq<int>,
+function decs_(x0: int, b: int, ks: List<int>, ls: List<int>,
               D: (int, int) -> bool, C: (int, int) -> bool, F: (int, int) -> int): Trace<int>
 
-lemma {:rw} decs_1(X: Trace<int>, x0: int, b: int, i: int, c: int, m: int, ls: seq<int>, C: (int, int) -> bool,
+lemma {:rw} decs_1(X: Trace<int>, x0: int, b: int, i: int, c: int, m: Nat, ls: List<int>, C: (int, int) -> bool,
                    D: (int, int) -> bool, F: (int, int) -> int)
   ensures X == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
     <==> X == decs_(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F) && b <= current(X)

@@ -48,7 +48,7 @@ object TEQ extends TestSuite:
       val sum = Examples.root / "dafny" / "vcgen" / "sum.dfy"
       val (cmds, errors) = Examples.stream("-teq", "-simplify", "-print", "null", sum.toString)
       errors ==> Nil
-      assert(cmds.exists { case DeclareFun(fun, _) => fun == Fun.trace.counter; case _ => false })
+      assert(cmds.exists { case DefineFun(fun, _, _) => fun == Fun.trace.counter; case _ => false })
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked
       assert(subexprs(phi).collect { case t: Trace => t }.isEmpty)
       assert(!subexprs(phi).exists { case App(fun, _, _, _) => fun == Fun.trace.counter; case _ => false })
@@ -85,7 +85,7 @@ object TEQ extends TestSuite:
 
       val i = Var("i", Sort.int)
       val c = Var("c", Sort.int)
-      val n = Var("n", Sort.int)
+      val n = Var("n", Sort.nat)
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val rule = rw(
@@ -110,16 +110,16 @@ object TEQ extends TestSuite:
       val k = Var("k", Sort.int)
       val w = Var("w", Sort.int)
       val e = Var("e", Sort.int)
-      val j = Var("j", Sort.int)
+      val j = Var("j", Sort.nat)
       val x = Var("x", Sort.int)
-      val keys = Var("keys", Sort.seq(Sort.int))
+      val keys = Var("keys", Sort.list(Sort.int))
 
       val ctx = cuvee.simplify.Context.empty.assume(app("distincts", keys)).withRules(rules)
       val updated = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("count", e, app("selects", Store(a, k, w), keys)))
       assert(subexprs(updated).contains(app("count", e, app("selects", a, keys))))
       assert(!subexprs(updated).exists { case Store(_, _, _) => true; case _ => false })
 
-      val bounds = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, j)).withRules(rules)
+      val bounds = cuvee.simplify.Context.empty.withRules(rules)
       val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
       assert(subexprs(earlier).contains(app("count", e, app("prefix", j, keys))))
       assert(!has(earlier, "counts"))
@@ -129,7 +129,7 @@ object TEQ extends TestSuite:
     // also with a second dependency whose bound variable is unused, and with the counter defined in the context
     test("invs with literal bound"):
       val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      val n = Var("n", Sort.int)
+      val n = Var("n", Sort.nat)
       val trace = Sort(Con("Trace", 1), List(Sort.int))
       val I = Var("I", trace)
       val K = Var("K", trace)
@@ -137,7 +137,7 @@ object TEQ extends TestSuite:
       val k = Var("k", Sort.int)
       val bound = Lit(BigInt(1024), Sort.int)
       val counter = Counter(Ints.zero, Ints.one, n)
-      val ctx = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, n)).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
+      val ctx = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, Nats.integer(n))).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
 
       for inv <- List(
           Invs(List(Butlast(counter)), List(i), Ints.lt(i, bound)),
@@ -157,12 +157,12 @@ object TEQ extends TestSuite:
     // is instantiated by a dependency of the expression, here the counter defined in the context
     test("constant updates"):
       val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      val n = Var("n", Sort.int)
+      val n = Var("n", Sort.nat)
       val trace = Sort(Con("Trace", 1), List(Sort.int))
       val K = Var("K", trace)
       val X = Var("X", trace)
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val loop = Trace(Ints.one, List(Butlast(K)), x, List(k), Ints.zero)
-      val ctx = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, n)).assume(Eq(K, Counter(Ints.zero, Ints.one, n))).assume(Eq(X, loop)).withRules(rules)
-      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Ints.zero), Ints.one, Ints.zero)
+      val ctx = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, Nats.integer(n))).assume(Eq(K, Counter(Ints.zero, Ints.one, n))).assume(Eq(X, loop)).withRules(rules)
+      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Nats.zero()), Ints.one, Ints.zero)

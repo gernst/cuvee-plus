@@ -159,6 +159,17 @@ def invs {β : Type} : List β → (β → Prop) → Prop
   | [], _ => True
   | d :: ds, φ => φ d ∧ invs ds φ
 
+-- naturals: their values as integers, which the arithmetic of the simplifier reasons about, and back
+
+theorem natural_integer (n : Nat) : natural (integer n) = n :=
+  by sorry
+
+theorem integer_natural (x : Int) : 0 ≤ x → integer (natural x) = x :=
+  by sorry
+
+theorem zero_integer (n : Nat) : n = zero ↔ integer n = 0 :=
+  by sorry
+
 -- traces
 
 -- a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)

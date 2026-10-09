@@ -1,8 +1,12 @@
 type Trace<a₀>
 
-function counter(x₀: int, x₁: int, x₂: int): Trace<int>
+type List<a₀>
 
-function steps(xs: seq<int>): int
+type Nat
+
+function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
+
+function steps(xs: List<int>): int
 
 function p(t: Trace<int>): bool
 
@@ -10,7 +14,7 @@ const J: Trace<int>
 
 const n: int
 
-const W: seq<int>
+const W: List<int>
 
 const done: bool
 
@@ -18,19 +22,19 @@ function r(x: int, y: int): bool
 
 function either(a: bool, b: bool): bool
 
-function fold(i: int, xs: seq<int>, f: (int, int) -> int): Trace<int>
+function fold(i: int, xs: List<int>, f: (int, int) -> int): Trace<int>
 
-lemma {:rw} invs_1(Xs: seq<int>, P: int -> bool, Q: int -> bool)
+lemma {:rw} invs_1(Xs: List<int>, P: int -> bool, Q: int -> bool)
   ensures
     invs(for Xs check x :: P(x) || Q(x))
       == either(invs(for Xs check x :: P(x)), invs(for Xs check x :: Q(x)))
 {}
 
-lemma {:rw} invs_2(Xs: seq<int>, F: int -> int)
+lemma {:rw} invs_2(Xs: List<int>, F: int -> int)
   ensures invs(for Xs check x :: r(F(x), F(x))) == done
 {}
 
-lemma {:rw} trace_1(i: int, Xs: seq<int>, F: (int, int) -> int)
+lemma {:rw} trace_1(i: int, Xs: List<int>, F: (int, int) -> int)
   ensures trace(i, for Xs do x, v :: F(x, v)) == fold(i, Xs, F)
 {}
 

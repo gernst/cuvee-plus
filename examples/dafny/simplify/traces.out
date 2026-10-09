@@ -1,10 +1,12 @@
 type Trace<a₀>
 
+type List<a₀>
+
 function f(x: int): int
 
-const J: seq<int>
+const J: List<int>
 
-const K: seq<int>
+const K: List<int>
 
 const n: int
 

@@ -255,7 +255,7 @@ Two designs:
 Without forward rules, cuts state such facts in the program,
 `assert φ; assume φ;` after a loop, where the assertion is a goal whose atoms
 the rewrite rules apply to (see
-[binary_search_partition.dfy](../examples/dafny/teq/binary_search_partition.dfy)).
+[bsearch.dfy](../examples/dafny/teq/bsearch.dfy)).
 The SV-COMP examples instead abstract an iteration constraint by an atom,
 which a second lemma takes as its side condition (see
 [summary.md](../examples/sv-comp/summary.md)).

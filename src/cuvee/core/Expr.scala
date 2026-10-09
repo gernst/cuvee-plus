@@ -273,12 +273,12 @@ case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updat
   def free = init.free ++ deps.free ++ (update.free -- (acc :: bound))
   def typ = Sort.trace(acc.typ)
 
-// map(for deps yield bound ↦ update): the sequence of the results of the update for the values of the dependencies,
+// map(for deps yield bound ↦ update): the list of the results of the update for the values of the dependencies,
 // point-wise, which has the same length as the dependencies
 case class Maps(deps: List[Expr], bound: List[Var], update: Expr) extends Expr:
   def params = deps.params ++ bound.params ++ update.params
   def free = deps.free ++ (update.free -- bound)
-  def typ = Sort.seq(update.typ)
+  def typ = Sort.list(update.typ)
 
 // all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:

@@ -1,6 +1,8 @@
 type Lst<a₀>
 
-const J: seq<int>
+type List<a₀>
+
+const J: List<int>
 
 function `single<Int>`(x: int): Lst<int>
 

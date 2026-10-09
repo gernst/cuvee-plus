@@ -4,9 +4,10 @@
 // dependencies whose bound variables are unused are dropped, except the first one if none remains,
 // and equal dependencies are collapsed
 type Trace<a₀>
+type List<a₀>
 function f(x: int): int
-const J: seq<int>
-const K: seq<int>
+const J: List<int>
+const K: List<int>
 const n: int
 axiom trace(0, for J do s, j :: case j < n => s + 2 * j - j case j < n && !(j < n) => s case !(j < n) => (if j < n then 1 else s))
   == trace(0, for J do s, j :: s + 0)

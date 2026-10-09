@@ -2,8 +2,9 @@
 // the combinators of trace equation systems: trace, map, and all,
 // the type of traces is declared explicitly, since it exists only with -teq otherwise
 type Trace<a>
+type List<a₀>
 
-function f(J: seq<int>, a: array<int,int>, n: int): bool
+function f(J: List<int>, a: array<int,int>, n: int): bool
 {
   trace(0, for J do s, j :: s + a[j]) == trace(0, for J do s, j :: case j < n => s + 1 case !(j < n) => s)
   && invs(for J, maps(for J yield i :: i + 1) check j, k :: j < k)

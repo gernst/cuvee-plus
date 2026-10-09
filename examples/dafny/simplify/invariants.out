@@ -1,14 +1,16 @@
 type Trace<a₀>
 
-function p(s: seq<int>): bool
+type List<a₀>
+
+function p(s: List<int>): bool
 
 function pt(t: Trace<int>): bool
 
-const J: seq<int>
+const J: List<int>
 
-const K: seq<int>
+const K: List<int>
 
-const Y: seq<int>
+const Y: List<int>
 
 axiom invs(for J check l :: 0 < l) ==> p(maps(for J yield j :: j))
 

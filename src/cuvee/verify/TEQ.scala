@@ -267,11 +267,12 @@ object TEQ extends Transform:
         case Some(_) => once :+ p.when(Not(guard_))
         case None    => p :: once
     else
-      // the nondeterministic choices of the body are ranged over by sequences, named after them with a final ?, e.g. Choice?
+      // the nondeterministic choices of the body are ranged over by lists, named after them with a final ?, e.g. Choice?
       val zs = paths.flatMap(_.zs).distinct
-      val Zs = zs.map(z => Var(z.name.name.capitalize + "?", Sort.seq(z.typ)).fresh)
+      val Zs = zs.map(z => Var(z.name.name.capitalize + "?", Sort.list(z.typ)).fresh)
 
-      val n = Var("n", Sort.int).fresh
+      // the number of iterations, a natural, whose value is nonnegative as an integer, an atom of arithmetic
+      val n = Var("n", Sort.nat).fresh
       val k = Var("k", Sort.int).fresh
       val K = Var("K", Sort.trace(Sort.int)).fresh
       // the traces are named after the variables, capitalized, e.g. I for i
@@ -304,7 +305,7 @@ object TEQ extends Transform:
         val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
         Invs(deps, bound, And(List(inner(guard), paths_).flatMap(And.flattenStrong)))
 
-      val teq = And(counter :: current ++ equations ++ List(iterations, Ints.le(Ints.zero, n)))
+      val teq = And(counter :: current ++ equations ++ List(iterations, Ints.le(Ints.zero, Nats.integer(n))))
 
       // the state at the exit, from which the body executes safely if the guard holds,
       // the paths of the body from there that end by break or return leave the loop as well

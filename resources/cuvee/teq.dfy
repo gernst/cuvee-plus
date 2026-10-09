@@ -174,6 +174,18 @@ function {:teq} pow(c: int, n: Nat): int
   case succ(m) => c * pow(c, m)
 }
 
+// naturals: their values as integers, which the arithmetic of the simplifier reasons about, and back
+
+lemma {:rw} {:teq} natural_integer(n: Nat)
+  ensures natural(integer(n)) == n
+
+lemma {:rw} {:teq} integer_natural(x: int)
+  requires 0 <= x
+  ensures integer(natural(x)) == x
+
+lemma {:rw} {:teq} zero_integer(n: Nat)
+  ensures (n == zero) <==> (integer(n) == 0)
+
 // traces
 
 // a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)

@@ -3,11 +3,12 @@
 // and the invariants that mention the combinator itself hold in its update: in X == trace(...), ⌊X⌋ is the accumulator,
 // and in Y == maps(...), Y is the update, e.g. the test of a loop lo < hi in the trace of lo, not without the equation
 type Trace<a₀>
-predicate p(s: seq<int>)
+type List<a₀>
+predicate p(s: List<int>)
 predicate pt(t: Trace<int>)
-const J: seq<int>
-const K: seq<int>
-const Y: seq<int>
+const J: List<int>
+const K: List<int>
+const Y: List<int>
 axiom invs(for J check l :: 0 < l) ==> invs(for K, J check k, j :: 0 < j)
 axiom invs(for J check l :: 0 < l) ==> p(maps(for J yield j :: case 0 < j => j case j <= 0 => 0))
 axiom invs(for J check l :: 0 < l) ==> invs(for K check k :: 0 < k)

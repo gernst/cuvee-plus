@@ -1,18 +1,19 @@
 # Binary search with `-teq -simplify`
 
-Three versions of the same search are in `examples/dafny/teq`:
+Three versions of the same search were tried, of which
+[bsearch.dfy](../examples/dafny/teq/bsearch.dfy) remains in `examples/dafny/teq`; the other two are in the
+history of git (removed in version 0.34):
 
-- [binary_search.dfy](../examples/dafny/teq/binary_search.dfy) computes the probe at the top of the
-  body, `mid := (lo + hi) / 2`, so `mid` is local to an iteration;
-- [binary_search_solution.dfy](../examples/dafny/teq/binary_search_solution.dfy) makes the probe a
-  variable of the loop, computed before the loop and at the end of the body,
-  and adds the abstractions `lows`, `highs`, `lts`, `gts`, `eqs` with their
-  lemmas;
-- [binary_search_partition.dfy](../examples/dafny/teq/binary_search_partition.dfy) uses partition
-  points instead, with `break` in the found case. It is verified, given a cut
-  after the loop (see the last section).
+- `binary_search.dfy` computed the probe at the top of the body,
+  `mid := (lo + hi) / 2`, so `mid` is local to an iteration;
+- `binary_search_solution.dfy` made the probe a variable of the loop, computed
+  before the loop and at the end of the body, and added the abstractions
+  `lows`, `highs`, `lts`, `gts`, `eqs` with their lemmas;
+- [bsearch.dfy](../examples/dafny/teq/bsearch.dfy) uses partition points instead, with `break` in the
+  found case. It is verified, given a cut after the loop (see the last
+  section).
 
-The first two are not verified. Two goals remain, one for each way the loop
+The first two were not verified. Two goals remain, one for each way the loop
 can terminate:
 
 - **found**, `0 <= i`: then `i < n && a[i] == x`;
@@ -205,7 +206,7 @@ where reads become indices, instead of between pairs of reads. The cost:
 
 ## Partition points, verified with a cut
 
-[binary_search_partition.dfy](../examples/dafny/teq/binary_search_partition.dfy) follows the
+[bsearch.dfy](../examples/dafny/teq/bsearch.dfy) follows the
 partition points above. The array, its bound, `x`, `p`, and `q` are global
 constants, such that the lemmas `a[m] < x ⟺ m < p`, `x < a[m] ⟺ q <= m`, and
 `a[m] == x ⟺ p <= m < q` are rewrite rules without further variables. They
@@ -258,8 +259,5 @@ What it needed, and what remains to do in the code instead:
 ## To reproduce
 
 ```
-cuvee -teq examples/dafny/teq/binary_search.dfy                        # the trace equations
-cuvee -teq -simplify -split -simplify examples/dafny/teq/binary_search.dfy
-cuvee -teq -simplify -split -simplify examples/dafny/teq/binary_search_solution.dfy
-cuvee -teq -split -simplify examples/dafny/teq/binary_search_partition.dfy  # no goals remain
+cuvee -teq -split -simplify examples/dafny/teq/bsearch.dfy  # no goals remain
 ```

@@ -143,6 +143,8 @@ object Nats:
         case _                   => false
 
   object succ extends Sugar.unary(Fun.nat.succ)
+  object integer extends Sugar.unary(Fun.nat.integer)
+  object natural extends Sugar.unary(Fun.nat.natural)
 
 object Lists:
   // the empty list needs the type of its elements

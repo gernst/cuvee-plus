@@ -5,11 +5,11 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New
 
-- make all dafny sv-comp examples unbounded
-- translate the remaining benchmarks to Dafny with unbounded loops
 - look at cyclic rewrite rules
 - support verifying trace lemmas in Dafny
 - identify performance improvements, notably in the simplifier
+- thread config through more code, so that it is usually available
+- error messages should use a nice printer
 
 ## Cycle through the contexts of iterations
 
@@ -318,6 +318,15 @@ concepts, found by reading the whole code base; none is a bug.
 - `Subst.rename(bound, ctx.free)` followed by `ctx.bind`/`forall`/`exists`
   and the renaming of the body occurs about ten times
   (→ `Context.enter(bound)`).
+- `Simplify.integers`, which turns the bound naturals that occur only as
+  `integer(n)` into integers within their range, is clumsy: a filter, a map
+  for the new variables, a substitution as a map, and a fold for the
+  replacement, with `asInteger` and `integer` as two traversals that collect
+  by side effect and rebuild by `Expr.map`; it runs on every quantifier
+  before the body is simplified, and the cases `All` and `Ex` repeat the
+  wrapping of the ranges (→ one traversal that collects the occurrences and a
+  `Subst` for the replacement, or a rewrite of `integer(n)` when entering the
+  binder via `Context.enter`, see above).
 - The counter of the iterations, `Butlast(ctx.↑(Counter(Zero, One, n)))`, is
   extracted in `Rewrite.iterations`, `Simplify.iterations` and
   `Simplify.deps` (→ one extractor).
@@ -650,11 +659,11 @@ SV-COMP examples (`examples/sv-comp`):
   case of the pattern is still open when an earlier case of the expression
   needs it.
 - Facts about terms are not derived (see [doc/simplifier.md](doc/simplifier.md#forward-reasoning));
-  binary_search_partition.dfy needs a cut, `assert φ; assume φ;`, and `-teq`
+  bsearch.dfy needs a cut, `assert φ; assume φ;`, and `-teq`
   does not assume assertions.
 - The simplifier evaluates integer division on literals and divides by
   literals on Real, but knows no bounds of division, e.g. `l <= (h + l) / 2`
-  for `l <= h` is a lemma in binary_search_partition.dfy, nor cancels factors,
+  for `l <= h` is a lemma in bsearch.dfy, nor cancels factors,
   e.g. `2 * n / 2` (see
   [mlceu2.dfy](examples/sv-comp/array-tiling/mlceu2.dfy),
   [array_of_struct_ptr_monotonic.dfy](examples/sv-comp/array-industry-pattern/array_of_struct_ptr_monotonic.dfy)).
