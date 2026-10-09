@@ -1,0 +1,105 @@
+// ./Cuvee.sh -teq -simplify examples/dafny/sorting/bubble_sort.dfy
+// bubble sort with nested loops: the outer loop moves the bound i down, the inner loop swaps adjacent elements
+// out of order below it
+//
+// status: verified with -teq -simplify, see NOTES.md for the approach and the workarounds;
+// the inner loop becomes fragments of the iteration constraint of the outer loop over fresh sequences, which the
+// simplifier does not combine (invs_counter_equation.dfy, invs_fragments.dfy); the lemma current_results_bubble
+// summarizes the inner loop from these fragments as side conditions, which are matched against the facts of the
+// goal: the result b₃₇ of the outer loop becomes current(trace(a, for ⌊K⌋ do b, k :: current(bubble_pass(b, ...)))),
+// n passes, the k-th over the positions 0, ..., len - k - 2; perm(b, a) then follows from perm_steps, a generic lemma
+// on traces of steps that preserve the permutation, whose quantified side condition the simplifier decides by
+// perm_bubble_pass, and sorted(b, 0, n) from sorted_bubble_passes, which states that bubble sort sorts;
+// workarounds for the matching of side conditions, see NOTES.md: an invs side condition is matched against the
+// facts only while one of its sequence variables is open (a closed one is decided by the simplifier, which does not
+// find it among the facts, since these keep the counter ⌊I⌋ as a dependency and rename bound variables), hence
+// the conditions are ordered such that each binds a new variable, and duplicates (Js2, js3, Js3) are identified by
+// equations, which are closed and decided; the length of a pass, len - k - 1, is the function passlen, since a
+// pattern with arithmetic on a bound variable of a combinator is not matched (TODO.md); the lemma passlen_def
+// states its meaning, but is no rewrite rule, since it would unfold the function
+
+function sorted(a: array<int, int>, lo: int, hi: int): bool
+function perm(a: array<int, int>, b: array<int, int>): bool
+
+lemma {:rw} perm_refl(a: array<int, int>)
+  ensures perm(a, a) <==> true
+
+// one pass of bubble sort over the positions js: adjacent elements out of order are swapped
+function {:fold} bubble_pass(b: array<int, int>, js: List<int>): Trace<array<int, int>>
+{
+  trace(b, for js do x, j :: case x[j + 1] < x[j] => x[j := x[j + 1]][j + 1 := x[j]] case x[j] <= x[j + 1] => x)
+}
+
+lemma {:rw} perm_bubble_pass(b: array<int, int>, c: array<int, int>, js: List<int>)
+  ensures perm(current(bubble_pass(b, js)), c) <==> perm(b, c)
+
+// the values of a variable at the head of an outer loop whose body only runs an inner loop on it:
+// the initial value followed by the results bs of the inner loop
+function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a>
+{
+  trace(x0, for ks, bs do x, k, b :: b)
+}
+
+// the number of positions of the pass of iteration k, len - k - 1, as a function, since a pattern with arithmetic
+// on a bound variable of a combinator is not matched (see TODO.md)
+function passlen(len: int, k: int): int
+
+lemma passlen_def(len: int, k: int)
+  ensures passlen(len, k) == len - k - 1
+
+// the summary of the inner loop: in iteration k of the outer loop, the inner loop is a bubble pass over the
+// positions 0, ..., len - k - 2, given its trace equations and iteration constraints as side conditions:
+// the exit len <= j + k + 1 of the inner loop binds len, its test j + k + 1 < len holds for the positions visited,
+// j is the current value of a counter J from 0 by 1 over the inner iterations, and each result b is the current
+// value of a pass B that starts from the previous result x
+lemma {:rw} current_results_bubble(a: array<int, int>, len: int, ks: List<int>, js: List<int>, Js: List<Trace<int>>,
+                                   Js2: List<Trace<int>>, js3: List<int>, Js3: List<Trace<int>>, Ks: List<Trace<int>>,
+                                   bs: List<array<int, int>>, Bs: List<Trace<array<int, int>>>)
+  requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
+  requires invs(for ks, ⌊results(a, ks, bs)⌋, Bs, Js check k, x, B, J :: B == bubble_pass(x, ⌊J⌋))
+  requires invs(for ks, js check k, j :: len <= j + k + 1)
+  requires invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j + k + 1 < len))
+  requires Js2 == Js
+  requires invs(for ks, js3, Js3 check k, j, J :: j == current(J))
+  requires js3 == js && Js3 == Js
+  requires invs(for ks, Ks, Js check k, K, J :: J == sums(0, maps(for ⌊K⌋ yield k2 :: 1)))
+  ensures current(results(a, ks, bs))
+    == current(trace(a, for ks do b, k :: current(bubble_pass(b, ⌊counter(0, 1, natural(passlen(len, k)))⌋))))
+
+// a trace of steps that preserve the permutation
+lemma {:rw} perm_steps(a: array<int, int>, c: array<int, int>, ks: List<int>, F: (array<int, int>, int) -> array<int, int>)
+  requires forall b: array<int, int>, k: int :: perm(F(b, k), b)
+  ensures perm(current(trace(a, for ks do b, k :: F(b, k))), c) <==> perm(a, c)
+
+// bubble sort sorts: n passes, the k-th over the positions 0, ..., len - k - 2, sort the positions 0, ..., len - 1
+// if len - 1 <= n
+lemma {:rw} sorted_bubble_passes(a: array<int, int>, n: Nat, len: int)
+  requires len <= integer(n) + 1
+  ensures sorted(current(trace(a, for ⌊counter(0, 1, n)⌋ do b, k :: current(bubble_pass(b, ⌊counter(0, 1, natural(passlen(len, k)))⌋)))), 0, len)
+    <==> true
+
+method main(a: array<int, int>, n: int) returns (b: array<int, int>)
+  requires 0 <= n
+  ensures sorted(b, 0, n)
+  ensures perm(b, a)
+{
+  var i: int;
+  var j: int;
+  var t: int;
+  b := a;
+  i := n;
+  while 1 < i
+  {
+    j := 0;
+    while j + 1 < i
+    {
+      if b[j + 1] < b[j] {
+        t := b[j];
+        b[j] := b[j + 1];
+        b[j + 1] := t;
+      }
+      j := j + 1;
+    }
+    i := i - 1;
+  }
+}

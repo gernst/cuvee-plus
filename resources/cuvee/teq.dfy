@@ -347,6 +347,15 @@ lemma {:rw} {:teq} invs_counter_lower(m: int, i: int, c: int, n: Nat)
   ensures invs(for ⌊counter(i, c, n)⌋ check k :: m <= k)
     <==> n == zero || m <= i && m <= i + (integer(n) - 1) * c
 
+// an upper bound m that is nonnegative holds for all values of the counter by 1 from 0 iff it holds for the number of
+// its steps: a counter of an inner loop, whose bound is nonnegative by the precondition, where the disjunction of the
+// general lemma below, with the case of no iteration, is not split in the context of a combinator
+// (from examples/dafny/sorting/nested_sum.dfy)
+lemma {:rw} {:teq} invs_counter_upper_nonnegative(m: int, n: Nat)
+  requires 0 <= m
+  ensures invs(for ⌊counter(0, 1, n)⌋ check k :: k < m)
+    <==> integer(n) <= m
+
 lemma {:rw} {:teq} invs_counter_upper(m: int, i: int, c: int, n: Nat)
   ensures invs(for ⌊counter(i, c, n)⌋ check k :: k < m)
     <==> n == zero || i < m && i + (integer(n) - 1) * c < m
@@ -679,6 +688,14 @@ lemma {:rw} {:teq} selects_stores_counter(a: array<int, int>, i: int, c: int, n:
   requires c != 0
   ensures selects(current(stores(a, ⌊counter(i, c, n)⌋, vs)), ⌊counter(i, c, n)⌋) == vs
 
+// sums
+
+// the prefix sums of n copies of c, from x, are the counter from x by c: the counter of an inner loop, whose trace is
+// folded into sums over its dependency before that is known to be a counter (see examples/dafny/sorting/nested_sum.dfy)
+lemma {:rw} {:teq} sums_consts(x: int, n: Nat, c: int)
+  ensures sums(x, ⌊consts(n, c)⌋)
+    == counter(x, c, n)
+
 // array selects
 
 lemma {:rw} {:teq} current_stores<a, b>(k: a, a: array<a, b>, keys: List<a>, values: List<b>)
@@ -762,6 +779,15 @@ lemma {:rw} {:teq} sum_empty()
 lemma {:rw} {:teq} sum_consts(n: Nat, x: int)
   ensures sum(⌊consts(n, x)⌋)
     == x * integer(n)
+
+// the sum of the values of a dependency over the iterations of a loop that are all c, e.g. the final values of the
+// counter of an inner loop; the iteration constraint is a side condition, since as a left-hand side it would also
+// match a constraint without the dependency, with the dependency synthesized as a map
+// (from examples/dafny/sorting/nested_sum.dfy)
+lemma {:rw} {:teq} sum_invs_const(n: Nat, c: int, js: List<int>)
+  requires invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)
+  ensures sum(js)
+    == c * integer(n)
 
 lemma {:rw} {:teq} sum_neg(values: List<int>)
   ensures sum(maps(for values yield v :: -v))
