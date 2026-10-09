@@ -5,14 +5,17 @@
 // which leaves the loop at once, and they are checked to be allocated if c <= 5
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 method main() {
+  var N: int;
   var i: int;
   var c: int;
   var s: array<int, bool>;
+  assume 0 < N;
   c := *;
   i := 0;
-  while i < 1000000 {
+  while i < N {
     if c > 5 {
       break;
     }
@@ -20,7 +23,7 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < 1000000 {
+  while i < N {
     if c <= 5 {
       assert s[i];
     }

@@ -6,6 +6,7 @@
 // findings: as array_init_var_plus_ind, with k == -j: the goal is the sum of two such halves, (x + x * x) / 2 and
 // (-x + x * x) / 2, which are nonnegative for all integers x, by lemmas whose left-hand sides are comparisons with
 // a further summand d, whose side condition 0 <= d is decided by the same lemmas; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the sums 0 + 1 + ... + x and 0 + 1 + ... + (x - 1) are nonnegative for all integers x, also plus a nonnegative d, in
 // the normal form of the simplifier (arithmetic, not about traces); the left-hand sides are comparisons
@@ -28,7 +29,7 @@ method main() {
   var l: int;
   var x: int;
   var a: array<int, int>;
-  N := 100000;
+  assume 0 < N;
   j := 0;
   k := 0;
   i := 0;

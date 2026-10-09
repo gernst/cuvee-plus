@@ -4,13 +4,15 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (simple_array_index_value_4
 // compares an array from both ends, by two indices, and is not translated)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: SIZE for 10000
 
 method main() {
   var SIZE: int;
   var index: int;
   var tmp: int;
   var array: array<int, int>;
-  SIZE := 10000;
+  SIZE := *;
+  assume 0 < SIZE;
   index := 0;
   tmp := 0;
   while index < SIZE {

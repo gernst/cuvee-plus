@@ -5,14 +5,17 @@
 //
 // findings: open: the goal n₃₉ + n₉ < 200 follows from n₃₉ < 100 and n₉ < 100, a sum of two variables, which is no
 // difference constraint (as for seq-3, see TODO.md)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 method main() {
+  var N: int;
   var i: int;
   var j: int;
   var b: int;
+  assume 0 < N;
   i := 0;
   b := *;
-  while b != 0 && i < 1000000 {
+  while b != 0 && i < N {
     i := i + 1;
     b := *;
   }
@@ -21,7 +24,7 @@ method main() {
   }
   j := 0;
   b := *;
-  while b != 0 && i < 1000000 {
+  while b != 0 && i < N {
     i := i + 1;
     j := j + 1;
     b := *;

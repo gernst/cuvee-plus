@@ -8,17 +8,20 @@
 // <==> (0 < k && a < b), does not match, since the coefficient 1000000 of the monomial 1000000 * k is not matched
 // by a variable of the pattern (see TODO.md); the lemma is kept
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 method main() {
+  var N: int;
   var i: int;
   var k: int;
+  assume 0 < N;
   k := *;
   assume 0 <= k <= 10;
   i := 0;
-  while i < 1000000 * k {
+  while i < N * k {
     i := i + k;
   }
-  assert i == 1000000 * k;
+  assert i == N * k;
 }
 
 // remaining goals of -teq -simplify -split -simplify:

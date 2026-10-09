@@ -9,6 +9,7 @@
 // 1500 <= j; the outer trace takes the inner results A₁₈, and teq.dfy has no rule that composes the two (see
 // TODO.md, nested loops); a lemma would have to combine the iteration constraints of the outer loop into a closed
 // form of the outer trace, which is the composition of nested loops listed among the further ideas of the summary
+// note: the concrete loop bounds are symbolic, arbitrary positive values: m for 1000, n for 1500
 
 method main() {
   var i: int;
@@ -17,8 +18,10 @@ method main() {
   var n: int;
   var C: int;
   var A: array<int, array<int, int>>;
-  m := 1000;
-  n := 1500;
+  m := *;
+  assume 0 < m;
+  n := *;
+  assume 0 < n;
   C := *;
   i := 0;
   while i < m {

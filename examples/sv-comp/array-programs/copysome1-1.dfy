@@ -8,17 +8,20 @@
 // where the second result is a variable d with the side condition d == F(c), since F(c) would be compared
 // literally; a lemma on guarded stores at the positions of a counter gives the reads; closed (no output)
 // note: 2 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 200000
 
 method main() {
+  var N: int;
   var a1: array<int, int>;
   var a2: array<int, int>;
   var i: int;
   var z: int;
   var x: int;
   var tmp: int;
+  assume 0 < N;
   z := 150000;
   i := 0;
-  while i < 200000 {
+  while i < N {
     tmp := *;
     a1 := a1[i := tmp];
     tmp := *;
@@ -26,14 +29,14 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < 200000 {
+  while i < N {
     if i != z {
       a2 := a2[i := a1[i]];
     }
     i := i + 1;
   }
   x := 0;
-  while x < 200000 {
+  while x < N {
     if x != z {
       assert a1[x] == a2[x];
     }

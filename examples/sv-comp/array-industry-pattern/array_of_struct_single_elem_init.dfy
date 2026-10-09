@@ -5,6 +5,7 @@
 //
 // findings: as array-lopstr16/single_elem_safe, by the lemmas joining guarded stores and for reads over writes at a
 // different position, and a lemma that an equation of a conditional is a case split; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -28,13 +29,15 @@ lemma <b> {:rw} {:free} {:teq} forall c: bool, x: b, y: b, z: b ::
   (if c then x else y) == z <==> if c then x == z else y == z
 
 method main() {
+  var N: int;
   var i: int;
   var q: int;
   var x: int;
   var n: array<int, int>;
   var p: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     q := *;
     x := *;
     if x == 0 {
@@ -48,7 +51,7 @@ method main() {
   p := p[3 := 30];
   n := n[3 := 40];
   i := 0;
-  while i < 100000 {
+  while i < N {
     if i != 3 && n[i] == 0 {
       assert p[i] == 10;
     }

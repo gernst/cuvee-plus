@@ -10,6 +10,7 @@
 // refer to it; a third lemma decides occurs for counters with a positive step, which teq.dfy has for the step 1
 // only, with the remainder lemma for the even positions; -split splits the conditionals; closed (no output)
 // note: 3 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -28,12 +29,14 @@ lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, ps: seq<int>, cs:
     == trace(a0, for ⌊counter(0, 1, n)⌋, ps, cs do a, k, p, c :: a[p := if C(p, c) then F(p, c) else G(p, c)])
 
 method main() {
+  var N: int;
   var i: int;
   var a: array<int, int>;
   var b: array<int, int>;
   var tmp: int;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     tmp := *;
     a := a[i := tmp];
     if a[i] == 10 {
@@ -42,7 +45,7 @@ method main() {
     i := i + 2;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     if a[i] == 10 {
       assert b[i] == 20;
     }

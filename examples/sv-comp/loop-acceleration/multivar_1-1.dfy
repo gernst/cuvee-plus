@@ -4,14 +4,17 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): x and y are both counters with
 // step 1 from the same initial value, over the same iterations
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1024
 
 method main() {
+  var N: int;
   var x: int;
   var y: int;
+  assume 0 < N;
   x := *;
   assume 0 <= x;
   y := x;
-  while x < 1024 {
+  while x < N {
     x := x + 1;
     y := y + 1;
   }

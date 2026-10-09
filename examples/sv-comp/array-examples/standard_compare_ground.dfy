@@ -10,6 +10,7 @@
 // condition does not terminate, since matching it builds contexts in which the lemma applies to its body, and the
 // equation of prefixes with an open length is not matched against the facts (see TODO.md); closed (no output)
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -32,14 +33,16 @@ lemma {:rw} {:free} {:teq} forall n: int, j: int, xs: seq<int>, ys: seq<int> ::
   then (earlier(j, xs) == earlier(j, ys)) <==> true
 
 method main() {
+  var N: int;
   var a: array<int, int>;
   var b: array<int, int>;
   var i: int;
   var rv: int;
   var x: int;
   var tmp: int;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     tmp := *;
     a := a[i := tmp];
     tmp := *;
@@ -48,7 +51,7 @@ method main() {
   }
   i := 0;
   rv := 1;
-  while i < 100000 {
+  while i < N {
     if a[i] != b[i] {
       rv := 0;
     }
@@ -56,7 +59,7 @@ method main() {
   }
   if rv != 0 {
     x := 0;
-    while x < 100000 {
+    while x < N {
       assert a[x] == b[x];
       x := x + 1;
     }

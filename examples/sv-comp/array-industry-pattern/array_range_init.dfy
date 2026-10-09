@@ -4,12 +4,15 @@
 //
 // findings: unsafe: the positions above 10000 are 0; open, as expected, the guarded stores are not read without a
 // lemma
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var a: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     if i >= 0 && i <= 10000 {
       a := a[i := 10];
     } else {
@@ -18,7 +21,7 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     assert a[i] == 10;
     i := i + 1;
   }

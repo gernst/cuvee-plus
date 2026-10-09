@@ -5,6 +5,7 @@
 // findings: b is filled from its end, at the positions c - k, whose reads teq.dfy expresses by occurs and indexof
 // over the map of the positions; two lemmas about such decreasing positions, that x occurs iff 0 <= c - x < n, at
 // the iteration c - x, reduce the sum to that of k - k; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -27,7 +28,7 @@ method main() {
   var b: array<int, int>;
   var i: int;
   var sum: int;
-  N := 100000;
+  assume 0 < N;
   sum := 0;
   i := 0;
   while i < N {

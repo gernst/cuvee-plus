@@ -7,6 +7,7 @@
 // over a shorter counter; open: the remaining atom 0 <= (7 * n + n * n + 12) / 2 is (n + 3) * (n + 4) / 2, which
 // the halves (x + x * x) / 2 do not match, since patterns match modulo A/C, not modulo the substitution of n + 3
 // for x, and a variable as a coefficient does not match the literal 7 (see TODO.md)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -40,7 +41,7 @@ method main() {
   var k: int;
   var x: int;
   var a: array<int, int>;
-  N := 100000;
+  assume 0 < N;
   j := 0;
   i := 0;
   while i < N {

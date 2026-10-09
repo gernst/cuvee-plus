@@ -4,9 +4,12 @@
 //
 // findings: open: the loop test i * i < 100 is non-linear; the goal needs that the first i from i0 with i * i >=
 // 100 is 10, from the iteration constraint at the last iteration, which teq.dfy does not decide for polynomials
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100
 
 method main() returns (result: int) {
+  var N: int;
   var tmp₁: int;
+  assume 0 < N;
   {
     var i: int;
     tmp₁ := *;
@@ -15,7 +18,7 @@ method main() returns (result: int) {
       result := 0;
       return;
     }
-    while i * i < 100 {
+    while i * i < N {
       i := i + 1;
     }
     assert i == 10;

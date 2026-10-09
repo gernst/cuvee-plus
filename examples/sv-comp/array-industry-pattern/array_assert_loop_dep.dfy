@@ -5,17 +5,20 @@
 //
 // findings: unsafe: a[1] is 20 when it is checked, set by the iteration before; open, as expected, -teq records the
 // check as an iteration constraint over the array at each iteration
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var a: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     a := a[i := 10];
     i := i + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     assert a[i] == 10;
     if i + 1 != 15000 {
       a := a[i + 1 := 20];

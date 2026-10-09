@@ -10,6 +10,7 @@
 // the simplifier decides without the facts of the context (Simplify.select with ctx.neutral), so that the
 // hypothesis j != 3 does not help; a lemma for it, whose side condition is decided against the facts, closes it (no
 // output) (see TODO.md)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -39,6 +40,7 @@ lemma <b> {:rw} {:free} {:teq} forall a: array<int, b>, i: int, j: int, v: b ::
   then a[i := v][j] == a[j]
 
 method main() {
+  var N: int;
   var i: int;
   var q: int;
   var v: int;
@@ -46,8 +48,9 @@ method main() {
   var s: array<int, bool>;
   var n: array<int, int>;
   var p: array<int, bool>;
+  assume 0 < N;
   i := 0;
-  while i < 1000000 {
+  while i < N {
     q := *;
     if q == 0 {
       s := s[i := true];
@@ -68,7 +71,7 @@ method main() {
   n := n[3 := v];
   p := p[3 := w];
   i := 0;
-  while i < 1000000 {
+  while i < N {
     if i != 3 && s[i] && n[i] == 0 {
       assert p[i];
     }

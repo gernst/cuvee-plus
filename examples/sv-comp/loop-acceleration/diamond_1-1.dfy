@@ -7,6 +7,7 @@
 // X == (if y % 2 == 0 then counter(0, 2, n) else counter(0, 1, n)) is split into cases by -split, and a second
 // -simplify closes both, given that the remainder modulo 2 is 0 or 1 (without that lemma, 0 <= y && y % 2 != 0 ==>
 // 1 == y % 2 remains); closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary values that keep the verdict: N for 99, which is odd
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -24,12 +25,14 @@ lemma {:rw} {:free} {:teq} forall y: int ::
   !(y % 2 == 0) <==> y % 2 == 1
 
 method main() {
+  var N: int;
   var x: int;
   var y: int;
+  assume 0 < N && N % 2 == 1;
   x := 0;
   y := *;
   assume 0 <= y;
-  while x < 99 {
+  while x < N {
     if y % 2 == 0 {
       x := x + 2;
     } else {

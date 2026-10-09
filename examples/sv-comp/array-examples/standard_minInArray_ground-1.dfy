@@ -4,30 +4,33 @@
 // the minimal element
 //
 // findings: unsafe: the minimal element is not above the minimum; open, as expected
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var j: int;
   var x: int;
   var v: int;
   var min: int;
   var a: array<int, int>;
+  assume 0 < N;
   min := 0;
   j := 0;
-  while j < 100000 {
+  while j < N {
     v := *;
     a := a[j := v];
     j := j + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     if a[i] < min {
       min := a[i];
     }
     i := i + 1;
   }
   x := 0;
-  while x < 100000 {
+  while x < N {
     assert a[x] > min;
     x := x + 1;
   }

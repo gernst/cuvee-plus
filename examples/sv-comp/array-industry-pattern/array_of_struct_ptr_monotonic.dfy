@@ -11,6 +11,7 @@
 // conditional a case split, both lemmas not about traces; closed (no output) (array_of_struct_ptr_cond_init,
 // array_of_struct_ptr_flag_init, array_ptr_partial_init, array_of_struct_break, and array_of_struct_ptr_mul_init
 // are variants of array-lopstr16 tasks and are not translated)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -46,13 +47,15 @@ lemma <b> {:rw} {:free} {:teq} forall c: bool, x: b, y: b, z: b ::
   (if c then x else y) == z <==> if c then x == z else y == z
 
 method main() {
+  var N: int;
   var i: int;
   var x: int;
   var y: bool;
   var t: array<int, int>;
   var p1: array<int, bool>;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     x := *;
     t := t[i := x];
     if x == 10 {
@@ -64,7 +67,7 @@ method main() {
     i := i + 2;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     if t[i] == 10 {
       assert p1[i];
     }

@@ -4,15 +4,18 @@
 // 1, and c[15000] == 0 is checked, which is arbitrary unless q was 0 at 15000
 //
 // findings: unsafe: c[15000] is arbitrary unless q was 0 there; open, as expected
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var q: int;
   var a: array<int, int>;
   var b: array<int, int>;
   var c: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     q := *;
     a := a[i := 0];
     if q == 0 {
@@ -30,7 +33,7 @@ method main() {
   }
   a := a[15000 := 1];
   i := 0;
-  while i < 100000 {
+  while i < N {
     if i == 15000 {
       assert c[i] == 0;
     }

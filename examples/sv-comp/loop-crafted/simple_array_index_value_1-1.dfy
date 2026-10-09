@@ -5,12 +5,14 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (simple_array_index_value_1-2 is
 // an unsafe variant)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: SIZE for 1000
 
 method main() {
   var SIZE: int;
   var index: int;
   var array: array<int, int>;
-  SIZE := 1000;
+  SIZE := *;
+  assume 0 < SIZE;
   index := 0;
   while index < SIZE {
     array := array[index := index % 2];

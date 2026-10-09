@@ -4,22 +4,25 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): the loop test reads the source,
 // which -teq records in the iteration constraints
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var j: int;
   var x: int;
   var v: int;
   var src: array<int, int>;
   var dst: array<int, int>;
+  assume 0 < N;
   i := 0;
   j := 0;
-  while j < 100000 {
+  while j < N {
     v := *;
     src := src[j := v];
     j := j + 1;
   }
-  while i < 100000 && src[i] != 0 {
+  while i < N && src[i] != 0 {
     dst := dst[i := src[i]];
     i := i + 1;
   }

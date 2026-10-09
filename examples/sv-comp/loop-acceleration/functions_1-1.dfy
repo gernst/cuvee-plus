@@ -4,6 +4,7 @@
 //
 // findings: with the definition of f as a rewrite rule, the update is x + 2, which teq.dfy accelerates to
 // counter(0, 2, n); closed (no output); without {:rw}, f is not unfolded and the goal remains
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455
 
 // f is a rewrite rule, i.e., it is unfolded, as the C function is inlined by verification tools
 function {:rw} f(z: int): int {
@@ -11,9 +12,11 @@ function {:rw} f(z: int): int {
 }
 
 method main() {
+  var N: int;
   var x: int;
+  assume 0 < N;
   x := 0;
-  while x < 268435455 {
+  while x < N {
     x := f(x);
   }
   assert x % 2 == 0;

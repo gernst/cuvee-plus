@@ -7,6 +7,7 @@
 // both agree, which the lemmas of standard_compare_ground abstract by agree and instantiate at the position; closed
 // (no output)
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing; the lemmas are
 // those of standard_compare_ground
@@ -30,14 +31,16 @@ lemma {:rw} {:free} {:teq} forall n: int, j: int, xs: seq<int>, ys: seq<int> ::
   then (earlier(j, xs) == earlier(j, ys)) <==> true
 
 method main() {
+  var N: int;
   var i: int;
   var x: int;
   var v: int;
   var c: int;
   var a: array<int, int>;
   var b: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     v := *;
     a := a[i := v];
     v := *;
@@ -46,7 +49,7 @@ method main() {
   }
   c := 0;
   i := 0;
-  while i < 100000 {
+  while i < N {
     if b[i] != a[i] {
       c := 1;
       break;
@@ -55,7 +58,7 @@ method main() {
   }
   if c == 0 {
     x := 0;
-    while x < 100000 {
+    while x < N {
       assert a[x] == b[x];
       x := x + 1;
     }

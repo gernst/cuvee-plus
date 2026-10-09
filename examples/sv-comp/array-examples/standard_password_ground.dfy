@@ -10,6 +10,7 @@
 // not simplified under the facts, and a lemma that splits the equation of a conditional cannot be combined with
 // -split, which splits that lemma, too (see TODO.md)
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing; the lemmas are
 // those of standard_compare_ground
@@ -33,15 +34,17 @@ lemma {:rw} {:free} {:teq} forall n: int, j: int, xs: seq<int>, ys: seq<int> ::
   then (earlier(j, xs) == earlier(j, ys)) <==> true
 
 method main() {
+  var N: int;
   var i: int;
   var x: int;
   var v: int;
   var result: int;
   var password: array<int, int>;
   var guess: array<int, int>;
+  assume 0 < N;
   result := 1;
   i := 0;
-  while i < 100000 {
+  while i < N {
     v := *;
     password := password[i := v];
     v := *;
@@ -49,7 +52,7 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     if password[i] != guess[i] {
       result := 0;
     }
@@ -57,7 +60,7 @@ method main() {
   }
   if result != 0 {
     x := 0;
-    while x < 100000 {
+    while x < N {
       assert password[x] == guess[x];
       x := x + 1;
     }

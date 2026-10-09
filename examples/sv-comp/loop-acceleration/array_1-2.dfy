@@ -3,16 +3,20 @@
 // hand: A[i] is set to i for i below 1024, and A[1023] is 1023
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary values that keep the verdict: N for 1024, the assertion on
+// A[1023] is on A[N - 1]
 
 method main() {
+  var N: int;
   var A: array<int, int>;
   var i: int;
+  assume 0 < N;
   i := 0;
-  while i < 1024 {
+  while i < N {
     A := A[i := i];
     i := i + 1;
   }
-  assert A[1023] == 1023;
+  assert A[N - 1] == N - 1;
 }
 
 // remaining goals of -teq -simplify:

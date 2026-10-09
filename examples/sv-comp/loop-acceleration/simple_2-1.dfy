@@ -3,15 +3,18 @@
 // hand: an arbitrary x >= 0 (unsigned) is increased while below 0x0fffffff, and checked to be at least that
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455
 
 method main() {
+  var N: int;
   var x: int;
+  assume 0 < N;
   x := *;
   assume x >= 0;
-  while x < 268435455 {
+  while x < N {
     x := x + 1;
   }
-  assert x >= 268435455;
+  assert x >= N;
 }
 
 // remaining goals of -teq -simplify:

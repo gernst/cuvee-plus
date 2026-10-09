@@ -3,15 +3,20 @@
 // hand: the unsafe variant of nested_1-1, which asserts that the final x, which is odd, is even
 //
 // findings: unsafe, not closed, as expected
+// note: the concrete loop bounds are symbolic, arbitrary positive values: M for 268435455, L for 10
 
 method main() {
+  var M: int;
+  var L: int;
   var x: int;
   var y: int;
+  assume 0 < M;
+  assume 0 < L;
   x := 0;
   y := 0;
-  while x < 268435455 {
+  while x < M {
     y := 0;
-    while y < 10 {
+    while y < L {
       y := y + 1;
     }
     x := x + 1;

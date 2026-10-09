@@ -4,16 +4,19 @@
 // the negation of the test is checked at the end
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100
 
 method main() returns (result: int) {
+  var N: int;
   var tmp₁: int, tmp₂: int, tmp₃: bool;
+  assume 0 < N;
   {
     var x: int, z: int;
     tmp₁ := *;
     x := tmp₁;
     tmp₂ := *;
     z := tmp₂;
-    if !(x > -100) {
+    if !(x > -N) {
       result := 0;
       return;
     }
@@ -21,7 +24,7 @@ method main() returns (result: int) {
       result := 0;
       return;
     }
-    if !(z > 100) {
+    if !(z > N) {
       result := 0;
       return;
     }
@@ -29,7 +32,7 @@ method main() returns (result: int) {
       result := 0;
       return;
     }
-    while x < 100 && z > 100 {
+    while x < N && z > N {
       var tmp: bool;
       tmp₃ := *;
       tmp := tmp₃;
@@ -40,7 +43,7 @@ method main() returns (result: int) {
         z := z - 1;
       }
     }
-    assert x >= 100 || z <= 100;
+    assert x >= N || z <= N;
     result := 0;
     return;
   }

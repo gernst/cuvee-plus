@@ -7,8 +7,10 @@
 // positions of bb are given by the counter b of the guarded iterations, whose reads earlier(k, ⌊B⌋) become counts
 // over prefixes, which build the contexts of the iterations again; a lemma on the values stored at such positions
 // (all satisfy the guard) cannot apply before, no lemma is added
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var aa: array<int, int>;
   var bb: array<int, int>;
   var cc: array<int, int>;
@@ -18,16 +20,17 @@ method main() {
   var i: int;
   var x: int;
   var tmp: int;
+  assume 0 < N;
   a := 0;
   b := 0;
   c := 0;
   i := 0;
-  while i < 100000 {
+  while i < N {
     tmp := *;
     aa := aa[i := tmp];
     i := i + 1;
   }
-  while a < 100000 {
+  while a < N {
     if aa[a] >= 0 {
       bb := bb[b := aa[a]];
       b := b + 1;
@@ -35,7 +38,7 @@ method main() {
     a := a + 1;
   }
   a := 0;
-  while a < 100000 {
+  while a < N {
     if aa[a] < 0 {
       cc := cc[c := aa[a]];
       c := c + 1;

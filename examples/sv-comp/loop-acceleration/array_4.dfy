@@ -6,6 +6,7 @@
 // findings: the search for 0 runs over the array with 0 stored at 1023; a lemma states that the iteration
 // constraint that the elements before n differ from v holds iff n <= c and those of the array without the store
 // differ; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1024
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -20,21 +21,23 @@ lemma {:rw} {:free} {:teq} forall a: array<int, int>, c: int, v: int, n: int, hs
     <==> n <= c && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: a[k] != v)
 
 method main() {
+  var N: int;
   var i: int;
   var v: int;
   var A: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 1024 - 1 {
+  while i < N - 1 {
     v := *;
     A := A[i := v];
     i := i + 1;
   }
-  A := A[1024 - 1 := 0];
+  A := A[N - 1 := 0];
   i := 0;
   while A[i] != 0 {
     i := i + 1;
   }
-  assert i <= 1024;
+  assert i <= N;
 }
 
 // remaining goals of -teq -simplify:

@@ -7,16 +7,19 @@
 // initial array; open: the goal is the iteration constraint over n₂₂ iterations instantiated at n₂₈ < n₂₂, with the
 // body 0 <= (if k < 100000 then earlier(k, V?) else aa[k]), which needs an instantiation of an iteration constraint
 // with an arbitrary body, which the lemmas abstract by atoms for specific bodies only; no lemmas tried
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var a: int;
   var x: int;
   var v: int;
   var aa: array<int, int>;
+  assume 0 < N;
   a := 0;
   i := 0;
-  while i < 100000 {
+  while i < N {
     v := *;
     aa := aa[i := v];
     i := i + 1;

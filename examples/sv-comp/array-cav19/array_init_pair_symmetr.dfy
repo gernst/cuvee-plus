@@ -3,6 +3,7 @@
 // a[i] = x and b[i] = -x for a value x chosen in each iteration, c[i] = a[i] + b[i], and c[i] == 0 is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): a[i] + b[i] is x + -x
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
   var N: int;
@@ -11,11 +12,11 @@ method main() {
   var a: array<int, int>;
   var b: array<int, int>;
   var c: array<int, int>;
-  N := 100000;
+  assume 0 < N;
   i := 0;
   while i < N {
     x := *;
-    assume x > -100000 && x < 100000;
+    assume x > -N && x < N;
     a := a[i := x];
     b := b[i := -x];
     i := i + 1;

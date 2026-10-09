@@ -6,6 +6,7 @@
 // findings: the stores depend on a second trace, the count k of zeros, which is below lim; open: the stored value
 // depends on k < lim, a condition on a trace that is not a counter, such that the count of zeros is that of a
 // prefix of length lim, which needs the trace k as a function of the iterations; no lemmas tried
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 method main() {
   var N: int;
@@ -15,7 +16,7 @@ method main() {
   var R: int;
   var lim: int;
   var a: array<int, int>;
-  N := 1000000;
+  assume 0 < N;
   j := 0;
   k := 0;
   lim := *;

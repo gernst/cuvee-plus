@@ -3,9 +3,12 @@
 // -print dfy: x grows by y > 0 until it reaches 100, which is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100
 
 method main() returns (result: int) {
+  var N: int;
   var tmp₁: int, tmp₂: int;
+  assume 0 < N;
   {
     var x: int, y: int;
     tmp₁ := *;
@@ -17,11 +20,11 @@ method main() returns (result: int) {
       return;
     }
     if y > 0 {
-      while x < 100 {
+      while x < N {
         x := x + y;
       }
     }
-    assert y <= 0 || y > 0 && x >= 100;
+    assert y <= 0 || y > 0 && x >= N;
     result := 0;
     return;
   }

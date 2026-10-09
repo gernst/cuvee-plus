@@ -3,18 +3,21 @@
 // up, j accumulates k, which counts down from 0 or 1, and 1 <= i + k <= 2 and i >= 1 are checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 method main() {
+  var N: int;
   var i: int;
   var j: int;
   var k: int;
+  assume 0 < N;
   i := 1;
   j := 1;
   k := *;
   if !(0 <= k && k <= 1) {
     return;
   }
-  while i < 1000000 {
+  while i < N {
     i := i + 1;
     j := j + k;
     k := k - 1;

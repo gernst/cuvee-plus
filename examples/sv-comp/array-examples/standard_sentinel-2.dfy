@@ -7,6 +7,7 @@
 // the unbounded search is abstracted by the auxiliary predicate absent(n, a, e), and a lemma concludes n <= j from
 // a[j] == e for the marker at pos; its left-hand side n <= j is a comparison, which terminates now, since its side
 // condition is an atom matched against the facts; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -25,20 +26,22 @@ lemma {:rw} {:free} {:teq} forall n: int, j: int, e: int, a: array<int, int> ::
   then n <= j
 
 method main() {
+  var N: int;
   var a: array<int, int>;
   var marker: int;
   var pos: int;
   var i: int;
   var tmp: int;
+  assume 0 < N;
   marker := *;
   pos := *;
   i := 0;
-  while i < 100000 {
+  while i < N {
     tmp := *;
     a := a[i := tmp];
     i := i + 1;
   }
-  if pos >= 0 && pos < 100000 {
+  if pos >= 0 && pos < N {
     a := a[pos := marker];
     i := 0;
     while a[i] != marker {

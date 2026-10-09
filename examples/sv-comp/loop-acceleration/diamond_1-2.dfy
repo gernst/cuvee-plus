@@ -4,6 +4,7 @@
 //
 // findings: unsafe, not closed with the lemmas of diamond_1-1, as expected: the cases remain where the parity of x
 // differs from that of y
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 99
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -21,12 +22,14 @@ lemma {:rw} {:free} {:teq} forall y: int ::
   !(y % 2 == 0) <==> y % 2 == 1
 
 method main() {
+  var N: int;
   var x: int;
   var y: int;
+  assume 0 < N;
   x := 0;
   y := *;
   assume 0 <= y;
-  while x < 99 {
+  while x < N {
     if y % 2 == 0 {
       x := x + 1;
     } else {

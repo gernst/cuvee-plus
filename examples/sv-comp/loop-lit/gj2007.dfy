@@ -4,13 +4,16 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): y counts in the second half
 // only, whose guard x < 50 refers to the counter x
+// note: the concrete loop bounds are symbolic, arbitrary values that keep the verdict: N for 100, at least 50
 
 method main() {
+  var N: int;
   var x: int;
   var y: int;
+  assume 50 <= N;
   x := 0;
   y := 50;
-  while x < 100 {
+  while x < N {
     if x < 50 {
       x := x + 1;
     } else {
@@ -18,7 +21,7 @@ method main() {
       y := y + 1;
     }
   }
-  assert y == 100;
+  assert y == N;
 }
 
 // remaining goals of -teq -simplify:

@@ -4,11 +4,14 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (simple_1-1 and the other -1
 // variants are unsafe, the _abstracted variants are the same programs with abstracted loops)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455
 
 method main() {
+  var N: int;
   var x: int;
+  assume 0 < N;
   x := 0;
-  while x < 268435455 {
+  while x < N {
     x := x + 2;
   }
   assert x % 2 == 0;

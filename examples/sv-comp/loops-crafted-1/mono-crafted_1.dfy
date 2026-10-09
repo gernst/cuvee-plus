@@ -5,16 +5,19 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output): the two-phase loop of gj2007 and
 // a loop that counts both down
+// note: the concrete loop bounds are symbolic, arbitrary values that keep the verdict: N for 1000000, at least 50000
 
 method main() {
+  var N: int;
   var x: int;
   var y: int;
   var z: int;
+  assume 50000 <= N;
   x := 0;
   y := 50000;
   z := 0;
   x := 0;
-  while x < 1000000 {
+  while x < N {
     if x < 50000 {
       x := x + 1;
     } else {

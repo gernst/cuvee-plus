@@ -7,6 +7,7 @@
 // findings: the two fields are stored under the same case split on the value x of the iteration; a lemma joins the
 // guarded stores into a store of a conditional value, polymorphic in the element type, after which teq.dfy reads
 // the stores; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -20,12 +21,14 @@ lemma <b> {:rw} {:free} {:teq} forall a0: array<int, b>, n: int, hs: seq<int>, x
     == trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: a[k := if C(h, x) then F(h, x) else G(h, x)])
 
 method main() {
+  var N: int;
   var i: int;
   var x: int;
   var n: array<int, int>;
   var p: array<int, bool>;
+  assume 0 < N;
   i := 0;
-  while i < 1000000 {
+  while i < N {
     x := *;
     n := n[i := x];
     if x == 0 {
@@ -36,7 +39,7 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < 1000000 {
+  while i < N {
     if n[i] == 0 {
       assert p[i];
     }

@@ -1,0 +1,33 @@
+// ./Cuvee.sh -teq -simplify examples/sv-comp/loop-lit/bh2017-ex1-poly.dfy
+// SV-COMP ReachSafety-Loops/loop-lit/bh2017-ex1-poly.yml (expected: safe), translated from the C program by
+// ./Cuvee.sh -print dfy: a program of the folder; checks 0 <= j; j <= 2 * i; 2 * i <= j + 6; j <= 4; 0 <= j; j <= 2
+// * i; 2 * i <= j + 6; j <= 4
+
+// the division of C, which truncates towards zero
+function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
+
+method main() returns (result: int) {
+  {
+    var i: int;
+    i := 0;
+    while i < 4 {
+      var j: int;
+      j := 0;
+      while j < 3 {
+        i := i + 1;
+        j := j + 2;
+        assert 0 <= j;
+        assert j <= 2 * i;
+        assert 2 * i <= j + 6;
+        assert j <= 4;
+      }
+      assert 0 <= j;
+      assert j <= 2 * i;
+      assert 2 * i <= j + 6;
+      assert j <= 4;
+      i := i - (quotient(j, 2)) + 1;
+    }
+    result := 0;
+    return;
+  }
+}

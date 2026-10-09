@@ -4,15 +4,19 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (mono-crafted_9, _11 to _14 are
 // variants)
+// note: the concrete loop bounds are symbolic, arbitrary values that keep the verdict: M for 5000000, y at least M
+// for 10000000
 
 method main() returns (result: int) {
   {
-    var x: int, y: int, z: int;
+    var M: int, x: int, y: int, z: int;
     x := 0;
-    y := 10000000;
-    z := 5000000;
+    assume 0 < M;
+    y := *;
+    assume M <= y;
+    z := M;
     while x < y {
-      if x >= 5000000 {
+      if x >= M {
         z := z + 1;
       }
       x := x + 1;

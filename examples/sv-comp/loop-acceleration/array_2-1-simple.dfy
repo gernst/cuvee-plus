@@ -1,0 +1,30 @@
+// ./Cuvee.sh -teq -simplify examples/sv-comp/loop-acceleration/array_2-1-simple.dfy
+// SV-COMP ReachSafety-Loops/loop-acceleration/array_2-1-simple.yml (expected: unsafe), translated from the C
+// program by ./Cuvee.sh -print dfy: a program of the folder; checks A[2048/2] != B[2048/2]
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 2048
+
+// the constant array of the initializers of C, whose values are all x
+function constant(x: int): array<int, int>
+
+lemma {:rw} {:free} {:teq} forall x: int, i: int ::
+  constant(x)[i] == x
+
+method main() returns (result: int) {
+  var N: int;
+  assume 0 < N;
+  {
+    var A: array<int, int>;
+    var B: array<int, int>;
+    var i: int;
+    var tmp: int;
+    A := constant(0)[0 := 0];
+    B := constant(0)[0 := 0];
+    i := 0;
+    while i < N {
+      tmp := A[i];
+      B := B[i := tmp];
+      i := i + 1;
+    }
+    assert A[1024] != B[1024];
+  }
+}

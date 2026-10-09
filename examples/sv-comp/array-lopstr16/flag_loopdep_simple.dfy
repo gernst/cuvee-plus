@@ -6,6 +6,7 @@
 // findings: a flag that is set whenever the read value is not 0 keeps its initial value iff it is never set, an
 // iteration constraint, by a lemma generic in the condition; the constraint that the values are 0 is abstracted by
 // the predicate constant, whose instantiation rewrites earlier(j, xs) to the constant; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -31,26 +32,28 @@ lemma {:rw} {:free} {:teq} forall n: int, xs: seq<int>, c: int, j: int ::
   then earlier(j, xs) == c
 
 method main() {
+  var N: int;
   var i: int;
   var v: int;
   var flag: int;
   var a: array<int, int>;
+  assume 0 < N;
   flag := 0;
   i := 0;
-  while i < 1000000 {
+  while i < N {
     v := *;
     a := a[i := v];
     i := i + 1;
   }
   i := 0;
-  while i < 1000000 {
+  while i < N {
     if a[i] != 0 {
       flag := 1;
     }
     i := i + 1;
   }
   i := 0;
-  while i < 1000000 {
+  while i < N {
     if flag == 0 {
       assert a[i] == 0;
     }

@@ -7,6 +7,7 @@
 // counter), a lemma for the stores of the third loop, whose second case stores at the literal position c that the
 // simplifier substituted for i, and a lemma that an equation of a conditional is a case split; closed (no output)
 // note: 2 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing (the first two
 // lemmas are those of copysome1-1)
@@ -34,7 +35,7 @@ method main() {
   var a1: array<int, int>;
   var a2: array<int, int>;
   var a3: array<int, int>;
-  N := 1000000;
+  assume 0 < N;
   z := 150000;
   i := 0;
   while i < N {

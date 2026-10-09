@@ -8,15 +8,18 @@
 // arithmetic, x >= y, since (n - 1) * (n - 2) is not negative for integers, which the lemma states in the normal
 // form of the simplifier; closed (no output)
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000
 
 method main() {
+  var N: int;
   var x: int;
   var y: int;
   var c: int;
+  assume 0 < N;
   x := 1;
   y := 0;
   c := *;
-  while y < 1000 && c != 0 {
+  while y < N && c != 0 {
     x := x + y;
     y := y + 1;
     c := *;

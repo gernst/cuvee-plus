@@ -10,23 +10,26 @@
 // left-hand side is the comparison j < n does not terminate, since the comparison matches the bounds of the
 // iterations in the contexts that matching the iteration constraint builds
 // note: 2 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var a: array<int, int>;
   var e: int;
   var i: int;
   var j: int;
   var x: int;
   var tmp: int;
+  assume 0 < N;
   e := *;
   i := 0;
   j := 0;
-  while j < 100000 {
+  while j < N {
     tmp := *;
     a := a[j := tmp];
     j := j + 1;
   }
-  while i < 100000 && a[i] != e {
+  while i < N && a[i] != e {
     i := i + 1;
   }
   x := 0;

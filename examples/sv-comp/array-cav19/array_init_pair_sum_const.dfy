@@ -3,6 +3,7 @@
 // program by hand: a[i] = 1, b[i] = 2, c[i] = a[i] + b[i], and c[i] >= 3 is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
   var i: int;
@@ -10,7 +11,8 @@ method main() {
   var a: array<int, int>;
   var b: array<int, int>;
   var c: array<int, int>;
-  N := 100000;
+  N := *;
+  assume 0 < N;
   i := 0;
   while i < N {
     a := a[i := 1];

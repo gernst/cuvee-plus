@@ -8,6 +8,7 @@
 // auxiliary predicates below and positive, of which a third lemma concludes n <= b, i.e., at most b iterations, for
 // 0 <= b, by a left-hand side that is a comparison, with atoms as side conditions; the order of the abstractions
 // matters, since positive also matches the loop test, with the map of b - i as its sequence; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -36,18 +37,20 @@ lemma {:rw} {:free} {:teq} forall n: int, b: int, js: seq<int> ::
   then n <= b
 
 method main() {
+  var N: int;
   var i: int;
   var k: int;
   var j: int;
+  assume 0 < N;
   i := 0;
   k := 0;
-  while i < 1000000 {
+  while i < N {
     j := *;
-    assume 1 <= j < 1000000;
+    assume 1 <= j < N;
     i := i + j;
     k := k + 1;
   }
-  assert k <= 1000000;
+  assert k <= N;
 }
 
 // remaining goals of -teq -simplify:

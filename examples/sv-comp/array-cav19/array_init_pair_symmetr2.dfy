@@ -5,6 +5,7 @@
 // findings: the pairs x > y chosen in each iteration are an iteration constraint over two dependencies, abstracted
 // by the predicate greater and instantiated at the read position by a lemma whose left-hand side is a comparison;
 // closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -34,13 +35,13 @@ method main() {
   var a: array<int, int>;
   var b: array<int, int>;
   var c: array<int, int>;
-  N := 100000;
+  assume 0 < N;
   i := 0;
   while i < N {
     x := *;
     y := *;
-    assume y < 100000 && y > -100000;
-    assume x < 100000 && x > -100000;
+    assume y < N && y > -N;
+    assume x < N && x > -N;
     assume x > y;
     a := a[i := x];
     b := b[i := y];

@@ -3,14 +3,17 @@
 // hand: the unsafe variant of multivar_1-1, where y starts at x + 1
 //
 // findings: unsafe, not closed, as expected: x and y are counters from x and x + 1, which differ
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1024
 
 method main() {
+  var N: int;
   var x: int;
   var y: int;
+  assume 0 < N;
   x := *;
   assume 0 <= x;
   y := x + 1;
-  while x < 1024 {
+  while x < N {
     x := x + 1;
     y := y + 1;
   }

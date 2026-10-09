@@ -5,8 +5,10 @@
 //
 // findings: error: rewriting does not terminate, with the rule of teq.dfy for earlier(k, ⌊counter(i, c, n)⌋), on
 // the trace of the two largest elements, whose updates read the array at the counter from 2 (see TODO.md)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var x: int;
   var v: int;
@@ -14,8 +16,9 @@ method main() {
   var largest2: int;
   var temp: int;
   var array: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     v := *;
     array := array[i := v];
     i := i + 1;
@@ -28,7 +31,7 @@ method main() {
     largest2 := temp;
   }
   i := 2;
-  while i < 100000 {
+  while i < N {
     if array[i] >= largest1 {
       largest2 := largest1;
       largest1 := array[i];
@@ -38,12 +41,12 @@ method main() {
     i := i + 1;
   }
   x := 0;
-  while x < 100000 {
+  while x < N {
     assert array[x] <= largest1;
     x := x + 1;
   }
   x := 0;
-  while x < 100000 {
+  while x < N {
     assert array[x] <= largest2 || array[x] == largest1;
     x := x + 1;
   }

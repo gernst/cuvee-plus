@@ -3,17 +3,20 @@
 // -print dfy: i counts to 1000000, which is checked
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 method main() returns (result: int) {
+  var N: int;
+  assume 0 < N;
   {
     var i: int;
     {
       i := 0;
-      while i < 1000000 {
+      while i < N {
         i := i + 1;
       }
     }
-    assert i == 1000000;
+    assert i == N;
     result := 0;
     return;
   }

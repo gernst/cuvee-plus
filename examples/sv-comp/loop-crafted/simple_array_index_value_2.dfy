@@ -6,6 +6,7 @@
 // findings: the iteration constraint of the first loop, the arbitrary value of each iteration exceeds the
 // iteration, is abstracted by the auxiliary predicate above, and instantiated at the positions of the assertions by
 // the atom j < earlier(j, ts) (see standard_find_ground-1); closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 10000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -24,18 +25,20 @@ lemma {:rw} {:free} {:teq} forall n: int, j: int, ts: seq<int> ::
   then (j < earlier(j, ts)) <==> true
 
 method main() {
+  var N: int;
   var array: array<int, int>;
   var index: int;
   var tmp: int;
+  assume 0 < N;
   index := 0;
-  while index < 10000 {
+  while index < N {
     tmp := *;
     assume tmp > index;
     array := array[index := tmp];
     index := index + 1;
   }
   index := 0;
-  while index < 10000 {
+  while index < N {
     assert array[index] > index;
     index := index + 1;
   }

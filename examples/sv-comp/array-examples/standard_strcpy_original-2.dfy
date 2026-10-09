@@ -6,26 +6,29 @@
 // findings: open: the second loop with the same test as the copy needs that it does not run beyond the exit n₂₃ of
 // the first, which is the iteration constraint of the second loop, src != 0 at all its iterations, instantiated at
 // n₂₃, against the exit src[n₂₃] == 0 of the first (see standard_vararg_ground); no lemmas tried
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var j: int;
   var v: int;
   var src: array<int, int>;
   var dst: array<int, int>;
+  assume 0 < N;
   i := 0;
   j := 0;
-  while j < 100000 {
+  while j < N {
     v := *;
     src := src[j := v];
     j := j + 1;
   }
-  while i < 100000 && src[i] != 0 {
+  while i < N && src[i] != 0 {
     dst := dst[i := src[i]];
     i := i + 1;
   }
   i := 0;
-  while i < 100000 && src[i] != 0 {
+  while i < N && src[i] != 0 {
     assert dst[i] == src[i];
     i := i + 1;
   }

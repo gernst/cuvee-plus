@@ -8,6 +8,7 @@
 // disjunction needs a case split on the shared test of the conditionals, which a lemma on equations of conditionals
 // with the same test does for the first disjunct, while a lemma on the product of two such conditionals does not
 // match the product (see TODO.md)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -31,19 +32,21 @@ lemma <b> {:rw} {:free} {:teq} forall c: bool, x: b, y: b, u: b, v: b ::
   (if c then x else y) == (if c then u else v) <==> if c then x == u else y == v
 
 method main() {
+  var N: int;
   var i: int;
   var b: int;
   var k: int;
   var p: array<int, int>;
   var q: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 1000000 {
+  while i < N {
     p := p[i := i];
     q := q[i := i];
     i := i + 1;
   }
   i := 0;
-  while i < 1000000 {
+  while i < N {
     b := *;
     if b != 0 {
       k := *;
@@ -53,7 +56,7 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < 1000000 {
+  while i < N {
     assert p[i] == q[i] || q[i] == p[i] * p[i];
     i := i + 1;
   }

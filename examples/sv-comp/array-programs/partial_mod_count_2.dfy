@@ -5,6 +5,7 @@
 // findings: as partial_mod_count_1 with R = 2, whose count of zeros additionally counts the even positions above N
 // / 2 (see the counting of remainders in loops-crafted-1/sumt2.dfy); open for the same reasons
 // (partial_mod_count_limited_1 to _5, _base, and _gen are variants with a limit on the number of zeros)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -25,7 +26,7 @@ method main() {
   var j: int;
   var R: int;
   var a: array<int, int>;
-  N := 1000000;
+  assume 0 < N;
   j := 0;
   R := 2;
   i := 0;

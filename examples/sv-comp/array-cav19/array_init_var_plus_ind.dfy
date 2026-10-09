@@ -5,6 +5,7 @@
 //
 // findings: teq.dfy sums j as (k + k * k) / 2; a lemma in the normal form of the simplifier states that it is
 // nonnegative; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the sum 0 + 1 + ... + x of a nonnegative x is nonnegative, in the normal form of the simplifier (arithmetic, not
 // about traces); the left-hand side is a comparison
@@ -19,7 +20,8 @@ method main() {
   var x: int;
   var N: int;
   var a: array<int, int>;
-  N := 100000;
+  N := *;
+  assume 0 < N;
   j := 0;
   i := 0;
   while i < N {

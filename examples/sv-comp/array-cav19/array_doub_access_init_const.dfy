@@ -7,6 +7,7 @@
 // lemma generic in the stored values; open: the goal needs n₁₄ < 2 * n₆ from n₁₄ <= 200000 and 100000 < n₆, which
 // the difference constraints of the simplifier do not give, since they have no coefficients, and the interval
 // 100000 < n₆ < 100002 is not narrowed to n₆ == 100001 (see TODO.md)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -25,7 +26,8 @@ method main() {
   var i: int;
   var N: int;
   var a: array<int, int>;
-  N := 100000;
+  N := *;
+  assume 0 < N;
   i := 0;
   while i <= N {
     a := a[2 * i := 0];

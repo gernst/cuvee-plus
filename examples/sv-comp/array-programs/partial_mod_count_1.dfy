@@ -9,6 +9,7 @@
 // and the count over a map split at the threshold N / 2 into the counts below and above it, where the side
 // conditions n <= N / 2 or N / 2 < n follow only from the conclusion, a[n] == 0, while j is defined in the
 // hypotheses, which are simplified without that case (partial_mod_count_3 to _5 are variants)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -29,7 +30,7 @@ method main() {
   var j: int;
   var R: int;
   var a: array<int, int>;
-  N := 1000000;
+  assume 0 < N;
   j := 0;
   R := 1;
   i := 0;

@@ -9,8 +9,10 @@
 // iterations again, in which earlier(k', ⌊I⌋) is simplified, and so on (k₁₁₉ and growing); no lemma is added, since
 // the assertions need a description of the stores at the positions given by the count, i.e., C[x] is the x-th index
 // where A and B agree, whose concept (a selection of indices, monotone in x) is not in the database
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var A: array<int, int>;
   var B: array<int, int>;
   var C: array<int, int>;
@@ -18,9 +20,10 @@ method main() {
   var j: int;
   var x: int;
   var tmp: int;
+  assume 0 < N;
   j := 0;
   i := 0;
-  while i < 100000 {
+  while i < N {
     tmp := *;
     A := A[i := tmp];
     tmp := *;
@@ -28,7 +31,7 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     if A[i] == B[i] {
       C := C[j := i];
       j := j + 1;

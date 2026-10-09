@@ -10,6 +10,8 @@
 // 100)⌋, or ⌊I₁₉⌋, which the definitions of the context make equal, while expressions are compared literally; the
 // lemma variant that keeps the matched positions ks on its right-hand side, with the side condition ks ==
 // ⌊counter(0, 1, m + 1)⌋, does not apply, since that side condition is not decided (see TODO.md)
+// note: the concrete loop bounds are symbolic, arbitrary values that keep the verdict: N for 100, at least 2, since
+// x[0] and x[1] are swapped
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -35,7 +37,7 @@ method main() {
   var ret2: int;
   var ret5: int;
   var x: array<int, int>;
-  N := 100;
+  assume 1 < N;
   i := 0;
   while i < N {
     v := *;

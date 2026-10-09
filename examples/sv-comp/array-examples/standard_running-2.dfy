@@ -7,6 +7,7 @@
 // store of a conditional value, which teq.dfy introduces as stores; then the reads of b decide the guards of the
 // loop of the flag, which stays 1 (no output); a lemma for flags, x0 unless a condition held in some iteration, is
 // not needed
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -20,19 +21,21 @@ lemma {:rw} {:free} {:teq} forall a0: array<int, int>, n: int, hs: seq<int>,
     == trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := if C(k, h) then F(k, h) else G(k, h)])
 
 method main() {
+  var N: int;
   var a: array<int, int>;
   var b: array<int, int>;
   var i: int;
   var f: int;
   var tmp: int;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     tmp := *;
     a := a[i := tmp];
     i := i + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     if a[i] >= 0 {
       b := b[i := 1];
     } else {
@@ -42,7 +45,7 @@ method main() {
   }
   f := 1;
   i := 0;
-  while i < 100000 {
+  while i < N {
     if a[i] >= 0 && b[i] == 0 {
       f := 0;
     }

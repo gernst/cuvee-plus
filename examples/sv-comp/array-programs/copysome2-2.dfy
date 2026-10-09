@@ -6,6 +6,7 @@
 // that position, earlier(150000, V?₁₈) == earlier(150000, V?₁₇), the initial values of a2 and a1 there, which are
 // arbitrary; open, as expected
 // note: 2 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing (the first two
 // lemmas are those of copysome1-1)
@@ -33,7 +34,7 @@ method main() {
   var a1: array<int, int>;
   var a2: array<int, int>;
   var a3: array<int, int>;
-  N := 1000000;
+  assume 0 < N;
   z := 150000;
   i := 0;
   while i < N {

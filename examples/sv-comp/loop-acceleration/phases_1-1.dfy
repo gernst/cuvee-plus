@@ -7,6 +7,8 @@
 // is contradictory with the exit, and the second is even, since even summands do not change the remainder modulo 2;
 // closed (no output)
 // note: 1 of its lemmas are part of teq.dfy now and are removed here
+// note: the concrete loop bounds are symbolic, arbitrary values that keep the verdict: N for 268435455, above the
+// threshold 65520
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -20,9 +22,11 @@ lemma {:rw} {:free} {:teq} forall x0: int, n: int, b: int, c: int ::
          == if n <= b - x0 then x0 + n else b + (n - (b - x0)) * c
 
 method main() {
+  var N: int;
   var x: int;
+  assume 65520 < N;
   x := 0;
-  while x < 268435455 {
+  while x < N {
     if x < 65520 {
       x := x + 1;
     } else {

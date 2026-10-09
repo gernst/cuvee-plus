@@ -4,19 +4,22 @@
 // nonnegative (the first loop and pvlen do not matter)
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
 method main() {
+  var N: int;
   var i: int;
   var pvlen: int;
   var k: int;
   var n: int;
   var j: int;
   var b: int;
+  assume 0 < N;
   k := 0;
   i := 0;
   pvlen := *;
   b := *;
-  while b != 0 && i <= 1000000 {
+  while b != 0 && i <= N {
     i := i + 1;
     b := *;
   }
@@ -25,7 +28,7 @@ method main() {
   }
   i := 0;
   b := *;
-  while b != 0 && i <= 1000000 {
+  while b != 0 && i <= N {
     i := i + 1;
     k := k + 1;
     b := *;

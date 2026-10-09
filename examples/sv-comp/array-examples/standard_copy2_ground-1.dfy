@@ -5,16 +5,19 @@
 //
 // findings: unsafe: a3 ends as a copy of a2, not a1; open, as expected (the -1 variants of standard_copy3 to _copy9
 // are similar)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var x: int;
   var v: int;
   var a1: array<int, int>;
   var a2: array<int, int>;
   var a3: array<int, int>;
+  assume 0 < N;
   i := 0;
-  while i < 100000 {
+  while i < N {
     v := *;
     a1 := a1[i := v];
     v := *;
@@ -22,17 +25,17 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     a3 := a3[i := a1[i]];
     i := i + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     a3 := a3[i := a2[i]];
     i := i + 1;
   }
   x := 0;
-  while x < 100000 {
+  while x < N {
     assert a1[x] == a3[x];
     x := x + 1;
   }

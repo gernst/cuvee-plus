@@ -5,6 +5,7 @@
 //
 // findings: as array_doub_access_init_const, with stores at 3 k, 3 k + 1, 3 k + 2 and a closed form modulo 3; open
 // for the same reason, n₁₄ < 3 * n₆
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 // the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
@@ -23,7 +24,7 @@ method main() {
   var N: int;
   var i: int;
   var a: array<int, int>;
-  N := 100000;
+  assume 0 < N;
   i := 0;
   while i <= N {
     a := a[3 * i := 0];

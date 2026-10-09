@@ -5,16 +5,19 @@
 //
 // findings: unsafe, not closed, as expected: a2 is arbitrary, and the goal compares an arbitrary element of it with
 // a1
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var a1: array<int, int>;
   var a2: array<int, int>;
   var a: int;
   var i: int;
   var x: int;
   var tmp: int;
+  assume 0 < N;
   a := 0;
-  while a < 100000 {
+  while a < N {
     tmp := *;
     a1 := a1[a := tmp];
     tmp := *;
@@ -22,12 +25,12 @@ method main() {
     a := a + 1;
   }
   i := 0;
-  while i < 100000 {
+  while i < N {
     a1 := a1[i := a1[i]];
     i := i + 1;
   }
   x := 0;
-  while x < 100000 {
+  while x < N {
     assert a1[x] == a2[x];
     x := x + 1;
   }

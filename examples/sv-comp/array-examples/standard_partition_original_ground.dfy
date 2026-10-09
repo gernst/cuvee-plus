@@ -5,8 +5,10 @@
 //
 // findings: error: rewriting does not terminate, with the rule of teq.dfy for earlier(k, ⌊counter(i, c, n)⌋), as
 // for standard_partition_ground-2 (counts over prefixes, see TODO.md)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
 method main() {
+  var N: int;
   var i: int;
   var a: int;
   var b: int;
@@ -16,16 +18,17 @@ method main() {
   var aa: array<int, int>;
   var bb: array<int, int>;
   var cc: array<int, int>;
+  assume 0 < N;
   a := 0;
   b := 0;
   c := 0;
   i := 0;
-  while i < 100000 {
+  while i < N {
     v := *;
     aa := aa[i := v];
     i := i + 1;
   }
-  while a < 100000 {
+  while a < N {
     if aa[a] >= 0 {
       bb := bb[b := aa[a]];
       b := b + 1;

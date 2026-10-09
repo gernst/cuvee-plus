@@ -12,7 +12,6 @@ examples/sv-comp/array-examples/standard_find_ground-1.dfy,safe,0,1109
 examples/sv-comp/array-examples/standard_init3_ground-2.dfy,safe,0,1068
 examples/sv-comp/array-examples/standard_maxInArray_ground.dfy,safe,0,1555
 examples/sv-comp/array-examples/standard_minInArray_ground-2.dfy,safe,0,1583
-examples/sv-comp/array-examples/standard_palindrome_ground.dfy,safe,0,1903
 examples/sv-comp/array-examples/standard_partial_init_ground.dfy,safe,error,10963
 examples/sv-comp/array-examples/standard_partition_ground-2.dfy,safe,error,19252
 examples/sv-comp/array-examples/standard_reverse_ground.dfy,safe,0,1092
@@ -56,7 +55,6 @@ examples/sv-comp/array-industry-pattern/array_shadowinit.dfy,safe,0,376
 examples/sv-comp/array-programs/copysome1-1.dfy,safe,0,1723
 examples/sv-comp/array-programs/copysome1-2.dfy,unsafe,1,2271
 examples/sv-comp/loop-acceleration/array_1-2.dfy,safe,0,115
-examples/sv-comp/loop-acceleration/array_3-1.dfy,safe,0,521
 examples/sv-comp/loop-acceleration/const_1-1.dfy,safe,0,194
 examples/sv-comp/loop-acceleration/diamond_1-1.dfy,safe,0,552
 examples/sv-comp/loop-acceleration/diamond_1-2.dfy,unsafe,2,584
@@ -67,7 +65,6 @@ examples/sv-comp/loop-acceleration/multivar_1-2.dfy,unsafe,1,176
 examples/sv-comp/loop-acceleration/nested_1-1.dfy,safe,0,1197
 examples/sv-comp/loop-acceleration/nested_1-2.dfy,unsafe,1,2714
 examples/sv-comp/loop-acceleration/phases_1-1.dfy,safe,0,377
-examples/sv-comp/loop-acceleration/phases_1-2.dfy,unsafe,1,377
 examples/sv-comp/loop-acceleration/simple_3-2.dfy,safe,0,255
 examples/sv-comp/loop-acceleration/simple_4-2.dfy,safe,0,77
 examples/sv-comp/loop-acceleration/underapprox_1-1.dfy,unsafe,1,290
@@ -85,7 +82,6 @@ examples/sv-comp/loop-lit/gsv2008.dfy,safe,1,766
 examples/sv-comp/loop-lit/hhk2008.dfy,safe,0,183
 examples/sv-comp/loop-lit/jm2006.dfy,safe,0,162
 examples/sv-comp/loop-lit/mcmillan2006.dfy,safe,0,434
-examples/sv-comp/loop-new/count_by_2.dfy,safe,0,70
 examples/sv-comp/loop-new/count_by_k.dfy,safe,1,620
 examples/sv-comp/loop-new/count_by_nondet.dfy,safe,0,824
 examples/sv-comp/loop-new/gauss_sum.dfy,safe,0,162
@@ -94,7 +90,6 @@ examples/sv-comp/loop-new/nested-1.dfy,safe,1,4708
 examples/sv-comp/loops/count_up_down-1.dfy,safe,0,149
 examples/sv-comp/loops-crafted-1/in-de20.dfy,safe,0,398
 examples/sv-comp/loops-crafted-1/loopv1.dfy,safe,0,781
-examples/sv-comp/loops-crafted-1/Mono1_1-2.dfy,safe,0,358
 examples/sv-comp/loops-crafted-1/mono-crafted_1.dfy,safe,0,487
 examples/sv-comp/loops-crafted-1/sumt2.dfy,safe,0,879
 examples/sv-comp/loops-crafted-1/sumt3.dfy,safe,1,2474
@@ -162,8 +157,6 @@ examples/sv-comp/array-programs/partial_mod_count_limited_1.dfy,safe,error,8863
 examples/sv-comp/array-crafted/mapsum1.dfy,safe,0,4540
 examples/sv-comp/array-crafted/zero_sum_const1.dfy,safe,0,1203
 examples/sv-comp/array-crafted/zero_sum_const_m2.dfy,safe,0,4017
-examples/sv-comp/array-examples/standard_two_index_02.dfy,safe,0,1634
-examples/sv-comp/array-examples/standard_two_index_03.dfy,safe,0,1614
 examples/sv-comp/array-examples/standard_copyInit_ground.dfy,safe,0,762
 examples/sv-comp/array-examples/standard_strcmp_ground.dfy,safe,0,1813
 examples/sv-comp/array-examples/standard_strcpy_ground-1.dfy,safe,0,1155
@@ -175,7 +168,6 @@ examples/sv-comp/array-examples/standard_copy2_ground-2.dfy,safe,0,1675
 examples/sv-comp/array-examples/standard_copy3_ground-1.dfy,safe,0,2630
 examples/sv-comp/array-examples/standard_vararg_ground.dfy,safe,1,2738
 examples/sv-comp/array-examples/sanfoundry_02_ground.dfy,safe,error,11824
-examples/sv-comp/array-examples/sanfoundry_27_ground.dfy,safe,0,1918
 examples/sv-comp/array-examples/sanfoundry_10_ground.dfy,safe,1,9631
 examples/sv-comp/array-examples/standard_strcpy_original-2.dfy,safe,1,2265
 examples/sv-comp/array-examples/standard_partition_original_ground.dfy,safe,error,36859
@@ -219,9 +211,7 @@ examples/sv-comp/loop-crafted/simple_vardep_1.dfy,safe,0,174
 examples/sv-comp/loop-crafted/simple_vardep_2.dfy,safe,0,183
 examples/sv-comp/loop-crafted/simple_array_index_value_1-1.dfy,safe,0,759
 examples/sv-comp/loop-crafted/simple_array_index_value_3.dfy,safe,0,459
-examples/sv-comp/loop-acceleration/array_2-2.dfy,safe,0,882
 examples/sv-comp/loop-acceleration/array_4.dfy,safe,0,761
-examples/sv-comp/loop-acceleration/overflow_1-1.dfy,safe,0,301
 examples/sv-comp/loop-acceleration/phases_2-2.dfy,safe,1,711
 examples/sv-comp/loop-acceleration/simple_1-2.dfy,safe,0,75
 examples/sv-comp/loop-acceleration/simple_2-1.dfy,safe,0,13
@@ -230,7 +220,6 @@ examples/sv-comp/loop-lit/css2003.dfy,safe,0,713
 examples/sv-comp/loop-lit/gj2007b.dfy,safe,0,1603
 examples/sv-comp/loop-lit/gr2006.dfy,safe,1,1875
 examples/sv-comp/loop-lit/mine2017-ex4.6.dfy,safe,0,111
-examples/sv-comp/loop-lit/mine2017-ex4.10.dfy,safe,0,84
 examples/sv-comp/loop-lit/jm2006_variant.dfy,safe,0,559
 examples/sv-comp/loop-invgen/half_2.dfy,safe,1,1248
 examples/sv-comp/loop-invgen/string_concat-noarr.dfy,safe,1,2333
@@ -240,7 +229,6 @@ examples/sv-comp/loop-invgen/sendmail-close-angle.dfy,safe,1,1675
 examples/sv-comp/loop-new/count_by_1.dfy,safe,0,61
 examples/sv-comp/loop-new/count_by_1_variant.dfy,safe,0,69
 examples/sv-comp/loop-zilu/benchmark02_linear.dfy,safe,0,14
-examples/sv-comp/loop-zilu/benchmark10_conjunctive.dfy,safe,0,178
 examples/sv-comp/loop-zilu/benchmark11_linear.dfy,safe,0,83
 examples/sv-comp/loop-zilu/benchmark14_linear.dfy,safe,0,107
 examples/sv-comp/loop-zilu/benchmark18_conjunctive.dfy,safe,0,141
@@ -252,18 +240,13 @@ examples/sv-comp/loop-zilu/benchmark32_linear.dfy,safe,0,875
 examples/sv-comp/loop-zilu/benchmark34_conjunctive.dfy,safe,0,134
 examples/sv-comp/loop-zilu/benchmark35_linear.dfy,safe,0,130
 examples/sv-comp/loop-zilu/benchmark37_conjunctive.dfy,safe,0,136
-examples/sv-comp/loop-zilu/benchmark43_conjunctive.dfy,safe,1,226
 examples/sv-comp/loop-zilu/benchmark52_polynomial.dfy,safe,1,526
 examples/sv-comp/loops-crafted-1/iftelse.dfy,safe,1,3648
 examples/sv-comp/loops-crafted-1/in-de31.dfy,safe,1,810
 examples/sv-comp/loops-crafted-1/loopv2.dfy,safe,0,1376
-examples/sv-comp/loops-crafted-1/mono-crafted_3.dfy,safe,0,609
 examples/sv-comp/loops-crafted-1/mono-crafted_6.dfy,safe,1,658
-examples/sv-comp/loops-crafted-1/mono-crafted_7.dfy,safe,0,515
-examples/sv-comp/loops-crafted-1/mono-crafted_8.dfy,safe,0,387
 examples/sv-comp/loops-crafted-1/mono-crafted_10.dfy,safe,0,517
 examples/sv-comp/loops-crafted-1/sum_by_3.dfy,safe,0,373
-examples/sv-comp/loops-crafted-1/sum_natnum.dfy,safe,0,245
 examples/sv-comp/loops-crafted-1/vnew2.dfy,safe,1,1049
 examples/sv-comp/loops-crafted-1/sumt4.dfy,safe,1,5473
 examples/sv-comp/loops/for_infinite_loop_1.dfy,safe,0,51

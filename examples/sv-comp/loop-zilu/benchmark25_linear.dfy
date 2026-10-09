@@ -4,9 +4,12 @@
 //
 // findings: closed by -teq -simplify with the lemmas of teq.dfy alone (no output) (the _abstracted variant is the
 // same program with an abstracted loop)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 10
 
 method main() returns (result: int) {
+  var N: int;
   var tmp₁: int;
+  assume 0 < N;
   {
     var x: int;
     tmp₁ := *;
@@ -15,10 +18,10 @@ method main() returns (result: int) {
       result := 0;
       return;
     }
-    while x < 10 {
+    while x < N {
       x := x + 1;
     }
-    assert x == 10;
+    assert x == N;
     result := 0;
     return;
   }

@@ -7,14 +7,17 @@
 // findings: -teq crashes with a stack overflow in Subst, presumably from the 2^10 paths of the ten conditionals of
 // the body (see TODO.md); for odd y, x decreases in each iteration here, without the wrap-around of unsigned
 // integers in C, such that the loop does not terminate and the assertion holds vacuously; no lemma is added
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 99
 
 method main() {
+  var N: int;
   var x: int;
   var y: int;
+  assume 0 < N;
   x := 0;
   y := *;
   assume 0 <= y;
-  while x < 99 {
+  while x < N {
     if y % 2 == 0 {
       x := x + 2;
     } else {

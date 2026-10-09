@@ -247,7 +247,7 @@ steps:
   - A value set to the iteration where a condition holds lies in the
     bounds of its initial value and the iterations (`gj2007b`).
   - An update `(x + c) % m` keeps the remainder modulo the divisors of `c`
-    and `m` (`overflow_1-1`).
+    and `m` (`overflow_1-1`, since removed).
   - A search over an array with a sentinel stored at `c` stops at `c`
     (`array_4`).
   - A value that swaps two values stays one of them (`benchmark32_linear`).

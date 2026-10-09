@@ -7,6 +7,7 @@
 // keeps its value, and the elements before pos are then shifted; the goal needs the iteration constraint that the
 // flag is 0 before the exit, i.e., that the element does not occur before pos, and reads past the shift at
 // positions below pos; no lemmas tried
+// note: the concrete loop bounds are symbolic, arbitrary positive values: n for 100000
 
 method main() {
   var i: int;
@@ -17,7 +18,8 @@ method main() {
   var element: int;
   var found: int;
   var vectorx: array<int, int>;
-  n := 100000;
+  n := *;
+  assume 0 < n;
   element := *;
   found := 0;
   i := 0;
