@@ -14,8 +14,8 @@
   </rundefinition>
 
   <tasks name="Dafny">
-    <includesfile>../examples/sv-comp/dafny.set</includesfile>
-    <propertyfile>../examples/sv-comp/properties/unreach-call.prp</propertyfile>
+    <includesfile>../benchmarks/sv-comp/dafny/dafny.set</includesfile>
+    <propertyfile>../benchmarks/sv-comp/dafny/properties/unreach-call.prp</propertyfile>
   </tasks>
 
   <tasks name="Loops">

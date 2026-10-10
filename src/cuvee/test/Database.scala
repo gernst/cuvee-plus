@@ -7,12 +7,14 @@ import scala.jdk.CollectionConverters._
 import cuvee.Error
 
 // a database of the expected results of many examples in a single CSV file, instead of name.out and name.err next to
-// each, for the translations of SV-COMP tasks (examples/sv-comp/expected.csv): each row is an example with its
+// each, for the translations of SV-COMP tasks (benchmarks/sv-comp/dafny/expected.csv): each row is an example with its
 // command line in its first line, whether its task is safe or unsafe, and the number of goals that remain,
 // or error if the run reports an error or crashes; the lemmas of the examples are marked {:teq}, such that they are
 // not printed, and only goals are counted;
+// the C programs printed from them (benchmarks/sv-comp/c/expected.csv) have their command line and task in their
+// first two lines, too;
 // SV-COMP task definitions (.yml) themselves have no command line, they are run with -teq -simplify through the C
-// frontend (examples/sv-comp/yml.csv); rows whose goals are timeout record runs that did not end within the time
+// frontend (benchmarks/sv-comp/dafny/yml.csv); rows whose goals are timeout record runs that did not end within the time
 // limit of a run by hand, which cannot be enforced in the same JVM, they are not checked;
 // the time of each run in milliseconds is recorded, too, a run that takes more than 110% of it or less than 10% of it,
 // with a slack of a second for the noise of runs in the same JVM, is a failure: a slower run is a performance

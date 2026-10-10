@@ -1,0 +1,59 @@
+// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-lopstr16/flag_loopdep_simple.dfy
+// SV-COMP array-lopstr16/flag_loopdep_simple.yml (expected: safe), translated from the C program by hand:
+// the elements are arbitrary (the function init, inlined), the flag is set if one is not 0, and if it is not
+// set, all are checked to be 0
+//
+// findings: a flag that is set whenever the read value is not 0 keeps its initial value iff it is never set, an
+// iteration constraint, by a lemma generic in the condition; the constraint that the values are 0 is abstracted by
+// the predicate constant, whose instantiation rewrites earlier(j, xs) to the constant; closed (no output)
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
+
+// the first n values of xs are c, an auxiliary predicate, which is not defined
+predicate {:teq} constant(n: Nat, xs: List<int>, c: int)
+
+// a flag that is set to d whenever C holds, and kept otherwise, keeps its initial value x0 iff it is set to x0 or C
+// never holds (with a further dependency hs)
+lemma {:rw} {:teq} current_1(x0: int, d: int, n: Nat, hs: List<int>, C: (int, int) -> bool)
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do f, k, h :: case C(k, h) => d case !C(k, h) => f)) == x0
+    <==> d == x0 || invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !C(k, h))
+
+// the iteration constraint that the values xs read at the iterations are c, abstracted by the predicate constant,
+// and its instantiation at an iteration j before n, which rewrites the term earlier(j, xs)
+lemma {:rw} {:teq} invs_1(n: Nat, hs: List<int>, xs: List<int>, c: int)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), xs) == c) <==> constant(n, xs, c)
+lemma {:rw} {:teq} earlier_1(n: Nat, xs: List<int>, c: int, j: Nat)
+  requires constant(n, xs, c) && integer(j) < integer(n)
+  ensures earlier(j, xs) == c
+
+method main() {
+  var N: int;
+  var i: int;
+  var v: int;
+  var flag: int;
+  var a: array<int, int>;
+  assume 0 < N;
+  flag := 0;
+  i := 0;
+  while i < N {
+    v := *;
+    a := a[i := v];
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    if a[i] != 0 {
+      flag := 1;
+    }
+    i := i + 1;
+  }
+  i := 0;
+  while i < N {
+    if flag == 0 {
+      assert a[i] == 0;
+    }
+    i := i + 1;
+  }
+}
+
+// remaining goals of -teq -simplify:
+// none

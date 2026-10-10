@@ -1,4 +1,5 @@
 int main(void) {
+  int result;
   int tmp_1;
   int n;
   int k;
@@ -13,6 +14,7 @@ int main(void) {
     k = k + 1;
   }
   assert(k == n);
-  return 0;
+  result = 0;
+  return result;
 }
 

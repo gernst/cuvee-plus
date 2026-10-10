@@ -534,7 +534,9 @@ class Parser(var state: State, arch: Int):
 
   // the statements of a block, whose declarations are the local variables of the core block,
   // which are renamed if they shadow variables in scope
-  def block(scope: Scope, ctx: Ctx, stmts: List[Stmt]): core.Prog =
+  // `body` for the body of a function, where a local variable result of the type of its result without initializer,
+  // as the printer declares it (see c.Printer), is the result itself
+  def block(scope: Scope, ctx: Ctx, stmts: List[Stmt], body: Boolean = false): core.Prog =
     val locals = mutable.ListBuffer[core.Var]()
     var scope_ = scope
 
@@ -547,11 +549,13 @@ class Parser(var state: State, arch: Int):
             prog <-
               val (t_, init) = if pointer then allocation(x, t, sizes, init_) else (array(t, sizes), init_)
               val v = state.exprs.formal(x, typ(t_))
-              // also apart from the result, e.g. a local variable result, which return e assigns to the result
-              val v_ = if scope_.values.exists(_._1.name == v.name) || ctx.result.exists(_._1.name == v.name) then v.fresh else v
+              val result = body && init.isEmpty && ctx.result.exists((r, t) => r == v && t == t_)
+              // also apart from the result otherwise, e.g. a local variable result of a block, which return e assigns to
+              // the result
+              val v_ = if !result && (scope_.values.exists(_._1.name == v.name) || ctx.result.exists(_._1.name == v.name)) then v.fresh else v
               if !pointer then declared(v_) = (elem(t, words), sizes, init_)
               if pointer && t_.isInstanceOf[PointerType] && !stmts.exists(reads(_).contains(x)) then unread += v_
-              locals += v_
+              if !result then locals += v_
               scope_ = scope_ + (x -> (v_, t_))
               init.toList.flatMap(assign(scope_, ctx, Id(x), "=", _))
           yield prog
@@ -688,7 +692,10 @@ class Parser(var state: State, arch: Int):
 
         val Some((result, t)) = ctx.result: @unchecked
         val (pre, e_) = value(scope, ctx, e, t)
-        pre ++ List(state.progs.assign(List(result), List(e_)), state.progs.return_)
+        // return result of the local variable that is the result itself (see block)
+        if e_ == result
+        then pre :+ state.progs.return_
+        else pre ++ List(state.progs.assign(List(result), List(e_)), state.progs.return_)
 
   val skip = state.progs.skip
 
@@ -1196,7 +1203,7 @@ class Parser(var state: State, arch: Int):
         (for ((t, x), v) <- params zip in yield x -> (v, t)) ++
         (for (x, _, copy, t) <- copies yield x -> (copy, t))
 
-    val body_ = block(scope, ctx, body.stmts)
+    val body_ = block(scope, ctx, body.stmts, body = true)
     val init = for (_, v, copy, _) <- copies yield state.progs.assign(List(copy), List(v))
     val prog = state.progs.block(copies.map(_._3) ++ ctx.temps.toList, init ++ entry :+ body_)
 

@@ -1,12 +1,16 @@
 int *g;
 
 void * f(int *p) {
-  return 0;
+  void *result;
+  result = 0;
+  return result;
 }
 
 int main(void) {
+  int result;
   int *q;
   q = g;
-  return q == 0 ? 1 : 0;
+  result = q == 0 ? 1 : 0;
+  return result;
 }
 

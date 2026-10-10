@@ -24,21 +24,30 @@ object Yml extends TestSuite:
   val tests =
     Examples.checked(os.sub / "yml", "yml")
 
-// the translations of SV-COMP tasks (examples/sv-comp), checked against the database of their expected results
+// the translations of SV-COMP tasks (benchmarks/sv-comp/dafny), checked against the database of their expected results
 // (see cuvee.test.Database), only if the environment variable CUVEE_SVCOMP is set, since they take minutes;
 // otherwise only the database is read, if it exists;
 // a run that is much slower or much faster than recorded fails: then the expected results must NOT be regenerated
 // before the change of performance is understood, a slower run may be a performance degradation of the simplifier or
 // the lemmas, and a run that ends much faster is likely a soundness bug, e.g. goals closed by mistake
 object SVComp extends TestSuite:
-  val database = Examples.root / "sv-comp" / "expected.csv"
-
-  val rows =
-    if os.exists(database)
-    then cuvee.test.Database.read(database.toNIO)
-    else Nil
-
   val tests =
+    Databases.checked(Examples.workspace / "benchmarks" / "sv-comp" / "dafny" / "expected.csv", timed = true)
+
+// the C programs printed from these translations (benchmarks/sv-comp/c), with the expected results of the Dafny ones,
+// without times
+object SVCompC extends TestSuite:
+  val tests =
+    Databases.checked(Examples.workspace / "benchmarks" / "sv-comp" / "c" / "expected.csv", timed = false)
+
+// the rows of a database, whose times are required if `timed`
+object Databases:
+  def checked(database: os.Path, timed: Boolean): Tests =
+    val rows =
+      if os.exists(database)
+      then cuvee.test.Database.read(database.toNIO)
+      else Nil
+
     if sys.env.contains("CUVEE_SVCOMP")
     then
       Examples.tests(rows.map(row => Examples.workspace / os.RelPath(row.file))): file =>
@@ -49,4 +58,4 @@ object SVComp extends TestSuite:
       Tests:
         test("database"):
           for row <- rows
-          do assert(Set("safe", "unsafe").contains(row.verdict), row.goals == "error" || row.goals.toIntOption.isDefined, row.time.isDefined)
+          do assert(Set("safe", "unsafe").contains(row.verdict), row.goals == "error" || row.goals.toIntOption.isDefined, !timed || row.time.isDefined)

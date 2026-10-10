@@ -12,7 +12,7 @@ object Cuvee extends util.Main:
       case Array("-v") | Array("-version") | Array("--version") =>
         Config.version()
 
-      // a database of expected results, e.g. examples/sv-comp/expected.csv (see test.Database)
+      // a database of expected results, e.g. benchmarks/sv-comp/dafny/expected.csv (see test.Database)
       case Array("-test", file) if file.endsWith(".csv") =>
         System.out.flush()
         sys.exit(cuvee.test.Database.test(file))

@@ -64,7 +64,11 @@ transformation and any output.
    see what the receiver sees. The solver sink passes all other declarations
    without attributes, e.g. those of `{:ho}`, which a solver may reject, and
    the assertions with their attributes `:named` and `:pattern` only. `Monomorph` keeps the polymorphic functions of
-   `config.output.features`. `-print null` and `-print scala` replace only
+   `config.output.features`. `-known <features>` adds features to those of
+   the output, e.g. `-print c -known dfy,teq,rw` prints the program of a
+   Dafny file without its logic, where `teq` also injects teq.dfy into the
+   input, as `-teq` does, but without its transform.
+   `-print null` and `-print scala` replace only
    the printer of the output; transforms whose output a language cannot
    express (`hasMath`, e.g. `-chc` of C) print SMT-LIB instead. Lean
    (`Lang.lean`) is an output only, which knows the built-in declarations of
@@ -297,13 +301,16 @@ A single run is `mill -i run <options> <file>`, e.g.
   `-print null` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
   `simplify`, `hybrid`, and `transform`; one suite per language checks all of
   its examples ([Checked.scala](../test/src/cuvee/test/Checked.scala)).
-  The translations of SV-COMP tasks (`examples/sv-comp`) instead share one
-  database of expected results, `examples/sv-comp/expected.csv`, with the
+  The translations of SV-COMP tasks (`benchmarks/sv-comp/dafny`) instead share one
+  database of expected results, `benchmarks/sv-comp/dafny/expected.csv`, with the
   verdict of each task (safe or unsafe) and the number of remaining goals
   ([test/Database.scala](../src/cuvee/test/Database.scala)):
   `./Cuvee.sh -record <file> ...` prints rows, `./Cuvee.sh -test <db>.csv`
   checks all of them, and the suite `SVComp` runs only if the environment
-  variable `CUVEE_SVCOMP` is set.
+  variable `CUVEE_SVCOMP` is set. The C programs printed from these
+  translations (`benchmarks/sv-comp/c`, by `-print c -known dfy,teq,rw`,
+  those that parse again) have the same expected results, without times,
+  in `benchmarks/sv-comp/c/expected.csv` (suite `SVCompC`).
   The examples verified against a solver state `// expected: valid` or
   `// expected: invalid` in their second line.
 - Relational tests run further commands on the accepted examples and print

@@ -269,10 +269,10 @@ object Grammar:
   val stmt: Parser[Stmt] =
     P(block | if_ | while_ | dowhile | for_ | switch_ | case_ | default_ | return_ | break_ | continue_ | goto_ | empty | labeled | (simple ~ ";"))
 
+  // arrays of arrays as parameters, e.g. int a[][N]
   val param =
-    P(pointer ~ id.? ~ (brackets(expr.?).map(_ => true) | R(false))).map:
-      case ((typ, name), true)  => (ArrayType(typ), name)
-      case ((typ, name), false) => (typ, name)
+    P(pointer ~ id.? ~ brackets(expr.?).*).map:
+      case ((typ, name), dims) => (dims.foldLeft(typ)((elem, _) => ArrayType(elem)), name)
 
   // parameters without names, as in declarations, are named by their position
   val params =

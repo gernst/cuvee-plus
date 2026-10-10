@@ -25,14 +25,14 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   the bounds `0 <= k < n` of the iterations that matching the `invs` of the
   side condition assumes in the context of its body (`Simplify.combinator`),
   where the rule is tried again (see
-  [standard_find_ground-1.dfy](examples/sv-comp/array-examples/standard_find_ground-1.dfy)).
+  [standard_find_ground-1.dfy](benchmarks/sv-comp/dafny/array-examples/standard_find_ground-1.dfy)).
 - A side condition that is an equation between applications with a variable
   that is not instantiated yet, e.g. `prefix(n, xs) == prefix(n, ys)` with `n`
   open, is not matched against an equal hypothesis
   `prefix(N, t) == prefix(N, u)`, while `q(prefix(n, xs), prefix(n, ys))` and
   `xs == ys` are; reproduced with `-simplify` alone on a lemma
   `if prefix(n, xs) == prefix(n, ys) then (earlier(j, xs) == earlier(j, ys)) <==> true`
-  (see [standard_compare_ground.dfy](examples/sv-comp/array-examples/standard_compare_ground.dfy),
+  (see [standard_compare_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_compare_ground.dfy),
   which uses the predicate `agree` instead).
 - A pattern with two cases matches an update with a single case, which one
   case of the pattern covers (`Rewrite.matchesUpdates`); variables of the rule
@@ -41,10 +41,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   `trace(x0, ... :: case c => F(x, k, h) case !c => G(x, k, h)) == if c then trace(... F ...) else trace(... G ...)`
   rewrites `trace(a, ... :: x[h := x[h] + 2])` to
   `if true then trace(... F ...) else trace(... G ...)` with `G` free, which
-  does not terminate (see [condm.dfy](examples/sv-comp/array-fpi/condm.dfy)).
+  does not terminate (see [condm.dfy](benchmarks/sv-comp/dafny/array-fpi/condm.dfy)).
   This is why the joins of guarded stores are not part of teq.dfy: they
   match every store with one case, e.g. `a[k := a[-k + 99999]]` of
-  [standard_palindrome_ground.dfy](examples/sv-comp/array-examples/standard_palindrome_ground.dfy),
+  [standard_palindrome_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_palindrome_ground.dfy),
   as `if true then ... else G(a, k, h)` with `G` free, which hides the update
   from other lemmas.
 - A sum that contains a bound variable of a combinator in a pattern is not
@@ -53,22 +53,22 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   does not rewrite `current(trace(a2, for ⌊counter(0, 1, N)⌋ do a, k :: a[k := a[k + -1]]))`
   with `-simplify`, while `a[k := a[k] + d]` matches `a[k := a[k] + 6]`;
   recurrences over the previous element are not matched (see
-  [ifcomp.dfy](examples/sv-comp/array-fpi/ifcomp.dfy)), only those whose
+  [ifcomp.dfy](benchmarks/sv-comp/dafny/array-fpi/ifcomp.dfy)), only those whose
   index is a dependency, e.g. `⌊counter(1, 1, n)⌋` (see
-  [eqn1.dfy](examples/sv-comp/array-fpi/eqn1.dfy)).
-- A cycle through the arithmetic: in [ss1.dfy](examples/sv-comp/array-fpi/ss1.dfy), the equation
+  [eqn1.dfy](benchmarks/sv-comp/dafny/array-fpi/eqn1.dfy)).
+- A cycle through the arithmetic: in [ss1.dfy](benchmarks/sv-comp/dafny/array-fpi/ss1.dfy), the equation
   `sum₄₀ == sum₂₂ + sum(selects(a₃₁, ⌊I₃₉⌋))` is solved for `sum₂₂` (`Chains`), whose value is then inlined into
   `⌊consts(n, sum₂₂ + 1)⌋`, which `selects_stores` returns for `selects(a₃₁, ⌊I₃₉⌋)`, which reappears in the
   solution; the poly guard against cycles (`Simplify.poly`) sees the equations of the context only, not the rules.
   Remedies: prefer to solve for the variable that occurs in fewer definitions (`sum₄₀`), or reject a rewrite whose
   result contains the rewritten term (`Rewrite.apply`). Also non-terminating, not analysed yet:
-  [add-3-n-u](examples/sv-comp/array-multidimensional/add-3-n-u.dfy), `copy-partial-3-u`, `diff-3-n-u`.
+  [add-3-n-u](benchmarks/sv-comp/dafny/array-multidimensional/add-3-n-u.dfy), `copy-partial-3-u`, `diff-3-n-u`.
 - A cycle through a side condition: `sum_invs_const` of teq.dfy has the left-hand side `sum(js)`, which matches
   every sum, and the side condition `invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)`, open in `n` and `c`,
   which `Rewrite.conditions` simplifies before it searches the facts. For `js` a term like
   `prefix(natural(k), maps(...))`, that builds the contexts of combinators with their iterations, whose reads of
   the dependencies produce new sums, on which `sum_invs_const` is tried again, until the budget is exhausted; e.g.
-  [ps2-ll.dfy](examples/sv-comp/nla-digbench/ps2-ll.dfy) repeats the same reads about 117 times and terminates
+  [ps2-ll.dfy](benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy) repeats the same reads about 117 times and terminates
   after 48 steps without the lemma; likewise ps3-ll to ps6-ll, cohencu-ll, cohendiv-ll, for_bounded_loop1,
   copy-3-n-u, diff-2-n-u (13 of the 16 errors of the Dafny translations at 0.34.22). Remedies:
   1. A reentrance guard for conditional rules: while the side condition of a rule is decided, the rule is not
@@ -88,12 +88,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   rounds, but the repetitions above remain, and it closes nothing (241 against 243 true, within the noise).
   The injection of 7b420a0, all invariants over the counter of a loop pointwise with `earlier(natural(k), Z)`, made
   the nested reads recurse further (19 errors), and is reverted in 0.34.23.
-- [sanfoundry_02_ground.dfy](examples/sv-comp/array-examples/sanfoundry_02_ground.dfy) times out (60 s), on the trace
+- [sanfoundry_02_ground.dfy](benchmarks/sv-comp/dafny/array-examples/sanfoundry_02_ground.dfy) times out (60 s), on the trace
   of the two largest elements, whose updates read the array at the counter from 2.
 - `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on
   a loop body with ten conditionals in sequence, presumably from the 2^10
   paths of its symbolic execution (see
-  [diamond_2-2.dfy](examples/sv-comp/loop-acceleration/diamond_2-2.dfy)).
+  [diamond_2-2.dfy](benchmarks/sv-comp/dafny/loop-acceleration/diamond_2-2.dfy)).
 
 ## General
 
@@ -172,6 +172,16 @@ Plan:
   `open Classical` and Mathlib (`ℝ`, `Set`), and names of the input that
   Lean declares already clash, e.g. a datatype `List` or a function `max`,
   which a namespace around the output would avoid. Not checked with Lean.
+- The C printer of the Dafny translations of SV-COMP
+  (`benchmarks/sv-comp/dafny`, `-print c -known dfy,teq,rw`): 596 of 651
+  print as C that parses again (`benchmarks/sv-comp/c`), whose programs, printed
+  back as Dafny, are those of their sources, except `loops/eureka_05`, whose
+  global array C initializes to zero, unlike the Dafny translation, and the
+  initializers of arrays, which become `const(0)[...]` and move to their
+  declarations (`loops/vogal-1`, `vogal-2`, `eureka_01-2`); the others
+  contain `SMT_LIB(...)` or fail:
+  - `%` and `/` of Dafny, `mod` and `div`, which round down, unlike those of
+    C (54), e.g. `array-examples/sanfoundry_24-1`;
 
 ## Code structure
 
@@ -457,45 +467,45 @@ concepts, found by reading the whole code base; none is a bug.
   5. limit the number of constraints (e.g. 20).
 - A lemma that is an equation of integers, e.g. `2 * s == n + n * n`, is a
   rule on its left-hand side as a term, not on the atom; equivalences of atoms
-  work (see [gauss_sum.dfy](examples/sv-comp/loop-new/gauss_sum.dfy)). A
+  work (see [gauss_sum.dfy](benchmarks/sv-comp/dafny/loop-new/gauss_sum.dfy)). A
   monomial such as `2 * s` inside a polynomial is not matched against the
   definition `s == e` of the context.
 - A comparison pattern `b < x` with `b` open does not match `k < x + n`,
   where `b` would be the difference `k - n`, while `0 < x + c` matches with
   `c := n - k` (see
-  [benchmark04_conjunctive.dfy](examples/sv-comp/loop-zilu/benchmark04_conjunctive.dfy)).
+  [benchmark04_conjunctive.dfy](benchmarks/sv-comp/dafny/loop-zilu/benchmark04_conjunctive.dfy)).
 - A higher-order pattern as a summand, e.g. `G(k)` in `G(k) + b[k]`, matches
   a single summand of the expression, not several, e.g. not `2 * k + 3` in
   `b[k] + 2 * k + 3`, and a variable as the coefficient of a monomial does not
   match a literal coefficient, such that affine updates are not matched
-  generically (see [sqm.dfy](examples/sv-comp/array-fpi/sqm.dfy)).
+  generically (see [sqm.dfy](benchmarks/sv-comp/dafny/array-fpi/sqm.dfy)).
 - Rules on a comparison do not match its negation, e.g. a rule for
   `0 <= e` does not apply to `e < 0` (on `Int`, `e + 1 <= 0`), such that
   lemmas are stated in both forms.
 - Hypotheses are not split into cases: `X == (if c then A else B)` and
   disjunctions among the hypotheses remain, `-split` followed by another
   `-simplify` splits them (see
-  [diamond_1-1.dfy](examples/sv-comp/loop-acceleration/diamond_1-1.dfy),
-  [half.dfy](examples/sv-comp/loop-new/half.dfy)).
+  [diamond_1-1.dfy](benchmarks/sv-comp/dafny/loop-acceleration/diamond_1-1.dfy),
+  [half.dfy](benchmarks/sv-comp/dafny/loop-new/half.dfy)).
 - Linear facts over more than two variables are not combined: the context
   `n0 <= 0`, `n1 <= 0`, `0 < n0 + n1` is not found inconsistent, since
   `n0 + n1` is no difference constraint (`Diffs`), while `FourierMotzkin`
-  would decide it (see [seq-3.dfy](examples/sv-comp/loop-invgen/seq-3.dfy)).
+  would decide it (see [seq-3.dfy](benchmarks/sv-comp/dafny/loop-invgen/seq-3.dfy)).
 - Expressions with binders are compared literally, not modulo the names of
   their bound variables: `count(0, maps(for ⌊K⌋, ⌊L⌋ yield k₁₀, l₈ :: k₁₀ % 2))`
   and the same with `k, h`, which the right-hand side of a rule introduces,
-  are not found equal (see [sumt2.dfy](examples/sv-comp/loops-crafted-1/sumt2.dfy)).
+  are not found equal (see [sumt2.dfy](benchmarks/sv-comp/dafny/loops-crafted-1/sumt2.dfy)).
 - Expressions are compared literally, also modulo the definitions of the
   context: `sum(selects(x, ⌊K⌋))` and `sum(selects(x, ⌊counter(0, 1, 100)⌋))`
   with `K == counter(0, 1, 100)` are not found equal, since definitions are
   followed in matching only (`Context.↑`), and a side condition
   `ks == ⌊counter(0, 1, m + 1)⌋` with `ks := ⌊K⌋` is not decided (see
-  [mapsum1.dfy](examples/sv-comp/array-crafted/mapsum1.dfy)).
+  [mapsum1.dfy](benchmarks/sv-comp/dafny/array-crafted/mapsum1.dfy)).
 - The branches of a conditional formula are not simplified under the facts
   of the context: `r != 0 ==> if a then 1 == r else 0 == r` stays, while
   `r != 0 && 0 == r ==> p` is closed; nor is a disjunction among the
   hypotheses, `(a && 1 == r || !a && 0 == r) && r != 0` (see
-  [standard_password_ground.dfy](examples/sv-comp/array-examples/standard_password_ground.dfy)).
+  [standard_password_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_password_ground.dfy)).
 - `-split` also splits lemmas marked `{:rw}`, e.g. an equivalence with a
   conditional on its right-hand side, into parts that are no valid rules, on
   which a following `-simplify` fails with "variables of right hand side do
@@ -505,33 +515,33 @@ concepts, found by reading the whole code base; none is a bug.
   among the hypotheses does not reduce `a[3 := w][j]` to `a[j]`; a lemma
   `if j != i then a[i := v][j] == a[j]`, whose side condition is decided
   against the facts, does (see
-  [single_elem_safe.dfy](examples/sv-comp/array-lopstr16/single_elem_safe.dfy)).
+  [single_elem_safe.dfy](benchmarks/sv-comp/dafny/array-lopstr16/single_elem_safe.dfy)).
 - Conditionals inside equations and products are not lifted, e.g.
   `(if c then x else n) == (if c then x * x else n)`; a lemma for equations of
   conditionals with the same test applies, but one for the product
   `(if c then x else y) * (if c then x else y)` does not match, presumably
   since products of conditionals are monomials of the polynomial (see
-  [motivex.dfy](examples/sv-comp/array-lopstr16/motivex.dfy)).
+  [motivex.dfy](benchmarks/sv-comp/dafny/array-lopstr16/motivex.dfy)).
 - Facts with coefficients are not combined: `n₁₄ <= 200000` and
   `100000 < n₆` do not give `n₁₄ < 2 * n₆`, since difference constraints
   have unit coefficients; nor is an interval `100000 < n₆ < 100002` on Int
   narrowed to `n₆ == 100001` (see
-  [array_doub_access_init_const.dfy](examples/sv-comp/array-cav19/array_doub_access_init_const.dfy)).
+  [array_doub_access_init_const.dfy](benchmarks/sv-comp/dafny/array-cav19/array_doub_access_init_const.dfy)).
 - A pattern sum of a rule variable and a bound variable, e.g. the position
   `c - k` of a store in an update, matches only if the variable takes a single
   summand: `S + -k` matches, `2 * S + -k + -1` and `S + -k + -1` do not, nor
   does the pattern `c - 1 - k` (see
-  [array_tiling_tcpy.dfy](examples/sv-comp/array-cav19/array_tiling_tcpy.dfy)).
+  [array_tiling_tcpy.dfy](benchmarks/sv-comp/dafny/array-cav19/array_tiling_tcpy.dfy)).
 - A lemma for a monomial with a coefficient, e.g.
   `2 * ((-x + x * x) / 2) == -x + x * x`, does not match that monomial inside
   an equation, `n * n == 2 * ((-n + n * n) / 2) + n`, presumably since
   equations are normalized as differences of polynomials (see
-  [ps2-ll.dfy](examples/sv-comp/nla-digbench/ps2-ll.dfy)).
+  [ps2-ll.dfy](benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy)).
 - Conjunctions are matched in order, not modulo commutativity: a pattern `R && A && B ==> C`, with a variable `R`
   for the other premises, matches `u < 3 && A && B ==> C`, but neither `A && u < 3 && B ==> C`, nor
   `A && B && u < 3 ==> C`, nor `u < 3 && B && A ==> C`; further variables between them, `R1 && A && R2 && B && R3`,
   do not help. Lemmas that need two premises of a goal therefore depend on the order in which the simplifier
-  emits them (see [seq-3.dfy](examples/sv-comp/loop-invgen/seq-3.dfy), where the order fits). Chains of comparisons are
+  emits them (see [seq-3.dfy](benchmarks/sv-comp/dafny/loop-invgen/seq-3.dfy), where the order fits). Chains of comparisons are
   conjunctions already (the parser resolves them), only printed as chains. Premises are looked up at any position
   as side conditions instead (`Rewrite.conditions`), also comparisons, e.g. `requires 2 * a + p <= b + 2 * c &&
   c < a` with `ensures (p + 1 < b) <==> true`, as in MADWiFi-encode_ie_ok; this form does not work for seq-3,
@@ -540,12 +550,12 @@ concepts, found by reading the whole code base; none is a bug.
   cancellation of a factor, e.g. `k * j < 1000000 * k`, and a lemma
   `if 0 <= k then (k * a < k * b) <==> (0 < k && a < b)` does not match it,
   since a variable of a pattern does not match the coefficient 1000000 of the
-  monomial `1000000 * k` (see [count_by_k.dfy](examples/sv-comp/loop-new/count_by_k.dfy)).
+  monomial `1000000 * k` (see [count_by_k.dfy](benchmarks/sv-comp/dafny/loop-new/count_by_k.dfy)).
 
 ## Performance
 
 Measured on binary search with forward rules (branch `forward`) and on the
-SV-COMP examples (`examples/sv-comp`):
+SV-COMP examples (`benchmarks/sv-comp/dafny`):
 
 - The rewrite steps per command are limited to 1000 (`Context.withRules`),
   and an exhausted budget is reported as "rewriting does not terminate",
@@ -570,7 +580,7 @@ SV-COMP examples (`examples/sv-comp`):
   `forward`, siblings are recorded without forward rules.
 - Each round of the fixpoint of `Simplify.apply` simplifies the whole
   formula again. Programs with many loops grow accordingly, e.g.
-  [standard_copy9_ground-2.dfy](examples/sv-comp/array-examples/standard_copy9_ground-2.dfy)
+  [standard_copy9_ground-2.dfy](benchmarks/sv-comp/dafny/array-examples/standard_copy9_ground-2.dfy)
   takes about 20 s for a chain of nine copies, against about 2 s for one copy.
 - Non-termination is detected by a stack overflow only, after 8 to 13 s,
   e.g. on counts over prefixes (see Bugs). The symbolic execution of `-teq`
@@ -597,8 +607,8 @@ SV-COMP examples (`examples/sv-comp`):
   literals on Real, but knows no bounds of division, e.g. `l <= (h + l) / 2`
   for `l <= h` is a lemma in bsearch.dfy, nor cancels factors,
   e.g. `2 * n / 2` (see
-  [mlceu2.dfy](examples/sv-comp/array-tiling/mlceu2.dfy),
-  [array_of_struct_ptr_monotonic.dfy](examples/sv-comp/array-industry-pattern/array_of_struct_ptr_monotonic.dfy)).
+  [mlceu2.dfy](benchmarks/sv-comp/dafny/array-tiling/mlceu2.dfy),
+  [array_of_struct_ptr_monotonic.dfy](benchmarks/sv-comp/dafny/array-industry-pattern/array_of_struct_ptr_monotonic.dfy)).
 - Solutions of arithmetic equations are inlined into polynomials only
   (`Chains.solved`), not substituted elsewhere, e.g. `forall x. x == y + 1
   ==> p(x)` stays; a solution that depends on its variable through the
@@ -613,12 +623,12 @@ SV-COMP examples (`examples/sv-comp`):
   which gives `n <= j`; the examples abstract the constraint by an atom first,
   e.g. `!occurs(e, selects(a, ⌊counter(0, 1, n)⌋))` by `not_occurs_selects_def` of teq.dfy, which a second lemma
   takes as its side condition (see
-  [standard_sentinel-2.dfy](examples/sv-comp/array-examples/standard_sentinel-2.dfy)),
+  [standard_sentinel-2.dfy](benchmarks/sv-comp/dafny/array-examples/standard_sentinel-2.dfy)),
   since a side condition that is an iteration constraint does not terminate;
   a forward rule on branch `forward` would instantiate it directly.
 - Nested loops: the outer trace takes the values of summarized inner traces,
   whose composition, e.g. `k == n * m`, is not accelerated (see
-  [nested-1.dfy](examples/sv-comp/loop-new/nested-1.dfy)).
+  [nested-1.dfy](benchmarks/sv-comp/dafny/loop-new/nested-1.dfy)).
 
 ## Dafny frontend
 

@@ -1,12 +1,16 @@
 int max(int x, int y) {
+  int result;
   if (x < y) {
-    return y;
+    result = y;
+    return result;
   } else {
-    return x;
+    result = x;
+    return result;
   }
 }
 
 int main(void) {
+  int result;
   int tmp_1;
   int tmp_2;
   int tmp_3;
@@ -21,6 +25,7 @@ int main(void) {
   m = tmp_3;
   m = a < b ? b : a;
   assert(m >= a && m >= b);
-  return 0;
+  result = 0;
+  return result;
 }
 

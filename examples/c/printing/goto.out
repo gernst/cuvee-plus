@@ -1,15 +1,19 @@
 int f(int x) {
+  int result;
   int x_1;
   x_1 = x;
   if (x_1 < 0) {
-    return 0;
+    result = 0;
+    return result;
   }
   if (x_1 == 0) {
     __VERIFIER_assume(false);
   }
   x_1 = x_1 - 1;
-  return x_1;
-  return 0;
+  result = x_1;
+  return result;
+  result = 0;
+  return result;
   __VERIFIER_assume(false);
 }
 

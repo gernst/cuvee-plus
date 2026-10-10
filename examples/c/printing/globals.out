@@ -1,7 +1,9 @@
 int g;
 
 int main(void) {
+  int result;
   g = 1;
-  return g;
+  result = g;
+  return result;
 }
 

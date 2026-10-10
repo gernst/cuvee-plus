@@ -1,12 +1,14 @@
 int f(void);
 
 int main(void) {
+  int result;
   int tmp_1;
   int tmp_1_;
   int r;
   tmp_1_ = 2;
   tmp_1 = f();
   r = tmp_1_ + tmp_1;
-  return r;
+  result = r;
+  return result;
 }
 

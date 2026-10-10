@@ -110,7 +110,7 @@ after section 4 of the paper.
   these definitions stand among the lemmas, at the position of their rule.
 - Functions that produce traces are plural (`sums`, `maxs`, `counts`), their
   scalar counterparts singular (`sum`, `max`, `count`).
-- Lemmas found on the SV-COMP examples (`examples/sv-comp`) are merged into
+- Lemmas found on the SV-COMP examples (`benchmarks/sv-comp/dafny`) are merged into
   the groups, with the examples they come from as `(from ...)`, and two new
   groups, the length of iterations and arithmetic in the normal form of the
   simplifier. Left out are lemmas that are no rules in general: the split of

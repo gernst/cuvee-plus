@@ -13,7 +13,9 @@ import easyprint.Align
 import easyparse.Assoc
 
 // prints procedures as C functions, as far as they are C programs: integers are int, Bool is _Bool,
-// arrays Array Int T are T a[] (as values); assertions and assumptions are written with the conventions of SV-COMP;
+// arrays Array Int T are T a[] (as values), arrays of arrays T a[][], initializers of constant arrays at their
+// declarations; the result of a function is a local variable result, which each return returns, and which the parser
+// reads back as the result itself; assertions and assumptions are written with the conventions of SV-COMP;
 // the functions of the prelude of C (resources/cuvee/c/prelude.bpl) are written as the C they stand for;
 // uninterpreted functions are prototypes, and their applications calls;
 // everything else is printed in SMT-LIB, wrapped such that it looks like a macro, SMT_LIB(...),
@@ -76,11 +78,22 @@ object Printer extends cuvee.pipe.Printer:
       case Sort(Con(Name("Ptr", None), 1), List(elem))      => doc(elem) ~ text(" *")
       case _         => smtlib(cuvee.smtlib.Printer.lines(typ))
 
-  // a declaration of a variable, where arrays have their brackets after the name
+  // the element type and the number of dimensions of arrays of arrays, e.g. int a[][] for Array Int (Array Int Int)
+  def dims(typ: Type): (Type, Int) =
+    typ match
+      case Sort(Con.array, List(Sort.int, elem)) =>
+        val (base, n) = dims(elem)
+        (base, n + 1)
+
+      case _ =>
+        (typ, 0)
+
+  // a declaration of a variable, where arrays have their brackets after the name, one per dimension
   def decl(x: Var): Doc =
     x.typ match
-      case Sort(Con.array, List(Sort.int, elem)) =>
-        doc(elem) ~~ text(name(x.name) + "[]")
+      case Sort(Con.array, List(Sort.int, _)) =>
+        val (base, n) = dims(x.typ)
+        doc(base) ~~ text(name(x.name) + "[]" * n)
 
       case Sort(Con(Name("Ptr", None), 1), List(elem)) =>
         doc(elem) ~~ text("*" + name(x.name))
@@ -111,9 +124,11 @@ object Printer extends cuvee.pipe.Printer:
         doc(res) ~~ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) ~ text(";")
 
       // contracts are omitted, e.g. the zero values of global variables as the precondition of main
+      // the result is a local variable, assigned as in the input, which each return returns,
+      // such that its value is arbitrary if it is not assigned, as in Dafny
       case DefineProc(Proc(name_, Nil, in, out), body, _) if out.length <= 1 =>
         result = out.headOption
-        try signature(name_, in, out) ~~ block(body)
+        try signature(name_, in, out) ~~ braces(out.map(decl(_) ~ text(";")) ++ statements(body))
         finally result = None
 
       case _ =>
@@ -124,12 +139,25 @@ object Printer extends cuvee.pipe.Printer:
     then text("{}")
     else text("{") ~ Nest(2, hardline ~ join(docs, hardline)) ~ hardline ~ text("}")
 
-  // the statements of a block, local variables are declared first,
-  // an assignment to the result followed by return is return e
+  // the statements of a block, local variables are declared first, with their initializers (see initializer)
   def statements(prog: Prog): List[Doc] =
     prog match
       case Block(locals, progs) =>
-        locals.map(decl(_) ~ text(";")) ++ sequence(progs)
+        val inits =
+          for
+            x <- locals
+            i = progs.indexWhere(_.free.contains(x))
+            if i >= 0
+            items <- initializer(x, progs(i))
+          yield (x, i, items)
+
+        val decls =
+          for x <- locals
+          yield inits.find(_._1 == x) match
+            case Some((_, _, items)) => Group(decl(x) ~~ text("=") ~ Nest(2, line ~ text("{") ~ commas(items.map(doc(_))) ~ text("}"))) ~ text(";")
+            case None                => decl(x) ~ text(";")
+
+        decls ++ sequence(progs.zipWithIndex.collect { case (prog, i) if !inits.exists(_._2 == i) => prog })
 
       case _ =>
         List(doc(prog))
@@ -138,9 +166,6 @@ object Printer extends cuvee.pipe.Printer:
     progs match
       case Nil =>
         Nil
-
-      case Assign(List(x), List(e)) :: Return :: rest if result == Some(x) =>
-        (Group(text("return") ~ Nest(2, line ~ doc(e))) ~ text(";")) :: sequence(rest)
 
       case prog :: rest =>
         statements(prog) ++ sequence(rest)
@@ -179,7 +204,9 @@ object Printer extends cuvee.pipe.Printer:
         join(xs.map(nondet), hardline) ~ hardline ~ call("__VERIFIER_assume", List(doc(phi))) ~ text(";")
 
       case Assign(List(x), List(Store(y, index, value))) if x == y =>
-        Group(text(name(x.name)) ~ text("[") ~ doc(index) ~ text("]") ~~ text("=") ~ Nest(2, line ~ doc(value))) ~ text(";")
+        val (indices, value_) = update(Select(x, index), value)
+        val lhs = (index :: indices).map(i => text("[") ~ doc(i) ~ text("]"))
+        Group(text(name(x.name)) ~ lhs.fold(empty)(_ ~ _) ~~ text("=") ~ Nest(2, line ~ doc(value_))) ~ text(";")
 
       case Assign(List(x), List(rhs)) =>
         Group(text(name(x.name)) ~~ text("=") ~ Nest(2, line ~ doc(rhs))) ~ text(";")
@@ -208,6 +235,40 @@ object Printer extends cuvee.pipe.Printer:
       case _ =>
         smtlib(cuvee.smtlib.Printer.lines(prog)) ~ text(";")
 
+  // the items of the initializer of an array `x` from its first statement in a block, which is moved to its declaration,
+  // int a[] = { 97, 65 }: an assignment of a constant array of zeros, const(0) of the prelude of C, or constant(0),
+  // the name of it in the Dafny translations of SV-COMP, whose positions 0, 1, ... are updated with closed values
+  def initializer(x: Var, prog: Prog): Option[List[Expr]] =
+    def items(expr: Expr): Option[List[Expr]] =
+      expr match
+        case App(Fun(Name("const" | "constant", None), _, _, _), _, _, List(Lit(zero: BigInt, _))) if zero == 0 =>
+          Some(Nil)
+
+        case Store(base, Lit(index: BigInt, _), value) if value.free.isEmpty =>
+          items(base).filter(_.length == index)
+            .map(_ :+ value)
+
+        case _ =>
+          None
+
+    (prog, x.typ) match
+      case (Assign(List(`x`), List(expr)), Sort(Con.array, List(Sort.int, elem))) if dims(elem)._2 == 0 =>
+        items(expr).filter(_.nonEmpty)
+
+      case _ =>
+        None
+
+  // the further indices and the value of an update of an element of an array of arrays, a[i][j] = v,
+  // i.e. a := store(a, i, store(select(a, i), j, v)), where `base` is select(a, i)
+  def update(base: Expr, value: Expr): (List[Expr], Expr) =
+    value match
+      case Store(base_, index, value_) if base_ == base =>
+        val (indices, value__) = update(Select(base, index), value_)
+        (index :: indices, value__)
+
+      case _ =>
+        (Nil, value)
+
   def parens(expr: Expr): Doc =
     Group(text("(") ~ Align(doc(expr)) ~ text(")"))
 
@@ -234,9 +295,10 @@ object Printer extends cuvee.pipe.Printer:
       case Eq(a, b)            => op("==", List(a, b))
       case And(args)           => op("&&", args)
       case Or(args)            => op("||", args)
-      case Ints.plus(args)      => op("+", args)
+      // the arguments as they are, not flattened, such that x * (y * z) keeps its parentheses
+      case App(Ints.plus.fun, _, _, args)  => op("+", args)
       case Ints.minus(a, b)     => op("-", List(a, b))
-      case Ints.times(args)     => op("*", args)
+      case App(Ints.times.fun, _, _, args) => op("*", args)
       // the division and remainder of C (see resources/cuvee/c/prelude.bpl), unlike div and mod of SMT-LIB
       case App(Fun(Name("quotient", None), Nil, _, _), _, _, List(a, b))  => op("/", List(a, b))
       case App(Fun(Name("remainder", None), Nil, _, _), _, _, List(a, b)) => op("%", List(a, b))

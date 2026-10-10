@@ -1,15 +1,20 @@
 int first(int a[], int n) {
+  int result;
   if (n > 0) {
-    return a[0];
+    result = a[0];
+    return result;
   }
-  return 0;
+  result = 0;
+  return result;
 }
 
 int main(void) {
+  int result;
   int tmp_1;
   int b[];
   b[0] = 3;
   tmp_1 = first(b, 10);
-  return tmp_1;
+  result = tmp_1;
+  return result;
 }
 

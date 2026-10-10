@@ -146,7 +146,8 @@ object Config:
   val teq =
     flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems"):
       case (config, rest) =>
-        val config_ = config.usingMath.having("teq").injecting(cuvee.dafny.Source, "/cuvee/teq.dfy").using(TEQ)
+        val injected = config.features.exists(_._2 == "/cuvee/teq.dfy")
+        val config_ = (if injected then config.usingMath else config.usingMath.having("teq").injecting(cuvee.dafny.Source, "/cuvee/teq.dfy")).using(TEQ)
         (config_, rest)
 
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
@@ -260,6 +261,19 @@ object Config:
         val config_ = config.copy(output = config.output.copy(printer = Printer.default))
         (config_, rest)
 
+  // features that the receiver of the output knows, e.g. -known dfy,teq for a C program without the logic of the
+  // preludes of Dafny and of -teq, whose declarations are dropped (see Sink.known), also after a later -print;
+  // teq also injects the declarations of teq.dfy into the input, as -teq does, but without its transform, e.g. for
+  // the lemmas of a program over Nat and Trace
+  val known_ =
+    flag("-known", "<features>", "omit the declarations with the comma-separated attributes <features> from the output, e.g. dfy,teq, where teq also declares those of -teq in the input"):
+      case (config, names :: rest) =>
+        val features = names.split(",").map(_.trim).filter(_.nonEmpty).toSet
+        val config_ = config.copy(output = config.output.copy(features = config.output.features ++ features), known = config.known ++ features)
+        val injected = config_.features.exists(_._2 == "/cuvee/teq.dfy")
+        val config__ = if features.contains("teq") && !injected then config_.having("teq").injecting(cuvee.dafny.Source, "/cuvee/teq.dfy") else config_
+        (config__, rest)
+
   val flags = Map(
     debug_,
     verify,
@@ -278,7 +292,8 @@ object Config:
     timeout_,
     linewidth,
     output,
-    print_
+    print_,
+    known_
   )
 
   // the languages by their file extensions
@@ -321,7 +336,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.35.3")
+    println("Cuvée 0.35.4")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

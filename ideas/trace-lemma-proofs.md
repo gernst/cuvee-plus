@@ -7,7 +7,7 @@ implemented. The lemmas of
 [teq.dfy](../resources/cuvee/teq.dfy) and
 [teq-new.dfy](../resources/cuvee/teq-new.dfy) are trusted (`{:free}`). The new
 ones are checked only by examples, unsafe variants, and mutants (see
-[examples/sv-comp/summary.md](../examples/sv-comp/summary.md)). This note
+[benchmarks/sv-comp/dafny/summary.md](../benchmarks/sv-comp/dafny/summary.md)). This note
 proposes:
 
 - proving them by induction over traces, with a small proof script or an
