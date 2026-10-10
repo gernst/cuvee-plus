@@ -14,6 +14,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## Bugs
 
+- `-fallback -z3` proves `benchmarks/sv-comp/dafny/nla-digbench/geo1-u` (expected unsafe), in the runs of
+  `xml/cuvee-quick-fallback.xml` of 2026-10-10 15:25 and 16:12: a soundness problem of the encoding or of the
+  lemmas it relies on, not yet analysed.
 - A bound variable may capture a constant of the same name in the output of
   SMT-LIB: normalization renames bound variables apart from free variables,
   but constants (`declare-const x`) are functions, e.g.
@@ -156,14 +159,12 @@ Plan:
 
 ## Proofs of teq.dfy in Lean
 
-- [teq.lean](resources/cuvee/teq.lean) is maintained by hand next to teq.dfy, without a generator: a changed lemma of
-  teq.dfy is changed there too. Of its lemmas, most are proved; the others are `sorry` and fall into three groups,
-  with counterexamples at the end of the file where they are refutable: they hold only for dependencies of equal
-  length (see above, e.g. `sum_add`, `count_false_true`, `agree_prefix_def`, `current_trace_cap`), only for indices
-  within the lists, whose elements are `unspecified` otherwise (`earlier_counter`, `earlier_sums`,
-  `current_stores`, `prefix_counter` for `k > n`), or only for complete guards, which the conditionals of the
-  updates in Lean lose (`current_trace_bounded`). `invs_two_phases` holds but is not proved yet.
-- The Lean check takes about 6 s, mostly `simp` and typeclass inference for the decidability of `if` on generic
+- [teq.lean](resources/cuvee/teq.lean) is maintained next to teq.dfy: the statements of new lemmas are printed by
+  `./Cuvee.sh -print lean resources/cuvee/teq.dfy` and copied there, with the premises that the printer cannot add
+  by hand (see the header of teq.lean). All lemmas are proved, no `sorry` remains; the counterexamples at the end of
+  the file show the premises that are needed: dependencies of equal length, indices within the lists, and complete
+  guards.
+- The Lean check takes about 6 to 9 s, mostly `simp` and typeclass inference for the decidability of `if` on generic
   types under `open Classical`; `simp only` instead of `simp` would speed it up.
 
 ## Printers
@@ -424,6 +425,14 @@ concepts, found by reading the whole code base; none is a bug.
 
 ## Simplifier and rewriting
 
+- A lemma that defines an auxiliary predicate by an iteration constraint with a general body, e.g.
+  `invs(... :: x <= b) <==> below_prefix(n, xs, b)`, matches the bound of every loop, `x < N` as `x + 1 <= N`
+  (the body generalized to a map), and hides it from the lemmas on traces (`loop-acceleration/diamond_1-1`), hence
+  such definitions stay local to the tasks (`loop-invariants/linear-inequality-inv-*`).
+- The pattern `a + b * v` of `maps_counter_affine` does not match `N + -k + -1` with `b == -1`, and a map with a
+  further dependency that its body does not use matches no lemma on a map of the counter alone, hence the local
+  lemmas `occurs_1` and `indexof_1` of `array-cav19/array_init_both_ends_multiple_sum`; general variants of the
+  lemma did not help and made `array_init_var_plus_ind2` open.
 - Statements are simplified without context (assignments invalidate facts);
   tests of branches could be used up to the first assignment to their
   variables. No rules for sequences or bitvectors.
@@ -586,6 +595,20 @@ SV-COMP examples (`benchmarks/sv-comp/dafny`):
 
 ## Trace equation systems (`-teq`)
 
+- The runs of the Dafny translations of SV-COMP (`Dafny.unreach-call.Unbounded`, 2 min, 2026-10-10 16:13 against
+  15:25): `array-lopstr16/flag_loopdep_simple` is no longer proved (also not with `-fallback`), not because of
+  the merged `mod_two_not_zero`; whether the other lemmas of 9a13ed0f or the eta reduction of 97c533c7 is open;
+  `loops/vogal-2` reports rewriting does not terminate (one goal locally) since its table of vowels is filled by a
+  loop. `loop-crafted/simple_array_index_value_1-1` was open by `mod_two_not_zero`, which is local again.
+- The C programs of the translations (`benchmarks/sv-comp/c`) differ from their Dafny sources in 42 of the 270 rows
+  of the databases: 32 have lemmas of their own in the Dafny file, which the C file does not contain (mostly closed
+  in Dafny, one goal in C); the other 10 differ by the shape of the program that the C frontend builds, e.g. a block
+  around the locals of main (`loop-new/gauss_sum`, `half`, `loops-crafted-1/sumt4`, `array-tiling/revcpyswp2`,
+  `skipped`, `skippedu`, `array-crafted/zero_sum_const_m2`, `array-programs/partial_mod_count_limited_1`,
+  `array-examples/sanfoundry_02_ground`, `sanfoundry_10_ground`).
+- Loops bounded by small constants remain in 10 translations (`loop-lit/bh2017-ex1-poly`, `cggmp2005b`,
+  `hh2012-ex3`, `loop-invgen/id_build`, `loop-simple/nested_1b`, `loops/eureka_01-2`, `invert_string-3`,
+  `sum04-1`, `sum04-2`, `vogal-2`), some asserting the bound, e.g. `k == 4` after `while k <= 3`.
 - The functions on traces are declared only by the lemma database
   ([teq.dfy](resources/cuvee/teq.dfy)), whose names may clash with the input,
   and which only Dafny inputs can use (`Config.features`).

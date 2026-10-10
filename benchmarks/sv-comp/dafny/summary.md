@@ -9,11 +9,14 @@ its end. Their lemmas are marked `{:teq}`, so that they are not printed.
 
 The expected results are in one database,
 [expected.csv](expected.csv): the file, whether the task is safe or unsafe,
-and the number of remaining goals (`error` if the run reports an error).
-`./Cuvee.sh -record <file> ...` prints the rows of examples, and
-`./Cuvee.sh -test benchmarks/sv-comp/dafny/expected.csv` checks all rows (about
-three minutes). The test suite `SVComp` checks them only if the environment
-variable `CUVEE_SVCOMP` is set.
+the number of remaining goals (`error` if the run reports an error, `timeout`
+if it did not end within 60 s), and the time. The rows were recorded on
+2026-10-10, one process per task with 60 s, by `./Cuvee.sh -record <file>`;
+`./Cuvee.sh -test benchmarks/sv-comp/dafny/expected.csv` checks all rows in one
+JVM (about an hour by the recorded times). The test suite `SVComp` checks them
+only if the environment variable `CUVEE_SVCOMP` is set. The C programs printed
+from the translations are in `../c`, with their own database (see
+doc/architecture.md).
 
 - `__VERIFIER_nondet_*()` is `x := *;`, an arbitrary value.
 - Simple integer programs (`loop-new/count_by_1`, `loop-zilu`) are
@@ -28,13 +31,22 @@ variable `CUVEE_SVCOMP` is set.
 - `sum[0]` of one-element arrays is a scalar.
 - Unsigned integers are `int` with nonnegative inputs. This is faithful
   except where C wraps around (noted in `diamond_2-2`).
-- Lemmas and auxiliary definitions are in the files; nothing is added to
-  teq.dfy. With `-teq`, teq.dfy is injected before the input is parsed, so the
-  lemmas refer to its declarations without repeating them.
+- The division and remainder of C, which truncate towards zero, are `quot`
+  and `rem` of the prelude of Dafny, not `/` and `%` of Dafny, in the methods;
+  lemmas keep `/` and `%`.
+- Lemmas and auxiliary definitions that are specific to a task are in its
+  file; general ones were merged into teq.dfy (2026-10-09 and 2026-10-10).
+  With `-teq`, teq.dfy is injected before the input is parsed, so the lemmas
+  refer to its declarations without repeating them.
 
 ## Results
 
-The counts come from the remaining goals recorded at the end of the files.
+The current results are those of the database ([expected.csv](expected.csv),
+270 rows: 160 closed, 86 open, 18 timeouts, 6 errors) and of the runs of
+`xml/cuvee-quick.xml` on all 651 translations (2026-10-10 16:13, 2 min: 234
+proved, 387 unknown, 22 timeouts, 8 errors; with `xml/cuvee-quick-fallback.xml`
+279 proved). The table and the list below are an earlier state, of 287 tasks,
+from the remaining goals recorded at the end of the files.
 
 | expected | outcome | teq.dfy alone | with lemmas in the file |
 |----------|---------|--------------:|------------------------:|

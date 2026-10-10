@@ -123,9 +123,32 @@ after section 4 of the paper.
   other case unbound (see TODO.md), and the join at the position of a
   further dependency also exhausts the rewrite steps; and lemmas that never
   match. The examples keep these lemmas locally.
+- A second merge (2026-10-10) added arithmetic (`triangle_nonneg`,
+  `half_4x_4xx`, `div_below`, ...), reads over updates at other positions
+  (`select_store_other`) and beyond a search (`select_not_occurs_selects_beyond`),
+  bounds of sums under the auxiliary predicates `below_prefix` and
+  `nonneg_prefix`, and counters with a step (`indexof_counter_step`,
+  `prefix_maps_counter`). A merged lemma is checked by re-running the tasks
+  whose local copies it replaces, which must reproduce their rows of
+  `benchmarks/sv-comp/dafny/expected.csv`, and by its proof in teq.lean. This
+  showed further lemmas that stay local:
+  - the definition of an auxiliary predicate by an iteration constraint with
+    a general body, `invs(... :: x <= b) <==> below_prefix(n, xs, b)`, since
+    it matches the bound of every loop, `x < N` as `x + 1 <= N` with the body
+    generalized to a map, and hides it from the lemmas on traces
+    (`diamond_1-1`); the predicate and its consequences are in teq.dfy, the
+    definition is local (`linear-inequality-inv-*`), unlike definitions with
+    a specific body such as `consts_prefix_def`;
+  - `!(y % 2 == 0) <==> y % 2 == 1` again, which opened
+    `simple_array_index_value_1-1`;
+  - lemmas on maps of a counter with a further dependency that the body does
+    not use, and with the body `c - k`, which `a + b * v` of
+    `maps_counter_affine` does not match as `N + -k + -1`
+    (`array_init_both_ends_multiple_sum`).
 - Auxiliary predicates abstract iteration constraints, e.g. `agree_prefix`,
-  and are only declared; their names avoid those that inputs declare with
-  other meanings, since equal signatures are identified.
+  and are defined by recursion over the positions, `earlier(m, xs)`, which
+  teq.lean proves their lemmas with; their names avoid those that inputs
+  declare with other meanings, since equal signatures are identified.
 
 ## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
 
@@ -144,7 +167,8 @@ after section 4 of the paper.
   conditionals. Zipping truncates to the shortest dependency, the lengths
   are not assumed yet (see TODO.md).
 - The functions that teq.dfy defines with `{:fold}` and the lemmas are
-  printed by `-print lean`, the lemmas as theorems, all `sorry` for now.
+  printed by `-print lean`, the lemmas as theorems, whose statements are
+  copied into teq.lean when lemmas are added, and proved there.
 - Checked counterexamples show lemmas that hold only under assumptions that
   the contexts of the goals provide, e.g. `n ≥ 0` or dependencies of equal
   length.
@@ -162,6 +186,15 @@ after section 4 of the paper.
   With them, all lemmas of teq.lean are proved; assumptions on indices
   within the lists are added by hand there as `requires` to be added to
   teq.dfy.
+- A new lemma of teq.dfy goes into teq.lean by printing teq.dfy with
+  `-print lean` and copying its statement (as a theorem) and those of new
+  functions, at the position it has in teq.dfy, then proving it. The printer
+  cannot see the length of a list that is no dependency of a combinator but
+  is summed or read under an auxiliary predicate, e.g. `sum(xs)` under
+  `below_prefix(n, xs, b)`: such lemmas hold for lists of length `n` only and
+  get `(hxs : length xs = n)` by hand (`sum_consts_prefix`,
+  `sum_below_prefix`, `earlier_nonneg_prefix`, `sum_nonneg_prefix`), listed in
+  the header of teq.lean.
 
 ## The fallback encoding `-fallback` ([Fallback.scala](../src/cuvee/transform/Fallback.scala))
 
@@ -295,3 +328,13 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
   traces, which declare `Trace` and the functions on traces as in `teq.dfy`.
 - E.g. `mill -i run -teq -simplify examples/dafny/vcgen/sum.dfy`.
+- The Dafny translations of SV-COMP (`benchmarks/sv-comp/dafny`) and the C
+  programs printed from them (`benchmarks/sv-comp/c`) have databases of their
+  expected results (`expected.csv`, suites `SVComp` and `SVCompC`, only with
+  `CUVEE_SVCOMP`), recorded one process per task with 60 s; their summary is
+  `benchmarks/sv-comp/dafny/summary.md`. The translations write the division
+  and remainder of C as `quot` and `rem` of the prelude of Dafny, lemmas keep
+  `/` and `%`. `-print c -known dfy,teq,rw` prints their programs without
+  the logic, where `teq` injects teq.dfy for parsing without the transform;
+  the C programs lack the lemmas of their Dafny files, hence they leave goals
+  that the Dafny files close (see TODO.md).
