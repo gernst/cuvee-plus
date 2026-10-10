@@ -917,14 +917,16 @@ object Simplify extends Transform:
     then body
     else Bind(quant, bound_, body)
 
-  // eta reduction, the lambda that selects the elements of an array is that array,
+  // eta reduction, the lambda of array type that selects the elements of an array is that array, but not one of
+  // function type, e.g. the instance (z) => a[z] of a higher-order variable G of a rule, whose applications G(k) the
+  // simplifier reduces to a[k] (see app), which would remain an application of the array otherwise;
   // and the lambda that applies a function value to its variables is that function value
   def lam(config: Config, state: State, ctx: Context, bound: List[Var], body: Expr, typ: Type): Expr =
-    (bound, body) match
-      case (List(x), Select(base, index)) if index == x && !base.free.contains(x) =>
+    (bound, body, typ) match
+      case (List(x), Select(base, index), Sort(Con.array, _)) if index == x && !base.free.contains(x) =>
         base
 
-      case (_, Apply(f, args)) if args == bound && (bound disjoint f.free) =>
+      case (_, Apply(f, args), _) if args == bound && (bound disjoint f.free) =>
         f
 
       case _ =>

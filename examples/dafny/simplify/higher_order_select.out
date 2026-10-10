@@ -1,0 +1,9 @@
+function g(i: int, x: int): int
+
+lemma {:rw} g_def(i: int, G: int -> int)
+  ensures g(i, G(i)) == G(i) + 1
+
+function f(a: array<int, int>, i: int): int {
+  a[i] + 1
+}
+
