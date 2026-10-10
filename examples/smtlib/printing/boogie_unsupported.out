@@ -4,8 +4,6 @@ type {:smt2} {:dfy} Set<a₀>;
 
 type {:smt2} {:dfy} Bag<a₀>;
 
-function {:smt2} {:c} const<a₀, a₁>(x₀: a₁): [a₀]a₁;
-
 function {:smt2} {:dfy} seq.empty<a₀>(): Seq<a₀>;
 
 function {:smt2} {:dfy} seq.unit<a₀>(x₀: a₀): Seq<a₀>;

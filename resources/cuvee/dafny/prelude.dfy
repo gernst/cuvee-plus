@@ -33,6 +33,8 @@ function {:dfy} {:bpl} {:smt2} {:c} ite<a₀>(x₀: bool, x₁: a₀, x₂: a₀
 // indexing and updates of arrays and sequences, s[i] and s[i := v], resolved like arithmetic
 function {:dfy} {:bpl} {:smt2} {:c} select<a₀, a₁, a₂>(x₀: a₀, x₁: a₁): a₂
 function {:dfy} {:bpl} {:smt2} {:c} store<a₀, a₁, a₂>(x₀: a₀, x₁: a₁, x₂: a₂): a₀
+// constant arrays, e.g. the initial values of arrays
+function {:dfy} {:bpl} {:smt2} {:c} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>
 
 // negation, which is also the complement of bitvectors, resolved like arithmetic
 function {:dfy} {:bpl} {:smt2} {:c} ! <a₀>(x₀: a₀): a₀

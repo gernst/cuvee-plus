@@ -205,8 +205,12 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   their free variables, defined in the antecedent of the goal, where the
   traces among them contribute the free variables of their lowered
   functions and lengths, e.g. the `n` of `K == counter(0, 1, n)`
-  (`Fallback.arguments`), likewise for generalized terms. `consts(n, v)`
-  and `prefix(k, xs)` state their lengths, other traces and lists get a
+  (`Fallback.arguments`), likewise for generalized terms. Equal terms share
+  their function if their traces and lists are lowered alike (`Fallback.key`),
+  not, e.g., `map(for ⌊K'⌋ yield ...)` for the traces `K'` of a list of
+  traces at different positions. `consts(n, v)` and `prefix(k, xs)` state
+  their lengths, `nil` has length 0, e.g. the iterations of an inner loop
+  that runs zero times, other traces and lists get a
   fresh length function, and the other functions of `teq.dfy` (`sum`,
   `occurs`, ...) are replaced by fresh functions without definition, which
   generalizes the goal: a model of the solver need not be a counterexample.

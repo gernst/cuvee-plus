@@ -27,7 +27,14 @@ object Fallback extends Transform:
   // the applications of the new functions, without the index, that replace combinators and other sequences
   // with their lengths, the applications that generalize other terms, and the functions for the lengths of the
   // traces of lists of traces
-  case class Lowered(decls: List[Cmd], defs: List[Expr], named: Map[Expr, (App, Expr)], general: Map[Expr, App], inner: Map[Fun, Fun])
+  case class Lowered(decls: List[Cmd], defs: List[Expr], named: Map[Key, (App, Expr)], general: Map[Key, App], inner: Map[Fun, Fun])
+
+  // a term with the lowered traces and lists of its free variables, which determine its meaning, e.g. the same
+  // map(for ⌊K'⌋ yield ...) for the traces K' of a list of traces at different positions (see bind)
+  type Key = (Expr, List[Option[(Expr, Expr)]])
+
+  def key(env: Map[Var, (Expr, Expr)], e: Expr): Key =
+    (e, e.free.toList.sortBy(_.toString).map(env.get))
 
   // the sorts of trace equation systems
   val sorts = Set(Con.trace, Con.list, Con.nat)
@@ -266,6 +273,10 @@ object Fallback extends Transform:
       case Counter(_, _, n) =>
         Some(expr(state, env, out, n))
 
+      // e.g. the iterations of an inner loop that runs zero times
+      case Lists.nil() =>
+        Some(Ints.zero)
+
       case Trace(_, deps, _, _, _) =>
         deps.view.flatMap(length(state, env, out, _)).headOption
 
@@ -282,7 +293,7 @@ object Fallback extends Transform:
         Some(sequence(state, env, out, seq)._2)
 
       case _ =>
-        out.value.named.get(seq).map(_._2)
+        out.value.named.get(key(env, seq)).map(_._2)
 
   // the lowered trace or list `seq` and its length
   def sequence(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], seq: Expr): (Expr, Expr) =
@@ -296,6 +307,10 @@ object Fallback extends Transform:
       case Counter(i, c, n) =>
         val List(i_, c_, n_) = List(i, c, n).map(expr(state, env, out, _)): @unchecked
         (App(Fun.trace.counter, Nil, Sort.trace(Sort.int), List(i_, c_, n_)), n_)
+
+      // the empty list, whose entries are never read
+      case Lists.nil() =>
+        (named(state, env, out, seq)._1, Ints.zero)
 
       // the first k entries, or all of a shorter list
       case App(fun, _, _, List(k, xs)) if fun.name.name == "prefix" && isTeq(state, fun) =>
@@ -316,7 +331,7 @@ object Fallback extends Transform:
   // a fresh function of the free variables for a combinator, defined in the antecedent of the goal,
   // or for another trace or list, with a fresh function for its length, both without definition
   def named(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], seq: Expr): (App, Expr) =
-    out.value.named.get(seq) match
+    out.value.named.get(key(env, seq)) match
       case Some(result) =>
         result
 
@@ -354,7 +369,7 @@ object Fallback extends Transform:
             val lenfun = Fun(Name(name.name + "_length", Some(index)), Nil, Expr.vars("x", xs.types), Sort.int)
             (App(lenfun, xs.types, Sort.int, xs), List(DeclareFun(fun, Attrs.empty), DeclareFun(lenfun, Attrs.empty)))
 
-        out.map(o => o.copy(decls = decls.reverse ++ o.decls, named = o.named + (seq -> (head, len))))
+        out.map(o => o.copy(decls = decls.reverse ++ o.decls, named = o.named + (key(env, seq) -> (head, len))))
 
         seq match
           case App(fun, _, _, List(n, v)) if fun.name.name == "consts" && isTeq(state, fun) =>
@@ -451,7 +466,7 @@ object Fallback extends Transform:
 
   // a fresh function of the free variables in place of `e`, which generalizes the goal
   def general(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], e: Expr): Expr =
-    out.value.general.get(e) match
+    out.value.general.get(key(env, e)) match
       case Some(app) =>
         app
 
@@ -468,7 +483,7 @@ object Fallback extends Transform:
         val typ = if e.typ == Sort.nat then Sort.int else e.typ
         val fun = Fun(name, Nil, Expr.vars("x", xs.types), typ)
         val app = App(fun, xs.types, typ, xs)
-        out.map(o => o.copy(decls = DeclareFun(fun, Attrs.empty) :: o.decls, general = o.general + (e -> app)))
+        out.map(o => o.copy(decls = DeclareFun(fun, Attrs.empty) :: o.decls, general = o.general + (key(env, e) -> app)))
         app
 
   // the lowered formula or term `e`, whose polarity, if it is a formula, is `polarity`: the variables of traces and

@@ -23,6 +23,8 @@ function {:bpl} {:dfy} {:smt2} {:c} == <a₀>(x₀: a₀, x₁: a₀): bool;
 function {:bpl} {:dfy} {:smt2} {:c} ite<a₀>(x₀: bool, x₁: a₀, x₂: a₀): a₀;
 function {:bpl} {:dfy} {:smt2} {:c} select<a₀, a₁>(x₀: [a₀]a₁, x₁: a₀): a₁;
 function {:bpl} {:dfy} {:smt2} {:c} store<a₀, a₁>(x₀: [a₀]a₁, x₁: a₀, x₂: a₁): [a₀]a₁;
+// constant arrays, e.g. the initial values of arrays
+function {:bpl} {:dfy} {:smt2} {:c} const<a₀, a₁>(x₀: a₁): [a₀]a₁;
 
 function {:bpl} {:dfy} {:smt2} {:c} !(x₀: bool): bool;
 function {:bpl} {:dfy} {:smt2} {:c} &&(x₀: bool, x₁: bool): bool;

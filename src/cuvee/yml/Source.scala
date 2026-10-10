@@ -27,7 +27,8 @@ object Source extends cuvee.pipe.Source:
       then new File(task.input)
       else new File(dir.orNull, task.input)
 
-    Error.report("input file of task not found", input):
+    // reported as written in the task, independent of the directory that it is in
+    Error.report("input file of task not found", task.input):
       require(input.isFile)
 
     // the data model of the task overrides the command line

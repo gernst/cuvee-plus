@@ -24,7 +24,7 @@
 (declare-fun store (par (a$0 a$1) ((Array a$0 a$1) a$0 a$1) (Array a$0 a$1) :smt2 :dfy :bpl :c))
 
 ; constant arrays are written ((as const (Array a$0 a$1)) v)
-(declare-fun const (par (a$0 a$1) (a$1) (Array a$0 a$1) :smt2 :c))
+(declare-fun const (par (a$0 a$1) (a$1) (Array a$0 a$1) :smt2 :dfy :bpl :c))
 
 ; sequences as in cvc5 (see cuvee.core.Fun.seq)
 (declare-fun seq.empty (par (a$0) () (Seq a$0) :smt2 :dfy))

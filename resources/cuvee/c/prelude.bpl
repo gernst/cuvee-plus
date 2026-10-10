@@ -19,7 +19,7 @@ function {:c} {:bpl} {:dfy} {:smt2} ite<a₀>(x₀: bool, x₁: a₀, x₂: a₀
 function {:c} {:bpl} {:dfy} {:smt2} select<a₀, a₁>(x₀: [a₀]a₁, x₁: a₀): a₁;
 function {:c} {:bpl} {:dfy} {:smt2} store<a₀, a₁>(x₀: [a₀]a₁, x₁: a₀, x₂: a₁): [a₀]a₁;
 // constant arrays, e.g. the initial values of arrays
-function {:c} {:smt2} const<a₀, a₁>(x₀: a₁): [a₀]a₁;
+function {:c} {:bpl} {:dfy} {:smt2} const<a₀, a₁>(x₀: a₁): [a₀]a₁;
 
 function {:c} {:bpl} {:dfy} {:smt2} !(x₀: bool): bool;
 function {:c} {:bpl} {:dfy} {:smt2} &&(x₀: bool, x₁: bool): bool;
