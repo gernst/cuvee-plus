@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
+<benchmark tool="cuvee" displayName="Cuvée (fallback)" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
+
+  <!-- <require cpuModel="Intel Core i7-10700 @ 2.90 GHz"/> -->
+  <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
+
+  <option name="-teq"/>
+  <option name="-simplify"/>
+  <option name="-split"/>
+  <option name="-simplify"/>
+  <option name="-fallback"/>
+  <option name="-z3"/>
+  <!-- z3 is limited by the time limit only, which this covers, since -timeout defaults to 1 s per query -->
+  <option name="-timeout">900000</option>
+
+  <rundefinition name="SV-COMP27_unreach-call">
+  </rundefinition>
+
+  <tasks name="Dafny">
+    <includesfile>../examples/sv-comp/dafny.set</includesfile>
+    <propertyfile>../examples/sv-comp/properties/unreach-call.prp</propertyfile>
+  </tasks>
+
+  <tasks name="Loops">
+    <includesfile>../sv-benchmarks/c/Loops.set</includesfile>
+    <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+
+  <tasks name="Arrays">
+    <includesfile>../sv-benchmarks/c/Arrays.set</includesfile>
+    <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+  </tasks>
+
+</benchmark>

@@ -13,13 +13,14 @@ class Tool(benchexec.tools.template.BaseTool2):
     """
     Tool info for Cuvée, which proves the property unreach-call of C programs and of their Dafny translations
     (examples/sv-comp) by trace equation systems, whose goals the simplifier closes with a database of lemmas
-    (cuvee.xml passes -teq -simplify).
+    (xml/cuvee.xml passes -teq -simplify, xml/cuvee-fallback.xml also -fallback -z3).
     The output is in the language of the input, SMT-LIB for C and Dafny for Dafny: no goal left means that the
     property holds, goals that remain are not refuted, hence the result is unknown, since the tool does not produce
     witnesses of violations.
     """
 
-    REQUIRED_PATHS = ["Cuvee.sh", "cuvee.jar"]
+    # z3 for -fallback -z3, a copy of the local one (not in git), since the machines of the cluster have none
+    REQUIRED_PATHS = ["Cuvee.sh", "cuvee.jar", "z3"]
 
     def executable(self, tool_locator):
         return tool_locator.find_executable("Cuvee.sh")
@@ -49,9 +50,12 @@ class Tool(benchexec.tools.template.BaseTool2):
         lines = list(run.output)
         for i, line in enumerate(lines):
             # errors, e.g. constructs of C that are not supported, or rewriting that does not terminate,
-            # whose message is the first string at the error or on the lines after it, e.g. (error "parse error" ...)
+            # whose message is the first string at the error or on the lines after it, e.g. (error "parse error" ...);
+            # goals that the solver of -fallback does not prove are not refuted, since the encoding generalizes
             if line.startswith("(error") or line.startswith("error") or line.startswith("Exception in thread"):
                 message = re.search(r'"([^"]*)"', " ".join(lines[i:i + 3]))
+                if message and message.group(1) == "goal does not hold":
+                    return result.RESULT_UNKNOWN
                 return result.RESULT_ERROR + (" (" + message.group(1) + ")" if message else "")
 
         if run.exit_code.value not in (0, None):

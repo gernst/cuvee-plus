@@ -276,6 +276,9 @@ object Fallback extends Transform:
       case None =>
         val xs = seq.free.toList.filterNot(env.contains).sortBy(_.toString).map(lower)
 
+        // the definitions hold for the arguments that are naturals, which are nonnegative
+        val nats = And(seq.free.toList.filter(_.typ == Sort.nat).map(nonnegative))
+
         Error.report("trace or list with free sequences not supported by -fallback", seq):
           require(!xs.exists(x => x.typ.cons.exists(sorts.contains)))
 
@@ -312,11 +315,11 @@ object Fallback extends Transform:
             val j = Var("j", Sort.int).fresh
             val v_ = expr(state, env, out, v)
             val range = And(Ints.le(Ints.zero, j), Ints.le(j, len))
-            val phi = All(xs, And(Ints.le(Ints.zero, len), All(List(j), Imp(range, Eq(at(head, j), v_)))))
+            val phi = All(xs, Imp(nats, All(List(j), Imp(range, Eq(at(head, j), v_)))))
             out.map(o => o.copy(defs = phi :: o.defs))
 
           case _ if combinator =>
-            val phi = All(xs, define(state, env, out, head, len, seq))
+            val phi = All(xs, Imp(nats, define(state, env, out, head, len, seq)))
             out.map(o => o.copy(defs = phi :: o.defs))
 
           case _ =>

@@ -11,3 +11,9 @@ cuvee.jar
 # benchmark results and the SV-COMP tasks, which are cloned separately
 results/
 sv-benchmarks
+
+# archives of other SV-COMP verifiers, downloaded from Zenodo
+tools/
+
+# the copy of z3 for BenchExec (see cuvee.py)
+/z3
