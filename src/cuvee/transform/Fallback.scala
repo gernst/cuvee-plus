@@ -12,9 +12,12 @@ import cuvee.core._
 // point-wise, and naturals become integers; a trace X of n steps has the entries X(0), ..., X(n), its butlast those
 // below n, and the length of all dependencies of a combinator is the n of its first one, ⌊counter(0, 1, n)⌋,
 // written directly or by an equation K == counter(0, 1, n); counters are not named, their entries are i + j * c;
-// the variables of traces and lists bound on the positive chain ∀ xs. φ ⇒ ψ of a goal are uninterpreted constants,
-// whose equations X == trace(...) are replaced by their characterization, other combinators are named by fresh
-// functions of their free variables, defined in the antecedent of the goal, and the remaining functions of
+// the variables of traces and lists bound by universal quantifiers of positive polarity or by existential ones of
+// negative polarity are uninterpreted functions, whose equations X == trace(...) among the hypotheses of the
+// quantifier (see hypotheses) are replaced by their characterization; a list of traces, e.g. of an inner loop per
+// iteration of the outer one, is a function of two indices with a function for the length of each trace, and a bound
+// variable of a combinator that ranges over it is the trace of the current iteration; other combinators are named by
+// fresh functions of their free variables, defined in the antecedent of the goal, and the remaining functions of
 // trace equation systems by fresh functions without definition, which generalizes the goal;
 // functions defined with {:fold} are unfolded first; the declarations and lemmas of teq.dfy are dropped,
 // as are lemmas over traces, lists, and naturals; guards need not be complete (see break), hence each case is
@@ -22,8 +25,9 @@ import cuvee.core._
 object Fallback extends Transform:
   // what lowering a goal has produced: the declarations of the new functions, their definitions as facts of the goal,
   // the applications of the new functions, without the index, that replace combinators and other sequences
-  // with their lengths, and the applications that generalize other terms
-  case class Lowered(decls: List[Cmd], defs: List[Expr], named: Map[Expr, (App, Expr)], general: Map[Expr, App])
+  // with their lengths, the applications that generalize other terms, and the functions for the lengths of the
+  // traces of lists of traces
+  case class Lowered(decls: List[Cmd], defs: List[Expr], named: Map[Expr, (App, Expr)], general: Map[Expr, App], inner: Map[Fun, Fun])
 
   // the sorts of trace equation systems
   val sorts = Set(Con.trace, Con.list, Con.nat)
@@ -37,9 +41,9 @@ object Fallback extends Transform:
   def fallback(state: State, cmd: Cmd): List[Cmd] =
     cmd match
       case Assert(Goal, Nil, phi, attrs) =>
-        val out = Ref(Lowered(Nil, Nil, Map(), Map()))
-        val phi_ = goal(state, Map(), out, phi)
-        val Lowered(decls, defs, _, _) = out.value
+        val out = Ref(Lowered(Nil, Nil, Map(), Map(), Map()))
+        val phi_ = expr(state, Map(), out, phi, Some(true))
+        val Lowered(decls, defs, _, _, _) = out.value
         val phi__ = if defs.isEmpty then phi_ else Imp(And(defs.reverse), phi_)
         decls.reverse :+ Assert(Goal, Nil, phi__, attrs)
 
@@ -64,6 +68,19 @@ object Fallback extends Transform:
     typ match
       case Sort(Con.trace | Con.list, List(elem)) => elem
       case _                                      => Error.raise("not a trace or list", typ)
+
+  // the type of the entries of nested traces and lists, with naturals as integers, and the number of indices
+  def entries(typ: Type): (Type, Int) =
+    typ match
+      case Sort(Con.trace | Con.list, List(elem)) =>
+        val (base, n) = entries(elem)
+        (base, n + 1)
+
+      case Sort.nat =>
+        (Sort.int, 0)
+
+      case _ =>
+        (typ, 0)
 
   // the variable with naturals as integers
   def lower(x: Var) =
@@ -97,60 +114,61 @@ object Fallback extends Transform:
   def nonnegative(x: Var) =
     Ints.le(Ints.zero, lower(x))
 
-  // the equations X == rhs of the antecedents along the chain of implications of `phi`
-  def equations(phi: Expr): List[(Var, Expr)] =
+  // the formulas that hold as hypotheses of all of `phi` of the polarity `positive`, as in the context of the
+  // simplifier, from which the lengths of the traces and lists that `phi` binds follow, which must hold for all of
+  // their occurrences: the antecedents of implications, the conjuncts of conjunctions that are hypotheses, and the
+  // formulas of negative polarity of disjunctions, e.g. ¬(φ ∧ ψ) for the conclusion false is φ ∧ ψ ⇒ false;
+  // not those of the conjuncts of a conjunction that is a goal, nor of the cases of implications and disjunctions
+  // that are hypotheses, which hold only there, nor below quantifiers, whose variables they would refer to
+  def hypotheses(phi: Expr, positive: Boolean): List[Expr] =
     phi match
-      case Imp(ante, concl) =>
-        val eqs =
-          And.flatten(ante).collect:
-            case Eq(x: Var, rhs) if isSeq(x.typ) => (x, rhs)
-            case Eq(rhs, x: Var) if isSeq(x.typ) => (x, rhs)
-        eqs ++ equations(concl)
+      case Imp(ante, concl) if positive =>
+        hypotheses(ante, false) ++ hypotheses(concl, true)
+
+      case Not(arg) =>
+        hypotheses(arg, !positive)
+
+      case And(phis) if phis.length > 1 && !positive =>
+        phis.flatMap(hypotheses(_, false))
+
+      case Or(phis) if phis.length > 1 && positive =>
+        phis.flatMap(hypotheses(_, true))
+
+      case Imp(_, _) | And(_) | Or(_) | Bind(_, _, _) =>
+        Nil
+
+      case _ if !positive =>
+        List(phi)
 
       case _ =>
         Nil
 
-  // the dependencies of the iteration constraints of the antecedents along the chain of implications of `phi`
-  def invariants(phi: Expr): List[List[Expr]] =
-    phi match
-      case Imp(ante, concl) =>
-        val deps =
-          And.flatten(ante).collect:
-            case Invs(deps, _, _) => deps
-        deps ++ invariants(concl)
+  // the equations X == rhs among the hypotheses
+  def equations(hyps: List[Expr]): List[(Var, Expr)] =
+    hyps.collect:
+      case Eq(x: Var, rhs) if isSeq(x.typ) => (x, rhs)
+      case Eq(rhs, x: Var) if isSeq(x.typ) => (x, rhs)
 
-      case _ =>
-        Nil
+  // the dependencies of the iteration constraints among the hypotheses
+  def invariants(hyps: List[Expr]): List[List[Expr]] =
+    hyps.collect:
+      case Invs(deps, _, _) => deps
 
-  // the positive chain of a goal: the traces and lists bound by its universal quantifiers become constants
-  def goal(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], phi: Expr): Expr =
-    phi match
-      case All(xs, body) =>
-        val (seqs, rest) = xs.partition(x => isSeq(x.typ))
-        val env_ = constants(state, env, out, seqs, equations(body), invariants(body))
-        val nats = rest.filter(_.typ == Sort.nat)
-        val body_ = goal(state, env_, out, body)
-        All(rest.map(lower), if nats.isEmpty then body_ else Imp(And(nats.map(nonnegative)), body_))
+  // the uninterpreted functions for the traces and lists `seqs`, whose lengths are those of the first dependencies of
+  // their equations among the hypotheses `hyps`, also for the lists among the dependencies of these and of the
+  // iteration constraints, counters are kept; lists of traces have a function for the length of each trace
+  def constants(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], seqs: List[Var], hyps: List[Expr]): Map[Var, (Expr, Expr)] =
+    val eqs = equations(hyps)
+    val invs = invariants(hyps)
 
-      case Imp(ante, concl) =>
-        val ante_ = And.flatten(ante).flatMap(premise(state, env, out, _))
-        Imp(And(ante_), goal(state, env, out, concl))
-
-      case And(phis) if phis.length > 1 =>
-        And(phis.map(goal(state, env, out, _)))
-
-      case _ =>
-        expr(state, env, out, phi)
-
-  // the uninterpreted constants for the traces and lists `seqs`, whose lengths are those of the first dependencies of
-  // their equations, also for the lists among the dependencies of these and of the iteration constraints `invs`,
-  // counters are kept
-  def constants(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], seqs: List[Var], eqs: List[(Var, Expr)], invs: List[List[Expr]]): Map[Var, (Expr, Expr)] =
     val heads =
       for x <- seqs
       yield
+        val (base, n) = entries(x.typ)
+        Error.report("traces and lists nested more than twice are not supported by -fallback", x):
+          require(n <= 2)
         // goals of -split share their variables, hence a fresh index
-        val fun = Fun(x.fresh.name, Nil, Expr.vars("x", List(Sort.int)), elem(x.typ))
+        val fun = Fun(x.fresh.name, Nil, Expr.vars("x", List.fill(n)(Sort.int)), base)
         x -> App(fun, Nil, fun.res, Nil)
 
     // counters are inlined
@@ -202,7 +220,21 @@ object Fallback extends Transform:
     do Error.raise("the length of a trace or list is unknown to -fallback", x)
 
     for (x, head) <- heads if !counters.exists(_._1 == x)
-    do out.map(o => o.copy(decls = DeclareFun(head.fun, Attrs.empty) :: o.decls))
+    do
+      out.map(o => o.copy(decls = DeclareFun(head.fun, Attrs.empty) :: o.decls))
+
+      // the entries of lists of naturals are nonnegative
+      if elem(x.typ) == Sort.nat then
+        val is = Expr.vars("i", head.fun.args).fresh
+        val phi = All(is, Ints.le(Ints.zero, App(head.fun, head.fun.args, head.fun.res, is)))
+        out.map(o => o.copy(defs = phi :: o.defs))
+
+      // the lengths of the traces of a list of traces, which are nonnegative
+      if head.fun.arity == 2 then
+        val lenfun = Fun(Name(head.fun.name.name + "_length", head.fun.name.index), Nil, Expr.vars("x", List(Sort.int)), Sort.int)
+        val i = Var("i", Sort.int).fresh
+        val phi = All(List(i), Ints.le(Ints.zero, App(lenfun, List(Sort.int), Sort.int, List(i))))
+        out.map(o => o.copy(decls = DeclareFun(lenfun, Attrs.empty) :: o.decls, defs = phi :: o.defs, inner = o.inner + (head.fun -> lenfun)))
 
     env ++ known
 
@@ -340,6 +372,24 @@ object Fallback extends Transform:
     val (head, _) = sequence(state, env, out, dep)
     at(head, j)
 
+  // the bound variables of a combinator at the position `j` of its dependencies: those of traces and lists, which
+  // range over a list of traces, are the trace at `j` with its length, the others are substituted by the entries
+  def bind(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], deps: List[Expr], bound: List[Var], j: Expr): (Map[Var, (Expr, Expr)], Subst[Nothing, Expr]) =
+    val (seqs, scalars) = (deps zip bound).partition((_, x) => isSeq(x.typ))
+
+    val env_ =
+      for (dep, x) <- seqs
+      yield
+        val (head, _) = sequence(state, env, out, dep)
+        val lenfun = head match
+          case App(fun, _, _, _) if out.value.inner.contains(fun) => out.value.inner(fun)
+          case _ => Error.raise("traces that are not the entries of a list are not supported by -fallback", dep)
+        val App(_, _, _, args) = head: @unchecked
+        x -> (at(head, j), App(lenfun, (args :+ j).types, Sort.int, args :+ j))
+
+    val su = Subst.from(scalars.map((_, x) => lower(x)), scalars.map((dep, _) => entry(state, env, out, dep, j)))
+    (env ++ env_, su)
+
   // the case φ ⇒ lhs == e of each guarded result, or the equation of a single one
   def cases(lhs: Expr, update: Expr): Expr =
     update match
@@ -353,15 +403,20 @@ object Fallback extends Transform:
 
     rhs match
       case Trace(init, deps, acc, bound, update) =>
-        val su = Subst.from(acc :: bound, at(head, j) :: deps.map(entry(state, env, out, _, j)))
-        val update_ = su(expr(state, env, out, update))
+        val (env_, su) = bind(state, env, out, deps, bound, j)
+        val update_ = Subst.from(List(lower(acc)), List(at(head, j)))(su(expr(state, env_, out, update)))
         val init_ = expr(state, env, out, init)
         And(Eq(at(head, Ints.zero), init_), All(List(j), Imp(range, cases(at(head, Ints.succ(j)), update_))))
 
       case Maps(deps, bound, update) =>
-        val su = Subst.from(bound, deps.map(entry(state, env, out, _, j)))
-        val update_ = su(expr(state, env, out, update))
+        val (env_, su) = bind(state, env, out, deps, bound, j)
+        val update_ = su(expr(state, env_, out, update))
         All(List(j), Imp(range, cases(at(head, j), update_)))
+
+      // the entries i + j * c of a counter, all n + 1 of them
+      case Counter(i, c, _) =>
+        val List(i_, c_) = List(i, c).map(expr(state, env, out, _)): @unchecked
+        All(List(j), Imp(And(Ints.le(Ints.zero, j), Ints.le(j, len)), Eq(at(head, j), Ints.plus(i_, Ints.times(j, c_)))))
 
       case App(fun, inst, _, args) if isFold(state, fun) =>
         define(state, env, out, head, len, unfold(state, fun, inst, args))
@@ -369,30 +424,22 @@ object Fallback extends Transform:
       case _ =>
         Error.raise("not a combinator", rhs)
 
-  // the conjuncts of an antecedent, where equations of constants are replaced by their characterization
-  def premise(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], phi: Expr): List[Expr] =
-    phi match
-      case Eq(x: Var, rhs) if env.contains(x) && isSeq(x.typ) =>
-        equation(state, env, out, x, rhs)
-
-      case Eq(rhs, x: Var) if env.contains(x) && isSeq(x.typ) =>
-        equation(state, env, out, x, rhs)
-
-      case _ =>
-        List(expr(state, env, out, phi))
-
-  def equation(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], x: Var, rhs: Expr): List[Expr] =
+  // the characterization of an equation x == rhs of a trace or list x, with the length of x if it differs from that of
+  // the dependencies of rhs, e.g. of the trace of a list of traces; an inlined counter needs none
+  def equation(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], x: Var, rhs: Expr): Expr =
     val (head, len) = env(x)
     (head, rhs) match
-      // the counter is inlined
       case (Counter(_, _, _), Counter(_, _, _)) =>
-        Nil
+        True
 
-      case _ if dependencies(state, rhs).nonEmpty =>
-        List(define(state, env, out, head, len, rhs))
+      case _ if dependencies(state, rhs).nonEmpty || Counter.unapply(rhs).isDefined =>
+        val len_ = length(state, env, out, rhs).getOrElse:
+          Error.raise("the length of a combinator is unknown to -fallback", rhs)
+        val phi = define(state, env, out, head, len, rhs)
+        if len_ == len then phi else And(Eq(len, len_), phi)
 
       case _ =>
-        List(expr(state, env, out, Eq(x, rhs)))
+        general(state, env, out, Eq(x, rhs))
 
   // a fresh function of the free variables in place of `e`, which generalizes the goal
   def general(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], e: Expr): Expr =
@@ -416,10 +463,48 @@ object Fallback extends Transform:
         out.map(o => o.copy(decls = DeclareFun(fun, Attrs.empty) :: o.decls, general = o.general + (e -> app)))
         app
 
-  def expr(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], e: Expr): Expr =
+  // the lowered formula or term `e`, whose polarity, if it is a formula, is `polarity`: the variables of traces and
+  // lists of quantifiers that can be skolemized are uninterpreted functions, those of other quantifiers are errors
+  def expr(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], e: Expr, polarity: Option[Boolean] = None): Expr =
     e match
       case x: Var =>
         lower(x)
+
+      case Bind(quant, xs, body) if xs.exists(x => isSeq(x.typ)) =>
+        val positive = polarity.getOrElse:
+          Error.raise("traces and lists bound in a term are not supported by -fallback", e)
+
+        Error.report("traces and lists bound by a quantifier that cannot be skolemized are not supported by -fallback", e):
+          require(quant == (if positive then All.name else Ex.name))
+
+        val (seqs, rest) = xs.partition(x => isSeq(x.typ))
+        val env_ = constants(state, env, out, seqs, hypotheses(body, positive))
+        if rest.isEmpty then expr(state, env_, out, body, polarity) else expr(state, env_, out, Bind(quant, rest, body), polarity)
+
+      case Bind(quant, xs, body) =>
+        val nats = And(xs.filter(_.typ == Sort.nat).map(nonnegative))
+        val body_ = expr(state, env, out, body, polarity)
+        val body__ = if nats == True then body_ else if quant == All.name then Imp(nats, body_) else And(nats, body_)
+        Bind(quant, xs.map(lower), body__)
+
+      case Imp(ante, concl) =>
+        Imp(expr(state, env, out, ante, polarity.map(!_)), expr(state, env, out, concl, polarity))
+
+      case Not(arg) =>
+        Not(expr(state, env, out, arg, polarity.map(!_)))
+
+      // without the inlined equations of counters, which are true
+      case And(phis) if phis.length > 1 =>
+        And(phis.map(expr(state, env, out, _, polarity)).conjuncts)
+
+      case Or(phis) if phis.length > 1 =>
+        Or(phis.map(expr(state, env, out, _, polarity)))
+
+      case Eq(x: Var, rhs) if env.contains(x) && isSeq(x.typ) =>
+        equation(state, env, out, x, rhs)
+
+      case Eq(rhs, x: Var) if env.contains(x) && isSeq(x.typ) =>
+        equation(state, env, out, x, rhs)
 
       case Current(t) =>
         val (head, len) = sequence(state, env, out, t)
@@ -444,18 +529,13 @@ object Fallback extends Transform:
       case App(fun, _, _, List(seq)) if fun.name.name == "length" && isSeq(seq.typ) =>
         sequence(state, env, out, seq)._2
 
+      // the body holds at each position of the dependencies, like that of a universal quantifier
       case Invs(deps, bound, body) =>
         val j = Var("j", Sort.int).fresh
         val (_, len) = sequence(state, env, out, deps.head)
-        val su = Subst.from(bound, deps.map(entry(state, env, out, _, j)))
-        val body_ = su(expr(state, env, out, body))
+        val (env_, su) = bind(state, env, out, deps, bound, j)
+        val body_ = su(expr(state, env_, out, body, polarity))
         All(List(j), Imp(And(Ints.le(Ints.zero, j), Ints.lt(j, len)), body_))
-
-      case Bind(quant, xs, body) if xs.exists(_.typ == Sort.nat) =>
-        val nats = And(xs.filter(_.typ == Sort.nat).map(nonnegative))
-        val body_ = expr(state, env, out, body)
-        val body__ = if quant == All.name then Imp(nats, body_) else And(nats, body_)
-        Bind(quant, xs.map(lower), body__)
 
       // equations and other functions of traces, lists, and naturals are generalized
       case App(fun, _, typ, args) if isTeq(state, fun) || (typ :: args.types).exists(_.cons.exists(sorts.contains)) =>

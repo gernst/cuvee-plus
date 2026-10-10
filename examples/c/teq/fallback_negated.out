@@ -1,0 +1,53 @@
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quot
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  rem
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(declare-fun bitand (Int Int) Int)
+
+(declare-fun bitor (Int Int) Int)
+
+(declare-fun bitxor (Int Int) Int)
+
+(declare-fun bitnot (Int) Int)
+
+(declare-fun shl (Int Int) Int)
+
+(declare-fun shr (Int Int) Int)
+
+(goal
+  (forall
+    ((N$2 Int) (n$4 Int))
+    (=>
+      (<= 0 n$4)
+      (not
+        (and
+          (forall
+            ((j$11 Int))
+            (=>
+              (and (<= 0 j$11) (< j$11 n$4))
+              (<
+                (* 2 (+ 0 (* j$11 1)))
+                N$2)))
+          (<= 0 n$4)
+          (<= N$2 (* 2 n$4)))))))
+

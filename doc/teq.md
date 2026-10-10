@@ -169,18 +169,30 @@ After section 5.3 of the paper, `-fallback` lowers the goals into first-order
 logic for solvers, e.g. `-teq -simplify -split -simplify -fallback -z3`;
 nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
 
-- The variables of traces and lists bound on the positive chain
-  `∀ xs. φ ⇒ ψ` of a goal become uninterpreted functions of an integer
-  index, with a fresh index, since the goals of `-split` share variables.
+- The variables of traces and lists bound by universal quantifiers of
+  positive polarity, e.g. of `∀ xs. φ ⇒ ψ`, or by existential ones of
+  negative polarity become uninterpreted functions of an integer index,
+  with a fresh index, since the goals of `-split` share variables; those of
+  other quantifiers are errors.
   A trace `X` of `n` steps has the entries `X(0), ..., X(n)`, `current(X)`
   is `X(n)`, `⌊X⌋` the same function below `n`; `earlier(k, ⌊X⌋)` is
   `X(k)`. Naturals become integers, `natural(x)` is `x` if nonnegative and
   0 otherwise.
 - The length of all dependencies of a combinator is the `n` of its first
   one, `⌊counter(0, 1, n)⌋`, written directly or by an equation
-  `K == counter(0, 1, n)` of the antecedents along the chain; lists among
-  the dependencies of equations and iteration constraints get it as well.
-  Counters are inlined, their entries are `i + j * c`.
+  `K == counter(0, 1, n)` among the hypotheses of the quantifier
+  (`Fallback.hypotheses`), which hold for all of its body, as in the context
+  of the simplifier: the antecedents of implications, the conjuncts of
+  hypotheses, and the formulas of negative polarity of disjunctions, e.g. of
+  `¬(φ ∧ ψ)`, which the simplifier makes of `φ ∧ ψ ⇒ false`, but not those
+  of a single conjunct of a goal; lists among the dependencies of equations
+  and iteration constraints get it as well. Counters are inlined, their
+  entries are `i + j * c`.
+- A list of traces, e.g. the traces of an inner loop per iteration of the
+  outer one, is a function of two indices, `K(j, i)`, with a function for the
+  length of each trace, `K_length(j)`; a bound variable of a combinator that
+  ranges over it is the trace at `j`, whose equations, e.g.
+  `K' == counter(0, 1, n')`, also state its length `K_length(j) == n'`.
 - The equations `X == trace(...)`, `maps(...)`, or of functions defined with
   `{:fold}` (unfolded) become their characterizations,
   `X(0) == e && ∀ j. 0 <= j < n ==> (φᵢ ==> X(j + 1) == eᵢ)`, one
@@ -199,7 +211,9 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   and naturals are dropped.
 - Tests: [fallback.dfy](../examples/dafny/teq/fallback.dfy),
   [fallback_count.dfy](../examples/dafny/teq/fallback_count.dfy),
-  [fallback.c](../examples/c/teq/fallback.c).
+  [fallback.c](../examples/c/teq/fallback.c),
+  [fallback_negated.c](../examples/c/teq/fallback_negated.c),
+  [fallback_nested.c](../examples/c/teq/fallback_nested.c).
 
 ## Simplification and rewriting
 

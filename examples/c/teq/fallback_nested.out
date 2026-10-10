@@ -1,0 +1,146 @@
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quot
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  rem
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(declare-fun bitand (Int Int) Int)
+
+(declare-fun bitor (Int Int) Int)
+
+(declare-fun bitxor (Int Int) Int)
+
+(declare-fun bitnot (Int) Int)
+
+(declare-fun shl (Int Int) Int)
+
+(declare-fun shr (Int Int) Int)
+
+(declare-fun B$29 (Int) Int)
+
+(declare-fun B?$31 (Int) Int)
+
+(declare-fun N?$32 (Int) Int)
+
+(declare-fun K?$33 (Int Int) Int)
+
+(declare-fun K?_length$33 (Int) Int)
+
+(declare-fun B?$34 (Int Int) Int)
+
+(declare-fun B?_length$34 (Int) Int)
+
+(declare-fun maps$45 (Int Int) Int)
+
+(goal
+  (=>
+    (and
+      (forall ((i$35 Int)) (<= 0 (N?$32 i$35)))
+      (forall
+        ((i$36 Int))
+        (<= 0 (K?_length$33 i$36)))
+      (forall
+        ((i$37 Int))
+        (<= 0 (B?_length$34 i$37)))
+      (forall
+        ((j$42 Int))
+        (=>
+          true
+          (forall
+            ((j$46 Int))
+            (=>
+              (and
+                (<= 0 j$46)
+                (< j$46 (K?_length$33 j$42)))
+              (= (maps$45 j$42 j$46) 1))))))
+    (forall
+      ((b$20 Int) (n$15 Int))
+      (=>
+        (<= 0 n$15)
+        (=>
+          (and
+            (= b$20 (B$29 n$15))
+            (= (B$29 0) 6)
+            (forall
+              ((j$38 Int))
+              (=>
+                (and (<= 0 j$38) (< j$38 n$15))
+                (= (B$29 (+ j$38 1)) (B?$31 j$38))))
+            (= n$15 6)
+            (forall
+              ((j$39 Int))
+              (=>
+                (and (<= 0 j$39) (< j$39 n$15))
+                (and
+                  (= (K?_length$33 j$39) (N?$32 j$39))
+                  (forall
+                    ((j$40 Int))
+                    (=>
+                      (and
+                        (<= 0 j$40)
+                        (<= j$40 (K?_length$33 j$39)))
+                      (= (K?$33 j$39 j$40) (+ 0 (* j$40 1))))))))
+            (forall
+              ((j$41 Int))
+              (=>
+                (and (<= 0 j$41) (< j$41 n$15))
+                (=
+                  (B?$31 j$41)
+                  (B?$34 j$41 (B?_length$34 j$41)))))
+            (forall
+              ((j$42 Int))
+              (=>
+                (and (<= 0 j$42) (< j$42 n$15))
+                (and
+                  (= (B?_length$34 j$42) (K?_length$33 j$42))
+                  (= (B?$34 j$42 0) 0)
+                  (forall
+                    ((j$44 Int))
+                    (=>
+                      (and
+                        (<= 0 j$44)
+                        (< j$44 (B?_length$34 j$42)))
+                      (=
+                        (B?$34 j$42 (+ j$44 1))
+                        (+ (B?$34 j$42 j$44) (maps$45 j$42 j$44))))))))
+            (forall
+              ((j$47 Int))
+              (=>
+                (and (<= 0 j$47) (< j$47 n$15))
+                (forall
+                  ((j$48 Int))
+                  (=>
+                    (and
+                      (<= 0 j$48)
+                      (< j$48 (B?_length$34 j$47)))
+                    (< (B?$34 j$47 j$48) 6)))))
+            (forall
+              ((j$49 Int))
+              (=>
+                (and (<= 0 j$49) (< j$49 n$15))
+                (<= 0 (N?$32 j$49))))
+            (forall
+              ((j$50 Int))
+              (=>
+                (and (<= 0 j$50) (< j$50 n$15))
+                (<= 6 (B?$31 j$50)))))
+          (= b$20 6))))))
+
