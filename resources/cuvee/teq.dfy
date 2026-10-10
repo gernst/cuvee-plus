@@ -162,12 +162,38 @@ function {:teq} agree_prefix(n: Nat, xs: List<int>, ys: List<int>): bool
   case succ(m) => agree_prefix(m, xs, ys) && earlier(m, xs) == earlier(m, ys)
 }
 
+// the first n values of js are all c
+function {:teq} consts_prefix(n: Nat, c: int, js: List<int>): bool
+{
+  match n
+  case zero => true
+  case succ(m) => consts_prefix(m, c, js) && earlier(m, js) == c
+}
+
 // the first n values of ts exceed their positions
 function {:teq} above_iterations(n: Nat, ts: List<int>): bool
 {
   match n
   case zero => true
   case succ(m) => above_iterations(m, ts) && integer(m) < earlier(m, ts)
+}
+
+// the first n values of xs are at most b, and nonnegative, for the values chosen in each of n iterations; the lemmas
+// that abstract the iteration constraints by them are local to the tasks (see linear-inequality-inv-a), since they
+// would match the bound of every loop, e.g. x < N as x + 1 <= N, and hide it from the lemmas on traces
+function {:teq} below_prefix(n: Nat, xs: List<int>, b: int): bool
+{
+  match n
+  case zero => true
+  case succ(m) => below_prefix(m, xs, b) && earlier(m, xs) <= b
+}
+
+// the first n values of xs are nonnegative
+function {:teq} nonneg_prefix(n: Nat, xs: List<int>): bool
+{
+  match n
+  case zero => true
+  case succ(m) => nonneg_prefix(m, xs) && 0 <= earlier(m, xs)
 }
 
 // powers, which are not unfolded
@@ -426,6 +452,11 @@ lemma {:rw} {:teq} not_occurs_selects_def(a: array<int, int>, x: int, i: int, n:
 lemma {:rw} {:teq} above_iterations_def(n: Nat, ts: List<int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs, ts check k, h, t :: k < t) <==> above_iterations(n, ts)
 
+// the values of a sequence at the iterations 0, ..., n - 1 are all c, e.g. the final values of an inner counter
+// (from nested_sum)
+lemma {:rw} {:teq} consts_prefix_def(n: Nat, c: int, js: List<int>, hs: List<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), js) == c) <==> consts_prefix(n, c, js)
+
 // butlast
 
 // a trace of n steps has n values before its last one, hence none if and only if n is zero
@@ -574,11 +605,32 @@ lemma {:rw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int,
   requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋)) && i <= k < i + integer(n)
   ensures (a[k] == x) <==> false
 
+// a sentinel: a position j that holds x, which does not occur among the values read at the positions 0, ..., n - 1,
+// is at least n
+// (from standard_sentinel-2)
+lemma {:rw} {:teq} select_not_occurs_selects_beyond(n: Nat, j: int, x: int, a: array<int, int>)
+  requires !occurs(x, selects(a, ⌊counter(0, 1, n)⌋)) && a[j] == x && 0 <= j
+  ensures integer(n) <= j
+
+// a read at a position other than that of an update, also where the simplifier does not decide that they differ, from
+// a fact j != i
+// (from array_of_struct_single_elem_init, single_elem_safe)
+lemma {:rw} {:teq} select_store_other<a, b>(a: array<a, b>, i: a, v: b, j: a)
+  requires j != i
+  ensures a[i := v][j] == a[j]
+
 // prefix
 
 lemma {:rw} {:teq} prefix_counter(k: Nat, i: int, c: int, n: Nat)
   ensures prefix(k, ⌊counter(i, c, n)⌋)
     == ⌊counter(i, c, k)⌋
+
+// the prefix of the values of a function at a counter, with a further dependency that it does not use
+// (from array_init_var_plus_ind3)
+lemma {:rw} {:teq} prefix_maps_counter(k: Nat, i: int, c: int, n: Nat, ys: List<int>, F: (int) -> int)
+  requires integer(k) <= integer(n)
+  ensures prefix(k, maps(for ⌊counter(i, c, n)⌋, ys yield v, y :: F(v)))
+    == maps(for ⌊counter(i, c, k)⌋ yield v :: F(v))
 
 lemma {:rw} {:teq} prefix_consts<a>(k: Nat, n: Nat, x: a)
   ensures prefix(k, ⌊consts(n, x)⌋)
@@ -662,6 +714,13 @@ lemma {:rw} {:teq} indexof_counter_down(j: int, i: int, n: Nat)
   requires i - integer(n) < j <= i
   ensures indexof(j, ⌊counter(i, -1, n)⌋)
     == natural(i - j)
+
+// the position of j among the values of a counter with a positive step d (see occurs_counter_step)
+// (from array_of_struct_ptr_monotonic)
+lemma {:rw} {:teq} indexof_counter_step(j: int, i: int, d: int, n: Nat)
+  requires 0 < d && i <= j < i + integer(n) * d && (j - i) % d == 0
+  ensures indexof(j, ⌊counter(i, d, n)⌋)
+    == natural((j - i) / d)
 
 // distincts
 
@@ -784,14 +843,29 @@ lemma {:rw} {:teq} sum_consts(n: Nat, x: int)
   ensures sum(⌊consts(n, x)⌋)
     == x * integer(n)
 
-// the sum of the values of a dependency over the iterations of a loop that are all c, e.g. the final values of the
-// counter of an inner loop; the iteration constraint is a side condition, since as a left-hand side it would also
-// match a constraint without the dependency, with the dependency synthesized as a map
-// (from examples/dafny/sorting/nested_sum.dfy)
-lemma {:rw} {:teq} sum_invs_const(n: Nat, c: int, js: List<int>)
-  requires invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)
+// the sum of the first n values of a sequence that are all c, e.g. the final values of the counter of an inner loop;
+// the iteration constraint is abstracted by consts_prefix (see consts_prefix_def), since an iteration constraint as
+// a side condition does not terminate
+// (from examples/dafny/algorithms/nested_sum.dfy)
+lemma {:rw} {:teq} sum_consts_prefix(n: Nat, c: int, js: List<int>)
+  requires consts_prefix(n, c, js)
   ensures sum(js)
     == c * integer(n)
+
+// the sum of n values that are at most b is at most n * b, that of nonnegative ones is nonnegative and at least each
+// of them; the left-hand sides are comparisons
+// (from linear-inequality-inv-a, -b, -c, -d)
+lemma {:rw} {:teq} sum_below_prefix(n: Nat, xs: List<int>, b: int, c: int)
+  requires below_prefix(n, xs, b) && integer(n) * b <= c
+  ensures sum(xs) <= c
+
+lemma {:rw} {:teq} earlier_nonneg_prefix(n: Nat, xs: List<int>, j: Nat)
+  requires nonneg_prefix(n, xs) && integer(j) < integer(n)
+  ensures earlier(j, xs) <= sum(xs)
+
+lemma {:rw} {:teq} sum_nonneg_prefix(n: Nat, xs: List<int>)
+  requires nonneg_prefix(n, xs)
+  ensures 0 <= sum(xs)
 
 lemma {:rw} {:teq} sum_neg(values: List<int>)
   ensures sum(maps(for values yield v :: -v))
@@ -984,6 +1058,47 @@ lemma {:rw} {:teq} half_4x_2xx(x: int)
 // (from pcomp, pcompf)
 lemma {:rw} {:teq} half_6x_6xx(x: int)
   ensures (6 * x + 6 * x * x) / 2 == 3 * x + 3 * x * x
+
+// the same
+// (from eqn2)
+lemma {:rw} {:teq} half_4x_4xx(x: int)
+  ensures (4 * x + 4 * x * x) / 2 == 2 * x + 2 * x * x
+
+// literal factors cancel in a division by them
+// (from array_of_struct_ptr_monotonic, sum_by_3)
+lemma {:rw} {:teq} half_2x(x: int)
+  ensures (2 * x) / 2 == x
+
+lemma {:rw} {:teq} third_3x(x: int)
+  ensures (3 * x) / 3 == x
+
+// the sums 0 + 1 + ... + x and 0 + 1 + ... + (x - 1) are nonnegative for all integers x, x * (x + 1) and x * (x - 1)
+// being products of consecutive numbers, also plus a nonnegative d
+// (from array_init_var_plus_ind, -ind2, -ind3, benchmark20_conjunctive)
+lemma {:rw} {:teq} triangle_nonneg(x: int)
+  ensures 0 <= (x + x * x) / 2
+
+lemma {:rw} {:teq} triangle_nonneg_below(x: int)
+  ensures 0 <= (-x + x * x) / 2
+
+lemma {:rw} {:teq} triangle_nonneg_add(x: int, d: int)
+  requires 0 <= d
+  ensures 0 <= (x + x * x) / 2 + d
+
+lemma {:rw} {:teq} triangle_nonneg_below_add(x: int, d: int)
+  requires 0 <= d
+  ensures 0 <= (-x + x * x) / 2 + d
+
+// a quotient below b + 1: x / d is at most b for 0 <= x < d * (b + 1)
+// (from mlceu2)
+lemma {:rw} {:teq} div_below(b: int, x: int, d: int)
+  requires 0 < d && 0 <= x && x < d * (b + 1)
+  ensures (b < x / d) <==> false
+
+// a remainder modulo 2 that is not 0 is 1
+// (from condm, diamond_1-1, diamond_1-2)
+lemma {:rw} {:teq} mod_two_not_zero(y: int)
+  ensures !(y % 2 == 0) <==> y % 2 == 1
 
 // the differences (k + 1)^3 - k^3 - 1 = 3 * k + 3 * k * k telescope to n^3 - n; teq.dfy splits such a sum by linearity
 // first, hence the sum of 3 * k * k as the rest, such that the division atoms cancel

@@ -9,11 +9,6 @@
 
 // are those of eqn1, except the arithmetic
 
-// division by 2 of a polynomial with even coefficients, in the normal form of the simplifier (arithmetic, not about
-// traces), see eqn1
-lemma {:rw} {:teq} lemma_1(x: int)
-  ensures (4 * x + 4 * x * x) / 2 == 2 * x + 2 * x * x
-
 method main() {
   var N: int;
   var i: int;

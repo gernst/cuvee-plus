@@ -26,17 +26,6 @@ lemma {:rw} {:teq} trace_2<b>(a0: array<int, b>, n: Nat, ps: List<int>, xs: List
           case C(x) => a[p := F(x, y)] case !C(x) => a[p := G(x, y)])
     == trace(a0, for ⌊counter(0, 1, n)⌋, ps, xs, ys do a, k, p, x, y :: a[p := if C(x) then F(x, y) else G(x, y)])
 
-// the positions of a counter with step 2 from 0 are the even numbers x with 0 <= x < 2 n, at the iteration x / 2;
-// stated for the literal 2, since a variable does not match the coefficient of a monomial (see TODO.md)
-lemma {:rw} {:teq} occurs_1(x: int, n: Nat)
-  ensures occurs(x, ⌊counter(0, 2, n)⌋) <==> 0 <= x < 2 * integer(n) && x % 2 == 0
-lemma {:rw} {:teq} indexof_1(x: int, n: Nat)
-  requires 0 <= x < 2 * integer(n) && x % 2 == 0
-  ensures indexof(x, ⌊counter(0, 2, n)⌋) == natural(x / 2)
-
-// cancellation of the factor 2 in a division, and an equation of a conditional as a case split (not about traces)
-lemma {:rw} {:teq} lemma_1(x: int)
-  ensures (2 * x) / 2 == x
 lemma {:rw} {:teq} lemma_2<b>(c: bool, x: b, y: b, z: b)
   ensures (if c then x else y) == z <==> if c then x == z else y == z
 

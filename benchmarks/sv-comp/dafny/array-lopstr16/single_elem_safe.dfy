@@ -29,12 +29,6 @@ lemma {:rw} {:teq} current_1<b>(a0: array<int, b>, n: Nat, j: int, hs: List<int>
     current(trace(a0, for ⌊counter(0, 1, n)⌋, hs, xs do a, k, h, x :: case C(h, x) => a[k := V(h, x)] case !C(h, x) => a))[j]
       == if 0 <= j < integer(n) && C(earlier(natural(j), hs), earlier(natural(j), xs)) then V(earlier(natural(j), hs), earlier(natural(j), xs)) else a0[j]
 
-// read over write at a different position, whose side condition is decided against the facts of the context, which
-// the simplifier does not consult for reads over writes (see TODO.md)
-lemma {:rw} {:teq} lemma_1<b>(a: array<int, b>, i: int, j: int, v: b)
-  requires j != i
-  ensures a[i := v][j] == a[j]
-
 method main() {
   var N: int;
   var i: int;

@@ -7,12 +7,6 @@
 // nonnegative; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the sum 0 + 1 + ... + x of a nonnegative x is nonnegative, in the normal form of the simplifier (arithmetic, not
-// about traces); the left-hand side is a comparison
-lemma {:rw} {:teq} lemma_1(x: int)
-  requires 0 <= x
-  ensures 0 <= (x + x * x) / 2
-
 method main() {
   var i: int;
   var j: int;

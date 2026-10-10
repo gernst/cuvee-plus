@@ -21,8 +21,9 @@ hold for indices within the lists only, whose elements are unspecified otherwise
 assumptions as further premises by hand, in the form of requires of teq.dfy, which are to be added there
 (earlier_counter, earlier_consts, earlier_selects, earlier_sums, earlier_counts, earlier_prefix, prefix_counter,
 prefix_consts, prefix_prefix, occurs_earlier, earlier_stores, current_maxs_earlier, current_mins_earlier, the
-completeness of the guards of current_trace_bounded), and two lemmas without a combinator state the length of a list
-read at the iterations by hand (occurs_earlier, earlier_not_occurs_prefix). The counterexamples at the end show that
+completeness of the guards of current_trace_bounded), and the lemmas without a combinator state the length of a list
+read at the iterations by hand (occurs_earlier, earlier_not_occurs_prefix, sum_consts_prefix, sum_below_prefix,
+earlier_nonneg_prefix, sum_nonneg_prefix). The counterexamples at the end show that
 the assumptions are needed.
 Check with `lean resources/cuvee/teq.lean` (Lean 4.34).
 -/
@@ -146,11 +147,28 @@ def agree_prefix (n : Nat) (xs : List Int)
   | .zero => True
   | .succ m => agree_prefix m xs ys ∧ earlier m xs = earlier m ys
 
+-- the first n values of js are all c
+def consts_prefix (n : Nat) (c : Int) (js : List Int) : Prop :=
+  match n with
+  | .zero => True
+  | .succ m => consts_prefix m c js ∧ earlier m js = c
+
 -- the first n values of ts exceed their positions
 def above_iterations (n : Nat) (ts : List Int) : Prop :=
   match n with
   | .zero => True
   | .succ m => above_iterations m ts ∧ integer m < earlier m ts
+
+-- the first n values of xs are at most b, and nonnegative, for the values chosen in each of n iterations
+def below_prefix (n : Nat) (xs : List Int) (b : Int) : Prop :=
+  match n with
+  | .zero => True
+  | .succ m => below_prefix m xs b ∧ earlier m xs ≤ b
+
+def nonneg_prefix (n : Nat) (xs : List Int) : Prop :=
+  match n with
+  | .zero => True
+  | .succ m => nonneg_prefix m xs ∧ 0 ≤ earlier m xs
 
 -- powers, which are not unfolded
 def pow (c : Int) (n : Nat) : Int :=
@@ -834,6 +852,61 @@ theorem above_iterations_forall (n : Nat) (ts : List Int) :
     · intro h
       exact ⟨fun i hi => h i (by omega), h m (by omega)⟩
 
+theorem consts_prefix_forall (n : Nat) (c : Int) (js : List Int) :
+    consts_prefix n c js ↔ ∀ i : Nat, i < n → earlier i js = c := by
+  induction n with
+  | zero => simp [consts_prefix]
+  | succ m ih =>
+    simp only [consts_prefix]
+    rw [ih]
+    constructor
+    · intro ⟨h1, h2⟩ i hi
+      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hi) with h | h
+      · exact h1 i h
+      · subst h; exact h2
+    · intro h
+      exact ⟨fun i hi => h i (by omega), h m (by omega)⟩
+
+theorem below_prefix_forall (n : Nat) (xs : List Int) (b : Int) :
+    below_prefix n xs b ↔ ∀ i : Nat, i < n → earlier i xs ≤ b := by
+  induction n with
+  | zero => simp [below_prefix]
+  | succ m ih =>
+    simp only [below_prefix]
+    rw [ih]
+    constructor
+    · intro ⟨h1, h2⟩ i hi
+      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hi) with h | h
+      · exact h1 i h
+      · subst h; exact h2
+    · intro h
+      exact ⟨fun i hi => h i (by omega), h m (by omega)⟩
+
+theorem nonneg_prefix_forall (n : Nat) (xs : List Int) :
+    nonneg_prefix n xs ↔ ∀ i : Nat, i < n → 0 ≤ earlier i xs := by
+  induction n with
+  | zero => simp [nonneg_prefix]
+  | succ m ih =>
+    simp only [nonneg_prefix]
+    rw [ih]
+    constructor
+    · intro ⟨h1, h2⟩ i hi
+      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hi) with h | h
+      · exact h1 i h
+      · subst h; exact h2
+    · intro h
+      exact ⟨fun i hi => h i (by omega), h m (by omega)⟩
+
+-- the sum of a list of nonnegative values is nonnegative
+theorem sum_nonneg_forall (xs : List Int) (h : ∀ i : Nat, i < xs.length → 0 ≤ earlier i xs) : 0 ≤ sum xs := by
+  induction xs with
+  | nil => simp [sum]
+  | cons x xs ih =>
+    simp only [sum]
+    have h0 : 0 ≤ x := by simpa [earlier] using h 0 (by simp)
+    have := ih (fun i hi => by simpa [earlier] using h (i + 1) (by simp; omega))
+    omega
+
 theorem not_occurs_prefix_forall (n : Nat) (xs : List Int) (e : Int) (hxs : xs.length = n) :
     ¬occurs e («prefix» n xs) ↔ ∀ i : Nat, i < n → earlier i xs ≠ e := by
   induction xs generalizing n with
@@ -1031,6 +1104,20 @@ theorem above_iterations_def (n : Nat) (ts : List Int) (hs : List Int)
     refine (invs_zip3_drop_middle _ hs ts (fun k t => k < t) (by rw [length_butlast_counter, hhs]) (by rw [hhs, hts])).trans ?_
     refine (invs_zip_counter 0 n ts hts (fun k t => k < t)).trans ?_
     simp [integer_eq]
+
+-- the values of a sequence at the iterations 0, ..., n - 1 are all c, e.g. the final values of an inner counter
+-- (from nested_sum)
+theorem consts_prefix_def (n : Nat) (c : Int) (js : List Int)
+                                (hs : List Int) (hhs : length hs = n)
+                                (hjs : length js = n) :
+  invs
+    (List.zip (butlast (counter 0 1 n)) hs)
+    (fun ⟨k, h⟩ => earlier (natural k) js = c)
+    ↔ consts_prefix n c js :=
+  by
+    rw [consts_prefix_forall]
+    refine (invs_zip_counter 0 n hs hhs (fun k h => earlier (natural k) js = c)).trans ?_
+    simp [natural_eq]
 
 -- butlast
 
@@ -1503,6 +1590,23 @@ theorem select_not_occurs_selects (a : Int → Int) (x : Int) (i : Int)
       · left; rw [← hk, e]
       · right; exact ih (i + 1) (by omega) (by push_cast at h2; omega)
 
+theorem select_not_occurs_selects_beyond (n : Nat) (j : Int) (x : Int)
+                                               (a : Int → Int) :
+  ¬occurs x (selects a (butlast (counter 0 1 n))) ∧ a j = x ∧ 0 ≤ j
+    → integer n ≤ j :=
+  by
+    intro ⟨h, e, hj⟩
+    rcases Int.lt_or_le j (integer n) with hlt | hle
+    · exact ((select_not_occurs_selects a x 0 n j ⟨h, hj, by omega⟩).mp e).elim
+    · exact hle
+
+theorem select_store_other {α β : Type} [Inhabited α] [Inhabited β] (a : α → β)
+                                                                          (i : α)
+                                                                          (v : β)
+                                                                          (j : α) :
+  j ≠ i → (fun j => if j = i then v else a j) j = a j :=
+  by intro h; simp [h]
+
 -- prefix
 
 theorem prefix_counter (k : Nat) (i : Int) (c : Int) (n : Nat) :
@@ -1518,6 +1622,29 @@ theorem prefix_counter (k : Nat) (i : Int) (c : Int) (n : Nat) :
       | succ j =>
         simp only [butlast_counter_succ, «prefix»]
         rw [ih j (i + c) (by simp only [integer_eq] at h ⊢; omega)]
+
+theorem prefix_maps_counter (k : Nat) (i : Int) (c : Int) (n : Nat)
+                                  (ys : List Int) (F : Int → Int)
+                                  (hys : length ys = n) :
+  integer k ≤ integer n
+    → «prefix»
+      k
+      (maps (List.zip (butlast (counter i c n)) ys) (fun ⟨v, y⟩ => F v))
+      = maps (butlast (counter i c k)) (fun v => F v) :=
+  by
+    intro h
+    induction n generalizing i k ys with
+    | zero => cases k with
+      | zero => rfl
+      | succ j => simp only [integer_eq] at h; omega
+    | succ m ih =>
+      cases ys with
+      | nil => simp at hys
+      | cons y ys => cases k with
+        | zero => rfl
+        | succ j =>
+          simp only [butlast_counter_succ, List.zip_cons_cons, maps, «prefix»]
+          rw [ih j (i + c) ys (by simpa using hys) (by simp only [integer_eq] at h ⊢; omega)]
 
 theorem prefix_consts {α : Type} [Inhabited α] (k : Nat) (n : Nat)
                                                      (x : α) :
@@ -1736,6 +1863,38 @@ theorem indexof_counter_down (j : Int) (i : Int) (n : Nat) :
         omega
       · rw [ite_eq_right (fun h => e (hocc.mp h)), natural_eq]
         show (0 : Nat) = (i - j).toNat
+        omega
+
+theorem indexof_counter_step (j : Int) (i : Int) (d : Int) (n : Nat) :
+  0 < d ∧ i ≤ j ∧ j < i + integer n * d ∧ (j - i) % d = 0
+    → indexof j (butlast (counter i d n)) = natural ((j - i) / d) :=
+  by
+    intro ⟨hd, h1, h2, h3⟩
+    rw [integer_eq] at h2
+    induction n generalizing i with
+    | zero => (simp at h2) <;> omega
+    | succ m ih =>
+      push_cast at h2
+      rw [Int.add_mul, Int.one_mul] at h2
+      have h3' : (j - (i + d)) % d = 0 := by
+        have : j - (i + d) = (j - i) + (-1) * d := by omega
+        rw [this, Int.add_mul_emod_self_right]; exact h3
+      rw [butlast_counter_succ, indexof]
+      have hocc : occurs j (butlast (counter (i + d) d m)) ↔ i + d ≤ j := by
+        rw [occurs_counter_step (i + d) d m j hd, integer_eq]
+        constructor
+        · intro ⟨a, _, _⟩; exact a
+        · intro a; exact ⟨a, by omega, h3'⟩
+      by_cases e : i + d ≤ j
+      · rw [ite_eq_left (hocc.mpr e), ih (i + d) e (by omega) h3', natural_eq, natural_eq]
+        have hq : (j - i) / d = (j - (i + d)) / d + 1 := by
+          have : j - i = (j - (i + d)) + 1 * d := by omega
+          rw [this, Int.add_mul_ediv_right _ _ (by omega)]
+        have : 0 ≤ (j - (i + d)) / d := Int.ediv_nonneg (by omega) (by omega)
+        omega
+      · rw [ite_eq_right (fun h => e (hocc.mp h)), natural_eq]
+        have : (j - i) / d = 0 := Int.ediv_eq_zero_of_lt (by omega) (by omega)
+        show (0 : Nat) = ((j - i) / d).toNat
         omega
 
 -- distincts
@@ -2277,29 +2436,80 @@ theorem sum_consts (n : Nat) (x : Int) :
     | zero => simp [consts, butlast, sum, integer]
     | succ m ih => simp [consts, butlast, sum, ih, integer]; grind
 
--- the sum of the values of a dependency over the iterations of a loop that are all c, e.g. the final values of the
--- counter of an inner loop; the iteration constraint is a side condition, since as a left-hand side it would also
--- match a constraint without the dependency, with the dependency synthesized as a map
--- (from examples/dafny/sorting/nested_sum.dfy)
-theorem sum_invs_const (n : Nat) (c : Int) (js : List Int)
-                             (hjs : length js = n) :
-  invs (List.zip (butlast (counter 0 1 n)) js) (fun ⟨k, j⟩ => j = c)
-    → sum js = c * integer n :=
+-- the sum of the first n values of a sequence that are all c, e.g. the final values of the counter of an inner loop;
+-- the iteration constraint is abstracted by consts_prefix (see consts_prefix_def), since an iteration constraint as
+-- a side condition does not terminate
+-- (from examples/dafny/algorithms/nested_sum.dfy)
+theorem sum_consts_prefix (n : Nat) (c : Int) (js : List Int)
+                                (hjs : length js = n) :
+  consts_prefix n c js → sum js = c * integer n :=
   by
     intro h
-    have h' := (invs_zip_counter 0 n js hjs (fun k j => j = c)).mp h
+    rw [consts_prefix_forall] at h
     subst hjs
     rw [integer_eq]
-    clear h
     induction js with
     | nil => simp [sum]
     | cons j js ih =>
       simp only [sum, List.length_cons]
-      rw [show j = c by simpa [earlier] using h' 0 (by simp),
-          ih (fun i hi => by simpa [earlier] using h' (i + 1) (by simp; omega))]
+      rw [show j = c by simpa [earlier] using h 0 (by simp),
+          ih (fun i hi => by simpa [earlier] using h (i + 1) (by simp; omega))]
       push_cast
       rw [Int.mul_add, Int.mul_one]
       omega
+
+theorem sum_below_prefix (n : Nat) (xs : List Int) (b : Int) (c : Int)
+                               (hxs : length xs = n) :
+  below_prefix n xs b ∧ integer n * b ≤ c → sum xs ≤ c :=
+  by
+    intro ⟨h, hc⟩
+    rw [below_prefix_forall] at h
+    subst hxs
+    rw [integer_eq] at hc
+    have key : sum xs ≤ (xs.length : Int) * b := by
+      clear hc
+      induction xs with
+      | nil => simp [sum]
+      | cons x xs ih =>
+        simp only [sum, List.length_cons]
+        have h0 : x ≤ b := by simpa [earlier] using h 0 (by simp)
+        have := ih (fun i hi => by simpa [earlier] using h (i + 1) (by simp; omega))
+        push_cast
+        rw [Int.add_mul, Int.one_mul]
+        omega
+    omega
+
+theorem earlier_nonneg_prefix (n : Nat) (xs : List Int) (j : Nat)
+                                    (hxs : length xs = n) :
+  nonneg_prefix n xs ∧ integer j < integer n → earlier j xs ≤ sum xs :=
+  by
+    intro ⟨h, hj⟩
+    rw [nonneg_prefix_forall] at h
+    subst hxs
+    rw [integer_eq, integer_eq] at hj
+    induction xs generalizing j with
+    | nil => (simp at hj) <;> omega
+    | cons x xs ih =>
+      have h0 : 0 ≤ x := by simpa [earlier] using h 0 (by simp)
+      have hs : ∀ i : Nat, i < xs.length → 0 ≤ earlier i xs :=
+        fun i hi => by simpa [earlier] using h (i + 1) (by simp; omega)
+      cases j with
+      | zero =>
+        simp only [earlier, sum]
+        have := sum_nonneg_forall xs hs
+        omega
+      | succ j =>
+        simp only [earlier, sum]
+        have := ih j hs (by simp only [List.length_cons] at hj; push_cast at hj; omega)
+        omega
+
+theorem sum_nonneg_prefix (n : Nat) (xs : List Int) (hxs : length xs = n) :
+  nonneg_prefix n xs → 0 ≤ sum xs :=
+  by
+    intro h
+    rw [nonneg_prefix_forall] at h
+    subst hxs
+    exact sum_nonneg_forall xs h
 
 theorem sum_neg (values : List Int) (n : Nat)
                       (hvalues : length values = n) :
@@ -2875,6 +3085,56 @@ theorem half_6x_6xx (x : Int) :
     have : 3 * x * x = 3 * (x * x) := by grind
     omega
 
+theorem half_4x_4xx (x : Int) :
+  (4 * x + 4 * x * x) / 2 = 2 * x + 2 * x * x :=
+  by
+    have : 4 * x * x = 4 * (x * x) := by grind
+    have : 2 * x * x = 2 * (x * x) := by grind
+    omega
+
+theorem half_2x (x : Int) : 2 * x / 2 = x :=
+  by omega
+
+theorem third_3x (x : Int) : 3 * x / 3 = x :=
+  by omega
+
+theorem triangle_nonneg (x : Int) : 0 ≤ (x + x * x) / 2 :=
+  by
+    have h : 0 ≤ x * (x + 1) := by
+      rcases Int.lt_or_le x 0 with h | h
+      · exact Int.mul_nonneg_of_nonpos_of_nonpos (by omega) (by omega)
+      · exact Int.mul_nonneg h (by omega)
+    have e : x * (x + 1) = x + x * x := by grind
+    omega
+
+theorem triangle_nonneg_below (x : Int) : 0 ≤ (-x + x * x) / 2 :=
+  by
+    have h : 0 ≤ x * (x - 1) := by
+      rcases Int.lt_or_le x 1 with h | h
+      · exact Int.mul_nonneg_of_nonpos_of_nonpos (by omega) (by omega)
+      · exact Int.mul_nonneg (by omega) (by omega)
+    have e : x * (x - 1) = -x + x * x := by grind
+    omega
+
+theorem triangle_nonneg_add (x : Int) (d : Int) :
+  0 ≤ d → 0 ≤ (x + x * x) / 2 + d :=
+  by intro h; have := triangle_nonneg x; omega
+
+theorem triangle_nonneg_below_add (x : Int) (d : Int) :
+  0 ≤ d → 0 ≤ (-x + x * x) / 2 + d :=
+  by intro h; have := triangle_nonneg_below x; omega
+
+theorem div_below (b : Int) (x : Int) (d : Int) :
+  0 < d ∧ 0 ≤ x ∧ x < d * (b + 1) → (b < x / d ↔ False) :=
+  by
+    intro ⟨hd, _, hx⟩
+    have : x / d < b + 1 := Int.ediv_lt_of_lt_mul hd (by rw [Int.mul_comm] at hx; exact hx)
+    simp only [iff_false]
+    omega
+
+theorem mod_two_not_zero (y : Int) : y % 2 ≠ 0 ↔ y % 2 = 1 :=
+  by constructor <;> intro h <;> omega
+
 -- the differences (k + 1)^3 - k^3 - 1 = 3 * k + 3 * k * k telescope to n^3 - n; teq.dfy splits such a sum by linearity
 -- first, hence the sum of 3 * k * k as the rest, such that the division atoms cancel
 -- (from pcomp, pcompf)
@@ -3071,6 +3331,15 @@ example : ¬ (invs (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨
 example : ¬ (invs (List.zip (butlast (counter 0 1 1)) (List.zip ([] : List Int) [(0 : Int)])) (fun ⟨k, h, t⟩ => k < t)
     ↔ above_iterations 1 [0]) :=
   by simp [invs, above_iterations, earlier, integer]
+
+-- consts_prefix_def
+example : ¬ (invs (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨k, h⟩ => earlier (natural k) [(1 : Int)] = 2)
+    ↔ consts_prefix 1 2 [1]) :=
+  by simp [invs, consts_prefix, earlier]
+
+-- sum_consts_prefix for a list that is longer than the iterations
+example : ¬ (consts_prefix 1 1 [(1 : Int), 1] → sum [1, 1] = 1 * integer 1) :=
+  by simp [consts_prefix, earlier, sum, integer_eq]
 
 -- current_trace_cap
 example : ¬ (current (trace (fun (_ : Int) => (1 : Int)) (List.zip (butlast (counter 0 1 1)) ([] : List Int))

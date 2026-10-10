@@ -9,14 +9,6 @@
 // condition is an atom matched against the facts; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the iteration constraint of the search, the elements of a at the iterations 0, ..., n - 1 differ from e, is
-// !occurs(e, selects(a, ⌊counter(0, 1, n)⌋)) by not_occurs_selects_def of teq.dfy; then a position j where e is found
-// is not before n, a comparison as the left-hand side, which terminates, since its side condition is an atom that is
-// matched against the facts, not an iteration constraint
-lemma {:rw} {:teq} lemma_1(n: Nat, j: int, e: int, a: array<int, int>)
-  requires !occurs(e, selects(a, ⌊counter(0, 1, n)⌋)) && a[j] == e && 0 <= j
-  ensures integer(n) <= j
-
 method main() {
   var N: int;
   var a: array<int, int>;

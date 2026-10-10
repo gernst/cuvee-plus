@@ -18,10 +18,6 @@ lemma {:rw} {:teq} trace_1(a0: array<int, int>, n: Nat, hs: List<int>, C: (int, 
     trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case C(k, h) => a[k := F(a, k, h)] case !C(k, h) => a[k := G(a, k, h)])
       == trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := if C(k, h) then F(a, k, h) else G(a, k, h)])
 
-// the remainder modulo 2 is 0 or 1 (arithmetic, not about traces)
-lemma {:rw} {:teq} lemma_1(y: int)
-  ensures !(y % 2 == 0) <==> y % 2 == 1
-
 method main() {
   var N: int;
   var a: array<int, int>;

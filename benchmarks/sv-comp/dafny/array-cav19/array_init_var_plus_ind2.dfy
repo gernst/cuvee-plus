@@ -8,19 +8,6 @@
 // a further summand d, whose side condition 0 <= d is decided by the same lemmas; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
 
-// the sums 0 + 1 + ... + x and 0 + 1 + ... + (x - 1) are nonnegative for all integers x, also plus a nonnegative d, in
-// the normal form of the simplifier (arithmetic, not about traces); the left-hand sides are comparisons
-lemma {:rw} {:teq} lemma_1(x: int)
-  ensures 0 <= (x + x * x) / 2
-lemma {:rw} {:teq} lemma_2(x: int)
-  ensures 0 <= (-x + x * x) / 2
-lemma {:rw} {:teq} lemma_3(x: int, d: int)
-  requires 0 <= d
-  ensures 0 <= (x + x * x) / 2 + d
-lemma {:rw} {:teq} lemma_4(x: int, d: int)
-  requires 0 <= d
-  ensures 0 <= (-x + x * x) / 2 + d
-
 method main() {
   var N: int;
   var i: int;
