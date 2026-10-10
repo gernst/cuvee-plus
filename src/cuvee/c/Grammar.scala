@@ -7,10 +7,13 @@ object Grammar:
   import easyparse._
   import Brackets._
 
+  // the address &x and the dereference *p, which the parser rejects
   val prefix_ops = Map(
     "-" -> 13,
     "!" -> 13,
-    "~" -> 13
+    "~" -> 13,
+    "&" -> 13,
+    "*" -> 13
   )
 
   val postfix_ops = Map[String, Int]()
@@ -120,6 +123,10 @@ object Grammar:
   val typ: Parser[Type] =
     P(qualifier.* ?~ base ~ qualifier.*)
 
+  // the type of a declaration with the words of an integer type, which sizeof of its variables needs
+  val sized: Parser[(Type, List[String])] =
+    P(qualifier.* ?~ (P((J("int") | J("long") | J("short") | J("char") | J("unsigned") | J("signed")).+).map(words => (IntType, words)) | base.map((_, Nil))) ~ qualifier.*)
+
   // pointers occur in the signatures of the builtins of the harness of SV-COMP, e.g. __assert_fail
   val pointer: Parser[Type] =
     P(typ ~ (star ~ qualifier.*).*).map:
@@ -145,7 +152,7 @@ object Grammar:
     P("sizeof" ~ (SizeofType("(" ?~ (qualifier.* ?~ intwords) ~ qualifier.* ~ ")") | SizeofExpr(unary)))
 
   val atom: Parser[Expr] =
-    P(Num(num) | sizeof | call | Id(id) | cast | parens(expr))
+    P(Num(num) | FloatNum(T("flt")) | sizeof | call | Id(id) | cast | parens(expr))
 
   val postfix: Parser[Expr] =
     P(atom ~ brackets(expr).*).map:
@@ -175,9 +182,13 @@ object Grammar:
 
   val one = R(Num("1"))
 
+  // assignments through pointers, *p = e, which the parser rejects
+  val deref =
+    App(P(star ~ unary.map(List(_))))
+
   // chained assignments x = y = e are the assignments y = e; x = y
   val assign: Parser[Stmt] =
-    P(postfix ?~ assignop ~ (assign.map[Either[Expr, Stmt]](Right(_)) | expr.map(Left(_)))).map:
+    P((postfix | deref) ?~ assignop ~ (assign.map[Either[Expr, Stmt]](Right(_)) | expr.map(Left(_)))).map:
       case ((lhs, op), Left(rhs))    => Assign(lhs, op, rhs)
       case ((lhs, op), Right(inner)) => Block(List(inner, Assign(lhs, op, target(inner))))
 
@@ -201,7 +212,7 @@ object Grammar:
     Declarator(P(star.?.map(_.isDefined) ~ id ~ brackets(expr.?).* ~ ("=" ~ init).?))
 
   val decl =
-    Decl(P(typ ~ (declarator ~+ ",")))
+    Decl(P(sized ~ (declarator ~+ ",")))
 
   // the comma operator, e.g. i = 0, j = 0 in for loops, as a sequence of statements
   val simple: Parser[Stmt] =
@@ -285,7 +296,7 @@ object Grammar:
     P(Dependent(header, { case ((typ, name), params) => body(name).map(Function(typ, name, params, _)) }))
 
   val global =
-    Global(Decl(P(typ ~ (declarator ~+ ",") ~ ";")))
+    Global(Decl(P(sized ~ (declarator ~+ ",") ~ ";")))
 
   val typedef_ =
     Typedef("typedef" ~ Until(";"))

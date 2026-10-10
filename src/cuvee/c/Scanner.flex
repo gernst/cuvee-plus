@@ -28,6 +28,10 @@ chr = \' ([^\'\\\n] | \\[^0-7x\n] | \\[0-7]{1,3} | \\x[0-9a-fA-F]+) \'
 
 num  = ({dec} | {oct} | {hex}) {suffix} | {chr}
 
+// floating point constants, e.g. 2.0, .5, 1e-6, 1.0f, which the parser rejects (see Parser.expr)
+exp = [eE] [+\-]? [0-9]+
+flt = ([0-9]+ "." [0-9]* | "." [0-9]+) {exp}? [fFlL]? | [0-9]+ {exp} [fFlL]?
+
 // type qualifiers and storage classes are ignored by the grammar, as are attributes of GCC
 kw  = "int" | "long" | "short" | "char" | "unsigned" | "signed" | "_Bool" | "bool" | "void" | "float" | "double"
     | "const" | "static" | "extern" | "volatile" | "inline" | "restrict" | "__attribute__"
@@ -62,6 +66,7 @@ sym = {id}
 
 {kw}        { return Syntax.apply(yytext()); }
 {str}       { return Syntax.apply("str", yytext()); }
+{flt}       { return Syntax.apply("flt", yytext()); }
 {num}       { return Syntax.apply("num", yytext()); }
 {sym}       { return Syntax.apply("sym", yytext()); }
 

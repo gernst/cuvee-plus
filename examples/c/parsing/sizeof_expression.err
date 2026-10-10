@@ -1,3 +1,0 @@
-(error
-  "sizeof of an expression is not supported"
-  "SizeofExpr(Cond(Id(a),None))")

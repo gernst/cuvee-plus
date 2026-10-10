@@ -258,7 +258,8 @@ inputs, after the harness), with where they occurred in the sample.
    character constants with escapes (`Parser.literal`), unexpected
    characters as errors (`Syntax.error`); also `float`/`double` in the
    signatures of builtins such as `__VERIFIER_nondet_double`, rejected by the
-   parser otherwise, like pointers.
+   parser otherwise, like pointers; float literals, `&x`, and `*p` are
+   parsed and rejected with "not supported".
 3. Casts to integer types, multidimensional arrays, initializer lists,
    chained assignment. **Done:** casts to integer types are the identity,
    to `_Bool` a comparison with zero, others are rejected; arrays of arrays
@@ -273,7 +274,9 @@ inputs, after the harness), with where they occurred in the sample.
    their definitions (`Typedefs`), the grammar skips typedef declarations,
    so a typedef of e.g. a struct fails only where it is used; `sizeof` of
    integer types, where `long` is an error, as its size depends on the data
-   model, which the yml frontend does not pass on. The tasks with typedefs
+   model, which the yml frontend does not pass on; `sizeof` of expressions
+   by the declared integer type and array sizes of their variables, e.g.
+   `sizeof(array)` of `char array[1024 * 100]`, otherwise by their type. The tasks with typedefs
    now fail later, at structs and pointers (6.), or at functions of the
    headers that are never called, e.g. `__bswap_32` with
    `__builtin_bswap32`, and prototypes with pointers.

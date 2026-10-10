@@ -35,6 +35,8 @@ case object FloatType extends Type
 
 sealed trait Expr
 case class Num(value: String) extends Expr
+// floating point constants, e.g. 2.0, which the parser rejects
+case class FloatNum(value: String) extends Expr
 case class Id(name: String) extends Expr
 case class Index(base: Expr, index: Expr) extends Expr
 case class Call(fun: String, args: List[Expr]) extends Expr
@@ -50,6 +52,7 @@ case class SizeofExpr(expr: Expr) extends Expr
 case class Items(items: List[Expr]) extends Expr
 
 object Num extends (String => Expr)
+object FloatNum extends (String => Expr)
 object Id extends (String => Expr)
 object Call extends ((String, List[Expr]) => Expr)
 object App extends ((String, List[Expr]) => Expr)
@@ -64,7 +67,8 @@ case class Declarator(pointer: Boolean, name: String, sizes: List[Option[Expr]],
 object Declarator extends ((Boolean, String, List[Option[Expr]], Option[Expr]) => Declarator)
 
 sealed trait Stmt
-case class Decl(typ: Type, decls: List[Declarator]) extends Stmt
+// the words of the integer type of a declaration, e.g. unsigned char, for sizeof of its variables (see Parser.bytes)
+case class Decl(typ: Type, words: List[String], decls: List[Declarator]) extends Stmt
 case class Assign(lhs: Expr, op: String, rhs: Expr) extends Stmt
 case class ExprStmt(expr: Expr) extends Stmt
 case class If(test: Expr, left: Stmt, right: Option[Stmt]) extends Stmt
@@ -83,7 +87,7 @@ case class Goto(label: String) extends Stmt
 case class Switch(test: Expr, body: List[Stmt]) extends Stmt
 case class Case(value: Option[Expr], stmt: Stmt) extends Stmt
 
-object Decl extends ((Type, List[Declarator]) => Decl)
+object Decl extends ((Type, List[String], List[Declarator]) => Decl)
 object Assign extends ((Expr, String, Expr) => Stmt)
 object ExprStmt extends (Expr => Stmt)
 object If extends ((Expr, Stmt, Option[Stmt]) => Stmt)

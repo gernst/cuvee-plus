@@ -20,6 +20,10 @@ class Parser(var state: State, arch: Int):
   // the global variables with their C types
   val globals = mutable.Map[String, (core.Var, Type)]()
 
+  // the declared variables that sizeof may measure: the size of their elements in bytes, the sizes of their arrays,
+  // and their initializers (see bytes)
+  val declared = mutable.Map[core.Var, (BigInt, List[Option[Expr]], Option[Expr])]()
+
   // the context of a function body: its result, the temporary variables for the results of calls,
   // the statements of its labels, which a goto may resolve in its place, and the labels at its end
   case class Ctx(result: Option[(core.Var, Type)], temps: mutable.ListBuffer[core.Var],
@@ -153,6 +157,67 @@ class Parser(var state: State, arch: Int):
     else if longs == 1 then arch / 8
     else 8
 
+  // the size in bytes of the elements of a declared variable, by the words of its integer type
+  def elem(t: Type, words: List[String]): BigInt =
+    t match
+      case IntType  => sizeof(words)
+      case BoolType => 1
+      case _        => arch / 8
+
+  // the size in bytes of an expression, sizeof e, e.g. sizeof(a) / sizeof(a[0]), by the declared types of variables
+  // and the sizes of their arrays, otherwise by its type, where pointers and arrays that are parameters are addresses;
+  // `e` is not evaluated
+  def bytes(scope: Scope, ctx: Ctx, e: Expr): BigInt =
+    shape(scope, e) match
+      case Some((size, dims)) =>
+        size * dims.product
+
+      case None =>
+        val (_, _, t) = expr(scope, ctx, e)
+        t match
+          case BoolType => 1
+          case IntType  => 4
+          case _        => arch / 8
+
+  // the size of the elements and the sizes of the dimensions of an array variable, or of an element of it,
+  // where an array without size has the number of items of its initializer
+  def shape(scope: Scope, e: Expr): Option[(BigInt, List[BigInt])] =
+    e match
+      case Id(x) if scope.contains(x) && declared.contains(scope(x)._1) =>
+        val (size, sizes, init) = declared(scope(x)._1)
+        val dims =
+          for (n, i) <- sizes.zipWithIndex
+          yield (n, init) match
+            case (Some(n), _)                         => constant(n)
+            case (None, Some(Items(items))) if i == 0 => BigInt(items.length)
+            case _                                    => Error.raise("sizeof of an array without size", x)
+        Some((size, dims))
+
+      case Index(base, _) =>
+        shape(scope, base).collect:
+          case (size, _ :: dims) => (size, dims)
+
+      case Cond(e, None) =>
+        shape(scope, e)
+
+      case _ =>
+        None
+
+  // the value of a constant expression, e.g. the size of an array 1024 * 100
+  def constant(e: Expr): BigInt =
+    e match
+      case Num(text)             => literal(text)
+      case SizeofType(words)     => sizeof(words)
+      case Cond(e, None)         => constant(e)
+      case App("-", List(a))     => -constant(a)
+      case App("+", List(a, b))  => constant(a) + constant(b)
+      case App("-", List(a, b))  => constant(a) - constant(b)
+      case App("*", List(a, b))  => constant(a) * constant(b)
+      case App("/", List(a, b))  => constant(a) / constant(b)
+      case App("%", List(a, b))  => constant(a) % constant(b)
+      case App("<<", List(a, b)) => constant(a) << constant(b).toInt
+      case _                     => Error.raise("size of an array that is not constant", e)
+
   // the simple escape sequences of C
   val escapes = Map('a' -> 7, 'b' -> 8, 't' -> 9, 'n' -> 10, 'v' -> 11, 'f' -> 12, 'r' -> 13, '\\' -> 92, '\'' -> 39, '"' -> 34, '?' -> 63)
 
@@ -168,6 +233,9 @@ class Parser(var state: State, arch: Int):
     e match
       case Num(text) =>
         (Nil, state.exprs.num(literal(text)), IntType)
+
+      case FloatNum(_) =>
+        Error.raise("floating point numbers are not supported", e)
 
       case Id("true") if !scope.contains("true") =>
         (Nil, state.exprs.const("true"), BoolType)
@@ -214,6 +282,12 @@ class Parser(var state: State, arch: Int):
       case App("~", List(arg)) =>
         val (pre, arg_) = int(scope, ctx, arg)
         (pre, state.exprs.app("bitnot", List(arg_)), IntType)
+
+      case App("&", List(_)) =>
+        Error.raise("the address of a variable is not supported", e)
+
+      case App("*", List(_)) =>
+        Error.raise("the dereference of a pointer is not supported", e)
 
       case App(op @ ("&&" | "||"), List(left, right)) =>
         val (pre1, left_) = cond(scope, ctx, left)
@@ -317,8 +391,8 @@ class Parser(var state: State, arch: Int):
       case SizeofType(words) =>
         (Nil, state.exprs.num(sizeof(words)), IntType)
 
-      case SizeofExpr(_) =>
-        Error.raise("sizeof of an expression is not supported", e)
+      case SizeofExpr(arg) =>
+        (Nil, state.exprs.num(bytes(scope, ctx, arg)), IntType)
 
       case Cond(test, Some((left, right))) =>
         val (pre0, test_) = cond(scope, ctx, test)
@@ -414,7 +488,7 @@ class Parser(var state: State, arch: Int):
       case Assign(lhs, _, rhs)           => indexed(lhs) ++ indexed(rhs)
       case ExprStmt(e)                   => indexed(e)
       case Return(e)                     => e.toSet.flatMap(indexed)
-      case Decl(_, decls)                => decls.flatMap(_.init).toSet.flatMap(indexed)
+      case Decl(_, _, decls)             => decls.flatMap(_.init).toSet.flatMap(indexed)
       case If(test, left, right)         => indexed(test) ++ indexed(left) ++ right.toSet.flatMap(indexed)
       case While(test, body)             => indexed(test) ++ indexed(body)
       case DoWhile(body, test)           => indexed(test) ++ indexed(body)
@@ -439,13 +513,14 @@ class Parser(var state: State, arch: Int):
     val progs =
       for stmt <- stmts
       yield stmt match
-        case Decl(t, decls) =>
+        case Decl(t, words, decls) =>
           for
             Declarator(pointer, x, sizes, init_) <- decls
             prog <-
               val (t_, init) = if pointer then allocation(x, t, sizes, init_) else (array(t, sizes), init_)
               val v = state.exprs.formal(x, typ(t_))
               val v_ = if scope_.values.exists(_._1.name == v.name) then v.fresh else v
+              if !pointer then declared(v_) = (elem(t, words), sizes, init_)
               locals += v_
               scope_ = scope_ + (x -> (v_, t_))
               init.toList.flatMap(assign(scope_, ctx, Id(x), "=", _))
@@ -671,7 +746,7 @@ class Parser(var state: State, arch: Int):
           then rest
           else Some(If(tests.reduce((a, b) => App("||", List(a, b))), falls(i), rest))
 
-    Block(Decl(IntType, List(Declarator(false, x, Nil, Some(test)))) :: chain.toList)
+    Block(Decl(IntType, List("int"), List(Declarator(false, x, Nil, Some(test)))) :: chain.toList)
 
   // the numbers of the variables of the tests of switches
   val switches = Iterator.from(1)
@@ -778,6 +853,9 @@ class Parser(var state: State, arch: Int):
 
         pre :+ state.progs.assign(List(v), List(rhs_))
 
+      case App("*", List(_)) =>
+        Error.raise("the dereference of a pointer is not supported", lhs)
+
       case Index(_, _) =>
         val elem = lvalue(scope, lhs)
         val (pre2, rhs_) =
@@ -871,7 +949,7 @@ class Parser(var state: State, arch: Int):
       case Assign(lhs, _, rhs)           => root(lhs) ++ writes(lhs) ++ writes(rhs)
       case ExprStmt(e)                   => writes(e)
       case Return(e)                     => e.toSet.flatMap(writes)
-      case Decl(_, decls)                => decls.flatMap(_.init).toSet.flatMap(writes)
+      case Decl(_, _, decls)             => decls.flatMap(_.init).toSet.flatMap(writes)
       case If(test, left, right)         => writes(test) ++ assigned(left) ++ right.toSet.flatMap(assigned)
       case While(test, body)             => writes(test) ++ assigned(body)
       case DoWhile(body, test)           => writes(test) ++ assigned(body)
@@ -918,20 +996,18 @@ class Parser(var state: State, arch: Int):
     def exprs(es: List[Expr]): (Set[String], Set[String]) =
       (es.toSet.flatMap(writes).flatMap(global), es.toSet.flatMap(calls))
 
+    // iteratively, since the statements of a block may be many, e.g. in the outputs of the reducers of SV-COMP
     def all(scope: Set[String], stmts: List[Stmt]): (Set[String], Set[String]) =
-      stmts match
-        case Nil =>
-          (Set(), Set())
+      val (_, mod, called) =
+        stmts.foldLeft((scope, Set[String](), Set[String]())):
+          case ((scope, mod, called), Decl(_, _, decls)) =>
+            val (mod_, called_) = exprs(decls.flatMap(_.init))
+            (scope ++ decls.map(_.name), mod ++ mod_, called ++ called_)
 
-        case Decl(_, decls) :: rest =>
-          val (mod1, called1) = exprs(decls.flatMap(_.init))
-          val (mod2, called2) = all(scope ++ decls.map(_.name), rest)
-          (mod1 ++ mod2, called1 ++ called2)
-
-        case stmt :: rest =>
-          val (mod1, called1) = effects(scope, stmt)
-          val (mod2, called2) = all(scope, rest)
-          (mod1 ++ mod2, called1 ++ called2)
+          case ((scope, mod, called), stmt) =>
+            val (mod_, called_) = effects(scope, stmt)
+            (scope, mod ++ mod_, called ++ called_)
+      (mod, called)
 
     s match
       case Assign(lhs, _, rhs)                 =>
@@ -993,7 +1069,7 @@ class Parser(var state: State, arch: Int):
     val zeros = mutable.ListBuffer[core.Expr]()
     val inits = mutable.ListBuffer[core.Prog]()
 
-    for case Global(Decl(t, decls)) <- tops; Declarator(pointer, x, sizes, init) <- decls
+    for case Global(Decl(t, words, decls)) <- tops; Declarator(pointer, x, sizes, init) <- decls
     do
       // global pointers are values, which are null without initializer
       Error.report("arrays of pointers are not supported", x):
@@ -1015,6 +1091,7 @@ class Parser(var state: State, arch: Int):
       zeros += state.exprs.app("=", List(state.exprs.formal(x, typ(t_)), zero(t_)))
       state = state.declare(x, typ(t_), Attrs.empty)
       globals(x) = (state.vars(x), t_)
+      if !pointer then declared(state.vars(x)) = (elem(t, words), sizes, init)
 
     val initialized = inits.toSet.flatMap(_.mod).map(_.name.name)
     val mod = modifies(defs.values.toList).map((f, xs) => if f == "main" then f -> (xs ++ initialized) else f -> xs)
@@ -1047,7 +1124,7 @@ class Parser(var state: State, arch: Int):
     for top <- tops
     do
       top match
-        case Global(Decl(_, decls)) =>
+        case Global(Decl(_, _, decls)) =>
           for Declarator(_, x, _, _) <- decls
           do cmds += state.cmds.declareVar(x)
 

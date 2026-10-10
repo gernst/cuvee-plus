@@ -82,7 +82,8 @@ transformation and any output.
    other exceptions are reported as `internal error` (stack trace with
    `-debug internal`) and always stop it. `Pipe.run` returns an exit code,
    1 for an error and 2 for an internal error, with which `Cuvee.main`
-   exits.
+   exits. `Cuvee.main` runs the pipe on a thread with a stack of 1 GB, for
+   deeply nested input, e.g. the outputs of the reducers of SV-COMP.
 
 ### Stages and transforms
 

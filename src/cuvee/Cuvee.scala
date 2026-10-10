@@ -26,8 +26,14 @@ object Cuvee extends util.Main:
         System.out.flush()
         sys.exit(cuvee.test.Expected.main(file))
 
+      // on a thread with a large stack for deeply nested input, e.g. the hundreds of nested conditionals in the
+      // outputs of the reducers of SV-COMP, which the parsers and transforms recurse into;
+      // an uncaught exception is reported by the thread, and the exit code stays 1
       case _ =>
-        val (code, _, _) = pipe(args.toList)
+        var code = 1
+        val thread = Thread(null, () => code = pipe(args.toList)._1, "cuvee", 1L << 30)
+        thread.start()
+        thread.join()
         System.out.flush()
         sys.exit(code)
 

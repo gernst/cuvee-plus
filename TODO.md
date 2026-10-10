@@ -9,7 +9,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - identify performance improvements, notably in the simplifier
 - thread config through more code, so that it is usually available
 - error messages should use a nice printer
-- C frontend: implement `sizeof` of an expression via its (unresolved) type
 - C frontend: `goto` to a label whose statement falls through, by copying
   the statements
 
@@ -680,6 +679,8 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   `END: return 0;`, `ERROR: { reach_error(); abort(); }`), which is copied in
   its place, or to itself (a loop without exit); other gotos, e.g. those of
   state machines, are not supported (`c.Parser.goto`).
+- `sizeof` of an expression by the declared integer type and array sizes of
+  its variable (`c.Parser.bytes`), otherwise by its type.
 - No structs, floating point, bitwise operators, preprocessor; pointers
   only as arrays allocated by `malloc`, `alloca`, `calloc` (see [SV-COMP.md](SV-COMP.md)), and otherwise as values of `Ptr`
   in the prelude of C ([prelude.bpl](resources/cuvee/c/prelude.bpl)), which
@@ -690,23 +691,27 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
   (only uncalled procedures are entry points).
-- Errors of the C frontend on SV-COMP (Arrays and Loops, 0.34.22, 101 tasks),
-  besides `sizeof` of expressions (3) and `goto` to labels that fall through
-  (23), see New:
-  - Unsupported constructs end in a generic parse error, not in "not
-    supported": structs (36 tasks: definitions and forward declarations
-    `struct S;` at the top level, `typedef struct {...} *T`, an anonymous
-    `struct { int n; } a[]` as parameter, e.g. `array-lopstr16`,
+- Errors of the C frontend on SV-COMP (Arrays and Loops, 0.34.22, 101 tasks;
+  with 0.35.2, 3 parse: `loops/compact`, `heavy-1`, `heavy-2` by `sizeof` of
+  expressions), besides `goto` to labels that fall through (26, see New;
+  most are gotos back in the outputs of the reducers, which could be loops
+  `L: while (true) { ...; break; }` whose gotos continue them, without
+  copies), and floating point (29, also float literals now report "not
+  supported"):
+  - Structs and unions end in a generic parse error, not in "not supported"
+    (37 tasks: definitions and forward declarations `struct S;` at the top
+    level, `typedef struct {...} *T`, an anonymous `struct { int n; } a[]`
+    as parameter, e.g. `array-lopstr16`,
     `array-industry-pattern/array_of_struct_*`, `loop-industry-pattern/aiob_*`,
-    `ofuf_*`), `&x` (`loops/terminator_01`), and `*p = 1` as a statement
-    (`loops/verisec_NetBSD-libc_loop`). Float literals, e.g. `a / 2.0`, fail
-    in the scanner with "unexpected character '.'" (16 tasks:
-    `nla-digbench-scaling/freire1_*`, `freire2_*`, `loops/ludcmp`, `lu.cmp`);
-    floating-point types report "not supported" (13 tasks).
+    `ofuf_*`, also `union wait` of the headers in `array-examples/relax-2-2`).
   - Deeply nested `if`/`else` (about 240 levels in the outputs of the
-    reducers) overflows the stack, in easyparse (`Choice`, `Recursive`) and
-    in `c.Parser.effects`/`all` (`loop-invgen/apache-get-tag.i.p+nlh-reducer`,
-    `apache-get-tag.i.p+sep-reducer`, `id_build.i.p+nlh-reducer`).
+    reducers) overflowed the stack; `Cuvee.main` now runs on a thread with a
+    stack of 1 GB, and `c.Parser.effects` iterates over the statements of a
+    block; these tasks now end at gotos. Tests call `Cuvee.pipe` directly,
+    on the default stack.
+  - `*p` in `p <= tmp` with pointers is "not an integer"
+    (`loops/verisec_NetBSD-libc_loop`, `veris.c_NetBSD-libc_loop`); `&x` and
+    `*p` otherwise report "not supported".
   - Arrays of pointers are not supported (`array-industry-pattern/array_ptr_partial_init`,
     `array-lopstr16/partial_lesser_bound`).
   - A pointer that is assigned a local array, `char in[11]; char *s; s = in;`,
