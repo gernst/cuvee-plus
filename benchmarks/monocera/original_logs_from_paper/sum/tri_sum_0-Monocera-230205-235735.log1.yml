@@ -1,0 +1,115 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 5094836 kB
+  notes: ''
+  toolName: TriCera
+  startDate: '2023-02-06 00:57:35'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/ms1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.120 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/ms2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.108 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/brs5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.128 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/brs3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.111 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/ms3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.123 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/brs2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.133 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/brs1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.75 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/ms5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.130 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/ms4.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.131 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/s2lif.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.126 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/brs4.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.113 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/s5lif.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.119 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/s4lif.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.120 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/conda.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.155 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/s1lif.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.131 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/s3lif.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.116 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/sum/indp5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.113 s

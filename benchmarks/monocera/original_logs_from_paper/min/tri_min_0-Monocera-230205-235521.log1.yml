@@ -1,0 +1,85 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 4060600 kB
+  notes: ''
+  toolName: TriCera
+  startDate: '2023-02-06 00:55:21'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/rew.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.91 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/array_doub_access_init_const.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.100 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/array_init_var_plus_ind.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Syntax Error, trying to recover and continue parse... for input symbol "" spanning
+      from unknown:25/-1(729) to unknown:25/0(730)
+    - 'Parse Error: At line 25, near ");'
+    - 'retur" :     Unrecoverable Syntax Error'
+    duration: 3.306 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/array_tripl_access_init_const.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.76 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/array_init_var_plus_ind2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Syntax Error, trying to recover and continue parse... for input symbol "" spanning
+      from unknown:27/-1(752) to unknown:27/0(753)
+    - 'Parse Error: At line 27, near ");'
+    - 'retur" :     Unrecoverable Syntax Error'
+    duration: 2.331 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/array_init_pair_symmetr2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.87 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/standard_vararg_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.70 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/standard_partition_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.67 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/array_init_pair_sum_const.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.100 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/rewnifrev.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.85 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/min/standard_minInArray_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.68 s

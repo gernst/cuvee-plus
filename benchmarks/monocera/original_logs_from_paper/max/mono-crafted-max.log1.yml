@@ -1,0 +1,91 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 4060600 kB
+  notes: ''
+  toolName: Monocera
+  startDate: '2023-02-05 20:28:04'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/crafted_tests/max_leq-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - SAFE
+    - 'Search space sizes: (1,9)'
+    - 'Search steps: (1,16)'
+    duration: 22.500 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/crafted_tests/max_eq-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - SAFE
+    - 'Search space sizes: (1,3)'
+    - 'Search steps: (1,11)'
+    duration: 21.335 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/crafted_tests/max_eq-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - SAFE
+    - 'Search space sizes: (1,3)'
+    - 'Search steps: (1,14)'
+    duration: 38.301 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/crafted_tests/max_leq-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - SAFE
+    - 'Search space sizes: (1,9)'
+    - 'Search steps: (1,20)'
+    duration: 30.202 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/crafted_tests/max_eq-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - SAFE
+    - 'Search space sizes: (1,3)'
+    - 'Search steps: (1,9)'
+    duration: 26.643 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/crafted_tests/max_leq-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - SAFE
+    - 'Search space sizes: (1,9)'
+    - 'Search steps: (1,20)'
+    duration: 52.223 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/crafted_tests/battery_diag-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: no definition of function "nondet_BATTERY_PACK" available'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - wall timeout
+    duration: 300.86 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/crafted_tests/battery_diag-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: no definition of function "nondet_BATTERY_PACK" available'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - wall timeout
+    duration: 300.110 s

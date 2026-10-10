@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the test sum/s2lif of the CAV 2023 paper on MonoCera, converted from svcomp_tests by convert_cuvee.py
+input_files: 's2lif.c'
+
+properties:
+  - property_file: ../../../../sv-comp/c/properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: C
+  data_model: ILP32

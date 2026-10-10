@@ -1,0 +1,55 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 4060600 kB
+  notes: ''
+  toolName: Monocera
+  startDate: '2023-02-05 21:01:22'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/max/array_init_var_plus_ind3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - unreach-call
+    - expected verdict mismatch!
+    - UNKNOWN
+    duration: 277.302 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/max/standard_maxInArray_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - wall timeout
+    duration: 300.109 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/max/condn.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - SAFE
+    - 'Search space sizes: (1,108)'
+    - 'Search steps: (1,96)'
+    - unreach-call
+    - expected verdict matches the result!
+    duration: 129.285 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/max/sanfoundry_27_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - 'Warning: Using -9223372036854775808 for empty ranges for \max.'
+    - SAFE
+    - 'Search space sizes: (1,24)'
+    - 'Search steps: (1,56)'
+    - unreach-call
+    - expected verdict matches the result!
+    duration: 284.675 s

@@ -1,0 +1,37 @@
+// ./Cuvee.sh -teq -simplify benchmarks/monocera/polished_tests/cuvee/forall/sanfoundry_27_ground.c
+extern void abort(void);
+#include <assert.h>
+void reach_error() { assert(0); }
+void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();} } }
+extern int __VERIFIER_nondet_int();
+
+/*
+ * Adapted from http://www.sanfoundry.com/c-programming-examples-arrays/
+ * C Program to Find the Largest Number in an Array
+ */
+// #define SIZE 100000
+
+int main()
+{
+    int array[100000];
+    int i;
+
+		for(i = 0; i < 100000; i++)
+		{
+		  array[i] = __VERIFIER_nondet_int();
+		}
+
+    int largest = array[0];
+    for (i = 1; i < 100000; i++)
+    {
+        if (largest < array[i])
+            largest = array[i];
+    }
+
+    int x;
+    for ( x = 0 ; x < 100000 ; x++ ) {
+      __VERIFIER_assert( array[ x ] <= largest );
+    }
+
+    return 0;
+}

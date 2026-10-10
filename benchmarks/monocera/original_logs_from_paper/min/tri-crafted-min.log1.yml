@@ -1,0 +1,49 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 6129072 kB
+  notes: ''
+  toolName: TriCera
+  startDate: '2023-02-06 00:54:20'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/min_geq-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    duration: 50.625 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/min_eq-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    duration: 61.367 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/min_eq-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.93 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/min_geq-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.82 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/min_geq-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.63 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/min_eq-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.61 s

@@ -1,0 +1,64 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 6129072 kB
+  notes: ''
+  toolName: TriCera
+  startDate: '2023-02-06 00:54:20'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/max_leq-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    duration: 90.24 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/max_eq-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    duration: 78.273 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/max_eq-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.88 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/max_leq-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.64 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/max_eq-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.67 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/max_leq-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.67 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/battery_diag-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: no definition of function "nondet_BATTERY_PACK" available'
+    - (error "Out of Memory")
+    - wall timeout
+    duration: 341.415 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/battery_diag-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: no definition of function "nondet_BATTERY_PACK" available'
+    - wall timeout
+    duration: 300.52 s

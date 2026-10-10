@@ -1,0 +1,37 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 5094836 kB
+  notes: ''
+  toolName: TriCera
+  startDate: '2023-02-06 08:20:48'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall_new/standard_partial_init_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.61 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall_new/standard_copyInitSum_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.62 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall_new/standard_find_ground-1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.73 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall_new/standard_partition_original_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.59 s

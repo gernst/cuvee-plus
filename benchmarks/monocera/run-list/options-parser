@@ -1,0 +1,70 @@
+usage() {
+    cat<<EOF
+Usage: run-list-* bmList [-h] [-tcpu value] [-twall value] [-notes string]
+  bmlist must contain a list of paths to benchmarks to execute, one per line
+  -h     display this help
+  -tcpu  must be followed by cpu timeout in seconds,  default: [-tcpu 1200]
+  -twall must be followed by wall timeout in seconds, default: [-twall 600]
+  -notes must be followed by a string, this will be printed in the log file.
+  -mail  must be followed by an email address, if provided the script will
+         try to end an email to this address on exit
+
+  A log will be generated at the end of script's execution named \$(bmList).log1
+EOF
+    exit
+}
+
+# todo: limit max number of processors?
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
+parse_params() {
+    # default values of variables set from params
+    CPUTIMELIMIT=1200 # seconds
+    WALLTIMELIMIT=600 # seconds
+    NOTES=""
+    EMAILADDRESS=""
+    while :; do
+        case "${2-}" in
+            -h | --help) usage ;;
+            #            -tcpu) flag=1 ;; # example flag
+            -tcpu) # cpu timeout
+                CPUTIMELIMIT="${3-}"
+                shift
+                ;;
+            -twall) # wall timeout
+                WALLTIMELIMIT="${3-}"
+                shift
+                ;;
+            -notes) # wall timeout
+                NOTES="${3-}"
+                shift
+                ;;
+            -mail) # email address
+                EMAILADDRESS="${3-}"
+                shift
+                ;;
+            -?*) die "Unknown option: $2" ;;
+            *) break ;;
+        esac
+        shift
+    done
+
+    args=("$@")
+
+    # check required params and arguments
+    [[ ${#args[@]} -eq 0 ]] && echo "Missing benchmark list" && usage
+
+    return 0
+}
+
+parse_params "$@"

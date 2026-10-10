@@ -78,7 +78,7 @@ object Grammar:
   val dec = T("dec")
   val str = T("str")
 
-  val op = P(sym | J("<") | J(">") | J("==") | J("*") | J("map") | J("multiset"))
+  val op = P(sym | J("<") | J(">") | J("==") | J("*") | J("map") | J("multiset") | J("const"))
   val id = Sym(op)
 
   val id_prime = id ~ "'"

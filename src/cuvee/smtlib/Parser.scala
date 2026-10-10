@@ -841,7 +841,7 @@ class Parser(private var init: State):
         state.exprs.map(deps_, bound_.map(_.name)): bound__ =>
           expr(scope ++ bound__, update)
 
-      case List(Id("all"), List(bindings*), body) =>
+      case List(Id("invs"), List(bindings*), body) =>
         val (bound_, deps_) = leteqs(scope, bindings)
         state.exprs.all(deps_, bound_.map(_.name)): bound__ =>
           expr(scope ++ bound__, body)

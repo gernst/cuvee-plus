@@ -1,0 +1,71 @@
+#!/bin/bash
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
+log_name=${1}-$TOOLNAME-$(date -u +%y%m%d-%H%M%S).log1
+
+source "$script_dir/options-parser"
+
+{
+# Print summary including system setup
+echo    "tool-name       : "$TOOLNAME
+echo    "tool-version    : "$TOOLVERSION
+echo    "tool-options    : "$TOOLOPTIONS
+echo    "cpu-time-limit  : "$CPUTIMELIMIT s
+echo    "wall-time-limit : "$WALLTIMELIMIT s
+echo -n "os              : "; (uname)
+MODEL_NAME=$(lscpu | grep "Model name" | sed 's/^.*: * //')
+echo -n "cpu-model       : "
+echo "$MODEL_NAME"
+echo -n "cpu-count       : "; (nproc)
+echo -n "architecture    : "; (lscpu | grep "Architecture" | sed 's/^.*: * //')
+echo -n "mem-total       : "; (grep "MemTotal" /proc/meminfo | sed 's/^.*: * //')
+echo -n "start-date      : "; (date +'%Y-%m-%d %H:%M:%S')
+echo    "script-dir      : "$PWD
+echo    "notes           : "$NOTES
+
+ulimit -t $CPUTIMELIMIT
+
+SECONDS=0
+echo
+for name in `cat $1`; do
+  echo "filename : "$name
+
+  # todo: review this line to get the expected status from other files, e.g.,
+  #       maybe YML files for SV-Comp benchmarks
+  # todo: below only works if there is an name.smt2 file with expected status in same dir
+  #echo -n "expected : ";(grep ':status' $name.smt2)
+
+	start_time="$(date -u +%s%N)"
+  echo "output   : "
+
+  timeout $WALLTIMELIMIT $BIN $name $TOOLOPTIONS 2>&1
+
+  xs=$?
+  case $xs in
+      (0) ;;
+      (124) echo "wall timeout";;
+      (137) echo "killed";;
+      (*)   echo "other error";;
+  esac
+
+  exit_status=$?
+  if [[ $exit_status -eq 124 ]]; then
+      echo "timeout"
+  fi
+
+  end_time="$(date -u +%s%N)"
+  elapsed_ms="$(($(($end_time-$start_time))/1000000))"
+  elapsed_s="$((elapsed_ms/1000))"
+  echo "duration : ${elapsed_s}.$(($elapsed_ms%1000)) s"
+  echo
+done
+total_elapsed=$SECONDS
+}> $log_name
+
+echo "  Completed execution of $TOOLNAME on $1 in $((total_elapsed/3600))h:$((total_elapsed/60-(total_elapsed/3600)*60))m:$((total_elapsed%60))s."
+echo "  Output written to ${log_name}."
+
+if [ -n "$EMAILADDRESS" ]; then
+    ssh lc1 mutt -s "\"Completed execution of $TOOLNAME on $1 in $((total_elapsed/3600)):$((total_elapsed/60-(total_elapsed/3600)*60)):$((total_elapsed%60)).\"" \
+        "$EMAILADDRESS" -a "${PWD}/$log_name"
+fi

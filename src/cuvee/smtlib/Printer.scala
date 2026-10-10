@@ -376,7 +376,7 @@ object Printer extends cuvee.pipe.Printer:
         apps(atom("map"), list(eqs(bound, deps)), lines(update))
 
       case Invs(deps, bound, body) =>
-        apps(atom("all"), list(eqs(bound, deps)), lines(body))
+        apps(atom("invs"), list(eqs(bound, deps)), lines(body))
 
       // not part of SMT-LIB, the choice of a result whose guard holds, (eps (phi1 expr1) ... (phin exprn))
       case Eps(updates) =>

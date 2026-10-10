@@ -57,7 +57,7 @@ After section 3 of the paper:
 |---|---|---|
 | `Trace` | `trace(e, for Y, Z do x, y, z :: u)` | `(trace (x e) ((y Y) (z Z)) u)` |
 | `Maps` | `maps(for Y yield y :: u)` (Boogie: `map(...)`) | `(map ((y Y)) u)` |
-| `Invs` | `invs(for Y check y :: φ)` (Boogie: `all(...)`) | `(all ((y Y)) φ)` |
+| `Invs` | `invs(for Y check y :: φ)` (Boogie: `all(...)`) | `(invs ((y Y)) φ)` |
 | update | `case φ₁ => e₁ case φ₂ => e₂` | `(eps (φ₁ e₁) (φ₂ e₂))` |
 
 `⌊X⌋` is `butlast(X)` in Dafny and Boogie.

@@ -1,0 +1,117 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 6129072 kB
+  notes: ''
+  toolName: Monocera
+  startDate: '2023-02-05 20:59:58'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/rew.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - SAFE
+    - 'Search space sizes: (1,27)'
+    - 'Search steps: (1,55)'
+    - unreach-call
+    - expected verdict matches the result!
+    duration: 39.990 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/array_doub_access_init_const.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - wall timeout
+    duration: 300.83 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/array_init_var_plus_ind.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - unreach-call
+    - expected verdict mismatch!
+    - UNKNOWN
+    duration: 66.55 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/array_tripl_access_init_const.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - wall timeout
+    duration: 300.89 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/array_init_var_plus_ind2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - unreach-call
+    - expected verdict mismatch!
+    - UNKNOWN
+    duration: 64.141 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/array_init_pair_symmetr2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - wall timeout
+    duration: 300.87 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/standard_vararg_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - SAFE
+    - 'Search space sizes: (1,12)'
+    - 'Search steps: (1,29)'
+    - unreach-call
+    - expected verdict matches the result!
+    duration: 58.66 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/standard_partition_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - wall timeout
+    duration: 300.97 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/array_init_pair_sum_const.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - wall timeout
+    duration: 300.90 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/rewnifrev.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - SAFE
+    - 'Search space sizes: (1,27)'
+    - 'Search steps: (1,51)'
+    - unreach-call
+    - expected verdict matches the result!
+    duration: 41.251 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/min/standard_minInArray_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - 'Warning: Using 9223372036854775807 for empty ranges for \min.'
+    - wall timeout
+    duration: 300.81 s

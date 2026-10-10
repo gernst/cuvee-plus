@@ -1,0 +1,67 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 6129072 kB
+  notes: ''
+  toolName: TriCera
+  startDate: '2023-02-06 00:54:20'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/two_arrays_sum-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    duration: 46.2 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/sum_geq-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.77 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/two_arrays_sum-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.92 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/sum_eq-100.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.75 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/sum_eq-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    duration: 44.668 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/sum_eq-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.73 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/sum_geq-10.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    duration: 97.51 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/sum_geq-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.67 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/crafted_tests/two_arrays_sum-UB.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.103 s

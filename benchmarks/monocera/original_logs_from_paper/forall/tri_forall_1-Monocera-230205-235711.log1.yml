@@ -1,0 +1,206 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 5094836 kB
+  notes: ''
+  toolName: TriCera
+  startDate: '2023-02-06 00:57:11'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/array_ptr_partial_init.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.68 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/pnr2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.82 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/mlceu2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - (error "method can only be applied to terms with a bit-vector sort")
+    - 'Other Error: method can only be applied to terms with a bit-vector sort'
+    duration: 3.424 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/pr2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.94 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/ifcomp.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.86 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/array_tiling_poly6.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.90 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/standard_init6_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.83 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/condg.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.94 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/sina1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.116 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/ifeqn3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.83 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/nr5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.88 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/skipped.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.80 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/ifeqn2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.87 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/ss2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.93 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/standard_vararg_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.78 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/sqm-if.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.94 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/sina4.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.111 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/standard_init5_ground-1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.79 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/rewnif.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.102 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/nsqm-if.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.81 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/mbpr5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.77 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/nr3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.74 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/standard_init7_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.67 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/modp.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.82 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/rewnifrev2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.55 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/pnr3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.93 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/indp1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.78 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/rewnifrev.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.64 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/sina5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.95 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/mbpr3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.87 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/standard_minInArray_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.65 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/forall/mbpr2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.87 s

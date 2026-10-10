@@ -1,0 +1,12 @@
+#!/bin/bash
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
+
+source "$script_dir/options-parser"
+
+TOOLNAME="Monocera"
+BIN=/home/cav23/artifact-168/tools/tricera/tri # enter manually
+TOOLVERSION="cav23" # enter manually or automate
+TOOLOPTIONS="-t:$CPUTIMELIMIT -heaparrays -abstractPO -onlyexq"
+
+source "$script_dir/run-list-c"

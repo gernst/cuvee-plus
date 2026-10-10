@@ -1,0 +1,40 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 4060600 kB
+  notes: ''
+  toolName: TriCera
+  startDate: '2023-02-06 00:55:13'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/max/array_init_var_plus_ind3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Syntax Error, trying to recover and continue parse... for input symbol "" spanning
+      from unknown:25/-1(732) to unknown:25/0(733)
+    - 'Parse Error: At line 25, near ");'
+    - 'retur" :     Unrecoverable Syntax Error'
+    duration: 2.328 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/max/standard_maxInArray_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.89 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/max/condn.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.105 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/tricera/max/sanfoundry_27_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.68 s

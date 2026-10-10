@@ -1,0 +1,210 @@
+- toolOptions: -t:2700 -heaparrays -abstractPO -onlyexq
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: TACAS22
+  memTotal: 6129072 kB
+  notes: ''
+  toolName: Monocera
+  startDate: '2023-02-05 23:09:33'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/partial_lesser_bound-1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    - 'Search space sizes: (1,9)'
+    - 'Search steps: (1,30)'
+    - unreach-call
+    - expected verdict matches the result!
+    duration: 88.762 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/indp2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.103 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/pr3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    - 'Search space sizes: (1,6561)'
+    - 'Search steps: (1,217)'
+    - unreach-call
+    - expected verdict matches the result!
+    duration: 143.434 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/mods.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.148 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/eqn5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.136 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/array_tripl_access_init_const.c
+    expected: ''
+    toolOutput:
+    - ''
+    - SAFE
+    - 'Search space sizes: (1,27)'
+    - 'Search steps: (1,80)'
+    - unreach-call
+    - expected verdict matches the result!
+    duration: 199.314 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/array_init_var_plus_ind2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - unreach-call
+    - expected verdict mismatch!
+    - UNKNOWN
+    duration: 108.735 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/eqn1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.96 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/nsqm-if.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.95 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/sina3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.107 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/standard_init7_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.111 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/modp.c
+    expected: ''
+    toolOutput:
+    - ''
+    - '(error "Internal exception: java.lang.Exception: theories failed to construct
+      model for ^ false'
+    - '. Facts: (valueAlmostEverywhere(a_shad_280'', 2) & store(a_shad_280'', 0, 1,
+      a) & select(a_shad_280'', _30, 0) & arrayConstant(a_shad_280'') & arrayConstant(a))'
+    - '. Arithmetic clauses: true'
+    - '. Eagerly matched clauses: (valueAlmostEverywhere(a_shad_280'', 2) & store(a_shad_280'',
+      0, 1, a) & select(a_shad_280'', _30, 0) & arrayConstant(a_shad_280'') & arrayConstant(a),
+      ! EX EX EX EX EX (_0 + -1*_4 != 0 & store(_2, _3, _4, _1) & select(_1, _3, _0))
+      & ! EX EX EX EX EX (_3 + -1*_4 != 0 & store2(_0, _1, _2, _3) & store2(_0, _1,
+      _2, _4)) & ! EX EX EX EX EX (_3 + -1*_4 != 0 & store(_0, _1, _2, _3) & store(_0,
+      _1, _2, _4)) & ! EX EX EX EX (_0 + -1*_3 != 0 & const(_3, _1) & select(_1, _2,
+      _0)) & ! EX EX EX EX (_2 + -1*_3 != 0 & select(_0, _1, _2) & select(_0, _1,
+      _3)) & ! EX EX EX (_1 + -1*_2 != 0 & valueAlmostEverywhere(_0, _1) & valueAlmostEverywhere(_0,
+      _2)) & ! EX EX EX (_1 + -1*_2 != 0 & const(_0, _1) & const(_0, _2)))'
+    - '. Lazily matched clauses: (valueAlmostEverywhere(a_shad_280'', 2) & store(a_shad_280'',
+      0, 1, a) & select(a_shad_280'', _30, 0) & arrayConstant(a_shad_280'') & arrayConstant(a),
+      ! EX EX EX EX EX EX (_3 + -1*_4 != 0 & store2(_2, _3, _5, _0) & select(_2, _4,
+      _1) & !select(_0, _4, _1)) & ! EX EX EX EX EX EX (_3 + -1*_4 != 0 & store2(_2,
+      _3, _5, _1) & select(_1, _4, _0) & !select(_2, _4, _0)) & ! EX EX EX EX EX EX
+      (_3 + -1*_4 != 0 & store(_2, _3, _5, _1) & select(_1, _4, _0) & !select(_2,
+      _4, _0)) & ! EX EX EX EX EX (valueAlmostEverywhere(_1, _3) & store2(_1, _2,
+      _4, _0) & !valueAlmostEverywhere(_0, _3)) & ! EX EX EX EX (store2(_1, _2, _3,
+      _0) & !select(_0, _2, _3)) & ! EX EX (const(_1, _0) & !valueAlmostEverywhere(_0,
+      _1)))'
+    - '. Tasks: []'
+    - '. Eliminated constants: Set(app0, arg16, app8, arg15, app4, N_shad_set_310'',
+      arg2, arg9, hi_0'', arg20, arg11, arg18, arg19, N_shad_set_31, app6, a_shad_28,
+      app7, arg13, app5, arg10, lo_0'', a_shad_280'', arg29, app2, a, a_shad_set_29,
+      arg14, arg27, sum, arg21, res_0'', arg2, arg26, N, arg3, arr_0'', arg0, N_shad_30,
+      arg22, arg4, arg1, app1, \forall_arr_27, app0, all_3_0, arg23, app3, app9, arg25,
+      arg6, arg12, \forall_res_26, arg17, \forall_lo_24, N_shad_300'', all_232_0,
+      arg24, a_shad_set_290'', arg5, \forall_hi_25, arg8, arg28, arg7)'
+    - '. Free constants (fixed): Map(arg16 -> ShieldingEquations, arg15 -> ShieldingEquations,
+      N_shad_set_310'' -> ShieldingEquations, arg9 -> ShieldingEquations, hi_0'' ->
+      ShieldingEquations, arg18 -> ShieldingEquations, arg19 -> ShieldingEquations,
+      N_shad_set_31 -> ShieldingEquations, a_shad_28 -> ShieldingEquations, arg13
+      -> ShieldingEquations, arg10 -> ShieldingEquations, lo_0'' -> ShieldingEquations,
+      a_shad_280'' -> ShieldingEquations, a -> ShieldingEquations, a_shad_set_29 ->
+      ShieldingEquations, arg27 -> ShieldingEquations, sum -> ShieldingEquations,
+      arg21 -> ShieldingEquations, arg3 -> ShieldingEquations, arr_0'' -> ShieldingEquations,
+      arg0 -> ShieldingEquations, N_shad_30 -> ShieldingEquations, arg22 -> ShieldingEquations,
+      arg4 -> ShieldingEquations, arg1 -> ShieldingEquations, \forall_arr_27 -> ShieldingEquations,
+      app0 -> ShieldingEquations, all_3_0 -> ShieldingEquations, arg25 -> ShieldingEquations,
+      arg6 -> ShieldingEquations, arg12 -> ShieldingEquations, \forall_lo_24 -> ShieldingEquations,
+      N_shad_300'' -> ShieldingEquations, all_232_0 -> ShieldingEquations, arg24 ->
+      ShieldingEquations, a_shad_set_290'' -> ShieldingEquations, \forall_hi_25 ->
+      ShieldingEquations, arg28 -> ShieldingEquations, arg7 -> ShieldingEquations)'
+    - '. Defined constants: []'
+    - '. Stored inferences: List()")'
+    - 'Other Error: Internal exception: java.lang.Exception: theories failed to construct
+      model for ^ false'
+    - '. Facts: (valueAlmostEverywhere(a_shad_280'', 2) & store(a_shad_280'', 0, 1,
+      a) & select(a_shad_280'', _30, 0) & arrayConstant(a_shad_280'') & arrayConstant(a))'
+    - '. Arithmetic clauses: true'
+    - '. Eagerly matched clauses: (valueAlmostEverywhere(a_shad_280'', 2) & store(a_shad_280'',
+      0, 1, a) & select(a_shad_280'', _30, 0) & arrayConstant(a_shad_280'') & arrayConstant(a),
+      ! EX EX EX EX EX (_0 + -1*_4 != 0 & store(_2, _3, _4, _1) & select(_1, _3, _0))
+      & ! EX EX EX EX EX (_3 + -1*_4 != 0 & store2(_0, _1, _2, _3) & store2(_0, _1,
+      _2, _4)) & ! EX EX EX EX EX (_3 + -1*_4 != 0 & store(_0, _1, _2, _3) & store(_0,
+      _1, _2, _4)) & ! EX EX EX EX (_0 + -1*_3 != 0 & const(_3, _1) & select(_1, _2,
+      _0)) & ! EX EX EX EX (_2 + -1*_3 != 0 & select(_0, _1, _2) & select(_0, _1,
+      _3)) & ! EX EX EX (_1 + -1*_2 != 0 & valueAlmostEverywhere(_0, _1) & valueAlmostEverywhere(_0,
+      _2)) & ! EX EX EX (_1 + -1*_2 != 0 & const(_0, _1) & const(_0, _2)))'
+    - '. Lazily matched clauses: (valueAlmostEverywhere(a_shad_280'', 2) & store(a_shad_280'',
+      0, 1, a) & select(a_shad_280'', _30, 0) & arrayConstant(a_shad_280'') & arrayConstant(a),
+      ! EX EX EX EX EX EX (_3 + -1*_4 != 0 & store2(_2, _3, _5, _0) & select(_2, _4,
+      _1) & !select(_0, _4, _1)) & ! EX EX EX EX EX EX (_3 + -1*_4 != 0 & store2(_2,
+      _3, _5, _1) & select(_1, _4, _0) & !select(_2, _4, _0)) & ! EX EX EX EX EX EX
+      (_3 + -1*_4 != 0 & store(_2, _3, _5, _1) & select(_1, _4, _0) & !select(_2,
+      _4, _0)) & ! EX EX EX EX EX (valueAlmostEverywhere(_1, _3) & store2(_1, _2,
+      _4, _0) & !valueAlmostEverywhere(_0, _3)) & ! EX EX EX EX (store2(_1, _2, _3,
+      _0) & !select(_0, _2, _3)) & ! EX EX (const(_1, _0) & !valueAlmostEverywhere(_0,
+      _1)))'
+    - '. Tasks: []'
+    - '. Eliminated constants: Set(app0, arg16, app8, arg15, app4, N_shad_set_310'',
+      arg2, arg9, hi_0'', arg20, arg11, arg18, arg19, N_shad_set_31, app6, a_shad_28,
+      app7, arg13, app5, arg10, lo_0'', a_shad_280'', arg29, app2, a, a_shad_set_29,
+      arg14, arg27, sum, arg21, res_0'', arg2, arg26, N, arg3, arr_0'', arg0, N_shad_30,
+      arg22, arg4, arg1, app1, \forall_arr_27, app0, all_3_0, arg23, app3, app9, arg25,
+      arg6, arg12, \forall_res_26, arg17, \forall_lo_24, N_shad_300'', all_232_0,
+      arg24, a_shad_set_290'', arg5, \forall_hi_25, arg8, arg28, arg7)'
+    - '. Free constants (fixed): Map(arg16 -> ShieldingEquations, arg15 -> ShieldingEquations,
+      N_shad_set_310'' -> ShieldingEquations, arg9 -> ShieldingEquations, hi_0'' ->
+      ShieldingEquations, arg18 -> ShieldingEquations, arg19 -> ShieldingEquations,
+      N_shad_set_31 -> ShieldingEquations, a_shad_28 -> ShieldingEquations, arg13
+      -> ShieldingEquations, arg10 -> ShieldingEquations, lo_0'' -> ShieldingEquations,
+      a_shad_280'' -> ShieldingEquations, a -> ShieldingEquations, a_shad_set_29 ->
+      ShieldingEquations, arg27 -> ShieldingEquations, sum -> ShieldingEquations,
+      arg21 -> ShieldingEquations, arg3 -> ShieldingEquations, arr_0'' -> ShieldingEquations,
+      arg0 -> ShieldingEquations, N_shad_30 -> ShieldingEquations, arg22 -> ShieldingEquations,
+      arg4 -> ShieldingEquations, arg1 -> ShieldingEquations, \forall_arr_27 -> ShieldingEquations,
+      app0 -> ShieldingEquations, all_3_0 -> ShieldingEquations, arg25 -> ShieldingEquations,
+      arg6 -> ShieldingEquations, arg12 -> ShieldingEquations, \forall_lo_24 -> ShieldingEquations,
+      N_shad_300'' -> ShieldingEquations, all_232_0 -> ShieldingEquations, arg24 ->
+      ShieldingEquations, a_shad_set_290'' -> ShieldingEquations, \forall_hi_25 ->
+      ShieldingEquations, arg28 -> ShieldingEquations, arg7 -> ShieldingEquations)'
+    - '. Defined constants: []'
+    - '. Stored inferences: List()'
+    duration: 8.689 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/sina5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - wall timeout
+    duration: 300.108 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/monocera/forall/pr4.c
+    expected: ''
+    toolOutput:
+    - ''
+    - (error "Out of Memory")
+    - Out of Memory
+    - wall timeout
+    duration: 639.59 s

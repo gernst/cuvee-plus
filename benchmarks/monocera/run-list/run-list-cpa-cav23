@@ -1,0 +1,19 @@
+#!/bin/bash
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
+
+source "$script_dir/options-parser"
+
+# These fields must be set manually for each tool
+
+# any exports needed by the tool
+#export JAVA= /home/user/jdk-11.0.13/bin/java # enter manually
+
+TOOLNAME="CPAchecker"
+BIN=/home/cav23/artifact-168/tools/cpachecker/scripts/cpa.sh # enter manually
+TOOLVERSION=$($BIN -version | tail -n 1) # enter manually or automate
+TOOLOPTIONS=" -nolog -benchmark -heap 1200M -timelimit $CPUTIMELIMIT -kInduction-linear -spec sv-comp-reachability -preprocess"
+#TOOLOPTIONS="-nolog -noout -benchmark -heap 1200M -timelimit $CPUTIMELIMIT -config /home/user/bin/CPAchecker-2.1.1-unix/config/svcomp22--memorysafety.properties"
+# todo: option to set heap size
+
+source "$script_dir/run-list-c"

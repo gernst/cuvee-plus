@@ -17,3 +17,6 @@ tools/
 
 # the copy of z3 for BenchExec (see cuvee.py)
 /z3
+
+# scripts for formatting the experimental results
+scripts/

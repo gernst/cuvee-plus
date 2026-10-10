@@ -1,0 +1,2 @@
+All test files in this repository comes from the SVCOMP22 github repo https://gitlab.com/sosy-lab/benchmarking.
+All files are licenced under Apache 2.0 (see Apache-2.0.txt)

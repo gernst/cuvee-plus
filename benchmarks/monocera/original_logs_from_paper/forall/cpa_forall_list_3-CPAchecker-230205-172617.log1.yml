@@ -1,0 +1,307 @@
+- toolOptions: -nolog -benchmark -heap 1200M -timelimit 2700 -kInduction-linear -spec
+    sv-comp-reachability -preprocess
+  scriptDir: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests
+  os: Linux
+  cpuCount: '4'
+  architecture: x86_64
+  toolVersion: CPAchecker 2.1.1 (Java HotSpot(TM) 64-Bit Server VM 11.0.13)
+  memTotal: 5094836 kB
+  notes: ''
+  toolName: CPAchecker
+  startDate: '2023-02-05 18:26:17'
+  cpuTimeLimit: 2700 s
+  cpuModel: ''
+  wallTimeLimit: 300 s
+- - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/partial_lesser_bound-1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Exception in thread "main" java.lang.OutOfMemoryError: Java heap space'
+    - at java.base/java.util.HashSet.<init>(HashSet.java:106)
+    - at org.sosy_lab.cpachecker.cpa.invariants.InvariantsState.clearAll(InvariantsState.java:722)
+    - at org.sosy_lab.cpachecker.cpa.invariants.InvariantsMergeOperator.reduceToGivenVariables(InvariantsMergeOperator.java:76)
+    - at org.sosy_lab.cpachecker.cpa.invariants.InvariantsMergeOperator.reduceToInterestingVariables(InvariantsMergeOperator.java:72)
+    - at org.sosy_lab.cpachecker.cpa.invariants.InvariantsMergeOperator.isMergeAllowed(InvariantsMergeOperator.java:59)
+    - at org.sosy_lab.cpachecker.cpa.invariants.InvariantsMergeOperator.merge(InvariantsMergeOperator.java:37)
+    - at org.sosy_lab.cpachecker.cpa.composite.CompositeMergeAgreeOperator.merge(CompositeMergeAgreeOperator.java:85)
+    - at org.sosy_lab.cpachecker.cpa.arg.ARGMergeJoin.merge(ARGMergeJoin.java:57)
+    - at org.sosy_lab.cpachecker.core.algorithm.CPAAlgorithm.handleState(CPAAlgorithm.java:404)
+    - at org.sosy_lab.cpachecker.core.algorithm.CPAAlgorithm.run0(CPAAlgorithm.java:273)
+    - at org.sosy_lab.cpachecker.core.algorithm.CPAAlgorithm.run(CPAAlgorithm.java:245)
+    - at org.sosy_lab.cpachecker.core.algorithm.ParallelAlgorithm.runParallelAnalysis(ParallelAlgorithm.java:407)
+    - at org.sosy_lab.cpachecker.core.algorithm.ParallelAlgorithm.lambda$createParallelAnalysis$3(ParallelAlgorithm.java:344)
+    - at org.sosy_lab.cpachecker.core.algorithm.ParallelAlgorithm$$Lambda$246/0x0000000100386c40.call(Unknown
+      Source)
+    - at com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:131)
+    - at com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:74)
+    - at com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:82)
+    - at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+    - at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+    - at java.base/java.lang.Thread.run(Thread.java:834)
+    - wall timeout
+    duration: 345.280 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/partial_lesser_bound.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - killed
+    duration: 107.868 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/array_init_var_plus_ind3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.532 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/standard_copyInit_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 301.564 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/mlceu2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.854 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/pr2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.404 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/standard_init3_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 301.38 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/nr2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.505 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/array_doub_access_init_const.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.990 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/standard_vararg_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.373 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/simple_array_index_value_3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 301.11 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/standard_partition_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 301.574 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/ifeqn1.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 301.96 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/nsqm-if.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: FALSE. Property violation (unreach-call: reach_error();
+      called in line 22) found by chosen configuration.'
+    - More details about the verification run can be found in the directory "./output".
+    duration: 15.453 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/sina3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 301.598 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/nr3.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.430 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/standard_init4_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.683 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/standard_init8_ground-2.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.639 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/pr5.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.434 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/mbpr4.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.375 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/sanfoundry_27_ground.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.512 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/pcomp.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 302.778 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/rewnifrev.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.475 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/array_init_nondet_vars.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.921 s
+  - bmName: /home/zafer/tri-exq/tacas22-tests/cav23tests/tests/polished_tests_nomalloc/cpa/forall/pr4.c
+    expected: ''
+    toolOutput:
+    - ''
+    - Running CPAchecker with Java heap of size 1200M.
+    - Running CPAchecker with default stack size (1024k). Specify a larger value with
+      -stack if needed.
+    - 'Verification result: UNKNOWN, incomplete analysis.'
+    - More details about the verification run can be found in the directory "./output".
+    - wall timeout
+    duration: 300.430 s

@@ -1,0 +1,4 @@
+function const<a₀, a₁>(x₀: a₁): array<a₀, a₁>
+
+const zeros: array<int, int> := const(0)
+

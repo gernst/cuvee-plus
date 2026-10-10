@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
-<benchmark tool="cuvee" displayName="Cuvée (fallback)" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
+<!-- Cuvée as cuvee.xml, with the remaining goals lowered to first-order logic for z3 (-fallback) -->
+<benchmark tool="cuvee" displayName="Cuvée+Z3" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
 
-  <!-- <require cpuModel="Intel Core i7-10700 @ 2.90 GHz"/> -->
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
   <option name="-teq"/>
@@ -37,6 +37,27 @@
     <tasks name="Dafny.unreach-call.Unbounded">
       <includesfile>../benchmarks/sv-comp/dafny/dafny.set</includesfile>
       <propertyfile>../benchmarks/sv-comp/dafny/properties/unreach-call.prp</propertyfile>
+    </tasks>
+  </rundefinition>
+
+  <!-- the SV-COMP tests of the CAV 2023 paper on MonoCera, converted for Cuvée (benchmarks/monocera/convert_cuvee.py),
+       by the operator that MonoCera instruments -->
+  <rundefinition name="MonoCera_unreach-call">
+    <tasks name="C.unreach-call.MonoCera-Forall">
+      <include>../benchmarks/monocera/polished_tests/cuvee/forall/*.yml</include>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.MonoCera-Max">
+      <include>../benchmarks/monocera/polished_tests/cuvee/max/*.yml</include>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.MonoCera-Min">
+      <include>../benchmarks/monocera/polished_tests/cuvee/min/*.yml</include>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.MonoCera-Sum">
+      <include>../benchmarks/monocera/polished_tests/cuvee/sum/*.yml</include>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
     </tasks>
   </rundefinition>
 
