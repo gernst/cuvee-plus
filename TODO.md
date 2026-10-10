@@ -9,6 +9,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - identify performance improvements, notably in the simplifier
 - thread config through more code, so that it is usually available
 - error messages should use a nice printer
+- C frontend: implement `sizeof` of an expression via its (unresolved) type
+- C frontend: `goto` to a label whose statement falls through, by copying
+  the statements
 
 ## Bugs
 
@@ -673,9 +676,12 @@ SV-COMP examples (`examples/sv-comp`):
 Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 
 - Unbounded integers, no overflow; arrays are values, sizes are ignored.
-- No `switch`, `goto`, structs, floating point, bitwise operators,
-  preprocessor; pointers only as arrays allocated by `malloc`, `alloca`,
-  `calloc` (see [SV-COMP.md](SV-COMP.md)), and otherwise as values of `Ptr`
+- `goto` only to a label whose statement does not fall through (e.g.
+  `END: return 0;`, `ERROR: { reach_error(); abort(); }`), which is copied in
+  its place, or to itself (a loop without exit); other gotos, e.g. those of
+  state machines, are not supported (`c.Parser.goto`).
+- No structs, floating point, bitwise operators, preprocessor; pointers
+  only as arrays allocated by `malloc`, `alloca`, `calloc` (see [SV-COMP.md](SV-COMP.md)), and otherwise as values of `Ptr`
   in the prelude of C ([prelude.bpl](resources/cuvee/c/prelude.bpl)), which
   are compared but not dereferenced; no `&`, `*p`, or pointer arithmetic.
 - The modifies clause of a loop is inferred from the core program, where a
@@ -684,6 +690,30 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
   (only uncalled procedures are entry points).
+- Errors of the C frontend on SV-COMP (Arrays and Loops, 0.34.22, 101 tasks),
+  besides `sizeof` of expressions (3) and `goto` to labels that fall through
+  (23), see New:
+  - Unsupported constructs end in a generic parse error, not in "not
+    supported": structs (36 tasks: definitions and forward declarations
+    `struct S;` at the top level, `typedef struct {...} *T`, an anonymous
+    `struct { int n; } a[]` as parameter, e.g. `array-lopstr16`,
+    `array-industry-pattern/array_of_struct_*`, `loop-industry-pattern/aiob_*`,
+    `ofuf_*`), `&x` (`loops/terminator_01`), and `*p = 1` as a statement
+    (`loops/verisec_NetBSD-libc_loop`). Float literals, e.g. `a / 2.0`, fail
+    in the scanner with "unexpected character '.'" (16 tasks:
+    `nla-digbench-scaling/freire1_*`, `freire2_*`, `loops/ludcmp`, `lu.cmp`);
+    floating-point types report "not supported" (13 tasks).
+  - Deeply nested `if`/`else` (about 240 levels in the outputs of the
+    reducers) overflows the stack, in easyparse (`Choice`, `Recursive`) and
+    in `c.Parser.effects`/`all` (`loop-invgen/apache-get-tag.i.p+nlh-reducer`,
+    `apache-get-tag.i.p+sep-reducer`, `id_build.i.p+nlh-reducer`).
+  - Arrays of pointers are not supported (`array-industry-pattern/array_ptr_partial_init`,
+    `array-lopstr16/partial_lesser_bound`).
+  - A pointer that is assigned a local array, `char in[11]; char *s; s = in;`,
+    is a type mismatch of `PointerType` and `ArrayType`
+    (`loops/veris.c_sendmail_tTflag_arr_one_loop`).
+  - GCC builtins are unknown functions, e.g. `__builtin_bswap32`
+    (`array-examples/relax-2-2`).
 
 ## SV-COMP task definitions
 
