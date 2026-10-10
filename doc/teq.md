@@ -211,16 +211,30 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   traces at different positions. `consts(n, v)` and `prefix(k, xs)` state
   their lengths, `nil` has length 0, e.g. the iterations of an inner loop
   that runs zero times, other traces and lists get a
-  fresh length function, and the other functions of `teq.dfy` (`sum`,
-  `occurs`, ...) are replaced by fresh functions without definition, which
-  generalizes the goal: a model of the solver need not be a counterexample.
+  fresh length function.
+- The definitions of `teq.dfy` by a `match` on a parameter of type `List` or
+  `Nat`, with a case per constructor, whose other case recurs on the tail or
+  the predecessor only, with the other arguments unchanged (`sum`, `parity`,
+  `count`, `occurs`, `pow`, `agree_prefix`, `above_iterations`), are unfolded
+  once per position (`Fallback.recursion`): over a list `xs` of length `n`,
+  a fresh function `f_from(j)` for the suffix from `j`, with
+  `f_from(n) == base` and `f_from(j) == step(xs(j), f_from(j + 1))`, and
+  `f(xs)` is `f_from(0)`; over a natural `n`, `f_upto(0) == base` and
+  `f_upto(k + 1) == step(k, f_upto(k))`, and `f(n)` is `f_upto(n)`. This
+  follows the definitions of `teq.dfy` without restating them.
+- The other functions of `teq.dfy`, e.g. `indexof` and `distincts`, which
+  also apply `occurs` to the tail, and those of the input without a
+  definition are replaced by fresh functions without definition,
+  which generalizes the goal: a model of the solver need not be a
+  counterexample.
 - The declarations and lemmas of `teq.dfy` and lemmas over traces, lists,
   and naturals are dropped.
 - Tests: [fallback.dfy](../examples/dafny/teq/fallback.dfy),
   [fallback_count.dfy](../examples/dafny/teq/fallback_count.dfy),
   [fallback.c](../examples/c/teq/fallback.c),
   [fallback_negated.c](../examples/c/teq/fallback_negated.c),
-  [fallback_nested.c](../examples/c/teq/fallback_nested.c).
+  [fallback_nested.c](../examples/c/teq/fallback_nested.c),
+  [fallback_recursion.dfy](../examples/dafny/teq/fallback_recursion.dfy).
 
 ## Simplification and rewriting
 

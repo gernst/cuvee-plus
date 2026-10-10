@@ -1,6 +1,20 @@
-function count₁₅(x₀: array<int, int>, x₁: int): int
+function maps₁₈(x₀: array<int, int>, x₁: int, x₂: int): bool
+
+function count_from₁₆(x₀: array<int, int>, x₁: int, x₂: int): int
 
 goal
-  forall a: array<int, int>, n: int, c₉: int, n₄: int ::
-    0 <= n₄ ==> c₉ == count₁₅(a, n₄) && n₄ == n && 0 <= n₄ ==> c₉ <= n
+  (forall a: array<int, int>, n₄: int ::
+     forall j₁₉: int ::
+       0 <= j₁₉ < n₄ ==> maps₁₈(a, n₄, j₁₉) == (a[0 + j₁₉ * 1] < 0))
+    && (forall a: array<int, int>, n₄: int ::
+          count_from₁₆(a, n₄, n₄) == 0
+            && (forall j₁₇: int ::
+                  0 <= j₁₇ < n₄
+                    ==> count_from₁₆(a, n₄, j₁₇)
+                      == count_from₁₆(a, n₄, j₁₇ + 1)
+                        + (if maps₁₈(a, n₄, j₁₇) == true then 1 else 0)))
+    ==> (forall a: array<int, int>, n: int, c₉: int, n₄: int ::
+           0 <= n₄
+             ==> c₉ == count_from₁₆(a, n₄, 0) && n₄ == n && 0 <= n₄
+             ==> c₉ <= n)
 

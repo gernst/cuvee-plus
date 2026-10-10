@@ -1,0 +1,43 @@
+const xs_length₂: int
+
+function xs₁(x₀: int): int
+
+function sum_from₄(x₀: int): int
+
+function occurs_from₇(x₀: int, x₁: int): bool
+
+function count_from₁₀(x₀: int, x₁: int): int
+
+function pow_upto₁₃(x₀: int, x₁: int): int
+
+goal
+  0 <= xs_length₂
+    && (sum_from₄(xs_length₂) == 0
+          && (forall j₅: int ::
+                0 <= j₅ < xs_length₂
+                  ==> sum_from₄(j₅) == xs₁(j₅) + sum_from₄(j₅ + 1)))
+    && (forall x: int ::
+          occurs_from₇(x, xs_length₂) == false
+            && (forall j₈: int ::
+                  0 <= j₈ < xs_length₂
+                    ==> occurs_from₇(x, j₈)
+                      == (xs₁(j₈) == x || occurs_from₇(x, j₈ + 1))))
+    && (forall x: int ::
+          count_from₁₀(x, xs_length₂) == 0
+            && (forall j₁₁: int ::
+                  0 <= j₁₁ < xs_length₂
+                    ==> count_from₁₀(x, j₁₁)
+                      == (if xs₁(j₁₁) == x then 1 else 0)
+                        + count_from₁₀(x, j₁₁ + 1)))
+    && (forall n: int ::
+          0 <= n
+            ==> pow_upto₁₃(n, 0) == 1
+              && (forall j₁₄: int ::
+                    0 <= j₁₄ < n
+                      ==> pow_upto₁₃(n, j₁₄ + 1) == 2 * pow_upto₁₃(n, j₁₄)))
+    ==> (forall x: int, n: int, r: int ::
+           0 <= n
+             ==> true
+             ==> (0 <= sum_from₄(0) || occurs_from₇(x, 0))
+               && count_from₁₀(x, 0) <= pow_upto₁₃(n, n))
+
