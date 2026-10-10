@@ -336,7 +336,7 @@ object Simplify extends Transform:
 
       // the guards of the cases are simplified, cases whose guard is false are dropped,
       // and the results are simplified assuming their guard and, since the guards are disjoint, that the others are false;
-      // not so the guards themselves, which would become true, as the guards are also complete
+      // not so the guards themselves, which could become weaker and overlap, e.g. both true for complementary guards
       case Eps(updates) =>
         val updates_ =
           for
@@ -950,8 +950,9 @@ object Simplify extends Transform:
     Upd(cond, rhs)
 
   // nested choices are flattened, cases with equal results are merged by the disjunction of their guards,
-  // and a single case is its result, since the guards are complete,
-  // e.g. case b => y case c => y is y, which is a trace that keeps its value;
+  // and a single case is its result, e.g. case b => y case c => y is y, which is a trace that keeps its value;
+  // where no guard holds, this chooses the value that is not specified, which is unused, since the guards of
+  // the updates of trace equation systems hold in all iterations by their iteration constraints;
   // without cases, e.g. when all guards are false, the result of type `typ` is not specified
   def eps(config: Config, state: State, ctx: Context, typ: Type, updates: List[Upd]): Expr =
     val merged =

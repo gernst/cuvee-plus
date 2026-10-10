@@ -234,7 +234,8 @@ object Old:
 
 // the combinators of trace equation systems, which describe the computation of a loop per variable;
 // their dependencies `deps` are sequences of the same length, over which the variables `bound` range point-wise,
-// and their updates are expressions, a single result or guarded results Eps(...) with disjoint and complete guards
+// and their updates are expressions, a single result or guarded results Eps(...) with disjoint guards,
+// which need not be complete, e.g. the paths that continue a loop with break
 //
 // a case of Eps, if φ then e, as Upd(φ, e)
 case class Upd(cond: Expr, rhs: Expr):
@@ -245,7 +246,7 @@ case class Upd(cond: Expr, rhs: Expr):
     Upd(f(cond), f(rhs))
 
 // a variant of Hilbert's choice over guarded results, if φ₁ then e₁, ..., if φₚ then eₚ:
-// some eᵢ whose guard φᵢ holds
+// some eᵢ whose guard φᵢ holds, a value that is not specified if none holds
 case class Eps(updates: List[Upd]) extends Expr:
   def params = updates.params
   def free = updates.free
