@@ -136,8 +136,14 @@ the side conditions hold.
 | `sum/brs2`-`brs5` | 1 goal | closed | `select_current_trace_reset_add`, `trace_store_index_cases_def`, `sum_cases_below` |
 | `sum/ms2`-`ms5` | 1 goal | closed | `select_current_trace_reset_add`, `sum_mod_below` |
 | `sum/indp5` | closed | closed | - |
+| `forall/array_doub_access_init_const` | 1 goal | closed | `select_current_trace_stride2` |
+| `forall/pr2` | 2 goals | closed | `div_nonpos`, `select_current_trace_stride2_cases`, `half_even` |
+| `forall/rewnif` | 1 goal | closed | `select_current_trace_ahead` |
+| `forall/rew`, `min/rew` | 1 goal | closed | `select_current_trace_ahead` |
+| `forall/rewnifrev`, `min/rewnifrev` | 1 goal | 1 goal | `select_current_trace_ahead_down` does not match |
 
-All 17 tests of `sum` are closed, of which MonoCera closes 10 (see above).
+All 17 tests of `sum` are closed, of which MonoCera closes 10 (see above),
+and 5 of the tests that only MonoCera closed before.
 
 - `select_current_trace_reset_add` reads a sum kept in the cell `j` of an
   array (`sum[0]` of a one-element array), which the first iteration sets to
@@ -164,3 +170,36 @@ All 17 tests of `sum` are closed, of which MonoCera closes 10 (see above).
   Their left-hand sides are comparisons, whose constants bind the bound;
   `sum_below_prefix` of teq.dfy does not apply, since its bound occurs only
   in the side condition `below_prefix(...)`, which would have to be a fact.
+- `select_current_trace_stride2` reads the cells of a loop whose iteration `k`
+  stores constants at `2*k` and `2*k + 1`: disjoint pairs, which cover
+  `0, ..., 2*n - 1`, outside of which the initial array remains;
+  `select_current_trace_stride2_cases` is the same for three cases whose
+  guards do not depend on the iteration (`MINVAL` in `pr2`), with the side
+  condition that they are exhaustive, without which the update would be
+  unspecified where none holds. Strides of 3, 4, and 5 (`pr3`-`pr5`) and
+  writes by an inner loop (`nr*`) would need lemmas of their own.
+- `div_nonpos`, `x / c <= 0` exactly if `x < c` for `0 < c`, refutes the
+  case `CELLCOUNT / 2 <= 0` of `pr2`. `half_even` works around a limitation
+  of the simplifier: for `n == CELLCOUNT / 2` and `CELLCOUNT % 2 == 0`, the
+  case `2*n <= i < CELLCOUNT` outside of the stores stays, since the
+  simplifier inlines solutions of arithmetic equations into polynomials only
+  and does not relate `n` to the atom `CELLCOUNT / 2` (see TODO.md); the
+  lemma states the half of an even number as `CELLCOUNT == 2*n`, a
+  polynomial equation, which it solves.
+- `select_current_trace_ahead` reads the cells of a loop whose iteration `k`
+  stores `F(k)` ahead at `k + 1` and then `G(k)` at `k`, except in the last
+  one: `G(j)` remains at `j < n`, which the iteration `j` writes last. The
+  side condition `n <= m` makes the guards `k + 1 < m` and `m == k + 1`
+  cover all iterations.
+- Open: `select_current_trace_ahead_down`, the same for the loop down from
+  `s` of `rewnifrev` (`counter(s, -1, n)`, storing ahead at `i - 1`), does
+  not match its trace, although the printed lemma and the trace in the goal
+  have the same form, with the counter `I == counter(n + i, -1, n)` of the
+  exit `i`, which only the hypothesis `0 == i + 1` determines. Not the
+  cause: another rule rewriting the trace first (the log of `-debug rewrite`
+  shows none), the unused first dependency (a variant without it does not
+  match either), or the literal `-1` (teq.dfy matches `counter(i, -1, n)`).
+  Minimal Dafny functions with the trace are no test: identical dependencies
+  are merged into one, simple stores are folded into `stores` before, and
+  lemma statements are not simplified. Finding the cause needs tracing the
+  match in `Rewrite`.
