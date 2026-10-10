@@ -46,6 +46,23 @@ function {:teq} sum(values: List<int>): int
   case cons(v, vs) => v + sum(vs)
 }
 
+function {:teq} {:fold} stores<a, b>(a: array<a, b>, keys: List<a>, values: List<b>): Trace<array<a, b>>
+{
+  trace(a, for keys, values do b, k, v :: b[k := v])
+}
+
+// updates in place
+
+// a loop that updates each position k once, by cases on the old value a[k], is the trace of the stores of the new
+// values computed from the initial array, since a[k] is not modified before iteration k; the first case stores a
+// constant, since a higher-order instance must contain a[k] (see Rewrite.abstraction); selects_counter of teq.dfy
+// then reads the values back
+// (from sum/conda)
+lemma {:rw} trace_store_cases_def(a0: array<int, int>, n: Nat, c: int, P: (int) -> bool, G: (int) -> int)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(a[k]) => a[k := c] case !P(a[k]) => a[k := G(a[k])])
+      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(a0[k]) then c else G(a0[k])))
+
 // sums in an array cell
 
 // a sum kept in the cell j of an array, e.g. sum[0] of a one-element array in C, which the first iteration sets to c
@@ -56,3 +73,11 @@ lemma {:rw} select_current_trace_reset_add(a0: array<int, int>, j: int, n: Nat, 
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a[j := a[j] + G(k)]))[j]
       == if n == zero then a0[j] else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0))
+
+// the same where the other iterations keep the array, e.g. since the simplifier has reduced sum[0] + a[i] to sum[0]
+// for a[i] == 0; the cell is c after the first iteration
+// (from sum/ms1)
+lemma {:rw} select_current_trace_reset_keep(a0: array<int, int>, j: int, n: Nat, c: int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a))[j]
+      == if n == zero then a0[j] else c

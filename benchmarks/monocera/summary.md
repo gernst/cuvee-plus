@@ -110,3 +110,47 @@ is one of the following.
    `0 <= (n + n*n) div 2` for `0 <= n`, which the simplifier does not decide
    (see the bounds of division under trace equation systems in
    [TODO.md](../../TODO.md)).
+
+## Lemmas for the open goals
+
+[lemmas.dfy](lemmas.dfy) collects lemmas for the open goals, injected by
+`-include` (not part of teq.dfy, whose declarations it repeats as needed):
+
+```
+./Cuvee.sh -teq -simplify -split -simplify -include benchmarks/monocera/lemmas.dfy benchmarks/monocera/polished_tests/cuvee/sum/brs1.c
+```
+
+The results are those of version 0.35.15 with the lemmas of teq.dfy of
+commit 9a13ed0f, run locally with 30 s per test. A variant of each closed
+test with a false assertion stays open, since the lemmas compute the value
+in question.
+
+| Test | without | with lemmas | lemma |
+|---|---|---|---|
+| `sum/brs1` | 1 goal | closed | `select_current_trace_reset_add` |
+| `sum/ms1` | 1 goal | closed | `select_current_trace_reset_keep` |
+| `sum/conda` | 1 goal | closed | `trace_store_cases_def` |
+| `sum/s1lif`-`s5lif` | 1 goal | closed | `trace_store_cases_def` |
+| `sum/indp5` | closed | closed | - |
+| `sum/brs2`-`brs5` | 1 goal | 1 goal | `select_current_trace_reset_add` applies |
+| `sum/ms2`-`ms5` | 1 goal | 1 goal | `select_current_trace_reset_add` applies |
+
+- `select_current_trace_reset_add` reads a sum kept in the cell `j` of an
+  array (`sum[0]` of a one-element array), which the first iteration sets to
+  `c` and the others increase by `G(k)`, as `current_trace_reset_add` of
+  teq.dfy for a scalar; `select_current_trace_reset_keep` is the variant
+  whose other iterations keep the array, since the simplifier reduces
+  `sum[0] + a[i]` to `sum[0]` for `a[i] == 0` (`ms1`).
+- `trace_store_cases_def` turns a loop that updates each position `k` once by
+  cases on its old value, e.g. `a[k] == 1 ? 2 : a[k] - 1` in `conda`, into
+  the stores of the values computed from the initial array, which
+  `selects_stores_counter` of teq.dfy reads back. The first case stores a
+  constant, since a higher-order instance must contain `a[k]`
+  (`Rewrite.abstraction`).
+- `select_current_trace_reset_add` needed version 0.35.15: the simplifier
+  reduced the instance `(z) => a[z]` of the higher-order variable `G` to the
+  array `a` by eta reduction, which left `G(k)` an application of the array.
+- Still open: in `brs2`-`brs5`, `sum(maps(... if 0 < k then a[k] else 0)) <=
+  c*N`, where the first loop sets `a[k]` by cases on `k % c`; in
+  `ms2`-`ms5`, `sum(maps(... if 0 < k then k % m else 0)) <= (m-1)*N`. Both
+  need a bound of each term and its sum over the iterations.
