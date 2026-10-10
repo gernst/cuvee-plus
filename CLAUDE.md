@@ -28,7 +28,9 @@ or solvers consume.
   item is finished (compiles, all tests pass), report and wait. Messages are
   one line `area: what changed; ...; version X.Y.Z`.
 - Bump `Config.version` ([src/cuvee/Config.scala](src/cuvee/Config.scala))
-  in every commit: second digit for major features, third for minor ones.
+  in every commit that changes Scala code: second digit for major features,
+  third for minor ones. Commits without Scala changes (examples, docs,
+  benchmark definitions) keep the version and omit it from the message.
 - After each commit: `mill -i assembly; cp out/assembly.dest/out.jar cuvee.jar`.
 - Never commit the user's untracked scratch files (e.g. `*.dfy` at the root).
 - Every feature gets tests, preferably example files whose first line is
