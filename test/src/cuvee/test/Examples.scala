@@ -23,8 +23,8 @@ object Examples:
   def supported(file: os.Path) =
     !unsupported.contains(file.relativeTo(root).toString)
 
-  // directories of examples that are no tests, e.g. the experiments with sorting in Dafny, which are worked on
-  val excluded = List(os.sub / "dafny" / "sorting")
+  // directories of examples that are no tests, e.g. the experiments with algorithms in Dafny, which are worked on
+  val excluded = List(os.sub / "dafny" / "algorithms")
 
   // example files with extension `ext` below `dir`, relative to the examples directory, except the excluded ones
   def find(dir: os.SubPath, ext: String): List[os.Path] =

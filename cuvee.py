@@ -12,8 +12,8 @@ import benchexec.tools.template
 class Tool(benchexec.tools.template.BaseTool2):
     """
     Tool info for Cuvée, which proves the property unreach-call of C programs and of their Dafny translations
-    (benchmarks/sv-comp/dafny) by trace equation systems, whose goals the simplifier closes with a database of lemmas
-    (xml/cuvee.xml passes -teq -simplify, xml/cuvee-fallback.xml also -fallback -z3).
+    (benchmarks/sv-comp/dafny) by trace equation systems, whose goals the simplifier closes with a database of lemmas,
+    optionally followed by an SMT solver on the remaining goals.
     The output is in the language of the input, SMT-LIB for C and Dafny for Dafny: no goal left means that the
     property holds, goals that remain are not refuted, hence the result is unknown, since the tool does not produce
     witnesses of violations.

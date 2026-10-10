@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
-<benchmark tool="cuvee" timelimit="1 min" memlimit="7 GB" cpuCores="1">
+<benchmark tool="cuvee" displayName="Cuvée" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
 
   <!-- <require cpuModel="Intel Core i7-10700 @ 2.90 GHz"/> -->
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
@@ -10,22 +10,30 @@
   <option name="-split"/>
   <option name="-simplify"/>
 
+  <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">
+    <tasks name="C.unreach-call.Arrays">
+      <includesfile>../sv-benchmarks/c/Arrays.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.Loops">
+      <includesfile>../sv-benchmarks/c/Loops.set</includesfile>
+      <includesfile>../sv-benchmarks/c/VerifyThis-Loops.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
   </rundefinition>
 
-  <tasks name="Dafny">
-    <includesfile>../benchmarks/sv-comp/dafny/dafny.set</includesfile>
-    <propertyfile>../benchmarks/sv-comp/dafny/properties/unreach-call.prp</propertyfile>
-  </tasks>
-
-  <tasks name="Loops">
-    <includesfile>../sv-benchmarks/c/Loops.set</includesfile>
-    <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
-  </tasks>
-
-  <tasks name="Arrays">
-    <includesfile>../sv-benchmarks/c/Arrays.set</includesfile>
-    <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
-  </tasks>
+  <!-- the local benchmarks: the Dafny translations of SV-COMP tasks and the C programs printed from them,
+       whose loops are unbounded (benchmarks/sv-comp) -->
+  <rundefinition name="local_unreach-call">
+    <tasks name="C.unreach-call.Unbounded">
+      <includesfile>../benchmarks/sv-comp/c/c.set</includesfile>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="Dafny.unreach-call.Unbounded">
+      <includesfile>../benchmarks/sv-comp/dafny/dafny.set</includesfile>
+      <propertyfile>../benchmarks/sv-comp/dafny/properties/unreach-call.prp</propertyfile>
+    </tasks>
+  </rundefinition>
 
 </benchmark>

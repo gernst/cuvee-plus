@@ -14,22 +14,30 @@
   <!-- z3 is limited by the time limit only, which this covers, since -timeout defaults to 1 s per query -->
   <option name="-timeout">900000</option>
 
+  <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">
+    <tasks name="C.unreach-call.Arrays">
+      <includesfile>../sv-benchmarks/c/Arrays.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.Loops">
+      <includesfile>../sv-benchmarks/c/Loops.set</includesfile>
+      <includesfile>../sv-benchmarks/c/VerifyThis-Loops.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
   </rundefinition>
 
-  <tasks name="Dafny">
-    <includesfile>../benchmarks/sv-comp/dafny/dafny.set</includesfile>
-    <propertyfile>../benchmarks/sv-comp/dafny/properties/unreach-call.prp</propertyfile>
-  </tasks>
-
-  <tasks name="Loops">
-    <includesfile>../sv-benchmarks/c/Loops.set</includesfile>
-    <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
-  </tasks>
-
-  <tasks name="Arrays">
-    <includesfile>../sv-benchmarks/c/Arrays.set</includesfile>
-    <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
-  </tasks>
+  <!-- the local benchmarks: the Dafny translations of SV-COMP tasks and the C programs printed from them,
+       whose loops are unbounded (benchmarks/sv-comp) -->
+  <rundefinition name="local_unreach-call">
+    <tasks name="C.unreach-call.Unbounded">
+      <includesfile>../benchmarks/sv-comp/c/c.set</includesfile>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="Dafny.unreach-call.Unbounded">
+      <includesfile>../benchmarks/sv-comp/dafny/dafny.set</includesfile>
+      <propertyfile>../benchmarks/sv-comp/dafny/properties/unreach-call.prp</propertyfile>
+    </tasks>
+  </rundefinition>
 
 </benchmark>
