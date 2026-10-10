@@ -186,7 +186,10 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   hypotheses, and the formulas of negative polarity of disjunctions, e.g. of
   `¬(φ ∧ ψ)`, which the simplifier makes of `φ ∧ ψ ⇒ false`, but not those
   of a single conjunct of a goal; lists among the dependencies of equations
-  and iteration constraints get it as well. Counters are inlined, their
+  and iteration constraints get it as well; those whose length follows
+  from no hypothesis, e.g. the nondeterministic choices of a loop that the
+  simplifier has eliminated, get a fresh length, as the functions are
+  universal. Counters are inlined, their
   entries are `i + j * c`.
 - A list of traces, e.g. the traces of an inner loop per iteration of the
   outer one, is a function of two indices, `K(j, i)`, with a function for the

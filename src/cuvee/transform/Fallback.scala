@@ -214,10 +214,18 @@ object Fallback extends Transform:
       val known_ = known ++ (found ++ deps ++ iterations).map((x, n) => x -> (heads.toMap.apply(x), n))
       if known_.size == known.size then known else propagate(known_)
 
-    val known = propagate(counters.toMap)
+    // traces and lists whose length follows from no hypothesis, e.g. the nondeterministic choices of a loop that the
+    // simplifier has eliminated, have a fresh length, which ranges over all lengths, as the functions are universal;
+    // the equations of traces over them state their lengths (see equation)
+    val free =
+      for (x, head) <- heads if !propagate(counters.toMap).contains(x)
+      yield
+        val lenfun = Fun(Name(head.fun.name.name + "_length", Some(Var.next())), Nil, Nil, Sort.int)
+        val len = App(lenfun, Nil, Sort.int, Nil)
+        out.map(o => o.copy(decls = DeclareFun(lenfun, Attrs.empty) :: o.decls, defs = Ints.le(Ints.zero, len) :: o.defs))
+        x -> (head, len)
 
-    for x <- seqs if !known.contains(x)
-    do Error.raise("the length of a trace or list is unknown to -fallback", x)
+    val known = propagate(counters.toMap ++ free)
 
     for (x, head) <- heads if !counters.exists(_._1 == x)
     do
