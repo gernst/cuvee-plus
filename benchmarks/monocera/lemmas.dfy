@@ -63,6 +63,27 @@ lemma {:rw} trace_store_cases_def(a0: array<int, int>, n: Nat, c: int, P: (int) 
     trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(a[k]) => a[k := c] case !P(a[k]) => a[k := G(a[k])])
       == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(a0[k]) then c else G(a0[k])))
 
+// a loop that stores at each position k a constant chosen by cases on k is the trace of the stores of these values,
+// which current_stores of teq.dfy reads back
+// (from sum/brs2)
+lemma {:rw} trace_store_index_cases_def(a0: array<int, int>, n: Nat, c: int, d: int, P: (int) -> bool)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(k) => a[k := c] case !P(k) => a[k := d])
+      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(k) then c else d))
+
+// a sum of n terms, each 0, c, or d, is at most n times the largest of them; the left-hand side is a comparison, whose
+// bound e the side conditions compare, since sum_below_prefix of teq.dfy needs below_prefix among the facts
+// (from sum/brs2)
+lemma {:rw} sum_cases_below(n: Nat, c: int, d: int, e: int, P: (int) -> bool)
+  requires 0 <= e && integer(n) * c <= e && integer(n) * d <= e
+  ensures sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then (if P(k) then c else d) else 0)) <= e
+
+// a sum of n remainders k % m of the iterations k of a counter from 0, each between 0 and m - 1, is at most n (m - 1)
+// (from sum/ms2)
+lemma {:rw} sum_mod_below(n: Nat, m: int, e: int)
+  requires 0 < m && integer(n) * (m - 1) <= e
+  ensures sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then k % m else 0)) <= e
+
 // sums in an array cell
 
 // a sum kept in the cell j of an array, e.g. sum[0] of a one-element array in C, which the first iteration sets to c

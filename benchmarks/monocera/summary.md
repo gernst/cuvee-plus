@@ -95,7 +95,8 @@ is one of the following.
    `benchmarks/sv-comp` make `sum[0]` a scalar (see
    [its summary](../sv-comp/dafny/summary.md)), the C programs do not. In
    `conda`, `sum(selects(a, ...)) == 2*N` stays, over an array that a second
-   loop modifies in place by its old contents.
+   loop modifies in place by its old contents. The lemmas below close all
+   `sum` tests (see Lemmas for the open goals).
 4. Nondeterministic input arrays (40 goals: `standard_vararg_ground`,
    `sanfoundry_27_ground`, `array_init_pair_symmetr2`). In
    `standard_vararg_ground`, a `while` loop runs while `aa[a] >= 0`, and the
@@ -121,9 +122,10 @@ is one of the following.
 ```
 
 The results are those of version 0.35.15 with the lemmas of teq.dfy of
-commit 9a13ed0f, run locally with 30 s per test. A variant of each closed
-test with a false assertion stays open, since the lemmas compute the value
-in question.
+commit 9a13ed0f, run locally with 30 s per test. Variants of `brs1`,
+`brs2`, `brs3`, `ms1`, `ms2`, and `conda` with a false assertion stay open,
+since the lemmas compute the value in question or bound it only as far as
+the side conditions hold.
 
 | Test | without | with lemmas | lemma |
 |---|---|---|---|
@@ -131,9 +133,11 @@ in question.
 | `sum/ms1` | 1 goal | closed | `select_current_trace_reset_keep` |
 | `sum/conda` | 1 goal | closed | `trace_store_cases_def` |
 | `sum/s1lif`-`s5lif` | 1 goal | closed | `trace_store_cases_def` |
+| `sum/brs2`-`brs5` | 1 goal | closed | `select_current_trace_reset_add`, `trace_store_index_cases_def`, `sum_cases_below` |
+| `sum/ms2`-`ms5` | 1 goal | closed | `select_current_trace_reset_add`, `sum_mod_below` |
 | `sum/indp5` | closed | closed | - |
-| `sum/brs2`-`brs5` | 1 goal | 1 goal | `select_current_trace_reset_add` applies |
-| `sum/ms2`-`ms5` | 1 goal | 1 goal | `select_current_trace_reset_add` applies |
+
+All 17 tests of `sum` are closed, of which MonoCera closes 10 (see above).
 
 - `select_current_trace_reset_add` reads a sum kept in the cell `j` of an
   array (`sum[0]` of a one-element array), which the first iteration sets to
@@ -150,7 +154,13 @@ in question.
 - `select_current_trace_reset_add` needed version 0.35.15: the simplifier
   reduced the instance `(z) => a[z]` of the higher-order variable `G` to the
   array `a` by eta reduction, which left `G(k)` an application of the array.
-- Still open: in `brs2`-`brs5`, `sum(maps(... if 0 < k then a[k] else 0)) <=
-  c*N`, where the first loop sets `a[k]` by cases on `k % c`; in
-  `ms2`-`ms5`, `sum(maps(... if 0 < k then k % m else 0)) <= (m-1)*N`. Both
-  need a bound of each term and its sum over the iterations.
+- `trace_store_index_cases_def` turns a loop that stores at each position `k`
+  a constant chosen by cases on `k`, e.g. `i % 2 == 0 ? 2 : 0` in `brs2`,
+  into the stores of these values, which `current_stores` of teq.dfy reads
+  back; then the sum consists of terms `0`, `c`, or `d`.
+- `sum_cases_below` bounds such a sum of `n` terms by `e` if `0 <= e`,
+  `n*c <= e`, and `n*d <= e` (`brs2`-`brs5`), `sum_mod_below` a sum of
+  remainders `k % m` by `e` if `0 < m` and `n*(m - 1) <= e` (`ms2`-`ms5`).
+  Their left-hand sides are comparisons, whose constants bind the bound;
+  `sum_below_prefix` of teq.dfy does not apply, since its bound occurs only
+  in the side condition `below_prefix(...)`, which would have to be a fact.
