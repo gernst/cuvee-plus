@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/sorting/nested_counter.dfy
+// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/nested_counter.dfy
 // the simplest nested loop: the inner loop counts to n and has no effect on the outer variable
 //
 // status: verified with -teq -simplify; the inner loop's trace equations become iteration constraints of the outer

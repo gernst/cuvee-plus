@@ -1,8 +1,10 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/sorting/insertion_sort.dfy
+// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/insertion_sort.dfy
 // insertion sort with nested loops: the inner loop moves b[i] down by adjacent swaps while it is smaller than its
 // predecessor
 //
-// status (interim): perm(b, a) is proved, sorted(b, 0, n) remains;
+// status: perm(b, a) is proved, sorted(b, 0, n) remains open, since the inner loop cannot be summarized: its swaps
+// are at j and j - 1, arithmetic on a bound variable of the trace, which patterns do not match (TODO.md); the
+// variant insertion_sort2.dfy with two pointers j and p == j - 1 is verified;
 // the trace equation system is like that of bubble_sort.dfy: the outer array trace is the chain of the results of
 // the inner loop, B == results(a, ⌊K⌋, B?), and the inner loop is a trace of swaps
 // B' == trace(b, for ⌊J⌋ do x, j :: x[j := x[j + -1]][j + -1 := x[j]]) over a counter J from i down by 1, with the
