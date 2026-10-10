@@ -250,9 +250,13 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   instantiates bound variables that occur only in guards, e.g. `b` in
   `if b then y + 1`) or whose conjuncts follow from the guard of the
   expression or match its conjuncts (`Rewrite.conditions`). Variables of
-  the rule that a match leaves unbound, e.g. of a case of the pattern that
-  covers no case of the expression, are reported as an error of the rule
-  (`Rewrite.apply`), rather than skipped.
+  the left-hand side that a match leaves unbound occur only in cases of the
+  pattern that cover no case of the expression, which never apply, since the
+  cases of the expression hold in all iterations by the iteration
+  constraints; they are instantiated by `unspecified`, e.g. `c` of
+  `case D(k, h) => c` of `current_trace_flag` for an update without the case
+  of a `return` where `D` holds. Other unbound variables are reported as an
+  error of the rule (`Rewrite.apply`).
 
 ## Tests
 

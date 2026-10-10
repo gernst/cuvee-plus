@@ -63,12 +63,16 @@ object Rewrite:
           holds(config, state, ctx, _),
           subst
         )
-        // variables of the rule that the match leaves open, e.g. of a case of the pattern that covers no case of
-        // the expression, are an error of the rule rather than reasons to skip the match, hence reported
+        // variables of the rule that the match leaves open: those of the left-hand side occur only in cases of the
+        // pattern that cover no case of the expression, which never apply, since the cases of the expression hold in
+        // all iterations by the iteration constraints, hence any value is an instance, which is not specified,
+        // e.g. c of the case D(k, h) => c of current_trace_flag for an update whose cases all keep the value, as the
+        // case where D holds left the loop; others, e.g. of the right-hand side only, are an error of the rule
         unbound = rule.rhs.free.intersect(rule.vars) -- subst_.vars.keySet
-        _ = Error.report("variables of a rule not instantiated by its match", rule, unbound, expr):
-          require(unbound.isEmpty)
-        rhs = subst_(rule.rhs)
+        _ = Error.report("variables of a rule not instantiated by its match", rule, unbound -- rule.lhs.free, expr):
+          require(unbound.subsetOf(rule.lhs.free))
+        subst__ = unbound.foldLeft(subst_)((subst, x) => subst + (x -> Unspecified(subst(x.typ))))
+        rhs = subst__(rule.rhs)
         // steps that do not change the expression are not applications, e.g. x + 0 = x for x without +
         if rhs != expr
       yield rhs
