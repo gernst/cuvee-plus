@@ -137,6 +137,9 @@ object Fun:
 
     val all = List(counter, current, butlast, earlier)
 
+    // a value that is not specified, e.g. of an update without cases, the constant of teq.dfy
+    val unspecified = Fun("unspecified", List(a), Nil, a)
+
     // the constructors of the datatype Trace of teq.dfy, the last value, or a value followed by the remaining trace
     val stop = Fun("stop", List(a), formals(a), Sort.trace(a))
     val step = Fun("step", List(a), formals(a, Sort.trace(a)), Sort.trace(a))

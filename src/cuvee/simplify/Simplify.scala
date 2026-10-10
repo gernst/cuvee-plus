@@ -351,7 +351,7 @@ object Simplify extends Transform:
             val others = updates_.guards.patch(i, Nil, 1)
             upd(config, state, ctx, cond_, simplify(config, state, ctx.neutral.assume(List(cond_), others), rhs))
 
-        eps(config, state, ctx, updates__)
+        eps(config, state, ctx, expr.typ, updates__)
 
       // the body holds for all values of the dependencies, like the body of a universal quantifier,
       // but without polarity, since the dependencies are not recorded in the context
@@ -951,8 +951,9 @@ object Simplify extends Transform:
 
   // nested choices are flattened, cases with equal results are merged by the disjunction of their guards,
   // and a single case is its result, since the guards are complete,
-  // e.g. case b => y case c => y is y, which is a trace that keeps its value
-  def eps(config: Config, state: State, ctx: Context, updates: List[Upd]): Expr =
+  // e.g. case b => y case c => y is y, which is a trace that keeps its value;
+  // without cases, e.g. when all guards are false, the result of type `typ` is not specified
+  def eps(config: Config, state: State, ctx: Context, typ: Type, updates: List[Upd]): Expr =
     val merged =
       Eps.flatten(updates).foldLeft(List.empty[Upd]): (merged, update) =>
         merged.indexWhere(other => eq_(config, state, ctx.neutral, other.rhs, update.rhs) == True) match
@@ -964,6 +965,7 @@ object Simplify extends Transform:
             merged.updated(i, Upd(or(config, state, ctx.neutral, List(cond, update.cond)), rhs))
 
     merged match
+      case Nil               => Unspecified(typ)
       case List(Upd(_, rhs)) => rhs
       case _                 => Eps(merged)
 

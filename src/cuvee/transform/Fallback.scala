@@ -266,6 +266,13 @@ object Fallback extends Transform:
       case _ =>
         named(state, env, out, seq)
 
+  // the arguments of a fresh function for `e`: its free variables, where those of traces and lists are replaced by
+  // the free variables of their lowered functions and lengths, e.g. the n of the counter K == counter(0, 1, n)
+  // of a dependency ⌊K⌋, such that terms over traces of different lengths are distinct
+  def arguments(env: Map[Var, (Expr, Expr)], e: Expr): List[Var] =
+    val lowered = e.free.filter(env.contains).flatMap(x => env(x)._1.free ++ env(x)._2.free)
+    (e.free.filterNot(env.contains).map(lower) ++ lowered).toList.sortBy(_.toString)
+
   // a fresh function of the free variables for a combinator, defined in the antecedent of the goal,
   // or for another trace or list, with a fresh function for its length, both without definition
   def named(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], seq: Expr): (App, Expr) =
@@ -274,7 +281,7 @@ object Fallback extends Transform:
         result
 
       case None =>
-        val xs = seq.free.toList.filterNot(env.contains).sortBy(_.toString).map(lower)
+        val xs = arguments(env, seq)
 
         // the definitions hold for the arguments that are naturals, which are nonnegative
         val nats = And(seq.free.toList.filter(_.typ == Sort.nat).map(nonnegative))
@@ -394,7 +401,7 @@ object Fallback extends Transform:
         app
 
       case None =>
-        val xs = e.free.toList.filterNot(env.contains).sortBy(_.toString).map(lower)
+        val xs = arguments(env, e)
 
         Error.report("term with free sequences not supported by -fallback", e):
           require(!xs.exists(x => x.typ.cons.exists(sorts.contains)))

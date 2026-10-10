@@ -1,0 +1,6 @@
+function count₁₅(x₀: array<int, int>, x₁: int): int
+
+goal
+  forall a: array<int, int>, n: int, c₉: int, n₄: int ::
+    0 <= n₄ ==> c₉ == count₁₅(a, n₄) && n₄ == n && 0 <= n₄ ==> c₉ <= n
+

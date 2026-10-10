@@ -163,6 +163,16 @@ object Traces:
   object stop extends Sugar.unary(Fun.trace.stop)
   object step extends Sugar.binary(Fun.trace.step)
 
+// a value of type `typ` that is not specified, the constant unspecified of teq.dfy
+object Unspecified:
+  def apply(typ: Type): Expr =
+    App(Fun.trace.unspecified, Nil, typ, Nil)
+
+  def unapply(expr: Expr): Option[Type] =
+    expr match
+      case App(fun, _, typ, Nil) if fun == Fun.trace.unspecified => Some(typ)
+      case _                                                      => None
+
 // the tuples of the prelude of Dafny, tupleₙ(x₁, ..., xₙ), e.g. the argument of a match on several values
 object Tuples:
   def name(arity: Int) =

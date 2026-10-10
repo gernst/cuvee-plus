@@ -39,7 +39,10 @@ After section 3 of the paper:
   of Hilbert's choice. The parsers build `Eps` only for written guards, the
   simplifier flattens nested `Eps` (`Eps.flatten`), merges cases with equal
   results by the disjunction of their guards, and replaces a single case by
-  its result, since the guards are complete. `List[Upd]` has `free`, `params`, and
+  its result, since the guards are complete. The guards need not be
+  complete since `break`; an update without cases, e.g. when all guards are
+  false, is a value that is not specified, the constant `unspecified` of
+  `teq.dfy` (`Unspecified`). `List[Upd]` has `free`, `params`, and
   `map` like lists of expressions.
 - The functions on traces are in `Fun.trace`: `counter`, `current`, `butlast`
   (the paper's `⌊X⌋`), `length`, `earlier`; `Counter`, `Current`,
@@ -184,14 +187,19 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   implication per case, since the guards need not be complete (`break`);
   `invs` is `∀ j. 0 <= j < n ==> φ`.
 - Combinators that are not equated to a variable are fresh functions of
-  their free variables, defined in the antecedent of the goal. `consts(n, v)`
+  their free variables, defined in the antecedent of the goal, where the
+  traces among them contribute the free variables of their lowered
+  functions and lengths, e.g. the `n` of `K == counter(0, 1, n)`
+  (`Fallback.arguments`), likewise for generalized terms. `consts(n, v)`
   and `prefix(k, xs)` state their lengths, other traces and lists get a
   fresh length function, and the other functions of `teq.dfy` (`sum`,
   `occurs`, ...) are replaced by fresh functions without definition, which
   generalizes the goal: a model of the solver need not be a counterexample.
 - The declarations and lemmas of `teq.dfy` and lemmas over traces, lists,
   and naturals are dropped.
-- Test: [fallback.dfy](../examples/dafny/teq/fallback.dfy).
+- Tests: [fallback.dfy](../examples/dafny/teq/fallback.dfy),
+  [fallback_count.dfy](../examples/dafny/teq/fallback_count.dfy),
+  [fallback.c](../examples/c/teq/fallback.c).
 
 ## Simplification and rewriting
 
@@ -227,7 +235,10 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   covered by a case of the pattern, whose guard matches syntactically (which
   instantiates bound variables that occur only in guards, e.g. `b` in
   `if b then y + 1`) or whose conjuncts follow from the guard of the
-  expression or match its conjuncts (`Rewrite.conditions`).
+  expression or match its conjuncts (`Rewrite.conditions`). Variables of
+  the rule that a match leaves unbound, e.g. of a case of the pattern that
+  covers no case of the expression, are reported as an error of the rule
+  (`Rewrite.apply`), rather than skipped.
 
 ## Tests
 

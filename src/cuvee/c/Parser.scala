@@ -24,6 +24,10 @@ class Parser(var state: State, arch: Int):
   // and their initializers (see bytes)
   val declared = mutable.Map[core.Var, (BigInt, List[Option[Expr]], Option[Expr])]()
 
+  // the local pointers that are never read, e.g. char *s; s = in; for an array in, whose assignments are dropped,
+  // since other pointers than allocations are no arrays
+  val unread = mutable.Set[core.Var]()
+
   // the context of a function body: its result, the temporary variables for the results of calls,
   // the statements of its labels, which a goto may resolve in its place, and the labels at its end
   case class Ctx(result: Option[(core.Var, Type)], temps: mutable.ListBuffer[core.Var],
@@ -499,6 +503,30 @@ class Parser(var state: State, arch: Int):
       case Case(_, stmt)                 => indexed(stmt)
       case _                             => Set()
 
+  // the variables that are read in a statement, all but those assigned by x = e, including the arrays of a[i] = e
+  def reads(s: Stmt): Set[String] =
+    s match
+      case Assign(Id(_), "=", rhs)       => reads(rhs)
+      case Assign(lhs, _, rhs)           => reads(lhs) ++ reads(rhs)
+      case ExprStmt(e)                   => reads(e)
+      case Return(e)                     => e.toSet.flatMap(reads)
+      case Decl(_, _, decls)             => decls.flatMap(_.init).toSet.flatMap(reads)
+      case If(test, left, right)         => reads(test) ++ reads(left) ++ right.toSet.flatMap(reads)
+      case While(test, body)             => reads(test) ++ reads(body)
+      case DoWhile(body, test)           => reads(test) ++ reads(body)
+      case For(init, test, step, body)   => init.toSet.flatMap(reads) ++ test.toSet.flatMap(reads) ++ step.toSet.flatMap(reads) ++ reads(body)
+      case Loop(test, body, step)        => test.toSet.flatMap(reads) ++ step.toSet.flatMap(reads) ++ reads(body)
+      case Block(stmts)                  => stmts.toSet.flatMap(reads)
+      case Labeled(_, stmt)              => reads(stmt)
+      case Switch(test, body)            => reads(test) ++ body.toSet.flatMap(reads)
+      case Case(value, stmt)             => value.toSet.flatMap(reads) ++ reads(stmt)
+      case _                             => Set()
+
+  def reads(e: Expr): Set[String] =
+    e match
+      case Id(x) => Set(x)
+      case _     => parts(e).toSet.flatMap(reads)
+
   def indexed(e: Expr): Set[String] =
     e match
       case Index(Id(x), index) => indexed(index) + x
@@ -519,8 +547,10 @@ class Parser(var state: State, arch: Int):
             prog <-
               val (t_, init) = if pointer then allocation(x, t, sizes, init_) else (array(t, sizes), init_)
               val v = state.exprs.formal(x, typ(t_))
-              val v_ = if scope_.values.exists(_._1.name == v.name) then v.fresh else v
+              // also apart from the result, e.g. a local variable result, which return e assigns to the result
+              val v_ = if scope_.values.exists(_._1.name == v.name) || ctx.result.exists(_._1.name == v.name) then v.fresh else v
               if !pointer then declared(v_) = (elem(t, words), sizes, init_)
+              if pointer && t_.isInstanceOf[PointerType] && !stmts.exists(reads(_).contains(x)) then unread += v_
               locals += v_
               scope_ = scope_ + (x -> (v_, t_))
               init.toList.flatMap(assign(scope_, ctx, Id(x), "=", _))
@@ -829,6 +859,11 @@ class Parser(var state: State, arch: Int):
 
   def assign(scope: Scope, ctx: Ctx, lhs: Expr, op: String, rhs: Expr): List[core.Prog] =
     lhs match
+      // only the effects of the value remain
+      case Id(x) if op == "=" && scope.contains(x) && unread.contains(scope(x)._1) =>
+        val (pre, _, _) = expr(scope, ctx, rhs)
+        pre
+
       // nondeterministic values and results of calls are assigned directly, without temporary variables
       case Id(x) if op == "=" && scope.contains(x) && nondet(rhs, scope(x)._2) =>
         val Call(f, _) = rhs: @unchecked

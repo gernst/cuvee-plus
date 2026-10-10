@@ -1,0 +1,204 @@
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quotient
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  remainder
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(declare-fun bitand (Int Int) Int)
+
+(declare-fun bitor (Int Int) Int)
+
+(declare-fun bitxor (Int Int) Int)
+
+(declare-fun bitnot (Int) Int)
+
+(declare-fun shl (Int Int) Int)
+
+(declare-fun shr (Int Int) Int)
+
+(declare-fun V$52 (Int) Int)
+
+(declare-fun Y$53 (Int) Int)
+
+(declare-fun maps$58 (Int Int Int) Bool)
+
+(declare-fun count$61 (Int Int) Int)
+
+(goal
+  (=>
+    (forall
+      ((X$1 Int) (n$9 Int))
+      (=>
+        true
+        (forall
+          ((j$59 Int))
+          (=>
+            (and (<= 0 j$59) (< j$59 n$9))
+            (=
+              (maps$58 X$1 n$9 j$59)
+              (and
+                (<= (+ 0 (* j$59 1)) X$1)
+                (< (V$52 j$59) 0)))))))
+    (forall
+      ((X$1 Int) (Y$2 Int) (v$15 Int) (n$9 Int))
+      (=>
+        (<= 0 n$9)
+        (=>
+          (and
+            (= v$15 (V$52 n$9))
+            (=
+              (V$52 0)
+              (+ (- X$1) (* 2 Y$2)))
+            (forall
+              ((j$55 Int))
+              (=>
+                (and (<= 0 j$55) (< j$55 n$9))
+                (and
+                  (=>
+                    (and
+                      (<= (+ 0 (* j$55 1)) X$1)
+                      (< (V$52 j$55) 0))
+                    (=
+                      (V$52 (+ j$55 1))
+                      (+ (* 2 Y$2) (V$52 j$55))))
+                  (=>
+                    (and
+                      (<= (+ 0 (* j$55 1)) X$1)
+                      (<= 0 (V$52 j$55)))
+                    (=
+                      (V$52 (+ j$55 1))
+                      (+ (* (- 2) X$1) (* 2 Y$2) (V$52 j$55)))))))
+            (= (Y$53 0) 0)
+            (forall
+              ((j$57 Int))
+              (=>
+                (and (<= 0 j$57) (< j$57 n$9))
+                (and
+                  (=>
+                    (=
+                      (maps$58 X$1 n$9 j$57)
+                      false)
+                    (= (Y$53 (+ j$57 1)) (+ (Y$53 j$57) 1)))
+                  (=>
+                    (not
+                      (=
+                        (maps$58 X$1 n$9 j$57)
+                        false))
+                    (= (Y$53 (+ j$57 1)) (Y$53 j$57))))))
+            (= n$9 0)
+            (forall
+              ((j$60 Int))
+              (=>
+                (and (<= 0 j$60) (< j$60 n$9))
+                (=
+                  (+
+                    (* 2 Y$2)
+                    (* 2 Y$2 (+ 0 (* j$60 1))))
+                  (+
+                    X$1
+                    (* 2 X$1 (Y$53 j$60))
+                    (V$52 j$60))))))
+          (=
+            (+
+              (* 2 (count$61 X$1 n$9) X$1)
+              (* 2 Y$2))
+            (+ X$1 v$15)))))))
+
+(declare-fun V$63 (Int) Int)
+
+(declare-fun Y$64 (Int) Int)
+
+(declare-fun maps$69 (Int Int) Bool)
+
+(declare-fun count$72 (Int) Int)
+
+(goal
+  (=>
+    (forall
+      ((n$9 Int))
+      (=>
+        true
+        (forall
+          ((j$70 Int))
+          (=>
+            (and (<= 0 j$70) (< j$70 n$9))
+            (= (maps$69 n$9 j$70) (< (V$63 j$70) 0))))))
+    (forall
+      ((X$1 Int) (Y$2 Int) (v$15 Int) (x$17 Int) (n$9 Int))
+      (=>
+        (<= 0 n$9)
+        (=>
+          (and
+            (= v$15 (V$63 n$9))
+            (= x$17 n$9)
+            (=
+              (V$63 0)
+              (+ (- X$1) (* 2 Y$2)))
+            (forall
+              ((j$66 Int))
+              (=>
+                (and (<= 0 j$66) (< j$66 n$9))
+                (and
+                  (=>
+                    (< (V$63 j$66) 0)
+                    (=
+                      (V$63 (+ j$66 1))
+                      (+ (* 2 Y$2) (V$63 j$66))))
+                  (=>
+                    (<= 0 (V$63 j$66))
+                    (=
+                      (V$63 (+ j$66 1))
+                      (+ (* (- 2) X$1) (* 2 Y$2) (V$63 j$66)))))))
+            (= (Y$64 0) 0)
+            (forall
+              ((j$68 Int))
+              (=>
+                (and (<= 0 j$68) (< j$68 n$9))
+                (and
+                  (=>
+                    (= (maps$69 n$9 j$68) false)
+                    (= (Y$64 (+ j$68 1)) (+ (Y$64 j$68) 1)))
+                  (=>
+                    (not
+                      (= (maps$69 n$9 j$68) false))
+                    (= (Y$64 (+ j$68 1)) (Y$64 j$68))))))
+            (<= 0 X$1)
+            (< n$9 (+ X$1 2))
+            (forall
+              ((j$71 Int))
+              (=>
+                (and (<= 0 j$71) (< j$71 n$9))
+                (=
+                  (+
+                    (* 2 Y$2)
+                    (* 2 Y$2 (+ 0 (* j$71 1))))
+                  (+
+                    X$1
+                    (* 2 X$1 (Y$64 j$71))
+                    (V$63 j$71)))))
+            (<= 0 n$9))
+          (=
+            (+
+              (* 2 (count$72 n$9) X$1)
+              (* 2 Y$2)
+              (* 2 Y$2 x$17))
+            (+ (* 2 n$9 X$1) X$1 v$15)))))))
+

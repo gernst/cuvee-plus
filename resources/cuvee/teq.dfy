@@ -34,7 +34,7 @@ datatype {:teq} {:lean} List<a₀> = nil | cons(head: a₀, tail: List<a₀>)
 function {:teq} {:lean} length<a>(xs: List<a>): Nat
 
 // a value that is not specified, e.g. of the elements outside of a list
-const {:teq} unspecified<a>: a
+const {:teq} unspecified<a₀>: a₀
 
 // the type and the functions of Fun.trace, whose type parameters and formals are numbered as there (Fun.formals)
 

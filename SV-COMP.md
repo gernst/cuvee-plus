@@ -140,6 +140,76 @@ increments in expressions, `continue`, hexadecimal constants), in about
 Its output is not C, so `-print c` omits it; use `-print smt2` or
 `-print dfy` to see it.
 
+### The fallback encoding (version 0.35.2, October 10, 2026)
+
+`xml/cuvee-fallback.xml` passes `-teq -simplify -split -simplify -fallback
+-z3` (see [doc/teq.md](doc/teq.md)), with the limits of the other tools
+(15 min, 2 cores, 7 GB), z3 limited by the time limit only
+(`-timeout 900000`), and shipped next to the jar, since the machines of the
+cluster have none. Goals that z3 does not prove are `unknown`
+([cuvee.py](cuvee.py)), since the encoding generalizes the functions of
+`teq.dfy` that it does not define. The baselines are those of
+`-teq -simplify -split -simplify` of October 9 (1 core).
+
+| Category | baseline 1 min | fallback 1 min | baseline 15 min | fallback 15 min |
+|---|---|---|---|---|
+| Loops (758) | 119 | 207 | 120 | 219 (+99, none lost) |
+| Arrays (440) | 107 | 116 | 107 | 116 (+9, none lost) |
+
+- The new proofs are in all folders of Loops (`loop-zilu`, `loop-invgen`,
+  `loop-lit`, `loops`, `nla-digbench`, ...), where the simplifier left a
+  residual goal, in Arrays in `array-cav19` and `reducercommutativity`.
+- Incorrect true: 15, `nla-digbench/geo1-u` and its scaled variants, which
+  fail only by the overflow of `unsigned long long`; the C frontend models
+  unsigned integers as unbounded, hence the goal holds. A first run had 16
+  more in `array-fpi` and `array-patterns`, from a vacuous definition of
+  `consts` in `-fallback` (fixed in 0.35.1).
+- 15 min instead of 1 min adds 12 proofs in Loops and none in Arrays: of the
+  runs that reach the minute, 110 end later by `rewriting does not
+  terminate`, 58 in Arrays still reach 15 min in z3.
+- Errors at 15 min: in Loops, `rewriting does not terminate` 140, the
+  unsupported `term with free sequences` 41 and `the length of a trace or
+  list is unknown` 28 of `-fallback`, `type mismatch` 40, floating point 29,
+  `solver error` 25; in Arrays, the length unknown 50, free sequences 27,
+  `rewriting does not terminate` 17, parse errors 17, `solver error` 16.
+- `solver error` (all 41): `unknown constant n$..` of z3. A combinator that
+  is not equated to a variable, e.g. `maps(for ⌊K⌋, ... )` among the
+  dependencies of a trace, became a fresh function of the free variables of
+  the term, defined in the antecedent of the goal, but its length `n` comes
+  from the counter `K == counter(0, 1, n)` and was not among them, hence
+  unbound in the definition. Likewise, the generalized functions of
+  `teq.dfy`, e.g. `count(c, maps(for ⌊K⌋ ...))`, did not depend on `n`, so
+  that two counts of the same array of different lengths were the same.
+  Fixed: the arguments include the free variables of the lowered functions
+  and lengths of the traces of the term (`Fallback.arguments`, tests
+  `examples/c/teq/fallback.c` and `examples/dafny/teq/fallback_count.dfy`);
+  the tasks are `unknown` now, e.g. `Sat` for `bresenham-ll`, `mannadiv`,
+  and `apache-escape-absolute`, through the generalized `count`.
+- `type mismatch` (39 of 40, `divbin`, `divbin2`, `hard-ll`, `hard-u`,
+  `hard2`, `dijkstra-u` of `nla-digbench-scaling`): the goal after
+  `-simplify` is ill-typed, `-fallback` only checks it. In loops
+  `while (counter++ < 1)` after another such loop, the counter starts at 2,
+  so that all guards of the updates are false and `Simplify` drops all
+  cases, an update without cases, `Eps(Nil)`. `Rewrite.matches` covers each
+  case of the update of the expression by a case of the pattern, vacuously
+  if there is none, also for patterns that are no updates (the case
+  `(_, Eps(updates_))`), so that every rule matches `Eps(Nil)` without
+  instantiating its variables; the first rule tried replaces it, here
+  `truth(x) = x != 0` of the C prelude, e.g.
+  `B == trace(b, for ⌊K⌋, ⌊Counter⌋ do b, k, counter :: x != 0)` of type
+  `Trace<int>`. Confirmed by `(= (eps ((< a a) 3)) 5)` with the rule
+  `f(x) = x + 1`, which `-simplify` turned into `(= x 4)`. Fixed: an
+  update without cases is `unspecified` of `teq.dfy`, and `Rewrite`
+  reports variables of a rule that a match leaves unbound as an error;
+  `divbin_unwindbound1` and `dijkstra-u_unwindbound1` are proved,
+  `hard-u_unwindbound1` (unsafe) is not.
+- The remaining `type mismatch`,
+  `loops/veris.c_sendmail_tTflag_arr_one_loop`, also in the baseline, was
+  the assignment `s = in` of an array to a local pointer that is never
+  read. Fixed: assignments to local pointers that are never read are
+  dropped, except for the effects of their values
+  (`examples/c/parsing/unread_pointer.c`); the task is proved.
+
 ## The SV-COMP harness (blocks every task)
 
 Every input starts with the same declarations and definitions, which already

@@ -63,6 +63,11 @@ object Rewrite:
           holds(config, state, ctx, _),
           subst
         )
+        // variables of the rule that the match leaves open, e.g. of a case of the pattern that covers no case of
+        // the expression, are an error of the rule rather than reasons to skip the match, hence reported
+        unbound = rule.rhs.free.intersect(rule.vars) -- subst_.vars.keySet
+        _ = Error.report("variables of a rule not instantiated by its match", rule, unbound, expr):
+          require(unbound.isEmpty)
         rhs = subst_(rule.rhs)
         // steps that do not change the expression are not applications, e.g. x + 0 = x for x without +
         if rhs != expr
