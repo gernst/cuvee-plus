@@ -31,7 +31,7 @@ transformation and any output.
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `Verify` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), `FourierMotzkin` (linear constraints over the rationals), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
-| `cuvee.transform` | `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), and `Monomorph` (instances of polymorphic functions). |
+| `cuvee.transform` | `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
 ## A run
@@ -40,7 +40,7 @@ transformation and any output.
 
 1. `Config.parse` reads the command line:
    - the input language from the file extension;
-   - the transforms in order (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fuse`, `-simplify`);
+   - the transforms in order (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`);
    - the printer (`-print`);
    - the sink (stdout, `-o`, `-z3`, `-cvc5`).
 2. `config.input.source(reader)` parses the frontend's prelude first
@@ -158,6 +158,9 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   (`Normalize.lift`), such that it is split by its test as well.
 - [`Monomorph`](../src/cuvee/transform/Monomorph.scala) replaces polymorphic
   functions by their instances, which are emitted before their first use.
+- [`Fallback`](../src/cuvee/transform/Fallback.scala) lowers trace equation
+  systems into first-order logic for solvers (`-fallback`, see
+  [teq.md](teq.md)).
 
 ### Sinks
 

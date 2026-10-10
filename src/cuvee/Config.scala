@@ -9,6 +9,7 @@ import cuvee.pipe._
 import cuvee.smtlib.Solver
 import cuvee.simplify.Fuse
 import cuvee.simplify.Simplify
+import cuvee.transform.Fallback
 import cuvee.transform.Flat
 import cuvee.transform.Monomorph
 import cuvee.transform.Split
@@ -173,6 +174,12 @@ object Config:
         val config_ = config.using(Monomorph)
         (config_, rest)
 
+  val fallback =
+    flag("-fallback", "lower trace equation systems into first-order logic for solvers, e.g. after -teq -simplify"):
+      case (config, rest) =>
+        val config_ = config.using(Fallback)
+        (config_, rest)
+
   val fuse =
     flag("-fuse", "fuse the compositions of defined functions in the requests fuse g(f(xs), ys) = ??? of Dafny input"):
       case (config, rest) =>
@@ -261,6 +268,7 @@ object Config:
     flat,
     split,
     monomorph,
+    fallback,
     fuse,
     simplify,
     hybrid,
@@ -313,7 +321,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.34.28")
+    println("Cuvée 0.35.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

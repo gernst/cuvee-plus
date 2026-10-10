@@ -160,6 +160,39 @@ after section 4 of the paper.
   within the lists are added by hand there as `requires` to be added to
   teq.dfy.
 
+## The fallback encoding `-fallback` ([Fallback.scala](../src/cuvee/transform/Fallback.scala))
+
+After section 5.3 of the paper, `-fallback` lowers the goals into first-order
+logic for solvers, e.g. `-teq -simplify -split -simplify -fallback -z3`;
+nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
+
+- The variables of traces and lists bound on the positive chain
+  `∀ xs. φ ⇒ ψ` of a goal become uninterpreted functions of an integer
+  index, with a fresh index, since the goals of `-split` share variables.
+  A trace `X` of `n` steps has the entries `X(0), ..., X(n)`, `current(X)`
+  is `X(n)`, `⌊X⌋` the same function below `n`; `earlier(k, ⌊X⌋)` is
+  `X(k)`. Naturals become integers, `natural(x)` is `x` if nonnegative and
+  0 otherwise.
+- The length of all dependencies of a combinator is the `n` of its first
+  one, `⌊counter(0, 1, n)⌋`, written directly or by an equation
+  `K == counter(0, 1, n)` of the antecedents along the chain; lists among
+  the dependencies of equations and iteration constraints get it as well.
+  Counters are inlined, their entries are `i + j * c`.
+- The equations `X == trace(...)`, `maps(...)`, or of functions defined with
+  `{:fold}` (unfolded) become their characterizations,
+  `X(0) == e && ∀ j. 0 <= j < n ==> (φᵢ ==> X(j + 1) == eᵢ)`, one
+  implication per case, since the guards need not be complete (`break`);
+  `invs` is `∀ j. 0 <= j < n ==> φ`.
+- Combinators that are not equated to a variable are fresh functions of
+  their free variables, defined in the antecedent of the goal. `consts(n, v)`
+  and `prefix(k, xs)` state their lengths, other traces and lists get a
+  fresh length function, and the other functions of `teq.dfy` (`sum`,
+  `occurs`, ...) are replaced by fresh functions without definition, which
+  generalizes the goal: a model of the solver need not be a counterexample.
+- The declarations and lemmas of `teq.dfy` and lemmas over traces, lists,
+  and naturals are dropped.
+- Test: [fallback.dfy](../examples/dafny/teq/fallback.dfy).
+
 ## Simplification and rewriting
 
 - The simplifier's helpers `trace`, `maps`, and `invs`

@@ -1,0 +1,45 @@
+function V₁₈(x₀: int): int
+
+function S₁₉(x₀: int): int
+
+function I₂₀(x₀: int): int
+
+function V?₂₁(x₀: int): int
+
+goal
+  forall a: array<int, int>, n: int, i: int, s: int ::
+    0 <= n
+      ==> (forall v₁: int ::
+             forall v₁₃: int, s₁₄: int, i₁₅: int, n₇: int ::
+               0 <= n₇
+                 ==> v₁₃ == V₁₈(n₇)
+                   && s₁₄ == S₁₉(n₇)
+                   && i₁₅ == I₂₀(n₇)
+                   && (V₁₈(0) == v₁
+                         && (forall j₂₂: int ::
+                               0 <= j₂₂ < n₇
+                                 ==> a[I₂₀(j₂₂)] != 0
+                                 ==> V₁₈(j₂₂ + 1) == V?₂₁(j₂₂)))
+                   && (S₁₉(0) == 0
+                         && (forall j₂₃: int ::
+                               0 <= j₂₃ < n₇
+                                 ==> a[I₂₀(j₂₃)] != 0
+                                 ==> S₁₉(j₂₃ + 1) == S₁₉(j₂₃) + V?₂₁(j₂₃)))
+                   && (I₂₀(0) == 0
+                         && (forall j₂₄: int ::
+                               0 <= j₂₄ < n₇
+                                 ==> a[I₂₀(j₂₄)] != 0
+                                 ==> I₂₀(j₂₄ + 1) == I₂₀(j₂₄) + 1))
+                   && (forall j₂₅: int ::
+                         0 <= j₂₅ < n₇
+                           ==> I₂₀(j₂₅) < n
+                             && a[I₂₀(j₂₅)] != 0
+                             && (a[I₂₀(j₂₅)] != 0 ==> true))
+                   && 0 <= n₇
+                 ==> (i₁₅ < n
+                        ==> (a[i₁₅] == 0 ==> true)
+                          && (a[i₁₅] != 0
+                                ==> true && (forall v₁₆: int :: true ==> true)))
+                   && (!(i₁₅ < n) ==> 0 <= i₁₅ <= n && true)
+                   && (i₁₅ < n ==> a[i₁₅] == 0 ==> 0 <= i₁₅ <= n && true))
+
