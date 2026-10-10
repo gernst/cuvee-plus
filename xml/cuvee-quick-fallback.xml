@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
-<!-- the quick variant of cuvee-fallback.xml, with 1 min per task instead of 15 -->
-<benchmark tool="cuvee" displayName="Cuvée+Z3 (quick)" timelimit="1 min" hardtimelimit="2 min" memlimit="7 GB" cpuCores="2">
+<!-- the quick variant of cuvee-fallback.xml, with 2 min per task instead of 15 -->
+<benchmark tool="cuvee" displayName="Cuvée+Z3 (quick)" timelimit="2 min" hardtimelimit="2 min" memlimit="7 GB" cpuCores="2">
 
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
@@ -12,7 +12,7 @@
   <option name="-fallback"/>
   <option name="-z3"/>
   <!-- z3 is limited by the time limit only, which this covers, since -timeout defaults to 1 s per query -->
-  <option name="-timeout">60000</option>
+  <option name="-timeout">120000</option>
 
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">

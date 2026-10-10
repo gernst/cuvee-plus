@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
-<!-- the quick variant of cuvee.xml, with 1 min per task instead of 15 -->
-<benchmark tool="cuvee" displayName="Cuvée (quick)" timelimit="1 min" hardtimelimit="2 min" memlimit="7 GB" cpuCores="2">
+<!-- the quick variant of cuvee.xml, with 2 min per task instead of 15 -->
+<benchmark tool="cuvee" displayName="Cuvée (quick)" timelimit="2 min" hardtimelimit="2 min" memlimit="7 GB" cpuCores="2">
 
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
