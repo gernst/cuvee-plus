@@ -80,6 +80,9 @@ case class Config(
     // the files of features that are injected into the input after its prelude, with the sources that parse them,
     // e.g. teq.dfy by -teq (see Source.apply)
     features: List[(Source, String)] = Nil,
+    // the files of the user that are injected into the input after the files of features, with the sources of their
+    // languages (see -include and Source.apply)
+    includes: List[(Source, String)] = Nil,
     // the lines of stdout and stderr, which tests capture instead (see test.Expected)
     stdout: PrintStream = System.out,
     stderr: PrintStream = System.err,
@@ -96,6 +99,10 @@ case class Config(
   // the configuration that injects `file` into the input, parsed by `source`
   def injecting(source: Source, file: String) =
     copy(features = features :+ (source, file))
+
+  // the configuration that injects the file `file` of the user into the input, parsed by `source`
+  def including(source: Source, file: String) =
+    copy(includes = includes :+ (source, file))
 
   // the configuration with the output in `lang`, which knows the features added so far
   def printing(lang: Lang) =
@@ -274,6 +281,12 @@ object Config:
         val config__ = if features.contains("teq") && !injected then config_.having("teq").injecting(cuvee.dafny.Source, "/cuvee/teq.dfy") else config_
         (config__, rest)
 
+  // a file of the user, e.g. with lemmas, in the language of its extension; task definitions describe no declarations
+  val include =
+    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension"):
+      case (config, file :: rest) if langs.get(file.suffix).exists(_ != Lang.yml) =>
+        (config.including(langs(file.suffix).source, file), rest)
+
   val flags = Map(
     debug_,
     verify,
@@ -293,7 +306,8 @@ object Config:
     linewidth,
     output,
     print_,
-    known_
+    known_,
+    include
   )
 
   // the languages by their file extensions
@@ -336,7 +350,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.35.12")
+    println("Cuvée 0.35.13")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

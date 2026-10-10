@@ -56,6 +56,9 @@ object Databases:
         cuvee.test.Database.check(Examples.workspace.toNIO, List(row)).mkString("\n") ==> ""
     else
       Tests:
+        // rows whose goals are timeout record runs that did not end, without a time (see cuvee.test.Database)
         test("database"):
           for row <- rows
-          do assert(Set("safe", "unsafe").contains(row.verdict), row.goals == "error" || row.goals.toIntOption.isDefined, !timed || row.time.isDefined)
+          do
+            val timeout = row.goals == "timeout"
+            assert(Set("safe", "unsafe").contains(row.verdict), timeout || row.goals == "error" || row.goals.toIntOption.isDefined, !timed || timeout || row.time.isDefined)

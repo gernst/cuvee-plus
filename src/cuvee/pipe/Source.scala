@@ -2,7 +2,10 @@ package cuvee.pipe
 
 import java.io.Reader
 import java.io.InputStreamReader
+import java.io.FileReader
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
 import easyparse.Token
 
 import cuvee.Config
@@ -37,6 +40,13 @@ trait Source:
 
     new InputStreamReader(stream, StandardCharsets.UTF_8)
 
+  // files of the user, such as those of -include
+  def file(path: String): Reader =
+    Error.report("file not found", path):
+      require(Files.isRegularFile(Path.of(path)))
+
+    new FileReader(path, StandardCharsets.UTF_8)
+
   def apply(reader: Reader): (State, LazyList[Cmd]) =
     apply(Config.default, reader)
 
@@ -56,7 +66,15 @@ trait Source:
         cmd <- if source == this then parse(path, parser) else source.parse(path, source.newParser(config)._2)
       yield cmd
 
-    val prelude_ = prelude ++ injected ++ features_
+    // the files of the user (-include), after the files of features, such that they can refer to them, parsed in the
+    // same way; a file in another language starts from the prelude of its source, not from the state of the input
+    val includes_ =
+      for
+        (source, path) <- config.includes
+        cmd <- if source == this then include(path, parser) else source.include(path, source.newParser(config)._2)
+      yield cmd
+
+    val prelude_ = prelude ++ injected ++ features_ ++ includes_
 
     // defer reading and parsing such that errors in the first command are reported by the pipeline, too
     (init, LazyList.empty #::: prelude_.to(LazyList) #::: input(config, reader, parser).filterNot(prelude_.contains))
@@ -68,6 +86,12 @@ trait Source:
   // the commands of a resource
   def parse(path: String, parser: easyparse.Parser[List[Cmd]]): List[Cmd] =
     val reader = resource(path)
+    try cmds(newScanner(reader).input, parser).toList
+    finally reader.close()
+
+  // the commands of a file of the user
+  def include(path: String, parser: easyparse.Parser[List[Cmd]]): List[Cmd] =
+    val reader = file(path)
     try cmds(newScanner(reader).input, parser).toList
     finally reader.close()
 
