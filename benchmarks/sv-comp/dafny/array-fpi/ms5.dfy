@@ -2,9 +2,6 @@
 // SV-COMP array-fpi/ms5.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of ms1 with other constants or assertions; checks sum[0] <= 4*N
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var N: int;
 
 method main() returns (result: int)
@@ -19,7 +16,7 @@ method main() returns (result: int)
   }
   i := 0;
   while i < N {
-    a := a[i := (remainder(i, 5))];
+    a := a[i := (rem(i, 5))];
     i := i + 1;
   }
   i := 0;

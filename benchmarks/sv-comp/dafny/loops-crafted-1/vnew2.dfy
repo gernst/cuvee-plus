@@ -7,20 +7,11 @@
 // assume; open: the three counters are equal, but i % (SIZE + 2) != 0 needs that i, a multiple of 3 up to SIZE + 2,
 // is below SIZE + 2, i.e., the bound at the last iteration with a remainder (see vnew1); no lemmas tried
 
-var SIZE: int;
-
 method main() returns (result: int)
-  modifies SIZE
-  requires SIZE == 0
 {
   var n: int, i: int, k: int, j: int;
-  SIZE := 20000001;
   n := *;
   assume 0 <= n;
-  if !(n <= SIZE) {
-    result := 0;
-    return;
-  }
   k := 0;
   j := k;
   i := j;
@@ -30,7 +21,7 @@ method main() returns (result: int)
     k := k + 3;
   }
   if n > 0 {
-    assert i == j == k && ((((i) % (SIZE + 2))) != 0);
+    assert i == j == k && (((rem(i, n + 3))) != 0);
   }
   result := 0;
   return;

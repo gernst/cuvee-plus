@@ -26,8 +26,8 @@ method main() {
   i := 0;
   while i < N {
     a := a[i := i + 1];
-    if i > N / 2 {
-      a := a[i := i % R];
+    if i > quot(N, 2) {
+      a := a[i := rem(i, R)];
     }
     i := i + 1;
   }
@@ -36,7 +36,7 @@ method main() {
     if a[i] == 0 {
       j := j + 1;
     }
-    assert j < N / 4;
+    assert j < quot(N, 4);
     i := i + 1;
   }
 }

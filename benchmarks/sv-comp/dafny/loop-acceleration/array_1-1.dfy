@@ -13,5 +13,5 @@ method main() returns (result: int) {
     A := A[i := i];
     i := i + 1;
   }
-  assert A[1023] != 1023;
+  assert A[N - 1] != N - 1;
 }

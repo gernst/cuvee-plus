@@ -2,9 +2,6 @@
 // SV-COMP array-fpi/modsf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of mods with other constants or assertions; checks a[i] == 1
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var N: int;
 
 method main() returns (result: int)
@@ -35,7 +32,7 @@ method main() returns (result: int)
   }
   i := 0;
   while i < N {
-    a := a[i := (remainder(a[i], sum[0]))];
+    a := a[i := (rem(a[i], sum[0]))];
     i := i + 1;
   }
   i := 0;

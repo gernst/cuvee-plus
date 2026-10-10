@@ -15,12 +15,12 @@ method main() {
   assume 0 < SIZE;
   index := 0;
   while index < SIZE {
-    array := array[index := index % 2];
+    array := array[index := rem(index, 2)];
     index := index + 1;
   }
   index := 0;
   while index < SIZE {
-    if index % 2 == 0 {
+    if rem(index, 2) == 0 {
       assert array[index] == 0;
     } else {
       assert array[index] != 0;

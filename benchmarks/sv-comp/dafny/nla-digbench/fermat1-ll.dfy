@@ -3,9 +3,6 @@
 // ./Cuvee.sh -print dfy: a program of the folder; checks 4*(A+r) == u*u - v*v - 2*u + 2*v; 4*(A+r) == u*u - v*v -
 // 2*u + 2*v; 4*(A+r) == u*u - v*v - 2*u + 2*v; ((long long) 4*A) == u*u - v*v - 2*u + 2*v
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 method main() returns (result: int) {
   var A: int;
   var R: int;
@@ -15,7 +12,7 @@ method main() returns (result: int) {
   A := *;
   R := *;
   assume (R - 1) * (R - 1) < A;
-  assume (remainder(A, 2)) == 1;
+  assume (rem(A, 2)) == 1;
   u := 2 * R + 1;
   v := 1;
   r := R * R - A;

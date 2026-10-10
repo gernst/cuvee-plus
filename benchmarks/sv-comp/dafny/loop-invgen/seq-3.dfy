@@ -23,8 +23,6 @@ method main() {
   k := 0;
   n0 := *;
   n1 := *;
-  assume -1000000 <= n0;
-  assume -1000000 <= n1;
   while i0 < n0 {
     i0 := i0 + 1;
     k := k + 1;

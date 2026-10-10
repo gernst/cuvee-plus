@@ -50,7 +50,7 @@ method main() {
     q := *;
     if q == 0 {
       s := s[i := true];
-      n := n[i := q % 2];
+      n := n[i := rem(q, 2)];
       if n[i] == 0 {
         p := p[i := true];
       } else {

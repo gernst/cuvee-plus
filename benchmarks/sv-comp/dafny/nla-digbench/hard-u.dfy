@@ -3,9 +3,6 @@
 // -print dfy: a program of the folder; checks q == 0; r == A; d == B * p; A == q*B + r; d == B*p; A == d*q + r; B
 // == d
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
 method main() returns (result: int) {
   var A: int;
   var B: int;
@@ -38,8 +35,8 @@ method main() returns (result: int) {
     if !(p != 1) {
       break;
     }
-    d := (quotient(d, 2));
-    p := (quotient(p, 2));
+    d := (quot(d, 2));
+    p := (quot(p, 2));
     if r >= d {
       r := r - d;
       q := q + p;

@@ -61,7 +61,7 @@ method main() returns (result: int)
   w := tmp₁;
   is_divisible1 := true;
   is_divisible2 := true;
-  if w > 0 && w < 10000000 {
+  if w > 0 {
     is_divisible1 := correct_version(w);
     is_divisible2 := student_version(w);
     assert is_divisible1 == is_divisible2;

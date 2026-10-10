@@ -13,12 +13,12 @@ method main() {
   var value: int;
   var a: array<int, int>;
   S := *;
-  if S > 1 && S < 100000 {
-    if S % 2 != 0 {
+  if S > 1 {
+    if rem(S, 2) != 0 {
       return;
     }
     i := 1;
-    while i <= S / 2 {
+    while i <= quot(S, 2) {
       value := *;
       if value != 0 {
         a := a[i * 2 - 2 := value];

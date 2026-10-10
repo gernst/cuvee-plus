@@ -25,12 +25,12 @@ method main() returns (result: int) {
     if !(y != 0) {
       break;
     }
-    if ((y) % (2)) == 1 {
+    if (rem(y, 2)) == 1 {
       z := z + x;
       y := y - 1;
     }
     x := 2 * x;
-    y := ((y) / (2));
+    y := (quot(y, 2));
   }
   assert z == a * b;
   result := 0;

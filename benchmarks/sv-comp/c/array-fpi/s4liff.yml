@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task array-fpi/s4liff.yml, printed from ../../dafny/array-fpi/s4liff.dfy
+input_files: 's4liff.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: ILP32

@@ -23,7 +23,7 @@ method main() {
       i := i + 3;
     }
   }
-  assert i % 3 == 0;
+  assert rem(i, 3) == 0;
 }
 
 // remaining goals of -teq -simplify:

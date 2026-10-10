@@ -3,9 +3,6 @@
 // program by ./Cuvee.sh -print dfy: a variant of array1_pattern_buggy with other constants or assertions; checks
 // sum == 0
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var ARR_SIZE: int;
 
 method main() returns (result: int)
@@ -36,7 +33,7 @@ method main() returns (result: int)
   while (1 != 0) {
     index := *;
     assume index >= 0 && index < ARR_SIZE;
-    if (remainder(index, 2)) == 0 {
+    if (rem(index, 2)) == 0 {
       if index == 42 {
         array1 := array1[index := 0];
       } else {

@@ -3,12 +3,6 @@
 // -print dfy: a variant of mbpr2 with other constants or assertions; checks volArray[i] >= MINVAL || volArray[i] ==
 // 0
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var CELLCOUNT: int;
 
 method main() returns (result: int)
@@ -31,13 +25,13 @@ method main() returns (result: int)
     CCCELVOL3 := 7;
     CCCELVOL2 := 3;
     CCCELVOL1 := 1;
-    if (remainder(CELLCOUNT, 5)) != 0 {
+    if (rem(CELLCOUNT, 5)) != 0 {
       result := 1;
       return;
     }
-    assume (remainder(CELLCOUNT, 5)) == 0;
+    assume (rem(CELLCOUNT, 5)) == 0;
     i := 1;
-    while i <= (quotient(CELLCOUNT, 5)) {
+    while i <= (quot(CELLCOUNT, 5)) {
       if CCCELVOL5 >= MINVAL {
         volArray := volArray[i * 5 - 5 := CCCELVOL5];
       } else {
@@ -50,7 +44,7 @@ method main() returns (result: int)
       i := i + 1;
     }
     i := 1;
-    while i <= (quotient(CELLCOUNT, 5)) {
+    while i <= (quot(CELLCOUNT, 5)) {
       if CCCELVOL4 >= MINVAL {
         volArray := volArray[i * 5 - 4 := CCCELVOL4];
       } else {
@@ -63,7 +57,7 @@ method main() returns (result: int)
       i := i + 1;
     }
     i := 1;
-    while i <= (quotient(CELLCOUNT, 5)) {
+    while i <= (quot(CELLCOUNT, 5)) {
       if CCCELVOL3 >= MINVAL {
         volArray := volArray[i * 5 - 3 := CCCELVOL3];
       } else {
@@ -76,7 +70,7 @@ method main() returns (result: int)
       i := i + 1;
     }
     i := 1;
-    while i <= (quotient(CELLCOUNT, 5)) {
+    while i <= (quot(CELLCOUNT, 5)) {
       if CCCELVOL2 >= MINVAL {
         volArray := volArray[i * 5 - 2 := CCCELVOL2];
       } else {
@@ -89,7 +83,7 @@ method main() returns (result: int)
       i := i + 1;
     }
     i := 1;
-    while i <= (quotient(CELLCOUNT, 5)) {
+    while i <= (quot(CELLCOUNT, 5)) {
       if CCCELVOL1 >= MINVAL {
         volArray := volArray[i * 5 - 1 := CCCELVOL1];
       } else {

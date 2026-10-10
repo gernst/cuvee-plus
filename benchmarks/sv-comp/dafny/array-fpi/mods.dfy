@@ -30,7 +30,7 @@ method main() {
   }
   i := 0;
   while i < N {
-    a := a[i := a[i] % (sum + 1)];
+    a := a[i := rem(a[i], sum + 1)];
     i := i + 1;
   }
   i := 0;

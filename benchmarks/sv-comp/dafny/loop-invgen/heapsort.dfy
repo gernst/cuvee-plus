@@ -3,9 +3,6 @@
 // -print dfy: a program of the folder; checks 1 <= j; j <= n; 1 <= j+1; j+1 <= n; 1 <= j; j <= n; 1 <= i; i <= n; 1
 // <= j; j <= n; 1 <= l; l <= n; 1 <= r; r <= n
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
 method main() returns (result: int) {
   var tmp₁: int;
   var tmp₂: int;
@@ -19,7 +16,7 @@ method main() returns (result: int) {
     result := 0;
     return;
   }
-  l := (quotient(n, 2)) + 1;
+  l := (quot(n, 2)) + 1;
   r := n;
   if l > 1 {
     l := l - 1;

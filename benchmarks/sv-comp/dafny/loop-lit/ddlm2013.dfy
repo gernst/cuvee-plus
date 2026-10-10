@@ -2,9 +2,6 @@
 // SV-COMP loop-lit/ddlm2013.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks a == b
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 method main() returns (result: int) {
   var tmp₁: int;
   var tmp₂: int;
@@ -31,7 +28,7 @@ method main() returns (result: int) {
     a := a + 1;
     b := b + (j - i);
     i := i + 2;
-    if (remainder(i, 2)) == 0 {
+    if (rem(i, 2)) == 0 {
       j := j + 2;
     } else {
       j := j + 1;

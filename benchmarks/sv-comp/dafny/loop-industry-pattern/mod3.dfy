@@ -18,11 +18,11 @@ method main() {
   y := 1;
   b := *;
   while b != 0 {
-    if x % 3 == 1 {
+    if rem(x, 3) == 1 {
       x := x + 2;
       y := 0;
     } else {
-      if x % 3 == 2 {
+      if rem(x, 3) == 2 {
         x := x + 1;
         y := 0;
       } else {
@@ -39,7 +39,7 @@ method main() {
     b := *;
   }
   if y == 0 {
-    assert x % 3 == 0;
+    assert rem(x, 3) == 0;
   }
 }
 

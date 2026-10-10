@@ -270,26 +270,39 @@ steps:
 
 ## Concrete constants
 
-Upper bounds by constants of at least 100 are removed from the assumptions and
-from the early returns `if !(...) { return; }` that translate
-`assume_abort_if_not` of the C programs, e.g. `assume n < 100000`, the guards
-against overflow `assume N <= 536870911`, the ranges of C types
-`assume -32768 <= x <= 32767`, and `if !(n <= SIZE)` with `SIZE := 20000001`;
-their lower bounds remain. The bounds that an assertion depends on remain:
-`loops-crafted-1/sum_by_3`, `sum_by_3_abstracted` and `vnew2` (`n <= SIZE`),
-`loop-zilu/benchmark43_conjunctive_abstracted` (`x < 100 && y < 100`).
+Bounds by concrete constants are removed, such that the inputs are unbounded:
+
+- upper bounds by constants of at least 100 in assumptions and in the early
+  returns `if !(...) { return; }` that translate `assume_abort_if_not` of the
+  C programs, e.g. `assume n < 100000`, the guards against overflow
+  `assume N <= 536870911`, the ranges of C types `assume -32768 <= x <= 32767`,
+  and `if !(n <= SIZE)` with `SIZE := 20000001`;
+- lower bounds by negative constants of at least 1000 in absolute value there,
+  e.g. `assume -32768 <= x`, `if !(x >= -1000000) { return; }`, also of array
+  elements, `assume a[i] < 10000 && a[i] > -10000`;
+- upper bounds of inputs by constants of at least 1000 in the conditions of
+  other `if` statements, if another conjunct remains, e.g.
+  `if SIZE > 1 && SIZE < MAX` with `MAX := 100000` (array-tiling, array-crafted,
+  `loops/linear_search`).
+
+The lower bounds by positive constants remain, which keep the verdict of
+tasks with symbolic bounds (e.g. `assume 1000 <= N`), as do conditions of the
+program, e.g. thresholds `if x < 500000` of the loops of `loops-crafted-1/Mono*`,
+and tests of indices `if i == 15000`. Where an assertion depends on a bound, it
+refers to a symbolic value instead: `loops-crafted-1/sum_by_3` and
+`sum_by_3_abstracted` assert `(i + j + k) / 3 <= n`, `vnew2` `i % (n + 3) != 0`;
+the last entries written, `A[N - 1]` in `loop-acceleration/array_1-1` and
+`array_2-1`; the bound `N` in `simple_2-1_abstracted`,
+`loop-crafted/simple_array_index_value_1-2`, `loops/nec20` (`N - 1` for 1023)
+and `loops-crafted-1/Mono1_1-1` (`x == N + 1`); the byte bound `M` of
+`loop-invariants/linear-inequality-inv-a` to `-d` (`s <= M * M`).
 
 The translations that still assign concrete numbers that are not small (at
 least 1000) to their variables, mostly thresholds and values that relate to
-the symbolic bounds (35 files):
+the symbolic bounds (20 files):
 
-- `array-crafted`: `zero_sum_const2` (100000), `zero_sum_const3` (100000),
-  `zero_sum_const4` (100000), `zero_sum_const5` (100000), `zero_sum_const_m3`
-  (100000), `zero_sum_const_m4` (100000), `zero_sum_const_m5` (100000).
 - `array-programs`: `copysome1-1` (150000), `copysome1-2` (150000, 150001),
   `copysome2-1` (150000), `copysome2-2` (150000).
-- `array-tiling`: `pnr3` (100000), `pnr4` (100000), `pnr5` (100000),
-  `rewnifrev2` (100000), `rewnifrev` (100000), `tcpy` (100000).
 - `loop-acceleration`: `simple_4-1_abstracted` (268435441), `simple_4-1`
   (268435441), `simple_4-2_abstracted` (268435440), `simple_4-2` (268435440).
 - `loop-invgen`: `large_const` (2000, 4000, 10000).
@@ -297,11 +310,13 @@ the symbolic bounds (35 files):
   (5000000), `mono-crafted_13` (50000), `mono-crafted_14` (500000),
   `mono-crafted_1` (50000), `mono-crafted_9` (500000), `sum_by_3_abstracted`
   (20000001), `sum_by_3` (20000001), `vnew2` (20000001).
-- `loops`: `linear_sea.ch` (100000), `linear_search` (100000), `nec20` (1023).
+- `loops`: `nec20` (1023).
 
-Not listed: numbers below 1000, e.g. the character codes of `loops/vogal-1`
-and `vogal-2` and `INFINITY := 899` of `loops/eureka_01-2`, and those in
-comments.
+Further numbers of at least 1000 occur in assertions (e.g.
+`loop-acceleration/array_1-1`, `loop-invariants/linear-inequality-inv-a`) and in
+conditions of the programs; not listed are numbers below 1000, e.g. the
+character codes of `loops/vogal-1` and `vogal-2` and `INFINITY := 899` of
+`loops/eureka_01-2`, and those in comments.
 
 ## Issues
 

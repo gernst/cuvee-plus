@@ -19,11 +19,11 @@ method main() returns (result: int)
     j := i + 2;
   }
   k := i;
-  while ((j) % (2)) == 0 {
+  while (rem(j, 2)) == 0 {
     j := j - 4;
     k := k - 4;
   }
-  assert ((k) % (2)) == 0;
+  assert (rem(k, 2)) == 0;
   result := 0;
   return;
 }

@@ -3,12 +3,6 @@
 // the C program by ./Cuvee.sh -print dfy: a program of the folder; checks j < 2
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var N: int;
 
 method main() returns (result: int)
@@ -31,8 +25,8 @@ method main() returns (result: int)
   i := 0;
   while i < N {
     a := a[i := i + 1];
-    if i > (quotient(N, 2)) && k < 1 {
-      a := a[i := (remainder(i, R))];
+    if i > (quot(N, 2)) && k < 1 {
+      a := a[i := (rem(i, R))];
     }
     if a[i] == 0 {
       k := k + 1;

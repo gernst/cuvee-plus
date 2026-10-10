@@ -21,11 +21,11 @@ method main() returns (result: int)
   n := *;
   assume 0 <= n;
   while l < n {
-    if !((((l) % (4))) != 0) {
+    if !(((rem(l, 4))) != 0) {
       v4 := v4 + 1;
-    } else if !((((l) % (3))) != 0) {
+    } else if !(((rem(l, 3))) != 0) {
       i := i + 1;
-    } else if !((((l) % (2))) != 0) {
+    } else if !(((rem(l, 2))) != 0) {
       j := j + 1;
     } else {
       k := k + 1;

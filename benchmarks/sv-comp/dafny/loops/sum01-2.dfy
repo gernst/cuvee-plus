@@ -10,7 +10,6 @@ method main() {
   var sn: int;
   n := *;
   sn := 0;
-  assume n >= -1000;
   i := 1;
   while i <= n {
     sn := sn + 2;

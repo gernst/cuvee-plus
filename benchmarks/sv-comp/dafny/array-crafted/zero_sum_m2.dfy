@@ -12,13 +12,11 @@ method main() {
   var i: int;
   var tmp: int;
   SIZE := *;
-  assume -32768 <= SIZE;
   if SIZE > 1 {
     sum := 0;
     i := 0;
     while i < SIZE {
       tmp := *;
-      assume -32768 <= tmp;
       a := a[i := tmp];
       i := i + 1;
     }

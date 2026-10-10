@@ -19,5 +19,5 @@ method main() returns (result: int) {
     B := B[i := tmp];
     i := i + 1;
   }
-  assert A[N / 2] != B[N / 2];
+  assert A[quot(N, 2)] != B[quot(N, 2)];
 }

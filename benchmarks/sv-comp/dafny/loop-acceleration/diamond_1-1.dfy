@@ -24,18 +24,18 @@ method main() {
   var N: int;
   var x: int;
   var y: int;
-  assume 0 < N && N % 2 == 1;
+  assume 0 < N && rem(N, 2) == 1;
   x := 0;
   y := *;
   assume 0 <= y;
   while x < N {
-    if y % 2 == 0 {
+    if rem(y, 2) == 0 {
       x := x + 2;
     } else {
       x := x + 1;
     }
   }
-  assert x % 2 == y % 2;
+  assert rem(x, 2) == rem(y, 2);
 }
 
 // remaining goals of -teq -simplify -split -simplify:

@@ -300,8 +300,8 @@ object Printer extends cuvee.pipe.Printer:
       case Ints.minus(a, b)     => op("-", List(a, b))
       case App(Ints.times.fun, _, _, args) => op("*", args)
       // the division and remainder of C (see resources/cuvee/c/prelude.bpl), unlike div and mod of SMT-LIB
-      case App(Fun(Name("quotient", None), Nil, _, _), _, _, List(a, b))  => op("/", List(a, b))
-      case App(Fun(Name("remainder", None), Nil, _, _), _, _, List(a, b)) => op("%", List(a, b))
+      case App(Fun(Name("quot", None), Nil, _, _), _, _, List(a, b)) => op("/", List(a, b))
+      case App(Fun(Name("rem", None), Nil, _, _), _, _, List(a, b))  => op("%", List(a, b))
       // shifts by constants, which are divisions by powers of 2 that round down (see Parser.arith)
       case App(Fun(Name("div", None), Nil, _, _), _, _, List(a, Lit(n: BigInt, _))) if n > 1 && n.bitCount == 1 =>
         op(">>", List(a, Lit(BigInt(n.bitLength - 1), Sort.int)))

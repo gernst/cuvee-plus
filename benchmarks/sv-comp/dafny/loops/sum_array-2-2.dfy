@@ -22,28 +22,12 @@ method main() returns (result: int) {
   while i < M {
     tmp₂ := *;
     A := A[i := tmp₂];
-    if !(A[i] <= 1000000) {
-      result := 0;
-      return;
-    }
-    if !(A[i] >= -1000000) {
-      result := 0;
-      return;
-    }
     i := i + 1;
   }
   i := 0;
   while i < M {
     tmp₃ := *;
     B := B[i := tmp₃];
-    if !(B[i] <= 1000000) {
-      result := 0;
-      return;
-    }
-    if !(B[i] >= -1000000) {
-      result := 0;
-      return;
-    }
     i := i + 1;
   }
   i := 0;

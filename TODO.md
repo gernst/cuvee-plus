@@ -173,15 +173,13 @@ Plan:
   Lean declares already clash, e.g. a datatype `List` or a function `max`,
   which a namespace around the output would avoid. Not checked with Lean.
 - The C printer of the Dafny translations of SV-COMP
-  (`benchmarks/sv-comp/dafny`, `-print c -known dfy,teq,rw`): 596 of 651
-  print as C that parses again (`benchmarks/sv-comp/c`), whose programs, printed
-  back as Dafny, are those of their sources, except `loops/eureka_05`, whose
-  global array C initializes to zero, unlike the Dafny translation, and the
-  initializers of arrays, which become `const(0)[...]` and move to their
-  declarations (`loops/vogal-1`, `vogal-2`, `eureka_01-2`); the others
-  contain `SMT_LIB(...)` or fail:
-  - `%` and `/` of Dafny, `mod` and `div`, which round down, unlike those of
-    C (54), e.g. `array-examples/sanfoundry_24-1`;
+  (`benchmarks/sv-comp/dafny`, `-print c -known dfy,teq,rw`): all 651 print as
+  C that parses again (`benchmarks/sv-comp/c`), whose programs, printed back as
+  Dafny, are those of their sources. The translations use `quot` and `rem` of
+  the prelude of Dafny for the division and remainder of C, have no global
+  variables where C would initialize them to zero (`loops/eureka_05`,
+  `n.c40`, `nec40`), and fill the constant arrays of C by loops with arbitrary
+  values (`loops/vogal-1`, `vogal-2`, `eureka_01-2`).
 
 ## Code structure
 

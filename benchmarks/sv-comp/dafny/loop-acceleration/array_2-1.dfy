@@ -26,5 +26,5 @@ method main() returns (result: int) {
     B := B[i := tmp];
     i := i + 1;
   }
-  assert A[1024] != B[1024];
+  assert A[N - 1] != B[N - 1];
 }

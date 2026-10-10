@@ -20,7 +20,7 @@ method main() {
     x := x + 1;
     y := y * 2;
   }
-  assert y % 3 != 0;
+  assert rem(y, 3) != 0;
 }
 
 // remaining goals of -teq -simplify:

@@ -3,9 +3,6 @@
 // by ./Cuvee.sh -print dfy: a variant of functions_1-1 with other constants or assertions; checks x % 2
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 method f(z: int) returns (result: int) {
   result := z + 2;
   return;
@@ -19,5 +16,5 @@ method main() returns (result: int) {
   while x < N {
     x := f(x);
   }
-  assert (((remainder(x, 2))) != 0);
+  assert (((rem(x, 2))) != 0);
 }

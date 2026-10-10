@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task loop-lit/bh2017-ex-add.yml, printed from ../../dafny/loop-lit/bh2017-ex-add.dfy
+input_files: 'bh2017-ex-add.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: C
+  data_model: ILP32

@@ -1,18 +1,15 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/vogal-2.dfy
 // SV-COMP loops/vogal-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of vogal-1 with other constants or assertions; checks cont_aux==cont
-// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 10 (MAX); the table of vowels keeps
-// its 11 entries, which j < 8 and j < 10 read
-
-// the constant array of the initializers of C, whose values are all x
-function {:c} constant(x: int): array<int, int>
-
-lemma {:rw} {:teq} constant_1(x: int, i: int)
-  ensures constant(x)[i] == x
+// note: the concrete loop bounds are symbolic, arbitrary positive values: N for 10 (MAX); the loops
+// over the vowels keep j < 8 and j < 10
+// note: the vowels of the C program, a constant array, are arbitrary values of the entries that the loops read,
+// filled by a loop, since the counts compare the same entries
 
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
+  var tmp₂: int;
   var string_entrada: array<int, int>;
   var vetor_vogais: array<int, int>;
   var i: int;
@@ -22,7 +19,12 @@ method main() returns (result: int) {
   var n_caracter: int;
   var cont_aux: int;
   assume 0 < N;
-  vetor_vogais := constant(0)[0 := 97][1 := 65][2 := 101][3 := 69][4 := 105][5 := 73][6 := 111][7 := 79][8 := 117][9 := 85][10 := 0];
+  i := 0;
+  while i < 10 {
+    tmp₂ := *;
+    vetor_vogais := vetor_vogais[i := tmp₂];
+    i := i + 1;
+  }
   i := 0;
   while i < N {
     tmp₁ := *;

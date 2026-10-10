@@ -21,7 +21,7 @@ method main() {
     i := i + 3;
   }
   j := 0;
-  while j < n / 3 {
+  while j < quot(n, 3) {
     assert k > 0;
     k := k - 1;
     j := j + 1;

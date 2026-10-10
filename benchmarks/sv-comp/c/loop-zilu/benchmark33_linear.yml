@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task loop-zilu/benchmark33_linear.yml, printed from ../../dafny/loop-zilu/benchmark33_linear.dfy
+input_files: 'benchmark33_linear.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: C
+  data_model: ILP32

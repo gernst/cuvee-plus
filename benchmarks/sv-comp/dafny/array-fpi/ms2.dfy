@@ -15,7 +15,7 @@ method main() {
   assume 0 < N;
   i := 0;
   while i < N {
-    a := a[i := i % 2];
+    a := a[i := rem(i, 2)];
     i := i + 1;
   }
   i := 0;

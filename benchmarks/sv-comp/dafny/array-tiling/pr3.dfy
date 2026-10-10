@@ -2,12 +2,6 @@
 // SV-COMP array-tiling/pr3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of pr2 with other constants or assertions; checks volArray[i] >= MINVAL || volArray[i] == 0
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var CELLCOUNT: int;
 
 method main() returns (result: int)
@@ -25,13 +19,13 @@ method main() returns (result: int)
     CCCELVOL3 := 7;
     CCCELVOL2 := 3;
     CCCELVOL1 := 1;
-    if (remainder(CELLCOUNT, 3)) != 0 {
+    if (rem(CELLCOUNT, 3)) != 0 {
       result := 1;
       return;
     }
-    assume (remainder(CELLCOUNT, 3)) == 0;
+    assume (rem(CELLCOUNT, 3)) == 0;
     i := 1;
-    while i <= (quotient(CELLCOUNT, 3)) {
+    while i <= (quot(CELLCOUNT, 3)) {
       if CCCELVOL3 >= MINVAL {
         volArray := volArray[i * 3 - 3 := CCCELVOL3];
       } else {

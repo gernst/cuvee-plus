@@ -4,17 +4,18 @@
 // >= 0x0fffffff
 
 method main() returns (result: int) {
+  var N: int;
   var tmp₁: int;
   var x: int;
   tmp₁ := *;
   assume 0 <= tmp₁;
   x := tmp₁;
-  if x < 268435455 {
+  if x < N {
     x := *;
   assume 0 <= x;
   }
-  if x < 268435455 {
+  if x < N {
     assume false;
   }
-  assert x >= 268435455;
+  assert x >= N;
 }

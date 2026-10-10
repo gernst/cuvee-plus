@@ -20,7 +20,7 @@ method main() {
   }
   i := 0;
   while i < N {
-    a := a[i := sum % N];
+    a := a[i := rem(sum, N)];
     i := i + 1;
   }
   i := 0;

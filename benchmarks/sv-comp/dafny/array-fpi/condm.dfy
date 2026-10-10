@@ -35,7 +35,7 @@ method main() {
   }
   i := 0;
   while i < N {
-    if N % 2 == 0 {
+    if rem(N, 2) == 0 {
       a := a[i := a[i] + 2];
     } else {
       a := a[i := a[i] + 1];
@@ -44,7 +44,7 @@ method main() {
   }
   i := 0;
   while i < N {
-    assert a[i] % 2 == N % 2;
+    assert rem(a[i], 2) == rem(N, 2);
     i := i + 1;
   }
 }

@@ -14,7 +14,7 @@ method main() {
   assume 0 < N;
   i := 0;
   while i < N {
-    if i % 1 == 0 {
+    if rem(i, 1) == 0 {
       a := a[i := 1];
     } else {
       a := a[i := 0];
@@ -24,7 +24,7 @@ method main() {
   i := 0;
   while i < N {
     if i == 0 {
-      sum := N / 2 + 10;
+      sum := quot(N, 2) + 10;
     } else {
       sum := sum + a[i];
     }

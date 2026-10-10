@@ -15,7 +15,7 @@ method main() {
   var ac: array<int, int>;
   var bc: array<int, int>;
   S := *;
-  if S > 1 && S < 100000 {
+  if S > 1 {
     i := 0;
     while i < S {
       v := *;

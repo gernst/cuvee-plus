@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task array-lopstr16/partial_lesser_bound.yml, printed from ../../dafny/array-lopstr16/partial_lesser_bound.dfy
+input_files: 'partial_lesser_bound.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: C
+  data_model: ILP32

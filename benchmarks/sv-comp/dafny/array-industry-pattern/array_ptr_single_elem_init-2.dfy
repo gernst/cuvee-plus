@@ -19,7 +19,7 @@ method main() {
     a := a[i := 0];
     if q == 0 {
       a := a[i := 1];
-      b := b[i := i % 2];
+      b := b[i := rem(i, 2)];
     }
     if a[i] != 0 {
       if b[i] == 0 {

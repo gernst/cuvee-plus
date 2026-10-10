@@ -4,17 +4,15 @@
 
 var SIZE: int;
 
-var MAX: int;
 
 method main() returns (result: int)
-  modifies MAX, SIZE
-  requires SIZE == 0 && MAX == 0
+  modifies SIZE
+  requires SIZE == 0 
 {
   var i: int;
   var a: array<int, int>;
-  MAX := 100000;
   SIZE := *;
-  if SIZE > 1 && SIZE < MAX {
+  if SIZE > 1 {
     i := SIZE - 2;
     while i >= 0 {
       a := a[i := i];

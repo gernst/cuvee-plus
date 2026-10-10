@@ -2,9 +2,6 @@
 // SV-COMP nla-digbench/divbin2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of divbin with other constants or assertions; checks A == q * b + r; A == q * b + r
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
 method main() returns (result: int) {
   var A: int;
   var B: int;
@@ -29,7 +26,7 @@ method main() returns (result: int) {
       break;
     }
     q := 2 * q;
-    b := (quotient(b, 2));
+    b := (quot(b, 2));
     if r >= b {
       q := q + 1;
       r := r - b;

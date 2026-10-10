@@ -15,11 +15,11 @@ method main() {
   C := *;
   if C > 1 {
     MINVAL := 2;
-    if C % 2 != 0 {
+    if rem(C, 2) != 0 {
       return;
     }
     i := 1;
-    while i <= C / 2 {
+    while i <= quot(C, 2) {
       j := 2;
       while j >= 1 {
         if j >= MINVAL {

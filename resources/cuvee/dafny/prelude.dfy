@@ -101,3 +101,9 @@ function {:dfy} {:smt2} {:ho} apply₇<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇>(
 function {:dfy} {:smt2} {:ho} apply₈<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈>(x₀: arrow₈<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇): a₈
 function {:dfy} {:smt2} {:ho} apply₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉>(x₀: arrow₉<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇, x₉: a₈): a₉
 function {:dfy} {:smt2} {:ho} apply₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀>(x₀: arrow₁₀<a₀,a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀>, x₁: a₀, x₂: a₁, x₃: a₂, x₄: a₃, x₅: a₄, x₆: a₅, x₇: a₆, x₈: a₇, x₉: a₈, x₁₀: a₉): a₁₀
+
+// the division and remainder of C, which truncate towards zero, e.g. quot(-7, 2) == -3 and rem(-7, 2) == -1,
+// unlike / and % of Dafny, with which they coincide for nonnegative dividends; they are those of the prelude of C
+// (resources/cuvee/c/prelude.bpl), which the C printer writes as / and %, and the simplifier unfolds them (rw)
+function {:dfy} {:c} {:rw} quot(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
+function {:dfy} {:c} {:rw} rem(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }

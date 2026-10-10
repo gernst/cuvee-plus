@@ -11,7 +11,7 @@ method main() {
   var sum: int;
   var a: array<int, int>;
   S := *;
-  if S > 1 && S < 100000 {
+  if S > 1 {
     sum := 0;
     i := 0;
     while i < S {

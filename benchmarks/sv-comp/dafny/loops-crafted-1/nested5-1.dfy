@@ -3,9 +3,6 @@
 // ./Cuvee.sh -print dfy: a variant of nested3-1 with other constants or assertions; checks v % 4
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455, M for 10
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 method main() returns (result: int) {
   var N: int;
   var M: int;
@@ -33,7 +30,7 @@ method main() returns (result: int) {
           while v < M {
             v := v + 1;
           }
-          assert (((remainder(v, 4))) != 0);
+          assert (((rem(v, 4))) != 0);
           z := z + 1;
         }
         y := y + 1;

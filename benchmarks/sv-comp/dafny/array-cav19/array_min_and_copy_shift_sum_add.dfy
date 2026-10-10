@@ -16,13 +16,10 @@ method main() {
   var a: array<int, int>;
   var b: array<int, int>;
   j := *;
-  assume j > -10000;
   k := 0;
   N := *;
-  assume N > -10000;
   i := 0;
   while i < N {
-    assume a[i] < 10000 && a[i] > -10000;
     if j > a[i] {
       j := a[i];
     }

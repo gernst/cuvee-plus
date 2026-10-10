@@ -19,13 +19,13 @@ method main() returns (result: int)
   i := j;
   while i < n {
     i := i + 3;
-    if ((((i) % (2))) != 0) {
+    if (((rem(i, 2))) != 0) {
       j := j + 3;
     } else {
       k := k + 3;
     }
     if n > 0 {
-      assert ((i) / (2)) <= j;
+      assert (quot(i, 2)) <= j;
     }
   }
   result := 0;

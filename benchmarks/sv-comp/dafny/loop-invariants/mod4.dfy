@@ -14,7 +14,7 @@ method main() {
     x := x + 4;
     b := *;
   }
-  assert x % 4 == 0;
+  assert rem(x, 4) == 0;
 }
 
 // remaining goals of -teq -simplify:

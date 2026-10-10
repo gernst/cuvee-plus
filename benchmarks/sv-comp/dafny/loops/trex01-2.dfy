@@ -24,15 +24,6 @@ method f(d: int) {
     z := 2 * z;
   }
   assert z >= 1;
-  if !(x >= -1000000) {
-    return;
-  }
-  if !(y >= -1000000) {
-    return;
-  }
-  if !(k >= -1000000) {
-    return;
-  }
   while x > 0 && y > 0 {
     tmp₄ := *;
     c := tmp₄;

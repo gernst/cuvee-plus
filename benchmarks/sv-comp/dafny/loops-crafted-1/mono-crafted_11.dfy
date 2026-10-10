@@ -5,9 +5,6 @@
 // it, 2 * K = N / 10 for 10000000; a multiple of 20, such that the threshold is even and x, which counts by 2 from
 // there, ends at an even value, as for the original bound
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 method main() returns (result: int) {
   var N: int;
   var K: int;
@@ -22,7 +19,7 @@ method main() returns (result: int) {
       x := x + 2;
     }
   }
-  assert (remainder(x, 2)) == 0;
+  assert (rem(x, 2)) == 0;
   result := 0;
   return;
 }

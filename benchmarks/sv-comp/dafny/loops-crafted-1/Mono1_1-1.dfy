@@ -15,5 +15,5 @@ method main() returns (result: int) {
       x := x + 2;
     }
   }
-  assert x == 100000001;
+  assert x == N + 1;
 }

@@ -11,7 +11,7 @@ method main() {
   var i: int;
   var a: array<int, int>;
   S := *;
-  if S > 1 && S < 100000 {
+  if S > 1 {
     i := S - 2;
     while i >= -1 {
       if i >= 0 {

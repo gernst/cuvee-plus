@@ -15,7 +15,7 @@ method main() {
   }
   i := 0;
   while i < S {
-    if i / 65536 > 250 {
+    if quot(i, 65536) > 250 {
       a := a[i := 1];
     } else {
       a := a[i := 0];

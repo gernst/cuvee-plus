@@ -28,7 +28,6 @@ method main() {
     c := *;
     if c != 0 {
       k := *;
-      assume -32768 <= k;
       a := a[i := k];
       b := b[i := k * k];
     }

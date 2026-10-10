@@ -2,12 +2,6 @@
 // SV-COMP array-tiling/pnr5.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of pnr2 with other constants or assertions; checks a[i]!=DEFAULTVAL
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 method ReadFromPort() returns (result: int) {
   var tmp₁: int;
   var x: int;
@@ -19,29 +13,27 @@ method ReadFromPort() returns (result: int) {
 
 var SIZE: int;
 
-var MAX: int;
 
 method main() returns (result: int)
-  modifies MAX, SIZE
-  requires SIZE == 0 && MAX == 0
+  modifies SIZE
+  requires SIZE == 0 
 {
   var i: int;
   var value: int;
   var a: array<int, int>;
   var DEFAULTVAL: int;
   var FIXEDVAL: int;
-  MAX := 100000;
   SIZE := *;
-  if SIZE > 1 && SIZE < MAX {
+  if SIZE > 1 {
     DEFAULTVAL := 0;
     FIXEDVAL := 10;
-    if (remainder(SIZE, 5)) != 0 {
+    if (rem(SIZE, 5)) != 0 {
       result := 1;
       return;
     }
-    assume (remainder(SIZE, 5)) == 0;
+    assume (rem(SIZE, 5)) == 0;
     i := 1;
-    while i <= (quotient(SIZE, 5)) {
+    while i <= (quot(SIZE, 5)) {
       value := ReadFromPort();
       if value != DEFAULTVAL {
         a := a[i * 5 - 5 := value];

@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task array-industry-pattern/check_removal_from_set_after_insertion.yml, printed from ../../dafny/array-industry-pattern/check_removal_from_set_after_insertion.dfy
+input_files: 'check_removal_from_set_after_insertion.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: ILP32

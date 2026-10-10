@@ -20,11 +20,11 @@ method main() {
     MINVAL := *;
     V2 := 3;
     V1 := 1;
-    if C % 2 != 0 {
+    if rem(C, 2) != 0 {
       return;
     }
     i := 1;
-    while i <= C / 2 {
+    while i <= quot(C, 2) {
       if V2 >= MINVAL {
         a := a[i * 2 - 2 := V2];
       } else {

@@ -17,7 +17,7 @@ method main() {
     return;
   }
   while x < y {
-    if x < y / x {
+    if x < quot(y, x) {
       x := x * x;
     } else {
       x := x + 1;

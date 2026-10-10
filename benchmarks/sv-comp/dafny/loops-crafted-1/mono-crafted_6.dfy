@@ -21,10 +21,10 @@ method main() returns (result: int) {
   z := 0;
   x := 0;
   while x < N {
-    if x < N / 2 {
+    if x < quot(N, 2) {
       x := x + 1;
     } else {
-      if x < 3 * N / 4 {
+      if x < quot(3 * N, 4) {
         x := x + 1;
       } else {
         x := x + 2;

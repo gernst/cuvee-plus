@@ -15,7 +15,7 @@ method main() {
     x := x + 8;
     b := *;
   }
-  assert x % 8 == 5;
+  assert rem(x, 8) == 5;
 }
 
 // remaining goals of -teq -simplify:

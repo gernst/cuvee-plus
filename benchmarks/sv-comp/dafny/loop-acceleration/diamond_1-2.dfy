@@ -26,13 +26,13 @@ method main() {
   y := *;
   assume 0 <= y;
   while x < N {
-    if y % 2 == 0 {
+    if rem(y, 2) == 0 {
       x := x + 1;
     } else {
       x := x + 2;
     }
   }
-  assert x % 2 == y % 2;
+  assert rem(x, 2) == rem(y, 2);
 }
 
 // remaining goals of -teq -simplify -split -simplify:

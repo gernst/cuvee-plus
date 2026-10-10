@@ -12,18 +12,18 @@ method main() {
   var v: int;
   var a: array<int, int>;
   S := *;
-  if S > 1 && S < 100000 {
+  if S > 1 {
     i := 0;
     while i < S {
       v := *;
       a := a[i := v];
       i := i + 1;
     }
-    if S % 2 != 0 {
+    if rem(S, 2) != 0 {
       return;
     }
     i := 1;
-    while i <= S / 2 {
+    while i <= quot(S, 2) {
       if a[2 * i - 2] > 2 * i - 2 {
         a := a[2 * i - 2 := 2 * i - 2];
       }

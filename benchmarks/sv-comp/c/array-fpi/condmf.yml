@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task array-fpi/condmf.yml, printed from ../../dafny/array-fpi/condmf.dfy
+input_files: 'condmf.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: ILP32

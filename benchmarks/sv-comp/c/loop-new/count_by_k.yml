@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task loop-new/count_by_k.yml, printed from ../../dafny/loop-new/count_by_k.dfy
+input_files: 'count_by_k.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: C
+  data_model: ILP32

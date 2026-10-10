@@ -1,0 +1,36 @@
+// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-fpi/eqn5.c
+// SV-COMP array-fpi/eqn5.yml, translated from benchmarks/sv-comp/dafny/array-fpi/eqn5.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
+
+int N;
+
+int main(void) {
+  int result;
+  int i;
+  int a[];
+  int b[];
+  N = __VERIFIER_nondet_int();
+  if (N <= 0) {
+    result = 1;
+    return result;
+  }
+  a[0] = 10;
+  b[0] = 1;
+  i = 1;
+  while (i < N) {
+    a[i] = a[i - 1] + 10;
+    i = i + 1;
+  }
+  i = 1;
+  while (i < N) {
+    b[i] = b[i - 1] + a[i - 1];
+    i = i + 1;
+  }
+  i = 0;
+  while (i < N) {
+    assert(b[i] == 5 * i * i + 5 * i + 1);
+    i = i + 1;
+  }
+  result = 1;
+  return result;
+}
+

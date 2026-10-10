@@ -7,9 +7,6 @@
 // h*h*h - 12*h*n + 16*n*p + 12*h*r - 16*p*r - h - 4*p == 0; p*p - n + r == 0; h*h*p - 4*h*n + 4*n*p + 4*h*r - 4*p*r
 // - p == 0
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
 method main() returns (result: int) {
   var n: int;
   var p: int;
@@ -51,9 +48,9 @@ method main() returns (result: int) {
     if !(q != 1) {
       break;
     }
-    q := (quotient(q, 4));
+    q := (quot(q, 4));
     h := p + q;
-    p := (quotient(p, 2));
+    p := (quot(p, 2));
     if r >= h {
       p := p + q;
       r := r - h;

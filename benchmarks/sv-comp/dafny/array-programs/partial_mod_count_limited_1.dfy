@@ -21,12 +21,12 @@ method main() {
   k := 0;
   lim := *;
   R := 1;
-  assume 0 < lim && lim < N / R;
+  assume 0 < lim && lim < quot(N, R);
   i := 0;
   while i < N {
     a := a[i := i + 1];
     if k < lim {
-      a := a[i := i % R];
+      a := a[i := rem(i, R)];
     }
     if a[i] == 0 {
       k := k + 1;
@@ -38,7 +38,7 @@ method main() {
     if a[i] == 0 {
       j := j + 1;
     }
-    assert j < N / R;
+    assert j < quot(N, R);
     i := i + 1;
   }
 }

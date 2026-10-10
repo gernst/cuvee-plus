@@ -57,10 +57,10 @@ function {:c} {:rw} number(b: bool): int { if b then 1 else 0 }
 
 // division and remainder of C, which truncate towards zero, e.g. -7 / 2 == -3 and -7 % 2 == -1,
 // unlike div and mod of SMT-LIB, whose remainder is nonnegative, with which they coincide for nonnegative dividends,
-// which the simplifier unfolds (rw)
-function {:c} {:rw} quotient(a: int, b: int): int { if 0 <= a then a div b else -((-a) div b) }
+// which the simplifier unfolds (rw); also in the prelude of Dafny (resources/cuvee/dafny/prelude.dfy)
+function {:c} {:rw} quot(a: int, b: int): int { if 0 <= a then a div b else -((-a) div b) }
 
-function {:c} {:rw} remainder(a: int, b: int): int { if 0 <= a then a mod b else -((-a) mod b) }
+function {:c} {:rw} rem(a: int, b: int): int { if 0 <= a then a mod b else -((-a) mod b) }
 
 // the bit operations on integers, &, |, ^, ~, and the shifts << and >> by values that are not constants, which are
 // declared only, since the integers are unbounded (shifts by constants are multiplications and divisions)

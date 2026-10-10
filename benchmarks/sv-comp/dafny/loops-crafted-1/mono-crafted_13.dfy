@@ -3,9 +3,6 @@
 // ./Cuvee.sh -print dfy: a variant of mono-crafted_1 with other constants or assertions; checks (x%2==0)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 method main() returns (result: int) {
   var N: int;
   var x: int;
@@ -28,7 +25,7 @@ method main() returns (result: int) {
     y := y - 1;
     x := x - 1;
   }
-  assert (remainder(x, 2)) == 0;
+  assert (rem(x, 2)) == 0;
   result := 0;
   return;
 }

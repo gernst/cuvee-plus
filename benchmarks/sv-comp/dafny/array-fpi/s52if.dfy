@@ -2,9 +2,6 @@
 // SV-COMP array-fpi/s52if.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of s12if with other constants or assertions; checks sum[0] == 6*N
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
 var N: int;
 
 method main() returns (result: int)

@@ -3,9 +3,6 @@
 // ./Cuvee.sh -print dfy: a program of the folder; checks 0 <= j; j <= 2 * i; 2 * i <= j + 6; j <= 4; 0 <= j; j <= 2
 // * i; 2 * i <= j + 6; j <= 4
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
 method main() returns (result: int) {
   var i: int;
   var j: int;
@@ -24,7 +21,7 @@ method main() returns (result: int) {
     assert j <= 2 * i;
     assert 2 * i <= j + 6;
     assert j <= 4;
-    i := i - (quotient(j, 2)) + 1;
+    i := i - (quot(j, 2)) + 1;
   }
   result := 0;
   return;

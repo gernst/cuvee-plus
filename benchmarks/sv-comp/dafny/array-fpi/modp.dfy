@@ -26,7 +26,7 @@ method main() {
   }
   i := 0;
   while i < N {
-    assert a[i] % N == 0;
+    assert rem(a[i], N) == 0;
     i := i + 1;
   }
 }

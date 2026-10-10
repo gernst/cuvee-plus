@@ -17,18 +17,6 @@ method main() returns (result: int) {
   urilen := *;
   tokenlen := *;
   scheme := *;
-  if !(urilen >= -1000000) {
-    result := 0;
-    return;
-  }
-  if !(tokenlen >= -1000000) {
-    result := 0;
-    return;
-  }
-  if !(scheme >= -1000000) {
-    result := 0;
-    return;
-  }
   if urilen > 0 {} else {
     result := 0;
     return;

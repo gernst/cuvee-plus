@@ -19,15 +19,15 @@ method main() {
   }
   i := 0;
   while i < num {
-    if array[i] % 2 == 0 {
-      assert array[i] % 2 == 0;
+    if rem(array[i], 2) == 0 {
+      assert rem(array[i], 2) == 0;
     }
     i := i + 1;
   }
   i := 0;
   while i < num {
-    if array[i] % 2 != 0 {
-      assert array[i] % 2 != 0;
+    if rem(array[i], 2) != 0 {
+      assert rem(array[i], 2) != 0;
     }
     i := i + 1;
   }

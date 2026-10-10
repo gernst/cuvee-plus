@@ -5,9 +5,6 @@
 // note: the concrete loop bounds are symbolic: N for 100, which is passed to mapavg, and at least 2, since x[0] and
 // x[1] are swapped
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
 method mapavg(x: array<int, int>, N: int) returns (result: int) {
   var i: int;
   var ret: int;
@@ -17,7 +14,7 @@ method mapavg(x: array<int, int>, N: int) returns (result: int) {
     ret := ret + i + x[i];
     i := i + 1;
   }
-  result := (quotient(ret, N));
+  result := (quot(ret, N));
   return;
 }
 

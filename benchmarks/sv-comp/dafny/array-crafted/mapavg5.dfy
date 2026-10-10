@@ -2,9 +2,6 @@
 // SV-COMP array-crafted/mapavg5.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of mapavg1 with other constants or assertions
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
 var N: int;
 
 method mapavg(x: array<int, int>) returns (result: int) {
@@ -16,7 +13,7 @@ method mapavg(x: array<int, int>) returns (result: int) {
     ret := ret + i + x[i];
     i := i + 1;
   }
-  result := (quotient(ret, N));
+  result := (quot(ret, N));
   return;
 }
 

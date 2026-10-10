@@ -11,7 +11,6 @@ method main() {
   var y: int;
   x := -50;
   y := *;
-  assume -1000 < y;
   while x < 0 {
     x := x + y;
     y := y + 1;

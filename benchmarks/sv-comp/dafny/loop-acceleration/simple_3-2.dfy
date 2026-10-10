@@ -14,7 +14,7 @@ method main() {
   while x < N {
     x := x + 2;
   }
-  assert x % 2 == 0;
+  assert rem(x, 2) == 0;
 }
 
 // remaining goals of -teq -simplify:

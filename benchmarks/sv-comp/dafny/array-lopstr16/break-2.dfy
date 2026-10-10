@@ -12,7 +12,7 @@ method main() {
   assume 0 < N;
   i := 0;
   while i < N {
-    if i > N / 2 {
+    if i > quot(N, 2) {
       break;
     }
     s := s[i := 10];
@@ -20,7 +20,7 @@ method main() {
   }
   i := 0;
   while i < N {
-    if i <= N / 2 {
+    if i <= quot(N, 2) {
       assert s[i] == 10;
     }
     i := i + 1;

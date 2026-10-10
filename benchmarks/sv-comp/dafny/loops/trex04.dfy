@@ -34,10 +34,6 @@ method main() returns (result: int) {
   d := 1;
   tmp₃ := *;
   x := tmp₃;
-  if !(x >= -1000000) {
-    result := 0;
-    return;
-  }
   tmp₄ := *;
   c1 := tmp₄;
   tmp₅ := *;

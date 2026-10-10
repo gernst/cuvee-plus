@@ -13,7 +13,7 @@ method main() {
   var M: int;
   var x: int;
   var y: int;
-  assume 0 < N && N % 2 == 1;
+  assume 0 < N && rem(N, 2) == 1;
   assume 0 < M;
   x := 0;
   y := 0;
@@ -24,7 +24,7 @@ method main() {
     }
     x := x + 1;
   }
-  assert x % 2 != 0;
+  assert rem(x, 2) != 0;
 }
 
 // remaining goals of -teq -simplify:

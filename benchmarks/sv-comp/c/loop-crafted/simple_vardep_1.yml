@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task loop-crafted/simple_vardep_1.yml, printed from ../../dafny/loop-crafted/simple_vardep_1.dfy
+input_files: 'simple_vardep_1.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: C
+  data_model: ILP32

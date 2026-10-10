@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task loop-invgen/NetBSD_loop.yml, printed from ../../dafny/loop-invgen/NetBSD_loop.dfy
+input_files: 'NetBSD_loop.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: C
+  data_model: ILP32

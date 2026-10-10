@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task array-examples/standard_copyInitSum2_ground-1.yml, printed from ../../dafny/array-examples/standard_copyInitSum2_ground-1.dfy
+input_files: 'standard_copyInitSum2_ground-1.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: ILP32

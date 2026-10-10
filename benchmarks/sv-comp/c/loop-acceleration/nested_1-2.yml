@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task loop-acceleration/nested_1-2.yml, printed from ../../dafny/loop-acceleration/nested_1-2.dfy
+input_files: 'nested_1-2.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: ILP32

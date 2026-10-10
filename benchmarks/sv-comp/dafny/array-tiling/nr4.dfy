@@ -2,12 +2,6 @@
 // SV-COMP array-tiling/nr4.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nr2 with other constants or assertions; checks volArray[i] >= MINVAL || volArray[i] == 0
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var CELLCOUNT: int;
 
 method main() returns (result: int)
@@ -21,13 +15,13 @@ method main() returns (result: int)
   CELLCOUNT := *;
   if CELLCOUNT > 1 {
     MINVAL := 2;
-    if (remainder(CELLCOUNT, 4)) != 0 {
+    if (rem(CELLCOUNT, 4)) != 0 {
       result := 1;
       return;
     }
-    assume (remainder(CELLCOUNT, 4)) == 0;
+    assume (rem(CELLCOUNT, 4)) == 0;
     i := 1;
-    while i <= (quotient(CELLCOUNT, 4)) {
+    while i <= (quot(CELLCOUNT, 4)) {
       j := 4;
       while j >= 1 {
         if j >= MINVAL {

@@ -21,7 +21,7 @@ method main() {
   j := 0;
   l := 0;
   while l < n {
-    if l % 2 == 0 {
+    if rem(l, 2) == 0 {
       i := i + 1;
     } else {
       j := j + 1;

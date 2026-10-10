@@ -2,9 +2,6 @@
 // SV-COMP array-patterns/array5_pattern.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of array10_pattern with other constants or assertions; checks sum == 0
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var ARR_SIZE: int;
 
 method main() returns (result: int)
@@ -35,7 +32,7 @@ method main() returns (result: int)
   while (1 != 0) {
     index := *;
     assume index >= 0 && index < ARR_SIZE;
-    if (remainder(index, 2)) == 0 {
+    if (rem(index, 2)) == 0 {
       array1 := array1[index := num * (num * count)];
       array2 := array2[index := num * count];
     } else {

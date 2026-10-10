@@ -123,8 +123,8 @@ class Parser(var state: State, arch: Int):
       case "-" => state.exprs.app("-", List(a, b))
       case "*" => state.exprs.app("*", List(a, b))
       // division and remainder truncate towards zero in C (see resources/cuvee/c/prelude.bpl)
-      case "/" => state.exprs.app("quotient", List(a, b))
-      case "%" => state.exprs.app("remainder", List(a, b))
+      case "/" => state.exprs.app("quot", List(a, b))
+      case "%" => state.exprs.app("rem", List(a, b))
       // shifts by constants are multiplications and divisions by powers of 2 of the unbounded integers,
       // where the division rounds down, like the arithmetic shift of negative numbers;
       // other shifts and the bit operations are declared functions (see resources/cuvee/c/prelude.bpl)

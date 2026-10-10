@@ -2,9 +2,6 @@
 // SV-COMP array-fpi/modpf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of modp with other constants or assertions; checks a[i] % N == 1
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var N: int;
 
 method main() returns (result: int)
@@ -30,7 +27,7 @@ method main() returns (result: int)
   }
   i := 0;
   while i < N {
-    assert (remainder(a[i], N)) == 1;
+    assert (rem(a[i], N)) == 1;
     i := i + 1;
   }
   result := 1;

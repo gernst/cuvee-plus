@@ -38,23 +38,25 @@ lemma {:rw} {:teq} sum_2(n: Nat, xs: List<int>)
   ensures 0 <= sum(xs)
 
 method main() {
+  var M: int;
   var n: int;
   var v: int;
   var s: int;
   var i: int;
   n := *;
-  assume 0 <= n;
+  assume 0 <= M;
+  assume 0 <= n <= M;
   v := 0;
   s := 0;
   i := 0;
   while i < n {
     v := *;
-    assume 0 <= v;
-    s := (s + v) % 256;
+    assume 0 <= v <= M;
+    s := rem(s + v, 256);
     i := i + 1;
   }
   assert s >= v;
-  assert s <= 65025;
+  assert s <= M * M;
 }
 
 // remaining goals of -teq -simplify -split -simplify:

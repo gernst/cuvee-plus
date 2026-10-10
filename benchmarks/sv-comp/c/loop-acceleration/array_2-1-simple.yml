@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task loop-acceleration/array_2-1-simple.yml, printed from ../../dafny/loop-acceleration/array_2-1-simple.dfy
+input_files: 'array_2-1-simple.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: ILP32

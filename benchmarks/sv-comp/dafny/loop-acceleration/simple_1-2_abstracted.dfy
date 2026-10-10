@@ -3,12 +3,6 @@
 // program by ./Cuvee.sh -print dfy: a variant of simple_1-1_abstracted with other constants or assertions; checks
 // !(x % 2)
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 method main() returns (result: int) {
   var x: int;
   var x__VERIFIER_LA_tmp0: int;
@@ -17,9 +11,9 @@ method main() returns (result: int) {
   x := 0;
   if x < 268435455 {
     x__VERIFIER_LA_tmp0 := x;
-    __VERIFIER_LA_iterations0 := (quotient(268435455 - x__VERIFIER_LA_tmp0, 2));
+    __VERIFIER_LA_iterations0 := (quot(268435455 - x__VERIFIER_LA_tmp0, 2));
     x__VERIFIER_LA_old_tmp0 := x;
     x := __VERIFIER_LA_iterations0 * 2 + x__VERIFIER_LA_old_tmp0;
   }
-  assert !(((remainder(x, 2))) != 0);
+  assert !(((rem(x, 2))) != 0);
 }

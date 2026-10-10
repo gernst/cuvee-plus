@@ -17,7 +17,7 @@ method main() {
   assume 0 < N;
   i := 0;
   while i < N {
-    if i % 2 == 0 {
+    if rem(i, 2) == 0 {
       a := a[i := 2];
     } else {
       a := a[i := 0];

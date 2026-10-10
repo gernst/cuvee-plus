@@ -3,12 +3,6 @@
 // C program by ./Cuvee.sh -print dfy: a program of the folder; checks j <= ((N*(R-1))/(R*R))
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000
 
-// the division of C, which truncates towards zero
-function {:rw} quotient(a: int, b: int): int { if 0 <= a then a / b else -((-a) / b) }
-
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var N: int;
 
 method main() returns (result: int)
@@ -33,12 +27,12 @@ method main() returns (result: int)
   assume 0 <= tmp₂;
   R := tmp₂;
   assume R > 1 && R < 6;
-  assume 0 < lim < (quotient(N, R));
+  assume 0 < lim < (quot(N, R));
   i := 0;
   while i < N {
     a := a[i := i + 1];
-    if i > (quotient(N, R)) && k < lim {
-      a := a[i := (remainder(i, R))];
+    if i > (quot(N, R)) && k < lim {
+      a := a[i := (rem(i, R))];
     }
     if a[i] == 0 {
       k := k + 1;
@@ -50,7 +44,7 @@ method main() returns (result: int)
     if a[i] == 0 {
       j := j + 1;
     }
-    assert j <= (quotient(N * (R - 1), R * R));
+    assert j <= (quot(N * (R - 1), R * R));
     i := i + 1;
   }
   result := 0;

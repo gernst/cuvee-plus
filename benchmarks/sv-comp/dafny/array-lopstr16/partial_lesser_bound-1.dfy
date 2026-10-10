@@ -16,12 +16,12 @@ method main() {
     i := i + 1;
   }
   i := 0;
-  while i < N / 2 {
+  while i < quot(N, 2) {
     a := a[i := 10];
     i := i + 1;
   }
   i := 0;
-  while i < N / 2 {
+  while i < quot(N, 2) {
     assert a[i] == 10;
     i := i + 1;
   }

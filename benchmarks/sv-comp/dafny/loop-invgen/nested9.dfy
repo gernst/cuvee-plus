@@ -16,18 +16,6 @@ method main() returns (result: int)
   n := *;
   m := *;
   l := *;
-  if !(-1000000 < n) {
-    result := 0;
-    return;
-  }
-  if !(-1000000 < m) {
-    result := 0;
-    return;
-  }
-  if !(-1000000 < l) {
-    result := 0;
-    return;
-  }
   if 3 * n <= m + l {} else {
     result := 0;
     return;

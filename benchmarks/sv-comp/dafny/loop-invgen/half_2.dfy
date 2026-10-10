@@ -20,7 +20,7 @@ method main() {
     i := i + 2;
   }
   j := 0;
-  while j < n / 2 {
+  while j < quot(n, 2) {
     assert k > 0;
     k := k - 1;
     j := j + 1;

@@ -3,9 +3,6 @@
 // ./Cuvee.sh -print dfy: a variant of array10_pattern with other constants or assertions; checks 3 * sum <=
 // ARR_SIZE+2
 
-// the remainder of C, which truncates towards zero
-function {:rw} remainder(a: int, b: int): int { if 0 <= a then a % b else -((-a) % b) }
-
 var ARR_SIZE: int;
 
 method main() returns (result: int)
@@ -37,7 +34,7 @@ method main() returns (result: int)
     index := *;
     assume index >= 0 && index < ARR_SIZE;
     array1 := array1[index := num * (num * count)];
-    array2 := array2[index := if (remainder(index, 3)) == 0 then array2[index] else num * count];
+    array2 := array2[index := if (rem(index, 3)) == 0 then array2[index] else num * count];
     temp := *;
     if temp == 0 {
       break;

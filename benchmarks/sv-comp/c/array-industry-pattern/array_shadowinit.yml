@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# the C version of the SV-COMP task array-industry-pattern/array_shadowinit.yml, printed from ../../dafny/array-industry-pattern/array_shadowinit.dfy
+input_files: 'array_shadowinit.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: C
+  data_model: ILP32
