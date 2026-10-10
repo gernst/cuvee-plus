@@ -51,6 +51,11 @@ or solvers consume.
   with a file, a timeout, and `< /dev/null`; mill in scripts with
   `< /dev/null`.
 - The shell is fish; write multi-line scripts for bash explicitly.
+- Benchmarks: `./benchmark xml/<definition>.xml -r <rundefinition> -t <tasks>`,
+  never with several `-t <tasks>` in one call: tasks of different sets with
+  the same name (e.g. the C and Dafny versions in `benchmarks/sv-comp`) get
+  each other's results. Start one call per set instead, in parallel if
+  needed.
 
 ## Trace equation systems and solvers
 
