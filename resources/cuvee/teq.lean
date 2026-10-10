@@ -3132,9 +3132,6 @@ theorem div_below (b : Int) (x : Int) (d : Int) :
     simp only [iff_false]
     omega
 
-theorem mod_two_not_zero (y : Int) : y % 2 ≠ 0 ↔ y % 2 = 1 :=
-  by constructor <;> intro h <;> omega
-
 -- the differences (k + 1)^3 - k^3 - 1 = 3 * k + 3 * k * k telescope to n^3 - n; teq.dfy splits such a sum by linearity
 -- first, hence the sum of 3 * k * k as the rest, such that the division atoms cancel
 -- (from pcomp, pcompf)

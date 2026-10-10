@@ -1095,11 +1095,6 @@ lemma {:rw} {:teq} div_below(b: int, x: int, d: int)
   requires 0 < d && 0 <= x && x < d * (b + 1)
   ensures (b < x / d) <==> false
 
-// a remainder modulo 2 that is not 0 is 1
-// (from condm, diamond_1-1, diamond_1-2)
-lemma {:rw} {:teq} mod_two_not_zero(y: int)
-  ensures !(y % 2 == 0) <==> y % 2 == 1
-
 // the differences (k + 1)^3 - k^3 - 1 = 3 * k + 3 * k * k telescope to n^3 - n; teq.dfy splits such a sum by linearity
 // first, hence the sum of 3 * k * k as the rest, such that the division atoms cancel
 // (from pcomp, pcompf)

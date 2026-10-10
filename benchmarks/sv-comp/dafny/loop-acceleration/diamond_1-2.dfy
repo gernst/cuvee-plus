@@ -13,6 +13,10 @@ lemma {:rw} {:teq} trace_1(x0: int, i: int, d: int, n: Nat, c: bool, F: (int, in
     == if c then trace(x0, for ⌊counter(i, d, n)⌋ do x, k :: F(x, k))
        else trace(x0, for ⌊counter(i, d, n)⌋ do x, k :: G(x, k))
 
+// the remainder modulo 2 is 0 or 1
+lemma {:rw} {:teq} lemma_1(y: int)
+  ensures !(y % 2 == 0) <==> y % 2 == 1
+
 method main() {
   var N: int;
   var x: int;
