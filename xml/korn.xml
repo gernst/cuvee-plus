@@ -10,7 +10,6 @@
   <option name="clauses.smt2" />
   <option name="-model" />
   <option name="-write" />
-  <option name="-confirm" />
   <option name="-debug" />
   <option name="-random" />
   <option name="20" />
