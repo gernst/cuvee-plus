@@ -178,3 +178,11 @@ function {:dfy} {:smt2} {:ho} apply₁₀<a₀, a₁, a₂, a₃, a₄, a₅, a�
   x₉: a₈,
   x₁₀: a₉): a₁₀;
 
+function {:dfy} {:c} {:rw} quot(a: int, b: int): int {
+  if 0 <= a then a div b else -(-a div b)
+}
+
+function {:dfy} {:c} {:rw} rem(a: int, b: int): int {
+  if 0 <= a then a mod b else -(-a mod b)
+}
+

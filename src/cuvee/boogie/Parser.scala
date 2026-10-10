@@ -84,7 +84,8 @@ class Parser(var state: State):
 
           state = state.define(name, core.Datatype(params_, constrs_))
 
-        List(state.cmds.declareDatatypes(datas.map(data => Name(data.name, None))))
+        // the names as declared above, where a subscript is an index, e.g. tuple₁ of the prelude of Dafny
+        List(state.cmds.declareDatatypes(datas.map(data => (data.name: Name))))
 
       case ConstDef(attrs, consts) =>
         val scope = Scope.empty

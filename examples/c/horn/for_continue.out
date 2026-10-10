@@ -13,13 +13,13 @@
 (define-fun number ((b Bool)) Int (ite b 1 0))
 
 (define-fun
-  quotient
+  quot
   ((a Int) (b Int))
   Int
   (ite (<= 0 a) (div a b) (- (div (- a) b))))
 
 (define-fun
-  remainder
+  rem
   ((a Int) (b Int))
   Int
   (ite (<= 0 a) (mod a b) (- (mod (- a) b))))

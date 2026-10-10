@@ -1,4 +1,4 @@
 error "type mismatch"
-  "App(Fun(Name(not,None),List(Param(Name(a,Some(0)))),List(Var(Name(x,Some(0)),Param(Name(a,Some(0))))),Param(Name(a,Some(0)))),List(Param(Name(a,Some(1)))),Param(Name(a,Some(1))),List(Var(Name(x,None),BitVec(8))))"
-  "Param(Name(a,Some(1)))"
+  "App(Fun(Name(not,None),List(Param(Name(a,Some(0)))),List(Var(Name(x,Some(0)),Param(Name(a,Some(0))))),Param(Name(a,Some(0)))),List(Param(Name(a,Some(15)))),Param(Name(a,Some(15))),List(Var(Name(x,None),BitVec(8))))"
+  "Param(Name(a,Some(15)))"
   "Sort(Con(Name(Bool,None),0),List())"

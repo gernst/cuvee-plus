@@ -107,6 +107,18 @@
         (|tuple₁₀_8| a$8)
         (|tuple₁₀_9| a$9)))))
 
+(define-fun
+  quot
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  rem
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
 (lemma
   (! (= (+ 1 2) 3) :named lemma_1))
 

@@ -1,0 +1,3 @@
+data pair₁<a₀>
+  = pair₁(pair₁_0: a₀);
+

@@ -108,6 +108,18 @@
         (|tuple₁₀_9| a$9)))))
 
 (define-fun
+  quot
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  rem
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(define-fun
   f
   ((g (-> Int Int Int)))
   Int

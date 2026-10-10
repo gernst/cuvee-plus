@@ -1,4 +1,4 @@
 error "type mismatch"
   "App(Fun(Name(J,None),List(),List(),Sort(Con(Name(List,None),1),List(Sort(Con(Name(Int,None),0),List())))),List(),Sort(Con(Name(List,None),1),List(Sort(Con(Name(Int,None),0),List()))),List())"
   "Sort(Con(Name(List,None),1),List(Sort(Con(Name(Int,None),0),List())))"
-  "Param(Name(a,Some(3)))"
+  "Param(Name(a,Some(17)))"

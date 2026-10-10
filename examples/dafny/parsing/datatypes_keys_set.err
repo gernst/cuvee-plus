@@ -1,4 +1,4 @@
 error "type mismatch"
   "Var(Name(s,None),Sort(Con(Name(Set,None),1),List(Sort(Con(Name(Int,None),0),List()))))"
   "Sort(Con(Name(Set,None),1),List(Sort(Con(Name(Int,None),0),List())))"
-  "Sort(Con(Name(Map,None),2),List(Param(Name(a,Some(1))), Param(Name(a,Some(2)))))"
+  "Sort(Con(Name(Map,None),2),List(Param(Name(a,Some(15))), Param(Name(a,Some(16)))))"
