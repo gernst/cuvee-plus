@@ -1,1 +1,1 @@
-goal 1 simplified to true, used: counter_def 1, current_counter 1, current_stores 1, earlier_counter 2, earlier_selects 1, indexof_counter_up 1, integer_natural 2, invs_counter_upper_nonnegative 1, occurs_counter_up 1, selects 1, stores 1
+used by goal 1, which simplified to true: counter_def 1, current_counter 1, current_stores 1, earlier_counter 2, earlier_selects 1, indexof_counter_up 1, integer_natural 2, invs_counter_upper_nonnegative 1, occurs_counter_up 1, selects 1, stores 1

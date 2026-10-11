@@ -1,0 +1,253 @@
+"""Shared code of the scripts that format the experimental results.
+
+BenchExec writes one result file per benchmark (e.g. cuvee-15min, symbiotic) and task set (its block,
+e.g. C.unreach-call.Loops or Loops). The scripts take the most recent file for each pair, so that a
+rerun of one tool or of one category replaces the older results without further configuration.
+"""
+
+import argparse
+import bz2
+import re
+import sys
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass
+from pathlib import Path
+
+SCRIPTS = Path(__file__).resolve().parent
+RESULTS = SCRIPTS.parent / "results"
+OUTPUT = SCRIPTS / "out"
+# results of SV-COMP 2026 from https://sv-comp.sosy-lab.org/2026/results/results-verified/ (the .fixed files,
+# whose categories include the validation of the witnesses)
+OFFICIAL = SCRIPTS / "official"
+
+# the benchmarks compared by default, in the order of the columns and legends;
+# cuvee (1 min) is left out because its time limit differs from the others
+TOOLS = ["cuvee-15min", "cuvee-fallback", "symbiotic", "aise", "uautomizer", "cpachecker", "korn"]
+
+CATEGORIES = ["Arrays", "Loops"]
+
+# names for display; other benchmarks fall back to the displayName of their definition.
+# Cuvée+Z3 is Cuvée with -fallback, which hands the goals to z3
+LABELS = {
+    "cuvee": "Cuvée (1 min)",
+    "cuvee-15min": "Cuvée",
+    "cuvee-fallback": "Cuvée+Z3",
+    "symbiotic": "Symbiotic",
+    "aise": "AISE",
+    "uautomizer": "UAutomizer",
+    "cpachecker": "CPAchecker",
+    "korn": "Korn",
+}
+
+# scores of SV-COMP for verdicts on reachability: a wrong proof costs twice as much as a wrong alarm
+SCORES = {
+    ("correct", "true"): 2,
+    ("correct", "false"): 1,
+    ("wrong", "true"): -32,
+    ("wrong", "false"): -16,
+}
+
+FILENAME = re.compile(r"^(?P<benchmark>.+)\.(?P<date>\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d)\.results\..+\.xml\.bz2$")
+
+
+@dataclass(frozen=True)
+class Run:
+    task: str  # e.g. loops/array-1.yml, below sv-benchmarks/c
+    category: str  # e.g. Loops
+    status: str  # as reported by the tool-info module, e.g. true, false(unreach-call), TIMEOUT
+    result: str  # as classified by BenchExec: correct, wrong, unknown, error, ...
+    cputime: float | None
+
+    @property
+    def verdict(self) -> str | None:
+        if self.status == "true":
+            return "true"
+        if self.status.startswith("false"):
+            return "false"
+        return None
+
+    @property
+    def outcome(self) -> tuple[str, str] | None:
+        """(correct|wrong, true|false), or None for runs without a verdict."""
+        if self.result in ("correct", "wrong") and self.verdict:
+            return (self.result, self.verdict)
+        return None
+
+    @property
+    def unconfirmed(self) -> bool:
+        """A correct verdict whose witness was not validated, which SV-COMP scores with 0."""
+        return self.result == "correct-unconfirmed"
+
+    @property
+    def solved(self) -> bool:
+        return self.result == "correct" and self.cputime is not None
+
+    @property
+    def score(self) -> int:
+        return SCORES.get(self.outcome, 0)
+
+
+@dataclass(frozen=True)
+class Results:
+    benchmark: str
+    label: str
+    category: str
+    date: str
+    version: str
+    timelimit: float  # seconds of CPU time
+    memlimit: str
+    cores: str
+    cpus: list[str]  # the models of the CPUs of the hosts that ran the tasks, e.g. Intel Core i9-9900 @ 3.10 GHz
+    path: Path
+    runs: list[Run]
+
+
+def label(benchmark: str, attributes: dict[str, str] | None = None) -> str:
+    if benchmark in LABELS:
+        return LABELS[benchmark]
+    if attributes and attributes.get("displayName"):
+        return attributes["displayName"]
+    return benchmark
+
+
+def header(path: Path) -> dict[str, str]:
+    """The attributes of the root element, without parsing the runs."""
+    with bz2.open(path) as file:
+        for _, element in ET.iterparse(file, events=("start",)):
+            return dict(element.attrib)
+    return {}
+
+
+def category(block: str) -> str:
+    # C.unreach-call.Loops and Loops (older definitions of Cuvée) are the same category; tasks in other
+    # languages keep theirs, e.g. Dafny.unreach-call.Unbounded is Unbounded (Dafny), next to the C version
+    parts = block.split(".")
+    if len(parts) == 3 and parts[0] != "C":
+        return f"{parts[2]} ({parts[0]})"
+    return parts[-1]
+
+
+def latest(results: Path = RESULTS) -> dict[tuple[str, str], Path]:
+    """The most recent result file for each benchmark and category."""
+    found: dict[tuple[str, str], tuple[str, Path]] = {}
+    for path in results.glob("*.results.*.xml.bz2"):
+        match = FILENAME.match(path.name)
+        if not match:
+            continue
+        # files without a block combine all task sets of a run definition and duplicate the others
+        block = header(path).get("block")
+        if not block:
+            continue
+        key = (match["benchmark"], category(block))
+        date = match["date"]
+        if key not in found or found[key][0] < date:
+            found[key] = (date, path)
+    return {key: path for key, (_, path) in found.items()}
+
+
+def seconds(value: str | None) -> float | None:
+    if value is None:
+        return None
+    return float(value.rstrip("s"))
+
+
+def task(name: str) -> str:
+    # tasks of sv-benchmarks by their path in the repository, others (e.g. Dafny) without leading ../
+    marker = "sv-benchmarks/c/"
+    if marker in name:
+        return name.split(marker, 1)[1]
+    while name.startswith("../"):
+        name = name[3:]
+    return name
+
+
+def load(benchmark: str, path: Path) -> Results:
+    root = ET.parse(bz2.open(path)).getroot()
+    name = category(root.get("block", ""))
+    runs = []
+    for run in root.iter("run"):
+        columns = {column.get("title"): column.get("value") for column in run.iter("column")}
+        runs.append(
+            Run(
+                task=task(run.get("name", "")),
+                category=name,
+                status=columns.get("status") or "",
+                result=columns.get("category") or "",
+                cputime=seconds(columns.get("cputime")),
+            )
+        )
+    return Results(
+        benchmark=benchmark,
+        label=label(benchmark, root.attrib),
+        category=name,
+        date=root.get("date", ""),
+        version=root.get("version", ""),
+        timelimit=seconds(root.get("timelimit")) or 0.0,
+        memlimit=root.get("memlimit", ""),
+        cores=root.get("cpuCores", ""),
+        cpus=sorted({cpu.get("model", "") for cpu in root.iter("cpu")} - {""}),
+        path=path,
+        runs=runs,
+    )
+
+
+def collect(tools: list[str], categories: list[str], results: Path = RESULTS, quiet: bool = False) -> dict[str, dict[str, Results]]:
+    """The results of each tool per category; tools or categories without results are skipped, and reported
+    unless quiet, e.g. for the results of SV-COMP, which lack Cuvée and the categories a tool did not enter."""
+    files = latest(results)
+    collected: dict[str, dict[str, Results]] = {}
+    for tool in tools:
+        for name in categories:
+            path = files.get((tool, name))
+            if path is None:
+                if not quiet:
+                    print(f"no results for {tool} on {name} in {results}", file=sys.stderr)
+                continue
+            collected.setdefault(tool, {})[name] = load(tool, path)
+    return collected
+
+
+def arguments(description: str) -> argparse.ArgumentParser:
+    """The options shared by all scripts; each script adds its own."""
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--results", type=Path, default=RESULTS, help=f"directory of BenchExec results (default: {RESULTS})")
+    parser.add_argument("--tools", type=lambda value: value.split(","), default=TOOLS, help=f"comma-separated benchmark names (default: {','.join(TOOLS)})")
+    parser.add_argument("--categories", type=lambda value: value.split(","), default=CATEGORIES, help=f"comma-separated categories (default: {','.join(CATEGORIES)})")
+    parser.add_argument("--official", type=Path, default=OFFICIAL, help=f"directory of the results of SV-COMP (default: {OFFICIAL})")
+    parser.add_argument("--output", type=Path, default=OUTPUT, help=f"directory for the generated files (default: {OUTPUT})")
+    return parser
+
+
+def available(collected: dict[str, dict[str, Results]], tools: list[str]) -> list[str]:
+    """The tools with results, in the requested order."""
+    return [tool for tool in tools if tool in collected]
+
+
+def labels(collected: dict[str, dict[str, Results]]) -> dict[str, str]:
+    return {tool: next(iter(results.values())).label for tool, results in collected.items()}
+
+
+def pyplot():
+    """matplotlib for writing PDF files, with fonts embedded as TrueType so that the PDFs can be edited."""
+    import matplotlib
+
+    matplotlib.use("pdf")
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update(
+        {
+            "pdf.fonttype": 42,
+            "font.size": 9,
+            "axes.titlesize": 10,
+            "legend.fontsize": 8,
+            "figure.dpi": 150,
+        }
+    )
+    return plt
+
+
+def colors(tools: list[str]) -> dict[str, str]:
+    """One color per tool, the same in all plots, following the default order of the tools."""
+    palette = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
+    order = TOOLS + [tool for tool in tools if tool not in TOOLS]
+    return {tool: palette[order.index(tool) % len(palette)] for tool in tools}

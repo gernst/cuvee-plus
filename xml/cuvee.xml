@@ -9,6 +9,8 @@
   <option name="-simplify"/>
   <option name="-split"/>
   <option name="-simplify"/>
+  <!-- the rules applied to each goal, for the statistics of scripts/rules.py -->
+  <option name="-rules"/>
 
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">

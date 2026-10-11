@@ -54,7 +54,8 @@ object Simplify extends Transform:
         if isTrivial(cmd) then
           val label = attrs.values[sexpr.Id]("named").map(_.text).headOption.getOrElse(justify.toString.toLowerCase + " " + position)
           val list = if counts.isEmpty then "none" else counts.map((name, n) => name + " " + n).mkString(", ")
-          config.stderr.println(label + " simplified to true, used: " + list)
+          // not starting with goal, which tools take for a remaining goal, e.g. cuvee.py of BenchExec
+          config.stderr.println("used by " + label + ", which simplified to true: " + list)
           cmd
         else
           val used = counts.map((name, n) => "used" -> Some(List(sexpr.Id(name), sexpr.Num(n.toString))))

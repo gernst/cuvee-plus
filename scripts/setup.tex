@@ -1,0 +1,46 @@
+% the experimental setup, included by comparison.tex; the macros \ArraysTasks, \LoopsTasks, \TimeLimit,
+% \MemoryLimit and \Cores come from facts.tex, which table.py derives from the results
+
+\section*{Experimental setup}
+
+\paragraph{Benchmarks.}
+We compare the tools on the categories ReachSafety-Arrays (\ArraysTasks{} tasks) and ReachSafety-Loops
+(\LoopsTasks{} tasks, including VerifyThis-Loops) of the SV-COMP benchmark collection (sv-benchmarks),
+with the property unreach-call, i.e., that the function \texttt{reach\_error} is never called.
+The task sets and expected verdicts are those of the SV-COMP task definitions, as used in the
+competition.
+
+\paragraph{Tools.}
+Cuvée runs with \texttt{-teq -simplify -split -simplify}: it generates trace equation systems for
+the loops, simplifies them with its lemma database, and splits the remaining goals. Cuvée+Z3 adds
+\texttt{-fallback -z3}, which lowers the goals that remain after simplification into first-order logic
+and hands them to Z3. Cuvée only reports safe programs (verdict true); it does not search for
+counterexamples. The other tools are the SV-COMP 2026 versions of Symbiotic, AISE, UAutomizer,
+CPAchecker and Korn, downloaded from their archives on Zenodo as listed in fm-tools, and run with
+the options of their official SV-COMP benchmark definitions. AISE did not compete in
+ReachSafety-Arrays; we run it on both categories nonetheless.
+
+\paragraph{Execution environment.}
+All runs use BenchExec on a cluster of Intel Core i9-9900 machines (3.10\,GHz) with Ubuntu 24.04,
+with a limit of \TimeLimit{} of CPU time, \MemoryLimit{} of memory and \Cores{} CPU cores per run,
+unless the legend says otherwise. These limits are smaller than those of SV-COMP (15\,GB of memory and
+4 cores on Intel Xeon E3-1230 v5 machines); the CPU time limit is the same. Accordingly, the Java heap
+of CPAchecker is reduced from 10\,GB to 5\,GB and that of Eldarica, a back end of Korn, from 14\,GB
+to 5\,GB. The tools run without containers, which requires small adaptations: the Python bindings
+of libclang, which Symbiotic needs for its witnesses, are bundled with the tool; Korn runs from its
+own directory, where it finds the files for confirming counterexamples, with a build that passes the
+math library to the linker after the program; and AISE uploads its whole tool directory, which its
+tool-info module of BenchExec does not declare.
+
+\paragraph{Scoring.}
+Results are scored as in SV-COMP: $+2$ for a correct proof (true), $+1$ for a correct alarm
+(false), $-32$ for a wrong proof and $-16$ for a wrong alarm; timeouts, crashes, and unknown results
+count $0$. Our runs do not validate witnesses, so every correct verdict counts. The columns SV-COMP 2026 show
+the official results of SV-COMP 2026 for comparison, where correct verdicts whose witness could not be
+validated (unconfirmed) count $0$, and 13 tasks of ReachSafety-Arrays were not run (included in the
+tasks, without a result).
+
+\paragraph{Plots.}
+The scatter plots compare the CPU times of two tools task by task, for the tasks that at least one of
+them solves correctly; tasks that only one tool solves lie on the line labeled unsolved of the other.
+Dotted lines mark a factor of 10, dashed lines the time limit.

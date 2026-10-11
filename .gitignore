@@ -18,5 +18,7 @@ tools/
 # the copy of z3 for BenchExec (see cuvee.py)
 /z3
 
-# scripts for formatting the experimental results
-scripts/
+# the output of the scripts for formatting the experimental results, and the downloaded results of SV-COMP
+scripts/out/
+scripts/official/
+__pycache__/
