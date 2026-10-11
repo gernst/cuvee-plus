@@ -1,0 +1,19 @@
+lemma {:rw} invs_pairs(n: Nat, m: int, hs: List<int>, gs: List<int>)
+  ensures
+    invs(for ⌊counter(0, 1, n)⌋, hs, gs check k, h, g :: 2 * k + 1 < m)
+      <==> n == zero || 2 * integer(n) - 1 < m
+
+lemma {:rw} exit_pointers(m: int, n: Nat, i: int)
+  requires i == integer(n)
+  ensures m <= integer(n) + i + 1 <==> m <= 2 * integer(n) + 1
+
+lemma {:rw} current_reversal(a: array<int, int>, c: int, d: int, n: Nat, j: int)
+  requires 2 * integer(n) <= c + 1
+  requires c <= 2 * integer(n)
+  requires d == -1
+  ensures
+    current(trace(a, for ⌊counter(0, 1, n)⌋, ⌊counter(c, d, n)⌋
+                     do b, k, l ::
+                       b[k := b[l]][l := b[k]]))[j]
+      == (if 0 <= j <= c then a[c - j] else a[j])
+

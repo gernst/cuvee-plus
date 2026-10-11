@@ -1,0 +1,26 @@
+lemma {:rw} select_le_maxs(a: array<int, int>, j: int, k: int, i: int, n: Nat)
+  requires k == j || i <= k < i + integer(n)
+  ensures a[k] <= current(maxs(a[j], selects(a, ⌊counter(i, 1, n)⌋))) <==> true
+
+lemma {:rw} occurs_maxs(a: array<int, int>, j: int, i: int, n: Nat, lo: int,
+                        m: Nat)
+  requires lo <= j
+  requires j < lo + integer(m)
+  requires lo <= i
+  requires i + integer(n) <= lo + integer(m)
+  ensures
+    occurs(current(maxs(a[j], selects(a, ⌊counter(i, 1, n)⌋))), selects(a,
+                                                                        ⌊counter(lo,
+                                                                                 1,
+                                                                                 m)⌋))
+      <==> true
+
+goal
+  forall a: array<int, int>, m₁₉: int, n₁₄: Nat, M₁₇: Trace<int>,
+         I₁₈: Trace<int> ::
+    m₁₉ == current(M₁₇)
+      && M₁₇ == maxs(a[0], selects(a, ⌊I₁₈⌋))
+      && I₁₈ == counter(1, 1, n₁₄)
+      && 0 <= integer(n₁₄)
+      ==> (exists k: int :: 0 <= k <= integer(n₁₄) && a[k] == m₁₉)
+

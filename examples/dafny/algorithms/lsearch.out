@@ -1,0 +1,12 @@
+lemma {:rw} not_occurs_selects_def(a: array<int, int>, x: int, i: int, n: Nat)
+  ensures
+    invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x)
+      <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
+
+lemma {:rw} select_not_occurs_selects(a: array<int, int>, x: int, i: int,
+                                      n: Nat, k: int)
+  requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
+  requires i <= k
+  requires k < i + integer(n)
+  ensures a[k] == x <==> false
+

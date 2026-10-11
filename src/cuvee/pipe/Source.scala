@@ -57,21 +57,28 @@ trait Source:
       for path <- preludes(config); cmd <- parse(path, parser)
       yield cmd
 
-    // the files of features, e.g. teq.dfy of -teq, on which the TEQ transform relies, parsed by the parser of the
-    // input if it is in the same language, such that the input can refer to them, otherwise by a fresh parser of
-    // their language
+    // the files of features, e.g. the modules of the lemma database of -teq (see TEQ.modules), on which the TEQ
+    // transform relies, parsed by the parser of the input if they are in the same language, such that the input can
+    // refer to them, otherwise by a fresh parser of their language, one per language for all of its files, such that
+    // later files can refer to the declarations of earlier ones, e.g. the modules to the core of the database
+    val parsers = scala.collection.mutable.Map[Source, easyparse.Parser[List[Cmd]]]()
+
+    def parserOf(source: Source) =
+      if source == this then parser else parsers.getOrElseUpdate(source, source.newParser(config)._2)
+
     val features_ =
       for
         (source, path) <- config.features
-        cmd <- if source == this then parse(path, parser) else source.parse(path, source.newParser(config)._2)
+        cmd <- source.parse(path, parserOf(source))
       yield cmd
 
     // the files of the user (-include), after the files of features, such that they can refer to them, parsed in the
-    // same way; a file in another language starts from the prelude of its source, not from the state of the input
+    // same way; a file in another language starts from the prelude of its source and the files of features in that
+    // language, not from the state of the input
     val includes_ =
       for
         (source, path) <- config.includes
-        cmd <- if source == this then include(path, parser) else source.include(path, source.newParser(config)._2)
+        cmd <- source.include(path, parserOf(source))
       yield cmd
 
     val prelude_ = prelude ++ injected ++ features_ ++ includes_

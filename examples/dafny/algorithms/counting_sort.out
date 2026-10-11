@@ -1,0 +1,80 @@
+function sorted(a: array<int, int>, lo: int, hi: int): bool
+
+function keys_below(a: array<int, int>, n: int, k: int): bool
+
+lemma {:rw} current_trace_histogram(c0: array<int, int>, a: array<int, int>,
+                                    n: Nat, hs: List<int>, v: int)
+  ensures
+    current(trace(c0, for ⌊counter(0, 1, n)⌋, hs
+                      do c, k, h ::
+                        c[a[k] := c[a[k]] + 1]))[v]
+      == c0[v] + count(v, selects(a, ⌊counter(0, 1, n)⌋))
+
+function rank_table(c: array<int, int>, a: array<int, int>, n: Nat,
+                    kk: Nat): array<int, int>
+
+lemma {:rw} rank_table_def(c0: array<int, int>, a: array<int, int>, n: Nat,
+                           kk: Nat, hs: List<int>)
+  ensures
+    current(stores(c0, ⌊counter(0, 1, kk)⌋, ⌊sums(0, maps(for ⌊counter(0, 1,
+                                                                       kk)⌋,
+                                                              hs
+                                                          yield v, h ::
+                                                            count(v, selects(a,
+                                                                             ⌊counter(0,
+                                                                                      1,
+                                                                                      n)⌋))))⌋))
+      == rank_table(c0, a, n, kk)
+
+lemma {:rw} sorted_scatter(b0: array<int, int>, c2: array<int, int>,
+                           a: array<int, int>, n: Nat, kk: Nat, s: int,
+                           hs: List<int>, hs2: List<int>, hs3: List<int>,
+                           kb: int, Iv: Trace<int>)
+  requires s == integer(n)
+  requires keys_below(a, s, kb)
+  requires kb == integer(kk)
+  requires Iv == counter(0, 1, n)
+  requires hs3 == ⌊Iv⌋
+  ensures
+    sorted(current(stores(b0, maps(for ⌊counter(0, 1, n)⌋,
+                                       ⌊trace(rank_table(c2, a, n,
+                                                         kk), for ⌊counter(0, 1,
+                                                                           n)⌋,
+                                                                  hs
+                                                              do c, k, h ::
+                                                                c[
+                                                                  a[k] :=
+                                                                  c[a[k]]
+                                                                    + 1])⌋,
+                                       hs2
+                                   yield k, c, h ::
+                                     c[a[k]]), selects(a, hs3))), 0, s)
+      <==> true
+
+lemma {:rw} count_scatter(b0: array<int, int>, c2: array<int, int>,
+                          a: array<int, int>, n: Nat, kk: Nat, s: int,
+                          hs: List<int>, hs2: List<int>, hs3: List<int>, x: int,
+                          kb: int, Iv: Trace<int>)
+  requires s == integer(n)
+  requires keys_below(a, s, kb)
+  requires kb == integer(kk)
+  requires Iv == counter(0, 1, n)
+  requires hs3 == ⌊Iv⌋
+  ensures
+    count(x, selects(current(stores(b0, maps(for ⌊counter(0, 1, n)⌋,
+                                                 ⌊trace(rank_table(c2, a, n,
+                                                                   kk), for ⌊counter(0,
+                                                                                     1,
+                                                                                     n)⌋,
+                                                                            hs
+                                                                        do c, k, h ::
+                                                                          c[
+                                                                            a[k] :=
+                                                                            c[a[k]]
+                                                                              + 1])⌋,
+                                                 hs2
+                                             yield k, c, h ::
+                                               c[a[k]]), selects(a, hs3))),
+                     ⌊counter(0, 1, n)⌋))
+      == count(x, selects(a, ⌊counter(0, 1, n)⌋))
+

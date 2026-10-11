@@ -1,0 +1,30 @@
+function sorted(a: array<int, int>, lo: int, hi: int): bool
+
+function perm(a: array<int, int>, b: array<int, int>): bool
+
+goal
+  forall a: array<int, int>, n: int, i₁₂: int, b₁₄: array<int, int>, n₆: Nat,
+         K₈: Trace<int>, I₉: Trace<int>, B₁₁: Trace<array<int, int>> ::
+    0 <= n
+      && K₈ == counter(0, 1, n₆)
+      && i₁₂ == current(I₉)
+      && b₁₄ == current(B₁₁)
+      && I₉
+        == trace(1, for ⌊K₈⌋, ⌊B₁₁⌋
+                    do i₃, k₇, b₅ ::
+                      case i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃] => i₃ + 1
+                      case !(i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃]) => i₃ + -1)
+      && B₁₁
+        == trace(a, for ⌊K₈⌋, ⌊I₉⌋
+                    do b₅, k₇, i₃ ::
+                      case i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃] => b₅
+                      case !(i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃]) => b₅[
+                        i₃ :=
+                        b₅[i₃ + -1]][
+                        i₃ + -1 :=
+                        b₅[i₃]])
+      && invs(for ⌊K₈⌋, ⌊I₉⌋ check k₇, i₃ :: i₃ < n)
+      && 0 <= integer(n₆)
+      && n <= i₁₂
+      ==> sorted(b₁₄, 0, n) && perm(b₁₄, a)
+

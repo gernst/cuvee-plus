@@ -1,0 +1,70 @@
+function sorted(a: array<int, int>, lo: int, hi: int): bool
+
+function perm(a: array<int, int>, b: array<int, int>): bool
+
+lemma {:rw} perm_refl(a: array<int, int>)
+  ensures perm(a, a) <==> true
+
+function {:fold} bubble_pass(b: array<int, int>,
+                             js: List<int>): Trace<array<int, int>> {
+  trace(b, for js
+           do x, j ::
+             case x[j + 1] < x[j] => x[j := x[j + 1]][j + 1 := x[j]]
+             case x[j] <= x[j + 1] => x)
+}
+
+lemma {:rw} perm_bubble_pass(b: array<int, int>, c: array<int, int>,
+                             js: List<int>)
+  ensures perm(current(bubble_pass(b, js)), c) <==> perm(b, c)
+
+lemma {:rw} current_results_bubble(a: array<int, int>, len: int, ks: List<int>,
+                                   js: List<int>, Js: List<Trace<int>>,
+                                   Js2: List<Trace<int>>, js3: List<int>,
+                                   Ns: List<Nat>, Ns2: List<Nat>,
+                                   bs: List<array<int, int>>,
+                                   Bs: List<Trace<array<int, int>>>)
+  requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
+  requires
+    invs(for ks, ⌊results(a, ks, bs)⌋, Bs, Js
+         check k, x, B, J ::
+           B == bubble_pass(x, ⌊J⌋))
+  requires invs(for ks, js check k, j :: len <= j + k + 1)
+  requires
+    invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j + k + 1 < len))
+  requires Js2 == Js
+  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(0, 1, nn))
+  requires invs(for ks, Ns2, js3 check k, nn, j :: j == integer(nn))
+  requires Ns2 == Ns
+  requires js3 == js
+  ensures
+    current(results(a, ks, bs))
+      == current(trace(a, for ks
+                          do b, k ::
+                            current(bubble_pass(b, ⌊counter(0, 1, natural(len
+                                                                            - k
+                                                                            - 1))⌋))))
+
+lemma {:rw} perm_steps(a: array<int, int>, c: array<int, int>, ks: List<int>,
+                       F: (array<int, int>, int) -> array<int, int>)
+  requires forall b: array<int, int>, k: int :: perm(F(b, k), b)
+  ensures perm(current(trace(a, for ks do b, k :: F(b, k))), c) <==> perm(a, c)
+
+function bubbled(b: array<int, int>, k: int, len: int): bool
+
+lemma {:rw} bubbled_pass(b: array<int, int>, p: int, k: int, len: int)
+  requires p == len - k - 1
+  requires bubbled(b, k, len)
+  ensures
+    bubbled(current(bubble_pass(b, ⌊counter(0, 1, natural(p))⌋)), k + 1, len)
+      <==> true
+
+lemma {:rw} sorted_bubbled_steps(a: array<int, int>, len: int, m: Nat,
+                                 F: (array<int, int>, int) -> array<int, int>)
+  requires len <= integer(m) + 1
+  requires
+    forall b: array<int, int>, k: int ::
+      0 <= k < integer(m) && bubbled(b, k, len) ==> bubbled(F(b, k), k + 1, len)
+  ensures
+    sorted(current(trace(a, for ⌊counter(0, 1, m)⌋ do b, k :: F(b, k))), 0, len)
+      <==> true
+

@@ -1,45 +1,10 @@
 // aggregation: sums, parities, maxima, minima, and counts as traces and as functions of lists, with their acceleration
 // (current, earlier, prefix), linearity, indicators, and bounds; the abstractions of iteration constraints over values
-// (consts_prefix, below_prefix, nonneg_prefix) extracted from teq.dfy on Oct 11, 2026 as one of its modules, teq.dfy
-// itself is unchanged; this file assumes the core declarations of teq.dfy (Nat, integer, natural, List, length,
-// unspecified, Trace, current, butlast, counter, earlier, prefix, occurs, indexof, distincts, consts), counters.dfy,
-// and arrays.dfy (selects); the attributes and the order of the lemmas are those of teq.dfy; the assembly of the
-// preludes from the modules is not implemented yet, and the modules are not tested
-
-// the sum of a list
-function {:teq} sum(values: List<int>): int
-{
-  match values
-  case nil => 0
-  case cons(v, vs) => v + sum(vs)
-}
-
-// the parity of a list, the number of even minus the number of odd elements
-function {:teq} parity(values: List<int>): int
-{
-  match values
-  case nil => 0
-  case cons(v, vs) => (if v % 2 == 0 then 1 else -1) + parity(vs)
-}
-
-// the maximum and the minimum
-function {:teq} max(m: int, n: int): int
-{
-  if m <= n then n else m
-}
-
-function {:teq} min(m: int, n: int): int
-{
-  if m <= n then m else n
-}
-
-// the number of occurrences of a value in a list
-function {:teq} count<a>(e: a, vs: List<a>): int
-{
-  match vs
-  case nil => 0
-  case cons(v, ws) => (if v == e then 1 else 0) + count(e, ws)
-}
+// (consts_prefix, below_prefix, nonneg_prefix) extracted from teq.dfy on Oct 11, 2026 as one of the modules that -teq
+// injects in the order of TEQ.modules, teq.dfy itself is kept but not injected; this file assumes the core declarations
+// of teq.dfy (Nat, integer, natural, List, length, unspecified, Trace, current, butlast, counter, earlier, prefix,
+// occurs, indexof, distincts, consts), counters.dfy, and arrays.dfy (selects); the attributes and the order of the
+// lemmas are those of teq.dfy
 
 // the first n values of js are all c
 function {:teq} consts_prefix(n: Nat, c: int, js: List<int>): bool

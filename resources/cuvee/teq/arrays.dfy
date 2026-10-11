@@ -1,10 +1,9 @@
 // array acceleration: the traces of stores and shifts, the reads of arrays at the positions of counters (selects), the
 // reads of their current and earlier values, conditional stores, caps, and recurrences that fill an array extracted
-// from teq.dfy on Oct 11, 2026 as one of its modules, teq.dfy itself is unchanged; this file assumes the core
-// declarations of teq.dfy (Nat, integer, natural, List, length, unspecified, Trace, current, butlast, counter, earlier,
-// prefix, occurs, indexof, distincts, consts), counters.dfy, and aggregation.dfy (sum); the attributes and the order of
-// the lemmas are those of teq.dfy; the assembly of the preludes from the modules is not implemented yet, and the
-// modules are not tested
+// from teq.dfy on Oct 11, 2026 as one of the modules that -teq injects in the order of TEQ.modules, teq.dfy itself is
+// kept but not injected; this file assumes the core declarations of teq.dfy (Nat, integer, natural, List, length,
+// unspecified, Trace, current, butlast, counter, earlier, prefix, occurs, indexof, distincts, consts), counters.dfy,
+// and aggregation.dfy (sum); the attributes and the order of the lemmas are those of teq.dfy
 
 // the trace of the successive stores of the values at the keys into a
 function {:teq} {:fold} stores<a, b>(a: array<a, b>, keys: List<a>, values: List<b>): Trace<array<a, b>>
@@ -49,12 +48,6 @@ lemma {:rw} {:teq} stores_def_read_unmodified(a0: array<int, int>, n: Nat, hs: L
   requires invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: integer(n) <= F(k, h))
   ensures trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := a[F(k, h)]])
     == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a0[F(k, h)]))
-
-// the values of a at the keys
-function {:teq} {:fold} selects<a, b>(a: array<a, b>, keys: List<a>): List<b>
-{
-  maps(for keys yield k :: a[k])
-}
 
 // the same for a sum kept in the cell j of an array, e.g. sum[0] of a one-element array in C: only the cell j is
 // written, hence it is read from the final array

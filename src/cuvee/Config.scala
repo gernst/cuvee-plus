@@ -106,6 +106,15 @@ case class Config(
   def including(source: Source, file: String) =
     copy(includes = includes :+ (source, file))
 
+  // the configuration that knows the feature teq and injects the modules of its lemma database (see TEQ.modules),
+  // in their order
+  def injectingTEQ =
+    TEQ.modules.foldLeft(having("teq"))((config, module) => config.injecting(cuvee.dafny.Source, module))
+
+  // whether the lemma database of -teq is injected already, e.g. by -known teq before -teq
+  def injectsTEQ =
+    features.exists(_._2 == TEQ.modules.head)
+
   // the configuration with the output in `lang`, which knows the features added so far
   def printing(lang: Lang) =
     copy(output = lang.copy(features = lang.features ++ known))
@@ -155,8 +164,7 @@ object Config:
   val teq =
     flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems"):
       case (config, rest) =>
-        val injected = config.features.exists(_._2 == "/cuvee/teq.dfy")
-        val config_ = (if injected then config.usingMath else config.usingMath.having("teq").injecting(cuvee.dafny.Source, "/cuvee/teq.dfy")).using(TEQ)
+        val config_ = (if config.injectsTEQ then config.usingMath else config.usingMath.injectingTEQ).using(TEQ)
         (config_, rest)
 
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
@@ -285,13 +293,17 @@ object Config:
       case (config, names :: rest) =>
         val features = names.split(",").map(_.trim).filter(_.nonEmpty).toSet
         val config_ = config.copy(output = config.output.copy(features = config.output.features ++ features), known = config.known ++ features)
-        val injected = config_.features.exists(_._2 == "/cuvee/teq.dfy")
-        val config__ = if features.contains("teq") && !injected then config_.having("teq").injecting(cuvee.dafny.Source, "/cuvee/teq.dfy") else config_
+        val config__ = if features.contains("teq") && !config_.injectsTEQ then config_.injectingTEQ else config_
         (config__, rest)
 
   // a file of the user, e.g. with lemmas, in the language of its extension; task definitions describe no declarations
+  // teq:<concept> is the module <concept>.dfy of the lemma database (resources/cuvee/teq), e.g. teq:sorting, which
+  // the output hides like the rest of the database if the feature teq is known (-teq), and prints otherwise, e.g.
+  // for -print lean of the database
   val include =
-    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension"):
+    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; teq:<concept> injects the module <concept> of the lemma database of -teq"):
+      case (config, file :: rest) if file.startsWith("teq:") =>
+        (config.injecting(cuvee.dafny.Source, TEQ.module(file.drop(4))), rest)
       case (config, file :: rest) if langs.get(file.suffix).exists(_ != Lang.yml) =>
         (config.including(langs(file.suffix).source, file), rest)
 
@@ -359,7 +371,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.35.17")
+    println("Cuvée 0.35.18")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

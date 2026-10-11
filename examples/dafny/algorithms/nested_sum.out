@@ -1,0 +1,37 @@
+lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>,
+                              Ns: List<Nat>, Js: List<Trace<int>>,
+                              X: int -> int, c: int)
+  requires invs(for ks, Ks, Ns check k, K, nn :: K == counter(0, 1, nn))
+  ensures
+    invs(for ks, Ks, Js
+         check k, K, J ::
+           J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
+      <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
+
+lemma {:rw} invs_current_counter(ks: List<int>, Ns: List<Nat>,
+                                 Js: List<Trace<int>>, js: List<int>,
+                                 X: int -> int, c: int)
+  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
+  ensures
+    invs(for ks, Js, js check k, J, j :: j == current(J))
+      <==> invs(for ks, Ns, js check k, nn, j :: j == X(k) + integer(nn) * c)
+
+lemma {:rw} invs_invs_counter_upper_zero(ks: List<int>, Ns: List<Nat>,
+                                         Js: List<Trace<int>>, n: int)
+  requires 0 <= n
+  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(0, 1, nn))
+  ensures
+    invs(for ks, Js check k, J :: invs(for ⌊J⌋ check x :: x < n))
+      <==> invs(for ks, Ns check k, nn :: integer(nn) <= n)
+
+lemma {:rw} invs_exit_counter_zero(ks: List<int>, Ns: List<Nat>, js: List<int>,
+                                   n: int)
+  requires invs(for ks, Ns, js check k, nn, j :: j == integer(nn))
+  requires invs(for ks, Ns check k, nn :: integer(nn) <= n)
+  ensures
+    invs(for ks, js check k, j :: n <= j)
+      <==> invs(for ks, js check k, j :: j == n)
+
+lemma {:rw} mul_eq_cancel(a: int, b: int, n: int)
+  ensures a * n == b * n <==> n == 0 || a == b
+

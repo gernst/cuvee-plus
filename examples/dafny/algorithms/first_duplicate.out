@@ -1,0 +1,45 @@
+goal
+  forall a: array<int, int>, n: int, r₂₈: bool, i₂₉: int, n₂₁: Nat,
+         K₂₃: Trace<int>, R₂₅: Trace<bool>, I₂₆: Trace<int>, R?₁₅: List<bool>,
+         J?₁₆: List<int>, N?₁₇: List<Nat>, K?₁₈: List<Trace<int>>,
+         R?₁₉: List<Trace<bool>>, J?₂₀: List<Trace<int>> ::
+    K₂₃ == counter(0, 1, n₂₁)
+      && r₂₈ == current(R₂₅)
+      && i₂₉ == integer(n₂₁)
+      && R₂₅ == trace(false, for ⌊K₂₃⌋, R?₁₅ do r₄, k₂₂, r₁₃ :: r₁₃)
+      && I₂₆ == counter(0, 1, n₂₁)
+      && integer(n₂₁) <= n
+      && invs(for ⌊K₂₃⌋, ⌊R₂₅⌋, ⌊I₂₆⌋ check k₂₂, r₄, i₅ :: !r₄)
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, N?₁₇, K?₁₈
+              check k₂₂, i₅, n₈, K₁₀ ::
+                K₁₀ == counter(0, 1, n₈))
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, R?₁₅, R?₁₉
+              check k₂₂, i₅, r₁₃, R₁₁ ::
+                r₁₃ == current(R₁₁))
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, J?₁₆, J?₂₀
+              check k₂₂, i₅, j₁₄, J₁₂ ::
+                j₁₄ == current(J₁₂))
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, R?₁₉, J?₂₀
+              check k₂₂, i₅, R₁₁, J₁₂ ::
+                R₁₁
+                  == trace(false, for ⌊J₁₂⌋
+                                  do r₆, j₇ ::
+                                    case a[k₂₂] == a[j₇] => true
+                                    case a[k₂₂] != a[j₇] => false))
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, K?₁₈, J?₂₀
+              check k₂₂, i₅, K₁₀, J₁₂ ::
+                J₁₂ == sums(k₂₂ + 1, maps(for ⌊K₁₀⌋ yield k₉ :: 1)))
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, J?₂₀
+              check k₂₂, i₅, J₁₂ ::
+                invs(for ⌊J₁₂⌋ check j₇ :: j₇ < n))
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, R?₁₉
+              check k₂₂, i₅, R₁₁ ::
+                invs(for ⌊R₁₁⌋ check r₆ :: !r₆))
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, N?₁₇ check k₂₂, i₅, n₈ :: 0 <= integer(n₈))
+      && invs(for ⌊K₂₃⌋, ⌊I₂₆⌋, R?₁₅, J?₁₆
+              check k₂₂, i₅, r₁₃, j₁₄ ::
+                !(j₁₄ < n && !r₁₃))
+      && 0 <= integer(n₂₁)
+      ==> i₂₉ < n && !r₂₈
+        || r₂₈ == !distincts(selects(a, ⌊counter(0, 1, natural(n))⌋))
+

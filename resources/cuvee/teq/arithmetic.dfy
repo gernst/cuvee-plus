@@ -1,17 +1,8 @@
 // naturals and arithmetic: the values of naturals as integers and back, small constants, and the lemmas of arithmetic
 // in the normal form of the simplifier (division, remainders, powers) extracted from teq.dfy on Oct 11, 2026 as one of
-// its modules, teq.dfy itself is unchanged; this file assumes the core declarations of teq.dfy (Nat, integer, natural,
-// List, length, unspecified, Trace, current, butlast, counter, earlier, prefix, occurs, indexof, distincts, consts);
-// the attributes and the order of the lemmas are those of teq.dfy; the assembly of the preludes from the modules is not
-// implemented yet, and the modules are not tested
-
-// powers, which are not unfolded
-function {:teq} pow(c: int, n: Nat): int
-{
-  match n
-  case zero => 1
-  case succ(m) => c * pow(c, m)
-}
+// the modules that -teq injects in the order of TEQ.modules, teq.dfy itself is kept but not injected; this file assumes
+// the core declarations of teq.dfy (Nat, integer, natural, List, length, unspecified, Trace, current, butlast, counter,
+// earlier, prefix, occurs, indexof, distincts, consts); the attributes and the order of the lemmas are those of teq.dfy
 
 lemma {:rw} {:teq} natural_integer(n: Nat)
   ensures natural(integer(n)) == n
@@ -137,14 +128,6 @@ lemma {:rw} {:teq} div_below(b: int, x: int, d: int)
 lemma {:rw} {:teq} div_nonpos(x: int, c: int)
   requires 0 < c
   ensures (x / c <= 0) == (x < c)
-
-// the half of an even number as an equation without division, which the simplifier solves and substitutes, e.g.
-// n == CELLCOUNT / 2 as CELLCOUNT == 2 * n, such that 2 * n <= i < CELLCOUNT is empty; a workaround, since solutions
-// of arithmetic equations are inlined into polynomials only, here not n into 2 * n (see TODO.md)
-// (from MonoCera: pr2)
-lemma {:rw} {:teq} half_even(n: int, x: int)
-  requires x % 2 == 0
-  ensures (n == x / 2) == (x == 2 * n)
 
 // a power of 2 is not divisible by 3
 // (from underapprox_1-1, underapprox_1-2)

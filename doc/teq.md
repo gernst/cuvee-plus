@@ -85,8 +85,25 @@ after section 4 of the paper.
 - Differential equations and parallel composition are not supported; loop
   invariants are ignored.
 
-## The lemma database ([teq.dfy](../resources/cuvee/teq.dfy))
+## The lemma database ([resources/cuvee/teq](../resources/cuvee/teq))
 
+- The database consists of modules, injected by `-teq` in the order of
+  `TEQ.modules` (`Config.injectingTEQ`): `core.dfy` (the types `Nat`, `List`,
+  `Trace`, the functions of `Fun.trace`, the basic functions on lists, and the
+  definitions that several modules share: `sum`, `parity`, `max`, `min`,
+  `count`, `pow`, `selects`), then the lemmas of `arithmetic.dfy`,
+  `counters.dfy`, `aggregation.dfy`, `arrays.dfy`, and `search.dfy`. Further
+  modules are injected on demand by `-include teq:<concept>`, after these:
+  `teq:nested` (the fragments of inner loops, see
+  [examples/dafny/algorithms](../examples/dafny/algorithms)) and
+  `teq:sorting` (`sorted`, `perm`, `partitioned`, inductions). Each module
+  refers to the declarations of the earlier ones only, and the order of the
+  modules is the order in which the rules are tried.
+  [teq.dfy](../resources/cuvee/teq.dfy) is the former single file, from which
+  the six modules of `-teq` were split, and is not injected any more. The
+  database is printed as Lean by including the modules without `-teq`, which
+  prints them since the feature is not known to the output:
+  `./Cuvee.sh -known dfy -print lean -include teq:core -include teq:arithmetic ... empty.dfy`.
 - Injected by the source with `-teq`, after its prelude (`Config.features`):
   Dafny input parses it with its own parser, such that the input can refer to
   its declarations, other input with a fresh Dafny parser; the TEQ transform
@@ -101,10 +118,10 @@ after section 4 of the paper.
 - `Trace` exists only with `-teq`. Inputs that use traces without `-teq`
   declare `Trace` themselves; Dafny inputs with `-teq` use the declarations of
   the database, inputs in other languages cannot.
-- All function declarations come first, then the lemmas, grouped by the
-  function of their left-hand side (the combinator, `current`, `prefix`, ...).
-  Rules are tried in the order of the file, lemmas whose order matters keep it
-  within their group.
+- Within a module, the function declarations come first, then the lemmas,
+  grouped by the function of their left-hand side (the combinator, `current`,
+  `prefix`, ...). Rules are tried in the order of the modules and of the
+  files, lemmas whose order matters keep it within their group.
 - Functions that are traces are defined by them with `{:fold}`, whose rule
   folds such a trace into the function (`stores`, `sums`, `selects`, ...);
   these definitions stand among the lemmas, at the position of their rule.
@@ -145,10 +162,39 @@ after section 4 of the paper.
     not use, and with the body `c - k`, which `a + b * v` of
     `maps_counter_affine` does not match as `N + -k + -1`
     (`array_init_both_ends_multiple_sum`).
-- Auxiliary predicates abstract iteration constraints, e.g. `agree_prefix`,
-  and are defined by recursion over the positions, `earlier(m, xs)`, which
-  teq.lean proves their lemmas with; their names avoid those that inputs
-  declare with other meanings, since equal signatures are identified.
+- Auxiliary predicates abstract iteration constraints, e.g. `agree_prefix`
+  and `consts_prefix`, and are defined by recursion over the positions,
+  `earlier(m, xs)`, which teq.lean proves their lemmas with; their names avoid
+  those that inputs declare with other meanings, since equal signatures are
+  identified.
+- An iteration constraint is never a side condition. Deciding one matches it
+  against the `invs` facts of the context (`Rewrite.conditions`), which builds
+  the simplifier's context of each such fact (`Simplify.combinator`) and
+  rewrites the reads of its dependencies there; if a read produces the
+  left-hand side of the rule again, the rule recurs through the same fact
+  until the step budget is exhausted: `sum_invs_const`, now
+  `sum_consts_prefix`, had the left-hand side `sum(js)`, which matched the
+  `sum(prefix(...))` that `earlier_sums` makes of the read of a trace of sums
+  (see TODO.md). Such a rule is not decreasing in the sense of conditional
+  rewriting, since its condition is not smaller than its left-hand side.
+  Instead, a definition lemma abstracts the constraint by an atom, e.g.
+  `consts_prefix_def`:
+  `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), js) == c) <==> consts_prefix(n, c, js)`,
+  and the lemma that needs the constraint takes the atom as its side
+  condition, e.g. `sum_consts_prefix`, which is matched against the facts
+  syntactically. The body of the definition lemma reads the sequence
+  explicitly, `earlier(natural(k), js)`, with a further dependency `hs` for
+  those of the constraint: a bound variable `j` of a dependency `J` of the
+  constraint matches the read through its equation
+  `j == earlier(natural(k), J)` in the context of the combinator, as do an
+  explicit read and the symmetric equation `c == j`, while `c` must not
+  capture `k`, so values that depend on the iteration, `j == k + 1`, do not
+  match, nor does an equation without a read, `x == 5` for a variable `x` of
+  the context. The values of a trace match too, so
+  `invs(for ⌊K⌋, ⌊X⌋ check k, x :: x == 5)` becomes `consts_prefix(n, 5, ⌊X⌋)`,
+  which hides the constraint from `Simplify.invariants`, since that collects
+  `invs` facts only; a definition lemma therefore comes late among the lemmas
+  on `invs`, after those that use such constraints.
 
 ## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
 
@@ -173,7 +219,7 @@ after section 4 of the paper.
   the contexts of the goals provide, e.g. `n ≥ 0` or dependencies of equal
   length.
 - Check with `lean resources/cuvee/teq.lean` (Lean 4.34); teq.lean is built
-  from the output of `./Cuvee.sh -print lean resources/cuvee/teq.dfy` and
+  from the output of `-print lean` on the modules (see above) and
   the hand-written definitions at its beginning.
 - The dependencies of a combinator have equal lengths, which `zip` in Lean
   does not assume: `-print lean` adds hypotheses on the lengths to each

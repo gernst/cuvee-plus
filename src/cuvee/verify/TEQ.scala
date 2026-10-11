@@ -109,11 +109,23 @@ object TEQ extends Transform:
       cmd_ <- verify(state, gs, cmd)
     yield cmd_
 
-  // the declarations of the functions on traces and the lemmas about them (resources/cuvee/teq.dfy),
-  // which are parsed by a fresh parser for Dafny, for tests
+  // the module `name` of the lemma database (resources/cuvee/teq), a resource
+  def module(name: String) =
+    s"/cuvee/teq/$name.dfy"
+
+  // the modules of the lemma database in the order in which -teq injects them, which is the order of their
+  // dependencies (each refers to the declarations of the earlier ones only) and the order in which the rules are
+  // tried: the core declarations (the types, the functions on traces, the shared definitions), then the lemmas on
+  // arithmetic, counters, aggregation, arrays, and searching; further modules, e.g. nested (nested loops) and sorting,
+  // are injected on demand by -include teq:<name>, after these
+  val modules =
+    List("core", "arithmetic", "counters", "aggregation", "arrays", "search").map(module)
+
+  // the declarations of the functions on traces and the lemmas about them, the modules parsed in order by a fresh
+  // parser for Dafny, for tests
   lazy val lemmas: List[Cmd] =
     val (_, parser, _) = cuvee.dafny.Source.newParser(Config.default)
-    cuvee.dafny.Source.parse("/cuvee/teq.dfy", parser)
+    modules.flatMap(cuvee.dafny.Source.parse(_, parser))
 
   def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
     cmd match

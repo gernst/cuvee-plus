@@ -1,0 +1,19 @@
+lemma {:rw} current_trace_prefix_sums_array(b0: array<int, int>,
+                                            a: array<int, int>, n: Nat, j: int)
+  ensures
+    current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋
+                      do b, k, i ::
+                        b[i := a[i] + b[k]]))[j]
+      == (if 0 <= j <= integer(n)
+          then b0[0] + sum(selects(a, ⌊counter(1, 1, natural(j))⌋))
+          else b0[j])
+
+lemma {:rw} sum_selects_cons(a: array<int, int>, i: int, m: int)
+  requires 0 <= m
+  ensures
+    sum(selects(a, ⌊counter(i, 1, natural(m + 1))⌋))
+      == a[i] + sum(selects(a, ⌊counter(i + 1, 1, natural(m))⌋))
+
+lemma {:rw} sum_selects_zero(a: array<int, int>, i: int, c: int)
+  ensures sum(selects(a, ⌊counter(i, c, zero)⌋)) == 0
+

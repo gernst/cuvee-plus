@@ -5,8 +5,7 @@
 // step lemmas, argmin, insert, bubble_pass) stays with the examples in examples/dafny/algorithms, Oct 11, 2026; this
 // file assumes the core declarations of teq.dfy (Nat, integer, List, Trace, current, butlast, counter) and
 // counters.dfy; the predicates are declared without definitions, their meaning is the lemmas (a definition in Lean
-// would make the lemmas provable); the assembly of the preludes from the modules is not implemented yet, and the
-// modules are not tested
+// would make the lemmas provable)
 
 // a[lo..hi) is nondecreasing
 function {:teq} sorted(a: array<int, int>, lo: int, hi: int): bool

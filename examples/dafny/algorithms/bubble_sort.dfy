@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/bubble_sort.dfy
+// ./Cuvee.sh -teq -include teq:nested -simplify examples/dafny/algorithms/bubble_sort.dfy
 // bubble sort with nested loops: the outer loop moves the bound i down, the inner loop swaps adjacent elements
 // out of order below it
 //
@@ -48,19 +48,20 @@ function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a>
 // positions 0, ..., len - k - 2 (len - k - 1 positions, arithmetic on the bound variable k, which the right-hand side
 // may contain), given its trace equations and iteration constraints as side conditions:
 // the exit len <= j + k + 1 of the inner loop binds len, its test j + k + 1 < len holds for the positions visited,
-// j is the current value of a counter J from 0 by 1 over the inner iterations, and each result b is the current
-// value of a pass B that starts from the previous result x
+// J is the inner counter from 0 by 1 of nn steps and j == integer(nn) its final value (the forms that the module
+// nested of the lemma database gives the fragments), and each result b is the current value of a pass B that
+// starts from the previous result x
 lemma {:rw} current_results_bubble(a: array<int, int>, len: int, ks: List<int>, js: List<int>, Js: List<Trace<int>>,
-                                   Js2: List<Trace<int>>, js3: List<int>, Js3: List<Trace<int>>, Ks: List<Trace<int>>,
+                                   Js2: List<Trace<int>>, js3: List<int>, Ns: List<Nat>, Ns2: List<Nat>,
                                    bs: List<array<int, int>>, Bs: List<Trace<array<int, int>>>)
   requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
   requires invs(for ks, ⌊results(a, ks, bs)⌋, Bs, Js check k, x, B, J :: B == bubble_pass(x, ⌊J⌋))
   requires invs(for ks, js check k, j :: len <= j + k + 1)
   requires invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j + k + 1 < len))
   requires Js2 == Js
-  requires invs(for ks, js3, Js3 check k, j, J :: j == current(J))
-  requires js3 == js && Js3 == Js
-  requires invs(for ks, Ks, Js check k, K, J :: J == sums(0, maps(for ⌊K⌋ yield k2 :: 1)))
+  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(0, 1, nn))
+  requires invs(for ks, Ns2, js3 check k, nn, j :: j == integer(nn))
+  requires Ns2 == Ns && js3 == js
   ensures current(results(a, ks, bs))
     == current(trace(a, for ks do b, k :: current(bubble_pass(b, ⌊counter(0, 1, natural(len - k - 1))⌋))))
 

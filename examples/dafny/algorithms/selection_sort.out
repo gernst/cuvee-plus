@@ -1,0 +1,105 @@
+function sorted(a: array<int, int>, lo: int, hi: int): bool
+
+function perm(a: array<int, int>, b: array<int, int>): bool
+
+lemma {:rw} perm_refl(a: array<int, int>)
+  ensures perm(a, a) <==> true
+
+lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>,
+                              Ns: List<Nat>, Js: List<Trace<int>>,
+                              X: int -> int, c: int)
+  requires invs(for ks, Ks, Ns check k, K, nn :: K == counter(0, 1, nn))
+  ensures
+    invs(for ks, Ks, Js
+         check k, K, J ::
+           J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
+      <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
+
+lemma {:rw} invs_current_counter(ks: List<int>, Ns: List<Nat>,
+                                 Js: List<Trace<int>>, js: List<int>,
+                                 X: int -> int, c: int)
+  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
+  ensures
+    invs(for ks, Js, js check k, J, j :: j == current(J))
+      <==> invs(for ks, Ns, js check k, nn, j :: j == X(k) + integer(nn) * c)
+
+function argmin(b: array<int, int>, lo: int, hi: int): int
+
+lemma {:rw} current_selection_swaps(a: array<int, int>, n: int, n2: int,
+                                    ks: List<int>, is: List<int>, ms: List<int>,
+                                    Ms: List<Trace<int>>, Js: List<Trace<int>>,
+                                    Js2: List<Trace<int>>, Ns: List<Nat>,
+                                    js: List<int>)
+  requires invs(for ks, ms, Ms check k, m, M :: m == current(M))
+  requires
+    invs(for ks,
+             ⌊trace(a, for ks, is, ms
+                       do b, k, i, m ::
+                         b[k := b[m]][m := b[k]])⌋,
+             Ms,
+             Js
+         check k, b, M, J ::
+           M
+             == trace(k, for ⌊J⌋
+                         do m, j ::
+                           case b[j] < b[m] => j case b[m] <= b[j] => m))
+  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(k + 1, 1, nn))
+  requires invs(for ks, Ns, js check k, nn, j :: j == integer(nn) + k + 1)
+  requires invs(for ks, js check k, j :: n <= j)
+  requires invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j < n2))
+  requires Js2 == Js
+  requires n2 == n
+  ensures
+    current(trace(a, for ks, is, ms do b, k, i, m :: b[k := b[m]][m := b[k]]))
+      == current(trace(a, for ks
+                          do b, k ::
+                            b[k := b[argmin(b, k, n)]][
+                              argmin(b, k, n) :=
+                              b[k]]))
+
+function partitioned(b: array<int, int>, lo: int, mid: int, hi: int): bool
+
+lemma {:rw} sorted_empty(b: array<int, int>, lo: int)
+  ensures sorted(b, lo, lo) <==> true
+
+lemma {:rw} partitioned_empty(b: array<int, int>, lo: int, hi: int)
+  ensures partitioned(b, lo, lo, hi) <==> true
+
+lemma {:rw} sorted_swap_argmin(b: array<int, int>, k: int, n: int)
+  requires k < n
+  requires sorted(b, 0, k)
+  requires partitioned(b, 0, k, n)
+  ensures
+    sorted(b[k := b[argmin(b, k, n)]][argmin(b, k, n) := b[k]], 0, k + 1)
+      <==> true
+
+lemma {:rw} partitioned_swap_argmin(b: array<int, int>, k: int, n: int)
+  requires k < n
+  requires sorted(b, 0, k)
+  requires partitioned(b, 0, k, n)
+  ensures
+    partitioned(b[k := b[argmin(b, k, n)]][argmin(b, k, n) := b[k]], 0, k + 1,
+                n)
+      <==> true
+
+lemma {:rw} sorted_prefix_steps(a: array<int, int>, n: int, m: Nat,
+                                F: (array<int, int>, int) -> array<int, int>)
+  requires n == integer(m)
+  requires
+    forall b: array<int, int>, k: int ::
+      0 <= k < n && sorted(b, 0, k) && partitioned(b, 0, k, n)
+        ==> sorted(F(b, k), 0, k + 1) && partitioned(F(b, k), 0, k + 1, n)
+  ensures
+    sorted(current(trace(a, for ⌊counter(0, 1, m)⌋ do b, k :: F(b, k))), 0, n)
+      <==> true
+
+lemma {:rw} perm_swaps_one(a: array<int, int>, b: array<int, int>,
+                           ks: List<int>, P: (array<int, int>, int) -> int,
+                           Q: (array<int, int>, int) -> int)
+  ensures
+    perm(current(trace(a, for ks
+                          do x, k ::
+                            x[P(x, k) := x[Q(x, k)]][Q(x, k) := x[P(x, k)]])),
+         b)
+      <==> perm(a, b)
+

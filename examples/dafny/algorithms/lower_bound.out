@@ -1,0 +1,27 @@
+function sorted(a: array<int, int>, lo: int, hi: int): bool
+
+goal
+  forall a: array<int, int>, n: int, x: int, lo₁₃: int, hi₁₄: int, n₆: Nat,
+         K₈: Trace<int>, Lo₁₀: Trace<int>, Hi₁₁: Trace<int> ::
+    0 <= n
+      && sorted(a, 0, n)
+      && K₈ == counter(0, 1, n₆)
+      && lo₁₃ == current(Lo₁₀)
+      && hi₁₄ == current(Hi₁₁)
+      && Lo₁₀
+        == trace(0, for ⌊K₈⌋, ⌊Hi₁₁⌋
+                    do lo₄, k₇, hi₅ ::
+                      case a[(hi₅ + lo₄) / 2] < x => (hi₅ + lo₄) / 2 + 1
+                      case x <= a[(hi₅ + lo₄) / 2] => lo₄)
+      && Hi₁₁
+        == trace(n, for ⌊K₈⌋, ⌊Lo₁₀⌋
+                    do hi₅, k₇, lo₄ ::
+                      case a[(hi₅ + lo₄) / 2] < x => hi₅
+                      case x <= a[(hi₅ + lo₄) / 2] => (hi₅ + lo₄) / 2)
+      && invs(for ⌊K₈⌋, ⌊Lo₁₀⌋, ⌊Hi₁₁⌋ check k₇, lo₄, hi₅ :: lo₄ < hi₅)
+      && 0 <= integer(n₆)
+      && hi₁₄ <= lo₁₃
+      ==> 0 <= lo₁₃ <= n
+        && (forall k: int :: 0 <= k < lo₁₃ ==> a[k] < x)
+        && (forall k: int :: lo₁₃ <= k < n ==> x <= a[k])
+

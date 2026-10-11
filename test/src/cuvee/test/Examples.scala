@@ -23,12 +23,20 @@ object Examples:
   def supported(file: os.Path) =
     !unsupported.contains(file.relativeTo(root).toString)
 
-  // directories of examples that are no tests, e.g. the experiments with algorithms in Dafny, which are worked on
-  val excluded = List(os.sub / "dafny" / "algorithms")
+  // directories of examples that are no tests, e.g. experiments that are worked on (none at the moment)
+  val excluded: List[os.SubPath] = Nil
 
-  // example files with extension `ext` below `dir`, relative to the examples directory, except the excluded ones
+  // examples whose runs do not terminate, which are no tests: the two algorithms whose lemmas make the simplifier
+  // cycle (see examples/dafny/algorithms/NOTES.md, finding 19)
+  val nonterminating = Set("dafny/algorithms/row_sums.dfy", "dafny/algorithms/transpose.dfy")
+
+  def terminating(file: os.Path) =
+    !nonterminating.contains(file.relativeTo(root).toString)
+
+  // example files with extension `ext` below `dir`, relative to the examples directory, except the excluded ones and
+  // those that do not terminate
   def find(dir: os.SubPath, ext: String): List[os.Path] =
-    os.walk(root / dir).filter(_.ext == ext).filterNot(file => excluded.exists(sub => file.startsWith(root / sub))).sorted.toList
+    os.walk(root / dir).filter(_.ext == ext).filter(terminating).filterNot(file => excluded.exists(sub => file.startsWith(root / sub))).sorted.toList
 
   // utest builds its test tree at compile time with the Tests macro,
   // therefore the tests for example files found at runtime are assembled by hand,
@@ -52,11 +60,16 @@ object Examples:
   // the options of the languages that an example needs, among those of the command line in its first line,
   // i.e., -hybrid, and the declarations of teq.dfy without its transform for -teq (-known teq), e.g. for inputs that
   // use its types Nat and List
+  // and the modules of the lemma database that it includes (-include teq:<concept>), whose declarations its output
+  // may refer to
   def options(file: os.Path): List[String] =
-    cuvee.test.Expected.command(workspace.toNIO, file.toNIO).getOrElse(Nil).flatMap:
+    val args = cuvee.test.Expected.command(workspace.toNIO, file.toNIO).getOrElse(Nil)
+    val modules = args.zip(args.drop(1)).collect { case ("-include", module) if module.startsWith("teq:") => List("-include", module) }
+    args.flatMap {
       case "-hybrid" => List("-hybrid")
       case "-teq"    => List("-known", "teq")
       case _         => Nil
+    } ++ modules.flatten
 
   // whether the goals of an example hold, as stated in its second line, after its command line:
   // "// expected: valid" or "// expected: invalid"

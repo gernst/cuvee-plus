@@ -19,9 +19,11 @@ object Normalize extends TestSuite:
     cuvee.dafny.Printer.lines(phi).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:
-    // bound variables are renamed apart from free ones of the same name, which SMT-LIB input cannot write
+    // bound variables are renamed apart from free ones of the same name, which SMT-LIB input cannot write;
+    // the index of the fresh name depends on the fresh names created before in the same run, e.g. by other tests
     test("quantifiers"):
-      show(N(Imp(Ex(List(x), Ints.lt(x, y)), Ints.le(x, y)))) ==> "forall x₁: int :: x₁ < y ==> x <= y"
+      val shown = show(N(Imp(Ex(List(x), Ints.lt(x, y)), Ints.le(x, y))))
+      shown.matches("forall x[₀-₉]+: int :: x[₀-₉]+ < y ==> x <= y") ==> true
 
     // ite is lifted out of atoms, all of its occurrences at once, but not out of binders inside of atoms
     test("lift"):

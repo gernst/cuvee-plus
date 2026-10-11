@@ -1,0 +1,95 @@
+function sorted(a: array<int, int>, lo: int, hi: int): bool
+
+function perm(a: array<int, int>, b: array<int, int>): bool
+
+lemma {:rw} perm_refl(a: array<int, int>)
+  ensures perm(a, a) <==> true
+
+lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>,
+                              Ns: List<Nat>, Js: List<Trace<int>>,
+                              X: int -> int, c: int)
+  requires invs(for ks, Ks, Ns check k, K, nn :: K == counter(0, 1, nn))
+  ensures
+    invs(for ks, Ks, Js
+         check k, K, J ::
+           J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
+      <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
+
+function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
+  trace(x0, for ks, bs do x, k, b :: b)
+}
+
+function insert(b: array<int, int>, i: int): array<int, int>
+
+lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>,
+                                   is: List<int>, bs: List<array<int, int>>,
+                                   Bs: List<Trace<array<int, int>>>,
+                                   Js: List<Trace<int>>, Ps: List<Trace<int>>,
+                                   Ns: List<Nat>, Ns2: List<Nat>,
+                                   Js2: List<Trace<int>>, js: List<int>,
+                                   Js3: List<Trace<int>>, ps: List<int>,
+                                   Ps3: List<Trace<int>>, Js4: List<Trace<int>>,
+                                   Bs5: List<Trace<array<int, int>>>,
+                                   Js5: List<Trace<int>>, Ps5: List<Trace<int>>,
+                                   bs6: List<array<int, int>>, js6: List<int>,
+                                   ps6: List<int>)
+  requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
+  requires
+    invs(for ks, ⌊results(a, ks, bs)⌋, Bs, Js, Ps
+         check k, x, B, J, P ::
+           B == trace(x, for ⌊J⌋, ⌊P⌋ do y, j, p :: y[j := y[p]][p := y[j]]))
+  requires invs(for ks, Ns, Ps check k, nn, P :: P == counter(k, d, nn))
+  requires d == -1
+  requires invs(for is, Ns2, Js2 check i, nn, J :: J == counter(i, d, nn))
+  requires Ns2 == Ns
+  requires Js2 == Js
+  requires invs(for ks, is check k, i :: i == k + 1)
+  requires invs(for ks, js, Js3 check k, j, J :: j == current(J))
+  requires Js3 == Js
+  requires invs(for ks, ps, Ps3 check k, p, P :: p == current(P))
+  requires Ps3 == Ps
+  requires invs(for ks, Js4 check k, J :: invs(for ⌊J⌋ check j :: 0 < j))
+  requires Js4 == Js
+  requires
+    invs(for ks, Bs5, Js5, Ps5
+         check k, B, J, P ::
+           invs(for ⌊B⌋, ⌊J⌋, ⌊P⌋ check y, j, p :: y[j] < y[p]))
+  requires Bs5 == Bs
+  requires Js5 == Js
+  requires Ps5 == Ps
+  requires
+    invs(for ks, bs6, js6, ps6 check k, b, j, p :: !(0 < j && b[j] < b[p]))
+  requires bs6 == bs
+  requires js6 == js
+  requires ps6 == ps
+  ensures
+    current(results(a, ks, bs))
+      == current(trace(a, for ks, is do b, k, i :: insert(b, i)))
+
+lemma {:rw} perm_insert(b: array<int, int>, c: array<int, int>, i: int)
+  ensures perm(insert(b, i), c) <==> perm(b, c)
+
+lemma {:rw} perm_steps_two(a: array<int, int>, c: array<int, int>,
+                           ks: List<int>, is: List<int>,
+                           F: (array<int, int>, int, int) -> array<int, int>)
+  requires forall b: array<int, int>, k: int, i: int :: perm(F(b, k, i), b)
+  ensures
+    perm(current(trace(a, for ks, is do b, k, i :: F(b, k, i))), c)
+      <==> perm(a, c)
+
+lemma {:rw} sorted_insert(b: array<int, int>, i: int)
+  requires sorted(b, 0, i)
+  ensures sorted(insert(b, i), 0, i + 1) <==> true
+
+lemma {:rw} sorted_prefix_steps_two(a: array<int, int>, n: int, m: Nat,
+                                    F: (array<int, int>, int, int) -> array<int, int>)
+  requires n <= integer(m) + 1
+  requires
+    forall b: array<int, int>, k: int, i: int ::
+      0 <= i && sorted(b, 0, i) ==> sorted(F(b, k, i), 0, i + 1)
+  ensures
+    sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ⌊counter(1, 1, m)⌋
+                            do b, k, i ::
+                              F(b, k, i))), 0, n)
+      <==> true
+

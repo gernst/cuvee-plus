@@ -1,9 +1,9 @@
 // searching: the abstractions of iteration constraints of searches (agreeing prefixes, no occurrence in a prefix,
 // values above the iterations) and their instantiation at a position extracted from teq.dfy on Oct 11, 2026 as one of
-// its modules, teq.dfy itself is unchanged; this file assumes the core declarations of teq.dfy (Nat, integer, natural,
-// List, length, unspecified, Trace, current, butlast, counter, earlier, prefix, occurs, indexof, distincts, consts),
-// counters.dfy, and arrays.dfy (selects); the attributes and the order of the lemmas are those of teq.dfy; the assembly
-// of the preludes from the modules is not implemented yet, and the modules are not tested
+// the modules that -teq injects in the order of TEQ.modules, teq.dfy itself is kept but not injected; this file assumes
+// the core declarations of teq.dfy (Nat, integer, natural, List, length, unspecified, Trace, current, butlast, counter,
+// earlier, prefix, occurs, indexof, distincts, consts), counters.dfy, and arrays.dfy (selects); the attributes and the
+// order of the lemmas are those of teq.dfy
 
 // the first n values of xs and ys agree
 function {:teq} agree_prefix(n: Nat, xs: List<int>, ys: List<int>): bool

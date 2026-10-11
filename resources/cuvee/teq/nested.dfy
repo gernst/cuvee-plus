@@ -2,10 +2,9 @@
 // produces them, resolved by generic lemmas, and the outer trace of a variable that only the inner loop modifies from
 // examples/dafny/algorithms (fragments.dfy, nested_mult.dfy, distinct.dfy), Oct 11, 2026; this file assumes the core
 // declarations of teq.dfy (Nat, integer, natural, List, Trace, current, butlast, counter, earlier, consts),
-// counters.dfy, and aggregation.dfy (sums); the lemmas are candidates for the database, see NOTES.md there for their
-// termination analysis (the side conditions are invs over the lists of the left-hand sides, which is safe since the
-// left-hand sides are fragments with specific bodies); the assembly of the preludes from the modules is not implemented
-// yet, and the modules are not tested
+// counters.dfy, and aggregation.dfy (sums); see NOTES.md there for the termination analysis of the lemmas (the side
+// conditions are invs over the lists of the left-hand sides, which is safe since the left-hand sides are fragments with
+// specific bodies)
 
 // the inner counter: a variable increased by c over the inner counter K, which is counter(0, 1, nn) in the same
 // iteration, is a counter from its initial value X(k), a higher-order pattern (0, k, k + 1, ...)
@@ -46,14 +45,16 @@ lemma {:rw} {:teq} invs_exit_counter_zero(ks: List<int>, Ns: List<Nat>, js: List
   ensures invs(for ks, js check k, j :: n <= j)
     <==> invs(for ks, js check k, j :: j == n)
 
-// the numbers of iterations of the inner loops are all n: the sequence is constant, which is substituted into the
-// other fragments; the fact arises when j == n is assumed in the fragment j == integer(nn); the body with the open n
-// matches any equation fragment with integer of a bound variable, to be restated with an earlier read as in
-// consts_prefix_def
-lemma {:rw} {:teq} invs_integer_consts(m: Nat, Ns: List<Nat>, n: int)
+// the numbers of iterations of the inner loops are all n, when the final values j == n of the inner counters are
+// abstracted by consts_prefix_def of the aggregation module, which is tried first: the sequence is constant, which
+// is substituted into the other fragments; the atom is the left-hand side, which binds n, and the fragment of the
+// final values the side condition, which binds Ns (a variant with the body n == integer(nn) as the left-hand side
+// matched any equation fragment with integer of a bound variable, and one with the atom as a side condition left n
+// unbound)
+lemma {:rw} {:teq} consts_prefix_integer(m: Nat, n: int, js: List<int>, Ns: List<Nat>)
+  requires invs(for ⌊counter(0, 1, m)⌋, Ns, js check k, nn, j :: j == integer(nn))
   requires 0 <= n
-  ensures invs(for ⌊counter(0, 1, m)⌋, Ns check k, nn :: n == integer(nn))
-    <==> Ns == ⌊consts(m, natural(n))⌋
+  ensures consts_prefix(m, n, js) <==> Ns == ⌊consts(m, natural(n))⌋
 
 // the values of a variable at the head of an outer loop whose body only runs an inner loop on it:
 // the initial value followed by the results bs of the inner loop

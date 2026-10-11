@@ -1,0 +1,26 @@
+function argmaxs(a: array<int, int>, p0: int, i: int, n: Nat): Trace<int>
+
+lemma {:rw} argmaxs_def(a: array<int, int>, p0: int, i: int, n: Nat)
+  ensures
+    trace(p0, for ⌊counter(0, 1, n)⌋, ⌊counter(i, 1, n)⌋
+              do p, k, j ::
+                case a[p] < a[j] => j case a[j] <= a[p] => p)
+      == argmaxs(a, p0, i, n)
+
+lemma {:rw} current_argmaxs_lower(a: array<int, int>, p0: int, i: int, n: Nat,
+                                  b: int)
+  requires b <= p0
+  requires b <= i
+  ensures b <= current(argmaxs(a, p0, i, n)) <==> true
+
+lemma {:rw} current_argmaxs_upper(a: array<int, int>, p0: int, i: int, n: Nat,
+                                  b: int)
+  requires p0 < b
+  requires i + integer(n) <= b
+  ensures current(argmaxs(a, p0, i, n)) < b <==> true
+
+lemma {:rw} select_le_argmaxs(a: array<int, int>, p0: int, i: int, n: Nat,
+                              k: int)
+  requires k == p0 || i <= k < i + integer(n)
+  ensures a[k] <= a[current(argmaxs(a, p0, i, n))] <==> true
+

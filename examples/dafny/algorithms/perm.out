@@ -1,0 +1,19 @@
+function perm(a: array<int, int>, b: array<int, int>): bool
+
+lemma {:rw} perm_refl(a: array<int, int>)
+  ensures perm(a, a) <==> true
+
+lemma {:rw} perm_swap(a: array<int, int>, b: array<int, int>, p: int, q: int)
+  ensures perm(a[p := a[q]][q := a[p]], b) <==> perm(a, b)
+
+lemma {:rw} perm_swaps(a: array<int, int>, b: array<int, int>, ks: List<int>,
+                       hs: List<int>, P: (array<int, int>, int, int) -> int,
+                       Q: (array<int, int>, int, int) -> int)
+  ensures
+    perm(current(trace(a, for ks, hs
+                          do x, k, h ::
+                            x[P(x, k, h) := x[Q(x, k, h)]][
+                              Q(x, k, h) :=
+                              x[P(x, k, h)]])), b)
+      <==> perm(a, b)
+

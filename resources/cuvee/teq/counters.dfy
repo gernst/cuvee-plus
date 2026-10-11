@@ -1,10 +1,9 @@
 // counters and iteration constraints: traces that are counters or constant, the iteration constraints over counters
 // (bounds, phases), flags, monotone and bounded traces, the lists of counters (prefix, occurs, indexof, distincts), and
-// the generic simplifications of cases extracted from teq.dfy on Oct 11, 2026 as one of its modules, teq.dfy itself is
-// unchanged; this file assumes the core declarations of teq.dfy (Nat, integer, natural, List, length, unspecified,
-// Trace, current, butlast, counter, earlier, prefix, occurs, indexof, distincts, consts) and arithmetic.dfy; the
-// attributes and the order of the lemmas are those of teq.dfy; the assembly of the preludes from the modules is not
-// implemented yet, and the modules are not tested
+// the generic simplifications of cases extracted from teq.dfy on Oct 11, 2026 as one of the modules that -teq injects
+// in the order of TEQ.modules, teq.dfy itself is kept but not injected; this file assumes the core declarations of
+// teq.dfy (Nat, integer, natural, List, length, unspecified, Trace, current, butlast, counter, earlier, prefix, occurs,
+// indexof, distincts, consts) and arithmetic.dfy; the attributes and the order of the lemmas are those of teq.dfy
 
 // a variable that is increased by c in each iteration is a counter (example 2.3 of the paper)
 lemma {:rw} {:teq} counter_def(i: int, c: int, n: Nat)
