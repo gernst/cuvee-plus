@@ -1,0 +1,36 @@
+; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/recursive.svlib
+; a recursive procedure, whose call in its body is resolved by its contract, with a termination measure,
+; and a location invariant after a call in main, inline since tags on statements are not supported
+
+(set-logic LIA)
+
+(define-proc count
+  ((n Int))
+  ((r Int))
+  ((r1 Int))
+  (! (sequence
+       (if (<= n 0)
+         (assign (r 0))
+         (sequence
+           (call count ((- n 1)) (r1))
+           (assign (r (+ 1 r1)))))
+       (return))
+     :tag count))
+
+(annotate-tag count
+  :requires (<= 0 n)
+  :ensures (= r n)
+  :decreases n)
+
+(define-proc main
+  ()
+  ((result Int))
+  ((r2 Int))
+  (! (sequence
+       (call count (3) (r2))
+       (! (sequence) :check-true (= r2 3))
+       (assign (result 0))
+       (return))
+     :tag main))
+
+(verify-call main ())

@@ -1,0 +1,24 @@
+(define-proc
+  add
+  ((x0 Int) (y0 Int))
+  ((x Int))
+  ((y Int))
+  (!
+    (sequence
+      (assign (x x0) (y y0))
+      (while
+        (< 0 y)
+        (assign (x (+ x 1)) (y (- y 1)))))
+    :tag
+    body))
+
+(define-proc
+  main
+  ()
+  ((r Int))
+  ()
+  (!
+    (sequence (call add (1 2) (r)))
+    :tag
+    body))
+

@@ -1,0 +1,10 @@
+(define-proc
+  inc
+  ((n Int))
+  ((r Int))
+  ()
+  (!
+    (sequence (assign (r (+ r n))))
+    :tag
+    inc))
+

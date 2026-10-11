@@ -1,0 +1,29 @@
+(declare-var g Int)
+
+(define-proc
+  main
+  ((n Int))
+  ((r Int))
+  ((i Int))
+  (!
+    (sequence
+      (! (sequence) :check-true (<= 0 n))
+      (assign (i 0) (r 0))
+      (!
+        (while
+          (< i n)
+          (sequence
+            (sequence
+              (! (sequence) :check-true (<= 0 r))
+              (assign (r (+ r i))))
+            (assign (i (+ i 1)))))
+        :tag
+        loop)
+      (! (sequence) :check-true (= i n)))
+    :tag
+    main))
+
+(annotate-tag loop :check-true (<= i n))
+
+(verify-call main (3))
+

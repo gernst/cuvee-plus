@@ -92,11 +92,23 @@ object Parser:
   def annotation(from: List[Any]): Attrs =
     Attrs(annotations(from))
 
+  // a statement with a tag of SV-LIB, a procedure body or a loop: the scope of its variables, that of a contract if
+  // it is the body of a procedure, the tag of the body of the enclosing procedure, and the variables whose values at
+  // the entry of the procedure are available there, to which (at x tag) of SV-LIB refers (see svlib.Parser)
+  case class Tagged(scope: Scope, contract: Option[Scope], body: Option[Name], entry: Set[Name])
+
 class Parser(private var init: State):
   import Parser.annotation
+  import Parser.Tagged
 
   var state = init
   var stack: List[State] = List()
+
+  // the statements with a tag of SV-LIB, in the order of their occurrence, which annotate-tag commands refer to
+  var tags: Map[Name, List[Tagged]] = Map()
+
+  def record(tag: Name, tagged: Tagged): Unit =
+    tags = tags + (tag -> (tags.getOrElse(tag, Nil) :+ tagged))
 
   def list[A](from: Seq[Any])(f: Any => A): List[A] =
     for arg <- from.toList
@@ -357,6 +369,13 @@ class Parser(private var init: State):
         val scope = Scope(params_)
         procedure(name, params_, list(in) { formal(scope, _) }, list(out) { formal(scope, _) }, Some(body), attrs.toList)
 
+      // the commands of SV-LIB (see svlib.Parser), e.g. in printed output that is parsed again
+      case List(Id("annotate-tag"), Id(tag), attrs*) =>
+        annotate(tag, attrs.toList)
+
+      case List(Id("verify-call"), Id(name), List(args*)) =>
+        verifyCall(name, args.toList)
+
       case _ =>
         Error.raise("not a command", Parser.head(from))
 
@@ -367,6 +386,9 @@ class Parser(private var init: State):
     val globals = state.globals
     val scope = Scope(params) ++ globals ++ in ++ out
     val attrs_ = contract(scope, attrs)
+
+    for tag <- attrs_.tags
+    do record(tag, Tagged(scope, Some(scope), attrs_.tags.headOption, (globals ++ in).map(_.name).toSet))
 
     val mod = attrs_.modifies
     val nonglobal = mod.filterNot(globals.contains)
@@ -385,13 +407,50 @@ class Parser(private var init: State):
         state = state.define(name, body_)
         state.cmds.defineProc(name)
 
-  // attributes whose arguments are resolved: formulas for contracts and invariants,
-  // integers for termination measures, and lists of variables for modifies
+  // the annotations of an annotate-tag command of SV-LIB, resolved like the contract of the first statement with
+  // the tag, as if written there; the SV-LIB frontend resolves them by their kind (see svlib.Parser)
+  def annotate(tag: Name, from: List[Any]): Cmd =
+    Error.report("unknown tag", tag):
+      require(tags.contains(tag))
+
+    linked(tag, contract(tags(tag).head.scope, from))
+
+  // the variables of the annotations `attrs` of `tag` must be in scope at every statement with the tag
+  def linked(tag: Name, attrs: Attrs): Cmd =
+    Error.report("tag in an annotate-tag command", tag):
+      require(!attrs.contains("tag"))
+
+    for tagged <- tags(tag).tail do
+      val unknown = attrs.free.filterNot(x => tagged.scope.vars.get(x.name) == Some(x))
+      Error.report("variables of the annotation are not in scope at every statement with the tag", tag, unknown):
+        require(unknown.isEmpty)
+
+    AnnotateTag(tag, attrs)
+
+  // the arguments of a verify-call of SV-LIB are resolved in the scope of the global variables and checked against
+  // the signature of the procedure; if it is not declared, e.g. in the output of -verify, where the procedures are
+  // replaced by their goals, the arguments are checked on their own
+  def verifyCall(name: Name, from: List[Any]): Cmd =
+    val scope = Scope(Nil, state.globals)
+    val args = list(from) { expr(scope, _) }
+
+    if state.procs.contains(name) then
+      val Proc(_, _, _, out) = state.procs(name)
+      val res = Expr.vars("r", out.types).fresh
+      val mod = state.procattrs(name).modifies.toSet
+      state.progs.check(scope ++ res, Set(), mod, Call(name, args, res)) match
+        case Call(_, args_, _) => VerifyCall(name, args_)
+        case prog              => Error.raise("not a call", prog)
+    else
+      VerifyCall(name, args.map(arg => state.exprs.check(scope, arg, arg.typ)))
+
+  // attributes whose arguments are resolved: formulas for contracts, invariants and location invariants (SV-LIB),
+  // integers for termination measures, lists of variables for modifies, and names for tags (SV-LIB)
   def contract(scope: Scope, from: List[Any]): Attrs =
     val attrs_ =
       for (kw, arg) <- Parser.annotations(from)
       yield (kw, arg) match
-        case ("requires" | "ensures" | "invariant" | "assumes" | "commits", Some(phi)) =>
+        case ("requires" | "ensures" | "invariant" | "check-true" | "assumes" | "commits", Some(phi)) =>
           kw -> Some(state.exprs.check(scope, expr(scope, phi), Sort.bool))
 
         case ("decreases", Some(arg)) =>
@@ -399,6 +458,11 @@ class Parser(private var init: State):
 
         case ("modifies", Some(List(xs*))) =>
           kw -> Some(list(xs) { variable(scope, _) })
+
+        // the tags of SV-LIB, e.g. in printed output that is parsed again
+        case ("tag", Some(Id(tag))) =>
+          val tag_ : Name = tag
+          kw -> Some(tag_)
 
         case _ =>
           kw -> arg
@@ -464,7 +528,9 @@ class Parser(private var init: State):
         state.progs.if_(expr(scope, test), prog(scope, left), prog(scope, right))
 
       case List(Id("while"), test, body, attrs*) =>
-        state.progs.while_(expr(scope, test), prog(scope, body), contract(scope, attrs.toList))
+        val attrs_ = contract(scope, attrs.toList)
+        for tag <- attrs_.tags do record(tag, Tagged(scope, None, None, Set()))
+        state.progs.while_(expr(scope, test), prog(scope, body), attrs_)
 
       case List(Id("iter"), body, attrs*) =>
         state.progs.iter(prog(scope, body), contract(scope, attrs.toList))

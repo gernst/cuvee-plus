@@ -1,0 +1,4 @@
+(error
+  "variables of the annotation are not in scope at every statement with the tag"
+  "Name(body,None)"
+  "Set(Var(Name(y,None),Sort(Con(Name(Int,None),0),List())))")

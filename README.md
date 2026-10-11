@@ -10,10 +10,12 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
 ## Capabilities
 
 - **Frontends:** SMT-LIB 2 (`.smt2`, extended by procedures and programs),
-  a subset of Boogie (`.bpl`), a subset of Dafny (`.dfy`), and simple
+  a subset of Boogie (`.bpl`), a subset of Dafny (`.dfy`), SV-LIB 1.0
+  (`.svlib`, without unstructured control flow, mutual recursion, liveness
+  properties and witnesses), and simple
   integer programs in C (`.c`), with arrays as values and the verification
   conventions of SV-COMP, also given by SV-COMP task definitions (`.yml`)
-  with a single input file; the sizes of integer types follow 32 or 64 bit
+  with a single input file in C or SV-LIB; the sizes of integer types follow 32 or 64 bit
   Linux (`-arch 32|64`, by default 64, or the data model of the task), and
   unsigned integers wrap around and the values of `__VERIFIER_nondet_<type>()`
   are within the range of their type (`-unbounded`: neither, the values of

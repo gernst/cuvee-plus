@@ -1,0 +1,31 @@
+(declare-var g Int)
+
+(define-proc
+  add
+  ((x0 Int) (y0 Int))
+  ((x Int))
+  (block
+    (locals (y Int))
+    (assign (x x0) (y y0))
+    (while
+      (< 0 y)
+      (assign (x (+ x 1)) (y (- y 1)) (g (+ g 1)))
+      :tag
+      while-loop
+      :invariant
+      (and
+        (<= 0 y)
+        (= (+ x y) (+ x0 y0)))
+      :modifies
+      (g)))
+  :tag
+  proc-add
+  :modifies
+  (g))
+
+(annotate-tag proc-add :requires (<= 0 y0) :ensures (= x (+ x0 y0)))
+
+(annotate-tag while-loop :decreases y)
+
+(verify-call add (1 2))
+

@@ -16,9 +16,18 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   the models of Z3 for `-chc`, or derived from the trace equation systems),
   violation witnesses a path (from the counterexamples of `-chc`); see
   "Portfolio of TEQ and CHC" below
-- SV-LIB support: a frontend for SV-LIB, the SMT-LIB-based format of
-  verification tasks for SV-COMP, next to the C frontend and the task
-  definitions (`.yml`)
+- SV-LIB: the frontend (`cuvee.svlib`, see doc/architecture.md) lacks
+  unstructured control flow (labels and gotos, e.g. by a loop over a program
+  counter, with the invariants of labels as `pc = k ⇒ φ`), `define-procs-rec`,
+  tags on statements other than loops and procedure bodies, which the
+  translated C tasks of SV-COMP use for their assertions, the liveness
+  properties `:recurring` and `:not-recurring`, which 6 of the 7 core
+  verification tasks use, and `:decreases-lex`, `get-witness` (see witness
+  output) and `select-trace`, the answers `correct`/`incorrect` to
+  `verify-call` for interactive use (the verdict is decided by cuvee.py),
+  constants in the bodies of procedures with `-chc` (Horn solvers reject free
+  constants, the entry clause quantifies only those of the arguments and
+  axioms); a dangling tag is an error, the report says to ignore it
 - SV-COMP tool entry and zenodo archive: publish the archive
   (`scripts/zenodo.py package`, `upload`, `publish`), enter its DOI in the
   fm-tools entry (`data/cuvee.yml`, still a dummy DOI) and in doc/paper; the

@@ -1,0 +1,13 @@
+; ./Cuvee.sh examples/svlib/parsing/invalid_contract.svlib
+; contracts are supported on the bodies of procedures only
+
+(define-proc main
+  ((n Int))
+  ((i Int))
+  ()
+  (! (sequence
+       (assign (i 0))
+       (! (while (< i n) (assign (i (+ i 1)))) :tag loop))
+     :tag main))
+
+(annotate-tag loop :ensures (= i n))

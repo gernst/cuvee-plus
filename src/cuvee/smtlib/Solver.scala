@@ -158,8 +158,12 @@ object Solver:
 
         // procedures and global variables are not understood by SMT solvers and must have been eliminated, e.g. with -verify,
         // in particular, z3 accepts declare-var but does not acknowledge it with print-success
-        case _: DeclareProc | _: DefineProc | _: DeclareVar =>
+        case _: DeclareProc | _: DefineProc | _: DeclareVar | _: AnnotateTag =>
           (Ack.Unsupported, Nil, this)
+
+        // the obligations of a verify-call have been checked already (see Verify and Horn), it has no answer of its own
+        case _: VerifyCall =>
+          (Ack.Done, Nil, this)
 
         case _: GetInfo =>
           (Parser.info(solver.query(cmd)), Nil, this)
@@ -187,6 +191,15 @@ object Solver:
         case Done =>
           solver.destroy()
           (Ack.Done, Nil, this)
+
+        // an option that the solver does not know is unsupported, as SMT-LIB prescribes, which z3 reports as an error,
+        // e.g. :produce-witnesses of SV-LIB
+        case option: SetOption =>
+          parser.state = parser.state.add(option)
+          val ack =
+            try solver.ack(option)
+            catch case error: Error if error.msg == "solver error" => Ack.Unsupported
+          (ack, Nil, this)
 
         // the state is updated only once the solver has accepted the declaration,
         // attributes are kept in the state but not sent to the solver

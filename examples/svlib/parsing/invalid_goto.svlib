@@ -1,0 +1,12 @@
+; ./Cuvee.sh examples/svlib/parsing/invalid_goto.svlib
+; unstructured control flow is not supported
+
+(define-proc main
+  ((n Int))
+  ((i Int))
+  ()
+  (! (sequence
+       (assign (i 0))
+       (! (label loop) :tag loop)
+       (if (< i n) (sequence (assign (i (+ i 1))) (goto loop))))
+     :tag main))

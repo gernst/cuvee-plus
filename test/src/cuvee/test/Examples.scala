@@ -71,12 +71,12 @@ object Examples:
       case _         => Nil
     } ++ modules.flatten
 
-  // whether the goals of an example hold, as stated in its second line, after its command line:
-  // "// expected: valid" or "// expected: invalid"
+  // whether the goals of an example hold, as stated in its second line, after its command line,
+  // as a comment of its language: "// expected: valid" or "; expected: invalid"
   def holds(file: os.Path): Boolean =
-    os.read.lines(file)(1) match
-      case "// expected: valid"   => true
-      case "// expected: invalid" => false
+    os.read.lines(file)(1).dropWhile(c => c == '/' || c == ';' || c == '#').trim match
+      case "expected: valid"   => true
+      case "expected: invalid" => false
 
   // the examples below `dir` with extension `ext` that are accepted, i.e., whose expected reports contain no errors
   // other than goals that do not hold, except for the cases of the frontends and printers in the modules parsing

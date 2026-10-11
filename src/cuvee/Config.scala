@@ -57,7 +57,11 @@ object Lang:
   val lean =
     Lang("Lean", cuvee.smtlib.Source, cuvee.lean.Printer, Set("smt2", "dfy", "bpl", "c", "lean"))
 
-  // its output is C (see Config.parse)
+  // the language of the logic is SMT-LIB, whose output drops the prelude
+  val svlib =
+    Lang("SV-LIB", cuvee.svlib.Source, cuvee.svlib.Printer, Set("smt2", "svlib"))
+
+  // its output is the language of the input file of the task (see Config.parse and yml.Source)
   val yml =
     Lang("SV-COMP task definition", cuvee.yml.Source, cuvee.c.Printer, Set("c"), false)
 
@@ -349,6 +353,7 @@ object Config:
     "c" -> Lang.c,
     // preprocessed C, e.g. of SV-COMP tasks
     "i" -> Lang.c,
+    "svlib" -> Lang.svlib,
     "yml" -> Lang.yml
   )
 
@@ -381,7 +386,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.36.3")
+    println("Cuvée 0.37.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
@@ -426,7 +431,7 @@ object Config:
 
       case file :: rest if langs.contains(file.suffix) =>
         val input = langs(file.suffix)
-        val output = if input == Lang.yml then Lang.c else input
+        val output = if input == Lang.yml then cuvee.yml.Source.lang(Some(file)) else input
         val config_ = config.copy(file = Some(file), input = input, output = output)
         arguments(config_, rest)
 

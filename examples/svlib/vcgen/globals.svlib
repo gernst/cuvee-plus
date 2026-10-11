@@ -1,0 +1,28 @@
+; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/globals.svlib
+; a global variable modified by a procedure and by the one that calls it, which is inferred, (at g tag) is its value
+; at the entry of the procedure whose body has the tag
+
+(set-logic LIA)
+
+(declare-var g Int)
+
+(define-proc inc
+  ((n Int))
+  ()
+  ()
+  (! (assign (g (+ g n))) :tag inc))
+
+(annotate-tag inc :ensures (= g (+ (at g inc) (at n inc))))
+
+(define-proc main
+  ()
+  ()
+  ()
+  (! (sequence
+       (call inc (1) ())
+       (call inc (1) ()))
+     :tag main))
+
+(annotate-tag main :ensures (= g (+ (at g main) 2)))
+
+(verify-call main ())

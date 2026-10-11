@@ -25,7 +25,8 @@ transformation and any output.
 | `cuvee.smtlib` | SMT-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks). |
 | `cuvee.boogie` | Boogie frontend and printer, with datatypes written like Dafny's (`data`). |
 | `cuvee.c` | C frontend and printer, for integer programs with arrays as values. |
-| `cuvee.yml` | SV-COMP task definitions (`Task`, read with SnakeYAML Engine), whose single C input file is read by the C frontend; a missing input file is reported as the task writes it, independent of the directory. |
+| `cuvee.svlib` | SV-LIB frontend (`Parser`, which extends the SMT-LIB parser by the statements and properties of SV-LIB, `Source`) and `Printer`. |
+| `cuvee.yml` | SV-COMP task definitions (`Task`, read with SnakeYAML Engine), whose single input file is read by the frontend of its extension, C or SV-LIB; a missing input file is reported as the task writes it, independent of the directory. |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.lean` | Printer of the logic in Lean 4 (`-print lean`), output only. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
@@ -258,10 +259,39 @@ it starts from its own prelude (`resources/cuvee/c/prelude.bpl`, in Boogie),
 which declares the core theory with arithmetic on `Int` only, arrays, and the
 background theory of C, builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
 that it can infer the global variables that each function and each loop
-modifies. SV-COMP task definitions (`.yml`) defer to the C frontend: their
-`Source` overrides `input`, which reads the input on demand, to load the task
-and parse its input file, relative to the task; the output is printed as C
-(`Lang.output`).
+modifies. SV-COMP task definitions (`.yml`) defer to the frontend of their
+input file, C or SV-LIB: their `Source` overrides `input`, which reads the
+input on demand, to load the task and parse its input file, relative to the
+task; the output is printed in the language of the input file (`Config.parse`).
+
+The SV-LIB frontend (`.svlib`, [SV-LIB 1.0](https://arxiv.org/abs/2511.21509))
+extends the SMT-LIB parser: `define-proc` with local variables, the
+statements `sequence`, `choice`, `if` without else, `(! s attrs)`, and the
+commands `annotate-tag` and `verify-call`, which are core commands
+`AnnotateTag` and `VerifyCall`, since an annotation may follow the procedure
+it belongs to, up to the `verify-call` that it applies to. Properties
+(`:requires`, `:ensures`, `:invariant`, `:decreases`, `:check-true`) are
+attributes of loops and of procedure bodies, written inline or linked by
+`annotate-tag` to the statements with the `:tag`; the parser resolves their
+variables in the scope of the tagged statement and their functions in the
+state at the command, and keeps a table from tags to these scopes. The
+stages collect the `AnnotateTag` commands in `State.annotations`, and
+`Verify` and `Horn` attach them to the loops of a body
+(`State.annotated`) when they verify it at the `VerifyCall`, which flushes
+the stages like `check-sat`. `Verify` adds the goal that the arguments
+satisfy the precondition, `Horn` the entry clause `p_pre(args, gs)`, in
+which the constants of the script are quantified together with the axioms
+about them, since Horn solvers reject free constants, and a `check-sat`.
+`(at x tag)` is `old(x)` when `tag` is that of the procedure body and `x` a
+global variable or an input; `:check-true` of a loop is checked at every
+evaluation of its test without being assumed, elsewhere it is asserted before
+the statement. Tags on other statements are rejected, since the core has no
+annotations there, and so are `define-procs-rec`, labels and gotos, the
+liveness properties, `:decreases-lex`, witnesses and traces. The modified
+global variables of procedures and loops are inferred, as in C. The verdict
+of a task is decided by the BenchExec module [cuvee.py](../cuvee.py) from the
+output: a refuted goal, or unsatisfiable clauses, mean that an annotation is
+violated.
 
 ## Errors and debugging
 
@@ -297,7 +327,7 @@ A single run is `mill -i run <options> <file>`, e.g.
   `./Cuvee.sh <options> <file> > name.out 2> name.err` and reviewed.
   `examples` has two levels, `examples/<language>/<module>/<file>`, no deeper:
   a folder per language of the input (`dafny`, `boogie`, `c`, `smtlib`,
-  `yml`) with a subfolder per module, e.g. `language`, `parsing` (the cases
+  `svlib`, `yml`) with a subfolder per module, e.g. `language`, `parsing` (the cases
   of the frontend, e.g. `examples/dafny/parsing/globals_call.dfy` with
   `-print null` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
   `simplify`, `hybrid`, and `transform`; one suite per language checks all of

@@ -24,9 +24,11 @@ object Horn extends Transform:
   // or is set at the beginning, i.e., when nothing has been passed through so far;
   // at the end of the input, the clauses are checked for satisfiability
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+    // the axioms about the constants of a verify-call are assumed in its entry clause instead (see entry)
     val cmds_ =
       for
-        cmd <- cmds;
+        cmd <- cmds
+        if !(last.isInstanceOf[VerifyCall] && isAxiom(state, cmd));
         cmd_ <- horn(state, cmd)
       yield cmd_
 
@@ -39,13 +41,73 @@ object Horn extends Transform:
       then List(SetLogic("HORN"))
       else Nil
 
-    // the model of the predicates are the inferred invariants, if the clauses are satisfiable
+    // the model of the predicates are the inferred invariants, if the clauses are satisfiable;
+    // a verify-call checks the clauses so far
     val check =
-      if last == Done
-      then List(CheckSat, GetModel)
-      else Nil
+      last match
+        case Done                   => List(CheckSat, GetModel)
+        case VerifyCall(name, args) => entry(state, prefix ++ cmds, name, args) ++ List(CheckSat)
+        case _                      => Nil
 
     logic ++ cmds_ ++ check
+
+  // the entry clauses of a verify-call of SV-LIB: p_pre(args, gs) for all values of the global variables gs and
+  // of the constants, assuming the axioms about them (see constants), since Horn solvers do not support
+  // free constants in clauses, which are therefore not asserted; constants that occur elsewhere, e.g. in the bodies
+  // of procedures, are not supported; the arguments must satisfy the precondition, which is a goal
+  def entry(state: State, cmds: List[Cmd], name: Name, args: List[Expr]): List[Cmd] =
+    val (in, _, requires, _) = Verify.contract(state, name)
+
+    Error.report("wrong number of arguments in verify-call", name, args):
+      require(in.length == args.length)
+
+    val gs = Type.expand(state, state.globals)
+    val axioms = cmds.collect { case cmd @ Assert(Axiom, Nil, phi, _) if isAxiom(state, cmd) => phi }
+    val head = App(state, precondition(state, name), args ++ gs)
+    val requires_ = Subst.from(in, args)(requires)
+
+    val cs = constants(state, head :: requires_ :: axioms).distinct
+    val xs = cs.map(c => Var(c.fun.name, c.typ))
+    val axioms_ = axioms.map(abstracted(cs, xs, _))
+
+    val clauses = Ref[List[Expr]](Nil)
+    this.clauses(gs ++ xs, axioms_, And.flattenStrong(abstracted(cs, xs, requires_)), clauses)
+    clause(gs ++ xs, axioms_, abstracted(cs, xs, head), clauses)
+    clauses.value.map(axiom)
+
+  // whether `cmd` is an axiom about constants, e.g. (assert (<= 0 n)) of SV-LIB
+  def isAxiom(state: State, cmd: Cmd): Boolean =
+    cmd match
+      case Assert(Axiom, Nil, phi, _) => constants(state, List(phi)).nonEmpty
+      case _                          => false
+
+  // the constants of `exprs`: the declared functions without arguments and definition,
+  // other than the built-in ones, e.g. true, and the constructors of datatypes
+  def constants(state: State, exprs: List[Expr]): List[App] =
+    def constants(expr: Expr): List[App] =
+      expr match
+        case app @ App(fun, _, _, Nil) if isConstant(state, fun) =>
+          List(app)
+
+        case _ =>
+          val inner = List.newBuilder[App]
+          expr.map: arg =>
+            inner ++= constants(arg)
+            arg
+          inner.result()
+
+    exprs.flatMap(constants)
+
+  def isConstant(state: State, fun: Fun): Boolean =
+    val key = (fun.name, 0)
+    fun.args.isEmpty && state.funs.contains(key) && !state.fundefs.contains(key)
+      && !state.constrs.contains(fun.name) && !state.funattrs(key).contains("smt2")
+
+  // `expr` with the constants `cs` replaced by the variables `xs`
+  def abstracted(cs: List[App], xs: List[Var], expr: Expr): Expr =
+    cs.indexOf(expr) match
+      case -1 => expr.map(abstracted(cs, xs, _))
+      case i  => xs(i)
 
   // a procedure is either declared or defined, never both (see State.declare),
   // therefore the predicates p_pre and p_post of a defined procedure are declared exactly once;
@@ -64,29 +126,39 @@ object Horn extends Transform:
       case DeclareProc(_, _) =>
         Nil
 
+      // the annotations are looked up from the state where the procedures and loops are verified (see State.annotated)
+      case AnnotateTag(_, _) =>
+        Nil
+
       // the body starts from the precondition p_pre with the global variables gs at their values gs_ at the entry,
       // which are never modified, and leads to p_post;
-      // gs_ are fresh copies of the global variables, which cannot clash with other names in the clauses
+      // gs_ are fresh copies of the global variables, which cannot clash with other names in the clauses;
+      // the contract of the procedure, if any, is checked: the goals p_pre ⇒ requires for all states in which
+      // it is called, and p_post ⇒ ensures, e.g. of SV-LIB, whereas the calls are resolved by the predicates
       case DefineProc(Proc(name, params, in_, out_), body, _) =>
         val in = Type.expand(state, in_)
         val out = Type.expand(state, out_)
-        // except for the precondition of main, e.g. the initial values of the global variables in C
         val (_, _, requires, ensures) = Verify.contract(state, name)
-        Error.report("procedure with body has a contract", name, requires, ensures):
-          require((requires == True || name.name == "main") && ensures == True)
 
         val (pre, post, decls) = declare(state, name)
 
         val gs = Type.expand(state, state.globals)
         val gs_ = gs.fresh
         val scope = in ++ gs_ ++ out ++ gs
-        // old(e) refers to the values gs_ at the entry
-        val body_ = Old.elim(gs, gs_, body)
+        // old(e) refers to the values gs_ at the entry, the annotations of SV-LIB are attached to the loops first
+        val body_ = Old.elim(gs, gs_, state.annotated(body))
         val decls_ = Ref[List[DeclareFun]](Nil)
         val clauses = Ref[List[Expr]](Nil)
 
-        if !called(state, name) then
-          clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
+        // the entry of a procedure that is not called, e.g. main, whose precondition is the initial values of the
+        // global variables in C, or a procedure of SV-LIB, which is verified for all inputs that satisfy its
+        // precondition; the precondition of a called procedure is a goal at its calls (the entry of a verify-call
+        // checks it separately, see entry), the postcondition at the exit
+        if called(state, name)
+        then this.clauses(in ++ gs, List(App(state, pre, in ++ gs)), And.flattenStrong(requires), clauses)
+        else clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
+
+        this.clauses(scope, List(App(state, post, scope)), And.flattenStrong(Old.elim(gs, gs_, ensures)), clauses)
 
         // the outputs are unconstrained initially
         val entry = App(state, pre, in ++ gs_) :: Eq(gs, gs_)
@@ -315,6 +387,8 @@ object Horn extends Transform:
 
         clause(scope, pre, head, clauses)
         clause(scope, List(head), attrs.invariant, clauses)
+        // the location invariants of SV-LIB (check-true) hold whenever the test is evaluated
+        this.clauses(scope, List(head), attrs.checks, clauses)
 
         join(state, proc, "exit", scope, rest, post, break, continue, return_, decls, clauses): exit =>
           wp(state, proc, scope_, List(body), head :: test ++ Eq(ms, dec), iter, Some(exit), Some(iter), return_, decls, clauses)

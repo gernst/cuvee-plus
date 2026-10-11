@@ -24,6 +24,10 @@ object Yml extends TestSuite:
   val tests =
     Examples.checked(os.sub / "yml", "yml")
 
+object SvLib extends TestSuite:
+  val tests =
+    Examples.checked(os.sub / "svlib", "svlib")
+
 // the translations of SV-COMP tasks (benchmarks/sv-comp/dafny), checked against the database of their expected results
 // (see cuvee.test.Database), only if the environment variable CUVEE_SVCOMP is set, since they take minutes;
 // otherwise only the database is read, if it exists;

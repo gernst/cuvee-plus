@@ -1,0 +1,25 @@
+; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/invalid_precondition.svlib
+; the arguments of the verify-call are not constrained to satisfy the precondition, which is its goal
+
+(set-logic LIA)
+
+(define-proc add
+  ((x0 Int) (y0 Int))
+  ((x Int))
+  ((y Int))
+  (! (sequence
+       (assign (x x0) (y y0))
+       (! (while (< 0 y)
+            (assign (x (+ x 1)) (y (- y 1))))
+          :tag while-loop
+          :invariant (and (<= 0 y) (= (+ x y) (+ x0 y0)))))
+     :tag proc-add))
+
+(annotate-tag proc-add
+  :requires (<= 0 y0)
+  :ensures (= x (+ x0 y0)))
+
+(declare-const x1 Int)
+(declare-const y1 Int)
+
+(verify-call add (x1 y1))

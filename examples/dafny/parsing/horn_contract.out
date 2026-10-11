@@ -1,0 +1,20 @@
+logic HORN
+
+function f_pre(x: int): bool
+
+function f_post(x: int, y: int): bool
+
+function f_assign_1(x: int, y: int): bool
+
+axiom forall x: int :: true ==> f_pre(x)
+
+axiom forall x: int, y: int :: f_post(x, y) ==> y == x
+
+axiom forall x: int :: f_pre(x) ==> f_assign_1(x, x)
+
+axiom forall x: int, y: int :: f_assign_1(x, y) ==> f_post(x, y)
+
+check
+
+model
+

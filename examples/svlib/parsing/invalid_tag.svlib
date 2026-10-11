@@ -1,0 +1,10 @@
+; ./Cuvee.sh examples/svlib/parsing/invalid_tag.svlib
+; tags are supported on loops and on the bodies of procedures only, since other statements have no attributes
+
+(define-proc main
+  ()
+  ((r Int))
+  ()
+  (sequence
+    (! (assign (r 0)) :tag point)
+    (return)))

@@ -1,0 +1,10 @@
+# ./Cuvee.sh examples/yml/tasks/invalid_ensures.yml
+format_version: '2.0'
+
+# the postcondition of add is wrong
+input_files:
+  - '../../svlib/horn/invalid_ensures.svlib'
+
+properties:
+  - property_file: ../properties/correct-annotations.prp
+    expected_verdict: false

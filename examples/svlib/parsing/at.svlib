@@ -1,0 +1,15 @@
+; ./Cuvee.sh examples/svlib/parsing/at.svlib
+; (at x tag) refers to the value of x at the entry of the procedure whose body has the tag, old(x) for a global
+; variable, and the current value of an input, which is never assigned
+
+(declare-var g Int)
+
+(define-proc inc
+  ((n Int))
+  ()
+  ()
+  (! (assign (g (+ g n))) :tag inc))
+
+(annotate-tag inc :ensures (= g (+ (at g inc) (at n inc))))
+
+(verify-call inc (1))

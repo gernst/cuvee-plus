@@ -1,0 +1,26 @@
+; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/check_true.svlib
+; location invariants: of the loop, which is checked at each evaluation of the test but not assumed,
+; of a statement inside the loop, and of the empty statement after it
+
+(set-logic LIA)
+
+(define-proc main
+  ((n Int))
+  ((r Int))
+  ((i Int))
+  (! (sequence
+       (assign (i 0) (r 0))
+       (! (while (< i n)
+            (sequence
+              (! (assign (r (+ r i))) :check-true (<= 0 r))
+              (assign (i (+ i 1)))))
+          :tag loop
+          :invariant (and (<= 0 r) (<= 0 i) (<= i n)))
+       (! (sequence) :check-true (= i n)))
+     :tag main))
+
+(annotate-tag main :requires (<= 0 n))
+
+(annotate-tag loop :check-true (<= 0 (+ i r)))
+
+(verify-call main (3))

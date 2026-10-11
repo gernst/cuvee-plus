@@ -88,6 +88,9 @@ object Simplify extends Transform:
         case DefineProc(proc, body, attrs) =>
           DefineProc(proc, simplify(config, state, ctx, body), simplify(config, state, ctx, attrs))
 
+        case AnnotateTag(tag, attrs) =>
+          AnnotateTag(tag, simplify(config, state, ctx, attrs))
+
         case _ =>
           cmd
     catch

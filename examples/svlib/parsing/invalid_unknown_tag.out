@@ -1,0 +1,10 @@
+(define-proc
+  main
+  ()
+  ((r Int))
+  ()
+  (!
+    (sequence (assign (r 0)))
+    :tag
+    main))
+

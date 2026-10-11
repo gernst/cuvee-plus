@@ -246,6 +246,10 @@ object Printer extends cuvee.pipe.Printer:
       case Done =>
         Error.raise("internal command cannot be printed", cmd)
 
+      // the commands of SV-LIB have no counterpart
+      case _: AnnotateTag | _: VerifyCall =>
+        Error.raise("command not supported", cmd)
+
       // uninterpreted sorts are axiomatized types
       case DeclareSort(Con(name_, arity), _) =>
         text("axiom " + name(name_) + " :") ~~ text((List.fill(arity)("Type") :+ "Type").mkString(" → "))

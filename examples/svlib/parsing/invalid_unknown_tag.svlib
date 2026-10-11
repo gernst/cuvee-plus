@@ -1,0 +1,10 @@
+; ./Cuvee.sh examples/svlib/parsing/invalid_unknown_tag.svlib
+; an annotation of a tag that does not occur in the program
+
+(define-proc main
+  ()
+  ((r Int))
+  ()
+  (! (assign (r 0)) :tag main))
+
+(annotate-tag loop :invariant true)

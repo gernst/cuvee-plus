@@ -1,0 +1,4 @@
+(error
+  "property not allowed on this statement"
+  "ensures"
+  "Loop")

@@ -1,0 +1,6 @@
+; ./Cuvee.sh examples/svlib/parsing/invalid_procs_rec.svlib
+; mutually recursive procedures are not supported, recursive procedures are defined with define-proc
+
+(define-procs-rec
+  (count ((n Int)) ((r Int)) ((r1 Int)))
+  ((! (if (<= n 0) (assign (r 0)) (sequence (call count ((- n 1)) (r1)) (assign (r (+ 1 r1))))) :tag count)))

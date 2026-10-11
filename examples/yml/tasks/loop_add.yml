@@ -1,0 +1,10 @@
+# ./Cuvee.sh examples/yml/tasks/loop_add.yml
+format_version: '2.0'
+
+# an SV-LIB task, whose input file selects the SV-LIB frontend, with the property of SV-COMP
+input_files:
+  - '../../svlib/horn/loop_add.svlib'
+
+properties:
+  - property_file: ../properties/correct-annotations.prp
+    expected_verdict: true

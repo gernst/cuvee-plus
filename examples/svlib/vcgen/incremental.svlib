@@ -1,0 +1,54 @@
+; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/incremental.svlib
+; two queries: the first verifies add, the second mul, which calls add by its contract (Fig. 4 of the SV-LIB report)
+
+(set-logic NIA)
+
+(define-proc add
+  ((x0 Int) (y0 Int))
+  ((x Int))
+  ((y Int))
+  (! (sequence
+       (assign (x x0) (y y0))
+       (! (while (< 0 y)
+            (assign (x (+ x 1)) (y (- y 1))))
+          :tag while-loop))
+     :tag proc-add))
+
+(annotate-tag proc-add
+  :requires (<= 0 y0)
+  :ensures (= x (+ x0 y0)))
+
+(annotate-tag while-loop
+  :invariant (and (<= 0 y) (= (+ x y) (+ x0 y0)))
+  :decreases y)
+
+(declare-const x1 Int)
+(declare-const y1 Int)
+
+(assert (<= 0 x1))
+(assert (<= 0 y1))
+
+(verify-call add (x1 y1))
+
+(define-proc mul
+  ((x2 Int) (y2 Int))
+  ((m Int))
+  ((l Int))
+  (! (sequence
+       (assign (m 0) (l y2))
+       (! (while (< 0 l)
+            (sequence
+              (call add (m x2) (m))
+              (assign (l (- l 1)))))
+          :tag while-mul))
+     :tag proc-mul))
+
+(annotate-tag proc-mul
+  :requires (and (<= 0 x2) (<= 0 y2))
+  :ensures (= m (* x2 y2)))
+
+(annotate-tag while-mul
+  :invariant (and (<= 0 l) (= m (* x2 (- y2 l))))
+  :decreases l)
+
+(verify-call mul (x1 y1))

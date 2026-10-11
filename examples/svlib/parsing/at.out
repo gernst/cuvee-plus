@@ -1,0 +1,19 @@
+(declare-var g Int)
+
+(define-proc
+  inc
+  ((n Int))
+  ()
+  ()
+  (!
+    (sequence (assign (g (+ g n))))
+    :tag
+    inc))
+
+(annotate-tag
+  inc
+  :ensures
+  (= g (+ (old g) (old n))))
+
+(verify-call inc (1))
+

@@ -1,5 +1,6 @@
 package cuvee.core
 
+import util.Name
 import cuvee.core._
 
 trait Result
@@ -41,6 +42,8 @@ sealed trait Cmd:
       case DefineProc(proc, body, attrs)          => DefineProc(proc, p(body), attrs.map(e))
       case Assert(justify, params, phi, attrs)    => Assert(justify, params, e(phi), attrs.map(e))
       case FuseFuns(term, rhs, attrs)             => FuseFuns(e(term), rhs.map(e), attrs.map(e))
+      case AnnotateTag(tag, attrs)                => AnnotateTag(tag, attrs.map(e))
+      case VerifyCall(proc, args)                 => VerifyCall(proc, args.map(e))
       case _                                      => this
 
   // axioms, lemmas, and function definitions with the attribute :rw, which are rewrite rules of -simplify,
@@ -104,6 +107,18 @@ case class DeclareVar(x: Var, attrs: Attrs) extends Decl
 
 case class DeclareProc(proc: Proc, attrs: Attrs) extends Decl
 case class DefineProc(proc: Proc, body: Prog, attrs: Attrs) extends Decl
+
+// SV-LIB: the properties `attrs` of the procedure bodies and loops that carry the tag, in addition to their own
+// attributes, whose variables the frontend has resolved in the scope of these statements (see State.annotated);
+// the command may follow the procedure, which is why the transforms look the annotations up when they verify it
+case class AnnotateTag(tag: Name, attrs: Attrs) extends Decl
+
+// SV-LIB: the query whether all executions that start by calling procedure `proc` with the arguments `args`
+// satisfy the properties of the program, which flushes the stages like check-sat;
+// the verifying transforms add the obligation that the arguments satisfy the precondition of `proc` (see Verify, Horn),
+// the procedures themselves are verified by their definitions; the answers to these obligations are reported,
+// the command itself is acknowledged only (see Sink.passive and smtlib.Solver)
+case class VerifyCall(proc: Name, args: List[Expr]) extends Query
 
 sealed trait Justify
 case object Axiom extends Justify

@@ -2,6 +2,8 @@ package cuvee.core
 
 import scala.reflect.ClassTag
 
+import util.Name
+
 import cuvee.sexpr.Kw
 
 object Attrs:
@@ -15,6 +17,10 @@ object Attrs:
 case class Attrs(attrs: List[(String, Option[Any])]):
   def isEmpty =
     attrs.isEmpty
+
+  // these attributes followed by those of `that`
+  def ++(that: Attrs): Attrs =
+    Attrs(attrs ++ that.attrs)
 
   def contains(kw: String) =
     attrs.exists:
@@ -69,6 +75,16 @@ case class Attrs(attrs: List[(String, Option[Any])]):
   // the invariants of loops, and the differential invariants of differential equations, in order
   def invariants: List[Expr] =
     values[Expr]("invariant")
+
+  // the location invariants of SV-LIB (check-true), which a loop must satisfy whenever its test is evaluated,
+  // in contrast to invariants, they are not assumed, i.e., they need not be inductive
+  def checks: List[Expr] =
+    values[Expr]("check-true")
+
+  // the tags of SV-LIB, which link the annotations of annotate-tag commands to a procedure body or loop
+  // (see State.annotated)
+  def tags: List[Name] =
+    values[Name]("tag")
 
   def invariant: Expr =
     And(invariants)

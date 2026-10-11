@@ -96,6 +96,10 @@ object Sink:
       case GetModel =>
         Ack.Done
 
+      // no answer of its own, the answers to the obligations that the transforms add are reported instead (see Pipe.run)
+      case _: VerifyCall =>
+        Ack.Done
+
       case Labels =>
         Error.raise("no labels available")
 

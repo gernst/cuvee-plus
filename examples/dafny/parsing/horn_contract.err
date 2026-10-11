@@ -1,4 +1,1 @@
-error "procedure with body has a contract"
-  "Name(f,None)"
-  "App(Fun(Name(true,None),List(),List(),Sort(Con(Name(Bool,None),0),List())),List(),Sort(Con(Name(Bool,None),0),List()),List())"
-  "App(Fun(Name(=,None),List(Param(Name(a,Some(0)))),List(Var(Name(x,Some(0)),Param(Name(a,Some(0)))), Var(Name(x,Some(1)),Param(Name(a,Some(0))))),Sort(Con(Name(Bool,None),0),List())),List(Sort(Con(Name(Int,None),0),List()), Sort(Con(Name(Int,None),0),List())),Sort(Con(Name(Bool,None),0),List()),List(Var(Name(y,None),Sort(Con(Name(Int,None),0),List())), Var(Name(x,None),Sort(Con(Name(Int,None),0),List()))))"
+unknown

@@ -65,6 +65,10 @@ object Printer extends cuvee.pipe.Printer:
       case Some(prog: Prog) =>
         kw(name) ++ lines(prog)
 
+      // e.g. the tags of SV-LIB
+      case Some(tag: Name) =>
+        kw(name) ++ mangle(tag)
+
       // e.g. the variables of a modifies attribute
       case Some(exprs: List[?]) if exprs.forall(_.isInstanceOf[Expr]) =>
         kw(name) ++ list(exprs.flatMap(expr => lines(expr.asInstanceOf[Expr])))
@@ -236,6 +240,13 @@ object Printer extends cuvee.pipe.Printer:
       case DefineProc(Proc(name, params, in, out), body, attrs) =>
         val body_ = apps(atom("par"), list(lines(params)), list(formals(in)), list(formals(out)), lines(body), lines(attrs))
         apps(atom("define-proc"), mangle(name), body_)
+
+      // the commands of SV-LIB, whose attributes are resolved already (see svlib.Parser)
+      case AnnotateTag(tag, attrs) =>
+        apps(atom("annotate-tag"), mangle(tag), lines(attrs))
+
+      case VerifyCall(proc, args) =>
+        apps(atom("verify-call"), mangle(proc), list(lines(args)))
 
   // goals and lemmas are not part of SMT-LIB, they are printed like assertions with their own command
   def command(justify: Justify) =

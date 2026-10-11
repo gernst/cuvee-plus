@@ -1,0 +1,10 @@
+; ./Cuvee.sh examples/svlib/parsing/invalid_at.svlib
+; the value of an output or local variable at the entry of the procedure is not supported
+
+(define-proc inc
+  ((n Int))
+  ((r Int))
+  ()
+  (! (assign (r (+ r n))) :tag inc))
+
+(annotate-tag inc :ensures (= r (+ (at r inc) n)))

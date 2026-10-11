@@ -1,0 +1,105 @@
+(set-logic HORN)
+
+(set-info :format-version "1.0")
+
+(declare-fun add_pre (Int Int) Bool)
+
+(declare-fun add_post (Int Int Int) Bool)
+
+(declare-fun add_assign_1 (Int Int Int Int) Bool)
+
+(declare-fun add_inv_2 (Int Int Int Int) Bool)
+
+(declare-fun
+  add_assign_3
+  (Int Int Int Int Int)
+  Bool)
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int))
+    (=> (<= 0 y0) (add_pre x0 y0))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int))
+    (=> (add_post x0 y0 x) (= x (+ x0 y0)))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int))
+    (=>
+      (add_pre x0 y0)
+      (add_assign_1 x0 y0 x0 y0))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$2 Int))
+    (=>
+      (add_assign_1 x0 y0 x y$2)
+      (add_inv_2 x0 y0 x y$2))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$2 Int))
+    (=>
+      (add_inv_2 x0 y0 x y$2)
+      (and
+        (<= 0 y$2)
+        (= (+ x y$2) (+ x0 y0))))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$2 Int) (m$3 Int))
+    (=>
+      (and
+        (add_inv_2 x0 y0 x y$2)
+        (< 0 y$2)
+        (= m$3 y$2))
+      (add_assign_3 x0 y0 (+ x 1) (- y$2 1) m$3))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$2 Int) (m$3 Int))
+    (=>
+      (add_assign_3 x0 y0 x y$2 m$3)
+      (add_inv_2 x0 y0 x y$2))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$2 Int) (m$3 Int))
+    (=>
+      (add_assign_3 x0 y0 x y$2 m$3)
+      (and (<= 0 m$3) (< y$2 m$3)))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$2 Int))
+    (=>
+      (and
+        (add_inv_2 x0 y0 x y$2)
+        (not (< 0 y$2)))
+      (add_post x0 y0 x))))
+
+(declare-const x1 Int)
+
+(declare-const y1 Int)
+
+(assert
+  (forall
+    ((y1 Int))
+    (=> (<= 0 y1) (<= 0 y1))))
+
+(assert
+  (forall
+    ((x1 Int) (y1 Int))
+    (=> (<= 0 y1) (add_pre x1 y1))))
+
+(check-sat)
+
+(verify-call add (x1 y1))
+
+(check-sat)
+
+(get-model)
+

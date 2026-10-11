@@ -1,0 +1,89 @@
+(set-logic HORN)
+
+(declare-fun inc_pre (Int Int) Bool)
+
+(declare-fun inc_post (Int Int Int) Bool)
+
+(declare-fun inc_assign_1 (Int Int Int) Bool)
+
+(assert
+  (forall
+    ((n Int) (g$1 Int) (g Int))
+    (=> (inc_post n g$1 g) (= g (+ g$1 n)))))
+
+(assert
+  (forall
+    ((n Int) (g$1 Int) (g Int))
+    (=>
+      (and (inc_pre n g$1) (= g g$1))
+      (inc_assign_1 n g$1 (+ g n)))))
+
+(assert
+  (forall
+    ((n Int) (g$1 Int) (g Int))
+    (=>
+      (inc_assign_1 n g$1 g)
+      (inc_post n g$1 g))))
+
+(declare-fun main_pre (Int) Bool)
+
+(declare-fun main_post (Int Int) Bool)
+
+(declare-fun main_call_1 (Int Int) Bool)
+
+(declare-fun main_call_2 (Int Int) Bool)
+
+(assert
+  (forall
+    ((g Int))
+    (=> true (main_pre g))))
+
+(assert
+  (forall
+    ((g$2 Int) (g Int))
+    (=> (main_post g$2 g) (= g (+ g$2 2)))))
+
+(assert
+  (forall
+    ((g$2 Int) (g Int))
+    (=>
+      (and (main_pre g$2) (= g g$2))
+      (inc_pre 1 g))))
+
+(assert
+  (forall
+    ((g$2 Int) (g Int) (g$3 Int))
+    (=>
+      (and (main_pre g$2) (= g g$2) (inc_post 1 g g$3))
+      (main_call_1 g$2 g$3))))
+
+(assert
+  (forall
+    ((g$2 Int) (g Int))
+    (=> (main_call_1 g$2 g) (inc_pre 1 g))))
+
+(assert
+  (forall
+    ((g$2 Int) (g Int) (g$4 Int))
+    (=>
+      (and (main_call_1 g$2 g) (inc_post 1 g g$4))
+      (main_call_2 g$2 g$4))))
+
+(assert
+  (forall
+    ((g$2 Int) (g Int))
+    (=> (main_call_2 g$2 g) (main_post g$2 g))))
+
+(assert
+  (forall
+    ((g Int))
+    (=> true (main_pre g))))
+
+(check-sat)
+
+(verify-call main ())
+
+(check-sat)
+
+(get-model)
+

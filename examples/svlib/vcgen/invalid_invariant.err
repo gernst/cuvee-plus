@@ -1,0 +1,4 @@
+(error
+  "goal does not hold"
+  "Sat"
+  "(forall ((x0 Int) (y0 Int) (x Int)) (=> (and (<= 0 y0) true) (forall ((y$2 Int)) (and (= (+ x0 y0) (+ x0 y0)) (forall ((x Int) (y$2 Int)) (=> (= (+ x y$2) (+ x0 y0)) (and (=> (< 0 y$2) (and (= (+ x 1 (- y$2 1)) (+ x0 y0)) true)) (=> (not (< 0 y$2)) (= x (+ x0 y0))))))))))")

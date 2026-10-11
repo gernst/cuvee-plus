@@ -129,14 +129,14 @@ object TEQ extends Transform:
 
   def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
     cmd match
-      case DeclareProc(_, _) | DeclareVar(_, _) =>
+      case DeclareProc(_, _) | DeclareVar(_, _) | AnnotateTag(_, _) =>
         Nil
 
       // old(e) refers to the values gs_ of the global variables at the entry, which coincide with gs initially
       case DefineProc(Proc(name, params, _, _), body, _) =>
         val (in, out, pre, post) = Verify.contract(state, name)
         val gs_ = gs.fresh
-        val body_ = Old.elim(gs, gs_, body)
+        val body_ = Old.elim(gs, gs_, state.annotated(body))
         val post_ = Old.elim(gs, gs_, post)
 
         // the postcondition is the last check of each path

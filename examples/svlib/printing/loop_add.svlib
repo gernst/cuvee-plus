@@ -1,0 +1,25 @@
+; ./Cuvee.sh -print smt2 examples/svlib/printing/loop_add.svlib
+; the same script in the SMT-LIB dialect of Cuvée, where the local variables are those of the block of the body,
+; the properties are attributes, and the modifies clause of the loop and the procedure is explicit
+
+(declare-var g Int)
+
+(define-proc add
+  ((x0 Int) (y0 Int))
+  ((x Int))
+  ((y Int))
+  (! (sequence
+       (assign (x x0) (y y0))
+       (! (while (< 0 y)
+            (assign (x (+ x 1)) (y (- y 1)) (g (+ g 1))))
+          :tag while-loop
+          :invariant (and (<= 0 y) (= (+ x y) (+ x0 y0)))))
+     :tag proc-add))
+
+(annotate-tag proc-add
+  :requires (<= 0 y0)
+  :ensures (= x (+ x0 y0)))
+
+(annotate-tag while-loop :decreases y)
+
+(verify-call add (1 2))

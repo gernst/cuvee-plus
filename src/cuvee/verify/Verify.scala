@@ -16,10 +16,30 @@ object Verify extends Transform:
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val gs = Type.expand(state, state.globals)
 
-    for
-      cmd <- cmds;
-      cmd_ <- verify(state, gs, cmd)
-    yield cmd_
+    val cmds_ =
+      for
+        cmd <- cmds;
+        cmd_ <- verify(state, gs, cmd)
+      yield cmd_
+
+    val entry_ =
+      last match
+        case VerifyCall(name, args) => List(entry(state, gs, name, args))
+        case _                      => Nil
+
+    cmds_ ++ entry_
+
+  // the goal of a verify-call of SV-LIB: the arguments satisfy the precondition of the procedure for all values of
+  // the global variables, under the axioms about the constants, which the solver assumes;
+  // the procedures are verified by their definitions, hence all other executions are covered
+  def entry(state: State, gs: List[Var], name: Name, args: List[Expr]): Cmd =
+    val (in, _, pre, _) = contract(state, name)
+
+    Error.report("wrong number of arguments in verify-call", name, args):
+      require(in.length == args.length)
+
+    val pre_ = Subst.from(in, args)(pre)
+    Assert(Goal, Nil, All(gs, pre_), Attrs.empty)
 
   // the goals of a command, the other commands are kept
   def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
@@ -33,8 +53,13 @@ object Verify extends Transform:
       case DeclareVar(x, attrs) =>
         Nil
 
+      // the annotations are looked up from the state where the procedures and loops are verified (see State.annotated)
+      case AnnotateTag(_, _) =>
+        Nil
+
       // old(e) in the body and in the postcondition refers to the values gs_ of the global variables at the entry,
-      // which are never modified and coincide with gs initially
+      // which are never modified and coincide with gs initially; the annotations of SV-LIB are attached to the loops
+      // of the body first (see State.annotated)
       case DefineProc(Proc(name, params, _, _), body, _) =>
         val (in, out, pre_, post) = contract(state, name)
         val gs_ = gs.fresh
@@ -44,7 +69,7 @@ object Verify extends Transform:
         val (assume, commit) = ac(state, name, in)
         val pre = And(pre_, assume)
 
-        val body_ = Old.elim(gs, gs_, body)
+        val body_ = Old.elim(gs, gs_, state.annotated(body))
         val post_ = Old.elim(gs, gs_, post)
         val phi = wp(state, gs, name, assume, commit, body_, post_, False, False, post_)
         val phi_ = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(phi)))
@@ -59,7 +84,7 @@ object Verify extends Transform:
       require(state.procs.contains(name))
 
     val Proc(_, _, in, out) = state.procs(name)
-    val attrs = state.procattrs(name)
+    val attrs = state.annotated(name)
     (Type.expand(state, in), Type.expand(state, out), attrs.requires, attrs.ensures)
 
   // the termination measure of procedure `name`, the components of a lexicographic order,
@@ -67,7 +92,7 @@ object Verify extends Transform:
   // which are never modified
   def measure(state: State, name: Name): List[Expr] =
     val Proc(_, _, in, _) = state.procs(name)
-    val dec = state.procattrs(name).decreases
+    val dec = state.annotated(name).decreases
 
     Error.report("termination measure refers to variables other than the inputs", name, dec):
       require(dec.free subsetOf Type.expand(state, in).toSet)
@@ -283,9 +308,12 @@ object Verify extends Transform:
     for h <- state.vars.get("history").map(Type.expand(state, _))
     yield Tick(List(h, time), List(h))
 
-  // loops with a test, and nondeterministic iterations without test, which may be left at any iteration
+  // loops with a test, and nondeterministic iterations without test, which may be left at any iteration;
+  // the location invariants of SV-LIB (check-true) must hold whenever the test is evaluated, i.e., initially and
+  // at the end of each iteration like the invariant, but they are not assumed, i.e., they need not be inductive
   def loop(state: State, gs: List[Var], proc: Name, assume: Expr, commit: Expr, test: Option[Expr], body: Prog, attrs: Attrs, post: Expr, return_ : Expr): Expr =
     val inv = attrs.invariant
+    val checks = attrs.checks
     // the body modifies the local variables that it assigns, and the global variables in the modifies clause of the loop,
     // which subsumes those that it assigns, that calls modify, and the history that differential equations tick (Type.check)
     val xs = (body.mod ++ attrs.modifies).toList.distinct
@@ -295,11 +323,11 @@ object Verify extends Transform:
     val dec = attrs.decreases
     val ms = Expr.vars("m", dec.map(_.typ)).fresh
     val su = Subst.from(ms, dec)
-    val iter = And(inv, decreases(dec, ms))
+    val iter = And(inv :: checks ++ List(decreases(dec, ms)))
 
     val step_ = su(wp(state, gs, proc, assume, commit, body, iter, post, iter, return_))
     val (step, exit) = test match
       case Some(test) => (Imp(test, step_), Imp(Not(test), post))
       case None       => (step_, post)
 
-    And(inv, All(xs, Imp(inv, And(step, exit))))
+    And(inv :: checks ++ List(All(xs, Imp(inv, And(step, exit)))))

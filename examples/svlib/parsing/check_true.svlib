@@ -1,0 +1,25 @@
+; ./Cuvee.sh examples/svlib/parsing/check_true.svlib
+; location invariants: on a statement, inline without a tag, which is asserted before it, on the body of a procedure,
+; which is asserted at its entry, and on a loop, which is checked at each evaluation of its test;
+; nested annotations are merged, (! (! s a) b) is (! s a b)
+
+(declare-var g Int)
+
+(define-proc main
+  ((n Int))
+  ((r Int))
+  ((i Int))
+  (! (! (sequence
+          (assign (i 0) (r 0))
+          (! (while (< i n)
+               (sequence
+                 (! (assign (r (+ r i))) :check-true (<= 0 r))
+                 (assign (i (+ i 1)))))
+             :tag loop)
+          (! (sequence) :check-true (= i n)))
+        :tag main)
+     :check-true (<= 0 n)))
+
+(annotate-tag loop :check-true (<= i n))
+
+(verify-call main (3))

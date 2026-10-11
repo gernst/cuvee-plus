@@ -28,7 +28,11 @@ case class State(
     fundefs: Map[(Name, Int), Expr] = Map(),
     procdefs: Map[Name, Prog] = Map(),
 
-    datatypes: Map[Name, Datatype] = Map()
+    datatypes: Map[Name, Datatype] = Map(),
+
+    // the attributes of annotate-tag commands by tag, in order, which the procedures and loops with that tag have
+    // in addition to their own (see annotated)
+    annotations: Map[Name, Attrs] = Map()
 ):
   // `f` unless the declaration or definition coincides with the existing one, which leaves the state unchanged
   def unless(same: Boolean)(f: => State): State =
@@ -51,6 +55,25 @@ case class State(
 
   def setInfo(name: String, value: Any) =
     copy(infos = infos + (name -> value))
+
+  def annotate(tag: Name, attrs: Attrs): State =
+    copy(annotations = annotations + (tag -> (annotations.getOrElse(tag, Attrs.empty) ++ attrs)))
+
+  // the attributes of a procedure or loop followed by the annotations of its tags, e.g. the invariants of a loop
+  // that an annotate-tag command adds, which the transforms use in place of the attributes alone
+  def annotated(attrs: Attrs): Attrs =
+    attrs.tags.foldLeft(attrs)((attrs_, tag) => attrs_ ++ annotations.getOrElse(tag, Attrs.empty))
+
+  // of procedure `name`
+  def annotated(name: Name): Attrs =
+    annotated(procattrs(name))
+
+  // the body of a procedure with the annotations of its loops attached, which the transforms do before they rename
+  // or substitute variables in the body, e.g. the locals of blocks, which the annotations refer to as written
+  def annotated(prog: Prog): Prog =
+    prog match
+      case While(test, body, attrs) => While(test, annotated(body), annotated(attrs))
+      case _                        => prog.map(identity, annotated)
 
   def declare(name: Name, arity: Int, attrs: Attrs): State =
     unless(sorts.get(name) == Some(Con(name, arity))):
@@ -235,6 +258,9 @@ case class State(
 
       case DefineProc(Proc(name, params, in, out), body, attrs) =>
         declare(name, params, in, out, attrs).define(name, body)
+
+      case AnnotateTag(tag, attrs) =>
+        annotate(tag, attrs)
 
       // assertions and requests of fusion declare nothing
       case _: Assert | _: FuseFuns =>
