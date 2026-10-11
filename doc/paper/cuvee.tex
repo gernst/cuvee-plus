@@ -1,0 +1,256 @@
+\documentclass[runningheads]{llncs}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  columns=fullflexible,
+  keepspaces=true,
+  mathescape=true,
+  keywordstyle=\bfseries,
+  morekeywords={trace,for,do,check,invs,current,counter,stores,maps,yield,int,while,if},
+  literate={⌊}{{$\lfloor$}}1 {⌋}{{$\rfloor$}}1 {≤}{{$\le$}}1 {⇒}{{$\Rightarrow$}}1,
+  xleftmargin=1em,
+  aboveskip=0.5ex,
+  belowskip=0.5ex,
+}
+
+\newcommand{\cuvee}{Cuvée}
+\newcommand{\lf}[1]{\lfloor #1 \rfloor}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\begin{document}
+
+\title{Cuvée: Loop Summaries by Trace Equations\\ and a Lemma Database\\ (Competition Contribution)}
+\titlerunning{Cuvée (Competition Contribution)}
+
+\author{Gidon Ernst}
+\authorrunning{G. Ernst}
+\institute{LMU Munich, Germany\\
+\email{gidon.ernst@gmail.com}}
+
+\maketitle
+
+\begin{abstract}
+\cuvee{} proves the safety of C programs with loops without inferring loop invariants.
+Each loop is summarized by a \emph{trace equation system}, which describes the sequences of values that
+the variables take in the iterations. A database of lemmas, most of them proved in Lean, rewrites these equations into closed forms, such as counters, sums, and arrays filled with values.
+Goals that remain after rewriting are encoded in first-order logic and passed to Z3.
+\cuvee{} reports safe programs only. In our experiments, it proves 88 safe tasks of ReachSafety-Arrays
+that none of five SV-COMP~2026 participants proves, and it reports no wrong proofs except
+on programs that rely on unsigned overflow.
+\end{abstract}
+
+\section{Verification Approach}
+
+The difficult part of the verification of loops is to find inductive invariants. Invariants describe the
+state at the loop head. However, the reasons why a program is correct are often easier to state about the
+whole computation of the loop: \emph{the array is a sequence of stores at the positions $0, \dots, n-1$}, or
+\emph{the variable is the sum of the elements read so far}. \cuvee{} follows this view. It represents the
+computation of each loop by \emph{trace equations} and proves goals by rewriting with a database of lemmas
+about such traces. The approach is described in detail in~\cite{teq}; we summarize it here.
+
+\paragraph{Trace equation systems.}
+\cuvee{} symbolically executes each function, and inlines the calls. A loop that runs $n$ times is
+replaced by a system of equations over \emph{traces}, sequences of values:
+\begin{itemize}
+\item a synthetic counter $K = \code{counter}(0, 1, n)$ of the iterations;
+\item for each modified variable $x$, an equation
+  \[X = \code{trace}(x_0, \code{for } \lf{K}, \lf{Y}, \dots \code{ do } x, k, y, \dots \Rightarrow u).\]
+  The update $u$ has one guarded case per path through the body, and $\lf{Y}$ is the trace of another
+  variable without its last value;
+\item the iteration constraint $\code{invs}(\code{for } \dots \code{ check } \dots \Rightarrow
+  \varphi)$, which states that each iteration ran with a true loop test along one of these paths.
+\end{itemize}
+The variable then has the value $\code{current}(X)$ after the loop. Nondeterministic values become fresh
+traces. The system is sound and relatively complete: it describes exactly the reachable states after the
+loop~\cite{teq}. Figure~\ref{fig:example} shows the trace equation system of a loop that fills an array.
+
+\begin{figure}[t]
+\begin{minipage}[t]{0.31\textwidth}
+\begin{lstlisting}[language=C,basicstyle=\ttfamily\footnotesize]
+int i = 0;
+while (i < N) {
+  a[i] = 0;
+  i = i + 1;
+}
+// assert a[j] == 0
+// for 0 $\le$ j < N
+\end{lstlisting}
+\end{minipage}%
+\begin{minipage}[t]{0.69\textwidth}
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+K == counter(0, 1, n)
+I == trace(0, for ⌊K⌋ do i, k :: i + 1)
+A == trace(a, for ⌊K⌋, ⌊I⌋ do a,k,i :: a[i := 0])
+invs(for ⌊K⌋, ⌊I⌋ check k, i :: i < N)
+!(current(I) < N)
+\end{lstlisting}
+\end{minipage}
+\caption{A loop (left) and its trace equation system (right), simplified. The goal is
+$\code{current}(A)[j] = 0$.}
+\label{fig:example}
+\end{figure}
+
+\paragraph{Rewriting with lemmas.}
+\cuvee{} does not compute fixpoints or interpolants. Instead, its simplifier rewrites the equations with
+lemmas of two kinds.
+\begin{itemize}
+\item \emph{Introduction rules} recognize a fragment of a computation and name it. For example,
+  \code{counter\_def} turns the trace $I$ into $\code{counter}(0, 1, n)$, and \code{stores} turns $A$
+  into the stores of zeros at the positions $\lf{I}$.
+\item \emph{Acceleration rules} evaluate observers of these functions. For example, the last value of
+  a counter is $\code{current}(\code{counter}(i, c, n)) = i + n \cdot c$, and the iteration constraint
+  $\code{invs}(\code{for } \lf{\code{counter}(0,1,n)} \code{ check } k \Rightarrow k < N)$ is
+  equivalent to $n \le N$ for $N \ge 0$. The rule \code{current\_stores} reads the value stored last at
+  a position.
+\end{itemize}
+In the example, eleven rule applications close the goal.
+The database contains 192 lemmas in eight modules: arithmetic, counters, aggregation (sums,
+counts, minima, maxima), arrays, search, nested loops, sorting, and strided stores. Its 164 core lemmas
+have machine-checked proofs in Lean~4~\cite{lean4}. The matcher works modulo the binding structure of the
+traces, modulo associativity and commutativity of $+$, and with higher-order patterns in Miller's fragment.
+It also uses the context of each update, such as $0 \le k < n$ and the iteration constraints. Thus a lemma
+applies to all loops that share its pattern, regardless of the names, order, and number of the other
+variables.
+
+\paragraph{Fallback to SMT.}
+The remaining goals are lowered into first-order logic, where each trace is a function of the
+iteration index and each trace equation a quantified characterization of its steps, and passed to
+Z3~\cite{z3}. Functions of the database without a first-order definition are generalized, so a model
+does not refute the program: the verdict is then \emph{unknown}.
+
+\section{Software Architecture}
+
+\cuvee{} is written in Scala~3 (about 20{,}000 lines). It is a pipeline of sources, transformations,
+and sinks over a common core of logic and programs, with frontends for SMT-LIB, Boogie, Dafny, C, and
+SV-COMP task definitions. The C frontend handles integer programs with arrays. Integers are
+mathematical integers, and arrays are values, also those allocated by \code{malloc} with a symbolic
+size. The transformation \code{-teq} generates the goals and loads the lemma database, which is written
+in Dafny syntax. The simplifier normalizes arithmetic into polynomials, simplifies formulas under their
+context, with Fourier--Motzkin elimination for linear facts, and applies the lemmas. \code{-split}
+separates the goals, and \code{-fallback} lowers the remaining ones for Z3~4.16.
+
+\section{Strengths and Weaknesses}
+
+We ran \cuvee{} and five participants of SV-COMP~2026, in their competition versions and
+configurations, on ReachSafety-Arrays (440 tasks, 320 safe) and ReachSafety-Loops (764 tasks, 555 safe),
+with BenchExec~\cite{benchexec}, 900\,s of CPU time, 7\,GB of memory, and 2 cores per run
+(Table~\ref{tab:results}). The results of the other tools are close to the official ones. We did not
+validate witnesses.
+
+\begin{table}[t]
+\centering
+\caption{Results of \cuvee{} and five SV-COMP~2026 participants in our runs. ``Unique'' counts
+the safe tasks that no other tool in the table proves. The score follows the SV-COMP scheme
+($+2$ / $+1$ for correct true / false, $-32$ / $-16$ for wrong true / false), without witness validation.
+\cuvee{}+Z3 is version 0.35.2; \cuvee{} alone is version 0.34.22, which ran on 6 fewer Loops tasks.}
+\label{tab:results}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrrr}
+\toprule
+& \cuvee{} & \cuvee{}+Z3 & Symbiotic & AISE & UAutom. & CPAchecker & Korn \\
+\midrule
+\multicolumn{8}{l}{\emph{ReachSafety-Arrays}} \\
+\quad correct true  & 107 & \textbf{116} & 68 & 65 & 11 & 4 & 34 \\
+\quad correct false & -- & -- & 86 & \textbf{89} & 76 & 70 & \textbf{89} \\
+\quad wrong & 0 & 0 & 0 & 8 & 0 & 0 & 0 \\
+\quad unique true & \multicolumn{2}{c}{88} & & & & & \\
+\quad score & 214 & \textbf{232} & 222 & 75 & 98 & 78 & 157 \\
+\midrule
+\multicolumn{8}{l}{\emph{ReachSafety-Loops}} \\
+\quad correct true  & 120 & 219 & 418 & \textbf{420} & 378 & 348 & 388 \\
+\quad correct false & -- & -- & 169 & 166 & 130 & 133 & \textbf{171} \\
+\quad wrong & 0 & 15 & 0 & 0 & 0 & 1 & 1 \\
+\quad unique true & \multicolumn{2}{c}{2} & & & & & \\
+\quad score & 240 & $-42$ & 1005 & \textbf{1006} & 886 & 813 & 915 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Strengths.}
+\begin{itemize}
+\item \emph{Arrays of unbounded size.} \cuvee{} proves more safe tasks of ReachSafety-Arrays than any other
+  tool in the table: 116 with Z3 and 107 without, compared with 68 for the next tool. Of these, 88 are not
+  proved by any of the other five tools. Most of them are in \code{array-fpi} (35), \code{array-examples}
+  (23), and \code{array-crafted} (18), whose loops fill arrays with values that depend on the position or
+  on earlier values, and whose sizes are symbolic. With \cuvee{}, the six tools prove 184 of the
+  320 safe tasks, instead of 96. The summaries do not depend on the number of iterations, so large or
+  symbolic bounds do not matter.
+\item \emph{Few wrong proofs.} Without the fallback, \cuvee{} reports no wrong result on all 1198 tasks.
+  The core lemmas are proved in Lean~4, so the trusted base is mainly the translation into
+  trace equations, the simplifier, and the matcher. The only wrong proofs, 15 of the fallback, have
+  a known cause (see below).
+\item \emph{Explanations.} With \code{-rules}, \cuvee{} reports the lemmas that each proof uses, and
+  a residual goal points to the lemma that is missing.
+\item \emph{Incremental.} Rewriting also simplifies goals that it does not close. The remaining goals are
+  small enough for Z3: the fallback adds 99 proofs in Loops, 82 of them in the nonlinear tasks of
+  \code{nla-digbench} and its scaled variants, where the simplifier eliminates the loops and Z3 solves the
+  remaining arithmetic.
+\end{itemize}
+
+\paragraph{Weaknesses and limitations.}
+\begin{itemize}
+\item \emph{No violations.} \cuvee{} never reports \emph{false}. It does not search for counterexamples,
+  so the 329 unsafe tasks of both categories are out of reach. Nor does it produce witnesses yet.
+  In the official scoring, its proofs would therefore count as unconfirmed.
+\item \emph{Unbounded integers.} The C frontend treats integers as mathematical integers. Signed overflow
+  is undefined behavior in C, which the tasks are meant to avoid, but the wrap-around of unsigned integers is
+  not. All 15 wrong proofs are variants of \code{nla-digbench/geo1-u}, which is unsafe only by the
+  overflow of \code{unsigned long long}.
+\item \emph{Coverage of the database.} A loop is summarized only if the database has a lemma for its shape.
+  Loops whose summary needs only partial facts, such as bounds, minima, or maxima under conditional
+  updates, are often not closed. In Loops, many tasks need nonlinear invariants, such as
+  \code{nla-digbench}, or their loops are state machines. Here \cuvee{} without Z3 proves only 120 tasks,
+  while the other tools prove 348 to 420. Each lemma fixes the shape of its left-hand side, so a loop that
+  writes $s$ cells under $s$ independent conditions requires a lemma for each $s$. Rewriting may also
+  diverge: 140 Loops tasks end with \emph{rewriting does not terminate}.
+\item \emph{Frontend.} \cuvee{} rejects floating-point numbers (29 tasks), \code{goto} into code that
+  falls through (25), and fails to parse 36 tasks, mostly because of structs, pointers other than arrays,
+  and bitwise operations.
+\item \emph{Limits of the fallback.} The first-order encoding does not cover every goal. For example, it
+  fails when the length of a trace is not determined (78 tasks) or when a goal has sequences that are
+  not bound by a quantifier (68).
+\item \emph{Speed.} The median CPU time of a proof is 12\,s without Z3 and 16\,s with Z3, compared with
+  4\,s for Symbiotic on Arrays. Even a trivial program takes about 5\,s of CPU time, for the start of the
+  JVM and the loading of the lemma database.
+\end{itemize}
+
+The development version 0.35.16 proves 133 safe tasks of ReachSafety-Arrays within 2\,min without Z3, up
+from 107 with 15\,min. The gains come from extensions of the database and the simplifier, among them
+lemmas for conditional stores, sums with resets, and strided stores, found on the MonoCera
+benchmarks~\cite{monocera}.
+
+\section{Tool Setup and Configuration}
+
+\cuvee{} needs Java~21. The archive contains \code{cuvee.jar}, the script \code{Cuvee.sh}, and a Z3
+binary, which the script puts on the path. The BenchExec tool-info module is \code{cuvee.py}. It runs
+\begin{center}
+\small\code{./Cuvee.sh -teq -simplify -split -simplify -fallback -z3}\\
+\small\code{-timeout 900000 [-arch 32|64] task.c}
+\end{center}
+where \code{-arch} follows the data model of the task. \cuvee{} reports \emph{true} if no goal remains and
+\emph{unknown} otherwise. It supports only the property \code{unreach-call}, and it participates in
+ReachSafety-Arrays and ReachSafety-Loops.
+
+\section{Software Project and Contributors}
+
+\cuvee{} is developed by Gidon Ernst at LMU Munich, at
+\url{https://github.com/gernst/cuvee-plus}. It is built with Mill.
+The lemma database is in the folder \code{resources/cuvee/teq} of the repository, and the
+Lean proofs are in the file \code{resources/cuvee/teq.lean}.
+
+\paragraph{Data-Availability Statement.}
+The version of \cuvee{} used in SV-COMP~2027 is available in the SV-COMP tool archive [TODO: Zenodo DOI].
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}
