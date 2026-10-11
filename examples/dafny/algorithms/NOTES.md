@@ -12,7 +12,7 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [perm.dfy](perm.dfy) | verified: permutations by swaps in single loops |
 | [bubble_sort.dfy](bubble_sort.dfy) | verified: nested loops, `sorted` by the induction lemma, `perm` |
 | [selection_sort.dfy](selection_sort.dfy) | verified: summary of the inner loop, `sorted` by the induction lemma, `perm` |
-| [insertion_sort.dfy](insertion_sort.dfy) | `perm` verified, `sorted` open: swaps at `j - 1`, arithmetic on a bound variable |
+| [insertion_sort.dfy](insertion_sort.dfy) | verified: the swaps at `j - 1` as pinned higher-order positions |
 | [insertion_sort2.dfy](insertion_sort2.dfy) | verified: the same with two pointers, summary and induction lemma |
 | [nested_counter.dfy](nested_counter.dfy) | verified: the simplest nested loop |
 | [nested_sum.dfy](nested_sum.dfy), [nested_mult.dfy](nested_mult.dfy) | verified: the generic fragment lemmas |
@@ -26,6 +26,17 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [partition.dfy](partition.dfy) | verified: Lomuto partition, conditional swaps at a count |
 | [reverse.dfy](reverse.dfy) | verified: two pointers, `-simplify -split -simplify` |
 | [is_sorted.dfy](is_sorted.dfy) | open by one substitution of the exit into `sorted` |
+| [row_sums.dfy](row_sums.dfy) | open: the substitution lemmas cycle (timeout reported as proved, finding 18) |
+| [transpose.dfy](transpose.dfy) | open: as row_sums, the substitution lemmas cycle |
+| [prefix_sums.dfy](prefix_sums.dfy) | verified: the recurrence with the term at the written position |
+| [distinct.dfy](distinct.dfy) | verified: nested loops with a flag, summary and `current_trace_all` |
+| [three_way_partition.dfy](three_way_partition.dfy) | verified: Dutch flag by a single scan, two counts |
+| [cocktail_sort.dfy](cocktail_sort.dfy) | open: closed once, the exit condition is not matched since (finding 12) |
+| [first_duplicate.dfy](first_duplicate.dfy) | open: early exit; a circular side condition made an attempt unsound |
+| [merge.dfy](merge.dfy) | verified: pinned higher-order guard, pointers tied by open trace variables |
+| [counting_sort.dfy](counting_sort.dfy) | verified: four loops in sequence, the key range as an atom |
+| [lower_bound.dfy](lower_bound.dfy) | open: the summary with the exit as a side condition cycles |
+| [gnome_sort.dfy](gnome_sort.dfy) | open, as expected: the number of iterations is not a counter |
 
 ## Abstract predicates
 
@@ -422,3 +433,243 @@ max_element.dfy (no witness; a lemma whose left-hand side is the quantifier
 is not matched, confirmed again), insertion_sort.dfy with one pointer
 (arithmetic on a bound variable in the trace), and the two minimal problems
 as problems of the simplifier (closed by lemmas only).
+
+## Further algorithms (Oct 10, 2026, afternoon)
+
+Eleven programs were written first, each with its specification, then
+attempted in order; all programs are in the folder with their status in the
+header. Verified (confirmed by exit status 0, see finding 18): prefix_sums,
+distinct, three_way_partition, and later merge, counting_sort, insertion_sort
+with one pointer (all `-teq -simplify`, wrong postconditions checked to leave
+a goal). Open: row_sums and transpose (timeouts that were reported as
+proved), cocktail_sort, first_duplicate, lower_bound, gnome_sort.
+
+**What carried over.** The fragment lemmas of fragments.dfy resolve the inner
+counters of every nested example without change; two more generic lemmas
+were needed and should join them: `invs_subst_counter` (a fragment
+`t == F(k, J)` about the inner counter `J` is stated about the counter;
+higher-order `F` in the left-hand side is fine) and `earlier_invs_def` (the
+element of a sequence at a position whose elements are given per iteration,
+`earlier(natural(i), ts) == F(i)`, the instantiation of an invariant at a
+witness). The summary-lemma approach (raw fragments as side conditions)
+worked for distinct and cocktail sort, the count approach of partition.dfy
+for the three-way partition, the recurrence lemma of teq.dfy for prefix sums
+with a variant. transpose needed `current_results_steps` monomorphic for
+arrays of arrays and a fold `column` of the inner loop.
+
+**New findings** (continuing the numbering above):
+
+10. **A higher-order variable for an array read is instantiated by the
+    array.** `G(i)` against `a[i]` yields `G := a`, and the right-hand side
+    then contains `a(i)` instead of `a[i]`, which no lemma matches
+    (prefix_sums.dfy, hence the lemma reads the array directly).
+11. **The simplifier does not decide `i == 0` from `0 <= i` and `!(1 <= i)`**
+    in the else branch of a conditional whose then branch covers `1 <= i`;
+    the lemma's conditional covers `0 <= j` instead (prefix_sums.dfy).
+12. **Reproducibility.** cocktail_sort.dfy closed in one run (and a wrong
+    postcondition left a goal), and leaves the whole goal in every later run
+    of the same file and jar. Bisecting the 21 side conditions of its summary:
+    the first three match, the fourth, the exit of the forward pass
+    `invs(for ks, js check k, j :: n <= j + k + 1)`, does not, not even alone,
+    with explicit dependencies, or renamed, although the fact has exactly
+    that shape over `⌊K⌋, ⌊Lo⌋, ⌊Hi⌋, J?`; the same condition works in
+    bubble_sort.dfy over `⌊K⌋, ⌊I⌋, J?`. Not explained; the one success
+    suggests an order that depends on an unordered collection.
+13. **A side condition is matched in the context of the fact's combinator,
+    where other rules fire** (TODO.md on `sum_invs_const`, now
+    `consts_prefix_def`). In first_duplicate.dfy this made a proof unsound:
+    the condition `invs(for ⌊counter(0, 1, m)⌋, rs2 check k, r :: r == !nodup(a, k, n))`
+    of `distincts_flags` was simplified by `nodup_distincts`, which rewrites
+    `nodup(a, k, n)` to true under the hypothesis `distincts(...)` of the split
+    goal, into `!r`, the constraint of the outer loop, a fact, so
+    `distincts(...)` was proved from itself; without `nodup_distincts` the two
+    goals remain, for the wrong postcondition too. Lesson: the side condition
+    of a rule must not be simplifiable by rules that use the conclusion, and
+    iteration constraints should be abstracted by atoms (`consts_prefix`
+    style) that are matched literally.
+14. **A literal disjunctive guard is never matched** (merge.dfy):
+    `n <= j || i < m && a[i] <= b[j]` in a trace pattern, while a higher-order
+    `G(i, j)` pinned by a quantified side condition `forall i, j :: G(i, j) <==> ...`
+    is, which the simplifier decides by beta reduction. The mutual dependency
+    of the pointers (`I` over `⌊J⌋`, `J` over `⌊I⌋`) is not the obstacle (a
+    reduced program with the same loop matches), but tying the pointer lists
+    to their traces is: as closed equations the conditions are decided and
+    fail, as equations with an open trace variable they are not matched
+    against the hypotheses (TODO.md). A variable argument of an
+    uninterpreted function (`sorted(c, 0, n)`) is not expanded by its
+    definition for subterm rewriting, so the whole atom must be the
+    left-hand side, with the length as a variable `s` and `s == m + n` as a
+    side condition (a pattern `m + n` of two variables is not matched).
+15. **Atoms for fragments interfere with lemmas on fragments.** Abstracting
+    each fragment of cocktail sort by an atom (`currents`, `passes_forward`,
+    `counters`, `exits_forward`, ...) to make the summary's side conditions
+    literal (the style of `consts_prefix`) fails twice: the definition lemma
+    of the exit, whose left-hand side body is a bare comparison
+    `n <= j + k + 1`, matches every comparison fact with `js` synthesized as a
+    map (`2 k + 1 < n`, `0 <= integer(nn)`, inner constraints), and the atom
+    for the inner counter consumes `K == counter(0, 1, nn)` before
+    `invs_sums_counter` finds it as a side condition. Atoms work for
+    structural fragments (`c == current(C)`, `C == bubble_pass(...)`), not
+    for comparisons; the order of abstraction and use must be designed.
+
+**Half-baked here:** `shake`, `shaken`, `nodup`, `merge`, `column`, `below`,
+`beloweq` are abstract with their properties as lemmas (no definitions); the
+summary lemmas repeat the whole fragment structure of each program; the
+`_array` and monomorphic variants of lemmas exist only because of findings 4
+and 10.
+
+## The pin, the open trace variable, and atoms for hypotheses (Oct 10, 2026, evening)
+
+Three workarounds, found on merge and counting sort, closed three more files
+(insertion_sort with one pointer, merge, counting_sort; cocktail_sort stays
+open, finding 12):
+
+- **The pin.** A literal pattern that the matcher does not handle (a
+  disjunctive guard, `j - 1` as a store index, `n - k - 2` as an initial
+  value) becomes a higher-order variable `G(i, j)`, `Q(y, j)`, which matches
+  anything, and a quantified side condition `forall i, j :: G(i, j) <==> φ`
+  pins it to the intended term; the simplifier decides the pin by beta
+  reduction. This makes the lemma sound and the pattern matchable, and it
+  applies to every "not matched" item of TODO.md on patterns.
+- **The open trace variable.** A side condition `Iv == trace(...)` with an
+  open trace variable `Iv` is matched against the hypothesis `I == trace(...)`
+  (the definition of the program's trace), and `is == ⌊Iv⌋` is then closed and
+  trivial. This ties a dependency list to its trace, which a closed equation
+  `is == ⌊trace(...)⌋` does not (it is decided by the simplifier, which does
+  not expand `⌊I⌋`), and the same for `Iv == counter(0, 1, n)` against
+  `I == counter(0, 1, n)`.
+- **Atoms for quantified hypotheses.** A quantified precondition
+  `forall i :: 0 <= i < n ==> 0 <= a[i] < k` is matched by no side condition,
+  open or closed; the specification states it as an atom `keys_below(a, n, k)`,
+  which a side condition with an open bound finds (counting_sort.dfy).
+
+Further findings:
+
+16. **A variable argument of an uninterpreted function is not expanded**
+    when a pattern is matched below it: `selects(c, ...)` with `c == current(C)`
+    is not matched by `selects(current(trace(...)), ...)` inside `count(...)`,
+    but `selects(...)` as the left-hand side head is; the same for `sorted`.
+    Hence the lemmas on merge rewrite `selects(current(...), ...)` to an
+    abstract list first.
+17. **The simplifier splits a conjunctive constraint into fragments**, so a
+    pinned test `D(y, j) <==> (0 < j && y[j] < y[j - 1])` is false for the
+    fragment `y[j] < y[j - 1]` alone; the pin must follow the fragments.
+
+## Summary of the state (Oct 10, 2026, end of the day)
+
+**Verified, confirmed by a terminating run** (`-teq -simplify`, exit status 0,
+wrong postconditions leave a goal): lsearch, perm, bubble_sort,
+selection_sort, insertion_sort (one pointer), insertion_sort2 (two pointers),
+nested_counter, nested_sum, nested_mult, fragments, inner_loop_flat,
+count_occurrences, max_element (with `occurs`), argmax, partition, reverse,
+prefix_sums, distinct, three_way_partition, merge, counting_sort. The
+whole folder runs in about five minutes on one core, 5 to 35 s per file.
+
+**Open:** row_sums, transpose (the substitution lemmas cycle), cocktail_sort
+(the exit condition of the forward pass is not matched), first_duplicate
+(early exit; two goals remain after the circular rule was removed),
+lower_bound (the summary cycles through its exit condition), gnome_sort (no
+counter), is_sorted (equation propagation), the `exists` of max_element, and
+the two minimal problems as problems of the simplifier.
+
+**What works as a method:**
+
+1. Generic fragment lemmas (fragments.dfy) resolve the inner counters of
+   every nested loop: `invs_sums_counter`, `invs_current_counter`,
+   `invs_invs_counter_upper_zero`, `invs_exit_counter_zero`,
+   `invs_integer_consts`, `invs_current_counter_other`. They terminate in all
+   files, although their side conditions are `invs`, since their left-hand
+   sides are specific fragments.
+2. Summary lemmas take the fragments of an inner loop as side conditions and
+   rewrite the outer trace into a trace of an abstract step (`shake`,
+   `insert`, swaps with `argmin`, `nodup`), with the duplicate-variable trick
+   for closed conditions; `current_results_steps` for inner results that are
+   a function of the previous value.
+3. Induction lemmas with the invariant indexed by the iteration
+   (`bubbled`, `shaken`, `sorted_prefix_steps`) and a quantified side
+   condition that the simplifier discharges by step lemmas on atoms; all
+   steps of the trace must be constrained.
+4. The pin for literal patterns the matcher does not handle, the open trace
+   variable to tie a dependency to its trace, and atoms for quantified
+   hypotheses (previous section).
+5. Rules on the atoms of the postcondition for named results (`argmin`,
+   `lb`, `below`, `beloweq`, `rank_table`, `merged`).
+
+**Findings about the tool**, numbered 1 to 17 above and:
+
+18. **A run that is killed by the timeout prints no goal, and a runner that
+    counts goals reports it as proved.** row_sums.dfy and transpose.dfy, the
+    first "closed" runs of lower_bound, and the "inconsistent hypotheses" of
+    its exit condition were all timeouts (120 s). Every status in this folder
+    was re-established with the exit status checked (`exit status: 0`) on
+    Oct 10 in the evening; the two files that time out are marked open.
+    Check `./Cuvee.sh -test`-style expectations with the status, never the
+    count of goals alone.
+19. **General left-hand sides with `invs` side conditions cycle**, as
+    TODO.md says for `sum_invs_const`: `invs_subst_counter` (body
+    `t == F(k, J)`), `invs_subst_sums`, `invs_subst_column`, and
+    `earlier_invs_def` (left-hand side `earlier(natural(i), ts)`, which the
+    reads of every combinator context match) do not terminate on row_sums and
+    transpose. The remedy to try: definitions of the sequences as maps
+    (`Js == maps(for ks yield k :: counter(0, 1, nn))`), which the simplifier
+    substitutes, with a structural lemma for
+    `earlier(natural(i), maps(for ⌊counter(0, 1, m)⌋ yield k :: F(k)))`.
+20. **A side condition on the current value of the trace being rewritten is
+    re-entrant** (lower_bound.dfy): deciding `current(Hv) <= current(Lv)`
+    rewrites `current(Lv)` by the lemma itself, whose conditions decide it
+    again; the exit of a loop must be taken from the facts (`hi <= lo` of the
+    goal, bound by open variables and identified with the current values)
+    or abstracted by an atom.
+21. **The name of a method variable must differ from the lemma's variables
+    in pins**: a pin `forall lo, hi :: G(lo, hi) <==> a[(hi + lo) / 2] < x` can
+    only be decided if `x` is bound; in lower_bound.dfy it was bound by name
+    capture only (finding 9). A pin must mention variables that the
+    left-hand side or an earlier condition binds.
+
+**Candidates for teq.dfy:** the fragment lemmas of fragments.dfy,
+`results`, `current_results_steps`, `current_trace_all`, `mul_eq_cancel`,
+`sum_selects_cons`, `sum_selects_zero`, `current_trace_prefix_sums_array`,
+`current_trace_histogram`, `perm_steps`, `perm_swaps_one`; the induction
+lemmas and the abstract predicates of sorting as a sorting library.
+
+## Candidates for teq.dfy and the cycling of `invs` side conditions (Oct 11, 2026)
+
+The mechanism, from TODO.md (the entry on `sum_invs_const`) and
+doc/simplifier.md: an open `invs` side condition is matched against the
+`invs` facts; matching it against a fact builds the simplifier's context of
+that fact's combinator, in which the reads of the dependencies
+`earlier(natural(k), ⌊X⌋)` are rewritten by all rules. If the left-hand side
+of the rule being decided matches one of those rewritten reads (`sum(js)`
+matched the `sum(prefix(...))` that `earlier_sums` produces), the rule is
+tried again inside, with the same fact, one level deeper, until the budget
+is exhausted. Two ingredients: an `invs` side condition over lists that the
+left-hand side binds, and a left-hand side general enough to match inside
+that context. TODO.md's static criterion ("no `invs` in a side condition
+whose dependencies are variables of the left-hand side") flags the first
+ingredient alone; the lemmas below show that the second decides.
+
+The candidates from this folder (first group of the answer of Oct 11),
+against the mechanism:
+
+| lemma | `invs` condition over lists of the lhs | lhs general? | verdict |
+| --- | --- | --- | --- |
+| `invs_sums_counter` | yes (`ks, Ks`, binds `Ns`) | no: an `invs` with the body `J == sums(X(k), map(...))` | safe; terminates in all files |
+| `invs_current_counter`, `_other` | yes | no: body `j == current(J)` | safe |
+| `invs_invs_counter_upper_zero` | yes | no: a nested `invs` with `x < n` | safe |
+| `invs_exit_counter_zero` | yes (`ks, js`) | **yes**: body `n <= j` with open `n` matches every comparison fragment, `js` synthesized as a map (finding 15) | risky: tried on every comparison fragment of every program; restate with the exit as an atom or a specific body |
+| `invs_integer_consts` | none | body `n == integer(nn)` with open `n` matches any equation fragment with `integer` of a bound variable | no cycle, but spurious matches; give it the shape of `consts_prefix_def` (an `earlier` read) |
+| `current_results_steps` | yes, exactly the lists of the lhs (the TODO criterion verbatim) | no today: `current(results(...))` arises from a read only if some rule rewrites `earlier(k, ⌊results(...)⌋)` into a `current` | safe now (nested_mult, 10 s); latent: an `earlier_results` lemma, the natural counterpart of `earlier_sums`, would create the cycle |
+| `current_trace_all`, `current_trace_histogram`, `current_trace_prefix_sums_array`, `sum_selects_cons`, `sum_selects_zero`, `earlier_maps_counter`, `mul_eq_cancel` | none (arithmetic conditions are decided, not searched) | various | no cycle of this kind; `mul_eq_cancel` is tried on every equation with a common factor, a cost |
+| `invs_subst_counter`, `invs_subst_sums`, `invs_subst_column` (not candidates) | yes | **yes**: higher-order bodies `t == F(k, J)` match almost any equation fragment | cycle confirmed: the timeouts of row_sums and transpose (finding 19) |
+| `earlier_invs_def` (not a candidate) | yes (`ts` of the lhs) | **yes**: `earlier(natural(i), ts)` matches the reads that the context of its own condition rewrites | cycle confirmed |
+
+Rule of thumb for new lemmas with `invs` side conditions: the left-hand
+side must be a term that no rewriting of a read `earlier(natural(k), ⌊X⌋)`
+can produce, i.e. an `invs` fragment with a specific body, or an atom of the
+specification; never a bare read, comparison, equation, or `current` of a
+named trace for which an `earlier_...` acceleration lemma exists or may be
+added. Abstracting the constraint by an atom first (`consts_prefix_def`
+style) and taking the atom as the side condition is always safe.
+
+Empirical check (`-include` of the candidates into the existing tests, one
+core, 120 s per file): see the next entry.

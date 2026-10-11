@@ -6,7 +6,7 @@
 // invs_fragments.dfy for the two problems of nested loops, which they work around): J == sums(0, maps(for ⌊K⌋ yield 1))
 // becomes J == counter(0, 1, nn) through the fragment K == counter(0, 1, nn), j == current(J) becomes
 // j == integer(nn), the inner iteration constraint invs(for ⌊J⌋ check j :: j < n) becomes integer(nn) <= n, and the
-// exit n <= j together with it j == n in each iteration; then sum_invs_const of teq.dfy gives sum(J?) == n * m;
+// exit n <= j together with it j == n in each iteration; then consts_prefix_def and sum_consts_prefix of teq.dfy give sum(J?) == n * m;
 // the remaining integer(n') * n == m * n with integer(n') == m needs mul_eq_cancel, since the simplifier does not
 // substitute the solution of the equation into the product (the other instance of this problem: is_sorted.dfy)
 

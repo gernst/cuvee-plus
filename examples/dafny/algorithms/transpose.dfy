@@ -1,11 +1,13 @@
 // ./Cuvee.sh -teq -simplify examples/dafny/algorithms/transpose.dfy
 // the transpose of an m x n matrix: nested loops that store A[i][j] at B[j][i]
 //
-// status: verified with -teq -simplify; row_sums.dfy on an array-valued inner result: the fragment lemmas of
-// fragments.dfy resolve the inner counter and its length n, invs_subst_counter states the inner trace over the
-// counter, which folds into column(B, A, k, nn), the stores of column k; invs_subst_column substitutes it into the
-// result b == current(B'), current_results_steps (nested_mult.dfy, monomorphic for arrays of arrays) makes the outer
-// trace the trace of the columns, and current_transpose reads the transposed element
+// status: open, the run does not terminate (300 s), reported as proved by the runs of Oct 10 (NOTES.md, finding
+// 18); row_sums.dfy on an array-valued inner result, with the same cycling lemmas invs_subst_counter and
+// invs_subst_column (a general left-hand side with an invs side condition over its lists); the intended chain: the
+// fragment lemmas resolve the inner counter and its length n, the inner trace folds into column(B, A, k, nn), the
+// stores of column k, which is substituted into the result b == current(B'), current_results_steps (monomorphic for
+// arrays of arrays) makes the outer trace the trace of the columns, and current_transpose reads the transposed
+// element
 
 // the inner counter (fragments.dfy)
 lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>, Ns: List<Nat>, Js: List<Trace<int>>, X: int -> int, c: int)

@@ -3,10 +3,17 @@
 // hi - 1, and a backward pass over (lo, hi - 1], which moves the minimum to lo; the backward pass uses two pointers
 // j and p == j - 1 (insertion_sort2.dfy)
 //
-// status: not reproducible: the same file closed in one run and leaves the whole goal in the next (the summary lemma
-// current_results_shake does not fire), with no change in between; presumably an order of rule applications or of
-// side-condition matches that depends on hash sets; the approach, which closed the goal once (and a wrong
-// postcondition sorted(b, 0, n + 1) left a goal):
+// status: open; the approach closed the goal in exactly one run (a wrong postcondition left a goal), and leaves the
+// whole goal in every later run of the same file and jar: the summary lemma current_results_shake does not fire,
+// since its fourth side condition, the exit of the forward pass invs(for ks, js check k, j :: n <= j + k + 1), is
+// not matched against the fact of that shape, invs(for ⌊K⌋, ⌊Lo⌋, ⌊Hi⌋, J? check k, lo, hi, j :: n <= j + k + 1), not
+// even alone, with explicit dependencies, or with the variable renamed (the same condition works in bubble_sort.dfy,
+// whose fact has one dependency fewer); an alternative that abstracts each fragment by an atom (currents, passes,
+// counters, exits, tests, as consts_prefix of teq.dfy does), so that the summary takes atoms as side conditions,
+// fails differently: the definition lemma of the exit, whose left-hand side is a bare comparison n <= j + k + 1,
+// matches every comparison fact with the dependency js synthesized as a map (2 k + 1 < n, 0 <= integer(nn), the
+// inner constraints), and the atom for the inner counter consumes the fragment K == counter(0, 1, nn) before
+// invs_sums_counter needs it as a side condition (NOTES.md); the approach as it stands:
 // two inner loops per outer iteration: the forward pass is bubble_pass of bubble_sort.dfy from the previous value to
 // an intermediate result (the sequence B?₄₀), the backward pass bubble_pass_back over the two counters j and p from
 // the intermediate result to the result (B?₄₈), all as fragments of the iteration constraint of the outer loop; the

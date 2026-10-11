@@ -1,14 +1,17 @@
 // ./Cuvee.sh -teq -simplify examples/dafny/algorithms/row_sums.dfy
 // the sums of the rows of an m x n matrix: nested loops, the inner loop sums one row, the outer loop stores the sum
 //
-// status: verified with -teq -simplify; the inner loop becomes fragments of the iteration constraint of the outer
-// loop (NOTES.md), which the generic fragment lemmas of fragments.dfy resolve: the inner counter J, its final value
-// j == n, hence the numbers of inner iterations N? == ⌊consts(m, natural(n))⌋; the two new lemmas substitute the
-// definition of a sequence into another fragment about it (invs_subst_counter: the trace T == sums(0, selects(A[k], ⌊J⌋))
-// of the sum becomes one over the counter, invs_subst_sums: the result t == current(T) becomes the sum), such that
-// the final values are t == sum(selects(A[k], ⌊counter(0, 1, natural(n))⌋)) in each iteration; the postcondition
-// reads the stored result at position i, earlier(natural(i), T?), which earlier_invs_def instantiates (the paper's
-// instantiation of an invariant at a witness)
+// status: open, the run does not terminate (300 s), which the runs of Oct 10 reported as proved, since a killed
+// run prints no goal (NOTES.md, finding 18); the cause is the cycle that TODO.md describes for sum_invs_const:
+// invs_subst_counter, invs_subst_sums, and earlier_invs_def have a general left-hand side (a higher-order body, a
+// read earlier(natural(i), ts)) and an invs side condition over the lists of the left-hand side, which is matched in
+// the context of the fact's combinator, whose reads earlier(natural(k), Z) the same rules match again; the intended
+// chain: the fragment lemmas of fragments.dfy resolve the inner counter J, its final value j == n, and the numbers
+// of inner iterations N? == ⌊consts(m, natural(n))⌋; the trace T == sums(0, selects(A[k], ⌊J⌋)) of the sum and the
+// result t == current(T) are stated over the counter, t == sum(selects(A[k], ⌊counter(0, 1, natural(n))⌋)) in each
+// iteration, and the postcondition reads the stored result at position i, earlier(natural(i), T?); the remedy to
+// try: definitions of the sequences as maps (Js == maps(for ks yield k :: counter(0, 1, nn)), Ts likewise), which
+// the simplifier substitutes, with a lemma for earlier(natural(i), maps(for ⌊counter(0, 1, m)⌋ yield k :: F(k)))
 
 // the inner counter (fragments.dfy)
 lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>, Ns: List<Nat>, Js: List<Trace<int>>, X: int -> int, c: int)

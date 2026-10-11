@@ -1,0 +1,878 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks,linkcolor=black,urlcolor=blue!50!black}
+
+% notation of the TEQ paper
+\newcommand{\bl}[1]{\lfloor #1\rfloor}                       % butlast
+\newcommand{\tr}[3]{\mathsf{trace}(#1,\ \mathsf{for}\ #2\ \mathsf{do}\ #3)}
+\newcommand{\mapc}[2]{\mathsf{map}(\mathsf{for}\ #1\ \mathsf{yield}\ #2)}
+\newcommand{\al}[2]{\mathsf{all}(\mathsf{for}\ #1\ \mathsf{check}\ #2)}
+\newcommand{\cnt}{\mathsf{counter}}
+\newcommand{\cur}{\mathsf{current}}
+\newcommand{\intf}{\mathsf{integer}}
+\newcommand{\natf}{\mathsf{natural}}
+\newcommand{\sums}{\mathsf{sums}}
+\newcommand{\sorted}{\mathsf{sorted}}
+\newcommand{\perm}{\mathsf{perm}}
+\newcommand{\partitioned}{\mathsf{partitioned}}
+\newcommand{\argmin}{\mathsf{argmin}}
+\newcommand{\swap}[3]{\mathsf{swap}(#1, #2, #3)}
+\newcommand{\ite}[3]{\mathsf{if}\ #1\ \mathsf{then}\ #2\ \mathsf{else}\ #3}
+\newcommand{\upd}[2]{\mathsf{case}\ #1 \Rightarrow #2}
+\newcommand{\lemma}[1]{\textsf{#1}}
+\newcommand{\seq}[1]{\hat{#1}}                               % the fresh sequences of inner loops
+
+\lstdefinelanguage{dafny}{
+  morekeywords={method,returns,requires,ensures,var,while,if,else,function,lemma,forall,int,bool,array},
+  sensitive=true, morecomment=[l]{//}, morestring=[b]",
+}
+\lstset{language=dafny,basicstyle=\ttfamily\footnotesize,keywordstyle=\bfseries,commentstyle=\itshape\color{black!60},
+  columns=fullflexible,keepspaces=true,xleftmargin=1.5em}
+
+\title{Trace Equation Systems for Array Algorithms:\\ Worked Examples}
+\author{Notes on \texttt{examples/dafny/algorithms}}
+\date{October 2026}
+
+\everydisplay{\small}
+\begin{document}
+\maketitle
+
+\noindent
+These notes document examples of the folder \texttt{examples/dafny/algorithms} in the style of the
+paper \emph{Trace Equation Systems for Program Verification}: for each program we show the trace
+equation system that Cuvée generates (\texttt{-teq}), the lemmas that the simplifier applies
+(\texttt{-simplify}), how they are instantiated, and the conceptual idea behind them. All lemmas are
+stated in the Dafny dialect of Cuvée at the beginning of the respective file; the lemma database
+\texttt{teq.dfy} is injected by \texttt{-teq}. We write $\bl{X}$ for \texttt{butlast(X)}, the trace $X$
+without its last element, $\cur(X)$ for its last element, and $\cnt(i, c, n)$ for the counter
+$\langle i, i + c, \ldots, i + n c\rangle$ of $n$ steps. The sections are ordered by the complexity of the proof, from a
+single loop with two lemmas to loops in sequence and nested loops with summaries and inductions; the last two
+sections document attempts that are open. Capital letters $K, I, B, M$ denote traces,
+hatted letters $\seq{M}, \seq{J}, \seq{N}$ the fresh \emph{sequences} that the summary of an inner loop
+introduces, one entry per iteration of the outer loop. $\swap{x}{p}{q}$ abbreviates the double store
+$x[p := x[q]][q := x[p]]$, which is how the swaps appear in the trace equations.
+
+\section{Linear Search: an Iteration Constraint Abstracted and Instantiated}\label{sec:lsearch}
+
+\subsection{The program}
+\begin{lstlisting}
+method lsearch(a: array<int, int>, n: int, x: int) returns (i: int)
+  requires 0 <= n
+  ensures 0 <= i <= n
+  ensures i < n ==> a[i] == x
+  ensures forall k: int :: 0 <= k < i ==> a[k] != x
+{
+  i := 0;
+  while i < n && a[i] != x { i := i + 1; }
+}
+\end{lstlisting}
+The first index of $x$ among $a[0..n)$, or $n$. The loop test is data-dependent, so the number of
+iterations is not determined by $n$; the trace equation system records the test as the iteration
+constraint and its negation as the exit.
+
+\subsection{The trace equation system}
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad i = \cur(I) \qquad I = \tr{0}{\bl{K}}{i, k \mapsto i + 1} \label{eq:ls0}\\
+  &\al{\bl{K}, \bl{I}}{k, i \mapsto i < n \wedge a[i] \ne x} \label{eq:ls1}\\
+  &\neg(i < n \wedge a[i] \ne x) \label{eq:ls2}\\
+  &\Longrightarrow\ 0 \le i \le n\ \wedge\ (i < n \Rightarrow a[i] = x)\ \wedge\ (\forall k.\ 0 \le k < i \Rightarrow a[k] \ne x) \nonumber
+\end{align}
+With \texttt{-split}, the conclusion becomes four goals, one per conjunct, the last two with their premises
+as hypotheses: $i < n \Rightarrow a[i] = x$, and $0 \le k < i \wedge a[k] = x \Rightarrow \mathsf{false}$.
+The simplifier's own rules do the following: $I$ is a counter by \lemma{counter\_def}, so
+$i = \intf(n')$; the constraint \eqref{eq:ls1} is distributed into
+$\al{\bl{\cnt(0, 1, n')}}{k \mapsto k < n}$, which \lemma{invs\_counter\_upper} resolves to
+$n' = 0 \vee \intf(n') \le n$ (hence $0 \le i \le n$, the first two goals), and
+$\al{\bl{\cnt(0, 1, n')}}{k \mapsto a[k] \ne x}$, the search constraint proper; the exit
+\eqref{eq:ls2} is $n \le i \vee a[i] = x$, which with $i < n$ gives the third goal.
+
+\subsection{The lemmas}
+The last goal needs the search constraint at a witness: for $0 \le k < i$, the constraint says
+$a[k] \ne x$. The paper's lemma database has no instantiation of iteration constraints at positions
+(\texttt{TODO.md}: no instantiation at a witness); the two lemmas of \texttt{lsearch.dfy}, since merged
+into \texttt{teq.dfy}, abstract the constraint by an atom and instantiate the atom:
+\begin{align*}
+  &\lemma{not\_occurs\_selects\_def}:\\
+  &\quad \al{\bl{\cnt(i, 1, n)}}{k \mapsto a[k] \ne x}\ \Longleftrightarrow\ \neg\mathsf{occurs}(x, \mathsf{selects}(a, \bl{\cnt(i, 1, n)}))\\[4pt]
+  &\lemma{select\_not\_occurs\_selects}:\\
+  &\quad \neg\mathsf{occurs}(x, \mathsf{selects}(a, \bl{\cnt(i, 1, n)}))\ \wedge\ i \le k < i + \intf(n)
+    \ \Longrightarrow\ (a[k] = x) \Longleftrightarrow \mathsf{false}
+\end{align*}
+The first matches the constraint with $i := 0$, $n := n'$ (the counter $K$ is followed in the dependency
+position) and replaces it by the atom "$x$ does not occur among the values of $a$ at the positions
+$0, \ldots, n' - 1$". The second is a rule on the atom $a[k] = x$ of the last goal: its side conditions
+are the fact just produced, matched with $i := 0$, $n := n'$, and the bounds $0 \le k < \intf(n')$,
+decided from $0 \le k < i$ and $i = \intf(n')$. The hypothesis $a[k] = x$ becomes $\mathsf{false}$ and
+the goal closes.
+
+This is the pattern of \lemma{not\_occurs\_prefix\_def} and \lemma{earlier\_not\_occurs\_prefix} of
+\texttt{teq.dfy} for reads $\mathsf{earlier}(k, xs)$ of a sequence, here for reads of an array: an
+iteration constraint becomes a named fact about the prefix visited, and a second lemma uses the fact at
+any position in the prefix. \texttt{TODO.md} notes that a side condition that is the iteration constraint
+itself would make the rule cycle (finding 19 of \texttt{NOTES.md}), which is why the abstraction by an
+atom is not merely convenient.
+
+The file's header prescribes \texttt{-teq -split -simplify}, since without the split the disjunction of
+the two exits, $n \le i \vee a[i] = x$, had to be split by the simplifier against the postcondition; with
+the current version the goal closes without \texttt{-split} as well.
+
+\section{Nested Sum: the Fragment Lemmas Alone}\label{sec:nsum}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(m: int, n: int) returns (c: int)
+  requires 0 <= m && 0 <= n
+  ensures c == m * n
+{
+  var i: int; var j: int;
+  c := 0; i := 0;
+  while i < m {
+    j := 0;
+    while j < n { j := j + 1; }
+    c := c + j;
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+The smallest nested loop whose result depends on the inner loop: $c$ sums the final values of $j$,
+which are all $n$. There is nothing to summarize but the inner counter, so this example introduces the
+\emph{fragment lemmas} of \texttt{fragments.dfy}, which every nested example uses (Section~\ref{sec:sel:frag}
+states the first two in full), and shows how an iteration constraint reaches a lemma of \texttt{teq.dfy}.
+
+\subsection{The trace equation system}
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad I = \cnt(0, 1, n') \qquad \intf(n') = m \qquad c = \mathsf{sum}(\seq{J}) \label{eq:ns0}\\
+  &\al{\bl{K}, \bl{I}, \seq{N}, \seq{K}'}{k, i, n'', K' \mapsto K' = \cnt(0, 1, n'')} \label{eq:ns1}\\
+  &\al{\bl{K}, \bl{I}, \seq{K}', \seq{J}'}{k, i, K', J \mapsto J = \sums(0, \mapc{\bl{K'}}{1})} \label{eq:ns2}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}, \seq{J}'}{k, i, j, J \mapsto j = \cur(J)} \label{eq:ns3}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}'}{k, i, J \mapsto \al{\bl{J}}{j \mapsto j < n}} \label{eq:ns4}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}}{k, i, j \mapsto n \le j} \label{eq:ns5}\\
+  &\Longrightarrow\ c = m \cdot n \nonumber
+\end{align}
+The trace of $c$ is $\tr{0}{\bl{K}, \seq{J}}{c, k, j \mapsto c + j}$, which the introduction rule of
+$\sums$ in \texttt{teq.dfy} folds and the acceleration rule $\cur(\sums(x, V)) = x + \mathsf{sum}(V)$
+turns into $c = \mathsf{sum}(\seq{J})$: the sum of the final values of the inner loop. The task is to
+show that $\seq{J}$ consists of $n$ repeated $m$ times.
+
+\subsection{The lemmas and their instantiation}
+Two lemmas of \texttt{fragments.dfy}, stated in full in Section~\ref{sec:sel:frag}, apply with
+$X := \lambda k.\, 0$ and $c := 1$: \lemma{invs\_sums\_counter} (the trace of an inner variable increased
+by $c$ over the inner counter $K'$, which is $\cnt(0, 1, n'')$ in the same iteration, is a counter from
+its initial value $X(k)$) turns \eqref{eq:ns2} into
+$\al{\bl{K}, \seq{N}, \seq{J}'}{k, n'', J \mapsto J = \cnt(0, 1, n'')}$, and
+\lemma{invs\_current\_counter} (the final value of an inner counter) turns \eqref{eq:ns3} into
+$\al{\bl{K}, \seq{N}, \seq{J}}{k, n'', j \mapsto j = \intf(n'')}$. Two more fragment lemmas of
+\texttt{fragments.dfy} resolve the test and the exit; both are stated for an inner counter from $0$,
+since their side conditions must be in the normal form of the facts, where a general initial value
+$X(k) + \intf(n'')$ would not match $\intf(n'')$ (a higher-order summand matches a single summand):
+\begin{align*}
+  &\lemma{invs\_invs\_counter\_upper\_zero}:\\
+  &\quad 0 \le n\ \wedge\ \al{ks, Ns, Js}{k, n'', J \mapsto J = \cnt(0, 1, n'')}\\
+  &\quad\Longrightarrow\\
+  &\quad \al{ks, Js}{k, J \mapsto \al{\bl{J}}{x \mapsto x < n}}\\
+  &\quad\Longleftrightarrow\ \al{ks, Ns}{k, n'' \mapsto \intf(n'') \le n}\\[4pt]
+  &\lemma{invs\_exit\_counter\_zero}:\\
+  &\quad \al{ks, Ns, js}{k, n'', j \mapsto j = \intf(n'')}\\
+  &\quad\wedge\ \al{ks, Ns}{k, n'' \mapsto \intf(n'') \le n}\ \Longrightarrow\\
+  &\quad \al{ks, js}{k, j \mapsto n \le j}\ \Longleftrightarrow\ \al{ks, js}{k, j \mapsto j = n}
+\end{align*}
+The first matches the test \eqref{eq:ns4}, with the counter fragment as its side condition (which binds
+$Ns := \seq{N}$); the inner constraint $j < n$ over $\bl{\cnt(0, 1, n'')}$ is the lemma
+\lemma{invs\_counter\_upper} of \texttt{teq.dfy}, $n'' = 0 \vee (0 < n \wedge \intf(n'') - 1 < n)$,
+which the nonnegative bound simplifies to $\intf(n'') \le n$. The second matches the exit
+\eqref{eq:ns5}, finds the two facts, and states the final value: $j = n$ in each outer iteration. It is
+an equivalence under its side conditions, since $j = \intf(n'') \le n$.
+
+The goal is now $\mathsf{sum}(\seq{J}) = m \cdot n$ with the fact
+$\al{\bl{K}, \seq{J}}{k, j \mapsto j = n}$. In the body of that iteration constraint the simplifier
+reads $j$ as $\mathsf{earlier}(\natf(k), \seq{J})$, so the fact is
+\[ \al{\bl{\cnt(0, 1, n')}}{k \mapsto \mathsf{earlier}(\natf(k), \seq{J}) = n} \]
+(the counter $K$ is followed in the dependency position), which \lemma{consts\_prefix\_def} of \texttt{teq.dfy} abstracts
+by the atom $\mathsf{consts\_prefix}(n', n, \seq{J})$, and \lemma{sum\_consts\_prefix} with that atom as
+its side condition rewrites $\mathsf{sum}(\seq{J})$ to $n \cdot \intf(n')$. (Until October 10 this
+was \lemma{sum\_invs\_const}, with the iteration constraint itself as the side condition, which cycles
+in general, see \texttt{TODO.md}.) The goal $\intf(n') \cdot n = m \cdot n$ with $\intf(n') = m$ is
+closed by a lemma \lemma{mul\_eq\_cancel}, $(a \cdot n = b \cdot n) \Leftrightarrow (n = 0 \vee a = b)$,
+since the simplifier substitutes the solution of $\intf(n') = m$ into polynomials but not into the
+product.
+
+\subsection{The idea}
+The fragments of an inner loop are a trace equation system over bound variables. The simplifier would
+resolve them if the bound variables of one fragment saw the equations of the others, which they do not
+(\texttt{NOTES.md}, the two problems of nested loops). The fragment lemmas are the four steps of that
+resolution as rewrite rules: the inner trace is a counter, its current value is its length, the test
+bounds the length, the exit fixes it. The same four lemmas serve every example with an inner counter
+from $0$ (\texttt{nested\_mult}, \texttt{row\_sums}, \texttt{transpose}); with another initial value
+the test and the exit are instead kept as side conditions of a summary (Section~\ref{sec:sel:sum}).
+
+\section{Selection Sort: Fragments, a Summary, and an Induction}\label{sec:sel}
+
+\subsection{The program}
+
+\begin{lstlisting}
+method main(a: array<int, int>, n: int) returns (b: array<int, int>)
+  requires 0 <= n
+  ensures sorted(b, 0, n)
+  ensures perm(b, a)
+{
+  var i: int; var j: int; var m: int; var t: int;
+  b := a; i := 0;
+  while i < n {
+    m := i; j := i + 1;
+    while j < n {
+      if b[j] < b[m] { m := j; }
+      j := j + 1;
+    }
+    t := b[i]; b[i] := b[m]; b[m] := t;
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+
+\noindent
+Arrays are total maps $\mathsf{array}\langle\mathsf{int},\mathsf{int}\rangle$; $\sorted(a, lo, hi)$
+states that $a[lo..hi)$ is nondecreasing, and $\perm(a, b)$ that $a$ is a permutation of $b$ as a total
+map, i.e. $b$ composed with a bijection of the indices. Both are abstract predicates, declared without
+a definition; their properties are the lemmas below. Whole-array permutation needs no side conditions
+on the ranges of swapped positions: a swap at any two positions preserves it.
+
+\subsection{The trace equation system}
+
+Symbolic execution of the outer loop (Definition 4.4 of the paper) introduces the synthetic counter
+$K = \cnt(0, 1, n')$ of $n'$ iterations and one trace per modified variable. The inner loop is
+summarized during the execution of the body (Theorem 4.8): its own trace equation system is in terms of
+fresh variables, which become fresh \emph{sequences} over the outer iterations, and it is recorded as the
+iteration constraint of the outer loop. After \texttt{-simplify} distributes the constraint over its
+conjuncts, the goal is (variables renamed, the fragments of the inner loop grouped):
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad I = \cnt(0, 1, n') \qquad \intf(n') = n \qquad b = \cur(B) \label{eq:outer}\\
+  B &= \tr{a}{\bl{K}, \bl{I}, \seq{M}}{x, k, i, m \mapsto \swap{x}{k}{m}} \label{eq:B}\\[2pt]
+  &\al{\bl{K}, \bl{I}, \seq{M}, \seq{M}'}{k, i, m, M \mapsto m = \cur(M)} \label{eq:f1}\\
+  &\al{\bl{K}, \bl{I}, \bl{B}, \seq{M}', \seq{J}'}{k, i, x, M, J \mapsto {} \nonumber\\
+  &\qquad\qquad M = \tr{k}{\bl{J}}{p, j \mapsto \upd{x[j] < x[p]}{j}\ \ \upd{x[p] \le x[j]}{p}}} \label{eq:f2}\\
+  &\al{\bl{K}, \bl{I}, \seq{N}, \seq{K}'}{k, i, n'', K' \mapsto K' = \cnt(0, 1, n'')} \label{eq:f3}\\
+  &\al{\bl{K}, \bl{I}, \seq{K}', \seq{J}'}{k, i, K', J \mapsto J = \sums(k + 1, \mapc{\bl{K'}}{1})} \label{eq:f4}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}', \seq{J}}{k, i, J, j \mapsto j = \cur(J)} \label{eq:f5}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}'}{k, i, J \mapsto \al{\bl{J}}{j \mapsto j < n}} \label{eq:f6}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}}{k, i, j \mapsto n \le j} \label{eq:f7}\\[2pt]
+  &\Longrightarrow\ \sorted(b, 0, n) \wedge \perm(b, a) \nonumber
+\end{align}
+Equation \eqref{eq:B} is the outer array trace: in iteration $k$ (with $i = k$, since $I$ and $K$ are
+equal counters that the simplifier does not identify), the positions $k$ and $m$ are swapped, where $m$ is
+the result of the inner loop, the entry of the sequence $\seq{M}$ at $k$. The fragments
+\eqref{eq:f1}--\eqref{eq:f7} describe that inner loop: its result $m$ is the current value of a
+\emph{selection trace} $M$ \eqref{eq:f1}, which starts at $k$ and moves to $j$ whenever $x[j] < x[p]$,
+over the inner counter $J$ \eqref{eq:f2}; $J$ is the trace of $j$, increased by 1 from $k + 1$ over the
+synthetic inner counter $K'$ of $n''$ steps \eqref{eq:f3}, \eqref{eq:f4}, with the final value $j$
+\eqref{eq:f5}; the test $j < n$ holds in every inner iteration \eqref{eq:f6} and fails at the exit
+\eqref{eq:f7}. The generic fold of \texttt{teq.dfy} already turned the trace of $j$ into
+$\sums(k + 1, \mapc{\bl{K'}}{1})$, since inside a fragment the equation $K' = \cnt(0, 1, n'')$ of the
+sibling fragment \eqref{eq:f3} is not followed (problem~1 of nested loops in \texttt{NOTES.md}).
+
+\subsection{Step 1: the inner counter (generic fragment lemmas)}\label{sec:sel:frag}
+
+The two lemmas of \texttt{fragments.dfy} relate fragments of one inner loop to each other. They are
+rewrite rules whose left-hand side is a fragment and whose side condition is a sibling fragment, matched
+against the facts of the goal, which binds the sequences that the left-hand side does not mention.
+\begin{align*}
+  &\lemma{invs\_sums\_counter}:\\
+  &\quad \al{ks, Ks, Ns}{k, K, n'' \mapsto K = \cnt(0, 1, n'')}\ \Longrightarrow \\
+  &\al{ks, Ks, Js}{k, K, J \mapsto J = \sums(X(k), \mapc{\bl{K}}{c})}\\
+  &\quad\Longleftrightarrow\ \al{ks, Ns, Js}{k, n'', J \mapsto J = \cnt(X(k), c, n'')}\\[4pt]
+  &\lemma{invs\_current\_counter}:\\
+  &\quad \al{ks, Ns, Js}{k, n'', J \mapsto J = \cnt(X(k), c, n'')}\ \Longrightarrow \\
+  &\al{ks, Js, js}{k, J, j \mapsto j = \cur(J)}\\
+  &\quad\Longleftrightarrow\ \al{ks, Ns, js}{k, n'', j \mapsto j = X(k) + \intf(n'') \cdot c}
+\end{align*}
+The initial value $X(k)$ is a higher-order pattern variable (Miller fragment): it matches $0$, $k$,
+$k + 1$, or the value of a further dependency, so one lemma covers all inner counters. The first lemma
+matches fragment \eqref{eq:f4} with $ks := \bl{K}$, $Ks := \seq{K}'$, $Js := \seq{J}'$,
+$X := \lambda k.\, k + 1$, $c := 1$; its side condition is found as fragment \eqref{eq:f3}, which binds
+$Ns := \seq{N}$. The unused dependency $\bl{I}$ of the fragment is selected by no pattern dependency and
+dropped. The result replaces \eqref{eq:f4}:
+\begin{equation}
+  \al{\bl{K}, \seq{N}, \seq{J}'}{k, n'', J \mapsto J = \cnt(k + 1, 1, n'')}. \label{eq:f4b}
+\end{equation}
+The second lemma matches \eqref{eq:f5} with $Js := \seq{J}'$, $js := \seq{J}$, finds \eqref{eq:f4b} as its
+side condition, and yields
+\begin{equation}
+  \al{\bl{K}, \seq{N}, \seq{J}}{k, n'', j \mapsto j = \intf(n'') + k + 1}. \label{eq:f5b}
+\end{equation}
+Conceptually, the fragment lemmas do by rewriting what the simplifier would do if the fragments of one
+inner loop shared their facts (the sharing was implemented and reverted, since it made rewriting cycle):
+they propagate the definition of a bound variable from one fragment into another. They are candidates for
+\texttt{teq.dfy}; they close the two minimal nested-loop problems \texttt{invs\_counter\_equation.dfy} and
+\texttt{invs\_fragments.dfy}, and \texttt{nested\_sum.dfy}, \texttt{nested\_mult.dfy},
+\texttt{distinct.dfy} and the sorting algorithms use them.
+
+\subsection{Step 2: the summary of the inner loop}\label{sec:sel:sum}
+
+The inner loop finds the position of the minimum of $x[k..n)$. We name that position by an abstract
+function $\argmin(x, lo, hi)$, declared without a definition, and state the summary as a rewrite rule
+whose side conditions are the fragments, in the forms they have after Step~1:
+\begin{align*}
+  &\lemma{current\_selection\_swaps}:\\
+  &\quad \al{ks, ms, Ms}{k, m, M \mapsto m = \cur(M)} \\
+  &\quad\wedge\ \mathsf{all}(\mathsf{for}\ ks, \bl{\tr{a}{ks, is, ms}{x, k, i, m \mapsto \swap{x}{k}{m}}}, Ms, Js\\
+  &\qquad\qquad \mathsf{check}\ k, x, M, J \mapsto {}\\
+  &\qquad\qquad\qquad M = \tr{k}{\bl{J}}{p, j \mapsto \upd{x[j] < x[p]}{j}\ \ \upd{x[p] \le x[j]}{p}}) \\
+  &\quad\wedge\ \al{ks, Ns, Js}{k, n'', J \mapsto J = \cnt(k + 1, 1, n'')} \\
+  &\quad\wedge\ \al{ks, Ns, js}{k, n'', j \mapsto j = \intf(n'') + k + 1}\\
+  &\quad\wedge\ \al{ks, js}{k, j \mapsto n \le j} \\
+  &\quad\wedge\ \al{ks, Js_2}{k, J \mapsto \al{\bl{J}}{j \mapsto j < n_2}}\ \wedge\ Js_2 = Js\ \wedge\ n_2 = n \\
+  &\quad\Longrightarrow\ \cur(\tr{a}{ks, is, ms}{x, k, i, m \mapsto \swap{x}{k}{m}})\\
+  &\qquad\qquad = \cur(\tr{a}{ks}{x, k \mapsto \swap{x}{k}{\argmin(x, k, n)}})
+\end{align*}
+The left-hand side is matched against $b = \cur(B)$ with the definition \eqref{eq:B} of $B$, which binds
+$a$, $ks := \bl{K}$, $is := \bl{I}$, $ms := \seq{M}$. The side conditions are then searched among the
+facts in order, each binding a new sequence: \eqref{eq:f1} binds $Ms := \seq{M}'$; \eqref{eq:f2} binds
+$Js := \seq{J}'$, where the dependency $\bl{\tr{a}{\ldots}}$ of the pattern is matched against $\bl{B}$
+through the definition of $B$; \eqref{eq:f4b} binds $Ns := \seq{N}$; \eqref{eq:f5b} binds $js := \seq{J}$;
+\eqref{eq:f7} binds $n$. The remaining condition is the inner test \eqref{eq:f6}, which is matched by a
+duplicate $Js_2$ with a fresh bound $n_2$, identified afterwards by the equations $Js_2 = Js$ and $n_2 = n$:
+a side condition whose sequence variables are all bound is \emph{decided} by the simplifier rather than
+matched against the facts, and the decision fails, since the facts keep $\bl{I}$ as a dependency and
+rename the bound variables. The equations are closed and trivially decided.
+
+Soundness of the lemma: given the side conditions, in iteration $k$ the selection trace $M$ scans the
+positions $k + 1, \ldots, k + n''$ with $n'' + k + 1 \ge n$ (exit) and $k + 1 + n'' - 1 < n$ if $n'' > 0$
+(test), hence exactly $k + 1, \ldots, n - 1$, so $\cur(M)$ is a position of the minimum of $x[k..n)$,
+i.e. $\argmin(x, k, n)$ for any choice of $\argmin$ among the minima. The result is the trace of swaps of
+$k$ with $\argmin(x, k, n)$, the \emph{summary} of the whole algorithm as a trace of an abstract step.
+After the rewrite, $b = \cur(\tr{a}{\bl{K}}{x, k \mapsto \swap{x}{k}{\argmin(x, k, n)}})$.
+
+Two workarounds are visible: the inner test is kept in its raw form \eqref{eq:f6} as a side condition
+instead of being resolved to a bound on $n''$, since the resolved form $k + 1 + \intf(n'') \le n$ is
+matched by \lemma{above\_iterations\_def} of \texttt{teq.dfy} (pattern $k < t$ with the dependency $t$
+synthesized as a map), which hides the fact; and the initial value $k + 1$ and the final value
+$\intf(n'') + k + 1$ are written literally in the normal form of the simplifier, since a higher-order
+summand $X(k)$ matches a single summand only.
+
+\subsection{Step 3: sortedness by induction, permutation by a generic lemma}\label{sec:sel:ind}
+
+The postcondition $\sorted(b, 0, n)$ is now
+\[ \sorted(\cur(\tr{a}{\bl{K}}{x, k \mapsto \swap{x}{k}{\argmin(x, k, n)}}), 0, n). \]
+The invariant of
+selection sort after $k$ iterations is that the prefix $x[0..k)$ is sorted and all of it is at most all
+of $x[k..n)$, written with a second abstract predicate $\partitioned(x, lo, mid, hi)$ (all of $x[lo..mid)$
+are at most all of $x[mid..hi)$). The induction is a lemma over a trace of arbitrary steps $F$:
+\begin{align*}
+  &\lemma{sorted\_prefix\_steps}:\\
+  &\quad  n = \intf(m)\ \wedge\
+    \big(\forall x, k.\ 0 \le k < n \wedge \sorted(x, 0, k) \wedge \partitioned(x, 0, k, n) \\
+  &\qquad\qquad \Longrightarrow \sorted(F(x, k), 0, k + 1) \wedge \partitioned(F(x, k), 0, k + 1, n)\big) \\
+  &\quad\Longrightarrow\ \sorted(\cur(\tr{a}{\bl{\cnt(0, 1, m)}}{x, k \mapsto F(x, k)}), 0, n)\ \Longleftrightarrow\ \mathsf{true}
+\end{align*}
+The left-hand side matches with $F := \lambda x\, k.\ \swap{x}{k}{\argmin(x, k, n)}$ and $m := n'$,
+through the definition $K = \cnt(0, 1, n')$ in the dependency position. The condition $n = \intf(m)$
+is the fact $\intf(n') = n$ of \eqref{eq:outer}; it fixes the number of steps to exactly $n$, since
+further steps would be unconstrained by the second condition (a lemma with $n \le \intf(m)$ would be
+unsound). The quantified condition is decided by the simplifier: $F$ is beta-reduced, and the two
+conjuncts of the conclusion are rules on atoms,
+\begin{align*}
+  &\lemma{sorted\_swap\_argmin}:\\
+  &\quad k < n \wedge \sorted(x, 0, k) \wedge \partitioned(x, 0, k, n)\\
+    &\quad\Longrightarrow \sorted(\swap{x}{k}{\argmin(x, k, n)}, 0, k + 1) \Longleftrightarrow \mathsf{true},\\
+  &\lemma{partitioned\_swap\_argmin}:\\
+  &\quad k < n \wedge \sorted(x, 0, k) \wedge \partitioned(x, 0, k, n)\\
+    &\quad\Longrightarrow \partitioned(\swap{x}{k}{\argmin(x, k, n)}, 0, k + 1, n) \Longleftrightarrow \mathsf{true},
+\end{align*}
+whose side conditions are the hypotheses of the quantified implication. The base case is inside the
+induction lemma: $\sorted(a, 0, 0)$ and $\partitioned(a, 0, 0, n)$ hold trivially (two further lemmas,
+\lemma{sorted\_empty} and \lemma{partitioned\_empty}, state them for completeness). This is the method of
+the paper's \lemma{current\_trace\_bounded}, an invariant scheme as a lemma with a quantified side
+condition: the lemma database proves the induction step, the shape of the invariant is the lemma's
+knowledge of selection sort, and no invariant inference takes place.
+
+The postcondition $\perm(b, a)$ follows from a generic lemma on traces of swaps at positions that may
+depend on the state and the iteration (a higher-order pattern):
+\begin{align*}
+  &\lemma{perm\_swaps\_one}:\\
+  &\quad \perm(\cur(\tr{a}{ks}{x, k \mapsto \swap{x}{P(x, k)}{Q(x, k)}}), c)\\
+  &\quad\Longleftrightarrow \perm(a, c)
+\end{align*}
+with $P := \lambda x\, k.\ k$ and $Q := \lambda x\, k.\ \argmin(x, k, n)$, and then \lemma{perm\_refl}.
+The whole goal closes with \texttt{./Cuvee.sh -teq -simplify}; a wrong postcondition, e.g.
+$\sorted(b, 0, n + 1)$, leaves a goal.
+
+\subsection{What is generic and what is specific}
+
+Of the lemmas used, \lemma{invs\_sums\_counter}, \lemma{invs\_current\_counter} and
+\lemma{perm\_swaps\_one} are independent of the algorithm; \lemma{sorted\_prefix\_steps} is the
+induction for every algorithm that grows a sorted prefix (selection sort, and insertion sort in a
+variant with two dependencies); the summary \lemma{current\_selection\_swaps} and the two step lemmas are the
+algorithm's knowledge: what one inner loop computes, and why one step keeps the invariant. The abstract
+predicates and $\argmin$ are axiomatized by these lemmas only; a definition in Lean, as for
+\texttt{teq.dfy}, would make the step lemmas and the summary provable.
+
+
+\section{Bubble Sort: an Invariant Indexed by the Iteration}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int) returns (b: array<int, int>)
+  requires 0 <= n
+  ensures sorted(b, 0, n)
+  ensures perm(b, a)
+{
+  var i: int; var j: int; var t: int;
+  b := a; i := n;
+  while 1 < i {
+    j := 0;
+    while j + 1 < i {
+      if b[j + 1] < b[j] { t := b[j]; b[j] := b[j + 1]; b[j + 1] := t; }
+      j := j + 1;
+    }
+    i := i - 1;
+  }
+}
+\end{lstlisting}
+
+\subsection{The trace equation system}
+The outer loop modifies only $b$, and only through the inner loop, so its trace is the chain of the inner
+results, which the fold \lemma{results} names:
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad I = \cnt(n, -1, n') \qquad b = \cur(B) \label{eq:bs0}\\
+  B &= \mathsf{results}(a, \bl{K}, \seq{B}) \quad\text{where}\quad \mathsf{results}(x_0, ks, bs) = \tr{x_0}{ks, bs}{x, k, b \mapsto b} \nonumber\\
+  &\al{\bl{K}, \bl{I}, \seq{B}, \seq{B}'}{k, i, b, B' \mapsto b = \cur(B')} \label{eq:bs1}\\
+  &\al{\bl{K}, \bl{B}, \bl{I}, \seq{B}', \seq{J}'}{k, x, i, B', J \mapsto B' = \mathsf{bubble\_pass}(x, \bl{J})} \label{eq:bs2}\\
+  &\qquad\text{where}\quad \mathsf{bubble\_pass}(b, js) = \tr{b}{js}{x, j \mapsto {}\nonumber\\
+  &\qquad\qquad\qquad\qquad \upd{x[j+1] < x[j]}{\swap{x}{j}{j + 1}}\ \ \upd{x[j] \le x[j+1]}{x}} \nonumber\\
+  &\al{\bl{K}, \bl{I}, \seq{J}}{k, i, j \mapsto n \le j + k + 1} \label{eq:bs3}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}'}{k, i, J \mapsto \al{\bl{J}}{j \mapsto j + k + 1 < n}} \label{eq:bs4}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}, \seq{J}'}{k, i, j, J \mapsto j = \cur(J)} \label{eq:bs5}\\
+  &\al{\bl{K}, \bl{I}, \seq{K}', \seq{J}'}{k, i, K', J \mapsto J = \sums(0, \mapc{\bl{K'}}{1})} \label{eq:bs6}\\
+  &\ldots \wedge\ n \le \intf(n') + 1\ \Longrightarrow\ \sorted(b, 0, n) \wedge \perm(b, a) \nonumber
+\end{align}
+The inner trace folds into $\mathsf{bubble\_pass}(x, \bl{J})$, a pass over the positions of the inner
+counter $J$, by a \texttt{\{:fold\}} function of the file, like $\sums$ in \texttt{teq.dfy}. The test and
+the exit are stated with $i = n - k$ already substituted: the pass of iteration $k$ runs over the
+positions $0, \ldots, n - k - 2$.
+
+\subsection{The summary}
+\begin{align*}
+  &\lemma{current\_results\_bubble}:\\
+  &\quad \al{ks, bs, Bs}{k, b, B' \mapsto b = \cur(B')}\\
+  &\quad\wedge\ \al{ks, \bl{\mathsf{results}(a, ks, bs)}, Bs, Js}{k, x, B', J \mapsto B' = \mathsf{bubble\_pass}(x, \bl{J})}\\
+  &\quad\wedge\ \al{ks, js}{k, j \mapsto len \le j + k + 1}\\
+  &\quad\wedge\ \al{ks, Js_2}{k, J \mapsto \al{\bl{J}}{j \mapsto j + k + 1 < len}}\ \wedge\ Js_2 = Js\\
+  &\quad\wedge\ \al{ks, js_3, Js_3}{k, j, J \mapsto j = \cur(J)}\ \wedge\ js_3 = js\ \wedge\ Js_3 = Js\\
+  &\quad\wedge\ \al{ks, Ks, Js}{k, K', J \mapsto J = \sums(0, \mapc{\bl{K'}}{1})}\\
+  &\quad\Longrightarrow\ \cur(\mathsf{results}(a, ks, bs))\\
+  &\qquad\qquad = \cur(\tr{a}{ks}{b, k \mapsto \cur(\mathsf{bubble\_pass}(b, \bl{\cnt(0, 1, \natf(len - k - 1))}))})
+\end{align*}
+This is the summary in its original form (October 9), before the fragment lemmas: the inner counter is
+matched as $\sums$, and the test and exit bind $len$. The left-hand side $\cur(\mathsf{results}(a, ks, bs))$
+is matched against $b = \cur(B)$ through \eqref{eq:bs0}, binding $ks := \bl{K}$ and $bs := \seq{B}$;
+\eqref{eq:bs1} binds $Bs := \seq{B}'$, \eqref{eq:bs2} binds $Js := \seq{J}'$, \eqref{eq:bs3} binds
+$js := \seq{J}$ and $len := n$; \eqref{eq:bs4}, \eqref{eq:bs5}, \eqref{eq:bs6} are matched through
+duplicates and the equations identify them, as in Section~\ref{sec:sel:sum}. The result is the trace of passes, the
+$k$-th over $\bl{\cnt(0, 1, \natf(n - k - 1))}$. Note that the arithmetic $n - k - 1$ on the bound
+variable $k$ is admissible on the right-hand side of a rule; on a left-hand side it would not be matched,
+which is why the original version of this file had a function $\mathsf{passlen}(len, k)$ for it, which
+the induction below makes unnecessary.
+
+\subsection{The induction with a clamped invariant}
+After $k$ passes the suffix $b[n - k..n)$ is sorted and all of $b[0..n - k)$ are at most all of it. Stated
+with $\sorted$ and $\partitioned$ as in Section~\ref{sec:sel:ind}, the invariant makes sense only for $k \le n$, but
+the number of outer iterations $n'$ is known only as $n \le n' + 1$ together with the iteration
+constraint $1 < i$, a disjunction $n' = 0 \vee (2 < n \wedge n' < n)$ that the simplifier does not split,
+so the induction cannot fix the number of steps to $n - 1$ (as Section~\ref{sec:sel:ind} fixes it to $n$). Instead the
+invariant is a predicate indexed by the iteration, $\mathsf{bubbled}(b, k, n)$, which means the sorted
+suffix of length $k$ once $k \le n$ and the whole range sorted once $k \ge n$; then every step keeps it,
+also the empty passes beyond $n - 1$:
+\begin{align*}
+  &\lemma{bubbled\_pass}:\\
+  &\quad p = len - k - 1 \wedge \mathsf{bubbled}(b, k, len)\\
+  &\quad\Longrightarrow \mathsf{bubbled}(\cur(\mathsf{bubble\_pass}(b, \bl{\cnt(0, 1, \natf(p))})), k + 1, len)
+    \Longleftrightarrow \mathsf{true}\\[4pt]
+  &\lemma{sorted\_bubbled\_steps}:\\
+  &\quad len \le \intf(m) + 1\\
+  &\quad\wedge\ \big(\forall b, k.\ 0 \le k < \intf(m) \wedge \mathsf{bubbled}(b, k, len) \Longrightarrow \mathsf{bubbled}(F(b, k), k + 1, len)\big)\\
+  &\quad\Longrightarrow\ \sorted(\cur(\tr{a}{\bl{\cnt(0, 1, m)}}{b, k \mapsto F(b, k)}), 0, len)\ \Longleftrightarrow\ \mathsf{true}
+\end{align*}
+The induction matches with $F := \lambda b\, k.\ \cur(\mathsf{bubble\_pass}(b, \bl{\cnt(0, 1, \natf(n - k - 1))}))$,
+$m := n'$, $len := n$. Its quantified condition is decided by \lemma{bubbled\_pass}, whose length $p$ is a
+variable with the equation $p = len - k - 1$ as a side condition, since a pattern $len - k - 1$ with two
+variables is not matched; the equation is closed after $p$ is bound to $n - k - 1$ by the left-hand side
+and decided by arithmetic. The lemma is sound for any number of steps $m$ with $len \le m + 1$: the
+invariant at $k = 0$ holds trivially, and $\mathsf{bubbled}(b, m, len)$ with $len - m \le 1$ is
+$\sorted(b, 0, len)$. For $\perm$, \lemma{perm\_steps} (the quantified condition $\forall b, k.\ \perm(F(b, k), b)$,
+decided by \lemma{perm\_bubble\_pass}) and \lemma{perm\_refl}.
+
+\subsection{The idea}
+Two things differ from selection sort. The inner loop is summarized to a function of the previous
+array that is itself a trace, $\cur(\mathsf{bubble\_pass}(\ldots))$, so the outer trace is a trace of
+traces; the lemma database needs no knowledge of what a pass does beyond the two facts
+\lemma{bubbled\_pass} and \lemma{perm\_bubble\_pass}. And the invariant is written as one predicate over
+the iteration, which absorbs the case distinction on the number of passes that the goal does not provide.
+The pattern "invariant as a predicate of $(b, k)$, step lemma, generic induction" is the same as
+\lemma{current\_trace\_bounded} of \texttt{teq.dfy}, with the induction hypothesis as an abstract atom.
+
+\section{Merge: Pinned Guards and Open Trace Variables}\label{sec:merge}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, m: int, b: array<int, int>, n: int) returns (c: array<int, int>)
+  requires 0 <= m && 0 <= n
+  requires sorted(a, 0, m) && sorted(b, 0, n)
+  ensures sorted(c, 0, m + n)
+  ensures forall x: int :: count(x, selects(c, butlast(counter(0, 1, natural(m + n)))))
+    == count(x, selects(a, butlast(counter(0, 1, natural(m)))))
+     + count(x, selects(b, butlast(counter(0, 1, natural(n)))))
+{
+  var i: int; var j: int; var k: int;
+  i := 0; j := 0; k := 0;
+  while k < m + n {
+    if n <= j || (i < m && a[i] <= b[j]) { c := c[k := a[i]]; i := i + 1; }
+    else { c := c[k := b[j]]; j := j + 1; }
+    k := k + 1;
+  }
+}
+\end{lstlisting}
+The second postcondition states the permutation as a multiset: for each value, its number of occurrences
+among the first $m + n$ elements of $c$ is the sum of its occurrences in $a$ and $b$, in the vocabulary of
+\texttt{teq.dfy}.
+
+\subsection{The trace equation system}
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad c = \cur(C) \qquad k = \intf(n') \qquad m + n \le k \label{eq:mg0}\\
+  C &= \tr{c_0}{\bl{K}, \bl{I}, \bl{J}}{c, k, i, j \mapsto \upd{G}{c[k := a[i]]}\ \ \upd{\neg G}{c[k := b[j]]}} \label{eq:mg1}\\
+  I &= \tr{0}{\bl{K}, \bl{J}}{i, k, j \mapsto \upd{G}{i + 1}\ \ \upd{\neg G}{i}} \label{eq:mg2}\\
+  J &= \tr{0}{\bl{K}, \bl{I}}{j, k, i \mapsto \upd{G}{j}\ \ \upd{\neg G}{j + 1}} \label{eq:mg3}
+\end{align}
+where $G$ abbreviates the test $n \le j \vee (i < m \wedge a[i] \le b[j])$ of the program. The pointers
+are traces over each other, \eqref{eq:mg2} and \eqref{eq:mg3}: $I$ has $\bl{J}$ among its dependencies and $J$ has $\bl{I}$. A single loop,
+no fragments; the whole difficulty is in matching this shape.
+
+\subsection{The lemmas}\label{sec:merge:lemmas}
+The merge is named by an abstract list $\mathsf{merged}(a, m, b, n)$, the values of the result on
+$0, \ldots, m + n - 1$, with two facts: it is sorted, and its counts are those of both ranges. The
+lemma on the loop rewrites the values of the result:
+\begin{align*}
+  &\lemma{selects\_merge\_loop}:\\
+  &\quad s = m + n\ \wedge\ m + n \le \intf(nn)\ \wedge\ 0 \le m \wedge 0 \le n\\
+  &\quad\wedge\ (\forall i, j.\ G(i, j) \Leftrightarrow (n \le j \vee (i < m \wedge a[i] \le b[j])))\\
+  &\quad\wedge\ (\forall i, j.\ U(i, j) = a[i])\ \wedge\ (\forall i, j.\ V(i, j) = b[j])\\
+  &\quad\wedge\ Iv = \tr{0}{\bl{\cnt(0, 1, nn)}, js}{i, k, j \mapsto \upd{G(i, j)}{i + 1}\ \ \upd{\neg G(i, j)}{i}}\\
+  &\quad\wedge\ is = \bl{Iv}\\
+  &\quad\wedge\ Jv = \tr{0}{\bl{\cnt(0, 1, nn)}, is}{j, k, i \mapsto \upd{G(i, j)}{j}\ \ \upd{\neg G(i, j)}{j + 1}}\\
+  &\quad\wedge\ js = \bl{Jv}\\
+  &\quad\Longrightarrow\ \mathsf{selects}(\cur(\tr{c_0}{\bl{\cnt(0, 1, nn)}, is, js}{c, k, i, j \mapsto {}\\
+  &\qquad\qquad\qquad \upd{G(i, j)}{c[k := U(i, j)]}\ \ \upd{\neg G(i, j)}{c[k := V(i, j)]}}), \bl{\cnt(0, 1, \natf(s))})\\
+  &\qquad\qquad = \mathsf{merged}(a, m, b, n)
+\end{align*}
+and \lemma{sorted\_merge\_loop} is the same with the conclusion $\sorted(\cur(\ldots), 0, s) \Leftrightarrow \mathsf{true}$
+and the two $\sorted$ premises; \lemma{count\_merged} gives
+\begin{align*}
+  \mathsf{count}(x, \mathsf{merged}(a, m, b, n)) = {}&\mathsf{count}(x, \mathsf{selects}(a, \bl{\cnt(0, 1, \natf(m))}))\\
+  &+ \mathsf{count}(x, \mathsf{selects}(b, \bl{\cnt(0, 1, \natf(n))})).
+\end{align*}
+
+Three workarounds of the matcher are built into this lemma, each isolated by experiments
+(\texttt{NOTES.md}, findings 14, 16 and the section on the pin):
+\begin{enumerate}[nosep]
+\item \textbf{The pin.} A literal disjunctive guard $n \le j \vee (\ldots)$ in a pattern is never
+  matched. The guard is the higher-order variable $G(i, j)$, which matches any guard over the bound
+  variables $i, j$, and the quantified side condition
+  $\forall i, j.\ G(i, j) \Leftrightarrow (n \le j \vee \ldots)$ pins it to the intended one; the simplifier
+  decides the pin by beta reduction. The stored values $U(i, j) = a[i]$ and $V(i, j) = b[j]$ are pinned
+  likewise. (A higher-order variable for an array read $a[i]$ alone would be instantiated by the array
+  itself, finding 10, hence the pin instead of a literal $a[i]$.)
+\item \textbf{The open trace variable.} The lemma must know that $is$ and $js$ are the pointer traces,
+  which the pattern cannot say, since each is defined over the other. A closed side condition
+  $is = \bl{\tr{0}{\ldots}{\ldots}}$ is decided by the simplifier and fails (it does not expand $\bl{I}$).
+  Instead $Iv = \tr{0}{\ldots, js}{\ldots}$ with an \emph{open} trace variable $Iv$ is matched against
+  the hypothesis $I = \tr{0}{\bl{K}, \bl{J}}{\ldots}$ \eqref{eq:mg2}, which binds $Iv := I$ (and the
+  counter $\bl{\cnt(0, 1, nn)}$ matches $\bl{K}$ through its definition); then $is = \bl{Iv}$ is closed
+  and trivially true.
+\item \textbf{The whole atom as the left-hand side.} A variable argument of an uninterpreted function
+  is not expanded by its definition when the simplifier rewrites below it: $\sorted(c, 0, m + n)$ with
+  $c = \cur(C)$ is not matched by a left-hand side $\cur(\tr{\ldots}{\ldots})$, but
+  $\sorted(\cur(\tr{\ldots}{\ldots}), 0, s)$ as the whole atom is, and $\mathsf{selects}(\cur(\ldots), \ldots)$
+  with $\mathsf{selects}$ as the head, inside $\mathsf{count}$ and the quantifier. The length is a
+  variable $s$ with $s = m + n$ as a side condition, since a pattern $m + n$ of two variables is not matched.
+\end{enumerate}
+The remaining condition $m + n \le \intf(nn)$ is the exit $m + n \le k$ with $k = \intf(n')$ of
+\eqref{eq:mg0}: after at least $m + n$ iterations the positions $0, \ldots, m + n - 1$ are those of the
+merge, whatever further iterations store beyond them, which makes the lemma sound without fixing the
+number of iterations exactly (the goal knows it only as a disjunction).
+
+\subsection{The idea}
+The loop computes a function of its inputs that has a name in the specification's vocabulary,
+$\mathsf{merged}$, and the lemma database relates the loop to that name and the name to the properties.
+The matching problems of mutually dependent traces are solved by two general devices, the pin and the
+open trace variable, which apply to every literal pattern that the matcher does not handle: in
+\texttt{insertion\_sort.dfy} with one pointer, the positions $j$ and $j - 1$ of the swaps are pinned in
+the same way, which closed a file that had been open since the start.
+
+\section{Counting Sort: Loops in Sequence and Atoms for Hypotheses}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int, k: int) returns (b: array<int, int>)
+  requires 0 <= n && 0 < k
+  requires keys_below(a, n, k)              // forall i :: 0 <= i < n ==> 0 <= a[i] < k
+  ensures sorted(b, 0, n)
+  ensures forall x: int :: count(x, selects(b, butlast(counter(0, 1, natural(n)))))
+    == count(x, selects(a, butlast(counter(0, 1, natural(n)))))
+{
+  var c: array<int, int>; var i: int; var v: int; var s: int; var t: int;
+  v := 0;
+  while v < k { c := c[v := 0]; v := v + 1; }
+  i := 0;
+  while i < n { c := c[a[i] := c[a[i]] + 1]; i := i + 1; }
+  s := 0; v := 0;
+  while v < k { t := c[v]; c := c[v := s]; s := s + t; v := v + 1; }
+  i := 0;
+  while i < n { b := b[c[a[i]] := a[i]]; c := c[a[i] := c[a[i]] + 1]; i := i + 1; }
+}
+\end{lstlisting}
+Four loops in sequence: the histogram is zeroed, filled, replaced by its prefix sums (the start position
+of each value), and the elements are scattered to their start positions, which are incremented.
+
+\subsection{The trace equation system}
+Each loop contributes a trace whose current value is the initial value of the next; the simplifier has
+already applied the introduction rules of \texttt{teq.dfy} (stores, consts, sums, selects) when the goal
+is printed ($V, V_2, K_2$ are counters of $k'$ steps with $\intf(k') = k$, $K, I, K_3, I_3$ counters of
+$n'$ steps with $\intf(n') = n$):
+\begin{align}
+  c_1 &= \cur(\mathsf{stores}(c_0, \bl{V}, \bl{\mathsf{consts}(k', 0)})) \label{eq:cs1}\\
+  c_2 &= \cur(\tr{c_1}{\bl{K}, \bl{I}}{c, k, i \mapsto c[a[k] := c[a[k]] + 1]}) \label{eq:cs2}\\
+  c_3 &= \cur(\mathsf{stores}(c_2, \bl{V_2}, \bl{S})) \qquad S = \sums(0, \mathsf{selects}(c_2, \bl{K_2})) \label{eq:cs3}\\
+  b' &= \cur(\mathsf{stores}(b, \mapc{\bl{K_3}, \bl{C}, \bl{I_3}}{k, c, i \mapsto c[a[k]]}, \mathsf{selects}(a, \bl{I_3}))) \label{eq:cs4}\\
+  C &= \tr{c_3}{\bl{K_3}, \bl{I_3}}{c, k, i \mapsto c[a[k] := c[a[k]] + 1]} \label{eq:cs5}
+\end{align}
+The scatter \eqref{eq:cs4} is a $\mathsf{stores}$ whose keys are the positions read from the table $C$ as
+it is incremented, and whose values are the elements of $a$.
+
+\subsection{The lemma chain}
+The histogram is characterized at each value (the generic lemma \lemma{current\_trace\_add\_at} of
+\texttt{teq.dfy} is for a fixed key; here the key is $a[k]$):
+\begin{align*}
+  &\lemma{current\_trace\_histogram}:\\
+  &\quad \cur(\tr{c_0}{\bl{\cnt(0, 1, n)}, hs}{c, k, h \mapsto c[a[k] := c[a[k]] + 1]})[v]\\
+  &\qquad = c_0[v] + \mathsf{count}(v, \mathsf{selects}(a, \bl{\cnt(0, 1, n)}))
+\end{align*}
+It fires on the reads $c_2[v]$ inside $\mathsf{selects}(c_2, \bl{K_2})$ of \eqref{eq:cs3}, with
+$c_1[v] = 0$ from \eqref{eq:cs1} by \lemma{current\_stores} of \texttt{teq.dfy}, so the prefix sums
+become
+\[ S = \sums(0, \mapc{\bl{K_2}, \bl{V_2}}{v, h \mapsto \mathsf{count}(v, \mathsf{selects}(a, \bl{\cnt(0, 1, n')}))}). \]
+The table of start positions is then named by a lemma whose left-hand side is this whole term:
+\begin{align*}
+  &\lemma{rank\_table\_def}:\\
+  &\quad \cur(\mathsf{stores}(c_0, \bl{\cnt(0, 1, kk)}, \bl{\sums(0, \mapc{\bl{\cnt(0, 1, kk)}, hs}{v, h \mapsto {}\\
+  &\qquad\qquad\qquad \mathsf{count}(v, \mathsf{selects}(a, \bl{\cnt(0, 1, n)}))})}))
+    = \mathsf{rank\_table}(c_0, a, n, kk)
+\end{align*}
+which rewrites $c_3$ to $\mathsf{rank\_table}(c_2, a, n', k')$, the number of elements of $a[0..n)$ below
+each value $v < k$ (and $c_2$ beyond). Naming the table is essential: the scatter lemma below needs the
+bound $kk$ of the keys, and a side condition $\mathsf{ranks}(c_0, a, n, kk)$ with $kk$ open would be
+matched by no fact, while $\mathsf{rank\_table}(c_2, a, n, kk)$ in the pattern binds $kk$. Finally the
+scatter:
+\begin{align*}
+  &\lemma{sorted\_scatter}:\\
+  &\quad s = \intf(n)\ \wedge\ \mathsf{keys\_below}(a, s, kb)\ \wedge\ kb = \intf(kk)
+    \ \wedge\ Iv = \cnt(0, 1, n)\ \wedge\ hs_3 = \bl{Iv}\\
+  &\quad\Longrightarrow\ \sorted(\cur(\mathsf{stores}(b_0,
+    \mapc{\bl{\cnt(0, 1, n)}, \bl{T}, hs_2}{k, c, h \mapsto c[a[k]]},\\
+  &\qquad\qquad\qquad\qquad\qquad \mathsf{selects}(a, hs_3))), 0, s)\ \Longleftrightarrow\ \mathsf{true}\\
+  &\qquad \text{where } T = \mathsf{trace}(\mathsf{rank\_table}(c_2, a, n, kk),\\
+  &\qquad\qquad\qquad \mathsf{for}\ \bl{\cnt(0, 1, n)}, hs\ \mathsf{do}\ c, k, h \mapsto c[a[k] := c[a[k]] + 1])
+\end{align*}
+and \lemma{count\_scatter} with the conclusion
+\[ \mathsf{count}(x, \mathsf{selects}(\cur(\ldots), \bl{\cnt(0, 1, n)})) = \mathsf{count}(x, \mathsf{selects}(a, \bl{\cnt(0, 1, n)})). \]
+The left-hand side binds $n := n'$, $kk := k'$, $hs_3 := \bl{I_3}$ and the rest; the counter of the
+values' $\mathsf{selects}$ is tied by the open trace variable $Iv$ (Section~\ref{sec:merge:lemmas}), since $\bl{I_3}$ and
+$\bl{\cnt(0, 1, n')}$ are not identified by a closed equation. The precondition on the keys is the atom
+$\mathsf{keys\_below}$ of the specification with an open bound $kb$, matched against the fact and then
+identified with $\intf(kk)$: a quantified hypothesis $\forall i.\ 0 \le i < n \Rightarrow 0 \le a[i] < k$
+is matched by no side condition, open or closed, so the specification uses the atom (as
+\texttt{count\_occurrences.dfy} uses the vocabulary of \texttt{teq.dfy} in its postcondition).
+
+Soundness of \lemma{sorted\_scatter}: with the start positions correct for all keys, element $a[k]$ is
+stored at (number of elements below $a[k]$) + (number of equal elements before position $k$), which is
+a bijection of $0, \ldots, n - 1$ that is monotone in the value, so the result is sorted on $0, \ldots, n - 1$
+and has the elements of $a$. Both are asserted, not proved; the lemma is the algorithm's correctness
+argument in one statement, over the exact shape of the two last loops.
+
+\subsection{The idea}
+Loops in sequence compose through the current values: each loop's trace has the previous result as its
+initial value, and the acceleration lemmas of \texttt{teq.dfy} (stores read at a position, sums, consts)
+push the characterization of one loop into the next without any lemma specific to counting sort, up to
+the table of start positions. The algorithm-specific knowledge is concentrated in naming the table and
+in the scatter lemma, whose left-hand side is the composition of the last two loops. What could not be
+expressed is a quantified precondition as a side condition; the specification's vocabulary must provide
+an atom for it.
+
+
+\section{First Duplicate: a Search with an Early Exit (open)}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int) returns (r: bool)
+  requires 0 <= n
+  ensures r <==> !distincts(selects(a, butlast(counter(0, 1, natural(n)))))
+{
+  var i: int; var j: int;
+  r := false; i := 0;
+  while i < n && !r {
+    j := i + 1;
+    while j < n && !r {
+      if a[i] == a[j] { r := true; }
+      j := j + 1;
+    }
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+The nested loop of \texttt{distinct.dfy} (which is verified) with both loops stopped by the flag: the
+search for a duplicate ends at the first one. The postcondition uses $\mathsf{distincts}$ of
+\texttt{teq.dfy}.
+
+\subsection{The trace equation system}
+The outer loop's constraint includes the flag, $\al{\bl{K}, \bl{R}, \bl{I}}{k, r, i \mapsto \neg r}$, so
+$r$ is false at the head of every outer iteration, and the simplifier uses this inside the inner trace:
+\begin{align}
+  K &= I = \cnt(0, 1, n') \qquad r = \cur(R) \qquad R = \mathsf{results}(\mathsf{false}, \bl{K}, \seq{R}) \qquad i = \intf(n') \label{eq:fd0}\\
+  &\al{\bl{K}, \bl{R}, \bl{I}}{k, r, i \mapsto \neg r} \label{eq:fd1}\\
+  &\al{\bl{K}, \bl{I}, \seq{R}, \seq{R}'}{k, i, r, R' \mapsto r = \cur(R')} \label{eq:fd2}\\
+  &\al{\bl{K}, \bl{I}, \seq{R}', \seq{J}'}{k, i, R', J \mapsto {}\nonumber\\
+  &\qquad\qquad R' = \tr{\mathsf{false}}{\bl{J}}{r, j \mapsto \upd{a[k] = a[j]}{\mathsf{true}}\ \ \upd{a[k] \ne a[j]}{\mathsf{false}}}} \label{eq:fd3}\\
+  &\al{\bl{K}, \seq{N}, \seq{J}'}{k, n'', J \mapsto J = \cnt(k + 1, 1, n'')} \label{eq:fd4}\\
+  &\al{\bl{K}, \seq{N}, \seq{J}}{k, n'', j \mapsto j = \intf(n'') + k + 1} \label{eq:fd4b}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}'}{k, i, J \mapsto \al{\bl{J}}{j \mapsto j < n}} \label{eq:fd5}\\
+  &\al{\bl{K}, \bl{I}, \seq{R}'}{k, i, R' \mapsto \al{\bl{R'}}{r \mapsto \neg r}} \label{eq:fd5b}\\
+  &\al{\bl{K}, \bl{I}, \seq{R}, \seq{J}}{k, i, r, j \mapsto \neg(j < n \wedge \neg r)} \label{eq:fd6}\\
+  &\neg(i < n \wedge \neg r)\ \Longrightarrow\ r \Leftrightarrow \neg\mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))})) \nonumber
+\end{align}
+(after the fragment lemmas of Section~\ref{sec:sel:frag}, which gave \eqref{eq:fd4} and \eqref{eq:fd4b}). The inner update
+\eqref{eq:fd3} does not mention the previous value of the flag, since the inner constraint
+$\neg r$ \eqref{eq:fd5b} replaced it by $\mathsf{false}$: the inner trace is a sequence of comparisons
+with $a[k]$. The inner exit \eqref{eq:fd6} is the negation of the test $j < n \wedge \neg r$: either all
+later positions were visited, or the flag was set. With \texttt{-split}, the outer exit
+$\neg(i < n \wedge \neg r)$ gives two goals, the exit by $i = n$ and the exit by $r$.
+
+\subsection{The attempt}
+The summary of the inner loop in the style of Section~\ref{sec:sel:sum} is a rewrite of the fragment \eqref{eq:fd2}
+into a fact about the results: with \eqref{eq:fd3}--\eqref{eq:fd6} as
+side conditions (duplicated and identified by equations where closed),
+\begin{align*}
+  \al{ks, rs, Rs}{k, r, R' \mapsto r = \cur(R')}\ \Longleftrightarrow\ \al{ks, rs}{k, r \mapsto r = \neg\mathsf{nodup}(a, k, n)}
+\end{align*}
+where $\mathsf{nodup}(a, k, n)$ is the abstract "$a[k]$ does not occur among $a[k + 1..n)$". This is
+sound in both exit cases of the inner loop: if the flag was set, a later duplicate was found; if $j$
+reached $n$, all later positions were compared. This lemma fires. The outer trace is then
+$\mathsf{results}(\mathsf{false}, \bl{K}, \seq{R})$ with $\seq{R}$ characterized pointwise, and the
+simplifier itself turns it into $\mathsf{results}(\mathsf{false}, \bl{K}, \mapc{\bl{K}}{k \mapsto \neg\mathsf{nodup}(a, k, n)})$,
+whose current value is the last comparison, $\neg\mathsf{nodup}(a, \intf(n') - 1, n)$ if $n' > 0$.
+The two goals then need: for the exit by $i = n$, that $\mathsf{nodup}(a, n - 1, n)$ holds (the last
+element has no later duplicate, a lemma \lemma{nodup\_last}) and that the flags of all iterations being
+false, \eqref{eq:fd1} over $\bl{R}$, gives $\mathsf{nodup}(a, k, n)$ for all $k < n - 1$, hence
+$\mathsf{distincts}$; for the exit by $r$, that $\neg\mathsf{nodup}(a, \intf(n') - 1, n)$ with
+$\intf(n') \le n$ contradicts $\mathsf{distincts}$.
+
+A first set of lemmas for these two steps closed both goals, and also the negated postcondition: the
+lemma for the first step, \lemma{distincts\_flags}, had the summary fragment
+\[ \al{\bl{\cnt(0, 1, m)}, rs_2}{k, r \mapsto r = \neg\mathsf{nodup}(a, k, n)} \]
+as an \emph{open} side condition, and a rule $\mathsf{nodup}(a, k, n) \Leftrightarrow \mathsf{true}$ under the hypothesis
+$\mathsf{distincts}(\ldots)$ for the second step. An $\mathsf{all}$ side condition is matched in the
+simplifier's context of the fact's combinator, where rules fire: under the hypothesis $\mathsf{distincts}$
+of the second goal, the rule rewrote the condition to $\al{\ldots}{k, r \mapsto \neg r}$, which is
+\eqref{eq:fd1}, a fact, so $\mathsf{distincts}$ was derived from itself (finding 13 of \texttt{NOTES.md}).
+With the circular rule replaced by a rule on the atom $\mathsf{distincts}$ with the atoms
+$\neg\mathsf{nodup}(a, k, n)$ and $0 \le k < n$ as side conditions, the proof is sound again and two goals remain: the current value of
+$\mathsf{results}$ over the map is not yet rewritten (the lemma for it, written for results that depend
+on the previous value, does not match the map), and the step from the flags \eqref{eq:fd1} to
+$\mathsf{distincts}$ needs the flag at position $k$ to be read as the result of iteration $k - 1$, a
+shift that the lemma must state explicitly.
+
+\subsection{The idea}
+An early exit is a data-dependent number of iterations with a disjunctive exit; the summary of the
+inner loop must be stated so that it holds in both cases, which the abstract atom $\mathsf{nodup}$
+affords, since it describes the result rather than the number of iterations. The soundness lesson is
+the important one: a side condition that other rules can simplify under the conclusion to be proved is a
+circular justification, and the safe form of side conditions is an atom that is matched literally
+(as \lemma{consts\_prefix\_def} of \texttt{teq.dfy} does for a constraint, and as the summary itself does
+for the inner loop).
+
+\section{Binary Search: the Lower Bound (open)}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int, x: int) returns (lo: int)
+  requires 0 <= n
+  requires sorted(a, 0, n)
+  ensures 0 <= lo <= n
+  ensures forall k: int :: 0 <= k < lo ==> a[k] < x
+  ensures forall k: int :: lo <= k < n ==> x <= a[k]
+{
+  var hi: int; var mid: int;
+  lo := 0; hi := n;
+  while lo < hi {
+    mid := (lo + hi) / 2;
+    if a[mid] < x { lo := mid + 1; } else { hi := mid; }
+  }
+}
+\end{lstlisting}
+The first position of $a[0..n)$ whose element is at least $x$, for a sorted array. The example
+\texttt{bsearch.dfy} of \texttt{examples/dafny/teq} verifies a binary search with the stronger
+precondition of partition points for all indices; here the precondition is $\sorted(a, 0, n)$, so the
+comparisons $a[m] < x$ are meaningful for $0 \le m < n$ only.
+
+\subsection{The trace equation system}
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad lo = \cur(L) \qquad hi = \cur(H) \qquad hi \le lo \label{eq:lb0}\\
+  L &= \tr{0}{\bl{K}, \bl{H}}{lo, k, hi \mapsto \upd{G}{(hi + lo)/2 + 1}\ \ \upd{\neg G}{lo}} \label{eq:lb1}\\
+  H &= \tr{n}{\bl{K}, \bl{L}}{hi, k, lo \mapsto \upd{G}{hi}\ \ \upd{\neg G}{(hi + lo)/2}} \label{eq:lb2}\\
+  &\qquad\text{where } G \text{ abbreviates } a[(hi + lo)/2] < x \nonumber\\
+  &\al{\bl{K}, \bl{L}, \bl{H}}{k, lo, hi \mapsto lo < hi} \label{eq:lb3}
+\end{align}
+As in the merge, the two variables are traces over each other, with a data-dependent guard that reads the
+array at a position computed from both.
+
+\subsection{The attempt}
+The intended lemmas name the result by an abstract function $\mathsf{lb}(a, n, x)$ with the facts
+$0 \le \mathsf{lb}(a, n, x) \le n$, $(a[k] < x) \Leftrightarrow \mathsf{true}$ for $0 \le k < \mathsf{lb}(a, n, x)$,
+and $(x \le a[k]) \Leftrightarrow \mathsf{true}$ for $\mathsf{lb}(a, n, x) \le k < n$ (all under $\sorted(a, 0, n)$),
+which close the postcondition once $lo = \mathsf{lb}(a, n, x)$ is known. The summary of the loop in the style of
+the merge (Section~\ref{sec:merge}): the guard is the higher-order $G(lo, hi)$ pinned by
+$\forall lo, hi.\ G(lo, hi) \Leftrightarrow a[(hi + lo)/2] < x$, the trace of $hi$ is tied by an open trace variable
+$Hv = \tr{n}{\bl{\cnt(0, 1, nn)}, \bl{Lv}}{\ldots}$ with $hs = \bl{Hv}$, and the left-hand side is
+$\cur(\tr{0}{\bl{\cnt(0, 1, nn)}, hs}{lo, k, hi \mapsto \upd{G(lo, hi)}{(hi + lo)/2 + 1}\ \ \upd{\neg G(lo, hi)}{lo}})$,
+rewritten to $\mathsf{lb}(a, n, x)$. What the lemma must also know is that the loop has terminated, the exit
+$hi \le lo$ of \eqref{eq:lb0}: without it the current value of $L$ is not the lower bound.
+
+Stating the exit as a side condition $\cur(Hv) \le \cur(Lv)$ makes the run exceed the time limit: to decide
+the condition, the simplifier rewrites $\cur(Lv)$, which is the left-hand side of the very lemma, whose
+conditions decide it again (finding 20 of \texttt{NOTES.md}). Stating it with open variables, $h \le l$ with
+$h = \cur(Hv)$ and $l = \cur(Lv)$, which should be matched against the hypothesis $hi \le lo$ and then
+identified with the current values by the definitions of $lo$ and $hi$, had the same effect in a first run;
+whether a form exists that is matched against the hypothesis without re-entering the lemma is not settled.
+Without the exit condition the lemma is unsound and the run terminates with the goal open (the conclusion
+$lo = \mathsf{lb}$ is produced, but the facts about $\mathsf{lb}$ do not close the quantified
+postconditions, since the pin $\forall lo, hi.\ G(lo, hi) \Leftrightarrow a[(hi + lo)/2] < x$ mentions
+$x$, which the left-hand side does not bind; it was only decided by name capture, finding 21).
+
+\subsection{The idea, and what is missing}
+Binary search is the paper's acknowledged weakness: the loop computes a bound by narrowing, and only a
+partial description of the traces (monotone $lo$, monotone $hi$, $lo \le \mathsf{lb} \le hi$ throughout) is
+needed, not their values. \texttt{bsearch.dfy} handles it by abstracting the comparisons with the array
+into comparisons of indices with partition points (lemmas $(a[m] < x) \Leftrightarrow m < p$ without side
+conditions), by the named monotone traces $\mathsf{incs}$ and $\mathsf{decs}$ whose bounds are their
+facts, and by a cut after the loop. With $\sorted$ instead of partition points, the comparison lemma needs
+$0 \le m < n$, which in the context of the updates follows from the invariant $0 \le lo \le hi \le n$,
+the thing to be established; the summary lemma of this section bypasses the invariant by stating the
+result directly, and founders on expressing the exit. A lemma that takes the exit from the facts as an
+atom (the way \lemma{consts\_prefix\_def} abstracts constraints) is the next thing to try.
+
+\end{document}

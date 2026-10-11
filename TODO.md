@@ -66,14 +66,51 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   Remedies: prefer to solve for the variable that occurs in fewer definitions (`sum₄₀`), or reject a rewrite whose
   result contains the rewritten term (`Rewrite.apply`). Also non-terminating, not analysed yet:
   [add-3-n-u](benchmarks/sv-comp/dafny/array-multidimensional/add-3-n-u.dfy), `copy-partial-3-u`, `diff-3-n-u`.
-- A cycle through a side condition: `sum_invs_const` of teq.dfy has the left-hand side `sum(js)`, which matches
-  every sum, and the side condition `invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)`, open in `n` and `c`,
-  which `Rewrite.conditions` simplifies before it searches the facts. For `js` a term like
-  `prefix(natural(k), maps(...))`, that builds the contexts of combinators with their iterations, whose reads of
-  the dependencies produce new sums, on which `sum_invs_const` is tried again, until the budget is exhausted; e.g.
-  [ps2-ll.dfy](benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy) repeats the same reads about 117 times and terminates
-  after 48 steps without the lemma; likewise ps3-ll to ps6-ll, cohencu-ll, cohendiv-ll, for_bounded_loop1,
-  copy-3-n-u, diff-2-n-u (13 of the 16 errors of the Dafny translations at 0.34.22). Remedies:
+- Rule variables are not renamed apart from the free variables of the goal: if the goal has a variable `Ns` and
+  a lemma's side condition has its own variable `Ns`, the open condition coincides with the fact literally, is
+  decided true without binding `Ns`, and `Rewrite.apply` reports "variables of a rule not instantiated by its
+  match", which replaces the goal; a pin `forall lo, hi :: G(lo, hi) <==> a[(hi + lo) / 2] < x` with the lemma's `x`
+  unbound was decided only because the method's variable is also named `x` (see
+  [fragments.dfy](examples/dafny/algorithms/fragments.dfy), whose test methods name their sequences `KK, NN, ...` apart,
+  and [lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy)).
+- A side condition that is an `invs` is matched in the context of the fact's combinator, where other rules fire,
+  also with the hypotheses of the goal: in [first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy) a rule
+  `nodup(a, k, n) <==> true` under the hypothesis `distincts(...)` rewrote the condition
+  `invs(for ⌊counter(0, 1, m)⌋, rs check k, r :: r == !nodup(a, k, n))` of a lemma on `distincts(...)` into the fact
+  `invs(... :: !r)`, so that `distincts(...)` was proved from itself, also for the negated postcondition; the path
+  through the split goals is not isolated. Side conditions of a rule should not be simplifiable by rules that use
+  the conclusion; atoms as side conditions (`consts_prefix` style) avoid it.
+- The result of a run is not reproducible in one case: the summary lemma of
+  [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy) with 21 side conditions closed the goal in one run
+  and leaves it in every later run of the same file and jar; its fourth condition, the exit of the forward pass
+  `invs(for ks, js check k, j :: n <= j + k + 1)`, is not matched against the fact of that shape over
+  `⌊K⌋, ⌊Lo⌋, ⌊Hi⌋, J?` (the same condition works in bubble_sort.dfy over `⌊K⌋, ⌊I⌋, J?`). Presumably an order that
+  depends on a hash set.
+- A cycle through a side condition that is an iteration constraint, resolved for `sum_invs_const` of teq.dfy, which
+  is `consts_prefix_def` and `sum_consts_prefix` now, with the atom `consts_prefix(n, c, js)` abstracting the
+  constraint like `agree_prefix`; the mechanism remains for any rule with a general left-hand side and an `invs` side
+  condition: `sum_invs_const` had the left-hand side `sum(js)`, which matches every sum, and the side condition
+  `invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)`, open in `n` and `c`, which `Rewrite.conditions`
+  simplifies and then matches against the facts. Matching it against an `invs` fact (`Rewrite.matches`) builds the
+  simplifier's context of that fact's combinator (`Simplify.combinator`), whose reads of the dependencies
+  (`Simplify.iterations`) are rewritten, e.g. `earlier(natural(k), ⌊X⌋)` to `sum(prefix(natural(k), ...))` by
+  `earlier_sums`, on which `sum_invs_const` is tried again, with the same fact, one level deeper, until the budget is
+  exhausted (the cache of `Context.combinators` is filled only after the context is complete); e.g.
+  [ps2-ll.dfy](benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy) repeats the same eight steps 122 times, 30 s, and
+  terminates after 48 steps without the lemma; likewise ps3-ll to ps6-ll, cohencu-ll, cohendiv-ll, for_bounded_loop1,
+  copy-3-n-u, diff-2-n-u (13 of the 16 errors of the Dafny translations at 0.34.22). Such a rule is not decreasing
+  in the sense of conditional rewriting (its condition is not smaller than its left-hand side), which `Rule.check`
+  could reject statically: no `invs` in a side condition whose dependencies are variables of the left-hand side.
+  The decisive ingredient is the second one, a left-hand side that matches what the rewriting of the reads
+  produces: the fragment lemmas of [fragments.dfy](examples/dafny/algorithms/fragments.dfy) have `invs` side conditions
+  over the lists of their left-hand sides, but their left-hand sides are `invs` fragments with specific bodies, and
+  they terminate in every file; `invs_subst_counter` (body `t == F(k, J)`, higher-order) and `earlier_invs_def`
+  (left-hand side `earlier(natural(i), ts)`) of the first version of
+  [row_sums.dfy](examples/dafny/algorithms/row_sums.dfy) cycle. A side condition on the current value of the trace
+  that the rule rewrites, `current(Hv) <= current(Lv)` for a left-hand side `current(trace(...))`
+  ([lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy)), is the same re-entrance through the decision of a
+  closed condition instead of the search; remedy 1 covers both.
+  Remedies in the engine:
   1. A reentrance guard for conditional rules: while the side condition of a rule is decided, the rule is not
      applied inside, e.g. a set of such rules in the context that `Rewrite.apply` skips; this cuts the recursion
      for all conditional rules, and loses only side conditions that need the same rule again.
@@ -634,11 +671,64 @@ SV-COMP examples (`benchmarks/sv-comp/dafny`):
   (`Chains.solved`), not substituted elsewhere, e.g. `forall x. x == y + 1
   ==> p(x)` stays; a solution that depends on its variable through the
   equations of the context is not inlined (`Chains.acyclic`).
+- The selection of the dependencies of a pattern is not backtracked when a side condition fails: a lemma whose
+  left-hand side binds `ks` to the first matching dependency (`⌊K⌋`) and whose side condition needs the fragment
+  whose first dependency is another list (`⌊R⌋`, selected since the initial value `X(k)` matched its bound variable)
+  fails, hence the variant `invs_current_counter_other` with an independent first dependency
+  (see [nested_mult.dfy](examples/dafny/algorithms/nested_mult.dfy)).
+- A polymorphic lemma with a higher-order variable in a side condition is not matched: `current_results_steps<a>`
+  with `F: (a, int) -> a` (or `F: a -> a`) never fires, the monomorphic lemma does; `X: a -> int` in a side
+  condition is matched, so the problem is a higher-order variable of the type parameter's type
+  (see [nested_mult.dfy](examples/dafny/algorithms/nested_mult.dfy), [transpose.dfy](examples/dafny/algorithms/transpose.dfy)).
+- A literal disjunctive guard `n <= j || i < m && a[i] <= b[j]` in a trace pattern is never matched, while a
+  higher-order guard `G(i, j)` is, pinned by a quantified side condition `forall i, j :: G(i, j) <==> ...` that the
+  simplifier decides by beta reduction; the same pin serves for every literal pattern that is not matched (`j - 1`
+  as a store index, `n - k - 2` as an initial value), see [merge.dfy](examples/dafny/algorithms/merge.dfy),
+  [insertion_sort.dfy](examples/dafny/algorithms/insertion_sort.dfy), [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy).
+- A higher-order variable for an array read, `G(i)` against `a[i]`, is instantiated by the array itself, and the
+  right-hand side then contains `a(i)`, which no lemma matches
+  (see [prefix_sums.dfy](examples/dafny/algorithms/prefix_sums.dfy), which reads the array literally instead).
+- A variable argument of an uninterpreted function is not expanded by its definition when a pattern is matched
+  below it: `sorted(c, 0, n)` with `c == current(C)` is not matched by a left-hand side `current(trace(...))`, but
+  the whole atom `sorted(current(trace(...)), 0, s)` is, likewise `selects(current(...), ...)` with `selects` as
+  the head inside `count`; the length must then be a variable `s` with `s == m + n` as a side condition, since a
+  pattern `m + n` of two variables is not matched (see [merge.dfy](examples/dafny/algorithms/merge.dfy)).
+- A closed side condition that equates a list with a trace, `is == ⌊trace(0, for ⌊counter(0, 1, nn)⌋, js do ...)⌋`,
+  is decided by the simplifier and fails, since `⌊I⌋` is not expanded; the same with an open trace variable,
+  `Iv == trace(...)` matched against the hypothesis `I == trace(...)` and then `is == ⌊Iv⌋`, works, also for
+  `Iv == counter(0, 1, n)` (see [merge.dfy](examples/dafny/algorithms/merge.dfy), [counting_sort.dfy](examples/dafny/algorithms/counting_sort.dfy)).
+- A quantified hypothesis `forall i :: 0 <= i < n ==> 0 <= a[i] < k` is matched by no side condition, open or
+  closed; the specification states it as an atom `keys_below(a, n, k)` instead
+  (see [counting_sort.dfy](examples/dafny/algorithms/counting_sort.dfy)).
+- Arithmetic premises of a quantified side condition are substituted before the step lemmas see it: `i == k + 1` in
+  `forall b, k, i :: ... && i == k + 1 && ... ==> sorted(F(b, k, i), 0, i + 1)` turns the conclusion into
+  `sorted(insert(b, k + 1), 0, k + 2)`, which the pattern `sorted(insert(b, i), 0, i + 1)` does not match
+  (see [insertion_sort2.dfy](examples/dafny/algorithms/insertion_sort2.dfy), whose induction drops the premise).
 - Higher-order patterns (`Rewrite`) take distinct bound variables or terms
   instantiated already as arguments; other arguments match only if an
   earlier occurrence instantiated the variable, and a single bound variable
   of the pattern cannot abstract several of the expression (no tuples).
   Terms are abstracted at all of their occurrences.
+- Lemmas whose left-hand side is an `invs` with a bare comparison or equation as the body and a dependency that
+  is a variable, e.g. `above_iterations_def` (`k < t`), match every fragment with such a body, with the dependency
+  synthesized as a map: a resolved constraint `k + 1 + integer(nn) <= n` of an inner loop is consumed as
+  `above_iterations(n, maps(... n - integer(nn)))`, and an atom for the exit of a pass,
+  `invs(for ks, js check k, j :: n <= j + k + 1) <==> exits(ks, js, n)`, matches `2 k + 1 < n` and `0 <= integer(nn)`
+  (see [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy), [selection_sort.dfy](examples/dafny/algorithms/selection_sort.dfy),
+  which keeps the raw constraint as a side condition). Such definition lemmas should have a body that the matcher
+  cannot synthesize, e.g. an `earlier` read as in `consts_prefix_def`.
+- The fragments of an inner loop are resolved by generic lemmas (the inner trace over the inner counter is a counter,
+  its final value, the test, the exit, the lengths as a constant sequence), see
+  [fragments.dfy](examples/dafny/algorithms/fragments.dfy), candidates for teq.dfy; they are what the sharing of facts
+  of 7b420a0 did, as rewrite rules. Likewise `results` with `current_results_steps` for the outer trace of a variable
+  that only the inner loop modifies, `current_trace_all`, `current_trace_histogram`, `current_trace_prefix_sums_array`,
+  and the lemmas on `perm` (see [NOTES.md](examples/dafny/algorithms/NOTES.md), the entry of Oct 11 for their
+  termination analysis).
+- Induction lemmas with the invariant as a predicate indexed by the iteration, `bubbled(b, k, len)`, and a
+  quantified side condition `forall b, k :: 0 <= k < integer(m) && I(b, k) ==> I(F(b, k), k + 1)` that the simplifier
+  decides by step lemmas on atoms, replace whole-loop lemmas of sorting algorithms; the number of steps must be
+  constrained exactly or the invariant clamped, since steps beyond the range are unconstrained otherwise
+  (see [bubble_sort.dfy](examples/dafny/algorithms/bubble_sort.dfy), [selection_sort.dfy](examples/dafny/algorithms/selection_sort.dfy)).
 - No instantiation of the iteration constraint at a witness, e.g. a search
   whose constraint states that `P` holds before the exit `n`, and `!P(j)`,
   which gives `n <= j`; the examples abstract the constraint by an atom first,
@@ -755,6 +845,13 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 
 - The properties and expected verdicts of a task (`Task.properties`) are read
   but not used; only a single input file in C is supported.
+- The C versions of the local benchmarks (`benchmarks/sv-comp/c`) and partly
+  their Dafny sources do not always mean what the expected verdicts say, which
+  causes most wrong results of the other verifiers: uninitialized locals,
+  overflow after dropped bounds on values, verdicts that depend on bounds made
+  symbolic, and 5 translations that lose an update of an array parameter
+  (excluded from the task sets). Proposals in SV-COMP.md ("Other verifiers on
+  the C versions of the local benchmarks").
 
 ## Bitvectors
 

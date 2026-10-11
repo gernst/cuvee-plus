@@ -2,11 +2,12 @@
 // binary search for the first position of a value at least x in the sorted range a[0..n) (the lower bound): the
 // bounds lo and hi are data-dependent, the postcondition relates them to the abstract predicate sorted
 //
-// status: open, not attempted beyond the goal: lo and hi are traces over each other with the data-dependent guard
-// a[(lo + hi) / 2] < x, like bsearch.dfy of examples/dafny/teq, which abstracts the array by partition points for all
-// indices; with sorted(a, 0, n) the partition point lb(a, n, x) is meaningful for indices in [0, n) only, so the guard
-// lemma (a[m] < x) <==> m < lb(a, n, x) needs 0 <= lo <= hi <= n in the context of the updates, the invariant to be
-// established, and bsearch.dfy also needs a cut after the loop
+// status: open; an attempt in the style of merge.dfy (the guard a[(lo + hi) / 2] < x higher-order and pinned, the
+// trace of hi tied by an open trace variable, the exit hi <= lo as a side condition on the current values, the
+// result the abstract lower bound lb(a, n, x) with its properties as rules on the atoms of the postcondition) does
+// not terminate once the exit condition current(Hv) <= current(Lv) is present (its decision rewrites current(Lv) by
+// the same lemma, re-entrant), and terminates with the goal open without it; the runs of Oct 10 reported the
+// timeouts as proofs (NOTES.md, finding 18)
 
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 
