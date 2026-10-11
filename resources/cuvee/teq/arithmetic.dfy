@@ -138,6 +138,14 @@ lemma {:rw} {:teq} div_nonpos(x: int, c: int)
   requires 0 < c
   ensures (x / c <= 0) == (x < c)
 
+// the half of an even number as an equation without division, which the simplifier solves and substitutes, e.g.
+// n == CELLCOUNT / 2 as CELLCOUNT == 2 * n, such that 2 * n <= i < CELLCOUNT is empty; a workaround, since solutions
+// of arithmetic equations are inlined into polynomials only, here not n into 2 * n (see TODO.md)
+// (from MonoCera: pr2)
+lemma {:rw} {:teq} half_even(n: int, x: int)
+  requires x % 2 == 0
+  ensures (n == x / 2) == (x == 2 * n)
+
 // a power of 2 is not divisible by 3
 // (from underapprox_1-1, underapprox_1-2)
 lemma {:rw} {:teq} pow_two_mod_three(n: Nat)
