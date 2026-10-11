@@ -29,6 +29,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## Bugs
 
+- `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
+  unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final
+  assertion fails), after about 340 s each, in the 15-minute runs of `xml/cuvee-full-fallback.xml` of Oct 11, 2026
+  (0.36.3, without `-unbounded`); the runs of Oct 10 with 60 s and 120 s stopped them at `TIMEOUT (true)`, so not
+  new; `-teq` without the fallback leaves them unknown, `-chc` (1 min) times out. Presumably the lowering for Z3
+  loses a constraint of the early exits, as for geo1-u below; not yet analysed.
 - `-fallback -z3` proves `benchmarks/sv-comp/dafny/nla-digbench/geo1-u` (expected unsafe), in the runs of
   `xml/cuvee-quick-fallback.xml` of 2026-10-10 15:25 and 16:12: a soundness problem of the encoding or of the
   lemmas it relies on, not yet analysed. Its C version is unsafe only by the wrap-around of `unsigned long long`,
@@ -103,6 +109,11 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   dependency variables `nn` and `hs` unbound: a rule then fires with "variables of a rule not instantiated by its
   match", or its identifying equations `nn2 == nn` stay open and are never matched (the probes of lower_bound.dfy,
   NOTES.md finding 32).
+- A lemma of an injected module (`-include teq:nested`) does not fire on a goal where the identical lemma, included
+  as a user file or written in the input, does: `invs_counter_consts` of nested.dfy on
+  [row_sums.dfy](examples/dafny/algorithms/row_sums.dfy) (`-rules` does not list it; it fires on transpose.dfy, and
+  the two further chain lemmas stay in row_sums.dfy for this reason, NOTES.md finding 34). Not understood: the rules
+  differ by the attribute `{:teq}` and by their position among the rules.
 - The exit of a loop in the conclusion of a goal is a disjunction, `i < n && !r || r == !distincts(...)` for the exit
   `!(i < n && !r)`, which `-split` does not split, and the context of the second disjunct does not contain the literals
   of the negated first, so a rule on the atom of the postcondition sees neither `n <= i` nor `r`; a case split on the
