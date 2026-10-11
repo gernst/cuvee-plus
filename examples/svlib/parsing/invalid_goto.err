@@ -1,3 +1,3 @@
 (error
-  "tag on a statement that is neither a loop nor the body of a procedure"
+  "tag on a statement that is neither a loop, the body of a procedure, nor a sequence"
   "Id(loop)")

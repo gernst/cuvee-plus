@@ -127,8 +127,8 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
             val attrs_ = properties(tagged, Kind.Loop, true, attrs) ++ modifies(prog_)
             state.progs.while_(expr(scope, test), prog_, attrs_)
 
-          // a sequence is a block with its tags and location invariants (see Kind)
-          case List(Id("sequence"), progs*) =>
+          // a sequence with tags is a block with its tags and location invariants (see Kind)
+          case List(Id("sequence"), progs*) if tagsOf(attrs).nonEmpty =>
             val tagged = Tagged(scope, None, body.body, body.entry)
             for tag <- tagsOf(attrs) do
               sequences += tag

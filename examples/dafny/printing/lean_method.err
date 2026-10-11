@@ -1,2 +1,2 @@
 error "not supported in Lean"
-  "DefineProc(Proc(Name(m,None),List(),List(Var(Name(x,None),Sort(Con(Name(Int,None),0),List()))),List(Var(Name(y,None),Sort(Con(Name(Int,None),0),List())))),Block(List(),List(Assign(List(Var(Name(y,None),Sort(Con(Name(Int,None),0),List()))),List(Var(Name(x,None),Sort(Con(Name(Int,None),0),List())))))),Attrs(List()))"
+  "DefineProc(Proc(Name(m,None),List(),List(Var(Name(x,None),Sort(Con(Name(Int,None),0),List()))),List(Var(Name(y,None),Sort(Con(Name(Int,None),0),List())))),Block(List(),List(Assign(List(Var(Name(y,None),Sort(Con(Name(Int,None),0),List()))),List(Var(Name(x,None),Sort(Con(Name(Int,None),0),List()))))),Attrs(List())),Attrs(List()))"
