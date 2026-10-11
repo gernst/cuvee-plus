@@ -59,9 +59,12 @@ case class SizeofType(words: List[String]) extends Expr
 case class SizeofExpr(expr: Expr) extends Expr
 // initializer lists of arrays, only in declarations
 case class Items(items: List[Expr]) extends Expr
-// the terms of ACSL: \result, \old(e), and the quantifiers \forall and \exists over typed variables
+// the terms of ACSL: \result, \old(e), \at(e, L) at the labels Pre, Here, and LoopEntry, \valid and \valid_read,
+// which are true, since memory safety is not checked, and the quantifiers \forall and \exists over typed variables
 case object Result extends Expr
 case class Old(expr: Expr) extends Expr
+case class At(expr: Expr, label: String) extends Expr
+case object Valid extends Expr
 case class Quant(quant: String, bound: List[(Type, String)], body: Expr) extends Expr
 
 object IntType:
@@ -92,6 +95,7 @@ object SizeofType extends (List[String] => Expr)
 object SizeofExpr extends (Expr => Expr)
 object Items extends (List[Expr] => Expr)
 object Old extends (Expr => Expr)
+object At extends ((Expr, String) => Expr)
 object Quant extends ((String, List[(Type, String)], Expr) => Expr)
 
 // the clauses of ACSL annotations by their keywords, e.g. requires, loop invariant, assert, whose argument is a term,

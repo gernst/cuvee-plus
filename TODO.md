@@ -913,28 +913,39 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   except with `-unbounded`, `integer` and `boolean` unbounded), chained
   comparisons, mathematical arithmetic without wrap-around, casts as in C.
   `assigns` and `loop assigns` are skipped (the modifies clauses are
-  inferred). Not supported: other `\...` constructs (`\valid`, `\at`,
-  `\separated`, ...), behaviors, ghost code, logic definitions, calls in
+  inferred). `\at(e, L)` for `Pre`, `Here`, `LoopEntry`, `\valid` and
+  `\valid_read` (true), ranges of unsigned variables as in Frama-C/WP, and
+  `&`, `|`, `^` of truth values (0.39.3). Not supported: other `\...`
+  constructs (`\separated`, other labels, ...), behaviors, ghost code, logic definitions, calls in
   annotations; contracts of `main` are conjoined with the zero values of the
   globals. The printer writes contracts, loop invariants and variants, and
   assertions that are not C (quantifiers, implications, `\old`) as ACSL.
 - ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the tasks of the
   categories Arrays and Loops with hand-written annotations, checked with
   `-verify -z3`, 0.38.0; the issues of the support found so far, by impact):
-  - The ranges of the C types of the program variables are not assumed at
-    loop heads: the state is quantified over all integers, while the program
+  - Done in 0.39.3 for unsigned types: annotated loops get the ranges of the
+    unsigned variables they modify as invariants, functions with annotations
+    those of their unsigned parameters as preconditions (`c.Parser.loop`;
+    `count_up_down-1`, `trex03-2` prove); signed types get none, as their
+    overflow is not modelled. Was: the ranges of the C types of the program
+    variables are not assumed at loop heads: the state is quantified over all integers, while the program
     wraps unsigned arithmetic (`uint(x + 1)`), so a loop invariant over
     unsigned variables, e.g. `x + y == n` (`loops/count_up_down-1`), is
     refuted by a negative `x`. Frama-C/WP conjoins the type ranges to every
     invariant implicitly; `loop-invariants/linear-inequality-inv-a` proves
     with an additional `0 <= s`. Affects nearly all of `loops-crafted-1`
     (43 of 55 refuted), `loop-crafted/simple_vardep_*`, `loops/trex03-2`.
-  - Bitwise `&` is uninterpreted (`bitand`), also on operands that are 0 or
-    1: the `*_abstracted` tasks test `(z > 100) & (x < 100)`
+  - Done in 0.39.3 for truth values: `&`, `|`, `^` of two truth values are
+    `and`, `or`, xor (`c.Parser.logical`; the `*_abstracted` tasks prove); `&`
+    with other operands remains `bitand` (`bin-suffix-5`). Was: bitwise `&` is
+    uninterpreted (`bitand`), also on operands that are 0 or 1: the `*_abstracted` tasks test `(z > 100) & (x < 100)`
     (`loops/terminator_02-2_abstracted`, `trex03-2_abstracted`), and
     `loop-invariants/bin-suffix-5` asserts `(x & 5) == 5` with the invariant
     `x % 8 == 5`.
-  - Not supported but used by the annotations: `\at(x, LoopEntry)` and
+  - Done in 0.39.3: `\at(e, Pre)` is `\old(e)`, `\at(e, Here)` is `e`,
+    `\at(e, LoopEntry)` reads copies assigned before the loop; `\valid` and
+    `\valid_read` are true. The `axiomatic` remains. Was: not supported but
+    used by the annotations: `\at(x, LoopEntry)` and
     `\at(x, Pre)` (`loop-crafted/simple_array_index_value_4`, `loops/nec20`,
     `trex02-2`), `\valid`/`\valid_read` in preconditions of functions on
     arrays (`loops/linear_sea.ch`, `linear_search`, `veris.c_NetBSD-libc_loop`;

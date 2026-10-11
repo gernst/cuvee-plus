@@ -37,6 +37,13 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
   type Scope = Map[String, (core.Var, Type)]
 
+  // the environment of the terms of ACSL: the result of the function, \result in a postcondition, and in the clauses
+  // of a loop, the copies of the variables at its entry, \at(x, LoopEntry), which are assigned before it (see loop)
+  case class Env(result: Option[(core.Var, Type)], entry: Option[(Ctx, mutable.LinkedHashMap[core.Var, core.Var])])
+
+  object Env:
+    val empty = Env(None, None)
+
   def typ(t: Type): core.Type =
     t match
       case IntType(_, _) | Integer => state.types.sort("Int")
@@ -464,7 +471,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case App(op, List(left, right)) =>
         val (pre1, left_, lt) = expr(scope, ctx, left)
         val (pre2, right_, rt) = expr(scope, ctx, right)
-        val (e_, t) = binary(op, left_, lt, right_, rt)
+        val (e_, t) = logical(op, left_, lt, right_, rt).getOrElse(binary(op, left_, lt, right_, rt))
         (pre1 ++ pre2, e_, t)
 
       case Cond(e, None) =>
@@ -494,7 +501,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Items(_) =>
         Error.raise("initializer list outside of a declaration", e)
 
-      case Result | Old(_) | Quant(_, _, _) =>
+      case Result | Old(_) | At(_, _) | Valid | Quant(_, _, _) =>
         Error.raise("term of ACSL outside of an annotation", e)
 
       // the update is made before the expression, whose value is the old one for x++ and the new one for ++x
@@ -579,8 +586,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
   // the terms of ACSL, whose arithmetic is on the mathematical integers, without the conversions and wrap-around of C,
   // whose comparisons chain, 0 <= i < n, and whose quantified variables of C types range over these types, unless
-  // -unbounded (see bounds); `result` is \result of a postcondition
-  def term(scope: Scope, result: Option[(core.Var, Type)], e: Expr): (core.Expr, Type) =
+  // -unbounded (see bounds)
+  def term(scope: Scope, env: Env, e: Expr): (core.Expr, Type) =
     e match
       case Num(text) =>
         (state.exprs.num(literal(text)), Integer)
@@ -598,40 +605,62 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
       case Result =>
         Error.report("\\result outside of a postcondition"):
-          require(result.isDefined)
-        result.get
+          require(env.result.isDefined)
+        env.result.get
 
       case Old(arg) =>
-        val (arg_, t) = term(scope, result, arg)
+        val (arg_, t) = term(scope, env, arg)
         (state.exprs.old(arg_), t)
 
+      case At(arg, "Pre") =>
+        term(scope, env, Old(arg))
+
+      case At(arg, "Here") =>
+        term(scope, env, arg)
+
+      // the variables of the term are replaced by their copies at the entry of the loop
+      case At(arg, "LoopEntry") =>
+        Error.report("\\at(_, LoopEntry) outside of the clauses of a loop", arg):
+          require(env.entry.isDefined)
+        val Some((ctx, copies)) = env.entry: @unchecked
+        val (arg_, t) = term(scope, env, arg)
+        val xs = arg_.free.toList.filter(x => scope.values.exists(_._1 == x))
+        val ys = for x <- xs yield copies.getOrElseUpdate(x, temp(ctx, scope.values.find(_._1 == x).get._2))
+        (core.Subst.from(xs, ys)(arg_), t)
+
+      case At(_, label) =>
+        Error.raise("label of \\at not supported", label)
+
+      case Valid =>
+        (state.exprs.const("true"), BoolType)
+
       case Index(base, index) =>
-        val (base_, t) = term(scope, result, base)
-        val (index_, it) = term(scope, result, index)
+        val (base_, t) = term(scope, env, base)
+        val (index_, it) = term(scope, env, index)
         t match
           case ArrayType(elem) => (state.exprs.app("select", List(base_, toInt(index_, it))), elem)
           case _               => Error.raise("indexing of an expression that is not an array", base)
 
       case Cond(e, None) =>
-        term(scope, result, e)
+        term(scope, env, e)
 
       case Cond(test, Some((left, right))) =>
-        val test_ = predicate(scope, result, test)
-        val (left_, lt) = term(scope, result, left)
-        val (right_, rt) = term(scope, result, right)
+        val test_ = predicate(scope, env, test)
+        val (left_, lt) = term(scope, env, left)
+        val (right_, rt) = term(scope, env, right)
         if lt == BoolType && rt == BoolType
         then (state.exprs.app("ite", List(test_, left_, right_)), BoolType)
         else (state.exprs.app("ite", List(test_, toInt(left_, lt), toInt(right_, rt))), Integer)
 
       case App("!", List(arg)) =>
-        (state.exprs.app("not", List(predicate(scope, result, arg))), BoolType)
+        (state.exprs.app("not", List(predicate(scope, env, arg))), BoolType)
 
       case App("-", List(arg)) =>
-        val (arg_, t) = term(scope, result, arg)
+        val (arg_, t) = term(scope, env, arg)
         (state.exprs.app("-", List(toInt(arg_, t))), Integer)
 
       case App("~", List(arg)) =>
-        val (arg_, t) = term(scope, result, arg)
+        val (arg_, t) = term(scope, env, arg)
         (state.exprs.app("bitnot", List(toInt(arg_, t))), Integer)
 
       case App(op @ ("&&" | "||" | "==>" | "<==>"), List(left, right)) =>
@@ -640,18 +669,18 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
           case "||"  => "or"
           case "==>" => "=>"
           case _     => "="
-        (state.exprs.app(fun, List(predicate(scope, result, left), predicate(scope, result, right))), BoolType)
+        (state.exprs.app(fun, List(predicate(scope, env, left), predicate(scope, env, right))), BoolType)
 
       // chained comparisons, where a parenthesized comparison is Cond(_, None) and does not chain
       case App(op, List(App(op_, List(_, middle)), right)) if relation(op) && relation(op_) =>
         val App(_, List(first, _)) = e: @unchecked
-        val left = predicate(scope, result, first)
-        val next = predicate(scope, result, App(op, List(middle, right)))
+        val left = predicate(scope, env, first)
+        val next = predicate(scope, env, App(op, List(middle, right)))
         (state.exprs.app("and", List(left, next)), BoolType)
 
       case App(op, List(left, right)) if relation(op) =>
-        val (left_, lt) = term(scope, result, left)
-        val (right_, rt) = term(scope, result, right)
+        val (left_, lt) = term(scope, env, left)
+        val (right_, rt) = term(scope, env, right)
         val (left__, right__) =
           (lt, rt) match
             case (BoolType, BoolType) | (ArrayType(_), _) | (_, ArrayType(_)) => (left_, right_)
@@ -663,25 +692,25 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
         (phi, BoolType)
 
       case App(op, List(left, right)) =>
-        val (left_, lt) = term(scope, result, left)
-        val (right_, rt) = term(scope, result, right)
-        (arith(op, toInt(left_, lt), toInt(right_, rt)), Integer)
+        val (left_, lt) = term(scope, env, left)
+        val (right_, rt) = term(scope, env, right)
+        logical(op, left_, lt, right_, rt).getOrElse((arith(op, toInt(left_, lt), toInt(right_, rt)), Integer))
 
       case Cast(Integer, e) =>
-        val (e_, t) = term(scope, result, e)
+        val (e_, t) = term(scope, env, e)
         (toInt(e_, t), Integer)
 
       case Cast(t: IntType, e) =>
-        val (e_, t_) = term(scope, result, e)
+        val (e_, t_) = term(scope, env, e)
         (convert(toInt(e_, t_), t_, t), t)
 
       case Cast(BoolType, e) =>
-        (predicate(scope, result, e), BoolType)
+        (predicate(scope, env, e), BoolType)
 
       case Quant(quant, bound, body) =>
         val xs = for (t, x) <- bound yield (x, state.exprs.formal(x, typ(t)), t)
         val scope_ = scope ++ xs.map((x, v, t) => x -> (v, t))
-        val body_ = predicate(scope_, result, body)
+        val body_ = predicate(scope_, env, body)
         val guards = xs.flatMap((_, v, t) => bounds(t, v))
         val guard = if guards.isEmpty then None else Some(guards.reduce((phi, psi) => state.exprs.app("and", List(phi, psi))))
         val vs = xs.map(_._2)
@@ -695,8 +724,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
   def relation(op: String) =
     op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || op == ">="
 
-  def predicate(scope: Scope, result: Option[(core.Var, Type)], e: Expr): core.Expr =
-    val (e_, t) = term(scope, result, e)
+  def predicate(scope: Scope, env: Env, e: Expr): core.Expr =
+    val (e_, t) = term(scope, env, e)
     toBool(e_, t)
 
   // the range of a quantified variable of a C integer type, as that of nondeterministic values (see havoc)
@@ -712,28 +741,51 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
   // a predicate of an annotation, type checked in the scope of the C variables, since the attributes of loops and
   // procedures are not checked with the bodies
-  def formula(scope: Scope, result: Option[(core.Var, Type)], phi: Expr): core.Expr =
-    val vars = scope.values.map(_._1).toList ++ result.map(_._1)
-    state.exprs.check(core.Scope.empty ++ vars, predicate(scope, result, phi), state.types.sort("Bool"))
+  def formula(scope: Scope, env: Env, phi: Expr): core.Expr =
+    val vars = scope.values.map(_._1).toList ++ env.result.map(_._1)
+    state.exprs.check(core.Scope.empty ++ vars, predicate(scope, env, phi), state.types.sort("Bool"))
 
-  def measure(scope: Scope, result: Option[(core.Var, Type)], e: Expr): core.Expr =
-    val vars = scope.values.map(_._1).toList ++ result.map(_._1)
-    val (e_, t) = term(scope, result, e)
+  def measure(scope: Scope, env: Env, e: Expr): core.Expr =
+    val vars = scope.values.map(_._1).toList ++ env.result.map(_._1)
+    val (e_, t) = term(scope, env, e)
     state.exprs.check(core.Scope.empty ++ vars, toInt(e_, t), state.types.sort("Int"))
 
   // the clauses of ACSL as the attributes of loops and procedures; assigns and loop assigns are dropped, since the
   // modified variables are inferred (see modifies)
-  def clauses(scope: Scope, result: Option[(core.Var, Type)], clauses: List[Clause]): List[(String, Option[core.Expr])] =
+  def clauses(scope: Scope, env: Env, clauses: List[Clause]): List[(String, Option[core.Expr])] =
     clauses.collect:
-      case Clause("requires", Some(phi))       => "requires" -> Some(formula(scope, None, phi))
-      case Clause("ensures", Some(phi))        => "ensures" -> Some(formula(scope, result, phi))
-      case Clause("decreases", Some(e))        => "decreases" -> Some(measure(scope, None, e))
-      case Clause("loop invariant", Some(phi)) => "invariant" -> Some(formula(scope, None, phi))
-      case Clause("loop variant", Some(e))     => "decreases" -> Some(measure(scope, None, e))
+      case Clause("requires", Some(phi))       => "requires" -> Some(formula(scope, env.copy(result = None), phi))
+      case Clause("ensures", Some(phi))        => "ensures" -> Some(formula(scope, env, phi))
+      case Clause("decreases", Some(e))        => "decreases" -> Some(measure(scope, env.copy(result = None), e))
+      case Clause("loop invariant", Some(phi)) => "invariant" -> Some(formula(scope, env, phi))
+      case Clause("loop variant", Some(e))     => "decreases" -> Some(measure(scope, env, e))
 
-  // the clauses of the loop that is translated, in its scope (see Ctx)
-  def loop(scope: Scope, ctx: Ctx): List[(String, Option[core.Expr])] =
-    clauses(scope, None, ctx.loop)
+  // the clauses of the loop that is translated, in its scope (see Ctx), followed by the ranges of the variables of
+  // unsigned types that its body modifies, which Frama-C/WP assumes for all variables, as their values wrap around
+  // (see overflow), but not those of signed types, whose overflow is not modelled; and the assignments of the copies
+  // of the variables at its entry before it
+  def loop(scope: Scope, ctx: Ctx, body: core.Prog): (List[core.Prog], List[(String, Option[core.Expr])]) =
+    if ctx.loop.isEmpty
+    then (Nil, Nil)
+    else
+      val copies = mutable.LinkedHashMap[core.Var, core.Var]()
+      val clauses_ = clauses(scope, Env(None, Some((ctx, copies))), ctx.loop)
+      val ranges =
+        for
+          (v, t) <- scope.values.toList.distinct.sortBy(_._1.name.toString)
+          if body.mod.contains(v) && t.isInstanceOf[IntType] && !t.asInstanceOf[IntType].signed
+          phi <- bounds(t, v)
+        yield "invariant" -> Some(phi)
+      val pre = for (x, y) <- copies.toList yield state.progs.assign(List(y), List(x))
+      (pre, clauses_ ++ ranges)
+
+  // the bit operations on truth values, e.g. (z > 100) & (x < 100), are the logical ones, whose operands are 0 or 1
+  def logical(op: String, left: core.Expr, lt: Type, right: core.Expr, rt: Type): Option[(core.Expr, Type)] =
+    (op, lt, rt) match
+      case ("&", BoolType, BoolType) => Some((state.exprs.app("and", List(left, right)), BoolType))
+      case ("|", BoolType, BoolType) => Some((state.exprs.app("or", List(left, right)), BoolType))
+      case ("^", BoolType, BoolType) => Some((state.exprs.app("not", List(state.exprs.app("=", List(left, right)))), BoolType))
+      case _                         => None
 
   // the arguments of a call to function `f`, converted to the types of its parameters
   def arguments(scope: Scope, ctx: Ctx, f: String, args: List[Expr]): (List[core.Prog], List[core.Expr]) =
@@ -932,7 +984,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
       case While(test, body) =>
         val (test_, check) = guard(scope, ctx, test)
-        List(while_(test_, wrap(check ++ stmt(scope, ctx.copy(loop = Nil), body)), loop(scope, ctx)))
+        val body_ = wrap(check ++ stmt(scope, ctx.copy(loop = Nil), body))
+        val (pre, clauses) = loop(scope, ctx, body_)
+        pre :+ while_(test_, body_, clauses)
 
       // the test is evaluated after each iteration, also after continue, but not before the first one
       case DoWhile(body, test) =>
@@ -944,7 +998,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
           then state.progs.block(Nil, state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx.copy(loop = Nil), body))
           else state.progs.block(Nil, state.progs.if_(state.exprs.app("not", List(first)), state.progs.block(Nil, check), skip) :: state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx.copy(loop = Nil), body))
 
-        List(state.progs.assign(List(first), List(state.exprs.const("true"))), while_(state.exprs.app("or", List(first, test_)), body_, loop(scope, ctx)))
+        val (pre, clauses) = loop(scope, ctx, body_)
+        pre ++ List(state.progs.assign(List(first), List(state.exprs.const("true"))), while_(state.exprs.app("or", List(first, test_)), body_, clauses))
 
       // the initialization may declare variables, whose scope is the loop
       case For(init, test, step, body) =>
@@ -958,20 +1013,25 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
         val step_ = step.toList.flatMap(stmt(scope, ctx, _))
 
         if !body_.exists(continues)
-        then List(while_(test_, state.progs.block(Nil, check ++ body_ ++ step_), loop(scope, ctx)))
+        then
+          val block = state.progs.block(Nil, check ++ body_ ++ step_)
+          val (pre, clauses) = loop(scope, ctx, block)
+          pre :+ while_(test_, block, clauses)
         else
           val brk = temp(ctx, BoolType)
           val inner = while_(state.exprs.const("true"), state.progs.block(Nil, body_.map(exits(brk, _)) :+ state.progs.break))
           val leave = state.progs.if_(brk, state.progs.break, skip)
-          val outer = while_(test_, state.progs.block(Nil, check ++ List(inner, leave) ++ step_), loop(scope, ctx))
-          List(state.progs.assign(List(brk), List(state.exprs.const("false"))), outer)
+          val block = state.progs.block(Nil, check ++ List(inner, leave) ++ step_)
+          val (pre, clauses) = loop(scope, ctx, block)
+          val outer = while_(test_, block, clauses)
+          pre ++ List(state.progs.assign(List(brk), List(state.exprs.const("false"))), outer)
 
       // the clauses of the loop are resolved in its scope, e.g. with the variables declared by the initialization of a for
       case Annotated(clauses, loop) =>
         stmt(scope, ctx.copy(loop = clauses), loop)
 
       case Assertion(phi) =>
-        List(state.progs.assert(formula(scope, None, phi)))
+        List(state.progs.assert(formula(scope, Env.empty, phi)))
 
       case Return(None) =>
         Error.report("return without value from a function with result"):
@@ -1122,6 +1182,20 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Case(_, stmt)                 => labels(stmt)
       case Annotated(_, loop)            => labels(loop)
       case _                             => Map()
+
+  // whether a statement contains annotations of ACSL
+  def acsl(s: Stmt): Boolean =
+    s match
+      case Annotated(_, _) | Assertion(_) => true
+      case Block(stmts)                   => stmts.exists(acsl)
+      case If(_, left, right)             => acsl(left) || right.exists(acsl)
+      case While(_, body)                 => acsl(body)
+      case DoWhile(body, _)               => acsl(body)
+      case For(_, _, _, body)             => acsl(body)
+      case Labeled(_, stmt)               => acsl(stmt)
+      case Switch(_, body)                => body.exists(acsl)
+      case Case(_, stmt)                  => acsl(stmt)
+      case _                              => false
 
   // the condition of a loop, whose calls are evaluated at the beginning of each iteration (`check`),
   // which then leaves the loop if the condition is false, and the loop itself runs while true;
@@ -1352,6 +1426,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Items(items)         => items
       case Cond(test, branches) => test :: branches.toList.flatMap((left, right) => List(left, right))
       case Old(e)               => List(e)
+      case At(e, _)             => List(e)
       case Quant(_, _, body)    => List(body)
       case _                    => Nil
 
@@ -1505,8 +1580,16 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       val modifies = if mod_.isEmpty then Nil else List("modifies" -> Some(mod_))
       val requires = if name == "main" && zeros.nonEmpty then List("requires" -> Some(zeros_)) else Nil
       val scope = globals.toMap ++ (for ((t, x), v) <- params zip in yield x -> (v, t))
-      val contract = clauses(scope, out.headOption.map((_, ret)), contracts.getOrElse(name, Nil))
-      val attrs = Attrs(modifies ++ requires ++ contract)
+      val contract = clauses(scope, Env(out.headOption.map((_, ret)), None), contracts.getOrElse(name, Nil))
+      // the ranges of the parameters of unsigned types of functions with annotations, as in Frama-C/WP, which the
+      // ranges of the variables that the annotated loops modify need at their entry (see loop)
+      val ranges =
+        if !contracts.contains(name) && !defs(name).body.exists(acsl)
+        then Nil
+        else
+          for ((t, _), v) <- params zip in if t.isInstanceOf[IntType] && !t.asInstanceOf[IntType].signed; phi <- bounds(t, v)
+          yield "requires" -> Some(state.exprs.check(core.Scope.empty ++ in, phi, state.types.sort("Bool")))
+      val attrs = Attrs(modifies ++ requires ++ ranges ++ contract)
 
       Error.report("parameter named result", name):
         require(ret == VoidType || !params.exists(_._2 == "result"))

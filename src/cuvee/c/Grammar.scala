@@ -172,7 +172,9 @@ object Grammar:
 
   // the terms of ACSL, which the scanner yields only in annotations
   val logical: Parser[Expr] =
-    P(Result("\\result") | Old("\\old" ~ parens(expr)) | Id(S("\\true").map("true")) | Id(S("\\false").map("false")) | quant)
+    P(Result("\\result") | Old("\\old" ~ parens(expr)) | At("\\at" ~ "(" ~ expr ~ "," ~ id ~ ")")
+      | Valid(("\\valid" | "\\valid_read") ~ Balanced("(", ")"))
+      | Id(S("\\true").map("true")) | Id(S("\\false").map("false")) | quant)
 
   val atom: Parser[Expr] =
     P(Num(num) | FloatNum(T("flt")) | sizeof | call | Id(id) | cast | parens(expr) | logical)
