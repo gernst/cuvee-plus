@@ -22,3 +22,9 @@ tools/
 scripts/out/
 scripts/official/
 __pycache__/
+
+# worktrees and local settings of Claude Code
+.claude/
+
+# compiled documents, rebuilt from their sources
+*.pdf

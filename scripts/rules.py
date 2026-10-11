@@ -4,8 +4,9 @@ For each benchmark of Cuvée and category, the most recent results (see common.l
 simplifies to true is reported on stderr as "used by goal 1, which simplified to true: name count, ...", a goal that
 remains carries attributes :used (name count). Only the tasks whose verdict true is correct count, since the logs of
 the others are incomplete, e.g. those stopped by the time limit. Per rule: the tasks that use it and its
-applications, per category and in total, written as CSV, as a LaTeX table, and compiled to rules.pdf; the lemmas of teq.dfy that no proved
-task uses are listed. The counts are upper bounds, since rewrites in subterms that are dropped later count as well.
+applications, per category and in total, written as CSV, as a LaTeX table, and as a bar chart of the number of tasks
+per rule (rules-frequency.pdf), compiled to rules.pdf; the lemmas of teq.dfy that no proved task uses are listed. The
+counts are upper bounds, since rewrites in subterms that are dropped later count as well.
 """
 
 import collections
