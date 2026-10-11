@@ -1,16 +1,32 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-programs/copysome2-2.c
 // SV-COMP array-programs/copysome2-2.yml, translated from benchmarks/sv-comp/dafny/array-programs/copysome2-2.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "copysome2-2.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void main(void) {
-  int N;
-  int i;
-  int x;
-  int z;
-  int v;
-  int a1[];
-  int a2[];
-  int a3[];
-  __VERIFIER_assume(0 < N);
+  int N = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int x = __VERIFIER_nondet_int();
+  int z = __VERIFIER_nondet_int();
+  int v = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && N <= 134217727);
+  int a1[N];
+  int a2[N];
+  int a3[N];
+  assume_abort_if_not(0 < N);
   z = 150000;
   i = 0;
   while (i < N) {
@@ -40,7 +56,7 @@ void main(void) {
   }
   x = 0;
   while (x < N) {
-    assert(a2[x] == a3[x]);
+    __VERIFIER_assert(a2[x] == a3[x]);
     x = x + 1;
   }
 }

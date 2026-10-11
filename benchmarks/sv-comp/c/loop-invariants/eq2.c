@@ -1,12 +1,24 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invariants/eq2.c
 // SV-COMP loop-invariants/eq2.yml, translated from benchmarks/sv-comp/dafny/loop-invariants/eq2.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "eq2.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void main(void) {
-  int w;
-  int x;
-  int y;
-  int z;
-  int b;
+  int w = __VERIFIER_nondet_int();
+  int x = __VERIFIER_nondet_int();
+  int y = __VERIFIER_nondet_int();
+  int z = __VERIFIER_nondet_int();
+  int b = __VERIFIER_nondet_int();
   w = __VERIFIER_nondet_int();
   x = w;
   y = w + 1;
@@ -17,6 +29,6 @@ void main(void) {
     z = z + 1;
     b = __VERIFIER_nondet_int();
   }
-  assert(y == z);
+  __VERIFIER_assert(y == z);
 }
 

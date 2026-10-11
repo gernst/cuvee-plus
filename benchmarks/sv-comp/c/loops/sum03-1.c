@@ -1,20 +1,35 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/sum03-1.c
 // SV-COMP loops/sum03-1.yml, translated from benchmarks/sv-comp/dafny/loops/sum03-1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "sum03-1.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int main(void) {
-  int result;
-  int tmp_1;
-  int tmp_2;
-  int sn;
-  int loop1;
-  int n1;
-  int x;
+  int result = __VERIFIER_nondet_int();
+  int tmp_1 = __VERIFIER_nondet_int();
+  int tmp_2 = __VERIFIER_nondet_int();
+  int sn = __VERIFIER_nondet_int();
+  int loop1 = __VERIFIER_nondet_int();
+  int n1 = __VERIFIER_nondet_int();
+  int x = __VERIFIER_nondet_int();
   sn = 0;
   tmp_1 = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 <= tmp_1);
+  assume_abort_if_not(0 <= tmp_1);
   loop1 = tmp_1;
   tmp_2 = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 <= tmp_2);
+  assume_abort_if_not(0 <= tmp_2);
   n1 = tmp_2;
   x = 0;
   while (1 != 0) {
@@ -22,7 +37,7 @@ int main(void) {
       sn = sn + 2;
     }
     x = x + 1;
-    assert(sn == x * 2 || sn == 0);
+    __VERIFIER_assert(sn == x * 2 || sn == 0);
   }
 }
 

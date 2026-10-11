@@ -1,18 +1,35 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-multidimensional/copy-2-u.c
 // SV-COMP array-multidimensional/copy-2-u.yml, translated from benchmarks/sv-comp/dafny/array-multidimensional/copy-2-u.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "copy-2-u.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int main(void) {
-  int result;
-  int tmp_1;
-  int i;
-  int j;
-  int n;
-  int A[][];
-  int B[][];
+  int result = __VERIFIER_nondet_int();
+  int tmp_1 = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int j = __VERIFIER_nondet_int();
+  int n = __VERIFIER_nondet_int();
   n = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 < n);
+  assume_abort_if_not(0 < n);
   i = 0;
   j = 0;
+  int N = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && n <= N && N <= 16383);
+  int A[N][N];
+  int B[N][N];
   while (i < n) {
     j = 0;
     while (j < n) {
@@ -37,7 +54,7 @@ int main(void) {
   while (i < n) {
     j = 0;
     while (j < n) {
-      assert(A[i][j] == B[i][j]);
+      __VERIFIER_assert(A[i][j] == B[i][j]);
       j = j + 1;
     }
     i = i + 1;

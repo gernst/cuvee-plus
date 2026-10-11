@@ -1,12 +1,27 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops-crafted-1/mono-crafted_1.c
 // SV-COMP loops-crafted-1/mono-crafted_1.yml, translated from benchmarks/sv-comp/dafny/loops-crafted-1/mono-crafted_1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "mono-crafted_1.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void main(void) {
-  int N;
-  int x;
-  int y;
-  int z;
-  __VERIFIER_assume(50000 <= N);
+  int N = __VERIFIER_nondet_int();
+  int x = __VERIFIER_nondet_int();
+  int y = __VERIFIER_nondet_int();
+  int z = __VERIFIER_nondet_int();
+  assume_abort_if_not(50000 <= N);
   x = 0;
   y = 50000;
   z = 0;
@@ -23,6 +38,6 @@ void main(void) {
     y = y - 1;
     x = x - 1;
   }
-  assert(x == z);
+  __VERIFIER_assert(x == z);
 }
 

@@ -1,12 +1,25 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/trex04.c
 // SV-COMP loops/trex04.yml, translated from benchmarks/sv-comp/dafny/loops/trex04.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "trex04.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+extern _Bool __VERIFIER_nondet_bool(void);
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void foo(void) {
-  _Bool tmp_1;
-  _Bool tmp_2;
-  int y;
-  _Bool c1;
-  _Bool c2;
+  _Bool tmp_1 = __VERIFIER_nondet_bool();
+  _Bool tmp_2 = __VERIFIER_nondet_bool();
+  int y = __VERIFIER_nondet_int();
+  _Bool c1 = __VERIFIER_nondet_bool();
+  _Bool c2 = __VERIFIER_nondet_bool();
   y = 0;
   tmp_1 = __VERIFIER_nondet_bool();
   c1 = tmp_1;
@@ -23,14 +36,14 @@ void foo(void) {
 }
 
 int main(void) {
-  int result;
-  int tmp_3;
-  _Bool tmp_4;
-  _Bool tmp_5;
-  int d;
-  int x;
-  _Bool c1;
-  _Bool c2;
+  int result = __VERIFIER_nondet_int();
+  int tmp_3 = __VERIFIER_nondet_int();
+  _Bool tmp_4 = __VERIFIER_nondet_bool();
+  _Bool tmp_5 = __VERIFIER_nondet_bool();
+  int d = __VERIFIER_nondet_int();
+  int x = __VERIFIER_nondet_int();
+  _Bool c1 = __VERIFIER_nondet_bool();
+  _Bool c2 = __VERIFIER_nondet_bool();
   d = 1;
   tmp_3 = __VERIFIER_nondet_int();
   x = tmp_3;
@@ -55,6 +68,6 @@ int main(void) {
   while (x > 0) {
     x = x - d;
   }
-  assert(x <= 0);
+  __VERIFIER_assert(x <= 0);
 }
 

@@ -232,12 +232,14 @@ def scatter(output: Path, tools: list[str]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def pdflatex(output: Path, name: str) -> Path:
+def pdflatex(output: Path, name: str, runs: int = 1) -> Path:
+    """`name`.pdf in `output`, compiled `runs` times, e.g. twice for the column widths of a longtable."""
     command = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", f"{name}.tex"]
-    process = subprocess.run(command, cwd=output, stdin=subprocess.DEVNULL, capture_output=True, text=True)
-    if process.returncode != 0:
-        print(process.stdout[-3000:], file=sys.stderr)
-        sys.exit(f"pdflatex failed, see {output / (name + '.log')}")
+    for _ in range(runs):
+        process = subprocess.run(command, cwd=output, stdin=subprocess.DEVNULL, capture_output=True, text=True)
+        if process.returncode != 0:
+            print(process.stdout[-3000:], file=sys.stderr)
+            sys.exit(f"pdflatex failed, see {output / (name + '.log')}")
     for suffix in (".aux", ".log"):
         (output / f"{name}{suffix}").unlink(missing_ok=True)
     return output / f"{name}.pdf"

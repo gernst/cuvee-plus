@@ -4,7 +4,7 @@ For each benchmark of Cuvée and category, the most recent results (see common.l
 simplifies to true is reported on stderr as "used by goal 1, which simplified to true: name count, ...", a goal that
 remains carries attributes :used (name count). Only the tasks whose verdict true is correct count, since the logs of
 the others are incomplete, e.g. those stopped by the time limit. Per rule: the tasks that use it and its
-applications, per category and in total, written as CSV and as a LaTeX table; the lemmas of teq.dfy that no proved
+applications, per category and in total, written as CSV, as a LaTeX table, and compiled to rules.pdf; the lemmas of teq.dfy that no proved
 task uses are listed. The counts are upper bounds, since rewrites in subterms that are dropped later count as well.
 """
 
@@ -16,8 +16,45 @@ import zipfile
 from pathlib import Path
 
 import common
+from table import pdflatex
 
 TEQ = common.SCRIPTS.parent / "resources" / "cuvee" / "teq.dfy"
+
+# the document of the statistics, compiled to rules.pdf, with the table rules-table.tex: the table of the rules and the unused lemmas
+DOCUMENT = r"""\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{graphicx}
+\pagestyle{empty}
+\begin{document}
+\begin{center}
+{\Large\bfseries Rewrite rules used by Cuvée\par}
+\medskip
+{\small <subtitle>\par}
+{\small\today\par}
+\end{center}
+
+The rules applied in the tasks that Cuvée proves (option \texttt{-rules}), by their names: the lemmas of
+\texttt{teq.dfy} and of the inputs, and the definitions of functions; per benchmark the number of proved tasks
+that use the rule and its applications in them, upper bounds, since rewrites in subterms that are dropped later
+count as well. <proved>
+
+\begin{center}
+\includegraphics[width=\textwidth]{rules-frequency.pdf}
+\end{center}
+
+{\footnotesize
+\input{rules-table.tex}
+}
+
+\section*{Unused lemmas of \texttt{teq.dfy}}
+<unused> of the <lemmas> lemmas of \texttt{teq.dfy} are used by no proved task:
+{\footnotesize\raggedright <list>\par}
+\end{document}
+"""
 
 # "used by goal 1, which simplified to true: counter_def 1, stores 1" (or "none")
 CLOSED = re.compile(r"^used by .+?, which simplified to true: (.*)$", re.M)
@@ -63,10 +100,36 @@ def lemmas(path: Path = TEQ) -> list[str]:
     return re.findall(r"^lemma\s+(?:\{:[^}]*\}\s*)*(\w+)", text, re.M)
 
 
+def frequency(collected, totals, ranked, labels, path):
+    """A bar chart of the rules in the order of the table, by the number of proved tasks that use them, without the
+    names of the rules, which are too many for the axis; the axis of the tasks is logarithmic, such that the rules
+    that few tasks use stay visible; the bars of several benchmarks stand next to each other."""
+    plt = common.pyplot()
+    colors = common.colors(list(collected))
+    figure, axes = plt.subplots(figsize=(7, 3))
+    width = 0.8 / len(collected)
+    for i, tool in enumerate(collected):
+        xs = [rank + i * width for rank in range(len(ranked))]
+        ys = [totals[tool].get(rule, (0, 0))[0] for rule, _ in ranked]
+        axes.bar(xs, ys, width=width, color=colors[tool], label=labels[tool], align="edge")
+    axes.set_yscale("log")
+    axes.set_xlim(0, len(ranked))
+    axes.set_xticks([])
+    axes.set_xlabel(f"rules, by the number of tasks that use them ({len(ranked)} rules)")
+    axes.set_ylabel("proved tasks")
+    axes.grid(axis="y", which="both", linewidth=0.3, alpha=0.5)
+    if len(collected) > 1:
+        axes.legend()
+    figure.tight_layout()
+    figure.savefig(path)
+    plt.close(figure)
+
+
 def main():
     parser = common.arguments(__doc__.splitlines()[0])
     parser.set_defaults(tools=["cuvee", "cuvee-fallback"])
     parser.add_argument("--top", type=int, default=0, help="the number of rules in the LaTeX table (default: 0, all)")
+    parser.add_argument("--no-pdf", action="store_true", help="write the CSV and LaTeX files only")
     args = parser.parse_args()
 
     collected = common.collect(args.tools, args.categories, args.results)
@@ -117,25 +180,30 @@ def main():
 
     # the rules of each benchmark over all categories, by the number of tasks that use them, all by default,
     # as a longtable, which breaks across pages (\usepackage{longtable})
-    lines = [r"\begin{longtable}{l" + "rr" * len(collected) + "}", r"\toprule"]
     labels = common.labels(collected)
-    lines.append("rule & " + " & ".join(rf"\multicolumn{{2}}{{c}}{{{labels[tool]}}}" for tool in collected) + r" \\")
-    lines.append(" & " + " & ".join(["tasks & applications"] * len(collected)) + r" \\")
-    lines += [r"\midrule", r"\endhead"]
+    columns = len(collected)
+    # the benchmarks over their two columns, underlined, then the names of the columns; repeated on further pages
+    head = [" & " + " & ".join(rf"\multicolumn{{2}}{{c}}{{{labels[tool]}}}" for tool in collected) + r" \\"]
+    head += ["".join(rf"\cmidrule(lr){{{2 + 2 * i}-{3 + 2 * i}}}" for i in range(columns))]
+    head += ["rule & " + " & ".join(["tasks & applications"] * columns) + r" \\", r"\midrule"]
+    lines = [r"\begin{longtable}{@{}l" + "rr" * columns + "@{}}", r"\toprule"] + head + [r"\endfirsthead"]
+    lines += [rf"\multicolumn{{{1 + 2 * columns}}}{{@{{}}l}}{{\emph{{continued}}}} \\", r"\toprule"] + head + [r"\endhead"]
+    lines += [r"\bottomrule", r"\endlastfoot"]
     totals = {tool: {row[2]: (row[3], row[4]) for row in rows if row[0] == tool and row[1] == "Total"} for tool in collected}
     ranking = collections.Counter()
     for tool in collected:
         for rule, (n, _) in totals[tool].items():
             ranking[rule] = max(ranking[rule], n)
     ranked = sorted(ranking.items(), key=lambda item: (-item[1], item[0]))
+    frequency(collected, totals, ranked, labels, args.output / "rules-frequency.pdf")
     for rule, _ in ranked[: args.top] if args.top > 0 else ranked:
         cells = []
         for tool in collected:
             n, m = totals[tool].get(rule, (0, 0))
             cells += [str(n), str(m)]
         lines.append(r"\texttt{" + rule.replace("_", r"\_") + "} & " + " & ".join(cells) + r" \\")
-    lines += [r"\bottomrule", r"\end{longtable}", ""]
-    (args.output / "rules.tex").write_text("\n".join(lines))
+    lines += [r"\end{longtable}", ""]
+    (args.output / "rules-table.tex").write_text("\n".join(lines))
 
     # the lemmas of teq.dfy that no proved task of any benchmark uses
     used = set(ranking)
@@ -146,7 +214,24 @@ def main():
         print(f"{labels[tool]}: {sum(proved[k] for k in proved if k[0] == tool)} proved tasks, {len(totals[tool])} rules used")
     print(f"{len(unused)} of {len(lemmas())} lemmas of teq.dfy unused")
     print(args.output / "rules.csv")
-    print(args.output / "rules.tex")
+    print(args.output / "rules-table.tex")
+    print(args.output / "rules-frequency.pdf")
+
+    if not args.no_pdf:
+        categories = sorted({key[1] for key in tasks})
+        counts_per = "; ".join(
+            f"{labels[tool]}: " + ", ".join(f"{proved[(tool, name)]} in {name}" for name in categories if (tool, name) in proved)
+            for tool in collected
+        )
+        document = (
+            DOCUMENT.replace("<subtitle>", "categories " + ", ".join(categories))
+            .replace("<proved>", "Proved tasks: " + counts_per + ".")
+            .replace("<unused>", str(len(unused)))
+            .replace("<lemmas>", str(len(lemmas())))
+            .replace("<list>", ", ".join(r"\texttt{" + name.replace("_", r"\_") + "}" for name in unused))
+        )
+        (args.output / "rules.tex").write_text(document)
+        print(pdflatex(args.output, "rules", runs=2))
 
 
 if __name__ == "__main__":

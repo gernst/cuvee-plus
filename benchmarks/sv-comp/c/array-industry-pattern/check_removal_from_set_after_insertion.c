@@ -1,11 +1,28 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-industry-pattern/check_removal_from_set_after_insertion.c
 // SV-COMP array-industry-pattern/check_removal_from_set_after_insertion.yml, translated from benchmarks/sv-comp/dafny/array-industry-pattern/check_removal_from_set_after_insertion.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "check_removal_from_set_after_insertion.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int SIZE;
 
 int insert(int Set[], int size, int value) {
-  int result;
-  int set_1[];
+  int result = __VERIFIER_nondet_int();
+  int N = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && size < N && N <= 536870911);
+  int set_1[N];
   set_1 = Set;
   set_1[size] = value;
   result = size + 1;
@@ -13,8 +30,8 @@ int insert(int Set[], int size, int value) {
 }
 
 int elem_exists(int Set[], int size, int value) {
-  int result;
-  int i;
+  int result = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
   i = 0;
   while (i < size) {
     if (Set[i] == value) {
@@ -28,23 +45,25 @@ int elem_exists(int Set[], int size, int value) {
 }
 
 int main(void) {
-  int result;
-  int tmp_2;
-  int tmp_3;
-  int tmp_4;
-  int i;
-  int pos;
-  int n;
-  int found;
-  int Set[];
-  int values[];
-  int element;
-  int v;
+  int result = __VERIFIER_nondet_int();
+  int tmp_2 = __VERIFIER_nondet_int();
+  int tmp_3 = __VERIFIER_nondet_int();
+  int tmp_4 = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int pos = __VERIFIER_nondet_int();
+  int n = __VERIFIER_nondet_int();
+  int found = __VERIFIER_nondet_int();
+  int element = __VERIFIER_nondet_int();
+  int v = __VERIFIER_nondet_int();
   SIZE = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 < SIZE);
+  assume_abort_if_not(0 < SIZE);
   n = 0;
   found = 0;
   i = 0;
+  int N = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && SIZE <= N && SIZE - 1 <= N && N <= 268435455);
+  int Set[N];
+  int values[N];
   while (i < SIZE) {
     tmp_2 = __VERIFIER_nondet_int();
     Set[i] = tmp_2;
@@ -79,7 +98,7 @@ int main(void) {
   if (found == 1) {
     i = 0;
     while (i < SIZE - 1) {
-      assert(Set[i] != element);
+      __VERIFIER_assert(Set[i] != element);
       i = i + 1;
     }
   }

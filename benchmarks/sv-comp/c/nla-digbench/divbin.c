@@ -1,18 +1,33 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/nla-digbench/divbin.c
 // SV-COMP nla-digbench/divbin.yml, translated from benchmarks/sv-comp/dafny/nla-digbench/divbin.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "divbin.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int main(void) {
-  int result;
-  int A;
-  int B;
-  int q;
-  int r;
-  int b;
+  int result = __VERIFIER_nondet_int();
+  int A = __VERIFIER_nondet_int();
+  int B = __VERIFIER_nondet_int();
+  int q = __VERIFIER_nondet_int();
+  int r = __VERIFIER_nondet_int();
+  int b = __VERIFIER_nondet_int();
   A = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 <= A);
+  assume_abort_if_not(0 <= A);
   B = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 <= B);
-  __VERIFIER_assume(B >= 1);
+  assume_abort_if_not(0 <= B);
+  assume_abort_if_not(B >= 1);
   q = 0;
   r = A;
   b = B;
@@ -23,7 +38,7 @@ int main(void) {
     b = 2 * b;
   }
   while (1 != 0) {
-    assert(A == q * b + r);
+    __VERIFIER_assert(A == q * b + r);
     if (!(b != B)) {
       break;
     }
@@ -34,7 +49,7 @@ int main(void) {
       r = r - b;
     }
   }
-  assert(A == q * b + r);
+  __VERIFIER_assert(A == q * b + r);
   result = 0;
   return result;
 }

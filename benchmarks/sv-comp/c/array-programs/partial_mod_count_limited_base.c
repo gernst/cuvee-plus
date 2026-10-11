@@ -1,23 +1,39 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-programs/partial_mod_count_limited_base.c
 // SV-COMP array-programs/partial_mod_count_limited_base.yml, translated from benchmarks/sv-comp/dafny/array-programs/partial_mod_count_limited_base.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "partial_mod_count_limited_base.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int N;
 
 int main(void) {
-  int result;
-  int tmp_1;
-  int i;
-  int j;
-  int k;
-  int a[];
-  int R;
+  int result = __VERIFIER_nondet_int();
+  int tmp_1 = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int j = __VERIFIER_nondet_int();
+  int k = __VERIFIER_nondet_int();
+  int R = __VERIFIER_nondet_int();
   N = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 < N);
+  assume_abort_if_not(0 <= N && N <= 536870911);
+  int a[N];
+  assume_abort_if_not(0 < N);
   j = 0;
   k = 0;
   tmp_1 = __VERIFIER_nondet_int();
   R = tmp_1;
-  __VERIFIER_assume(R > 0);
+  assume_abort_if_not(R > 0);
   i = 0;
   while (i < N) {
     a[i] = i + 1;
@@ -34,7 +50,7 @@ int main(void) {
     if (a[i] == 0) {
       j = j + 1;
     }
-    assert(j < 2);
+    __VERIFIER_assert(j < 2);
     i = i + 1;
   }
   result = 0;

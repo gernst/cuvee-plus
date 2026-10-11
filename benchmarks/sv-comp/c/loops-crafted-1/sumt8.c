@@ -1,18 +1,30 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops-crafted-1/sumt8.c
 // SV-COMP loops-crafted-1/sumt8.yml, translated from benchmarks/sv-comp/dafny/loops-crafted-1/sumt8.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "sumt8.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int main(void) {
-  int result;
-  int n;
-  int i;
-  int k;
-  int j;
-  int l;
-  int v1;
-  int v2;
-  int v3;
-  int v4;
-  int v5;
+  int result = __VERIFIER_nondet_int();
+  int n = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int k = __VERIFIER_nondet_int();
+  int j = __VERIFIER_nondet_int();
+  int l = __VERIFIER_nondet_int();
+  int v1 = __VERIFIER_nondet_int();
+  int v2 = __VERIFIER_nondet_int();
+  int v3 = __VERIFIER_nondet_int();
+  int v4 = __VERIFIER_nondet_int();
+  int v5 = __VERIFIER_nondet_int();
   n = 0;
   i = 0;
   k = 0;
@@ -43,7 +55,7 @@ int main(void) {
       k = k + 1;
     }
     l = l + 1;
-    assert(i + j + k + v1 + v2 + v3 + v4 + v5 == l);
+    __VERIFIER_assert(i + j + k + v1 + v2 + v3 + v4 + v5 == l);
   }
   result = 0;
   return result;

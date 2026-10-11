@@ -1,24 +1,41 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/invert_string-1.c
 // SV-COMP loops/invert_string-1.yml, translated from benchmarks/sv-comp/dafny/loops/invert_string-1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "invert_string-1.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int main(void) {
-  int result;
-  int tmp_1;
-  int tmp_2;
-  int MAX;
-  int str1[];
-  int str2[];
-  int cont;
-  int i;
-  int j;
+  int result = __VERIFIER_nondet_int();
+  int tmp_1 = __VERIFIER_nondet_int();
+  int tmp_2 = __VERIFIER_nondet_int();
+  int MAX = __VERIFIER_nondet_int();
+  int cont = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int j = __VERIFIER_nondet_int();
   tmp_1 = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 <= tmp_1);
+  assume_abort_if_not(0 <= tmp_1);
   MAX = tmp_1;
   if (!(MAX > 0)) {
-    __VERIFIER_assume(false);
+    assume_abort_if_not(0);
   }
   cont = 0;
   i = 0;
+  int N = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && MAX <= N && MAX - 1 < N && 0 < N && N <= 268435455);
+  int str1[N];
+  int str2[N];
   while (i < MAX) {
     tmp_2 = __VERIFIER_nondet_int();
     str1[i] = tmp_2;
@@ -35,7 +52,7 @@ int main(void) {
   j = MAX - 1;
   i = 0;
   while (i < MAX) {
-    assert(str1[i] == str2[j]);
+    __VERIFIER_assert(str1[i] == str2[j]);
     j = j - 1;
     i = i + 1;
   }

@@ -1,13 +1,25 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-lit/bhmr2007.c
 // SV-COMP loop-lit/bhmr2007.yml, translated from benchmarks/sv-comp/dafny/loop-lit/bhmr2007.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "bhmr2007.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int main(void) {
-  int result;
-  int tmp_1;
-  int i;
-  int n;
-  int a;
-  int b;
+  int result = __VERIFIER_nondet_int();
+  int tmp_1 = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int n = __VERIFIER_nondet_int();
+  int a = __VERIFIER_nondet_int();
+  int b = __VERIFIER_nondet_int();
   i = 0;
   a = 0;
   b = 0;
@@ -27,7 +39,7 @@ int main(void) {
     }
     i = i + 1;
   }
-  assert(a + b == 3 * n);
+  __VERIFIER_assert(a + b == 3 * n);
   result = 0;
   return result;
 }

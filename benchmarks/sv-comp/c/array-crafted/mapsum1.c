@@ -1,16 +1,32 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-crafted/mapsum1.c
 // SV-COMP array-crafted/mapsum1.yml, translated from benchmarks/sv-comp/dafny/array-crafted/mapsum1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "mapsum1.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void main(void) {
-  int N;
-  int i;
-  int v;
-  int temp;
-  int ret;
-  int ret2;
-  int ret5;
-  int x[];
-  __VERIFIER_assume(1 < N);
+  int N = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int v = __VERIFIER_nondet_int();
+  int temp = __VERIFIER_nondet_int();
+  int ret = __VERIFIER_nondet_int();
+  int ret2 = __VERIFIER_nondet_int();
+  int ret5 = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && N <= 536870911);
+  int x[N];
+  assume_abort_if_not(1 < N);
   i = 0;
   while (i < N) {
     v = __VERIFIER_nondet_int();
@@ -45,6 +61,6 @@ void main(void) {
     ret5 = ret5 + i + x[i];
     i = i + 1;
   }
-  assert(ret == ret2 && ret == ret5);
+  __VERIFIER_assert(ret == ret2 && ret == ret5);
 }
 

@@ -1,13 +1,29 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-programs/partial_mod_count_1.c
 // SV-COMP array-programs/partial_mod_count_1.yml, translated from benchmarks/sv-comp/dafny/array-programs/partial_mod_count_1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "partial_mod_count_1.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void main(void) {
-  int N;
-  int i;
-  int j;
-  int R;
-  int a[];
-  __VERIFIER_assume(0 < N);
+  int N = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int j = __VERIFIER_nondet_int();
+  int R = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && N <= 536870911);
+  int a[N];
+  assume_abort_if_not(0 < N && N % 2 == 0);
   j = 0;
   R = 1;
   i = 0;
@@ -23,7 +39,7 @@ void main(void) {
     if (a[i] == 0) {
       j = j + 1;
     }
-    assert(j < N / 2);
+    __VERIFIER_assert(j < N / 2);
     i = i + 1;
   }
 }

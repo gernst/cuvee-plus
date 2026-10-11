@@ -1,17 +1,33 @@
 // ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/c/loop-invgen/seq-3.c
 // SV-COMP loop-invgen/seq-3.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/seq-3.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "seq-3.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void main(void) {
-  int n0;
-  int n1;
-  int i0;
-  int i1;
-  int j1;
-  int k;
+  int n0 = __VERIFIER_nondet_int();
+  int n1 = __VERIFIER_nondet_int();
+  int i0 = __VERIFIER_nondet_int();
+  int i1 = __VERIFIER_nondet_int();
+  int j1 = __VERIFIER_nondet_int();
+  int k = __VERIFIER_nondet_int();
   i0 = 0;
   k = 0;
   n0 = __VERIFIER_nondet_int();
   n1 = __VERIFIER_nondet_int();
+  assume_abort_if_not(-1073741824 <= n0 && n0 <= 1073741823 && -1073741824 <= n1 && n1 <= 1073741823);
   while (i0 < n0) {
     i0 = i0 + 1;
     k = k + 1;
@@ -23,7 +39,7 @@ void main(void) {
   }
   j1 = 0;
   while (j1 < n0 + n1) {
-    assert(k > 0);
+    __VERIFIER_assert(k > 0);
     j1 = j1 + 1;
     k = k - 1;
   }

@@ -1,15 +1,30 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invgen/fragtest_simple.c
 // SV-COMP loop-invgen/fragtest_simple.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/fragtest_simple.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "fragtest_simple.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void main(void) {
-  int N;
-  int i;
-  int pvlen;
-  int k;
-  int n;
-  int j;
-  int b;
-  __VERIFIER_assume(0 < N);
+  int N = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int pvlen = __VERIFIER_nondet_int();
+  int k = __VERIFIER_nondet_int();
+  int n = __VERIFIER_nondet_int();
+  int j = __VERIFIER_nondet_int();
+  int b = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 < N);
   k = 0;
   i = 0;
   pvlen = __VERIFIER_nondet_int();
@@ -30,8 +45,8 @@ void main(void) {
   }
   j = 0;
   n = i;
-  while (true) {
-    assert(k >= 0);
+  while (1) {
+    __VERIFIER_assert(k >= 0);
     k = k - 1;
     i = i - 1;
     j = j + 1;

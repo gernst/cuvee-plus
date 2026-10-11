@@ -1,29 +1,46 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-multidimensional/copy-partial-2-n-u.c
 // SV-COMP array-multidimensional/copy-partial-2-n-u.yml, translated from benchmarks/sv-comp/dafny/array-multidimensional/copy-partial-2-n-u.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "copy-partial-2-n-u.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 int main(void) {
-  int result;
-  int tmp_1;
-  int i;
-  int j;
-  int m;
-  int n;
-  int q;
-  int s;
-  int A[][];
-  int B[][];
+  int result = __VERIFIER_nondet_int();
+  int tmp_1 = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int j = __VERIFIER_nondet_int();
+  int m = __VERIFIER_nondet_int();
+  int n = __VERIFIER_nondet_int();
+  int q = __VERIFIER_nondet_int();
+  int s = __VERIFIER_nondet_int();
   m = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 < m);
+  assume_abort_if_not(0 < m);
   n = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 < n);
+  assume_abort_if_not(0 < n);
   q = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 < q);
+  assume_abort_if_not(0 < q);
   s = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 < s);
-  __VERIFIER_assume(q < m);
-  __VERIFIER_assume(s < n);
+  assume_abort_if_not(0 < s);
+  assume_abort_if_not(q < m);
+  assume_abort_if_not(s < n);
   i = 0;
   j = 0;
+  int N = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && m <= N && n <= N && q <= N && s <= N && N <= 16383);
+  int A[N][N];
+  int B[N][N];
   while (i < m) {
     j = 0;
     while (j < n) {
@@ -48,7 +65,7 @@ int main(void) {
   while (i < q) {
     j = 0;
     while (j < s) {
-      assert(A[i][j] == B[i][j]);
+      __VERIFIER_assert(A[i][j] == B[i][j]);
       j = j + 1;
     }
     i = i + 1;

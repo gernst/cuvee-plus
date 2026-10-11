@@ -1,22 +1,38 @@
 // ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-cav19/array_init_pair_symmetr2.c
 // SV-COMP array-cav19/array_init_pair_symmetr2.yml, translated from benchmarks/sv-comp/dafny/array-cav19/array_init_pair_symmetr2.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
+// the SV-COMP harness
+extern void abort(void);
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+void reach_error() { __assert_fail("0", "array_init_pair_symmetr2.c", 7, "reach_error"); }
+extern int __VERIFIER_nondet_int(void);
+void assume_abort_if_not(int cond) {
+  if (!cond) { abort(); }
+}
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error(); abort();}
+  }
+  return;
+}
+
 void main(void) {
-  int N;
-  int i;
-  int x;
-  int y;
-  int a[];
-  int b[];
-  int c[];
-  __VERIFIER_assume(0 < N);
+  int N = __VERIFIER_nondet_int();
+  int i = __VERIFIER_nondet_int();
+  int x = __VERIFIER_nondet_int();
+  int y = __VERIFIER_nondet_int();
+  assume_abort_if_not(0 <= N && N <= 134217727);
+  int a[N];
+  int b[N];
+  int c[N];
+  assume_abort_if_not(0 < N);
   i = 0;
   while (i < N) {
     x = __VERIFIER_nondet_int();
     y = __VERIFIER_nondet_int();
-    __VERIFIER_assume(y < N && y > -N);
-    __VERIFIER_assume(x < N && x > -N);
-    __VERIFIER_assume(x > y);
+    assume_abort_if_not(y < N && y > -N);
+    assume_abort_if_not(x < N && x > -N);
+    assume_abort_if_not(x > y);
     a[i] = x;
     b[i] = y;
     i = i + 1;
@@ -28,7 +44,7 @@ void main(void) {
   }
   i = 1;
   while (i < N) {
-    assert(c[i] > 0);
+    __VERIFIER_assert(c[i] > 0);
     i = i + 1;
   }
 }

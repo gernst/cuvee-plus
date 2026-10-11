@@ -210,6 +210,61 @@ cluster have none. Goals that z3 does not prove are `unknown`
   dropped, except for the effects of their values
   (`examples/c/parsing/unread_pointer.c`); the task is proved.
 
+### Other verifiers on the C versions of the local benchmarks (October 10, 2026)
+
+The C programs of `benchmarks/sv-comp/c`, printed from the Dafny translations
+and patched with the SV-COMP harness and sized arrays (see its
+[README](benchmarks/sv-comp/c/README.md)), 646 tasks without the 5 whose
+translation loses an update of an array parameter, task set
+`C.unreach-call.Unbounded` of `xml/*.xml`, 5 min per task (`-T 300s`), 2
+cores, each tool started from its directory:
+
+| tool | correct true | correct false | wrong true | wrong false |
+|---|---|---|---|---|
+| Cuvée (0.35.15) | 211 | – | 0 | 0 |
+| Cuvée+Z3 (`-fallback`) | 256 | – | 1 | 0 |
+| Korn | 161 | 96 | 1 | 5 |
+| CPAchecker | 93 | 143 | 0 | 46 |
+| AISE | 215 | 101 | 55 | 36 |
+| Symbiotic | 165 | 95 | 57 | 27 |
+| UAutomizer | 176 | 144 | 2 | 26 |
+
+The wrong results are mostly due to the tasks, not the tools: the C programs
+do not always mean what their Dafny sources and expected verdicts say.
+
+- Uninitialized locals: 132 functions declare `N` (or other variables)
+  without assigning them, which is an arbitrary value in Dafny and undefined
+  in C. The tools based on KLEE (Symbiotic, AISE) use a fixed value instead,
+  so that the violation is unreachable: 55 of the 57 wrong true results of
+  Symbiotic and 53 of the 55 of AISE are in such files. Proposal: assign the
+  variables that Dafny leaves arbitrary a nondeterministic value in the C
+  versions (`N = __VERIFIER_nondet_int();`), in `arrays.py` for `N`, in
+  general for every local that is read before it is written.
+- Overflow: the translations compute with unbounded integers and drop the
+  bounds of at least 100, also those on values that rule out an overflow in
+  the original task, e.g. `assume_abort_if_not(a[i] < 10000 && a[i] >
+  -10000)` of `array-cav19/array_min_and_copy_shift_sum_add`; the C versions
+  overflow (undefined), which the bit-precise tools find, e.g. most of the 46
+  wrong false of CPAchecker (not all checked); `nla-digbench/geo1-u` is
+  unsafe only by the wrap-around of `unsigned long long`, which Cuvée and
+  Korn prove safe. Proposal: keep the bounds on values in the C versions (or
+  in the translations, where they are harmless), or determine the expected
+  verdicts of the C versions separately.
+- Symbolic bounds: where an assertion depends on the bound, the verdict of
+  the original task does not hold for an arbitrary one, e.g. `j < N / 8` of
+  `array-programs/partial_mod_count_4`, `_5`, `_limited_2`, `_limited_5`
+  fails for small `N`, and `loop-zilu/benchmark52_polynomial` (`N` for 100).
+  These are wrong in the Dafny tasks as well. Proposal: keep the constant
+  where an assertion depends on it, or correct the expected verdict.
+- AISE reports 36 violations of safe tasks, 21 in programs whose arrays have
+  a fresh size `N` and 12 with the program's own `N`: to be checked, possibly
+  accesses beyond the size or the contents of uninitialized arrays, which are
+  arbitrary in Dafny.
+- Excluded: `array-examples/data_structures_set_multi_proc_ground-1`, `-2`,
+  `_trivial_ground`, `sanfoundry_43_ground`, and
+  `array-industry-pattern/check_removal_from_set_after_insertion` update an
+  array parameter only in a local copy (see the README of the C versions).
+
 ## The SV-COMP harness (blocks every task)
 
 Every input starts with the same declarations and definitions, which already
