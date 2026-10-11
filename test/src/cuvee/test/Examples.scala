@@ -26,9 +26,9 @@ object Examples:
   // directories of examples that are no tests, e.g. experiments that are worked on (none at the moment)
   val excluded: List[os.SubPath] = Nil
 
-  // examples whose runs do not terminate, which are no tests: the two algorithms whose lemmas make the simplifier
-  // cycle (see examples/dafny/algorithms/NOTES.md, finding 19)
-  val nonterminating = Set("dafny/algorithms/row_sums.dfy", "dafny/algorithms/transpose.dfy")
+  // examples whose runs do not terminate, which are no tests (none at the moment; row_sums and transpose were, until
+  // their lemmas were restated, see examples/dafny/algorithms/NOTES.md, finding 19)
+  val nonterminating = Set[String]()
 
   def terminating(file: os.Path) =
     !nonterminating.contains(file.relativeTo(root).toString)

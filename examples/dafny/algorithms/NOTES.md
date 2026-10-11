@@ -18,24 +18,24 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [nested_sum.dfy](nested_sum.dfy), [nested_mult.dfy](nested_mult.dfy) | verified: the generic fragment lemmas |
 | [fragments.dfy](fragments.dfy) | verified: the generic fragment lemmas on the two minimal problems |
 | [inner_loop_flat.dfy](inner_loop_flat.dfy) | verified: the facts of an inner loop at the top level |
-| [invs_counter_equation.dfy](invs_counter_equation.dfy) | open: problem 1, minimal (closed with the lemmas of fragments.dfy) |
-| [invs_fragments.dfy](invs_fragments.dfy) | open: problem 2, minimal (closed with the lemmas of fragments.dfy) |
+| [invs_counter_equation.dfy](invs_counter_equation.dfy) | verified with `-include teq:nested` (problem 1, minimal) |
+| [invs_fragments.dfy](invs_fragments.dfy) | verified with `-include teq:nested` (problem 2, minimal); method variables named apart |
 | [count_occurrences.dfy](count_occurrences.dfy) | verified: the count named as the normal form |
 | [max_element.dfy](max_element.dfy) | verified with `occurs`; open with `exists` (no witness) |
 | [argmax.dfy](argmax.dfy) | verified: a selection trace with rules on the atoms |
 | [partition.dfy](partition.dfy) | verified: Lomuto partition, conditional swaps at a count |
 | [reverse.dfy](reverse.dfy) | verified: two pointers, `-simplify -split -simplify` |
 | [is_sorted.dfy](is_sorted.dfy) | open by one substitution of the exit into `sorted` |
-| [row_sums.dfy](row_sums.dfy) | open: the substitution lemmas cycle (timeout reported as proved, finding 18) |
-| [transpose.dfy](transpose.dfy) | open: as row_sums, the substitution lemmas cycle |
+| [row_sums.dfy](row_sums.dfy) | verified with `-include teq:nested`: a chain of specific lemmas, no substitution lemma (finding 29) |
+| [transpose.dfy](transpose.dfy) | verified with `-include teq:nested`: as row_sums, the columns folded |
 | [prefix_sums.dfy](prefix_sums.dfy) | verified: the recurrence with the term at the written position |
 | [distinct.dfy](distinct.dfy) | verified: nested loops with a flag, summary and `current_trace_all` |
 | [three_way_partition.dfy](three_way_partition.dfy) | verified: Dutch flag by a single scan, two counts |
-| [cocktail_sort.dfy](cocktail_sort.dfy) | open: closed once, the exit condition is not matched since (finding 12) |
-| [first_duplicate.dfy](first_duplicate.dfy) | open: early exit; a circular side condition made an attempt unsound |
+| [cocktail_sort.dfy](cocktail_sort.dfy) | verified: a closed condition over fresh variables, the bound in the goal's form (finding 27) |
+| [first_duplicate.dfy](first_duplicate.dfy) | verified with the postcondition as two implications (finding 31) |
 | [merge.dfy](merge.dfy) | verified: pinned higher-order guard, pointers tied by open trace variables |
 | [counting_sort.dfy](counting_sort.dfy) | verified: four loops in sequence, the key range as an atom |
-| [lower_bound.dfy](lower_bound.dfy) | open: the summary with the exit as a side condition cycles |
+| [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32) |
 | [gnome_sort.dfy](gnome_sort.dfy) | open, as expected: the number of iterations is not a counter |
 
 ## Abstract predicates
@@ -764,3 +764,117 @@ invs_counter_equation, invs_fragments use `teq:nested` (the last two are
 verified only by it); all others use the six base modules and their own
 lemmas, with the results of the morning; the sorting lemmas of the examples
 are duplicated in `teq:sorting`, which no file includes yet.
+
+## The pending threads resolved (Oct 11, 2026, evening)
+
+The open threads were worked on in a folder `pending/` (not committed) with
+diagnostics that are worth keeping as techniques: *pair runs* of single lemmas
+of a module to find a cycling pair, *truncated copies* of a summary lemma with
+its first k side conditions to find the first failing one, and *probes*: rules
+with the real left-hand side, the first k side conditions and a fresh atom
+`probe_k(...)` as right-hand side, k downwards, so that the goal shows the
+largest k whose conditions hold. Every result was checked on a program with a
+wrong postcondition, which must leave a goal. Four files are verified now
+(cocktail_sort, first_duplicate, row_sums, transpose), the `nested` module is
+restated, lower_bound remains open for reasons of the engine.
+
+27. **A closed `invs` condition over variables bound by earlier conditions
+    is decided, not matched, and fails** (cocktail_sort.dfy). The summary
+    `current_results_shake` fired with its first 20 side conditions and not
+    with the 21st, `invs(for ks, js4, Js3 check k, j, J :: j == current(J))`,
+    whose variables were all bound: the same condition for the forward pass
+    (condition 7) uses fresh `js5`, `Js5` and succeeds. The fix is the pattern
+    of bubble_sort: fresh variables and identifying equations. Neither the
+    extra dependencies of the fact (the traces of `lo` and `hi`; a diagnostic
+    with two and four dependencies matched both) nor the name of the rule
+    variable `n` (finding 21; renamed to `len` without effect) was the cause.
+    The run of Oct 10 that closed the goal once (finding 12) presumably
+    decided the closed condition by chance.
+28. **A bound that is not a difference constraint is not decided from two
+    facts** (cocktail_sort.dfy): `len <= 2 * integer(m) + 1` is not derived
+    from `n <= integer(m) + lo + 1` and `lo == integer(m)` (finding 11 again).
+    The induction lemma states the bound in the goal's form, `l == integer(m)`
+    with `l` open, matched against the equation of `lo`, and
+    `len <= integer(m) + l + 1`, which is the fact.
+29. **A bare bound variable on one side of a fragment's body is synthesized
+    as a map.** The pair runs of the five lemmas of the first half of the
+    `nested` module on the cocktail program showed that the exit lemma
+    `invs_exit_counter_zero` cycles with each of the four others and alone
+    with none: its left-hand side `invs(for ks, js check k, j :: n <= j)`
+    matches every comparison fragment with `js` synthesized as a map (finding
+    15), and its `invs` side conditions build the combinator contexts in which
+    the counter lemmas and then the exit lemma fire again. A restatement with
+    the left-hand side `invs(for ks, Ns, js check k, nn, j :: j == integer(nn))`
+    removed the cycle on cocktail sort and introduced one on nested_mult:
+    `j` alone on one side is synthesized just as well, and matches
+    `r' == r + integer(nn)`. The left-hand side that works is the constraint
+    fragment `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, a function
+    symbol on the side of the bound variable, with the exit and the final
+    values as side conditions over fresh variables; it produces `j == n` (which
+    `consts_prefix_def` abstracts) and `nn == natural(n)`, which the new
+    `invs_natural_consts` turns into `Ns == ⌊consts(m, natural(n))⌋`. The
+    module is now this; a compatibility run over all algorithms agrees with the
+    expected goals except where summaries are written for the fragment forms
+    without the module (insertion_sort, insertion_sort2, finding 22) and for
+    invs_fragments, whose method variables were named like the rule's
+    (finding 21; renamed).
+30. **The chain for an inner result stored at the outer position**
+    (row_sums.dfy, transpose.dfy): with the module, the goal has the exit
+    abstracted (`consts_prefix(m, n, J?)`), `N? == ⌊consts(m, natural(n))⌋`,
+    and the inner counters, sums (or stores) and final values as fragments
+    over separate lists. The substitution lemmas with general left-hand sides
+    (finding 19) are replaced by one specific lemma per step: the counters
+    over the constant numbers of iterations (the dependency
+    `⌊consts(m, natural(n))⌋` as a pattern is matched through the context),
+    the inner sums (stores) over the inner counter, the final values of inner
+    traces given per iteration (higher-order `T == G(k)` as a side condition
+    over a fresh list), sums given per iteration as a `maps`, and the element
+    of a `maps` over the counter at the position of the postcondition. Each
+    step takes the fragment it depends on as a side condition over a fresh
+    list variable, identified by an equation. Both files verify in under two
+    minutes on one core.
+31. **The exit of an outer loop in the conclusion is a disjunction that no
+    rule sees** (first_duplicate.dfy). The summary of the inner loop fires,
+    the simplifier turns the pointwise fragment of the results into a `maps`,
+    so the final flag is `r == current(results(false, ⌊K⌋, maps(for ⌊K⌋ yield k :: !nodup(a, k, n))))`,
+    and the outer counter and the flag trace are the variables `K`, `R` with
+    their equations as hypotheses: lemmas with `⌊counter(0, 1, m)⌋` as an
+    argument never match (the open trace variables `Kv == counter(0, 1, m)`,
+    `Rv == results(false, ⌊Kv⌋, rs)` do, matched against the hypotheses). The
+    flags at the heads, `invs(for ⌊K⌋, ⌊R⌋, ⌊I⌋ check k, r, i :: !r)`, carry
+    the unused dependency `⌊I⌋`, which the simplifier drops from a closed
+    instance, so the condition is written over an open list `hs` and
+    `hs == ⌊Rv⌋` afterwards. The probes then showed the last condition failing:
+    the exit `n <= i || r`, a closed disjunction, is not decided, since the
+    goal's conclusion is `i < n && !r || r == !distincts(...)`, which `-split`
+    does not split, and the context of the second disjunct does not contain
+    the literals of the negated first. With the postcondition as the two
+    implications `r ==> !distincts(...)` and `!r ==> distincts(...)`, each
+    goal has its literal (`r`, respectively `n <= i`) in the context of the
+    atom, and one rule per case closes it. Also seen: an instantiated
+    higher-order variable leaves a beta-redex `((k: int) => !nodup(a, k, n))(k)`
+    in the output.
+32. **A rule is applied while the instances of its own side conditions are
+    simplified** (lower_bound.dfy). The summary `current_lower_bound` fires
+    and the four properties of `lb(a, n, x)` close the postconditions when the
+    exit is a comparison `h <= l` of two open variables, matched against the
+    fact `hi <= lo`; but then `h` and `l` are not tied to the traces and the
+    rule is not sound as a lemma. Every sound tie fails: `l == current(Lv)`
+    with `Lv` bound, closed or open, is simplified before it is decided or
+    matched (`Rewrite.conditions`), which rewrites `current(Lv)` by the lemma
+    itself (re-entrant, finding 20; the same reason bubble_sort's summary takes
+    `current(results(...))` as left-hand side instead of `results(...)`).
+    With `Lv` open, `l == current(Lv)` binds `Lv` and `l` from the hypothesis,
+    but the probes showed that **a left-hand side matched against `current(Lo)`
+    through the definition of the trace variable `Lo` leaves its dependency
+    variables `nn`, `hs` unbound** (a probe fired with "variables of a rule not
+    instantiated"), and the trace condition that would bind them no longer
+    matches once `Lv` is bound (its instance is simplified with `Lo` replaced).
+    A guard in the engine (the rule disabled while its conditions are
+    evaluated) would make the sound version work.
+33. **The checkout's jar must not be used for long runs**: a rebuild during a
+    run crashes the running JVM with `NoClassDefFoundError`, and a build from
+    a working tree with changes is not the committed state; run from a private
+    copy of the jar. The results above were produced with a copy of the jar of
+    c8a3cec7; the expected outputs of the four verified files and of
+    invs_fragments must be regenerated after the assembly of this commit.

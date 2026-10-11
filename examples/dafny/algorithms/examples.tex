@@ -55,8 +55,8 @@ stated in the Dafny dialect of Cuvée at the beginning of the respective file; t
 \texttt{teq.dfy} is injected by \texttt{-teq}. We write $\bl{X}$ for \texttt{butlast(X)}, the trace $X$
 without its last element, $\cur(X)$ for its last element, and $\cnt(i, c, n)$ for the counter
 $\langle i, i + c, \ldots, i + n c\rangle$ of $n$ steps. The sections are ordered by the complexity of the proof, from a
-single loop with two lemmas to loops in sequence and nested loops with summaries and inductions; the last two
-sections document attempts that are open. Capital letters $K, I, B, M$ denote traces,
+single loop with two lemmas to loops in sequence and nested loops with summaries and inductions; the last
+section documents an attempt that is open. Capital letters $K, I, B, M$ denote traces,
 hatted letters $\seq{M}, \seq{J}, \seq{N}$ the fresh \emph{sequences} that the summary of an inner loop
 introduces, one entry per iteration of the outer loop. $\swap{x}{p}{q}$ abbreviates the double store
 $x[p := x[q]][q := x[p]]$, which is how the swaps appear in the trace equations.
@@ -518,6 +518,122 @@ the iteration, which absorbs the case distinction on the number of passes that t
 The pattern "invariant as a predicate of $(b, k)$, step lemma, generic induction" is the same as
 \lemma{current\_trace\_bounded} of \texttt{teq.dfy}, with the induction hypothesis as an abstract atom.
 
+\section{Cocktail Sort: Two Inner Loops and a Closed Side Condition}\label{sec:cock}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int) returns (b: array<int, int>)
+  requires 0 <= n
+  ensures sorted(b, 0, n)
+  ensures perm(b, a)
+{
+  var lo: int;
+  var hi: int;
+  var j: int;
+  var p: int;
+  var t: int;
+  b := a;
+  lo := 0;
+  hi := n;
+  while lo + 1 < hi
+  {
+    j := lo;
+    while j + 1 < hi
+    {
+      if b[j + 1] < b[j] {
+        t := b[j];
+        b[j] := b[j + 1];
+        b[j + 1] := t;
+      }
+      j := j + 1;
+    }
+    hi := hi - 1;
+    j := hi - 1;
+    p := hi - 2;
+    while lo < j
+    {
+      if b[j] < b[p] {
+        t := b[j];
+        b[j] := b[p];
+        b[p] := t;
+      }
+      j := j - 1;
+      p := p - 1;
+    }
+    lo := lo + 1;
+  }
+}
+\end{lstlisting}
+Each outer iteration runs a forward bubble pass over $[lo, hi)$, which moves the maximum to $hi - 1$, and a
+backward pass over $(lo, hi - 1]$, which moves the minimum to $lo$; the backward pass uses two pointers
+$j$ and $p = j - 1$, like \texttt{insertion\_sort2.dfy}, so that the positions of its swaps are counters.
+
+\subsection{The trace equation system}
+The outer loop modifies $b$ only through the two inner loops, so its trace is again the chain of the
+results, $B = \mathsf{results}(a, \bl{K}, \seq{B}'')$, where the intermediate results $\seq{B}'$ of the forward
+passes are the initial values of the backward passes. With $lo = k$ and $hi = n - k$ substituted,
+\begin{align}
+  K &= Lo = \cnt(0, 1, n') \qquad Hi = \cnt(n, -1, n') \qquad b = \cur(B) \qquad lo = \intf(n') \label{eq:ck0}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}}{k, lo, hi \mapsto 2k + 1 < n} \label{eq:ck1}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}', \seq{B}'_t}{k, lo, hi, c, C \mapsto c = \cur(C)}\quad
+   \al{\bl{K}, \bl{B}, \bl{Lo}, \bl{Hi}, \seq{B}'_t, \seq{J}'_t}{k, x, lo, hi, C, J \mapsto C = \mathsf{bubble\_pass}(x, \bl{J})} \label{eq:ck2}\\
+  &\al{\bl{K}, \seq{N}, \seq{J}'_t}{k, nn, J \mapsto J = \cnt(k, 1, nn)}\quad
+   \al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}'}{k, lo, hi, j \mapsto n \le j + k + 1}\quad \ldots \label{eq:ck3}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}'', \seq{B}''_t}{k, lo, hi, b, B' \mapsto b = \cur(B')}\quad
+   \al{\ldots, \seq{B}', \seq{B}''_t, \seq{J}''_t, \seq{P}''_t}{\ldots, c, B', J, P \mapsto B' = \mathsf{bubble\_pass\_back}(c, \bl{J}, \bl{P})} \label{eq:ck4}\\
+  &\al{\bl{K}, \seq{N}', \seq{J}''_t}{k, nn, J \mapsto J = \cnt(n - k - 2, -1, nn)}\quad
+   \al{\bl{K}, \seq{N}', \seq{P}''_t}{k, nn, P \mapsto P = \cnt(n - k - 3, -1, nn)} \label{eq:ck5}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}''}{k, lo, hi, j \mapsto j \le k}\quad
+   \al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}'', \seq{J}''_t}{k, lo, hi, j, J \mapsto j = \cur(J)}\quad \ldots \label{eq:ck6}\\
+  &\ldots \wedge\ n \le \intf(n') + lo + 1\ \Longrightarrow\ \sorted(b, 0, n) \wedge \perm(b, a) \nonumber
+\end{align}
+with $\mathsf{bubble\_pass}$ as in the bubble sort and $\mathsf{bubble\_pass\_back}(c, js, ps)$ the trace of
+conditional swaps $\swap{x}{j}{p}$ over the two counters. All facts of the outer iteration carry the
+counters $Lo$ and $Hi$ as dependencies, which no body uses, and the outer exit is $n \le \intf(n') + lo + 1$
+with $lo = \intf(n')$ a separate fact.
+
+\subsection{The summary and the induction}
+The summary \lemma{current\_results\_shake} takes the fragments of both inner loops as side conditions,
+twenty-one of them, in the manner of Section~\ref{sec:sel:sum}: the results and traces of each pass, the
+counters (whose initial values $n - k - 2$, $n - k - 3$ are higher-order $X(k)$, $Y(k)$, pinned by closed
+$\mathsf{all}$ conditions $\al{ks}{k \mapsto X(k) = len - k - 2}$, since a sum of a rule variable and a bound
+variable is not matched), the tests and the exits; the result is
+\[ \cur(\mathsf{results}(a, ks, bs)) = \cur(\tr{a}{ks}{b, k \mapsto \mathsf{shake}(b, k, len)}) \]
+with $\mathsf{shake}(b, k, len)$ abstract: the pass of iteration $k$. The induction is that of the bubble sort
+with the invariant $\mathsf{shaken}(b, k, len)$, both ends of length $k$ sorted and the middle between them,
+the whole range once $2k + 1 \ge len$, and \lemma{shaken\_shake} as the step.
+
+The goal stayed open for a day although every piece was in place, and the diagnosis is the point of this
+section. Truncated copies of the summary with its first $k$ side conditions showed that it fires with
+$k \le 20$ and not with the 21st, $\al{ks, js_4, Js_3}{k, j, J \mapsto j = \cur(J)}$, the final values of
+the backward counter. All its variables were bound by earlier conditions, so the condition was closed and
+\emph{decided} by the simplifier instead of matched against the fact \eqref{eq:ck6}, and the simplifier
+does not find a closed $\mathsf{all}$ among the facts (these carry the unused dependencies $\bl{Lo}$, $\bl{Hi}$,
+and their bound variables are renamed). The same condition for the forward pass had fresh variables
+$js_5, Js_5$ with identifying equations, the pattern of Section~\ref{sec:sel:sum}, and succeeded. With
+fresh $js_6, Js_6$ and $js_6 = js_4 \wedge Js_6 = Js_3$ the summary fires and $\perm$ closes.
+
+Then $\sorted(b, 0, n)$ remained: the induction's bound $len \le 2\,\intf(m) + 1$ is not a difference
+constraint, and the simplifier does not derive it from the two facts $n \le \intf(n') + lo + 1$ and
+$lo = \intf(n')$. The lemma therefore states the bound in the goal's form,
+\begin{align*}
+  &\lemma{sorted\_shaken\_steps}:\quad l = \intf(m)\ \wedge\ len \le \intf(m) + l + 1\\
+  &\quad\wedge\ \big(\forall b, k.\ 0 \le k < \intf(m) \wedge \mathsf{shaken}(b, k, len) \Longrightarrow \mathsf{shaken}(F(b, k), k + 1, len)\big)\\
+  &\quad\Longrightarrow\ \sorted(\cur(\tr{a}{\bl{\cnt(0, 1, m)}}{b, k \mapsto F(b, k)}), 0, len)\ \Longleftrightarrow\ \mathsf{true}
+\end{align*}
+with $l$ an open variable matched against the equation of $lo$, after which the bound is literally a fact.
+The counter $\bl{\cnt(0, 1, m)}$ as a dependency matches $\bl{K}$ through $K = \cnt(0, 1, n')$ in the
+context, as in the bubble sort. Two things that were suspected were not the cause: the extra dependencies
+$\bl{Lo}$, $\bl{Hi}$ of the facts (a diagnostic with two and with four dependencies matched both) and the
+name $n$ of the rule variable, which the program shares (it was renamed to $len$ anyway).
+
+\subsection{The idea}
+Nothing new is needed for two inner loops: each pass is summarized by its own fold, and the summary of
+the outer iteration takes both. The lesson is about side conditions: a condition whose variables are all
+bound is decided, not matched, so every $\mathsf{all}$ condition that should be read off a fact must bind a
+fresh sequence and be identified afterwards; and a closed arithmetic condition must be the fact as the goal
+has it, since the decision procedure combines difference constraints only.
+
 \section{Merge: Pinned Guards and Open Trace Variables}\label{sec:merge}
 
 \subsection{The program}
@@ -715,13 +831,14 @@ expressed is a quantified precondition as a side condition; the specification's 
 an atom for it.
 
 
-\section{First Duplicate: a Search with an Early Exit (open)}
+\section{First Duplicate: a Search with an Early Exit}\label{sec:fd}
 
 \subsection{The program}
 \begin{lstlisting}
 method main(a: array<int, int>, n: int) returns (r: bool)
   requires 0 <= n
-  ensures r <==> !distincts(selects(a, butlast(counter(0, 1, natural(n)))))
+  ensures r ==> !distincts(selects(a, butlast(counter(0, 1, natural(n)))))
+  ensures !r ==> distincts(selects(a, butlast(counter(0, 1, natural(n)))))
 {
   var i: int; var j: int;
   r := false; i := 0;
@@ -736,8 +853,9 @@ method main(a: array<int, int>, n: int) returns (r: bool)
 }
 \end{lstlisting}
 The nested loop of \texttt{distinct.dfy} (which is verified) with both loops stopped by the flag: the
-search for a duplicate ends at the first one. The postcondition uses $\mathsf{distincts}$ of
-\texttt{teq.dfy}.
+search for a duplicate ends at the first one. The postcondition uses $\mathsf{distincts}$ of the lemma
+database, and is stated as two implications rather than the equivalence $r \Leftrightarrow \neg\mathsf{distincts}(\ldots)$,
+for a reason explained below.
 
 \subsection{The trace equation system}
 The outer loop's constraint includes the flag, $\al{\bl{K}, \bl{R}, \bl{I}}{k, r, i \mapsto \neg r}$, so
@@ -759,10 +877,10 @@ $r$ is false at the head of every outer iteration, and the simplifier uses this 
 \eqref{eq:fd3} does not mention the previous value of the flag, since the inner constraint
 $\neg r$ \eqref{eq:fd5b} replaced it by $\mathsf{false}$: the inner trace is a sequence of comparisons
 with $a[k]$. The inner exit \eqref{eq:fd6} is the negation of the test $j < n \wedge \neg r$: either all
-later positions were visited, or the flag was set. With \texttt{-split}, the outer exit
-$\neg(i < n \wedge \neg r)$ gives two goals, the exit by $i = n$ and the exit by $r$.
+later positions were visited, or the flag was set. The outer exit $\neg(i < n \wedge \neg r)$ is a
+disjunction, $n \le i \vee r$, with one goal per postcondition.
 
-\subsection{The attempt}
+\subsection{The lemmas}
 The summary of the inner loop in the style of Section~\ref{sec:sel:sum} is a rewrite of the fragment \eqref{eq:fd2}
 into a fact about the results: with \eqref{eq:fd3}--\eqref{eq:fd6} as
 side conditions (duplicated and identified by equations where closed),
@@ -771,39 +889,55 @@ side conditions (duplicated and identified by equations where closed),
 \end{align*}
 where $\mathsf{nodup}(a, k, n)$ is the abstract "$a[k]$ does not occur among $a[k + 1..n)$". This is
 sound in both exit cases of the inner loop: if the flag was set, a later duplicate was found; if $j$
-reached $n$, all later positions were compared. This lemma fires. The outer trace is then
+reached $n$, all later positions were compared. The outer trace is then
 $\mathsf{results}(\mathsf{false}, \bl{K}, \seq{R})$ with $\seq{R}$ characterized pointwise, and the
-simplifier itself turns it into $\mathsf{results}(\mathsf{false}, \bl{K}, \mapc{\bl{K}}{k \mapsto \neg\mathsf{nodup}(a, k, n)})$,
-whose current value is the last comparison, $\neg\mathsf{nodup}(a, \intf(n') - 1, n)$ if $n' > 0$.
-The two goals then need: for the exit by $i = n$, that $\mathsf{nodup}(a, n - 1, n)$ holds (the last
-element has no later duplicate, a lemma \lemma{nodup\_last}) and that the flags of all iterations being
-false, \eqref{eq:fd1} over $\bl{R}$, gives $\mathsf{nodup}(a, k, n)$ for all $k < n - 1$, hence
-$\mathsf{distincts}$; for the exit by $r$, that $\neg\mathsf{nodup}(a, \intf(n') - 1, n)$ with
-$\intf(n') \le n$ contradicts $\mathsf{distincts}$.
+simplifier itself turns it into $\mathsf{results}(\mathsf{false}, \bl{K}, \mapc{\bl{K}}{k \mapsto \neg\mathsf{nodup}(a, k, n)})$.
 
-A first set of lemmas for these two steps closed both goals, and also the negated postcondition: the
-lemma for the first step, \lemma{distincts\_flags}, had the summary fragment
-\[ \al{\bl{\cnt(0, 1, m)}, rs_2}{k, r \mapsto r = \neg\mathsf{nodup}(a, k, n)} \]
-as an \emph{open} side condition, and a rule $\mathsf{nodup}(a, k, n) \Leftrightarrow \mathsf{true}$ under the hypothesis
-$\mathsf{distincts}(\ldots)$ for the second step. An $\mathsf{all}$ side condition is matched in the
-simplifier's context of the fact's combinator, where rules fire: under the hypothesis $\mathsf{distincts}$
-of the second goal, the rule rewrote the condition to $\al{\ldots}{k, r \mapsto \neg r}$, which is
-\eqref{eq:fd1}, a fact, so $\mathsf{distincts}$ was derived from itself (finding 13 of \texttt{NOTES.md}).
-With the circular rule replaced by a rule on the atom $\mathsf{distincts}$ with the atoms
-$\neg\mathsf{nodup}(a, k, n)$ and $0 \le k < n$ as side conditions, the proof is sound again and two goals remain: the current value of
-$\mathsf{results}$ over the map is not yet rewritten (the lemma for it, written for results that depend
-on the previous value, does not match the map), and the step from the flags \eqref{eq:fd1} to
-$\mathsf{distincts}$ needs the flag at position $k$ to be read as the result of iteration $k - 1$, a
-shift that the lemma must state explicitly.
+The outer loop is summarized on the atom $\mathsf{distincts}(\ldots)$ of the postcondition, by one rule per
+case of the exit. If the flag is set, it is the result of the last iteration, which found a duplicate:
+\begin{align*}
+  &\lemma{distincts\_flag\_set}:\quad Kv = \cnt(0, 1, m)\ \wedge\ flag = \cur(\mathsf{results}(\mathsf{false}, \bl{Kv}, \mapc{\bl{Kv}}{k \mapsto \neg\mathsf{nodup}(a, k, n)}))\\
+  &\quad\wedge\ flag\ \wedge\ \intf(m) \le n\ \Longrightarrow\ \mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))}))\ \Longleftrightarrow\ \mathsf{false}
+\end{align*}
+If all iterations ran, $n \le \intf(m)$, and the flag was reset at the head of each, \eqref{eq:fd1}, then no
+element before the last has a later duplicate (the flag at the head of iteration $k$ is the result of
+iteration $k - 1$) and the last has none:
+\begin{align*}
+  &\lemma{distincts\_flags\_reset}:\quad Kv = \cnt(0, 1, m)\ \wedge\ Rv = \mathsf{results}(\mathsf{false}, \bl{Kv}, rs)\\
+  &\quad\wedge\ \al{\bl{Kv}, hs}{k, h \mapsto \neg h}\ \wedge\ hs = \bl{Rv}\
+   \wedge\ \al{\bl{Kv}, rs_2}{k, h \mapsto h = \neg\mathsf{nodup}(a, k, n)}\ \wedge\ rs_2 = rs\ \wedge\ n \le \intf(m)\\
+  &\quad\Longrightarrow\ \mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))}))\ \Longleftrightarrow\ \mathsf{true}
+\end{align*}
+Three details made these fire. The outer counter and the flag trace are the variables $K$ and $R$ of the
+goal with their equations \eqref{eq:fd0} as hypotheses, so a rule with $\bl{\cnt(0, 1, m)}$ as an
+\emph{argument} never matches; the open trace variables $Kv$, $Rv$ are matched against the hypotheses
+(Section~\ref{sec:merge}). The fact of the flags at the heads \eqref{eq:fd1} carries the counter $\bl{I}$ as
+an unused dependency, which the simplifier drops from a closed instance of the condition, after which it
+is not found among the facts; hence the open list $hs$, identified with $\bl{Rv}$ afterwards. And the exit
+$n \le i \vee r$ is needed as a closed condition: with the postcondition as an equivalence, the goal's
+conclusion is $i < n \wedge \neg r\ \vee\ r \Leftrightarrow \neg\mathsf{distincts}(\ldots)$, which
+\texttt{-split} does not split, and in the context of the second disjunct neither literal of the negated
+first is available, so the condition is not decided; probes (rules with the real left-hand side and the
+first $k$ conditions) located it as the only failing one. As two implications, each goal has its literal
+of the exit, $r$ respectively $n \le i$ with $i = \intf(n')$, in the context of the atom.
+
+An earlier set of lemmas closed both goals and also the negated postcondition: the rule for the first step
+had the summary fragment as an open side condition, and a rule $\mathsf{nodup}(a, k, n) \Leftrightarrow \mathsf{true}$
+under the hypothesis $\mathsf{distincts}(\ldots)$ for the second. An $\mathsf{all}$ side condition is matched
+in the simplifier's context of the fact's combinator, where rules fire: under the hypothesis $\mathsf{distincts}$,
+the rule rewrote the condition to \eqref{eq:fd1}, a fact, so $\mathsf{distincts}$ was derived from itself
+(finding 13 of \texttt{NOTES.md}). The rules above take the atom $\mathsf{distincts}$ as left-hand side
+and never rewrite $\mathsf{nodup}$.
 
 \subsection{The idea}
 An early exit is a data-dependent number of iterations with a disjunctive exit; the summary of the
 inner loop must be stated so that it holds in both cases, which the abstract atom $\mathsf{nodup}$
-affords, since it describes the result rather than the number of iterations. The soundness lesson is
-the important one: a side condition that other rules can simplify under the conclusion to be proved is a
-circular justification, and the safe form of side conditions is an atom that is matched literally
-(as \lemma{consts\_prefix\_def} of \texttt{teq.dfy} does for a constraint, and as the summary itself does
-for the inner loop).
+affords, since it describes the result rather than the number of iterations; the outer loop is summarized
+on the atom of the postcondition with one rule per case of its exit, each with the case as a closed
+condition. The soundness lesson stands: a side condition that other rules can simplify under the conclusion
+to be proved is a circular justification, and the safe form of side conditions is an atom that is matched
+literally (as \lemma{consts\_prefix\_def} of the database does for a constraint, and as the summary itself
+does for the inner loop).
 
 \section{Binary Search: the Lower Bound (open)}
 
@@ -854,14 +988,19 @@ $hi \le lo$ of \eqref{eq:lb0}: without it the current value of $L$ is not the lo
 
 Stating the exit as a side condition $\cur(Hv) \le \cur(Lv)$ makes the run exceed the time limit: to decide
 the condition, the simplifier rewrites $\cur(Lv)$, which is the left-hand side of the very lemma, whose
-conditions decide it again (finding 20 of \texttt{NOTES.md}). Stating it with open variables, $h \le l$ with
-$h = \cur(Hv)$ and $l = \cur(Lv)$, which should be matched against the hypothesis $hi \le lo$ and then
-identified with the current values by the definitions of $lo$ and $hi$, had the same effect in a first run;
-whether a form exists that is matched against the hypothesis without re-entering the lemma is not settled.
-Without the exit condition the lemma is unsound and the run terminates with the goal open (the conclusion
-$lo = \mathsf{lb}$ is produced, but the facts about $\mathsf{lb}$ do not close the quantified
-postconditions, since the pin $\forall lo, hi.\ G(lo, hi) \Leftrightarrow a[(hi + lo)/2] < x$ mentions
-$x$, which the left-hand side does not bind; it was only decided by name capture, finding 21).
+conditions decide it again (finding 20 of \texttt{NOTES.md}). Stating it as a comparison $h \le l$ of two
+open variables, matched against the hypothesis $hi \le lo$, makes the lemma fire, and the four facts about
+$\mathsf{lb}$ then close the three postconditions: the goal is closed, and a wrong postcondition leaves a
+goal. But $h$ and $l$ are not tied to the traces, so the rule is not a sound lemma (in this goal its
+conclusion holds whichever comparison the condition matched, since the exit does hold in the final state).
+Every sound tie fails for a reason of the engine, located with probes: the instance of a side condition is
+simplified before it is decided or matched, so $l = \cur(Lv)$ with $Lv$ bound re-enters the lemma like the
+first form, whether closed or open. With $Lv$ open, $l = \cur(Lv)$ binds both from the hypothesis $lo = \cur(L)$
+without re-entrance; but then the left-hand side, matched against $\cur(L)$ through the definition of the
+trace variable $L$, turns out to have left its dependency variables $nn$ and $hs$ unbound (a probe fired with
+"variables of a rule not instantiated"), and the trace condition that would bind them,
+$Lv = \tr{0}{\bl{\cnt(0, 1, nn)}, hs}{\ldots}$, no longer matches once $Lv$ is bound, since its instance is
+simplified with $L$ replaced by its definition.
 
 \subsection{The idea, and what is missing}
 Binary search is the paper's acknowledged weakness: the loop computes a bound by narrowing, and only a
@@ -872,7 +1011,9 @@ conditions), by the named monotone traces $\mathsf{incs}$ and $\mathsf{decs}$ wh
 facts, and by a cut after the loop. With $\sorted$ instead of partition points, the comparison lemma needs
 $0 \le m < n$, which in the context of the updates follows from the invariant $0 \le lo \le hi \le n$,
 the thing to be established; the summary lemma of this section bypasses the invariant by stating the
-result directly, and founders on expressing the exit. A lemma that takes the exit from the facts as an
-atom (the way \lemma{consts\_prefix\_def} abstracts constraints) is the next thing to try.
+result directly, and founders on tying the exit to the traces soundly. What is missing is in the engine: a
+rule should not be applied while the instances of its own side conditions are simplified, and a left-hand
+side matched through a trace variable should bind all its variables; with either, the sound form of the
+lemma closes the goal.
 
 \end{document}

@@ -77,6 +77,24 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   unbound was decided only because the method's variable is also named `x` (see
   [fragments.dfy](examples/dafny/algorithms/fragments.dfy), whose test methods name their sequences `KK, NN, ...` apart,
   and [lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy)).
+- A rule is applied while the instances of its own side conditions are simplified (`Rewrite.conditions` simplifies an
+  instance before it decides or matches it): a condition that mentions the term of the rule's left-hand side, e.g.
+  `l == current(Lv)` for a rule on `current(Lv)` with `Lv` bound, does not terminate
+  ([lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy), whose sound ties of the exit to the traces all
+  fail this way; the summary of bubble_sort.dfy takes `current(results(...))` as left-hand side instead of `results(...)`
+  for the same reason). The rule should be disabled, or the instance not rewritten, while its conditions are evaluated.
+- A left-hand side `current(trace(0, for ⌊counter(0, 1, nn)⌋, hs do ...))` matched against `current(Lo)` through the
+  definition `Lo == trace(...)` of the trace variable in the context binds the higher-order guard but leaves the
+  dependency variables `nn` and `hs` unbound: a rule then fires with "variables of a rule not instantiated by its
+  match", or its identifying equations `nn2 == nn` stay open and are never matched (the probes of lower_bound.dfy,
+  NOTES.md finding 32).
+- The exit of a loop in the conclusion of a goal is a disjunction, `i < n && !r || r == !distincts(...)` for the exit
+  `!(i < n && !r)`, which `-split` does not split, and the context of the second disjunct does not contain the literals
+  of the negated first, so a rule on the atom of the postcondition sees neither `n <= i` nor `r`; a case split on the
+  negated exit when it is a disjunction would make a postcondition stated as an equivalence work
+  ([first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy) states it as two implications instead).
+- An instantiated higher-order variable leaves a beta-redex in the output, `((k: int) => !nodup(a, k, n))(k)`
+  (first_duplicate.dfy with a lemma `current(results(x0, ks, maps(for ks yield k :: F(k))))`).
 - A side condition that is an `invs` is matched in the context of the fact's combinator, where other rules fire,
   also with the hypotheses of the goal: in [first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy) a rule
   `nodup(a, k, n) <==> true` under the hypothesis `distincts(...)` rewrote the condition
@@ -84,12 +102,16 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   `invs(... :: !r)`, so that `distincts(...)` was proved from itself, also for the negated postcondition; the path
   through the split goals is not isolated. Side conditions of a rule should not be simplifiable by rules that use
   the conclusion; atoms as side conditions (`consts_prefix` style) avoid it.
-- The result of a run is not reproducible in one case: the summary lemma of
-  [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy) with 21 side conditions closed the goal in one run
-  and leaves it in every later run of the same file and jar; its fourth condition, the exit of the forward pass
-  `invs(for ks, js check k, j :: n <= j + k + 1)`, is not matched against the fact of that shape over
-  `⌊K⌋, ⌊Lo⌋, ⌊Hi⌋, J?` (the same condition works in bubble_sort.dfy over `⌊K⌋, ⌊I⌋, J?`). Presumably an order that
-  depends on a hash set.
+- A closed side condition that is an `invs` over variables bound by earlier conditions is decided by the simplifier, which
+  does not find it among the facts (these keep unused dependencies, e.g. the traces of `lo` and `hi`, and their bound
+  variables are renamed), so the condition fails although the fact exists; the condition must be written over fresh
+  variables, matched, and identified by equations (`js6 == js4 && Js6 == Js3`). This was the condition of
+  [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy) that blocked its summary for a day (the one
+  run that closed the goal presumably decided the closed condition by chance), found with truncated copies of the
+  lemma with its first k conditions; the same closed instance also loses its unused dependencies when the simplifier
+  simplifies it (`invs(for ⌊Kv⌋, ⌊Rv⌋, ⌊Iv⌋ check k, h, i :: !h)` becomes two dependencies,
+  [first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy)). A closed `invs` condition should be matched
+  against the facts modulo unused dependencies instead.
 - A cycle through a side condition that is an iteration constraint, resolved for `sum_invs_const` of teq.dfy, which
   is `consts_prefix_def` and `sum_consts_prefix` now, with the atom `consts_prefix(n, c, js)` abstracting the
   constraint like `agree_prefix`; the mechanism remains for any rule with a general left-hand side and an `invs` side
@@ -680,6 +702,17 @@ SV-COMP examples (`benchmarks/sv-comp/dafny`):
   whose first dependency is another list (`⌊R⌋`, selected since the initial value `X(k)` matched its bound variable)
   fails, hence the variant `invs_current_counter_other` with an independent first dependency
   (see [nested_mult.dfy](examples/dafny/algorithms/nested_mult.dfy)).
+- A bare bound variable on one side of the body of an `invs` pattern is synthesized as a map (`Rewrite.instantiate`):
+  `invs(for ks, js check k, j :: n <= j)` matches every comparison fragment and
+  `invs(for ks, Ns, js check k, nn, j :: j == integer(nn))` every equation fragment with `integer` of a bound
+  variable (`r' == r + integer(nn)`), with `js` a map over the fact's dependencies; as a left-hand side with `invs`
+  side conditions both cycle (the exit lemma of the `nested` module, found by pair runs of its lemmas on
+  cocktail_sort.dfy, NOTES.md finding 29); a function symbol on the side of the bound variable,
+  `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, is specific. `Rule.check` could reject a left-hand side whose
+  body has a bare bound variable of a variable dependency together with an `invs` side condition.
+- A bound that is not a difference constraint is not decided from two facts: `len <= 2 * integer(m) + 1` from
+  `n <= integer(m) + lo + 1` and `lo == integer(m)` (cocktail_sort.dfy states the bound in the goal's form with `lo`
+  an open variable).
 - A polymorphic lemma with a higher-order variable in a side condition is not matched: `current_results_steps<a>`
   with `F: (a, int) -> a` (or `F: a -> a`) never fires, the monomorphic lemma does; `X: a -> int` in a side
   condition is matched, so the problem is a higher-order variable of the type parameter's type

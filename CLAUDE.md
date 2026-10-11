@@ -83,6 +83,13 @@ or solvers consume.
   modules produce; a file includes only the modules its lemmas are written
   for. Examples that do not terminate stay in the tree and are listed in
   `Examples.nonterminating`.
+- A closed `invs` side condition is decided, not matched, and fails: write
+  it over a fresh list variable and identify it by an equation (`Js2 == Js`).
+  A side condition must not mention the term of the rule's own left-hand side
+  (`l == current(Lv)` for a rule on `current(Lv)`): its instance is simplified
+  by the rule itself and the run does not terminate.
+- Long runs use a private copy of `cuvee.jar`: a rebuild during a run crashes
+  the JVM, and the checkout's jar may contain uncommitted changes.
 - Runs on `-teq` examples take a timeout and one core
   (`timeout 300 nice -n 19 taskset -c 0 java -cp cuvee.jar cuvee.Cuvee ...`),
   and check the exit status: a killed run prints no goals and looks like a
@@ -93,8 +100,8 @@ or solvers consume.
 
 ## Caveats
 
-- **Combinator dependencies** have type `Seq(T)`, at least one, of equal
-  length (`Seqs.len`).
+- **Combinator dependencies** have type `List(T)`, at least one, of equal
+  length (`List.len`).
 - **The simplifier runs only in `-simplify`.** Other transforms never call it
   or its helpers.
 - **Simplifier helpers are local.** Each normalizes its own constructor, in

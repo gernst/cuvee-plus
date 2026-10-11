@@ -8,13 +8,15 @@
 // n <= j over js), and the fragments do not share their facts, since the body of an invs assumes only the
 // invariants whose dependencies are among its own (Simplify.invariants); hence j == current(J) is not rewritten to
 // j == integer(nn) by the simplifier itself, and the conclusion j == n, which needs all four fragments at the same
-// position k, is derived only by the lemmas
+// position k, is derived only by the lemmas; the variables of the method are named apart from the variables of the
+// lemmas of the module (Ns, Js, js), whose capture made the restated exit lemma fail with "variables of a rule not
+// instantiated by its match" (NOTES.md, finding 21)
 
-method test(n: int, m: Nat, Ns: List<Nat>, Js: List<Trace<int>>, js: List<int>)
+method test(n: int, m: Nat, NN: List<Nat>, JJ: List<Trace<int>>, jj: List<int>)
   requires 0 <= n
 {
-  assume invs(for ⌊counter(0, 1, m)⌋, Ns, Js, js check k, nn, J, j ::
+  assume invs(for ⌊counter(0, 1, m)⌋, NN, JJ, jj check k, nn, J, j ::
     J == trace(0, for ⌊counter(0, 1, nn)⌋ do x, i :: x + 1) && j == current(J)
     && invs(for ⌊counter(0, 1, nn)⌋, ⌊J⌋ check i, x :: x < n) && !(j < n));
-  assert invs(for ⌊counter(0, 1, m)⌋, js check k, j :: j == n);
+  assert invs(for ⌊counter(0, 1, m)⌋, jj check k, j :: j == n);
 }

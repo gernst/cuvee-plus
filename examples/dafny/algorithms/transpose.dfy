@@ -1,46 +1,13 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/transpose.dfy
+// ./Cuvee.sh -teq -include teq:nested -simplify examples/dafny/algorithms/transpose.dfy
 // the transpose of an m x n matrix: nested loops that store A[i][j] at B[j][i]
 //
-// status: open, the run does not terminate (300 s), reported as proved by the runs of Oct 10 (NOTES.md, finding
-// 18); row_sums.dfy on an array-valued inner result, with the same cycling lemmas invs_subst_counter and
-// invs_subst_column (a general left-hand side with an invs side condition over its lists); the intended chain: the
-// fragment lemmas resolve the inner counter and its length n, the inner trace folds into column(B, A, k, nn), the
-// stores of column k, which is substituted into the result b == current(B'), current_results_steps (monomorphic for
-// arrays of arrays) makes the outer trace the trace of the columns, and current_transpose reads the transposed
-// element
-
-// the inner counter (fragments.dfy)
-lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>, Ns: List<Nat>, Js: List<Trace<int>>, X: int -> int, c: int)
-  requires invs(for ks, Ks, Ns check k, K, nn :: K == counter(0, 1, nn))
-  ensures invs(for ks, Ks, Js check k, K, J :: J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
-    <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
-
-// a fragment about the inner counter J is stated about the counter (row_sums.dfy)
-lemma {:rw} invs_subst_counter<a>(ks: List<int>, Ns: List<Nat>, Js: List<Trace<int>>, ts: List<a>, X: int -> int, c: int, F: (int, Trace<int>) -> a)
-  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
-  ensures invs(for ks, Js, ts check k, J, t :: t == F(k, J))
-    <==> invs(for ks, Ns, ts check k, nn, t :: t == F(k, counter(X(k), c, nn)))
-
-// the iteration constraint of an inner counter from 0 by 1 below a nonnegative bound (fragments.dfy)
-lemma {:rw} invs_invs_counter_upper_zero(ks: List<int>, Ns: List<Nat>, Js: List<Trace<int>>, n: int)
-  requires 0 <= n
-  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(0, 1, nn))
-  ensures invs(for ks, Js check k, J :: invs(for ⌊J⌋ check x :: x < n))
-    <==> invs(for ks, Ns check k, nn :: integer(nn) <= n)
-
-// the exit of an inner counter from 0 by 1 at or above its bound (fragments.dfy)
-lemma {:rw} invs_exit_counter_zero(ks: List<int>, Ns: List<Nat>, js: List<int>, n: int)
-  requires invs(for ks, Ns, js check k, nn, j :: j == integer(nn))
-  requires invs(for ks, Ns check k, nn :: integer(nn) <= n)
-  ensures invs(for ks, js check k, j :: n <= j)
-    <==> invs(for ks, js check k, j :: j == n)
-
-// the numbers of iterations of the inner loops are all n (fragments.dfy)
-lemma {:rw} invs_integer_consts(m: Nat, Ns: List<Nat>, n: int)
-  requires 0 <= n
-  ensures invs(for ⌊counter(0, 1, m)⌋, Ns check k, nn :: n == integer(nn))
-    <==> Ns == ⌊consts(m, natural(n))⌋
-
+// status: verified with -teq -include teq:nested -simplify (Oct 11, 2026, evening); row_sums.dfy on an array-valued
+// inner result: the module nested resolves the inner counter, the exit and the numbers of inner iterations, then
+// the chain of specific lemmas: the counters over the constant numbers of iterations, the inner stores over the
+// inner counter folded into column(B, A, k, natural(n)), the final values of the columns, current_results_steps
+// (monomorphic for arrays of arrays) makes the outer trace the trace of the columns, and current_transpose reads the
+// transposed element; the earlier substitution lemmas invs_subst_counter and invs_subst_column had general left-hand
+// sides with an invs side condition over their lists and did not terminate (NOTES.md, finding 19)
 // the outer trace: the initial value followed by the results of the inner loop
 function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a>
 {
@@ -53,20 +20,43 @@ function {:fold} column(B0: array<int, array<int, int>>, A: array<int, array<int
   trace(B0, for ⌊counter(0, 1, nn)⌋ do B, j :: B[j := B[j][k := A[k][j]]])
 }
 
-// a fragment about the inner results B', which are columns in the same iteration, is stated about the columns
-lemma {:rw} invs_subst_column(ks: List<int>, hs: List<array<int, array<int, int>>>, Ns: List<Nat>, Bs: List<Trace<array<int, array<int, int>>>>,
-                              bs: List<array<int, array<int, int>>>, A: array<int, array<int, int>>)
-  requires invs(for ks, hs, Ns, Bs check k, h, nn, B :: B == column(h, A, k, nn))
-  ensures invs(for ks, Bs, bs check k, B, b :: b == current(B))
-    <==> invs(for ks, hs, Ns, bs check k, h, nn, b :: b == current(column(h, A, k, nn)))
+// the inner counters over the constant numbers of iterations (row_sums.dfy)
+lemma {:rw} invs_counter_consts(ks: List<int>, Js: List<Trace<int>>, m: Nat, n: int)
+  requires 0 <= n
+  ensures invs(for ks, ⌊consts(m, natural(n))⌋, Js check k, nn, J :: J == counter(0, 1, nn))
+    <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
 
-// the results of the inner loop are a function F of the previous value and the iteration (nested_mult.dfy)
+lemma {:rw} invs_counter_consts_var(ks: List<int>, Ns: List<Nat>, Js: List<Trace<int>>, m: Nat, n: int)
+  requires Ns == ⌊consts(m, natural(n))⌋
+  requires 0 <= n
+  ensures invs(for ks, Ns, Js check k, nn, J :: J == counter(0, 1, nn))
+    <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
+
+// the inner stores over the inner counter are the column, with the fragment of the counter as a side condition over a
+// fresh variable
+lemma {:rw} invs_column_counter(ks: List<int>, hs: List<array<int, array<int, int>>>, Bs: List<Trace<array<int, array<int, int>>>>,
+                                Js: List<Trace<int>>, Js2: List<Trace<int>>, A: array<int, array<int, int>>, n: int)
+  requires invs(for ks, Js2 check k, J :: J == counter(0, 1, natural(n)))
+  requires Js2 == Js
+  ensures invs(for ks, hs, Bs, Js check k, h, B, J :: B == trace(h, for ⌊J⌋ do x, j :: x[j := x[j][k := A[k][j]]]))
+    <==> invs(for ks, hs, Bs check k, h, B :: B == column(h, A, k, natural(n)))
+
+// the final values of the inner traces, which are columns in the same iteration
+lemma {:rw} invs_current_column(ks: List<int>, hs: List<array<int, array<int, int>>>, bs: List<array<int, array<int, int>>>,
+                                Bs: List<Trace<array<int, array<int, int>>>>, Bs2: List<Trace<array<int, array<int, int>>>>,
+                                A: array<int, array<int, int>>, n: int)
+  requires invs(for ks, hs, Bs2 check k, h, B :: B == column(h, A, k, natural(n)))
+  requires Bs2 == Bs
+  ensures invs(for ks, bs, Bs check k, b, B :: b == current(B))
+    <==> invs(for ks, hs, bs check k, h, b :: b == current(column(h, A, k, natural(n))))
+
+// the results of the inner loop are a function F of the previous value and the iteration (transpose.dfy)
 lemma {:rw} current_results_steps(x0: array<int, array<int, int>>, ks: List<int>, bs: List<array<int, array<int, int>>>,
                                   F: (array<int, array<int, int>>, int) -> array<int, array<int, int>>)
   requires invs(for ks, ⌊results(x0, ks, bs)⌋, bs check k, x, b :: b == F(x, k))
   ensures current(results(x0, ks, bs)) == current(trace(x0, for ks do x, k :: F(x, k)))
 
-// m columns transpose the m x nn matrix
+// m columns transpose the m x nn matrix (transpose.dfy)
 lemma {:rw} current_transpose(B0: array<int, array<int, int>>, A: array<int, array<int, int>>, m: Nat, nn: Nat, i: int, j: int)
   ensures current(trace(B0, for ⌊counter(0, 1, m)⌋ do x, k :: current(column(x, A, k, nn))))[j][i]
     == if 0 <= i < integer(m) && 0 <= j < integer(nn) then A[i][j] else B0[j][i]
