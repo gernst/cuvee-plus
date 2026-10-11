@@ -690,3 +690,77 @@ init, rules, swap) cannot take the injection, since it needs `Trace`.
 So the candidates are compatible with the existing tests as far as sampled;
 the cost of `invs_exit_counter_zero` on comparison fragments (above) did not
 show in the times.
+
+## The modules of the database and the tests (Oct 11, 2026, afternoon)
+
+teq.dfy was split into the modules of `resources/cuvee/teq`, which `-teq`
+injects in order (`core`, `arithmetic`, `counters`, `aggregation`, `arrays`,
+`search`), and two further modules that a file includes on demand with
+`-include teq:<concept>`: `nested` (the fragment lemmas of fragments.dfy,
+`results`, `current_results_steps`, `current_trace_all`, `current_trace_last`,
+`consts_prefix_integer`) and `sorting` (`sorted`, `perm`, `partitioned`, the
+lemmas on swaps and steps, the prefix inductions). This folder is a test
+suite now: each file's first line is its command line and `name.out` its
+expected output (`name.err` only if there is one); row_sums and transpose
+are listed in `Examples.nonterminating` and not run. Regenerate an output by
+hand with `./Cuvee.sh <options> <file> > name.out 2> name.err`, remove an
+empty `.err`, and check the exit status, not the count of goals (finding 18).
+
+What injecting the `nested` module taught, by attempting it for all files at
+once first:
+
+22. **A summary lemma is tied to the forms of the fragments it sees.** With
+    the fragment lemmas injected before the file's lemmas, the fragments of
+    an inner loop are resolved (`J == counter(0, 1, nn)`, `j == integer(nn)`,
+    `integer(nn) + j == k + 1`) before a summary that expects the raw forms
+    (`J == sums(...)`, `j == current(J)`) can match. bubble_sort.dfy was
+    adapted to the resolved forms and includes `teq:nested`; insertion_sort
+    and insertion_sort2 keep their file-local lemmas and do not include it,
+    since their adapted summaries did not fire (the 17th condition, the
+    equations identifying the exit's lists, failed, not isolated).
+    Rule: a lemma that takes fragments as side conditions must be written
+    for the normal form that the whole database, including the modules
+    included, gives the fragments, and a file should include only the modules
+    its lemmas are written for.
+23. **The order of modules decides which abstraction a fragment gets.** With
+    `aggregation` before `nested`, the exit `j == n` of an inner counter is
+    abstracted by `consts_prefix_def` into `consts_prefix(m, n, J?)` before a
+    lemma of `nested` could derive `n == integer(nn)` from it; hence
+    `consts_prefix_integer`, with the atom as the left-hand side (which binds
+    `n`) and the fragment of the final values as the side condition (which
+    binds `Ns`): `consts_prefix(m, n, js) <==> Ns == ⌊consts(m, natural(n))⌋`.
+    A version with the atom as an *open side condition* raised "variables of a
+    rule not instantiated" (`n` unbound), although open atoms are said to be
+    searched among the facts; a version with the body `n == integer(nn)` as
+    the left-hand side matched unrelated equation fragments (finding 15).
+24. **The `nested` module makes rewriting cycle on cocktail sort** ("rewriting
+    does not terminate"), on the program alone without any file lemma; the
+    first half of the module (`invs_sums_counter` to
+    `invs_exit_counter_zero`) suffices to cause it, the single lemma is not
+    isolated. The suspect is `invs_exit_counter_zero` (finding 15 and the
+    termination table above), whose bare comparison body matches every
+    comparison fragment of a program with three counters. cocktail_sort does
+    not include the module.
+25. **Duplicate declarations are accepted** when a file declares a lemma or
+    function identically to an injected module (the files of this folder
+    keep their local copies), but the method's variables must be named apart
+    from the lemmas' variables (finding 9), which invs_counter_equation.dfy
+    needed once `teq:nested` was included.
+26. **The harness runs the roundtrip of an output with the options of its
+    command line**, so `-include teq:<concept>` must be passed through
+    (`Examples.options`), or an output that mentions a module's function
+    (`results`) does not parse back.
+
+Lean: the database is printed by
+`./Cuvee.sh -known dfy -print lean -include teq:core -include teq:arithmetic ... empty.dfy`;
+without `-teq` the included modules are not hidden. The output equals the
+one from teq.dfy modulo order; `half_even` was dropped from teq.dfy between
+the split and the commit, so the modules are a snapshot: regenerate them from
+teq.dfy by the split (by declaration name, with the preceding comments) if
+teq.dfy changes before it is retired.
+
+State of the files with respect to the modules: bubble_sort, nested_mult,
+invs_counter_equation, invs_fragments use `teq:nested` (the last two are
+verified only by it); all others use the six base modules and their own
+lemmas, with the results of the morning; the sorting lemmas of the examples
+are duplicated in `teq:sorting`, which no file includes yet.
