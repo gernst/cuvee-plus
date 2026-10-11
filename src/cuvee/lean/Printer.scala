@@ -233,6 +233,7 @@ object Printer extends cuvee.pipe.Printer:
       case CheckSat              => text("-- check-sat")
       case Labels                => text("-- labels")
       case GetModel              => text("-- get-model")
+      case GetWitness            => text("-- get-witness")
       case Exit                  => text("-- exit")
       case Push(depth)           => text("-- push " + depth)
       case Pop(depth)            => text("-- pop " + depth)

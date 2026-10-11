@@ -24,8 +24,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   `check-true` annotations `State.annotated` asserts at its beginning, as the
   translated C tasks of SV-COMP use for their assertions), the liveness
   properties `:recurring` and `:not-recurring`, which 6 of the 7 core
-  verification tasks use, and `:decreases-lex`, `get-witness` (answered
-  `unsupported`, as the query `(get-info :witness)`; see witness output) and
+  verification tasks use, and `:decreases-lex`, `get-witness` (the query
+  `GetWitness`, answered `unsupported`; see witness output) and
   `select-trace`, the answers `correct`/`incorrect` to
   `verify-call` for interactive use (the verdict is decided by cuvee.py),
   constants in the bodies of procedures with `-chc` (Horn solvers reject free
@@ -41,6 +41,11 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## Bugs
 
+- SV-LIB (0.39.0), wrong verdicts on `sv-benchmarks/sv-lib/core-verification` (property correct-tags), found with
+  `xml/cuvee-svlib-chc.xml` and `xml/cuvee-svlib-teq.xml` before running them:
+  - `-chc -z3` refutes `loop-add` (expected true): the clauses of `verify-call add (x0 y0)` contain the goal
+    `forall y0. 0 <= y0`, the precondition of `add` over all values of the constants, which fails; the task
+    expects the precondition of the called procedure to be assumed (`-teq` proves the task).
 - `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
   unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final
   assertion fails), after about 340 s each, in the 15-minute runs of `xml/cuvee-full-fallback.xml` of Oct 11, 2026
@@ -913,6 +918,38 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   annotations; contracts of `main` are conjoined with the zero values of the
   globals. The printer writes contracts, loop invariants and variants, and
   assertions that are not C (quantifiers, implications, `\old`) as ACSL.
+- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the tasks of the
+  categories Arrays and Loops with hand-written annotations, checked with
+  `-verify -z3`, 0.38.0; the issues of the support found so far, by impact):
+  - The ranges of the C types of the program variables are not assumed at
+    loop heads: the state is quantified over all integers, while the program
+    wraps unsigned arithmetic (`uint(x + 1)`), so a loop invariant over
+    unsigned variables, e.g. `x + y == n` (`loops/count_up_down-1`), is
+    refuted by a negative `x`. Frama-C/WP conjoins the type ranges to every
+    invariant implicitly; `loop-invariants/linear-inequality-inv-a` proves
+    with an additional `0 <= s`. Affects nearly all of `loops-crafted-1`
+    (43 of 55 refuted), `loop-crafted/simple_vardep_*`, `loops/trex03-2`.
+  - Bitwise `&` is uninterpreted (`bitand`), also on operands that are 0 or
+    1: the `*_abstracted` tasks test `(z > 100) & (x < 100)`
+    (`loops/terminator_02-2_abstracted`, `trex03-2_abstracted`), and
+    `loop-invariants/bin-suffix-5` asserts `(x & 5) == 5` with the invariant
+    `x % 8 == 5`.
+  - Not supported but used by the annotations: `\at(x, LoopEntry)` and
+    `\at(x, Pre)` (`loop-crafted/simple_array_index_value_4`, `loops/nec20`,
+    `trex02-2`), `\valid`/`\valid_read` in preconditions of functions on
+    arrays (`loops/linear_sea.ch`, `linear_search`, `veris.c_NetBSD-libc_loop`;
+    could be accepted and ignored, memory safety is not checked), an
+    `axiomatic` with a recursive logic function (`loops/vogal-1`, the number
+    of vowels of a prefix; ends in a generic parse error).
+  - A refuted goal is printed as one SMT-LIB string, `(error "goal does not
+    hold" "Sat" "(forall ...)")`, without the annotation (loop invariant,
+    assertion, postcondition, line) that failed; `-verify -z3` prints
+    nothing when all goals hold.
+  - `loop-new/count_by_k`: the invariant `\exists integer q; 0 <= q && i ==
+    q*k` (with `k` possibly 0, so not `i % k == 0`) is `Unknown`.
+  - Contracts of functions that read globals need the globals' values as
+    preconditions (`loops/eureka_05`, `requires n == 5`), as in Frama-C; a
+    contract on `main` is the only one that sees the initial values.
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls

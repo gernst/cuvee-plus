@@ -125,6 +125,9 @@ object Printer extends cuvee.pipe.Printer:
       case GetModel =>
         text("model;")
 
+      case GetWitness =>
+        text("witness;")
+
       case Exit =>
         text("exit;")
 

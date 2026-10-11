@@ -88,8 +88,8 @@ object Sink:
       case CheckSat =>
         Status.Unknown
 
-      // no information is available when printing only
-      case _: GetInfo | _: GetOption =>
+      // no information is available when printing only, and no witnesses are produced
+      case _: GetInfo | _: GetOption | GetWitness =>
         Ack.Unsupported
 
       // no answer, e.g. to the get-model added by Horn

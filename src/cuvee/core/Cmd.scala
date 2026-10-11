@@ -64,6 +64,8 @@ case object CheckSat extends Query
 // the query (labels) is answered by (labels ...), the object doubles as the companion of the result
 case object Labels extends Query
 case object GetModel extends Query
+// the witness of the last verify-call of SV-LIB, which is not produced, hence the answer is unsupported
+case object GetWitness extends Query
 
 case object Exit extends Throwable with Ctrl:
   override def toString =

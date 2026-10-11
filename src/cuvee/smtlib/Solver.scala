@@ -161,6 +161,10 @@ object Solver:
         case _: DeclareProc | _: DefineProc | _: DeclareVar | _: AnnotateTag =>
           (Ack.Unsupported, Nil, this)
 
+        // the witnesses of SV-LIB are not produced
+        case GetWitness =>
+          (Ack.Unsupported, Nil, this)
+
         // the obligations of a verify-call have been checked already (see Verify and Horn), it has no answer of its own
         case _: VerifyCall =>
           (Ack.Done, Nil, this)

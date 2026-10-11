@@ -42,9 +42,9 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
       case List(Id("define-procs-rec"), _*) =>
         Error.raise("not supported", "define-procs-rec")
 
-      // witnesses are not produced: a query for information, whose answer is unsupported (see Sink)
+      // witnesses are not produced, the answer is unsupported (see Sink)
       case List(Id("get-witness")) =>
-        GetInfo("witness")
+        GetWitness
 
       case List(Id("select-trace"), _*) =>
         Error.raise("not supported", "select-trace")

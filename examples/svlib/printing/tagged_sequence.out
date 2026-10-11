@@ -27,5 +27,5 @@
 
 (verify-call main (1 5))
 
-(get-info :witness)
+(get-witness)
 
