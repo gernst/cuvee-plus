@@ -1,7 +1,7 @@
 # Cuvée
 
-A verification toolchain in Scala 3: frontends for SMT-LIB, Dafny, Boogie, and
-C produce one core representation, which transformations (verification
+A verification toolchain in Scala 3: frontends for SMT-LIB, SV-LIB, Dafny,
+Boogie, and C produce one core representation, which transformations (verification
 conditions, trace equation systems, Horn clauses, simplification) and printers
 or solvers consume.
 
@@ -34,7 +34,8 @@ or solvers consume.
 - After each commit: `mill -i assembly; cp out/assembly.dest/out.jar cuvee.jar`.
 - Never commit the user's untracked scratch files (e.g. `*.dfy` at the root).
 - Every feature gets tests, preferably example files whose first line is
-  their command line (`// ./Cuvee.sh <options> <file>`) with the expected
+  their command line (`// ./Cuvee.sh <options> <file>`, `; ./Cuvee.sh ...` in
+  SMT-LIB and SV-LIB) with the expected
   `name.out`/`name.err`; unit tests only where the command line cannot observe
   it. Tests never write files. Regenerate changed expected outputs by hand
   (`./Cuvee.sh <options> <file> > name.out 2> name.err`, after the assembly)
@@ -134,3 +135,12 @@ or solvers consume.
   commit.
 - **Rejected tool calls may have taken effect:** check `git status` and
   revert.
+- **SV-LIB:** `annotate-tag` and `verify-call` are the core commands
+  `AnnotateTag` and `VerifyCall`; the parser resolves the terms of an
+  annotation in the scope of the tagged statement, the transforms attach the
+  annotations to loops and procedures when the `verify-call` flushes them
+  (`State.annotated`); tags are allowed on loops and procedure bodies only;
+  the verdict of a task is decided by `cuvee.py` from the output, there is no
+  `correct`/`incorrect` answer. Out of scope by decision: labels and gotos,
+  `define-procs-rec`, `:recurring`, `:not-recurring`, `:decreases-lex`,
+  witnesses and traces.
