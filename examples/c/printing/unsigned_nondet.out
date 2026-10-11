@@ -2,8 +2,7 @@ int main(void) {
   int result;
   int tmp_1;
   int x;
-  tmp_1 = __VERIFIER_nondet_int();
-  __VERIFIER_assume(0 <= tmp_1);
+  tmp_1 = __VERIFIER_nondet_uint();
   x = tmp_1;
   result = x;
   return result;

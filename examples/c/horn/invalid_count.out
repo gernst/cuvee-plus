@@ -24,6 +24,18 @@
   Int
   (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
 
+(define-fun uchar ((x Int)) Int (mod x 256))
+
+(define-fun ushort ((x Int)) Int (mod x 65536))
+
+(define-fun uint ((x Int)) Int (mod x 4294967296))
+
+(define-fun
+  ulonglong
+  ((x Int))
+  Int
+  (mod x 18446744073709551616))
+
 (declare-fun bitand (Int Int) Int)
 
 (declare-fun bitor (Int Int) Int)
@@ -101,7 +113,10 @@
   (forall
     ((result Int) (n$3 Int) (k$4 Int) (i$5 Int) (tmp$6 Int))
     (=>
-      (and main_pre true)
+      (and
+        main_pre
+        (<= 0 (+ tmp$6 2147483648))
+        (<= tmp$6 2147483647))
       (main_spec_1 result tmp$6 n$3 k$4 i$5))))
 
 (assert

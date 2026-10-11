@@ -101,11 +101,11 @@ object Grammar:
   val qualifier: Scanner =
     "const" | "static" | "extern" | "volatile" | "inline" | "restrict" | attribute
 
-  val intword: Scanner =
-    "int" | "long" | "short" | "char" | "unsigned" | "signed"
+  val integer =
+    P((J("int") | J("long") | J("short") | J("char") | J("unsigned") | J("signed")).+)
 
-  val int =
-    IntType(intword.+)
+  val int: Parser[Type] =
+    integer.map(IntType(_))
 
   val bool =
     BoolType("_Bool" | "bool")
@@ -125,7 +125,7 @@ object Grammar:
 
   // the type of a declaration with the words of an integer type, which sizeof of its variables needs
   val sized: Parser[(Type, List[String])] =
-    P(qualifier.* ?~ (P((J("int") | J("long") | J("short") | J("char") | J("unsigned") | J("signed")).+).map(words => (IntType, words)) | base.map((_, Nil))) ~ qualifier.*)
+    P(qualifier.* ?~ (integer.map(words => (IntType(words), words)) | base.map((_, Nil))) ~ qualifier.*)
 
   // pointers occur in the signatures of the builtins of the harness of SV-COMP, e.g. __assert_fail
   val pointer: Parser[Type] =

@@ -1,0 +1,15 @@
+int main(void) {
+  int result;
+  int tmp_1;
+  int tmp_2;
+  int x;
+  int y;
+  tmp_1 = __VERIFIER_nondet_int();
+  __VERIFIER_assume(0 <= tmp_1);
+  x = tmp_1;
+  tmp_2 = __VERIFIER_nondet_int();
+  y = tmp_2;
+  result = x + y;
+  return result;
+}
+

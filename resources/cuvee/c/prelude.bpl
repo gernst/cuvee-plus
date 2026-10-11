@@ -62,6 +62,19 @@ function {:c} {:rw} quot(a: int, b: int): int { if 0 <= a then a div b else -((-
 
 function {:c} {:rw} rem(a: int, b: int): int { if 0 <= a then a mod b else -((-a) mod b) }
 
+// the arithmetic of unsigned integers of 1, 2, 4, and 8 bytes, modulo the size of their range, e.g. UINT_MAX + 1 == 0
+// and 0 - 1 == UINT_MAX, which the C frontend applies to the results of +, -, *, and shifts left in an unsigned type,
+// and to conversions of values to an unsigned type (see cuvee.c.Parser.overflow, not with -unbounded), and which the
+// simplifier unfolds (rw); unsigned long is unsigned int or unsigned long long by the data model, and the overflow of
+// signed integers is undefined in C, hence not modelled
+function {:c} {:rw} uchar(x: int): int { x mod 256 }
+
+function {:c} {:rw} ushort(x: int): int { x mod 65536 }
+
+function {:c} {:rw} uint(x: int): int { x mod 4294967296 }
+
+function {:c} {:rw} ulonglong(x: int): int { x mod 18446744073709551616 }
+
 // the bit operations on integers, &, |, ^, ~, and the shifts << and >> by values that are not constants, which are
 // declared only, since the integers are unbounded (shifts by constants are multiplications and divisions)
 function {:c} bitand(a: int, b: int): int;

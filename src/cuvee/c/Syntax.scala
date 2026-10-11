@@ -20,12 +20,19 @@ object Syntax:
     name == "assert" || name == "reach_error" || name == "abort" || name.startsWith("__assert") || name.startsWith("__VERIFIER_") ||
       allocation(name)
 
+  // the functions of the prelude that compute modulo the range of an unsigned type of 1, 2, 4, or 8 bytes, with the
+  // type that a cast to it denotes, e.g. uint(x) as (unsigned int) x (see resources/cuvee/c/prelude.bpl)
+  val overflows =
+    Map("uchar" -> "unsigned char", "ushort" -> "unsigned short", "uint" -> "unsigned int", "ulonglong" -> "unsigned long long")
+
   // allocations of arrays (see Parser.allocation)
   def allocation(name: String) =
     name == "malloc" || name == "calloc" || name == "alloca" || name == "free"
 
 sealed trait Type
-case object IntType extends Type
+// integer types by their signedness and rank, char, short, int, long, or longlong (long long), e.g. unsigned long is
+// IntType(false, "long"), where plain char is signed, as on x86 Linux; their sizes follow the data model (see Parser.size)
+case class IntType(signed: Boolean, rank: String) extends Type
 case object BoolType extends Type
 case object VoidType extends Type
 case class ArrayType(elem: Type) extends Type
@@ -50,6 +57,23 @@ case class SizeofType(words: List[String]) extends Expr
 case class SizeofExpr(expr: Expr) extends Expr
 // initializer lists of arrays, only in declarations
 case class Items(items: List[Expr]) extends Expr
+
+object IntType:
+  val int = IntType(true, "int")
+
+  // the ranks in increasing order, which decide the usual arithmetic conversions (see Parser.common)
+  val ranks = List("char", "short", "int", "long", "longlong")
+
+  // the integer type of the words of a declaration, e.g. unsigned long int
+  def apply(words: List[String]): IntType =
+    val longs = words.count(_ == "long")
+    val rank =
+      if words.contains("char") then "char"
+      else if words.contains("short") then "short"
+      else if longs == 1 then "long"
+      else if longs > 1 then "longlong"
+      else "int"
+    IntType(!words.contains("unsigned"), rank)
 
 object Num extends (String => Expr)
 object FloatNum extends (String => Expr)

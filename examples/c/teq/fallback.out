@@ -22,6 +22,18 @@
   Int
   (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
 
+(define-fun uchar ((x Int)) Int (mod x 256))
+
+(define-fun ushort ((x Int)) Int (mod x 65536))
+
+(define-fun uint ((x Int)) Int (mod x 4294967296))
+
+(define-fun
+  ulonglong
+  ((x Int))
+  Int
+  (mod x 18446744073709551616))
+
 (declare-fun bitand (Int Int) Int)
 
 (declare-fun bitor (Int Int) Int)

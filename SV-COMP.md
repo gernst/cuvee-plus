@@ -370,8 +370,10 @@ inputs, after the harness), with where they occurred in the sample.
   throws a `RuntimeException` in `Scanner.flex`, which is reported as
   `"internal error" "RuntimeException" "unexpected character '&' at 8:14"`.
   It should be a regular parse error via `Error.raise`.
-- **Integers are unbounded.** All integer types are `Int`, so unsigned
-  wrap-around and overflow are not modelled. Some tasks rely on them, e.g.
+- **Integers are unbounded.** All integer types are `Int`; without
+  `-unbounded`, unsigned integers wrap around by the overflow functions of
+  the prelude (`uint(x) = x mod 2^32`, ...) and nondeterministic values are
+  within the ranges of their types, but signed overflow is not modelled. Some tasks rely on them, e.g.
   `overflow_1-1.c`, and tasks with `unsigned` loop counters that wrap; their
   verdicts would differ even once they parse. The data model of the task
   (ILP32/LP64) is read by the yml frontend, but not used.

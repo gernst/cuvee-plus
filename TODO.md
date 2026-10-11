@@ -13,14 +13,14 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   the statements
 - witness output
 - SV-LIB support
-- unbounded flag
 - SV-COMP tool entry and zenodo archive
 
 ## Bugs
 
 - `-fallback -z3` proves `benchmarks/sv-comp/dafny/nla-digbench/geo1-u` (expected unsafe), in the runs of
   `xml/cuvee-quick-fallback.xml` of 2026-10-10 15:25 and 16:12: a soundness problem of the encoding or of the
-  lemmas it relies on, not yet analysed.
+  lemmas it relies on, not yet analysed. Its C version is unsafe only by the wrap-around of `unsigned long long`,
+  which the C frontend models without `-unbounded`; not rerun since.
 - A bound variable may capture a constant of the same name in the output of
   SMT-LIB: normalization renames bound variables apart from free variables,
   but constants (`declare-const x`) are functions, e.g.
@@ -799,7 +799,25 @@ SV-COMP examples (`benchmarks/sv-comp/dafny`):
 
 Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 
-- Unbounded integers, no overflow; arrays are values, sizes are ignored.
+- Integers are unbounded, signed overflow is not modelled; arrays are
+  values, sizes are ignored. Expressions have the integer types of C
+  (`c.IntType`: signedness and rank, sizes by `-arch`), with the integer
+  promotions and the usual arithmetic conversions (`c.Parser.common`).
+- Unsigned integers wrap around: the results of `+`, `-`, `*`, and `<<` in
+  an unsigned type, and conversions of values to one (assignments,
+  arguments, returns, casts, operands of a common unsigned type, e.g.
+  `-1 < 1u` is false) apply the overflow function of its size, `uchar`,
+  `ushort`, `uint`, `ulonglong` of the prelude (`x mod 2^n`, rw), unless the
+  value fits (`c.Parser.convert`); the printer prints them as casts.
+  Unsigned loop counters, `x = uint(x + 1)`, are no counters for `-teq`,
+  which does not accelerate them (see `examples/c/teq/from.c`, run with
+  `-unbounded`).
+- The values of `__VERIFIER_nondet_<type>()` are within the range of their
+  type, for `char`, `short`, `int`, `long`, `longlong`, their unsigned
+  versions, and `size_t` (`c.Parser.havoc`). Variables declared without a
+  value are arbitrary integers.
+- `-unbounded`: neither ranges nor overflow, only the values of unsigned
+  nondeterministic functions are nonnegative, as before.
 - `goto` only to a label whose statement does not fall through (e.g.
   `END: return 0;`, `ERROR: { reach_error(); abort(); }`), which is copied in
   its place, or to itself (a loop without exit); other gotos, e.g. those of

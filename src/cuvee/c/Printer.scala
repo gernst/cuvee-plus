@@ -173,6 +173,20 @@ object Printer extends cuvee.pipe.Printer:
   def block(prog: Prog): Doc =
     braces(statements(prog))
 
+  // the nondeterministic functions of SV-COMP by the ranges of their integer types (see Parser.havoc), where long is
+  // printed as long long or int, whichever has its range
+  val ranges: Map[(BigInt, BigInt), String] =
+    val types =
+      for
+        (bytes, name) <- List(1 -> "char", 2 -> "short", 4 -> "int", 8 -> "longlong")
+        signed <- List(true, false)
+      yield
+        val bits = 8 * bytes
+        if signed
+        then (-BigInt(2).pow(bits - 1), BigInt(2).pow(bits - 1) - 1) -> name
+        else (BigInt(0), BigInt(2).pow(bits) - 1) -> ("u" + name)
+    types.toMap
+
   def nondet(x: Var): Doc =
     val fun = if x.typ == Sort.bool then "__VERIFIER_nondet_bool" else "__VERIFIER_nondet_int"
     text(name(x.name)) ~~ text("=") ~~ text(fun + "();")
@@ -199,7 +213,12 @@ object Printer extends cuvee.pipe.Printer:
       case Spec(xs, True, True) =>
         join(xs.map(nondet), hardline)
 
-      // nondeterministic values with a postcondition, e.g. 0 <= x for __VERIFIER_nondet_uint (see Parser.havoc)
+      // nondeterministic values within the range of an integer type (see Parser.havoc)
+      case Spec(List(x), True, And(List(Ints.le(Lit(lo: BigInt, _), y), Ints.le(z, Lit(hi: BigInt, _)))))
+          if x == y && x == z && ranges.contains((lo, hi)) =>
+        text(name(x.name)) ~~ text("=") ~~ text("__VERIFIER_nondet_" + ranges((lo, hi)) + "();")
+
+      // nondeterministic values with another postcondition, e.g. 0 <= x for __VERIFIER_nondet_uint with -unbounded
       case Spec(xs, True, phi) =>
         join(xs.map(nondet), hardline) ~ hardline ~ call("__VERIFIER_assume", List(doc(phi))) ~ text(";")
 
@@ -283,6 +302,9 @@ object Printer extends cuvee.pipe.Printer:
       case Not(arg)      => Some(("!", Grammar.prefix_ops("!"), arg))
       case Ints.uminus(arg) => Some(("-", Grammar.prefix_ops("-"), arg))
       case App(Fun(Name("bitnot", None), Nil, _, _), _, _, List(arg)) => Some(("~", Grammar.prefix_ops("~"), arg))
+      // the overflow of unsigned integers as casts, e.g. uint(x + 1) as (unsigned int) (x + 1), which parse back to it
+      case App(Fun(Name(f, None), Nil, _, _), _, _, List(arg)) if Syntax.overflows.contains(f) =>
+        Some(("(" + Syntax.overflows(f) + ") ", Grammar.prefix_ops("-"), arg))
       case _             => None
 
   def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =

@@ -1,4 +1,4 @@
 (error
   "unsupported cast"
-  "PointerType(IntType)"
+  "PointerType(IntType(true,int))"
   "Id(v)")

@@ -12,8 +12,9 @@ import cuvee.core.Attrs
 // functions are procedures whose result is the output `result`,
 // and whose global variables modified, directly or by calls, are inferred;
 // calls inside expressions are evaluated before the statement that contains them, in order
-// `arch` is the data model, 32 or 64 bit Linux (ILP32 or LP64), see Config.arch
-class Parser(var state: State, arch: Int):
+// `arch` is the data model, 32 or 64 bit Linux (ILP32 or LP64), see Config.arch;
+// `unbounded` drops the ranges of the types of nondeterministic values, see Config.unbounded
+class Parser(var state: State, arch: Int, unbounded: Boolean):
   // the signatures of the functions by name
   val functions = mutable.Map[String, Function]()
 
@@ -37,7 +38,7 @@ class Parser(var state: State, arch: Int):
 
   def typ(t: Type): core.Type =
     t match
-      case IntType      => state.types.sort("Int")
+      case IntType(_, _) => state.types.sort("Int")
       case BoolType     => state.types.sort("Bool")
       case ArrayType(e) => state.types.sort("Array", List(state.types.sort("Int"), typ(e)))
       case VoidType     => Error.raise("void is not a type of values")
@@ -91,7 +92,7 @@ class Parser(var state: State, arch: Int):
 
   def zero(t: Type): core.Expr =
     t match
-      case IntType      => state.exprs.num(0)
+      case IntType(_, _) => state.exprs.num(0)
       case BoolType     => state.exprs.const("false")
       case ArrayType(e) => state.exprs.app("const", List(zero(e)))
       case PointerType(_) => state.exprs.const("null")
@@ -106,16 +107,100 @@ class Parser(var state: State, arch: Int):
   // conversions between integers and truth values as in C
   def toInt(expr: core.Expr, t: Type): core.Expr =
     t match
-      case IntType  => expr
+      case IntType(_, _) => expr
       case BoolType => state.exprs.app("number", List(expr))
       case _        => Error.raise("not an integer", expr)
 
   def toBool(expr: core.Expr, t: Type): core.Expr =
     t match
       case BoolType => expr
-      case IntType  => state.exprs.app("truth", List(expr))
+      case IntType(_, _) => state.exprs.app("truth", List(expr))
       case PointerType(_) => state.exprs.app("not", List(state.exprs.app("=", List(expr, state.exprs.const("null")))))
       case _        => Error.raise("not a truth value", expr)
+
+  // the size of an integer type in bytes, where long has 4 bytes in the data model ILP32 and 8 bytes in LP64
+  def size(t: IntType): Int =
+    t.rank match
+      case "char"  => 1
+      case "short" => 2
+      case "int"   => 4
+      case "long"  => arch / 8
+      case _       => 8
+
+  // the least and the greatest value of an integer type
+  def range(t: IntType): (BigInt, BigInt) =
+    val bits = 8 * size(t)
+    if t.signed
+    then (-BigInt(2).pow(bits - 1), BigInt(2).pow(bits - 1) - 1)
+    else (BigInt(0), BigInt(2).pow(bits) - 1)
+
+  // the function of the prelude that computes modulo the range of an unsigned type, by its size, e.g. uint for
+  // unsigned int, and for unsigned long in ILP32; none for signed types, whose overflow is undefined, and with
+  // -unbounded, where unsigned integers are unbounded as well
+  def overflow(t: Type): Option[String] =
+    t match
+      case t: IntType if !t.signed && !unbounded =>
+        size(t) match
+          case 1 => Some("uchar")
+          case 2 => Some("ushort")
+          case 4 => Some("uint")
+          case _ => Some("ulonglong")
+      case _ => None
+
+  // the integer promotions of C: types of lower rank than int, whose values int contains, and _Bool are int
+  def promote(t: Type): IntType =
+    t match
+      case t: IntType if size(t) >= 4 => t
+      case _                          => IntType.int
+
+  def rank(t: IntType): Int =
+    IntType.ranks.indexOf(t.rank)
+
+  // the usual arithmetic conversions of C: the common type of the operands of a binary operator, e.g. unsigned int
+  // for int and unsigned int, which converts the signed operand
+  def common(lt: Type, rt: Type): IntType =
+    val (a, b) = (promote(lt), promote(rt))
+    if a.signed == b.signed
+    then if rank(a) >= rank(b) then a else b
+    else
+      val (u, s) = if a.signed then (b, a) else (a, b)
+      if rank(u) >= rank(s) then u
+      else if size(s) > size(u) then s
+      else IntType(false, s.rank)
+
+  // whether the values of type `from` need no conversion to type `to`: all but those to an unsigned type, unless they
+  // are truth values or of an unsigned type that is not larger, as integers are unbounded
+  def fits(from: Type, to: Type): Boolean =
+    from match
+      case _ if overflow(to).isEmpty => true
+      case BoolType                  => true
+      case from: IntType             => !from.signed && size(from) <= size(to.asInstanceOf[IntType])
+      case _                         => false
+
+  // a value of type `from` converted to type `to`, which is modulo the range of an unsigned type, unless it is within
+  // it already: a constant in it or a value of a type that fits (see fits)
+  def convert(e: core.Expr, from: Type, to: Type): core.Expr =
+    (overflow(to), to, e) match
+      case (Some(f), to: IntType, core.Lit(n: BigInt, _)) if range(to)._1 <= n && n <= range(to)._2 => e
+      case (Some(f), _, _) if !fits(from, to)                                                    => state.exprs.app(f, List(e))
+      case _                                                                                     => e
+
+  // the result of an arithmetic operator in the integer type `t`, which wraps around for unsigned types after
+  // additions, subtractions, multiplications, and shifts left; quotients, remainders, and shifts right of values
+  // within the range stay within it, and the bit operations are declared only
+  def wrap(op: String, e: core.Expr, t: IntType): core.Expr =
+    (op, overflow(t)) match
+      case ("+" | "-" | "*" | "<<", Some(f)) => state.exprs.app(f, List(e))
+      case _                                 => e
+
+  // a binary arithmetic operator applied to the operands converted to their common type, which is the type of the
+  // result, where shifts have the promoted type of their left operand, whose right operand is not converted
+  def binary(op: String, left: core.Expr, lt: Type, right: core.Expr, rt: Type): (core.Expr, IntType) =
+    val shift = op == "<<" || op == ">>"
+    val t = if shift then promote(lt) else common(lt, rt)
+    val left_ = convert(toInt(left, lt), lt, t)
+    val right_ = if shift then toInt(right, rt) else convert(toInt(right, rt), rt, t)
+    (wrap(op, arith(op, left_, right_), t), t)
 
   def arith(op: String, a: core.Expr, b: core.Expr): core.Expr =
     op match
@@ -152,6 +237,25 @@ class Parser(var state: State, arch: Int):
       else if digits.length > 1 && digits.startsWith("0") then BigInt(digits.drop(1), 8)
       else BigInt(digits)
 
+  // the type of an integer constant: the first of int, long, and long long, from long with the suffix l and from long
+  // long with ll, whose range contains its value, unsigned with the suffix u, where octal and hexadecimal constants
+  // may also be of the unsigned version of each; character constants are int
+  def literalType(text: String): IntType =
+    if text.startsWith("'")
+    then IntType.int
+    else
+      val lower = text.toLowerCase
+      val value = literal(text)
+      val unsigned = lower.contains('u')
+      val decimal = !lower.startsWith("0") || lower == "0" || lower.startsWith("0u") || lower.startsWith("0l")
+      val ranks = IntType.ranks.drop(2 + lower.count(_ == 'l').min(2))
+      val candidates =
+        for
+          rank <- ranks
+          signed <- if unsigned then List(false) else if decimal then List(true) else List(true, false)
+        yield IntType(signed, rank)
+      candidates.find(t => range(t)._1 <= value && value <= range(t)._2).getOrElse(IntType(false, "longlong"))
+
   // the size of an integer type in bytes, where long has 4 bytes in the data model ILP32 and 8 bytes in LP64
   def sizeof(words: List[String]): BigInt =
     val longs = words.count(_ == "long")
@@ -164,7 +268,7 @@ class Parser(var state: State, arch: Int):
   // the size in bytes of the elements of a declared variable, by the words of its integer type
   def elem(t: Type, words: List[String]): BigInt =
     t match
-      case IntType  => sizeof(words)
+      case IntType(_, _) => sizeof(words)
       case BoolType => 1
       case _        => arch / 8
 
@@ -180,7 +284,7 @@ class Parser(var state: State, arch: Int):
         val (_, _, t) = expr(scope, ctx, e)
         t match
           case BoolType => 1
-          case IntType  => 4
+          case t: IntType => size(t)
           case _        => arch / 8
 
   // the size of the elements and the sizes of the dimensions of an array variable, or of an element of it,
@@ -236,7 +340,7 @@ class Parser(var state: State, arch: Int):
   def expr(scope: Scope, ctx: Ctx, e: Expr): (List[core.Prog], core.Expr, Type) =
     e match
       case Num(text) =>
-        (Nil, state.exprs.num(literal(text)), IntType)
+        (Nil, state.exprs.num(literal(text)), literalType(text))
 
       case FloatNum(_) =>
         Error.raise("floating point numbers are not supported", e)
@@ -261,7 +365,7 @@ class Parser(var state: State, arch: Int):
           case _               => Error.raise("indexing of an expression that is not an array", base)
 
       case Call(f, Nil) if f.startsWith("__VERIFIER_nondet_") =>
-        val t = if f == "__VERIFIER_nondet_bool" then BoolType else IntType
+        val t = if f == "__VERIFIER_nondet_bool" then BoolType else integer(f.stripPrefix("__VERIFIER_nondet_")).getOrElse(IntType.int)
         val x = temp(ctx, t)
         (List(havoc(f, x)), x, t)
 
@@ -276,16 +380,17 @@ class Parser(var state: State, arch: Int):
         (pre :+ state.progs.call(f, args_, List(x)), x, ret)
 
       case App("-", List(arg)) =>
-        val (pre, arg_) = int(scope, ctx, arg)
-        (pre, state.exprs.app("-", List(arg_)), IntType)
+        val (pre, arg_, t) = expr(scope, ctx, arg)
+        val t_ = promote(t)
+        (pre, wrap("-", state.exprs.app("-", List(toInt(arg_, t))), t_), t_)
 
       case App("!", List(arg)) =>
         val (pre, arg_) = cond(scope, ctx, arg)
         (pre, state.exprs.app("not", List(arg_)), BoolType)
 
       case App("~", List(arg)) =>
-        val (pre, arg_) = int(scope, ctx, arg)
-        (pre, state.exprs.app("bitnot", List(arg_)), IntType)
+        val (pre, arg_, t) = expr(scope, ctx, arg)
+        (pre, state.exprs.app("bitnot", List(toInt(arg_, t))), promote(t))
 
       case App("&", List(_)) =>
         Error.raise("the address of a variable is not supported", e)
@@ -329,16 +434,23 @@ class Parser(var state: State, arch: Int):
           case (BoolType, BoolType)                 => state.exprs.app("=", List(left_, right_))
           case (ArrayType(_), _) | (_, ArrayType(_)) => state.exprs.app("=", List(left_, right_))
           case (PointerType(_), _) | (_, PointerType(_)) =>
+            // e.g. int * and long *, which are both pointers to integers
             Error.report("comparison of pointers of different types", left, right):
-              require(lt == rt)
+              require(typ(lt) == typ(rt))
             state.exprs.app("=", List(left_, right_))
-          case _                                    => state.exprs.app("=", List(toInt(left_, lt), toInt(right_, rt)))
+          case _ =>
+            val t = common(lt, rt)
+            state.exprs.app("=", List(convert(toInt(left_, lt), lt, t), convert(toInt(right_, rt), rt, t)))
 
         (pre1 ++ pre2, if op == "==" then eq else state.exprs.app("not", List(eq)), BoolType)
 
+      // in the common type of the operands, e.g. -1 < 1u is false, as -1 is converted to unsigned int
       case App(op @ ("<" | "<=" | ">" | ">="), List(left, right)) =>
-        val (pre1, left_) = int(scope, ctx, left)
-        val (pre2, right_) = int(scope, ctx, right)
+        val (pre1, left0, lt) = expr(scope, ctx, left)
+        val (pre2, right0, rt) = expr(scope, ctx, right)
+        val t = common(lt, rt)
+        val left_ = convert(toInt(left0, lt), lt, t)
+        val right_ = convert(toInt(right0, rt), rt, t)
 
         val phi = op match
           case "<"  => state.exprs.app("<", List(left_, right_))
@@ -349,17 +461,18 @@ class Parser(var state: State, arch: Int):
         (pre1 ++ pre2, phi, BoolType)
 
       case App(op, List(left, right)) =>
-        val (pre1, left_) = int(scope, ctx, left)
-        val (pre2, right_) = int(scope, ctx, right)
-        (pre1 ++ pre2, arith(op, left_, right_), IntType)
+        val (pre1, left_, lt) = expr(scope, ctx, left)
+        val (pre2, right_, rt) = expr(scope, ctx, right)
+        val (e_, t) = binary(op, left_, lt, right_, rt)
+        (pre1 ++ pre2, e_, t)
 
       case Cond(e, None) =>
         expr(scope, ctx, e)
 
-      // casts to integer types are the identity, as integers are unbounded
-      case Cast(IntType, e) =>
-        val (pre, e_) = int(scope, ctx, e)
-        (pre, e_, IntType)
+      // casts to signed integer types are the identity, as integers are unbounded, those to unsigned types wrap around
+      case Cast(t: IntType, e) =>
+        val (pre, e_, t_) = expr(scope, ctx, e)
+        (pre, convert(toInt(e_, t_), t_, t), t)
 
       case Cast(BoolType, e) =>
         val (pre, e_) = cond(scope, ctx, e)
@@ -392,11 +505,12 @@ class Parser(var state: State, arch: Int):
           (pre ++ (state.progs.assign(List(old), List(now)) :: update), old, t)
         else (pre ++ update, now, t)
 
+      // of type size_t, unsigned long
       case SizeofType(words) =>
-        (Nil, state.exprs.num(sizeof(words)), IntType)
+        (Nil, state.exprs.num(sizeof(words)), IntType(false, "long"))
 
       case SizeofExpr(arg) =>
-        (Nil, state.exprs.num(bytes(scope, ctx, arg)), IntType)
+        (Nil, state.exprs.num(bytes(scope, ctx, arg)), IntType(false, "long"))
 
       case Cond(test, Some((left, right))) =>
         val (pre0, test_) = cond(scope, ctx, test)
@@ -406,7 +520,9 @@ class Parser(var state: State, arch: Int):
         val (t, left__, right__) =
           if lt == BoolType && rt == BoolType
           then (BoolType, left_, right_)
-          else (IntType, toInt(left_, lt), toInt(right_, rt))
+          else
+            val t = common(lt, rt)
+            (t, convert(toInt(left_, lt), lt, t), convert(toInt(right_, rt), rt, t))
 
         if pre1.isEmpty && pre2.isEmpty
         then (pre0, state.exprs.app("ite", List(test_, left__, right__)), t)
@@ -435,7 +551,9 @@ class Parser(var state: State, arch: Int):
   // a value of C type `t`, converted as in C
   def value(scope: Scope, ctx: Ctx, e: Expr, t: Type): (List[core.Prog], core.Expr) =
     t match
-      case IntType  => int(scope, ctx, e)
+      case IntType(_, _) =>
+        val (pre, e_, t_) = expr(scope, ctx, e)
+        (pre, convert(toInt(e_, t_), t_, t))
       case BoolType => cond(scope, ctx, e)
       case PointerType(_) if isNull(e) => (Nil, state.exprs.const("null"))
 
@@ -450,8 +568,9 @@ class Parser(var state: State, arch: Int):
 
       case _ =>
         val (pre, e_, t_) = expr(scope, ctx, e)
+        // e.g. arrays of int passed for arrays of unsigned int, which are both arrays of integers
         Error.report("type mismatch", e, t, t_):
-          require(t == t_)
+          require(typ(t) == typ(t_))
         (pre, e_)
 
   // the arguments of a call to function `f`, converted to the types of its parameters
@@ -783,7 +902,7 @@ class Parser(var state: State, arch: Int):
           then rest
           else Some(If(tests.reduce((a, b) => App("||", List(a, b))), falls(i), rest))
 
-    Block(Decl(IntType, List("int"), List(Declarator(false, x, Nil, Some(test)))) :: chain.toList)
+    Block(Decl(IntType.int, List("int"), List(Declarator(false, x, Nil, Some(test)))) :: chain.toList)
 
   // the numbers of the variables of the tests of switches
   val switches = Iterator.from(1)
@@ -890,8 +1009,10 @@ class Parser(var state: State, arch: Int):
           if op == "="
           then value(scope, ctx, rhs, t)
           else
-            val (pre, rhs_) = int(scope, ctx, rhs)
-            (pre, arith(op, toInt(v, t), rhs_))
+            // x op= e is x = x op e, whose result is converted to the type of x
+            val (pre, rhs_, rt) = expr(scope, ctx, rhs)
+            val (e_, t_) = binary(op, v, t, rhs_, rt)
+            (pre, convert(e_, t_, t))
 
         pre :+ state.progs.assign(List(v), List(rhs_))
 
@@ -900,13 +1021,22 @@ class Parser(var state: State, arch: Int):
 
       case Index(_, _) =>
         val elem = lvalue(scope, lhs)
-        val (pre2, rhs_) =
+        val (pre2, rhs_, rt) =
           if op == "="
-          then value(scope, ctx, rhs, elem)
-          else int(scope, ctx, rhs)
+          then
+            val (pre, rhs_) = value(scope, ctx, rhs, elem)
+            (pre, rhs_, elem)
+          else expr(scope, ctx, rhs)
 
-        val (pre1, v, array) =
-          store(scope, ctx, lhs, old => if op == "=" then rhs_ else arith(op, toInt(old, elem), rhs_))
+        // a[i] op= e as above
+        def update(old: core.Expr) =
+          if op == "="
+          then rhs_
+          else
+            val (e_, t_) = binary(op, old, elem, rhs_, rt)
+            convert(e_, t_, elem)
+
+        val (pre1, v, array) = store(scope, ctx, lhs, update)
 
         pre1 ++ pre2 :+ state.progs.assign(List(v), List(array))
 
@@ -952,18 +1082,49 @@ class Parser(var state: State, arch: Int):
       case Index(base, _) => root(base)
       case _              => Set()
 
-  // a nondeterministic value of __VERIFIER_nondet_f, which is nonnegative for unsigned types, e.g. uint and size_t,
-  // whose upper bounds are not modeled, as integers are unbounded
+  // the integer type of __VERIFIER_nondet_<typ>, where size_t is unsigned long; None for types whose range is not
+  // known, e.g. pointer
+  def integer(typ: String): Option[IntType] =
+    typ match
+      case "char"              => Some(IntType(true, "char"))
+      case "uchar"             => Some(IntType(false, "char"))
+      case "short"             => Some(IntType(true, "short"))
+      case "ushort"            => Some(IntType(false, "short"))
+      case "int"               => Some(IntType(true, "int"))
+      case "uint" | "unsigned" => Some(IntType(false, "int"))
+      case "long"              => Some(IntType(true, "long"))
+      case "ulong" | "size_t"  => Some(IntType(false, "long"))
+      case "longlong"          => Some(IntType(true, "longlong"))
+      case "ulonglong"         => Some(IntType(false, "longlong"))
+      case _                   => None
+
+  // a nondeterministic value of __VERIFIER_nondet_<typ>, within the range of its type, as integers are unbounded
+  // otherwise; only nonnegative for unsigned types, e.g. uint and size_t, with -unbounded or if the range is unknown;
+  // variables declared without a value stay arbitrary
   def havoc(f: String, x: core.Var): core.Prog =
     val typ = f.stripPrefix("__VERIFIER_nondet_")
-    if typ.startsWith("u") || typ == "size_t"
-    then state.progs.spec(List(x), state.exprs.const("true"), state.exprs.app("<=", List(state.exprs.num(0), x)))
-    else state.progs.havoc(List(x))
+    integer(typ) match
+      case Some(t) if !unbounded =>
+        val (lo, hi) = range(t)
+        val above = state.exprs.app("<=", List(state.exprs.num(lo), x))
+        val below = state.exprs.app("<=", List(x, state.exprs.num(hi)))
+        state.progs.spec(List(x), state.exprs.const("true"), state.exprs.app("and", List(above, below)))
 
+      case _ if typ.startsWith("u") || typ == "size_t" =>
+        state.progs.spec(List(x), state.exprs.const("true"), state.exprs.app("<=", List(state.exprs.num(0), x)))
+
+      case _ =>
+        state.progs.havoc(List(x))
+
+  // the value needs no conversion to type `t`, which it does to an unsigned type of a smaller size, e.g.
+  // unsigned char x = __VERIFIER_nondet_int()
   def nondet(rhs: Expr, t: Type) =
     rhs match
       case Call("__VERIFIER_nondet_bool", Nil) => t == BoolType
-      case Call(f, Nil)                        => f.startsWith("__VERIFIER_nondet_") && t == IntType
+      case Call(f, Nil) if f.startsWith("__VERIFIER_nondet_") =>
+        val from = integer(f.stripPrefix("__VERIFIER_nondet_")).getOrElse(IntType.int)
+        t.isInstanceOf[IntType] && fits(from, t)
+      case _ => false
       case _                                   => false
 
   // loops modify the global variables that their body assigns or that the functions it calls modify,

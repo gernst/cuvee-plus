@@ -23,7 +23,7 @@ object Source extends cuvee.pipe.Source:
       yield cmd_
     val prelude = cuvee.boogie.Source.parse("/cuvee/c/prelude.bpl", lifted)
 
-    val parser = new Parser(boogie.state, config.arch)
+    val parser = new Parser(boogie.state, config.arch, config.unbounded)
     (boogie.state, Grammar.unit.map(parser.resolve), prelude)
 
   // no further definitions

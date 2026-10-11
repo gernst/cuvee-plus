@@ -75,6 +75,9 @@ case class Config(
     timeout: Int = 1000,
     // the data model of C for 32 or 64 bit Linux, ILP32 or LP64, i.e., the sizes of the integer types
     arch: Int = 64,
+    // whether the nondeterministic values of C input range over all integers, instead of the values of their types,
+    // except that unsigned ones are nonnegative (see c.Parser.havoc)
+    unbounded: Boolean = false,
     // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print
     known: Set[String] = Set(),
     // the files of features that are injected into the input after its prelude, with the sources that parse them,
@@ -228,6 +231,12 @@ object Config:
         val config_ = config.copy(arch = bits.toInt)
         (config_, rest)
 
+  val unbounded =
+    flag("-unbounded", "nondeterministic values of C input are unbounded integers, unsigned ones nonnegative, instead of within the ranges of their types"):
+      case (config, rest) =>
+        val config_ = config.copy(unbounded = true)
+        (config_, rest)
+
   val z3 =
     flag("-z3", "pass output to z3"):
       case (config, rest) =>
@@ -321,6 +330,7 @@ object Config:
     rules,
     hybrid,
     arch,
+    unbounded,
     z3,
     cvc5,
     timeout_,
@@ -371,7 +381,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.35.18")
+    println("Cuvée 0.36.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
