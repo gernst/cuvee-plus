@@ -22,7 +22,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   tags on statements other than loops, procedure bodies and sequences (0.39.0:
   `(! (sequence ...) :tag t)` is a `core.Block` with attributes, whose
   `check-true` annotations `State.annotated` asserts at its beginning, as the
-  translated C tasks of SV-COMP use for their assertions), the liveness
+  translated C tasks of SV-COMP use for their assertions; the printers of C,
+  Boogie and Dafny drop the attributes of blocks, and the SMT-LIB printer
+  writes them as `(! (sequence ...) ...)` of SV-LIB, which the SMT-LIB parser
+  does not read, by decision), the liveness
   properties `:recurring` and `:not-recurring`, which 6 of the 7 core
   verification tasks use, and `:decreases-lex`, `get-witness` (the query
   `GetWitness`, answered `unsupported`; see witness output) and
@@ -50,6 +53,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
     goal for it), `loop-add` is true with `-chc -z3`. Consequence: `loop-add-incorrect-invariant` (expected false
     by its `:not-live`, the invariant itself holds) was refuted by the precondition goal before, by accident, and is
     now true with `-chc`, a wrong verdict while `:live`/`:not-live` are ignored (left to the liveness work).
+    Until they are supported, `svlib.Parser.properties` could reject them as not supported, like `:recurring`,
+    which turns the wrong verdict into unknown (one line, not done).
 - `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
   unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final
   assertion fails), after about 340 s each, in the 15-minute runs of `xml/cuvee-full-fallback.xml` of Oct 11, 2026
@@ -965,6 +970,46 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   - Contracts of functions that read globals need the globals' values as
     preconditions (`loops/eureka_05`, `requires n == 5`), as in Frama-C; a
     contract on `main` is the only one that sees the initial values.
+  - The annotations of whole folders need constructs beyond 0.38.0: logic
+    functions in an `axiomatic` for sums and folds over arrays
+    (`array-crafted`, `reducercommutativity`, `array-patterns`, and
+    `loops/vogal-1`; about 100 tasks, a generic parse error at `/*@
+    axiomatic`), lemmas, also with labels (`lemma fold_swap{L1, L2}` on
+    `\at(fold(x, n), L2)`), `\min` (`array-programs/partial_mod_count_limited_*`),
+    `\valid` in contracts of functions on arrays and structs (`array-lopstr16`,
+    `array-industry-pattern`, `array-examples/data_structures_*`,
+    `sanfoundry_43`, `standard_strcmp`), matrices flattened by `(int *) array`
+    in logic functions.
+  - Z3 answers `Unknown` on nonlinear closed forms: `nla-digbench/geo*`
+    modulo 2^64, `lcm2`, `prod4br`; `array-programs/partial_mod_count_2-5`
+    (counts with integer division); `array-patterns/array26` (parity of a
+    count). `array25`, `array27`, `array29`, `array30` with cubic closed
+    forms are proved.
+  - Function parameters of unsigned types are not in range either
+    (`loop-acceleration/functions_1-1`, `ensures \result == z + 2` with
+    `uint(z + 2)` in the body is refuted for negative `z`). Done in 0.39.3 for
+    functions with annotations: `functions_1-1` proves.
+  - Runs under CPU load time out at 10 s on trivial tasks (`loop-lit/mine2017-ex4.6`
+    proves in 2.6 s alone); the limits of the runs in the README are not
+    those of the tool.
+  - Open in the frontend (0.39.4): `&` of operands that are not truth
+    values stays `bitand` (`bin-suffix-5`, `(x & 5) == 5` with `x % 8 == 5`;
+    could be `x % 8` for constant masks of low bits); labels of `\at` other
+    than `Pre`, `Here`, `LoopEntry`; `-chc` answers `unknown` on the unsigned
+    arithmetic modulo 2^n of annotated programs
+    ([acsl_ranges.c](examples/c/vcgen/acsl_ranges.c) is checked with
+    `-verify` only).
+  - Results per folder (true tasks proved / true tasks, Oct 12, 2026, 0.38.0):
+    `array-cav19` 13/13, `array-fpi` 68/68, `array-examples` 55/61 (the
+    others `\valid`, a builtin, a reducer), `loop-invariants` 6/9,
+    `loop-simple` 6/6, `loop-zilu` 23/27 (3 timeouts under load, one `&`),
+    `loop-lit` 20/26 (6 reducers), `loop-new` 7/8, `loops` 26/37,
+    `loop-acceleration` 15/23, `nla-digbench` 14/26, `loop-invgen` 16/27
+    (10 reducers), `loops-crafted-1` 8/46 (unsigned counters; with 0.39.3,
+    10 of the first 12 files prove, `in-de42` is refuted, `discover_list`
+    ends in a parse error),
+    `array-crafted`, `reducercommutativity`, `array-patterns` mostly
+    `axiomatic`.
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
