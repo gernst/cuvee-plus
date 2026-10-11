@@ -11,16 +11,31 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - error messages should use a nice printer
 - C frontend: `goto` to a label whose statement falls through, by copying
   the statements
-- witness output
-- SV-LIB support
-- SV-COMP tool entry and zenodo archive
+- witness output: SV-COMP scores verdicts without a validated witness with 0
+  (doc/paper/README.md); correctness witnesses need loop invariants (from
+  the models of Z3 for `-chc`, or derived from the trace equation systems),
+  violation witnesses a path (from the counterexamples of `-chc`); see
+  "Portfolio of TEQ and CHC" below
+- SV-LIB support: a frontend for SV-LIB, the SMT-LIB-based format of
+  verification tasks for SV-COMP, next to the C frontend and the task
+  definitions (`.yml`)
+- SV-COMP tool entry and zenodo archive: publish the archive
+  (`scripts/zenodo.py package`, `upload`, `publish`), enter its DOI in the
+  fm-tools entry (`data/cuvee.yml`, still a dummy DOI) and in doc/paper; the
+  tool-info module `cuvee.py` is the pull request `add-cuvee` to BenchExec
+  (github.com/gernst/benchexec), to be kept in sync with this repository
+- a portfolio of `-teq` and `-chc` within the time limit, see "Portfolio of
+  TEQ and CHC" below
 
 ## Bugs
 
 - `-fallback -z3` proves `benchmarks/sv-comp/dafny/nla-digbench/geo1-u` (expected unsafe), in the runs of
   `xml/cuvee-quick-fallback.xml` of 2026-10-10 15:25 and 16:12: a soundness problem of the encoding or of the
   lemmas it relies on, not yet analysed. Its C version is unsafe only by the wrap-around of `unsigned long long`,
-  which the C frontend models without `-unbounded`; not rerun since.
+  which the C frontend models without `-unbounded` (0.36.0): the fallback no longer proves geo1-u and its 14
+  variants in nla-digbench-scaling, Z3 finds a model instead (15-minute runs of Oct 11, 2026), and `-chc` reports
+  the violation; with `-unbounded`, it proves it again, as the semantics drops the wrap-around. The Dafny version,
+  over mathematical integers, has not been rerun.
 - A bound variable may capture a constant of the same name in the output of
   SMT-LIB: normalization renames bound variables apart from free variables,
   but constants (`declare-const x`) are functions, e.g.
@@ -895,6 +910,35 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     (`loops/veris.c_sendmail_tTflag_arr_one_loop`).
   - GCC builtins are unknown functions, e.g. `__builtin_bswap32`
     (`array-examples/relax-2-2`).
+
+## Portfolio of TEQ and CHC (SV-COMP)
+
+The configurations complement each other: in the runs of Oct 11, 2026 on
+ReachSafety-Loops, `-chc -z3` (1 min, `xml/cuvee-chc.xml`) proves 146 tasks
+and `-teq` (2 min) 123, together 195; on ReachSafety-Arrays 8 and 133,
+together 137. Only `-chc` reports violations (85 correct, none wrong), since
+`unsat` of the Horn clauses is a counterexample, whereas a model of Z3 for a
+goal of `-fallback` is none (the encoding abstracts the goal, `cuvee.py`
+scores it unknown).
+
+- A portfolio in Cuvée, e.g. an option that `cuvee.py` passes with the time
+  limit (BenchExec's rlimits): the steps in sequence, not in parallel, since
+  BenchExec counts the CPU time of all cores against one limit, e.g. `-teq`
+  for a short slice (usually fast or stuck), then `-chc` for most of the
+  remaining time, then `-fallback` with the rest; the slices from the CPU
+  times of the 15-minute runs; parsing shared between the steps.
+- Disagreement is unknown: a proof by `-teq` and `unsat` by `-chc` indicate
+  a bug in one of them, and wrong results cost 32 (true) and 16 (false).
+- Soundness of `sat` with `-chc`: the prelude declares the bit operations
+  (`bitand`, `bitor`, `bitxor`, `bitnot`, `shl`, `shr`) without definitions,
+  so Z3 may choose their interpretation in clauses that use them and report
+  them satisfiable for a program that is not safe; `sat` should count only
+  if the clauses use no such function, which Cuvée can check.
+- Witnesses (see "witness output" above): SV-COMP scores verdicts without a
+  validated witness with 0. The model of Z3 for the Horn clauses gives the
+  loop invariants of a correctness witness, its counterexample the path of a
+  violation witness; `-teq` would need invariants from the trace equation
+  systems.
 
 ## SV-COMP task definitions
 
