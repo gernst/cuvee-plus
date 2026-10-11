@@ -51,8 +51,9 @@ These notes document examples of the folder \texttt{examples/dafny/algorithms} i
 paper \emph{Trace Equation Systems for Program Verification}: for each program we show the trace
 equation system that Cuvée generates (\texttt{-teq}), the lemmas that the simplifier applies
 (\texttt{-simplify}), how they are instantiated, and the conceptual idea behind them. All lemmas are
-stated in the Dafny dialect of Cuvée at the beginning of the respective file; the lemma database
-\texttt{teq.dfy} is injected by \texttt{-teq}. We write $\bl{X}$ for \texttt{butlast(X)}, the trace $X$
+stated in the Dafny dialect of Cuvée at the beginning of the respective file; the lemma database (the
+modules of \texttt{resources/cuvee/teq}) is injected by \texttt{-teq}, and the module of the fragments of
+inner loops by \texttt{-include teq:nested} where a file uses it. We write $\bl{X}$ for \texttt{butlast(X)}, the trace $X$
 without its last element, $\cur(X)$ for its last element, and $\cnt(i, c, n)$ for the counter
 $\langle i, i + c, \ldots, i + n c\rangle$ of $n$ steps. The sections are ordered by the complexity of the proof, from a
 single loop with two lemmas to loops in sequence and nested loops with summaries and inductions; the last
@@ -213,6 +214,110 @@ resolution as rewrite rules: the inner trace is a counter, its current value is 
 bounds the length, the exit fixes it. The same four lemmas serve every example with an inner counter
 from $0$ (\texttt{nested\_mult}, \texttt{row\_sums}, \texttt{transpose}); with another initial value
 the test and the exit are instead kept as side conditions of a summary (Section~\ref{sec:sel:sum}).
+
+\section{Row Sums and Transpose: a Chain of Specific Lemmas}\label{sec:rows}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(A: array<int, array<int, int>>, m: int, n: int) returns (s: array<int, int>)
+  requires 0 <= m && 0 <= n
+  ensures forall i: int :: 0 <= i < m ==>
+    s[i] == sum(selects(A[i], butlast(counter(0, 1, natural(n)))))
+{
+  var i: int;
+  var j: int;
+  var t: int;
+  i := 0;
+  while i < m
+  {
+    t := 0;
+    j := 0;
+    while j < n
+    {
+      t := t + A[i][j];
+      j := j + 1;
+    }
+    s := s[i := t];
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+The inner loop sums one row and the outer loop stores the sum at the position of its iteration; the
+transpose (\texttt{transpose.dfy}) is the same shape with an array-valued inner result, the stores of
+column $k$ into $B$. Both are run with \texttt{-include teq:nested}, the module of the fragments of inner loops.
+
+\subsection{The trace equation system}
+With the module, the goal of the program alone is
+\begin{align}
+  K &= I = \cnt(0, 1, n') \qquad \intf(n') = m \label{eq:rs0}\\
+  &\al{\bl{K}, \bl{I}, \seq{N}, \seq{K}'}{k, i, nn, K' \mapsto K' = \cnt(0, 1, nn)} \nonumber\\
+  &\al{\bl{K}, \seq{N}, \seq{J}'}{k, nn, J \mapsto J = \cnt(0, 1, nn)} \label{eq:rs1}\\
+  &\seq{N} = \bl{\mathsf{consts}(n', \natf(n))} \qquad \mathsf{consts\_prefix}(n', n, \seq{J}) \label{eq:rs2}\\
+  &\al{\bl{K}, \bl{I}, \seq{T}', \seq{J}'}{k, i, T, J \mapsto T = \sums(0, \mathsf{selects}(A[k], \bl{J}))} \label{eq:rs3}\\
+  &\al{\bl{K}, \bl{I}, \seq{T}, \seq{T}'}{k, i, t, T \mapsto t = \cur(T)} \label{eq:rs4}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}}{k, i, j \mapsto n \le j} \qquad \ldots \nonumber\\
+  &\Longrightarrow\ 0 \le i < m \Rightarrow \mathsf{earlier}(\natf(i), \seq{T}) = \mathsf{sum}(\mathsf{selects}(A[i], \bl{\cnt(0, 1, \natf(n))})) \nonumber
+\end{align}
+The module has resolved the inner counter \eqref{eq:rs1}, the exit (abstracted to $\mathsf{consts\_prefix}$)
+and the numbers of inner iterations \eqref{eq:rs2}: $\seq{N}$ is the constant sequence $n$. The sum of
+row $k$ is the trace \eqref{eq:rs3} over the inner counter, its result the fragment \eqref{eq:rs4}, and the
+postcondition reads the stored results at position $i$. What is left is to carry $\seq{N}$ into the counter,
+the counter into the sum, the sum into the result, and the results into the read: four substitutions
+between fragments over different dependency lists, which the simplifier does not make by itself.
+
+\subsection{The chain}
+The first version of this file stated the substitutions as general lemmas: a fragment about the inner
+counter $J$ with a higher-order body $t = F(k, J)$ is stated about $\cnt(0, 1, nn)$, and a read
+$\mathsf{earlier}(\natf(i), ts)$ is the body of the $\mathsf{all}$ over $ts$ at $i$. Both have a general
+left-hand side, matching every fragment, respectively every read, together with an $\mathsf{all}$ side
+condition over the lists of the left-hand side; matching the condition builds the simplifier's context of
+the fact's combinator, where the reads of the dependencies are rewritten, on which the rule matches again,
+one level deeper, until the step budget is exhausted (finding 19 of \texttt{NOTES.md}, the cycle that
+\texttt{TODO.md} describes for \lemma{sum\_invs\_const}). The runs did not terminate, which the runners of
+the time reported as proofs, since a killed run prints no goal.
+
+The version that verifies has one specific lemma per step, each with the fragment it depends on as a side
+condition over a fresh list variable, identified by an equation (Section~\ref{sec:cock}); $C_n$ abbreviates
+the counter $\bl{\cnt(0, 1, \natf(n))}$:
+\begin{align*}
+  &\lemma{invs\_counter\_consts}:\quad 0 \le n\\
+  &\quad\Longrightarrow\ \al{ks, \bl{\mathsf{consts}(m, \natf(n))}, Js}{k, nn, J \mapsto J = \cnt(0, 1, nn)}\\
+  &\qquad\Longleftrightarrow\ \al{ks, Js}{k, J \mapsto \bl{J} = C_n}\\[2pt]
+  &\lemma{invs\_sums\_selects\_counter}:\quad \al{ks, Js_2}{k, J \mapsto \bl{J} = C_n}\ \wedge\ Js_2 = Js\\
+  &\quad\Longrightarrow\ \al{ks, Ts, Js}{k, T, J \mapsto T = \sums(0, \mathsf{selects}(F(k), \bl{J}))}\\
+  &\qquad\Longleftrightarrow\ \al{ks, Ts}{k, T \mapsto T = \sums(0, \mathsf{selects}(F(k), C_n))}\\[2pt]
+  &\lemma{invs\_current\_def}:\quad \al{ks, Ts_2}{k, T \mapsto T = G(k)}\ \wedge\ Ts_2 = Ts\\
+  &\quad\Longrightarrow\ \al{ks, ts, Ts}{k, t, T \mapsto t = \cur(T)}\\
+  &\qquad\Longleftrightarrow\ \al{ks, ts}{k, t \mapsto t = \cur(G(k))}\\[2pt]
+  &\lemma{invs\_maps\_sum}:\quad \al{ks, ts}{k, t \mapsto t = \mathsf{sum}(F(k))}\\
+  &\qquad\Longleftrightarrow\ ts = \mapc{ks}{k \mapsto \mathsf{sum}(F(k))}\\[2pt]
+  &\lemma{earlier\_maps\_counter}:\quad 0 \le i < \intf(m)\\
+  &\quad\Longrightarrow\ \mathsf{earlier}(\natf(i), \mapc{\bl{\cnt(0, 1, m)}}{k \mapsto F(k)}) = F(i)
+\end{align*}
+The first matches \eqref{eq:rs1} with the dependency $\bl{\mathsf{consts}(m, \natf(n))}$ as a pattern,
+which is matched against $\seq{N}$ through its equation \eqref{eq:rs2} in the context (a variant with
+$\seq{N}$ as a variable and the equation as a side condition is in the file as well). The second rewrites
+\eqref{eq:rs3} to a sum over the counter $\bl{\cnt(0, 1, \natf(n))}$, with $F := \lambda k.\ A[k]$. The third
+rewrites \eqref{eq:rs4} with $G$ the sum of row $k$, after which the database makes $\cur(\sums(0, xs))$ into
+$\mathsf{sum}(xs)$; the fourth turns the pointwise fragment of the results
+into a map (specific to sums, so that the fragments $j = \cur(J)$ of counters are left to the module); the
+fifth reads the map at $i$, with $m := n'$ and $0 \le i < \intf(n')$ decided from $0 \le i < m$ and
+\eqref{eq:rs0}. Every left-hand side is a fragment with a function symbol on the side of its bound variable
+or a read of a $\mathsf{map}$, and every $\mathsf{all}$ condition is over a fresh list: nothing matches what
+the rewriting of a read in a combinator context produces, and the runs take under twenty seconds.
+
+For the transpose the chain is the same with the inner stores: the trace of stores over $\bl{J}$ is folded
+into $\mathsf{column}(h, A, k, \natf(n))$ once $J = \cnt(0, 1, \natf(n))$ is known, the final values of the
+columns are the fragment $b = \cur(\mathsf{column}(h, A, k, \natf(n)))$ over the previous value $h$, then
+\lemma{current\_results\_steps} (Section~\ref{sec:nsum}) makes the outer trace the trace of the columns, and
+\lemma{current\_transpose} reads the transposed element.
+
+\subsection{The idea}
+An inner result stored at the position of the outer iteration is the pattern of the paper's nested loops,
+and with the module it needs no new concept, only discipline: every step is a lemma whose left-hand side is
+specific and whose side condition is a fragment over a fresh list, matched against the facts. The general
+substitution lemmas that one would write first are exactly the rules that the cycle mechanism of
+\texttt{TODO.md} forbids; the chain makes the same substitutions one fragment at a time.
 
 \section{Selection Sort: Fragments, a Summary, and an Induction}\label{sec:sel}
 
@@ -575,16 +680,17 @@ passes are the initial values of the backward passes. With $lo = k$ and $hi = n 
 \begin{align}
   K &= Lo = \cnt(0, 1, n') \qquad Hi = \cnt(n, -1, n') \qquad b = \cur(B) \qquad lo = \intf(n') \label{eq:ck0}\\
   &\al{\bl{K}, \bl{Lo}, \bl{Hi}}{k, lo, hi \mapsto 2k + 1 < n} \label{eq:ck1}\\
-  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}', \seq{B}'_t}{k, lo, hi, c, C \mapsto c = \cur(C)}\quad
-   \al{\bl{K}, \bl{B}, \bl{Lo}, \bl{Hi}, \seq{B}'_t, \seq{J}'_t}{k, x, lo, hi, C, J \mapsto C = \mathsf{bubble\_pass}(x, \bl{J})} \label{eq:ck2}\\
-  &\al{\bl{K}, \seq{N}, \seq{J}'_t}{k, nn, J \mapsto J = \cnt(k, 1, nn)}\quad
-   \al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}'}{k, lo, hi, j \mapsto n \le j + k + 1}\quad \ldots \label{eq:ck3}\\
-  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}'', \seq{B}''_t}{k, lo, hi, b, B' \mapsto b = \cur(B')}\quad
-   \al{\ldots, \seq{B}', \seq{B}''_t, \seq{J}''_t, \seq{P}''_t}{\ldots, c, B', J, P \mapsto B' = \mathsf{bubble\_pass\_back}(c, \bl{J}, \bl{P})} \label{eq:ck4}\\
-  &\al{\bl{K}, \seq{N}', \seq{J}''_t}{k, nn, J \mapsto J = \cnt(n - k - 2, -1, nn)}\quad
-   \al{\bl{K}, \seq{N}', \seq{P}''_t}{k, nn, P \mapsto P = \cnt(n - k - 3, -1, nn)} \label{eq:ck5}\\
-  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}''}{k, lo, hi, j \mapsto j \le k}\quad
-   \al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}'', \seq{J}''_t}{k, lo, hi, j, J \mapsto j = \cur(J)}\quad \ldots \label{eq:ck6}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}', \seq{B}'_t}{k, lo, hi, c, C \mapsto c = \cur(C)} \nonumber\\
+  &\al{\bl{K}, \bl{B}, \bl{Lo}, \bl{Hi}, \seq{B}'_t, \seq{J}'_t}{k, x, lo, hi, C, J \mapsto C = \mathsf{bubble\_pass}(x, \bl{J})} \label{eq:ck2}\\
+  &\al{\bl{K}, \seq{N}, \seq{J}'_t}{k, nn, J \mapsto J = \cnt(k, 1, nn)} \nonumber\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}'}{k, lo, hi, j \mapsto n \le j + k + 1} \qquad \ldots \label{eq:ck3}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}'', \seq{B}''_t}{k, lo, hi, b, B' \mapsto b = \cur(B')} \nonumber\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}', \seq{B}''_t, \seq{J}''_t, \seq{P}''_t}{k, lo, hi, c, B', J, P \mapsto {}\nonumber\\
+  &\qquad\qquad\qquad\qquad B' = \mathsf{bubble\_pass\_back}(c, \bl{J}, \bl{P})} \label{eq:ck4}\\
+  &\al{\bl{K}, \seq{N}', \seq{J}''_t}{k, nn, J \mapsto J = \cnt(n - k - 2, -1, nn)} \nonumber\\
+  &\al{\bl{K}, \seq{N}', \seq{P}''_t}{k, nn, P \mapsto P = \cnt(n - k - 3, -1, nn)} \label{eq:ck5}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}''}{k, lo, hi, j \mapsto j \le k} \nonumber\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}'', \seq{J}''_t}{k, lo, hi, j, J \mapsto j = \cur(J)} \qquad \ldots \label{eq:ck6}\\
   &\ldots \wedge\ n \le \intf(n') + lo + 1\ \Longrightarrow\ \sorted(b, 0, n) \wedge \perm(b, a) \nonumber
 \end{align}
 with $\mathsf{bubble\_pass}$ as in the bubble sort and $\mathsf{bubble\_pass\_back}(c, js, ps)$ the trace of
@@ -896,7 +1002,8 @@ simplifier itself turns it into $\mathsf{results}(\mathsf{false}, \bl{K}, \mapc{
 The outer loop is summarized on the atom $\mathsf{distincts}(\ldots)$ of the postcondition, by one rule per
 case of the exit. If the flag is set, it is the result of the last iteration, which found a duplicate:
 \begin{align*}
-  &\lemma{distincts\_flag\_set}:\quad Kv = \cnt(0, 1, m)\ \wedge\ flag = \cur(\mathsf{results}(\mathsf{false}, \bl{Kv}, \mapc{\bl{Kv}}{k \mapsto \neg\mathsf{nodup}(a, k, n)}))\\
+  &\lemma{distincts\_flag\_set}:\quad Kv = \cnt(0, 1, m)\\
+  &\quad\wedge\ flag = \cur(\mathsf{results}(\mathsf{false}, \bl{Kv}, \mapc{\bl{Kv}}{k \mapsto \neg\mathsf{nodup}(a, k, n)}))\\
   &\quad\wedge\ flag\ \wedge\ \intf(m) \le n\ \Longrightarrow\ \mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))}))\ \Longleftrightarrow\ \mathsf{false}
 \end{align*}
 If all iterations ran, $n \le \intf(m)$, and the flag was reset at the head of each, \eqref{eq:fd1}, then no
@@ -904,8 +1011,8 @@ element before the last has a later duplicate (the flag at the head of iteration
 iteration $k - 1$) and the last has none:
 \begin{align*}
   &\lemma{distincts\_flags\_reset}:\quad Kv = \cnt(0, 1, m)\ \wedge\ Rv = \mathsf{results}(\mathsf{false}, \bl{Kv}, rs)\\
-  &\quad\wedge\ \al{\bl{Kv}, hs}{k, h \mapsto \neg h}\ \wedge\ hs = \bl{Rv}\
-   \wedge\ \al{\bl{Kv}, rs_2}{k, h \mapsto h = \neg\mathsf{nodup}(a, k, n)}\ \wedge\ rs_2 = rs\ \wedge\ n \le \intf(m)\\
+  &\quad\wedge\ \al{\bl{Kv}, hs}{k, h \mapsto \neg h}\ \wedge\ hs = \bl{Rv}\\
+  &\quad\wedge\ \al{\bl{Kv}, rs_2}{k, h \mapsto h = \neg\mathsf{nodup}(a, k, n)}\ \wedge\ rs_2 = rs\ \wedge\ n \le \intf(m)\\
   &\quad\Longrightarrow\ \mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))}))\ \Longleftrightarrow\ \mathsf{true}
 \end{align*}
 Three details made these fire. The outer counter and the flag trace are the variables $K$ and $R$ of the

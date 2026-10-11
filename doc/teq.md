@@ -100,8 +100,16 @@ after section 4 of the paper.
   `teq.lean` yet); the simplifier drops the remaining remainders whose
   arguments are in range (see [simplifier.md](simplifier.md)). Further
   modules are injected on demand by `-include teq:<concept>`, after these:
-  `teq:nested` (the fragments of inner loops, see
-  [examples/dafny/algorithms](../examples/dafny/algorithms)) and
+  `teq:nested` (the fragments of inner loops: the inner counter, its final
+  value, its iteration constraint, and its exit, which is stated on the
+  constraint fragment `invs(for ks, Ns check k, nn :: integer(nn) <= n)`
+  with the exit and the final values as side conditions, since a bare
+  comparison `n <= j` as left-hand side matched every comparison fragment and
+  cycled with the counter lemmas; the numbers of inner iterations as
+  `⌊consts(m, natural(n))⌋`; the outer trace of a variable that only the inner
+  loop modifies, `results`; see
+  [examples/dafny/algorithms](../examples/dafny/algorithms), whose
+  bubble_sort, nested_mult, row_sums and transpose use it) and
   `teq:sorting` (`sorted`, `perm`, `partitioned`, inductions), and
   `teq:strides` (the strided stores and stores ahead of the MonoCera
   benchmarks, see [benchmarks/monocera](../benchmarks/monocera): loops that
@@ -209,6 +217,62 @@ after section 4 of the paper.
   which hides the constraint from `Simplify.invariants`, since that collects
   `invs` facts only; a definition lemma therefore comes late among the lemmas
   on `invs`, after those that use such constraints.
+- Lemmas written for a program (the summaries of inner loops, the inductions,
+  the chains of [examples/dafny/algorithms](../examples/dafny/algorithms),
+  whose NOTES.md records the findings) follow patterns that the matcher
+  imposes:
+  - **Specific left-hand sides.** A left-hand side `invs(...)` whose body has
+    a bare bound variable of a variable dependency on one side, `n <= j` or
+    `j == integer(nn)`, matches every comparison, respectively equation,
+    fragment, since the dependency is synthesized as a map of the fact's
+    dependencies (`Rewrite.instantiate`); with an `invs` side condition such
+    a rule cycles. A function symbol on the side of the bound variable,
+    `integer(nn) <= n`, `J == counter(0, 1, nn)`, or an atom is specific.
+  - **Fresh variables for every `invs` side condition.** A side condition is
+    open while it has a variable that no earlier condition bound; an open one
+    is matched against the facts, with backtracking over them, a closed one
+    is decided by the simplifier, which does not find a closed `invs` among
+    the facts (these carry unused dependencies, e.g. the counters of the
+    outer loop, which the simplifier also drops from the instance, and their
+    bound variables are renamed). So each `invs` condition binds a fresh
+    sequence, `invs(for ks, js6, Js6 check k, j, J :: j == current(J))`, and
+    an equation `js6 == js4 && Js6 == Js3` identifies it; the equation is
+    closed and decided trivially. The 21st condition of the cocktail sort's
+    summary stayed closed for a day.
+  - **Open trace variables.** The traces of the goal are variables `K`, `R`
+    with their equations as hypotheses; `⌊counter(0, 1, m)⌋` as an argument
+    of a left-hand side never matches `⌊K⌋` (as a dependency of a combinator
+    it does, through the context). A rule takes `Kv == counter(0, 1, m)`,
+    `Rv == results(false, ⌊Kv⌋, rs)` as open conditions, matched against the
+    hypotheses, and uses `⌊Kv⌋` afterwards.
+  - **No condition on the rule's own left-hand side term.** The instance of a
+    condition is simplified before it is decided or matched, so a condition
+    `l == current(Lv)` of a rule on `current(Lv)` with `Lv` bound rewrites
+    `current(Lv)` by the rule itself and does not terminate; this is why the
+    summaries take `current(results(...))` as left-hand side rather than
+    `results(...)`, and why lower_bound.dfy is open (TODO.md).
+  - **Arithmetic conditions in the goal's form.** The decision procedure
+    combines difference constraints; `len <= 2 * integer(m) + 1` is not
+    decided from `n <= integer(m) + lo + 1` and `lo == integer(m)`, while
+    `l == integer(m)` (open, matched) and `len <= integer(m) + l + 1` (the
+    fact) are.
+  - **The exit of an outer loop.** In the goal it is a disjunction in the
+    conclusion, `i < n && !r || post`, which `-split` does not split and whose
+    literals a rule on an atom of `post` does not see; a postcondition stated
+    as two implications gives each goal its literal (first_duplicate.dfy).
+    The exit of an inner loop is a fragment and a side condition like the
+    others.
+  - **Summaries are tied to the fragment forms of the included modules**
+    (`j == current(J)` without `teq:nested`, `j == k + integer(nn)` with it),
+    so a file includes the modules its lemmas are written for.
+  - **Diagnostics.** Truncated copies of a summary with its first k
+    conditions find the first failing one; *probes*, rules with the real
+    left-hand side, the first k conditions and a fresh atom `probe_k(...)` as
+    right-hand side, k downwards, show in the goal the largest k whose
+    conditions hold; pair runs of the single lemmas of a module find a
+    cycling pair; every result is checked on a program with a wrong
+    postcondition, which must leave a goal; long runs use a private copy of
+    the jar and read the exit status, since a killed run prints no goal.
 
 ## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
 
