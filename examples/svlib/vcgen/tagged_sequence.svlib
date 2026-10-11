@@ -1,0 +1,27 @@
+; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/tagged_sequence.svlib
+; expected: valid
+; the assertions of the C tasks translated to SV-LIB: an empty sequence with a tag, whose location invariant an
+; annotate-tag command adds after the procedure; get-witness answers unsupported
+
+(set-logic LIA)
+
+(define-proc main
+  ((l Int) (n Int))
+  ((result Int))
+  ((i Int))
+  (! (sequence
+       (assign (i l))
+       (if (not (< 0 l)) (sequence (assign (result 0)) (return)))
+       (! (while (< i n) (assign (i (+ i 1)))) :tag main-while-1)
+       (! (sequence) :tag main-check-1 :check-true (< 0 i))
+       (assign (result 0))
+       (return))
+     :tag main))
+
+(annotate-tag main-check-1 :check-true (<= 1 l))
+
+(annotate-tag main-while-1 :invariant (<= l i))
+
+(verify-call main (1 5))
+
+(get-witness)

@@ -307,10 +307,10 @@ object Printer extends cuvee.pipe.Printer:
   // the statements of a block, local variables are declared first
   def statements(prog: Prog): List[Doc] =
     prog match
-      case Block(Nil, progs) =>
+      case Block(Nil, progs, _) =>
         progs.map(doc(_))
 
-      case Block(locals, progs) =>
+      case Block(locals, progs, _) =>
         val locals_ = Group(text("var") ~ Nest(2, line ~ formals(locals))) ~ text(";")
         locals_ :: progs.map(doc(_))
 
@@ -370,7 +370,7 @@ object Printer extends cuvee.pipe.Printer:
       case Call(proc, args, res) =>
         Group(text("call") ~~ commas(res.map(doc(_))) ~~ text(":=") ~~ call(name(proc), args.map(doc(_)))) ~ text(";")
 
-      case Block(_, _) =>
+      case Block(_, _, _) =>
         block(prog)
 
       case Choice(Nil) =>

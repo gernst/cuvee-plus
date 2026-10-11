@@ -339,7 +339,7 @@ object Horn extends Transform:
       // the statements inside the block range over the scope extended by the locals, which are unconstrained initially,
       // each way to leave the block leads to heads over the outer scope, which drops the locals;
       // the remaining statements continue from a fresh predicate after the block, if there are any
-      case Block(locals, progs_) :: rest =>
+      case Block(locals, progs_, _) :: rest =>
         // locals may shadow variables in scope, therefore they are renamed apart
         val (locals_, su) = Subst.rename(locals)
         val scope_ = scope ++ locals_

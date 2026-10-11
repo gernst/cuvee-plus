@@ -200,7 +200,7 @@ object Type:
       case Spec(ys, pre, post)         => Spec(expand(state, ys), expand(state, pre), expand(state, post))
       case Assign(lhs, rhs)            => Assign(expand(state, lhs), rhs.map(expand(state, _)))
       case Call(proc, args, res)       => Call(proc, args.map(expand(state, _)), expand(state, res))
-      case Block(locals, progs)        => Block(expand(state, locals), progs.map(expand(state, _)))
+      case Block(locals, progs, attrs) => Block(expand(state, locals), progs.map(expand(state, _)), expand(state, attrs))
       case While(test, body, attrs)    => While(expand(state, test), expand(state, body), expand(state, attrs))
       case Iter(body, attrs)           => Iter(expand(state, body), expand(state, attrs))
       case Ode(t, ys, rhs, dom, attrs) => Ode(expand(state, t), expand(state, ys), rhs.map(expand(state, _)), expand(state, dom), expand(state, attrs))
@@ -666,7 +666,7 @@ object Type:
         val args_ = instantiate(state, scope, subst, pending, args)
         Call(name, args_, res)
 
-      case Block(locals, progs) =>
+      case Block(locals, progs, attrs) =>
         Error.report("duplicate local variables", locals):
           require(locals.distinctBy(_.name) == locals)
 
@@ -674,7 +674,7 @@ object Type:
         val scope_ = scope ++ locals
         val fixed_ = fixed.filterNot(x => locals.exists(_.name == x.name))
         val progs_ = progs.map(check(state, scope_, fixed_, mod, _, loop))
-        Block(locals, progs_)
+        Block(locals, progs_, attrs)
 
       case Choice(progs) =>
         val progs_ = progs.map(check(state, scope, fixed, mod, _, loop))

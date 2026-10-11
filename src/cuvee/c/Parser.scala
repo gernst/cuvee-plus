@@ -1136,7 +1136,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
   def continues(prog: core.Prog): Boolean =
     prog match
       case core.Continue            => true
-      case core.Block(_, progs)     => progs.exists(continues)
+      case core.Block(_, progs, _)    => progs.exists(continues)
       case core.If(_, left, right)  => continues(left) || continues(right)
       case core.Choice(progs)       => progs.exists(continues)
       case _                        => false
@@ -1146,7 +1146,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
     prog match
       case core.Continue            => state.progs.break
       case core.Break               => state.progs.block(Nil, List(state.progs.assign(List(brk), List(state.exprs.const("true"))), state.progs.break))
-      case core.Block(locals, progs) => state.progs.block(locals, progs.map(exits(brk, _)))
+      case core.Block(locals, progs, _) => state.progs.block(locals, progs.map(exits(brk, _)))
       case core.If(test, left, right) => state.progs.if_(test, exits(brk, left), exits(brk, right))
       case core.Choice(progs)       => progs.map(exits(brk, _)).reduceRight(state.progs.choice)
       case _                        => prog

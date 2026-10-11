@@ -15,7 +15,7 @@ sealed trait Prog:
   // the immediate subprograms
   def subprogs: List[Prog] =
     this match
-      case Block(_, progs)    => progs
+      case Block(_, progs, _) => progs
       case Choice(progs)      => progs
       case If(_, left, right) => List(left, right)
       case While(_, body, _)  => List(body)
@@ -31,7 +31,7 @@ sealed trait Prog:
       case Spec(xs, pre, post)         => Spec(xs, e(pre), e(post))
       case Assign(xs, rhs)             => Assign(xs, rhs.map(e))
       case Call(proc, args, res)       => Call(proc, args.map(e), res)
-      case Block(locals, progs)        => Block(locals, progs.map(p))
+      case Block(locals, progs, attrs) => Block(locals, progs.map(p), attrs.map(e))
       case Choice(progs)               => Choice(progs.map(p))
       case If(test, left, right)       => If(e(test), p(left), p(right))
       case While(test, body, attrs)    => While(e(test), p(body), attrs.map(e))
@@ -73,9 +73,11 @@ case class Call(proc: Name, args: List[Expr], res: List[Var]) extends Prog:
   def mod = Set(res*)
   def free = args.free ++ res
 
-case class Block(locals: List[Var], progs: List[Prog]) extends Prog:
+// the attributes of a block are those of a statement of SV-LIB, (! (sequence ...) :tag t), e.g. location invariants,
+// which State.annotated asserts at its beginning
+case class Block(locals: List[Var], progs: List[Prog], attrs: Attrs = Attrs.empty) extends Prog:
   def mod = progs.mod -- locals
-  def free = progs.flatMap(_.free).toSet -- locals
+  def free = (progs.flatMap(_.free).toSet ++ attrs.free) -- locals
 
 case class Choice(progs: List[Prog]) extends Prog:
   def mod = progs.mod
@@ -127,7 +129,7 @@ object Par:
   def modifies(state: State, prog: Prog): Set[Var] =
     val mod = prog match
       case Call(name, _, res)   => (res ++ state.procattrs(name).modifies).toSet
-      case Block(locals, progs) => progs.flatMap(modifies(state, _)).toSet -- locals
+      case Block(locals, progs, _) => progs.flatMap(modifies(state, _)).toSet -- locals
       case _                    => prog.mod ++ prog.subprogs.flatMap(modifies(state, _))
     mod -- state.vars.get("history")
 

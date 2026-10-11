@@ -452,7 +452,14 @@ object Printer extends cuvee.pipe.Printer:
       case Call(proc, args, res) =>
         apps(atom("call"), mangle(proc), list(lines(args)), list(lines(res)))
 
-      case Block(locals, progs) =>
+      // the attributes of a sequence of SV-LIB, e.g. its tags, as its annotation, (! (sequence ...) :tag t)
+      case Block(Nil, progs, attrs) if !attrs.isEmpty =>
+        apps(atom("!"), apps(atom("sequence"), lines(progs)), lines(attrs))
+
+      case Block(locals, progs, attrs) if !attrs.isEmpty =>
+        apps(atom("!"), lines(Block(locals, progs)), lines(attrs))
+
+      case Block(locals, progs, _) =>
         apps(mangle("block"), apps(mangle("locals"), formals(locals)), lines(progs))
 
       case Choice(progs) =>

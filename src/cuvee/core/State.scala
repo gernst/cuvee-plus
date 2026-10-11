@@ -69,10 +69,16 @@ case class State(
     annotated(procattrs(name))
 
   // the body of a procedure with the annotations of its loops attached, which the transforms do before they rename
-  // or substitute variables in the body, e.g. the locals of blocks, which the annotations refer to as written
+  // or substitute variables in the body, e.g. the locals of blocks, which the annotations refer to as written;
+  // the location invariants of a block, inline or by its tags, are asserted at its beginning, and its tags dropped,
+  // such that annotating again adds nothing
   def annotated(prog: Prog): Prog =
     prog match
       case While(test, body, attrs) => While(test, annotated(body), annotated(attrs))
+      case Block(locals, progs, attrs) =>
+        val attrs_ = annotated(attrs)
+        val rest = Attrs(attrs_.attrs.filterNot((kw, _) => kw == "tag" || kw == "check-true"))
+        Block(locals, attrs_.checks.map(Spec.assert) ++ progs.map(annotated), rest)
       case _                        => prog.map(identity, annotated)
 
   def declare(name: Name, arity: Int, attrs: Attrs): State =

@@ -47,7 +47,7 @@ object Printer extends cuvee.pipe.Printer:
       case DefineProc(Proc(name, Nil, in, out), body, attrs) =>
         val (locals, progs) =
           body match
-            case Block(locals, progs) => (locals, progs)
+            case Block(locals, progs, _) => (locals, progs)
             case _                    => (Nil, List(body))
 
         val body_ = annotated(apps(atom("sequence"), lines(progs)), properties(attrs))
@@ -88,13 +88,13 @@ object Printer extends cuvee.pipe.Printer:
       case Call(proc, args, res) =>
         apps(atom("call"), mangle(proc), list(lines(args)), list(lines(res)))
 
-      case Block(Nil, progs) =>
-        apps(atom("sequence"), lines(progs))
+      case Block(Nil, progs, attrs) =>
+        annotated(apps(atom("sequence"), lines(progs)), properties(attrs))
 
       case Choice(progs) =>
         apps(atom("choice"), lines(progs))
 
-      case If(test, left, Block(Nil, Nil)) =>
+      case If(test, left, Block(Nil, Nil, attrs)) if attrs.isEmpty =>
         apps(atom("if"), lines(test), lines(left))
 
       case If(test, left, right) =>

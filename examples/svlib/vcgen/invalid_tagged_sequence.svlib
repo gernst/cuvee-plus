@@ -1,0 +1,26 @@
+; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/invalid_tagged_sequence.svlib
+; expected: invalid
+; the location invariant of a tagged sequence does not hold: after the loop, i is n only if l is at most n
+
+(set-logic LIA)
+
+(define-proc main
+  ((l Int) (n Int))
+  ((result Int))
+  ((i Int))
+  (! (sequence
+       (assign (i l))
+       (if (not (< 0 l)) (sequence (assign (result 0)) (return)))
+       (! (while (< i n) (assign (i (+ i 1)))) :tag main-while-1)
+       (! (sequence) :tag main-check-1 :check-true (< 0 i))
+       (assign (result 0))
+       (return))
+     :tag main))
+
+(annotate-tag main-check-1 :check-true (= i n))
+
+(annotate-tag main-while-1 :invariant (<= l i))
+
+(verify-call main (1 5))
+
+(get-witness)

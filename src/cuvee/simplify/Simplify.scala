@@ -1151,9 +1151,10 @@ object Simplify extends Transform:
         val args_ = simplify(config, state, ctx, args)
         call(config, state, ctx, name, args_, res)
 
-      case Block(locals, progs) =>
+      case Block(locals, progs, attrs) =>
         val progs_ = progs.map(simplify(config, state, ctx, _))
-        block(config, state, ctx, locals, progs_)
+        val attrs_ = simplify(config, state, ctx, attrs)
+        block(config, state, ctx, locals, progs_, attrs_)
 
       case Choice(progs) =>
         val progs_ = progs.map(simplify(config, state, ctx, _))
@@ -1204,8 +1205,9 @@ object Simplify extends Transform:
 
   // nested blocks are merged, which drops Skip, the empty block, and whose locals are hoisted unless that captures
   // variables of the other statements; statements after a jump and locals that are not used are dropped;
-  // a block of a single statement without locals is that statement
-  def block(config: Config, state: State, ctx: Context, locals: List[Var], progs: List[Prog]): Prog =
+  // a block of a single statement without locals is that statement; blocks with attributes, e.g. the tags of SV-LIB,
+  // are kept
+  def block(config: Config, state: State, ctx: Context, locals: List[Var], progs: List[Prog], attrs: Attrs = Attrs.empty): Prog =
     def flatten(locals: List[Var], done: List[Prog], progs: List[Prog]): (List[Var], List[Prog]) =
       progs match
         case Nil =>
@@ -1214,18 +1216,18 @@ object Simplify extends Transform:
         case (jump @ (Break | Continue | Return)) :: _ =>
           (locals, done :+ jump)
 
-        case Block(inner, progs_) :: rest
-            if (inner disjoint locals.toSet) && !(done ++ rest).exists(p => inner intersects p.free) =>
+        case Block(inner, progs_, inner_attrs) :: rest
+            if inner_attrs.isEmpty && (inner disjoint locals.toSet) && !(done ++ rest).exists(p => inner intersects p.free) =>
           flatten(locals ++ inner, done, progs_ ++ rest)
 
         case prog :: rest =>
           flatten(locals, done :+ prog, rest)
 
     val (locals_, progs_) = flatten(locals, Nil, progs)
-    val used = locals_.filter(x => progs_.exists(_.free.contains(x)))
+    val used = locals_.filter(x => progs_.exists(_.free.contains(x)) || attrs.free.contains(x))
     (used, progs_) match
-      case (Nil, List(prog)) => prog
-      case _                 => Block(used, progs_)
+      case (Nil, List(prog)) if attrs.isEmpty => prog
+      case _                                  => Block(used, progs_, attrs)
 
   // nested choices are merged, duplicates are dropped, and a choice of a single statement is that statement
   def choice(config: Config, state: State, ctx: Context, progs: List[Prog]): Prog =

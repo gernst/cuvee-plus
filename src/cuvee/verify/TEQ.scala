@@ -176,7 +176,7 @@ object TEQ extends Transform:
           this.call(state, proc, call, p)
 
         // locals have arbitrary initial values, the values of variables they shadow are restored afterwards
-        case Block(locals, progs) =>
+        case Block(locals, progs, _) =>
           val zs = locals.fresh
           val outer = locals.map(x => x -> p.su.vars.get(x))
           for p_ <- symex(state, proc, progs, p.fresh(zs).assign(locals, zs))

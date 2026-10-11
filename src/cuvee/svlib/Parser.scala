@@ -7,10 +7,12 @@ import cuvee.core._
 import cuvee.core.Attrs
 
 object Parser:
-  // what a property annotates: a loop, the body of a procedure, or another statement, which has no attributes
-  // in the core, such that only location invariants (check-true) are allowed, as assertions before it
+  // what a property annotates: a loop, the body of a procedure, a sequence, which is a block with attributes in the
+  // core, its tags and location invariants (check-true), which the transforms assert at its beginning (see
+  // State.annotated), or another statement, which has no attributes in the core, such that only location invariants
+  // are allowed, as assertions before it
   enum Kind:
-    case Loop, Body, Statement
+    case Loop, Body, Sequence, Statement
 
 // SV-LIB scripts: SMT-LIB with global variables, procedures with local variables, and the query verify-call (see Cmd),
 // whose properties are attributes of loops and of procedure bodies, written inline as (! s attrs) or linked by
@@ -18,12 +20,16 @@ object Parser:
 // the tagged statement, its functions in the state at the command, which is why annotate-tag commands are resolved
 // here but attached to the statements only by the transforms (see State.annotated); the global variables that
 // procedures and loops modify are inferred;
-// not supported: define-procs-rec, labels and gotos, tags on other statements, the properties recurring,
-// not-recurring and decreases-lex, witnesses and traces
+// not supported: define-procs-rec, labels and gotos, tags on statements other than loops, procedure bodies and
+// sequences, the properties recurring,
+// not-recurring and decreases-lex, witnesses (get-witness answers unsupported) and traces
 class Parser(init: State) extends cuvee.smtlib.Parser(init):
   import cuvee.smtlib.Parser.annotations
   import cuvee.smtlib.Parser.Tagged
   import Parser.Kind
+
+  // the tags of sequences, whose annotate-tag commands are resolved as those of statements (see kind)
+  val sequences = scala.collection.mutable.Set[Name]()
 
   override def cmd(from: Any): Cmd =
     from match
@@ -36,8 +42,9 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
       case List(Id("define-procs-rec"), _*) =>
         Error.raise("not supported", "define-procs-rec")
 
+      // witnesses are not produced: a query for information, whose answer is unsupported (see Sink)
       case List(Id("get-witness")) =>
-        Error.raise("not supported", "get-witness")
+        GetInfo("witness")
 
       case List(Id("select-trace"), _*) =>
         Error.raise("not supported", "select-trace")
@@ -68,7 +75,7 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
 
     val progs =
       stmt(scope, tagged, inner) match
-        case Block(Nil, progs) => progs
+        case Block(Nil, progs, attrs) if attrs.isEmpty => progs
         case prog              => List(prog)
 
     // location invariants of the body hold at the entry
@@ -120,6 +127,15 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
             val attrs_ = properties(tagged, Kind.Loop, true, attrs) ++ modifies(prog_)
             state.progs.while_(expr(scope, test), prog_, attrs_)
 
+          // a sequence is a block with its tags and location invariants (see Kind)
+          case List(Id("sequence"), progs*) =>
+            val tagged = Tagged(scope, None, body.body, body.entry)
+            for tag <- tagsOf(attrs) do
+              sequences += tag
+              record(tag, tagged)
+            val attrs_ = properties(tagged, Kind.Sequence, true, attrs)
+            Block(Nil, list(progs) { stmt(scope, body, _) }, attrs_)
+
           // the core has no attributes on other statements: their location invariants are asserted before them
           // and tags, which annotate-tag commands could refer to later, are rejected (see properties)
           case _ =>
@@ -127,7 +143,7 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
             val attrs_ = properties(tagged, Kind.Statement, true, attrs)
             val progs =
               stmt(scope, body, inner) match
-                case Block(Nil, Nil) => Nil
+                case Block(Nil, Nil, attrs) if attrs.isEmpty => Nil
                 case prog            => List(prog)
 
             attrs_.checks.map(Spec.assert) ++ progs match
@@ -178,8 +194,10 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
       case _ =>
         Error.raise("not a statement", cuvee.smtlib.Parser.head(from))
 
-  def kind(tagged: Tagged): Kind =
-    if tagged.contract.isEmpty then Kind.Loop else Kind.Body
+  def kind(tag: Name, tagged: Tagged): Kind =
+    if sequences.contains(tag) then Kind.Sequence
+    else if tagged.contract.isEmpty then Kind.Loop
+    else Kind.Body
 
   // the properties of the statement `tagged` of kind `kind`, written `inline` as its annotation or in an annotate-tag
   // command, whose values are resolved: formulas for location invariants, invariants and contracts, which are those
@@ -196,7 +214,7 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
           kw -> Some(tag_)
 
         case ("tag", _) if inline =>
-          Error.raise("tag on a statement that is neither a loop nor the body of a procedure", arg.getOrElse(kw))
+          Error.raise("tag on a statement that is neither a loop, the body of a procedure, nor a sequence", arg.getOrElse(kw))
 
         case ("tag", _) =>
           Error.raise("tag in an annotate-tag command", arg.getOrElse(kw))
@@ -214,7 +232,7 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
         case ("ensures", Some(phi)) if kind == Kind.Body =>
           kw -> Some(formula(tagged, contract, phi))
 
-        case ("decreases", Some(arg)) if kind != Kind.Statement =>
+        case ("decreases", Some(arg)) if kind == Kind.Loop || kind == Kind.Body =>
           kw -> Some(integer(tagged, contract, arg))
 
         case ("invariant" | "requires" | "ensures" | "decreases", _) =>
@@ -266,4 +284,4 @@ class Parser(init: State) extends cuvee.smtlib.Parser(init):
       require(tags.contains(tag))
 
     val tagged = tags(tag).head
-    linked(tag, properties(tagged, kind(tagged), false, from))
+    linked(tag, properties(tagged, kind(tag, tagged), false, from))

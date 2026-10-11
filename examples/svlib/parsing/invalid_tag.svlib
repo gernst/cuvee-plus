@@ -1,5 +1,6 @@
 ; ./Cuvee.sh examples/svlib/parsing/invalid_tag.svlib
-; tags are supported on loops and on the bodies of procedures only, since other statements have no attributes
+; tags are supported on loops, on the bodies of procedures, and on sequences only, since other statements have no
+; attributes
 
 (define-proc main
   ()

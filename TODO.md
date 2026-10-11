@@ -19,11 +19,14 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - SV-LIB: the frontend (`cuvee.svlib`, see doc/architecture.md) lacks
   unstructured control flow (labels and gotos, e.g. by a loop over a program
   counter, with the invariants of labels as `pc = k ⇒ φ`), `define-procs-rec`,
-  tags on statements other than loops and procedure bodies, which the
-  translated C tasks of SV-COMP use for their assertions, the liveness
+  tags on statements other than loops, procedure bodies and sequences (0.39.0:
+  `(! (sequence ...) :tag t)` is a `core.Block` with attributes, whose
+  `check-true` annotations `State.annotated` asserts at its beginning, as the
+  translated C tasks of SV-COMP use for their assertions), the liveness
   properties `:recurring` and `:not-recurring`, which 6 of the 7 core
-  verification tasks use, and `:decreases-lex`, `get-witness` (see witness
-  output) and `select-trace`, the answers `correct`/`incorrect` to
+  verification tasks use, and `:decreases-lex`, `get-witness` (answered
+  `unsupported`, as the query `(get-info :witness)`; see witness output) and
+  `select-trace`, the answers `correct`/`incorrect` to
   `verify-call` for interactive use (the verdict is decided by cuvee.py),
   constants in the bodies of procedures with `-chc` (Horn solvers reject free
   constants, the entry clause quantifies only those of the arguments and

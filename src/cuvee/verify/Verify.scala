@@ -158,7 +158,7 @@ object Verify extends Transform:
       case call: Call =>
         this.call(state, proc, call, post)
 
-      case Block(locals, progs) =>
+      case Block(locals, progs, _) =>
         // locals may shadow variables in the postcondition, therefore they are renamed apart
         val (locals_, su) = Subst.rename(locals)
         All(locals_, wp(state, gs, proc, assume, commit, su(progs), post, break, continue, return_))

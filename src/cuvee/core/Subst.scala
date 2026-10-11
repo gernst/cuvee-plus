@@ -203,9 +203,9 @@ case class Subst[+T <: Type, +E <: Expr](params: Map[Param, T], vars: Map[Var, E
       case Call(proc, args, res) =>
         Call(proc, this(args), lhs(res))
 
-      case Block(locals, progs) =>
+      case Block(locals, progs, attrs) =>
         val (rename, that) = avoid(locals)
-        Block(rename.lhs(locals), that(progs))
+        Block(rename.lhs(locals), that(progs), that(attrs))
 
       case Choice(progs) =>
         Choice(this(progs))
