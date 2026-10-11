@@ -28,7 +28,7 @@ class Tool(benchexec.tools.template.BaseTool2):
     (the property holds), unsat (it is violated, except with -unbounded), or
     unknown. Cuvée does not produce witnesses.
 
-    For the property correct-annotations of SV-LIB scripts, Cuvée checks the
+    For the property correct-tags (formerly correct-annotations) of SV-LIB scripts, Cuvée checks the
     annotations by verification conditions (-verify -z3) or by constrained Horn
     clauses (-chc -z3). A goal that Z3 refutes, or unsatisfiable clauses, mean that
     an annotation is violated, no refuted goal or satisfiable clauses that all of
@@ -61,7 +61,9 @@ class Tool(benchexec.tools.template.BaseTool2):
         return version.replace("Cuvée", "").strip()
 
     def cmdline(self, executable, options, task, rlimits):
-        if task.property_file and not task.property_file.endswith(("unreach-call.prp", "correct-annotations.prp")):
+        if task.property_file and not task.property_file.endswith(
+            ("unreach-call.prp", "correct-tags.prp", "correct-annotations.prp")
+        ):
             raise benchexec.tools.template.UnsupportedFeatureException(
                 "property not supported: " + task.property_file
             )
@@ -128,7 +130,6 @@ class Tool(benchexec.tools.template.BaseTool2):
 
         return result.RESULT_TRUE_PROP
 
-
     # the answer of Z3 to a refuted goal of -verify, (error "goal does not hold"
     # "Sat" ...), or to one that it cannot decide
     GOAL_SAT = re.compile(r'"goal does not hold"\s+"Sat"')
@@ -154,7 +155,11 @@ class Tool(benchexec.tools.template.BaseTool2):
             if line.startswith(("(error", "error", "Exception in thread")):
                 context = " ".join(lines[i : i + 3])
                 message = re.search(r'"([^"]*)"', context)
-                if message and message.group(1) == "not supported" and "get-witness" in context:
+                if (
+                    message
+                    and message.group(1) == "not supported"
+                    and "get-witness" in context
+                ):
                     witness = True
                     continue
                 return result.RESULT_ERROR + (
@@ -169,12 +174,22 @@ class Tool(benchexec.tools.template.BaseTool2):
         # check mean that all annotations hold
         if "-chc" in run.cmdline:
             statuses = [
-                line.strip() for line in lines if line.strip() in ("sat", "unsat", "unknown")
+                line.strip()
+                for line in lines
+                if line.strip() in ("sat", "unsat", "unknown")
             ]
             if "unsat" in statuses:
                 return result.RESULT_FALSE_PROP
             if statuses and all(status == "sat" for status in statuses):
                 return result.RESULT_TRUE_PROP
+            return result.RESULT_UNKNOWN
+
+        # the goals of -teq and -verify that remain: a refuted one violates an
+        # annotation, the others are not refuted
+        goals = [line.strip() for line in lines if line.startswith(("(goal", "goal"))]
+        if any(self.GOAL_FALSE.match(goal) for goal in goals):
+            return result.RESULT_FALSE_PROP
+        if goals:
             return result.RESULT_UNKNOWN
 
         return result.RESULT_TRUE_PROP
