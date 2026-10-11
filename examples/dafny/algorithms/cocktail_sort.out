@@ -36,8 +36,8 @@ function {:fold} bubble_pass_back(b: array<int, int>, js: List<int>,
 
 function shake(b: array<int, int>, k: int, n: int): array<int, int>
 
-lemma {:rw} current_results_shake(a: array<int, int>, n: int, n2: int, n3: int,
-                                  d: int, ks: List<int>,
+lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int,
+                                  len3: int, d: int, ks: List<int>,
                                   bs: List<array<int, int>>,
                                   Bs: List<Trace<array<int, int>>>,
                                   cs: List<array<int, int>>,
@@ -48,7 +48,8 @@ lemma {:rw} current_results_shake(a: array<int, int>, n: int, n2: int, n3: int,
                                   Js3: List<Trace<int>>, ps: List<int>,
                                   Ps3: List<Trace<int>>, js4: List<int>,
                                   Js4: List<Trace<int>>, js5: List<int>,
-                                  Js5: List<Trace<int>>, X: int -> int,
+                                  Js5: List<Trace<int>>, js6: List<int>,
+                                  Js6: List<Trace<int>>, X: int -> int,
                                   Y: int -> int)
   requires invs(for ks, cs, Cs check k, c, C :: c == current(C))
   requires
@@ -56,11 +57,11 @@ lemma {:rw} current_results_shake(a: array<int, int>, n: int, n2: int, n3: int,
          check k, x, C, J ::
            C == bubble_pass(x, ⌊J⌋))
   requires invs(for ks, Ns, Js check k, nn, J :: J == counter(k, 1, nn))
-  requires invs(for ks, js check k, j :: n <= j + k + 1)
+  requires invs(for ks, js check k, j :: len <= j + k + 1)
   requires
-    invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j + k + 1 < n2))
+    invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j + k + 1 < len2))
   requires Js2 == Js
-  requires n2 == n
+  requires len2 == len
   requires invs(for ks, js5, Js5 check k, j, J :: j == current(J))
   requires js5 == js
   requires Js5 == Js
@@ -71,138 +72,43 @@ lemma {:rw} current_results_shake(a: array<int, int>, n: int, n2: int, n3: int,
            B == bubble_pass_back(c, ⌊J⌋, ⌊P⌋))
   requires invs(for ks, Ns2, Js3 check k, nn, J :: J == counter(X(k), d, nn))
   requires d == -1
-  requires invs(for ks check k :: X(k) == n - k - 2)
+  requires invs(for ks check k :: X(k) == len - k - 2)
   requires invs(for ks, Ns2, Ps check k, nn, P :: P == counter(Y(k), d, nn))
   requires Ps == Ps3
-  requires invs(for ks check k :: Y(k) == n - k - 3)
+  requires invs(for ks check k :: Y(k) == len - k - 3)
   requires invs(for ks, Js4 check k, J :: invs(for ⌊J⌋ check j :: k < j))
   requires Js4 == Js3
   requires invs(for ks, js4 check k, j :: j <= k)
   requires invs(for ks, ps, Ps3 check k, p, P :: p == current(P))
-  requires invs(for ks, js4, Js3 check k, j, J :: j == current(J))
+  requires invs(for ks, js6, Js6 check k, j, J :: j == current(J))
+  requires js6 == js4
+  requires Js6 == Js3
   ensures
     current(results(a, ks, bs))
-      == current(trace(a, for ks do b, k :: shake(b, k, n)))
+      == current(trace(a, for ks do b, k :: shake(b, k, len)))
 
 function shaken(b: array<int, int>, k: int, n: int): bool
 
-lemma {:rw} shaken_shake(b: array<int, int>, k: int, n: int)
-  requires shaken(b, k, n)
-  ensures shaken(shake(b, k, n), k + 1, n) <==> true
+lemma {:rw} shaken_shake(b: array<int, int>, k: int, len: int)
+  requires shaken(b, k, len)
+  ensures shaken(shake(b, k, len), k + 1, len) <==> true
 
-lemma {:rw} sorted_shaken_steps(a: array<int, int>, n: int, m: Nat,
+lemma {:rw} sorted_shaken_steps(a: array<int, int>, len: int, m: Nat, l: int,
                                 F: (array<int, int>, int) -> array<int, int>)
-  requires n <= 2 * integer(m) + 1
+  requires l == integer(m)
+  requires len <= integer(m) + l + 1
   requires
     forall b: array<int, int>, k: int ::
-      0 <= k < integer(m) && shaken(b, k, n) ==> shaken(F(b, k), k + 1, n)
+      0 <= k < integer(m) && shaken(b, k, len) ==> shaken(F(b, k), k + 1, len)
   ensures
-    sorted(current(trace(a, for ⌊counter(0, 1, m)⌋ do b, k :: F(b, k))), 0, n)
+    sorted(current(trace(a, for ⌊counter(0, 1, m)⌋ do b, k :: F(b, k))), 0, len)
       <==> true
 
-lemma {:rw} perm_shake(b: array<int, int>, c: array<int, int>, k: int, n: int)
-  ensures perm(shake(b, k, n), c) <==> perm(b, c)
+lemma {:rw} perm_shake(b: array<int, int>, c: array<int, int>, k: int, len: int)
+  ensures perm(shake(b, k, len), c) <==> perm(b, c)
 
 lemma {:rw} perm_steps(a: array<int, int>, c: array<int, int>, ks: List<int>,
                        F: (array<int, int>, int) -> array<int, int>)
   requires forall b: array<int, int>, k: int :: perm(F(b, k), b)
   ensures perm(current(trace(a, for ks do b, k :: F(b, k))), c) <==> perm(a, c)
-
-goal
-  forall a: array<int, int>, n: int, t₅: int, b₆₇: array<int, int>, lo₇₀: int,
-         n₅₇: Nat, K₅₉: Trace<int>, B₆₁: Trace<array<int, int>>,
-         T₆₃: Trace<int>, Lo₆₄: Trace<int>, Hi₆₅: Trace<int>, T?₃₉: List<int>,
-         B?₄₀: List<array<int, int>>, J?₄₁: List<int>, N?₄₂: List<Nat>,
-         K?₄₃: List<Trace<int>>, T?₄₄: List<Trace<int>>,
-         B?₄₅: List<Trace<array<int, int>>>, J?₄₆: List<Trace<int>>,
-         T?₄₇: List<int>, B?₄₈: List<array<int, int>>, J?₄₉: List<int>,
-         P?₅₀: List<int>, N?₅₁: List<Nat>, K?₅₂: List<Trace<int>>,
-         T?₅₃: List<Trace<int>>, B?₅₄: List<Trace<array<int, int>>>,
-         J?₅₅: List<Trace<int>>, P?₅₆: List<Trace<int>> ::
-    0 <= n
-      && K₅₉ == counter(0, 1, n₅₇)
-      && b₆₇ == current(B₆₁)
-      && lo₇₀ == integer(n₅₇)
-      && B₆₁ == results(a, ⌊K₅₉⌋, B?₄₈)
-      && T₆₃ == results(t₅, ⌊K₅₉⌋, T?₄₇)
-      && Lo₆₄ == counter(0, 1, n₅₇)
-      && Hi₆₅ == counter(n, -1, n₅₇)
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋
-              check k₅₈, lo₁₀, hi₁₁ ::
-                2 * k₅₈ + 1 < n)
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, N?₄₂, K?₄₃
-              check k₅₈, lo₁₀, hi₁₁, n₁₅, K₁₇ ::
-                K₁₇ == counter(0, 1, n₁₅))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, T?₃₉, T?₄₄
-              check k₅₈, lo₁₀, hi₁₁, t₂₁, T₁₈ ::
-                t₂₁ == current(T₁₈))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, B?₄₀, B?₄₅
-              check k₅₈, lo₁₀, hi₁₁, b₂₂, B₁₉ ::
-                b₂₂ == current(B₁₉))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, J?₄₁, J?₄₆
-              check k₅₈, lo₁₀, hi₁₁, j₂₃, J₂₀ ::
-                j₂₃ == current(J₂₀))
-      && invs(for ⌊K₅₉⌋, ⌊T₆₃⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, T?₄₄, B?₄₅, J?₄₆
-              check k₅₈, t₉, lo₁₀, hi₁₁, T₁₈, B₁₉, J₂₀ ::
-                T₁₈
-                  == trace(t₉, for ⌊B₁₉⌋, ⌊J₂₀⌋
-                               do t₁₂, b₁₃, j₁₄ ::
-                                 case b₁₃[j₁₄ + 1] < b₁₃[j₁₄] => b₁₃[j₁₄]
-                                 case b₁₃[j₁₄] <= b₁₃[j₁₄ + 1] => t₁₂))
-      && invs(for ⌊K₅₉⌋, ⌊B₆₁⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, B?₄₅, J?₄₆
-              check k₅₈, b₇, lo₁₀, hi₁₁, B₁₉, J₂₀ ::
-                B₁₉ == bubble_pass(b₇, ⌊J₂₀⌋))
-      && invs(for ⌊K₅₉⌋, N?₄₂, J?₄₆ check k, nn, J :: J == counter(k, 1, nn))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, J?₄₆
-              check k₅₈, lo₁₀, hi₁₁, J₂₀ ::
-                invs(for ⌊J₂₀⌋ check j₁₄ :: j₁₄ + k₅₈ + 1 < n))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, N?₄₂
-              check k₅₈, lo₁₀, hi₁₁, n₁₅ ::
-                0 <= integer(n₁₅))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, J?₄₁
-              check k₅₈, lo₁₀, hi₁₁, j₂₃ ::
-                n <= j₂₃ + k₅₈ + 1)
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, N?₅₁, K?₅₂
-              check k₅₈, lo₁₀, hi₁₁, n₂₈, K₃₀ ::
-                K₃₀ == counter(0, 1, n₂₈))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, T?₄₇, T?₅₃
-              check k₅₈, lo₁₀, hi₁₁, t₃₅, T₃₁ ::
-                t₃₅ == current(T₃₁))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, B?₄₈, B?₅₄
-              check k₅₈, lo₁₀, hi₁₁, b₃₆, B₃₂ ::
-                b₃₆ == current(B₃₂))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, J?₄₉, J?₅₅
-              check k₅₈, lo₁₀, hi₁₁, j₃₇, J₃₃ ::
-                j₃₇ == current(J₃₃))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, P?₅₀, P?₅₆
-              check k₅₈, lo₁₀, hi₁₁, p₃₈, P₃₄ ::
-                p₃₈ == current(P₃₄))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, T?₃₉, T?₅₃, B?₅₄, J?₅₅, P?₅₆
-              check k₅₈, lo₁₀, hi₁₁, t₂₁, T₃₁, B₃₂, J₃₃, P₃₄ ::
-                T₃₁
-                  == trace(t₂₁, for ⌊B₃₂⌋, ⌊J₃₃⌋, ⌊P₃₄⌋
-                                do t₂₄, b₂₅, j₂₆, p₂₇ ::
-                                  case b₂₅[j₂₆] < b₂₅[p₂₇] => b₂₅[j₂₆]
-                                  case b₂₅[p₂₇] <= b₂₅[j₂₆] => t₂₄))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, B?₄₀, B?₅₄, J?₅₅, P?₅₆
-              check k₅₈, lo₁₀, hi₁₁, b₂₂, B₃₂, J₃₃, P₃₄ ::
-                B₃₂ == bubble_pass_back(b₂₂, ⌊J₃₃⌋, ⌊P₃₄⌋))
-      && invs(for ⌊K₅₉⌋, N?₅₁, J?₅₅
-              check k, nn, J ::
-                J == counter(-k + n + -2, -1, nn))
-      && invs(for ⌊K₅₉⌋, N?₅₁, P?₅₆
-              check k, nn, J ::
-                J == counter(-k + n + -3, -1, nn))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, J?₅₅
-              check k₅₈, lo₁₀, hi₁₁, J₃₃ ::
-                invs(for ⌊J₃₃⌋ check j₂₆ :: k₅₈ < j₂₆))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, N?₅₁
-              check k₅₈, lo₁₀, hi₁₁, n₂₈ ::
-                0 <= integer(n₂₈))
-      && invs(for ⌊K₅₉⌋, ⌊Lo₆₄⌋, ⌊Hi₆₅⌋, J?₄₉
-              check k₅₈, lo₁₀, hi₁₁, j₃₇ ::
-                j₃₇ <= k₅₈)
-      && 0 <= integer(n₅₇)
-      && n <= integer(n₅₇) + lo₇₀ + 1
-      ==> sorted(b₆₇, 0, n) && perm(b₆₇, a)
 

@@ -1,0 +1,48 @@
+lemma {:rw} invs_counter_consts(ks: List<int>, Js: List<Trace<int>>, m: Nat,
+                                n: int)
+  requires 0 <= n
+  ensures
+    invs(for ks, ⌊consts(m, natural(n))⌋, Js
+         check k, nn, J ::
+           J == counter(0, 1, nn))
+      <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
+
+lemma {:rw} invs_counter_consts_var(ks: List<int>, Ns: List<Nat>,
+                                    Js: List<Trace<int>>, m: Nat, n: int)
+  requires Ns == ⌊consts(m, natural(n))⌋
+  requires 0 <= n
+  ensures
+    invs(for ks, Ns, Js check k, nn, J :: J == counter(0, 1, nn))
+      <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
+
+lemma {:rw} invs_sums_selects_counter(ks: List<int>, Ts: List<Trace<int>>,
+                                      Js: List<Trace<int>>,
+                                      Js2: List<Trace<int>>, n: int,
+                                      F: int -> array<int, int>)
+  requires invs(for ks, Js2 check k, J :: J == counter(0, 1, natural(n)))
+  requires Js2 == Js
+  ensures
+    invs(for ks, Ts, Js check k, T, J :: T == sums(0, selects(F(k), ⌊J⌋)))
+      <==> invs(for ks, Ts
+                check k, T ::
+                  T == sums(0, selects(F(k), ⌊counter(0, 1, natural(n))⌋)))
+
+lemma {:rw} invs_current_def(ks: List<int>, ts: List<int>, Ts: List<Trace<int>>,
+                             Ts2: List<Trace<int>>, G: int -> Trace<int>)
+  requires invs(for ks, Ts2 check k, T :: T == G(k))
+  requires Ts2 == Ts
+  ensures
+    invs(for ks, ts, Ts check k, t, T :: t == current(T))
+      <==> invs(for ks, ts check k, t :: t == current(G(k)))
+
+lemma {:rw} invs_maps_sum(ks: List<int>, ts: List<int>, F: int -> List<int>)
+  ensures
+    invs(for ks, ts check k, t :: t == sum(F(k)))
+      <==> ts == maps(for ks yield k :: sum(F(k)))
+
+lemma {:rw} earlier_maps_counter(i: int, m: Nat, F: int -> int)
+  requires 0 <= i
+  requires i < integer(m)
+  ensures
+    earlier(natural(i), maps(for ⌊counter(0, 1, m)⌋ yield k :: F(k))) == F(i)
+
