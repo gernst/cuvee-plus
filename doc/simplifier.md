@@ -84,6 +84,21 @@ derivatives in [hybrid.md](hybrid.md).
   - Arithmetic is normalised into polynomials (`Arith`); comparisons and
     equations on `Int` and `Real` become `0 < p`, `0 <= p`, and `0 == p`,
     with `p` primitive, printed with positive coefficients on both sides.
+  - Remainders by a literal `k` (`mod`), e.g. of the unsigned arithmetic of
+    C, take their coefficients modulo `k`, after remainders modulo multiples
+    of `k` among the atoms are replaced by their arguments, also through the
+    definitions of variables (`remainders`): `(x % 2^32 + 1) % 2^32` is
+    `(x + 1) % 2^32`, `(x % 2^32) % 2` is `x % 2`. A remainder whose argument
+    `p`, or its representative with the coefficients centered around 0
+    (`representatives`, e.g. `x - 1` for `x + 4294967295`), is known to be in
+    `0, ..., k - 1` is that polynomial. The difference constraints bound every
+    remainder by `0 <= e % k <= |k| - 1` (`Diffs.ranges`). The update of a
+    trace whose results are remainders modulo `k` or the accumulator, and
+    whose initial value is in the range, assumes the range of the accumulator
+    (`wrapped`), which holds for all its values by induction, such that the
+    remainders under the test of the loop are dropped
+    ([remainders.dfy](../examples/dafny/simplify/remainders.dfy),
+    `examples/c/teq/unsigned_*.c`).
   - Derivatives are computed by the rules of dL ([hybrid.md](hybrid.md)).
 - [`Rewrite`](../src/cuvee/simplify/Rewrite.scala) applies conditional rules
   innermost first, also as a library. Its methods take

@@ -92,7 +92,13 @@ after section 4 of the paper.
   `Trace`, the functions of `Fun.trace`, the basic functions on lists, and the
   definitions that several modules share: `sum`, `parity`, `max`, `min`,
   `count`, `pow`, `selects`), then the lemmas of `arithmetic.dfy`,
-  `counters.dfy`, `aggregation.dfy`, `arrays.dfy`, and `search.dfy`. Further
+  `counters.dfy`, `aggregation.dfy`, `arrays.dfy`, and `search.dfy`.
+  `counters.dfy` declares `mods(i, c, m, n)`, the counter modulo `m` of the
+  unsigned variables of C, whose arithmetic wraps around (`mods_def`), with
+  lemmas that bound it by the tests of loops below `m`, such that it does not
+  wrap and its values and final value are those of `counter` (not proved in
+  `teq.lean` yet); the simplifier drops the remaining remainders whose
+  arguments are in range (see [simplifier.md](simplifier.md)). Further
   modules are injected on demand by `-include teq:<concept>`, after these:
   `teq:nested` (the fragments of inner loops, see
   [examples/dafny/algorithms](../examples/dafny/algorithms)) and

@@ -201,4 +201,13 @@ case class Diffs(nodes: Set[Expr], distance: Map[(Expr, Expr), BigInt]) extends 
       if (distance contains (x, from)) && (distance contains (to, y))
     do link(x, y, distance((x, from)) + c + distance((to, y)))
 
-    Diffs(nodes, distance)
+    Diffs(nodes, distance).ranges(this.nodes, List(from, to))
+
+  // the bounds 0 <= e mod k <= |k| - 1 of the remainders among `atoms` that are new with respect to `known`, e.g. of the
+  // values of unsigned variables of C, uint(x) = x mod 2^32, which are added once, when the remainder becomes a node
+  def ranges(known: Set[Expr], atoms: List[Expr]): Diffs =
+    atoms.distinct.foldLeft(this):
+      case (diffs, atom @ Ints.mod(_, Lit(k: BigInt, _))) if k != 0 && !known.contains(atom) =>
+        diffs.add(atom, Ints.zero, k.abs - 1).add(Ints.zero, atom, 0)
+      case (diffs, _) =>
+        diffs

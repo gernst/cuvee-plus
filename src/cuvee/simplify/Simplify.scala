@@ -190,7 +190,7 @@ object Simplify extends Transform:
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
         val inner = combinator(config, state, ctx.bind(List(vars_.head)).copy(self = Some((Butlast(x), vars_.head))), deps_, vars_.tail)
-        val update_ = simplify(config, state, inner, re(update))
+        val update_ = simplify(config, state, inner.assume(wrapped(config, state, ctx, inner, init_, vars_.head, re(update)), Nil), re(update))
         val right_ = trace(config, state, ctx.neutral, init_, deps_, vars_.head, vars_.tail, update_)
         eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
 
@@ -363,7 +363,8 @@ object Simplify extends Transform:
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
-        val update_ = simplify(config, state, combinator(config, state, ctx.bind(List(vars_.head)), deps_, vars_.tail), re(update))
+        val inner = combinator(config, state, ctx.bind(List(vars_.head)), deps_, vars_.tail)
+        val update_ = simplify(config, state, inner.assume(wrapped(config, state, ctx, inner, init_, vars_.head, re(update)), Nil), re(update))
         trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, update_)
 
       case Maps(deps, bound, update) =>
@@ -413,6 +414,34 @@ object Simplify extends Transform:
         val inner = ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound), Nil)
         ctx.combinators := ctx.combinators.value + (key -> inner)
         inner
+
+  // the range 0 <= acc < k of the accumulator of a trace whose initial value is known to be in it and whose results are
+  // remainders modulo k or the accumulator itself, which holds for all values of the accumulator by induction, e.g. of
+  // an unsigned variable of C, x == trace(0, for ... do x, ... :: (x + 1) % 4294967296); under the test of the loop,
+  // e.g. x < 100, the remainder in the update is then the sum itself (see mod); the results are simplified in the context
+  // `inner` of the update first, which unfolds the overflow functions of C, e.g. uint(x + 1) to (x + 1) % 4294967296
+  def wrapped(config: Config, state: State, ctx: Context, inner: Context, init: Expr, acc: Var, update: Expr): List[Expr] =
+    def results(expr: Expr): List[Expr] =
+      expr match
+        case Eps(updates)       => Eps.flatten(updates).flatMap(upd => results(upd.rhs))
+        case Ite(_, left, right) => results(left) ++ results(right)
+        case _                  => List(expr)
+
+    val results_ = results(update).map(simplify(config, state, inner, _))
+    val moduli = results_.collect { case Ints.mod(_, Lit(k: BigInt, _)) if k != 0 => k.abs }.distinct
+    val bounded = results_.forall:
+      case Ints.mod(_, Lit(k: BigInt, _)) => moduli == List(k.abs)
+      case result                         => result == acc
+
+    moduli match
+      case List(k) if bounded =>
+        val range = (e: Expr) => List(Ints.le(Ints.zero, e), Ints.lt(e, Lit(k, Sort.int)))
+        if simplify(config, state, ctx.neutral, And(range(init))) == True
+        then range(acc)
+        else Nil
+
+      case _ =>
+        Nil
 
   // the bodies of the invariants among the assumptions whose dependencies are among `deps` and `self`,
   // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of ctx.self,
@@ -750,16 +779,55 @@ object Simplify extends Transform:
       case (_, Lit(n: BigInt, _)) if n == 1 || n == -1 =>
         Ints.zero
 
-      // the coefficients and the constant of a polynomial are taken modulo n, e.g. (2 * x + 3) % 2 is 1
+      // the coefficients and the constant of a polynomial are taken modulo n, e.g. (2 * x + 3) % 2 is 1, after its
+      // remainders modulo multiples of n are replaced by their arguments, e.g. (x % 4294967296 + 1) % 4294967296 is
+      // (x + 1) % 4294967296 and (x % 4294967296) % 2 is x % 2; the remainder is the polynomial itself if it is known to
+      // be in the range 0, ..., n - 1, or a representative of it (see representatives)
       case (_, Lit(n: BigInt, _)) if n != 0 =>
         val poly = Arith.toPoly(Ints.ring, left)
-        val reduced = poly.modulo(n)
+        val reduced = remainders(ctx, n, poly).modulo(n)
         if reduced != poly.normalize
         then mod(config, state, ctx, reduced.toExpr(Ints.ring), right)
-        else Ints.mod(left, right)
+        else
+          val inside =
+            for
+              poly_ <- representatives(n, reduced)
+              expr = poly_.toExpr(Ints.ring)
+              if simplify(config, state, ctx.neutral, And(List(Ints.le(Ints.zero, expr), Ints.lt(expr, Lit(n.abs, Sort.int))))) == True
+            yield expr
+          inside.headOption.getOrElse(Ints.mod(left, right))
 
       case _ =>
         Ints.mod(left, right)
+
+  // `poly` with its atoms e % k replaced by e where n divides k, which is equal modulo n; also variables whose definition
+  // in the context is such a remainder, e.g. the final value x of a loop with x == current(X) after rewriting, unless
+  // the definition refers to the variable itself
+  def remainders(ctx: Context, n: BigInt, poly: Poly): Poly =
+    def atom(expr: Expr): Poly =
+      (expr, expr) match
+        case (x: Var, ctx.↑(Ints.mod(e, _))) if e.free contains x =>
+          Poly.atom(expr)
+        case (_, ctx.↑(Ints.mod(e, Lit(k: BigInt, _)))) if k != 0 && k % n == 0 =>
+          Arith.toPoly(Ints.ring, e)
+        case _ =>
+          Poly.atom(expr)
+
+    val monos =
+      for Mono(factor, atoms) <- poly.monos
+      yield atoms.foldLeft(Poly.const(factor)) { case (product, (expr, exp)) =>
+        List.fill(exp.toInt)(atom(expr)).foldLeft(product)(_ * _)
+      }
+    monos.foldLeft(Poly.const(poly.const))(_ + _)
+
+  // the polynomials equal to `poly` modulo n that are candidates for the value of poly % n, the reduced one itself and the
+  // one whose coefficients and constant are between -|n|/2 and |n|/2, e.g. x - 1 for x + 4294967295 modulo 4294967296,
+  // which is the value of the remainder if 1 <= x
+  def representatives(n: BigInt, poly: Poly): List[Poly] =
+    def centered(r: Rational) =
+      if r.num > n.abs / 2 then r - Rational(n.abs) else r
+    val centered_ = Poly(centered(poly.const), poly.monos.map(m => Mono(centered(m.factor), m.atoms))).normalize
+    List(poly, centered_).distinct
 
   // the derivative of `expr` with respect to `xs` (see Diff), by the rules of dL:
   // derivatives are on Real only, derivatives of terms on Int are kept;
