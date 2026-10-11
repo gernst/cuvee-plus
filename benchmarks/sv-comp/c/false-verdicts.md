@@ -167,3 +167,16 @@ largest one that the arithmetic allows.
 - **Group 3:** [sizes.py](sizes.py) bounds the sizes of all arrays (see the [README](README.md)).
 - **Group 4:** unchanged.
 
+### Checks
+
+On October 11, 2026, 31 of the patched tasks ran again with CPAchecker,
+Symbiotic and UAutomizer, for 120 or 180 s each:
+
+- all of group 1;
+- the group 2 tasks NetBSD_loop, half, count_by_k, MADWiFi-encode_ie_ok, heapsort, nest-if3, nested9, seq-3 and
+  gsv2008;
+- the group 3 tasks sum_array-2-2, add-3-n-u, array4_pattern, array28_pattern, revcpyswp2 and tcpy.
+
+Some of these ran only with CPAchecker, since the batches were stopped. None of the runs gives the verdict false.
+The tools prove 8 tasks: NetBSD_loop, as2013-hybrid, half, benchmark52_polynomial, mono-crafted_9, nested3-1,
+nested3-1_abstracted and nested5-1. The others time out. The remaining tasks of group 2 have not run again.

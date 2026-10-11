@@ -311,7 +311,9 @@ A single run is `mill -i run <options> <file>`, e.g.
   variable `CUVEE_SVCOMP` is set. The C programs printed from these
   translations (`benchmarks/sv-comp/c`, by `-print c -known dfy,teq,rw`,
   those that parse again) have the same expected results, without times,
-  in `benchmarks/sv-comp/c/expected.csv` (suite `SVCompC`).
+  in `benchmarks/sv-comp/c/expected.csv` (suite `SVCompC`), recorded before
+  the programs were patched for other verifiers (see
+  [benchmarks/sv-comp/c/README.md](../benchmarks/sv-comp/c/README.md)).
   The examples verified against a solver state `// expected: valid` or
   `// expected: invalid` in their second line.
 - Relational tests run further commands on the accepted examples and print

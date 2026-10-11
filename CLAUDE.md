@@ -60,13 +60,33 @@ or solvers consume.
 ## Trace equation systems and solvers
 
 - `Trace` exists only with `-teq` (defined in
-  [teq.dfy](resources/cuvee/teq.dfy)); never include it implicitly or in
-  preludes.
+  [teq/core.dfy](resources/cuvee/teq/core.dfy)); never include it implicitly
+  or in preludes.
+- The lemma database is the modules in [resources/cuvee/teq](resources/cuvee/teq):
+  `-teq` injects `core`, `arithmetic`, `counters`, `aggregation`, `arrays`,
+  `search` in this order (`TEQ.modules`), `-include teq:<concept>` injects a
+  further one (`nested`, `sorting`, `strides`) after them. Each module refers
+  to earlier ones only; the order is the order in which rules are tried, so
+  it decides which abstraction a fragment gets. A new lemma goes into the
+  module of its concept. [teq.dfy](resources/cuvee/teq.dfy) is the former
+  single file: kept, not injected, changing it has no effect.
 - Tests of trace equation systems are Dafny examples only, not SMT-LIB or
   Boogie. Those that should not pull in the lemma database of `-teq` duplicate
-  the declarations of `teq.dfy` that they need, with its indexed names (e.g.
+  the declarations of `core.dfy` that they need, with its indexed names (e.g.
   `type Trace<a₀>`, `function counter(x₀: int, x₁: int, x₂: int): Trace<int>`),
   and bind the variables of their context with `forall`, not as constants.
+- Variables of methods and of example-local lemmas must be named apart from
+  the variables of the database rules (`Ks`, `Ns`, `Js`, `x`, `n`, ...): a
+  clash captures the name, conditions are decided vacuously or the goal is
+  replaced by a "variables of a rule not instantiated" error.
+- Example-local summary lemmas match the fragment forms that the included
+  modules produce; a file includes only the modules its lemmas are written
+  for. Examples that do not terminate stay in the tree and are listed in
+  `Examples.nonterminating`.
+- Runs on `-teq` examples take a timeout and one core
+  (`timeout 300 nice -n 19 taskset -c 0 java -cp cuvee.jar cuvee.Cuvee ...`),
+  and check the exit status: a killed run prints no goals and looks like a
+  full proof.
 - The don't have to prove `-teq` goals on their own: no trace special cases
   in the solver interface, no implicit monomorphization, no implicit TEQ
   concepts passed to the solver.
@@ -87,8 +107,8 @@ or solvers consume.
 - **Polymorphic assertions** need `lemma name<a>(...)`. Never run z3 or
   `-monomorph` on polymorphic input; such tests only generate goals
   (`-print null`).
-- **Testing teq.dfy lemmas:** on core terms with
-  `Rules.from(State.empty, TEQ.lemmas)` and `Rewrite`.
+- **Testing database lemmas:** on core terms with
+  `Rules.from(State.empty, TEQ.lemmas)` (the modules of `-teq`) and `Rewrite`.
 - **Preludes** are injected into the stream; transforms see them, tests that
   call a `Source` directly drop `Examples.prelude(...)`.
 - **Stages buffer declarations**, losing the sink's answers to them; filters

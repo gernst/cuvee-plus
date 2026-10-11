@@ -96,7 +96,15 @@ after section 4 of the paper.
   modules are injected on demand by `-include teq:<concept>`, after these:
   `teq:nested` (the fragments of inner loops, see
   [examples/dafny/algorithms](../examples/dafny/algorithms)) and
-  `teq:sorting` (`sorted`, `perm`, `partitioned`, inductions). Each module
+  `teq:sorting` (`sorted`, `perm`, `partitioned`, inductions), and
+  `teq:strides` (the strided stores and stores ahead of the MonoCera
+  benchmarks, see [benchmarks/monocera](../benchmarks/monocera): loops that
+  store at 2k and 2k+1, at 3k to 3k+2, the same under three exhaustive guards
+  that do not depend on the iteration, and stores at k+1 then k, upwards and
+  downwards). Unlike the other modules, the rules of `strides.dfy` fix the
+  number of stores and of cases on their left-hand sides, are not proved in
+  `teq.lean`, and are not tested; the downward one does not match `rewnifrev`
+  yet. Each module
   refers to the declarations of the earlier ones only, and the order of the
   modules is the order in which the rules are tried.
   [teq.dfy](../resources/cuvee/teq.dfy) is the former single file, from which
@@ -375,7 +383,8 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   traces, which declare `Trace` and the functions on traces as in `teq.dfy`.
 - E.g. `mill -i run -teq -simplify examples/dafny/vcgen/sum.dfy`.
 - The Dafny translations of SV-COMP (`benchmarks/sv-comp/dafny`) and the C
-  programs printed from them (`benchmarks/sv-comp/c`) have databases of their
+  programs printed from them (`benchmarks/sv-comp/c`, since patched for other
+  verifiers, which `expected.csv` predates) have databases of their
   expected results (`expected.csv`, suites `SVComp` and `SVCompC`, only with
   `CUVEE_SVCOMP`), recorded one process per task with 60 s; their summary is
   `benchmarks/sv-comp/dafny/summary.md`. The translations write the division

@@ -11,6 +11,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - error messages should use a nice printer
 - C frontend: `goto` to a label whose statement falls through, by copying
   the statements
+- witness output
 
 ## Bugs
 
@@ -845,13 +846,32 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 
 - The properties and expected verdicts of a task (`Task.properties`) are read
   but not used; only a single input file in C is supported.
-- The C versions of the local benchmarks (`benchmarks/sv-comp/c`) and partly
-  their Dafny sources do not always mean what the expected verdicts say, which
-  causes most wrong results of the other verifiers: uninitialized locals,
-  overflow after dropped bounds on values, verdicts that depend on bounds made
-  symbolic, and 5 translations that lose an update of an array parameter
-  (excluded from the task sets). Proposals in SV-COMP.md ("Other verifiers on
-  the C versions of the local benchmarks").
+- The C versions of the local benchmarks (`benchmarks/sv-comp/c`) are patched
+  by nondet.py, sizes.py, and bounds or conditions on the inputs of 34 tasks
+  (see [false-verdicts.md](benchmarks/sv-comp/c/false-verdicts.md)); open:
+  - not checked by a full run: of the patched tasks, 10 of group 2 have not
+    run again (eureka_01-2, array_init_nondet_vars,
+    array_min_and_copy_shift_sum_add, mono-crafted_6,
+    linear-inequality-inv-a, -c, -d, hard-ll, underapprox_1-2, mod3) and 23
+    of group 3; the wrong true verdicts of Symbiotic (57) and AISE (55),
+    nearly all in files with uninitialized locals, should be gone with
+    nondet.py; Cuvée has not run on the patched files, and their
+    `expected.csv` predates the patches.
+  - 9 tasks that only AISE finds false, without a known cause (group 4:
+    bAnd5, bor5, xor5, mapsum5, mapavg5, sanfoundry_10_ground, init-2-n-u,
+    gj2007, mono-crafted_1); AISE's first stage fails (`bin/runexec`
+    missing), so these verdicts come from its KLEE fallback.
+  - The Dafny translations lack the patches
+    ([c_patches.diff](benchmarks/sv-comp/dafny/c_patches.diff)); printing the
+    C versions again undoes them. The expected verdict true of the group 1
+    translations is wrong without their conditions.
+  - partial_mod_count_limited_gen assumes `N % 60 == 0`, which suffices but
+    is stronger than needed.
+  - geo1-u is unsafe only by the wrap-around of `unsigned long long`, which
+    Cuvée+Z3 and Korn prove safe (see Bugs).
+  - 5 translations lose an update of an array parameter and are excluded
+    from the task sets until fixed (see the
+    [README](benchmarks/sv-comp/c/README.md)).
 
 ## Bitvectors
 

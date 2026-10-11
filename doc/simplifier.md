@@ -274,4 +274,6 @@ the rewrite rules apply to (see
 [bsearch.dfy](../examples/dafny/teq/bsearch.dfy)).
 The SV-COMP examples instead abstract an iteration constraint by an atom,
 which a second lemma takes as its side condition (see
-[summary.md](../benchmarks/sv-comp/dafny/summary.md)).
+[summary.md](../benchmarks/sv-comp/dafny/summary.md)); the lemma database does
+the same, since an iteration constraint as a side condition recurs through the
+facts it is matched against (see [teq.md](teq.md)).

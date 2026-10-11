@@ -265,6 +265,21 @@ do not always mean what their Dafny sources and expected verdicts say.
   `array-industry-pattern/check_removal_from_set_after_insertion` update an
   array parameter only in a local copy (see the README of the C versions).
 
+Since then (October 11, 2026), the C versions follow these proposals:
+
+- [nondet.py](benchmarks/sv-comp/c/nondet.py) initializes the locals by
+  nondet calls.
+- [sizes.py](benchmarks/sv-comp/c/sizes.py) bounds the sizes of the arrays
+  below 2^31 bytes.
+- The tasks that other verifiers rightly find false assume the bounds or
+  conditions they need.
+
+[false-verdicts.md](benchmarks/sv-comp/c/false-verdicts.md) has the analysis
+of the 72 wrong false verdicts and the fixes.
+[c_patches.diff](benchmarks/sv-comp/dafny/c_patches.diff) has all the
+changes. The Dafny translations do not have them yet. The results above
+predate these changes.
+
 ## The SV-COMP harness (blocks every task)
 
 Every input starts with the same declarations and definitions, which already
