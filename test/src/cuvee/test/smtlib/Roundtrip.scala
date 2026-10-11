@@ -13,8 +13,9 @@ object Roundtrip extends TestSuite:
 // the sorts and datatypes of the preludes of the frontends are not printed (see TODO.md), hence only examples without
 object Programs extends TestSuite:
   // function types are not read back, since lambdas of SMT-LIB are arrays;
-  // likewise the datatypes Nat and List of teq.dfy (see -teq)
-  val prelude = List("tuple", "event", "chan", "seq<", "datatype", "type ", "->", "List<", ": Nat")
+  // likewise the datatypes Nat and List of teq.dfy (see -teq), and the combinators of the lemma database, whose
+  // dependencies ⌊...⌋ refer to its declarations, e.g. selects(a, ⌊counter(0, 1, n)⌋)
+  val prelude = List("tuple", "event", "chan", "seq<", "datatype", "type ", "->", "List<", ": Nat", "⌊")
 
   def plain(file: os.Path) =
     !prelude.exists(os.read(file).contains)
