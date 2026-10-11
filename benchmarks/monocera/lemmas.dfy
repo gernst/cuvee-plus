@@ -39,50 +39,9 @@ function {:teq} counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
   case succ(m) => step(x₀, counter(x₀ + x₁, x₁, m))
 }
 
-function {:teq} sum(values: List<int>): int
-{
-  match values
-  case nil => 0
-  case cons(v, vs) => v + sum(vs)
-}
 
-function {:teq} {:fold} stores<a, b>(a: array<a, b>, keys: List<a>, values: List<b>): Trace<array<a, b>>
-{
-  trace(a, for keys, values do b, k, v :: b[k := v])
-}
 
-// updates in place
 
-// a loop that updates each position k once, by cases on the old value a[k], is the trace of the stores of the new
-// values computed from the initial array, since a[k] is not modified before iteration k; the first case stores a
-// constant, since a higher-order instance must contain a[k] (see Rewrite.abstraction); selects_counter of teq.dfy
-// then reads the values back
-// (from sum/conda)
-lemma {:rw} trace_store_cases_def(a0: array<int, int>, n: Nat, c: int, P: (int) -> bool, G: (int) -> int)
-  ensures
-    trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(a[k]) => a[k := c] case !P(a[k]) => a[k := G(a[k])])
-      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(a0[k]) then c else G(a0[k])))
-
-// a loop that stores at each position k a constant chosen by cases on k is the trace of the stores of these values,
-// which current_stores of teq.dfy reads back
-// (from sum/brs2)
-lemma {:rw} trace_store_index_cases_def(a0: array<int, int>, n: Nat, c: int, d: int, P: (int) -> bool)
-  ensures
-    trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(k) => a[k := c] case !P(k) => a[k := d])
-      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(k) then c else d))
-
-// a sum of n terms, each 0, c, or d, is at most n times the largest of them; the left-hand side is a comparison, whose
-// bound e the side conditions compare, since sum_below_prefix of teq.dfy needs below_prefix among the facts
-// (from sum/brs2)
-lemma {:rw} sum_cases_below(n: Nat, c: int, d: int, e: int, P: (int) -> bool)
-  requires 0 <= e && integer(n) * c <= e && integer(n) * d <= e
-  ensures sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then (if P(k) then c else d) else 0)) <= e
-
-// a sum of n remainders k % m of the iterations k of a counter from 0, each between 0 and m - 1, is at most n (m - 1)
-// (from sum/ms2)
-lemma {:rw} sum_mod_below(n: Nat, m: int, e: int)
-  requires 0 < m && integer(n) * (m - 1) <= e
-  ensures sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then k % m else 0)) <= e
 
 // strided stores
 
@@ -93,6 +52,13 @@ lemma {:rw} select_current_trace_stride2(a0: array<int, int>, n: Nat, X: int, Y:
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: a[2 * k := X][2 * k + 1 := Y]))[j]
       == if 0 <= j && j < 2 * integer(n) then (if j % 2 == 0 then X else Y) else a0[j]
+
+// the same for stride 3, the triples 3 k, 3 k + 1, 3 k + 2 cover 0, ..., 3 n - 1
+// (from forall/array_tripl_access_init_const)
+lemma {:rw} select_current_trace_stride3(a0: array<int, int>, n: Nat, X: int, Y: int, Z: int, j: int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: a[3 * k := X][3 * k + 1 := Y][3 * k + 2 := Z]))[j]
+      == if 0 <= j && j < 3 * integer(n) then (if j % 3 == 0 then X else if j % 3 == 1 then Y else Z) else a0[j]
 
 // the same with three cases whose guards do not depend on the iteration, e.g. on MINVAL, and are exhaustive, such that
 // one of the pairs is stored in all iterations
@@ -131,12 +97,6 @@ lemma {:rw} select_current_trace_ahead_down(a0: array<int, int>, n: Nat, s: int,
 
 // arithmetic
 
-// the quotient of a positive divisor c, which rounds down, is not positive exactly below c, e.g. CELLCOUNT / 2 <= 0
-// contradicts 1 < CELLCOUNT
-// (from forall/pr2)
-lemma {:rw} div_nonpos(x: int, c: int)
-  requires 0 < c
-  ensures (x / c <= 0) == (x < c)
 
 // the half of an even number as an equation without division, which the simplifier solves and substitutes, e.g.
 // n == CELLCOUNT / 2 as CELLCOUNT == 2 * n, such that 2 * n <= i < CELLCOUNT is empty; a workaround, since solutions
@@ -146,21 +106,3 @@ lemma {:rw} half_even(n: int, x: int)
   requires x % 2 == 0
   ensures (n == x / 2) == (x == 2 * n)
 
-// sums in an array cell
-
-// a sum kept in the cell j of an array, e.g. sum[0] of a one-element array in C, which the first iteration sets to c
-// and the others increase by G(k), is c plus the sum of G over 1, ..., n - 1, as current_trace_reset_add of teq.dfy
-// states for a scalar; only the cell j is written, hence it is read from the final array
-// (from sum/brs1)
-lemma {:rw} select_current_trace_reset_add(a0: array<int, int>, j: int, n: Nat, c: int, G: (int) -> int)
-  ensures
-    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a[j := a[j] + G(k)]))[j]
-      == if n == zero then a0[j] else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0))
-
-// the same where the other iterations keep the array, e.g. since the simplifier has reduced sum[0] + a[i] to sum[0]
-// for a[i] == 0; the cell is c after the first iteration
-// (from sum/ms1)
-lemma {:rw} select_current_trace_reset_keep(a0: array<int, int>, j: int, n: Nat, c: int)
-  ensures
-    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a))[j]
-      == if n == zero then a0[j] else c

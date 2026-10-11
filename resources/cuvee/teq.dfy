@@ -271,6 +271,22 @@ lemma {:rw} {:teq} trace_read_initial<a, b>(a: array<a, b>, keys: List<a>, fs: L
   ensures trace(a, for keys, fs do b, k, f :: b[k := f(b[k])])
     == trace(a, for keys, fs do b, k, f :: b[k := f(a[k])])
 
+// a loop that updates each position once, by cases on its old value, stores the values computed from the initial
+// array, since a[k] is not modified before iteration k; the first case stores a constant, since a higher-order
+// instance must contain the term it abstracts, a[k] (see Rewrite.abstraction)
+// (from MonoCera: conda, s1lif-s5lif)
+lemma {:rw} {:teq} stores_cases_def(a0: array<int, int>, n: Nat, c: int, P: (int) -> bool, G: (int) -> int)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(a[k]) => a[k := c] case !P(a[k]) => a[k := G(a[k])])
+      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(a0[k]) then c else G(a0[k])))
+
+// a loop that stores at each position k a constant chosen by cases on k stores these values
+// (from MonoCera: brs2-brs5)
+lemma {:rw} {:teq} stores_index_cases_def(a0: array<int, int>, n: Nat, c: int, d: int, P: (int) -> bool)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(k) => a[k := c] case !P(k) => a[k := d])
+      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(k) then c else d))
+
 // the trace of the successive copies a[k] := a[k + d] for the keys, which is modeled for increasing keys and
 // nonnegative offsets only, where the entries read are not yet modified
 function {:teq} {:fold} shifts(a: array<int, int>, keys: List<int>, d: int): Trace<array<int, int>>
@@ -555,6 +571,22 @@ lemma {:rw} {:teq} current_trace_reset_add(x0: int, n: Nat, c: int, G: (int) -> 
   ensures
     current(trace(x0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do x, k, i :: case i == 0 => c case i != 0 => G(i) + x))
       == if n == zero then x0 else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0))
+
+// the same for a sum kept in the cell j of an array, e.g. sum[0] of a one-element array in C: only the cell j is
+// written, hence it is read from the final array
+// (from MonoCera: brs1-brs5, ms2-ms5)
+lemma {:rw} {:teq} select_current_trace_reset_add(a0: array<int, int>, j: int, n: Nat, c: int, G: (int) -> int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a[j := a[j] + G(k)]))[j]
+      == if n == zero then a0[j] else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0))
+
+// the same where the other iterations keep the array, e.g. since the simplifier has reduced sum[0] + a[i] to sum[0]
+// for a[i] == 0
+// (from MonoCera: ms1)
+lemma {:rw} {:teq} select_current_trace_reset_keep(a0: array<int, int>, j: int, n: Nat, c: int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a))[j]
+      == if n == zero then a0[j] else c
 
 // earlier
 
@@ -867,6 +899,18 @@ lemma {:rw} {:teq} sum_nonneg_prefix(n: Nat, xs: List<int>)
   requires nonneg_prefix(n, xs)
   ensures 0 <= sum(xs)
 
+// a sum of n terms that are each 0, c, or d is at most n times the largest of them, and one of remainders k % m of
+// the iterations k from 0 at most n (m - 1); the left-hand sides are comparisons, whose constants bind the bound,
+// unlike sum_below_prefix, whose bound occurs only in its side condition
+// (from MonoCera: brs2-brs5, ms2-ms5)
+lemma {:rw} {:teq} sum_cases_below(n: Nat, c: int, d: int, e: int, P: (int) -> bool)
+  requires 0 <= e && integer(n) * c <= e && integer(n) * d <= e
+  ensures sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then (if P(k) then c else d) else 0)) <= e
+
+lemma {:rw} {:teq} sum_mod_below(n: Nat, m: int, e: int)
+  requires 0 < m && integer(n) * (m - 1) <= e
+  ensures sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then k % m else 0)) <= e
+
 lemma {:rw} {:teq} sum_neg(values: List<int>)
   ensures sum(maps(for values yield v :: -v))
     == -sum(values)
@@ -1094,6 +1138,12 @@ lemma {:rw} {:teq} triangle_nonneg_below_add(x: int, d: int)
 lemma {:rw} {:teq} div_below(b: int, x: int, d: int)
   requires 0 < d && 0 <= x && x < d * (b + 1)
   ensures (b < x / d) <==> false
+
+// the quotient of a positive divisor is not positive exactly below it
+// (from MonoCera: pr2)
+lemma {:rw} {:teq} div_nonpos(x: int, c: int)
+  requires 0 < c
+  ensures (x / c <= 0) == (x < c)
 
 // the differences (k + 1)^3 - k^3 - 1 = 3 * k + 3 * k * k telescope to n^3 - n; teq.dfy splits such a sum by linearity
 // first, hence the sum of 3 * k * k as the rest, such that the division atoms cancel

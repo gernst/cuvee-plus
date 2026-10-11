@@ -26,6 +26,12 @@ read at the iterations by hand (occurs_earlier, earlier_not_occurs_prefix, sum_c
 earlier_nonneg_prefix, sum_nonneg_prefix). The counterexamples at the end show that
 the assumptions are needed.
 Check with `lean resources/cuvee/teq.lean` (Lean 4.34).
+
+Maintenance: the definitions and the statements of the lemmas are those of the Lean printer,
+`./Cuvee.sh -print lean resources/cuvee/teq.dfy`; nothing on the definitions is patched by hand, a definition that
+does not check is fixed in teq.dfy or in the printer (lean.Printer), not here. The statements are taken as printed,
+except for the premises on indices and guards above, which are added by hand. A new lemma of teq.dfy gets its
+printed statement here, with a proof.
 -/
 open Classical
 
@@ -326,6 +332,18 @@ theorem maps_counter_congr_gen {γ : Type} (s : Int) (m : Nat) (f g : Int → γ
     simp only [butlast_counter_succ, maps]
     rw [h s (by omega), ih (s + 1) (by intro k hk; exact h k (by push_cast; omega))]
 
+-- a sum of t terms, each at most b, is at most t * b
+theorem sum_counter_le (s : Int) (t : Nat) (f : Int → Int) (b : Int) (h : ∀ k, s ≤ k → k < s + t → f k ≤ b) :
+    sum (maps (butlast (counter s 1 t)) f) ≤ t * b := by
+  induction t generalizing s with
+  | zero => simp [counter, butlast, maps, sum]
+  | succ t ih =>
+    rw [sum_counter_succ]
+    have h1 := h s (by omega) (by push_cast; omega)
+    have h2 := ih (s + 1) (fun k hk1 hk2 => h k (by omega) (by push_cast; omega))
+    calc f s + sum (maps (butlast (counter (s + 1) 1 t)) f) ≤ b + t * b := Int.add_le_add h1 h2
+      _ = ((t + 1 : Nat) : Int) * b := by push_cast; rw [Int.add_mul, Int.one_mul, Int.add_comm]
+
 -- a counter shifted by d
 theorem maps_counter_offset (s d : Int) (m : Nat) (G : Int → Int) :
     maps (butlast (counter (s + d) 1 m)) G = maps (butlast (counter s 1 m)) (fun k => G (k + d)) := by
@@ -440,6 +458,76 @@ theorem trace_read_initial {α β : Type} [Inhabited α] [Inhabited β] (a : α 
         · intro k' hk'
           have : k' ≠ k := fun e => hd.1 (e ▸ hk')
           simp [this, hb k' (by simp [occurs, hk'])]
+
+-- a loop that updates each position once, from s on, by a function of the old value, stores the values computed
+-- from the array before the loop, as long as the positions from s on still hold them
+theorem stores_counter_read (a0 : Int → Int) (F : Int → Int → Int) : ∀ (m : Nat) (s : Int) (b : Int → Int),
+    (∀ x, s ≤ x → b x = a0 x) →
+    trace b (List.zip (butlast (counter s 1 m)) (butlast (counter s 1 m)))
+      (fun a ⟨k, i⟩ => fun j => if j = k then F k (a k) else a j)
+    = stores b (butlast (counter s 1 m)) (maps (butlast (counter s 1 m)) (fun k => F k (a0 k))) := by
+  intro m
+  induction m with
+  | zero => intro s b _; simp [counter, butlast, trace, stores, maps]
+  | succ t ih =>
+    intro s b hb
+    simp only [butlast_counter_succ, List.zip_cons_cons, maps, stores, trace] at ih ⊢
+    rw [hb s (by omega)]
+    congr 1
+    exact ih (s + 1) _ (by intro x hx; simp [show x ≠ s by omega, hb x (by omega)])
+
+-- a loop that updates each position once, by cases on its old value, stores the values computed from the initial
+-- array
+-- (from MonoCera: conda, s1lif-s5lif)
+theorem stores_cases_def (a0 : Int → Int) (n : Nat) (c : Int)
+                               (P : Int → Prop) (G : Int → Int) :
+  trace
+    a0
+    (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
+    (fun a ⟨k, i⟩ =>
+       if P (a k) then
+         fun j => if j = k then c else a j
+       else
+         fun j => if j = k then G (a k) else a j)
+    = stores
+      a0
+      (butlast (counter 0 1 n))
+      (maps
+         (butlast (counter 0 1 n))
+         (fun k => if P (a0 k) then c else G (a0 k))) :=
+  by
+    have := stores_counter_read a0 (fun _ v => if P v then c else G v) n 0 a0 (fun _ _ => rfl)
+    simp only at this
+    rw [← this]
+    congr 1
+    funext a p j
+    by_cases h : P (a p.1) <;> by_cases e : j = p.1 <;> simp [h, e]
+
+-- a loop that stores at each position k a constant chosen by cases on k stores these values
+-- (from MonoCera: brs2-brs5)
+theorem stores_index_cases_def (a0 : Int → Int) (n : Nat) (c : Int)
+                                     (d : Int) (P : Int → Prop) :
+  trace
+    a0
+    (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
+    (fun a ⟨k, i⟩ =>
+       if P k then
+         fun j => if j = k then c else a j
+       else
+         fun j => if j = k then d else a j)
+    = stores
+      a0
+      (butlast (counter 0 1 n))
+      (maps (butlast (counter 0 1 n)) (fun k => if P k then c else d)) :=
+  by
+    have := stores_counter_read a0 (fun k _ => if P k then c else d) n 0 a0 (fun _ _ => rfl)
+    simp only at this
+    rw [← this]
+    congr 1
+    funext a p
+    obtain ⟨k, i⟩ := p
+    funext j
+    by_cases h : P k <;> simp [h]
 
 -- the trace of the successive copies a[k] := a[k + d] for the keys, which is modeled for increasing keys and
 -- nonnegative offsets only, where the entries read are not yet modified
@@ -1428,6 +1516,87 @@ theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
       simp only [butlast_counter_succ, List.zip_cons_cons, trace, current, Int.zero_add] at h e ⊢
       simp only [ite_true, Nat.succ_ne_zero, ite_false]
       rw [h, e]
+      simp
+
+-- the cell j of a trace that writes only j, setting it to c in the first iteration and adding G(k) in the others
+-- (from MonoCera: brs1-brs5, ms2-ms5)
+theorem select_current_trace_reset_add (a0 : Int → Int) (j : Int)
+                                             (n : Nat) (c : Int)
+                                             (G : Int → Int) :
+  current
+    (trace
+       a0
+       (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
+       (fun a ⟨k, i⟩ =>
+          if k = 0 then
+            fun j1 => if j1 = j then c else a j1
+          else
+            fun j1 => if j1 = j then a j + G k else a j1))
+    j
+    = (if n = zero then
+         a0 j
+       else
+         c
+           + sum
+             (maps
+                (butlast (counter 0 1 n))
+                (fun k => if 0 < k then G k else 0))) :=
+  by
+    have later : ∀ (s : Int) (x : Int → Int) (m : Nat), 1 ≤ s →
+        current (trace x (List.zip (butlast (counter s 1 m)) (butlast (counter s 1 m)))
+          (fun a ⟨k, i⟩ => if k = 0 then fun j1 => if j1 = j then c else a j1
+            else fun j1 => if j1 = j then a j + G k else a j1)) j
+        = x j + sum (maps (butlast (counter s 1 m)) G) := by
+      intro s x m hs
+      induction m generalizing s x with
+      | zero => simp [counter, butlast, trace, current, maps, sum]
+      | succ t ih =>
+        simp only [butlast_counter_succ, List.zip_cons_cons, trace, current, maps, sum]
+        rw [ite_eq_right_iff.mpr (by omega), ih (s + 1) _ (by omega)]
+        simp only [ite_true]
+        omega
+    cases n with
+    | zero => simp [counter, butlast, trace, current]
+    | succ m =>
+      have h := later 1 (fun j1 => if j1 = j then c else a0 j1) m (by omega)
+      have e : maps (butlast (counter 1 1 m)) (fun k => if 0 < k then G k else 0) = maps (butlast (counter 1 1 m)) (fun k => G k) :=
+        maps_counter_congr 1 m _ _ (fun k hk => by simp [show 0 < k by omega])
+      rw [sum_counter_succ]
+      simp only [butlast_counter_succ, List.zip_cons_cons, trace, current, Int.zero_add] at h e ⊢
+      simp only [ite_true, Nat.succ_ne_zero, ite_false] at h ⊢
+      rw [h, e]
+      simp
+
+-- the same where the other iterations keep the array
+-- (from MonoCera: ms1)
+theorem select_current_trace_reset_keep (a0 : Int → Int) (j : Int)
+                                              (n : Nat) (c : Int) :
+  current
+    (trace
+       a0
+       (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
+       (fun a ⟨k, i⟩ =>
+          if k = 0 then fun j1 => if j1 = j then c else a j1 else a))
+    j
+    = (if n = zero then a0 j else c) :=
+  by
+    have later : ∀ (s : Int) (x : Int → Int) (m : Nat), 1 ≤ s →
+        current (trace x (List.zip (butlast (counter s 1 m)) (butlast (counter s 1 m)))
+          (fun a ⟨k, i⟩ => if k = 0 then fun j1 => if j1 = j then c else a j1 else a)) = x := by
+      intro s x m hs
+      induction m generalizing s x with
+      | zero => simp [counter, butlast, trace, current]
+      | succ t ih =>
+        simp only [butlast_counter_succ, List.zip_cons_cons, trace, current]
+        simp only [show ¬ (s = 0) by omega, ite_false]
+        rw [ih (s + 1) _ (by omega)]
+    cases n with
+    | zero => simp [counter, butlast, trace, current]
+    | succ m =>
+      have h := later 1 (fun j1 => if j1 = j then c else a0 j1) m (by omega)
+      simp only [butlast_counter_succ, List.zip_cons_cons, trace, current, Int.zero_add] at h ⊢
+      simp only [ite_true, Nat.succ_ne_zero, ite_false]
+      rw [h]
       simp
 
 -- earlier
@@ -2511,6 +2680,44 @@ theorem sum_nonneg_prefix (n : Nat) (xs : List Int) (hxs : length xs = n) :
     subst hxs
     exact sum_nonneg_forall xs h
 
+-- a sum of n terms that are each 0, c, or d is at most n times the largest of them
+-- (from MonoCera: brs2-brs5)
+theorem sum_cases_below (n : Nat) (c : Int) (d : Int) (e : Int)
+                              (P : Int → Prop) :
+  0 ≤ e ∧ integer n * c ≤ e ∧ integer n * d ≤ e
+    → sum
+      (maps
+         (butlast (counter 0 1 n))
+         (fun k => if 0 < k then if P k then c else d else 0))
+      ≤ e :=
+  by
+    intro ⟨he, hc, hd⟩
+    rw [integer_eq] at hc hd
+    by_cases h1 : d ≤ c ∧ 0 ≤ c
+    · refine Int.le_trans (sum_counter_le 0 n _ c ?_) hc
+      intro k _ _; (repeat' split) <;> omega
+    · by_cases h2 : c ≤ d ∧ 0 ≤ d
+      · refine Int.le_trans (sum_counter_le 0 n _ d ?_) hd
+        intro k _ _; (repeat' split) <;> omega
+      · have := sum_counter_le 0 n (fun k => if 0 < k then if P k then c else d else 0) 0
+          (by intro k _ _; (repeat' split) <;> omega)
+        omega
+
+-- a sum of n remainders k % m of the iterations k from 0 is at most n (m - 1)
+-- (from MonoCera: ms2-ms5)
+theorem sum_mod_below (n : Nat) (m : Int) (e : Int) :
+  0 < m ∧ integer n * (m - 1) ≤ e
+    → sum (maps (butlast (counter 0 1 n)) (fun k => if 0 < k then k % m else 0))
+      ≤ e :=
+  by
+    intro ⟨hm, he⟩
+    rw [integer_eq] at he
+    refine Int.le_trans (sum_counter_le 0 n _ (m - 1) ?_) he
+    intro k hk _
+    have := Int.emod_lt_of_pos k hm
+    have := Int.emod_nonneg k (show m ≠ 0 by omega)
+    split <;> omega
+
 theorem sum_neg (values : List Int) (n : Nat)
                       (hvalues : length values = n) :
   sum (maps values (fun v => -v)) = -sum values :=
@@ -3131,6 +3338,13 @@ theorem div_below (b : Int) (x : Int) (d : Int) :
     have : x / d < b + 1 := Int.ediv_lt_of_lt_mul hd (by rw [Int.mul_comm] at hx; exact hx)
     simp only [iff_false]
     omega
+
+-- the quotient of a positive divisor is not positive exactly below it
+-- (from MonoCera: pr2)
+theorem div_nonpos (x : Int) (c : Int) : 0 < c → (x / c ≤ 0 ↔ x < c) :=
+  by
+    intro hc
+    rw [show (x / c ≤ 0) ↔ (x / c < 1) by omega, Int.ediv_lt_iff_lt_mul hc, Int.one_mul]
 
 -- the differences (k + 1)^3 - k^3 - 1 = 3 * k + 3 * k * k telescope to n^3 - n; teq.dfy splits such a sum by linearity
 -- first, hence the sum of 3 * k * k as the rest, such that the division atoms cancel

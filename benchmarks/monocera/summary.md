@@ -115,7 +115,12 @@ is one of the following.
 ## Lemmas for the open goals
 
 [lemmas.dfy](lemmas.dfy) collects lemmas for the open goals, injected by
-`-include` (not part of teq.dfy, whose declarations it repeats as needed):
+`-include` (not part of teq.dfy, whose declarations it repeats as needed).
+The generic ones among them have moved to teq.dfy, with proofs in teq.lean:
+`select_current_trace_reset_add`, `select_current_trace_reset_keep`,
+`stores_cases_def`, `stores_index_cases_def`, `sum_cases_below`,
+`sum_mod_below`, and `div_nonpos`; the strides, the stores ahead, and
+`half_even` stay in lemmas.dfy.
 
 ```
 ./Cuvee.sh -teq -simplify -split -simplify -include benchmarks/monocera/lemmas.dfy benchmarks/monocera/polished_tests/cuvee/sum/brs1.c
@@ -131,9 +136,9 @@ the side conditions hold.
 |---|---|---|---|
 | `sum/brs1` | 1 goal | closed | `select_current_trace_reset_add` |
 | `sum/ms1` | 1 goal | closed | `select_current_trace_reset_keep` |
-| `sum/conda` | 1 goal | closed | `trace_store_cases_def` |
-| `sum/s1lif`-`s5lif` | 1 goal | closed | `trace_store_cases_def` |
-| `sum/brs2`-`brs5` | 1 goal | closed | `select_current_trace_reset_add`, `trace_store_index_cases_def`, `sum_cases_below` |
+| `sum/conda` | 1 goal | closed | `stores_cases_def` |
+| `sum/s1lif`-`s5lif` | 1 goal | closed | `stores_cases_def` |
+| `sum/brs2`-`brs5` | 1 goal | closed | `select_current_trace_reset_add`, `stores_index_cases_def`, `sum_cases_below` |
 | `sum/ms2`-`ms5` | 1 goal | closed | `select_current_trace_reset_add`, `sum_mod_below` |
 | `sum/indp5` | closed | closed | - |
 | `forall/array_doub_access_init_const` | 1 goal | closed | `select_current_trace_stride2` |
@@ -151,7 +156,7 @@ and 5 of the tests that only MonoCera closed before.
   teq.dfy for a scalar; `select_current_trace_reset_keep` is the variant
   whose other iterations keep the array, since the simplifier reduces
   `sum[0] + a[i]` to `sum[0]` for `a[i] == 0` (`ms1`).
-- `trace_store_cases_def` turns a loop that updates each position `k` once by
+- `stores_cases_def` turns a loop that updates each position `k` once by
   cases on its old value, e.g. `a[k] == 1 ? 2 : a[k] - 1` in `conda`, into
   the stores of the values computed from the initial array, which
   `selects_stores_counter` of teq.dfy reads back. The first case stores a
@@ -160,7 +165,7 @@ and 5 of the tests that only MonoCera closed before.
 - `select_current_trace_reset_add` needed version 0.35.15: the simplifier
   reduced the instance `(z) => a[z]` of the higher-order variable `G` to the
   array `a` by eta reduction, which left `G(k)` an application of the array.
-- `trace_store_index_cases_def` turns a loop that stores at each position `k`
+- `stores_index_cases_def` turns a loop that stores at each position `k`
   a constant chosen by cases on `k`, e.g. `i % 2 == 0 ? 2 : 0` in `brs2`,
   into the stores of these values, which `current_stores` of teq.dfy reads
   back; then the sum consists of terms `0`, `c`, or `d`.
