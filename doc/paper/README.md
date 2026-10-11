@@ -48,8 +48,8 @@ A new run updates the table: `./benchmark xml/cuvee.xml` (and the
 
 ## Open points
 
-- The affiliation is a guess, the Zenodo DOI of the tool archive and the
-  reference of MonoCera are `[TODO]`, no license is stated.
+- The Zenodo DOI of the tool archive and the reference of MonoCera are
+  `[TODO]`; the fm-tools entry (`data/cuvee.yml` in fm-tools) has a dummy DOI.
 - The TEQ paper is cited as an anonymous submission under review; citing it
   from a paper with an author name may break its double-blind review.
 - Cuvée writes no witnesses, so SV-COMP counts its proofs as unconfirmed

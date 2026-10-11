@@ -15,8 +15,8 @@ class Tool(benchexec.tools.template.BaseTool2):
     (benchmarks/sv-comp/dafny) by trace equation systems, whose goals the simplifier closes with a database of lemmas,
     optionally followed by an SMT solver on the remaining goals.
     The output is in the language of the input, SMT-LIB for C and Dafny for Dafny: no goal left means that the
-    property holds, goals that remain are not refuted, hence the result is unknown, since the tool does not produce
-    witnesses of violations.
+    property holds, a goal that simplifies to false that it is violated (except with -unbounded), other goals that
+    remain are not refuted, hence the result is unknown; the tool does not produce witnesses of violations.
     """
 
     # z3 for -fallback -z3, a copy of the local one (not in git), since the machines of the cluster have none
@@ -46,8 +46,22 @@ class Tool(benchexec.tools.template.BaseTool2):
 
         return [executable] + options + arch + [task.single_input_file]
 
+    # a goal that the simplifier refutes, printed as (goal false) or goal false, or passed on to the solver of -fallback,
+    # which reports it as (error "goal does not hold" "Sat" "false")
+    GOAL_FALSE = re.compile(r'^\(?goal false\)?$')
+    SAT_FALSE = re.compile(r'"goal does not hold"\s+"Sat"\s+"false"')
+
     def determine_result(self, run):
         lines = list(run.output)
+
+        # a refuted goal means that the property is violated, since the steps before are equivalences, except with
+        # -unbounded, whose nondeterministic values range over more than their types; the other goals that remain
+        # are not refuted, nor are those that the solver of -fallback does not prove, as its encoding generalizes
+        if "-unbounded" not in run.cmdline:
+            for i, line in enumerate(lines):
+                if self.GOAL_FALSE.match(line.strip()) or self.SAT_FALSE.search(" ".join(lines[i:i + 3])):
+                    return result.RESULT_FALSE_REACH
+
         for i, line in enumerate(lines):
             # errors, e.g. constructs of C that are not supported, or rewriting that does not terminate,
             # whose message is the first string at the error or on the lines after it, e.g. (error "parse error" ...);
