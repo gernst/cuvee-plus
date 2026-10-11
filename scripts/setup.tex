@@ -12,10 +12,16 @@ competition.
 
 \paragraph{Tools.}
 Cuvée runs with \texttt{-teq -simplify -split -simplify}: it generates trace equation systems for
-the loops, simplifies them with its lemma database, and splits the remaining goals. Cuvée+Z3 adds
-\texttt{-fallback -z3}, which lowers the goals that remain after simplification into first-order logic
-and hands them to Z3. Cuvée only reports safe programs (verdict true); it does not search for
-counterexamples. The other tools are the SV-COMP 2026 versions of Symbiotic, AISE, UAutomizer,
+the loops, simplifies them with its lemma database, and splits the remaining goals. It uses the full
+lemma database, the modules of \texttt{-teq} and the extensions for nested loops, sorting and strided
+stores (\texttt{-include teq:nested -include teq:sorting -include teq:strides}), and the semantics of C:
+nondeterministic values within the ranges of their types and unsigned arithmetic modulo $2^n$ (not
+\texttt{-unbounded}). Cuvée+Z3 adds \texttt{-fallback -z3}, which lowers the goals that remain after
+simplification into first-order logic and hands them to Z3, with a timeout per query that covers the
+whole time limit (\texttt{-timeout 900000}). In these configurations, Cuvée only reports safe programs
+(verdict true), since a model of Z3 for a goal of the abstraction is no counterexample. Cuvée (CHC)
+translates the program into constrained Horn clauses instead (\texttt{-simplify -chc -z3}), whose
+answer by Z3 is the verdict: true if they are satisfiable, false if they are not. The other tools are the SV-COMP 2026 versions of Symbiotic, AISE, UAutomizer,
 CPAchecker and Korn, downloaded from their archives on Zenodo as listed in fm-tools, and run with
 the options of their official SV-COMP benchmark definitions. AISE did not compete in
 ReachSafety-Arrays; we run it on both categories nonetheless.

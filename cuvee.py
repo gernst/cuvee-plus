@@ -22,7 +22,11 @@ class Tool(benchexec.tools.template.BaseTool2):
     No goal left means that the property holds. A goal that simplifies to false
     means that it is violated, except with the option -unbounded, under which
     nondeterministic values range over all integers. Other goals that remain are
-    not refuted, hence the result is unknown. Cuvée does not produce witnesses.
+    not refuted, hence the result is unknown, also those that Z3 refutes, since
+    the encoding for it abstracts the goal. With -chc -z3, Cuvée translates the
+    program into constrained Horn clauses, and the answer of Z3 is the result: sat
+    (the property holds), unsat (it is violated, except with -unbounded), or
+    unknown. Cuvée does not produce witnesses.
 
     For the property correct-annotations of SV-LIB scripts, Cuvée checks the
     annotations by verification conditions (-verify -z3) or by constrained Horn
@@ -35,11 +39,10 @@ class Tool(benchexec.tools.template.BaseTool2):
     # z3 next to Cuvee.sh, which puts its own directory first on the PATH
     REQUIRED_PATHS = ["Cuvee.sh", "cuvee.jar", "z3"]
 
-    # a goal that the simplifier refutes, printed as (goal false) or goal false,
-    # or passed on to the solver, which reports it as
-    # (error "goal does not hold" "Sat" "false")
+    # a goal that the simplifier refutes, printed as (goal false) or goal false;
+    # a model of Z3 for a goal passed on to it, (error "goal does not hold" "Sat" ...),
+    # is no counterexample, since the encoding generalizes the goal (see below)
     GOAL_FALSE = re.compile(r"^\(?goal false\)?$")
-    SAT_FALSE = re.compile(r'"goal does not hold"\s+"Sat"\s+"false"')
 
     def executable(self, tool_locator):
         return tool_locator.find_executable("Cuvee.sh")
@@ -77,13 +80,26 @@ class Tool(benchexec.tools.template.BaseTool2):
         if run.cmdline and run.cmdline[-1].endswith(".svlib"):
             return self.determine_svlib_result(run, lines)
 
+        # with -chc, the answer of the solver to the Horn clauses, unless an error
+        # comes first; unsat is a counterexample to the semantics of C, which
+        # -unbounded does not model
+        if "-chc" in run.cmdline:
+            for line in lines:
+                answer = line.strip()
+                if answer.startswith(("(error", "error", "Exception in thread")):
+                    break
+                if answer == "sat":
+                    return result.RESULT_TRUE_PROP
+                if answer == "unsat" and "-unbounded" not in run.cmdline:
+                    return result.RESULT_FALSE_REACH
+                if answer in ("unsat", "unknown"):
+                    return result.RESULT_UNKNOWN
+
         # a refuted goal, since the steps before are equivalences,
         # except with -unbounded
         if "-unbounded" not in run.cmdline:
-            for i, line in enumerate(lines):
-                if self.GOAL_FALSE.match(line.strip()) or self.SAT_FALSE.search(
-                    " ".join(lines[i : i + 3])
-                ):
+            for line in lines:
+                if self.GOAL_FALSE.match(line.strip()):
                     return result.RESULT_FALSE_REACH
 
         # errors, e.g. constructs of C that are not supported, or rewriting that
@@ -105,6 +121,10 @@ class Tool(benchexec.tools.template.BaseTool2):
         for line in lines:
             if line.startswith(("(goal", "goal")):
                 return result.RESULT_UNKNOWN
+
+        # with -chc, no answer of the solver, e.g. when it was stopped
+        if "-chc" in run.cmdline:
+            return result.RESULT_UNKNOWN
 
         return result.RESULT_TRUE_PROP
 

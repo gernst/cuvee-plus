@@ -20,18 +20,23 @@ OUTPUT = SCRIPTS / "out"
 # whose categories include the validation of the witnesses)
 OFFICIAL = SCRIPTS / "official"
 
-# the benchmarks compared by default, in the order of the columns and legends;
-# cuvee (1 min) is left out because its time limit differs from the others
-TOOLS = ["cuvee-15min", "cuvee-fallback", "symbiotic", "aise", "uautomizer", "cpachecker", "korn"]
+# the benchmarks compared by default, in the order of the columns and legends: Cuvée with the full lemma database
+# (cuvee-full.xml, cuvee-full-fallback.xml, 15 min) and with Horn clauses for z3 (cuvee-chc.xml), the other runs
+# of Cuvée are left out
+TOOLS = ["cuvee-full", "cuvee-full-fallback", "cuvee-chc", "symbiotic", "aise", "uautomizer", "cpachecker", "korn"]
 
 CATEGORIES = ["Arrays", "Loops"]
 
 # names for display; other benchmarks fall back to the displayName of their definition, e.g. cuvee (Cuvée,
-# whose time limit was 1 min in the runs on Arrays and Loops) and cuvee-full (Cuvée (full TEQ), with all
-# modules of the lemma database); Cuvée+Z3 is Cuvée with -fallback, which hands the goals to z3
+# whose time limit was 1 min in the runs on Arrays and Loops); cuvee-full, with all modules of the lemma
+# database, is Cuvée, as the configuration of the comparison; Cuvée+Z3 is Cuvée with -fallback, which hands
+# the goals to z3
 LABELS = {
     "cuvee-15min": "Cuvée",
     "cuvee-fallback": "Cuvée+Z3",
+    "cuvee-full": "Cuvée",
+    "cuvee-full-fallback": "Cuvée+Z3",
+    "cuvee-chc": "Cuvée (CHC)",
     "symbiotic": "Symbiotic",
     "aise": "AISE",
     "uautomizer": "UAutomizer",
