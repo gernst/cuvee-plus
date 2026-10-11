@@ -20,13 +20,18 @@ import easyparse.Assoc
 // uninterpreted functions are prototypes, and their applications calls;
 // everything else is printed in SMT-LIB, wrapped such that it looks like a macro, SMT_LIB(...),
 // e.g. assertions of formulas, quantifiers, and commands such as check-sat, as far down as possible,
-// e.g. a quantifier in an assertion of a procedure; contracts are omitted, which C input has only implicitly,
-// e.g. the zero values of global variables as the precondition of main;
+// e.g. a quantifier in an assertion of a procedure; contracts and the invariants and variants of loops are annotations
+// of ACSL, as are assertions with quantifiers or implications, without the zero values of global variables as the
+// precondition of main, which C input has implicitly;
 // results, e.g. models, are not programs, they are printed in SMT-LIB
 object Printer extends cuvee.pipe.Printer:
 
   // the result of the procedure that is printed, which return writes
   var result: Option[Var] = None
+
+  // whether an annotation of ACSL is printed, and the result of the procedure as \result in its postconditions
+  var acsl: Boolean = false
+  var returns: Option[Var] = None
 
   val names = Map(
     "=" -> "==",
@@ -116,8 +121,8 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareVar(x, _) =>
         decl(x) ~ text(";")
 
-      case DeclareProc(Proc(name_, Nil, in, out), _) if out.length <= 1 =>
-        signature(name_, in, out) ~ text(";")
+      case DeclareProc(Proc(name_, Nil, in, out), attrs) if out.length <= 1 =>
+        contract(name_, out, attrs) ~ signature(name_, in, out) ~ text(";")
 
       // uninterpreted functions, e.g. the predicates of Horn clauses
       case DeclareFun(Fun(name_, Nil, formals, res), _) =>
@@ -126,13 +131,62 @@ object Printer extends cuvee.pipe.Printer:
       // contracts are omitted, e.g. the zero values of global variables as the precondition of main
       // the result is a local variable, assigned as in the input, which each return returns,
       // such that its value is arbitrary if it is not assigned, as in Dafny
-      case DefineProc(Proc(name_, Nil, in, out), body, _) if out.length <= 1 =>
+      case DefineProc(Proc(name_, Nil, in, out), body, attrs) if out.length <= 1 =>
         result = out.headOption
-        try signature(name_, in, out) ~~ braces(out.map(decl(_) ~ text(";")) ++ statements(body))
+        try contract(name_, out, attrs) ~ signature(name_, in, out) ~~ braces(out.map(decl(_) ~ text(";")) ++ statements(body))
         finally result = None
 
       case _ =>
         smtlib(cuvee.smtlib.Printer.command(cmd))
+
+  // the clauses of an annotation of ACSL, /*@ requires ...; ensures ...; */, each on a line of its own
+  def annotation(clauses: List[(String, Expr)]): Doc =
+    acsl = true
+    try
+      val docs = clauses.map((kw, e) => Group(text(kw) ~ Nest(2, line ~ doc(e))) ~ text(";"))
+      text("/*@") ~ Nest(2, hardline ~ join(docs, hardline)) ~ hardline ~ text("*/")
+    finally acsl = false
+
+  // the contract of a procedure followed by a line break, if any, without the precondition of main that the global
+  // variables are zero (see zeros), which the parser adds again
+  def contract(name_ : Name, out: List[Var], attrs: Attrs): Doc =
+    val requires = attrs.values[Expr]("requires").filterNot(phi => name_ == Name("main", None) && zeros(phi))
+    val clauses =
+      requires.map("requires" -> _) ++ attrs.values[Expr]("ensures").map("ensures" -> _) ++
+        attrs.values[Expr]("decreases").map("decreases" -> _)
+    if clauses.isEmpty
+    then empty
+    else
+      returns = out.headOption
+      try annotation(clauses) ~ hardline
+      finally returns = None
+
+  // equations of variables with the zero values of their types, false, null, and constant arrays of those
+  def zeros(phi: Expr): Boolean =
+    def zero(e: Expr): Boolean =
+      e match
+        case Lit(value: BigInt, _)                                         => value == 0
+        case False                                                         => true
+        case App(Fun(Name("null", None), _, Nil, _), _, _, Nil)            => true
+        case App(Fun(Name("const", None), _, _, _), _, _, List(arg))       => zero(arg)
+        case _                                                             => false
+
+    phi match
+      case And(args)     => args.forall(zeros)
+      case Eq(_: Var, e) => zero(e)
+      case _             => false
+
+  // the invariants and variants of a loop followed by a line break, if any
+  def invariants(attrs: Attrs): Doc =
+    val clauses = attrs.invariants.map("loop invariant" -> _) ++ attrs.decreases.map("loop variant" -> _)
+    if clauses.isEmpty then empty else annotation(clauses) ~ hardline
+
+  // whether an expression is not C, but ACSL: quantifiers, implications, and old values
+  def logical(expr: Expr): Boolean =
+    expr match
+      case Bind(_, _, _) | Imp(_, _) | Old(_) => true
+      case App(_, _, _, args)                 => args.exists(logical)
+      case _                                  => false
 
   def braces(docs: List[Doc]): Doc =
     if docs.isEmpty
@@ -207,6 +261,9 @@ object Printer extends cuvee.pipe.Printer:
       case Spec(Nil, True, phi) =>
         call("__VERIFIER_assume", List(doc(phi))) ~ text(";")
 
+      case Spec(Nil, phi, True) if logical(phi) =>
+        annotation(List("assert" -> phi))
+
       case Spec(Nil, phi, True) =>
         call("assert", List(doc(phi))) ~ text(";")
 
@@ -248,8 +305,8 @@ object Printer extends cuvee.pipe.Printer:
       case If(test, left, right) =>
         text("if") ~~ parens(test) ~~ block(left) ~~ text("else") ~~ block(right)
 
-      case While(test, body, _) =>
-        text("while") ~~ parens(test) ~~ block(body)
+      case While(test, body, attrs) =>
+        invariants(attrs) ~ text("while") ~~ parens(test) ~~ block(body)
 
       case _ =>
         smtlib(cuvee.smtlib.Printer.lines(prog)) ~ text(";")
@@ -313,6 +370,9 @@ object Printer extends cuvee.pipe.Printer:
       Some((op, assoc, prec, args))
 
     expr match
+      // the connectives of ACSL, where equations of truth values are equivalences
+      case Imp(a, b) if acsl                     => op("==>", List(a, b))
+      case Eq(a, b) if acsl && a.typ == Sort.bool => op("<==>", List(a, b))
       case Not(Eq(a, b))       => op("!=", List(a, b))
       case Eq(a, b)            => op("==", List(a, b))
       case And(args)           => op("&&", args)
@@ -350,6 +410,9 @@ object Printer extends cuvee.pipe.Printer:
       case Ite(_, _, _) if infix(expr).isEmpty =>
         (lowest, None)
 
+      case Bind(_, _, _) if acsl =>
+        (lowest, None)
+
       case _ =>
         prefix(expr) match
           case Some((_, prec, _)) =>
@@ -381,17 +444,34 @@ object Printer extends cuvee.pipe.Printer:
       case prelude(expr_) =>
         doc(expr_)
 
+      case x: Var if acsl && returns.contains(x) =>
+        text("\\result")
+
       case Var(name_, _) =>
         text(name(name_))
 
       case Lit(value: BigInt, _) =>
         text(value.toString)
 
+      case True if acsl =>
+        text("\\true")
+
+      case False if acsl =>
+        text("\\false")
+
       case True =>
         text("true")
 
       case False =>
         text("false")
+
+      case Old(arg) if acsl =>
+        text("\\old(") ~ Align(doc(arg)) ~ text(")")
+
+      // quantifiers of ACSL over the mathematical integers and the truth values
+      case Bind(quant, bound, body) if acsl && (quant == All.name || quant == Ex.name) && bound.forall(x => x.typ == Sort.int || x.typ == Sort.bool) =>
+        val binders = bound.map(x => text(if x.typ == Sort.int then "integer" else "boolean") ~~ text(name(x.name)))
+        Group(text("\\" + quant.name) ~~ commas(binders) ~ text(";") ~ Nest(2, line ~ doc(body)))
 
       // the null pointer constant
       case App(Fun(Name("null", None), _, Nil, _), _, _, Nil) =>

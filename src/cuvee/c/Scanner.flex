@@ -15,6 +15,9 @@ package cuvee.c;
 %line
 %column
 
+// the annotations of ACSL, /*@ ... */ and //@ up to the end of the line, are delimited by the tokens /*@ and */
+%state ACSL ACSL_LINE
+
 nl = \r|\n|\r\n
 ws = {nl} | [ \t\f]
 
@@ -48,15 +51,53 @@ id  = [a-zA-Z_] [a-zA-Z0-9_]*
 sym = {id}
     | [+\-*/%!<>&|\^~] | "&&" | "||" | "==" | "!=" | "<=" | ">=" | "<<" | ">>"
 
+// the keywords of ACSL that have counterparts in the core (see Grammar.contract), which are names in C
+acsl = "requires" | "ensures" | "assigns" | "decreases" | "loop" | "invariant" | "variant" | "assert"
+     | "integer" | "boolean"
+     | "\\result" | "\\old" | "\\forall" | "\\exists" | "\\true" | "\\false" | "\\nothing"
+
 %%
 
 <YYINITIAL> {
 
+"/*@"       { yybegin(ACSL); return Syntax.apply("/*@"); }
+"//@"       { yybegin(ACSL_LINE); return Syntax.apply("/*@"); }
+
 {ws}+ {}
-"//" .* {nl} {}
-"/*" ~"*/" {}
+"//" ([^@\r\n] .*)? {nl} {}
+"/*" ("*/" | [^@] ~"*/") {}
 // preprocessor directives are skipped
 "#" .* {nl} {}
+
+}
+
+// the @ at the beginning of the lines of an annotation is white space
+<ACSL> {
+
+"*/"        { yybegin(YYINITIAL); return Syntax.apply("*/"); }
+{ws}+ {}
+"@" {}
+
+}
+
+<ACSL_LINE> {
+
+{nl}        { yybegin(YYINITIAL); return Syntax.apply("*/"); }
+[ \t\f]+ {}
+
+}
+
+<ACSL, ACSL_LINE> {
+
+{acsl}      { return Syntax.apply(yytext()); }
+// ranges, e.g. a[0..n-1] in assigns clauses, which are skipped, where 0. is not a floating point number
+{dec} / ".." { return Syntax.apply("num", yytext()); }
+"==>" | "<==>" | ".." { return Syntax.apply("sym", yytext()); }
+"\\" {id}   { Syntax.error("ACSL construct not supported: " + yytext() + " at " + yyline + ":" + yycolumn); }
+
+}
+
+<YYINITIAL, ACSL, ACSL_LINE> {
 
 // the spellings of GCC in preprocessed files (.i)
 "__extension__" {}

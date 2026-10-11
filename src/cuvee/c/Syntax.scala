@@ -39,6 +39,8 @@ case class ArrayType(elem: Type) extends Type
 // pointers and floating point numbers only in the signatures of builtins, the parser rejects them otherwise
 case class PointerType(elem: Type) extends Type
 case object FloatType extends Type
+// the mathematical integers of ACSL, integer, the type of its arithmetic
+case object Integer extends Type
 
 sealed trait Expr
 case class Num(value: String) extends Expr
@@ -57,6 +59,10 @@ case class SizeofType(words: List[String]) extends Expr
 case class SizeofExpr(expr: Expr) extends Expr
 // initializer lists of arrays, only in declarations
 case class Items(items: List[Expr]) extends Expr
+// the terms of ACSL: \result, \old(e), and the quantifiers \forall and \exists over typed variables
+case object Result extends Expr
+case class Old(expr: Expr) extends Expr
+case class Quant(quant: String, bound: List[(Type, String)], body: Expr) extends Expr
 
 object IntType:
   val int = IntType(true, "int")
@@ -85,6 +91,12 @@ object Cast extends ((Type, Expr) => Expr)
 object SizeofType extends (List[String] => Expr)
 object SizeofExpr extends (Expr => Expr)
 object Items extends (List[Expr] => Expr)
+object Old extends (Expr => Expr)
+object Quant extends ((String, List[(Type, String)], Expr) => Expr)
+
+// the clauses of ACSL annotations by their keywords, e.g. requires, loop invariant, assert, whose argument is a term,
+// except for those of assigns and loop assigns, which are not checked (see Parser.clauses)
+case class Clause(kind: String, arg: Option[Expr])
 
 // pointers, and the sizes of arrays, one per dimension, which are optional, e.g. int a[] = { 1, 2 }
 case class Declarator(pointer: Boolean, name: String, sizes: List[Option[Expr]], init: Option[Expr])
@@ -110,6 +122,9 @@ case class Goto(label: String) extends Stmt
 // a switch, whose cases are labels of the statements of its body, case c: or default: (None)
 case class Switch(test: Expr, body: List[Stmt]) extends Stmt
 case class Case(value: Option[Expr], stmt: Stmt) extends Stmt
+// the annotations of ACSL in statements, a loop with its clauses, and an assertion
+case class Annotated(clauses: List[Clause], loop: Stmt) extends Stmt
+case class Assertion(phi: Expr) extends Stmt
 
 object Decl extends ((Type, List[String], List[Declarator]) => Decl)
 object Assign extends ((Expr, String, Expr) => Stmt)
@@ -124,14 +139,19 @@ object Labeled extends ((String, Stmt) => Stmt)
 object Goto extends (String => Stmt)
 object Switch extends ((Expr, List[Stmt]) => Stmt)
 object Case extends ((Option[Expr], Stmt) => Stmt)
+object Annotated extends ((List[Clause], Stmt) => Stmt)
+object Assertion extends (Expr => Stmt)
 
 sealed trait Top
 case class Global(decl: Decl) extends Top
 // the names of types are replaced by their definitions by the scanner (see Typedefs)
 case object Typedef extends Top
 case class Function(typ: Type, name: String, params: List[(Type, String)], body: Option[Block]) extends Top
+// the contract of ACSL of the function that follows (see Parser.resolve)
+case class Contract(clauses: List[Clause]) extends Top
 
 object Global extends (Decl => Top)
 object Function extends ((Type, String, List[(Type, String)], Option[Block]) => Top)
+object Contract extends (List[Clause] => Top)
 
 case class Loop(test: Option[Expr], body: Stmt, step: Option[Stmt]) extends Stmt

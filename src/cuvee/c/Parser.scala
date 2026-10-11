@@ -30,15 +30,16 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
   val unread = mutable.Set[core.Var]()
 
   // the context of a function body: its result, the temporary variables for the results of calls,
-  // the statements of its labels, which a goto may resolve in its place, and the labels at its end
+  // the statements of its labels, which a goto may resolve in its place, and the labels at its end;
+  // the clauses of ACSL of the loop that is translated next, but not of the loops nested in it (see loop)
   case class Ctx(result: Option[(core.Var, Type)], temps: mutable.ListBuffer[core.Var],
-                 labels: Map[String, Stmt] = Map(), ends: Set[String] = Set())
+                 labels: Map[String, Stmt] = Map(), ends: Set[String] = Set(), loop: List[Clause] = Nil)
 
   type Scope = Map[String, (core.Var, Type)]
 
   def typ(t: Type): core.Type =
     t match
-      case IntType(_, _) => state.types.sort("Int")
+      case IntType(_, _) | Integer => state.types.sort("Int")
       case BoolType     => state.types.sort("Bool")
       case ArrayType(e) => state.types.sort("Array", List(state.types.sort("Int"), typ(e)))
       case VoidType     => Error.raise("void is not a type of values")
@@ -92,7 +93,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
   def zero(t: Type): core.Expr =
     t match
-      case IntType(_, _) => state.exprs.num(0)
+      case IntType(_, _) | Integer => state.exprs.num(0)
       case BoolType     => state.exprs.const("false")
       case ArrayType(e) => state.exprs.app("const", List(zero(e)))
       case PointerType(_) => state.exprs.const("null")
@@ -107,14 +108,14 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
   // conversions between integers and truth values as in C
   def toInt(expr: core.Expr, t: Type): core.Expr =
     t match
-      case IntType(_, _) => expr
+      case IntType(_, _) | Integer => expr
       case BoolType => state.exprs.app("number", List(expr))
       case _        => Error.raise("not an integer", expr)
 
   def toBool(expr: core.Expr, t: Type): core.Expr =
     t match
       case BoolType => expr
-      case IntType(_, _) => state.exprs.app("truth", List(expr))
+      case IntType(_, _) | Integer => state.exprs.app("truth", List(expr))
       case PointerType(_) => state.exprs.app("not", List(state.exprs.app("=", List(expr, state.exprs.const("null")))))
       case _        => Error.raise("not a truth value", expr)
 
@@ -493,6 +494,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Items(_) =>
         Error.raise("initializer list outside of a declaration", e)
 
+      case Result | Old(_) | Quant(_, _, _) =>
+        Error.raise("term of ACSL outside of an annotation", e)
+
       // the update is made before the expression, whose value is the old one for x++ and the new one for ++x
       case Incr(lhs, op, post) =>
         val t = lvalue(scope, lhs)
@@ -573,6 +577,164 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
           require(typ(t) == typ(t_))
         (pre, e_)
 
+  // the terms of ACSL, whose arithmetic is on the mathematical integers, without the conversions and wrap-around of C,
+  // whose comparisons chain, 0 <= i < n, and whose quantified variables of C types range over these types, unless
+  // -unbounded (see bounds); `result` is \result of a postcondition
+  def term(scope: Scope, result: Option[(core.Var, Type)], e: Expr): (core.Expr, Type) =
+    e match
+      case Num(text) =>
+        (state.exprs.num(literal(text)), Integer)
+
+      case Id("true") if !scope.contains("true") =>
+        (state.exprs.const("true"), BoolType)
+
+      case Id("false") if !scope.contains("false") =>
+        (state.exprs.const("false"), BoolType)
+
+      case Id(x) =>
+        Error.report("unknown variable", x):
+          require(scope.contains(x))
+        scope(x)
+
+      case Result =>
+        Error.report("\\result outside of a postcondition"):
+          require(result.isDefined)
+        result.get
+
+      case Old(arg) =>
+        val (arg_, t) = term(scope, result, arg)
+        (state.exprs.old(arg_), t)
+
+      case Index(base, index) =>
+        val (base_, t) = term(scope, result, base)
+        val (index_, it) = term(scope, result, index)
+        t match
+          case ArrayType(elem) => (state.exprs.app("select", List(base_, toInt(index_, it))), elem)
+          case _               => Error.raise("indexing of an expression that is not an array", base)
+
+      case Cond(e, None) =>
+        term(scope, result, e)
+
+      case Cond(test, Some((left, right))) =>
+        val test_ = predicate(scope, result, test)
+        val (left_, lt) = term(scope, result, left)
+        val (right_, rt) = term(scope, result, right)
+        if lt == BoolType && rt == BoolType
+        then (state.exprs.app("ite", List(test_, left_, right_)), BoolType)
+        else (state.exprs.app("ite", List(test_, toInt(left_, lt), toInt(right_, rt))), Integer)
+
+      case App("!", List(arg)) =>
+        (state.exprs.app("not", List(predicate(scope, result, arg))), BoolType)
+
+      case App("-", List(arg)) =>
+        val (arg_, t) = term(scope, result, arg)
+        (state.exprs.app("-", List(toInt(arg_, t))), Integer)
+
+      case App("~", List(arg)) =>
+        val (arg_, t) = term(scope, result, arg)
+        (state.exprs.app("bitnot", List(toInt(arg_, t))), Integer)
+
+      case App(op @ ("&&" | "||" | "==>" | "<==>"), List(left, right)) =>
+        val fun = op match
+          case "&&"  => "and"
+          case "||"  => "or"
+          case "==>" => "=>"
+          case _     => "="
+        (state.exprs.app(fun, List(predicate(scope, result, left), predicate(scope, result, right))), BoolType)
+
+      // chained comparisons, where a parenthesized comparison is Cond(_, None) and does not chain
+      case App(op, List(App(op_, List(_, middle)), right)) if relation(op) && relation(op_) =>
+        val App(_, List(first, _)) = e: @unchecked
+        val left = predicate(scope, result, first)
+        val next = predicate(scope, result, App(op, List(middle, right)))
+        (state.exprs.app("and", List(left, next)), BoolType)
+
+      case App(op, List(left, right)) if relation(op) =>
+        val (left_, lt) = term(scope, result, left)
+        val (right_, rt) = term(scope, result, right)
+        val (left__, right__) =
+          (lt, rt) match
+            case (BoolType, BoolType) | (ArrayType(_), _) | (_, ArrayType(_)) => (left_, right_)
+            case _                                                          => (toInt(left_, lt), toInt(right_, rt))
+        val phi = op match
+          case "==" => state.exprs.app("=", List(left__, right__))
+          case "!=" => state.exprs.app("not", List(state.exprs.app("=", List(left__, right__))))
+          case _    => state.exprs.app(op, List(left__, right__))
+        (phi, BoolType)
+
+      case App(op, List(left, right)) =>
+        val (left_, lt) = term(scope, result, left)
+        val (right_, rt) = term(scope, result, right)
+        (arith(op, toInt(left_, lt), toInt(right_, rt)), Integer)
+
+      case Cast(Integer, e) =>
+        val (e_, t) = term(scope, result, e)
+        (toInt(e_, t), Integer)
+
+      case Cast(t: IntType, e) =>
+        val (e_, t_) = term(scope, result, e)
+        (convert(toInt(e_, t_), t_, t), t)
+
+      case Cast(BoolType, e) =>
+        (predicate(scope, result, e), BoolType)
+
+      case Quant(quant, bound, body) =>
+        val xs = for (t, x) <- bound yield (x, state.exprs.formal(x, typ(t)), t)
+        val scope_ = scope ++ xs.map((x, v, t) => x -> (v, t))
+        val body_ = predicate(scope_, result, body)
+        val guards = xs.flatMap((_, v, t) => bounds(t, v))
+        val guard = if guards.isEmpty then None else Some(guards.reduce((phi, psi) => state.exprs.app("and", List(phi, psi))))
+        val vs = xs.map(_._2)
+        quant match
+          case "forall" => (state.exprs.all(vs, guard.fold(body_)(g => state.exprs.app("=>", List(g, body_)))), BoolType)
+          case _        => (state.exprs.ex(vs, guard.fold(body_)(g => state.exprs.app("and", List(g, body_)))), BoolType)
+
+      case _ =>
+        Error.raise("not supported in annotations", e)
+
+  def relation(op: String) =
+    op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || op == ">="
+
+  def predicate(scope: Scope, result: Option[(core.Var, Type)], e: Expr): core.Expr =
+    val (e_, t) = term(scope, result, e)
+    toBool(e_, t)
+
+  // the range of a quantified variable of a C integer type, as that of nondeterministic values (see havoc)
+  def bounds(t: Type, x: core.Var): Option[core.Expr] =
+    t match
+      case t: IntType if !unbounded =>
+        val (lo, hi) = range(t)
+        Some(state.exprs.app("and", List(state.exprs.app("<=", List(state.exprs.num(lo), x)), state.exprs.app("<=", List(x, state.exprs.num(hi))))))
+      case t: IntType if !t.signed =>
+        Some(state.exprs.app("<=", List(state.exprs.num(0), x)))
+      case _ =>
+        None
+
+  // a predicate of an annotation, type checked in the scope of the C variables, since the attributes of loops and
+  // procedures are not checked with the bodies
+  def formula(scope: Scope, result: Option[(core.Var, Type)], phi: Expr): core.Expr =
+    val vars = scope.values.map(_._1).toList ++ result.map(_._1)
+    state.exprs.check(core.Scope.empty ++ vars, predicate(scope, result, phi), state.types.sort("Bool"))
+
+  def measure(scope: Scope, result: Option[(core.Var, Type)], e: Expr): core.Expr =
+    val vars = scope.values.map(_._1).toList ++ result.map(_._1)
+    val (e_, t) = term(scope, result, e)
+    state.exprs.check(core.Scope.empty ++ vars, toInt(e_, t), state.types.sort("Int"))
+
+  // the clauses of ACSL as the attributes of loops and procedures; assigns and loop assigns are dropped, since the
+  // modified variables are inferred (see modifies)
+  def clauses(scope: Scope, result: Option[(core.Var, Type)], clauses: List[Clause]): List[(String, Option[core.Expr])] =
+    clauses.collect:
+      case Clause("requires", Some(phi))       => "requires" -> Some(formula(scope, None, phi))
+      case Clause("ensures", Some(phi))        => "ensures" -> Some(formula(scope, result, phi))
+      case Clause("decreases", Some(e))        => "decreases" -> Some(measure(scope, None, e))
+      case Clause("loop invariant", Some(phi)) => "invariant" -> Some(formula(scope, None, phi))
+      case Clause("loop variant", Some(e))     => "decreases" -> Some(measure(scope, None, e))
+
+  // the clauses of the loop that is translated, in its scope (see Ctx)
+  def loop(scope: Scope, ctx: Ctx): List[(String, Option[core.Expr])] =
+    clauses(scope, None, ctx.loop)
+
   // the arguments of a call to function `f`, converted to the types of its parameters
   def arguments(scope: Scope, ctx: Ctx, f: String, args: List[Expr]): (List[core.Prog], List[core.Expr]) =
     Error.report("unknown function", f):
@@ -620,6 +782,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Labeled(_, stmt)              => indexed(stmt)
       case Switch(test, body)            => indexed(test) ++ body.toSet.flatMap(indexed)
       case Case(_, stmt)                 => indexed(stmt)
+      case Annotated(clauses, loop)      => clauses.flatMap(_.arg).toSet.flatMap(indexed) ++ indexed(loop)
+      case Assertion(phi)                => indexed(phi)
       case _                             => Set()
 
   // the variables that are read in a statement, all but those assigned by x = e, including the arrays of a[i] = e
@@ -639,6 +803,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Labeled(_, stmt)              => reads(stmt)
       case Switch(test, body)            => reads(test) ++ body.toSet.flatMap(reads)
       case Case(value, stmt)             => value.toSet.flatMap(reads) ++ reads(stmt)
+      case Annotated(clauses, loop)      => clauses.flatMap(_.arg).toSet.flatMap(reads) ++ reads(loop)
+      case Assertion(phi)                => reads(phi)
       case _                             => Set()
 
   def reads(e: Expr): Set[String] =
@@ -766,7 +932,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
       case While(test, body) =>
         val (test_, check) = guard(scope, ctx, test)
-        List(while_(test_, wrap(check ++ stmt(scope, ctx, body))))
+        List(while_(test_, wrap(check ++ stmt(scope, ctx.copy(loop = Nil), body)), loop(scope, ctx)))
 
       // the test is evaluated after each iteration, also after continue, but not before the first one
       case DoWhile(body, test) =>
@@ -775,10 +941,10 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
         val body_ =
           if check.isEmpty
-          then state.progs.block(Nil, state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx, body))
-          else state.progs.block(Nil, state.progs.if_(state.exprs.app("not", List(first)), state.progs.block(Nil, check), skip) :: state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx, body))
+          then state.progs.block(Nil, state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx.copy(loop = Nil), body))
+          else state.progs.block(Nil, state.progs.if_(state.exprs.app("not", List(first)), state.progs.block(Nil, check), skip) :: state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx.copy(loop = Nil), body))
 
-        List(state.progs.assign(List(first), List(state.exprs.const("true"))), while_(state.exprs.app("or", List(first, test_)), body_))
+        List(state.progs.assign(List(first), List(state.exprs.const("true"))), while_(state.exprs.app("or", List(first, test_)), body_, loop(scope, ctx)))
 
       // the initialization may declare variables, whose scope is the loop
       case For(init, test, step, body) =>
@@ -788,17 +954,24 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       // and a break of the body sets a flag that leaves the outer loop
       case Loop(test, body, step) =>
         val (test_, check) = test.map(guard(scope, ctx, _)).getOrElse((state.exprs.const("true"), Nil))
-        val body_ = stmt(scope, ctx, body)
+        val body_ = stmt(scope, ctx.copy(loop = Nil), body)
         val step_ = step.toList.flatMap(stmt(scope, ctx, _))
 
         if !body_.exists(continues)
-        then List(while_(test_, state.progs.block(Nil, check ++ body_ ++ step_)))
+        then List(while_(test_, state.progs.block(Nil, check ++ body_ ++ step_), loop(scope, ctx)))
         else
           val brk = temp(ctx, BoolType)
           val inner = while_(state.exprs.const("true"), state.progs.block(Nil, body_.map(exits(brk, _)) :+ state.progs.break))
           val leave = state.progs.if_(brk, state.progs.break, skip)
-          val outer = while_(test_, state.progs.block(Nil, check ++ List(inner, leave) ++ step_))
+          val outer = while_(test_, state.progs.block(Nil, check ++ List(inner, leave) ++ step_), loop(scope, ctx))
           List(state.progs.assign(List(brk), List(state.exprs.const("false"))), outer)
+
+      // the clauses of the loop are resolved in its scope, e.g. with the variables declared by the initialization of a for
+      case Annotated(clauses, loop) =>
+        stmt(scope, ctx.copy(loop = clauses), loop)
+
+      case Assertion(phi) =>
+        List(state.progs.assert(formula(scope, None, phi)))
 
       case Return(None) =>
         Error.report("return without value from a function with result"):
@@ -865,6 +1038,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case For(_, _, _, body)            => unlabeled(body)
       case Switch(_, body)               => body.forall(unlabeled)
       case Case(_, stmt)                 => unlabeled(stmt)
+      case Annotated(_, loop)            => unlabeled(loop)
       case _                             => true
 
   // a switch is a chain of conditionals over the value of its test, which is evaluated once, where each case is
@@ -946,6 +1120,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case For(_, _, _, body)            => labels(body)
       case Switch(_, body)               => body.flatMap(labels).toMap
       case Case(_, stmt)                 => labels(stmt)
+      case Annotated(_, loop)            => labels(loop)
       case _                             => Map()
 
   // the condition of a loop, whose calls are evaluated at the beginning of each iteration (`check`),
@@ -1128,8 +1303,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case _                                   => false
 
   // loops modify the global variables that their body assigns or that the functions it calls modify,
-  // which are their modifies clause, as C has no annotations for it
-  def while_(test: core.Expr, body: core.Prog): core.Prog =
+  // which are their modifies clause, as C has no annotations for it, followed by the clauses of ACSL (see loop)
+  def while_(test: core.Expr, body: core.Prog, clauses: List[(String, Option[core.Expr])] = Nil): core.Prog =
     def calls(prog: core.Prog): Set[core.Var] =
       prog match
         case core.Call(f, _, _) => state.procattrs(f).modifies.toSet
@@ -1137,8 +1312,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
     val vars = globals.values.map(_._1).toSet
     val mod = (body.mod.toSet intersect vars) ++ calls(body)
-    val attrs = if mod.isEmpty then Attrs.empty else Attrs(List("modifies" -> Some(mod.toList.sortBy(_.name.toString))))
-    state.progs.while_(test, body, attrs)
+    val attrs = if mod.isEmpty then Nil else List("modifies" -> Some(mod.toList.sortBy(_.name.toString)))
+    state.progs.while_(test, body, Attrs(attrs ++ clauses))
 
   // calls of functions whose result has the type of the variable, which needs no conversion
   def direct(rhs: Expr, t: Type) =
@@ -1162,6 +1337,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Labeled(_, stmt)              => assigned(stmt)
       case Switch(test, body)            => writes(test) ++ body.toSet.flatMap(assigned)
       case Case(_, stmt)                 => assigned(stmt)
+      case Annotated(_, loop)            => assigned(loop)
       case _                             => Set()
 
   // the direct subexpressions of an expression
@@ -1175,6 +1351,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case SizeofExpr(e)        => List(e)
       case Items(items)         => items
       case Cond(test, branches) => test :: branches.toList.flatMap((left, right) => List(left, right))
+      case Old(e)               => List(e)
+      case Quant(_, _, body)    => List(body)
       case _                    => Nil
 
   // the functions called in an expression
@@ -1227,6 +1405,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Labeled(_, stmt)                    => all(scope, List(stmt))
       case Switch(test, body)                  => all(scope, ExprStmt(test) :: body)
       case Case(_, stmt)                       => all(scope, List(stmt))
+      case Annotated(_, loop)                  => all(scope, List(loop))
       case decl: Decl                          => all(scope, List(decl))
       case _                                   => (Set(), Set())
 
@@ -1254,6 +1433,15 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       unit.collect:
         case f @ Function(_, name, _, _) if !Syntax.builtin(name) => readonly(f)
         case top if !top.isInstanceOf[Function]                   => top
+
+    // the contracts of ACSL by the names of the functions that follow them, those of declarations and of the
+    // definition together, where repeated clauses count once
+    val contracts = mutable.Map[String, List[Clause]]()
+    for case (Contract(clauses), next) <- unit zip (unit.tail.map(Some(_)) :+ None)
+    do
+      next match
+        case Some(Function(_, name, _, _)) => contracts(name) = (contracts.getOrElse(name, Nil) ++ clauses).distinct
+        case _                             => Error.raise("contract not followed by a function", clauses)
 
     // the signatures of all functions are known before any body is resolved
     for case f @ Function(_, name, _, _) <- tops if !functions.contains(name)
@@ -1316,7 +1504,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       val mod_ = mod(name).toList.sorted.map(globals(_)._1)
       val modifies = if mod_.isEmpty then Nil else List("modifies" -> Some(mod_))
       val requires = if name == "main" && zeros.nonEmpty then List("requires" -> Some(zeros_)) else Nil
-      val attrs = Attrs(modifies ++ requires)
+      val scope = globals.toMap ++ (for ((t, x), v) <- params zip in yield x -> (v, t))
+      val contract = clauses(scope, out.headOption.map((_, ret)), contracts.getOrElse(name, Nil))
+      val attrs = Attrs(modifies ++ requires ++ contract)
 
       Error.report("parameter named result", name):
         require(ret == VoidType || !params.exists(_._2 == "result"))

@@ -18,8 +18,11 @@ object Grammar:
 
   val postfix_ops = Map[String, Int]()
 
-  // the precedences of C, the bit operations below the comparisons
+  // the precedences of C, the bit operations below the comparisons, and the logical connectives of ACSL below those
+  // of C, where implications associate to the right
   val infix_ops = Map(
+    "<==>" -> (Assoc.Left, 0),
+    "==>" -> (Assoc.Right, 1),
     "||" -> (Assoc.Left, 2),
     "&&" -> (Assoc.Left, 3),
     "|" -> (Assoc.Left, 4),
@@ -117,8 +120,12 @@ object Grammar:
   val float =
     FloatType("float" | "double")
 
+  // the types of ACSL, which occur only in annotations
+  val logic =
+    Integer("integer") | BoolType("boolean")
+
   val base: Parser[Type] =
-    P(float | int | bool | void)
+    P(float | int | bool | void | logic)
 
   val typ: Parser[Type] =
     P(qualifier.* ?~ base ~ qualifier.*)
@@ -151,8 +158,24 @@ object Grammar:
   val sizeof: Parser[Expr] =
     P("sizeof" ~ (SizeofType("(" ?~ (qualifier.* ?~ intwords) ~ qualifier.* ~ ")") | SizeofExpr(unary)))
 
+  // the variables bound by a quantifier of ACSL, where a variable without type has that of the one before,
+  // \forall integer i, j;
+  val binders: Parser[List[(Type, String)]] =
+    P((pointer.? ~ id) ~+ ",").map:
+      _.foldLeft(List[(Type, String)]()):
+        case (done, (Some(typ), x))           => done :+ (typ, x)
+        case (done @ (_ :+ (typ, _)), (None, x)) => done :+ (typ, x)
+        case (_, (None, x))                   => Error.raise("quantified variable without type", x)
+
+  val quant =
+    Quant(P((S("\\forall").map("forall") | S("\\exists").map("exists")) ~ binders ~ ";" ~ expr))
+
+  // the terms of ACSL, which the scanner yields only in annotations
+  val logical: Parser[Expr] =
+    P(Result("\\result") | Old("\\old" ~ parens(expr)) | Id(S("\\true").map("true")) | Id(S("\\false").map("false")) | quant)
+
   val atom: Parser[Expr] =
-    P(Num(num) | FloatNum(T("flt")) | sizeof | call | Id(id) | cast | parens(expr))
+    P(Num(num) | FloatNum(T("flt")) | sizeof | call | Id(id) | cast | parens(expr) | logical)
 
   val postfix: Parser[Expr] =
     P(atom ~ brackets(expr).*).map:
@@ -266,8 +289,23 @@ object Grammar:
   val default_ =
     P("default" ~ ":" ~ stmt).map(Case(None, _))
 
+  // the annotations of ACSL in function bodies: loops with their clauses, which may span several annotations, and
+  // assertions, several in one annotation (see Parser.clauses)
+  val loopclause =
+    P("loop" ~ (P("invariant" ~ expr ~ ";").map(phi => Clause("loop invariant", Some(phi)))
+      | P("variant" ~ expr ~ ";").map(e => Clause("loop variant", Some(e)))
+      | ("assigns" ~ Until(";")).map(Clause("loop assigns", None))))
+
+  val annotated =
+    Annotated(P(("/*@" ?~ loopclause.+ ~ "*/").+.map(_.flatten) ~ (while_ | for_ | dowhile)))
+
+  val assertion =
+    P("/*@" ?~ P("assert" ~ expr ~ ";").+ ~ "*/").map:
+      case List(phi) => Assertion(phi)
+      case phis      => Block(phis.map(Assertion))
+
   val stmt: Parser[Stmt] =
-    P(block | if_ | while_ | dowhile | for_ | switch_ | case_ | default_ | return_ | break_ | continue_ | goto_ | empty | labeled | (simple ~ ";"))
+    P(annotated | assertion | block | if_ | while_ | dowhile | for_ | switch_ | case_ | default_ | return_ | break_ | continue_ | goto_ | empty | labeled | (simple ~ ";"))
 
   // arrays of arrays as parameters, e.g. int a[][N]
   val param =
@@ -298,11 +336,21 @@ object Grammar:
   val global =
     Global(Decl(P(sized ~ (declarator ~+ ",") ~ ";")))
 
+  // the contract of ACSL of the function that follows
+  val clause =
+    P(P("requires" ~ expr ~ ";").map(phi => Clause("requires", Some(phi)))
+      | P("ensures" ~ expr ~ ";").map(phi => Clause("ensures", Some(phi)))
+      | P("decreases" ~ expr ~ ";").map(e => Clause("decreases", Some(e)))
+      | ("assigns" ~ Until(";")).map(Clause("assigns", None)))
+
+  val contract =
+    Contract(P("/*@" ?~ clause.+ ~ "*/"))
+
   val typedef_ =
     Typedef("typedef" ~ Until(";"))
 
   val top: Parser[Top] =
-    P(typedef_ | function | global)
+    P(typedef_ | contract | function | global)
 
   // at least one declaration, such that a declaration that is not supported is a parse error,
   // where top.* would succeed without consuming input, which the pipeline then parses again forever

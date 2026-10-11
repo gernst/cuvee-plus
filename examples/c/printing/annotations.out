@@ -1,0 +1,55 @@
+int g;
+
+int b[];
+
+/*@
+  requires 0 <= n && n <= 10;
+  ensures \result == \old(g) + n;
+  ensures \forall integer k; 0 <= k && k < n ==> b[k] == k;
+*/
+int fill(int n) {
+  int result;
+  int old;
+  old = g;
+  int i;
+  i = 0;
+  /*@
+    loop invariant 0 <= i && i <= n && g == old + i;
+    loop invariant \forall integer k; 0 <= k && k < i ==> b[k] == k;
+  */
+  while (i < n) {
+    b[i] = i;
+    g = g + 1;
+    i = i + 1;
+  }
+  result = g;
+  return result;
+}
+
+int main(void) {
+  int result;
+  int tmp_1;
+  _Bool p;
+  int r;
+  int j;
+  p = g == 0;
+  tmp_1 = fill(3);
+  r = tmp_1;
+  j = 5;
+  /*@
+    loop variant j;
+  */
+  while (j > 0) {
+    j = j - 1;
+  }
+  /*@
+    assert (p <==> r == 3) && (\exists integer k; b[k] == 2);
+  */
+  /*@
+    assert \forall boolean q; q || !q;
+  */
+  assert((unsigned char) (r + 255) == 2);
+  result = r;
+  return result;
+}
+

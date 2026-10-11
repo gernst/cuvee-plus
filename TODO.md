@@ -898,6 +898,18 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   are compared but not dereferenced; no `&`, `*p`, or pointer arithmetic.
 - The modifies clause of a loop is inferred from the core program, where a
   local variable that shadows a global one of the same type counts as global.
+- ACSL annotations (0.38.0, `/*@ ... */` and `//@`): function contracts
+  `requires`, `ensures` (`\result`, `\old`), `decreases`; `loop invariant`,
+  `loop variant` before `while`, `for`, `do`; `assert`; terms with `==>`,
+  `<==>`, `\forall`/`\exists` (variables of C types range over the type,
+  except with `-unbounded`, `integer` and `boolean` unbounded), chained
+  comparisons, mathematical arithmetic without wrap-around, casts as in C.
+  `assigns` and `loop assigns` are skipped (the modifies clauses are
+  inferred). Not supported: other `\...` constructs (`\valid`, `\at`,
+  `\separated`, ...), behaviors, ghost code, logic definitions, calls in
+  annotations; contracts of `main` are conjoined with the zero values of the
+  globals. The printer writes contracts, loop invariants and variants, and
+  assertions that are not C (quantifiers, implications, `\old`) as ACSL.
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
