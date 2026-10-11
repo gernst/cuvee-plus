@@ -3,7 +3,9 @@
 Cuvée is a pipeline for program verification in Scala 3. It reads SMT-LIB,
 Boogie, Dafny, and C, translates them into one common representation of logic
 and programs, transforms that representation, and prints it in any of these
-languages or passes it to an SMT solver (z3 or cvc5).
+languages or passes it to an SMT solver (z3 or cvc5). Its verifier for C,
+based on trace equation systems, takes part in SV-COMP 2027 (see
+[SV-COMP](#sv-comp) below).
 
 ## Capabilities
 
@@ -41,10 +43,16 @@ languages or passes it to an SMT solver (z3 or cvc5).
   `invs(for Y check y => φ)` (in Boogie `all(...)`), where the dependencies are traces without their
   last element, `⌊X⌋` in Dafny and Boogie (`butlast`, sort `Trace<T>`).
   Loop-free programs go directly to a solver,
-  loops need rewriting by lemmas first: `-teq` injects a lemma database
-  ([resources/cuvee/teq.dfy](resources/cuvee/teq.dfy)) once at the beginning
-  of its output, whose rewrite rules `-simplify` applies, e.g. the counter
-  lemma.
+  loops need rewriting by lemmas first: `-teq` injects the modules of a lemma
+  database ([resources/cuvee/teq](resources/cuvee/teq): `core`, `arithmetic`,
+  `counters`, `aggregation`, `arrays`, `search`) once at the beginning of its
+  output, whose rewrite rules `-simplify` applies, e.g. the counter lemma;
+  `-include teq:<concept>` adds a further module (`nested`, `sorting`,
+  `strides`). The lemmas of the former single file
+  [teq.dfy](resources/cuvee/teq.dfy) are proved in Lean 4
+  ([teq.lean](resources/cuvee/teq.lean)). `-rules` reports the rules that
+  close each goal. `-fallback` encodes the trace equation systems that remain
+  into first-order logic for the solvers.
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the
   predicates by their fields.
@@ -137,10 +145,59 @@ simplifier and of the rewrite engine that change an expression, in the
 language of the output; `-debug solver` traces the communication with the
 solvers.
 
+## SV-COMP
+
+Cuvée takes part in the categories ReachSafety-Arrays and ReachSafety-Loops
+(property `unreach-call`) of SV-COMP 2027 with
+
+```sh
+./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 [-arch 32|64] task.c
+```
+
+where no output means that the property holds, a goal that simplifies to
+`false` that it is violated, and other remaining goals are not refuted
+(unknown); Cuvée does not produce witnesses.
+
+- [cuvee.py](cuvee.py): the tool-info module of BenchExec, which interprets
+  this output; submitted to BenchExec as `benchexec/tools/cuvee.py`.
+- [benchmarks/sv-comp](benchmarks/sv-comp): Dafny translations of the tasks of
+  both categories and C programs printed from them; `./benchmark
+  xml/<definition>.xml -r <rundefinition> -t <tasks>` runs Cuvée and other
+  verifiers on them and on the original tasks with BenchExec, whose results
+  [scripts](scripts) summarize (`table.py`, `scatter.py`, `quantile.py`,
+  `rules.py`). [SV-COMP.md](SV-COMP.md) records the results and the
+  limitations found.
+- [archive](archive): the README, `smoketest.sh`, and examples of the archive
+  for the competition; `scripts/zenodo.py package` builds `dist/cuvee.zip`
+  and runs its smoke test, `upload` and `publish` put it on Zenodo (with a
+  personal access token, see the script).
+- [doc/paper](doc/paper): the competition contribution (LNCS).
+
 ## Documentation
 
 - [doc/architecture.md](doc/architecture.md): the pipeline, the packages, and
   how a run flows through them.
 - [doc/datastructures.md](doc/datastructures.md): the core representation of
   types, expressions, programs, commands, and the state.
+- [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion,
+  and forward reasoning.
+- [doc/teq.md](doc/teq.md): trace equation systems, the combinators, and the
+  lemma database.
+- [doc/hybrid.md](doc/hybrid.md): derivatives, differential equations, and
+  parallel composition.
 - [doc/style.md](doc/style.md): coding style.
+- [ideas](ideas): proposals and experiments that are not implemented.
+
+## License
+
+Cuvée is licensed under the Apache License 2.0 ([LICENSE](LICENSE)). The
+archive for SV-COMP includes software under its own licenses: Z3
+([LICENSE.z3](LICENSE.z3)), the Scala library
+([LICENSE.scala](LICENSE.scala)), sourcecode
+([LICENSE.sourcecode](LICENSE.sourcecode)), and SnakeYAML Engine
+([LICENSE.snakeyaml](LICENSE.snakeyaml)).
+
+## Acknowledgement
+
+This code was developed with the help of Claude Code, using the models Claude
+Opus and Claude Fable by Anthropic.
