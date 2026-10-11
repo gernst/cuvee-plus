@@ -1,1 +1,0 @@
-(error "goal does not hold" "Sat" "(<= 0 y1)")

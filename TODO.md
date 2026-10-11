@@ -46,6 +46,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   - `-chc -z3` refutes `loop-add` (expected true): the clauses of `verify-call add (x0 y0)` contain the goal
     `forall y0. 0 <= y0`, the precondition of `add` over all values of the constants, which fails; the task
     expects the precondition of the called procedure to be assumed (`-teq` proves the task).
+    Done in 0.39.4: `verify-call` assumes the precondition for the arguments (`Horn.entry`; `Verify` emits no
+    goal for it), `loop-add` is true with `-chc -z3`. Consequence: `loop-add-incorrect-invariant` (expected false
+    by its `:not-live`, the invariant itself holds) was refuted by the precondition goal before, by accident, and is
+    now true with `-chc`, a wrong verdict while `:live`/`:not-live` are ignored (left to the liveness work).
 - `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
   unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final
   assertion fails), after about 340 s each, in the 15-minute runs of `xml/cuvee-full-fallback.xml` of Oct 11, 2026

@@ -54,7 +54,8 @@ object Horn extends Transform:
   // the entry clauses of a verify-call of SV-LIB: p_pre(args, gs) for all values of the global variables gs and
   // of the constants, assuming the axioms about them (see constants), since Horn solvers do not support
   // free constants in clauses, which are therefore not asserted; constants that occur elsewhere, e.g. in the bodies
-  // of procedures, are not supported; the arguments must satisfy the precondition, which is a goal
+  // of procedures, are not supported; the precondition of the procedure is assumed for the arguments, as the tasks of
+  // SV-LIB expect, e.g. core-verification/loop-add with arbitrary constants as arguments
   def entry(state: State, cmds: List[Cmd], name: Name, args: List[Expr]): List[Cmd] =
     val (in, _, requires, _) = Verify.contract(state, name)
 
@@ -71,8 +72,7 @@ object Horn extends Transform:
     val axioms_ = axioms.map(abstracted(cs, xs, _))
 
     val clauses = Ref[List[Expr]](Nil)
-    this.clauses(gs ++ xs, axioms_, And.flattenStrong(abstracted(cs, xs, requires_)), clauses)
-    clause(gs ++ xs, axioms_, abstracted(cs, xs, head), clauses)
+    clause(gs ++ xs, (axioms_ ++ And.flattenStrong(abstracted(cs, xs, requires_))).distinct, abstracted(cs, xs, head), clauses)
     clauses.value.map(axiom)
 
   // whether `cmd` is an axiom about constants, e.g. (assert (<= 0 n)) of SV-LIB
@@ -153,7 +153,7 @@ object Horn extends Transform:
         // the entry of a procedure that is not called, e.g. main, whose precondition is the initial values of the
         // global variables in C, or a procedure of SV-LIB, which is verified for all inputs that satisfy its
         // precondition; the precondition of a called procedure is a goal at its calls (the entry of a verify-call
-        // checks it separately, see entry), the postcondition at the exit
+        // assumes it, see entry), the postcondition at the exit
         if called(state, name)
         then this.clauses(in ++ gs, List(App(state, pre, in ++ gs)), And.flattenStrong(requires), clauses)
         else clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)

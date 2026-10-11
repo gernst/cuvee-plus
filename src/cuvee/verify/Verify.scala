@@ -22,24 +22,10 @@ object Verify extends Transform:
         cmd_ <- verify(state, gs, cmd)
       yield cmd_
 
-    val entry_ =
-      last match
-        case VerifyCall(name, args) => List(entry(state, gs, name, args))
-        case _                      => Nil
-
-    cmds_ ++ entry_
-
-  // the goal of a verify-call of SV-LIB: the arguments satisfy the precondition of the procedure for all values of
-  // the global variables, under the axioms about the constants, which the solver assumes;
-  // the procedures are verified by their definitions, hence all other executions are covered
-  def entry(state: State, gs: List[Var], name: Name, args: List[Expr]): Cmd =
-    val (in, _, pre, _) = contract(state, name)
-
-    Error.report("wrong number of arguments in verify-call", name, args):
-      require(in.length == args.length)
-
-    val pre_ = Subst.from(in, args)(pre)
-    Assert(Goal, Nil, All(gs, pre_), Attrs.empty)
+    // a verify-call has no goal of its own: the precondition of the procedure is assumed for the arguments, as the
+    // tasks of SV-LIB expect (e.g. core-verification/loop-add), and the procedures are verified by their definitions,
+    // hence all executions from the call are covered
+    cmds_
 
   // the goals of a command, the other commands are kept
   def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =

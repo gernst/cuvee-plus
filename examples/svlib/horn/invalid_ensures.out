@@ -85,11 +85,6 @@
 
 (assert
   (forall
-    ((y1 Int))
-    (=> (<= 0 y1) (<= 0 y1))))
-
-(assert
-  (forall
     ((x1 Int) (y1 Int))
     (=> (<= 0 y1) (add_pre x1 y1))))
 
