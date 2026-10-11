@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/cocktail_sort.dfy
+// ./Cuvee.sh -teq -include teq:nested -simplify examples/dafny/algorithms/cocktail_sort.dfy
 // cocktail shaker sort: each outer iteration runs a forward bubble pass over [lo, hi), which moves the maximum to
 // hi - 1, and a backward pass over (lo, hi - 1], which moves the minimum to lo; the backward pass uses two pointers
 // j and p == j - 1 (insertion_sort2.dfy)
@@ -63,7 +63,7 @@ lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int, len3:
                                   Cs: List<Trace<array<int, int>>>, Js: List<Trace<int>>, Ns: List<Nat>, js: List<int>,
                                   Js2: List<Trace<int>>, Ps: List<Trace<int>>, Ns2: List<Nat>, Js3: List<Trace<int>>,
                                   ps: List<int>, Ps3: List<Trace<int>>, js4: List<int>, Js4: List<Trace<int>>,
-                                  js5: List<int>, Js5: List<Trace<int>>, js6: List<int>, Js6: List<Trace<int>>, X: int -> int, Y: int -> int)
+                                  js5: List<int>, Ns5: List<Nat>, js6: List<int>, Ns6: List<Nat>, Ns7: List<Nat>, X: int -> int, Y: int -> int)
   // the first pass: from the previous value x to the intermediate result c, over the counter J from k
   requires invs(for ks, cs, Cs check k, c, C :: c == current(C))
   requires invs(for ks, ⌊results(a, ks, bs)⌋, Cs, Js check k, x, C, J :: C == bubble_pass(x, ⌊J⌋))
@@ -71,8 +71,10 @@ lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int, len3:
   requires invs(for ks, js check k, j :: len <= j + k + 1)
   requires invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j + k + 1 < len2))
   requires Js2 == Js && len2 == len
-  requires invs(for ks, js5, Js5 check k, j, J :: j == current(J))
-  requires js5 == js && Js5 == Js
+  // the final values of the forward counter in the form that the module nested gives them (without the module the
+  // fragment is j == current(J), and the summary was stated with it)
+  requires invs(for ks, Ns5, js5 check k, nn, j :: j == integer(nn) + k)
+  requires js5 == js && Ns5 == Ns
   // the second pass: from the intermediate result c to the result b, over the counters J' from len - k - 2 and
   // P' from len - k - 3 down by 1
   requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
@@ -86,13 +88,15 @@ lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int, len3:
   requires invs(for ks, Js4 check k, J :: invs(for ⌊J⌋ check j :: k < j))
   requires Js4 == Js3
   requires invs(for ks, js4 check k, j :: j <= k)
-  requires invs(for ks, ps, Ps3 check k, p, P :: p == current(P))
+  // the final values of the backward counters in the module's forms, p == len - k - 3 - nn and j == len - k - 2 - nn
+  requires invs(for ks, Ns6, ps check k, nn, p :: integer(nn) + p + k + 3 == len)
+  requires Ns6 == Ns2
   // the final values of the backward counter J' with fresh variables, matched against the fact, then identified: with
   // js4 and Js3 bound by the conditions above, the condition is closed and decided instead, which fails (the first
   // condition that fails, found by the truncated copies cock7_*; the same condition for the forward pass, js5 and
   // Js5, uses fresh variables)
-  requires invs(for ks, js6, Js6 check k, j, J :: j == current(J))
-  requires js6 == js4 && Js6 == Js3
+  requires invs(for ks, Ns7, js6 check k, nn, j :: integer(nn) + j + k + 2 == len)
+  requires js6 == js4 && Ns7 == Ns2
   ensures current(results(a, ks, bs)) == current(trace(a, for ks do b, k :: shake(b, k, len)))
 
 // the invariant after k iterations: the prefix b[0..k) and the suffix b[n - k..n) are sorted, and all of the prefix

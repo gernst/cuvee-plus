@@ -15,10 +15,6 @@ lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>,
            J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
       <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
 
-function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
-  trace(x0, for ks, bs do x, k, b :: b)
-}
-
 function {:fold} bubble_pass(b: array<int, int>,
                              js: List<int>): Trace<array<int, int>> {
   trace(b, for js
@@ -48,8 +44,8 @@ lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int,
                                   Js3: List<Trace<int>>, ps: List<int>,
                                   Ps3: List<Trace<int>>, js4: List<int>,
                                   Js4: List<Trace<int>>, js5: List<int>,
-                                  Js5: List<Trace<int>>, js6: List<int>,
-                                  Js6: List<Trace<int>>, X: int -> int,
+                                  Ns5: List<Nat>, js6: List<int>,
+                                  Ns6: List<Nat>, Ns7: List<Nat>, X: int -> int,
                                   Y: int -> int)
   requires invs(for ks, cs, Cs check k, c, C :: c == current(C))
   requires
@@ -62,9 +58,9 @@ lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int,
     invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j + k + 1 < len2))
   requires Js2 == Js
   requires len2 == len
-  requires invs(for ks, js5, Js5 check k, j, J :: j == current(J))
+  requires invs(for ks, Ns5, js5 check k, nn, j :: j == integer(nn) + k)
   requires js5 == js
-  requires Js5 == Js
+  requires Ns5 == Ns
   requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
   requires
     invs(for ks, cs, Bs, Js3, Ps3
@@ -79,10 +75,13 @@ lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int,
   requires invs(for ks, Js4 check k, J :: invs(for ⌊J⌋ check j :: k < j))
   requires Js4 == Js3
   requires invs(for ks, js4 check k, j :: j <= k)
-  requires invs(for ks, ps, Ps3 check k, p, P :: p == current(P))
-  requires invs(for ks, js6, Js6 check k, j, J :: j == current(J))
+  requires
+    invs(for ks, Ns6, ps check k, nn, p :: integer(nn) + p + k + 3 == len)
+  requires Ns6 == Ns2
+  requires
+    invs(for ks, Ns7, js6 check k, nn, j :: integer(nn) + j + k + 2 == len)
   requires js6 == js4
-  requires Js6 == Js3
+  requires Ns7 == Ns2
   ensures
     current(results(a, ks, bs))
       == current(trace(a, for ks do b, k :: shake(b, k, len)))

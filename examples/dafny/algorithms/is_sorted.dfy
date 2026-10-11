@@ -10,6 +10,12 @@
 // constraints, iteration constraints over adjacent positions are the abstract predicate); the exit of the loop from 1
 // is a disjunction with the case of no iteration, which -split separates only after a first -simplify produced it,
 // hence the pipeline -simplify -split -simplify; the lemma exit_from_one is not needed with it
+// tried (Oct 11, 2026, evening) without effect: a rule sorted(a, 0, m + 1) <==> sorted(a, 0, n) with n == m + 1 as a
+// side condition, which matched the equation i == n' + 1 of the final value of i instead (both equations match), and a
+// rule sorted(a, 0, x) <==> sorted(a, 0, m + 1) with x == m + 1, respectively m == x - 1, as the side condition, which
+// did not fire at all, presumably since the instance of the condition is simplified with the solution of the exit
+// before it is matched (the stored orientation of the equation is not visible in the goal); a rule that rewrites both
+// bounds to a common form also risks a cycle between the two forms
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 
 // a flag, initially x0, that is set to c whenever D holds, is x0 at the end iff D never held, otherwise c:

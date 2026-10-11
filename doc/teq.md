@@ -106,10 +106,12 @@ after section 4 of the paper.
   with the exit and the final values as side conditions, since a bare
   comparison `n <= j` as left-hand side matched every comparison fragment and
   cycled with the counter lemmas; the numbers of inner iterations as
-  `⌊consts(m, natural(n))⌋`; the outer trace of a variable that only the inner
+  `⌊consts(m, natural(n))⌋`, and the inner counters over them
+  (`invs_counter_consts`); the outer trace of a variable that only the inner
   loop modifies, `results`; see
-  [examples/dafny/algorithms](../examples/dafny/algorithms), whose
-  bubble_sort, nested_mult, row_sums and transpose use it) and
+  [examples/dafny/algorithms](../examples/dafny/algorithms), whose nested
+  loops all include it, with their summaries written for the fragment forms
+  it produces, so that it could become part of `-teq`) and
   `teq:sorting` (`sorted`, `perm`, `partitioned`, inductions), and
   `teq:strides` (the strided stores and stores ahead of the MonoCera
   benchmarks, see [benchmarks/monocera](../benchmarks/monocera): loops that

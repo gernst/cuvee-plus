@@ -2,29 +2,55 @@ function sorted(a: array<int, int>, lo: int, hi: int): bool
 
 function perm(a: array<int, int>, b: array<int, int>): bool
 
-goal
-  forall a: array<int, int>, n: int, i₁₂: int, b₁₄: array<int, int>, n₆: Nat,
-         K₈: Trace<int>, I₉: Trace<int>, B₁₁: Trace<array<int, int>> ::
-    0 <= n
-      && K₈ == counter(0, 1, n₆)
-      && i₁₂ == current(I₉)
-      && b₁₄ == current(B₁₁)
-      && I₉
-        == trace(1, for ⌊K₈⌋, ⌊B₁₁⌋
-                    do i₃, k₇, b₅ ::
-                      case i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃] => i₃ + 1
-                      case !(i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃]) => i₃ + -1)
-      && B₁₁
-        == trace(a, for ⌊K₈⌋, ⌊I₉⌋
-                    do b₅, k₇, i₃ ::
-                      case i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃] => b₅
-                      case !(i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃]) => b₅[
-                        i₃ :=
-                        b₅[i₃ + -1]][
-                        i₃ + -1 :=
-                        b₅[i₃]])
-      && invs(for ⌊K₈⌋, ⌊I₉⌋ check k₇, i₃ :: i₃ < n)
-      && 0 <= integer(n₆)
-      && n <= i₁₂
-      ==> sorted(b₁₄, 0, n) && perm(b₁₄, a)
+lemma {:rw} perm_refl(a: array<int, int>)
+  ensures perm(a, a) <==> true
+
+lemma {:rw} sorted_gnome(a: array<int, int>, n: int, u: int, d: int, x: int,
+                         Kv: Trace<int>, Iv: Trace<int>, Iv2: Trace<int>,
+                         Kv2: Trace<int>, Bv: Trace<array<int, int>>,
+                         Bv2: Trace<array<int, int>>,
+                         G: (int, array<int, int>) -> bool, P: int -> int,
+                         Q: int -> int)
+  requires
+    Bv
+      == trace(a, for ⌊Kv⌋, ⌊Iv2⌋
+                  do b, k, i ::
+                    case G(i, b) => b
+                    case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])
+  requires Iv2 == Iv
+  requires
+    Iv2
+      == trace(1, for ⌊Kv2⌋, ⌊Bv2⌋
+                  do i, k, b ::
+                    case G(i, b) => i + u case !G(i, b) => i + d)
+  requires Kv2 == Kv
+  requires Bv2 == Bv
+  requires u == 1
+  requires d == -1
+  requires
+    forall i: int, b: array<int, int> :: G(i, b) <==> i == 0 || b[i - 1] <= b[i]
+  requires forall i: int :: P(i) == i - 1
+  requires forall i: int :: Q(i) == i
+  requires x == current(Iv)
+  requires n <= x
+  ensures
+    sorted(current(trace(a, for ⌊Kv⌋, ⌊Iv⌋
+                            do b, k, i ::
+                              case G(i, b) => b
+                              case !G(i, b) => b[Q(i) := b[P(i)]][
+                                P(i) :=
+                                b[Q(i)]])), 0, n)
+      <==> true
+
+lemma {:rw} perm_gnome(a: array<int, int>, c: array<int, int>, ks: List<int>,
+                       is: List<int>, G: (int, array<int, int>) -> bool,
+                       P: int -> int, Q: int -> int)
+  ensures
+    perm(current(trace(a, for ks, is
+                          do b, k, i ::
+                            case G(i, b) => b
+                            case !G(i, b) => b[Q(i) := b[P(i)]][
+                              P(i) :=
+                              b[Q(i)]])), c)
+      <==> perm(a, c)
 

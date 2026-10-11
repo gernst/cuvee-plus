@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/insertion_sort2.dfy
+// ./Cuvee.sh -teq -include teq:nested -simplify examples/dafny/algorithms/insertion_sort2.dfy
 // insertion sort with nested loops, with two pointers j and p == j - 1 in the inner loop, such that the positions
 // of the swaps are counters: insertion_sort.dfy swaps b[j] and b[j - 1], arithmetic on a bound variable of the
 // trace, which patterns do not match (TODO.md), hence its inner loop cannot be summarized (the principle of
@@ -48,8 +48,8 @@ function insert(b: array<int, int>, i: int): array<int, int>
 // variable with d == -1 as a side condition, since the literal -1 in a pattern is not matched (reverse.dfy)
 lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>, is: List<int>, bs: List<array<int, int>>,
                                    Bs: List<Trace<array<int, int>>>, Js: List<Trace<int>>, Ps: List<Trace<int>>,
-                                   Ns: List<Nat>, Ns2: List<Nat>, Js2: List<Trace<int>>, js: List<int>, Js3: List<Trace<int>>,
-                                   ps: List<int>, Ps3: List<Trace<int>>, Js4: List<Trace<int>>,
+                                   Ns: List<Nat>, Ns2: List<Nat>, Js2: List<Trace<int>>, js: List<int>, Ns3: List<Nat>,
+                                   ps: List<int>, Ns4: List<Nat>, Js4: List<Trace<int>>,
                                    Bs5: List<Trace<array<int, int>>>, Js5: List<Trace<int>>, Ps5: List<Trace<int>>,
                                    bs6: List<array<int, int>>, js6: List<int>, ps6: List<int>)
   requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
@@ -60,10 +60,13 @@ lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>, is
   requires invs(for is, Ns2, Js2 check i, nn, J :: J == counter(i, d, nn))
   requires Ns2 == Ns && Js2 == Js
   requires invs(for ks, is check k, i :: i == k + 1)
-  requires invs(for ks, js, Js3 check k, j, J :: j == current(J))
-  requires Js3 == Js
-  requires invs(for ks, ps, Ps3 check k, p, P :: p == current(P))
-  requires Ps3 == Ps
+  // the final values of the counters in the forms that the module nested gives them, j == i - nn and p == k - nn, with
+  // the numbers of iterations over a fresh variable identified with Ns (without the module the fragments are
+  // j == current(J) and p == current(P), and the summary was stated with them)
+  requires invs(for ks, Ns3, js check k, nn, j :: integer(nn) + j == k + 1)
+  requires Ns3 == Ns
+  requires invs(for ks, Ns4, ps check k, nn, p :: integer(nn) + p == k)
+  requires Ns4 == Ns
   requires invs(for ks, Js4 check k, J :: invs(for ⌊J⌋ check j :: 0 < j))
   requires Js4 == Js
   requires invs(for ks, Bs5, Js5, Ps5 check k, B, J, P :: invs(for ⌊B⌋, ⌊J⌋, ⌊P⌋ check y, j, p :: y[j] < y[p]))

@@ -731,7 +731,12 @@ with $l$ an open variable matched against the equation of $lo$, after which the 
 The counter $\bl{\cnt(0, 1, m)}$ as a dependency matches $\bl{K}$ through $K = \cnt(0, 1, n')$ in the
 context, as in the bubble sort. Two things that were suspected were not the cause: the extra dependencies
 $\bl{Lo}$, $\bl{Hi}$ of the facts (a diagnostic with two and with four dependencies matched both) and the
-name $n$ of the rule variable, which the program shares (it was renamed to $len$ anyway).
+name $n$ of the rule variable, which the program shares (it was renamed to $len$ anyway). The file in the
+tree now runs with the module of the fragments of inner loops (\texttt{-include teq:nested}), which resolves
+the inner counters to $\cnt(k, 1, nn)$ and their final values to $j = \intf(nn) + k$,
+$\intf(nn) + j + k + 2 = len$ and $\intf(nn) + j + k + 3 = len$; the summary states these conditions in the
+forms the module produces, as the goal prints them, instead of $j = \cur(J)$. The two insertion sorts were
+adapted the same way, so that every nested loop of the folder verifies with the module.
 
 \subsection{The idea}
 Nothing new is needed for two inner loops: each pass is summarized by its own fold, and the summary of
@@ -836,6 +841,81 @@ The matching problems of mutually dependent traces are solved by two general dev
 open trace variable, which apply to every literal pattern that the matcher does not handle: in
 \texttt{insertion\_sort.dfy} with one pointer, the positions $j$ and $j - 1$ of the swaps are pinned in
 the same way, which closed a file that had been open since the start.
+
+\section{Gnome Sort: a Data-Dependent Number of Iterations}\label{sec:gnome}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int) returns (b: array<int, int>)
+  requires 0 <= n
+  ensures sorted(b, 0, n)
+  ensures perm(b, a)
+{
+  var i: int;
+  var t: int;
+  b := a;
+  i := 1;
+  while i < n
+  {
+    if i == 0 || b[i - 1] <= b[i] {
+      i := i + 1;
+    } else {
+      t := b[i];
+      b[i] := b[i - 1];
+      b[i - 1] := t;
+      i := i - 1;
+    }
+  }
+}
+\end{lstlisting}
+The position moves up when the adjacent elements are in order and down with a swap otherwise. The number of
+iterations is not a counter and is unrelated to $n$: the exit $n \le i$ bounds it from below only. The file
+was the folder's negative example, "open, as expected", until it was verified with two lemmas.
+
+\subsection{The trace equation system}
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad i = \cur(I) \qquad b = \cur(B) \qquad n \le i \label{eq:gn0}\\
+  I &= \tr{1}{\bl{K}, \bl{B}}{i, k, b \mapsto \upd{G}{i + 1}\ \ \upd{\neg G}{i - 1}} \label{eq:gn1}\\
+  B &= \tr{a}{\bl{K}, \bl{I}}{b, k, i \mapsto \upd{G}{b}\ \ \upd{\neg G}{b[i := b[i - 1]][i - 1 := b[i]]}} \label{eq:gn2}\\
+  &\qquad\text{where } G \text{ abbreviates } i = 0 \vee b[i - 1] \le b[i] \nonumber\\
+  &\al{\bl{K}, \bl{I}}{k, i \mapsto i < n} \label{eq:gn3}
+\end{align}
+As in the merge and the lower bound, two traces over each other with a data-dependent guard.
+
+\subsection{The lemmas}
+The invariant of gnome sort is $\sorted(b, 0, i)$: a step up extends the sorted prefix by the element that
+is in order with its predecessor, a swap down keeps the prefix below the position sorted, and at the exit
+$n \le i$ the prefix covers the range. The lemma states this on the whole atom of the postcondition
+(Section~\ref{sec:merge}), with the guard and the swap positions higher-order and pinned, since the literal
+$i - 1$ is not matched:
+\begin{align*}
+  &\lemma{sorted\_gnome}:\quad Bv = \tr{a}{\bl{Kv}, \bl{Iv_2}}{b, k, i \mapsto \upd{G(i, b)}{b}\ \ \upd{\neg G(i, b)}{b[Q(i) := b[P(i)]][P(i) := b[Q(i)]]}}\\
+  &\quad\wedge\ Iv_2 = Iv\\
+  &\quad\wedge\ Iv_2 = \tr{1}{\bl{Kv_2}, \bl{Bv_2}}{i, k, b \mapsto \upd{G(i, b)}{i + u}\ \ \upd{\neg G(i, b)}{i + d}}\\
+  &\quad\wedge\ Kv_2 = Kv \wedge Bv_2 = Bv \wedge u = 1 \wedge d = -1\\
+  &\quad\wedge\ (\forall i, b.\ G(i, b) \Leftrightarrow (i = 0 \vee b[i - 1] \le b[i]))\ \wedge\ (\forall i.\ P(i) = i - 1)\ \wedge\ (\forall i.\ Q(i) = i)\\
+  &\quad\wedge\ x = \cur(Iv)\ \wedge\ n \le x\\
+  &\quad\Longrightarrow\ \sorted(\cur(\tr{a}{\bl{Kv}, \bl{Iv}}{b, k, i \mapsto \upd{G(i, b)}{b}\ \ \upd{\neg G(i, b)}{b[Q(i) := b[P(i)]][P(i) := b[Q(i)]]}}), 0, n)\
+    \Longleftrightarrow\ \mathsf{true}
+\end{align*}
+The left-hand side matches $\sorted(b, 0, n)$ through $b = \cur(B)$ and \eqref{eq:gn2}, binding $Kv := K$,
+$Iv := I$, $G$, $P := \lambda i.\ i - 1$, $Q := \lambda i.\ i$ by abstraction. The conditions follow the
+discipline of Section~\ref{sec:fd} and the lower bound: the trace of the array is tied first, open in $Bv$
+and $Iv_2$, matched against \eqref{eq:gn2}, and $Iv_2 = Iv$ is decided; the trace of the position is tied
+second, with fresh $Kv_2$, $Bv_2$ and the steps $u$, $d$ as variables (a literal $-1$ in a pattern is not
+matched), matched against \eqref{eq:gn1}, and identified; the pins are decided by beta reduction; and the
+exit is read from the facts through $x = \cur(Iv)$, matched against $i = \cur(I)$, then $n \le x$ decided.
+No condition mentions the left-hand side, so nothing re-enters. For the permutation, \lemma{perm\_gnome}
+states that every step of such a trace is the identity or a swap, for any guard and positions, hence
+$\perm(\cur(\ldots), c) \Leftrightarrow \perm(a, c)$, and \lemma{perm\_refl} closes it. A wrong postcondition
+$\sorted(b, 0, n + 1)$ leaves the goal.
+
+\subsection{The idea}
+A data-dependent number of iterations is no obstacle when the property can be stated on the final values
+alone: the lemma does not describe how many steps were taken, only that the invariant holds after any number
+of them and that the exit turns it into the postcondition. This is the same shape as the merge, where the
+pointers are traces over each other, and it shows that the "negative example" of the paper's loop shapes is
+negative for the characterization of the traces, not for the verification of the postcondition.
 
 \section{Counting Sort: Loops in Sequence and Atoms for Hypotheses}
 

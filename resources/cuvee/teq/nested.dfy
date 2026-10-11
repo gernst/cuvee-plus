@@ -1,6 +1,6 @@
 // nested loops: the fragments of the iteration constraint of an outer loop that describe an inner loop, as -teq
 // produces them, resolved by generic lemmas, and the outer trace of a variable that only the inner loop modifies from
-// examples/dafny/algorithms (fragments.dfy, nested_mult.dfy, distinct.dfy), Oct 11, 2026; this file assumes the core
+// examples/dafny/algorithms (fragments.dfy, nested_mult.dfy, distinct.dfy, row_sums.dfy), Oct 11, 2026; this file assumes the core
 // declarations of teq.dfy (Nat, integer, natural, List, Trace, current, butlast, counter, earlier, consts),
 // counters.dfy, and aggregation.dfy (sums); see NOTES.md there for the termination analysis of the lemmas (the side
 // conditions are invs over the lists of the left-hand sides, which is safe since the left-hand sides are fragments with
@@ -65,6 +65,17 @@ lemma {:rw} {:teq} consts_prefix_integer(m: Nat, n: int, js: List<int>, Ns: List
   requires invs(for ⌊counter(0, 1, m)⌋, Ns, js check k, nn, j :: j == integer(nn))
   requires 0 <= n
   ensures consts_prefix(m, n, js) <==> Ns == ⌊consts(m, natural(n))⌋
+
+// an inner result stored at the position of the outer iteration (row_sums.dfy, transpose.dfy): the first step of the
+// chain from the fragments above to the postcondition, the inner counters over the constant numbers of iterations;
+// the further steps (the inner sums over the counter, sums given per iteration as a maps) are in row_sums.dfy: as
+// lemmas of this module they do not fire there, while the same lemmas in the input do (NOTES.md, finding 34)
+// the inner counters over the constant numbers of iterations, the dependency as a pattern matched through the context
+// (N? == ⌊consts(m, natural(n))⌋ is a hypothesis, from consts_prefix_integer or invs_natural_consts above)
+lemma {:rw} {:teq} invs_counter_consts(ks: List<int>, Js: List<Trace<int>>, m: Nat, n: int)
+  requires 0 <= n
+  ensures invs(for ks, ⌊consts(m, natural(n))⌋, Js check k, nn, J :: J == counter(0, 1, nn))
+    <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
 
 // the values of a variable at the head of an outer loop whose body only runs an inner loop on it:
 // the initial value followed by the results bs of the inner loop

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/insertion_sort.dfy
+// ./Cuvee.sh -teq -include teq:nested -simplify examples/dafny/algorithms/insertion_sort.dfy
 // insertion sort with nested loops: the inner loop moves b[i] down by adjacent swaps while it is smaller than its
 // predecessor
 //
@@ -37,8 +37,8 @@ function insert(b: array<int, int>, i: int): array<int, int>
 // pinned to j and j - 1 by quantified side conditions, since a pattern y[j := y[j - 1]] with arithmetic on the bound
 // variable j is not matched (TODO.md); likewise the test D(b, j) of the loop
 lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>, is: List<int>, bs: List<array<int, int>>,
-                                   Bs: List<Trace<array<int, int>>>, Js: List<Trace<int>>, Ns: List<Nat>, js: List<int>,
-                                   Js3: List<Trace<int>>, Js4: List<Trace<int>>, Bs5: List<Trace<array<int, int>>>, Js5: List<Trace<int>>,
+                                   Bs: List<Trace<array<int, int>>>, Js: List<Trace<int>>, Ns: List<Nat>, Ns2: List<Nat>, js: List<int>,
+                                   Js3: List<Trace<int>>, Bs5: List<Trace<array<int, int>>>, Js5: List<Trace<int>>,
                                    bs6: List<array<int, int>>, js6: List<int>, Js7: List<Trace<int>>,
                                    P: (array<int, int>, int) -> int, Q: (array<int, int>, int) -> int, D: (array<int, int>, int) -> bool)
   requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
@@ -49,8 +49,10 @@ lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>, is
   requires invs(for is, Ns, Js3 check i, nn, J :: J == counter(i, d, nn))
   requires Js3 == Js && d == -1
   requires invs(for ks, is check k, i :: i == k + 1)
-  requires invs(for ks, js, Js4 check k, j, J :: j == current(J))
-  requires Js4 == Js
+  // the final values of the counter in the form that the module nested gives them, j == i - nn (without the module the
+  // fragment is j == current(J), and the summary was stated with it)
+  requires invs(for ks, Ns2, js check k, nn, j :: integer(nn) + j == k + 1)
+  requires Ns2 == Ns
   requires invs(for ks, Js7 check k, J :: invs(for ⌊J⌋ check j :: 0 < j))
   requires Js7 == Js
   requires invs(for ks, Bs5, Js5 check k, B, J :: invs(for ⌊B⌋, ⌊J⌋ check y, j :: D(y, j)))

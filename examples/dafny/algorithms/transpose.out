@@ -4,23 +4,6 @@ function {:fold} column(B0: array<int, array<int, int>>,
   trace(B0, for ⌊counter(0, 1, nn)⌋ do B, j :: B[j := B[j][k := A[k][j]]])
 }
 
-lemma {:rw} invs_counter_consts(ks: List<int>, Js: List<Trace<int>>, m: Nat,
-                                n: int)
-  requires 0 <= n
-  ensures
-    invs(for ks, ⌊consts(m, natural(n))⌋, Js
-         check k, nn, J ::
-           J == counter(0, 1, nn))
-      <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
-
-lemma {:rw} invs_counter_consts_var(ks: List<int>, Ns: List<Nat>,
-                                    Js: List<Trace<int>>, m: Nat, n: int)
-  requires Ns == ⌊consts(m, natural(n))⌋
-  requires 0 <= n
-  ensures
-    invs(for ks, Ns, Js check k, nn, J :: J == counter(0, 1, nn))
-      <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
-
 lemma {:rw} invs_column_counter(ks: List<int>,
                                 hs: List<array<int, array<int, int>>>,
                                 Bs: List<Trace<array<int, array<int, int>>>>,

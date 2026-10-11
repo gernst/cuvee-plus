@@ -3,8 +3,8 @@
 //
 // status: verified with -teq -include teq:nested -simplify (Oct 11, 2026, evening); row_sums.dfy on an array-valued
 // inner result: the module nested resolves the inner counter, the exit and the numbers of inner iterations, then
-// the chain of specific lemmas: the counters over the constant numbers of iterations, the inner stores over the
-// inner counter folded into column(B, A, k, natural(n)), the final values of the columns, current_results_steps
+// the chain of specific lemmas: the counters over the constant numbers of iterations (invs_counter_consts of the
+// module), the inner stores over the inner counter folded into column(B, A, k, natural(n)), the final values of the columns, current_results_steps
 // (monomorphic for arrays of arrays) makes the outer trace the trace of the columns, and current_transpose reads the
 // transposed element; the earlier substitution lemmas invs_subst_counter and invs_subst_column had general left-hand
 // sides with an invs side condition over their lists and did not terminate (NOTES.md, finding 19)
@@ -19,18 +19,6 @@ function {:fold} column(B0: array<int, array<int, int>>, A: array<int, array<int
 {
   trace(B0, for ⌊counter(0, 1, nn)⌋ do B, j :: B[j := B[j][k := A[k][j]]])
 }
-
-// the inner counters over the constant numbers of iterations (row_sums.dfy)
-lemma {:rw} invs_counter_consts(ks: List<int>, Js: List<Trace<int>>, m: Nat, n: int)
-  requires 0 <= n
-  ensures invs(for ks, ⌊consts(m, natural(n))⌋, Js check k, nn, J :: J == counter(0, 1, nn))
-    <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
-
-lemma {:rw} invs_counter_consts_var(ks: List<int>, Ns: List<Nat>, Js: List<Trace<int>>, m: Nat, n: int)
-  requires Ns == ⌊consts(m, natural(n))⌋
-  requires 0 <= n
-  ensures invs(for ks, Ns, Js check k, nn, J :: J == counter(0, 1, nn))
-    <==> invs(for ks, Js check k, J :: J == counter(0, 1, natural(n)))
 
 // the inner stores over the inner counter are the column, with the fragment of the counter as a side condition over a
 // fresh variable

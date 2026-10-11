@@ -15,18 +15,14 @@ lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>,
            J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
       <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
 
-function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
-  trace(x0, for ks, bs do x, k, b :: b)
-}
-
 function insert(b: array<int, int>, i: int): array<int, int>
 
 lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>,
                                    is: List<int>, bs: List<array<int, int>>,
                                    Bs: List<Trace<array<int, int>>>,
                                    Js: List<Trace<int>>, Ns: List<Nat>,
-                                   js: List<int>, Js3: List<Trace<int>>,
-                                   Js4: List<Trace<int>>,
+                                   Ns2: List<Nat>, js: List<int>,
+                                   Js3: List<Trace<int>>,
                                    Bs5: List<Trace<array<int, int>>>,
                                    Js5: List<Trace<int>>,
                                    bs6: List<array<int, int>>, js6: List<int>,
@@ -48,8 +44,8 @@ lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>,
   requires Js3 == Js
   requires d == -1
   requires invs(for ks, is check k, i :: i == k + 1)
-  requires invs(for ks, js, Js4 check k, j, J :: j == current(J))
-  requires Js4 == Js
+  requires invs(for ks, Ns2, js check k, nn, j :: integer(nn) + j == k + 1)
+  requires Ns2 == Ns
   requires invs(for ks, Js7 check k, J :: invs(for ⌊J⌋ check j :: 0 < j))
   requires Js7 == Js
   requires

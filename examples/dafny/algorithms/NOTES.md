@@ -12,8 +12,8 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [perm.dfy](perm.dfy) | verified: permutations by swaps in single loops |
 | [bubble_sort.dfy](bubble_sort.dfy) | verified: nested loops, `sorted` by the induction lemma, `perm` |
 | [selection_sort.dfy](selection_sort.dfy) | verified: summary of the inner loop, `sorted` by the induction lemma, `perm` |
-| [insertion_sort.dfy](insertion_sort.dfy) | verified: the swaps at `j - 1` as pinned higher-order positions |
-| [insertion_sort2.dfy](insertion_sort2.dfy) | verified: the same with two pointers, summary and induction lemma |
+| [insertion_sort.dfy](insertion_sort.dfy) | verified with `-include teq:nested`: the swaps at `j - 1` as pinned higher-order positions |
+| [insertion_sort2.dfy](insertion_sort2.dfy) | verified with `-include teq:nested`: the same with two pointers, summary and induction lemma |
 | [nested_counter.dfy](nested_counter.dfy) | verified: the simplest nested loop |
 | [nested_sum.dfy](nested_sum.dfy), [nested_mult.dfy](nested_mult.dfy) | verified: the generic fragment lemmas |
 | [fragments.dfy](fragments.dfy) | verified: the generic fragment lemmas on the two minimal problems |
@@ -25,18 +25,18 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [argmax.dfy](argmax.dfy) | verified: a selection trace with rules on the atoms |
 | [partition.dfy](partition.dfy) | verified: Lomuto partition, conditional swaps at a count |
 | [reverse.dfy](reverse.dfy) | verified: two pointers, `-simplify -split -simplify` |
-| [is_sorted.dfy](is_sorted.dfy) | open by one substitution of the exit into `sorted` |
+| [is_sorted.dfy](is_sorted.dfy) | open by one substitution of the exit into `sorted`; two rules tried without effect (finding 35) |
 | [row_sums.dfy](row_sums.dfy) | verified with `-include teq:nested`: a chain of specific lemmas, no substitution lemma (finding 29) |
 | [transpose.dfy](transpose.dfy) | verified with `-include teq:nested`: as row_sums, the columns folded |
 | [prefix_sums.dfy](prefix_sums.dfy) | verified: the recurrence with the term at the written position |
 | [distinct.dfy](distinct.dfy) | verified: nested loops with a flag, summary and `current_trace_all` |
 | [three_way_partition.dfy](three_way_partition.dfy) | verified: Dutch flag by a single scan, two counts |
-| [cocktail_sort.dfy](cocktail_sort.dfy) | verified: a closed condition over fresh variables, the bound in the goal's form (finding 27) |
+| [cocktail_sort.dfy](cocktail_sort.dfy) | verified with `-include teq:nested`: a closed condition over fresh variables, the bound in the goal's form (finding 27) |
 | [first_duplicate.dfy](first_duplicate.dfy) | verified with the postcondition as two implications (finding 31) |
 | [merge.dfy](merge.dfy) | verified: pinned higher-order guard, pointers tied by open trace variables |
 | [counting_sort.dfy](counting_sort.dfy) | verified: four loops in sequence, the key range as an atom |
 | [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32) |
-| [gnome_sort.dfy](gnome_sort.dfy) | open, as expected: the number of iterations is not a counter |
+| [gnome_sort.dfy](gnome_sort.dfy) | verified: the invariant `sorted(b, 0, i)` in one lemma on the atom, the traces tied by open trace variables (finding 36) |
 
 ## Abstract predicates
 
@@ -878,3 +878,129 @@ restated, lower_bound remains open for reasons of the engine.
     copy of the jar. The results above were produced with a copy of the jar of
     c8a3cec7; the expected outputs of the four verified files and of
     invs_fragments must be regenerated after the assembly of this commit.
+
+## Proposals (Oct 11, 2026, end of the day)
+
+Ordered by expected payoff; the engine items are the ones that would remove
+the workarounds now in every summary lemma.
+
+Engine (TODO.md has the observations):
+
+1. **A re-entrance guard**: a rule is not applied, or the instance is not
+   rewritten, while its own side conditions are evaluated. This makes the
+   sound summary of lower_bound.dfy work (the ties `l == current(Lv)`),
+   removes the `current(results(...))` workaround from the summaries, and
+   admits conditions on the rule's own term in general. Smallest change,
+   largest effect.
+2. **Closed `invs` conditions matched modulo unused dependencies** instead of
+   decided: the fresh-variable-plus-equation pattern (five files now) becomes
+   unnecessary and the summaries shrink by a third.
+3. **A left-hand side matched through a trace variable's definition binds all
+   its variables**, or the match is refused there, instead of firing later
+   with "variables of a rule not instantiated by its match" (finding 32).
+4. **`Rule.check` rejects a left-hand side with a bare bound variable of a
+   variable dependency together with an `invs` side condition** (finding 29);
+   it would have refused the exit lemma of the nested module on load.
+5. **`-split` splits the negated exit** when the conclusion is `¬exit ∨ post`
+   with a disjunctive exit, one goal per literal (finding 31); then the
+   postcondition of first_duplicate.dfy can be the equivalence again.
+
+Database:
+
+6. The chain lemmas of row_sums.dfy and transpose.dfy (finding 30) into the
+   `nested` module in generalized form: counters over constant numbers of
+   iterations, final values of traces given per iteration, pointwise
+   definitions as `maps`, reads of a `maps` over the counter. Most nested
+   loops with a stored inner result need exactly this chain.
+7. The summaries of insertion_sort.dfy, insertion_sort2.dfy and
+   cocktail_sort.dfy restated for the fragment forms of the module
+   (finding 22), so that `nested` can become part of `-teq`; the
+   compatibility run shows these three files as the only obstacle.
+8. Lean proofs for the `nested` module, which has none; the restated exit
+   lemma and `invs_natural_consts` are small.
+
+Algorithms:
+
+9. gnome_sort.dfy needs an idea rather than a lemma: the number of iterations
+   is not a counter and the position moves in both directions, so an
+   abstraction by a potential (the invariant "sorted up to the position" with
+   the position's trace characterized by its bounds), in the style of the
+   lower bound.
+10. is_sorted.dfy is one substitution of the exit into `sorted` away
+    (finding 7 of the principles), presumably a two-line lemma on the exit;
+    max_element.dfy with `exists` waits for quantified left-hand sides or a
+    witness trace (principle 4).
+
+Infrastructure:
+
+11. The probe technique as a flag, `-probe <lemma>`, which reports the first
+    side condition of a named rule that fails on a goal, with the facts it
+    was matched against: the truncated copies and probe files of today took
+    an afternoon for information the engine has.
+12. A `-timeout` that reports the killed goal instead of printing nothing: a
+    silent kill looked like a proof twice this week (finding 18).
+
+## The proposals worked on (Oct 11, 2026, night)
+
+Of the proposals above, those without Scala changes: 6 (the chain into the
+module), 7 (the summaries for the module's forms), 9 (gnome sort), 10
+(is_sorted). Runs on one core from a private copy of the jar of 1a20a02c.
+
+34. **A lemma of the module `nested` does not fire where the identical lemma
+    in the input does.** The three chain lemmas of row_sums.dfy were moved into
+    the module, after `consts_prefix_integer`; row_sums then leaves one goal,
+    with the fragments of the inner counters and `N? == ⌊consts(m, natural(n))⌋`
+    untouched, and `-rules` lists `invs_counter_consts` neither among the
+    used rules; the same lemmas included once more as a user file close the
+    goal, and `-rules` listed them before (`invs_counter_consts` twice,
+    `invs_sums_selects_counter` eight times). The texts are identical, and the
+    module's `invs_counter_consts` does fire on transpose.dfy, whose program
+    has the same variables `m`, `n`, `A`. Variants of the module (the rule
+    variables `m`, `n` renamed, the chain at the end) could not be run, since
+    including them as user files gave a parse error at the first line of the
+    input, which is not understood either. The module keeps
+    `invs_counter_consts` (transpose needs it there), row_sums.dfy keeps
+    `invs_sums_selects_counter` and `invs_maps_sum` locally. A candidate for
+    TODO.md: whether rules from an injected module and from the input are
+    treated alike (the attributes differ by `{:teq}`), and whether the order
+    of rules matters for a fragment that several rules could rewrite.
+35. **Two rules for the exit of is_sorted.dfy did not help.** The goal is
+    `s == sorted(a, 0, n' + 1) && n == n' + 1 ==> s == sorted(a, 0, n)`. A
+    rule `sorted(a, 0, m + 1) <==> sorted(a, 0, n)` with `n == m + 1` as side
+    condition matched the equation `i == n' + 1` of the final value of `i`
+    first, both equations match, and rewrote the hypothesis to
+    `sorted(a, 0, i)`. A rule `sorted(a, 0, x) <==> sorted(a, 0, m + 1)` with
+    `x == m + 1`, or `m == x - 1`, did not fire at all, presumably since the
+    instance of the condition is simplified with the solution of the exit
+    before it is matched, and the orientation in which the equation is
+    stored is not visible in the goal. A rule that rewrites both bounds to
+    one form also risks a cycle between the two forms. The file is reverted
+    and stays open; a sound fix is finding 32's engine guard or the
+    substitution of solutions into function arguments (TODO.md).
+36. **Gnome sort is verified** (gnome_sort.dfy), contrary to its status "open
+    as expected". The position and the array are traces over each other with
+    the guard `i == 0 || b[i - 1] <= b[i]`, swaps at `i` and `i - 1`, and a
+    number of iterations unrelated to `n`. The lemma `sorted_gnome` is on the
+    whole atom `sorted(current(trace(a, for ⌊Kv⌋, ⌊Iv⌋ do b, k, i :: case G(i, b) => b case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])), 0, n)`
+    (merge.dfy), with the guard `G` and the positions `P`, `Q` higher-order
+    and pinned, the trace of the array tied first (`Bv == trace(a, for ⌊Kv⌋, ⌊Iv2⌋ ...)`,
+    open in `Bv`, `Iv2`, then `Iv2 == Iv`), the trace of the position tied
+    second (`Iv2 == trace(1, for ⌊Kv2⌋, ⌊Bv2⌋ do i, k, b :: case G(i, b) => i + u case !G(i, b) => i + d)`
+    with fresh `Kv2`, `Bv2`, `u`, `d`, identified afterwards, since literals
+    and arithmetic on bound variables are not matched), the exit through
+    `x == current(Iv)` and `n <= x`. The invariant is `sorted(b, 0, i)`: a
+    step up extends the sorted prefix, a swap down keeps the prefix below
+    sorted, and at the exit the prefix covers the range; `perm_gnome` states
+    that every step is the identity or a swap. The wrong postcondition
+    `sorted(b, 0, n + 1)` leaves a goal. The lesson: a data-dependent number
+    of iterations is no obstacle when the invariant can be stated on the
+    final values alone and the lemma is written on the atom of the
+    postcondition.
+37. **The module `nested` can become part of `-teq`** as far as the
+    algorithms are concerned: with insertion_sort, insertion_sort2 and
+    cocktail_sort restated for the module's fragment forms (the final values
+    of the inner counters as `integer(nn) + j == k + 1`, `j == integer(nn) + k`,
+    `integer(nn) + j + k + 2 == len`, written as the goal prints them), all 30
+    files agree with their expected goals when the module is included
+    (round 7 of the runs), and nothing cycles. The remaining step is the
+    Scala change in `TEQ.modules`, and a run on the SV-COMP translations.
