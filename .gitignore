@@ -28,3 +28,6 @@ __pycache__/
 
 # compiled documents, rebuilt from their sources
 *.pdf
+
+# the archive for Zenodo (scripts/zenodo.py)
+dist/
