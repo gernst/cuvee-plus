@@ -12,6 +12,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - C frontend: `goto` to a label whose statement falls through, by copying
   the statements
 - witness output
+- SV-LIB support
+- unbounded flag
+- SV-COMP tool entry and zenodo archive
 
 ## Bugs
 
