@@ -1,0 +1,45 @@
+% the experimental setup on the C versions of the local benchmarks (category Unbounded), included by
+% comparison.tex instead of setup.tex; the macros \UnboundedTasks, \TimeLimit, \MemoryLimit and \Cores come
+% from facts.tex, which table.py derives from the results
+
+\section*{Experimental setup}
+
+\paragraph{Benchmarks.}
+The \UnboundedTasks{} tasks are C programs with the property unreach-call
+(\texttt{benchmarks/sv-comp/c}, task set \texttt{C.unreach-call.Unbounded}). They are printed from the
+Dafny translations of tasks of ReachSafety-Arrays and ReachSafety-Loops
+(\texttt{benchmarks/sv-comp/dafny}), whose concrete loop bounds are replaced by symbolic ones, hence
+unbounded, and keep the expected verdicts of the original tasks. Scripts patch the printed programs for
+other verifiers: the SV-COMP harness, sizes for the arrays, below $2^{31}$ bytes, nondeterministic initial
+values for the local variables, and, for 34 tasks that other verifiers rightly found false, bounds or
+conditions on the inputs (see \texttt{benchmarks/sv-comp/c/README.md} and \texttt{false-verdicts.md}).
+The runs of the other tools are those of October 10, 2026, before the initial values, the sizes and the
+bounds; the runs of Cuvée dated October 11 are on the patched programs.
+
+\paragraph{Tools.}
+Cuvée runs with \texttt{-teq -simplify -split -simplify}: it generates trace equation systems for
+the loops, simplifies them with its lemma database, and splits the remaining goals. Cuvée+Z3 adds
+\texttt{-fallback -z3}, which lowers the goals that remain after simplification into first-order logic
+and hands them to Z3. The lemma database of \texttt{-teq} consists of the modules core, arithmetic,
+counters, aggregation, arrays and search; the variants marked full TEQ add the further modules nested,
+sorting and strides (\texttt{-include teq:nested -include teq:sorting -include teq:strides}). Cuvée only
+reports safe programs (verdict true); it does not search for counterexamples. The other tools are the
+SV-COMP 2026 versions of Symbiotic, AISE, UAutomizer, CPAchecker and Korn, run with the options of their
+official SV-COMP benchmark definitions.
+
+\paragraph{Execution environment.}
+All runs use BenchExec on a cluster of Intel Core i9-9900 machines (3.10\,GHz) with Ubuntu 24.04,
+with a limit of \TimeLimit{} of CPU time, \MemoryLimit{} of memory and \Cores{} CPU cores per run,
+unless the legend says otherwise, and the adaptations of the tools to our cluster described for the
+runs on the categories of SV-COMP.
+
+\paragraph{Scoring.}
+Results are scored as in SV-COMP: $+2$ for a correct proof (true), $+1$ for a correct alarm
+(false), $-32$ for a wrong proof and $-16$ for a wrong alarm; timeouts, crashes, and unknown results
+count $0$. Our runs do not validate witnesses, so every correct verdict counts.
+
+\paragraph{Plots.}
+The
+scatter plots compare the CPU times of the variants of Cuvée with and without the full lemma database
+task by task, for the tasks that at least one of them solves correctly; tasks that only one solves lie
+on the line labeled unsolved of the other. Dotted lines mark a factor of 10, dashed lines the time limit.

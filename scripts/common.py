@@ -26,10 +26,10 @@ TOOLS = ["cuvee-15min", "cuvee-fallback", "symbiotic", "aise", "uautomizer", "cp
 
 CATEGORIES = ["Arrays", "Loops"]
 
-# names for display; other benchmarks fall back to the displayName of their definition.
-# Cuvée+Z3 is Cuvée with -fallback, which hands the goals to z3
+# names for display; other benchmarks fall back to the displayName of their definition, e.g. cuvee (Cuvée,
+# whose time limit was 1 min in the runs on Arrays and Loops) and cuvee-full (Cuvée (full TEQ), with all
+# modules of the lemma database); Cuvée+Z3 is Cuvée with -fallback, which hands the goals to z3
 LABELS = {
-    "cuvee": "Cuvée (1 min)",
     "cuvee-15min": "Cuvée",
     "cuvee-fallback": "Cuvée+Z3",
     "symbiotic": "Symbiotic",
