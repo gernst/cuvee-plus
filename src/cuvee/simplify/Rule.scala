@@ -1,21 +1,27 @@
 package cuvee.simplify
 
 import cuvee.Error
+import cuvee.sexpr
 import cuvee.core._
 
 // a conditional rewrite rule lhs = rhs if cond, whose variables vars may be instantiated by arbitrary expressions
 // of the same type, and whose type parameters may be instantiated by arbitrary types;
 // variables that occur only in the condition are instantiated by matching it against the facts of the context
 // (see Rewrite.conditions);
-// the other free variables are constants, e.g. those of the facts of the context (see Context.assume)
-case class Rule(params: Set[Param], vars: Set[Var], lhs: Expr, rhs: Expr, cond: Expr):
+// the other free variables are constants, e.g. those of the facts of the context (see Context.assume);
+// the attributes are those of the command of the rule, whose :named identifies it (see Rules.from and Context.applied)
+case class Rule(params: Set[Param], vars: Set[Var], lhs: Expr, rhs: Expr, cond: Expr, attrs: Attrs = Attrs.empty):
   def removeAs =
-    Rule(params, vars, lhs.removeAs, rhs, cond)
+    copy(lhs = lhs.removeAs)
+
+  // the name of the lemma or the function of the rule, none for the rules of the facts of a context
+  def name: Option[String] =
+    attrs.values[sexpr.Id]("named").map(_.text).headOption
 
 object Rule:
   // well-formedness of rules from the input, see Rules.from
   def check(rule: Rule): Rule =
-    val Rule(params, vars, lhs, rhs, cond) = rule
+    val Rule(params, vars, lhs, rhs, cond, _) = rule
 
     Error.report("variables of right hand side do not occur in left hand side or condition", rule):
       require((rhs.free intersect vars) subsetOf (lhs.free ++ cond.free))
@@ -119,19 +125,23 @@ object Rules:
     // and matching would compare their types literally, which may contain the type parameters of the rule
     yield Rule.check(rule.removeAs)
 
+  // the rules carry the attributes of their command, definitions also the name of their function as :named
   def from(state: State, cmd: Cmd): List[Rule] =
     cmd match
-      case Assert(_, params, phi, _) =>
-        List(Rule.from(params.toSet, Set(), True, phi))
+      case Assert(_, params, phi, attrs) =>
+        List(Rule.from(params.toSet, Set(), True, phi).copy(attrs = attrs))
 
       // a definition is either unfolded or folded, both would loop
       case DefineFun(fun, body, attrs) if attrs.contains("fold") =>
         Error.report("definition with both :rw and :fold", fun.name.subscripted):
           require(!attrs.contains("rw"))
-        List(Rule.fold(state, fun, body))
+        List(Rule.fold(state, fun, body).copy(attrs = named(fun, attrs)))
 
-      case DefineFun(fun, body, _) =>
-        Rule.from(state, fun, body)
+      case DefineFun(fun, body, attrs) =>
+        Rule.from(state, fun, body).map(_.copy(attrs = named(fun, attrs)))
 
       case _ =>
         Nil
+
+  def named(fun: Fun, attrs: Attrs): Attrs =
+    if attrs.contains("named") then attrs else Attrs(attrs.attrs :+ ("named" -> Some(sexpr.Id(fun.name.subscripted))))

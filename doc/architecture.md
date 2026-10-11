@@ -40,7 +40,8 @@ transformation and any output.
 
 1. `Config.parse` reads the command line:
    - the input language from the file extension;
-   - the transforms in order (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`);
+   - the transforms in order (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`),
+     and `-rules`, which makes `-simplify` report the rules it applies (see [simplifier.md](simplifier.md));
    - the printer (`-print`);
    - the sink (stdout, `-o`, `-z3`, `-cvc5`).
 2. `config.input.source(reader)` parses the frontend's prelude first

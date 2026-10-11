@@ -45,6 +45,8 @@ object Rewrite:
   // matching modulo associativity and commutativity may find several matches with different results,
   // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
   def apply(config: Config, state: State, ctx: Context, rule: Rule, expr: Expr, self: Option[Var] = None): Expr =
+    // the rules applied while matching count only if this rule applies (see Context.applied)
+    val applied = ctx.applied.value
     val results =
       for
         subst <- matches(config, state, ctx, rule.params, rule.vars, Set(), rule.lhs, self, Map(), Set(), expr, Subst.empty)
@@ -79,6 +81,7 @@ object Rewrite:
 
     results match
       case Nil =>
+        ctx.applied := applied
         expr
 
       case rhs :: rest =>
@@ -89,12 +92,18 @@ object Rewrite:
         //    require(rest.isEmpty)
 
         ctx.steps := ctx.steps.value - 1
+        for name <- rule.name
+        do ctx.applied := ctx.applied.value.updated(name, ctx.applied.value.getOrElse(name, 0) + 1)
         Debug.step("rewrite", Simplify.show(config.output.printer, expr), Simplify.show(config.output.printer, rhs))
         rhs
 
-  // side conditions and the guards of updates are decided by the simplifier in the context
+  // side conditions and the guards of updates are decided by the simplifier in the context,
+  // whose applications of rules count only if the condition holds (see Context.applied)
   def holds(config: Config, state: State, ctx: Context, phi: Expr): Boolean =
-    phi == True || Simplify.simplify(config, state, ctx.neutral, phi) == True
+    val applied = ctx.applied.value
+    val result = phi == True || Simplify.simplify(config, state, ctx.neutral, phi) == True
+    if !result then ctx.applied := applied
+    result
 
   def unmatched =
     Nil

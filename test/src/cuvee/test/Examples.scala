@@ -50,9 +50,13 @@ object Examples:
     results.collect { case status: cuvee.core.Status => status }.last
 
   // the options of the languages that an example needs, among those of the command line in its first line,
-  // i.e., -hybrid, whereas -teq is a transform, too
+  // i.e., -hybrid, and the declarations of teq.dfy without its transform for -teq (-known teq), e.g. for inputs that
+  // use its types Nat and List
   def options(file: os.Path): List[String] =
-    cuvee.test.Expected.command(workspace.toNIO, file.toNIO).getOrElse(Nil).filter(Set("-hybrid"))
+    cuvee.test.Expected.command(workspace.toNIO, file.toNIO).getOrElse(Nil).flatMap:
+      case "-hybrid" => List("-hybrid")
+      case "-teq"    => List("-known", "teq")
+      case _         => Nil
 
   // whether the goals of an example hold, as stated in its second line, after its command line:
   // "// expected: valid" or "// expected: invalid"

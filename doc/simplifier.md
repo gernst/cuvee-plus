@@ -23,6 +23,20 @@ derivatives in [hybrid.md](hybrid.md).
     attribute `:rw` (`Rules.from`) and are kept as they are; a definition
     whose body is a match on a parameter gives one rule per case, with the
     pattern in place of the parameter (overlapping patterns are not handled).
+    Each rule carries the attributes of its command (`Rule.attrs`), whose
+    `:named` names it: the name of a lemma, which the Dafny parser adds, or
+    the function of a definition, which `Rules.from` adds; the rules of the
+    facts of a context have none.
+  - With `-rules`, the context counts the applications of each named rule
+    (`Context.applied`), shared by its copies like the steps and fresh for each
+    command; the applications while deciding a side condition or a guard count
+    only if it holds (`Rewrite.holds`), those while matching a rule only if it
+    applies. An assertion that remains carries the counts as attributes
+    `:used (name count)`, which a later `-simplify`, e.g. after `-split`, adds
+    to; one that simplifies to true is reported on stderr with them, by its
+    `:named` or as `goal n`. Applications in subterms that are dropped later
+    count as well, so that the counts are an upper bound
+    ([rules.dfy](../examples/dafny/teq/rules.dfy)).
   - Each round (`once`) simplifies the subterms first and dispatches on the
     built-in functions; afterwards, one rewrite step with the rules of the
     context is tried at the top (`Rewrite.step`), until a fixpoint.

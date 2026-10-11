@@ -16,7 +16,7 @@ trait Printer:
   def lines(prog: Prog): List[String]
 
   def lines(rule: Rule): List[String] =
-    val Rule(params, vars, lhs, rhs, cond) = rule
+    val Rule(params, vars, lhs, rhs, cond, _) = rule
     val cmd = Assert(Lemma, params.toList, All(vars.toList, Imp(cond, Eq(lhs, rhs))), Attrs.from("rw"))
     lines(cmd)
 

@@ -86,6 +86,8 @@ case class Config(
     // the lines of stdout and stderr, which tests capture instead (see test.Expected)
     stdout: PrintStream = System.out,
     stderr: PrintStream = System.err,
+    // whether -simplify reports the rules that it applies to each assertion (see Simplify.apply)
+    rules: Boolean = false,
     // keep last
     debug: Set[String] = Set()
 ):
@@ -194,6 +196,12 @@ object Config:
         val config_ = config.using(Fuse)
         (config_, rest)
 
+  val rules =
+    flag("-rules", "report the rewrite rules that -simplify applies to each assertion, by their names, as :used"):
+      case (config, rest) =>
+        val config_ = config.copy(rules = true)
+        (config_, rest)
+
   val simplify =
     flag("-simplify", "simplify formulas and function definitions"):
       case (config, rest) =>
@@ -298,6 +306,7 @@ object Config:
     fallback,
     fuse,
     simplify,
+    rules,
     hybrid,
     arch,
     z3,
@@ -350,7 +359,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.35.15")
+    println("Cuvée 0.35.16")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

@@ -29,6 +29,9 @@ import cuvee.core._
 // self: within the update of a combinator that defines a dependency, X == trace(...) or Y == maps(...),
 // that dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants)
 //
+// applied: the number of applications of each rule by its name (see Rule.name), for -rules, shared by the copies of
+// this context like steps and fresh for each command, without those of checks that fail (see Rewrite.holds)
+//
 // combinators: the contexts of the updates and bodies of combinators built so far (see Simplify.combinator),
 // shared by the copies of this context like steps and fresh for each command (see withRules), such that the
 // iterations of a combinator are not simplified again for each rule that is matched and in each round;
@@ -45,13 +48,14 @@ case class Context(
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0),
     self: Option[(Expr, Expr)] = None,
-    combinators: util.Ref[Context.Combinators] = util.Ref(Map())
+    combinators: util.Ref[Context.Combinators] = util.Ref(Map()),
+    applied: util.Ref[Map[String, Int]] = util.Ref(Map())
 ):
   // the rewrite rules with a fresh number of steps and no contexts of combinators yet, which are shared by the copies
   // of this context,
   // and which guards against rules that do not terminate
   def withRules(rules: List[Rule], steps: Int = 1000) =
-    copy(rules = rules, steps = util.Ref(steps), combinators = util.Ref(Map()))
+    copy(rules = rules, steps = util.Ref(steps), combinators = util.Ref(Map()), applied = util.Ref(Map()))
 
   // an expression seen through the equations of chains.chain, never a variable: a variable matches only by
   // a definition that is not a variable, any other expression as itself,
