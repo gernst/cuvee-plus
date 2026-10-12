@@ -73,11 +73,18 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final
   assertion fails), after about 340 s each, in the 15-minute runs of `xml/cuvee-full-fallback.xml` of Oct 11, 2026
   (0.36.3, without `-unbounded`); the runs of Oct 10 with 60 s and 120 s stopped them at `TIMEOUT (true)`, so not
-  new; `-teq` without the fallback leaves them unknown, `-chc` (1 min) times out. Presumably the lowering for Z3
-  loses a constraint of the early exits, as for geo1-u below; not yet analysed.
+  new; `-teq` without the fallback leaves them unknown, `-chc` (1 min) times out. Fixed in 0.42.2: `TEQ.loop` told
+  the exits of a loop apart by assumptions (`¬test`, the test before a `break`), while an enclosing loop guards the
+  cases of its updates by the branch conditions of the paths only, such that the normal exit (here infeasible,
+  `while (true)`) and the `break` exits overlapped, `case true => c case φ => c + 1`, whose lowering contradicts
+  itself for φ; the exits are branch conditions now (`examples/c/verify/teq_nested_break.c`,
+  `fermat1-ll_unwindbound1` is `unknown`, 627 s). Still wrong in the 15-minute runs of 0.42.1 (5 of them, the
+  others time out); a rerun with 0.42.2 is pending, which may also lose correct results that came from such
+  contradictions.
 - `-fallback -z3` proves `benchmarks/sv-comp/dafny/nla-digbench/geo1-u` (expected unsafe), in the runs of
   `xml/cuvee-quick-fallback.xml` of 2026-10-10 15:25 and 16:12: a soundness problem of the encoding or of the
-  lemmas it relies on, not yet analysed. Its C version is unsafe only by the wrap-around of `unsigned long long`,
+  lemmas it relies on, not yet analysed; possibly the overlapping exits of loops above (fixed in 0.42.2), to
+  check. Its C version is unsafe only by the wrap-around of `unsigned long long`,
   which the C frontend models without `-unbounded` (0.36.0): the fallback no longer proves geo1-u and its 14
   variants in nla-digbench-scaling, Z3 finds a model instead (15-minute runs of Oct 11, 2026), and `-chc` reports
   the violation; with `-unbounded`, it proves it again, as the semantics drops the wrap-around. The Dafny version,

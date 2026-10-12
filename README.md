@@ -216,8 +216,9 @@ tasks of SV-COMP 2026; see [doc/paper](doc/paper)): on ReachSafety-Arrays,
 UAutomizer, CPAchecker, and Korn reports as true in the official results;
 on ReachSafety-Loops, 126 without and 280 with z3. Without `-fallback`, no
 result is wrong. Known problems of `-fallback`: 7 wrong proofs
-(`fermat1-ll_unwindbound*`, presumably a constraint of the early loop exits
-lost in the lowering) and 2 wrong refutations (`sanfoundry_24-1`,
+(`fermat1-ll_unwindbound*`, where the exits of nested loops had overlapping
+guards, whose lowering contradicted itself, fixed in 0.42.2, see
+[doc/teq.md](doc/teq.md)) and 2 wrong refutations (`sanfoundry_24-1`,
 `verifythis/lcp`), where functions that `main` calls only in a certain context
 were also checked for arbitrary arguments, which the entry point fixes (see
 below and [doc/architecture.md](doc/architecture.md)). The runs included the modules `nested`, `sorting`, and

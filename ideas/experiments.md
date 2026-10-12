@@ -40,8 +40,8 @@ and others (imported from the SV-COMP statistics, not run by us).
 
 | | Arrays (440) | Loops (764) | score |
 |---|--:|--:|--:|
-| Cuvée (0.41.4, `-verify`, 15 min) | 137 true, 9 false | 126 true, 16 false | 551 |
-| Cuvée+Z3 (0.41.4, `-verify`, 15 min) | 147 true, 51 false, 1 wrong false | 280 true, 28 false, 7 wrong true, 1 wrong false | 677 |
+| Cuvée (0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false | 553 |
+| Cuvée+Z3 (0.42.1, `-verify`, 15 min) | 148 true, 51 false | 282 true, 28 false, 5 wrong true | 779 |
 | Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false | 400 |
 
 Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, Korn 882, CPAchecker 852
@@ -51,10 +51,18 @@ Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, 
   model-checking tools lead.
 - The tasks have machine integers, which TEQ models in part (nondeterministic values in their ranges, unsigned
   wrap-around, since 0.36).
-- Cuvée has no wrong results. `-fallback` has 7 wrong proofs (probably `fermat1-ll_unwindbound*`, see
-  [TODO.md](../TODO.md)) and wrong refutations, although its goals should be `:abstract` under `-verify`:
-  `array-examples/sanfoundry_24-1` and `verifythis/lcp` here, three more on the unbounded set; a bug of
-  `-verify` with `-fallback` (Z3's model of the abstraction, e.g. `bitand` uninterpreted, answered `incorrect`).
+- Cuvée has no wrong results. `-fallback` (0.42.1) has 5 wrong proofs, `nla-digbench-scaling/fermat1-ll_unwindbound{1,5,10,20,50}`
+  (the other two of the 7 in 0.41.4 time out now): `TEQ` told the exits of an inner loop apart by assumptions
+  only, an enclosing loop guards its cases by the branch conditions, such that the normal exit and the `break`
+  exits overlapped, e.g. `case true => c case φ => c + 1`, and their lowering contradicted itself, from which z3
+  proved any goal; the C loop `while (counter++ < k)` of the `*_unwindbound*` tasks is `while (true)` with a
+  `break`. Fixed in 0.42.2 (exits by branch conditions, `examples/c/verify/teq_nested_break.c`;
+  `fermat1-ll_unwindbound1` is `unknown`), not yet rerun: correct results that came from such contradictions may
+  go as well.
+- The wrong refutations of 0.41.4 are gone: `array-examples/sanfoundry_24-1` and `verifythis/lcp` were goals of
+  helper functions out of the context of `main` (entry points, 0.42.0), the three on the unbounded set were
+  refuted through an uninterpreted `bitand` on truth values (rules of the C prelude for 0 and 1; the
+  other bit operations are `:abstract` since 0.42.1, their refutations `unknown`).
 
 ## 3. Complementarity: TEQ and Horn clauses
 
@@ -71,7 +79,7 @@ Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose ar
 | | proved (15 min) | wrong |
 |---|--:|--:|
 | Cuvée `-teq -unbounded` (0.41.4) | 234 | 0 |
-| Cuvée+Z3 `-unbounded` (0.41.4) | 286 | 3 wrong false (the `-verify` bug, see 2) |
+| Cuvée+Z3 `-unbounded` (0.41.4) | 286 | 3 wrong false (`bitand`, fixed, see 2; locally `correct` with 0.42.0) |
 | Korn `-u` (Oct 11, 2026) | 175 | 0 |
 
 - Cuvée and Korn: 91 both, 143 Cuvée only, 84 Korn only. With 60 s: Cuvée 228, Korn 130; TEQ 129 against 4
@@ -125,10 +133,14 @@ result files): `xml/cuvee.xml` and `xml/cuvee-fallback.xml` on SV-COMP Arrays an
 (`-unbounded`), `xml/korn.xml` on the unbounded set (`-u`). An earlier attempt at 11:31 lost the results still
 running when the connection to the cloud master broke (11:54).
 
-To do: the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
+Done (Oct 12, 2026, 16:51–17:16, Cuvée 0.42.1, the same setup, complete): `xml/cuvee.xml` and
+`xml/cuvee-fallback.xml` on SV-COMP Arrays and Loops (section 2). Before, the same with 60 s: no wrong results,
+the `fermat1-ll` tasks time out at 60 s.
+
+To do: `xml/cuvee-fallback.xml` on SV-COMP and the unbounded set with 0.42.2 (the fix of the exits of loops); the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
 MonoCera itself (`xml/monocera.xml`); SV-LIB `CTranslated` and `CoreVerification` (`xml/cuvee.xml`,
 `xml/cuvee-chc.xml`); `-chc` on SV-COMP with `-verify`; the ACSL tasks with `-verify` after the revised
-annotations; `-fallback` after the fix of `-verify`.
+annotations.
 
 `scripts/experiments.py` makes `scripts/out/experiments.pdf` from the newest results that meet each experiment's
 requirements (options, time limit), with blanks for the missing ones. The other tools on SV-COMP come from the

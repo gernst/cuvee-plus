@@ -336,15 +336,18 @@ object TEQ extends Transform:
       val guard_ = exit_(guard)
       val checked = if safe == True then exit_ else exit_.check(Imp(guard_, safe))
 
+      // the exits are told apart by branch conditions, the negated test and the guard before a break or return,
+      // which an enclosing loop takes as the guards of the cases of its updates (Upd(q.B, ...)), such that these are
+      // disjoint, otherwise exits with different values would give contradicting cases
       val left =
         for q <- last if !iterates(q)
         yield
           val jump = if q.jump == Some(Return) then q.jump else None
-          Path(q.su, checked.steps ++ (Step.Assume(guard_) :: q.steps), jump)
+          Path(q.su, checked.steps ++ (Step.When(guard_) :: q.steps), jump)
 
       test match
         case Some(test) =>
-          checked.assume(Not(exit_(test))) :: left
+          checked.when(Not(exit_(test))) :: left
 
         case None =>
           checked :: left

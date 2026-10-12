@@ -80,7 +80,16 @@ the even numbers that `main` passes).
   equation system (definition 4.4): one `Trace` per modified variable, whose
   update has a case per path through the body, the counter
   `K = counter(0, 1, n)`, and the iteration constraint `Invs`, and which
-  checks that the body executes safely from the current state.
+  checks that the body executes safely from the current state. Its exits
+  (by the negated test, and by `break` or `return` in a last iteration from
+  the current state) are told apart by branch conditions, not assumptions:
+  an enclosing loop guards the cases of its updates by the branch conditions
+  of the paths (`Upd(q.B, ...)`), which must be disjoint; with the exit
+  conditions as assumptions, two exits with different values gave
+  contradicting cases, from which any goal followed
+  ([teq_nested_break.c](../examples/c/verify/teq_nested_break.c), the
+  `*_unwindbound*` tasks, whose `while (counter++ < k)` is `while (true)`
+  with a `break`).
 - A loop whose body ends by `break` or `return` on all paths runs it at most
   once: its body is a conditional on the test, without a trace equation
   system, where `break` continues after the loop.
