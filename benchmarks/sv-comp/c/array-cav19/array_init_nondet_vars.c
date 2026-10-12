@@ -23,14 +23,14 @@ void main(void) {
   int k = __VERIFIER_nondet_int();
   j = __VERIFIER_nondet_int();
   n = __VERIFIER_nondet_int();
-  assume_abort_if_not(j > 0 && j <= 536870911);
+  assume_abort_if_not(j > 0);
   i = 1;
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && n <= N && N <= 536870911);
   int a[N];
   while (i < n) {
     k = __VERIFIER_nondet_int();
-    assume_abort_if_not(k > 0 && k <= 536870911);
+    assume_abort_if_not(k > 0);
     a[i] = i + j + k;
     i = i + 1;
   }

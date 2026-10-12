@@ -23,7 +23,7 @@ int main(void) {
   int x = __VERIFIER_nondet_int();
   int y = __VERIFIER_nondet_int();
   int z = __VERIFIER_nondet_int();
-  assume_abort_if_not(0 < K && K <= 268435455);
+  assume_abort_if_not(0 < K);
   assume_abort_if_not(N == 8 * K);
   x = 0;
   y = 4 * K;

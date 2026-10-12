@@ -143,8 +143,8 @@ summands. The other tools leave these tasks open or prove them.
 
 ## Fixes
 
-The tasks are now patched as follows. The bounds are datatype limits, 2^k - 1 from above and -2^k from below, each the
-largest one that the arithmetic allows.
+The tasks were patched as follows. The bounds are datatype limits, 2^k - 1 from above and -2^k from below, each the
+largest one that the arithmetic allows; those of group 2 are removed again.
 
 - **Group 1:** each task assumes the weakest condition under which the property holds.
   - partial_mod_count: simulating all N up to 20000 shows that these are correct exactly when N is a multiple of
@@ -154,8 +154,11 @@ largest one that the arithmetic allows.
   - nested3-1 and nested3-1_abstracted: N odd; nested5-1: `M % 4 != 0`.
   - array_of_struct_single_elem_init: `3 < N`.
 
-  The Dafny translations need the same conditions.
-- **Group 2:** the inputs are bounded such that the arithmetic stays within `int`.
+  The Dafny translations assume the same conditions (since October 12, 2026).
+- **Group 2:** the inputs were bounded such that the arithmetic stays within `int`. These bounds were removed again
+  on October 12, 2026, as the tasks are meant for verifiers that treat the arithmetic of C as unbounded, under which
+  they are true, as their Dafny translations; mod3 is `int` again, with `x >= 0`, and the arrays of
+  array_min_and_copy_shift_sum_add have the bound of sizes.py. The bounds were:
   - Most bounds are 2^30 - 1, e.g. for `2 * k` of half; NetBSD_loop, gsv2008, nest-if3, seq-3, heapsort, nested9,
     MADWiFi-encode_ie_ok, eureka_01-2 and hard-ll are bounded the same way.
   - count_by_k: `N <= 134217727`, since k is at most 10; mono-crafted_6: `K <= 268435455`.
@@ -179,4 +182,5 @@ Symbiotic and UAutomizer, for 120 or 180 s each:
 
 Some of these ran only with CPAchecker, since the batches were stopped. None of the runs gives the verdict false.
 The tools prove 8 tasks: NetBSD_loop, as2013-hybrid, half, benchmark52_polynomial, mono-crafted_9, nested3-1,
-nested3-1_abstracted and nested5-1. The others time out. The remaining tasks of group 2 have not run again.
+nested3-1_abstracted and nested5-1. The others time out. The remaining tasks of group 2 have not run again. These checks
+predate the removal of the bounds of group 2, without which its tasks are false again for these tools.

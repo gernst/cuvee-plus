@@ -27,7 +27,6 @@ void main(void) {
   k = 0;
   n0 = __VERIFIER_nondet_int();
   n1 = __VERIFIER_nondet_int();
-  assume_abort_if_not(-1073741824 <= n0 && n0 <= 1073741823 && -1073741824 <= n1 && n1 <= 1073741823);
   while (i0 < n0) {
     i0 = i0 + 1;
     k = k + 1;

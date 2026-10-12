@@ -20,7 +20,7 @@ void main(void) {
   int N = __VERIFIER_nondet_int();
   int i = __VERIFIER_nondet_int();
   int k = __VERIFIER_nondet_int();
-  assume_abort_if_not(0 < N && N <= 134217727);
+  assume_abort_if_not(0 < N);
   k = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= k && k <= 10);
   i = 0;

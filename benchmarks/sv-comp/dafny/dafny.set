@@ -1,8 +1,5 @@
 # the task definitions of the Dafny translations of the SV-COMP tasks, for BenchExec (see cuvee.xml), relative to this
 # file, with the expected verdicts of the property unreach-call
-# without the tasks whose translation updates an array parameter only in a local copy, which the caller does not
-# see, unlike the original C program (insert of data_structures_set_multi_proc_ground-1, -2, _trivial_ground and
-# check_removal_from_set_after_insertion, incrementArray of sanfoundry_43_ground), until they are fixed
 array-cav19/array_doub_access_init_const.yml
 array-cav19/array_init_both_ends_multiple_sum.yml
 array-cav19/array_init_nondet_vars.yml

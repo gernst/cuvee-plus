@@ -23,7 +23,7 @@ void main(void) {
   int s = __VERIFIER_nondet_int();
   int i = __VERIFIER_nondet_int();
   n = __VERIFIER_nondet_int();
-  assume_abort_if_not(0 <= M && M <= 32767);
+  assume_abort_if_not(0 <= M);
   assume_abort_if_not(0 < n && n <= M);
   v = 0;
   s = 0;

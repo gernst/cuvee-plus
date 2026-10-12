@@ -5,12 +5,14 @@
 // findings: open: the loop test i * i < 100 is non-linear; the goal needs that the first i from i0 with i * i >=
 // 100 is 10, from the iteration constraint at the last iteration, which teq.dfy does not decide for polynomials
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100
+// note: assumes 81 < N <= 100, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 method main() returns (result: int) {
   var N: int;
   var tmp₁: int;
   var i: int;
-  assume 0 < N;
+  assume 81 < N <= 100;
   tmp₁ := *;
   i := tmp₁;
   if !(i < 10 && i > -10) {

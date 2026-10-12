@@ -26,7 +26,6 @@ int main(void) {
   int i = __VERIFIER_nondet_int();
   int j = __VERIFIER_nondet_int();
   n = __VERIFIER_nondet_int();
-  assume_abort_if_not(n <= 1073741823);
   if (!(1 <= n)) {
     result = 0;
     return result;

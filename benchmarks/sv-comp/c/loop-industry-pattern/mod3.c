@@ -17,7 +17,7 @@ void __VERIFIER_assert(int cond) {
 }
 
 void main(void) {
-  unsigned int x = __VERIFIER_nondet_int();
+  int x = __VERIFIER_nondet_int();
   int y = __VERIFIER_nondet_int();
   int b = __VERIFIER_nondet_int();
   x = __VERIFIER_nondet_int();

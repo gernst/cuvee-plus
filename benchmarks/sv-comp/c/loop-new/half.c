@@ -23,7 +23,6 @@ void main(void) {
   i = 0;
   n = 0;
   k = __VERIFIER_nondet_int();
-  assume_abort_if_not(k <= 1073741823);
   i = 0;
   while (i < 2 * k) {
     if (i % 2 == 0) {

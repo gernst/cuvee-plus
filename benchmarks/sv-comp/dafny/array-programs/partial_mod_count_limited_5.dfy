@@ -3,6 +3,8 @@
 // program by ./Cuvee.sh -print dfy: a variant of partial_mod_count_limited_1 with other constants or assertions;
 // checks j < N/(2*R)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000
+// note: assumes N % 10 == 0, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 var N: int;
 
@@ -18,7 +20,7 @@ method main() returns (result: int)
   var lim: int;
   var R: int;
   N := *;
-  assume 0 < N;
+  assume 0 < N && rem(N, 10) == 0;
   j := 0;
   k := 0;
   tmp₁ := *;

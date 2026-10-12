@@ -6,6 +6,8 @@
 // / 2 (see the counting of remainders in loops-crafted-1/sumt2.dfy); open for the same reasons
 // (partial_mod_count_limited_1 to _5, _base, and _gen are variants with a limit on the number of zeros)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
+// note: assumes N % 4 == 0, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 // a store at the iteration k whose value depends on a case split on k is a store of the conditional value (with a
 // further dependency ys)
@@ -20,7 +22,7 @@ method main() {
   var j: int;
   var R: int;
   var a: array<int, int>;
-  assume 0 < N;
+  assume 0 < N && rem(N, 4) == 0;
   j := 0;
   R := 2;
   i := 0;

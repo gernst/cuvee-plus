@@ -2,6 +2,8 @@
 // SV-COMP loops-crafted-1/nested3-1.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks z % 4; y % 2; x % 2
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455
+// note: assumes N odd, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 method main() returns (result: int) {
   var N: int;
@@ -9,7 +11,7 @@ method main() returns (result: int) {
   var y: int;
   var z: int;
   var w: int;
-  assume 0 < N;
+  assume 0 < N && rem(N, 2) == 1;
   x := 0;
   y := 0;
   z := 0;

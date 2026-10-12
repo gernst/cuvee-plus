@@ -2,6 +2,8 @@
 // SV-COMP loops-crafted-1/nested5-1.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of nested3-1 with other constants or assertions; checks v % 4
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455, M for 10
+// note: assumes M % 4 != 0, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 method main() returns (result: int) {
   var N: int;
@@ -12,7 +14,7 @@ method main() returns (result: int) {
   var w: int;
   var v: int;
   assume 0 < N;
-  assume 0 < M;
+  assume 0 < M && rem(M, 4) != 0;
   x := 0;
   y := 0;
   z := 0;

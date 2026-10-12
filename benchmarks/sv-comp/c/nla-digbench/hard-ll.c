@@ -25,7 +25,7 @@ int main(void) {
   int p = __VERIFIER_nondet_int();
   int q = __VERIFIER_nondet_int();
   A = __VERIFIER_nondet_int();
-  assume_abort_if_not(0 <= A && A <= 1073741823);
+  assume_abort_if_not(0 <= A);
   B = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= B);
   assume_abort_if_not(B >= 1);

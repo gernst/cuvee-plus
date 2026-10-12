@@ -22,15 +22,13 @@ void main(void) {
   int j = __VERIFIER_nondet_int();
   int k = __VERIFIER_nondet_int();
   j = __VERIFIER_nondet_int();
-  assume_abort_if_not(-32768 <= j && j <= 32767);
   k = 0;
   N = __VERIFIER_nondet_int();
-  assume_abort_if_not(0 <= N && N <= 16383);
+  assume_abort_if_not(0 <= N && N <= 268435455);
   int a[N];
   int b[N];
   i = 0;
   while (i < N) {
-    assume_abort_if_not(-32768 <= a[i] && a[i] <= 32767);
     if (j > a[i]) {
       j = a[i];
     }

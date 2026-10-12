@@ -21,7 +21,6 @@ void main(void) {
   int y = __VERIFIER_nondet_int();
   x = -50;
   y = __VERIFIER_nondet_int();
-  assume_abort_if_not(-32768 <= y && y <= 1073741823);
   while (x < 0) {
     x = x + y;
     y = y + 1;

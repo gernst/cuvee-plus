@@ -49,7 +49,7 @@ int main(void) {
     assume_abort_if_not(0 <= tmp_2 && tmp_2 < nodecount);
     Dest[i] = tmp_2;
     tmp_3 = __VERIFIER_nondet_int();
-    assume_abort_if_not(0 <= tmp_3 && tmp_3 <= 1073741823);
+    assume_abort_if_not(0 <= tmp_3);
     Weight[i] = tmp_3;
     i = i + 1;
   }

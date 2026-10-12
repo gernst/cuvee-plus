@@ -20,7 +20,6 @@ void main(void) {
   int M = __VERIFIER_nondet_int();
   int p = __VERIFIER_nondet_int();
   M = __VERIFIER_nondet_int();
-  assume_abort_if_not(M <= 1073741823);
   if (!(M > 0)) {
     return;
   }

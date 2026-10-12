@@ -2,6 +2,8 @@
 // SV-COMP array-programs/partial_mod_count_limited_gen.yml (expected: safe), translated from the
 // C program by ./Cuvee.sh -print dfy: a program of the folder; checks j <= ((N*(R-1))/(R*R))
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000
+// note: assumes N % 60 == 0, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 var N: int;
 
@@ -18,7 +20,7 @@ method main() returns (result: int)
   var lim: int;
   var R: int;
   N := *;
-  assume 0 < N;
+  assume 0 < N && rem(N, 60) == 0;
   j := 0;
   k := 0;
   tmp₁ := *;

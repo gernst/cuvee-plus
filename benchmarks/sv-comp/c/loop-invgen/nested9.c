@@ -29,7 +29,6 @@ int main(void) {
   n = __VERIFIER_nondet_int();
   m = __VERIFIER_nondet_int();
   l = __VERIFIER_nondet_int();
-  assume_abort_if_not(-536870912 <= n && n <= 536870911 && -1073741824 <= m && m <= 1073741823 && -1073741824 <= l && l <= 1073741823);
   if (3 * n <= m + l) {} else {
     result = 0;
     return result;

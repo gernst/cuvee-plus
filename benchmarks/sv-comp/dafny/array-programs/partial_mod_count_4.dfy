@@ -2,6 +2,8 @@
 // SV-COMP array-programs/partial_mod_count_4.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a variant of partial_mod_count_1 with other constants or assertions; checks j < (N/8)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
+// note: assumes N % 8 == 0, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 var N: int;
 
@@ -14,7 +16,7 @@ method main() returns (result: int)
   var a: array<int, int>;
   var R: int;
   N := *;
-  assume 0 < N;
+  assume 0 < N && rem(N, 8) == 0;
   j := 0;
   R := 4;
   i := 0;

@@ -271,14 +271,18 @@ Since then (October 11, 2026), the C versions follow these proposals:
   nondet calls.
 - [sizes.py](benchmarks/sv-comp/c/sizes.py) bounds the sizes of the arrays
   below 2^31 bytes.
-- The tasks that other verifiers rightly find false assume the bounds or
-  conditions they need.
+- The tasks that other verifiers rightly find false assume the conditions
+  under which the property holds, as their Dafny translations do now; the
+  bounds that kept the arithmetic within `int` were removed again (October
+  12, 2026), since the tasks are meant for verifiers that treat the
+  arithmetic of C as unbounded.
+- The 5 tasks that pass an array to a function that changes it are removed
+  (October 12, 2026), 646 remain.
 
 [false-verdicts.md](benchmarks/sv-comp/c/false-verdicts.md) has the analysis
 of the 72 wrong false verdicts and the fixes.
 [c_patches.diff](benchmarks/sv-comp/dafny/c_patches.diff) has all the
-changes. The Dafny translations do not have them yet. The results above
-predate these changes.
+changes. The results above predate these changes.
 
 ## The SV-COMP harness (blocks every task)
 

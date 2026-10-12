@@ -20,7 +20,7 @@ void main(void) {
   int N = __VERIFIER_nondet_int();
   int x = __VERIFIER_nondet_int();
   int y = __VERIFIER_nondet_int();
-  assume_abort_if_not(0 < N && N <= 30);
+  assume_abort_if_not(0 < N);
   x = 0;
   y = 1;
   while (x < N) {

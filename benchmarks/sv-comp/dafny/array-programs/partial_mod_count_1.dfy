@@ -10,6 +10,8 @@
 // conditions n <= N / 2 or N / 2 < n follow only from the conclusion, a[n] == 0, while j is defined in the
 // hypotheses, which are simplified without that case (partial_mod_count_3 to _5 are variants)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000
+// note: assumes N % 2 == 0, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 // a store at the iteration k whose value depends on a case split on k is a store of the conditional value (with a
 // further dependency ys)
@@ -24,7 +26,7 @@ method main() {
   var j: int;
   var R: int;
   var a: array<int, int>;
-  assume 0 < N;
+  assume 0 < N && rem(N, 2) == 0;
   j := 0;
   R := 1;
   i := 0;

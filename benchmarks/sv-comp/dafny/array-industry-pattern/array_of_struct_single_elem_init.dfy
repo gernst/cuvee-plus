@@ -6,6 +6,8 @@
 // findings: as array-lopstr16/single_elem_safe, by the lemmas joining guarded stores and for reads over writes at a
 // different position, and a lemma that an equation of a conditional is a case split; closed (no output)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000
+// note: assumes 3 < N, as the C version: the property depends on the original constant, which the symbolic bound
+// generalizes, and fails without (benchmarks/sv-comp/c/false-verdicts.md, group 1)
 
 // a store at the iteration k whose value depends on a case split on the values of the iteration is a store of the
 // conditional value (with two further dependencies hs and xs)
@@ -26,7 +28,7 @@ method main() {
   var x: int;
   var n: array<int, int>;
   var p: array<int, int>;
-  assume 0 < N;
+  assume 3 < N;
   i := 0;
   while i < N {
     q := *;

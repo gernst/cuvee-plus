@@ -1,6 +1,6 @@
 # C versions of the local SV-COMP benchmarks
 
-The 651 tasks in this folder are C programs with the property `unreach-call`,
+The 646 tasks in this folder are C programs with the property `unreach-call`,
 for comparing Cuvée with other verifiers on the same programs, e.g. with
 BenchExec on the task set `C.unreach-call.Unbounded` of `xml/*.xml`.
 
@@ -85,25 +85,25 @@ python3 benchmarks/sv-comp/c/sizes.py
 Before nondet.py and sizes.py, other verifiers found 72 tasks false whose
 expected verdict is true, mostly because the concrete bounds of the originals
 are needed after all: see [false-verdicts.md](false-verdicts.md). Besides
-sizes.py, 34 of these tasks are patched by hand with bounds or conditions on
-their inputs (`assume_abort_if_not(...)`, see the section "Fixes" there):
+sizes.py, 15 of these tasks are patched by hand with conditions on their
+inputs under which the property holds, e.g. `N % 4 == 0`
+(`assume_abort_if_not(...)`, see the section "Fixes" there), which their
+Dafny translations assume as well.
 
-- conditions under which the property holds, e.g. `N % 4 == 0`;
-- bounds that keep the arithmetic within `int`, as limits of datatypes
-  (2^k - 1 and -2^k), the largest that suffice.
-
-The other 9, false only for AISE, are unchanged.
+The tasks are meant for verifiers that treat the arithmetic of C as
+unbounded: the bounds that kept the arithmetic of 19 other tasks within
+`int` were removed again (2026-10-12), so that these tasks are false for
+verifiers with machine integers but true with mathematical ones, as their
+Dafny translations. The other 9, false only for AISE, are unchanged.
 
 Printing the programs again from the Dafny translations undoes the patches;
 their diff is in [../dafny/c_patches.diff](../dafny/c_patches.diff), for
 changing the translations accordingly.
 
-Five programs remain invalid C, since they copy an array parameter into a
-local array (`set_1 = Set;`, `dst_1 = dst;`), as arrays are values in the
-Dafny translations: `array-examples/data_structures_set_multi_proc_ground-1`,
-`-2`, `data_structures_set_multi_proc_trivial_ground`, `sanfoundry_43_ground`,
-and `array-industry-pattern/check_removal_from_set_after_insertion`. Their
-translations update the array parameter only in that local copy, which the
-caller does not see, unlike the original C programs, so that they are excluded
-from [c.set](c.set) and [../dafny/dafny.set](../dafny/dafny.set), which list
-the other tasks explicitly, until the translations are fixed.
+Five tasks were removed (2026-10-12):
+`array-examples/data_structures_set_multi_proc_ground-1`, `-2`,
+`data_structures_set_multi_proc_trivial_ground`, `sanfoundry_43_ground`, and
+`array-industry-pattern/check_removal_from_set_after_insertion`. Their C
+programs pass an array to a function that changes it, which needs the array
+as a global variable in Dafny, where arrays are values, and C has no global
+arrays of symbolic size.

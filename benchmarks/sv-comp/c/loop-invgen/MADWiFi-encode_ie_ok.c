@@ -27,7 +27,6 @@ int main(void) {
   leader_len = __VERIFIER_nondet_int();
   bufsize = __VERIFIER_nondet_int();
   ielen = __VERIFIER_nondet_int();
-  assume_abort_if_not(ielen <= 1073741823);
   if (leader_len > 0) {} else {
     return result;
   }
