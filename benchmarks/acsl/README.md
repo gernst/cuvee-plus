@@ -9,7 +9,7 @@ expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
   323 tasks expected `false` are removed). All have the contracts of the
   harness, 799 have loop invariants.
 - **Proved with Cuvée 0.40.0: 603 of the 838 true tasks**, none wrong
-  (60 s per task, Oct 12, 2026, see [Results](#results)); 630 with the
+  (60 s per task, Oct 12, 2026, see [Results](#results)); 652 with the
   annotations revised since, by single runs. These results predate the
   answers of `-verify` (0.41.0), under which refuted annotations of true
   tasks are wrong verdicts (see [Running](#running)); not yet rerun.
@@ -59,9 +59,9 @@ which locates a failing one.
 Refutations are not always counterexamples: `1 << k`, `&` and the other
 bitwise operators on values other than truth values are uninterpreted
 functions (`shl`, `bitand`, ...), which z3 may interpret arbitrarily, e.g.
-`shl(1, 0) != 1`. Annotations over them, such as the powers of 2 by shifts
-of `divbin*` and `dijkstra-u*`, are refuted although they hold (see
-[Open](#open)).
+`shl(1, 0) != 1`. Annotations over them are refuted although they hold; the
+powers of 2 and 4 that were written with shifts are predicates now (see
+[Annotations](#annotations)).
 
 ## Annotations
 
@@ -87,15 +87,27 @@ followed by a note where they need explanation.
   `reads`): arrays are values in Cuvée's C.
 - **Unsigned arithmetic** that wraps around is stated modulo its type
   (`sn == (2*x) % 4294967296`; `nla-digbench/geo*`, `lcm*`, `hard-u`,
-  `dijkstra-u`, `knuth`); powers of 2 and 4 by shifts (`\exists integer k;
-  0 <= k <= 64 && p == 1 << k`), except in `hard-ll` and `hard2` (below).
-- **Powers of 2** in `nla-digbench/hard-ll` and `nla-digbench-scaling/hard-ll_*`,
-  `hard2_*` (15 tasks) are the predicate `pow2` of an `axiomatic Pow2` with
-  first-order axioms, `pow2(1)`, `pow2(p) ==> pow2(2*p)`, `pow2(p) ==> p >= 1`,
-  `pow2(p) && p != 1 ==> p % 2 == 0 && pow2(p / 2)`, instead of `\exists
-  integer k; ... p == 1 << k`: neither an existential, whose witness z3 does
-  not find, nor the uninterpreted shift; the invariant is `pow2(p)`. All 15
-  answer `correct` (0.41.4, 60 s, Oct 12, 2026), where the shifts were refuted.
+  `dijkstra-u`, `knuth`).
+- **Powers of 2 and 4** (`hard-ll`, `hard2`, `divbin`, `divbin2`,
+  `dijkstra-u` of `nla-digbench*`, 50 tasks) are predicates of an
+  `axiomatic`, not `\exists integer k; ... p == 1 << k`, whose witness z3 does
+  not find and whose shift is uninterpreted: `pow2(p)` (`Pow2`), `pow2mul(b,
+  B)`, `b` is `B` times a power of 2 (`Pow2Mul`), `pow4(q)` (`Pow4`). The
+  axioms are goal-directed: those that relate two powers name both as
+  variables, `\forall integer p, d; pow2(p) && d == 2*p ==> pow2(d)` and
+  `\forall integer p, h; pow2(p) && p != 1 && p == 2*h ==> pow2(h)`, so z3
+  instantiates them only for the powers in the goal; `pow2(p) ==> pow2(2*p)`
+  creates new terms with each instance, a matching loop that drowns the
+  nonlinear arithmetic. The others state the bound (`pow2(p) ==> p >= 1`)
+  and the parity (`pow2(p) && p != 1 ==> p % 2 == 0`), which the halving
+  steps need. In `divbin2` and `divbin2_unwindbound*`, where `A` is
+  unbounded, `b = 2*b` wraps to 0 once `b` is 2^31 and the first loop does
+  not end: the invariants are `b == 0 || pow2(b)`, with the trusted lemma
+  `pow2_wrap` (2^31 is the only power of 2 that wraps). The `unwindbound`
+  variants of `divbin*` and `dijkstra-u` had two errors: `r < b` in the second
+  loop, which does not hold if the first ends by the bound, and the bound of
+  the counter in the second loop, which is one more, since `counter++ < N`
+  increments it also when the test fails.
 - **Sums and folds** are logic functions in an `axiomatic`, defined
   recursively over the length with the step backwards, `n > 0 ==> f(a, n) ==
   f(a, n-1) + a[n-1]`, whose instances z3 finds (the forward step `f(a, n+1)`
@@ -165,7 +177,7 @@ the tasks proved per folder.
 
 Before the support of logic functions (0.39.5, with the memory clauses and
 the labels of the first annotations) 534 were proved. After this run, the
-annotations of 27 tasks were revised and prove by single runs with the
+annotations of 49 tasks were revised and prove by single runs with the
 options of the benchmark (`-vcgen -timeout 900000 -z3`, 60 s, Oct 12, 2026,
 0.40.0 and 0.40.1):
 the seven reducers with the assertion above (`array-crafted` 43,
@@ -174,8 +186,10 @@ iteration takes `x` from 0 to 2^32-5); `loop-crafted/simple_array_index_value_4`
 (the invariants of the first loop hold also if it is not entered);
 `loop-new/count_by_k` (`i % k == 0` instead of an existential);
 `loop-invariants/bin-suffix-5` (the lemma above); `loops-crafted-1/theatreSquare`
-(the quotients as invariants); the 15 tasks of `hard-ll` and `hard2` (`pow2`
-instead of shifts, with `-verify`, 0.41.4).
+(the quotients as invariants); the 15 tasks of `hard-ll` and `hard2`, the 8
+of `divbin2` and `divbin2_unwindbound`, the 7 of `divbin2_valuebound`, and
+the 7 of `divbin_valuebound` (predicates instead of shifts, with `-verify`,
+0.41.4).
 
 ## Open
 
@@ -184,19 +198,20 @@ instead of shifts, with `-verify`, 0.41.4).
 refuted goal in that run (`unknown` then), those not revised since are wrong
 `false` answers now (`loops-crafted-1/mono-crafted_1`,
 `nla-digbench-scaling/divbin2_unwindbound10` in the sample): 51 had an
-uninterpreted bitwise operator in the refuted goal, of which 16 are revised
-(`hard-ll`, `hard2`, `bin-suffix-5`) and 35 remain, the powers of 2 by shifts
-of `divbin2` (15), `divbin` (10), and `dijkstra-u` (10); the others have too
-weak annotations (`mono-crafted_1`: the second loop needs `y >= 0`) or the
-causes below (`heavy-2`, `matrix-1`, `veris.c_sendmail_tTflag_arr_one_loop`,
-`data_structures_set_multi_proc_*`, `*-u`). The predicate `pow2mul(b, B)`
-(`b` is `B` times a power of 2) does not suffice for `divbin*`: the
-invariant `r < b` of the second loop is wrong in the `unwindbound` variants,
-whose first loop may end by the bound, and the step is nonlinear under the
-`uint` wrap-around. Cuvée could answer `unknown` to refutations through
-uninterpreted operators instead (see [TODO.md](../../TODO.md)).
+uninterpreted bitwise operator in the refuted goal, all revised: 38 prove
+(`hard-ll`, `hard2`, `divbin2`, `divbin_valuebound`, `bin-suffix-5`), 13 end
+as timeouts, `divbin_unwindbound*` (3, `b = 2*b` may wrap to values that are
+no multiples of `B` by a power of 2) and `dijkstra-u*` (10: the invariants
+modulo 2^32 bound neither `p` nor `q`, so z3 cannot exclude that the asserted
+`2*p + q` wraps; 28 of the 382 goals of `-split` are `unknown`, and a proof
+needs integer invariants with bounds, `q <= 4*n`, `p*p <= n*q`, of degree 3);
+the others have too weak annotations (`mono-crafted_1`: the second loop needs
+`y >= 0`) or the causes below (`heavy-2`, `matrix-1`,
+`veris.c_sendmail_tTflag_arr_one_loop`, `data_structures_set_multi_proc_*`,
+`*-u`). Cuvée could answer `unknown` to refutations through uninterpreted
+operators instead (see [TODO.md](../../TODO.md)).
 
-The 208 tasks that are not proved (235 of the run above, less the 27
+The 186 tasks that are not proved (235 of the run above, less the 49
 revised since), by cause:
 
 - **Not supported by Cuvée** (57):
@@ -212,7 +227,7 @@ revised since), by cause:
     (`loops/veris.c_NetBSD-libc_loop`).
 - **Nonlinear arithmetic**, z3 times out or answers `Unknown` (most of the
   143 of `nla-digbench-scaling`; `nla-digbench/geo*-ll`, `lcm1`, `lcm2`,
-  `prod4br-ll`, `divbin2`, `dijkstra-u`;
+  `prod4br-ll`, `dijkstra-u`;
   `array-programs/partial_mod_count_2-5`, integer division;
   `array-patterns/array26`, the parity of a count; `array1`, `3`, `4`, `6`,
   `7`, the lemmas with products and remainders).

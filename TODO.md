@@ -1005,8 +1005,9 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     an annotation with such an operator (the powers of 2 `\exists integer k;
     ... p == 1 << k` of `nla-digbench*`), wrong `false` answers under
     `-verify` (`nla-digbench-scaling/hard-ll_valuebound100`,
-    `divbin2_unwindbound10`, Oct 12, 2026); 35 remain after `hard-ll` and
-    `hard2` were annotated with a predicate `pow2` instead. Such goals could be `:abstract`
+    `divbin2_unwindbound10`, Oct 12, 2026); none remain in benchmarks/acsl
+    since the powers of 2 and 4 are predicates with goal-directed axioms
+    (`pow2`, `pow2mul`, `pow4`, 50 tasks, 37 of them proved). Such goals could be `:abstract`
     (refutations `unknown`), or the operators interpreted where possible
     (shifts of constants as multiplications by powers of 2, masks of low bits
     as `%`).
@@ -1058,8 +1059,9 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     `\null` (`array-industry-pattern/array_ptr_partial_init`, `array-lopstr16/partial_lesser_bound`) end in
     "arrays of pointers are not supported".
   - Results: 603 of the 838 true tasks proved with 0.40.0 (60 s, Oct 12, 2026; 534 with 0.39.5), none wrong;
-    630 with the annotations of 27 tasks revised since (single runs; the 15 of `hard-ll` and `hard2` with a
-    predicate `pow2` instead of shifts); the 323 tasks expected `false` are removed (Oct 12, 2026), 838 remain;
+    652 with the annotations of 49 tasks revised since (single runs; 37 of `hard-ll`, `hard2`, `divbin`, `divbin2`
+    with predicates for the powers of 2 instead of shifts); the 323 tasks expected `false` are removed (Oct 12,
+    2026), 838 remain;
     per folder and the causes of the others in [benchmarks/acsl/README.md](benchmarks/acsl/README.md).
   - Done in 0.40.0: the parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks). The 95
     global logic declarations (`axiomatic Fold` 53, `Asum` 18, `Msum` 14, `Sum` 9, `Count` 1) are supported

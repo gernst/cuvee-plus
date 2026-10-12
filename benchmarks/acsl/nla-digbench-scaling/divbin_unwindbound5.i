@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin; expected verdict false (b = 2*b overflows), the invariants are those of divbin2
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin; the invariants are those of divbin2; b is B times a power of 2 by the predicate pow2mul of the axiomatic Pow2Mul; the counter is at most 5 + 1 in the second loop, since the test of the first increments it also when it fails; r < b dropped, since the first loop may end by the bound (goal-directed axioms; 1 << k is uninterpreted)
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -35,6 +35,14 @@ void __VERIFIER_assert(int cond) {
     return;
 }
 int counter = 0;
+/*@ axiomatic Pow2Mul {
+  predicate pow2mul(integer b, integer B);
+  axiom pow2mul_base: \forall integer B; B >= 1 ==> pow2mul(B, B);
+  axiom pow2mul_double: \forall integer b, integer B, integer d; pow2mul(b, B) && d == 2*b ==> pow2mul(d, B);
+  axiom pow2mul_ge: \forall integer b, integer B; pow2mul(b, B) ==> b >= B;
+  axiom pow2mul_even: \forall integer b, integer B; pow2mul(b, B) && b != B ==> b % 2 == 0;
+  axiom pow2mul_half: \forall integer b, integer B, integer h; pow2mul(b, B) && b != B && b == 2*h ==> pow2mul(h, B);
+} */
 int main() {
   unsigned A, B;
   unsigned q, r, b;
@@ -47,7 +55,7 @@ int main() {
     b = B;
     /*@ loop invariant q == 0 && r == A;
         loop invariant b >= B;
-        loop invariant \exists integer k; 0 <= k <= 64 && b == B * (1 << k);
+        loop invariant pow2mul(b, B);
         loop assigns b;
         loop invariant 0 <= counter <= 5; */
     while (counter++<5) {
@@ -55,11 +63,10 @@ int main() {
         b = 2 * b;
     }
     /*@ loop invariant A == q*b + r;
-        loop invariant r < b;
         loop invariant b >= B;
-        loop invariant \exists integer k; 0 <= k <= 64 && b == B * (1 << k);
+        loop invariant pow2mul(b, B);
         loop assigns q, r, b;
-        loop invariant 0 <= counter <= 5; */
+        loop invariant 0 <= counter <= 5 + 1; */
     while (counter++<5) {
         __VERIFIER_assert(A == q * b + r);
         if (!(b != B)) break;

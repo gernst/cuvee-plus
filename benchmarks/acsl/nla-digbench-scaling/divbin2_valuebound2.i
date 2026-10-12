@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin2; b is B times a power of 2, written with a shift
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin2; b is a power of 2 (B is 1) by the predicate pow2 of the axiomatic Pow2 (goal-directed axioms; 1 << k is uninterpreted)
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -34,6 +34,14 @@ void __VERIFIER_assert(int cond) {
     }
     return;
 }
+/*@ axiomatic Pow2 {
+  predicate pow2(integer p);
+  axiom pow2_one: pow2(1);
+  axiom pow2_double: \forall integer p, d; pow2(p) && d == 2*p ==> pow2(d);
+  axiom pow2_pos: \forall integer p; pow2(p) ==> p >= 1;
+  axiom pow2_even: \forall integer p; pow2(p) && p != 1 ==> p % 2 == 0;
+  axiom pow2_half: \forall integer p, h; pow2(p) && p != 1 && p == 2*h ==> pow2(h);
+} */
 int main() {
   unsigned A, B;
   unsigned q, r, b;
@@ -45,7 +53,7 @@ int main() {
     b = B;
     /*@ loop invariant q == 0 && r == A;
         loop invariant b >= B;
-        loop invariant \exists integer k; 0 <= k <= 64 && b == B * (1 << k);
+        loop invariant pow2(b);
         loop assigns b; */
     while (1) {
         if (!(r >= b)) break;
@@ -54,7 +62,7 @@ int main() {
     /*@ loop invariant A == q*b + r;
         loop invariant r < b;
         loop invariant b >= B;
-        loop invariant \exists integer k; 0 <= k <= 64 && b == B * (1 << k);
+        loop invariant pow2(b);
         loop assigns q, r, b; */
     while (1) {
         __VERIFIER_assert(A == q * b + r);

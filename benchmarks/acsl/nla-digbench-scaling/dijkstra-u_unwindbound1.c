@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/dijkstra-u; q is a power of 4, written with a shift; the equalities are stated modulo 2^32 since the variables are unsigned
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/dijkstra-u; q is a power of 4; the equalities are stated modulo 2^32 since the variables are unsigned; q is a power of 4 by the predicate pow4 of the axiomatic Pow4; the counter is at most 1 + 1 in the second loop, since the test of the first increments it also when it fails (goal-directed axioms; 1 << k is uninterpreted)
 /* Compute the floor of the square root, by Dijkstra */
 
 /*@ assigns \nothing;
@@ -29,6 +29,14 @@ void __VERIFIER_assert(int cond) {
 }
 
 int counter = 0;
+/*@ axiomatic Pow4 {
+  predicate pow4(integer q);
+  axiom pow4_one: pow4(1);
+  axiom pow4_times: \forall integer q, d; pow4(q) && d == 4*q ==> pow4(d);
+  axiom pow4_pos: \forall integer q; pow4(q) ==> q >= 1;
+  axiom pow4_div: \forall integer q; pow4(q) && q != 1 ==> q % 4 == 0;
+  axiom pow4_quarter: \forall integer q, h; pow4(q) && q != 1 && q == 4*h ==> pow4(h);
+} */
 int main() {
     unsigned int n, p, q, r, h;
 
@@ -41,7 +49,7 @@ int main() {
     h = 0;
     /*@ loop invariant p == 0 && r == n && h == 0;
         loop invariant q >= 1;
-        loop invariant \exists integer k; 0 <= k <= 64 && q == 1 * (1 << k);
+        loop invariant pow4(q);
         loop invariant q % 4 == 0 || q == 1;
         loop assigns q;
         loop invariant 0 <= counter <= 1; */
@@ -59,10 +67,10 @@ int main() {
         loop invariant (h*h*n - 4*h*n*p + 4*(n*n)*q - n*q*q - h*h*r + 4*h*p*r - 8*n*q*r + q*q*r + 4*q*r*r) % 4294967296 == 0;
         loop invariant (h*h*p - 4*h*n*q + 4*n*p*q - p*q*q + 4*h*q*r - 4*p*q*r) % 4294967296 == 0;
         loop invariant q >= 1;
-        loop invariant \exists integer k; 0 <= k <= 64 && q == 1 * (1 << k);
+        loop invariant pow4(q);
         loop invariant q % 4 == 0 || q == 1;
         loop assigns p, q, r, h;
-        loop invariant 0 <= counter <= 1; */
+        loop invariant 0 <= counter <= 1 + 1; */
     while (counter++<1) {
         __VERIFIER_assert(r < 2 * p + q);
         __VERIFIER_assert(p*p + r*q == n*q);

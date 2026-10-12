@@ -34,9 +34,10 @@ void __VERIFIER_assert(int cond) {
 /*@ axiomatic Pow2 {
   predicate pow2(integer p);
   axiom pow2_one: pow2(1);
-  axiom pow2_double: \forall integer p; pow2(p) ==> pow2(2*p);
+  axiom pow2_double: \forall integer p, d; pow2(p) && d == 2*p ==> pow2(d);
   axiom pow2_pos: \forall integer p; pow2(p) ==> p >= 1;
-  axiom pow2_half: \forall integer p; pow2(p) && p != 1 ==> p % 2 == 0 && pow2(p / 2);
+  axiom pow2_even: \forall integer p; pow2(p) && p != 1 ==> p % 2 == 0;
+  axiom pow2_half: \forall integer p, h; pow2(p) && p != 1 && p == 2*h ==> pow2(h);
 } */
 int main() {
     int A, B;

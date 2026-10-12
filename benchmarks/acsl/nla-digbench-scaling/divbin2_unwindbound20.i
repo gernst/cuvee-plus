@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin2; b is B times a power of 2, written with a shift
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin2; b is a power of 2 (B is 1) by the predicate pow2 of the axiomatic Pow2; the counter is at most 20 + 1 in the second loop, since the test of the first increments it also when it fails; r < b dropped, since the first loop may end by the bound; b = 2*b wraps to 0 once b is 2^31 (A is unbounded), hence b == 0 || pow2(b), and the trusted lemma pow2_wrap: 2^31 is the only power of 2 that wraps (goal-directed axioms; 1 << k is uninterpreted)
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -35,6 +35,15 @@ void __VERIFIER_assert(int cond) {
     return;
 }
 int counter = 0;
+/*@ axiomatic Pow2 {
+  predicate pow2(integer p);
+  axiom pow2_one: pow2(1);
+  axiom pow2_double: \forall integer p, d; pow2(p) && d == 2*p ==> pow2(d);
+  axiom pow2_pos: \forall integer p; pow2(p) ==> p >= 1;
+  axiom pow2_even: \forall integer p; pow2(p) && p != 1 ==> p % 2 == 0;
+  axiom pow2_half: \forall integer p, h; pow2(p) && p != 1 && p == 2*h ==> pow2(h);
+  lemma pow2_wrap: \forall integer p; pow2(p) && p < 4294967296 && 2*p >= 4294967296 ==> p == 2147483648;
+} */
 int main() {
   unsigned A, B;
   unsigned q, r, b;
@@ -44,8 +53,7 @@ int main() {
     r = A;
     b = B;
     /*@ loop invariant q == 0 && r == A;
-        loop invariant b >= B;
-        loop invariant \exists integer k; 0 <= k <= 64 && b == B * (1 << k);
+        loop invariant b == 0 || pow2(b);
         loop assigns b;
         loop invariant 0 <= counter <= 20; */
     while (counter++<20) {
@@ -53,11 +61,9 @@ int main() {
         b = 2 * b;
     }
     /*@ loop invariant A == q*b + r;
-        loop invariant r < b;
-        loop invariant b >= B;
-        loop invariant \exists integer k; 0 <= k <= 64 && b == B * (1 << k);
+        loop invariant b == 0 || pow2(b);
         loop assigns q, r, b;
-        loop invariant 0 <= counter <= 20; */
+        loop invariant 0 <= counter <= 20 + 1; */
     while (counter++<20) {
         __VERIFIER_assert(A == q * b + r);
         if (!(b != B)) break;
