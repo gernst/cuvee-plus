@@ -62,8 +62,8 @@ Only actual approximations make a refutation `unknown`; the goal attribute `:abs
 ## cuvee.py and the benchmark definitions
 
 - The definitions in `xml/` add `-verify`.
-- `determine_result` reads the answers: any `incorrect` is false (`RESULT_FALSE_REACH` for unreach-call,
-  `RESULT_FALSE_PROP` for correct-tags), at least one answer and all `correct` is true, otherwise unknown; no
+- `determine_result` reads the answers: any `incorrect` is false (`RESULT_FALSE_PROP`, for every property),
+  at least one answer and all `correct` is true, otherwise unknown; no
   answer is an error.
 - The parsing per mode, including the special cases of `-chc` and `-unbounded`, is removed.
 
