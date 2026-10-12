@@ -1007,6 +1007,17 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     `!post`, and `-split` makes `post` a goal of its own without `phi`; the
     reducers proved only because z3 kept the quantifier instances of the
     assertion's proof in the same query.
+  - `-verify` answers `incorrect` to goals refuted through uninterpreted C
+    operators (`shl`, `shr`, `bitand`, `bitor`, `bitxor`, `bitnot`), whose
+    models need not be counterexamples (`shl(1, 0) != 1`): of the 87 true
+    tasks of benchmarks/acsl with a refuted goal in the 0.40.0 run, 51 refute
+    an annotation with such an operator (the powers of 2 `\exists integer k;
+    ... p == 1 << k` of `nla-digbench*`), wrong `false` answers under
+    `-verify` (`nla-digbench-scaling/hard-ll_valuebound100`,
+    `divbin2_unwindbound10`, Oct 12, 2026). Such goals could be `:abstract`
+    (refutations `unknown`), or the operators interpreted where possible
+    (shifts of constants as multiplications by powers of 2, masks of low bits
+    as `%`).
   - Uninitialized locals of unsigned types are not in the range of their type:
     a loop whose `loop assigns` contains one checks its range at the entry
     (the ranges of the modified unsigned variables are invariants, see above),
@@ -1014,7 +1025,8 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     (`loops/vogal-1`, `heavy-2`, `matrix-1`,
     `veris.c_sendmail_tTflag_arr_one_loop`, all prove with the locals
     initialized). A declaration without initializer could choose a value in
-    range, as C's indeterminate values are.
+    range, as C's indeterminate values are. Under `-verify` the refuted range is
+    `incorrect`, a wrong `false` (`heavy-2`).
   - Contracts of functions that read globals need the globals' values as
     preconditions (`loops/eureka_05`, `requires n == 5`), as in Frama-C; a
     contract on `main` is the only one that sees the initial values.

@@ -3,13 +3,15 @@
 The tasks of the SV-COMP categories ReachSafety-Arrays and ReachSafety-Loops
 with the property `unreach-call`, annotated by hand with ACSL: loop
 invariants, contracts, and logic functions, such that Cuvée can check the
-expected verdict `true` by verification conditions (`-vcgen -z3`).
+expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
 
 - **1161 tasks**, 422 of Arrays and 739 of Loops; 838 expected `true`, 323
   `false`. All have the contracts of the harness, 1119 have loop invariants.
 - **Proved with Cuvée 0.40.0: 603 of the 838 true tasks**, none wrong
   (60 s per task, Oct 12, 2026, see [Results](#results)); 615 with the
-  annotations revised since, by single runs.
+  annotations revised since, by single runs. These results predate the
+  answers of `-verify` (0.41.0), under which refuted annotations of true
+  tasks are wrong verdicts (see [Running](#running)); not yet rerun.
 
 ## Origin
 
@@ -33,16 +35,28 @@ copied. Changes since (Oct 12, 2026):
 ## Running
 
 ```
-./Cuvee.sh -vcgen -z3 benchmarks/acsl/<folder>/<task>.c
+./Cuvee.sh -vcgen -z3 -timeout 900000 -verify benchmarks/acsl/<folder>/<task>.yml
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Arrays -T 60s
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Loops -T 60s
 ```
 
-No output means that all goals hold, the task is `true`. A goal that z3
-does not prove, `(error "goal does not hold" "Sat" ...)` or `"Unknown"`, is
-`unknown` ([cuvee.py](../../cuvee.py)): it may be a weak annotation as well
-as a violation, so tasks expected `false` end as `unknown` or timeouts, never
-as `false`.
+With `-verify` (since 0.41.0, see [doc/architecture.md](../../doc/architecture.md))
+Cuvée answers `correct`, `incorrect`, or `unknown`, which
+[cuvee.py](../../cuvee.py) maps to `true`, `false`, and `unknown`. The
+annotations are the specification: a goal that z3 refutes (`Sat`) is
+`incorrect`, also if the annotation holds but is too weak, so a true task
+with a weak or wrong annotation ends as a wrong `false`; a false task ends as
+`false` if z3 refutes its failing assertion, and as `unknown` or a timeout
+otherwise. `Unknown` of z3 is `unknown`. Without `-verify`, `-vcgen -z3`
+prints the goals that do not hold, `(error "goal does not hold" "Sat"
+...)`, and `-split` before `-z3` makes each annotation a goal of its own,
+which locates a failing one.
+
+Refutations are not always counterexamples: `1 << k`, `&` and the other
+bitwise operators on values other than truth values are uninterpreted
+functions (`shl`, `bitand`, ...), which z3 may interpret arbitrarily, e.g.
+`shl(1, 0) != 1`. Annotations over them, such as the powers of 2 by shifts
+of `nla-digbench*`, are refuted although they hold (see [Open](#open)).
 
 ## Annotations
 
@@ -153,6 +167,19 @@ iteration takes `x` from 0 to 2^32-5); `loop-crafted/simple_array_index_value_4`
 (the quotients as invariants).
 
 ## Open
+
+**Under `-verify`.** A sample of 23 tasks with 0.41.3 (60 s, Oct 12, 2026)
+answers as expected where the 0.40.0 run proved or refuted: 10 proved true
+tasks `correct`, 5 refuted false tasks `false`. Of the 87 true tasks with a
+refuted goal in the run above (`unknown` then), those not revised since are
+wrong `false` answers now (`loops-crafted-1/mono-crafted_1`,
+`nla-digbench-scaling/hard-ll_valuebound100`, `divbin2_unwindbound10` in the
+sample), 51 of them with an uninterpreted bitwise operator in the refuted
+goal (`nla-digbench-scaling` 47, `nla-digbench` 3, `bin-suffix-5`, revised
+since), the others with too weak annotations (`mono-crafted_1`: the second
+loop needs `y >= 0`) or the causes below (`heavy-2`, `matrix-1`,
+`veris.c_sendmail_tTflag_arr_one_loop`, `data_structures_set_multi_proc_*`,
+`*-u`).
 
 The 223 true tasks that are not proved (235 of the run above, less the 12
 revised since), by cause:
