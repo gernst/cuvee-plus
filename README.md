@@ -196,8 +196,9 @@ tags on statements other than loops and procedure bodies (see
   limitations found.
 - [archive](archive): the README, `smoketest.sh`, and examples of the archive
   for the competition; `scripts/zenodo.py package` builds `dist/cuvee.zip`
-  and runs its smoke test, `upload` and `publish` put it on Zenodo (with a
-  personal access token, see the script).
+  from the last commit and runs its smoke test, `upload` puts it into a draft
+  on Zenodo (with a personal access token, see the script), which is
+  published by hand.
 - [doc/paper](doc/paper): the competition contribution (LNCS).
 
 ## Documentation

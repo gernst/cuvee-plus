@@ -5,12 +5,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New
 
-- URGENT, since `-verify` is on main (0.41.3): `cuvee.py` reads only the answers `correct`/`incorrect`/`unknown`
-  of `-verify`, a run without it is an error
-  - BenchExec: update the tool-info module of the pull request `add-cuvee` (github.com/gernst/benchexec,
-    `benchexec/tools/cuvee.py`) to this `cuvee.py`
-  - fm-tools: add `-verify` to the options of the entry `data/cuvee.yml`, as `archive/README.md` and
-    `archive/smoketest.sh` do
 - `-verify` (see [ideas/verify-answers.md](ideas/verify-answers.md)): a refutation is classified per goal, `VCGen`
   marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
   not depend on that loop, which `-split` keeps apart
@@ -44,7 +38,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   constants, the entry clause quantifies only those of the arguments and
   axioms); a dangling tag is an error, the report says to ignore it
 - SV-COMP tool entry and zenodo archive: publish the archive
-  (`scripts/zenodo.py package`, `upload`, `publish`), enter its DOI in the
+  (`scripts/zenodo.py package`, `upload`, then published by hand on Zenodo), enter its DOI in the
   fm-tools entry (`data/cuvee.yml`, still a dummy DOI) and in doc/paper; the
   tool-info module `cuvee.py` is the pull request `add-cuvee` to BenchExec
   (github.com/gernst/benchexec), to be kept in sync with this repository

@@ -1,0 +1,21 @@
+; addition by a loop, whose postcondition is off by one, hence the verify-call is incorrect
+(set-logic LIA)
+
+(define-proc add
+  ((x0 Int) (y0 Int))
+  ((x Int))
+  ((y Int))
+  (! (sequence
+       (assign (x x0) (y y0))
+       (while (< 0 y)
+         (assign (x (+ x 1)) (y (- y 1)))))
+     :tag proc-add))
+
+(annotate-tag proc-add
+  :requires (<= 0 y0)
+  :ensures (= x (+ x0 y0 1)))
+
+(declare-const x1 Int)
+(declare-const y1 Int)
+
+(verify-call add (x1 y1))

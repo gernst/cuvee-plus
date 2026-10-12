@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """The archive of Cuvée for SV-COMP, packaged and uploaded to Zenodo.
 
-  python3 scripts/zenodo.py package             builds dist/cuvee.zip and runs its smoke test
+  python3 scripts/zenodo.py package             builds dist/cuvee.zip from the last commit and runs its smoke test
   python3 scripts/zenodo.py upload [--sandbox]  uploads it to a draft of a Zenodo record, which is not published
-  python3 scripts/zenodo.py publish [--sandbox] publishes the draft, which cannot be undone, and prints its DOI
+
+The draft is checked and published by hand on the website of Zenodo, which cannot be undone and gives the DOI of the
+version, for fm-tools (data/cuvee.yml) and the paper.
 
 The archive has a single root directory cuvee/ with the executable Cuvee.sh, cuvee.jar, z3, the licenses, and the
 files of the folder archive/: the README of the archive, smoketest.sh, and its examples, as SV-COMP requires
@@ -11,9 +13,10 @@ files of the folder archive/: the README of the archive, smoketest.sh, and its e
 module, which goes to BenchExec. Java 21 is not included, the entry of fm-tools (data/cuvee.yml) requires the package
 openjdk-21-jre-headless instead.
 
-The first upload creates a record, later ones a new version of the last record, such that all versions share one
-concept DOI; fm-tools takes the DOI of a version, whose record contains a single zip file. The id of the last record
-is kept in scripts/zenodo.json (scripts/zenodo-sandbox.json for the sandbox), which is public information.
+The first upload creates a record; a later one replaces the file of the draft if it has not been published yet, and
+otherwise creates a new version of the record, such that all versions share one concept DOI; fm-tools takes the DOI of
+a version, whose record contains a single zip file. The id of the last record is kept in scripts/zenodo.json
+(scripts/zenodo-sandbox.json for the sandbox), which is public information.
 
 The token of Zenodo, a personal access token with the scopes deposit:write and deposit:actions (Account,
 Applications, Personal access tokens), is read from the environment variable ZENODO_TOKEN or from the file
@@ -75,22 +78,34 @@ def run(cmd: list[str], cwd: Path = ROOT, timeout: int = 600) -> subprocess.Comp
 
 
 def package():
-    # the assembly from the sources of the working tree, which should be committed, since the archive names no commit
+    # the assembly and the files of the archive from the last commit, in a temporary checkout of it, such that
+    # uncommitted changes of the working tree, e.g. of others working on it, are never included; z3 is not under
+    # version control and comes from the working tree
+    commit = run(["git", "rev-parse", "--short", "HEAD"]).stdout.strip()
     status = run(["git", "status", "--porcelain", "--untracked-files=no"]).stdout.strip()
     if status:
-        print("warning: uncommitted changes, which the archive includes:\n" + status, file=sys.stderr)
-
-    build = run(["mill", "-i", "assembly"])
-    if build.returncode != 0:
-        sys.exit("mill assembly failed:\n" + build.stdout + build.stderr)
+        print("note: uncommitted changes, which the archive does not include:\n" + status, file=sys.stderr)
 
     folder = DIST / "cuvee"
     shutil.rmtree(folder, ignore_errors=True)
     folder.mkdir(parents=True)
-    shutil.copy2(ROOT / "out" / "assembly.dest" / "out.jar", folder / "cuvee.jar")
-    for name in FILES:
-        shutil.copy2(ROOT / name, folder / name)
-    shutil.copytree(EXTRA, folder, dirs_exist_ok=True)
+
+    with tempfile.TemporaryDirectory(prefix="cuvee-build-") as tmp:
+        checkout = Path(tmp) / "cuvee-plus"
+        added = run(["git", "worktree", "add", "--detach", str(checkout), commit])
+        if added.returncode != 0:
+            sys.exit("git worktree add failed:\n" + added.stderr)
+        try:
+            build = run(["mill", "-i", "assembly"], cwd=checkout, timeout=1800)
+            if build.returncode != 0:
+                sys.exit("mill assembly failed:\n" + build.stdout + build.stderr)
+
+            shutil.copy2(checkout / "out" / "assembly.dest" / "out.jar", folder / "cuvee.jar")
+            for name in FILES:
+                shutil.copy2(ROOT / name if name == "z3" else checkout / name, folder / name)
+            shutil.copytree(checkout / EXTRA.name, folder, dirs_exist_ok=True)
+        finally:
+            run(["git", "worktree", "remove", "--force", str(checkout)])
     for name in EXECUTABLES:
         (folder / name).chmod(0o755)
 
@@ -99,7 +114,7 @@ def package():
     zipped = run(["zip", "-q", "-r", ARCHIVE.name, "cuvee"], cwd=DIST)
     if zipped.returncode != 0:
         sys.exit("zip failed:\n" + zipped.stderr)
-    print(f"{ARCHIVE.relative_to(ROOT)}: {ARCHIVE.stat().st_size / 2**20:.1f} MB")
+    print(f"{ARCHIVE.relative_to(ROOT)}: {ARCHIVE.stat().st_size / 2**20:.1f} MB, from commit {commit}")
 
     smoke()
 
@@ -159,14 +174,16 @@ def upload(sandbox: bool):
         sys.exit(f"{ARCHIVE.relative_to(ROOT)} is missing, run package first")
 
     state = load_state(sandbox)
-    if not state:
+    last = request(sandbox, "GET", f"/deposit/depositions/{state['id']}") if state else None
+    if last is None:
         # the first record
         draft = request(sandbox, "POST", "/deposit/depositions", b"{}")
-    elif not state.get("published"):
-        # the draft of an earlier upload, which is replaced
-        draft = request(sandbox, "GET", f"/deposit/depositions/{state['id']}")
+    elif not last.get("submitted"):
+        # the draft of an earlier upload, not published yet, which is replaced
+        draft = last
     else:
-        # a new version of the last record, which starts with its files and metadata
+        # the last record has been published on the website: a new version of it, which starts with its files and
+        # metadata
         version = request(sandbox, "POST", f"/deposit/depositions/{state['id']}/actions/newversion")
         draft = request(sandbox, "GET", version["links"]["latest_draft"])
 
@@ -181,31 +198,18 @@ def upload(sandbox: bool):
         sys.exit(f"checksum mismatch: {uploaded.get('checksum')} uploaded, md5:{md5} local")
 
     request(sandbox, "PUT", f"/deposit/depositions/{draft['id']}", json.dumps({"metadata": METADATA}).encode())
-    save_state(sandbox, {"id": draft["id"], "published": False})
+    save_state(sandbox, {"id": draft["id"]})
     print("draft:", draft["links"]["html"])
-    print("check it there, then: python3 scripts/zenodo.py publish" + (" --sandbox" if sandbox else ""))
-
-
-def publish(sandbox: bool):
-    state = load_state(sandbox)
-    if not state or state.get("published"):
-        sys.exit("no draft to publish, run upload first")
-
-    record = request(sandbox, "POST", f"/deposit/depositions/{state['id']}/actions/publish")
-    save_state(sandbox, {"id": record["id"], "published": True, "doi": record["doi"]})
-    print("DOI:", record["doi"], "(the DOI of this version, for fm-tools data/cuvee.yml and the paper)")
-    print("concept DOI:", record.get("conceptdoi"))
+    print("check it there and publish it on the website, which gives the DOI of this version")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["package", "upload", "publish"])
+    parser.add_argument("command", choices=["package", "upload"])
     parser.add_argument("--sandbox", action="store_true", help="use https://sandbox.zenodo.org, for trying it out")
     args = parser.parse_args()
 
     if args.command == "package":
         package()
-    elif args.command == "upload":
-        upload(args.sandbox)
     else:
-        publish(args.sandbox)
+        upload(args.sandbox)
