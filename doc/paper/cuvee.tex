@@ -231,7 +231,7 @@ benchmarks~\cite{monocera}.
 \section{Tool Setup and Configuration}
 
 \cuvee{} needs Java~21. The archive contains \code{cuvee.jar}, the script \code{Cuvee.sh}, and a Z3
-binary, which the script puts on the path. The BenchExec tool-info module is \code{cuvee.py}. It runs
+binary, which the script puts on the path. The BenchExec tool-info module is \code{cuvee.py} (\code{benchexec.tools.cuvee}). It runs
 \begin{center}
 \small\code{./Cuvee.sh -teq -simplify -split -simplify -fallback -z3}\\
 \small\code{-timeout 900000 -verify [-arch 32|64] task.c}
@@ -241,6 +241,13 @@ where \code{-arch} follows the data model of the task. With \code{-verify}, \cuv
 \emph{unknown} otherwise, which \code{cuvee.py} reports as \emph{true}, \emph{false}, and \emph{unknown}. It supports only the property \code{unreach-call}, and it participates in
 ReachSafety-Arrays and ReachSafety-Loops.
 
+\cuvee{} also participates in the SV-LIB categories CoreVerification and CTranslated of the property
+\code{correct-tags}, with the same command on the script. The tool-info module reports \emph{false}
+if a \code{verify-call} is answered \emph{incorrect}, and \emph{true} if all of them are answered
+\emph{correct}. The archive also contains the licenses and a smoke test, which runs \code{-teq}, with
+and without the fallback to Z3, and \code{-chc -z3}, the encoding into constrained Horn clauses, on a
+safe and an unsafe C program and SV-LIB script each.
+
 \section{Software Project and Contributors}
 
 \cuvee{} is developed by Gidon Ernst at LMU Munich, at
@@ -249,7 +256,7 @@ The lemma database is in the folder \code{resources/cuvee/teq} of the repository
 Lean proofs are in the file \code{resources/cuvee/teq.lean}.
 
 \paragraph{Data-Availability Statement.}
-The version of \cuvee{} used in SV-COMP~2027 is available in the SV-COMP tool archive [TODO: Zenodo DOI].
+Version 0.41.4 of \cuvee{}, used in SV-COMP~2027, is available in the SV-COMP tool archive~\cite{cuvee-artifact}.
 
 \bibliographystyle{splncs04}
 \bibliography{references}
