@@ -48,6 +48,36 @@ function {:c} shl(a: int, b: int): int
 
 function {:c} shr(a: int, b: int): int
 
+axiom {:c} {:smt2} {:rw}
+  forall c: bool, d: bool ::
+    bitand(if c then 1 else 0, if d then 1 else 0) == (if c && d then 1 else 0)
+
+axiom {:c} {:smt2} {:rw}
+  forall c: bool, d: bool ::
+    bitor(if c then 1 else 0, if d then 1 else 0) == (if c || d then 1 else 0)
+
+axiom {:c} {:smt2} {:rw}
+  forall c: bool, d: bool ::
+    bitxor(if c then 1 else 0, if d then 1 else 0) == (if c != d then 1 else 0)
+
+axiom {:c} {:smt2} {:rw} forall x: int :: bitand(0, x) == 0
+
+axiom {:c} {:smt2} {:rw} forall x: int :: bitand(x, 0) == 0
+
+axiom {:c} {:smt2} {:rw} bitand(1, 1) == 1
+
+axiom {:c} {:smt2} {:rw} forall x: int :: bitor(0, x) == x
+
+axiom {:c} {:smt2} {:rw} forall x: int :: bitor(x, 0) == x
+
+axiom {:c} {:smt2} {:rw} bitor(1, 1) == 1
+
+axiom {:c} {:smt2} {:rw} forall x: int :: bitxor(0, x) == x
+
+axiom {:c} {:smt2} {:rw} forall x: int :: bitxor(x, 0) == x
+
+axiom {:c} {:smt2} {:rw} bitxor(1, 1) == 0
+
 var g: int
 
 method f() returns (result: int)

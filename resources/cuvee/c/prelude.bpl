@@ -83,3 +83,22 @@ function {:c} bitxor(a: int, b: int): int;
 function {:c} bitnot(a: int): int;
 function {:c} shl(a: int, b: int): int;
 function {:c} shr(a: int, b: int): int;
+
+// &, |, ^ on 0 and 1, the truth values as integers, e.g. (y < 100 ? 1 : 0) & (x < 100 ? 1 : 0), which the C frontend
+// writes as and, or, xor only on operands of the type of truth values (see cuvee.c.Parser.logical); rules of the
+// simplifier (rw), which are not passed to the solvers ({:smt2}, assumed known), since Horn solvers reject
+// uninterpreted functions in their clauses; the operations stay uninterpreted on other integers
+axiom {:c} {:smt2} {:rw} (forall c: bool, d: bool :: bitand(if c then 1 else 0, if d then 1 else 0) == (if c && d then 1 else 0));
+axiom {:c} {:smt2} {:rw} (forall c: bool, d: bool :: bitor(if c then 1 else 0, if d then 1 else 0) == (if c || d then 1 else 0));
+axiom {:c} {:smt2} {:rw} (forall c: bool, d: bool :: bitxor(if c then 1 else 0, if d then 1 else 0) == (if c != d then 1 else 0));
+
+// the constants 0 and 1, e.g. after case splits
+axiom {:c} {:smt2} {:rw} (forall x: int :: bitand(0, x) == 0);
+axiom {:c} {:smt2} {:rw} (forall x: int :: bitand(x, 0) == 0);
+axiom {:c} {:smt2} {:rw} bitand(1, 1) == 1;
+axiom {:c} {:smt2} {:rw} (forall x: int :: bitor(0, x) == x);
+axiom {:c} {:smt2} {:rw} (forall x: int :: bitor(x, 0) == x);
+axiom {:c} {:smt2} {:rw} bitor(1, 1) == 1;
+axiom {:c} {:smt2} {:rw} (forall x: int :: bitxor(0, x) == x);
+axiom {:c} {:smt2} {:rw} (forall x: int :: bitxor(x, 0) == x);
+axiom {:c} {:smt2} {:rw} bitxor(1, 1) == 0;
