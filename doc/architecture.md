@@ -136,7 +136,12 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   input.
   - Procedures with a body have predicates and no contract, which is an
     error, except for `requires` of `main` (in C, the globals are zero; their
-    initializers are assignments at the beginning of `main`). Those that no procedure calls are entry points, `requires ⇒ p_pre`.
+    initializers are assignments at the beginning of `main`). The entry
+    point (`Config.entryPoint`: `-entry`, or `main` in C) has the clause
+    `requires ⇒ p_pre`; the other procedures have trivial contracts, their
+    preconditions are inferred from their calls. Outside C and SV-LIB (whose
+    entries are its `verify-call` commands), `-chc` needs `-entry`; a C
+    program without `main` and without `-entry` is an error.
   - Procedures without body have no predicates; calls instantiate their
     contract (`VCGen.instance`, also the type parameters), whose
     precondition's conjuncts are goals and whose postcondition's conjuncts
@@ -339,8 +344,9 @@ that change an expression with the printer of the configuration.
 
 The tests use utest and run with `mill -i test` (four forked groups, each
 reporting `Tests: n, Passed: n, Failed: n`; failures are marked `X`).
-A single run is `mill -i run <options> <file>`, e.g.
-`mill -i run -teq -simplify examples/dafny/vcgen/sum.dfy`. Their sources are in
+A single run is `./Cuvee.sh <options> <file>` (after the assembly, see the
+README; options in [options.md](options.md)), e.g.
+`./Cuvee.sh -teq -simplify examples/dafny/vcgen/sum.dfy`. Their sources are in
 `test/src/cuvee/test/`, by frontend:
 
 - Example tests: every file in `examples/` (except `datastructures`) states its

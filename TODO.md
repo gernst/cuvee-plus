@@ -1083,7 +1083,7 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
-  (only uncalled procedures are entry points).
+  (only the entry point has a precondition of its own, see `-entry`).
 - Errors of the C frontend on SV-COMP (Arrays and Loops, 0.34.22, 101 tasks;
   with 0.35.2, 3 parse: `loops/compact`, `heavy-1`, `heavy-2` by `sizeof` of
   expressions), besides `goto` to labels that fall through (26, see New;

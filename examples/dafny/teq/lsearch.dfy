@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -split -simplify examples/dafny/teq/lsearch.dfy
+// ./Cuvee.sh -teq -entry find -split -simplify examples/dafny/teq/lsearch.dfy
 // the first index of x among the first n elements of an array, n if there is none
 //
 // status: verified with -teq -split -simplify by not_occurs_selects_def and select_not_occurs_selects of teq.dfy;

@@ -13,8 +13,8 @@ object Horn extends TestSuite:
   // the other examples are not covered, since their procedures with a body have contracts
   val tests =
     Examples.tests(Examples.find(os.sub / "boogie" / "horn", "bpl")): file =>
-      Examples.show(List("-chc", "-monomorph", "-z3", file.toString))
-      val (_, results) = Cuvee.run("-chc", "-monomorph", "-z3", file.toString)
+      Examples.show(List("-chc", "-entry", "main", "-monomorph", "-z3", file.toString))
+      val (_, results) = Cuvee.run("-chc", "-entry", "main", "-monomorph", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
@@ -39,12 +39,12 @@ object Globals extends TestSuite:
       assert(!cmds.exists(_.isInstanceOf[DeclareVar]))
 
     test("eliminated by -chc"):
-      val cmds = output("-chc", "-print", "null", horn.toString)
+      val cmds = output("-chc", "-entry", "main", "-print", "null", horn.toString)
       assert(!cmds.exists(_.isInstanceOf[DeclareVar]))
 
     // the predicates range over the global variables, the postcondition also over their values at the entry
     test("arguments of the predicates"):
-      val cmds = output("-chc", "-print", "null", horn.toString)
+      val cmds = output("-chc", "-entry", "main", "-print", "null", horn.toString)
       val arity = cmds.collect { case DeclareFun(fun, _) => fun.name.name -> fun.arity }.toMap
       arity("incr_pre") ==> 2
       arity("incr_post") ==> 4

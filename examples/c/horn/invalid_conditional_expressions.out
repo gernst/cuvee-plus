@@ -57,9 +57,6 @@
 (declare-fun f_assign_2 (Int Int Int) Bool)
 
 (assert
-  (forall ((c Int)) (=> true (f_pre c))))
-
-(assert
   (forall
     ((c$3 Int) (result Int) (c Int))
     (=>

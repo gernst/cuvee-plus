@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -fallback examples/dafny/teq/fallback.dfy
+// ./Cuvee.sh -teq -entry search -fallback examples/dafny/teq/fallback.dfy
 // the fallback encoding of trace equation systems into first-order logic: the traces become uninterpreted functions
 // of an index, characterized point-wise, where the guards of the updates need not be complete (break)
 

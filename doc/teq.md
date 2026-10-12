@@ -65,7 +65,11 @@ After section 3 of the paper:
 ## The transform `-teq` ([TEQ.scala](../src/cuvee/verify/TEQ.scala))
 
 `TEQ` replaces each procedure definition by a goal from symbolic execution,
-after section 4 of the paper.
+after section 4 of the paper; with an entry point (`-entry`, or `main` in C,
+see `Config.entryPoint`) only that of the entry point, since calls are inlined,
+which checks the other procedures in the context of their calls, and not for
+arbitrary arguments (e.g. `sanfoundry_24-1`, whose `printEven` holds only for
+the even numbers that `main` passes).
 
 - A `Path` holds the fresh variables for nondeterministic choices, the values
   of the variables as a substitution, and the assumptions, branch conditions,
@@ -453,7 +457,7 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   summations, `selects`) in single steps; `examples/dafny/simplify/traces*.dfy`,
   `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
   traces, which declare `Trace` and the functions on traces as in `teq.dfy`.
-- E.g. `mill -i run -teq -simplify examples/dafny/vcgen/sum.dfy`.
+- E.g. `./Cuvee.sh -teq -simplify examples/dafny/vcgen/sum.dfy`.
 - The Dafny translations of SV-COMP (`benchmarks/sv-comp/dafny`) and the C
   programs printed from them (`benchmarks/sv-comp/c`, since patched for other
   verifiers, which `expected.csv` predates) have databases of their

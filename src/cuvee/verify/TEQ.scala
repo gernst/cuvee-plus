@@ -103,10 +103,18 @@ object TEQ extends Transform:
   // the lemma database is injected by the source (see Config.injected)
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val gs = Type.expand(state, state.globals)
+    val entry = config.entryPoint
+
+    // the entry point must be defined by the end of the input, e.g. main in C
+    if last == Done then
+      for p <- entry
+      do
+        Error.report("entry point not defined", p.name):
+          require(state.procdefs.contains(p))
 
     for
       cmd <- cmds
-      cmd_ <- verify(state, gs, cmd)
+      cmd_ <- verify(state, gs, entry, cmd)
     yield cmd_
 
   // the module `name` of the lemma database (resources/cuvee/teq), a resource
@@ -127,9 +135,14 @@ object TEQ extends Transform:
     val (_, parser, _) = cuvee.dafny.Source.newParser(Config.default)
     modules.flatMap(cuvee.dafny.Source.parse(_, parser))
 
-  def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
+  // a goal for the entry point only, if there is one (see Config.entryPoint), since calls are inlined, which checks
+  // the other procedures in the context of their calls; a goal for each procedure otherwise
+  def verify(state: State, gs: List[Var], entry: Option[Name], cmd: Cmd): List[Cmd] =
     cmd match
       case DeclareProc(_, _) | DeclareVar(_, _) | AnnotateTag(_, _) =>
+        Nil
+
+      case DefineProc(Proc(name, _, _, _), _, _) if entry.exists(_ != name) =>
         Nil
 
       // old(e) refers to the values gs_ of the global variables at the entry, which coincide with gs initially

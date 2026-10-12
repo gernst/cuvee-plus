@@ -58,6 +58,11 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the
   predicates by their fields.
+- **Entry point** (`-entry <name>`): the procedure where executions start,
+  `main` in C by default (as in SV-COMP); `-chc` needs one outside C (SV-LIB
+  starts at its `verify-call` commands), `-teq` emits a goal only for it, the
+  other procedures are checked inlined at their calls, `-vcgen` ignores it and
+  checks every procedure against its contract.
 - **Monomorphization** (`-monomorph`): polymorphic functions are replaced by
   their instances, which the solvers require.
 - **Splitting** (`-split`): goals and lemmas are split into individual
@@ -145,7 +150,7 @@ appear. For example:
 
 ```sh
 mill -i run -vcgen -z3 examples/dafny/vcgen/max.dfy          # verify methods
-mill -i run -chc -z3 examples/dafny/vcgen/max.dfy             # infer invariants
+mill -i run -chc -entry max -z3 examples/dafny/vcgen/max.dfy            # infer invariants
 mill -i run -vcgen -simplify -z3 examples/dafny/hybrid/ball.dfy    # hybrid programs
 mill -i run -vcgen -print smt2 examples/dafny/vcgen/max.dfy  # show the goals
 mill -i run -teq examples/dafny/vcgen/sum.dfy                 # trace equation systems

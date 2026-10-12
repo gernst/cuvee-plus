@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/three_way_partition.dfy
+// ./Cuvee.sh -teq -entry main -simplify examples/dafny/algorithms/three_way_partition.dfy
 // the three-way partition of a[0..n) around a value p (the Dutch national flag), with a single scan j as in Lomuto's
 // partition: the elements below p are moved to [0, lt), those equal to p to [lt, eq), the rest stays in [eq, j)
 //

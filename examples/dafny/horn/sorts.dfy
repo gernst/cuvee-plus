@@ -1,4 +1,4 @@
-// ./Cuvee.sh -chc examples/dafny/horn/sorts.dfy
+// ./Cuvee.sh -chc -entry main examples/dafny/horn/sorts.dfy
 // expected: valid
 // the predicates of the procedures have the expanded types of the formal parameters and global variables
 type T = int

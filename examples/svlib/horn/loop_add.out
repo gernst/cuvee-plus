@@ -18,7 +18,7 @@
 (assert
   (forall
     ((x0 Int) (y0 Int))
-    (=> (<= 0 y0) (add_pre x0 y0))))
+    (=> (add_pre x0 y0) (<= 0 y0))))
 
 (assert
   (forall

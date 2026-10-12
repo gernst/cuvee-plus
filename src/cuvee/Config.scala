@@ -4,6 +4,8 @@ import java.io.PrintStream
 import java.io.InputStreamReader
 import java.io.FileReader
 
+import util.Name
+
 import cuvee.core._
 import cuvee.pipe._
 import cuvee.smtlib.Solver
@@ -87,6 +89,8 @@ case class Config(
     // whether the nondeterministic values of C input range over all integers, instead of the values of their types,
     // except that unsigned ones are nonnegative (see c.Parser.havoc)
     unbounded: Boolean = false,
+    // -entry: the procedure where executions start, by default main in C (see entryPoint)
+    entry: Option[String] = None,
     // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print;
     // teq injects the modules of the lemma database (see injected)
     known: Set[String] = Set(),
@@ -113,6 +117,16 @@ case class Config(
   // the configuration that injects the file `file` of the user into the input, parsed by `source`
   def including(source: Source, file: String) =
     copy(includes = includes :+ (source, file))
+
+  // the source of the program, that of the input file of a task definition for one
+  def program: Source =
+    if input.source == cuvee.yml.Source then cuvee.yml.Source.lang(file).source else input.source
+
+  // the procedure where executions start, -entry or main in C, as SV-COMP has it; none otherwise, where the
+  // transforms that need one say so (Horn), SV-LIB starts at its verify-call commands instead; which procedures
+  // are checked is up to the technique: VCGen checks all against their contracts, TEQ inlines the others
+  def entryPoint: Option[Name] =
+    entry.map(Name(_, None)).orElse(if program == cuvee.c.Source then Some(Name("main", None)) else None)
 
   // the modules of the lemma database that are injected into the input after its prelude (see Source.apply):
   // those of -teq (see TEQ.modules) if the feature teq is known, then the further ones, each once, such that the
@@ -240,6 +254,11 @@ object Config:
         val config_ = config.copy(arch = bits.toInt)
         (config_, rest)
 
+  val entry_ =
+    flag("-entry", "<name>", "the procedure where executions start, which -teq and -chc check (default: main in C)"):
+      case (config, name :: rest) =>
+        (config.copy(entry = Some(name)), rest)
+
   val unbounded =
     flag("-unbounded", "nondeterministic values of C input are unbounded integers, unsigned ones nonnegative, instead of within the ranges of their types"):
       case (config, rest) =>
@@ -346,6 +365,7 @@ object Config:
     rules,
     hybrid,
     arch,
+    entry_,
     unbounded,
     z3,
     cvc5,
@@ -399,7 +419,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.41.6")
+    println("Cuvée 0.42.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

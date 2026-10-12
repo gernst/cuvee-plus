@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/partition.dfy
+// ./Cuvee.sh -teq -entry main -simplify examples/dafny/algorithms/partition.dfy
 // the partition of a[0..n) around the pivot a[n - 1] (Lomuto), the inner step of quicksort
 //
 // status: verified with -teq -simplify; the trace of the array is a conditional swap of the position k with the

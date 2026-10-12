@@ -1,4 +1,4 @@
-// ./Cuvee.sh -chc examples/dafny/horn/loop.dfy
+// ./Cuvee.sh -chc -entry main examples/dafny/horn/loop.dfy
 // expected: valid
 // the invariant of the loop is inferred
 

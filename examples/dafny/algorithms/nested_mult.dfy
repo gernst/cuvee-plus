@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -include teq:nested -simplify examples/dafny/algorithms/nested_mult.dfy
+// ./Cuvee.sh -teq -entry main -include teq:nested -simplify examples/dafny/algorithms/nested_mult.dfy
 // multiplication by repeated addition: the inner loop increments the outer variable n times
 //
 // status: verified with -teq -simplify; the inner loop modifies the outer variable r, whose outer trace is the

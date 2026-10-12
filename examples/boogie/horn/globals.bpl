@@ -1,4 +1,4 @@
-// ./Cuvee.sh -chc -monomorph examples/boogie/horn/globals.bpl
+// ./Cuvee.sh -chc -entry main -monomorph examples/boogie/horn/globals.bpl
 // expected: valid
 // global variables, which procedures and loops declare as modified, verified with -chc,
 // where the predicates of procedures with a body replace their contracts

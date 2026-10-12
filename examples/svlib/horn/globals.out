@@ -35,11 +35,6 @@
 
 (assert
   (forall
-    ((g Int))
-    (=> true (main_pre g))))
-
-(assert
-  (forall
     ((g$2 Int) (g Int))
     (=> (main_post g$2 g) (= g (+ g$2 2)))))
 

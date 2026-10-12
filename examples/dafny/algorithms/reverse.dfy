@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify examples/dafny/algorithms/reverse.dfy
+// ./Cuvee.sh -teq -entry main -simplify -split -simplify examples/dafny/algorithms/reverse.dfy
 // the reversal of a[0..n) in place, with two pointers i and j that move towards each other
 //
 // status: verified with -teq -simplify -split -simplify; the two-pointer form makes the positions of the swaps

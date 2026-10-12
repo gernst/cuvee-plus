@@ -1,4 +1,4 @@
-// ./Cuvee.sh -chc examples/dafny/horn/max.dfy
+// ./Cuvee.sh -chc -entry main examples/dafny/horn/max.dfy
 // expected: valid
 // procedures with a body have no contract, their pre- and postconditions are inferred
 

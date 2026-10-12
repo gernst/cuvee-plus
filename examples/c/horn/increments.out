@@ -48,177 +48,179 @@
 
 (declare-fun shr (Int Int) Int)
 
-(declare-fun f_pre (Int) Bool)
+(declare-fun main_pre (Int) Bool)
 
-(declare-fun f_post (Int Int) Bool)
+(declare-fun main_post (Int Int) Bool)
 
 (declare-fun
-  f_join_1
+  main_join_1
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_assign_2
+  main_assign_2
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_assign_3
+  main_assign_3
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_assign_4
+  main_assign_4
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_inv_5
+  main_inv_5
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_exit_6
+  main_exit_6
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_assign_7
+  main_assign_7
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_assign_8
+  main_assign_8
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_join_9
+  main_join_9
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_assign_10
+  main_assign_10
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_spec_11
+  main_spec_11
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  f_assign_12
+  main_assign_12
   (Int Int Int Int Int)
   Bool)
 
 (assert
-  (forall ((n Int)) (=> true (f_pre n))))
+  (forall
+    ((n Int))
+    (=> true (main_pre n))))
 
 (assert
   (forall
     ((n Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (and (f_pre n) (< n 0))
-      (f_assign_2 n 0 tmp$2 counter$3 x$4))))
+      (and (main_pre n) (< n 0))
+      (main_assign_2 n 0 tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_assign_2 n result tmp$2 counter$3 x$4)
-      (f_post n result))))
+      (main_assign_2 n result tmp$2 counter$3 x$4)
+      (main_post n result))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (and (f_pre n) (not (< n 0)))
-      (f_join_1 n result tmp$2 counter$3 x$4))))
+      (and (main_pre n) (not (< n 0)))
+      (main_join_1 n result tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_join_1 n result tmp$2 counter$3 x$4)
-      (f_assign_3 n result tmp$2 0 x$4))))
+      (main_join_1 n result tmp$2 counter$3 x$4)
+      (main_assign_3 n result tmp$2 0 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_assign_3 n result tmp$2 counter$3 x$4)
-      (f_assign_4 n result tmp$2 counter$3 0))))
+      (main_assign_3 n result tmp$2 counter$3 x$4)
+      (main_assign_4 n result tmp$2 counter$3 0))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_assign_4 n result tmp$2 counter$3 x$4)
-      (f_inv_5 n result tmp$2 counter$3 x$4))))
+      (main_assign_4 n result tmp$2 counter$3 x$4)
+      (main_inv_5 n result tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
       (and
-        (f_inv_5 n result tmp$2 counter$3 x$4)
+        (main_inv_5 n result tmp$2 counter$3 x$4)
         true)
-      (f_assign_7 n result counter$3 counter$3 x$4))))
+      (main_assign_7 n result counter$3 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_assign_7 n result tmp$2 counter$3 x$4)
-      (f_assign_8 n result tmp$2 (+ counter$3 1) x$4))))
+      (main_assign_7 n result tmp$2 counter$3 x$4)
+      (main_assign_8 n result tmp$2 (+ counter$3 1) x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
       (and
-        (f_assign_8 n result tmp$2 counter$3 x$4)
+        (main_assign_8 n result tmp$2 counter$3 x$4)
         (<= n tmp$2))
-      (f_exit_6 n result tmp$2 counter$3 x$4))))
+      (main_exit_6 n result tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
       (and
-        (f_assign_8 n result tmp$2 counter$3 x$4)
+        (main_assign_8 n result tmp$2 counter$3 x$4)
         (not (<= n tmp$2)))
-      (f_join_9 n result tmp$2 counter$3 x$4))))
+      (main_join_9 n result tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_join_9 n result tmp$2 counter$3 x$4)
-      (f_assign_10 n result tmp$2 counter$3 (+ x$4 1)))))
+      (main_join_9 n result tmp$2 counter$3 x$4)
+      (main_assign_10 n result tmp$2 counter$3 (+ x$4 1)))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_assign_10 n result tmp$2 counter$3 x$4)
-      (f_inv_5 n result tmp$2 counter$3 x$4))))
+      (main_assign_10 n result tmp$2 counter$3 x$4)
+      (main_inv_5 n result tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
       (and
-        (f_inv_5 n result tmp$2 counter$3 x$4)
+        (main_inv_5 n result tmp$2 counter$3 x$4)
         (not true))
-      (f_exit_6 n result tmp$2 counter$3 x$4))))
+      (main_exit_6 n result tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_exit_6 n result tmp$2 counter$3 x$4)
+      (main_exit_6 n result tmp$2 counter$3 x$4)
       (and
         (= x$4 n)
         (= counter$3 (+ n 1))))))
@@ -228,23 +230,23 @@
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
       (and
-        (f_exit_6 n result tmp$2 counter$3 x$4)
+        (main_exit_6 n result tmp$2 counter$3 x$4)
         true)
-      (f_spec_11 n result tmp$2 counter$3 x$4))))
+      (main_spec_11 n result tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_spec_11 n result tmp$2 counter$3 x$4)
-      (f_assign_12 n 0 tmp$2 counter$3 x$4))))
+      (main_spec_11 n result tmp$2 counter$3 x$4)
+      (main_assign_12 n 0 tmp$2 counter$3 x$4))))
 
 (assert
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (f_assign_12 n result tmp$2 counter$3 x$4)
-      (f_post n result))))
+      (main_assign_12 n result tmp$2 counter$3 x$4)
+      (main_post n result))))
 
 (check-sat)
 

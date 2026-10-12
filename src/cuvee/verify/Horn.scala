@@ -24,12 +24,23 @@ object Horn extends Transform:
   // or is set at the beginning, i.e., when nothing has been passed through so far;
   // at the end of the input, the clauses are checked for satisfiability
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+    // the entry point, where executions start (see Config.entryPoint), which SV-LIB does not need, since its entries
+    // are the verify-call commands; the others need one, it must be defined by the end of the input
+    val start = config.entryPoint
+    val svlib = config.program == cuvee.svlib.Source
+
+    if last == Done then
+      for p <- start
+      do
+        Error.report("entry point not defined", p.name):
+          require(state.procdefs.contains(p))
+
     // the axioms about the constants of a verify-call are assumed in its entry clause instead (see entry)
     val cmds_ =
       for
         cmd <- cmds
         if !(last.isInstanceOf[VerifyCall] && isAxiom(state, cmd));
-        cmd_ <- horn(state, cmd)
+        cmd_ <- horn(state, start, svlib, cmd)
       yield cmd_
 
     val hasLogic = cmds.exists:
@@ -112,9 +123,9 @@ object Horn extends Transform:
 
   // a procedure is either declared or defined, never both (see State.declare),
   // therefore the predicates p_pre and p_post of a defined procedure are declared exactly once;
-  // the defined procedures that no defined procedure calls are the entry points: requires ⇒ p_pre,
-  // where only main may have a precondition
-  def horn(state: State, cmd: Cmd): List[Cmd] =
+  // the entry point `start` has the clause requires ⇒ p_pre, the other procedures have trivial contracts, their
+  // preconditions are inferred from their calls; SV-LIB starts at its verify-call commands instead (`svlib`)
+  def horn(state: State, start: Option[Name], svlib: Boolean, cmd: Cmd): List[Cmd] =
     cmd match
       case SetLogic(_) =>
         List(SetLogic("HORN"))
@@ -137,6 +148,9 @@ object Horn extends Transform:
       // the contract of the procedure, if any, is checked: the goals p_pre ⇒ requires for all states in which
       // it is called, and p_post ⇒ ensures, e.g. of SV-LIB, whereas the calls are resolved by the predicates
       case DefineProc(Proc(name, params, in_, out_), body, _) =>
+        Error.report("-chc needs an entry point, e.g. -entry <name>", name.name):
+          require(start.isDefined || svlib)
+
         val in = Type.expand(state, in_)
         val out = Type.expand(state, out_)
         val (_, _, requires, ensures) = VCGen.contract(state, name)
@@ -151,13 +165,13 @@ object Horn extends Transform:
         val decls_ = Ref[List[DeclareFun]](Nil)
         val clauses = Ref[List[Expr]](Nil)
 
-        // the entry of a procedure that is not called, e.g. main, whose precondition is the initial values of the
-        // global variables in C, or a procedure of SV-LIB, which is verified for all inputs that satisfy its
-        // precondition; the precondition of a called procedure is a goal at its calls (the entry of a verify-call
-        // assumes it, see entry), the postcondition at the exit
-        if called(state, name)
-        then this.clauses(in ++ gs, List(App(state, pre, in ++ gs)), And.flattenStrong(requires), clauses)
-        else clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
+        // the entry point, e.g. main, whose precondition is the initial values of the global variables in C, holds
+        // for all inputs that satisfy its precondition; the precondition of any other procedure is a goal for the
+        // states in which it is called, such that its predicate is inferred from its calls (and from the entry of a
+        // verify-call, which assumes it, see entry), its contract is trivial otherwise; the postcondition at the exit
+        if start.contains(name)
+        then clause(in ++ gs, List(requires), App(state, pre, in ++ gs), clauses)
+        else this.clauses(in ++ gs, List(App(state, pre, in ++ gs)), And.flattenStrong(requires), clauses)
 
         this.clauses(scope, List(App(state, post, scope)), And.flattenStrong(Old.elim(gs, gs_, ensures)), clauses)
 
@@ -170,15 +184,6 @@ object Horn extends Transform:
 
       case _ =>
         List(cmd)
-
-  // whether some defined procedure calls `name`
-  def called(state: State, name: Name): Boolean =
-    def calls(prog: Prog): Boolean =
-      prog match
-        case Call(`name`, _, _) => true
-        case _                  => prog.subprogs.exists(calls)
-
-    state.procdefs.values.exists(calls)
 
   // the predicates p_pre and p_post of procedure `name` together with their declarations,
   // Horn solvers do not support polymorphism, therefore procedures must not have type parameters

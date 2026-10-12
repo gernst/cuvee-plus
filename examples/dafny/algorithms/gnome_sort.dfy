@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/gnome_sort.dfy
+// ./Cuvee.sh -teq -entry main -simplify examples/dafny/algorithms/gnome_sort.dfy
 // gnome sort: a single loop whose position moves down at a descent and up otherwise, so that the number of
 // iterations is not a counter; expected to stay open as a negative example of the loop shapes that trace equation
 // systems model, but verified by a summary lemma on the whole atom of the postcondition

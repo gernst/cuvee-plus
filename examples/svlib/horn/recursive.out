@@ -91,8 +91,6 @@
 
 (declare-fun main_assign_3 (Int Int) Bool)
 
-(assert (=> true main_pre))
-
 (assert
   (=> main_pre (count_pre 3)))
 
