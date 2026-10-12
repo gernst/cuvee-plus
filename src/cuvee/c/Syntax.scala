@@ -25,9 +25,12 @@ object Syntax:
   val overflows =
     Map("uchar" -> "unsigned char", "ushort" -> "unsigned short", "uint" -> "unsigned int", "ulonglong" -> "unsigned long long")
 
-  // allocations of arrays (see Parser.allocation)
+  // allocations of arrays (see Parser.allocation), also safe_malloc and safe_calloc, with which SV-COMP replaces
+  // allocations that are not checked for NULL, defined in the tasks as abort() on NULL, which the allocations never
+  // return here
   def allocation(name: String) =
-    name == "malloc" || name == "calloc" || name == "alloca" || name == "free"
+    name == "malloc" || name == "calloc" || name == "alloca" || name == "free" || name == "safe_malloc" ||
+      name == "safe_calloc"
 
 sealed trait Type
 // integer types by their signedness and rank, char, short, int, long, or longlong (long long), e.g. unsigned long is
