@@ -314,8 +314,7 @@ annotations there, and so are `define-procs-rec`, labels and gotos, the
 properties `:recurring` and `:not-recurring`, `:decreases-lex`, witnesses and traces. The modified
 global variables of procedures and loops are inferred, as in C. The verdict
 of a task is decided by the BenchExec module [cuvee.py](../cuvee.py) from the
-output: a refuted goal, or unsatisfiable clauses, mean that an annotation is
-violated; with `-verify`, from the answers to the `verify-call`s alone.
+answers of `-verify` to the `verify-call`s.
 
 ## Errors and debugging
 

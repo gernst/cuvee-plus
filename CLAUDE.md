@@ -140,7 +140,7 @@ or solvers consume.
   annotation in the scope of the tagged statement, the transforms attach the
   annotations to loops and procedures when the `verify-call` flushes them
   (`State.annotated`); tags are allowed on loops and procedure bodies only;
-  the verdict of a task is decided by `cuvee.py` from the output, there is no
-  `correct`/`incorrect` answer. Out of scope by decision: labels and gotos,
+  with `-verify`, each `verify-call` is answered `correct`, `incorrect`, or
+  `unknown` (`pipe.Verify`), which `cuvee.py` reads. Out of scope by decision: labels and gotos,
   `define-procs-rec`, `:recurring`, `:not-recurring`, `:decreases-lex`,
   witnesses and traces.

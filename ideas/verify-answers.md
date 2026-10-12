@@ -130,9 +130,9 @@ output is unchanged.
    for `scripts/rules.py`, which reads the `:used` of the printed goals; under `-verify` nothing is printed, the
    statistics are lost. Likewise the remaining goals, which explain an `unknown`, are no longer visible.
 
-7. **Two interpretations in `cuvee.py`.** Runs without `-verify` are still interpreted from the output, since the
-   archive of SV-COMP and the fm-tools entry (`archive/README.md`, `data/cuvee.yml`) use the old command line; the
-   inconsistencies that motivated `-verify` remain there until they switch.
+7. **`cuvee.py` needs `-verify`.** It reads only the answers, a run without `-verify` is an error; the archive of
+   SV-COMP passes it (`archive/README.md`, `archive/smoketest.sh`), the options of the fm-tools entry
+   (`data/cuvee.yml`) must as well.
 
 8. **Errors of the options are exceptions.** `Config.validate` raises before the pipeline runs, like the existing
    errors of the command line, which are printed as `Exception in thread "cuvee" Error(...)` with a stack trace

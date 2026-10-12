@@ -164,33 +164,29 @@ Cuvée takes part in the categories ReachSafety-Arrays and ReachSafety-Loops
 (property `unreach-call`) of SV-COMP 2027 with
 
 ```sh
-./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 [-arch 32|64] task.c
+./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 -verify [-arch 32|64] task.c
 ```
 
-where no output means that the property holds, a goal that simplifies to
-`false` that it is violated, and other remaining goals are not refuted
-(unknown); Cuvée does not produce witnesses. With `-verify`, as in the
-benchmark definitions in [xml](xml), the answer is `correct`, `incorrect`, or
-`unknown` instead.
+where the answer is `correct` (the property holds), `incorrect` (it is
+violated), or `unknown`; Cuvée does not produce witnesses.
 
 In the demo category SV-LIB (property `correct-annotations`), the tasks are
 SV-LIB scripts (`.svlib`), which Cuvée verifies with
 
 ```sh
-./Cuvee.sh -chc -z3 -timeout 900000 task.svlib
+./Cuvee.sh -chc -z3 -timeout 900000 -verify task.svlib
 ```
 
-where `sat` means that all annotations hold and `unsat` that one is violated;
-`-vcgen -z3` checks the annotations as given instead, for validation tasks
-with the invariants of all loops. With `-verify`, each `verify-call` is
-answered `correct`, `incorrect`, or `unknown`. The frontend does not support labels and
+where each `verify-call` is answered `correct`, `incorrect`, or `unknown`;
+`-vcgen -z3` checks the annotations as given instead, which answers `unknown`
+for loops without invariant. The frontend does not support labels and
 gotos, `define-procs-rec`, the properties `:recurring` and `:not-recurring`, and
 witnesses, and it rejects
 tags on statements other than loops and procedure bodies (see
 [doc/architecture.md](doc/architecture.md) and [TODO.md](TODO.md)).
 
 - [cuvee.py](cuvee.py): the tool-info module of BenchExec, which interprets
-  this output; submitted to BenchExec as `benchexec/tools/cuvee.py`.
+  the answers of `-verify`; submitted to BenchExec as `benchexec/tools/cuvee.py`.
 - [benchmarks/sv-comp](benchmarks/sv-comp): Dafny translations of the tasks of
   both categories and C programs printed from them; `./benchmark
   xml/<definition>.xml -r <rundefinition> -t <tasks>` runs Cuvée and other

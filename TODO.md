@@ -14,8 +14,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
     have to cut the loop at its invariant
   - `xml/cuvee.xml` and `xml/cuvee-fallback.xml` pass `-rules` for the statistics of `scripts/rules.py`, which read
     the `:used` of the printed goals, which `-verify` does not print
-  - `cuvee.py` keeps the interpretation of the output without `-verify`, for the archive of SV-COMP and the fm-tools
-    entry (`archive/README.md`, `data/cuvee.yml`), until their options pass `-verify`
+  - `cuvee.py` reads only the answers of `-verify`: the options of the fm-tools entry (`data/cuvee.yml`) must pass
+    `-verify`, as the archive (`archive/README.md`, `archive/smoketest.sh`) does
   - a refutation is classified per goal, `VCGen` marks the whole goal of a procedure `:abstract` if one of its loops
     has no invariant, also the obligations that do not depend on that loop, which `-split` keeps apart
 

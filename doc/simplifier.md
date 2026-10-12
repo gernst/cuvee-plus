@@ -35,8 +35,7 @@ derivatives in [hybrid.md](hybrid.md).
     `:used (name count)`, which a later `-simplify`, e.g. after `-split`, adds
     to; one that simplifies to true is reported on stderr with them, by its
     `:named` or as `goal n` (`used by goal 1, which simplified to true: ...`,
-    not starting with `goal`, which BenchExec's `cuvee.py` takes for a
-    remaining goal). Applications in subterms that are dropped later
+    not starting with `goal`, which would be taken for a remaining goal). Applications in subterms that are dropped later
     count as well, so that the counts are an upper bound
     ([rules.dfy](../examples/dafny/teq/rules.dfy)).
   - Each round (`once`) simplifies the subterms first and dispatches on the

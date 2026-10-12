@@ -22,8 +22,10 @@ the loops, simplifies them with its lemma database, and splits the remaining goa
 \texttt{-fallback -z3}, which lowers the goals that remain after simplification into first-order logic
 and hands them to Z3. The lemma database of \texttt{-teq} consists of the modules core, arithmetic,
 counters, aggregation, arrays and search; the variants marked full TEQ add the further modules nested,
-sorting and strides (\texttt{-include teq:nested -include teq:sorting -include teq:strides}). Cuvée only
-reports safe programs (verdict true); it does not search for counterexamples. The other tools are the
+sorting and strides (\texttt{-include teq:nested -include teq:sorting -include teq:strides}). With
+\texttt{-verify} (since version 0.41.0), Cuvée answers correct if all goals are proved, incorrect if a goal
+simplifies to false, also under \texttt{-unbounded}, which is part of the meaning of the task, and unknown
+otherwise; it does not search for counterexamples. The other tools are the
 SV-COMP 2026 versions of Symbiotic, AISE, UAutomizer, CPAchecker and Korn, run with the options of their
 official SV-COMP benchmark definitions.
 

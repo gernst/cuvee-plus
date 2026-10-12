@@ -149,7 +149,10 @@ Its output is not C, so `-print c` omits it; use `-print smt2` or
 cluster have none. Goals that z3 does not prove are `unknown`
 ([cuvee.py](cuvee.py)), since the encoding generalizes the functions of
 `teq.dfy` that it does not define. The baselines are those of
-`-teq -simplify -split -simplify` of October 9 (1 core).
+`-teq -simplify -split -simplify` of October 9 (1 core). Since version 0.41.0,
+the definitions pass `-verify`, with which Cuvée answers `correct`,
+`incorrect`, or `unknown` itself (such goals are `:abstract`, hence `unknown`),
+and `cuvee.py` reads only these answers.
 
 | Category | baseline 1 min | fallback 1 min | baseline 15 min | fallback 15 min |
 |---|---|---|---|---|
