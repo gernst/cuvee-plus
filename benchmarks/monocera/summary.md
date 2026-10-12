@@ -20,8 +20,8 @@ same way for Cuvée (`polished_tests/cuvee/<operator>`, with task definitions,
 all expected true), keeping SV-COMP's harness and `__VERIFIER_assert`. The
 run definition `MonoCera_unreach-call` of `xml/cuvee*.xml` in the root of the
 repository takes them, one task set per operator. The runs used
-[cuvee-quick.xml](../../xml/cuvee-quick.xml) and
-[cuvee-quick-fallback.xml](../../xml/cuvee-quick-fallback.xml) (1 min,
+`xml/cuvee-quick.xml` and
+`xml/cuvee-quick-fallback.xml` (since removed; 1 min,
 2 cores, 7 GB); the paper's limits were 300 s wall time and 2700 s CPU time
 on an AMD Opteron 2220 with 6 GB.
 

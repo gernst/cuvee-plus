@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
-<!-- the quick variant of cuvee.xml, with 2 min per task instead of 15 -->
-<benchmark tool="cuvee" displayName="Cuvée (quick)" timelimit="2 min" hardtimelimit="2 min" memlimit="7 GB" cpuCores="2">
+<!-- Cuvée with constrained Horn clauses (-chc) solved by z3 instead of trace equation systems -->
+<benchmark tool="cuvee" displayName="Cuvée (CHC)" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
 
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
-  <option name="-teq"/>
+  <!-- the program as constrained Horn clauses, solved by z3, after simplifying the procedures -->
   <option name="-simplify"/>
-  <option name="-split"/>
-  <option name="-simplify"/>
-  <!-- the rules applied to each goal, for the statistics of scripts/rules.py -->
-  <option name="-rules"/>
+  <option name="-chc"/>
+  <option name="-z3"/>
+  <!-- z3 is limited by the time limit only, which this covers, since -timeout defaults to 1 s per query -->
+  <option name="-timeout">900000</option>
 
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">
@@ -56,6 +56,19 @@
     <tasks name="C.unreach-call.MonoCera-Sum">
       <include>../benchmarks/monocera/polished_tests/cuvee/sum/*.yml</include>
       <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+  </rundefinition>
+
+  <!-- the categories SV-LIB.correct-tags.* of SV-COMP (sv-benchmarks/sv-lib) for verifiers; not CoreValidation,
+       whose tasks are for validators, nor the translations of BTOR2, which are on bitvectors -->
+  <rundefinition name="SV-LIB_correct-tags">
+    <tasks name="SV-LIB.correct-tags.CoreVerification">
+      <includesfile>../sv-benchmarks/sv-lib/CoreVerification.set</includesfile>
+      <propertyfile>../sv-benchmarks/sv-lib/properties/correct-tags.prp</propertyfile>
+    </tasks>
+    <tasks name="SV-LIB.correct-tags.CTranslated">
+      <includesfile>../sv-benchmarks/sv-lib/CTranslated.set</includesfile>
+      <propertyfile>../sv-benchmarks/sv-lib/properties/correct-tags.prp</propertyfile>
     </tasks>
   </rundefinition>
 

@@ -6,6 +6,10 @@
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
   <option name="-teq"/>
+  <!-- the full lemma database: the modules of -teq and the further ones -->
+  <option name="-include">teq:nested</option>
+  <option name="-include">teq:sorting</option>
+  <option name="-include">teq:strides</option>
   <option name="-simplify"/>
   <option name="-split"/>
   <option name="-simplify"/>

@@ -45,7 +45,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 ## Bugs
 
 - SV-LIB (0.39.0), wrong verdicts on `sv-benchmarks/sv-lib/core-verification` (property correct-tags), found with
-  `xml/cuvee-svlib-chc.xml` and `xml/cuvee-svlib-teq.xml` before running them:
+  the run definition `SV-LIB_correct-tags` of `xml/cuvee-chc.xml` and `xml/cuvee.xml` before running them:
   - `-chc -z3` refutes `loop-add` (expected true): the clauses of `verify-call add (x0 y0)` contain the goal
     `forall y0. 0 <= y0`, the precondition of `add` over all values of the constants, which fails; the task
     expects the precondition of the called procedure to be assumed (`-teq` proves the task).
@@ -1010,6 +1010,35 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     ends in a parse error),
     `array-crafted`, `reducercommutativity`, `array-patterns` mostly
     `axiomatic`.
+  - Parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks of benchmarks/acsl, 95 of them left). The
+    message names no position, only the tokens of the top-level declaration that fails; `file:line` below is
+    the line where that declaration starts.
+    - Global logic declarations (95 tasks): `/*@ axiomatic A { logic integer f(integer n); } */` fails already
+      without axioms and lemmas, as does a plain `/*@ logic integer f(integer n) = n; */`. `axiomatic Fold`
+      (53): `array-crafted`: `bAnd1.i:26`, `bAnd2.i:26`, `bAnd3.i:26`, `bAnd4.i:26`, `bAnd5.i:27`,
+      `bor1.i:26`, `bor2.i:26`, `bor3.i:26`, `bor4.i:26`, `bor5.i:27`, `mapavg1.i:26`, `mapavg2.i:26`,
+      `mapavg3.i:26`, `mapavg4.i:26`, `mapavg5.i:27`, `mapsum1.i:26`, `mapsum2.i:26`, `mapsum3.i:26`,
+      `mapsum4.i:26`, `mapsum5.i:27`, `xor1.i:26`, `xor2.i:26`, `xor3.i:26`, `xor4.i:26`, `xor5.i:27`;
+      `reducercommutativity`: `avg05-1.i:23`, `avg10-2.i:23`, `avg20-2.i:23`, `avg40-2.i:23`, `avg60-1.i:23`,
+      `max.i:25`, `max05-1.i:23`, `max10-1.i:23`, `max20-1.i:23`, `max40-1.i:23`, `max60-2.i:23`,
+      `rangesum.i:36`, `rangesum05.i:35`, `rangesum10.i:35`, `rangesum20.i:35`, `rangesum40.i:35`,
+      `rangesum60.i:35`, `sep.i:25`, `sep05-1.i:23`, `sep10-2.i:23`, `sep20-1.i:23`, `sep40-1.i:23`,
+      `sep60-2.i:23`, `sum05-2.i:23`, `sum10-1.i:23`, `sum20-2.i:23`, `sum40-2.i:23`, `sum60-2.i:23`.
+      `axiomatic Asum` (18): `array-patterns`: `array10_pattern.c:52`, `array11_pattern.c:52`,
+      `array1_pattern.c:49`, `array1_pattern_buggy.c:49`, `array2_pattern.c:49`, `array2_pattern_buggy.c:49`,
+      `array3_pattern.c:59`, `array3_pattern_buggy.c:59`, `array4_pattern.c:59`, `array4_pattern_buggy.c:59`,
+      `array5_pattern.c:60`, `array5_pattern_buggy.c:60`, `array6_pattern.c:52`, `array6_pattern_buggy.c:52`,
+      `array7_pattern.c:53`, `array7_pattern_buggy.c:53`, `array8_pattern.c:52`, `array9_pattern.c:52`.
+      `axiomatic Msum` (14): `array-patterns`: `array12_pattern.c:53`, `array13_pattern.c:52`,
+      `array14_pattern.c:51`, `array15_pattern.c:58`, `array16_pattern.c:52`, `array17_pattern.c:54`,
+      `array18_pattern.c:54`, `array19_pattern.c:54`, `array20_pattern.c:53`, `array21_pattern.c:62`,
+      `array22_pattern.c:62`, `array23_pattern.c:62`, `array24_pattern.c:62`, `array28_pattern.c:50`.
+      `axiomatic Sum` (9): `array-crafted`: `zero_sum1.c:25`, `zero_sum2.c:25`, `zero_sum3.c:25`,
+      `zero_sum4.c:25`, `zero_sum5.c:25`, `zero_sum_m2.c:25`, `zero_sum_m3.c:25`, `zero_sum_m4.c:25`,
+      `zero_sum_m5.c:25`. `axiomatic Count` (1): `loops`: `vogal-1.i:40`.
+    - Struct declarations of the programs (33 tasks), and a field selector after a range, `assigns
+      a[0..size-1].n;` in 3 more programs with structs: the 37 tasks with structs are removed from
+      benchmarks/acsl (see its README).
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
