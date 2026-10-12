@@ -246,7 +246,7 @@ revised since), by cause:
 - **Timeouts and `Unknown` of z3** (in the run above; not analyzed per goal
   yet, a timeout may also hide a matching loop or a weak annotation, as in
   `divbin2`): nonlinear arithmetic in `nla-digbench*` (`lcm1`, `lcm2` 23,
-  `geo1/2/3-ll` 32 with `unsigned long long`, `prod4br-ll` 7, `prodbin-ll` 2,
+  `geo1/2/3-ll` 31 with `unsigned long long`, `prod4br-ll` 7, `prodbin-ll` 2,
   `divbin_unwindbound` 3, `dijkstra-u` 10); `array-patterns/array26`, the
   parity of a count, `array1`,
   `3`, `4`, `6`, `7`, the lemmas with products and remainders;
