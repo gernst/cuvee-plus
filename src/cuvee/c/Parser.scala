@@ -810,24 +810,18 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       val vars = globals.values.map(_._1).toSet
       Some(xs.map(scope(_)._1).filter(vars).sortBy(_.name.toString))
 
-  // the clauses of the loop that is translated, in its scope (see Ctx), followed by the ranges of the variables of
-  // unsigned types that its body modifies, which Frama-C/WP assumes for all variables, as their values wrap around
-  // (see overflow), but not those of signed types, whose overflow is not modelled; the assignments of the copies
-  // of the variables at its entry before it; and the global variables of its loop assigns (see assigned)
-  def loop(scope: Scope, ctx: Ctx, body: core.Prog): (List[core.Prog], List[(String, Option[core.Expr])], Option[List[core.Var]]) =
+  // the clauses of the loop that is translated, in its scope (see Ctx), the assignments of the copies of the
+  // variables at its entry before it, and the global variables of its loop assigns (see assigned); the ranges of
+  // the variables of unsigned types that it modifies, which Frama-C/WP assumes, are no implicit invariants, they
+  // must be stated by loop invariants
+  def loop(scope: Scope, ctx: Ctx): (List[core.Prog], List[(String, Option[core.Expr])], Option[List[core.Var]]) =
     if ctx.loop.isEmpty
     then (Nil, Nil, None)
     else
       val copies = mutable.LinkedHashMap[core.Var, core.Var]()
       val clauses_ = clauses(scope, Env(None, Some((ctx, copies))), ctx.loop)
-      val ranges =
-        for
-          (v, t) <- scope.values.toList.distinct.sortBy(_._1.name.toString)
-          if body.mod.contains(v) && t.isInstanceOf[IntType] && !t.asInstanceOf[IntType].signed
-          phi <- bounds(t, v)
-        yield "invariant" -> Some(phi)
       val pre = for (x, y) <- copies.toList yield state.progs.assign(List(y), List(x))
-      (pre, clauses_ ++ ranges, assigned(scope, ctx.loop, "loop assigns"))
+      (pre, clauses_, assigned(scope, ctx.loop, "loop assigns"))
 
   // the bit operations on truth values, e.g. (z > 100) & (x < 100), are the logical ones, whose operands are 0 or 1
   def logical(op: String, left: core.Expr, lt: Type, right: core.Expr, rt: Type): Option[(core.Expr, Type)] =
@@ -1035,7 +1029,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case While(test, body) =>
         val (test_, check) = guard(scope, ctx, test)
         val body_ = wrap(check ++ stmt(scope, ctx.copy(loop = Nil), body))
-        val (pre, clauses, assigns) = loop(scope, ctx, body_)
+        val (pre, clauses, assigns) = loop(scope, ctx)
         pre :+ while_(test_, body_, clauses, assigns)
 
       // the test is evaluated after each iteration, also after continue, but not before the first one
@@ -1048,7 +1042,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
           then state.progs.block(Nil, state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx.copy(loop = Nil), body))
           else state.progs.block(Nil, state.progs.if_(state.exprs.app("not", List(first)), state.progs.block(Nil, check), skip) :: state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx.copy(loop = Nil), body))
 
-        val (pre, clauses, assigns) = loop(scope, ctx, body_)
+        val (pre, clauses, assigns) = loop(scope, ctx)
         pre ++ List(state.progs.assign(List(first), List(state.exprs.const("true"))), while_(state.exprs.app("or", List(first, test_)), body_, clauses, assigns))
 
       // the initialization may declare variables, whose scope is the loop
@@ -1065,14 +1059,14 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
         if !body_.exists(continues)
         then
           val block = state.progs.block(Nil, check ++ body_ ++ step_)
-          val (pre, clauses, assigns) = loop(scope, ctx, block)
+          val (pre, clauses, assigns) = loop(scope, ctx)
           pre :+ while_(test_, block, clauses, assigns)
         else
           val brk = temp(ctx, BoolType)
           val inner = while_(state.exprs.const("true"), state.progs.block(Nil, body_.map(exits(brk, _)) :+ state.progs.break))
           val leave = state.progs.if_(brk, state.progs.break, skip)
           val block = state.progs.block(Nil, check ++ List(inner, leave) ++ step_)
-          val (pre, clauses, assigns) = loop(scope, ctx, block)
+          val (pre, clauses, assigns) = loop(scope, ctx)
           val outer = while_(test_, block, clauses, assigns)
           pre ++ List(state.progs.assign(List(brk), List(state.exprs.const("false"))), outer)
 
@@ -1682,8 +1676,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       val modifies = if mod_.isEmpty then Nil else List("modifies" -> Some(mod_))
       val requires = if name == "main" && zeros.nonEmpty then List("requires" -> Some(zeros_)) else Nil
       val contract = clauses(scope, Env(out.headOption.map((_, ret)), None), contracts.getOrElse(name, Nil))
-      // the ranges of the parameters of unsigned types of functions with annotations, as in Frama-C/WP, which the
-      // ranges of the variables that the annotated loops modify need at their entry (see loop)
+      // the ranges of the parameters of unsigned types of functions with annotations, as in Frama-C/WP
       val ranges =
         if !contracts.contains(name) && !defs(name).body.exists(acsl)
         then Nil

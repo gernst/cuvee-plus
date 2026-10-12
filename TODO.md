@@ -931,7 +931,9 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   and loops (their identifiers, the global ones; locals are inferred), which
   the body must respect, except with `-teq` and `-chc`, which infer the
   modifies clauses (0.41.5; before, the clauses were skipped). `\at(e, L)` for `Pre`, `Here`, `LoopEntry`, `\valid` and
-  `\valid_read` (true), ranges of unsigned variables as in Frama-C/WP, and
+  `\valid_read` (true), ranges of unsigned parameters of functions with
+  annotations as preconditions as in Frama-C/WP (those of the unsigned
+  variables that loops modify are no implicit invariants since 0.41.6), and
   `&`, `|`, `^` of truth values (0.39.3). Global declarations (0.40.0):
   `axiomatic Name { ... }`, whose name is dropped (it groups, it does not
   scope), and the same declarations outside of one: `logic T f(params)` and
@@ -959,7 +961,10 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     unsigned variables they modify as invariants, functions with annotations
     those of their unsigned parameters as preconditions (`c.Parser.loop`;
     `count_up_down-1`, `trex03-2` prove); signed types get none, as their
-    overflow is not modelled. Was: the ranges of the C types of the program
+    overflow is not modelled. Undone for loops in 0.41.6: the ranges of the
+    modified variables are no implicit invariants, the annotations state them
+    as loop invariants where needed (the implicit ones also constrained
+    uninitialized locals, see below). Was: the ranges of the C types of the program
     variables are not assumed at loop heads: the state is quantified over all integers, while the program
     wraps unsigned arithmetic (`uint(x + 1)`), so a loop invariant over
     unsigned variables, e.g. `x + y == n` (`loops/count_up_down-1`), is
@@ -1013,7 +1018,8 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     (refutations `unknown`), or the operators interpreted where possible
     (shifts of constants as multiplications by powers of 2, masks of low bits
     as `%`).
-  - Uninitialized locals of unsigned types are not in the range of their type:
+  - Done in 0.41.6 by dropping the implicit ranges of loops (see above). Was:
+    uninitialized locals of unsigned types are not in the range of their type:
     a loop whose `loop assigns` contains one checks its range at the entry
     (the ranges of the modified unsigned variables are invariants, see above),
     which fails for `unsigned int i, j;` before `j` is assigned
