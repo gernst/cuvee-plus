@@ -1,0 +1,76 @@
+\section{Binary Search: the Lower Bound (open)}\label{sec:lb}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int, x: int) returns (lo: int)
+  requires 0 <= n
+  requires sorted(a, 0, n)
+  ensures 0 <= lo <= n
+  ensures forall k: int :: 0 <= k < lo ==> a[k] < x
+  ensures forall k: int :: lo <= k < n ==> x <= a[k]
+{
+  var hi: int; var mid: int;
+  lo := 0; hi := n;
+  while lo < hi {
+    mid := (lo + hi) / 2;
+    if a[mid] < x { lo := mid + 1; } else { hi := mid; }
+  }
+}
+\end{lstlisting}
+The first position of $a[0..n)$ whose element is at least $x$, for a sorted array. The example
+\texttt{bsearch.dfy} of \texttt{examples/dafny/teq} verifies a binary search with the stronger
+precondition of partition points for all indices; here the precondition is $\sorted(a, 0, n)$, so the
+comparisons $a[m] < x$ are meaningful for $0 \le m < n$ only.
+
+\subsection{The trace equation system}
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad lo = \cur(L) \qquad hi = \cur(H) \qquad hi \le lo \label{eq:lb0}\\
+  L &= \tr{0}{\bl{K}, \bl{H}}{lo, k, hi \mapsto \upd{G}{(hi + lo)/2 + 1}\ \ \upd{\neg G}{lo}} \label{eq:lb1}\\
+  H &= \tr{n}{\bl{K}, \bl{L}}{hi, k, lo \mapsto \upd{G}{hi}\ \ \upd{\neg G}{(hi + lo)/2}} \label{eq:lb2}\\
+  &\qquad\text{where } G \text{ abbreviates } a[(hi + lo)/2] < x \nonumber\\
+  &\al{\bl{K}, \bl{L}, \bl{H}}{k, lo, hi \mapsto lo < hi} \label{eq:lb3}
+\end{align}
+As in the merge, the two variables are traces over each other, with a data-dependent guard that reads the
+array at a position computed from both.
+
+\subsection{The attempt}
+The intended lemmas name the result by an abstract function $\mathsf{lb}(a, n, x)$ with the facts
+$0 \le \mathsf{lb}(a, n, x) \le n$, $(a[k] < x) \Leftrightarrow \mathsf{true}$ for $0 \le k < \mathsf{lb}(a, n, x)$,
+and $(x \le a[k]) \Leftrightarrow \mathsf{true}$ for $\mathsf{lb}(a, n, x) \le k < n$ (all under $\sorted(a, 0, n)$),
+which close the postcondition once $lo = \mathsf{lb}(a, n, x)$ is known. The summary of the loop in the style of
+the merge (Section~\ref{sec:merge}): the guard is the higher-order $G(lo, hi)$ pinned by
+$\forall lo, hi.\ G(lo, hi) \Leftrightarrow a[(hi + lo)/2] < x$, the trace of $hi$ is tied by an open trace variable
+$Hv = \tr{n}{\bl{\cnt(0, 1, nn)}, \bl{Lv}}{\ldots}$ with $hs = \bl{Hv}$, and the left-hand side is
+$\cur(\tr{0}{\bl{\cnt(0, 1, nn)}, hs}{lo, k, hi \mapsto \upd{G(lo, hi)}{(hi + lo)/2 + 1}\ \ \upd{\neg G(lo, hi)}{lo}})$,
+rewritten to $\mathsf{lb}(a, n, x)$. What the lemma must also know is that the loop has terminated, the exit
+$hi \le lo$ of \eqref{eq:lb0}: without it the current value of $L$ is not the lower bound.
+
+Stating the exit as a side condition $\cur(Hv) \le \cur(Lv)$ makes the run exceed the time limit: to decide
+the condition, the simplifier rewrites $\cur(Lv)$, which is the left-hand side of the very lemma, whose
+conditions decide it again (finding 20 of \texttt{NOTES.md}). Stating it as a comparison $h \le l$ of two
+open variables, matched against the hypothesis $hi \le lo$, makes the lemma fire, and the four facts about
+$\mathsf{lb}$ then close the three postconditions: the goal is closed, and a wrong postcondition leaves a
+goal. But $h$ and $l$ are not tied to the traces, so the rule is not a sound lemma (in this goal its
+conclusion holds whichever comparison the condition matched, since the exit does hold in the final state).
+Every sound tie fails for a reason of the engine, located with probes: the instance of a side condition is
+simplified before it is decided or matched, so $l = \cur(Lv)$ with $Lv$ bound re-enters the lemma like the
+first form, whether closed or open. With $Lv$ open, $l = \cur(Lv)$ binds both from the hypothesis $lo = \cur(L)$
+without re-entrance; but then the left-hand side, matched against $\cur(L)$ through the definition of the
+trace variable $L$, turns out to have left its dependency variables $nn$ and $hs$ unbound (a probe fired with
+"variables of a rule not instantiated"), and the trace condition that would bind them,
+$Lv = \tr{0}{\bl{\cnt(0, 1, nn)}, hs}{\ldots}$, no longer matches once $Lv$ is bound, since its instance is
+simplified with $L$ replaced by its definition.
+
+\subsection{The idea, and what is missing}
+Binary search is the paper's acknowledged weakness: the loop computes a bound by narrowing, and only a
+partial description of the traces (monotone $lo$, monotone $hi$, $lo \le \mathsf{lb} \le hi$ throughout) is
+needed, not their values. \texttt{bsearch.dfy} handles it by abstracting the comparisons with the array
+into comparisons of indices with partition points (lemmas $(a[m] < x) \Leftrightarrow m < p$ without side
+conditions), by the named monotone traces $\mathsf{incs}$ and $\mathsf{decs}$ whose bounds are their
+facts, and by a cut after the loop. With $\sorted$ instead of partition points, the comparison lemma needs
+$0 \le m < n$, which in the context of the updates follows from the invariant $0 \le lo \le hi \le n$,
+the thing to be established; the summary lemma of this section bypasses the invariant by stating the
+result directly, and founders on tying the exit to the traces soundly. What is missing is in the engine: a
+rule should not be applied while the instances of its own side conditions are simplified, and a left-hand
+side matched through a trace variable should bind all its variables; with either, the sound form of the
+lemma closes the goal.

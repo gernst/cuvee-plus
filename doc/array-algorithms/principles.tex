@@ -1,0 +1,351 @@
+\section{Principles}\label{sec:principles}
+
+This section collects what the examples have in common: the shape that every proof takes, the rules
+that the matcher imposes on a lemma written for a program, the discipline that keeps such lemmas sound and
+the rewriting terminating, the diagnostics that located each obstacle, and what the same principles look
+like on the C programs of the MonoCera benchmarks (\texttt{benchmarks/monocera}). The sources are the numbered
+findings of \texttt{NOTES.md}, the experiment threads kept in \texttt{pending/} (preludes, programs with wrong
+postconditions, scripts and logs, Oct 10 and 11, 2026), \texttt{doc/teq.md}, and the summary and case studies
+of the MonoCera tests. The state of the folder on Oct 12, 2026: 27 of its 30 files verify with
+\texttt{-teq -simplify} (nine of them with \texttt{-include teq:nested}); open are \texttt{is\_sorted.dfy}
+(one substitution of the exit into an argument of $\sorted$), the existential postcondition of
+\texttt{max\_element.dfy} (no witness), and the lower bound (Section~\ref{sec:lb}, blocked by the engine).
+
+\subsection{The shape of a proof}\label{sec:principles:shape}
+
+Every verified example is closed by lemmas of the following kinds, in this order from generic to specific.
+The first two kinds are the database's, the others are the algorithm's knowledge, stated at the beginning of
+its file.
+\begin{enumerate}[nosep]
+\item \textbf{The database resolves single loops.} Counters, sums, stores, selects, counts, minima and
+  maxima are introduced and accelerated by the modules of \texttt{-teq} without anything written for the
+  program (the four loops of the counting sort up to the table of start positions, Section~\ref{sec:cs}).
+\item \textbf{Fragment lemmas resolve inner counters.} Theorem~4.8 of the paper turns the trace equation
+  system of an inner loop into fresh sequences inside the iteration constraint of the outer loop, which the
+  simplifier distributes into fragments over incomparable dependency lists that do not see each other's
+  facts (the two minimal problems, \texttt{invs\_counter\_equation.dfy} and \texttt{invs\_fragments.dfy}). The
+  module \texttt{nested} does the resolution by rewriting, one fragment at a time in the order in which
+  \texttt{-teq} produces them: the inner trace is a counter, its final value is its length, the test bounds
+  the length, the exit fixes it, the numbers of inner iterations are a constant sequence
+  (Sections~\ref{sec:nsum} and~\ref{sec:sel:frag}). The same lemmas serve every nested example.
+\item \textbf{A summary states what an inner loop computes.} Its left-hand side is the outer trace, read
+  through the current value, or the whole atom of the postcondition; its side conditions are the fragments,
+  matched against the facts; its right-hand side is a trace of an abstract step, $\argmin$ swaps,
+  $\mathsf{insert}$, $\mathsf{shake}$, $\neg\mathsf{nodup}$ (Sections~\ref{sec:sel:sum}, \ref{sec:cock},
+  \ref{sec:fd}). An inner result stored at the outer position needs no summary but a chain of specific
+  substitutions (Section~\ref{sec:rows}).
+\item \textbf{An induction lemma states the invariant of the outer loop} as a quantified side condition over
+  the abstract step, which the simplifier decides by step lemmas on atoms; the invariant is a predicate
+  indexed by the iteration ($\mathsf{bubbled}$, $\mathsf{shaken}$, the sorted prefix), and the lemma
+  constrains all steps of the trace (Sections~\ref{sec:sel:ind} and~\ref{sec:bs}). This is the scheme of
+  \lemma{current\_trace\_bounded} of the database: no invariant is inferred, its shape is the lemma's
+  knowledge, and the database proves the step.
+\item \textbf{Rules on the atoms of the postcondition} characterize a named result: the bounds of
+  $\argmin$ and $\mathsf{lb}$, the regions of a partition, the counts of $\mathsf{merged}$, the two cases of
+  the exit for $\mathsf{distincts}$. The postcondition is never rewritten as a whole; each atom finds its
+  rule, with the exit of the loop among the facts.
+\item \textbf{Name the normal form.} The counter of a loop is not inlined into the facts, so a count over
+  $\bl{I}$ and over $\bl{\cnt(0, 1, n)}$ differ (\texttt{count\_occurrences.dfy}); a lemma that names the
+  term makes both sides equal. Quantified preconditions are stated as atoms of the specification
+  ($\mathsf{keys\_below}$, Section~\ref{sec:cs}), postconditions in the database's vocabulary
+  ($\mathsf{occurs}$, $\mathsf{distincts}$, $\mathsf{count}$ over $\mathsf{selects}$) where the standard
+  form has no witness or no matchable shape.
+\end{enumerate}
+A data-dependent number of iterations (merge, gnome sort, the early exit of the first duplicate) is no
+obstacle to this shape as long as the property can be stated on the final values and the exit is read from
+the facts; what the paper's loop shapes exclude is the characterization of the traces, not the postcondition
+(Section~\ref{sec:gnome}).
+
+\subsection{Writing a lemma that the matcher accepts}\label{sec:principles:matcher}
+
+The matcher of the paper (Section~5.2) relates the binding structure of combinators, follows the definitions
+of the context on demand, synthesizes dependencies that are variables of the rule as maps, and matches side
+conditions against the facts while they have an open variable. From these four mechanisms follow the
+patterns below, each found by an example that did not close without it (Table~\ref{tab:principles}).
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+pattern & found on & finding \\
+\midrule
+specific left-hand side of an $\mathsf{all}$ rule & cocktail sort, nested mult & 15, 29 \\
+fresh variables for every $\mathsf{all}$ side condition & bubble sort, cocktail sort & 9, 27 \\
+open trace variables for the traces of the goal & merge, counting sort, first duplicate & 14, 31 \\
+the pin for literal patterns & merge, insertion sort, gnome sort & 14 \\
+the whole atom as left-hand side & merge, gnome sort & 16 \\
+arithmetic in the goal's form & cocktail sort, bubble sort & 11, 28 \\
+side conditions in the forms of the included modules & insertion sorts, cocktail sort & 22, 37 \\
+no condition on the rule's own term & lower bound, bubble sort & 20, 32 \\
+the exit of an outer loop as two implications & first duplicate & 31 \\
+atoms for constraints and quantified hypotheses & linear search, counting sort & 13, 19 \\
+variables of the method named apart & fragments, invs\_fragments & 9, 21 \\
+\bottomrule
+\end{tabular}
+\caption{The patterns of Section~\ref{sec:principles:matcher}, the examples that forced them, and the
+findings of \texttt{NOTES.md} that record them.}\label{tab:principles}
+\end{table}
+
+\begin{enumerate}[nosep]
+\item \textbf{A specific left-hand side.} An $\mathsf{all}$ pattern whose body has a bare bound variable of
+  a variable dependency on one side, $n \le j$ or $j = \intf(nn)$, matches every comparison, respectively
+  equation, fragment: the dependency is synthesized as a map of the fact's dependencies. With an
+  $\mathsf{all}$ side condition such a rule cycles (Section~\ref{sec:principles:termination}). A function
+  symbol on the side of the bound variable, $\intf(nn) \le n$ or $J = \cnt(0, 1, nn)$, an $\mathsf{all}$ with
+  a specific body, or an atom of the specification is specific.
+\item \textbf{The whole atom as left-hand side.} A variable argument of an uninterpreted function is not
+  expanded by its definition when the simplifier rewrites below it: $\sorted(c, 0, n)$ with $c = \cur(C)$
+  is not reached by a rule on $\cur(\tr{\ldots}{\ldots}{\ldots})$, but
+  $\sorted(\cur(\tr{\ldots}{\ldots}{\ldots}), 0, s)$ is, and the length is a variable $s$ with $s = m + n$
+  as a side condition, since a pattern $m + n$ of two variables is not matched (Section~\ref{sec:merge}).
+\item \textbf{Fresh variables for every $\mathsf{all}$ side condition.} A condition is matched against the
+  facts, with backtracking, while a variable of it is open; once all are bound it is closed and decided by
+  the simplifier, which does not find a closed $\mathsf{all}$ among the facts (these carry unused
+  dependencies, which the simplifier also drops from the instance, and their bound variables are renamed).
+  So each $\mathsf{all}$ condition binds a fresh sequence, $\al{ks, js_6, Js_6}{k, j, J \mapsto j = \cur(J)}$,
+  and an equation $js_6 = js_4 \wedge Js_6 = Js_3$ identifies it afterwards; the equation is closed and
+  trivially decided. The 21st condition of the cocktail summary stayed closed for a day
+  (Section~\ref{sec:cock}).
+\item \textbf{Open trace variables.} The traces of the goal are variables $K$, $I$, $R$ with their equations
+  as hypotheses. $\bl{\cnt(0, 1, m)}$ as a \emph{dependency} of a pattern matches $\bl{K}$ through the
+  context; as an \emph{argument} of a function it never does, and a closed equation $is = \bl{\tr{\ldots}{\ldots}{\ldots}}$
+  is decided and fails, since $\bl{I}$ is not expanded. A rule takes $Kv = \cnt(0, 1, m)$ or
+  $Iv = \tr{0}{\ldots}{\ldots}$ as an \emph{open} condition, matched against the hypothesis, and uses
+  $\bl{Kv}$, $\bl{Iv}$ afterwards (Sections~\ref{sec:merge}, \ref{sec:cs}, \ref{sec:fd}).
+\item \textbf{The pin.} A literal pattern that the matcher does not handle, a disjunctive guard, the
+  position $j - 1$ of a store, the initial value $n - k - 2$ of a counter, the step $-1$, becomes a
+  higher-order variable $G(i, j)$, $P(j)$, $X(k)$, $d$, which matches anything, and a quantified side
+  condition $\forall i, j.\ G(i, j) \Leftrightarrow \varphi$ or an equation pins it to the intended term; the
+  simplifier decides the pin by beta reduction. A pin must mention only variables that the left-hand side
+  or an earlier condition binds, and it must follow the fragments: a test $0 < j \wedge y[j] < y[j - 1]$ is
+  split into two constraints, so its pin is two pins (\texttt{insertion\_sort.dfy}). A higher-order variable
+  for a bare array read $a[i]$ is instantiated by the array itself (finding~10), so reads are pinned, as
+  $U(i, j) = a[i]$ in the merge, or written literally.
+\item \textbf{Arithmetic in the goal's form.} The decision procedure of the context combines difference
+  constraints; $len \le 2\,\intf(m) + 1$ is not derived from $n \le \intf(m) + lo + 1$ and $lo = \intf(m)$.
+  A condition states the bound as the goal has it, with the program's variable as an open rule variable
+  matched against its equation ($l = \intf(m)$, then $len \le \intf(m) + l + 1$); a length $len - k - 1$
+  that a pattern cannot contain is a variable $p$ with $p = len - k - 1$ as a closed condition, decided once
+  $p$ is bound (Section~\ref{sec:bs}). Arithmetic on a bound variable is admissible on right-hand sides and
+  in side conditions, never in a left-hand side.
+\item \textbf{Side conditions in the forms of the included modules.} The fragments are rewritten by the
+  modules before a summary sees them, so a summary is written for the normal form of the whole database
+  that the run includes: $j = \cur(J)$ without \texttt{teq:nested}, $j = \intf(nn) + k + 1$ with it, as the
+  goal prints them. A file includes exactly the modules its lemmas are written for; all nested loops of the
+  folder are now written for \texttt{teq:nested}, so that the module can become part of \texttt{-teq}
+  (finding~37).
+\item \textbf{No condition on the rule's own term.} The instance of a side condition is simplified before it
+  is decided or matched, so a condition $l = \cur(Lv)$ of a rule on $\cur(Lv)$ with $Lv$ bound rewrites
+  $\cur(Lv)$ by the rule itself and does not terminate. The summaries take $\cur(\mathsf{results}(\ldots))$
+  as left-hand side rather than $\mathsf{results}(\ldots)$ for the same reason, and the exit of a loop is
+  read from the facts ($x = \cur(Iv)$ open, then $n \le x$, Section~\ref{sec:gnome}) or abstracted by an
+  atom, never stated on the current value of the trace being rewritten (Section~\ref{sec:lb}).
+\item \textbf{The exit of an outer loop.} The exit of an inner loop is a fragment and a side condition like
+  the others. The exit of the outer loop stands in the conclusion of the goal, $\neg exit \vee post$, which
+  \texttt{-split} does not split when the exit is a disjunction, and a rule on an atom of $post$ sees
+  neither literal; a postcondition stated as two implications gives each goal its literal
+  (Section~\ref{sec:fd}). The case of no iteration appears only after a first simplification, hence
+  \texttt{-simplify -split -simplify} where it matters (\texttt{is\_sorted.dfy}, \texttt{reverse.dfy}).
+\item \textbf{Atoms for iteration constraints and quantified hypotheses.} An iteration constraint is never a
+  side condition (Section~\ref{sec:principles:termination}); a definition lemma abstracts it by an atom
+  with a body that the matcher cannot synthesize, an explicit read $\mathsf{earlier}(\natf(k), js) = c$, and
+  the lemma that needs the constraint takes the atom (Section~\ref{sec:lsearch}). A quantified hypothesis is
+  matched by no side condition, open or closed; the specification provides the atom (Section~\ref{sec:cs}).
+\item \textbf{Variables named apart.} Rule variables are not renamed apart from the variables of the goal.
+  A method variable with the name of a rule variable of an open condition makes the condition coincide
+  with the fact literally; it is decided true without binding the variable, and the run ends with
+  ``variables of a rule not instantiated by its match'' on stderr, which \emph{replaces the goal}: zero
+  goals with an error is not a proof. The fragments of \texttt{-teq} are named $K?_{14}$ and never clash;
+  test methods and pins name their variables $KK$, $NN$, $len$ apart.
+\item \textbf{Dependencies.} Lemmas carry the extra dependencies that the simplifier keeps in maps (the
+  counter of the loop as $hs$), the matcher does not backtrack over the selection of dependencies when a
+  side condition fails (hence \lemma{invs\_current\_counter\_other}), equal counters $K = I$ of one loop are
+  not identified, and a higher-order summand $X(k)$ matches a single summand only, which is why the
+  resolved forms are written literally.
+\end{enumerate}
+
+\subsection{Soundness}\label{sec:principles:sound}
+
+The lemmas of the examples are axioms: the abstract predicates $\sorted$, $\perm$, $\partitioned$,
+$\mathsf{bubbled}$, $\mathsf{shaken}$ and the functions $\argmin$, $\mathsf{insert}$, $\mathsf{shake}$,
+$\mathsf{nodup}$, $\mathsf{merged}$, $\mathsf{lb}$ have no definitions, and the summaries state the
+correctness of an inner loop in one line. Nothing in the tool checks them, so the discipline of the folder
+replaces the check.
+\begin{itemize}[nosep]
+\item \textbf{Every result is checked on a wrong postcondition.} Each thread of \texttt{pending/} has a
+  \texttt{program\_wrong.dfy} ($\sorted(b, 0, n + 1)$, the sum plus one, the negated flag); a prelude that
+  closes its goal is unsound or vacuous, not a success. Two such cases occurred: a rule
+  $\mathsf{nodup}(a, k, n) \Leftrightarrow \mathsf{true}$ under the hypothesis $\mathsf{distincts}(\ldots)$
+  fired inside the context in which a side condition of a rule \emph{on} $\mathsf{distincts}$ was matched, so
+  the atom was derived from itself (finding~13); and a condition with an open dependency and an equation on
+  its bound variable was decided vacuously (\texttt{vac.dfy}). The lesson: a side condition must not be
+  simplifiable by rules that use the conclusion, and the safe form of a condition is an atom that is matched
+  literally.
+\item \textbf{A lemma must be a lemma.} The lower bound closes with an exit $h \le l$ of two open variables
+  matched against the fact $hi \le lo$ (\texttt{lb\_cmp0.dfy}); in this goal its conclusion is right, since
+  the exit holds in the final state, but $h$ and $l$ are not tied to the traces and the rule is not a
+  theorem. Such a rule is not admitted, and the file stays open (Section~\ref{sec:lb}).
+\item \textbf{An induction constrains all steps.} A quantified condition over $0 \le k < n$ with
+  $n \le \intf(m)$ steps leaves the further steps unconstrained. The number of steps is fixed exactly
+  ($n = \intf(m)$, a fact of the goal), or the invariant is clamped so that every step keeps it
+  ($\mathsf{bubbled}$ for $k \ge len$), or the result holds for any number of iterations beyond a bound
+  ($m + n \le \intf(nn)$ in the merge).
+\item \textbf{Soundness premises are the matcher's facts.} The Lean proofs of the core modules showed the
+  premises that the lemmas need and the statements omit: dependencies of equal length, indices within the
+  lists, complete guards; the fallback encoding does not assume them. The modules \texttt{nested},
+  \texttt{sorting} and \texttt{strides} have no Lean proofs yet, and the abstract predicates would need
+  definitions there for the step lemmas to be provable; both are open items.
+\item \textbf{A killed run prints no goal.} A runner that counts goals reports a timeout as a proof: the
+  first ``closed'' runs of \texttt{row\_sums}, \texttt{transpose} and most variants of the lower bound were
+  kills at 120 or 300 s (finding~18). Every status of the folder was re-established with the exit status
+  read, and long runs use a private copy of the jar, since a rebuild during a run crashes the JVM
+  (finding~33).
+\end{itemize}
+
+\subsection{Termination}\label{sec:principles:termination}
+
+Rewriting cycles by one mechanism, recorded for \lemma{sum\_invs\_const} of the database and met four
+times in the folder (findings~19, 24, 29): an open $\mathsf{all}$ side condition is matched against the
+$\mathsf{all}$ facts, which builds the simplifier's context of each fact's combinator and rewrites the reads
+$\mathsf{earlier}(\natf(k), \bl{X})$ of its dependencies there; if the left-hand side of the rule being
+decided matches one of those rewritten reads, the rule recurs through the same fact one level deeper until
+the step budget is exhausted. Two ingredients, both needed: an $\mathsf{all}$ condition over lists that the
+left-hand side binds, and a left-hand side general enough to match inside that context. Hence the rule of
+thumb for a rule with $\mathsf{all}$ conditions: its left-hand side must be a term that no rewriting of a
+read can produce, an $\mathsf{all}$ fragment with a specific body or an atom of the specification, never a
+bare read, comparison, equation, or $\cur$ of a named trace for which an $\mathsf{earlier}$ acceleration
+lemma exists or may be added. The general substitution lemmas of the first version of \texttt{row\_sums.dfy}
+(a higher-order body $t = F(k, J)$, a read $\mathsf{earlier}(\natf(i), ts)$) are exactly what this forbids
+(Section~\ref{sec:rows}); the exit lemma of the module \texttt{nested} with the body $n \le j$ cycled with
+each counter lemma and with none alone, found by pair runs, and is stated on the constraint fragment
+$\intf(nn) \le n$ now. The order of the modules also decides which abstraction a fragment gets:
+\lemma{consts\_prefix\_def} of \texttt{aggregation} abstracts the exit $j = n$ before \texttt{nested} sees it,
+hence \lemma{consts\_prefix\_integer} with the atom as left-hand side (finding~23).
+
+\subsection{Diagnostics}\label{sec:principles:diag}
+
+The obstacles of this folder were located by four techniques, each worth a flag of the tool:
+\begin{itemize}[nosep]
+\item \textbf{Preludes.} A program without lemmas and a file of lemmas spliced in front of it by the
+  script \texttt{with.sh} of \texttt{pending/}, so that variants of the lemmas run against the same program;
+  the folder holds the series for the cocktail sort (\texttt{cock2} to \texttt{cock9b}), the first duplicate
+  (\texttt{fd4} to \texttt{fd8}), the lower bound, the row sums and the transpose, and the bisection of the
+  module \texttt{nested}.
+\item \textbf{Truncated copies.} A summary with its first $k$ side conditions, $k$ downwards, finds the first
+  failing condition (the 21st of the cocktail summary); the copies are unsound and serve the diagnosis only.
+\item \textbf{Probes.} Rules with the real left-hand side, the first $k$ conditions and a fresh atom
+  $\mathsf{probe}_k(\ldots)$ as right-hand side show in the goal the largest $k$ whose conditions hold, and a
+  probe that fires with ``variables of a rule not instantiated'' shows a left-hand side that left variables
+  unbound (finding~32). A flag \texttt{-probe <lemma>} that reports the first failing condition of a named
+  rule, with the facts it was matched against, would replace an afternoon of probe files.
+\item \textbf{Pair runs.} The single lemmas of a module in pairs on the program that cycles find the pair
+  that does (\texttt{pending/nested\_module/pairs.sh}); the rule reported at the step limit is the last step
+  of the loop, not its cause.
+\end{itemize}
+With \texttt{-rules} a proof reports the lemmas it used; a residual goal points to the missing one. The
+whole folder runs in about five minutes on one core, 5 to 35 s per file, the row sums and the transpose in
+under two minutes.
+
+\subsection{The same principles on C programs: the MonoCera tests}\label{sec:principles:monocera}
+
+The 125 SV-COMP tests of MonoCera (Amilon et al., CAV 2023; instrumentation of $\forall$, $\max$, $\min$ and
+$\sum$ over arrays) are C programs with a loop that fills an array and a loop that checks an assertion over
+it. Their summary (\texttt{benchmarks/monocera/summary.md}) and the case studies of the lemmas written for
+them (\texttt{lemmas.tex} there, Cuvée 0.35.15) show the principles of this folder on another class of
+programs, without hand-written specifications.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+operator & tests & MonoCera & Cuvée \texttt{-teq} & Cuvée \texttt{-chc} & TriCera, CPAchecker, SeaHorn \\
+\midrule
+forall & 93 & 26 & 53 & 0 & 0, 1, 0 \\
+max & 4 & 2 & 2 & 0 & 0, 0, 0 \\
+min & 11 & 3 & 7 & 0 & 0, 0, 0 \\
+sum & 17 & 10 & 17 & 0 & 0, 0, 0 \\
+\midrule
+total & 125 & 41 & 79 & 0 & 0, 1, 0 \\
+\bottomrule
+\end{tabular}
+\caption{Proved tests of the MonoCera evaluation (Cuvée 0.40.0, 15 min, Oct 12, 2026; the other tools' numbers
+from the paper). All proofs of \texttt{-teq} end within 20 s (median 9 s); no tool gives a wrong result.}
+\label{tab:monocera}
+\end{table}
+
+\begin{itemize}[nosep]
+\item \textbf{The shape of the data decides the lemma, not the idea.} An accumulator kept in the cell
+  \texttt{sum[0]} of a one-element array is a trace of stores, which \lemma{current\_trace\_reset\_add} of the
+  database, written for a scalar, does not match; \lemma{select\_current\_trace\_reset\_add} is the same lemma
+  for the read of the cell, with the scalar lemma's right-hand side so that the database continues from
+  there. This is ``name the normal form'' (Section~\ref{sec:principles:shape}): the Dafny translations of
+  SV-COMP make the cell a scalar and close the test for free, the C programs need the variant.
+\item \textbf{Left-hand sides bind, side conditions must be facts.} \lemma{sum\_cases\_below} bounds a sum of
+  $n$ terms that are each $0$, $c$ or $d$ by $e$ with its left-hand side a comparison whose constants bind
+  the bound; the general \lemma{sum\_below\_prefix} of the database does not apply, since its bound occurs
+  only in a side condition, which would have to be among the facts. The counting sort's
+  \lemma{rank\_table\_def} binds the key bound $kk$ for the same reason (Section~\ref{sec:cs}), and the
+  pattern $s = m + n$ of the merge is its arithmetic form.
+\item \textbf{Lemmas compute values, they do not make goals vacuous.} Each closed test was rerun with a
+  false assertion, which stays open with a residual such as $\neg(0 < N)$: the lemma computed $N - 1$ and the
+  bound was wrong. The same check as the wrong postconditions of Section~\ref{sec:principles:sound}.
+\item \textbf{Specific lemmas are summaries.} The strided stores (\lemma{select\_current\_trace\_stride2},
+  stride 3, three exhaustive cases at stride 2) and the stores ahead ($F(k)$ at $k + 1$, then $G(k)$ at $k$)
+  fix the number of stores and of cases on their left-hand sides, as the summaries of this folder fix the
+  fragment structure of one algorithm; strides 3 to 5 with per-cell cases, writes by inner loops and
+  recurrences on earlier entries remain open. Both want what the arity variants \lemma{perm\_steps},
+  \lemma{perm\_steps\_two} and \lemma{sorted\_prefix\_steps\_two} want: a pattern with the stride, the number
+  of dependencies, or the number of cases as a parameter.
+\item \textbf{The checking loop is an instantiation at a witness.} In 72 of the 96 open goals of the
+  earlier run the assertion of the checking loop survives as an $\mathsf{all}$ over its earlier iterations,
+  and the goal is the assertion at the current index $i = \intf(n)$ of a filled array whose closed form is
+  not derived (recurrences $b[i] = b[i - 1] + a[i - 1]$, parity, division): the step from the constraint of
+  one loop to a position of another is the one that \lemma{not\_occurs\_selects\_def} and
+  \lemma{select\_not\_occurs\_selects} make for the linear search (Section~\ref{sec:lsearch}), an atom and
+  its instantiation, and the missing closed forms are the partial descriptions of Section~7 of the paper
+  (the $\max$ and $\min$ tests, the lower bound here).
+\item \textbf{The higher-order variable and the array.} The simplifier's eta reduction turned the instance
+  $(z) \mapsto a[z]$ of a higher-order summand $G$ into the array $a$, leaving an application $a(k)$ that no
+  rule about $a[k]$ matches; restricting eta reduction to lambdas of array type fixed it in 0.35.15. The
+  examples of this folder meet the same phenomenon in the matcher (finding~10) and avoid a higher-order
+  variable for a bare read, reading the array literally (\texttt{prefix\_sums.dfy}) or pinning the stored
+  values (Section~\ref{sec:merge}).
+\item \textbf{A match that fails for no visible reason is usually one of the known patterns.} The lemma for
+  the stores ahead of a loop that runs downwards had the same printed form as the trace in the goal and did
+  not match, and the summary of the MonoCera tests had excluded the literal $-1$ as the cause. Re-traced here
+  (Section~\ref{sec:rewnif}), it is two of the patterns of Section~\ref{sec:principles:matcher} at once: the
+  literal step $-1$ of the counter dependency is not matched (a variable $d$ with $d = -1$ as a side
+  condition is, as in \texttt{reverse.dfy}), and the position $i - 1$ of the store ahead is arithmetic on a
+  bound variable (the pin). With both, the lemma fires and the two \texttt{rewnifrev} tests close
+  (\texttt{rewnifrev2} stores ahead upwards in a loop that runs downwards, another shape). The cocktail
+  summary that fired once in a day (finding~12) and the lemma of the module \texttt{nested} that fires in
+  the input but not from the module (finding~34) are residues of the same kind, for which the probe flag of
+  Section~\ref{sec:principles:diag} is the remedy.
+\item \textbf{Lookup against inference.} \texttt{-chc} with the Horn solver of z3 proves none of the 125
+  tests (120 timeouts): the quantified invariants over arrays that the tests need, $b[k] = k^2 + k + 1$ for
+  all $k < i$, are not found, as for TriCera in the paper, and the 15 minutes add nothing to either
+  MonoCera or \texttt{-teq}, whose proofs end within 20 s. This is the paper's thesis in numbers: a lemma
+  found once serves every loop of its shape, and the price is that a loop without a lemma stays open
+  (43 of the 125, mostly the recurrences, the parity and the nondeterministic input arrays).
+\end{itemize}
+
+\subsection{What the engine and the database need}\label{sec:principles:next}
+
+The workarounds of Section~\ref{sec:principles:matcher} are each a missing feature of the engine, ordered
+by the payoff that the examples measure: a re-entrance guard, such that a rule is not applied while the
+instances of its own side conditions are simplified (the sound lower bound closes, the summaries lose the
+$\cur(\mathsf{results}(\ldots))$ detour); closed $\mathsf{all}$ conditions matched modulo unused
+dependencies instead of decided (the fresh variables and identifying equations disappear from five files,
+the summaries shrink by a third); a left-hand side matched through the definition of a trace variable binds
+all its variables or is refused; a static check that rejects a left-hand side with a bare bound variable of a
+variable dependency together with an $\mathsf{all}$ condition (it would have refused the cycling exit lemma
+on load); and a case split of \texttt{-split} on a disjunctive negated exit. For the database: the module
+\texttt{nested} into \texttt{-teq} with a run on the SV-COMP translations; the chain of the row sums
+generalized into it (counters over constant numbers of iterations, final values given per iteration,
+pointwise definitions as maps, reads of a map over the counter); the module \texttt{sorting}, which no file
+includes yet, taken up by the examples; Lean proofs for \texttt{nested}, \texttt{sorting} and
+\texttt{strides}, with definitions of the abstract predicates; and lemma schemas, one per observer of a
+named scan, in place of the arity and type variants. The algorithms that remain open need, respectively,
+the substitution of a solved exit into a function argument (\texttt{is\_sorted.dfy}), a witness for an
+existential postcondition or quantified left-hand sides (\texttt{max\_element.dfy}), and the re-entrance
+guard (the lower bound).

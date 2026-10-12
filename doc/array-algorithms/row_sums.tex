@@ -1,0 +1,103 @@
+\section{Row Sums and Transpose: a Chain of Specific Lemmas}\label{sec:rows}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(A: array<int, array<int, int>>, m: int, n: int) returns (s: array<int, int>)
+  requires 0 <= m && 0 <= n
+  ensures forall i: int :: 0 <= i < m ==>
+    s[i] == sum(selects(A[i], butlast(counter(0, 1, natural(n)))))
+{
+  var i: int;
+  var j: int;
+  var t: int;
+  i := 0;
+  while i < m
+  {
+    t := 0;
+    j := 0;
+    while j < n
+    {
+      t := t + A[i][j];
+      j := j + 1;
+    }
+    s := s[i := t];
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+The inner loop sums one row and the outer loop stores the sum at the position of its iteration; the
+transpose (\texttt{transpose.dfy}) is the same shape with an array-valued inner result, the stores of
+column $k$ into $B$. Both are run with \texttt{-include teq:nested}, the module of the fragments of inner loops.
+
+\subsection{The trace equation system}
+With the module, the goal of the program alone is
+\begin{align}
+  K &= I = \cnt(0, 1, n') \qquad \intf(n') = m \label{eq:rs0}\\
+  &\al{\bl{K}, \bl{I}, \seq{N}, \seq{K}'}{k, i, nn, K' \mapsto K' = \cnt(0, 1, nn)} \nonumber\\
+  &\al{\bl{K}, \seq{N}, \seq{J}'}{k, nn, J \mapsto J = \cnt(0, 1, nn)} \label{eq:rs1}\\
+  &\seq{N} = \bl{\mathsf{consts}(n', \natf(n))} \qquad \mathsf{consts\_prefix}(n', n, \seq{J}) \label{eq:rs2}\\
+  &\al{\bl{K}, \bl{I}, \seq{T}', \seq{J}'}{k, i, T, J \mapsto T = \sums(0, \mathsf{selects}(A[k], \bl{J}))} \label{eq:rs3}\\
+  &\al{\bl{K}, \bl{I}, \seq{T}, \seq{T}'}{k, i, t, T \mapsto t = \cur(T)} \label{eq:rs4}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}}{k, i, j \mapsto n \le j} \qquad \ldots \nonumber\\
+  &\Longrightarrow\ 0 \le i < m \Rightarrow \mathsf{earlier}(\natf(i), \seq{T}) = \mathsf{sum}(\mathsf{selects}(A[i], \bl{\cnt(0, 1, \natf(n))})) \nonumber
+\end{align}
+The module has resolved the inner counter \eqref{eq:rs1}, the exit (abstracted to $\mathsf{consts\_prefix}$)
+and the numbers of inner iterations \eqref{eq:rs2}: $\seq{N}$ is the constant sequence $n$. The sum of
+row $k$ is the trace \eqref{eq:rs3} over the inner counter, its result the fragment \eqref{eq:rs4}, and the
+postcondition reads the stored results at position $i$. What is left is to carry $\seq{N}$ into the counter,
+the counter into the sum, the sum into the result, and the results into the read: four substitutions
+between fragments over different dependency lists, which the simplifier does not make by itself.
+
+\subsection{The chain}
+The first version of this file stated the substitutions as general lemmas: a fragment about the inner
+counter $J$ with a higher-order body $t = F(k, J)$ is stated about $\cnt(0, 1, nn)$, and a read
+$\mathsf{earlier}(\natf(i), ts)$ is the body of the $\mathsf{all}$ over $ts$ at $i$. Both have a general
+left-hand side, matching every fragment, respectively every read, together with an $\mathsf{all}$ side
+condition over the lists of the left-hand side; matching the condition builds the simplifier's context of
+the fact's combinator, where the reads of the dependencies are rewritten, on which the rule matches again,
+one level deeper, until the step budget is exhausted (finding 19 of \texttt{NOTES.md}, the cycle that
+\texttt{TODO.md} describes for \lemma{sum\_invs\_const}). The runs did not terminate, which the runners of
+the time reported as proofs, since a killed run prints no goal.
+
+The version that verifies has one specific lemma per step, each with the fragment it depends on as a side
+condition over a fresh list variable, identified by an equation (Section~\ref{sec:cock}); $C_n$ abbreviates
+the counter $\bl{\cnt(0, 1, \natf(n))}$:
+\begin{align*}
+  &\lemma{invs\_counter\_consts}:\quad 0 \le n\\
+  &\quad\Longrightarrow\ \al{ks, \bl{\mathsf{consts}(m, \natf(n))}, Js}{k, nn, J \mapsto J = \cnt(0, 1, nn)}\\
+  &\qquad\Longleftrightarrow\ \al{ks, Js}{k, J \mapsto \bl{J} = C_n}\\[2pt]
+  &\lemma{invs\_sums\_selects\_counter}:\quad \al{ks, Js_2}{k, J \mapsto \bl{J} = C_n}\ \wedge\ Js_2 = Js\\
+  &\quad\Longrightarrow\ \al{ks, Ts, Js}{k, T, J \mapsto T = \sums(0, \mathsf{selects}(F(k), \bl{J}))}\\
+  &\qquad\Longleftrightarrow\ \al{ks, Ts}{k, T \mapsto T = \sums(0, \mathsf{selects}(F(k), C_n))}\\[2pt]
+  &\lemma{invs\_current\_def}:\quad \al{ks, Ts_2}{k, T \mapsto T = G(k)}\ \wedge\ Ts_2 = Ts\\
+  &\quad\Longrightarrow\ \al{ks, ts, Ts}{k, t, T \mapsto t = \cur(T)}\\
+  &\qquad\Longleftrightarrow\ \al{ks, ts}{k, t \mapsto t = \cur(G(k))}\\[2pt]
+  &\lemma{invs\_maps\_sum}:\quad \al{ks, ts}{k, t \mapsto t = \mathsf{sum}(F(k))}\\
+  &\qquad\Longleftrightarrow\ ts = \mapc{ks}{k \mapsto \mathsf{sum}(F(k))}\\[2pt]
+  &\lemma{earlier\_maps\_counter}:\quad 0 \le i < \intf(m)\\
+  &\quad\Longrightarrow\ \mathsf{earlier}(\natf(i), \mapc{\bl{\cnt(0, 1, m)}}{k \mapsto F(k)}) = F(i)
+\end{align*}
+The first matches \eqref{eq:rs1} with the dependency $\bl{\mathsf{consts}(m, \natf(n))}$ as a pattern,
+which is matched against $\seq{N}$ through its equation \eqref{eq:rs2} in the context (a variant with
+$\seq{N}$ as a variable and the equation as a side condition is in the file as well). The second rewrites
+\eqref{eq:rs3} to a sum over the counter $\bl{\cnt(0, 1, \natf(n))}$, with $F := \lambda k.\ A[k]$. The third
+rewrites \eqref{eq:rs4} with $G$ the sum of row $k$, after which the database makes $\cur(\sums(0, xs))$ into
+$\mathsf{sum}(xs)$; the fourth turns the pointwise fragment of the results
+into a map (specific to sums, so that the fragments $j = \cur(J)$ of counters are left to the module); the
+fifth reads the map at $i$, with $m := n'$ and $0 \le i < \intf(n')$ decided from $0 \le i < m$ and
+\eqref{eq:rs0}. Every left-hand side is a fragment with a function symbol on the side of its bound variable
+or a read of a $\mathsf{map}$, and every $\mathsf{all}$ condition is over a fresh list: nothing matches what
+the rewriting of a read in a combinator context produces, and the runs take under twenty seconds.
+
+For the transpose the chain is the same with the inner stores: the trace of stores over $\bl{J}$ is folded
+into $\mathsf{column}(h, A, k, \natf(n))$ once $J = \cnt(0, 1, \natf(n))$ is known, the final values of the
+columns are the fragment $b = \cur(\mathsf{column}(h, A, k, \natf(n)))$ over the previous value $h$, then
+\lemma{current\_results\_steps} (Section~\ref{sec:nsum}) makes the outer trace the trace of the columns, and
+\lemma{current\_transpose} reads the transposed element.
+
+\subsection{The idea}
+An inner result stored at the position of the outer iteration is the pattern of the paper's nested loops,
+and with the module it needs no new concept, only discipline: every step is a lemma whose left-hand side is
+specific and whose side condition is a fragment over a fresh list, matched against the facts. The general
+substitution lemmas that one would write first are exactly the rules that the cycle mechanism of
+\texttt{TODO.md} forbids; the chain makes the same substitutions one fragment at a time.

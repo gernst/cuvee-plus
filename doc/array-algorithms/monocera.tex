@@ -1,0 +1,23 @@
+\section{The MonoCera Tests: Array Programs in C}\label{sec:monocera}
+
+The following sections re-trace the proofs of some of the tests of the MonoCera evaluation (Amilon, Esen,
+Gurov, Lidström, Rümmer, \emph{Automatic Program Instrumentation for Automatic Verification}, CAV 2023):
+125 C programs derived from SV-COMP, each with a loop that fills an array and a loop that checks an
+assertion over it, one test per aggregation operator that the assertion admits ($\forall$, $\max$, $\min$,
+$\sum$). They are in \texttt{benchmarks/monocera/polished\_tests/cuvee}, converted as for the other tools of
+that evaluation (macros substituted, \texttt{malloc} replaced by arrays, the SV-COMP harness kept), and run
+with \texttt{-unbounded -teq -simplify} as the benchmark definition does (mathematical integers, as the
+paper runs all tools); \texttt{benchmarks/monocera/summary.md} has the comparison (Table~\ref{tab:monocera})
+and \texttt{lemmas.tex} there the case studies from which the lemmas came. Unlike the algorithms of the
+previous sections, these programs carry no specification and no lemmas of their own: the assertion is the
+postcondition, and everything the proof needs is in the database. The traces below are those of
+\texttt{-rules} and \texttt{-debug rewrite} with Cuvée 0.41.6 on October 12, 2026; the steps on the
+harness (\texttt{truth}, \texttt{number}, the bounds of \texttt{sizeof}) and the repeated reads of counters
+are left out.
+
+Two things differ from the Dafny examples. The C frontend translates a \texttt{for} loop with a body of
+conditionals into a trace with one case per path, also where the paths agree (the counter $i$ of the first
+loop of every test has two cases $i + 1$), and the simplifier merges such cases first
+(\lemma{trace\_merge\_cases\_ne}). And the symbolic execution of \texttt{main} branches on the harness,
+\texttt{if (N <= 0) return 1} and \texttt{assume\_abort\_if\_not(N <= 2147483647 / sizeof(int))}, so the
+goal has a branch per path of the harness, of which one carries the loops; the others are trivial.

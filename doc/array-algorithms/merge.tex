@@ -1,0 +1,96 @@
+\section{Merge: Pinned Guards and Open Trace Variables}\label{sec:merge}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, m: int, b: array<int, int>, n: int) returns (c: array<int, int>)
+  requires 0 <= m && 0 <= n
+  requires sorted(a, 0, m) && sorted(b, 0, n)
+  ensures sorted(c, 0, m + n)
+  ensures forall x: int :: count(x, selects(c, butlast(counter(0, 1, natural(m + n)))))
+    == count(x, selects(a, butlast(counter(0, 1, natural(m)))))
+     + count(x, selects(b, butlast(counter(0, 1, natural(n)))))
+{
+  var i: int; var j: int; var k: int;
+  i := 0; j := 0; k := 0;
+  while k < m + n {
+    if n <= j || (i < m && a[i] <= b[j]) { c := c[k := a[i]]; i := i + 1; }
+    else { c := c[k := b[j]]; j := j + 1; }
+    k := k + 1;
+  }
+}
+\end{lstlisting}
+The second postcondition states the permutation as a multiset: for each value, its number of occurrences
+among the first $m + n$ elements of $c$ is the sum of its occurrences in $a$ and $b$, in the vocabulary of
+\texttt{teq.dfy}.
+
+\subsection{The trace equation system}
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad c = \cur(C) \qquad k = \intf(n') \qquad m + n \le k \label{eq:mg0}\\
+  C &= \tr{c_0}{\bl{K}, \bl{I}, \bl{J}}{c, k, i, j \mapsto \upd{G}{c[k := a[i]]}\ \ \upd{\neg G}{c[k := b[j]]}} \label{eq:mg1}\\
+  I &= \tr{0}{\bl{K}, \bl{J}}{i, k, j \mapsto \upd{G}{i + 1}\ \ \upd{\neg G}{i}} \label{eq:mg2}\\
+  J &= \tr{0}{\bl{K}, \bl{I}}{j, k, i \mapsto \upd{G}{j}\ \ \upd{\neg G}{j + 1}} \label{eq:mg3}
+\end{align}
+where $G$ abbreviates the test $n \le j \vee (i < m \wedge a[i] \le b[j])$ of the program. The pointers
+are traces over each other, \eqref{eq:mg2} and \eqref{eq:mg3}: $I$ has $\bl{J}$ among its dependencies and $J$ has $\bl{I}$. A single loop,
+no fragments; the whole difficulty is in matching this shape.
+
+\subsection{The lemmas}\label{sec:merge:lemmas}
+The merge is named by an abstract list $\mathsf{merged}(a, m, b, n)$, the values of the result on
+$0, \ldots, m + n - 1$, with two facts: it is sorted, and its counts are those of both ranges. The
+lemma on the loop rewrites the values of the result:
+\begin{align*}
+  &\lemma{selects\_merge\_loop}:\\
+  &\quad s = m + n\ \wedge\ m + n \le \intf(nn)\ \wedge\ 0 \le m \wedge 0 \le n\\
+  &\quad\wedge\ (\forall i, j.\ G(i, j) \Leftrightarrow (n \le j \vee (i < m \wedge a[i] \le b[j])))\\
+  &\quad\wedge\ (\forall i, j.\ U(i, j) = a[i])\ \wedge\ (\forall i, j.\ V(i, j) = b[j])\\
+  &\quad\wedge\ Iv = \tr{0}{\bl{\cnt(0, 1, nn)}, js}{i, k, j \mapsto \upd{G(i, j)}{i + 1}\ \ \upd{\neg G(i, j)}{i}}\\
+  &\quad\wedge\ is = \bl{Iv}\\
+  &\quad\wedge\ Jv = \tr{0}{\bl{\cnt(0, 1, nn)}, is}{j, k, i \mapsto \upd{G(i, j)}{j}\ \ \upd{\neg G(i, j)}{j + 1}}\\
+  &\quad\wedge\ js = \bl{Jv}\\
+  &\quad\Longrightarrow\ \mathsf{selects}(\cur(\tr{c_0}{\bl{\cnt(0, 1, nn)}, is, js}{c, k, i, j \mapsto {}\\
+  &\qquad\qquad\qquad \upd{G(i, j)}{c[k := U(i, j)]}\ \ \upd{\neg G(i, j)}{c[k := V(i, j)]}}), \bl{\cnt(0, 1, \natf(s))})\\
+  &\qquad\qquad = \mathsf{merged}(a, m, b, n)
+\end{align*}
+and \lemma{sorted\_merge\_loop} is the same with the conclusion $\sorted(\cur(\ldots), 0, s) \Leftrightarrow \mathsf{true}$
+and the two $\sorted$ premises; \lemma{count\_merged} gives
+\begin{align*}
+  \mathsf{count}(x, \mathsf{merged}(a, m, b, n)) = {}&\mathsf{count}(x, \mathsf{selects}(a, \bl{\cnt(0, 1, \natf(m))}))\\
+  &+ \mathsf{count}(x, \mathsf{selects}(b, \bl{\cnt(0, 1, \natf(n))})).
+\end{align*}
+
+Three workarounds of the matcher are built into this lemma, each isolated by experiments
+(\texttt{NOTES.md}, findings 14, 16 and the section on the pin):
+\begin{enumerate}[nosep]
+\item \textbf{The pin.} A literal disjunctive guard $n \le j \vee (\ldots)$ in a pattern is never
+  matched. The guard is the higher-order variable $G(i, j)$, which matches any guard over the bound
+  variables $i, j$, and the quantified side condition
+  $\forall i, j.\ G(i, j) \Leftrightarrow (n \le j \vee \ldots)$ pins it to the intended one; the simplifier
+  decides the pin by beta reduction. The stored values $U(i, j) = a[i]$ and $V(i, j) = b[j]$ are pinned
+  likewise. (A higher-order variable for an array read $a[i]$ alone would be instantiated by the array
+  itself, finding 10, hence the pin instead of a literal $a[i]$.)
+\item \textbf{The open trace variable.} The lemma must know that $is$ and $js$ are the pointer traces,
+  which the pattern cannot say, since each is defined over the other. A closed side condition
+  $is = \bl{\tr{0}{\ldots}{\ldots}}$ is decided by the simplifier and fails (it does not expand $\bl{I}$).
+  Instead $Iv = \tr{0}{\ldots, js}{\ldots}$ with an \emph{open} trace variable $Iv$ is matched against
+  the hypothesis $I = \tr{0}{\bl{K}, \bl{J}}{\ldots}$ \eqref{eq:mg2}, which binds $Iv := I$ (and the
+  counter $\bl{\cnt(0, 1, nn)}$ matches $\bl{K}$ through its definition); then $is = \bl{Iv}$ is closed
+  and trivially true.
+\item \textbf{The whole atom as the left-hand side.} A variable argument of an uninterpreted function
+  is not expanded by its definition when the simplifier rewrites below it: $\sorted(c, 0, m + n)$ with
+  $c = \cur(C)$ is not matched by a left-hand side $\cur(\tr{\ldots}{\ldots})$, but
+  $\sorted(\cur(\tr{\ldots}{\ldots}), 0, s)$ as the whole atom is, and $\mathsf{selects}(\cur(\ldots), \ldots)$
+  with $\mathsf{selects}$ as the head, inside $\mathsf{count}$ and the quantifier. The length is a
+  variable $s$ with $s = m + n$ as a side condition, since a pattern $m + n$ of two variables is not matched.
+\end{enumerate}
+The remaining condition $m + n \le \intf(nn)$ is the exit $m + n \le k$ with $k = \intf(n')$ of
+\eqref{eq:mg0}: after at least $m + n$ iterations the positions $0, \ldots, m + n - 1$ are those of the
+merge, whatever further iterations store beyond them, which makes the lemma sound without fixing the
+number of iterations exactly (the goal knows it only as a disjunction).
+
+\subsection{The idea}
+The loop computes a function of its inputs that has a name in the specification's vocabulary,
+$\mathsf{merged}$, and the lemma database relates the loop to that name and the name to the properties.
+The matching problems of mutually dependent traces are solved by two general devices, the pin and the
+open trace variable, which apply to every literal pattern that the matcher does not handle: in
+\texttt{insertion\_sort.dfy} with one pointer, the positions $j$ and $j - 1$ of the swaps are pinned in
+the same way, which closed a file that had been open since the start.

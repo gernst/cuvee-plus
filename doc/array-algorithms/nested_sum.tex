@@ -1,0 +1,88 @@
+\section{Nested Sum: the Fragment Lemmas Alone}\label{sec:nsum}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(m: int, n: int) returns (c: int)
+  requires 0 <= m && 0 <= n
+  ensures c == m * n
+{
+  var i: int; var j: int;
+  c := 0; i := 0;
+  while i < m {
+    j := 0;
+    while j < n { j := j + 1; }
+    c := c + j;
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+The smallest nested loop whose result depends on the inner loop: $c$ sums the final values of $j$,
+which are all $n$. There is nothing to summarize but the inner counter, so this example introduces the
+\emph{fragment lemmas} of \texttt{fragments.dfy}, which every nested example uses (Section~\ref{sec:sel:frag}
+states the first two in full), and shows how an iteration constraint reaches a lemma of \texttt{teq.dfy}.
+
+\subsection{The trace equation system}
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad I = \cnt(0, 1, n') \qquad \intf(n') = m \qquad c = \mathsf{sum}(\seq{J}) \label{eq:ns0}\\
+  &\al{\bl{K}, \bl{I}, \seq{N}, \seq{K}'}{k, i, n'', K' \mapsto K' = \cnt(0, 1, n'')} \label{eq:ns1}\\
+  &\al{\bl{K}, \bl{I}, \seq{K}', \seq{J}'}{k, i, K', J \mapsto J = \sums(0, \mapc{\bl{K'}}{1})} \label{eq:ns2}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}, \seq{J}'}{k, i, j, J \mapsto j = \cur(J)} \label{eq:ns3}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}'}{k, i, J \mapsto \al{\bl{J}}{j \mapsto j < n}} \label{eq:ns4}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}}{k, i, j \mapsto n \le j} \label{eq:ns5}\\
+  &\Longrightarrow\ c = m \cdot n \nonumber
+\end{align}
+The trace of $c$ is $\tr{0}{\bl{K}, \seq{J}}{c, k, j \mapsto c + j}$, which the introduction rule of
+$\sums$ in \texttt{teq.dfy} folds and the acceleration rule $\cur(\sums(x, V)) = x + \mathsf{sum}(V)$
+turns into $c = \mathsf{sum}(\seq{J})$: the sum of the final values of the inner loop. The task is to
+show that $\seq{J}$ consists of $n$ repeated $m$ times.
+
+\subsection{The lemmas and their instantiation}
+Two lemmas of \texttt{fragments.dfy}, stated in full in Section~\ref{sec:sel:frag}, apply with
+$X := \lambda k.\, 0$ and $c := 1$: \lemma{invs\_sums\_counter} (the trace of an inner variable increased
+by $c$ over the inner counter $K'$, which is $\cnt(0, 1, n'')$ in the same iteration, is a counter from
+its initial value $X(k)$) turns \eqref{eq:ns2} into
+$\al{\bl{K}, \seq{N}, \seq{J}'}{k, n'', J \mapsto J = \cnt(0, 1, n'')}$, and
+\lemma{invs\_current\_counter} (the final value of an inner counter) turns \eqref{eq:ns3} into
+$\al{\bl{K}, \seq{N}, \seq{J}}{k, n'', j \mapsto j = \intf(n'')}$. Two more fragment lemmas of
+\texttt{fragments.dfy} resolve the test and the exit; both are stated for an inner counter from $0$,
+since their side conditions must be in the normal form of the facts, where a general initial value
+$X(k) + \intf(n'')$ would not match $\intf(n'')$ (a higher-order summand matches a single summand):
+\begin{align*}
+  &\lemma{invs\_invs\_counter\_upper\_zero}:\\
+  &\quad 0 \le n\ \wedge\ \al{ks, Ns, Js}{k, n'', J \mapsto J = \cnt(0, 1, n'')}\\
+  &\quad\Longrightarrow\\
+  &\quad \al{ks, Js}{k, J \mapsto \al{\bl{J}}{x \mapsto x < n}}\\
+  &\quad\Longleftrightarrow\ \al{ks, Ns}{k, n'' \mapsto \intf(n'') \le n}\\[4pt]
+  &\lemma{invs\_exit\_counter\_zero}:\\
+  &\quad \al{ks, Ns, js}{k, n'', j \mapsto j = \intf(n'')}\\
+  &\quad\wedge\ \al{ks, Ns}{k, n'' \mapsto \intf(n'') \le n}\ \Longrightarrow\\
+  &\quad \al{ks, js}{k, j \mapsto n \le j}\ \Longleftrightarrow\ \al{ks, js}{k, j \mapsto j = n}
+\end{align*}
+The first matches the test \eqref{eq:ns4}, with the counter fragment as its side condition (which binds
+$Ns := \seq{N}$); the inner constraint $j < n$ over $\bl{\cnt(0, 1, n'')}$ is the lemma
+\lemma{invs\_counter\_upper} of \texttt{teq.dfy}, $n'' = 0 \vee (0 < n \wedge \intf(n'') - 1 < n)$,
+which the nonnegative bound simplifies to $\intf(n'') \le n$. The second matches the exit
+\eqref{eq:ns5}, finds the two facts, and states the final value: $j = n$ in each outer iteration. It is
+an equivalence under its side conditions, since $j = \intf(n'') \le n$.
+
+The goal is now $\mathsf{sum}(\seq{J}) = m \cdot n$ with the fact
+$\al{\bl{K}, \seq{J}}{k, j \mapsto j = n}$. In the body of that iteration constraint the simplifier
+reads $j$ as $\mathsf{earlier}(\natf(k), \seq{J})$, so the fact is
+\[ \al{\bl{\cnt(0, 1, n')}}{k \mapsto \mathsf{earlier}(\natf(k), \seq{J}) = n} \]
+(the counter $K$ is followed in the dependency position), which \lemma{consts\_prefix\_def} of \texttt{teq.dfy} abstracts
+by the atom $\mathsf{consts\_prefix}(n', n, \seq{J})$, and \lemma{sum\_consts\_prefix} with that atom as
+its side condition rewrites $\mathsf{sum}(\seq{J})$ to $n \cdot \intf(n')$. (Until October 10 this
+was \lemma{sum\_invs\_const}, with the iteration constraint itself as the side condition, which cycles
+in general, see \texttt{TODO.md}.) The goal $\intf(n') \cdot n = m \cdot n$ with $\intf(n') = m$ is
+closed by a lemma \lemma{mul\_eq\_cancel}, $(a \cdot n = b \cdot n) \Leftrightarrow (n = 0 \vee a = b)$,
+since the simplifier substitutes the solution of $\intf(n') = m$ into polynomials but not into the
+product.
+
+\subsection{The idea}
+The fragments of an inner loop are a trace equation system over bound variables. The simplifier would
+resolve them if the bound variables of one fragment saw the equations of the others, which they do not
+(\texttt{NOTES.md}, the two problems of nested loops). The fragment lemmas are the four steps of that
+resolution as rewrite rules: the inner trace is a counter, its current value is its length, the test
+bounds the length, the exit fixes it. The same four lemmas serve every example with an inner counter
+from $0$ (\texttt{nested\_mult}, \texttt{row\_sums}, \texttt{transpose}); with another initial value
+the test and the exit are instead kept as side conditions of a summary (Section~\ref{sec:sel:sum}).

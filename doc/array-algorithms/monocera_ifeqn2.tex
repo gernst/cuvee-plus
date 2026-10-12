@@ -1,0 +1,58 @@
+\section{A Recurrence on the Previous Cell (open)}\label{sec:ifeqn2}
+
+\subsection{The program}
+The test \texttt{forall/ifeqn2}: two arrays filled by recurrences on the previous cell, and the closed form
+asserted for every position.
+\begin{lstlisting}[language=C]
+for (i = 0; i < N; i++) { if (i == 0) a[0] = 4; else a[i] = a[i-1] + 4; }
+for (i = 0; i < N; i++) { if (i == 0) b[0] = 1; else b[i] = b[i-1] + a[i-1]; }
+for (i = 0; i < N; i++) __VERIFIER_assert(b[i] == 2*i*i + 2*i + 1);
+\end{lstlisting}
+
+\subsection{The goal that remains}
+After 127 rule applications, all on counters and their reads, the goal is
+\begin{align}
+  A &= \tr{a_0}{\bl{K}, \bl{I}}{a, k, i \mapsto \upd{k = 0}{a[0 := 4]}\ \ \upd{0 < k}{a[k := a[k - 1] + 4]}} \label{eq:ie1}\\
+  a' &= \cur(A) \nonumber\\
+  B &= \tr{b_0}{\bl{K'}, \bl{I'}}{b, k, i \mapsto \upd{k = 0}{b[0 := 1]}\ \ \upd{0 < k}{b[k := a'[k - 1] + b[k - 1]]}} \label{eq:ie2}\\
+  b' &= \cur(B) \nonumber\\
+  &\al{\bl{K''}, \bl{I''}}{k, i \mapsto b'[k] = 2k^2 + 2k + 1} \label{eq:ie3}\\
+  &i'' = \intf(n'') < N \nonumber\\
+  &\Longrightarrow\ b'[i''] = 2\,i''^2 + 2\,i'' + 1 \nonumber
+\end{align}
+with $K = I = K' = I' = \cnt(0, 1, n)$, $\intf(n) = N$, and $K'' = I'' = \cnt(0, 1, n'')$ the counter of the
+checking loop. The two filling loops are not resolved: a store at $k$ of a value read at $k - 1$ is not a
+$\mathsf{stores}$ of a map (the value depends on the trace, not on the initial array), and no lemma of the
+database names such a recurrence. The checking loop has become the constraint \eqref{eq:ie3}, the assertion
+for the earlier iterations, and the goal is the assertion at the current index: an induction step without a
+closed form of $b'$.
+
+\subsection{What is missing}
+This is the first of the five classes of open goals that the summary of the MonoCera tests lists
+(recurrences on earlier entries with a polynomial closed form: \texttt{ifeqn1} to \texttt{ifeqn5},
+\texttt{ifcomp}, \texttt{pcomp}, \texttt{sqm}, \texttt{nsqm}, \texttt{condm}), and TODO.md records that
+even a lemma written for the shape,
+\[ \cur(\tr{a_0}{\bl{\cnt(0, 1, n)}}{a, k \mapsto a[k := a[k - 1]]}) = \ldots, \]
+does not match its instance: $k - 1$ as a store index is arithmetic on a bound variable, the same obstacle
+as the swaps at $j - 1$ of the insertion sort, where the pin of Section~\ref{sec:merge} is the way out
+(a higher-order $P(k)$ for the position, pinned to $k - 1$). What a proof would need beyond the match:
+\begin{itemize}[nosep]
+\item an introduction lemma that names the recurrence, e.g.\ $\mathsf{recur}(a_0, c, n)$ for
+  $a[k] = a[k - 1] + c$ from $a[0] = c$, with the acceleration $\mathsf{recur}(\ldots)[j] = c\,(j + 1)$ for
+  $0 \le j < n$: the closed form of an arithmetic progression, which is what $a'[k] = 4k + 4$ needs;
+\item the same for $b$, whose increment is the entry of another named trace, i.e.\ a sum of the
+  progression, $b'[k] = 1 + \sum_{j < k} (4j + 4) = 2k^2 + 2k + 1$: either a lemma on sums of affine maps
+  (the database has $\mathsf{sum}$ over counters, not over maps of a counter with a polynomial body), or a
+  recurrence solver as a lemma generator for the arithmetic fragment, which the ideas on the paper
+  propose as related work (compositional recurrence analysis, closed forms for numerical loops);
+\item alternatively, the checking loop as an induction: \eqref{eq:ie3} is the invariant at the earlier
+  positions, and the goal at $i''$ follows from $b'[i''] = a'[i'' - 1] + b'[i'' - 1]$ and the
+  constraint at $i'' - 1$, an instantiation at a witness with the recurrence unfolded once, which no rule of
+  the database performs (the step from a constraint to a position is the pattern of
+  Section~\ref{sec:lsearch}, but here the position's value is given by the recurrence, not by a named
+  function).
+\end{itemize}
+Neither Cuvée nor MonoCera proves this test (nor TriCera, CPAchecker or SeaHorn in the paper's evaluation):
+the instrumentation of the quantified assertion by a ghost variable still needs the polynomial invariant of
+the filling loops. A lemma-based proof needs the closed forms, which is the representation that trace
+equation systems are meant to provide, and a database that does not yet have them.

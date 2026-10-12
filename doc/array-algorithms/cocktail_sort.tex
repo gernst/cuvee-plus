@@ -1,0 +1,121 @@
+\section{Cocktail Sort: Two Inner Loops and a Closed Side Condition}\label{sec:cock}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int) returns (b: array<int, int>)
+  requires 0 <= n
+  ensures sorted(b, 0, n)
+  ensures perm(b, a)
+{
+  var lo: int;
+  var hi: int;
+  var j: int;
+  var p: int;
+  var t: int;
+  b := a;
+  lo := 0;
+  hi := n;
+  while lo + 1 < hi
+  {
+    j := lo;
+    while j + 1 < hi
+    {
+      if b[j + 1] < b[j] {
+        t := b[j];
+        b[j] := b[j + 1];
+        b[j + 1] := t;
+      }
+      j := j + 1;
+    }
+    hi := hi - 1;
+    j := hi - 1;
+    p := hi - 2;
+    while lo < j
+    {
+      if b[j] < b[p] {
+        t := b[j];
+        b[j] := b[p];
+        b[p] := t;
+      }
+      j := j - 1;
+      p := p - 1;
+    }
+    lo := lo + 1;
+  }
+}
+\end{lstlisting}
+Each outer iteration runs a forward bubble pass over $[lo, hi)$, which moves the maximum to $hi - 1$, and a
+backward pass over $(lo, hi - 1]$, which moves the minimum to $lo$; the backward pass uses two pointers
+$j$ and $p = j - 1$, like \texttt{insertion\_sort2.dfy}, so that the positions of its swaps are counters.
+
+\subsection{The trace equation system}
+The outer loop modifies $b$ only through the two inner loops, so its trace is again the chain of the
+results, $B = \mathsf{results}(a, \bl{K}, \seq{B}'')$, where the intermediate results $\seq{B}'$ of the forward
+passes are the initial values of the backward passes. With $lo = k$ and $hi = n - k$ substituted,
+\begin{align}
+  K &= Lo = \cnt(0, 1, n') \qquad Hi = \cnt(n, -1, n') \qquad b = \cur(B) \qquad lo = \intf(n') \label{eq:ck0}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}}{k, lo, hi \mapsto 2k + 1 < n} \label{eq:ck1}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}', \seq{B}'_t}{k, lo, hi, c, C \mapsto c = \cur(C)} \nonumber\\
+  &\al{\bl{K}, \bl{B}, \bl{Lo}, \bl{Hi}, \seq{B}'_t, \seq{J}'_t}{k, x, lo, hi, C, J \mapsto C = \mathsf{bubble\_pass}(x, \bl{J})} \label{eq:ck2}\\
+  &\al{\bl{K}, \seq{N}, \seq{J}'_t}{k, nn, J \mapsto J = \cnt(k, 1, nn)} \nonumber\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}'}{k, lo, hi, j \mapsto n \le j + k + 1} \qquad \ldots \label{eq:ck3}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}'', \seq{B}''_t}{k, lo, hi, b, B' \mapsto b = \cur(B')} \nonumber\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{B}', \seq{B}''_t, \seq{J}''_t, \seq{P}''_t}{k, lo, hi, c, B', J, P \mapsto {}\nonumber\\
+  &\qquad\qquad\qquad\qquad B' = \mathsf{bubble\_pass\_back}(c, \bl{J}, \bl{P})} \label{eq:ck4}\\
+  &\al{\bl{K}, \seq{N}', \seq{J}''_t}{k, nn, J \mapsto J = \cnt(n - k - 2, -1, nn)} \nonumber\\
+  &\al{\bl{K}, \seq{N}', \seq{P}''_t}{k, nn, P \mapsto P = \cnt(n - k - 3, -1, nn)} \label{eq:ck5}\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}''}{k, lo, hi, j \mapsto j \le k} \nonumber\\
+  &\al{\bl{K}, \bl{Lo}, \bl{Hi}, \seq{J}'', \seq{J}''_t}{k, lo, hi, j, J \mapsto j = \cur(J)} \qquad \ldots \label{eq:ck6}\\
+  &\ldots \wedge\ n \le \intf(n') + lo + 1\ \Longrightarrow\ \sorted(b, 0, n) \wedge \perm(b, a) \nonumber
+\end{align}
+with $\mathsf{bubble\_pass}$ as in the bubble sort and $\mathsf{bubble\_pass\_back}(c, js, ps)$ the trace of
+conditional swaps $\swap{x}{j}{p}$ over the two counters. All facts of the outer iteration carry the
+counters $Lo$ and $Hi$ as dependencies, which no body uses, and the outer exit is $n \le \intf(n') + lo + 1$
+with $lo = \intf(n')$ a separate fact.
+
+\subsection{The summary and the induction}
+The summary \lemma{current\_results\_shake} takes the fragments of both inner loops as side conditions,
+twenty-one of them, in the manner of Section~\ref{sec:sel:sum}: the results and traces of each pass, the
+counters (whose initial values $n - k - 2$, $n - k - 3$ are higher-order $X(k)$, $Y(k)$, pinned by closed
+$\mathsf{all}$ conditions $\al{ks}{k \mapsto X(k) = len - k - 2}$, since a sum of a rule variable and a bound
+variable is not matched), the tests and the exits; the result is
+\[ \cur(\mathsf{results}(a, ks, bs)) = \cur(\tr{a}{ks}{b, k \mapsto \mathsf{shake}(b, k, len)}) \]
+with $\mathsf{shake}(b, k, len)$ abstract: the pass of iteration $k$. The induction is that of the bubble sort
+with the invariant $\mathsf{shaken}(b, k, len)$, both ends of length $k$ sorted and the middle between them,
+the whole range once $2k + 1 \ge len$, and \lemma{shaken\_shake} as the step.
+
+The goal stayed open for a day although every piece was in place, and the diagnosis is the point of this
+section. Truncated copies of the summary with its first $k$ side conditions showed that it fires with
+$k \le 20$ and not with the 21st, $\al{ks, js_4, Js_3}{k, j, J \mapsto j = \cur(J)}$, the final values of
+the backward counter. All its variables were bound by earlier conditions, so the condition was closed and
+\emph{decided} by the simplifier instead of matched against the fact \eqref{eq:ck6}, and the simplifier
+does not find a closed $\mathsf{all}$ among the facts (these carry the unused dependencies $\bl{Lo}$, $\bl{Hi}$,
+and their bound variables are renamed). The same condition for the forward pass had fresh variables
+$js_5, Js_5$ with identifying equations, the pattern of Section~\ref{sec:sel:sum}, and succeeded. With
+fresh $js_6, Js_6$ and $js_6 = js_4 \wedge Js_6 = Js_3$ the summary fires and $\perm$ closes.
+
+Then $\sorted(b, 0, n)$ remained: the induction's bound $len \le 2\,\intf(m) + 1$ is not a difference
+constraint, and the simplifier does not derive it from the two facts $n \le \intf(n') + lo + 1$ and
+$lo = \intf(n')$. The lemma therefore states the bound in the goal's form,
+\begin{align*}
+  &\lemma{sorted\_shaken\_steps}:\quad l = \intf(m)\ \wedge\ len \le \intf(m) + l + 1\\
+  &\quad\wedge\ \big(\forall b, k.\ 0 \le k < \intf(m) \wedge \mathsf{shaken}(b, k, len) \Longrightarrow \mathsf{shaken}(F(b, k), k + 1, len)\big)\\
+  &\quad\Longrightarrow\ \sorted(\cur(\tr{a}{\bl{\cnt(0, 1, m)}}{b, k \mapsto F(b, k)}), 0, len)\ \Longleftrightarrow\ \mathsf{true}
+\end{align*}
+with $l$ an open variable matched against the equation of $lo$, after which the bound is literally a fact.
+The counter $\bl{\cnt(0, 1, m)}$ as a dependency matches $\bl{K}$ through $K = \cnt(0, 1, n')$ in the
+context, as in the bubble sort. Two things that were suspected were not the cause: the extra dependencies
+$\bl{Lo}$, $\bl{Hi}$ of the facts (a diagnostic with two and with four dependencies matched both) and the
+name $n$ of the rule variable, which the program shares (it was renamed to $len$ anyway). The file in the
+tree now runs with the module of the fragments of inner loops (\texttt{-include teq:nested}), which resolves
+the inner counters to $\cnt(k, 1, nn)$ and their final values to $j = \intf(nn) + k$,
+$\intf(nn) + j + k + 2 = len$ and $\intf(nn) + j + k + 3 = len$; the summary states these conditions in the
+forms the module produces, as the goal prints them, instead of $j = \cur(J)$. The two insertion sorts were
+adapted the same way, so that every nested loop of the folder verifies with the module.
+
+\subsection{The idea}
+Nothing new is needed for two inner loops: each pass is summarized by its own fold, and the summary of
+the outer iteration takes both. The lesson is about side conditions: a condition whose variables are all
+bound is decided, not matched, so every $\mathsf{all}$ condition that should be read off a fact must bind a
+fresh sequence and be identified afterwards; and a closed arithmetic condition must be the fact as the goal
+has it, since the decision procedure combines difference constraints only.

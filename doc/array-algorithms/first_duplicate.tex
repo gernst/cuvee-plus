@@ -1,0 +1,108 @@
+\section{First Duplicate: a Search with an Early Exit}\label{sec:fd}
+
+\subsection{The program}
+\begin{lstlisting}
+method main(a: array<int, int>, n: int) returns (r: bool)
+  requires 0 <= n
+  ensures r ==> !distincts(selects(a, butlast(counter(0, 1, natural(n)))))
+  ensures !r ==> distincts(selects(a, butlast(counter(0, 1, natural(n)))))
+{
+  var i: int; var j: int;
+  r := false; i := 0;
+  while i < n && !r {
+    j := i + 1;
+    while j < n && !r {
+      if a[i] == a[j] { r := true; }
+      j := j + 1;
+    }
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+The nested loop of \texttt{distinct.dfy} (which is verified) with both loops stopped by the flag: the
+search for a duplicate ends at the first one. The postcondition uses $\mathsf{distincts}$ of the lemma
+database, and is stated as two implications rather than the equivalence $r \Leftrightarrow \neg\mathsf{distincts}(\ldots)$,
+for a reason explained below.
+
+\subsection{The trace equation system}
+The outer loop's constraint includes the flag, $\al{\bl{K}, \bl{R}, \bl{I}}{k, r, i \mapsto \neg r}$, so
+$r$ is false at the head of every outer iteration, and the simplifier uses this inside the inner trace:
+\begin{align}
+  K &= I = \cnt(0, 1, n') \qquad r = \cur(R) \qquad R = \mathsf{results}(\mathsf{false}, \bl{K}, \seq{R}) \qquad i = \intf(n') \label{eq:fd0}\\
+  &\al{\bl{K}, \bl{R}, \bl{I}}{k, r, i \mapsto \neg r} \label{eq:fd1}\\
+  &\al{\bl{K}, \bl{I}, \seq{R}, \seq{R}'}{k, i, r, R' \mapsto r = \cur(R')} \label{eq:fd2}\\
+  &\al{\bl{K}, \bl{I}, \seq{R}', \seq{J}'}{k, i, R', J \mapsto {}\nonumber\\
+  &\qquad\qquad R' = \tr{\mathsf{false}}{\bl{J}}{r, j \mapsto \upd{a[k] = a[j]}{\mathsf{true}}\ \ \upd{a[k] \ne a[j]}{\mathsf{false}}}} \label{eq:fd3}\\
+  &\al{\bl{K}, \seq{N}, \seq{J}'}{k, n'', J \mapsto J = \cnt(k + 1, 1, n'')} \label{eq:fd4}\\
+  &\al{\bl{K}, \seq{N}, \seq{J}}{k, n'', j \mapsto j = \intf(n'') + k + 1} \label{eq:fd4b}\\
+  &\al{\bl{K}, \bl{I}, \seq{J}'}{k, i, J \mapsto \al{\bl{J}}{j \mapsto j < n}} \label{eq:fd5}\\
+  &\al{\bl{K}, \bl{I}, \seq{R}'}{k, i, R' \mapsto \al{\bl{R'}}{r \mapsto \neg r}} \label{eq:fd5b}\\
+  &\al{\bl{K}, \bl{I}, \seq{R}, \seq{J}}{k, i, r, j \mapsto \neg(j < n \wedge \neg r)} \label{eq:fd6}\\
+  &\neg(i < n \wedge \neg r)\ \Longrightarrow\ r \Leftrightarrow \neg\mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))})) \nonumber
+\end{align}
+(after the fragment lemmas of Section~\ref{sec:sel:frag}, which gave \eqref{eq:fd4} and \eqref{eq:fd4b}). The inner update
+\eqref{eq:fd3} does not mention the previous value of the flag, since the inner constraint
+$\neg r$ \eqref{eq:fd5b} replaced it by $\mathsf{false}$: the inner trace is a sequence of comparisons
+with $a[k]$. The inner exit \eqref{eq:fd6} is the negation of the test $j < n \wedge \neg r$: either all
+later positions were visited, or the flag was set. The outer exit $\neg(i < n \wedge \neg r)$ is a
+disjunction, $n \le i \vee r$, with one goal per postcondition.
+
+\subsection{The lemmas}
+The summary of the inner loop in the style of Section~\ref{sec:sel:sum} is a rewrite of the fragment \eqref{eq:fd2}
+into a fact about the results: with \eqref{eq:fd3}--\eqref{eq:fd6} as
+side conditions (duplicated and identified by equations where closed),
+\begin{align*}
+  \al{ks, rs, Rs}{k, r, R' \mapsto r = \cur(R')}\ \Longleftrightarrow\ \al{ks, rs}{k, r \mapsto r = \neg\mathsf{nodup}(a, k, n)}
+\end{align*}
+where $\mathsf{nodup}(a, k, n)$ is the abstract "$a[k]$ does not occur among $a[k + 1..n)$". This is
+sound in both exit cases of the inner loop: if the flag was set, a later duplicate was found; if $j$
+reached $n$, all later positions were compared. The outer trace is then
+$\mathsf{results}(\mathsf{false}, \bl{K}, \seq{R})$ with $\seq{R}$ characterized pointwise, and the
+simplifier itself turns it into $\mathsf{results}(\mathsf{false}, \bl{K}, \mapc{\bl{K}}{k \mapsto \neg\mathsf{nodup}(a, k, n)})$.
+
+The outer loop is summarized on the atom $\mathsf{distincts}(\ldots)$ of the postcondition, by one rule per
+case of the exit. If the flag is set, it is the result of the last iteration, which found a duplicate:
+\begin{align*}
+  &\lemma{distincts\_flag\_set}:\quad Kv = \cnt(0, 1, m)\\
+  &\quad\wedge\ flag = \cur(\mathsf{results}(\mathsf{false}, \bl{Kv}, \mapc{\bl{Kv}}{k \mapsto \neg\mathsf{nodup}(a, k, n)}))\\
+  &\quad\wedge\ flag\ \wedge\ \intf(m) \le n\ \Longrightarrow\ \mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))}))\ \Longleftrightarrow\ \mathsf{false}
+\end{align*}
+If all iterations ran, $n \le \intf(m)$, and the flag was reset at the head of each, \eqref{eq:fd1}, then no
+element before the last has a later duplicate (the flag at the head of iteration $k$ is the result of
+iteration $k - 1$) and the last has none:
+\begin{align*}
+  &\lemma{distincts\_flags\_reset}:\quad Kv = \cnt(0, 1, m)\ \wedge\ Rv = \mathsf{results}(\mathsf{false}, \bl{Kv}, rs)\\
+  &\quad\wedge\ \al{\bl{Kv}, hs}{k, h \mapsto \neg h}\ \wedge\ hs = \bl{Rv}\\
+  &\quad\wedge\ \al{\bl{Kv}, rs_2}{k, h \mapsto h = \neg\mathsf{nodup}(a, k, n)}\ \wedge\ rs_2 = rs\ \wedge\ n \le \intf(m)\\
+  &\quad\Longrightarrow\ \mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))}))\ \Longleftrightarrow\ \mathsf{true}
+\end{align*}
+Three details made these fire. The outer counter and the flag trace are the variables $K$ and $R$ of the
+goal with their equations \eqref{eq:fd0} as hypotheses, so a rule with $\bl{\cnt(0, 1, m)}$ as an
+\emph{argument} never matches; the open trace variables $Kv$, $Rv$ are matched against the hypotheses
+(Section~\ref{sec:merge}). The fact of the flags at the heads \eqref{eq:fd1} carries the counter $\bl{I}$ as
+an unused dependency, which the simplifier drops from a closed instance of the condition, after which it
+is not found among the facts; hence the open list $hs$, identified with $\bl{Rv}$ afterwards. And the exit
+$n \le i \vee r$ is needed as a closed condition: with the postcondition as an equivalence, the goal's
+conclusion is $i < n \wedge \neg r\ \vee\ r \Leftrightarrow \neg\mathsf{distincts}(\ldots)$, which
+\texttt{-split} does not split, and in the context of the second disjunct neither literal of the negated
+first is available, so the condition is not decided; probes (rules with the real left-hand side and the
+first $k$ conditions) located it as the only failing one. As two implications, each goal has its literal
+of the exit, $r$ respectively $n \le i$ with $i = \intf(n')$, in the context of the atom.
+
+An earlier set of lemmas closed both goals and also the negated postcondition: the rule for the first step
+had the summary fragment as an open side condition, and a rule $\mathsf{nodup}(a, k, n) \Leftrightarrow \mathsf{true}$
+under the hypothesis $\mathsf{distincts}(\ldots)$ for the second. An $\mathsf{all}$ side condition is matched
+in the simplifier's context of the fact's combinator, where rules fire: under the hypothesis $\mathsf{distincts}$,
+the rule rewrote the condition to \eqref{eq:fd1}, a fact, so $\mathsf{distincts}$ was derived from itself
+(finding 13 of \texttt{NOTES.md}). The rules above take the atom $\mathsf{distincts}$ as left-hand side
+and never rewrite $\mathsf{nodup}$.
+
+\subsection{The idea}
+An early exit is a data-dependent number of iterations with a disjunctive exit; the summary of the
+inner loop must be stated so that it holds in both cases, which the abstract atom $\mathsf{nodup}$
+affords, since it describes the result rather than the number of iterations; the outer loop is summarized
+on the atom of the postcondition with one rule per case of its exit, each with the case as a closed
+condition. The soundness lesson stands: a side condition that other rules can simplify under the conclusion
+to be proved is a circular justification, and the safe form of side conditions is an atom that is matched
+literally (as \lemma{consts\_prefix\_def} of the database does for a constraint, and as the summary itself
+does for the inner loop).
