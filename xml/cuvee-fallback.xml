@@ -52,20 +52,25 @@
 
   <!-- the SV-COMP tests of the CAV 2023 paper on MonoCera, converted for Cuvée (benchmarks/monocera/convert_cuvee.py),
        by the operator that MonoCera instruments -->
+  <!-- as in the paper, which runs all tools with mathematical integers (TriCera's default -arithMode:math) -->
   <rundefinition name="MonoCera_unreach-call">
     <tasks name="C.unreach-call.MonoCera-Forall">
+      <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/forall/*.yml</include>
       <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Max">
+      <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/max/*.yml</include>
       <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Min">
+      <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/min/*.yml</include>
       <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Sum">
+      <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/sum/*.yml</include>
       <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
     </tasks>
