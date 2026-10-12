@@ -8,6 +8,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage[nolist]{acronym}
 
 \lstset{
   basicstyle=\ttfamily\small,
@@ -27,9 +28,12 @@
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 
+\acrodef{TEQ}{Trace Equation System}
+\acrodefplural{TEQ}[TEQs]{Trace Equation Systems}
+
 \begin{document}
 
-\title{Cuvée: Loop Summaries by Trace Equations\\ and a Lemma Database\\ (Competition Preview)}
+\title{Cuvée: Loop Summaries by Trace Equation Systems\\ and a Lemma Database\\ (Competition Preview)}
 \titlerunning{Cuvée (Competition Preview)}
 
 \author{Gidon Ernst}
@@ -41,7 +45,7 @@
 
 \begin{abstract}
 \cuvee{} proves the safety of C programs with loops without inferring loop invariants.
-Each loop is summarized by a \emph{trace equation system}, which describes the sequences of values that
+Each loop is summarized by a \ac{TEQ}, which describes the sequences of values that
 the variables take in the iterations. A database of lemmas, most of them proved in Lean, rewrites these equations into closed forms, such as counters, sums, and arrays filled with values.
 Goals that remain after rewriting are encoded in first-order logic and passed to Z3.
 \cuvee{} does not search for counterexamples: it reports a violation only when rewriting refutes a goal.
@@ -49,6 +53,7 @@ In our experiments, it proves 113 safe tasks of ReachSafety-Arrays
 that none of five SV-COMP~2026 participants proves, and without the fallback to Z3 it reports no wrong
 results.
 \end{abstract}
+\acresetall
 
 \section{Verification Approach}
 
@@ -56,10 +61,10 @@ The difficult part of the verification of loops is to find inductive invariants.
 state at the loop head. However, the reasons why a program is correct are often easier to state about the
 whole computation of the loop: \emph{the array is a sequence of stores at the positions $0, \dots, n-1$}, or
 \emph{the variable is the sum of the elements read so far}. \cuvee{} follows this view. It represents the
-computation of each loop by \emph{trace equations} and proves goals by rewriting with a database of lemmas
+computation of each loop by \acp{TEQ} and proves goals by rewriting with a database of lemmas
 about such traces. The approach is described in detail in~\cite{teq}; we summarize it here.
 
-\paragraph{Trace equation systems.}
+\paragraph{Trace Equation Systems.}
 \cuvee{} symbolically executes each function, and inlines the calls of functions without a contract. A loop that runs $n$ times is
 replaced by a system of equations over \emph{traces}, sequences of values:
 \begin{itemize}
@@ -73,7 +78,7 @@ replaced by a system of equations over \emph{traces}, sequences of values:
 \end{itemize}
 The variable then has the value $\code{current}(X)$ after the loop. Nondeterministic values become fresh
 traces. The system is sound and relatively complete: it describes exactly the reachable states after the
-loop~\cite{teq}. Figure~\ref{fig:example} shows the trace equation system of a loop that fills an array.
+loop~\cite{teq}. Figure~\ref{fig:example} shows the \ac{TEQ} of a loop that fills an array.
 
 \begin{figure}[t]
 \begin{minipage}[t]{0.31\textwidth}
@@ -96,7 +101,7 @@ invs(for ⌊K⌋, ⌊I⌋ check k, i :: i < N)
 !(current(I) < N)
 \end{lstlisting}
 \end{minipage}
-\caption{A loop (left) and its trace equation system (right), simplified. The goal is
+\caption{A loop (left) and its \ac{TEQ} (right), simplified. The goal is
 $\code{current}(A)[j] = 0$.}
 \label{fig:example}
 \end{figure}
@@ -128,7 +133,7 @@ variables.
 
 \paragraph{Fallback to SMT.}
 The remaining goals are lowered into first-order logic, where each trace is a function of the
-iteration index and each trace equation a quantified characterization of its steps, and passed to
+iteration index and each equation of a \ac{TEQ} a quantified characterization of its steps, and passed to
 Z3~\cite{z3}. Functions of the database without a first-order definition are generalized, so a model
 does not refute the program: the verdict is then \emph{unknown}.
 
@@ -194,7 +199,7 @@ the safe tasks that no other tool in the table proves. The score follows the SV-
   symbolic bounds do not matter.
 \item \emph{Few wrong results.} Without the fallback, \cuvee{} reports no wrong result on all 1204 tasks.
   Most lemmas are proved in Lean~4, so the trusted base is mainly the translation into
-  trace equations, the simplifier, the matcher, and the lemmas without a proof. The only wrong results,
+  \acp{TEQ}, the simplifier, the matcher, and the lemmas without a proof. The only wrong results,
   9 of the fallback, are discussed below.
 \item \emph{Explanations.} With \code{-rules}, \cuvee{} reports the lemmas that each proof uses, and
   a residual goal points to the lemma that is missing.
@@ -272,7 +277,7 @@ The version of \cuvee{} used in SV-COMP~2027 is available in the SV-COMP tool ar
 
 \section*{AI Declaration}
 
-The theory of trace equation systems, the translation of loops, the rewriting strategy, the matching of
+The theory of \acp{TEQ}, the translation of loops, the rewriting strategy, the matching of
 traces, and the soundness argument, was fully worked out before this implementation~\cite{teq}. An
 earlier implementation in Scala~2, with a lemma database of about 65 lemmas written in Boogie, produced
 the results of that work. The present version of \cuvee{} started from a Scala~3 code base of about
@@ -281,8 +286,8 @@ SMT-LIB and Dafny.
 
 From there, coding agents (Claude Code with Claude Opus) carried out most of the implementation, under
 the direction of the author, who set the design, decided the open questions, and reviewed the results;
-574 of the 584 commits since then are co-authored by the agent. The agents wrote the generation of trace
-equation systems, the simplifier with its reasoning about the context, the rewriting with the database
+574 of the 584 commits since then are co-authored by the agent. The agents wrote the generation of
+\acp{TEQ}, the simplifier with its reasoning about the context, the rewriting with the database
 and the matching of traces, the fallback to Z3, the encoding into constrained Horn clauses, the frontends
 for Boogie, C with ACSL, SV-LIB, and SV-COMP task definitions, the tests, and the scripts of the
 experiments. The code base grew to about 22{,}000 lines.

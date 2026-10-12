@@ -55,7 +55,7 @@ INSTANCES = {
 }
 
 METADATA = {
-    "title": "Cuvée: Loop Summaries by Trace Equations and a Lemma Database",
+    "title": "Cuvée: Loop Summaries by Trace Equation Systems and a Lemma Database",
     "upload_type": "software",
     "description": "<p>Cuvée is a multi-language and multi-technique verification tool. It supports C, Dafny, Boogie, "
                    "and SV-LIB among its frontends and backends. Verification conditions can be generated from "
