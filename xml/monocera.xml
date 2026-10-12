@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
+<!-- MonoCera of the CAV 2023 artifact on its conversions of the SV-COMP tests (benchmarks/monocera/polished_tests/monocera),
+     with the options of the artifact; the tool-info module monocera.py, linked into benchexec/tools like cuvee.py,
+     uploads the tool from the tool directory tools/monocera/tricera -->
+<benchmark tool="monocera" displayName="MonoCera" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
+
+  <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
+
+  <option name="-heaparrays"/>
+  <option name="-abstractPO"/>
+  <option name="-onlyexq"/>
+
+  <!-- the SV-COMP tests of the paper by operator, as the task sets MonoCera_unreach-call of xml/cuvee.xml, with task
+       definitions next to the tests (expected true); the crafted tests of the paper have none and are not run -->
+  <rundefinition name="MonoCera_unreach-call">
+    <tasks name="C.unreach-call.MonoCera-Forall">
+      <include>../benchmarks/monocera/polished_tests/monocera/forall/*.yml</include>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.MonoCera-Max">
+      <include>../benchmarks/monocera/polished_tests/monocera/max/*.yml</include>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.MonoCera-Min">
+      <include>../benchmarks/monocera/polished_tests/monocera/min/*.yml</include>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.MonoCera-Sum">
+      <include>../benchmarks/monocera/polished_tests/monocera/sum/*.yml</include>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+  </rundefinition>
+
+</benchmark>

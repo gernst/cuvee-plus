@@ -1,7 +1,5 @@
 # The benchmarks of MonoCera
 
-The results are those of version 0.35.8 (October 10, 2026).
-
 The CAV 2023 paper "Automatic Program Instrumentation for Automatic
 Verification" (Amilon, Esen, Gurov, Lidström, Rümmer; technical report
 arXiv 2306.00004, artifact doi:10.5281/zenodo.7875416) evaluates MonoCera,
@@ -15,41 +13,75 @@ on its own conversion of the programs (`polished_tests/<tool>`, produced by
 arrays, and for MonoCera the assertion replaced by an aggregate, often with
 the loop that computes it commented out.
 
-[convert_cuvee.py](convert_cuvee.py) converts the 125 SV-COMP tests in the
-same way for Cuvée (`polished_tests/cuvee/<operator>`, with task definitions,
-all expected true), keeping SV-COMP's harness and `__VERIFIER_assert`. The
-run definition `MonoCera_unreach-call` of `xml/cuvee*.xml` in the root of the
-repository takes them, one task set per operator. The runs used
-`xml/cuvee-quick.xml` and
-`xml/cuvee-quick-fallback.xml` (since removed; 1 min,
-2 cores, 7 GB); the paper's limits were 300 s wall time and 2700 s CPU time
-on an AMD Opteron 2220 with 6 GB.
+## Setup
 
-| Operator | tests | MonoCera | TriCera | CPAchecker | SeaHorn | Cuvée | Cuvée+Z3 |
-|---|---|---|---|---|---|---|---|
-| forall | 93 | 27 | 0 | 1 | 0 | 46 | 51 |
-| max | 4 | 2 | 0 | 0 | 0 | 2 | 2 |
-| min | 11 | 3 | 0 | 0 | 0 | 2 | 5 |
-| sum | 17 | 10 | 0 | 0 | 0 | 1 | 1 |
-| total | 125 | 42 | 0 | 1 | 0 | 51 | 59 |
+- **Cuvée**: [convert_cuvee.py](convert_cuvee.py) converts the 125 SV-COMP
+  tests in the same way (`polished_tests/cuvee/<operator>`, with task
+  definitions, all expected true), keeping SV-COMP's harness and
+  `__VERIFIER_assert`. The run definition `MonoCera_unreach-call` of
+  `xml/cuvee.xml` (`-teq` with the full lemma database, without
+  [lemmas.dfy](lemmas.dfy)) and of `xml/cuvee-chc.xml` (`-chc`, Horn clauses
+  for z3) takes them, one task set per operator.
+- **MonoCera**: the TriCera build of the artifact (`tools/monocera/tricera`)
+  with the artifact's options (`-heaparrays -abstractPO -onlyexq`, `-t` from
+  the CPU time limit), on its own conversion `polished_tests/monocera`, with
+  task definitions for the 125 SV-COMP tests next to them (the crafted tests
+  have none). The tool-info module [monocera.py](../../monocera.py) is linked
+  into `benchexec/tools`, like `cuvee.py`:
 
-- The columns of the paper's tools count the verified tests of the original
-  logs; they agree with the paper (42 SV-COMP tests for MonoCera, 1 for
-  CPAchecker). No wrong results; the spurious models of `-fallback`
-  (`goal does not hold`, `Sat`) are `unknown`.
-- 13 tests are proved by MonoCera and Cuvée (either configuration), 29 by
-  MonoCera only (all `sum` tests of `array-fpi`, `brs1`-`brs5`, `ms1`-`ms5`,
-  the `nr*`, `pr*`, `pnr*`, `rewnif*` of `array-tiling`,
-  `max/sanfoundry_27_ground`, `min/rew`), 46 by Cuvée only (almost all
-  `forall`: `eqn1`-`5`, `indp1`-`4`, `sina2`-`5`, `modn`, `modp`, `mods`,
-  `array_init_pair_*`, `standard_init*`, `standard_copyInit*`). By programs:
-  MonoCera 39, Cuvée 47, Cuvée+Z3 52.
-- Without `-fallback`, unproved tests end within 10-45 s as `unknown` with
-  open goals (69), 3 by timeout, 2 by `arrays of pointers are not
-  supported` (`array_ptr_partial_init`, `partial_lesser_bound`). With
-  `-fallback`, 25 tests of `forall` and 9 of `sum` reach the minute in z3,
-  and `the length of a trace or list is unknown to -fallback` stops tests
-  with nondeterministic input arrays, e.g. `sanfoundry_27_ground`.
+  ```
+  ./benchmark xml/monocera.xml --tool-directory tools/monocera/tricera -r MonoCera_unreach-call -t C.unreach-call.MonoCera-Max
+  ```
+
+All runs: Cuvée 0.40.0, 15 min CPU time, 7 GB, 2 cores (the two hardware
+threads of one core of an Intel Core i9-9900 @ 3.10 GHz), Oct 12, 2026,
+`results/{cuvee,cuvee-chc,monocera}.2026-10-12_09-5*`. The paper's limits
+were 300 s wall time and 2700 s CPU time on an AMD Opteron 2220 with 6 GB.
+
+## Comparison
+
+| Operator | tests | MonoCera (paper) | MonoCera | Cuvée `-teq` | Cuvée `-chc` | TriCera, CPAchecker, SeaHorn (paper) |
+|---|--:|--:|--:|--:|--:|--:|
+| forall | 93 | 27 | 26 | 53 | 0 | 0, 1, 0 |
+| max | 4 | 2 | 0 | 2 | 0 | 0, 0, 0 |
+| min | 11 | 3 | 3 | 7 | 0 | 0, 0, 0 |
+| sum | 17 | 10 | 10 | 17 | 0 | 0, 0, 0 |
+| total | 125 | 42 | 39 | 79 | 0 | 0, 1, 0 |
+
+- The columns of the paper count the verified tests of its original logs;
+  they agree with the paper. No tool gives a wrong result.
+- **Time**: all proofs of MonoCera end within 300 s (at most 164 s, median
+  30 s), those of Cuvée `-teq` within 20 s (median 9 s), which proves the same
+  79 tests with 60 s. The 15 minutes add nothing to either.
+- **MonoCera against the paper**: 3 tests fewer, `max/condn` (129 s in the
+  paper), `max/sanfoundry_27_ground` (285 s), `forall/partial_lesser_bound-1`,
+  none more; on a faster machine, so its search seems to behave differently
+  (Java 21 here, the artifact's VM older). The other runs end by timeout (74)
+  or `unknown` (12).
+- **Cuvée against MonoCera**: 23 tests are proved by both, 56 by Cuvée only,
+  16 by MonoCera only, 95 of the 125 by either. Those of MonoCera only are
+  the strided and backward stores of `array-tiling` (`forall/nr2`-`nr5`,
+  `pnr2`, `pnr3`, `pr2`, `pr3`, `rewnifrev`, `rewnifrev2`, `min/rewnifrev`),
+  `forall/array_init_nondet_vars`, `array_init_var_plus_ind3`,
+  `simple_array_index_value_2`, and `standard_vararg_ground` (`forall`,
+  `min`). All 17 `sum` tests are proved by Cuvée, 10 of them by MonoCera.
+- **Cuvée `-chc`** proves none: 120 timeouts, 3 `unknown`, 2 `arrays of
+  pointers are not supported` (`array_ptr_partial_init`,
+  `partial_lesser_bound`). z3's Horn solver does not find the quantified
+  invariants over arrays that the tests need (`forall/eqn1` needs
+  `b[k] == k*k + k + 1` for all `k < i`), as TriCera in the paper; the
+  clauses are right, z3 refutes a variant of `eqn1` with a false assertion
+  in 3 s. The 3 `unknown` are z3's own timeout (`-timeout 900000`).
+- **Cuvée `-teq`**: 43 `unknown`, 1 timeout, 2 `arrays of pointers are not
+  supported`. Of the lemmas of [lemmas.dfy](lemmas.dfy), all but
+  `half_even` are in the database now (`strides.dfy`); `forall/pr2`, which
+  needs it, stays open.
+
+Earlier, with version 0.35.8 and 1 min (the former `xml/cuvee-quick.xml`),
+Cuvée proved 51 tests and Cuvée+Z3 (`-fallback`) 59; the analysis of the
+open goals below is of that version.
+
+## Open goals of version 0.35.8
 
 The 69 `unknown` tests and a timeout leave 96 open goals, mostly one or two
 per test. In 72 of them, the assertion of the checking loop survives as an
