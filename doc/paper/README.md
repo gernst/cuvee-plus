@@ -25,21 +25,22 @@ witnesses.
 
 | Column | Version | Result files (`results/<prefix>.results.SV-COMP27_unreach-call...`) |
 |---|---|---|
-| Cuvée | 0.34.22 | `cuvee.2026-10-09_18-48-26` (Arrays), `cuvee.2026-10-09_18-46-59` (Loops, 6 tasks fewer) |
-| Cuvée+Z3 | 0.35.2 | `cuvee-fallback.2026-10-10_10-44-55` (Arrays), `cuvee-fallback.2026-10-10_10-28-14` (Loops) |
+| Cuvée | 0.41.4, `-verify`, all modules | `cuvee.2026-10-12_12-48-00` (Arrays), `cuvee.2026-10-12_13-03-58` (Loops) |
+| Cuvée+Z3 | 0.41.4, `-verify`, all modules | `cuvee-fallback.2026-10-12_13-15-47` (Arrays), `cuvee-fallback.2026-10-12_13-24-45` (Loops) |
 | Symbiotic | SV-COMP 2026 | `symbiotic.2026-10-10_10-14-10` |
 | AISE | SV-COMP 2026 | `aise.2026-10-10_10-50-01` |
 | UAutomizer | SV-COMP 2026 | `uautomizer.2026-10-10_09-41-15` |
 | CPAchecker | SV-COMP 2026 | `cpachecker.2026-10-10_09-41-16` (Arrays), `cpachecker.2026-10-10_09-39-19` (Loops) |
 | Korn | SV-COMP 2026 | `korn.2026-10-10_11-59-02` |
 
-- The latest `cuvee-fallback` files are runs of 1 min (0.35.5), which
-  `common.latest` would pick; the table uses the 15 min runs above.
-- "133 safe Arrays tasks within 2 min" of 0.35.16 is
-  `cuvee-quick.2026-10-11_11-47-10` (`xml/cuvee-quick.xml`).
-- The error counts of the weaknesses (140 tasks with "rewriting does not
-  terminate", floats, `goto`, parse errors) are those of SV-COMP.md; the
-  wrong proofs of Cuvée+Z3 are the 15 variants of `geo1-u` in Loops.
+- The paper names no version of Cuvée. The runs of Cuvée include the modules
+  `nested`, `sorting`, and `strides` of the lemma database (`-include`) and
+  `-rules`, unlike the command of the archive.
+- The error counts of the weaknesses ("rewriting does not terminate",
+  floats, `goto`, parse errors, limits of the fallback, timeouts) are the
+  statuses of these runs, over both categories; the wrong results of
+  Cuvée+Z3 are the 7 variants of `fermat1-ll_unwindbound` (wrong true) and
+  `sanfoundry_24-1` and `verifythis/lcp` (wrong false).
 - The example of Fig. 1 was run with `-teq -simplify -rules`, which lists
   the 11 rules of its proof; a trivial program takes about 5 s CPU time.
 
@@ -48,12 +49,11 @@ A new run updates the table: `./benchmark xml/cuvee.xml` (and the
 
 ## Open points
 
-- The Zenodo DOI of the tool archive and the reference of MonoCera are
-  `[TODO]`; the fm-tools entry (`data/cuvee.yml` in fm-tools) has a dummy DOI.
+- The reference of MonoCera is `[TODO]`.
 - The TEQ paper is cited as an anonymous submission under review; citing it
   from a paper with an author name may break its double-blind review.
 - Cuvée writes no witnesses, so SV-COMP counts its proofs as unconfirmed
   (score 0); the paper says so.
-- The paper describes the configuration with Z3, whose 15 wrong proofs make
-  the Loops score negative (−42, against +240 without Z3).
+- The section AI Declaration summarizes the share of the coding agents
+  (counts of commits and lines from the git history).
 - The body is about half a page over the usual 4 pages.
