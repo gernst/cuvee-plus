@@ -175,7 +175,7 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   - arithmetic per numeric type, `Ints.plus`, `Reals.plus`, `Reals.lt`, ...,
     the constants `Ints.zero` and `Reals.one`, and the rings `Ints.ring` and
     `Reals.ring` (see `Ring`);
-  - the constructors of the datatypes of teq.dfy, `Nats.zero`, `Nats.succ`,
+  - the constructors of the datatypes of `core.dfy` of the lemma database, `Nats.zero`, `Nats.succ`,
     `Lists.nil(elem)`, `Lists.cons`, `Traces.stop`, `Traces.step`, and the
     tuples of the prelude of Dafny, `Tuples(args)`.
 

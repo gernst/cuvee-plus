@@ -226,7 +226,7 @@ derivatives in [hybrid.md](hybrid.md).
   (`Apply`), as are the remaining calls of `g` and `f`. The result is equivalent if
   both are total and their recursion is monomorphic.
 
-## Forward reasoning
+## Facts that the goal does not mention
 
 `Simplify` and `Rewrite` reason backwards from the goal. A subterm of the goal
 is rewritten when the left-hand side of a rule matches it and the rule's
@@ -240,51 +240,14 @@ the not-found exit of binary search (see
 [binary-search.md](../ideas/binary-search.md)), the bounds of the probes, or
 `lastlt < k` and `k < lastgt` for the index `k` of `x` in a sorted array,
 whose lemmas never fire, since their conclusions are not subterms of the goal.
+Variables of a side condition that do not occur in the left-hand side are
+therefore bound by matching the condition against the facts, e.g. `k` of
+`a[k] == x`, and the lemma states its conclusion in the shape of the goal
+(`Rewrite.conditions`, see `Rule` above). Derived facts are not combined: the
+lemma must state `lastlt + 1 < lastgt`, not the two facts `lastlt < k` and
+`k < lastgt`.
 
-Matching suffices to derive them, no unification is needed. The facts of the
-context are ground with respect to the lemmas, since the variables of the goal
-are moved into the context by `Split` and `Simplify` and act as constants. To
-apply a lemma `if P₁ && ... && Pₙ then C`:
-1. match `P₁` against a fact;
-2. match `P₂` under the resulting substitution, and so on;
-3. backtrack over the choices.
-
-This is the instantiation of quantifiers by triggers in SMT solvers
-(E-matching), with `Rewrite.matches` for each premise. Unification would be
-needed only to combine lemmas with each other (resolution, superposition).
-
-Two designs:
-
-- **Option A, conditions that bind variables (backward):** variables of a side
-  condition that do not occur in the left-hand side are bound by matching the
-  condition against the facts, e.g. `k` of `a[k] == x`, and the lemma states
-  its conclusion in the shape of the goal. This is implemented on `main`
-  (`Rewrite.conditions`, see `Rule` above). Its limitation is that derived
-  facts are not combined: the lemma must state `lastlt + 1 < lastgt`, not the
-  two facts `lastlt < k` and `k < lastgt`.
-- **Option B, forward rules (saturation):** lemmas with an attribute `:fw`
-  are applied when `Context.assume` records facts. Their premises are matched
-  against the facts, their conclusions simplified and assumed, and the
-  context combines them, e.g. by its difference constraints (`Diffs`). This
-  gives:
-  - general lemmas on sortedness;
-  - facts about terms that occur, e.g. the bounds `x0 <= current(X)` of a
-    monotonic trace from its equation `X == trace(...)`;
-  - the instantiation of `invs` and quantified hypotheses at the terms that
-    occur, e.g. `if invs(for xs check v :: P(v)) && 0 <= j < |xs| then P(earlier(j, xs))`,
-    triggered by `earlier(j, xs)`.
-
-  Guards against blow-up: every variable of a conclusion is bound by the
-  premises (`Rule.checkForward`); the conclusions are derived one level deep,
-  without forward rules of their own.
-
-  Option B is implemented on the branch `forward`. There, the first premise
-  is the trigger, matched against the new facts of `Context.assume` only, and
-  the siblings of conjunctions are recorded without forward rules. Its notes
-  describe an open question: how conclusions reach sibling hypotheses, e.g.
-  the invariants of a trace equation in the updates of another one.
-
-Without forward rules, cuts state such facts in the program,
+Otherwise, cuts state such facts in the program,
 `assert φ; assume φ;` after a loop, where the assertion is a goal whose atoms
 the rewrite rules apply to (see
 [bsearch.dfy](../examples/dafny/teq/bsearch.dfy)).

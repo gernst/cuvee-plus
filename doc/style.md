@@ -31,7 +31,7 @@
   plural: arithmetic per numeric type, `Ints.plus`, `Reals.lt`, `Ints.zero`,
   `Ints.ring`, the functions on sequences as in `Fun.seq`, `Seqs.len`,
   `Seqs.nth`, since e.g. `Unit` would shadow a Scala name, and the
-  constructors of the datatypes of teq.dfy, `Nats.succ`, `Lists.nil`,
+  constructors of the datatypes of `core.dfy` of the lemma database, `Nats.succ`, `Lists.nil`,
   `Traces.step`, and of tuples, `Tuples(args)`
 - avoid shadowing Scala names in `core`, e.g. no case class `Map` (hence
   `Maps`)

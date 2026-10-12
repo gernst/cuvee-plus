@@ -42,7 +42,7 @@ After section 3 of the paper:
   its result, since the guards are complete. The guards need not be
   complete since `break`; an update without cases, e.g. when all guards are
   false, is a value that is not specified, the constant `unspecified` of
-  `teq.dfy` (`Unspecified`). `List[Upd]` has `free`, `params`, and
+  `core.dfy` (`Unspecified`). `List[Upd]` has `free`, `params`, and
   `map` like lists of expressions.
 - The functions on traces are in `Fun.trace`: `counter`, `current`, `butlast`
   (the paper's `⌊X⌋`), `length`, `earlier`; `Counter`, `Current`,
@@ -92,7 +92,7 @@ the even numbers that `main` passes).
 ## The lemma database ([resources/cuvee/teq](../resources/cuvee/teq))
 
 - The database consists of modules, injected by `-teq` in the order of
-  `TEQ.modules` (`Config.injectingTEQ`): `core.dfy` (the types `Nat`, `List`,
+  `TEQ.modules` (`Config.injected`): `core.dfy` (the types `Nat`, `List`,
   `Trace`, the functions of `Fun.trace`, the basic functions on lists, and the
   definitions that several modules share: `sum`, `parity`, `max`, `min`,
   `count`, `pow`, `selects`), then the lemmas of `arithmetic.dfy`,
@@ -138,7 +138,7 @@ the even numbers that `main` passes).
   relies on it. It defines the datatype `Trace`, declares the functions on traces,
   and lemmas about them, which are `{:rw}` (rewrite rules of `-simplify`) and
   free, without a body (assumed by the solvers without proof). Lemmas that
-  identify a trace with a function of teq.dfy are named after it, e.g.
+  identify a trace with a function of the database are named after it, e.g.
   `stores_def` (likewise `selects_def` for `maps`, `agree_prefix_def` for
   `invs`), those about an accessor of such a function after both, e.g.
   `current_sums` or `earlier_prefix`, the others after what they state,
@@ -181,7 +181,7 @@ the even numbers that `main` passes).
     a general body, `invs(... :: x <= b) <==> below_prefix(n, xs, b)`, since
     it matches the bound of every loop, `x < N` as `x + 1 <= N` with the body
     generalized to a map, and hides it from the lemmas on traces
-    (`diamond_1-1`); the predicate and its consequences are in teq.dfy, the
+    (`diamond_1-1`); the predicate and its consequences are in `aggregation.dfy`, the
     definition is local (`linear-inequality-inv-*`), unlike definitions with
     a specific body such as `consts_prefix_def`;
   - `!(y % 2 == 0) <==> y % 2 == 1` again, which opened
@@ -282,10 +282,10 @@ the even numbers that `main` passes).
 
 ## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
 
-- `Trace` is a datatype of teq.dfy, a value followed by the trace of the
+- `Trace` is a datatype of `core.dfy`, a value followed by the trace of the
   remaining iterations (`step`) or a last value (`stop`), hence never empty,
   with `current` and `butlast` defined by recursion; teq.lean takes them
-  from the printed teq.dfy. The functions that teq.dfy only declares are
+  from the printed `core.dfy`. The functions that the database only declares are
   defined in Lean 4 (core, without Mathlib): `current`, `butlast`, `counter`,
   and `consts` are recursive; sequences are lists;
   the auxiliary predicates (`agree_prefix`, ...) are the iteration
@@ -296,7 +296,7 @@ the even numbers that `main` passes).
   tuple, `fun acc ⟨b₁, b₂, b₃⟩ => ...`, and prints guarded cases as
   conditionals. Zipping truncates to the shortest dependency, the lengths
   are not assumed yet (see TODO.md).
-- The functions that teq.dfy defines with `{:fold}` and the lemmas are
+- The functions that the modules define with `{:fold}` and the lemmas are
   printed by `-print lean`, the lemmas as theorems, whose statements are
   copied into teq.lean when lemmas are added, and proved there.
 - Checked counterexamples show lemmas that hold only under assumptions that
@@ -312,13 +312,16 @@ the even numbers that `main` passes).
   function, or that is read at the iterations `k` of a counter by
   `earlier(natural(k), xs)`, where `n` is the number of steps of a counter
   among the dependencies or a further parameter `(n : Nat)` of the lemma;
-  `length` is declared in teq.dfy with `{:lean}` as `List.length` of Lean.
+  `length` is declared in `core.dfy` with `{:lean}` as `List.length` of Lean.
   With them, all lemmas of teq.lean are proved; assumptions on indices
   within the lists are added by hand there as `requires` to be added to
-  teq.dfy.
-- A new lemma of teq.dfy goes into teq.lean by printing teq.dfy with
+  the module. teq.lean proves 164 of the 205 lemmas of the database: those of
+  `arithmetic`, `aggregation`, `arrays`, and `search`, and 50 of the 62 of
+  `counters`; the lemmas of `nested`, `sorting`, and `strides` are not in
+  teq.lean yet.
+- A new lemma of a module goes into teq.lean by printing the module with
   `-print lean` and copying its statement (as a theorem) and those of new
-  functions, at the position it has in teq.dfy, then proving it. The printer
+  functions, at the position it has in the database, then proving it. The printer
   cannot see the length of a list that is no dependency of a combinator but
   is summed or read under an auxiliary predicate, e.g. `sum(xs)` under
   `below_prefix(n, xs, b)`: such lemmas hold for lists of length `n` only and
@@ -330,7 +333,7 @@ the even numbers that `main` passes).
 
 After section 5.3 of the paper, `-fallback` lowers the goals into first-order
 logic for solvers, e.g. `-teq -simplify -split -simplify -fallback -z3`;
-nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
+nothing polymorphic remains of the lemma database, hence no `-monomorph`.
 
 - The variables of traces and lists bound by universal quantifiers of
   positive polarity, e.g. of `∀ xs. φ ⇒ ψ`, or by existential ones of
@@ -375,7 +378,7 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   their lengths, `nil` has length 0, e.g. the iterations of an inner loop
   that runs zero times, other traces and lists get a
   fresh length function.
-- The definitions of `teq.dfy` by a `match` on a parameter of type `List` or
+- The definitions of the lemma database by a `match` on a parameter of type `List` or
   `Nat`, with a case per constructor, whose other case recurs on the tail or
   the predecessor only, with the other arguments unchanged (`sum`, `parity`,
   `count`, `occurs`, `pow`, `agree_prefix`, `above_iterations`), are unfolded
@@ -384,13 +387,13 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   `f_from(n) == base` and `f_from(j) == step(xs(j), f_from(j + 1))`, and
   `f(xs)` is `f_from(0)`; over a natural `n`, `f_upto(0) == base` and
   `f_upto(k + 1) == step(k, f_upto(k))`, and `f(n)` is `f_upto(n)`. This
-  follows the definitions of `teq.dfy` without restating them.
-- The other functions of `teq.dfy`, e.g. `indexof` and `distincts`, which
+  follows the definitions of the lemma database without restating them.
+- The other functions of the lemma database, e.g. `indexof` and `distincts`, which
   also apply `occurs` to the tail, and those of the input without a
   definition are replaced by fresh functions without definition,
   which generalizes the goal: a model of the solver need not be a
   counterexample.
-- The declarations and lemmas of `teq.dfy` and lemmas over traces, lists,
+- The declarations and lemmas of the lemma database and lemmas over traces, lists,
   and naturals are dropped.
 - Tests: [fallback.dfy](../examples/dafny/teq/fallback.dfy),
   [fallback_count.dfy](../examples/dafny/teq/fallback_count.dfy),
@@ -456,7 +459,7 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   tests the rewrite engine with the examples of the paper (counters,
   summations, `selects`) in single steps; `examples/dafny/simplify/traces*.dfy`,
   `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
-  traces, which declare `Trace` and the functions on traces as in `teq.dfy`.
+  traces, which declare `Trace` and the functions on traces as in `core.dfy`.
 - E.g. `./Cuvee.sh -teq -simplify examples/dafny/vcgen/sum.dfy`.
 - The Dafny translations of SV-COMP (`benchmarks/sv-comp/dafny`) and the C
   programs printed from them (`benchmarks/sv-comp/c`, since patched for other
@@ -466,6 +469,6 @@ nothing polymorphic remains of `teq.dfy`, hence no `-monomorph`.
   `benchmarks/sv-comp/dafny/summary.md`. The translations write the division
   and remainder of C as `quot` and `rem` of the prelude of Dafny, lemmas keep
   `/` and `%`. `-print c -known dfy,teq,rw` prints their programs without
-  the logic, where `teq` injects teq.dfy for parsing without the transform;
+  the logic, where `teq` keeps the lemmas of the database out of the output;
   the C programs lack the lemmas of their Dafny files, hence they leave goals
   that the Dafny files close (see TODO.md).

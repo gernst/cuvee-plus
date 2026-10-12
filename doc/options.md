@@ -1,0 +1,79 @@
+# Command line options
+
+```sh
+./Cuvee.sh [options] file
+```
+
+The language of the input is given by the extension of `file`: `.smt2`
+(SMT-LIB), `.svlib` (SV-LIB), `.bpl` (Boogie), `.dfy` (Dafny), `.c` and `.i`
+(C), `.yml` (SV-COMP task definition, whose single input file is C or SV-LIB).
+Without options, the input is printed in its own language after parsing and
+type checking.
+
+The transformations are applied in the order in which they are given, e.g.
+`-teq -simplify -split -simplify`. The output options (`-print`, `-z3`,
+`-cvc5`, `-verify`, `-o`) apply to the result, wherever they appear.
+`./Cuvee.sh -help` lists all options with a short description.
+
+## Input
+
+| Option | Meaning |
+|---|---|
+| `-arch 32\|64` | the data model of C input, 32 or 64 bit Linux (ILP32 or LP64), e.g. for `sizeof`; by default 64, or the data model of an SV-COMP task |
+| `-unbounded` | nondeterministic values of C input are unbounded integers, unsigned ones only nonnegative, instead of within the ranges of their types; unsigned arithmetic does not wrap around |
+| `-entry <name>` | the procedure where executions start, which `-teq` and `-chc` check; by default `main` in C, none otherwise (SV-LIB starts at its `verify-call` commands, `-chc` needs an entry point in Dafny, Boogie, and SMT-LIB); `-vcgen` ignores it and checks every procedure against its contract |
+| `-include <file>` | inject `<file>` into the input after its prelude, parsed in the language of its extension; `-include teq:<concept>` injects the module `<concept>` of the lemma database of `-teq` (`nested`, `sorting`, `strides`) |
+| `-hybrid` | inject the definitions of parallel composition into Dafny input: channels, events, the history, `send`, and `receive` |
+
+## Transformations
+
+| Option | Meaning |
+|---|---|
+| `-vcgen` | verification conditions for procedures by weakest preconditions: contracts, loops with invariants, termination measures, global variables, nondeterministic choice and iteration |
+| `-teq` | verification conditions by symbolic execution, each loop summarized by a Trace Equation System (TEQ); injects the modules `core`, `arithmetic`, `counters`, `aggregation`, `arrays`, `search` of the lemma database, whose rules `-simplify` applies (see [teq.md](teq.md)) |
+| `-chc` | constrained Horn clauses for procedures, for the inference of invariants |
+| `-flat` | replace arguments of predicates that are records by their fields, e.g. after `-chc` |
+| `-simplify` | contextual simplification of formulas and function definitions, with the rewrite rules of lemmas and axioms with `:rw` (see [simplifier.md](simplifier.md)) |
+| `-rules` | report the rewrite rules that `-simplify` applies to each assertion, by their names, as `(set-info :used ((name count) ...))` after it |
+| `-fallback` | lower the Trace Equation Systems that remain into first-order logic for the solvers, e.g. after `-teq -simplify`; the lowered goals are `:abstract` |
+| `-split` | split goals and lemmas into individual obligations `forall xs. antecedents ==> conclusion`, which the solvers report one by one |
+| `-monomorph` | replace polymorphic functions by their monomorphic instances, e.g. before `-z3` |
+| `-fuse` | fuse the compositions of defined functions in the requests `fuse g(f(xs), ys) = ???` of Dafny input |
+
+## Output
+
+| Option | Meaning |
+|---|---|
+| `-print <lang>` | print the output in `<lang>` instead of the language of the input: `smt2`, `dfy`, `bpl`, `c`, `lean` (the logic only: sorts, datatypes, functions, axioms, lemmas, and goals), `scala` (the internal representation), or `null` (nothing) |
+| `-linewidth <n>` | lay out the output for lines of `<n>` characters (default 80) |
+| `-known <features>` | omit the declarations with the comma-separated attributes `<features>` from the output, e.g. `dfy,teq` (a C program without the logic of its Dafny source, where `teq` keeps the declarations and lemmas of the lemma database out of the output) |
+| `-o <file>` | write the output to `<file>` and the reports to stdout |
+
+## Solvers and answers
+
+| Option | Meaning |
+|---|---|
+| `-z3`, `-cvc5` | pass the output to the solver, which checks it: goals and lemmas must hold (a goal that does not is an error), assertions and `check-sat` are passed through, the answers to queries are reported; lemmas with the attribute `free` (Dafny lemmas without a body) are assumed |
+| `-timeout <ms>` | timeout per solver query in milliseconds (default 1000) |
+| `-verify` | instead of the output, answer `correct`, `incorrect`, or `unknown` to each `verify-call` of SV-LIB, or once for other inputs: whether the program satisfies its specification (contracts and loop invariants), aggregated over all obligations, with the solver if there is one; procedures need `-vcgen`, `-teq`, or `-chc` first. A refutation is `incorrect` unless the goal is `:abstract` (a loop without invariant under `-vcgen`, the lowering of `-fallback`) |
+
+## Debugging and tests
+
+| Option | Meaning |
+|---|---|
+| `-debug <modules>` | print the steps of the given comma-separated modules, e.g. `simplify,rewrite` (the steps of the simplifier and of the rewrite engine that change an expression, in the language of the output) or `solver` (the communication with the solvers) |
+| `-test <file>` | run the example `<file>` with the command line of its first line and compare with the expected `name.out` and `name.err`; with a `.csv` file, check a database of expected results |
+| `-help` | list the options |
+| `-version` | print the version |
+
+## Examples
+
+```sh
+./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/max.dfy              # verify methods
+./Cuvee.sh -chc -entry max -z3 examples/dafny/vcgen/max.dfy     # infer invariants
+./Cuvee.sh -vcgen -print smt2 examples/dafny/vcgen/max.dfy      # show the goals
+./Cuvee.sh -teq examples/dafny/vcgen/sum.dfy                    # Trace Equation Systems
+./Cuvee.sh -teq -z3 examples/dafny/vcgen/max.dfy                # loop-free, by symbolic execution
+./Cuvee.sh -chc -z3 examples/c/horn/count.c                     # C, invariants by Horn clauses
+./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -verify task.c   # as in SV-COMP
+```

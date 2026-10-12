@@ -70,8 +70,9 @@ transformation and any output.
    the assertions with their attributes `:named` and `:pattern` only. `Monomorph` keeps the polymorphic functions of
    `config.output.features`. `-known <features>` adds features to those of
    the output, e.g. `-print c -known dfy,teq,rw` prints the program of a
-   Dafny file without its logic, where `teq` also injects teq.dfy into the
-   input, as `-teq` does, but without its transform.
+   Dafny file without its logic: `teq` keeps the declarations and lemmas of
+   the lemma database out of the output (they are declared in the input, as
+   with `-teq`, but without its transform).
    `-print null` and `-print scala` replace only
    the printer of the output; transforms whose output a language cannot
    express (`hasMath`, e.g. `-chc` of C) print SMT-LIB instead. Lean
@@ -127,8 +128,9 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     Frama-C/WP: equivalent to `pre ∧ wp`, but the goals after it have `pre`
     as hypothesis, also the separate ones of `-split`.
 - [`TEQ`](../src/cuvee/verify/TEQ.scala) replaces each procedure definition
-  by a goal from symbolic execution with trace equation systems for loops,
-  see [teq.md](teq.md).
+  by a goal from symbolic execution with trace equation systems for loops;
+  with an entry point (`Config.entryPoint`) only that of the entry point,
+  whose calls are inlined, see [teq.md](teq.md).
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point after assignments, calls, loop heads, and joins, followed

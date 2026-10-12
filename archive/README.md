@@ -1,9 +1,10 @@
 # Cuvée for SV-COMP
 
-Cuvée is a deductive verifier for C programs, which proves the property
-`unreach-call` without loop invariants: it summarizes each loop by a trace
-equation system, whose goals it closes by rewriting with a database of lemmas,
-and passes the goals that remain to the SMT solver Z3.
+Cuvée is a deductive verifier for C programs (property `unreach-call`) and
+SV-LIB scripts (property `correct-tags`), which needs no loop invariants: it
+summarizes each loop by a Trace Equation System, whose goals it closes by
+rewriting with a database of lemmas, and passes the goals that remain to the
+SMT solver Z3.
 
 Source code and documentation: https://github.com/gernst/cuvee-plus
 
@@ -25,9 +26,11 @@ Source code and documentation: https://github.com/gernst/cuvee-plus
 
 Requires Java 21 (e.g. the Ubuntu package `openjdk-21-jre-headless`).
 
-    ./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 -verify [-arch 32|64] task.c
+    ./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 -verify [-arch 32|64] task
 
+for a C program (`task.c`, `task.i`) or an SV-LIB script (`task.svlib`).
 The answer is `correct` (the property holds), `incorrect` (it is violated),
-or `unknown`; errors, e.g. constructs that are not supported, are reported
+or `unknown`, one for each `verify-call` of an SV-LIB script; executions of a
+C program start in `main`. Errors, e.g. constructs that are not supported, are reported
 as `(error ...)`. Cuvée does not produce witnesses. `./Cuvee.sh -version`
 prints the version.

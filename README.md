@@ -1,13 +1,83 @@
 # Cuvée
 
 Cuvée is a pipeline for program verification in Scala 3. It reads SMT-LIB,
-Boogie, Dafny, and C, translates them into one common representation of logic
-and programs, transforms that representation, and prints it in any of these
-languages or passes it to an SMT solver (z3 or cvc5). Its verifier for C,
-based on trace equation systems, takes part in SV-COMP 2027 (see
-[SV-COMP](#sv-comp) below).
+SV-LIB, Boogie, Dafny, and C, translates them into one common representation
+of logic and programs, transforms that representation, and prints it in any of
+these languages or passes it to an SMT solver (z3 or cvc5). Its verifier for C
+and SV-LIB, based on Trace Equation Systems (TEQs), takes part in SV-COMP 2027
+(see [SV-COMP](#sv-comp) below).
 
-## Capabilities
+Main features:
+
+- **Inputs:** SMT-LIB, SV-LIB, Boogie, Dafny, C, and SV-COMP task
+  definitions, parsed into one core of logic and programs; **outputs** in any
+  of these languages and the logic in Lean 4 (`-print`).
+- **Verification conditions** by weakest preconditions (`-vcgen`), **Trace
+  Equation Systems** with a database of lemmas, most of them proved in Lean
+  (`-teq`), and **constrained Horn clauses** (`-chc`).
+- **Simplifier** with a rewrite engine for lemmas (`-simplify`), and the
+  **fallback** of the remaining goals to first-order logic (`-fallback`).
+- **Solvers** z3 and cvc5 (`-z3`, `-cvc5`), and **answers** `correct`,
+  `incorrect`, or `unknown` as in SV-COMP (`-verify`).
+
+## Competition preview (SV-COMP 2027)
+
+**[Cuvée: Loop Summaries by Trace Equation Systems and a Lemma Database
+(Competition Preview)](doc/paper/cuvee.tex)** describes the approach, the
+software architecture, the results on ReachSafety-Arrays and
+ReachSafety-Loops against the official results of SV-COMP 2026, and the
+setup of Cuvée in SV-COMP 2027. [doc/paper/README.md](doc/paper/README.md)
+explains how to build it and where its numbers come from. The tool archive of
+the competition version is
+[10.5281/zenodo.23317707](https://doi.org/10.5281/zenodo.23317707). The
+paper was generated with AI, see its AI Declaration.
+
+## Dependencies
+
+- Java 21 (a JDK to build, a JRE to run).
+- [mill](https://mill-build.org) to build and test.
+- z3 for `-z3` (the archive for SV-COMP bundles it next to `Cuvee.sh`, which
+  puts that directory first on the `PATH`), cvc5 for `-cvc5`; both for the
+  tests.
+- Python 3 for the scripts of the experiments, LaTeX for the paper.
+
+## Installation
+
+```sh
+git clone https://github.com/gernst/cuvee-plus.git
+cd cuvee-plus
+```
+
+## Compilation
+
+```sh
+mill -i assembly                          # build out/assembly.dest/out.jar
+cp out/assembly.dest/out.jar cuvee.jar    # the jar that Cuvee.sh runs
+mill -i test                              # run all tests
+```
+
+## Usage
+
+```sh
+./Cuvee.sh [options] file
+```
+
+Without options, the input is printed in its own language after parsing and
+type checking. Transformations are applied in the order in which they are
+given, the output options apply to the result. For example:
+
+```sh
+./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/max.dfy              # verify methods
+./Cuvee.sh -chc -entry max -z3 examples/dafny/vcgen/max.dfy     # infer invariants
+./Cuvee.sh -teq -simplify examples/dafny/vcgen/sum.dfy          # Trace Equation Systems
+./Cuvee.sh -chc -z3 examples/c/horn/count.c                     # C, invariants by Horn clauses
+```
+
+All options are documented in [doc/options.md](doc/options.md); `-help`
+lists them.
+
+## Features
+
 
 - **Frontends:** SMT-LIB 2 (`.smt2`, extended by procedures and programs),
   a subset of Boogie (`.bpl`), a subset of Dafny (`.dfy`), SV-LIB 1.0
@@ -21,9 +91,15 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
   are within the range of their type (`-unbounded`: neither, the values of
   unsigned types are only nonnegative). All are parsed into the same core, are type
   checked with polymorphism, and resolve overloaded arithmetic on `Int` and
-  `Real`, and indexing of arrays and sequences. In Dafny, axioms, lemmas,
-  and goals may be written `if φ then ψ` for `φ ==> ψ`, also below the
-  quantifiers at the top, where `else` is optional.
+  `Real`, and indexing of arrays and sequences. In Dafny, lemmas are written
+  as in Dafny, `lemma name<a>(xs) returns (ys) requires φ ensures ψ` for
+  `forall xs :: φ ==> exists ys :: ψ`, assumed without a body (`free`) and
+  to be proved with an empty one; functions may be recursive, defined by
+  `match` with constructor patterns; the right-hand side `*` of an
+  assignment or initializer gives an arbitrary value (there is no `havoc`);
+  `a[i][j] := v` updates nested arrays; axioms, lemmas, and goals may be
+  written `if φ then ψ` for `φ ==> ψ`, also below the quantifiers at the top,
+  where `else` is optional.
 - **Printers:** any input can be printed as SMT-LIB, Boogie, Dafny, or C
   (`-print smt2|bpl|dfy|c`), within the limits of each language, laid out
   for lines of 80 characters (`-linewidth <n>`), without the declarations
@@ -40,19 +116,26 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
   - nondeterministic choice and iteration.
 - **Trace equation systems** (`-teq`): verification conditions by symbolic
   execution, where each loop is summarized by a trace equation system: one
-  trace per modified variable, `trace(e, for Y do x, y => u)`, and the
-  constraint that all earlier iterations took a path through the body,
-  `invs(for Y check y => φ)` (in Boogie `all(...)`), where the dependencies are traces without their
-  last element, `⌊X⌋` in Dafny and Boogie (`butlast`, sort `Trace<T>`).
+  trace per modified variable, `trace(e, for Y do x, y :: u)`, whose update
+  `u` is an expression or guarded cases `case φ => e`, and the constraint that
+  all earlier iterations took a path through the body,
+  `invs(for Y check y :: φ)` (in Boogie `all(...)`, in SMT-LIB `invs`), where
+  the dependencies are traces without their last element, `⌊X⌋` in Dafny and
+  Boogie (`butlast`, sort `Trace<T>`); `maps(for Y yield y :: e)` maps traces
+  element by element. Functions of the database that are traces are defined
+  with `{:fold}`, whose definition is a rule that folds such a trace into
+  the function.
   Loop-free programs go directly to a solver,
   loops need rewriting by lemmas first: `-teq` injects the modules of a lemma
   database ([resources/cuvee/teq](resources/cuvee/teq): `core`, `arithmetic`,
   `counters`, `aggregation`, `arrays`, `search`) once at the beginning of its
   output, whose rewrite rules `-simplify` applies, e.g. the counter lemma;
   `-include teq:<concept>` adds a further module (`nested`, `sorting`,
-  `strides`). The lemmas of the former single file
-  [teq.dfy](resources/cuvee/teq.dfy) are proved in Lean 4
-  ([teq.lean](resources/cuvee/teq.lean)). `-rules` reports the rules that
+  `strides`). The database has 205 lemmas; 164 of them are proved in Lean 4
+  ([teq.lean](resources/cuvee/teq.lean)): those of `arithmetic`,
+  `aggregation`, `arrays`, and `search`, and 50 of the 62 of `counters`, but
+  none of `nested`, `sorting`, and `strides`. The former single file
+  [teq.dfy](resources/cuvee/teq.dfy) is kept but no longer injected. `-rules` reports the rules that
   each `-simplify` applies to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain
   into first-order logic for the solvers.
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
@@ -98,100 +181,54 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
   `incorrect`, unless the goal is `:abstract`, i.e., stronger than the
   specification: a loop without invariant under `-vcgen`, the lowering of
   `-fallback`.
-- **Data types:**
-  - integers, exact rationals for `real`;
-  - arrays, sequences (`seq<T>`, using cvc5's `Seq` theory);
-  - finite sets and multisets (`set<T>`, `multiset<T>`, using cvc5's `Set`
-    and `Bag` theories) with literals `{a, b}`, `multiset{a, b}`, the
-    operators `+`, `*`, `-`, `<=`, `<`, `in`, `!in`, `|s|`, and `m[x]`;
-  - algebraic datatypes, tuples, and defined sorts;
-  - bitvectors in SMT-LIB (`(_ BitVec n)`), with literals and all functions
-    of the theory, and in Dafny (`bv8`, ...) with `+ - * / %`, `& ^ !`,
-    unary `-`, unsigned comparisons, and `e as int`/`e as bv8`; numeric
-    literals are bitvectors where the context requires it.
-- **Hybrid programs** (Dafny syntax, after Platzer's dL):
-  - differential equations with evolution constraints and differential
-    invariants, `x', v' == v, -g && 0.0 <= x invariant ...;`;
-  - derivatives `(x, v :: e)'`;
-  - nondeterministic repetition, `while * { ... }`.
-
-  Verification uses differential cuts and differential weakening (see
-  [examples/dafny/hybrid/ball.dfy](examples/dafny/hybrid/ball.dfy)).
-- **Parallel composition:**
-  - methods may have assumption-commitment contracts (`assumes`, `commits`)
-    over a global history of events, which `send` and `receive` extend;
-  - these contracts are used by the parallel composition of calls,
-    `parallel { p(a); x := q(b); }`;
-  - `-hybrid` declares the channels, events, the history, `send`, and
-    `receive` ([resources/cuvee/dafny/hybrid.dfy](resources/cuvee/dafny/hybrid.dfy)).
-
-  See [examples/dafny/hybrid/par.dfy](examples/dafny/hybrid/par.dfy).
 
 Known limitations and planned work are listed in [TODO.md](TODO.md).
 
-## Usage
-
-The build uses [mill](https://mill-build.org). z3 and cvc5 must be on the
-`PATH` for `-z3`, `-cvc5`, and the tests.
-
-```sh
-mill -i run [options] file.{smt2,bpl,dfy,c} # run from source
-mill -i test                                # run all tests
-mill -i assembly                            # build out/assembly.dest/out.jar
-./Cuvee.sh [options] file                   # run cuvee.jar, a copy of the assembly
-```
-
-Without options, the input is printed in its own language after parsing and
-type checking. The transformations (`-vcgen`, `-teq`, `-chc`, `-flat`,
-`-split`, `-monomorph`, `-simplify`) are applied in the order in which they
-are given. The output options
-(`-print`, `-z3`, `-cvc5`, `-o <file>`) apply to the result, wherever they
-appear. For example:
-
-```sh
-mill -i run -vcgen -z3 examples/dafny/vcgen/max.dfy          # verify methods
-mill -i run -chc -entry max -z3 examples/dafny/vcgen/max.dfy            # infer invariants
-mill -i run -vcgen -simplify -z3 examples/dafny/hybrid/ball.dfy    # hybrid programs
-mill -i run -vcgen -print smt2 examples/dafny/vcgen/max.dfy  # show the goals
-mill -i run -teq examples/dafny/vcgen/sum.dfy                 # trace equation systems
-mill -i run -teq -z3 examples/dafny/vcgen/max.dfy             # loop-free, by symbolic execution
-mill -i run -chc -z3 examples/c/horn/count.c                       # C, invariants by Horn clauses
-```
-
-`-help` lists all options. `-debug simplify,rewrite` prints the steps of the
-simplifier and of the rewrite engine that change an expression, in the
-language of the output; `-debug solver` traces the communication with the
-solvers.
-
 ## SV-COMP
 
-Cuvée takes part in the categories ReachSafety-Arrays and ReachSafety-Loops
-(property `unreach-call`) of SV-COMP 2027 with
+Cuvée takes part in SV-COMP 2027 in the categories ReachSafety-Arrays and
+ReachSafety-Loops (C, property `unreach-call`) and in SV-LIB.Overall with
+SV-LIB.correct-tags.CoreVerification and SV-LIB.correct-tags.CTranslated
+(SV-LIB scripts, property `correct-tags`), with the same command for both:
 
 ```sh
-./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 -verify [-arch 32|64] task.c
+./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 -verify [-arch 32|64] task
 ```
 
 where the answer is `correct` (the property holds), `incorrect` (it is
-violated), or `unknown`; Cuvée does not produce witnesses.
-
-In the demo category SV-LIB (property `correct-annotations`), the tasks are
-SV-LIB scripts (`.svlib`), which Cuvée verifies with
-
-```sh
-./Cuvee.sh -chc -z3 -timeout 900000 -verify task.svlib
-```
-
-where each `verify-call` is answered `correct`, `incorrect`, or `unknown`;
-`-vcgen -z3` checks the annotations as given instead, which answers `unknown`
-for loops without invariant. The frontend does not support labels and
+violated), or `unknown`, one for each `verify-call` of an SV-LIB script.
+Executions of a C program start in `main`, the entry point (`-entry <name>`
+selects another one): `-teq` emits a goal for `main` only and checks the
+other functions inlined at their calls, in their context; in SV-LIB, the
+`verify-call` commands are the entry points;
+Cuvée does not produce witnesses, so its results count as unconfirmed.
+`-chc -z3 -verify` (Horn clauses) and `-vcgen -z3 -verify` (the annotations as
+given, `unknown` for loops without invariant) are alternatives that are not
+used in the competition. The SV-LIB frontend does not support labels and
 gotos, `define-procs-rec`, the properties `:recurring` and `:not-recurring`, and
-witnesses, and it rejects
-tags on statements other than loops and procedure bodies (see
-[doc/architecture.md](doc/architecture.md) and [TODO.md](TODO.md)).
+witnesses, and it rejects tags on statements other than loops and procedure
+bodies (see [doc/architecture.md](doc/architecture.md) and [TODO.md](TODO.md)).
+
+Results (15 min, `-verify`, all modules of the lemma database, on the valid
+tasks of SV-COMP 2026; see [doc/paper](doc/paper)): on ReachSafety-Arrays,
+131 tasks proved without and 141 with z3, 112 of which none of Symbiotic,
+UAutomizer, CPAchecker, and Korn reports as true in the official results;
+on ReachSafety-Loops, 126 without and 280 with z3. Without `-fallback`, no
+result is wrong. Known problems of `-fallback`: 7 wrong proofs
+(`fermat1-ll_unwindbound*`, presumably a constraint of the early loop exits
+lost in the lowering) and 2 wrong refutations (`sanfoundry_24-1`,
+`verifythis/lcp`), where functions that `main` calls only in a certain context
+were also checked for arbitrary arguments, which the entry point fixes (see
+below and [ideas/entry-points.md](ideas/entry-points.md)). The runs included the modules `nested`, `sorting`, and
+`strides`, which the competition command does not load.
 
 - [cuvee.py](cuvee.py): the tool-info module of BenchExec, which interprets
-  the answers of `-verify`; submitted to BenchExec as `benchexec/tools/cuvee.py`.
+  the answers of `-verify` (`correct` is true and `incorrect` false, for every
+  property); submitted to BenchExec as `benchexec/tools/cuvee.py`
+  ([sosy-lab/benchexec#1327](https://github.com/sosy-lab/benchexec/pull/1327)).
+  The entry of fm-tools (`data/cuvee.yml`, merge request !1176 of
+  [fm-tools](https://gitlab.com/sosy-lab/benchmarking/fm-tools)) gives the
+  options, the categories, and the DOI of the archive.
 - [benchmarks/sv-comp](benchmarks/sv-comp): Dafny translations of the tasks of
   both categories and C programs printed from them; `./benchmark
   xml/<definition>.xml -r <rundefinition> -t <tasks>` runs Cuvée and other
@@ -201,19 +238,23 @@ tags on statements other than loops and procedure bodies (see
   limitations found.
 - [archive](archive): the README, `smoketest.sh`, and examples of the archive
   for the competition; `scripts/zenodo.py package` builds `dist/cuvee.zip`
-  from the last commit and runs its smoke test, `upload` puts it into a draft
-  on Zenodo (with a personal access token, see the script), which is
-  published by hand.
-- [doc/paper](doc/paper): the competition contribution (LNCS).
+  from the last commit and runs its smoke test (`-teq`, `-teq -fallback -z3`,
+  and `-chc -z3` on a safe and an unsafe C program and SV-LIB script), `upload`
+  puts it into a draft on Zenodo (with a personal access token, see the
+  script), which is published by hand. The archive of the competition version
+  is [10.5281/zenodo.23317707](https://doi.org/10.5281/zenodo.23317707).
+- [doc/paper](doc/paper): the competition preview (LNCS), see
+  [above](#competition-preview-sv-comp-2027).
 
 ## Documentation
 
+- [doc/options.md](doc/options.md): the command line options.
 - [doc/architecture.md](doc/architecture.md): the pipeline, the packages, and
   how a run flows through them.
 - [doc/datastructures.md](doc/datastructures.md): the core representation of
   types, expressions, programs, commands, and the state.
 - [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion,
-  and forward reasoning.
+  and facts that the goal does not mention.
 - [doc/teq.md](doc/teq.md): trace equation systems, the combinators, and the
   lemma database.
 - [doc/hybrid.md](doc/hybrid.md): derivatives, differential equations, and

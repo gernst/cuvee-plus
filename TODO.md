@@ -37,11 +37,17 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   constants in the bodies of procedures with `-chc` (Horn solvers reject free
   constants, the entry clause quantifies only those of the arguments and
   axioms); a dangling tag is an error, the report says to ignore it
-- SV-COMP tool entry and zenodo archive: publish the archive
-  (`scripts/zenodo.py package`, `upload`, then published by hand on Zenodo), enter its DOI in the
-  fm-tools entry (`data/cuvee.yml`, still a dummy DOI) and in doc/paper; the
-  tool-info module `cuvee.py` is the pull request `add-cuvee` to BenchExec
-  (github.com/gernst/benchexec), to be kept in sync with this repository
+- SV-COMP tool entry and zenodo archive: the archive of 0.41.4 is published
+  (10.5281/zenodo.23317707, in fm-tools `data/cuvee.yml`, merge request !1176,
+  and in doc/paper); it predates the entry points (25c90e96), without which
+  `-teq` checks functions out of the context of their calls
+  (`sanfoundry_24-1`, `verifythis/lcp` answered `incorrect`): package and
+  upload a new version (`scripts/zenodo.py package`, `upload`, published by
+  hand) and enter its DOI in fm-tools and doc/paper. The experiments of the
+  paper loaded all modules of the database (`-include teq:nested`, `sorting`,
+  `strides`), the options in fm-tools do not: align them. The tool-info module
+  `cuvee.py` is the pull request sosy-lab/benchexec#1327 (branch `add-cuvee`
+  of github.com/gernst/benchexec), to be kept in sync with this repository
 - a portfolio of `-teq` and `-chc` within the time limit, see "Portfolio of
   TEQ and CHC" below
 
@@ -682,8 +688,8 @@ concepts, found by reading the whole code base; none is a bug.
 
 ## Performance
 
-Measured on binary search with forward rules (branch `forward`) and on the
-SV-COMP examples (`benchmarks/sv-comp/dafny`):
+Measured on binary search and on the SV-COMP examples
+(`benchmarks/sv-comp/dafny`):
 
 - The rewrite steps per command are limited to 1000 (`Context.withRules`),
   and an exhausted budget is reported as "rewriting does not terminate",
@@ -697,15 +703,10 @@ SV-COMP examples (`benchmarks/sv-comp/dafny`):
   cache: 864 decisions, 15 of them distinct, in one run of binary search.
 - `Rewrite.conditions` simplifies each conjunct of a side condition, also
   one in which no variable is instantiated yet. Then it rewrites the open
-  pattern with all rules, e.g. `X == trace(...)` as the premise of a forward
-  rule. This is fixed on `forward` only.
+  pattern with all rules, e.g. `X == trace(...)`.
 - Matching an equation tries both orders. With the definition of a variable
   (`Context.↑`), `X == trace(...)` matches `Lo == trace(...)` twice, the
-  second time with `X` bound to the trace. This is fixed on `forward` only.
-- `Simplify.nary` simplifies each conjunct under all others. With forward
-  rules in `Context.assume`, every sibling context derives the same
-  conclusions again, which took binary search beyond 10 minutes; on
-  `forward`, siblings are recorded without forward rules.
+  second time with `X` bound to the trace.
 - Each round of the fixpoint of `Simplify.apply` simplifies the whole
   formula again. Programs with many loops grow accordingly, e.g.
   [standard_copy9_ground-2.dfy](benchmarks/sv-comp/dafny/array-examples/standard_copy9_ground-2.dfy)
@@ -830,8 +831,7 @@ SV-COMP examples (`benchmarks/sv-comp/dafny`):
   e.g. `!occurs(e, selects(a, ⌊counter(0, 1, n)⌋))` by `not_occurs_selects_def` of teq.dfy, which a second lemma
   takes as its side condition (see
   [standard_sentinel-2.dfy](benchmarks/sv-comp/dafny/array-examples/standard_sentinel-2.dfy)),
-  since a side condition that is an iteration constraint does not terminate;
-  a forward rule on branch `forward` would instantiate it directly.
+  since a side condition that is an iteration constraint does not terminate.
 - Nested loops: the outer trace takes the values of summarized inner traces,
   whose composition, e.g. `k == n * m`, is not accelerated (see
   [nested-1.dfy](benchmarks/sv-comp/dafny/loop-new/nested-1.dfy)).

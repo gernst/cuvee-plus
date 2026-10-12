@@ -10,14 +10,15 @@ or solvers consume.
 - [doc/architecture.md](doc/architecture.md): pipeline, packages, stages,
   frontends, tests.
 - [doc/datastructures.md](doc/datastructures.md): the core.
-- [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion,
-  forward reasoning.
+- [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion, and
+  facts that the goal does not mention.
 - [doc/teq.md](doc/teq.md): trace equation systems (`-teq`), combinators,
   lemma database.
 - [doc/hybrid.md](doc/hybrid.md): derivatives, ODEs, parallel composition
   (`-hybrid`).
 - [doc/style.md](doc/style.md): coding style, incl. lowercase comments that
   explain why.
+- [doc/options.md](doc/options.md): the command line options.
 - [TODO.md](TODO.md): open problems and the user's instructions.
 - [ideas/](ideas): proposals and experiments, not implemented.
 
@@ -121,6 +122,11 @@ or solvers consume.
   call a `Source` directly drop `Examples.prelude(...)`.
 - **Stages buffer declarations**, losing the sink's answers to them; filters
   that need those are sink wrappers.
+- **Entry points:** `-teq` emits a goal for the entry point only and `-chc`
+  starts from it (`Config.entryPoint`: `-entry <name>`, otherwise `main` in
+  C; SV-LIB starts at its `verify-call` commands); the other procedures are
+  checked in the context of their calls. `-vcgen` checks every procedure
+  against its contract.
 - **Pretty printing:** wrap parenthesized documents in `Align(...)`.
 - **Imports:** import `cuvee.Error` and `cuvee.Debug` instead of using
   qualified names.
