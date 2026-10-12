@@ -1,5 +1,7 @@
 package cuvee.smtlib
 
+import java.io.PrintStream
+
 import util.Tool
 
 import cuvee.Debug
@@ -115,8 +117,14 @@ object Solver:
   def cvc5(timeout: Int = 1000) =
     new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
 
-  def sink(solver: Solver, init: State) =
-    Sink(init, solver)
+  def sink(solver: Solver, init: State, stderr: PrintStream = System.err) =
+    Sink(init, solver, stderr)
+
+  // the meta information for the user, e.g. the rules applied by -simplify (set-info :used ...), which z3 rejects
+  // as structured values, contrary to SMT-LIB, is printed on `stderr` instead of passed to the solver
+  def info(stderr: PrintStream, cmd: SetInfo) =
+    for line <- Printer.lines(cmd) if line.nonEmpty
+    do stderr.println(line)
 
   // SMT-LIB does not admit attributes on declarations and definitions,
   // assertions are handled separately and keep their names
@@ -136,7 +144,7 @@ object Solver:
   // the declarations that SMT-LIB has built in ({:smt2}, see the preludes) are not passed to the solver,
   // all others are, without their attributes, e.g. those of higher-order features ({:ho}), which a solver may reject;
   // goals that do not hold are reported in SMT-LIB
-  class Sink(init: State, solver: Solver) extends cuvee.pipe.Sink:
+  class Sink(init: State, solver: Solver, stderr: PrintStream) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
     val printer = Printer
 
@@ -177,6 +185,11 @@ object Solver:
         // in particular, z3 accepts declare-var but does not acknowledge it with print-success
         case _: DeclareProc | _: DefineProc | _: DeclareVar | _: AnnotateTag =>
           (Ack.Unsupported, Nil, this)
+
+        // the rules applied by -simplify are reported (see Solver.info)
+        case info @ SetInfo("used", _) =>
+          Solver.info(stderr, info)
+          (Ack.Success, Nil, this)
 
         // the witnesses of SV-LIB are not produced
         case GetWitness =>

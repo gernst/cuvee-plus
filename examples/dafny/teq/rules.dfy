@@ -1,6 +1,6 @@
 // ./Cuvee.sh -teq -simplify -rules examples/dafny/teq/rules.dfy
 // the rules that -simplify applies to each goal, by their names (:named of the lemmas, the functions of definitions):
-// as attributes :used of the goals that remain, and on stderr for those that simplify to true
+// as (set-info :used ((name count) ...)) after each goal, also after those that simplify to true and are dropped
 
 // closed by the lemmas on counters, stores, and selects
 method copy(a: array<int, int>, n: int) returns (b: array<int, int>)

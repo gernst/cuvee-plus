@@ -6,9 +6,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 ## New
 
 - `-verify` (0.41.0, see [ideas/verify-answers.md](ideas/verify-answers.md)):
-  - the statistics of `-rules` are lost: `xml/cuvee.xml` and `xml/cuvee-fallback.xml` pass `-rules` for
-    `scripts/rules.py`, which reads the `:used` of the printed goals, which `-verify` does not print; the remaining
-    goals, with their `:used`, should be reported on stderr (see ideas/verify-answers.md, problem 6)
   - `cuvee.py` reads only the answers of `-verify`: the options of the fm-tools entry (`data/cuvee.yml`) must pass
     `-verify`, as the archive (`archive/README.md`, `archive/smoketest.sh`) does
   - a refutation is classified per goal, `VCGen` marks the whole goal of a procedure `:abstract` if one of its loops

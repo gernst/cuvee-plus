@@ -1,5 +1,7 @@
 package cuvee.pipe
 
+import java.io.PrintStream
+
 import cuvee.Error
 import cuvee.core._
 import cuvee.smtlib.Solver
@@ -20,8 +22,8 @@ object Verify:
     else if left == Status.Unknown || right == Status.Unknown then Status.Unknown
     else Status.Correct
 
-  def sink(solver: Option[Solver]) =
-    Verify(solver, Status.Correct, false)
+  def sink(solver: Option[Solver], stderr: PrintStream) =
+    Verify(solver, stderr, Status.Correct, false)
 
   // the status of an obligation if the program satisfies its specification: goals and lemmas are checked by their
   // negation, which is unsat (see Solver.valid), the check-sat of the clauses of -chc is sat, since a model of the
@@ -37,9 +39,10 @@ object Verify:
     else if status == Status.Unknown || approximated then Status.Unknown
     else Status.Incorrect
 
+// stderr: where the rules applied by -simplify are reported (see Solver.info),
 // outcome: the aggregated outcome so far, correct, incorrect, or unknown,
 // answered: whether a verify-call has been answered
-case class Verify(solver: Option[Solver], outcome: Status, answered: Boolean) extends Sink:
+case class Verify(solver: Option[Solver], stderr: PrintStream, outcome: Status, answered: Boolean) extends Sink:
   // the declarations that SMT-LIB has built in are not passed to the solver
   override def knows =
     if solver.nonEmpty then Set("smt2") else Set()
@@ -106,6 +109,11 @@ case class Verify(solver: Option[Solver], outcome: Status, answered: Boolean) ex
       // models and the answers to get-info and get-option are not reported
       case GetModel | _: GetInfo | _: GetOption =>
         (Ack.Done, Nil, this)
+
+      // the rules applied by -simplify are reported, as the output is not printed
+      case info @ SetInfo("used", _) =>
+        Solver.info(stderr, info)
+        (Ack.Success, Nil, this)
 
       case GetWitness | Labels =>
         (Ack.Unsupported, Nil, this)

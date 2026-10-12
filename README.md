@@ -53,7 +53,7 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
   `strides`). The lemmas of the former single file
   [teq.dfy](resources/cuvee/teq.dfy) are proved in Lean 4
   ([teq.lean](resources/cuvee/teq.lean)). `-rules` reports the rules that
-  close each goal. `-fallback` encodes the trace equation systems that remain
+  each `-simplify` applies to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain
   into first-order logic for the solvers.
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the

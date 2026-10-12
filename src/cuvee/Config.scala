@@ -124,8 +124,8 @@ case class Config(
   // the receiver of the output, by the final configuration: the answers with -verify, with or without a solver,
   // otherwise the solver, if there is one, which checks the output, otherwise the sink of the output, e.g. a printer
   def receiver(init: State): Sink =
-    if verify then cuvee.pipe.Verify.sink(solver.map(_(timeout)))
-    else solver.map(solver => Solver.sink(solver(timeout), init)).getOrElse(sink(this, output.printer, init))
+    if verify then cuvee.pipe.Verify.sink(solver.map(_(timeout)), stderr)
+    else solver.map(solver => Solver.sink(solver(timeout), init, stderr)).getOrElse(sink(this, output.printer, init))
 
   // the configuration with the output in `lang`, which knows the features added so far
   def printing(lang: Lang) =
@@ -217,7 +217,7 @@ object Config:
         (config_, rest)
 
   val rules =
-    flag("-rules", "report the rewrite rules that -simplify applies to each assertion, by their names, as :used"):
+    flag("-rules", "report the rewrite rules that -simplify applies to each assertion, by their names, as (set-info :used ((name count) ...)) after it"):
       case (config, rest) =>
         val config_ = config.copy(rules = true)
         (config_, rest)
@@ -399,7 +399,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.41.1")
+    println("Cuvée 0.41.2")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

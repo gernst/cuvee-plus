@@ -121,12 +121,11 @@ output is unchanged.
    obligations of the procedure `unknown`, also those that do not depend on the loop, which `-split` separates but
    which keep the attribute.
 
-6. **`-verify` hides the output that other tools read (open, to be fixed).** `xml/cuvee.xml` and
-   `xml/cuvee-fallback.xml` pass `-rules` for `scripts/rules.py`, which reads the `:used` of the printed goals;
-   under `-verify` nothing is printed, the statistics are lost. Likewise the remaining goals, which explain an
-   `unknown`, are no longer visible. A fix would report the remaining goals with their `:used`, or only the latter,
-   on stderr, where `-simplify` already reports the rules of the goals that simplify to true, and adapt
-   `scripts/rules.py`.
+6. **`-verify` hid the output that other tools read** (resolved in 0.41.2 for `-rules`). `scripts/rules.py` read the
+   `:used` attributes of the printed goals. Now each `-simplify` reports its applications after each assertion as
+   `(set-info :used ((name count) ...))`, which the solver sink and the verify sink print on stderr instead of
+   passing it to the solver (z3 rejects structured values of `set-info`, contrary to SMT-LIB). The remaining goals,
+   which explain an `unknown`, are still not visible under `-verify`.
 
 7. **`cuvee.py` needs `-verify`.** It reads only the answers, a run without `-verify` is an error; the archive of
    SV-COMP passes it (`archive/README.md`, `archive/smoketest.sh`), the options of the fm-tools entry
