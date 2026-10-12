@@ -1,165 +1,160 @@
-# Implementing the deduction engine: a concrete plan
+# Implementing the deduction engine: work packages
 
-Plan of Oct 12, 2026 for [deduction-engine.md](deduction-engine.md), against the code of version 0.42.0. Six
-phases, each with the files it touches, the size, the tests that decide it, and what it retires in the lemma
-database. Every phase is measured by the same harness (phase 0) and lands only if it loses no proof there.
-Code changes happen on a private copy of the repository (worktree `cycles`, later one worktree per phase).
+Plan of Oct 12, 2026 for [deduction-engine.md](deduction-engine.md), against the code of version 0.42.4, revised
+into packages that can be built and tested in isolation, each in its own worktree, with the dependencies between
+them stated. The re-entrance guard of [reentrance-guard.md](reentrance-guard.md) is done (0.42.3) and showed the
+way this plan should go: a change is accepted only with a trace that explains the failure it removes, and only
+after the harness of package A loses no proof.
 
-## 0. The harness
+## Dependency graph
 
-Four regression sets, run from a private copy of the jar, one core, exit status read:
+```
+A harness ──┬── B canonical forms ──┬── C closed conditions looked up
+            │                       ├── E the pin in the matcher
+            │                       └── L e-graph (its node representation)
+            ├── D matcher repairs (alternatives, renaming)
+            ├── F definitions at variables
+            ├── G congruence closure (standalone) ── H arithmetic over classes ── I state traces
+            │                                     └── J triggers and forward facts
+            ├── K exit splitting
+            └── M diagnostics (-probe, budgets)
+```
+
+B, D, F, G, K, M have no dependency on each other and can start at once. C and E need B; H, I, J need G; L needs
+B and is a long-term alternative to C, E, F and H together.
+
+## A. The harness
+
+Four regression sets from a private copy of the jar, one core, exit status read; a package lands only if it loses
+no proof here and no test takes twice its time. The scripts of the guard work (`run.sh`, `algos.sh`,
+`sample.sh`, `compare.py` of the scratchpad) should move into `scripts/regression/` as this package.
 
 | set | what | time |
 |---|---|---|
-| `mill -i test` | the four groups, 930 tests | 10 min |
-| the algorithms | `examples/dafny/algorithms`, 30 files against their `.out` (`pending/runall.sh`) | 5 min |
-| the Dafny translations | `benchmarks/sv-comp/dafny/expected.csv`, every fourth row (68 tasks, `pending/candidates/check.sh`), the full 651 rows before a phase lands | 15 min / 2 h |
-| MonoCera | the 125 tests with `-unbounded`, counted against the 79 of `summary.md` | 25 min |
+| `mill -i test` | the default suite (997 tests, 80 s); `CUVEE_PRINTING=1` after parser or printer changes | 2 min |
+| the algorithms | `CUVEE_ALGORITHMS=1 mill -i test`, or the 30 files with `-test` | 5 min |
+| the Dafny translations | every fourth row of `benchmarks/sv-comp/dafny/expected.csv` (68 tasks), all 651 before landing; compared with the current main's jar, since expected.csv predates it | 15 min / 2 h |
+| the C benchmarks | `./benchmark xml/cuvee.xml -r SV-COMP27_unreach-call -t C.unreach-call.Arrays` and `Loops` at `-T 60s` with the jar installed in the checkout, compared with the latest 60 s run of main (`compare.py`) | 15 min |
+| MonoCera | the 125 tests with `-unbounded` against the 79 of `summary.md` | 25 min |
 
-A phase is accepted if the four sets lose no proof and no test exceeds twice its time; the gains are recorded
-as the lemmas and workarounds it retires (the `Retires` lines below), verified by removing them from the files.
+## B. Canonical forms (`simplify/Canon.scala`, new, standalone)
 
-## 1. The re-entrance guard
+Pure functions on `Expr`, no context, no rules: `Canon.poly` (a polynomial with sorted monomials and literal
+constants, so that `i - 1`, `i + (-1)` and `-1 + i` are one term), `Canon.combinator` (equal dependencies
+merged, unused ones dropped except the counter, a fixed order with the counter first, bound variables renamed by
+position), `Canon.guards` (the conjuncts of a guard as a sorted set of literals, negations in normal form).
+Testable alone: idempotence, equality of α-variants, the examples of the dependency lists of NOTES.md. About
+150 lines, three days. Used by C, E, L and by the hashing of G. Retires nothing by itself.
 
-[reentrance-guard.md](reentrance-guard.md): `Context.active`, `Rewrite.apply(rule)` suspends the rule while its
-conditions are evaluated, `Context.key` includes `active`. About fifteen lines in `Context.scala` and
-`Rewrite.scala`. Tests: `pending/lower_bound/lb_cmp4.dfy` closes, `pending/nested_module/nested_a.dfy` on the
-cocktail program terminates, the former `sum_invs_const` on `nla-digbench/ps2-ll.dfy` terminates; two examples
-in `examples/dafny/simplify` (a condition on the rule's own term; a general left-hand side with an `invs`
-condition). Retires: the `current(results(...))` left-hand sides of the summaries (bubble, insertion,
-cocktail), the open status of the lower bound.
+## C. Closed conditions looked up (`Rewrite.conditions`)
 
-## 2. Canonical forms before matching
+A closed instance that is an `Invs`, an equation of lists, or an atom is looked up among `ctx.known` modulo
+`Canon` before it is decided by simplification. One function, about 30 lines, plus unit tests in
+`RewriteTraces.scala` for the 21st condition of the cocktail summary and the flags fact of first_duplicate.
+Retires the fresh variables and identifying equations of six example files (the summaries shrink by a third).
+Needs B.
 
-All in `Rewrite.scala` and `Simplify.scala`, the context untouched. Four independent steps, each a day or two,
-each with unit tests in `test/src/cuvee/test/simplify/RewriteTraces.scala` written *before* the change from the
-failing matches of NOTES.md, since several of the "not matched" findings were never isolated to a line.
+## D. Matcher repairs (`Rewrite.instantiate`, `Rewrite.apply`)
 
-- **2a. Dependency selection with alternatives.** `Rewrite.instantiate` instantiates an unbound variable
-  dependency by the front counter only (`case None => List(front._1)`); make it enumerate all dependencies of
-  the expression, front first, so that the for-comprehension of `apply(rule)` backtracks over them. Retires
-  `invs_current_counter_other`. Risk: more matches tried; bounded by the number of dependencies.
-- **2b. Closed `invs` conditions looked up.** In `Rewrite.conditions`, a closed instance that is an `Invs` is
-  looked up among `ctx.known` modulo a canonical form before it is decided: unused dependencies dropped, equal
-  dependencies merged, bound variables renamed by position, the body compared after `Simplify.invs`'s own
-  normalization. A function `Canon.invs(expr): Expr` in a new file `simplify/Canon.scala` (about 60 lines),
-  applied to the instance and to each candidate fact. Retires the fresh variables and identifying equations in
-  bubble, selection, insertion, cocktail, first duplicate, row sums (finding 27).
-- **2c. Rule variables renamed apart.** In `Rewrite.apply(rule)`, if `rule.vars` intersects the free variables
-  of `expr` and of `ctx`, rename the rule's variables fresh (once per rule and command, cached on the rule).
-  Retires the naming discipline of the test methods (findings 9, 21) and the error that replaces the goal.
-- **2d. The pin in the matcher.** The literal patterns that fail: a literal step `-1` in a dependency
-  `⌊counter(s, -1, n)⌋` matched through the context, arithmetic on a bound variable as a store index
-  (`a[j - 1 := ...]`), a disjunctive guard, a sum of two rule variables `m + n`, and a higher-order summand. For
-  each, a unit test with the pattern and the expression from the example (rewnifrev, insertion_sort, merge,
-  cocktail, selection). Then one mechanism: when `matches` fails on a pattern subterm `p` whose free variables
-  are bound variables of the pattern or already instantiated, and the expression subterm `e` has the same type,
-  abstract `p` by a fresh higher-order variable over its bound variables and record the equation `p == e` as a
-  closed condition to decide after the match (the pin, generated). A fallback case at the end of `matches`,
-  about 30 lines, plus the decision in `apply(rule)`. Retires the pins of merge, insertion sort, gnome sort,
-  cocktail, the stores-ahead-down restatement, `passlen`-style functions; opens the recurrences of TODO.md
-  (`a[k - 1]`) to lemmas.
+Two independent fixes with unit tests written first from the findings:
+- `instantiate` offers only the front counter for an unbound variable dependency (`case None => List(front._1)`);
+  offer all dependencies, front first, so the for-comprehension of `apply` backtracks (finding 1; retires
+  `invs_current_counter_other`).
+- rule variables renamed apart from the free variables of the goal, once per rule and command (findings 9, 21;
+  retires the naming discipline of the test methods and the error that replaced the goal).
+Two days. No dependencies.
 
-## 3. Congruence closure as the context
+## E. The pin in the matcher (`Rewrite.matches`, fallback case)
 
-`Theory.scala` and `Context.scala`, with `Simplify.var_`, `Simplify.poly` and `Rewrite.rewrite` adapted; the
-largest phase, about two weeks.
+For each literal pattern that fails (the step `-1` of a counter dependency through the context, a store index
+`i - 1`, a disjunctive guard, a sum `m + n` of two rule variables, a higher-order summand), first a unit test with
+the pattern and the expression of the example; then one mechanism: when a pattern subterm over bound or
+instantiated variables fails to match an expression subterm of the same type, abstract it by a fresh
+higher-order variable and record `p == e` as a closed condition decided after the match. About 40 lines.
+Retires the pins of merge, insertion sort, gnome sort, cocktail, the stores-ahead-down restatement, and opens the
+recurrences on `a[k - 1]` to lemmas. Needs B for the arithmetic cases (the equation `p == e` is decided on
+canonical polynomials).
 
-- **3a. Definitions tried at variables.** `Rewrite.rewrite` returns a variable unchanged; let it try the rules on
-  the definition of the variable (`ctx.↑`) when some rule's left-hand side has the definition's head symbol, and
-  return the rewritten definition. Ten lines; retires the whole-atom left-hand sides (merge, gnome sort,
-  finding 16) and the open trace variables for traces (the definitions are followed in argument positions as
-  well).
-- **3b. A union-find with congruence closure** `CC` as a `Theory` next to `Facts` and `Diffs`, replacing
-  `Chains`: `assume(Eq(l, r))` merges the classes of `l` and `r` and propagates congruence to the parents
-  recorded for each node; `repr(e)` the representative, chosen to be a non-variable term if the class has one
-  (the definition), a literal if it has one, else the smallest term; `members(e)` for the matcher. Arithmetic:
-  a class of integer terms carries the normalized polynomial of its representative, and an equation between two
-  arithmetic terms is a linear constraint solved as `Chains.solve` does today, the solution recorded as a
-  merge of `x` with its solution term, which inlines into polynomials and, through `repr`, into function
-  arguments. `Context.↑` and `Simplify.var_` read `repr`; `Context.used`, `free` and `acyclic` adapt; the
-  one-point rule (`Simplify.point`) checks that the variable is alone in its class. `Context.key` includes the
-  class structure (its map). About 300 lines new, 150 removed.
-- **3c. Implied by classes.** `Context.implied(phi)` holds if `phi` is in the class of `true`, if it is an
-  equation of two terms in one class, or by `Diffs` as today; `denied` dually. `Simplify.simplify` then closes
-  `s == sorted(a, 0, n' + 1) ∧ n == n' + 1 ⇒ s == sorted(a, 0, n)` without a rule.
-- Tests: `examples/dafny/simplify/congruence.dfy` (definitions in argument positions, solutions into arguments,
-  two counters identified), is_sorted.dfy verified, the MonoCera `pr2` without `half_even`, nested_sum and
-  nested_mult without `mul_eq_cancel`. Risk: the cost of congruence on large goals; the parents table makes a
-  merge linear in the parents, and the contexts are copied per position as today, so the structure must be
-  persistent (immutable maps, as `Diffs` is).
+## F. Definitions at variables (`Rewrite.rewrite`)
 
-## 4. State traces with projections
+A variable with a non-variable definition in the context gets the rules tried on its definition, when some
+rule's left-hand side has the definition's head symbol, and is replaced by the rewritten definition. Ten lines,
+one day, tests on merge and gnome sort with the whole-atom left-hand sides replaced by rules on
+`current(trace(...))`. Retires the whole-atom pattern and the open trace variables for traces. No dependencies;
+subsumed by G later, but cheap now.
 
-`verify/TEQ.scala` (`loop`), `Simplify.scala` (one projection rule), `Fallback.scala` (the lowering of tuples),
-the printers; about a week after phase 3.
+## G. Congruence closure, standalone (`simplify/CC.scala`, new)
 
-- **4a. The state trace.** `TEQ.loop` emits, besides or instead of the per-variable equations, one equation
-  `S == trace(tuple(x̄₀), for ⌊K⌋, Zs do s, k, zs :: tuple(F₁(s), ..., Fₘ(s)))` over the tuple of the modified
-  variables (`Tuples` of the prelude, the selectors `tupleₘ_i`), the iteration constraint over `⌊K⌋, ⌊S⌋, Zs`
-  alone, and `x_i == tupleₘ_i(current(S))`. Behind an option `-teq-state` first, to compare.
-- **4b. The projection rule**, a built-in of `Simplify.trace`, not a lemma: a component `i` of a tuple-valued
-  trace whose update `Fᵢ` reads the components `J` of the accumulator and no others is the per-variable trace
-  `trace(x_i0, for ⌊K⌋, ⌊S⌋ do x, k, s :: Fᵢ[x / sᵢ])` with the other components read from `s`; the simplifier
-  applies it to `tupleₘ_i(current(S))` and to `tupleₘ_i(earlier(j, ⌊S⌋))`, so that every lemma of the database
-  meets the shape it was written for, with `⌊S⌋` where it had `⌊Y⌋` and `tupleₘ_j(s)` where it had `y`. The
-  matcher's synthesis of variable dependencies as maps (`Rewrite.instantiate`) covers the rest: a pattern
-  dependency `ys` against `⌊S⌋` with the body reading `tupleₘ_j(s)` is `maps(for ⌊S⌋ yield s :: tupleₘ_j(s))`.
-- **4c. Inner loops as values.** In `TEQ.loop`, the summary of an inner loop within a path of the outer body
-  becomes `s' == current(S'(s))` with the inner state trace a term over the outer accumulator, which the
-  simplifier rewrites as a unit in the context of the outer iteration before the outer trace is distributed;
-  the fragments then all bind `s`.
-- Tests: `invs_counter_equation.dfy` and `invs_fragments.dfy` without the module `nested`; nested_sum,
-  nested_mult and row_sums with the module's lemmas removed one by one; the merge and gnome sort with a lemma on
-  the pair. Retires the module `nested` as far as the fragment lemmas go, `results`, the chain lemmas, and the
-  summaries' side conditions on fragments (one condition on the inner fold instead). Risk: the Lean semantics
-  (`teq.lean`) and the fallback must lower tuples, and the per-variable output is what the SV-COMP databases
-  were recorded with, so the comparison runs with both forms.
+A persistent union-find over terms with congruence propagation, as a `Theory` next to `Facts` and `Diffs`:
+`assume(Eq(l, r))` merges, `repr(e)` the representative (a non-variable definition if the class has one, a literal
+if it has one, else the smallest term), `members(e)`, `implied(Eq(l, r))`. Built and tested entirely alone, on
+terms without any context: merge, congruence through parents, persistence of copies (immutable maps as `Diffs`),
+cost on goals with a thousand terms. Then, as a second step in the same package, wired into `Context` in place of
+`Chains.replace` and `Chains.chain`: `Context.↑` and `Simplify.var_` read `repr`, `used`, `free`, `acyclic` and
+the one-point rule adapt (`Simplify.point` checks that the variable is alone in its class), `Context.key`
+includes the class map. About 300 lines new, 150 removed, two weeks. Retires open trace variables, the whole
+atom, equal counters not identified. The integration step is the risky part and is measured by the harness
+before H starts.
 
-## 5. Triggers and forward facts
+## H. Arithmetic over classes (`CC` with `Poly`)
 
-`Simplify.select`, `Simplify.earlier`, `Context.assume`, and the `forward` branch of version 0.30.0 as the
-reference (forward rules `:fw`, matched against new facts of `Context.assume`, conclusions recorded one level
-deep; it was too slow because `Simplify.nary` re-derived the conclusions in every sibling context). About a
-week.
+A class of integer terms carries the normalized polynomial of its representative; an equation between two
+arithmetic terms is a linear constraint solved as `Chains.solve` does today, recorded as a merge of the variable
+with its solution, which reaches function arguments through `repr`. Tests: is_sorted.dfy verified; `pr2` of
+MonoCera without `half_even`; nested_sum and nested_mult without `mul_eq_cancel`. One week. Needs G.
 
-- **5a. Instantiation at indices.** When `Simplify.select(a, j)` or `earlier(j, xs)` is simplified and the
-  context has an `invs` over `⌊counter(0, 1, n)⌋` whose body mentions `a[k]` or `earlier(natural(k), xs)`, and
-  `0 <= j < integer(n)` is implied by `Diffs`, the body at `j` is assumed in the context of that position. One
-  trigger kind, no general forward rules. Retires `not_occurs_selects_def`/`select_not_occurs_selects` style
-  pairs, the definitional atoms for constraints in the examples, and closes the checking-loop goals of
-  MonoCera whose arrays are resolved (the `above_iterations_def` interference goes with it: the constraint is
-  consumed at the index, not abstracted first).
-- **5b. Facts about named traces.** Lemmas marked `:facts` on a function of the database (the bounds of `incs`
-  and `decs`, `current(sums(x, vs))` with `nonneg_prefix`) are assumed when the term occurs in the goal,
-  recorded once per command and term (the memo of 0.30.0, without the sibling re-derivation: the facts are
-  attached to the term's e-class of phase 3, not to the context). Retires the cut of `bsearch.dfy`.
-- **5c. The disjunctive exit.** In `Simplify.or`, a disjunct `¬(l₁ ∧ ... ∧ lₙ)` that is the negated exit of a
-  loop (marked by `TEQ` with an attribute on the implication) is distributed over the other disjuncts when they
-  contain atoms that rules of the context have conditions on, one context per literal; otherwise `-split`.
-  Retires the two-implication postcondition of first_duplicate.
-- Tests: lsearch without its two lemmas, first_duplicate with the equivalence, bsearch without the cut, the
-  lower bound with its properties only.
+## I. State traces with projections (`TEQ.loop`, `Simplify.trace`, `Fallback`)
 
-## 6. Equality saturation
+Behind an option `-teq-state` first: one trace of the tuple of the modified variables per loop, the iteration
+constraint over `⌊K⌋, ⌊S⌋`, `x_i == tupleₘ_i(current(S))`; a built-in projection rule in `Simplify.trace` that turns
+a component whose update reads the components `J` into the per-variable trace with the others read from `s`, so
+that the lemmas meet the shapes they were written for; inner loops as values `s' == current(S'(s))` simplified as
+units in the outer iteration. Tests: the two minimal nested-loop files without the module `nested`, nested_sum and
+nested_mult with the module's lemmas removed one by one, merge and gnome sort with one lemma on the pair; the
+Lean printer and the fallback lower tuples. One week after G, since the projections are equations between classes.
+Retires the fragment lemmas of `nested`, `results`, the chains, the fragment side conditions of the summaries.
 
-Research, after 1 to 5 are measured: an e-graph per goal with the canonical forms of phase 2 as the node
-representation, rules applied by e-matching, a nested e-graph per combinator body keyed as
-`Context.combinators`, extraction by size. Start from the term bank of phase 3 (a union-find over terms is the
-e-graph without the rules). Decide after phase 3 whether the step budget and the rule order still cost proofs;
-if the four sets show none, this phase is not needed.
+## J. Triggers and forward facts (`Simplify.select`, `Simplify.earlier`, `Context.assume`)
 
-## Order and estimates
+Three sub-packages, each alone:
+- instantiation at indices: when `a[j]` or `earlier(j, xs)` is simplified and the context has an `invs` over
+  `⌊counter(0, 1, n)⌋` whose body reads `a[k]` or `earlier(natural(k), xs)`, and `0 <= j < integer(n)` is implied,
+  assume the body at `j` at that position (retires the definitional atoms for constraints, the lsearch pair, and
+  the `above_iterations_def` interference);
+- facts on named traces: lemmas marked `:facts` on a function of the database assumed when the term occurs,
+  memoized per command and term (the `forward` branch of 0.30.0 without its sibling re-derivation; retires the
+  cut of bsearch);
+- a trigger table in the context, so that the first two do not scan the facts at every read.
+One week. Needs G for the memo by class; the first sub-package can be prototyped without it.
 
-| phase | effort | depends on | decides |
-|---|---|---|---|
-| 1 guard | 1 day | — | the lower bound, the cycles |
-| 2 canonical forms | 1 week | — | the summaries' side conditions, the pins |
-| 3 congruence closure | 2 weeks | — | is_sorted, `half_even`, whole atoms |
-| 4 state traces | 1 week | 3 | the fragments, the module `nested` |
-| 5 triggers | 1 week | 3 | constraints at indices, the cut |
-| 6 saturation | open | 2, 3 | rule order |
+## K. Exit splitting (`Simplify.or`)
 
-Phases 1 and 2 can start now; 2a to 2d are independent of each other and of 1. Each phase is one commit with
-its tests, docs (`doc/simplifier.md`, `doc/teq.md`), the retired lemmas removed from the examples with their
-expected outputs regenerated, and a version bump (second digit for 3 and 4).
+A disjunct `¬(l₁ ∧ ... ∧ lₙ)` that is the negated exit of a loop, marked by `TEQ` with an attribute, is
+distributed over the other disjuncts when they contain atoms that rules of the context have conditions on, one
+context per literal. Two days. Retires the two-implication postcondition of first_duplicate. No dependencies.
+
+## L. E-graph (`egraph/`, new package, standalone)
+
+A library independent of the simplifier: hash-consed nodes over `Canon` forms, classes with a union-find,
+rebuilding (congruence), e-matching of patterns with pattern variables bound to classes, extraction by size, a
+budget on nodes. Built and tested alone on arithmetic and uninterpreted terms, then with the combinators as
+binders: canonical bound variables (B) and a nested e-graph per combinator body carrying its iteration facts,
+memoized as `Context.combinators` is. Integration last, as a transform `-saturate` that takes the goal and the
+rules of the context, saturates within the budget, and extracts; the ordered rewriter stays as it is. Decides
+whether rule order still costs proofs after C to H; if the harness shows none, L stays a library. Open-ended;
+the library alone is two weeks and useful for G's representation as well.
+
+## M. Diagnostics (`-probe`, budgets, timeouts)
+
+Independent of everything: `-probe <lemma>` reports the first side condition of a named rule that fails on a goal,
+with the facts it was matched against, and which part of a left-hand side did not match; a separate step budget
+for the evaluation of conditions whose exhaustion leaves the condition undecided instead of aborting the command
+(remedy 3 of the TODO entry); a timeout that reports the goal it was working on. One week. Retires the probe
+files and pair runs of `pending/`.
+
+## Order
+
+A first, then B, D, F, G, K, M in parallel worktrees; C and E after B; H, I, J after G has landed and is measured;
+L when the rest is in and the harness still shows proofs lost to rule order. Each package is one commit with its
+tests, its docs (`doc/simplifier.md`, `doc/teq.md`), the retired lemmas removed from the examples with their
+expected outputs regenerated, and a version bump.
