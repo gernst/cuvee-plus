@@ -1,6 +1,10 @@
 # Answers `correct`/`incorrect`/`unknown` with `-verify`
 
-Proposal, not implemented (Oct 12, 2026, after 0.39.7 renamed the former `-verify` to `-vcgen`).
+Proposal of Oct 12, 2026 (after 0.39.7 renamed the former `-verify` to `-vcgen`), implemented in 0.41.0 as
+revised: `-z3` and `-cvc5` choose the solver, `-check` (the default) checks as before, `-verify` answers with the sink
+[pipe/Verify.scala](../src/cuvee/pipe/Verify.scala), the answers are aggregated over all obligations so far, given to
+each `verify-call` and to the end of an input without `verify-call`, and the `check-sat` of `-chc` states its
+expected status by `(set-info :status sat)` (see [doc/architecture.md](../doc/architecture.md)).
 
 ## Problem
 
@@ -68,3 +72,68 @@ Only actual approximations make a refutation `unknown`; the goal attribute `:abs
 Per mode, a safe and an unsafe example with `-verify`, and two that answer `unknown`: a loop without an
 invariant under `-vcgen`, and a refutation after `-fallback`. Existing examples do not use `-verify`, their
 output is unchanged.
+
+## Implementation (0.41.0, worktree `verify`) and its problems
+
+### What was built
+
+- `Status` has the further cases `Correct` and `Incorrect`, which with `Unknown` are the answers, printed by all
+  printers.
+- `-z3` and `-cvc5` choose the solver; `-check`, the default with a solver, checks as before (a goal that does not
+  hold is an error, `check-sat` and `get-model` are answered); `-verify` builds the sink
+  [pipe/Verify.scala](../src/cuvee/pipe/Verify.scala). `Config.receiver` builds the sink from the final
+  configuration, `Config.validate` rejects `-check` without solver, `-check` with `-verify`, `-verify` without
+  `-vcgen`, `-teq`, or `-chc`, and `-verify` with `-print` or `-o`.
+- The sink checks each obligation against its expected status (goals and lemmas: their negation `unsat`;
+  `check-sat`: the `(set-info :status ...)` before it), aggregates the outcomes over the whole run, and answers each
+  `verify-call`, and `Done` if there was no `verify-call`. The commands go to the solver directly. `Pipe`, `Stage`,
+  `Sink` and the passive sinks are unchanged.
+- `Horn` writes `(set-info :status sat)` before its `check-sat`, `VCGen` marks the goal of a procedure `:abstract`
+  if one of its loops has no invariant, `Fallback` the goals it lowers.
+- `cuvee.py` reads only the answers under `-verify`; the definitions in `xml/` pass `-verify`.
+- Examples in `examples/{c,svlib,smtlib}/verify`, a unit test of the options and of the classification; 39
+  expected outputs regenerated for the `set-info` line of `-chc` and `:abstract` of `-fallback`.
+
+### Problems
+
+1. **The modes disagree on a loop invariant that holds but is too weak.** In
+   `examples/svlib/vcgen/invalid_invariant.svlib` (and `examples/c/verify/vcgen_weak_invariant.c`), `-vcgen`
+   answers `incorrect`, since the invariant is the only summary of the loop, but `-chc` and `-teq` answer
+   `correct`: `Horn` checks the invariant as a property of the loop head and infers its own invariant for the
+   postcondition, `TEQ` summarizes the loop by its trace and checks the invariant along it. The decision "too weak
+   invariants are incorrect" is therefore implemented by `-vcgen` only; for the property correct-tags of SV-LIB
+   ("all annotations hold"), the answer of `-chc` and `-teq` is the intended one, since the invariant and the
+   postcondition both hold. Making the modes agree requires either cutting the loop at its invariant in `Horn` and
+   `TEQ` (losing what they infer), or making the refutation of a goal behind a given invariant `unknown` in
+   `VCGen`, i.e., marking those goals `:abstract` as well, which revises the decision.
+
+2. **`:status` cannot be passed to the solver.** z3 checks `(set-info :status sat)` itself and answers the next
+   command with an error ("check annotation that says sat") after a contradicting `check-sat`. The solver sink
+   drops it, also under `-check`, hence it is only metadata for Cuvée, not the SMT-LIB meaning of `:status`.
+
+3. **The answers to the commands added by transforms are not what SV-LIB expects.** `Horn` adds a `check-sat` and
+   `get-model` at `Done`; after a `verify-call` the sink acknowledges `Done` with `success` instead of no answer,
+   such that `Pipe.run` does not report them (it reports the answers added in front of a command without answer).
+   This relies on the rule of `Pipe.run` for added answers, and with `print-success` a `success` appears at the end.
+   Obligations after the last `verify-call` are still checked, only not reported.
+
+4. **The work is not done at `verify-call`.** The transforms emit the goals and clauses of a procedure when its
+   definition is flushed, which in all current tasks is the `verify-call`, but not in general, e.g. after another
+   query between `define-proc` and `verify-call`. Each answer covers all procedures so far, not those that the call
+   reaches, and the aggregation makes an answer `incorrect` because of an earlier, unrelated call.
+
+5. **`:abstract` is per procedure.** `VCGen` produces one goal per procedure, so a loop without invariant makes all
+   obligations of the procedure `unknown`, also those that do not depend on the loop, which `-split` separates but
+   which keep the attribute.
+
+6. **`-verify` hides the output that other tools read.** `xml/cuvee.xml` and `xml/cuvee-fallback.xml` pass `-rules`
+   for `scripts/rules.py`, which reads the `:used` of the printed goals; under `-verify` nothing is printed, the
+   statistics are lost. Likewise the remaining goals, which explain an `unknown`, are no longer visible.
+
+7. **Two interpretations in `cuvee.py`.** Runs without `-verify` are still interpreted from the output, since the
+   archive of SV-COMP and the fm-tools entry (`archive/README.md`, `data/cuvee.yml`) use the old command line; the
+   inconsistencies that motivated `-verify` remain there until they switch.
+
+8. **Errors of the options are exceptions.** `Config.validate` raises before the pipeline runs, like the existing
+   errors of the command line, which are printed as `Exception in thread "cuvee" Error(...)` with a stack trace
+   rather than as `(error ...)`, and cannot be examples with an expected `.err`.

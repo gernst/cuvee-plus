@@ -108,6 +108,12 @@ object Printer extends cuvee.pipe.Printer:
       case Status.Unsat =>
         atom("unsat")
 
+      case Status.Correct =>
+        atom("correct")
+
+      case Status.Incorrect =>
+        atom("incorrect")
+
       case Labels(labels) =>
         apps(atom("labels"), labels)
 

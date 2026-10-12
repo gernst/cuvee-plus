@@ -87,6 +87,8 @@ object Printer extends cuvee.pipe.Printer:
       case Status.Unknown => text("-- unknown")
       case Status.Sat     => text("-- sat")
       case Status.Unsat   => text("-- unsat")
+      case Status.Correct   => text("-- correct")
+      case Status.Incorrect => text("-- incorrect")
       case error: Error   => text("-- error " + error.msg + error.info.mkString(" ", " ", ""))
       case _              => text("-- " + res)
 

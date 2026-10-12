@@ -52,7 +52,9 @@ object Fallback extends Transform:
         val phi_ = expr(state, Map(), out, phi, Some(true))
         val Lowered(decls, defs, _, _, _) = out.value
         val phi__ = if defs.isEmpty then phi_ else Imp(And(defs.reverse), phi_)
-        decls.reverse :+ Assert(Goal, Nil, phi__, attrs)
+        // the lowered goal is stronger than the original one, its refutation is no counterexample (see pipe.Verify)
+        val attrs_ = if phi__ == phi then attrs else attrs ++ Attrs.from("abstract")
+        decls.reverse :+ Assert(Goal, Nil, phi__, attrs_)
 
       case Assert(Goal, _, _, _) =>
         Error.raise("polymorphic goals are not supported by -fallback", cmd)

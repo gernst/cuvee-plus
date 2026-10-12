@@ -1,0 +1,32 @@
+; ./Cuvee.sh -chc -z3 -verify examples/svlib/verify/chc.svlib
+; the clauses of the query are satisfiable, as expected by the set-info :status of -chc
+; for the running example of the SV-LIB report (vcgen/loop_add.svlib)
+
+(set-logic LIA)
+
+(set-info :format-version "1.0")
+
+(define-proc add
+  ((x0 Int) (y0 Int))
+  ((x Int))
+  ((y Int))
+  (! (sequence
+       (assign (x x0) (y y0))
+       (! (while (< 0 y)
+            (assign (x (+ x 1)) (y (- y 1))))
+          :tag while-loop
+          :invariant (and (<= 0 y) (= (+ x y) (+ x0 y0)))))
+     :tag proc-add))
+
+(annotate-tag proc-add
+  :requires (<= 0 y0)
+  :ensures (= x (+ x0 y0)))
+
+(annotate-tag while-loop :decreases y)
+
+(declare-const x1 Int)
+(declare-const y1 Int)
+
+(assert (<= 0 y1))
+
+(verify-call add (x1 y1))

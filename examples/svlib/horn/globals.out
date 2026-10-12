@@ -79,9 +79,13 @@
     ((g Int))
     (=> true (main_pre g))))
 
+(set-info :status sat)
+
 (check-sat)
 
 (verify-call main ())
+
+(set-info :status sat)
 
 (check-sat)
 

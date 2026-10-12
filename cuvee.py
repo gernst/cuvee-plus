@@ -34,6 +34,10 @@ class Tool(benchexec.tools.template.BaseTool2):
     an annotation is violated, no refuted goal or satisfiable clauses that all of
     them hold. The verification conditions need the invariants of all loops, i.e.,
     validation tasks, whereas the Horn clauses infer them.
+
+    With -verify, Cuvée decides the result itself: it answers correct, incorrect, or
+    unknown to each verify-call of SV-LIB, or once to other inputs, whether the
+    program satisfies its specification, and only these answers determine the result.
     """
 
     # z3 next to Cuvee.sh, which puts its own directory first on the PATH
@@ -78,6 +82,9 @@ class Tool(benchexec.tools.template.BaseTool2):
 
     def determine_result(self, run):
         lines = list(run.output)
+
+        if "-verify" in run.cmdline:
+            return self.determine_answers(run, lines)
 
         if run.cmdline and run.cmdline[-1].endswith(".svlib"):
             return self.determine_svlib_result(run, lines)
@@ -129,6 +136,33 @@ class Tool(benchexec.tools.template.BaseTool2):
             return result.RESULT_UNKNOWN
 
         return result.RESULT_TRUE_PROP
+
+    ANSWERS = ("correct", "incorrect", "unknown")
+
+    # the answers of -verify: an incorrect one is a violation, also before an error, all of them correct means that
+    # the property holds; otherwise the errors, e.g. constructs that are not supported, as above
+    def determine_answers(self, run, lines):
+        answers = [line.strip() for line in lines if line.strip() in self.ANSWERS]
+
+        if "incorrect" in answers:
+            if run.cmdline[-1].endswith(".svlib"):
+                return result.RESULT_FALSE_PROP
+            return result.RESULT_FALSE_REACH
+
+        for i, line in enumerate(lines):
+            if line.startswith(("(error", "error", "Exception in thread")):
+                message = re.search(r'"([^"]*)"', " ".join(lines[i : i + 3]))
+                return result.RESULT_ERROR + (
+                    " (" + message.group(1) + ")" if message else ""
+                )
+
+        if run.exit_code.value not in (0, None) or not answers:
+            return result.RESULT_ERROR
+
+        if all(answer == "correct" for answer in answers):
+            return result.RESULT_TRUE_PROP
+
+        return result.RESULT_UNKNOWN
 
     # the answer of Z3 to a refuted goal of -vcgen, (error "goal does not hold"
     # "Sat" ...), or to one that it cannot decide

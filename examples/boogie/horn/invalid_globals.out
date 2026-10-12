@@ -87,6 +87,8 @@ axiom
      main_spec_4(counter₃, limit₄, counter, limit)
        ==> main_post(counter₃, limit₄, counter, limit));
 
+info :status := sat;
+
 check;
 
 model;

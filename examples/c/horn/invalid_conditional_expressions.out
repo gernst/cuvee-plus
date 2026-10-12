@@ -153,6 +153,8 @@
       (main_assign_4 c$4 result c tmp$5 r$6)
       (main_post c$4 result c))))
 
+(set-info :status sat)
+
 (check-sat)
 
 (get-model)

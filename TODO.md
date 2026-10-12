@@ -5,6 +5,20 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New
 
+- `-verify` (0.41.0, see [ideas/verify-answers.md](ideas/verify-answers.md)):
+  - the modes disagree on a loop invariant that holds but is too weak for the postcondition
+    (`examples/svlib/vcgen/invalid_invariant.svlib`, `examples/c/verify/vcgen_weak_invariant.c`): `-vcgen` answers
+    `incorrect`, since the invariant is the specification of the loop, `-chc` and `-teq` answer `correct`, since they
+    check the invariant as a property and summarize the loop by themselves; for SV-LIB (correct-tags) the latter is
+    the semantics of the property, for the decision that too weak invariants are incorrect, `Horn` and `TEQ` would
+    have to cut the loop at its invariant
+  - `xml/cuvee.xml` and `xml/cuvee-fallback.xml` pass `-rules` for the statistics of `scripts/rules.py`, which read
+    the `:used` of the printed goals, which `-verify` does not print
+  - `cuvee.py` keeps the interpretation of the output without `-verify`, for the archive of SV-COMP and the fm-tools
+    entry (`archive/README.md`, `data/cuvee.yml`), until their options pass `-verify`
+  - a refutation is classified per goal, `VCGen` marks the whole goal of a procedure `:abstract` if one of its loops
+    has no invariant, also the obligations that do not depend on that loop, which `-split` keeps apart
+
 - support verifying trace lemmas in Dafny
 - identify performance improvements, notably in the simplifier
 - thread config through more code, so that it is usually available

@@ -135,9 +135,13 @@
 
 (assert (=> true main_pre))
 
+(set-info :status sat)
+
 (check-sat)
 
 (verify-call main ())
+
+(set-info :status sat)
 
 (check-sat)
 

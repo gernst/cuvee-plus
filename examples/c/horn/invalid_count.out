@@ -218,6 +218,8 @@
       (main_assign_11 result tmp$2 n$3 k$4 i$5)
       (main_post result))))
 
+(set-info :status sat)
+
 (check-sat)
 
 (get-model)

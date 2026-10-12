@@ -7,6 +7,7 @@ import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
 import cuvee.core.Attrs
+import cuvee.sexpr.Id
 
 // constrained Horn clauses, where pre-/postconditions and the program points are uninterpreted predicates:
 // each procedure p(in) returns (out) with a body has predicates p_pre(in, gs) and p_post(in, gs_, out, gs),
@@ -42,11 +43,14 @@ object Horn extends Transform:
       else Nil
 
     // the model of the predicates are the inferred invariants, if the clauses are satisfiable;
-    // a verify-call checks the clauses so far
+    // a verify-call checks the clauses so far, which are satisfiable if the program is correct, as stated by
+    // set-info :status for -verify (see pipe.Verify)
+    val status = SetInfo("status", Id("sat"))
+
     val check =
       last match
-        case Done                   => List(CheckSat, GetModel)
-        case VerifyCall(name, args) => entry(state, prefix ++ cmds, name, args) ++ List(CheckSat)
+        case Done                   => List(status, CheckSat, GetModel)
+        case VerifyCall(name, args) => entry(state, prefix ++ cmds, name, args) ++ List(status, CheckSat)
         case _                      => Nil
 
     logic ++ cmds_ ++ check

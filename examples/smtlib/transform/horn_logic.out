@@ -4,6 +4,8 @@
 
 (assert (= x 0))
 
+(set-info :status sat)
+
 (check-sat)
 
 (get-model)

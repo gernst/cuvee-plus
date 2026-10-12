@@ -24,6 +24,8 @@ axiom forall x: int, y₁: int :: g_pre(x) && f_post(x, y₁) ==> g_call_1(x, y�
 
 axiom forall x: int, y: int :: g_call_1(x, y) ==> g_post(x, y)
 
+info :status := sat
+
 check
 
 model

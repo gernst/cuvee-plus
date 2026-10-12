@@ -59,6 +59,12 @@ class Solver(cmd: String*):
   def ack(cmd: Cmd): Ack =
     Parser.ack(query(cmd))
 
+  // an option that the solver does not know is unsupported, as SMT-LIB prescribes, which z3 reports as an error,
+  // e.g. :produce-witnesses of SV-LIB
+  def option(option: SetOption): Ack =
+    try ack(option)
+    catch case error: Error if error.msg == "solver error" => Ack.Unsupported
+
   def push(depth: Int = 1): Ack =
     ack(Push(depth))
 
@@ -112,6 +118,17 @@ object Solver:
   def sink(solver: Solver, init: State) =
     Sink(init, solver)
 
+  // SMT-LIB does not admit attributes on declarations and definitions,
+  // assertions are handled separately and keep their names
+  def noAttrs(decl: Decl): Decl =
+    decl match
+      case DeclareSort(con, _)              => DeclareSort(con, Attrs.empty)
+      case DefineSort(con, params, body, _) => DefineSort(con, params, body, Attrs.empty)
+      case DeclareDatatypes(cons, datas, _) => DeclareDatatypes(cons, datas, Attrs.empty)
+      case DeclareFun(fun, _)               => DeclareFun(fun, Attrs.empty)
+      case DefineFun(fun, body, _)          => DefineFun(fun, body, Attrs.empty)
+      case _                                => decl
+
   // a sink that passes commands to the solver,
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
@@ -161,6 +178,11 @@ object Solver:
         case _: DeclareProc | _: DefineProc | _: DeclareVar | _: AnnotateTag =>
           (Ack.Unsupported, Nil, this)
 
+        // the expected status of the next check-sat is for -verify (see pipe.Verify), z3 would report an error for
+        // a check-sat that contradicts it
+        case SetInfo("status", _) =>
+          (Ack.Success, Nil, this)
+
         // the witnesses of SV-LIB are not produced
         case GetWitness =>
           (Ack.Unsupported, Nil, this)
@@ -196,20 +218,16 @@ object Solver:
           solver.destroy()
           (Ack.Done, Nil, this)
 
-        // an option that the solver does not know is unsupported, as SMT-LIB prescribes, which z3 reports as an error,
-        // e.g. :produce-witnesses of SV-LIB
+        // an option that the solver does not know is unsupported (see Solver.option)
         case option: SetOption =>
           parser.state = parser.state.add(option)
-          val ack =
-            try solver.ack(option)
-            catch case error: Error if error.msg == "solver error" => Ack.Unsupported
-          (ack, Nil, this)
+          (solver.option(option), Nil, this)
 
         // the state is updated only once the solver has accepted the declaration,
         // attributes are kept in the state but not sent to the solver
         case decl: Decl =>
           val state_ = parser.state.add(decl)
-          val ack = solver.ack(noAttrs(decl))
+          val ack = solver.ack(Solver.noAttrs(decl))
           parser.state = state_
           (ack, Nil, this)
 
@@ -227,14 +245,3 @@ object Solver:
           val ack = solver.ack(cmd)
           parser.reset()
           (ack, Nil, this)
-
-    // SMT-LIB does not admit attributes on declarations and definitions,
-    // assertions are handled separately and keep their names
-    def noAttrs(decl: Decl): Decl =
-      decl match
-        case DeclareSort(con, _)              => DeclareSort(con, Attrs.empty)
-        case DefineSort(con, params, body, _) => DefineSort(con, params, body, Attrs.empty)
-        case DeclareDatatypes(cons, datas, _) => DeclareDatatypes(cons, datas, Attrs.empty)
-        case DeclareFun(fun, _)               => DeclareFun(fun, Attrs.empty)
-        case DefineFun(fun, body, _)          => DefineFun(fun, body, Attrs.empty)
-        case _                                => decl

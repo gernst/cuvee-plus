@@ -64,6 +64,8 @@ axiom
   forall a: int, count₂: int, b: int, count: int, c₃: int ::
     main_spec_3(a, count₂, b, count, c₃) ==> main_post(a, count₂, b, count)
 
+info :status := sat
+
 check
 
 model
