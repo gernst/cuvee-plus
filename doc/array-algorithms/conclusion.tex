@@ -1,0 +1,81 @@
+\section{Conclusion: Symptoms, an Engine, and the Representation}\label{sec:conclusion}
+
+\subsection{The patterns are symptoms}
+Section~\ref{sec:principles} presents the twelve patterns of Table~\ref{tab:principles} as a discipline for
+writing lemmas. Read against their causes, they are a bill for the engine. Nine of the twelve are the matcher
+(specific left-hand sides, fresh variables for closed conditions, the pin, variables named apart), the context
+(open trace variables, the whole atom as left-hand side, arithmetic in the goal's form), or the rewriting
+strategy (side conditions in the forms of the included modules, no condition on the rule's own term, the exit
+of an outer loop as two implications); one is the representation (the fragments of inner loops that do not
+share facts); only the atoms for quantified hypotheses and iteration constraints are partly a design choice,
+what a lemma may take as a fact. The residues of the MonoCera tests sort the same way: the downward stores-ahead
+lemma failed on a literal step and a position computed from a bound variable (Section~\ref{sec:rewnif}),
+\lemma{half\_even} exists for a solution that is not substituted (Section~\ref{sec:pr2}), and a definition lemma
+hid a constraint by rule order. What the examples strained is not the method, lookup of loop shapes in a
+database of lemmas, but the engine that performs the lookup: syntactic matching modulo a fixed list of
+theories, first match without backtracking, a context that follows definitions only where the matcher asks,
+conditions simplified recursively, and normal forms that depend on the order of the rules.
+
+\subsection{Trace equation systems: an interface, not the sole carrier}
+A loop over variables $\bar x$ is, semantically, one fold over the iterations,
+$S = \tr{\bar s_0}{\bl{K}}{\bar s, k \mapsto F(\bar s, k)}$, with the state tuple as the accumulator. A trace
+equation system is this fold decomposed by projection: one equation per variable, with the other components as
+sequences among the dependencies. The decomposition is exact, every projection of a fold over a product is a
+fold over the product's history, and symbolic execution computes it for free. Where the dependencies form a
+layering (a counter, an index over it, an array over both, a sum over the array), the decomposition is the
+compositional reasoning of the method: each equation meets a small lemma of the database and the results are
+substituted downstream, which is why the single loops of this document and the arrays of SV-COMP go through
+with nothing written for the program. A single fold over the state would first have to discover that layering
+before any lemma on a counter or a sum could apply.
+
+Where the graph of dependencies is not a layering, the decomposition is the obstacle, and these are the hard
+examples. Mutually dependent variables, the pointers of the merge, the bounds of the binary search, the position
+and the array of gnome sort, give equations that are individually meaningless, and every lemma reconstructs the
+product by tying the dependency lists back to their traces with open trace variables. Inner loops become fresh
+sequences distributed into fragments over incomparable dependency lists, which is the whole fragments problem of
+Sections~\ref{sec:nsum} and~\ref{sec:sel:frag}. Equal counters that are not identified, the injective selection
+of dependencies, unused dependencies dropped and later missed, and the arity variants of lemmas are bookkeeping
+of dependency lists that a single shared dependency would not have.
+
+The conclusion we draw is that trace equation systems are the right interface for the lemma database and the
+wrong sole carrier of the goal. The state trace of a loop should be the primary object, with one counter, one
+dependency list $\bl{K}, \bl{S}$, all iteration constraints over it, and the inner loop as a value of the update;
+the per-variable equations are views, $X = \pi_x(S)$ with $\bl{Y} = \mapc{\bl{S}}{\bar s \mapsto \pi_y(\bar s)}$,
+derived by one projection rule whenever the update of a component mentions only some components, which is
+exactly when a lemma of the database can apply to it. The matcher already synthesizes dependencies as maps when
+a pattern dependency is a variable; this is the same mechanism made principal. The lemmas keep their form.
+
+\subsection{An engine without the symptoms}
+Five components, from the most local to the most far-reaching, each removing a group of patterns
+(\texttt{ideas/deduction-engine.md} has the details and an order of work):
+\begin{enumerate}[nosep]
+\item \textbf{Congruence closure as the context}, in place of the chains of variable equations and the
+  definitions followed on demand: a pattern variable matches an equivalence class, a definition is followed in
+  every position, both orientations of an equation are available, equal counters are identified, and solutions
+  reach function arguments. This closes \texttt{is\_sorted}, retires \lemma{half\_even} and \lemma{mul\_eq\_cancel},
+  and removes the open trace variables and the whole-atom left-hand sides.
+\item \textbf{Canonical forms before matching}, with closed conditions looked up modulo those forms instead of
+  re-simplified, backtracking over the selection of dependencies, rule variables in their own namespace, and
+  abstraction applied by the engine where a pattern subterm over bound variables fails to match. No fresh
+  variables with identifying equations, no pins, no literal $-1$, no arity variants.
+\item \textbf{Saturation with triggers} in place of the recursive simplification of condition instances:
+  conditional rules fire when their conditions are present, facts about terms that occur are derived forward
+  (the bounds of named monotone traces, the body of an iteration constraint at an index in range, the value of a
+  trace at its exit), and a disjunctive exit is split by the engine when a rule on an atom needs a literal of it.
+  This removes the cycles, the condition on the rule's own term, the atoms for constraints, and the dependence
+  of normal forms on the order of modules; a condition that is a formula to prove, the step of an induction
+  lemma or a pin, is a subgoal with the parent rule suspended.
+\item \textbf{Equality saturation for the terms}, the long-term form of the first three: rules add equal nodes
+  rather than replacing, extraction picks the result, nested e-graphs per combinator body carry the iteration
+  facts.
+\item \textbf{State traces with projections}, as above, which dissolves the fragments problem and makes the
+  lemmas for mutually dependent shapes what their summaries are today after all the tying: a lemma on a fold
+  over a pair with the guard as a higher-order variable.
+\end{enumerate}
+With the first three and the representation, \texttt{is\_sorted} closes by congruence, the nested sums and the
+two minimal problems need no fragment lemmas, the merge, gnome sort and the lower bound take one lemma on a fold
+over a pair, the sorting summaries take the inner fold as one condition instead of seven to twenty-one, the first
+duplicate keeps its equivalence, the existential postcondition of \texttt{max\_element} finds its witness among the
+terms, and the stores-ahead lemma matches downwards as it does upwards. What stays is what the method is for: the
+database of introduction and acceleration rules, the symbolic execution that produces the equations, and the
+summaries and inductions that state what an algorithm's loops compute.

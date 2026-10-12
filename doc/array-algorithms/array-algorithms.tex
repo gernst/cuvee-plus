@@ -59,7 +59,8 @@ $\langle i, i + c, \ldots, i + n c\rangle$ of $n$ steps. The sections are ordere
 single loop with two lemmas to loops in sequence and nested loops with summaries and inductions;
 Section~\ref{sec:lb} documents an attempt that is open. Sections~\ref{sec:monocera} to~\ref{sec:ifeqn2}
 re-trace the proofs of some of the C programs of the MonoCera benchmarks with the database alone, and
-Section~\ref{sec:principles} collects the principles that the examples share. Capital letters $K, I, B, M$ denote traces,
+Section~\ref{sec:principles} collects the principles that the examples share, and Section~\ref{sec:conclusion}
+reads them as symptoms of the engine and draws the conclusion for the representation. Capital letters $K, I, B, M$ denote traces,
 hatted letters $\seq{M}, \seq{J}, \seq{N}$ the fresh \emph{sequences} that the summary of an inner loop
 introduces, one entry per iteration of the outer loop. $\swap{x}{p}{q}$ abbreviates the double store
 $x[p := x[q]][q := x[p]]$, which is how the swaps appear in the trace equations.
@@ -82,6 +83,7 @@ $x[p := x[q]][q := x[p]]$, which is how the swaps appear in the trace equations.
 \input{monocera_rewnif}
 \input{monocera_ifeqn2}
 \input{principles}
+\input{conclusion}
 
 \section*{AI Declaration}
 

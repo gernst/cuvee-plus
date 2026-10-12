@@ -13,7 +13,7 @@ None is implemented. The observations behind them are in TODO.md.
    on `current(Lv)`) rewrites it by the rule itself and never terminates. Disable the rule, or do not rewrite the
    instance, while its conditions are evaluated. Unblocks the sound lower bound (`pending/lower_bound/lb_cmp4`),
    removes the `current(results(...))` detour of every summary, and admits conditions on the rule's own term in
-   general. Smallest change, largest effect.
+   general. Smallest change, largest effect; the plan is in [reentrance-guard.md](reentrance-guard.md).
 2. **Closed `invs` conditions matched, not decided.** A side condition whose variables are all bound is decided
    by the simplifier, which does not find a closed `invs` among the facts: these carry unused dependencies, which
    the simplifier also drops from the instance, and their bound variables are renamed. Match closed `invs`

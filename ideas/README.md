@@ -7,6 +7,15 @@ which only the open points remain).
 - [teq-engine.md](teq-engine.md): the matcher, the simplifier and the diagnostics of `-teq -simplify`, the
   workarounds that every lemma written for a program carries, ordered by payoff (re-entrance guard, closed
   `invs` conditions matched, the pin in the matcher, ...), and cheap extensions of the method.
+- [deduction-engine.md](deduction-engine.md): the findings of the hard algorithms read as symptoms of the matcher,
+  the context and the strategy; a proposal for an engine without them (congruence closure, canonical forms and
+  lookup, triggers and forward facts, equality saturation), and the representation question: state traces with
+  the per-variable equations as projections.
+- [deduction-engine-plan.md](deduction-engine-plan.md): the implementation plan for it, six phases with files,
+  sizes, tests, what each retires, and a harness of four regression sets.
+- [reentrance-guard.md](reentrance-guard.md): the plan for item 1 of teq-engine.md, a rule suspended while its own
+  side conditions are evaluated, which cuts both cycles (the search through `invs` facts and the decision of a
+  condition on the rule's own term).
 - [teq-database.md](teq-database.md): what is ready to land (`nested` into `-teq`, the restated stores-ahead
   lemma, the chains), what is trusted without proof, lemma schemas and variadic patterns, the open shapes of the
   benchmarks.
