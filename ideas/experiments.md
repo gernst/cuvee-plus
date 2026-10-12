@@ -41,7 +41,7 @@ and others (imported from the SV-COMP statistics, not run by us).
 | | Arrays (440) | Loops (764) | score |
 |---|--:|--:|--:|
 | Cuvée (0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false | 553 |
-| Cuvée+Z3 (0.42.1, `-verify`, 15 min) | 148 true, 51 false | 282 true, 28 false, 5 wrong true | 779 |
+| Cuvée+Z3 (0.42.2, `-verify`, 15 min) | 148 true, 51 false | 283 true, 28 false | 941 |
 | Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false | 400 |
 
 Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, Korn 882, CPAchecker 852
@@ -51,14 +51,16 @@ Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, 
   model-checking tools lead.
 - The tasks have machine integers, which TEQ models in part (nondeterministic values in their ranges, unsigned
   wrap-around, since 0.36).
-- Cuvée has no wrong results. `-fallback` (0.42.1) has 5 wrong proofs, `nla-digbench-scaling/fermat1-ll_unwindbound{1,5,10,20,50}`
+- No wrong results. Cuvée+Z3 scores as UAutomizer (941), ahead of Korn and CPAchecker, behind Symbiotic.
+- `-fallback` had 5 wrong proofs in 0.42.1, `nla-digbench-scaling/fermat1-ll_unwindbound{1,5,10,20,50}`
   (the other two of the 7 in 0.41.4 time out now): `TEQ` told the exits of an inner loop apart by assumptions
   only, an enclosing loop guards its cases by the branch conditions, such that the normal exit and the `break`
   exits overlapped, e.g. `case true => c case φ => c + 1`, and their lowering contradicted itself, from which z3
   proved any goal; the C loop `while (counter++ < k)` of the `*_unwindbound*` tasks is `while (true)` with a
   `break`. Fixed in 0.42.2 (exits by branch conditions, `examples/c/verify/teq_nested_break.c`;
-  `fermat1-ll_unwindbound1` is `unknown`), not yet rerun: correct results that came from such contradictions may
-  go as well.
+  `fermat1-ll_unwindbound1` is `unknown`). The rerun with 0.42.2 lost no correct result to the fix (only
+  `egcd2-ll_valuebound20` times out, 837 s before) and proves `fermat1-ll_valuebound50` and `_valuebound100` in
+  addition; the `fermat1-ll_unwindbound*` tasks are `unknown` or time out.
 - The wrong refutations of 0.41.4 are gone: `array-examples/sanfoundry_24-1` and `verifythis/lcp` were goals of
   helper functions out of the context of `main` (entry points, 0.42.0), the three on the unbounded set were
   refuted through an uninterpreted `bitand` on truth values (rules of the C prelude for 0 and 1; the
@@ -79,9 +81,12 @@ Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose ar
 | | proved (15 min) | wrong |
 |---|--:|--:|
 | Cuvée `-teq -unbounded` (0.41.4) | 234 | 0 |
-| Cuvée+Z3 `-unbounded` (0.41.4) | 286 | 3 wrong false (`bitand`, fixed, see 2; locally `correct` with 0.42.0) |
+| Cuvée+Z3 `-unbounded` (0.42.2) | 290 | 0 |
 | Korn `-u` (Oct 11, 2026) | 175 | 0 |
 
+- Cuvée+Z3 against 0.41.4: the three wrong refutations through `bitand` are proved now, as are
+  `nla-digbench/fermat1-ll` and `sqrt1-ll` (an error before); `nla-digbench/lcm1` times out (99 s before),
+  possibly a proof that relied on the overlapping exits (to check).
 - Cuvée and Korn: 91 both, 143 Cuvée only, 84 Korn only. With 60 s: Cuvée 228, Korn 130; TEQ 129 against 4
   on the `array-*` folders, Korn ahead on `loop-lit`, `loop-invgen`, `nla-digbench`.
 - Only Korn has a mode for mathematical integers; the other verifiers would be wrong by construction. A clean
@@ -137,7 +142,10 @@ Done (Oct 12, 2026, 16:51–17:16, Cuvée 0.42.1, the same setup, complete): `xm
 `xml/cuvee-fallback.xml` on SV-COMP Arrays and Loops (section 2). Before, the same with 60 s: no wrong results,
 the `fermat1-ll` tasks time out at 60 s.
 
-To do: `xml/cuvee-fallback.xml` on SV-COMP and the unbounded set with 0.42.2 (the fix of the exits of loops); the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
+Done (Oct 12, 2026, 17:29–17:55, Cuvée 0.42.2, the same setup, complete): `xml/cuvee-fallback.xml` on SV-COMP
+Arrays and Loops and on the unbounded set, after the fix of the exits of loops; no wrong results.
+
+To do: the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
 MonoCera itself (`xml/monocera.xml`); SV-LIB `CTranslated` and `CoreVerification` (`xml/cuvee.xml`,
 `xml/cuvee-chc.xml`); `-chc` on SV-COMP with `-verify`; the ACSL tasks with `-verify` after the revised
 annotations.
