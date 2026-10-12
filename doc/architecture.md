@@ -45,11 +45,8 @@ transformation and any output.
      and `-rules`, which makes `-simplify` report the rules it applies (see [simplifier.md](simplifier.md));
    - the printer (`-print`);
    - the sink (stdout, `-o`), the solver (`-z3`, `-cvc5`), which checks the
-     output (`-check`, the default), and the answers of `-verify`, with or
-     without solver; `Config.receiver` builds the sink from the final
-     configuration, `Config.validate` rejects `-check` without solver,
-     `-verify` without `-vcgen`, `-teq`, or `-chc`, and `-verify` with `-print`
-     or `-o`.
+     output, and the answers of `-verify`, with or without solver;
+     `Config.receiver` builds the sink from the final configuration.
 2. `config.input.source(reader)` parses the frontend's prelude first
    (`prelude.*`). It returns the initial `State`, which holds its
    declarations, and a lazy `LazyList[Cmd]`, which begins with these
@@ -189,8 +186,6 @@ and the next sink.
     proof, like axioms.
   - Procedures and global variables must have been eliminated by `-vcgen` or
     `-chc`.
-  - `(set-info :status ...)` is not passed on, since z3 reports a `check-sat`
-    that contradicts it as an error.
 - [`Verify`](../src/cuvee/pipe/Verify.scala) (`-verify`) answers
   `correct`, `incorrect`, or `unknown` (the cases `Correct`, `Incorrect`, `Unknown` of
   [`Status`](../src/cuvee/core/Cmd.scala))
@@ -198,16 +193,20 @@ and the next sink.
   the obligations so far; the answers are reported on stdout, the output is not
   printed. The commands go to the solver directly, as with the solver sink but
   without its parser state, since models and other answers are not reported.
-  - Each obligation has an expected status: goals and lemmas `unsat` of their
-    negation, `check-sat` that of the `(set-info :status ...)` before it, which
-    `Horn` writes (`sat`); a `check-sat` without it is answered and does not
-    count. The answer of the solver holds if it is the expected one, refutes if
-    it is the opposite one, unless the goal is `:abstract` (a loop without
-    invariant in `VCGen`, a goal lowered by `Fallback`), and is undecided
-    otherwise. Without solver, only the goal `false` is refuted.
-  - The outcome is incorrect once an obligation is refuted, after which goals
-    are not checked anymore, otherwise unknown once one is undecided.
-  - Refuted goals are no errors, such that all commands are processed.
+  - Each obligation has the status that it has if the program is correct
+    (`Verify.expected`): goals and lemmas `unsat` of their negation, `check-sat`
+    `sat`, since a model of the clauses of `Horn` gives the invariants; a
+    `check-sat` of the input counts as well. The answer of the solver holds if
+    it is the expected one, refutes if it is the opposite one, unless the goal
+    is `:abstract` (a loop without invariant in `VCGen`, a goal lowered by
+    `Fallback`), and is undecided otherwise. Without solver, only the goal
+    `false` is refuted.
+  - The outcome is incorrect once an obligation is refuted, otherwise unknown
+    once one is undecided; all obligations are checked.
+  - Refuted goals are no errors, such that all commands are processed;
+    procedures, global variables, and tags are an error, since they would be
+    answered correct without checking anything (they need `-vcgen`, `-teq`, or
+    `-chc`).
 
 ## Frontends
 

@@ -98,8 +98,6 @@ axiom
        && !(0 <= counter && counter <= limit)
        ==> main_post(counter₃, limit₄, counter, limit));
 
-info :status := sat;
-
 check;
 
 model;

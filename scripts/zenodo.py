@@ -51,7 +51,7 @@ INSTANCES = {
 }
 
 METADATA = {
-    "title": "Cuvée: Loop Summaries by Trace Equations and a Lemma Database (Competition Preview)",
+    "title": "Cuvée: Loop Summaries by Trace Equations and a Lemma Database",
     "upload_type": "software",
     "description": "<p>The archive of the verifier Cuvée for SV-COMP 2027, for the property unreach-call of C programs "
                    "(categories ReachSafety-Arrays and ReachSafety-Loops). Cuvée summarizes loops by trace equation "

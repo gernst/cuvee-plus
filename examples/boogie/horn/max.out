@@ -50,8 +50,6 @@ axiom
 axiom
   (forall x: int, y: int, m₁: int :: main_spec_2(x, y, m₁) ==> main_post(x, y));
 
-info :status := sat;
-
 check;
 
 model;

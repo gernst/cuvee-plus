@@ -39,8 +39,6 @@ axiom forall n: int, i₁: int :: main_spec_5(n, i₁) ==> main_post(n)
 
 axiom forall n: int :: main_pre(n) && !(0 <= n) ==> main_post(n)
 
-info :status := sat
-
 check
 
 model

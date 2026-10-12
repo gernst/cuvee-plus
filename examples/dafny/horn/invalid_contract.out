@@ -15,8 +15,6 @@ axiom
 
 axiom forall x: int, y₁: int :: main_call_1(x, y₁) ==> main_post(x)
 
-info :status := sat
-
 check
 
 model

@@ -178,11 +178,6 @@ object Solver:
         case _: DeclareProc | _: DefineProc | _: DeclareVar | _: AnnotateTag =>
           (Ack.Unsupported, Nil, this)
 
-        // the expected status of the next check-sat is for -verify (see pipe.Verify), z3 would report an error for
-        // a check-sat that contradicts it
-        case SetInfo("status", _) =>
-          (Ack.Success, Nil, this)
-
         // the witnesses of SV-LIB are not produced
         case GetWitness =>
           (Ack.Unsupported, Nil, this)

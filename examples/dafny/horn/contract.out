@@ -32,8 +32,6 @@ axiom
   forall x: int, y: int, p₁: pair<int> ::
     main_spec_2(x, y, p₁) ==> main_post(x, y)
 
-info :status := sat
-
 check
 
 model

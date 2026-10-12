@@ -1,0 +1,2 @@
+(error
+  "-verify needs -vcgen, -teq, or -chc for procedures")

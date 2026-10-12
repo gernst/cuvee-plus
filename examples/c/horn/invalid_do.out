@@ -194,8 +194,6 @@
       (main_assign_10 result tmp$3 tmp$4 i$5)
       (main_post result))))
 
-(set-info :status sat)
-
 (check-sat)
 
 (get-model)

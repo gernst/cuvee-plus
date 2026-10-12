@@ -14,8 +14,6 @@ axiom forall x: int :: f_pre(x) ==> f_assign_1(x, x)
 
 axiom forall x: int, y: int :: f_assign_1(x, y) ==> f_post(x, y)
 
-info :status := sat
-
 check
 
 model

@@ -397,8 +397,6 @@
       (main_assign_11 result tmp$5 a$6 b$7)
       (main_post result))))
 
-(set-info :status sat)
-
 (check-sat)
 
 (get-model)

@@ -78,18 +78,18 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
   binding structure of the trace combinators `trace`, `maps`, and `invs` from
   *Trace Equation Systems for Program Verification*; and Fourier-Motzkin
   elimination over the rationals.
-- **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`), which check the output
-  (`-check`, the default): goals and lemmas are checked for validity, a goal
-  that does not hold is an error, and assertions and `check-sat` are passed
+- **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`), which check the output:
+  goals and lemmas are checked for validity, a goal that does not hold is an
+  error, and assertions and `check-sat` are passed
   through. Lemmas with the attribute `free` (Dafny lemmas without a body) are
   assumed without proof, like axioms, although they are meant to follow from
   the theory.
-- **Answers** (`-verify`, with or without solver, after `-vcgen`, `-teq`, or
-  `-chc`): instead of the output, `correct`, `incorrect`, or `unknown` for each
-  `verify-call` of SV-LIB, or once for other inputs, whether the program
-  satisfies its specification (contracts and loop invariants), aggregated over
-  the goals and lemmas, which are valid, and the `check-sat` of `-chc`, which is
-  satisfiable as its `(set-info :status sat)` states. A refutation is
+- **Answers** (`-verify`, with or without solver; procedures need `-vcgen`,
+  `-teq`, or `-chc`): instead of the output, `correct`, `incorrect`, or
+  `unknown` for each `verify-call` of SV-LIB, or once for other inputs, whether
+  the program satisfies its specification (contracts and loop invariants),
+  aggregated over all obligations: goals and lemmas, which must be valid, and
+  each `check-sat`, e.g. of `-chc`, which must be satisfiable. A refutation is
   `incorrect`, unless the goal is `:abstract`, i.e., stronger than the
   specification: a loop without invariant under `-vcgen`, the lowering of
   `-fallback`.

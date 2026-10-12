@@ -246,8 +246,6 @@
       (f_assign_12 n result tmp$2 counter$3 x$4)
       (f_post n result))))
 
-(set-info :status sat)
-
 (check-sat)
 
 (get-model)

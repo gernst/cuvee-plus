@@ -394,8 +394,6 @@
       (main_assign_8 g$5 result g tmp$6 tmp$7 q$8 v$9)
       (main_post g$5 result g))))
 
-(set-info :status sat)
-
 (check-sat)
 
 (get-model)

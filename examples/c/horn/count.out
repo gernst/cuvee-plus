@@ -452,8 +452,6 @@
       (main_assign_16 counter$3 result counter tmp$4 tmp$5 n$6 i$7)
       (main_post counter$3 result counter))))
 
-(set-info :status sat)
-
 (check-sat)
 
 (get-model)

@@ -77,9 +77,7 @@ case class Config(
     report: (Config, Printer) => Report,
     // the solver of -z3 or -cvc5, given the timeout, which receives the output, see receiver
     solver: Option[Int => Solver] = None,
-    // -check: the goals must hold, the answers of the solver are reported (implied by a solver without -verify);
     // -verify: the answers correct, incorrect, or unknown (see pipe.Verify)
-    check: Boolean = false,
     verify: Boolean = false,
     transforms: List[Transform] = Nil,
     // per query, in milliseconds
@@ -124,7 +122,7 @@ case class Config(
     (modules_ ++ modules).distinct
 
   // the receiver of the output, by the final configuration: the answers with -verify, with or without a solver,
-  // otherwise the solver, if there is one, otherwise the sink of the output, e.g. a printer
+  // otherwise the solver, if there is one, which checks the output, otherwise the sink of the output, e.g. a printer
   def receiver(init: State): Sink =
     if verify then cuvee.pipe.Verify.sink(solver.map(_(timeout)))
     else solver.map(solver => Solver.sink(solver(timeout), init)).getOrElse(sink(this, output.printer, init))
@@ -248,23 +246,17 @@ object Config:
         val config_ = config.copy(unbounded = true)
         (config_, rest)
 
-  // the solvers receive the output, which they check (-check, also without the option) or verify (-verify)
+  // the solvers receive the output, which they check, i.e., goals and lemmas must hold, or verify (-verify)
   val z3 =
-    flag("-z3", "pass output to z3, which checks it (-check, the default) or verifies it (-verify)"):
+    flag("-z3", "pass output to z3, which checks it: goals and lemmas must hold, the answers to queries are reported"):
       case (config, rest) =>
         val config_ = config.copy(solver = Some(Solver.z3))
         (config_, rest)
 
   val cvc5 =
-    flag("-cvc5", "pass output to cvc5, which checks it (-check, the default) or verifies it (-verify)"):
+    flag("-cvc5", "pass output to cvc5, which checks it: goals and lemmas must hold, the answers to queries are reported"):
       case (config, rest) =>
         val config_ = config.copy(solver = Some(Solver.cvc5))
-        (config_, rest)
-
-  val check =
-    flag("-check", "check the output with the solver: goals and lemmas must hold, the answers to queries are reported"):
-      case (config, rest) =>
-        val config_ = config.copy(check = true)
         (config_, rest)
 
   // the answers are reported on stdout, the output is not printed
@@ -357,7 +349,6 @@ object Config:
     unbounded,
     z3,
     cvc5,
-    check,
     verify,
     timeout_,
     linewidth,
@@ -408,7 +399,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.41.0")
+    println("Cuvée 0.41.1")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")
@@ -416,24 +407,7 @@ object Config:
   // the input files are parsed first, such that -print takes precedence regardless of its position
   def parse(config: Config, args: List[String]): Config =
     val (files, options) = split(args)
-    validate(arguments(config, files ++ options), options)
-
-  // the combinations of options that the final configuration rejects: -check needs a solver and excludes -verify,
-  // -verify needs a transform that generates the obligations of programs and has no other output
-  def validate(config: Config, options: List[String]): Config =
-    Error.report("-check needs a solver (-z3 or -cvc5)"):
-      require(!config.check || config.solver.nonEmpty)
-
-    Error.report("-check and -verify exclude each other"):
-      require(!(config.check && config.verify))
-
-    Error.report("-verify needs -vcgen, -teq, or -chc"):
-      require(!config.verify || config.transforms.exists(Set(VCGen, TEQ, Horn).contains))
-
-    Error.report("-verify has no output for -print or -o"):
-      require(!config.verify || !options.exists(Set("-print", "-o").contains))
-
-    config
+    arguments(config, files ++ options)
 
   // the input files among `args`, and the options with their argument, in order
   def split(args: List[String]): (List[String], List[String]) =

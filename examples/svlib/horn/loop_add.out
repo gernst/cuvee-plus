@@ -90,13 +90,9 @@
     ((x1 Int) (y1 Int))
     (=> (<= 0 y1) (add_pre x1 y1))))
 
-(set-info :status sat)
-
 (check-sat)
 
 (verify-call add (x1 y1))
-
-(set-info :status sat)
 
 (check-sat)
 
