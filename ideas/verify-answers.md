@@ -56,6 +56,7 @@ Only actual approximations make a refutation `unknown`; the goal attribute `:abs
 | loop invariants given by the user (SV-LIB tags, Dafny/Boogie `invariant`, ACSL `loop invariant`) | `incorrect`, they are specification, also when too weak |
 | loops without an invariant under `-vcgen` (implicitly `true`) | `unknown`: `VCGen` marks the goals behind such a loop `:abstract` |
 | goals of `-fallback`, whose encoding generalizes | `unknown`: `Fallback` marks all its goals |
+| goals that apply a function declared `:abstract`, uninterpreted in place of an operation that is not modelled (the bit operations `bitand`, ..., `shl`, `shr` of the C prelude), or one defined in terms of such | `unknown`: the sink tracks these functions (`Cmd.funs`), the goals keep their attributes |
 | `TEQ` and `Horn` | `incorrect`, their steps are exact with respect to the given contracts |
 | `-unbounded` | no effect |
 

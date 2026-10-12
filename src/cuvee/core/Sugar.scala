@@ -37,12 +37,18 @@ extension (self: Iterable[Expr])
   @targetName("Exprs.free")
   def free = self.flatMap(_.free).toSet
 
+  @targetName("Exprs.funs")
+  def funs = self.flatMap(_.funs).toSet
+
   @targetName("Exprs.params")
   def params = self.flatMap(_.params).toSet
 
 extension (self: Iterable[Upd])
   @targetName("Upds.free")
   def free = self.flatMap(_.free).toSet
+
+  @targetName("Upds.funs")
+  def funs = self.flatMap(_.funs).toSet
 
   @targetName("Upds.params")
   def params = self.flatMap(_.params).toSet
@@ -57,6 +63,9 @@ extension (self: List[Upd])
 extension (self: Iterable[Case])
   @targetName("Cases.free")
   def free = self.flatMap(_.free).toSet
+
+  @targetName("Cases.funs")
+  def funs = self.flatMap(_.funs).toSet
 
   @targetName("Cases.params")
   def params = self.flatMap(_.params).toSet

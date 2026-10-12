@@ -10,7 +10,9 @@ import cuvee.smtlib.Solver
 // its contracts and loop invariants: each obligation is checked against the status that it has if the program is
 // correct (see expected); it holds if the solver answers that status, it is refuted if it answers the opposite one,
 // unless the goal is :abstract, i.e., stronger than the specification (a loop without invariant, see VCGen, or the
-// encoding of -fallback), otherwise it is undecided; without a solver, only the goal false is refuted;
+// encoding of -fallback), or applies a function declared :abstract, i.e., uninterpreted in place of an operation
+// whose meaning is not modelled (e.g. the bit operations of C, see c/prelude.bpl), such that the solver's
+// counterexample may interpret it differently, otherwise it is undecided; without a solver, only the goal false is refuted;
 // the answer to verify-call is the outcome of the obligations so far, as is the answer to the end of the input
 // if there was no verify-call; obligations are not thrown as errors, such that all commands are processed;
 // the commands are passed to the solver directly, as by the solver sink, but without keeping track of the
@@ -23,7 +25,7 @@ object Verify:
     else Status.Correct
 
   def sink(solver: Option[Solver], stderr: PrintStream) =
-    Verify(solver, stderr, Status.Correct, false)
+    Verify(solver, stderr, Status.Correct, false, Set())
 
   // the status of an obligation if the program satisfies its specification: goals and lemmas are checked by their
   // negation, which is unsat (see Solver.valid), the check-sat of the clauses of -chc is sat, since a model of the
@@ -41,8 +43,10 @@ object Verify:
 
 // stderr: where the rules applied by -simplify are reported (see Solver.info),
 // outcome: the aggregated outcome so far, correct, incorrect, or unknown,
-// answered: whether a verify-call has been answered
-case class Verify(solver: Option[Solver], stderr: PrintStream, outcome: Status, answered: Boolean) extends Sink:
+// answered: whether a verify-call has been answered,
+// abstracts: the functions declared :abstract, and those defined in terms of them
+case class Verify(solver: Option[Solver], stderr: PrintStream, outcome: Status, answered: Boolean, abstracts: Set[Fun])
+    extends Sink:
   // the declarations that SMT-LIB has built in are not passed to the solver
   override def knows =
     if solver.nonEmpty then Set("smt2") else Set()
@@ -74,7 +78,8 @@ case class Verify(solver: Option[Solver], stderr: PrintStream, outcome: Status, 
         if justify == Lemma && status == Status.Unsat
         then ack(Assert(Axiom, params, phi, attrs.retain("named", "pattern")))
 
-        val outcome_ = Verify.and(outcome, Verify.outcome(Verify.expected(cmd), status, attrs.contains("abstract")))
+        val approximated = attrs.contains("abstract") || (cmd.funs exists abstracts.contains)
+        val outcome_ = Verify.and(outcome, Verify.outcome(Verify.expected(cmd), status, approximated))
         (Ack.Success, Nil, copy(outcome = outcome_))
 
       case CheckSat =>
@@ -125,6 +130,13 @@ case class Verify(solver: Option[Solver], stderr: PrintStream, outcome: Status, 
             case Some(solver) => solver.option(option)
             case None         => Ack.Success
         (ack_, Nil, this)
+
+      // functions whose refutations are no counterexamples, see above
+      case decl @ DeclareFun(fun, attrs) if attrs.contains("abstract") =>
+        (ack(Solver.noAttrs(decl)), Nil, copy(abstracts = abstracts + fun))
+
+      case decl @ DefineFun(fun, _, _) if decl.funs exists abstracts.contains =>
+        (ack(Solver.noAttrs(decl)), Nil, copy(abstracts = abstracts + fun))
 
       case decl: Decl =>
         (ack(Solver.noAttrs(decl)), Nil, this)

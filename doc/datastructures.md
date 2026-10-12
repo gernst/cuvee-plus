@@ -72,7 +72,7 @@ case class Fun(name: Name, params: List[Param], formals: List[Var], res: Type)
 ## Expressions ([Expr.scala](../src/cuvee/core/Expr.scala))
 
 ```scala
-sealed trait Expr { def params: Set[Param]; def free: Set[Var]; def typ: Type }
+sealed trait Expr { def params: Set[Param]; def free: Set[Var]; def funs: Set[Fun]; def typ: Type }
 
 case class Var(name: Name, typ: Type)
 case class Lit(value: Any, typ: Type)          // BigInt, util.Rational, String
@@ -215,7 +215,7 @@ case class Trace(...); case class Maps(...); case class Invs(...)
 ## Programs ([Prog.scala](../src/cuvee/core/Prog.scala))
 
 ```scala
-sealed trait Prog { def mod: Set[Var]; def free: Set[Var] }
+sealed trait Prog { def mod: Set[Var]; def free: Set[Var]; def funs: Set[Fun] }
 
 case object Break; case object Continue; case object Return
 case class Spec(xs: List[Var], pre: Expr, post: Expr)   // assert pre; havoc xs; assume post
@@ -243,7 +243,10 @@ case class Par(progs: List[Prog])                       // parallel composition
   attribute. The C frontend infers the attribute of loops, the others require
   it in the input (`while ... modifies g` in Dafny, `modifies g;` in Boogie).
 - **`free`** includes the variables in the attributes, e.g. in loop
-  invariants.
+  invariants; **`funs`**, the functions applied, also those in the
+  attributes, as does `Cmd.funs`, which excludes the functions that the
+  command declares or defines (e.g. `pipe.Verify` finds the goals that apply
+  a function declared `:abstract`).
 - **`Ode`**, **`Iter`**, **`Par`**, `Send`, `Recv`, and `Tick` are hybrid programs and
   parallel composition, see [hybrid.md](hybrid.md).
 - **`Sugar.call(name, in, out)`** builds and matches calls of a procedure with

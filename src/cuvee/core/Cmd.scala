@@ -50,6 +50,22 @@ sealed trait Cmd:
       case VerifyCall(proc, args)                 => VerifyCall(proc, args.map(e))
       case _                                      => this
 
+  // the functions applied in the expressions, including those in attributes and the bodies of procedures, but not
+  // the functions that the command declares or defines, e.g. the constructors of datatypes
+  def funs: Set[Fun] =
+    this match
+      case DeclareDatatypes(_, _, attrs)      => attrs.funs
+      case DeclareFun(_, attrs)               => attrs.funs
+      case DefineFun(fun, body, attrs)        => body.funs ++ attrs.funs - fun
+      case DeclareVar(_, attrs)               => attrs.funs
+      case DeclareProc(_, attrs)              => attrs.funs
+      case DefineProc(_, body, attrs)         => body.funs ++ attrs.funs
+      case Assert(_, _, phi, attrs)           => phi.funs ++ attrs.funs
+      case FuseFuns(term, rhs, attrs)         => term.funs ++ rhs.toList.funs ++ attrs.funs
+      case AnnotateTag(_, attrs)              => attrs.funs
+      case VerifyCall(_, args)                => args.funs
+      case _                                  => Set()
+
   // axioms, lemmas, and function definitions with the attribute :rw, which are rewrite rules of -simplify,
   // and function definitions with the attribute :fold, whose rules fold their body into a call (see Rules.from)
   def isRule: Boolean =

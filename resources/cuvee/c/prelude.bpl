@@ -76,13 +76,14 @@ function {:c} {:rw} uint(x: int): int { x mod 4294967296 }
 function {:c} {:rw} ulonglong(x: int): int { x mod 18446744073709551616 }
 
 // the bit operations on integers, &, |, ^, ~, and the shifts << and >> by values that are not constants, which are
-// declared only, since the integers are unbounded (shifts by constants are multiplications and divisions)
-function {:c} bitand(a: int, b: int): int;
-function {:c} bitor(a: int, b: int): int;
-function {:c} bitxor(a: int, b: int): int;
-function {:c} bitnot(a: int): int;
-function {:c} shl(a: int, b: int): int;
-function {:c} shr(a: int, b: int): int;
+// declared only, since the integers are unbounded (shifts by constants are multiplications and divisions), and
+// :abstract, such that -verify takes a refutation of a goal that applies them for no counterexample (see pipe.Verify)
+function {:c} {:abstract} bitand(a: int, b: int): int;
+function {:c} {:abstract} bitor(a: int, b: int): int;
+function {:c} {:abstract} bitxor(a: int, b: int): int;
+function {:c} {:abstract} bitnot(a: int): int;
+function {:c} {:abstract} shl(a: int, b: int): int;
+function {:c} {:abstract} shr(a: int, b: int): int;
 
 // &, |, ^ on 0 and 1, the truth values as integers, e.g. (y < 100 ? 1 : 0) & (x < 100 ? 1 : 0), which the C frontend
 // writes as and, or, xor only on operands of the type of truth values (see cuvee.c.Parser.logical); rules of the

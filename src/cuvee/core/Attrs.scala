@@ -52,6 +52,10 @@ case class Attrs(attrs: List[(String, Option[Any])]):
   def free: Set[Var] =
     attrs.flatMap(_._2).collect { case expr: Expr => expr.free }.flatten.toSet
 
+  // the functions applied in the expressions among the values
+  def funs: Set[Fun] =
+    attrs.flatMap(_._2).collect { case expr: Expr => expr.funs }.flatten.toSet
+
   def flatten =
     attrs flatMap:
       case (kw, None)      => List(Kw(kw))

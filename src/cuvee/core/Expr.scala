@@ -8,6 +8,8 @@ import cuvee.Error
 sealed trait Expr:
   def params: Set[Param]
   def free: Set[Var]
+  // the functions that are applied or tested for, also in patterns, excluding those bound by Rec
+  def funs: Set[Fun]
   def typ: Type
 
   // apply `f` to the immediate subexpressions point-wise,
@@ -80,6 +82,7 @@ object Expr:
 case class Var(name: Name, typ: Type) extends Expr:
   def params = typ.params
   def free = Set(this)
+  def funs = Set()
 
   def asPair = (name, typ)
   def asIndex = (name, this)
@@ -96,6 +99,7 @@ object Var extends Counter
 case class Lit(value: Any, typ: Type) extends Expr:
   def params = typ.params
   def free = Set()
+  def funs = Set()
 
 object App:
   // instantiate the type parameters of `fun` by matching its argument types against those of `args`,
@@ -113,23 +117,27 @@ object App:
 case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends Expr:
   def params = inst.params ++ args.params
   def free = args.free
+  def funs = args.funs + fun
 
 // pairwise distinctness of two or more expressions of the same type, n-ary as in SMT-LIB
 case class Distinct(exprs: List[Expr]) extends Expr:
   def params = exprs.params
   def free = exprs.free
+  def funs = exprs.funs
   def typ = Sort.bool
 
 // whether `expr` is built by the constructor `fun` of a datatype
 case class Is(expr: Expr, fun: Fun) extends Expr:
   def params = expr.params
   def free = expr.free
+  def funs = expr.funs + fun
   def typ = Sort.bool
 
 // explicit type annotation, e.g. for polymorphic constants
 case class As(expr: Expr, typ: Type) extends Expr:
   def params = expr.params ++ typ.params
   def free = expr.free
+  def funs = expr.funs
 
 // the (time-)derivative of `expr` with respect to the variables `xs`, i.e., the sum of ∂expr/∂x * x' for x in xs,
 // where the variables xs are ordinary free variables without primes, which are introduced only by computing
@@ -138,6 +146,7 @@ case class As(expr: Expr, typ: Type) extends Expr:
 case class Diff(xs: List[Var], expr: Expr) extends Expr:
   def params = xs.params ++ expr.params
   def free = expr.free ++ xs ++ xs.primed
+  def funs = expr.funs
   def typ = expr.typ
 
 // the value of `expr` at the entry of the enclosing procedure, where the global variables have their initial values,
@@ -145,6 +154,7 @@ case class Diff(xs: List[Var], expr: Expr) extends Expr:
 case class Old(expr: Expr) extends Expr:
   def params = expr.params
   def free = expr.free
+  def funs = expr.funs
   def typ = expr.typ
 
 object Old:
@@ -241,6 +251,7 @@ object Old:
 case class Upd(cond: Expr, rhs: Expr):
   def params = cond.params ++ rhs.params
   def free = cond.free ++ rhs.free
+  def funs = cond.funs ++ rhs.funs
 
   def map(f: Expr => Expr) =
     Upd(f(cond), f(rhs))
@@ -250,6 +261,7 @@ case class Upd(cond: Expr, rhs: Expr):
 case class Eps(updates: List[Upd]) extends Expr:
   def params = updates.params
   def free = updates.free
+  def funs = updates.funs
 
   // there is at least one case, see Type.check
   def typ = updates.head.rhs.typ
@@ -272,6 +284,7 @@ object Eps:
 case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr) extends Expr:
   def params = init.params ++ deps.params ++ (acc :: bound).params ++ update.params
   def free = init.free ++ deps.free ++ (update.free -- (acc :: bound))
+  def funs = init.funs ++ deps.funs ++ update.funs
   def typ = Sort.trace(acc.typ)
 
 // map(for deps yield bound ↦ update): the list of the results of the update for the values of the dependencies,
@@ -279,17 +292,20 @@ case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updat
 case class Maps(deps: List[Expr], bound: List[Var], update: Expr) extends Expr:
   def params = deps.params ++ bound.params ++ update.params
   def free = deps.free ++ (update.free -- bound)
+  def funs = deps.funs ++ update.funs
   def typ = Sort.list(update.typ)
 
 // all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:
   def params = deps.params ++ bound.params ++ body.params
   def free = deps.free ++ (body.free -- bound)
+  def funs = deps.funs ++ body.funs
   def typ = Sort.bool
 
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
   def params = bound.params ++ body.params
   def free = body.free -- bound
+  def funs = body.funs
   def typ = body.typ
 
 // an anonymous function, whose type is explicit, since it is not determined by the bound variables and the body:
@@ -297,10 +313,12 @@ case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
 case class Lam(bound: List[Var], body: Expr, typ: Type) extends Expr:
   def params = bound.params ++ body.params ++ typ.params
   def free = body.free -- bound
+  def funs = body.funs
 
 case class Let(bound: List[Var], args: List[Expr], body: Expr) extends Expr:
   def params = bound.params ++ args.params ++ body.params
   def free = args.free ++ (body.free -- bound)
+  def funs = args.funs ++ body.funs
   def typ = body.typ
 
 // a case of a match expression, which applies if the argument matches the pattern and the condition holds,
@@ -310,6 +328,7 @@ case class Case(pat: Expr, body: Expr, cond: Expr):
   def bound = pat.free
   def params = pat.params ++ body.params ++ cond.params
   def free = body.free ++ cond.free -- bound
+  def funs = pat.funs ++ body.funs ++ cond.funs
 
   // the pattern is kept, like the bound variables of binders
   def map(f: Expr => Expr) =
@@ -319,6 +338,7 @@ case class Case(pat: Expr, body: Expr, cond: Expr):
 case class Match(arg: Expr, cases: List[Case]) extends Expr:
   def params = arg.params ++ cases.params
   def free = arg.free ++ cases.free
+  def funs = arg.funs ++ cases.funs
 
   // there is at least one case, see Type.check
   def typ = cases.head.body.typ
@@ -331,6 +351,8 @@ case class Match(arg: Expr, cases: List[Case]) extends Expr:
 case class Rec(fun: Fun, cases: List[Case]) extends Expr:
   def params = (fun.args.params ++ fun.res.params ++ cases.params) -- fun.params
   def free = cases.free
+  // the recursive calls by name, since their types may be instantiated
+  def funs = cases.funs.filterNot(_.name == fun.name)
 
   // generic in the type parameters of `fun`, see Type.check
   def typ = Arrow(fun.args, fun.res)

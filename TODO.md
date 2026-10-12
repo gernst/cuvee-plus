@@ -8,6 +8,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `-verify` (see [ideas/verify-answers.md](ideas/verify-answers.md)): a refutation is classified per goal, `VCGen`
   marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
   not depend on that loop, which `-split` keeps apart
+- `-verify` stops at a solver error with the error instead of an answer, e.g. `-teq -simplify -z3 -verify` without
+  `-fallback` (`unknown constant integer (Nat)`); an error of the solver could count as `unknown` for its goal
 - support verifying trace lemmas in Dafny
 - identify performance improvements, notably in the simplifier
 - thread config through more code, so that it is usually available
@@ -1014,10 +1016,12 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     `-verify` (`nla-digbench-scaling/hard-ll_valuebound100`,
     `divbin2_unwindbound10`, Oct 12, 2026); none remain in benchmarks/acsl
     since the powers of 2 and 4 are predicates with goal-directed axioms
-    (`pow2`, `pow2mul`, `pow4`, 50 tasks, 37 of them proved). Such goals could be `:abstract`
-    (refutations `unknown`), or the operators interpreted where possible
-    (shifts of constants as multiplications by powers of 2, masks of low bits
-    as `%`).
+    (`pow2`, `pow2mul`, `pow4`, 50 tasks, 37 of them proved). Done in 0.42.1:
+    the operators are declared `:abstract` in the C prelude, `pipe.Verify`
+    takes the refutation of a goal that applies them (`Cmd.funs`) for
+    `unknown` ([teq_bits_abstract.c](examples/c/verify/teq_bits_abstract.c)).
+    Open: interpret the operators where possible (shifts of constants as
+    multiplications by powers of 2, masks of low bits as `%`).
   - Done in 0.41.6 by dropping the implicit ranges of loops (see above). Was:
     uninitialized locals of unsigned types are not in the range of their type:
     a loop whose `loop assigns` contains one checks its range at the entry

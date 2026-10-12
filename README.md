@@ -180,7 +180,8 @@ lists them.
   each `check-sat`, e.g. of `-chc`, which must be satisfiable. A refutation is
   `incorrect`, unless the goal is `:abstract`, i.e., stronger than the
   specification: a loop without invariant under `-vcgen`, the lowering of
-  `-fallback`.
+  `-fallback`, or a function declared `:abstract` that the goal applies, e.g.
+  the bit operations of C, uninterpreted on integers other than 0 and 1.
 
 Known limitations and planned work are listed in [TODO.md](TODO.md).
 

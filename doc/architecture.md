@@ -212,7 +212,9 @@ and the next sink.
     `check-sat` of the input counts as well. The answer of the solver holds if
     it is the expected one, refutes if it is the opposite one, unless the goal
     is `:abstract` (a loop without invariant in `VCGen`, a goal lowered by
-    `Fallback`), and is undecided otherwise. Without solver, only the goal
+    `Fallback`) or applies a function declared `:abstract` (`Cmd.funs`), or
+    one defined in terms of such, e.g. the bit operations of the C prelude,
+    and is undecided otherwise. Without solver, only the goal
     `false` is refuted.
   - The outcome is incorrect once an obligation is refuted, otherwise unknown
     once one is undecided; all obligations are checked.
@@ -293,7 +295,11 @@ The SMT-LIB frontend is an exception: it reads s-expressions with the shared
 `sexpr` scanner and turns them into core directly. The C frontend is another:
 it starts from its own prelude (`resources/cuvee/c/prelude.bpl`, in Boogie),
 which declares the core theory with arithmetic on `Int` only, arrays, and the
-background theory of C, builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
+background theory of C: the bit operations `&`, `|`, `^`, `~` and shifts by
+non-constants are uninterpreted functions declared `:abstract`, with rules of
+the simplifier for the operands 0 and 1 (`{:smt2} {:rw}`, not passed to the
+solvers), such that `-verify` takes a refutation that depends on them for no
+counterexample (`pipe.Verify`). It builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
 that it can infer the global variables that each function and each loop
 modifies. Functions and loops with ACSL `assigns` or `loop assigns` clauses
 modify the global variables listed there instead (their identifiers, e.g. `a`

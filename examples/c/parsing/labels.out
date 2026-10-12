@@ -36,17 +36,17 @@ function {:c} {:rw} ulonglong(x: int): int {
   x % 18446744073709551616
 }
 
-function {:c} bitand(a: int, b: int): int
+function {:c} {:abstract} bitand(a: int, b: int): int
 
-function {:c} bitor(a: int, b: int): int
+function {:c} {:abstract} bitor(a: int, b: int): int
 
-function {:c} bitxor(a: int, b: int): int
+function {:c} {:abstract} bitxor(a: int, b: int): int
 
-function {:c} bitnot(a: int): int
+function {:c} {:abstract} bitnot(a: int): int
 
-function {:c} shl(a: int, b: int): int
+function {:c} {:abstract} shl(a: int, b: int): int
 
-function {:c} shr(a: int, b: int): int
+function {:c} {:abstract} shr(a: int, b: int): int
 
 axiom {:c} {:smt2} {:rw}
   forall c: bool, d: bool ::
