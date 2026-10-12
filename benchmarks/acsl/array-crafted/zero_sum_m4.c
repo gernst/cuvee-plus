@@ -23,9 +23,9 @@ extern short __VERIFIER_nondet_short(void);
 short SIZE;
 
 /*@ axiomatic Sum {
-  logic integer sum(short *a, integer n) reads a[0..n-1];
+  logic integer sum(short *a, integer n);
   axiom sum_zero: \forall short *a; sum(a, 0) == 0;
-  axiom sum_step: \forall short *a, integer n; n >= 0 ==> sum(a, n+1) == sum(a, n) + a[n];
+  axiom sum_step: \forall short *a, integer n; n > 0 ==> sum(a, n) == sum(a, n-1) + a[n-1];
 } */
 int main()
 {

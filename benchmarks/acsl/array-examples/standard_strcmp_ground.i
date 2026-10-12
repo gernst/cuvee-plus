@@ -23,9 +23,7 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int();
 
-/*@ requires \valid_read(src + (0..99999));
-    requires \valid_read(dst + (0..99999));
-    assigns \nothing;
+/*@ assigns \nothing;
     ensures \result == 0 ==> (\forall integer t; 0 <= t < 100000 ==> src[t] == dst[t]); */
 int _strcmp( int src[100000] , int dst[100000] ) {
   int i = 0;

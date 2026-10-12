@@ -26,21 +26,18 @@ int i;
 int main()
 {
  /*@ loop invariant 0 <= i <= 1000000;
-     loop invariant \forall integer t; 0 <= t < i ==> a[t] == \null;
      loop assigns i, a[0..999999]; */
  for(i = 0; i < 1000000; i++)
  {
   a[i] = 0;
  }
  /*@ loop invariant 0 <= i <= 500000;
-     loop invariant \forall integer t; 0 <= t < i ==> a[t] != \null;
      loop assigns i, a[0..499999]; */
  for(i = 0; i < 1000000 / 2; i++)
  {
   a[i] = malloc(sizeof(int)) ;
  }
  /*@ loop invariant 0 <= i <= 500000;
-     loop invariant \forall integer t; 0 <= t < 500000 ==> a[t] != \null;
      loop assigns i; */
  for(i = 0; i < 1000000 / 2; i++)
  {

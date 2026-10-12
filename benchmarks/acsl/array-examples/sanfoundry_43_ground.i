@@ -23,10 +23,7 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int();
 
-/*@ requires \valid_read(src + (0..99999));
-    requires \valid(dst + (0..99999));
-    requires \separated(src + (0..99999), dst + (0..99999));
-    assigns dst[0..99999];
+/*@ assigns dst[0..99999];
     ensures \forall integer t; 0 <= t < 100000 ==> dst[t] == src[t] + 1; */
 void incrementArray(int src[100000] , int dst[100000])
 {

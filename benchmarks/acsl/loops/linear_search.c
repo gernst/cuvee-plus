@@ -30,8 +30,7 @@ void __VERIFIER_assert(int cond) {
 unsigned int __VERIFIER_nondet_uint();
 unsigned int  SIZE;
 const unsigned int MAX = 100000;
-/*@ requires \valid_read(a + (0..n-1));
-    assigns \nothing; */
+/*@ assigns \nothing; */
 int linear_search(int *a, int n, int q) {
   unsigned int j=0;
   /*@ loop invariant 0 <= j <= n;

@@ -24,7 +24,6 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 extern int __VERIFIER_nondet_int();
 
 /*@ requires 0 <= size < 100000;
-    requires \valid(set + size);
     assigns set[size];
     ensures \result == size + 1;
     ensures set[size] == value; */
@@ -33,7 +32,6 @@ int insert( int set [] , int size , int value ) {
   return size + 1;
 }
 /*@ requires 0 <= size <= 100000;
-    requires \valid_read(set + (0..size-1));
     assigns \nothing;
     ensures (\result == 1) <==> (\exists integer t; 0 <= t < size && set[t] == value);
     ensures \result == 1 || \result == 0; */

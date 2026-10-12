@@ -51,14 +51,13 @@ extern short __VERIFIER_nondet_short() ;
 signed long long ARR_SIZE ;
 
 /*@ axiomatic Msum {
-  logic integer rsum(int *r, integer n) reads r[0..n-1];
+  logic integer rsum(int *r, integer n);
   axiom rsum_zero: \forall int *r; rsum(r, 0) == 0;
-  axiom rsum_step: \forall int *r, integer n; n >= 0 ==> rsum(r, n+1) == rsum(r, n) + r[n];
-  // the sum of the first rows of a matrix with n columns, flattened
-  logic integer msum(int *a, integer n, integer rows) reads a[0..n*rows-1];
-  axiom msum_zero: \forall int *a, integer n; msum(a, n, 0) == 0;
-  axiom msum_step: \forall int *a, integer n, integer rows; rows >= 0 ==> msum(a, n, rows+1) == msum(a, n, rows) + rsum(a + rows*n, n);
-  lemma total: \forall int *a, integer n; n >= 1 && (\forall integer r, c; 0 <= r < n && 0 <= c < n ==> (r != c && r + c != n-1 ==> a[(r)*n + (c)] == 0) && (r + c == n-1 && r != c ==> (a[(r)*n + (c)] == 0 || a[(r)*n + (c)] == -1) && a[(r)*n + (c)] + a[(c)*n + (c)] == 0) && (r == c && r + c == n-1 ==> (a[(r)*n + (c)] == 0 || a[(r)*n + (c)] == 1))) ==> msum(a, n, n) == 0 || msum(a, n, n) == 1;
+  axiom rsum_step: \forall int *r, integer n; n > 0 ==> rsum(r, n) == rsum(r, n-1) + r[n-1];
+  logic integer msum(int **a, integer n, integer rows);
+  axiom msum_zero: \forall int **a, integer n; msum(a, n, 0) == 0;
+  axiom msum_step: \forall int **a, integer n, integer rows; rows > 0 ==> msum(a, n, rows) == msum(a, n, rows-1) + rsum(a[rows-1], n);
+  lemma total: \forall int **a, integer n; n >= 1 && (\forall integer r, c; 0 <= r < n && 0 <= c < n ==> (r != c && r + c != n-1 ==> a[r][c] == 0) && (r + c == n-1 && r != c ==> (a[r][c] == 0 || a[r][c] == -1) && a[r][c] + a[c][c] == 0) && (r == c && r + c == n-1 ==> (a[r][c] == 0 || a[r][c] == 1))) ==> msum(a, n, n) == 0 || msum(a, n, n) == 1;
 } */
 int main()
 {
@@ -105,13 +104,13 @@ int main()
 
 	/*@ loop invariant 0 <= row <= ARR_SIZE;
 	    loop invariant \forall integer r, c; 0 <= r < ARR_SIZE && 0 <= c < ARR_SIZE ==> (r != c && r + c != ARR_SIZE-1 ==> array[r][c] == 0) && (r + c == ARR_SIZE-1 && r != c ==> (array[r][c] == 0 || array[r][c] == -1) && array[r][c] + array[c][c] == 0) && (r == c && r + c == ARR_SIZE-1 ==> (array[r][c] == 0 || array[r][c] == 1));
-	    loop invariant sum == msum((int *) array, ARR_SIZE, row);
+	    loop invariant sum == msum(array, ARR_SIZE, row);
 	    loop assigns row, column, sum; */
 	for(row=0;row<ARR_SIZE;row++)
 		/*@ loop invariant 0 <= column <= ARR_SIZE;
 		    loop invariant 0 <= row < ARR_SIZE;
 		    loop invariant \forall integer r, c; 0 <= r < ARR_SIZE && 0 <= c < ARR_SIZE ==> (r != c && r + c != ARR_SIZE-1 ==> array[r][c] == 0) && (r + c == ARR_SIZE-1 && r != c ==> (array[r][c] == 0 || array[r][c] == -1) && array[r][c] + array[c][c] == 0) && (r == c && r + c == ARR_SIZE-1 ==> (array[r][c] == 0 || array[r][c] == 1));
-		    loop invariant sum == msum((int *) array, ARR_SIZE, row) + rsum(array[row], column);
+		    loop invariant sum == msum(array, ARR_SIZE, row) + rsum(array[row], column);
 		    loop assigns column, sum; */
 		for(column=0;column<ARR_SIZE;column++)
 			sum = sum + array[row][column] ;

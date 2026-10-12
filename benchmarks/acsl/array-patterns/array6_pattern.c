@@ -50,12 +50,12 @@ extern short __VERIFIER_nondet_short() ;
 signed long long ARR_SIZE ;
 
 /*@ axiomatic Asum {
-  logic integer asum(int *a, integer n) reads a[0..n-1];
+  logic integer asum(int *a, integer n);
   axiom asum_zero: \forall int *a; asum(a, 0) == 0;
-  axiom asum_step: \forall int *a, integer n; n >= 0 ==> asum(a, n+1) == asum(a, n) + a[n];
-  logic integer sqsum(int *a, integer n) reads a[0..n-1];
+  axiom asum_step: \forall int *a, integer n; n > 0 ==> asum(a, n) == asum(a, n-1) + a[n-1];
+  logic integer sqsum(int *a, integer n);
   axiom sqsum_zero: \forall int *a; sqsum(a, 0) == 0;
-  axiom sqsum_step: \forall int *a, integer n; n >= 0 ==> sqsum(a, n+1) == sqsum(a, n) + a[n]*a[n];
+  axiom sqsum_step: \forall int *a, integer n; n > 0 ==> sqsum(a, n) == sqsum(a, n-1) + a[n-1]*a[n-1];
   lemma total: \forall int *a1, int *a2, integer n; n >= 1 && (\forall integer t; 0 <= t < n ==> a1[t] + a2[t] == 0) ==> asum(a1, n) + asum(a2, n) == 0;
 } */
 int main()

@@ -21,7 +21,6 @@ void reach_error() { ((void) sizeof ((0) ? 1 : 0), __extension__ ({ if (0) ; els
 extern int __VERIFIER_nondet_int();
 
 /*@ requires 20 >= 1;
-    requires \valid(x + (0..20-1));
     assigns x[0..20-1]; */
 void init_nondet(int x[20]) {
   int i;
@@ -33,12 +32,11 @@ void init_nondet(int x[20]) {
 }
 
 /*@ axiomatic Fold {
-  logic integer fold(int *x, integer n) reads x[0..n-1];
+  logic integer fold(int *x, integer n);
   axiom fold_base: \forall int *x; fold(x, 0) == 0;
-  axiom fold_step: \forall int *x, integer n; n >= 0 ==> fold(x, n+1) == fold(x, n) + (n > 20/2 ? x[n] : 0);
+  axiom fold_step: \forall int *x, integer n; n > 0 ==> fold(x, n) == fold(x, n-1) + (n-1 > 20/2 ? x[n-1] : 0);
 } */
 /*@ requires 20 >= 1;
-    requires \valid_read(x + (0..20-1));
     assigns \nothing;
     ensures \result == (int) (20 - 20/2 - 1 > 0 ? fold(x, 20) / (20 - 20/2 - 1) : 0); */
 int rangesum (int x[20])
@@ -72,17 +70,15 @@ int main ()
   int ret2;
   int ret5;
 
-  L1: ;
   ret = rangesum(x);
 
   temp=x[0];x[0] = x[1]; x[1] = temp;
-  L2: ;
   ret2 = rangesum(x);
   temp=x[0];
   /*@ loop invariant 0 <= i <= 20-1;
-      loop invariant \forall integer k; 0 <= k < i ==> x[k] == \at(x[k+1], L2);
-      loop invariant \forall integer k; i <= k < 20 ==> x[k] == \at(x[k], L2);
-      loop invariant temp == \at(x[0], L2);
+      loop invariant \forall integer k; 0 <= k < i ==> x[k] == \at(x[k+1], LoopEntry);
+      loop invariant \forall integer k; i <= k < 20 ==> x[k] == \at(x[k], LoopEntry);
+      loop invariant temp == \at(x[0], LoopEntry);
       loop assigns i, x[0..20-2]; */
   for(int i =0 ; i<20 -1; i++){
      x[i] = x[i+1];

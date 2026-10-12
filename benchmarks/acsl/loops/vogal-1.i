@@ -38,10 +38,10 @@ void __VERIFIER_assert(int cond) {
 char __VERIFIER_nondet_char();
 
 /*@ axiomatic Count {
-  logic integer cnt(char *s, integer n) reads s[0..n-1];
+  logic integer cnt(char *s, integer n);
   axiom cnt_zero: \forall char *s; cnt(s, 0) == 0;
-  axiom cnt_step: \forall char *s, integer n; n >= 0 ==>
-    cnt(s, n+1) == cnt(s, n) + (s[n] == 'a' || s[n] == 'A' ? 1 : 0);
+  axiom cnt_step: \forall char *s, integer n; n > 0 ==>
+    cnt(s, n) == cnt(s, n-1) + (s[n-1] == 'a' || s[n-1] == 'A' ? 1 : 0);
 } */
 int main(void)
 {

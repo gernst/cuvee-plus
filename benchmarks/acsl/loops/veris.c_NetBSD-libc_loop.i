@@ -32,7 +32,6 @@ typedef int Char;
 Char *tmp;
 
 /*@ requires pathlim == tmp;
-    requires \valid(pathbuf + (0..1));
     requires pathlim == pathbuf + 1;
     assigns pathbuf[0..1]; */
 int glob2 (Char *pathbuf, Char *pathlim)

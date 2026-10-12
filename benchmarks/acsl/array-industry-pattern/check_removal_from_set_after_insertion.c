@@ -21,7 +21,6 @@ const int SIZE = 100000;
 
 
 /*@ requires 0 <= size < SIZE;
-    requires \valid(set + size);
     assigns set[size];
     ensures \result == size + 1;
     ensures set[size] == value; */
@@ -31,7 +30,6 @@ int insert( int set [] , int size , int value ) {
 }
 
 /*@ requires 0 <= size <= SIZE;
-    requires \valid_read(set + (0..size-1));
     assigns \nothing;
     ensures (\result == 1) <==> (\exists integer t; 0 <= t < size && set[t] == value); */
 int elem_exists( int set [ ] , int size , int value ) {

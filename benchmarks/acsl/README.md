@@ -38,8 +38,9 @@ note where the annotations need explanation.
 - Every loop gets `loop invariant`s and a `loop assigns` clause (the latter
   in ACSL syntax as far as the arrays are concerned, `a[0..N-1]`, `a[i][0..n-1]`).
   Functions other than `main` get contracts when the proof of the caller
-  needs them (`requires`, `assigns`, `ensures`, with `\valid`/`\valid_read`
-  for array parameters). Globals read by a function are constrained in its
+  needs them (`requires`, `assigns`, `ensures`). Memory clauses (`\valid`,
+  `\valid_read`, `\separated`, `\null`, `reads`) are left out, since arrays
+  are values in Cuvée's C (removed on Oct 12, 2026). Globals read by a function are constrained in its
   precondition (`requires n == 5`), since a contract does not see their
   initial values.
 - Unsigned arithmetic that wraps around in the program is stated modulo its
@@ -47,15 +48,19 @@ note where the annotations need explanation.
   `dijkstra-u`, `knuth`); the bit patterns of the powers of 2 and 4 use a
   shift (`\exists integer k; 0 <= k <= 64 && p == 1 << k`).
 - Sums and folds over arrays are logic functions in an `axiomatic`, defined
-  recursively over the length (`asum`, `sqsum` in `array-patterns`; `rsum`
-  and `msum` for matrices, flattened with `(int *) array`; `sum` for the
-  `zero_sum*` tasks of `array-crafted`; `fold` for the reducer programs of
-  `array-crafted` and `reducercommutativity`, with the lemmas `fold_swap` and
-  `fold_rotate` over two labels that state the invariance under the swap of
-  the first two elements and under a rotation, and labels `L1:`, `L2:`
-  inserted before the calls). Where a final bound follows from an
-  element-wise property of the arrays, it is stated as a `lemma` in the
-  axiomatic (`array-patterns`, `lemma total`). Counts in `array-programs`
+  recursively over the length, with the step backwards, `n > 0 ==> f(a, n)
+  == f(a, n-1) + a[n-1]`, whose instances z3 finds (`asum`, `sqsum` in
+  `array-patterns`; `rsum` of a row and `msum` of the first rows of a matrix,
+  `int **a`; `sum` for the `zero_sum*` tasks of `array-crafted`; `cnt` in
+  `loops/vogal-1`; `fold` for the reducer programs of `array-crafted` and
+  `reducercommutativity`, with the lemmas `fold_swap` and `fold_rotate` over
+  two arrays `x1`, `x2`, which state the invariance under the swap of the
+  first two elements and under a rotation; the global `N` of
+  `reducercommutativity/rangesum` is a parameter of its `fold`). The loops
+  that rotate the array refer to its values by `\at(e, LoopEntry)`. Where a
+  final bound follows from an element-wise property of the arrays, it is
+  stated as a `lemma` in the axiomatic (`array-patterns`, `lemma total`;
+  `asum_update` over two arrays). Lemmas are trusted by Cuvée (`:free`). Counts in `array-programs`
   are closed forms with integer division and `\min`.
 - Tasks with expected verdict `false` get the invariants that do hold (often
   those of the `true` variant) and a note on why the assertion fails; the

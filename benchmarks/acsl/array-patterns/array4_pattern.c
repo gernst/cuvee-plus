@@ -57,13 +57,13 @@ extern short __VERIFIER_nondet_short() ;
 signed long long ARR_SIZE ;
 
 /*@ axiomatic Asum {
-  logic integer asum(int *a, integer n) reads a[0..n-1];
+  logic integer asum(int *a, integer n);
   axiom asum_zero: \forall int *a; asum(a, 0) == 0;
-  axiom asum_step: \forall int *a, integer n; n >= 0 ==> asum(a, n+1) == asum(a, n) + a[n];
-  logic integer sqsum(int *a, integer n) reads a[0..n-1];
+  axiom asum_step: \forall int *a, integer n; n > 0 ==> asum(a, n) == asum(a, n-1) + a[n-1];
+  logic integer sqsum(int *a, integer n);
   axiom sqsum_zero: \forall int *a; sqsum(a, 0) == 0;
-  axiom sqsum_step: \forall int *a, integer n; n >= 0 ==> sqsum(a, n+1) == sqsum(a, n) + a[n]*a[n];
-  lemma asum_update{L1, L2}: \forall int *a, integer n, k; 0 <= k < n && (\forall integer t; 0 <= t < n && t != k ==> \at(a[t], L2) == \at(a[t], L1)) ==> \at(asum(a, n), L2) == \at(asum(a, n), L1) + \at(a[k], L2) - \at(a[k], L1);
+  axiom sqsum_step: \forall int *a, integer n; n > 0 ==> sqsum(a, n) == sqsum(a, n-1) + a[n-1]*a[n-1];
+  lemma asum_update: \forall int *a1, int *a2, integer n, k; 0 <= k < n && (\forall integer t; 0 <= t < n && t != k ==> a2[t] == a1[t]) ==> asum(a2, n) == asum(a1, n) + a2[k] - a1[k];
 } */
 int main()
 {

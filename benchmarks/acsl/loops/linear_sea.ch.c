@@ -31,7 +31,6 @@ unsigned int __VERIFIER_nondet_uint();
 unsigned int  SIZE;
 const unsigned int MAX = 100000;
 /*@ requires 0 < n && n == SIZE;
-    requires \valid_read(a + (0..n-1));
     requires \exists integer t; 0 <= t < n && a[t] == q;
     assigns \nothing;
     ensures \result == 1; */

@@ -22,7 +22,6 @@ extern int __VERIFIER_nondet_int(void);
 
 int N;
 /*@ requires N >= 1;
-    requires \valid(x + (0..N-1));
     assigns x[0..N-1]; */
 void init_nondet(int x[N]) {
   int i;
@@ -34,14 +33,13 @@ void init_nondet(int x[N]) {
 }
 
 /*@ axiomatic Fold {
-  logic integer fold(int *x, integer n) reads x[0..n-1];
-  axiom fold_base: \forall int *x; fold(x, 0) == 0;
-  axiom fold_step: \forall int *x, integer n; n >= 0 ==> fold(x, n+1) == fold(x, n) + (n > N/2 ? x[n] : 0);
+  logic integer fold(int *x, integer n, integer m);
+  axiom fold_base: \forall int *x, integer m; fold(x, 0, m) == 0;
+  axiom fold_step: \forall int *x, integer n, integer m; n > 0 ==> fold(x, n, m) == fold(x, n-1, m) + (n-1 > m/2 ? x[n-1] : 0);
 } */
 /*@ requires N >= 1;
-    requires \valid_read(x + (0..N-1));
     assigns \nothing;
-    ensures \result == (int) (N - N/2 - 1 > 0 ? fold(x, N) / (N - N/2 - 1) : 0); */
+    ensures \result == (int) (N - N/2 - 1 > 0 ? fold(x, N, N) / (N - N/2 - 1) : 0); */
 int rangesum (int x[N])
 {
   int i;
@@ -49,7 +47,7 @@ int rangesum (int x[N])
   ret = 0;
   int cnt = 0;
   /*@ loop invariant 0 <= i <= N;
-      loop invariant ret == fold(x, i);
+      loop invariant ret == fold(x, i, N);
       loop invariant cnt == (i > N/2 + 1 ? i - N/2 - 1 : 0);
       loop assigns i, ret; */
   for (i = 0; i < N; i++) {
@@ -75,17 +73,15 @@ int main ()
     int ret2;
     int ret5;
 
-    L1: ;
     ret = rangesum(x);
 
     temp=x[0];x[0] = x[1]; x[1] = temp;
-    L2: ;
     ret2 = rangesum(x);
     temp=x[0];
     /*@ loop invariant 0 <= i <= N-1;
-        loop invariant \forall integer k; 0 <= k < i ==> x[k] == \at(x[k+1], L2);
-        loop invariant \forall integer k; i <= k < N ==> x[k] == \at(x[k], L2);
-        loop invariant temp == \at(x[0], L2);
+        loop invariant \forall integer k; 0 <= k < i ==> x[k] == \at(x[k+1], LoopEntry);
+        loop invariant \forall integer k; i <= k < N ==> x[k] == \at(x[k], LoopEntry);
+        loop invariant temp == \at(x[0], LoopEntry);
         loop assigns i, x[0..N-2]; */
     for(int i =0 ; i<N-1; i++){
        x[i] = x[i+1];
