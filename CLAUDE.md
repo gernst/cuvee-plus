@@ -20,7 +20,7 @@ or solvers consume.
   explain why.
 - [doc/options.md](doc/options.md): the command line options.
 - [TODO.md](TODO.md): open problems and the user's instructions.
-- [ideas/](ideas): proposals and experiments, not implemented.
+- [ideas/](ideas): proposals and experiments, not implemented (index in ideas/README.md).
 
 ## Workflow
 

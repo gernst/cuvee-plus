@@ -44,7 +44,7 @@ scored as if confirmed; the counts are those of `scripts/common.py` (`load`).
   wrong results of Cuvée+Z3 are the 7 variants of `fermat1-ll_unwindbound`
   (wrong true) and `sanfoundry_24-1` and `verifythis/lcp` (wrong false),
   whose helper functions were checked out of context, fixed by the entry
-  point (`ideas/entry-points.md`); the table is not rerun with the fix.
+  point (`-entry`, version 0.42.0, see `doc/architecture.md`); the table is not rerun with the fix.
 - The example of Fig. 1 was run with `-teq -simplify -rules`, which lists
   the 11 rules of its proof; a trivial program takes about 7 s CPU time
   (measured on Oct 12, 2026).

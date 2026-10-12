@@ -1,5 +1,18 @@
 # Binary search with `-teq -simplify`
 
+Status (Oct 12, 2026). [bsearch.dfy](../examples/dafny/teq/bsearch.dfy) with partition points is verified
+given a cut after the loop (last section). The variant with the precondition `sorted(a, 0, n)` instead of
+partition points is [lower_bound.dfy](../examples/dafny/algorithms/lower_bound.dfy), open: a summary lemma that
+names the result `lb(a, n, x)` closes it, but its only sound form ties the exit to the traces by a condition on
+the rule's own term, which the engine applies re-entrantly (the re-entrance guard of
+[teq-engine.md](teq-engine.md), and the lower bound section of
+[doc/array-algorithms](../doc/array-algorithms)). The gnome sort of the same folder shows that a
+data-dependent number of iterations is no obstacle when the invariant is stated on the final values and the
+exit is read from the facts, which suggests the same for the lower bound once the guard exists. The analysis
+below, of Oct 9, remains the account of what the general route (facts about terms, derived variables) needs;
+this is the paper's acknowledged weakness, partial descriptions of traces (bounds, monotone traces, minima and
+maxima under conditional updates), see [teq-database.md](teq-database.md).
+
 Three versions of the same search were tried, of which
 [bsearch.dfy](../examples/dafny/teq/bsearch.dfy) remains in `examples/dafny/teq`; the other two are in the
 history of git (removed in version 0.34):

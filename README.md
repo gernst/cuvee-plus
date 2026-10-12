@@ -220,7 +220,7 @@ result is wrong. Known problems of `-fallback`: 7 wrong proofs
 lost in the lowering) and 2 wrong refutations (`sanfoundry_24-1`,
 `verifythis/lcp`), where functions that `main` calls only in a certain context
 were also checked for arbitrary arguments, which the entry point fixes (see
-below and [ideas/entry-points.md](ideas/entry-points.md)). The runs included the modules `nested`, `sorting`, and
+below and [doc/architecture.md](doc/architecture.md)). The runs included the modules `nested`, `sorting`, and
 `strides`, which the competition command does not load.
 
 - [cuvee.py](cuvee.py): the tool-info module of BenchExec, which interprets
