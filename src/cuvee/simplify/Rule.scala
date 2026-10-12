@@ -19,6 +19,11 @@ case class Rule(params: Set[Param], vars: Set[Var], lhs: Expr, rhs: Expr, cond: 
     attrs.values[sexpr.Id]("named").map(_.text).headOption
 
 object Rule:
+  // whether the condition of a rule has no invs among its conjuncts, which would be matched against the invs facts of
+  // the context (see Rewrite.conditions and Simplify.iterations)
+  def plain(rule: Rule): Boolean =
+    !And.flatten(rule.cond).exists(_.isInstanceOf[Invs])
+
   // well-formedness of rules from the input, see Rules.from
   def check(rule: Rule): Rule =
     val Rule(params, vars, lhs, rhs, cond, _) = rule

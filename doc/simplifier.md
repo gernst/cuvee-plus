@@ -106,6 +106,26 @@ derivatives in [hybrid.md](hybrid.md).
   `(config, state, ctx, ...)` as well; matches are substitutions, and side
   conditions are decided by `Simplify.simplify` in the context. Matching
   below the combinators of TEQs is described in [teq.md](teq.md).
+  - A rule is suspended while its left-hand side is matched and its
+    conditions are evaluated (`Context.active`, `Rewrite.apply`): the instance
+    of a condition is simplified before it is decided or matched, and a
+    condition that mentions the rule's own term (`l == current(Lv)` for a
+    rule on `current(Lv)`) was rewritten by the rule itself without end; a
+    condition that is matched against an `invs` fact builds the context of
+    that fact's combinator, whose reads the rule would match again
+    ([reentrant.dfy](../examples/dafny/simplify/reentrant.dfy),
+    [reentrant_invs.dfy](../examples/dafny/simplify/reentrant_invs.dfy)). A
+    condition that needs the same rule on another instance is not decided.
+  - The reads of a combinator context, the values `z == earlier(natural(k), ⌊Z⌋)`
+    of its bound variables (`Simplify.iterations`), are normalized by the
+    rules without an `invs` condition only (`Rule.plain`), since a rule with
+    one would be matched against the `invs` facts and build their contexts in
+    turn, through every such rule; and they are cached by the dependencies,
+    the bound variables and the definitions of the traces (`Context.reads`),
+    since the contexts of a fact are built for every position at which a
+    condition is matched against it, with different facts, while the reads
+    normalize the same. A context built while a rule is suspended may lack
+    that rule's rewrites of its reads and is reused nevertheless.
 
 ## Data structures
 

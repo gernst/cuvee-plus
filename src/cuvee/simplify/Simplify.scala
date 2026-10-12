@@ -443,18 +443,29 @@ object Simplify extends Transform:
   // then 0 <= k < integer(n), since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
   // is its value in iteration k, i.e., z == earlier(natural(k), ⌊Z⌋), which is simplified within the range,
   // e.g. z == k for ⌊Z⌋ with Z == counter(0, 1, n), which then bounds z as well
+  // the reads are normalized by the rules without an invs side condition only (see Rule.plain): a summary whose
+  // condition is matched against the invs facts would build the contexts of those facts in turn, whose reads are
+  // normalized again, through every such rule, which exhausts the steps (see Context.active)
   def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
-    (deps, bound) match
-      case (Butlast(ctx.↑(Counter(Ints.zero, Ints.one, n))) :: deps_, k :: bound_) =>
-        val ctx_ = ctx.neutral.bind(bound)
-        val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, Nats.integer(n)))
-        val range = simplify(config, state, ctx_, bounds)
-        val inside = ctx_.assume(range, Nil)
-        val values = (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(Nats.natural(k), dep))))
-        range ++ values
+    val key = (deps, bound, ctx.chains)
+    ctx.reads.value.get(key) match
+      case Some(values) =>
+        values
 
-      case _ =>
-        Nil
+      case None =>
+        val values =
+          (deps, bound) match
+            case (Butlast(ctx.↑(Counter(Ints.zero, Ints.one, n))) :: deps_, k :: bound_) =>
+              val ctx_ = ctx.neutral.bind(bound).copy(rules = ctx.rules.filter(Rule.plain))
+              val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, Nats.integer(n)))
+              val range = simplify(config, state, ctx_, bounds)
+              val inside = ctx_.assume(range, Nil)
+              range ++ (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(Nats.natural(k), dep))))
+
+            case _ =>
+              Nil
+        ctx.reads := ctx.reads.value + (key -> values)
+        values
 
   // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,
   // without polarity, since the context does not record the argument

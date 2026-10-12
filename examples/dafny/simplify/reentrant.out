@@ -1,0 +1,8 @@
+function f(x: int): int
+
+function g(x: int): int
+
+lemma {:rw} f_small(x: int)
+  requires f(x) <= 1
+  ensures f(x) == g(x)
+

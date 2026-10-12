@@ -209,7 +209,12 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   that the rule rewrites, `current(Hv) <= current(Lv)` for a left-hand side `current(trace(...))`
   ([lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy)), is the same re-entrance through the decision of a
   closed condition instead of the search; remedy 1 covers both.
-  Remedies in the engine:
+  Remedies in the engine (1 done in 0.42.3, with two more that the traces of the cycles showed to be needed:
+  the reads of a combinator context are normalized by the rules without an `invs` condition only, since a chain of
+  different rules with `invs` conditions nests through the contexts of the facts they are matched against, and the
+  reads are cached by the dependencies and the definitions of the traces, since the contexts of a fact are rebuilt
+  at every position at which a condition is matched against it; the six cycles of `pending/` and of this entry
+  terminate, none of them closes its goal, see ideas/reentrance-guard.md):
   1. A reentrance guard for conditional rules: while the side condition of a rule is decided, the rule is not
      applied inside, e.g. a set of such rules in the context that `Rewrite.apply` skips; this cuts the recursion
      for all conditional rules, and loses only side conditions that need the same rule again.

@@ -87,9 +87,10 @@ or solvers consume.
   `Examples.nonterminating`.
 - A closed `invs` side condition is decided, not matched, and fails: write
   it over a fresh list variable and identify it by an equation (`Js2 == Js`).
-  A side condition must not mention the term of the rule's own left-hand side
-  (`l == current(Lv)` for a rule on `current(Lv)`): its instance is simplified
-  by the rule itself and the run does not terminate.
+  A side condition may mention the term of the rule's own left-hand side
+  (`l == current(Lv)` for a rule on `current(Lv)`): the rule is suspended while
+  its conditions are evaluated (`Context.active`), so the instance is not
+  rewritten by the rule itself.
 - Long runs use a private copy of `cuvee.jar`: a rebuild during a run crashes
   the JVM, and the checkout's jar may contain uncommitted changes.
 - Runs on `-teq` examples take a timeout and one core

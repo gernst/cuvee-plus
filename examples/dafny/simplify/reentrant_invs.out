@@ -1,0 +1,4 @@
+lemma {:rw} sum_invs_const(n: Nat, c: int, js: List<int>)
+  requires invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)
+  ensures sum(js) == c * integer(n)
+

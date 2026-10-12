@@ -32,6 +32,16 @@ import cuvee.core._
 // applied: the number of applications of each rule by its name (see Rule.name), for -rules, shared by the copies of
 // this context like steps and fresh for each command, without those of checks that fail (see Rewrite.holds)
 //
+// active: the rules whose side conditions are being evaluated at this position (see Rewrite.apply), which are not
+// applied inside, since a rule that rewrites the instance of its own condition or the reads of a fact its condition is
+// matched against recurs until the steps are exhausted (see TODO.md on sum_invs_const); copied along to the nested
+// contexts of conditions and combinators
+//
+// reads: the values of the bound variables of combinators over the counter of a loop, by the dependencies, the bound
+// variables and the definitions of the traces (see Simplify.iterations), shared like combinators: the contexts of a
+// fact's combinator are built for each position at which a side condition is matched against the fact, whose facts
+// differ, but the reads of its dependencies normalize the same
+//
 // combinators: the contexts of the updates and bodies of combinators built so far (see Simplify.combinator),
 // shared by the copies of this context like steps and fresh for each command (see withRules), such that the
 // iterations of a combinator are not simplified again for each rule that is matched and in each round;
@@ -49,13 +59,15 @@ case class Context(
     steps: util.Ref[Int] = util.Ref(0),
     self: Option[(Expr, Expr)] = None,
     combinators: util.Ref[Context.Combinators] = util.Ref(Map()),
-    applied: util.Ref[Map[String, Int]] = util.Ref(Map())
+    applied: util.Ref[Map[String, Int]] = util.Ref(Map()),
+    active: List[Rule] = Nil,
+    reads: util.Ref[Context.Reads] = util.Ref(Map())
 ):
   // the rewrite rules with a fresh number of steps and no contexts of combinators yet, which are shared by the copies
   // of this context,
   // and which guards against rules that do not terminate
   def withRules(rules: List[Rule], steps: Int = 1000) =
-    copy(rules = rules, steps = util.Ref(steps), combinators = util.Ref(Map()), applied = util.Ref(Map()))
+    copy(rules = rules, steps = util.Ref(steps), combinators = util.Ref(Map()), applied = util.Ref(Map()), reads = util.Ref(Map()))
 
   // an expression seen through the equations of chains.chain, never a variable: a variable matches only by
   // a definition that is not a variable, any other expression as itself,
@@ -67,9 +79,15 @@ case class Context(
         case _      => Some(expr)
 
   // the parts of this context that determine the contexts of combinators built in it, besides the rules and the
-  // steps, which are fixed for a command (see combinators)
+  // steps, which are fixed for a command (see combinators); not the active rules: a context built while a rule is
+  // suspended may lack that rule's rewrites of its reads and is reused nevertheless, since keying by the suspended
+  // rules rebuilds the context of each fact for every combination of them, which exhausts the steps
   def key: Context.Key =
     (self, bound, facts, chains, diffs)
+
+  // whether `rule` is suspended at this position, by identity
+  def suspended(rule: Rule): Boolean =
+    active.exists(_ eq rule)
 
   // variables bound by let, match, and the combinators, which are neither universal nor existential
   def bind(xs: List[Var]) =
@@ -220,6 +238,9 @@ object Context:
 
   // the contexts of combinators by their dependencies, bound variables, and the key of the outer context
   type Combinators = Map[(List[Expr], List[Var], Key), Context]
+
+  // the values of the bound variables of combinators by their dependencies, bound variables, and the definitions
+  type Reads = Map[(List[Expr], List[Var], Chains), List[Expr]]
 
   val empty = Context(Nil, Set(), Set(), Facts.empty, Chains.empty, Diffs.empty, None)
 

@@ -45,15 +45,25 @@ object Rewrite:
   // matching modulo associativity and commutativity may find several matches with different results,
   // e.g. x - y matches a - b with y = b, y = -a, and y = b - a, the first one is taken (see TODO.md)
   def apply(config: Config, state: State, ctx: Context, rule: Rule, expr: Expr, self: Option[Var] = None): Expr =
+    if ctx.suspended(rule)
+    then expr
+    else applyActive(config, state, ctx, rule, expr, self)
+
+  // the rule is suspended while its left-hand side is matched and its conditions are evaluated (see Context.active):
+  // a condition that mentions the rule's own term, l == current(Lv) for a rule on current(Lv), would otherwise be
+  // rewritten by the rule itself, and a condition that is matched against an invs fact builds the context of that
+  // fact's combinator, whose reads the rule would otherwise rewrite into instances of its own left-hand side again
+  def applyActive(config: Config, state: State, ctx: Context, rule: Rule, expr: Expr, self: Option[Var]): Expr =
     // the rules applied while matching count only if this rule applies (see Context.applied)
     val applied = ctx.applied.value
+    val ctx_ = ctx.copy(active = rule :: ctx.active)
     val results =
       for
-        subst <- matches(config, state, ctx, rule.params, rule.vars, Set(), rule.lhs, self, Map(), Set(), expr, Subst.empty)
+        subst <- matches(config, state, ctx_, rule.params, rule.vars, Set(), rule.lhs, self, Map(), Set(), expr, Subst.empty)
         subst_ <- conditions(
           config,
           state,
-          ctx,
+          ctx_,
           rule.params,
           rule.vars,
           Set(),
@@ -61,8 +71,8 @@ object Rewrite:
           None,
           Map(),
           Set(),
-          ctx.known,
-          holds(config, state, ctx, _),
+          ctx_.known,
+          holds(config, state, ctx_, _),
           subst
         )
         // variables of the rule that the match leaves open: those of the left-hand side occur only in cases of the

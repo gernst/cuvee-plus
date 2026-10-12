@@ -213,8 +213,12 @@ the even numbers that `main` passes).
   `sum_consts_prefix`, had the left-hand side `sum(js)`, which matched the
   `sum(prefix(...))` that `earlier_sums` makes of the read of a trace of sums
   (see TODO.md). Such a rule is not decreasing in the sense of conditional
-  rewriting, since its condition is not smaller than its left-hand side.
-  Instead, a definition lemma abstracts the constraint by an atom, e.g.
+  rewriting, since its condition is not smaller than its left-hand side; since
+  0.42.3 the run terminates (the rule is suspended while its condition is
+  matched, and the reads of a context are normalized by the rules without an
+  `invs` condition, [simplifier.md](simplifier.md)), but the rule still does
+  not apply, since the read it would match is not rewritten while it is
+  suspended. Instead, a definition lemma abstracts the constraint by an atom, e.g.
   `consts_prefix_def`:
   `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), js) == c) <==> consts_prefix(n, c, js)`,
   and the lemma that needs the constraint takes the atom as its side
@@ -260,12 +264,15 @@ the even numbers that `main` passes).
     it does, through the context). A rule takes `Kv == counter(0, 1, m)`,
     `Rv == results(false, ⌊Kv⌋, rs)` as open conditions, matched against the
     hypotheses, and uses `⌊Kv⌋` afterwards.
-  - **No condition on the rule's own left-hand side term.** The instance of a
-    condition is simplified before it is decided or matched, so a condition
-    `l == current(Lv)` of a rule on `current(Lv)` with `Lv` bound rewrites
-    `current(Lv)` by the rule itself and does not terminate; this is why the
-    summaries take `current(results(...))` as left-hand side rather than
-    `results(...)`, and why lower_bound.dfy is open (TODO.md).
+  - **A condition on the rule's own left-hand side term** is admissible since
+    0.42.3: the instance of a condition is simplified before it is decided or
+    matched, and a condition `l == current(Lv)` of a rule on `current(Lv)`
+    with `Lv` bound rewrote `current(Lv)` by the rule itself without end;
+    the rule is suspended while its conditions are evaluated
+    (`Context.active`, [simplifier.md](simplifier.md)). The summaries took
+    `current(results(...))` as left-hand side rather than `results(...)` for
+    this reason, and lower_bound.dfy stays open for another (its summary leaves
+    the dependency variables unbound, TODO.md).
   - **Arithmetic conditions in the goal's form.** The decision procedure
     combines difference constraints; `len <= 2 * integer(m) + 1` is not
     decided from `n <= integer(m) + lo + 1` and `lo == integer(m)`, while
