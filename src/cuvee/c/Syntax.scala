@@ -156,9 +156,18 @@ case object Typedef extends Top
 case class Function(typ: Type, name: String, params: List[(Type, String)], body: Option[Block]) extends Top
 // the contract of ACSL of the function that follows (see Parser.resolve)
 case class Contract(clauses: List[Clause]) extends Top
+// the global declarations of ACSL in one annotation, those of an axiomatic, whose name only groups them and is
+// dropped, or others outside of an axiomatic: logic functions and predicates (BoolType), with a body or without,
+// and axioms and lemmas by their keyword (see Parser.logic)
+case class Logical(decls: List[Top]) extends Top
+case class LogicFun(typ: Type, name: String, params: List[(Type, String)], body: Option[Expr]) extends Top
+case class Property(kind: String, name: String, phi: Expr) extends Top
 
 object Global extends (Decl => Top)
 object Function extends ((Type, String, List[(Type, String)], Option[Block]) => Top)
 object Contract extends (List[Clause] => Top)
+object Logical extends (List[Top] => Top)
+object LogicFun extends ((Type, String, List[(Type, String)], Option[Expr]) => Top)
+object Property extends ((String, String, Expr) => Top)
 
 case class Loop(test: Option[Expr], body: Stmt, step: Option[Stmt]) extends Stmt

@@ -6,6 +6,7 @@ import cuvee.Error
 import cuvee.core
 import cuvee.core.State
 import cuvee.core.Attrs
+import cuvee.sexpr
 
 // resolution of a C translation unit into core procedures:
 // integer types are Int (unbounded), _Bool is Bool, arrays are values of type Array Int T;
@@ -17,6 +18,9 @@ import cuvee.core.Attrs
 class Parser(var state: State, arch: Int, unbounded: Boolean):
   // the signatures of the functions by name
   val functions = mutable.Map[String, Function]()
+
+  // the logic functions and predicates of ACSL by name (see logic)
+  val logics = mutable.Map[String, LogicFun]()
 
   // the global variables with their C types
   val globals = mutable.Map[String, (core.Var, Type)]()
@@ -37,9 +41,11 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
   type Scope = Map[String, (core.Var, Type)]
 
-  // the environment of the terms of ACSL: the result of the function, \result in a postcondition, and in the clauses
-  // of a loop, the copies of the variables at its entry, \at(x, LoopEntry), which are assigned before it (see loop)
-  case class Env(result: Option[(core.Var, Type)], entry: Option[(Ctx, mutable.LinkedHashMap[core.Var, core.Var])])
+  // the environment of the terms of ACSL: the result of the function, \result in a postcondition, in the clauses
+  // of a loop, the copies of the variables at its entry, \at(x, LoopEntry), which are assigned before it (see loop),
+  // and the variables bound by the quantifiers around a term, which have no copies
+  case class Env(result: Option[(core.Var, Type)], entry: Option[(Ctx, mutable.LinkedHashMap[core.Var, core.Var])],
+                 bound: Set[core.Var] = Set())
 
   object Env:
     val empty = Env(None, None)
@@ -624,7 +630,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
           require(env.entry.isDefined)
         val Some((ctx, copies)) = env.entry: @unchecked
         val (arg_, t) = term(scope, env, arg)
-        val xs = arg_.free.toList.filter(x => scope.values.exists(_._1 == x))
+        val xs = arg_.free.toList.filter(x => scope.values.exists(_._1 == x) && !env.bound.contains(x))
         val ys = for x <- xs yield copies.getOrElseUpdate(x, temp(ctx, scope.values.find(_._1 == x).get._2))
         (core.Subst.from(xs, ys)(arg_), t)
 
@@ -707,10 +713,23 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
       case Cast(BoolType, e) =>
         (predicate(scope, env, e), BoolType)
 
+      // calls of logic functions, whose arguments are converted to the types of the parameters
+      case Call(f, args) if logics.contains(f) =>
+        val LogicFun(t, _, params, _) = logics(f)
+        Error.report("wrong number of arguments", f, args):
+          require(params.length == args.length)
+        val args_ =
+          for ((pt, _), arg) <- params zip args
+          yield
+            val (arg_, at) = term(scope, env, arg)
+            coerce(arg_, at, values(pt))
+        (state.exprs.app(f, args_), values(t))
+
+      // quantified pointers are arrays, as the parameters of logic functions (see values)
       case Quant(quant, bound, body) =>
-        val xs = for (t, x) <- bound yield (x, state.exprs.formal(x, typ(t)), t)
+        val xs = for (t, x) <- bound yield (x, state.exprs.formal(x, typ(values(t))), values(t))
         val scope_ = scope ++ xs.map((x, v, t) => x -> (v, t))
-        val body_ = predicate(scope_, env, body)
+        val body_ = predicate(scope_, env.copy(bound = env.bound ++ xs.map(_._2)), body)
         val guards = xs.flatMap((_, v, t) => bounds(t, v))
         val guard = if guards.isEmpty then None else Some(guards.reduce((phi, psi) => state.exprs.app("and", List(phi, psi))))
         val vs = xs.map(_._2)
@@ -720,6 +739,21 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
       case _ =>
         Error.raise("not supported in annotations", e)
+
+  // the pointers of the signatures of logic functions and of quantified variables are the arrays they point to,
+  // since arrays are values, e.g. int *a and int **m for the arrays int a[] and int m[][]
+  def values(t: Type): Type =
+    t match
+      case PointerType(elem) => ArrayType(values(elem))
+      case ArrayType(elem)   => ArrayType(values(elem))
+      case _                 => t
+
+  // a term of type `from` as one of type `to`, e.g. the argument of a logic function
+  def coerce(e: core.Expr, from: Type, to: Type): core.Expr =
+    to match
+      case BoolType                => toBool(e, from)
+      case IntType(_, _) | Integer => toInt(e, from)
+      case _                       => e
 
   def relation(op: String) =
     op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || op == ">="
@@ -1503,16 +1537,58 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
 
     mod
 
+  // the global declarations of ACSL: logic functions and predicates are functions, defined by their body if they
+  // have one, which may call them recursively, axioms are axioms, and lemmas are free lemmas, which are trusted,
+  // since their proofs need induction in general, both named; their terms cannot refer to the variables of the program
+  def logic(top: Top): List[core.Cmd] =
+    top match
+      case f @ LogicFun(t, name, params, body) =>
+        Error.report("logic function named like a function of the program", name):
+          require(!functions.contains(name))
+        Error.report("logic function already declared", name):
+          require(!logics.contains(name))
+
+        val formals = params.map((pt, x) => state.exprs.formal(x, typ(values(pt))))
+        state = state.declare(name, Nil, formals, typ(values(t)), Attrs.empty)
+        logics(name) = f
+
+        body match
+          case None =>
+            List(state.cmds.declareFun(name, formals.length))
+
+          case Some(e) =>
+            val scope = (for ((pt, x), v) <- params zip formals yield x -> (v, values(pt))).toMap
+            val (e_, et) = term(scope, Env.empty, e)
+            val body_ = state.exprs.check(core.Scope.empty ++ formals, coerce(e_, et, values(t)), typ(values(t)))
+            state = state.define(name, formals.length, body_)
+            List(state.cmds.defineFun(name, formals.length))
+
+      case Property(kind, name, phi) =>
+        val phi_ = formula(Map(), Env.empty, phi)
+        val named = "named" -> Some(sexpr.Id(name))
+        if kind == "axiom"
+        then List(state.cmds.axiom(Nil, phi_, Attrs(List(named))))
+        else List(state.cmds.lemma(Nil, phi_, Attrs(List("free" -> None, named))))
+
+      case _ =>
+        Nil
+
   def resolve(unit: List[Top]): List[core.Cmd] =
+    // the declarations of an annotation of ACSL in its place
+    val unit_ =
+      unit.flatMap:
+        case Logical(decls) => decls
+        case top            => List(top)
+
     val tops =
-      unit.collect:
+      unit_.collect:
         case f @ Function(_, name, _, _) if !Syntax.builtin(name) => readonly(f)
         case top if !top.isInstanceOf[Function]                   => top
 
     // the contracts of ACSL by the names of the functions that follow them, those of declarations and of the
     // definition together, where repeated clauses count once
     val contracts = mutable.Map[String, List[Clause]]()
-    for case (Contract(clauses), next) <- unit zip (unit.tail.map(Some(_)) :+ None)
+    for case (Contract(clauses), next) <- unit_ zip (unit_.tail.map(Some(_)) :+ None)
     do
       next match
         case Some(Function(_, name, _, _)) => contracts(name) = (contracts.getOrElse(name, Nil) ++ clauses).distinct
@@ -1571,6 +1647,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
         val phi = zeros.reduce((phi, psi) => state.exprs.app("and", List(phi, psi)))
         state.exprs.check(core.Scope.empty ++ globals.values.map(_._1).toList, phi, state.types.sort("Bool"))
 
+    // the declarations of ACSL in their order before the contracts of the procedures, which may refer to them
+    val logical = mutable.Queue.from(tops.collect { case top @ (_: LogicFun | _: Property) => logic(top) })
+
     // procedures are declared before the bodies are resolved, since they may call each other
     for (name, Function(ret, _, params, _)) <- defs
     do
@@ -1603,6 +1682,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean):
         case Global(Decl(_, _, decls)) =>
           for Declarator(_, x, _, _) <- decls
           do cmds += state.cmds.declareVar(x)
+
+        case _: LogicFun | _: Property =>
+          cmds ++= logical.dequeue()
 
         case f @ Function(_, name, _, _) if defs(name) eq f =>
           f.body match

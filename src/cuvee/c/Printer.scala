@@ -2,6 +2,7 @@ package cuvee.c
 
 import util.Name
 import cuvee.Error
+import cuvee.sexpr
 import cuvee.core._
 
 import easyprint.Doc
@@ -124,9 +125,19 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareProc(Proc(name_, Nil, in, out), attrs) if out.length <= 1 =>
         contract(name_, out, attrs) ~ signature(name_, in, out) ~ text(";")
 
-      // uninterpreted functions, e.g. the predicates of Horn clauses
-      case DeclareFun(Fun(name_, Nil, formals, res), _) =>
-        doc(res) ~~ call(name(name_), if formals.isEmpty then List(text("void")) else formals.map(decl)) ~ text(";")
+      // functions are the logic functions and predicates of ACSL, e.g. those of Parser.logic and the predicates of
+      // Horn clauses, if ACSL has their types
+      case DeclareFun(Fun(name_, Nil, formals, res), _) if (res :: formals.map(_.typ)).forall(ints) =>
+        global(logic(name_, formals, res) ~ text(";"))
+
+      case DefineFun(Fun(name_, Nil, formals, res), body, _) if (res :: formals.map(_.typ)).forall(ints) =>
+        global(Group(logic(name_, formals, res) ~~ text("=") ~ Nest(2, line ~ doc(body))) ~ text(";"))
+
+      // the axioms and lemmas of ACSL, which are named, where lemmas are free (see Parser.logic)
+      case Assert(justify @ (Axiom | Lemma), Nil, phi, attrs) if attrs.values[sexpr.Id]("named").nonEmpty =>
+        val kw = if justify == Axiom then "axiom" else "lemma"
+        val label = attrs.values[sexpr.Id]("named").head.text
+        global(Group(text(kw) ~~ text(label + ":") ~ Nest(2, line ~ doc(phi))) ~ text(";"))
 
       // contracts are omitted, e.g. the zero values of global variables as the precondition of main
       // the result is a local variable, assigned as in the input, which each return returns,
@@ -138,6 +149,36 @@ object Printer extends cuvee.pipe.Printer:
 
       case _ =>
         smtlib(cuvee.smtlib.Printer.command(cmd))
+
+  // a global annotation of ACSL, /*@ logic ...; */, whose terms are printed as those of ACSL
+  def global(body: => Doc): Doc =
+    acsl = true
+    try text("/*@") ~~ body ~~ text("*/")
+    finally acsl = false
+
+  // the signature of a logic function, or of a predicate for the result Bool
+  def logic(name_ : Name, formals: List[Var], res: Type): Doc =
+    val head = if res == Sort.bool then text("predicate") else text("logic") ~~ logical(res)
+    head ~~ call(name(name_), formals.map(binder))
+
+  // the types of ACSL, where arrays, which are values, are pointers to their elements, int *a for Array Int Int,
+  // as in the signatures of logic functions and quantified variables that the parser reads (see Parser.values)
+  def logical(typ: Type): Doc =
+    typ match
+      case Sort.int  => text("integer")
+      case Sort.bool => text("boolean")
+      case _         => text(pointers(typ))
+
+  def pointers(typ: Type): String =
+    typ match
+      case Sort(Con.array, List(Sort.int, elem)) => pointers(elem) + " *"
+      case Sort.int                              => "int"
+      case _                                     => Error.raise("type not supported in ACSL", typ)
+
+  def binder(x: Var): Doc =
+    x.typ match
+      case Sort(Con.array, _) => text(pointers(x.typ) + name(x.name))
+      case _                  => logical(x.typ) ~~ text(name(x.name))
 
   // the clauses of an annotation of ACSL, /*@ requires ...; ensures ...; */, each on a line of its own
   def annotation(clauses: List[(String, Expr)]): Doc =
@@ -181,12 +222,22 @@ object Printer extends cuvee.pipe.Printer:
     val clauses = attrs.invariants.map("loop invariant" -> _) ++ attrs.decreases.map("loop variant" -> _)
     if clauses.isEmpty then empty else annotation(clauses) ~ hardline
 
-  // whether an expression is not C, but ACSL: quantifiers, implications, and old values
+  // whether an expression is not C, but ACSL: quantifiers, implications, old values, and calls of logic functions,
+  // those that are not written as operators or as the functions of the prelude of C (see doc)
   def logical(expr: Expr): Boolean =
     expr match
-      case Bind(_, _, _) | Imp(_, _) | Old(_) => true
-      case App(_, _, _, args)                 => args.exists(logical)
-      case _                                  => false
+      case Bind(_, _, _) | Imp(_, _) | Old(_)                                          => true
+      case prelude(expr_)                                                              => logical(expr_)
+      case App(fun, _, _, args) if args.nonEmpty && fun.params.isEmpty && !operator(expr) => true
+      case App(_, _, _, args)                                                          => args.exists(logical)
+      case _                                                                           => false
+
+  // whether an application is written as C: an operator, a selection, a conditional, or the null pointer constant
+  def operator(expr: Expr): Boolean =
+    expr match
+      case Select(_, _) | Ite(_, _, _)                              => true
+      case App(Fun(Name("null", None), _, Nil, _), _, _, Nil)       => true
+      case _                                                        => prefix(expr).isDefined || infix(expr).isDefined
 
   def braces(docs: List[Doc]): Doc =
     if docs.isEmpty
@@ -439,6 +490,13 @@ object Printer extends cuvee.pipe.Printer:
         case App(Fun(Name("number", None), Nil, _, _), _, _, List(arg)) => Some(Ite(arg, Ints.one, Ints.zero))
         case _                                                        => None
 
+  // the types of the variables of quantifiers of ACSL (see binder)
+  def ints(typ: Type): Boolean =
+    typ match
+      case Sort.int | Sort.bool                  => true
+      case Sort(Con.array, List(Sort.int, elem)) => elem != Sort.bool && ints(elem)
+      case _                                     => false
+
   def doc(expr: Expr): Doc =
     expr match
       case prelude(expr_) =>
@@ -468,10 +526,9 @@ object Printer extends cuvee.pipe.Printer:
       case Old(arg) if acsl =>
         text("\\old(") ~ Align(doc(arg)) ~ text(")")
 
-      // quantifiers of ACSL over the mathematical integers and the truth values
-      case Bind(quant, bound, body) if acsl && (quant == All.name || quant == Ex.name) && bound.forall(x => x.typ == Sort.int || x.typ == Sort.bool) =>
-        val binders = bound.map(x => text(if x.typ == Sort.int then "integer" else "boolean") ~~ text(name(x.name)))
-        Group(text("\\" + quant.name) ~~ commas(binders) ~ text(";") ~ Nest(2, line ~ doc(body)))
+      // quantifiers of ACSL over the mathematical integers, the truth values, and arrays of integers, as pointers
+      case Bind(quant, bound, body) if acsl && (quant == All.name || quant == Ex.name) && bound.forall(x => ints(x.typ)) =>
+        Group(text("\\" + quant.name) ~~ commas(bound.map(binder)) ~ text(";") ~ Nest(2, line ~ doc(body)))
 
       // the null pointer constant
       case App(Fun(Name("null", None), _, Nil, _), _, _, Nil) =>
@@ -504,11 +561,11 @@ object Printer extends cuvee.pipe.Printer:
       case Let(bound, args, body) =>
         doc(Subst.from(bound, args)(body))
 
-      // other functions, e.g. the predicates of Horn clauses
-      case App(fun, Nil, _, Nil) =>
+      // other functions without type parameters, e.g. the logic functions of ACSL and the predicates of Horn clauses
+      case App(fun, _, _, Nil) if fun.params.isEmpty =>
         text(name(fun.name))
 
-      case App(fun, Nil, _, args) =>
+      case App(fun, _, _, args) if fun.params.isEmpty =>
         call(name(fun.name), args.map(doc(_)))
 
       case _ =>

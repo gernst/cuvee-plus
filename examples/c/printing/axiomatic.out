@@ -1,0 +1,56 @@
+/*@ logic integer sum(int *a, integer n); */
+
+/*@ axiom sum_zero: \forall int *a; sum(a, 0) == 0; */
+
+/*@ axiom sum_step:
+  \forall int *a, integer n; n > 0 ==> sum(a, n) == sum(a, n - 1) + a[n - 1]; */
+
+/*@ lemma sum_nonneg:
+  \forall int *a,
+  integer n;
+    n >= 0 && (\forall integer k; 0 <= k && k < n ==> a[k] >= 0)
+      ==> sum(a, n) >= 0; */
+
+/*@ logic integer twice(integer x) = 2 * x; */
+
+/*@ predicate small(integer x) = x < 100; */
+
+/*@
+  requires n >= 0;
+  ensures \result == sum(a, n);
+*/
+int total(int a[], int n) {
+  int result;
+  int s;
+  s = 0;
+  int i;
+  i = 0;
+  /*@
+    loop invariant 0 <= i && i <= n;
+    loop invariant s == sum(a, i);
+  */
+  while (i < n) {
+    s = s + a[i];
+    i = i + 1;
+  }
+  result = s;
+  return result;
+}
+
+int main(void) {
+  int result;
+  int tmp_1;
+  int a[];
+  int t;
+  a[0] = 1;
+  a[1] = 2;
+  a[2] = 3;
+  tmp_1 = total(a, 3);
+  t = tmp_1;
+  /*@
+    assert t == sum(a, 3) && twice(3) == 6 && small(t);
+  */
+  result = 0;
+  return result;
+}
+

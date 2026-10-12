@@ -42,8 +42,10 @@ object Printing extends TestSuite:
         List("SMT_LIB((assert", "          (forall ((x Int)) (=> (p x) (< x 1)))))", "")
 
     test("declarations"):
-      print(DeclareFun(p, Attrs.empty)) ==> List("_Bool p(int x_0);", "")
-      print(DefineFun(p, Ex(List(x), Ints.lt(x, Ints.one)), Attrs.empty)).head ==> "SMT_LIB((define-fun"
+      // functions are the logic functions and predicates of ACSL
+      print(DeclareFun(p, Attrs.empty)) ==> List("/*@ predicate p(integer x_0); */", "")
+      print(DefineFun(p, Ex(List(x), Ints.lt(x, Ints.one)), Attrs.empty)) ==>
+        List("/*@ predicate p(integer x_0) = \\exists integer x; x < 1; */", "")
       print(CheckSat) ==> List("SMT_LIB((check-sat))", "")
 
     // models are not programs, they are SMT-LIB

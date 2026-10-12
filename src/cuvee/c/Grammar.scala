@@ -348,11 +348,28 @@ object Grammar:
   val contract =
     Contract(P("/*@" ?~ clause.+ ~ "*/"))
 
+  // the global declarations of ACSL: logic functions and predicates, whose reads clause is skipped, since arrays are
+  // values, and axioms and lemmas; an axiomatic groups them under a name, which is dropped, the others stand alone
+  val definition: Parser[Option[Expr]] =
+    P("=" ~ expr ~ ";").map(Some(_)) | ("reads" ~ Until(";")).map(None) | ";".map(None)
+
+  val logicfun =
+    LogicFun(P(("logic" ~ pointer | "predicate".map(BoolType)) ~ id ~ params ~ definition))
+
+  val property =
+    Property(P((J("axiom") | J("lemma")) ~ id ~ ":" ~ expr ~ ";"))
+
+  val logicdecl: Parser[Top] =
+    P(logicfun | property)
+
+  val declarations =
+    Logical(P("/*@" ?~ (P("axiomatic" ~ id ~ braces(logicdecl.*)).map(_._2) | logicdecl.+) ~ "*/"))
+
   val typedef_ =
     Typedef("typedef" ~ Until(";"))
 
   val top: Parser[Top] =
-    P(typedef_ | contract | function | global)
+    P(typedef_ | declarations | contract | function | global)
 
   // at least one declaration, such that a declaration that is not supported is a parse error,
   // where top.* would succeed without consuming input, which the pipeline then parses again forever

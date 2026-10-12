@@ -2,6 +2,8 @@ void main(void) {
   int x;
   x = __VERIFIER_nondet_int();
   __VERIFIER_assume(0 <= x);
-  assert(SMT_LIB((quotient x 2)) <= x);
+  /*@
+    assert quotient(x, 2) <= x;
+  */
 }
 

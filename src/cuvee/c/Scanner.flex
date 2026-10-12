@@ -53,7 +53,7 @@ sym = {id}
 
 // the keywords of ACSL that have counterparts in the core (see Grammar.contract), which are names in C
 acsl = "requires" | "ensures" | "assigns" | "decreases" | "loop" | "invariant" | "variant" | "assert"
-     | "integer" | "boolean"
+     | "integer" | "boolean" | "axiomatic" | "logic" | "predicate" | "reads" | "axiom" | "lemma"
      | "\\result" | "\\old" | "\\at" | "\\forall" | "\\exists" | "\\true" | "\\false" | "\\nothing"
      | "\\valid" | "\\valid_read"
 

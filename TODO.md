@@ -924,11 +924,26 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   `assigns` and `loop assigns` are skipped (the modifies clauses are
   inferred). `\at(e, L)` for `Pre`, `Here`, `LoopEntry`, `\valid` and
   `\valid_read` (true), ranges of unsigned variables as in Frama-C/WP, and
-  `&`, `|`, `^` of truth values (0.39.3). Not supported: other `\...`
-  constructs (`\separated`, other labels, ...), behaviors, ghost code, logic definitions, calls in
-  annotations; contracts of `main` are conjoined with the zero values of the
-  globals. The printer writes contracts, loop invariants and variants, and
-  assertions that are not C (quantifiers, implications, `\old`) as ACSL.
+  `&`, `|`, `^` of truth values (0.39.3). Global declarations (0.40.0):
+  `axiomatic Name { ... }`, whose name is dropped (it groups, it does not
+  scope), and the same declarations outside of one: `logic T f(params)` and
+  `predicate p(params)`, uninterpreted or `= body` (also recursive), with
+  `reads` skipped, as `DeclareFun`/`DefineFun`; `axiom name: phi;` as
+  `Assert(Axiom)`, `lemma name: phi;` as `Assert(Lemma)` with `:free`
+  (trusted, inductive lemmas are beyond z3), both `:named`; calls of logic
+  functions in terms; pointers in logic signatures and quantifiers are
+  arrays (`int *a`, `int **m`); logic declarations cannot refer to program
+  variables (pass them as parameters). Not supported: other `\...`
+  constructs (`\separated`, other labels, ...), labels of lemmas
+  (`lemma l{L1, L2}`, state them over two arrays), behaviors, ghost code,
+  calls of C functions in annotations; contracts of `main` are conjoined
+  with the zero values of the globals. The printer writes contracts, loop
+  invariants and variants, and assertions that are not C (quantifiers,
+  implications, `\old`, calls of logic functions) as ACSL, and functions
+  (`DeclareFun`, `DefineFun`), axioms and named lemmas as global ACSL
+  declarations. Step axioms of recursive definitions are best stated
+  backwards, `n > 0 ==> f(a, n) == f(a, n-1) + a[n-1]`: z3 cannot trigger on
+  `f(a, n+1)` (`+` is interpreted) and unfolds `f(a, n)` forever.
 - ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the tasks of the
   categories Arrays and Loops with hand-written annotations, checked with
   `-vcgen -z3`, 0.38.0; the issues of the support found so far, by impact):
@@ -970,16 +985,11 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   - Contracts of functions that read globals need the globals' values as
     preconditions (`loops/eureka_05`, `requires n == 5`), as in Frama-C; a
     contract on `main` is the only one that sees the initial values.
-  - The annotations of whole folders need constructs beyond 0.38.0: logic
-    functions in an `axiomatic` for sums and folds over arrays
-    (`array-crafted`, `reducercommutativity`, `array-patterns`, and
-    `loops/vogal-1`; about 100 tasks, a generic parse error at `/*@
-    axiomatic`), lemmas, also with labels (`lemma fold_swap{L1, L2}` on
-    `\at(fold(x, n), L2)`), `\min` (`array-programs/partial_mod_count_limited_*`),
-    `\valid` in contracts of functions on arrays and structs (`array-lopstr16`,
-    `array-industry-pattern`, `array-examples/data_structures_*`,
-    `sanfoundry_43`, `standard_strcmp`), matrices flattened by `(int *) array`
-    in logic functions.
+  - The annotations of whole folders need `\min`
+    (`array-programs/partial_mod_count_limited_*`). Done in 0.40.0: logic
+    functions in an `axiomatic` and lemmas (the labels of lemmas and the
+    flattened matrices restated in the annotations, see below); the memory
+    clauses (`\valid`, structs) are removed from the annotations.
   - Z3 answers `Unknown` on nonlinear closed forms: `nla-digbench/geo*`
     modulo 2^64, `lcm2`, `prod4br`; `array-programs/partial_mod_count_2-5`
     (counts with integer division); `array-patterns/array26` (parity of a
@@ -1021,35 +1031,13 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     ends in a parse error),
     `array-crafted`, `reducercommutativity`, `array-patterns` mostly
     `axiomatic`.
-  - Parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks of benchmarks/acsl, 95 of them left). The
-    message names no position, only the tokens of the top-level declaration that fails; `file:line` below is
-    the line where that declaration starts.
-    - Global logic declarations (95 tasks): `/*@ axiomatic A { logic integer f(integer n); } */` fails already
-      without axioms and lemmas, as does a plain `/*@ logic integer f(integer n) = n; */`. `axiomatic Fold`
-      (53): `array-crafted`: `bAnd1.i:26`, `bAnd2.i:26`, `bAnd3.i:26`, `bAnd4.i:26`, `bAnd5.i:27`,
-      `bor1.i:26`, `bor2.i:26`, `bor3.i:26`, `bor4.i:26`, `bor5.i:27`, `mapavg1.i:26`, `mapavg2.i:26`,
-      `mapavg3.i:26`, `mapavg4.i:26`, `mapavg5.i:27`, `mapsum1.i:26`, `mapsum2.i:26`, `mapsum3.i:26`,
-      `mapsum4.i:26`, `mapsum5.i:27`, `xor1.i:26`, `xor2.i:26`, `xor3.i:26`, `xor4.i:26`, `xor5.i:27`;
-      `reducercommutativity`: `avg05-1.i:23`, `avg10-2.i:23`, `avg20-2.i:23`, `avg40-2.i:23`, `avg60-1.i:23`,
-      `max.i:25`, `max05-1.i:23`, `max10-1.i:23`, `max20-1.i:23`, `max40-1.i:23`, `max60-2.i:23`,
-      `rangesum.i:36`, `rangesum05.i:35`, `rangesum10.i:35`, `rangesum20.i:35`, `rangesum40.i:35`,
-      `rangesum60.i:35`, `sep.i:25`, `sep05-1.i:23`, `sep10-2.i:23`, `sep20-1.i:23`, `sep40-1.i:23`,
-      `sep60-2.i:23`, `sum05-2.i:23`, `sum10-1.i:23`, `sum20-2.i:23`, `sum40-2.i:23`, `sum60-2.i:23`.
-      `axiomatic Asum` (18): `array-patterns`: `array10_pattern.c:52`, `array11_pattern.c:52`,
-      `array1_pattern.c:49`, `array1_pattern_buggy.c:49`, `array2_pattern.c:49`, `array2_pattern_buggy.c:49`,
-      `array3_pattern.c:59`, `array3_pattern_buggy.c:59`, `array4_pattern.c:59`, `array4_pattern_buggy.c:59`,
-      `array5_pattern.c:60`, `array5_pattern_buggy.c:60`, `array6_pattern.c:52`, `array6_pattern_buggy.c:52`,
-      `array7_pattern.c:53`, `array7_pattern_buggy.c:53`, `array8_pattern.c:52`, `array9_pattern.c:52`.
-      `axiomatic Msum` (14): `array-patterns`: `array12_pattern.c:53`, `array13_pattern.c:52`,
-      `array14_pattern.c:51`, `array15_pattern.c:58`, `array16_pattern.c:52`, `array17_pattern.c:54`,
-      `array18_pattern.c:54`, `array19_pattern.c:54`, `array20_pattern.c:53`, `array21_pattern.c:62`,
-      `array22_pattern.c:62`, `array23_pattern.c:62`, `array24_pattern.c:62`, `array28_pattern.c:50`.
-      `axiomatic Sum` (9): `array-crafted`: `zero_sum1.c:25`, `zero_sum2.c:25`, `zero_sum3.c:25`,
-      `zero_sum4.c:25`, `zero_sum5.c:25`, `zero_sum_m2.c:25`, `zero_sum_m3.c:25`, `zero_sum_m4.c:25`,
-      `zero_sum_m5.c:25`. `axiomatic Count` (1): `loops`: `vogal-1.i:40`.
-    - Struct declarations of the programs (33 tasks), and a field selector after a range, `assigns
-      a[0..size-1].n;` in 3 more programs with structs: the 37 tasks with structs are removed from
-      benchmarks/acsl (see its README).
+  - Done in 0.40.0: the parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks). The 95
+    global logic declarations (`axiomatic Fold` 53, `Asum` 18, `Msum` 14, `Sum` 9, `Count` 1) are supported
+    (see ACSL annotations above), with the annotations restated: no `reads`, step axioms backwards, the lemmas
+    with labels over two arrays, `Msum` over `int **a` instead of the flattened matrix, the labels `L1`, `L2`
+    of the reducers and their assertions removed, `\at(e, LoopEntry)` in the rotation loops, the global `N` a
+    parameter of `fold` in `rangesum`. The 37 tasks with structs (33 parse errors, 3 with a field selector after
+    a range in `assigns`, `relax-2-2`) are removed from benchmarks/acsl (see its README).
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
