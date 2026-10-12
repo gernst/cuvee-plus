@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md): for odd y one iteration takes x from 0 to 2^32-5 (unsigned wrap-around), which ends the loop
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -25,7 +25,7 @@ int main(void) {
   unsigned int y = __VERIFIER_nondet_uint();
 
   /*@ loop invariant y % 2 == 0 ==> x % 2 == 0;
-      loop invariant y % 2 != 0 ==> (x == 0 || x % 2 == 1);
+      loop invariant y % 2 != 0 ==> (x == 0 || x == 4294967291);
       loop assigns x; */
   while (x < 99) {
     if (y % 2 == 0) x += 2;

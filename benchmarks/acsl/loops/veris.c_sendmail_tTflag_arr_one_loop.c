@@ -39,7 +39,7 @@ int main (void)
   i = 0;
   c = in[idx_in];
   /*@ loop invariant 0 <= idx_in <= 10;
-      loop invariant c == in[idx_in];
+      loop invariant c == (unsigned char) in[idx_in];
       loop invariant in[10] == 0;
       loop assigns c, i, j, idx_in; */
   while (('0' <= c) && (c <= '9'))

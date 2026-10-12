@@ -60,7 +60,10 @@ int main()
   index2 = __VERIFIER_nondet_uint();
   assume_abort_if_not(index2 < 100000);
 
-  /*@ loop invariant index1 <= index2 + 1;
+  /*@ loop invariant index1 + index2 == \at(index1,LoopEntry) + \at(index2,LoopEntry);
+      loop invariant \at(index1,LoopEntry) <= index1;
+      loop invariant loop_entered == 0 ==> index1 == \at(index1,LoopEntry);
+      loop invariant loop_entered != 0 ==> index1 <= index2 + 1 && \at(index1,LoopEntry) <= index2;
       loop invariant index1 < 100000;
       loop invariant index2 < 100000;
       loop invariant \forall integer t; \at(index1,LoopEntry) <= t < index1 ==> array[t] == array[index1 + index2 - t];

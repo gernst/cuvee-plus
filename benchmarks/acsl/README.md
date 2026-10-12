@@ -8,7 +8,8 @@ expected verdict `true` by verification conditions (`-vcgen -z3`).
 - **1161 tasks**, 422 of Arrays and 739 of Loops; 838 expected `true`, 323
   `false`. All have the contracts of the harness, 1119 have loop invariants.
 - **Proved with Cuvée 0.40.0: 603 of the 838 true tasks**, none wrong
-  (60 s per task, Oct 12, 2026, see [Results](#results)).
+  (60 s per task, Oct 12, 2026, see [Results](#results)); 615 with the
+  annotations revised since, by single runs.
 
 ## Origin
 
@@ -84,6 +85,18 @@ followed by a note where they need explanation.
   - a final bound that follows from an element-wise property is a `lemma`
     (`array-patterns`, `total`, `asum_update`). Lemmas are trusted (`:free`),
     since their proofs need induction.
+- **Bitwise operators** on values other than truth values are uninterpreted;
+  a trusted `lemma` states the bits that an invariant fixes
+  (`loop-invariants/bin-suffix-5`: `x % 8 == 5 ==> (x & 5) == 5`).
+- **Assertions** (`//@ assert`) are checked but not assumed afterwards in
+  Cuvée (see [TODO.md](../../TODO.md)), unlike Frama-C/WP: a fact that later
+  goals need is a loop invariant of the later loops instead
+  (`loops-crafted-1/theatreSquare`, the quotients `i == (n + a - 1) / a`).
+  In the reducers `bAnd5`, `bor5`, `xor5`, `mapavg2`, `mapavg3`, `mapsum3`,
+  `reducercommutativity/sum40-2`, `//@ assert ret2 == ret;` after the second
+  call is a hint only: the final goal needs the instances of both `fold_swap`
+  and `fold_rotate`, which z3 does not find on its own, and finds once it has
+  proved the assertion in the same query (without `-split`).
 - **Counts** in `array-programs` are closed forms with integer division and
   `\min`.
 - **Tasks expected `false`** get the invariants that do hold (often those of
@@ -128,11 +141,21 @@ Cuvée 0.40.0, `xml/cuvee-acsl.xml` with 60 s per task (Oct 12, 2026,
 | **total** | **1161** | **838** | **603** | **323** |
 
 Before the support of logic functions (0.39.5, with the memory clauses and
-the labels of the first annotations) 534 were proved.
+the labels of the first annotations) 534 were proved. After this run, the
+annotations of 12 true tasks were revised and prove by single runs with the
+options of the benchmark (`-vcgen -timeout 900000 -z3`, 60 s, Oct 12, 2026):
+the seven reducers with the assertion above (`array-crafted` 43,
+`reducercommutativity` 22); `loop-acceleration/diamond_2-2` (for odd `y` one
+iteration takes `x` from 0 to 2^32-5); `loop-crafted/simple_array_index_value_4`
+(the invariants of the first loop hold also if it is not entered);
+`loop-new/count_by_k` (`i % k == 0` instead of an existential);
+`loop-invariants/bin-suffix-5` (the lemma above); `loops-crafted-1/theatreSquare`
+(the quotients as invariants).
 
 ## Open
 
-The 235 true tasks that are not proved, by cause:
+The 223 true tasks that are not proved (235 of the run above, less the 12
+revised since), by cause:
 
 - **Not supported by Cuvée** (57):
   - gotos to labels whose statement falls through, in the outputs of the
@@ -157,14 +180,12 @@ The 235 true tasks that are not proved, by cause:
   array parameter for its caller, which needs in/out parameters (see
   [TODO.md](../../TODO.md)); `data_structures_set_multi_proc_*` (2) pass
   arrays to functions that change them.
-- **To inspect**: the reducers `bAnd5`, `bor5`, `xor5`, `mapavg2`,
-  `mapavg3`, `mapsum3`, `reducercommutativity/sum40-2` (their variants
-  prove); `loops/vogal-1`, `heavy-2`, `matrix-1`,
-  `veris.c_sendmail_tTflag_arr_one_loop`; `loop-acceleration/diamond_2-2`;
-  `loop-crafted/simple_array_index_value_4`; `loop-new/count_by_k` (an
-  existential invariant); `loop-invariants/bin-suffix-5` (`(x & 5) == 5`,
-  bitwise `&` is uninterpreted); `loops-crafted-1/theatreSquare`; the counter
-  bounds of `egcd3-ll_unwindbound*`.
+- **Uninitialized unsigned locals** in the `loop assigns` of a loop:
+  Cuvée checks the ranges of the unsigned variables that a loop modifies at
+  its entry, but does not assume an uninitialized local in the range of its
+  type (see [TODO.md](../../TODO.md)); `loops/vogal-1`, `heavy-2`,
+  `matrix-1`, `veris.c_sendmail_tTflag_arr_one_loop` prove with the locals
+  initialized.
 - **A bug of the frontend**: `loops-crafted-1/watermelon` declares the
   globals `int true = 1; int false = 0;`, which reach z3 under these names
   and clash with its constants (a solver error, see [TODO.md](../../TODO.md)).

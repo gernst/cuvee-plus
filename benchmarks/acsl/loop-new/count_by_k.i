@@ -39,7 +39,8 @@ int main() {
     k = __VERIFIER_nondet_int();
     if (!(0 <= k && k <= 10)) return 0;
     /*@ loop invariant 0 <= i <= 1000000*k;
-        loop invariant \exists integer q; 0 <= q && i == q*k;
+        loop invariant k == 0 ==> i == 0;
+        loop invariant k > 0 ==> i % k == 0;
         loop assigns i; */
     for (i = 0; i < 1000000*k; i += k) ;
     __VERIFIER_assert(i == 1000000*k);

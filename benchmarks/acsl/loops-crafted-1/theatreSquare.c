@@ -60,6 +60,7 @@ int correct_version(int n, int m, int a)
 
     /*@ loop invariant j >= 0;
         loop invariant l == j*a;
+        loop invariant i == (n + a - 1) / a;
         loop invariant j == 0 || (j-1)*a < m;
         loop assigns l, j; */
     while(l < m)
@@ -72,6 +73,7 @@ int correct_version(int n, int m, int a)
     
     /*@ loop invariant 0 <= x <= i;
         loop invariant y == x*j;
+        loop invariant i == (n + a - 1) / a && j == (m + a - 1) / a;
         loop assigns x, y; */
     while(x < i)
     {
@@ -101,6 +103,7 @@ int student_version(int n, int m, int a)
 
     /*@ loop invariant j >= 0;
         loop invariant l == j*a;
+        loop invariant i == (n + a - 1) / a;
         loop invariant j == 0 || (j-1)*a < m;
         loop assigns l, j; */
     while(l < m)
@@ -113,6 +116,7 @@ int student_version(int n, int m, int a)
     
     /*@ loop invariant 0 <= x <= i;
         loop invariant y == x*j;
+        loop invariant i == (n + a - 1) / a && j == (m + a - 1) / a;
         loop assigns x, y; */
     while(x < i)
     {

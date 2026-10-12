@@ -64,6 +64,7 @@ int main ()
 
   temp=x[0];x[0] = x[1]; x[1] = temp;
   ret2 = sum(x);
+  //@ assert ret2 == ret;
   temp=x[0];
   /*@ loop invariant 0 <= i <= 40-1;
       loop invariant \forall integer k; 0 <= k < i ==> x[k] == \at(x[k+1], LoopEntry);

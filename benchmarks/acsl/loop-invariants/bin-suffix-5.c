@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md): & is uninterpreted in Cuvée, the lemma and_5 states the bits of x that the invariant fixes
 // This file is part of the SV-Benchmarks collection of verification tasks:
 // https://github.com/sosy-lab/sv-benchmarks
 //
@@ -25,6 +25,7 @@ void __VERIFIER_assert(int cond) {
   }
   return;
 }
+/*@ lemma and_5: \forall integer x; 0 <= x && x % 8 == 5 ==> (x & 5) == 5; */
 int main(void) {
   unsigned int x = 5;
   /*@ loop invariant x % 8 == 5;

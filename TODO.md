@@ -44,6 +44,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## Bugs
 
+- `-split` splits an axiom with a conditional (`c ? 1 : 0`, e.g. `cnt_step` of
+  `benchmarks/acsl/loops/vogal-1`) into one axiom per case, each with the same `:named`, which z3 rejects
+  ("named expression already defined", a solver error); the parts need distinct names or none.
 - C: variables named like the constants of SMT-LIB, `int true = 1; int false = 0;`
   (`benchmarks/acsl/loops-crafted-1/watermelon`), keep their names and reach z3 as `(true Int)`, a sort error
   ("solver error"); such names need renaming in the frontend.
@@ -983,8 +986,27 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     hold" "Sat" "(forall ...)")`, without the annotation (loop invariant,
     assertion, postcondition, line) that failed; `-vcgen -z3` prints
     nothing when all goals hold.
-  - `loop-new/count_by_k`: the invariant `\exists integer q; 0 <= q && i ==
-    q*k` (with `k` possibly 0, so not `i % k == 0`) is `Unknown`.
+  - Done by the annotation (Oct 12, 2026): `loop-new/count_by_k` proves with
+    `k == 0 ==> i == 0` and `k > 0 ==> i % k == 0`. Was: the invariant
+    `\exists integer q; 0 <= q && i == q*k` is `Unknown`.
+  - Assertions are checked but not assumed afterwards: `Spec.assert(phi)` is
+    `Spec(Nil, phi, True)`, whose weakest precondition is `phi && (true ==>
+    post)` ([VCGen](src/cuvee/verify/VCGen.scala), case `Spec`), while
+    Frama-C/WP (and Boogie) assume an assertion once it is proved, `phi &&
+    (phi ==> post)`. A `//@ assert` cannot pass a fact on to later goals
+    (`loops-crafted-1/theatreSquare` carries it in loop invariants instead);
+    in the reducers (`array-crafted/bAnd5` etc.) `//@ assert ret2 == ret;`
+    helps only because z3 keeps the quantifier instances of its proof in the
+    same query, not with `-split`. Affects all frontends that use
+    `Spec.assert`.
+  - Uninitialized locals of unsigned types are not in the range of their type:
+    a loop whose `loop assigns` contains one checks its range at the entry
+    (the ranges of the modified unsigned variables are invariants, see above),
+    which fails for `unsigned int i, j;` before `j` is assigned
+    (`loops/vogal-1`, `heavy-2`, `matrix-1`,
+    `veris.c_sendmail_tTflag_arr_one_loop`, all prove with the locals
+    initialized). A declaration without initializer could choose a value in
+    range, as C's indeterminate values are.
   - Contracts of functions that read globals need the globals' values as
     preconditions (`loops/eureka_05`, `requires n == 5`), as in Frama-C; a
     contract on `main` is the only one that sees the initial values.
@@ -1024,7 +1046,8 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     `\null` (`array-industry-pattern/array_ptr_partial_init`, `array-lopstr16/partial_lesser_bound`) end in
     "arrays of pointers are not supported".
   - Results: 603 of the 838 true tasks proved with 0.40.0 (60 s, Oct 12, 2026; 534 with 0.39.5), none wrong;
-    per folder and the causes of the others in [benchmarks/acsl/README.md](benchmarks/acsl/README.md).
+    615 with the annotations of 12 tasks revised since (single runs); per folder and the causes of the others in
+    [benchmarks/acsl/README.md](benchmarks/acsl/README.md).
   - Done in 0.40.0: the parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks). The 95
     global logic declarations (`axiomatic Fold` 53, `Asum` 18, `Msum` 14, `Sum` 9, `Count` 1) are supported
     (see ACSL annotations above), with the annotations restated: no `reads`, step axioms backwards, the lemmas

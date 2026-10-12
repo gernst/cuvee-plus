@@ -67,6 +67,7 @@ int main ()
 
   temp=x[0];x[0] = x[1]; x[1] = temp;
   ret2 = mapavg(x);
+  //@ assert ret2 == ret;
   temp=x[0];
   /*@ loop invariant 0 <= i <= 1000-1;
       loop invariant \forall integer k; 0 <= k < i ==> x[k] == \at(x[k+1], LoopEntry);
