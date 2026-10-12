@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/geo2-ll; the equality is stated modulo 2^64 since x and y are unsigned long long
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/geo2-ll; the equality is exact, since x and y are signed long long here, whose overflow is undefined and not modelled
 /*
 Geometric Series
 computes x = sum(z^k)[k=0..k-1], y = z^(k-1)
@@ -44,7 +44,7 @@ int main() {
     y = 1;
     c = 1;
 
-    /*@ loop invariant (1 + x*z - x - z*y) % 18446744073709551616 == 0;
+    /*@ loop invariant 1 + x*z - x - z*y == 0;
         loop invariant c >= 1;
         loop assigns x, y, c; */
     while (1) {

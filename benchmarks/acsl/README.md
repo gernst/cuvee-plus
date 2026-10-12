@@ -9,7 +9,7 @@ expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
   323 tasks expected `false` are removed). All have the contracts of the
   harness, 799 have loop invariants.
 - **Proved with Cuvée 0.40.0: 603 of the 838 true tasks**, none wrong
-  (60 s per task, Oct 12, 2026, see [Results](#results)); 652 with the
+  (60 s per task, Oct 12, 2026, see [Results](#results)); 682 with the
   annotations revised since, by single runs. These results predate the
   answers of `-verify` (0.41.0), under which refuted annotations of true
   tasks are wrong verdicts (see [Running](#running)); not yet rerun.
@@ -177,7 +177,7 @@ the tasks proved per folder.
 
 Before the support of logic functions (0.39.5, with the memory clauses and
 the labels of the first annotations) 534 were proved. After this run, the
-annotations of 49 tasks were revised and prove by single runs with the
+annotations of 79 tasks were revised and prove by single runs with the
 options of the benchmark (`-vcgen -timeout 900000 -z3`, 60 s, Oct 12, 2026,
 0.40.0 and 0.40.1):
 the seven reducers with the assertion above (`array-crafted` 43,
@@ -189,29 +189,37 @@ iteration takes `x` from 0 to 2^32-5); `loop-crafted/simple_array_index_value_4`
 (the quotients as invariants); the 15 tasks of `hard-ll` and `hard2`, the 8
 of `divbin2` and `divbin2_unwindbound`, the 7 of `divbin2_valuebound`, and
 the 7 of `divbin_valuebound` (predicates instead of shifts, with `-verify`,
-0.41.4).
+0.41.4); 30 refuted annotations corrected (0.41.4): `y >= 0` in the second
+loop of `loops-crafted-1/mono-crafted_1`, `3`, `7`, `13`, `14`; `0 <= j` in
+`sum_by_3*`, where the `int j` is compared with the unsigned `n`; the last
+loop of `in-de42` modulo 2^32, where `z` reaches `2*n`; in
+`array-multidimensional/init-non-constant-2-n-u` and `3-u` the elements as
+values modulo 2^32, `A[i][j] == (i + j + C) % 4294967296`, instead of their
+differences modulo 2^32, which do not bound them, and in `2-n-u` negative
+`q`, `s`; `nla-digbench-scaling/geo*-ll_valuebound*` (12), whose `long long`
+are signed, with exact equalities instead of modulo 2^64;
+`hard-u_valuebound*` (6) with exact equalities, `pow2(p)`, and bounds that
+exclude the wrap-around; `prodbin-ll_unwindbound50`, `100`, whose `y` is 0
+before the bound ends the loop, `y < p2(31 - counter)` with `p2(k) = 2^k`.
 
 ## Open
 
 **Under `-verify`.** A sample with 0.41.3 (60 s, Oct 12, 2026) answers
 `correct` for the 10 tasks proved in the run above. Of the 87 tasks with a
-refuted goal in that run (`unknown` then), those not revised since are wrong
-`false` answers now (`loops-crafted-1/mono-crafted_1`,
-`nla-digbench-scaling/divbin2_unwindbound10` in the sample): 51 had an
-uninterpreted bitwise operator in the refuted goal, all revised: 38 prove
-(`hard-ll`, `hard2`, `divbin2`, `divbin_valuebound`, `bin-suffix-5`), 13 end
-as timeouts, `divbin_unwindbound*` (3, `b = 2*b` may wrap to values that are
-no multiples of `B` by a power of 2) and `dijkstra-u*` (10: the invariants
-modulo 2^32 bound neither `p` nor `q`, so z3 cannot exclude that the asserted
-`2*p + q` wraps; 28 of the 382 goals of `-split` are `unknown`, and a proof
-needs integer invariants with bounds, `q <= 4*n`, `p*p <= n*q`, of degree 3);
-the others have too weak annotations (`mono-crafted_1`: the second loop needs
-`y >= 0`) or the causes below (`heavy-2`, `matrix-1`,
-`veris.c_sendmail_tTflag_arr_one_loop`, `data_structures_set_multi_proc_*`,
-`*-u`). Cuvée could answer `unknown` to refutations through uninterpreted
-operators instead (see [TODO.md](../../TODO.md)).
+refuted goal in that run (`unknown` then), 69 are revised and prove (the
+shifts, see [Annotations](#annotations), and the annotations corrected above),
+13 end as timeouts instead (`divbin_unwindbound*`, 3: `b = 2*b` may wrap to
+values that are no multiples of `B` by a power of 2; `dijkstra-u*`, 10: the
+invariants modulo 2^32 bound neither `p` nor `q`, so z3 cannot exclude that
+the asserted `2*p + q` wraps, 28 of the 382 goals of `-split` are `unknown`,
+and a proof needs integer invariants with bounds, `q <= 4*n`, `p*p <= n*q`, of
+degree 3), and 5 are wrong `false` answers by the causes below (`heavy-2`,
+`matrix-1`, `veris.c_sendmail_tTflag_arr_one_loop`, uninitialized locals;
+`data_structures_set_multi_proc_*`, arrays as values). Cuvée could answer
+`unknown` to refutations through uninterpreted operators (see
+[TODO.md](../../TODO.md)).
 
-The 186 tasks that are not proved (235 of the run above, less the 49
+The 156 tasks that are not proved (235 of the run above, less the 79
 revised since), by cause:
 
 - **Not supported by Cuvée** (57):
@@ -225,14 +233,15 @@ revised since), by cause:
   - arrays of pointers (`array-industry-pattern/array_ptr_partial_init`,
     `array-lopstr16/partial_lesser_bound`), pointer arithmetic
     (`loops/veris.c_NetBSD-libc_loop`).
-- **Nonlinear arithmetic**, z3 times out or answers `Unknown` (most of the
-  143 of `nla-digbench-scaling`; `nla-digbench/geo*-ll`, `lcm1`, `lcm2`,
-  `prod4br-ll`, `dijkstra-u`;
-  `array-programs/partial_mod_count_2-5`, integer division;
-  `array-patterns/array26`, the parity of a count; `array1`, `3`, `4`, `6`,
-  `7`, the lemmas with products and remainders).
-- **Unsigned arithmetic modulo 2^32**: `array-multidimensional/*-u` (7),
-  `loops-crafted-1/mono-crafted_*`, `in-de42`, `sum_by_3*`.
+- **Timeouts and `Unknown` of z3** (in the run above; not analyzed per goal
+  yet, a timeout may also hide a matching loop or a weak annotation, as in
+  `divbin2`): nonlinear arithmetic in `nla-digbench*` (`lcm1`, `lcm2` 23,
+  `geo1/2/3-ll` 32 with `unsigned long long`, `prod4br-ll` 7, `prodbin-ll` 2,
+  `divbin_unwindbound` 3, `dijkstra-u` 10); `array-programs/partial_mod_count_2-5`,
+  integer division; `array-patterns/array26`, the parity of a count, `array1`,
+  `3`, `4`, `6`, `7`, the lemmas with products and remainders;
+  `array-multidimensional/add-2-n-u`, `add-3-n-u`, `diff-2-n-u`, `diff-3-n-u`,
+  `copy-partial-3-u`, unsigned elements.
 - **The arrays as values**: `array-examples/sanfoundry_43_ground` assigns an
   array parameter for its caller, which needs in/out parameters (see
   [TODO.md](../../TODO.md)); `data_structures_set_multi_proc_*` (2) pass

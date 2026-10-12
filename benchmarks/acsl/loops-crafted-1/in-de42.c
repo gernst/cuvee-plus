@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md): z reaches 2*n in the last loop, which wraps modulo 2^32 like the asserted 2*n
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -50,7 +50,8 @@ int main()
     z++;
   }
 
-  /*@ loop invariant x + z == 2*n;
+  /*@ loop invariant 0 <= x <= n;
+      loop invariant z == (2*n - x) % 4294967296;
       loop assigns x, z; */
   while(x>0)
   {

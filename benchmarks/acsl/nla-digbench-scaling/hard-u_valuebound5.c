@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/hard-u; expected verdict false (d = 2*d overflows), the equalities are stated modulo 2^32
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/hard-u; the equalities are exact, with bounds on d, p, q that exclude the wrap-around, since A and B are bounded; p is a power of 2 by the predicate pow2 of the axiomatic Pow2
 /*
   hardware integer division program, by Manna
   returns q==A//B
@@ -31,6 +31,14 @@ void __VERIFIER_assert(int cond) {
     return;
 }
 
+/*@ axiomatic Pow2 {
+  predicate pow2(integer p);
+  axiom pow2_one: pow2(1);
+  axiom pow2_double: \forall integer p, d; pow2(p) && d == 2*p ==> pow2(d);
+  axiom pow2_pos: \forall integer p; pow2(p) ==> p >= 1;
+  axiom pow2_even: \forall integer p; pow2(p) && p != 1 ==> p % 2 == 0;
+  axiom pow2_half: \forall integer p, h; pow2(p) && p != 1 && p == 2*h ==> pow2(h);
+} */
 int main() {
     unsigned int A, B;
     unsigned int r, d, p, q;
@@ -46,8 +54,9 @@ int main() {
     q = 0;
 
     /*@ loop invariant q == 0 && r == A;
-        loop invariant (d - B*p) % 4294967296 == 0;
-        loop invariant p >= 1;
+        loop invariant d == B*p;
+        loop invariant pow2(p);
+        loop invariant p <= d && d <= B + 2*A;
         loop assigns d, p; */
     while (1) {
         __VERIFIER_assert(q == 0);
@@ -59,9 +68,12 @@ int main() {
         p = 2 * p;
     }
 
-    /*@ loop invariant (A - q*B - r) % 4294967296 == 0;
-        loop invariant (d - B*p) % 4294967296 == 0;
-        loop invariant p >= 1;
+    /*@ loop invariant A == q*B + r;
+        loop invariant d == B*p;
+        loop invariant r < d;
+        loop invariant pow2(p);
+        loop invariant p <= d && d <= B + 2*A;
+        loop invariant q <= A;
         loop assigns r, d, p, q; */
     while (1) {
         __VERIFIER_assert(A == q*B + r);

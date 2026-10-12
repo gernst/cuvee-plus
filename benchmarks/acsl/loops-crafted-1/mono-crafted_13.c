@@ -28,6 +28,7 @@ int main(){
 		}
 	}
 	/*@ loop invariant x == y;
+	    loop invariant y >= 0;
 	    loop invariant z == 0;
 	    loop assigns x, y; */
 	while(y>z){

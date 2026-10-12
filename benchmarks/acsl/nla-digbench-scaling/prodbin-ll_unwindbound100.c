@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/prodbin-ll
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/prodbin-ll; y < 2^31 halves in each iteration, so it is 0 before the bound ends the loop: y < p2(31 - counter) with p2(k) = 2^k of the axiomatic P2
 /* shift_add algorithm for computing the 
    product of two natural numbers
    
@@ -39,6 +39,11 @@ void __VERIFIER_assert(int cond) {
 }
 
 int counter = 0;
+/*@ axiomatic P2 {
+  logic integer p2(integer k);
+  axiom p2_zero: p2(0) == 1;
+  axiom p2_step: \forall integer k; k > 0 ==> p2(k) == 2*p2(k-1);
+} */
 int main() {
     int a, b;
     long long x, y, z;
@@ -53,6 +58,8 @@ int main() {
 
     /*@ loop invariant z + x*y == a*b;
         loop invariant y >= 0;
+        loop invariant counter <= 31 ==> y < p2(31 - counter);
+        loop invariant counter > 31 ==> y == 0;
         loop assigns x, y, z;
         loop invariant 0 <= counter <= 100; */
     while (counter++<100) {

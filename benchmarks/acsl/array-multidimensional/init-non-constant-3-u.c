@@ -32,24 +32,24 @@ int main()
 	j=0;
 	k=0;
 	/*@ loop invariant 0 <= i <= n;
-	    loop invariant \forall integer x0, x1, x2; 0 <= x0 < i && 0 <= x1 < n && 0 <= x2 < n ==> (A[x0][x1][x2] - (x0 + x1 + x2 + C)) % 4294967296 == 0;
+	    loop invariant \forall integer x0, x1, x2; 0 <= x0 < i && 0 <= x1 < n && 0 <= x2 < n ==> A[x0][x1][x2] == (x0 + x1 + x2 + C) % 4294967296;
 	    loop assigns i, j, k, A[0..n-1][0..n-1][0..n-1]; */
 	while(i < n){
 		j=0;
 		k=0;
 		/*@ loop invariant 0 <= i < n;
 		    loop invariant 0 <= j <= n;
-		    loop invariant \forall integer x0, x1, x2; 0 <= x0 < i && 0 <= x1 < n && 0 <= x2 < n ==> (A[x0][x1][x2] - (x0 + x1 + x2 + C)) % 4294967296 == 0;
-		    loop invariant \forall integer x1, x2; 0 <= x1 < j && 0 <= x2 < n ==> (A[i][x1][x2] - (i + x1 + x2 + C)) % 4294967296 == 0;
+		    loop invariant \forall integer x0, x1, x2; 0 <= x0 < i && 0 <= x1 < n && 0 <= x2 < n ==> A[x0][x1][x2] == (x0 + x1 + x2 + C) % 4294967296;
+		    loop invariant \forall integer x1, x2; 0 <= x1 < j && 0 <= x2 < n ==> A[i][x1][x2] == (i + x1 + x2 + C) % 4294967296;
 		    loop assigns j, k, A[0..n-1][0..n-1][0..n-1]; */
 		while(j < n){
 			k=0;
 			/*@ loop invariant 0 <= i < n;
 			    loop invariant 0 <= j < n;
 			    loop invariant 0 <= k <= n;
-			    loop invariant \forall integer x0, x1, x2; 0 <= x0 < i && 0 <= x1 < n && 0 <= x2 < n ==> (A[x0][x1][x2] - (x0 + x1 + x2 + C)) % 4294967296 == 0;
-			    loop invariant \forall integer x1, x2; 0 <= x1 < j && 0 <= x2 < n ==> (A[i][x1][x2] - (i + x1 + x2 + C)) % 4294967296 == 0;
-			    loop invariant \forall integer x2; 0 <= x2 < k ==> (A[i][j][x2] - (i + j + x2 + C)) % 4294967296 == 0;
+			    loop invariant \forall integer x0, x1, x2; 0 <= x0 < i && 0 <= x1 < n && 0 <= x2 < n ==> A[x0][x1][x2] == (x0 + x1 + x2 + C) % 4294967296;
+			    loop invariant \forall integer x1, x2; 0 <= x1 < j && 0 <= x2 < n ==> A[i][x1][x2] == (i + x1 + x2 + C) % 4294967296;
+			    loop invariant \forall integer x2; 0 <= x2 < k ==> A[i][j][x2] == (i + j + x2 + C) % 4294967296;
 			    loop assigns k, A[0..n-1][0..n-1][0..n-1]; */
 			while(k < n){
 					A[i][j][k]=i+j+k+C;
@@ -67,21 +67,21 @@ int main()
 	j=0;
 	k=0;
 	/*@ loop invariant 0 <= i <= n;
-	    loop invariant \forall integer x0, x1, x2; 0 <= x0 < n && 0 <= x1 < n && 0 <= x2 < n ==> (A[x0][x1][x2] - (x0 + x1 + x2 + C)) % 4294967296 == 0;
+	    loop invariant \forall integer x0, x1, x2; 0 <= x0 < n && 0 <= x1 < n && 0 <= x2 < n ==> A[x0][x1][x2] == (x0 + x1 + x2 + C) % 4294967296;
 	    loop assigns i, j, k; */
 	while(i < n){
 		j=0;
 		k=0;
 		/*@ loop invariant 0 <= i < n;
 		    loop invariant 0 <= j <= n;
-		    loop invariant \forall integer x0, x1, x2; 0 <= x0 < n && 0 <= x1 < n && 0 <= x2 < n ==> (A[x0][x1][x2] - (x0 + x1 + x2 + C)) % 4294967296 == 0;
+		    loop invariant \forall integer x0, x1, x2; 0 <= x0 < n && 0 <= x1 < n && 0 <= x2 < n ==> A[x0][x1][x2] == (x0 + x1 + x2 + C) % 4294967296;
 		    loop assigns j, k; */
 		while(j < n){
 			k=0;
 			/*@ loop invariant 0 <= i < n;
 			    loop invariant 0 <= j < n;
 			    loop invariant 0 <= k <= n;
-			    loop invariant \forall integer x0, x1, x2; 0 <= x0 < n && 0 <= x1 < n && 0 <= x2 < n ==> (A[x0][x1][x2] - (x0 + x1 + x2 + C)) % 4294967296 == 0;
+			    loop invariant \forall integer x0, x1, x2; 0 <= x0 < n && 0 <= x1 < n && 0 <= x2 < n ==> A[x0][x1][x2] == (x0 + x1 + x2 + C) % 4294967296;
 			    loop assigns k; */
 			while(k < n){
 					__VERIFIER_assert(A[i][j][k]==i+j+k+C);

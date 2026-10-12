@@ -28,6 +28,7 @@ int main(){
 		}
 	}
 	/*@ loop invariant z >= 0;
+	    loop invariant y >= 0;
 	    loop invariant x == 1000000 - z;
 	    loop invariant y == 1000000 - 2*z;
 	    loop assigns x, y, z; */
