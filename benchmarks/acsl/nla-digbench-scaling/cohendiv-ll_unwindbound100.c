@@ -49,7 +49,7 @@ int main() {
     /*@ loop invariant b == y*a;
         loop invariant x == q*y + r;
         loop invariant y >= 1;
-        loop assigns q, r, a, b;
+        loop assigns q, r, a, b, counter;
         loop invariant 0 <= counter <= 100 + 1; */
     while (counter++<100) {
 	__VERIFIER_assert(b == y*a);
@@ -66,7 +66,7 @@ int main() {
 	    loop invariant a >= 1;
 	    loop invariant b >= y;
 	    loop invariant y >= 1;
-	    loop assigns a, b;
+	    loop assigns a, b, counter;
 	    loop invariant 0 <= counter <= 100; */
 	while (counter++<100) {            
 	    __VERIFIER_assert(b == y*a);

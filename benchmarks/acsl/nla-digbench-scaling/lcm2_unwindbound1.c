@@ -47,7 +47,7 @@ int main() {
 
     /*@ loop invariant (x*u + y*v - 2*a*b) % 4294967296 == 0;
         loop invariant x >= 1 && y >= 1;
-        loop assigns x, y, u, v;
+        loop assigns x, y, u, v, counter;
         loop invariant 0 <= counter <= 1; */
     while (counter++<1) {
         __VERIFIER_assert(x*u + y*v == 2*a*b);

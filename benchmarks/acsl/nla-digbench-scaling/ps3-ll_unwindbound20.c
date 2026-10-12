@@ -40,7 +40,7 @@ int main() {
         loop invariant y == c;
         loop invariant 0 <= c;
         loop invariant c <= k || c == 0;
-        loop assigns c, y, x;
+        loop assigns c, y, x, counter;
         loop invariant 0 <= counter <= 20; */
     while (counter++<20) {
         __VERIFIER_assert(6*x - 2*y*y*y - 3*y*y - y == 0);

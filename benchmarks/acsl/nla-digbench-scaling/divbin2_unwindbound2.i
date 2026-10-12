@@ -54,7 +54,7 @@ int main() {
     b = B;
     /*@ loop invariant q == 0 && r == A;
         loop invariant b == 0 || pow2(b);
-        loop assigns b;
+        loop assigns b, counter;
         loop invariant 0 <= counter <= 2; */
     while (counter++<2) {
         if (!(r >= b)) break;
@@ -62,7 +62,7 @@ int main() {
     }
     /*@ loop invariant A == q*b + r;
         loop invariant b == 0 || pow2(b);
-        loop assigns q, r, b;
+        loop assigns q, r, b, counter;
         loop invariant 0 <= counter <= 2 + 1; */
     while (counter++<2) {
         __VERIFIER_assert(A == q * b + r);

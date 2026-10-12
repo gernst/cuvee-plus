@@ -75,7 +75,7 @@ int main()
 
 	/*@ loop invariant 0 <= i <= N;
 	    loop invariant \forall integer t; 0 <= t < N ==> b[t] == 5*t*t + 5*t + 1;
-	    loop assigns i,; */
+	    loop assigns i; */
 	for(i=0; i<N; i++)
 	{
 		__VERIFIER_assert(b[i] == 5*i*i + 5*i + 1);

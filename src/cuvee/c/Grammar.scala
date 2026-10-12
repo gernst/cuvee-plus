@@ -291,12 +291,17 @@ object Grammar:
   val default_ =
     P("default" ~ ":" ~ stmt).map(Case(None, _))
 
+  // the locations of assigns and loop assigns by their variables only, whose indices and ranges are skipped,
+  // e.g. a for a[0..N-1], since arrays are values
+  val locations =
+    Locations(P("\\nothing".map(Nil) | (id ~ Balanced("[", "]").*) ~+ ","))
+
   // the annotations of ACSL in function bodies: loops with their clauses, which may span several annotations, and
   // assertions, several in one annotation (see Parser.clauses)
   val loopclause =
     P("loop" ~ (P("invariant" ~ expr ~ ";").map(phi => Clause("loop invariant", Some(phi)))
       | P("variant" ~ expr ~ ";").map(e => Clause("loop variant", Some(e)))
-      | ("assigns" ~ Until(";")).map(Clause("loop assigns", None))))
+      | P("assigns" ~ locations ~ ";").map(xs => Clause("loop assigns", Some(xs)))))
 
   val annotated =
     Annotated(P(("/*@" ?~ loopclause.+ ~ "*/").+.map(_.flatten) ~ (while_ | for_ | dowhile)))
@@ -343,7 +348,7 @@ object Grammar:
     P(P("requires" ~ expr ~ ";").map(phi => Clause("requires", Some(phi)))
       | P("ensures" ~ expr ~ ";").map(phi => Clause("ensures", Some(phi)))
       | P("decreases" ~ expr ~ ";").map(e => Clause("decreases", Some(e)))
-      | ("assigns" ~ Until(";")).map(Clause("assigns", None)))
+      | P("assigns" ~ locations ~ ";").map(xs => Clause("assigns", Some(xs))))
 
   val contract =
     Contract(P("/*@" ?~ clause.+ ~ "*/"))

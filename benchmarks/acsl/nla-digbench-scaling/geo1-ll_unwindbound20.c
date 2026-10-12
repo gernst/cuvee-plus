@@ -46,7 +46,7 @@ int main() {
 
     /*@ loop invariant (x*z - x - y + 1) % 18446744073709551616 == 0;
         loop invariant c >= 1;
-        loop assigns x, y, c;
+        loop assigns x, y, c, counter;
         loop invariant 0 <= counter <= 20; */
     while (counter++<20) {
         __VERIFIER_assert(x*z - x - y + 1 == 0);

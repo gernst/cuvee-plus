@@ -69,6 +69,8 @@ case class Old(expr: Expr) extends Expr
 case class At(expr: Expr, label: String) extends Expr
 case object Valid extends Expr
 case class Quant(quant: String, bound: List[(Type, String)], body: Expr) extends Expr
+// the locations of assigns and loop assigns by their variables, e.g. a for a[0..N-1], none for \nothing
+case class Locations(names: List[String]) extends Expr
 
 object IntType:
   val int = IntType(true, "int")
@@ -100,9 +102,10 @@ object Items extends (List[Expr] => Expr)
 object Old extends (Expr => Expr)
 object At extends ((Expr, String) => Expr)
 object Quant extends ((String, List[(Type, String)], Expr) => Expr)
+object Locations extends (List[String] => Expr)
 
 // the clauses of ACSL annotations by their keywords, e.g. requires, loop invariant, assert, whose argument is a term,
-// except for those of assigns and loop assigns, which are not checked (see Parser.clauses)
+// except for those of assigns and loop assigns, whose argument is their Locations (see Parser.assigned)
 case class Clause(kind: String, arg: Option[Expr])
 
 // pointers, and the sizes of arrays, one per dimension, which are optional, e.g. int a[] = { 1, 2 }

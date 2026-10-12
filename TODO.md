@@ -927,8 +927,10 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   `<==>`, `\forall`/`\exists` (variables of C types range over the type,
   except with `-unbounded`, `integer` and `boolean` unbounded), chained
   comparisons, mathematical arithmetic without wrap-around, casts as in C.
-  `assigns` and `loop assigns` are skipped (the modifies clauses are
-  inferred). `\at(e, L)` for `Pre`, `Here`, `LoopEntry`, `\valid` and
+  `assigns` and `loop assigns` are the modifies clauses of their functions
+  and loops (their identifiers, the global ones; locals are inferred), which
+  the body must respect, except with `-teq` and `-chc`, which infer the
+  modifies clauses (0.41.5; before, the clauses were skipped). `\at(e, L)` for `Pre`, `Here`, `LoopEntry`, `\valid` and
   `\valid_read` (true), ranges of unsigned variables as in Frama-C/WP, and
   `&`, `|`, `^` of truth values (0.39.3). Global declarations (0.40.0):
   `axiomatic Name { ... }`, whose name is dropped (it groups, it does not

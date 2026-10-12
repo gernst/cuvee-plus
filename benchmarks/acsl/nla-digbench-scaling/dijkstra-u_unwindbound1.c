@@ -51,7 +51,7 @@ int main() {
         loop invariant q >= 1;
         loop invariant pow4(q);
         loop invariant q % 4 == 0 || q == 1;
-        loop assigns q;
+        loop assigns q, counter;
         loop invariant 0 <= counter <= 1; */
     while (counter++<1) {
         if (!(q <= n))
@@ -69,7 +69,7 @@ int main() {
         loop invariant q >= 1;
         loop invariant pow4(q);
         loop invariant q % 4 == 0 || q == 1;
-        loop assigns p, q, r, h;
+        loop assigns p, q, r, h, counter;
         loop invariant 0 <= counter <= 1 + 1; */
     while (counter++<1) {
         __VERIFIER_assert(r < 2 * p + q);

@@ -70,7 +70,7 @@ int main()
 
 	/*@ loop invariant 0 <= i <= N;
 	    loop invariant \forall integer t; 0 <= t < N ==> a[t] == N + (t+1)*(t+1);
-	    loop assigns i,; */
+	    loop assigns i; */
 	for(i=0; i<N; i++)
 	{
 		__VERIFIER_assert(a[i] == N + (i+1)*(i+1));

@@ -40,7 +40,7 @@ int main( ) {
   /*@ loop invariant 0 <= i <= 100000;
       loop invariant \forall integer p, q; 0 <= p < q < i ==> a[p] <= a[q];
       loop invariant \forall integer p, q; 0 <= p < i && i <= q < 100000 ==> a[p] <= a[q];
-      loop assigns i, k, s, x, y, a[0..99999]; */
+      loop assigns i, x, y, a[0..99999]; */
   while ( i < 100000 ) {
     int k = i + 1;
     int s = i;

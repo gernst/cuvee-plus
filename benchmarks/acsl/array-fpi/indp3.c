@@ -84,7 +84,7 @@ int main()
 
 	/*@ loop invariant 0 <= i <= N;
 	    loop invariant \forall integer t; 0 <= t < N ==> a[t] == t*t;
-	    loop assigns i,; */
+	    loop assigns i; */
 	for(i=0;i<N;i++)
 	{
 		__VERIFIER_assert(a[i]==i*i);

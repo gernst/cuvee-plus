@@ -23,7 +23,9 @@ object Source extends cuvee.pipe.Source:
       yield cmd_
     val prelude = cuvee.boogie.Source.parse("/cuvee/c/prelude.bpl", lifted)
 
-    val parser = new Parser(boogie.state, config.arch, config.unbounded)
+    // -teq and -chc infer the modified global variables, -vcgen takes those of assigns clauses where there are some
+    val infer = config.transforms.exists(t => t == cuvee.verify.TEQ || t == cuvee.verify.Horn)
+    val parser = new Parser(boogie.state, config.arch, config.unbounded, infer)
     (boogie.state, Grammar.unit.map(parser.resolve), prelude)
 
   // no further definitions

@@ -70,7 +70,7 @@ int main()
 
 	/*@ loop invariant 0 <= i <= N;
 	    loop invariant \forall integer t; 0 <= t < N ==> a[t] == (N % 2 == 0 ? 2 : 1);
-	    loop assigns i,; */
+	    loop assigns i; */
 	for (i = 0; i < N; i++)
 	{
 		__VERIFIER_assert(a[i] % 2 == N % 2);

@@ -84,7 +84,11 @@ followed by a note where they need explanation.
   0`); `__VERIFIER_nondet_*` assign nothing.
 - **Loops** get `loop invariant`s and `loop assigns` (`a[0..N-1]`,
   `a[i][0..n-1]`). The loops that rotate an array refer to its values at the
-  entry by `\at(e, LoopEntry)`.
+  entry by `\at(e, LoopEntry)`. With `-vcgen`, the global variables of the
+  `assigns` and `loop assigns` clauses are the modifies clauses (0.41.5), so
+  the clauses must list the globals that the code modifies, e.g. `counter`
+  in the loops of the `unwindbound` tasks, `while (counter++ < N)`, and only
+  variables in scope, not locals declared in the body.
 - **Functions** other than `main` get contracts where the caller needs them
   (`requires`, `assigns`, `ensures`). Globals that a function reads are
   constrained in its precondition (`requires n == 5`), since a contract does

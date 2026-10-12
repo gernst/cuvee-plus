@@ -23,7 +23,7 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 int main() {
   int i = 0;
   /*@ loop invariant 0 <= i <= 9;
-      loop assigns i, j; */
+      loop assigns i; */
   while (1) {
     i++;
     int j = 0;

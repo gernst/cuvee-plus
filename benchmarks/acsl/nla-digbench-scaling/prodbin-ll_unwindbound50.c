@@ -60,7 +60,7 @@ int main() {
         loop invariant y >= 0;
         loop invariant counter <= 31 ==> y < p2(31 - counter);
         loop invariant counter > 31 ==> y == 0;
-        loop assigns x, y, z;
+        loop assigns x, y, z, counter;
         loop invariant 0 <= counter <= 50; */
     while (counter++<50) {
         __VERIFIER_assert(z + x * y == (long long) a * b);

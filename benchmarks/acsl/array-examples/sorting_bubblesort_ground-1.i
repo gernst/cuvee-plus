@@ -36,7 +36,7 @@ int main( ) {
   int swapped = 1;
   /*@ loop invariant swapped == 0 || swapped == 1;
       loop invariant swapped == 0 ==> (\forall integer p, q; 0 <= p < q < 100000 ==> a[p] <= a[q]);
-      loop assigns swapped, i, a[0..99999]; */
+      loop assigns swapped, a[0..99999]; */
   while ( swapped ) {
     swapped = 0;
     int i = 1;

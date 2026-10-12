@@ -45,7 +45,7 @@ int main() {
 
     /*@ loop invariant 1 + x*z - x - z*y == 0;
         loop invariant c >= 1;
-        loop assigns x, y, c;
+        loop assigns x, y, c, counter;
         loop invariant 0 <= counter <= 1; */
     while (counter++<1) {
         __VERIFIER_assert(1 + x*z - x - z*y == 0);

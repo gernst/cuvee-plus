@@ -288,7 +288,11 @@ it starts from its own prelude (`resources/cuvee/c/prelude.bpl`, in Boogie),
 which declares the core theory with arithmetic on `Int` only, arrays, and the
 background theory of C, builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
 that it can infer the global variables that each function and each loop
-modifies. SV-COMP task definitions (`.yml`) defer to the frontend of their
+modifies. Functions and loops with ACSL `assigns` or `loop assigns` clauses
+modify the global variables listed there instead (their identifiers, e.g. `a`
+for `a[0..N-1]`), which `Type.check` holds against the body, unless `-teq` or
+`-chc` is among the transforms, which infer them always (`c.Parser.assigned`,
+the parameter `infer` set by `c.Source`). SV-COMP task definitions (`.yml`) defer to the frontend of their
 input file, C or SV-LIB: their `Source` overrides `input`, which reads the
 input on demand, to load the task and parse its input file, relative to the
 task; the output is printed in the language of the input file (`Config.parse`).

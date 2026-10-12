@@ -70,7 +70,7 @@ int main()
 
 	/*@ loop invariant 0 <= i <= N;
 	    loop invariant \forall integer t; 0 <= t < N ==> b[t] == 3*t*t + 3*t + 1;
-	    loop assigns i,; */
+	    loop assigns i; */
 	for(i=0; i<N; i++)
 	{
 		__VERIFIER_assert(b[i] == 3*i*i + 3*i + 1);

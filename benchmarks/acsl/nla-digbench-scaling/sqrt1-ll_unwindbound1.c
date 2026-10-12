@@ -42,7 +42,7 @@ int main() {
     /*@ loop invariant t == 2*a + 1;
         loop invariant s == (a + 1)*(a + 1);
         loop invariant a >= 0;
-        loop assigns a, s, t;
+        loop assigns a, s, t, counter;
         loop invariant 0 <= counter <= 1; */
     while (counter++<1) {
         __VERIFIER_assert(t == 2*a + 1);
