@@ -2,8 +2,8 @@
 # runs Cuvée on the examples of this archive and checks its answers (option -verify): correct for the safe ones,
 # incorrect for the unsafe ones, which the tool-info module of BenchExec (cuvee.py) reports as true and false; it
 # covers trace equation systems with and without the fallback to z3 (the configuration of SV-COMP) and constrained
-# Horn clauses, on C programs and SV-LIB scripts, in parallel with a solver timeout of 10 s, and checks the version
-# and the bundled z3; exit code 0 if all answers are as expected
+# Horn clauses, each on a safe and an unsafe C program and SV-LIB script, in parallel with a solver timeout of 10 s,
+# and checks the version and the bundled z3; exit code 0 if all answers are as expected
 cd "$(dirname "$0")" || exit 1
 
 TEQ=(-teq -simplify -split -simplify)
@@ -26,10 +26,16 @@ check() {
 }
 
 count=0
+check correct safe-array.c "${TEQ[@]}"
 check incorrect unsafe.c "${TEQ[@]}"
-check correct safe-array.c "${FALLBACK[@]}"
+check correct safe-add.svlib "${TEQ[@]}"
+check incorrect unsafe-add.svlib "${TEQ[@]}"
 check correct safe-nested.c "${FALLBACK[@]}"
+check incorrect unsafe.c "${FALLBACK[@]}"
+check correct safe-add.svlib "${FALLBACK[@]}"
+check incorrect unsafe-add.svlib "${FALLBACK[@]}"
 check correct safe-loop.c "${CHC[@]}"
+check incorrect unsafe.c "${CHC[@]}"
 check correct safe-add.svlib "${CHC[@]}"
 check incorrect unsafe-add.svlib "${CHC[@]}"
 wait

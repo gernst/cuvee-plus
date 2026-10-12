@@ -13,10 +13,10 @@ Source code and documentation: https://github.com/gernst/cuvee-plus
   folder.
 - `cuvee.jar`: Cuvée with the Scala library and its dependencies.
 - `z3`: Z3 4.16 for x86-64 Linux.
-- `smoketest.sh` and `examples/`: runs Cuvée with `-verify` on safe and
-  unsafe C programs and SV-LIB scripts, by trace equation systems with and
-  without the fallback to Z3 and by constrained Horn clauses (six runs in
-  parallel, a few seconds), exit code 0 if all answers are as expected.
+- `smoketest.sh` and `examples/`: runs Cuvée with `-verify` by trace
+  equation systems with and without the fallback to Z3 and by constrained
+  Horn clauses, each on a safe and an unsafe C program and SV-LIB script
+  (12 runs in parallel), exit code 0 if all answers are as expected.
 - `LICENSE`: the license of Cuvée (Apache 2.0); `LICENSE.z3`,
   `LICENSE.scala`, `LICENSE.sourcecode`, `LICENSE.snakeyaml`: those of the
   included software.

@@ -47,9 +47,6 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## Bugs
 
-- `-split` splits an axiom with a conditional (`c ? 1 : 0`, e.g. `cnt_step` of
-  `benchmarks/acsl/loops/vogal-1`) into one axiom per case, each with the same `:named`, which z3 rejects
-  ("named expression already defined", a solver error); the parts need distinct names or none.
 - C: variables named like the constants of SMT-LIB, `int true = 1; int false = 0;`
   (`benchmarks/acsl/loops-crafted-1/watermelon`), keep their names and reach z3 as `(true Int)`, a sort error
   ("solver error"); such names need renaming in the frontend.

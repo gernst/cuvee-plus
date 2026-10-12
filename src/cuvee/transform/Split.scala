@@ -1,6 +1,7 @@
 package cuvee.transform
 
 import cuvee.Config
+import cuvee.sexpr
 import cuvee.pipe.Transform
 import cuvee.core._
 import cuvee.simplify.Normalize
@@ -31,11 +32,27 @@ object Split extends Transform:
         List(cmd)
 
       case Assert(justify, params, phi, attrs) =>
-        for phi_ <- split(Nil, Nil, Normalize.lift(phi))
-        yield Assert(justify, params, phi_, attrs)
+        split(Nil, Nil, Normalize.lift(phi)) match
+          case List(phi_) =>
+            List(Assert(justify, params, phi_, attrs))
+
+          // the parts are named apart, since solvers reject a name that is already defined
+          case phis =>
+            for (phi_, i) <- phis.zipWithIndex
+            yield Assert(justify, params, phi_, part(attrs, i + 1))
 
       case _ =>
         List(cmd)
+
+  // the attributes of the `i`-th part of a split assertion, whose name, if any, gets the suffix `_i`
+  def part(attrs: Attrs, i: Int): Attrs =
+    val attrs_ =
+      for (kw, arg) <- attrs.attrs
+      yield arg match
+        case Some(id: sexpr.Id) if kw == "named" => (kw, Some(sexpr.Id(id.text + "_" + i)))
+        case _                                 => (kw, arg)
+
+    Attrs(attrs_)
 
   // the obligations of `phi` under the bound variables and the antecedents of the context
   def split(bound: List[Var], ant: List[Expr], phi: Expr): List[Expr] =

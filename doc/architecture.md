@@ -166,9 +166,11 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   parameters (e.g. in arrays) are errors. It also inlines the equations
   `x == t` of the antecedents of clauses `∀ xs. φ₁ ∧ ... ∧ φₙ ⇒ ψ` whose
   variable is among `xs` and not in `t` (`Flat.eliminate`).
-- [`Split`](../src/cuvee/transform/Split.scala) splits goals and lemmas into
-  individual obligations, after lifting `ite` out of the terms of atoms
-  (`Normalize.lift`), such that it is split by its test as well.
+- [`Split`](../src/cuvee/transform/Split.scala) splits goals, lemmas, and
+  axioms into individual obligations, after lifting `ite` out of the terms of
+  atoms (`Normalize.lift`), such that it is split by its test as well; the
+  parts of a named assertion are named apart, `n_1`, `n_2`, ..., since
+  solvers reject a name that is already defined.
 - [`Monomorph`](../src/cuvee/transform/Monomorph.scala) replaces polymorphic
   functions by their instances, which are emitted before their first use.
 - [`Fallback`](../src/cuvee/transform/Fallback.scala) lowers trace equation
