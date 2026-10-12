@@ -44,6 +44,9 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## Bugs
 
+- C: variables named like the constants of SMT-LIB, `int true = 1; int false = 0;`
+  (`benchmarks/acsl/loops-crafted-1/watermelon`), keep their names and reach z3 as `(true Int)`, a sort error
+  ("solver error"); such names need renaming in the frontend.
 - SV-LIB (0.39.0), wrong verdicts on `sv-benchmarks/sv-lib/core-verification` (property correct-tags), found with
   the run definition `SV-LIB_correct-tags` of `xml/cuvee-chc.xml` and `xml/cuvee.xml` before running them:
   - `-chc -z3` refutes `loop-add` (expected true): the clauses of `verify-call add (x0 y0)` contain the goal
@@ -1020,17 +1023,8 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     needed in this dialect; the two tasks with
     `\null` (`array-industry-pattern/array_ptr_partial_init`, `array-lopstr16/partial_lesser_bound`) end in
     "arrays of pointers are not supported".
-  - Results per folder (true tasks proved / true tasks, Oct 12, 2026, 0.38.0):
-    `array-cav19` 13/13, `array-fpi` 68/68, `array-examples` 55/61 (the
-    others `\valid`, a builtin, a reducer), `loop-invariants` 6/9,
-    `loop-simple` 6/6, `loop-zilu` 23/27 (3 timeouts under load, one `&`),
-    `loop-lit` 20/26 (6 reducers), `loop-new` 7/8, `loops` 26/37,
-    `loop-acceleration` 15/23, `nla-digbench` 14/26, `loop-invgen` 16/27
-    (10 reducers), `loops-crafted-1` 8/46 (unsigned counters; with 0.39.3,
-    10 of the first 12 files prove, `in-de42` is refuted, `discover_list`
-    ends in a parse error),
-    `array-crafted`, `reducercommutativity`, `array-patterns` mostly
-    `axiomatic`.
+  - Results: 603 of the 838 true tasks proved with 0.40.0 (60 s, Oct 12, 2026; 534 with 0.39.5), none wrong;
+    per folder and the causes of the others in [benchmarks/acsl/README.md](benchmarks/acsl/README.md).
   - Done in 0.40.0: the parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks). The 95
     global logic declarations (`axiomatic Fold` 53, `Asum` 18, `Msum` 14, `Sum` 9, `Count` 1) are supported
     (see ACSL annotations above), with the annotations restated: no `reads`, step axioms backwards, the lemmas
