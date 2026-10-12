@@ -28,6 +28,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -56,20 +57,26 @@ INSTANCES = {
 METADATA = {
     "title": "Cuvée: Loop Summaries by Trace Equations and a Lemma Database",
     "upload_type": "software",
-    "description": "<p>The archive of the verifier Cuvée for SV-COMP 2027, for the property unreach-call of C programs "
-                   "(categories ReachSafety-Arrays and ReachSafety-Loops). Cuvée summarizes loops by trace equation "
-                   "systems, whose goals it closes by rewriting with a database of lemmas, followed by Z3. "
-                   "It requires Java 21; run it as <code>./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 "
-                   "-verify task.c</code>, which answers correct, incorrect, or unknown.</p>",
+    "description": "<p>Cuvée is a multi-language and multi-technique verification tool. It supports C, Dafny, Boogie, "
+                   "and SV-LIB among its frontends and backends. Verification conditions can be generated from "
+                   "existing annotations or inferred by automatic methods, including Constrained Horn Solvers and "
+                   "Trace Equation Systems.</p>"
+                   "<p>This archive contains the SV-COMP contribution for participation in the C track (Arrays, Loops) "
+                   "and the SV-LIB track.</p>",
     "creators": [
         {"name": "Ernst, Gidon", "affiliation": "Ludwig Maximilian University of Munich", "orcid": "0000-0002-3289-5764"}
     ],
-    "version": "svcomp27",
+    "copyright": "Copyright (C) 2026 Gidon Ernst",
     "license": "apache-2.0",
     "access_right": "open",
     "related_identifiers": [
         {"identifier": "https://github.com/gernst/cuvee-plus", "relation": "isSupplementTo", "resource_type": "software"}
     ],
+    # the repository URL and programming language of the form (Software)
+    "custom": {
+        "code:codeRepository": "https://github.com/gernst/cuvee-plus",
+        "code:programmingLanguage": [{"id": "scala"}],
+    },
 }
 
 
@@ -169,9 +176,19 @@ def save_state(sandbox: bool, state: dict):
     state_file(sandbox).write_text(json.dumps(state, indent=2) + "\n")
 
 
+# the version of the packaged tool, as its -version prints it (Cuvée 0.41.4), which is the version of the record
+def version() -> str:
+    printed = run(["java", "-cp", str(DIST / "cuvee" / "cuvee.jar"), "cuvee.Cuvee", "-version"], timeout=60).stdout
+    match = re.match(r"Cuvée (\S+)", printed)
+    if not match:
+        sys.exit("no version of the packaged tool: " + printed)
+    return match.group(1)
+
+
 def upload(sandbox: bool):
     if not ARCHIVE.exists():
         sys.exit(f"{ARCHIVE.relative_to(ROOT)} is missing, run package first")
+    metadata = METADATA | {"version": version()}
 
     state = load_state(sandbox)
     last = request(sandbox, "GET", f"/deposit/depositions/{state['id']}") if state else None
@@ -197,7 +214,7 @@ def upload(sandbox: bool):
     if uploaded.get("checksum") != "md5:" + md5:
         sys.exit(f"checksum mismatch: {uploaded.get('checksum')} uploaded, md5:{md5} local")
 
-    request(sandbox, "PUT", f"/deposit/depositions/{draft['id']}", json.dumps({"metadata": METADATA}).encode())
+    request(sandbox, "PUT", f"/deposit/depositions/{draft['id']}", json.dumps({"metadata": metadata}).encode())
     save_state(sandbox, {"id": draft["id"]})
     print("draft:", draft["links"]["html"])
     print("check it there and publish it on the website, which gives the DOI of this version")
