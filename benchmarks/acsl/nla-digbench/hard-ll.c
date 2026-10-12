@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): p is a power of 2, written with a shift
+// ACSL annotations added by hand (benchmarks/acsl/README.md): p is a power of 2 by the predicate pow2 of the axiomatic Pow2, not by 1 << k, which is uninterpreted
 /*
   hardware integer division program, by Manna
   returns q==A//B
@@ -31,6 +31,13 @@ void __VERIFIER_assert(int cond) {
     return;
 }
 
+/*@ axiomatic Pow2 {
+  predicate pow2(integer p);
+  axiom pow2_one: pow2(1);
+  axiom pow2_double: \forall integer p; pow2(p) ==> pow2(2*p);
+  axiom pow2_pos: \forall integer p; pow2(p) ==> p >= 1;
+  axiom pow2_half: \forall integer p; pow2(p) && p != 1 ==> p % 2 == 0 && pow2(p / 2);
+} */
 int main() {
     unsigned int A, B;
     long long r, d, p, q;
@@ -46,7 +53,7 @@ int main() {
     /*@ loop invariant q == 0 && r == A;
         loop invariant d == B*p;
         loop invariant p >= 1;
-        loop invariant \exists integer k; 0 <= k <= 64 && p == 1 * (1 << k);
+        loop invariant pow2(p);
         loop assigns d, p; */
     while (1) {
         __VERIFIER_assert(q == 0);
@@ -63,7 +70,7 @@ int main() {
         loop invariant r < d;
         loop invariant r >= 0;
         loop invariant p >= 1;
-        loop invariant \exists integer k; 0 <= k <= 64 && p == 1 * (1 << k);
+        loop invariant pow2(p);
         loop assigns r, d, p, q; */
     while (1) {
         __VERIFIER_assert(A == q*B + r);

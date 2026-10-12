@@ -5,10 +5,11 @@ with the property `unreach-call`, annotated by hand with ACSL: loop
 invariants, contracts, and logic functions, such that Cuvée can check the
 expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
 
-- **1161 tasks**, 422 of Arrays and 739 of Loops; 838 expected `true`, 323
-  `false`. All have the contracts of the harness, 1119 have loop invariants.
+- **838 tasks**, 303 of Arrays and 535 of Loops, all expected `true` (the
+  323 tasks expected `false` are removed). All have the contracts of the
+  harness, 799 have loop invariants.
 - **Proved with Cuvée 0.40.0: 603 of the 838 true tasks**, none wrong
-  (60 s per task, Oct 12, 2026, see [Results](#results)); 615 with the
+  (60 s per task, Oct 12, 2026, see [Results](#results)); 630 with the
   annotations revised since, by single runs. These results predate the
   answers of `-verify` (0.41.0), under which refuted annotations of true
   tasks are wrong verdicts (see [Running](#running)); not yet rerun.
@@ -31,6 +32,10 @@ copied. Changes since (Oct 12, 2026):
 - The allocations of sv-benchmarks ada89e0473b (unchecked `malloc` and
   `calloc` replaced by `safe_malloc` and `safe_calloc`) are merged into the
   166 files they touch, with the annotations unchanged.
+- The 323 tasks expected `false` are removed (their task definitions and
+  programs, none shared with a true task): under `-verify` their answers
+  depend on whether z3 refutes the failing assertion or an annotation, which
+  says little about the annotations; 838 tasks remain, all expected `true`.
 
 ## Running
 
@@ -45,9 +50,8 @@ Cuvée answers `correct`, `incorrect`, or `unknown`, which
 [cuvee.py](../../cuvee.py) maps to `true`, `false`, and `unknown`. The
 annotations are the specification: a goal that z3 refutes (`Sat`) is
 `incorrect`, also if the annotation holds but is too weak, so a true task
-with a weak or wrong annotation ends as a wrong `false`; a false task ends as
-`false` if z3 refutes its failing assertion, and as `unknown` or a timeout
-otherwise. `Unknown` of z3 is `unknown`. Without `-verify`, `-vcgen -z3`
+with a weak or wrong annotation ends as a wrong `false`. `Unknown` of z3 is
+`unknown`. Without `-verify`, `-vcgen -z3`
 prints the goals that do not hold, `(error "goal does not hold" "Sat"
 ...)`, and `-split` before `-z3` makes each annotation a goal of its own,
 which locates a failing one.
@@ -56,7 +60,8 @@ Refutations are not always counterexamples: `1 << k`, `&` and the other
 bitwise operators on values other than truth values are uninterpreted
 functions (`shl`, `bitand`, ...), which z3 may interpret arbitrarily, e.g.
 `shl(1, 0) != 1`. Annotations over them, such as the powers of 2 by shifts
-of `nla-digbench*`, are refuted although they hold (see [Open](#open)).
+of `divbin*` and `dijkstra-u*`, are refuted although they hold (see
+[Open](#open)).
 
 ## Annotations
 
@@ -83,7 +88,14 @@ followed by a note where they need explanation.
 - **Unsigned arithmetic** that wraps around is stated modulo its type
   (`sn == (2*x) % 4294967296`; `nla-digbench/geo*`, `lcm*`, `hard-u`,
   `dijkstra-u`, `knuth`); powers of 2 and 4 by shifts (`\exists integer k;
-  0 <= k <= 64 && p == 1 << k`).
+  0 <= k <= 64 && p == 1 << k`), except in `hard-ll` and `hard2` (below).
+- **Powers of 2** in `nla-digbench/hard-ll` and `nla-digbench-scaling/hard-ll_*`,
+  `hard2_*` (15 tasks) are the predicate `pow2` of an `axiomatic Pow2` with
+  first-order axioms, `pow2(1)`, `pow2(p) ==> pow2(2*p)`, `pow2(p) ==> p >= 1`,
+  `pow2(p) && p != 1 ==> p % 2 == 0 && pow2(p / 2)`, instead of `\exists
+  integer k; ... p == 1 << k`: neither an existential, whose witness z3 does
+  not find, nor the uninterpreted shift; the invariant is `pow2(p)`. All 15
+  answer `correct` (0.41.4, 60 s, Oct 12, 2026), where the shifts were refuted.
 - **Sums and folds** are logic functions in an `axiomatic`, defined
   recursively over the length with the step backwards, `n > 0 ==> f(a, n) ==
   f(a, n-1) + a[n-1]`, whose instances z3 finds (the forward step `f(a, n+1)`
@@ -112,50 +124,48 @@ followed by a note where they need explanation.
   invariants of the later loops.
 - **Counts** in `array-programs` are closed forms with integer division and
   `\min`.
-- **Tasks expected `false`** get the invariants that do hold (often those of
-  the `true` variant) and a note on why the assertion fails.
 - **Not annotated** beyond the harness: the 25 outputs of the reducers
   (`*-reducer.c`, unrolled control flow with gotos) and the `*_abstracted`
-  tasks without loops. `loops/lu.cmp`, `ludcmp`, and the verisec tasks carry
-  bounds only.
+  tasks without loops. `loops/lu.cmp` carries bounds only.
 
 ## Results
 
 Cuvée 0.40.0, `xml/cuvee-acsl.xml` with 60 s per task (Oct 12, 2026,
-`results/cuvee-acsl.2026-10-12_09-01-*`): the true tasks proved per folder.
+`results/cuvee-acsl.2026-10-12_09-01-*`, with the false tasks since removed):
+the tasks proved per folder.
 
-| folder | tasks | true | proved | false |
-|---|--:|--:|--:|--:|
-| array-cav19 | 13 | 13 | 13 | 0 |
-| array-crafted | 43 | 43 | 37 | 0 |
-| array-examples | 88 | 60 | 56 | 28 |
-| array-fpi | 137 | 68 | 68 | 69 |
-| array-industry-pattern | 9 | 4 | 3 | 5 |
-| array-lopstr16 | 2 | 2 | 1 | 0 |
-| array-multidimensional | 20 | 20 | 13 | 0 |
-| array-patterns | 37 | 30 | 24 | 7 |
-| array-programs | 16 | 14 | 3 | 2 |
-| array-tiling | 29 | 27 | 27 | 2 |
-| loop-acceleration | 43 | 23 | 22 | 20 |
-| loop-crafted | 9 | 8 | 5 | 1 |
-| loop-industry-pattern | 4 | 4 | 1 | 0 |
-| loop-invariants | 10 | 9 | 8 | 1 |
-| loop-invariants64 | 1 | 1 | 1 | 0 |
-| loop-invgen | 29 | 28 | 17 | 1 |
-| loop-lit | 32 | 32 | 26 | 0 |
-| loop-new | 11 | 11 | 7 | 0 |
-| loop-simple | 8 | 6 | 6 | 2 |
-| loop-zilu | 27 | 27 | 27 | 0 |
-| loops | 59 | 36 | 30 | 23 |
-| loops-crafted-1 | 53 | 44 | 34 | 9 |
-| nla-digbench | 29 | 26 | 16 | 3 |
-| nla-digbench-scaling | 424 | 280 | 137 | 144 |
-| reducercommutativity | 28 | 22 | 21 | 6 |
-| **total** | **1161** | **838** | **603** | **323** |
+| folder | tasks | proved |
+|---|--:|--:|
+| array-cav19 | 13 | 13 |
+| array-crafted | 43 | 37 |
+| array-examples | 60 | 56 |
+| array-fpi | 68 | 68 |
+| array-industry-pattern | 4 | 3 |
+| array-lopstr16 | 2 | 1 |
+| array-multidimensional | 20 | 13 |
+| array-patterns | 30 | 24 |
+| array-programs | 14 | 3 |
+| array-tiling | 27 | 27 |
+| loop-acceleration | 23 | 22 |
+| loop-crafted | 8 | 5 |
+| loop-industry-pattern | 4 | 1 |
+| loop-invariants | 9 | 8 |
+| loop-invariants64 | 1 | 1 |
+| loop-invgen | 28 | 17 |
+| loop-lit | 32 | 26 |
+| loop-new | 11 | 7 |
+| loop-simple | 6 | 6 |
+| loop-zilu | 27 | 27 |
+| loops | 36 | 30 |
+| loops-crafted-1 | 44 | 34 |
+| nla-digbench | 26 | 16 |
+| nla-digbench-scaling | 280 | 137 |
+| reducercommutativity | 22 | 21 |
+| **total** | **838** | **603** |
 
 Before the support of logic functions (0.39.5, with the memory clauses and
 the labels of the first annotations) 534 were proved. After this run, the
-annotations of 12 true tasks were revised and prove by single runs with the
+annotations of 27 tasks were revised and prove by single runs with the
 options of the benchmark (`-vcgen -timeout 900000 -z3`, 60 s, Oct 12, 2026,
 0.40.0 and 0.40.1):
 the seven reducers with the assertion above (`array-crafted` 43,
@@ -164,24 +174,29 @@ iteration takes `x` from 0 to 2^32-5); `loop-crafted/simple_array_index_value_4`
 (the invariants of the first loop hold also if it is not entered);
 `loop-new/count_by_k` (`i % k == 0` instead of an existential);
 `loop-invariants/bin-suffix-5` (the lemma above); `loops-crafted-1/theatreSquare`
-(the quotients as invariants).
+(the quotients as invariants); the 15 tasks of `hard-ll` and `hard2` (`pow2`
+instead of shifts, with `-verify`, 0.41.4).
 
 ## Open
 
-**Under `-verify`.** A sample of 23 tasks with 0.41.3 (60 s, Oct 12, 2026)
-answers as expected where the 0.40.0 run proved or refuted: 10 proved true
-tasks `correct`, 5 refuted false tasks `false`. Of the 87 true tasks with a
-refuted goal in the run above (`unknown` then), those not revised since are
-wrong `false` answers now (`loops-crafted-1/mono-crafted_1`,
-`nla-digbench-scaling/hard-ll_valuebound100`, `divbin2_unwindbound10` in the
-sample), 51 of them with an uninterpreted bitwise operator in the refuted
-goal (`nla-digbench-scaling` 47, `nla-digbench` 3, `bin-suffix-5`, revised
-since), the others with too weak annotations (`mono-crafted_1`: the second
-loop needs `y >= 0`) or the causes below (`heavy-2`, `matrix-1`,
-`veris.c_sendmail_tTflag_arr_one_loop`, `data_structures_set_multi_proc_*`,
-`*-u`).
+**Under `-verify`.** A sample with 0.41.3 (60 s, Oct 12, 2026) answers
+`correct` for the 10 tasks proved in the run above. Of the 87 tasks with a
+refuted goal in that run (`unknown` then), those not revised since are wrong
+`false` answers now (`loops-crafted-1/mono-crafted_1`,
+`nla-digbench-scaling/divbin2_unwindbound10` in the sample): 51 had an
+uninterpreted bitwise operator in the refuted goal, of which 16 are revised
+(`hard-ll`, `hard2`, `bin-suffix-5`) and 35 remain, the powers of 2 by shifts
+of `divbin2` (15), `divbin` (10), and `dijkstra-u` (10); the others have too
+weak annotations (`mono-crafted_1`: the second loop needs `y >= 0`) or the
+causes below (`heavy-2`, `matrix-1`, `veris.c_sendmail_tTflag_arr_one_loop`,
+`data_structures_set_multi_proc_*`, `*-u`). The predicate `pow2mul(b, B)`
+(`b` is `B` times a power of 2) does not suffice for `divbin*`: the
+invariant `r < b` of the second loop is wrong in the `unwindbound` variants,
+whose first loop may end by the bound, and the step is nonlinear under the
+`uint` wrap-around. Cuvée could answer `unknown` to refutations through
+uninterpreted operators instead (see [TODO.md](../../TODO.md)).
 
-The 223 true tasks that are not proved (235 of the run above, less the 12
+The 208 tasks that are not proved (235 of the run above, less the 27
 revised since), by cause:
 
 - **Not supported by Cuvée** (57):
@@ -197,7 +212,7 @@ revised since), by cause:
     (`loops/veris.c_NetBSD-libc_loop`).
 - **Nonlinear arithmetic**, z3 times out or answers `Unknown` (most of the
   143 of `nla-digbench-scaling`; `nla-digbench/geo*-ll`, `lcm1`, `lcm2`,
-  `prod4br-ll`, `hard-ll`, `divbin2`, `dijkstra-u`;
+  `prod4br-ll`, `divbin2`, `dijkstra-u`;
   `array-programs/partial_mod_count_2-5`, integer division;
   `array-patterns/array26`, the parity of a count; `array1`, `3`, `4`, `6`,
   `7`, the lemmas with products and remainders).
