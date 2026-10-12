@@ -44,10 +44,15 @@ object Examples:
   // utest builds its test tree at compile time with the Tests macro,
   // therefore the tests for example files found at runtime are assembled by hand,
   // with one test per file, named after the file
+  // a suite without files, e.g. one that is disabled by an environment variable (see printing), has a single empty test,
+  // since utest rejects an empty tree
   def tests(files: List[os.Path])(body: os.Path => Unit): Tests =
-    val names = files.map(file => Tree(file.relativeTo(root).toString))
-    val calls = files.map(file => new TestCallTree(Left(body(file))))
-    Tests(Tree("", names*), new TestCallTree(Right(calls.toIndexedSeq)))
+    if files.isEmpty
+    then Tests(Tree("", Tree("disabled")), new TestCallTree(Right(IndexedSeq(new TestCallTree(Left(()))))))
+    else
+      val names = files.map(file => Tree(file.relativeTo(root).toString))
+      val calls = files.map(file => new TestCallTree(Left(body(file))))
+      Tests(Tree("", names*), new TestCallTree(Right(calls.toIndexedSeq)))
 
   // a source applied directly, outside of Cuvee.run, whose fresh names are numbered from the start as in Cuvee.pipe,
   // such that they do not depend on the order of the tests
@@ -87,6 +92,11 @@ object Examples:
   def valid(dir: os.SubPath, ext: String): List[os.Path] =
     def cases(file: os.Path) = file.segments.exists(Set("parsing", "printing", "solver"))
     find(dir, ext).filter(file => !cases(file) && reported(file).forall(_ == "goal does not hold"))
+
+  // the examples of the roundtrip suites (see roundtrip), which run every example again and parse its output back,
+  // only if the environment variable CUVEE_PRINTING is set: they are needed when a parser or a printer changes
+  def printing(files: List[os.Path]): List[os.Path] =
+    if sys.env.contains("CUVEE_PRINTING") then files else Nil
 
   // printing is stable: the output of `args` on `file`, parsed in the language of the output and printed again,
   // is the same text

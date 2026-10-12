@@ -6,7 +6,7 @@ import utest._
 // printing the SMT-LIB examples is stable when the output is parsed again
 object Roundtrip extends TestSuite:
   val tests =
-    Examples.tests(Examples.valid(os.sub / "smtlib", "smt2")): file =>
+    Examples.tests(Examples.printing(Examples.valid(os.sub / "smtlib", "smt2"))): file =>
       Examples.roundtrip(file, Nil)
 
 // the programs of the Dafny and Boogie examples printed as SMT-LIB can be read back, and printing them again is stable;
@@ -21,5 +21,5 @@ object Programs extends TestSuite:
     !prelude.exists(os.read(file).contains)
 
   val tests =
-    Examples.tests((Examples.valid(os.sub / "dafny", "dfy") ++ Examples.valid(os.sub / "boogie", "bpl")).filter(plain)): file =>
+    Examples.tests(Examples.printing((Examples.valid(os.sub / "dafny", "dfy") ++ Examples.valid(os.sub / "boogie", "bpl")).filter(plain))): file =>
       Examples.roundtrip(file, List("-print", "smt2"))

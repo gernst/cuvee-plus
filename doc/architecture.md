@@ -386,7 +386,10 @@ README; options in [options.md](options.md)), e.g.
   checks all of them, and the suite `SVComp` runs only if the environment
   variable `CUVEE_SVCOMP` is set; likewise the algorithms of
   `examples/dafny/algorithms`, whose runs take minutes, only if
-  `CUVEE_ALGORITHMS` is set (`Examples.excluded`). The C programs printed from these
+  `CUVEE_ALGORITHMS` is set (`Examples.excluded`), and the roundtrip suites
+  of the printers (`Roundtrip` and `Programs`, every example printed and
+  parsed back, `Examples.printing`) only if `CUVEE_PRINTING` is set, which
+  a change of a parser or a printer requires. The C programs printed from these
   translations (`benchmarks/sv-comp/c`, by `-print c -known dfy,teq,rw`,
   those that parse again) have the same expected results, without times,
   in `benchmarks/sv-comp/c/expected.csv` (suite `SVCompC`), recorded before

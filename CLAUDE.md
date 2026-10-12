@@ -47,7 +47,10 @@ or solvers consume.
 - Test: `mill -i test` (four groups; check every `Tests: n, Passed: n,
   Failed: 0` line, failures are marked `X`). The algorithms of
   `examples/dafny/algorithms` run only with `CUVEE_ALGORITHMS=1 mill -i test`
-  (about five minutes), the SV-COMP databases only with `CUVEE_SVCOMP=1`.
+  (about five minutes), the roundtrip suites of the printers (every example
+  printed and parsed back) only with `CUVEE_PRINTING=1`, which a change of a
+  parser or a printer requires, the SV-COMP databases only with
+  `CUVEE_SVCOMP=1`.
 - Run: `mill -i run <options> <file>`. `-print` takes an argument
   (`-print null`).
 - z3 by hand only with a timeout: `z3 -T:5 file.smt2`.

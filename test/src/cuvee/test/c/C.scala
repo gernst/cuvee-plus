@@ -9,7 +9,7 @@ import cuvee.Cuvee
 // printing the C examples is stable after a first round of parsing and printing again
 object Roundtrip extends TestSuite:
   val tests =
-    Examples.tests(Examples.valid(os.sub / "c", "c")): file =>
+    Examples.tests(Examples.printing(Examples.valid(os.sub / "c", "c"))): file =>
       Examples.roundtrip(file, Nil, rounds = 1)
 
 // all examples with -chc whose second line states whether all assertions hold,

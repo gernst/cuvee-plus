@@ -10,7 +10,7 @@ import cuvee.Cuvee
 // before their statements and moves the local variables of the body into the signature
 object Roundtrip extends TestSuite:
   val tests =
-    Examples.tests(Examples.valid(os.sub / "svlib", "svlib")): file =>
+    Examples.tests(Examples.printing(Examples.valid(os.sub / "svlib", "svlib"))): file =>
       Examples.roundtrip(file, Nil, rounds = 1)
 
 // the examples with -chc whose second line states whether the properties hold
