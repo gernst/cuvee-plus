@@ -1,0 +1,52 @@
+// ACSL annotations added by hand (benchmarks/acsl/README.md)
+/*@ assigns \nothing;
+    ensures \false; */
+extern void abort(void);
+/*@ assigns \nothing;
+    ensures \false; */
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+/*@ requires \false;
+    assigns \nothing; */
+void reach_error() { __assert_fail("0", "vnew1.c", 3, "reach_error"); }
+extern void abort(void);
+/*@ assigns \nothing;
+    ensures cond != 0; */
+void assume_abort_if_not(int cond) {
+  if(!cond) {abort();}
+}
+/*@ requires cond != 0;
+    assigns \nothing; */
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error();abort();}
+  }
+  return;
+}
+int SIZE = 20000001;
+/*@ assigns \nothing; */
+unsigned int __VERIFIER_nondet_uint();
+int main() {
+  unsigned int n,i,k;
+  n = __VERIFIER_nondet_uint();
+  if (!(n <= SIZE)) return 0;
+  k = n;
+  i = 0;
+  /*@ loop invariant i % 3 == 0;
+      loop invariant i <= n + 2;
+      loop invariant k == n - i/3;
+      loop assigns i, k; */
+  while( i < n ) {
+    k--;
+    i = i + 3;
+  }
+  int j = 0;
+  /*@ loop invariant 0 <= j <= n/3;
+      loop invariant k == n - (n+2)/3 - j;
+      loop assigns j, k; */
+  while( j < n/3 ) {
+    __VERIFIER_assert(k > 0);
+    k--;
+    j++;
+  }
+  return 0;
+}

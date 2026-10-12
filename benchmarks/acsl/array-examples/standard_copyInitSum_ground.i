@@ -1,0 +1,59 @@
+// ACSL annotations added by hand (benchmarks/acsl/README.md)
+/*@ assigns \nothing; */
+extern int __VERIFIER_nondet_int(void);
+/*@ assigns \nothing;
+    ensures \false; */
+extern void abort(void);
+
+/*@ assigns \nothing;
+    ensures \false; */
+extern void __assert_fail (const char *__assertion, const char *__file,
+      unsigned int __line, const char *__function)
+     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+extern void __assert_perror_fail (int __errnum, const char *__file,
+      unsigned int __line, const char *__function)
+     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+extern void __assert (const char *__assertion, const char *__file, int __line)
+     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+
+/*@ requires \false;
+    assigns \nothing; */
+void reach_error() { ((void) sizeof ((0) ? 1 : 0), __extension__ ({ if (0) ; else __assert_fail ("0", "standard_copyInitSum_ground.c", 4, __extension__ __PRETTY_FUNCTION__); })); }
+/*@ requires cond != 0;
+    assigns \nothing; */
+void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();} } }
+int main ( ) {
+  int a [100000];
+  int b [100000];
+  int incr = __VERIFIER_nondet_int();
+  int i = 0;
+  /*@ loop invariant 0 <= i <= 100000;
+      loop invariant \forall integer t; 0 <= t < i ==> a[t] == 42;
+      loop assigns i, a[0..99999]; */
+  while ( i < 100000 ) {
+    a[i] = 42;
+    i = i + 1;
+  }
+  /*@ loop invariant 0 <= i <= 100000;
+      loop invariant \forall integer t; 0 <= t < 100000 ==> a[t] == 42;
+      loop invariant \forall integer t; 0 <= t < i ==> b[t] == 42;
+      loop assigns i, b[0..99999]; */
+  for ( i = 0 ; i < 100000 ; i++ ) {
+    b[i] = a[i];
+  }
+  /*@ loop invariant 0 <= i <= 100000;
+      loop invariant \forall integer t; 0 <= t < i ==> b[t] == 42 + incr;
+      loop invariant \forall integer t; i <= t < 100000 ==> b[t] == 42;
+      loop assigns i, b[0..99999]; */
+  for ( i = 0 ; i < 100000 ; i++ ) {
+    b[i] = b[i] + incr;
+  }
+  int x;
+  /*@ loop invariant 0 <= x <= 100000;
+      loop invariant \forall integer t; 0 <= t < 100000 ==> b[t] == 42 + incr;
+      loop assigns x; */
+  for ( x = 0 ; x < 100000 ; x++ ) {
+    __VERIFIER_assert( b[x] == 42 + incr );
+  }
+  return 0;
+}

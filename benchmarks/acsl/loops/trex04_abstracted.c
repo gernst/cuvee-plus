@@ -1,0 +1,81 @@
+// ACSL annotations added by hand (benchmarks/acsl/README.md)
+/*@ assigns \nothing;
+    ensures \false; */
+extern void abort(void);
+/*@ assigns \nothing; */
+extern int __VERIFIER_nondet_int();
+/*@ assigns \nothing; */
+extern _Bool __VERIFIER_nondet_bool();
+/*@ assigns \nothing; */
+extern char __VERIFIER_nondet_char();
+/*@ assigns \nothing; */
+extern double __VERIFIER_nondet_double();
+/*@ assigns \nothing; */
+extern float __VERIFIER_nondet_float();
+/*@ assigns \nothing; */
+extern unsigned long __VERIFIER_nondet_ulong();
+/*@ assigns \nothing; */
+extern unsigned long long __VERIFIER_nondet_ulonglong();
+/*@ assigns \nothing; */
+extern unsigned int __VERIFIER_nondet_uint();
+extern int __VERIFIER_nondet_int();
+extern void abort(void);
+/*@ assigns \nothing;
+    ensures \false; */
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+/*@ requires \false;
+    assigns \nothing; */
+void reach_error() { __assert_fail("0", "trex04_abstracted.c", 3, "reach_error"); }
+extern void abort(void);
+/*@ assigns \nothing;
+    ensures cond != 0; */
+void assume_abort_if_not(int cond) {
+  if(!cond) {abort();}
+}
+
+/*@ requires cond != 0;
+    assigns \nothing; */
+void __VERIFIER_assert(int cond) {
+  if (!(cond)) {
+    ERROR: {reach_error();abort();}
+  }
+  return;
+}
+extern _Bool __VERIFIER_nondet_bool();
+extern int __VERIFIER_nondet_int();
+
+/*@ assigns \nothing; */
+void foo()
+{
+  int y=0;
+  _Bool c1=__VERIFIER_nondet_bool(), c2=__VERIFIER_nondet_bool();
+  if (c1) y++;
+  if (c2) y--;
+  else y+=10;
+}
+
+int main()
+{
+  int d = 1;
+  int x = __VERIFIER_nondet_int();
+  if (!(x <= 1000000 && x >= -1000000)) return 0;
+  _Bool c1=__VERIFIER_nondet_bool(), c2=__VERIFIER_nondet_bool();
+
+  if (c1) d = d - 1;
+  if (c2) foo();
+
+  c1=__VERIFIER_nondet_bool(), c2=__VERIFIER_nondet_bool();
+
+  if (c1) foo();
+  if (c2) d = d - 1;
+  
+  // START HAVOCABSTRACTION
+  if (x > (0)) {
+  x = __VERIFIER_nondet_int();
+  }
+  if (x > (0)) abort();
+  // END HAVOCABSTRACTION
+
+  __VERIFIER_assert(x<=0);
+}
+

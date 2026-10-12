@@ -1,0 +1,96 @@
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the partial sums in row-major order in closed form
+/*
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+/* Program Description :-
+ * A square 2D array is declared.
+ * Elements of matrix are initialized as the following condition :-
+ * i) If main diagonal element, assign zero.
+ * ii) Otherwise, assign row number.
+ * Sum of array should be (1/2)*(ARR_SIZE)*(ARR_SIZE-1)^2.
+ * ARR_SIZE.
+ */
+
+/*@ assigns \nothing;
+    ensures \false; */
+extern void abort(void);
+/*@ assigns \nothing;
+    ensures \false; */
+extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
+/*@ requires \false;
+    assigns \nothing; */
+void reach_error() { __assert_fail("0", "array27_pattern.c", 27, "reach_error"); }
+extern void abort(void);
+/*@ assigns \nothing;
+    ensures cond != 0; */
+void assume_abort_if_not(int cond) {
+  if(!cond) {abort();}
+}
+/*@ requires cond != 0;
+    assigns \nothing; */
+void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();} } }
+/*@ assigns \nothing; */
+extern int __VERIFIER_nondet_int() ;
+/*@ assigns \nothing; */
+extern short __VERIFIER_nondet_short() ;
+
+signed long long ARR_SIZE ;
+
+
+int main()
+{
+	ARR_SIZE = (signed long long)__VERIFIER_nondet_short() ;
+	assume_abort_if_not(ARR_SIZE > 0) ;
+
+	int array[ARR_SIZE][ARR_SIZE] ;
+	
+	int row = 0, column = 0 ;
+
+	signed long long sum = 0 ;
+
+	/*@ loop invariant 0 <= row <= ARR_SIZE;
+	    loop invariant \forall integer r, c; 0 <= r < row && 0 <= c < ARR_SIZE ==> array[r][c] == ((r) == (c) ? 0 : (r));
+	    loop assigns row, column, array[0..ARR_SIZE-1][0..ARR_SIZE-1]; */
+	for(row=0;row<ARR_SIZE;row++)
+		/*@ loop invariant 0 <= column <= ARR_SIZE;
+		    loop invariant 0 <= row < ARR_SIZE;
+		    loop invariant \forall integer r, c; 0 <= r < row && 0 <= c < ARR_SIZE ==> array[r][c] == ((r) == (c) ? 0 : (r));
+		    loop invariant \forall integer c; 0 <= c < column ==> array[row][c] == ((row) == (c) ? 0 : (row));
+		    loop assigns column, array[row][0..ARR_SIZE-1]; */
+		for(column=0;column<ARR_SIZE;column++)
+		{
+			if(row == column)
+				array[row][row] = 0 ;
+			else
+				array[row][column] = row ;
+		}
+				
+
+	/*@ loop invariant 0 <= row <= ARR_SIZE;
+	    loop invariant \forall integer r, c; 0 <= r < ARR_SIZE && 0 <= c < ARR_SIZE ==> array[r][c] == ((r) == (c) ? 0 : (r));
+	    loop invariant 2*sum == (ARR_SIZE-1)*row*(row-1);
+	    loop assigns row, column, sum; */
+	for(row=0;row<ARR_SIZE;row++)
+		/*@ loop invariant 0 <= column <= ARR_SIZE;
+		    loop invariant 0 <= row < ARR_SIZE;
+		    loop invariant \forall integer r, c; 0 <= r < ARR_SIZE && 0 <= c < ARR_SIZE ==> array[r][c] == ((r) == (c) ? 0 : (r));
+		    loop invariant 2*sum == (ARR_SIZE-1)*row*(row-1) + 2*row*(column - (column > row ? 1 : 0));
+		    loop assigns column, sum; */
+		for(column=0;column<ARR_SIZE;column++)
+			sum = sum + array[row][column] ;
+
+	__VERIFIER_assert(2*sum == (ARR_SIZE*(ARR_SIZE-1)*(ARR_SIZE-1))) ;
+	return 0 ;
+}
