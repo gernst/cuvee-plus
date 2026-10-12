@@ -53,11 +53,11 @@ trait Source:
   def apply(config: Config, reader: Reader): (State, LazyList[Cmd]) =
     val (init, parser, prelude) = newParser(config)
 
-    val injected =
+    val preludes_ =
       for path <- preludes(config); cmd <- parse(path, parser)
       yield cmd
 
-    // the files of features, e.g. the modules of the lemma database of -teq (see TEQ.modules), on which the TEQ
+    // the modules of the lemma database (see Config.injected), on which the TEQ
     // transform relies, parsed by the parser of the input if they are in the same language, such that the input can
     // refer to them, otherwise by a fresh parser of their language, one per language for all of its files, such that
     // later files can refer to the declarations of earlier ones, e.g. the modules to the core of the database
@@ -66,14 +66,14 @@ trait Source:
     def parserOf(source: Source) =
       if source == this then parser else parsers.getOrElseUpdate(source, source.newParser(config)._2)
 
-    val features_ =
+    val modules_ =
       for
-        (source, path) <- config.features
+        (source, path) <- config.injected
         cmd <- source.parse(path, parserOf(source))
       yield cmd
 
-    // the files of the user (-include), after the files of features, such that they can refer to them, parsed in the
-    // same way; a file in another language starts from the prelude of its source and the files of features in that
+    // the files of the user (-include), after the modules, such that they can refer to them, parsed in the
+    // same way; a file in another language starts from the prelude of its source and the modules in that
     // language, not from the state of the input
     val includes_ =
       for
@@ -81,7 +81,7 @@ trait Source:
         cmd <- source.include(path, parserOf(source))
       yield cmd
 
-    val prelude_ = prelude ++ injected ++ features_ ++ includes_
+    val prelude_ = prelude ++ preludes_ ++ modules_ ++ includes_
 
     // defer reading and parsing such that errors in the first command are reported by the pipeline, too
     (init, LazyList.empty #::: prelude_.to(LazyList) #::: input(config, reader, parser).filterNot(prelude_.contains))

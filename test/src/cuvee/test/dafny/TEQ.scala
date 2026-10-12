@@ -54,7 +54,7 @@ object TEQ extends TestSuite:
       assert(!subexprs(phi).exists { case App(fun, _, _, _) => fun == Fun.trace.counter; case _ => false })
       assert(!subexprs(phi).exists { case App(fun, _, _, _) => fun.name.name == "sums"; case _ => false })
 
-      // also without loops, once, as part of the prelude of the source (see Config.features)
+      // also without loops, once, as part of the prelude of the source (see Config.injected)
       val abs = Examples.root / "dafny" / "vcgen" / "abs.dfy"
       val (cmds_, _) = Examples.stream("-teq", "-print", "null", abs.toString)
       val prelude = Examples.prelude("-teq", "-print", "null", abs.toString)

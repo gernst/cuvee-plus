@@ -26,7 +26,7 @@ case class Flag(
 // a language with the source that reads it and the printer that writes it,
 // features: the features that it has built in, whose declarations are not printed (see Sink.known),
 // beyond its file extension e.g. hybrid for the definitions of parallel composition in Dafny
-// (resources/cuvee/dafny/hybrid.dfy, see -hybrid) and teq for trace equation systems (resources/cuvee/teq.dfy, see -teq),
+// (resources/cuvee/dafny/hybrid.dfy, see -hybrid) and teq for trace equation systems (resources/cuvee/teq, see -teq),
 // hasMath: whether it can express the output of transforms like -teq and -chc, otherwise the output is SMT-LIB
 case class Lang(
     help: String,
@@ -53,7 +53,7 @@ object Lang:
 
   // output only (-print lean), there is no source of Lean, the one given is never used; Lean knows the built-in sorts
   // and functions of all languages, which its printer maps to their counterparts in Lean, or rejects, and the
-  // declarations with the attribute {:lean}, e.g. the datatypes Nat and List of teq.dfy
+  // declarations with the attribute {:lean}, e.g. the datatypes Nat and List of the lemma database (teq/core.dfy)
   val lean =
     Lang("Lean", cuvee.smtlib.Source, cuvee.lean.Printer, Set("smt2", "dfy", "bpl", "c", "lean"))
 
@@ -82,12 +82,12 @@ case class Config(
     // whether the nondeterministic values of C input range over all integers, instead of the values of their types,
     // except that unsigned ones are nonnegative (see c.Parser.havoc)
     unbounded: Boolean = false,
-    // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print
+    // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print;
+    // teq injects the modules of the lemma database (see injected)
     known: Set[String] = Set(),
-    // the files of features that are injected into the input after its prelude, with the sources that parse them,
-    // e.g. teq.dfy by -teq (see Source.apply)
-    features: List[(Source, String)] = Nil,
-    // the files of the user that are injected into the input after the files of features, with the sources of their
+    // the further modules of the lemma database, e.g. by -include teq:nested, with the sources that parse them
+    modules: List[(Source, String)] = Nil,
+    // the files of the user that are injected into the input after the modules, with the sources of their
     // languages (see -include and Source.apply)
     includes: List[(Source, String)] = Nil,
     // the lines of stdout and stderr, which tests capture instead (see test.Expected)
@@ -105,22 +105,16 @@ case class Config(
   def having(feature: String) =
     copy(input = input.having(feature), output = output.having(feature), known = known + feature)
 
-  // the configuration that injects `file` into the input, parsed by `source`
-  def injecting(source: Source, file: String) =
-    copy(features = features :+ (source, file))
-
   // the configuration that injects the file `file` of the user into the input, parsed by `source`
   def including(source: Source, file: String) =
     copy(includes = includes :+ (source, file))
 
-  // the configuration that knows the feature teq and injects the modules of its lemma database (see TEQ.modules),
-  // in their order
-  def injectingTEQ =
-    TEQ.modules.foldLeft(having("teq"))((config, module) => config.injecting(cuvee.dafny.Source, module))
-
-  // whether the lemma database of -teq is injected already, e.g. by -known teq before -teq
-  def injectsTEQ =
-    features.exists(_._2 == TEQ.modules.head)
+  // the modules of the lemma database that are injected into the input after its prelude (see Source.apply):
+  // those of -teq (see TEQ.modules) if the feature teq is known, then the further ones, each once, such that the
+  // order of the options does not matter
+  def injected =
+    val modules_ = if known.contains("teq") then TEQ.modules.map((cuvee.dafny.Source, _)) else Nil
+    (modules_ ++ modules).distinct
 
   // the configuration with the output in `lang`, which knows the features added so far
   def printing(lang: Lang) =
@@ -171,7 +165,7 @@ object Config:
   val teq =
     flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems"):
       case (config, rest) =>
-        val config_ = (if config.injectsTEQ then config.usingMath else config.usingMath.injectingTEQ).using(TEQ)
+        val config_ = config.usingMath.having("teq").using(TEQ)
         (config_, rest)
 
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
@@ -299,15 +293,14 @@ object Config:
 
   // features that the receiver of the output knows, e.g. -known dfy,teq for a C program without the logic of the
   // preludes of Dafny and of -teq, whose declarations are dropped (see Sink.known), also after a later -print;
-  // teq also injects the declarations of teq.dfy into the input, as -teq does, but without its transform, e.g. for
-  // the lemmas of a program over Nat and Trace
+  // teq also injects the lemma database into the input, as -teq does, but without its transform, e.g. for
+  // the lemmas of a program over Nat and Trace (see injected)
   val known_ =
     flag("-known", "<features>", "omit the declarations with the comma-separated attributes <features> from the output, e.g. dfy,teq, where teq also declares those of -teq in the input"):
       case (config, names :: rest) =>
         val features = names.split(",").map(_.trim).filter(_.nonEmpty).toSet
         val config_ = config.copy(output = config.output.copy(features = config.output.features ++ features), known = config.known ++ features)
-        val config__ = if features.contains("teq") && !config_.injectsTEQ then config_.injectingTEQ else config_
-        (config__, rest)
+        (config_, rest)
 
   // a file of the user, e.g. with lemmas, in the language of its extension; task definitions describe no declarations
   // teq:<concept> is the module <concept>.dfy of the lemma database (resources/cuvee/teq), e.g. teq:sorting, which
@@ -316,7 +309,7 @@ object Config:
   val include =
     flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; teq:<concept> injects the module <concept> of the lemma database of -teq"):
       case (config, file :: rest) if file.startsWith("teq:") =>
-        (config.injecting(cuvee.dafny.Source, TEQ.module(file.drop(4))), rest)
+        (config.copy(modules = config.modules :+ (cuvee.dafny.Source, TEQ.module(file.drop(4)))), rest)
       case (config, file :: rest) if langs.get(file.suffix).exists(_ != Lang.yml) =>
         (config.including(langs(file.suffix).source, file), rest)
 
@@ -386,7 +379,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.39.5")
+    println("Cuvée 0.39.6")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

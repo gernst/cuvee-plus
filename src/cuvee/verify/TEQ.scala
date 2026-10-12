@@ -100,7 +100,7 @@ object Path:
 // the goals contain the combinators trace and all, which must be rewritten before they are passed to a solver,
 // except for programs without loops
 object TEQ extends Transform:
-  // the lemma database is injected by the source (see Config.features)
+  // the lemma database is injected by the source (see Config.injected)
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val gs = Type.expand(state, state.globals)
 
