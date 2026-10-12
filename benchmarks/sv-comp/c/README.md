@@ -1,8 +1,9 @@
 # C versions of the local SV-COMP benchmarks
 
-The 646 tasks in this folder are C programs with the property `unreach-call`,
-for comparing Cuvée with other verifiers on the same programs, e.g. with
-BenchExec on the task set `C.unreach-call.Unbounded` of `xml/*.xml`.
+The 481 tasks in this folder are C programs with the property `unreach-call`,
+all expected true, for comparing Cuvée with other verifiers on the same
+programs, e.g. with BenchExec on the task set `C.unreach-call.Unbounded` of
+`xml/*.xml`. The 165 tasks expected false were removed (October 12, 2026).
 
 ## Origin
 

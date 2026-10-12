@@ -278,6 +278,8 @@ Since then (October 11, 2026), the C versions follow these proposals:
   arithmetic of C as unbounded.
 - The 5 tasks that pass an array to a function that changes it are removed
   (October 12, 2026), 646 remain.
+- The 165 tasks expected false are removed (October 12, 2026), 481 remain,
+  all expected true; the tables above count them.
 
 [false-verdicts.md](benchmarks/sv-comp/c/false-verdicts.md) has the analysis
 of the 72 wrong false verdicts and the fixes.
