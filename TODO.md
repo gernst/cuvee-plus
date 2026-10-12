@@ -995,16 +995,15 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   - Done by the annotation (Oct 12, 2026): `loop-new/count_by_k` proves with
     `k == 0 ==> i == 0` and `k > 0 ==> i % k == 0`. Was: the invariant
     `\exists integer q; 0 <= q && i == q*k` is `Unknown`.
-  - Assertions are checked but not assumed afterwards: `Spec.assert(phi)` is
-    `Spec(Nil, phi, True)`, whose weakest precondition is `phi && (true ==>
-    post)` ([VCGen](src/cuvee/verify/VCGen.scala), case `Spec`), while
-    Frama-C/WP (and Boogie) assume an assertion once it is proved, `phi &&
-    (phi ==> post)`. A `//@ assert` cannot pass a fact on to later goals
-    (`loops-crafted-1/theatreSquare` carries it in loop invariants instead);
-    in the reducers (`array-crafted/bAnd5` etc.) `//@ assert ret2 == ret;`
-    helps only because z3 keeps the quantifier instances of its proof in the
-    same query, not with `-split`. Affects all frontends that use
-    `Spec.assert`.
+  - Done in 0.40.1: an assertion is assumed once it is checked, `phi && (phi
+    ==> post)` ([VCGen](src/cuvee/verify/VCGen.scala), case `Spec`;
+    [assert_assumed.c](examples/c/vcgen/assert_assumed.c)), as in Frama-C/WP
+    and Boogie, for all frontends; the reducers (`array-crafted/bAnd5` etc.)
+    with `//@ assert ret2 == ret;` now prove with `-split` as well. Was: `phi
+    && (true ==> post)`, equivalent, but z3 does not have `phi` in the branch
+    `!post`, and `-split` makes `post` a goal of its own without `phi`; the
+    reducers proved only because z3 kept the quantifier instances of the
+    assertion's proof in the same query.
   - Uninitialized locals of unsigned types are not in the range of their type:
     a loop whose `loop assigns` contains one checks its range at the entry
     (the ranges of the modified unsigned variables are invariants, see above),

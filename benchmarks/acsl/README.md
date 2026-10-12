@@ -88,15 +88,14 @@ followed by a note where they need explanation.
 - **Bitwise operators** on values other than truth values are uninterpreted;
   a trusted `lemma` states the bits that an invariant fixes
   (`loop-invariants/bin-suffix-5`: `x % 8 == 5 ==> (x & 5) == 5`).
-- **Assertions** (`//@ assert`) are checked but not assumed afterwards in
-  Cuvée (see [TODO.md](../../TODO.md)), unlike Frama-C/WP: a fact that later
-  goals need is a loop invariant of the later loops instead
-  (`loops-crafted-1/theatreSquare`, the quotients `i == (n + a - 1) / a`).
-  In the reducers `bAnd5`, `bor5`, `xor5`, `mapavg2`, `mapavg3`, `mapsum3`,
+- **Assertions** (`//@ assert`) split a proof: they are hypotheses of the
+  goals after them (since 0.40.1, `A && (A ==> B)` as in Frama-C/WP). In the
+  reducers `bAnd5`, `bor5`, `xor5`, `mapavg2`, `mapavg3`, `mapsum3`,
   `reducercommutativity/sum40-2`, `//@ assert ret2 == ret;` after the second
-  call is a hint only: the final goal needs the instances of both `fold_swap`
-  and `fold_rotate`, which z3 does not find on its own, and finds once it has
-  proved the assertion in the same query (without `-split`).
+  call separates the instances of `fold_swap` and `fold_rotate`, which z3
+  does not find together. Facts about the loops of
+  `loops-crafted-1/theatreSquare` (the quotients `i == (n + a - 1) / a`) are
+  invariants of the later loops.
 - **Counts** in `array-programs` are closed forms with integer division and
   `\min`.
 - **Tasks expected `false`** get the invariants that do hold (often those of
@@ -143,7 +142,8 @@ Cuvée 0.40.0, `xml/cuvee-acsl.xml` with 60 s per task (Oct 12, 2026,
 Before the support of logic functions (0.39.5, with the memory clauses and
 the labels of the first annotations) 534 were proved. After this run, the
 annotations of 12 true tasks were revised and prove by single runs with the
-options of the benchmark (`-vcgen -timeout 900000 -z3`, 60 s, Oct 12, 2026):
+options of the benchmark (`-vcgen -timeout 900000 -z3`, 60 s, Oct 12, 2026,
+0.40.0 and 0.40.1):
 the seven reducers with the assertion above (`array-crafted` 43,
 `reducercommutativity` 22); `loop-acceleration/diamond_2-2` (for odd `y` one
 iteration takes `x` from 0 to 2^32-5); `loop-crafted/simple_array_index_value_4`

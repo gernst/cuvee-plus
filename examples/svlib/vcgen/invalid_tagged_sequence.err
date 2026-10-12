@@ -1,4 +1,4 @@
 (error
   "goal does not hold"
   "Sat"
-  "(forall ((l Int) (n Int) (result Int)) (=> (and true true) (forall ((i$2 Int)) (and (=> (not (< 0 l)) true) (=> (not (not (< 0 l))) (and (<= l l) (forall ((i$2 Int)) (=> (<= l i$2) (and (=> (< i$2 n) (and (<= l (+ i$2 1)) true)) (=> (not (< i$2 n)) (and (< 0 i$2) (=> true (and (= i$2 n) (=> true true))))))))))))))")
+  "(forall ((l Int) (n Int) (result Int)) (=> (and true true) (forall ((i$2 Int)) (and (=> (not (< 0 l)) true) (=> (not (not (< 0 l))) (and (<= l l) (forall ((i$2 Int)) (=> (<= l i$2) (and (=> (< i$2 n) (and (<= l (+ i$2 1)) true)) (=> (not (< i$2 n)) (and (< 0 i$2) (=> (< 0 i$2) (=> true (and (= i$2 n) (=> (= i$2 n) (=> true true))))))))))))))))")

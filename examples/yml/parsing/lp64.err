@@ -1,4 +1,4 @@
 (error
   "goal does not hold"
   "Sat"
-  "(forall ((result Int)) (=> (and true true) (and (= 8 4) (=> true true))))")
+  "(forall ((result Int)) (=> (and true true) (and (= 8 4) (=> (= 8 4) (=> true true)))))")

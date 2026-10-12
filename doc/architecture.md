@@ -120,6 +120,10 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     each have a rule.
   - `old(e)` is eliminated first, by `Old.elim`, into fresh variables for the
     values at the entry.
+  - An assertion (`Spec(xs, pre, post)` with `pre` not `true`) is assumed
+    once it is checked, `pre ∧ (pre ⇒ ∀ xs. post ⇒ wp)`, as in Boogie and
+    Frama-C/WP: equivalent to `pre ∧ wp`, but the goals after it have `pre`
+    as hypothesis, also the separate ones of `-split`.
 - [`TEQ`](../src/cuvee/verify/TEQ.scala) replaces each procedure definition
   by a goal from symbolic execution with trace equation systems for loops,
   see [teq.md](teq.md).

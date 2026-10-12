@@ -120,8 +120,14 @@ object VCGen extends Transform:
       case Return =>
         return_
 
+      case Spec(xs, True, phi) =>
+        And(True, All(xs, Imp(phi, post)))
+
+      // the precondition is assumed once it is checked, as in Boogie and Frama-C/WP:
+      // pre && (pre ==> post) is equivalent to pre && post, but gives the solver pre as hypothesis of post,
+      // also in the separate goals of -split
       case Spec(xs, pre, phi) =>
-        And(pre, All(xs, Imp(phi, post)))
+        And(pre, Imp(pre, All(xs, Imp(phi, post))))
 
       case Assign(xs, rhs) =>
         val su = Subst.from(xs, rhs)

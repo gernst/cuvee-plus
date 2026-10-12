@@ -1,4 +1,4 @@
 (error
   "goal does not hold"
   "Sat"
-  "(forall ((result Int)) (=> (and true true) (forall ((tmp$2 Int)) (forall ((c$3 Int)) (and true (forall ((tmp$2 Int)) (=> (<= 0 tmp$2) (and (<= tmp$2 255) (=> true true)))))))))")
+  "(forall ((result Int)) (=> (and true true) (forall ((tmp$2 Int)) (forall ((c$3 Int)) (and true (forall ((tmp$2 Int)) (=> (<= 0 tmp$2) (and (<= tmp$2 255) (=> (<= tmp$2 255) (=> true true))))))))))")

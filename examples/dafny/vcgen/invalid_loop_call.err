@@ -1,3 +1,3 @@
 error "goal does not hold"
   "Sat"
-  "(forall ((n Int) (g Int)) (=> (and (< 0 n) true) (forall ((i$3 Int)) (and (<= 0 n) (forall ((i$3 Int) (g$5 Int)) (=> (<= i$3 n) (and (=> (< i$3 n) (and true true (forall ((g$4 Int)) (=> true (and (<= (+ i$3 1) n) true))))) (=> (not (< i$3 n)) (and (= g$5 0) (=> true true))))))))))"
+  "(forall ((n Int) (g Int)) (=> (and (< 0 n) true) (forall ((i$3 Int)) (and (<= 0 n) (forall ((i$3 Int) (g$5 Int)) (=> (<= i$3 n) (and (=> (< i$3 n) (and true true (forall ((g$4 Int)) (=> true (and (<= (+ i$3 1) n) true))))) (=> (not (< i$3 n)) (and (= g$5 0) (=> (= g$5 0) (=> true true)))))))))))"
