@@ -43,27 +43,26 @@ were 300 s wall time and 2700 s CPU time on an AMD Opteron 2220 with 6 GB.
 | Operator | tests | MonoCera (paper) | MonoCera | Cuvée `-teq` | Cuvée `-chc` | TriCera, CPAchecker, SeaHorn (paper) |
 |---|--:|--:|--:|--:|--:|--:|
 | forall | 93 | 27 | 26 | 53 | 0 | 0, 1, 0 |
-| max | 4 | 2 | 0 | 2 | 0 | 0, 0, 0 |
+| max | 4 | 2 | 2 | 2 | 0 | 0, 0, 0 |
 | min | 11 | 3 | 3 | 7 | 0 | 0, 0, 0 |
 | sum | 17 | 10 | 10 | 17 | 0 | 0, 0, 0 |
-| total | 125 | 42 | 39 | 79 | 0 | 0, 1, 0 |
+| total | 125 | 42 | 41 | 79 | 0 | 0, 1, 0 |
 
 - The columns of the paper count the verified tests of its original logs;
   they agree with the paper. No tool gives a wrong result.
-- **Time**: all proofs of MonoCera end within 300 s (at most 164 s, median
-  30 s), those of Cuvée `-teq` within 20 s (median 9 s), which proves the same
+- **Time**: all proofs of MonoCera end within 300 s (at most 274 s, median
+  31 s), those of Cuvée `-teq` within 20 s (median 9 s), which proves the same
   79 tests with 60 s. The 15 minutes add nothing to either.
-- **MonoCera against the paper**: 3 tests fewer, `max/condn` (129 s in the
-  paper), `max/sanfoundry_27_ground` (285 s), `forall/partial_lesser_bound-1`,
-  none more; on a faster machine, so its search seems to behave differently
-  (Java 21 here, the artifact's VM older). The other runs end by timeout (74)
-  or `unknown` (12).
-- **Cuvée against MonoCera**: 23 tests are proved by both, 56 by Cuvée only,
-  16 by MonoCera only, 95 of the 125 by either. Those of MonoCera only are
+- **MonoCera against the paper**: 1 test fewer, `forall/partial_lesser_bound-1`,
+  none more. The other runs end by timeout (71) or `unknown` (13). (An earlier
+  version of this summary had 39, from MonoCera's 60 s test run on `max` taken
+  by mistake.)
+- **Cuvée against MonoCera**: 24 tests are proved by both, 55 by Cuvée only,
+  17 by MonoCera only, 96 of the 125 by either. Those of MonoCera only are
   the strided and backward stores of `array-tiling` (`forall/nr2`-`nr5`,
   `pnr2`, `pnr3`, `pr2`, `pr3`, `rewnifrev`, `rewnifrev2`, `min/rewnifrev`),
   `forall/array_init_nondet_vars`, `array_init_var_plus_ind3`,
-  `simple_array_index_value_2`, and `standard_vararg_ground` (`forall`,
+  `simple_array_index_value_2`, `max/sanfoundry_27_ground`, and `standard_vararg_ground` (`forall`,
   `min`). All 17 `sum` tests are proved by Cuvée, 10 of them by MonoCera.
 - **Cuvée `-chc`** proves none: 120 timeouts, 3 `unknown`, 2 `arrays of
   pointers are not supported` (`array_ptr_partial_init`,

@@ -13,18 +13,17 @@ paper's conversion of the programs for it.
 | | forall (93) | max (4) | min (11) | sum (17) | total |
 |---|--:|--:|--:|--:|--:|
 | Cuvée `-teq` | 53 | 2 | 7 | 17 | 79 |
-| MonoCera (our run, 15 min) | 26 | 0 | 3 | 10 | 39 |
+| MonoCera (our run, 15 min) | 26 | 2 | 3 | 10 | 41 |
 | MonoCera (paper) | 27 | 2 | 3 | 10 | 42 |
 | Cuvée `-chc` (z3, Horn clauses) | 0 | 0 | 0 | 0 | 0 |
 | TriCera, CPAchecker, SeaHorn (paper) | | | | | 0, 1, 0 |
 
 - The direct comparison with a technique made for quantifiers and aggregates over arrays; no wrong results.
-- Both 23, Cuvée only 56 (all 17 `sum`), MonoCera only 16: the strided and backward stores of `array-tiling`
+- Both 24, Cuvée only 55 (all 17 `sum`), MonoCera only 17: the strided and backward stores of `array-tiling`
   (`nr*`, `pnr*`, `pr*`, `rewnifrev*`), a weakness to discuss.
-- Time: TEQ at most 20 s per proof, MonoCera up to 164 s.
+- Time: TEQ at most 20 s per proof, MonoCera up to 274 s.
 - Horn clauses alone fail for lack of quantified invariants over arrays, which motivates the approach.
-- Our MonoCera proves 3 fewer than the paper (`max/condn`, `max/sanfoundry_27_ground`,
-  `forall/partial_lesser_bound-1`), probably the Java version (21 here).
+- Our MonoCera proves 1 fewer than the paper (`forall/partial_lesser_bound-1`), none more.
 - **Semantics: mathematical integers.** The paper set up all tools "with equivalent configurations; for instance,
   to use the SMT-LIB theory of arrays to model C arrays, and a mathematical (as opposed to machine) semantics of
   integers" (Sect. 6, CPAchecker with k-induction for that reason). MonoCera is TriCera with its default
@@ -39,23 +38,29 @@ paper's conversion of the programs for it.
 The breadth comparison, against the official SV-COMP results of CPAchecker, UAutomizer, Symbiotic, AISE, Korn,
 and others (imported from the SV-COMP statistics, not run by us).
 
-| | Arrays (440) | Loops (764) |
-|---|--:|--:|
-| Cuvée `-teq -verify` (0.41.3, 60 s) | 133 true, 9 false | 125 true, 16 false |
-| Cuvée `-teq` (0.36.3, 15 min) | 137 | 123 |
-| Cuvée `-teq -fallback` (0.36.3, 15 min) | 147 | 277, 7 wrong |
+| | Arrays (440) | Loops (764) | score |
+|---|--:|--:|--:|
+| Cuvée (0.41.4, `-verify`, 15 min) | 137 true, 9 false | 126 true, 16 false | 551 |
+| Cuvée+Z3 (0.41.4, `-verify`, 15 min) | 147 true, 51 false, 1 wrong false | 280 true, 28 false, 7 wrong true, 1 wrong false | 677 |
+| Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false | 400 |
+
+Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, Korn 882, CPAchecker 852
+(AISE, which did not enter Arrays, 982 on Loops); see `scripts/out/experiments.pdf`.
 
 - Arrays is where TEQ should stand out against the model checkers; on Loops over integers, the Horn-based and
   model-checking tools lead.
 - The tasks have machine integers, which TEQ models in part (nondeterministic values in their ranges, unsigned
   wrap-around, since 0.36).
-- `-fallback` had 7 wrong proofs (`fermat1-ll_unwindbound*`, see [TODO.md](../TODO.md)); with `-verify`, its
-  goals are `:abstract`, which makes their refutations `unknown`, the wrong proofs remain to be checked.
+- Cuvée has no wrong results. `-fallback` has 7 wrong proofs (probably `fermat1-ll_unwindbound*`, see
+  [TODO.md](../TODO.md)) and wrong refutations, although its goals should be `:abstract` under `-verify`:
+  `array-examples/sanfoundry_24-1` and `verifythis/lcp` here, three more on the unbounded set; a bug of
+  `-verify` with `-fallback` (Z3's model of the abstraction, e.g. `bitand` uninterpreted, answered `incorrect`).
 
 ## 3. Complementarity: TEQ and Horn clauses
 
-TEQ and `-chc` together proved 151 Arrays and 307 Loops tasks on SV-COMP (15 min), far more than either: TEQ is
-strong on arrays, Horn clauses on integer loops. The argument for TEQ as a complement to invariant inference,
+A virtual portfolio of TEQ and `-chc` (correct if either is, 15 min): 341 true and 105 false correct, score
+787 with no wrong results, against 551 for TEQ and 400 for CHC alone (TEQ+Z3 and CHC: 458 true and 126 false,
+score 786, with the wrong results of `-fallback`). TEQ is strong on arrays, Horn clauses on integer loops. The argument for TEQ as a complement to invariant inference,
 and for a portfolio (see the TODO "Portfolio of TEQ and CHC").
 
 ## 4. Mathematical integers: the unbounded set
@@ -63,22 +68,24 @@ and for a portfolio (see the TODO "Portfolio of TEQ and CHC").
 The 481 C programs of [benchmarks/sv-comp/c](../benchmarks/sv-comp/c) (all expected true), printed from the
 Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose arithmetic is unbounded.
 
-| | proved (60 s) |
-|---|--:|
-| Cuvée `-teq -unbounded` | 228 |
-| Korn `-u` (Oct 11, 2026) | 130 |
-| either | 286 |
+| | proved (15 min) | wrong |
+|---|--:|--:|
+| Cuvée `-teq -unbounded` (0.41.4) | 234 | 0 |
+| Cuvée+Z3 `-unbounded` (0.41.4) | 286 | 3 wrong false (the `-verify` bug, see 2) |
+| Korn `-u` (Oct 11, 2026) | 175 | 0 |
 
-- TEQ 129 against 4 on the `array-*` folders, Korn ahead on `loop-lit`, `loop-invgen`, `nla-digbench`.
+- Cuvée and Korn: 91 both, 143 Cuvée only, 84 Korn only. With 60 s: Cuvée 228, Korn 130; TEQ 129 against 4
+  on the `array-*` folders, Korn ahead on `loop-lit`, `loop-invgen`, `nla-digbench`.
 - Only Korn has a mode for mathematical integers; the other verifiers would be wrong by construction. A clean
   comparison with one Horn-based tool. Korn runs without fuzzing (`-random`), which executes the program on
   machine integers, and with `-confirm` (see `xml/korn.xml`).
 
 ## 5. Annotations against automation: the ACSL tasks
 
-The 1161 tasks of SV-COMP Arrays and Loops annotated by hand with ACSL ([benchmarks/acsl](../benchmarks/acsl)):
-`-vcgen -z3` with the given invariants proves 603 of the 838 true tasks, TEQ about 260 of the same programs
-without annotations. How far TEQ gets automatically, and which tasks need annotations (nonlinear closed forms,
+The 838 tasks of SV-COMP Arrays and Loops annotated by hand with ACSL ([benchmarks/acsl](../benchmarks/acsl)),
+303 of Arrays and 535 of Loops, all expected true (the 323 tasks expected false were removed): `-vcgen -z3` with
+the given invariants proves 603 of them (0.40.0, 60 s), TEQ without annotations 263 of the same programs (0.41.4,
+15 min), 614 either. How far TEQ gets automatically, and which tasks need annotations (nonlinear closed forms,
 `\min`). The annotations are not checked with Frama-C.
 
 ## 6. SV-LIB: the verification tasks
@@ -113,13 +120,16 @@ as tags (`correct-tags`).
 
 ## Reruns
 
-With Cuvée 0.41.3, `-verify`, 15 min, 2 cores, 7 GB, Intel Core i9-9900 (started Oct 12, 2026):
+Done (Oct 12, 2026, 12:47–13:55, Cuvée 0.41.4, `-verify`, 15 min, 2 cores, 7 GB, Intel Core i9-9900, complete
+result files): `xml/cuvee.xml` and `xml/cuvee-fallback.xml` on SV-COMP Arrays and Loops and on the unbounded set
+(`-unbounded`), `xml/korn.xml` on the unbounded set (`-u`). An earlier attempt at 11:31 lost the results still
+running when the connection to the cloud master broke (11:54).
 
-- running (started 11:31): `xml/cuvee.xml` and `xml/cuvee-fallback.xml` on SV-COMP Arrays and Loops and on the
-  unbounded set (`-unbounded`), `xml/korn.xml` on the unbounded set (`-u`); at 11:5x, Cuvée had 437 of 440,
-  728 of 764 and 468 of 481 results, Cuvée+Z3 332, 471 and 132, Korn 1 (it started last);
-- to do: the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`;
-  the runs started without it were scrapped), MonoCera itself (`xml/monocera.xml`); SV-LIB `CTranslated` and
-  `CoreVerification` (`xml/cuvee.xml`, `xml/cuvee-chc.xml`).
+To do: the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
+MonoCera itself (`xml/monocera.xml`); SV-LIB `CTranslated` and `CoreVerification` (`xml/cuvee.xml`,
+`xml/cuvee-chc.xml`); `-chc` on SV-COMP with `-verify`; the ACSL tasks with `-verify` after the revised
+annotations; `-fallback` after the fix of `-verify`.
 
-The other tools on SV-COMP come from the official SV-COMP 2026 results, MonoCera from our run and the paper.
+`scripts/experiments.py` makes `scripts/out/experiments.pdf` from the newest results that meet each experiment's
+requirements (options, time limit), with blanks for the missing ones. The other tools on SV-COMP come from the
+official SV-COMP 2026 results, MonoCera from our run and the paper.
