@@ -287,7 +287,7 @@ global variable or an input; `:check-true` of a loop is checked at every
 evaluation of its test without being assumed, elsewhere it is asserted before
 the statement. Tags on other statements are rejected, since the core has no
 annotations there, and so are `define-procs-rec`, labels and gotos, the
-liveness properties, `:decreases-lex`, witnesses and traces. The modified
+properties `:recurring` and `:not-recurring`, `:decreases-lex`, witnesses and traces. The modified
 global variables of procedures and loops are inferred, as in C. The verdict
 of a task is decided by the BenchExec module [cuvee.py](../cuvee.py) from the
 output: a refuted goal, or unsatisfiable clauses, mean that an annotation is

@@ -1,5 +1,5 @@
 ; ./Cuvee.sh examples/svlib/parsing/invalid_recurring.svlib
-; the liveness properties are not supported
+; the properties :recurring and :not-recurring are not supported
 
 (define-proc main
   ((n Int))

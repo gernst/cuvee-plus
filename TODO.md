@@ -51,10 +51,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
     expects the precondition of the called procedure to be assumed (`-teq` proves the task).
     Done in 0.39.4: `verify-call` assumes the precondition for the arguments (`Horn.entry`; `Verify` emits no
     goal for it), `loop-add` is true with `-chc -z3`. Consequence: `loop-add-incorrect-invariant` (expected false
-    by its `:not-live`, the invariant itself holds) was refuted by the precondition goal before, by accident, and is
-    now true with `-chc`, a wrong verdict while `:live`/`:not-live` are ignored (left to the liveness work).
-    Until they are supported, `svlib.Parser.properties` could reject them as not supported, like `:recurring`,
-    which turns the wrong verdict into unknown (one line, not done).
+    by its `:not-recurring`, the invariant itself holds) was refuted by the precondition goal before, by accident.
+    Resolved by sv-benchmarks d1b5aaf48f9, which renamed `:not-live` to `:not-recurring`: `svlib.Parser.properties`
+    rejects `:recurring` and `:not-recurring` as not supported, so the task (and the 8 others with
+    `:not-recurring`) ends in an error instead of a wrong verdict, until the properties are supported.
 - `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
   unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final
   assertion fails), after about 340 s each, in the 15-minute runs of `xml/cuvee-full-fallback.xml` of Oct 11, 2026
@@ -999,6 +999,17 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     arithmetic modulo 2^n of annotated programs
     ([acsl_ranges.c](examples/c/vcgen/acsl_ranges.c) is checked with
     `-verify` only).
+  - Deferred: array parameters that a function assigns as in/out parameters. Arrays are values in Cuvée's C
+    and ACSL, so `void incrementArray(int src[N], int dst[N])` assigns a copy of `dst`: its `ensures dst[t] ==
+    src[t] + 1` speaks of the value passed in (z3 answers `Unknown`, quantified), and the caller's `dst` stays
+    unchanged after the call, while C passes a pointer (`array-examples/sanfoundry_43_ground`, 0.39.5, without
+    its `\valid`, `\valid_read`, `\separated`). In/out parameters, whose final value the caller receives and
+    `ensures` refers to, are sound when the arguments do not alias, which `\separated` states in Frama-C and
+    distinct variables as arguments would ensure here. The memory clauses of the annotations are removed
+    (`\valid`, `\valid_read`, `\separated`, `\null`, 64 files of benchmarks/acsl): pointer reasoning is not
+    needed in this dialect; the two tasks with
+    `\null` (`array-industry-pattern/array_ptr_partial_init`, `array-lopstr16/partial_lesser_bound`) end in
+    "arrays of pointers are not supported".
   - Results per folder (true tasks proved / true tasks, Oct 12, 2026, 0.38.0):
     `array-cav19` 13/13, `array-fpi` 68/68, `array-examples` 55/61 (the
     others `\valid`, a builtin, a reducer), `loop-invariants` 6/9,
