@@ -53,7 +53,7 @@ cd cuvee-plus
 ```sh
 mill -i assembly                          # build out/assembly.dest/out.jar
 cp out/assembly.dest/out.jar cuvee.jar    # the jar that Cuvee.sh runs
-mill -i test                              # run all tests
+mill -i test                              # run the tests (CUVEE_ALGORITHMS=1 and CUVEE_SVCOMP=1 for the slow suites)
 ```
 
 ## Usage

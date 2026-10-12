@@ -384,7 +384,9 @@ README; options in [options.md](options.md)), e.g.
   ([test/Database.scala](../src/cuvee/test/Database.scala)):
   `./Cuvee.sh -record <file> ...` prints rows, `./Cuvee.sh -test <db>.csv`
   checks all of them, and the suite `SVComp` runs only if the environment
-  variable `CUVEE_SVCOMP` is set. The C programs printed from these
+  variable `CUVEE_SVCOMP` is set; likewise the algorithms of
+  `examples/dafny/algorithms`, whose runs take minutes, only if
+  `CUVEE_ALGORITHMS` is set (`Examples.excluded`). The C programs printed from these
   translations (`benchmarks/sv-comp/c`, by `-print c -known dfy,teq,rw`,
   those that parse again) have the same expected results, without times,
   in `benchmarks/sv-comp/c/expected.csv` (suite `SVCompC`), recorded before

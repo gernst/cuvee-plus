@@ -23,8 +23,11 @@ object Examples:
   def supported(file: os.Path) =
     !unsupported.contains(file.relativeTo(root).toString)
 
-  // directories of examples that are no tests, e.g. experiments that are worked on (none at the moment)
-  val excluded: List[os.SubPath] = Nil
+  // directories of examples that are no tests by default: the algorithms of examples/dafny/algorithms, whose runs
+  // take minutes, only if the environment variable CUVEE_ALGORITHMS is set (like CUVEE_SVCOMP for the translations
+  // of SV-COMP, see Checked.scala)
+  val excluded: List[os.SubPath] =
+    if sys.env.contains("CUVEE_ALGORITHMS") then Nil else List(os.sub / "dafny" / "algorithms")
 
   // examples whose runs do not terminate, which are no tests (none at the moment; row_sums and transpose were, until
   // their lemmas were restated, see examples/dafny/algorithms/NOTES.md, finding 19)
