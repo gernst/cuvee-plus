@@ -13,6 +13,10 @@ which only the open points remain).
   the per-variable equations as projections.
 - [deduction-engine-plan.md](deduction-engine-plan.md): the implementation plan for it, six phases with files,
   sizes, tests, what each retires, and a harness of four regression sets.
+- [state-trace.md](state-trace.md): the sketch of the representation question in the worktree `state-trace`:
+  `-teq-state` with one state trace per loop over a datatype of the modified variables, whose per-variable traces
+  are views that the matcher follows on demand, a fresh database, ten examples (the swap of two arrays, nested
+  loops without fragment lemmas), the findings and a conclusion (Oct 12, 2026).
 - [reentrance-guard.md](reentrance-guard.md): the plan for item 1 of teq-engine.md, a rule suspended while its own
   side conditions are evaluated, which cuts both cycles (the search through `invs` facts and the decision of a
   condition on the rule's own term).
