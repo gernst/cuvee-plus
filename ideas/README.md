@@ -11,6 +11,9 @@ which only the open points remain).
   the context and the strategy; a proposal for an engine without them (congruence closure, canonical forms and
   lookup, triggers and forward facts, equality saturation), and the representation question: state traces with
   the per-variable equations as projections.
+- [state-trace-review.md](state-trace-review.md): the state-trace sketch read against the plan: what is new
+  (nested loops without fragment lemmas, views instead of equations), where the sketch differs from what the plan
+  expected and why, and the consequences for the plan.
 - [deduction-engine-plan.md](deduction-engine-plan.md): the implementation plan for it, six phases with files,
   sizes, tests, what each retires, and a harness of four regression sets.
 - [state-trace.md](state-trace.md): the sketch of the representation question in the worktree `state-trace`:
