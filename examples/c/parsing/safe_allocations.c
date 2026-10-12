@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/c/parsing/safe_allocations.c
+// ./Cuvee.sh -vcgen -z3 examples/c/parsing/safe_allocations.c
 // safe_malloc and safe_calloc, with which SV-COMP replaces allocations that are not checked for NULL, are malloc and calloc
 typedef unsigned int size_t;
 extern void abort(void);

@@ -155,7 +155,7 @@ object Old:
 
   // a single traversal that replaces the free variables by `now`, and inside of old(e) by `before`, and strips old,
   // e.g. for the postcondition of a call, whose modified global variables refer to their new values outside of old
-  // and to their values before the call inside of it (see Verify.instance); `Subst` substitutes inside old(e) as well;
+  // and to their values before the call inside of it (see VCGen.instance); `Subst` substitutes inside old(e) as well;
   // the type parameters are instantiated by `now`
   def instance(now: Subst[Type, Expr], before: Subst[Type, Expr], expr: Expr): Expr =
     instance(now, before, false, expr)

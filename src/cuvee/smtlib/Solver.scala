@@ -156,7 +156,7 @@ object Solver:
           status = Some(status_)
           (status_, Nil, this)
 
-        // procedures and global variables are not understood by SMT solvers and must have been eliminated, e.g. with -verify,
+        // procedures and global variables are not understood by SMT solvers and must have been eliminated, e.g. with -vcgen,
         // in particular, z3 accepts declare-var but does not acknowledge it with print-success
         case _: DeclareProc | _: DefineProc | _: DeclareVar | _: AnnotateTag =>
           (Ack.Unsupported, Nil, this)
@@ -165,7 +165,7 @@ object Solver:
         case GetWitness =>
           (Ack.Unsupported, Nil, this)
 
-        // the obligations of a verify-call have been checked already (see Verify and Horn), it has no answer of its own
+        // the obligations of a verify-call have been checked already (see VCGen and Horn), it has no answer of its own
         case _: VerifyCall =>
           (Ack.Done, Nil, this)
 

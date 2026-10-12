@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_call.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/invalid_call.dfy
 // expected: invalid
 // the precondition of the callee is violated, the callee itself is correct
 

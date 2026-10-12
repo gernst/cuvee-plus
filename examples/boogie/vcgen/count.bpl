@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/count.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/count.bpl
 // expected: valid
 // loops with invariants, calls with and without results
 

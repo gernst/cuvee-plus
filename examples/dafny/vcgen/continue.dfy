@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/continue.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/continue.dfy
 // expected: valid
 // continue must re-establish the invariant
 

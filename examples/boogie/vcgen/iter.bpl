@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/iter.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/iter.bpl
 // expected: valid
 // nondeterministic iterations, while (*) { ... }, may stop after any number of iterations
 

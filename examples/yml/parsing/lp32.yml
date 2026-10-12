@@ -1,4 +1,4 @@
-# ./Cuvee.sh -arch 64 -verify -z3 examples/yml/parsing/lp32.yml
+# ./Cuvee.sh -arch 64 -vcgen -z3 examples/yml/parsing/lp32.yml
 input_files: long.c
 options:
   data_model: LP32

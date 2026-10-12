@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_decreases_call.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/invalid_decreases_call.dfy
 // expected: invalid
 // the measure of the recursive call is not bounded from below
 

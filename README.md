@@ -29,9 +29,9 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
   for lines of 80 characters (`-linewidth <n>`), without the declarations
   of given features (`-known dfy,teq`, e.g. a C program without the logic of
   its Dafny source), and its logic in Lean 4
-  (`-print lean`, e.g. the goals of `-verify`): sorts, datatypes, functions,
+  (`-print lean`, e.g. the goals of `-vcgen`): sorts, datatypes, functions,
   axioms, lemmas, and goals, but no programs.
-- **Verification conditions** (`-verify`): weakest preconditions for
+- **Verification conditions** (`-vcgen`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;
   - loops with invariants, including `break`, `continue` and `return`;
@@ -126,17 +126,17 @@ mill -i assembly                            # build out/assembly.dest/out.jar
 ```
 
 Without options, the input is printed in its own language after parsing and
-type checking. The transformations (`-verify`, `-teq`, `-chc`, `-flat`,
+type checking. The transformations (`-vcgen`, `-teq`, `-chc`, `-flat`,
 `-split`, `-monomorph`, `-simplify`) are applied in the order in which they
 are given. The output options
 (`-print`, `-z3`, `-cvc5`, `-o <file>`) apply to the result, wherever they
 appear. For example:
 
 ```sh
-mill -i run -verify -z3 examples/dafny/vcgen/max.dfy          # verify methods
+mill -i run -vcgen -z3 examples/dafny/vcgen/max.dfy          # verify methods
 mill -i run -chc -z3 examples/dafny/vcgen/max.dfy             # infer invariants
-mill -i run -verify -simplify -z3 examples/dafny/hybrid/ball.dfy    # hybrid programs
-mill -i run -verify -print smt2 examples/dafny/vcgen/max.dfy  # show the goals
+mill -i run -vcgen -simplify -z3 examples/dafny/hybrid/ball.dfy    # hybrid programs
+mill -i run -vcgen -print smt2 examples/dafny/vcgen/max.dfy  # show the goals
 mill -i run -teq examples/dafny/vcgen/sum.dfy                 # trace equation systems
 mill -i run -teq -z3 examples/dafny/vcgen/max.dfy             # loop-free, by symbolic execution
 mill -i run -chc -z3 examples/c/horn/count.c                       # C, invariants by Horn clauses
@@ -168,7 +168,7 @@ SV-LIB scripts (`.svlib`), which Cuvée verifies with
 ```
 
 where `sat` means that all annotations hold and `unsat` that one is violated;
-`-verify -z3` checks the annotations as given instead, for validation tasks
+`-vcgen -z3` checks the annotations as given instead, for validation tasks
 with the invariants of all loops. The frontend does not support labels and
 gotos, `define-procs-rec`, the properties `:recurring` and `:not-recurring`, and
 witnesses, and it rejects

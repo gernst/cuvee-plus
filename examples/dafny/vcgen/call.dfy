@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/call.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/call.dfy
 // expected: valid
 // method calls are replaced by the callee's contract
 

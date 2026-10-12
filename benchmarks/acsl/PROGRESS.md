@@ -25,7 +25,7 @@ SV-COMP"), where someone else picks them up.
   `n.c24`, `array-examples/relax-2-2`, `loops-crafted-1/discover_list`, ...).
 - 1054 tasks have expected verdict `true`, 144 `false`. The false tasks get
   the invariants that hold and a header note saying why the assertion fails.
-- Checked with Cuvée 0.38.0 (`-verify -z3`, 10 s per task, two in parallel,
+- Checked with Cuvée 0.38.0 (`-vcgen -z3`, 10 s per task, two in parallel,
   Oct 12, 00:00–01:30), results in `pending/acsl/results/*.tsv`; a second
   run with 0.39.3 (commit 0bebb8ae, unsigned ranges, `\at`, `\valid`, truth
   values of `&`) into `pending/acsl/results2/` was in progress when this file

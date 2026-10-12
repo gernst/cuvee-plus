@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/old.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/old.bpl
 // expected: valid
 // old(e) refers to the values of the global variables at the entry of the procedure
 

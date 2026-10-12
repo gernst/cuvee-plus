@@ -1,4 +1,4 @@
-; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/invalid_invariant.svlib
+; ./Cuvee.sh -vcgen -z3 examples/svlib/vcgen/invalid_invariant.svlib
 ; the invariant is not strong enough for the postcondition, which needs (<= 0 y) at the exit of the loop
 
 (set-logic LIA)

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/array.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/array.bpl
 // expected: valid
 // maps as SMT-LIB arrays, selection, update, and assignment to an element
 

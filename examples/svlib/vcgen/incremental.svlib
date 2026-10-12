@@ -1,4 +1,4 @@
-; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/incremental.svlib
+; ./Cuvee.sh -vcgen -z3 examples/svlib/vcgen/incremental.svlib
 ; two queries: the first verifies add, the second mul, which calls add by its contract (Fig. 4 of the SV-LIB report)
 
 (set-logic NIA)

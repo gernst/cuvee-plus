@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/old.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/old.dfy
 // expected: valid
 // global variables, which are not Dafny, and old(e) for their values at the entry of a method
 

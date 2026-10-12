@@ -6,7 +6,7 @@
 
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
-  <option name="-verify"/>
+  <option name="-vcgen"/>
   <option name="-z3"/>
   <!-- z3 is limited by the time limit only, which this covers, since -timeout defaults to 1 s per query -->
   <option name="-timeout">900000</option>

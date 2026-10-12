@@ -49,7 +49,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   - `-chc -z3` refutes `loop-add` (expected true): the clauses of `verify-call add (x0 y0)` contain the goal
     `forall y0. 0 <= y0`, the precondition of `add` over all values of the constants, which fails; the task
     expects the precondition of the called procedure to be assumed (`-teq` proves the task).
-    Done in 0.39.4: `verify-call` assumes the precondition for the arguments (`Horn.entry`; `Verify` emits no
+    Done in 0.39.4: `verify-call` assumes the precondition for the arguments (`Horn.entry`; `VCGen` emits no
     goal for it), `loop-add` is true with `-chc -z3`. Consequence: `loop-add-incorrect-invariant` (expected false
     by its `:not-recurring`, the invariant itself holds) was refuted by the precondition goal before, by accident.
     Resolved by sv-benchmarks d1b5aaf48f9, which renamed `:not-live` to `:not-recurring`: `svlib.Parser.properties`
@@ -339,7 +339,7 @@ concepts, found by reading the whole code base; none is a bug.
   declared" and "not declared" (→ one generic table). `exprs.trace`, `map`
   and `all` repeat the creation of the bound variables.
 - `history`: `State.history` exists, but `Prog.Par`, `Type.check(Ode)` and
-  `Verify.tick` look up `state.vars.get("history")`.
+  `VCGen.tick` look up `state.vars.get("history")`.
 - `Type`:
   - `unify` and `bind` repeat the unfolding of defined sorts;
   - `Error.report("type mismatch", ...): unify(...)` occurs about ten times;
@@ -403,18 +403,18 @@ concepts, found by reading the whole code base; none is a bug.
 
 ### Transforms and verification
 
-- `Verify`, `TEQ` and `Horn` repeat the setup of a procedure (→ one helper):
+- `VCGen`, `TEQ` and `Horn` repeat the setup of a procedure (→ one helper):
   - the contract and the globals `gs` with fresh copies `gs_`;
   - `Old.elim` of the body and the postcondition;
   - the goal `All(in ++ out ++ gs, Imp(pre, ...))`;
   - dropping `DeclareProc`/`DeclareVar`.
-- `Verify.wp` and `Horn.wp` pass the four exits (normal, break, continue,
-  return) separately (→ a record). Horn's `decls`/`clauses` and Verify's
+- `VCGen.wp` and `Horn.wp` pass the four exits (normal, break, continue,
+  return) separately (→ a record). Horn's `decls`/`clauses` and VCGen's
   `gs`/`proc`/`assume`/`commit` are threaded (→ a class per procedure).
 - Duplicated helpers:
   - the loop variables `(body.mod ++ attrs.modifies).toList.distinct`
-    (`Verify.loop`, `TEQ.modified`);
-  - the fresh measures `Expr.vars("m", ...)` (`Verify`, `Horn`);
+    (`VCGen.loop`, `TEQ.modified`);
+  - the fresh measures `Expr.vars("m", ...)` (`VCGen`, `Horn`);
   - the save and restore of shadowed variables (`TEQ` `Block` and `call`).
 - `Monomorph` threads `(state, poly, instances, out)` (→ a class per run). Its
   comment refers to `Sink.known`, which is `Sink.knows`. It replays the whole
@@ -931,7 +931,7 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   assertions that are not C (quantifiers, implications, `\old`) as ACSL.
 - ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the tasks of the
   categories Arrays and Loops with hand-written annotations, checked with
-  `-verify -z3`, 0.38.0; the issues of the support found so far, by impact):
+  `-vcgen -z3`, 0.38.0; the issues of the support found so far, by impact):
   - Done in 0.39.3 for unsigned types: annotated loops get the ranges of the
     unsigned variables they modify as invariants, functions with annotations
     those of their unsigned parameters as preconditions (`c.Parser.loop`;
@@ -963,7 +963,7 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     of vowels of a prefix; ends in a generic parse error).
   - A refuted goal is printed as one SMT-LIB string, `(error "goal does not
     hold" "Sat" "(forall ...)")`, without the annotation (loop invariant,
-    assertion, postcondition, line) that failed; `-verify -z3` prints
+    assertion, postcondition, line) that failed; `-vcgen -z3` prints
     nothing when all goals hold.
   - `loop-new/count_by_k`: the invariant `\exists integer q; 0 <= q && i ==
     q*k` (with `k` possibly 0, so not `i % k == 0`) is `Unknown`.
@@ -998,7 +998,7 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     than `Pre`, `Here`, `LoopEntry`; `-chc` answers `unknown` on the unsigned
     arithmetic modulo 2^n of annotated programs
     ([acsl_ranges.c](examples/c/vcgen/acsl_ranges.c) is checked with
-    `-verify` only).
+    `-vcgen` only).
   - Deferred: array parameters that a function assigns as in/out parameters. Arrays are values in Cuvée's C
     and ACSL, so `void incrementArray(int src[N], int dst[N])` assigns a copy of `dst`: its `ensures dst[t] ==
     src[t] + 1` speaks of the value passed in (z3 answers `Unknown`, quantified), and the caller's `dst` stays
@@ -1149,10 +1149,10 @@ scores it unknown).
 simplifier rules; widths cannot be parameters.
 
 - Return to the bitvectors of Dafny: the test suites over
-  `examples/dafny/vcgen` (`SimplifyPrograms`, `Verify`, `Split`) reported
+  `examples/dafny/vcgen` (`SimplifyPrograms`, `VCGen`, `Split`) reported
   "goal does not hold" for [bitvectors.dfy](examples/dafny/language/bitvectors.dfy)
   sometimes in the full test run, depending on the tests run before it in the
-  same JVM; alone, and with `java -jar cuvee.jar -simplify -verify -z3`, it
+  same JVM; alone, and with `java -jar cuvee.jar -simplify -vcgen -z3`, it
   passes. The fresh-name counters are reset per run (`Cuvee.pipe`), so some
   other state persists across runs. The example is moved out of `vcgen`,
   hence no suite runs it.

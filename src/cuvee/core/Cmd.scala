@@ -117,7 +117,7 @@ case class AnnotateTag(tag: Name, attrs: Attrs) extends Decl
 
 // SV-LIB: the query whether all executions that start by calling procedure `proc` with the arguments `args`
 // satisfy the properties of the program, which flushes the stages like check-sat;
-// the verifying transforms add the obligation that the arguments satisfy the precondition of `proc` (see Verify, Horn),
+// the verifying transforms add the obligation that the arguments satisfy the precondition of `proc` (see VCGen, Horn),
 // the procedures themselves are verified by their definitions; the answers to these obligations are reported,
 // the command itself is acknowledged only (see Sink.passive and smtlib.Solver)
 case class VerifyCall(proc: Name, args: List[Expr]) extends Query

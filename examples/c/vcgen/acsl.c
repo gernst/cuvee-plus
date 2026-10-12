@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/c/vcgen/acsl.c
+// ./Cuvee.sh -vcgen -z3 examples/c/vcgen/acsl.c
 // expected: valid
 // the annotations of ACSL: a contract, whose postcondition refers to \result and \old, a loop invariant and variant
 // with chained comparisons, and an assertion

@@ -116,7 +116,7 @@ case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attr
   def mod = Set(xs*)
   def free = rhs.free ++ dom.free ++ attrs.free - time ++ xs
 
-// parallel composition of programs, of which verification supports calls to procedures only (see Verify),
+// parallel composition of programs, of which verification supports calls to procedures only (see VCGen),
 // whose assumption-commitment contracts over the global history of events are in their attributes,
 // "assumes" and "commits"; the programs must not share the variables that they modify, other than the history
 case class Par(progs: List[Prog]) extends Prog:

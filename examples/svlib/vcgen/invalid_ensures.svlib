@@ -1,4 +1,4 @@
-; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/invalid_ensures.svlib
+; ./Cuvee.sh -vcgen -z3 examples/svlib/vcgen/invalid_ensures.svlib
 ; the postcondition is wrong by one, the goal of the procedure does not hold
 
 (set-logic LIA)

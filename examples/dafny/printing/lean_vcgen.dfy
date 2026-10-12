@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -print lean examples/dafny/printing/lean_verify.dfy
+// ./Cuvee.sh -vcgen -print lean examples/dafny/printing/lean_vcgen.dfy
 // the verification conditions of methods are goals, printed in Lean as examples to be proved
 method abs(x: int) returns (y: int)
   ensures 0 <= y

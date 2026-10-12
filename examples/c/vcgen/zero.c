@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/c/vcgen/zero.c
+// ./Cuvee.sh -vcgen -z3 examples/c/vcgen/zero.c
 // expected: valid
 // global variables without initializer are zero, as in C
 int counter;

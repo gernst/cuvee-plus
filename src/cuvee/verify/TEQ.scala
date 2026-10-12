@@ -134,7 +134,7 @@ object TEQ extends Transform:
 
       // old(e) refers to the values gs_ of the global variables at the entry, which coincide with gs initially
       case DefineProc(Proc(name, params, _, _), body, _) =>
-        val (in, out, pre, post) = Verify.contract(state, name)
+        val (in, out, pre, post) = VCGen.contract(state, name)
         val gs_ = gs.fresh
         val body_ = Old.elim(gs, gs_, state.annotated(body))
         val post_ = Old.elim(gs, gs_, post)
@@ -223,7 +223,7 @@ object TEQ extends Transform:
   // calls of recursive procedures do not terminate
   def call(state: State, proc: Name, call: Call, p: Path): List[Path] =
     val Call(name, args, res) = call
-    val (in, out, pre, post) = Verify.contract(state, name)
+    val (in, out, pre, post) = VCGen.contract(state, name)
 
     Error.report("calls of procedures with a contract are not supported", name):
       require(pre == True && post == True)

@@ -6,7 +6,7 @@ import utest._
 // hybrid programs, whose goals are generated without errors, not passed to a solver:
 // differential cuts for each invariant in sequence, followed by differential weakening,
 // and methods with assumption-commitment contracts composed in parallel
-object VerifyHybrid extends TestSuite:
+object VCGenHybrid extends TestSuite:
   import cuvee.core._
 
   val x = Var("x", Sort.real)
@@ -16,7 +16,7 @@ object VerifyHybrid extends TestSuite:
   // the formula with fresh variables numbered from 1
   def ode(invs: List[Expr], post: Expr) =
     Var.reset()
-    val phi = cuvee.verify.Verify.ode(List(x), List(y), Reals.lt(zero, y), invs, post)
+    val phi = cuvee.verify.VCGen.ode(List(x), List(y), Reals.lt(zero, y), invs, post)
     cuvee.dafny.Printer.lines(phi).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:

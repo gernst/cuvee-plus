@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_seq.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/invalid_seq.dfy
 // expected: invalid
 // the element is at the front, not at the back
 

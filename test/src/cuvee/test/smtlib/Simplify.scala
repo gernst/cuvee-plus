@@ -27,4 +27,4 @@ object SimplifyPrograms extends TestSuite:
   val tests = Tests:
     test("examples"):
       for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filter(Examples.supported)
-      do Examples.errors("-simplify", "-verify", "-z3", file.toString) ==> Examples.reported(file)
+      do Examples.errors("-simplify", "-vcgen", "-z3", file.toString) ==> Examples.reported(file)

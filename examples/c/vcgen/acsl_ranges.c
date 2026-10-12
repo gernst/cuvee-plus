@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/c/vcgen/acsl_ranges.c
+// ./Cuvee.sh -vcgen -z3 examples/c/vcgen/acsl_ranges.c
 // annotations of ACSL as in Frama-C/WP: the ranges of the unsigned variables that an annotated loop modifies are
 // invariants, and those of the unsigned parameters of a function with annotations are preconditions;
 // \at(e, LoopEntry) is the value before the loop, \at(e, Pre) at the entry of the function, \valid is true;

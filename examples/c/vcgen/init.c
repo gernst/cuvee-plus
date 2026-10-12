@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/c/vcgen/init.c
+// ./Cuvee.sh -vcgen -z3 examples/c/vcgen/init.c
 // expected: valid
 // initialized global variables, whose values hold at the entry of main
 

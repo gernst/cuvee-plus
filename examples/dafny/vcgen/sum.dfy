@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/sum.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/sum.dfy
 // expected: valid
 // loop with invariants, local variable
 

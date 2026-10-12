@@ -696,7 +696,7 @@ object Type:
         Iter(body_, attrs)
 
       // differential equations are on Real only, like derivatives, and so is the time
-      // the history, if it is declared, ticks after the evolution (see Verify) and must be modifiable
+      // the history, if it is declared, ticks after the evolution (see VCGen) and must be modifiable
       case Ode(time, xs, rhs, dom, attrs) =>
         assignable(fixed, xs)
 

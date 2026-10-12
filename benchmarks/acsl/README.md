@@ -68,7 +68,7 @@ note where the annotations need explanation.
 ## Checking with Cuvée
 
 Cuvée reads the annotations since 0.38.0 (`c: ACSL annotations available`),
-with `./Cuvee.sh -verify -z3 <task>`: no output means that all goals hold, a
+with `./Cuvee.sh -vcgen -z3 <task>`: no output means that all goals hold, a
 refuted goal is printed as `(error "goal does not hold" "Sat" ...)`. The
 results on these tasks (10 s per task, Oct 12, 2026) and what they show
 about the support are recorded in [TODO.md](../../TODO.md), section "C

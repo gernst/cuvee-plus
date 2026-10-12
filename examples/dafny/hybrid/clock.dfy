@@ -1,4 +1,4 @@
-// ./Cuvee.sh -hybrid -verify -simplify examples/dafny/hybrid/clock.dfy
+// ./Cuvee.sh -hybrid -vcgen -simplify examples/dafny/hybrid/clock.dfy
 // a clock x that runs for at most 2 time units, after which the history ticks by the time that has passed,
 // which is the value of the clock, hence the history has a single time event of at most 2,
 // or none if no time has passed (see delay in resources/cuvee/dafny/hybrid.dfy)

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/invalid_old.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/invalid_old.bpl
 // expected: invalid
 // the value at the entry is not the current one
 

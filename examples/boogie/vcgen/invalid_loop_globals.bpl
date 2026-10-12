@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/invalid_loop_globals.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/invalid_loop_globals.bpl
 // expected: invalid
 // loops modify the global variables in their modifies clause
 

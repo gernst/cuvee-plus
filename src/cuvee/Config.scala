@@ -15,7 +15,7 @@ import cuvee.transform.Monomorph
 import cuvee.transform.Split
 import cuvee.verify.Horn
 import cuvee.verify.TEQ
-import cuvee.verify.Verify
+import cuvee.verify.VCGen
 
 case class Flag(
     args: Option[String],
@@ -157,9 +157,9 @@ object Config:
         (config_, rest)
 
   val verify =
-    flag("-verify", "generate verification conditions for procedures"):
+    flag("-vcgen", "generate verification conditions for procedures"):
       case (config, rest) =>
-        val config_ = config.using(Verify)
+        val config_ = config.using(VCGen)
         (config_, rest)
 
   val teq =
@@ -182,7 +182,7 @@ object Config:
         (config_, rest)
 
   val split =
-    flag("-split", "split goals and lemmas into individual obligations, e.g. after -verify"):
+    flag("-split", "split goals and lemmas into individual obligations, e.g. after -vcgen"):
       case (config, rest) =>
         val config_ = config.using(Split)
         (config_, rest)
@@ -379,7 +379,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.39.6")
+    println("Cuvée 0.39.7")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

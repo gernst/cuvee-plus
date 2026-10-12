@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/max.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/max.bpl
 // expected: valid
 // conditionals, assertion with equality
 

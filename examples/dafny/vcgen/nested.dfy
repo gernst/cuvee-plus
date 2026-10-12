@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/nested.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/nested.dfy
 // expected: valid
 // nested loops, loop body with local variable
 

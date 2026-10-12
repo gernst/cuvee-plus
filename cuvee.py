@@ -29,7 +29,7 @@ class Tool(benchexec.tools.template.BaseTool2):
     unknown. Cuvée does not produce witnesses.
 
     For the property correct-tags (formerly correct-annotations) of SV-LIB scripts, Cuvée checks the
-    annotations by verification conditions (-verify -z3) or by constrained Horn
+    annotations by verification conditions (-vcgen -z3) or by constrained Horn
     clauses (-chc -z3). A goal that Z3 refutes, or unsatisfiable clauses, mean that
     an annotation is violated, no refuted goal or satisfiable clauses that all of
     them hold. The verification conditions need the invariants of all loops, i.e.,
@@ -130,7 +130,7 @@ class Tool(benchexec.tools.template.BaseTool2):
 
         return result.RESULT_TRUE_PROP
 
-    # the answer of Z3 to a refuted goal of -verify, (error "goal does not hold"
+    # the answer of Z3 to a refuted goal of -vcgen, (error "goal does not hold"
     # "Sat" ...), or to one that it cannot decide
     GOAL_SAT = re.compile(r'"goal does not hold"\s+"Sat"')
     GOAL_UNKNOWN = re.compile(r'"goal does not hold"\s+"Unknown"')
@@ -184,7 +184,7 @@ class Tool(benchexec.tools.template.BaseTool2):
                 return result.RESULT_TRUE_PROP
             return result.RESULT_UNKNOWN
 
-        # the goals of -teq and -verify that remain: a refuted one violates an
+        # the goals of -teq and -vcgen that remain: a refuted one violates an
         # annotation, the others are not refuted
         goals = [line.strip() for line in lines if line.startswith(("(goal", "goal"))]
         if any(self.GOAL_FALSE.match(goal) for goal in goals):

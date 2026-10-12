@@ -10,7 +10,7 @@ import cuvee.core.Attrs
 
 // verification conditions by weakest preconditions: each procedure definition is replaced by the goal
 // that its precondition implies the weakest precondition of its body for its postcondition (see wp)
-object Verify extends Transform:
+object VCGen extends Transform:
   // the global variables gs are computed once and passed to the generation of the verification conditions;
   // declarations keep defined sorts, which are expanded where they meet the expressions (see Type.expand)
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/locals.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/locals.dfy
 // expected: valid
 // initialized locals, by expressions and by a method call
 datatype d = d(f: int) { method get() returns (r: int) ensures r == 7 }

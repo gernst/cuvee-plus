@@ -823,7 +823,7 @@ class Parser(var state: State):
         val attrs_ = loop(scope, mod, invs, dec)
         state.progs.iter(body_, attrs_)
 
-      // verification supports calls only (see Verify)
+      // verification supports calls only (see VCGen)
       case Par(progs) =>
         val progs_ = progs.map(resolve(scope, _))
         state.progs.par(progs_)

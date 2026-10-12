@@ -98,7 +98,7 @@
 - every feature comes with tests: unit tests on core terms, and examples in
   `examples/<language>/` that the tests run through `cuvee.Cuvee.run`
 - every example states its command line in its first line, e.g.
-  `// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/abs.dfy`, with its expected
+  `// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/abs.dfy`, with its expected
   output in `name.out` and `name.err` (see [architecture.md](architecture.md));
   tests never write files
 - verification examples state their expected verdict in the second line,

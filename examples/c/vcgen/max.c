@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/c/vcgen/max.c
+// ./Cuvee.sh -vcgen -z3 examples/c/vcgen/max.c
 // expected: valid
 // the maximum of two numbers, without loops
 

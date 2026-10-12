@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/toplevel.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/toplevel.dfy
 // expected: valid
 // calls to top-level methods, with and without results, and member calls without results
 datatype counter = counter(n: int)

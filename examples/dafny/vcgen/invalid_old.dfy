@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_old.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/invalid_old.dfy
 // expected: invalid
 // the value at the entry is not the current one
 

@@ -6,7 +6,7 @@ import cuvee.core._
 import cuvee.simplify.Normalize
 
 // splitting of goals and lemmas into individual proof obligations of the form
-// forall xs. antecedents ==> succedents, e.g. those from Verify, which are reported separately by the solvers,
+// forall xs. antecedents ==> succedents, e.g. those from VCGen, which are reported separately by the solvers,
 // as a sequent calculus (after the splitter of the earlier Cuvée, cuvee.pure.Horn):
 // conclusions are decomposed into conjunctions, which are split, and disjunctions, whose disjuncts are succedents,
 // negated conclusions and the premises of implications are antecedents, if-then-else is split by its test,

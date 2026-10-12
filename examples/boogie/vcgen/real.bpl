@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/real.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/real.bpl
 // expected: valid
 // arithmetic and comparison are overloaded for int and real
 

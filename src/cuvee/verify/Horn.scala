@@ -57,7 +57,7 @@ object Horn extends Transform:
   // of procedures, are not supported; the precondition of the procedure is assumed for the arguments, as the tasks of
   // SV-LIB expect, e.g. core-verification/loop-add with arbitrary constants as arguments
   def entry(state: State, cmds: List[Cmd], name: Name, args: List[Expr]): List[Cmd] =
-    val (in, _, requires, _) = Verify.contract(state, name)
+    val (in, _, requires, _) = VCGen.contract(state, name)
 
     Error.report("wrong number of arguments in verify-call", name, args):
       require(in.length == args.length)
@@ -138,7 +138,7 @@ object Horn extends Transform:
       case DefineProc(Proc(name, params, in_, out_), body, _) =>
         val in = Type.expand(state, in_)
         val out = Type.expand(state, out_)
-        val (_, _, requires, ensures) = Verify.contract(state, name)
+        val (_, _, requires, ensures) = VCGen.contract(state, name)
 
         val (pre, post, decls) = declare(state, name)
 
@@ -295,7 +295,7 @@ object Horn extends Transform:
       // and pre ∧ ψ ⇒ next(scope[res, mod := res_, mod_]) for the conjuncts ψ of its postcondition,
       // both instantiated for the call, which also instantiates the type parameters by the types of the arguments
       case (call @ Call(name, args, res)) :: rest if !state.procdefs.contains(name) =>
-        val (requires, fresh, ensures, rename) = Verify.instance(state, proc, call)
+        val (requires, fresh, ensures, rename) = VCGen.instance(state, proc, call)
         val next = predicate(proc, "call", scope, decls)
 
         this.clauses(scope, pre, And.flattenStrong(requires), clauses)
@@ -323,10 +323,10 @@ object Horn extends Transform:
 
         // recursive calls must decrease the measure, which refers to the inputs that are in scope
         if name == proc then
-          val dec = Verify.measure(state, proc)
+          val dec = VCGen.measure(state, proc)
           val su_ = Subst.from(in, args)
           if dec.nonEmpty then
-            clause(scope, pre, Verify.decreases(su_(dec), dec), clauses)
+            clause(scope, pre, VCGen.decreases(su_(dec), dec), clauses)
 
         clause(
           scope ++ res_ ++ mod_,
@@ -383,7 +383,7 @@ object Horn extends Transform:
 
         val inv = predicate(proc, "inv", scope, decls)
         val head = App(state, inv, scope)
-        val iter = if dec.isEmpty then List(head) else List(head, Verify.decreases(dec, ms))
+        val iter = if dec.isEmpty then List(head) else List(head, VCGen.decreases(dec, ms))
 
         clause(scope, pre, head, clauses)
         clause(scope, List(head), attrs.invariant, clauses)

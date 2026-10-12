@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/sorts.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/sorts.dfy
 // the verification conditions quantify over the formal parameters and global variables with their types expanded,
 // such that they bind the variables of the body
 type T = int

@@ -25,7 +25,7 @@ object Horn extends TestSuite:
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
 // the annotations of annotate-tag commands are attached to the procedures and loops by the transforms,
-// after the command, which may follow the procedure, and the properties of the output of -verify in SV-LIB parse again
+// after the command, which may follow the procedure, and the properties of the output of -vcgen in SV-LIB parse again
 object Annotations extends TestSuite:
   val file = Examples.root / "svlib" / "vcgen" / "loop_add.svlib"
 
@@ -40,7 +40,7 @@ object Annotations extends TestSuite:
       proc.tags.map(_.indexed) ==> List("proc-add")
 
     test("verified"):
-      val (cmds, errors) = Examples.output("-verify", "-print", "null", file.toString)
+      val (cmds, errors) = Examples.output("-vcgen", "-print", "null", file.toString)
       errors ==> Nil
       // the goal of the procedure, the verify-call has none, as it assumes the precondition, the annotations are consumed
       cmds.collect { case Assert(Goal, _, _, _) => () }.length ==> 1

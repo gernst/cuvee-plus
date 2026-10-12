@@ -73,11 +73,11 @@ case class Iter(body: Prog, attrs: Attrs)               // while * { body }
   nor modified. In SMT-LIB, it is `(ode t ((x e) ...) dom attrs)`.
 - `Iter` is the repetition of dL, a loop with a nondeterministic number of
   iterations.
-- `Verify` proves an `Ode` by differential cuts with its invariants, then
+- `VCGen` proves an `Ode` by differential cuts with its invariants, then
   weakening, where the time starts at `0.0` and evolves with `time' = 1`
   within `0 <= time`. Afterwards, if the global `history` is declared, it
   ticks by the time that has passed, `history := history.tick(time)`
-  (`Verify.tick`), which asserts the enclosing commitment like `Tick`. Hence
+  (`VCGen.tick`), which asserts the enclosing commitment like `Tick`. Hence
   an `Ode` modifies the history, which must be in the modifies clause of the
   method and of loops around it (`Type.check`). The derivatives of the
   invariants must be simplified
@@ -89,7 +89,7 @@ case class Iter(body: Prog, attrs: Attrs)               // while * { body }
 case class Par(progs: List[Prog])                       // parallel composition
 ```
 
-- `-verify` supports calls only and rejects other statements (`Verify`).
+- `-vcgen` supports calls only and rejects other statements (`VCGen`).
 
 - The callees' contracts `assumes` and `commits` (procedure attributes) are
   formulas over the shared history, the global variable named `history`
@@ -101,7 +101,7 @@ case class Par(progs: List[Prog])                       // parallel composition
   procedures `history_send`, `history_receive`, and `history_tick` with the
   history as first argument, which return the extended history as an
   additional result. `Send`, `Recv`, and `Tick` recognize
-  these calls; in `Verify`, each one asserts the enclosing procedure's
+  these calls; in `VCGen`, each one asserts the enclosing procedure's
   commitment for the extended history and then assumes it. Calls to
   polymorphic procedures instantiate their contracts by the types of the
   arguments and results (`Type.bind`).
@@ -115,14 +115,14 @@ case class Par(progs: List[Prog])                       // parallel composition
     processes (rule `par`), which hold for every history that they produce.
     Inside the body, it is therefore taken only initially, and the new event
     of a `receive` is constrained by the contract of `receive` only.
-- `Verify` has a rule `par` (assumption-commitment), which knows the
+- `VCGen` has a rule `par` (assumption-commitment), which knows the
   assumption and commitment of the enclosing procedure (parameters `assume`
   and `commit` of `wp`): the commitments of the calls must hold initially,
   the enclosing assumption and the commitments of the other calls must imply
   the assumption of each call, and the commitments of the calls must imply
   the enclosing commitment, both for all histories. Each call is a process
   that starts in the current state and is verified modularly by its contract
-  (`Verify.instance`, as for calls): its precondition must hold initially,
+  (`VCGen.instance`, as for calls): its precondition must hold initially,
   and its body is not considered. Afterwards,
   the results of each call satisfy its postcondition, over a copy of the
   history of its own, and the history is arbitrary, satisfying all

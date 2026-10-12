@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/max.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/max.dfy
 // expected: valid
 // conditionals, assertion with equality
 

@@ -7,7 +7,7 @@ passes them to a solver. All stages share one representation, the core
 transformation and any output.
 
 ```
- input.dfy ──► Source ──► Stage(Verify) ──► Stage(Simplify) ──► Sink(z3)
+ input.dfy ──► Source ──► Stage(VCGen) ──► Stage(Simplify) ──► Sink(z3)
               (parse,      (transform)       (transform)         (print or
                resolve,                                           solve)
                check)                        Report ◄── results of each command
@@ -30,7 +30,7 @@ transformation and any output.
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.lean` | Printer of the logic in Lean 4 (`-print lean`), output only. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
-| `cuvee.verify` | `Verify` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
+| `cuvee.verify` | `VCGen` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), `FourierMotzkin` (linear constraints over the rationals), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
 | `cuvee.transform` | `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
@@ -41,7 +41,7 @@ transformation and any output.
 
 1. `Config.parse` reads the command line:
    - the input language from the file extension;
-   - the transforms in order (`-verify`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`),
+   - the transforms in order (`-vcgen`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`),
      and `-rules`, which makes `-simplify` report the rules it applies (see [simplifier.md](simplifier.md));
    - the printer (`-print`);
    - the sink (stdout, `-o`, `-z3`, `-cvc5`).
@@ -113,7 +113,7 @@ type Transform = (Config, State, List[Cmd], List[Cmd], Cmd) => List[Cmd]
 The answers to several queries that a transform adds, e.g. `check-sat` and
 `get-model` after `Horn`, are reported one by one (`Answers`).
 
-- [`Verify`](../src/cuvee/verify/Verify.scala) replaces each procedure
+- [`VCGen`](../src/cuvee/verify/VCGen.scala) replaces each procedure
   definition by a goal: `∀ in, out, globals. pre ⇒ wp(body, post)`.
   - Loops, iterations, calls (by contract), `old`, termination measures,
     differential equations and parallel composition ([hybrid.md](hybrid.md))
@@ -132,7 +132,7 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
     error, except for `requires` of `main` (in C, the globals are zero; their
     initializers are assignments at the beginning of `main`). Those that no procedure calls are entry points, `requires ⇒ p_pre`.
   - Procedures without body have no predicates; calls instantiate their
-    contract (`Verify.instance`, also the type parameters), whose
+    contract (`VCGen.instance`, also the type parameters), whose
     precondition's conjuncts are goals and whose postcondition's conjuncts
     are facts. Polymorphic procedures that are only specified thus yield
     monomorphic clauses.
@@ -182,7 +182,7 @@ and the next sink.
   - Goals and lemmas are checked for validity in a `push`/`pop` scope; lemmas
     are then asserted. Lemmas with the attribute `:free` are assumed without
     proof, like axioms.
-  - Procedures and global variables must have been eliminated by `-verify` or
+  - Procedures and global variables must have been eliminated by `-vcgen` or
     `-chc`.
 
 ## Frontends
@@ -276,9 +276,9 @@ attributes of loops and of procedure bodies, written inline or linked by
 variables in the scope of the tagged statement and their functions in the
 state at the command, and keeps a table from tags to these scopes. The
 stages collect the `AnnotateTag` commands in `State.annotations`, and
-`Verify` and `Horn` attach them to the loops of a body
+`VCGen` and `Horn` attach them to the loops of a body
 (`State.annotated`) when they verify it at the `VerifyCall`, which flushes
-the stages like `check-sat`. `Verify` adds the goal that the arguments
+the stages like `check-sat`. `VCGen` adds the goal that the arguments
 satisfy the precondition, `Horn` the entry clause `p_pre(args, gs)`, in
 which the constants of the script are quantified together with the axioms
 about them, since Horn solvers reject free constants, and a `check-sat`.

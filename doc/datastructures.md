@@ -44,7 +44,7 @@ case class BitVec(n: Int) extends Type          // (_ BitVec n)
   variables and bound variables, before overloading is resolved;
   `App(state, fun, args)` expands the result type. Declarations keep them,
   e.g. formal parameters, global variables, and modifies clauses, which
-  `Verify`, `Horn`, `TEQ`, `Rule.from`, and `Flat` expand where they meet
+  `VCGen`, `Horn`, `TEQ`, `Rule.from`, and `Flat` expand where they meet
   bodies, since variables are compared with their types. Overloading,
   rewriting, `Ring`, and `Monomorph` see expanded types only.
 - `Type.unify` drives type checking. It respects rigid parameters: those of
@@ -238,7 +238,7 @@ case class Par(progs: List[Prog])                       // parallel composition
   enclosing procedure may modify. A loop modifies the global variables in its
   `modifies` attribute only, which must be modifiable outside of the loop and
   subsume the global variables that its body assigns, that calls in it modify,
-  and the history that differential equations tick. Hence `Verify` and `TEQ`
+  and the history that differential equations tick. Hence `VCGen` and `TEQ`
   take the modified variables of a loop as its `mod` and its `modifies`
   attribute. The C frontend infers the attribute of loops, the others require
   it in the input (`while ... modifies g` in Dafny, `modifies g;` in Boogie).

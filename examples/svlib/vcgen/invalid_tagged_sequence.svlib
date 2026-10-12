@@ -1,4 +1,4 @@
-; ./Cuvee.sh -verify -z3 examples/svlib/vcgen/invalid_tagged_sequence.svlib
+; ./Cuvee.sh -vcgen -z3 examples/svlib/vcgen/invalid_tagged_sequence.svlib
 ; expected: invalid
 ; the location invariant of a tagged sequence does not hold: after the loop, i is n only if l is at most n
 

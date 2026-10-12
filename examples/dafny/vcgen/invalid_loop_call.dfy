@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_loop_call.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/invalid_loop_call.dfy
 // expected: invalid
 // calls in a loop modify the global variables that the callee modifies, which the loop declares
 

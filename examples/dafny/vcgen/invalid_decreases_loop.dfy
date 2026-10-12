@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/dafny/vcgen/invalid_decreases_loop.dfy
+// ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/invalid_decreases_loop.dfy
 // expected: invalid
 // the measure of the loop does not decrease
 

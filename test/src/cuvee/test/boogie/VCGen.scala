@@ -18,7 +18,7 @@ object Horn extends TestSuite:
       results.collect { case error: Error => error.msg } ==> Nil
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
-// global variables are eliminated by -verify and -chc, and are not passed to solvers
+// global variables are eliminated by -vcgen and -chc, and are not passed to solvers
 object Globals extends TestSuite:
   val globals = Examples.root / "boogie" / "vcgen" / "globals.bpl"
   val horn = Examples.root / "boogie" / "horn" / "globals.bpl"
@@ -34,8 +34,8 @@ object Globals extends TestSuite:
       val vars = cmds.collect { case DeclareVar(x, _) => x.name.name }
       vars ==> List("counter", "limit")
 
-    test("eliminated by -verify"):
-      val cmds = output("-verify", "-print", "null", globals.toString)
+    test("eliminated by -vcgen"):
+      val cmds = output("-vcgen", "-print", "null", globals.toString)
       assert(!cmds.exists(_.isInstanceOf[DeclareVar]))
 
     test("eliminated by -chc"):

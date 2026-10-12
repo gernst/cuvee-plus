@@ -428,7 +428,7 @@ class Parser(private var init: State):
     AnnotateTag(tag, attrs)
 
   // the arguments of a verify-call of SV-LIB are resolved in the scope of the global variables and checked against
-  // the signature of the procedure; if it is not declared, e.g. in the output of -verify, where the procedures are
+  // the signature of the procedure; if it is not declared, e.g. in the output of -vcgen, where the procedures are
   // replaced by their goals, the arguments are checked on their own
   def verifyCall(name: Name, from: List[Any]): Cmd =
     val scope = Scope(Nil, state.globals)

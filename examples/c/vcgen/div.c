@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -z3 examples/c/vcgen/div.c
+// ./Cuvee.sh -vcgen -z3 examples/c/vcgen/div.c
 // expected: valid
 // division and remainder truncate towards zero in C, unlike div and mod of SMT-LIB,
 // whose remainder is nonnegative (see quotient and remainder in resources/cuvee/c/prelude.bpl)

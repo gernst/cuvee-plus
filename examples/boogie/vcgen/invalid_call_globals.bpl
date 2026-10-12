@@ -1,4 +1,4 @@
-// ./Cuvee.sh -verify -monomorph -z3 examples/boogie/vcgen/invalid_call_globals.bpl
+// ./Cuvee.sh -vcgen -monomorph -z3 examples/boogie/vcgen/invalid_call_globals.bpl
 // expected: invalid
 // calls modify the global variables in the modifies clause of the callee
 
