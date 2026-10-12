@@ -8,11 +8,11 @@ expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
 - **838 tasks**, 303 of Arrays and 535 of Loops, all expected `true` (the
   323 tasks expected `false` are removed). All have the contracts of the
   harness, 799 have loop invariants.
-- **Proved with Cuvée 0.40.0: 603 of the 838 true tasks**, none wrong
-  (60 s per task, Oct 12, 2026, see [Results](#results)); 744 with the
-  annotations revised since and Cuvée 0.41.6, by single runs. These results predate the
-  answers of `-verify` (0.41.0), under which refuted annotations of true
-  tasks are wrong verdicts (see [Running](#running)); not yet rerun.
+- **Proved with Cuvée 0.42.1 and `-verify`: 752 of the 838 true tasks**
+  (15 min per task, Oct 12, 2026, a partial run stopped with 27 tasks
+  unfinished, see [Results](#results)), 3 wrong `false`, 2 of them by arrays
+  as values; `veris.c_sendmail_tTflag_arr_one_loop` is corrected since and
+  proves (753).
 
 ## Origin
 
@@ -168,6 +168,29 @@ followed by a note where they need explanation.
   tasks without loops. `loops/lu.cmp` carries bounds only.
 
 ## Results
+
+Cuvée 0.42.1 (the jar of the checkout, whose uncommitted changes concern
+`-teq`), `xml/cuvee-acsl.xml` with `-verify`, 15 min per task, the three task
+sets (Oct 12, 2026, `results/cuvee-acsl.2026-10-12_17-20-5*`), stopped when
+27 tasks were left, likely timeouts: `dijkstra-u` 10, `array-multidimensional`
+`add-*`, `diff-*`, `copy-partial-3-u` 5, `array-patterns/array3`, `4`, `26`,
+`divbin_unwindbound` 3, `prod4br-ll` 3, `prodbin-ll`, `lcm2_unwindbound10`,
+`sanfoundry_43_ground`.
+
+| task set | tasks | true | false | unknown | out of memory | error | unfinished |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| Arrays | 302 | 285 | 2 | 3 | 0 | 3 | 9 |
+| Loops | 488 | 422 | 1 | 0 | 0 | 48 | 17 |
+| Split | 48 | 45 | 0 | 0 | 2 | 0 | 1 |
+| **total** | **838** | **752** | **3** | **3** | **2** | **51** | **27** |
+
+The wrong `false` answers: `array-examples/data_structures_set_multi_proc_ground-2`
+and `_trivial_ground`, arrays that a called function changes (see below), and
+`loops/veris.c_sendmail_tTflag_arr_one_loop`, whose loop assigns the unsigned
+`i` without a stated range (corrected since, proves). `unknown`:
+`array-patterns/array1`, `6`, `7`. Out of memory: `lcm2_unwindbound5`, `20`.
+The errors are the unsupported constructs (gotos 26, floating point 21,
+pointers 3) and `watermelon`.
 
 Cuvée 0.40.0, `xml/cuvee-acsl.xml` with 60 s per task (Oct 12, 2026,
 `results/cuvee-acsl.2026-10-12_09-01-*`, with the false tasks since removed):

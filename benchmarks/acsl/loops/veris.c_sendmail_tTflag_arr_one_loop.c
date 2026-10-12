@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): i is unsigned, the assertion is trivial
+// ACSL annotations added by hand (benchmarks/acsl/README.md): i is unsigned, the assertion is trivial; the range of the unsigned i, which the loop assigns, is a loop invariant
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -41,6 +41,7 @@ int main (void)
   /*@ loop invariant 0 <= idx_in <= 10;
       loop invariant c == (unsigned char) in[idx_in];
       loop invariant in[10] == 0;
+      loop invariant 0 <= i <= 4294967295;
       loop assigns c, i, j, idx_in; */
   while (('0' <= c) && (c <= '9'))
   {
