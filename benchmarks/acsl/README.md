@@ -9,7 +9,7 @@ expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
   323 tasks expected `false` are removed). All have the contracts of the
   harness, 799 have loop invariants.
 - **Proved with Cuvée 0.40.0: 603 of the 838 true tasks**, none wrong
-  (60 s per task, Oct 12, 2026, see [Results](#results)); 682 with the
+  (60 s per task, Oct 12, 2026, see [Results](#results)); 693 with the
   annotations revised since, by single runs. These results predate the
   answers of `-verify` (0.41.0), under which refuted annotations of true
   tasks are wrong verdicts (see [Running](#running)); not yet rerun.
@@ -43,7 +43,13 @@ copied. Changes since (Oct 12, 2026):
 ./Cuvee.sh -vcgen -z3 -timeout 900000 -verify benchmarks/acsl/<folder>/<task>.yml
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Arrays -T 60s
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Loops -T 60s
+./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Split -T 60s
 ```
+
+The task set `C.unreach-call.Split` runs with `-split` in addition, for the
+tasks whose verification conditions z3 proves only as separate goals:
+`array-programs/partial_mod_count_limited_gen` (18 s with `-split`, 252 s
+without), which the set `C.unreach-call.Arrays` excludes.
 
 With `-verify` (since 0.41.0, see [doc/architecture.md](../../doc/architecture.md))
 Cuvée answers `correct`, `incorrect`, or `unknown`, which
@@ -134,8 +140,10 @@ followed by a note where they need explanation.
   does not find together. Facts about the loops of
   `loops-crafted-1/theatreSquare` (the quotients `i == (n + a - 1) / a`) are
   invariants of the later loops.
-- **Counts** in `array-programs` are closed forms with integer division and
-  `\min`.
+- **Counts** in `array-programs` are closed forms with integer division;
+  `\min(a, b)`, which Cuvée does not support, is the conditional `(a <= b ?
+  a : b)` (`partial_mod_count_limited_*`). Above the threshold the programs
+  write `a[t] = t % R`, which is 0 for the multiples of `R` only.
 - **Not annotated** beyond the harness: the 25 outputs of the reducers
   (`*-reducer.c`, unrolled control flow with gotos) and the `*_abstracted`
   tasks without loops. `loops/lu.cmp` carries bounds only.
@@ -177,7 +185,7 @@ the tasks proved per folder.
 
 Before the support of logic functions (0.39.5, with the memory clauses and
 the labels of the first annotations) 534 were proved. After this run, the
-annotations of 79 tasks were revised and prove by single runs with the
+annotations of 90 tasks were revised and prove by single runs with the
 options of the benchmark (`-vcgen -timeout 900000 -z3`, 60 s, Oct 12, 2026,
 0.40.0 and 0.40.1):
 the seven reducers with the assertion above (`array-crafted` 43,
@@ -198,6 +206,9 @@ values modulo 2^32, `A[i][j] == (i + j + C) % 4294967296`, instead of their
 differences modulo 2^32, which do not bound them, and in `2-n-u` negative
 `q`, `s`; `nla-digbench-scaling/geo*-ll_valuebound*` (12), whose `long long`
 are signed, with exact equalities instead of modulo 2^64;
+`array-programs/partial_mod_count_2-5`, `partial_mod_count_limited_*` (11),
+where the elements above the threshold are `t % R`, not `t + 1`, and `\min` a
+conditional (`partial_mod_count_limited_gen` with `-split`);
 `hard-u_valuebound*` (6) with exact equalities, `pow2(p)`, and bounds that
 exclude the wrap-around; `prodbin-ll_unwindbound50`, `100`, whose `y` is 0
 before the bound ends the loop, `y < p2(31 - counter)` with `p2(k) = 2^k`.
@@ -219,17 +230,16 @@ degree 3), and 5 are wrong `false` answers by the causes below (`heavy-2`,
 `unknown` to refutations through uninterpreted operators (see
 [TODO.md](../../TODO.md)).
 
-The 156 tasks that are not proved (235 of the run above, less the 79
+The 145 tasks that are not proved (235 of the run above, less the 90
 revised since), by cause:
 
-- **Not supported by Cuvée** (57):
+- **Not supported by Cuvée** (50):
   - gotos to labels whose statement falls through, in the outputs of the
     reducers (26: `loop-invgen` 11, `loop-lit` 6, `loop-new` 3,
     `loop-industry-pattern/mod3.*` 3, `loop-crafted` 2,
     `array-examples/standard_sentinel.i.v+cfa-reducer`);
   - floating point (21: `nla-digbench-scaling` 19, `nla-digbench/knuth`,
     `loops/lu.cmp`);
-  - `\min` (7: `array-programs/partial_mod_count_limited_*`);
   - arrays of pointers (`array-industry-pattern/array_ptr_partial_init`,
     `array-lopstr16/partial_lesser_bound`), pointer arithmetic
     (`loops/veris.c_NetBSD-libc_loop`).
@@ -237,8 +247,8 @@ revised since), by cause:
   yet, a timeout may also hide a matching loop or a weak annotation, as in
   `divbin2`): nonlinear arithmetic in `nla-digbench*` (`lcm1`, `lcm2` 23,
   `geo1/2/3-ll` 32 with `unsigned long long`, `prod4br-ll` 7, `prodbin-ll` 2,
-  `divbin_unwindbound` 3, `dijkstra-u` 10); `array-programs/partial_mod_count_2-5`,
-  integer division; `array-patterns/array26`, the parity of a count, `array1`,
+  `divbin_unwindbound` 3, `dijkstra-u` 10); `array-patterns/array26`, the
+  parity of a count, `array1`,
   `3`, `4`, `6`, `7`, the lemmas with products and remainders;
   `array-multidimensional/add-2-n-u`, `add-3-n-u`, `diff-2-n-u`, `diff-3-n-u`,
   `copy-partial-3-u`, unsigned elements.

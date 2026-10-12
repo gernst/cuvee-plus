@@ -1023,8 +1023,9 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   - Contracts of functions that read globals need the globals' values as
     preconditions (`loops/eureka_05`, `requires n == 5`), as in Frama-C; a
     contract on `main` is the only one that sees the initial values.
-  - The annotations of whole folders need `\min`
-    (`array-programs/partial_mod_count_limited_*`). Done in 0.40.0: logic
+  - `\min`, `\max`, `\abs` are not supported (the scanner rejects them);
+    `array-programs/partial_mod_count_limited_*` write `\min(a, b)` as the
+    conditional `(a <= b ? a : b)` instead (Oct 12, 2026). Done in 0.40.0: logic
     functions in an `axiomatic` and lemmas (the labels of lemmas and the
     flattened matrices restated in the annotations, see below); the memory
     clauses (`\valid`, structs) are removed from the annotations.
@@ -1059,8 +1060,9 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     `\null` (`array-industry-pattern/array_ptr_partial_init`, `array-lopstr16/partial_lesser_bound`) end in
     "arrays of pointers are not supported".
   - Results: 603 of the 838 true tasks proved with 0.40.0 (60 s, Oct 12, 2026; 534 with 0.39.5), none wrong;
-    682 with the annotations of 79 tasks revised since (single runs; 37 of `hard-ll`, `hard2`, `divbin`, `divbin2`
-    with predicates for the powers of 2 instead of shifts, 30 refuted annotations corrected); the 323 tasks expected
+    693 with the annotations of 90 tasks revised since (single runs; 37 of `hard-ll`, `hard2`, `divbin`, `divbin2`
+    with predicates for the powers of 2 instead of shifts, 41 refuted or weak annotations corrected, `\min` as a
+    conditional in `partial_mod_count_limited_*`, `partial_mod_count_limited_gen` with `-split`); the 323 tasks expected
     `false` are removed (Oct 12, 2026), 838 remain;
     per folder and the causes of the others in [benchmarks/acsl/README.md](benchmarks/acsl/README.md).
   - Done in 0.40.0: the parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks). The 95

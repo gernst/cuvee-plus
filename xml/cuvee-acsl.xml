@@ -19,7 +19,14 @@
     <tasks name="C.unreach-call.Arrays">
       <include>../benchmarks/acsl/array-*/*.yml</include>
       <include>../benchmarks/acsl/reducercommutativity/*.yml</include>
+      <exclude>../benchmarks/acsl/array-programs/partial_mod_count_limited_gen.yml</exclude>
       <propertyfile>../benchmarks/acsl/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <!-- tasks whose verification conditions z3 proves only as separate goals (see benchmarks/acsl/README.md) -->
+    <tasks name="C.unreach-call.Split">
+      <include>../benchmarks/acsl/array-programs/partial_mod_count_limited_gen.yml</include>
+      <propertyfile>../benchmarks/acsl/properties/unreach-call.prp</propertyfile>
+      <option name="-split"/>
     </tasks>
     <tasks name="C.unreach-call.Loops">
       <include>../benchmarks/acsl/loop*/*.yml</include>

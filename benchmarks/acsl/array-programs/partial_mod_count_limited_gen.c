@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the zeros of a are the multiples of R above the threshold, counted in closed form with integer division
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the zeros of a are the multiples of R above the threshold, counted in closed form with integer division; \min(a, b) written as the conditional (a <= b ? a : b), since Cuvée does not support \min; below the limit the program writes a[t] = t % R, which is 0 for the multiples of R only
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -29,8 +29,8 @@ int lim=__VERIFIER_nondet_int();
  assume_abort_if_not(R>1 && R<6);
 assume_abort_if_not(0 < lim && lim < N/R);
   /*@ loop invariant 0 <= i <= N;
-      loop invariant \forall integer t; 0 <= t < i ==> a[t] == ((t > N/R && t % R == 0 && (t-1)/R - (N/R)/R < lim) ? 0 : t+1);
-      loop invariant k == \min(lim, (i >= N/R + 2 ? (i-1)/R - (N/R)/R : 0));
+      loop invariant \forall integer t; 0 <= t < i ==> a[t] == ((t > N/R && (t-1)/R - (N/R)/R < lim) ? t % R : t+1);
+      loop invariant k == ((lim) <= ((i >= N/R + 2 ? (i-1)/R - (N/R)/R : 0)) ? (lim) : ((i >= N/R + 2 ? (i-1)/R - (N/R)/R : 0)));
       loop assigns i, k, a[0..N-1]; */
   for(i=0;i<N;i++){
     a[i]=i+1;
@@ -39,8 +39,8 @@ assume_abort_if_not(0 < lim && lim < N/R);
     if(a[i]==0) k++;
   }
   /*@ loop invariant 0 <= i <= N;
-      loop invariant \forall integer t; 0 <= t < N ==> a[t] == ((t > N/R && t % R == 0 && (t-1)/R - (N/R)/R < lim) ? 0 : t+1);
-      loop invariant j == \min(lim, (i >= N/R + 2 ? (i-1)/R - (N/R)/R : 0));
+      loop invariant \forall integer t; 0 <= t < N ==> a[t] == ((t > N/R && (t-1)/R - (N/R)/R < lim) ? t % R : t+1);
+      loop invariant j == ((lim) <= ((i >= N/R + 2 ? (i-1)/R - (N/R)/R : 0)) ? (lim) : ((i >= N/R + 2 ? (i-1)/R - (N/R)/R : 0)));
       loop assigns i, j; */
   for(i=0;i<N;i++){
     if (a[i]==0) j++;
