@@ -14,7 +14,10 @@ is the property file they refer to. The 37 tasks whose programs use structs
 the two `verisec_OpenSER` tasks, `loops-crafted-1/discover_list`, `net_reset`,
 `array-examples/relax-2-2`) were removed on Oct 12, 2026, since Cuvée's C
 frontend does not support structs: 1161 tasks remain, 422 of Arrays and 739
-of Loops.
+of Loops. The upstream change of the allocations (sv-benchmarks ada89e0473b,
+Oct 9, 2026: unchecked `malloc` and `calloc` replaced by `safe_malloc` and
+`safe_calloc`, defined in the tasks) is merged into the 166 files it touches,
+with the annotations unchanged.
 
 The annotations are a first approximation written by judgement, without a
 verifier: they are meant to be the invariants and contracts that prove the

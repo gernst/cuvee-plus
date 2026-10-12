@@ -27,6 +27,14 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int(void);
 void* malloc(unsigned int size);
+void *safe_malloc(unsigned int size) {
+  void *p = malloc(size);
+  if (p == 0) {
+    abort();
+  }
+  return p;
+}
+
 
 int N;
 
@@ -38,9 +46,9 @@ int main()
 
 	int i;
 	long long sum[1];
-	int *a = malloc(sizeof(int)*N);
-	int *b = malloc(sizeof(int)*N);
-	int *c = malloc(sizeof(int)*N);
+	int *a = safe_malloc(sizeof(int)*N);
+	int *b = safe_malloc(sizeof(int)*N);
+	int *c = safe_malloc(sizeof(int)*N);
 
 	sum[0] = 1;
 	/*@ loop invariant 0 <= i <= N;

@@ -35,10 +35,18 @@ void __VERIFIER_assert(int cond) {
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int();
 extern void *malloc(unsigned int size);
+void *safe_malloc(unsigned int size) {
+  void *p = malloc(size);
+  if (p == 0) {
+    abort();
+  }
+  return p;
+}
+
 int main() {
     int n = __VERIFIER_nondet_int();
     if (!(0 <= n && n <= 1000)) return 0;
-    int *x = malloc(n * sizeof(int));
+    int *x = safe_malloc(n * sizeof(int));
     /*@ loop invariant 0 <= i <= n;
         loop invariant \forall integer t; 0 <= t < i ==> x[t] == 0;
         loop assigns i, x[0..n-1]; */

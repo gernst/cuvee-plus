@@ -20,6 +20,14 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int(void);
 void *malloc(unsigned int size);
+void *safe_malloc(unsigned int size) {
+  void *p = malloc(size);
+  if (p == 0) {
+    abort();
+  }
+  return p;
+}
+
 
 int SIZE;
 
@@ -30,7 +38,7 @@ int main()
 	assume_abort_if_not(SIZE <= 66060288/sizeof(int));
 
 	int i;
-	int *a = malloc(sizeof(int)*SIZE);
+	int *a = safe_malloc(sizeof(int)*SIZE);
 
 	/*@ loop invariant 0 <= i <= SIZE;
 	    loop invariant \forall integer t; 0 <= t < i ==> a[t] == (t >> 16 > 250 ? 1 : 0);

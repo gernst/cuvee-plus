@@ -9,6 +9,14 @@ extern void __assert_fail(const char *, const char *, unsigned int, const char *
     assigns \nothing; */
 void reach_error() { __assert_fail("0", "linear_sea.ch.c", 3, "reach_error"); }
 extern void *calloc(unsigned int num, unsigned int size);
+void *safe_calloc(unsigned int num, unsigned int size) {
+  void *p = calloc(num, size);
+  if (p == 0) {
+    abort();
+  }
+  return p;
+}
+
 
 /*@ requires cond != 0;
     assigns \nothing; */
@@ -42,7 +50,7 @@ int main() {
   SIZE=(__VERIFIER_nondet_uint()/8)+1;
 
   if (SIZE > 1 && SIZE < MAX) {
-    int *a = calloc(SIZE,sizeof(int));
+    int *a = safe_calloc(SIZE,sizeof(int));
     a[SIZE/2]=3;
     __VERIFIER_assert(linear_search(a,SIZE,3));
   }

@@ -20,6 +20,14 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int(void);
 void *malloc(unsigned int size);
+void *safe_malloc(unsigned int size) {
+  void *p = malloc(size);
+  if (p == 0) {
+    abort();
+  }
+  return p;
+}
+
 
 int SIZE;
 
@@ -31,7 +39,7 @@ int main()
 	if(SIZE > 1 && SIZE < MAX)
 	{
 		long long i;
-		long long *a = malloc(sizeof(long long)*SIZE);
+		long long *a = safe_malloc(sizeof(long long)*SIZE);
 
 		/*@ loop invariant 0 <= i <= SIZE;
 		    loop invariant \forall integer t; 0 <= t < i ==> a[t] == t*t + 2;

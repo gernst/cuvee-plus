@@ -27,6 +27,14 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int(void);
 void* malloc(unsigned int size);
+void *safe_malloc(unsigned int size) {
+  void *p = malloc(size);
+  if (p == 0) {
+    abort();
+  }
+  return p;
+}
+
 
 int N;
 
@@ -37,9 +45,9 @@ int main()
 	assume_abort_if_not(N <= 2147483647/sizeof(int));
 
 	long long i;
-	long long *a = malloc(sizeof(long long)*N);
-	long long *b = malloc(sizeof(long long)*N);
-	long long *c = malloc(sizeof(long long)*N);
+	long long *a = safe_malloc(sizeof(long long)*N);
+	long long *b = safe_malloc(sizeof(long long)*N);
+	long long *c = safe_malloc(sizeof(long long)*N);
 
 	a[0] = 6;
 	b[0] = 1;
