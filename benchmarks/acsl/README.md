@@ -257,23 +257,9 @@ before the bound ends the loop, `y < p2(31 - counter)` with `p2(k) = 2^k`.
 
 ## Open
 
-**Under `-verify`.** A sample with 0.41.3 (60 s, Oct 12, 2026) answers
-`correct` for the 10 tasks proved in the run above. Of the 87 tasks with a
-refuted goal in that run (`unknown` then), 69 are revised and prove (the
-shifts, see [Annotations](#annotations), and the annotations corrected above),
-13 end as timeouts instead (`divbin_unwindbound*`, 3: `b = 2*b` may wrap to
-values that are no multiples of `B` by a power of 2; `dijkstra-u*`, 10: the
-invariants modulo 2^32 bound neither `p` nor `q`, so z3 cannot exclude that
-the asserted `2*p + q` wraps, 28 of the 382 goals of `-split` are `unknown`,
-and a proof needs integer invariants with bounds, `q <= 4*n`, `p*p <= n*q`, of
-degree 3), and 5 are wrong `false` answers by the causes below (`heavy-2`,
-`matrix-1`, `veris.c_sendmail_tTflag_arr_one_loop`, uninitialized locals;
-`data_structures_set_multi_proc_*`, arrays as values). Cuvée could answer
-`unknown` to refutations through uninterpreted operators (see
-[TODO.md](../../TODO.md)).
-
-The 94 tasks that are not proved by single runs with Cuvée 0.41.6 (Oct 12,
-2026), by cause:
+The 85 tasks that the partial run with 0.42.1 and `-verify` (see
+[Results](#results)) does not prove, after the correction of
+`veris.c_sendmail_tTflag_arr_one_loop`, by cause:
 
 - **Not supported by Cuvée** (50):
   - gotos to labels whose statement falls through, in the outputs of the
@@ -285,27 +271,36 @@ The 94 tasks that are not proved by single runs with Cuvée 0.41.6 (Oct 12,
   - arrays of pointers (`array-industry-pattern/array_ptr_partial_init`,
     `array-lopstr16/partial_lesser_bound`), pointer arithmetic
     (`loops/veris.c_NetBSD-libc_loop`).
-- **Timeouts and `Unknown` of z3** (not analyzed per goal yet, a timeout may
-  also hide a matching loop or a weak annotation, as in `divbin2`):
-  nonlinear arithmetic in `nla-digbench*` (`lcm2` 11, which time out at
-  120 s under load with the lemmas above, `nla-digbench/lcm2` takes 37 s
-  alone; `prod4br-ll` 3, `divbin_unwindbound` 3, `dijkstra-u` 10);
-  `nla-digbench/prodbin-ll`, which proved with 0.40.0 in 2 s and times out
-  since 0.41.4, also without `-verify` (not bisected); `array-patterns/array26`, the
-  parity of a count, `array1`,
-  `3`, `4`, `6`, `7`, the lemmas with products and remainders;
-  `array-multidimensional/add-2-n-u`, `add-3-n-u`, `diff-2-n-u`, `diff-3-n-u`,
-  `copy-partial-3-u`, unsigned elements.
-- **The arrays as values**: `array-examples/sanfoundry_43_ground` assigns an
-  array parameter for its caller, which needs in/out parameters (see
-  [TODO.md](../../TODO.md)); `data_structures_set_multi_proc_*` (2) pass
-  arrays to functions that change them.
-- **Not analyzed**: `loops/veris.c_sendmail_tTflag_arr_one_loop`, no longer
-  blocked by the implicit ranges of uninitialized locals (0.41.6, which also
-  makes `vogal-1`, `heavy-2`, `matrix-1` prove).
-- **A bug of the frontend**: `loops-crafted-1/watermelon` declares the
+- **The arrays as values** (3): `array-examples/sanfoundry_43_ground`
+  assigns an array parameter for its caller, which needs in/out parameters
+  (see [TODO.md](../../TODO.md)); `data_structures_set_multi_proc_ground-2`
+  and `_trivial_ground` pass arrays to functions that change them, wrong
+  `false` answers under `-verify`.
+- **A bug of the frontend** (1): `loops-crafted-1/watermelon` declares the
   globals `int true = 1; int false = 0;`, which reach z3 under these names
   and clash with its constants (a solver error, see [TODO.md](../../TODO.md)).
+- **Timeouts, `unknown`, out of memory** (31; not analyzed per goal yet, a
+  timeout may also hide a matching loop or a weak annotation, as in
+  `divbin2`):
+  - `nla-digbench*/dijkstra-u*` (10): the invariants modulo 2^32 bound
+    neither `p` nor `q`, so z3 cannot exclude that the asserted `2*p + q`
+    wraps (28 of the 382 goals of `-split` are `unknown`); a proof needs
+    integer invariants with bounds, `q <= 4*n`, `p*p <= n*q`, of degree 3;
+  - `divbin_unwindbound*` (3): `b = 2*b` may wrap to values that are no
+    multiples of `B` by a power of 2;
+  - `prod4br-ll` (3: `nla-digbench/prod4br-ll`, `_valuebound1`, `5`);
+  - `lcm2_unwindbound5`, `20` (out of memory with `-split`), `10`;
+  - `nla-digbench/prodbin-ll`, which proved with 0.40.0 in 2 s and times out
+    since 0.41.4, also without `-verify` (not bisected);
+  - `array-patterns/array1`, `6`, `7` (`unknown`, the lemmas with products
+    and remainders), `array3`, `4`, `26` (the parity of a count);
+  - `array-multidimensional/add-2-n-u`, `add-3-n-u`, `diff-2-n-u`,
+    `diff-3-n-u`, `copy-partial-3-u`, unsigned elements.
+
+Refutations through uninterpreted operators (`shl`, `bitand`, ...) are no
+counterexamples, but `-verify` answers them `incorrect`; no task of this set
+depends on them since the powers of 2 are predicates (see
+[TODO.md](../../TODO.md)).
 
 The issues of Cuvée's ACSL support are tracked in [TODO.md](../../TODO.md),
 section "C frontend", item "ACSL on SV-COMP".

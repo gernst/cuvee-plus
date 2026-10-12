@@ -1079,6 +1079,8 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     `\null` (`array-industry-pattern/array_ptr_partial_init`, `array-lopstr16/partial_lesser_bound`) end in
     "arrays of pointers are not supported".
   - Results: 603 of the 838 true tasks proved with 0.40.0 (60 s, Oct 12, 2026; 534 with 0.39.5), none wrong;
+    752 with 0.42.1 and -verify (15 min, a partial run with 27 tasks unfinished, Oct 12, 2026; 3 wrong false, 2 of
+    them arrays as values, veris.c_sendmail corrected since: 753, 85 open, see the README);
     744 with the annotations revised since and 0.41.6 (single runs, Oct 12, 2026; the powers of 2 as predicates, 41
     refuted or weak annotations corrected, `\min` as a conditional, explicit ranges of unsigned variables where the
     implicit ones of loops were needed, logic functions with trusted step lemmas for `geo*-ll` and `lcm2`, the tasks
