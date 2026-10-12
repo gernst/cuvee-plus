@@ -18,51 +18,31 @@ object Simplify extends Transform:
   // the other commands are simplified with these rules, each with a fresh number of rewrite steps,
   // where axioms, goals, and lemmas that simplify to true are dropped, since they state nothing;
   // debug output is printed with the printer of the configuration;
-  // with -rules, the rules applied to an assertion are its attributes :used (name count), and those of the
-  // assertions that simplify to true, which are dropped, are reported on stderr
+  // with -rules, the rules applied to an assertion follow it as (set-info :used ((name count) ...)), also if it
+  // simplifies to true and is dropped (see used)
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
     val rules = Rules.from(state, prefix ++ cmds)
 
     for
-      (cmd, index) <- cmds.zipWithIndex
+      cmd <- cmds
       ctx = Context.empty.withRules(rules)
-      cmd_ = if cmd.isRule then cmd else used(config, ctx, position(cmds, index), simplify(config, state, ctx, cmd))
+      cmd_ <- if cmd.isRule then List(cmd) else simplify(config, state, ctx, cmd) :: used(config, ctx, cmd)
       if !isTrivial(cmd_)
     yield cmd_
 
-  // the number of the assertion at `index` among those of the same kind that are no rules, from 1, e.g. goal 2
-  def position(cmds: List[Cmd], index: Int): Int =
-    cmds(index) match
-      case Assert(justify, _, _, _) =>
-        cmds.take(index + 1).count:
-          case cmd @ Assert(`justify`, _, _, _) => !cmd.isRule
-          case _                                => false
-
-      case _ =>
-        0
-
-  // with -rules, the rules applied to an assertion as its attributes :used (name count), reported on stderr
-  // for assertions that simplify to true, by their :named or their kind and position, e.g. goal 2
-  def used(config: Config, ctx: Context, position: Int, cmd: Cmd): Cmd =
+  // with -rules, the rules applied to the assertion `cmd` by this simplification, as structured meta information
+  // (set-info :used ((name count) ...)), which solvers do not receive (see Solver.Sink and pipe.Verify); only the
+  // applications of this simplification, such that the counts of several, e.g. before and after -split, add up
+  // (see scripts/rules.py)
+  def used(config: Config, ctx: Context, cmd: Cmd): List[Cmd] =
     cmd match
-      case Assert(justify, params, phi, attrs) if config.rules =>
-        // with those of an earlier -simplify, e.g. before -split, whose attributes the assertion carries
-        val earlier =
-          attrs.values[List[?]]("used").collect:
-            case List(sexpr.Id(name), sexpr.Num(n)) => name -> n.toInt
-        val counts = (earlier ++ ctx.applied.value.toList).groupMapReduce(_._1)(_._2)(_ + _).toList.sorted
-        if isTrivial(cmd) then
-          val label = attrs.values[sexpr.Id]("named").map(_.text).headOption.getOrElse(justify.toString.toLowerCase + " " + position)
-          val list = if counts.isEmpty then "none" else counts.map((name, n) => name + " " + n).mkString(", ")
-          // not starting with goal, which tools take for a remaining goal, e.g. cuvee.py of BenchExec
-          config.stderr.println("used by " + label + ", which simplified to true: " + list)
-          cmd
-        else
-          val used = counts.map((name, n) => "used" -> Some(List(sexpr.Id(name), sexpr.Num(n.toString))))
-          Assert(justify, params, phi, Attrs(attrs.attrs.filter(_._1 != "used") ++ used))
+      case _: Assert if config.rules =>
+        val counts = ctx.applied.value.toList.groupMapReduce(_._1)(_._2)(_ + _).toList.sorted
+        if counts.isEmpty then Nil
+        else List(SetInfo("used", counts.map((name, n) => List(sexpr.Id(name), sexpr.Num(n.toString)))))
 
       case _ =>
-        cmd
+        Nil
 
   def isTrivial(cmd: Cmd) =
     cmd match

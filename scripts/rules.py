@@ -1,8 +1,9 @@
 """Frequencies of the rewrite rules that Cuvée applies in the proved tasks (option -rules).
 
-For each benchmark of Cuvée and category, the most recent results (see common.latest) and their logs: a goal that
-simplifies to true is reported on stderr as "used by goal 1, which simplified to true: name count, ...", a goal that
-remains carries attributes :used (name count). Only the tasks whose verdict true is correct count, since the logs of
+For each benchmark of Cuvée and category, the most recent results (see common.latest) and their logs: each
+-simplify reports the rules that it applies to an assertion as (set-info :used ((name count) ...)), which the counts
+of several -simplify add up; logs before 0.41.2 report a goal that simplifies to true on stderr as "used by goal 1,
+which simplified to true: name count, ...", and a goal that remains carries attributes :used (name count). Only the tasks whose verdict true is correct count, since the logs of
 the others are incomplete, e.g. those stopped by the time limit. Per rule: the tasks that use it and its
 applications, per category and in total, written as CSV, as a LaTeX table, and as a bar chart of the number of tasks
 per rule (rules-frequency.pdf), compiled to rules.pdf; the lemmas of teq.dfy that no proved task uses are listed. The
@@ -57,9 +58,13 @@ count as well. <proved>
 \end{document}
 """
 
-# "used by goal 1, which simplified to true: counter_def 1, stores 1" (or "none")
+# since 0.41.2: the rules applied by each -simplify to an assertion, (set-info :used ((name count) ...)), in SMT-LIB
+# on stderr with a solver or -verify, as info :used := ((name count) ...) in Dafny output
+INFO = re.compile(r":used\s*(?::=)?\s*\(((?:\s*\(\s*[^\s()]+\s+\d+\s*\))*)\s*\)")
+PAIR = re.compile(r"\(\s*([^\s()]+)\s+(\d+)\s*\)")
+# before 0.41.2: "used by goal 1, which simplified to true: counter_def 1, stores 1" (or "none") on stderr
 CLOSED = re.compile(r"^used by .+?, which simplified to true: (.*)$", re.M)
-# :used (name count), also across lines and as {:used (name count)} in Dafny
+# before 0.41.2: :used (name count) of the goals that remain, also across lines and as {:used (name count)} in Dafny
 USED = re.compile(r":used \(\s*([^\s()]+)\s+(\d+)\s*\)")
 
 
@@ -90,7 +95,11 @@ def counts(log: str) -> collections.Counter:
             name, _, n = item.rpartition(" ")
             if name and n.isdigit():
                 used[name] += int(n)
-    for name, n in USED.findall(" ".join(log.split())):
+    text = " ".join(log.split())
+    for pairs in INFO.findall(text):
+        for name, n in PAIR.findall(pairs):
+            used[name] += int(n)
+    for name, n in USED.findall(text):
         used[name] += int(n)
     return used
 

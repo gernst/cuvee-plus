@@ -5,12 +5,15 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New
 
-- URGENT, once `-verify` (branch `worktree-verify`, 0.41.0) is on main: `cuvee.py` reads only the answers
-  `correct`/`incorrect`/`unknown` of `-verify`, a run without it is an error
+- URGENT, since `-verify` is on main (0.41.3): `cuvee.py` reads only the answers `correct`/`incorrect`/`unknown`
+  of `-verify`, a run without it is an error
   - BenchExec: update the tool-info module of the pull request `add-cuvee` (github.com/gernst/benchexec,
     `benchexec/tools/cuvee.py`) to this `cuvee.py`
   - fm-tools: add `-verify` to the options of the entry `data/cuvee.yml`, as `archive/README.md` and
     `archive/smoketest.sh` do
+- `-verify` (see [ideas/verify-answers.md](ideas/verify-answers.md)): a refutation is classified per goal, `VCGen`
+  marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
+  not depend on that loop, which `-split` keeps apart
 - support verifying trace lemmas in Dafny
 - identify performance improvements, notably in the simplifier
 - thread config through more code, so that it is usually available

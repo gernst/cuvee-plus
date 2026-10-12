@@ -42,7 +42,8 @@ object Horn extends Transform:
       else Nil
 
     // the model of the predicates are the inferred invariants, if the clauses are satisfiable;
-    // a verify-call checks the clauses so far
+    // a verify-call checks the clauses so far, which are satisfiable iff the program is correct, as -verify expects
+    // (see pipe.Verify.expected)
     val check =
       last match
         case Done                   => List(CheckSat, GetModel)

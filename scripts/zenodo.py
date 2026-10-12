@@ -51,13 +51,13 @@ INSTANCES = {
 }
 
 METADATA = {
-    "title": "Cuvée: Loop Summaries by Trace Equations and a Lemma Database (Competition Contribution)",
+    "title": "Cuvée: Loop Summaries by Trace Equations and a Lemma Database",
     "upload_type": "software",
     "description": "<p>The archive of the verifier Cuvée for SV-COMP 2027, for the property unreach-call of C programs "
                    "(categories ReachSafety-Arrays and ReachSafety-Loops). Cuvée summarizes loops by trace equation "
                    "systems, whose goals it closes by rewriting with a database of lemmas, followed by Z3. "
                    "It requires Java 21; run it as <code>./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 "
-                   "task.c</code>.</p>",
+                   "-verify task.c</code>, which answers correct, incorrect, or unknown.</p>",
     "creators": [
         {"name": "Ernst, Gidon", "affiliation": "Ludwig Maximilian University of Munich", "orcid": "0000-0002-3289-5764"}
     ],

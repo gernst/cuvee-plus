@@ -1,9 +1,18 @@
-goal {:used (counter_def 1)} {:used (counts_true_def 1)} {:used
-  (current_counter 1)} {:used (current_counts 1)} {:used
-  (earlier_counter 7)} {:used (earlier_counts 1)} {:used
-  (integer_natural 7)} {:used
-  (invs_counter_upper_nonnegative
-    1)}
+info :used :=
+  ((counter_def 1)
+    (current_counter 1)
+    (current_stores 1)
+    (earlier_counter 2)
+    (earlier_selects 1)
+    (indexof_counter_up 1)
+    (integer_natural 2)
+    (invs_counter_upper_nonnegative
+      1)
+    (occurs_counter_up 1)
+    (selects 1)
+    (stores 1))
+
+goal
   forall a: array<int, int>, n: int, c₁₉: int, n₁₄: Nat, K₁₆: Trace<int>,
          I₁₈: Trace<int> ::
     K₁₆ == counter(0, 1, n₁₄)
@@ -12,4 +21,15 @@ goal {:used (counter_def 1)} {:used (counts_true_def 1)} {:used
       && integer(n₁₄) == n
       && 0 <= integer(n₁₄)
       ==> c₁₉ <= n
+
+info :used :=
+  ((counter_def 1)
+    (counts_true_def 1)
+    (current_counter 1)
+    (current_counts 1)
+    (earlier_counter 7)
+    (earlier_counts 1)
+    (integer_natural 7)
+    (invs_counter_upper_nonnegative
+      1))
 

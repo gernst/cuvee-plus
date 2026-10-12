@@ -11,10 +11,14 @@ enum Ack extends Result:
   // default answer to Done, which is not reported
   case Done
 
+// the answers to check-sat, and those of -verify to verify-call (see pipe.Verify): whether the program satisfies its
+// specification, correct, incorrect, or unknown
 enum Status extends Result:
   case Unknown
   case Sat
   case Unsat
+  case Correct
+  case Incorrect
 
 case class Labels(labels: List[String]) extends Result
 

@@ -31,13 +31,14 @@ derivatives in [hybrid.md](hybrid.md).
     (`Context.applied`), shared by its copies like the steps and fresh for each
     command; the applications while deciding a side condition or a guard count
     only if it holds (`Rewrite.holds`), those while matching a rule only if it
-    applies. An assertion that remains carries the counts as attributes
-    `:used (name count)`, which a later `-simplify`, e.g. after `-split`, adds
-    to; one that simplifies to true is reported on stderr with them, by its
-    `:named` or as `goal n` (`used by goal 1, which simplified to true: ...`,
-    not starting with `goal`, which BenchExec's `cuvee.py` takes for a
-    remaining goal). Applications in subterms that are dropped later
-    count as well, so that the counts are an upper bound
+    applies. The counts follow each assertion as structured meta information
+    `(set-info :used ((name count) ...))`, also if it simplifies to true and
+    is dropped; each `-simplify` reports its own applications, such that those
+    of several, e.g. before and after `-split`, add up (`scripts/rules.py`).
+    Solvers do not receive it, z3 rejects structured values of `set-info`
+    contrary to SMT-LIB: the solver sink and the sink of `-verify` print it on
+    stderr instead (`Solver.info`). Applications in subterms that are dropped
+    later count as well, so that the counts are an upper bound
     ([rules.dfy](../examples/dafny/teq/rules.dfy)).
   - Each round (`once`) simplifies the subterms first and dispatches on the
     built-in functions; afterwards, one rewrite step with the rules of the

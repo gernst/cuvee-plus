@@ -1,5 +1,7 @@
 package cuvee.smtlib
 
+import java.io.PrintStream
+
 import util.Tool
 
 import cuvee.Debug
@@ -59,6 +61,12 @@ class Solver(cmd: String*):
   def ack(cmd: Cmd): Ack =
     Parser.ack(query(cmd))
 
+  // an option that the solver does not know is unsupported, as SMT-LIB prescribes, which z3 reports as an error,
+  // e.g. :produce-witnesses of SV-LIB
+  def option(option: SetOption): Ack =
+    try ack(option)
+    catch case error: Error if error.msg == "solver error" => Ack.Unsupported
+
   def push(depth: Int = 1): Ack =
     ack(Push(depth))
 
@@ -109,8 +117,25 @@ object Solver:
   def cvc5(timeout: Int = 1000) =
     new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
 
-  def sink(solver: Solver, init: State) =
-    Sink(init, solver)
+  def sink(solver: Solver, init: State, stderr: PrintStream = System.err) =
+    Sink(init, solver, stderr)
+
+  // the meta information for the user, e.g. the rules applied by -simplify (set-info :used ...), which z3 rejects
+  // as structured values, contrary to SMT-LIB, is printed on `stderr` instead of passed to the solver
+  def info(stderr: PrintStream, cmd: SetInfo) =
+    for line <- Printer.lines(cmd) if line.nonEmpty
+    do stderr.println(line)
+
+  // SMT-LIB does not admit attributes on declarations and definitions,
+  // assertions are handled separately and keep their names
+  def noAttrs(decl: Decl): Decl =
+    decl match
+      case DeclareSort(con, _)              => DeclareSort(con, Attrs.empty)
+      case DefineSort(con, params, body, _) => DefineSort(con, params, body, Attrs.empty)
+      case DeclareDatatypes(cons, datas, _) => DeclareDatatypes(cons, datas, Attrs.empty)
+      case DeclareFun(fun, _)               => DeclareFun(fun, Attrs.empty)
+      case DefineFun(fun, body, _)          => DefineFun(fun, body, Attrs.empty)
+      case _                                => decl
 
   // a sink that passes commands to the solver,
   // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
@@ -119,7 +144,7 @@ object Solver:
   // the declarations that SMT-LIB has built in ({:smt2}, see the preludes) are not passed to the solver,
   // all others are, without their attributes, e.g. those of higher-order features ({:ho}), which a solver may reject;
   // goals that do not hold are reported in SMT-LIB
-  class Sink(init: State, solver: Solver) extends cuvee.pipe.Sink:
+  class Sink(init: State, solver: Solver, stderr: PrintStream) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
     val printer = Printer
 
@@ -161,6 +186,11 @@ object Solver:
         case _: DeclareProc | _: DefineProc | _: DeclareVar | _: AnnotateTag =>
           (Ack.Unsupported, Nil, this)
 
+        // the rules applied by -simplify are reported (see Solver.info)
+        case info @ SetInfo("used", _) =>
+          Solver.info(stderr, info)
+          (Ack.Success, Nil, this)
+
         // the witnesses of SV-LIB are not produced
         case GetWitness =>
           (Ack.Unsupported, Nil, this)
@@ -196,20 +226,16 @@ object Solver:
           solver.destroy()
           (Ack.Done, Nil, this)
 
-        // an option that the solver does not know is unsupported, as SMT-LIB prescribes, which z3 reports as an error,
-        // e.g. :produce-witnesses of SV-LIB
+        // an option that the solver does not know is unsupported (see Solver.option)
         case option: SetOption =>
           parser.state = parser.state.add(option)
-          val ack =
-            try solver.ack(option)
-            catch case error: Error if error.msg == "solver error" => Ack.Unsupported
-          (ack, Nil, this)
+          (solver.option(option), Nil, this)
 
         // the state is updated only once the solver has accepted the declaration,
         // attributes are kept in the state but not sent to the solver
         case decl: Decl =>
           val state_ = parser.state.add(decl)
-          val ack = solver.ack(noAttrs(decl))
+          val ack = solver.ack(Solver.noAttrs(decl))
           parser.state = state_
           (ack, Nil, this)
 
@@ -227,14 +253,3 @@ object Solver:
           val ack = solver.ack(cmd)
           parser.reset()
           (ack, Nil, this)
-
-    // SMT-LIB does not admit attributes on declarations and definitions,
-    // assertions are handled separately and keep their names
-    def noAttrs(decl: Decl): Decl =
-      decl match
-        case DeclareSort(con, _)              => DeclareSort(con, Attrs.empty)
-        case DefineSort(con, params, body, _) => DefineSort(con, params, body, Attrs.empty)
-        case DeclareDatatypes(cons, datas, _) => DeclareDatatypes(cons, datas, Attrs.empty)
-        case DeclareFun(fun, _)               => DeclareFun(fun, Attrs.empty)
-        case DefineFun(fun, body, _)          => DefineFun(fun, body, Attrs.empty)
-        case _                                => decl

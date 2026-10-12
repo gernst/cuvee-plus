@@ -2,7 +2,7 @@ function maps₁₈(x₀: array<int, int>, x₁: int, x₂: int): bool
 
 function count_from₁₆(x₀: array<int, int>, x₁: int, x₂: int): int
 
-goal
+goal {:abstract}
   (forall a: array<int, int>, n₄: int ::
      forall j₁₉: int ::
        0 <= j₁₉ < n₄ ==> maps₁₈(a, n₄, j₁₉) == (a[0 + j₁₉ * 1] < 0))

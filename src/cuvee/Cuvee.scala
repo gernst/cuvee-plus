@@ -65,7 +65,7 @@ object Cuvee extends util.Main:
     // the declarations that the receiver knows are dropped before it, e.g. the prelude of the language of the output
     // for a printer, before further sinks, e.g. of tests, which therefore see what the receiver sees;
     // the reports are in the language of the input
-    val main = config.sink(config, config.output.printer, init)
+    val main = config.receiver(init)
     val sink = Sink.filter(main.knows, Sink.tee(main, sinks*))
     val report = config.report(config, config.input.printer)
     val stages = config.stages(init, sink)

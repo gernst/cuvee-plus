@@ -44,7 +44,9 @@ transformation and any output.
    - the transforms in order (`-vcgen`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`),
      and `-rules`, which makes `-simplify` report the rules it applies (see [simplifier.md](simplifier.md));
    - the printer (`-print`);
-   - the sink (stdout, `-o`, `-z3`, `-cvc5`).
+   - the sink (stdout, `-o`), the solver (`-z3`, `-cvc5`), which checks the
+     output, and the answers of `-verify`, with or without solver;
+     `Config.receiver` builds the sink from the final configuration.
 2. `config.input.source(reader)` parses the frontend's prelude first
    (`prelude.*`). It returns the initial `State`, which holds its
    declarations, and a lazy `LazyList[Cmd]`, which begins with these
@@ -188,6 +190,27 @@ and the next sink.
     proof, like axioms.
   - Procedures and global variables must have been eliminated by `-vcgen` or
     `-chc`.
+- [`Verify`](../src/cuvee/pipe/Verify.scala) (`-verify`) answers
+  `correct`, `incorrect`, or `unknown` (the cases `Correct`, `Incorrect`, `Unknown` of
+  [`Status`](../src/cuvee/core/Cmd.scala))
+  to `verify-call`, and to `Done` if there was no `verify-call`, aggregated over
+  the obligations so far; the answers are reported on stdout, the output is not
+  printed. The commands go to the solver directly, as with the solver sink but
+  without its parser state, since models and other answers are not reported.
+  - Each obligation has the status that it has if the program is correct
+    (`Verify.expected`): goals and lemmas `unsat` of their negation, `check-sat`
+    `sat`, since a model of the clauses of `Horn` gives the invariants; a
+    `check-sat` of the input counts as well. The answer of the solver holds if
+    it is the expected one, refutes if it is the opposite one, unless the goal
+    is `:abstract` (a loop without invariant in `VCGen`, a goal lowered by
+    `Fallback`), and is undecided otherwise. Without solver, only the goal
+    `false` is refuted.
+  - The outcome is incorrect once an obligation is refuted, otherwise unknown
+    once one is undecided; all obligations are checked.
+  - Refuted goals are no errors, such that all commands are processed;
+    procedures, global variables, and tags are an error, since they would be
+    answered correct without checking anything (they need `-vcgen`, `-teq`, or
+    `-chc`).
 
 ## Frontends
 
@@ -294,8 +317,7 @@ annotations there, and so are `define-procs-rec`, labels and gotos, the
 properties `:recurring` and `:not-recurring`, `:decreases-lex`, witnesses and traces. The modified
 global variables of procedures and loops are inferred, as in C. The verdict
 of a task is decided by the BenchExec module [cuvee.py](../cuvee.py) from the
-output: a refuted goal, or unsatisfiable clauses, mean that an annotation is
-violated.
+answers of `-verify` to the `verify-call`s.
 
 ## Errors and debugging
 

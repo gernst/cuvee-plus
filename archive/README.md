@@ -23,10 +23,9 @@ Source code and documentation: https://github.com/gernst/cuvee-plus
 
 Requires Java 21 (e.g. the Ubuntu package `openjdk-21-jre-headless`).
 
-    ./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 [-arch 32|64] task.c
+    ./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 -verify [-arch 32|64] task.c
 
-No output means that the property holds. A goal that simplifies to false,
-reported as `(goal false)` or `(error "goal does not hold" "Sat" "false")`,
-means that it is violated; other goals that remain are not refuted, the
-result is unknown. Cuvée does not produce witnesses. `./Cuvee.sh -version`
+The answer is `correct` (the property holds), `incorrect` (it is violated),
+or `unknown`; errors, e.g. constructs that are not supported, are reported
+as `(error ...)`. Cuvée does not produce witnesses. `./Cuvee.sh -version`
 prints the version.

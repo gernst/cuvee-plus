@@ -28,8 +28,8 @@
 
 \begin{document}
 
-\title{Cuvée: Loop Summaries by Trace Equations\\ and a Lemma Database\\ (Competition Contribution)}
-\titlerunning{Cuvée (Competition Contribution)}
+\title{Cuvée: Loop Summaries by Trace Equations\\ and a Lemma Database\\ (Competition Preview)}
+\titlerunning{Cuvée (Competition Preview)}
 
 \author{Gidon Ernst}
 \authorrunning{G. Ernst}
@@ -234,10 +234,11 @@ benchmarks~\cite{monocera}.
 binary, which the script puts on the path. The BenchExec tool-info module is \code{cuvee.py}. It runs
 \begin{center}
 \small\code{./Cuvee.sh -teq -simplify -split -simplify -fallback -z3}\\
-\small\code{-timeout 900000 [-arch 32|64] task.c}
+\small\code{-timeout 900000 -verify [-arch 32|64] task.c}
 \end{center}
-where \code{-arch} follows the data model of the task. \cuvee{} reports \emph{true} if no goal remains and
-\emph{unknown} otherwise. It supports only the property \code{unreach-call}, and it participates in
+where \code{-arch} follows the data model of the task. With \code{-verify}, \cuvee{} answers
+\emph{correct} if all goals are proved, \emph{incorrect} if a goal is refuted without abstraction, and
+\emph{unknown} otherwise, which \code{cuvee.py} reports as \emph{true}, \emph{false}, and \emph{unknown}. It supports only the property \code{unreach-call}, and it participates in
 ReachSafety-Arrays and ReachSafety-Loops.
 
 \section{Software Project and Contributors}

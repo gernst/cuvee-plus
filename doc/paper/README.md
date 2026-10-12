@@ -1,6 +1,6 @@
-# SV-COMP competition contribution
+# SV-COMP competition preview
 
-[cuvee.tex](cuvee.tex) is the competition contribution of Cuvée for SV-COMP
+[cuvee.tex](cuvee.tex) is the competition preview of Cuvée for SV-COMP
 (LNCS, `llncs` with `splncs04`, about 4.5 pages without references);
 [references.bib](references.bib) its bibliography. `cuvee.pdf` is not under
 version control.

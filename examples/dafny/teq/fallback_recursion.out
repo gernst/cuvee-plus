@@ -10,7 +10,7 @@ function count_from₁₀(x₀: int, x₁: int): int
 
 function pow_upto₁₃(x₀: int, x₁: int): int
 
-goal
+goal {:abstract}
   0 <= xs_length₂
     && (sum_from₄(xs_length₂) == 0
           && (forall j₅: int ::

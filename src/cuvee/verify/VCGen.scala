@@ -59,10 +59,19 @@ object VCGen extends Transform:
         val post_ = Old.elim(gs, gs_, post)
         val phi = wp(state, gs, name, assume, commit, body_, post_, False, False, post_)
         val phi_ = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(phi)))
-        List(Assert(Goal, params, phi_, Attrs.empty))
+        val attrs = if abstracts(body_) then Attrs.from("abstract") else Attrs.empty
+        List(Assert(Goal, params, phi_, attrs))
 
       case _ =>
         List(cmd)
+
+  // whether `prog` contains a loop without invariants, whose invariant is true, such that the goal is stronger than
+  // the specification and its refutation is no counterexample (see pipe.Verify)
+  def abstracts(prog: Prog): Boolean =
+    prog match
+      case While(_, _, attrs) if attrs.invariants.isEmpty => true
+      case Iter(_, attrs) if attrs.invariants.isEmpty     => true
+      case _                                              => prog.subprogs.exists(abstracts)
 
   // formal parameters, precondition, and postcondition of procedure `name`
   def contract(state: State, name: Name): (List[Var], List[Var], Expr, Expr) =

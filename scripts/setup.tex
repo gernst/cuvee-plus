@@ -18,8 +18,9 @@ stores (\texttt{-include teq:nested -include teq:sorting -include teq:strides}),
 nondeterministic values within the ranges of their types and unsigned arithmetic modulo $2^n$ (not
 \texttt{-unbounded}). Cuvée+Z3 adds \texttt{-fallback -z3}, which lowers the goals that remain after
 simplification into first-order logic and hands them to Z3, with a timeout per query that covers the
-whole time limit (\texttt{-timeout 900000}). In these configurations, Cuvée only reports safe programs
-(verdict true), since a model of Z3 for a goal of the abstraction is no counterexample. Cuvée (CHC)
+whole time limit (\texttt{-timeout 900000}). With \texttt{-verify} (since version 0.41.0), Cuvée
+answers itself: correct if all goals are proved, incorrect if a goal simplifies to false, and unknown
+otherwise, also for a model of Z3 for a goal of the abstraction, which is no counterexample. Cuvée (CHC)
 translates the program into constrained Horn clauses instead (\texttt{-simplify -chc -z3}), whose
 answer by Z3 is the verdict: true if they are satisfiable, false if they are not. The other tools are the SV-COMP 2026 versions of Symbiotic, AISE, UAutomizer,
 CPAchecker and Korn, downloaded from their archives on Zenodo as listed in fm-tools, and run with

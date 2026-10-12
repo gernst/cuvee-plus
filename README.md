@@ -53,7 +53,7 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
   `strides`). The lemmas of the former single file
   [teq.dfy](resources/cuvee/teq.dfy) are proved in Lean 4
   ([teq.lean](resources/cuvee/teq.lean)). `-rules` reports the rules that
-  close each goal. `-fallback` encodes the trace equation systems that remain
+  each `-simplify` applies to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain
   into first-order logic for the solvers.
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the
@@ -78,10 +78,21 @@ based on trace equation systems, takes part in SV-COMP 2027 (see
   binding structure of the trace combinators `trace`, `maps`, and `invs` from
   *Trace Equation Systems for Program Verification*; and Fourier-Motzkin
   elimination over the rationals.
-- **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`): goals and lemmas are checked
-  for validity, and assertions and `check-sat` are passed through. Lemmas
-  with the attribute `free` (Dafny lemmas without a body) are assumed without proof,
-  like axioms, although they are meant to follow from the theory.
+- **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`), which check the output:
+  goals and lemmas are checked for validity, a goal that does not hold is an
+  error, and assertions and `check-sat` are passed
+  through. Lemmas with the attribute `free` (Dafny lemmas without a body) are
+  assumed without proof, like axioms, although they are meant to follow from
+  the theory.
+- **Answers** (`-verify`, with or without solver; procedures need `-vcgen`,
+  `-teq`, or `-chc`): instead of the output, `correct`, `incorrect`, or
+  `unknown` for each `verify-call` of SV-LIB, or once for other inputs, whether
+  the program satisfies its specification (contracts and loop invariants),
+  aggregated over all obligations: goals and lemmas, which must be valid, and
+  each `check-sat`, e.g. of `-chc`, which must be satisfiable. A refutation is
+  `incorrect`, unless the goal is `:abstract`, i.e., stronger than the
+  specification: a loop without invariant under `-vcgen`, the lowering of
+  `-fallback`.
 - **Data types:**
   - integers, exact rationals for `real`;
   - arrays, sequences (`seq<T>`, using cvc5's `Seq` theory);
@@ -153,30 +164,29 @@ Cuvée takes part in the categories ReachSafety-Arrays and ReachSafety-Loops
 (property `unreach-call`) of SV-COMP 2027 with
 
 ```sh
-./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 [-arch 32|64] task.c
+./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 -verify [-arch 32|64] task.c
 ```
 
-where no output means that the property holds, a goal that simplifies to
-`false` that it is violated, and other remaining goals are not refuted
-(unknown); Cuvée does not produce witnesses.
+where the answer is `correct` (the property holds), `incorrect` (it is
+violated), or `unknown`; Cuvée does not produce witnesses.
 
 In the demo category SV-LIB (property `correct-annotations`), the tasks are
 SV-LIB scripts (`.svlib`), which Cuvée verifies with
 
 ```sh
-./Cuvee.sh -chc -z3 -timeout 900000 task.svlib
+./Cuvee.sh -chc -z3 -timeout 900000 -verify task.svlib
 ```
 
-where `sat` means that all annotations hold and `unsat` that one is violated;
-`-vcgen -z3` checks the annotations as given instead, for validation tasks
-with the invariants of all loops. The frontend does not support labels and
+where each `verify-call` is answered `correct`, `incorrect`, or `unknown`;
+`-vcgen -z3` checks the annotations as given instead, which answers `unknown`
+for loops without invariant. The frontend does not support labels and
 gotos, `define-procs-rec`, the properties `:recurring` and `:not-recurring`, and
 witnesses, and it rejects
 tags on statements other than loops and procedure bodies (see
 [doc/architecture.md](doc/architecture.md) and [TODO.md](TODO.md)).
 
 - [cuvee.py](cuvee.py): the tool-info module of BenchExec, which interprets
-  this output; submitted to BenchExec as `benchexec/tools/cuvee.py`.
+  the answers of `-verify`; submitted to BenchExec as `benchexec/tools/cuvee.py`.
 - [benchmarks/sv-comp](benchmarks/sv-comp): Dafny translations of the tasks of
   both categories and C programs printed from them; `./benchmark
   xml/<definition>.xml -r <rundefinition> -t <tasks>` runs Cuvée and other

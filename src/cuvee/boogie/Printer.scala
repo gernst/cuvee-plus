@@ -96,6 +96,12 @@ object Printer extends cuvee.pipe.Printer:
       case Status.Unsat =>
         text("unsat")
 
+      case Status.Correct =>
+        text("correct")
+
+      case Status.Incorrect =>
+        text("incorrect")
+
       case Labels(labels) =>
         Group(text("labels") ~ Nest(2, line ~ commas(labels.map(text)))) ~ text(";")
 

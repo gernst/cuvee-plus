@@ -11,6 +11,8 @@
   <option name="-z3"/>
   <!-- z3 is limited by the time limit only, which this covers, since -timeout defaults to 1 s per query -->
   <option name="-timeout">900000</option>
+  <!-- the answers correct, incorrect, or unknown, which cuvee.py reads -->
+  <option name="-verify"/>
 
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">
