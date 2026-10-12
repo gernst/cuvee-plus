@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md); the ranges of the unsigned variables that the loops assign are loop invariants
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -23,6 +23,8 @@ int main(void) {
   unsigned int y = 0;
 
   /*@ loop invariant x <= 0x0fffffff;
+      loop invariant 0 <= x <= 4294967295;
+      loop invariant 0 <= y <= 4294967295;
       loop assigns x, y; */
   while (x < 0x0fffffff) {
     y = 0;

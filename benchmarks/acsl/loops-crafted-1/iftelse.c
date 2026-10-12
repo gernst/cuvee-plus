@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md); the ranges of the unsigned variables that the loops assign are loop invariants
 
 /*@ assigns \nothing;
     ensures \false; */
@@ -36,6 +36,9 @@ int main() {
       loop invariant i % 2 == 1 ==> 2*j == i + 3;
       loop invariant j + k == i;
       loop invariant i <= n + 2;
+      loop invariant 0 <= i <= 4294967295;
+      loop invariant 0 <= k <= 4294967295;
+      loop invariant 0 <= j <= 4294967295;
       loop assigns i, j, k; */
   while( i < n ) {
     i = i + 3;

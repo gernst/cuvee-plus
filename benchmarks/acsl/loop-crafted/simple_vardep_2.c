@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md); the ranges of the unsigned variables that the loops assign are loop invariants
 /* Benchmark used to verify Chimdyalwar, Bharti, et al. "VeriAbs: Verification by abstraction (competition contribution)." 
 International Conference on Tools and Algorithms for the Construction and Analysis of Systems. Springer, Berlin, Heidelberg, 2017.*/
 
@@ -29,6 +29,9 @@ int main()
 
   /*@ loop invariant j == 2*i;
       loop invariant k == 3*i;
+      loop invariant 0 <= i <= 4294967295;
+      loop invariant 0 <= j <= 4294967295;
+      loop invariant 0 <= k <= 4294967295;
       loop assigns i, j, k; */
   while (k < 0x0fffffff) {
     i = i + 1;

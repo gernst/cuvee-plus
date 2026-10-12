@@ -9,8 +9,8 @@ expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
   323 tasks expected `false` are removed). All have the contracts of the
   harness, 799 have loop invariants.
 - **Proved with Cuvée 0.40.0: 603 of the 838 true tasks**, none wrong
-  (60 s per task, Oct 12, 2026, see [Results](#results)); 693 with the
-  annotations revised since, by single runs. These results predate the
+  (60 s per task, Oct 12, 2026, see [Results](#results)); 744 with the
+  annotations revised since and Cuvée 0.41.6, by single runs. These results predate the
   answers of `-verify` (0.41.0), under which refuted annotations of true
   tasks are wrong verdicts (see [Running](#running)); not yet rerun.
 
@@ -47,9 +47,10 @@ copied. Changes since (Oct 12, 2026):
 ```
 
 The task set `C.unreach-call.Split` runs with `-split` in addition, for the
-tasks whose verification conditions z3 proves only as separate goals:
+tasks whose verification conditions z3 proves only as separate goals, listed
+in [split.set](split.set), which the other sets exclude:
 `array-programs/partial_mod_count_limited_gen` (18 s with `-split`, 252 s
-without), which the set `C.unreach-call.Arrays` excludes.
+without), `geo1/2/3-ll` with `unsigned long long` (32), `lcm2` (15).
 
 With `-verify` (since 0.41.0, see [doc/architecture.md](../../doc/architecture.md))
 Cuvée answers `correct`, `incorrect`, or `unknown`, which
@@ -98,6 +99,20 @@ followed by a note where they need explanation.
 - **Unsigned arithmetic** that wraps around is stated modulo its type
   (`sn == (2*x) % 4294967296`; `nla-digbench/geo*`, `lcm*`, `hard-u`,
   `dijkstra-u`, `knuth`).
+- **Ranges of unsigned variables** are loop invariants where a proof needs
+  them, `loop invariant 0 <= x <= 4294967295;`, written out for the 74 tasks
+  that relied on the implicit ones of Cuvée before 0.41.6 (each annotated
+  loop, each unsigned variable that it assigns, the maximum of its type and
+  data model).
+- **Nonlinear steps modulo 2^n** are logic functions with trusted lemmas
+  whose conclusions have the terms of the loop body, such that z3 instantiates
+  them (`%` and the wrap-around of C are interpreted, they are no triggers):
+  `g1`, `g2`, `g3` for the geometric sums of `geo1/2/3-ll` with `unsigned
+  long long` (`g_step`: the polynomial of the next iteration is `z` times
+  that of this one; `g3_init`, `g3_value`), `l2` for `lcm2` (`l2_left`,
+  `l2_right`, `l2_init`, `l2_value`, without a definition, which makes z3
+  give up on the linear goals). `lcm1` needs none: `a, b <= 65535` bounds
+  `x*u + y*v == a*b < 2^32`, the invariants are exact.
 - **Powers of 2 and 4** (`hard-ll`, `hard2`, `divbin`, `divbin2`,
   `dijkstra-u` of `nla-digbench*`, 50 tasks) are predicates of an
   `axiomatic`, not `\exists integer k; ... p == 1 << k`, whose witness z3 does
@@ -234,8 +249,8 @@ degree 3), and 5 are wrong `false` answers by the causes below (`heavy-2`,
 `unknown` to refutations through uninterpreted operators (see
 [TODO.md](../../TODO.md)).
 
-The 145 tasks that are not proved (235 of the run above, less the 90
-revised since), by cause:
+The 94 tasks that are not proved by single runs with Cuvée 0.41.6 (Oct 12,
+2026), by cause:
 
 - **Not supported by Cuvée** (50):
   - gotos to labels whose statement falls through, in the outputs of the
@@ -247,11 +262,13 @@ revised since), by cause:
   - arrays of pointers (`array-industry-pattern/array_ptr_partial_init`,
     `array-lopstr16/partial_lesser_bound`), pointer arithmetic
     (`loops/veris.c_NetBSD-libc_loop`).
-- **Timeouts and `Unknown` of z3** (in the run above; not analyzed per goal
-  yet, a timeout may also hide a matching loop or a weak annotation, as in
-  `divbin2`): nonlinear arithmetic in `nla-digbench*` (`lcm1`, `lcm2` 23,
-  `geo1/2/3-ll` 31 with `unsigned long long`, `prod4br-ll` 7, `prodbin-ll` 2,
-  `divbin_unwindbound` 3, `dijkstra-u` 10); `array-patterns/array26`, the
+- **Timeouts and `Unknown` of z3** (not analyzed per goal yet, a timeout may
+  also hide a matching loop or a weak annotation, as in `divbin2`):
+  nonlinear arithmetic in `nla-digbench*` (`lcm2` 11, which time out at
+  120 s under load with the lemmas above, `nla-digbench/lcm2` takes 37 s
+  alone; `prod4br-ll` 3, `divbin_unwindbound` 3, `dijkstra-u` 10);
+  `nla-digbench/prodbin-ll`, which proved with 0.40.0 in 2 s and times out
+  since 0.41.4, also without `-verify` (not bisected); `array-patterns/array26`, the
   parity of a count, `array1`,
   `3`, `4`, `6`, `7`, the lemmas with products and remainders;
   `array-multidimensional/add-2-n-u`, `add-3-n-u`, `diff-2-n-u`, `diff-3-n-u`,
@@ -260,12 +277,9 @@ revised since), by cause:
   array parameter for its caller, which needs in/out parameters (see
   [TODO.md](../../TODO.md)); `data_structures_set_multi_proc_*` (2) pass
   arrays to functions that change them.
-- **Uninitialized unsigned locals** in the `loop assigns` of a loop:
-  Cuvée checks the ranges of the unsigned variables that a loop modifies at
-  its entry, but does not assume an uninitialized local in the range of its
-  type (see [TODO.md](../../TODO.md)); `loops/vogal-1`, `heavy-2`,
-  `matrix-1`, `veris.c_sendmail_tTflag_arr_one_loop` prove with the locals
-  initialized.
+- **Not analyzed**: `loops/veris.c_sendmail_tTflag_arr_one_loop`, no longer
+  blocked by the implicit ranges of uninitialized locals (0.41.6, which also
+  makes `vogal-1`, `heavy-2`, `matrix-1` prove).
 - **A bug of the frontend**: `loops-crafted-1/watermelon` declares the
   globals `int true = 1; int false = 0;`, which reach z3 under these names
   and clash with its constants (a solver error, see [TODO.md](../../TODO.md)).

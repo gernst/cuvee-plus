@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md); the ranges of the unsigned variables that the loops assign are loop invariants
 
 
 
@@ -67,6 +67,9 @@ int main()
       loop invariant index1 < 100000;
       loop invariant index2 < 100000;
       loop invariant \forall integer t; \at(index1,LoopEntry) <= t < index1 ==> array[t] == array[index1 + index2 - t];
+      loop invariant 0 <= index1 <= 4294967295;
+      loop invariant 0 <= index2 <= 4294967295;
+      loop invariant 0 <= loop_entered <= 4294967295;
       loop assigns index1, index2, loop_entered; */
   while (index1 < index2) {
     __VERIFIER_assert((index1 < 100000) && (index2 < 100000));
@@ -81,6 +84,8 @@ int main()
         loop invariant index1 < 100000;
         loop invariant index2 < 100000;
         loop invariant \forall integer t; index2 <= t <= index1 ==> array[t] == array[index1 + index2 - t];
+        loop invariant 0 <= index1 <= 4294967295;
+        loop invariant 0 <= index2 <= 4294967295;
         loop assigns index1, index2; */
     while (index2 < index1) {
       __VERIFIER_assert(array[index1] == array[index2]);

@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the assertion is the negation of the loop condition
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the assertion is the negation of the loop condition; the ranges of the unsigned variables that the loops assign are loop invariants
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -29,6 +29,9 @@ int main()
   _Bool c1=__VERIFIER_nondet_bool(), c2=__VERIFIER_nondet_bool();
   
   /*@ loop invariant d1 == 1 && d2 == 1 && d3 == 1;
+      loop invariant 0 <= x1 <= 4294967295;
+      loop invariant 0 <= x2 <= 4294967295;
+      loop invariant 0 <= x3 <= 4294967295;
       loop assigns x1, x2, x3, c1, c2; */
   while(x1>0 && x2>0 && x3>0)
   {

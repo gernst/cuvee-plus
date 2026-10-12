@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin2; b is a power of 2 (B is 1) by the predicate pow2 of the axiomatic Pow2; the counter is at most 2 + 1 in the second loop, since the test of the first increments it also when it fails; r < b dropped, since the first loop may end by the bound; b = 2*b wraps to 0 once b is 2^31 (A is unbounded), hence b == 0 || pow2(b), and the trusted lemma pow2_wrap: 2^31 is the only power of 2 that wraps (goal-directed axioms; 1 << k is uninterpreted)
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin2; b is a power of 2 (B is 1) by the predicate pow2 of the axiomatic Pow2; the counter is at most 2 + 1 in the second loop, since the test of the first increments it also when it fails; r < b dropped, since the first loop may end by the bound; b = 2*b wraps to 0 once b is 2^31 (A is unbounded), hence b == 0 || pow2(b), and the trusted lemma pow2_wrap: 2^31 is the only power of 2 that wraps (goal-directed axioms; 1 << k is uninterpreted); the ranges of the unsigned variables that the loops assign are loop invariants
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -54,6 +54,7 @@ int main() {
     b = B;
     /*@ loop invariant q == 0 && r == A;
         loop invariant b == 0 || pow2(b);
+        loop invariant 0 <= b <= 4294967295;
         loop assigns b, counter;
         loop invariant 0 <= counter <= 2; */
     while (counter++<2) {
@@ -62,6 +63,9 @@ int main() {
     }
     /*@ loop invariant A == q*b + r;
         loop invariant b == 0 || pow2(b);
+        loop invariant 0 <= q <= 4294967295;
+        loop invariant 0 <= r <= 4294967295;
+        loop invariant 0 <= b <= 4294967295;
         loop assigns q, r, b, counter;
         loop invariant 0 <= counter <= 2 + 1; */
     while (counter++<2) {

@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin; the invariants are those of divbin2; b is B times a power of 2 by the predicate pow2mul of the axiomatic Pow2Mul (goal-directed axioms; 1 << k is uninterpreted)
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/divbin; the invariants are those of divbin2; b is B times a power of 2 by the predicate pow2mul of the axiomatic Pow2Mul (goal-directed axioms; 1 << k is uninterpreted); the ranges of the unsigned variables that the loops assign are loop invariants
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -57,6 +57,7 @@ int main() {
     /*@ loop invariant q == 0 && r == A;
         loop invariant b >= B;
         loop invariant pow2mul(b, B);
+        loop invariant 0 <= b <= 4294967295;
         loop assigns b; */
     while (1) {
         if (!(r >= b)) break;
@@ -66,6 +67,9 @@ int main() {
         loop invariant r < b;
         loop invariant b >= B;
         loop invariant pow2mul(b, B);
+        loop invariant 0 <= q <= 4294967295;
+        loop invariant 0 <= r <= 4294967295;
+        loop invariant 0 <= b <= 4294967295;
         loop assigns q, r, b; */
     while (1) {
         __VERIFIER_assert(A == q * b + r);

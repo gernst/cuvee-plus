@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): j is an int compared with the unsigned n, hence 0 <= j
+// ACSL annotations added by hand (benchmarks/acsl/README.md): j is an int compared with the unsigned n, hence 0 <= j; the ranges of the unsigned variables that the loops assign are loop invariants
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -31,6 +31,7 @@ int main() {
   if (!(n <= SIZE)) return 0;
   i = 0;
   /*@ loop invariant i <= n;
+      loop invariant 0 <= i <= 4294967295;
       loop assigns i; */
   while( i < n ) {
     i = i + 1;
@@ -46,6 +47,7 @@ int main() {
   /*@ loop invariant i <= n;
       loop invariant 0 <= j <= n;
       loop invariant k <= n;
+      loop invariant 0 <= k <= 4294967295;
       loop assigns k; */
   while( k < n ) {
     k = k+1;

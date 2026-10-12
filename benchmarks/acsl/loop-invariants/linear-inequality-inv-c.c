@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md); the ranges of the unsigned variables that the loops assign are loop invariants
 // This file is part of the SV-Benchmarks collection of verification tasks:
 // https://github.com/sosy-lab/sv-benchmarks
 //
@@ -25,6 +25,9 @@ int main() {
   /*@ loop invariant 0 <= i <= n;
       loop invariant s <= 65535*i;
       loop invariant v <= s;
+      loop invariant 0 <= v <= 65535;
+      loop invariant 0 <= s <= 4294967295;
+      loop invariant 0 <= i <= 4294967295;
       loop assigns i, v, s; */
   while (i < n) {
     v = __VERIFIER_nondet_ushort();

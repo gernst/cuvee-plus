@@ -1072,9 +1072,11 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     `\null` (`array-industry-pattern/array_ptr_partial_init`, `array-lopstr16/partial_lesser_bound`) end in
     "arrays of pointers are not supported".
   - Results: 603 of the 838 true tasks proved with 0.40.0 (60 s, Oct 12, 2026; 534 with 0.39.5), none wrong;
-    693 with the annotations of 90 tasks revised since (single runs; 37 of `hard-ll`, `hard2`, `divbin`, `divbin2`
-    with predicates for the powers of 2 instead of shifts, 41 refuted or weak annotations corrected, `\min` as a
-    conditional in `partial_mod_count_limited_*`, `partial_mod_count_limited_gen` with `-split`); the 323 tasks expected
+    744 with the annotations revised since and 0.41.6 (single runs, Oct 12, 2026; the powers of 2 as predicates, 41
+    refuted or weak annotations corrected, `\min` as a conditional, explicit ranges of unsigned variables where the
+    implicit ones of loops were needed, logic functions with trusted step lemmas for `geo*-ll` and `lcm2`, the tasks
+    of benchmarks/acsl/split.set with `-split`); `nla-digbench/prodbin-ll` and `geo2-ll_unwindbound1` time out since
+    0.41.4, which they did not with 0.40.0 (2 to 3 s), also without `-verify` (not bisected); the 323 tasks expected
     `false` are removed (Oct 12, 2026), 838 remain;
     per folder and the causes of the others in [benchmarks/acsl/README.md](benchmarks/acsl/README.md).
   - Done in 0.40.0: the parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks). The 95

@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the equality is stated modulo 2^64 since x and y are unsigned long long
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the equality is stated modulo 2^64 since x and y are unsigned long long, by the logic function g1 with the trusted lemma g1_step: the polynomial of the next iteration is z times that of this one
 /* 
 Geometric Series
 computes x=(z-1)* sum(z^k)[k=0..k-1] , y = z^k
@@ -31,6 +31,12 @@ void __VERIFIER_assert(int cond) {
     }
     return;
 }
+/*@ axiomatic Geo1 {
+  logic integer g1(integer x, integer y, integer z);
+  axiom g1_def: \forall integer x, y, z; g1(x, y, z) == (x*z - x - y + 1) % 18446744073709551616;
+  lemma g1_step: \forall integer x, y, z; g1(x, y, z) == 0 ==>
+    g1((unsigned long long)((unsigned long long)(x * (unsigned long long) z) + 1), (unsigned long long)(y * (unsigned long long) z), z) == 0;
+} */
 int main() {
     int z, k;
     unsigned long long x, y, c;
@@ -43,7 +49,9 @@ int main() {
     y = z;
     c = 1;
 
-    /*@ loop invariant (x*z - x - y + 1) % 18446744073709551616 == 0;
+    /*@ loop invariant g1(x, y, z) == 0;
+
+        loop invariant 0 <= x <= 18446744073709551615 && 0 <= y <= 18446744073709551615;
         loop invariant c >= 1;
         loop assigns x, y, c; */
     while (1) {

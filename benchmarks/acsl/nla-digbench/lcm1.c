@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the equality is stated modulo 2^32 since the variables are unsigned
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the equality is exact, since a, b <= 65535 and x, y >= 1 bound x*u, y*v, u + v by a*b < 2^32
 /*
  * algorithm for computing simultaneously the GCD and the LCM,
  * by Sankaranarayanan
@@ -47,16 +47,18 @@ int main() {
     u = b;
     v = 0;
 
-    /*@ loop invariant (x*u + y*v - a*b) % 4294967296 == 0;
-        loop invariant x >= 1 && y >= 1;
+    /*@ loop invariant x*u + y*v == a*b;
+        loop invariant 1 <= x <= 65535 && 1 <= y <= 65535 && 0 <= u && 0 <= v;
+        loop invariant x*u <= a*b && y*v <= a*b && u + v <= a*b && a*b <= 4294836225;
         loop assigns x, y, u, v; */
     while (1) {
         __VERIFIER_assert(x*u + y*v == a*b);
         if (!(x != y))
             break;
 
-        /*@ loop invariant (x*u + y*v - a*b) % 4294967296 == 0;
-            loop invariant x >= 1 && y >= 1;
+        /*@ loop invariant x*u + y*v == a*b;
+            loop invariant 1 <= x <= 65535 && 1 <= y <= 65535 && 0 <= u && 0 <= v;
+            loop invariant x*u <= a*b && y*v <= a*b && u + v <= a*b && a*b <= 4294836225;
             loop assigns x, y, u, v; */
         while (1) {
 	    __VERIFIER_assert(x*u + y*v == a*b);
@@ -66,8 +68,9 @@ int main() {
             v = v + u;
         }
 
-        /*@ loop invariant (x*u + y*v - a*b) % 4294967296 == 0;
-            loop invariant x >= 1 && y >= 1;
+        /*@ loop invariant x*u + y*v == a*b;
+            loop invariant 1 <= x <= 65535 && 1 <= y <= 65535 && 0 <= u && 0 <= v;
+            loop invariant x*u <= a*b && y*v <= a*b && u + v <= a*b && a*b <= 4294836225;
             loop assigns x, y, u, v; */
         while (1) {
 	    __VERIFIER_assert(x*u + y*v == a*b);

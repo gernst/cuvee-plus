@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/lcm2; the equality is stated modulo 2^32 since the variables are unsigned
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/lcm2; the equality is stated modulo 2^32, since 2*a*b and u + v exceed 2^32, by the logic function l2(x, y, u, v, a, b), which stands for (x*u + y*v - 2*a*b) % 2^32, characterized by trusted lemmas only (a definition makes z3 give up on the other goals): l2_init, l2_left and l2_right, the steps of the branches keep x*u + y*v, and l2_value, the assertion in C
 /* Algorithm for computing simultaneously the GCD and the LCM, by Dijkstra */
 
 /*@ assigns \nothing;
@@ -29,6 +29,16 @@ void __VERIFIER_assert(int cond) {
 }
 
 int counter = 0;
+/*@ axiomatic Lcm2 {
+  logic integer l2(integer x, integer y, integer u, integer v, integer a, integer b);
+  lemma l2_init: \forall integer a, b; l2(a, b, b, a, a, b) == 0;
+  lemma l2_left: \forall integer x, y, u, v, a, b; l2(x, y, u, v, a, b) == 0 ==>
+    l2((unsigned int)(x - y), y, u, (unsigned int)(v + u), a, b) == 0;
+  lemma l2_right: \forall integer x, y, u, v, a, b; l2(x, y, u, v, a, b) == 0 ==>
+    l2(x, (unsigned int)(y - x), (unsigned int)(u + v), v, a, b) == 0;
+  lemma l2_value: \forall integer x, y, u, v, a, b; l2(x, y, u, v, a, b) == 0 ==>
+    (unsigned int)((unsigned int)(x*u) + (unsigned int)(y*v)) == (unsigned int)((unsigned int)(2*a)*b);
+} */
 int main() {
     unsigned a, b;
     unsigned x, y, u, v;
@@ -45,8 +55,9 @@ int main() {
     u = b;
     v = a;
 
-    /*@ loop invariant (x*u + y*v - 2*a*b) % 4294967296 == 0;
-        loop invariant x >= 1 && y >= 1;
+    /*@ loop invariant l2(x, y, u, v, a, b) == 0;
+        loop invariant 1 <= x <= 4294967295 && 1 <= y <= 4294967295;
+        loop invariant 0 <= u <= 4294967295 && 0 <= v <= 4294967295;
         loop assigns x, y, u, v, counter;
         loop invariant 0 <= counter <= 2; */
     while (counter++<2) {

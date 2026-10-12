@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/geo3-ll; the equality is stated modulo 2^64 since x and y are unsigned long long
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/geo3-ll; the equality is stated modulo 2^64 since x and y are unsigned long long, by the logic function g3 with the trusted lemma g3_step: the polynomial of the next iteration is z times that of this one; g3_init: it is 0 modulo 2^64 initially
 /* 
 Geometric Series
 computes x = sum(z^k)[k=0..k-1], y = z^(k-1)
@@ -31,6 +31,13 @@ void __VERIFIER_assert(int cond) {
     return;
 }
 int counter = 0;
+/*@ axiomatic Geo3 {
+  logic integer g3(integer x, integer y, integer z, integer a, integer az);
+  axiom g3_def: \forall integer x, y, z, a, az; g3(x, y, z, a, az) == (z*x - x + a - az*y) % 18446744073709551616;
+  lemma g3_init: \forall integer x, z, a, az; x == (unsigned long long) a && az == a*z ==> g3(x, 1, z, a, az) == 0;
+  lemma g3_step: \forall integer x, y, z, a, az; az == a*z && g3(x, y, z, a, az) == 0 ==>
+    g3((unsigned long long)((unsigned long long)(x * (unsigned long long) z) + (unsigned long long) a), (unsigned long long)(y * (unsigned long long) z), z, a, az) == 0;
+} */
 int main() {
     int z, a, k;
     unsigned long long x, y, c;
@@ -44,7 +51,9 @@ int main() {
     c = 1;
     az = (long long) a * z;
 
-    /*@ loop invariant (z*x - x + a - az*y) % 18446744073709551616 == 0;
+    /*@ loop invariant g3(x, y, z, a, az) == 0;
+
+        loop invariant 0 <= x <= 18446744073709551615 && 0 <= y <= 18446744073709551615;
         loop invariant az == a*z;
         loop invariant c >= 1;
         loop assigns x, y, c, counter;

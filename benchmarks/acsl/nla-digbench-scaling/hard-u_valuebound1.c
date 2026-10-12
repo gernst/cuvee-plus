@@ -1,4 +1,4 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/hard-u; expected verdict false (d = 2*d overflows), the equalities are stated modulo 2^32
+// ACSL annotations added by hand (benchmarks/acsl/README.md): the invariants of nla-digbench/hard-u; expected verdict false (d = 2*d overflows), the equalities are stated modulo 2^32; the ranges of the unsigned variables that the loops assign are loop invariants
 /*
   hardware integer division program, by Manna
   returns q==A//B
@@ -48,6 +48,8 @@ int main() {
     /*@ loop invariant q == 0 && r == A;
         loop invariant (d - B*p) % 4294967296 == 0;
         loop invariant p >= 1;
+        loop invariant 0 <= d <= 4294967295;
+        loop invariant 0 <= p <= 4294967295;
         loop assigns d, p; */
     while (1) {
         __VERIFIER_assert(q == 0);
@@ -62,6 +64,10 @@ int main() {
     /*@ loop invariant (A - q*B - r) % 4294967296 == 0;
         loop invariant (d - B*p) % 4294967296 == 0;
         loop invariant p >= 1;
+        loop invariant 0 <= r <= 4294967295;
+        loop invariant 0 <= d <= 4294967295;
+        loop invariant 0 <= p <= 4294967295;
+        loop invariant 0 <= q <= 4294967295;
         loop assigns r, d, p, q; */
     while (1) {
         __VERIFIER_assert(A == q*B + r);
