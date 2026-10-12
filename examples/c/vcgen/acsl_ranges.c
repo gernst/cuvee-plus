@@ -1,6 +1,6 @@
 // ./Cuvee.sh -vcgen -z3 examples/c/vcgen/acsl_ranges.c
-// annotations of ACSL as in Frama-C/WP: the ranges of the unsigned variables that an annotated loop modifies are
-// invariants, and those of the unsigned parameters of a function with annotations are preconditions;
+// annotations of ACSL as in Frama-C/WP: the ranges of the unsigned parameters of a function with annotations are
+// preconditions, those of the unsigned variables that a loop modifies are stated by its invariants (not implicit);
 // \at(e, LoopEntry) is the value before the loop, \at(e, Pre) at the entry of the function, \valid is true;
 // & of truth values is their conjunction
 extern unsigned int __VERIFIER_nondet_uint(void);
@@ -12,6 +12,7 @@ unsigned int count(int a[], unsigned int n) {
   unsigned int x = n;
   unsigned int y = 0;
   /*@ loop invariant x + y == \at(x, LoopEntry);
+    @ loop invariant 0 <= x <= 4294967295 && 0 <= y <= 4294967295;
     @ loop assigns x, y;
     */
   while (x > 0) {
