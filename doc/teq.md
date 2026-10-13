@@ -178,10 +178,12 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   increasing and bounded values); and `strides.dfy` (`-include teq:strides`:
   the strided stores and stores ahead of the MonoCera benchmarks, see
   [benchmarks/monocera](../benchmarks/monocera), which fix the number of
-  stores and of cases on their left-hand sides).
-  The rules of these files never applied on SV-COMP and specific to one task
-  stay in the legacy file, among them `mods`, the counters modulo `m` of the
-  unsigned variables of C, which the C examples do not need under `-prove`.
+  stores and of cases on their left-hand sides); and `unsigned.dfy`
+  (`-include teq:unsigned`: `mods(i, c, m, n)`, the counter modulo `m` of the
+  unsigned variables of C, whose arithmetic wraps around, with the bounds of
+  its iteration constraints below `m` and its final values). The rules of
+  these files never applied on SV-COMP and specific to one task stay in the
+  legacy file.
   Not migrated: `teq:nested`, the fragments of inner loops (the inner counter,
   its final value, its iteration constraint, its exit stated on the constraint
   fragment `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, the numbers of

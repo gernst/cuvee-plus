@@ -44,6 +44,17 @@ statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a gui
   algorithms, perm, lower_bound and affine close now, is_sorted, reverse, lsearch, nested_* and others have fewer
   goals; bubble_sort, insertion_sort and insertion_sort2 loop with `teq:sorted` and without `teq:nested`, so they keep
   `teq:nested`; cocktail_sort and counting_sort do not terminate (deferred).
+- After the first full run on SV-COMP (Oct 13, 60 s, against 0.42.1 of Oct 12: Arrays 139 to 105 correct, Loops
+  141 to 128, no wrong answers): `sum_add` matched a single negated summand `-e` as `-e + 0` and did not terminate
+  on 13 tasks (zero_sum and others); the matcher no longer gives the empty sum to a negation of one summand, and
+  `sum_add` comes after `sum_neg` and `sum_scale` again, as in the legacy file. `mods` and its rules, which the
+  migration of counters had dropped, are the module `teq:unsigned` (proposed above), which wins back 16 of the 24
+  Loops tasks lost to unknown; two forward lemmas replace rules whose forms `-prove` no longer produces:
+  `natural_positive` in teq.dfy (`natural(x) != zero` for `0 < x`, const_1-1, const_1-2, large_const) and
+  `triangle_even`, `triangle_even_below` in arithmetic (the halved triangles are exact, gauss_sum, for which
+  `double_eq_half` no longer matches). Still open for want of the engine: while_infinite_loop_4 (a goal refuted by
+  substituting `n := zero`), sum_by_3 and in-de20 (the premise `n == zero || integer(n) < 1` of the `_cases` rules
+  of `mods` is not split).
 - Next: retiring nested (a rewrite of the lemmas of the three sorts), the remaining conversions to forward lemmas,
   the firing at definitions (step 3 of J) before more forward lemmas.
 

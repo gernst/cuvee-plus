@@ -23,6 +23,7 @@ or solvers consume.
 - [doc/style.md](doc/style.md): coding style, incl. lowercase comments that
   explain why.
 - [doc/options.md](doc/options.md): the command line options.
+- [doc/benchmarks.md](doc/benchmarks.md): runs in the VerifierCloud, definitions, results, comparison scripts.
 - [TODO.md](TODO.md): open problems and the user's instructions.
 - [ideas/](ideas): proposals and experiments, not implemented (index in ideas/README.md).
 

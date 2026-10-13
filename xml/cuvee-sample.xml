@@ -15,6 +15,7 @@
   <option name="-include">teq:search</option>
   <option name="-include">teq:sorted</option>
   <option name="-include">teq:strides</option>
+  <option name="-include">teq:unsigned</option>
   <option name="-prove"/>
   <option name="-split"/>
   <option name="-prove"/>

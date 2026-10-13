@@ -137,6 +137,13 @@ lemma {:rw} {:teq} natural_nonpositive(x: int)
   requires x <= 0
   ensures natural(x) == zero
 
+// a positive number of iterations is not zero, as a fact where natural(x) occurs, e.g. for a loop of a literal number
+// of iterations whose exit n == zero is assumed together with n == natural(1024)
+// (from const_1-1, const_1-2)
+lemma {:fw} {:teq} natural_positive(x: int)
+  requires 0 < x
+  ensures natural(x) != zero
+
 // the number of iterations of an inner loop determined by its value, e.g. by the test and the exit of the loop; for the
 // value 0, zero_integer comes first, whose normal form n == zero this would rewrite to again
 lemma {:rw} {:teq} integer_eq(n: Nat, x: int)

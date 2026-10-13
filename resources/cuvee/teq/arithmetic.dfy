@@ -65,3 +65,12 @@ lemma {:fw} {:teq} triangle_nonneg(x: int)
 
 lemma {:fw} {:teq} triangle_nonneg_below(x: int)
   ensures 0 <= (-x + x * x) / 2
+
+// the triangles are exact, x * (x + 1) and x * (x - 1) being even, which the linear arithmetic needs where they are
+// halved and doubled again, e.g. 2 * s == n * (n + 1) for the sum s of 1, ..., n
+// (from gauss_sum)
+lemma {:fw} {:teq} triangle_even(x: int)
+  ensures 2 * ((x + x * x) / 2) == x + x * x
+
+lemma {:fw} {:teq} triangle_even_below(x: int)
+  ensures 2 * ((-x + x * x) / 2) == -x + x * x

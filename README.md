@@ -129,12 +129,13 @@ lists them.
   with `{:fold}`, whose definition is a rule that folds such a trace into
   the function.
   Loop-free programs go directly to a solver,
-  loops need rewriting by lemmas first: `-teq` injects the modules of a lemma
-  database ([resources/cuvee/teq](resources/cuvee/teq): `core`, `arithmetic`,
-  `counters`, `aggregation`, `arrays`, `search`) once at the beginning of its
-  output, whose rewrite rules `-simplify` applies, e.g. the counter lemma;
-  `-include teq:<concept>` adds a further module (`nested`, `sorting`,
-  `strides`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
+  loops need rewriting by lemmas first: `-teq` injects the lemma database
+  [teq.dfy](resources/cuvee/teq.dfy) once at the beginning of its output,
+  whose rewrite rules `-prove` applies, e.g. the counter lemma;
+  `-include teq:<concept>` adds a module of
+  [resources/cuvee/teq](resources/cuvee/teq) (`aggregation`, `arithmetic`,
+  `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`, and the
+  unmigrated `nested`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
   `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`) are proved in Lean 4 ([lean/](lean)), except
   the bisection of `search` (lean/open.txt), against
   statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
@@ -245,7 +246,7 @@ below and [doc/architecture.md](doc/architecture.md)). The runs included the mod
   xml/<definition>.xml -r <rundefinition> -t <tasks>` runs Cuvée and other
   verifiers on them and on the original tasks with BenchExec, whose results
   [scripts](scripts) summarize (`table.py`, `scatter.py`, `quantile.py`,
-  `rules.py`). [SV-COMP.md](SV-COMP.md) records the results and the
+  `rules.py`, `compare.py`; see [doc/benchmarks.md](doc/benchmarks.md)). [SV-COMP.md](SV-COMP.md) records the results and the
   limitations found.
 - [archive](archive): the README, `smoketest.sh`, and examples of the archive
   for the competition; `scripts/zenodo.py package` builds `dist/cuvee.zip`
