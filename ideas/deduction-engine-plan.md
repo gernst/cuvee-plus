@@ -292,7 +292,7 @@ binary search and about half the rewrite steps of the sorted search. Half a day.
 `bsearch_sorted.dfy` (both kept for now), lower_bound closes (8 s); the matcher matches traces of several
 accumulators, component reads and lambdas; the repeated firing of J stays while the two-layer version is kept. As written, the guards
 are higher-order in the midpoint, `G((hi + lo) / 2)`, bound by abstraction; `P` and `Q` are named by the lemma as
-the cuts `cut(G, l0, h0)` and `cut2(H, l0, h0)` of the guards, which rules on sortedness rewrite to the partition
+the cuts `cut(G, l0, h0)` and `cut((j: int) => !H(j), l0, h0)` of the guards, which rules on sortedness rewrite to the partition
 points (`cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)`), since a variable of the conclusion that only a
 quantified condition mentions cannot be bound by matching. The forward instances are simplified before they are
 assumed, which brings the cut to the partition point.

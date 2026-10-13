@@ -642,17 +642,17 @@ $\mathsf{incs}$ and $\mathsf{decs}$ are replaced by two functions and four lemma
 the guard:
 \begin{lstlisting}
 function cut(G: int -> bool, l: int, h: int): int
-function cut2(H: int -> bool, l: int, h: int): int
 \end{lstlisting}
-For a predicate $G$ that holds on a prefix of $[l, h)$, $\mathsf{cut}(G, l, h)$ is the first index where it fails,
-and for a predicate $H$ that holds on a suffix, $\mathsf{cut2}(H, l, h)$ is the first index where it holds. On a
-sorted array, the cuts of the comparisons with $y$ are the partition points:
+For a predicate $G$ that holds on a prefix of $[l, h)$, $\mathsf{cut}(G, l, h)$ is the first index where it fails.
+A predicate $H$ that holds on a suffix has the cut of its negation, the first index where $H$ holds. On a sorted
+array, the cut of the comparison with $y$ is the partition point:
 \begin{lstlisting}
 lemma {:rw} cut_lower(ar: array<int, int>, len: int, y: int)
   requires sorted(ar, len) && 0 <= len
   ensures cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)
 \end{lstlisting}
-and \lemma{cut\_upper} likewise for $(j: int) \Rightarrow y < ar[j]$ and $\mathsf{upper}$.
+The other partition point is a cut of the same kind: on the integers, $\neg(y < ar[j])$ is $ar[j] < y + 1$, so
+\lemma{lower\_succ} states $\mathsf{lower}(ar, len, y + 1) = \mathsf{upper}(ar, len, y)$.
 
 \paragraph{The bisection.} A bisection of $[l_0, h_0)$ moves $lo$ above the midpoint where a guard $G$ holds and
 $hi$ down to it where $H$ holds, in iterations where $lo < hi$:
@@ -668,8 +668,8 @@ lemma {:fw} bisect_1(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool, H
        <= cut(G, l0, h0)
 \end{lstlisting}
 If $G$ holds on a prefix, $lo$ stays within $l_0$ and the cut of $G$: it passes a midpoint only where $G$ holds,
-hence on all indices up to it. \lemma{bisect\_2} states $\mathsf{cut2}(H, l_0, h_0) \le \cur(\ldots).1 \le h_0$ if
-$H$ holds on a suffix. The guards are higher-order in the midpoint. The conjunct $lo < hi$ is not in the program's
+hence on all indices up to it. \lemma{bisect\_2} states
+$\mathsf{cut}((j) \Rightarrow \neg H(j), l_0, h_0) \le \cur(\ldots).1 \le h_0$ if $H$ holds on a suffix. The guards are higher-order in the midpoint. The conjunct $lo < hi$ is not in the program's
 guards; it follows from the iteration constraint in the context of the update, which makes the lemma sound for
 iterations of a loop with the test $lo < hi$.
 
@@ -684,7 +684,8 @@ are now closed:
 \]
 and the dual one for $H$. The engine decides them by the rules on sortedness, which apply within the range of the
 premise: $a[q] < x \rw q < P$ and $a[p] < x \rw p < P$, and $p \le q < P$ gives $p < P$. The instance is simplified
-before it is assumed, which rewrites the cuts by \lemma{cut\_lower} and \lemma{cut\_upper}:
+before it is assumed: the negation $\neg(x < a[j])$ becomes $a[j] < x + 1$, and the cuts are rewritten by
+\lemma{cut\_lower}, to $P$ and to $\mathsf{lower}(a, n, x + 1)$, which \lemma{lower\_succ} rewrites to $Q$:
 \begin{align*}
 &0 \le \cur(S).0 \le P &&\text{by \lemma{bisect\_1}},\\
 &Q \le \cur(S).1 \le n &&\text{by \lemma{bisect\_2}}.
@@ -692,9 +693,8 @@ before it is assumed, which rewrites the cuts by \lemma{cut\_lower} and \lemma{c
 These are the four bounds that the two layers derived. The rest of the proof is as above: $i$ stays $-1$, the exit
 closes by $hi' \le lo' \le P \le Q \le hi'$, and the found case by $P \le m' < Q \le n$.
 
-The run uses eleven lemmas, all eight of the file and three of the database on constant traces. It assumes 56
-forward instances, computes 131 views of components, has 282 rewrite steps in its log, and takes about 11 seconds
-against 45. The rules on sortedness are the same; what is gone is the layering, since no view has to be computed
+The run uses eleven lemmas, all eight of the file and three of the database on constant traces, and takes about
+12 seconds against 45. The rules on sortedness are the same; what is gone is the layering, since no view has to be computed
 before and after the invariants are known.
 
 \subsection{What this example shows, and what it does not}

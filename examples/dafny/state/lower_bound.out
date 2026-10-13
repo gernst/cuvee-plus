@@ -16,17 +16,10 @@ lemma {:rw} lower_le(ar: array<int, int>, len: int, y: int, m: int)
 
 function cut(G: int -> bool, l: int, h: int): int
 
-function cut2(H: int -> bool, l: int, h: int): int
-
 lemma {:rw} cut_lower(ar: array<int, int>, len: int, y: int)
   requires sorted(ar, len)
   requires 0 <= len
   ensures cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)
-
-lemma {:rw} cut_le(ar: array<int, int>, len: int, y: int)
-  requires sorted(ar, len)
-  requires 0 <= len
-  ensures cut2((j: int) => y <= ar[j], 0, len) == lower(ar, len, y)
 
 lemma {:fw} bisect_1(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool,
                      H: int -> bool)
@@ -56,7 +49,7 @@ lemma {:fw} bisect_2(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool,
   requires l0 <= h0
   requires forall p: int, q: int :: l0 <= p <= q < h0 && H(p) ==> H(q)
   ensures
-    cut2(H, l0, h0)
+    cut((j: int) => !H(j), l0, h0)
       <= current(trace(l0, h0,
                        for ⌊counter(i, c, m)⌋
                        do lo, hi, k ::

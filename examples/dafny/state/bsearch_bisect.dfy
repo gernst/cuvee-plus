@@ -9,7 +9,7 @@
 // bisect_1 and bisect_2 abstract as a whole: a bisection of [l0, h0) whose guards G and H hold on a prefix and a
 // suffix keeps lo below the cut of G and hi above that of H (forward facts at current(S).0 and current(S).1); the
 // conditions are decided by the rules on sortedness within the range of their premise, and the cuts of the
-// comparisons with x are the partition points (cut_lower, cut_upper); the midpoint (h + l) / 2 is bounded by the
+// comparisons with x are the partition points (cut_lower, lower_succ); the midpoint (h + l) / 2 is bounded by the
 // linear arithmetic
 
 function sorted(ar: array<int, int>, len: int): bool
@@ -37,24 +37,23 @@ lemma {:fw} bounds(ar: array<int, int>, len: int, y: int)
   requires sorted(ar, len) && 0 <= len
   ensures 0 <= lower(ar, len, y) && lower(ar, len, y) <= upper(ar, len, y) && upper(ar, len, y) <= len
 
-// the cut of a predicate G that holds on a prefix of [l, h): the first index where it fails, h if none; and the cut
-// of a predicate H that holds on a suffix: the first index where it holds, h if none
+// the cut of a predicate G that holds on a prefix of [l, h): the first index where it fails, h if none; a predicate
+// H that holds on a suffix has the cut of its negation, the first index where H holds
 function cut(G: int -> bool, l: int, h: int): int
 
-function cut2(H: int -> bool, l: int, h: int): int
-
-// the cuts of the comparisons with y on a sorted array are its partition points
+// the cut of the comparison with y on a sorted array is its partition point; the negation of the other guard,
+// !(y < ar[j]), is ar[j] <= y, which is ar[j] < y + 1 on Int, whose partition point is upper(ar, len, y)
 lemma {:rw} cut_lower(ar: array<int, int>, len: int, y: int)
   requires sorted(ar, len) && 0 <= len
   ensures cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)
 
-lemma {:rw} cut_upper(ar: array<int, int>, len: int, y: int)
-  requires sorted(ar, len) && 0 <= len
-  ensures cut2((j: int) => y < ar[j], 0, len) == upper(ar, len, y)
+lemma {:rw} lower_succ(ar: array<int, int>, len: int, y: int)
+  requires sorted(ar, len)
+  ensures lower(ar, len, y + 1) == upper(ar, len, y)
 
 // a bisection of [l0, h0): while lo < hi, the midpoint moves lo above it where G holds and hi down to it where H
 // holds; if G holds on a prefix of [l0, h0), lo stays within l0 and the cut of G, and if H holds on a suffix, hi
-// stays within the cut of H and h0; the guards are higher-order in the midpoint, bound to the guards of the program
+// stays within the cut of its negation and h0; the guards are higher-order in the midpoint, bound to the guards of the program
 // by abstraction, and lo < hi follows from the iteration constraint in the update
 lemma {:fw} bisect_1(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool, H: int -> bool)
   requires l0 <= h0
@@ -67,7 +66,7 @@ lemma {:fw} bisect_1(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool, H
 lemma {:fw} bisect_2(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool, H: int -> bool)
   requires l0 <= h0
   requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && H(p) ==> H(q)
-  ensures cut2(H, l0, h0) <= current(trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
+  ensures cut((j: int) => !H(j), l0, h0) <= current(trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
           case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1 case H((hi + lo) / 2) && lo < hi => lo,
           case G((hi + lo) / 2) && lo < hi => hi case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).1
        <= h0

@@ -153,7 +153,7 @@ short:
    - step 3 of J: forward lemmas on traces fired where a trace is defined, with a memo per lemma and canonical
      term; the repeated firing at the same terms, needed only by the two layers of bsearch_sorted.dfy, goes with that
      version;
-   - the bisection lemmas (`cut`, `cut2`, `bisect_1`, `bisect_2`) and the partition points of sorted arrays into the
+   - the bisection lemmas (`cut`, `bisect_1`, `bisect_2`) and the partition points of sorted arrays into the
      database, once a second program uses them beyond the two binary searches;
    - step 2 of J: the `invs` instances at reads;
    - is_sorted under `-teq-state -prove` ends in "rewriting does not terminate" (already in 0.44.3; it left one
@@ -325,7 +325,8 @@ scripts/prove/slow.sh       # on request or before a commit: the transpose, the 
   `⌊T⌋.i` of a pattern matches that of a variable through its definition; lambdas match lambdas. The lemmas
   `bisect_1`, `bisect_2` (forward facts at `current(S).0`, `current(S).1`): a bisection of `[l0, h0)` whose guards
   `G((hi + lo) / 2) && lo < hi` and `H(...)` hold on a prefix and a suffix (closed quantified conditions, decided by
-  the rules on sortedness within their range) keeps `l0 <= lo <= cut(G, l0, h0)` and `cut2(H, l0, h0) <= hi <= h0`;
+  the rules on sortedness within their range) keeps `l0 <= lo <= cut(G, l0, h0)` and `cut((j: int) => !H(j), l0, h0) <= hi <= h0` (one cut for both ends,
+  `lower(a, n, x + 1) == upper(a, n, x)` for the negated guard);
   the cuts are rewritten to the partition points by rules with a lambda on the left, which needed the forward
   instances simplified before they are assumed. `P` and `Q` cannot be variables of the lemma: a variable that only a
   quantified condition mentions is not bound by matching facts. bsearch_bisect.dfy closes in 11 s with 282 log
