@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -prove examples/dafny/algorithms/fragments.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -prove examples/dafny/algorithms/fragments.dfy
 // generic lemmas on the fragments of the iteration constraint of an outer loop that describe an inner loop, which
 // do by rewriting what the sharing of facts between fragments (reverted in cb7aed7) did in the simplifier; the two
 // methods are the facts of invs_counter_equation.dfy and invs_fragments.dfy, the minimal forms of the two problems

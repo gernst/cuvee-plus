@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/merge.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/merge.dfy
 // the merge of the sorted ranges a[0..m) and b[0..n) into c[0..m + n): a single loop over k == i + j with two
 // data-dependent pointers i and j, and a conditional store; the permutation is stated by the counts of each value
 // (a multiset), since the elements move between arrays

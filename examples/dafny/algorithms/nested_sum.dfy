@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/nested_sum.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/nested_sum.dfy
 // the result of the inner loop is used once per outer iteration: c is the sum of m times n
 //
 // status: verified with -teq -simplify by the generic fragment lemmas of fragments.dfy, which rewrite the fragments

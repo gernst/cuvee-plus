@@ -158,14 +158,14 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `arithmetic`, `counters`, `aggregation`, `arrays`, `search` in this order,
   and `nested`, `sorting`, `strides` were optional); they are migrated file by
   file into modules over teq.dfy alone (see
-  [ideas/teq-modules.md](../ideas/teq-modules.md)). `core.dfy`, the
-  declarations and the definitions that several modules share, is migrated:
-  teq.dfy has all of them (`sum`, `parity`, `max`, `min`, `count`, `pow`,
-  `distincts`, `selects`), the file is in `legacy/`; so are `aggregation.dfy`
-  (`-include teq:aggregation`: counts, maxima, minima, the linearity of sums,
-  indicators) and `arithmetic.dfy` (`-include teq:arithmetic`: the rules that
-  the arithmetic of `-prove` does not decide on its own), migrated as modules
-  over teq.dfy. The others still declare
+  [ideas/teq-modules.md](../ideas/teq-modules.md)). Migrated so far:
+  `core.dfy`, whose declarations went into teq.dfy (`distincts`, `selects`)
+  and into the modules of their concept, the file is in `legacy/`;
+  `aggregation.dfy` (`-include teq:aggregation`: the functions `sum`, `count`,
+  `max`, `min`, `parity` and the traces `sums`, `parities`, `counts`, `maxs`,
+  `mins`, with the linearity of sums, indicators and bounds); and
+  `arithmetic.dfy` (`-include teq:arithmetic`: `pow` and the rules that the
+  arithmetic of `-prove` does not decide on its own). The others still declare
   functions that teq.dfy declares as well, or refer to each other, and cannot
   be included with teq.dfy until they are migrated. What they hold: `counters.dfy`
   `mods(i, c, m, n)`, the counter modulo `m` of the unsigned variables of C,

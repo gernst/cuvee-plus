@@ -1,11 +1,83 @@
-// aggregation: counts, maxima and minima as traces and as functions of lists, with their acceleration (current,
-// earlier), linearity of sums, indicators, and bounds, and the abstraction of an iteration constraint by consts_prefix;
-// an optional module over teq.dfy alone (-include teq:aggregation), migrated on Oct 13, 2026 from the module of the
-// per-variable form (in legacy/teq.dfy): the sums, the shared declarations (count, max, min, parity) and their basic
-// lemmas are in teq.dfy, the rules that were never applied on SV-COMP and are specific to one task are left in the
-// legacy file (below_prefix, nonneg_prefix, parities, the maxima and minima of counters and constants, the prefixes
-// of maxima, minima and counts, the indicators of two dependencies, the updates of selects, sum_squares); the bounds
-// of counts and of the prefix maxima and minima by their initial value are forward lemmas, facts about the term
+// aggregation: sums, parities, counts, maxima and minima as traces and as functions of lists, with their
+// acceleration (current, earlier), linearity of sums, indicators, and bounds, and the abstraction of an iteration
+// constraint by consts_prefix; an optional module over teq.dfy alone (-include teq:aggregation), migrated on Oct 13,
+// 2026 from the module of the per-variable form (in legacy/teq.dfy), with the functions sum, count, max, min, parity
+// and the sums of the former core.dfy and teq.dfy, and the parities; the rules that were never applied on SV-COMP and
+// are specific to one task are left in the legacy file (below_prefix, nonneg_prefix, the maxima and minima of counters
+// and constants, the prefixes of maxima, minima and counts, the indicators of two dependencies, the updates of
+// selects, sum_squares); the bounds of counts and of the prefix maxima and minima by their initial value are forward
+// lemmas, facts about the term
+
+// the functions of lists and integers that the aggregates fold
+// the sum of a list
+function {:teq} sum(values: List<int>): int
+{
+  match values
+  case nil => 0
+  case cons(v, vs) => v + sum(vs)
+}
+
+// the parity of a list, the number of even minus the number of odd elements
+function {:teq} parity(values: List<int>): int
+{
+  match values
+  case nil => 0
+  case cons(v, vs) => (if v % 2 == 0 then 1 else -1) + parity(vs)
+}
+
+// the maximum and the minimum
+function {:teq} max(m: int, n: int): int
+{
+  if m <= n then n else m
+}
+
+function {:teq} min(m: int, n: int): int
+{
+  if m <= n then m else n
+}
+
+// the number of occurrences of a value in a list
+function {:teq} count<a>(e: a, vs: List<a>): int
+{
+  match vs
+  case nil => 0
+  case cons(v, ws) => (if v == e then 1 else 0) + count(e, ws)
+}
+
+// sums: the fold comes after the counter lemmas of teq.dfy, since a counter is a trace of sums of ones as well
+
+function {:teq} {:fold} sums(x: int, values: List<int>): Trace<int>
+{
+  trace(x, for values do s, v :: s + v)
+}
+
+lemma {:rw} {:teq} current_sums(x: int, values: List<int>)
+  ensures current(sums(x, values))
+    == x + sum(values)
+
+lemma {:rw} {:teq} earlier_sums(j: Nat, x: int, values: List<int>)
+  ensures earlier(j, ⌊sums(x, values)⌋)
+    == x + sum(prefix(j, values))
+
+lemma {:rw} {:teq} prefix_sums(k: Nat, x: int, values: List<int>)
+  ensures prefix(k, ⌊sums(x, values)⌋)
+    == ⌊sums(x, prefix(k, values))⌋
+
+lemma {:rw} {:teq} sum_empty()
+  ensures sum(nil)
+    == 0
+
+lemma {:rw} {:teq} sum_consts(n: Nat, x: int)
+  ensures sum(⌊consts(n, x)⌋)
+    == x * integer(n)
+
+lemma {:rw} {:teq} sum_add(xs: List<int>, ys: List<int>)
+  ensures sum(maps(for xs, ys yield v, w :: v + w))
+    == sum(xs) + sum(ys)
+
+lemma {:rw} {:teq} sum_counter(i: int, c: int, n: Nat)
+  ensures sum(⌊counter(i, c, n)⌋)
+    == (2 * i + (integer(n) - 1) * c) * integer(n) / 2
 
 // the first n values of js are all c
 function {:teq} consts_prefix(n: Nat, c: int, js: List<int>): bool
@@ -160,3 +232,13 @@ lemma {:fw} {:teq} current_mins_initial(x: int, values: List<int>)
 
 lemma {:rw} {:teq} current_mins_earlier(k: Nat, x: int, values: List<int>)
   ensures current(mins(x, values)) <= earlier(k, values)
+
+// the prefix parities starting with an initial value
+function {:teq} {:fold} parities(x: int, values: List<int>): Trace<int>
+{
+  trace(x, for values do s, v :: case v % 2 == 0 => s + 1 case v % 2 != 0 => s - 1)
+}
+
+lemma {:rw} {:teq} current_parities(x: int, values: List<int>)
+  ensures current(parities(x, values))
+    == x + parity(values)

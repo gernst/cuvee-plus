@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/counting_sort.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/counting_sort.dfy
 // counting sort of a[0..n) with keys in [0, k): a histogram, its prefix sums as the starting positions, and the
 // scatter of the elements; three loops in sequence, whose summaries feed each other
 //

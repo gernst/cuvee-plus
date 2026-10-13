@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/distinct.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/distinct.dfy
 // whether the elements of a[0..n) are pairwise distinct, by a nested loop that resets a flag at a duplicate; the
 // postcondition uses distincts of teq.dfy on the values at the positions of a counter
 //

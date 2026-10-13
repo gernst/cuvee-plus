@@ -24,6 +24,10 @@ statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a gui
   follow by the simplex, so those two rules are gone. A goal that is a bare atom needs the forward lemmas to fire
   when the atom is decided, which `-prove` does now for comparisons and equations at positions with a polarity
   (`Simplify.forward`). No example changes with the module; the benchmark definitions include both migrated modules.
+- Regrouped (Oct 13, the user's wish): `sum`, `count`, `max`, `min`, `parity` and the sums with their lemmas moved
+  from teq.dfy into aggregation.dfy, `parities` back from legacy; `pow` into arithmetic.dfy. Eleven examples that
+  used them include `teq:aggregation` now (fallback_recursion also `teq:arithmetic`), with unchanged results except
+  counting_sort, which does not terminate on another rule now.
 - Next: search and sorted (with the bisection and the partition points of examples/dafny/state), arrays, then
   counters (`unsigned`), strides, and retiring nested.
 

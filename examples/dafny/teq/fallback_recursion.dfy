@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry recursion -fallback examples/dafny/teq/fallback_recursion.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -include teq:arithmetic -entry recursion -fallback examples/dafny/teq/fallback_recursion.dfy
 // the recursive definitions of teq.dfy by a match on a list or a natural, unfolded once per position: sum, count, and
 // occurs over the list xs, a function of a position each, pow over the natural n, a function of the steps up to n
 

@@ -48,11 +48,11 @@ object TEQ extends TestSuite:
           assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
 
     // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy;
-    // that of s, which the lemma on sums rewrites, is unused, its equation vanishes by the one-point rule;
-    // the invariant over the counter is rewritten as well, such that only arithmetic remains
+    // that of s, which the lemma on sums of the module aggregation rewrites, is unused, its equation vanishes by the
+    // one-point rule; the invariant over the counter is rewritten as well, such that only arithmetic remains
     test("lemmas"):
       val sum = Examples.root / "dafny" / "vcgen" / "sum.dfy"
-      val (cmds, errors) = Examples.stream("-teq", "-simplify", "-print", "null", sum.toString)
+      val (cmds, errors) = Examples.stream("-teq", "-include", "teq:aggregation", "-simplify", "-print", "null", sum.toString)
       errors ==> Nil
       assert(cmds.exists { case DefineFun(fun, _, _) => fun == Fun.trace.counter; case _ => false })
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked

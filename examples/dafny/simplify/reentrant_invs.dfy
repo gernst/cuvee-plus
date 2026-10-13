@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -prove examples/dafny/simplify/reentrant_invs.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -prove examples/dafny/simplify/reentrant_invs.dfy
 // a rule with a general left-hand side and an iteration constraint as its side condition, the former sum_invs_const
 // of the lemma database: the condition is matched against the invs facts of the goal, which builds the context of
 // each fact's combinator and normalizes the reads of its dependencies, where earlier_sums turns the read of the trace

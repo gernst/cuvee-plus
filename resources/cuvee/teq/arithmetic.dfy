@@ -6,7 +6,15 @@
 // SV-COMP (natural_one, natural_two, integer_one, integer_two, and div_quotient_remainder, which does not match the
 // product k * m of the normal form of -prove), and the sums with a nonnegative d of the triangle
 // bounds, which follow from these as forward facts by the linear arithmetic; the bounds of the triangles are forward
-// facts about their term, the others rewrite rules
+// facts about their term, the others rewrite rules; the function pow of the former core.dfy is declared here
+
+// powers, which are not unfolded
+function {:teq} pow(c: int, n: Nat): int
+{
+  match n
+  case zero => 1
+  case succ(m) => c * pow(c, m)
+}
 
 // a positive number divides itself
 // (from modn, modnf)

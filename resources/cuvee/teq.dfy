@@ -3,8 +3,8 @@
 // as they expect), the functions on lists that the lemmas need, and the lemmas about the traces of trace equation
 // systems (one trace per strongly connected component of the variables of a loop), which the engine of -prove
 // applies; started Oct 12, 2026 as the module state.dfy of -teq-state with the lemmas that the examples of
-// examples/dafny/state need, copied from the modules of the per-variable form, and the declarations that several
-// optional modules share from their former core.dfy (distincts, parity, max, min, count, pow); the optional modules of
+// examples/dafny/state need, copied from the modules of the per-variable form, and distincts from the former core.dfy
+// (sum, count, max, min, parity and the sums are in the module aggregation, pow in arithmetic); the optional modules of
 // resources/cuvee/teq are injected on demand by -include teq:<name>, the former single file of the per-variable form
 // is kept in resources/cuvee/legacy/teq.dfy, not injected
 
@@ -95,49 +95,6 @@ function {:teq} consts<a>(n: Nat, v: a): Trace<a>
   match n
   case zero => stop(v)
   case succ(m) => step(v, consts(m, v))
-}
-
-// the sum of a list
-function {:teq} sum(values: List<int>): int
-{
-  match values
-  case nil => 0
-  case cons(v, vs) => v + sum(vs)
-}
-
-// the parity of a list, the number of even minus the number of odd elements
-function {:teq} parity(values: List<int>): int
-{
-  match values
-  case nil => 0
-  case cons(v, vs) => (if v % 2 == 0 then 1 else -1) + parity(vs)
-}
-
-// the maximum and the minimum
-function {:teq} max(m: int, n: int): int
-{
-  if m <= n then n else m
-}
-
-function {:teq} min(m: int, n: int): int
-{
-  if m <= n then m else n
-}
-
-// the number of occurrences of a value in a list
-function {:teq} count<a>(e: a, vs: List<a>): int
-{
-  match vs
-  case nil => 0
-  case cons(v, ws) => (if v == e then 1 else 0) + count(e, ws)
-}
-
-// powers, which are not unfolded
-function {:teq} pow(c: int, n: Nat): int
-{
-  match n
-  case zero => 1
-  case succ(m) => c * pow(c, m)
 }
 
 // the values of a at the keys, and the stores of the values at the keys
@@ -247,41 +204,6 @@ lemma {:rw} {:teq} current_consts<a>(n: Nat, x: a)
 lemma {:rw} {:teq} earlier_consts<a>(k: Nat, n: Nat, x: a)
   ensures earlier(k, ⌊consts(n, x)⌋)
     == x
-
-// sums: the fold comes after the counter lemmas, since a counter is a trace of sums of ones as well
-
-function {:teq} {:fold} sums(x: int, values: List<int>): Trace<int>
-{
-  trace(x, for values do s, v :: s + v)
-}
-
-lemma {:rw} {:teq} current_sums(x: int, values: List<int>)
-  ensures current(sums(x, values))
-    == x + sum(values)
-
-lemma {:rw} {:teq} earlier_sums(j: Nat, x: int, values: List<int>)
-  ensures earlier(j, ⌊sums(x, values)⌋)
-    == x + sum(prefix(j, values))
-
-lemma {:rw} {:teq} prefix_sums(k: Nat, x: int, values: List<int>)
-  ensures prefix(k, ⌊sums(x, values)⌋)
-    == ⌊sums(x, prefix(k, values))⌋
-
-lemma {:rw} {:teq} sum_empty()
-  ensures sum(nil)
-    == 0
-
-lemma {:rw} {:teq} sum_consts(n: Nat, x: int)
-  ensures sum(⌊consts(n, x)⌋)
-    == x * integer(n)
-
-lemma {:rw} {:teq} sum_add(xs: List<int>, ys: List<int>)
-  ensures sum(maps(for xs, ys yield v, w :: v + w))
-    == sum(xs) + sum(ys)
-
-lemma {:rw} {:teq} sum_counter(i: int, c: int, n: Nat)
-  ensures sum(⌊counter(i, c, n)⌋)
-    == (2 * i + (integer(n) - 1) * c) * integer(n) / 2
 
 // search
 

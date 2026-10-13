@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/selection_sort.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/selection_sort.dfy
 // selection sort with nested loops: the inner loop finds the position m of the minimum of b[i..n), which is swapped
 // to position i
 //
