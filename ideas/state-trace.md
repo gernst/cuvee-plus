@@ -1,5 +1,9 @@
 # State traces with projections: the sketch
 
+> Superseded as a plan by [deduction-engine-plan.md](deduction-engine-plan.md) (Oct 13, 2026); kept for the
+> findings and the conclusion. The implementation is the package `prove` on the branch `prove`, see
+> [deduction-engine-implementation.md](deduction-engine-implementation.md).
+
 Plan of Oct 12, 2026 for section 4 of [deduction-engine.md](deduction-engine.md) (the conclusion of
 [doc/array-algorithms](../doc/array-algorithms), "an interface, not the sole carrier"): a loop is one fold over
 its state, the per-variable trace equations are projections of it. The sketch lives in the worktree

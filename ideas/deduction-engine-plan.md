@@ -1,14 +1,16 @@
-# Implementing the deduction engine: the joint trace first, then the packages
+# Implementing the deduction engine: the representation first, then the packages
 
-Plan of Oct 12, 2026 for [deduction-engine.md](deduction-engine.md), against the code of version 0.42.4. The
-representation comes first: a loop is one trace of its whole state, the *joint trace*, and the per-variable trace
-equations of today are projections of it, split off on demand when a lemma needs one. The engine packages that
-follow are independent of each other and of the joint trace where stated, each built and tested in isolation in
-its own worktree. The re-entrance guard of [reentrance-guard.md](reentrance-guard.md) is done (0.42.3) and set the
-rule for all of this: a change lands only with the trace that explains the failure it removes, and only after
-the harness (package A) loses no proof.
+Plan of Oct 12, 2026 for [deduction-engine.md](deduction-engine.md), revised Oct 13, 2026 after the first milestone
+of the package `prove` (see [deduction-engine-implementation.md](deduction-engine-implementation.md) for the record,
+the decisions taken and the log). The representation comes first: a loop is a fold over its state, the per-variable
+trace equations of the paper are projections of it, computed on demand when a lemma needs one. The revision takes
+in what the implementation taught: the state form is partitioned by the strongly connected components of the
+loop's variables, and the tuples of the prelude are a first version of a syntax in which the combinators bind
+several accumulators. The engine packages that follow are independent of each other where stated. The rule for all
+of this stands: a change lands only with the trace that explains the failure it removes, and only after the quick
+check loses no proof.
 
-## 1. The joint trace
+## 1. The representation
 
 ### 1.1 Why first
 
@@ -16,98 +18,130 @@ Section 4 of [deduction-engine.md](deduction-engine.md) found that the hard case
 decomposition into one equation per variable is wrong by construction: mutually dependent variables whose
 equations are individually meaningless, inner loops whose equations become fragments over incomparable
 dependency lists that do not see each other's facts, and the bookkeeping of dependency lists (equal counters,
-injective selection, unused dependencies, arity variants). Every one of these disappears if the loop is a single
-fold over its state and the per-variable equations are derived from it rather than produced by symbolic
-execution. The engine packages below (congruence closure, lookup, the pin) then work on a representation with
-one dependency list per loop instead of repairing the consequences of many. That is why the representation is
-not package I at the end but the foundation.
+injective selection, unused dependencies, arity variants). The implementation confirmed the diagnosis: the state
+form proves the five nested examples without a fragment lemma, resolves the swap through one lemma on earlier
+stores, and reaches the same point as the per-variable proof on the binary search. The reason is a single property:
+no trace depends on another one, so every trace is a closed term and an inner loop is a value of the outer update
+(see the conclusion of [state-trace.md](state-trace.md)).
 
-### 1.2 The representation
+### 1.2 The form that stays: one trace per strongly connected component
 
-For a loop with modified variables `x̄ = x₁, ..., xₘ` and choices `z̄`, symbolic execution yields paths with
-branch conditions `Bᵢ` and results `x̄ᵢ`. Today it emits `m` equations `Xⱼ == trace(xⱼ₀, for ⌊K⌋, ⌊Y⌋, ... do ...)`.
-Instead:
+The full state tuple pays for its uniformity: every read of a component is a selector application that the engine
+must recognize as a marker, suspend, key and replace, and the existing lemmas with typed dependencies need
+polymorphism for the list of states. The refinement keeps the property that matters and drops the uniformity.
+`TEQ.loop` builds the read relation of the body over the modified variables, where a variable depends on what its
+results read and on what the case guards read (the guards are shared by all components), takes the strongly
+connected components with `util.SCC` (which also orders them topologically), and emits one trace per component in
+that order:
 
 ```
 K == counter(0, 1, n)
-S == trace(tupleₘ(x̄₀), for ⌊K⌋, Z̄ do s, k, z̄ :: case B₁ => tupleₘ(x̄₁) ... case Bₚ => tupleₘ(x̄ₚ))   -- with xⱼ read as tupleₘ_j(s)
-invs(for ⌊K⌋, ⌊S⌋, Z̄ check k, s, z̄ :: guard ∧ (B₁ ∨ ... ∨ Bₚ))
-xⱼ == tupleₘ_j(current(S))                                                                    for each j
+X₁ == trace(x₁₀, for ⌊K⌋, Z̄ do x₁, k, z̄ :: ...)                              -- a singleton component: as in the paper
+S₂ == trace(tupleₘ(x̄₂₀), for ⌊K⌋, ⌊X₁⌋, Z̄ do s, k, x₁, z̄ :: ...)             -- a cycle: a tuple trace over the earlier histories
+invs(for ⌊K⌋, ⌊X₁⌋, ⌊S₂⌋, Z̄ check k, x₁, s, z̄ :: guard ∧ (B₁ ∨ ... ∨ Bₚ))
 ```
 
-One trace, one dependency list, one iteration constraint, the tuples of the prelude (`Tuples`, selectors
-`tupleₘ_j`) as the state. Choices stay sequences `Z̄`, or become components of the state as well (a choice is a
-value per iteration like any other), which makes `⌊K⌋, ⌊S⌋` the only dependency list of a loop; the second
-form is the target, the first the intermediate step.
+Since the component graph is acyclic, every trace is a closed term over the number of iterations, the choices and
+the earlier histories; nested loops are substituted as today (`StateTEQ`, `Path.depth`), outermost loops keep
+their definitions as equations. All variables in one component is the state form of today, all singletons is the
+per-variable form, which is exactly the case where that form had no cycles and worked: the per-SCC form is the
+finest decomposition without recursion. Most variables are singletons (counters, indices, sums over the input,
+arrays written at the index), so most traces are matched by the database directly, with its typed dependencies, and
+print as before; views, suspension and the positional relation are confined to the real cycles (the two arrays of the
+swap with the temporary, the bounds of the binary search, the pointers of a merge). The relation is syntactic, hence
+conservative (a read under a guard that never fires merges components). Choices stay dependencies of the variables
+that use them. The fragments that the distribution of the constraint produces are harmless now, since no fresh
+sequences are involved, only closed terms.
 
-**Inner loops** are values of the outer update, not constraints: the summary of an inner loop in a path of the
-outer body is `s' == tupleₘ_i(current(S'(s)))` with `S'(s)` the inner joint trace as a term over the outer
-state `s`, and its number of iterations `n'`, counter `K'` and the inner trace itself are *ghost components* of
-the outer state, so that the inner iteration constraints and the exit are conjuncts of the outer constraint
-over the same `s`. Nothing is distributed over different dependency lists any more, which is the fragments
-problem solved by construction, and the inner trace is simplified as a unit in the context of the outer
-iteration, where `s` is bound.
+### 1.3 Views, as implemented
 
-### 1.3 Splitting on demand: projections
+For a tuple trace, a read of a component (a selector applied to the current or an earlier value of the trace, also
+through a bound variable of a combinator over its history, or a map of one) is a marker that the matcher matches
+modulo its view, the simplified projection of the trace to that component, with the other components read from the
+history as a dependency and the own component read from the accumulator (`Views.project`). A component is not
+projected inside its own view (`Context.active`, keyed by selector and number of iterations), a marker whose view
+reads no component is replaced by it in place, and while a view is simplified or matched the context carries the
+selector being projected (`Context.projection`), from which each projection trace derives the relation "the read of
+the component from the state is the accumulator" by position (`Views.relation`), which `Simplify.invariants` applies
+to the invariants over the history. Views are simplified under and memoized by the facts of the position that mention
+their variables (`Context.restricted`). The per-variable equations are never stated; nothing is mutually recursive.
 
-The per-variable trace of component `j` is the projection `πⱼ(S)`, defined by one rule in `Simplify.trace`,
-not by a lemma:
+### 1.4 First-class syntax: combinators with several accumulators
 
+The tuples of the prelude are the semantics (a trace of products, immediate in Lean and in the fallback) but a poor
+syntax for the engine. Once the merge and the sorts have shown what the lemma language needs from cycles, the
+trace of a cycle should bind its accumulators in the core rather than wrap them in a tuple, which removes most of 1.3
+by construction: the components are bound variables, not selector applications, so a read of a component is a
+variable, the relation of a projection is trivial, suspension keys on the trace and a position, and matching a
+per-variable lemma against a component is choosing the component and treating the others as dependencies, done by the
+matcher like its selection of dependencies today (`Rewrite.combinator`). The sketch, signatures only:
+
+```scala
+// trace(x̄ := ē₀, for deps do ȳ :: ē): the trace of the accumulators accs, one initial value and one result per
+// accumulator, where a result is a guarded expression (Eps) over the loop's shared guards as in the paper, so that the
+// simplifier merges the cases of each component on its own; the dependencies are lists as today, one bound variable
+// each; the type is Trace<(T₁, ..., Tₘ)> over the existing sorts Trace<a> and tupleₘ, Trace<T> for one accumulator:
+// the tuple lives in the type only, no term of tuple type is ever built in a goal
+case class Trace(inits: List[Expr], deps: List[Expr], accs: List[Var], bound: List[Var], results: List[Expr]) extends Expr
+
+// unchanged: a map has one result and a constraint one body, their dependencies are lists, one bound variable each
+case class Maps(deps: List[Expr], bound: List[Var], update: Expr) extends Expr
+case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr
+
+// the history and the last value of a trace, per component, as core nodes typed structurally (the type checker reads
+// the component type Tᵢ off the tuple type of the trace, since the combinators are built in): the history of a trace
+// with m accumulators is m lists ⌊S⌋.1, ..., ⌊S⌋.m of the ordinary type List<Tᵢ>, which are m dependencies of equal
+// length wherever the state is read, so no list of tuples exists and the functions on lists are untouched; no family
+// of selectors is declared, which is what the tuple terms of today cost
+object Butlast: def apply(trace: Expr, i: Int): Expr
+object Current: def apply(trace: Expr, i: Int): Expr
 ```
-πⱼ(S) == trace(tupleₘ_j(s₀), for ⌊K⌋, ⌊S⌋, Z̄ do x, k, s, z̄ :: case B₁ => x₁ⱼ ... case Bₚ => xₚⱼ)   -- with tupleₘ_j(s) replaced by x
-```
 
-The other components are read from the history `⌊S⌋` through `s`; a component that reads none of them (a
-counter, a sum of the input) loses the dependency `⌊S⌋` by the existing normalization (unused dependencies are
-dropped), and is then exactly the trace that the lemma database matches today (`counter_def`, `sums_def`, ...).
-The simplifier introduces projections on demand:
+**Types.** No new sort and no family of sorts: `Trace<a>` and `List<a>` stay as declared in `core.dfy`, and a cycle
+trace has the type `Trace<tupleₘ<T₁, ..., Tₘ>>` with the tuple sorts of the prelude, which is the honest description
+of its values (a trace of states; in Lean a trace of a product). The constructors `stop` and `step` instantiate `a`
+with the tuple type but are applied only in the Lean proofs, never in goals. The one consequence is on the output
+side: a goal quantifies over `S: Trace<(int, int)>`, so the output language needs the tuple sort, which Dafny has in
+its prelude and SMT-LIB output from C input gets declared ahead of the goal if a trace survives to the output at all
+(the fallback lowers it into one function per component before a solver sees it). A family `Traceₘ` indexed by the
+arity, as the tuples are, was rejected: it would need a family of observers `currentₘ_i`, `butlastₘ_i` and put the
+database on `Trace₁`; a variadic sort would need variadic constructors in `Con`.
 
-- `tupleₘ_j(current(S))` becomes `current(πⱼ(S))` and `tupleₘ_j(earlier(i, ⌊S⌋))` becomes `earlier(i, ⌊πⱼ(S)⌋)`,
-  whenever the component is read, so that reads of the state meet the acceleration lemmas;
-- the map `maps(for ⌊S⌋ yield s :: tupleₘ_j(s))`, which the matcher synthesizes for a variable dependency of a
-  pattern, is `⌊πⱼ(S)⌋`, so that the per-variable forms `⌊Y⌋` of the lemmas appear and a concrete pattern
-  dependency `⌊counter(i, c, n)⌋` matches `⌊πⱼ(S)⌋` through the context once `πⱼ(S) == counter(...)` is known;
-- a projection whose trace is rewritten to a closed form (a counter, `sums`, `stores`) is recorded as the
-  equation `Xⱼ == closed form` of the context, which is the per-variable equation of today, now derived.
+A trace with several accumulators is used only where a cycle needs it (section 1.2); the loop as a whole still has
+one trace per component in topological order. The per-variable form is the case of one accumulator, the state form
+of today the case of one trace with all accumulators, so both are instances. The history of a cycle trace flattens
+into its component lists wherever it is a dependency, which is how `Maps` and `Invs` compose with it without any
+change: a map that would yield several values is several maps, and the synthesized `maps(for ⌊S⌋.j yield h :: h)` of
+the matcher is `⌊S⌋.j` by `maps_identity`. The projection of a cycle trace to a component becomes syntactic: the
+co-accumulators in the component's result are replaced by fresh bound variables over the corresponding histories
+`⌊S⌋.j`, and a lemma on one accumulator matches the result like any per-variable trace; of the views only this
+construction remains, without selectors, closedness check or a relation to carry. `Eps` and `Upd` stay as they are,
+per component; `Type.dependencies` is unchanged; the parsers and printers of Dafny, Boogie and SMT-LIB get the syntax
+of several accumulators and of `⌊S⌋.i`, `current(S).i`, the Lean printer prints products, `Fallback` one function per
+accumulator. Estimated a week across the core, the four frontends, the two engines and the fallback, to be done when
+the lemma language asks for it, not before.
 
-So a layered loop (counter, index, array, sum) splits itself apart lemma by lemma, in the order the lemmas
-apply, and a loop whose variables depend on each other stays joint, where the lemma for its shape is one lemma
-on the fold over the pair with higher-order guards, which is what the summaries of merge, gnome sort and the
-lower bound are today after all their tying.
-
-### 1.4 What the lemma language needs
-
-- **Accumulator patterns over tuples.** A lemma on a joint fold names the components:
-  `trace(tuple2(l₀, h₀), for ks do (lo, hi), k :: tuple2(F(lo, hi), G(lo, hi)))`, i.e. a tuple pattern in the
-  accumulator position, matched by destructuring, with the components as bound variables of the update. The
-  parser of lemmas and `Rewrite.matches` for `Trace` get this; the printer prints it. Without it, the joint
-  lemmas can still be written with `tupleₘ_j(s)` selectors, which is what the first examples do.
-- **Projection-aware dependencies.** A pattern dependency that is a variable, `ys`, matched against `⌊S⌋`, binds
-  `ys` to `⌊πⱼ(S)⌋` for the component `j` that the body reads at the corresponding bound variable (today's
-  synthesis of `Maps`, specialized to projections); this is the mechanism of `Rewrite.instantiate` with
-  projections in place of general maps.
-- The database itself is unchanged: its lemmas are about per-variable traces and apply to the projections.
+Accumulator patterns in lemmas (the former step S5) come with it for free. Estimated a
+week across the core, the four frontends, the two engines and the fallback, to be done when the lemma language asks
+for it, not before.
 
 ### 1.5 Steps and tests
 
-| step | what | tests | size |
-|---|---|---|---|
-| S1 | `TEQ.loop` emits the joint trace behind `-teq-joint` (choices as sequences, inner loops as values with ghost components); the printers print tuples as today | the goals of the `-teq` examples compared by hand on five files: counter, nested_sum, merge, bubble_sort, first_duplicate | 3 days |
-| S2 | the projection rule in `Simplify.trace` and the three on-demand rewrites of 1.3; equal-length typing of `⌊S⌋` | the single-loop examples of `examples/dafny/teq` and `examples/c/teq` close under `-teq-joint` as under `-teq` (the harness, goals compared) | 1 week |
-| S3 | projection-aware dependencies in `Rewrite.instantiate`; the per-variable equations recorded as context equations | the SV-COMP translations sampled (68) under `-teq-joint` against main's `-teq` | 1 week |
-| S4 | inner loops as values with ghost components; the fragments of today no longer produced | `invs_counter_equation`, `invs_fragments`, nested_sum, nested_mult, row_sums, transpose without the module `nested` | 1 week |
-| S5 | accumulator patterns over tuples in the lemma language | merge, gnome sort, lower bound with one lemma on the pair; bubble and cocktail with the inner fold as one side condition | 1 week |
-| S6 | `-fallback` lowers tuple traces (one function per component), `-print lean` prints them; `-teq-joint` becomes the default, the expected outputs are regenerated deliberately, `-teq-split` keeps the old form for comparison for one release | the full harness, the C benchmarks at 60 s | 1 week |
+| step | what | state |
+|---|---|---|
+| S1 | the joint trace over the tuples of the prelude (`StateTEQ`, `-teq-state`), closed for nested loops | done (0.43.0, 0.43.1) |
+| S2 | views in place of projection rewrites, with suspension | done |
+| S3 | the positional relation of a projection, the definitions through the classes, views memoized by relevant facts | done |
+| S4 | inner loops as values by the closed substitution | done |
+| S5 | traces per strongly connected component (`util.SCC` in `TEQ.loop`/`StateTEQ`; the read relation includes the guards) | next; tests: the ten state examples unchanged, bsearch with `i` a plain trace, swap with `i` a plain counter and one tuple |
+| S6 | the merge and the sorts in the state form, lemmas over cycles; what the lemma language needs | after S5 |
+| S7 | combinators with several accumulators in the core (1.4), the tuples of the prelude retired from the goals | begun Oct 13 on the branch `accumulators`: the core nodes, the Dafny syntax and printer, the example `accumulators.dfy`; open: `StateTEQ` emitting the form (with S5), the engine of `-prove` on components, the other frontends, Lean and the fallback |
+| S8 | `-fallback` for tuple or multi-accumulator traces, the tuples for C input, the C benchmarks with a cleaned-up lemma selection | deferred; benchmarks only when the user asks |
 
 What it retires: the module `nested` as far as the fragment lemmas go, `results`, the chain lemmas of row sums,
 the fragment side conditions of all summaries, `invs_current_counter_other`, the identification of equal
-counters, and the "open trace variable" pattern for tying dependencies to traces.
-
-Risks: the SV-COMP databases were recorded with the per-variable form, so until S6 the comparison is by the
-number of goals, not by text; the Lean semantics of tuple traces is immediate, the fallback encoding is not
-(functions of two indices for the inner ghost traces); and the matcher's cost on a single large update with
-`p` cases and `m` components, where today each equation has only the cases that change its variable (the
-simplifier merges cases with equal results per component after projection, which recovers that).
+counters, and the "open trace variable" pattern for tying dependencies to traces; after S5 also the polymorphism of
+lemmas over another dependency except within a cycle.
 
 ## 2. The engine packages
 
@@ -115,6 +149,7 @@ Independent of each other unless stated; A first. Those marked (joint) are easie
 wait for S3; the others can start now in parallel worktrees.
 
 ### A. The harness
+**State:** done in a quick form: `scripts/prove/quick.sh` after each change, `slow.sh` and `compare.sh` on request; the full suite and the benchmarks are not run between changes (the user iterates quickly).
 Four regression sets from a private copy of the jar, one core, exit status read; a package lands only if it
 loses no proof and no test takes twice its time. The scripts of the guard work (`run.sh`, `algos.sh`, `sample.sh`,
 `compare.py`) move into `scripts/regression/`.
@@ -128,12 +163,14 @@ loses no proof and no test takes twice its time. The scripts of the guard work (
 | MonoCera | the 125 tests with `-unbounded` against the 79 of `summary.md` | 25 min |
 
 ### B. Canonical forms (`simplify/Canon.scala`, standalone)
+**State:** done in `prove/Canon.scala`: canonical keys of the memos, the canonical form of terms for the lookup of conditions with binders and for `eq_`; the matcher itself is modulo AC as before.
 Pure functions on `Expr`: canonical polynomials (`i - 1`, `i + (-1)`, `-1 + i` one term), canonical combinators
 (equal dependencies merged, unused dropped except the counter, a fixed order with the counter first, bound
 variables renamed by position), guards as sorted sets of literals. Tested alone for idempotence and α-variants.
 150 lines, three days. Used by C, E, L and the hashing of G.
 
 ### C. Closed conditions looked up (`Rewrite.conditions`)
+**State:** done (`Rewrite.known`, modulo the classes and the canonical forms, facts of the same shape).
 A closed instance that is an `invs`, an equation of lists or an atom is looked up among `ctx.known` modulo
 `Canon` before it is decided. 30 lines plus unit tests from the 21st cocktail condition and the flags fact of
 first_duplicate. Retires the fresh variables and identifying equations of six files. Needs B. Less needed
@@ -141,11 +178,13 @@ after S4, since the fragments that these conditions pick up no longer exist, but
 the iteration constraints.
 
 ### D. Matcher repairs (`Rewrite.instantiate`, `Rewrite.apply`)
+**State:** open; the alternatives over dependencies are superseded by the views.
 Rule variables renamed apart from the goal's free variables (findings 9, 21). The alternatives over dependencies
 for an unbound variable dependency (finding 1) are superseded by S3's projection-aware instantiation; do them
 only if S3 slips. Two days.
 
 ### E. The pin in the matcher (`Rewrite.matches`, fallback case)
+**State:** open; expected to be pulled by the merge and the sorts (S6).
 A unit test per failing literal pattern (the step `-1` through the context, the store index `i - 1`, a
 disjunctive guard, `m + n`, a higher-order summand), then one mechanism: a pattern subterm over bound or
 instantiated variables that fails to match is abstracted by a fresh higher-order variable with `p == e` as a
@@ -153,10 +192,12 @@ closed condition decided after the match. 40 lines. Retires the pins of merge, i
 cocktail and the stores-ahead-down restatement; opens recurrences on `a[k - 1]`. Needs B.
 
 ### F. Definitions at variables (`Rewrite.rewrite`)
+**State:** done through the classes (`Context.defs`): the definitions of a variable are the non-variable members of its class that do not contain it, matched with the view fallback.
 A variable with a non-variable definition gets the rules tried on the definition when a rule's left-hand side
 has its head symbol. Ten lines. Retires the whole-atom left-hand sides. Subsumed by G, cheap now.
 
 ### G. Congruence closure, standalone (`simplify/CC.scala`)
+**State:** done as `prove/Classes.scala` in the restricted form: definitions at variables plus transitivity and congruence; matching an arbitrary term modulo its class cycles (`a[k]` by `S.2[k] == a[k]`) and needs a term order or equality saturation (L).
 A persistent union-find over terms with congruence propagation as a `Theory`: `assume(Eq)`, `repr` (a
 non-variable definition if the class has one, a literal if it has one, else the smallest term), `members`,
 `implied(Eq)`. Built and tested alone on terms; then wired into `Context` in place of `Chains.replace` and
@@ -165,11 +206,13 @@ non-variable definition if the class has one, a literal if it has one, else the 
 the classes hold, so G and S3 meet in the middle.
 
 ### H. Arithmetic over classes (`CC` with `Poly`)
+**State:** reframed: the simplex (`prove/Simplex.scala`, `Linear`) is the arithmetic; the open item is the other direction, equalities that the bounds imply merged into the classes.
 Classes of integer terms carry the polynomial of their representative; linear equations solved as `Chains.solve`
 does, recorded as merges, reaching function arguments through `repr`. Tests: is_sorted closes, `pr2` without
 `half_even`, nested sums without `mul_eq_cancel`. One week. Needs G.
 
 ### J. Triggers and forward facts (joint)
+**State:** next after S5: the bounds of a named trace (`current(incs(...)) <= b`) as facts when the term occurs, which is what the exit of the binary search needs.
 Instantiation of an `invs` over `⌊counter(0, 1, n)⌋` at an index `j` with `0 <= j < integer(n)` when `a[j]` or
 `earlier(j, xs)` is read; facts on named traces (`:facts` lemmas) assumed when the term occurs, memoized per
 class; a trigger table. With the joint trace there is one constraint per loop to instantiate, which makes the
@@ -177,10 +220,12 @@ trigger table trivial. Retires the definitional atoms, the lsearch pair, the `ab
 the cut of bsearch. One week after S3 and G.
 
 ### K. Exit splitting (`Simplify.or`)
+**State:** open.
 The negated exit of a loop, marked by `TEQ`, distributed over the other disjuncts when a rule on their atoms
 needs a literal of it. Two days. Retires the two-implication postcondition of first_duplicate.
 
 ### L. E-graph (`egraph/`, standalone library)
+**State:** open; now also the home of matching modulo classes in full.
 Hash-consed nodes over `Canon`, classes with a union-find, rebuilding, e-matching with pattern variables bound
 to classes, extraction by size, a node budget; tested alone on arithmetic and uninterpreted terms; then binders
 as nested e-graphs per combinator body; integration last as `-saturate`. With the joint trace, a loop is one
@@ -188,25 +233,25 @@ combinator and one nested e-graph, which is the case e-graphs with binders handl
 order still costs proofs after C to H; if the harness shows none, L stays a library. Two weeks for the library.
 
 ### M. Diagnostics (`-probe`, budgets, timeouts)
+**State:** partly done: `-debug conditions`, `-debug match` (uncovered cases, failing guards, trace patterns that fail), `-debug views`; `-probe` and budgets open.
 `-probe <lemma>` reports the first failing side condition of a named rule with the facts it was matched
 against and the part of a left-hand side that did not match; a separate step budget for conditions whose
 exhaustion leaves the condition undecided; a timeout that reports the goal it was working on. One week.
 Independent; most useful during S2 to S5.
 
-## 3. Dependency graph and order
+## 3. Dependency graph and order (revised Oct 13, 2026)
 
 ```
-A harness
-S1 joint trace ── S2 projections ── S3 projection-aware matching ── S4 inner loops as values ── S5 tuple patterns ── S6 default
-                                   │                                  │
-B canonical ──┬── C lookup          J triggers (after S3 and G)        │
-              └── E the pin                                           │
-D renaming, F definitions, K exit splitting, M diagnostics: independent, any time
-G congruence closure ── H arithmetic over classes
-L e-graph library: after B, integrated last
+A harness (quick)   B canonical   C lookup   F definitions   G classes (restricted)   M diagnostics (partly)   -- done
+S1 to S4 the state form with views                                                                              -- done
+S7 multi-accumulator core (begun) ── S5 traces per SCC in that form ── S6 merge and sorts ── S8 fallback and benchmarks (deferred)
+                      │
+J forward facts (after S5, finishes binary search)     E the pin, K exit splitting, D renaming: pulled by S6
+H equalities from the simplex into the classes: when an example needs it
+L e-graph library: after S7, integrated last
 ```
 
-Order: A, then S1 and S2 as the main line, with B, D, F, G, K, M in parallel worktrees; C and E once B is in;
-S3 to S6 on the main line, J after S3 and G, H after G; L last. Each step is one commit with its tests, docs
-(`doc/teq.md`, `doc/simplifier.md`), the retired lemmas removed from the examples with their expected outputs
-regenerated deliberately, and a version bump (second digit for S6 and the integration of G).
+Order (revised Oct 13, evening): S7's core form first, since it is begun and `StateTEQ` should emit the final form
+directly rather than the tuples once more; then S5, the partition per strongly connected component, emitted in that
+form; then J with the binary search as its test; then S6 with E, K, D as the examples ask; S8 only when the user asks. Each step is one commit with its tests and docs (`doc/teq.md`, `doc/prove.md`), the quick
+check green, and a version bump.

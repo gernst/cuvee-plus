@@ -99,6 +99,7 @@ Verbatim in substance, from the user:
 | P11 | triggers and forward facts (package J), the pin in the matcher (E), exit splitting (K), diagnostics (M) | open |
 | P12a | interim files in examples/dafny/state: bsearch.dfy and bsearch_cut.dfy with their expected outputs (one goal each, the exit), which the test suite picks up; to be removed from the tests, or kept as regression tests with no goal, once the algorithms are done in the state form | note |
 | P12 | the algorithms in the state form: binary search done up to the exit's bounds (forward facts needed, package J), the views no longer recomputed; merge and the sorts open | in progress |
+| S7 | combinators with several accumulators in the core (branch `accumulators`, from `prove`): `Trace(inits, deps, accs, bound, results)`, `Component(S, i)` and `History(S, i)` as core nodes, typed structurally over the existing sorts (`Trace<tupleₘ<...>>`); the Dafny grammar, parser (`trace(e₁, e₂, for ... do x, y, k :: u₁, u₂)`, `current(S).i`, `⌊S⌋.i`) and printer; the other printers, the Lean printer, the fallback and both engines handle single-accumulator traces only (`Trace.single`) and leave the others alone; example `accumulators.dfy` parses, type-checks and prints with an identical roundtrip | started Oct 13, 2026 |
 | P13 | `-fallback` for tuple traces and the Lean printer, the tuples declared for C input under `-teq-state`, the C benchmarks of the state form with a cleaned-up lemma selection | deferred until the engine is in a reasonable state; benchmarks only when the user asks |
 
 ## Adjustments to the plan (Oct 13, 2026, after the first milestone)
@@ -129,27 +130,37 @@ Against [deduction-engine-plan.md](deduction-engine-plan.md) as revised by [stat
 - **The cost model.** The simplex rebuilt per check is affordable on the ten examples but visible (the transpose at
   three times the sketch); it belongs before the algorithms (P12), since those multiply the checks.
 
-## Next steps, in order (revised Oct 13, 2026)
+## Next steps, in order (revised Oct 13, 2026, evening)
 
-Iteration is quick: after each change only `scripts/prove/quick.sh` (under 30 s) and the example under work run;
-the slow sets (`scripts/prove/slow.sh`, the comparison with `-simplify`, benchmarks) run on request or before a
-commit.
+The consolidated plan is [deduction-engine-plan.md](deduction-engine-plan.md) (its sections 1.2, 1.4 and 3); in
+short:
 
-1. (done) P8, the harness: the two scripts; the nested_sum difference under `teq:nested` is still to be traced.
-2. (done) P9 and P10 together, the cost work: canonical keys first, i.e. a canonical form of terms with the bound variables
-   numbered by position, computed on demand and used as the key of the memos of views, reads and combinator contexts
-   and as the comparison in the lookup of closed `invs` conditions, while the traversal keeps its fresh names (not a
-   global renaming, which touches every binder); then the simplex made incremental per context or its checks cached
-   by constraint set. Canonical forms moved up from last place because the evidence is already there: on the branch,
-   binary search recomputed the views of `lo` and `hi` in nine contexts that differ only by the names of their bound
-   variables, which is exactly what the memos miss, and the lookup of `invs` conditions and the pin need the same form.
-3. P12, the algorithms in the state form, the real test of the representation: bsearch first, then merge and the
-   sorts; `state.dfy` grows by what they need, the engine by what the matcher lacks (the pin E, the one-point rule
-   over sequences, triggers J), pulled by the examples rather than built ahead.
-4. P13, deferred (Oct 13, 2026, the user): the fallback encoding of tuple traces comes after the engine is in a
-   reasonable state and after a cleaned-up selection of lemmas from the database for the C benchmarks; the
-   benchmarks are not run by the assistant on its own, only when asked (also the tuples for C input then).
-5. Polynomial and combinator canonicalization (the rest of package B), once the matcher needs them.
+1. S5: traces per strongly connected component of the read relation of the loop (guards included), with `util.SCC`,
+   in `TEQ.loop`/`StateTEQ`; singletons are plain traces, cycles tuple traces; the ten state examples unchanged.
+2. J: forward facts, the bounds of a named trace as facts when its term occurs; binary search closes without the cut.
+3. S6: the merge and the sorts in the state form; the pin (E), exit splitting (K), renaming (D) as they ask.
+4. S7: combinators with several accumulators in the core, if S6 needs accumulator patterns in lemmas.
+5. S8, deferred: the fallback encoding, the tuples for C input, the C benchmarks with a cleaned-up lemma selection;
+   benchmarks only when the user asks.
+
+## Log (continued)
+
+- **Oct 13, 2026, evening: S7 begun** on the branch `accumulators` from `prove` (1e17a69a and fae14245). The core
+  data structures of section 1.4 of the plan: `Trace(inits, deps, accs, bound, results)` with `Trace.apply` for a
+  single accumulator and the extractor `Trace.single`, the nodes `Component(trace, i)` (`current(S).i`) and
+  `History(trace, i)` (`⌊S⌋.i`), typed by `Trace.components` of the element type, `Trace.elem` building the tuple
+  type for several accumulators; `Expr.map`, `Subst`, `Type.expand`, `Type.check` (initial values and results against
+  the accumulators, the components' types from the resolved trace type), `State.exprs.trace` with several accumulators.
+  Dafny: `Combinator(kind, inits, deps, bound, updates)`, the grammar `trace(e₁, ..., eₘ, for deps do accs, bound ::
+  u₁, ..., uₘ)` where each initial value ends with a comma (a list separated by commas would commit to an expression
+  before `for`) and each result is guarded cases or a plain expression, the member access `.i` on `current(S)` and
+  `butlast(S)` of a trace with several components resolved to the nodes; the printer prints several initial values on
+  their own line. Boogie, SMT-LIB and Lean printers, `Fallback`, and both engines match `Trace.single` and pass traces
+  of several accumulators through (the engines) or reject them (the printers), as the cheap workaround for now.
+  `examples/dafny/state/accumulators.dfy` (two lemmas, one over the state of the swap) parses, type-checks and prints,
+  and the printed output parses back identically; the quick check is unchanged. Next: `StateTEQ` emits the new form
+  (per strongly connected component, S5) and the engine of `-prove` learns the components (the views become the
+  syntactic projection of 1.4).
 
 ## How to run
 

@@ -14,8 +14,10 @@ which only the open points remain).
 - [state-trace-review.md](state-trace-review.md): the state-trace sketch read against the plan: what is new
   (nested loops without fragment lemmas, views instead of equations), where the sketch differs from what the plan
   expected and why, and the consequences for the plan.
-- [deduction-engine-plan.md](deduction-engine-plan.md): the implementation plan for it, six phases with files,
-  sizes, tests, what each retires, and a harness of four regression sets.
+- [deduction-engine-plan.md](deduction-engine-plan.md): the consolidated plan (revised Oct 13, 2026): the
+  representation first, traces per strongly connected component of a loop's variables with views for the cycles,
+  a sketch of combinators with several accumulators as first-class syntax, the steps S1 to S8 with their state,
+  and the engine packages A to M with theirs.
 - [deduction-engine-implementation.md](deduction-engine-implementation.md): the record of the implementation in
   the package `prove` (`-prove`, `-teq-state` over tuples) on the branch `prove`: the instructions, the decisions,
   the files, the state of each step and the log, to be picked up at any time.

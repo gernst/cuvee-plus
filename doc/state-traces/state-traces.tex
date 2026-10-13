@@ -1,0 +1,441 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks,linkcolor=black,urlcolor=blue!50!black}
+
+% notation of the TEQ paper
+\newcommand{\bl}[1]{\lfloor #1\rfloor}                       % butlast
+\newcommand{\tr}[3]{\mathsf{trace}(#1,\ \mathsf{for}\ #2\ \mathsf{do}\ #3)}
+\newcommand{\mapc}[2]{\mathsf{maps}(\mathsf{for}\ #1\ \mathsf{yield}\ #2)}
+\newcommand{\al}[2]{\mathsf{invs}(\mathsf{for}\ #1\ \mathsf{check}\ #2)}
+\newcommand{\cnt}{\mathsf{counter}}
+\newcommand{\cur}{\mathsf{current}}
+\newcommand{\ear}{\mathsf{earlier}}
+\newcommand{\intf}{\mathsf{integer}}
+\newcommand{\natf}{\mathsf{natural}}
+\newcommand{\stores}{\mathsf{stores}}
+\newcommand{\selects}{\mathsf{selects}}
+\newcommand{\consts}{\mathsf{consts}}
+\newcommand{\occurs}{\mathsf{occurs}}
+\newcommand{\indexof}{\mathsf{indexof}}
+\newcommand{\prefix}{\mathsf{prefix}}
+\newcommand{\ite}[3]{\mathsf{if}\ #1\ \mathsf{then}\ #2\ \mathsf{else}\ #3}
+\newcommand{\lemma}[1]{\textsf{#1}}
+\newcommand{\sel}[2]{#2.#1}                                   % component #1 of state #2
+\newcommand{\rw}{\ \leadsto\ }
+
+\lstdefinelanguage{dafny}{
+  morekeywords={method,returns,requires,ensures,var,while,if,else,function,lemma,forall,int,bool,array,datatype,case,for,do,yield,check,trace,maps,invs},
+  sensitive=true, morecomment=[l]{//}, morestring=[b]",
+}
+\lstset{language=dafny,basicstyle=\ttfamily\footnotesize,keywordstyle=\bfseries,commentstyle=\itshape\color{black!60},
+  columns=fullflexible,keepspaces=true,xleftmargin=1.5em}
+
+\title{Verifying Loops without Invariants:\\ Trace Equation Systems by Two Examples}
+\author{Gidon Ernst\\[2pt] \small LMU Munich, Germany\\ \small\texttt{gidon.ernst@gmail.com}}
+\date{October 13, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note explains how the verifier Cuvée proves array programs without loop invariants, by two examples that
+every reader of a verification paper knows: the initialization of an array and the element-wise exchange of two
+arrays. A loop is represented as a fold over its iterations whose result is a \emph{trace}, the sequence of values of
+the program state at the loop head, and the verification condition is a first-order formula over traces. The formula
+is proved by rewriting with a database of lemmas about traces, each a small fact about a loop shape (a counter, a
+sequence of stores, a constant), under a context that keeps the facts of the goal. No invariant is written, and no
+lemma is written for the two programs. The note introduces the representation, the lemma database, and the
+engine as the examples need them, and ends with what the examples do not show.
+\end{abstract}
+
+\section{The idea}
+
+A verifier based on Hoare logic asks for an invariant of every loop. For the initialization of an array the invariant
+is easy, \lstinline|forall k :: 0 <= k < i ==> a[k] == v|, but it is an input of the user and not a property of the
+program, and for programs that compute something more involved it is where the effort goes. Trace equation systems
+take another route. Instead of asking what holds at the loop head in every iteration, they ask what the loop
+\emph{computes}: the values of the variables after $n$ iterations, as a function of the inputs and $n$. For a loop
+that counts, that function is $i_0 + n$; for a loop that stores $v$ at positions $0, \ldots, n-1$, it is the array
+with those positions set to $v$. Once the loop is summarized by such a function, the postcondition is a claim about
+the function, and that claim is first-order.
+
+The summary is obtained in two steps. Symbolic execution turns the loop into a \emph{trace}, a sequence of states,
+defined recursively from the body: the state after an iteration is the body applied to the state before it. This is
+mechanical and needs no insight. Then a rewrite engine applies lemmas from a database to the trace, each stating what a
+particular shape of loop computes, until the trace has a closed form and the postcondition follows by arithmetic.
+The insight sits in the database, written once; a new program is verified without a lemma of its own as long as its
+loops are composed of shapes the database knows.
+
+The two examples below are such programs. The first shows the representation and the ordinary lemmas, the
+second shows what happens when two variables of a loop depend on each other, which is where the approach needed
+an idea that the paper on trace equation systems did not have.
+
+\section{Array initialization}
+
+\begin{lstlisting}
+method init(n: int, v: int) returns (a: array<int, int>)
+  requires 0 <= n
+  ensures forall k: int :: 0 <= k < n ==> a[k] == v
+{
+  var i: int;
+  i := 0;
+  while i < n
+  {
+    a[i] := v;
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+
+Arrays here are total maps from integers to integers (the type \lstinline|array<int, int>|), so there is no bounds
+check and \lstinline|a[i] := v| is the functional update $a[i := v]$. The run is
+\begin{center}
+\texttt{./Cuvee.sh -teq-state -prove examples/dafny/state/init.dfy}
+\end{center}
+where \texttt{-teq-state} produces the verification condition over traces and \texttt{-prove} runs the engine. The
+output is empty: the goal is proved and therefore dropped.
+
+\subsection{The verification condition}
+
+Symbolic execution runs the method body on symbolic values, collecting the assumptions and checks of each path. The
+loop is the only interesting statement. Its modified variables are $a$ and $i$, so the loop's state is the pair
+$(a, i)$, and the condition produced for the method is (with \texttt{-print dfy} in place of \texttt{-prove}, the
+fresh variables numbered by the tool)
+\begin{align*}
+&\forall n, v, a.\ 0 \le n \Rightarrow \forall a', i', n_4{:}\mathsf{Nat}, K, S.\\
+&\quad K = \cnt(0, 1, n_4)\\
+&\quad \wedge\ S = \tr{(a, 0)}{\bl{K}}{s, k :: (\sel{0}{s}[\sel{1}{s} := v],\ \sel{1}{s} + 1)}\\
+&\quad \wedge\ a' = \sel{0}{\cur(S)}\ \wedge\ i' = \sel{1}{\cur(S)}\\
+&\quad \wedge\ \al{\bl{K}, \bl{S}}{k, s :: \sel{1}{s} < n}\\
+&\quad \wedge\ 0 \le \intf(n_4)\\
+&\quad \Rightarrow \neg(i' < n) \Rightarrow \forall k.\ 0 \le k < n \Rightarrow a'[k] = v
+\end{align*}
+Read it line by line; every construct of the approach appears once.
+
+\paragraph{The number of iterations.} $n_4$ is a natural number, the number of times the body runs. Nothing is
+known about it except that it is some natural (its integer value $\intf(n_4)$ is nonnegative, stated explicitly
+since the arithmetic works on integers). The loop test does not determine it directly; it is constrained by the
+iteration constraint below.
+
+\paragraph{The counter.} $K = \cnt(0, 1, n_4)$ is the sequence $0, 1, \ldots, n_4$, a trace of $n_4 + 1$ integers:
+the iteration numbers. Every loop gets such a counter, and the lemmas of the database are indexed by it.
+
+\paragraph{Traces.} A trace of type $\mathsf{Trace}\langle T\rangle$ is a nonempty sequence of values of type $T$,
+the values of some quantity at the loop head before each iteration and after the last. Two functions take it
+apart: $\bl{X}$ (``butlast'', the floor brackets) is the list of all but the last element, i.e.\ the values before
+each of the $n$ iterations, and $\cur(X)$ is the last element, the value after the loop. The $j$-th element of a
+list is $\ear(j, \bl{X})$, with $j$ a natural number.
+
+\paragraph{The state trace.} $S$ is the trace of the loop's state, a pair, written with the combinator
+\[
+\tr{s_0}{\bl{K}}{s, k :: u}
+\]
+It starts with $s_0 = (a, 0)$, the state before the first iteration, and for each
+iteration $k$ of the counter its next value is the update $u$ applied to the previous value $s$. Here the update is
+the loop body as a function of the state: the array component gets $v$ stored at the index component, the index is
+incremented. The components of a pair are written $\sel{0}{s}$ and $\sel{1}{s}$ (the tool prints them as the
+selectors \texttt{tuple2\_0(s)}, \texttt{tuple2\_1(s)} of the pair datatype of its Dafny prelude). The combinator is
+a fold: $S$ has one element more than $\bl{K}$, and
+\[
+\cur(\tr{s_0}{\bl{K}}{s, k :: u}) = u(\cdots u(u(s_0, 0), 1) \cdots, n_4 - 1).
+\]
+
+\paragraph{The exit values.} After the loop, the program variables are the components of the final state,
+$a' = \sel{0}{\cur(S)}$ and $i' = \sel{1}{\cur(S)}$, and the loop was left because its test failed, $\neg(i' < n)$.
+
+\paragraph{The iteration constraint.} $\al{\bl{K}, \bl{S}}{k, s :: \sel{1}{s} < n}$ states that the loop test
+held before every iteration: the combinator $\mathsf{invs}$ ranges over the two lists $\bl{K}$ and $\bl{S}$ in
+parallel, binding the iteration number $k$ and the state $s$ at position $k$, and requires its body for all
+positions. This is the only place where the number of iterations is pinned down: the test must hold $n_4$ times and
+fail afterwards.
+
+Nothing in this condition is specific to the program but the update and the test; the rest is the schema that every
+loop gets. In particular there is no invariant.
+
+\subsection{The lemma database}
+
+The engine does not know what a counter or a store is; it knows rewrite rules. A rule is a lemma with the attribute
+\lstinline|{:rw}| whose conclusion is an equation $l = r$ (or an equivalence), read from left to right, possibly
+with preconditions as side conditions. The variables of the lemma are matched against the goal. The database of
+\texttt{-teq-state} is one Dafny file, \texttt{resources/cuvee/teq/state.dfy}, with the definitions of the types and
+functions above and about forty lemmas. The ones this example needs:
+\begin{lstlisting}
+lemma {:rw} counter_def(i: int, c: int, n: Nat)
+  ensures trace(i, for butlast(counter(0, 1, n)) do x, k :: x + c) == counter(i, c, n)
+
+lemma {:rw} current_counter(i: int, c: int, n: Nat)
+  ensures current(counter(i, c, n)) == i + integer(n) * c
+
+lemma {:rw} earlier_counter(k: Nat, i: int, c: int, n: Nat)
+  ensures earlier(k, butlast(counter(i, c, n))) == i + integer(k) * c
+
+lemma {:rw} invs_counter_upper_nonnegative(m: int, n: Nat)
+  requires 0 <= m
+  ensures invs(for butlast(counter(0, 1, n)) check k :: k < m) <==> integer(n) <= m
+
+function {:fold} stores<a, b>(a: array<a, b>, keys: List<a>, values: List<b>): Trace<array<a, b>>
+{ trace(a, for keys, values do b, k, v :: b[k := v]) }
+
+lemma {:rw} maps_const<a>(x: a, i: int, c: int, n: Nat)
+  ensures maps(for butlast(counter(i, c, n)) yield v :: x) == butlast(consts(n, x))
+
+lemma {:rw} current_stores<a, b>(k: a, a: array<a, b>, keys: List<a>, values: List<b>)
+  ensures current(stores(a, keys, values))[k]
+    == if occurs(k, keys) then earlier(indexof(k, keys), values) else a[k]
+
+lemma {:rw} occurs_counter_up(j: int, i: int, n: Nat)
+  ensures occurs(j, butlast(counter(i, 1, n))) <==> i <= j < i + integer(n)
+
+lemma {:rw} indexof_counter_up(j: int, i: int, n: Nat)
+  requires i <= j < i + integer(n)
+  ensures indexof(j, butlast(counter(i, 1, n))) == natural(j - i)
+
+lemma {:rw} earlier_consts<a>(k: Nat, n: Nat, x: a)
+  ensures earlier(k, butlast(consts(n, x))) == x
+\end{lstlisting}
+Three kinds of lemma appear. \emph{Introduction} lemmas recognize a loop shape and name it: a trace that adds a
+constant is a counter (\lemma{counter\_def}); a trace that stores values at keys is $\stores(a, keys, values)$,
+which is a function definition marked \lstinline|{:fold}|, i.e.\ its body is rewritten \emph{to} the function.
+\emph{Acceleration} lemmas give the closed form of a named shape: the final value of a counter, its $k$-th value,
+the element of a store sequence at a key (\lemma{current\_stores}: the last value stored there, or the original
+if the key was never stored). \emph{Bookkeeping} lemmas relate the list functions: $\occurs$, $\indexof$, $\prefix$,
+the constant list $\consts$, and the third combinator $\mapc{xs}{x :: e}$, the list of $e$ for each element of $xs$,
+which the engine introduces itself when a lemma needs a sequence of values that the program computes implicitly.
+
+These lemmas are proved once, in Lean, from the recursive definitions; the program proof trusts them.
+
+\subsection{The proof}
+
+The engine simplifies the goal under a context of facts, innermost subterms first, and after each round applies the
+first rule whose left-hand side matches and whose side conditions hold. Every rewrite step can be printed
+(\texttt{-debug rewrite}); what follows is that printout, cleaned up. Three ideas appear along the way that are not
+in the condition itself: contexts of combinators, projections, and views.
+
+\paragraph{The index is the iteration number.} The engine first simplifies the update of $S$. To do so it builds the
+\emph{context of the combinator}: inside $\mathsf{for}\ \bl{K}, \bl{S}\ \mathsf{do}\ s, k$, the bound variable $k$
+is a value of $\bl{K}$, so $0 \le k < \intf(n_4)$, and $s$ is the state at position $k$, $s = \ear(\natf(k), \bl{S})$;
+these are facts of the context in which the update is simplified. The update reads $\sel{1}{s}$, the index
+component. The engine never writes down a trace for the index; instead, when it meets the read $\sel{1}{s}$ of a
+component, it computes the \emph{view} of that read: the trace of this component alone, the \emph{projection} of
+$S$ to component~1,
+\[
+\pi_1(S) = \tr{0}{\bl{K}, \bl{S}}{c, k, s :: c + 1}
+\]
+obtained from $S$ by taking the first component of the initial state and of each result, and by replacing the read
+of the own component by the accumulator $c$ (the other components are still read from $s$, hence $\bl{S}$ is a
+dependency). This update does not use $s$, so the unused dependency is dropped and $\lemma{counter\_def}$ fires:
+\begin{align*}
+\tr{0}{\bl{K}}{c, k :: c + 1} &\rw \cnt(0, 1, n_4) \\
+\ear(\natf(k), \bl{\cnt(0, 1, n_4)}) &\rw 0 + \intf(\natf(k)) \cdot 1 \rw k
+\end{align*}
+The second line is the value of the view at position $k$ by \lemma{earlier\_counter}, and $\intf(\natf(k)) = k$
+since $0 \le k$ is known. The view is a closed term that reads no component any more, so the engine replaces the
+read in place: in every iteration $k$, the index is $k$. This is the step where ``the loop stores at $i$'' becomes
+``the loop stores at $0, 1, \ldots$''.
+
+\paragraph{The array is a sequence of stores.} The update of $S$ now has the array component $\sel{0}{s}[k := v]$,
+and the projection of $S$ to component~0 is $\tr{a}{\bl{K}}{c, k :: c[k := v]}$ (the index read is gone, so
+$\bl{S}$ is dropped again). It is matched by the body of $\stores$ with $keys = \bl{K}$ and the values a sequence that
+the program never names: the engine synthesizes it as the map of the stored expression over the iterations,
+\begin{align*}
+\tr{a}{\bl{K}}{c, k :: c[k := v]} &\rw \stores(a, \bl{K}, \mapc{\bl{K}}{k :: v}) \\
+\mapc{\bl{K}}{k :: v} &\rw \bl{\consts(n_4, v)}
+\end{align*}
+by the fold and \lemma{maps\_const}. The view of the exit value $a' = \sel{0}{\cur(S)}$ is therefore
+\[
+\cur(\stores(a, \bl{K}, \bl{\consts(n_4, v)})),
+\]
+the array after storing $v$ at each key of the counter. The view of the final index is
+\[
+\cur(\cnt(0, 1, n_4)) \rw \intf(n_4)
+\]
+by \lemma{current\_counter}.
+
+\paragraph{The number of iterations is $n$.} The iteration constraint has become
+$\al{\bl{K}}{k :: k < n}$ after the index read was evaluated, and \lemma{invs\_counter\_upper\_nonnegative} turns
+it into $\intf(n_4) \le n$ (its side condition $0 \le n$ is the precondition). The exit $\neg(i' < n)$ with
+$i' = \intf(n_4)$ gives $n \le \intf(n_4)$, and the arithmetic of the context concludes $\intf(n_4) = n$. The engine
+records this as $n_4 = \natf(i')$ and replaces $\intf(n_4)$ by $i'$ from here on (the rewrite \lemma{integer\_eq}
+in the log).
+
+\paragraph{The postcondition.} Finally $a'[k]$ for $0 \le k < n$: $a'$ is a variable whose definition in the context
+is the marker $\sel{0}{\cur(S)}$, whose view is the store sequence, and \lemma{current\_stores} fires through both,
+\begin{align*}
+a'[k] &\rw \mathsf{if}\ \occurs(k, \bl{K})\ \mathsf{then}\ \ear(\indexof(k, \bl{K}), \bl{\consts(n_4, v)}) \\
+&\qquad\ \mathsf{else}\ a[k] \\
+\occurs(k, \bl{K}) &\rw 0 \le k < 0 + \intf(n_4) \qquad\text{true, since } \intf(n_4) = n \\
+\indexof(k, \bl{K}) &\rw \natf(k - 0) \\
+\ear(\natf(k), \bl{\consts(n_4, v)}) &\rw v
+\end{align*}
+by \lemma{occurs\_counter\_up}, \lemma{indexof\_counter\_up} and \lemma{earlier\_consts}. The conclusion $a'[k] = v$
+is true, the goal is dropped. The whole run takes about two seconds, of which the JVM start is most.
+
+The proof needed no fact about the loop except what the database knows about counters, stores and constant lists.
+Had the program stored $v$ at $2i$ or counted down, other lemmas of the same database would have fired.
+
+\section{The element-wise exchange of two arrays}
+
+\begin{lstlisting}
+method swap(a: array<int, int>, b: array<int, int>, n: int)
+  returns (a_: array<int, int>, b_: array<int, int>)
+  requires 0 <= n
+  ensures forall k: int :: 0 <= k < n ==> a_[k] == b[k] && b_[k] == a[k]
+{
+  var i: int;
+  var t: int;
+  a_ := a;
+  b_ := b;
+  i := 0;
+  while i < n
+  {
+    t := a_[i];
+    a_[i] := b_[i];
+    b_[i] := t;
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+
+The state of the loop now has four components, $(t, a', b', i)$, and the update of $S$ is
+\[
+s, k :: \big(\sel{1}{s}[\sel{3}{s}],\ \sel{1}{s}[\sel{3}{s} := \sel{2}{s}[\sel{3}{s}]],\
+\sel{2}{s}[\sel{3}{s} := \sel{1}{s}[\sel{3}{s}]],\ \sel{3}{s} + 1\big).
+\]
+The rest of the condition has the same shape as before. What is new is that the two arrays read each other: the new
+$a'$ stores a value of the old $b'$, and the new $b'$ a value of the old $a'$ (through $t$).
+
+\subsection{Why this is the hard case}
+
+In the paper on trace equation systems, a loop yields one trace per variable, and a variable that reads another has
+the history of that other among its dependencies: $A' = \tr{a}{\bl{K}, \bl{B'}}{x, k, y :: x[k := y[k]]}$ and
+symmetrically $B'$ over $\bl{A'}$. The two equations are recursive through each other. To summarize $A'$, the
+engine needs $B'$ in closed form, which needs $A'$ in closed form. The paper resolves such cases by lemmas that tie
+the two equations together, written per shape, and the summaries of the sorting algorithms in that line of work
+carry a dozen side conditions each for this reason.
+
+The state trace sidesteps the recursion: there is one fold over the pair of arrays, and its components are
+projections computed on demand. The question is only how a projection may read the other component.
+
+\subsection{The proof}
+
+\paragraph{The index, as before.} The read $\sel{3}{s}$ becomes $k$ exactly as in the first example; afterwards
+every store and read in the update is at position $k$.
+
+\paragraph{The view of $a'$ reads $b'$.} To summarize the array $a'$, the engine computes its projection,
+\[
+\pi_1(S) = \tr{a}{\bl{K}, \bl{S}}{c, k, s :: c[k := \sel{2}{s}[k]]},
+\]
+which still reads component~2 of the state, so $\bl{S}$ stays a dependency. The fold of $\stores$ matches it with
+the synthesized value sequence,
+\[
+\pi_1(S) \rw \stores(a, \bl{K}, \mapc{\bl{K}, \bl{S}}{k, s :: \sel{2}{s}[k]}),
+\]
+but that is not closed: the values stored are reads of $b'$. The engine now needs to know what $\sel{2}{s}[k]$ is,
+the element $k$ of the other array in iteration $k$. It computes the view of the read $\sel{2}{s}$: the projection
+of $S$ to component~2 at position $k$,
+\[
+\ear(\natf(k), \bl{\stores(b, \bl{K}, \mapc{\bl{K}, \bl{S}}{k', s' :: \sel{1}{s'}[k']})}),
+\]
+whose update in turn reads component~1. Here the engine would loop forever if it followed every read: the view of
+$a'$ needs the view of $b'$, which needs the view of $a'$. The rule is that \emph{a component is not projected
+inside its own view}: while the view of component~1 is being computed, a read of component~1 stays as it is, a
+marker that the lemmas treat as an opaque value. So $\sel{1}{s'}[k']$ stays, and the view of $b'$ is a sequence of
+stores whose values are unknown terms. That is enough, because of what is asked next.
+
+\paragraph{Iteration $k$ reads a position that no earlier iteration wrote.} The lemma on an element of an earlier
+value of a store sequence,
+\begin{lstlisting}
+lemma {:rw} earlier_stores<a, b>(k: a, j: Nat, a: array<a, b>, keys: List<a>, values: List<b>)
+  ensures earlier(j, butlast(stores(a, keys, values)))[k]
+    == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
+\end{lstlisting}
+says: the value at $k$ after $j$ stores is the last value stored at $k$ among the first $j$ keys, or the original if
+$k$ is not among them. Applied to the read, with $j = \natf(k)$ and $keys = \bl{K}$,
+\begin{align*}
+\sel{2}{s}[k] &\rw \ite{\occurs(k, \prefix(\natf(k), \bl{K}))}{\ear(\ldots)}{b[k]} \\
+\prefix(\natf(k), \bl{K}) &\rw \bl{\cnt(0, 1, \natf(k))} \\
+\occurs(k, \bl{\cnt(0, 1, \natf(k))}) &\rw 0 \le k < 0 + \intf(\natf(k)) \qquad\text{i.e. } k < k,\ \text{false}
+\end{align*}
+by \lemma{prefix\_counter} and \lemma{occurs\_counter\_up}. The first $k$ keys are $0, \ldots, k-1$, and $k$ is not
+among them, so the \textsf{then} branch, and with it the opaque read of $a'$, disappears: in iteration $k$ the loop
+reads the \emph{original} $b[k]$. This is the whole argument of the program's correctness, and the engine found it by
+asking the right question (what is the element at $k$ of the earlier value) rather than by unfolding both arrays.
+
+\paragraph{The closed forms.} With the read resolved, the projection of $a'$ no longer depends on the state, and
+\begin{align*}
+\pi_1(S) &\rw \stores(a, \bl{K}, \mapc{\bl{K}}{k :: b[k]}) \rw \stores(a, \bl{K}, \selects(b, \bl{K})) \\
+\pi_2(S) &\rw \stores(b, \bl{K}, \selects(a, \bl{K}))
+\end{align*}
+where $\selects(b, keys)$, the reads of $b$ at the keys, is another \lstinline|{:fold}| of the database. The exit
+values are $\cur$ of these; the number of iterations is $n$ as before.
+
+\paragraph{The postcondition.} $a'[k]$ for $0 \le k < n$ goes through the definition of $a'$, the view, and
+\lemma{current\_stores} as in the first example, now with the values $\selects(b, \bl{K})$:
+\begin{align*}
+a'[k] &\rw \mathsf{if}\ \occurs(k, \bl{K})\ \mathsf{then}\ \ear(\indexof(k, \bl{K}), \selects(b, \bl{K}))\ \mathsf{else}\ a[k] \\
+&\rw \ear(\natf(k), \selects(b, \bl{K})) \rw b[\ear(\natf(k), \bl{K})] \rw b[k]
+\end{align*}
+by \lemma{earlier\_selects} and \lemma{earlier\_counter}; $b'[k] = a[k]$ is symmetric. About three seconds in all,
+fourteen distinct lemmas, none written for the program.
+
+\section{The engine, in short}
+
+The examples used the following machinery, which the engine of \texttt{-prove} provides for every goal.
+
+\begin{description}[leftmargin=1.5em]
+\item[Contextual simplification.] The goal is traversed innermost first; at each position the context holds the facts
+  that are known there (the antecedents of the implication, the other conjuncts, the guards of a branch), and a
+  subformula known to hold or to fail is replaced by its truth value. Combinator bodies get the context of their
+  position: the ranges of the bound variables and their values in the dependencies.
+\item[Rewriting with the database.] After each round, the first rule whose left-hand side matches the term at the
+  top and whose side conditions hold is applied. Matching is modulo the usual algebra of arithmetic, the binding
+  structure of the combinators, and higher-order patterns for shapes with a free function in them. Side
+  conditions that are closed after the match are looked up among the facts and otherwise decided by the same
+  simplification; conditions with free variables are matched against the facts, which binds them.
+\item[Definitions and classes.] Equations among the facts, $K = \cnt(0, 1, n_4)$ or $a' = \sel{0}{\cur(S)}$, are kept
+  in congruence classes. A variable that a pattern does not match is matched like each member of its class, so
+  a lemma on counters applies to $\bl{K}$, and a lemma on stores applies to $a'$ through its definition and the view
+  of that definition.
+\item[Arithmetic.] Linear facts over the integers go to a simplex over the rationals with integer rounding, which
+  decides the comparisons the examples needed ($\intf(n_4) = n$ from the two bounds, $k < k$ false).
+\item[Views and suspension.] A read of a component of a state trace is matched modulo its view, the simplified
+  projection of the state trace to that component; a component is not projected inside its own view; a read whose
+  view is closed is replaced by it in place. Views are memoized by the facts that mention their variables.
+\end{description}
+
+The same two examples are proved by the earlier form of the tool (\texttt{-teq -simplify}, one trace per variable)
+with the same lemmas; the swap needed there what the state form avoids, the two equations over each other's
+histories, resolved by following the equations through the context. The state form matters for loops where
+the variables cannot be layered, and most of all for nested loops, where an inner loop becomes a single value of the
+outer update rather than a family of fresh sequences; those examples are in the same directory of the repository
+(\texttt{examples/dafny/state}, nested sums, row sums, a transpose), and a binary search where the remaining gap is
+visible.
+
+\section{What the examples do not show}
+
+Both programs have a layered loop: the index depends on nothing, the arrays depend on the index and on each other
+only at the position being written. The database covers such loops without help. Programs whose loops carry an
+accumulated property (a sorted prefix, a running maximum, a search that stops) need lemmas about their shapes, some
+of them written for the program, and the engine has to match those lemmas against views whose shape it has not seen
+before. The open items at the time of writing, with the binary search as the example: facts about a named trace
+should become available when its term occurs, not only when the goal mentions the exact atom (the bounds of a
+monotone search index), and lemmas over another dependency must be polymorphic in that dependency's type, since in
+the state form it is the list of states. The record of the implementation,
+\texttt{ideas/deduction-engine-implementation.md} in the repository, keeps the state of these.
+
+\section*{AI Declaration}
+
+This note was written with the assistance of Claude (Anthropic) in Claude Code, from the runs of the tool on the
+two examples (\texttt{-debug rewrite}) and the documentation of the repository; the author directed the work and
+is responsible for the content.
+
+\end{document}

@@ -1,5 +1,7 @@
 # The state-trace sketch, reviewed against the engine plan
 
+> Its consequences are taken into [deduction-engine-plan.md](deduction-engine-plan.md) (Oct 13, 2026).
+
 Oct 12, 2026. A reading of [state-trace.md](state-trace.md) and of the commit b6f2b969 on the branch
 `worktree-state-trace` (`-teq-state`, version 0.43.0 on the branch, not merged) from the perspective of
 [deduction-engine-plan.md](deduction-engine-plan.md), whose section 1 was written before the sketch's second
