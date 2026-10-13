@@ -30,6 +30,8 @@ class Need:
 
     options: tuple[str, ...] = ()
     timelimit: float | None = FULL
+    # a prefix of the version of the tool, e.g. "0.42." for the runs before the migration of the lemma database
+    version: str | None = None
 
 
 def options(path: Path) -> set[str]:
@@ -57,6 +59,8 @@ def find(benchmark: str, name: str, need: Need, directory: Path = common.RESULTS
             continue
         if need.timelimit is not None and common.seconds(attributes.get("timelimit")) != need.timelimit:
             continue
+        if need.version is not None and not attributes.get("version", "").startswith(need.version):
+            continue
         if not set(need.options) <= options(path):
             continue
         candidates.append((match["date"], path))
@@ -78,6 +82,10 @@ LABELS = {
     "cuvee-chc": "Cuvée (CHC)",
     "monocera": "MonoCera",
     "cuvee-acsl": "Cuvée -vcgen (ACSL)",
+    "cuvee-before": "Cuvée (0.42)",
+    "cuvee-fallback-before": "Cuvée+Z3 (0.42)",
+    "cuvee-after": "Cuvée (0.46)",
+    "cuvee-fallback-after": "Cuvée+Z3 (0.46)",
 }
 
 
@@ -294,6 +302,18 @@ witnesses (unconfirmed: correct, but the witness was not validated, score 0). Cu
 \end{center}
 \noindent\plot{quantile-Arrays.pdf}\hfill\plot{quantile-Loops.pdf}
 
+\subsection*{The migration of the lemma database at 60\,s}
+Development runs with 60\,s CPU time, before (0.42: one trace per variable, \texttt{-simplify}, the whole
+database with \texttt{teq:nested}) and after the migration of the lemma database on Oct 13, 2026 (0.46: one trace
+per strongly connected component of the variables of a loop, \texttt{-prove}, the migrated modules, and for
+Cuvée a second round of \texttt{-split -prove}); the newest run of each.
+\begin{center}\footnotesize
+\fit{\input{migration.tex}}
+<migration-note>
+\medskip
+<migration-legend>
+\end{center}
+
 \section{Complementarity of TEQ and Horn clauses}
 A virtual portfolio per task: correct if either configuration is correct (the faster one), wrong if either is
 wrong.
@@ -375,6 +395,18 @@ def main():
     replacements["svcomp"] = (note(pending(spec2, categories)), legend(spec2))
     for name in categories:
         plots(plt, out, name, spec2, [name], name, file=f"quantile-{name}.pdf")
+
+    # 2b. the migration of the lemma database (Oct 13, 2026) at 60 s: the per-variable form against one trace per
+    # component, each with and without Z3
+    short = Need(("-verify",), timelimit=60.0)
+    migration = columns([
+        ("cuvee-before", "here", gather("cuvee", categories, replace(short, version="0.42."))),
+        ("cuvee-fallback-before", "here", gather("cuvee-fallback", categories, replace(short, version="0.42."))),
+        ("cuvee-after", "here", gather("cuvee", categories, replace(short, version="0.46."))),
+        ("cuvee-fallback-after", "here", gather("cuvee-fallback", categories, replace(short, version="0.46."))),
+    ])
+    (out / "migration.tex").write_text(grid(migration, categories))
+    replacements["migration"] = (note(pending(migration, categories)), legend(migration))
 
     # 3. complementarity
     teq_results, z3_results, chc_results = (spec2[0].results, spec2[1].results, spec2[2].results)

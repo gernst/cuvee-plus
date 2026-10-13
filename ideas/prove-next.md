@@ -17,13 +17,13 @@ not repeat (no round completes); the 1000 steps of the goal are used up inside o
 simplification of the instances in `Forward.fire`, which is repeated wherever a lemma fires: at every assumed fact
 and at every comparison decided by `Simplify.forward`, without a memo.
 
-**Done (0.46.8).** The steps went into the simplification of the instances, which `fire` repeats wherever a lemma
-fires (also at every comparison decided by `Simplify.forward`): an instance is simplified with steps of its own now.
-The reducercommutativity tasks end `unknown` (sum05-2 in 32 s); bAnd*, bor*, xor* still use up the steps of the goal,
-in the traversal itself: the same reads x[0], x[1] are simplified again in about 31 sibling contexts. Both outcomes
-score the same; what remains is the cost.
+**Tried and reverted (0.46.8, 0.46.9).** An instance simplified with steps of its own: the reducercommutativity tasks
+end `unknown` instead of breaking off, but on Arrays at 60 s the errors fall from 58 to 38 and the timeouts rise
+from 76 to 95, with the same correct results, since every firing may use 1000 steps again; the bound on the steps of
+the goal is what ends these runs early. bAnd*, bor*, xor* use up the steps of the goal in the traversal itself: the
+same reads x[0], x[1] are simplified again in about 31 sibling contexts.
 
-**Further change, if the cost matters.**
+**Change, if the cost matters.**
 - A memo of the instances per context: an instance whose canonical form (`Canon`, modulo the classes) is known is
   not assumed again, and does not count as a change of the round (step 3 of J in ideas/teq-modules.md, "firing at
   definitions, a memo per lemma and canonical term").
