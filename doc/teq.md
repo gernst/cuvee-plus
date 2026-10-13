@@ -98,6 +98,21 @@ the even numbers that `main` passes).
 - Differential equations and parallel composition are not supported; loop
   invariants are ignored.
 
+## State traces (`-teq-state`)
+
+`-teq-state` summarizes a loop with several modified variables `x₁, ..., xₘ` by one trace over the tuple
+`tupleₘ(x₁, ..., xₘ)` of the prelude of Dafny ([StateTEQ](../src/cuvee/transform/StateTEQ.scala)): the update
+reads the variables as the components `tupleₘ_i(s)` of the accumulator `s`, the counter and the choices are the
+only dependencies, the exit values are the components of the current value, and the iteration constraint ranges
+over `⌊K⌋, ⌊S⌋`. The system is closed: the counter, the trace and the exit values are substituted by their
+definitions, such that only the number of iterations and the choices are fresh, and an inner loop is a value of the
+outer update rather than a family of fresh sequences; a loop with a single modified variable keeps its per-variable
+trace, closed in the same way. The lemma database is the single module `state.dfy`. The per-variable traces of the
+paper are views of the state trace that the engine of `-prove` follows on demand (see [prove.md](prove.md)); the
+simplifier of `-simplify` does not know them. Examples in [examples/dafny/state](../examples/dafny/state), the
+design and the findings of the sketch in [ideas/state-trace.md](../ideas/state-trace.md), the implementation in
+[ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md).
+
 ## The lemma database ([resources/cuvee/teq](../resources/cuvee/teq))
 
 - The database consists of modules, injected by `-teq` in the order of

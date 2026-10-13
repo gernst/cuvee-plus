@@ -32,7 +32,8 @@ transformation and any output.
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `VCGen` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), `FourierMotzkin` (linear constraints over the rationals), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
-| `cuvee.transform` | `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
+| `cuvee.prove` | the deduction engine of `-prove` ([prove.md](prove.md)): `Prove` (the transform), `Simplify` and `Rewrite` (the traversal and the matcher, copied from `cuvee.simplify` and adapted, independent of it), `Context` with `Classes` (congruence closure), `Linear` and `Simplex` (linear arithmetic over the rationals), `Views` (the per-variable projections of state traces), and its own `Arith`, `Normalize`, `Rule`. |
+| `cuvee.transform` | `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), `Fallback` (trace equation systems in first-order logic), and `StateTEQ` (the trace equation system of a loop over the tuple of its state, `-teq-state`). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
 ## A run
@@ -41,7 +42,7 @@ transformation and any output.
 
 1. `Config.parse` reads the command line:
    - the input language from the file extension;
-   - the transforms in order (`-vcgen`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`),
+   - the transforms in order (`-vcgen`, `-teq`, `-teq-state`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`, `-prove`),
      and `-rules`, which makes `-simplify` report the rules it applies (see [simplifier.md](simplifier.md));
    - the printer (`-print`);
    - the sink (stdout, `-o`), the solver (`-z3`, `-cvc5`), which checks the
@@ -163,6 +164,12 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   function definitions to a fixpoint under the facts of the context, with
   conditional rewrite rules ([`Rewrite`](../src/cuvee/simplify/Rewrite.scala)),
   see [simplifier.md](simplifier.md).
+- [`Prove`](../src/cuvee/prove/Prove.scala) is the second engine for the goals of trace equation systems
+  (`-prove`), with congruence closure and a simplex as its context and the views of state traces, see
+  [prove.md](prove.md).
+- [`StateTEQ`](../src/cuvee/transform/StateTEQ.scala) builds the trace equation system of a loop over the
+  tuple of its modified variables for `-teq-state`, which `TEQ.loop` calls in place of the per-variable form,
+  see [teq.md](teq.md).
 - [`Flat`](../src/cuvee/transform/Flat.scala) eliminates records
   (non-recursive datatypes with one constructor), whose declarations are
   dropped: functions take their fields, functions with records as results are

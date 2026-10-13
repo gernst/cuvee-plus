@@ -16,6 +16,9 @@ which only the open points remain).
   expected and why, and the consequences for the plan.
 - [deduction-engine-plan.md](deduction-engine-plan.md): the implementation plan for it, six phases with files,
   sizes, tests, what each retires, and a harness of four regression sets.
+- [deduction-engine-implementation.md](deduction-engine-implementation.md): the record of the implementation in
+  the package `prove` (`-prove`, `-teq-state` over tuples) on the branch `prove`: the instructions, the decisions,
+  the files, the state of each step and the log, to be picked up at any time.
 - [state-trace.md](state-trace.md): the sketch of the representation question in the worktree `state-trace`:
   `-teq-state` with one state trace per loop over a datatype of the modified variables, whose per-variable traces
   are views that the matcher follows on demand, a fresh database, ten examples (the swap of two arrays, nested

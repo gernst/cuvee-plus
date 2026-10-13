@@ -114,7 +114,7 @@ object TEQ extends Transform:
 
     for
       cmd <- cmds
-      cmd_ <- verify(state, gs, entry, cmd)
+      cmd_ <- verify(config, state, gs, entry, cmd)
     yield cmd_
 
   // the module `name` of the lemma database (resources/cuvee/teq), a resource
@@ -129,6 +129,11 @@ object TEQ extends Transform:
   val modules =
     List("core", "arithmetic", "counters", "aggregation", "arrays", "search").map(module)
 
+  // the lemma database of -teq-state, a single fresh module with the core declarations that it needs and the lemmas
+  // that the examples of state traces need (see ideas/state-trace.md), instead of the modules of -teq
+  val stateModules =
+    List("state").map(module)
+
   // the declarations of the functions on traces and the lemmas about them, the modules parsed in order by a fresh
   // parser for Dafny, for tests
   lazy val lemmas: List[Cmd] =
@@ -137,7 +142,7 @@ object TEQ extends Transform:
 
   // a goal for the entry point only, if there is one (see Config.entryPoint), since calls are inlined, which checks
   // the other procedures in the context of their calls; a goal for each procedure otherwise
-  def verify(state: State, gs: List[Var], entry: Option[Name], cmd: Cmd): List[Cmd] =
+  def verify(config: Config, state: State, gs: List[Var], entry: Option[Name], cmd: Cmd): List[Cmd] =
     cmd match
       case DeclareProc(_, _) | DeclareVar(_, _) | AnnotateTag(_, _) =>
         Nil
@@ -153,7 +158,7 @@ object TEQ extends Transform:
         val post_ = Old.elim(gs, gs_, post)
 
         // the postcondition is the last check of each path
-        val paths = symex(state, name, body_, Path(Subst.empty))
+        val paths = symex(config, state, name, body_, Path(Subst.empty))
         val goal = Path.formula(for p <- paths yield p.check(p(post_)).steps)
 
         val phi = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(goal)))
@@ -162,13 +167,13 @@ object TEQ extends Transform:
       case _ =>
         List(cmd)
 
-  def symex(state: State, proc: Name, progs: List[Prog], p: Path): List[Path] =
+  def symex(config: Config, state: State, proc: Name, progs: List[Prog], p: Path): List[Path] =
     progs.foldLeft(List(p)):
       case (paths, prog) =>
-        paths.flatMap(symex(state, proc, prog, _))
+        paths.flatMap(symex(config, state, proc, prog, _))
 
   // the paths through `prog` that extend `p`
-  def symex(state: State, proc: Name, prog: Prog, p: Path): List[Path] =
+  def symex(config: Config, state: State, proc: Name, prog: Prog, p: Path): List[Path] =
     if p.jump.isDefined
     then List(p)
     else
@@ -186,13 +191,13 @@ object TEQ extends Transform:
           List(p.assign(xs, rhs.map(p(_))))
 
         case call: Call =>
-          this.call(state, proc, call, p)
+          this.call(config, state, proc, call, p)
 
         // locals have arbitrary initial values, the values of variables they shadow are restored afterwards
         case Block(locals, progs, _) =>
           val zs = locals.fresh
           val outer = locals.map(x => x -> p.su.vars.get(x))
-          for p_ <- symex(state, proc, progs, p.fresh(zs).assign(locals, zs))
+          for p_ <- symex(config, state, proc, progs, p.fresh(zs).assign(locals, zs))
           yield
             val su = outer.foldLeft(p_.su):
               case (su, (x, Some(e))) => su + (x -> e)
@@ -201,40 +206,40 @@ object TEQ extends Transform:
 
         case If(test, left, right) =>
           val test_ = p(test)
-          symex(state, proc, left, p.when(test_)) ++ symex(state, proc, right, p.when(Not(test_)))
+          symex(config, state, proc, left, p.when(test_)) ++ symex(config, state, proc, right, p.when(Not(test_)))
 
         // nondeterministic choices are branches on fresh boolean variables, which keeps branch conditions disjoint
         case Choice(progs) =>
-          choice(state, proc, progs, p)
+          choice(config, state, proc, progs, p)
 
         case While(test, body, attrs) =>
-          loop(state, proc, Some(test), body, attrs, p)
+          loop(config, state, proc, Some(test), body, attrs, p)
 
         case Iter(body, attrs) =>
-          loop(state, proc, None, body, attrs, p)
+          loop(config, state, proc, None, body, attrs, p)
 
         case _: Ode | _: Par =>
           Error.raise("differential equations and parallel composition not supported by symbolic execution", proc)
 
-  def choice(state: State, proc: Name, progs: List[Prog], p: Path): List[Path] =
+  def choice(config: Config, state: State, proc: Name, progs: List[Prog], p: Path): List[Path] =
     progs match
       case Nil =>
         Nil
 
       case List(prog) =>
-        symex(state, proc, prog, p)
+        symex(config, state, proc, prog, p)
 
       case prog :: rest =>
         val z = Var("choice", Sort.bool).fresh
         val p_ = p.fresh(List(z))
-        symex(state, proc, prog, p_.when(z)) ++ choice(state, proc, rest, p_.when(Not(z)))
+        symex(config, state, proc, prog, p_.when(z)) ++ choice(config, state, proc, rest, p_.when(Not(z)))
 
   // calls are inlined, which requires procedures without a contract, e.g. functions in C:
   // the paths through the body of the callee, like a block whose locals are the formal parameters:
   // the inputs are the values of the arguments, the outputs are arbitrary initially, a return leaves the callee only,
   // and the variables of the caller with the same names are restored afterwards, before the results are assigned;
   // calls of recursive procedures do not terminate
-  def call(state: State, proc: Name, call: Call, p: Path): List[Path] =
+  def call(config: Config, state: State, proc: Name, call: Call, p: Path): List[Path] =
     val Call(name, args, res) = call
     val (in, out, pre, post) = VCGen.contract(state, name)
 
@@ -248,7 +253,7 @@ object TEQ extends Transform:
     val outer = (in ++ out).map(x => x -> p.su.vars.get(x))
     val entry = p.fresh(zs).assign(in ++ out, args.map(p(_)) ++ zs)
 
-    for q <- symex(state, name, state.procdefs(name), entry)
+    for q <- symex(config, state, name, state.procdefs(name), entry)
     yield
       val values = out.map(q(_))
       val su = outer.foldLeft(q.su):
@@ -264,14 +269,14 @@ object TEQ extends Transform:
   // the iterations take the paths through the body that end normally or by continue,
   // the loop is left if the guard does not hold, where loops without test (nondeterministic iterations)
   // may be left in every iteration, or by a path through the body that ends by break or return
-  def loop(state: State, proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, p: Path): List[Path] =
+  def loop(config: Config, state: State, proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, p: Path): List[Path] =
     val xs = modified(body, attrs)
     val guard = test.getOrElse(True)
 
     // the body from an arbitrary state x♯ of the loop variables, the other variables keep their values
     val sharp = xs.fresh
     val inner = Path(p.su ++ Subst.from(xs, sharp))
-    val paths = symex(state, proc, body, inner).filter(iterates)
+    val paths = symex(config, state, proc, body, inner).filter(iterates)
 
     // no path through the body leads to another iteration, e.g. a body that ends by break or return on all paths:
     // the loop runs the body at most once, as a conditional, without a trace equation system, where the paths that
@@ -280,7 +285,7 @@ object TEQ extends Transform:
     then
       val guard_ = p(guard)
       val once =
-        for q <- symex(state, proc, body, if test.isDefined then p.when(guard_) else p)
+        for q <- symex(config, state, proc, body, if test.isDefined then p.when(guard_) else p)
         yield if q.jump == Some(Return) then q else q.copy(jump = None)
 
       test match
@@ -295,42 +300,22 @@ object TEQ extends Transform:
       val n = Var("n", Sort.nat).fresh
       val k = Var("k", Sort.int).fresh
       val K = Var("K", Sort.trace(Sort.int)).fresh
-      // the traces are named after the variables, capitalized, e.g. I for i
-      val Xs = xs.map(x => Var(x.name.name.capitalize, Sort.trace(x.typ)).fresh)
-      val cur = xs.fresh
-
-      // the update of x_j has a case for each path, the dependencies are the other loop variables and choices it uses
-      val equations =
-        for ((x, x_), tr) <- xs zip sharp zip Xs
-        yield
-          val updates = for q <- paths yield Upd(q.B, q(x))
-          val used = updates.free
-          val others = (sharp zip Xs).filter((y_, _) => y_ != x_ && used.contains(y_))
-          val choices = (zs zip Zs).filter((z, _) => used.contains(z))
-          val deps = Butlast(K) :: others.map((_, tr_) => Butlast(tr_)) ++ choices.map(_._2)
-          val bound = k :: others.map(_._1) ++ choices.map(_._1)
-          val update =
-            updates match
-              case List(Upd(True, rhs)) => rhs
-              case _                    => Eps(updates)
-          Eq(tr, Trace(p(x), deps, x_, bound, update))
-
-      val counter = Eq(K, Counter(Ints.zero, Ints.one, n))
-      val current = for (x, tr) <- cur zip Xs yield Eq(x, Current(tr))
-
       // all earlier iterations have taken some path through the body, with the guard holding before each of them
-      val iterations =
-        val deps = Butlast(K) :: Xs.map(Butlast(_)) ++ Zs
-        val bound = k :: sharp ++ zs
-        val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
-        Invs(deps, bound, And(List(inner(guard), paths_).flatMap(And.flattenStrong)))
+      val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
+      val constraint = And(List(inner(guard), paths_).flatMap(And.flattenStrong))
 
-      val teq = And(counter :: current ++ equations ++ List(iterations, Ints.le(Ints.zero, Nats.integer(n))))
+      // the per-variable form of the paper, or the state form of -teq-state over the tuples of the prelude (see
+      // transform.StateTEQ), which is closed: the counter, the trace and the exit
+      // values are substituted by their definitions, such that only the number of iterations and the choices are fresh
+      val (fresh, cur, teq) =
+        if config.stateTraces
+        then cuvee.transform.StateTEQ.system(state, xs, sharp, zs, Zs, n, k, K, paths, constraint, p)
+        else system(xs, sharp, zs, Zs, n, k, K, paths, constraint, p)
 
       // the state at the exit, from which the body executes safely if the guard holds,
       // the paths of the body from there that end by break or return leave the loop as well
-      val exit = p.fresh(cur ++ List(n, K) ++ Xs ++ Zs).assign(xs, cur)
-      val last = symex(state, proc, body, Path(exit.su))
+      val exit = p.fresh(fresh).assign(xs, cur)
+      val last = symex(config, state, proc, body, Path(exit.su))
       val safe = Path.formula(last.map(_.steps))
       val exit_ = exit.assume(teq)
       val guard_ = exit_(guard)
@@ -351,6 +336,48 @@ object TEQ extends Transform:
 
         case None =>
           checked :: left
+
+  // the trace equation system of the paper (definition 4.4): one trace per modified variable x, named after it,
+  // capitalized, e.g. I for i, whose update has a case for each path, with the other loop variables and the choices it
+  // uses as dependencies; the current values; the counter; and the iteration constraint over all traces and choices;
+  // the fresh variables of the exit, the exit values of the loop variables, and the system
+  def system(
+      xs: List[Var],
+      sharp: List[Var],
+      zs: List[Var],
+      Zs: List[Var],
+      n: Var,
+      k: Var,
+      K: Var,
+      paths: List[Path],
+      constraint: Expr,
+      p: Path
+  ): (List[Var], List[Expr], Expr) =
+    val Xs = xs.map(x => Var(x.name.name.capitalize, Sort.trace(x.typ)).fresh)
+    val cur = xs.fresh
+
+    val equations =
+      for ((x, x_), tr) <- xs zip sharp zip Xs
+      yield
+        val updates = for q <- paths yield Upd(q.B, q(x))
+        val used = updates.free
+        val others = (sharp zip Xs).filter((y_, _) => y_ != x_ && used.contains(y_))
+        val choices = (zs zip Zs).filter((z, _) => used.contains(z))
+        val deps = Butlast(K) :: others.map((_, tr_) => Butlast(tr_)) ++ choices.map(_._2)
+        val bound = k :: others.map(_._1) ++ choices.map(_._1)
+        Eq(tr, Trace(p(x), deps, x_, bound, update(updates)))
+
+    val counter = Eq(K, Counter(Ints.zero, Ints.one, n))
+    val current = for (x, tr) <- cur zip Xs yield Eq(x, Current(tr))
+    val iterations = Invs(Butlast(K) :: Xs.map(Butlast(_)) ++ Zs, k :: sharp ++ zs, constraint)
+
+    (cur ++ List(n, K) ++ Xs ++ Zs, cur, And(counter :: current ++ equations ++ List(iterations, Ints.le(Ints.zero, Nats.integer(n)))))
+
+  // a single unconditional case is its result
+  def update(updates: List[Upd]): Expr =
+    updates match
+      case List(Upd(True, rhs)) => rhs
+      case _                    => Eps(updates)
 
   // the paths through a loop body that lead to the next iteration, i.e., that end normally or by continue
   def iterates(q: Path): Boolean =

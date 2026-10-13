@@ -729,6 +729,26 @@ Measured on binary search and on the SV-COMP examples
   e.g. on counts over prefixes (see Bugs). The symbolic execution of `-teq`
   is exponential in sequences of conditionals and overflows at ten (see Bugs).
 
+## Deduction engine (`-prove`, package `prove`)
+
+- The record of the implementation, with the open steps, is
+  [ideas/deduction-engine-implementation.md](ideas/deduction-engine-implementation.md); the design in
+  [doc/prove.md](doc/prove.md).
+- The simplex is rebuilt from the constraints of the context at every check (`Linear.inconsistent`, lazy per
+  context); the transpose of [examples/dafny/state](examples/dafny/state) takes 22 s against 7 s with the
+  difference constraints of the sketch. An incremental tableau per context, or a cache of the checks by the
+  constraint set, is the next step.
+- Closed `invs` side conditions are looked up among the facts syntactically only (`Rewrite.known`); the classes
+  do not look below binders, and bound variables are not numbered canonically (package B of the plan).
+- Only variables have definitions in the matcher (`Context.defs`): a term matched by a member of its class that
+  contains it cycles (`a[k]` by `S.2[k] == a[k]`); a class member that does not contain the term would be safe to
+  try and is not tried yet.
+- The per-variable form of `-teq` is not tested under `-prove` yet, nor the C frontend under `-teq-state`.
+- The views are memoized by the marker, the bound variables and the classes, so a view computed under weaker
+  facts is reused where stronger facts hold; not observed to lose a proof on the ten examples.
+- `-prove` simplifies assertions and function definitions only; programs, attributes and derivatives pass
+  through unchanged.
+
 ## Trace equation systems (`-teq`)
 
 - The runs of the Dafny translations of SV-COMP (`Dafny.unreach-call.Unbounded`, 2 min, 2026-10-10 16:13 against

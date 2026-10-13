@@ -11,6 +11,7 @@ import cuvee.pipe._
 import cuvee.smtlib.Solver
 import cuvee.simplify.Fuse
 import cuvee.simplify.Simplify
+import cuvee.prove.Prove
 import cuvee.transform.Fallback
 import cuvee.transform.Flat
 import cuvee.transform.Monomorph
@@ -104,6 +105,9 @@ case class Config(
     stderr: PrintStream = System.err,
     // whether -simplify reports the rules that it applies to each assertion (see Simplify.apply)
     rules: Boolean = false,
+    // -teq-state: loops with several modified variables are summarized by one trace over the tuple of them (see
+    // transform.StateTEQ), with the fresh lemma database of TEQ.stateModules
+    stateTraces: Boolean = false,
     // keep last
     debug: Set[String] = Set()
 ):
@@ -132,7 +136,8 @@ case class Config(
   // those of -teq (see TEQ.modules) if the feature teq is known, then the further ones, each once, such that the
   // order of the options does not matter
   def injected =
-    val modules_ = if known.contains("teq") then TEQ.modules.map((cuvee.dafny.Source, _)) else Nil
+    val teq = if stateTraces then TEQ.stateModules else TEQ.modules
+    val modules_ = if known.contains("teq") then teq.map((cuvee.dafny.Source, _)) else Nil
     (modules_ ++ modules).distinct
 
   // the receiver of the output, by the final configuration: the answers with -verify, with or without a solver,
@@ -193,6 +198,12 @@ object Config:
         val config_ = config.usingMath.having("teq").using(TEQ)
         (config_, rest)
 
+  val teqState =
+    flag("-teq-state", "like -teq, with one trace per loop over the tuple of its modified variables (a state trace), and the lemma database of the module state only"):
+      case (config, rest) =>
+        val config_ = config.usingMath.having("teq").using(TEQ).copy(stateTraces = true)
+        (config_, rest)
+
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
   val chc =
     flag("-chc", "generate constrained Horn clauses for procedures"):
@@ -240,6 +251,12 @@ object Config:
     flag("-simplify", "simplify formulas and function definitions"):
       case (config, rest) =>
         val config_ = config.using(Simplify)
+        (config_, rest)
+
+  val prove =
+    flag("-prove", "prove goals with the deduction engine of the package prove (congruence closure, a simplex, matching modulo the classes and the views of state traces), like -simplify"):
+      case (config, rest) =>
+        val config_ = config.using(Prove)
         (config_, rest)
 
   val hybrid =
@@ -355,6 +372,7 @@ object Config:
     debug_,
     vcgen,
     teq,
+    teqState,
     chc,
     flat,
     split,
@@ -362,6 +380,7 @@ object Config:
     fallback,
     fuse,
     simplify,
+    prove,
     rules,
     hybrid,
     arch,
@@ -419,7 +438,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.42.4")
+    println("Cuvée 0.43.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

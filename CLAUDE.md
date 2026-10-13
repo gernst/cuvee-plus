@@ -13,7 +13,10 @@ or solvers consume.
 - [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion, and
   facts that the goal does not mention.
 - [doc/teq.md](doc/teq.md): trace equation systems (`-teq`), combinators,
-  lemma database.
+  lemma database, state traces (`-teq-state`).
+- [doc/prove.md](doc/prove.md): the deduction engine (`-prove`, package
+  `prove`, independent of `simplify`), its record in
+  [ideas/deduction-engine-implementation.md](ideas/deduction-engine-implementation.md).
 - [doc/hybrid.md](doc/hybrid.md): derivatives, ODEs, parallel composition
   (`-hybrid`).
 - [doc/style.md](doc/style.md): coding style, incl. lowercase comments that
@@ -111,7 +114,9 @@ or solvers consume.
 - **Combinator dependencies** have type `List(T)`, at least one, of equal
   length (`List.len`).
 - **The simplifier runs only in `-simplify`.** Other transforms never call it
-  or its helpers.
+  or its helpers. The engine of `-prove` (package `prove`) copies what it
+  needs from `simplify` and never references it; changes to one are not
+  mirrored in the other unless asked.
 - **Simplifier helpers are local.** Each normalizes its own constructor, in
   one step, building with the normalizing helpers (`not(...)`, not
   `Not(...)`). The outer loops iterate. No global normal forms, no further
