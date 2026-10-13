@@ -104,7 +104,7 @@ goal
                                            b₁₁[j₁₂ := b₁₁[p₁₃]][
                                              p₁₃ :=
                                              b₁₁[j₁₂]]))))
-      && invs(for ⌊K₂₄⌋, ⌊counter(1, 1, n₂₂)⌋ check k₂₃, i₆ :: k₂₃ + 1 < n)
+      && (n₂₂ == zero || 1 < n && integer(n₂₂) < n)
       && invs(for ⌊K₂₄⌋, ⌊counter(1, 1, n₂₂)⌋, N?₂₁
               check k₂₃, i₆, n₁₄ ::
                 integer(n₁₄) <= k₂₃ + 1)

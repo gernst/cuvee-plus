@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/lower_bound.dfy
+// ./Cuvee.sh -teq -include teq:search -include teq:sorted -entry main -prove examples/dafny/algorithms/lower_bound.dfy
 // binary search for the first position of a value at least x in the sorted range a[0..n) (the lower bound): the
 // bounds lo and hi are data-dependent, the postcondition relates them to the abstract predicate sorted
 //

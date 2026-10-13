@@ -1,5 +1,3 @@
-function perm(a: array<int, int>, b: array<int, int>): bool
-
 lemma {:rw} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
 
@@ -16,19 +14,4 @@ lemma {:rw} perm_swaps(a: array<int, int>, b: array<int, int>, ks: List<int>,
                            Q(x, k, h) :=
                            x[P(x, k, h)]])), b)
       <==> perm(a, b)
-
-goal
-  forall a: array<int, int>, n: int, b₁₃: array<int, int>, i₁₄: int, n₆: Nat,
-         I₉: Trace<int>, B₁₀: Trace<array<int, int>> ::
-    0 <= n
-      && I₉ == counter(0, 1, n₆)
-      && B₁₀
-        == trace(a, for ⌊I₉⌋
-                 do b₄, k₇ ::
-                   b₄[k₇ := b₄[-k₇ + n + -1]][-k₇ + n + -1 := b₄[k₇]])
-      && b₁₃ == current(B₁₀)
-      && n₆ == natural(i₁₄)
-      && invs(for ⌊I₉⌋ check k₇ :: 2 * k₇ + 1 < n)
-      && n <= 2 * i₁₄ + 1
-      ==> perm(b₁₃, a)
 

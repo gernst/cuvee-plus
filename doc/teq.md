@@ -163,25 +163,32 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   and into the modules of their concept, the file is in `legacy/`;
   `aggregation.dfy` (`-include teq:aggregation`: the functions `sum`, `count`,
   `max`, `min`, `parity` and the traces `sums`, `parities`, `counts`, `maxs`,
-  `mins`, with the linearity of sums, indicators and bounds); and
+  `mins`, with the linearity of sums, indicators and bounds);
   `arithmetic.dfy` (`-include teq:arithmetic`: `pow` and the rules that the
-  arithmetic of `-prove` does not decide on its own). The others still declare
-  functions that teq.dfy declares as well, or refer to each other, and cannot
-  be included with teq.dfy until they are migrated. What they hold: `counters.dfy`
-  `mods(i, c, m, n)`, the counter modulo `m` of the unsigned variables of C,
-  whose arithmetic wraps around (`mods_def`), with lemmas that bound it by the
-  tests of loops below `m` (not proved in Lean yet); `teq:nested` the
-  fragments of inner loops (the inner counter, its final value, its iteration
-  constraint, its exit stated on the constraint fragment
-  `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, the numbers of inner
-  iterations as `⌊consts(m, natural(n))⌋`, the outer trace of a variable that
-  only the inner loop modifies, `results`), which `-teq` no longer needs,
-  since an inner loop is a value of the outer update; `teq:sorting` (`sorted`,
-  `perm`, `partitioned`, inductions); `teq:strides` (the strided stores and
-  stores ahead of the MonoCera benchmarks, see
+  arithmetic of `-prove` does not decide on its own); `search.dfy`
+  (`-include teq:search`: agreeing prefixes, no occurrence, values above the
+  iterations, with their facts at the reads as forward lemmas, and the
+  bisection of an interval with a probe, `bisection`, `bisection_lo/hi`);
+  `sorted.dfy`, formerly `sorting.dfy` (`-include teq:sorted`: `sorted`,
+  `perm`, `partitioned`, inductions, and the partition points `lower`, `upper`
+  of a sorted array with their bounds); `arrays.dfy` (`-include teq:arrays`:
+  stores at a counter and at distinct keys, conditional stores, resets, the
+  reads of an array updated along a trace); `counters.dfy`
+  (`-include teq:counters`: phases, flags, catching up, merged cases, constant,
+  increasing and bounded values); and `strides.dfy` (`-include teq:strides`:
+  the strided stores and stores ahead of the MonoCera benchmarks, see
   [benchmarks/monocera](../benchmarks/monocera), which fix the number of
-  stores and of cases on their left-hand sides, are not proved in
-  Lean, and are not tested). The order of the modules is the order in
+  stores and of cases on their left-hand sides and are not proved in Lean).
+  The rules of these files never applied on SV-COMP and specific to one task
+  stay in the legacy file, among them `mods`, the counters modulo `m` of the
+  unsigned variables of C, which the C examples do not need under `-prove`.
+  Not migrated: `teq:nested`, the fragments of inner loops (the inner counter,
+  its final value, its iteration constraint, its exit stated on the constraint
+  fragment `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, the numbers of
+  inner iterations as `⌊consts(m, natural(n))⌋`, the outer trace of a variable
+  that only the inner loop modifies, `results`), which `-teq` no longer needs,
+  since an inner loop is a value of the outer update, and which only the
+  nested sorting algorithms still include. The order of the modules is the order in
   which the rules are tried.
   [legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy) is the former single
   file of the per-variable form, from which its modules were split: a backup,

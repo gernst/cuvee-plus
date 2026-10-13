@@ -242,3 +242,26 @@ function {:teq} {:fold} parities(x: int, values: List<int>): Trace<int>
 lemma {:rw} {:teq} current_parities(x: int, values: List<int>)
   ensures current(parities(x, values))
     == x + parity(values)
+
+// the recurrences of arrays whose values are sums (from arrays.dfy of the per-variable form)
+// the same for a sum kept in the cell j of an array, e.g. sum[0] of a one-element array in C: only the cell j is
+// written, hence it is read from the final array
+// (from MonoCera: brs1-brs5, ms2-ms5)
+lemma {:rw} {:teq} select_current_trace_reset_add(a0: array<int, int>, j: int, n: Nat, c: int, G: (int) -> int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a[j := a[j] + G(k)]))[j]
+      == if n == zero then a0[j] else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0))
+
+// an array filled by a recurrence at the positions 1, ..., n, each element from its predecessor plus G of the position
+// of the predecessor, is the initial element plus the sum of G over the positions before
+// (from eqn1, eqn1f, nsqm, nsqmf, pcomp, pcompf, sqm)
+lemma {:rw} {:teq} current_trace_prefix_sums(b0: array<int, int>, n: Nat, j: int, G: (int) -> int)
+  ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := G(k) + b[k]]))[j]
+    == if 0 <= j <= integer(n) then b0[0] + sum(maps(for ⌊counter(0, 1, natural(j))⌋ yield k :: G(k))) else b0[j]
+
+// the same with two added terms, since a higher-order summand matches a single summand only (see TODO.md)
+// (from nsqm, nsqmf, pcomp, pcompf, sqm)
+lemma {:rw} {:teq} current_trace_prefix_sums_add(b0: array<int, int>, n: Nat, j: int, G: (int) -> int,
+                                                 H: (int) -> int)
+  ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := b[k] + G(k) + H(k)]))[j]
+    == if 0 <= j <= integer(n) then b0[0] + sum(maps(for ⌊counter(0, 1, natural(j))⌋ yield k :: G(k) + H(k))) else b0[j]

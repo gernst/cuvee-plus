@@ -28,10 +28,26 @@ statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a gui
   from teq.dfy into aggregation.dfy, `parities` back from legacy; `pow` into arithmetic.dfy. Eleven examples that
   used them include `teq:aggregation` now (fallback_recursion also `teq:arithmetic`), with unchanged results except
   counting_sort, which does not terminate on another rule now.
-- Next: search and sorted (with the bisection and the partition points of examples/dafny/state), arrays, then
-  counters (`unsigned`), strides, and retiring nested.
+- `search.dfy`, `sorting.dfy` (now `sorted.dfy`), `arrays.dfy`, `counters.dfy`, `strides.dfy` migrated (Oct 13):
+  search with the lsearch rules of teq.dfy and the bisection of examples/dafny/state (`bisection`, `bisection_lo/hi`),
+  its facts at the reads (`earlier_agree_prefix`, `earlier_not_occurs_prefix`, `select_not_occurs_selects`,
+  `earlier_above_iterations`) forward lemmas; sorted with the partition points (`lower`, `upper`, `bounds`,
+  `cut_lower`, `lower_succ`) over `sorted(a, 0, n)`, so bsearch_bisect, bsearch_safe and lower_bound of
+  examples/dafny/state include `teq:search` and `teq:sorted` instead of declaring them; arrays 24 to 10 rules (the
+  recurrences with sums in aggregation); counters 60 to 9 rules on the shapes of traces over a counter, the bounds of
+  iteration constraints (`invs_const`, `invs_counter_lower`, `invs_counter_upper_nonnegative` before
+  `invs_counter_upper`, which loops otherwise) and `distincts_counter` in teq.dfy, `mods` left in the legacy file
+  (the C examples close without it under `-prove`); strides unchanged. In teq.dfy, `zero_integer` is oriented
+  `(integer(n) == 0) <==> (n == zero)` with the forward lemma `zero_integer_value`, since the other orientation looped
+  with `integer_eq`. In `-prove`: a forward instance that simplifies to true is assumed as it is (its atoms are what
+  the classes need), and conclusions that `-split` turned into `... ==> false` are taken apart (`Forward.from`). Of the
+  algorithms, perm, lower_bound and affine close now, is_sorted, reverse, lsearch, nested_* and others have fewer
+  goals; bubble_sort, insertion_sort and insertion_sort2 loop with `teq:sorted` and without `teq:nested`, so they keep
+  `teq:nested`; cocktail_sort and counting_sort do not terminate (deferred).
+- Next: retiring nested (a rewrite of the lemmas of the three sorts), the remaining conversions to forward lemmas,
+  the firing at definitions (step 3 of J) before more forward lemmas.
 
-## The state of the files
+## The state of the files (before the migration)
 
 | file | functions | rules | written for | state |
 |---|---|---|---|---|
@@ -43,7 +59,7 @@ statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a gui
 | `teq/arrays.dfy` | `stores`, `shifts` | 24 | per-variable | `stores` duplicated in `teq.dfy` |
 | `teq/search.dfy` | `agree_prefix`, `above_iterations` | 9 | per-variable | `select_not_occurs_selects` duplicated in `teq.dfy` |
 | `teq/nested.dfy` | `results` | 11 (7 on `invs` of fragments) | per-variable only | needs `consts_prefix` of aggregation |
-| `teq/sorting.dfy` | `sorted`, `perm`, `partitioned` | 13 | both | |
+| `teq/sorting.dfy` | `sorted`, `perm`, `partitioned` | 13 | both | now `teq/sorted.dfy` |
 | `teq/strides.dfy` | none | 5 | per-variable (MonoCera) | untested |
 | `legacy/teq.dfy` | 31 | 162 | per-variable | backup, not injected |
 

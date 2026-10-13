@@ -78,7 +78,7 @@ goal
                          do b₆, k₁₈, n₁₁, i₇ ::
                            current(bubble_pass(b₆, ⌊counter(0, 1, n₁₁)⌋))))
       && integer(n₁₇) + i₂₆ == n
-      && invs(for ⌊K₁₉⌋, ⌊counter(n, -1, n₁₇)⌋ check k₁₈, i₇ :: k₁₈ + 1 < n)
+      && (n₁₇ == zero || 1 < n && integer(n₁₇) < n)
       && maps(for ⌊K₁₉⌋, N?₁₆ yield k₁₈, n₁₁ :: integer(n₁₁) + k₁₈ + 1)
         == ⌊consts(n₁₇, n)⌋
       && 0 <= integer(n₁₇)

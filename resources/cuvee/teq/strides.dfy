@@ -1,6 +1,6 @@
 // strides: the reads of the final arrays of loops that store several cells per iteration, at strided positions (s k, s
 // k + 1, ...) or ahead of the iteration (k + 1, then k), taken from benchmarks/monocera/lemmas.dfy on Oct 11, 2026;
-// this file assumes the core declarations of teq.dfy (Nat, integer, List, Trace, current, butlast, counter); unlike the
+// an optional module over teq.dfy alone (-include teq:strides), which it needed no change for (Oct 13); unlike the
 // other modules, these lemmas fix the number of stores and of cases on their left-hand sides, since a rule matches a
 // fixed shape of nested stores, and they are not proved in Lean yet
 

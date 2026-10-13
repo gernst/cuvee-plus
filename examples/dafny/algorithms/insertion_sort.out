@@ -103,7 +103,7 @@ goal
                                            b₉[j₁₀ := b₉[-k₁₂ + k₁₉]][
                                              -k₁₂ + k₁₉ :=
                                              b₉[j₁₀]]))))
-      && invs(for ⌊K₂₀⌋, ⌊counter(1, 1, n₁₈)⌋ check k₁₉, i₇ :: k₁₉ + 1 < n)
+      && (n₁₈ == zero || 1 < n && integer(n₁₈) < n)
       && invs(for ⌊K₂₀⌋, ⌊counter(1, 1, n₁₈)⌋, N?₁₇
               check k₁₉, i₇, n₁₁ ::
                 integer(n₁₁) <= k₁₉ + 1)

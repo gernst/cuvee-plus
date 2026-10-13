@@ -348,7 +348,7 @@ object Config:
         (config_, rest)
 
   // a file of the user, e.g. with lemmas, in the language of its extension; task definitions describe no declarations
-  // teq:<concept> is the module <concept>.dfy of the lemma database (resources/cuvee/teq), e.g. teq:sorting, which
+  // teq:<concept> is the module <concept>.dfy of the lemma database (resources/cuvee/teq), e.g. teq:sorted, which
   // the output hides like the rest of the database if the feature teq is known (-teq), and prints otherwise, e.g.
   // for -print lean of the database
   val include =
@@ -427,7 +427,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.46.2")
+    println("Cuvée 0.46.3")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

@@ -1,9 +1,11 @@
-// searching: the abstractions of iteration constraints of searches (agreeing prefixes, no occurrence in a prefix,
-// values above the iterations) and their instantiation at a position extracted from teq.dfy on Oct 11, 2026 as one of
-// the modules that -teq injects in the order of TEQ.modules, teq.dfy itself is kept but not injected; this file assumes
-// the core declarations of teq.dfy (Nat, integer, natural, List, length, unspecified, Trace, current, butlast, counter,
-// earlier, prefix, occurs, indexof, distincts, consts), counters.dfy, and arrays.dfy (selects); the attributes and the
-// order of the lemmas are those of teq.dfy
+// searching: the abstractions of the iteration constraints of linear searches (agreeing prefixes, no occurrence in a
+// prefix or among the values read at a counter, values above the iterations) with their facts at the reads, and the
+// bisection of an interval with a probe, whose bounds are the cuts of its guards (cut, declared in teq.dfy); an
+// optional module over teq.dfy
+// alone (-include teq:search), migrated on Oct 13, 2026 from the module of the per-variable form (in legacy/teq.dfy),
+// with the search lemmas of teq.dfy and the bisection of examples/dafny/state/bsearch_bisect.dfy; the facts at the
+// reads are forward lemmas, triggered by the read, earlier(j, xs) or a[k], whose other variables are matched against
+// the facts of the abstractions
 
 // the first n values of xs and ys agree
 function {:teq} agree_prefix(n: Nat, xs: List<int>, ys: List<int>): bool
@@ -32,33 +34,22 @@ lemma {:rw} {:teq} agree_prefix_def(n: Nat, xs: List<int>, ys: List<int>, hs: Li
 lemma {:rw} {:teq} not_occurs_prefix_def(n: Nat, e: int, xs: List<int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), xs) != e) <==> !occurs(e, prefix(n, xs))
 
-// the same for reads of an array at the positions of a counter: x does not occur among the values read there
-// (from lsearch)
-lemma {:rw} {:teq} not_occurs_selects_def(a: array<int, int>, x: int, i: int, n: Nat)
-  ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x) <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
-
 // the values of the iterations exceed the iterations
 // (from simple_array_index_value_2)
 lemma {:rw} {:teq} above_iterations_def(n: Nat, ts: List<int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs, ts check k, h, t :: k < t) <==> above_iterations(n, ts)
 
-// agreeing sequences are equal at each position in the range; the atom is the left-hand side
+// agreeing sequences are equal at each position in the range, a fact at the reads
 // (from standard_compare_ground)
-lemma {:rw} {:teq} earlier_agree_prefix(n: Nat, j: Nat, xs: List<int>, ys: List<int>)
+lemma {:fw} {:teq} earlier_agree_prefix(n: Nat, j: Nat, xs: List<int>, ys: List<int>)
   requires agree_prefix(n, xs, ys) && integer(j) < integer(n)
-  ensures (earlier(j, xs) == earlier(j, ys)) <==> true
+  ensures earlier(j, xs) == earlier(j, ys)
 
 // which is instantiated at the positions j in that range
 // (from standard_find_ground-1)
-lemma {:rw} {:teq} earlier_not_occurs_prefix(n: Nat, j: Nat, e: int, xs: List<int>)
+lemma {:fw} {:teq} earlier_not_occurs_prefix(n: Nat, j: Nat, e: int, xs: List<int>)
   requires !occurs(e, prefix(n, xs)) && integer(j) < integer(n)
-  ensures (earlier(j, xs) == e) <==> false
-
-// the same for reads of an array, at the positions k of the counter
-// (from lsearch)
-lemma {:rw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int, n: Nat, k: int)
-  requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋)) && i <= k < i + integer(n)
-  ensures (a[k] == x) <==> false
+  ensures earlier(j, xs) != e
 
 // a sentinel: a position j that holds x, which does not occur among the values read at the positions 0, ..., n - 1,
 // is at least n
@@ -69,6 +60,39 @@ lemma {:rw} {:teq} select_not_occurs_selects_beyond(n: Nat, j: int, x: int, a: a
 
 // which is instantiated at the positions j in the range
 // (from simple_array_index_value_2)
-lemma {:rw} {:teq} earlier_above_iterations(n: Nat, j: Nat, ts: List<int>)
+lemma {:fw} {:teq} earlier_above_iterations(n: Nat, j: Nat, ts: List<int>)
   requires above_iterations(n, ts) && integer(j) < integer(n)
-  ensures (integer(j) < earlier(j, ts)) <==> true
+  ensures integer(j) < earlier(j, ts)
+
+lemma {:rw} {:teq} not_occurs_selects_def(a: array<int, int>, x: int, i: int, n: Nat)
+  ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x) <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
+
+lemma {:fw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int, n: Nat, k: int)
+  requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋)) && i <= k < i + integer(n)
+  ensures a[k] != x
+
+// a bisection of [l0, h0) with a probe M strictly inside the interval: while lo < hi, lo moves above the probe where
+// G holds and hi down to it where H holds; named by bisection, which keeps the probe and the guards
+function {:teq} bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool,
+                          H: int -> bool): Trace<(int, int)>
+
+lemma {:rw} {:teq} bisection(l0: int, h0: int, i: int, c: int, m: Nat, M: (int, int) -> int, G: int -> bool,
+                             H: int -> bool)
+  ensures trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
+          case G(M(lo, hi)) && lo < hi => M(lo, hi) + 1 case H(M(lo, hi)) && lo < hi => lo,
+          case G(M(lo, hi)) && lo < hi => hi case H(M(lo, hi)) && lo < hi => M(lo, hi))
+    == bisection(l0, h0, ⌊counter(i, c, m)⌋, M, G, H)
+
+// if G holds on a prefix of [l0, h0), lo stays within l0 and the cut of G, and if H holds on a suffix, hi stays within
+// the cut of its negation and h0
+lemma {:fw} {:teq} bisection_lo(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool, H: int -> bool)
+  requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
+  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
+  ensures l0 <= current(bisection(l0, h0, ks, M, G, H)).0 <= cut(G, l0, h0)
+
+lemma {:fw} {:teq} bisection_hi(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool, H: int -> bool)
+  requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
+  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && H(p) ==> H(q)
+  ensures cut((j: int) => !H(j), l0, h0) <= current(bisection(l0, h0, ks, M, G, H)).1 <= h0

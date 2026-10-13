@@ -1,11 +1,12 @@
-// sorting: the abstract predicates sorted and perm (permutation as a total map on the indices, so that a swap at any
-// two positions preserves it) and partitioned, with the generic lemmas on traces of swaps and of steps, and the
-// inductions for sorting by a growing sorted prefix, with the invariant as a quantified side condition that the
-// simplifier decides by step lemmas on atoms; the algorithms' own knowledge (the summaries of their inner loops, the
-// step lemmas, argmin, insert, bubble_pass) stays with the examples in examples/dafny/algorithms, Oct 11, 2026; this
-// file assumes the core declarations of teq.dfy (Nat, integer, List, Trace, current, butlast, counter) and
-// counters.dfy; the predicates are declared without definitions, their meaning is the lemmas (a definition in Lean
-// would make the lemmas provable)
+// sorting: the abstract predicates sorted, perm (permutation as a total map on the indices, so that a swap at any
+// two positions preserves it) and partitioned, with the generic lemmas on traces of swaps and of steps, the inductions
+// for sorting by a growing sorted prefix, with the invariant as a quantified side condition decided by step lemmas on
+// atoms, and the partition points of a sorted array, which turn its reads into comparisons of indices; an optional
+// module over teq.dfy alone (-include teq:sorted; the cuts of its comparisons are those of the bisection of
+// teq:search), migrated on Oct 13, 2026 from
+// sorting.dfy of the per-variable form, with the partition points of examples/dafny/state/bsearch_bisect.dfy; the
+// algorithms' own knowledge (summaries of inner loops, step lemmas) stays with the examples; the predicates are
+// declared without definitions, their meaning is the lemmas
 
 // a[lo..hi) is nondecreasing
 function {:teq} sorted(a: array<int, int>, lo: int, hi: int): bool
@@ -89,3 +90,40 @@ lemma {:rw} {:teq} sorted_prefix_steps_two(a: array<int, int>, n: int, m: Nat, F
   requires forall b: array<int, int>, k: int, i: int :: 0 <= i && sorted(b, 0, i) ==> sorted(F(b, k, i), 0, i + 1)
   ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ⌊counter(1, 1, m)⌋ do b, k, i :: F(b, k, i))), 0, n)
     <==> true
+
+// the partition points of a sorted array a[0..len): below lower(ar, len, y), the elements are less than y, from
+// upper(ar, len, y) on, greater
+function {:teq} lower(ar: array<int, int>, len: int, y: int): int
+
+function {:teq} upper(ar: array<int, int>, len: int, y: int): int
+
+lemma {:rw} {:teq} lower(ar: array<int, int>, len: int, y: int, m: int)
+  requires sorted(ar, 0, len) && 0 <= m && m < len
+  ensures (ar[m] < y) <==> m < lower(ar, len, y)
+
+lemma {:rw} {:teq} upper(ar: array<int, int>, len: int, y: int, m: int)
+  requires sorted(ar, 0, len) && 0 <= m && m < len
+  ensures (y < ar[m]) <==> upper(ar, len, y) <= m
+
+lemma {:rw} {:teq} lower_le(ar: array<int, int>, len: int, y: int, m: int)
+  requires sorted(ar, 0, len) && 0 <= m && m < len
+  ensures (y <= ar[m]) <==> lower(ar, len, y) <= m
+
+lemma {:rw} {:teq} equal(ar: array<int, int>, len: int, y: int, m: int)
+  requires sorted(ar, 0, len) && 0 <= m && m < len
+  ensures (ar[m] == y) <==> lower(ar, len, y) <= m && m < upper(ar, len, y)
+
+// the partition points lie within the bounds, where they occur (the exit, P <= Q, and the found case, Q <= n)
+lemma {:fw} {:teq} bounds(ar: array<int, int>, len: int, y: int)
+  requires sorted(ar, 0, len) && 0 <= len
+  ensures 0 <= lower(ar, len, y) && lower(ar, len, y) <= upper(ar, len, y) && upper(ar, len, y) <= len
+
+// the cut of the comparison with y on a sorted array is its partition point; the negation of the other guard,
+// !(y < ar[j]), is ar[j] <= y, which is ar[j] < y + 1 on Int, whose partition point is upper(ar, len, y)
+lemma {:rw} {:teq} cut_lower(ar: array<int, int>, len: int, y: int)
+  requires sorted(ar, 0, len) && 0 <= len
+  ensures cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)
+
+lemma {:rw} {:teq} lower_succ(ar: array<int, int>, len: int, y: int)
+  requires sorted(ar, 0, len)
+  ensures lower(ar, len, y + 1) == upper(ar, len, y)

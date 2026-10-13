@@ -1,3 +1,7 @@
+function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
+  trace(x0, for ks, bs do x, k, b :: b)
+}
+
 function {:fold} column(B0: array<int, array<int, int>>,
                         A: array<int, array<int, int>>, k: int,
                         nn: Nat): Trace<array<int, array<int, int>>> {

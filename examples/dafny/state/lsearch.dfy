@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry find -prove examples/dafny/state/lsearch.dfy
+// ./Cuvee.sh -teq -include teq:search -entry find -prove examples/dafny/state/lsearch.dfy
 // examples/dafny/teq/lsearch.dfy under -teq (see ideas/state-trace.md)
 // the first index of x among the first n elements of an array, n if there is none
 //

@@ -73,8 +73,9 @@ goal
                                    case a[k₁₅] != a[j₇] => d₆)))
       && d₂₁ == current(D₁₉)
       && n₁₄ == natural(i₂₂)
-      && invs(for ⌊I₁₇⌋, N?₁₃ check k₁₅, n₈ :: integer(n₈) + k₁₅ < i₂₂)
-      && maps(for ⌊I₁₇⌋, N?₁₃ yield k₁₅, n₈ :: integer(n₈) + k₁₅ + 1)
-        == ⌊consts(n₁₄, i₂₂)⌋
+      && invs(for ⌊I₁₇⌋, N?₁₃
+              check k₁₅, n₈ ::
+                n₈ == zero || k₁₅ + 1 < i₂₂ && integer(n₈) + k₁₅ < i₂₂)
+      && invs(for ⌊I₁₇⌋, N?₁₃ check k₁₅, n₈ :: i₂₂ <= integer(n₈) + k₁₅ + 1)
       ==> d₂₁ == distincts(selects(a, ⌊counter(0, 1, natural(i₂₂))⌋))
 

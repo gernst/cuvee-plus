@@ -125,9 +125,7 @@ goal
                              b₇[i₆]]))
       && invs(for ⌊K₁₉⌋, ⌊counter(0, 1, n₁₇)⌋, N?₁₆
               check k₁₈, i₆, n₁₂ ::
-                invs(for ⌊counter(0, 1, n₁₂)⌋, ⌊counter(i₆ + 1, 1, n₁₂)⌋
-                     check k₁₃, j₁₁ ::
-                       j₁₁ < i₂₅))
+                n₁₂ == zero || i₆ + 1 < i₂₅ && integer(n₁₂) + i₆ < i₂₅)
       && invs(for ⌊K₁₉⌋, ⌊counter(0, 1, n₁₇)⌋, N?₁₆
               check k₁₈, i₆, n₁₂ ::
                 i₂₅ <= integer(n₁₂) + i₆ + 1)

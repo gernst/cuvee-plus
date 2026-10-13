@@ -97,6 +97,10 @@ function {:teq} consts<a>(n: Nat, v: a): Trace<a>
   case succ(m) => step(v, consts(m, v))
 }
 
+// the cut of a predicate G that holds on a prefix of [l, h): the first index where it fails, h if none; a predicate
+// H that holds on a suffix has the cut of its negation, the first index where H holds
+function {:teq} cut(G: int -> bool, l: int, h: int): int
+
 // the values of a at the keys, and the stores of the values at the keys
 function {:teq} {:fold} selects<a, b>(a: array<a, b>, keys: List<a>): List<b>
 {
@@ -118,7 +122,13 @@ lemma {:rw} {:teq} integer_natural(x: int)
   ensures integer(natural(x)) == x
 
 lemma {:rw} {:teq} zero_integer(n: Nat)
-  ensures (n == zero) <==> (integer(n) == 0)
+  ensures (integer(n) == 0) <==> (n == zero)
+
+// the value of a number of iterations that is zero, as a fact for the arithmetic where its value occurs, since the
+// equation n == zero of the classes does not reach the linear constraints
+lemma {:fw} {:teq} zero_integer_value(n: Nat)
+  requires n == zero
+  ensures integer(n) == 0
 
 lemma {:rw} {:teq} integer_injective(m: Nat, n: Nat)
   ensures (integer(m) == integer(n)) <==> (m == n)
@@ -127,7 +137,8 @@ lemma {:rw} {:teq} natural_nonpositive(x: int)
   requires x <= 0
   ensures natural(x) == zero
 
-// the number of iterations of an inner loop determined by its value, e.g. by the test and the exit of the loop
+// the number of iterations of an inner loop determined by its value, e.g. by the test and the exit of the loop; for the
+// value 0, zero_integer comes first, whose normal form n == zero this would rewrite to again
 lemma {:rw} {:teq} integer_eq(n: Nat, x: int)
   requires 0 <= x
   ensures (integer(n) == x) <==> (n == natural(x))
@@ -159,10 +170,26 @@ lemma {:rw} {:teq} maps_counter_affine(a: int, b: int, i: int, c: int, n: Nat)
   ensures maps(for ⌊counter(i, c, n)⌋ yield v :: a + b * v)
     == ⌊counter(a + b * i, b * c, n)⌋
 
+lemma {:rw} {:teq} invs_const(b: bool, i: int, c: int, n: Nat)
+  ensures invs(for ⌊counter(i, c, n)⌋ check v :: b)
+    <==> n == zero || b
+
+lemma {:rw} {:teq} invs_counter_lower(m: int, i: int, c: int, n: Nat)
+  ensures invs(for ⌊counter(i, c, n)⌋ check k :: m <= k)
+    <==> n == zero || m <= i && m <= i + (integer(n) - 1) * c
+
+lemma {:rw} {:teq} distincts_counter(i: int, c: int, n: Nat)
+  requires c != 0
+  ensures distincts(⌊counter(i, c, n)⌋)
+
 lemma {:rw} {:teq} invs_counter_upper_nonnegative(m: int, n: Nat)
   requires 0 <= m
   ensures invs(for ⌊counter(0, 1, n)⌋ check k :: k < m)
     <==> integer(n) <= m
+
+lemma {:rw} {:teq} invs_counter_upper(m: int, i: int, c: int, n: Nat)
+  ensures invs(for ⌊counter(i, c, n)⌋ check k :: k < m)
+    <==> n == zero || i < m && i + (integer(n) - 1) * c < m
 
 lemma {:rw} {:teq} current_counter(i: int, c: int, n: Nat)
   ensures current(counter(i, c, n))
@@ -204,15 +231,6 @@ lemma {:rw} {:teq} current_consts<a>(n: Nat, x: a)
 lemma {:rw} {:teq} earlier_consts<a>(k: Nat, n: Nat, x: a)
   ensures earlier(k, ⌊consts(n, x)⌋)
     == x
-
-// search
-
-lemma {:rw} {:teq} not_occurs_selects_def(a: array<int, int>, x: int, i: int, n: Nat)
-  ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x) <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
-
-lemma {:rw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int, n: Nat, k: int)
-  requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋)) && i <= k < i + integer(n)
-  ensures (a[k] == x) <==> false
 
 // a choice of a loop, e.g. the numbers of iterations of an inner loop, whose values are all determined by the
 // iteration constraint is a constant list, which the reads of the choice then follow (earlier_consts)

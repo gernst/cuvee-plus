@@ -131,9 +131,7 @@ goal
                 !r₄)
       && invs(for ⌊K₁₆⌋, ⌊counter(0, 1, n₁₄)⌋, N?₁₃
               check k₁₅, i₅, n₈ ::
-                invs(for ⌊counter(0, 1, n₈)⌋, ⌊counter(i₅ + 1, 1, n₈)⌋
-                     check k₉, j₇ ::
-                       j₇ < n))
+                n₈ == zero || i₅ + 1 < n && integer(n₈) + i₅ < n)
       && invs(for ⌊K₁₆⌋, ⌊counter(0, 1, n₁₄)⌋, N?₁₃
               check k₁₅, i₅, n₈ ::
                 invs(for ⌊counter(0, 1, n₈)⌋,
