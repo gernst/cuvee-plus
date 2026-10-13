@@ -123,21 +123,25 @@ object Simplify:
       // and of a map, Y == maps(...), whose update is the value of Y at each position, such that the update
       // assumes also the invariants of the context that mention ⌊X⌋ or Y (see invariants), e.g. the test of a loop;
       // the right-hand side is simplified like the combinator below, and then rewritten at the top (see simplify)
-      case Eq(x: Var, Trace.single(init, deps, acc, bound, update)) =>
+      // the histories of the accumulators denote them in the results (see Views.selfOf); the trace is rewritten at the
+      // top with the variable as its self only if it has a single accumulator, since the lemmas are about those
+      case Eq(x: Var, Trace(inits, deps, accs, bound, results)) =>
         val left_ = simplify(config, state, ctx.neutral, x)
-        val init_ = simplify(config, state, ctx.neutral, init)
+        val inits_ = simplify(config, state, ctx.neutral, inits)
         val deps_ = simplify(config, state, ctx.neutral, deps)
-        val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
-        val inner = combinator(config, state, ctx.bind(List(vars_.head)).copy(self = Some((Butlast(x), vars_.head))), deps_, vars_.tail)
-        val update_ = simplify(config, state, inner.assume(wrapped(config, state, ctx, inner, init_, vars_.head, re(update)), Nil), re(update))
-        val right_ = trace(config, state, ctx.neutral, init_, deps_, vars_.head, vars_.tail, update_)
-        eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
+        val (vars_, re) = Subst.rename(accs ++ bound, ctx.free)
+        val (accs_, bound_) = vars_.splitAt(accs.length)
+        val inner = combinator(config, state, ctx.bind(accs_).copy(self = Views.selfOf(x, accs_)), deps_, bound_)
+        val ranges = if accs.length == 1 then wrapped(config, state, ctx, inner, inits_.head, accs_.head, re(results.head)) else Nil
+        val results_ = results.map(result => simplify(config, state, inner.assume(ranges, Nil), re(result)))
+        val right_ = trace(config, state, ctx.neutral, inits_, deps_, accs_, bound_, results_)
+        eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, if accs.length == 1 then Some(x) else None))
 
       case Eq(y: Var, Maps(deps, bound, update)) =>
         val left_ = simplify(config, state, ctx.neutral, y)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val update_ = simplify(config, state, combinator(config, state, ctx.copy(self = Some((y, re(update)))), deps_, bound_), re(update))
+        val update_ = simplify(config, state, combinator(config, state, ctx.copy(self = List((y, re(update)))), deps_, bound_), re(update))
         val right_ = maps(config, state, ctx.neutral, deps_, bound_, update_)
         eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(y)))
 
@@ -298,25 +302,43 @@ object Simplify:
 
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see combinator)
-      // a projection trace of the component of the context's projection has its relation as self (see Views.relation)
-      case Trace.single(init, deps, acc, bound, update) =>
-        val init_ = simplify(config, state, ctx.neutral, init)
+      // a projection of a trace of several accumulators has the history of its component as self (see Views.relation);
+      // the histories ⌊S⌋.j among the dependencies are inert (see Views)
+      case Trace(inits, deps, accs, bound, results) =>
+        val inits_ = simplify(config, state, ctx.neutral, inits)
         val deps_ = simplify(config, state, ctx.neutral, deps)
-        val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
-        val self_ = Views.relation(state, ctx, deps_, vars_.head, vars_.tail).orElse(ctx.self)
-        val inner = combinator(config, state, ctx.bind(List(vars_.head)).copy(self = self_), deps_, vars_.tail)
-        val update_ = simplify(config, state, inner.assume(wrapped(config, state, ctx, inner, init_, vars_.head, re(update)), Nil), re(update))
-        trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, update_)
+        val (vars_, re) = Subst.rename(accs ++ bound, ctx.free)
+        val (accs_, bound_) = vars_.splitAt(accs.length)
+        val self_ =
+          Views.relation(deps_, accs_.head) match
+            case Nil if accs.length == 1 => ctx.self
+            case Nil                     => Nil
+            case pairs                   => pairs
+        val inner = combinator(config, state, ctx.bind(accs_).copy(self = self_), deps_, bound_)
+        val ranges = if accs.length == 1 then wrapped(config, state, ctx, inner, inits_.head, accs_.head, re(results.head)) else Nil
+        val results_ = results.map(result => simplify(config, state, inner.assume(ranges, Nil), re(result)))
+        trace(config, state, ctx, inits_, deps_, accs_, bound_, results_)
+
+      // the reads of the components of a trace of several accumulators are markers, replaced by their views once these
+      // read no component any more (see Views), e.g. the counter of a loop by its value; otherwise they stay, and the
+      // matcher matches them modulo their views (see Rewrite.matches)
+      case Component(s, i) =>
+        val expr_ = Component(simplify(config, state, ctx.neutral, s), i)
+        Views.projected(config, state, ctx, expr_) match
+          case Some(e) if Views.closed(Views.traceOf(ctx, s).map(_._1).getOrElse(s), e) => e
+          case _                                                                          => expr_
+
+      case History(s, i) =>
+        val expr_ = History(simplify(config, state, ctx.neutral, s), i)
+        Views.projected(config, state, ctx, expr_) match
+          case Some(e) if Views.closed(Views.traceOf(ctx, s).map(_._1).getOrElse(s), e) => e
+          case _                                                                          => expr_
 
       case Maps(deps, bound, update) =>
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (bound_, re) = Subst.rename(bound, ctx.free)
         val update_ = simplify(config, state, combinator(config, state, ctx, deps_, bound_), re(update))
         maps(config, state, ctx, deps_, bound_, update_)
-
-      // traces of several accumulators and their components are not simplified yet (see ideas/deduction-engine-plan.md, 1.4)
-      case _: Trace | _: Component | _: History =>
-        expr
 
       // the guards of the cases are simplified, cases whose guard is false are dropped,
       // and the results are simplified assuming their guard and, since the guards are disjoint, that the others are false;
@@ -398,27 +420,18 @@ object Simplify:
   // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of ctx.self,
   // which hold at each position of the dependencies, hence also for the values bound there;
   // the dependencies of a combinator have equal length, such that the positions coincide
-  // for the projection of a state trace to a component, whose self is the read sel(s) of that component and the
-  // accumulator (see Views.projected), the read is the accumulator in the invariants over ⌊S⌋, e.g. the test lo < hi of
-  // the loop bounds the accumulator of the projection to lo, and the equation itself is a fact of the update
+  // the self of the context maps further dependencies to their values in the update: ⌊X⌋ to the accumulator of X, the
+  // histories ⌊S⌋.j to the accumulators of a trace of several, the history of the own component of a projection to
+  // its accumulator (see Views.selfOf and Views.relation), such that e.g. the test lo < hi of a loop bounds the
+  // accumulator of the projection of lo
   def invariants(ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     val values = (deps zip bound).toMap[Expr, Expr] ++ ctx.self
-    val own =
-      ctx.self match
-        case Some((term, value)) if !deps.contains(term) && (term.free subsetOf bound.toSet) => Some((term, value))
-        case _                                                                                 => None
-    def read(expr: Expr): Expr =
-      own match
-        case Some((term, value)) if expr == term => value
-        case _                                   => expr.map(read)
-    val bodies =
-      for
-        case Invs(deps_, bound_, body) <- ctx.facts.assms
-        if deps_.forall(values.contains)
-      yield
-        val re = Subst.from(bound_, deps_.map(values))
-        read(re(body))
-    bodies ++ own.map((term, value) => Eq(term, value))
+    for
+      case Invs(deps_, bound_, body) <- ctx.facts.assms
+      if deps_.forall(values.contains)
+    yield
+      val re = Subst.from(bound_, deps_.map(values))
+      re(body)
 
   // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),
   // then 0 <= k < integer(n), since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
@@ -898,28 +911,26 @@ object Simplify:
       case Apply(ctx.↑(Lam(bound, body, _)), args_) if bound.length == args_.length =>
         Subst.from(bound, args_)(body)
 
-      // the component of a constructor application is its argument, also of a term defined by one (see Context.↑);
-      // a marker of a component of a state trace is replaced by its simplified view if that is closed, i.e. reads no
-      // component of the state any more (see Views.closed), e.g. the counter of a loop by the iteration k, as the bound
-      // variable i of the per-variable form is replaced by its value k (see iterations); a view that still reads a
-      // component stays a marker in place, which the matcher matches modulo its view (see Rewrite.matches); the
-      // accumulator of the state trace itself is never replaced in its own update (ctx.self)
-      case expr @ App(sel, _, _, List(arg)) if Views.selector(state, sel).isDefined =>
-        val Some((constr, i)) = Views.selector(state, sel): @unchecked
+      // the component of a constructor application is its argument, also of a term defined by one (see Context.↑)
+      case expr @ App(sel, _, _, List(arg)) if selector(state, sel).isDefined =>
+        val Some((constr, i)) = selector(state, sel): @unchecked
         arg match
-          case ctx.↑(App(`constr`, _, _, args)) =>
-            args(i)
-
-          case _ if ctx.self.exists(_._2 == arg) =>
-            expr
-
-          case _ =>
-            Views.projected(config, state, ctx, expr) match
-              case Some((e, _)) if Views.closed(state, constr, e) => e
-              case _                                              => expr
+          case ctx.↑(App(`constr`, _, _, args)) => args(i)
+          case _                                 => expr
 
       case expr =>
         expr
+
+  // the constructor whose selector `sel` is, and the position of the selector among its selectors, by the datatype of
+  // the formal parameter of the selector, such that the lookup is cheap for the applications of other functions
+  def selector(state: State, sel: Fun): Option[(Fun, Int)] =
+    sel.formals match
+      case List(Var(_, Sort(con, _))) =>
+        state.datatypes.get(con.name).flatMap: data =>
+          data.constrs.collectFirst:
+            case (constr, sels) if sels.contains(sel) => (constr, sels.indexOf(sel))
+      case _ =>
+        None
 
   // a bound natural n that occurs only as its value integer(n) is an integer variable of the same name within its range
   // 0 <= n, such that arithmetic reasons about it, e.g. forall n: Nat :: integer(n) != 10 is false for n == 10;
@@ -1022,9 +1033,9 @@ object Simplify:
       case List(Upd(_, rhs)) => rhs
       case _                 => Eps(merged)
 
-  def trace(config: Config, state: State, ctx: Context, init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr): Expr =
-    val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free - acc)
-    Trace(init, deps_, acc, bound_, re(update))
+  def trace(config: Config, state: State, ctx: Context, inits: List[Expr], deps: List[Expr], accs: List[Var], bound: List[Var], results: List[Expr]): Expr =
+    val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, results.free -- accs)
+    Trace(inits, deps_, accs, bound_, results.map(re(_)))
 
   def maps(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var], update: Expr): Expr =
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free)

@@ -185,9 +185,23 @@ object Rewrite:
       if defs.nonEmpty
       then defs
       else
-        Views.projected(config, state, ctx, arg) match
-          case Some((e, sel)) => matches(config, state, ctx.copy(projection = Some(sel)), params, vars, locals, pat, self, bound, avoid, e, subst)
-          case None           => unmatched
+        // a read of a component of a trace of several accumulators is matched structurally first, against the
+        // projection of the trace to that component (see Views.structural): a pattern with one accumulator takes
+        // the component as its accumulator and the other components as further dependencies, which the selection of
+        // dependencies leaves aside like any dependency the pattern does not mention; only if that fails is the
+        // normal form of the component computed and matched (see Views.projected), which costs a simplification
+        val structural =
+          for
+            e <- Views.structural(ctx, pat, arg).toList
+            subst_ <- matches_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
+          yield subst_
+
+        if structural.nonEmpty
+        then structural
+        else
+          Views.projected(config, state, ctx, arg) match
+            case Some(e) => matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
+            case None    => unmatched
 
   def matches_(
       config: Config,
@@ -295,9 +309,11 @@ object Rewrite:
 
       // the updates and bodies are matched in the context that the simplifier has there (see Simplify.combinator),
       // which is determined by the expression, e.g. guards follow from the test of the loop
-      // a projection trace of the component of the context's projection has its relation as self (see Views.relation)
+      // a projection of a trace of several accumulators has the history of its component as self (see Views.relation)
       case (Trace.single(init, deps, acc, ys, update), Trace.single(init_, deps_, acc_, ys_, update_)) =>
-        val self_ = self.map(x => (Butlast(x), acc_)).orElse(Views.relation(state, ctx, deps_, acc_, ys_))
+        val self_ = self.map(x => List((Butlast(x), acc_))).getOrElse(Views.relation(deps_, acc_) match
+          case Nil   => ctx.self
+          case pairs => pairs)
         lazy val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)).copy(self = self_), deps_, ys_)
         for
           subst1 <- matches(config, state, ctx, params, vars, locals, init, self, bound, avoid, init_, subst)
@@ -307,7 +323,7 @@ object Rewrite:
         yield subst2
 
       case (Maps(deps, ys, update), Maps(deps_, ys_, update_)) =>
-        val self_ = self.map(y => (y, update_))
+        val self_ = self.map(y => (y, update_)).toList
         lazy val inner = Simplify.combinator(config, state, ctx.copy(self = self_), deps_, ys_)
         combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(), subst):
           (locals_, bound_, avoid_, subst) =>
@@ -755,7 +771,7 @@ object Rewrite:
             // -debug conditions reports the closed conditions that fail, the first diagnostics of a match that does not
             // go through (see ideas/deduction-engine-plan.md, package M)
             Debug.info("conditions", "not decided: " + Simplify.show(config.output.printer, instance) + " (from " + Simplify.show(config.output.printer, phi) + ")")
-            Debug.info("conditions", "  self " + ctx.self.map((t, v) => Simplify.show(config.output.printer, Eq(t, v))).getOrElse("none") + ", facts on its variables: " + ctx.known.filter(fact => fact.free.intersect(instance.free).nonEmpty).map(Simplify.show(config.output.printer, _)).mkString(" | "))
+            Debug.info("conditions", "  self " + ctx.self.map((t, v) => Simplify.show(config.output.printer, Eq(t, v))).mkString(", ") + ", facts on its variables: " + ctx.known.filter(fact => fact.free.intersect(instance.free).nonEmpty).map(Simplify.show(config.output.printer, _)).mkString(" | "))
             unmatched
         else
           for

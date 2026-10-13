@@ -99,7 +99,7 @@ Verbatim in substance, from the user:
 | P11 | triggers and forward facts (package J), the pin in the matcher (E), exit splitting (K), diagnostics (M) | open |
 | P12a | interim files in examples/dafny/state: bsearch.dfy and bsearch_cut.dfy with their expected outputs (one goal each, the exit), which the test suite picks up; to be removed from the tests, or kept as regression tests with no goal, once the algorithms are done in the state form | note |
 | P12 | the algorithms in the state form: binary search done up to the exit's bounds (forward facts needed, package J), the views no longer recomputed; merge and the sorts open | in progress |
-| S7 | combinators with several accumulators in the core (branch `accumulators`, from `prove`): `Trace(inits, deps, accs, bound, results)`, `Component(S, i)` and `History(S, i)` as core nodes, typed structurally over the existing sorts (`Trace<tupleₘ<...>>`); the Dafny grammar, parser (`trace(e₁, e₂, for ... do x, y, k :: u₁, u₂)`, `current(S).i`, `⌊S⌋.i`) and printer; the other printers, the Lean printer, the fallback and both engines handle single-accumulator traces only (`Trace.single`) and leave the others alone; example `accumulators.dfy` parses, type-checks and prints with an identical roundtrip | started Oct 13, 2026 |
+| S7 | combinators with several accumulators in the core (branch `accumulators`, from `prove`): `Trace(inits, deps, accs, bound, results)`, `Component(S, i)` and `History(S, i)` as core nodes, typed structurally over the existing sorts (`Trace<tupleₘ<...>>`); the Dafny grammar, parser (`trace(e₁, e₂, for ... do x, y, k :: u₁, u₂)`, `current(S).i`, `⌊S⌋.i`) and printer; `StateTEQ` emits the form per strongly connected component (S5); the engine of `-prove` handles traces of several accumulators (the views as syntactic projections, `self` a list of pairs); the other printers, the Lean printer, the fallback and `-simplify` handle single-accumulator traces only (`Trace.single`) | done Oct 13, 2026 |
 | P13 | `-fallback` for tuple traces and the Lean printer, the tuples declared for C input under `-teq-state`, the C benchmarks of the state form with a cleaned-up lemma selection | deferred until the engine is in a reasonable state; benchmarks only when the user asks |
 
 ## Adjustments to the plan (Oct 13, 2026, after the first milestone)
@@ -135,11 +135,13 @@ Against [deduction-engine-plan.md](deduction-engine-plan.md) as revised by [stat
 The consolidated plan is [deduction-engine-plan.md](deduction-engine-plan.md) (its sections 1.2, 1.4 and 3); in
 short:
 
-1. S5: traces per strongly connected component of the read relation of the loop (guards included), with `util.SCC`,
-   in `TEQ.loop`/`StateTEQ`; singletons are plain traces, cycles tuple traces; the ten state examples unchanged.
+1. (done) S5 and S7: traces per strongly connected component, emitted as traces of one or several accumulators,
+   and the engine of `-prove` on their components (branch `accumulators`).
 2. J: forward facts, the bounds of a named trace as facts when its term occurs; binary search closes without the cut.
-3. S6: the merge and the sorts in the state form; the pin (E), exit splitting (K), renaming (D) as they ask.
-4. S7: combinators with several accumulators in the core, if S6 needs accumulator patterns in lemmas.
+3. S6: the merge and the sorts in the partitioned form; lemmas over whole cycles (patterns with several accumulators)
+   in the matcher; the pin (E), exit splitting (K), renaming (D) as they ask.
+4. The rest of S7: the Boogie and SMT-LIB frontends and printers, the Lean printer and `-fallback` for traces of
+   several accumulators; with S8.
 5. S8, deferred: the fallback encoding, the tuples for C input, the C benchmarks with a cleaned-up lemma selection;
    benchmarks only when the user asks.
 
@@ -158,9 +160,28 @@ short:
   their own line. Boogie, SMT-LIB and Lean printers, `Fallback`, and both engines match `Trace.single` and pass traces
   of several accumulators through (the engines) or reject them (the printers), as the cheap workaround for now.
   `examples/dafny/state/accumulators.dfy` (two lemmas, one over the state of the swap) parses, type-checks and prints,
-  and the printed output parses back identically; the quick check is unchanged. Next: `StateTEQ` emits the new form
-  (per strongly connected component, S5) and the engine of `-prove` learns the components (the views become the
-  syntactic projection of 1.4).
+  and the printed output parses back identically; the quick check is unchanged.
+- **Oct 13, 2026, night: S5 and S7 done.** `StateTEQ` partitions the loop's variables by the strongly connected
+  components of the read relation (results, plus the guards if there are several paths; `util.SCC`), one trace per
+  component in dependency order, a single accumulator for a variable in no cycle and several for a cycle, the
+  histories of the earlier components as dependencies (`⌊X⌋`, `⌊S⌋.i`), the constraint over all histories; nested
+  loops closed as before. The swap gives `I` a plain counter, `S` the two arrays over `⌊K⌋, ⌊I⌋`, `T` after them. The
+  engine of `-prove`: the markers are `Component` and `History` nodes, their views the syntactic projection
+  (`Views.project`: the component's accumulator alone, the others bound over `⌊S⌋.j`, which are inert dependencies, so
+  the projections do not unfold each other), suspension by loop and component, replacement in place once the view
+  reads no component, `self` a list of pairs (`⌊X⌋`, each `⌊S⌋.j`, the own history of a projection by position,
+  `Views.selfOf`, `Views.relation`); the tuple-selector machinery, the `own` replacement and `Context.projection` are
+  gone, `Simplify.once` handles `Trace` generally and `Component`/`History`. All ten state examples and
+  `accumulators.dfy` check against their outputs; the swap closes with 160 rewrites and 16 views (262 before), the
+  binary search takes 12 s (17 s), the cut variant 7 s (75 s), each with the one goal of the exit as before; the
+  transpose 3 s. Open: lemmas over whole cycles (patterns with several accumulators) in the matcher, forward facts
+  for the exit of the binary search (J), the other frontends, Lean and the fallback.
+- **Oct 13, 2026, night: the projection folded into the matcher.** A pattern of the shape `current(trace(...))` or
+  `⌊trace(...)⌋` is matched against a read `current(S).i`, `⌊S⌋.i` structurally, against the syntactic projection
+  without simplifying it (`Views.structural`, tried after the definitions and before the normal form); the normal form
+  of a component stays explicit and memoized, since folding a component into `stores` or evaluating its counter is a
+  rewriting, not a match. Views computed: unchanged on the swap (16) and the binary search (64), since the lemmas that
+  need the normal form dominate; the binary search 7 s instead of 12 s; quick check green.
 
 ## How to run
 

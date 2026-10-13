@@ -31,7 +31,7 @@ object Canon:
 
   // the canonical key of a context under the renaming of its bound variables: the dependency that it defines (see
   // Context.self) and its facts as sets, which determine its classes and linear constraints
-  type Key = (Option[(Expr, Expr)], Set[Expr], Set[Expr])
+  type Key = (List[(Expr, Expr)], Set[Expr], Set[Expr])
 
   // the facts take their canonical form (see term), since their inner binders are renamed on every round of the
   // traversal; the canonical forms are cached per command by the fact and the renaming (see Context.canon)

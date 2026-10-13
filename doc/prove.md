@@ -35,18 +35,19 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   equals that of a fact after both are normalized under the classes (`Classes.normalize`, registered subterms
   replaced by the roots of their classes), so the fresh list variables and identifying equations (`Js2 == Js`) that
   the simplifier needs for such conditions are not needed here.
-- **Views of state traces** ([`Views`](../src/cuvee/prove/Views.scala), see [teq.md](teq.md), "State traces"): the
-  reads of the components of a state trace are markers that the matcher matches modulo their simplified view, the
-  per-variable projection; a component is not projected inside its own view (suspension), and a marker is replaced
-  by its view once that reads no component. While a view is simplified or matched, the context carries the selector
-  of the component (`Context.projection`), and each projection trace met gets the relation "the read of the component
-  from the state is the accumulator" as its `self` (`Views.relation`, by position, since binders are renamed on every
-  round); `Simplify.invariants` then replaces the read by the accumulator in the invariants over the state (the loop
-  test `lo < hi` bounds the accumulator of the projection of `lo`) and assumes the equation. Lemmas over another
-  dependency must be polymorphic in its type, since that dependency is the list of states in this form. A view is
-  simplified under the facts of its position that mention a variable of the view (the state trace, the counter, the
-  constants of the update; `Context.restricted`) and memoized by exactly those facts, so that positions that differ in
-  other facts, e.g. the sibling conjuncts of the goal, share it soundly; `-debug views` reports the misses. The views are memoized by the marker, the bound variables and the
+- **Views of traces with several accumulators** ([`Views`](../src/cuvee/prove/Views.scala), see [teq.md](teq.md),
+  "State traces"): the reads of the components of such a trace `S`, `current(S).i` and `⌊S⌋.i` (also through
+  `earlier(j, ⌊S⌋.i)`), are markers that the matcher matches modulo their view, the same read of the projection of
+  `S` to the component: the trace of that accumulator alone, the other accumulators bound over the histories `⌊S⌋.j`
+  of their components (`Views.project`, syntactic). The histories are inert as dependencies, never rewritten in place,
+  so the projections do not unfold each other; a component is not projected inside its own view (suspension by the
+  loop and the component), and a marker is replaced by its view once that reads no component of `S` (the counter of a
+  loop by its value). The `self` of a context, a list of pairs, maps `⌊X⌋`, the histories `⌊S⌋.j` and the history of
+  the own component of a projection to their accumulators (`Views.selfOf`, `Views.relation`, by position), so that the
+  invariants over the histories bound the accumulators (`Simplify.invariants`). A view is simplified under the facts of
+  its position that mention a variable of the view (`Context.restricted`) and memoized by exactly those facts, so that
+  positions that differ in other facts, e.g. the sibling conjuncts of the goal, share it soundly; `-debug views`
+  reports the misses. The views are memoized by the marker, the bound variables and the
   classes, not by the full context: a view computed under weaker facts is reused.
 - **Canonical forms** ([`Canon`](../src/cuvee/prove/Canon.scala)): `Canon.term` renames the variables bound inside
   a term by their depth, sorts the dependencies of combinators (their bound variables permuted along), the cases of
@@ -80,18 +81,11 @@ their expected outputs, four per-variable examples that must leave no goal); `sc
 or before a commit (the transpose, the unit tests, the 30 algorithms of `examples/dafny/algorithms` in the state form
 with their exit status, time and remaining goals, as the baseline for the work on them).
 
-## Towards traces with several accumulators
-
-The branch `accumulators` adds the core form of section 1.4 of the plan: a trace binds one or several accumulators
-(`Trace(inits, deps, accs, bound, results)`), and the components of a trace of several are read by `current(S).i`
-and `⌊S⌋.i` (`Component`, `History`) instead of tuple selectors, so that the markers, views and relations above
-reduce to a syntactic projection. The Dafny frontend and printer have the syntax; the engines leave such traces alone
-until `StateTEQ` emits them, per strongly connected component of the loop's variables (steps S5 and S7 of the plan).
-
 ## State
 
-Oct 13, 2026: the ten examples of [examples/dafny/state](../examples/dafny/state) close under `-teq-state -prove`
+Oct 13, 2026: the eleven examples of [examples/dafny/state](../examples/dafny/state) check under `-teq-state -prove`
 with the module `state.dfy` alone (single loops, the swap of two arrays, five nested loops without fragment lemmas,
-the transpose with one summary lemma, 1.5 to 7 s). Open: the per-variable examples of `-teq` under `-prove`, the
-algorithms in the state form, canonical forms for the lookup of `invs` conditions, triggers; see
+the transpose with one summary lemma, the syntax example), 1.5 to 3 s; the binary search leaves the exit open
+(7 s). Open: forward facts for the bounds of named traces, lemmas over whole cycles in the matcher, the merge and the
+sorts, the other frontends and the fallback for traces of several accumulators; see
 [ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md) and [TODO.md](../TODO.md).

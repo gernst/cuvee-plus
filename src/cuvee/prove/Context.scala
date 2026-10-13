@@ -26,14 +26,10 @@ import cuvee.core._
 // rules, steps: the rewrite rules, which are applied after each round of simplification, and the remaining number
 // of steps
 //
-// self: within the update of a combinator that defines a dependency, X == trace(...) or Y == maps(...),
-// that dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants); within
-// the update of the projection of a state trace to a component, the read of that component, sel(s), and the
-// accumulator of the projection, which denotes it (see Views.relation)
-//
-// projection: while the view of a component of a state trace is simplified or matched, the selector of the component
-// (see Views.projected), from which the traversal and the matcher derive the self of each projection trace they meet
-// (see Views.relation), positionally, since the bound variables of a trace are renamed on every round
+// self: within the update of a combinator that defines a dependency, X == trace(...) or Y == maps(...), that
+// dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants): ⌊X⌋ and the
+// accumulator, each history ⌊S⌋.j and its accumulator for a trace of several, and the history of the own component
+// and the accumulator of a projection (see Views.selfOf and Views.relation)
 //
 // applied: the number of applications of each rule by its name, for -rules
 //
@@ -57,14 +53,13 @@ case class Context(
     polarity: Option[Boolean],
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0),
-    self: Option[(Expr, Expr)] = None,
+    self: List[(Expr, Expr)] = Nil,
     combinators: util.Ref[Context.Combinators] = util.Ref(Map()),
     applied: util.Ref[Map[String, Int]] = util.Ref(Map()),
     active: List[AnyRef] = Nil,
     reads: util.Ref[Context.Reads] = util.Ref(Map()),
     views: util.Ref[Context.Views] = util.Ref(Map()),
-    canon: util.Ref[Map[(Expr, Subst[Nothing, Var]), Expr]] = util.Ref(Map()),
-    projection: Option[Fun] = None
+    canon: util.Ref[Map[(Expr, Subst[Nothing, Var]), Expr]] = util.Ref(Map())
 ):
   // the rewrite rules with a fresh number of steps and no memoized contexts, views or reads, which are shared by the
   // copies of this context, and which guards against rules that do not terminate
@@ -93,7 +88,7 @@ case class Context(
   def suspended(rule: Rule): Boolean =
     active.exists(_ eq rule)
 
-  // whether the component `key` of a state trace is being projected at this position (see Views)
+  // whether the component `key` of a trace is being projected at this position (see Views.projected)
   def projecting(key: AnyRef): Boolean =
     active.exists(_ == key)
 

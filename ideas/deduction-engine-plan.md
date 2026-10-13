@@ -53,7 +53,17 @@ conservative (a read under a guard that never fires merges components). Choices 
 that use them. The fragments that the distribution of the constraint produces are harmless now, since no fresh
 sequences are involved, only closed terms.
 
-### 1.3 Views, as implemented
+### 1.3 Views, as implemented (revised Oct 13, night, for traces of several accumulators)
+
+The two halves of a view are treated differently. The *projection* of a trace to a component is syntactic (the
+component's accumulator alone, the others bound over the histories `⌊S⌋.j`) and the matcher performs it implicitly:
+a pattern `current(trace(...))` or `⌊trace(...)⌋` meets a read `current(S).i` or `⌊S⌋.i` and is matched against the
+projection directly, without simplifying it (`Views.structural`), where the sibling histories are dependencies that
+the pattern need not mention. The *normal form* of a component (the fold into `stores`, the counter evaluated, the
+reads of the other components resolved) is a rewriting, not a match, so it stays explicit, computed once per loop
+and component with suspension and memoized (`Views.projected`); the matcher falls back to it when the structural
+match fails. The description of the tuple form below is kept for the record:
+
 
 For a tuple trace, a read of a component (a selector applied to the current or an earlier value of the trace, also
 through a bound variable of a combinator over its history, or a map of one) is a marker that the matcher matches
@@ -133,9 +143,9 @@ for it, not before.
 | S2 | views in place of projection rewrites, with suspension | done |
 | S3 | the positional relation of a projection, the definitions through the classes, views memoized by relevant facts | done |
 | S4 | inner loops as values by the closed substitution | done |
-| S5 | traces per strongly connected component (`util.SCC` in `TEQ.loop`/`StateTEQ`; the read relation includes the guards) | next; tests: the ten state examples unchanged, bsearch with `i` a plain trace, swap with `i` a plain counter and one tuple |
+| S5 | traces per strongly connected component (`util.SCC` in `StateTEQ`; the read relation includes the guards) | done Oct 13: the ten state examples unchanged, the swap with `I` a plain counter, `S` the two arrays, `T` after them |
 | S6 | the merge and the sorts in the state form, lemmas over cycles; what the lemma language needs | after S5 |
-| S7 | combinators with several accumulators in the core (1.4), the tuples of the prelude retired from the goals | begun Oct 13 on the branch `accumulators`: the core nodes, the Dafny syntax and printer, the example `accumulators.dfy`; open: `StateTEQ` emitting the form (with S5), the engine of `-prove` on components, the other frontends, Lean and the fallback |
+| S7 | combinators with several accumulators in the core (1.4), the tuples of the prelude retired from the goals | done Oct 13 on the branch `accumulators` for the core, Dafny and the engine of `-prove` (views as syntactic projections, `self` a list, the tuple selectors gone); open: lemmas over whole cycles in the matcher, the other frontends, Lean and the fallback |
 | S8 | `-fallback` for tuple or multi-accumulator traces, the tuples for C input, the C benchmarks with a cleaned-up lemma selection | deferred; benchmarks only when the user asks |
 
 What it retires: the module `nested` as far as the fragment lemmas go, `results`, the chain lemmas of row sums,
@@ -244,14 +254,15 @@ Independent; most useful during S2 to S5.
 ```
 A harness (quick)   B canonical   C lookup   F definitions   G classes (restricted)   M diagnostics (partly)   -- done
 S1 to S4 the state form with views                                                                              -- done
-S7 multi-accumulator core (begun) ── S5 traces per SCC in that form ── S6 merge and sorts ── S8 fallback and benchmarks (deferred)
+S7 multi-accumulator core, S5 traces per SCC (done) ── J forward facts ── S6 merge and sorts, lemmas over cycles ── S8 fallback and benchmarks (deferred)
                       │
 J forward facts (after S5, finishes binary search)     E the pin, K exit splitting, D renaming: pulled by S6
 H equalities from the simplex into the classes: when an example needs it
 L e-graph library: after S7, integrated last
 ```
 
-Order (revised Oct 13, evening): S7's core form first, since it is begun and `StateTEQ` should emit the final form
-directly rather than the tuples once more; then S5, the partition per strongly connected component, emitted in that
-form; then J with the binary search as its test; then S6 with E, K, D as the examples ask; S8 only when the user asks. Each step is one commit with its tests and docs (`doc/teq.md`, `doc/prove.md`), the quick
+Order (revised Oct 13, night, S5 and S7 done for the core, Dafny and `-prove`): J, forward facts, with the exit of the
+binary search as its test; then S6, the merge and the sorts in the partitioned form, which brings lemmas over whole
+cycles (patterns with several accumulators) into the matcher, and E, K, D as the examples ask; the rest of S7 (the
+Boogie and SMT-LIB frontends, Lean, the fallback) with S8, only when the user asks. Each step is one commit with its tests and docs (`doc/teq.md`, `doc/prove.md`), the quick
 check green, and a version bump.

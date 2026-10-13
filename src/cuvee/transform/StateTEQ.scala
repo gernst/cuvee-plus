@@ -1,24 +1,26 @@
 package cuvee.transform
 
+import util.SCC
 import cuvee.Error
 import cuvee.core._
 import cuvee.verify.Path
 import cuvee.verify.TEQ
 
-// the trace equation system of a loop over its state (-teq-state, see ideas/state-trace.md and
-// ideas/deduction-engine-implementation.md): the modified variables x₁, ..., xₘ form a tuple of the prelude of Dafny,
-// tupleₘ(x₁, ..., xₘ), and the loop has a single trace S over it, whose update reads the variables as the components
-// tupleₘ_i(s) of the accumulator s, and whose dependencies are the counter and the choices only, since the
-// accumulator carries the state; the iteration constraint ranges over ⌊K⌋ and ⌊S⌋, since invs has no accumulator;
-// the per-variable traces of the paper are the projections of S, which the engine of -prove follows on demand
-// (see prove.Views); a loop with a single modified variable keeps its per-variable trace, closed in the same way
+// the trace equation system of a loop with its variables partitioned by the strongly connected components of their
+// read relation (-teq-state, see ideas/deduction-engine-plan.md, section 1.2): a variable reads the variables that
+// occur in its results and, if the paths are guarded, in the guards, which all components share; the components are
+// ordered such that each comes after those it reads, and each becomes one trace, of a single accumulator for a
+// variable that reads no other in a cycle (the per-variable form of the paper), of several accumulators for a cycle
+// (core.Trace), with the counter, the histories of the earlier components that it reads and the choices as its
+// dependencies; the exit values are current(X) and current(S).i, the iteration constraint ranges over the counter and
+// all histories, ⌊X⌋ and ⌊S⌋.i; since the component graph is acyclic, no trace depends on another one, and the
+// per-variable traces of a cycle are the projections of its trace (see prove.Views)
 //
-// the system of a nested loop is closed: since no trace depends on another one, the counter, the trace and the exit
-// values of the loop are terms over the number of iterations and the choices, which are substituted, such that only
-// those are fresh at the exit; an inner loop is then a value of the update of the outer one, not a family of fresh
-// sequences; an outermost loop keeps its definitions as equations (K, S and the exit values are fresh), since the
-// engine follows them through the classes on demand and the goal stays small, where the substituted trace would be
-// repeated at every read of the state
+// the system of a nested loop is closed: the counter, the traces and the exit values are substituted by their
+// definitions, in the order of the components, such that only the number of iterations and the choices are fresh at
+// the exit and an inner loop is a value of the update of the outer one, not a family of fresh sequences; an outermost
+// loop keeps its definitions as equations, which the engine follows on demand, so that the goal does not repeat the
+// traces at every read
 object StateTEQ:
   // the fresh variables of the exit, the exit values of the loop variables, and the system, like TEQ.system
   def system(
@@ -35,50 +37,60 @@ object StateTEQ:
       p: Path,
       closed: Boolean
   ): (List[Var], List[Expr], Expr) =
-    val (s, st, trace, reads) =
-      xs match
-        // a loop with one modified variable keeps the per-variable form, which is its own projection
-        case List(x) =>
-          val x_ = sharp.head
-          val X = Var(x.name.name.capitalize, Sort.trace(x.typ)).fresh
-          val updates = for q <- paths yield Upd(q.B, q(x))
-          val used = updates.free
-          val choices = (zs zip Zs).filter((z, _) => used.contains(z))
-          val trace = Trace(p(x), Butlast(K) :: choices.map(_._2), x_, k :: choices.map(_._1), TEQ.update(updates))
-          (x_, X, trace, Subst.empty)
+    val index = sharp.zipWithIndex.toMap
+    val results = for x <- xs yield TEQ.update(for q <- paths yield Upd(q.B, q(x)))
+    val guards = paths.map(_.B).free.intersect(sharp.toSet)
 
-        case _ =>
-          val m = xs.length
-          Error.report("the tuple of the prelude of Dafny for the state of a loop is not declared", m):
-            require(state.datatypes.contains(Tuples.name(m)))
+    // the read relation: the loop variables (as x♯) in the result of a variable, and those of the guards if there are
+    // several paths, whose guards every result has
+    def reads(i: Int): Set[Int] =
+      val own = results(i).free.intersect(sharp.toSet)
+      (if paths.length > 1 then own ++ guards else own).map(index)
 
-          val Datatype(_, List((constr, sels))) = state.datatypes(Tuples.name(m)): @unchecked
-          val sort = Sort(Con(Tuples.name(m), m), xs.types)
-          val s = Var("s", sort).fresh
-          val S = Var("S", Sort.trace(sort)).fresh
+    val components = SCC(sharp.indices.toList, reads)
 
-          // the loop variables x♯ of the paths are the components of the state s
-          val reads = Subst.from(sharp, sels.map(sel => App(state, sel, List(s))))
-          val updates = for q <- paths yield Upd(reads(q.B), reads(App(state, constr, xs.map(q(_)))))
-          val used = updates.free
-          val choices = (zs zip Zs).filter((z, _) => used.contains(z))
-          val trace = Trace(App(state, constr, xs.map(p(_))), Butlast(K) :: choices.map(_._2), s, k :: choices.map(_._1), TEQ.update(updates))
-          (s, S, trace, reads)
+    // the trace of each component, its variable (named after the variable, capitalized, or S for a cycle), the
+    // history of each loop variable as a dependency (⌊X⌋ or ⌊S⌋.i), and the exit values
+    val traces = scala.collection.mutable.Map[Int, (Var, Trace)]()
+    val histories = scala.collection.mutable.Map[Int, Expr]()
+    val exits = scala.collection.mutable.Map[Int, Expr]()
+    val order = scala.collection.mutable.ListBuffer[(Var, Trace)]()
+
+    for component <- components
+    do
+      val accs = component.map(sharp)
+      val inits = component.map(i => p(xs(i)))
+      val results_ = component.map(results)
+      val used = results_.free
+      // the earlier components that this one reads, by their history and the bound variable x♯ of the read
+      val earlier = sharp.indices.filter(j => !component.contains(j) && used.contains(sharp(j))).toList
+      val choices = (zs zip Zs).filter((z, _) => used.contains(z))
+      val deps = Butlast(K) :: earlier.map(histories) ++ choices.map(_._2)
+      val bound = k :: earlier.map(sharp) ++ choices.map(_._1)
+      val trace = Trace(inits, deps, accs, bound, results_)
+      val variable =
+        component match
+          case List(i) => Var(xs(i).name.name.capitalize, trace.typ).fresh
+          case _       => Var("S", trace.typ).fresh
+      for (i, j) <- component.zipWithIndex
+      do
+        traces(i) = (variable, trace)
+        histories(i) = if component.length == 1 then Butlast(variable) else History(variable, j)
+        exits(i) = if component.length == 1 then Current(variable) else Component(variable, j)
+      order += ((variable, trace))
 
     val counter = Counter(Ints.zero, Ints.one, n)
-    val current =
-      xs match
-        case List(_) => List(Current(st))
-        case _       => state.datatypes(Tuples.name(xs.length)).constrs.head._2.map(sel => App(state, sel, List(Current(st))))
-    val iterations = Invs(Butlast(K) :: Butlast(st) :: Zs, k :: s :: zs, reads(constraint))
+    val current = sharp.indices.map(exits).toList
+    val iterations = Invs(Butlast(K) :: sharp.indices.map(histories).toList ++ Zs, k :: sharp ++ zs, constraint)
     val rest = List(iterations, Ints.le(Ints.zero, Nats.integer(n)))
 
     if closed
     then
-      // the definitions refer to each other in this order: the trace to the counter, the exit values to the trace
-      val su = Subst.from(List(K), List(counter)) + (st -> Subst.from(List(K), List(counter))(trace))
+      // the definitions refer to earlier ones only: the traces to the counter and the traces of earlier components,
+      // the exit values to the traces; the substitution is composed in that order
+      val su = order.foldLeft(Subst.from(List(K), List(counter)): Subst[Nothing, Expr]) { case (su, (x, trace)) => su + (x -> su(trace)) }
       (n :: Zs, current.map(su(_)), su(And(rest)))
     else
       val cur = xs.fresh
-      val defs = Eq(K, counter) :: Eq(st, trace) :: (cur zip current).map((x, e) => Eq(x, e))
-      (cur ++ List(n, K, st) ++ Zs, cur, And(defs ++ rest))
+      val defs = Eq(K, counter) :: order.toList.map((x, trace) => Eq(x, trace)) ++ (cur zip current).map((x, e) => Eq(x, e))
+      (cur ++ List(n, K) ++ order.map(_._1) ++ Zs, cur, And(defs ++ rest))

@@ -749,8 +749,9 @@ Measured on binary search and on the SV-COMP examples
 ## Traces with several accumulators (branch `accumulators`)
 
 - Only the Dafny frontend and printer know traces with several accumulators and the component reads `current(S).i`,
-  `⌊S⌋.i`; the Boogie, SMT-LIB and Lean printers and `-fallback` reject them, the engines of `-simplify` and `-prove`
-  leave them unsimplified. `StateTEQ` still emits the tuple form.
+  `⌊S⌋.i`; the Boogie, SMT-LIB and Lean printers and `-fallback` reject them, and the engine of `-simplify` leaves them
+  unsimplified (`-teq-state` needs `-prove`). The matcher matches a pattern with one accumulator against the
+  projections of a cycle only; lemmas over whole cycles (several accumulators in a pattern) are not matched yet.
 - The grammar needs each initial value of a trace to end with a comma before `for`, since a comma-separated list
   commits to a further expression after its separator.
 

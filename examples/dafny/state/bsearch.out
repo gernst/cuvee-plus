@@ -26,8 +26,8 @@ lemma {:rw} trace_1<a>(x0: int, b: int, i: int, c: int, m: Nat, hs: List<a>,
                        F: (int, a) -> int)
   ensures
     trace(x0, for ⌊counter(i, c, m)⌋, hs
-              do x, k, h ::
-                case C(x, h) => x case D(x, h) && x < F(x, h) <= b => F(x, h))
+          do x, k, h ::
+            case C(x, h) => x case D(x, h) && x < F(x, h) <= b => F(x, h))
       == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
 
 function decs<a>(x0: int, b: int, ks: List<int>, ls: List<a>,
@@ -39,9 +39,9 @@ lemma {:rw} trace_2<a>(x0: int, b: int, i: int, c: int, m: Nat, ls: List<a>,
                        F: (int, a) -> int)
   ensures
     trace(x0, for ⌊counter(i, c, m)⌋, ls
-              do x, k, l ::
-                case C(x, l) => x
-                case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
+          do x, k, l ::
+            case C(x, l) => x
+            case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
       == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
 
 lemma {:rw} lemma_4(l: int, h: int)
@@ -85,37 +85,26 @@ lemma {:rw} decs_1<a>(X: Trace<int>, x0: int, b: int, i: int, c: int, m: Nat,
       <==> X == decs_(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F) && b <= current(X)
 
 goal
-  forall mid₃: int, lo₁₄: int, hi₁₅: int, n₈: Nat, K₁₀: Trace<int>,
-         S₁₂: Trace<(int, int, int, int)>, k: int ::
+  forall lo₁₅: int, hi₁₆: int, n₈: Nat, K₁₀: Trace<int>, S₁₁: Trace<(int, int)>,
+         k: int ::
     !(0 <= p
         && q <= n
         && K₁₀ == counter(0, 1, n₈)
-        && S₁₂
-          == trace((mid₃, 0, n, -1), for ⌊K₁₀⌋
-                                     do s₁₁, k₉ ::
-                                       case (tuple₄_1(s₁₁) + tuple₄_2(s₁₁)) / 2
-                                         < p => ((tuple₄_1(s₁₁) + tuple₄_2(s₁₁))
-                                                   / 2, (tuple₄_1(s₁₁)
-                                                           + tuple₄_2(s₁₁))
-                                                   / 2
-                                                   + 1, tuple₄_2(s₁₁),
-                                                 tuple₄_3(s₁₁))
-                                       case q
-                                         <= (tuple₄_1(s₁₁) + tuple₄_2(s₁₁))
-                                           / 2 => ((tuple₄_1(s₁₁)
-                                                      + tuple₄_2(s₁₁))
-                                                     / 2, tuple₄_1(s₁₁),
-                                                   (tuple₄_1(s₁₁)
-                                                      + tuple₄_2(s₁₁))
-                                                     / 2, tuple₄_3(s₁₁)))
-        && lo₁₄ == tuple₄_1(current(S₁₂))
-        && hi₁₅ == tuple₄_2(current(S₁₂))
-        && invs(for ⌊K₁₀⌋, ⌊S₁₂⌋ check k₉, s₁₁ :: tuple₄_1(s₁₁) < tuple₄_2(s₁₁))
-        && invs(for ⌊K₁₀⌋, ⌊S₁₂⌋
-                check k₉, s₁₁ ::
-                  (tuple₄_1(s₁₁) + tuple₄_2(s₁₁)) / 2 < p
-                    || q <= (tuple₄_1(s₁₁) + tuple₄_2(s₁₁)) / 2)
+        && S₁₁
+          == trace(0, n,
+                   for ⌊K₁₀⌋
+                   do lo₅, hi₆, k₉ ::
+                     case (hi₆ + lo₅) / 2 < p => (hi₆ + lo₅) / 2 + 1
+                     case q <= (hi₆ + lo₅) / 2 => lo₅,
+                     case (hi₆ + lo₅) / 2 < p => hi₆
+                     case q <= (hi₆ + lo₅) / 2 => (hi₆ + lo₅) / 2)
+        && lo₁₅ == current(S₁₁).0
+        && hi₁₆ == current(S₁₁).1
+        && invs(for ⌊K₁₀⌋, ⌊S₁₁⌋.0, ⌊S₁₁⌋.1 check k₉, lo₅, hi₆ :: lo₅ < hi₆)
+        && invs(for ⌊K₁₀⌋, ⌊S₁₁⌋.0, ⌊S₁₁⌋.1
+                check k₉, lo₅, hi₆ ::
+                  (hi₆ + lo₅) / 2 < p || q <= (hi₆ + lo₅) / 2)
         && 0 <= integer(n₈)
-        && hi₁₅ <= lo₁₄
+        && hi₁₆ <= lo₁₅
         && p <= k < q)
 

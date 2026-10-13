@@ -1,9 +1,10 @@
 # State traces
 
 Examples of `-teq-state -prove` (see [doc/teq.md](../../../doc/teq.md), [doc/prove.md](../../../doc/prove.md) and
-[ideas/state-trace.md](../../../ideas/state-trace.md)): each loop with several modified variables is summarized by
-one trace over the tuple of them, the per-variable traces are views that the engine of `-prove` follows on demand, and
-the lemma database is the single module [resources/cuvee/teq/state.dfy](../../../resources/cuvee/teq/state.dfy). The
+[ideas/deduction-engine-plan.md](../../../ideas/deduction-engine-plan.md)): the variables of a loop are partitioned by
+the strongly connected components of their read relation, each component is one trace (of several accumulators for a
+cycle), the per-variable traces of a cycle are projections that the engine of `-prove` computes on demand, and the
+lemma database is the single module [resources/cuvee/teq/state.dfy](../../../resources/cuvee/teq/state.dfy). The
 first line of each file is its command line, the `.out` file its expected output (no goal remains; the transpose
 prints its summary lemma).
 
@@ -15,8 +16,7 @@ prints its summary lemma).
 | transpose | nested, two-dimensional stores | examples/dafny/algorithms, one summary lemma on the nested fold | 22 s |
 
 `accumulators.dfy` shows the syntax of traces with several accumulators (`trace(e₁, e₂, for ... do x₁, x₂, k :: u₁, u₂)`,
-`current(S).i`, `⌊S⌋.i`, see doc/teq.md), parsed, type-checked and printed only; the engines do not simplify such
-traces yet.
+`current(S).i`, `⌊S⌋.i`, see doc/teq.md), parsed, type-checked and printed.
 
 Interim (to be removed from the tests later): `bsearch.dfy` and `bsearch_cut.dfy`, the binary search of examples/dafny/teq
 in the state form, each with one goal remaining (the exit of the loop, which needs the bounds of the `incs`/`decs`

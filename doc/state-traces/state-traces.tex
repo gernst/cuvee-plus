@@ -41,7 +41,7 @@
 
 \title{Verifying Loops without Invariants:\\ Trace Equation Systems by Two Examples}
 \author{Gidon Ernst\\[2pt] \small LMU Munich, Germany\\ \small\texttt{gidon.ernst@gmail.com}}
-\date{October 13, 2026}
+\date{October 13, 2026 (revised the same night for traces per strongly connected component)}
 
 \begin{document}
 \maketitle
@@ -49,8 +49,9 @@
 \begin{abstract}
 This note explains how the verifier Cuvée proves array programs without loop invariants, by two examples that
 every reader of a verification paper knows: the initialization of an array and the element-wise exchange of two
-arrays. A loop is represented as a fold over its iterations whose result is a \emph{trace}, the sequence of values of
-the program state at the loop head, and the verification condition is a first-order formula over traces. The formula
+arrays. A loop is represented by folds over its iterations whose results are \emph{traces}, the sequences of values of
+the program variables at the loop head, one trace per group of variables that depend on each other, and the
+verification condition is a first-order formula over traces. The formula
 is proved by rewriting with a database of lemmas about traces, each a small fact about a loop shape (a counter, a
 sequence of stores, a constant), under a context that keeps the facts of the goal. No invariant is written, and no
 lemma is written for the two programs. The note introduces the representation, the lemma database, and the
@@ -107,15 +108,16 @@ output is empty: the goal is proved and therefore dropped.
 \subsection{The verification condition}
 
 Symbolic execution runs the method body on symbolic values, collecting the assumptions and checks of each path. The
-loop is the only interesting statement. Its modified variables are $a$ and $i$, so the loop's state is the pair
-$(a, i)$, and the condition produced for the method is (with \texttt{-print dfy} in place of \texttt{-prove}, the
-fresh variables numbered by the tool)
+loop is the only interesting statement. Its modified variables are $a$ and $i$; the index reads nothing, the array
+reads the index, so the two are summarized separately, the array after the index. The condition produced for the
+method is (with \texttt{-print dfy} in place of \texttt{-prove}, the fresh variables numbered by the tool)
 \begin{align*}
-&\forall n, v, a.\ 0 \le n \Rightarrow \forall a', i', n_4{:}\mathsf{Nat}, K, S.\\
+&\forall n, v, a.\ 0 \le n \Rightarrow \forall a', i', n_4{:}\mathsf{Nat}, K, I, A.\\
 &\quad K = \cnt(0, 1, n_4)\\
-&\quad \wedge\ S = \tr{(a, 0)}{\bl{K}}{s, k :: (\sel{0}{s}[\sel{1}{s} := v],\ \sel{1}{s} + 1)}\\
-&\quad \wedge\ a' = \sel{0}{\cur(S)}\ \wedge\ i' = \sel{1}{\cur(S)}\\
-&\quad \wedge\ \al{\bl{K}, \bl{S}}{k, s :: \sel{1}{s} < n}\\
+&\quad \wedge\ I = \tr{0}{\bl{K}}{i, k :: i + 1}\\
+&\quad \wedge\ A = \tr{a}{\bl{K}, \bl{I}}{a', k, i :: a'[i := v]}\\
+&\quad \wedge\ a' = \cur(A)\ \wedge\ i' = \cur(I)\\
+&\quad \wedge\ \al{\bl{K}, \bl{A}, \bl{I}}{k, a', i :: i < n}\\
 &\quad \wedge\ 0 \le \intf(n_4)\\
 &\quad \Rightarrow \neg(i' < n) \Rightarrow \forall k.\ 0 \le k < n \Rightarrow a'[k] = v
 \end{align*}
@@ -131,34 +133,41 @@ the iteration numbers. Every loop gets such a counter, and the lemmas of the dat
 
 \paragraph{Traces.} A trace of type $\mathsf{Trace}\langle T\rangle$ is a nonempty sequence of values of type $T$,
 the values of some quantity at the loop head before each iteration and after the last. Two functions take it
-apart: $\bl{X}$ (``butlast'', the floor brackets) is the list of all but the last element, i.e.\ the values before
-each of the $n$ iterations, and $\cur(X)$ is the last element, the value after the loop. The $j$-th element of a
-list is $\ear(j, \bl{X})$, with $j$ a natural number.
+apart: $\bl{X}$ (``butlast'', the floor brackets, \lstinline|butlast| in the Dafny files) is the list of all but
+the last element, i.e.\ the values before each of the $n$ iterations, and $\cur(X)$ is the last element, the value
+after the loop. The $j$-th element of a list is $\ear(j, \bl{X})$, with $j$ a natural number.
 
-\paragraph{The state trace.} $S$ is the trace of the loop's state, a pair, written with the combinator
+\paragraph{The trace of a variable.} $I$ is the trace of the index, written with the combinator
 \[
-\tr{s_0}{\bl{K}}{s, k :: u}
+\tr{x_0}{\bl{K}}{x, k :: u}
 \]
-It starts with $s_0 = (a, 0)$, the state before the first iteration, and for each
-iteration $k$ of the counter its next value is the update $u$ applied to the previous value $s$. Here the update is
-the loop body as a function of the state: the array component gets $v$ stored at the index component, the index is
-incremented. The components of a pair are written $\sel{0}{s}$ and $\sel{1}{s}$ (the tool prints them as the
-selectors \texttt{tuple2\_0(s)}, \texttt{tuple2\_1(s)} of the pair datatype of its Dafny prelude). The combinator is
-a fold: $S$ has one element more than $\bl{K}$, and
+It starts with $x_0 = 0$, the value before the first iteration, and for each iteration $k$ of the counter its next
+value is the update $u$ applied to the previous value $x$. The combinator is a fold: $I$ has one element more than
+$\bl{K}$, and
 \[
-\cur(\tr{s_0}{\bl{K}}{s, k :: u}) = u(\cdots u(u(s_0, 0), 1) \cdots, n_4 - 1).
+\cur(\tr{x_0}{\bl{K}}{x, k :: u}) = u(\cdots u(u(x_0, 0), 1) \cdots, n_4 - 1).
 \]
+The array reads the index, so its trace $A$ has the history $\bl{I}$ as a further dependency, and its update reads
+the index of the same iteration through the bound variable $i$: in iteration $k$, $i$ is $\ear(\natf(k), \bl{I})$,
+the value of the index before that iteration. This is how the traces of a loop refer to each other: never to each
+other's accumulators, only to the histories of the variables summarized before them.
 
-\paragraph{The exit values.} After the loop, the program variables are the components of the final state,
-$a' = \sel{0}{\cur(S)}$ and $i' = \sel{1}{\cur(S)}$, and the loop was left because its test failed, $\neg(i' < n)$.
+\paragraph{Which variables share a trace.} The variables of a loop are partitioned by the strongly connected
+components of their read relation (a variable reads the variables in its result, and those in the branch
+conditions if the body branches), ordered so that each component comes after the ones it reads. A variable in no
+cycle gets a trace of its own, as here. Variables that read each other get one trace with several accumulators,
+which the second example shows; since the component graph is acyclic, no trace ever depends on itself through
+another, and every trace is a closed term over the number of iterations and the earlier histories.
 
-\paragraph{The iteration constraint.} $\al{\bl{K}, \bl{S}}{k, s :: \sel{1}{s} < n}$ states that the loop test
-held before every iteration: the combinator $\mathsf{invs}$ ranges over the two lists $\bl{K}$ and $\bl{S}$ in
-parallel, binding the iteration number $k$ and the state $s$ at position $k$, and requires its body for all
-positions. This is the only place where the number of iterations is pinned down: the test must hold $n_4$ times and
-fail afterwards.
+\paragraph{The exit values.} After the loop, the program variables are the final values of their traces,
+$a' = \cur(A)$ and $i' = \cur(I)$, and the loop was left because its test failed, $\neg(i' < n)$.
 
-Nothing in this condition is specific to the program but the update and the test; the rest is the schema that every
+\paragraph{The iteration constraint.} $\al{\bl{K}, \bl{A}, \bl{I}}{k, a', i :: i < n}$ states that the loop test
+held before every iteration: the combinator $\mathsf{invs}$ ranges over the histories in parallel, binding the
+iteration number $k$ and the values of the variables at position $k$, and requires its body for all positions. This
+is the only place where the number of iterations is pinned down: the test must hold $n_4$ times and fail afterwards.
+
+Nothing in this condition is specific to the program but the updates and the test; the rest is the schema that every
 loop gets. In particular there is no invariant.
 
 \subsection{The lemma database}
@@ -217,44 +226,39 @@ These lemmas are proved once, in Lean, from the recursive definitions; the progr
 
 The engine simplifies the goal under a context of facts, innermost subterms first, and after each round applies the
 first rule whose left-hand side matches and whose side conditions hold. Every rewrite step can be printed
-(\texttt{-debug rewrite}); what follows is that printout, cleaned up. Three ideas appear along the way that are not
-in the condition itself: contexts of combinators, projections, and views.
+(\texttt{-debug rewrite}); what follows is that printout, cleaned up. One idea appears along the way that is not in
+the condition itself: the context of a combinator.
 
-\paragraph{The index is the iteration number.} The engine first simplifies the update of $S$. To do so it builds the
-\emph{context of the combinator}: inside $\mathsf{for}\ \bl{K}, \bl{S}\ \mathsf{do}\ s, k$, the bound variable $k$
-is a value of $\bl{K}$, so $0 \le k < \intf(n_4)$, and $s$ is the state at position $k$, $s = \ear(\natf(k), \bl{S})$;
-these are facts of the context in which the update is simplified. The update reads $\sel{1}{s}$, the index
-component. The engine never writes down a trace for the index; instead, when it meets the read $\sel{1}{s}$ of a
-component, it computes the \emph{view} of that read: the trace of this component alone, the \emph{projection} of
-$S$ to component~1,
+\paragraph{The index is a counter.} The trace of the index is matched by \lemma{counter\_def} as it stands:
 \[
-\pi_1(S) = \tr{0}{\bl{K}, \bl{S}}{c, k, s :: c + 1}
+\tr{0}{\bl{K}}{i, k :: i + 1} \rw \cnt(0, 1, n_4).
 \]
-obtained from $S$ by taking the first component of the initial state and of each result, and by replacing the read
-of the own component by the accumulator $c$ (the other components are still read from $s$, hence $\bl{S}$ is a
-dependency). This update does not use $s$, so the unused dependency is dropped and $\lemma{counter\_def}$ fires:
-\begin{align*}
-\tr{0}{\bl{K}}{c, k :: c + 1} &\rw \cnt(0, 1, n_4) \\
-\ear(\natf(k), \bl{\cnt(0, 1, n_4)}) &\rw 0 + \intf(\natf(k)) \cdot 1 \rw k
-\end{align*}
-The second line is the value of the view at position $k$ by \lemma{earlier\_counter}, and $\intf(\natf(k)) = k$
-since $0 \le k$ is known. The view is a closed term that reads no component any more, so the engine replaces the
-read in place: in every iteration $k$, the index is $k$. This is the step where ``the loop stores at $i$'' becomes
-``the loop stores at $0, 1, \ldots$''.
+From here on $I$ is known to be a counter: the equation $I = \cnt(0, 1, n_4)$ is a fact of the context, and
+whenever a lemma asks for a counter where the goal has $\bl{I}$, the engine follows the equation.
 
-\paragraph{The array is a sequence of stores.} The update of $S$ now has the array component $\sel{0}{s}[k := v]$,
-and the projection of $S$ to component~0 is $\tr{a}{\bl{K}}{c, k :: c[k := v]}$ (the index read is gone, so
-$\bl{S}$ is dropped again). It is matched by the body of $\stores$ with $keys = \bl{K}$ and the values a sequence that
-the program never names: the engine synthesizes it as the map of the stored expression over the iterations,
+\paragraph{The index read by the array is the iteration number.} To simplify the update of $A$ the engine builds the
+\emph{context of the combinator}: inside $\mathsf{for}\ \bl{K}, \bl{I}\ \mathsf{do}\ a', k, i$, the bound variable
+$k$ is a value of $\bl{K}$, so $0 \le k < \intf(n_4)$, and $i$ is the value of $\bl{I}$ at position $k$,
+$i = \ear(\natf(k), \bl{I})$. That read is simplified in the same context,
+\[
+\ear(\natf(k), \bl{I}) \rw 0 + \intf(\natf(k)) \cdot 1 \rw k,
+\]
+by \lemma{earlier\_counter} through the equation of $I$ and by $\intf(\natf(k)) = k$ for $0 \le k$. So in every
+iteration $k$ the index is $k$, and the update of $A$ becomes $a'[k := v]$: ``the loop stores at $i$'' has become
+``the loop stores at $0, 1, \ldots$''. The unused dependency $\bl{I}$ is dropped from $A$.
+
+\paragraph{The array is a sequence of stores.} The trace $\tr{a}{\bl{K}}{a', k :: a'[k := v]}$ is matched by the
+body of $\stores$ with $keys = \bl{K}$ and the values a sequence that the program never names: the engine
+synthesizes it as the map of the stored expression over the iterations,
 \begin{align*}
-\tr{a}{\bl{K}}{c, k :: c[k := v]} &\rw \stores(a, \bl{K}, \mapc{\bl{K}}{k :: v}) \\
+\tr{a}{\bl{K}}{a', k :: a'[k := v]} &\rw \stores(a, \bl{K}, \mapc{\bl{K}}{k :: v}) \\
 \mapc{\bl{K}}{k :: v} &\rw \bl{\consts(n_4, v)}
 \end{align*}
-by the fold and \lemma{maps\_const}. The view of the exit value $a' = \sel{0}{\cur(S)}$ is therefore
+by the fold and \lemma{maps\_const}. The final array $a' = \cur(A)$ is therefore
 \[
 \cur(\stores(a, \bl{K}, \bl{\consts(n_4, v)})),
 \]
-the array after storing $v$ at each key of the counter. The view of the final index is
+the array after storing $v$ at each key of the counter, and the final index is
 \[
 \cur(\cnt(0, 1, n_4)) \rw \intf(n_4)
 \]
@@ -268,7 +272,7 @@ records this as $n_4 = \natf(i')$ and replaces $\intf(n_4)$ by $i'$ from here on
 in the log).
 
 \paragraph{The postcondition.} Finally $a'[k]$ for $0 \le k < n$: $a'$ is a variable whose definition in the context
-is the marker $\sel{0}{\cur(S)}$, whose view is the store sequence, and \lemma{current\_stores} fires through both,
+is $\cur(A)$ with $A$ the store sequence, and \lemma{current\_stores} fires through both,
 \begin{align*}
 a'[k] &\rw \mathsf{if}\ \occurs(k, \bl{K})\ \mathsf{then}\ \ear(\indexof(k, \bl{K}), \bl{\consts(n_4, v)}) \\
 &\qquad\ \mathsf{else}\ a[k] \\
@@ -305,13 +309,20 @@ method swap(a: array<int, int>, b: array<int, int>, n: int)
 }
 \end{lstlisting}
 
-The state of the loop now has four components, $(t, a', b', i)$, and the update of $S$ is
-\[
-s, k :: \big(\sel{1}{s}[\sel{3}{s}],\ \sel{1}{s}[\sel{3}{s} := \sel{2}{s}[\sel{3}{s}]],\
-\sel{2}{s}[\sel{3}{s} := \sel{1}{s}[\sel{3}{s}]],\ \sel{3}{s} + 1\big).
-\]
-The rest of the condition has the same shape as before. What is new is that the two arrays read each other: the new
-$a'$ stores a value of the old $b'$, and the new $b'$ a value of the old $a'$ (through $t$).
+The modified variables are $t$, $a'$, $b'$ and $i$. The index reads nothing; the two arrays read each other, since
+the new $a'$ stores a value of the old $b'$ and the new $b'$ a value of the old $a'$ (through $t$); the temporary
+reads $a'$. The partition therefore gives three traces in this order: $I$ as before, one trace $S$ with the two
+accumulators $a'$ and $b'$, and $T$ after it:
+\begin{align*}
+&I = \tr{0}{\bl{K}}{i, k :: i + 1}\\
+&S = \mathsf{trace}(a, b,\ \mathsf{for}\ \bl{K}, \bl{I}\ \mathsf{do}\ a', b', k, i ::\ a'[i := b'[i]],\ b'[i := a'[i]])\\
+&T = \tr{t_2}{\bl{K}, \bl{S}.0, \bl{I}}{t, k, a', i :: a'[i]}
+\end{align*}
+A trace of several accumulators has one initial value and one result per accumulator, and its values are read per
+component: $\cur(S).0$ and $\cur(S).1$ are the final arrays, and the histories $\bl{S}.0$ and $\bl{S}.1$ are
+ordinary lists, dependencies like any other, over which $T$ and the iteration constraint
+$\al{\bl{K}, \bl{T}, \bl{S}.0, \bl{S}.1, \bl{I}}{k, t, a', b', i :: i < n}$ range. The rest of the condition has
+the shape of the first example.
 
 \subsection{Why this is the hard case}
 
@@ -322,34 +333,37 @@ engine needs $B'$ in closed form, which needs $A'$ in closed form. The paper res
 the two equations together, written per shape, and the summaries of the sorting algorithms in that line of work
 carry a dozen side conditions each for this reason.
 
-The state trace sidesteps the recursion: there is one fold over the pair of arrays, and its components are
-projections computed on demand. The question is only how a projection may read the other component.
+One trace for the cycle sidesteps the recursion: the two arrays are accumulators of a single fold, and the
+per-variable traces, which the database lemmas are about, are its \emph{projections}, computed when a lemma asks for
+one. The question is only how a projection may read the other component.
 
 \subsection{The proof}
 
-\paragraph{The index, as before.} The read $\sel{3}{s}$ becomes $k$ exactly as in the first example; afterwards
-every store and read in the update is at position $k$.
+\paragraph{The index, as before.} $I$ becomes the counter, and in the context of the update of $S$ the read $i$ is
+$k$, so both results store and read at position $k$.
 
-\paragraph{The view of $a'$ reads $b'$.} To summarize the array $a'$, the engine computes its projection,
+\paragraph{The projection of $a'$ reads $b'$.} The postcondition asks for $\cur(S).0[k]$, a read of a component.
+The engine projects $S$ to its component $0$: the trace of that accumulator alone, in which the other accumulator
+becomes a bound variable over its own history,
 \[
-\pi_1(S) = \tr{a}{\bl{K}, \bl{S}}{c, k, s :: c[k := \sel{2}{s}[k]]},
+\pi_0(S) = \tr{a}{\bl{K}, \bl{I}, \bl{S}.1}{a', k, i, b' :: a'[k := b'[k]]}.
 \]
-which still reads component~2 of the state, so $\bl{S}$ stays a dependency. The fold of $\stores$ matches it with
-the synthesized value sequence,
+This is a syntactic rearrangement, and a lemma about a trace with one accumulator matches it directly, with
+$\bl{S}.1$ as a dependency the lemma may ignore. The fold of $\stores$ matches with the synthesized value sequence,
 \[
-\pi_1(S) \rw \stores(a, \bl{K}, \mapc{\bl{K}, \bl{S}}{k, s :: \sel{2}{s}[k]}),
+\pi_0(S) \rw \stores(a, \bl{I}, \mapc{\bl{I}, \bl{S}.1}{k, b' :: b'[k]}),
 \]
-but that is not closed: the values stored are reads of $b'$. The engine now needs to know what $\sel{2}{s}[k]$ is,
-the element $k$ of the other array in iteration $k$. It computes the view of the read $\sel{2}{s}$: the projection
-of $S$ to component~2 at position $k$,
+but that is not closed: the values stored are reads of $b'$. To know what $b'[k]$ is, the engine needs the element
+$k$ of the other array in iteration $k$. In the context of the projection, $b' = \ear(\natf(k), \bl{S}.1)$, and
+$\bl{S}.1$ is again a read of a component, whose normal form is the projection of $S$ to component $1$, simplified:
 \[
-\ear(\natf(k), \bl{\stores(b, \bl{K}, \mapc{\bl{K}, \bl{S}}{k', s' :: \sel{1}{s'}[k']})}),
+\bl{S}.1 \rw \bl{\stores(b, \bl{I}, \mapc{\bl{I}, \bl{S}.0}{k', a' :: a'[k']})}.
 \]
-whose update in turn reads component~1. Here the engine would loop forever if it followed every read: the view of
-$a'$ needs the view of $b'$, which needs the view of $a'$. The rule is that \emph{a component is not projected
-inside its own view}: while the view of component~1 is being computed, a read of component~1 stays as it is, a
-marker that the lemmas treat as an opaque value. So $\sel{1}{s'}[k']$ stays, and the view of $b'$ is a sequence of
-stores whose values are unknown terms. That is enough, because of what is asked next.
+Its update reads component $0$ in turn. Here the engine would loop forever if it followed every read: the normal
+form of component $0$ needs that of component $1$, which needs that of component $0$. The rule is that \emph{a
+component is not projected inside its own normal form}: while component $0$ is being normalized, a read of $\bl{S}.0$
+stays as it is, an inert dependency that the lemmas treat as an opaque sequence. So $a'[k']$ stays, and the normal
+form of $b'$ is a sequence of stores whose values are unknown terms. That is enough, because of what is asked next.
 
 \paragraph{Iteration $k$ reads a position that no earlier iteration wrote.} The lemma on an element of an earlier
 value of a store sequence,
@@ -359,10 +373,10 @@ lemma {:rw} earlier_stores<a, b>(k: a, j: Nat, a: array<a, b>, keys: List<a>, va
     == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
 \end{lstlisting}
 says: the value at $k$ after $j$ stores is the last value stored at $k$ among the first $j$ keys, or the original if
-$k$ is not among them. Applied to the read, with $j = \natf(k)$ and $keys = \bl{K}$,
+$k$ is not among them. Applied to the read $b'[k]$, with $j = \natf(k)$ and $keys = \bl{I}$,
 \begin{align*}
-\sel{2}{s}[k] &\rw \ite{\occurs(k, \prefix(\natf(k), \bl{K}))}{\ear(\ldots)}{b[k]} \\
-\prefix(\natf(k), \bl{K}) &\rw \bl{\cnt(0, 1, \natf(k))} \\
+b'[k] &\rw \ite{\occurs(k, \prefix(\natf(k), \bl{I}))}{\ear(\ldots)}{b[k]} \\
+\prefix(\natf(k), \bl{I}) &\rw \bl{\cnt(0, 1, \natf(k))} \\
 \occurs(k, \bl{\cnt(0, 1, \natf(k))}) &\rw 0 \le k < 0 + \intf(\natf(k)) \qquad\text{i.e. } k < k,\ \text{false}
 \end{align*}
 by \lemma{prefix\_counter} and \lemma{occurs\_counter\_up}. The first $k$ keys are $0, \ldots, k-1$, and $k$ is not
@@ -370,22 +384,23 @@ among them, so the \textsf{then} branch, and with it the opaque read of $a'$, di
 reads the \emph{original} $b[k]$. This is the whole argument of the program's correctness, and the engine found it by
 asking the right question (what is the element at $k$ of the earlier value) rather than by unfolding both arrays.
 
-\paragraph{The closed forms.} With the read resolved, the projection of $a'$ no longer depends on the state, and
+\paragraph{The closed forms.} With the read resolved, the projection of $a'$ no longer depends on $\bl{S}.1$, and
 \begin{align*}
-\pi_1(S) &\rw \stores(a, \bl{K}, \mapc{\bl{K}}{k :: b[k]}) \rw \stores(a, \bl{K}, \selects(b, \bl{K})) \\
-\pi_2(S) &\rw \stores(b, \bl{K}, \selects(a, \bl{K}))
+\cur(S).0 &\rw \cur(\stores(a, \bl{I}, \mapc{\bl{I}}{k :: b[k]})) \\
+&\rw \cur(\stores(a, \bl{I}, \selects(b, \bl{I}))) \\
+\cur(S).1 &\rw \cur(\stores(b, \bl{I}, \selects(a, \bl{I})))
 \end{align*}
-where $\selects(b, keys)$, the reads of $b$ at the keys, is another \lstinline|{:fold}| of the database. The exit
-values are $\cur$ of these; the number of iterations is $n$ as before.
+where $\selects(b, keys)$, the reads of $b$ at the keys, is another \lstinline|{:fold}| of the database. The number
+of iterations is $n$ as before.
 
-\paragraph{The postcondition.} $a'[k]$ for $0 \le k < n$ goes through the definition of $a'$, the view, and
-\lemma{current\_stores} as in the first example, now with the values $\selects(b, \bl{K})$:
+\paragraph{The postcondition.} $a'[k]$ for $0 \le k < n$ goes through the definition $a' = \cur(S).0$, its normal
+form, and \lemma{current\_stores} as in the first example, now with the values $\selects(b, \bl{I})$:
 \begin{align*}
-a'[k] &\rw \mathsf{if}\ \occurs(k, \bl{K})\ \mathsf{then}\ \ear(\indexof(k, \bl{K}), \selects(b, \bl{K}))\ \mathsf{else}\ a[k] \\
-&\rw \ear(\natf(k), \selects(b, \bl{K})) \rw b[\ear(\natf(k), \bl{K})] \rw b[k]
+a'[k] &\rw \mathsf{if}\ \occurs(k, \bl{I})\ \mathsf{then}\ \ear(\indexof(k, \bl{I}), \selects(b, \bl{I}))\ \mathsf{else}\ a[k] \\
+&\rw \ear(\natf(k), \selects(b, \bl{I})) \rw b[\ear(\natf(k), \bl{I})] \rw b[k]
 \end{align*}
 by \lemma{earlier\_selects} and \lemma{earlier\_counter}; $b'[k] = a[k]$ is symmetric. About three seconds in all,
-fourteen distinct lemmas, none written for the program.
+fourteen distinct lemmas, none written for the program, 160 rewrite steps and 16 normal forms of components.
 
 \section{The engine, in short}
 
@@ -401,24 +416,27 @@ The examples used the following machinery, which the engine of \texttt{-prove} p
   structure of the combinators, and higher-order patterns for shapes with a free function in them. Side
   conditions that are closed after the match are looked up among the facts and otherwise decided by the same
   simplification; conditions with free variables are matched against the facts, which binds them.
-\item[Definitions and classes.] Equations among the facts, $K = \cnt(0, 1, n_4)$ or $a' = \sel{0}{\cur(S)}$, are kept
+\item[Definitions and classes.] Equations among the facts, $K = \cnt(0, 1, n_4)$ or $a' = \cur(S).0$, are kept
   in congruence classes. A variable that a pattern does not match is matched like each member of its class, so
   a lemma on counters applies to $\bl{K}$, and a lemma on stores applies to $a'$ through its definition and the view
   of that definition.
 \item[Arithmetic.] Linear facts over the integers go to a simplex over the rationals with integer rounding, which
   decides the comparisons the examples needed ($\intf(n_4) = n$ from the two bounds, $k < k$ false).
-\item[Views and suspension.] A read of a component of a state trace is matched modulo its view, the simplified
-  projection of the state trace to that component; a component is not projected inside its own view; a read whose
-  view is closed is replaced by it in place. Views are memoized by the facts that mention their variables.
+\item[Components of a cycle.] A read $\cur(S).i$ or $\bl{S}.i$ of a trace with several accumulators is matched
+  structurally against the projection of $S$ to the component when the pattern has that shape, and otherwise modulo
+  the normal form of the component, computed once per loop and component under the facts that mention its variables
+  and memoized; a component is not projected inside its own normal form; a read whose normal form is closed is
+  replaced by it in place. The histories $\bl{S}.j$ are never rewritten in place, which is what keeps the projections
+  from unfolding each other.
 \end{description}
 
-The same two examples are proved by the earlier form of the tool (\texttt{-teq -simplify}, one trace per variable)
-with the same lemmas; the swap needed there what the state form avoids, the two equations over each other's
-histories, resolved by following the equations through the context. The state form matters for loops where
-the variables cannot be layered, and most of all for nested loops, where an inner loop becomes a single value of the
-outer update rather than a family of fresh sequences; those examples are in the same directory of the repository
-(\texttt{examples/dafny/state}, nested sums, row sums, a transpose), and a binary search where the remaining gap is
-visible.
+The same two examples are proved by the earlier form of the tool (\texttt{-teq -simplify}, one trace per variable
+without the partition) with the same lemmas; the swap needed there what the cycle trace avoids, the two equations
+over each other's histories, resolved by following the equations through the context. The partition matters for
+loops where the variables cannot be layered, and most of all for nested loops, where an inner loop becomes a single
+value of the outer update rather than a family of fresh sequences, since no trace depends on another and all can be
+substituted; those examples are in the same directory of the repository (\texttt{examples/dafny/state}, nested sums,
+row sums, a transpose), and a binary search where the remaining gap is visible.
 
 \section{What the examples do not show}
 
@@ -428,8 +446,8 @@ accumulated property (a sorted prefix, a running maximum, a search that stops) n
 of them written for the program, and the engine has to match those lemmas against views whose shape it has not seen
 before. The open items at the time of writing, with the binary search as the example: facts about a named trace
 should become available when its term occurs, not only when the goal mentions the exact atom (the bounds of a
-monotone search index), and lemmas over another dependency must be polymorphic in that dependency's type, since in
-the state form it is the list of states. The record of the implementation,
+monotone search index), and lemmas about a cycle as a whole, with several accumulators in their pattern, are not
+matched yet. The record of the implementation,
 \texttt{ideas/deduction-engine-implementation.md} in the repository, keeps the state of these.
 
 \section*{AI Declaration}
