@@ -165,11 +165,12 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   conditional rewrite rules ([`Rewrite`](../src/cuvee/simplify/Rewrite.scala)),
   see [simplifier.md](simplifier.md).
 - [`Prove`](../src/cuvee/prove/Prove.scala) is the second engine for the goals of trace equation systems
-  (`-prove`), with congruence closure and a simplex as its context and the views of state traces, see
-  [prove.md](prove.md).
-- [`StateTEQ`](../src/cuvee/transform/StateTEQ.scala) builds the trace equation system of a loop over the
-  tuple of its modified variables for `-teq-state`, which `TEQ.loop` calls in place of the per-variable form,
-  see [teq.md](teq.md).
+  (`-prove`), with congruence closure and a simplex as its context, the views of state traces, rules over whole
+  cycles and forward lemmas ([`Forward`](../src/cuvee/prove/Forward.scala)), see [prove.md](prove.md).
+- [`StateTEQ`](../src/cuvee/transform/StateTEQ.scala) builds the trace equation system of a loop for
+  `-teq-state`, one trace per strongly connected component of the read relation of its modified variables (of
+  several accumulators for a cycle), which `TEQ.loop` calls in place of the per-variable form, see
+  [teq.md](teq.md).
 - [`Flat`](../src/cuvee/transform/Flat.scala) eliminates records
   (non-recursive datatypes with one constructor), whose declarations are
   dropped: functions take their fields, functions with records as results are

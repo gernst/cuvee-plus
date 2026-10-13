@@ -116,14 +116,14 @@ with their exit status, time and remaining goals, as the baseline for the work o
 
 ## State
 
-Oct 13, 2026: the eleven examples of [examples/dafny/state](../examples/dafny/state) check under `-teq-state -prove`
-with the module `state.dfy` alone (single loops, the swap of two arrays, five nested loops without fragment lemmas,
-the transpose with one summary lemma, the syntax example), 1.5 to 3 s; the binary search closes with its bounds as
-forward facts (7 s, no cut), and over a sorted array (`bsearch_sorted.dfy`, the array, its bound and the key as
-parameters) in two layers, the monotonicity of `lo` and `hi` as forward invariants first (about 45 s), and by a
-lemma over the whole cycle, a named bisection with a probe whose cuts are the partition points (`bsearch_bisect.dfy`,
-8 s; `bsearch_safe.dfy` with the probe `lo + (hi - lo) / 2`); the lower bound
-of the algorithms (`lower_bound.dfy`, open under `-simplify`) closes with the same lemmas (8 s). Open: the instances
-of `invs` by triggers (step 2 of J), the merge and the
-sorts, the other frontends and the fallback for traces of several accumulators; see
+Oct 13, 2026: the examples of [examples/dafny/state](../examples/dafny/state) check under `-teq-state -prove`. With
+the module `state.dfy` alone: single loops, the swap of two arrays, four nested loops without fragment lemmas, the
+transpose with one summary lemma, and the syntax example, 1.5 to 5 s. The binary search over a sorted array, with the
+array, its bound and the key as parameters, closes by a lemma over the whole cycle, a named bisection with a probe
+whose cuts are the partition points (`bsearch_bisect.dfy`, 8 s; `bsearch_safe.dfy` with the probe
+`lo + (hi - lo) / 2`), and so does the lower bound of the algorithms (`lower_bound.dfy`, open under `-simplify`,
+8 s); the per-component route is kept as a regression test (`bsearch_sorted.dfy` in two layers, 45 s; `bsearch.dfy`
+with constant partition points, 8 s). Open: the bisection and the partition points of sorted arrays as a module of
+the database, the instances of `invs` by triggers (step 2 of J), the merge and the sorts, the other frontends and the
+fallback for traces of several accumulators; see
 [ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md) and [TODO.md](../TODO.md).

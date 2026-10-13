@@ -153,8 +153,9 @@ short:
    - step 3 of J: forward lemmas on traces fired where a trace is defined, with a memo per lemma and canonical
      term; the repeated firing at the same terms, needed only by the two layers of bsearch_sorted.dfy, goes with that
      version;
-   - the bisection lemmas (`cut`, `bisect_1`, `bisect_2`) and the partition points of sorted arrays into the
-     database, once a second program uses them beyond the two binary searches;
+   - the bisection (`bisection`, `cut`, `bisection_lo`, `bisection_hi`) and the partition points of sorted arrays
+     (`lower`, `upper`, `equal`, `bounds`, `cut_lower`, `lower_succ`) as a module of the database, now that
+     bsearch_bisect, bsearch_safe and lower_bound share them; waits for the user;
    - step 2 of J: the `invs` instances at reads;
    - is_sorted under `-teq-state -prove` ends in "rewriting does not terminate" (already in 0.44.3; it left one
      goal earlier);

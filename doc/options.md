@@ -31,11 +31,11 @@ The transformations are applied in the order in which they are given, e.g.
 |---|---|
 | `-vcgen` | verification conditions for procedures by weakest preconditions: contracts, loops with invariants, termination measures, global variables, nondeterministic choice and iteration |
 | `-teq` | verification conditions by symbolic execution, each loop summarized by a Trace Equation System (TEQ); injects the modules `core`, `arithmetic`, `counters`, `aggregation`, `arrays`, `search` of the lemma database, whose rules `-simplify` applies (see [teq.md](teq.md)) |
-| `-teq-state` | like `-teq`, with one trace per loop over the tuple of its modified variables (a state trace, see [teq.md](teq.md)), whose per-variable traces are views that `-prove` follows on demand, and the single fresh module `state` of the lemma database instead of the modules of `-teq` |
+| `-teq-state` | like `-teq`, with the modified variables of a loop partitioned by the strongly connected components of their read relation, one trace per component, of several accumulators for a cycle (a state trace, see [teq.md](teq.md)), whose per-variable traces are views that `-prove` follows on demand, and the single fresh module `state` of the lemma database instead of the modules of `-teq` |
 | `-chc` | constrained Horn clauses for procedures, for the inference of invariants |
 | `-flat` | replace arguments of predicates that are records by their fields, e.g. after `-chc` |
 | `-simplify` | contextual simplification of formulas and function definitions, with the rewrite rules of lemmas and axioms with `:rw` (see [simplifier.md](simplifier.md)) |
-| `-prove` | the deduction engine of the package `prove`, like `-simplify` for the goals of `-teq` and `-teq-state`: congruence closure and a simplex as the context, matching modulo the classes and the views of state traces (see [prove.md](prove.md)) |
+| `-prove` | the deduction engine of the package `prove`, like `-simplify` for the goals of `-teq` and `-teq-state`: congruence closure and a simplex as the context, matching modulo the classes and the views of state traces, rules over whole cycles (patterns of several accumulators), and forward lemmas (`{:fw}`) (see [prove.md](prove.md)) |
 | `-rules` | report the rewrite rules that `-simplify` applies to each assertion, by their names, as `(set-info :used ((name count) ...))` after it |
 | `-fallback` | lower the Trace Equation Systems that remain into first-order logic for the solvers, e.g. after `-teq -simplify`; the lowered goals are `:abstract` |
 | `-split` | split goals and lemmas into individual obligations `forall xs. antecedents ==> conclusion`, which the solvers report one by one |

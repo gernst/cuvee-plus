@@ -750,8 +750,9 @@ Measured on binary search and on the SV-COMP examples
 
 - Only the Dafny frontend and printer know traces with several accumulators and the component reads `current(S).i`,
   `⌊S⌋.i`; the Boogie, SMT-LIB and Lean printers and `-fallback` reject them, and the engine of `-simplify` leaves them
-  unsimplified (`-teq-state` needs `-prove`). The matcher matches a pattern with one accumulator against the
-  projections of a cycle only; lemmas over whole cycles (several accumulators in a pattern) are not matched yet.
+  unsimplified (`-teq-state` needs `-prove`). The matcher of `-prove` matches patterns of several accumulators
+  against cycles as a whole (the bisection of examples/dafny/state); the bisection and the partition points of
+  sorted arrays are lemmas of the examples, not yet a module of the database.
 - The grammar needs each initial value of a trace to end with a comma before `for`, since a comma-separated list
   commits to a further expression after its separator.
 

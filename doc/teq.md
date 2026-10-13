@@ -135,7 +135,9 @@ family of fresh sequences; an outermost loop keeps its definitions as equations,
 All variables in one component is the state form of the sketch, all singletons the per-variable form, which is
 exactly the case where that form had no cycles. The lemma database is the single module `state.dfy`. The
 per-variable traces of a cycle are projections of its trace that the engine of `-prove` computes on demand (see
-[prove.md](prove.md)); the simplifier of `-simplify` does not know traces of several accumulators. Examples in
+[prove.md](prove.md)), and a rule may also match the trace of a cycle as a whole, with a pattern of several
+accumulators, e.g. the bisection of the binary searches, which names the trace of `lo` and `hi`; the simplifier of
+`-simplify` does not know traces of several accumulators. Examples in
 [examples/dafny/state](../examples/dafny/state), the design in
 [ideas/deduction-engine-plan.md](../ideas/deduction-engine-plan.md), the implementation in
 [ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md).

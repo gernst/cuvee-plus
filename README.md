@@ -156,9 +156,10 @@ lists them.
   one by one.
 - **Deduction engine** (`-prove`): a second engine for the goals of `-teq` and
   `-teq-state`, independent of the simplifier: congruence closure and a simplex
-  over the rationals as the context, matching modulo the classes, and the
-  per-variable views of state traces (one trace per loop over the tuple of its
-  variables, `-teq-state`), see [doc/prove.md](doc/prove.md).
+  over the rationals as the context, matching modulo the classes, the
+  per-variable views of state traces (one trace per strongly connected
+  component of the variables of a loop, `-teq-state`), rules over whole
+  cycles, and forward lemmas (`{:fw}`), see [doc/prove.md](doc/prove.md).
 - **Simplifier** (`-simplify`): contextual simplification of formulas and
   simplification of programs, normalisation of arithmetic on `Int` and `Real`
   into polynomials, comparisons with positive coefficients, and derivatives.

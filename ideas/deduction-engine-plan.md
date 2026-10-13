@@ -342,6 +342,8 @@ L e-graph library: after S7, integrated last
 
 Order after the sorted binary search (Oct 13, 2026): N (division), then O (the bisection over the cycle, with S6's
 patterns of several accumulators, the sorted search as its test), then step 3 of J (firing at definitions, memo).
+N and O are done (0.44.4 to 0.45.1); next: the bisection and the partition points as a module of the database (when
+the user says so), the review of `{:fw}` against `{:rw}`, then S6 (the merge, a cycle of two pointers).
 
 Order (revised Oct 13, night, S5 and S7 done for the core, Dafny and `-prove`): J, forward facts, with the exit of the
 binary search as its test; then S6, the merge and the sorts in the partitioned form, which brings lemmas over whole

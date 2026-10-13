@@ -42,7 +42,7 @@
 
 \title{Verifying Loops without Invariants:\\ Trace Equation Systems by Three Examples}
 \author{Gidon Ernst\\[2pt] \small LMU Munich, Germany\\ \small\texttt{gidon.ernst@gmail.com}}
-\date{October 13, 2026 (revised the same night for traces per strongly connected component; the binary search added; revised for the binary search over a sorted array)}
+\date{October 13, 2026 (revised the same night for traces per strongly connected component and for the binary search over a sorted array, proved by a lemma about the bisection)}
 
 \begin{document}
 \maketitle
@@ -56,8 +56,8 @@ verification condition is a first-order formula over traces. The formula
 is proved by rewriting with a database of lemmas about traces, each a small fact about a loop shape (a counter, a
 sequence of stores, a constant), under a context that keeps the facts of the goal. No invariant is written, and no
 lemma is written for the first two programs. The note introduces the representation, the lemma database, and the
-engine as the examples need them. The binary search has no closed form. It is proved from bounds, with lemmas written for it that abstract a trace to its bound and with facts that hold wherever their term
-occurs. The note ends with what the examples do not show.
+engine as the examples need them. The binary search has no closed form. It is proved from bounds, by a lemma about the bisection of an interval
+as a whole, whose bounds are facts that hold wherever their term occurs. The note ends with what the examples do not show.
 \end{abstract}
 
 \section{The idea}
@@ -81,7 +81,8 @@ loops are composed of shapes the database knows.
 The first two examples below are such programs. The first shows the representation and the ordinary lemmas, the
 second shows what happens when two variables of a loop depend on each other, which is where the approach needed
 an idea that the paper on trace equation systems did not have. The third, a binary search, has no closed form: it
-is proved from bounds, with lemmas written for the program, and shows where the database ends.
+is proved from bounds, by a lemma about the whole loop that is not in the database yet, and shows where the database
+ends.
 
 \section{Array initialization}
 
@@ -405,17 +406,17 @@ a'[k] &\rw \mathsf{if}\ \occurs(k, \bl{I})\ \mathsf{then}\ \ear(\indexof(k, \bl{
 by \lemma{earlier\_selects} and \lemma{earlier\_counter}; $b'[k] = a[k]$ is symmetric. About three seconds in all,
 fourteen distinct lemmas, none written for the program, 160 rewrite steps and 16 normal forms of components.
 
-\section{A binary search: partial descriptions and forward facts}
+\section{A binary search: a lemma about the whole loop}
 
 The first two loops have closed forms: after $n$ iterations, the index is $n$ and the arrays are known element by
 element. A binary search has none. How often it runs and where it ends depend on the contents of the array, and
 what its correctness needs are \emph{bounds}: the lower end of the interval never passes the first occurrence of
 $x$, and the upper end never passes the last one. The trace equation systems paper names this as the weak spot of
 the approach, loops that need partial facts rather than closed forms. This section shows how the engine handles
-one such loop with two further ideas: lemmas that abstract a trace to the property that matters, and facts that
-become available wherever their term occurs. Unlike in the first two examples, these lemmas are written for the
-program. The file is \texttt{examples/dafny/state/bsearch\_sorted.dfy}; the run is the same as before, and its
-output is again only the declarations.
+such a loop with two further ideas: a lemma about a cycle of variables as a whole, here the bisection of an
+interval, and facts that become available wherever their term occurs. Unlike in the first two examples, these
+lemmas are not in the database yet. The file is \texttt{examples/dafny/state/bsearch\_bisect.dfy}; the run is the
+same as before, and its output is again only the declarations.
 
 \begin{lstlisting}
 function sorted(ar: array<int, int>, len: int): bool
@@ -456,22 +457,20 @@ of the array into a comparison of indices:
 function lower(ar: array<int, int>, len: int, y: int): int
 function upper(ar: array<int, int>, len: int, y: int): int
 
-lemma {:rw} lower_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} lower(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (ar[m] < y) <==> m < lower(ar, len, y)
-lemma {:rw} upper_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} upper(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (y < ar[m]) <==> upper(ar, len, y) <= m
-lemma {:rw} equal_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} equal(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (ar[m] == y) <==> lower(ar, len, y) <= m && m < upper(ar, len, y)
 \end{lstlisting}
 Sortedness is used here and nowhere else. The variable $len$ occurs only in the condition; it is bound by matching
-$\mathsf{sorted}(ar, len)$ against the precondition. The variables of the lemmas are named apart from those of the
-method, since a variable of a rule with the name of a variable of the goal would capture it. Three more lemmas
-state $0 \le \mathsf{lower} \le \mathsf{upper} \le len$: as rules on the atoms $0 \le \mathsf{lower}(\ldots)$ and
-$\mathsf{upper}(\ldots) \le len$, and as a forward fact (below). The rules hold only within the array, for
-$0 \le m < len$, and that condition is what shapes the proof.
+$\mathsf{sorted}(ar, len)$ against the precondition. A forward lemma, \lemma{bounds}, states
+$0 \le \mathsf{lower} \le \mathsf{upper} \le len$ wherever a partition point occurs. The rules hold only within the
+array, for $0 \le m < len$: a read at an index whose range the context does not know stays a read.
 
 The midpoint needs no rule: the arithmetic of the engine bounds an integer division by a constant,
 $2 \cdot ((h + l)/2) \le h + l \le 2 \cdot ((h + l)/2) + 1$, which gives $l \le (h + l)/2$ if $l \le h$, and
@@ -505,106 +504,102 @@ continue. The path that breaks appears only in the goal, as the last iteration. 
 There is no closed form to aim for. The values of $lo$ and $hi$ after the loop are not a function of the number
 of iterations, and that number is not a function of $n$ alone. Writing $P$ for $\mathsf{lower}(a, n, x)$ and $Q$
 for $\mathsf{upper}(a, n, x)$, the proof needs the bounds $0 \le lo' \le P$ and $Q \le hi' \le n$, and $i' = -1$.
+These are the invariant that a Hoare-style proof would state. Here a lemma about the shape of the loop states it,
+once for every loop of that shape.
 
-\subsection{Lemmas that abstract a trace}
+\subsection{A lemma about the bisection}
 
-The file declares two functions without a body and an introduction lemma for each:
+$S$ is a bisection of the interval $[0, n)$: in each iteration, a probe strictly inside the interval is tested,
+and $lo$ moves above it or $hi$ down to it. The file names such a trace, with the initial interval, the iterations,
+the probe $M$ and the two guards $G$ and $H$ as arguments, by a function without a body and a rule that introduces
+it:
 \begin{lstlisting}
-function incs<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
-                 D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int): Trace<int>
+function bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int,
+                   G: int -> bool, H: int -> bool): Trace<(int, int)>
 
-lemma {:rw} trace_1<a>(x0: int, b: int, i: int, c: int, m: Nat, hs: List<a>,
-                       C: (int, a) -> bool, D: (int, a) -> bool, F: (int, a) -> int)
-  ensures trace(x0, for ⌊counter(i, c, m)⌋, hs do v, k, h ::
-          case C(v, h) => v
-          case D(v, h) && v < F(v, h) && F(v, h) <= b => F(v, h))
-    == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+lemma {:rw} bisection(l0: int, h0: int, i: int, c: int, m: Nat,
+                      M: (int, int) -> int, G: int -> bool, H: int -> bool)
+  ensures trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
+          case G(M(lo, hi)) && lo < hi => M(lo, hi) + 1
+          case H(M(lo, hi)) && lo < hi => lo,
+          case G(M(lo, hi)) && lo < hi => hi
+          case H(M(lo, hi)) && lo < hi => M(lo, hi))
+    == bisection(l0, h0, ⌊counter(i, c, m)⌋, M, G, H)
 \end{lstlisting}
-In each iteration, a trace of this shape either keeps its value or increases it to some value $F(v, h)$ that
-does not exceed $b$; $h$ is the value of a further dependency, here the history of the other component. The
-function $\mathsf{incs}$ names such a trace and forgets everything about it except its bound. The functions $C$,
-$D$ and $F$ are higher-order pattern variables. The bound $b$ is found by matching $F(v, h) \le b$ against a
-conjunct of the program's guard, and the increase $v < F(v, h)$ must follow from the guard; the remaining guard is
-bound to $D$. The dual $\mathsf{decs}$ (\lemma{trace\_2}) describes a value that decreases down to $b$. Two
-\emph{forward} lemmas give the bounds:
+The pattern is a trace of two accumulators, matched against $S$ as a whole, component by component. $M$, $G$ and
+$H$ are higher-order pattern variables. The conjunct $lo < hi$ is not in the program's guards; it must follow from
+them in the context of the update, which has the iteration constraint. So the name stands only for iterations of a
+loop with the test $lo < hi$.
+
+What a bisection keeps is stated with the \emph{cut} of a guard: for a predicate $G$ that holds on a prefix of
+$[l, h)$, $\mathsf{cut}(G, l, h)$ is the first index where it fails, a function without a body. A predicate $H$
+that holds on a suffix has the cut of its negation, the first index where $H$ holds. Two forward lemmas give the
+bounds:
 \begin{lstlisting}
-lemma {:fw} current_1<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
-                         D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int)
-  requires x0 <= b
-  ensures current(incs(x0, b, ks, hs, D, C, F)) <= b
+lemma {:fw} bisection_lo(l0: int, h0: int, ks: List<int>, M: (int, int) -> int,
+                         G: int -> bool, H: int -> bool)
+  requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
+  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
+  ensures l0 <= current(bisection(l0, h0, ks, M, G, H)).0 <= cut(G, l0, h0)
 
-lemma {:fw} current_2<a>(x0: int, b: int, ks: List<int>, ls: List<a>,
-                         D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int)
-  requires b <= x0
-  ensures b <= current(decs(x0, b, ks, ls, D, C, F))
+lemma {:fw} bisection_hi(l0: int, h0: int, ks: List<int>, M: (int, int) -> int,
+                         G: int -> bool, H: int -> bool)
+  requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
+  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && H(p) ==> H(q)
+  ensures cut((j: int) => !H(j), l0, h0) <= current(bisection(l0, h0, ks, M, G, H)).1 <= h0
 \end{lstlisting}
+If the probe lies strictly inside the interval and $G$ holds on a prefix, $lo$ stays within $l_0$ and the cut of
+$G$: it passes a probe only where $G$ holds, hence on all indices up to it. Dually for $hi$. The lemmas say nothing
+about arrays, and nothing about the midpoint: any probe strictly inside the interval will do, e.g.\ the probe
+$lo + (hi - lo)/2$, which does not overflow (\texttt{bsearch\_safe.dfy}, the same lemmas). On a sorted array, the
+cut of the comparison with $y$ is the partition point:
+\begin{lstlisting}
+lemma {:rw} cut_lower(ar: array<int, int>, len: int, y: int)
+  requires sorted(ar, len) && 0 <= len
+  ensures cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)
+
+lemma {:rw} lower_succ(ar: array<int, int>, len: int, y: int)
+  requires sorted(ar, len)
+  ensures lower(ar, len, y + 1) == upper(ar, len, y)
+\end{lstlisting}
+The second rule is the other partition point: on the integers, $\neg(y < ar[j])$ is $ar[j] < y + 1$.
+
 Why forward lemmas and not rewrite rules: the goal speaks about $lo'$ and $hi'$, and none of its terms is a
-comparison of the form $\cur(\mathsf{incs}(\ldots)) \le b$. A rewrite rule fires only where its left-hand side
-occurs, so a rule on the comparison would never fire. A forward lemma is assumed wherever a term matching its
-trigger $\cur(\mathsf{incs}(\ldots))$ occurs in a fact that the traversal assumes. The instance is stated over the
-term as it occurs, so the bound reaches the arithmetic of the goal.
-
-\paragraph{Monotone values.} The bounded abstractions need the guards in the form $m < P$ and $Q \le m$, and the
-rules on sortedness give that form only for $0 \le m < n$. In the update of a component, the context knows
-$lo < hi$ from the iteration constraint, but nothing about $0 \le lo$ or $hi \le n$. These are facts about every
-value of the histories, and they hold for a simpler reason than the bounds: $lo$ only increases from $0$, and $hi$
-only decreases from $n$. A forward lemma states this for any trace that keeps or increases its value, with no bound:
-\begin{lstlisting}
-lemma {:fw} up_1<a>(x0: int, i: int, c: int, m: Nat, hs: List<a>,
-                    C: (int, a) -> bool, D: (int, a) -> bool, F: (int, a) -> int)
-  ensures invs(for ⌊trace(x0, for ⌊counter(i, c, m)⌋, hs do v, k, h ::
-          case C(v, h) => v case D(v, h) && v < F(v, h) => F(v, h))⌋
-          check w :: x0 <= w)
-\end{lstlisting}
-Its trigger is the history $\bl{\mathsf{trace}(\ldots)}$, so it fires wherever a history of a component occurs in
-an assumed fact, e.g.\ as a dependency of the iteration constraint. The dual \lemma{down\_1} states that every value
-stays below the initial one, and \lemma{up\_2} and \lemma{down\_2} state the same of the current value.
+comparison of the form $\cur(\mathsf{bisection}(\ldots)).0 \le \mathsf{cut}(\ldots)$. A rewrite rule fires only where
+its left-hand side occurs, so a rule on the comparison would never fire. A forward lemma is assumed wherever a term
+matching its \emph{trigger}, here $\cur(\mathsf{bisection}(\ldots)).0$, occurs in a fact that the traversal assumes.
+The instance is stated over the term as it occurs, so the bound reaches the arithmetic of the goal.
 
 \subsection{The proof}
 
-\paragraph{First layer: the histories are monotone.} Where the traversal assumes the iteration constraint, the
-histories $\bl{S}.0$ and $\bl{S}.1$ occur as its dependencies, and the triggers of \lemma{up\_1} and
-\lemma{down\_1} match them through the views of the components, as in the swap. At this point the guards are still
-reads of the array, since the range of the midpoint is not known. In the view of component $0$, the trace of $lo$
-alone over the history of $hi$, $C$ is $x < a[m]$, the case that keeps the value, $D$ is $a[m] < x$, and $F$ is
-$m + 1$; the increase $lo < m + 1$ follows from $lo < hi$ by the bounds of the division. The instances are stated
-over the histories as they occur:
+\paragraph{The loop is a bisection.} Where the traversal simplifies the definition of $S$, the rule
+\lemma{bisection} matches it. The result of the first case, $m + 1$, binds the probe,
+$M = (lo, hi) \Rightarrow (hi + lo)/2$. The guards are then matched with the probe in place:
+$G((hi + lo)/2)$ against $a[m] < x$ binds $G = (z) \Rightarrow a[z] < x$ by abstracting the probe, and $H$ likewise to
+$(z) \Rightarrow x < a[z]$. In the context of the update, the histories $\bl{S}.0$ and $\bl{S}.1$ stand for the
+accumulators, so the iteration constraint gives $lo < hi$, and the conjuncts $lo < hi$ of the pattern hold. Then
 \[
-\al{\bl{S}.0}{w :: 0 \le w}, \qquad \al{\bl{S}.1}{w :: w \le n}.
+S = \mathsf{bisection}(0, n, \bl{\cnt(0, 1, n_8)}, (lo, hi) \Rightarrow (hi + lo)/2,
+(z) \Rightarrow a[z] < x, (z) \Rightarrow x < a[z]).
 \]
-\lemma{up\_2} and \lemma{down\_2} give $0 \le \cur(S).0$ and $\cur(S).1 \le n$ in the same way.
 
-\paragraph{Second layer: the guards and the bounds.} In the update of a view, the accumulator stands for the
-history of its own component, and the other accumulator is a dependency over the other history. The context of
-the update instantiates every $\mathsf{invs}$ fact over these histories, so it now knows $0 \le lo$ and $hi \le n$,
-and with $lo < hi$ the arithmetic gives $0 \le m < n$. The rules on sortedness apply,
-$a[m] < x \rw m < P$ and $x < a[m] \rw Q \le m$, and the view of component $1$ becomes
+\paragraph{The bounds as forward facts.} Where the traversal assumes $lo' = \cur(S).0$, the trigger of
+\lemma{bisection\_lo} matches $\cur(S).0$ through the definition of $S$. Its conditions are closed now and are
+decided. The probe condition $l < h \Rightarrow l \le (h + l)/2 < h$ follows from the bounds of the division. That $G$
+holds on a prefix is
 \[
-\cur(S).1 \rw \cur(\tr{n}{\bl{K}, \bl{S}.0}{hi, k, lo :: \mathsf{case}\ m < P \Rightarrow hi\ \
-\mathsf{case}\ Q \le m \Rightarrow m}).
+\forall p, q.\ 0 \le p \le q < n \wedge a[q] < x \Rightarrow a[p] < x,
 \]
-\lemma{trace\_2} matches this view as follows:
-\begin{itemize}
-\item $C$ is $m < P$, the case that keeps the value.
-\item $D$ is $Q \le m$, the guard of the case that changes it, and $F$ is $m$.
-\item The bound $b$ is $Q$, from the conjunct $Q \le F(v, l)$, which is the guard itself.
-\item The side condition, that $F$ decreases, is $m < hi$, which the arithmetic decides from $lo < hi$.
-\end{itemize}
-$K$ is replaced by its definition, and $\cur(S).1$ becomes $\cur(\mathsf{decs}(n, Q, \ldots))$. The same for $lo$:
-in the view of component $0$, the case $m < P$ sets $lo$ to $m + 1$. Over the integers the guard $m < P$ is
-$m + 1 \le P$, which gives the bound $b = P$, and \lemma{trace\_1} matches. The pattern lists the case that keeps
-the value first; the program lists it second, and the match is modulo the order of the cases.
-
-The second layer is possible only once the facts of the first are known, at the same terms. The engine therefore
-tries the triggers again at the terms of the facts it assumes, as long as new instances are added; this terminates,
-since the terms are fixed and known instances are skipped. In the second round, \lemma{current\_1} and
-\lemma{current\_2} match through the rewritten views:
+which the rules on sortedness decide within the range of the premise: $a[q] < x \rw q < P$ and $a[p] < x \rw p < P$,
+and $p \le q < P$ gives $p < P$. The instance is simplified before it is assumed, which rewrites the cut by
+\lemma{cut\_lower}; for \lemma{bisection\_hi}, the negation $\neg(x < a[j])$ becomes $a[j] < x + 1$, whose cut is
+$\mathsf{lower}(a, n, x + 1)$ by \lemma{cut\_lower} and $Q$ by \lemma{lower\_succ}:
 \begin{align*}
-&\cur(S).0 \le P &&\text{by \lemma{current\_1}, since } 0 \le P,\\
-&Q \le \cur(S).1 &&\text{by \lemma{current\_2}, since } Q \le n,
+&0 \le \cur(S).0 \le P &&\text{by \lemma{bisection\_lo}},\\
+&Q \le \cur(S).1 \le n &&\text{by \lemma{bisection\_hi}}.
 \end{align*}
-with the side conditions decided by the rules on the atoms $0 \le \mathsf{lower}(\ldots)$ and
-$\mathsf{upper}(\ldots) \le n$.
 
 \paragraph{The index $i$ stays $-1$.} Once its guards are evaluated, both cases of $I$ keep $i$, so the cases are
 joined, the dependencies on $S$ are dropped, and
@@ -615,108 +610,37 @@ by \lemma{consts\_def} and \lemma{current\_consts}; the reads of $i$ in the iter
 \lemma{earlier\_consts}.
 
 \paragraph{The exit.} With $\neg(lo' < hi')$, i.e.\ $hi' \le lo'$, the context has
-$hi' \le lo' \le P \le Q \le hi'$, where $P \le Q$ is the forward fact on the partition points, and the arithmetic
+$hi' \le lo' \le P \le Q \le hi'$, where $P \le Q$ is the forward fact \lemma{bounds}, and the arithmetic
 concludes $P = Q$. Since $i' = -1$, the first postcondition holds vacuously. In the second, the premise
-$0 \le k < n$ is the range of \lemma{equal\_def}, so $a[k] = x \rw P \le k < Q$, which is false for $P = Q$; hence
+$0 \le k < n$ is the range of \lemma{equal}, so $a[k] = x \rw P \le k < Q$, which is false for $P = Q$; hence
 $a[k] \ne x$ for every $k$.
 
 \paragraph{The found case.} Here $0 \le lo' < hi' \le n$ puts $m'$ within the array, and the branch conditions
 give $\neg(m' < P)$ and $\neg(Q \le m')$, so $P \le m' < Q$. Then $a[m'] = x \rw P \le m' < Q$ holds, $m' < n$
 follows from $Q \le n$, and $m' < 0$ is false.
 
-The run uses seventeen lemmas: all fourteen of the file and three of the database on constant traces. It assumes
-300 forward instances, applies about 450 rules, computes 194 views of components, and takes about 45 seconds on a
-single core. Most of this is the layering: each view is computed before and after the invariants are known, at
-every position where the facts differ.
-
-\subsection{A lemma about the cycle as a whole}
-\label{sec:bisection}
-
-The two layers above build a joint invariant, $0 \le lo \le P$ and $Q \le hi \le n$, from two descriptions of each
-component. The file \texttt{examples/dafny/state/bsearch\_bisect.dfy} states it at once, by a lemma whose pattern is
-the trace of both accumulators. It is the same program with the same rules on sortedness; the monotone values and
-$\mathsf{incs}$ and $\mathsf{decs}$ are replaced by two functions and four lemmas.
-
-\paragraph{The cut of a guard.} Instead of a variable for the partition point, which the lemma could not bind
-(a variable that only a quantified condition mentions is not found by matching), the lemma names it as a function of
-the guard:
-\begin{lstlisting}
-function cut(G: int -> bool, l: int, h: int): int
-\end{lstlisting}
-For a predicate $G$ that holds on a prefix of $[l, h)$, $\mathsf{cut}(G, l, h)$ is the first index where it fails.
-A predicate $H$ that holds on a suffix has the cut of its negation, the first index where $H$ holds. On a sorted
-array, the cut of the comparison with $y$ is the partition point:
-\begin{lstlisting}
-lemma {:rw} cut_lower(ar: array<int, int>, len: int, y: int)
-  requires sorted(ar, len) && 0 <= len
-  ensures cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)
-\end{lstlisting}
-The other partition point is a cut of the same kind: on the integers, $\neg(y < ar[j])$ is $ar[j] < y + 1$, so
-\lemma{lower\_succ} states $\mathsf{lower}(ar, len, y + 1) = \mathsf{upper}(ar, len, y)$.
-
-\paragraph{The bisection.} A bisection of $[l_0, h_0)$ moves $lo$ above the midpoint where a guard $G$ holds and
-$hi$ down to it where $H$ holds, in iterations where $lo < hi$:
-\begin{lstlisting}
-lemma {:fw} bisect_1(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool, H: int -> bool)
-  requires l0 <= h0
-  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
-  ensures l0 <= current(trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
-          case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1
-          case H((hi + lo) / 2) && lo < hi => lo,
-          case G((hi + lo) / 2) && lo < hi => hi
-          case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).0
-       <= cut(G, l0, h0)
-\end{lstlisting}
-If $G$ holds on a prefix, $lo$ stays within $l_0$ and the cut of $G$: it passes a midpoint only where $G$ holds,
-hence on all indices up to it. \lemma{bisect\_2} states
-$\mathsf{cut}((j) \Rightarrow \neg H(j), l_0, h_0) \le \cur(\ldots).1 \le h_0$ if $H$ holds on a suffix. The guards are higher-order in the midpoint. The conjunct $lo < hi$ is not in the program's
-guards; it follows from the iteration constraint in the context of the update, which makes the lemma sound for
-iterations of a loop with the test $lo < hi$.
-
-\paragraph{The proof.} The trigger $\cur(\mathsf{trace}(\ldots)).0$ matches $\cur(S).0$ where the traversal assumes
-$lo' = \cur(S).0$. The matcher takes the definition of $S$ and matches it component by component: the initial values
-$0$ and $n$ give $l_0$ and $h_0$, and $\bl{K}$ gives the counter. The guard $G((hi + lo)/2)$ matches the program's
-guard $a[m] < x$ by abstraction, with $G = (z) \Rightarrow a[z] < x$, and $H = (z) \Rightarrow x < a[z]$. In the
-update, the histories of $S$ stand for the accumulators, so the iteration constraint gives $lo < hi$. The conditions
-are now closed:
-\[
-\forall p, q.\ 0 \le p \le q < n \wedge a[q] < x \Rightarrow a[p] < x
-\]
-and the dual one for $H$. The engine decides them by the rules on sortedness, which apply within the range of the
-premise: $a[q] < x \rw q < P$ and $a[p] < x \rw p < P$, and $p \le q < P$ gives $p < P$. The instance is simplified
-before it is assumed: the negation $\neg(x < a[j])$ becomes $a[j] < x + 1$, and the cuts are rewritten by
-\lemma{cut\_lower}, to $P$ and to $\mathsf{lower}(a, n, x + 1)$, which \lemma{lower\_succ} rewrites to $Q$:
-\begin{align*}
-&0 \le \cur(S).0 \le P &&\text{by \lemma{bisect\_1}},\\
-&Q \le \cur(S).1 \le n &&\text{by \lemma{bisect\_2}}.
-\end{align*}
-These are the four bounds that the two layers derived. The rest of the proof is as above: $i$ stays $-1$, the exit
-closes by $hi' \le lo' \le P \le Q \le hi'$, and the found case by $P \le m' < Q \le n$.
-
-The run uses eleven lemmas, all eight of the file and three of the database on constant traces, and takes about
-12 seconds against 45. The rules on sortedness are the same; what is gone is the layering, since no view has to be computed
-before and after the invariants are known.
+The run uses twelve lemmas: all nine of the file and three of the database on constant traces. The log has 253
+rewrite steps, 49 of them views of components, and the run takes about 8 seconds, 18 on a single core.
 
 \subsection{What this example shows, and what it does not}
 \label{sec:missing}
 
-\paragraph{A partial description is enough.} The proof never computes $lo'$ or $hi'$. The traces of a cycle are
-abstracted, through their views, to functions that keep only a bound, and the bound is available wherever the
-goal mentions the variable. This is the form a description takes when the loop has no closed form, and it uses
-the representation unchanged: the views of a cycle are the same as in the swap, matched by a different kind of
-lemma.
+\paragraph{A partial description is enough.} The proof never computes $lo'$ or $hi'$. The trace of the cycle is
+named by the shape of its loop and described by the bounds that the shape guarantees, and the bounds are available
+wherever the goal mentions the variables. This is the form a description takes when the loop has no closed form,
+and it uses the representation unchanged: the cycle is the same kind of trace as in the swap, matched as a whole.
 
-\paragraph{The lemmas are the program's.} The shapes $\mathsf{incs}$, $\mathsf{decs}$ and the monotone values are
-general. They are polymorphic in the other dependency, and nothing in them is specific to binary search, so they
-are candidates for the database. The rules on sortedness are general as well, but they hold only within the array,
-which is why the proof needs the monotone layer to apply them.
+\paragraph{A lemma about a cycle as a whole.} The invariant of the loop relates both variables, and the lemma about
+the bisection states it at once, for the two accumulators together. Its shape is general: any pair of guards that
+hold on a prefix and a suffix, any initial interval, any probe strictly inside it. The same lemmas prove the lower
+bound of a sorted array (\texttt{examples/dafny/state/lower\_bound.dfy}), which the earlier form of the tool did not.
+The lemmas are candidates for the database: the bisection and its cuts for searches in general, the partition
+points for sorted arrays.
 
-\paragraph{Per component, or the cycle as a whole.} The lemmas of the first proof match one component each, with
-the history of the other one as an opaque dependency, and the joint invariant is built in two layers. The bisection
-of Section~\ref{sec:bisection} matches the cycle as a whole and states the joint invariant at once, at a quarter of
-the cost. Its shape is general (any pair of guards that hold on a prefix and a suffix, any initial interval), and the
-same lemmas prove the lower bound of a sorted array (\texttt{examples/dafny/state/lower\_bound.dfy}), which the
-earlier form of the tool did not.
+\paragraph{What is specific.} The rules on sortedness state what sortedness means for a comparison with a fixed
+key; another use of sortedness, e.g.\ that a merge of two sorted arrays is sorted, needs other rules. The guards of
+the program must be comparisons that these rules know, and the probe must be computed in the loop's update from
+$lo$ and $hi$ alone.
 
 \section{The engine, in short}
 
@@ -748,13 +672,13 @@ The examples used the following machinery, which the engine of \texttt{-prove} p
   from unfolding each other.
 \item[Forward facts.] A lemma marked \lstinline|{:fw}| is assumed wherever a term that matches its trigger (the term
   of its conclusion with the most variables) occurs in a fact the traversal assumes. The trigger is matched like
-  the left-hand side of a rule, through definitions and views, also at the dependencies of combinators (a history
-  $\bl{S}.0$), and the instance names the term as it occurs. An instance fires nothing at its own terms; the
-  triggers are tried again at the same terms while instances are added, which terminates. The instance is
-  simplified before it is assumed.
-\item[Cycles as a whole.] A pattern with several accumulators matches a trace of as many component by component,
-  in the context of the update, and a read $\cur(T).i$ of a pattern matches that of a variable through its
-  definition.
+  the left-hand side of a rule, through definitions and views, and the instance names the term as it occurs; it is
+  simplified by the rules before it is assumed, and it fires nothing itself, so this terminates.
+\item[Cycles as a whole.] A pattern with several accumulators matches a trace of as many, component by component,
+  in the context of the update, where the histories of the trace stand for its accumulators; a read $\cur(T).i$ of
+  a pattern matches that of a variable through its definition. Higher-order patterns may be nested, $G(M(lo, hi))$:
+  the inner one is bound first, and the argument of the outer one is then a term that is abstracted wherever it
+  occurs.
 \end{description}
 
 The first two examples are proved by the earlier form of the tool (\texttt{-teq -simplify}, one trace per variable
@@ -771,12 +695,13 @@ The first two programs have a layered loop: the index depends on nothing, the ar
 each other only at the position being written. The database covers such loops without help. Programs whose loops
 carry an accumulated property (a sorted prefix, a running maximum, a search that stops) need lemmas about their
 shapes, some of them written for the program, and the engine has to match those lemmas against views whose shape
-it has not seen before. The binary search is such a program, and it is proved with forward facts, but its lemmas are its own. The open items at the time of writing:
+it has not seen before. The binary search is such a program, proved by a lemma about the bisection that is general
+but not yet in the database. The open items at the time of writing:
 \begin{itemize}
-\item lemmas about a cycle as a whole beyond the bisection, e.g.\ for merging, where two pointers move by
-  comparisons of the elements they point to;
-\item which lemmas of the database should be forward facts rather than rewrite rules;
-\item merging and sorting in this form.
+\item the bisection and the partition points of sorted arrays in the database;
+\item lemmas about other cycles as a whole, e.g.\ for merging, where two pointers move by comparisons of the
+  elements they point to, and sorting in this form;
+\item which lemmas of the database should be forward facts rather than rewrite rules.
 \end{itemize}
 The record of the implementation, \texttt{ideas/deduction-engine-implementation.md} in the repository, keeps the
 state of these.
