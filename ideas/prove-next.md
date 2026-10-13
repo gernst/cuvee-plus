@@ -12,10 +12,10 @@ run takes up to the time limit.
 
 **Diagnosis** (sum05-2 with `-debug rewrite,forward`): the same instances are assumed again in every round,
 `natural_positive at natural(5)` 173 times, `store_occurs_selects` 1008 times in total, and the same terms are
-rewritten again, `integer(n)` to `5` 508 times, where `n == natural(5)`. The rounds of `Simplify` repeat because the
-facts differ from round to round. The likely cause is the rule of 0.46.3 that an instance which simplifies to true
-is assumed raw (`Forward.fire`: its atoms are what the classes need): once its atoms are in the classes, the raw
-instance is new in each round again.
+rewritten again, `integer(n)` to `5` 508 times, where `n == natural(5)`. The outer rounds of `Simplify.apply` do
+not repeat (no round completes); the 1000 steps of the goal are used up inside one traversal, by the
+simplification of the instances in `Forward.fire`, which is repeated wherever a lemma fires: at every assumed fact
+and at every comparison decided by `Simplify.forward`, without a memo.
 
 **Done (0.46.8).** The steps went into the simplification of the instances, which `fire` repeats wherever a lemma
 fires (also at every comparison decided by `Simplify.forward`): an instance is simplified with steps of its own now.
