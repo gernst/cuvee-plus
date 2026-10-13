@@ -745,6 +745,8 @@ Measured on binary search and on the SV-COMP examples
 - The C frontend under `-teq` (partitioned by components since Oct 13, 2026) is tested by examples/c/teq and examples/c/verify
   only; the databases of SV-COMP (`expected.csv`) were recorded under the former per-variable form with `-simplify`
   and are to be recorded again.
+- The matcher of `-prove` matches sums modulo associativity and commutativity, products not: a pattern `m * k`
+  does not match the normal form `k * m` (e.g. `div_quotient_remainder`, left in legacy/teq.dfy).
 - `-prove` simplifies assertions and function definitions only; programs, attributes and derivatives pass
   through unchanged.
 

@@ -6,8 +6,9 @@
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
   <option name="-teq"/>
-  <!-- the lemma database teq.dfy of -teq; the optional modules (-include teq:<name>) were written for the former
-       per-variable form and are left out until they are reorganized -->
+  <!-- the lemma database teq.dfy of -teq and the optional modules migrated so far (ideas/teq-modules.md) -->
+  <option name="-include">teq:aggregation</option>
+  <option name="-include">teq:arithmetic</option>
   <option name="-prove"/>
   <option name="-split"/>
   <option name="-prove"/>

@@ -358,3 +358,5 @@ scripts/prove/slow.sh       # on request or before a commit: the transpose, the 
 - **Oct 13, 2026, night: one form.** `StateTEQ` folded into `TEQ` (`TEQ.system`), the term "state form" dropped from
   the code and the docs (examples/dafny/state keeps its name); the database migration begun with `core.dfy`
   (ideas/teq-modules.md).
+- **Oct 13, 2026, night: aggregation and arithmetic migrated** (ideas/teq-modules.md, progress); forward lemmas fire
+  when a comparison or equation is decided at a position with a polarity (`Simplify.forward`), for bare goals.

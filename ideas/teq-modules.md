@@ -4,11 +4,28 @@ Oct 13, 2026, after `-teq` partitioned every loop by its components (0.46.0). A 
 file; the user agreed to the plan, with an example per lemma only where intuition asks for one, and with the usage
 statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a guide.
 
-**Progress.** `core.dfy` migrated (Oct 13): teq.dfy declares `distincts`, `parity`, `max`, `min`, `count`, `pow` as
-well, the file is in `legacy/`; count_occurrences, distinct, first_duplicate, merge and fallback_recursion run again
-(with goals), counting_sort does not terminate under `-prove` now that `count` resolves (its own lemmas). Next:
-`aggregation.dfy` (`counts`, `maxs`, `consts_prefix`, on which ten examples fail), then `arithmetic.dfy`, cross-checked
-against what the arithmetic of `-prove` decides on its own.
+**Progress.**
+- `core.dfy` migrated (Oct 13): teq.dfy declares `distincts`, `parity`, `max`, `min`, `count`, `pow` as well, the file
+  is in `legacy/`; count_occurrences, distinct, first_duplicate, merge and fallback_recursion run again (with goals),
+  counting_sort does not terminate under `-prove` now that `count` resolves (its own lemmas).
+- `aggregation.dfy` migrated (Oct 13), 53 to 31 declarations: the sums and their lemmas left to teq.dfy, the rules
+  never applied on SV-COMP and specific to one task left in legacy/teq.dfy (below_prefix, nonneg_prefix, parities,
+  the maxima and minima of counters and constants, the prefixes of maxima, minima and counts, the indicators of two
+  dependencies, the updates of selects, sum_squares); `count_nonnegative`, `current_maxs_initial`,
+  `current_mins_initial` forward lemmas. 14 examples include it now (before `teq:nested`, which needs
+  `consts_prefix`): invs_counter_equation, invs_fragments, nested_mult, row_sums and include_before_teq close, the
+  other nine run with goals, count_occurrences with one goal fewer; cocktail_sort does not terminate (deferred, the
+  user remembers it as tricky).
+- `arithmetic.dfy` migrated (Oct 13), 30 to 10 rules, cross-checked against `-prove` with each rule stated as a goal:
+  `-prove` decides mod_add_even, the halves and thirds of polynomials with literal coefficients, natural_zero and
+  integer_zero on its own, five rules on naturals are in teq.dfy, natural_one/two and integer_one/two and
+  div_quotient_remainder were never applied on SV-COMP (the latter does not match the product `k * m` of the normal
+  form, TODO.md); the bounds of the triangles are forward lemmas, which makes their sums with a nonnegative `d`
+  follow by the simplex, so those two rules are gone. A goal that is a bare atom needs the forward lemmas to fire
+  when the atom is decided, which `-prove` does now for comparisons and equations at positions with a polarity
+  (`Simplify.forward`). No example changes with the module; the benchmark definitions include both migrated modules.
+- Next: search and sorted (with the bisection and the partition points of examples/dafny/state), arrays, then
+  counters (`unsigned`), strides, and retiring nested.
 
 ## The state of the files
 

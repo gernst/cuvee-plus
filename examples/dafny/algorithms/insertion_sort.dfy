@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -include teq:nested -prove examples/dafny/algorithms/insertion_sort.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -include teq:nested -prove examples/dafny/algorithms/insertion_sort.dfy
 // insertion sort with nested loops: the inner loop moves b[i] down by adjacent swaps while it is smaller than its
 // predecessor
 //

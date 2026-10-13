@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -include teq:nested -prove examples/dafny/algorithms/row_sums.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -include teq:nested -prove examples/dafny/algorithms/row_sums.dfy
 // the sums of the rows of an m x n matrix: nested loops, the inner loop sums one row, the outer loop stores the sum
 //
 // status: verified with -teq -include teq:nested -simplify (Oct 11, 2026, evening); the module nested resolves the

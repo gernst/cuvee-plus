@@ -1,4 +1,4 @@
-// ./Cuvee.sh -include teq:nested -teq -entry test -prove examples/dafny/teq/include_before_teq.dfy
+// ./Cuvee.sh -include teq:aggregation -include teq:nested -teq -entry test -prove examples/dafny/teq/include_before_teq.dfy
 // a module of the lemma database requested before -teq is injected after the modules of -teq, on which it builds,
 // as with the options in the other order (algorithms/invs_counter_equation.dfy)
 

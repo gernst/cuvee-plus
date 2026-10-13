@@ -73,7 +73,9 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   `current(S).0`, and the instance names the term as it occurs, `current(S).0 <= p`, so the fact reaches the classes
   and the linear constraints of the goal's term. The instance is simplified by the rules before it is assumed, so its
   other terms meet those of the goal (the cut of a bisection becomes a partition point). The instances are assumed by
-  `Context.assume`, which fires nothing at its own terms (generation 1); the triggers are tried again at the same
+  `Context.assume`, which fires nothing at its own terms (generation 1). A comparison or an equation at a position
+  with a polarity also fires the forward lemmas on its own terms when it is decided (`Simplify.forward`), so a goal
+  that is a bare atom, `0 <= (x + x * x) / 2`, follows from the instance at its term; the triggers are tried again at the same
   terms as long as instances are added, since one instance may enable another (the invariant `0 <= lo` over `⌊S⌋.0`
   lets the guards of the view of `current(S).0` be rewritten, so its bound matches, in `bsearch_sorted.dfy`); this
   terminates, as the terms are fixed and an instance whose conjuncts are all known is skipped; no lemma fires while

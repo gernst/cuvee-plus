@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -include teq:nested -prove examples/dafny/algorithms/transpose.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -include teq:nested -prove examples/dafny/algorithms/transpose.dfy
 // the transpose of an m x n matrix: nested loops that store A[i][j] at B[j][i]
 //
 // status: verified with -teq -include teq:nested -simplify (Oct 11, 2026, evening); row_sums.dfy on an array-valued

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/count_occurrences.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/count_occurrences.dfy
 // the number of occurrences of x in a[0..n), specified with the vocabulary of teq.dfy
 //
 // status: verified with -teq -simplify; the trace of c is counts over the reads at the counter, and the goal is

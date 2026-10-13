@@ -161,7 +161,11 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   [ideas/teq-modules.md](../ideas/teq-modules.md)). `core.dfy`, the
   declarations and the definitions that several modules share, is migrated:
   teq.dfy has all of them (`sum`, `parity`, `max`, `min`, `count`, `pow`,
-  `distincts`, `selects`), the file is in `legacy/`. The others still declare
+  `distincts`, `selects`), the file is in `legacy/`; so are `aggregation.dfy`
+  (`-include teq:aggregation`: counts, maxima, minima, the linearity of sums,
+  indicators) and `arithmetic.dfy` (`-include teq:arithmetic`: the rules that
+  the arithmetic of `-prove` does not decide on its own), migrated as modules
+  over teq.dfy. The others still declare
   functions that teq.dfy declares as well, or refer to each other, and cannot
   be included with teq.dfy until they are migrated. What they hold: `counters.dfy`
   `mods(i, c, m, n)`, the counter modulo `m` of the unsigned variables of C,

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -include teq:nested -prove examples/dafny/algorithms/bubble_sort.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -include teq:nested -prove examples/dafny/algorithms/bubble_sort.dfy
 // bubble sort with nested loops: the outer loop moves the bound i down, the inner loop swaps adjacent elements
 // out of order below it
 //

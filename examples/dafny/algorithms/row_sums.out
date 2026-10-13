@@ -1,0 +1,17 @@
+lemma {:rw} invs_sums_selects_counter(ks: List<int>, Ts: List<Trace<int>>,
+                                      Js: List<Trace<int>>,
+                                      Js2: List<Trace<int>>, n: int,
+                                      F: int -> array<int, int>)
+  requires invs(for ks, Js2 check k, J :: J == counter(0, 1, natural(n)))
+  requires Js2 == Js
+  ensures
+    invs(for ks, Ts, Js check k, T, J :: T == sums(0, selects(F(k), ⌊J⌋)))
+      <==> invs(for ks, Ts
+                check k, T ::
+                  T == sums(0, selects(F(k), ⌊counter(0, 1, natural(n))⌋)))
+
+lemma {:rw} invs_maps_sum(ks: List<int>, ts: List<int>, F: int -> List<int>)
+  ensures
+    invs(for ks, ts check k, t :: t == sum(F(k)))
+      <==> ts == maps(for ks yield k :: sum(F(k)))
+

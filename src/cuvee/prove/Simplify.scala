@@ -65,8 +65,23 @@ object Simplify:
 
       val expr_ = rewrite(config, state, ctx, once_)
       if expr_ == expr
-      then expr
+      then forward(config, state, ctx, expr)
       else simplify(config, state, ctx, expr_)
+
+  // a comparison or an equation at a position with a polarity, decided by the forward lemmas that fire on its own terms
+  // (see Forward): at a positive position, it holds if its denial contradicts their instances, e.g. the bare goal
+  // 0 <= (x + x * x) / 2 by the instance of triangle_nonneg at its term, and dually at a negative one; the instances
+  // are not kept, since the atom is decided or stays as it is; the other formulas fire at the facts that the traversal
+  // assumes (see Imp and nary)
+  def forward(config: Config, state: State, ctx: Context, phi: Expr): Expr =
+    phi match
+      case App(fun, _, _, _) if ctx.forward.nonEmpty && Set("<", "<=", "=").contains(fun.name.name) && phi.typ == Sort.bool =>
+        ctx.polarity match
+          case Some(true) if Forward.assume(config, state, ctx, Nil, List(phi)).inconsistent  => True
+          case Some(false) if Forward.assume(config, state, ctx, List(phi), Nil).inconsistent => False
+          case _                                                                             => phi
+      case _ =>
+        phi
 
   // whether `phi` is known to hold in `ctx`, also by its negation in normal form, e.g. a < b if !(b <= a) is known
   // (see Context.implied), and in an inconsistent context at positive positions,

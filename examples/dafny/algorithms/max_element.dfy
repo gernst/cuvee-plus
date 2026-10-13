@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -prove examples/dafny/algorithms/max_element.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -prove examples/dafny/algorithms/max_element.dfy
 // the maximum of a[0..n), n > 0
 //
 // status: verified with -teq -simplify for the postcondition that the maximum occurs among the values of a at the
