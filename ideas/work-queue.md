@@ -27,19 +27,24 @@ double); speed only where a task times out that would succeed.
       trace per strongly connected component, `-prove`, the lemma database with its modules, forward lemmas,
       `-fallback`, `-chc`, `-verify`; `-simplify` omitted), for readers who know verification but not TEQ, with all
       major insights (from the docs, ideas/, bugs.md, the experiments).
-- [ ] Recurrences in arrays: ifeqn1, ifeqn2 close with `select_current_trace_recurrence`; open: `ifcomp`, `pcomp`,
-      `sqm-if`, `nsqm-if`, `condm` (other shapes).
+- [ ] Recurrences in arrays: ifeqn1, ifeqn2 close with `select_current_trace_recurrence`; open: `ifcomp` (three
+      levels, `c[j] == j^3`: a sum of a quadratic over `counter(1, 1, j)`, which needs a general sum of squares with
+      an exact division by 6, as a forward lemma like `triangle_even`, and products matched modulo commutativity),
+      `pcomp`, `sqm-if`, `nsqm-if`, `condm`.
 - [ ] Strided stores (array-tiling `mbpr*`, `pr*`, `pnr*`; 22 true tasks): `store_select_other`
       (`a[i := v][j := a[j]] == a[i := v]` for `i != j`), `maps_counter_scale` (`maps(... :: b * v)`, which
       `maps_counter_affine` does not match without a constant), `occurs_counter_step` back from the legacy file
       (scratch stride.dfy; all fire on mbpr2). Open: the parity `(i - 1) % 2 == 0` against `i % 2 == 0`, which
       needs integer reasoning about remainders (the simplex is rational); a forward lemma
       `x % 2 == 0 || (x - 1) % 2 == 0` does not close it.
-- [ ] Counterexamples without a solver: a remaining goal without traces and uninterpreted functions, e.g.
-      `forall N :: !(0 < N && N <= 536870911)` of brs1f, refuted by evaluation at candidate values (the `f`
-      variants of array-fpi, while_infinite_loop_4; expected false, lower priority).
+- [x] Counterexamples without a solver (`Prove.counterexample`, 0.46.13) and `integer_zero`: of the 80 tasks of
+      array-fpi that 0.46.8 left unknown at 60 s, 38 unsafe ones are refuted and 7 safe ones proved locally (120 s),
+      no wrong verdict; while_infinite_loop_4 refuted. Cloud run pending (the cloud is busy with the 15 min runs).
 - [ ] The tasks lost against 0.42.1: in-de52 to in-de62 (try with the case splits), sum_by_3_abstracted (open with
       the case splits), sum_array-2-2, indp5, revcpyswp2 (time outs at 60 s), while_infinite_loop_4.
+- [ ] array-programs partial_mod_count_* (true): conditional stores `case P(k) => a[k := 0] case !P(k) => a[k := k
+      + 1]`, whose second value is not a constant (the rule of arrays has constants in both cases), then the count of
+      zeros among the reads.
 - [ ] array-patterns (30 true tasks): pairwise cancelling sums over stores at nondeterministic indices; hard.
 
 ## Deferred

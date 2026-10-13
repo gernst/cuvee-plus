@@ -38,12 +38,12 @@ disjuncts), each case in a fresh context, up to four premises deep, and drops it
 with a single round of `-split -prove`, in-de41, in-de42, in-de51 at depth 4 (depth 2 was not enough: the cases of
 one loop make the `_cases` rule of the next one apply). sum_by_3_abstracted stays open.
 
-## 3. Refutation by substitution (1 task)
+## 3. Counterexamples without a solver
 
-`while_infinite_loop_4` (expected false) leaves `not (n == zero && 0 <= integer(n))`, which is false for `n = zero`.
-`-prove` does not substitute a variable that a premise equates with a constructor before deciding a goal false.
-**Change:** in the refutation of a goal (`-verify`), substitute variables by the literals and constructors of their
-classes and simplify; small, but one task only.
+**Done (0.46.13).** `Prove.counterexample` refutes a remaining goal without traces and uninterpreted functions by
+evaluating it at small values and the literals of the goal plus or minus 1: brs1f, ms1f, sina1f, s1iff become
+correct `false`; with `integer_zero` in teq.dfy also while_infinite_loop_4. On the 80 tasks of array-fpi that 0.46.8
+left unknown, 38 unsafe ones are refuted and 7 safe ones proved (locally, 120 s), without a wrong verdict.
 
 ## 4. The cost of forward lemmas
 

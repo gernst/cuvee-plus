@@ -1,19 +1,19 @@
-function S_0₂₈₂(x₀: int): int
+function S_0₂₈₈(x₀: int): int
 
-function S_1₂₈₂(x₀: int): int
+function S_1₂₈₈(x₀: int): int
 
 goal {:abstract}
   forall a₁₅: int, i₁₇: int, n₈: int ::
     0 <= n₈
       ==> 0 <= i₁₇
-        && S_0₂₈₂(0) == 0
-        && (forall j₂₈₄: int ::
-              0 <= j₂₈₄ < n₈ ==> S_0₂₈₂(j₂₈₄ + 1) == S_1₂₈₂(j₂₈₄))
-        && S_1₂₈₂(0) == 1
-        && (forall j₂₈₄: int ::
-              0 <= j₂₈₄ < n₈
-                ==> S_1₂₈₂(j₂₈₄ + 1) == S_0₂₈₂(j₂₈₄) + S_1₂₈₂(j₂₈₄))
-        && a₁₅ == S_0₂₈₂(n₈)
+        && S_0₂₈₈(0) == 0
+        && (forall j₂₉₀: int ::
+              0 <= j₂₉₀ < n₈ ==> S_0₂₈₈(j₂₉₀ + 1) == S_1₂₈₈(j₂₉₀))
+        && S_1₂₈₈(0) == 1
+        && (forall j₂₉₀: int ::
+              0 <= j₂₉₀ < n₈
+                ==> S_1₂₈₈(j₂₉₀ + 1) == S_0₂₈₈(j₂₉₀) + S_1₂₈₈(j₂₉₀))
+        && a₁₅ == S_0₂₈₈(n₈)
         && n₈ == (if 0 <= i₁₇ then i₁₇ else 0)
       ==> 0 <= a₁₅
 

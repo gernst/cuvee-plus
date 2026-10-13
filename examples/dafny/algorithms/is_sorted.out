@@ -19,7 +19,3 @@ lemma {:rw} sorted_short(a: array<int, int>, lo: int, hi: int)
   requires hi <= lo + 1
   ensures sorted(a, lo, hi) <==> true
 
-goal
-  forall a: array<int, int>, s₉: bool, n₄: Nat ::
-    !sorted(a, 0, integer(n₄) + 1) && n₄ == zero ==> s₉
-

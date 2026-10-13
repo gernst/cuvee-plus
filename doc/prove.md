@@ -106,6 +106,11 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   of two or three formulas, each case in a fresh context, up to four premises deep; it is dropped if all cases hold
   and kept as it is otherwise. The `_cases` rules of `mods` (`teq:unsigned`) introduce such premises,
   `n == zero || integer(n) < 1`, whose cases make the values of the next loops known (in-de20 to in-de51).
+- **Counterexamples** (`Prove.counterexample`): a goal that remains without traces, lists and other functions than
+  those of arithmetic and logic, over at most four integer, natural or boolean variables, is refuted if its body
+  evaluates to false at an assignment of small values and the literals of the goal plus or minus 1; it becomes
+  `false`, which `-verify` answers with `incorrect` unless the goal is `:abstract`. The unsafe variants of array-fpi
+  leave such goals, e.g. `forall N :: !(0 < N && N <= 536870911)` of brs1f.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.

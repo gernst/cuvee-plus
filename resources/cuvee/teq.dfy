@@ -135,6 +135,12 @@ lemma {:rw} {:teq} integer_natural(x: int)
 lemma {:rw} {:teq} zero_integer(n: Nat)
   ensures (integer(n) == 0) <==> (n == zero)
 
+// the value of zero as a term, e.g. in 0 <= integer(zero) of an instance of a counterexample (Prove.counterexample),
+// which zero_integer decides only as an equation
+// (from while_infinite_loop_4)
+lemma {:rw} {:teq} integer_zero()
+  ensures integer(zero) == 0
+
 // the value of a number of iterations that is zero, as a fact for the arithmetic where its value occurs, since the
 // equation n == zero of the classes does not reach the linear constraints
 lemma {:fw} {:teq} zero_integer_value(n: Nat)
