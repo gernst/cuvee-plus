@@ -213,6 +213,9 @@ theorem integer_eq (n : Nat) (x : Int) :
 theorem natural_nonpositive (x : Int) : x ≤ 0 → natural x = zero :=
   by intro h; simp [natural_eq]; omega
 
+theorem natural_positive (x : Int) : 0 < x → natural x ≠ zero :=
+  by intro h; rw [natural_eq]; show x.toNat ≠ 0; omega
+
 theorem natural_zero : natural 0 = zero :=
   by simp [natural_eq]
 
@@ -1616,6 +1619,15 @@ theorem select_not_occurs_selects_beyond (n : Nat) (j : Int) (x : Int)
     rcases Int.lt_or_le j (integer n) with hlt | hle
     · exact (select_not_occurs_selects a x 0 n j ⟨h, hj, by omega⟩ e).elim
     · exact hle
+
+-- the sentinel x stored at j occurs among the values read at 0, ..., n - 1 unless j is beyond them
+theorem store_occurs_selects (n : Nat) (j : Int) (x : Int) (a : Int → Int) :
+  0 ≤ j → occurs x (selects (fun j1 => if j1 = j then x else a j1) (butlast (counter 0 1 n))) ∨ integer n ≤ j :=
+  by
+    intro hj
+    by_cases h : occurs x (selects (fun j1 => if j1 = j then x else a j1) (butlast (counter 0 1 n)))
+    · exact Or.inl h
+    · exact Or.inr (select_not_occurs_selects_beyond n j x _ ⟨h, by simp, hj⟩)
 
 theorem select_store_other {α β : Type} [Inhabited α] [Inhabited β] (a : α → β)
                                                                           (i : α)
@@ -3160,6 +3172,19 @@ theorem triangle_nonneg (x : Int) : 0 ≤ (x + x * x) / 2 :=
       · exact Int.mul_nonneg h (by omega)
     have e : x * (x + 1) = x + x * x := by grind
     omega
+
+-- x + x * x and -x + x * x are even, by the parity of x
+theorem triangle_even (x : Int) : 2 * ((x + x * x) / 2) = x + x * x :=
+  by
+    have h : (x + x * x) % 2 = 0 := by
+      rw [Int.add_emod, Int.mul_emod]
+      have : x % 2 = 0 ∨ x % 2 = 1 := by omega
+      rcases this with e | e <;> simp [e]
+    omega
+
+-- -x + x * x is x + x * x less 2 * x
+theorem triangle_even_below (x : Int) : 2 * ((-x + x * x) / 2) = -x + x * x :=
+  by have := triangle_even x; omega
 
 theorem triangle_nonneg_below (x : Int) : 0 ≤ (-x + x * x) / 2 :=
   by

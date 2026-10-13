@@ -120,6 +120,10 @@ def Stmt.natural_nonpositive : Prop :=
   ∀ (x : Int),
     x ≤ 0 → natural x = zero
 
+def Stmt.natural_positive : Prop :=
+  ∀ (x : Int),
+    0 < x → natural x ≠ zero
+
 def Stmt.integer_eq : Prop :=
   ∀ (n : Nat) (x : Int),
     0 ≤ x → (integer n = x ↔ n = natural x)
@@ -283,10 +287,6 @@ def Stmt.sum_consts : Prop :=
   ∀ (n : Nat) (x : Int),
     sum (butlast (consts n x)) = x * integer n
 
-def Stmt.sum_add : Prop :=
-  ∀ (xs : List Int) (ys : List Int) (n : Nat) (hxs : length xs = n) (hys : length ys = n),
-    sum (maps (List.zip xs ys) (fun ⟨v, w⟩ => v + w)) = sum xs + sum ys
-
 def Stmt.sum_counter : Prop :=
   ∀ (i : Int) (c : Int) (n : Nat),
     sum (butlast (counter i c n)) = (2 * i + (integer n - 1) * c) * integer n / 2
@@ -365,6 +365,10 @@ def Stmt.sum_neg : Prop :=
 def Stmt.sum_scale : Prop :=
   ∀ (values : List Int) (a : Int) (n : Nat) (hvalues : length values = n),
     sum (maps values (fun v => a * v)) = a * sum values
+
+def Stmt.sum_add : Prop :=
+  ∀ (xs : List Int) (ys : List Int) (n : Nat) (hxs : length xs = n) (hys : length ys = n),
+    sum (maps (List.zip xs ys) (fun ⟨v, w⟩ => v + w)) = sum xs + sum ys
 
 def Stmt.sum_indicator_true : Prop :=
   ∀ {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) (n : Nat) (hxs : length xs = n),
@@ -543,6 +547,14 @@ def Stmt.triangle_nonneg_below : Prop :=
   ∀ (x : Int),
     0 ≤ (-x + x * x) / 2
 
+def Stmt.triangle_even : Prop :=
+  ∀ (x : Int),
+    2 * ((x + x * x) / 2) = x + x * x
+
+def Stmt.triangle_even_below : Prop :=
+  ∀ (x : Int),
+    2 * ((-x + x * x) / 2) = -x + x * x
+
 noncomputable def agree_prefix (n : Nat) (xs : List Int)
                                (ys : List Int) : Prop :=
   match n with
@@ -583,10 +595,13 @@ def Stmt.earlier_not_occurs_prefix : Prop :=
   ∀ (n : Nat) (j : Nat) (e : Int) (xs : List Int) (hxs : length xs = n),
     ¬occurs e («prefix» n xs) ∧ integer j < integer n → earlier j xs ≠ e
 
-def Stmt.select_not_occurs_selects_beyond : Prop :=
+def Stmt.store_occurs_selects : Prop :=
   ∀ (n : Nat) (j : Int) (x : Int) (a : Int → Int),
-    ¬occurs x (selects a (butlast (counter 0 1 n))) ∧ a j = x ∧ 0 ≤ j
-      → integer n ≤ j
+    0 ≤ j
+      → occurs
+        x
+        (selects (fun j1 => if j1 = j then x else a j1) (butlast (counter 0 1 n)))
+        ∨ integer n ≤ j
 
 def Stmt.earlier_above_iterations : Prop :=
   ∀ (n : Nat) (j : Nat) (ts : List Int),
