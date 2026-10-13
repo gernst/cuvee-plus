@@ -3,8 +3,8 @@
 Status (Oct 12, 2026). The proposal of Oct 10 had three parts: the combinators as recursive definitions over a
 data type of traces (an experiment `teq-def.dfy`, since removed), proofs of the database by induction inside
 Cuvée with a proof script `{:by ...}` and an automatic tactic, and the derivation of acceleration lemmas by
-fusion. The proofs are done differently now: [teq.lean](../resources/cuvee/teq.lean) defines the combinators in
-Lean 4 and proves 164 of the 205 lemmas of the database, printed from the modules by `-print lean` (see
+fusion. The proofs are done differently now: [lean/](../lean) defines the combinators in
+Lean 4 and proves the lemmas of the stable modules, printed from them by `-print lean` (see
 [doc/teq.md](../doc/teq.md)); the modules `nested`, `sorting` and `strides` are not proved yet, and the premises
 that the Lean proofs needed (dependencies of equal length, indices within the lists, complete guards) are the
 well-formedness items of TODO.md. What remains of the proposal is the derivation of lemmas, and induction in the

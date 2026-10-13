@@ -38,6 +38,13 @@ which only the open points remain).
 - [trace-lemma-proofs.md](trace-lemma-proofs.md): deriving acceleration lemmas by fusion, induction in the tool
   for user lemmas; the proofs of the database are in Lean now.
 - [verify-answers.md](verify-answers.md): the open points of `-verify`.
+- [iterator-profiles.md](iterator-profiles.md): the loop patterns of LoopAnnotator (ASE 2026, iterator
+  profiles) read against TEQs: what is covered (counters, conditional stores, sums, searches), what needs new
+  lemmas (enumerations of set bits as in `for_each_cpu`, wrap-around, halving, reads of `a[i-1]` as chains),
+  what is hard (lists, aliasing); benchmarks in `benchmarks/loopannotator`.
+- [teq-lean.md](teq-lean.md): the open points of the Lean proofs of the database (implemented in `lean/`): the
+  premises as `requires`, a Scala test of the generated statements, the legacy theorems, a Lean mode of the
+  printer, faithful guards.
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 

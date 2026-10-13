@@ -1,5 +1,5 @@
 // ./Cuvee.sh -print lean examples/dafny/printing/lean_teq.dfy
-// the combinators of trace equation systems in Lean, applications of the functions of resources/cuvee/teq.lean by
+// the combinators of trace equation systems in Lean, applications of the functions of lean/TEQ/Semantics.lean by
 // the number of their dependencies to the update as a function of the bound variables, guarded cases as
 // conditionals; the declarations of teq.dfy that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>

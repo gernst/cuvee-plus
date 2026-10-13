@@ -170,7 +170,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   be included with teq.dfy until they are migrated. What they hold: `counters.dfy`
   `mods(i, c, m, n)`, the counter modulo `m` of the unsigned variables of C,
   whose arithmetic wraps around (`mods_def`), with lemmas that bound it by the
-  tests of loops below `m` (not proved in `teq.lean` yet); `teq:nested` the
+  tests of loops below `m` (not proved in Lean yet); `teq:nested` the
   fragments of inner loops (the inner counter, its final value, its iteration
   constraint, its exit stated on the constraint fragment
   `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, the numbers of inner
@@ -181,7 +181,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   stores ahead of the MonoCera benchmarks, see
   [benchmarks/monocera](../benchmarks/monocera), which fix the number of
   stores and of cases on their left-hand sides, are not proved in
-  `teq.lean`, and are not tested). The order of the modules is the order in
+  Lean, and are not tested). The order of the modules is the order in
   which the rules are tried.
   [legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy) is the former single
   file of the per-variable form, from which its modules were split: a backup,
@@ -232,7 +232,7 @@ prints them since the feature is not known to the output:
   `nonneg_prefix`, and counters with a step (`indexof_counter_step`,
   `prefix_maps_counter`). A merged lemma is checked by re-running the tasks
   whose local copies it replaces, which must reproduce their rows of
-  `benchmarks/sv-comp/dafny/expected.csv`, and by its proof in teq.lean. This
+  `benchmarks/sv-comp/dafny/expected.csv`, and by its proof in Lean (lean/). This
   showed further lemmas that stay local:
   - the definition of an auxiliary predicate by an iteration constraint with
     a general body, `invs(... :: x <= b) <==> below_prefix(n, xs, b)`, since
@@ -249,7 +249,7 @@ prints them since the feature is not known to the output:
     (`array_init_both_ends_multiple_sum`).
 - Auxiliary predicates abstract iteration constraints, e.g. `agree_prefix`
   and `consts_prefix`, and are defined by recursion over the positions,
-  `earlier(m, xs)`, which teq.lean proves their lemmas with; their names avoid
+  `earlier(m, xs)`, which the Lean proofs use; their names avoid
   those that inputs declare with other meanings, since equal signatures are
   identified.
 - An iteration constraint is never a side condition. Deciding one matches it
@@ -352,54 +352,67 @@ prints them since the feature is not known to the output:
     postcondition, which must leave a goal; long runs use a private copy of
     the jar and read the exit status, since a killed run prints no goal.
 
-## The semantics in Lean ([teq.lean](../resources/cuvee/teq.lean))
+## The semantics in Lean ([lean/](../lean))
 
-- `Trace` is a datatype of `core.dfy`, a value followed by the trace of the
-  remaining iterations (`step`) or a last value (`stop`), hence never empty,
-  with `current` and `butlast` defined by recursion; teq.lean takes them
-  from the printed `core.dfy`. The functions that the database only declares are
-  defined in Lean 4 (core, without Mathlib): `current`, `butlast`, `counter`,
-  and `consts` are recursive; sequences are lists;
-  the auxiliary predicates (`agree_prefix`, ...) are the iteration
-  constraints that they abstract.
-- There is a single combinator of each kind, `trace`, `maps`, and `invs`,
-  defined by recursion over one dependency, `trace` as a right fold; the Lean printer zips several
-  dependencies, `List.zip d₁ (List.zip d₂ d₃)`, binds their values by a
-  tuple, `fun acc ⟨b₁, b₂, b₃⟩ => ...`, and prints guarded cases as
-  conditionals. Zipping truncates to the shortest dependency, the lengths
-  are not assumed yet (see TODO.md).
-- The functions that the modules define with `{:fold}` and the lemmas are
-  printed by `-print lean`, the lemmas as theorems, whose statements are
-  copied into teq.lean when lemmas are added, and proved there.
-- Checked counterexamples show lemmas that hold only under assumptions that
-  the contexts of the goals provide, e.g. `n ≥ 0` or dependencies of equal
-  length.
-- Check with `lean resources/cuvee/teq.lean` (Lean 4.34); teq.lean is built
-  from the output of `-print lean` on the modules (see above) and
-  the hand-written definitions at its beginning.
-- The dependencies of a combinator have equal lengths, which `zip` in Lean
-  does not assume: `-print lean` adds hypotheses on the lengths to each
-  lemma (`lean.Printer.lengths`), `(hxs : length xs = n)` for each list
-  variable that is a dependency of a combinator, also through a `{:fold}`
-  function, or that is read at the iterations `k` of a counter by
-  `earlier(natural(k), xs)`, where `n` is the number of steps of a counter
-  among the dependencies or a further parameter `(n : Nat)` of the lemma;
-  `length` is declared in `core.dfy` with `{:lean}` as `List.length` of Lean.
-  With them, all lemmas of teq.lean are proved; assumptions on indices
-  within the lists are added by hand there as `requires` to be added to
-  the module. teq.lean proves 164 of the 205 lemmas of the database: those of
-  `arithmetic`, `aggregation`, `arrays`, and `search`, and 50 of the 62 of
-  `counters`; the lemmas of `nested`, `sorting`, and `strides` are not in
-  teq.lean yet.
-- A new lemma of a module goes into teq.lean by printing the module with
-  `-print lean` and copying its statement (as a theorem) and those of new
-  functions, at the position it has in the database, then proving it. The printer
-  cannot see the length of a list that is no dependency of a combinator but
-  is summed or read under an auxiliary predicate, e.g. `sum(xs)` under
-  `below_prefix(n, xs, b)`: such lemmas hold for lists of length `n` only and
-  get `(hxs : length xs = n)` by hand (`sum_consts_prefix`,
-  `sum_below_prefix`, `earlier_nonneg_prefix`, `sum_nonneg_prefix`), listed in
-  the header of teq.lean.
+The lemmas of the stable modules, teq.dfy, `aggregation.dfy` and
+`arithmetic.dfy` (`MODULES` of
+[scripts/lean/generate.py](../scripts/lean/generate.py)), are proved in Lean 4
+(core, without Mathlib, the toolchain of `lean-toolchain`), in the Lake
+project at the root (`lakefile.toml`, sources in `lean/`):
+
+- [Semantics.lean](../lean/TEQ/Semantics.lean), by hand: the datatype
+  `Trace`, a value followed by the trace of the remaining iterations (`step`)
+  or a last value (`stop`), hence never empty, and the combinators. There is a
+  single combinator of each kind, `trace`, `maps`, and `invs`, defined by
+  recursion over one dependency, `trace` as a right fold; the Lean printer
+  zips several dependencies, `List.zip d₁ (List.zip d₂ d₃)`, binds their
+  values by a tuple, `fun acc ⟨b₁, b₂, b₃⟩ => ...`, and prints guarded cases
+  as conditionals.
+- [Database.lean](../lean/TEQ/Database.lean), generated: the functions of the
+  modules as printed by `-print lean`, and each lemma as a proposition
+  `Stmt.<name>` of its printed statement, with the premises of
+  [premises.txt](../lean/premises.txt). Sequences are lists, arrays functions,
+  `length` is declared in teq.dfy with `{:lean}` as `List.length` of Lean.
+- [Proofs.lean](../lean/TEQ/Proofs.lean), by hand: a theorem of the name of
+  each lemma with its statement, and the auxiliary lemmas; it also keeps the
+  theorems of the lemmas of the former single file
+  ([legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy)) that the stable
+  modules no longer contain, with the auxiliary predicates of those
+  (`agree_prefix`, `below_prefix`, ...).
+- [Check.lean](../lean/TEQ/Check.lean), generated:
+  `example : Stmt.<name> := @<name>` for each lemma, so a lemma whose
+  statement changed or that has no proof fails the build.
+- [Counterexamples.lean](../lean/TEQ/Counterexamples.lean), by hand: the
+  lemmas without their premises are false.
+
+The dependencies of a combinator have equal lengths, which `zip` in Lean does
+not assume: `-print lean` adds hypotheses on the lengths to each lemma
+(`lean.Printer.lengths`), `(hxs : length xs = n)` for each list variable that
+is a dependency of a combinator, also through a `{:fold}` function, or that is
+read at the iterations `k` of a counter by `earlier(natural(k), xs)`, where `n`
+is the number of steps of a counter among the dependencies or a further
+parameter `(n : Nat)` of the lemma. The premises that the printer cannot see
+and that the engine does not check are listed in `premises.txt`, each with the
+reason why the contexts of `-teq` provide it: reads within the loop
+(`integer k < integer n` of `earlier_counter`, `earlier_sums`, ...), prefixes
+not longer than the list (`prefix_counter`), and the lengths of lists that are
+no dependency of a combinator (`sum_consts_prefix`).
+
+- Check with `scripts/lean/check.sh` (about 20 s from scratch): it fails if
+  the generated files are not those of the current modules, if the build
+  fails, or on a `sorry`; `--regenerate` regenerates them first.
+- A new or changed lemma of a stable module: edit the module, run
+  `scripts/lean/generate.py` (it prints the modules with a copy of
+  `cuvee.jar`, hence after the assembly if the printer changed), prove
+  `Stmt.<name>` by a theorem `<name>` in Proofs.lean at the position of its
+  group, and add a premise to `premises.txt` only if the lemma is false
+  without it, with a counterexample in Counterexamples.lean. A definition that
+  does not check is fixed in the module or in `lean.Printer`, never in the
+  generated file.
+- A module that becomes stable joins `MODULES`; until then, the proofs of its
+  lemmas of the former single file stay in Proofs.lean unchecked against its
+  statements. The lemmas of `nested`, `sorting`, and `strides`, and 12 of the 62
+  of `counters`, have no proofs.
 
 ## The fallback encoding `-fallback` ([Fallback.scala](../src/cuvee/transform/Fallback.scala))
 

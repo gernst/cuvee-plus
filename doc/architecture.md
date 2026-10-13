@@ -81,7 +81,8 @@ transformation and any output.
    all languages: its printer maps them to Lean (booleans to propositions,
    arrays to functions, sequences to lists, tuples to products, Mathlib's
    `ℝ` and `Set`) or rejects them, like multisets, finite maps, bitvectors,
-   and programs; the combinators of `-teq` are the functions of teq.lean.
+   and programs; the combinators of `-teq` are the functions of
+   [lean/TEQ/Semantics.lean](../lean/TEQ/Semantics.lean).
    Datatypes are inductive types whose selectors are not declared, free
    lemmas and axioms are axioms,
    the other lemmas theorems and goals examples, proved `by sorry`, rewrite

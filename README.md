@@ -134,10 +134,9 @@ lists them.
   `counters`, `aggregation`, `arrays`, `search`) once at the beginning of its
   output, whose rewrite rules `-simplify` applies, e.g. the counter lemma;
   `-include teq:<concept>` adds a further module (`nested`, `sorting`,
-  `strides`). The database has 205 lemmas; 164 of them are proved in Lean 4
-  ([teq.lean](resources/cuvee/teq.lean)): those of `arithmetic`,
-  `aggregation`, `arrays`, and `search`, and 50 of the 62 of `counters`, but
-  none of `nested`, `sorting`, and `strides`. The former single file
+  `strides`). The lemmas of the stable modules (teq.dfy, `aggregation`,
+  `arithmetic`) are proved in Lean 4 ([lean/](lean)), against
+  statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
   [teq.dfy](resources/cuvee/teq.dfy) is kept but no longer injected. `-rules` reports the rules that
   each `-simplify` applies to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain
   into first-order logic for the solvers.

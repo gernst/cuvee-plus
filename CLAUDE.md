@@ -55,6 +55,10 @@ or solvers consume.
   printed and parsed back) only with `CUVEE_PRINTING=1`, which a change of a
   parser or a printer requires, the SV-COMP databases only with
   `CUVEE_SVCOMP=1`.
+- Lean proofs of the stable database modules: `scripts/lean/check.sh`
+  (`--regenerate` after changing teq.dfy, aggregation.dfy, or arithmetic.dfy;
+  see lean/README.md); `lean` works in the repository through
+  `lean-toolchain`, `lake` only as `$(elan which lake)`.
 - Run: `mill -i run <options> <file>`. `-print` takes an argument
   (`-print null`).
 - z3 by hand only with a timeout: `z3 -T:5 file.smt2`.

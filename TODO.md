@@ -292,7 +292,7 @@ Plan:
 3. In Lean, each lemma gets the hypotheses that the combinators of its left-hand side are well-formed:
    `d₁.length = d₂.length` for the dependencies, with the lengths of `butlast (counter i c n)` and of the other
    functions given by lemmas (the length of `butlast (counter ...)`, of `maps` and of `butlast (trace ...)`),
-   stated by hand in teq.lean; a lemma about the right-hand side (well-formedness) is proved along with it.
+   stated by hand in lean/TEQ/Proofs.lean; a lemma about the right-hand side (well-formedness) is proved along with it.
 4. Lemmas whose assumptions cannot be derived from well-formedness (`earlier_consts` outside the trace,
    `prefix_prefix` for `j > k`) get `requires`, which makes them conditional rules; check on the SV-COMP
    database that the simplifier still discharges them in the contexts of the goals.
@@ -300,12 +300,18 @@ Plan:
 
 ## Proofs of teq.dfy in Lean
 
-- [teq.lean](resources/cuvee/teq.lean) is maintained next to teq.dfy: the statements of new lemmas are printed by
-  `./Cuvee.sh -print lean resources/cuvee/teq.dfy` and copied there, with the premises that the printer cannot add
-  by hand (see the header of teq.lean). All lemmas are proved, no `sorry` remains; the counterexamples at the end of
-  the file show the premises that are needed: dependencies of equal length, indices within the lists, and complete
-  guards.
-- The Lean check takes about 6 to 9 s, mostly `simp` and typeclass inference for the decidability of `if` on generic
+- The proofs are in [lean/](lean) (doc/teq.md): the statements of the lemmas of the stable modules (teq.dfy,
+  aggregation, arithmetic) are generated from them (`scripts/lean/generate.py`), the proofs are by hand, and
+  `scripts/lean/check.sh` checks that each lemma is proved as printed. All are proved, no `sorry` remains; the
+  counterexamples show the premises that are needed: dependencies of equal length, indices within the lists, and
+  complete guards.
+- The premises that the engine does not check are listed in [lean/premises.txt](lean/premises.txt): nine reads and
+  prefixes within the loop and one length. Open: turn the index premises into `requires` where `-prove` decides them
+  in the contexts of the goals (item 4 above), measured on the tests and the SV-COMP rows, which would shrink the
+  list to the soundness gaps proper.
+- The guards of `case` updates are printed as `if g₁ then e₁ else e₂`, which assumes them complete and disjoint;
+  printing `else if g₂ then e₂ else unspecified` would turn that into an obligation of the proofs (lean.Printer).
+- The check from scratch takes about 20 s, mostly `simp` and typeclass inference for the decidability of `if` on generic
   types under `open Classical`; `simp only` instead of `simp` would speed it up.
 
 ## Printers

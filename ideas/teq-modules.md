@@ -83,7 +83,7 @@ bounds of their iteration constraints (`invs_counter_lower`, `invs_counter_upper
 | `teq:strides` | the strided stores of MonoCera | strides.dfy, to be tested in the state form |
 
 `teq:nested` and the fragment rules of counters.dfy are retired to `legacy/`. The modules move lemma by lemma, each
-with a state-form example that uses it (the algorithms are the tests), and with its proof in `teq.lean`; what is not
+with a state-form example that uses it (the algorithms are the tests), and with its proof in Lean (`lean/`, once the module joins the stable ones); what is not
 moved stays in `legacy/teq.dfy`. First step: the shared declarations into `teq.dfy`, which turns the 14 failures into
 runs with goals; then search and sorted (their examples exist), aggregation (the counting algorithms), then the
 rest.

@@ -1,0 +1,20 @@
+# The lemma database of -teq in Lean
+
+The proofs of the lemmas of the stable modules of the database (`resources/cuvee/teq.dfy`,
+`resources/cuvee/teq/aggregation.dfy`, `resources/cuvee/teq/arithmetic.dfy`), in Lean 4 without Mathlib, as the
+library `TEQ` of the Lake project at the root of the repository (`lakefile.toml`, `lean-toolchain`):
+
+- `TEQ/Semantics.lean` (by hand): the datatype of traces and the combinators `trace`, `maps`, `invs`.
+- `TEQ/Database.lean` (generated): the functions of the modules as printed by `-print lean`, and each lemma as the
+  proposition `Stmt.<name>`, its printed statement with the premises of `premises.txt`.
+- `TEQ/Proofs.lean` (by hand): the theorem `<name>` of each lemma, with the auxiliary lemmas, and the theorems of the
+  lemmas of the former single file (`resources/cuvee/legacy/teq.dfy`) that are no longer in the stable modules.
+- `TEQ/Check.lean` (generated): `example : Stmt.<name> := @<name>` for each lemma.
+- `TEQ/Counterexamples.lean` (by hand): the lemmas without their premises are false.
+- `premises.txt`: the premises that the printer does not produce and the engine does not check, each with the
+  reason why the contexts of -teq provide it.
+
+Check with `scripts/lean/check.sh`, which fails if the generated files are not those of the current modules
+(`--regenerate` regenerates them), if the build fails, or on a `sorry`. Regenerate with `scripts/lean/generate.py`,
+which prints the modules with a copy of `cuvee.jar`. A changed lemma then fails in `Check.lean` until its theorem in
+`Proofs.lean` states and proves the new statement. Details in `doc/teq.md`.

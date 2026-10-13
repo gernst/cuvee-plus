@@ -1,0 +1,8 @@
+# the Lean semantics of the lemma database of -teq and its proofs (lean/, see lean/README.md); the toolchain is that
+# of lean-toolchain, core only, no Mathlib; built by scripts/lean/check.sh
+name = "teq"
+srcDir = "lean"
+defaultTargets = ["TEQ"]
+
+[[lean_lib]]
+name = "TEQ"

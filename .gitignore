@@ -43,3 +43,4 @@ doc/**/*.out
 
 # the archive for Zenodo (scripts/zenodo.py)
 dist/
+/.lake/

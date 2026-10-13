@@ -295,7 +295,7 @@ lemma {:rw} {:teq} current_trace_bounded(x0: int, n: Nat, lo: int, hi: int, C1: 
 
 // counters modulo m, the unsigned variables of C, whose arithmetic wraps around (see mods): the tests of loops bound
 // them below m, such that the values do not wrap, and the remainders of their final values are the values themselves
-// (see Simplify.mod), or their remainders remain, e.g. for parities; not proved in teq.lean yet
+// (see Simplify.mod), or their remainders remain, e.g. for parities; not proved in Lean yet
 
 // a variable that is increased by c modulo m in each iteration
 // (from SV-COMP loop-acceleration/simple_1-2 without -unbounded)
