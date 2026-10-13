@@ -43,6 +43,10 @@ true, -16 for a wrong false).
     three lemmas leave `lean/open.txt`.
   - The benchmark definitions (`xml/cuvee*.xml`) include `teq:search`, so the SV-COMP runs load the inconsistent
     rule set.
+  - Tried on Oct 13, 2026 and reverted: the premise as an `invs` over the histories of the trace and further
+    dependencies `hs`, on `bisection_lo` and `bisection_hi` (never matched, since the histories of the iteration
+    constraint resolve to the raw trace, not to `bisection(...)`), and on the rule `bisection` itself, where the
+    open `hs` is matched against the facts: bsearch_bisect.dfy no longer terminates (killed after 300 s).
 
 - **`sat` of `-chc` with uninterpreted bit operations** (moved from the portfolio in TODO.md): the prelude declares the bit operations
   (`bitand`, `bitor`, `bitxor`, `bitnot`, `shl`, `shr`) without definitions,
@@ -192,6 +196,22 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   `function {:c} {:smt2} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>`.
 
 ## Non-termination and timeouts
+
+- **`-prove` is slower than `-simplify` on polynomial loops** (Oct 13, 2026, 0.46.5 to 0.46.9, measured locally and on
+  the cloud at 60 s): nla-digbench-scaling/bresenham-ll_valuebound1 takes 8 s with teq.dfy alone, 11 s with
+  `teq:arithmetic` and `teq:unsigned`, 46 s with `teq:aggregation` in addition (the other modules add 0 to 4 s); of
+  that, about 20 s are the three forward lemmas of aggregation (`count_nonnegative`, `current_maxs_initial`,
+  `current_mins_initial`), the rest its rewrite rules. A profile (15 samples) has 6 of 15 in `Forward.saturate` and
+  `fire` (the instances are matched and simplified again at every assumed fact, without a memo, see
+  ideas/prove-next.md) and 12 of 15 in `Rewrite.matches`. The matcher changes of 0.46.5 are not the cause (46 s
+  before, 41 s after). On SV-COMP Loops at 60 s, `xml/cuvee-fallback.xml` lost 63 tasks against 0.42.1 (`-simplify`,
+  Oct 12, i9-9900), 38 of them in nla-digbench-scaling, mostly timeouts (bresenham-ll_valuebound1 38 s before, 68 s
+  now, almost all of it in `-prove`): 196 true, 20 false against 233, 28. The same without `-fallback` gained.
+- **Forward instances use up the steps of a goal** (0.46.3 on): `natural_positive` and `store_occurs_selects` are
+  instantiated and simplified again wherever they fire, which uses up the 1000 steps of the goal on array-crafted
+  bAnd*, bor*, xor*, reducercommutativity avg*, sum*, data_structures_set_multi_proc_ground-2 ("rewriting does not
+  terminate" instead of `unknown`, no correct result lost). Steps of their own for each instance (0.46.8) turned the
+  breaks into timeouts and were reverted (ideas/prove-next.md).
 
 - A rule whose left-hand side is a comparison of two open variables, e.g.
   `j < n` with a side condition `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: P(k, h))`,

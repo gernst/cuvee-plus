@@ -16,7 +16,6 @@ from pathlib import Path
 
 import common
 import quantile
-import scatter
 import table
 
 # the time limit of the experiments, in seconds of CPU time, and the exception of the ACSL tasks, run with 60 s
@@ -82,10 +81,6 @@ LABELS = {
     "cuvee-chc": "Cuvée (CHC)",
     "monocera": "MonoCera",
     "cuvee-acsl": "Cuvée -vcgen (ACSL)",
-    "cuvee-before": "Cuvée (0.42)",
-    "cuvee-fallback-before": "Cuvée+Z3 (0.42)",
-    "cuvee-after": "Cuvée (0.46)",
-    "cuvee-fallback-after": "Cuvée+Z3 (0.46)",
 }
 
 
@@ -269,11 +264,14 @@ DOCUMENT = r"""\documentclass[a4paper]{article}
 {\small\today\par}
 \end{center}
 
-\noindent The experiments of \texttt{ideas/experiments.md}. Cuvée runs with \texttt{-teq -simplify -split
--simplify}, the full lemma database (\texttt{-include teq:nested -include teq:sorting -include teq:strides}) and
-\texttt{-verify}; Cuvée+Z3 adds \texttt{-fallback -z3}, Cuvée (CHC) is \texttt{-simplify -chc -z3}. All our runs:
-BenchExec, 15\,min CPU time, 7\,GB, 2 cores (the two hardware threads of one core) of an Intel Core i9-9900
-@ 3.10\,GHz, unless the legends say otherwise. A dash marks results that are missing, listed as pending.
+\noindent The experiments of \texttt{ideas/experiments.md}, with the current version of Cuvée only (0.46, after
+the migration of the lemma database). Cuvée runs with \texttt{-teq -prove -split -prove -split -prove} (one trace
+per strongly connected component of the variables of a loop, the deduction engine \texttt{-prove}), the lemma
+database \texttt{teq.dfy} with the modules \texttt{aggregation}, \texttt{arithmetic}, \texttt{arrays},
+\texttt{counters}, \texttt{search}, \texttt{sorted}, \texttt{strides}, \texttt{unsigned}, and
+\texttt{-verify}; Cuvée+Z3 adds \texttt{-fallback -z3} (one round of \texttt{-split -prove}), Cuvée (CHC) is
+\texttt{-simplify -chc -z3}. All our runs: BenchExec, 15\,min CPU time, 7\,GB, 2 cores of an Intel Core i7-6700
+@ 3.40\,GHz, unless the legends say otherwise. A dash marks results that are missing, listed as pending.
 Scores as in SV-COMP: correct true $+2$, correct false $+1$, wrong true $-32$, wrong false $-16$.
 
 \section{Aggregates over arrays: the MonoCera tests}
@@ -288,7 +286,7 @@ are Table~3 of the paper (300\,s wall time, AMD Opteron 2220). Tests verified:
 \medskip
 <monocera-legend>
 \end{center}
-\noindent\plot{quantile-monocera.pdf}\hfill\plot{scatter-monocera.pdf}
+\noindent\plot{quantile-monocera.pdf}
 
 \section{SV-COMP ReachSafety-Arrays and -Loops}
 Our runs of Cuvée next to the official results of SV-COMP 2026 for the other verifiers, which validate the
@@ -302,18 +300,6 @@ witnesses (unconfirmed: correct, but the witness was not validated, score 0). Cu
 \end{center}
 \noindent\plot{quantile-Arrays.pdf}\hfill\plot{quantile-Loops.pdf}
 
-\subsection*{The migration of the lemma database at 60\,s}
-Development runs with 60\,s CPU time, before (0.42: one trace per variable, \texttt{-simplify}, the whole
-database with \texttt{teq:nested}) and after the migration of the lemma database on Oct 13, 2026 (0.46: one trace
-per strongly connected component of the variables of a loop, \texttt{-prove}, the migrated modules, and for
-Cuvée a second round of \texttt{-split -prove}); the newest run of each.
-\begin{center}\footnotesize
-\fit{\input{migration.tex}}
-<migration-note>
-\medskip
-<migration-legend>
-\end{center}
-
 \section{Complementarity of TEQ and Horn clauses}
 A virtual portfolio per task: correct if either configuration is correct (the faster one), wrong if either is
 wrong.
@@ -321,7 +307,6 @@ wrong.
 \fit{\input{union.tex}}
 <union-note>
 \end{center}
-\noindent\plot{scatter-chc.pdf}\hfill\plot{scatter-fallback.pdf}
 
 \section{Mathematical integers: the unbounded set}
 The 481 C programs of \texttt{benchmarks/sv-comp/c}, printed from the Dafny translations of tasks of
@@ -334,7 +319,7 @@ integers, and with the confirmation of counterexamples.
 \medskip
 <unbounded-legend>
 \end{center}
-\noindent\plot{quantile-Unbounded.pdf}\hfill\plot{scatter-korn.pdf}
+\noindent\plot{quantile-Unbounded.pdf}
 
 \section{Annotations against automation: the ACSL tasks}
 The tasks of Arrays and Loops annotated by hand with ACSL (\texttt{benchmarks/acsl}), checked with
@@ -368,20 +353,21 @@ def main():
     plt = common.pyplot()
     replacements = {}
 
-    teq = Need(("-verify",))
-    unbounded = Need(("-verify", "-unbounded"))
+    # only the runs of the current version of Cuvée (one trace per component, -prove, the migrated modules);
+    # older runs are not mixed in, their configurations are pending until rerun
+    current = "0.46."
+    teq = Need(("-verify",), version=current)
+    unbounded = Need(("-verify", "-unbounded"), version=current)
 
     # 1. MonoCera
     spec1 = columns([
         ("cuvee", "here", gather("cuvee", MONOCERA, unbounded)),
         ("cuvee-fallback", "here", gather("cuvee-fallback", MONOCERA, unbounded)),
-        ("cuvee-chc", "here", gather("cuvee-chc", MONOCERA, unbounded)),
         ("monocera", "here", gather("monocera", MONOCERA, Need())),
     ])
     (out / "monocera.tex").write_text(monocera(spec1))
     replacements["monocera"] = (note(pending(spec1, MONOCERA)), legend(spec1))
     plots(plt, out, "monocera", spec1, MONOCERA, "MonoCera tests (all operators)")
-    pair(plt, out, "scatter-monocera.pdf", spec1, "cuvee", "monocera", MONOCERA)
 
     # 2. SV-COMP
     categories = common.CATEGORIES
@@ -389,24 +375,12 @@ def main():
     spec2 = columns([
         ("cuvee", "here", gather("cuvee", categories, teq)),
         ("cuvee-fallback", "here", gather("cuvee-fallback", categories, teq)),
-        ("cuvee-chc", "here", gather("cuvee-chc", categories, Need())),
+        ("cuvee-chc", "here", gather("cuvee-chc", categories, Need(version=current))),
     ]) + [table.Column(tool, "SV-COMP", results) for tool, results in official.items()]
     (out / "svcomp.tex").write_text(grid(spec2, categories))
     replacements["svcomp"] = (note(pending(spec2, categories)), legend(spec2))
     for name in categories:
         plots(plt, out, name, spec2, [name], name, file=f"quantile-{name}.pdf")
-
-    # 2b. the migration of the lemma database (Oct 13, 2026) at 60 s: the per-variable form against one trace per
-    # component, each with and without Z3
-    short = Need(("-verify",), timelimit=60.0)
-    migration = columns([
-        ("cuvee-before", "here", gather("cuvee", categories, replace(short, version="0.42."))),
-        ("cuvee-fallback-before", "here", gather("cuvee-fallback", categories, replace(short, version="0.42."))),
-        ("cuvee-after", "here", gather("cuvee", categories, replace(short, version="0.46."))),
-        ("cuvee-fallback-after", "here", gather("cuvee-fallback", categories, replace(short, version="0.46."))),
-    ])
-    (out / "migration.tex").write_text(grid(migration, categories))
-    replacements["migration"] = (note(pending(migration, categories)), legend(migration))
 
     # 3. complementarity
     teq_results, z3_results, chc_results = (spec2[0].results, spec2[1].results, spec2[2].results)
@@ -418,8 +392,6 @@ def main():
     spec3 = spec2[:3] + virtual
     (out / "union.tex").write_text(grid(spec3, categories))
     replacements["union"] = (note(pending(spec3, categories)), "")
-    pair(plt, out, "scatter-chc.pdf", spec2, "cuvee", "cuvee-chc", categories)
-    pair(plt, out, "scatter-fallback.pdf", spec2, "cuvee", "cuvee-fallback", categories)
 
     # 4. unbounded
     spec4 = columns([
@@ -430,10 +402,9 @@ def main():
     (out / "unbounded.tex").write_text(grid(spec4, ["Unbounded"]))
     replacements["unbounded"] = (note(pending(spec4, ["Unbounded"])), legend(spec4))
     plots(plt, out, "Unbounded", spec4, ["Unbounded"], "Unbounded set", file="quantile-Unbounded.pdf")
-    pair(plt, out, "scatter-korn.pdf", spec4, "cuvee", "korn", ["Unbounded"])
 
     # 5. ACSL, whose tasks are matched with those of sv-benchmarks/c by folder and name
-    annotated = gather("cuvee-acsl", categories, Need(timelimit=None))
+    annotated = gather("cuvee-acsl", categories, Need(timelimit=None, version=current))
     expected = expectations([results.path for results in annotated.values()])
     annotated = {name: replace(results, runs=[replace(run, task=acsl_task(run.task)) for run in results.runs]) for name, results in annotated.items()}
     (out / "acsl.tex").write_text(acsl(annotated, teq_results, expected))
@@ -474,14 +445,6 @@ def plots(plt, out: Path, key: str, spec: list[table.Column], categories: list[s
         return
     names = {tool: LABELS.get(tool, tool) for tool in curves}
     quantile.plot(plt, title, curves, names, common.colors(list(curves)), limit, path)
-
-
-def pair(plt, out: Path, file: str, spec: list[table.Column], x: str, y: str, categories: list[str]):
-    """A scatter plot of two columns, if both have results; otherwise the document shows it as pending."""
-    collected = {column.tool: column.results for column in spec if column.tool in (x, y) and column.results}
-    path = out / file
-    if len(collected) < 2 or not scatter.plot(plt, x, y, collected, categories, {tool: LABELS.get(tool, tool) for tool in (x, y)}, path):
-        path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
