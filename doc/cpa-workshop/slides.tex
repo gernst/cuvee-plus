@@ -49,7 +49,7 @@
   \ifnum#3=1
     \node[single arrow, draw=cred, line width=1.4pt, fill=white, rotate=90, minimum height=0.75cm, minimum width=0.75cm,
           single arrow head extend=3pt, inner sep=0pt] at (8.1,1.95) {};
-    \node[text=cred, font=\bfseries] at (8.1,1.2) {open challenge};
+    \node[text=cred, align=center] at (8.1,0.95) {\textbf{open challenge}\\ routine, not trivial};
   \fi}
 % a box with a picture and a tail pointing down: \picbox{x0}{y0}{x1}{y1}{tail from}{tail to}{tip x}{color}{content}
 \newcommand{\picbox}[9]{%
@@ -68,7 +68,7 @@
   \draw[very thick] (F.south west) rectangle ($(F.north east)+(0.3,0)$);
   \coordinate (P) at ($(F.east)+(0.3,0)$);}
 \tikzset{
-  bubble/.style={draw, very thick, fill=white, rectangle callout, align=center, inner sep=6pt, font=\small,
+  bubble/.style={draw, very thick, fill=white, rectangle callout, align=center, inner sep=6pt, font=\normalsize,
     text width=7.6cm, minimum height=1.7cm},
   box/.style={draw, very thick, align=center, minimum height=1.2cm, inner sep=6pt},
   arrow/.style={-{Stealth[length=3mm]}, very thick}}
@@ -112,7 +112,7 @@
 
 % =====================================================================================================================
 % two worlds, the open challenge in between (routine, not trivial), why bother
-\begin{frame}[plain]
+\begin{frame}
   \begin{tikzpicture}[page]
     \picbox{0.35}{3.6}{12.65}{9.7}{2.4}{5.4}{3.45}{cblue}{};
     \node[anchor=north, inner sep=0pt] at (6.5,9.6) {\includegraphics[width=11.9cm, height=5.45cm, keepaspectratio]{figures/svcomp.jpg}};
@@ -121,7 +121,7 @@
   \end{tikzpicture}
 \end{frame}
 
-\begin{frame}[plain]
+\begin{frame}
   \begin{tikzpicture}[page]
     \picbox{3.35}{3.6}{15.65}{9.7}{10.4}{13.5}{12.65}{cblue}
       {\includegraphics[width=12.1cm, height=5.95cm, keepaspectratio, trim=0 60 30 0, clip]{figures/aws.jpg}};
@@ -130,7 +130,7 @@
 \end{frame}
 
 % the open challenge between the two worlds
-\begin{frame}[plain]
+\begin{frame}
   \begin{tikzpicture}[page]
     \picbox{0.9}{3.6}{7.75}{7.85}{2.4}{4.3}{3.45}{black}
       {\includegraphics[width=6.6cm, height=4.0cm, keepaspectratio]{figures/svcomp.jpg}};
@@ -148,8 +148,9 @@
     \node[bubble, text width=8.6cm, align=left, font=\small, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (9.9,3.4) {\textbf{interactive}: write the loop again\\[2pt]
         {\ttfamily\footnotesize\begin{tabular}{@{}r@{\hspace{5pt}}l@{}}
           \color{black!45}1 & function sum(i, n, a): int \{\\
-          \color{black!45}2 & \ \ if 0 <= i < n then a[i] + sum(i+1, n, a)\\
-          \color{black!45}3 & \ \ else 0 \}
+          \color{black!45}2 & \ \ if 0 <= i < n\\
+          \color{black!45}3 & \ \ then a[i] + sum(i+1, n, a)\\
+          \color{black!45}4 & \ \ else 0 \}
         \end{tabular}}\\[2pt]
         \bad{+ lemmas: empty sum, unfolding, linearity, \ldots}};
     \node[align=center, font=\small, text width=8.6cm] at (9.9,0.9) {too hard for inference,\\ tedious and error-prone for a person};
@@ -157,23 +158,23 @@
 \end{frame}
 
 {\setbeamercolor{background canvas}{bg=black}
-\begin{frame}[plain]
+\begin{frame}
   \begin{tikzpicture}[page]
     \node[inner sep=0pt] at (8,5) {\includegraphics[height=10cm]{figures/meme.jpg}};
-    \node[rotate=-8, font=\ttfamily\large, align=left] at (5.9,8.15) {for i = 0..n\\ \ \ s += a[i]};
+    \node[rotate=-8, font=\ttfamily\small, align=left] at (5.9,8.15) {for i = 0..n\\ \ \ s += a[i]};
     \node[rotate=-11, font=\ttfamily\scriptsize, align=left] at (10.35,7.35)
       {sum(i,n,a) ==\\ \ if 0 <= i < n\\ \ then\\ \ \ a[i] + sum(i+1,n,a)\\ \ else\\ \ \ 0};
   \end{tikzpicture}
 \end{frame}}
 
-\begin{frame}[plain]
+\begin{frame}
   \begin{tikzpicture}[page]
-    \node[anchor=west, inner sep=0pt] at (1.3,5) {\includegraphics[height=9.6cm]{figures/datadog.jpg}};
+    \node[anchor=west, inner sep=0pt] at (1.3,5) {\includegraphics[height=9.0cm]{figures/datadog.jpg}};
     \node[rotate=90, text=cblue, align=center, font=\small] at (0.55,5) {https://www.datadoghq.com/\\ blog/ai/harness-first-agents/};
-    \node[draw, line width=1.6pt, fill=white, rectangle callout, callout absolute pointer={(9.1,0.8)},
-          text width=6.2cm, align=center, inner sep=8pt] at (12.45,4.6)
-      {{\Large\bfseries\color{cred} Why bother at all?}\\[0.8em]
-       \large ``the bottleneck has moved from writing code to \textbf{trusting what was written}''};
+    \node[draw, line width=1.6pt, fill=white, rectangle callout, callout absolute pointer={(8.7,1.0)},
+          text width=6.4cm, align=center, inner sep=9pt] at (12.35,4.8)
+      {{\bfseries\color{cred} Why bother at all?}\\[0.6em]
+       ``the bottleneck has moved\\ from writing code to\\ \textbf{trusting what was written}''};
   \end{tikzpicture}
 \end{frame}
 
@@ -185,6 +186,7 @@
     \item have an effective problem representation
     \item actually know the solution
   \end{enumerate}
+  \pause
   \vspace{1.2em}
   \begin{itemize}
     \setlength{\itemsep}{0.4em}
@@ -194,16 +196,19 @@
 \end{frame}
 
 % overview of the approach (after CPA.pdf, slide 41)
-\begin{frame}[plain]
+\begin{frame}
   \begin{tikzpicture}[page]
-    \node[anchor=west, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.35) {Our approach: trace equations + a database of lemmas};
+    \node[anchor=west, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.35) {Key ideas};
     \node[box, minimum width=2.9cm, minimum height=1.45cm, text=cblue] (task) at (2.55,6.75) {task};
     \node[box, minimum width=3.3cm, minimum height=1.45cm, text=cblue] (proof) at (12.85,6.75) {proof};
     \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (5.2,6.75) {};
     \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (10.3,6.75) {};
-    \node[inner sep=0pt] at (7.75,6.75) {\includegraphics[width=5.6cm]{figures/unicorns.png}};
-    \node[inner sep=0pt] at (9.2,7.55) {\includegraphics[width=2.6cm]{figures/wand.png}};
-    \node[fill=blue, text=white, draw=black, line width=0.8pt, font=\small] at (10.0,8.3) {magic unicorn zoo};
+    \node[inner sep=0pt] at (6.85,7.25) {\includegraphics[width=1.75cm, trim=0 0 384 0, clip]{figures/unicorns.png}};
+    \node[inner sep=0pt] at (8.75,7.25) {\includegraphics[width=1.75cm, trim=192 0 192 0, clip]{figures/unicorns.png}};
+    \node[inner sep=0pt] at (7.8,6.05) {\includegraphics[width=1.75cm, trim=384 0 0 0, clip]{figures/unicorns.png}};
+    \node[inner sep=0pt] at (10.75,8.1) {\includegraphics[width=2.2cm]{figures/wand.png}};
+    \node[left color=magenta!25, right color=violet!25, draw=magenta!60!black, line width=0.8pt, rounded corners=3pt,
+          text=cpurple!80!black, font=\small\bfseries] at (7.8,8.35) {magic unicorn zoo};
     \node[single arrow, draw, line width=1.4pt, rotate=-90, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (2.7,5.1) {};
     \node[box, text width=4.4cm, minimum height=2.1cm, text=cgreen, font=\bfseries] at (3.1,2.75)
       {representation:\\ Trace Equation\\ Systems (TEQs)};
@@ -276,15 +281,18 @@
 % claim 2: insight belongs in reusable lemmas -> the database; AI should make tools
 \claims{2}
 
-% the CEGAR dialog of CPA.pdf, slides 28 to 35, at its end
-\begin{frame}{Algorithmic invariant inference}
-  \begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (14.4,7.4);
-    \program{0.1}{6.6}{6}{i := 0, while i < n, \ \ i := i + 1, \ \ \ldots, assert, \ \ i == n}
-    \node[draw, line width=1.6pt, rectangle callout, callout absolute pointer={(12.3,6.3)}, text width=5.2cm,
-          align=left, font=\ttfamily\small, text=cred, inner sep=8pt] at (8.4,4.0)
-      {$i \le n \wedge \neg(i < n)$\\ $\Rightarrow i = n$ ?\\[1.2em] yes.\\[0.6em] you are right!\\ it's a counter};
-    \node[inner sep=0pt] at (13.1,6.3) {\includegraphics[width=1.6cm]{figures/checkmark.jpg}};
+% the CEGAR dialog of CPA.pdf, slides 28 to 35, at its end, in the layout of the original
+\begin{frame}
+  \begin{tikzpicture}[page]
+    \node[anchor=west, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.35) {Algorithmic invariant inference};
+    \draw[line width=1.6pt] (0.71,0.93) rectangle (5.82,7.47);
+    \node[anchor=north west, align=left, font=\ttfamily] at (1.0,7.0)
+      {i = 0\\[1.1em] while i < n\\ \ \ i += 1\\ \ \ \ldots\\[1.1em] assert\\ \ \ i == n};
+    \filldraw[line width=1.6pt, fill=white] (6.16,0.93) -- (10.54,0.93) -- (10.54,4.75) -- (11.87,6.98) -- (10.54,6.37)
+      -- (10.54,7.47) -- (6.16,7.47) -- cycle;
+    \node[anchor=north west, align=left, font=\ttfamily\small, text=cred] at (6.35,7.2)
+      {i $\le$ n $\wedge$\\ \ \ !(i < n)\\ $\Longrightarrow$ i == n ?\\[2.2em] yes.\\[1.2em] you are right!\\ it's a counter};
+    \node[anchor=north west, inner sep=0pt] at (12.2,7.47) {\includegraphics[width=2.68cm]{figures/checkmark.jpg}};
   \end{tikzpicture}
 \end{frame}
 
@@ -293,15 +301,16 @@
   \begin{tikzpicture}
     \useasboundingbox (0,0) rectangle (14.4,7.4);
     \program{0.1}{6.4}{7}{while i < n, \ \ a[i] := z, \ \ i := i + 1, {}, assert, \ \ i == n \&\&, \ \ a[k] == z}
-    \node[bubble, callout absolute pointer={($(P |- L1.east)+(0.15,0)$)}] at (10.4,6.6)
+    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L1.east)+(0.15,0)$)}] at (10.0,6.6)
       {$\mathsf{trace}(0, \mathsf{for}\ \bl{K}\ \mathsf{do}\ i, k \mapsto i + 1)$\\ $\rw \concept{\mathsf{counter}(0, 1, n)}$\\
-       {\footnotesize\color{black!55} lemma \textsf{counter\_def}}};
-    \node[bubble, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.4,4.3)
-      {$\mathsf{trace}(a, \mathsf{for}\ \bl{K}, \bl{I}\ \mathsf{do}\ a', k, i \mapsto a'[i := z])$\\ $\rw \concept{\mathsf{stores}(a, \bl{I}, \bl{\mathsf{consts}(n, z)})}$\\
+       {\footnotesize\color{black!55} lemma \textsf{counter}}};
+    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.0,4.2)
+      {$\mathsf{trace}(a, \mathsf{for}\ \bl{I}\ \mathsf{do}\ a', i \mapsto a'[i := z])$\\
+       $\rw \concept{\mathsf{stores}(a, \bl{I}, \bl{\mathsf{consts}(n, z)})}$\\
        {\footnotesize\color{black!55} definition \textsf{stores}, lemma \textsf{maps\_const}}};
-    \node[bubble, callout absolute pointer={($(P |- L7.east)+(0.15,0)$)}] at (10.4,1.7)
+    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L7.east)+(0.15,0)$)}] at (10.0,1.5)
       {$a'[k] \rw \mathsf{if}\ 0 \le k < n\ \mathsf{then}\ z\ \ldots$\\ $\rw z$\\
-       {\footnotesize\color{black!55} lemmas \textsf{current\_stores}, \textsf{occurs\_counter\_up},\\ \textsf{earlier\_consts}}};
+       {\footnotesize\color{black!55} lemmas \textsf{current\_stores},\\ \textsf{occurs\_counter\_up}, \textsf{earlier\_consts}}};
     \node[align=center, font=\small] at (2.4,0.6) {\good{every step a database lemma},\\ none for the program};
   \end{tikzpicture}
 \end{frame}
@@ -310,12 +319,12 @@
   \begin{tikzpicture}
     \useasboundingbox (0,0) rectangle (14.4,7.4);
     \program{0.1}{6.4}{8}{for i = 0..n, \ \ s += a[i], {}, for i = 0..n, \ \ s -= a[i], {}, assert, \ \ s == 0}
-    \node[bubble, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.4,6.4) {$\mathsf{trace}(s_0, \mathsf{for}\ \bl{K}\ \mathsf{do}\ s, k \mapsto s + a[k])$\\
+    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.0,6.4) {$\mathsf{trace}(s_0, \mathsf{for}\ \bl{K}\ \mathsf{do}\ s, k \mapsto s + a[k])$\\
         $\rw \concept{\mathsf{sums}(s_0, \mathsf{selects}(a, \bl{K}))}$};
-    \node[bubble, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (10.4,4.0) {$\mathsf{trace}(s_1, \mathsf{for}\ \bl{K}\ \mathsf{do}\ s, k \mapsto s - a[k])$\\
+    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (10.0,4.0) {$\mathsf{trace}(s_1, \mathsf{for}\ \bl{K}\ \mathsf{do}\ s, k \mapsto s - a[k])$\\
         $\rw s_1 - \concept{\mathsf{sum}(\mathsf{selects}(a, \bl{K}))}$};
-    \node[bubble, callout absolute pointer={($(P |- L8.east)+(0.15,0)$)}] at (10.4,1.5) {linearity: $s_0 + \mathsf{sum}(\ldots) - \mathsf{sum}(\ldots) = s_0$\\
-        \good{no auxiliary function, no program lemma}};
+    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L8.east)+(0.15,0)$)}] at (10.0,1.5) {linearity: $s_0 + \mathsf{sum}(\ldots) - \mathsf{sum}(\ldots) = s_0$\\
+        \good{no auxiliary function:}\\ \good{sums and linearity are in the database}};
   \end{tikzpicture}
 \end{frame}
 
@@ -346,7 +355,7 @@
 \end{frame}
 
 % the generated proof (CPA.pdf, slide 61), then the same theorem with a better tool
-\begin{frame}[plain]
+\begin{frame}
   \begin{tikzpicture}[page]
     \node[anchor=north west, inner sep=0pt] at (0.4,9.75) {\includegraphics[width=11.0cm]{figures/lean.png}};
     \draw[cred, line width=3pt, decorate, decoration={brace, amplitude=12pt}] (11.15,6.7) -- (11.15,0.85);
@@ -355,7 +364,7 @@
   \end{tikzpicture}
 \end{frame}
 
-% the example of CPA.pdf slides 58 to 61, redone in Lean 4.34.1 (checked): one line with grind
+% the example of CPA.pdf slides 58 to 61, redone in Lean 4.34.1 (checked) for all trees: fun_cases and grind
 \begin{frame}[fragile]{The same proof, with a better tool}
   \begin{columns}[T]
     \begin{column}{0.55\textwidth}
@@ -382,20 +391,18 @@ def rotateLeft : Tree α → Tree α
     \begin{column}{0.43\textwidth}
 \begin{lstlisting}[firstnumber=19]
 theorem rotateLeft_BST [LT α]
-    {l rl rr : Tree α} {x y : α}
     (lt_trans : ∀ {a b c : α},
        a < b → b < c → a < c)
-    (h : BST (node l x
-            (node rl y rr))) :
-    BST (rotateLeft (node l x
-            (node rl y rr))) := by
-  grind [rotateLeft, BST, toList]
+    (t : Tree α) (h : BST t) :
+    BST (rotateLeft t) := by
+  fun_cases rotateLeft t
+    <;> grind [rotateLeft,
+               BST, toList]
 \end{lstlisting}
       \vspace{0.6em}
       \begin{itemize}\small
-        \item \good{one line}, checked by Lean
-        \item the generated proof did the case analysis \bad{by hand}
-        \item the insight is in the \concept{tool} (\texttt{grind}), not in the proof
+        \item \good{for all trees}: a case split and \texttt{grind}, checked by Lean
+        \item the insight is in the \concept{tool}, not in the proof
       \end{itemize}
     \end{column}
   \end{columns}
@@ -479,13 +486,13 @@ theorem rotateLeft_BST [LT α]
     \useasboundingbox (0,0) rectangle (14.4,7.4);
     \program{0.1}{6.4}{5}{while i < n, \ \ t := a[i], \ \ a[i] := b[i], \ \ b[i] := t, \ \ i := i + 1}
     \only<1>{
-      \node[bubble, callout absolute pointer={($(P |- L3.east)+(0.15,0)$)}] at (10.4,6.0) {$A = \mathsf{trace}(a, \ldots \bl{B} \ldots)$\\ $B = \mathsf{trace}(b, \ldots \bl{A} \ldots)$\\
+      \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L3.east)+(0.15,0)$)}] at (10.0,6.0) {$A = \mathsf{trace}(a, \ldots \bl{B} \ldots)$\\ $B = \mathsf{trace}(b, \ldots \bl{A} \ldots)$\\
           \bad{one trace per variable: mutually recursive}};}
     \only<2->{
-      \node[bubble, callout absolute pointer={($(P |- L3.east)+(0.15,0)$)}] at (10.4,6.0) {$S = \mathsf{trace}(a, b,\ \mathsf{for}\ \bl{I}\ \mathsf{do}\ a', b', i \mapsto$\\
+      \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L3.east)+(0.15,0)$)}] at (10.0,6.0) {$S = \mathsf{trace}(a, b,\ \mathsf{for}\ \bl{I}\ \mathsf{do}\ a', b', i \mapsto$\\
           $a'[i := b'[i]],\ b'[i := a'[i]])$\\ \good{one trace per strongly connected component}};}
     \only<3>{
-      \node[bubble, callout absolute pointer={($(P |- L4.east)+(0.15,0)$)}] at (10.4,2.8) {the lemmas see \concept{projections} of $S$:\\[2pt]
+      \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L4.east)+(0.15,0)$)}] at (10.0,2.8) {the lemmas see \concept{projections} of $S$:\\[2pt]
           $b'[k] \rw \mathsf{if}\ k \in \mathsf{prefix}(k, \bl{I})\ \ldots\ \mathsf{else}\ b[k]$\\[2pt]
           iteration $k$ reads what \good{no earlier iteration wrote}};}
   \end{tikzpicture}
@@ -502,15 +509,39 @@ theorem rotateLeft_BST [LT α]
   \end{tikzpicture}
 \end{frame}
 
-\begin{frame}{Partial descriptions: binary search}
+\begin{frame}{Partial descriptions: binary search over a sorted array}
   \begin{tikzpicture}
     \useasboundingbox (0,0) rectangle (14.4,7.4);
     \program{0.1}{6.8}{10}{{lo, hi, i := 0, n, -1}, while lo < hi, \ \ mid := (lo + hi) / 2, \ \ if a[mid] < x, \ \ \ \ lo := mid + 1, \ \ else if x < a[mid], \ \ \ \ hi := mid, \ \ else, \ \ \ \ i := mid, \ \ \ \ break}
-    \node[bubble, text width=6.9cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.75,6.5) {exit: $hi \le lo \le p \le q \le hi$\\ \bad{open}: these lemmas are the program's own};
-    \node[bubble, text width=6.9cm, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (10.75,4.3) {no closed form for $lo$ and $hi$\\ \concept{abstraction}: grows up to a bound $b$\\
-        $\rw \mathsf{incs}(x_0, b, \ldots)$};
-    \node[bubble, text width=6.9cm, callout absolute pointer={($(P |- L7.east)+(0.15,0)$)}] at (10.75,1.9) {\concept{forward fact},\\ wherever the term occurs:\\ $x_0 \le b \Rightarrow \cur(\mathsf{incs}(x_0, b, \ldots)) \le b$};
+    \node[bubble, text width=7.3cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (11.05,6.6)
+      {\concept{one lemma for the whole loop}:\\ $S \rw \mathsf{bisection}(0, n, \ldots)$};
+    \node[bubble, text width=7.3cm, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (11.05,4.15)
+      {\concept{forward facts}:\\ $0 \le lo \le \mathsf{lower}(a, n, x)$\\ $\mathsf{upper}(a, n, x) \le hi \le n$};
+    \node[bubble, text width=7.3cm, callout absolute pointer={($(P |- L9.east)+(0.15,0)$)}] at (11.05,1.6)
+      {found: $\mathsf{lower} \le mid < \mathsf{upper}$\\ exit: $\mathsf{lower} = \mathsf{upper}$};
+    \node[align=center, font=\small, text=black!55] at (3.0,0.3) {general lemmas, not yet in the database};
   \end{tikzpicture}
+\end{frame}
+
+% =====================================================================================================================
+% evaluation (placeholder: the numbers are filled in once the runs with one version are done)
+\begin{frame}{Evaluation}
+  \begin{center}
+  \begin{tabular}{lrrr}
+    \hline
+    benchmark & tasks & TEQs & reference\\
+    \hline
+    MaxPranq & 17 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
+    Rapid & 33 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
+    MonoCera & 125 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
+    SV-COMP Arrays & 440 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
+    SV-COMP Loops & 764 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
+    array algorithms & 30 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
+    \hline
+  \end{tabular}
+  \end{center}
+  \vspace{0.8em}
+  \textcolor{black!45}{placeholder: results with one version of Cuvée, to be filled in}
 \end{frame}
 
 % =====================================================================================================================

@@ -1,28 +1,23 @@
 # Story: Trace equations for program verification
 
-CPAchecker Workshop, October 16, 2026. The storyline of the talk. The audience knows verification, mostly the
-automated side, and nothing about TEQs. The talk is structured around three claims. The numbers in brackets are
-pages of `figures/CPA.pdf` used as slides.
+CPAchecker Workshop, October 16, 2026. The storyline of the talk, in the order of the slides (`slides.tex`). The
+audience knows verification, mostly the automated side, and nothing about TEQs. Open points are in `review.md`.
 
-## Opening: two worlds, and what lies between
+## Opening
 
-- **Automated verification** (CPAchecker, SV-COMP, Zelkova and its billion SMT queries a day) [4]: push-button,
-  scales; simpler properties; the insight is found by search.
-- **Interactive verification** (KeY, Isabelle, Dafny, AWS authorization) [6]: expressive specifications; the
-  insight comes from a person (invariants, auxiliary functions, lemmas).
-- Their strengths are complementary; **what lies between is an open challenge** (the spectrum of the KeY talk, with AWS on
-  the right).
-- **Routine, not trivial**: widely occurring programming patterns that are still hard to reason about, e.g. two
-  loops that add and subtract the elements of an array.
+- **Two worlds.** Automated verification (SV-COMP, CPAchecker): push-button, scales, simpler properties, the
+  insight found by search. Interactive verification (KeY, AWS authorization): expressive specifications, the insight
+  from a person. Their strengths are complementary.
+- **Between them, an open challenge: routine, not trivial** --- widely occurring programming patterns that are still
+  hard to reason about. Example: two loops that add and subtract the elements of an array.
   - automated: `0 <= i <= n`, then unrolling until the timeout;
-  - interactive: write the loop again as a recursive `sum`, plus its lemmas --- tedious and error-prone.
-  - "They're the same picture" [26].
-- Why bother: "the bottleneck has moved from writing code to trusting what was written" [7].
-- Why LLMs are surprisingly good: an effective problem representation, and they know the solution [12]. That is
-  the motivation for a better representation, and for knowledge that is reused.
-- Overview of our approach, "trace equations + a database of lemmas" [41]: the task becomes a representation (TEQs),
-  which is simplified by rewriting with a database of program lemmas until the proof is done. The database is the
-  "knowing the solution" of an LLM, but checked once and reused.
+  - interactive: write the loop again as a recursive `sum`, plus its lemmas --- tedious and error-prone;
+  - "they're the same picture".
+- **Why bother:** "the bottleneck has moved from writing code to trusting what was written".
+- **Why LLMs are surprisingly good:** an effective problem representation, and they know the solution --- but
+  their proofs need a trusted cross-check, and they cost per case.
+- **Key ideas:** the task becomes a representation (TEQs), simplified by rewriting with a database of program
+  lemmas until the proof is done. The database is the "knowing the solution" of an LLM, checked once and reused.
 
 ## Three claims
 
@@ -34,48 +29,53 @@ Each part opens with the claims, the current one in red.
 
 ## Claim 1: invariants are the wrong representation → TEQs
 
-- The array initialization with its invariants (`0 <= i <= n`, a quantified invariant, an exit lemma) against "a much
-  better explanation": *i counts from 0 to n; a is set to z at all earlier i*.
-- That explanation **is** the trace equation system: `I = counter(0, 1, n)`,
-  `A = stores(a, ⌊I⌋, ⌊consts(n, z)⌋)`, and one lemma each closes the goal.
-- What a TEQ is, for newcomers: one trace per variable, the sequence of its values at the loop head, defined as a fold
-  over the iterations; *variable-modular*, where Horn clauses are *state-modular*. The loop is its own specification:
-  sound, relatively complete, generated mechanically; program fragments get names.
+- **Invariants** for the array initialization (`0 <= i <= n`, a quantified invariant, an exit lemma), against **a
+  much better explanation**: i counts from 0 to n; a is set to z at all earlier i.
+- That explanation **is** the trace equation system: `I = counter(0, 1, n)` and
+  `A = stores(a, ⌊I⌋, ⌊consts(n, z)⌋)`, the history ⌊I⌋ connecting the two; one lemma each closes the goal.
+- **Variable-modular, not state-modular:** `x_n = current(X)` where `X = trace(x_0, for ⌊K⌋, ⌊Y⌋ do x, k, y ↦ u)`.
+  Horn clauses describe a loop by a relation on states, TEQs by what each variable computes. The loop is its own
+  specification (sound, relatively complete), and program fragments get names.
 
 ## Claim 2: insight belongs in reusable lemmas → a database, and AI should make tools
 
-- Search rediscovers known facts on every program: the CEGAR dialog ends with "it's a counter" [35].
-- The array initialization again, by lemmas: every step (`counter`, `stores`, `current_stores`, …) is a database
-  lemma, none is written for the program.
-- Routine, not trivial, as TEQs: the first loop is `sums(…)`, the second subtracts the same sequence, linearity closes it.
-  No auxiliary function, no lemma for the program.
-- Two obvious ways to use AI, both per program: AI as the verifier (no trust) and AI as the proof generator (checked,
-  but the cost is paid per program, and the proofs read like assembler).
-- The proof a language model generated for the AVL rotation reads like assembler [61]. Redone in Lean: with `grind` and the definitions, each theorem is **one line** (checked
-  with Lean 4.34.1). The insight is in the tool, not in the generated proof.
-- **Thesis: AI should make tools.** AI builds lemmas, engine rules, frontends and tests; they are checked once (Lean,
-  the engine, tests) and every program benefits. The cost is paid once per concept, the trust is in a checked
-  artifact.
-- The threads meet: TEQs make the knowledge explicit and modular, one lemma per loop shape --- exactly what AI can
+- **Algorithmic invariant inference** rediscovers known facts on every program: the dialog ends with "it's a
+  counter".
+- **Array initialization, by lemmas:** every step is a lemma of the database (`counter_def`, `stores`,
+  `current_stores`, …), none is written for the program.
+- **Routine, not trivial --- as TEQs:** the first loop is `sums(…)`, the second subtracts the same sequence,
+  linearity closes it. No auxiliary function: sums and their linearity are in the database.
+- **Two obvious ways to use AI**, both per program: as the verifier (no trust), and as the proof generator
+  (checked, but paid per program).
+- The proof a language model generated for an AVL rotation reads like **assembler**. **The same proof, with a
+  better tool:** with `grind` and the definitions, each theorem is one line (checked with Lean 4.34.1).
+- **Thesis: AI should make tools** --- lemmas, engine rules, frontends, tests --- checked once and used for every
+  program. The cost is paid once per concept, the trust is in a checked artifact.
+- **The two threads meet:** TEQs make the knowledge explicit and modular, one lemma per loop shape --- what AI can
   write and a tool can check (LemmaCalc does it without AI).
-- How Cuvée is built: recent features written by an AI agent under direction; the speaker's own experience.
+- **How Cuvée is built:** recent features written by an AI agent under direction; the speaker's own experience.
 
 ## Claim 3: reasoning must be incremental → rewriting on TEQs
 
-- Rewriting with the database proceeds one program fragment at a time; partial results stay useful, nothing has to be guessed
-  up front. The same representation carries to nested loops, sorting, partitioning, merging.
-- **Variables that read each other** (the swap of two arrays): one trace per variable would be mutually recursive;
-  one trace per strongly connected component, whose projections the lemmas see on demand. The argument: iteration k
-  reads what no earlier iteration wrote.
-- **Nested loops**: the inner loop becomes one value of the outer update, `c + n`, so `c = m · n`.
-- **Partial descriptions** (binary search): no closed form, but bounds suffice --- an abstraction (`incs`: grows up to
-  a bound) and a forward fact (its bound, wherever the term occurs). Open: these lemmas are still the program's own.
+- **Incremental reasoning on TEQs:** rewriting proceeds one program fragment at a time; partial results stay
+  useful, nothing has to be guessed up front. The same representation carries to nested loops, sorting,
+  partitioning, merging.
+- **State traces, variables that read each other** (the swap of two arrays): one trace per variable would be
+  mutually recursive; one trace per strongly connected component, whose projections the lemmas see on demand. The
+  argument: iteration k reads what no earlier iteration wrote.
+- **State traces, nested loops:** the inner loop becomes one value of the outer update, `c + n`, so `c = m · n`.
+- **Partial descriptions, binary search over a sorted array:** no closed form, but bounds suffice. One lemma names
+  the whole loop, both variables together, a bisection of the interval; two forward lemmas give its bounds
+  (`0 <= lo <= lower(a, n, x)`, `upper(a, n, x) <= hi <= n`) wherever the term occurs; the found case and the exit
+  follow. The lemmas are general but not yet in the database (`doc/state-traces`, `bsearch_bisect.dfy`).
 
 ## Close
 
-- Questions for this community: TEQ summaries as loop acceleration inside a CPA? TEQ normal forms as invariants in
-  correctness witnesses? Shared frontends (C, SV-LIB, Boogie, Dafny) and Horn clauses as output.
-- Outlook [53]: the scope of TEQs (recursive procedures?), combination with traditional methods, interaction,
+- **Evaluation:** a placeholder table (MaxPranq, Rapid, MonoCera, SV-COMP Arrays and Loops, the array algorithms),
+  filled in once the runs with one version of Cuvée are done.
+- **Questions for this community:** TEQ summaries as loop acceleration inside a CPA? TEQ normal forms as invariants
+  in correctness witnesses? Shared frontends (C, SV-LIB, Boogie, Dafny) and Horn clauses as output.
+- **Outlook:** the scope of TEQs (recursive procedures?), combination with traditional methods, interaction,
   inferring lemmas automatically.
 - *Don't let AI verify programs. Let it build the tools that do, on a representation that makes their knowledge
   reusable.*
