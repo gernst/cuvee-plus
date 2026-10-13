@@ -35,7 +35,7 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [first_duplicate.dfy](first_duplicate.dfy) | verified with the postcondition as two implications (finding 31) |
 | [merge.dfy](merge.dfy) | verified: pinned higher-order guard, pointers tied by open trace variables |
 | [counting_sort.dfy](counting_sort.dfy) | verified: four loops in sequence, the key range as an atom |
-| [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32) |
+| [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32); verified in the state form under `-prove` by a bisection lemma over the cycle ([state/lower_bound.dfy](../state/lower_bound.dfy)) |
 | [gnome_sort.dfy](gnome_sort.dfy) | verified: the invariant `sorted(b, 0, i)` in one lemma on the atom, the traces tied by open trace variables (finding 36) |
 
 ## Abstract predicates

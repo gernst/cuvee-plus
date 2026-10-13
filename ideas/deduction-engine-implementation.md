@@ -140,12 +140,29 @@ short:
 2. (done, step 1) J: forward facts, `{:fw}` lemmas fired at the terms of assumed facts; binary search closes without
    the cut. Next: which lemmas of the database should be `{:fw}` rather than `{:rw}` (with the user); step 2, the
    `invs` instances on the same triggers.
-2a. The binary search as a third example of the note in `doc/state-traces` (the cycle of `lo` and `hi`, the views
-   matched by `incs`/`decs`, the bounds as forward facts).
+2a. (done, Oct 13) The binary search in `doc/state-traces`, the version over a sorted array only.
 2b. (done, interim, Oct 13: `bsearch_sorted.dfy`, in two layers, 45 s; the bisection over the cycle, package O, next)
    The full binary search: sortedness as a predicate (`sorted(a, n)`, a quantified hypothesis) in place of the
    partition points p and q of the interim example, which are stronger than sortedness and turn the reads of the array
    into index comparisons by ground rules; the bounds of lo and hi then have to come from the monotonicity of the array.
+2c. (done, Oct 13) O: the bisection over the cycle, a lemma with a pattern of two accumulators (the matcher's part
+   of S6), its conditions over the guards decided by the rules on sortedness; bsearch_bisect.dfy in 11 s without the
+   monotone layer (bsearch_sorted.dfy, the two layers, kept for now), lower_bound.dfy closes (8 s).
+2d. Open items, unordered, as of Oct 13, 2026 (0.44.4):
+   - which lemmas of the database should be `{:fw}` rather than `{:rw}`, a review led by the user;
+   - step 3 of J: forward lemmas on traces fired where a trace is defined, with a memo per lemma and canonical
+     term; the repeated firing at the same terms, needed only by the two layers of bsearch_sorted.dfy, goes with that
+     version;
+   - the bisection lemmas (`cut`, `cut2`, `bisect_1`, `bisect_2`) and the partition points of sorted arrays into the
+     database, once a second program uses them beyond the two binary searches;
+   - step 2 of J: the `invs` instances at reads;
+   - is_sorted under `-teq-state -prove` ends in "rewriting does not terminate" (already in 0.44.3; it left one
+     goal earlier);
+   - bounds of `quot`, C's truncating division (`half_2` of SV-COMP, the halving loops of
+     [iterator-profiles.md](iterator-profiles.md)): those of `div` for `0 <= t`, a split by the sign otherwise;
+   - the eight algorithms whose lemmas are missing from the state module (`count`, `distincts`, `maxs`): counting_sort,
+     count_occurrences, distinct, first_duplicate, max_element, merge, partition, three_way_partition; the one goal
+     of each of bubble, cocktail, gnome, insertion (two), selection sort, lower_bound, perm, reverse, transpose.
 3. S6: the merge and the sorts in the partitioned form; lemmas over whole cycles (patterns with several accumulators)
    in the matcher; the pin (E), exit splitting (K), renaming (D) as they ask.
 4. The rest of S7: the Boogie and SMT-LIB frontends and printers, the Lean printer and `-fallback` for traces of
@@ -302,3 +319,15 @@ scripts/prove/slow.sh       # on request or before a commit: the transpose, the 
   lemmas (`lemma_4`, `lemma_5` of bsearch.dfy) and brings the sorted search under the step budget (about 450 of
   1000 steps, 46 s). The two layers are the cost: the invariant is a joint one, hence O (a bisection lemma over the
   cycle) next, then step 3 of J (firing at definitions with a memo), which replaces the repeated firing.
+- **Oct 13, 2026, night: O, the bisection over the cycle.** The matcher matches a pattern of several accumulators
+  against a trace of as many, component by component, the results in the context of the update with the histories of
+  the matched variable as `self` (so `lo < hi` of the iteration constraint holds there); a read `current(T).i`,
+  `⌊T⌋.i` of a pattern matches that of a variable through its definition; lambdas match lambdas. The lemmas
+  `bisect_1`, `bisect_2` (forward facts at `current(S).0`, `current(S).1`): a bisection of `[l0, h0)` whose guards
+  `G((hi + lo) / 2) && lo < hi` and `H(...)` hold on a prefix and a suffix (closed quantified conditions, decided by
+  the rules on sortedness within their range) keeps `l0 <= lo <= cut(G, l0, h0)` and `cut2(H, l0, h0) <= hi <= h0`;
+  the cuts are rewritten to the partition points by rules with a lambda on the left, which needed the forward
+  instances simplified before they are assumed. `P` and `Q` cannot be variables of the lemma: a variable that only a
+  quantified condition mentions is not bound by matching facts. bsearch_bisect.dfy closes in 11 s with 282 log
+  steps, against 45 s for the two layers of bsearch_sorted.dfy, which is kept for now with the repeated firing it
+  needs; lower_bound.dfy, open under `-simplify`, closes in 8 s.

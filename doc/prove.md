@@ -68,15 +68,25 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   assumes (the premise of an implication, the denied conclusion, the siblings of a conjunct or disjunct). The trigger
   is the term of `φ` below its boolean, comparison and arithmetic structure with the most variables of the lemma
   (those of `C` only are matched against the facts, as for rules), a term rather than a formula among equals; the
-  terms include the dependencies of combinators, outside their binders, so a lemma
-  `ensures invs(for ⌊trace(x0, ...)⌋ check w :: x0 <= w)` fires at a history `⌊S⌋.0` and states the invariant over it. The trigger is matched like the left-hand side of
-  a rule, through definitions and views, so `current(incs(x0, b, ...)) <= b` fires at `current(S).0`, and the
-  instance names the term as it occurs, `current(S).0 <= p`, so the fact reaches the classes and the linear
-  constraints of the goal's term. The instances are assumed by `Context.assume`, which fires nothing (generation 1);
-  the triggers are tried again at the same terms as long as instances are added, since one instance may enable
-  another (the invariant `0 <= lo` over `⌊S⌋.0` lets the guards of the view of `current(S).0` be rewritten, so its
-  bound matches); this terminates, as the terms are fixed and an instance whose conjuncts are all known is skipped;
-  no lemma fires while a trigger is matched. `-debug forward` prints the instances.
+  terms include the dependencies of combinators, outside their binders (a history `⌊S⌋.0`). The trigger is matched
+  like the left-hand side of a rule, through definitions and views, so `current(incs(x0, b, ...)) <= b` fires at
+  `current(S).0`, and the instance names the term as it occurs, `current(S).0 <= p`, so the fact reaches the classes
+  and the linear constraints of the goal's term. The instance is simplified by the rules before it is assumed, so its
+  other terms meet those of the goal (the cut of a bisection becomes a partition point). The instances are assumed by
+  `Context.assume`, which fires nothing at its own terms (generation 1); the triggers are tried again at the same
+  terms as long as instances are added, since one instance may enable another (the invariant `0 <= lo` over `⌊S⌋.0`
+  lets the guards of the view of `current(S).0` be rewritten, so its bound matches, in `bsearch_sorted.dfy`); this
+  terminates, as the terms are fixed and an instance whose conjuncts are all known is skipped; no lemma fires while
+  a trigger is matched.
+  `-debug forward` prints the instances.
+- **Lemmas over whole cycles** (`Rewrite.matches`): a pattern with several accumulators,
+  `trace(l0, h0, for ... do lo, hi, k :: u₀, u₁)`, matches a trace of as many accumulators component by component,
+  the initial values pairwise and the results in the context of the update, where the histories of the trace that
+  the matched variable defines denote the accumulators, so the iteration constraint holds there; a read
+  `current(T).i` or `⌊T⌋.i` of the pattern matches the same read of a variable by its definition; lambdas match
+  lambdas of the same arity with their bound variables related. The binary search over a sorted array is proved by
+  one such lemma in `bsearch_bisect.dfy` (a bisection, whose higher-order guards are bound to the guards of the
+  program by abstraction).
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.
@@ -106,7 +116,9 @@ Oct 13, 2026: the eleven examples of [examples/dafny/state](../examples/dafny/st
 with the module `state.dfy` alone (single loops, the swap of two arrays, five nested loops without fragment lemmas,
 the transpose with one summary lemma, the syntax example), 1.5 to 3 s; the binary search closes with its bounds as
 forward facts (7 s, no cut), and over a sorted array (`bsearch_sorted.dfy`, the array, its bound and the key as
-  parameters) with the reads of the array as comparisons with partition points and the monotonicity of `lo` and `hi`
-  as forward invariants (about 45 s; a lemma over the whole cycle is planned, package O of the plan). Open: the instances of `invs` by triggers (step 2 of J), lemmas over whole cycles in the matcher, the merge and the
+parameters) in two layers, the monotonicity of `lo` and `hi` as forward invariants first (about 45 s), and by a
+lemma over the whole cycle, a bisection whose cuts are the partition points (`bsearch_bisect.dfy`, 11 s); the lower bound
+of the algorithms (`lower_bound.dfy`, open under `-simplify`) closes with the same lemmas (8 s). Open: the instances
+of `invs` by triggers (step 2 of J), the merge and the
 sorts, the other frontends and the fallback for traces of several accumulators; see
 [ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md) and [TODO.md](../TODO.md).

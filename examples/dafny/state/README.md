@@ -21,7 +21,10 @@ prints its summary lemma).
 Kept as regression tests: `bsearch.dfy`, the binary search of examples/dafny/teq in the state form
 with partition points in place of sortedness, which closes with the bounds of the `incs`/`decs` abstractions as
 forward facts (`{:fw}`), see ideas/deduction-engine-implementation.md; the midpoint is bounded by the linear arithmetic.
-`bsearch_sorted.dfy`, the same search over a sorted array with the array, its bound and the key as parameters: the
-reads of the array become comparisons with the partition points `lower(a, n, x)`, `upper(a, n, x)` within `a[0..n)`,
-which needs `0 <= lo` and `hi <= n` in the update, from the monotonicity of each component as forward invariants over
-its history; about 45 s, interim until the bisection lemma over the cycle (package O of the plan).
+`bsearch_sorted.dfy`, the same search over a sorted array with the array, its bound and the key as parameters (the
+version of doc/state-traces): the reads of the array become comparisons with the partition points `lower(a, n, x)`,
+`upper(a, n, x)` within `a[0..n)`, which needs `0 <= lo` and `hi <= n` in the update, from the monotonicity of each
+component as forward invariants over its history (two layers, about 45 s).
+`bsearch_bisect.dfy`, the same proved by a lemma over the whole cycle, a bisection whose guards hold on a prefix and
+a suffix, which bounds `lo` and `hi` by the cuts of the guards, the partition points; 11 s.
+`lower_bound.dfy`, the lower bound of the algorithms (open under `-teq -simplify`) with the same bisection lemmas; 8 s.

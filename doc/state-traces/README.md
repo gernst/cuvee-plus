@@ -8,7 +8,8 @@ systems. It uses three examples of [examples/dafny/state](../../examples/dafny/s
   database, and the proofs step by step from the rewrite log;
 - the binary search over a sorted array (`bsearch_sorted.dfy`): a loop without a closed form, proved from bounds
   with lemmas written for it (sortedness as partition points within the array, the abstractions `incs`/`decs`,
-  forward facts, monotone invariants over the histories as a first layer).
+  forward facts, monotone invariants over the histories as a first layer), and again by a lemma over the whole
+  cycle, a bisection (`bsearch_bisect.dfy`).
 
 It ends with the engine in short and what the examples do not show. Compile with `pdflatex state-traces.tex`
 (twice). Written Oct 13, 2026, with the help of Claude Code (see the AI declaration in the document).

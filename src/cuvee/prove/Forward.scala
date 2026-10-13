@@ -91,7 +91,10 @@ object Forward:
       subst <- Rewrite.matches(config, state, ctx, fw.params, fw.vars, Set(), fw.trigger, None, Map(), Set(), term, Subst.empty)
       subst_ <- Rewrite.conditions(config, state, ctx, fw.params, fw.vars, Set(), And.flatten(fw.cond), None, Map(), Set(), ctx.known, Rewrite.holds(config, state, ctx, _), subst)
     yield
-      val phi = replace(subst_(fw.concl), subst_(fw.trigger), term)
+      // the instance is simplified by the rules, such that its terms meet those of the goal, e.g. the cut of a
+      // bisection, cut(m => a[m] < x, 0, n), becomes the partition point lower(a, n, x) that the reads of the array
+      // become; the trigger's term stays as it occurs, since a marker is replaced only by a closed view
+      val phi = Simplify.simplify(config, state, ctx.neutral, replace(subst_(fw.concl), subst_(fw.trigger), term))
       Debug.step("forward", fw.name.getOrElse("?") + " at " + Simplify.show(config.output.printer, term), Simplify.show(config.output.printer, phi))
       phi
 

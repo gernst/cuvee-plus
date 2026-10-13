@@ -4,7 +4,9 @@ Status (Oct 13, 2026): in the state form under `-prove`, both versions close:
 [state/bsearch.dfy](../examples/dafny/state/bsearch.dfy) with partition points (no cut, the bounds as forward facts,
 the midpoint by the bounds of division in the arithmetic) and
 [state/bsearch_sorted.dfy](../examples/dafny/state/bsearch_sorted.dfy) over a sorted array, the array, its bound and
-the key as parameters (see ideas/deduction-engine-plan.md, packages N and O). The rest of this note is about
+the key as parameters, in two layers, and [state/bsearch_bisect.dfy](../examples/dafny/state/bsearch_bisect.dfy) by a
+lemma over the whole cycle (a bisection, see ideas/deduction-engine-plan.md, packages N and O);
+[state/lower_bound.dfy](../examples/dafny/state/lower_bound.dfy) with the same lemmas. The rest of this note is about
 `-teq -simplify`.
 
 Status (Oct 12, 2026). [bsearch.dfy](../examples/dafny/teq/bsearch.dfy) with partition points is verified

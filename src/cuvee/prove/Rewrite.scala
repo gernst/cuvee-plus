@@ -322,6 +322,38 @@ object Rewrite:
               matches(config, state, inner, params, vars, locals_, update, None, bound_, avoid_, update_, subst)
         yield subst2
 
+      // a trace of several accumulators, component by component (a lemma over a whole cycle, package O of the plan):
+      // the initial values pairwise, the results in the context of the update, where the histories ⌊S⌋.j of the
+      // trace that `self` defines denote the accumulators (see Views.selfOf), so that the iteration constraint over
+      // them holds there, e.g. lo < hi of the binary search
+      case (Trace(inits, deps, accs, ys, results), Trace(inits_, deps_, accs_, ys_, results_))
+          if accs.length >= 2 && accs.length == accs_.length =>
+        val self_ = self.map(x => Views.selfOf(x, accs_)).getOrElse(ctx.self)
+        lazy val inner = Simplify.combinator(config, state, ctx.bind(accs_).copy(self = self_), deps_, ys_)
+        for
+          subst1 <- matches(config, state, ctx, params, vars, locals, inits, self, bound, avoid, inits_, subst)
+          subst2 <- combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, (accs zip accs_).toMap, subst1):
+            (locals_, bound_, avoid_, subst) =>
+              matches(config, state, inner, params, vars, locals_, results, None, bound_, avoid_, results_, subst)
+        yield subst2
+
+      // the reads of a component of a trace of several accumulators by the same component of a pattern, the trace
+      // matched against the definition of the variable it reads, which that variable then defines (self)
+      case (Component(tr, i), Component(s, i_)) if i == i_ =>
+        Views.traceOf(ctx, s) match
+          case Some((x: Var, tr_)) => matches(config, state, ctx, params, vars, locals, tr, Some(x), bound, avoid, tr_, subst)
+          case _                   => matches(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
+
+      case (History(tr, i), History(s, i_)) if i == i_ =>
+        Views.traceOf(ctx, s) match
+          case Some((x: Var, tr_)) => matches(config, state, ctx, params, vars, locals, tr, Some(x), bound, avoid, tr_, subst)
+          case _                   => matches(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
+
+      // lambdas of the same arity, their bodies with the bound variables related, e.g. the guard m => a[m] < x of a
+      // bisection against the pattern m => ar[m] < y of the lemma that names its cut
+      case (Lam(xs, body, _), Lam(xs_, body_, _)) if xs.length == xs_.length && xs.types == xs_.types =>
+        matches(config, state, ctx, params, vars, locals, body, self, bound ++ (xs zip xs_), avoid ++ xs_, body_, subst)
+
       case (Maps(deps, ys, update), Maps(deps_, ys_, update_)) =>
         val self_ = self.map(y => (y, update_)).toList
         lazy val inner = Simplify.combinator(config, state, ctx.copy(self = self_), deps_, ys_)

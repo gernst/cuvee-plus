@@ -262,7 +262,7 @@ firing per lemma and canonical term with its relevant facts. The general firing 
 trace pattern through a view in every sibling context (quadratic in the conjuncts of a premise, and again in every
 update), and the check whether an instance is known comes only after the match. A fixpoint of the firing over the
 terms of the assumed facts (an instance enabling another at the same term) was tried for the sorted search and
-works, but costs; it is dropped once O makes it unnecessary. Firing when an atom is decided and in the contexts of
+works, but costs; O makes it unnecessary, and it goes with the two-layer version of the search. Firing when an atom is decided and in the contexts of
 updates stays out: arithmetic facts belong in the theory (N), domain facts are assumed where the traversal assumes.
 
 ### K. Exit splitting (`Simplify.or`)
@@ -288,7 +288,14 @@ same addition, so decisions get them as well. Decides the facts of the midpoint 
 binary search and about half the rewrite steps of the sorted search. Half a day.
 
 ### O. Lemmas over whole cycles: the bisection
-**State:** planned (Oct 13, 2026); the matcher's part is that of S6.
+**State:** done (Oct 13, 2026): `bsearch_bisect.dfy` in 11 s against 45 s for the two layers of
+`bsearch_sorted.dfy` (both kept for now), lower_bound closes (8 s); the matcher matches traces of several
+accumulators, component reads and lambdas; the repeated firing of J stays while the two-layer version is kept. As written, the guards
+are higher-order in the midpoint, `G((hi + lo) / 2)`, bound by abstraction; `P` and `Q` are named by the lemma as
+the cuts `cut(G, l0, h0)` and `cut2(H, l0, h0)` of the guards, which rules on sortedness rewrite to the partition
+points (`cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)`), since a variable of the conclusion that only a
+quantified condition mentions cannot be bound by matching. The forward instances are simplified before they are
+assumed, which brings the cut to the partition point.
 The sorted binary search (`sorted(a, n)`, the array, its bound and the key as parameters) closes with the
 per-component route of `incs` and `decs`, but in two layers: the reads of the array become comparisons with the
 partition points `lower(a, n, x)` and `upper(a, n, x)` only for `0 <= mid < n`, which needs `0 <= lo` and `hi <= n` in

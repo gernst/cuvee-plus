@@ -629,6 +629,74 @@ The run uses seventeen lemmas: all fourteen of the file and three of the databas
 single core. Most of this is the layering: each view is computed before and after the invariants are known, at
 every position where the facts differ.
 
+\subsection{A lemma about the cycle as a whole}
+\label{sec:bisection}
+
+The two layers above build a joint invariant, $0 \le lo \le P$ and $Q \le hi \le n$, from two descriptions of each
+component. The file \texttt{examples/dafny/state/bsearch\_bisect.dfy} states it at once, by a lemma whose pattern is
+the trace of both accumulators. It is the same program with the same rules on sortedness; the monotone values and
+$\mathsf{incs}$ and $\mathsf{decs}$ are replaced by two functions and four lemmas.
+
+\paragraph{The cut of a guard.} Instead of a variable for the partition point, which the lemma could not bind
+(a variable that only a quantified condition mentions is not found by matching), the lemma names it as a function of
+the guard:
+\begin{lstlisting}
+function cut(G: int -> bool, l: int, h: int): int
+function cut2(H: int -> bool, l: int, h: int): int
+\end{lstlisting}
+For a predicate $G$ that holds on a prefix of $[l, h)$, $\mathsf{cut}(G, l, h)$ is the first index where it fails,
+and for a predicate $H$ that holds on a suffix, $\mathsf{cut2}(H, l, h)$ is the first index where it holds. On a
+sorted array, the cuts of the comparisons with $y$ are the partition points:
+\begin{lstlisting}
+lemma {:rw} cut_lower(ar: array<int, int>, len: int, y: int)
+  requires sorted(ar, len) && 0 <= len
+  ensures cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)
+\end{lstlisting}
+and \lemma{cut\_upper} likewise for $(j: int) \Rightarrow y < ar[j]$ and $\mathsf{upper}$.
+
+\paragraph{The bisection.} A bisection of $[l_0, h_0)$ moves $lo$ above the midpoint where a guard $G$ holds and
+$hi$ down to it where $H$ holds, in iterations where $lo < hi$:
+\begin{lstlisting}
+lemma {:fw} bisect_1(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool, H: int -> bool)
+  requires l0 <= h0
+  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
+  ensures l0 <= current(trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
+          case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1
+          case H((hi + lo) / 2) && lo < hi => lo,
+          case G((hi + lo) / 2) && lo < hi => hi
+          case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).0
+       <= cut(G, l0, h0)
+\end{lstlisting}
+If $G$ holds on a prefix, $lo$ stays within $l_0$ and the cut of $G$: it passes a midpoint only where $G$ holds,
+hence on all indices up to it. \lemma{bisect\_2} states $\mathsf{cut2}(H, l_0, h_0) \le \cur(\ldots).1 \le h_0$ if
+$H$ holds on a suffix. The guards are higher-order in the midpoint. The conjunct $lo < hi$ is not in the program's
+guards; it follows from the iteration constraint in the context of the update, which makes the lemma sound for
+iterations of a loop with the test $lo < hi$.
+
+\paragraph{The proof.} The trigger $\cur(\mathsf{trace}(\ldots)).0$ matches $\cur(S).0$ where the traversal assumes
+$lo' = \cur(S).0$. The matcher takes the definition of $S$ and matches it component by component: the initial values
+$0$ and $n$ give $l_0$ and $h_0$, and $\bl{K}$ gives the counter. The guard $G((hi + lo)/2)$ matches the program's
+guard $a[m] < x$ by abstraction, with $G = (z) \Rightarrow a[z] < x$, and $H = (z) \Rightarrow x < a[z]$. In the
+update, the histories of $S$ stand for the accumulators, so the iteration constraint gives $lo < hi$. The conditions
+are now closed:
+\[
+\forall p, q.\ 0 \le p \le q < n \wedge a[q] < x \Rightarrow a[p] < x
+\]
+and the dual one for $H$. The engine decides them by the rules on sortedness, which apply within the range of the
+premise: $a[q] < x \rw q < P$ and $a[p] < x \rw p < P$, and $p \le q < P$ gives $p < P$. The instance is simplified
+before it is assumed, which rewrites the cuts by \lemma{cut\_lower} and \lemma{cut\_upper}:
+\begin{align*}
+&0 \le \cur(S).0 \le P &&\text{by \lemma{bisect\_1}},\\
+&Q \le \cur(S).1 \le n &&\text{by \lemma{bisect\_2}}.
+\end{align*}
+These are the four bounds that the two layers derived. The rest of the proof is as above: $i$ stays $-1$, the exit
+closes by $hi' \le lo' \le P \le Q \le hi'$, and the found case by $P \le m' < Q \le n$.
+
+The run uses eleven lemmas, all eight of the file and three of the database on constant traces. It assumes 56
+forward instances, computes 131 views of components, has 282 rewrite steps in its log, and takes about 11 seconds
+against 45. The rules on sortedness are the same; what is gone is the layering, since no view has to be computed
+before and after the invariants are known.
+
 \subsection{What this example shows, and what it does not}
 \label{sec:missing}
 
@@ -643,13 +711,12 @@ general. They are polymorphic in the other dependency, and nothing in them is sp
 are candidates for the database. The rules on sortedness are general as well, but they hold only within the array,
 which is why the proof needs the monotone layer to apply them.
 
-\paragraph{No lemma about the cycle as a whole.} Each lemma above matches one component, with the history of the
-other one as an opaque dependency. The invariant of the loop is a joint one, $0 \le lo \le P$ and
-$Q \le hi \le n$, and it is built here in two layers. A lemma about the bisection as a whole, with the higher-order
-guards $G$ and $H$ of its two cases and the side condition
-$\forall j.\ l_0 \le j < h_0 \Rightarrow (G(j) \Leftrightarrow j < P) \wedge (H(j) \Leftrightarrow Q \le j)$, decided
-by the rules on sortedness within the range of its premise, would give $l_0 \le lo \le P$ and $Q \le hi \le h_0$ at
-once. It needs a pattern with two accumulators, which the matcher does not support yet.
+\paragraph{Per component, or the cycle as a whole.} The lemmas of the first proof match one component each, with
+the history of the other one as an opaque dependency, and the joint invariant is built in two layers. The bisection
+of Section~\ref{sec:bisection} matches the cycle as a whole and states the joint invariant at once, at a quarter of
+the cost. Its shape is general (any pair of guards that hold on a prefix and a suffix, any initial interval), and the
+same lemmas prove the lower bound of a sorted array (\texttt{examples/dafny/state/lower\_bound.dfy}), which the
+earlier form of the tool did not.
 
 \section{The engine, in short}
 
@@ -683,7 +750,11 @@ The examples used the following machinery, which the engine of \texttt{-prove} p
   of its conclusion with the most variables) occurs in a fact the traversal assumes. The trigger is matched like
   the left-hand side of a rule, through definitions and views, also at the dependencies of combinators (a history
   $\bl{S}.0$), and the instance names the term as it occurs. An instance fires nothing at its own terms; the
-  triggers are tried again at the same terms while instances are added, which terminates.
+  triggers are tried again at the same terms while instances are added, which terminates. The instance is
+  simplified before it is assumed.
+\item[Cycles as a whole.] A pattern with several accumulators matches a trace of as many component by component,
+  in the context of the update, and a read $\cur(T).i$ of a pattern matches that of a variable through its
+  definition.
 \end{description}
 
 The first two examples are proved by the earlier form of the tool (\texttt{-teq -simplify}, one trace per variable
@@ -702,8 +773,8 @@ carry an accumulated property (a sorted prefix, a running maximum, a search that
 shapes, some of them written for the program, and the engine has to match those lemmas against views whose shape
 it has not seen before. The binary search is such a program, and it is proved with forward facts, but its lemmas are its own. The open items at the time of writing:
 \begin{itemize}
-\item lemmas about a cycle as a whole, with several accumulators in their pattern, which the matcher does not
-  support yet, and which would prove the binary search in one layer instead of two;
+\item lemmas about a cycle as a whole beyond the bisection, e.g.\ for merging, where two pointers move by
+  comparisons of the elements they point to;
 \item which lemmas of the database should be forward facts rather than rewrite rules;
 \item merging and sorting in this form.
 \end{itemize}
