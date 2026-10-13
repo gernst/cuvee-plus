@@ -373,8 +373,8 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
 ## The semantics in Lean ([lean/](../lean))
 
 The lemmas of the stable modules, teq.dfy, `aggregation.dfy`,
-`arithmetic.dfy`, `search.dfy`, `sorted.dfy`, `arrays.dfy`, `counters.dfy` and
-`strides.dfy` (`MODULES` of
+`arithmetic.dfy`, `search.dfy`, `sorted.dfy`, `arrays.dfy`, `counters.dfy`,
+`strides.dfy` and `unsigned.dfy` (`MODULES` of
 [scripts/lean/generate.py](../scripts/lean/generate.py)), are proved in Lean 4
 (core, without Mathlib, the toolchain of `lean-toolchain`), in the Lake
 project at the root (`lakefile.toml`, sources in `lean/`):

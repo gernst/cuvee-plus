@@ -3745,4 +3745,240 @@ theorem select_current_trace_ahead_down (a0 : Int → Int) (n : Nat) (s : Int) (
   rw [ahead_down_from, integer_cast]
   (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
 
+-- unsigned.dfy: the counters modulo m, by induction over the steps, whose values are the remainders of those of the
+-- counter, (a % m + c) % m = (a + c) % m; the products n * c are atoms of omega, with the facts it needs about them
+
+theorem mods_zero (i c m : Int) : mods i c m 0 = .stop i := by rw [mods]
+
+theorem mods_succ (i c m : Int) (n : Nat) : mods i c m (n + 1) = .step i (mods ((i + c) % m) c m n) := by rw [mods]
+
+theorem mods_def (i c m : Int) (n : Nat) :
+    trace i (butlast (counter 0 1 n)) (fun x k => (x + c) % m) = mods i c m n := by
+  suffices h : ∀ s i, trace i (butlast (counter s 1 n)) (fun x k => (x + c) % m) = mods i c m n from h 0 i
+  induction n with
+  | zero => intro s i; rw [mods_zero]; rfl
+  | succ n ih => intro s i; rw [butlast_counter_succ, trace_cons, mods_succ, ih]
+
+-- after at least one step, the current value is the remainder of that of the counter, whatever the initial value
+theorem current_mods_succ (i c m : Int) (n : Nat) : current (mods i c m (n + 1)) = (i + ((n + 1 : Nat) : Int) * c) % m := by
+  induction n generalizing i with
+  | zero => rw [mods_succ, current_step_eq, mods_zero]; simp [current]
+  | succ n ih =>
+    rw [mods_succ, current_step_eq, ih, Int.emod_add_emod]
+    congr 1; push_cast; simp only [Int.add_mul, Int.one_mul]; omega
+
+theorem current_mods (i c m : Int) (n : Nat) : 0 ≤ i ∧ i < m → current (mods i c m n) = (i + integer n * c) % m := by
+  intro ⟨h1, h2⟩
+  rw [integer_cast]
+  cases n with
+  | zero => rw [mods_zero]; simp [current]; exact (Int.emod_eq_of_lt h1 h2).symm
+  | succ n => exact current_mods_succ i c m n
+
+theorem current_mods_up (i c m : Int) (n : Nat) :
+    0 ≤ i + integer n * c ∧ i + integer n * c < m → current (mods i c m n) = i + integer n * c := by
+  intro ⟨h1, h2⟩
+  rw [integer_cast] at *
+  cases n with
+  | zero => rw [mods_zero]; simp [current]
+  | succ n => rw [current_mods_succ]; exact Int.emod_eq_of_lt h1 h2
+
+theorem butlast_mods_up (i c m : Int) (n : Nat) :
+    0 ≤ i ∧ 0 ≤ c ∧ i + (integer n - 1) * c < m → butlast (mods i c m n) = butlast (counter i c n) := by
+  intro ⟨h1, h2, h3⟩
+  rw [integer_cast] at h3
+  induction n generalizing i with
+  | zero => rw [mods_zero]; rfl
+  | succ n ih =>
+    rw [mods_succ, butlast_counter_succ]
+    cases n with
+    | zero => rw [mods_zero]; rfl
+    | succ k =>
+      have hk : 0 ≤ (k : Int) * c := Int.mul_nonneg (by omega) h2
+      push_cast at h3
+      simp only [Int.sub_mul, Int.add_mul, Int.one_mul] at h3
+      have e : (i + c) % m = i + c := Int.emod_eq_of_lt (by omega) (by omega)
+      show i :: butlast (mods ((i + c) % m) c m (k + 1)) = i :: butlast (counter (i + c) c (k + 1))
+      rw [e, ih (i + c) (by omega) (by push_cast; simp only [Int.sub_mul, Int.add_mul, Int.one_mul]; omega)]
+
+theorem invs_mods_upper_cases (b i c m : Int) (n : Nat) :
+    0 ≤ i ∧ i < m ∧ 0 < c ∧ b + c ≤ m
+      → (invs (butlast (mods i c m n)) (fun x => x < b) ↔ n = zero ∨ i + (integer n - 1) * c < b) := by
+  intro ⟨h1, h2, h3, h4⟩
+  rw [integer_cast]
+  induction n generalizing i with
+  | zero => rw [mods_zero]; simp [butlast, invs]
+  | succ n ih =>
+    rw [mods_succ]
+    show (i < b ∧ invs (butlast (mods ((i + c) % m) c m n)) (fun x => x < b)) ↔ _
+    have hn : n = 0 → (n : Int) * c = 0 := by intro h; subst h; simp
+    have hc : 0 ≤ (n : Int) * c := Int.mul_nonneg (by omega) (by omega)
+    by_cases hb : i < b
+    · have e : (i + c) % m = i + c := Int.emod_eq_of_lt (by omega) (by omega)
+      have hih := ih (i + c) (by omega) (by omega)
+      rw [e, propext hih]
+      push_cast; simp only [Int.sub_mul, Int.add_mul, Int.one_mul]
+      constructor
+      · intro ⟨_, h⟩; right; rcases h with h | h
+        · have := hn h; omega
+        · omega
+      · intro h; rcases h with h | h
+        · exact h.elim
+        · refine ⟨hb, ?_⟩; by_cases h0 : n = 0
+          · exact Or.inl h0
+          · right; omega
+    · constructor
+      · intro ⟨h, _⟩; exact absurd h hb
+      · intro h; rcases h with h | h
+        · exact absurd h (Nat.succ_ne_zero n)
+        · push_cast at h; simp only [Int.sub_mul, Int.add_mul, Int.one_mul] at h; omega
+
+theorem invs_mods_upper (b i c m : Int) (n : Nat) :
+    0 ≤ i ∧ i < b ∧ 0 < c ∧ b + c ≤ m
+      → (invs (butlast (mods i c m n)) (fun x => x < b) ↔ i + (integer n - 1) * c < b) := by
+  intro ⟨h1, h2, h3, h4⟩
+  rw [invs_mods_upper_cases b i c m n ⟨h1, by omega, h3, h4⟩]
+  constructor
+  · intro h; rcases h with h | h
+    · subst h; simp [integer_cast]; omega
+    · exact h
+  · intro h; exact Or.inr h
+
+theorem invs_mods_down_cases (i c m : Int) (n : Nat) :
+    0 ≤ i ∧ i < m ∧ c < m ∧ i % (m - c) = 0
+      → (invs (butlast (mods i c m n)) (fun x => 0 < x) ↔ n = zero ∨ 0 < i - (integer n - 1) * (m - c)) := by
+  intro ⟨h1, h2, h3, h4⟩
+  rw [integer_cast]
+  induction n generalizing i with
+  | zero => rw [mods_zero]; simp [butlast, invs]
+  | succ n ih =>
+    rw [mods_succ]
+    show (0 < i ∧ invs (butlast (mods ((i + c) % m) c m n)) (fun x => 0 < x)) ↔ _
+    have hd : 0 < m - c := by omega
+    have hn : n = 0 → (n : Int) * (m - c) = 0 := by intro h; subst h; simp
+    have hc : 0 ≤ (n : Int) * (m - c) := Int.mul_nonneg (by omega) (by omega)
+    by_cases hi : 0 < i
+    · have hdi : m - c ≤ i := Int.le_of_dvd hi (Int.dvd_of_emod_eq_zero h4)
+      have e : (i + c) % m = i - (m - c) := by
+        rw [show i + c = (i - (m - c)) + m by omega, Int.add_emod_right]
+        exact Int.emod_eq_of_lt (by omega) (by omega)
+      have h4' : (i - (m - c)) % (m - c) = 0 :=
+        Int.emod_eq_zero_of_dvd (Int.dvd_sub (Int.dvd_of_emod_eq_zero h4) (Int.dvd_refl _))
+      have hih := ih (i - (m - c)) (by omega) (by omega) h4'
+      rw [e, propext hih]
+      push_cast; simp only [Int.sub_mul, Int.add_mul, Int.one_mul]
+      constructor
+      · intro ⟨_, h⟩; right; rcases h with h | h
+        · have := hn h; omega
+        · omega
+      · intro h; rcases h with h | h
+        · exact h.elim
+        · refine ⟨hi, ?_⟩; by_cases h0 : n = 0
+          · exact Or.inl h0
+          · right; omega
+    · constructor
+      · intro ⟨h, _⟩; exact absurd h hi
+      · intro h; rcases h with h | h
+        · exact absurd h (Nat.succ_ne_zero n)
+        · push_cast at h; simp only [Int.sub_mul, Int.add_mul, Int.one_mul] at h; omega
+
+theorem invs_mods_down (i c m : Int) (n : Nat) :
+    0 < i ∧ i < m ∧ c < m ∧ i % (m - c) = 0
+      → (invs (butlast (mods i c m n)) (fun x => 0 < x) ↔ 0 < i - (integer n - 1) * (m - c)) := by
+  intro ⟨h1, h2, h3, h4⟩
+  rw [invs_mods_down_cases i c m n ⟨by omega, h2, h3, h4⟩]
+  constructor
+  · intro h; rcases h with h | h
+    · subst h; simp [integer_cast]; omega
+    · exact h
+  · intro h; exact Or.inr h
+
+theorem invs_counter_mod_upper_zero (b m : Int) (n : Nat) :
+    0 < b ∧ b < m → (invs (butlast (counter 0 1 n)) (fun k => k % m < b) ↔ integer n - 1 < b) := by
+  intro ⟨h1, h2⟩
+  rw [invs_counter_forall, integer_cast]
+  constructor
+  · intro h
+    apply Classical.byContradiction
+    intro hc
+    have := h b.toNat (by omega)
+    rw [show (0 : Int) + (b.toNat : Int) = b by omega, Int.emod_eq_of_lt (by omega) h2] at this
+    omega
+  · intro h i hi
+    rw [Int.emod_eq_of_lt (by omega) (by omega)]
+    omega
+
+theorem invs_counter_mod_upper_cases (b i m : Int) (n : Nat) :
+    0 ≤ i ∧ i < m ∧ b < m
+      → (invs (butlast (counter 0 1 n)) (fun k => (k + i) % m < b) ↔ n = zero ∨ i + integer n - 1 < b) := by
+  intro ⟨h1, h2, h3⟩
+  rw [invs_counter_forall, integer_cast]
+  constructor
+  · intro h
+    by_cases h0 : n = 0
+    · exact Or.inl h0
+    · right
+      apply Classical.byContradiction
+      intro hc
+      by_cases hb : b ≤ i
+      · have := h 0 (by omega)
+        rw [show (0 : Int) + ((0 : Nat) : Int) + i = i by omega, Int.emod_eq_of_lt h1 h2] at this
+        omega
+      · have := h (b - i).toNat (by omega)
+        rw [show (0 : Int) + ((b - i).toNat : Int) + i = b by omega, Int.emod_eq_of_lt (by omega) h3] at this
+        omega
+  · intro h k hk
+    rcases h with h | h
+    · subst h; exact absurd hk (Nat.not_lt_zero _)
+    · rw [Int.emod_eq_of_lt (by omega) (by omega)]; omega
+
+-- the trace of the remainders from y % m is the remainder of the trace from y, over any dependency
+theorem trace_mod_add_const_from (m c : Int) (ds : List (Int × Int)) : ∀ y,
+    current (trace (y % m) ds (fun x ⟨k, h⟩ => (k + x + c) % m))
+      = current (trace y ds (fun x ⟨k, h⟩ => k + x + c)) % m := by
+  induction ds with
+  | nil => intro y; rfl
+  | cons d ds ih =>
+    intro y
+    obtain ⟨k, h⟩ := d
+    rw [trace_cons, trace_cons, current_step_eq, current_step_eq]
+    dsimp only
+    have e : (k + y % m + c) % m = (k + y + c) % m := by
+      rw [show k + y % m + c = y % m + (k + c) by omega, show k + y + c = y + (k + c) by omega, Int.emod_add_emod]
+    rw [e]
+    exact ih (k + y + c)
+
+theorem current_trace_mod_add_const (x0 : Int) (n : Nat) (m c : Int) (hs : List Int) (hhs : length hs = n) :
+    0 ≤ x0 ∧ x0 < m
+      → current (trace x0 (List.zip (butlast (counter 0 1 n)) hs) (fun x ⟨k, h⟩ => (k + x + c) % m))
+        = current (trace x0 (List.zip (butlast (counter 0 1 n)) hs) (fun x ⟨k, h⟩ => k + x + c)) % m := by
+  intro ⟨h1, h2⟩
+  have := trace_mod_add_const_from m c (List.zip (butlast (counter 0 1 n)) hs) x0
+  rwa [Int.emod_eq_of_lt h1 h2] at this
+
+theorem trace_mod_add_cases_from (m : Int) (C : Int → Prop) (F : Int → Int) (ds : List (Int × Int)) : ∀ y,
+    current (trace (y % m) ds (fun x ⟨k, h⟩ => if C k then (x + F k) % m else x))
+      = current (trace y ds (fun x ⟨k, h⟩ => if C k then x + F k else x)) % m := by
+  induction ds with
+  | nil => intro y; rfl
+  | cons d ds ih =>
+    intro y
+    obtain ⟨k, h⟩ := d
+    rw [trace_cons, trace_cons, current_step_eq, current_step_eq]
+    dsimp only
+    by_cases hc : C k
+    · simp only [hc, ↓reduceIte]
+      rw [Int.emod_add_emod]
+      exact ih (y + F k)
+    · simp only [hc, ↓reduceIte]
+      exact ih y
+
+theorem current_trace_mod_add_cases (x0 : Int) (n : Nat) (m : Int) (hs : List Int) (C : Int → Prop) (F : Int → Int)
+    (hhs : length hs = n) :
+    0 ≤ x0 ∧ x0 < m
+      → current (trace x0 (List.zip (butlast (counter 0 1 n)) hs) (fun x ⟨k, h⟩ => if C k then (x + F k) % m else x))
+        = current (trace x0 (List.zip (butlast (counter 0 1 n)) hs) (fun x ⟨k, h⟩ => if C k then x + F k else x)) % m := by
+  intro ⟨h1, h2⟩
+  have := trace_mod_add_cases_from m C F (List.zip (butlast (counter 0 1 n)) hs) x0
+  rwa [Int.emod_eq_of_lt h1 h2] at this
+
 end TEQ

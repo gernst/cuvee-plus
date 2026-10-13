@@ -2,8 +2,8 @@
 // bound them below m, such that the values do not wrap, and the remainders of their final values are the values
 // themselves, or their remainders remain, e.g. for parities; an optional module over teq.dfy alone
 // (-include teq:unsigned), restored on Oct 13, 2026 from the module counters.dfy of the per-variable form, from which
-// the migration had dropped it, since the C examples do not need it, while 16 tasks of SV-COMP Loops do; not proved in
-// Lean yet
+// the migration had dropped it, since the C examples do not need it, while 16 tasks of SV-COMP Loops do; proved in Lean
+// (lean/)
 
 // mods(i, c, m, n) is the trace i, (i + c) % m, ((i + c) % m + c) % m, ... of n steps, a counter that wraps around
 // modulo m, e.g. an unsigned variable of C increased by c in each iteration, whose values are (i + k c) % m for

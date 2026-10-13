@@ -1,7 +1,7 @@
 # The lemma database of -teq in Lean
 
 The proofs of the lemmas of the stable modules of the database (`resources/cuvee/teq.dfy` and the modules
-`aggregation`, `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides` of `resources/cuvee/teq`, the
+`aggregation`, `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`, `unsigned` of `resources/cuvee/teq`, the
 `MODULES` of `scripts/lean/generate.py`), in Lean 4 without Mathlib, as the
 library `TEQ` of the Lake project at the root of the repository (`lakefile.toml`, `lean-toolchain`):
 

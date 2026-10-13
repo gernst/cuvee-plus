@@ -310,7 +310,7 @@ Plan:
 ## Proofs of teq.dfy in Lean
 
 - The proofs are in [lean/](lean) (doc/teq.md): the statements of the lemmas of the stable modules (teq.dfy,
-  aggregation, arithmetic, search, sorted, arrays, counters, strides) are generated from them
+  aggregation, arithmetic, search, sorted, arrays, counters, strides, unsigned) are generated from them
   (`scripts/lean/generate.py`), the proofs are by hand, and `scripts/lean/check.sh` checks that each lemma is proved
   as printed. All are proved except the three of [lean/open.txt](lean/open.txt), no `sorry` remains; the
   counterexamples show the premises that are needed: dependencies of equal length, indices within the lists, and

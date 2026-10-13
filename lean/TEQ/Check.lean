@@ -7,6 +7,7 @@
 --   resources/cuvee/teq/arrays.dfy
 --   resources/cuvee/teq/counters.dfy
 --   resources/cuvee/teq/strides.dfy
+--   resources/cuvee/teq/unsigned.dfy
 -- do not edit: a definition that does not check is fixed in the module or in lean.Printer
 import TEQ.Proofs
 
@@ -148,5 +149,17 @@ example : Stmt.select_current_trace_stride3 := @select_current_trace_stride3
 example : Stmt.select_current_trace_stride2_cases := @select_current_trace_stride2_cases
 example : Stmt.select_current_trace_ahead := @select_current_trace_ahead
 example : Stmt.select_current_trace_ahead_down := @select_current_trace_ahead_down
+example : Stmt.mods_def := @mods_def
+example : Stmt.invs_mods_upper := @invs_mods_upper
+example : Stmt.invs_mods_upper_cases := @invs_mods_upper_cases
+example : Stmt.invs_mods_down := @invs_mods_down
+example : Stmt.invs_mods_down_cases := @invs_mods_down_cases
+example : Stmt.current_mods_up := @current_mods_up
+example : Stmt.current_mods := @current_mods
+example : Stmt.butlast_mods_up := @butlast_mods_up
+example : Stmt.invs_counter_mod_upper_zero := @invs_counter_mod_upper_zero
+example : Stmt.invs_counter_mod_upper_cases := @invs_counter_mod_upper_cases
+example : Stmt.current_trace_mod_add_const := @current_trace_mod_add_const
+example : Stmt.current_trace_mod_add_cases := @current_trace_mod_add_cases
 
 end TEQ

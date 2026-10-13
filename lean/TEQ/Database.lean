@@ -7,6 +7,7 @@
 --   resources/cuvee/teq/arrays.dfy
 --   resources/cuvee/teq/counters.dfy
 --   resources/cuvee/teq/strides.dfy
+--   resources/cuvee/teq/unsigned.dfy
 -- do not edit: a definition that does not check is fixed in the module or in lean.Printer
 import TEQ.Definitions
 
@@ -1104,5 +1105,94 @@ def Stmt.select_current_trace_ahead_down : Prop :=
            G j
          else
            if j = s - integer n ∧ 0 ≤ j ∧ 0 < integer n then F (j + 1) else a0 j)
+
+noncomputable def mods (x₀ : Int) (x₁ : Int) (x₂ : Int)
+                       (x₃ : Nat) : Trace Int :=
+  match x₃ with
+  | .zero => stop x₀
+  | .succ m => step x₀ (mods ((x₀ + x₁) % x₂) x₁ x₂ m)
+
+def Stmt.mods_def : Prop :=
+  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
+    trace i (butlast (counter 0 1 n)) (fun x k => (x + c) % m) = mods i c m n
+
+def Stmt.invs_mods_upper : Prop :=
+  ∀ (b : Int) (i : Int) (c : Int) (m : Int) (n : Nat),
+    0 ≤ i ∧ i < b ∧ 0 < c ∧ b + c ≤ m
+      → (invs (butlast (mods i c m n)) (fun x => x < b)
+           ↔ i + (integer n - 1) * c < b)
+
+def Stmt.invs_mods_upper_cases : Prop :=
+  ∀ (b : Int) (i : Int) (c : Int) (m : Int) (n : Nat),
+    0 ≤ i ∧ i < m ∧ 0 < c ∧ b + c ≤ m
+      → (invs (butlast (mods i c m n)) (fun x => x < b)
+           ↔ n = zero ∨ i + (integer n - 1) * c < b)
+
+def Stmt.invs_mods_down : Prop :=
+  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
+    0 < i ∧ i < m ∧ c < m ∧ i % (m - c) = 0
+      → (invs (butlast (mods i c m n)) (fun x => 0 < x)
+           ↔ 0 < i - (integer n - 1) * (m - c))
+
+def Stmt.invs_mods_down_cases : Prop :=
+  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
+    0 ≤ i ∧ i < m ∧ c < m ∧ i % (m - c) = 0
+      → (invs (butlast (mods i c m n)) (fun x => 0 < x)
+           ↔ n = zero ∨ 0 < i - (integer n - 1) * (m - c))
+
+def Stmt.current_mods_up : Prop :=
+  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
+    0 ≤ i + integer n * c ∧ i + integer n * c < m
+      → current (mods i c m n) = i + integer n * c
+
+def Stmt.current_mods : Prop :=
+  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
+    0 ≤ i ∧ i < m → current (mods i c m n) = (i + integer n * c) % m
+
+def Stmt.butlast_mods_up : Prop :=
+  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
+    0 ≤ i ∧ 0 ≤ c ∧ i + (integer n - 1) * c < m
+      → butlast (mods i c m n) = butlast (counter i c n)
+
+def Stmt.invs_counter_mod_upper_zero : Prop :=
+  ∀ (b : Int) (m : Int) (n : Nat),
+    0 < b ∧ b < m
+      → (invs (butlast (counter 0 1 n)) (fun k => k % m < b) ↔ integer n - 1 < b)
+
+def Stmt.invs_counter_mod_upper_cases : Prop :=
+  ∀ (b : Int) (i : Int) (m : Int) (n : Nat),
+    0 ≤ i ∧ i < m ∧ b < m
+      → (invs (butlast (counter 0 1 n)) (fun k => (k + i) % m < b)
+           ↔ n = zero ∨ i + integer n - 1 < b)
+
+def Stmt.current_trace_mod_add_const : Prop :=
+  ∀ (x0 : Int) (n : Nat) (m : Int) (c : Int) (hs : List Int) (hhs : length hs = n),
+    0 ≤ x0 ∧ x0 < m
+      → current
+        (trace
+           x0
+           (List.zip (butlast (counter 0 1 n)) hs)
+           (fun x ⟨k, h⟩ => (k + x + c) % m))
+        = current
+          (trace
+             x0
+             (List.zip (butlast (counter 0 1 n)) hs)
+             (fun x ⟨k, h⟩ => k + x + c))
+          % m
+
+def Stmt.current_trace_mod_add_cases : Prop :=
+  ∀ (x0 : Int) (n : Nat) (m : Int) (hs : List Int) (C : Int → Prop) (F : Int → Int) (hhs : length hs = n),
+    0 ≤ x0 ∧ x0 < m
+      → current
+        (trace
+           x0
+           (List.zip (butlast (counter 0 1 n)) hs)
+           (fun x ⟨k, h⟩ => if C k then (x + F k) % m else x))
+        = current
+          (trace
+             x0
+             (List.zip (butlast (counter 0 1 n)) hs)
+             (fun x ⟨k, h⟩ => if C k then x + F k else x))
+          % m
 
 end TEQ

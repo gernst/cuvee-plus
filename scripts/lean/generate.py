@@ -23,7 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 MODULES = ["resources/cuvee/teq.dfy", "resources/cuvee/teq/aggregation.dfy", "resources/cuvee/teq/arithmetic.dfy",
            "resources/cuvee/teq/search.dfy", "resources/cuvee/teq/sorted.dfy",
            "resources/cuvee/teq/arrays.dfy", "resources/cuvee/teq/counters.dfy",
-           "resources/cuvee/teq/strides.dfy"]
+           "resources/cuvee/teq/strides.dfy", "resources/cuvee/teq/unsigned.dfy"]
 
 TRACE = """inductive Trace (α₀ : Type) where
   | stop (last : α₀) : Trace α₀

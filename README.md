@@ -136,7 +136,7 @@ lists them.
   [resources/cuvee/teq](resources/cuvee/teq) (`aggregation`, `arithmetic`,
   `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`, and the
   unmigrated `nested`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
-  `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`) are proved in Lean 4 ([lean/](lean)), except
+  `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`, `unsigned`) are proved in Lean 4 ([lean/](lean)), except
   the bisection of `search` (lean/open.txt), against
   statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
   [teq.dfy](resources/cuvee/teq.dfy) is kept but no longer injected. `-rules` reports the rules that
