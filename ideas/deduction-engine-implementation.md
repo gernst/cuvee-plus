@@ -96,6 +96,49 @@ Verbatim in substance, from the user:
 | P10 | canonical forms (package B): bound variables numbered by position, so that `invs` conditions are looked up modulo renaming and the memos share contexts | open |
 | P11 | triggers and forward facts (package J), the pin in the matcher (E), exit splitting (K), diagnostics (M) | open |
 | P12 | the algorithms of examples/dafny/algorithms in the state form: bsearch (the views of `lo` and `hi` recomputed), merge, sorting | open |
+| P13 | `-fallback` for tuple traces and the Lean printer, the tuples declared for C input under `-teq-state`, the 60 s C benchmarks of the state form | open |
+
+## Adjustments to the plan (Oct 13, 2026, after the first milestone)
+
+Against [deduction-engine-plan.md](deduction-engine-plan.md) as revised by [state-trace-review.md](state-trace-review.md):
+
+- **The main line S1 to S4 is done in the form of the sketch**, not of the plan: the joint trace over tuples (S1),
+  views in place of the projection rewrites and the derived equations (S2, S3), the closed substitution in place of
+  ghost components (S4). S5 (tuple patterns in the lemma language) stays optional: the transpose's lemma is written
+  with nested traces directly. S6 splits: the lowering of tuple traces by `-fallback` and the Lean printer are needed
+  before any C benchmark of the state form, and the C frontend needs the tuples declared (the Dafny prelude has them,
+  C has not: `StateTEQ` should declare `tupleₘ` ahead of the goal when the state lacks it, as the branch declared its
+  datatypes); making `-teq-state -prove` the default is far off.
+- **Package G landed as F plus transitivity, not as matching modulo classes.** A term may be matched by a member of
+  its class only if the member does not contain it, otherwise the rewrite cycles (`a[k]` by `S.2[k] == a[k]`); the
+  implementation restricts this to variables. Matching an arbitrary term modulo its class needs a term order on the
+  members (a member is a definition if it is smaller or does not contain the term) or equality saturation (L), which
+  rewrites nothing in place. G in the plan's full sense is therefore moved behind L, and the term-order variant is a
+  small item on its own.
+- **Package H (arithmetic over classes) changes shape.** With the simplex as the theory, the natural combination is
+  the other way round: equalities that the bounds imply (`lo <= x <= lo`) are merged into the classes, and the
+  solutions of linear equations stay inlined into polynomials as now. The classes do not need polynomial
+  representatives.
+- **Package A (the harness) is needed now, in a TEQ-only form:** the ten state examples, `-teq -prove` against
+  `-teq -simplify` on examples/dafny/teq and examples/c/teq by the number of remaining goals, and the 30 algorithms in
+  the state form; the full suite and the C benchmarks come with S6. The nested_sum difference under `teq:nested` is
+  the first case for it.
+- **The cost model.** The simplex rebuilt per check is affordable on the ten examples but visible (the transpose at
+  three times the sketch); it belongs before the algorithms (P12), since those multiply the checks.
+
+## Next steps, in order
+
+1. P8, the harness: a script that compares `-prove` with `-simplify` by remaining goals on examples/dafny/teq and
+   examples/c/teq, and runs the algorithms in the state form; the nested_sum difference traced.
+2. P9, the simplex: an incremental tableau per context (assert bounds on the copy of the parent's tableau) or a cache
+   of the checks by the constraint set.
+3. P12, the algorithms in the state form, which is the real test of the representation: bsearch first (the views of
+   `lo` and `hi` under guards, recomputed per context on the branch), then merge and the sorts; the module `state.dfy`
+   grows by what they need, the engine by what the matcher lacks (the pin E, the one-point rule over sequences,
+   triggers J), pulled by the examples rather than built ahead.
+4. P13, S6 in parts: `-fallback` for tuple traces, the tuples declared for C input, then the 60 s C benchmarks of the
+   state form against the per-variable form.
+5. P10, canonical forms, once the `invs` lookups or the memo misses show up in P12.
 
 ## How to run
 
@@ -126,4 +169,4 @@ mill -i test.testOnly cuvee.test.prove.*
   architecture, teq, CLAUDE.md, README, the README of the examples; version 0.43.0. Not run: the full test suite.
   A first look at P8: under `-teq -prove` (the per-variable form, the full database) teq/counter, swap and bsearch
   close as under `-simplify`; algorithms/nested_sum with `teq:nested` leaves one goal that `-simplify` closes, to be
-  traced. Nothing committed yet.
+  traced. Committed as 8af7d753 on the branch `prove`.
