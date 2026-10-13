@@ -18,4 +18,5 @@ fi
 if grep -n -w "sorry\|admit" lean/TEQ/*.lean | grep -v -- "-- "; then
   exit 1
 fi
-echo "lean: all lemmas of the database proved ($(grep -c '^example' lean/TEQ/Check.lean) lemmas)"
+echo "lean: all lemmas of the database proved ($(grep -c '^example' lean/TEQ/Check.lean) lemmas," \
+  "$(grep -c '^[a-z]' lean/open.txt) open in lean/open.txt)"

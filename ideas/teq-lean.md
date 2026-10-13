@@ -19,8 +19,17 @@ Open:
   that a change of a stable module fails the Scala tests on machines without Lean (`generate.py --check` does it
   now, but only when called); a Scala change.
 - **The legacy theorems** in `Proofs.lean` (those of lemmas of `legacy/teq.dfy` no longer in the stable modules):
-  move them into a frozen `Legacy.lean`, or drop them with the legacy database; they join the checked part when
-  their modules (search, arrays, counters) become stable and join `MODULES`.
+  move them into a frozen `Legacy.lean`, or drop them with the legacy database. Since Oct 13, 2026 search, sorted,
+  arrays, counters and strides are in `MODULES` too (131 lemmas): the theorems of arrays and counters checked
+  unchanged except `current_trace_bounded` (its guard premise moved to `premises.txt`), the forward facts of search
+  lost their `↔ True`/`↔ False`, sorted and strides were proved anew.
+- **The bisection** (`lean/open.txt`): `-print lean` does not print traces of several accumulators, and the rule with
+  `bisection_lo` and `bisection_hi` is inconsistent under the semantics of an update without a case (TODO.md); with a
+  premise that all steps have `lo < hi` and a printer for tuples of accumulators, the facts follow by induction with
+  `cut_iff` of `Proofs.lean`.
+- **The models of Definitions.lean** fix one meaning of functions that the modules leave uninterpreted: the proofs show
+  the lemmas consistent and true of the described meaning, not of every interpretation; `cut` on an empty interval
+  and the partition points are chosen so (`lower` as the cut of `ar[j] < y`).
 - **A Lean mode of the printer** (`Stmt` definitions and the preamble), replacing the text manipulation of
   `generate.py`; a Scala change.
 - **Guards.** `case g₁ => e₁ case g₂ => e₂` is printed as `if g₁ then e₁ else e₂`, which assumes the guards complete

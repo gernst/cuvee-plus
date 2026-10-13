@@ -301,12 +301,21 @@ Plan:
 ## Proofs of teq.dfy in Lean
 
 - The proofs are in [lean/](lean) (doc/teq.md): the statements of the lemmas of the stable modules (teq.dfy,
-  aggregation, arithmetic) are generated from them (`scripts/lean/generate.py`), the proofs are by hand, and
-  `scripts/lean/check.sh` checks that each lemma is proved as printed. All are proved, no `sorry` remains; the
+  aggregation, arithmetic, search, sorted, arrays, counters, strides) are generated from them
+  (`scripts/lean/generate.py`), the proofs are by hand, and `scripts/lean/check.sh` checks that each lemma is proved
+  as printed. All are proved except the three of [lean/open.txt](lean/open.txt), no `sorry` remains; the
   counterexamples show the premises that are needed: dependencies of equal length, indices within the lists, and
-  complete guards.
+  complete guards. The functions declared without a body (`cut` and the predicates of sorted.dfy) are modelled by hand
+  in `lean/TEQ/Definitions.lean`.
+- **The bisection of search.dfy is inconsistent** as stated: an update whose guards all fail is `unspecified`, a
+  single constant, and for `l0 == h0` and one iteration (no guard holds, since `lo < hi` fails) with `G` false,
+  `bisection_lo` gives `l0 <= current(...).0 <= cut(G, l0, h0) == l0`, i.e. the first component of `unspecified` is
+  `l0` for every `l0`. The facts hold only for the traces of the loop, whose iterations all have `lo < hi`; a premise
+  `invs(for ⌊bisection(...)⌋ check s :: s.0 < s.1)` (and complete guards) on `bisection_lo` and `bisection_hi`, or a
+  third case that keeps the state, would make them true. The three lemmas are not proved, also since `-print lean`
+  does not print traces of several accumulators yet.
 - The premises that the engine does not check are listed in [lean/premises.txt](lean/premises.txt): nine reads and
-  prefixes within the loop and one length. Open: turn the index premises into `requires` where `-prove` decides them
+  prefixes within the loop, two lengths, and one complete guard. Open: turn the index premises into `requires` where `-prove` decides them
   in the contexts of the goals (item 4 above), measured on the tests and the SV-COMP rows, which would shrink the
   list to the soundness gaps proper.
 - The guards of `case` updates are printed as `if g₁ then e₁ else e₂`, which assumes them complete and disjoint;

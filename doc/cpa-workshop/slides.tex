@@ -321,10 +321,10 @@
   \begin{tikzpicture}
     \useasboundingbox (0,0) rectangle (14.4,7.4);
     \program{0.1}{6.4}{8}{for i = 0..n, \ \ s += a[i], {}, for i = 0..n, \ \ s -= a[i], {}, assert, \ \ s == 0}
-    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.0,6.4) {$\mathsf{trace}(s_0, \mathsf{for}\ \bl{K}\ \mathsf{do}\ s, k \mapsto s + a[k])$\\
-        $\rw \concept{\mathsf{sums}(s_0, \mathsf{selects}(a, \bl{K}))}$};
-    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (10.0,4.0) {$\mathsf{trace}(s_1, \mathsf{for}\ \bl{K}\ \mathsf{do}\ s, k \mapsto s - a[k])$\\
-        $\rw s_1 - \concept{\mathsf{sum}(\mathsf{selects}(a, \bl{K}))}$};
+    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.0,6.4) {{\small $\mathsf{current}(\mathsf{trace}(s_0, \mathsf{for}\ \bl{I}\ \mathsf{do}\ s, i \mapsto s + a[i]))$}\\
+        $\rw s_0 + \concept{\mathsf{sum}(\mathsf{selects}(a, \bl{I}))}$};
+    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (10.0,4.0) {{\small $\mathsf{current}(\mathsf{trace}(s_1, \mathsf{for}\ \bl{I}\ \mathsf{do}\ s, i \mapsto s - a[i]))$}\\
+        $\rw s_1 - \concept{\mathsf{sum}(\mathsf{selects}(a, \bl{I}))}$};
     \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L8.east)+(0.15,0)$)}] at (10.0,1.5) {linearity: $s_0 + \mathsf{sum}(\ldots) - \mathsf{sum}(\ldots) = s_0$\\
         \good{no auxiliary function:}\\ \good{sums and linearity are in the database}};
   \end{tikzpicture}

@@ -44,8 +44,8 @@ Each part opens with the claims, the current one in red.
   counter".
 - **Array initialization, by lemmas:** every step is a lemma of the database (`counter_def`, `stores`,
   `current_stores`, …), none is written for the program.
-- **Routine, not trivial --- as TEQs:** the first loop is `sums(…)`, the second subtracts the same sequence,
-  linearity closes it. No auxiliary function: sums and their linearity are in the database.
+- **Routine, not trivial --- as TEQs:** after the first loop, `s` is `s₀ + sum(selects(a, ⌊I⌋))` (the trace is
+  `sums(…)`), after the second, which subtracts the same sequence, `s₁ - sum(selects(a, ⌊I⌋))`; linearity closes it. No auxiliary function: sums and their linearity are in the database.
 - **Two obvious ways to use AI**, both per program: as the verifier (no trust), and as the proof generator
   (checked, but paid per program).
 - The proof a language model generated for an AVL rotation reads like **assembler**. **The same proof, with a

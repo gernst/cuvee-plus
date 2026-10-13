@@ -178,7 +178,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   increasing and bounded values); and `strides.dfy` (`-include teq:strides`:
   the strided stores and stores ahead of the MonoCera benchmarks, see
   [benchmarks/monocera](../benchmarks/monocera), which fix the number of
-  stores and of cases on their left-hand sides and are not proved in Lean).
+  stores and of cases on their left-hand sides).
   The rules of these files never applied on SV-COMP and specific to one task
   stay in the legacy file, among them `mods`, the counters modulo `m` of the
   unsigned variables of C, which the C examples do not need under `-prove`.
@@ -192,10 +192,10 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   which the rules are tried.
   [legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy) is the former single
   file of the per-variable form, from which its modules were split: a backup,
-  not injected. The database is printed as Lean by including the modules
-  without `-teq`, which
-prints them since the feature is not known to the output:
-  `./Cuvee.sh -known dfy -print lean -include teq:core -include teq:arithmetic ... empty.dfy`.
+  not injected. The database is printed as Lean by
+  [scripts/lean/generate.py](../scripts/lean/generate.py), which concatenates
+  the modules into one file and prints it with `-print lean` (with `-teq`, the
+  output hides the database).
 - Injected by the source with `-teq`, after its prelude (`Config.features`):
   Dafny input parses it with its own parser, such that the input can refer to
   its declarations, other input with a fresh Dafny parser; the TEQ transform
@@ -361,8 +361,9 @@ prints them since the feature is not known to the output:
 
 ## The semantics in Lean ([lean/](../lean))
 
-The lemmas of the stable modules, teq.dfy, `aggregation.dfy` and
-`arithmetic.dfy` (`MODULES` of
+The lemmas of the stable modules, teq.dfy, `aggregation.dfy`,
+`arithmetic.dfy`, `search.dfy`, `sorted.dfy`, `arrays.dfy`, `counters.dfy` and
+`strides.dfy` (`MODULES` of
 [scripts/lean/generate.py](../scripts/lean/generate.py)), are proved in Lean 4
 (core, without Mathlib, the toolchain of `lean-toolchain`), in the Lake
 project at the root (`lakefile.toml`, sources in `lean/`):
@@ -375,22 +376,35 @@ project at the root (`lakefile.toml`, sources in `lean/`):
   zips several dependencies, `List.zip d₁ (List.zip d₂ d₃)`, binds their
   values by a tuple, `fun acc ⟨b₁, b₂, b₃⟩ => ...`, and prints guarded cases
   as conditionals.
+- [Definitions.lean](../lean/TEQ/Definitions.lean), by hand: a model of each
+  function that the modules declare without a body and describe in a comment
+  (`cut`, `sorted`, `perm`, `partitioned`, `lower`, `upper`), so that the
+  lemmas about them are proved of the described meaning; the generator drops
+  their printed axioms after checking their types (`DEFINED`). The other
+  functions without a body (`bisection`) stay axioms.
 - [Database.lean](../lean/TEQ/Database.lean), generated: the functions of the
   modules as printed by `-print lean`, and each lemma as a proposition
   `Stmt.<name>` of its printed statement, with the premises of
   [premises.txt](../lean/premises.txt). Sequences are lists, arrays functions,
   `length` is declared in teq.dfy with `{:lean}` as `List.length` of Lean.
 - [Proofs.lean](../lean/TEQ/Proofs.lean), by hand: a theorem of the name of
-  each lemma with its statement, and the auxiliary lemmas; it also keeps the
+  each lemma with its statement (`<name>_rule` for a lemma named like a
+  function, `lower` and `upper` of sorted.dfy, also for its `Stmt`, since the
+  body of `Stmt.lower` would resolve `lower` to it), and the auxiliary lemmas;
+  it also keeps the
   theorems of the lemmas of the former single file
   ([legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy)) that the stable
   modules no longer contain, with the auxiliary predicates of those
-  (`agree_prefix`, `below_prefix`, ...).
+  (`below_prefix`, ...).
 - [Check.lean](../lean/TEQ/Check.lean), generated:
   `example : Stmt.<name> := @<name>` for each lemma, so a lemma whose
   statement changed or that has no proof fails the build.
 - [Counterexamples.lean](../lean/TEQ/Counterexamples.lean), by hand: the
   lemmas without their premises are false.
+- [open.txt](../lean/open.txt): the lemmas without a proof, which the
+  generator removes from the modules before printing, each with the reason:
+  the bisection of search.dfy (`bisection`, `bisection_lo`, `bisection_hi`), a
+  trace of two accumulators, which `-print lean` does not print yet.
 
 The dependencies of a combinator have equal lengths, which `zip` in Lean does
 not assume: `-print lean` adds hypotheses on the lengths to each lemma
@@ -402,8 +416,11 @@ parameter `(n : Nat)` of the lemma. The premises that the printer cannot see
 and that the engine does not check are listed in `premises.txt`, each with the
 reason why the contexts of `-teq` provide it: reads within the loop
 (`integer k < integer n` of `earlier_counter`, `earlier_sums`, ...), prefixes
-not longer than the list (`prefix_counter`), and the lengths of lists that are
-no dependency of a combinator (`sum_consts_prefix`).
+not longer than the list (`prefix_counter`), the lengths of lists that are
+no dependency of a combinator (`sum_consts_prefix`,
+`earlier_not_occurs_prefix`), and complete guards where the last case, printed
+as the `else` branch, is constrained only under its guard
+(`current_trace_bounded`).
 
 - Check with `scripts/lean/check.sh` (about 20 s from scratch): it fails if
   the generated files are not those of the current modules, if the build
@@ -418,8 +435,8 @@ no dependency of a combinator (`sum_consts_prefix`).
   generated file.
 - A module that becomes stable joins `MODULES`; until then, the proofs of its
   lemmas of the former single file stay in Proofs.lean unchecked against its
-  statements. The lemmas of `nested`, `sorting`, and `strides`, and 12 of the 62
-  of `counters`, have no proofs.
+  statements. The lemmas of `nested` have no proofs; a lemma that cannot be
+  proved yet goes to `open.txt` with the reason.
 
 ## The fallback encoding `-fallback` ([Fallback.scala](../src/cuvee/transform/Fallback.scala))
 

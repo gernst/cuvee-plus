@@ -19,3 +19,10 @@ prefix_counter: integer k ≤ integer n -- the prefixes of a counter are cut at 
 
 # lengths that lean.Printer.lengths does not see, since the list is no dependency of a combinator
 sum_consts_prefix: (hjs : length js = n) -- the values of an inner loop, one per iteration of the outer one
+
+# search.dfy
+earlier_not_occurs_prefix: (hxs : length xs = n) -- xs is a list of the loop of n iterations
+
+# counters.dfy: guards that the printer turns into conditionals, the last case into the else branch, which the
+# lemma constrains only under its guard
+current_trace_bounded: (hc : ∀ (y : Int), ¬C1 y ∧ ¬C2 y → C3 y) -- the guards of the cases of an update are complete (doc/teq.md), the loop has no break

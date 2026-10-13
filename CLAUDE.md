@@ -56,8 +56,8 @@ or solvers consume.
   parser or a printer requires, the SV-COMP databases only with
   `CUVEE_SVCOMP=1`.
 - Lean proofs of the stable database modules: `scripts/lean/check.sh`
-  (`--regenerate` after changing teq.dfy, aggregation.dfy, or arithmetic.dfy;
-  see lean/README.md); `lean` works in the repository through
+  (`--regenerate` after changing a module of `MODULES` in
+  scripts/lean/generate.py; see lean/README.md); `lean` works in the repository through
   `lean-toolchain`, `lake` only as `$(elan which lake)`.
 - Run: `mill -i run <options> <file>`. `-print` takes an argument
   (`-print null`).

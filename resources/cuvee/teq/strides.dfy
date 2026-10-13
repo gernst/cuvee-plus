@@ -2,7 +2,7 @@
 // k + 1, ...) or ahead of the iteration (k + 1, then k), taken from benchmarks/monocera/lemmas.dfy on Oct 11, 2026;
 // an optional module over teq.dfy alone (-include teq:strides), which it needed no change for (Oct 13); unlike the
 // other modules, these lemmas fix the number of stores and of cases on their left-hand sides, since a rule matches a
-// fixed shape of nested stores, and they are not proved in Lean yet
+// fixed shape of nested stores; proved in Lean (lean/)
 
 // a loop whose iteration k stores X at 2 k and Y at 2 k + 1 writes disjoint pairs of cells, which cover 0, ..., 2 n - 1;
 // X and Y do not depend on the iteration, since variables of the rule do not capture the bound variables

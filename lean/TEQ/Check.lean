@@ -2,15 +2,22 @@
 --   resources/cuvee/teq.dfy
 --   resources/cuvee/teq/aggregation.dfy
 --   resources/cuvee/teq/arithmetic.dfy
+--   resources/cuvee/teq/search.dfy
+--   resources/cuvee/teq/sorted.dfy
+--   resources/cuvee/teq/arrays.dfy
+--   resources/cuvee/teq/counters.dfy
+--   resources/cuvee/teq/strides.dfy
 -- do not edit: a definition that does not check is fixed in the module or in lean.Printer
 import TEQ.Proofs
 
--- each lemma of the database is proved as printed, with the premises of lean/premises.txt
+-- each lemma of the database is proved as printed, with the premises of lean/premises.txt, by the theorem of its name
+-- (<name>_rule if a function has the name)
 namespace TEQ
 
 example : Stmt.natural_integer := @natural_integer
 example : Stmt.integer_natural := @integer_natural
 example : Stmt.zero_integer := @zero_integer
+example : Stmt.zero_integer_value := @zero_integer_value
 example : Stmt.integer_injective := @integer_injective
 example : Stmt.natural_nonpositive := @natural_nonpositive
 example : Stmt.integer_eq := @integer_eq
@@ -19,7 +26,11 @@ example : Stmt.counter_def := @counter_def
 example : Stmt.consts_def := @consts_def
 example : Stmt.maps_earlier := @maps_earlier
 example : Stmt.maps_counter_affine := @maps_counter_affine
+example : Stmt.invs_const := @invs_const
+example : Stmt.invs_counter_lower := @invs_counter_lower
+example : Stmt.distincts_counter := @distincts_counter
 example : Stmt.invs_counter_upper_nonnegative := @invs_counter_upper_nonnegative
+example : Stmt.invs_counter_upper := @invs_counter_upper
 example : Stmt.current_counter := @current_counter
 example : Stmt.earlier_counter := @earlier_counter
 example : Stmt.prefix_counter := @prefix_counter
@@ -69,6 +80,9 @@ example : Stmt.current_maxs_earlier := @current_maxs_earlier
 example : Stmt.current_mins_initial := @current_mins_initial
 example : Stmt.current_mins_earlier := @current_mins_earlier
 example : Stmt.current_parities := @current_parities
+example : Stmt.select_current_trace_reset_add := @select_current_trace_reset_add
+example : Stmt.current_trace_prefix_sums := @current_trace_prefix_sums
+example : Stmt.current_trace_prefix_sums_add := @current_trace_prefix_sums_add
 example : Stmt.mod_self := @mod_self
 example : Stmt.double_eq_half := @double_eq_half
 example : Stmt.div_below := @div_below
@@ -78,5 +92,58 @@ example : Stmt.pow_two_mod_three := @pow_two_mod_three
 example : Stmt.triangle_bound := @triangle_bound
 example : Stmt.triangle_nonneg := @triangle_nonneg
 example : Stmt.triangle_nonneg_below := @triangle_nonneg_below
+example : Stmt.agree_prefix_def := @agree_prefix_def
+example : Stmt.not_occurs_prefix_def := @not_occurs_prefix_def
+example : Stmt.above_iterations_def := @above_iterations_def
+example : Stmt.earlier_agree_prefix := @earlier_agree_prefix
+example : Stmt.earlier_not_occurs_prefix := @earlier_not_occurs_prefix
+example : Stmt.select_not_occurs_selects_beyond := @select_not_occurs_selects_beyond
+example : Stmt.earlier_above_iterations := @earlier_above_iterations
+example : Stmt.not_occurs_selects_def := @not_occurs_selects_def
+example : Stmt.select_not_occurs_selects := @select_not_occurs_selects
+example : Stmt.sorted_empty := @sorted_empty
+example : Stmt.sorted_short := @sorted_short
+example : Stmt.partitioned_empty := @partitioned_empty
+example : Stmt.partitioned_whole := @partitioned_whole
+example : Stmt.sorted_def := @sorted_def
+example : Stmt.perm_refl := @perm_refl
+example : Stmt.perm_swap := @perm_swap
+example : Stmt.perm_swaps_one := @perm_swaps_one
+example : Stmt.perm_swaps := @perm_swaps
+example : Stmt.perm_steps := @perm_steps
+example : Stmt.perm_steps_two := @perm_steps_two
+example : Stmt.sorted_prefix_steps := @sorted_prefix_steps
+example : Stmt.sorted_prefix_steps_two := @sorted_prefix_steps_two
+example : Stmt.lower_rule := @lower_rule
+example : Stmt.upper_rule := @upper_rule
+example : Stmt.lower_le := @lower_le
+example : Stmt.equal := @equal
+example : Stmt.bounds := @bounds
+example : Stmt.cut_lower := @cut_lower
+example : Stmt.lower_succ := @lower_succ
+example : Stmt.trace_read_initial := @trace_read_initial
+example : Stmt.stores_cases_def := @stores_cases_def
+example : Stmt.stores_index_cases_def := @stores_index_cases_def
+example : Stmt.stores_def_read_unmodified := @stores_def_read_unmodified
+example : Stmt.select_current_trace_reset_keep := @select_current_trace_reset_keep
+example : Stmt.select_store_other := @select_store_other
+example : Stmt.selects_stores_counter := @selects_stores_counter
+example : Stmt.current_trace_conditional_store := @current_trace_conditional_store
+example : Stmt.current_trace_conditional_store_deps := @current_trace_conditional_store_deps
+example : Stmt.current_trace_cap := @current_trace_cap
+example : Stmt.trace_merge_cases_ne := @trace_merge_cases_ne
+example : Stmt.invs_two_phases := @invs_two_phases
+example : Stmt.invs_not_or := @invs_not_or
+example : Stmt.current_trace_constant := @current_trace_constant
+example : Stmt.current_trace_two_phases := @current_trace_two_phases
+example : Stmt.current_trace_catch_up := @current_trace_catch_up
+example : Stmt.current_trace_flag := @current_trace_flag
+example : Stmt.current_trace_increasing := @current_trace_increasing
+example : Stmt.current_trace_bounded := @current_trace_bounded
+example : Stmt.select_current_trace_stride2 := @select_current_trace_stride2
+example : Stmt.select_current_trace_stride3 := @select_current_trace_stride3
+example : Stmt.select_current_trace_stride2_cases := @select_current_trace_stride2_cases
+example : Stmt.select_current_trace_ahead := @select_current_trace_ahead
+example : Stmt.select_current_trace_ahead_down := @select_current_trace_ahead_down
 
 end TEQ

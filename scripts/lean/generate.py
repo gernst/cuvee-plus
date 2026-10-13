@@ -6,7 +6,8 @@
 #
 #   scripts/lean/generate.py [--jar cuvee.jar] [--check]
 #
-# --check compares instead of writing and fails if the files differ, e.g. after a change of a module
+# --check compares instead of writing and fails if the files differ, e.g. after a change of a module; the lemmas of
+# lean/open.txt are removed from the modules before printing
 
 import argparse
 import os
@@ -19,14 +20,25 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # the entry of the database and the optional modules that are stable, in the order of the database
-MODULES = ["resources/cuvee/teq.dfy", "resources/cuvee/teq/aggregation.dfy", "resources/cuvee/teq/arithmetic.dfy"]
+MODULES = ["resources/cuvee/teq.dfy", "resources/cuvee/teq/aggregation.dfy", "resources/cuvee/teq/arithmetic.dfy",
+           "resources/cuvee/teq/search.dfy", "resources/cuvee/teq/sorted.dfy",
+           "resources/cuvee/teq/arrays.dfy", "resources/cuvee/teq/counters.dfy",
+           "resources/cuvee/teq/strides.dfy"]
 
 TRACE = """inductive Trace (α₀ : Type) where
   | stop (last : α₀) : Trace α₀
   | step (first : α₀) (rest : Trace α₀) : Trace α₀"""
 
-# axioms of the printed output that are axioms of the semantics, not lemmas
-AXIOMS = {"unspecified"}
+# functions declared without a body whose meaning is defined in lean/TEQ/Definitions.lean, with their printed types,
+# which the generator checks before it drops the printed axiom
+DEFINED = {
+    "cut": "(Int → Prop) → Int → Int → Int",
+    "sorted": "(Int → Int) → Int → Int → Prop",
+    "perm": "(Int → Int) → (Int → Int) → Prop",
+    "partitioned": "(Int → Int) → Int → Int → Int → Prop",
+    "lower": "(Int → Int) → Int → Int → Int",
+    "upper": "(Int → Int) → Int → Int → Int",
+}
 
 
 def norm(s):
@@ -40,14 +52,42 @@ def run_printer(jar):
         shutil.copy(jar, copy)
         source = os.path.join(tmp, "database.dfy")
         with open(source, "w") as out:
-            for module in MODULES:
-                with open(os.path.join(ROOT, module)) as f:
-                    out.write(f.read() + "\n")
+            out.write(modules())
         result = subprocess.run(["java", "-cp", copy, "cuvee.Cuvee", "-print", "lean", source],
                                 stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120)
         if result.returncode != 0 or result.stderr.strip():
             sys.exit("-print lean failed:\n" + result.stderr)
         return result.stdout
+
+
+# the stable modules concatenated, without the lemmas of lean/open.txt
+def modules():
+    text = ""
+    for module in MODULES:
+        with open(os.path.join(ROOT, module)) as f:
+            text += f.read() + "\n"
+    for name in unproved():
+        # the lemma up to the next blank line
+        text, n = re.subn(r"^lemma (?:\{[^}]*\} )*" + re.escape(name) + r"\b.*?(?=\n\n|\Z)", "", text, flags=re.S | re.M)
+        if n != 1:
+            sys.exit("lean/open.txt names " + name + ", which is not a lemma of the database")
+    return text
+
+
+# the functions and constants that the modules declare, whose printed axioms are declarations, not lemmas
+def declared(text):
+    return set(re.findall(r"^(?:function|const) (?:\{[^}]*\} )*(\w+)", text, re.M))
+
+
+# the lemmas of lean/open.txt, `name -- why`, which have no proof yet and are left out
+def unproved():
+    names = []
+    with open(os.path.join(ROOT, "lean/open.txt")) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                names.append(line.split(" -- ")[0].strip())
+    return names
 
 
 def premises():
@@ -89,8 +129,15 @@ def split_binders(text):
     return binders, text[i + 1:].strip()
 
 
+# the statement and the theorem of a lemma, <name>_rule if a function has the name, which the body of the statement
+# Stmt.<name> would otherwise resolve to it
+def theorem(name, functions):
+    return name + "_rule" if name in functions else name
+
+
 def generate(printed):
     extra = premises()
+    functions = declared(modules())
     blocks = [b for b in printed.strip().split("\n\n") if b.strip()]
     database = []
     lemmas = []
@@ -100,7 +147,15 @@ def generate(printed):
                 sys.exit("the printed datatype of traces differs from that of Semantics.lean:\n" + block)
             continue
         m = re.match(r"(?:@\[simp\] )?axiom (\S+)(.*)", block, re.S)
-        if m and m.group(1) not in AXIOMS:
+        # a declared function or constant, whose axiom has no explicit binders, unlike a lemma of the same name
+        if m and m.group(1) in functions and not any(b.startswith("(") for b in split_binders(m.group(2))[0]):
+            if m.group(1) not in DEFINED:
+                database.append(block)
+                continue
+            if norm(m.group(2)) != ": " + DEFINED[m.group(1)]:
+                sys.exit("the printed type of " + m.group(1) + " differs from that of Definitions.lean:\n" + block)
+            continue
+        if m:
             name = m.group(1)
             binders, statement = split_binders(m.group(2))
             for premise in extra.pop(name, []):
@@ -110,8 +165,8 @@ def generate(printed):
                     statement = premise + " →\n    (" + statement.replace("\n", "\n   ") + ")"
             quantifier = "∀ " + " ".join(binders) + ",\n    " if binders else ""
             statement = statement.replace("\n", "\n  ")
-            database.append(f"def Stmt.{name} : Prop :=\n  {quantifier}{statement}")
-            lemmas.append(name)
+            database.append(f"def Stmt.{theorem(name, functions)} : Prop :=\n  {quantifier}{statement}")
+            lemmas.append(theorem(name, functions))
         else:
             database.append(block)
     if extra:
@@ -120,7 +175,7 @@ def generate(printed):
     header = "-- generated by scripts/lean/generate.py with -print lean and the premises of lean/premises.txt from\n" + \
         "".join(f"--   {module}\n" for module in MODULES) + \
         "-- do not edit: a definition that does not check is fixed in the module or in lean.Printer\n"
-    database_lean = header + """import TEQ.Semantics
+    database_lean = header + """import TEQ.Definitions
 
 open Classical
 
@@ -134,7 +189,8 @@ open List (nil cons length)
 """ + "\n\n".join(database) + "\n\nend TEQ\n"
     check_lean = header + """import TEQ.Proofs
 
--- each lemma of the database is proved as printed, with the premises of lean/premises.txt
+-- each lemma of the database is proved as printed, with the premises of lean/premises.txt, by the theorem of its name
+-- (<name>_rule if a function has the name)
 namespace TEQ
 
 """ + "\n".join(f"example : Stmt.{name} := @{name}" for name in lemmas) + "\n\nend TEQ\n"

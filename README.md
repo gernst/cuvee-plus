@@ -134,8 +134,9 @@ lists them.
   `counters`, `aggregation`, `arrays`, `search`) once at the beginning of its
   output, whose rewrite rules `-simplify` applies, e.g. the counter lemma;
   `-include teq:<concept>` adds a further module (`nested`, `sorting`,
-  `strides`). The lemmas of the stable modules (teq.dfy, `aggregation`,
-  `arithmetic`) are proved in Lean 4 ([lean/](lean)), against
+  `strides`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
+  `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`) are proved in Lean 4 ([lean/](lean)), except
+  the bisection of `search` (lean/open.txt), against
   statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
   [teq.dfy](resources/cuvee/teq.dfy) is kept but no longer injected. `-rules` reports the rules that
   each `-simplify` applies to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain

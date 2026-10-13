@@ -15,21 +15,9 @@ open Nat (zero succ)
 open List (nil cons length)
 open Trace
 
--- auxiliary predicates of the lemmas of the former single file (legacy/teq.dfy), abstractions of iteration
--- constraints, defined by recursion over the positions
-
--- the first n values of xs and ys agree
-def agree_prefix (n : Nat) (xs : List Int)
-                 (ys : List Int) : Prop :=
-  match n with
-  | .zero => True
-  | .succ m => agree_prefix m xs ys ∧ earlier m xs = earlier m ys
-
--- the first n values of ts exceed their positions
-def above_iterations (n : Nat) (ts : List Int) : Prop :=
-  match n with
-  | .zero => True
-  | .succ m => above_iterations m ts ∧ integer m < earlier m ts
+-- auxiliary predicates of the lemmas of the former single file (legacy/teq.dfy) that are not in the stable modules,
+-- abstractions of iteration constraints, defined by recursion over the positions (agree_prefix and above_iterations
+-- are those of search.dfy)
 
 -- the first n values of xs are at most b, and nonnegative, for the values chosen in each of n iterations
 def below_prefix (n : Nat) (xs : List Int) (b : Int) : Prop :=
@@ -203,8 +191,11 @@ theorem natural_integer (n : Nat) : natural (integer n) = n :=
 theorem integer_natural (x : Int) : 0 ≤ x → integer (natural x) = x :=
   by intro h; simp [natural_eq, integer_cast]; omega
 
-theorem zero_integer (n : Nat) : n = zero ↔ integer n = 0 :=
+theorem zero_integer (n : Nat) : integer n = 0 ↔ n = zero :=
   by cases n <;> simp [integer_cast] <;> omega
+
+theorem zero_integer_value (n : Nat) : n = zero → integer n = 0 :=
+  (zero_integer n).2
 
 -- loops whose numbers of iterations have the same value, e.g. N for loops in sequence, iterate equally often
 -- (from ss1)
@@ -1572,10 +1563,9 @@ theorem earlier_prefix {α : Type} [Inhabited α] (j : Nat) (k : Nat)
 theorem earlier_agree_prefix (n : Nat) (j : Nat) (xs : List Int)
                                    (ys : List Int) :
   agree_prefix n xs ys ∧ integer j < integer n
-    → (earlier j xs = earlier j ys ↔ True) :=
+    → earlier j xs = earlier j ys :=
   by
     intro ⟨h, hj⟩
-    simp only [iff_true]
     simp only [integer_cast] at hj
     induction n with
     | zero => omega
@@ -1589,22 +1579,21 @@ theorem earlier_agree_prefix (n : Nat) (j : Nat) (xs : List Int)
 -- (from standard_find_ground-1)
 theorem earlier_not_occurs_prefix (n : Nat) (j : Nat) (e : Int)
                                         (xs : List Int) (hxs : length xs = n) :
-  ¬occurs e («prefix» n xs) ∧ integer j < integer n → (earlier j xs = e ↔ False) :=
+  ¬occurs e («prefix» n xs) ∧ integer j < integer n → earlier j xs ≠ e :=
   by
     intro ⟨h1, h2⟩
     rw [not_occurs_prefix_forall n xs e hxs] at h1
     simp only [integer_cast] at h2
-    exact iff_false_intro (h1 j (by omega))
+    exact h1 j (by omega)
 
 -- the same for reads of an array, at the positions k of the counter
 -- (from lsearch)
 theorem select_not_occurs_selects (a : Int → Int) (x : Int) (i : Int)
                                         (n : Nat) (k : Int) :
   ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + integer n
-    → (a k = x ↔ False) :=
+    → a k ≠ x :=
   by
     intro ⟨h, h1, h2⟩
-    simp only [iff_false]
     intro e
     apply h
     rw [integer_cast] at h2
@@ -1625,7 +1614,7 @@ theorem select_not_occurs_selects_beyond (n : Nat) (j : Int) (x : Int)
   by
     intro ⟨h, e, hj⟩
     rcases Int.lt_or_le j (integer n) with hlt | hle
-    · exact ((select_not_occurs_selects a x 0 n j ⟨h, hj, by omega⟩).mp e).elim
+    · exact (select_not_occurs_selects a x 0 n j ⟨h, hj, by omega⟩ e).elim
     · exact hle
 
 theorem select_store_other {α β : Type} [Inhabited α] [Inhabited β] (a : α → β)
@@ -3027,13 +3016,13 @@ theorem current_trace_increasing (x0 : Int) (n : Nat) (a : Int) (b : Int)
 theorem current_trace_bounded (x0 : Int) (n : Nat) (lo : Int) (hi : Int)
                                     (C1 : Int → Prop) (C2 : Int → Prop)
                                     (C3 : Int → Prop) (F1 : Int → Int)
-                                    (F2 : Int → Int) (F3 : Int → Int) :
+                                    (F2 : Int → Int) (F3 : Int → Int)
+                                    (hc : ∀ (y : Int), ¬C1 y ∧ ¬C2 y → C3 y) :
   lo ≤ x0
     ∧ x0 ≤ hi
     ∧ (∀ (y : Int), lo ≤ y ∧ y ≤ hi ∧ C1 y → lo ≤ F1 y ∧ F1 y ≤ hi)
     ∧ (∀ (y : Int), lo ≤ y ∧ y ≤ hi ∧ C2 y → lo ≤ F2 y ∧ F2 y ≤ hi)
     ∧ (∀ (y : Int), lo ≤ y ∧ y ≤ hi ∧ C3 y → lo ≤ F3 y ∧ F3 y ≤ hi)
-    ∧ (∀ (y : Int), ¬C1 y ∧ ¬C2 y → C3 y)
     → (lo
          ≤ current
            (trace
@@ -3048,7 +3037,7 @@ theorem current_trace_bounded (x0 : Int) (n : Nat) (lo : Int) (hi : Int)
            ≤ hi
          ↔ True) :=
   by
-    intro ⟨h1, h2, f1, f2, f3, hc⟩
+    intro ⟨h1, h2, f1, f2, f3⟩
     simp only [iff_true]
     suffices g : ∀ s x, lo ≤ x ∧ x ≤ hi → lo ≤ current (trace x (butlast (counter s 1 n))
         (fun x k => if C1 x then F1 x else if C2 x then F2 x else F3 x)) ∧ current (trace x (butlast (counter s 1 n))
@@ -3070,10 +3059,9 @@ theorem current_trace_bounded (x0 : Int) (n : Nat) (lo : Int) (hi : Int)
 -- (from simple_array_index_value_2)
 theorem earlier_above_iterations (n : Nat) (j : Nat) (ts : List Int) :
   above_iterations n ts ∧ integer j < integer n
-    → (integer j < earlier j ts ↔ True) :=
+    → integer j < earlier j ts :=
   by
     intro ⟨h, hj⟩
-    simp only [iff_true]
     simp only [integer_cast] at hj
     induction n with
     | zero => omega
@@ -3336,5 +3324,400 @@ theorem invs_two_phases (x0 : Int) (n : Nat) (b : Int) (c : Int)
         have := mono i (t - i)
         rw [show i + (t - i) = t by omega] at this
         exact Int.lt_of_le_of_lt this h
+
+-- sorted.dfy: sorted, perm and partitioned as defined in Definitions.lean
+
+theorem sorted_empty (a : Int → Int) (lo : Int) : sorted a lo lo ↔ True := by
+  simp only [sorted, iff_true]; intro i j h1 h2 h3; omega
+
+theorem sorted_short (a : Int → Int) (lo hi : Int) : hi ≤ lo + 1 → (sorted a lo hi ↔ True) := by
+  intro h; simp only [sorted, iff_true]; intro i j h1 h2 h3
+  rw [show j = i by omega]; exact Int.le_refl _
+
+theorem partitioned_empty (a : Int → Int) (lo hi : Int) : partitioned a lo lo hi ↔ True := by
+  simp only [partitioned, iff_true]; intro i j h1 h2 h3 h4; omega
+
+theorem partitioned_whole (a : Int → Int) (lo hi : Int) : partitioned a lo hi hi ↔ True := by
+  simp only [partitioned, iff_true]; intro i j h1 h2 h3 h4; omega
+
+theorem sorted_mono (a : Int → Int) (lo hi hi' : Int) : hi' ≤ hi → sorted a lo hi → sorted a lo hi' :=
+  fun h hs i j h1 h2 h3 => hs i j h1 h2 (by omega)
+
+-- adjacent pairs along two counters
+theorem invs_adjacent (a : Int → Int) (s : Int) (n : Nat) :
+    invs (List.zip (butlast (counter s 1 n)) (butlast (counter (s + 1) 1 n))) (fun ⟨k, i⟩ => a k ≤ a i)
+      ↔ ∀ k, s ≤ k → k < s + n → a k ≤ a (k + 1) := by
+  induction n generalizing s with
+  | zero => simp [counter, butlast, invs]; intro k h1 h2; omega
+  | succ m ih =>
+    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons]
+    simp only [invs]; rw [ih (s + 1)]
+    constructor
+    · intro ⟨h, hs⟩ k h1 h2
+      by_cases e : k = s
+      · subst e; exact h
+      · exact hs k (by omega) (by omega)
+    · intro h; exact ⟨h s (by omega) (by omega), fun k h1 h2 => h k (by omega) (by omega)⟩
+
+theorem sorted_def (a : Int → Int) (n : Nat) :
+    invs (List.zip (butlast (counter 0 1 n)) (butlast (counter 1 1 n))) (fun ⟨k, i⟩ => a k ≤ a i)
+      ↔ sorted a 0 (integer n + 1) := by
+  have := invs_adjacent a 0 n
+  simp only [Int.zero_add] at this
+  rw [this, integer_cast]
+  constructor
+  · intro h i j h1 h2 h3
+    have step : ∀ d : Nat, i + d < n + 1 → a i ≤ a (i + d) := by
+      intro d
+      induction d with
+      | zero => intro _; simp
+      | succ d ih =>
+        intro hd
+        have := h (i + d) (by omega) (by omega)
+        rw [show i + ((d + 1 : Nat) : Int) = i + d + 1 by omega]
+        exact Int.le_trans (ih (by omega)) this
+    have := step (j - i).toNat (by omega)
+    rwa [show i + ((j - i).toNat : Int) = j by omega] at this
+  · intro h k h1 h2; exact h k (k + 1) h1 (by omega) (by omega)
+
+theorem perm_refl (a : Int → Int) : perm a a ↔ True :=
+  iff_true_intro ⟨id, id, fun _ => rfl, fun _ => rfl, fun _ => rfl⟩
+
+theorem perm_symm {a b : Int → Int} : perm a b → perm b a := by
+  intro ⟨f, g, hgf, hfg, h⟩
+  exact ⟨g, f, hfg, hgf, fun i => by rw [h (g i), hfg]⟩
+
+theorem perm_trans {a b c : Int → Int} : perm a b → perm b c → perm a c := by
+  intro ⟨f, g, hgf, hfg, h⟩ ⟨f', g', hgf', hfg', h'⟩
+  exact ⟨fun i => f' (f i), fun i => g (g' i), fun i => by simp [hgf', hgf], fun i => by simp [hfg, hfg'],
+    fun i => by rw [h, h']⟩
+
+-- a permutation of a, b, gives the permutations of a those of b
+theorem perm_congr {a b : Int → Int} (c : Int → Int) : perm a b → (perm a c ↔ perm b c) :=
+  fun h => ⟨fun h' => perm_trans (perm_symm h) h', fun h' => perm_trans h h'⟩
+
+theorem perm_swap_self (a : Int → Int) (p q : Int) :
+    perm (fun j => if j = q then a p else (fun j => if j = p then a q else a j) j) a := by
+  let t : Int → Int := fun j => if j = q then p else if j = p then q else j
+  refine ⟨t, t, ?_, ?_, ?_⟩ <;> intro i <;> simp only [t] <;>
+    by_cases h1 : i = q <;> by_cases h2 : i = p <;> by_cases h3 : p = q <;> simp_all
+
+theorem perm_swap (a b : Int → Int) (p q : Int) :
+    perm (fun j => if j = q then a p else (fun j => if j = p then a q else a j) j) b ↔ perm a b :=
+  perm_congr b (perm_swap_self a p q)
+
+theorem perm_steps (a c : Int → Int) (ks : List Int) (F : (Int → Int) → Int → Int → Int) (n : Nat)
+    (hks : length ks = n) :
+    (∀ (b : Int → Int) (k : Int), perm (F b k) b)
+      → (perm (current (trace a ks (fun b k => F b k))) c ↔ perm a c) := by
+  intro hF
+  induction ks generalizing a n with
+  | nil => simp [trace, current]
+  | cons k ks ih =>
+    simp only [trace, current]
+    rw [ih (F a k) ks.length rfl]
+    exact perm_congr c (hF a k)
+
+theorem perm_steps_two (a c : Int → Int) (ks is : List Int) (F : (Int → Int) → Int → Int → Int → Int) (n : Nat)
+    (hks : length ks = n) (his : length is = n) :
+    (∀ (b : Int → Int) (k : Int) (i : Int), perm (F b k i) b)
+      → (perm (current (trace a (List.zip ks is) (fun b ⟨k, i⟩ => F b k i))) c ↔ perm a c) := by
+  intro hF
+  induction ks generalizing a is n with
+  | nil => simp [trace, current]
+  | cons k ks ih =>
+    cases is with
+    | nil => simp [trace, current]
+    | cons i is =>
+      rw [List.zip_cons_cons]; simp only [trace, current]
+      rw [ih (F a k i) is ks.length rfl (by simp at hks his; omega)]
+      exact perm_congr c (hF a k i)
+
+theorem perm_swaps_one (a b : Int → Int) (ks : List Int) (P Q : (Int → Int) → Int → Int) (n : Nat)
+    (hks : length ks = n) :
+    perm (current (trace a ks (fun x k => fun j =>
+        if j = Q x k then x (P x k) else (fun j => if j = P x k then x (Q x k) else x j) j))) b
+      ↔ perm a b :=
+  perm_steps a b ks _ n hks (fun x k => perm_swap_self x (P x k) (Q x k))
+
+theorem perm_swaps (a b : Int → Int) (ks hs : List Int) (P Q : (Int → Int) → Int → Int → Int) (n : Nat)
+    (hks : length ks = n) (hhs : length hs = n) :
+    perm (current (trace a (List.zip ks hs) (fun x ⟨k, h⟩ => fun j =>
+        if j = Q x k h then x (P x k h) else (fun j => if j = P x k h then x (Q x k h) else x j) j))) b
+      ↔ perm a b :=
+  perm_steps_two a b ks hs _ n hks hhs (fun x k h => perm_swap_self x (P x k h) (Q x k h))
+
+theorem sorted_prefix_steps (a : Int → Int) (n : Int) (m : Nat) (F : (Int → Int) → Int → Int → Int) :
+    n = integer m
+      ∧ (∀ (b : Int → Int) (k : Int),
+           0 ≤ k ∧ k < n ∧ sorted b 0 k ∧ partitioned b 0 k n
+             → sorted (F b k) 0 (k + 1) ∧ partitioned (F b k) 0 (k + 1) n)
+      → (sorted (current (trace a (butlast (counter 0 1 m)) (fun b k => F b k))) 0 n ↔ True) := by
+  intro ⟨hn, hF⟩
+  rw [integer_cast] at hn
+  have : ∀ (r : Nat) (b : Int → Int) (k : Int), 0 ≤ k → k + r = n → sorted b 0 k ∧ partitioned b 0 k n →
+      sorted (current (trace b (butlast (counter k 1 r)) (fun b k => F b k))) 0 n := by
+    intro r
+    induction r with
+    | zero => intro b k _ hk h; simp only [counter, butlast, trace, current]; rw [← hk]; simpa using h.1
+    | succ r ih =>
+      intro b k h0 hk h
+      rw [butlast_counter_succ]; simp only [trace, current]
+      exact ih (F b k) (k + 1) (by omega) (by omega) (hF b k ⟨h0, by omega, h.1, h.2⟩)
+  exact iff_true_intro (this m a 0 (by omega) (by omega)
+    ⟨(sorted_empty a 0).2 trivial, (partitioned_empty a 0 n).2 trivial⟩)
+
+theorem sorted_prefix_steps_two (a : Int → Int) (n : Int) (m : Nat) (F : (Int → Int) → Int → Int → Int → Int) :
+    n ≤ integer m + 1
+      ∧ (∀ (b : Int → Int) (k : Int) (i : Int), 0 ≤ i ∧ sorted b 0 i → sorted (F b k i) 0 (i + 1))
+      → (sorted (current (trace a (List.zip (butlast (counter 0 1 m)) (butlast (counter 1 1 m)))
+            (fun b ⟨k, i⟩ => F b k i))) 0 n ↔ True) := by
+  intro ⟨hn, hF⟩
+  rw [integer_cast] at hn
+  have : ∀ (r : Nat) (b : Int → Int) (s : Int), 0 ≤ s → sorted b 0 (s + 1) →
+      sorted (current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter (s + 1) 1 r)))
+        (fun b ⟨k, i⟩ => F b k i))) 0 (s + 1 + r) := by
+    intro r
+    induction r with
+    | zero => intro b s _ h; simpa [counter, butlast, trace, current] using h
+    | succ r ih =>
+      intro b s h0 h
+      rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons]; simp only [trace, current]
+      have := ih (F b s (s + 1)) (s + 1) (by omega) (hF b s (s + 1) ⟨by omega, h⟩)
+      rwa [show s + 1 + 1 + (r : Int) = s + 1 + ((r + 1 : Nat) : Int) by omega] at this
+  have := this m a 0 (by omega) ((sorted_short a 0 (0 + 1)) (by omega) |>.2 trivial)
+  exact iff_true_intro (sorted_mono _ 0 _ n (by omega) this)
+
+-- the cut and the partition points
+
+theorem cutFrom_bounds (G : Int → Prop) (l : Int) (n : Nat) : l ≤ cutFrom G l n ∧ cutFrom G l n ≤ l + n := by
+  induction n generalizing l with
+  | zero => simp [cutFrom]
+  | succ n ih =>
+    simp only [cutFrom]
+    split
+    · have := ih (l + 1); omega
+    · omega
+
+theorem cutFrom_holds (G : Int → Prop) (l : Int) (n : Nat) : ∀ j, l ≤ j → j < cutFrom G l n → G j := by
+  induction n generalizing l with
+  | zero => simp [cutFrom]; intro j h1 h2; omega
+  | succ n ih =>
+    intro j h1 h2
+    simp only [cutFrom] at h2
+    split at h2
+    · by_cases e : j = l
+      · subst e; assumption
+      · exact ih (l + 1) j (by omega) h2
+    · omega
+
+theorem cutFrom_fails (G : Int → Prop) (l : Int) (n : Nat) : cutFrom G l n < l + n → ¬G (cutFrom G l n) := by
+  induction n generalizing l with
+  | zero => simp [cutFrom]
+  | succ n ih =>
+    simp only [cutFrom]
+    split
+    · intro h; exact ih (l + 1) (by omega)
+    · intro _; assumption
+
+theorem cutFrom_mono (G G' : Int → Prop) (l : Int) (n : Nat) :
+    (∀ j, G j → G' j) → cutFrom G l n ≤ cutFrom G' l n := by
+  intro h
+  induction n generalizing l with
+  | zero => simp [cutFrom]
+  | succ n ih =>
+    simp only [cutFrom]
+    split
+    · rw [if_pos (h l (by assumption))]; exact ih (l + 1)
+    · split
+      · have := cutFrom_bounds G' (l + 1) n; omega
+      · exact Int.le_refl _
+
+theorem cut_bounds (G : Int → Prop) (l h : Int) : l ≤ h → l ≤ cut G l h ∧ cut G l h ≤ h := by
+  intro hl; have := cutFrom_bounds G l (h - l).toNat; simp only [cut]; omega
+
+-- on a predicate that holds on a prefix of [l, h), the cut separates where it holds
+theorem cut_iff (G : Int → Prop) (l h m : Int) :
+    (∀ p q, l ≤ p → p ≤ q → q < h → G q → G p) → l ≤ m → m < h → (G m ↔ m < cut G l h) := by
+  intro hG h1 h2
+  have hb := cutFrom_bounds G l (h - l).toNat
+  simp only [cut]
+  constructor
+  · intro hm
+    apply Classical.byContradiction
+    intro hc
+    exact cutFrom_fails G l (h - l).toNat (by omega) (hG _ m (by omega) (by omega) h2 hm)
+  · intro hm; exact cutFrom_holds G l (h - l).toNat m h1 hm
+
+theorem lower_iff (ar : Int → Int) (len y m : Int) :
+    sorted ar 0 len → 0 ≤ m → m < len → (ar m < y ↔ m < lower ar len y) :=
+  fun hs h1 h2 => cut_iff _ 0 len m (fun p q hp hpq hq hy => Int.lt_of_le_of_lt (hs p q hp hpq hq) hy) h1 h2
+
+theorem upper_iff (ar : Int → Int) (len y m : Int) :
+    sorted ar 0 len → 0 ≤ m → m < len → (ar m ≤ y ↔ m < upper ar len y) :=
+  fun hs h1 h2 => cut_iff _ 0 len m (fun p q hp hpq hq hy => Int.le_trans (hs p q hp hpq hq) hy) h1 h2
+
+theorem lower_rule (ar : Int → Int) (len y m : Int) :
+    sorted ar 0 len ∧ 0 ≤ m ∧ m < len → (ar m < y ↔ m < lower ar len y) :=
+  fun ⟨hs, h1, h2⟩ => lower_iff ar len y m hs h1 h2
+
+theorem upper_rule (ar : Int → Int) (len y m : Int) :
+    sorted ar 0 len ∧ 0 ≤ m ∧ m < len → (y < ar m ↔ upper ar len y ≤ m) := by
+  intro ⟨hs, h1, h2⟩; have := upper_iff ar len y m hs h1 h2; omega
+
+theorem lower_le (ar : Int → Int) (len y m : Int) :
+    sorted ar 0 len ∧ 0 ≤ m ∧ m < len → (y ≤ ar m ↔ lower ar len y ≤ m) := by
+  intro ⟨hs, h1, h2⟩; have := lower_iff ar len y m hs h1 h2; omega
+
+theorem equal (ar : Int → Int) (len y m : Int) :
+    sorted ar 0 len ∧ 0 ≤ m ∧ m < len → (ar m = y ↔ lower ar len y ≤ m ∧ m < upper ar len y) := by
+  intro ⟨hs, h1, h2⟩
+  have := lower_iff ar len y m hs h1 h2
+  have := upper_iff ar len y m hs h1 h2
+  omega
+
+theorem bounds (ar : Int → Int) (len y : Int) :
+    sorted ar 0 len ∧ 0 ≤ len → 0 ≤ lower ar len y ∧ lower ar len y ≤ upper ar len y ∧ upper ar len y ≤ len := by
+  intro ⟨_, hl⟩
+  have := cut_bounds (fun j => ar j < y) 0 len hl
+  have := cut_bounds (fun j => ar j ≤ y) 0 len hl
+  have := cutFrom_mono (fun j => ar j < y) (fun j => ar j ≤ y) 0 (len - 0).toNat (fun j h => Int.le_of_lt h)
+  simp only [lower, upper, cut] at *
+  omega
+
+theorem cut_lower (ar : Int → Int) (len y : Int) :
+    sorted ar 0 len ∧ 0 ≤ len → cut (fun (j : Int) => ar j < y) 0 len = lower ar len y :=
+  fun _ => rfl
+
+theorem lower_succ (ar : Int → Int) (len y : Int) : sorted ar 0 len → lower ar len (y + 1) = upper ar len y := by
+  intro _
+  simp only [lower, upper]
+  congr 1; funext j; apply propext; omega
+
+-- strides.dfy: induction over the remaining iterations, from the iteration s, with the read at j as the invariant
+
+theorem trace_cons {α β : Type} (x : α) (d : β) (ds : List β) (f : α → β → α) :
+    trace x (d :: ds) f = .step x (trace (f x d) ds f) := rfl
+
+theorem current_step_eq {α : Type} [Inhabited α] (x : α) (t : Trace α) : current (.step x t) = current t := rfl
+
+theorem current_trace_nil {α β : Type} [Inhabited α] (x : α) (f : α → β → α) : current (trace x [] f) = x := rfl
+
+theorem stride2_from (X Y j : Int) (r : Nat) : ∀ (b : Int → Int) (s u : Int),
+    current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter u 1 r)))
+      (fun a ⟨k, i⟩ => fun j => if j = 2 * k + 1 then Y else (fun j => if j = 2 * k then X else a j) j)) j
+      = (if 2 * s ≤ j ∧ j < 2 * (s + r) then if j % 2 = 0 then X else Y else b j) := by
+  induction r with
+  | zero => intro b s u; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+  | succ r ih =>
+    intro b s u
+    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih]
+    dsimp only
+    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+theorem select_current_trace_stride2 (a0 : Int → Int) (n : Nat) (X Y j : Int) :
+    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
+      (fun a ⟨k, i⟩ => fun j => if j = 2 * k + 1 then Y else (fun j => if j = 2 * k then X else a j) j)) j
+      = (if 0 ≤ j ∧ j < 2 * integer n then if j % 2 = 0 then X else Y else a0 j) := by
+  rw [stride2_from, integer_cast]; simp only [Int.mul_zero, Int.zero_add]
+
+theorem stride3_from (X Y Z j : Int) (r : Nat) : ∀ (b : Int → Int) (s u : Int),
+    current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter u 1 r)))
+      (fun a ⟨k, i⟩ => fun j => if j = 3 * k + 2 then Z else
+        (fun j => if j = 3 * k + 1 then Y else (fun j => if j = 3 * k then X else a j) j) j)) j
+      = (if 3 * s ≤ j ∧ j < 3 * (s + r) then if j % 3 = 0 then X else if j % 3 = 1 then Y else Z else b j) := by
+  induction r with
+  | zero => intro b s u; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+  | succ r ih =>
+    intro b s u
+    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih]
+    dsimp only
+    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+theorem select_current_trace_stride3 (a0 : Int → Int) (n : Nat) (X Y Z j : Int) :
+    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
+      (fun a ⟨k, i⟩ => fun j => if j = 3 * k + 2 then Z else
+        (fun j => if j = 3 * k + 1 then Y else (fun j => if j = 3 * k then X else a j) j) j)) j
+      = (if 0 ≤ j ∧ j < 3 * integer n then if j % 3 = 0 then X else if j % 3 = 1 then Y else Z else a0 j) := by
+  rw [stride3_from, integer_cast]; simp only [Int.mul_zero, Int.zero_add]
+
+theorem stride2_cases_from (P Q : Prop) (X1 Y1 X2 Y2 X3 Y3 j : Int) (r : Nat) : ∀ (b : Int → Int) (s u : Int),
+    current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter u 1 r)))
+      (fun a ⟨k, i⟩ =>
+        if P then fun j => if j = 2 * k + 1 then Y1 else (fun j => if j = 2 * k then X1 else a j) j
+        else if Q then fun j => if j = 2 * k + 1 then Y2 else (fun j => if j = 2 * k then X2 else a j) j
+        else fun j => if j = 2 * k + 1 then Y3 else (fun j => if j = 2 * k then X3 else a j) j)) j
+      = (if 2 * s ≤ j ∧ j < 2 * (s + r) then
+           if j % 2 = 0 then (if P then X1 else if Q then X2 else X3) else (if P then Y1 else if Q then Y2 else Y3)
+         else b j) := by
+  induction r with
+  | zero => intro b s u; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+  | succ r ih =>
+    intro b s u
+    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih]
+    dsimp only
+    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+theorem select_current_trace_stride2_cases (a0 : Int → Int) (n : Nat) (P Q R : Prop) (X1 Y1 X2 Y2 X3 Y3 j : Int) :
+    (R ↔ ¬P ∧ ¬Q) →
+    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 1 1 n)))
+      (fun a ⟨k, i⟩ =>
+        if P then fun j => if j = 2 * k + 1 then Y1 else (fun j => if j = 2 * k then X1 else a j) j
+        else if Q then fun j => if j = 2 * k + 1 then Y2 else (fun j => if j = 2 * k then X2 else a j) j
+        else fun j => if j = 2 * k + 1 then Y3 else (fun j => if j = 2 * k then X3 else a j) j)) j
+      = (if 0 ≤ j ∧ j < 2 * integer n then
+           if j % 2 = 0 then (if P then X1 else if Q then X2 else X3) else (if P then Y1 else if Q then Y2 else Y3)
+         else a0 j) := by
+  intro _; rw [stride2_cases_from, integer_cast]; simp only [Int.mul_zero, Int.zero_add]
+
+theorem ahead_from (m : Int) (F G : Int → Int) (j : Int) (r : Nat) : ∀ (b : Int → Int) (s : Int), s + r ≤ m →
+    current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter s 1 r)))
+      (fun a ⟨k, i⟩ =>
+        if k + 1 < m then fun j => if j = k then G k else (fun j => if j = k + 1 then F k else a j) j
+        else fun j => if j = k then G k else a j)) j
+      = (if s ≤ j ∧ j < s + r then G j else if j = s + r ∧ 0 < r ∧ j < m then F (j - 1) else b j) := by
+  induction r with
+  | zero => intro b s _; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+  | succ r ih =>
+    intro b s hm
+    rw [butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih _ _ (by omega)]
+    dsimp only
+    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+theorem select_current_trace_ahead (a0 : Int → Int) (n : Nat) (m : Int) (F G : Int → Int) (j : Int) :
+    integer n ≤ m →
+    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
+      (fun a ⟨k, i⟩ =>
+        if k + 1 < m then fun j => if j = k then G k else (fun j => if j = k + 1 then F k else a j) j
+        else fun j => if j = k then G k else a j)) j
+      = (if 0 ≤ j ∧ j < integer n then G j else if j = integer n ∧ 0 < j ∧ j < m then F (j - 1) else a0 j) := by
+  intro h
+  rw [integer_cast] at *
+  rw [ahead_from m F G j n a0 0 (by omega)]
+  (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+theorem ahead_down_from (F G : Int → Int) (j : Int) (r : Nat) : ∀ (b : Int → Int) (t s : Int),
+    current (trace b (List.zip (butlast (counter t 1 r)) (butlast (counter s (-1) r)))
+      (fun a ⟨k, i⟩ =>
+        if 1 ≤ i then fun j => if j = i then G i else (fun j => if j = i + -1 then F i else a j) j
+        else fun j => if j = i then G i else a j)) j
+      = (if s - r < j ∧ j ≤ s then G j else if j = s - r ∧ 0 ≤ j ∧ 0 < r then F (j + 1) else b j) := by
+  induction r with
+  | zero => intro b t s; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+  | succ r ih =>
+    intro b t s
+    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih]
+    dsimp only
+    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+theorem select_current_trace_ahead_down (a0 : Int → Int) (n : Nat) (s : Int) (F G : Int → Int) (j : Int) :
+    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter s (-1) n)))
+      (fun a ⟨k, i⟩ =>
+        if 1 ≤ i then fun j => if j = i then G i else (fun j => if j = i + -1 then F i else a j) j
+        else fun j => if j = i then G i else a j)) j
+      = (if s - integer n < j ∧ j ≤ s then G j
+         else if j = s - integer n ∧ 0 ≤ j ∧ 0 < integer n then F (j + 1) else a0 j) := by
+  rw [ahead_down_from, integer_cast]
+  (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
 
 end TEQ
