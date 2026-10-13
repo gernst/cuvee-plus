@@ -295,7 +295,9 @@ are higher-order in the midpoint, `G((hi + lo) / 2)`, bound by abstraction; `P` 
 the cuts `cut(G, l0, h0)` and `cut((j: int) => !H(j), l0, h0)` of the guards, which rules on sortedness rewrite to the partition
 points (`cut((j: int) => ar[j] < y, 0, len) == lower(ar, len, y)`), since a variable of the conclusion that only a
 quantified condition mentions cannot be bound by matching. The forward instances are simplified before they are
-assumed, which brings the cut to the partition point.
+assumed, which brings the cut to the partition point. Then (Oct 13): the trace named by a rule `bisection` with a
+probe `M(lo, hi)` in place of the midpoint, any probe strictly inside the interval (`lo + (hi - lo) / 2` too); one
+cut for both ends; the database module waits for the user.
 The sorted binary search (`sorted(a, n)`, the array, its bound and the key as parameters) closes with the
 per-component route of `incs` and `decs`, but in two layers: the reads of the array become comparisons with the
 partition points `lower(a, n, x)` and `upper(a, n, x)` only for `0 <= mid < n`, which needs `0 <= lo` and `hi <= n` in

@@ -332,3 +332,15 @@ scripts/prove/slow.sh       # on request or before a commit: the transpose, the 
   quantified condition mentions is not bound by matching facts. bsearch_bisect.dfy closes in 11 s with 282 log
   steps, against 45 s for the two layers of bsearch_sorted.dfy, which is kept for now with the repeated firing it
   needs; lower_bound.dfy, open under `-simplify`, closes in 8 s.
+- **Oct 13, 2026, night: the bisection named, with a probe.** One `cut` for both ends (`cut((j: int) => !H(j), ...)`,
+  `lower(ar, len, y + 1) == upper(ar, len, y)` since `!(y < ar[j])` normalizes to `ar[j] < y + 1`). The trace is named
+  by a rule `bisection(l0, h0, ks, M, G, H)` and bounded by two forward lemmas on `current(bisection(...)).i`, with a
+  probe `M(lo, hi)` and the condition `forall l, h :: l < h ==> l <= M(l, h) < h`, decided by the division bounds.
+  Engine: equations of traces of several accumulators rewritten with their variable as self (the iteration constraint
+  in the update of the match), component reads matched through the other definitions of the variable when the trace
+  does not match, instantiated arguments of higher-order patterns beta-reduced (`G(M(lo, hi))`), and a higher-order
+  pattern not yet instantiated may take several summands when the sum does not match otherwise
+  (`M(lo, hi) + 1` against `lo + (hi - lo) / 2 + 1`). bsearch_bisect 8 s, bsearch_safe (the probe
+  `lo + (hi - lo) / 2`) 10 s, lower_bound 8 s; the lemmas lose the suffix `_def` (lower, upper, equal, bisection), and
+  the note on naming the variables of lemmas apart from the goal's moved to doc/teq.md. The paper waits until the
+  approach has converged.

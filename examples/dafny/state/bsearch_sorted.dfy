@@ -3,7 +3,7 @@
 // is sorted, sorted(a, n), instead of given by partition points (step 2b of ideas/deduction-engine-implementation.md)
 //
 // sortedness is used once, where the reads of the array become comparisons of the index with the partition points
-// lower(a, n, y) and upper(a, n, y), which exist for a sorted array (lower_def, upper_def, equal_def); these hold only
+// lower(a, n, y) and upper(a, n, y), which exist for a sorted array (lower, upper, equal); these hold only
 // for indices within a[0..n), so the guards a[mid] < x and x < a[mid] in the update of the loop are rewritten only
 // once 0 <= lo and hi <= n are known there, as invariants over the histories of lo and hi; these follow from the
 // monotonicity of each component (up_1, down_1, forward lemmas whose trigger is the history ⌊S⌋.i, matched through
@@ -20,16 +20,16 @@ function lower(ar: array<int, int>, len: int, y: int): int
 function upper(ar: array<int, int>, len: int, y: int): int
 
 // the partition points of a sorted array: below lower(ar, len, y), the elements are less than y, from
-// upper(ar, len, y) on, greater; the variables are named apart from those of the method, which they would capture
-lemma {:rw} lower_def(ar: array<int, int>, len: int, y: int, m: int)
+// upper(ar, len, y) on, greater
+lemma {:rw} lower(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (ar[m] < y) <==> m < lower(ar, len, y)
 
-lemma {:rw} upper_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} upper(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (y < ar[m]) <==> upper(ar, len, y) <= m
 
-lemma {:rw} equal_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} equal(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (ar[m] == y) <==> lower(ar, len, y) <= m && m < upper(ar, len, y)
 

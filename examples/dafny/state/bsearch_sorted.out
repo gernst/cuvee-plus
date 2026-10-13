@@ -4,19 +4,19 @@ function lower(ar: array<int, int>, len: int, y: int): int
 
 function upper(ar: array<int, int>, len: int, y: int): int
 
-lemma {:rw} lower_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} lower(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len)
   requires 0 <= m
   requires m < len
   ensures ar[m] < y <==> m < lower(ar, len, y)
 
-lemma {:rw} upper_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} upper(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len)
   requires 0 <= m
   requires m < len
   ensures y < ar[m] <==> upper(ar, len, y) <= m
 
-lemma {:rw} equal_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} equal(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len)
   requires 0 <= m
   requires m < len

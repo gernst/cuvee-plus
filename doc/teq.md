@@ -282,6 +282,14 @@ per-variable traces of a cycle are projections of its trace that the engine of `
   the chains of [examples/dafny/algorithms](../examples/dafny/algorithms),
   whose NOTES.md records the findings) follow patterns that the matcher
   imposes:
+  - **Variables named apart.** The variables of a lemma are named apart from
+    those of the goal, i.e. of the method and its context: a variable of a
+    rule with the name of a variable of the goal captures it, e.g. a lemma
+    variable `n` that occurs only in its condition is then taken as the
+    goal's `n` and the match leaves it unbound ("variables of a rule not
+    instantiated"). The binary searches of
+    [examples/dafny/state](../examples/dafny/state) write their lemmas over
+    `ar`, `len`, `y` for the method's `a`, `n`, `x`.
   - **Specific left-hand sides.** A left-hand side `invs(...)` whose body has
     a bare bound variable of a variable dependency on one side, `n <= j` or
     `j == integer(nn)`, matches every comparison, respectively equation,

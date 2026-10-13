@@ -4,19 +4,19 @@ function lower(ar: array<int, int>, len: int, y: int): int
 
 function upper(ar: array<int, int>, len: int, y: int): int
 
-lemma {:rw} lower_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} lower(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len)
   requires 0 <= m
   requires m < len
   ensures ar[m] < y <==> m < lower(ar, len, y)
 
-lemma {:rw} upper_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} upper(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len)
   requires 0 <= m
   requires m < len
   ensures y < ar[m] <==> upper(ar, len, y) <= m
 
-lemma {:rw} equal_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} equal(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len)
   requires 0 <= m
   requires m < len
@@ -40,49 +40,35 @@ lemma {:rw} lower_succ(ar: array<int, int>, len: int, y: int)
   requires sorted(ar, len)
   ensures lower(ar, len, y + 1) == upper(ar, len, y)
 
-lemma {:fw} bisect_1(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool,
-                     H: int -> bool)
-  requires l0 <= h0
-  requires forall p: int, q: int :: l0 <= p <= q < h0 && G(q) ==> G(p)
-  ensures
-    l0
-      <= current(trace(l0, h0,
-                       for ⌊counter(i, c, m)⌋
-                       do lo, hi, k ::
-                         case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1
-                         case H((hi + lo) / 2) && lo < hi => lo,
-                         case G((hi + lo) / 2) && lo < hi => hi
-                         case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).0
-  ensures
-    current(trace(l0, h0,
-                  for ⌊counter(i, c, m)⌋
-                  do lo, hi, k ::
-                    case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1
-                    case H((hi + lo) / 2) && lo < hi => lo,
-                    case G((hi + lo) / 2) && lo < hi => hi
-                    case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).0
-      <= cut(G, l0, h0)
+function bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int,
+                   G: int -> bool, H: int -> bool): Trace<(int, int)>
 
-lemma {:fw} bisect_2(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool,
-                     H: int -> bool)
+lemma {:rw} bisection(l0: int, h0: int, i: int, c: int, m: Nat,
+                      M: (int, int) -> int, G: int -> bool, H: int -> bool)
+  ensures
+    trace(l0, h0,
+          for ⌊counter(i, c, m)⌋
+          do lo, hi, k ::
+            case G(M(lo, hi)) && lo < hi => M(lo, hi) + 1
+            case H(M(lo, hi)) && lo < hi => lo,
+            case G(M(lo, hi)) && lo < hi => hi
+            case H(M(lo, hi)) && lo < hi => M(lo, hi))
+      == bisection(l0, h0, ⌊counter(i, c, m)⌋, M, G, H)
+
+lemma {:fw} bisection_lo(l0: int, h0: int, ks: List<int>, M: (int, int) -> int,
+                         G: int -> bool, H: int -> bool)
   requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) < h
+  requires forall p: int, q: int :: l0 <= p <= q < h0 && G(q) ==> G(p)
+  ensures l0 <= current(bisection(l0, h0, ks, M, G, H)).0
+  ensures current(bisection(l0, h0, ks, M, G, H)).0 <= cut(G, l0, h0)
+
+lemma {:fw} bisection_hi(l0: int, h0: int, ks: List<int>, M: (int, int) -> int,
+                         G: int -> bool, H: int -> bool)
+  requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) < h
   requires forall p: int, q: int :: l0 <= p <= q < h0 && H(p) ==> H(q)
   ensures
-    cut((j: int) => !H(j), l0, h0)
-      <= current(trace(l0, h0,
-                       for ⌊counter(i, c, m)⌋
-                       do lo, hi, k ::
-                         case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1
-                         case H((hi + lo) / 2) && lo < hi => lo,
-                         case G((hi + lo) / 2) && lo < hi => hi
-                         case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).1
-  ensures
-    current(trace(l0, h0,
-                  for ⌊counter(i, c, m)⌋
-                  do lo, hi, k ::
-                    case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1
-                    case H((hi + lo) / 2) && lo < hi => lo,
-                    case G((hi + lo) / 2) && lo < hi => hi
-                    case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).1
-      <= h0
+    cut((j: int) => !H(j), l0, h0) <= current(bisection(l0, h0, ks, M, G, H)).1
+  ensures current(bisection(l0, h0, ks, M, G, H)).1 <= h0
 

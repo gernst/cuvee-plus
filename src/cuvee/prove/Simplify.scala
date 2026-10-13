@@ -124,7 +124,8 @@ object Simplify:
       // assumes also the invariants of the context that mention ⌊X⌋ or Y (see invariants), e.g. the test of a loop;
       // the right-hand side is simplified like the combinator below, and then rewritten at the top (see simplify)
       // the histories of the accumulators denote them in the results (see Views.selfOf); the trace is rewritten at the
-      // top with the variable as its self only if it has a single accumulator, since the lemmas are about those
+      // top with the variable as its self, also with several accumulators, whose histories then denote them in the
+      // matcher as well (a lemma over a whole cycle, see Rewrite.matches_)
       case Eq(x: Var, Trace(inits, deps, accs, bound, results)) =>
         val left_ = simplify(config, state, ctx.neutral, x)
         val inits_ = simplify(config, state, ctx.neutral, inits)
@@ -135,7 +136,7 @@ object Simplify:
         val ranges = if accs.length == 1 then wrapped(config, state, ctx, inner, inits_.head, accs_.head, re(results.head)) else Nil
         val results_ = results.map(result => simplify(config, state, inner.assume(ranges, Nil), re(result)))
         val right_ = trace(config, state, ctx.neutral, inits_, deps_, accs_, bound_, results_)
-        eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, if accs.length == 1 then Some(x) else None))
+        eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
 
       case Eq(y: Var, Maps(deps, bound, update)) =>
         val left_ = simplify(config, state, ctx.neutral, y)

@@ -25,6 +25,8 @@ forward facts (`{:fw}`), see ideas/deduction-engine-implementation.md; the midpo
 version of doc/state-traces): the reads of the array become comparisons with the partition points `lower(a, n, x)`,
 `upper(a, n, x)` within `a[0..n)`, which needs `0 <= lo` and `hi <= n` in the update, from the monotonicity of each
 component as forward invariants over its history (two layers, about 45 s).
-`bsearch_bisect.dfy`, the same proved by a lemma over the whole cycle, a bisection whose guards hold on a prefix and
-a suffix, which bounds `lo` and `hi` by the cuts of the guards, the partition points; 11 s.
+`bsearch_bisect.dfy`, the same proved by a lemma over the whole cycle: the rule `bisection` names the trace with its
+probe and guards, and two forward lemmas bound `lo` and `hi` by the cuts of the guards, the partition points, if the
+guards hold on a prefix and a suffix and the probe lies strictly inside the interval; 8 s. `bsearch_safe.dfy`, the
+same with the probe `lo + (hi - lo) / 2`, which does not overflow.
 `lower_bound.dfy`, the lower bound of the algorithms (open under `-teq -simplify`) with the same bisection lemmas; 8 s.

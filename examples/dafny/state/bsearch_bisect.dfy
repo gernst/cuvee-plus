@@ -4,13 +4,13 @@
 // is sorted, sorted(a, n)
 //
 // sortedness is used where the reads of the array become comparisons of the index with the partition points
-// lower(a, n, y) and upper(a, n, y), which exist for a sorted array (lower_def, upper_def, equal_def), for indices
-// within a[0..n) only; lo and hi read each other and form one trace S of two accumulators, which the lemmas
-// bisect_1 and bisect_2 abstract as a whole: a bisection of [l0, h0) whose guards G and H hold on a prefix and a
-// suffix keeps lo below the cut of G and hi above that of H (forward facts at current(S).0 and current(S).1); the
-// conditions are decided by the rules on sortedness within the range of their premise, and the cuts of the
-// comparisons with x are the partition points (cut_lower, lower_succ); the midpoint (h + l) / 2 is bounded by the
-// linear arithmetic
+// lower(a, n, y) and upper(a, n, y), which exist for a sorted array, for indices within a[0..n) only; lo and hi read
+// each other and form one trace S of two accumulators, which the rule bisection names: a bisection of [l0, h0) with
+// a probe strictly inside the interval, (lo + hi) / 2 here; if its guards G and H hold on a prefix and a suffix, lo
+// stays below the cut of G and hi above the cut of the negation of H (bisection_lo, bisection_hi, forward facts at
+// current(S).0 and current(S).1); the conditions are decided by the rules on sortedness within the range of their
+// premise and, for the probe, by the bounds of division in the linear arithmetic; the cuts of the comparisons with x
+// are the partition points (cut_lower, lower_succ)
 
 function sorted(ar: array<int, int>, len: int): bool
 
@@ -19,16 +19,16 @@ function lower(ar: array<int, int>, len: int, y: int): int
 function upper(ar: array<int, int>, len: int, y: int): int
 
 // the partition points of a sorted array: below lower(ar, len, y), the elements are less than y, from
-// upper(ar, len, y) on, greater; the variables are named apart from those of the method, which they would capture
-lemma {:rw} lower_def(ar: array<int, int>, len: int, y: int, m: int)
+// upper(ar, len, y) on, greater
+lemma {:rw} lower(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (ar[m] < y) <==> m < lower(ar, len, y)
 
-lemma {:rw} upper_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} upper(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (y < ar[m]) <==> upper(ar, len, y) <= m
 
-lemma {:rw} equal_def(ar: array<int, int>, len: int, y: int, m: int)
+lemma {:rw} equal(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, len) && 0 <= m && m < len
   ensures (ar[m] == y) <==> lower(ar, len, y) <= m && m < upper(ar, len, y)
 
@@ -51,25 +51,31 @@ lemma {:rw} lower_succ(ar: array<int, int>, len: int, y: int)
   requires sorted(ar, len)
   ensures lower(ar, len, y + 1) == upper(ar, len, y)
 
-// a bisection of [l0, h0): while lo < hi, the midpoint moves lo above it where G holds and hi down to it where H
-// holds; if G holds on a prefix of [l0, h0), lo stays within l0 and the cut of G, and if H holds on a suffix, hi
-// stays within the cut of its negation and h0; the guards are higher-order in the midpoint, bound to the guards of the program
-// by abstraction, and lo < hi follows from the iteration constraint in the update
-lemma {:fw} bisect_1(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool, H: int -> bool)
-  requires l0 <= h0
-  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
-  ensures l0 <= current(trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
-          case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1 case H((hi + lo) / 2) && lo < hi => lo,
-          case G((hi + lo) / 2) && lo < hi => hi case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).0
-       <= cut(G, l0, h0)
+// a bisection of [l0, h0) with a probe M strictly inside the interval: while lo < hi, lo moves above the probe where
+// G holds and hi down to it where H holds; named by bisection, which keeps the probe and the guards
+function bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool,
+                   H: int -> bool): Trace<(int, int)>
 
-lemma {:fw} bisect_2(l0: int, h0: int, i: int, c: int, m: Nat, G: int -> bool, H: int -> bool)
+lemma {:rw} bisection(l0: int, h0: int, i: int, c: int, m: Nat, M: (int, int) -> int, G: int -> bool,
+                      H: int -> bool)
+  ensures trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
+          case G(M(lo, hi)) && lo < hi => M(lo, hi) + 1 case H(M(lo, hi)) && lo < hi => lo,
+          case G(M(lo, hi)) && lo < hi => hi case H(M(lo, hi)) && lo < hi => M(lo, hi))
+    == bisection(l0, h0, ⌊counter(i, c, m)⌋, M, G, H)
+
+// if G holds on a prefix of [l0, h0), lo stays within l0 and the cut of G, and if H holds on a suffix, hi stays within
+// the cut of its negation and h0
+lemma {:fw} bisection_lo(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool, H: int -> bool)
   requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
+  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
+  ensures l0 <= current(bisection(l0, h0, ks, M, G, H)).0 <= cut(G, l0, h0)
+
+lemma {:fw} bisection_hi(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool, H: int -> bool)
+  requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
   requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && H(p) ==> H(q)
-  ensures cut((j: int) => !H(j), l0, h0) <= current(trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
-          case G((hi + lo) / 2) && lo < hi => (hi + lo) / 2 + 1 case H((hi + lo) / 2) && lo < hi => lo,
-          case G((hi + lo) / 2) && lo < hi => hi case H((hi + lo) / 2) && lo < hi => (hi + lo) / 2)).1
-       <= h0
+  ensures cut((j: int) => !H(j), l0, h0) <= current(bisection(l0, h0, ks, M, G, H)).1 <= h0
 
 method search(a: array<int, int>, n: int, x: int) returns (i: int)
   requires 0 <= n && sorted(a, n)

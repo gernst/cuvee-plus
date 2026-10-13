@@ -338,16 +338,13 @@ object Rewrite:
         yield subst2
 
       // the reads of a component of a trace of several accumulators by the same component of a pattern, the trace
-      // matched against the definition of the variable it reads, which that variable then defines (self)
+      // matched against the definition of the variable it reads, which that variable then defines (self), and
+      // otherwise against the variable, i.e. its other definitions, e.g. a name of the trace, bisection(...)
       case (Component(tr, i), Component(s, i_)) if i == i_ =>
-        Views.traceOf(ctx, s) match
-          case Some((x: Var, tr_)) => matches(config, state, ctx, params, vars, locals, tr, Some(x), bound, avoid, tr_, subst)
-          case _                   => matches(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
+        component(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
 
       case (History(tr, i), History(s, i_)) if i == i_ =>
-        Views.traceOf(ctx, s) match
-          case Some((x: Var, tr_)) => matches(config, state, ctx, params, vars, locals, tr, Some(x), bound, avoid, tr_, subst)
-          case _                   => matches(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
+        component(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
 
       // lambdas of the same arity, their bodies with the bound variables related, e.g. the guard m => a[m] < x of a
       // bisection against the pattern m => ar[m] < y of the lemma that names its cut
@@ -430,6 +427,14 @@ object Rewrite:
         case (_, x: Var) => mayBind(vars, locals, x) && !subst.vars.contains(x)
         case _           => false
 
+    // a higher-order pattern F(...) whose function is not instantiated yet, which may take several summands like a
+    // variable, e.g. M(lo, hi) of M(lo, hi) + 1 against lo + (hi - lo) / 2 + 1 (a probe of a bisection); tried only
+    // if the summands do not match otherwise (see below)
+    def higher(summand: (Boolean, Expr)) =
+      summand match
+        case (_, Apply(f: Var, _)) => mayBind(vars, locals, f) && !subst.vars.contains(f)
+        case _                     => false
+
     val (flex, fixed) = pats.partition(flexible)
 
     def fix(
@@ -483,10 +488,20 @@ object Rewrite:
 
           single ++ none
 
-    for
-      (rest, subst_) <- fix(fixed, args, subst)
-      result <- distribute(flex, rest, subst_)
-    yield result
+    val results =
+      for
+        (rest, subst_) <- fix(fixed, args, subst)
+        result <- distribute(flex, rest, subst_)
+      yield result
+
+    if results.nonEmpty || !fixed.exists(higher)
+    then results
+    else
+      val (flex_, fixed_) = pats.partition(summand => flexible(summand) || higher(summand))
+      for
+        (rest, subst_) <- fix(fixed_, args, subst)
+        result <- distribute(flex_, rest, subst_)
+      yield result
 
   // the dependencies of a combinator in the pattern are partitioned into variables of the rule and other expressions,
   // the latter are matched to a selection of the dependencies of the expression, which relates their bound variables,
@@ -537,6 +552,36 @@ object Rewrite:
       subst3 <- instantiate(config, state, ctx, params, vars, locals, zs, self, bound, avoid, deps_, ys_, acc.values.toSet, subst2)
     yield Subst(subst3.params, subst3.vars -- zs.map(_._2))
 
+  // the pattern `tr` of a read of a component against the trace `s` that the read reads (see matches_)
+  def component(
+      config: Config,
+      state: State,
+      ctx: Context,
+      params: Set[Param],
+      vars: Set[Var],
+      locals: Set[Var],
+      tr: Expr,
+      self: Option[Var],
+      bound: Map[Var, Var],
+      avoid: Set[Var],
+      s: Expr,
+      subst: Subst[Type, Expr]
+  ): List[Subst[Type, Expr]] =
+    val defined =
+      Views.traceOf(ctx, s) match
+        case Some((x: Var, tr_)) => matches(config, state, ctx, params, vars, locals, tr, Some(x), bound, avoid, tr_, subst)
+        case _                   => Nil
+    if defined.nonEmpty
+    then defined
+    else matches(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
+
+  // the applications of lambdas in `expr` reduced, e.g. the argument M(lo, hi) of a pattern G(M(lo, hi)) once M is
+  // instantiated by (l, h) => (h + l) / 2, which is then found as (hi + lo) / 2 in the expression (see abstraction)
+  def beta(expr: Expr): Expr =
+    expr match
+      case Apply(Lam(xs, body, _), args) if xs.length == args.length => beta(Subst.from(xs, args)(body))
+      case _                                                         => expr.map(beta)
+
   // the instances of the arguments of a higher-order pattern: the bound variables of the expression
   // that correspond to the bound variables of the pattern, where those of the variables of the rule
   // among the dependencies (locals) that are not instantiated yet are chosen among the bound variables
@@ -568,7 +613,7 @@ object Rewrite:
               yield (y, subst_)
 
             case _ if arg.free.forall(x => bound.contains(x) || subst.vars.contains(x) || !mayBind(vars, locals, x)) =>
-              List(((subst ++ Subst(Map(), bound))(arg), subst))
+              List((beta((subst ++ Subst(Map(), bound))(arg)), subst))
 
             case _ =>
               unmatched

@@ -84,9 +84,13 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   the initial values pairwise and the results in the context of the update, where the histories of the trace that
   the matched variable defines denote the accumulators, so the iteration constraint holds there; a read
   `current(T).i` or `⌊T⌋.i` of the pattern matches the same read of a variable by its definition; lambdas match
-  lambdas of the same arity with their bound variables related. The binary search over a sorted array is proved by
-  one such lemma in `bsearch_bisect.dfy` (a bisection, whose higher-order guards are bound to the guards of the
-  program by abstraction).
+  lambdas of the same arity with their bound variables related. An equation `S == trace(...)` of several
+  accumulators is rewritten with `S` as its self, so a rule over the whole cycle can name the trace. The binary
+  search over a sorted array is proved so in `bsearch_bisect.dfy`: the rule `bisection` names the trace with its
+  probe `M` and guards `G`, `H`, higher-order patterns `G(M(lo, hi))` whose inner function is bound first (from the
+  result `M(lo, hi) + 1`) and whose instantiated arguments are beta-reduced (`Rewrite.beta`); a higher-order pattern
+  that is not instantiated yet may take several summands of a sum, like a variable, if the sum does not match
+  otherwise, so `M(lo, hi) + 1` matches `lo + (hi - lo) / 2 + 1` (`bsearch_safe.dfy`).
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.
@@ -117,7 +121,8 @@ with the module `state.dfy` alone (single loops, the swap of two arrays, five ne
 the transpose with one summary lemma, the syntax example), 1.5 to 3 s; the binary search closes with its bounds as
 forward facts (7 s, no cut), and over a sorted array (`bsearch_sorted.dfy`, the array, its bound and the key as
 parameters) in two layers, the monotonicity of `lo` and `hi` as forward invariants first (about 45 s), and by a
-lemma over the whole cycle, a bisection whose cuts are the partition points (`bsearch_bisect.dfy`, 11 s); the lower bound
+lemma over the whole cycle, a named bisection with a probe whose cuts are the partition points (`bsearch_bisect.dfy`,
+8 s; `bsearch_safe.dfy` with the probe `lo + (hi - lo) / 2`); the lower bound
 of the algorithms (`lower_bound.dfy`, open under `-simplify`) closes with the same lemmas (8 s). Open: the instances
 of `invs` by triggers (step 2 of J), the merge and the
 sorts, the other frontends and the fallback for traces of several accumulators; see
