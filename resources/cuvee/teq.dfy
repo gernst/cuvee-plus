@@ -97,9 +97,20 @@ function {:teq} consts<a>(n: Nat, v: a): Trace<a>
   case succ(m) => step(v, consts(m, v))
 }
 
-// the cut of a predicate G that holds on a prefix of [l, h): the first index where it fails, h if none; a predicate
-// H that holds on a suffix has the cut of its negation, the first index where H holds
+// the cut of a predicate G that holds on a prefix of [l, h): the first index where it fails, h if none (l if the
+// interval is empty); a predicate H that holds on a suffix has the cut of its negation, the first index where H
+// holds; by the search of the n indices from l, cutFrom, which recurs on a natural; neither is a rule of the engines
+function {:teq} cutFrom(G: int -> bool, l: int, n: Nat): int
+{
+  match n
+  case zero => l
+  case succ(k) => if G(l) then cutFrom(G, l + 1, k) else l
+}
+
 function {:teq} cut(G: int -> bool, l: int, h: int): int
+{
+  cutFrom(G, l, natural(h - l))
+}
 
 // the values of a at the keys, and the stores of the values at the keys
 function {:teq} {:fold} selects<a, b>(a: array<a, b>, keys: List<a>): List<b>

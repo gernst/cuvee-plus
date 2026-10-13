@@ -5,17 +5,29 @@
 // module over teq.dfy alone (-include teq:sorted; the cuts of its comparisons are those of the bisection of
 // teq:search), migrated on Oct 13, 2026 from
 // sorting.dfy of the per-variable form, with the partition points of examples/dafny/state/bsearch_bisect.dfy; the
-// algorithms' own knowledge (summaries of inner loops, step lemmas) stays with the examples; the predicates are
-// declared without definitions, their meaning is the lemmas
+// algorithms' own knowledge (summaries of inner loops, step lemmas) stays with the examples; the predicates and the
+// partition points are defined here (the proofs of the lemmas in lean/ use the definitions), but the engines use
+// the lemmas only, the definitions are no rules
 
 // a[lo..hi) is nondecreasing
 function {:teq} sorted(a: array<int, int>, lo: int, hi: int): bool
+{
+  forall i: int, j: int :: lo <= i && i <= j && j < hi ==> a[i] <= a[j]
+}
 
-// a is a permutation of b as a total map on the indices
+// a is a permutation of b as a total map on the indices: b read through a bijection f of the indices, whose inverse
+// is g
 function {:teq} perm(a: array<int, int>, b: array<int, int>): bool
+{
+  exists f: int -> int, g: int -> int ::
+    (forall i: int :: g(f(i)) == i) && (forall i: int :: f(g(i)) == i) && (forall i: int :: a[i] == b[f(i)])
+}
 
 // all of a[lo..mid) are at most all of a[mid..hi)
 function {:teq} partitioned(a: array<int, int>, lo: int, mid: int, hi: int): bool
+{
+  forall i: int, j: int :: lo <= i && i < mid && mid <= j && j < hi ==> a[i] <= a[j]
+}
 
 // the empty range and ranges of one element are sorted, the empty prefix is partitioned from the rest
 lemma {:rw} {:teq} sorted_empty(a: array<int, int>, lo: int)
@@ -92,10 +104,16 @@ lemma {:rw} {:teq} sorted_prefix_steps_two(a: array<int, int>, n: int, m: Nat, F
     <==> true
 
 // the partition points of a sorted array a[0..len): below lower(ar, len, y), the elements are less than y, from
-// upper(ar, len, y) on, greater
+// upper(ar, len, y) on, greater; the cuts of the comparisons with y
 function {:teq} lower(ar: array<int, int>, len: int, y: int): int
+{
+  cut((j: int) => ar[j] < y, 0, len)
+}
 
 function {:teq} upper(ar: array<int, int>, len: int, y: int): int
+{
+  cut((j: int) => ar[j] <= y, 0, len)
+}
 
 lemma {:rw} {:teq} lower(ar: array<int, int>, len: int, y: int, m: int)
   requires sorted(ar, 0, len) && 0 <= m && m < len
