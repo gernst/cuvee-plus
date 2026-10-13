@@ -41,6 +41,8 @@ and others (imported from the SV-COMP statistics, not run by us).
 | | Arrays (440) | Loops (764) | score |
 |---|--:|--:|--:|
 | Cuvée (0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false | 553 |
+| Cuvée (0.46.9, `-verify`, 15 min, i7-6700) | 138 true, 9 false | 149 true, 16 false | 599 |
+| Cuvée+Z3 (0.46.9, `-verify`, 15 min, i7-6700) | 148 true, 48 false | running | |
 | Cuvée+Z3 (0.42.2, `-verify`, 15 min) | 148 true, 51 false | 283 true, 28 false | 941 |
 | Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false | 400 |
 | Cuvée (0.42.1, `-verify`, 60 s, i9-9900) | 130 true, 9 false | 125 true, 16 false | 535 |
@@ -152,13 +154,18 @@ the `fermat1-ll` tasks time out at 60 s.
 Done (Oct 12, 2026, 17:29–17:55, Cuvée 0.42.2, the same setup, complete): `xml/cuvee-fallback.xml` on SV-COMP
 Arrays and Loops and on the unbounded set, after the fix of the exits of loops; no wrong results.
 
+Done (Oct 13, 2026, from 22:11, Cuvée 0.46.9, 15 min, 2 cores, 7 GB, Intel Core i7-6700, after the migration of the
+lemma database): `xml/cuvee.xml` on SV-COMP Arrays (138 true, 9 false, score 285) and Loops (149 true, 16 false,
+score 314), `xml/cuvee-fallback.xml` on Arrays (148 true, 48 false, score 344), no wrong results; Loops with
+`-fallback`, `xml/cuvee-chc.xml` on Arrays and Loops, and the MonoCera tests with `xml/cuvee.xml` and
+`xml/cuvee-fallback.xml` still running (`scripts/out/experiments.pdf` takes only these runs of 0.46).
+
 Done (Oct 13, 2026, 19:44–21:17, Cuvée 0.46.3 to 0.46.5, 60 s, 2 cores, 7 GB, Intel Core i7-6700, complete):
 `xml/cuvee.xml` on SV-COMP Arrays and Loops after each step of the database migration (`-T 60s --vcloudCPUModel`,
 see doc/benchmarks.md); correct results Arrays 105, 124, 140, 144, 145 and Loops 128, 148, 154, 154, 161, no wrong
 results.
 
-To do: `xml/cuvee.xml` on SV-COMP Arrays and Loops with 15 min after the migration (the second round of `-split
--prove`, the migrated modules), for section 2 and the PDF; the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
+To do: the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
 MonoCera itself (`xml/monocera.xml`); SV-LIB `CTranslated` and `CoreVerification` (`xml/cuvee.xml`,
 `xml/cuvee-chc.xml`); `-chc` on SV-COMP with `-verify`; the ACSL tasks with `-verify` after the revised
 annotations.
