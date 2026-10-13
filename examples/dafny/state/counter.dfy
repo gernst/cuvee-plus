@@ -1,5 +1,5 @@
-// ./Cuvee.sh -teq-state -prove examples/dafny/state/counter.dfy
-// examples/dafny/teq/counter.dfy with state traces (see ideas/state-trace.md)
+// ./Cuvee.sh -teq -prove examples/dafny/state/counter.dfy
+// examples/dafny/teq/counter.dfy under -teq (see ideas/state-trace.md)
 // a counter that runs up to n, which it reaches at the end
 
 method counter(n: int) returns (i: int)

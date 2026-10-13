@@ -6,13 +6,11 @@
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
   <option name="-teq"/>
-  <!-- the full lemma database: the modules of -teq and the further ones -->
-  <option name="-include">teq:nested</option>
-  <option name="-include">teq:sorting</option>
-  <option name="-include">teq:strides</option>
-  <option name="-simplify"/>
+  <!-- the lemma database teq.dfy of -teq; the optional modules (-include teq:<name>) were written for the former
+       per-variable form and are left out until they are reorganized -->
+  <option name="-prove"/>
   <option name="-split"/>
-  <option name="-simplify"/>
+  <option name="-prove"/>
   <!-- the rules applied to each goal, for the statistics of scripts/rules.py -->
   <option name="-rules"/>
   <option name="-fallback"/>

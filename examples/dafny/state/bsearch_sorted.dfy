@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq-state -prove examples/dafny/state/bsearch_sorted.dfy
+// ./Cuvee.sh -teq -prove examples/dafny/state/bsearch_sorted.dfy
 // the binary search of bsearch.dfy over a sorted array: the array, its bound and the key are parameters, the array
 // is sorted, sorted(a, n), instead of given by partition points (step 2b of ideas/deduction-engine-implementation.md)
 //

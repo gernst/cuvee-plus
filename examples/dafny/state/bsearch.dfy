@@ -1,6 +1,6 @@
-// ./Cuvee.sh -teq-state -prove examples/dafny/state/bsearch.dfy
-// binary search in the state form, after examples/dafny/teq/bsearch.dfy (see ideas/binary-search.md); interim,
-// until the algorithms are done in the state form (see ideas/deduction-engine-implementation.md)
+// ./Cuvee.sh -teq -prove examples/dafny/state/bsearch.dfy
+// binary search, after examples/dafny/teq/bsearch.dfy (see ideas/binary-search.md), with constant partition points;
+// kept as a regression test of the per-component abstractions (see ideas/deduction-engine-implementation.md)
 //
 // the array is given by partition points p and q instead of sortedness: a[m] < x below p, a[m] == x between p and q,
 // and x < a[m] from q on, such that the rules need no variables for the array, the bound, and x; this is stronger

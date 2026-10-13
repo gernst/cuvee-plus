@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -simplify examples/dafny/algorithms/first_duplicate.dfy
+// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/first_duplicate.dfy
 // whether a[0..n) has a duplicate, with an early exit of both loops by a flag that stops them (distinct.dfy runs
 // all iterations); a search in a nested loop
 //

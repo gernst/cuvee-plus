@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/teq/break_once.dfy
+// ./Cuvee.sh -teq -prove examples/dafny/teq/break_once.dfy
 // a loop whose body ends by break or return on all paths runs it at most once, as a conditional, without a trace
 // equation system: a path that ends by break continues after the loop, one that ends by return leaves the method
 

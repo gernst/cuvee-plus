@@ -1,7 +1,7 @@
-# The proof of `swap.dfy` with `-teq-state` (written for the sketch with `-simplify` on the branch `worktree-state-trace`; `-prove` follows the same steps)
+# The proof of `swap.dfy` with `-teq`, formerly `-teq-state` (written for the sketch with `-simplify` on the branch `worktree-state-trace`; `-prove` follows the same steps)
 
 The state-trace form of [examples/dafny/teq/swap.md](../teq/swap.md), from the output of `-debug rewrite` of the
-verifying run (264 rewrite steps, 2.3 s, the fresh module `resources/cuvee/teq/state.dfy`). The lines `view m ~> e`
+verifying run (264 rewrite steps, 2.3 s, the fresh module `state.dfy`, now `resources/cuvee/teq.dfy`). The lines `view m ~> e`
 are the views of markers that the matcher computed (see ideas/state-trace.md).
 
 ## The goal

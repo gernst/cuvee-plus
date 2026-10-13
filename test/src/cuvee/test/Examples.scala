@@ -76,8 +76,6 @@ object Examples:
     args.flatMap {
       case "-hybrid" => List("-hybrid")
       case "-teq"    => List("-known", "teq")
-      // the declarations of the module of -teq-state, which those of core.dfy cover
-      case "-teq-state" => List("-known", "teq")
       case _         => Nil
     } ++ modules.flatten
 

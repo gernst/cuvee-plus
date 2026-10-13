@@ -2,8 +2,8 @@ lemma {:rw} current_trace_prefix_sums_array(b0: array<int, int>,
                                             a: array<int, int>, n: Nat, j: int)
   ensures
     current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋
-                      do b, k, i ::
-                        b[i := a[i] + b[k]]))[j]
+                  do b, k, i ::
+                    b[i := a[i] + b[k]]))[j]
       == (if 0 <= j <= integer(n)
           then b0[0] + sum(selects(a, ⌊counter(1, 1, natural(j))⌋))
           else b0[j])

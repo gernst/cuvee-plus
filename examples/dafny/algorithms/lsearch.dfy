@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry lsearch -split -simplify examples/dafny/algorithms/lsearch.dfy
+// ./Cuvee.sh -teq -entry lsearch -split -prove examples/dafny/algorithms/lsearch.dfy
 // linear search: the first index of x among the first n elements of a, n if there is none
 //
 // status: verified with -teq -split -simplify; without -split, the goal that remains is the disjunction of the

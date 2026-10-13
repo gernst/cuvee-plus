@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq-state -prove examples/dafny/state/bsearch_bisect.dfy
+// ./Cuvee.sh -teq -prove examples/dafny/state/bsearch_bisect.dfy
 // the binary search over a sorted array of bsearch_sorted.dfy, proved by a lemma over the whole cycle instead of two
 // layers (package O of ideas/deduction-engine-plan.md): the array, its bound and the key are parameters, the array
 // is sorted, sorted(a, n)

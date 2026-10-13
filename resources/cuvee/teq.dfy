@@ -1,7 +1,12 @@
-// the lemma database of -teq-state (see ideas/state-trace.md), a fresh single module that replaces the modules of -teq:
-// the declarations that the transform and the simplifier refer to (as in core.dfy: Sort.trace, Fun.trace, whose type
-// parameters and formals are numbered as there), the functions on lists that the lemmas need, and only the lemmas that
-// the examples of examples/dafny/state need, in the forms of the modules of -teq, from which they are copied
+// the lemma database of -teq, its entry point, which -teq injects at the beginning of its output: the declarations
+// that the transform and the engines refer to (Sort.trace, Fun.trace, whose type parameters and formals are numbered
+// as they expect), the functions on lists that the lemmas need, and the lemmas about the traces of trace equation
+// systems (one trace per strongly connected component of the variables of a loop), which the engine of -prove
+// applies; started Oct 12, 2026 as the module state.dfy of -teq-state with the lemmas that the examples of
+// examples/dafny/state need, copied from the modules of the per-variable form, and the declarations that several
+// optional modules share from their former core.dfy (distincts, parity, max, min, count, pow); the optional modules of
+// resources/cuvee/teq are injected on demand by -include teq:<name>, the former single file of the per-variable form
+// is kept in resources/cuvee/legacy/teq.dfy, not injected
 
 datatype {:teq} {:lean} Nat = zero | succ(pred: Nat)
 
@@ -76,6 +81,14 @@ function {:teq} indexof<a>(x: a, xs: List<a>): Nat
   case cons(y, ys) => if occurs(x, ys) then succ(indexof(x, ys)) else zero
 }
 
+// whether a list has no duplicates
+function {:teq} distincts<a>(xs: List<a>): bool
+{
+  match xs
+  case nil => true
+  case cons(y, ys) => !occurs(y, ys) && distincts(ys)
+}
+
 // consts(n, v) is the trace v, ..., v of n steps
 function {:teq} consts<a>(n: Nat, v: a): Trace<a>
 {
@@ -90,6 +103,41 @@ function {:teq} sum(values: List<int>): int
   match values
   case nil => 0
   case cons(v, vs) => v + sum(vs)
+}
+
+// the parity of a list, the number of even minus the number of odd elements
+function {:teq} parity(values: List<int>): int
+{
+  match values
+  case nil => 0
+  case cons(v, vs) => (if v % 2 == 0 then 1 else -1) + parity(vs)
+}
+
+// the maximum and the minimum
+function {:teq} max(m: int, n: int): int
+{
+  if m <= n then n else m
+}
+
+function {:teq} min(m: int, n: int): int
+{
+  if m <= n then m else n
+}
+
+// the number of occurrences of a value in a list
+function {:teq} count<a>(e: a, vs: List<a>): int
+{
+  match vs
+  case nil => 0
+  case cons(v, ws) => (if v == e then 1 else 0) + count(e, ws)
+}
+
+// powers, which are not unfolded
+function {:teq} pow(c: int, n: Nat): int
+{
+  match n
+  case zero => 1
+  case succ(m) => c * pow(c, m)
 }
 
 // the values of a at the keys, and the stores of the values at the keys

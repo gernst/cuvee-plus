@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry test -include teq:nested -simplify examples/dafny/algorithms/invs_counter_equation.dfy
+// ./Cuvee.sh -teq -entry test -include teq:nested -prove examples/dafny/algorithms/invs_counter_equation.dfy
 // the facts of inner_loop_flat.dfy inside an iteration constraint of an outer loop, as -teq produces them for nested
 // loops: the inner loop's variables K, nn, J, j are bound variables of the invs over fresh sequences Ks, Ns, Js, js
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -simplify -split -simplify examples/dafny/algorithms/is_sorted.dfy
+// ./Cuvee.sh -teq -entry main -prove -split -prove examples/dafny/algorithms/is_sorted.dfy
 // whether a[0..n) is sorted, by a flag that is reset at a descent
 //
 // status: open, one goal remains: s == sorted(a, 0, n' + 1) && n == n' + 1 ==> s == sorted(a, 0, n), i.e. the

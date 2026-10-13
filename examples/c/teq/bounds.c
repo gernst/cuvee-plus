@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -split -simplify examples/c/teq/bounds.c
+// ./Cuvee.sh -teq -split -prove examples/c/teq/bounds.c
 // the variable of a counter that runs in parallel to the iterations is bounded like them,
 // since its value earlier(k, ⌊I⌋) is k within the range of k
 int main(void) { int s = 0; int i;

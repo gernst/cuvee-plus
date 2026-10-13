@@ -34,15 +34,15 @@ lemma {:rw} current_selection_swaps(a: array<int, int>, n: int, n2: int,
   requires
     invs(for ks,
              ⌊trace(a, for ks, is, ms
-                       do b, k, i, m ::
-                         b[k := b[m]][m := b[k]])⌋,
+                    do b, k, i, m ::
+                      b[k := b[m]][m := b[k]])⌋,
              Ms,
              Js
          check k, b, M, J ::
            M
              == trace(k, for ⌊J⌋
-                         do m, j ::
-                           case b[j] < b[m] => j case b[m] <= b[j] => m))
+                      do m, j ::
+                        case b[j] < b[m] => j case b[m] <= b[j] => m))
   requires invs(for ks, Ns, Js check k, nn, J :: J == counter(k + 1, 1, nn))
   requires invs(for ks, Ns, js check k, nn, j :: j == integer(nn) + k + 1)
   requires invs(for ks, js check k, j :: n <= j)
@@ -52,10 +52,8 @@ lemma {:rw} current_selection_swaps(a: array<int, int>, n: int, n2: int,
   ensures
     current(trace(a, for ks, is, ms do b, k, i, m :: b[k := b[m]][m := b[k]]))
       == current(trace(a, for ks
-                          do b, k ::
-                            b[k := b[argmin(b, k, n)]][
-                              argmin(b, k, n) :=
-                              b[k]]))
+                       do b, k ::
+                         b[k := b[argmin(b, k, n)]][argmin(b, k, n) := b[k]]))
 
 function partitioned(b: array<int, int>, lo: int, mid: int, hi: int): bool
 
@@ -98,8 +96,40 @@ lemma {:rw} perm_swaps_one(a: array<int, int>, b: array<int, int>,
                            Q: (array<int, int>, int) -> int)
   ensures
     perm(current(trace(a, for ks
-                          do x, k ::
-                            x[P(x, k) := x[Q(x, k)]][Q(x, k) := x[P(x, k)]])),
-         b)
+                       do x, k ::
+                         x[P(x, k) := x[Q(x, k)]][Q(x, k) := x[P(x, k)]])), b)
       <==> perm(a, b)
+
+goal
+  forall a: array<int, int>, i₂₅: int, b₂₆: array<int, int>, n₁₇: Nat,
+         K₁₉: Trace<int>, N?₁₆: List<Nat> ::
+    0 <= i₂₅
+      && K₁₉ == counter(0, 1, n₁₇)
+      && n₁₇ == natural(i₂₅)
+      && b₂₆
+        == current(trace(a, for ⌊K₁₉⌋, N?₁₆, ⌊counter(0, 1, n₁₇)⌋
+                         do b₇, k₁₈, n₁₂, i₆ ::
+                           b₇[
+                             i₆ :=
+                             b₇[current(trace(i₆, for ⌊counter(0, 1, n₁₂)⌋,
+                                                      ⌊counter(i₆ + 1, 1, n₁₂)⌋
+                                              do m₁₀, k₁₃, j₁₁ ::
+                                                case b₇[j₁₁] < b₇[m₁₀] => j₁₁
+                                                case b₇[m₁₀]
+                                                  <= b₇[j₁₁] => m₁₀))]][
+                             current(trace(i₆, for ⌊counter(0, 1, n₁₂)⌋,
+                                                   ⌊counter(i₆ + 1, 1, n₁₂)⌋
+                                           do m₁₀, k₁₃, j₁₁ ::
+                                             case b₇[j₁₁] < b₇[m₁₀] => j₁₁
+                                             case b₇[m₁₀] <= b₇[j₁₁] => m₁₀)) :=
+                             b₇[i₆]]))
+      && invs(for ⌊K₁₉⌋, ⌊counter(0, 1, n₁₇)⌋, N?₁₆
+              check k₁₈, i₆, n₁₂ ::
+                invs(for ⌊counter(0, 1, n₁₂)⌋, ⌊counter(i₆ + 1, 1, n₁₂)⌋
+                     check k₁₃, j₁₁ ::
+                       j₁₁ < i₂₅))
+      && invs(for ⌊K₁₉⌋, ⌊counter(0, 1, n₁₇)⌋, N?₁₆
+              check k₁₈, i₆, n₁₂ ::
+                i₂₅ <= integer(n₁₂) + i₆ + 1)
+      ==> sorted(b₂₆, 0, i₂₅) && perm(b₂₆, a)
 

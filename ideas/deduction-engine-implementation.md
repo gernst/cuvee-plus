@@ -345,3 +345,16 @@ scripts/prove/slow.sh       # on request or before a commit: the transpose, the 
   `lo + (hi - lo) / 2`) 10 s, lower_bound 8 s; the lemmas lose the suffix `_def` (lower, upper, equal, bisection), and
   the note on naming the variables of lemmas apart from the goal's moved to doc/teq.md. The paper waits until the
   approach has converged.
+- **Oct 13, 2026, night: the state form is `-teq`.** `-teq` produces the state form (`StateTEQ` always), `-teq-state`
+  and the per-variable `TEQ.system` are removed; the database entry is `resources/cuvee/teq.dfy`, the former
+  `teq/state.dfy`, the former single file of the per-variable form backed up in `resources/cuvee/legacy/teq.dfy`;
+  the optional modules stay for a reorganization. The 63 examples with `-teq` outside examples/dafny/state run
+  `-prove` in place of `-simplify` (outputs regenerated): the C examples and most Dafny ones as before, 14 algorithms
+  and four Dafny examples fail on functions and lemmas of the former modules (`count`, `distincts`, `maxs`,
+  `consts_prefix` of `teq:nested`, the higher-order lemma on distinct keys of affine), is_sorted does not terminate
+  as before. Errors of injected modules are reported like parse errors (no stack trace). The two unit tests of the
+  rewriting of `-simplify` on lemmas of the former database parse `legacy/teq.dfy`; quick.sh without the
+  per-variable examples, compare.sh removed; the benchmark definitions run `-prove` without the optional modules.
+- **Oct 13, 2026, night: one form.** `StateTEQ` folded into `TEQ` (`TEQ.system`), the term "state form" dropped from
+  the code and the docs (examples/dafny/state keeps its name); the database migration begun with `core.dfy`
+  (ideas/teq-modules.md).

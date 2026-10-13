@@ -33,8 +33,8 @@ lemma {:rw} current_results_nodup(a: array<int, int>, n: int, n2: int,
          check k, x, D, J ::
            D
              == trace(x, for ⌊J⌋
-                         do d, j ::
-                           case a[k] == a[j] => false case a[k] != a[j] => d))
+                      do d, j ::
+                        case a[k] == a[j] => false case a[k] != a[j] => d))
   requires invs(for ks, Ns, Js check k, nn, J :: J == counter(k + 1, 1, nn))
   requires invs(for ks, Ns, js check k, nn, j :: j == integer(nn) + k + 1)
   requires invs(for ks, js check k, j :: n <= j)
@@ -44,8 +44,8 @@ lemma {:rw} current_results_nodup(a: array<int, int>, n: int, n2: int,
   ensures
     current(results(true, ks, ds))
       == current(trace(true, for ks
-                             do d, k ::
-                               if nodup(a, k, n) then d else false))
+                       do d, k ::
+                         if nodup(a, k, n) then d else false))
 
 lemma {:rw} current_trace_all(ks: List<int>, P: int -> bool)
   ensures
@@ -57,4 +57,24 @@ lemma {:rw} distincts_nodup(a: array<int, int>, m: Nat, n: int)
   ensures
     invs(for ⌊counter(0, 1, m)⌋ check k :: nodup(a, k, n))
       <==> distincts(selects(a, ⌊counter(0, 1, m)⌋))
+
+goal
+  forall a: array<int, int>, d₂₁: bool, i₂₂: int, n₁₄: Nat, I₁₇: Trace<int>,
+         D₁₉: Trace<bool>, N?₁₃: List<Nat> ::
+    0 <= i₂₂
+      && I₁₇ == counter(0, 1, n₁₄)
+      && D₁₉
+        == trace(true, for ⌊I₁₇⌋, N?₁₃
+                 do d₄, k₁₅, n₈ ::
+                   current(trace(d₄, for ⌊counter(0, 1, n₈)⌋,
+                                         ⌊counter(k₁₅ + 1, 1, n₈)⌋
+                                 do d₆, k₉, j₇ ::
+                                   case a[k₁₅] == a[j₇] => false
+                                   case a[k₁₅] != a[j₇] => d₆)))
+      && d₂₁ == current(D₁₉)
+      && n₁₄ == natural(i₂₂)
+      && invs(for ⌊I₁₇⌋, N?₁₃ check k₁₅, n₈ :: integer(n₈) + k₁₅ < i₂₂)
+      && maps(for ⌊I₁₇⌋, N?₁₃ yield k₁₅, n₈ :: integer(n₈) + k₁₅ + 1)
+        == ⌊consts(n₁₄, i₂₂)⌋
+      ==> d₂₁ == distincts(selects(a, ⌊counter(0, 1, natural(i₂₂))⌋))
 

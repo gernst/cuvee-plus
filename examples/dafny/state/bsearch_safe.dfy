@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq-state -prove examples/dafny/state/bsearch_safe.dfy
+// ./Cuvee.sh -teq -prove examples/dafny/state/bsearch_safe.dfy
 // bsearch_bisect.dfy with the midpoint that does not overflow, lo + (hi - lo) / 2: the same lemmas, since the
 // bisection takes any probe strictly inside the interval (package O of ideas/deduction-engine-plan.md)
 //

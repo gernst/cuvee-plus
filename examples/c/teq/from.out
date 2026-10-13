@@ -46,3 +46,21 @@
 
 (declare-fun shr (Int Int) Int)
 
+(goal
+  (forall
+    ((z$10 Int) (n$5 Nat) (K$7 (Trace Int)) (Z$9 (Trace Int)))
+    (=>
+      (and
+        (= K$7 (counter 0 1 n$5))
+        (=
+          Z$9
+          (trace
+            (z$3 5)
+            ((k$6 (butlast K$7)))
+            (eps
+              ((<= 5 k$6) (+ z$3 1))
+              ((< k$6 5) z$3))))
+        (= z$10 (current Z$9))
+        (= n$5 (natural 10)))
+      (= z$10 10))))
+

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry test -include teq:nested -simplify examples/dafny/algorithms/invs_fragments.dfy
+// ./Cuvee.sh -teq -entry test -include teq:nested -prove examples/dafny/algorithms/invs_fragments.dfy
 // the facts of invs_counter_equation.dfy with the inner counter inlined into the trace of J, which is then recognized
 // as counter(0, 1, nn), and the inner iteration constraint is resolved to integer(nn) == 0 || 0 < n && integer(nn) <= n
 //

@@ -46,3 +46,24 @@
 
 (declare-fun shr (Int Int) Int)
 
+(goal
+  (forall
+    ((x$7 Int) (n$3 Nat) (K$5 (Trace Int)) (X$6 (Trace Int)))
+    (not
+      (and
+        (= K$5 (counter 0 1 n$3))
+        (=
+          X$6
+          (trace
+            (x$2 0)
+            ((k$4 (butlast K$5)))
+            (eps
+              ((< x$2 10000000) (+ x$2 1))
+              ((<= 10000000 x$2) (+ x$2 2)))))
+        (= x$7 (current X$6))
+        (invs
+          ((k$4 (butlast K$5)) (x$2 (butlast X$6)))
+          (< x$2 100000000))
+        (<= 0 (integer n$3))
+        (< 100000000 x$7)))))
+

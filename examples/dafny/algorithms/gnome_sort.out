@@ -14,15 +14,15 @@ lemma {:rw} sorted_gnome(a: array<int, int>, n: int, u: int, d: int, x: int,
   requires
     Bv
       == trace(a, for ⌊Kv⌋, ⌊Iv2⌋
-                  do b, k, i ::
-                    case G(i, b) => b
-                    case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])
+               do b, k, i ::
+                 case G(i, b) => b
+                 case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])
   requires Iv2 == Iv
   requires
     Iv2
       == trace(1, for ⌊Kv2⌋, ⌊Bv2⌋
-                  do i, k, b ::
-                    case G(i, b) => i + u case !G(i, b) => i + d)
+               do i, k, b ::
+                 case G(i, b) => i + u case !G(i, b) => i + d)
   requires Kv2 == Kv
   requires Bv2 == Bv
   requires u == 1
@@ -35,11 +35,11 @@ lemma {:rw} sorted_gnome(a: array<int, int>, n: int, u: int, d: int, x: int,
   requires n <= x
   ensures
     sorted(current(trace(a, for ⌊Kv⌋, ⌊Iv⌋
-                            do b, k, i ::
-                              case G(i, b) => b
-                              case !G(i, b) => b[Q(i) := b[P(i)]][
-                                P(i) :=
-                                b[Q(i)]])), 0, n)
+                         do b, k, i ::
+                           case G(i, b) => b
+                           case !G(i, b) => b[Q(i) := b[P(i)]][
+                             P(i) :=
+                             b[Q(i)]])), 0, n)
       <==> true
 
 lemma {:rw} perm_gnome(a: array<int, int>, c: array<int, int>, ks: List<int>,
@@ -47,10 +47,33 @@ lemma {:rw} perm_gnome(a: array<int, int>, c: array<int, int>, ks: List<int>,
                        P: int -> int, Q: int -> int)
   ensures
     perm(current(trace(a, for ks, is
-                          do b, k, i ::
-                            case G(i, b) => b
-                            case !G(i, b) => b[Q(i) := b[P(i)]][
-                              P(i) :=
-                              b[Q(i)]])), c)
+                       do b, k, i ::
+                         case G(i, b) => b
+                         case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])),
+         c)
       <==> perm(a, c)
+
+goal
+  forall a: array<int, int>, n: int, i₁₁: int, b₁₃: array<int, int>, n₆: Nat,
+         K₈: Trace<int>, S₉: Trace<(int, array<int, int>)> ::
+    0 <= n
+      && K₈ == counter(0, 1, n₆)
+      && S₉
+        == trace(1, a,
+                 for ⌊K₈⌋
+                 do i₃, b₅, k₇ ::
+                   case i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃] => i₃ + 1
+                   case !(i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃]) => i₃ + -1,
+                   case i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃] => b₅
+                   case !(i₃ == 0 || b₅[i₃ + -1] <= b₅[i₃]) => b₅[
+                     i₃ :=
+                     b₅[i₃ + -1]][
+                     i₃ + -1 :=
+                     b₅[i₃]])
+      && i₁₁ == current(S₉).0
+      && b₁₃ == current(S₉).1
+      && invs(for ⌊K₈⌋, ⌊S₉⌋.0 check k₇, i₃ :: i₃ < n)
+      && 0 <= integer(n₆)
+      && n <= i₁₁
+      ==> sorted(b₁₃, 0, n)
 

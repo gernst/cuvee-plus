@@ -117,7 +117,7 @@ object App:
     App(State.empty, fun, args)
 
 // the compound expressions cache their hash (lazy, the generated one of case classes), since the memos and classes of
-// the engines hash large terms, e.g. the state traces of -teq-state substituted throughout a goal, at every lookup
+// the engines hash large terms, e.g. the traces of -teq substituted throughout a goal, at every lookup
 case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends Expr:
   override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = inst.params ++ args.params

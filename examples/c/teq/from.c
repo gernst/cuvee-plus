@@ -1,4 +1,4 @@
-// ./Cuvee.sh -unbounded -teq -split -simplify examples/c/teq/from.c
+// ./Cuvee.sh -unbounded -teq -split -prove examples/c/teq/from.c
 // with -unbounded, since -teq does not accelerate unsigned counters, which wrap around otherwise
 // the iterations from a bound on, counted for an increment in the body (Mono6_1), where solving z == x for the
 // number of iterations would be cyclic, since the count depends on the counter of the iterations

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -simplify examples/dafny/algorithms/prefix_sums.dfy
+// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/prefix_sums.dfy
 // the prefix sums of a[0..n) in b: b[i] is the sum of a[0..i], computed from b[i - 1] with the two pointers k == i - 1
 // and i, as the lemma current_trace_prefix_sums of teq.dfy expects them
 //

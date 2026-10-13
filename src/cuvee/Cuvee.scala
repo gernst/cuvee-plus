@@ -60,7 +60,15 @@ object Cuvee extends util.Main:
     Param.reset()
 
     val reader = config.reader
-    val (init, cmds) = config.input.source(config, reader)
+
+    // the modules of the lemma database and the files of -include are parsed before the pipe runs, an error there,
+    // e.g. a module that refers to declarations of another one that is not injected, is reported like a parse error
+    val (init, cmds) =
+      try config.input.source(config, reader)
+      catch
+        case result: Error =>
+          config.report(config, config.input.printer).report(result, false)
+          return (Pipe.errorCode, Nil, List(result))
 
     // the declarations that the receiver knows are dropped before it, e.g. the prelude of the language of the output
     // for a printer, before further sinks, e.g. of tests, which therefore see what the receiver sees;

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify -fallback examples/c/teq/fallback.c
+// ./Cuvee.sh -teq -prove -split -prove -fallback examples/c/teq/fallback.c
 // the loop of SV-COMP nla-digbench/bresenham-ll: the flags v < 0 become a combinator that is not equated to a variable,
 // a dependency of the trace of y, which is a fresh function, whose arguments include the length n of the counter
 int main() {

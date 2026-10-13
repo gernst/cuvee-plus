@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry count -simplify -fallback examples/dafny/teq/fallback_count.dfy
+// ./Cuvee.sh -teq -entry count -prove -fallback examples/dafny/teq/fallback_count.dfy
 // a combinator that is not equated to a variable, the flags of the positions counted, becomes a fresh function,
 // whose arguments include the length n of the counter of its dependency
 

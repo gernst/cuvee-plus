@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify examples/c/teq/unsigned_down.c
+// ./Cuvee.sh -teq -prove -split -prove examples/c/teq/unsigned_down.c
 // an unsigned counter down to 0 from a nondeterministic value, x - 1 as x + 4294967295 modulo 2^32, and a counter up
 // in parallel, which ends at the initial value
 extern unsigned int __VERIFIER_nondet_uint(void);

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify -verify examples/c/verify/entry_context.c
+// ./Cuvee.sh -teq -prove -split -prove -verify examples/c/verify/entry_context.c
 // the entry point is main (as in SV-COMP): even only has a goal inlined at its call, under the condition of the call,
 // not one of its own for all n, which would not hold (sanfoundry_24-1)
 extern int __VERIFIER_nondet_int(void);

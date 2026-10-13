@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify examples/dafny/algorithms/perm.dfy
+// ./Cuvee.sh -teq -prove examples/dafny/algorithms/perm.dfy
 // permutations by swaps in single loops: a reversal of a[0..n), and swaps with arbitrary positions
 //
 // status: verified with -teq -simplify;

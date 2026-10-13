@@ -39,7 +39,7 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   replaced by the roots of their classes), so the fresh list variables and identifying equations (`Js2 == Js`) that
   the simplifier needs for such conditions are not needed here.
 - **Views of traces with several accumulators** ([`Views`](../src/cuvee/prove/Views.scala), see [teq.md](teq.md),
-  "State traces"): the reads of the components of such a trace `S`, `current(S).i` and `⌊S⌋.i` (also through
+  "Trace equation systems of loops"): the reads of the components of such a trace `S`, `current(S).i` and `⌊S⌋.i` (also through
   `earlier(j, ⌊S⌋.i)`), are markers that the matcher matches modulo their view, the same read of the projection of
   `S` to the component: the trace of that accumulator alone, the other accumulators bound over the histories `⌊S⌋.j`
   of their components (`Views.project`, syntactic). The histories are inert as dependencies, never rewritten in place,
@@ -94,7 +94,7 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.
-- Programs, attributes and derivatives are not simplified; `-prove` is for the goals of `-teq` and `-teq-state`.
+- Programs, attributes and derivatives are not simplified; `-prove` is for the goals of `-teq`.
 
 ## Debugging
 
@@ -109,15 +109,15 @@ lookup.
 
 ## Checks
 
-`scripts/prove/quick.sh` runs after each change (under 30 s: the state examples except the transpose against
-their expected outputs, four per-variable examples that must leave no goal); `scripts/prove/slow.sh` runs on request
-or before a commit (the transpose, the unit tests, the 30 algorithms of `examples/dafny/algorithms` in the state form
+`scripts/prove/quick.sh` runs after each change (under 30 s: the state examples except the transpose and the binary
+searches against their expected outputs); `scripts/prove/slow.sh` runs on request
+or before a commit (the transpose, the unit tests, the 30 algorithms of `examples/dafny/algorithms`
 with their exit status, time and remaining goals, as the baseline for the work on them).
 
 ## State
 
-Oct 13, 2026: the examples of [examples/dafny/state](../examples/dafny/state) check under `-teq-state -prove`. With
-the module `state.dfy` alone: single loops, the swap of two arrays, four nested loops without fragment lemmas, the
+Oct 13, 2026: the examples of [examples/dafny/state](../examples/dafny/state) check under `-teq -prove`. With
+the database `teq.dfy` alone: single loops, the swap of two arrays, four nested loops without fragment lemmas, the
 transpose with one summary lemma, and the syntax example, 1.5 to 5 s. The binary search over a sorted array, with the
 array, its bound and the key as parameters, closes by a lemma over the whole cycle, a named bisection with a probe
 whose cuts are the partition points (`bsearch_bisect.dfy`, 8 s; `bsearch_safe.dfy` with the probe

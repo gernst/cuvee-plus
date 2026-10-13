@@ -13,7 +13,25 @@ lemma {:rw} current_reversal(a: array<int, int>, c: int, d: int, n: Nat, j: int)
   requires d == -1
   ensures
     current(trace(a, for ⌊counter(0, 1, n)⌋, ⌊counter(c, d, n)⌋
-                     do b, k, l ::
-                       b[k := b[l]][l := b[k]]))[j]
+                  do b, k, l ::
+                    b[k := b[l]][l := b[k]]))[j]
       == (if 0 <= j <= c then a[c - j] else a[j])
+
+goal
+  forall a: array<int, int>, n: int, b₁₆: array<int, int>, i₁₇: int, j₁₈: int,
+         n₈: Nat, I₁₁: Trace<int>, J₁₂: Trace<int>, B₁₃: Trace<array<int, int>>,
+         k: int ::
+    I₁₁ == counter(0, 1, n₈)
+      && J₁₂ == counter(n + -1, -1, n₈)
+      && B₁₃
+        == trace(a, for ⌊I₁₁⌋, ⌊J₁₂⌋
+                 do b₅, k₉, j₇ ::
+                   b₅[k₉ := b₅[j₇]][j₇ := b₅[k₉]])
+      && b₁₆ == current(B₁₃)
+      && n₈ == natural(i₁₇)
+      && i₁₇ + j₁₈ + 1 == n
+      && integer(n₈) < j₁₈ + 2
+      && j₁₈ <= i₁₇
+      && 0 <= k <= integer(n₈) + j₁₈
+      ==> b₁₆[k] == a[-k + n + -1]
 

@@ -1,0 +1,10 @@
+goal
+  forall a: array<int, int>, c: int, b₉: array<int, int>, i₁₀: int, n₄: Nat,
+         I₇: Trace<int>, B₈: Trace<array<int, int>>, k: int ::
+    I₇ == counter(0, 1, n₄)
+      && B₈ == trace(a, for ⌊I₇⌋ do b₂, k₅ :: b₂[k₅ := b₂[k₅] * c + k₅])
+      && b₉ == current(B₈)
+      && n₄ == natural(i₁₀)
+      && 0 <= k < i₁₀
+      ==> b₉[k] == a[k] * c + k
+

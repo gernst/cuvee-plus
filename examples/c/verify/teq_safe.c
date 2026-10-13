@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify -verify examples/c/verify/teq_safe.c
+// ./Cuvee.sh -teq -prove -split -prove -verify examples/c/verify/teq_safe.c
 // the goal is closed by the lemma database, without solver
 
 extern void reach_error(void);

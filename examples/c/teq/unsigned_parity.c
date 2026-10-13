@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify examples/c/teq/unsigned_parity.c
+// ./Cuvee.sh -teq -prove -split -prove examples/c/teq/unsigned_parity.c
 // an unsigned counter by 2 without a bound, whose values wrap around, but stay even, since 2 divides 2^32
 extern int __VERIFIER_nondet_int(void);
 int main(void) { unsigned int x = 0;

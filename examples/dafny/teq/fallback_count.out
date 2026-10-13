@@ -1,20 +1,17 @@
-function maps₁₈(x₀: array<int, int>, x₁: int, x₂: int): bool
+function C₁₂(x₀: int): int
 
-function count_from₁₆(x₀: array<int, int>, x₁: int, x₂: int): int
+function `=₁₄`(x₀: int, x₁: int): bool
 
 goal {:abstract}
-  (forall a: array<int, int>, n₄: int ::
-     forall j₁₉: int ::
-       0 <= j₁₉ < n₄ ==> maps₁₈(a, n₄, j₁₉) == (a[0 + j₁₉ * 1] < 0))
-    && (forall a: array<int, int>, n₄: int ::
-          count_from₁₆(a, n₄, n₄) == 0
-            && (forall j₁₇: int ::
-                  0 <= j₁₇ < n₄
-                    ==> count_from₁₆(a, n₄, j₁₇)
-                      == count_from₁₆(a, n₄, j₁₇ + 1)
-                        + (if maps₁₈(a, n₄, j₁₇) == true then 1 else 0)))
-    ==> (forall a: array<int, int>, n: int, c₉: int, n₄: int ::
-           0 <= n₄
-             ==> c₉ == count_from₁₆(a, n₄, 0) && n₄ == n && 0 <= n₄
-             ==> c₉ <= n)
+  forall a: array<int, int>, c₉: int, i₁₀: int, n₄: int ::
+    0 <= n₄
+      ==> 0 <= i₁₀
+        && C₁₂(0) == 0
+        && (forall j₁₃: int ::
+              0 <= j₁₃ < n₄
+                ==> (a[0 + j₁₃ * 1] < 0 ==> C₁₂(j₁₃ + 1) == C₁₂(j₁₃) + 1)
+                  && (0 <= a[0 + j₁₃ * 1] ==> C₁₂(j₁₃ + 1) == C₁₂(j₁₃)))
+        && c₉ == C₁₂(n₄)
+        && `=₁₄`(i₁₀, n₄)
+      ==> c₉ <= i₁₀
 

@@ -29,6 +29,12 @@ object TEQ extends TestSuite:
 
   val contracts = "calls of procedures with a contract are not supported"
 
+  // the former lemma database of the per-variable form (resources/cuvee/legacy/teq.dfy), no longer injected, whose
+  // lemmas the tests of the rewriting of -simplify below use
+  lazy val legacy: List[Cmd] =
+    val (_, parser, _) = cuvee.dafny.Source.newParser(cuvee.Config.default)
+    cuvee.dafny.Source.parse("/cuvee/legacy/teq.dfy", parser)
+
   val tests = Tests:
     // goals are generated without errors (z3 is never run on them);
     // examples that call methods with a contract are rejected, since calls are inlined (see "calls with contract")
@@ -99,10 +105,10 @@ object TEQ extends TestSuite:
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
 
     // an update of a visited key replaces its contribution to the count, and the prefix counts are counts of prefixes;
-    // the conditions are decided by the assumptions of the context
+    // the conditions are decided by the assumptions of the context (the lemmas of the legacy database)
     test("count"):
-      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      def fun(name: String) = cuvee.verify.TEQ.lemmas.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun; case DefineFun(fun, _, _) if fun.name.name == name => fun }.get
+      val rules = cuvee.simplify.Rules.from(State.empty, legacy)
+      def fun(name: String) = legacy.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun; case DefineFun(fun, _, _) if fun.name.name == name => fun }.get
       def app(name: String, args: Expr*) = App(fun(name), args.toList)
       def has(expr: Expr, name: String) = subexprs(expr).exists { case App(f, _, _, _) => f.name.name == name; case _ => false }
 
@@ -154,9 +160,10 @@ object TEQ extends TestSuite:
       errors ==> List(contracts)
 
     // a loop that assigns a constant: the dependency of the lemma whose bound variable the update does not use
-    // is instantiated by a dependency of the expression, here the counter defined in the context
+    // is instantiated by a dependency of the expression, here the counter defined in the context (the lemmas of the
+    // legacy database)
     test("constant updates"):
-      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
+      val rules = cuvee.simplify.Rules.from(State.empty, legacy)
       val n = Var("n", Sort.nat)
       val trace = Sort(Con("Trace", 1), List(Sort.int))
       val K = Var("K", trace)

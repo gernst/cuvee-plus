@@ -46,247 +46,100 @@
 
 (declare-fun shr (Int Int) Int)
 
-(declare-fun V$37 (Int) Int)
+(declare-fun Y$45 (Int) Int)
 
-(declare-fun Y$38 (Int) Int)
-
-(declare-fun maps$43 (Int Int Int) Bool)
-
-(declare-fun maps$49 (Int Int Int) Bool)
-
-(declare-fun count_from$47 (Int Int Int) Int)
+(declare-fun trace$47 (Int Int Int Int) Int)
 
 (goal
   (!
     (=>
-      (and
-        (forall
-          ((X$1 Int) (n$9 Int))
-          (forall
-            ((j$44 Int))
-            (=>
-              (and (<= 0 j$44) (< j$44 n$9))
-              (=
-                (maps$43 X$1 n$9 j$44)
-                (and
-                  (<= (+ 0 (* j$44 1)) X$1)
-                  (< (V$37 j$44) 0))))))
-        (forall
-          ((X$1 Int) (n$9 Int))
-          (=>
-            (<= 0 n$9)
-            (forall
-              ((j$50 Int))
-              (=>
-                (and (<= 0 j$50) (< j$50 n$9))
-                (=
-                  (maps$49 X$1 n$9 j$50)
-                  (and
-                    (<= (+ 0 (* j$50 1)) X$1)
-                    (< (V$37 j$50) 0)))))))
-        (forall
-          ((X$1 Int) (n$9 Int))
-          (=>
-            (<= 0 n$9)
-            (and
-              (=
-                (count_from$47 X$1 n$9 n$9)
-                0)
-              (forall
-                ((j$48 Int))
-                (=>
-                  (and (<= 0 j$48) (< j$48 n$9))
-                  (=
-                    (count_from$47 X$1 n$9 j$48)
-                    (+
-                      (count_from$47 X$1 n$9 (+ j$48 1))
-                      (ite
-                        (=
-                          (maps$49 X$1 n$9 j$48)
-                          true)
-                        1
-                        0)))))))))
       (forall
-        ((X$1 Int) (Y$2 Int) (v$15 Int) (n$9 Int))
+        ((X$1 Int) (Y$2 Int) (n$9 Int))
         (=>
           (<= 0 n$9)
-          (=>
-            (and
-              (= v$15 (V$37 n$9))
-              (=
-                (V$37 0)
-                (+ (- X$1) (* 2 Y$2)))
-              (forall
-                ((j$40 Int))
-                (=>
-                  (and (<= 0 j$40) (< j$40 n$9))
-                  (and
-                    (=>
-                      (and
-                        (<= (+ 0 (* j$40 1)) X$1)
-                        (< (V$37 j$40) 0))
-                      (=
-                        (V$37 (+ j$40 1))
-                        (+ (* 2 Y$2) (V$37 j$40))))
-                    (=>
-                      (and
-                        (<= (+ 0 (* j$40 1)) X$1)
-                        (<= 0 (V$37 j$40)))
-                      (=
-                        (V$37 (+ j$40 1))
-                        (+ (* (- 2) X$1) (* 2 Y$2) (V$37 j$40)))))))
-              (= (Y$38 0) 0)
-              (forall
-                ((j$42 Int))
-                (=>
-                  (and (<= 0 j$42) (< j$42 n$9))
-                  (and
-                    (=>
-                      (=
-                        (maps$43 X$1 n$9 j$42)
-                        false)
-                      (= (Y$38 (+ j$42 1)) (+ (Y$38 j$42) 1)))
-                    (=>
-                      (not
-                        (=
-                          (maps$43 X$1 n$9 j$42)
-                          false))
-                      (= (Y$38 (+ j$42 1)) (Y$38 j$42))))))
-              (= n$9 0)
-              (forall
-                ((j$45 Int))
-                (=>
-                  (and (<= 0 j$45) (< j$45 n$9))
-                  (=
-                    (+
-                      (* 2 Y$2)
-                      (* 2 Y$2 (+ 0 (* j$45 1))))
-                    (+
-                      X$1
-                      (* 2 X$1 (Y$38 j$45))
-                      (V$37 j$45))))))
+          (and
             (=
-              (+
-                (*
-                  2
-                  (count_from$47 X$1 n$9 0)
-                  X$1)
-                (* 2 Y$2))
-              (+ X$1 v$15))))))
-    :abstract))
-
-(declare-fun V$52 (Int) Int)
-
-(declare-fun Y$53 (Int) Int)
-
-(declare-fun maps$58 (Int Int) Bool)
-
-(declare-fun maps$64 (Int Int) Bool)
-
-(declare-fun count_from$62 (Int Int) Int)
-
-(goal
-  (!
-    (=>
-      (and
-        (forall
-          ((n$9 Int))
-          (forall
-            ((j$59 Int))
-            (=>
-              (and (<= 0 j$59) (< j$59 n$9))
-              (= (maps$58 n$9 j$59) (< (V$52 j$59) 0)))))
-        (forall
-          ((n$9 Int))
-          (=>
-            (<= 0 n$9)
+              (trace$47 X$1 Y$2 n$9 0)
+              (+ (- X$1) (* 2 Y$2)))
             (forall
-              ((j$65 Int))
+              ((j$48 Int))
               (=>
-                (and (<= 0 j$65) (< j$65 n$9))
-                (= (maps$64 n$9 j$65) (< (V$52 j$65) 0))))))
-        (forall
-          ((n$9 Int))
-          (=>
-            (<= 0 n$9)
-            (and
-              (=
-                (count_from$62 n$9 n$9)
-                0)
-              (forall
-                ((j$63 Int))
-                (=>
-                  (and (<= 0 j$63) (< j$63 n$9))
-                  (=
-                    (count_from$62 n$9 j$63)
-                    (+
-                      (count_from$62 n$9 (+ j$63 1))
-                      (ite
-                        (= (maps$64 n$9 j$63) true)
-                        1
-                        0)))))))))
+                (and (<= 0 j$48) (< j$48 n$9))
+                (and
+                  (=>
+                    (<
+                      (trace$47 X$1 Y$2 n$9 j$48)
+                      0)
+                    (=
+                      (trace$47 X$1 Y$2 n$9 (+ j$48 1))
+                      (+
+                        (* 2 Y$2)
+                        (trace$47 X$1 Y$2 n$9 j$48))))
+                  (=>
+                    (<=
+                      0
+                      (trace$47 X$1 Y$2 n$9 j$48))
+                    (=
+                      (trace$47 X$1 Y$2 n$9 (+ j$48 1))
+                      (+
+                        (* (- 2) X$1)
+                        (* 2 Y$2)
+                        (trace$47 X$1 Y$2 n$9 j$48))))))))))
       (forall
-        ((X$1 Int) (Y$2 Int) (v$15 Int) (x$17 Int) (n$9 Int))
+        ((X$1 Int) (Y$2 Int) (v$14 Int) (y$15 Int) (x$16 Int) (n$9 Int))
         (=>
           (<= 0 n$9)
           (=>
             (and
-              (= v$15 (V$52 n$9))
-              (= x$17 n$9)
+              (= (Y$45 0) 0)
+              (forall
+                ((j$46 Int))
+                (=>
+                  (and (<= 0 j$46) (< j$46 n$9))
+                  (and
+                    (=>
+                      (<
+                        (+
+                          (* 2 Y$2)
+                          (* 2 Y$2 (+ 0 (* j$46 1))))
+                        (+
+                          X$1
+                          (* 2 X$1 (Y$45 j$46))))
+                      (= (Y$45 (+ j$46 1)) (Y$45 j$46)))
+                    (=>
+                      (<=
+                        (+
+                          X$1
+                          (* 2 X$1 (Y$45 j$46)))
+                        (+
+                          (* 2 Y$2)
+                          (* 2 Y$2 (+ 0 (* j$46 1)))))
+                      (= (Y$45 (+ j$46 1)) (+ (Y$45 j$46) 1))))))
               (=
-                (V$52 0)
-                (+ (- X$1) (* 2 Y$2)))
+                v$14
+                (trace$47 X$1 Y$2 n$9 n$9))
+              (= y$15 (Y$45 n$9))
+              (= x$16 n$9)
               (forall
-                ((j$55 Int))
+                ((j$49 Int))
                 (=>
-                  (and (<= 0 j$55) (< j$55 n$9))
-                  (and
-                    (=>
-                      (< (V$52 j$55) 0)
-                      (=
-                        (V$52 (+ j$55 1))
-                        (+ (* 2 Y$2) (V$52 j$55))))
-                    (=>
-                      (<= 0 (V$52 j$55))
-                      (=
-                        (V$52 (+ j$55 1))
-                        (+ (* (- 2) X$1) (* 2 Y$2) (V$52 j$55)))))))
-              (= (Y$53 0) 0)
+                  (and (<= 0 j$49) (< j$49 n$9))
+                  (<= (+ 0 (* j$49 1)) X$1)))
               (forall
-                ((j$57 Int))
+                ((j$50 Int))
                 (=>
-                  (and (<= 0 j$57) (< j$57 n$9))
-                  (and
-                    (=>
-                      (= (maps$58 n$9 j$57) false)
-                      (= (Y$53 (+ j$57 1)) (+ (Y$53 j$57) 1)))
-                    (=>
-                      (not
-                        (= (maps$58 n$9 j$57) false))
-                      (= (Y$53 (+ j$57 1)) (Y$53 j$57))))))
-              (<= 0 X$1)
-              (< n$9 (+ X$1 2))
-              (forall
-                ((j$60 Int))
-                (=>
-                  (and (<= 0 j$60) (< j$60 n$9))
+                  (and (<= 0 j$50) (< j$50 n$9))
                   (=
                     (+
                       (* 2 Y$2)
-                      (* 2 Y$2 (+ 0 (* j$60 1))))
+                      (* 2 Y$2 (+ 0 (* j$50 1))))
                     (+
                       X$1
-                      (* 2 X$1 (Y$53 j$60))
-                      (V$52 j$60)))))
+                      (* 2 X$1 (Y$45 j$50))
+                      (trace$47 X$1 Y$2 n$9 j$50)))))
               (<= 0 n$9))
             (=
-              (+
-                (*
-                  2
-                  (count_from$62 n$9 0)
-                  X$1)
-                (* 2 Y$2)
-                (* 2 Y$2 x$17))
-              (+ (* 2 n$9 X$1) X$1 v$15))))))
+              (+ (* 2 Y$2) (* 2 Y$2 x$16))
+              (+ X$1 (* 2 X$1 y$15) v$14))))))
     :abstract))
 

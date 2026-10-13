@@ -1,3 +1,7 @@
+// backup (Oct 13, 2026): the former single file of the lemma database of the per-variable form of -teq, which is
+// no longer injected; the per-variable form was replaced by the state form, whose database is resources/cuvee/teq.dfy;
+// kept for the lemmas that the state form may take over
+
 // the lemma database of -teq, which is injected at the beginning of its output:
 // the type of traces and the functions on them (see cuvee.core.Sort.trace and cuvee.core.Fun.trace),
 // which exist only with -teq, and lemmas about them, which are rewrite rules of the simplifier ({:rw}),

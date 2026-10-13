@@ -56,7 +56,7 @@ object Lang:
 
   // output only (-print lean), there is no source of Lean, the one given is never used; Lean knows the built-in sorts
   // and functions of all languages, which its printer maps to their counterparts in Lean, or rejects, and the
-  // declarations with the attribute {:lean}, e.g. the datatypes Nat and List of the lemma database (teq/core.dfy)
+  // declarations with the attribute {:lean}, e.g. the datatypes Nat and List of the lemma database (teq.dfy)
   val lean =
     Lang("Lean", cuvee.smtlib.Source, cuvee.lean.Printer, Set("smt2", "dfy", "bpl", "c", "lean"))
 
@@ -105,9 +105,6 @@ case class Config(
     stderr: PrintStream = System.err,
     // whether -simplify reports the rules that it applies to each assertion (see Simplify.apply)
     rules: Boolean = false,
-    // -teq-state: loops with several modified variables are summarized by one trace over the tuple of them (see
-    // transform.StateTEQ), with the fresh lemma database of TEQ.stateModules
-    stateTraces: Boolean = false,
     // keep last
     debug: Set[String] = Set()
 ):
@@ -133,11 +130,10 @@ case class Config(
     entry.map(Name(_, None)).orElse(if program == cuvee.c.Source then Some(Name("main", None)) else None)
 
   // the modules of the lemma database that are injected into the input after its prelude (see Source.apply):
-  // those of -teq (see TEQ.modules) if the feature teq is known, then the further ones, each once, such that the
+  // teq.dfy of -teq (see TEQ.modules) if the feature teq is known, then the further ones, each once, such that the
   // order of the options does not matter
   def injected =
-    val teq = if stateTraces then TEQ.stateModules else TEQ.modules
-    val modules_ = if known.contains("teq") then teq.map((cuvee.dafny.Source, _)) else Nil
+    val modules_ = if known.contains("teq") then TEQ.modules.map((cuvee.dafny.Source, _)) else Nil
     (modules_ ++ modules).distinct
 
   // the receiver of the output, by the final configuration: the answers with -verify, with or without a solver,
@@ -193,15 +189,9 @@ object Config:
         (config_, rest)
 
   val teq =
-    flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems"):
+    flag("-teq", "generate verification conditions for procedures by symbolic execution and trace equation systems, one trace per strongly connected component of the variables of a loop, with the lemma database teq.dfy"):
       case (config, rest) =>
         val config_ = config.usingMath.having("teq").using(TEQ)
-        (config_, rest)
-
-  val teqState =
-    flag("-teq-state", "like -teq, with one trace per loop over the tuple of its modified variables (a state trace), and the lemma database of the module state only"):
-      case (config, rest) =>
-        val config_ = config.usingMath.having("teq").using(TEQ).copy(stateTraces = true)
         (config_, rest)
 
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
@@ -254,7 +244,7 @@ object Config:
         (config_, rest)
 
   val prove =
-    flag("-prove", "prove goals with the deduction engine of the package prove (congruence closure, a simplex, matching modulo the classes and the views of state traces), like -simplify"):
+    flag("-prove", "prove goals with the deduction engine of the package prove (congruence closure, a simplex, matching modulo the classes and the views of traces of several accumulators), like -simplify"):
       case (config, rest) =>
         val config_ = config.using(Prove)
         (config_, rest)
@@ -372,7 +362,6 @@ object Config:
     debug_,
     vcgen,
     teq,
-    teqState,
     chc,
     flat,
     split,
@@ -438,7 +427,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.45.1")
+    println("Cuvée 0.46.0")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

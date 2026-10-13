@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -simplify examples/dafny/algorithms/argmax.dfy
+// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/argmax.dfy
 // the position of a maximum of a[0..n), n > 0
 //
 // status: verified with -teq -simplify; the trace of the position is a selection, named argmaxs, whose cases bind by

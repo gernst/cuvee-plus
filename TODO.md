@@ -8,7 +8,7 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `-verify` (see [ideas/verify-answers.md](ideas/verify-answers.md)): a refutation is classified per goal, `VCGen`
   marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
   not depend on that loop, which `-split` keeps apart
-- `-verify` stops at a solver error with the error instead of an answer, e.g. `-teq -simplify -z3 -verify` without
+- `-verify` stops at a solver error with the error instead of an answer, e.g. `-teq -prove -z3 -verify` without
   `-fallback` (`unknown constant integer (Nat)`); an error of the solver could count as `unknown` for its goal
 - support verifying trace lemmas in Dafny
 - identify performance improvements, notably in the simplifier
@@ -742,7 +742,9 @@ Measured on binary search and on the SV-COMP examples
 - Only variables have definitions in the matcher (`Context.defs`): a term matched by a member of its class that
   contains it cycles (`a[k]` by `S.2[k] == a[k]`); a class member that does not contain the term would be safe to
   try and is not tried yet.
-- The per-variable form of `-teq` is not tested under `-prove` yet, nor the C frontend under `-teq-state`.
+- The C frontend under `-teq` (partitioned by components since Oct 13, 2026) is tested by examples/c/teq and examples/c/verify
+  only; the databases of SV-COMP (`expected.csv`) were recorded under the former per-variable form with `-simplify`
+  and are to be recorded again.
 - `-prove` simplifies assertions and function definitions only; programs, attributes and derivatives pass
   through unchanged.
 
@@ -750,7 +752,7 @@ Measured on binary search and on the SV-COMP examples
 
 - Only the Dafny frontend and printer know traces with several accumulators and the component reads `current(S).i`,
   `⌊S⌋.i`; the Boogie, SMT-LIB and Lean printers and `-fallback` reject them, and the engine of `-simplify` leaves them
-  unsimplified (`-teq-state` needs `-prove`). The matcher of `-prove` matches patterns of several accumulators
+  unsimplified (`-teq` needs `-prove`). The matcher of `-prove` matches patterns of several accumulators
   against cycles as a whole (the bisection of examples/dafny/state); the bisection and the partition points of
   sorted arrays are lemmas of the examples, not yet a module of the database.
 - The grammar needs each initial value of a trace to end with a comma before `for`, since a comma-separated list
@@ -787,7 +789,7 @@ Measured on binary search and on the SV-COMP examples
 - Facts about terms are not derived by the simplifier (see [doc/simplifier.md](doc/simplifier.md#forward-reasoning));
   bsearch.dfy needs a cut, `assert φ; assume φ;`, and `-teq`
   does not assume assertions. `-prove` has forward lemmas (`{:fw}`, see
-  [doc/prove.md](doc/prove.md)), with which the binary search in the state form closes without the cut;
+  [doc/prove.md](doc/prove.md)), with which the binary search of examples/dafny/state closes without the cut;
   which lemmas of the database should be `{:fw}` rather than `{:rw}` is open.
 - The simplifier evaluates integer division on literals and divides by
   literals on Real, but knows no bounds of division, e.g. `l <= (h + l) / 2`

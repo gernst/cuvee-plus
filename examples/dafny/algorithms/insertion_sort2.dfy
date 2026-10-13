@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -include teq:nested -simplify examples/dafny/algorithms/insertion_sort2.dfy
+// ./Cuvee.sh -teq -entry main -include teq:nested -prove examples/dafny/algorithms/insertion_sort2.dfy
 // insertion sort with nested loops, with two pointers j and p == j - 1 in the inner loop, such that the positions
 // of the swaps are counters: insertion_sort.dfy swaps b[j] and b[j - 1], arithmetic on a bound variable of the
 // trace, which patterns do not match (TODO.md), hence its inner loop cannot be summarized (the principle of

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -rules examples/dafny/teq/rules.dfy
+// ./Cuvee.sh -teq -prove -rules examples/dafny/teq/rules.dfy
 // the rules that -simplify applies to each goal, by their names (:named of the lemmas, the functions of definitions):
 // as (set-info :used ((name count) ...)) after each goal, also after those that simplify to true and are dropped
 

@@ -4,7 +4,7 @@ import cuvee.core._
 
 // a sequent at the current position of the engine (after cuvee.simplify.Context, see doc/prove.md)
 //
-// state: the declarations, e.g. the datatypes whose selectors read the components of state traces (see Views)
+// state: the declarations, e.g. the datatypes whose selectors read the components of traces (see Views)
 //
 // bound: the variables bound by enclosing binders, one list per binder, innermost first;
 // the variables of one binder are not nested, e.g. in forall x, y. phi, y is not in the scope of x (see Simplify.point)
@@ -33,12 +33,12 @@ import cuvee.core._
 //
 // applied: the number of applications of each rule by its name, for -rules
 //
-// active: the rules whose side conditions are being evaluated at this position and the components of state traces
+// active: the rules whose side conditions are being evaluated at this position and the components of traces of several accumulators
 // whose views are being computed (see Rewrite.apply and Views.projected), which are not applied or projected inside;
 // one facility for both kinds of re-entrance, by identity for rules and by the key of a component for views
 //
 // reads, views, combinators: the memos of the values of the bound variables of combinators (see Simplify.iterations),
-// of the simplified views of the markers of state traces (see Views), and of the facts of the contexts of the updates
+// of the simplified views of the markers of traces of several accumulators (see Views), and of the facts of the contexts of the updates
 // and bodies of combinators (see Simplify.combinator), keyed by the canonical facts of the position (see Canon) and
 // holding their values under the canonical names, shared by the copies of this context like steps and fresh for each
 // command (see withRules)

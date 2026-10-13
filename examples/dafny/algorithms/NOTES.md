@@ -1,7 +1,10 @@
 # Algorithms with trace equation systems
 
 Experiments towards sorting and other array algorithms with nested loops with
-`-teq -simplify`, in the dialect of Dafny of Cuvée: arrays are total maps `array<int, int>`, the first `n`
+`-teq -simplify` in the former per-variable form (until Oct 13, 2026; since then their command lines run `-teq
+-prove`, one trace per strongly connected component, with the database `teq.dfy`, and the statuses below are those of the former form; several
+of them fail now on lemmas or functions of the former modules that `teq.dfy` lacks, until the optional modules are
+reorganized; five of them are verified in examples/dafny/state), in the dialect of Dafny of Cuvée: arrays are total maps `array<int, int>`, the first `n`
 elements are sorted. Each file states its command line in its first line and
 its status in its header; the lemma database `teq.dfy` is injected by `-teq`,
 the lemmas specific to the examples stand at the beginning of each file.
@@ -35,7 +38,7 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [first_duplicate.dfy](first_duplicate.dfy) | verified with the postcondition as two implications (finding 31) |
 | [merge.dfy](merge.dfy) | verified: pinned higher-order guard, pointers tied by open trace variables |
 | [counting_sort.dfy](counting_sort.dfy) | verified: four loops in sequence, the key range as an atom |
-| [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32); verified in the state form under `-prove` by a bisection lemma over the cycle ([state/lower_bound.dfy](../state/lower_bound.dfy)) |
+| [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32); verified under `-prove` by a bisection lemma over the cycle ([state/lower_bound.dfy](../state/lower_bound.dfy)) |
 | [gnome_sort.dfy](gnome_sort.dfy) | verified: the invariant `sorted(b, 0, i)` in one lemma on the atom, the traces tied by open trace variables (finding 36) |
 
 ## Abstract predicates

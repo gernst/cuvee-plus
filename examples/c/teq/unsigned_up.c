@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify examples/c/teq/unsigned_up.c
+// ./Cuvee.sh -teq -prove -split -prove examples/c/teq/unsigned_up.c
 // an unsigned counter that wraps around modulo 2^32 (mods), whose test bounds it below 2^32, such that its final value
 // is the bound itself, which is even
 int main(void) { unsigned int x = 0;

@@ -1,5 +1,5 @@
-// ./Cuvee.sh -teq-state -entry main -prove examples/dafny/state/row_sums.dfy
-// examples/dafny/algorithms/row_sums.dfy with state traces, without its lemmas (see ideas/state-trace.md)
+// ./Cuvee.sh -teq -entry main -prove examples/dafny/state/row_sums.dfy
+// examples/dafny/algorithms/row_sums.dfy under -teq, without its lemmas (see ideas/state-trace.md)
 
 method main(A: array<int, array<int, int>>, m: int, n: int) returns (s: array<int, int>)
   requires 0 <= m && 0 <= n

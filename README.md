@@ -16,7 +16,7 @@ Main features:
   Equation Systems** with a database of lemmas, most of them proved in Lean
   (`-teq`), and **constrained Horn clauses** (`-chc`).
 - **Deduction engine** (`-prove`) for the goals of trace equation systems, with
-  congruence closure, a simplex, and state traces (`-teq-state`), see
+  congruence closure, a simplex, and traces of several accumulators, see
   [doc/prove.md](doc/prove.md).
 - **Simplifier** with a rewrite engine for lemmas (`-simplify`), and the
   **fallback** of the remaining goals to first-order logic (`-fallback`).
@@ -72,7 +72,7 @@ given, the output options apply to the result. For example:
 ```sh
 ./Cuvee.sh -vcgen -z3 examples/dafny/vcgen/max.dfy              # verify methods
 ./Cuvee.sh -chc -entry max -z3 examples/dafny/vcgen/max.dfy     # infer invariants
-./Cuvee.sh -teq -simplify examples/dafny/vcgen/sum.dfy          # Trace Equation Systems
+./Cuvee.sh -teq -prove examples/dafny/vcgen/sum.dfy             # Trace Equation Systems
 ./Cuvee.sh -chc -z3 examples/c/horn/count.c                     # C, invariants by Horn clauses
 ```
 
@@ -155,10 +155,10 @@ lists them.
   obligations `forall xs. antecedents ==> conclusion`, which the solvers report
   one by one.
 - **Deduction engine** (`-prove`): a second engine for the goals of `-teq` and
-  `-teq-state`, independent of the simplifier: congruence closure and a simplex
+  independent of the simplifier: congruence closure and a simplex
   over the rationals as the context, matching modulo the classes, the
-  per-variable views of state traces (one trace per strongly connected
-  component of the variables of a loop, `-teq-state`), rules over whole
+  per-variable views of traces of several accumulators (one trace per strongly connected
+  component of the variables of a loop, `-teq`), rules over whole
   cycles, and forward lemmas (`{:fw}`), see [doc/prove.md](doc/prove.md).
 - **Simplifier** (`-simplify`): contextual simplification of formulas and
   simplification of programs, normalisation of arithmetic on `Int` and `Real`
@@ -202,7 +202,7 @@ SV-LIB.correct-tags.CoreVerification and SV-LIB.correct-tags.CTranslated
 (SV-LIB scripts, property `correct-tags`), with the same command for both:
 
 ```sh
-./Cuvee.sh -teq -simplify -split -simplify -fallback -z3 -timeout 900000 -verify [-arch 32|64] task
+./Cuvee.sh -teq -prove -split -prove -fallback -z3 -timeout 900000 -verify [-arch 32|64] task
 ```
 
 where the answer is `correct` (the property holds), `incorrect` (it is

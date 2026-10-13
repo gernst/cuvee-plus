@@ -3,3 +3,16 @@ function occurrences(x: int, a: array<int, int>, i: int, n: Nat): int
 lemma {:rw} occurrences_def(x: int, a: array<int, int>, i: int, n: Nat)
   ensures count(x, selects(a, ⌊counter(i, 1, n)⌋)) == occurrences(x, a, i, n)
 
+goal
+  forall a: array<int, int>, x: int, c₉: int, i₁₀: int, n₄: Nat, I₇: Trace<int>,
+         C₈: Trace<int> ::
+    0 <= i₁₀
+      && I₇ == counter(0, 1, n₄)
+      && C₈
+        == trace(0, for ⌊I₇⌋
+                 do c₂, k₅ ::
+                   case a[k₅] == x => c₂ + 1 case a[k₅] != x => c₂)
+      && c₉ == current(C₈)
+      && n₄ == natural(i₁₀)
+      ==> c₉ == occurrences(x, a, 0, natural(i₁₀))
+

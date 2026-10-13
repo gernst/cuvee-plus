@@ -104,9 +104,9 @@ method init(n: int, v: int) returns (a: array<int, int>)
 Arrays here are total maps from integers to integers (the type \lstinline|array<int, int>|), so there is no bounds
 check and \lstinline|a[i] := v| is the functional update $a[i := v]$. The run is
 \begin{center}
-\texttt{./Cuvee.sh -teq-state -prove examples/dafny/state/init.dfy}
+\texttt{./Cuvee.sh -teq -prove examples/dafny/state/init.dfy}
 \end{center}
-where \texttt{-teq-state} produces the verification condition over traces and \texttt{-prove} runs the engine. The
+where \texttt{-teq} produces the verification condition over traces and \texttt{-prove} runs the engine. The
 output is empty: the goal is proved and therefore dropped.
 
 \subsection{The verification condition}
@@ -179,7 +179,7 @@ loop gets. In particular there is no invariant.
 The engine does not know what a counter or a store is; it knows rewrite rules. A rule is a lemma with the attribute
 \lstinline|{:rw}| whose conclusion is an equation $l = r$ (or an equivalence), read from left to right, possibly
 with preconditions as side conditions. The variables of the lemma are matched against the goal. The database of
-\texttt{-teq-state} is one Dafny file, \texttt{resources/cuvee/teq/state.dfy}, with the definitions of the types and
+\texttt{-teq} is one Dafny file, \texttt{resources/cuvee/teq.dfy}, with the definitions of the types and
 functions above and about forty lemmas. The ones this example needs:
 \begin{lstlisting}
 lemma {:rw} counter_def(i: int, c: int, n: Nat)

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq-state -prove examples/dafny/state/lower_bound.dfy
+// ./Cuvee.sh -teq -prove examples/dafny/state/lower_bound.dfy
 // the lower bound of x in a sorted array, after examples/dafny/algorithms/lower_bound.dfy (open under -teq -simplify):
 // the binary search without the found case, whose result is the partition point lower(a, n, x); proved with the
 // named bisection of bsearch_bisect.dfy (package O of ideas/deduction-engine-plan.md): the guard of the else branch,

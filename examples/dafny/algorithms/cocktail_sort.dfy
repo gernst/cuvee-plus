@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -include teq:nested -simplify examples/dafny/algorithms/cocktail_sort.dfy
+// ./Cuvee.sh -teq -entry main -include teq:nested -prove examples/dafny/algorithms/cocktail_sort.dfy
 // cocktail shaker sort: each outer iteration runs a forward bubble pass over [lo, hi), which moves the maximum to
 // hi - 1, and a backward pass over (lo, hi - 1], which moves the minimum to lo; the backward pass uses two pointers
 // j and p == j - 1 (insertion_sort2.dfy)

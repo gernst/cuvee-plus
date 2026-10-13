@@ -1,6 +1,6 @@
-// ./Cuvee.sh -teq-state -prove examples/dafny/state/swap.dfy
-// the exchange of the first n elements of two arrays, element by element (examples/dafny/teq/swap.dfy), by a state trace:
-// the arrays and the index form one state, whose per-variable traces are projections (see ideas/state-trace.md)
+// ./Cuvee.sh -teq -prove examples/dafny/state/swap.dfy
+// the exchange of the first n elements of two arrays, element by element (examples/dafny/teq/swap.dfy), by one trace:
+// the arrays and the index form one cycle, whose per-variable traces are projections (see ideas/state-trace.md)
 
 method swap(a: array<int, int>, b: array<int, int>, n: int) returns (a_: array<int, int>, b_: array<int, int>)
   requires 0 <= n

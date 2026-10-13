@@ -12,8 +12,9 @@ or solvers consume.
 - [doc/datastructures.md](doc/datastructures.md): the core.
 - [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion, and
   facts that the goal does not mention.
-- [doc/teq.md](doc/teq.md): trace equation systems (`-teq`), combinators,
-  lemma database, state traces (`-teq-state`).
+- [doc/teq.md](doc/teq.md): trace equation systems (`-teq`, one trace per
+  strongly connected component of a loop's variables), combinators, lemma
+  database.
 - [doc/prove.md](doc/prove.md): the deduction engine (`-prove`, package
   `prove`, independent of `simplify`), its record in
   [ideas/deduction-engine-implementation.md](ideas/deduction-engine-implementation.md).
@@ -69,20 +70,26 @@ or solvers consume.
 
 ## Trace equation systems and solvers
 
-- `Trace` exists only with `-teq` (defined in
-  [teq/core.dfy](resources/cuvee/teq/core.dfy)); never include it implicitly
-  or in preludes.
-- The lemma database is the modules in [resources/cuvee/teq](resources/cuvee/teq):
-  `-teq` injects `core`, `arithmetic`, `counters`, `aggregation`, `arrays`,
-  `search` in this order (`TEQ.modules`), `-include teq:<concept>` injects a
-  further one (`nested`, `sorting`, `strides`) after them. Each module refers
-  to earlier ones only; the order is the order in which rules are tried, so
-  it decides which abstraction a fragment gets. A new lemma goes into the
-  module of its concept. [teq.dfy](resources/cuvee/teq.dfy) is the former
-  single file: kept, not injected, changing it has no effect.
+- `-teq` partitions the variables of a loop by
+  the strongly connected components of their read relation, one trace per
+  component, of several accumulators for a cycle (`TEQ.system`); its goals are
+  for `-prove`, since `-simplify` does not know traces of several
+  accumulators. The per-variable form of the paper is gone (Oct 13, 2026).
+- `Trace` exists only with `-teq` (declared in
+  [teq.dfy](resources/cuvee/teq.dfy)); never include it implicitly or in
+  preludes.
+- The lemma database: `-teq` injects [teq.dfy](resources/cuvee/teq.dfy), the
+  entry point (`TEQ.modules`); `-include teq:<concept>` injects an optional
+  module of [resources/cuvee/teq](resources/cuvee/teq) after it. The optional
+  modules were written for the per-variable form and are migrated file by file
+  into modules over teq.dfy alone ([ideas/teq-modules.md](ideas/teq-modules.md));
+  migrated files go to [legacy/](resources/cuvee/legacy).
+  [legacy/teq.dfy](resources/cuvee/legacy/teq.dfy) is the former single file
+  of the per-variable form: a backup, not injected. Rules are tried in the
+  order of the file, so it decides which abstraction a fragment gets.
 - Tests of trace equation systems are Dafny examples only, not SMT-LIB or
   Boogie. Those that should not pull in the lemma database of `-teq` duplicate
-  the declarations of `core.dfy` that they need, with its indexed names (e.g.
+  the declarations of `teq.dfy` that they need, with its indexed names (e.g.
   `type Trace<a₀>`, `function counter(x₀: int, x₁: int, x₂: int): Trace<int>`),
   and bind the variables of their context with `forall`, not as constants.
 - Variables of methods and of example-local lemmas must be named apart from
@@ -124,7 +131,8 @@ or solvers consume.
   `Trace(init, deps, acc, bound, update)`; the components of a trace of
   several are read by `Component(S, i)` and `History(S, i)` only, never by
   tuple selectors. Only the Dafny frontend and printer know the syntax of
-  several accumulators yet (`doc/teq.md`).
+  several accumulators yet (`doc/teq.md`), and only `-prove` simplifies such
+  traces.
 - **The simplifier runs only in `-simplify`.** Other transforms never call it
   or its helpers. The engine of `-prove` (package `prove`) copies what it
   needs from `simplify` and never references it; changes to one are not
@@ -140,7 +148,9 @@ or solvers consume.
   `-monomorph` on polymorphic input; such tests only generate goals
   (`-print null`).
 - **Testing database lemmas:** on core terms with
-  `Rules.from(State.empty, TEQ.lemmas)` (the modules of `-teq`) and `Rewrite`.
+  `Rules.from(State.empty, TEQ.lemmas)` (teq.dfy) and `Rewrite`; the tests of
+  the rewriting of `-simplify` on lemmas of the former database parse
+  `legacy/teq.dfy` (`test/dafny/TEQ.scala`).
 - **Preludes** are injected into the stream; transforms see them, tests that
   call a `Source` directly drop `Examples.prelude(...)`.
 - **Stages buffer declarations**, losing the sink's answers to them; filters

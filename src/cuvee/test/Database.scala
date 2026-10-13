@@ -52,10 +52,10 @@ object Database:
       case Some("false") => "unsafe"
       case _             => "unknown"
 
-  // the command line of an example, without ./Cuvee.sh, in its first line, or -teq -simplify for a task definition
+  // the command line of an example, without ./Cuvee.sh, in its first line, or -teq -prove for a task definition
   def command(root: Path, file: Path): Option[List[String]] =
     if file.toString.endsWith(".yml")
-    then Some(List("-teq", "-simplify", root.relativize(file).toString))
+    then Some(List("-teq", "-prove", root.relativize(file).toString))
     else Expected.command(root, file)
 
   // runs the example `file` below `root` with its command line

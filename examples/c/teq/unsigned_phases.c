@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify examples/c/teq/unsigned_phases.c
+// ./Cuvee.sh -teq -prove -split -prove examples/c/teq/unsigned_phases.c
 // an unsigned variable whose updates are remainders in two cases is in the range of unsigned int, which the updates
 // assume, such that under the test of the loop they are the sums themselves, as for mathematical integers
 int main(void) { unsigned int x = 0;

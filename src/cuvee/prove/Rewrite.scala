@@ -96,7 +96,7 @@ object Rewrite:
     results match
       case Nil =>
         // -debug match reports the rules on traces whose left-hand side does not match a trace, e.g. a summary lemma
-        // on a view of a state trace (see ideas/deduction-engine-plan.md, package M)
+        // on a view of a trace of several accumulators (see ideas/deduction-engine-plan.md, package M)
         (rule.lhs, expr) match
           case (_: Trace, _: Trace) =>
             Debug.info("match", "no match of " + rule.name.getOrElse("?") + " on " + Simplify.show(config.output.printer, expr))
@@ -167,7 +167,7 @@ object Rewrite:
 
     // a variable that the pattern does not match as it is, is matched like the other members of its class, its
     // definitions (see Context.defs), e.g. a variable K with K == counter(0, 1, n) by the counter; and a marker of a
-    // component of a state trace is matched like its simplified view (see Views.projected), which generalizes the
+    // component of a trace of several accumulators is matched like its simplified view (see Views.projected), which generalizes the
     // definitions of variables to terms
     if direct.nonEmpty || pat.isInstanceOf[Var]
     then direct

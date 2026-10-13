@@ -1,6 +1,7 @@
 package cuvee.verify
 
 import util.Name
+import util.SCC
 import cuvee.Config
 import cuvee.Error
 import cuvee.pipe.Transform
@@ -18,7 +19,7 @@ enum Step:
 // the values of the program variables as a substitution and the steps taken, where each check
 // is conditional on the assumptions and branch conditions before it;
 // a path that has left by a jump (break, continue, or return) skips the remaining statements;
-// depth is the number of enclosing loops, by which -teq-state tells nested loops from the outermost ones
+// depth is the number of enclosing loops, by which -teq tells nested loops from the outermost ones
 case class Path(su: Subst[Nothing, Expr], steps: List[Step], jump: Option[Prog], depth: Int = 0):
   def apply(expr: Expr): Expr =
     su(expr)
@@ -122,18 +123,11 @@ object TEQ extends Transform:
   def module(name: String) =
     s"/cuvee/teq/$name.dfy"
 
-  // the modules of the lemma database in the order in which -teq injects them, which is the order of their
-  // dependencies (each refers to the declarations of the earlier ones only) and the order in which the rules are
-  // tried: the core declarations (the types, the functions on traces, the shared definitions), then the lemmas on
-  // arithmetic, counters, aggregation, arrays, and searching; further modules, e.g. nested (nested loops) and sorting,
-  // are injected on demand by -include teq:<name>, after these
+  // the lemma database that -teq injects, its entry point resources/cuvee/teq.dfy: the declarations that the transform
+  // and the engines refer to (Sort.trace, Fun.trace) and the lemmas about traces; the optional modules of
+  // resources/cuvee/teq are injected on demand by -include teq:<name>, after it
   val modules =
-    List("core", "arithmetic", "counters", "aggregation", "arrays", "search").map(module)
-
-  // the lemma database of -teq-state, a single fresh module with the core declarations that it needs and the lemmas
-  // that the examples of state traces need (see ideas/state-trace.md), instead of the modules of -teq
-  val stateModules =
-    List("state").map(module)
+    List("/cuvee/teq.dfy")
 
   // the declarations of the functions on traces and the lemmas about them, the modules parsed in order by a fresh
   // parser for Dafny, for tests
@@ -305,13 +299,9 @@ object TEQ extends Transform:
       val paths_ = Or(for q <- paths yield And(List(q.A, q.B, q.C).flatMap(And.flattenStrong)))
       val constraint = And(List(inner(guard), paths_).flatMap(And.flattenStrong))
 
-      // the per-variable form of the paper, or the state form of -teq-state over the tuples of the prelude (see
-      // transform.StateTEQ), which is closed for nested loops: the counter, the trace and the exit values are
-      // substituted by their definitions, such that only the number of iterations and the choices are fresh
+      // one trace per strongly connected component of the loop's variables (see system), closed for nested loops
       val (fresh, cur, teq) =
-        if config.stateTraces
-        then cuvee.transform.StateTEQ.system(state, xs, sharp, zs, Zs, n, k, K, paths, constraint, p, closed = p.depth > 0)
-        else system(xs, sharp, zs, Zs, n, k, K, paths, constraint, p)
+        system(state, xs, sharp, zs, Zs, n, k, K, paths, constraint, p, closed = p.depth > 0)
 
       // the state at the exit, from which the body executes safely if the guard holds,
       // the paths of the body from there that end by break or return leave the loop as well
@@ -338,11 +328,24 @@ object TEQ extends Transform:
         case None =>
           checked :: left
 
-  // the trace equation system of the paper (definition 4.4): one trace per modified variable x, named after it,
-  // capitalized, e.g. I for i, whose update has a case for each path, with the other loop variables and the choices it
-  // uses as dependencies; the current values; the counter; and the iteration constraint over all traces and choices;
-  // the fresh variables of the exit, the exit values of the loop variables, and the system
+  // the trace equation system of a loop (definition 4.4 of the paper, with its variables partitioned): the variables
+  // are partitioned by the strongly connected components of their read relation, a variable reads the variables that
+  // occur in its results and, if the paths are guarded, in the guards, which all components share; the components are
+  // ordered such that each comes after those it reads, and each becomes one trace, of a single accumulator for a
+  // variable that reads no other in a cycle, of several accumulators for a cycle (core.Trace), with the counter, the
+  // histories of the earlier components that it reads and the choices as its dependencies; the exit values are
+  // current(X) and current(S).i, the iteration constraint ranges over the counter and all histories, ⌊X⌋ and ⌊S⌋.i;
+  // since the component graph is acyclic, no trace depends on another one, and the per-variable traces of a cycle
+  // are the projections of its trace (see prove.Views)
+  //
+  // the system of a nested loop is closed: the counter, the traces and the exit values are substituted by their
+  // definitions, in the order of the components, such that only the number of iterations and the choices are fresh at
+  // the exit and an inner loop is a value of the update of the outer one, not a family of fresh sequences; an
+  // outermost loop keeps its definitions as equations, which the engine follows on demand, so that the goal does not
+  // repeat the traces at every read
+  // returns the fresh variables of the exit, the exit values of the loop variables, and the system
   def system(
+      state: State,
       xs: List[Var],
       sharp: List[Var],
       zs: List[Var],
@@ -352,27 +355,66 @@ object TEQ extends Transform:
       K: Var,
       paths: List[Path],
       constraint: Expr,
-      p: Path
+      p: Path,
+      closed: Boolean
   ): (List[Var], List[Expr], Expr) =
-    val Xs = xs.map(x => Var(x.name.name.capitalize, Sort.trace(x.typ)).fresh)
-    val cur = xs.fresh
+    val index = sharp.zipWithIndex.toMap
+    val results = for x <- xs yield update(for q <- paths yield Upd(q.B, q(x)))
+    val guards = paths.map(_.B).free.intersect(sharp.toSet)
 
-    val equations =
-      for ((x, x_), tr) <- xs zip sharp zip Xs
-      yield
-        val updates = for q <- paths yield Upd(q.B, q(x))
-        val used = updates.free
-        val others = (sharp zip Xs).filter((y_, _) => y_ != x_ && used.contains(y_))
-        val choices = (zs zip Zs).filter((z, _) => used.contains(z))
-        val deps = Butlast(K) :: others.map((_, tr_) => Butlast(tr_)) ++ choices.map(_._2)
-        val bound = k :: others.map(_._1) ++ choices.map(_._1)
-        Eq(tr, Trace(p(x), deps, x_, bound, update(updates)))
+    // the read relation: the loop variables (as x♯) in the result of a variable, and those of the guards if there are
+    // several paths, whose guards every result has
+    def reads(i: Int): Set[Int] =
+      val own = results(i).free.intersect(sharp.toSet)
+      (if paths.length > 1 then own ++ guards else own).map(index)
 
-    val counter = Eq(K, Counter(Ints.zero, Ints.one, n))
-    val current = for (x, tr) <- cur zip Xs yield Eq(x, Current(tr))
-    val iterations = Invs(Butlast(K) :: Xs.map(Butlast(_)) ++ Zs, k :: sharp ++ zs, constraint)
+    val components = SCC(sharp.indices.toList, reads)
 
-    (cur ++ List(n, K) ++ Xs ++ Zs, cur, And(counter :: current ++ equations ++ List(iterations, Ints.le(Ints.zero, Nats.integer(n)))))
+    // the trace of each component, its variable (named after the variable, capitalized, or S for a cycle), the
+    // history of each loop variable as a dependency (⌊X⌋ or ⌊S⌋.i), and the exit values
+    val traces = scala.collection.mutable.Map[Int, (Var, Trace)]()
+    val histories = scala.collection.mutable.Map[Int, Expr]()
+    val exits = scala.collection.mutable.Map[Int, Expr]()
+    val order = scala.collection.mutable.ListBuffer[(Var, Trace)]()
+
+    for component <- components
+    do
+      val accs = component.map(sharp)
+      val inits = component.map(i => p(xs(i)))
+      val results_ = component.map(results)
+      val used = results_.free
+      // the earlier components that this one reads, by their history and the bound variable x♯ of the read
+      val earlier = sharp.indices.filter(j => !component.contains(j) && used.contains(sharp(j))).toList
+      val choices = (zs zip Zs).filter((z, _) => used.contains(z))
+      val deps = Butlast(K) :: earlier.map(histories) ++ choices.map(_._2)
+      val bound = k :: earlier.map(sharp) ++ choices.map(_._1)
+      val trace = Trace(inits, deps, accs, bound, results_)
+      val variable =
+        component match
+          case List(i) => Var(xs(i).name.name.capitalize, trace.typ).fresh
+          case _       => Var("S", trace.typ).fresh
+      for (i, j) <- component.zipWithIndex
+      do
+        traces(i) = (variable, trace)
+        histories(i) = if component.length == 1 then Butlast(variable) else History(variable, j)
+        exits(i) = if component.length == 1 then Current(variable) else Component(variable, j)
+      order += ((variable, trace))
+
+    val counter = Counter(Ints.zero, Ints.one, n)
+    val current = sharp.indices.map(exits).toList
+    val iterations = Invs(Butlast(K) :: sharp.indices.map(histories).toList ++ Zs, k :: sharp ++ zs, constraint)
+    val rest = List(iterations, Ints.le(Ints.zero, Nats.integer(n)))
+
+    if closed
+    then
+      // the definitions refer to earlier ones only: the traces to the counter and the traces of earlier components,
+      // the exit values to the traces; the substitution is composed in that order
+      val su = order.foldLeft(Subst.from(List(K), List(counter)): Subst[Nothing, Expr]) { case (su, (x, trace)) => su + (x -> su(trace)) }
+      (n :: Zs, current.map(su(_)), su(And(rest)))
+    else
+      val cur = xs.fresh
+      val defs = Eq(K, counter) :: order.toList.map((x, trace) => Eq(x, trace)) ++ (cur zip current).map((x, e) => Eq(x, e))
+      (cur ++ List(n, K) ++ order.map(_._1) ++ Zs, cur, And(defs ++ rest))
 
   // a single unconditional case is its result
   def update(updates: List[Upd]): Expr =

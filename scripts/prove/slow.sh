@@ -1,8 +1,9 @@
 #!/bin/bash
 # the slow sets of the engine of -prove, run on request or before a commit, not in between (see quick.sh):
-# the transpose, the unit tests, and the algorithms of examples/dafny/algorithms in the state form, each with a 60 s
-# timeout, two at a time, reporting the exit status, the time and the number of remaining goals per file, as the
-# baseline for the work on the algorithms (most leave goals, since state.dfy lacks their lemmas)
+# the transpose, the unit tests, and the algorithms of examples/dafny/algorithms with their command lines, each with a
+# 60 s timeout, two at a time, reporting the exit status, the time and the number of remaining goals per file, as the
+# baseline for the work on the algorithms (most leave goals or fail, since teq.dfy lacks their lemmas and the optional
+# modules they include were written for the per-variable form)
 # usage: scripts/prove/slow.sh [jar], from the root of the repository
 cd "$(dirname "$0")/../.."
 jar=${1:-cuvee.jar}
@@ -12,8 +13,7 @@ mill -i test.testOnly cuvee.test.prove.SimplexTests cuvee.test.prove.ClassesTest
 
 one() {
   f=$1; jar=$2
-  # the modules of -teq (-include teq:<concept>) are dropped: the database of -teq-state is the module state alone
-  args=$(head -1 "$f" | sed 's|^// ./Cuvee.sh ||; s| -simplify| -prove|g; s|-teq |-teq-state |; s| -include teq:[a-z]*||g' | sed "s| $f||")
+  args=$(head -1 "$f" | sed 's|^// ./Cuvee.sh ||' | sed "s| $f||")
   start=$(date +%s)
   out=$(timeout 60 nice -n 19 java -cp "$jar" cuvee.Cuvee $args "$f" < /dev/null 2>&1)
   code=$?

@@ -1,5 +1,5 @@
-// ./Cuvee.sh -teq-state -prove examples/dafny/state/init.dfy
-// examples/dafny/teq/init.dfy with state traces (see ideas/state-trace.md)
+// ./Cuvee.sh -teq -prove examples/dafny/state/init.dfy
+// examples/dafny/teq/init.dfy under -teq (see ideas/state-trace.md)
 // the initialization of the first n elements of the array a with the value v
 
 method init(n: int, v: int) returns (a: array<int, int>)

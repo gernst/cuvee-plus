@@ -2,8 +2,8 @@
 
 Verification by symbolic execution and trace equation systems (TEQs), after
 *Trace Equation Systems for Program Verification*. Loops are summarized by
-equations over traces, which the simplifier rewrites with a lemma database
-until the goal is proved. SMT solvers are not expected to solve TEQs: there
+equations over traces, which the engine of `-prove` rewrites with a lemma
+database until the goal is proved ([prove.md](prove.md)). SMT solvers are not expected to solve TEQs: there
 are no special cases for traces in the solver interface, no implicit
 monomorphization, and no implicit introduction of TEQ concepts to the solvers.
 
@@ -98,8 +98,9 @@ the even numbers that `main` passes).
   calls are inlined, which requires procedures without a contract (e.g. C
   functions) and does not terminate for recursive ones.
 - Each loop yields a single path (theorem 4.8), which assumes its trace
-  equation system (definition 4.4): one `Trace` per modified variable, whose
-  update has a case per path through the body, the counter
+  equation system (definition 4.4, partitioned as below): one `Trace` per
+  strongly connected component of the modified variables, whose updates have a
+  case per path through the body, the counter
   `K = counter(0, 1, n)`, and the iteration constraint `Invs`, and which
   checks that the body executes safely from the current state. Its exits
   (by the negated test, and by `break` or `return` in a last iteration from
@@ -119,10 +120,10 @@ the even numbers that `main` passes).
 - Differential equations and parallel composition are not supported; loop
   invariants are ignored.
 
-## State traces (`-teq-state`)
+## The partition into components
 
-`-teq-state` partitions the modified variables of a loop by the strongly connected components of their read
-relation ([StateTEQ](../src/cuvee/transform/StateTEQ.scala), `util.SCC`): a variable reads the variables in its
+`-teq` partitions the modified variables of a loop by the strongly connected components of their read
+relation (`TEQ.system`, `util.SCC`): a variable reads the variables in its
 results and, if the paths are guarded, in the guards, which all results share. The components are ordered so that
 each comes after those it reads, and each becomes one trace: a trace of a single accumulator for a variable in no
 cycle, as in the paper, and a trace of several accumulators for a cycle (see Combinators above), with the counter,
@@ -132,8 +133,10 @@ component graph is acyclic, no trace depends on another one, and the system of a
 (`Path.depth`): the counter, the traces and the exit values are substituted by their definitions, such that only the
 number of iterations and the choices are fresh, and an inner loop is a value of the outer update rather than a
 family of fresh sequences; an outermost loop keeps its definitions as equations, which the engine follows on demand.
-All variables in one component is the state form of the sketch, all singletons the per-variable form, which is
-exactly the case where that form had no cycles. The lemma database is the single module `state.dfy`. The
+All singletons is the per-variable form of the paper, which is exactly the case where that form had no cycles; the
+per-variable form for every loop, the former `-teq`, was removed on Oct 13, 2026, when the partition, until then
+`-teq-state`, became `-teq`. The lemma database is
+[teq.dfy](../resources/cuvee/teq.dfy). The
 per-variable traces of a cycle are projections of its trace that the engine of `-prove` computes on demand (see
 [prove.md](prove.md)), and a rule may also match the trace of a cycle as a whole, with a pattern of several
 accumulators, e.g. the bisection of the binary searches, which names the trace of `lo` and `hi`; the simplifier of
@@ -144,52 +147,49 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
 
 ## The lemma database ([resources/cuvee/teq](../resources/cuvee/teq))
 
-- The database consists of modules, injected by `-teq` in the order of
-  `TEQ.modules` (`Config.injected`): `core.dfy` (the types `Nat`, `List`,
-  `Trace`, the functions of `Fun.trace`, the basic functions on lists, and the
-  definitions that several modules share: `sum`, `parity`, `max`, `min`,
-  `count`, `pow`, `selects`), then the lemmas of `arithmetic.dfy`,
-  `counters.dfy`, `aggregation.dfy`, `arrays.dfy`, and `search.dfy`.
-  `counters.dfy` declares `mods(i, c, m, n)`, the counter modulo `m` of the
-  unsigned variables of C, whose arithmetic wraps around (`mods_def`), with
-  lemmas that bound it by the tests of loops below `m`, such that it does not
-  wrap and its values and final value are those of `counter` (not proved in
-  `teq.lean` yet); the simplifier drops the remaining remainders whose
-  arguments are in range (see [simplifier.md](simplifier.md)). Further
-  modules are injected on demand by `-include teq:<concept>`, after these:
-  `teq:nested` (the fragments of inner loops: the inner counter, its final
-  value, its iteration constraint, and its exit, which is stated on the
-  constraint fragment `invs(for ks, Ns check k, nn :: integer(nn) <= n)`
-  with the exit and the final values as side conditions, since a bare
-  comparison `n <= j` as left-hand side matched every comparison fragment and
-  cycled with the counter lemmas; the numbers of inner iterations as
-  `⌊consts(m, natural(n))⌋`, and the inner counters over them
-  (`invs_counter_consts`); the outer trace of a variable that only the inner
-  loop modifies, `results`; see
-  [examples/dafny/algorithms](../examples/dafny/algorithms), whose nested
-  loops all include it, with their summaries written for the fragment forms
-  it produces, so that it could become part of `-teq`) and
-  `teq:sorting` (`sorted`, `perm`, `partitioned`, inductions), and
-  `teq:strides` (the strided stores and stores ahead of the MonoCera
-  benchmarks, see [benchmarks/monocera](../benchmarks/monocera): loops that
-  store at 2k and 2k+1, at 3k to 3k+2, the same under three exhaustive guards
-  that do not depend on the iteration, and stores at k+1 then k, upwards and
-  downwards). Unlike the other modules, the rules of `strides.dfy` fix the
-  number of stores and of cases on their left-hand sides, are not proved in
-  `teq.lean`, and are not tested; the downward one does not match `rewnifrev`
-  yet. Each module
-  refers to the declarations of the earlier ones only, and the order of the
-  modules is the order in which the rules are tried.
-  [teq.dfy](../resources/cuvee/teq.dfy) is the former single file, from which
-  the six modules of `-teq` were split, and is not injected any more. The
-  database is printed as Lean by including the modules without `-teq`, which
-  prints them since the feature is not known to the output:
+- The database is [teq.dfy](../resources/cuvee/teq.dfy), its entry point, which
+  `-teq` injects (`TEQ.modules`, `Config.injected`): the types `Nat`, `List`,
+  `Trace`, the functions of `Fun.trace`, the functions on lists that the lemmas
+  need, and the lemmas about traces, started as the module `state.dfy` of
+  `-teq-state` with the lemmas of [examples/dafny/state](../examples/dafny/state).
+  The optional modules of [resources/cuvee/teq](../resources/cuvee/teq) are
+  injected on demand by `-include teq:<concept>`, after it. They were written
+  for the per-variable form (until Oct 13, 2026, `-teq` injected `core`,
+  `arithmetic`, `counters`, `aggregation`, `arrays`, `search` in this order,
+  and `nested`, `sorting`, `strides` were optional); they are migrated file by
+  file into modules over teq.dfy alone (see
+  [ideas/teq-modules.md](../ideas/teq-modules.md)). `core.dfy`, the
+  declarations and the definitions that several modules share, is migrated:
+  teq.dfy has all of them (`sum`, `parity`, `max`, `min`, `count`, `pow`,
+  `distincts`, `selects`), the file is in `legacy/`. The others still declare
+  functions that teq.dfy declares as well, or refer to each other, and cannot
+  be included with teq.dfy until they are migrated. What they hold: `counters.dfy`
+  `mods(i, c, m, n)`, the counter modulo `m` of the unsigned variables of C,
+  whose arithmetic wraps around (`mods_def`), with lemmas that bound it by the
+  tests of loops below `m` (not proved in `teq.lean` yet); `teq:nested` the
+  fragments of inner loops (the inner counter, its final value, its iteration
+  constraint, its exit stated on the constraint fragment
+  `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, the numbers of inner
+  iterations as `⌊consts(m, natural(n))⌋`, the outer trace of a variable that
+  only the inner loop modifies, `results`), which `-teq` no longer needs,
+  since an inner loop is a value of the outer update; `teq:sorting` (`sorted`,
+  `perm`, `partitioned`, inductions); `teq:strides` (the strided stores and
+  stores ahead of the MonoCera benchmarks, see
+  [benchmarks/monocera](../benchmarks/monocera), which fix the number of
+  stores and of cases on their left-hand sides, are not proved in
+  `teq.lean`, and are not tested). The order of the modules is the order in
+  which the rules are tried.
+  [legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy) is the former single
+  file of the per-variable form, from which its modules were split: a backup,
+  not injected. The database is printed as Lean by including the modules
+  without `-teq`, which
+prints them since the feature is not known to the output:
   `./Cuvee.sh -known dfy -print lean -include teq:core -include teq:arithmetic ... empty.dfy`.
 - Injected by the source with `-teq`, after its prelude (`Config.features`):
   Dafny input parses it with its own parser, such that the input can refer to
   its declarations, other input with a fresh Dafny parser; the TEQ transform
   relies on it. It defines the datatype `Trace`, declares the functions on traces,
-  and lemmas about them, which are `{:rw}` (rewrite rules of `-simplify`) and
+  and lemmas about them, which are `{:rw}` (rewrite rules of `-prove`) or `{:fw}` (forward lemmas) and
   free, without a body (assumed by the solvers without proof). Lemmas that
   identify a trace with a function of the database are named after it, e.g.
   `stores_def` (likewise `selects_def` for `maps`, `agree_prefix_def` for
@@ -400,8 +400,11 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
 ## The fallback encoding `-fallback` ([Fallback.scala](../src/cuvee/transform/Fallback.scala))
 
 After section 5.3 of the paper, `-fallback` lowers the goals into first-order
-logic for solvers, e.g. `-teq -simplify -split -simplify -fallback -z3`;
+logic for solvers, e.g. `-teq -prove -split -prove -fallback -z3`;
 nothing polymorphic remains of the lemma database, hence no `-monomorph`.
+Traces of several accumulators are not lowered yet (S8 of
+[ideas/deduction-engine-plan.md](../ideas/deduction-engine-plan.md)): a goal
+with a cycle that `-prove` leaves open is rejected.
 
 - The variables of traces and lists bound by universal quantifiers of
   positive polarity, e.g. of `∀ xs. φ ⇒ ψ`, or by existential ones of
@@ -518,7 +521,7 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
 - `examples/dafny/vcgen/*.dfy` without loops must generate their goals with
   `-teq` (never passed to a solver).
 - `examples/c/teq/*.c` and `examples/dafny/teq/affine.dfy` state their command
-  line, e.g. `-teq -split -simplify`, and the goals that remain in their
+  line, e.g. `-teq -split -prove`, and the goals that remain in their
   expected output (none if they are proved).
 - [TEQ.scala](../test/src/cuvee/test/dafny/TEQ.scala) checks the goals of
   `-teq`, the injection of the database, and the lemmas on core terms
@@ -528,12 +531,14 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   summations, `selects`) in single steps; `examples/dafny/simplify/traces*.dfy`,
   `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
   traces, which declare `Trace` and the functions on traces as in `core.dfy`.
-- E.g. `./Cuvee.sh -teq -simplify examples/dafny/vcgen/sum.dfy`.
+- E.g. `./Cuvee.sh -teq -prove examples/dafny/vcgen/sum.dfy`.
 - The Dafny translations of SV-COMP (`benchmarks/sv-comp/dafny`) and the C
   programs printed from them (`benchmarks/sv-comp/c`, since patched for other
   verifiers, which `expected.csv` predates) have databases of their
   expected results (`expected.csv`, suites `SVComp` and `SVCompC`, only with
-  `CUVEE_SVCOMP`), recorded one process per task with 60 s; their summary is
+  `CUVEE_SVCOMP`), recorded one process per task with 60 s under the former
+  per-variable form with `-simplify` (to be recorded again under `-teq -prove`,
+  which `test/Database.scala` now runs); their summary is
   `benchmarks/sv-comp/dafny/summary.md`. The translations write the division
   and remainder of C as `quot` and `rem` of the prelude of Dafny, lemmas keep
   `/` and `%`. `-print c -known dfy,teq,rw` prints their programs without
