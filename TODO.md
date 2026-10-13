@@ -64,6 +64,32 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## Bugs
 
+- **The bisection of `teq:search` is inconsistent** (found by the Lean proofs, Oct 13, 2026; `lean/open.txt`). The
+  rule `bisection` equates the trace of the loop with the function `bisection`, whose cases are guarded by
+  `G(M(lo, hi)) && lo < hi` and `H(M(lo, hi)) && lo < hi`; an update whose guards all fail is `unspecified`, a single
+  constant per type (doc/teq.md, Combinators). `bisection_lo` and `bisection_hi` bound the components of the current
+  value for any number of steps, also for steps after `lo < hi` has failed, where both components are
+  `unspecified`:
+  - Counterexample: `l0 == h0 == 0`, one step (`m == 1`), `G` and `H` false, any probe `M` within the interval. The
+    premises of `bisection_lo` hold (`G` holds on no prefix, vacuously), and it gives
+    `0 <= current(bisection(0, 0, ⌊counter(i, c, 1)⌋, M, G, H)).0 <= cut(G, 0, 0) == 0`, by the rule the first
+    component of `unspecified`, i.e. `unspecified.0 == 0`. The same with `l0 == h0 == 5` gives
+    `unspecified.0 == 5`: the database derives `false`.
+  - Not affected so far: `-prove` instantiates the forward facts at the traces of the loops of the goals, whose
+    iteration constraints give `lo < hi` for every step, so the examples (`examples/dafny/state/bsearch_bisect.dfy`,
+    `bsearch_safe.dfy`, `lower_bound.dfy`) do not reach the contradiction; nothing prevents an instance with a
+    number of steps beyond the exit.
+  - The guards are also neither complete nor disjoint for `lo < hi` alone: where neither `G` nor `H` holds at the
+    probe the step is `unspecified` too, and where both hold the cases disagree (the binary searches have `H == !G`
+    or the negation of the comparison, which avoids both).
+  - Fix, to be decided: a premise of `bisection_lo` and `bisection_hi` that every step is taken with `lo < hi` and
+    some guard true, e.g. `invs(for ⌊bisection(l0, h0, ks, M, G, H)⌋.0, ⌊bisection(l0, h0, ks, M, G, H)⌋.1 check
+    lo, hi :: lo < hi && (G(M(lo, hi)) || H(M(lo, hi))))`, which the iteration constraint of the loop provides
+    (`-prove` looks closed conditions up among the facts); or a third case in the rule that keeps the state,
+    `case !(lo < hi) => lo, hi`, which the traces of the programs do not have, such that the rule would no longer
+    match them. With the premise, the facts follow by induction with `cut_iff` of `lean/TEQ/Proofs.lean`; then the
+    three lemmas leave `lean/open.txt`.
+
 - C: variables named like the constants of SMT-LIB, `int true = 1; int false = 0;`
   (`benchmarks/acsl/loops-crafted-1/watermelon`), keep their names and reach z3 as `(true Int)`, a sort error
   ("solver error"); such names need renaming in the frontend.
@@ -316,13 +342,8 @@ Plan:
   counterexamples show the premises that are needed: dependencies of equal length, indices within the lists, and
   complete guards. The functions declared without a body (`cut` and the predicates of sorted.dfy) are modelled by hand
   in `lean/TEQ/Definitions.lean`.
-- **The bisection of search.dfy is inconsistent** as stated: an update whose guards all fail is `unspecified`, a
-  single constant, and for `l0 == h0` and one iteration (no guard holds, since `lo < hi` fails) with `G` false,
-  `bisection_lo` gives `l0 <= current(...).0 <= cut(G, l0, h0) == l0`, i.e. the first component of `unspecified` is
-  `l0` for every `l0`. The facts hold only for the traces of the loop, whose iterations all have `lo < hi`; a premise
-  `invs(for ⌊bisection(...)⌋ check s :: s.0 < s.1)` (and complete guards) on `bisection_lo` and `bisection_hi`, or a
-  third case that keeps the state, would make them true. The three lemmas are not proved (`lean/open.txt`); `-print
-  lean` prints the trace of two accumulators of the rule since 0.46.6, as a trace of a product.
+- The three lemmas of the bisection of search.dfy are not proved (`lean/open.txt`), since they are inconsistent
+  (see Bugs); `-print lean` prints the trace of two accumulators of the rule since 0.46.6, as a trace of a product.
 - The premises that the engine does not check are listed in [lean/premises.txt](lean/premises.txt): nine reads and
   prefixes within the loop, two lengths, and one complete guard. Open: turn the index premises into `requires` where `-prove` decides them
   in the contexts of the goals (item 4 above), measured on the tests and the SV-COMP rows, which would shrink the
