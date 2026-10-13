@@ -1,4 +1,4 @@
-# The lemma database after the switch to the state form: a reorganization of the modules
+# The lemma database after the switch to one trace per component: a reorganization of the modules
 
 Oct 13, 2026, after `-teq` partitioned every loop by its components (0.46.0). A proposal, being implemented file by
 file; the user agreed to the plan, with an example per lemma only where intuition asks for one, and with the usage
@@ -73,7 +73,7 @@ statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a gui
 
 | file | functions | rules | written for | state |
 |---|---|---|---|---|
-| `teq.dfy` (entry, injected by `-teq`) | 15 + 3 types | 35 `{:rw}` | the state form (the former `state.dfy`) | injected |
+| `teq.dfy` (entry, injected by `-teq`) | 15 + 3 types | 35 `{:rw}` | one trace per component (the former `state.dfy`) | injected |
 | `teq/core.dfy` | 19 + 3 types | none | per-variable | duplicates 16 declarations of `teq.dfy`, adds `count`, `distincts`, `max`, `min`, `parity`, `pow`; cannot be included with `teq.dfy` |
 | `teq/arithmetic.dfy` | 0 | 30 | both (no traces) | needs `core.dfy` only for `Nat` |
 | `teq/counters.dfy` | `mods` | 60 (16 on `invs`) | per-variable | partly duplicated in `teq.dfy` (counter, consts) |
@@ -90,7 +90,7 @@ Uses: `-include teq:nested` 25 times (algorithms), `teq:sorting` 6, `teq:strides
 old modules have: `count` (counting_sort, count_occurrences, merge, partition, three_way_partition), `distincts`
 (distinct, first_duplicate), `maxs` (max_element), and `consts_prefix` of every inclusion of `teq:nested`.
 
-What no longer applies in the state form:
+What no longer applies since one trace per component:
 - **The fragments of inner loops** (`teq:nested`, the `invs` rules over `ks, Js, Ns` and `results`): an inner loop is a
   value of the outer update, closed by substitution (examples/dafny/state: nested_sum, nested_mult, nested_counter,
   row_sums, transpose without fragment lemmas).
@@ -118,7 +118,7 @@ bounds of their iteration constraints (`invs_counter_lower`, `invs_counter_upper
 | `teq:unsigned` | `mods`, the counters of the unsigned variables of C | counters.dfy (`mods_def`, `invs_mods_*`) |
 | `teq:search` | linear searches (`agree_prefix`, `above_iterations`, not occurs) and the bisection (`bisection`, `cut`, `bisection_lo/hi`) | search.dfy, examples/dafny/state/bsearch_bisect.dfy |
 | `teq:sorted` | sortedness, permutations, partitions, and the partition points of a sorted array (`lower`, `upper`, `equal`, `bounds`, `cut_lower`, `lower_succ`) | sorting.dfy, bsearch_bisect.dfy |
-| `teq:strides` | the strided stores of MonoCera | strides.dfy, to be tested in the state form |
+| `teq:strides` | the strided stores of MonoCera | strides.dfy (tested on SV-COMP since Oct 13) |
 
 `teq:nested` and the fragment rules of counters.dfy are retired to `legacy/`. The modules move lemma by lemma, each
 with a state-form example that uses it (the algorithms are the tests), and with its proof in Lean (`lean/`, once the module joins the stable ones); what is not

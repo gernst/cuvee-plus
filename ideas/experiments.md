@@ -43,10 +43,17 @@ and others (imported from the SV-COMP statistics, not run by us).
 | Cuvée (0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false | 553 |
 | Cuvée+Z3 (0.42.2, `-verify`, 15 min) | 148 true, 51 false | 283 true, 28 false | 941 |
 | Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false | 400 |
+| Cuvée (0.42.1, `-verify`, 60 s, i9-9900) | 130 true, 9 false | 125 true, 16 false | 535 |
+| Cuvée (0.46.5, `-verify`, 60 s, i7-6700) | 136 true, 9 false | 145 true, 16 false | 587 |
 
 Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, Korn 882, CPAchecker 852
 (AISE, which did not enter Arrays, 982 on Loops); see `scripts/out/experiments.pdf`.
 
+- The 60 s rows compare the database migration (Oct 13, 0.46.x: one trace per strongly connected component,
+  `-prove`, the migrated modules with `-include`, a second round of `-split -prove`) with the per-variable form
+  (0.42.1, `-simplify`, the whole database and `teq:nested`); not in `scripts/out/experiments.pdf`, which takes the
+  15 min runs. 0.46.5 loses 11 tasks of 0.42.1 (Arrays: indp5, revcpyswp2, time outs; Loops: in-de41 to in-de62,
+  sum_by_3_abstracted, sum_array-2-2, while_infinite_loop_4) and gains 37; see ideas/teq-modules.md.
 - Arrays is where TEQ should stand out against the model checkers; on Loops over integers, the Horn-based and
   model-checking tools lead.
 - The tasks have machine integers, which TEQ models in part (nondeterministic values in their ranges, unsigned
@@ -126,7 +133,7 @@ as tags (`correct-tags`).
 
 ## Ablations
 
-- The modules of the lemma database: the default against `teq:nested`, `teq:sorting`, `teq:strides`.
+- The modules of the lemma database: teq.dfy alone against the optional modules (`aggregation`, `arithmetic`, `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`), one at a time.
 - The simplifier with and without `mods` and the remainders (version 0.36.2).
 - The frequency of the rules (`scripts/rules.py`).
 - Time to proof: most proofs take less than 20 s, the time limit barely matters.
@@ -145,7 +152,13 @@ the `fermat1-ll` tasks time out at 60 s.
 Done (Oct 12, 2026, 17:29–17:55, Cuvée 0.42.2, the same setup, complete): `xml/cuvee-fallback.xml` on SV-COMP
 Arrays and Loops and on the unbounded set, after the fix of the exits of loops; no wrong results.
 
-To do: the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
+Done (Oct 13, 2026, 19:44–21:17, Cuvée 0.46.3 to 0.46.5, 60 s, 2 cores, 7 GB, Intel Core i7-6700, complete):
+`xml/cuvee.xml` on SV-COMP Arrays and Loops after each step of the database migration (`-T 60s --vcloudCPUModel`,
+see doc/benchmarks.md); correct results Arrays 105, 124, 140, 144, 145 and Loops 128, 148, 154, 154, 161, no wrong
+results.
+
+To do: `xml/cuvee.xml` on SV-COMP Arrays and Loops with 15 min after the migration (the second round of `-split
+-prove`, the migrated modules), for section 2 and the PDF; the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
 MonoCera itself (`xml/monocera.xml`); SV-LIB `CTranslated` and `CoreVerification` (`xml/cuvee.xml`,
 `xml/cuvee-chc.xml`); `-chc` on SV-COMP with `-verify`; the ACSL tasks with `-verify` after the revised
 annotations.

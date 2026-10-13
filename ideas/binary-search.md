@@ -1,6 +1,6 @@
 # Binary search with `-teq -simplify`
 
-Status (Oct 13, 2026): in the state form under `-prove`, both versions close:
+Status (Oct 13, 2026): under `-teq -prove`, both versions close:
 [state/bsearch.dfy](../examples/dafny/state/bsearch.dfy) with partition points (no cut, the bounds as forward facts,
 the midpoint by the bounds of division in the arithmetic) and
 [state/bsearch_sorted.dfy](../examples/dafny/state/bsearch_sorted.dfy) over a sorted array, the array, its bound and

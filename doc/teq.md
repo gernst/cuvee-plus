@@ -61,7 +61,7 @@ After section 3 of the paper, generalized to several accumulators
   its result, since the guards are complete. The guards need not be
   complete since `break`; an update without cases, e.g. when all guards are
   false, is a value that is not specified, the constant `unspecified` of
-  `core.dfy` (`Unspecified`). `List[Upd]` has `free`, `params`, and
+  teq.dfy (`Unspecified`). `List[Upd]` has `free`, `params`, and
   `map` like lists of expressions.
 - The functions on traces are in `Fun.trace`: `counter`, `current`, `butlast`
   (the paper's `⌊X⌋`), `length`, `earlier`; `Counter`, `Current`,
@@ -164,7 +164,10 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `arithmetic`, `counters`, `aggregation`, `arrays`, `search` in this order,
   and `nested`, `sorting`, `strides` were optional); they are migrated file by
   file into modules over teq.dfy alone (see
-  [ideas/teq-modules.md](../ideas/teq-modules.md)). Migrated so far:
+  [ideas/teq-modules.md](../ideas/teq-modules.md)), all but `nested` by
+  Oct 13, 2026; rules that still iterate over the iterations and the loop
+  variable, or over further variables `hs`, match the single dependency of
+  `-teq` (see [prove.md](prove.md)). Migrated:
   `core.dfy`, whose declarations went into teq.dfy (`distincts`, `selects`)
   and into the modules of their concept, the file is in `legacy/`;
   `aggregation.dfy` (`-include teq:aggregation`: the functions `sum`, `count`,
@@ -592,7 +595,7 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   tests the rewrite engine with the examples of the paper (counters,
   summations, `selects`) in single steps; `examples/dafny/simplify/traces*.dfy`,
   `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
-  traces, which declare `Trace` and the functions on traces as in `core.dfy`.
+  traces, which declare `Trace` and the functions on traces as in teq.dfy.
 - E.g. `./Cuvee.sh -teq -prove examples/dafny/vcgen/sum.dfy`.
 - The Dafny translations of SV-COMP (`benchmarks/sv-comp/dafny`) and the C
   programs printed from them (`benchmarks/sv-comp/c`, since patched for other
