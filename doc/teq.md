@@ -416,7 +416,7 @@ project at the root (`lakefile.toml`, sources in `lean/`):
   generator removes from the modules before printing, each with the reason:
   the bisection of search.dfy (`bisection`, `bisection_lo`, `bisection_hi`),
   whose rule and facts are inconsistent under the semantics of an update
-  without a case (TODO.md).
+  without a case (bugs.md).
 
 The dependencies of a combinator have equal lengths, which `zip` in Lean does
 not assume: `-print lean` adds hypotheses on the lengths to each lemma

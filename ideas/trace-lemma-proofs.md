@@ -7,7 +7,7 @@ fusion. The proofs are done differently now: [lean/](../lean) defines the combin
 Lean 4 and proves the lemmas of the stable modules, printed from them by `-print lean` (see
 [doc/teq.md](../doc/teq.md)); the modules `nested`, `sorting` and `strides` are not proved yet, and the premises
 that the Lean proofs needed (dependencies of equal length, indices within the lists, complete guards) are the
-well-formedness items of TODO.md. What remains of the proposal is the derivation of lemmas, and induction in the
+well-formedness items of bugs.md. What remains of the proposal is the derivation of lemmas, and induction in the
 tool as the general mechanism for user data types.
 
 ## Induction in the tool

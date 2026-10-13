@@ -24,7 +24,7 @@ Open:
   unchanged except `current_trace_bounded` (its guard premise moved to `premises.txt`), the forward facts of search
   lost their `↔ True`/`↔ False`, sorted and strides were proved anew.
 - **The bisection** (`lean/open.txt`): the rule with `bisection_lo` and `bisection_hi` is inconsistent under the
-  semantics of an update without a case (TODO.md); with a premise that all steps have `lo < hi`, the facts follow by
+  semantics of an update without a case (bugs.md); with a premise that all steps have `lo < hi`, the facts follow by
   induction with `cut_iff` of `Proofs.lean`. `-print lean` prints the rule since 0.46.6, a trace of a product.
 - **The models of Definitions.lean** fix one meaning of functions that the modules leave uninterpreted: the proofs show
   the lemmas consistent and true of the described meaning, not of every interpretation; `cut` on an empty interval

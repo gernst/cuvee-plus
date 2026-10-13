@@ -30,7 +30,7 @@ example : ¬ («prefix» 1 (butlast (consts 0 (0 : Int))) = butlast (consts 1 0)
 example : ¬ (maps (butlast (counter 0 1 0)) (fun k => earlier (natural k) [(1 : Int)]) = [1]) :=
   by simp [maps, counter, butlast]
 
--- the following hold only for dependencies of equal length (see TODO.md), here a further dependency that is shorter
+-- the following hold only for dependencies of equal length (see bugs.md), here a further dependency that is shorter
 -- than the iterations, which zip truncates
 
 -- sum_add

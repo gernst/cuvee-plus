@@ -33,7 +33,7 @@ Consolidated on Oct 12, 2026 from the findings and proposals of
    the summaries, which state an inner loop's correctness in one line. A Lean model with definitions would make
    them provable, and the user lemmas of a program are the next thing that needs a proof route
    ([trace-lemma-proofs.md](trace-lemma-proofs.md)).
-7. **Well-formedness premises explicit** (TODO.md): equal lengths of dependencies, indices in range, complete
+7. **Well-formedness premises explicit** (bugs.md): equal lengths of dependencies, indices in range, complete
    guards, which the Lean proofs needed and the statements omit; the fallback encoding does not assume them, a
    candidate cause of its wrong proofs.
 8. **Every summary checked on a wrong postcondition**, as a rule of the folder; two vacuous proofs occurred (a

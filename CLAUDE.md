@@ -25,6 +25,7 @@ or solvers consume.
 - [doc/options.md](doc/options.md): the command line options.
 - [doc/benchmarks.md](doc/benchmarks.md): runs in the VerifierCloud, definitions, results, comparison scripts.
 - [TODO.md](TODO.md): open problems and the user's instructions.
+- [bugs.md](bugs.md): wrong results (soundness first), errors, crashes, non-termination.
 - [ideas/](ideas): proposals and experiments, not implemented (index in ideas/README.md).
 
 ## Workflow

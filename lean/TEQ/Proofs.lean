@@ -520,7 +520,7 @@ theorem maps_counter_affine (a : Int) (b : Int) (i : Int) (c : Int)
       rw [show a + b * (i + c) = a + b * i + b * c by grind]
 
 
--- auxiliary lemmas for the lemmas that hold for dependencies of equal length only (see TODO.md): the lengths of zipped
+-- auxiliary lemmas for the lemmas that hold for dependencies of equal length only (see bugs.md): the lengths of zipped
 -- dependencies and of prefixes, the iteration constraints over a counter and over the lists zipped with it as
 -- statements over the positions, maps over zipped lists, reads of earlier states of a trace, monotone traces,
 -- and the auxiliary predicates as statements over the positions

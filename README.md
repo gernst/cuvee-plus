@@ -193,7 +193,7 @@ lists them.
   `-fallback`, or a function declared `:abstract` that the goal applies, e.g.
   the bit operations of C, uninterpreted on integers other than 0 and 1.
 
-Known limitations and planned work are listed in [TODO.md](TODO.md).
+Known limitations and planned work are listed in [TODO.md](TODO.md), bugs in [bugs.md](bugs.md).
 
 ## SV-COMP
 

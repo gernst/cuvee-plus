@@ -1,7 +1,7 @@
 # TODO
 
-Open problems, limitations, and inconsistencies, grouped by area; the
-architecture is described in [doc/architecture.md](doc/architecture.md).
+Open problems, limitations, and planned work, grouped by area; bugs (wrong results, errors, crashes,
+non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architecture.md](doc/architecture.md).
 
 ## New
 
@@ -17,14 +17,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 - `-verify` (see [ideas/verify-answers.md](ideas/verify-answers.md)): a refutation is classified per goal, `VCGen`
   marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
   not depend on that loop, which `-split` keeps apart
-- `-verify` stops at a solver error with the error instead of an answer, e.g. `-teq -prove -z3 -verify` without
-  `-fallback` (`unknown constant integer (Nat)`); an error of the solver could count as `unknown` for its goal
 - support verifying trace lemmas in Dafny
 - identify performance improvements, notably in the simplifier
 - thread config through more code, so that it is usually available
 - error messages should use a nice printer
-- C frontend: `goto` to a label whose statement falls through, by copying
-  the statements
 - witness output: SV-COMP scores verdicts without a validated witness with 0
   (doc/paper/README.md); correctness witnesses need loop invariants (from
   the models of Z3 for `-chc`, or derived from the trace equation systems),
@@ -55,224 +51,17 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   (`sanfoundry_24-1`, `verifythis/lcp` answered `incorrect`): package and
   upload a new version (`scripts/zenodo.py package`, `upload`, published by
   hand) and enter its DOI in fm-tools and doc/paper. The experiments of the
-  paper loaded all modules of the database (`-include teq:nested`, `sorting`,
-  `strides`), the options in fm-tools do not: align them. The tool-info module
+  paper loaded all modules of the database (`-include teq:nested`, `sorting`, since
+  renamed `sorted`, `strides`), the options in fm-tools do not: align them. The tool-info module
   `cuvee.py` is the pull request sosy-lab/benchexec#1327 (branch `add-cuvee`
   of github.com/gernst/benchexec), to be kept in sync with this repository
-- a portfolio of `-teq` and `-chc` within the time limit, see "Portfolio of
-  TEQ and CHC" below
 
 ## Bugs
 
-- **The bisection of `teq:search` is inconsistent** (found by the Lean proofs, Oct 13, 2026; `lean/open.txt`). The
-  rule `bisection` equates the trace of the loop with the function `bisection`, whose cases are guarded by
-  `G(M(lo, hi)) && lo < hi` and `H(M(lo, hi)) && lo < hi`; an update whose guards all fail is `unspecified`, a single
-  constant per type (doc/teq.md, Combinators). `bisection_lo` and `bisection_hi` bound the components of the current
-  value for any number of steps, also for steps after `lo < hi` has failed, where both components are
-  `unspecified`:
-  - Counterexample: `l0 == h0 == 0`, one step (`m == 1`), `G` and `H` false, any probe `M` within the interval. The
-    premises of `bisection_lo` hold (`G` holds on no prefix, vacuously), and it gives
-    `0 <= current(bisection(0, 0, ⌊counter(i, c, 1)⌋, M, G, H)).0 <= cut(G, 0, 0) == 0`, by the rule the first
-    component of `unspecified`, i.e. `unspecified.0 == 0`. The same with `l0 == h0 == 5` gives
-    `unspecified.0 == 5`: the database derives `false`.
-  - Not affected so far: `-prove` instantiates the forward facts at the traces of the loops of the goals, whose
-    iteration constraints give `lo < hi` for every step, so the examples (`examples/dafny/state/bsearch_bisect.dfy`,
-    `bsearch_safe.dfy`, `lower_bound.dfy`) do not reach the contradiction; nothing prevents an instance with a
-    number of steps beyond the exit.
-  - The guards are also neither complete nor disjoint for `lo < hi` alone: where neither `G` nor `H` holds at the
-    probe the step is `unspecified` too, and where both hold the cases disagree (the binary searches have `H == !G`
-    or the negation of the comparison, which avoids both).
-  - Fix, to be decided: a premise of `bisection_lo` and `bisection_hi` that every step is taken with `lo < hi` and
-    some guard true, e.g. `invs(for ⌊bisection(l0, h0, ks, M, G, H)⌋.0, ⌊bisection(l0, h0, ks, M, G, H)⌋.1 check
-    lo, hi :: lo < hi && (G(M(lo, hi)) || H(M(lo, hi))))`, which the iteration constraint of the loop provides
-    (`-prove` looks closed conditions up among the facts); or a third case in the rule that keeps the state,
-    `case !(lo < hi) => lo, hi`, which the traces of the programs do not have, such that the rule would no longer
-    match them. With the premise, the facts follow by induction with `cut_iff` of `lean/TEQ/Proofs.lean`; then the
-    three lemmas leave `lean/open.txt`.
-
-- C: variables named like the constants of SMT-LIB, `int true = 1; int false = 0;`
-  (`benchmarks/acsl/loops-crafted-1/watermelon`), keep their names and reach z3 as `(true Int)`, a sort error
-  ("solver error"); such names need renaming in the frontend.
-- SV-LIB (0.39.0), wrong verdicts on `sv-benchmarks/sv-lib/core-verification` (property correct-tags), found with
-  the run definition `SV-LIB_correct-tags` of `xml/cuvee-chc.xml` and `xml/cuvee.xml` before running them:
-  - `-chc -z3` refutes `loop-add` (expected true): the clauses of `verify-call add (x0 y0)` contain the goal
-    `forall y0. 0 <= y0`, the precondition of `add` over all values of the constants, which fails; the task
-    expects the precondition of the called procedure to be assumed (`-teq` proves the task).
-    Done in 0.39.4: `verify-call` assumes the precondition for the arguments (`Horn.entry`; `VCGen` emits no
-    goal for it), `loop-add` is true with `-chc -z3`. Consequence: `loop-add-incorrect-invariant` (expected false
-    by its `:not-recurring`, the invariant itself holds) was refuted by the precondition goal before, by accident.
-    Resolved by sv-benchmarks d1b5aaf48f9, which renamed `:not-live` to `:not-recurring`: `svlib.Parser.properties`
-    rejects `:recurring` and `:not-recurring` as not supported, so the task (and the 8 others with
-    `:not-recurring`) ends in an error instead of a wrong verdict, until the properties are supported.
-- `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
-  unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final
-  assertion fails), after about 340 s each, in the 15-minute runs of `xml/cuvee-full-fallback.xml` of Oct 11, 2026
-  (0.36.3, without `-unbounded`); the runs of Oct 10 with 60 s and 120 s stopped them at `TIMEOUT (true)`, so not
-  new; `-teq` without the fallback leaves them unknown, `-chc` (1 min) times out. Fixed in 0.42.2: `TEQ.loop` told
-  the exits of a loop apart by assumptions (`¬test`, the test before a `break`), while an enclosing loop guards the
-  cases of its updates by the branch conditions of the paths only, such that the normal exit (here infeasible,
-  `while (true)`) and the `break` exits overlapped, `case true => c case φ => c + 1`, whose lowering contradicts
-  itself for φ; the exits are branch conditions now (`examples/c/verify/teq_nested_break.c`,
-  `fermat1-ll_unwindbound1` is `unknown`, 627 s). Still wrong in the 15-minute runs of 0.42.1 (5 of them, the
-  others time out); a rerun with 0.42.2 is pending, which may also lose correct results that came from such
-  contradictions.
-- `-fallback -z3` proves `benchmarks/sv-comp/dafny/nla-digbench/geo1-u` (expected unsafe), in the runs of
-  `xml/cuvee-quick-fallback.xml` of 2026-10-10 15:25 and 16:12: a soundness problem of the encoding or of the
-  lemmas it relies on, not yet analysed; possibly the overlapping exits of loops above (fixed in 0.42.2), to
-  check. Its C version is unsafe only by the wrap-around of `unsigned long long`,
-  which the C frontend models without `-unbounded` (0.36.0): the fallback no longer proves geo1-u and its 14
-  variants in nla-digbench-scaling, Z3 finds a model instead (15-minute runs of Oct 11, 2026), and `-chc` reports
-  the violation; with `-unbounded`, it proves it again, as the semantics drops the wrap-around. The Dafny version,
-  over mathematical integers, has not been rerun.
-- A bound variable may capture a constant of the same name in the output of
-  SMT-LIB: normalization renames bound variables apart from free variables,
-  but constants (`declare-const x`) are functions, e.g.
-  `(=> (exists ((x Int)) (< x y)) (<= x y))` becomes
-  `(forall ((x Int)) (=> (< x y) (<= x y)))` with `-simplify`.
-- A rule whose left-hand side is a comparison of two open variables, e.g.
-  `j < n` with a side condition `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: P(k, h))`,
-  overflows the stack before any step: it matches every comparison, also
-  the bounds `0 <= k < n` of the iterations that matching the `invs` of the
-  side condition assumes in the context of its body (`Simplify.combinator`),
-  where the rule is tried again (see
-  [standard_find_ground-1.dfy](benchmarks/sv-comp/dafny/array-examples/standard_find_ground-1.dfy)).
-- A side condition that is an equation between applications with a variable
-  that is not instantiated yet, e.g. `prefix(n, xs) == prefix(n, ys)` with `n`
-  open, is not matched against an equal hypothesis
-  `prefix(N, t) == prefix(N, u)`, while `q(prefix(n, xs), prefix(n, ys))` and
-  `xs == ys` are; reproduced with `-simplify` alone on a lemma
-  `if prefix(n, xs) == prefix(n, ys) then (earlier(j, xs) == earlier(j, ys)) <==> true`
-  (see [standard_compare_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_compare_ground.dfy),
-  which uses the predicate `agree` instead).
-- A pattern with two cases matches an update with a single case, which one
-  case of the pattern covers (`Rewrite.matchesUpdates`); variables of the rule
-  that occur only in the other case stay uninstantiated, and the rule is
-  applied anyway: the lemma
-  `trace(x0, ... :: case c => F(x, k, h) case !c => G(x, k, h)) == if c then trace(... F ...) else trace(... G ...)`
-  rewrites `trace(a, ... :: x[h := x[h] + 2])` to
-  `if true then trace(... F ...) else trace(... G ...)` with `G` free, which
-  does not terminate (see [condm.dfy](benchmarks/sv-comp/dafny/array-fpi/condm.dfy)).
-  This is why the joins of guarded stores are not part of teq.dfy: they
-  match every store with one case, e.g. `a[k := a[-k + 99999]]` of
-  [standard_palindrome_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_palindrome_ground.dfy),
-  as `if true then ... else G(a, k, h)` with `G` free, which hides the update
-  from other lemmas.
-- A sum that contains a bound variable of a combinator in a pattern is not
-  matched, even against the same sum: the lemma
-  `current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: a[k := a[k + -1]])) == hit(a0)`
-  does not rewrite `current(trace(a2, for ⌊counter(0, 1, N)⌋ do a, k :: a[k := a[k + -1]]))`
-  with `-simplify`, while `a[k := a[k] + d]` matches `a[k := a[k] + 6]`;
-  recurrences over the previous element are not matched (see
-  [ifcomp.dfy](benchmarks/sv-comp/dafny/array-fpi/ifcomp.dfy)), only those whose
-  index is a dependency, e.g. `⌊counter(1, 1, n)⌋` (see
-  [eqn1.dfy](benchmarks/sv-comp/dafny/array-fpi/eqn1.dfy)).
-- A cycle through the arithmetic: in [ss1.dfy](benchmarks/sv-comp/dafny/array-fpi/ss1.dfy), the equation
-  `sum₄₀ == sum₂₂ + sum(selects(a₃₁, ⌊I₃₉⌋))` is solved for `sum₂₂` (`Chains`), whose value is then inlined into
-  `⌊consts(n, sum₂₂ + 1)⌋`, which `selects_stores` returns for `selects(a₃₁, ⌊I₃₉⌋)`, which reappears in the
-  solution; the poly guard against cycles (`Simplify.poly`) sees the equations of the context only, not the rules.
-  Remedies: prefer to solve for the variable that occurs in fewer definitions (`sum₄₀`), or reject a rewrite whose
-  result contains the rewritten term (`Rewrite.apply`). Also non-terminating, not analysed yet:
-  [add-3-n-u](benchmarks/sv-comp/dafny/array-multidimensional/add-3-n-u.dfy), `copy-partial-3-u`, `diff-3-n-u`.
-- Rule variables are not renamed apart from the free variables of the goal: if the goal has a variable `Ns` and
-  a lemma's side condition has its own variable `Ns`, the open condition coincides with the fact literally, is
-  decided true without binding `Ns`, and `Rewrite.apply` reports "variables of a rule not instantiated by its
-  match", which replaces the goal; a pin `forall lo, hi :: G(lo, hi) <==> a[(hi + lo) / 2] < x` with the lemma's `x`
-  unbound was decided only because the method's variable is also named `x` (see
-  [fragments.dfy](examples/dafny/algorithms/fragments.dfy), whose test methods name their sequences `KK, NN, ...` apart,
-  and [lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy)).
-- A rule is applied while the instances of its own side conditions are simplified (`Rewrite.conditions` simplifies an
-  instance before it decides or matches it): a condition that mentions the term of the rule's left-hand side, e.g.
-  `l == current(Lv)` for a rule on `current(Lv)` with `Lv` bound, does not terminate
-  ([lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy), whose sound ties of the exit to the traces all
-  fail this way; the summary of bubble_sort.dfy takes `current(results(...))` as left-hand side instead of `results(...)`
-  for the same reason). The rule should be disabled, or the instance not rewritten, while its conditions are evaluated.
-- A left-hand side `current(trace(0, for ⌊counter(0, 1, nn)⌋, hs do ...))` matched against `current(Lo)` through the
-  definition `Lo == trace(...)` of the trace variable in the context binds the higher-order guard but leaves the
-  dependency variables `nn` and `hs` unbound: a rule then fires with "variables of a rule not instantiated by its
-  match", or its identifying equations `nn2 == nn` stay open and are never matched (the probes of lower_bound.dfy,
-  NOTES.md finding 32).
-- A lemma of an injected module (`-include teq:nested`) does not fire on a goal where the identical lemma, included
-  as a user file or written in the input, does: `invs_counter_consts` of nested.dfy on
-  [row_sums.dfy](examples/dafny/algorithms/row_sums.dfy) (`-rules` does not list it; it fires on transpose.dfy, and
-  the two further chain lemmas stay in row_sums.dfy for this reason, NOTES.md finding 34). Not understood: the rules
-  differ by the attribute `{:teq}` and by their position among the rules.
-- The exit of a loop in the conclusion of a goal is a disjunction, `i < n && !r || r == !distincts(...)` for the exit
-  `!(i < n && !r)`, which `-split` does not split, and the context of the second disjunct does not contain the literals
-  of the negated first, so a rule on the atom of the postcondition sees neither `n <= i` nor `r`; a case split on the
-  negated exit when it is a disjunction would make a postcondition stated as an equivalence work
-  ([first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy) states it as two implications instead).
-- An instantiated higher-order variable leaves a beta-redex in the output, `((k: int) => !nodup(a, k, n))(k)`
-  (first_duplicate.dfy with a lemma `current(results(x0, ks, maps(for ks yield k :: F(k))))`).
-- A side condition that is an `invs` is matched in the context of the fact's combinator, where other rules fire,
-  also with the hypotheses of the goal: in [first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy) a rule
-  `nodup(a, k, n) <==> true` under the hypothesis `distincts(...)` rewrote the condition
-  `invs(for ⌊counter(0, 1, m)⌋, rs check k, r :: r == !nodup(a, k, n))` of a lemma on `distincts(...)` into the fact
-  `invs(... :: !r)`, so that `distincts(...)` was proved from itself, also for the negated postcondition; the path
-  through the split goals is not isolated. Side conditions of a rule should not be simplifiable by rules that use
-  the conclusion; atoms as side conditions (`consts_prefix` style) avoid it.
-- A closed side condition that is an `invs` over variables bound by earlier conditions is decided by the simplifier, which
-  does not find it among the facts (these keep unused dependencies, e.g. the traces of `lo` and `hi`, and their bound
-  variables are renamed), so the condition fails although the fact exists; the condition must be written over fresh
-  variables, matched, and identified by equations (`js6 == js4 && Js6 == Js3`). This was the condition of
-  [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy) that blocked its summary for a day (the one
-  run that closed the goal presumably decided the closed condition by chance), found with truncated copies of the
-  lemma with its first k conditions; the same closed instance also loses its unused dependencies when the simplifier
-  simplifies it (`invs(for ⌊Kv⌋, ⌊Rv⌋, ⌊Iv⌋ check k, h, i :: !h)` becomes two dependencies,
-  [first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy)). A closed `invs` condition should be matched
-  against the facts modulo unused dependencies instead.
-- A cycle through a side condition that is an iteration constraint, resolved for `sum_invs_const` of teq.dfy, which
-  is `consts_prefix_def` and `sum_consts_prefix` now, with the atom `consts_prefix(n, c, js)` abstracting the
-  constraint like `agree_prefix`; the mechanism remains for any rule with a general left-hand side and an `invs` side
-  condition: `sum_invs_const` had the left-hand side `sum(js)`, which matches every sum, and the side condition
-  `invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)`, open in `n` and `c`, which `Rewrite.conditions`
-  simplifies and then matches against the facts. Matching it against an `invs` fact (`Rewrite.matches`) builds the
-  simplifier's context of that fact's combinator (`Simplify.combinator`), whose reads of the dependencies
-  (`Simplify.iterations`) are rewritten, e.g. `earlier(natural(k), ⌊X⌋)` to `sum(prefix(natural(k), ...))` by
-  `earlier_sums`, on which `sum_invs_const` is tried again, with the same fact, one level deeper, until the budget is
-  exhausted (the cache of `Context.combinators` is filled only after the context is complete); e.g.
-  [ps2-ll.dfy](benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy) repeats the same eight steps 122 times, 30 s, and
-  terminates after 48 steps without the lemma; likewise ps3-ll to ps6-ll, cohencu-ll, cohendiv-ll, for_bounded_loop1,
-  copy-3-n-u, diff-2-n-u (13 of the 16 errors of the Dafny translations at 0.34.22). Such a rule is not decreasing
-  in the sense of conditional rewriting (its condition is not smaller than its left-hand side), which `Rule.check`
-  could reject statically: no `invs` in a side condition whose dependencies are variables of the left-hand side.
-  The decisive ingredient is the second one, a left-hand side that matches what the rewriting of the reads
-  produces: the fragment lemmas of [fragments.dfy](examples/dafny/algorithms/fragments.dfy) have `invs` side conditions
-  over the lists of their left-hand sides, but their left-hand sides are `invs` fragments with specific bodies, and
-  they terminate in every file; `invs_subst_counter` (body `t == F(k, J)`, higher-order) and `earlier_invs_def`
-  (left-hand side `earlier(natural(i), ts)`) of the first version of
-  [row_sums.dfy](examples/dafny/algorithms/row_sums.dfy) cycle. A side condition on the current value of the trace
-  that the rule rewrites, `current(Hv) <= current(Lv)` for a left-hand side `current(trace(...))`
-  ([lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy)), is the same re-entrance through the decision of a
-  closed condition instead of the search; remedy 1 covers both.
-  Remedies in the engine (1 done in 0.42.3, with two more that the traces of the cycles showed to be needed:
-  the reads of a combinator context are normalized by the rules without an `invs` condition only, since a chain of
-  different rules with `invs` conditions nests through the contexts of the facts they are matched against, and the
-  reads are cached by the dependencies and the definitions of the traces, since the contexts of a fact are rebuilt
-  at every position at which a condition is matched against it; the six cycles of `pending/` and of this entry
-  terminate, none of them closes its goal, see ideas/reentrance-guard.md):
-  1. A reentrance guard for conditional rules: while the side condition of a rule is decided, the rule is not
-     applied inside, e.g. a set of such rules in the context that `Rewrite.apply` skips; this cuts the recursion
-     for all conditional rules, and loses only side conditions that need the same rule again.
-  2. Open side conditions that contain combinators are only substituted, not simplified, before they are searched
-     among the facts, which are simplified already; simplification is needed for normalization elsewhere, e.g.
-     beta reduction after a higher-order match, hence only for combinators.
-  3. A separate budget for side conditions, whose exhaustion leaves the condition undecided, such that the rule
-     does not apply instead of aborting the command: a safety net, which turns errors into open goals.
-
-  Not remedies, measured on the Dafny translations: stating the lemma as the definition
-  `invs(... j == c) <==> js == ⌊consts(n, c)⌋` rewrites the `invs` facts that `Simplify.invariants` uses
-  pointwise; recording the counters that the context iterates over and not injecting their invariants again
-  (`Context.iterating`) ends bresenham-ll only; not renaming the bound variables of combinators, with binders
-  that shadow those of the context (`Context.bind` hiding the facts about them), makes the terms stable across
-  rounds, but the repetitions above remain, and it closes nothing (241 against 243 true, within the noise).
-  The injection of 7b420a0, all invariants over the counter of a loop pointwise with `earlier(natural(k), Z)`, made
-  the nested reads recurse further (19 errors), and is reverted in 0.34.23.
-- [sanfoundry_02_ground.dfy](benchmarks/sv-comp/dafny/array-examples/sanfoundry_02_ground.dfy) times out (60 s), on the trace
-  of the two largest elements, whose updates read the array at the counter from 2.
-- `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on
-  a loop body with ten conditionals in sequence, presumably from the 2^10
-  paths of its symbolic execution (see
-  [diamond_2-2.dfy](benchmarks/sv-comp/dafny/loop-acceleration/diamond_2-2.dfy)).
+Moved to [bugs.md](bugs.md) (Oct 13, 2026), also the entries that comments elsewhere cite as "see TODO.md":
+the cycle through `sum_invs_const`, the patterns with two cases (`condm`), sums over a bound variable
+(`ifcomp`), `sanfoundry_02_ground`, `diamond_2-2`, the variable capture in SMT-LIB, the dependencies of equal
+length, the bisection of `teq:search`, the soundness of `sat` with `-chc`, and parallel composition.
 
 ## General
 
@@ -283,6 +72,8 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   Lambdas of SMT-LIB are arrays of a single variable, since solvers support
   only those, hence lambdas of function type printed in SMT-LIB are not read
   back.
+- `-monomorph` keeps polymorphic assertions uninstantiated (`Monomorph`), which
+  the solvers reject; hence no z3 on polymorphic input (CLAUDE.md).
 - The implementations of overloaded operators that are not part of cvc5
   (`seq.store`, `seq.member`, `seq.proper_prefixof`, `set.proper_subset`,
   `bag.select`, `bag.proper_subbag`, `map.store`, see `core.Overload`) are
@@ -293,45 +84,10 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
   `sets.dfy`, and `invalid_sets.dfy` are removed.
 - Goals that do not hold are reported by the solver sink with their formula
   in SMT-LIB, not in the language of the input like the other reports.
-- An input file with an unknown extension, e.g. a preprocessed C file
-  `.i`, ends in an uncaught exception with a stack trace
-  ("unsupported command line option or input file"), since `Config.parse`
-  raises outside of the pipeline; the task definitions (`.yml`) of such
-  files are read.
-- Readers of input files and the stream of `-o` are never closed.
 - `Match`: parsed only in Dafny (expressions, without case conditions, not
   statements), printed in Dafny and SMT-LIB without case conditions; the
   simplifier does not reduce it on constructors (only `Fuse` selects cases),
   no rewriting modulo matches.
-- Tests that run z3 have its default timeout of 1 s per query, which a
-  loaded machine may exceed: `c.Translation.increments in expressions` failed
-  with `unknown` while z3 unrolled a loop with the constant bound 10 (about
-  0.17 s alone); with a symbolic bound it finds a linear invariant (0.035 s).
-
-## Dependencies of equal length
-
-The combinators assume that their dependencies have equal lengths (an invariant of the core, see
-`Type.dependencies`), which teq.dfy never states: e.g. `current_stores` holds only if `|keys| == |values|`, and
-`current_trace_flag` only if `|hs| == n` for the dependency `⌊counter(0, 1, n)⌋`. In Lean, the dependencies are
-zipped, which truncates to the shortest one, so such lemmas are false without the assumption.
-
-Plan:
-
-1. Make the invariant part of the semantics: a term is well-formed if the dependencies of each combinator in it,
-   also in the definitions of the functions of teq.dfy (`stores(a, keys, values)` is a trace over `keys, values`),
-   have equal lengths. The lemma database is sound for well-formed terms only, which is all that -teq builds: the
-   dependencies of a loop are `⌊X⌋` of its traces, which all have `n` steps.
-2. Rewriting preserves the invariant if each lemma maps well-formed left-hand sides to well-formed right-hand
-   sides, e.g. `prefix_stores` cuts `keys` and `values` to the same length. This is a proof obligation of each
-   lemma, not a check at run time.
-3. In Lean, each lemma gets the hypotheses that the combinators of its left-hand side are well-formed:
-   `d₁.length = d₂.length` for the dependencies, with the lengths of `butlast (counter i c n)` and of the other
-   functions given by lemmas (the length of `butlast (counter ...)`, of `maps` and of `butlast (trace ...)`),
-   stated by hand in lean/TEQ/Proofs.lean; a lemma about the right-hand side (well-formedness) is proved along with it.
-4. Lemmas whose assumptions cannot be derived from well-formedness (`earlier_consts` outside the trace,
-   `prefix_prefix` for `j > k`) get `requires`, which makes them conditional rules; check on the SV-COMP
-   database that the simplifier still discharges them in the contexts of the goals.
-5. Document the invariant and the soundness of the database modulo it in doc/teq.md.
 
 ## Proofs of teq.dfy in Lean
 
@@ -342,14 +98,10 @@ Plan:
   counterexamples show the premises that are needed: dependencies of equal length, indices within the lists, and
   complete guards. The functions declared without a body (`cut` and the predicates of sorted.dfy) are modelled by hand
   in `lean/TEQ/Definitions.lean`.
+- The premises that the engine does not check (lean/premises.txt), the printing of guards as complete, and the
+  lemmas without a proof are in bugs.md (Soundness, Trusted without a check).
 - The three lemmas of the bisection of search.dfy are not proved (`lean/open.txt`), since they are inconsistent
-  (see Bugs); `-print lean` prints the trace of two accumulators of the rule since 0.46.6, as a trace of a product.
-- The premises that the engine does not check are listed in [lean/premises.txt](lean/premises.txt): nine reads and
-  prefixes within the loop, two lengths, and one complete guard. Open: turn the index premises into `requires` where `-prove` decides them
-  in the contexts of the goals (item 4 above), measured on the tests and the SV-COMP rows, which would shrink the
-  list to the soundness gaps proper.
-- The guards of `case` updates are printed as `if g₁ then e₁ else e₂`, which assumes them complete and disjoint;
-  printing `else if g₂ then e₂ else unspecified` would turn that into an obligation of the proofs (lean.Printer).
+  (see bugs.md); `-print lean` prints the trace of two accumulators of the rule since 0.46.6, as a trace of a product.
 - The check from scratch takes about 20 s, mostly `simp` and typeclass inference for the decidability of `if` on generic
   types under `open Classical`; `simp only` instead of `simp` would speed it up.
 
@@ -358,7 +110,9 @@ Plan:
 - The Lean printer (`-print lean`) prints no preamble: the output needs
   `open Classical` and Mathlib (`ℝ`, `Set`), and names of the input that
   Lean declares already clash, e.g. a datatype `List` or a function `max`,
-  which a namespace around the output would avoid. Not checked with Lean.
+  which a namespace around the output would avoid. Only the modules of the
+  database are checked with Lean, through scripts/lean/generate.py, which adds
+  the preamble.
 - The C printer of the Dafny translations of SV-COMP
   (`benchmarks/sv-comp/dafny`, `-print c -known dfy,teq,rw`): all 651 print as
   C that parses again (`benchmarks/sv-comp/c`), whose programs, printed back as
@@ -371,7 +125,9 @@ Plan:
 ## Code structure
 
 Opportunities for cleaning up, making the code uniform, and merging common
-concepts, found by reading the whole code base; none is a bug.
+concepts, found by reading the whole code base; none is a bug. The engine of
+`-prove` copies the simplifier (package `prove`, by decision, CLAUDE.md), so the
+items on the simplifier hold for both copies.
 
 ### Core
 
@@ -487,8 +243,7 @@ concepts, found by reading the whole code base; none is a bug.
     (`VCGen.loop`, `TEQ.modified`);
   - the fresh measures `Expr.vars("m", ...)` (`VCGen`, `Horn`);
   - the save and restore of shadowed variables (`TEQ` `Block` and `call`).
-- `Monomorph` threads `(state, poly, instances, out)` (→ a class per run). Its
-  comment refers to `Sink.known`, which is `Sink.knows`. It replays the whole
+- `Monomorph` threads `(state, poly, instances, out)` (→ a class per run). It replays the whole
   prefix on every flush, which is quadratic for long incremental inputs.
   Keeping the instances across flushes needs a transform with state, which
   `Stage` does not provide.
@@ -532,7 +287,7 @@ concepts, found by reading the whole code base; none is a bug.
   - `typ` and `zero` repeat the errors for `void` and `float`;
   - the comment on global variables without initializer sits above `array`
     instead of `zero`;
-  - at 889 lines, it mixes the resolution of expressions and statements, the
+  - at 1743 lines, it mixes the resolution of expressions and statements, the
     inference of modifies (`assigned`, `effects`, `calls`, `writes`) and the
     translation unit, which could be split.
 - The flex scanners throw `RuntimeException` on unexpected characters
@@ -565,11 +320,11 @@ concepts, found by reading the whole code base; none is a bug.
   - `attrs.retain("named", "pattern")` occurs three times;
   - every case returns `(x, Nil, this)`.
 - `util.Tool.pipe` returns `(in, out, ...)` from the process's view, which
-  `Solver` binds as `(out, in, ...)`. `Tool.run` and `util.Run` are unused.
+  `Solver` binds as `(out, in, ...)`. `Tool.run` is unused.
 - `Pipe.run`:
   - it handles `Error` and `NonFatal` twice, inside the loop and around it;
   - a `StackOverflowError` is not `NonFatal` and escapes as a crash (see
-    Bugs);
+    bugs.md);
   - `if (!incremental)` is parenthesized.
 - `Config`: every transform flag repeats `config.using(X)`. `flags` is an
   unordered map, so `-help` lists the options in arbitrary order. `suffix`
@@ -602,7 +357,6 @@ concepts, found by reading the whole code base; none is a bug.
 
 ## Solvers
 
-- The stderr of a solver is never read, which can block it.
 - Axiomatization of data types: sequences are left to the solvers' theory,
   where quantified specifications often end in `unknown` (e.g. `positive` in
   [examples/dafny/hybrid/par.dfy](examples/dafny/hybrid/par.dfy)), whereas inductive
@@ -699,10 +453,6 @@ concepts, found by reading the whole code base; none is a bug.
   `r != 0 && 0 == r ==> p` is closed; nor is a disjunction among the
   hypotheses, `(a && 1 == r || !a && 0 == r) && r != 0` (see
   [standard_password_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_password_ground.dfy)).
-- `-split` also splits lemmas marked `{:rw}`, e.g. an equivalence with a
-  conditional on its right-hand side, into parts that are no valid rules, on
-  which a following `-simplify` fails with "variables of right hand side do
-  not occur in left hand side or condition".
 - Reads over writes at a different position are decided in the neutral
   context (`Simplify.select` with `ctx.neutral`), without the facts: `j != 3`
   among the hypotheses does not reduce `a[3 := w][j]` to `a[j]`; a lemma
@@ -770,9 +520,11 @@ Measured on binary search and on the SV-COMP examples
   formula again. Programs with many loops grow accordingly, e.g.
   [standard_copy9_ground-2.dfy](benchmarks/sv-comp/dafny/array-examples/standard_copy9_ground-2.dfy)
   takes about 20 s for a chain of nine copies, against about 2 s for one copy.
-- Non-termination is detected by a stack overflow only, after 8 to 13 s,
-  e.g. on counts over prefixes (see Bugs). The symbolic execution of `-teq`
-  is exponential in sequences of conditionals and overflows at ten (see Bugs).
+- Non-termination is detected by the budget of steps or by a stack overflow,
+  after 8 to 13 s, both reported as "rewriting does not terminate"
+  (`Rewrite.apply`, `Simplify.simplify` in both engines), e.g. on counts over prefixes (see bugs.md).
+  The symbolic execution of `-teq` is exponential in sequences of conditionals
+  and overflows at ten (see bugs.md).
 
 ## Deduction engine (`-prove`, package `prove`)
 
@@ -805,10 +557,6 @@ Measured on binary search and on the SV-COMP examples
   function for all components) but has no test yet.
 - The grammars of Dafny and Boogie need each initial value of a trace to end with a comma before `for`, since a
   comma-separated list commits to a further expression after its separator.
-- The round trips of `CUVEE_PRINTING` fail on four examples (Oct 13, 2026): `smtlib.Programs` on
-  `dafny/state/bsearch_bisect.dfy`, `bsearch_safe.dfy` and `lower_bound.dfy`, which use the predicates of
-  `teq:sorted` and do not resolve without `-include` (since the migration of the modules), and `dafny.Roundtrip` on
-  `dafny/state/accumulators.dfy` ("unknown type" when the output is parsed again in the test, not on the command line).
 
 ## Trace equation systems (`-teq`)
 
@@ -939,36 +687,30 @@ Measured on binary search and on the SV-COMP examples
 - Containers: missing comprehensions, `multiset(s)`, the multiset update
   `m[x := n]`, `>=` and `>`, disjointness `!!`, `seq(n, f)`, and
   multi-dimensional updates.
-- `x.f` and `x.C?` on variables only; members inside `type`/`datatype` bodies
-  need `this.` ([examples/datastructures/stack.dfy](examples/datastructures/stack.dfy)). The
-  qualified name `T_f` comes from the declared sort of the variable, before
-  type checking. Plan:
+- `x.f` and `x.C?` on variables only, e.g. `P(1).a` is "member access on an
+  expression that is not a variable". The qualified name `T_f` comes from the
+  declared sort of the variable, before type checking. Members inside
+  `type`/`datatype` bodies need no `this.` (`dafny.Parser.isMember`), although
+  [examples/datastructures/stack.dfy](examples/datastructures/stack.dfy) still
+  writes it. Plan:
   1. testers `e.C?` on terms: the constructor determines the datatype
      (`state.exprs.is`), drop the restriction to variables;
-  2. unqualified members in type bodies: with `this: T` in scope, `f(args)` is
-     `T_f(this, args)` and `y := m(args)` calls `T_m(this, args)`, with
-     Dafny's precedence: locals, members of `T`, top-level functions;
-  3. functions and selectors on terms: the parser emits a generic
+  2. functions and selectors on terms: the parser emits a generic
      application `.f` with fresh types and the receiver first, `Type.check`
      records it as pending, and `Overload.resolve` looks up `T_f` in
      `state.funs` by the sort of the receiver, extending `impl` by a lookup
      in the state; a receiver whose type is still a parameter is an error;
-  4. method calls on terms (`y := f(x).m()`) need the receiver's sort when
+  3. method calls on terms (`y := f(x).m()`) need the receiver's sort when
      the statement is built: type check the receiver on its own, otherwise
      keep the restriction; last;
-  5. tests: [stack.dfy](examples/datastructures/stack.dfy) without `this.`, nested
+  4. tests: [stack.dfy](examples/datastructures/stack.dfy) without `this.`, nested
      accesses `f(x).g()`, errors for unknown receivers.
 - `var` declarations before statements; contract clauses in the fixed order
   `modifies`, `requires`, `ensures`, `assumes`, `commits`, `decreases`, for
   loops `modifies`, `invariant`, `decreases`.
-- `t.0.1` is scanned as `t` `.` `0.1`.
-- The printer's `any` raises `MatchError` on plain strings and numbers.
 - Names that are neither identifiers nor operators, e.g. the instances
   `f<Int>` of `-monomorph`, are escaped by backticks, which the scanner reads
   back but Dafny does not have; names containing backticks are not handled.
-- Dafny printed from C input (`-print dfy`) is not parsed back: the prelude
-  declares a function named `const` with type parameters,
-  `function {:c} {:smt2} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>`.
 - Parse errors of `fuse` show the term in the internal syntax of the parser
   (`Inner(App(...))`).
 
@@ -1010,7 +752,8 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
 - `goto` only to a label whose statement does not fall through (e.g.
   `END: return 0;`, `ERROR: { reach_error(); abort(); }`), which is copied in
   its place, or to itself (a loop without exit); other gotos, e.g. those of
-  state machines, are not supported (`c.Parser.goto`).
+  state machines, are not supported (`c.Parser.goto`); open: gotos to a label
+  whose statement falls through, by copying the statements.
 - `sizeof` of an expression by the declared integer type and array sizes of
   its variable (`c.Parser.bytes`), otherwise by its type.
 - No structs, floating point, bitwise operators, preprocessor; pointers
@@ -1052,145 +795,52 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   declarations. Step axioms of recursive definitions are best stated
   backwards, `n > 0 ==> f(a, n) == f(a, n-1) + a[n-1]`: z3 cannot trigger on
   `f(a, n+1)` (`+` is interpreted) and unfolds `f(a, n)` forever.
-- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the tasks of the
-  categories Arrays and Loops with hand-written annotations, checked with
-  `-vcgen -z3`, 0.38.0; the issues of the support found so far, by impact):
-  - Done in 0.39.3 for unsigned types: annotated loops get the ranges of the
-    unsigned variables they modify as invariants, functions with annotations
-    those of their unsigned parameters as preconditions (`c.Parser.loop`;
-    `count_up_down-1`, `trex03-2` prove); signed types get none, as their
-    overflow is not modelled. Undone for loops in 0.41.6: the ranges of the
-    modified variables are no implicit invariants, the annotations state them
-    as loop invariants where needed (the implicit ones also constrained
-    uninitialized locals, see below). Was: the ranges of the C types of the program
-    variables are not assumed at loop heads: the state is quantified over all integers, while the program
-    wraps unsigned arithmetic (`uint(x + 1)`), so a loop invariant over
-    unsigned variables, e.g. `x + y == n` (`loops/count_up_down-1`), is
-    refuted by a negative `x`. Frama-C/WP conjoins the type ranges to every
-    invariant implicitly; `loop-invariants/linear-inequality-inv-a` proves
-    with an additional `0 <= s`. Affects nearly all of `loops-crafted-1`
-    (43 of 55 refuted), `loop-crafted/simple_vardep_*`, `loops/trex03-2`.
-  - Done in 0.39.3 for truth values: `&`, `|`, `^` of two truth values are
-    `and`, `or`, xor (`c.Parser.logical`; the `*_abstracted` tasks prove); `&`
-    with other operands remains `bitand` (`bin-suffix-5`). Was: bitwise `&` is
-    uninterpreted (`bitand`), also on operands that are 0 or 1: the `*_abstracted` tasks test `(z > 100) & (x < 100)`
-    (`loops/terminator_02-2_abstracted`, `trex03-2_abstracted`), and
-    `loop-invariants/bin-suffix-5` asserts `(x & 5) == 5` with the invariant
-    `x % 8 == 5`.
-  - Done in 0.39.3: `\at(e, Pre)` is `\old(e)`, `\at(e, Here)` is `e`,
-    `\at(e, LoopEntry)` reads copies assigned before the loop; `\valid` and
-    `\valid_read` are true. The `axiomatic` remains. Was: not supported but
-    used by the annotations: `\at(x, LoopEntry)` and
-    `\at(x, Pre)` (`loop-crafted/simple_array_index_value_4`, `loops/nec20`,
-    `trex02-2`), `\valid`/`\valid_read` in preconditions of functions on
-    arrays (`loops/linear_sea.ch`, `linear_search`, `veris.c_NetBSD-libc_loop`;
-    could be accepted and ignored, memory safety is not checked), an
-    `axiomatic` with a recursive logic function (`loops/vogal-1`, the number
-    of vowels of a prefix; ends in a generic parse error).
+- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the tasks of the categories Arrays and Loops with
+  hand-written annotations, checked with `-vcgen -z3`; results per folder and the causes of the open tasks in
+  [benchmarks/acsl/README.md](benchmarks/acsl/README.md)); open issues of the support, by impact:
   - A refuted goal is printed as one SMT-LIB string, `(error "goal does not
     hold" "Sat" "(forall ...)")`, without the annotation (loop invariant,
     assertion, postcondition, line) that failed; `-vcgen -z3` prints
     nothing when all goals hold.
-  - Done by the annotation (Oct 12, 2026): `loop-new/count_by_k` proves with
-    `k == 0 ==> i == 0` and `k > 0 ==> i % k == 0`. Was: the invariant
-    `\exists integer q; 0 <= q && i == q*k` is `Unknown`.
-  - Done in 0.40.1: an assertion is assumed once it is checked, `phi && (phi
-    ==> post)` ([VCGen](src/cuvee/verify/VCGen.scala), case `Spec`;
-    [assert_assumed.c](examples/c/vcgen/assert_assumed.c)), as in Frama-C/WP
-    and Boogie, for all frontends; the reducers (`array-crafted/bAnd5` etc.)
-    with `//@ assert ret2 == ret;` now prove with `-split` as well. Was: `phi
-    && (true ==> post)`, equivalent, but z3 does not have `phi` in the branch
-    `!post`, and `-split` makes `post` a goal of its own without `phi`; the
-    reducers proved only because z3 kept the quantifier instances of the
-    assertion's proof in the same query.
-  - `-verify` answers `incorrect` to goals refuted through uninterpreted C
-    operators (`shl`, `shr`, `bitand`, `bitor`, `bitxor`, `bitnot`), whose
-    models need not be counterexamples (`shl(1, 0) != 1`): of the 87 true
-    tasks of benchmarks/acsl with a refuted goal in the 0.40.0 run, 51 refute
-    an annotation with such an operator (the powers of 2 `\exists integer k;
-    ... p == 1 << k` of `nla-digbench*`), wrong `false` answers under
-    `-verify` (`nla-digbench-scaling/hard-ll_valuebound100`,
-    `divbin2_unwindbound10`, Oct 12, 2026); none remain in benchmarks/acsl
-    since the powers of 2 and 4 are predicates with goal-directed axioms
-    (`pow2`, `pow2mul`, `pow4`, 50 tasks, 37 of them proved). Done in 0.42.1:
-    the operators are declared `:abstract` in the C prelude, `pipe.Verify`
-    takes the refutation of a goal that applies them (`Cmd.funs`) for
-    `unknown` ([teq_bits_abstract.c](examples/c/verify/teq_bits_abstract.c)).
-    Open: interpret the operators where possible (shifts of constants as
-    multiplications by powers of 2, masks of low bits as `%`).
-  - Done in 0.41.6 by dropping the implicit ranges of loops (see above). Was:
-    uninitialized locals of unsigned types are not in the range of their type:
-    a loop whose `loop assigns` contains one checks its range at the entry
-    (the ranges of the modified unsigned variables are invariants, see above),
-    which fails for `unsigned int i, j;` before `j` is assigned
-    (`loops/vogal-1`, `heavy-2`, `matrix-1`,
-    `veris.c_sendmail_tTflag_arr_one_loop`, all prove with the locals
-    initialized). A declaration without initializer could choose a value in
-    range, as C's indeterminate values are. Under `-verify` the refuted range is
-    `incorrect`, a wrong `false` (`heavy-2`).
+  - The C operators `shl`, `shr`, `bitand`, `bitor`, `bitxor`, `bitnot` are uninterpreted (`:abstract` in the C
+    prelude, so `-verify` takes a refutation through them for `unknown`): interpret them where possible (shifts
+    of constants as multiplications by powers of 2, masks of low bits as `%`, e.g. `(x & 5) == 5` with
+    `x % 8 == 5` of `bin-suffix-5`); `&` of two truth values is `and` already (`c.Parser.logical`).
   - Contracts of functions that read globals need the globals' values as
     preconditions (`loops/eureka_05`, `requires n == 5`), as in Frama-C; a
     contract on `main` is the only one that sees the initial values.
   - `\min`, `\max`, `\abs` are not supported (the scanner rejects them);
     `array-programs/partial_mod_count_limited_*` write `\min(a, b)` as the
-    conditional `(a <= b ? a : b)` instead (Oct 12, 2026). Done in 0.40.0: logic
-    functions in an `axiomatic` and lemmas (the labels of lemmas and the
-    flattened matrices restated in the annotations, see below); the memory
-    clauses (`\valid`, structs) are removed from the annotations.
+    conditional `(a <= b ? a : b)` instead.
+  - Labels of `\at` other than `Pre`, `Here`, `LoopEntry`.
+  - `-chc` answers `unknown` on the unsigned arithmetic modulo 2^n of annotated programs
+    ([acsl_ranges.c](examples/c/vcgen/acsl_ranges.c) is checked with `-vcgen` only).
   - Z3 answers `Unknown` on nonlinear closed forms: `nla-digbench/geo*`
     modulo 2^64, `lcm2`, `prod4br`; `array-programs/partial_mod_count_2-5`
     (counts with integer division); `array-patterns/array26` (parity of a
-    count). `array25`, `array27`, `array29`, `array30` with cubic closed
-    forms are proved.
-  - Function parameters of unsigned types are not in range either
-    (`loop-acceleration/functions_1-1`, `ensures \result == z + 2` with
-    `uint(z + 2)` in the body is refuted for negative `z`). Done in 0.39.3 for
-    functions with annotations: `functions_1-1` proves.
+    count).
+  - `nla-digbench/prodbin-ll` and `geo2-ll_unwindbound1` time out since 0.41.4, which they did not with 0.40.0
+    (2 to 3 s), also without `-verify` (not bisected).
   - Runs under CPU load time out at 10 s on trivial tasks (`loop-lit/mine2017-ex4.6`
     proves in 2.6 s alone); the limits of the runs in the README are not
     those of the tool.
-  - Open in the frontend (0.39.4): `&` of operands that are not truth
-    values stays `bitand` (`bin-suffix-5`, `(x & 5) == 5` with `x % 8 == 5`;
-    could be `x % 8` for constant masks of low bits); labels of `\at` other
-    than `Pre`, `Here`, `LoopEntry`; `-chc` answers `unknown` on the unsigned
-    arithmetic modulo 2^n of annotated programs
-    ([acsl_ranges.c](examples/c/vcgen/acsl_ranges.c) is checked with
-    `-vcgen` only).
   - Deferred: array parameters that a function assigns as in/out parameters. Arrays are values in Cuvée's C
     and ACSL, so `void incrementArray(int src[N], int dst[N])` assigns a copy of `dst`: its `ensures dst[t] ==
     src[t] + 1` speaks of the value passed in (z3 answers `Unknown`, quantified), and the caller's `dst` stays
-    unchanged after the call, while C passes a pointer (`array-examples/sanfoundry_43_ground`, 0.39.5, without
-    its `\valid`, `\valid_read`, `\separated`). In/out parameters, whose final value the caller receives and
+    unchanged after the call, while C passes a pointer (`array-examples/sanfoundry_43_ground`; wrong false
+    verdicts, see bugs.md). In/out parameters, whose final value the caller receives and
     `ensures` refers to, are sound when the arguments do not alias, which `\separated` states in Frama-C and
     distinct variables as arguments would ensure here. The memory clauses of the annotations are removed
-    (`\valid`, `\valid_read`, `\separated`, `\null`, 64 files of benchmarks/acsl): pointer reasoning is not
-    needed in this dialect; the two tasks with
+    (`\valid`, `\valid_read`, `\separated`, `\null`); the two tasks with
     `\null` (`array-industry-pattern/array_ptr_partial_init`, `array-lopstr16/partial_lesser_bound`) end in
     "arrays of pointers are not supported".
-  - Results: 603 of the 838 true tasks proved with 0.40.0 (60 s, Oct 12, 2026; 534 with 0.39.5), none wrong;
-    752 with 0.42.1 and -verify (15 min, a partial run with 27 tasks unfinished, Oct 12, 2026; 3 wrong false, 2 of
-    them arrays as values, veris.c_sendmail corrected since: 753, 85 open, see the README);
-    744 with the annotations revised since and 0.41.6 (single runs, Oct 12, 2026; the powers of 2 as predicates, 41
-    refuted or weak annotations corrected, `\min` as a conditional, explicit ranges of unsigned variables where the
-    implicit ones of loops were needed, logic functions with trusted step lemmas for `geo*-ll` and `lcm2`, the tasks
-    of benchmarks/acsl/split.set with `-split`); `nla-digbench/prodbin-ll` and `geo2-ll_unwindbound1` time out since
-    0.41.4, which they did not with 0.40.0 (2 to 3 s), also without `-verify` (not bisected); the 323 tasks expected
-    `false` are removed (Oct 12, 2026), 838 remain;
-    per folder and the causes of the others in [benchmarks/acsl/README.md](benchmarks/acsl/README.md).
-  - Done in 0.40.0: the parse errors of `xml/cuvee-acsl.xml` (60 s, 0.39.4, Oct 12, 2026; 131 tasks). The 95
-    global logic declarations (`axiomatic Fold` 53, `Asum` 18, `Msum` 14, `Sum` 9, `Count` 1) are supported
-    (see ACSL annotations above), with the annotations restated: no `reads`, step axioms backwards, the lemmas
-    with labels over two arrays, `Msum` over `int **a` instead of the flattened matrix, the labels `L1`, `L2`
-    of the reducers and their assertions removed, `\at(e, LoopEntry)` in the rotation loops, the global `N` a
-    parameter of `fold` in `rangesum`. The 37 tasks with structs (33 parse errors, 3 with a field selector after
-    a range in `assigns`, `relax-2-2`) are removed from benchmarks/acsl (see its README).
 - z3 answers `unknown` for Horn clauses with division by variables
   ([examples/c/vcgen/div.c](examples/c/vcgen/div.c)), and for calls in loops whose
   callee has no goals, since its precondition is inferred from the calls
   (only the entry point has a precondition of its own, see `-entry`).
 - Errors of the C frontend on SV-COMP (Arrays and Loops, 0.34.22, 101 tasks;
   with 0.35.2, 3 parse: `loops/compact`, `heavy-1`, `heavy-2` by `sizeof` of
-  expressions), besides `goto` to labels that fall through (26, see New;
+  expressions), besides `goto` to labels that fall through (26, see above;
   most are gotos back in the outputs of the reducers, which could be loops
   `L: while (true) { ...; break; }` whose gotos continue them, without
   copies), and floating point (29, also float literals now report "not
@@ -1201,19 +851,11 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     as parameter, e.g. `array-lopstr16`,
     `array-industry-pattern/array_of_struct_*`, `loop-industry-pattern/aiob_*`,
     `ofuf_*`, also `union wait` of the headers in `array-examples/relax-2-2`).
-  - Deeply nested `if`/`else` (about 240 levels in the outputs of the
-    reducers) overflowed the stack; `Cuvee.main` now runs on a thread with a
-    stack of 1 GB, and `c.Parser.effects` iterates over the statements of a
-    block; these tasks now end at gotos. Tests call `Cuvee.pipe` directly,
-    on the default stack.
   - `*p` in `p <= tmp` with pointers is "not an integer"
     (`loops/verisec_NetBSD-libc_loop`, `veris.c_NetBSD-libc_loop`); `&x` and
     `*p` otherwise report "not supported".
   - Arrays of pointers are not supported (`array-industry-pattern/array_ptr_partial_init`,
     `array-lopstr16/partial_lesser_bound`).
-  - A pointer that is assigned a local array, `char in[11]; char *s; s = in;`,
-    is a type mismatch of `PointerType` and `ArrayType`
-    (`loops/veris.c_sendmail_tTflag_arr_one_loop`).
   - GCC builtins are unknown functions, e.g. `__builtin_bswap32`
     (`array-examples/relax-2-2`).
 
@@ -1235,21 +877,12 @@ scores it unknown).
   times of the 15-minute runs; parsing shared between the steps.
 - Disagreement is unknown: a proof by `-teq` and `unsat` by `-chc` indicate
   a bug in one of them, and wrong results cost 32 (true) and 16 (false).
-- Soundness of `sat` with `-chc`: the prelude declares the bit operations
-  (`bitand`, `bitor`, `bitxor`, `bitnot`, `shl`, `shr`) without definitions,
-  so Z3 may choose their interpretation in clauses that use them and report
-  them satisfiable for a program that is not safe; `sat` should count only
-  if the clauses use no such function, which Cuvée can check.
-- Witnesses (see "witness output" above): SV-COMP scores verdicts without a
-  validated witness with 0. The model of Z3 for the Horn clauses gives the
-  loop invariants of a correctness witness, its counterexample the path of a
-  violation witness; `-teq` would need invariants from the trace equation
-  systems.
 
 ## SV-COMP task definitions
 
 - The properties and expected verdicts of a task (`Task.properties`) are read
-  but not used; only a single input file in C is supported.
+  but not used; only a single input file is supported, in a language that
+  Cuvée reads, by its extension (`yml.Source.lang`).
 - The C versions of the local benchmarks (`benchmarks/sv-comp/c`) are patched
   by nondet.py, sizes.py, and bounds or conditions on the inputs of 34 tasks
   (see [false-verdicts.md](benchmarks/sv-comp/c/false-verdicts.md)); open:
@@ -1272,7 +905,7 @@ scores it unknown).
   - partial_mod_count_limited_gen assumes `N % 60 == 0`, which suffices but
     is stronger than needed.
   - geo1-u is unsafe only by the wrap-around of `unsigned long long`, which
-    Cuvée+Z3 and Korn prove safe (see Bugs).
+    Cuvée+Z3 and Korn prove safe (see bugs.md).
   - 5 translations lose an update of an array parameter and are excluded
     from the task sets until fixed (see the
     [README](benchmarks/sv-comp/c/README.md)).
@@ -1281,15 +914,6 @@ scores it unknown).
 
 `BitVec(n)` with the SMT-LIB literals and functions (`BitVecs`). Open: no
 simplifier rules; widths cannot be parameters.
-
-- Return to the bitvectors of Dafny: the test suites over
-  `examples/dafny/vcgen` (`SimplifyPrograms`, `VCGen`, `Split`) reported
-  "goal does not hold" for [bitvectors.dfy](examples/dafny/language/bitvectors.dfy)
-  sometimes in the full test run, depending on the tests run before it in the
-  same JVM; alone, and with `java -jar cuvee.jar -simplify -vcgen -z3`, it
-  passes. The fresh-name counters are reset per run (`Cuvee.pipe`), so some
-  other state persists across runs. The example is moved out of `vcgen`,
-  hence no suite runs it.
 
 - Dafny: no `<<`, `>>` (as a token, `>>` would close nested type arguments
   `seq<seq<int>>`), no infix `|` (which clashes with `|s|`), no
@@ -1302,10 +926,4 @@ simplifier rules; widths cannot be parameters.
 ## Parallel composition
 
 - `Horn` rejects `parallel` and ignores assumptions and commitments.
-- Sequential calls neither establish the callee's assumption nor guarantee
-  its commitment (unsound); commitments are checked only at `send`/`receive`/`tick`
-  directly in the body.
-- The results of `send`, `receive`, and `tick` must be assigned to the global
-  `history`, which is not checked.
 - Only calls can be composed.
-- Neither `tick` nor `delay` has a test.

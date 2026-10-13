@@ -90,8 +90,8 @@
   where relevant, the reasoning or the source (e.g. a definition of the paper
   on trace equation systems), in lowercase prose without a trailing period
 - comments explain why and what holds, not how the code proceeds step by step
-- limitations go into [TODO.md](../TODO.md) rather than into comments, with a
-  link to the file
+- limitations go into [TODO.md](../TODO.md) and bugs into [bugs.md](../bugs.md) rather than
+  into comments, with a link to the file
 
 ## Tests and examples
 
