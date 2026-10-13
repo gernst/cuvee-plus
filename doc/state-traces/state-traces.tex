@@ -37,25 +37,27 @@
   sensitive=true, morecomment=[l]{//}, morestring=[b]",
 }
 \lstset{language=dafny,basicstyle=\ttfamily\footnotesize,keywordstyle=\bfseries,commentstyle=\itshape\color{black!60},
-  columns=fullflexible,keepspaces=true,xleftmargin=1.5em}
+  columns=fullflexible,keepspaces=true,xleftmargin=1.5em,
+  literate={⌊}{{$\lfloor$}}1 {⌋}{{$\rfloor$}}1}
 
-\title{Verifying Loops without Invariants:\\ Trace Equation Systems by Two Examples}
+\title{Verifying Loops without Invariants:\\ Trace Equation Systems by Three Examples}
 \author{Gidon Ernst\\[2pt] \small LMU Munich, Germany\\ \small\texttt{gidon.ernst@gmail.com}}
-\date{October 13, 2026 (revised the same night for traces per strongly connected component)}
+\date{October 13, 2026 (revised the same night for traces per strongly connected component; the binary search added)}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-This note explains how the verifier Cuvée proves array programs without loop invariants, by two examples that
-every reader of a verification paper knows: the initialization of an array and the element-wise exchange of two
-arrays. A loop is represented by folds over its iterations whose results are \emph{traces}, the sequences of values of
+This note explains how the verifier Cuvée proves array programs without loop invariants, by three examples that
+every reader of a verification paper knows: the initialization of an array, the element-wise exchange of two
+arrays, and a binary search. A loop is represented by folds over its iterations whose results are \emph{traces}, the sequences of values of
 the program variables at the loop head, one trace per group of variables that depend on each other, and the
 verification condition is a first-order formula over traces. The formula
 is proved by rewriting with a database of lemmas about traces, each a small fact about a loop shape (a counter, a
 sequence of stores, a constant), under a context that keeps the facts of the goal. No invariant is written, and no
-lemma is written for the two programs. The note introduces the representation, the lemma database, and the
-engine as the examples need them, and ends with what the examples do not show.
+lemma is written for the first two programs. The note introduces the representation, the lemma database, and the
+engine as the examples need them. The binary search has no closed form. It is proved from bounds, with lemmas written for it that abstract a trace to its bound and with facts that hold wherever their term
+occurs. The note ends with what the examples do not show.
 \end{abstract}
 
 \section{The idea}
@@ -76,9 +78,10 @@ particular shape of loop computes, until the trace has a closed form and the pos
 The insight sits in the database, written once; a new program is verified without a lemma of its own as long as its
 loops are composed of shapes the database knows.
 
-The two examples below are such programs. The first shows the representation and the ordinary lemmas, the
+The first two examples below are such programs. The first shows the representation and the ordinary lemmas, the
 second shows what happens when two variables of a loop depend on each other, which is where the approach needed
-an idea that the paper on trace equation systems did not have.
+an idea that the paper on trace equation systems did not have. The third, a binary search, has no closed form: it
+is proved from bounds, with lemmas written for the program, and shows where the database ends.
 
 \section{Array initialization}
 
@@ -133,7 +136,7 @@ the iteration numbers. Every loop gets such a counter, and the lemmas of the dat
 
 \paragraph{Traces.} A trace of type $\mathsf{Trace}\langle T\rangle$ is a nonempty sequence of values of type $T$,
 the values of some quantity at the loop head before each iteration and after the last. Two functions take it
-apart: $\bl{X}$ (``butlast'', the floor brackets, \lstinline|butlast| in the Dafny files) is the list of all but
+apart: $\bl{X}$ (``butlast'', written with floor brackets in the Dafny files too) is the list of all but
 the last element, i.e.\ the values before each of the $n$ iterations, and $\cur(X)$ is the last element, the value
 after the loop. The $j$-th element of a list is $\ear(j, \bl{X})$, with $j$ a natural number.
 
@@ -179,37 +182,37 @@ with preconditions as side conditions. The variables of the lemma are matched ag
 functions above and about forty lemmas. The ones this example needs:
 \begin{lstlisting}
 lemma {:rw} counter_def(i: int, c: int, n: Nat)
-  ensures trace(i, for butlast(counter(0, 1, n)) do x, k :: x + c) == counter(i, c, n)
+  ensures trace(i, for ⌊counter(0, 1, n)⌋ do x, k :: x + c) == counter(i, c, n)
 
 lemma {:rw} current_counter(i: int, c: int, n: Nat)
   ensures current(counter(i, c, n)) == i + integer(n) * c
 
 lemma {:rw} earlier_counter(k: Nat, i: int, c: int, n: Nat)
-  ensures earlier(k, butlast(counter(i, c, n))) == i + integer(k) * c
+  ensures earlier(k, ⌊counter(i, c, n)⌋) == i + integer(k) * c
 
 lemma {:rw} invs_counter_upper_nonnegative(m: int, n: Nat)
   requires 0 <= m
-  ensures invs(for butlast(counter(0, 1, n)) check k :: k < m) <==> integer(n) <= m
+  ensures invs(for ⌊counter(0, 1, n)⌋ check k :: k < m) <==> integer(n) <= m
 
 function {:fold} stores<a, b>(a: array<a, b>, keys: List<a>, values: List<b>): Trace<array<a, b>>
 { trace(a, for keys, values do b, k, v :: b[k := v]) }
 
 lemma {:rw} maps_const<a>(x: a, i: int, c: int, n: Nat)
-  ensures maps(for butlast(counter(i, c, n)) yield v :: x) == butlast(consts(n, x))
+  ensures maps(for ⌊counter(i, c, n)⌋ yield v :: x) == ⌊consts(n, x)⌋
 
 lemma {:rw} current_stores<a, b>(k: a, a: array<a, b>, keys: List<a>, values: List<b>)
   ensures current(stores(a, keys, values))[k]
     == if occurs(k, keys) then earlier(indexof(k, keys), values) else a[k]
 
 lemma {:rw} occurs_counter_up(j: int, i: int, n: Nat)
-  ensures occurs(j, butlast(counter(i, 1, n))) <==> i <= j < i + integer(n)
+  ensures occurs(j, ⌊counter(i, 1, n)⌋) <==> i <= j < i + integer(n)
 
 lemma {:rw} indexof_counter_up(j: int, i: int, n: Nat)
   requires i <= j < i + integer(n)
-  ensures indexof(j, butlast(counter(i, 1, n))) == natural(j - i)
+  ensures indexof(j, ⌊counter(i, 1, n)⌋) == natural(j - i)
 
 lemma {:rw} earlier_consts<a>(k: Nat, n: Nat, x: a)
-  ensures earlier(k, butlast(consts(n, x))) == x
+  ensures earlier(k, ⌊consts(n, x)⌋) == x
 \end{lstlisting}
 Three kinds of lemma appear. \emph{Introduction} lemmas recognize a loop shape and name it: a trace that adds a
 constant is a counter (\lemma{counter\_def}); a trace that stores values at keys is $\stores(a, keys, values)$,
@@ -369,7 +372,7 @@ form of $b'$ is a sequence of stores whose values are unknown terms. That is eno
 value of a store sequence,
 \begin{lstlisting}
 lemma {:rw} earlier_stores<a, b>(k: a, j: Nat, a: array<a, b>, keys: List<a>, values: List<b>)
-  ensures earlier(j, butlast(stores(a, keys, values)))[k]
+  ensures earlier(j, ⌊stores(a, keys, values)⌋)[k]
     == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
 \end{lstlisting}
 says: the value at $k$ after $j$ stores is the last value stored at $k$ among the first $j$ keys, or the original if
@@ -402,6 +405,217 @@ a'[k] &\rw \mathsf{if}\ \occurs(k, \bl{I})\ \mathsf{then}\ \ear(\indexof(k, \bl{
 by \lemma{earlier\_selects} and \lemma{earlier\_counter}; $b'[k] = a[k]$ is symmetric. About three seconds in all,
 fourteen distinct lemmas, none written for the program, 160 rewrite steps and 16 normal forms of components.
 
+\section{A binary search: partial descriptions and forward facts}
+
+The first two loops have closed forms: after $n$ iterations, the index is $n$ and the arrays are known element by
+element. A binary search has none. How often it runs and where it ends depend on the contents of the array, and
+what its correctness needs are \emph{bounds}: the lower end of the interval never passes the first occurrence of
+$x$, and the upper end never passes the last one. The trace equation systems paper names this as the weak spot of
+the approach, loops that need partial facts rather than closed forms. This section shows how the engine handles
+one such loop with two further ideas: lemmas that abstract a trace to the property that matters, and facts that
+become available wherever their term occurs. Unlike in the first two examples, these lemmas are written for the
+program. The file is \texttt{examples/dafny/state/bsearch.dfy}; the run is the same as before, and its output is
+again only the declarations.
+
+\begin{lstlisting}
+const a: array<int, int>
+const n: int
+const x: int
+const p: int
+const q: int
+
+method search() returns (i: int)
+  requires 0 <= p <= q <= n
+  ensures 0 <= i ==> i < n && a[i] == x
+  ensures i < 0 ==> forall k: int :: 0 <= k < n ==> a[k] != x
+{
+  var lo: int;
+  var hi: int;
+  var mid: int;
+  lo := 0;
+  hi := n;
+  i := -1;
+  while lo < hi
+  {
+    mid := (lo + hi) / 2;
+    if a[mid] < x {
+      lo := mid + 1;
+    } else if x < a[mid] {
+      hi := mid;
+    } else {
+      i := mid;
+      break;
+    }
+  }
+}
+\end{lstlisting}
+
+\paragraph{The array by its partition points.} The example does not assume that $a$ is sorted. It assumes
+something stronger, which is easier to rewrite with: two points $p \le q$ that split the indices into a part
+below $x$, a part equal to $x$, and a part above it. Three ground rules state this, and they turn every read of the
+array into a comparison of indices:
+\begin{lstlisting}
+lemma {:rw} lemma_1(m: int)
+  ensures (a[m] < x) <==> m < p
+lemma {:rw} lemma_2(m: int)
+  ensures (x < a[m]) <==> q <= m
+lemma {:rw} lemma_3(m: int)
+  ensures (a[m] == x) <==> p <= m && m < q
+\end{lstlisting}
+Without $p$ and $q$ the rules would need variables for the array, the bound and $x$, and the bounds below would
+have to come from the monotonicity of the array; that is the next step (Section~\ref{sec:missing}). Two more rules
+state that the midpoint lies in the interval, which the engine does not know for division that rounds down:
+$l \le (h + l)/2$ if $l \le h$ (\lemma{lemma\_4}), and $(h + l)/2 < h$ if $l < h$ (\lemma{lemma\_5}).
+
+\subsection{The verification condition}
+
+The modified variables are $lo$, $hi$, $mid$ and $i$. Since the body branches, every variable reads the variables
+of the branch conditions, which read $lo$ and $hi$ through the midpoint. So $lo$ and $hi$ read each other and form
+one trace $S$ with two accumulators. The traces of $mid$ and $i$ read $S$ and come after it. Writing $m$ for
+$(lo + hi)/2$ and leaving out the trace of $mid$, which the goal does not need, the condition is
+\begin{align*}
+&S = \mathsf{trace}(0, n,\ \mathsf{for}\ \bl{K}\ \mathsf{do}\ lo, hi, k ::\\
+&\qquad \mathsf{case}\ a[m] < x \Rightarrow m + 1\ \ \mathsf{case}\ \neg(a[m] < x) \wedge x < a[m] \Rightarrow lo,\\
+&\qquad \mathsf{case}\ a[m] < x \Rightarrow hi\ \ \mathsf{case}\ \neg(a[m] < x) \wedge x < a[m] \Rightarrow m)\\
+&I = \tr{-1}{\bl{K}, \bl{S}.0, \bl{S}.1}{i, k, lo, hi ::\\
+&\qquad \mathsf{case}\ a[m] < x \Rightarrow i\ \ \mathsf{case}\ \neg(a[m] < x) \wedge x < a[m] \Rightarrow i}\\
+&\al{\bl{K}, \ldots, \bl{S}.0, \bl{S}.1, \bl{I}}{k, \ldots, lo, hi, i ::\\
+&\qquad lo < hi \wedge (a[m] < x \vee \neg(a[m] < x) \wedge x < a[m])}
+\end{align*}
+together with $lo' = \cur(S).0$, $hi' = \cur(S).1$ and $i' = \cur(I)$. The path through \lstinline|break| is not a
+case of any update: the guards of a trace need not cover every case, and the iteration constraint states that
+every iteration took one of the paths that continue. The path that breaks appears only in the goal, as the last
+iteration. The goal has two parts:
+\begin{itemize}
+\item \emph{The exit}: if $\neg(lo' < hi')$, then the postcondition holds for $i'$.
+\item \emph{The found case}: if $lo' < hi'$, $\neg(a[m'] < x)$ and $\neg(x < a[m'])$, then it holds for
+  $i = m'$, where $m' = (lo' + hi')/2$.
+\end{itemize}
+
+There is no closed form to aim for. The values of $lo$ and $hi$ after the loop are not a function of the number
+of iterations, and that number is not a function of $n$ alone. What the proof needs are three facts:
+$lo' \le p$, $q \le hi'$, and $i' = -1$.
+
+\subsection{Lemmas that abstract a trace}
+
+The file declares two functions without a body and an introduction lemma for each:
+\begin{lstlisting}
+function incs<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
+                 D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int): Trace<int>
+
+lemma {:rw} trace_1<a>(x0: int, b: int, i: int, c: int, m: Nat, hs: List<a>,
+                       C: (int, a) -> bool, D: (int, a) -> bool, F: (int, a) -> int)
+  ensures trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h ::
+          case C(x, h) => x
+          case D(x, h) && x < F(x, h) && F(x, h) <= b => F(x, h))
+    == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+\end{lstlisting}
+In each iteration, a trace of this shape either keeps its value or increases it to some value $F(x, h)$ that
+does not exceed $b$; $h$ is the value of a further dependency, here the history of the other component. The
+function $\mathsf{incs}$ names such a trace and forgets everything about it except its bound. The functions $C$,
+$D$ and $F$ are higher-order pattern variables. The bound $b$ is found by matching $F(x, h) \le b$ against a
+conjunct of the program's guard, and the increase $x < F(x, h)$ must follow from the guard; the remaining guard is
+bound to $D$. The dual $\mathsf{decs}$ (\lemma{trace\_2}) describes a value that decreases down to $b$. Two
+\emph{forward} lemmas give the bounds:
+\begin{lstlisting}
+lemma {:fw} current_1<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
+                         D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int)
+  requires x0 <= b
+  ensures current(incs(x0, b, ks, hs, D, C, F)) <= b
+
+lemma {:fw} current_2<a>(x0: int, b: int, ks: List<int>, ls: List<a>,
+                         D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int)
+  requires b <= x0
+  ensures b <= current(decs(x0, b, ks, ls, D, C, F))
+\end{lstlisting}
+Why forward lemmas and not rewrite rules: the goal speaks about $lo'$ and $hi'$, and none of its terms is a
+comparison of the form $\cur(\mathsf{incs}(\ldots)) \le b$. A rewrite rule fires only where its left-hand side
+occurs, so a rule on the comparison would never fire. A forward lemma is assumed wherever a term matching its
+trigger $\cur(\mathsf{incs}(\ldots))$ occurs in a fact that the traversal assumes. The instance is stated over the
+term as it occurs, so the bound reaches the arithmetic of the goal.
+
+\subsection{The proof}
+
+\paragraph{The reads of the array.} Every guard is rewritten by \lemma{lemma\_1} and \lemma{lemma\_2},
+$a[m] < x \rw m < p$ and $x < a[m] \rw q \le m$. In the context, $p \le q$, so $\neg(m < p) \wedge q \le m$
+simplifies to $q \le m$. Each component now has two cases with the guards $m < p$ and $q \le m$.
+
+\paragraph{The projection of $hi$ is a decreasing trace.} The goal reads $\cur(S).1$. As in the swap, the engine
+computes the view of component $1$, the trace of $hi$ alone over the history of $lo$:
+\[
+\cur(S).1 \rw \cur(\tr{n}{\bl{K}, \bl{S}.0}{hi, k, lo :: \mathsf{case}\ m < p \Rightarrow hi\ \
+\mathsf{case}\ q \le m \Rightarrow m}).
+\]
+\lemma{trace\_2} matches this view as follows:
+\begin{itemize}
+\item $C$ is $m < p$, the case that keeps the value.
+\item $D$ is $q \le m$, the guard of the case that changes it, and $F$ is $m$.
+\item The bound $b$ is $q$, from the conjunct $q \le F(x, l)$, which is the guard itself.
+\item The side condition, that $F$ decreases, is $m < hi$. \lemma{lemma\_5} decides it, given $lo < hi$ from the
+  iteration constraint in the context of the update.
+\end{itemize}
+$K$ is replaced by its definition, and the result is
+\begin{align*}
+\cur(S).1 \rw \cur(\mathsf{decs}(&n, q, \bl{\cnt(0, 1, n_8)}, \bl{S}.0,\\
+&(hi, lo) \Rightarrow q \le m,\ (hi, lo) \Rightarrow m < p,\ (hi, lo) \Rightarrow m)).
+\end{align*}
+The same for $lo$: in the view of component $0$, the case $m < p$ sets $lo$ to $m + 1$. Over the integers the
+guard $m < p$ is $m + 1 \le p$, which gives the bound $b = p$, and the increase $lo < m + 1$ follows from \lemma{lemma\_4}. \lemma{trace\_1} matches with $b = p$,
+and $\cur(S).0$ becomes $\cur(\mathsf{incs}(0, p, \ldots))$. The pattern lists the case that keeps the value first;
+the program lists it second, and the match is modulo the order of the cases.
+
+\paragraph{The bounds as forward facts.} Where the traversal assumes the definitions $lo' = \cur(S).0$ and
+$hi' = \cur(S).1$, the triggers of \lemma{current\_1} and \lemma{current\_2} match through the views:
+\begin{align*}
+&\cur(S).0 \le p &&\text{by \lemma{current\_1}, since } 0 \le p,\\
+&q \le \cur(S).1 &&\text{by \lemma{current\_2}, since } q \le n,
+\end{align*}
+with the side conditions taken from the precondition. The log prints these two instances 32 times: the engine
+assumes the same definitions at several places of the goal, and each place gets the facts.
+
+\paragraph{The index $i$ stays $-1$.} Once its guards are evaluated, both cases of $I$ keep $i$, so the cases are
+joined, the dependencies on $S$ are dropped, and
+\[
+\tr{-1}{\bl{K}}{i, k :: i} \rw \consts(n_8, -1), \qquad \cur(I) \rw -1
+\]
+by \lemma{consts\_def} and \lemma{current\_consts}; the reads of $i$ in the iteration constraint become $-1$ by
+\lemma{earlier\_consts}.
+
+\paragraph{The exit.} With $\neg(lo' < hi')$, i.e.\ $hi' \le lo'$, the context has
+$hi' \le lo' \le p \le q \le hi'$, and the arithmetic concludes $p = q$. Since $i' = -1$, the first postcondition
+holds vacuously. In the second, $a[k] = x \rw p \le k < q$ by \lemma{lemma\_3}, which is false for $p = q$, so
+$a[k] \ne x$ for every $k$.
+
+\paragraph{The found case.} Here the branch conditions give $\neg(m' < p)$ and $\neg(q \le m')$, so
+$p \le m' < q$. Then $a[m'] = x \rw p \le m' < q$ holds, $m' < n$ follows from $q \le n$, and $m' < 0$ is false
+since $0 \le p$.
+
+The run uses twelve lemmas: all nine of the file (\lemma{lemma\_1} to \lemma{lemma\_5}, \lemma{trace\_1},
+\lemma{trace\_2}, \lemma{current\_1}, \lemma{current\_2}) and three of the database on constant traces. The log has 214 rewrite steps, 97 of them views of components, and the run takes about 20 seconds
+on a single core.
+
+\subsection{What this example shows, and what it does not}
+\label{sec:missing}
+
+\paragraph{A partial description is enough.} The proof never computes $lo'$ or $hi'$. The traces of a cycle are
+abstracted, through their views, to functions that keep only a bound, and the bound is available wherever the
+goal mentions the variable. This is the form a description takes when the loop has no closed form, and it uses
+the representation unchanged: the views of a cycle are the same as in the swap, matched by a different kind of
+lemma.
+
+\paragraph{The lemmas are the program's.} The shapes $\mathsf{incs}$ and $\mathsf{decs}$ are general. They are
+polymorphic in the other dependency, and nothing in them is specific to binary search, so they are candidates for
+the database. The partition points are not general, and they assume more than sortedness. The three rules hold for
+every integer, also outside $0, \ldots, n-1$, and they fix the comparison with $x$ at each index by a ground
+rule, where sortedness only orders the elements. The full binary search states sortedness
+as a predicate, so that the bounds of $lo$ and $hi$ have to come from the monotonicity of the array; that is open.
+The midpoint rules exist because the engine does not reason about division.
+
+\paragraph{No lemma about the cycle as a whole.} Each lemma above matches one component, with the history of the
+other one as an opaque dependency. A property that relates the two accumulators, such as $lo \le hi$ throughout,
+would need a pattern with two accumulators, which the matcher does not support yet. The binary search does not
+need one, since the bounds of each component together with the exit condition suffice.
+
 \section{The engine, in short}
 
 The examples used the following machinery, which the engine of \texttt{-prove} provides for every goal.
@@ -428,32 +642,42 @@ The examples used the following machinery, which the engine of \texttt{-prove} p
   and memoized; a component is not projected inside its own normal form; a read whose normal form is closed is
   replaced by it in place. The histories $\bl{S}.j$ are never rewritten in place, which is what keeps the projections
   from unfolding each other.
+\item[Forward facts.] A lemma marked \lstinline|{:fw}| is assumed wherever a term that matches its trigger (the term
+  of its conclusion with the most variables) occurs in a fact the traversal assumes. The trigger is matched like
+  the left-hand side of a rule, through definitions and views, and the instance names the term as it occurs. An
+  instance fires nothing further, so this terminates.
 \end{description}
 
-The same two examples are proved by the earlier form of the tool (\texttt{-teq -simplify}, one trace per variable
+The first two examples are proved by the earlier form of the tool (\texttt{-teq -simplify}, one trace per variable
 without the partition) with the same lemmas; the swap needed there what the cycle trace avoids, the two equations
 over each other's histories, resolved by following the equations through the context. The partition matters for
 loops where the variables cannot be layered, and most of all for nested loops, where an inner loop becomes a single
 value of the outer update rather than a family of fresh sequences, since no trace depends on another and all can be
 substituted; those examples are in the same directory of the repository (\texttt{examples/dafny/state}, nested sums,
-row sums, a transpose), and a binary search where the remaining gap is visible.
+row sums, a transpose).
 
 \section{What the examples do not show}
 
-Both programs have a layered loop: the index depends on nothing, the arrays depend on the index and on each other
-only at the position being written. The database covers such loops without help. Programs whose loops carry an
-accumulated property (a sorted prefix, a running maximum, a search that stops) need lemmas about their shapes, some
-of them written for the program, and the engine has to match those lemmas against views whose shape it has not seen
-before. The open items at the time of writing, with the binary search as the example: facts about a named trace
-should become available when its term occurs, not only when the goal mentions the exact atom (the bounds of a
-monotone search index), and lemmas about a cycle as a whole, with several accumulators in their pattern, are not
-matched yet. The record of the implementation,
-\texttt{ideas/deduction-engine-implementation.md} in the repository, keeps the state of these.
+The first two programs have a layered loop: the index depends on nothing, the arrays depend on the index and on
+each other only at the position being written. The database covers such loops without help. Programs whose loops
+carry an accumulated property (a sorted prefix, a running maximum, a search that stops) need lemmas about their
+shapes, some of them written for the program, and the engine has to match those lemmas against views whose shape
+it has not seen before. The binary search is such a program, and it is proved with forward facts, but its lemmas
+are its own. The open items at the time of writing:
+\begin{itemize}
+\item the binary search over a sorted array, with the bounds derived from monotonicity instead of partition points;
+\item lemmas about a cycle as a whole, with several accumulators in their pattern, which the matcher does not
+  support yet;
+\item which lemmas of the database should be forward facts rather than rewrite rules;
+\item merging and sorting in this form.
+\end{itemize}
+The record of the implementation, \texttt{ideas/deduction-engine-implementation.md} in the repository, keeps the
+state of these.
 
 \section*{AI Declaration}
 
 This note was written with the assistance of Claude (Anthropic) in Claude Code, from the runs of the tool on the
-two examples (\texttt{-debug rewrite}) and the documentation of the repository; the author directed the work and
+three examples (\texttt{-debug rewrite}, for the binary search also \texttt{-debug forward}) and the documentation of the repository; the author directed the work and
 is responsible for the content.
 
 \end{document}
