@@ -51,12 +51,13 @@ lemma {:fw} {:teq} earlier_not_occurs_prefix(n: Nat, j: Nat, e: int, xs: List<in
   requires !occurs(e, prefix(n, xs)) && integer(j) < integer(n)
   ensures earlier(j, xs) != e
 
-// a sentinel: a position j that holds x, which does not occur among the values read at the positions 0, ..., n - 1,
-// is at least n
+// a sentinel: a value x stored at a position j occurs among the values read at the positions 0, ..., n - 1, unless j
+// is beyond them; a forward fact at the reads, which are the trigger, since the bound integer(n) <= j occurs in the
+// goal only as a comparison of the loop variable
 // (from standard_sentinel-2)
-lemma {:rw} {:teq} select_not_occurs_selects_beyond(n: Nat, j: int, x: int, a: array<int, int>)
-  requires !occurs(x, selects(a, ⌊counter(0, 1, n)⌋)) && a[j] == x && 0 <= j
-  ensures integer(n) <= j
+lemma {:fw} {:teq} store_occurs_selects(n: Nat, j: int, x: int, a: array<int, int>)
+  requires 0 <= j
+  ensures occurs(x, selects(a[j := x], ⌊counter(0, 1, n)⌋)) || integer(n) <= j
 
 // which is instantiated at the positions j in the range
 // (from simple_array_index_value_2)

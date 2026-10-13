@@ -61,6 +61,11 @@ statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a gui
   back the sums kept in array cells (brs, ms), the strided stores, rew, rewnif, copysome1, standard_running-2
   (Arrays 124 to 140 correct, above the 139 of 0.42.1), and the flags and agreeing prefixes of the searches
   standard_compare, _compareModified, _password, _palindrome; the rules are kept in their form.
+- standard_sentinel-2 closes with the forward lemma `store_occurs_selects` of search (a value stored at j occurs
+  among the reads of 0, ..., n - 1 unless n <= j, triggered by the reads), in place of the rewrite rule on the atom
+  `integer(n) <= j`, which the goal does not contain; the benchmark definitions run a second round of `-split -prove`,
+  which splits the disjunctions that the `_cases` rules of `mods` introduce (in-de20, in-de31, sum_by_3 close
+  locally). SV-COMP at 60 s with 0.46.5: Arrays 144 correct, Loops 154 (0.42.1: 139, 141), no wrong answers.
 - Next: retiring nested (a rewrite of the lemmas of the three sorts), the remaining conversions to forward lemmas,
   the firing at definitions (step 3 of J) before more forward lemmas.
 

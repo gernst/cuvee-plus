@@ -19,6 +19,9 @@
   <option name="-prove"/>
   <option name="-split"/>
   <option name="-prove"/>
+  <!-- a second round splits the disjunctions that the rules introduce, e.g. n == zero || integer(n) < 1 of mods -->
+  <option name="-split"/>
+  <option name="-prove"/>
   <!-- the rules applied to each goal, for the statistics of scripts/rules.py -->
   <option name="-rules"/>
   <!-- the answers correct, incorrect, or unknown, which cuvee.py reads -->
