@@ -20,6 +20,9 @@ pages of `figures/CPA.pdf` used as slides.
 - Why bother: "the bottleneck has moved from writing code to trusting what was written" [7].
 - Why LLMs are surprisingly good: an effective problem representation, and they know the solution [12]. That is
   the motivation for a better representation, and for knowledge that is reused.
+- Overview of our approach, "trace equations + a database of lemmas" [41]: the task becomes a representation (TEQs),
+  which is simplified by rewriting with a database of program lemmas until the proof is done. The database is the
+  "knowing the solution" of an LLM, but checked once and reused.
 
 ## Three claims
 
@@ -46,8 +49,6 @@ Each part opens with the claims, the current one in red.
   lemma, none is written for the program.
 - Routine, not trivial, as TEQs: the first loop is `sums(…)`, the second subtracts the same sequence, linearity closes it.
   No auxiliary function, no lemma for the program.
-- The pipeline [41]: representation + database of lemmas + rewriting → proof. The database is the "knowing the
-  solution" of an LLM, but checked once and reused.
 - Two obvious ways to use AI, both per program: AI as the verifier (no trust) and AI as the proof generator (checked,
   but the cost is paid per program, and the proofs read like assembler).
 - The proof a language model generated for the AVL rotation reads like assembler [61]. Redone in Lean: with `grind` and the definitions, each theorem is **one line** (checked

@@ -193,6 +193,32 @@
   \end{itemize}
 \end{frame}
 
+% overview of the approach (after CPA.pdf, slide 41)
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \node[anchor=west, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.35) {Our approach: trace equations + a database of lemmas};
+    \node[box, minimum width=2.9cm, minimum height=1.45cm, text=cblue] (task) at (2.55,6.75) {task};
+    \node[box, minimum width=3.3cm, minimum height=1.45cm, text=cblue] (proof) at (12.85,6.75) {proof};
+    \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (5.2,6.75) {};
+    \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (10.3,6.75) {};
+    \node[inner sep=0pt] at (7.75,6.75) {\includegraphics[width=5.6cm]{figures/unicorns.png}};
+    \node[inner sep=0pt] at (9.2,7.55) {\includegraphics[width=2.6cm]{figures/wand.png}};
+    \node[fill=blue, text=white, draw=black, line width=0.8pt, font=\small] at (10.0,8.3) {magic unicorn zoo};
+    \node[single arrow, draw, line width=1.4pt, rotate=-90, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (2.7,5.1) {};
+    \node[box, text width=4.4cm, minimum height=2.1cm, text=cgreen, font=\bfseries] at (3.1,2.75)
+      {representation:\\ Trace Equation\\ Systems (TEQs)};
+    \draw[line width=3pt, -{Triangle[length=7pt,width=11pt]}] (8.4,2.95) arc (0:300:0.6);
+    \node[single arrow, draw, line width=1.4pt, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (6.35,2.95) {};
+    \node[single arrow, draw, line width=1.4pt, rotate=180, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (9.65,2.95) {};
+    \node[cylinder, shape border rotate=90, draw, line width=1.6pt, aspect=0.22, minimum width=4.6cm, minimum height=2.1cm,
+          align=center, text=cgreen, font=\bfseries] at (13.25,2.75) {database of\\ program lemmas};
+    \node[align=center, text=cgreen, font=\bfseries] at (7.8,1.2) {simplification\\ by rewriting};
+    \draw[line width=6pt, cgreen, -{Triangle[length=10pt,width=16pt]}] (8.6,3.75) -- (11.0,5.85);
+    \draw[line width=6pt, -{Triangle[length=8pt,width=14pt]}] (7.85,3.95) -- (7.85,4.75);
+    \node[text=white, font=\bfseries\small] at (7.85,4.2) {?};
+  \end{tikzpicture}
+\end{frame}
+
 \claims{0}
 
 % =====================================================================================================================
@@ -293,31 +319,6 @@
   \end{tikzpicture}
 \end{frame}
 
-% the approach (CPA.pdf, slide 41)
-\begin{frame}[plain]
-  \begin{tikzpicture}[page]
-    \node[anchor=west, text=cblue, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.1) {How to do better?};
-    \node[box, minimum width=2.9cm, minimum height=1.45cm, text=cblue] (task) at (2.55,6.75) {task};
-    \node[box, minimum width=3.3cm, minimum height=1.45cm, text=cblue] (proof) at (12.85,6.75) {proof};
-    \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (5.2,6.75) {};
-    \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (10.3,6.75) {};
-    \node[inner sep=0pt] at (7.75,6.75) {\includegraphics[width=5.6cm]{figures/unicorns.png}};
-    \node[inner sep=0pt] at (9.2,7.55) {\includegraphics[width=2.6cm]{figures/wand.png}};
-    \node[fill=blue, text=white, draw=black, line width=0.8pt, font=\small] at (10.0,8.55) {magic unicorn zoo};
-    \node[single arrow, draw, line width=1.4pt, rotate=-90, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (2.7,5.1) {};
-    \node[box, text width=4.4cm, minimum height=2.1cm, text=cgreen, font=\bfseries] at (3.1,2.75)
-      {representation:\\ Trace Equation\\ Systems (TEQs)};
-    \draw[line width=3pt, -{Triangle[length=7pt,width=11pt]}] (8.4,2.95) arc (0:300:0.6);
-    \node[single arrow, draw, line width=1.4pt, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (6.35,2.95) {};
-    \node[single arrow, draw, line width=1.4pt, rotate=180, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (9.65,2.95) {};
-    \node[cylinder, shape border rotate=90, draw, line width=1.6pt, aspect=0.22, minimum width=4.6cm, minimum height=2.1cm,
-          align=center, text=cgreen, font=\bfseries] at (13.25,2.75) {database of\\ program lemmas};
-    \node[align=center, text=cgreen, font=\bfseries] at (7.8,1.2) {simplification\\ by rewriting};
-    \draw[line width=6pt, cgreen, -{Triangle[length=10pt,width=16pt]}] (8.6,3.75) -- (11.0,5.85);
-    \draw[line width=6pt, -{Triangle[length=8pt,width=14pt]}] (7.85,3.95) -- (7.85,4.75);
-    \node[text=white, font=\bfseries\small] at (7.85,4.2) {?};
-  \end{tikzpicture}
-\end{frame}
 
 \begin{frame}{Two obvious ways to use AI}
   \begin{columns}[T]
