@@ -13,3 +13,7 @@ prints its summary lemma).
 | swap | single, two arrays that read each other | examples/dafny/teq ([swap.md](swap.md) has the proof) | 3 s |
 | nested_counter, nested_sum, nested_mult, row_sums | nested | examples/dafny/algorithms, without their lemmas | 2.5 to 9 s |
 | transpose | nested, two-dimensional stores | examples/dafny/algorithms, one summary lemma on the nested fold | 22 s |
+
+Interim (to be removed from the tests later): `bsearch.dfy` and `bsearch_cut.dfy`, the binary search of examples/dafny/teq
+in the state form, each with one goal remaining (the exit of the loop, which needs the bounds of the `incs`/`decs`
+abstractions as facts), see ideas/deduction-engine-implementation.md.

@@ -1,0 +1,121 @@
+const a: array<int, int>
+
+const n: int
+
+const x: int
+
+const p: int
+
+const q: int
+
+lemma {:rw} lemma_1(m: int)
+  ensures a[m] < x <==> m < p
+
+lemma {:rw} lemma_2(m: int)
+  ensures x < a[m] <==> q <= m
+
+lemma {:rw} lemma_3(m: int)
+  ensures a[m] == x <==> p <= m < q
+
+function incs<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
+                 D: (int, a) -> bool, C: (int, a) -> bool,
+                 F: (int, a) -> int): Trace<int>
+
+lemma {:rw} trace_1<a>(x0: int, b: int, i: int, c: int, m: Nat, hs: List<a>,
+                       C: (int, a) -> bool, D: (int, a) -> bool,
+                       F: (int, a) -> int)
+  ensures
+    trace(x0, for ⌊counter(i, c, m)⌋, hs
+              do x, k, h ::
+                case C(x, h) => x case D(x, h) && x < F(x, h) <= b => F(x, h))
+      == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+
+function decs<a>(x0: int, b: int, ks: List<int>, ls: List<a>,
+                 D: (int, a) -> bool, C: (int, a) -> bool,
+                 F: (int, a) -> int): Trace<int>
+
+lemma {:rw} trace_2<a>(x0: int, b: int, i: int, c: int, m: Nat, ls: List<a>,
+                       C: (int, a) -> bool, D: (int, a) -> bool,
+                       F: (int, a) -> int)
+  ensures
+    trace(x0, for ⌊counter(i, c, m)⌋, ls
+              do x, k, l ::
+                case C(x, l) => x
+                case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
+      == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
+
+lemma {:rw} lemma_4(l: int, h: int)
+  requires l <= h
+  ensures l <= (h + l) / 2 <==> true
+
+lemma {:rw} lemma_5(l: int, h: int)
+  requires l < h
+  ensures (h + l) / 2 < h <==> true
+
+lemma current_1<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
+                   D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int)
+  requires x0 <= b
+  ensures current(incs(x0, b, ks, hs, D, C, F)) <= b
+
+lemma current_2<a>(x0: int, b: int, ks: List<int>, ls: List<a>,
+                   D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int)
+  requires b <= x0
+  ensures b <= current(decs(x0, b, ks, ls, D, C, F))
+
+function incs_<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
+                  D: (int, a) -> bool, C: (int, a) -> bool,
+                  F: (int, a) -> int): Trace<int>
+
+lemma {:rw} incs_1<a>(X: Trace<int>, x0: int, b: int, i: int, c: int, m: Nat,
+                      hs: List<a>, C: (int, a) -> bool, D: (int, a) -> bool,
+                      F: (int, a) -> int)
+  ensures
+    X == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+      <==> X == incs_(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F) && current(X) <= b
+
+function decs_<a>(x0: int, b: int, ks: List<int>, ls: List<a>,
+                  D: (int, a) -> bool, C: (int, a) -> bool,
+                  F: (int, a) -> int): Trace<int>
+
+lemma {:rw} decs_1<a>(X: Trace<int>, x0: int, b: int, i: int, c: int, m: Nat,
+                      ls: List<a>, C: (int, a) -> bool, D: (int, a) -> bool,
+                      F: (int, a) -> int)
+  ensures
+    X == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
+      <==> X == decs_(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F) && b <= current(X)
+
+goal
+  forall mid₃: int, lo₁₄: int, hi₁₅: int, n₈: Nat, K₁₀: Trace<int>,
+         S₁₂: Trace<(int, int, int, int)>, k: int ::
+    !(0 <= p
+        && q <= n
+        && K₁₀ == counter(0, 1, n₈)
+        && S₁₂
+          == trace((mid₃, 0, n, -1), for ⌊K₁₀⌋
+                                     do s₁₁, k₉ ::
+                                       case (tuple₄_1(s₁₁) + tuple₄_2(s₁₁)) / 2
+                                         < p => ((tuple₄_1(s₁₁) + tuple₄_2(s₁₁))
+                                                   / 2, (tuple₄_1(s₁₁)
+                                                           + tuple₄_2(s₁₁))
+                                                   / 2
+                                                   + 1, tuple₄_2(s₁₁),
+                                                 tuple₄_3(s₁₁))
+                                       case q
+                                         <= (tuple₄_1(s₁₁) + tuple₄_2(s₁₁))
+                                           / 2 => ((tuple₄_1(s₁₁)
+                                                      + tuple₄_2(s₁₁))
+                                                     / 2, tuple₄_1(s₁₁),
+                                                   (tuple₄_1(s₁₁)
+                                                      + tuple₄_2(s₁₁))
+                                                     / 2, tuple₄_3(s₁₁)))
+        && lo₁₄ == tuple₄_1(current(S₁₂))
+        && hi₁₅ == tuple₄_2(current(S₁₂))
+        && invs(for ⌊K₁₀⌋, ⌊S₁₂⌋ check k₉, s₁₁ :: tuple₄_1(s₁₁) < tuple₄_2(s₁₁))
+        && invs(for ⌊K₁₀⌋, ⌊S₁₂⌋
+                check k₉, s₁₁ ::
+                  (tuple₄_1(s₁₁) + tuple₄_2(s₁₁)) / 2 < p
+                    || q <= (tuple₄_1(s₁₁) + tuple₄_2(s₁₁)) / 2)
+        && 0 <= integer(n₈)
+        && hi₁₅ <= lo₁₄
+        && p <= k < q)
+
