@@ -386,7 +386,8 @@ project at the root (`lakefile.toml`, sources in `lean/`):
   recursion over one dependency, `trace` as a right fold; the Lean printer
   zips several dependencies, `List.zip d₁ (List.zip d₂ d₃)`, binds their
   values by a tuple, `fun acc ⟨b₁, b₂, b₃⟩ => ...`, and prints guarded cases
-  as conditionals.
+  as conditionals that end in `unspecified` where no guard holds, as in the
+  core, such that complete guards are an obligation of the proofs.
 - The functions that the engines use through their lemmas only, `cut`,
   `sorted`, `perm`, `partitioned`, `lower` and `upper`, have definitions in
   the modules without `{:rw}` (no rules), which the proofs use; a function
@@ -428,9 +429,9 @@ reason why the contexts of `-teq` provide it: reads within the loop
 (`integer k < integer n` of `earlier_counter`, `earlier_sums`, ...), prefixes
 not longer than the list (`prefix_counter`), the lengths of lists that are
 no dependency of a combinator (`sum_consts_prefix`,
-`earlier_not_occurs_prefix`), and complete guards where the last case, printed
-as the `else` branch, is constrained only under its guard
-(`current_trace_bounded`).
+`earlier_not_occurs_prefix`), and complete guards where the module does not
+state them, e.g. arbitrary guards `C1`, `C2`, `C3` (`current_trace_bounded`,
+`current_trace_increasing`).
 
 - Check with `scripts/lean/check.sh` (about 20 s from scratch): it fails if
   the generated files are not those of the current modules, if the build

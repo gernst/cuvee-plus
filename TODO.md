@@ -98,8 +98,8 @@ length, the bisection of `teq:search`, the soundness of `sat` with `-chc`, and p
   counterexamples show the premises that are needed: dependencies of equal length, indices within the lists, and
   complete guards. `cut` and the predicates of sorted.dfy have definitions in the modules (no rules), which the proofs
   use.
-- The premises that the engine does not check (lean/premises.txt), the printing of guards as complete, and the
-  lemmas without a proof are in bugs.md (Soundness, Trusted without a check).
+- The premises that the engine does not check (lean/premises.txt), the disjointness of guards, and the lemmas without
+  a proof are in bugs.md (Soundness, Trusted without a check).
 - The three lemmas of the bisection of search.dfy are not proved (`lean/open.txt`), since they are inconsistent
   (see bugs.md); `-print lean` prints the trace of two accumulators of the rule since 0.46.6, as a trace of a product.
 - The check from scratch takes about 20 s, mostly `simp` and typeclass inference for the decidability of `if` on generic

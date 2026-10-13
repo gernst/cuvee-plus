@@ -91,11 +91,13 @@ the contexts that `-teq` builds, as far as the reasons go.
      database that the simplifier still discharges them in the contexts of the goals.
   5. Document the invariant and the soundness of the database modulo it in doc/teq.md.
 - The premises that the engine does not check are listed in [lean/premises.txt](lean/premises.txt): nine reads and
-  prefixes within the loop, two lengths, and one complete guard. Open: turn the index premises into `requires` where `-prove` decides them
+  prefixes within the loop, two lengths, and two complete guards. Open: turn the index premises into `requires` where `-prove` decides them
   in the contexts of the goals (item 4 above), measured on the tests and the SV-COMP rows, which would shrink the
   list to the soundness gaps proper.
-- The guards of `case` updates are printed as `if g₁ then e₁ else e₂`, which assumes them complete and disjoint;
-  printing `else if g₂ then e₂ else unspecified` would turn that into an obligation of the proofs (lean.Printer).
+- The guards of `case` updates are printed as `if g₁ then e₁ else if g₂ then e₂ else unspecified` since 0.46.11, so
+  their completeness is an obligation of the proofs (two premises of premises.txt where the module does not provide
+  it); their disjointness is still assumed: overlapping guards take the first case, a refinement of the choice of the
+  core.
 - **Lemmas without a proof**: the three of [lean/open.txt](lean/open.txt) (the bisection, above); the module
   `nested`, which has no Lean proofs; the abstract predicates of the examples (`sorted`, `perm`, `partitioned`,
   `bubbled`, `shaken`, `argmin`, `insert`, `shake`, `nodup`, `merged`, `lb`), axiomatized by their lemmas, and the

@@ -31,6 +31,8 @@ Open:
   an empty interval and the partition points are chosen so (`lower` as the cut of `ar[j] < y`).
 - **A Lean mode of the printer** (`Stmt` definitions and the preamble), replacing the text manipulation of
   `generate.py`; a Scala change.
-- **Guards.** `case g₁ => e₁ case g₂ => e₂` is printed as `if g₁ then e₁ else e₂`, which assumes the guards complete
-  and disjoint; `else if g₂ then e₂ else unspecified` would make that an obligation of the proofs (`lean.Printer`).
+- **Guards** (done in 0.46.11): `case g₁ => e₁ case g₂ => e₂` is printed as `if g₁ then e₁ else if g₂ then e₂ else
+  unspecified`; the dead branches of complementary guards are dropped by `ite_lt_le` and its siblings, guards that are
+  complementary on the values of a counter only by `trace_counter_congr`; overlapping guards still take the first
+  case.
 - The comments of `lean.Printer` still refer to `resources/cuvee/teq.lean` (Scala, left unchanged).

@@ -12,7 +12,8 @@ axiom current {α₀ : Type} [Inhabited α₀] : Trace α₀ → α₀
     (trace
        x0
        (List.zip (butlast (counter 0 1 n)) hs)
-       (fun x ⟨k, h⟩ => if x < b then x + h else x))
+       (fun x ⟨k, h⟩ =>
+          if x < b then x + h else if b ≤ x then x else unspecified))
     = current
       (trace
          x0

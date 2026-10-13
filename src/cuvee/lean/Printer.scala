@@ -693,10 +693,10 @@ object Printer extends cuvee.pipe.Printer:
       case History(trace, i) =>
         Group(text("maps") ~ Nest(2, line ~ arg(Butlast(trace)) ~ line ~ text("(fun s => s" + projection(accumulators(trace), i) + ")")))
 
-      // the guards of the cases of an update are disjoint and complete, the last one is implied by the others
+      // the cases of an update as conditionals, where no guard holding is unspecified, as in the core (see Eps), such
+      // that the completeness of the guards is an obligation of the proofs, not an assumption of the printer
       case Eps(updates) =>
-        val Upd(_, last) = updates.last
-        doc(updates.init.foldRight(last) { case (Upd(cond, rhs), rest) => Ite(cond, rhs, rest) })
+        doc(updates.foldRight(Unspecified(expr.typ)) { case (Upd(cond, rhs), rest) => Ite(cond, rhs, rest) })
 
       case _: Old | _: Diff | _: Rec =>
         unsupported(expr)

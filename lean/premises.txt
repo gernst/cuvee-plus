@@ -23,6 +23,7 @@ sum_consts_prefix: (hjs : length js = n) -- the values of an inner loop, one per
 # search.dfy
 earlier_not_occurs_prefix: (hxs : length xs = n) -- xs is a list of the loop of n iterations
 
-# counters.dfy: guards that the printer turns into conditionals, the last case into the else branch, which the
-# lemma constrains only under its guard
+# counters.dfy: arbitrary guards of the cases of an update, whose completeness the module does not state; the
+# printer ends their conditionals in unspecified (lean.Printer)
 current_trace_bounded: (hc : ∀ (y : Int), ¬C1 y ∧ ¬C2 y → C3 y) -- the guards of the cases of an update are complete (doc/teq.md), the loop has no break
+current_trace_increasing: (hc : ∀ (h : Int), C h ∨ D h ∨ E h) -- the guards of the cases of an update are complete (doc/teq.md), the loop has no break

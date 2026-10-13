@@ -306,22 +306,33 @@ noncomputable def consts_prefix (n : Nat) (c : Int) (js : List Int) : Prop :=
   | .succ m => consts_prefix m c js ∧ earlier m js = c
 
 noncomputable def maxs (x : Int) (values : List Int) : Trace Int :=
-  trace x values (fun m v => if m < v then v else m)
+  trace
+    x
+    values
+    (fun m v => if m < v then v else if v ≤ m then m else unspecified)
 
 noncomputable def mins (x : Int) (values : List Int) : Trace Int :=
-  trace x values (fun m v => if v < m then v else m)
+  trace
+    x
+    values
+    (fun m v => if v < m then v else if m ≤ v then m else unspecified)
 
 noncomputable def counts {α : Type} [Inhabited α] (x : Int) (e : α)
                                                   (vs : List α) : Trace Int :=
-  trace x vs (fun y v => if v = e then y + 1 else y)
+  trace
+    x
+    vs
+    (fun y v => if v = e then y + 1 else if v ≠ e then y else unspecified)
 
 def Stmt.counts_false_def : Prop :=
   ∀ (x : Int) (bs : List Prop) (n : Nat) (hbs : length bs = n),
-    trace x bs (fun y b => if ¬b then y + 1 else y) = counts x False bs
+    trace x bs (fun y b => if ¬b then y + 1 else if b then y else unspecified)
+      = counts x False bs
 
 def Stmt.counts_true_def : Prop :=
   ∀ (x : Int) (bs : List Prop) (n : Nat) (hbs : length bs = n),
-    trace x bs (fun y b => if b then y + 1 else y) = counts x True bs
+    trace x bs (fun y b => if b then y + 1 else if ¬b then y else unspecified)
+      = counts x True bs
 
 def Stmt.consts_prefix_def : Prop :=
   ∀ (n : Nat) (c : Int) (js : List Int) (hs : List Int) (hhs : length hs = n) (hjs : length js = n),
@@ -461,7 +472,11 @@ def Stmt.current_mins_earlier : Prop :=
       (current (mins x values) ≤ earlier k values)
 
 noncomputable def parities (x : Int) (values : List Int) : Trace Int :=
-  trace x values (fun s v => if v % 2 = 0 then s + 1 else s - 1)
+  trace
+    x
+    values
+    (fun s v =>
+       if v % 2 = 0 then s + 1 else if v % 2 ≠ 0 then s - 1 else unspecified)
 
 def Stmt.current_parities : Prop :=
   ∀ (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
@@ -477,7 +492,10 @@ def Stmt.select_current_trace_reset_add : Prop :=
             if k = 0 then
               fun j1 => if j1 = j then c else a j1
             else
-              fun j1 => if j1 = j then a j + G k else a j1))
+              if 0 < k then
+                fun j1 => if j1 = j then a j + G k else a j1
+              else
+                unspecified))
       j
       = (if n = zero then
            a0 j
@@ -806,7 +824,10 @@ def Stmt.stores_cases_def : Prop :=
          if P (a k) then
            fun j => if j = k then c else a j
          else
-           fun j => if j = k then G (a k) else a j)
+           if ¬P (a k) then
+             fun j => if j = k then G (a k) else a j
+           else
+             unspecified)
       = stores
         a0
         (butlast (counter 0 1 n))
@@ -823,7 +844,7 @@ def Stmt.stores_index_cases_def : Prop :=
          if P k then
            fun j => if j = k then c else a j
          else
-           fun j => if j = k then d else a j)
+           if ¬P k then fun j => if j = k then d else a j else unspecified)
       = stores
         a0
         (butlast (counter 0 1 n))
@@ -850,7 +871,10 @@ def Stmt.select_current_trace_reset_keep : Prop :=
          a0
          (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
          (fun a ⟨k, i⟩ =>
-            if k = 0 then fun j1 => if j1 = j then c else a j1 else a))
+            if k = 0 then
+              fun j1 => if j1 = j then c else a j1
+            else
+              if 0 < k then a else unspecified))
       j
       = (if n = zero then a0 j else c)
 
@@ -872,7 +896,11 @@ def Stmt.current_trace_conditional_store : Prop :=
       (trace
          a0
          (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
-         (fun a ⟨k, i⟩ => if C i then fun j => if j = i then V i else a j else a))
+         (fun a ⟨k, i⟩ =>
+            if C i then
+              fun j => if j = i then V i else a j
+            else
+              if ¬C i then a else unspecified))
       j
       = (if 0 ≤ j ∧ j < integer n ∧ C j then V j else a0 j)
 
@@ -883,7 +911,10 @@ def Stmt.current_trace_conditional_store_deps : Prop :=
          a0
          (List.zip (butlast (counter 0 1 n)) (List.zip hs (List.zip cs vs)))
          (fun a ⟨k, h, c, v⟩ =>
-            if C h c v then fun j => if j = k then V h c v else a j else a))
+            if C h c v then
+              fun j => if j = k then V h c v else a j
+            else
+              if ¬C h c v then a else unspecified))
       j
       = (if 0 ≤ j
            ∧ j < integer n
@@ -905,14 +936,20 @@ def Stmt.current_trace_cap : Prop :=
          a0
          (List.zip (butlast (counter 0 1 n)) hs)
          (fun a ⟨k, h⟩ =>
-            if a k < b then a else fun j => if j = k then b else a j))
+            if a k < b then
+              a
+            else
+              if b ≤ a k then fun j => if j = k then b else a j else unspecified))
       j
       = (if 0 ≤ j ∧ j < integer n ∧ b ≤ a0 j then b else a0 j)
 
 def Stmt.trace_merge_cases_ne : Prop :=
   ∀ (x0 : Int) (n : Nat) (c : Int) (d : Int) (F : Int → Int),
     d = F c
-      → trace x0 (butlast (counter 0 1 n)) (fun x k => if x ≠ c then F x else d)
+      → trace
+        x0
+        (butlast (counter 0 1 n))
+        (fun x k => if x ≠ c then F x else if x = c then d else unspecified)
         = trace x0 (butlast (counter 0 1 n)) (fun x k => F x)
 
 def Stmt.invs_two_phases : Prop :=
@@ -927,7 +964,10 @@ def Stmt.invs_two_phases : Prop :=
                                                         if x < b then
                                                           x + 1
                                                         else
-                                                          x + c))))
+                                                          if b ≤ x then
+                                                            x + c
+                                                          else
+                                                            unspecified))))
            (fun ⟨k, x⟩ => x < B)
            ↔ n = zero
              ∨ (if integer n - 1 ≤ b - x0 then
@@ -954,7 +994,8 @@ def Stmt.current_trace_two_phases : Prop :=
         (trace
            x0
            (butlast (counter 0 1 n))
-           (fun x k => if x < b then x + 1 else x + c))
+           (fun x k =>
+              if x < b then x + 1 else if b ≤ x then x + c else unspecified))
         = (if integer n ≤ b - x0 then
              x0 + integer n
            else
@@ -967,7 +1008,8 @@ def Stmt.current_trace_catch_up : Prop :=
         (trace
            y0
            (List.zip (butlast (counter 0 1 n)) (butlast (counter x0 1 n)))
-           (fun y ⟨k, x⟩ => if y ≤ x then y + 1 else y))
+           (fun y ⟨k, x⟩ =>
+              if y ≤ x then y + 1 else if x < y then y else unspecified))
         = (if x0 + integer n ≤ y0 then y0 else x0 + integer n)
 
 def Stmt.current_trace_flag : Prop :=
@@ -976,7 +1018,7 @@ def Stmt.current_trace_flag : Prop :=
       (trace
          x0
          (List.zip (butlast (counter 0 1 n)) hs)
-         (fun f ⟨k, h⟩ => if D k h then c else f))
+         (fun f ⟨k, h⟩ => if D k h then c else if ¬D k h then f else unspecified))
       = (if invs
            (List.zip (butlast (counter 0 1 n)) hs)
            (fun ⟨k, h⟩ => ¬D k h) then
@@ -985,7 +1027,7 @@ def Stmt.current_trace_flag : Prop :=
            c)
 
 def Stmt.current_trace_increasing : Prop :=
-  ∀ (x0 : Int) (n : Nat) (a : Int) (b : Int) (c : Int) (hs : List Int) (C : Int → Prop) (D : Int → Prop) (E : Int → Prop) (hhs : length hs = n),
+  ∀ (x0 : Int) (n : Nat) (a : Int) (b : Int) (c : Int) (hs : List Int) (C : Int → Prop) (D : Int → Prop) (E : Int → Prop) (hhs : length hs = n) (hc : ∀ (h : Int), C h ∨ D h ∨ E h),
     n ≠ zero ∧ 0 < a ∧ 0 < b ∧ 0 < c
       → x0
         < current
@@ -993,7 +1035,10 @@ def Stmt.current_trace_increasing : Prop :=
              x0
              (List.zip (butlast (counter 0 1 n)) hs)
              (fun x ⟨k, h⟩ =>
-                if C h then x + a else if D h then x + b else x + c))
+                if C h then
+                  x + a
+                else
+                  if D h then x + b else if E h then x + c else unspecified))
 
 def Stmt.current_trace_bounded : Prop :=
   ∀ (x0 : Int) (n : Nat) (lo : Int) (hi : Int) (C1 : Int → Prop) (C2 : Int → Prop) (C3 : Int → Prop) (F1 : Int → Int) (F2 : Int → Int) (F3 : Int → Int) (hc : ∀ (y : Int), ¬C1 y ∧ ¬C2 y → C3 y),
@@ -1007,12 +1052,20 @@ def Stmt.current_trace_bounded : Prop :=
              (trace
                 x0
                 (butlast (counter 0 1 n))
-                (fun x k => if C1 x then F1 x else if C2 x then F2 x else F3 x))
+                (fun x k =>
+                   if C1 x then
+                     F1 x
+                   else
+                     if C2 x then F2 x else if C3 x then F3 x else unspecified))
            ∧ current
              (trace
                 x0
                 (butlast (counter 0 1 n))
-                (fun x k => if C1 x then F1 x else if C2 x then F2 x else F3 x))
+                (fun x k =>
+                   if C1 x then
+                     F1 x
+                   else
+                     if C2 x then F2 x else if C3 x then F3 x else unspecified))
              ≤ hi
            ↔ True)
 
@@ -1076,11 +1129,14 @@ def Stmt.select_current_trace_stride2_cases : Prop :=
                     else
                       (fun j => if j = 2 * k then X2 else a j) j
                 else
-                  fun j =>
-                    if j = 2 * k + 1 then
-                      Y3
-                    else
-                      (fun j => if j = 2 * k then X3 else a j) j))
+                  if R then
+                    fun j =>
+                      if j = 2 * k + 1 then
+                        Y3
+                      else
+                        (fun j => if j = 2 * k then X3 else a j) j
+                  else
+                    unspecified))
         j
         = (if 0 ≤ j ∧ j < 2 * integer n then
              if j % 2 = 0 then
@@ -1105,7 +1161,10 @@ def Stmt.select_current_trace_ahead : Prop :=
                   else
                     (fun j => if j = k + 1 then F k else a j) j
               else
-                fun j => if j = k then G k else a j))
+                if m = k + 1 then
+                  fun j => if j = k then G k else a j
+                else
+                  unspecified))
         j
         = (if 0 ≤ j ∧ j < integer n then
              G j
@@ -1126,7 +1185,7 @@ def Stmt.select_current_trace_ahead_down : Prop :=
                 else
                   (fun j => if j = i + -1 then F i else a j) j
             else
-              fun j => if j = i then G i else a j))
+              if i < 1 then fun j => if j = i then G i else a j else unspecified))
       j
       = (if s - integer n < j ∧ j ≤ s then
            G j
@@ -1214,12 +1273,14 @@ def Stmt.current_trace_mod_add_cases : Prop :=
         (trace
            x0
            (List.zip (butlast (counter 0 1 n)) hs)
-           (fun x ⟨k, h⟩ => if C k then (x + F k) % m else x))
+           (fun x ⟨k, h⟩ =>
+              if C k then (x + F k) % m else if ¬C k then x else unspecified))
         = current
           (trace
              x0
              (List.zip (butlast (counter 0 1 n)) hs)
-             (fun x ⟨k, h⟩ => if C k then x + F k else x))
+             (fun x ⟨k, h⟩ =>
+                if C k then x + F k else if ¬C k then x else unspecified))
           % m
 
 end TEQ

@@ -48,8 +48,58 @@ termination_by x.toNat
 decreasing_by omega
 
 -- the values before the last one of a counter and of consts
+-- the printer writes the cases of an update as conditionals whose last branch, where no guard holds, is unspecified
+-- (lean.Printer); for complementary guards that branch is dead, which these lemmas drop, for any instances of
+-- decidability (open Classical mixes them)
+@[simp] theorem ite_lt_le {α : Type} (a b : Int) (h1 : Decidable (a < b)) (h2 : Decidable (b ≤ a)) (p q z : α) :
+    @ite α (a < b) h1 p (@ite α (b ≤ a) h2 q z) = @ite α (a < b) h1 p q := by
+  by_cases h : a < b
+  · simp [h]
+  · rw [if_neg h, if_neg h, if_pos (by omega)]
+
+@[simp] theorem ite_le_lt {α : Type} (a b : Int) (h1 : Decidable (a ≤ b)) (h2 : Decidable (b < a)) (p q z : α) :
+    @ite α (a ≤ b) h1 p (@ite α (b < a) h2 q z) = @ite α (a ≤ b) h1 p q := by
+  by_cases h : a ≤ b
+  · simp [h]
+  · rw [if_neg h, if_neg h, if_pos (by omega)]
+
+@[simp] theorem ite_eq_ne {α β : Type} (a b : β) (h1 : Decidable (a = b)) (h2 : Decidable (a ≠ b)) (p q z : α) :
+    @ite α (a = b) h1 p (@ite α (a ≠ b) h2 q z) = @ite α (a = b) h1 p q := by
+  by_cases h : a = b
+  · simp [h]
+  · rw [if_neg h, if_neg h, if_pos h]
+
+@[simp] theorem ite_not_else {α : Type} (c : Prop) (h1 : Decidable c) (h2 : Decidable (¬c)) (p q z : α) :
+    @ite α c h1 p (@ite α (¬c) h2 q z) = @ite α c h1 p q := by
+  by_cases h : c
+  · simp [h]
+  · rw [if_neg h, if_neg h, if_pos h]
+
+@[simp] theorem ite_ne_eq {α β : Type} (a b : β) (h1 : Decidable (a ≠ b)) (h2 : Decidable (a = b)) (p q z : α) :
+    @ite α (a ≠ b) h1 p (@ite α (a = b) h2 q z) = @ite α (a ≠ b) h1 p q := by
+  by_cases h : a = b <;> simp [h]
+
+@[simp] theorem ite_not_first {α : Type} (c : Prop) (h1 : Decidable (¬c)) (h2 : Decidable c) (p q z : α) :
+    @ite α (¬c) h1 p (@ite α c h2 q z) = @ite α (¬c) h1 p q := by
+  by_cases h : c <;> simp [h]
+
 theorem butlast_counter_succ (i c : Int) (m : Nat) :
     butlast (counter i c (m + 1)) = i :: butlast (counter (i + c) c m) := rfl
+
+-- updates that agree on the values s, ..., s + n - 1 of a counter give the same trace over it, e.g. where guards are
+-- complementary on the values of the counter only (k == 0 and 0 < k for k from 0)
+theorem trace_counter_congr {α β : Type} (x : α) (s : Int) (n : Nat) (ys : List β) (f g : α → Int × β → α)
+    (h : ∀ a k y, s ≤ k → k < s + n → f a (k, y) = g a (k, y)) :
+    trace x (List.zip (butlast (counter s 1 n)) ys) f = trace x (List.zip (butlast (counter s 1 n)) ys) g := by
+  induction n generalizing x s ys with
+  | zero => rfl
+  | succ n ih =>
+    cases ys with
+    | nil => simp [List.zip_nil_right, trace]
+    | cons y ys =>
+      rw [butlast_counter_succ, List.zip_cons_cons]
+      simp only [trace]
+      rw [h x s y (by omega) (by omega), ih _ (s + 1) ys (fun a k y h1 h2 => h a k y (by omega) (by omega))]
 
 theorem length_butlast_counter (i c : Int) (n : Nat) : (butlast (counter i c n)).length = n := by
   induction n generalizing i with
@@ -316,7 +366,7 @@ theorem stores_counter_read (a0 : Int → Int) (F : Int → Int → Int) : ∀ (
 -- a loop that updates each position once, by cases on its old value, stores the values computed from the initial
 -- array
 -- (from MonoCera: conda, s1lif-s5lif)
-theorem stores_cases_def (a0 : Int → Int) (n : Nat) (c : Int)
+theorem stores_cases_def_complete (a0 : Int → Int) (n : Nat) (c : Int)
                                (P : Int → Prop) (G : Int → Int) :
   trace
     a0
@@ -340,9 +390,14 @@ theorem stores_cases_def (a0 : Int → Int) (n : Nat) (c : Int)
     funext a p j
     by_cases h : P (a p.1) <;> by_cases e : j = p.1 <;> simp [h, e]
 
+theorem stores_cases_def : Stmt.stores_cases_def := by
+  intro a0 n c P G
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact stores_cases_def_complete a0 n c P G
+
 -- a loop that stores at each position k a constant chosen by cases on k stores these values
 -- (from MonoCera: brs2-brs5)
-theorem stores_index_cases_def (a0 : Int → Int) (n : Nat) (c : Int)
+theorem stores_index_cases_def_complete (a0 : Int → Int) (n : Nat) (c : Int)
                                      (d : Int) (P : Int → Prop) :
   trace
     a0
@@ -366,6 +421,11 @@ theorem stores_index_cases_def (a0 : Int → Int) (n : Nat) (c : Int)
     funext j
     by_cases h : P k <;> simp [h]
 
+theorem stores_index_cases_def : Stmt.stores_index_cases_def := by
+  intro a0 n c d P
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact stores_index_cases_def_complete a0 n c d P
+
 -- the trace of the successive copies a[k] := a[k + d] for the keys, which is modeled for increasing keys and
 -- nonnegative offsets only, where the entries read are not yet modified
 def shifts (a : Int → Int) (keys : List Int)
@@ -379,7 +439,7 @@ def shifts (a : Int → Int) (keys : List Int)
 
 -- on booleans, the guards are the values themselves; the occurrences of false come first,
 -- since the guard b of the other lemma also matches !b, which counts the occurrences of true among the negations
-theorem counts_false_def (x : Int) (bs : List Prop) (n : Nat)
+theorem counts_false_def_complete (x : Int) (bs : List Prop) (n : Nat)
                                (hbs : length bs = n) :
   trace x bs (fun y b => if ¬b then y + 1 else y) = counts x False bs :=
   by
@@ -388,7 +448,12 @@ theorem counts_false_def (x : Int) (bs : List Prop) (n : Nat)
     funext y b
     by_cases h : b <;> simp [h]
 
-theorem counts_true_def (x : Int) (bs : List Prop) (n : Nat)
+theorem counts_false_def : Stmt.counts_false_def := by
+  intro x bs n hbs
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact counts_false_def_complete x bs n hbs
+
+theorem counts_true_def_complete (x : Int) (bs : List Prop) (n : Nat)
                               (hbs : length bs = n) :
   trace x bs (fun y b => if b then y + 1 else y) = counts x True bs :=
   by
@@ -397,10 +462,15 @@ theorem counts_true_def (x : Int) (bs : List Prop) (n : Nat)
     funext y b
     by_cases h : b <;> simp [h]
 
+theorem counts_true_def : Stmt.counts_true_def := by
+  intro x bs n hbs
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact counts_true_def_complete x bs n hbs
+
 -- two cases whose results agree under the guard of the second one, x == c, which the simplifier has substituted
 -- into it, are one; the second result is a variable d, since F(c) would be compared literally
 -- (from copysome1-1, copysome1-2)
-theorem trace_merge_cases_ne (x0 : Int) (n : Nat) (c : Int) (d : Int)
+theorem trace_merge_cases_ne_complete (x0 : Int) (n : Nat) (c : Int) (d : Int)
                                    (F : Int → Int) :
   d = F c
     → trace x0 (butlast (counter 0 1 n)) (fun x k => if x ≠ c then F x else d)
@@ -410,6 +480,11 @@ theorem trace_merge_cases_ne (x0 : Int) (n : Nat) (c : Int) (d : Int)
     congr 1
     funext x k
     by_cases e : x = c <;> simp [e, h]
+
+theorem trace_merge_cases_ne : Stmt.trace_merge_cases_ne := by
+  intro x0 n c d F
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact trace_merge_cases_ne_complete x0 n c d F
 
 -- the same with the guards in the other order
 -- (from brs1, brs1f, ifcomp, ms1, ms1f)
@@ -1206,7 +1281,7 @@ theorem current_counts {α : Type} [Inhabited α] (x : Int) (e : α)
 -- a counter in two phases: by 1 up to the bound b, from an initial value up to b, then by c >= 0, which keeps it
 -- at least b
 -- (from Mono1_1-2, phases_1-1, phases_1-2)
-theorem current_trace_two_phases (x0 : Int) (n : Nat) (b : Int)
+theorem current_trace_two_phases_complete (x0 : Int) (n : Nat) (b : Int)
                                        (c : Int) :
   x0 ≤ b ∧ 0 ≤ c
     → current
@@ -1241,10 +1316,15 @@ theorem current_trace_two_phases (x0 : Int) (n : Nat) (b : Int)
         rw [ite_eq_right (by omega)]
         grind
 
+theorem current_trace_two_phases : Stmt.current_trace_two_phases := by
+  intro x0 n b c
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact current_trace_two_phases_complete x0 n b c
+
 -- a follower: y increases by 1 whenever it does not exceed the value x of a counter with step 1, hence y is the
 -- larger of its initial value and the final value of x, given that it starts at least at x
 -- (from benchmark05_conjunctive)
-theorem current_trace_catch_up (y0 : Int) (x0 : Int) (n : Nat) :
+theorem current_trace_catch_up_complete (y0 : Int) (x0 : Int) (n : Nat) :
   x0 ≤ y0
     → current
       (trace
@@ -1266,9 +1346,14 @@ theorem current_trace_catch_up (y0 : Int) (x0 : Int) (n : Nat) :
       · rw [ite_eq_left e, ih (s + 1) (y + 1) (x + 1) (by omega)]; push_cast; split <;> split <;> omega
       · rw [ite_eq_right e, ih (s + 1) y (x + 1) (by omega)]; push_cast; split <;> split <;> omega
 
+theorem current_trace_catch_up : Stmt.current_trace_catch_up := by
+  intro y0 x0 n
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact current_trace_catch_up_complete y0 x0 n
+
 -- a flag, initially x0, that is set to c whenever D holds, is x0 at the end iff D never held, otherwise c
 -- (from standard_compare_ground)
-theorem current_trace_flag (x0 : Int) (c : Int) (n : Nat) (hs : List Int)
+theorem current_trace_flag_complete (x0 : Int) (c : Int) (n : Nat) (hs : List Int)
                                  (D : Int → Int → Prop) (hhs : length hs = n) :
   current
     (trace
@@ -1296,6 +1381,11 @@ theorem current_trace_flag (x0 : Int) (c : Int) (n : Nat) (hs : List Int)
         | nil => simp [trace, current]
         | cons q qs ih2 => obtain ⟨k', h'⟩ := q; simp
       · simp [d]
+
+theorem current_trace_flag : Stmt.current_trace_flag := by
+  intro x0 c n hs D hhs
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact current_trace_flag_complete x0 c n hs D hhs
 
 -- a value multiplied by c in each iteration, a geometric sequence
 -- (from underapprox_1-1, underapprox_1-2)
@@ -1373,7 +1463,7 @@ theorem current_trace_reset_add (x0 : Int) (n : Nat) (c : Int)
 
 -- the cell j of a trace that writes only j, setting it to c in the first iteration and adding G(k) in the others
 -- (from MonoCera: brs1-brs5, ms2-ms5)
-theorem select_current_trace_reset_add (a0 : Int → Int) (j : Int)
+theorem select_current_trace_reset_add_complete (a0 : Int → Int) (j : Int)
                                              (n : Nat) (c : Int)
                                              (G : Int → Int) :
   current
@@ -1420,9 +1510,17 @@ theorem select_current_trace_reset_add (a0 : Int → Int) (j : Int)
       rw [h, e]
       simp
 
+theorem select_current_trace_reset_add : Stmt.select_current_trace_reset_add := by
+  intro a0 j n c G
+  rw [trace_counter_congr a0 0 n _ _
+    (fun a ⟨k, i⟩ => if k = 0 then fun j1 => if j1 = j then c else a j1 else fun j1 => if j1 = j then a j + G k else a j1)
+    (fun a k y h1 h2 => by
+      dsimp only; by_cases e : k = 0 <;> simp only [e, ↓reduceIte]; rw [if_pos (show 0 < k by omega)])]
+  exact select_current_trace_reset_add_complete a0 j n c G
+
 -- the same where the other iterations keep the array
 -- (from MonoCera: ms1)
-theorem select_current_trace_reset_keep (a0 : Int → Int) (j : Int)
+theorem select_current_trace_reset_keep_complete (a0 : Int → Int) (j : Int)
                                               (n : Nat) (c : Int) :
   current
     (trace
@@ -1451,6 +1549,14 @@ theorem select_current_trace_reset_keep (a0 : Int → Int) (j : Int)
       simp only [ite_true, Nat.succ_ne_zero, ite_false]
       rw [h]
       simp
+
+theorem select_current_trace_reset_keep : Stmt.select_current_trace_reset_keep := by
+  intro a0 j n c
+  rw [trace_counter_congr a0 0 n _ _
+    (fun a ⟨k, i⟩ => if k = 0 then fun j1 => if j1 = j then c else a j1 else a)
+    (fun a k y h1 h2 => by
+      dsimp only; by_cases e : k = 0 <;> simp only [e, ↓reduceIte]; rw [if_pos (show 0 < k by omega)])]
+  exact select_current_trace_reset_keep_complete a0 j n c
 
 -- earlier
 
@@ -1537,7 +1643,8 @@ theorem earlier_counts {α : Type} [Inhabited α] (j : Nat) (x : Int)
     induction vs generalizing j x n with
     | nil => rw [← hvs] at h; simp only [integer_cast, List.length_nil] at h; omega
     | cons v vs ih =>
-      have e' : counts x e (v :: vs) = .step x (counts (if v = e then x + 1 else x) e vs) := rfl
+      have e' : counts x e (v :: vs) = .step x (counts (if v = e then x + 1 else x) e vs) := by
+        simp only [counts, trace, ite_eq_ne]
       rw [e']
       cases j with
       | zero => simp [butlast, earlier, «prefix», count]
@@ -2109,7 +2216,7 @@ theorem current_shifts (a : Int → Int) (n : Nat) (i : Int) (d : Int)
 
 -- stores at the positions of a counter, guarded by C, keep the other positions; a read at j
 -- (from copysome1-1, copysome1-2)
-theorem current_trace_conditional_store (a0 : Int → Int) (n : Nat)
+theorem current_trace_conditional_store_complete (a0 : Int → Int) (n : Nat)
                                               (j : Int) (C : Int → Prop)
                                               (V : Int → Int) :
   current
@@ -2135,9 +2242,14 @@ theorem current_trace_conditional_store (a0 : Int → Int) (n : Nat)
       · subst e; by_cases hC : C j <;> simp [hC] <;> omega
       · by_cases hC : C s <;> simp [hC, e] <;> (repeat' split) <;> grind
 
+theorem current_trace_conditional_store : Stmt.current_trace_conditional_store := by
+  intro a0 n j C V
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact current_trace_conditional_store_complete a0 n j C V
+
 -- the same, with the guard and the value on the values of three further dependencies at the iteration of j
 -- (from array_mul_init)
-theorem current_trace_conditional_store_deps (a0 : Int → Int) (n : Nat)
+theorem current_trace_conditional_store_deps_complete (a0 : Int → Int) (n : Nat)
                                                    (j : Int) (hs : List Int)
                                                    (cs : List Int)
                                                    (vs : List Int)
@@ -2227,6 +2339,11 @@ theorem current_trace_conditional_store_deps (a0 : Int → Int) (n : Nat)
     have := gen n 0 a0 hs cs vs hhs hcs hvs
     simpa using this
 
+theorem current_trace_conditional_store_deps : Stmt.current_trace_conditional_store_deps := by
+  intro a0 n j hs cs vs C V hhs hcs hvs
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact current_trace_conditional_store_deps_complete a0 n j hs cs vs C V hhs hcs hvs
+
 -- the same, at distinct positions ps, which are kept as matched, read by occurs and indexof
 -- (from array_monotonic)
 theorem current_trace_conditional_store_distinct (a0 : Int → Int)
@@ -2289,7 +2406,7 @@ theorem current_trace_conditional_store_distinct (a0 : Int → Int)
 -- a clamp of each element to b, where the guard reads the initial element, since each position is written in its own
 -- iteration only; a generic guard C(a[k], k) is no pattern, and C(a, k) would read other positions
 -- (from condn, condnf)
-theorem current_trace_cap (a0 : Int → Int) (n : Nat) (j : Int) (b : Int)
+theorem current_trace_cap_complete (a0 : Int → Int) (n : Nat) (j : Int) (b : Int)
                                 (hs : List Int) (hhs : length hs = n) :
   current
     (trace
@@ -2343,6 +2460,11 @@ theorem current_trace_cap (a0 : Int → Int) (n : Nat) (j : Int) (b : Int)
               <;> split <;> split <;> first | rfl | omega
     have := gen n 0 a0 hs hhs (fun _ _ => rfl)
     simpa using this
+
+theorem current_trace_cap : Stmt.current_trace_cap := by
+  intro a0 n j b hs hhs
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact current_trace_cap_complete a0 n j b hs hhs
 
 -- an array filled by a recurrence at the positions 1, ..., n, each element from its predecessor plus G of the position
 -- of the predecessor, is the initial element plus the sum of G over the positions before
@@ -2930,7 +3052,7 @@ theorem current_maxs_initial (x : Int) (values : List Int) (n : Nat)
     induction values generalizing x with
     | nil => simp [maxs, trace, current]
     | cons v vs ih =>
-      simp only [maxs, trace, current] at *
+      simp only [maxs, trace, current, ite_lt_le] at *
       have h1 := ih (if x < v then v else x)
       have h2 : x ≤ (if x < v then v else x) := by split <;> omega
       omega
@@ -2943,7 +3065,8 @@ theorem current_maxs_earlier (k : Nat) (x : Int) (values : List Int)
     induction values generalizing k x n with
     | nil => rw [← hvalues] at h; simp only [integer_cast, List.length_nil] at h; omega
     | cons v vs ih =>
-      have e : maxs x (v :: vs) = .step x (maxs (if x < v then v else x) vs) := rfl
+      have e : maxs x (v :: vs) = .step x (maxs (if x < v then v else x) vs) := by
+        simp only [maxs, trace, ite_lt_le]
       rw [e]
       simp only [current]
       cases k with
@@ -2963,7 +3086,7 @@ theorem current_mins_initial (x : Int) (values : List Int) (n : Nat)
     induction values generalizing x with
     | nil => simp [mins, trace, current]
     | cons v vs ih =>
-      simp only [mins, trace, current] at *
+      simp only [mins, trace, current, ite_lt_le] at *
       have h1 := ih (if v < x then v else x)
       have h2 : (if v < x then v else x) ≤ x := by split <;> omega
       omega
@@ -2976,7 +3099,8 @@ theorem current_mins_earlier (k : Nat) (x : Int) (values : List Int)
     induction values generalizing k x n with
     | nil => rw [← hvalues] at h; simp only [integer_cast, List.length_nil] at h; omega
     | cons v vs ih =>
-      have e : mins x (v :: vs) = .step x (mins (if v < x then v else x) vs) := rfl
+      have e : mins x (v :: vs) = .step x (mins (if v < x then v else x) vs) := by
+        simp only [mins, trace, ite_lt_le]
       rw [e]
       simp only [current]
       cases k with
@@ -2991,7 +3115,7 @@ theorem current_mins_earlier (k : Nat) (x : Int) (values : List Int)
 -- a value that increases by a positive constant in each of its three cases exceeds its initial value after at
 -- least one iteration
 -- (from large_const)
-theorem current_trace_increasing (x0 : Int) (n : Nat) (a : Int) (b : Int)
+theorem current_trace_increasing_complete (x0 : Int) (n : Nat) (a : Int) (b : Int)
                                        (c : Int) (hs : List Int)
                                        (C : Int → Prop) (D : Int → Prop)
                                        (E : Int → Prop) (hhs : length hs = n) :
@@ -3022,10 +3146,20 @@ theorem current_trace_increasing (x0 : Int) (n : Nat) (a : Int) (b : Int)
         simp only [trace, current]
         exact Int.lt_of_lt_of_le (hstrict x0 (0, h)) (trace_mono _ _ _ (fun x p => Int.le_of_lt (hstrict x p)))
 
+theorem current_trace_increasing : Stmt.current_trace_increasing := by
+  intro x0 n a b c hs C D E hhs hc
+  have e : ∀ (h A B C' z : Int), (if C h then A else if D h then B else if E h then C' else z)
+      = (if C h then A else if D h then B else C') := by
+    intro h A B C' z
+    by_cases h1 : C h <;> by_cases h2 : D h <;> simp [h1, h2]
+    rcases hc h with h3 | h3 | h3 <;> simp_all
+  simp only [e]
+  exact current_trace_increasing_complete x0 n a b c hs C D E hhs
+
 -- an interval that contains the initial value and that each of the three cases maps into itself contains the
 -- current value, an inductive invariant; the left-hand side is the conjunction of both bounds, which binds both
 -- (from benchmark51_polynomial)
-theorem current_trace_bounded (x0 : Int) (n : Nat) (lo : Int) (hi : Int)
+theorem current_trace_bounded_complete (x0 : Int) (n : Nat) (lo : Int) (hi : Int)
                                     (C1 : Int → Prop) (C2 : Int → Prop)
                                     (C3 : Int → Prop) (F1 : Int → Int)
                                     (F2 : Int → Int) (F3 : Int → Int)
@@ -3066,6 +3200,19 @@ theorem current_trace_bounded (x0 : Int) (n : Nat) (lo : Int) (hi : Int)
         by_cases c2 : C2 x
         · rw [ite_eq_left c2]; exact f2 x ⟨hx.1, hx.2, c2⟩
         · rw [ite_eq_right c2]; exact f3 x ⟨hx.1, hx.2, hc x ⟨c1, c2⟩⟩
+
+theorem current_trace_bounded : Stmt.current_trace_bounded := by
+  intro x0 n lo hi C1 C2 C3 F1 F2 F3 hc
+  have e : ∀ (y A B C z : Int), (if C1 y then A else if C2 y then B else if C3 y then C else z)
+      = (if C1 y then A else if C2 y then B else C) := by
+    intro y A B C z
+    by_cases h1 : C1 y
+    · simp [h1]
+    by_cases h2 : C2 y
+    · simp [h1, h2]
+    simp [h1, h2, hc y ⟨h1, h2⟩]
+  simp only [e]
+  exact current_trace_bounded_complete x0 n lo hi C1 C2 C3 F1 F2 F3 hc
 
 -- which is instantiated at the positions j in the range
 -- (from simple_array_index_value_2)
@@ -3275,7 +3422,7 @@ theorem mul_lt_cancel (k : Int) (a : Int) (b : Int) :
 -- the same counter is increasing for 0 < c, hence an upper bound B holds at all its values before the current one
 -- iff it holds at the last of them
 -- (from Mono1_1-2)
-theorem invs_two_phases (x0 : Int) (n : Nat) (b : Int) (c : Int)
+theorem invs_two_phases_complete (x0 : Int) (n : Nat) (b : Int) (c : Int)
                               (B : Int) :
   x0 ≤ b ∧ 0 < c
     → (invs
@@ -3335,7 +3482,7 @@ theorem invs_two_phases (x0 : Int) (n : Nat) (b : Int) (c : Int)
     | zero => simp
     | succ t =>
       have hfalse : (t + 1 = zero) = False := by simp
-      have hlast := current_trace_two_phases x0 t b c ⟨hx, Int.le_of_lt hc⟩
+      have hlast := current_trace_two_phases_complete x0 t b c ⟨hx, Int.le_of_lt hc⟩
       have e : integer (t + 1) - 1 = integer t := by simp only [integer_cast]; push_cast; omega
       rw [hfalse, false_or, show x0 + integer (t + 1) - 1 = x0 + (integer (t + 1) - 1) by omega, e, ← hlast]
       constructor
@@ -3349,6 +3496,11 @@ theorem invs_two_phases (x0 : Int) (n : Nat) (b : Int) (c : Int)
         have := mono i (t - i)
         rw [show i + (t - i) = t by omega] at this
         exact Int.lt_of_le_of_lt this h
+
+theorem invs_two_phases : Stmt.invs_two_phases := by
+  intro x0 n b c B
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact invs_two_phases_complete x0 n b c B
 
 -- sorted.dfy: sorted, perm and partitioned as defined in the module
 
@@ -3687,7 +3839,7 @@ theorem stride2_cases_from (P Q : Prop) (X1 Y1 X2 Y2 X3 Y3 j : Int) (r : Nat) : 
     dsimp only
     (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
 
-theorem select_current_trace_stride2_cases (a0 : Int → Int) (n : Nat) (P Q R : Prop) (X1 Y1 X2 Y2 X3 Y3 j : Int) :
+theorem select_current_trace_stride2_cases_complete (a0 : Int → Int) (n : Nat) (P Q R : Prop) (X1 Y1 X2 Y2 X3 Y3 j : Int) :
     (R ↔ ¬P ∧ ¬Q) →
     current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 1 1 n)))
       (fun a ⟨k, i⟩ =>
@@ -3698,6 +3850,19 @@ theorem select_current_trace_stride2_cases (a0 : Int → Int) (n : Nat) (P Q R :
            if j % 2 = 0 then (if P then X1 else if Q then X2 else X3) else (if P then Y1 else if Q then Y2 else Y3)
          else a0 j) := by
   intro _; rw [stride2_cases_from, integer_cast]; simp only [Int.mul_zero, Int.zero_add]
+
+theorem select_current_trace_stride2_cases : Stmt.select_current_trace_stride2_cases := by
+  intro a0 n P Q R X1 Y1 X2 Y2 X3 Y3 j hR
+  have e : ∀ (A B C z : Int → Int), (if P then A else if Q then B else if R then C else z)
+      = (if P then A else if Q then B else C) := by
+    intro A B C z
+    by_cases h1 : P
+    · simp [h1]
+    by_cases h2 : Q
+    · simp [h1, h2]
+    simp [h1, h2, hR.2 ⟨h1, h2⟩]
+  simp only [e]
+  exact select_current_trace_stride2_cases_complete a0 n P Q R X1 Y1 X2 Y2 X3 Y3 j hR
 
 theorem ahead_from (m : Int) (F G : Int → Int) (j : Int) (r : Nat) : ∀ (b : Int → Int) (s : Int), s + r ≤ m →
     current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter s 1 r)))
@@ -3713,7 +3878,7 @@ theorem ahead_from (m : Int) (F G : Int → Int) (j : Int) (r : Nat) : ∀ (b : 
     dsimp only
     (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
 
-theorem select_current_trace_ahead (a0 : Int → Int) (n : Nat) (m : Int) (F G : Int → Int) (j : Int) :
+theorem select_current_trace_ahead_complete (a0 : Int → Int) (n : Nat) (m : Int) (F G : Int → Int) (j : Int) :
     integer n ≤ m →
     current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
       (fun a ⟨k, i⟩ =>
@@ -3724,6 +3889,18 @@ theorem select_current_trace_ahead (a0 : Int → Int) (n : Nat) (m : Int) (F G :
   rw [integer_cast] at *
   rw [ahead_from m F G j n a0 0 (by omega)]
   (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+theorem select_current_trace_ahead : Stmt.select_current_trace_ahead := by
+  intro a0 n m F G j h
+  have hn := h
+  rw [integer_cast] at hn
+  rw [trace_counter_congr a0 0 n _ _
+    (fun a ⟨k, i⟩ =>
+      if k + 1 < m then fun j => if j = k then G k else (fun j => if j = k + 1 then F k else a j) j
+      else fun j => if j = k then G k else a j)
+    (fun a k y h1 h2 => by
+      dsimp only; by_cases e : k + 1 < m <;> simp only [e, ↓reduceIte]; rw [if_pos (show m = k + 1 by omega)])]
+  exact select_current_trace_ahead_complete a0 n m F G j h
 
 theorem ahead_down_from (F G : Int → Int) (j : Int) (r : Nat) : ∀ (b : Int → Int) (t s : Int),
     current (trace b (List.zip (butlast (counter t 1 r)) (butlast (counter s (-1) r)))
@@ -3739,7 +3916,7 @@ theorem ahead_down_from (F G : Int → Int) (j : Int) (r : Nat) : ∀ (b : Int �
     dsimp only
     (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
 
-theorem select_current_trace_ahead_down (a0 : Int → Int) (n : Nat) (s : Int) (F G : Int → Int) (j : Int) :
+theorem select_current_trace_ahead_down_complete (a0 : Int → Int) (n : Nat) (s : Int) (F G : Int → Int) (j : Int) :
     current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter s (-1) n)))
       (fun a ⟨k, i⟩ =>
         if 1 ≤ i then fun j => if j = i then G i else (fun j => if j = i + -1 then F i else a j) j
@@ -3748,6 +3925,11 @@ theorem select_current_trace_ahead_down (a0 : Int → Int) (n : Nat) (s : Int) (
          else if j = s - integer n ∧ 0 ≤ j ∧ 0 < integer n then F (j + 1) else a0 j) := by
   rw [ahead_down_from, integer_cast]
   (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+theorem select_current_trace_ahead_down : Stmt.select_current_trace_ahead_down := by
+  intro a0 n s F G j
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact select_current_trace_ahead_down_complete a0 n s F G j
 
 -- unsigned.dfy: the counters modulo m, by induction over the steps, whose values are the remainders of those of the
 -- counter, (a % m + c) % m = (a + c) % m; the products n * c are atoms of omega, with the facts it needs about them
@@ -3976,7 +4158,7 @@ theorem trace_mod_add_cases_from (m : Int) (C : Int → Prop) (F : Int → Int) 
     · simp only [hc, ↓reduceIte]
       exact ih y
 
-theorem current_trace_mod_add_cases (x0 : Int) (n : Nat) (m : Int) (hs : List Int) (C : Int → Prop) (F : Int → Int)
+theorem current_trace_mod_add_cases_complete (x0 : Int) (n : Nat) (m : Int) (hs : List Int) (C : Int → Prop) (F : Int → Int)
     (hhs : length hs = n) :
     0 ≤ x0 ∧ x0 < m
       → current (trace x0 (List.zip (butlast (counter 0 1 n)) hs) (fun x ⟨k, h⟩ => if C k then (x + F k) % m else x))
@@ -3984,5 +4166,10 @@ theorem current_trace_mod_add_cases (x0 : Int) (n : Nat) (m : Int) (hs : List In
   intro ⟨h1, h2⟩
   have := trace_mod_add_cases_from m C F (List.zip (butlast (counter 0 1 n)) hs) x0
   rwa [Int.emod_eq_of_lt h1 h2] at this
+
+theorem current_trace_mod_add_cases : Stmt.current_trace_mod_add_cases := by
+  intro x0 n m hs C F hhs
+  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
+  exact current_trace_mod_add_cases_complete x0 n m hs C F hhs
 
 end TEQ

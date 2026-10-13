@@ -6,7 +6,12 @@ axiom current {α₀ : Type} [Inhabited α₀] : Trace α₀ → α₀
 
 axiom flag (K : List Int) (S : Trace (Int × Prop)) (n : Nat)
            (hK : length K = n) :
-  S = trace (0, True) K (fun ⟨x, b⟩ k => (if b then x + k else x, ¬b))
+  S
+    = trace
+      (0,
+       True)
+      K
+      (fun ⟨x, b⟩ k => (if b then x + k else if ¬b then x else unspecified, ¬b))
     → invs
       (List.zip K (List.zip (maps (butlast S) (fun s => s.1)) (maps
                                                                  (butlast S)
