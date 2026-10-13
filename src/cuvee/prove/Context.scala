@@ -42,6 +42,9 @@ import cuvee.core._
 // and bodies of combinators (see Simplify.combinator), keyed by the canonical facts of the position (see Canon) and
 // holding their values under the canonical names, shared by the copies of this context like steps and fresh for each
 // command (see withRules)
+//
+// forward: the forward lemmas, whose instances at the terms of the facts that the traversal assumes are assumed with
+// them (see Forward.assume), none while a trigger is matched
 case class Context(
     state: State,
     bound: List[List[Var]],
@@ -59,7 +62,8 @@ case class Context(
     active: List[AnyRef] = Nil,
     reads: util.Ref[Context.Reads] = util.Ref(Map()),
     views: util.Ref[Context.Views] = util.Ref(Map()),
-    canon: util.Ref[Map[(Expr, Subst[Nothing, Var]), Expr]] = util.Ref(Map())
+    canon: util.Ref[Map[(Expr, Subst[Nothing, Var]), Expr]] = util.Ref(Map()),
+    forward: List[Forward] = Nil
 ):
   // the rewrite rules with a fresh number of steps and no memoized contexts, views or reads, which are shared by the
   // copies of this context, and which guards against rules that do not terminate

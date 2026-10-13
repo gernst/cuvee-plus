@@ -96,9 +96,9 @@ Verbatim in substance, from the user:
 | P8 | the harness: `scripts/prove/quick.sh` (the state examples except the transpose, four per-variable examples, under 30 s), `scripts/prove/slow.sh` (the transpose, the unit tests, the 30 algorithms in the state form as a baseline), `scripts/prove/compare.sh` (`-prove` against `-simplify` on the per-variable examples without `-teq` modules) | done; the `teq:nested` difference explained (see the log) |
 | P9 | the cost of the simplex: the checks cached by the set of constraints and disequations (`Linear.checks`, per command); with P10 the transpose takes 6.8 s instead of 22 s, the quick check 27 s instead of 36 s | done |
 | P10 | canonical forms (package B): the bound variables of a position renamed by position (`Canon.renaming`), the memos of the views, the reads and the combinator facts keyed by the canonical facts and holding canonical values; the equations of variables are facts now, so the facts determine the classes; the canonical form of terms (`Canon.term`: inner binders numbered by depth, dependencies and cases in a fixed order, conjuncts and equations sorted), by which closed conditions with binders are looked up among the facts after both are normalized under the classes (`Rewrite.known`, `Classes.normalize`) and terms with binders are equal in `eq_`; 6 unit tests | done |
-| P11 | triggers and forward facts (package J), the pin in the matcher (E), exit splitting (K), diagnostics (M) | open |
+| P11 | triggers and forward facts (package J): step 1, `{:fw}` lemmas, done; step 2, `invs` instances, open; the pin in the matcher (E), exit splitting (K), diagnostics (M) | in progress |
 | P12a | interim files in examples/dafny/state: bsearch.dfy and bsearch_cut.dfy with their expected outputs (one goal each, the exit), which the test suite picks up; to be removed from the tests, or kept as regression tests with no goal, once the algorithms are done in the state form | note |
-| P12 | the algorithms in the state form: binary search done up to the exit's bounds (forward facts needed, package J), the views no longer recomputed; merge and the sorts open | in progress |
+| P12 | the algorithms in the state form: binary search done (its bounds as forward facts, no goal), the views no longer recomputed; merge and the sorts open | in progress |
 | S7 | combinators with several accumulators in the core (branch `accumulators`, from `prove`): `Trace(inits, deps, accs, bound, results)`, `Component(S, i)` and `History(S, i)` as core nodes, typed structurally over the existing sorts (`Trace<tupleₘ<...>>`); the Dafny grammar, parser (`trace(e₁, e₂, for ... do x, y, k :: u₁, u₂)`, `current(S).i`, `⌊S⌋.i`) and printer; `StateTEQ` emits the form per strongly connected component (S5); the engine of `-prove` handles traces of several accumulators (the views as syntactic projections, `self` a list of pairs); the other printers, the Lean printer, the fallback and `-simplify` handle single-accumulator traces only (`Trace.single`) | done Oct 13, 2026 |
 | P13 | `-fallback` for tuple traces and the Lean printer, the tuples declared for C input under `-teq-state`, the C benchmarks of the state form with a cleaned-up lemma selection | deferred until the engine is in a reasonable state; benchmarks only when the user asks |
 
@@ -137,7 +137,11 @@ short:
 
 1. (done) S5 and S7: traces per strongly connected component, emitted as traces of one or several accumulators,
    and the engine of `-prove` on their components (branch `accumulators`).
-2. J: forward facts, the bounds of a named trace as facts when its term occurs; binary search closes without the cut.
+2. (done, step 1) J: forward facts, `{:fw}` lemmas fired at the terms of assumed facts; binary search closes without
+   the cut. Next: which lemmas of the database should be `{:fw}` rather than `{:rw}` (with the user); step 2, the
+   `invs` instances on the same triggers.
+2a. The binary search as a third example of the note in `doc/state-traces` (the cycle of `lo` and `hi`, the views
+   matched by `incs`/`decs`, the bounds as forward facts).
 3. S6: the merge and the sorts in the partitioned form; lemmas over whole cycles (patterns with several accumulators)
    in the matcher; the pin (E), exit splitting (K), renaming (D) as they ask.
 4. The rest of S7: the Boogie and SMT-LIB frontends and printers, the Lean printer and `-fallback` for traces of
@@ -272,3 +276,12 @@ scripts/prove/slow.sh       # on request or before a commit: the transpose, the 
   goals: this is the forward-facts item (package J): the bounds of a named trace should become facts when the term
   occurs. The split pipeline is not pursued further. Binary search is left here: one goal without the cut (the
   exit), two with `-split`.
+- **Oct 13, 2026, night: J, step 1.** `{:fw}` lemmas (`Forward`): the trigger is the term of the conclusion below
+  its boolean, comparison and arithmetic structure with the most variables; fired by `Forward.assume` where the
+  traversal assumes facts (the premise and the denied conclusion of an implication, the siblings in `nary`), matched
+  through definitions and views like rules, the conditions decided like those of rules, the instance stated over the
+  term as it occurs; instances assumed by `Context.assume` (generation 1), no firing while matching a trigger, known
+  instances skipped. The binary search in the state form closes with `current_1`, `current_2` as `{:fw}` (the
+  `incs_`/`decs_` workaround removed): 16 instances each, 7 s as before, no goal. Quick check unchanged (24 s).
+  Not done: firing at the decision of an atom (the denied conclusion covers the examples), the memo of matches per
+  trigger and canonical term (not needed so far), the static check of new terms (needed only for step 2).

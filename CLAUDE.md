@@ -101,6 +101,10 @@ or solvers consume.
   (`l == current(Lv)` for a rule on `current(Lv)`): the rule is suspended while
   its conditions are evaluated (`Context.active`), so the instance is not
   rewritten by the rule itself.
+- A fact that is needed where only its term occurs (a bound of
+  `current(incs(...))`) is a forward lemma, `{:fw}`, not a rewrite rule on
+  the atom: `-prove` assumes its instances wherever a term matching its
+  trigger occurs in an assumed fact (`Forward`); `-simplify` does not use them.
 - Long runs use a private copy of `cuvee.jar`: a rebuild during a run crashes
   the JVM, and the checkout's jar may contain uncommitted changes.
 - Runs on `-teq` examples take a timeout and one core

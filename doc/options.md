@@ -63,7 +63,7 @@ The transformations are applied in the order in which they are given, e.g.
 
 | Option | Meaning |
 |---|---|
-| `-debug <modules>` | print the steps of the given comma-separated modules, e.g. `simplify,rewrite` (the steps of the simplifier and of the rewrite engine that change an expression, in the language of the output, also those of `-prove`, where `rewrite` includes the views of state traces, `match` the matches through the definitions of variables and the trace patterns that fail, `conditions` the closed side conditions that fail, and `views` the misses of the memo of views, see [prove.md](prove.md)) or `solver` (the communication with the solvers) |
+| `-debug <modules>` | print the steps of the given comma-separated modules, e.g. `simplify,rewrite` (the steps of the simplifier and of the rewrite engine that change an expression, in the language of the output, also those of `-prove`, where `rewrite` includes the views of state traces, `match` the matches through the definitions of variables and the trace patterns that fail, `conditions` the closed side conditions that fail, `forward` the instances of forward lemmas (`{:fw}`), and `views` the misses of the memo of views, see [prove.md](prove.md)) or `solver` (the communication with the solvers) |
 | `-test <file>` | run the example `<file>` with the command line of its first line and compare with the expected `name.out` and `name.err`; with a `.csv` file, check a database of expected results |
 | `-help` | list the options |
 | `-version` | print the version |

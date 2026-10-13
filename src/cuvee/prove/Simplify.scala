@@ -198,8 +198,8 @@ object Simplify:
         not(config, state, ctx, phi_)
 
       case Imp(phi, psi) =>
-        val phi_ = simplify(config, state, ctx.flip.assume(Nil, List(psi)), phi)
-        val psi_ = simplify(config, state, ctx.assume(List(phi_), Nil), psi)
+        val phi_ = simplify(config, state, Forward.assume(config, state, ctx.flip, Nil, List(psi)), phi)
+        val psi_ = simplify(config, state, Forward.assume(config, state, ctx, List(phi_), Nil), psi)
         imp(config, state, ctx, phi_, psi_)
 
       case And(phis) =>
@@ -484,8 +484,8 @@ object Simplify:
         val others = done ++ rest
         val ctx_ =
           if pos
-          then ctx.assume(others, Nil)
-          else ctx.assume(Nil, others)
+          then Forward.assume(config, state, ctx, others, Nil)
+          else Forward.assume(config, state, ctx, Nil, others)
         val phi_ = simplify(config, state, ctx_, phi)
         nary(config, state, ctx, phi_ :: done, rest, pos)
 

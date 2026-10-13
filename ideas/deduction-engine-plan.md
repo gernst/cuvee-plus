@@ -222,12 +222,39 @@ does, recorded as merges, reaching function arguments through `repr`. Tests: is_
 `half_even`, nested sums without `mul_eq_cancel`. One week. Needs G.
 
 ### J. Triggers and forward facts (joint)
-**State:** next after S5: the bounds of a named trace (`current(incs(...)) <= b`) as facts when the term occurs, which is what the exit of the binary search needs.
-Instantiation of an `invs` over `⌊counter(0, 1, n)⌋` at an index `j` with `0 <= j < integer(n)` when `a[j]` or
-`earlier(j, xs)` is read; facts on named traces (`:facts` lemmas) assumed when the term occurs, memoized per
-class; a trigger table. With the joint trace there is one constraint per loop to instantiate, which makes the
-trigger table trivial. Retires the definitional atoms, the lsearch pair, the `above_iterations_def` interference,
-the cut of bsearch. One week after S3 and G.
+**State:** step 1 (`{:fw}` lemmas, `Forward`) done (Oct 13, 2026): the binary search closes without the cut; step 2 (`invs` instances) open.
+
+The bounds of a trace that a summary names (`current(incs(x0, b, ...)) <= b`) are needed as facts where only the
+term occurs, e.g. at the exit of the binary search as `current(S).0`, inside other comparisons; a rewrite rule on
+the atom `current(incs(...)) <= b` never fires, since the atom does not occur, and the linear constraints need the
+bound as a fact to combine it with `hi <= lo` and `p <= k < q`. Triggers on inner terms, not formulas:
+
+1. **Lemma form.** `lemma {:fw} name(...) requires C ensures φ`, the counterpart of `{:rw}`; a lemma is one or
+   the other (one used both ways would rewrite its own trigger away). The trigger is the term of φ below its
+   boolean, comparison and arithmetic structure that contains all variables of the lemma that the condition
+   cannot bind (variables of C only are bound against the facts, as for rules); a lemma without one is an error.
+2. **Firing points.** (a) When hypotheses are assumed by the traversal (the premise of an implication, the siblings
+   of a conjunct or disjunct, `Simplify.assume`): their terms outside binders are matched against the triggers,
+   with the matcher of the rules (`Rewrite.matches`, through definitions and views, so `current(S).0` matches
+   `current(incs(...))` by its view), the conditions decided like those of rules, and the instances assumed in the
+   same context, which is the right scope by construction. (b) The terms of a conclusion: the denied conclusion is
+   assumed by (a) as well (`ctx.flip.assume(Nil, List(psi))` of the implication), so no separate decision-time
+   firing is needed for now.
+3. **The instance names the term as it occurs.** The trigger's instance is replaced by the matched term in the
+   conclusion, `current(S).0 <= p`, not `current(incs(0, p, ...)) <= p`, so the fact reaches the classes and the
+   linear constraints of the term the goal mentions.
+4. **Generation bound.** The instances are assumed by `Context.assume`, which does not fire triggers, so facts of
+   generation 1 never fire again; the static check (conclusions with no terms beyond the trigger) is not needed for
+   termination then, and is kept for step 2 if a larger generation is needed.
+5. **Idempotence under merges.** An instance whose conclusion is already known (`Rewrite.known`, modulo classes and
+   canonical forms) is not assumed, so firing again after a merge changes nothing.
+6. **Memo.** The matches per trigger and canonical term (`Canon.term`), the conditions decided per context, if the
+   measurements ask for it; the views behind the matches are memoized already.
+
+Step 2: the instantiation of an `invs` over `⌊counter(0, 1, n)⌋` at an index `j` with `0 <= j < integer(n)` when
+`a[j]` or `earlier(j, xs)` is read, on the same table (trigger `earlier(j, xs)`, generation counter on the facts,
+since the body brings new terms). Retires the definitional atoms, the lsearch pair, the `above_iterations_def`
+interference, the cut of bsearch.
 
 ### K. Exit splitting (`Simplify.or`)
 **State:** open.

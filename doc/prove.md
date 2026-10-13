@@ -59,6 +59,16 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   holds the facts of the inner context, from which the context is built at each position. The simplex checks are
   cached by the set of constraints and disequations (`Linear.checks`). Together they took the transpose from 22 s
   to 7 s.
+- **Forward facts** ([`Forward`](../src/cuvee/prove/Forward.scala)): a lemma with `{:fw}` (`requires C ensures φ`,
+  not also `{:rw}`) is a fact that is assumed wherever a term that matches its trigger occurs in a fact the traversal
+  assumes (the premise of an implication, the denied conclusion, the siblings of a conjunct or disjunct). The trigger
+  is the term of `φ` below its boolean, comparison and arithmetic structure with the most variables of the lemma
+  (those of `C` only are matched against the facts, as for rules). The trigger is matched like the left-hand side of
+  a rule, through definitions and views, so `current(incs(x0, b, ...)) <= b` fires at `current(S).0`, and the
+  instance names the term as it occurs, `current(S).0 <= p`, so the fact reaches the classes and the linear
+  constraints of the goal's term. The instances are assumed by `Context.assume`, which fires nothing (generation 1,
+  so it terminates); no lemma fires while a trigger is matched; an instance already known is skipped, so firing
+  again after classes merge changes nothing. `-debug forward` prints the instances.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.
@@ -69,7 +79,8 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
 `-debug rewrite` prints the rewrite steps and the views (`view <marker> ~> <view>`); `-debug match` the matches that
 went through the definition of a variable, the rules on traces whose left-hand side fails on a trace, with the case of
 the expression that no case of the pattern covers and the guard that fails; `-debug conditions` the closed side
-conditions that fail, with the `self` of the context and the facts on the condition's variables; `-debug simplify`
+conditions that fail, with the `self` of the context and the facts on the condition's variables; `-debug forward`
+the instances of forward lemmas with their terms; `-debug simplify`
 the steps of the traversal; `-rules` reports the rules applied per assertion as with `-simplify`. The compound
 expressions of the core cache their hash (`Expr.hashCode`), since the memos and classes hash large terms at every
 lookup.
@@ -85,7 +96,7 @@ with their exit status, time and remaining goals, as the baseline for the work o
 
 Oct 13, 2026: the eleven examples of [examples/dafny/state](../examples/dafny/state) check under `-teq-state -prove`
 with the module `state.dfy` alone (single loops, the swap of two arrays, five nested loops without fragment lemmas,
-the transpose with one summary lemma, the syntax example), 1.5 to 3 s; the binary search leaves the exit open
-(7 s). Open: forward facts for the bounds of named traces, lemmas over whole cycles in the matcher, the merge and the
+the transpose with one summary lemma, the syntax example), 1.5 to 3 s; the binary search closes with its bounds as
+forward facts (7 s, no cut). Open: the instances of `invs` by triggers (step 2 of J), lemmas over whole cycles in the matcher, the merge and the
 sorts, the other frontends and the fallback for traces of several accumulators; see
 [ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md) and [TODO.md](../TODO.md).

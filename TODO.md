@@ -783,9 +783,11 @@ Measured on binary search and on the SV-COMP examples
   some case of the pattern, such that a higher-order guard bound by a later
   case of the pattern is still open when an earlier case of the expression
   needs it.
-- Facts about terms are not derived (see [doc/simplifier.md](doc/simplifier.md#forward-reasoning));
+- Facts about terms are not derived by the simplifier (see [doc/simplifier.md](doc/simplifier.md#forward-reasoning));
   bsearch.dfy needs a cut, `assert φ; assume φ;`, and `-teq`
-  does not assume assertions.
+  does not assume assertions. `-prove` has forward lemmas (`{:fw}`, see
+  [doc/prove.md](doc/prove.md)), with which the binary search in the state form closes without the cut;
+  which lemmas of the database should be `{:fw}` rather than `{:rw}` is open.
 - The simplifier evaluates integer division on literals and divides by
   literals on Real, but knows no bounds of division, e.g. `l <= (h + l) / 2`
   for `l <= h` is a lemma in bsearch.dfy, nor cancels factors,

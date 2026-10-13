@@ -2,8 +2,9 @@
 // interim: the binary search of examples/dafny/teq/bsearch.dfy in the state form (Oct 13, 2026, see
 // ideas/deduction-engine-implementation.md): the duplicated declarations of teq.dfy removed, since -teq-state declares
 // them, the incs/decs abstractions polymorphic in the other dependency, which is the list of states here; the exit
-// of the loop remains open until the bounds of the abstractions become facts (forward facts, package J); to be
-// removed from the tests once the algorithms are done in the state form
+// of the loop closes by the bounds of the abstractions as forward facts (current_1, current_2 with :fw, package J),
+// which fire at current(S).0 and current(S).1 through their views, without the cut; to be removed from the tests
+// once the algorithms are done in the state form
 // experiment: binary search with partition points, for -teq -split -simplify (see ideas/binary-search.md);
 // the comparisons of the array with x are those of the indices with the partition points p and q,
 // a[m] < x iff m < p, x < a[m] iff q <= m, a[m] == x iff p <= m < q, given by lemmas on global constants,
@@ -78,34 +79,16 @@ lemma {:rw} lemma_5(l: int, h: int)
 
 
 // the value stays below the bound if the initial value does
-lemma current_1<a>(x0: int, b: int, ks: List<int>, hs: List<a>, D: (int, a) -> bool, C: (int, a) -> bool,
+lemma {:fw} current_1<a>(x0: int, b: int, ks: List<int>, hs: List<a>, D: (int, a) -> bool, C: (int, a) -> bool,
                 F: (int, a) -> int)
   requires x0 <= b
-  ensures (current(incs(x0, b, ks, hs, D, C, F)) <= b) <==> true
+  ensures current(incs(x0, b, ks, hs, D, C, F)) <= b
 
 // the value stays above the bound if the initial value does
-lemma current_2<a>(x0: int, b: int, ks: List<int>, ls: List<a>, D: (int, a) -> bool, C: (int, a) -> bool,
+lemma {:fw} current_2<a>(x0: int, b: int, ks: List<int>, ls: List<a>, D: (int, a) -> bool, C: (int, a) -> bool,
                 F: (int, a) -> int)
   requires b <= x0
-  ensures (b <= current(decs(x0, b, ks, ls, D, C, F))) <==> true
-
-
-function incs_<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
-              D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int): Trace<int>
-
-lemma {:rw} incs_1<a>(X: Trace<int>, x0: int, b: int, i: int, c: int, m: Nat, hs: List<a>, C: (int, a) -> bool,
-                   D: (int, a) -> bool, F: (int, a) -> int)
-  ensures X == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
-    <==> X == incs_(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F) && current(X) <= b
-
-
-function decs_<a>(x0: int, b: int, ks: List<int>, ls: List<a>,
-              D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int): Trace<int>
-
-lemma {:rw} decs_1<a>(X: Trace<int>, x0: int, b: int, i: int, c: int, m: Nat, ls: List<a>, C: (int, a) -> bool,
-                   D: (int, a) -> bool, F: (int, a) -> int)
-  ensures X == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
-    <==> X == decs_(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F) && b <= current(X)
+  ensures b <= current(decs(x0, b, ks, ls, D, C, F))
 
 method search() returns (i: int)
   requires 0 <= p <= q <= n
@@ -130,9 +113,4 @@ method search() returns (i: int)
       break;
     }
   }
-  // a cut, until facts about terms are derived (see doc/simplifier.md): the bounds are proved by the lemmas on
-  // incs and decs, whose atoms occur here, and then assumed for the postcondition, since -teq does not assume
-  // assertions
-  // assert lo <= p && q <= hi;
-  // assume lo <= p && q <= hi;
 }
