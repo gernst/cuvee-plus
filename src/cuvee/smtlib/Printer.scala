@@ -388,12 +388,21 @@ object Printer extends cuvee.pipe.Printer:
       case As(expr, typ) =>
         apps(atom("as"), lines(expr), lines(typ))
 
-      // not part of SMT-LIB, the combinators of trace equation systems, whose dependencies are bound like let
+      // not part of SMT-LIB, the combinators of trace equation systems, whose dependencies are bound like let; several
+      // accumulators are bound like the dependencies, (trace ((x₁ e₁) (x₂ e₂)) ((y Y)) u₁ u₂)
       case Trace.single(init, deps, acc, bound, update) =>
         apps(atom("trace"), apps(lines(acc), lines(init)), list(eqs(bound, deps)), lines(update))
 
-      case _: Trace | _: Component | _: History =>
-        Error.raise("traces with several accumulators not supported in SMT-LIB", expr)
+      case Trace(inits, deps, accs, bound, results) =>
+        apps(atom("trace") :: list(eqs(accs, inits)) :: list(eqs(bound, deps)) :: results.map(lines(_))*)
+
+      // the component i of the last value and the history of a trace of several accumulators, indexed like testers,
+      // ((_ current i) S) and ((_ butlast i) S)
+      case Component(trace, i) =>
+        apps(apps(atom("_"), atom("current"), atom(i.toString)), lines(trace))
+
+      case History(trace, i) =>
+        apps(apps(atom("_"), atom("butlast"), atom(i.toString)), lines(trace))
 
       case Maps(deps, bound, update) =>
         apps(atom("map"), list(eqs(bound, deps)), lines(update))

@@ -25,15 +25,20 @@ case class Array(indices: List[Type], value: Type) extends Type
 object Sort extends ((String, List[Type]) => Type)
 object Array extends ((List[Type], Type) => Type)
 
-case class Access(indices: List[Expr], value: Option[Expr])
+// the accesses after an atom: of maps, a[i] and a[i := v], and of the components of a trace of several
+// accumulators, current(S).i and ⌊S⌋.i
+sealed trait Selector
+case class Access(indices: List[Expr], value: Option[Expr]) extends Selector
+case class Member(index: Int) extends Selector
 object Access extends ((List[Expr], Option[Expr]) => Access)
+object Member extends (Int => Member)
 
 case class Num(value: String) extends Expr
 case class Dec(value: String) extends Expr
 case class Str(value: String) extends Expr
 case class Butlast(arg: Expr) extends Expr
 case class App(fun: String, args: List[Expr]) extends Expr
-case class Inner(base: Expr, access: List[Access]) extends Expr
+case class Inner(base: Expr, access: List[Selector]) extends Expr
 case class Ite(test: Expr, left: Expr, right: Expr) extends Expr
 case class Ex(bound: Typed, triggers: List[List[Expr]], body: Expr) extends Expr
 case class All(bound: Typed, triggers: List[List[Expr]], body: Expr) extends Expr
@@ -44,11 +49,13 @@ object Dec extends (String => Expr)
 object Str extends (String => Expr)
 object Butlast extends (Expr => Expr)
 object App extends ((String, List[Expr]) => Expr)
-object Inner extends ((Expr, List[Access]) => Expr)
+object Inner extends ((Expr, List[Selector]) => Expr)
 object True extends App("true", Nil)
 
-case class Combinator(kind: String, init: Option[Expr], deps: List[Expr], bound: List[String], update: List[(Expr, Expr)]) extends Expr
-object Combinator extends ((String, Option[Expr], List[Expr], List[String], List[(Expr, Expr)]) => Expr)
+// the combinators of trace equation systems, with the initial values of the accumulators of a trace, the first of
+// its bound variables, and one update per accumulator (see dafny.Combinator)
+case class Combinator(kind: String, inits: List[Expr], deps: List[Expr], bound: List[String], updates: List[List[(Expr, Expr)]]) extends Expr
+object Combinator extends ((String, List[Expr], List[Expr], List[String], List[List[(Expr, Expr)]]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)
 object Ex extends ((Typed, List[List[Expr]], Expr) => Expr)
 object All extends ((Typed, List[List[Expr]], Expr) => Expr)

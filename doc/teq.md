@@ -29,9 +29,10 @@ After section 3 of the paper, generalized to several accumulators
   with `inits`; each further value is the results of the previous ones and
   the next values of the dependencies, which `bound` ranges over point-wise.
   `Trace.apply(init, deps, acc, bound, update)` builds the single case and
-  `Trace.single` matches it; the lemma database, the lowering of `-fallback`,
-  the Lean printer and the printers of Boogie and SMT-LIB handle that case
-  only. Several accumulators are for the variables of a loop that depend on
+  `Trace.single` matches it; the lemma database and `-simplify` handle that
+  case only, the engine of `-prove`, the parsers and printers of Dafny, Boogie,
+  SMT-LIB (and SV-LIB, whose terms are those of SMT-LIB), the Lean printer and
+  the lowering of `-fallback` also several. Several accumulators are for the variables of a loop that depend on
   each other (a cycle of the read relation), whose per-variable traces would
   be recursive through each other.
 - `Component(S, i)` is the component `i` of the last value of a trace of
@@ -75,13 +76,18 @@ After section 3 of the paper, generalized to several accumulators
 | Combinator | Dafny and Boogie | SMT-LIB |
 |---|---|---|
 | `Trace` | `trace(e, for Y, Z do x, y, z :: u)` | `(trace (x e) ((y Y) (z Z)) u)` |
-| `Trace`, several accumulators | `trace(e₁, e₂, for Y do x₁, x₂, y :: u₁, u₂)` (Dafny only; the first bound variables are the accumulators, as many as initial values) | not supported |
-| `Component`, `History` | `current(S).1`, `⌊S⌋.1` (Dafny only) | not supported |
+| `Trace`, several accumulators | `trace(e₁, e₂, for Y do x₁, x₂, y :: u₁, u₂)` (the first bound variables are the accumulators, as many as initial values) | `(trace ((x₁ e₁) (x₂ e₂)) ((y Y)) u₁ u₂)` |
+| `Component`, `History` | `current(S).1`, `⌊S⌋.1` | `((_ current 1) S)`, `((_ butlast 1) S)` |
 | `Maps` | `maps(for Y yield y :: u)` (Boogie: `map(...)`) | `(map ((y Y)) u)` |
 | `Invs` | `invs(for Y check y :: φ)` (Boogie: `all(...)`) | `(invs ((y Y)) φ)` |
 | update | `case φ₁ => e₁ case φ₂ => e₂` | `(eps (φ₁ e₁) (φ₂ e₂))` |
 
-`⌊X⌋` is `butlast(X)` in Dafny and Boogie.
+`⌊X⌋` is `butlast(X)` in Dafny and Boogie. In Boogie, `.1` scans as an
+identifier, since the dot is a character of identifiers, which the grammar
+accepts after an atom (`boogie.Grammar.access`). In Lean, a trace of several
+accumulators is a trace of their product, `trace (e₁, e₂) Y (fun ⟨x₁, x₂⟩ y =>
+(u₁, u₂))`, its components are selected from the nested pairs,
+`(current S).2.1`, and its histories are `maps (butlast S) (fun s => s.2.1)`.
 
 ## The transform `-teq` ([TEQ.scala](../src/cuvee/verify/TEQ.scala))
 
@@ -405,8 +411,9 @@ project at the root (`lakefile.toml`, sources in `lean/`):
   lemmas without their premises are false.
 - [open.txt](../lean/open.txt): the lemmas without a proof, which the
   generator removes from the modules before printing, each with the reason:
-  the bisection of search.dfy (`bisection`, `bisection_lo`, `bisection_hi`), a
-  trace of two accumulators, which `-print lean` does not print yet.
+  the bisection of search.dfy (`bisection`, `bisection_lo`, `bisection_hi`),
+  whose rule and facts are inconsistent under the semantics of an update
+  without a case (TODO.md).
 
 The dependencies of a combinator have equal lengths, which `zip` in Lean does
 not assume: `-print lean` adds hypotheses on the lengths to each lemma
@@ -445,9 +452,6 @@ as the `else` branch, is constrained only under its guard
 After section 5.3 of the paper, `-fallback` lowers the goals into first-order
 logic for solvers, e.g. `-teq -prove -split -prove -fallback -z3`;
 nothing polymorphic remains of the lemma database, hence no `-monomorph`.
-Traces of several accumulators are not lowered yet (S8 of
-[ideas/deduction-engine-plan.md](../ideas/deduction-engine-plan.md)): a goal
-with a cycle that `-prove` leaves open is rejected.
 
 - The variables of traces and lists bound by universal quantifiers of
   positive polarity, e.g. of `∀ xs. φ ⇒ ψ`, or by existential ones of
@@ -481,6 +485,13 @@ with a cycle that `-prove` leaves open is rejected.
   `X(0) == e && ∀ j. 0 <= j < n ==> (φᵢ ==> X(j + 1) == eᵢ)`, one
   implication per case, since the guards need not be complete (`break`);
   `invs` is `∀ j. 0 <= j < n ==> φ`.
+- A trace `S` of several accumulators is one function per accumulator,
+  `S_0(j)`, `S_1(j)`, ... (`Fallback.head`; the lowered head is a tuple of
+  their applications, which no output contains): the equation
+  `S == trace(e₀, e₁, ...)` states `S_i(0) == eᵢ` and the cases of the result
+  `uᵢ` for `S_i(j + 1)`, in which the accumulators are `S_0(j)`, `S_1(j)`,
+  ...; `current(S).i` is `S_i(n)` and `⌊S⌋.i` the same function below `n`.
+  Lists of such traces have one length function for all components.
 - Combinators that are not equated to a variable are fresh functions of
   their free variables, defined in the antecedent of the goal, where the
   traces among them contribute the free variables of their lowered
@@ -507,6 +518,12 @@ with a cycle that `-prove` leaves open is rejected.
   definition are replaced by fresh functions without definition,
   which generalizes the goal: a model of the solver need not be a
   counterexample.
+- Equations between naturals are generalized the same way, since `=` applied
+  to naturals is a function of the sorts of trace equation systems: the
+  number of iterations `n₈ == natural(i₁₇)` of a loop becomes `` `=`(i₁₇, n₈) ``,
+  a fresh predicate without definition, which loses the relation of `n` and
+  `i` (examples/dafny/teq/fallback_count.out, fallback_accumulators.out; see
+  TODO.md).
 - The declarations and lemmas of the lemma database and lemmas over traces, lists,
   and naturals are dropped.
 - Tests: [fallback.dfy](../examples/dafny/teq/fallback.dfy),
@@ -514,7 +531,9 @@ with a cycle that `-prove` leaves open is rejected.
   [fallback.c](../examples/c/teq/fallback.c),
   [fallback_negated.c](../examples/c/teq/fallback_negated.c),
   [fallback_nested.c](../examples/c/teq/fallback_nested.c),
-  [fallback_recursion.dfy](../examples/dafny/teq/fallback_recursion.dfy).
+  [fallback_recursion.dfy](../examples/dafny/teq/fallback_recursion.dfy),
+  [fallback_accumulators.dfy](../examples/dafny/teq/fallback_accumulators.dfy)
+  (a cycle).
 
 ## Simplification and rewriting
 

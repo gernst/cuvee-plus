@@ -321,8 +321,8 @@ Plan:
   `bisection_lo` gives `l0 <= current(...).0 <= cut(G, l0, h0) == l0`, i.e. the first component of `unspecified` is
   `l0` for every `l0`. The facts hold only for the traces of the loop, whose iterations all have `lo < hi`; a premise
   `invs(for ⌊bisection(...)⌋ check s :: s.0 < s.1)` (and complete guards) on `bisection_lo` and `bisection_hi`, or a
-  third case that keeps the state, would make them true. The three lemmas are not proved, also since `-print lean`
-  does not print traces of several accumulators yet.
+  third case that keeps the state, would make them true. The three lemmas are not proved (`lean/open.txt`); `-print
+  lean` prints the trace of two accumulators of the rule since 0.46.6, as a trace of a product.
 - The premises that the engine does not check are listed in [lean/premises.txt](lean/premises.txt): nine reads and
   prefixes within the loop, two lengths, and one complete guard. Open: turn the index premises into `requires` where `-prove` decides them
   in the contexts of the goals (item 4 above), measured on the tests and the SV-COMP rows, which would shrink the
@@ -776,13 +776,21 @@ Measured on binary search and on the SV-COMP examples
 
 ## Traces with several accumulators (branch `accumulators`)
 
-- Only the Dafny frontend and printer know traces with several accumulators and the component reads `current(S).i`,
-  `⌊S⌋.i`; the Boogie, SMT-LIB and Lean printers and `-fallback` reject them, and the engine of `-simplify` leaves them
+- The frontends and printers of Dafny, Boogie, SMT-LIB and SV-LIB, the Lean printer and `-fallback` know traces with
+  several accumulators and the component reads (doc/teq.md, Syntax); the engine of `-simplify` leaves them
   unsimplified (`-teq` needs `-prove`). The matcher of `-prove` matches patterns of several accumulators
-  against cycles as a whole (the bisection of examples/dafny/state); the bisection and the partition points of
-  sorted arrays are lemmas of the examples, not yet a module of the database.
-- The grammar needs each initial value of a trace to end with a comma before `for`, since a comma-separated list
-  commits to a further expression after its separator.
+  against cycles as a whole (the bisection of examples/dafny/state).
+- `-fallback` on lists of traces of several accumulators (an inner loop with a cycle) is implemented (one length
+  function for all components) but has no test yet.
+- `-fallback` generalizes equations of naturals, e.g. `n == natural(i)` of the number of iterations, by a fresh
+  function `=(i, n)` instead of lowering them to integers (examples/dafny/teq/fallback_count.out,
+  fallback_accumulators.out), which loses the relation of `n` and `i`.
+- The grammars of Dafny and Boogie need each initial value of a trace to end with a comma before `for`, since a
+  comma-separated list commits to a further expression after its separator.
+- The round trips of `CUVEE_PRINTING` fail on four examples (Oct 13, 2026): `smtlib.Programs` on
+  `dafny/state/bsearch_bisect.dfy`, `bsearch_safe.dfy` and `lower_bound.dfy`, which use the predicates of
+  `teq:sorted` and do not resolve without `-include` (since the migration of the modules), and `dafny.Roundtrip` on
+  `dafny/state/accumulators.dfy` ("unknown type" when the output is parsed again in the test, not on the command line).
 
 ## Trace equation systems (`-teq`)
 

@@ -1,0 +1,230 @@
+type {:smt2} {:dfy} String;
+
+type {:smt2} {:dfy} Set<a₀>;
+
+type {:smt2} {:dfy} Bag<a₀>;
+
+function {:smt2} {:dfy} seq.empty<a₀>(): Seq<a₀>;
+
+function {:smt2} {:dfy} seq.unit<a₀>(x₀: a₀): Seq<a₀>;
+
+function {:smt2} {:dfy} seq.++<a₀>(x₀: Seq<a₀>, x₁: Seq<a₀>): Seq<a₀>;
+
+function {:smt2} {:dfy} seq.len<a₀>(x₀: Seq<a₀>): int;
+
+function {:smt2} {:dfy} seq.nth<a₀>(x₀: Seq<a₀>, x₁: int): a₀;
+
+function {:smt2} {:dfy} seq.update<a₀>(
+  x₀: Seq<a₀>,
+  x₁: int,
+  x₂: Seq<a₀>): Seq<a₀>;
+
+function {:smt2} {:dfy} seq.extract<a₀>(x₀: Seq<a₀>, x₁: int, x₂: int): Seq<a₀>;
+
+function {:smt2} {:dfy} seq.contains<a₀>(x₀: Seq<a₀>, x₁: Seq<a₀>): bool;
+
+function {:smt2} {:dfy} seq.prefixof<a₀>(x₀: Seq<a₀>, x₁: Seq<a₀>): bool;
+
+function {:smt2} {:dfy} seq.store<a₀>(x₀: Seq<a₀>, x₁: int, x₂: a₀): Seq<a₀>;
+
+function {:smt2} {:dfy} seq.member<a₀>(x₀: a₀, x₁: Seq<a₀>): bool;
+
+function {:smt2} {:dfy} seq.proper_prefixof<a₀>(x₀: Seq<a₀>, x₁: Seq<a₀>): bool;
+
+function {:smt2} {:dfy} set.empty<a₀>(): Set<a₀>;
+
+function {:smt2} {:dfy} set.singleton<a₀>(x₀: a₀): Set<a₀>;
+
+function {:smt2} {:dfy} set.union<a₀>(x₀: Set<a₀>, x₁: Set<a₀>): Set<a₀>;
+
+function {:smt2} {:dfy} set.inter<a₀>(x₀: Set<a₀>, x₁: Set<a₀>): Set<a₀>;
+
+function {:smt2} {:dfy} set.minus<a₀>(x₀: Set<a₀>, x₁: Set<a₀>): Set<a₀>;
+
+function {:smt2} {:dfy} set.member<a₀>(x₀: a₀, x₁: Set<a₀>): bool;
+
+function {:smt2} {:dfy} set.subset<a₀>(x₀: Set<a₀>, x₁: Set<a₀>): bool;
+
+function {:smt2} {:dfy} set.card<a₀>(x₀: Set<a₀>): int;
+
+function {:smt2} {:dfy} set.proper_subset<a₀>(x₀: Set<a₀>, x₁: Set<a₀>): bool;
+
+function {:smt2} {:dfy} bag.empty<a₀>(): Bag<a₀>;
+
+function {:smt2} {:dfy} bag<a₀>(x₀: a₀, x₁: int): Bag<a₀>;
+
+function {:smt2} {:dfy} bag.union_disjoint<a₀>(
+  x₀: Bag<a₀>,
+  x₁: Bag<a₀>): Bag<a₀>;
+
+function {:smt2} {:dfy} bag.inter_min<a₀>(x₀: Bag<a₀>, x₁: Bag<a₀>): Bag<a₀>;
+
+function {:smt2} {:dfy} bag.difference_subtract<a₀>(
+  x₀: Bag<a₀>,
+  x₁: Bag<a₀>): Bag<a₀>;
+
+function {:smt2} {:dfy} bag.count<a₀>(x₀: a₀, x₁: Bag<a₀>): int;
+
+function {:smt2} {:dfy} bag.subbag<a₀>(x₀: Bag<a₀>, x₁: Bag<a₀>): bool;
+
+function {:smt2} {:dfy} bag.card<a₀>(x₀: Bag<a₀>): int;
+
+function {:smt2} {:dfy} bag.member<a₀>(x₀: a₀, x₁: Bag<a₀>): bool;
+
+function {:smt2} {:dfy} bag.select<a₀>(x₀: Bag<a₀>, x₁: a₀): int;
+
+function {:smt2} {:dfy} bag.proper_subbag<a₀>(x₀: Bag<a₀>, x₁: Bag<a₀>): bool;
+
+type {:smt2} {:dfy} Map<a₀, a₁>;
+
+function {:smt2} {:dfy} map.empty<a₀, a₁>(): Map<a₀, a₁>;
+
+function {:smt2} {:dfy} map.singleton<a₀, a₁>(x₀: a₀, x₁: a₁): Map<a₀, a₁>;
+
+function {:smt2} {:dfy} map.card<a₀, a₁>(x₀: Map<a₀, a₁>): int;
+
+function {:smt2} {:dfy} map.member<a₀, a₁>(x₀: a₀, x₁: Map<a₀, a₁>): bool;
+
+function {:smt2} {:dfy} map.keys<a₀, a₁>(x₀: Map<a₀, a₁>): Set<a₀>;
+
+function {:smt2} {:dfy} map.values<a₀, a₁>(x₀: Map<a₀, a₁>): Set<a₁>;
+
+function {:smt2} {:dfy} map.subset<a₀, a₁>(
+  x₀: Map<a₀, a₁>,
+  x₁: Map<a₀, a₁>): bool;
+
+function {:smt2} {:dfy} map.get<a₀, a₁>(x₀: Map<a₀, a₁>, x₁: a₀): a₁;
+
+function {:smt2} {:dfy} map.update<a₀, a₁>(
+  x₀: Map<a₀, a₁>,
+  x₁: Map<a₀, a₁>): Map<a₀, a₁>;
+
+function {:smt2} {:dfy} map.minus<a₀, a₁>(
+  x₀: Map<a₀, a₁>,
+  x₁: Set<a₀>): Map<a₀, a₁>;
+
+function {:smt2} {:dfy} map.store<a₀, a₁>(
+  x₀: Map<a₀, a₁>,
+  x₁: a₀,
+  x₂: a₁): Map<a₀, a₁>;
+
+type {:smt2} {:dfy} {:ho} arrow₁<a₀, a₁>;
+
+type {:smt2} {:dfy} {:ho} arrow₂<a₀, a₁, a₂>;
+
+type {:smt2} {:dfy} {:ho} arrow₃<a₀, a₁, a₂, a₃>;
+
+type {:smt2} {:dfy} {:ho} arrow₄<a₀, a₁, a₂, a₃, a₄>;
+
+type {:smt2} {:dfy} {:ho} arrow₅<a₀, a₁, a₂, a₃, a₄, a₅>;
+
+type {:smt2} {:dfy} {:ho} arrow₆<a₀, a₁, a₂, a₃, a₄, a₅, a₆>;
+
+type {:smt2} {:dfy} {:ho} arrow₇<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇>;
+
+type {:smt2} {:dfy} {:ho} arrow₈<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈>;
+
+type {:smt2} {:dfy} {:ho} arrow₉<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉>;
+
+type {:smt2} {:dfy} {:ho} arrow₁₀<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉, a₁₀>;
+
+function {:smt2} {:dfy} {:ho} apply₁<a₀, a₁>(x₀: arrow₁<a₀, a₁>, x₁: a₀): a₁;
+
+function {:smt2} {:dfy} {:ho} apply₂<a₀, a₁, a₂>(
+  x₀: arrow₂<a₀, a₁, a₂>,
+  x₁: a₀,
+  x₂: a₁): a₂;
+
+function {:smt2} {:dfy} {:ho} apply₃<a₀, a₁, a₂, a₃>(
+  x₀: arrow₃<a₀, a₁, a₂, a₃>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂): a₃;
+
+function {:smt2} {:dfy} {:ho} apply₄<a₀, a₁, a₂, a₃, a₄>(
+  x₀: arrow₄<a₀, a₁, a₂, a₃, a₄>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃): a₄;
+
+function {:smt2} {:dfy} {:ho} apply₅<a₀, a₁, a₂, a₃, a₄, a₅>(
+  x₀: arrow₅<a₀, a₁, a₂, a₃, a₄, a₅>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄): a₅;
+
+function {:smt2} {:dfy} {:ho} apply₆<a₀, a₁, a₂, a₃, a₄, a₅, a₆>(
+  x₀: arrow₆<a₀, a₁, a₂, a₃, a₄, a₅, a₆>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅): a₆;
+
+function {:smt2} {:dfy} {:ho} apply₇<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇>(
+  x₀: arrow₇<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅,
+  x₇: a₆): a₇;
+
+function {:smt2} {:dfy} {:ho} apply₈<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈>(
+  x₀: arrow₈<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅,
+  x₇: a₆,
+  x₈: a₇): a₈;
+
+function {:smt2} {:dfy} {:ho} apply₉<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉>(
+  x₀: arrow₉<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅,
+  x₇: a₆,
+  x₈: a₇,
+  x₉: a₈): a₉;
+
+function {:smt2} {:dfy} {:ho} apply₁₀<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉, a₁₀>(
+  x₀: arrow₁₀<a₀, a₁, a₂, a₃, a₄, a₅, a₆, a₇, a₈, a₉, a₁₀>,
+  x₁: a₀,
+  x₂: a₁,
+  x₃: a₂,
+  x₄: a₃,
+  x₅: a₄,
+  x₆: a₅,
+  x₇: a₆,
+  x₈: a₇,
+  x₉: a₈,
+  x₁₀: a₉): a₁₀;
+
+data tuple₂<a₀, a₁>
+  = tuple₂(tuple₂_0: a₀, tuple₂_1: a₁);
+
+type Trace<a₀>;
+
+type List<a₀>;
+
+function butlast<a₀>(x₀: Trace<a₀>): List<a₀>;
+
+function current<a₀>(x₀: Trace<a₀>): a₀;
+
+function swap(K: List<int>, S: Trace<tuple₂<int, bool>>): bool {
+  S == trace(0, true, for K do x, b, k :: case b => x + k case !b => x, !b)
+    ==> 0 <= current(S).0
+      && all(for K, ⌊S⌋.0, ⌊S⌋.1 check k, y, c :: c || 0 <= y)
+}
+

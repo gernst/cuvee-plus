@@ -902,6 +902,22 @@ class Parser(private var init: State):
         state.exprs.trace(init_, deps_, acc, bound_.map(_.name)): (acc_, bound__) =>
           expr(scope ++ (acc_ :: bound__), update)
 
+      // several accumulators, bound like the dependencies, with one result each, (trace ((x₁ e₁) (x₂ e₂)) ((y Y)) u₁ u₂)
+      case List(Id("trace"), List(accs*), List(bindings*), results*) =>
+        val (accs_, inits_) = leteqs(scope, accs)
+        val (bound_, deps_) = leteqs(scope, bindings)
+        Error.report("mismatching accumulators and results of a trace", from):
+          require(accs_.length == results.length)
+        state.exprs.trace(inits_, deps_, accs_.map(_.name), bound_.map(_.name)): (accs__, bound__) =>
+          results.toList.map(expr(scope ++ (accs__ ++ bound__), _))
+
+      // the component i of the last value and the history of a trace of several accumulators (see core.Component)
+      case List(List(Id("_"), Id("current"), Num(index)), trace) =>
+        Component(expr(scope, trace), index.toInt)
+
+      case List(List(Id("_"), Id("butlast"), Num(index)), trace) =>
+        History(expr(scope, trace), index.toInt)
+
       case List(Id("map"), List(bindings*), update) =>
         val (bound_, deps_) = leteqs(scope, bindings)
         state.exprs.map(deps_, bound_.map(_.name)): bound__ =>

@@ -552,11 +552,12 @@ object Printer extends cuvee.pipe.Printer:
   def dependencies(deps: List[Expr]): Doc =
     Group(Align(commas(deps.map(doc(_)))))
 
-  // a combinator, whose head is followed by the dependencies after for, the keyword with the bound variables,
-  // and the update, a single expression or guarded cases, case guard => result ...;
-  // if it does not fit, the keyword goes below for and the update below the keyword, indented
-  def combinator(head: Doc, deps: List[Expr], keyword: String, bound: List[Var], update: Expr): Doc =
-    val updates_ =
+  // a combinator, whose head is followed by the initial values of a trace, the dependencies after for, the keyword
+  // with the bound variables, and the updates, one per accumulator, each a single expression or guarded cases,
+  // case guard => result ...; if it does not fit, the keyword goes below for and the updates below the keyword,
+  // indented (as in Dafny)
+  def combinator(head: Doc, inits: List[Expr], deps: List[Expr], keyword: String, bound: List[Var], results: List[Expr]): Doc =
+    def result(update: Expr): Doc =
       update match
         case Eps(updates) =>
           val cases =
@@ -567,9 +568,17 @@ object Printer extends cuvee.pipe.Printer:
         case _ =>
           doc(update)
 
-    // the bound variables are never broken across lines
+    val updates_ = commas(results.map(result))
+
+    // the bound variables are never broken across lines; the initial values precede the dependencies, on their own
+    // line when there are several
     val binders = text(bound.map(x => name(x.name)).mkString(", ") + " ::")
-    val body = text("for") ~~ dependencies(deps) ~ line ~ text(keyword) ~~ binders ~ Nest(2, line ~ updates_)
+    val inits_ =
+      inits match
+        case Nil       => empty
+        case List(one) => doc(one) ~ text(",") ~ space
+        case _         => Group(commas(inits.map(doc(_)))) ~ text(",") ~ line
+    val body = inits_ ~ text("for") ~~ dependencies(deps) ~ line ~ text(keyword) ~~ binders ~ Nest(2, line ~ updates_)
     Group(head ~ Align(body) ~ text(")"))
 
   // chains of the same operator are flattened in the direction of its associativity, a && b && c,
@@ -672,18 +681,23 @@ object Printer extends cuvee.pipe.Printer:
       case Distinct(_) =>
         Error.raise("unprintable distinct", expr)
 
-      // the combinators of trace equation systems
-      case Trace.single(init, deps, acc, bound, update) =>
-        combinator(text("trace(") ~ doc(init) ~ text(",") ~ space, deps, "do", acc :: bound, update)
-
-      case _: Trace | _: Component | _: History =>
-        Error.raise("traces with several accumulators not supported in Boogie", expr)
+      // the combinators of trace equation systems; a trace with several accumulators lists their initial values, then
+      // the accumulators before the bound variables, and one result per accumulator (as in Dafny)
+      case Trace(inits, deps, accs, bound, results) =>
+        combinator(text("trace("), inits, deps, "do", accs ++ bound, results)
 
       case Maps(deps, bound, update) =>
-        combinator(text("map("), deps, "yield", bound, update)
+        combinator(text("map("), Nil, deps, "yield", bound, List(update))
 
       case Invs(deps, bound, body) =>
-        combinator(text("all("), deps, "check", bound, body)
+        combinator(text("all("), Nil, deps, "check", bound, List(body))
+
+      // the component i of the last value and the history of a trace of several accumulators, current(S).i and ⌊S⌋.i
+      case Component(trace, i) =>
+        doc(Current(trace)) ~ text("." + i)
+
+      case History(trace, i) =>
+        doc(Butlast(trace)) ~ text("." + i)
 
       case Old(arg) =>
         call("old", List(doc(arg)))

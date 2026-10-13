@@ -1,7 +1,7 @@
 # the lemmas of the stable modules without a proof in Lean, which the generator removes from the modules before
 # printing (scripts/lean/generate.py): a line `name -- why`; each line is a lemma that is assumed, not checked
 
-# search.dfy: the bisection, a trace of two accumulators, which -print lean does not print yet
-bisection -- a trace of two accumulators (lean.Printer); with the semantics of an update without a case (unspecified), the rule and bisection_lo are inconsistent: for l0 == h0 and one iteration with G false, bisection_lo bounds the first component of unspecified by l0 for every l0
+# search.dfy: the bisection, a trace of two accumulators (a trace of a product in Lean)
+bisection -- with the semantics of an update without a case (unspecified), the rule and bisection_lo are inconsistent: for l0 == h0 and one iteration with G false, bisection_lo bounds the first component of unspecified by l0 for every l0
 bisection_lo -- bisection is declared without a body, its meaning is the rule bisection
 bisection_hi -- bisection is declared without a body, its meaning is the rule bisection

@@ -345,6 +345,34 @@ global variables of procedures and loops are inferred, as in C. The verdict
 of a task is decided by the BenchExec module [cuvee.py](../cuvee.py) from the
 answers of `-verify` to the `verify-call`s.
 
+### Programs in SV-LIB and in the SMT-LIB of Cuvée
+
+Both languages share the logic (terms, sorts, datatypes, functions, and the
+combinators of trace equation systems, printed by `smtlib.Printer`) and
+`declare-var` for global variables, but write programs differently. The
+SMT-LIB dialect (`smtlib.Parser.prog`) is the core's own notation, printed one
+to one; SV-LIB (`svlib.Parser.stmt`) is the language of the tasks, read into
+the same core:
+
+| | SMT-LIB of Cuvée | SV-LIB |
+|---|---|---|
+| procedure | `(define-proc p (in) (out) body attrs)`, the local variables in the block of the body | `(define-proc p (in) (out) (locals) body)` |
+| contract | attributes after the body, `:requires`, `:ensures`, `:modifies` | annotations of the body, `(! body :requires φ :ensures ψ)` |
+| modified globals | `:modifies (x ...)`, required: the other globals must not be assigned (`Type.check`) | inferred from the assignments and calls (`svlib.Parser.modifies`); a `:modifies` of the core is dropped by `svlib.Printer` |
+| loop properties | attributes after the body, `(while test body :invariant φ)` | `(! (while test body) :invariant φ)`, or `annotate-tag` on a `:tag` |
+| blocks | `(block (locals x ...) s ...)`, with local variables anywhere | `(sequence s ...)`, without local variables |
+| assertions | `(assert φ)`, `(abort)`, `(spec (xs) pre post)` | `(! (sequence) :check-true φ)`, a location invariant |
+| choices | `(choose s ...)`, `(if test s₁ s₂)` with both branches | `(choice s ...)`, `(if test s)` without else |
+| values at the entry | `(old x)` | `(at x tag)` with the tag of the body |
+| polymorphism, declarations | `(define-proc p (par (a) ...) ...)`, `declare-proc` | not supported (`svlib.Printer`) |
+| further statements | `iter`, `ode`, `par` (hybrid programs) | `label`, `goto`, `define-procs-rec`, rejected by the parser |
+| what is verified | every procedure against its contract (`-vcgen`), or the entry point (`-entry`, `-teq`, `-chc`); `annotate-tag` and `verify-call` are read as well, e.g. in printed SV-LIB that is parsed back | the `verify-call` commands, one answer each with `-verify` |
+
+A script printed as SV-LIB (`-print svlib`) and read back keeps its meaning but
+not its text: the contracts become annotations, the modifies clauses are
+inferred again, and blocks with local variables outside the body are not
+printable.
+
 ## Errors and debugging
 
 `cuvee.Error(msg, info*)` is a result as well as an exception.

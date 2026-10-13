@@ -123,8 +123,11 @@ object Grammar:
   val lit =
     P(Num(num) | Dec(dec) | Str(str))
 
-  val access =
-    Access(P(brackets(exprs ~ (":=" ~ expr).?)))
+  // .i scans as a symbol, since the dot is a character of identifiers
+  val component = "\\.([0-9]+)".r
+
+  val access: Parser[Selector] =
+    P(Access(P(brackets(exprs ~ (":=" ~ expr).?))) | Member(sym.collect { case component(i) => i.toInt }))
 
   val app =
     App(P(id ~ (args | nil)))
@@ -158,14 +161,23 @@ object Grammar:
   val update: Parser[List[(Expr, Expr)]] =
     P(guarded.+ | list(true_ ~ expr))
 
+  // the results of the accumulators of a trace, separated by commas, each guarded cases or a plain expression
+  val updates: Parser[List[List[(Expr, Expr)]]] =
+    P(update ~+ ",")
+
+  // the initial values each end with a comma, since a list separated by commas would commit to an expression after
+  // the comma before the keyword for (as in Dafny)
+  val inits: Parser[List[Expr]] =
+    P((expr ~ ",").+)
+
   val trace_ =
-    Combinator(P(J("trace") ~ "(" ~ some(expr) ~ "," ~ "for" ~ exprs ~ "do" ~ ids ~ "::" ~ update ~ ")"))
+    Combinator(P(J("trace") ~ "(" ~ inits ~ "for" ~ exprs ~ "do" ~ ids ~ "::" ~ updates ~ ")"))
 
   val map_ =
-    Combinator(P(J("map") ~ none ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "::" ~ update ~ ")"))
+    Combinator(P(J("map") ~ nil ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "::" ~ list(update) ~ ")"))
 
   val all_ =
-    Combinator(P(J("all") ~ none ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "::" ~ list(true_ ~ expr) ~ ")"))
+    Combinator(P(J("all") ~ nil ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "::" ~ list(list(true_ ~ expr)) ~ ")"))
 
   val combinator =
     P(trace_ | map_ | all_)

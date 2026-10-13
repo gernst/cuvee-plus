@@ -448,7 +448,8 @@ object Printer extends cuvee.pipe.Printer:
       case Lit(value: Rational, _) if value.decimal.isEmpty => 70
       case Ite(_, _, _) | Bind(_, _, _) | Lam(_, _, _) | Let(_, _, _) | Match(_, _) | Store(_, _, _) => lowest
       case Eps(updates) if updates.length > 1 => lowest
-      case Trace(_, _, _, _, _) | Maps(_, _, _) | Invs(_, _, _) => max - 1
+      case Trace(_, _, _, _, _) | Maps(_, _, _) | Invs(_, _, _) | History(_, _) => max - 1
+      case Component(_, _)                                  => max
       case Seqs.len(_) | Seqs.unit(_) | Seqs.empty() | Sets.empty() | Sets.singleton(_) => max
       case Distinct(exprs) if exprs.length > 2              => 35
       case As(_, _) | Is(_, _)                              => max
@@ -608,8 +609,7 @@ object Printer extends cuvee.pipe.Printer:
         doc(arg_)
 
       case component(arg_, n, i) =>
-        val path = List.fill(i)(".2") ++ (if i < n - 1 then List(".1") else Nil)
-        doc(arg_, max) ~ text(path.mkString)
+        doc(arg_, max) ~ text(projection(n, i))
 
       case App(fun, _, _, Nil) =>
         text(name(fun.name))
@@ -674,17 +674,24 @@ object Printer extends cuvee.pipe.Printer:
 
       // the combinators of trace equation systems, as applications of the functions of teq.lean by the number of
       // their dependencies (trace, trace2, ...) to the dependencies and the update as a function of the bound variables
-      case Trace.single(init, deps, acc, bound, update) =>
-        combinator("trace", init :: deps, acc :: bound, update)
-
-      case _: Trace | _: Component | _: History =>
-        Error.raise("traces with several accumulators not supported in Lean yet", expr)
+      // the combinators of trace equation systems; several accumulators are a trace of their product, whose initial
+      // value and result are tuples, and whose accumulator is bound by ⟨x₁, x₂⟩
+      case Trace(inits, deps, accs, bound, results) =>
+        combinator("trace", inits, deps, accs, bound, results)
 
       case Maps(deps, bound, update) =>
-        combinator("maps", deps, bound, update)
+        combinator("maps", Nil, deps, Nil, bound, List(update))
 
       case Invs(deps, bound, body) =>
-        combinator("invs", deps, bound, body)
+        combinator("invs", Nil, deps, Nil, bound, List(body))
+
+      // the component i of the last value of a trace of several accumulators, selected from the nested pairs like the
+      // components of tuples, and its history, the list of that component of the earlier values
+      case Component(trace, i) =>
+        doc(Current(trace), max) ~ text(projection(accumulators(trace), i))
+
+      case History(trace, i) =>
+        Group(text("maps") ~ Nest(2, line ~ arg(Butlast(trace)) ~ line ~ text("(fun s => s" + projection(accumulators(trace), i) + ")")))
 
       // the guards of the cases of an update are disjoint and complete, the last one is implied by the others
       case Eps(updates) =>
@@ -694,20 +701,33 @@ object Printer extends cuvee.pipe.Printer:
       case _: Old | _: Diff | _: Rec =>
         unsupported(expr)
 
-  // a combinator over its dependencies, which are zipped if there are several, List.zip d₁ (List.zip d₂ d₃), whose
-  // update is a function of the values of the dependencies as a tuple, fun ⟨b₁, b₂, b₃⟩ => ..., after the accumulator
-  // of a trace
-  def combinator(name_ : String, args: List[Expr], bound: List[Var], update: Expr): Doc =
-    val (init, deps, acc, vars) =
-      if name_ == "trace"
-      then (List(args.head), args.tail, List(bound.head), bound.tail)
-      else (Nil, args, Nil, bound)
+  // the number of accumulators of a trace, by its type
+  def accumulators(trace: Expr): Int =
+    trace.typ match
+      case Sort(Con.trace, List(elem)) => Trace.components(elem).length
+      case _                           => Error.raise("component of an expression that is not a trace", trace)
 
+  // the selection of the component i of n nested pairs, (a, (b, c)): .1 for a, .2.1 for b, .2.2 for c
+  def projection(n: Int, i: Int): String =
+    (List.fill(i)(".2") ++ (if i < n - 1 then List(".1") else Nil)).mkString
+
+  // a combinator over its dependencies, which are zipped if there are several, List.zip d₁ (List.zip d₂ d₃), whose
+  // update is a function of the values of the dependencies as a tuple, fun ⟨b₁, b₂, b₃⟩ => ..., after the accumulators
+  // of a trace, also a tuple if there are several, whose initial values and results are then tuples
+  def combinator(name_ : String, inits: List[Expr], deps: List[Expr], accs: List[Var], bound: List[Var], results: List[Expr]): Doc =
+    def tuple(xs: List[Var]) =
+      if xs.length == 1 then name(xs.head.name) else xs.map(x => name(x.name)).mkString("⟨", ", ", "⟩")
+    def product(es: List[Expr]) =
+      if es.length == 1 then doc(es.head) else text("(") ~ Align(join(es.map(doc(_)), text(",") ~ line)) ~ text(")")
+
+    val init = inits match
+      case Nil       => Nil
+      case List(one) => List(arg(one))
+      case _         => List(product(inits))
     val zipped = deps.init.foldRight(arg(deps.last))((dep, rest) => text("(List.zip") ~~ arg(dep) ~~ rest ~ text(")"))
-    val tuple = if vars.length == 1 then name(vars.head.name) else vars.map(x => name(x.name)).mkString("⟨", ", ", "⟩")
-    val params_ = (acc.map(x => name(x.name)) :+ tuple).mkString(" ")
-    val fun = Group(text("fun " + params_ + " =>") ~ Nest(2, line ~ doc(update)))
-    Group(text(name_) ~ Nest(2, concat(init.map(line ~ arg(_))) ~ line ~ zipped ~ line ~ text("(") ~ Align(fun) ~ text(")")))
+    val params_ = ((if accs.isEmpty then Nil else List(tuple(accs))) :+ tuple(bound)).mkString(" ")
+    val fun = Group(text("fun " + params_ + " =>") ~ Nest(2, line ~ product(results)))
+    Group(text(name_) ~ Nest(2, concat(init.map(line ~ _)) ~ line ~ zipped ~ line ~ text("(") ~ Align(fun) ~ text(")")))
 
   // patterns of constructors, whose wildcards are named apart by indices (see dafny.Parser), which are not printed
   def pattern(pat: Expr): Doc =

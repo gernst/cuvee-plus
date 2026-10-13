@@ -254,7 +254,7 @@ class Parser(var state: State):
         Error.raise("unknown type", typ)
 
   // map selections and updates are applied from left to right
-  def resolve(scope: Scope, base: core.Expr, access: List[Access]): core.Expr =
+  def resolve(scope: Scope, base: core.Expr, access: List[Selector]): core.Expr =
     access match
       case Nil =>
         base
@@ -271,6 +271,29 @@ class Parser(var state: State):
         val value_ = resolve(scope, value)
         val base_ = update(base, indices_, value_)
         resolve(scope, base_, rest)
+
+      // the component i of the last value of a trace of several accumulators, current(S).i, and of its history, ⌊S⌋.i
+      // (see core.Component)
+      case Member(index) :: rest =>
+        val base_ = base match
+          case core.Current(trace) if several(trace) => core.Component(trace, index)
+          case core.Butlast(trace) if several(trace) => core.History(trace, index)
+          case _ => Error.raise("component of an expression that is not a trace of several accumulators", base, index)
+        resolve(scope, base_, rest)
+
+  // whether a trace has several accumulators, by its type
+  def several(trace: core.Expr): Boolean =
+    trace.typ match
+      case core.Sort(core.Con.trace, List(elem)) => core.Trace.components(elem).length >= 2
+      case _                                     => false
+
+  // the guarded cases of a result, a single case with the guard true is the plain result
+  def cases(scope: Scope, update: List[(Expr, Expr)]): core.Expr =
+    update match
+      case List((True, result)) =>
+        resolve(scope, result)
+      case _ =>
+        core.Eps(update.map((guard, result) => core.Upd(resolve(scope, guard), resolve(scope, result))))
 
   // groups of variables with a common type, x, y: int, b: bool
   def flatten(groups: Typed): List[(String, Type)] =
@@ -296,28 +319,24 @@ class Parser(var state: State):
         resolve(scope, expr_)
 
       // the combinators of trace equation systems, whose bound variables are typed by the dependencies
-      case Combinator("trace", Some(init), deps, acc :: bound, update) =>
-        val init_ = resolve(scope, init)
+      // the first bound variables of a trace are its accumulators, as many as it has initial values, with one result
+      // each (as in Dafny)
+      case Combinator("trace", inits, deps, ids, updates) =>
+        Error.report("mismatching initial values and results of a trace", expr):
+          require(inits.length == updates.length && ids.length > inits.length)
+        val (accs, bound) = ids.splitAt(inits.length)
+        val inits_ = inits.map(resolve(scope, _))
         val deps_ = deps.map(resolve(scope, _))
-        state.exprs.trace(init_, deps_, acc, bound.map(util.Name(_, None))): (acc_, bound_) =>
-          val scope_ = scope ++ (acc_ :: bound_)
-          update match
-            case List((True, result)) =>
-              resolve(scope_, result)
-            case _ =>
-              core.Eps(update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result))))
+        state.exprs.trace(inits_, deps_, accs.map(util.Name(_, None)), bound.map(util.Name(_, None))): (accs_, bound_) =>
+          val scope_ = scope ++ (accs_ ++ bound_)
+          updates.map(update => cases(scope_, update))
 
-      case Combinator("map", None, deps, bound, update) =>
+      case Combinator("map", Nil, deps, bound, List(update)) =>
         val deps_ = deps.map(resolve(scope, _))
         state.exprs.map(deps_, bound.map(util.Name(_, None))): bound_ =>
-          val scope_ = scope ++ bound_
-          update match
-            case List((True, result)) =>
-              resolve(scope_, result)
-            case _ =>
-              core.Eps(update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result))))
+          cases(scope ++ bound_, update)
 
-      case Combinator("all", None, deps, bound, List((_, body))) =>
+      case Combinator("all", Nil, deps, bound, List(List((_, body)))) =>
         val deps_ = deps.map(resolve(scope, _))
         state.exprs.all(deps_, bound.map(util.Name(_, None))): bound_ =>
           resolve(scope ++ bound_, body)

@@ -134,6 +134,5 @@ whose cuts are the partition points (`bsearch_bisect.dfy`, 8 s; `bsearch_safe.df
 `lo + (hi - lo) / 2`), and so does the lower bound of the algorithms (`lower_bound.dfy`, open under `-simplify`,
 8 s); the per-component route is kept as a regression test (`bsearch_sorted.dfy` in two layers, 45 s; `bsearch.dfy`
 with constant partition points, 8 s). Open: the bisection and the partition points of sorted arrays as a module of
-the database, the instances of `invs` by triggers (step 2 of J), the merge and the sorts, the other frontends and the
-fallback for traces of several accumulators; see
+the database, the instances of `invs` by triggers (step 2 of J), the merge and the sorts; see
 [ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md) and [TODO.md](../TODO.md).

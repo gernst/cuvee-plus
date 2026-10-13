@@ -36,7 +36,7 @@ The transformations are applied in the order in which they are given, e.g.
 | `-simplify` | contextual simplification of formulas and function definitions, with the rewrite rules of lemmas and axioms with `:rw` (see [simplifier.md](simplifier.md)) |
 | `-prove` | the deduction engine of the package `prove`, like `-simplify` for the goals of `-teq`: congruence closure and a simplex as the context, matching modulo the classes and the views of traces of several accumulators, rules over whole cycles (patterns of several accumulators), and forward lemmas (`{:fw}`) (see [prove.md](prove.md)) |
 | `-rules` | report the rewrite rules that `-simplify` applies to each assertion, by their names, as `(set-info :used ((name count) ...))` after it |
-| `-fallback` | lower the Trace Equation Systems that remain into first-order logic for the solvers, e.g. after `-teq -prove`; traces of several accumulators are not lowered yet; the lowered goals are `:abstract` |
+| `-fallback` | lower the Trace Equation Systems that remain into first-order logic for the solvers, e.g. after `-teq -prove`, a trace of several accumulators into one function per accumulator; the lowered goals are `:abstract` |
 | `-split` | split goals and lemmas into individual obligations `forall xs. antecedents ==> conclusion`, which the solvers report one by one |
 | `-monomorph` | replace polymorphic functions by their monomorphic instances, e.g. before `-z3` |
 | `-fuse` | fuse the compositions of defined functions in the requests `fuse g(f(xs), ys) = ???` of Dafny input |

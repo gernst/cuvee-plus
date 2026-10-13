@@ -1,0 +1,22 @@
+axiom Trace : Type → Type
+
+axiom butlast {α₀ : Type} [Inhabited α₀] : Trace α₀ → List α₀
+
+axiom current {α₀ : Type} [Inhabited α₀] : Trace α₀ → α₀
+
+axiom flag (K : List Int) (S : Trace (Int × Prop)) (n : Nat)
+           (hK : length K = n) :
+  S = trace (0, True) K (fun ⟨x, b⟩ k => (if b then x + k else x, ¬b))
+    → invs
+      (List.zip K (List.zip (maps (butlast S) (fun s => s.1)) (maps
+                                                                 (butlast S)
+                                                                 (fun s => s.2))))
+      (fun ⟨k, y, c⟩ => c ∨ 0 ≤ y)
+      → 0 ≤ (current S).1
+
+axiom three (K : List Int) (S : Trace (Int × Int × Int)) (n : Nat)
+            (hK : length K = n) :
+  S = trace (0, 1, 2) K (fun ⟨x, y, z⟩ k => (y, z, x + k))
+    → (current S).1 + (current S).2.1 + (current S).2.2
+      = (current S).2.2 + (current S).2.1 + (current S).1
+

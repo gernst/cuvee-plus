@@ -145,8 +145,8 @@ for it, not before.
 | S4 | inner loops as values by the closed substitution | done |
 | S5 | traces per strongly connected component (`util.SCC` in `StateTEQ`; the read relation includes the guards) | done Oct 13: the ten state examples unchanged, the swap with `I` a plain counter, `S` the two arrays, `T` after them |
 | S6 | the merge and the sorts in the state form, lemmas over cycles; what the lemma language needs | after S5 |
-| S7 | combinators with several accumulators in the core (1.4), the tuples of the prelude retired from the goals | done Oct 13 on the branch `accumulators` for the core, Dafny and the engine of `-prove` (views as syntactic projections, `self` a list, the tuple selectors gone); open: lemmas over whole cycles in the matcher, the other frontends, Lean and the fallback |
-| S8 | `-fallback` for tuple or multi-accumulator traces, the tuples for C input, the C benchmarks with a cleaned-up lemma selection | deferred; benchmarks only when the user asks |
+| S7 | combinators with several accumulators in the core (1.4), the tuples of the prelude retired from the goals | done Oct 13 on the branch `accumulators` for the core, Dafny and the engine of `-prove` (views as syntactic projections, `self` a list, the tuple selectors gone); the other frontends (Boogie, SMT-LIB, SV-LIB) and the Lean printer done Oct 13 (0.46.6); open: lemmas over whole cycles in the matcher |
+| S8 | `-fallback` for tuple or multi-accumulator traces, the tuples for C input, the C benchmarks with a cleaned-up lemma selection | `-fallback` for traces of several accumulators done Oct 13 (0.46.6, one function per accumulator); the benchmarks only when the user asks |
 
 What it retires: the module `nested` as far as the fragment lemmas go, `results`, the chain lemmas of row sums,
 the fragment side conditions of all summaries, `invs_current_counter_other`, the identification of equal

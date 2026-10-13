@@ -19,6 +19,7 @@ import cuvee.core._
 // variable of a combinator that ranges over it is the trace of the current iteration; other combinators are named by
 // fresh functions of their free variables, defined in the antecedent of the goal, and the remaining functions of
 // trace equation systems by fresh functions without definition, which generalizes the goal;
+// a trace of several accumulators is one function per accumulator, read by its components and histories;
 // functions defined with {:fold} are unfolded first; the declarations and lemmas of teq.dfy are dropped,
 // as are lemmas over traces, lists, and naturals; guards need not be complete (see break), hence each case is
 // an implication, and the entry is unconstrained if no guard holds
@@ -27,7 +28,7 @@ object Fallback extends Transform:
   // the applications of the new functions, without the index, that replace combinators and other sequences
   // with their lengths, the applications that generalize other terms, and the functions for the lengths of the
   // traces of lists of traces
-  case class Lowered(decls: List[Cmd], defs: List[Expr], named: Map[Key, (App, Expr)], general: Map[Key, Expr], inner: Map[Fun, Fun])
+  case class Lowered(decls: List[Cmd], defs: List[Expr], named: Map[Key, (Expr, Expr)], general: Map[Key, Expr], inner: Map[Fun, Fun])
 
   // a term with the lowered traces and lists of its free variables, which determine its meaning, e.g. the same
   // map(for ⌊K'⌋ yield ...) for the traces K' of a list of traces at different positions (see bind)
@@ -91,6 +92,35 @@ object Fallback extends Transform:
       case _ =>
         (typ, 0)
 
+  // the lowered head of a trace or list of entries of the type `elem`, applied to `xs`, with further indices of the
+  // types `args`: one function per component for a trace of several accumulators, as a tuple of their applications,
+  // which components and histories take apart, such that no tuple term remains (see parts)
+  def head(name: Name, xs: List[Var], args: List[Type], elem: Type): Expr =
+    Trace.components(elem) match
+      case List(typ) =>
+        val fun = Fun(name, Nil, Expr.vars("x", xs.types ++ args), typ)
+        App(fun, xs.types, typ, xs)
+
+      case types =>
+        val apps =
+          for (typ, i) <- types.zipWithIndex
+          yield
+            val fun = Fun(Name(name.name + "_" + i, name.index), Nil, Expr.vars("x", xs.types ++ args), typ)
+            App(fun, xs.types, typ, xs)
+        val tuple = Fun(Tuples.name(types.length), Nil, Expr.vars("x", types), elem)
+        App(tuple, Nil, elem, apps)
+
+  // the heads of the components of a lowered trace or list, one unless it is a trace of several accumulators
+  def parts(head: Expr): List[Expr] =
+    head match
+      case Tuples(apps) => apps
+      case _            => List(head)
+
+  // the functions of a lowered head
+  def funs(head: Expr): List[Fun] =
+    parts(head).collect:
+      case App(fun, _, _, _) => fun
+
   // the variable with naturals as integers
   def lower(x: Var) =
     if x.typ == Sort.nat then Var(x.name, Sort.int) else x
@@ -113,6 +143,11 @@ object Fallback extends Transform:
     head match
       case Counter(i, c, _) =>
         Ints.plus(i, Ints.times(j, c))
+
+      // the entries of the components of a trace of several accumulators
+      case Tuples(apps) =>
+        val App(tuple, inst, typ, _) = head: @unchecked
+        App(tuple, inst, typ, apps.map(at(_, j)))
 
       case App(fun, inst, typ, args) =>
         App(fun, inst :+ Sort.int, typ, args :+ j)
@@ -181,8 +216,7 @@ object Fallback extends Transform:
         Error.report("traces and lists nested more than twice are not supported by -fallback", x):
           require(n <= 2)
         // goals of -split share their variables, hence a fresh index
-        val fun = Fun(x.fresh.name, Nil, Expr.vars("x", List.fill(n)(Sort.int)), base)
-        x -> App(fun, Nil, fun.res, Nil)
+        x -> head(x.fresh.name, Nil, List.fill(n)(Sort.int), base)
 
     // counters are inlined
     val counters =
@@ -205,9 +239,10 @@ object Fallback extends Transform:
           if known.contains(x)
           dep <- dependencies(state, rhs)
           y <- dep match
-            case Butlast(y: Var) => Some(y)
-            case y: Var          => Some(y)
-            case _               => None
+            case Butlast(y: Var)    => Some(y)
+            case History(y: Var, _) => Some(y)
+            case y: Var             => Some(y)
+            case _                  => None
           if seqs.contains(y) && !known.contains(y)
         yield y -> known(x)._2
 
@@ -218,9 +253,10 @@ object Fallback extends Transform:
           n <- deps.view.flatMap(length(state, env ++ known, out, _)).headOption.toList
           dep <- deps
           y <- dep match
-            case Butlast(y: Var) => Some(y)
-            case y: Var          => Some(y)
-            case _               => None
+            case Butlast(y: Var)    => Some(y)
+            case History(y: Var, _) => Some(y)
+            case y: Var             => Some(y)
+            case _                  => None
           if seqs.contains(y) && !known.contains(y)
         yield y -> n
 
@@ -233,7 +269,7 @@ object Fallback extends Transform:
     val free =
       for (x, head) <- heads if !propagate(counters.toMap).contains(x)
       yield
-        val lenfun = Fun(Name(head.fun.name.name + "_length", Some(Var.next())), Nil, Nil, Sort.int)
+        val lenfun = Fun(Name(funs(head).head.name.name + "_length", Some(Var.next())), Nil, Nil, Sort.int)
         val len = App(lenfun, Nil, Sort.int, Nil)
         out.map(o => o.copy(decls = DeclareFun(lenfun, Attrs.empty) :: o.decls, defs = Ints.le(Ints.zero, len) :: o.defs))
         x -> (head, len)
@@ -242,20 +278,23 @@ object Fallback extends Transform:
 
     for (x, head) <- heads if !counters.exists(_._1 == x)
     do
-      out.map(o => o.copy(decls = DeclareFun(head.fun, Attrs.empty) :: o.decls))
+      val funs_ = funs(head)
+      out.map(o => o.copy(decls = funs_.reverse.map(DeclareFun(_, Attrs.empty)) ++ o.decls))
 
       // the entries of lists of naturals are nonnegative
       if elem(x.typ) == Sort.nat then
-        val is = Expr.vars("i", head.fun.args).fresh
-        val phi = All(is, Ints.le(Ints.zero, App(head.fun, head.fun.args, head.fun.res, is)))
+        val fun = funs_.head
+        val is = Expr.vars("i", fun.args).fresh
+        val phi = All(is, Ints.le(Ints.zero, App(fun, fun.args, fun.res, is)))
         out.map(o => o.copy(defs = phi :: o.defs))
 
-      // the lengths of the traces of a list of traces, which are nonnegative
-      if head.fun.arity == 2 then
-        val lenfun = Fun(Name(head.fun.name.name + "_length", head.fun.name.index), Nil, Expr.vars("x", List(Sort.int)), Sort.int)
+      // the lengths of the traces of a list of traces, which are nonnegative, one for all components
+      if funs_.head.arity == 2 then
+        val first = funs_.head
+        val lenfun = Fun(Name(first.name.name + "_length", first.name.index), Nil, Expr.vars("x", List(Sort.int)), Sort.int)
         val i = Var("i", Sort.int).fresh
         val phi = All(List(i), Ints.le(Ints.zero, App(lenfun, List(Sort.int), Sort.int, List(i))))
-        out.map(o => o.copy(decls = DeclareFun(lenfun, Attrs.empty) :: o.decls, defs = phi :: o.defs, inner = o.inner + (head.fun -> lenfun)))
+        out.map(o => o.copy(decls = DeclareFun(lenfun, Attrs.empty) :: o.decls, defs = phi :: o.defs, inner = o.inner ++ funs_.map(_ -> lenfun)))
 
     env ++ known
 
@@ -274,6 +313,9 @@ object Fallback extends Transform:
         Some(env(x)._2)
 
       case Butlast(t) =>
+        length(state, env, out, t)
+
+      case History(t, _) =>
         length(state, env, out, t)
 
       case Counter(_, _, n) =>
@@ -310,6 +352,11 @@ object Fallback extends Transform:
       case Butlast(t) =>
         sequence(state, env, out, t)
 
+      // the function of the component i of a trace of several accumulators
+      case History(t, i) =>
+        val (head, len) = sequence(state, env, out, t)
+        (parts(head)(i), len)
+
       case Counter(i, c, n) =>
         val List(i_, c_, n_) = List(i, c, n).map(expr(state, env, out, _)): @unchecked
         (App(Fun.trace.counter, Nil, Sort.trace(Sort.int), List(i_, c_, n_)), n_)
@@ -336,7 +383,7 @@ object Fallback extends Transform:
 
   // a fresh function of the free variables for a combinator, defined in the antecedent of the goal,
   // or for another trace or list, with a fresh function for its length, both without definition
-  def named(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], seq: Expr): (App, Expr) =
+  def named(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], seq: Expr): (Expr, Expr) =
     out.value.named.get(key(env, seq)) match
       case Some(result) =>
         result
@@ -357,8 +404,8 @@ object Fallback extends Transform:
           case App(fun, _, _, _) => Name(fun.name.name, Some(index))
           case _             => Name("seq", Some(index))
 
-        val fun = Fun(name, Nil, Expr.vars("x", xs.types :+ Sort.int), elem(seq.typ))
-        val head = App(fun, xs.types, fun.res, xs)
+        val head = this.head(name, xs, List(Sort.int), elem(seq.typ))
+        val declared = funs(head).map(DeclareFun(_, Attrs.empty))
         val combinator = dependencies(state, seq).nonEmpty
 
         val consts = seq match
@@ -366,14 +413,14 @@ object Fallback extends Transform:
           case _ => None
 
         val (len, decls) =
-          if consts.nonEmpty then (consts.get, List(DeclareFun(fun, Attrs.empty)))
+          if consts.nonEmpty then (consts.get, declared)
           else if combinator then
             val len = length(state, env, out, seq).getOrElse:
               Error.raise("the length of a combinator is unknown to -fallback", seq)
-            (len, List(DeclareFun(fun, Attrs.empty)))
+            (len, declared)
           else
             val lenfun = Fun(Name(name.name + "_length", Some(index)), Nil, Expr.vars("x", xs.types), Sort.int)
-            (App(lenfun, xs.types, Sort.int, xs), List(DeclareFun(fun, Attrs.empty), DeclareFun(lenfun, Attrs.empty)))
+            (App(lenfun, xs.types, Sort.int, xs), declared :+ DeclareFun(lenfun, Attrs.empty))
 
         out.map(o => o.copy(decls = decls.reverse ++ o.decls, named = o.named + (key(env, seq) -> (head, len))))
 
@@ -410,10 +457,9 @@ object Fallback extends Transform:
       for (dep, x) <- seqs
       yield
         val (head, _) = sequence(state, env, out, dep)
-        val lenfun = head match
-          case App(fun, _, _, _) if out.value.inner.contains(fun) => out.value.inner(fun)
-          case _ => Error.raise("traces that are not the entries of a list are not supported by -fallback", dep)
-        val App(_, _, _, args) = head: @unchecked
+        val lenfun = funs(head).headOption.flatMap(out.value.inner.get).getOrElse:
+          Error.raise("traces that are not the entries of a list are not supported by -fallback", dep)
+        val App(_, _, _, args) = parts(head).head: @unchecked
         x -> (at(head, j), App(lenfun, (args :+ j).types, Sort.int, args :+ j))
 
     val su = Subst.from(scalars.map((_, x) => lower(x)), scalars.map((dep, _) => entry(state, env, out, dep, j)))
@@ -431,11 +477,18 @@ object Fallback extends Transform:
     val range = And(Ints.le(Ints.zero, j), Ints.lt(j, len))
 
     rhs match
-      case Trace.single(init, deps, acc, bound, update) =>
+      // one function per accumulator, whose results read the entries of all of them at j
+      case Trace(inits, deps, accs, bound, results) =>
         val (env_, su) = bind(state, env, out, deps, bound, j)
-        val update_ = Subst.from(List(lower(acc)), List(at(head, j)))(su(expr(state, env_, out, update)))
-        val init_ = expr(state, env, out, init)
-        And(Eq(at(head, Ints.zero), init_), All(List(j), Imp(range, cases(at(head, Ints.succ(j)), update_))))
+        val comps = parts(head)
+        val accs_ = Subst.from(accs.map(lower), comps.map(at(_, j)))
+        val phis =
+          for ((comp, init), result) <- comps zip inits zip results
+          yield
+            val result_ = accs_(su(expr(state, env_, out, result)))
+            val init_ = expr(state, env, out, init)
+            List(Eq(at(comp, Ints.zero), init_), All(List(j), Imp(range, cases(at(comp, Ints.succ(j)), result_))))
+        And(phis.flatten)
 
       case Maps(deps, bound, update) =>
         val (env_, su) = bind(state, env, out, deps, bound, j)
@@ -618,6 +671,11 @@ object Fallback extends Transform:
       case Current(t) =>
         val (head, len) = sequence(state, env, out, t)
         at(head, len)
+
+      // the last entry of the function of the component i of a trace of several accumulators
+      case Component(t, i) =>
+        val (head, len) = sequence(state, env, out, t)
+        at(parts(head)(i), len)
 
       case Earlier(k, seq) =>
         entry(state, env, out, seq, expr(state, env, out, k))
