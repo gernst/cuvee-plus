@@ -55,6 +55,12 @@ statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a gui
   `double_eq_half` no longer matches). Still open for want of the engine: while_infinite_loop_4 (a goal refuted by
   substituting `n := zero`), sum_by_3 and in-de20 (the premise `n == zero || integer(n) < 1` of the `_cases` rules
   of `mods` is not split).
+- Rules of the per-variable form match the one form (Oct 13, 0.46.5, `Rewrite.combinator`): a dependency equal to
+  an earlier one of the pattern (`⌊counter(0, 1, n)⌋` twice, iterations and loop variable) may take the same one of
+  the expression, and variables among the dependencies (`hs`) take the front if the expression has fewer; this wins
+  back the sums kept in array cells (brs, ms), the strided stores, rew, rewnif, copysome1, standard_running-2
+  (Arrays 124 to 140 correct, above the 139 of 0.42.1), and the flags and agreeing prefixes of the searches
+  standard_compare, _compareModified, _password, _palindrome; the rules are kept in their form.
 - Next: retiring nested (a rewrite of the lemmas of the three sorts), the remaining conversions to forward lemmas,
   the firing at definitions (step 3 of J) before more forward lemmas.
 

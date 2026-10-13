@@ -93,6 +93,14 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   result `M(lo, hi) + 1`) and whose instantiated arguments are beta-reduced (`Rewrite.beta`); a higher-order pattern
   that is not instantiated yet may take several summands of a sum, like a variable, if the sum does not match
   otherwise, so `M(lo, hi) + 1` matches `lo + (hi - lo) / 2 + 1` (`bsearch_safe.dfy`).
+- **Rules of the per-variable form** (`Rewrite.combinator`): many rules of the database iterate over the iterations
+  and a loop variable, `for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i`, or over the iterations and further
+  variables, `for ⌊counter(0, 1, n)⌋, hs do f, k, h`, where `-teq` has the loop variable only. A dependency of the
+  pattern equal to an earlier one may take the same dependency of the expression; if the expression has fewer
+  dependencies than the pattern, the variables of the rule among the dependencies take the front, and their bound
+  variables share its bound variable, which a higher-order pattern `D(k, h)` may then take twice (the abstraction
+  ignores the repetition, `D = (k, z) => ...`). A sum of one summand, e.g. `-e`, gives no variable of a pattern
+  `v + w` the empty sum 0.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.

@@ -5,6 +5,15 @@ architecture is described in [doc/architecture.md](doc/architecture.md).
 
 ## New
 
+- `-prove`: with `natural_positive` (teq.dfy), the rounds of simplification of array-crafted bAnd*, bor*, xor* (15
+  tasks, unknown before) do not settle and use up the 1000 steps ("rewriting does not terminate"): the same reads
+  `x[0]`, `x[1]` are rewritten in every round, `integer(n)` to `i` by integer_natural modulo the class of `n`; a rule
+  `natural(x) == zero <==> x <= 0` instead does the same
+- `-prove` does not refute a goal by substituting a variable that a premise equates with a constructor, e.g.
+  `not (n == zero && 0 <= integer(n))` of while_infinite_loop_4 (expected false)
+- `-prove` does not split a premise `n == zero || integer(n) < 1` (the `_cases` rules of `mods`), which sum_by_3,
+  sum_by_3_abstracted and in-de20 need
+
 - `-verify` (see [ideas/verify-answers.md](ideas/verify-answers.md)): a refutation is classified per goal, `VCGen`
   marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
   not depend on that loop, which `-split` keeps apart

@@ -241,10 +241,16 @@ object Rewrite:
       // bound variables of the expression, where all occurrences of the instances of the terms are abstracted, too
       // (see abstraction); the applications in the instantiated right-hand side are beta-reduced by the simplifier
       // (see Simplify.app)
+      // a shared local, e.g. h of a rule over ⌊counter(0, 1, n)⌋, hs whose hs has no dependency of its own in the
+      // expression (see combinator), may repeat the instance of another argument, which the abstraction ignores
       case (Apply(f: Var, args), _) if mayBind(vars, locals, f) && args.distinct == args =>
+        val shared = args.map:
+          case x: Var => locals.contains(x) && bound.contains(x)
+          case _      => false
         for
           (terms, subst1) <- arguments(state, params, vars, locals, args, bound, avoid, subst)
-          if terms.distinct == terms
+          fixed = (terms zip shared).collect { case (term, false) => term }
+          if fixed.distinct == fixed
           subst2 <- abstraction(state, params, vars, f, terms, avoid, arg, subst1)
         yield subst2
 
@@ -537,24 +543,54 @@ object Rewrite:
 
     val pairs_ = (deps_ zip ys_).zipWithIndex
 
-    // an injective selection of the dependencies of the expression for those of the pattern that are not variables
-    def select(es: List[(Expr, Var)], available: List[((Expr, Var), Int)], subst: Subst[Type, Expr]): List[(Map[Var, Var], Subst[Type, Expr])] =
+    // an injective selection of the dependencies of the expression for those of the pattern that are not variables,
+    // where a dependency of the pattern equal to an earlier one may also take the same one as that, since both are
+    // the same values: rules of the per-variable form iterate over the iterations and the loop variable, e.g.
+    // ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i, where -teq has the loop variable only (taken: those chosen)
+    def select(
+        es: List[(Expr, Var)],
+        available: List[((Expr, Var), Int)],
+        taken: List[(Expr, Var)],
+        subst: Subst[Type, Expr]
+    ): List[(Map[Var, Var], Subst[Type, Expr])] =
       es match
         case Nil =>
           List((Map(), subst))
 
         case (dep, y) :: rest =>
-          for
-            (((dep_, y_), i), k) <- available.zipWithIndex
-            subst1 <- matches(config, state, ctx, params, vars, locals, dep, self, bound, avoid, dep_, subst)
-            (selected, subst2) <- select(rest, available.patch(k, Nil, 1), subst1)
-          yield (selected + (y -> y_), subst2)
+          val fresh =
+            for
+              (((dep_, y_), i), k) <- available.zipWithIndex
+              subst1 <- matches(config, state, ctx, params, vars, locals, dep, self, bound, avoid, dep_, subst)
+              (selected, subst2) <- select(rest, available.patch(k, Nil, 1), (dep, y_) :: taken, subst1)
+            yield (selected + (y -> y_), subst2)
 
-    for
-      (selected, subst1) <- select(es, pairs_, subst)
-      subst2 <- body(locals ++ zs.map(_._2), bound ++ acc ++ selected, avoid ++ ys_ ++ acc.values, subst1)
-      subst3 <- instantiate(config, state, ctx, params, vars, locals, zs, self, bound, avoid, deps_, ys_, acc.values.toSet, subst2)
-    yield Subst(subst3.params, subst3.vars -- zs.map(_._2))
+          val shared =
+            for
+              (dep__, y_) <- taken.distinct
+              if dep__ == dep
+              (selected, subst2) <- select(rest, available, taken, subst)
+            yield (selected + (y -> y_), subst2)
+
+          fresh ++ shared
+
+    def results(shared: Map[Var, Var]) =
+      for
+        (selected, subst1) <- select(es, pairs_, Nil, subst)
+        subst2 <- body(locals ++ zs.map(_._2), bound ++ acc ++ selected ++ shared, avoid ++ ys_ ++ acc.values, subst1)
+        subst3 <- instantiate(config, state, ctx, params, vars, locals, zs, self, bound, avoid, deps_, ys_, acc.values.toSet, subst2)
+      yield Subst(subst3.params, subst3.vars -- zs.map(_._2))
+
+    // an expression with fewer dependencies than the pattern, e.g. the loop variable only for a rule of the
+    // per-variable form over ⌊counter(0, 1, n)⌋, hs, may have none left for the variables of the rule among the
+    // dependencies: if the match fails otherwise, their bound variables share that of the front, whose dependency
+    // they take (see instantiate); not first, since e.g. vs of stores over ks, vs takes a map over the front
+    val direct = results(Map())
+    if direct.nonEmpty || deps_.length >= deps.length || deps_.isEmpty || zs.isEmpty
+    then direct
+    else
+      val front = (deps_ zip ys_).find((dep_, _) => iterations(ctx, dep_)).getOrElse((deps_ zip ys_).head)
+      results(zs.map((_, y) => y -> front._2).toMap)
 
   // the pattern `tr` of a read of a component against the trace `s` that the read reads (see matches_)
   def component(
@@ -655,6 +691,12 @@ object Rewrite:
 
     val body = replace(arg)
 
+    // a bound variable that instantiates two arguments is a parameter once, the later argument is ignored by a fresh
+    // parameter, e.g. D(k, h) of a rule over ⌊counter(0, 1, n)⌋, hs whose h has no dependency of its own in the
+    // expression and takes the bound variable of k (see instantiate), D = (k, z) => ... instead of (k, k) => ...
+    val params_ =
+      zs.zipWithIndex.map((z, i) => if zs.take(i).contains(z) then Var("z", z.typ).fresh else z)
+
     subst.vars.get(f) match
       case Some(Lam(xs, body_, _)) =>
         same(Subst.from(xs, terms)(body_), arg, subst)
@@ -664,7 +706,7 @@ object Rewrite:
 
       case None if replaced.forall((_, z) => body.free.contains(z))
           && (!vars.contains(f) || (body.free intersect avoid).subsetOf(zs.toSet)) =>
-        bind(state, params, f, Lam(zs, body, Arrow(zs.types, body.typ)), subst)
+        bind(state, params, f, Lam(params_, body, Arrow(params_.types, body.typ)), subst)
 
       case None =>
         unmatched
