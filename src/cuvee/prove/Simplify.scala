@@ -123,7 +123,7 @@ object Simplify:
       // and of a map, Y == maps(...), whose update is the value of Y at each position, such that the update
       // assumes also the invariants of the context that mention ⌊X⌋ or Y (see invariants), e.g. the test of a loop;
       // the right-hand side is simplified like the combinator below, and then rewritten at the top (see simplify)
-      case Eq(x: Var, Trace(init, deps, acc, bound, update)) =>
+      case Eq(x: Var, Trace.single(init, deps, acc, bound, update)) =>
         val left_ = simplify(config, state, ctx.neutral, x)
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
@@ -299,7 +299,7 @@ object Simplify:
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see combinator)
       // a projection trace of the component of the context's projection has its relation as self (see Views.relation)
-      case Trace(init, deps, acc, bound, update) =>
+      case Trace.single(init, deps, acc, bound, update) =>
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
@@ -313,6 +313,10 @@ object Simplify:
         val (bound_, re) = Subst.rename(bound, ctx.free)
         val update_ = simplify(config, state, combinator(config, state, ctx, deps_, bound_), re(update))
         maps(config, state, ctx, deps_, bound_, update_)
+
+      // traces of several accumulators and their components are not simplified yet (see ideas/deduction-engine-plan.md, 1.4)
+      case _: Trace | _: Component | _: History =>
+        expr
 
       // the guards of the cases are simplified, cases whose guard is false are dropped,
       // and the results are simplified assuming their guard and, since the guards are disjoint, that the others are false;

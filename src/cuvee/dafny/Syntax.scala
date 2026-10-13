@@ -80,8 +80,11 @@ object Butlast extends (Expr => Expr)
 object Diff extends ((List[String], Expr) => Expr)
 object App extends ((String, List[Expr]) => Expr)
 
-case class Combinator(kind: String, init: Option[Expr], deps: List[Expr], bound: List[String], update: List[(Expr, Expr)]) extends Expr
-object Combinator extends ((String, Option[Expr], List[Expr], List[String], List[(Expr, Expr)]) => Expr)
+// a combinator of trace equation systems: trace(inits, for deps do accs, bound :: results), maps(for deps yield bound
+// :: update), invs(for deps check bound :: body), where a result is a list of guarded cases (a single case with the
+// guard true for a plain expression), one per accumulator, whose number is that of the initial values
+case class Combinator(kind: String, inits: List[Expr], deps: List[Expr], bound: List[String], updates: List[List[(Expr, Expr)]]) extends Expr
+object Combinator extends ((String, List[Expr], List[Expr], List[String], List[List[(Expr, Expr)]]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)
 object Match extends ((Expr, List[(Expr, Expr)]) => Expr)
 object Inner extends ((Expr, List[Access]) => Expr)

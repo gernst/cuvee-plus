@@ -80,6 +80,14 @@ their expected outputs, four per-variable examples that must leave no goal); `sc
 or before a commit (the transpose, the unit tests, the 30 algorithms of `examples/dafny/algorithms` in the state form
 with their exit status, time and remaining goals, as the baseline for the work on them).
 
+## Towards traces with several accumulators
+
+The branch `accumulators` adds the core form of section 1.4 of the plan: a trace binds one or several accumulators
+(`Trace(inits, deps, accs, bound, results)`), and the components of a trace of several are read by `current(S).i`
+and `⌊S⌋.i` (`Component`, `History`) instead of tuple selectors, so that the markers, views and relations above
+reduce to a syntactic projection. The Dafny frontend and printer have the syntax; the engines leave such traces alone
+until `StateTEQ` emits them, per strongly connected component of the loop's variables (steps S5 and S7 of the plan).
+
 ## State
 
 Oct 13, 2026: the ten examples of [examples/dafny/state](../examples/dafny/state) close under `-teq-state -prove`

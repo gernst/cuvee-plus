@@ -90,7 +90,8 @@ case class Case(pat: Expr, body: Expr, cond: Expr)  // pattern variables are bou
 case class Rec(fun: Fun, cases: List[Case])     // recursive function, cases fun(p₁, ..., pₙ) if cond => body
 
 // the combinators of trace equation systems, see teq.md
-case class Trace(...); case class Maps(...); case class Invs(...)
+case class Trace(inits, deps, accs, bound, results); case class Maps(...); case class Invs(...)
+case class Component(trace, index); case class History(trace, index)  // current(S).i, ⌊S⌋.i
 ```
 
 - **Function types** `(A₁, ..., Aₙ) -> R` of Dafny are the sorts `arrow₁`,
@@ -166,8 +167,11 @@ case class Trace(...); case class Maps(...); case class Invs(...)
   it by `e[gs := gs_]` before verification.
 - **Trace combinators** `Trace`, `Maps`, `Invs`, whose updates are
   expressions, guarded ones as `Eps` of cases `Upd`, are described in
-  [teq.md](teq.md). The guards of an update are disjoint and complete, which
-  transformations may rely on.
+  [teq.md](teq.md). A trace has one or several accumulators, with one initial
+  value and one result each (`Trace.single` matches the single case);
+  `Component` and `History` read the components of a trace of several. The
+  guards of an update are disjoint and complete, which transformations may
+  rely on.
 - **Sugar.** [Builtin.scala](../src/cuvee/core/Builtin.scala) provides
   objects that both build and match applications of built-in functions:
   - `True`, `False`, `Eq`, `Ite`, `Not`, `And`, `Or`, `Imp`, `All`, `Ex`,

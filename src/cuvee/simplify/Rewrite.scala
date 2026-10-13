@@ -245,7 +245,7 @@ object Rewrite:
 
       // the updates and bodies are matched in the context that the simplifier has there (see Simplify.combinator),
       // which is determined by the expression, e.g. guards follow from the test of the loop
-      case (Trace(init, deps, acc, ys, update), Trace(init_, deps_, acc_, ys_, update_)) =>
+      case (Trace.single(init, deps, acc, ys, update), Trace.single(init_, deps_, acc_, ys_, update_)) =>
         val self_ = self.map(x => (Butlast(x), acc_))
         lazy val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)).copy(self = self_), deps_, ys_)
         for

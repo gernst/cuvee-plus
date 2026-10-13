@@ -12,17 +12,35 @@ monomorphization, and no implicit introduction of TEQ concepts to the solvers.
 ```scala
 case class Upd(cond: Expr, rhs: Expr)                         // if cond then rhs
 case class Eps(updates: List[Upd])                            // some rhs whose cond holds
-case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr)
+case class Trace(inits: List[Expr], deps: List[Expr], accs: List[Var], bound: List[Var], results: List[Expr])
 case class Maps(deps: List[Expr], bound: List[Var], update: Expr)
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr)
+case class Component(trace: Expr, index: Int)                 // current(S).i
+case class History(trace: Expr, index: Int)                   // ⌊S⌋.i
 ```
 
-After section 3 of the paper:
+After section 3 of the paper, generalized to several accumulators
+([ideas/deduction-engine-plan.md](../ideas/deduction-engine-plan.md), section 1.4):
 
-- `Trace(init, deps, acc, bound, update)` is the trace of the accumulator
-  `acc`, of type `Trace(T)`. It starts with `init`; each further value is the
-  update of the previous one and the next values of the dependencies, which
-  `bound` ranges over point-wise.
+- `Trace(inits, deps, accs, bound, results)` is the trace of the accumulators
+  `accs`, one initial value and one result each, of type `Trace(T)` for a
+  single accumulator and `Trace((T₁, ..., Tₘ))` for several, where the tuple
+  type names the state and no term of tuple type is ever built. It starts
+  with `inits`; each further value is the results of the previous ones and
+  the next values of the dependencies, which `bound` ranges over point-wise.
+  `Trace.apply(init, deps, acc, bound, update)` builds the single case and
+  `Trace.single` matches it; the lemma database, the lowering of `-fallback`,
+  the Lean printer and the printers of Boogie and SMT-LIB handle that case
+  only. Several accumulators are for the variables of a loop that depend on
+  each other (a cycle of the read relation), whose per-variable traces would
+  be recursive through each other.
+- `Component(S, i)` is the component `i` of the last value of a trace of
+  several accumulators, `History(S, i)` the list of its earlier values, of the
+  ordinary type `List(Tᵢ)`: the history of such a trace is `m` lists, which
+  are dependencies like any other, so `Maps` and `Invs` are unchanged and the
+  functions on lists apply. Both are typed by the component types of the
+  trace (`Trace.components`); the type checker resolves the type of the
+  trace first.
 - `Maps(deps, bound, update)` is the sequence of the updates, of type
   `Seq(T)`.
 - `Invs(deps, bound, φ)` states `φ` for all values of the dependencies.
@@ -49,13 +67,16 @@ After section 3 of the paper:
   `Butlast`, `Earlier`, and `Length` in
   [Builtin.scala](../src/cuvee/core/Builtin.scala) are their sugar. The sort is `Sort.trace(elem)`.
 - `state.exprs.trace`, `map`, and `all` create the bound variables with the
-  element types of the dependencies (`Type.elem`).
+  element types of the dependencies (`Type.elem`); `trace` with lists of
+  initial values and accumulators builds a trace of several.
 
 ## Syntax
 
 | Combinator | Dafny and Boogie | SMT-LIB |
 |---|---|---|
 | `Trace` | `trace(e, for Y, Z do x, y, z :: u)` | `(trace (x e) ((y Y) (z Z)) u)` |
+| `Trace`, several accumulators | `trace(e₁, e₂, for Y do x₁, x₂, y :: u₁, u₂)` (Dafny only; the first bound variables are the accumulators, as many as initial values) | not supported |
+| `Component`, `History` | `current(S).1`, `⌊S⌋.1` (Dafny only) | not supported |
 | `Maps` | `maps(for Y yield y :: u)` (Boogie: `map(...)`) | `(map ((y Y)) u)` |
 | `Invs` | `invs(for Y check y :: φ)` (Boogie: `all(...)`) | `(invs ((y Y)) φ)` |
 | update | `case φ₁ => e₁ case φ₂ => e₂` | `(eps (φ₁ e₁) (φ₂ e₂))` |

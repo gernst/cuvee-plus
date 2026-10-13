@@ -115,6 +115,12 @@ or solvers consume.
 
 - **Combinator dependencies** have type `List(T)`, at least one, of equal
   length (`List.len`).
+- **Traces have one or several accumulators** (`Trace(inits, deps, accs,
+  bound, results)`): match the single case with `Trace.single`, build it with
+  `Trace(init, deps, acc, bound, update)`; the components of a trace of
+  several are read by `Component(S, i)` and `History(S, i)` only, never by
+  tuple selectors. Only the Dafny frontend and printer know the syntax of
+  several accumulators yet (`doc/teq.md`).
 - **The simplifier runs only in `-simplify`.** Other transforms never call it
   or its helpers. The engine of `-prove` (package `prove`) copies what it
   needs from `simplify` and never references it; changes to one are not

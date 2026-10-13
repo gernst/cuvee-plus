@@ -431,7 +431,7 @@ object Fallback extends Transform:
     val range = And(Ints.le(Ints.zero, j), Ints.lt(j, len))
 
     rhs match
-      case Trace(init, deps, acc, bound, update) =>
+      case Trace.single(init, deps, acc, bound, update) =>
         val (env_, su) = bind(state, env, out, deps, bound, j)
         val update_ = Subst.from(List(lower(acc)), List(at(head, j)))(su(expr(state, env_, out, update)))
         val init_ = expr(state, env, out, init)

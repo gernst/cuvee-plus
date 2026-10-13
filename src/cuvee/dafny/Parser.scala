@@ -452,6 +452,13 @@ class Parser(var state: State):
         val base_ = state.exprs.is(base, tester.dropRight(1))
         resolve(scope, base_, rest)
 
+      // the component i of the last value of a trace of several accumulators, current(S).i, and of its history, ⌊S⌋.i,
+      // where the type of S is known from its declaration (see core.Component)
+      case Member(index, Nil) :: rest if index.forall(_.isDigit) && component(base).isDefined =>
+        val Some((trace, history)) = component(base): @unchecked
+        val base_ = if history then core.History(trace, index.toInt) else core.Component(trace, index.toInt)
+        resolve(scope, base_, rest)
+
       // members are accessed on variables only, whose type is known without type checking
       case Member(fun, args) :: rest =>
         val self = base match
@@ -471,6 +478,25 @@ class Parser(var state: State):
 
           case _ =>
             Error.raise("invalid access", self, qname, access)
+
+  // the trace of current(S) or butlast(S) if its type has several components, and whether it is the history
+  def component(base: core.Expr): Option[(core.Expr, Boolean)] =
+    def several(trace: core.Expr) =
+      trace.typ match
+        case core.Sort(core.Con.trace, List(elem)) => core.Trace.components(elem).length >= 2
+        case _                                     => false
+    base match
+      case core.Current(trace) if several(trace) => Some((trace, false))
+      case core.Butlast(trace) if several(trace) => Some((trace, true))
+      case _                                     => None
+
+  // the guarded cases of a result, a single case with the guard true is the plain result
+  def update(scope: Scope, update: List[(Expr, Expr)]): core.Expr =
+    update match
+      case List((True, result)) =>
+        resolve(scope, result)
+      case _ =>
+        core.Eps(update.map((guard, result) => core.Upd(resolve(scope, guard), resolve(scope, result))))
 
   // the comparisons that can be chained, with the translated operators
   val chainable = Grammar.chainable.map(op => Grammar.translate.getOrElse(op, op))
@@ -576,29 +602,26 @@ class Parser(var state: State):
         val expr_ = App("not", List(App("in", args)))
         resolve(scope, expr_)
 
-      // the combinators of trace equation systems, whose bound variables are typed by the dependencies
-      case Combinator("trace", Some(init), deps, acc :: bound, update) =>
-        val init_ = resolve(scope, init)
+      // the combinators of trace equation systems, whose bound variables are typed by the dependencies; the first
+      // bound variables of a trace are its accumulators, as many as it has initial values, with one result each
+      case Combinator("trace", inits, deps, ids, updates) =>
+        Error.report("trace without initial value", expr):
+          require(inits.nonEmpty)
+        Error.report("mismatching initial values and results of a trace", expr):
+          require(inits.length == updates.length && ids.length > inits.length)
+        val (accs, bound) = ids.splitAt(inits.length)
+        val inits_ = inits.map(resolve(scope, _))
         val deps_ = deps.map(resolve(scope, _))
-        state.exprs.trace(init_, deps_, acc, bound.map(util.Name(_, None))): (acc_, bound_) =>
-          val scope_ = scope ++ (acc_ :: bound_)
-          update match
-            case List((True, result)) =>
-              resolve(scope_, result)
-            case _ =>
-              core.Eps(update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result))))
+        state.exprs.trace(inits_, deps_, accs.map(util.Name(_, None)), bound.map(util.Name(_, None))): (accs_, bound_) =>
+          val scope_ = scope ++ (accs_ ++ bound_)
+          updates.map(update => this.update(scope_, update))
 
-      case Combinator("maps", None, deps, bound, update) =>
+      case Combinator("maps", Nil, deps, bound, List(update)) =>
         val deps_ = deps.map(resolve(scope, _))
         state.exprs.map(deps_, bound.map(util.Name(_, None))): bound_ =>
-          val scope_ = scope ++ bound_
-          update match
-            case List((True, result)) =>
-              resolve(scope_, result)
-            case _ =>
-              core.Eps(update.map((guard, result) => core.Upd(resolve(scope_, guard), resolve(scope_, result))))
+          this.update(scope ++ bound_, update)
 
-      case Combinator("invs", None, deps, bound, List((_, body))) =>
+      case Combinator("invs", Nil, deps, bound, List(List((_, body)))) =>
         val deps_ = deps.map(resolve(scope, _))
         state.exprs.all(deps_, bound.map(util.Name(_, None))): bound_ =>
           resolve(scope ++ bound_, body)

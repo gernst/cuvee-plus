@@ -349,11 +349,17 @@ case class State(
     // the combinators of trace equation systems, whose bound variables have the types of the elements of the dependencies,
     // and the accumulator that of the initial value; the update or body is resolved with the bound variables
     def trace(init: Expr, deps: List[Expr], acc: Name, bound: List[Name])(update: (Var, List[Var]) => Expr): Trace =
+      trace(List(init), deps, List(acc), bound)((accs, bound) => List(update(accs.head, bound)))
+
+    // several accumulators, one initial value and one result each (see core.Trace)
+    def trace(inits: List[Expr], deps: List[Expr], accs: List[Name], bound: List[Name])(results: (List[Var], List[Var]) => List[Expr]): Trace =
       Error.report("mismatching dependencies and bound variables", deps, bound):
         require(deps.length == bound.length)
-      val acc_ = Var(acc, init.typ)
+      Error.report("mismatching accumulators and initial values", accs, inits):
+        require(accs.length == inits.length)
+      val accs_ = for (x, init) <- accs zip inits yield Var(x, init.typ)
       val bound_ = for (x, dep) <- bound zip deps yield Var(x, Type.elem(dep.typ))
-      Trace(init, deps, acc_, bound_, update(acc_, bound_))
+      Trace(inits, deps, accs_, bound_, results(accs_, bound_))
 
     def map(deps: List[Expr], bound: List[Name])(update: List[Var] => Expr): Maps =
       Error.report("mismatching dependencies and bound variables", deps, bound):

@@ -171,8 +171,10 @@ object Type:
       case App(fun, inst, typ, args)          => App(fun, inst.map(expand(state, _)), expand(state, typ), args.map(expand(state, _)))
       case As(arg, typ)                       => As(expand(state, arg), expand(state, typ))
       case Diff(ys, arg)                      => Diff(expand(state, ys), expand(state, arg))
-      case Trace(init, deps, acc, bound, upd) =>
-        Trace(expand(state, init), deps.map(expand(state, _)), expand(state, acc), expand(state, bound), expand(state, upd))
+      case Trace(inits, deps, accs, bound, results) =>
+        Trace(inits.map(expand(state, _)), deps.map(expand(state, _)), expand(state, accs), expand(state, bound), results.map(expand(state, _)))
+      case Component(trace, i) => Component(expand(state, trace), i)
+      case History(trace, i)   => History(expand(state, trace), i)
       case Maps(deps, bound, upd)             => Maps(deps.map(expand(state, _)), expand(state, bound), expand(state, upd))
       case Invs(deps, bound, body)            => Invs(deps.map(expand(state, _)), expand(state, bound), expand(state, body))
       case Bind(quant, bound, body)           => Bind(quant, expand(state, bound), expand(state, body))
@@ -357,14 +359,35 @@ object Type:
       case Old(arg) =>
         check(state, scope, arg, res, subst, pending)
 
-      // the accumulator starts with the initial value and is updated by the result
-      case Trace(init, deps, acc, bound, update) =>
-        check(state, scope, init, acc.typ, subst, pending)
+      // each accumulator starts with its initial value and is updated by its result
+      case Trace(inits, deps, accs, bound, results) =>
+        Error.report("mismatching accumulators, initial values and results", expr):
+          require(inits.length == accs.length && results.length == accs.length)
+        check(state, scope, inits, accs.types, subst, pending)
         dependencies(state, scope, expr, deps, bound, subst, pending)
-        check(state, scope, update, acc.typ, subst, pending)
+        check(state, scope, results, accs.types, subst, pending)
 
-        Error.report("type mismatch", expr, Sort.trace(acc.typ), res):
-          unify(state, scope, Sort.trace(acc.typ), res, subst)
+        Error.report("type mismatch", expr, expr.typ, res):
+          unify(state, scope, expr.typ, res, subst)
+
+      // the components of a trace, whose type must be known
+      case Component(trace, i) =>
+        val typ = Param("a").fresh
+        check(state, scope, trace, Sort.trace(typ), subst, pending)
+        val components = Trace.components(resolve(subst.value, typ))
+        Error.report("component of a trace that has none", expr, components):
+          require(i < components.length)
+        Error.report("type mismatch", expr, components(i), res):
+          unify(state, scope, components(i), res, subst)
+
+      case History(trace, i) =>
+        val typ = Param("a").fresh
+        check(state, scope, trace, Sort.trace(typ), subst, pending)
+        val components = Trace.components(resolve(subst.value, typ))
+        Error.report("component of a trace that has none", expr, components):
+          require(i < components.length)
+        Error.report("type mismatch", expr, Sort.list(components(i)), res):
+          unify(state, scope, Sort.list(components(i)), res, subst)
 
       case Maps(deps, bound, update) =>
         val typ = update.typ

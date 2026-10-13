@@ -67,10 +67,10 @@ object Canon:
 
   def term(expr: Expr, depth: Int): Expr =
     expr match
-      case Trace(init, deps, acc, bound, update) =>
+      case Trace(inits, deps, accs, bound, results) =>
         val (deps_, bound_) = sorted(deps.map(term(_, depth)), bound)
-        val (re, depth_) = scope(acc :: bound_, depth)
-        Trace(term(init, depth), deps_, re(acc), bound_.map(re(_)), term(re(update), depth_))
+        val (re, depth_) = scope(accs ++ bound_, depth)
+        Trace(inits.map(term(_, depth)), deps_, accs.map(re(_)), bound_.map(re(_)), results.map(r => term(re(r), depth_)))
 
       case Maps(deps, bound, update) =>
         val (deps_, bound_) = sorted(deps.map(term(_, depth)), bound)

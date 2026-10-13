@@ -257,14 +257,26 @@ object Grammar:
   val update: Parser[List[(Expr, Expr)]] =
     P(guarded.+ | list(true_ ~ expr))
 
+  // the results of the accumulators of a trace, separated by commas, each guarded cases or a plain expression
+  val updates: Parser[List[List[(Expr, Expr)]]] =
+    P(update ~* ",")
+
+  val nil_ : Parser[List[Expr]] =
+    R(Nil)
+
+  // the initial values each end with a comma, since a list separated by commas would commit to an expression after
+  // the comma before the keyword for
+  val inits: Parser[List[Expr]] =
+    P((expr ~ ",").+)
+
   val trace_ =
-    Combinator(P(J("trace") ~ "(" ~ some(expr) ~ "," ~ "for" ~ exprs ~ "do" ~ ids ~ "::" ~ update ~ ")"))
+    Combinator(P(J("trace") ~ "(" ~ inits ~ "for" ~ exprs ~ "do" ~ ids ~ "::" ~ updates ~ ")"))
 
   val map_ =
-    Combinator(P(J("maps") ~ none ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "::" ~ update ~ ")"))
+    Combinator(P(J("maps") ~ nil_ ~ "(" ~ "for" ~ exprs ~ "yield" ~ ids ~ "::" ~ list(update) ~ ")"))
 
   val all_ =
-    Combinator(P(J("invs") ~ none ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "::" ~ list(true_ ~ expr) ~ ")"))
+    Combinator(P(J("invs") ~ nil_ ~ "(" ~ "for" ~ exprs ~ "check" ~ ids ~ "::" ~ list(list(true_ ~ expr)) ~ ")"))
 
   val combinator =
     P(trace_ | map_ | all_)

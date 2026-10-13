@@ -24,7 +24,9 @@ sealed trait Expr:
       case As(arg, typ)                       => As(f(arg), typ)
       case Diff(xs, arg)                      => Diff(xs, f(arg))
       case Old(arg)                           => Old(f(arg))
-      case Trace(init, deps, acc, bound, upd) => Trace(f(init), deps.map(f), acc, bound, f(upd))
+      case Trace(inits, deps, accs, bound, results) => Trace(inits.map(f), deps.map(f), accs, bound, results.map(f))
+      case Component(trace, i)                => Component(f(trace), i)
+      case History(trace, i)                  => History(f(trace), i)
       case Maps(deps, bound, upd)             => Maps(deps.map(f), bound, f(upd))
       case Eps(upds)                          => Eps(upds.map(f))
       case Invs(deps, bound, body)            => Invs(deps.map(f), bound, f(body))
@@ -203,9 +205,13 @@ object Old:
         val (bound_, inner) = bind(bound)
         Lam(bound_, inner(body), now(typ))
 
-      case Trace(init, deps, acc, bound, update) =>
-        val (acc_ :: bound_, inner) = bind(acc :: bound): @unchecked
-        Trace(instance(now, before, old, init), deps.map(instance(now, before, old, _)), acc_, bound_, inner(update))
+      case Trace(inits, deps, accs, bound, results) =>
+        val (vars_, inner) = bind(accs ++ bound)
+        val (accs_, bound_) = vars_.splitAt(accs.length)
+        Trace(inits.map(instance(now, before, old, _)), deps.map(instance(now, before, old, _)), accs_, bound_, results.map(inner))
+
+      case Component(trace, i) => Component(instance(now, before, old, trace), i)
+      case History(trace, i)   => History(instance(now, before, old, trace), i)
 
       case Maps(deps, bound, update) =>
         val (bound_, inner) = bind(bound)
@@ -286,15 +292,66 @@ object Eps:
           case _          => List(Upd(cond, rhs))
     yield upd
 
-// trace(init, for deps do acc, bound ↦ update): the trace of the values of the accumulator `acc`,
-// starting from `init`, where each subsequent value is computed by the update from the previous one
-// and the corresponding values of the dependencies, one entry longer than the dependencies
-case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr) extends Expr:
+// trace(inits, for deps do accs, bound ↦ results): the trace of the values of the accumulators `accs`, starting
+// from `inits`, where each subsequent value is computed by the results from the previous ones and the corresponding
+// values of the dependencies, one entry longer than the dependencies; one accumulator for a variable of a loop that
+// depends on no other, several for the variables of a cycle (see ideas/deduction-engine-plan.md, section 1.4), whose
+// values are tuples in the type only (Trace<(T₁, ..., Tₘ)>): no term of tuple type is built, the components are read
+// by Component and History
+case class Trace(inits: List[Expr], deps: List[Expr], accs: List[Var], bound: List[Var], results: List[Expr]) extends Expr:
   override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
-  def params = init.params ++ deps.params ++ (acc :: bound).params ++ update.params
-  def free = init.free ++ deps.free ++ (update.free -- (acc :: bound))
-  def funs = init.funs ++ deps.funs ++ update.funs
-  def typ = Sort.trace(acc.typ)
+  def params = inits.params ++ deps.params ++ (accs ++ bound).params ++ results.params
+  def free = inits.free ++ deps.free ++ (results.free -- (accs ++ bound))
+  def funs = inits.funs ++ deps.funs ++ results.funs
+  def typ = Sort.trace(Trace.elem(accs.types))
+
+object Trace:
+  // a trace of a single accumulator, as in the paper, the common case
+  def apply(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr): Trace =
+    Trace(List(init), deps, List(acc), bound, List(update))
+
+  // the element type of a trace with the given component types: the type itself for one, a tuple type for several
+  def elem(types: List[Type]): Type =
+    types match
+      case List(typ) => typ
+      case _         => Sort(Con(Tuples.name(types.length), types.length), types)
+
+  // the component types of the element type of a trace (see elem)
+  def components(elem: Type): List[Type] =
+    elem match
+      case Sort(Con(name, arity), args) if name == Tuples.name(arity) && arity >= 2 => args
+      case _                                                                     => List(elem)
+
+  // the traces of a single accumulator, which the lemma database and the lowering handle; a trace of several
+  // accumulators does not match
+  object single:
+    def unapply(trace: Trace): Option[(Expr, List[Expr], Var, List[Var], Expr)] =
+      trace match
+        case Trace(List(init), deps, List(acc), bound, List(update)) => Some((init, deps, acc, bound, update))
+        case _                                                       => None
+
+// current(S).i, the component i of the last value of a trace of several accumulators, and ⌊S⌋.i, the history of that
+// component, a list of the ordinary type List<Tᵢ>: the only ways to read a component, such that the tuple type of the
+// trace never appears in a term; typed by the component types of the trace (see Trace.components)
+case class Component(trace: Expr, index: Int) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
+  def params = trace.params
+  def free = trace.free
+  def funs = trace.funs
+  def typ = Component.typ(trace.typ, index)
+
+object Component:
+  def typ(trace: Type, index: Int): Type =
+    trace match
+      case Sort(Con.trace, List(elem)) => Trace.components(elem)(index)
+      case _                           => Error.raise("component of an expression that is not a trace", trace, index)
+
+case class History(trace: Expr, index: Int) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
+  def params = trace.params
+  def free = trace.free
+  def funs = trace.funs
+  def typ = Sort.list(Component.typ(trace.typ, index))
 
 // map(for deps yield bound ↦ update): the list of the results of the update for the values of the dependencies,
 // point-wise, which has the same length as the dependencies

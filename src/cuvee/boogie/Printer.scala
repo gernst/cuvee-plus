@@ -673,8 +673,11 @@ object Printer extends cuvee.pipe.Printer:
         Error.raise("unprintable distinct", expr)
 
       // the combinators of trace equation systems
-      case Trace(init, deps, acc, bound, update) =>
+      case Trace.single(init, deps, acc, bound, update) =>
         combinator(text("trace(") ~ doc(init) ~ text(",") ~ space, deps, "do", acc :: bound, update)
+
+      case _: Trace | _: Component | _: History =>
+        Error.raise("traces with several accumulators not supported in Boogie", expr)
 
       case Maps(deps, bound, update) =>
         combinator(text("map("), deps, "yield", bound, update)

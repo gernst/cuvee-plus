@@ -187,8 +187,8 @@ object Printer extends cuvee.pipe.Printer:
   // where `counters` are the variables bound to the iterations of counters by the enclosing combinators
   def dependencies(expr: Expr, counters: Map[Var, Expr]): List[(Var, Option[Expr])] =
     expr match
-      case Trace(init, deps, _, bound, update) =>
-        dependencies(init, counters) ++ loop(deps, bound, update, counters)
+      case Trace(inits, deps, _, bound, results) =>
+        inits.flatMap(dependencies(_, counters)) ++ results.flatMap(loop(deps, bound, _, counters))
 
       case Maps(deps, bound, update) =>
         loop(deps, bound, update, counters)
@@ -674,8 +674,11 @@ object Printer extends cuvee.pipe.Printer:
 
       // the combinators of trace equation systems, as applications of the functions of teq.lean by the number of
       // their dependencies (trace, trace2, ...) to the dependencies and the update as a function of the bound variables
-      case Trace(init, deps, acc, bound, update) =>
+      case Trace.single(init, deps, acc, bound, update) =>
         combinator("trace", init :: deps, acc :: bound, update)
+
+      case _: Trace | _: Component | _: History =>
+        Error.raise("traces with several accumulators not supported in Lean yet", expr)
 
       case Maps(deps, bound, update) =>
         combinator("maps", deps, bound, update)

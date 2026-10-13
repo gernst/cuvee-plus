@@ -746,6 +746,14 @@ Measured on binary search and on the SV-COMP examples
 - `-prove` simplifies assertions and function definitions only; programs, attributes and derivatives pass
   through unchanged.
 
+## Traces with several accumulators (branch `accumulators`)
+
+- Only the Dafny frontend and printer know traces with several accumulators and the component reads `current(S).i`,
+  `⌊S⌋.i`; the Boogie, SMT-LIB and Lean printers and `-fallback` reject them, the engines of `-simplify` and `-prove`
+  leave them unsimplified. `StateTEQ` still emits the tuple form.
+- The grammar needs each initial value of a trace to end with a comma before `for`, since a comma-separated list
+  commits to a further expression after its separator.
+
 ## Trace equation systems (`-teq`)
 
 - The runs of the Dafny translations of SV-COMP (`Dafny.unreach-call.Unbounded`, 2 min, 2026-10-10 16:13 against

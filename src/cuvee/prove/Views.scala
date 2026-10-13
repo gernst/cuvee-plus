@@ -33,10 +33,10 @@ object Views:
         for
           (constr, i) <- selector(state, sel)
           (tr, e) <- arg match
-            case Current(tr @ ctx.↑(Trace(init, deps, acc, bound, update))) if constructed(constr, update) =>
+            case Current(tr @ ctx.↑(Trace.single(init, deps, acc, bound, update))) if constructed(constr, update) =>
               Some((tr, Current(project(state, sel, typ, constr, i, tr, init, deps, acc, bound, update))))
 
-            case ctx.↑(Earlier(j, Butlast(tr @ ctx.↑(Trace(init, deps, acc, bound, update))))) if constructed(constr, update) =>
+            case ctx.↑(Earlier(j, Butlast(tr @ ctx.↑(Trace.single(init, deps, acc, bound, update))))) if constructed(constr, update) =>
               Some((tr, Earlier(j, Butlast(project(state, sel, typ, constr, i, tr, init, deps, acc, bound, update)))))
 
             case _ =>
@@ -47,7 +47,7 @@ object Views:
         for
           (constr, i) <- selector(state, sel)
           (tr, e) <- deps(bound.indexOf(y)) match
-            case Butlast(tr @ ctx.↑(Trace(init, deps_, acc, bound_, update))) if constructed(constr, update) =>
+            case Butlast(tr @ ctx.↑(Trace.single(init, deps_, acc, bound_, update))) if constructed(constr, update) =>
               Some((tr, Butlast(project(state, sel, typ, constr, i, tr, init, deps_, acc, bound_, update))))
 
             case _ =>

@@ -139,9 +139,15 @@ case class Subst[+T <: Type, +E <: Expr](params: Map[Param, T], vars: Map[Var, E
         Lam(rename(bound), that(body), this(typ))
 
       // the accumulator and the bound variables of the combinators are renamed like those of binders
-      case Trace(init, deps, acc, bound, update) =>
-        val (rename, that) = avoid(acc :: bound)
-        Trace(this(init), this(deps), rename.lhs(acc), rename.lhs(bound), that(update))
+      case Trace(inits, deps, accs, bound, results) =>
+        val (rename, that) = avoid(accs ++ bound)
+        Trace(this(inits), this(deps), rename.lhs(accs), rename.lhs(bound), that(results))
+
+      case Component(trace, i) =>
+        Component(this(trace), i)
+
+      case History(trace, i) =>
+        History(this(trace), i)
 
       case Maps(deps, bound, update) =>
         val (rename, that) = avoid(bound)
