@@ -1,7 +1,5 @@
 function C₁₂(x₀: int): int
 
-function `=₁₄`(x₀: int, x₁: int): bool
-
 goal {:abstract}
   forall a: array<int, int>, c₉: int, i₁₀: int, n₄: int ::
     0 <= n₄
@@ -12,6 +10,6 @@ goal {:abstract}
                 ==> (a[0 + j₁₃ * 1] < 0 ==> C₁₂(j₁₃ + 1) == C₁₂(j₁₃) + 1)
                   && (0 <= a[0 + j₁₃ * 1] ==> C₁₂(j₁₃ + 1) == C₁₂(j₁₃)))
         && c₉ == C₁₂(n₄)
-        && `=₁₄`(i₁₀, n₄)
+        && n₄ == (if 0 <= i₁₀ then i₁₀ else 0)
       ==> c₉ <= i₁₀
 

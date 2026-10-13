@@ -464,7 +464,10 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   A trace `X` of `n` steps has the entries `X(0), ..., X(n)`, `current(X)`
   is `X(n)`, `⌊X⌋` the same function below `n`; `earlier(k, ⌊X⌋)` is
   `X(k)`. Naturals become integers, `natural(x)` is `x` if nonnegative and
-  0 otherwise.
+  0 otherwise; equations and conditionals of naturals are rebuilt over the
+  integers, e.g. the number of iterations `n == natural(i)` of a loop is
+  `n == (if 0 <= i then i else 0)` (before 0.46.7 they were generalized like
+  the other functions of naturals, which lost the relation of `n` and `i`).
 - The length of all dependencies of a combinator is the `n` of its first
   one, `⌊counter(0, 1, n)⌋`, written directly or by an equation
   `K == counter(0, 1, n)` among the hypotheses of the quantifier
@@ -521,12 +524,6 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   definition are replaced by fresh functions without definition,
   which generalizes the goal: a model of the solver need not be a
   counterexample.
-- Equations between naturals are generalized the same way, since `=` applied
-  to naturals is a function of the sorts of trace equation systems: the
-  number of iterations `n₈ == natural(i₁₇)` of a loop becomes `` `=`(i₁₇, n₈) ``,
-  a fresh predicate without definition, which loses the relation of `n` and
-  `i` (examples/dafny/teq/fallback_count.out, fallback_accumulators.out; see
-  TODO.md).
 - The declarations and lemmas of the lemma database and lemmas over traces, lists,
   and naturals are dropped.
 - Tests: [fallback.dfy](../examples/dafny/teq/fallback.dfy),

@@ -704,6 +704,14 @@ object Fallback extends Transform:
         val body_ = su(expr(state, env_, out, body, polarity))
         All(List(j), Imp(And(Ints.le(Ints.zero, j), Ints.lt(j, len)), body_))
 
+      // equations and conditionals of naturals are those of their values as integers, rebuilt such that their type
+      // instances are Int, e.g. n == natural(i) of the number of iterations of a loop
+      case Eq(left, right) if left.typ == Sort.nat =>
+        Eq(expr(state, env, out, left), expr(state, env, out, right))
+
+      case Ite(test, left, right) if left.typ == Sort.nat =>
+        Ite(expr(state, env, out, test), expr(state, env, out, left), expr(state, env, out, right))
+
       // recursive definitions of teq.dfy over lists and naturals are unfolded once per position (see recursion),
       // equations and other functions of traces, lists, and naturals are generalized
       case app @ App(fun, _, typ, args) if isTeq(state, fun) || (typ :: args.types).exists(_.cons.exists(sorts.contains)) =>

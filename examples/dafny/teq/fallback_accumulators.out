@@ -2,8 +2,6 @@ function S_0₂₇₆(x₀: int): int
 
 function S_1₂₇₆(x₀: int): int
 
-function `=₂₇₉`(x₀: int, x₁: int): bool
-
 goal {:abstract}
   forall a₁₅: int, i₁₇: int, n₈: int ::
     0 <= n₈
@@ -16,6 +14,6 @@ goal {:abstract}
               0 <= j₂₇₈ < n₈
                 ==> S_1₂₇₆(j₂₇₈ + 1) == S_0₂₇₆(j₂₇₈) + S_1₂₇₆(j₂₇₈))
         && a₁₅ == S_0₂₇₆(n₈)
-        && `=₂₇₉`(i₁₇, n₈)
+        && n₈ == (if 0 <= i₁₇ then i₁₇ else 0)
       ==> 0 <= a₁₅
 

@@ -48,8 +48,6 @@
 
 (declare-fun B$23 (Int) Int)
 
-(declare-fun =$26 (Int) Bool)
-
 (goal
   (!
     (forall
@@ -65,7 +63,7 @@
                 (and (<= 0 j$25) (< j$25 n$11))
                 (= (B$23 (+ j$25 1)) 6)))
             (= b$16 (B$23 n$11))
-            (=$26 n$11))
+            (= n$11 (ite (<= 0 6) 6 0)))
           (= b$16 6))))
     :abstract))
 

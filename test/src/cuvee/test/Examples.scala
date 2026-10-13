@@ -69,15 +69,14 @@ object Examples:
   // i.e., -hybrid, and the declarations of teq.dfy without its transform for -teq (-known teq), e.g. for inputs that
   // use its types Nat and List
   // and the modules of the lemma database that it includes (-include teq:<concept>), whose declarations its output
-  // may refer to
+  // may refer to, and the features it declares known (-known teq), e.g. the syntax examples of traces
   def options(file: os.Path): List[String] =
     val args = cuvee.test.Expected.command(workspace.toNIO, file.toNIO).getOrElse(Nil)
-    val modules = args.zip(args.drop(1)).collect { case ("-include", module) if module.startsWith("teq:") => List("-include", module) }
-    args.flatMap {
-      case "-hybrid" => List("-hybrid")
-      case "-teq"    => List("-known", "teq")
-      case _         => Nil
-    } ++ modules.flatten
+    val pairs = args.zip(args.drop(1))
+    val modules = pairs.collect { case ("-include", module) if module.startsWith("teq:") => List("-include", module) }
+    val known = pairs.collect { case ("-known", feature) => List("-known", feature) }
+    val teq = if args.contains("-teq") && !known.contains(List("-known", "teq")) then List("-known", "teq") else Nil
+    args.filter(_ == "-hybrid") ++ teq ++ known.flatten ++ modules.flatten
 
   // whether the goals of an example hold, as stated in its second line, after its command line,
   // as a comment of its language: "// expected: valid" or "; expected: invalid"

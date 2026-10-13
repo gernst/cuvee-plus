@@ -782,9 +782,6 @@ Measured on binary search and on the SV-COMP examples
   against cycles as a whole (the bisection of examples/dafny/state).
 - `-fallback` on lists of traces of several accumulators (an inner loop with a cycle) is implemented (one length
   function for all components) but has no test yet.
-- `-fallback` generalizes equations of naturals, e.g. `n == natural(i)` of the number of iterations, by a fresh
-  function `=(i, n)` instead of lowering them to integers (examples/dafny/teq/fallback_count.out,
-  fallback_accumulators.out), which loses the relation of `n` and `i`.
 - The grammars of Dafny and Boogie need each initial value of a trace to end with a comma before `for`, since a
   comma-separated list commits to a further expression after its separator.
 - The round trips of `CUVEE_PRINTING` fail on four examples (Oct 13, 2026): `smtlib.Programs` on
