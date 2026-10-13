@@ -256,6 +256,15 @@ Step 2: the instantiation of an `invs` over `⌊counter(0, 1, n)⌋` at an index
 since the body brings new terms). Retires the definitional atoms, the lsearch pair, the `above_iterations_def`
 interference, the cut of bsearch.
 
+Step 3 (Oct 13, 2026, after the binary search with sortedness): fire the forward lemmas on traces where a trace is
+defined (`S == trace(...)`, once per component), not at every read of `⌊S⌋.i` or `current(S).i`, and memoize the
+firing per lemma and canonical term with its relevant facts. The general firing at every occurrence matches a
+trace pattern through a view in every sibling context (quadratic in the conjuncts of a premise, and again in every
+update), and the check whether an instance is known comes only after the match. A fixpoint of the firing over the
+terms of the assumed facts (an instance enabling another at the same term) was tried for the sorted search and
+works, but costs; it is dropped once O makes it unnecessary. Firing when an atom is decided and in the contexts of
+updates stays out: arithmetic facts belong in the theory (N), domain facts are assumed where the traversal assumes.
+
 ### K. Exit splitting (`Simplify.or`)
 **State:** open.
 The negated exit of a loop, marked by `TEQ`, distributed over the other disjuncts when a rule on their atoms
@@ -268,6 +277,40 @@ to classes, extraction by size, a node budget; tested alone on arithmetic and un
 as nested e-graphs per combinator body; integration last as `-saturate`. With the joint trace, a loop is one
 combinator and one nested e-graph, which is the case e-graphs with binders handle best. Decides whether rule
 order still costs proofs after C to H; if the harness shows none, L stays a library. Two weeks for the library.
+
+### N. Integer division by constants in the linear arithmetic (`Linear.add`)
+**State:** done (Oct 13, 2026); `quot` (C's truncating division, `half_2` of SV-COMP) open: the same bounds for
+`0 <= t`, a split by the sign otherwise.
+`t div c` for a positive literal `c` is an opaque atom of the polynomials; whenever a constraint mentions one, the
+two constraints `c * (t div c) <= t` and `t <= c * (t div c) + c - 1` are added once. A denied atom goes through the
+same addition, so decisions get them as well. Decides the facts of the midpoint (`l <= (h + l) / 2` for `l <= h`,
+`(h + l) / 2 < h` for `l < h`, `0 <= (h + l) / 2` for `0 <= l < h`), which retires `lemma_4` and `lemma_5` of the
+binary search and about half the rewrite steps of the sorted search. Half a day.
+
+### O. Lemmas over whole cycles: the bisection
+**State:** planned (Oct 13, 2026); the matcher's part is that of S6.
+The sorted binary search (`sorted(a, n)`, the array, its bound and the key as parameters) closes with the
+per-component route of `incs` and `decs`, but in two layers: the reads of the array become comparisons with the
+partition points `lower(a, n, x)` and `upper(a, n, x)` only for `0 <= mid < n`, which needs `0 <= lo` and `hi <= n` in
+the update, i.e. the monotonicity of each component as an `invs` over its history (forward lemmas whose trigger is the
+history, matched through the view), and only then do the bounded abstractions match. 48 s and 1,400 steps against 7 s
+for the version with constants. The invariant is a joint one, `l0 <= lo <= P`, `Q <= hi <= h0`, and belongs in one
+lemma over the trace of both accumulators, with higher-order guards and a quantified side condition decided once the
+guards are instantiated (as `perm_steps`):
+
+```
+trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
+        case G((lo + hi) / 2) => (lo + hi) / 2 + 1, hi
+        case H((lo + hi) / 2) => lo, (lo + hi) / 2)
+requires l0 <= h0
+requires forall j :: l0 <= j < h0 ==> (G(j) <==> j < P) && (H(j) <==> Q <= j)
+gives l0 <= current(...).0 <= P, Q <= current(...).1 <= h0
+```
+
+The side condition is decided by the sortedness lemmas within the range of its premise, with no monotone layer, no
+fixpoint and no forward lemma on views. How `P` and `Q` are bound (matched against `lower`, `upper` in the guards, or
+named by the lemma) is to be settled when it is written. Needs patterns with several accumulators in the matcher
+(S6), of which this is the first test.
 
 ### M. Diagnostics (`-probe`, budgets, timeouts)
 **State:** partly done: `-debug conditions`, `-debug match` (uncovered cases, failing guards, trace patterns that fail), `-debug views`; `-probe` and budgets open.
@@ -287,6 +330,9 @@ J forward facts (after S5, finishes binary search)     E the pin, K exit splitti
 H equalities from the simplex into the classes: when an example needs it
 L e-graph library: after S7, integrated last
 ```
+
+Order after the sorted binary search (Oct 13, 2026): N (division), then O (the bisection over the cycle, with S6's
+patterns of several accumulators, the sorted search as its test), then step 3 of J (firing at definitions, memo).
 
 Order (revised Oct 13, night, S5 and S7 done for the core, Dafny and `-prove`): J, forward facts, with the exit of the
 binary search as its test; then S6, the merge and the sorts in the partitioned form, which brings lemmas over whole

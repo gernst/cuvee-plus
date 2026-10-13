@@ -142,7 +142,8 @@ short:
    `invs` instances on the same triggers.
 2a. The binary search as a third example of the note in `doc/state-traces` (the cycle of `lo` and `hi`, the views
    matched by `incs`/`decs`, the bounds as forward facts).
-2b. The full binary search: sortedness as a predicate (`sorted(a, n)`, a quantified hypothesis) in place of the
+2b. (done, interim, Oct 13: `bsearch_sorted.dfy`, in two layers, 45 s; the bisection over the cycle, package O, next)
+   The full binary search: sortedness as a predicate (`sorted(a, n)`, a quantified hypothesis) in place of the
    partition points p and q of the interim example, which are stronger than sortedness and turn the reads of the array
    into index comparisons by ground rules; the bounds of lo and hi then have to come from the monotonicity of the array.
 3. S6: the merge and the sorts in the partitioned form; lemmas over whole cycles (patterns with several accumulators)
@@ -288,3 +289,16 @@ scripts/prove/slow.sh       # on request or before a commit: the transpose, the 
   `incs_`/`decs_` workaround removed): 16 instances each, 7 s as before, no goal. Quick check unchanged (24 s).
   Not done: firing at the decision of an atom (the denied conclusion covers the examples), the memo of matches per
   trigger and canonical term (not needed so far), the static check of new terms (needed only for step 2).
+- **Oct 13, 2026, night: the binary search over a sorted array, and N.** `bsearch_sorted.dfy`: `sorted(a, n)` and
+  the partition points `lower`, `upper` as functions with rules on the reads within `a[0..n)`; the range of the
+  midpoint in the update needs `0 <= lo` and `hi <= n` there, which forward lemmas on monotone traces give as `invs`
+  over the histories (`up_1`, `down_1`, trigger the history `⌊S⌋.i`, matched through its view); then `incs` and `decs`
+  match with the partition points as bounds. Engine: `Forward.terms` descends into the dependencies of combinators,
+  the trigger is a term rather than a formula among equals, the firing repeats at the same terms while instances are
+  added (the bounded abstractions match only after the invariants), instances checked by their conjuncts (the
+  conjunctive conclusions were never known and looped); the views keep the facts over the variables of the view and
+  of their definitions only (364 misses to 199, 68 s to 48 s); the `-debug` lines no longer print `self` pairs as
+  equations (a type mismatch). N: division by a positive literal bounded in `Linear.add`, which retires the midpoint
+  lemmas (`lemma_4`, `lemma_5` of bsearch.dfy) and brings the sorted search under the step budget (about 450 of
+  1000 steps, 46 s). The two layers are the cost: the invariant is a joint one, hence O (a bisection lemma over the
+  cycle) next, then step 3 of J (firing at definitions with a memo), which replaces the repeated firing.

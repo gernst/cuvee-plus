@@ -771,7 +771,7 @@ object Rewrite:
             // -debug conditions reports the closed conditions that fail, the first diagnostics of a match that does not
             // go through (see ideas/deduction-engine-plan.md, package M)
             Debug.info("conditions", "not decided: " + Simplify.show(config.output.printer, instance) + " (from " + Simplify.show(config.output.printer, phi) + ")")
-            Debug.info("conditions", "  self " + ctx.self.map((t, v) => Simplify.show(config.output.printer, Eq(t, v))).mkString(", ") + ", facts on its variables: " + ctx.known.filter(fact => fact.free.intersect(instance.free).nonEmpty).map(Simplify.show(config.output.printer, _)).mkString(" | "))
+            Debug.info("conditions", "  self " + ctx.self.map((t, v) => Simplify.show(config.output.printer, t) + " ~ " + Simplify.show(config.output.printer, v)).mkString(", ") + ", facts on its variables: " + ctx.known.filter(fact => fact.free.intersect(instance.free).nonEmpty).map(Simplify.show(config.output.printer, _)).mkString(" | "))
             unmatched
         else
           for

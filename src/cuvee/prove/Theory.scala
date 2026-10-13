@@ -108,10 +108,24 @@ case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], sol
     then add(ring, Constraint.le(Arith.toPoly(ring, left) + Poly.one, Arith.toPoly(ring, right)))
     else add(ring, Constraint.lt(Arith.toPoly(ring, left), Arith.toPoly(ring, right)))
 
-  // on Int, the coefficients are rounded, which is exact for integers (Poly.floor)
+  // on Int, the coefficients are rounded, which is exact for integers (Poly.floor); an atom t div k for a positive
+  // literal k brings its bounds k * (t div k) <= t <= k * (t div k) + k - 1 (with t div k rounding down, as in the
+  // binary search's midpoint, l <= (h + l) / 2 < h for l < h), added once with the first constraint that mentions it,
+  // so a denied atom gets them as well; t is smaller than the atom, so its own divisions terminate
   def add(ring: Ring, c: Constraint): Linear =
     val c_ = if ring == Ints.ring then Constraint(c.poly.floor, c.strict) else c
-    if constraints.contains(c_) then this else copy(constraints = c_ :: constraints)
+    if constraints.contains(c_)
+    then this
+    else
+      val divisions =
+        for
+          mono <- c_.poly.monos
+          case (atom @ Ints.div(t, Ints.ring.num(k: BigInt)), _) <- mono.atoms
+          if ring == Ints.ring && k > 0
+        yield (Arith.toPoly(ring, t), Poly.atom(atom) * Rational(k), Rational(k - 1))
+      divisions.distinct.foldLeft(copy(constraints = c_ :: constraints)) { case (linear, (t, d, offset)) =>
+        linear.add(ring, Constraint.le(d, t)).add(ring, Constraint.le(t, d + Poly.const(offset)))
+      }
 
   // the first solution of a linear equation for a variable that is not solved yet, if it is an arithmetic
   // expression (see Poly.solution); equations with a variable or a literal are classes (see Classes)

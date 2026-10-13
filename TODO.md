@@ -790,7 +790,8 @@ Measured on binary search and on the SV-COMP examples
   which lemmas of the database should be `{:fw}` rather than `{:rw}` is open.
 - The simplifier evaluates integer division on literals and divides by
   literals on Real, but knows no bounds of division, e.g. `l <= (h + l) / 2`
-  for `l <= h` is a lemma in bsearch.dfy, nor cancels factors,
+  for `l <= h` is a lemma in teq/bsearch.dfy (`-prove` bounds `t div k` in its
+  linear arithmetic, not yet `quot` of C, see [doc/prove.md](doc/prove.md)), nor cancels factors,
   e.g. `2 * n / 2` (see
   [mlceu2.dfy](benchmarks/sv-comp/dafny/array-tiling/mlceu2.dfy),
   [array_of_struct_ptr_monotonic.dfy](benchmarks/sv-comp/dafny/array-industry-pattern/array_of_struct_ptr_monotonic.dfy)).

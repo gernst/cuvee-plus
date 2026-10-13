@@ -17,14 +17,6 @@ lemma {:rw} lemma_2(m: int)
 lemma {:rw} lemma_3(m: int)
   ensures a[m] == x <==> p <= m < q
 
-lemma {:rw} lemma_4(l: int, h: int)
-  requires l <= h
-  ensures l <= (h + l) / 2 <==> true
-
-lemma {:rw} lemma_5(l: int, h: int)
-  requires l < h
-  ensures (h + l) / 2 < h <==> true
-
 function incs<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
                  D: (int, a) -> bool, C: (int, a) -> bool,
                  F: (int, a) -> int): Trace<int>

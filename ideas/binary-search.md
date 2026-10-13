@@ -1,5 +1,12 @@
 # Binary search with `-teq -simplify`
 
+Status (Oct 13, 2026): in the state form under `-prove`, both versions close:
+[state/bsearch.dfy](../examples/dafny/state/bsearch.dfy) with partition points (no cut, the bounds as forward facts,
+the midpoint by the bounds of division in the arithmetic) and
+[state/bsearch_sorted.dfy](../examples/dafny/state/bsearch_sorted.dfy) over a sorted array, the array, its bound and
+the key as parameters (see ideas/deduction-engine-plan.md, packages N and O). The rest of this note is about
+`-teq -simplify`.
+
 Status (Oct 12, 2026). [bsearch.dfy](../examples/dafny/teq/bsearch.dfy) with partition points is verified
 given a cut after the loop (last section). The variant with the precondition `sorted(a, 0, n)` instead of
 partition points is [lower_bound.dfy](../examples/dafny/algorithms/lower_bound.dfy), open: a summary lemma that

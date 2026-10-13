@@ -20,4 +20,8 @@ prints its summary lemma).
 
 Interim (to be removed from the tests later): `bsearch.dfy`, the binary search of examples/dafny/teq in the state form
 with partition points in place of sortedness, which closes with the bounds of the `incs`/`decs` abstractions as
-forward facts (`{:fw}`), see ideas/deduction-engine-implementation.md.
+forward facts (`{:fw}`), see ideas/deduction-engine-implementation.md; the midpoint is bounded by the linear arithmetic.
+`bsearch_sorted.dfy`, the same search over a sorted array with the array, its bound and the key as parameters: the
+reads of the array become comparisons with the partition points `lower(a, n, x)`, `upper(a, n, x)` within `a[0..n)`,
+which needs `0 <= lo` and `hi <= n` in the update, from the monotonicity of each component as forward invariants over
+its history; about 45 s, interim until the bisection lemma over the cycle (package O of the plan).

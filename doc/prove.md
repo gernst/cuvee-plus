@@ -28,7 +28,10 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   strict bounds by an infinitesimal, Bland's rule, built per check from the constraints of the context (memoized per
   context, since `Linear.inconsistent` is lazy). On `Int`, a strict comparison is the non-strict one offset by 1 and the
   coefficients are rounded (`Poly.floor`), so `2 * x < 7` bounds `x` by 3; products of atoms are variables of their
-  own. Disequations are refuted when the constraints determine the difference. The solutions of linear equations for
+  own. An atom `t div k` for a positive literal `k` brings its bounds `k * (t div k) <= t <= k * (t div k) + k - 1`,
+  added with the first constraint that mentions it (also when an atom is denied), so the midpoint of a binary search
+  lies in its interval, `l <= (h + l) / 2 < h` for `l < h`, without lemmas. Disequations are refuted when the
+  constraints determine the difference. The solutions of linear equations for
   a variable (`x` by `40 - n`) are recorded as `solved` and inlined into polynomials, as the chains did.
 - **Closed side conditions are looked up** before they are decided (`Rewrite.known`): a closed instance that is
   congruent to a fact modulo the classes holds; an instance with binders, e.g. an `invs`, holds if its canonical form
@@ -45,8 +48,9 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   loop by its value). The `self` of a context, a list of pairs, maps `⌊X⌋`, the histories `⌊S⌋.j` and the history of
   the own component of a projection to their accumulators (`Views.selfOf`, `Views.relation`, by position), so that the
   invariants over the histories bound the accumulators (`Simplify.invariants`). A view is simplified under the facts of
-  its position that mention a variable of the view (`Context.restricted`) and memoized by exactly those facts, so that
-  positions that differ in other facts, e.g. the sibling conjuncts of the goal, share it soundly; `-debug views`
+  its position over the variables of the view and of their definitions only (`Context.restricted`), and memoized by
+  exactly those facts, so that positions that differ in other facts, e.g. the sibling conjuncts of the goal or a fact
+  `lower(a, n, x) <= k` that mentions a parameter of the view, share it soundly; `-debug views`
   reports the misses. The views are memoized by the marker, the bound variables and the
   classes, not by the full context: a view computed under weaker facts is reused.
 - **Canonical forms** ([`Canon`](../src/cuvee/prove/Canon.scala)): `Canon.term` renames the variables bound inside
@@ -63,12 +67,16 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   not also `{:rw}`) is a fact that is assumed wherever a term that matches its trigger occurs in a fact the traversal
   assumes (the premise of an implication, the denied conclusion, the siblings of a conjunct or disjunct). The trigger
   is the term of `φ` below its boolean, comparison and arithmetic structure with the most variables of the lemma
-  (those of `C` only are matched against the facts, as for rules). The trigger is matched like the left-hand side of
+  (those of `C` only are matched against the facts, as for rules), a term rather than a formula among equals; the
+  terms include the dependencies of combinators, outside their binders, so a lemma
+  `ensures invs(for ⌊trace(x0, ...)⌋ check w :: x0 <= w)` fires at a history `⌊S⌋.0` and states the invariant over it. The trigger is matched like the left-hand side of
   a rule, through definitions and views, so `current(incs(x0, b, ...)) <= b` fires at `current(S).0`, and the
   instance names the term as it occurs, `current(S).0 <= p`, so the fact reaches the classes and the linear
-  constraints of the goal's term. The instances are assumed by `Context.assume`, which fires nothing (generation 1,
-  so it terminates); no lemma fires while a trigger is matched; an instance already known is skipped, so firing
-  again after classes merge changes nothing. `-debug forward` prints the instances.
+  constraints of the goal's term. The instances are assumed by `Context.assume`, which fires nothing (generation 1);
+  the triggers are tried again at the same terms as long as instances are added, since one instance may enable
+  another (the invariant `0 <= lo` over `⌊S⌋.0` lets the guards of the view of `current(S).0` be rewritten, so its
+  bound matches); this terminates, as the terms are fixed and an instance whose conjuncts are all known is skipped;
+  no lemma fires while a trigger is matched. `-debug forward` prints the instances.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.
@@ -97,6 +105,8 @@ with their exit status, time and remaining goals, as the baseline for the work o
 Oct 13, 2026: the eleven examples of [examples/dafny/state](../examples/dafny/state) check under `-teq-state -prove`
 with the module `state.dfy` alone (single loops, the swap of two arrays, five nested loops without fragment lemmas,
 the transpose with one summary lemma, the syntax example), 1.5 to 3 s; the binary search closes with its bounds as
-forward facts (7 s, no cut). Open: the instances of `invs` by triggers (step 2 of J), lemmas over whole cycles in the matcher, the merge and the
+forward facts (7 s, no cut), and over a sorted array (`bsearch_sorted.dfy`, the array, its bound and the key as
+  parameters) with the reads of the array as comparisons with partition points and the monotonicity of `lo` and `hi`
+  as forward invariants (about 45 s; a lemma over the whole cycle is planned, package O of the plan). Open: the instances of `invs` by triggers (step 2 of J), lemmas over whole cycles in the matcher, the merge and the
 sorts, the other frontends and the fallback for traces of several accumulators; see
 [ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md) and [TODO.md](../TODO.md).

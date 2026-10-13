@@ -22,23 +22,17 @@ const q: int
 // x < a[mid] become mid < p and q <= mid, and a[k] == x of the postcondition becomes p <= k < q
 lemma {:rw} lemma_1(m: int)
   ensures (a[m] < x) <==> m < p
+
 lemma {:rw} lemma_2(m: int)
   ensures (x < a[m]) <==> q <= m
+
 lemma {:rw} lemma_3(m: int)
   ensures (a[m] == x) <==> p <= m && m < q
 
-// the midpoint lies in the interval, for division that rounds down, which the engine does not know otherwise:
-// the increase lo < (hi + lo) / 2 + 1 and the decrease (hi + lo) / 2 < hi
-lemma {:rw} lemma_4(l: int, h: int)
-  requires l <= h
-  ensures (l <= (h + l) / 2) <==> true
-lemma {:rw} lemma_5(l: int, h: int)
-  requires l < h
-  ensures ((h + l) / 2 < h) <==> true
-
 // a value that increases monotonically up to a bound b: in each iteration, it either keeps its value, case C, or
 // increases to F(x, h) under the guard D(x, h) && x < F(x, h) <= b, where D is bound to the whole guard, b by matching
-// F(x, h) <= b against a conjunct of the guard, and the increase must follow from the guard; polymorphic in the other
+// F(x, h) <= b against a conjunct of the guard, and the increase must follow from the guard (the midpoint by the
+// bounds of division in the linear arithmetic, l <= (h + l) / 2 < h for l < h); polymorphic in the other
 // dependency, the history of the other component
 function incs<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
               D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int): Trace<int>

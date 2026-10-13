@@ -46,7 +46,8 @@ object Forward:
         val candidates = terms(phi).filter(t => (needed -- t.free).subsetOf(cond.free))
         Error.report("forward lemma without a term that binds its variables", phi):
           require(candidates.nonEmpty)
-        val trigger = candidates.maxBy(t => (t.free intersect vars).size)
+        // a term rather than a formula among those with the most variables, e.g. ⌊T⌋ rather than invs(for ⌊T⌋ ...)
+        val trigger = candidates.maxBy(t => ((t.free intersect vars).size, t.typ != Sort.bool))
         Forward(params, vars, trigger, phi, cond, Attrs.empty)
 
   // the boolean, comparison, and arithmetic structure of a formula, below which its terms are found
@@ -61,6 +62,14 @@ object Forward:
           Nil
         case App(fun, _, _, args) if structure.contains(fun.name.name) =>
           args.flatMap(collect)
+        // the dependencies of a combinator are outside its binder, e.g. the histories ⌊S⌋.0 of an invs, at which the
+        // facts about the values of a trace are stated (the monotone bounds of the binary search)
+        case Trace(inits, deps, _, _, _) =>
+          expr :: (inits ++ deps).flatMap(collect)
+        case Maps(deps, _, _) =>
+          expr :: deps.flatMap(collect)
+        case Invs(deps, _, _) =>
+          expr :: deps.flatMap(collect)
         case _ if Canon.binds(expr) && !expr.isInstanceOf[App] =>
           List(expr)
         case _ =>
@@ -87,28 +96,38 @@ object Forward:
       phi
 
   // the facts `pos` and `neg` assumed in `ctx` (see Context.assume), and the instances of the forward lemmas at their
-  // terms; the instances are assumed by Context.assume, which fires no triggers, so they never fire again (generation
-  // 1, which terminates), and while the triggers are matched and their conditions decided, no forward lemma fires
-  // (the context of fire has none); an instance that is known already is skipped, so firing again after classes
-  // merge changes nothing
+  // terms; the instances are assumed by Context.assume, which fires no triggers, so their own terms never fire
+  // (generation 1); the triggers are tried again at the terms of `pos` and `neg` as long as instances are added, since
+  // an instance may enable another one at the same term, e.g. the invariant 0 <= lo over the history ⌊S⌋.0 lets the
+  // guards of the view of current(S).0 be rewritten such that its bound matches (the binary search with sortedness);
+  // this terminates, as the terms are fixed and an instance that is known already is skipped, so firing again after
+  // classes merge changes nothing; while the triggers are matched and their conditions decided, no forward lemma fires
+  // (the context of fire has none)
   def assume(config: Config, state: State, ctx: Context, pos: List[Expr], neg: List[Expr]): Context =
     val ctx_ = ctx.assume(pos, neg)
     if ctx.forward.isEmpty || ctx_.inconsistent
     then ctx_
-    else
-      val inner = ctx_.copy(forward = Nil)
-      val facts =
-        for
-          term <- (pos ++ neg).flatMap(terms).distinct
-          fw <- ctx.forward
-          phi <- fire(config, state, inner, fw, term)
-        yield (fw, phi)
-      // the instances assumed count as applications of their lemma, for -rules (see Context.applied)
-      facts.distinct.foldLeft(ctx_) { case (ctx, (fw, phi)) =>
-        if Rewrite.known(ctx, ctx.known, phi) || ctx.implied(phi)
-        then ctx
-        else
-          for name <- fw.name
-          do ctx.applied := ctx.applied.value.updated(name, ctx.applied.value.getOrElse(name, 0) + 1)
-          ctx.assume(List(phi), Nil)
-      }
+    else saturate(config, state, ctx_, (pos ++ neg).flatMap(terms).distinct, ctx.forward)
+
+  def saturate(config: Config, state: State, ctx: Context, terms: List[Expr], forward: List[Forward]): Context =
+    val inner = ctx.copy(forward = Nil)
+    val facts =
+      for
+        term <- terms
+        fw <- forward
+        phi <- fire(config, state, inner, fw, term)
+      yield (fw, phi)
+    // the instances assumed count as applications of their lemma, for -rules (see Context.applied)
+    // a conclusion is checked by its conjuncts, which is how the context records it
+    val (ctx_, added) = facts.distinct.foldLeft((ctx, false)) { case ((ctx, added), (fw, phi)) =>
+      val fresh = And.flatten(phi).filterNot(psi => Rewrite.known(ctx, ctx.known, psi) || ctx.implied(psi))
+      if fresh.isEmpty
+      then (ctx, added)
+      else
+        for name <- fw.name
+        do ctx.applied := ctx.applied.value.updated(name, ctx.applied.value.getOrElse(name, 0) + 1)
+        (ctx.assume(fresh, Nil), true)
+    }
+    if added && !ctx_.inconsistent
+    then saturate(config, state, ctx_, terms, forward)
+    else ctx_

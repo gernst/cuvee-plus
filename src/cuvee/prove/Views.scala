@@ -80,8 +80,8 @@ object Views:
       key = this.key(tr, i)
       if !ctx.projecting(key)
     yield
-      val relevant = e.free
-      def keep(phi: Expr) = phi.free.intersect(relevant).nonEmpty
+      val relevant = e.free ++ e.free.flatMap(x => ctx.defs(x).flatMap(_.free))
+      def keep(phi: Expr) = phi.free.nonEmpty && phi.free.subsetOf(relevant)
       val re = Canon.renaming(ctx.bound)
       val memo = (re(expr), Canon.key(ctx, re, keep))
       ctx.views.value.get(memo) match
@@ -90,6 +90,7 @@ object Views:
 
         case None =>
           Debug.info("views", "miss " + Simplify.show(config.output.printer, memo._1) + " with " + memo._2._2.size + " assumptions, " + memo._2._3.size + " conclusions")
+          Debug.info("views", "  self " + memo._2._1.map((a, b) => Simplify.show(config.output.printer, a) + " ~ " + Simplify.show(config.output.printer, b)).mkString(", ") + " facts " + memo._2._2.map(Simplify.show(config.output.printer, _)).toList.sorted.mkString(" | "))
           val e_ = Simplify.simplify(config, state, ctx.restricted(keep).neutral.copy(active = key :: ctx.active), e)
           Debug.step("rewrite", "view " + Simplify.show(config.output.printer, expr), Simplify.show(config.output.printer, e_))
           ctx.views := ctx.views.value + (memo -> re(e_))
