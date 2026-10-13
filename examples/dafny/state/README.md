@@ -18,7 +18,7 @@ prints its summary lemma).
 `accumulators.dfy` shows the syntax of traces with several accumulators (`trace(e₁, e₂, for ... do x₁, x₂, k :: u₁, u₂)`,
 `current(S).i`, `⌊S⌋.i`, see doc/teq.md), parsed, type-checked and printed.
 
-Interim (to be removed from the tests later): `bsearch.dfy`, the binary search of examples/dafny/teq in the state form
+Kept as regression tests: `bsearch.dfy`, the binary search of examples/dafny/teq in the state form
 with partition points in place of sortedness, which closes with the bounds of the `incs`/`decs` abstractions as
 forward facts (`{:fw}`), see ideas/deduction-engine-implementation.md; the midpoint is bounded by the linear arithmetic.
 `bsearch_sorted.dfy`, the same search over a sorted array with the array, its bound and the key as parameters: the

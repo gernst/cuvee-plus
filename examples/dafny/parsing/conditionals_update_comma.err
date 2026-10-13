@@ -1,3 +1,2 @@
-error "parse error"
-  "List(cmd, fundef, inner, atom, combinator, trace_, ')')"
-  ", if 0 <= j then s + 1 ) ... "
+error "mismatching initial values and results of a trace"
+  "Combinator(trace,List(Inner(Num(0),List())),List(Inner(App(J,List()),List())),List(s, j),List(List((App(true,List()),Inner(Ite(App(<,List(Inner(App(j,List()),List()), Inner(Num(0),List()))),Inner(App(s,List()),List()),App(true,List())),List()))), List((App(true,List()),Inner(Ite(App(<=,List(Inner(Num(0),List()), Inner(App(j,List()),List()))),App(+,List(Inner(App(s,List()),List()), Inner(Num(1),List()))),App(true,List())),List())))))"
