@@ -83,3 +83,10 @@ lemma {:rw} {:teq} current_trace_conditional_store_deps(a0: array<int, int>, n: 
 lemma {:rw} {:teq} current_trace_cap(a0: array<int, int>, n: Nat, j: int, b: int, hs: List<int>)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case a[k] < b => a case b <= a[k] => a[k := b]))[j]
     == if 0 <= j < integer(n) && b <= a0[j] then b else a0[j]
+
+// a store of the old value of a cell after a store at another position changes nothing, e.g. volArray[2 k + 1] =
+// volArray[2 k + 1] after volArray[2 k] = c
+// (from mbpr2)
+lemma {:rw} {:teq} store_select_other(a: array<int, int>, i: int, j: int, v: int)
+  requires i != j
+  ensures a[i := v][j := a[j]] == a[i := v]

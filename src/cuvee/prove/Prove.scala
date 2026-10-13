@@ -17,12 +17,48 @@ object Prove extends Transform:
     val rules = Rules.from(state, prefix ++ cmds)
     val forward = Forward.from(prefix ++ cmds)
 
+    def fresh() = Context.empty(state).withRules(rules).copy(forward = forward)
+
     for
       cmd <- cmds
-      ctx = Context.empty(state).withRules(rules).copy(forward = forward)
-      cmd_ <- if cmd.isRule || Forward.is(cmd) then List(cmd) else Simplify.simplify(config, state, ctx, cmd) :: used(config, ctx, cmd)
+      ctx = fresh()
+      cmd_ <- if cmd.isRule || Forward.is(cmd) then List(cmd) else cases(config, state, fresh, Simplify.simplify(config, state, ctx, cmd), 4) :: used(config, ctx, cmd)
       if !isTrivial(cmd_)
     yield cmd_
+
+  // a goal that remains is proved by cases on the first premise that is a disjunction of at most three formulas, each
+  // case with a context of its own, at most `depth` premises deep, e.g. n == zero || integer(n) < 1 that the rules of
+  // mods introduce (in-de41); it is kept as it is unless all cases hold, so that the output does not multiply
+  def cases(config: Config, state: State, fresh: () => Context, cmd: Cmd, depth: Int): Cmd =
+    cmd match
+      case Assert(justify, params, phi, attrs) if depth > 0 =>
+        alternatives(phi) match
+          case Some(phis) if phis.forall(phi_ => isTrivial(cases(config, state, fresh, Simplify.simplify(config, state, fresh(), Assert(justify, params, phi_, attrs)), depth - 1))) =>
+            Assert(justify, params, True, attrs)
+
+          case _ =>
+            cmd
+
+      case _ =>
+        cmd
+
+  // the goals for the cases of the first disjunctive premise of forall xs. φ₁ && ... && φₙ ==> ψ
+  def alternatives(phi: Expr): Option[List[Expr]] =
+    phi match
+      case All(xs, body) =>
+        alternatives(body).map(_.map(All(xs, _)))
+
+      case Imp(ante, concl) =>
+        val premises = And.flatten(ante)
+        premises.indexWhere(premise => Or.flatten(premise).length.min(4) match { case 2 | 3 => true; case _ => false }) match
+          case -1 =>
+            None
+
+          case i =>
+            Some(for disjunct <- Or.flatten(premises(i)) yield Imp(And(premises.patch(i, List(disjunct), 1)), concl))
+
+      case _ =>
+        None
 
   def used(config: Config, ctx: Context, cmd: Cmd): List[Cmd] =
     cmd match

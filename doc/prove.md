@@ -100,7 +100,12 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   dependencies than the pattern, the variables of the rule among the dependencies take the front, and their bound
   variables share its bound variable, which a higher-order pattern `D(k, h)` may then take twice (the abstraction
   ignores the repetition, `D = (k, z) => ...`). A sum of one summand, e.g. `-e`, gives no variable of a pattern
-  `v + w` the empty sum 0.
+  `v + w` the empty sum 0. A negative literal is the negation of its absolute value among the summands, so the read
+  `a[i - 1]` of a pattern matches `a[k + -1]` of the normal form (the recurrences of `aggregation`).
+- **Case splits** (`Prove.cases`): a goal that remains is proved by cases on its first premise that is a disjunction
+  of two or three formulas, each case in a fresh context, up to four premises deep; it is dropped if all cases hold
+  and kept as it is otherwise. The `_cases` rules of `mods` (`teq:unsigned`) introduce such premises,
+  `n == zero || integer(n) < 1`, whose cases make the values of the next loops known (in-de20 to in-de51).
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.

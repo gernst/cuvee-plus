@@ -953,10 +953,13 @@ object Rewrite:
 
     monos ++ const
 
-  // the summands of a sum with their signs, where 0 is dropped
+  // the summands of a sum with their signs, where 0 is dropped and a negative literal is the negation of its absolute
+  // value, such that i - 1 or i + -(1) of a pattern, e.g. the read a[i - 1] of a recurrence, matches i + -1 of the
+  // normal form
   def summands(ring: Ring, expr: Expr): List[(Boolean, Expr)] =
     expr match
       case ring.zero               => Nil
+      case ring.num(value: BigInt) if value < 0 => List((false, ring.num(-value)))
       case ring.plus(args)         => for arg <- args; summand <- summands(ring, arg) yield summand
       case ring.minus(left, right) => summands(ring, left) ++ negate(summands(ring, right))
       case ring.uminus(arg)        => negate(summands(ring, arg))

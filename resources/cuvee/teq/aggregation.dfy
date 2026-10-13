@@ -267,3 +267,12 @@ lemma {:rw} {:teq} current_trace_prefix_sums_add(b0: array<int, int>, n: Nat, j:
                                                  H: (int) -> int)
   ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := b[k] + G(k) + H(k)]))[j]
     == if 0 <= j <= integer(n) then b0[0] + sum(maps(for ⌊counter(0, 1, natural(j))⌋ yield k :: G(k) + H(k))) else b0[j]
+
+// a recurrence in an array: the first cell set to c, each further cell i the previous one plus G(i), so the cell j is
+// c plus the sum of G over 1, ..., j, e.g. a[i] = a[i - 1] + 2 and b[i] = b[i - 1] + a[i - 1] of ifeqn1 (needs the
+// read a[i - 1] matched as a[k + -1], see Rewrite.summands)
+// (from ifeqn1, ifeqn2)
+lemma {:rw} {:teq} select_current_trace_recurrence(a0: array<int, int>, n: Nat, c: int, j: int, G: (int) -> int)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, i ::
+            case i == 0 => a[0 := c] case 0 < i => a[i := a[i - 1] + G(i)]))[j]
+    == if 0 <= j && j < integer(n) then c + sum(maps(for ⌊counter(1, 1, natural(j))⌋ yield k :: G(k))) else a0[j]

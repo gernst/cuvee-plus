@@ -188,6 +188,12 @@ lemma {:rw} {:teq} maps_counter_affine(a: int, b: int, i: int, c: int, n: Nat)
   ensures maps(for ⌊counter(i, c, n)⌋ yield v :: a + b * v)
     == ⌊counter(a + b * i, b * c, n)⌋
 
+// the same without a constant summand, which the pattern a + b * v does not match (a sum is needed for a = 0)
+// (from mbpr2)
+lemma {:rw} {:teq} maps_counter_scale(b: int, i: int, c: int, n: Nat)
+  ensures maps(for ⌊counter(i, c, n)⌋ yield v :: b * v)
+    == ⌊counter(b * i, b * c, n)⌋
+
 lemma {:rw} {:teq} invs_const(b: bool, i: int, c: int, n: Nat)
   ensures invs(for ⌊counter(i, c, n)⌋ check v :: b)
     <==> n == zero || b

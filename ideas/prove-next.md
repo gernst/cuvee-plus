@@ -33,12 +33,10 @@ same reads x[0], x[1] are simplified again in about 31 sibling contexts.
 
 ## 2. Splitting disjunctive premises in `-prove`
 
-**Now.** The `_cases` rules of `mods` (teq:unsigned) introduce premises `n == zero || integer(n) < 1`, which `-prove`
-does not split; the benchmark definitions run a second round of `-split -prove` (7 tasks of Loops, among them
-in-de20, in-de31, in-de32, sum_by_3), which costs a full pass over all remaining goals.
-
-**Change.** None necessary. If the cost of the second round shows in the timeouts, `Prove` could split a premise
-that a rule turned into a disjunction of two atoms, at most once per goal, and prove both cases.
+**Done (0.46.12).** `Prove.cases` proves a remaining goal by cases on its first disjunctive premise (two or three
+disjuncts), each case in a fresh context, up to four premises deep, and drops it if all cases hold. in-de20 closes
+with a single round of `-split -prove`, in-de41, in-de42, in-de51 at depth 4 (depth 2 was not enough: the cases of
+one loop make the `_cases` rule of the next one apply). sum_by_3_abstracted stays open.
 
 ## 3. Refutation by substitution (1 task)
 

@@ -15,8 +15,11 @@ double); speed only where a task times out that would succeed.
       on the rule `bisection` makes bsearch_bisect.dfy not terminate (the earlier "0 goals" were runs killed by
       the timeout; always check the exit status). Next idea: a third case of the function `bisection` that keeps
       the state, or the premise as a closed condition over the trace's own histories without `hs`.
-- [ ] Matcher: a negative literal is the negation of its absolute value in `Rewrite.summands`, so `a[i - 1]` of a
-      pattern matches `a[k + -1]` (uncommitted, built into a scratch jar; needs the suite). Enables recurrences.
+- [ ] Commit 0.46.12 (suite running): a negative literal is the negation of its absolute value in `Rewrite.summands`
+      (`a[i - 1]` of a pattern matches `a[k + -1]`); case splits on disjunctive premises in `Prove.cases`
+      (in-de20, in-de41, in-de42, in-de51 close); `select_current_trace_recurrence` in aggregation (ifeqn1, ifeqn2
+      close); `store_select_other` (arrays), `maps_counter_scale` (teq.dfy), `occurs_counter_step` (counters).
+      Then a cloud run at 60 s against 0.46.9.
 
 ## Next, by expected gain
 
@@ -24,9 +27,8 @@ double); speed only where a task times out that would succeed.
       trace per strongly connected component, `-prove`, the lemma database with its modules, forward lemmas,
       `-fallback`, `-chc`, `-verify`; `-simplify` omitted), for readers who know verification but not TEQ, with all
       major insights (from the docs, ideas/, bugs.md, the experiments).
-- [ ] Recurrences in arrays (array-fpi `ifeqn1`-`5`, `ifcomp`, `pcomp`, `sqm-if`, `nsqm-if`, `condm`; 13+ true
-      tasks): `select_current_trace_recurrence`, `a[0] = c`, `a[i] = a[i - 1] + G(i)` is `c + sum(G(1..j))`
-      (scratch rec.dfy); test once the summands fix is in.
+- [ ] Recurrences in arrays: ifeqn1, ifeqn2 close with `select_current_trace_recurrence`; open: `ifcomp`, `pcomp`,
+      `sqm-if`, `nsqm-if`, `condm` (other shapes).
 - [ ] Strided stores (array-tiling `mbpr*`, `pr*`, `pnr*`; 22 true tasks): `store_select_other`
       (`a[i := v][j := a[j]] == a[i := v]` for `i != j`), `maps_counter_scale` (`maps(... :: b * v)`, which
       `maps_counter_affine` does not match without a constant), `occurs_counter_step` back from the legacy file
@@ -36,8 +38,8 @@ double); speed only where a task times out that would succeed.
 - [ ] Counterexamples without a solver: a remaining goal without traces and uninterpreted functions, e.g.
       `forall N :: !(0 < N && N <= 536870911)` of brs1f, refuted by evaluation at candidate values (the `f`
       variants of array-fpi, while_infinite_loop_4; expected false, lower priority).
-- [ ] The 11 tasks lost against 0.42.1: in-de41 to in-de62, sum_by_3_abstracted, sum_array-2-2, indp5,
-      revcpyswp2, while_infinite_loop_4.
+- [ ] The tasks lost against 0.42.1: in-de52 to in-de62 (try with the case splits), sum_by_3_abstracted (open with
+      the case splits), sum_array-2-2, indp5, revcpyswp2 (time outs at 60 s), while_infinite_loop_4.
 - [ ] array-patterns (30 true tasks): pairwise cancelling sums over stores at nondeterministic indices; hard.
 
 ## Deferred
@@ -46,3 +48,9 @@ double); speed only where a task times out that would succeed.
 - [ ] The memo of forward instances (cost; bugs.md, prove-next.md).
 - [ ] nla-digbench: non-linear arithmetic, beyond the lemma database for now.
 - [ ] Lean: proofs of `bisection_lo`/`_hi` under the new premise, the module `unsigned` (the Lean session).
+
+## Last
+
+- [ ] When everything is done: the final integration of the results into the documents (doc/paper/cuvee.tex with
+      `scripts/paper.py`, `scripts/out/experiments.pdf`, ideas/experiments.md, doc/overview/overview.tex), commit all
+      the work, and only then a single push.

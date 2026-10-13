@@ -79,3 +79,9 @@ lemma {:rw} {:teq} current_trace_bounded(x0: int, n: Nat, lo: int, hi: int, C1: 
     (lo <= current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C1(x) => F1(x) case C2(x) => F2(x) case C3(x) => F3(x)))
        && current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C1(x) => F1(x) case C2(x) => F2(x) case C3(x) => F3(x))) <= hi)
       <==> true
+
+// membership in a counter with a positive step d, e.g. the odd positions counter(1, 2, n) of strided stores
+// (from mbpr2; in legacy/teq.dfy from occurs_counter_step of the per-variable form)
+lemma {:rw} {:teq} occurs_counter_step(i: int, d: int, n: Nat, j: int)
+  requires 0 < d
+  ensures occurs(j, ⌊counter(i, d, n)⌋) <==> i <= j < i + integer(n) * d && (j - i) % d == 0
