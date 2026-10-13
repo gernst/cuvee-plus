@@ -2,6 +2,7 @@ package cuvee.prove
 
 import util.Rational
 import cuvee.core._
+import util.Ref
 
 // an immutable collection of facts of some theory, which records the facts it can express and ignores the others,
 // and which detects when they contradict each other (after cuvee.simplify.Theory)
@@ -34,7 +35,11 @@ case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) e
     assms.free ++ concls.free
 
 object Linear:
-  val empty = Linear(Nil, Nil, Map())
+  def empty = Linear(Nil, Nil, Map(), util.Ref(Map()))
+
+  // the results of the checks by the set of constraints and disequations, shared by the copies of a context and fresh
+  // for each command (see Context.withRules), since the same check is made at many positions
+  type Checks = Map[(Set[Constraint], Set[(Ring, Poly)]), Boolean]
 
 // the linear constraints on Int and Real among the facts, decided by the simplex over the rationals (see Simplex),
 // which replaces the difference constraints of the simplifier: comparisons and equations as constraints 0 <= p and
@@ -43,11 +48,19 @@ object Linear:
 // the constraints if these determine the value of the difference; the solutions of linear equations for a variable,
 // e.g. x by 40 - n for n + x == 40, are recorded as `solved` and inlined into polynomials by the simplifier (see
 // Simplify.poly), while the equation remains a constraint
-case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], solved: Map[Var, Expr]) extends Theory:
-  // a disequation p != 0 is refuted if the constraints bound p to 0 from both sides
+case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], solved: Map[Var, Expr], checks: util.Ref[Linear.Checks]) extends Theory:
+  // a disequation p != 0 is refuted if the constraints bound p to 0 from both sides; the check is cached (see checks)
   lazy val inconsistent: Boolean =
-    !Simplex.satisfiable(constraints) || diseqs.exists: (ring, poly) =>
-      !Simplex.satisfiable(positive(ring, poly) :: constraints) && !Simplex.satisfiable(positive(ring, -poly) :: constraints)
+    val key = (constraints.toSet, diseqs.toSet)
+    checks.value.get(key) match
+      case Some(result) =>
+        result
+
+      case None =>
+        val result = !Simplex.satisfiable(constraints) || diseqs.exists: (ring, poly) =>
+          !Simplex.satisfiable(positive(ring, poly) :: constraints) && !Simplex.satisfiable(positive(ring, -poly) :: constraints)
+        checks := checks.value + (key -> result)
+        result
 
   // 0 < p, on Int as 0 <= p - 1
   def positive(ring: Ring, poly: Poly): Constraint =

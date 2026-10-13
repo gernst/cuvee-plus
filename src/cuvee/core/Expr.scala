@@ -114,13 +114,17 @@ object App:
   def apply(fun: Fun, args: List[Expr]): App =
     App(State.empty, fun, args)
 
+// the compound expressions cache their hash (lazy, the generated one of case classes), since the memos and classes of
+// the engines hash large terms, e.g. the state traces of -teq-state substituted throughout a goal, at every lookup
 case class App(fun: Fun, inst: List[Type], typ: Type, args: List[Expr]) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = inst.params ++ args.params
   def free = args.free
   def funs = args.funs + fun
 
 // pairwise distinctness of two or more expressions of the same type, n-ary as in SMT-LIB
 case class Distinct(exprs: List[Expr]) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = exprs.params
   def free = exprs.free
   def funs = exprs.funs
@@ -128,6 +132,7 @@ case class Distinct(exprs: List[Expr]) extends Expr:
 
 // whether `expr` is built by the constructor `fun` of a datatype
 case class Is(expr: Expr, fun: Fun) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = expr.params
   def free = expr.free
   def funs = expr.funs + fun
@@ -135,6 +140,7 @@ case class Is(expr: Expr, fun: Fun) extends Expr:
 
 // explicit type annotation, e.g. for polymorphic constants
 case class As(expr: Expr, typ: Type) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = expr.params ++ typ.params
   def free = expr.free
   def funs = expr.funs
@@ -249,6 +255,7 @@ object Old:
 //
 // a case of Eps, if φ then e, as Upd(φ, e)
 case class Upd(cond: Expr, rhs: Expr):
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = cond.params ++ rhs.params
   def free = cond.free ++ rhs.free
   def funs = cond.funs ++ rhs.funs
@@ -259,6 +266,7 @@ case class Upd(cond: Expr, rhs: Expr):
 // a variant of Hilbert's choice over guarded results, if φ₁ then e₁, ..., if φₚ then eₚ:
 // some eᵢ whose guard φᵢ holds, a value that is not specified if none holds
 case class Eps(updates: List[Upd]) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = updates.params
   def free = updates.free
   def funs = updates.funs
@@ -282,6 +290,7 @@ object Eps:
 // starting from `init`, where each subsequent value is computed by the update from the previous one
 // and the corresponding values of the dependencies, one entry longer than the dependencies
 case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], update: Expr) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = init.params ++ deps.params ++ (acc :: bound).params ++ update.params
   def free = init.free ++ deps.free ++ (update.free -- (acc :: bound))
   def funs = init.funs ++ deps.funs ++ update.funs
@@ -290,6 +299,7 @@ case class Trace(init: Expr, deps: List[Expr], acc: Var, bound: List[Var], updat
 // map(for deps yield bound ↦ update): the list of the results of the update for the values of the dependencies,
 // point-wise, which has the same length as the dependencies
 case class Maps(deps: List[Expr], bound: List[Var], update: Expr) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = deps.params ++ bound.params ++ update.params
   def free = deps.free ++ (update.free -- bound)
   def funs = deps.funs ++ update.funs
@@ -297,12 +307,14 @@ case class Maps(deps: List[Expr], bound: List[Var], update: Expr) extends Expr:
 
 // all(for deps check bound ↦ body): the condition holds for all values of the dependencies, point-wise
 case class Invs(deps: List[Expr], bound: List[Var], body: Expr) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = deps.params ++ bound.params ++ body.params
   def free = deps.free ++ (body.free -- bound)
   def funs = deps.funs ++ body.funs
   def typ = Sort.bool
 
 case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = bound.params ++ body.params
   def free = body.free -- bound
   def funs = body.funs
@@ -311,11 +323,13 @@ case class Bind(quant: Name, bound: List[Var], body: Expr) extends Expr:
 // an anonymous function, whose type is explicit, since it is not determined by the bound variables and the body:
 // for now an array, as the lambda of SMT-LIB, of a single bound variable (see Type.check)
 case class Lam(bound: List[Var], body: Expr, typ: Type) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = bound.params ++ body.params ++ typ.params
   def free = body.free -- bound
   def funs = body.funs
 
 case class Let(bound: List[Var], args: List[Expr], body: Expr) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = bound.params ++ args.params ++ body.params
   def free = args.free ++ (body.free -- bound)
   def funs = args.funs ++ body.funs
@@ -325,6 +339,7 @@ case class Let(bound: List[Var], args: List[Expr], body: Expr) extends Expr:
 // the pattern consists of variables and constructor applications (see Type.check), whose variables are bound
 // in the body and the condition; conditions are not part of SMT-LIB, where they are always true
 case class Case(pat: Expr, body: Expr, cond: Expr):
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def bound = pat.free
   def params = pat.params ++ body.params ++ cond.params
   def free = body.free ++ cond.free -- bound
@@ -336,6 +351,7 @@ case class Case(pat: Expr, body: Expr, cond: Expr):
 
 // the result of the first case whose pattern matches `arg` and whose condition holds
 case class Match(arg: Expr, cases: List[Case]) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = arg.params ++ cases.params
   def free = arg.free ++ cases.free
   def funs = arg.funs ++ cases.funs
@@ -349,6 +365,7 @@ case class Match(arg: Expr, cases: List[Case]) extends Expr:
 // applications of `fun`; the type parameters of `fun` are bound as well, rigid in the cases and instantiated
 // freshly at each use, like those of a declared function, and its types may refer to those of the context
 case class Rec(fun: Fun, cases: List[Case]) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
   def params = (fun.args.params ++ fun.res.params ++ cases.params) -- fun.params
   def free = cases.free
   // the recursive calls by name, since their types may be instantiated

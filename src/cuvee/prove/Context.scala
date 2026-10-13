@@ -27,7 +27,13 @@ import cuvee.core._
 // of steps
 //
 // self: within the update of a combinator that defines a dependency, X == trace(...) or Y == maps(...),
-// that dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants)
+// that dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants); within
+// the update of the projection of a state trace to a component, the read of that component, sel(s), and the
+// accumulator of the projection, which denotes it (see Views.relation)
+//
+// projection: while the view of a component of a state trace is simplified or matched, the selector of the component
+// (see Views.projected), from which the traversal and the matcher derive the self of each projection trace they meet
+// (see Views.relation), positionally, since the bound variables of a trace are renamed on every round
 //
 // applied: the number of applications of each rule by its name, for -rules
 //
@@ -35,13 +41,11 @@ import cuvee.core._
 // whose views are being computed (see Rewrite.apply and Views.projected), which are not applied or projected inside;
 // one facility for both kinds of re-entrance, by identity for rules and by the key of a component for views
 //
-// reads: the values of the bound variables of combinators, by the dependencies, the bound variables and the classes
-// (see Simplify.iterations), shared like combinators
-//
-// views: the simplified views of the markers of state traces by the marker and the classes (see Views)
-//
-// combinators: the contexts of the updates and bodies of combinators built so far (see Simplify.combinator),
-// shared by the copies of this context like steps and fresh for each command (see withRules)
+// reads, views, combinators: the memos of the values of the bound variables of combinators (see Simplify.iterations),
+// of the simplified views of the markers of state traces (see Views), and of the facts of the contexts of the updates
+// and bodies of combinators (see Simplify.combinator), keyed by the canonical facts of the position (see Canon) and
+// holding their values under the canonical names, shared by the copies of this context like steps and fresh for each
+// command (see withRules)
 case class Context(
     state: State,
     bound: List[List[Var]],
@@ -58,12 +62,14 @@ case class Context(
     applied: util.Ref[Map[String, Int]] = util.Ref(Map()),
     active: List[AnyRef] = Nil,
     reads: util.Ref[Context.Reads] = util.Ref(Map()),
-    views: util.Ref[Context.Views] = util.Ref(Map())
+    views: util.Ref[Context.Views] = util.Ref(Map()),
+    canon: util.Ref[Map[(Expr, Subst[Nothing, Var]), Expr]] = util.Ref(Map()),
+    projection: Option[Fun] = None
 ):
   // the rewrite rules with a fresh number of steps and no memoized contexts, views or reads, which are shared by the
   // copies of this context, and which guards against rules that do not terminate
   def withRules(rules: List[Rule], steps: Int = 1000) =
-    copy(rules = rules, steps = util.Ref(steps), combinators = util.Ref(Map()), applied = util.Ref(Map()), reads = util.Ref(Map()), views = util.Ref(Map()))
+    copy(rules = rules, steps = util.Ref(steps), combinators = util.Ref(Map()), applied = util.Ref(Map()), reads = util.Ref(Map()), views = util.Ref(Map()), canon = util.Ref(Map()), linear = linear.copy(checks = util.Ref(Map())))
 
   // an expression seen through its class, never a variable: a variable matches only by a definition that is not a
   // variable, the first member of its class that is none, any other expression as itself,
@@ -83,11 +89,6 @@ case class Context(
       case x: Var => classes.defs(x).filterNot(_.free.contains(x))
       case _      => Nil
 
-  // the parts of this context that determine the contexts of combinators built in it, besides the rules and the
-  // steps, which are fixed for a command (see combinators); not the active rules (see cuvee.simplify.Context.key)
-  def key: Context.Key =
-    (self, bound, facts, classes, linear)
-
   // whether `rule` is suspended at this position, by identity
   def suspended(rule: Rule): Boolean =
     active.exists(_ eq rule)
@@ -95,6 +96,13 @@ case class Context(
   // whether the component `key` of a state trace is being projected at this position (see Views)
   def projecting(key: AnyRef): Boolean =
     active.exists(_ == key)
+
+  // the context with the facts that `keep` selects only, e.g. those that mention the variables of a view (see
+  // Views.projected), with the same bound variables, rules of the input, and memos; the rules of the facts of the
+  // context are dropped (they have no name, see Context.rules) and come back with the facts that are kept
+  def restricted(keep: Expr => Boolean): Context =
+    val base = copy(facts = Facts.empty, classes = Classes.empty(state.constrs.values.toSet), linear = Linear.empty.copy(checks = linear.checks), rules = rules.filter(_.name.isDefined))
+    base.assume(facts.assms.filter(keep), facts.concls.filter(keep))
 
   // variables bound by let, match, and the combinators, which are neither universal nor existential
   def bind(xs: List[Var]) =
@@ -142,23 +150,17 @@ case class Context(
 
     !reach(e.free.toList, Set()).contains(x)
 
-  // each fact is passed to all theories; equations of a variable with a variable or a literal are recorded in the
-  // classes only (they are substituted away, see Simplify.var_), but may conflict with the conclusions;
-  // facts are stored as given and not normalized, e.g. Simplify.implied misses (p y) when the fact is stored as
-  // (p x); this is done at the top level instead: Simplify.simplify iterates to a fixpoint
+  // each fact is passed to all theories, and stored as given, also the equations of variables, which the classes
+  // substitute away (see Simplify.var_), such that the facts determine the classes and the linear constraints (the
+  // memos are keyed by the facts, see Canon); facts are not normalized, e.g. Simplify.implied misses (p y) when the
+  // fact is stored as (p x); this is done at the top level instead: Simplify.simplify iterates to a fixpoint
   def assume(phi: Expr): Context =
-    val classes_ = classes.assume(phi)
-    val linear_ = linear.assume(phi)
-
     phi match
       case Eq(e1, e2) if e1 == e2 =>
         this
 
-      case Eq(_: Var, _: Var) | Eq(_: Var, _: Lit) | Eq(_: Lit, _: Var) =>
-        copy(facts = facts.check(phi), classes = classes_, linear = linear_)
-
       case _ =>
-        copy(facts = facts.assume(phi), classes = classes_, linear = linear_, rules = Context.rules(phi) ++ rules)
+        copy(facts = facts.assume(phi), classes = classes.assume(phi), linear = linear.assume(phi), rules = Context.rules(phi) ++ rules)
 
   def deny(phi: Expr): Context =
     copy(facts = facts.deny(phi), classes = classes.deny(phi), linear = linear.deny(phi))
@@ -245,17 +247,15 @@ object Context:
       case Reals.le(a, b) => Reals.lt(b, a)
       case _              => Not(phi)
 
-  // the parts of a context that the contexts of combinators built in it depend on (see key)
-  type Key = (Option[(Expr, Expr)], List[List[Var]], Facts, Classes, Linear)
+  // the facts of the contexts of combinators by their dependencies and bound variables and the key of the outer
+  // context, all under the canonical names (see Canon)
+  type Combinators = Map[(List[Expr], List[Var], Canon.Key), List[Expr]]
 
-  // the contexts of combinators by their dependencies, bound variables, and the key of the outer context
-  type Combinators = Map[(List[Expr], List[Var], Key), Context]
+  // the values of the bound variables of combinators, likewise
+  type Reads = Map[(List[Expr], List[Var], Canon.Key), List[Expr]]
 
-  // the values of the bound variables of combinators by their dependencies, bound variables, and the classes
-  type Reads = Map[(List[Expr], List[Var], Classes), List[Expr]]
-
-  // the views of markers by the marker, the bound variables and the classes (see Views)
-  type Views = Map[(Expr, List[List[Var]], Classes), Expr]
+  // the views of markers by the marker and the key of the context, likewise (see Views)
+  type Views = Map[(Expr, Canon.Key), Expr]
 
   def empty(state: State) =
     Context(state, Nil, Set(), Set(), Facts.empty, Classes.empty(state.constrs.values.toSet), Linear.empty, None)

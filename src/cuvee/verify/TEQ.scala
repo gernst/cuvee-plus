@@ -17,8 +17,9 @@ enum Step:
 // a path through a program by symbolic execution:
 // the values of the program variables as a substitution and the steps taken, where each check
 // is conditional on the assumptions and branch conditions before it;
-// a path that has left by a jump (break, continue, or return) skips the remaining statements
-case class Path(su: Subst[Nothing, Expr], steps: List[Step], jump: Option[Prog]):
+// a path that has left by a jump (break, continue, or return) skips the remaining statements;
+// depth is the number of enclosing loops, by which -teq-state tells nested loops from the outermost ones
+case class Path(su: Subst[Nothing, Expr], steps: List[Step], jump: Option[Prog], depth: Int = 0):
   def apply(expr: Expr): Expr =
     su(expr)
 
@@ -275,7 +276,7 @@ object TEQ extends Transform:
 
     // the body from an arbitrary state x♯ of the loop variables, the other variables keep their values
     val sharp = xs.fresh
-    val inner = Path(p.su ++ Subst.from(xs, sharp))
+    val inner = Path(p.su ++ Subst.from(xs, sharp)).copy(depth = p.depth + 1)
     val paths = symex(config, state, proc, body, inner).filter(iterates)
 
     // no path through the body leads to another iteration, e.g. a body that ends by break or return on all paths:
@@ -305,17 +306,17 @@ object TEQ extends Transform:
       val constraint = And(List(inner(guard), paths_).flatMap(And.flattenStrong))
 
       // the per-variable form of the paper, or the state form of -teq-state over the tuples of the prelude (see
-      // transform.StateTEQ), which is closed: the counter, the trace and the exit
-      // values are substituted by their definitions, such that only the number of iterations and the choices are fresh
+      // transform.StateTEQ), which is closed for nested loops: the counter, the trace and the exit values are
+      // substituted by their definitions, such that only the number of iterations and the choices are fresh
       val (fresh, cur, teq) =
         if config.stateTraces
-        then cuvee.transform.StateTEQ.system(state, xs, sharp, zs, Zs, n, k, K, paths, constraint, p)
+        then cuvee.transform.StateTEQ.system(state, xs, sharp, zs, Zs, n, k, K, paths, constraint, p, closed = p.depth > 0)
         else system(xs, sharp, zs, Zs, n, k, K, paths, constraint, p)
 
       // the state at the exit, from which the body executes safely if the guard holds,
       // the paths of the body from there that end by break or return leave the loop as well
       val exit = p.fresh(fresh).assign(xs, cur)
-      val last = symex(config, state, proc, body, Path(exit.su))
+      val last = symex(config, state, proc, body, Path(exit.su).copy(depth = p.depth + 1))
       val safe = Path.formula(last.map(_.steps))
       val exit_ = exit.assume(teq)
       val guard_ = exit_(guard)

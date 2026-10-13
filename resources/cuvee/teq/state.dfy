@@ -139,6 +139,13 @@ lemma {:rw} {:teq} counter_def(i: int, c: int, n: Nat)
   ensures trace(i, for ⌊counter(0, 1, n)⌋ do x, k :: x + c)
     == counter(i, c, n)
 
+// a variable that keeps its value in each iteration (consts_def of counters.dfy), e.g. the index of a search before it
+// is found; without it, a summary lemma with a case that keeps the value matches the trace with its other cases
+// unspecified
+lemma {:rw} {:teq} consts_def<a>(x: a, i: int, c: int, n: Nat)
+  ensures trace(x, for ⌊counter(i, c, n)⌋ do y, v :: y)
+    == consts(n, x)
+
 lemma {:rw} {:teq} maps_earlier<a>(n: Nat, xs: List<a>)
   ensures maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(natural(k), xs))
     == xs

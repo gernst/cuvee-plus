@@ -4,7 +4,7 @@ import cuvee.core._
 
 object Classes:
   def empty(constrs: Set[Fun]) =
-    Classes(constrs, Map(), Map(), Map(), Nil)
+    Classes(constrs, Map(), Map(), Map(), Nil, false)
 
 // congruence closure over the terms of the facts: a persistent union-find whose nodes are the registered terms, where
 // applications are decomposed into their arguments and everything else (variables, literals, binders, the combinators
@@ -18,12 +18,14 @@ object Classes:
 // uses: the applications that have a member of the class as a direct argument, by root;
 // diseqs: the disequations among the facts, which contradict the classes once their sides are in one class;
 // two different literals or two applications of different constructors in one class are inconsistent as well
+// (clashed, checked when classes are merged)
 case class Classes(
     constrs: Set[Fun],
     parent: Map[Expr, Expr],
     members: Map[Expr, List[Expr]],
     uses: Map[Expr, List[Expr]],
-    diseqs: List[(Expr, Expr)]
+    diseqs: List[(Expr, Expr)],
+    clashed: Boolean
 ) extends Theory:
   def find(expr: Expr): Expr =
     parent.get(expr) match
@@ -51,7 +53,7 @@ case class Classes(
     classOf(x).collect { case y: Var => y }.minByOption(y => (y.name.name, y.name.index.getOrElse(-1))).getOrElse(x)
 
   lazy val inconsistent: Boolean =
-    diseqs.exists((a, b) => equal(a, b)) || members.values.exists(clashes)
+    clashed || diseqs.exists((a, b) => equal(a, b))
 
   // two different literals, or two applications of different constructors
   def clashes(members: List[Expr]): Boolean =
@@ -76,6 +78,13 @@ case class Classes(
       case Not(Eq(a, b)) => merge(a, b)
       case Not(phi)      => add(phi)
       case _             => add(expr)
+
+  // the term with its registered subterms replaced by the roots of their classes, bottom-up, such that terms that
+  // the classes identify become syntactically equal, also below binders, which the classes do not decompose (see
+  // Rewrite.known); bound variables are not registered, since they are renamed apart from the context
+  def normalize(expr: Expr): Expr =
+    val expr_ = expr.map(normalize)
+    if parent.contains(expr_) then find(expr_) else expr_
 
   def congruent(a: Expr, b: Expr): Boolean =
     (a, b) match
@@ -115,10 +124,12 @@ case class Classes(
       val (small, big) = if cl.members(ra).length <= cl.members(rb).length then (ra, rb) else (rb, ra)
       val usesSmall = cl.uses.getOrElse(small, Nil)
       val usesBig = cl.uses.getOrElse(big, Nil)
+      val members_ = cl.members(big) ++ cl.members(small)
       val merged = cl.copy(
         parent = cl.parent + (small -> big),
-        members = cl.members - small + (big -> (cl.members(big) ++ cl.members(small))),
-        uses = cl.uses - small + (big -> (usesBig ++ usesSmall))
+        members = cl.members - small + (big -> members_),
+        uses = cl.uses - small + (big -> (usesBig ++ usesSmall)),
+        clashed = cl.clashed || clashes(members_)
       )
       val pairs = for u <- usesSmall; v <- usesBig if merged.congruent(u, v) yield (u, v)
       pairs.foldLeft(merged)((cl, pair) => cl.merge(pair._1, pair._2))

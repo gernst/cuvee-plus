@@ -298,11 +298,13 @@ object Simplify:
 
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see combinator)
+      // a projection trace of the component of the context's projection has its relation as self (see Views.relation)
       case Trace(init, deps, acc, bound, update) =>
         val init_ = simplify(config, state, ctx.neutral, init)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (vars_, re) = Subst.rename(acc :: bound, ctx.free)
-        val inner = combinator(config, state, ctx.bind(List(vars_.head)), deps_, vars_.tail)
+        val self_ = Views.relation(state, ctx, deps_, vars_.head, vars_.tail).orElse(ctx.self)
+        val inner = combinator(config, state, ctx.bind(List(vars_.head)).copy(self = self_), deps_, vars_.tail)
         val update_ = simplify(config, state, inner.assume(wrapped(config, state, ctx, inner, init_, vars_.head, re(update)), Nil), re(update))
         trace(config, state, ctx, init_, deps_, vars_.head, vars_.tail, update_)
 
@@ -343,17 +345,22 @@ object Simplify:
   // and which assumes the invariants of the context over the same dependencies and the iterations of loops;
   // ctx.self is the dependency that the combinator defines and its value in the update, if known (see once)
   // built once per command for the same outer context (see Context.combinators)
+  // the facts of the context are memoized under the canonical names of the position (see Canon), such that positions
+  // that differ only by the names of their bound variables share them; the context is built from them at each
+  // position, which keeps the suspended rules and components of the position
   def combinator(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): Context =
-    // a memoized context takes the suspended rules and components of this position, since the key has none
-    val key = (deps, bound, ctx.key)
-    ctx.combinators.value.get(key) match
-      case Some(inner) =>
-        inner.copy(active = ctx.active)
+    val re = Canon.renaming(ctx.bound, bound)
+    val key = (deps.map(re(_)), bound.map(re(_)), Canon.key(ctx, re))
+    val facts =
+      ctx.combinators.value.get(key) match
+        case Some(facts) =>
+          facts.map(Canon.back(re)(_))
 
-      case None =>
-        val inner = ctx.neutral.bind(bound).assume(invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound), Nil)
-        ctx.combinators := ctx.combinators.value + (key -> inner)
-        inner
+        case None =>
+          val facts = invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound)
+          ctx.combinators := ctx.combinators.value + (key -> facts.map(re(_)))
+          facts
+    ctx.neutral.bind(bound).assume(facts, Nil)
 
   // the range 0 <= acc < k of the accumulator of a trace whose initial value is known to be in it and whose results are
   // remainders modulo k or the accumulator itself, which holds for all values of the accumulator by induction, e.g. of
@@ -387,14 +394,27 @@ object Simplify:
   // with their bound variables renamed to those of the corresponding dependencies in `bound`, or to the value of ctx.self,
   // which hold at each position of the dependencies, hence also for the values bound there;
   // the dependencies of a combinator have equal length, such that the positions coincide
+  // for the projection of a state trace to a component, whose self is the read sel(s) of that component and the
+  // accumulator (see Views.projected), the read is the accumulator in the invariants over ⌊S⌋, e.g. the test lo < hi of
+  // the loop bounds the accumulator of the projection to lo, and the equation itself is a fact of the update
   def invariants(ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     val values = (deps zip bound).toMap[Expr, Expr] ++ ctx.self
-    for
-      case Invs(deps_, bound_, body) <- ctx.facts.assms
-      if deps_.forall(values.contains)
-    yield
-      val re = Subst.from(bound_, deps_.map(values))
-      re(body)
+    val own =
+      ctx.self match
+        case Some((term, value)) if !deps.contains(term) && (term.free subsetOf bound.toSet) => Some((term, value))
+        case _                                                                                 => None
+    def read(expr: Expr): Expr =
+      own match
+        case Some((term, value)) if expr == term => value
+        case _                                   => expr.map(read)
+    val bodies =
+      for
+        case Invs(deps_, bound_, body) <- ctx.facts.assms
+        if deps_.forall(values.contains)
+      yield
+        val re = Subst.from(bound_, deps_.map(values))
+        read(re(body))
+    bodies ++ own.map((term, value) => Eq(term, value))
 
   // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),
   // then 0 <= k < integer(n), since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
@@ -404,10 +424,11 @@ object Simplify:
   // condition is matched against the invs facts would build the contexts of those facts in turn, whose reads are
   // normalized again, through every such rule, which exhausts the steps (see Context.active)
   def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
-    val key = (deps, bound, ctx.classes)
+    val re = Canon.renaming(ctx.bound, bound)
+    val key = (deps.map(re(_)), bound.map(re(_)), Canon.key(ctx, re))
     ctx.reads.value.get(key) match
       case Some(values) =>
-        values
+        values.map(Canon.back(re)(_))
 
       case None =>
         val values =
@@ -421,7 +442,7 @@ object Simplify:
 
             case _ =>
               Nil
-        ctx.reads := ctx.reads.value + (key -> values)
+        ctx.reads := ctx.reads.value + (key -> values.map(re(_)))
         values
 
   // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,
@@ -524,6 +545,12 @@ object Simplify:
 
       // variables with the same definition among the assumptions, or a variable and its definition (see Context.↑)
       case (ctx.↑(left_), ctx.↑(right_)) if left_ == right_ =>
+        True
+
+      // terms known to be equal by the classes, and terms with binders that are equal modulo the names of their bound
+      // variables and the orders that do not matter (see Canon.equal), e.g. two cases of a choice with equal results
+      // that bind their variables differently, or two dependencies of a combinator
+      case _ if ctx.classes.equal(left, right) || Canon.equal(left, right) =>
         True
 
       case (x: Var, e) if point(ctx, x, e) =>
@@ -884,8 +911,8 @@ object Simplify:
 
           case _ =>
             Views.projected(config, state, ctx, expr) match
-              case Some(e) if Views.closed(state, constr, e) => e
-              case _                                         => expr
+              case Some((e, _)) if Views.closed(state, constr, e) => e
+              case _                                              => expr
 
       case expr =>
         expr

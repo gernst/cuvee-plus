@@ -13,9 +13,12 @@ import cuvee.verify.TEQ
 // the per-variable traces of the paper are the projections of S, which the engine of -prove follows on demand
 // (see prove.Views); a loop with a single modified variable keeps its per-variable trace, closed in the same way
 //
-// the system is closed: since no trace depends on another one, the counter, the trace and the exit values of the loop
-// are terms over the number of iterations and the choices, which are substituted, such that only those are fresh at
-// the exit; an inner loop is then a value of the update of the outer one, not a family of fresh sequences
+// the system of a nested loop is closed: since no trace depends on another one, the counter, the trace and the exit
+// values of the loop are terms over the number of iterations and the choices, which are substituted, such that only
+// those are fresh at the exit; an inner loop is then a value of the update of the outer one, not a family of fresh
+// sequences; an outermost loop keeps its definitions as equations (K, S and the exit values are fresh), since the
+// engine follows them through the classes on demand and the goal stays small, where the substituted trace would be
+// repeated at every read of the state
 object StateTEQ:
   // the fresh variables of the exit, the exit values of the loop variables, and the system, like TEQ.system
   def system(
@@ -29,7 +32,8 @@ object StateTEQ:
       K: Var,
       paths: List[Path],
       constraint: Expr,
-      p: Path
+      p: Path,
+      closed: Boolean
   ): (List[Var], List[Expr], Expr) =
     val (s, st, trace, reads) =
       xs match
@@ -61,13 +65,20 @@ object StateTEQ:
           val trace = Trace(App(state, constr, xs.map(p(_))), Butlast(K) :: choices.map(_._2), s, k :: choices.map(_._1), TEQ.update(updates))
           (s, S, trace, reads)
 
-    // the definitions refer to each other in this order: the trace to the counter, the exit values to the trace
-    val counter = Subst.from(List(K), List(Counter(Ints.zero, Ints.one, n)))
-    val closed = counter + (st -> counter(trace))
-    val cur =
+    val counter = Counter(Ints.zero, Ints.one, n)
+    val current =
       xs match
-        case List(_) => List(closed(Current(st)))
-        case _       => state.datatypes(Tuples.name(xs.length)).constrs.head._2.map(sel => closed(App(state, sel, List(Current(st)))))
+        case List(_) => List(Current(st))
+        case _       => state.datatypes(Tuples.name(xs.length)).constrs.head._2.map(sel => App(state, sel, List(Current(st))))
     val iterations = Invs(Butlast(K) :: Butlast(st) :: Zs, k :: s :: zs, reads(constraint))
+    val rest = List(iterations, Ints.le(Ints.zero, Nats.integer(n)))
 
-    (n :: Zs, cur, closed(And(List(iterations, Ints.le(Ints.zero, Nats.integer(n))))))
+    if closed
+    then
+      // the definitions refer to each other in this order: the trace to the counter, the exit values to the trace
+      val su = Subst.from(List(K), List(counter)) + (st -> Subst.from(List(K), List(counter))(trace))
+      (n :: Zs, current.map(su(_)), su(And(rest)))
+    else
+      val cur = xs.fresh
+      val defs = Eq(K, counter) :: Eq(st, trace) :: (cur zip current).map((x, e) => Eq(x, e))
+      (cur ++ List(n, K, st) ++ Zs, cur, And(defs ++ rest))

@@ -31,12 +31,33 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
   own. Disequations are refuted when the constraints determine the difference. The solutions of linear equations for
   a variable (`x` by `40 - n`) are recorded as `solved` and inlined into polynomials, as the chains did.
 - **Closed side conditions are looked up** before they are decided (`Rewrite.known`): a closed instance that is
-  congruent to a fact modulo the classes holds. Instances with binders (`invs`) are compared syntactically for now.
+  congruent to a fact modulo the classes holds; an instance with binders, e.g. an `invs`, holds if its canonical form
+  equals that of a fact after both are normalized under the classes (`Classes.normalize`, registered subterms
+  replaced by the roots of their classes), so the fresh list variables and identifying equations (`Js2 == Js`) that
+  the simplifier needs for such conditions are not needed here.
 - **Views of state traces** ([`Views`](../src/cuvee/prove/Views.scala), see [teq.md](teq.md), "State traces"): the
   reads of the components of a state trace are markers that the matcher matches modulo their simplified view, the
   per-variable projection; a component is not projected inside its own view (suspension), and a marker is replaced
-  by its view once that reads no component. The views are memoized by the marker, the bound variables and the
+  by its view once that reads no component. While a view is simplified or matched, the context carries the selector
+  of the component (`Context.projection`), and each projection trace met gets the relation "the read of the component
+  from the state is the accumulator" as its `self` (`Views.relation`, by position, since binders are renamed on every
+  round); `Simplify.invariants` then replaces the read by the accumulator in the invariants over the state (the loop
+  test `lo < hi` bounds the accumulator of the projection of `lo`) and assumes the equation. Lemmas over another
+  dependency must be polymorphic in its type, since that dependency is the list of states in this form. A view is
+  simplified under the facts of its position that mention a variable of the view (the state trace, the counter, the
+  constants of the update; `Context.restricted`) and memoized by exactly those facts, so that positions that differ in
+  other facts, e.g. the sibling conjuncts of the goal, share it soundly; `-debug views` reports the misses. The views are memoized by the marker, the bound variables and the
   classes, not by the full context: a view computed under weaker facts is reused.
+- **Canonical forms** ([`Canon`](../src/cuvee/prove/Canon.scala)): `Canon.term` renames the variables bound inside
+  a term by their depth, sorts the dependencies of combinators (their bound variables permuted along), the cases of
+  choices, conjuncts, disjuncts and the sides of equations, so alpha-variants and reorderings coincide; `eq_` decides
+  two terms with binders equal by it, which merges cases and dependencies modulo renaming. The traversal renames bound
+  variables apart from the context, so positions that differ only by those names recur; the memos of the views, the reads and the facts
+  of combinator contexts are keyed by the facts of the position under a renaming of its bound variables by position,
+  and store their values under those names, from which the names of the position are restored. The combinator memo
+  holds the facts of the inner context, from which the context is built at each position. The simplex checks are
+  cached by the set of constraints and disequations (`Linear.checks`). Together they took the transpose from 22 s
+  to 7 s.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.
@@ -44,15 +65,25 @@ traversal and the matcher) is copied and adapted, not referenced, so that the tw
 
 ## Debugging
 
-`-debug rewrite` prints the rewrite steps and the views (`view <marker> ~> <view>`), `-debug match` the matches
-that went through the definition of a variable, `-debug simplify` the steps of the traversal; `-rules` reports the
-rules applied per assertion as with `-simplify`.
+`-debug rewrite` prints the rewrite steps and the views (`view <marker> ~> <view>`); `-debug match` the matches that
+went through the definition of a variable, the rules on traces whose left-hand side fails on a trace, with the case of
+the expression that no case of the pattern covers and the guard that fails; `-debug conditions` the closed side
+conditions that fail, with the `self` of the context and the facts on the condition's variables; `-debug simplify`
+the steps of the traversal; `-rules` reports the rules applied per assertion as with `-simplify`. The compound
+expressions of the core cache their hash (`Expr.hashCode`), since the memos and classes hash large terms at every
+lookup.
+
+## Checks
+
+`scripts/prove/quick.sh` runs after each change (under 30 s: the state examples except the transpose against
+their expected outputs, four per-variable examples that must leave no goal); `scripts/prove/slow.sh` runs on request
+or before a commit (the transpose, the unit tests, the 30 algorithms of `examples/dafny/algorithms` in the state form
+with their exit status, time and remaining goals, as the baseline for the work on them).
 
 ## State
 
 Oct 13, 2026: the ten examples of [examples/dafny/state](../examples/dafny/state) close under `-teq-state -prove`
 with the module `state.dfy` alone (single loops, the swap of two arrays, five nested loops without fragment lemmas,
-the transpose with one summary lemma, 1.5 to 22 s). Open: the cost of the simplex rebuilt per check (the transpose
-takes three times as long as under the simplifier of the branch `worktree-state-trace`), the per-variable examples
-of `-teq` under `-prove`, canonical forms for the lookup of `invs` conditions, triggers; see
+the transpose with one summary lemma, 1.5 to 7 s). Open: the per-variable examples of `-teq` under `-prove`, the
+algorithms in the state form, canonical forms for the lookup of `invs` conditions, triggers; see
 [ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md) and [TODO.md](../TODO.md).

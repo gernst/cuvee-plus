@@ -95,6 +95,12 @@ object Rewrite:
 
     results match
       case Nil =>
+        // -debug match reports the rules on traces whose left-hand side does not match a trace, e.g. a summary lemma
+        // on a view of a state trace (see ideas/deduction-engine-plan.md, package M)
+        (rule.lhs, expr) match
+          case (_: Trace, _: Trace) =>
+            Debug.info("match", "no match of " + rule.name.getOrElse("?") + " on " + Simplify.show(config.output.printer, expr))
+          case _ =>
         ctx.applied := applied
         expr
 
@@ -159,18 +165,19 @@ object Rewrite:
   ): List[Subst[Type, Expr]] =
     val direct = matches_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
 
-    // an expression that the pattern does not match as it is, is matched like the other members of its class, its
-    // definitions (see Context.defs), e.g. a variable K with K == counter(0, 1, n) by the counter, a counter by a
-    // variable equal to it, or a term f(x) known to be f(y); the definitions are matched directly (matches_), since
-    // their classes are the same; and a marker of a component of a state trace is matched like its simplified view
-    // (see Views.projected), which generalizes the definitions of variables to terms
+    // a variable that the pattern does not match as it is, is matched like the other members of its class, its
+    // definitions (see Context.defs), e.g. a variable K with K == counter(0, 1, n) by the counter; and a marker of a
+    // component of a state trace is matched like its simplified view (see Views.projected), which generalizes the
+    // definitions of variables to terms
     if direct.nonEmpty || pat.isInstanceOf[Var]
     then direct
     else
+      // the definitions are matched with the fallbacks again, since a definition may be a marker whose view matches;
+      // this does not recur through the definitions, since only variables have definitions and the members are none
       val defs =
         for
           e <- ctx.defs(arg)
-          subst_ <- matches_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
+          subst_ <- matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
         yield
           Debug.step("match", Simplify.show(config.output.printer, arg) + " by its definition", Simplify.show(config.output.printer, e))
           subst_
@@ -179,8 +186,8 @@ object Rewrite:
       then defs
       else
         Views.projected(config, state, ctx, arg) match
-          case Some(e) => matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
-          case None    => unmatched
+          case Some((e, sel)) => matches(config, state, ctx.copy(projection = Some(sel)), params, vars, locals, pat, self, bound, avoid, e, subst)
+          case None           => unmatched
 
   def matches_(
       config: Config,
@@ -288,8 +295,9 @@ object Rewrite:
 
       // the updates and bodies are matched in the context that the simplifier has there (see Simplify.combinator),
       // which is determined by the expression, e.g. guards follow from the test of the loop
+      // a projection trace of the component of the context's projection has its relation as self (see Views.relation)
       case (Trace(init, deps, acc, ys, update), Trace(init_, deps_, acc_, ys_, update_)) =>
-        val self_ = self.map(x => (Butlast(x), acc_))
+        val self_ = self.map(x => (Butlast(x), acc_)).orElse(Views.relation(state, ctx, deps_, acc_, ys_))
         lazy val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)).copy(self = self_), deps_, ys_)
         for
           subst1 <- matches(config, state, ctx, params, vars, locals, init, self, bound, avoid, init_, subst)
@@ -642,10 +650,16 @@ object Rewrite:
         List(subst)
 
       case Upd(cond_, rhs_) :: rest =>
+        val covered =
+          for
+            Upd(cond, rhs) <- updates
+            subst1 <- matches(config, state, ctx, params, vars, locals, rhs, self, bound, avoid, rhs_, subst)
+            subst2 <- guard(config, state, ctx, params, vars, locals, cond, self, bound, avoid, cond_, subst1)
+          yield subst2
+        if covered.isEmpty then
+          Debug.info("match", "  no case of the pattern covers " + Simplify.show(config.output.printer, cond_) + " => " + Simplify.show(config.output.printer, rhs_))
         for
-          Upd(cond, rhs) <- updates
-          subst1 <- matches(config, state, ctx, params, vars, locals, rhs, self, bound, avoid, rhs_, subst)
-          subst2 <- guard(config, state, ctx, params, vars, locals, cond, self, bound, avoid, cond_, subst1)
+          subst2 <- covered
           subst3 <- matches(config, state, ctx, params, vars, locals, updates, self, bound, avoid, rest, subst2)
         yield subst3
 
@@ -693,7 +707,11 @@ object Rewrite:
               unmatched
 
         if whole.nonEmpty then whole
-        else conditions(config, state, ctx, params, vars, locals, And.flatten(guard), self, bound, avoid, And.flatten(guard_), decide, subst)
+        else
+          val parts = conditions(config, state, ctx, params, vars, locals, And.flatten(guard), self, bound, avoid, And.flatten(guard_), decide, subst)
+          if parts.isEmpty then
+            Debug.info("match", "  guard " + Simplify.show(config.output.printer, guard) + " does not match " + Simplify.show(config.output.printer, guard_))
+          parts
 
       case substs =>
         substs
@@ -733,7 +751,12 @@ object Rewrite:
         if !open then
           if known(ctx, facts, instance) || decide(instance)
           then conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, facts, decide, subst)
-          else unmatched
+          else
+            // -debug conditions reports the closed conditions that fail, the first diagnostics of a match that does not
+            // go through (see ideas/deduction-engine-plan.md, package M)
+            Debug.info("conditions", "not decided: " + Simplify.show(config.output.printer, instance) + " (from " + Simplify.show(config.output.printer, phi) + ")")
+            Debug.info("conditions", "  self " + ctx.self.map((t, v) => Simplify.show(config.output.printer, Eq(t, v))).getOrElse("none") + ", facts on its variables: " + ctx.known.filter(fact => fact.free.intersect(instance.free).nonEmpty).map(Simplify.show(config.output.printer, _)).mkString(" | "))
+            unmatched
         else
           for
             fact <- facts
@@ -741,13 +764,25 @@ object Rewrite:
             subst2 <- conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, facts, decide, subst1)
           yield subst2
 
-  // whether a closed formula is one of the facts, modulo the classes of the context: the formula is registered in a
-  // copy of the classes, which merges it with a fact that is congruent to it
+  // whether a closed formula is one of the facts, modulo the classes of the context (the formula is registered in a
+  // copy of the classes, which merges it with a fact that is congruent to it) and modulo the canonical forms of
+  // terms with binders (see Canon.equal), e.g. an invs condition whose bound variables are named differently from the
+  // iteration constraint it is an instance of
+  // the canonical comparison is made only with the facts of the same shape (the same constructor, for combinators
+  // the same number of dependencies), since the normalization of a fact under the classes costs a traversal
   def known(ctx: Context, facts: List[Expr], phi: Expr): Boolean =
     facts.contains(phi) || {
       val classes = ctx.classes.add(phi)
-      facts.exists(fact => classes.equal(fact, phi))
+      lazy val phi_ = classes.normalize(phi)
+      facts.exists(fact => classes.equal(fact, phi) || (Canon.binds(phi) && shaped(fact, phi) && Canon.equal(classes.normalize(fact), phi_)))
     }
+
+  def shaped(a: Expr, b: Expr): Boolean =
+    (a, b) match
+      case (Invs(deps, _, _), Invs(deps_, _, _))       => deps.length == deps_.length
+      case (App(f, _, _, _), App(g, _, _, _))           => f == g
+      case (Not(a_), Not(b_))                           => shaped(a_, b_)
+      case _                                            => a.getClass == b.getClass
 
   // comparisons on Int and Real as the difference right - left as a normalized polynomial,
   // which is nonnegative, or positive if strict; on Int, left < right is left + 1 <= right, hence never strict;

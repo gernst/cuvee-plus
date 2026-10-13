@@ -93,8 +93,10 @@ or solvers consume.
   modules produce; a file includes only the modules its lemmas are written
   for. Examples that do not terminate stay in the tree and are listed in
   `Examples.nonterminating`.
-- A closed `invs` side condition is decided, not matched, and fails: write
-  it over a fresh list variable and identify it by an equation (`Js2 == Js`).
+- A closed `invs` side condition is decided, not matched, and fails under
+  `-simplify`: write it over a fresh list variable and identify it by an
+  equation (`Js2 == Js`); `-prove` looks closed conditions up among the facts
+  modulo classes and renaming (`Rewrite.known`), which needs no such variable.
   A side condition may mention the term of the rule's own left-hand side
   (`l == current(Lv)` for a rule on `current(Lv)`): the rule is suspended while
   its conditions are evaluated (`Context.active`), so the instance is not
