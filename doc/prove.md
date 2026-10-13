@@ -81,7 +81,7 @@ went through the definition of a variable, the rules on traces whose left-hand s
 the expression that no case of the pattern covers and the guard that fails; `-debug conditions` the closed side
 conditions that fail, with the `self` of the context and the facts on the condition's variables; `-debug forward`
 the instances of forward lemmas with their terms; `-debug simplify`
-the steps of the traversal; `-rules` reports the rules applied per assertion as with `-simplify`. The compound
+the steps of the traversal; `-rules` reports the rules applied per assertion as with `-simplify`, and the instances of forward lemmas assumed. The compound
 expressions of the core cache their hash (`Expr.hashCode`), since the memos and classes hash large terms at every
 lookup.
 

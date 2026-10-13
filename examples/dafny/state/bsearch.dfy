@@ -1,31 +1,16 @@
 // ./Cuvee.sh -teq-state -prove examples/dafny/state/bsearch.dfy
-// interim: the binary search of examples/dafny/teq/bsearch.dfy in the state form (Oct 13, 2026, see
-// ideas/deduction-engine-implementation.md): the duplicated declarations of teq.dfy removed, since -teq-state declares
-// them, the incs/decs abstractions polymorphic in the other dependency, which is the list of states here; the exit
-// of the loop closes by the bounds of the abstractions as forward facts (current_1, current_2 with :fw, package J),
-// which fire at current(S).0 and current(S).1 through their views, without the cut; to be removed from the tests
-// once the algorithms are done in the state form
-// experiment: binary search with partition points, for -teq -split -simplify (see ideas/binary-search.md);
-// the comparisons of the array with x are those of the indices with the partition points p and q,
-// a[m] < x iff m < p, x < a[m] iff q <= m, a[m] == x iff p <= m < q, given by lemmas on global constants,
-// such that the rules need no variables for the array, the bound, and x;
-// this assumes partition points for all indices, which is stronger than sortedness of a[0..n)
-// (all elements of a sorted array may be below x, then no index p exists)
+// binary search in the state form, after examples/dafny/teq/bsearch.dfy (see ideas/binary-search.md); interim,
+// until the algorithms are done in the state form (see ideas/deduction-engine-implementation.md)
 //
-// status: verified with -teq -split -simplify, given the cut after the loop;
-// the traces of lo and hi are abstracted by incs and decs, monotonically increasing and decreasing values with
-// the bounds p and q, which are bound by matching the guards (see Rewrite.conjuncts); the increase and decrease
-// follow from the guards together with the loop test lo < hi, which holds in the updates (see Simplify.invariants),
-// where the matching decides guards in the context of the update (see Rewrite.matches);
-// the bounds lo <= p and q <= hi are proved at the cut by the lemmas on incs and decs, and then assumed,
-// which closes the exit when x is not found with hi <= lo and p <= k < q for a[k] == x;
-// the equations Lo == incs(..., ⌊Hi⌋, ...) and Hi == decs(..., ⌊Lo⌋, ...) depend on each other, which the matching
-// follows (Ctx.↑), since cycles among the equations are only excluded where a solution is inlined (Simplify.poly);
-// without the cut, one goal remains, as the bounds are facts about the terms current(incs(0, p, ...)) and
-// current(decs(n, q, ...)), which the simplifier does not derive (see doc/simplifier.md);
-// the found case is closed by the test of the branch with break, mid < n and a[mid] == x from p <= mid < q <= n;
-// the exit of the loop by its test closes once i is known to keep its value -1: the simplifier merges the cases
-// of its update, which are all i, and the trace that keeps its value is consts(n, -1) by the lemma of teq.dfy
+// the array is given by partition points p and q instead of sortedness: a[m] < x below p, a[m] == x between p and q,
+// and x < a[m] from q on, such that the rules need no variables for the array, the bound, and x; this is stronger
+// than sortedness of a[0..n), whose elements may all be below x
+//
+// lo and hi read each other and form one trace of two accumulators, S; the view of each component is a single trace
+// over the history of the other one, which trace_1 and trace_2 abstract by incs and decs, a value that increases up
+// to p and one that decreases down to q; the bounds of these, current_1 and current_2, are forward facts that fire at
+// current(S).0 and current(S).1, which closes the exit with hi <= lo and p <= k < q; the found case closes by the test
+// of the branch with break, and i keeps -1 on the exit
 
 const a: array<int, int>
 const n: int
@@ -33,9 +18,8 @@ const x: int
 const p: int
 const q: int
 
-// the reads of the array become comparisons of the indices with the partition points: below p, a[m] is less
-// than x, from q on, it is greater, and in between, it is x; the guards a[mid] < x and x < a[mid] of the loop
-// become mid < p and q <= mid, and a[k] == x of the postcondition becomes p <= k < q
+// the reads of the array as comparisons of the index with the partition points, such that the guards a[mid] < x and
+// x < a[mid] become mid < p and q <= mid, and a[k] == x of the postcondition becomes p <= k < q
 lemma {:rw} lemma_1(m: int)
   ensures (a[m] < x) <==> m < p
 lemma {:rw} lemma_2(m: int)
@@ -43,12 +27,19 @@ lemma {:rw} lemma_2(m: int)
 lemma {:rw} lemma_3(m: int)
   ensures (a[m] == x) <==> p <= m && m < q
 
-// the declarations of teq.dfy that the lemmas refer to are repeated here, since Trace exists only with -teq
+// the midpoint lies in the interval, for division that rounds down, which the engine does not know otherwise:
+// the increase lo < (hi + lo) / 2 + 1 and the decrease (hi + lo) / 2 < hi
+lemma {:rw} lemma_4(l: int, h: int)
+  requires l <= h
+  ensures (l <= (h + l) / 2) <==> true
+lemma {:rw} lemma_5(l: int, h: int)
+  requires l < h
+  ensures ((h + l) / 2 < h) <==> true
 
-// a value that increases monotonically up to a bound b: in each iteration, it either keeps its value, case C,
-// or increases to F(x, h) under the guard D(x, h) && x < F(x, h) && F(x, h) <= b, where D is bound to the whole guard
-// of the program, the bound b by matching F(x, h) <= b against a conjunct of the guard, and the increase must follow
-// from the guard (see Rewrite.guard)
+// a value that increases monotonically up to a bound b: in each iteration, it either keeps its value, case C, or
+// increases to F(x, h) under the guard D(x, h) && x < F(x, h) <= b, where D is bound to the whole guard, b by matching
+// F(x, h) <= b against a conjunct of the guard, and the increase must follow from the guard; polymorphic in the other
+// dependency, the history of the other component
 function incs<a>(x0: int, b: int, ks: List<int>, hs: List<a>,
               D: (int, a) -> bool, C: (int, a) -> bool, F: (int, a) -> int): Trace<int>
 
@@ -57,6 +48,12 @@ lemma {:rw} trace_1<a>(x0: int, b: int, i: int, c: int, m: Nat, hs: List<a>, C: 
   ensures trace(x0, for ⌊counter(i, c, m)⌋, hs do x, k, h ::
           case C(x, h) => x case D(x, h) && x < F(x, h) && F(x, h) <= b => F(x, h))
     == incs(x0, b, ⌊counter(i, c, m)⌋, hs, D, C, F)
+
+// the value stays below the bound if the initial value does
+lemma {:fw} current_1<a>(x0: int, b: int, ks: List<int>, hs: List<a>, D: (int, a) -> bool, C: (int, a) -> bool,
+                F: (int, a) -> int)
+  requires x0 <= b
+  ensures current(incs(x0, b, ks, hs, D, C, F)) <= b
 
 // a value that decreases monotonically down to a bound b, dually
 function decs<a>(x0: int, b: int, ks: List<int>, ls: List<a>,
@@ -67,22 +64,6 @@ lemma {:rw} trace_2<a>(x0: int, b: int, i: int, c: int, m: Nat, ls: List<a>, C: 
   ensures trace(x0, for ⌊counter(i, c, m)⌋, ls do x, k, l ::
           case C(x, l) => x case D(x, l) && F(x, l) < x && b <= F(x, l) => F(x, l))
     == decs(x0, b, ⌊counter(i, c, m)⌋, ls, D, C, F)
-
-// the midpoint lies in the interval, for division that rounds down, which the simplifier does not know otherwise,
-// needed for the increase lo < (hi + lo) / 2 + 1 and the decrease (hi + lo) / 2 < hi
-lemma {:rw} lemma_4(l: int, h: int)
-  requires l <= h
-  ensures (l <= (h + l) / 2) <==> true
-lemma {:rw} lemma_5(l: int, h: int)
-  requires l < h
-  ensures ((h + l) / 2 < h) <==> true
-
-
-// the value stays below the bound if the initial value does
-lemma {:fw} current_1<a>(x0: int, b: int, ks: List<int>, hs: List<a>, D: (int, a) -> bool, C: (int, a) -> bool,
-                F: (int, a) -> int)
-  requires x0 <= b
-  ensures current(incs(x0, b, ks, hs, D, C, F)) <= b
 
 // the value stays above the bound if the initial value does
 lemma {:fw} current_2<a>(x0: int, b: int, ks: List<int>, ls: List<a>, D: (int, a) -> bool, C: (int, a) -> bool,

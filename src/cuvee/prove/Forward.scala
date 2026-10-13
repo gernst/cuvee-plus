@@ -102,5 +102,13 @@ object Forward:
           term <- (pos ++ neg).flatMap(terms).distinct
           fw <- ctx.forward
           phi <- fire(config, state, inner, fw, term)
-        yield phi
-      facts.distinct.foldLeft(ctx_)((ctx, phi) => if Rewrite.known(ctx, ctx.known, phi) || ctx.implied(phi) then ctx else ctx.assume(List(phi), Nil))
+        yield (fw, phi)
+      // the instances assumed count as applications of their lemma, for -rules (see Context.applied)
+      facts.distinct.foldLeft(ctx_) { case (ctx, (fw, phi)) =>
+        if Rewrite.known(ctx, ctx.known, phi) || ctx.implied(phi)
+        then ctx
+        else
+          for name <- fw.name
+          do ctx.applied := ctx.applied.value.updated(name, ctx.applied.value.getOrElse(name, 0) + 1)
+          ctx.assume(List(phi), Nil)
+      }
