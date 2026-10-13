@@ -71,10 +71,6 @@ lemma {:rw} {:teq} sum_consts(n: Nat, x: int)
   ensures sum(⌊consts(n, x)⌋)
     == x * integer(n)
 
-lemma {:rw} {:teq} sum_add(xs: List<int>, ys: List<int>)
-  ensures sum(maps(for xs, ys yield v, w :: v + w))
-    == sum(xs) + sum(ys)
-
 lemma {:rw} {:teq} sum_counter(i: int, c: int, n: Nat)
   ensures sum(⌊counter(i, c, n)⌋)
     == (2 * i + (integer(n) - 1) * c) * integer(n) / 2
@@ -164,6 +160,12 @@ lemma {:rw} {:teq} sum_neg(values: List<int>)
 lemma {:rw} {:teq} sum_scale(values: List<int>, a: int)
   ensures sum(maps(for values yield v :: a * v))
     == a * sum(values)
+
+// after the negation and the scaling, since v + w also matches a single summand -e or a * e, with w = 0, whose sum
+// contains the same sum again
+lemma {:rw} {:teq} sum_add(xs: List<int>, ys: List<int>)
+  ensures sum(maps(for xs, ys yield v, w :: v + w))
+    == sum(xs) + sum(ys)
 
 // a sum of indicators, 1 where a condition holds and 0 otherwise, is the number of values where it holds, which the
 // lemmas on counts evaluate

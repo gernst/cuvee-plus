@@ -10,6 +10,11 @@
   <!-- the lemma database teq.dfy of -teq and the optional modules migrated so far (ideas/teq-modules.md) -->
   <option name="-include">teq:aggregation</option>
   <option name="-include">teq:arithmetic</option>
+  <option name="-include">teq:arrays</option>
+  <option name="-include">teq:counters</option>
+  <option name="-include">teq:search</option>
+  <option name="-include">teq:sorted</option>
+  <option name="-include">teq:strides</option>
   <option name="-prove"/>
   <option name="-split"/>
   <option name="-prove"/>

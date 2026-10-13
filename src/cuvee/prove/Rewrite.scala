@@ -288,8 +288,12 @@ object Rewrite:
 
       case _ if pat.isSum =>
         val Some(ring) = Ring(pat.typ): @unchecked
+        // a negation -e is a sum of one summand, which takes no empty sums, otherwise v + w matches -e with w = 0,
+        // e.g. sum_add on sum(maps(for xs yield v :: -v)), whose result contains the same sum again
         if arg.typ == ring.typ
-        then matches(config, state, ctx, params, vars, locals, ring, summands(ring, pat), self, bound, avoid, summands(ring, arg), arg.isSum, subst)
+        then
+          val args = summands(ring, arg)
+          matches(config, state, ctx, params, vars, locals, ring, summands(ring, pat), self, bound, avoid, args, arg.isSum && args.length > 1, subst)
         else unmatched
 
       // equations modulo symmetry, e.g. the pattern a[k] == x matches x == a[i]
