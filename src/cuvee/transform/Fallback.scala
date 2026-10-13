@@ -131,6 +131,15 @@ object Fallback extends Transform:
   def isTeq(state: State, fun: Fun) =
     state.funattrs.get((fun.name, fun.arity)).exists(_.contains("teq"))
 
+  // the functions of the prelude that are lowered over the integers where they are applied to naturals (see expr):
+  // equations and conditionals, whose meaning does not change when the naturals are embedded into the integers;
+  // nothing marks the functions of the prelude, hence the explicit list
+  val lowered = Set(Fun.eq_, Fun.ite).map(fun => (fun.name, fun.arity))
+
+  // whether the types mention traces or lists, which are lowered into functions, unlike the naturals
+  def sequences(types: List[Type]) =
+    types.exists(_.cons.exists(con => con == Con.trace || con == Con.list))
+
   // the body of the function `fun` defined with {:fold} for the arguments `args`
   def unfold(state: State, fun: Fun, inst: List[Type], args: List[Expr]): Expr =
     val su = Type.bind(state, fun.args, inst)
@@ -610,6 +619,14 @@ object Fallback extends Transform:
         app
 
       case None =>
+        // a function of the list `lowered` over naturals is lowered in expr, generalizing it would weaken the goal
+        // silently, e.g. the equations n == natural(i) of the numbers of iterations before 0.46.7
+        e match
+          case App(fun, _, typ, args) if lowered.contains((fun.name, fun.arity)) =>
+            Error.report("function over naturals not lowered by -fallback", e):
+              require(sequences(typ :: args.types))
+          case _ =>
+
         val xs = arguments(env, e)
 
         Error.report("term with free sequences not supported by -fallback", e):
@@ -704,8 +721,9 @@ object Fallback extends Transform:
         val body_ = su(expr(state, env_, out, body, polarity))
         All(List(j), Imp(And(Ints.le(Ints.zero, j), Ints.lt(j, len)), body_))
 
-      // equations and conditionals of naturals are those of their values as integers, rebuilt such that their type
-      // instances are Int, e.g. n == natural(i) of the number of iterations of a loop
+      // the functions of the list `lowered` over naturals: equations and conditionals of naturals are those of their
+      // values as integers, rebuilt such that their type instances are Int, e.g. n == natural(i) of the number of
+      // iterations of a loop
       case Eq(left, right) if left.typ == Sort.nat =>
         Eq(expr(state, env, out, left), expr(state, env, out, right))
 

@@ -560,6 +560,11 @@ Measured on binary search and on the SV-COMP examples
 
 ## Trace equation systems (`-teq`)
 
+- `-fallback`: the fresh functions that generalize terms of type `Nat` (`Fallback.general`, e.g. `indexof(x, xs)` or
+  functions of the input over naturals) are declared over `Int` without the fact that their values are nonnegative,
+  unlike the entries of lists of naturals and the length functions, which get `0 <= f(xs)` among the definitions of
+  the goal; the lowered goal is weaker than necessary. Fix: `general` adds `forall xs. 0 <= f(xs)` for a term of type
+  `Nat`, as `named` does for the lengths.
 - The runs of the Dafny translations of SV-COMP (`Dafny.unreach-call.Unbounded`, 2 min, 2026-10-10 16:13 against
   15:25): `array-lopstr16/flag_loopdep_simple` is no longer proved (also not with `-fallback`), not because of
   the merged `mod_two_not_zero`; whether the other lemmas of 9a13ed0f or the eta reduction of 97c533c7 is open;

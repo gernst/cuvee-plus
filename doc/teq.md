@@ -468,6 +468,11 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   integers, e.g. the number of iterations `n == natural(i)` of a loop is
   `n == (if 0 <= i then i else 0)` (before 0.46.7 they were generalized like
   the other functions of naturals, which lost the relation of `n` and `i`).
+  These functions, `=` and `ite`, are an explicit list (`Fallback.lowered`),
+  since nothing marks the functions of the prelude; an application of one of
+  them over naturals without traces or lists that reaches the generalization
+  is an error ("function over naturals not lowered by -fallback") instead of
+  a silently weaker goal.
 - The length of all dependencies of a combinator is the `n` of its first
   one, `⌊counter(0, 1, n)⌋`, written directly or by an equation
   `K == counter(0, 1, n)` among the hypotheses of the quantifier
