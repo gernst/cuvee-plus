@@ -26,9 +26,9 @@ Open:
 - **The bisection** (`lean/open.txt`): the rule with `bisection_lo` and `bisection_hi` is inconsistent under the
   semantics of an update without a case (bugs.md); with a premise that all steps have `lo < hi`, the facts follow by
   induction with `cut_iff` of `Proofs.lean`. `-print lean` prints the rule since 0.46.6, a trace of a product.
-- **The models of Definitions.lean** fix one meaning of functions that the modules leave uninterpreted: the proofs show
-  the lemmas consistent and true of the described meaning, not of every interpretation; `cut` on an empty interval
-  and the partition points are chosen so (`lower` as the cut of `ar[j] < y`).
+- **The definitions of `cut` and the predicates of sorted.dfy** (in the modules since Oct 13, 2026, formerly models in
+  `lean/TEQ/Definitions.lean`) fix one meaning of functions that the engines use through their lemmas only: `cut` on
+  an empty interval and the partition points are chosen so (`lower` as the cut of `ar[j] < y`).
 - **A Lean mode of the printer** (`Stmt` definitions and the preamble), replacing the text manipulation of
   `generate.py`; a Scala change.
 - **Guards.** `case g₁ => e₁ case g₂ => e₂` is printed as `if g₁ then e₁ else e₂`, which assumes the guards complete

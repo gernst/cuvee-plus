@@ -96,8 +96,8 @@ length, the bisection of `teq:search`, the soundness of `sat` with `-chc`, and p
   (`scripts/lean/generate.py`), the proofs are by hand, and `scripts/lean/check.sh` checks that each lemma is proved
   as printed. All are proved except the three of [lean/open.txt](lean/open.txt), no `sorry` remains; the
   counterexamples show the premises that are needed: dependencies of equal length, indices within the lists, and
-  complete guards. The functions declared without a body (`cut` and the predicates of sorted.dfy) are modelled by hand
-  in `lean/TEQ/Definitions.lean`.
+  complete guards. `cut` and the predicates of sorted.dfy have definitions in the modules (no rules), which the proofs
+  use.
 - The premises that the engine does not check (lean/premises.txt), the printing of guards as complete, and the
   lemmas without a proof are in bugs.md (Soundness, Trusted without a check).
 - The three lemmas of the bisection of search.dfy are not proved (`lean/open.txt`), since they are inconsistent

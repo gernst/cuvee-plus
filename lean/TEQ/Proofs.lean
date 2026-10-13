@@ -3350,23 +3350,23 @@ theorem invs_two_phases (x0 : Int) (n : Nat) (b : Int) (c : Int)
         rw [show i + (t - i) = t by omega] at this
         exact Int.lt_of_le_of_lt this h
 
--- sorted.dfy: sorted, perm and partitioned as defined in Definitions.lean
+-- sorted.dfy: sorted, perm and partitioned as defined in the module
 
 theorem sorted_empty (a : Int → Int) (lo : Int) : sorted a lo lo ↔ True := by
-  simp only [sorted, iff_true]; intro i j h1 h2 h3; omega
+  simp only [sorted, iff_true]; intro i j ⟨h1, h2, h3⟩; omega
 
 theorem sorted_short (a : Int → Int) (lo hi : Int) : hi ≤ lo + 1 → (sorted a lo hi ↔ True) := by
-  intro h; simp only [sorted, iff_true]; intro i j h1 h2 h3
+  intro h; simp only [sorted, iff_true]; intro i j ⟨h1, h2, h3⟩
   rw [show j = i by omega]; exact Int.le_refl _
 
 theorem partitioned_empty (a : Int → Int) (lo hi : Int) : partitioned a lo lo hi ↔ True := by
-  simp only [partitioned, iff_true]; intro i j h1 h2 h3 h4; omega
+  simp only [partitioned, iff_true]; intro i j ⟨h1, h2, h3, h4⟩; omega
 
 theorem partitioned_whole (a : Int → Int) (lo hi : Int) : partitioned a lo hi hi ↔ True := by
-  simp only [partitioned, iff_true]; intro i j h1 h2 h3 h4; omega
+  simp only [partitioned, iff_true]; intro i j ⟨h1, h2, h3, h4⟩; omega
 
 theorem sorted_mono (a : Int → Int) (lo hi hi' : Int) : hi' ≤ hi → sorted a lo hi → sorted a lo hi' :=
-  fun h hs i j h1 h2 h3 => hs i j h1 h2 (by omega)
+  fun h hs i j ⟨h1, h2, h3⟩ => hs i j ⟨h1, h2, by omega⟩
 
 -- adjacent pairs along two counters
 theorem invs_adjacent (a : Int → Int) (s : Int) (n : Nat) :
@@ -3391,7 +3391,7 @@ theorem sorted_def (a : Int → Int) (n : Nat) :
   simp only [Int.zero_add] at this
   rw [this, integer_cast]
   constructor
-  · intro h i j h1 h2 h3
+  · intro h i j ⟨h1, h2, h3⟩
     have step : ∀ d : Nat, i + d < n + 1 → a i ≤ a (i + d) := by
       intro d
       induction d with
@@ -3403,7 +3403,7 @@ theorem sorted_def (a : Int → Int) (n : Nat) :
         exact Int.le_trans (ih (by omega)) this
     have := step (j - i).toNat (by omega)
     rwa [show i + ((j - i).toNat : Int) = j by omega] at this
-  · intro h k h1 h2; exact h k (k + 1) h1 (by omega) (by omega)
+  · intro h k h1 h2; exact h k (k + 1) ⟨h1, by omega, by omega⟩
 
 theorem perm_refl (a : Int → Int) : perm a a ↔ True :=
   iff_true_intro ⟨id, id, fun _ => rfl, fun _ => rfl, fun _ => rfl⟩
@@ -3558,15 +3558,19 @@ theorem cutFrom_mono (G G' : Int → Prop) (l : Int) (n : Nat) :
       · have := cutFrom_bounds G' (l + 1) n; omega
       · exact Int.le_refl _
 
+-- the cut searches the h - l indices from l
+theorem cut_toNat (G : Int → Prop) (l h : Int) : cut G l h = cutFrom G l (h - l).toNat := by
+  simp only [cut, natural_eq]
+
 theorem cut_bounds (G : Int → Prop) (l h : Int) : l ≤ h → l ≤ cut G l h ∧ cut G l h ≤ h := by
-  intro hl; have := cutFrom_bounds G l (h - l).toNat; simp only [cut]; omega
+  intro hl; have := cutFrom_bounds G l (h - l).toNat; rw [cut_toNat]; omega
 
 -- on a predicate that holds on a prefix of [l, h), the cut separates where it holds
 theorem cut_iff (G : Int → Prop) (l h m : Int) :
     (∀ p q, l ≤ p → p ≤ q → q < h → G q → G p) → l ≤ m → m < h → (G m ↔ m < cut G l h) := by
   intro hG h1 h2
   have hb := cutFrom_bounds G l (h - l).toNat
-  simp only [cut]
+  rw [cut_toNat]
   constructor
   · intro hm
     apply Classical.byContradiction
@@ -3576,11 +3580,11 @@ theorem cut_iff (G : Int → Prop) (l h m : Int) :
 
 theorem lower_iff (ar : Int → Int) (len y m : Int) :
     sorted ar 0 len → 0 ≤ m → m < len → (ar m < y ↔ m < lower ar len y) :=
-  fun hs h1 h2 => cut_iff _ 0 len m (fun p q hp hpq hq hy => Int.lt_of_le_of_lt (hs p q hp hpq hq) hy) h1 h2
+  fun hs h1 h2 => cut_iff _ 0 len m (fun p q hp hpq hq hy => Int.lt_of_le_of_lt (hs p q ⟨hp, hpq, hq⟩) hy) h1 h2
 
 theorem upper_iff (ar : Int → Int) (len y m : Int) :
     sorted ar 0 len → 0 ≤ m → m < len → (ar m ≤ y ↔ m < upper ar len y) :=
-  fun hs h1 h2 => cut_iff _ 0 len m (fun p q hp hpq hq hy => Int.le_trans (hs p q hp hpq hq) hy) h1 h2
+  fun hs h1 h2 => cut_iff _ 0 len m (fun p q hp hpq hq hy => Int.le_trans (hs p q ⟨hp, hpq, hq⟩) hy) h1 h2
 
 theorem lower_rule (ar : Int → Int) (len y m : Int) :
     sorted ar 0 len ∧ 0 ≤ m ∧ m < len → (ar m < y ↔ m < lower ar len y) :=
@@ -3607,7 +3611,7 @@ theorem bounds (ar : Int → Int) (len y : Int) :
   have := cut_bounds (fun j => ar j < y) 0 len hl
   have := cut_bounds (fun j => ar j ≤ y) 0 len hl
   have := cutFrom_mono (fun j => ar j < y) (fun j => ar j ≤ y) 0 (len - 0).toNat (fun j h => Int.le_of_lt h)
-  simp only [lower, upper, cut] at *
+  simp only [lower, upper, cut_toNat] at *
   omega
 
 theorem cut_lower (ar : Int → Int) (len y : Int) :

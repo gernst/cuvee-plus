@@ -9,7 +9,7 @@
 --   resources/cuvee/teq/strides.dfy
 --   resources/cuvee/teq/unsigned.dfy
 -- do not edit: a definition that does not check is fixed in the module or in lean.Printer
-import TEQ.Definitions
+import TEQ.Semantics
 
 open Classical
 
@@ -84,6 +84,14 @@ noncomputable def consts {α : Type} [Inhabited α] (n : Nat) (v : α) : Trace �
   match n with
   | .zero => stop v
   | .succ m => step v (consts m v)
+
+noncomputable def cutFrom (G : Int → Prop) (l : Int) (n : Nat) : Int :=
+  match n with
+  | .zero => l
+  | .succ k => if G l then cutFrom G (l + 1) k else l
+
+noncomputable def cut (G : Int → Prop) (l : Int) (h : Int) : Int :=
+  cutFrom G l (natural (h - l))
 
 noncomputable def selects {α β : Type} [Inhabited α] [Inhabited β] (a : α → β)
                                                                    (keys : List α) : List β :=
@@ -621,6 +629,19 @@ def Stmt.select_not_occurs_selects : Prop :=
 axiom bisection :
   Int → Int → List Int → (Int → Int → Int) → (Int → Prop) → (Int → Prop) → Trace (Int × Int)
 
+noncomputable def sorted (a : Int → Int) (lo : Int) (hi : Int) : Prop :=
+  ∀ (i : Int) (j : Int), lo ≤ i ∧ i ≤ j ∧ j < hi → a i ≤ a j
+
+noncomputable def perm (a : Int → Int) (b : Int → Int) : Prop :=
+  ∃ (f : Int → Int) (g : Int → Int),
+    (∀ (i : Int), g (f i) = i)
+      ∧ (∀ (i : Int), f (g i) = i)
+      ∧ (∀ (i : Int), a i = b (f i))
+
+noncomputable def partitioned (a : Int → Int) (lo : Int) (mid : Int)
+                              (hi : Int) : Prop :=
+  ∀ (i : Int) (j : Int), lo ≤ i ∧ i < mid ∧ mid ≤ j ∧ j < hi → a i ≤ a j
+
 def Stmt.sorted_empty : Prop :=
   ∀ (a : Int → Int) (lo : Int),
     sorted a lo lo ↔ True
@@ -724,6 +745,12 @@ def Stmt.sorted_prefix_steps_two : Prop :=
            0
            n
            ↔ True)
+
+noncomputable def lower (ar : Int → Int) (len : Int) (y : Int) : Int :=
+  cut (fun (j : Int) => ar j < y) 0 len
+
+noncomputable def upper (ar : Int → Int) (len : Int) (y : Int) : Int :=
+  cut (fun (j : Int) => ar j ≤ y) 0 len
 
 def Stmt.lower_rule : Prop :=
   ∀ (ar : Int → Int) (len : Int) (y : Int) (m : Int),

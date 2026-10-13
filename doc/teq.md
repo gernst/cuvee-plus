@@ -387,12 +387,10 @@ project at the root (`lakefile.toml`, sources in `lean/`):
   zips several dependencies, `List.zip d₁ (List.zip d₂ d₃)`, binds their
   values by a tuple, `fun acc ⟨b₁, b₂, b₃⟩ => ...`, and prints guarded cases
   as conditionals.
-- [Definitions.lean](../lean/TEQ/Definitions.lean), by hand: a model of each
-  function that the modules declare without a body and describe in a comment
-  (`cut`, `sorted`, `perm`, `partitioned`, `lower`, `upper`), so that the
-  lemmas about them are proved of the described meaning; the generator drops
-  their printed axioms after checking their types (`DEFINED`). The other
-  functions without a body (`bisection`) stay axioms.
+- The functions that the engines use through their lemmas only, `cut`,
+  `sorted`, `perm`, `partitioned`, `lower` and `upper`, have definitions in
+  the modules without `{:rw}` (no rules), which the proofs use; a function
+  without a body (`bisection`) is printed as an axiom.
 - [Database.lean](../lean/TEQ/Database.lean), generated: the functions of the
   modules as printed by `-print lean`, and each lemma as a proposition
   `Stmt.<name>` of its printed statement, with the premises of

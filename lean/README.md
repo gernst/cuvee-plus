@@ -6,8 +6,6 @@ The proofs of the lemmas of the stable modules of the database (`resources/cuvee
 library `TEQ` of the Lake project at the root of the repository (`lakefile.toml`, `lean-toolchain`):
 
 - `TEQ/Semantics.lean` (by hand): the datatype of traces and the combinators `trace`, `maps`, `invs`.
-- `TEQ/Definitions.lean` (by hand): a model of each function that the modules declare without a body and describe
-  in a comment (`cut`, `sorted`, `perm`, `partitioned`, `lower`, `upper`).
 - `TEQ/Database.lean` (generated): the functions of the modules as printed by `-print lean`, and each lemma as the
   proposition `Stmt.<name>`, its printed statement with the premises of `premises.txt`.
 - `TEQ/Proofs.lean` (by hand): the theorem `<name>` of each lemma, with the auxiliary lemmas, and the theorems of the
