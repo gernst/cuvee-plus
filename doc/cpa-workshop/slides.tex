@@ -18,6 +18,7 @@
 \setbeamertemplate{footline}{\hfill{\color{black!60}\normalsize\insertpagenumber\,/\,\insertdocumentendpage}\hspace*{0.25cm}\vspace*{0.2cm}}
 \setbeamertemplate{itemize items}{\textbullet}
 \setbeamertemplate{itemize subitem}{--}
+\setbeamerfont{itemize/enumerate subbody}{size=\normalsize}
 \setbeamertemplate{enumerate items}{\insertenumlabel)}
 \setbeamersize{text margin left=0.8cm,text margin right=0.8cm}
 \setbeamerfont{frametitle}{series=\bfseries,size=\fontsize{17}{20}\selectfont}
@@ -273,6 +274,7 @@
     \item \concept{CHCs}: a loop is a relation on \emph{states}
     \item \concept{TEQs}: a loop is what each \emph{variable computes} over the iterations
     \item the loop is its own specification: \good{sound, relatively complete}
+    \item no induction per program: it is in the \concept{lemmas of the database}, proved once
     \item program fragments get \good{names}: counter, stores, sums --- knowledge about them is reusable
   \end{itemize}
 \end{frame}
@@ -402,7 +404,7 @@ theorem rotateLeft_BST [LT α]
       \vspace{0.6em}
       \begin{itemize}\small
         \item \good{for all trees}: a case split and \texttt{grind}, checked by Lean
-        \item the insight is in the \concept{tool}, not in the proof
+        \item a \concept{better tool} beats a better proof --- this one built by people
       \end{itemize}
     \end{column}
   \end{columns}
@@ -424,7 +426,8 @@ theorem rotateLeft_BST [LT α]
   \vspace{0.3em}
   \begin{itemize}
     \item the cost is paid \good{once per concept}, not once per program
-    \item the trust is in a \good{checked artifact}, not in a language model
+    \item the trust is in a \good{checked artifact}, not in a language model\\
+      {\small (lemmas written for one program are assumed, unless proved)}
     \item AI writes what people find tedious: the lemma for every loop shape
   \end{itemize}
 \end{frame}
@@ -450,16 +453,42 @@ theorem rotateLeft_BST [LT α]
 \end{frame}
 
 \begin{frame}{How Cuvée is built}
-  recent features, written by an AI agent (Claude Code) under direction:
-  \begin{itemize}
-    \item the lemma database: modules for counters, sums, stores, searches, sorting
-    \item a new deduction engine (\texttt{-prove})
-    \item state traces, the SV-LIB frontend, the ACSL annotations of SV-COMP
-    \item examples, tests, and the documentation of every step
-  \end{itemize}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{what it took}
+      \begin{itemize}
+        \item years of personal experience with the approach
+        \item two weeks of Claude Code (Max plan)
+        \item Opus does as well as Fable, which is perhaps not worth its cost
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{who did what}
+      \begin{itemize}
+        \item the AI \good{fills the gaps}
+        \item the \concept{main ideas}, \concept{guidance} and \concept{decisions} are human
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vfill
+  \centerline{\good{you can make a verification tool from scratch over a weekend}}
   \vspace{0.6em}
-  \textcolor{black!45}{% experience to be filled in by the speaker
-  what worked, what did not}
+\end{frame}
+
+\begin{frame}{What the AI contributed}
+  \begin{itemize}
+    \item built: the lemma database, a new deduction engine, state traces, the SV-LIB frontend, tests
+    \item a \good{profound understanding of the theory}; works with it autonomously, e.g.\ in creating the
+      lemma database
+    \item spots \good{corner cases} reliably, and is \good{self-critical}
+    \item substantial contributions to the approach itself:
+      \begin{itemize}
+        \item the binary search by a bisection
+        \item higher-order matching
+        \item most importantly, the partition of the state into strongly connected components, and
+          recognizing what the main point is
+      \end{itemize}
+  \end{itemize}
 \end{frame}
 
 % =====================================================================================================================
@@ -467,18 +496,18 @@ theorem rotateLeft_BST [LT α]
 \claims{3}
 
 \begin{frame}{Incremental reasoning on TEQs}
+  rewriting with the database, \concept{one program fragment at a time}:
+  partial results stay useful, nothing must be guessed up front
+  \vspace{0.5em}
   \begin{itemize}
-    \item rewriting with the database, \concept{one program fragment at a time}:\\
-      partial results stay useful, nothing must be guessed up front
-    \item the same representation carries far: nested loops, sorting, partitioning, merging
+    \setlength{\itemsep}{0.3em}
+    \item \textbf{two loops}: the second builds on the summary of the first (the sums)
+    \item \textbf{swap}: one question at a time --- what does iteration $k$ read?
+    \item \textbf{nested loops}: the inner loop first, then the outer one
+    \item \textbf{binary search}: bounds, while the number of iterations stays unknown
   \end{itemize}
   \vspace{0.5em}
-  what makes it work beyond simple loops:
-  \begin{enumerate}
-    \item \concept{state traces}: variables that read each other
-    \item \concept{partial descriptions}: proofs without a closed form
-    \item \concept{a deduction engine}: congruence closure, simplex, lookup before decision
-  \end{enumerate}
+  what makes it work: \concept{state traces}, \concept{partial descriptions}, \concept{a deduction engine}
 \end{frame}
 
 \begin{frame}{State traces: variables that read each other}
@@ -519,7 +548,7 @@ theorem rotateLeft_BST [LT α]
       {\concept{forward facts}:\\ $0 \le lo \le \mathsf{lower}(a, n, x)$\\ $\mathsf{upper}(a, n, x) \le hi \le n$};
     \node[bubble, text width=7.3cm, callout absolute pointer={($(P |- L9.east)+(0.15,0)$)}] at (11.05,1.6)
       {found: $\mathsf{lower} \le mid < \mathsf{upper}$\\ exit: $\mathsf{lower} = \mathsf{upper}$};
-    \node[align=center, font=\small, text=black!55] at (3.0,0.3) {general lemmas, not yet in the database};
+    \node[align=center, font=\small, text=black!55] at (3.0,0.3) {general lemmas, assumed,\\ not yet in the database};
   \end{tikzpicture}
 \end{frame}
 
@@ -559,8 +588,8 @@ theorem rotateLeft_BST [LT α]
   \end{columns}
   \vspace{1em}
   \begin{itemize}
-    \item TEQ summaries as \concept{loop acceleration} inside a CPA?
-    \item TEQ normal forms as \concept{invariants in correctness witnesses}?
+    \item complementary: TEQ summaries as \concept{loop acceleration} inside a CPA?
+    \item TEQ normal forms, lowered to quantified invariants, in \concept{correctness witnesses}?
     \item \concept{shared frontends}: C, SV-LIB, Boogie, Dafny --- and Horn clauses as output
     \item which tasks does each side solve alone, and why?
   \end{itemize}
@@ -583,6 +612,29 @@ theorem rotateLeft_BST [LT α]
   Thank you!\\[0.5em]
   {\small Trace Equation Systems for Program Verification \cit{[Coenen, Ernst, submitted 2026]}}
   \vfill
+\end{frame}
+
+% references: titles only where they are certain, otherwise authors, venue and topic
+\begin{frame}{References}
+  \scriptsize
+  \begin{itemize}
+    \setlength{\itemsep}{0.15em}
+    \item C.~Coenen, G.~Ernst. \emph{Trace Equation Systems for Program Verification.} Submitted, 2026.
+    \item G.~Ernst, G.~Fedyukovich. LemmaCalc: helper lemmas by program transformation. iFM 2025.
+    \item K.~Nishimura, J.-P.~Lozi, J.~Lawall. \emph{Generating Loop Invariants for Deductive Verification using
+      Iterator Profiles.} ASE 2026.
+    \item J.~Amilon, Z.~Esen, D.~Gurov, C.~Lidström, P.~Rümmer. \emph{Automatic Program Instrumentation for
+      Automatic Verification.} CAV 2023 (MonoCera).
+    \item S.~Chakraborty, A.~Gupta, D.~Unadkat. \emph{Verifying Array Manipulating Programs with Full-Program
+      Induction.} TACAS 2020. \emph{Diffy: Inductive Reasoning of Array Programs Using Difference Invariants.} CAV 2021.
+    \item P.~Georgiou, B.~Gleiss, L.~Kovács. \emph{Trace Logic for Inductive Loop Reasoning.} FMCAD 2020.
+    \item F.~Frohn. \emph{A Calculus for Modular Loop Acceleration.} TACAS 2020. Acceleration of array lookups,
+      CAV 2026.
+    \item P.~Daca, T.~A.~Henzinger, A.~Kupriyanov. \emph{Array Folds Logic.} CAV 2016.
+    \item H.~Unno, S.~Torii, H.~Sakamoto. \emph{Automating Induction for Solving Horn Clauses.} CAV 2017.
+    \item A.~Bundy, A.~Stevens, F.~van Harmelen, A.~Ireland, A.~Smaill. \emph{Rippling: A Heuristic for Guiding
+      Inductive Proofs.} Artificial Intelligence, 1993.
+  \end{itemize}
 \end{frame}
 
 \end{document}

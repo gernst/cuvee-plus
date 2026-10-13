@@ -3,8 +3,8 @@
 - `story.md`: the storyline, for an audience that knows nothing about TEQs: two worlds and what lies between
   ("routine, not trivial"), then three claims (invariants are the wrong representation; insight belongs in reusable
   lemmas, and AI should make tools; reasoning must be incremental), each with its slides.
-- `review.md`: open points from re-reading the story against the slides and the repository.
-- `slides.tex`: the beamer deck that tells the story (16:10, 38 pages with overlays). Compile with
+- `review.md`: points from re-reading the story against the slides and the repository, and how they were addressed.
+- `slides.tex`: the beamer deck that tells the story (16:10, 40 pages with overlays). Compile with
   `pdflatex slides.tex` (twice).
 
 All slides are drawn in beamer and TikZ, in the look of the earlier decks (`~/Papers/array-acceleration/talks/CPA.pdf`

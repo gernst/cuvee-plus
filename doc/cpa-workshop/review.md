@@ -1,45 +1,37 @@
 # Review of the story (October 13, 2026)
 
-Open points from re-reading `story.md` against the slides and the state of the repository. The arc holds:
-problem, three claims, approach, open questions.
+Open points from re-reading `story.md` against the slides and the state of the repository, and how they were
+addressed.
 
 ## 1. The binary search (done)
 
-The slide now follows `doc/state-traces`: the binary search over a sorted array, one lemma about the bisection for
-the whole loop, its bounds as forward facts through the partition points `lower` and `upper`. The caption says the
-lemmas are general but not yet in the database.
+The slide follows `doc/state-traces`: the binary search over a sorted array, one lemma about the bisection for the
+whole loop, its bounds as forward facts through the partition points `lower` and `upper`. The caption says the
+lemmas are general, assumed, and not yet in the database.
 
-## 2. Claim 3 is not yet shown as incremental
+## 2. Claim 3 as incremental (done)
 
-The swap, nested-loop and binary-search slides show that the representation stretches further, but none of them
-shows the incrementality the claim promises. Either:
+The slide "Incremental reasoning on TEQs" names the incremental step of each example: the two loops (the second
+builds on the summary of the first), the swap (one question at a time), nested loops (the inner loop first), the
+binary search (bounds while the number of iterations stays unknown).
 
-- add one line per example that names the incremental step: the number of iterations stays unknown and the bounds
-  still follow; the inner loop is summarized first and becomes one value of the outer update; or
-- rename the claim to "Reasoning must be incremental and compositional". The sum example, where the second loop
-  builds on the first loop's result, is the cleanest demonstration and could open claim 3.
+## 3. Where the induction went, and what is checked (done)
 
-## 3. "Where did the induction go?"
+"Variable-modular, not state-modular" says that there is no induction per program: it is in the lemmas of the
+database, proved once. The thesis slide notes that lemmas written for one program are assumed unless proved, and
+the binary search's caption says its lemmas are assumed.
 
-This is the obvious question from a model-checking audience. Answer: the induction moved into the database lemmas,
-which are proved once; the TEQ itself is an exact description of the loop. A sentence in claim 1, or a backup
-slide, would pre-empt it.
+## 4. The evidence for "AI should make tools" (done)
 
-Related: the thesis slide says "checked once (Lean, …)". That holds for the database, but not for program-specific
-lemmas such as those of the binary search, which are assumed. Say this caveat, at least verbally.
+"How Cuvée is built" and "What the AI contributed" state the speaker's experience: the cost, the models, the
+division of labour, and the AI's contributions to the approach. The Lean slide frames `grind` as a better tool
+built by people: a better tool beats a better proof.
 
-## 4. The evidence for "AI should make tools" is thin
+## 5. Smaller points (done, one open)
 
-- "How Cuvée is built" still has the grey placeholder; the thesis rests on the speaker's experience there.
-- The `grind` one-liner shows a better tool beating a generated proof. But `grind` was built by people, not by AI.
-  The argument still holds (tools beat per-program proofs), but frame it that way, so it is not read as evidence for
-  AI-made tools.
-
-## 5. Smaller points
-
-- Done: `story.md` follows the slides in order and no longer refers to pages of the removed `figures/CPA.pdf`.
-- Partly done: the slide "Evaluation" is a placeholder table; the numbers come from the runs with one version.
-- "Search rediscovers known facts" is aimed at exactly this audience's tools. Acceleration is known in their
-  community too, so "complementary" may land better than "inference is bad".
-- The witness question is fair but non-trivial: correctness witnesses need state invariants, and TEQ normal forms
-  would first have to be lowered to quantified invariants.
+- `story.md` follows the slides in order and no longer refers to pages of a removed PDF.
+- "Questions for this community" frames TEQs as complementary to model checking (TEQ summaries as acceleration in a
+  CPA), and the witness question mentions the lowering to quantified invariants.
+- A references slide closes the talk.
+- **Open:** the slide "Evaluation" is a placeholder table; its numbers come from the runs with one version of Cuvée.
+  The task counts in it mix sources (the submission counts 150 MonoCera tasks, `ideas/experiments.md` 125).

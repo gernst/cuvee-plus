@@ -35,7 +35,8 @@ Each part opens with the claims, the current one in red.
   `A = stores(a, ⌊I⌋, ⌊consts(n, z)⌋)`, the history ⌊I⌋ connecting the two; one lemma each closes the goal.
 - **Variable-modular, not state-modular:** `x_n = current(X)` where `X = trace(x_0, for ⌊K⌋, ⌊Y⌋ do x, k, y ↦ u)`.
   Horn clauses describe a loop by a relation on states, TEQs by what each variable computes. The loop is its own
-  specification (sound, relatively complete), and program fragments get names.
+  specification (sound, relatively complete), and program fragments get names. There is no induction per program:
+  it is in the lemmas of the database, proved once.
 
 ## Claim 2: insight belongs in reusable lemmas → a database, and AI should make tools
 
@@ -48,18 +49,28 @@ Each part opens with the claims, the current one in red.
 - **Two obvious ways to use AI**, both per program: as the verifier (no trust), and as the proof generator
   (checked, but paid per program).
 - The proof a language model generated for an AVL rotation reads like **assembler**. **The same proof, with a
-  better tool:** with `grind` and the definitions, each theorem is one line (checked with Lean 4.34.1).
+  better tool:** for all trees, a case split and `grind` (checked with Lean 4.34.1). A better tool beats a better
+  proof --- this one built by people.
 - **Thesis: AI should make tools** --- lemmas, engine rules, frontends, tests --- checked once and used for every
-  program. The cost is paid once per concept, the trust is in a checked artifact.
+  program. The cost is paid once per concept, the trust is in a checked artifact (lemmas written for one program
+  are assumed, unless proved).
 - **The two threads meet:** TEQs make the knowledge explicit and modular, one lemma per loop shape --- what AI can
   write and a tool can check (LemmaCalc does it without AI).
-- **How Cuvée is built:** recent features written by an AI agent under direction; the speaker's own experience.
+- **How Cuvée is built:** years of personal experience with the approach, then two weeks of Claude Code on a Max
+  plan; Opus does as well as Fable, which is perhaps not worth its cost. The AI fills the gaps, but the main ideas,
+  the guidance and the decisions are human. You can make a verification tool from scratch over a weekend.
+- **What the AI contributed:** it built the lemma database, a new deduction engine, state traces, the SV-LIB frontend
+  and tests; it has a profound understanding of the theory and works with it autonomously (e.g. the database); it
+  spots corner cases reliably and is self-critical; and it contributed to the approach itself: the binary search by a
+  bisection, higher-order matching, and most importantly the partition of the state into strongly connected
+  components, and recognizing what the main point is.
 
 ## Claim 3: reasoning must be incremental → rewriting on TEQs
 
 - **Incremental reasoning on TEQs:** rewriting proceeds one program fragment at a time; partial results stay
-  useful, nothing has to be guessed up front. The same representation carries to nested loops, sorting,
-  partitioning, merging.
+  useful, nothing has to be guessed up front. In the examples: two loops, the second builds on the summary of the
+  first (the sums); the swap, one question at a time (what does iteration k read?); nested loops, the inner loop
+  first; the binary search, bounds while the number of iterations stays unknown.
 - **State traces, variables that read each other** (the swap of two arrays): one trace per variable would be
   mutually recursive; one trace per strongly connected component, whose projections the lemmas see on demand. The
   argument: iteration k reads what no earlier iteration wrote.
@@ -73,9 +84,10 @@ Each part opens with the claims, the current one in red.
 
 - **Evaluation:** a placeholder table (MaxPranq, Rapid, MonoCera, SV-COMP Arrays and Loops, the array algorithms),
   filled in once the runs with one version of Cuvée are done.
-- **Questions for this community:** TEQ summaries as loop acceleration inside a CPA? TEQ normal forms as invariants
-  in correctness witnesses? Shared frontends (C, SV-LIB, Boogie, Dafny) and Horn clauses as output.
+- **Questions for this community:** complementary, not competing --- TEQ summaries as loop acceleration inside a
+  CPA? TEQ normal forms, lowered to quantified invariants, in correctness witnesses? Shared frontends (C, SV-LIB, Boogie, Dafny) and Horn clauses as output.
 - **Outlook:** the scope of TEQs (recursive procedures?), combination with traditional methods, interaction,
   inferring lemmas automatically.
 - *Don't let AI verify programs. Let it build the tools that do, on a representation that makes their knowledge
   reusable.*
+- **References** to close: the TEQ paper, LemmaCalc, iterator profiles, MonoCera, and the related work of the talk.
