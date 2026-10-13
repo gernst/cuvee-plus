@@ -95,7 +95,7 @@ case class Config(
     // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print;
     // teq injects the modules of the lemma database (see injected)
     known: Set[String] = Set(),
-    // the further modules of the lemma database, e.g. by -include teq:nested, with the sources that parse them
+    // the further modules of the lemma database, e.g. by -include teq:aggregation, with the sources that parse them
     modules: List[(Source, String)] = Nil,
     // the files of the user that are injected into the input after the modules, with the sources of their
     // languages (see -include and Source.apply)
@@ -220,7 +220,7 @@ object Config:
         (config_, rest)
 
   val fallback =
-    flag("-fallback", "lower trace equation systems into first-order logic for solvers, e.g. after -teq -simplify"):
+    flag("-fallback", "lower trace equation systems into first-order logic for solvers, e.g. after -teq -prove"):
       case (config, rest) =>
         val config_ = config.using(Fallback)
         (config_, rest)
@@ -353,8 +353,12 @@ object Config:
   // for -print lean of the database
   val include =
     flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; teq:<concept> injects the module <concept> of the lemma database of -teq"):
+      // a module that does not exist is reported by its name, e.g. teq:sorting, renamed to teq:sorted on Oct 13, 2026
       case (config, file :: rest) if file.startsWith("teq:") =>
-        (config.copy(modules = config.modules :+ (cuvee.dafny.Source, TEQ.module(file.drop(4)))), rest)
+        val module = TEQ.module(file.drop(4))
+        if getClass.getResource(module) == null
+        then Error.raise("unknown module of the lemma database (resources/cuvee/teq)", file)
+        (config.copy(modules = config.modules :+ (cuvee.dafny.Source, module)), rest)
       case (config, file :: rest) if langs.get(file.suffix).exists(_ != Lang.yml) =>
         (config.including(langs(file.suffix).source, file), rest)
 
@@ -427,7 +431,7 @@ object Config:
       println()
 
   def version() =
-    println("Cuvée 0.46.7")
+    println("Cuvée 0.46.8")
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

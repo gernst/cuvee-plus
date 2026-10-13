@@ -17,7 +17,13 @@ facts differ from round to round. The likely cause is the rule of 0.46.3 that an
 is assumed raw (`Forward.fire`: its atoms are what the classes need): once its atoms are in the classes, the raw
 instance is new in each round again.
 
-**Change.**
+**Done (0.46.8).** The steps went into the simplification of the instances, which `fire` repeats wherever a lemma
+fires (also at every comparison decided by `Simplify.forward`): an instance is simplified with steps of its own now.
+The reducercommutativity tasks end `unknown` (sum05-2 in 32 s); bAnd*, bor*, xor* still use up the steps of the goal,
+in the traversal itself: the same reads x[0], x[1] are simplified again in about 31 sibling contexts. Both outcomes
+score the same; what remains is the cost.
+
+**Further change, if the cost matters.**
 - A memo of the instances per context: an instance whose canonical form (`Canon`, modulo the classes) is known is
   not assumed again, and does not count as a change of the round (step 3 of J in ideas/teq-modules.md, "firing at
   definitions, a memo per lemma and canonical term").

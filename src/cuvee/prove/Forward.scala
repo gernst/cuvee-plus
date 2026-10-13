@@ -105,7 +105,9 @@ object Forward:
       // an instance that the rules reduce to true, e.g. integer(n) == 0 to the known n == zero, is assumed as it is, since
       // it may still be news to the arithmetic, whose constraints do not see the equations of the classes
       val raw = replace(subst_(fw.concl), subst_(fw.trigger), term)
-      val simplified = Simplify.simplify(config, state, ctx.neutral, raw)
+      // with steps of its own, since the instances are simplified again wherever the lemma fires, which would use up
+      // the steps of the goal (natural_positive on reducercommutativity/sum05-2, see ideas/prove-next.md)
+      val simplified = Simplify.simplify(config, state, ctx.neutral.copy(steps = util.Ref(1000)), raw)
       val phi = if simplified == True then raw else simplified
       Debug.step("forward", fw.name.getOrElse("?") + " at " + Simplify.show(config.output.printer, term), Simplify.show(config.output.printer, phi))
       phi
