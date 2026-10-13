@@ -1,6 +1,5 @@
 % compile with pdflatex (twice): Linux Libertine for text and Bera Mono for code
-% storyline: story.md; full pages of the earlier decks via \cpa{page} (figures/CPA.pdf) and \nextgen{page}
-% (figures/NextGeneration.pdf)
+% storyline: story.md; the pictures in figures/ are taken from the earlier decks (CPA.pdf, Next Generation.pdf)
 \documentclass[aspectratio=1610,14pt]{beamer}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -9,7 +8,7 @@
 \usepackage[scaled=0.88]{beramono}
 \usepackage{listings}
 \usepackage{tikz}
-\usetikzlibrary{calc,fit,shapes.callouts,shapes.geometric,arrows.meta,positioning}
+\usetikzlibrary{calc,fit,shapes.callouts,shapes.geometric,shapes.arrows,arrows.meta,positioning,decorations.pathreplacing}
 
 % the look of the earlier decks: plain white, bold serif titles at the top left,
 % blue concepts, red problems, green answers, purple citations
@@ -35,11 +34,27 @@
 \newcommand{\concept}[1]{\textcolor{cblue}{#1}}
 \newcommand{\cit}[1]{\textcolor{cpurple}{#1}}
 
-% a page of an earlier deck as a full slide
-\newcommand{\fullpage}[2]{{\usebackgroundtemplate{\includegraphics[page=#2,width=\paperwidth,height=\paperheight]{figures/#1.pdf}}
-  \begin{frame}\end{frame}}}
-\newcommand{\cpa}[1]{\fullpage{CPA}{#1}}
-\newcommand{\nextgen}[1]{\fullpage{NextGeneration}{#1}}
+% slides drawn on the whole page, coordinates in cm from the bottom left (the page is 16 x 10)
+\tikzset{page/.style={remember picture, overlay, shift={(current page.south west)}}}
+% the spectrum from fully automatic to human-guided: \spectrum{left color}{right color}{middle: 1 to show}
+\newcommand{\spectrum}[3]{%
+  \draw[line width=3.5pt, black!60, {Triangle[length=7pt,width=11pt]}-{Triangle[length=7pt,width=11pt]}]
+    (2.7,2.77) -- (5.6,2.77) -- (6.7,3.15) -- (7.0,2.77) -- (8.1,3.15) -- (8.4,2.77) -- (9.5,3.15) -- (9.8,2.77) -- (13.6,2.77);
+  \node[single arrow, draw=#1, line width=1.4pt, fill=white, rotate=90, minimum height=0.75cm, minimum width=0.75cm,
+        single arrow head extend=3pt, inner sep=0pt] at (3.4,1.95) {};
+  \node[single arrow, draw=#2, line width=1.4pt, fill=white, rotate=90, minimum height=0.75cm, minimum width=0.75cm,
+        single arrow head extend=3pt, inner sep=0pt] at (12.65,1.95) {};
+  \node[align=center, text=#1] at (3.4,0.95) {fully automatic\\ simpler properties};
+  \node[align=center, text=#2] at (12.65,0.95) {human-guided\\ expressive specs};
+  \ifnum#3=1
+    \node[single arrow, draw=cred, line width=1.4pt, fill=white, rotate=90, minimum height=0.75cm, minimum width=0.75cm,
+          single arrow head extend=3pt, inner sep=0pt] at (8.1,1.95) {};
+    \node[text=cred, font=\bfseries] at (8.1,1.2) {open challenge};
+  \fi}
+% a box with a picture and a tail pointing down: \picbox{x0}{y0}{x1}{y1}{tail from}{tail to}{tip x}{color}{content}
+\newcommand{\picbox}[9]{%
+  \filldraw[draw=#8, line width=1.6pt, fill=white] (#5,#2) -- (#7,3.15) -- (#6,#2) -- (#3,#2) -- (#3,#4) -- (#1,#4) -- (#1,#2) -- cycle;
+  \node[inner sep=0pt] at ($0.5*(#1,#2)+0.5*(#3,#4)$) {#9};}
 
 % a program in a box, its lines named L1, L2, ... for the pointers of the callouts
 % \program{x}{y}{number of lines}{line, line, ...} (lines with commas in braces)
@@ -83,22 +98,47 @@
 
 % =====================================================================================================================
 % title
-\cpa{1}
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \node[font=\bfseries\fontsize{22}{26}\selectfont] at (8,7.7) {Trace Equations for Program Verification};
+    \node[font=\Large] at (8,5.75) {CPAchecker Workshop 2026};
+    \node[anchor=south west, inner sep=0pt] at (0.35,0.41) {\includegraphics[height=3.86cm]{figures/photo.jpg}};
+    \node[anchor=north west, align=left] at (3.45,4.25)
+      {{\Large\bfseries Gidon Ernst}\\[3pt] LMU Munich, University of Regensburg\\ \textcolor{cblue}{https://www.sosy-lab.org/people/ernst/}};
+    \node[anchor=south west, inner sep=0pt] at (3.75,0.41) {\includegraphics[height=1.3cm]{figures/logos.png}};
+    \node[anchor=south east] at (15.1,0.55) {October 16, 2026};
+  \end{tikzpicture}
+\end{frame}
 
 % =====================================================================================================================
 % two worlds, the open challenge in between (routine, not trivial), why bother
-\cpa{4}
-\cpa{6}
-
-% the open challenge of NextGeneration.pdf, with the AWS picture of CPA.pdf on the right
-{\usebackgroundtemplate{\includegraphics[page=11,width=\paperwidth,height=\paperheight]{figures/NextGeneration.pdf}}
-\begin{frame}
-  \begin{tikzpicture}[remember picture, overlay]
-    \fill[white] ($(current page.north west)+(8.37,-2.20)$) rectangle ($(current page.north west)+(15.57,-6.36)$);
-    \node[anchor=center, inner sep=0] at ($(current page.north west)+(11.97,-4.28)$)
-      {\includegraphics[width=7.2cm, height=4.16cm, keepaspectratio, trim=0 60 30 0, clip]{figures/aws-000.jpg}};
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \picbox{0.35}{3.6}{12.65}{9.7}{2.4}{5.4}{3.45}{cblue}{};
+    \node[anchor=north, inner sep=0pt] at (6.5,9.6) {\includegraphics[width=11.9cm, height=5.45cm, keepaspectratio]{figures/svcomp.jpg}};
+    \node[anchor=south east, text=cblue, font=\small] at (12.55,3.62) {https://sv-comp.sosy-lab.org/};
+    \spectrum{cblue}{black}{0}
   \end{tikzpicture}
-\end{frame}}
+\end{frame}
+
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \picbox{3.35}{3.6}{15.65}{9.7}{10.4}{13.5}{12.65}{cblue}
+      {\includegraphics[width=12.1cm, height=5.95cm, keepaspectratio, trim=0 60 30 0, clip]{figures/aws.jpg}};
+    \spectrum{black}{cblue}{0}
+  \end{tikzpicture}
+\end{frame}
+
+% the open challenge between the two worlds
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \picbox{0.9}{3.6}{7.75}{7.85}{2.4}{4.3}{3.45}{black}
+      {\includegraphics[width=6.6cm, height=4.0cm, keepaspectratio]{figures/svcomp.jpg}};
+    \picbox{8.3}{3.6}{15.6}{7.85}{11.5}{13.4}{12.65}{black}
+      {\includegraphics[width=7.1cm, height=4.0cm, keepaspectratio, trim=0 60 30 0, clip]{figures/aws.jpg}};
+    \spectrum{black}{black}{1}
+  \end{tikzpicture}
+\end{frame}
 
 \begin{frame}{Routine, not trivial}
   \begin{tikzpicture}
@@ -116,11 +156,42 @@
   \end{tikzpicture}
 \end{frame}
 
-\cpa{26}
-\cpa{7}
+{\setbeamercolor{background canvas}{bg=black}
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \node[inner sep=0pt] at (8,5) {\includegraphics[height=10cm]{figures/meme.jpg}};
+    \node[rotate=-8, font=\ttfamily\large, align=left] at (5.9,8.15) {for i = 0..n\\ \ \ s += a[i]};
+    \node[rotate=-11, font=\ttfamily\scriptsize, align=left] at (10.35,7.35)
+      {sum(i,n,a) ==\\ \ if 0 <= i < n\\ \ then\\ \ \ a[i] + sum(i+1,n,a)\\ \ else\\ \ \ 0};
+  \end{tikzpicture}
+\end{frame}}
+
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \node[anchor=west, inner sep=0pt] at (1.3,5) {\includegraphics[height=9.6cm]{figures/datadog.jpg}};
+    \node[rotate=90, text=cblue, align=center, font=\small] at (0.55,5) {https://www.datadoghq.com/\\ blog/ai/harness-first-agents/};
+    \node[draw, line width=1.6pt, fill=white, rectangle callout, callout absolute pointer={(9.1,0.8)},
+          text width=6.2cm, align=center, inner sep=8pt] at (12.45,4.6)
+      {{\Large\bfseries\color{cred} Why bother at all?}\\[0.8em]
+       \large ``the bottleneck has moved from writing code to \textbf{trusting what was written}''};
+  \end{tikzpicture}
+\end{frame}
 
 % why LLMs work: a good representation and knowing the solution, which motivates the claims
-\cpa{12}
+\begin{frame}{LLMs for software verification}
+  \vspace{0.6em}
+  \begin{enumerate}
+    \setlength{\itemsep}{0.4em}
+    \item have an effective problem representation
+    \item actually know the solution
+  \end{enumerate}
+  \vspace{1.2em}
+  \begin{itemize}
+    \setlength{\itemsep}{0.4em}
+    \item need a trusted cross-check of proofs
+    \item high cost when applied case by case
+  \end{itemize}
+\end{frame}
 
 \claims{0}
 
@@ -179,7 +250,17 @@
 % claim 2: insight belongs in reusable lemmas -> the database; AI should make tools
 \claims{2}
 
-\cpa{35}
+% the CEGAR dialog of CPA.pdf, slides 28 to 35, at its end
+\begin{frame}{Algorithmic invariant inference}
+  \begin{tikzpicture}
+    \useasboundingbox (0,0) rectangle (14.4,7.4);
+    \program{0.1}{6.6}{6}{i := 0, while i < n, \ \ i := i + 1, \ \ \ldots, assert, \ \ i == n}
+    \node[draw, line width=1.6pt, rectangle callout, callout absolute pointer={(12.3,6.3)}, text width=5.2cm,
+          align=left, font=\ttfamily\small, text=cred, inner sep=8pt] at (8.4,4.0)
+      {$i \le n \wedge \neg(i < n)$\\ $\Rightarrow i = n$ ?\\[1.2em] yes.\\[0.6em] you are right!\\ it's a counter};
+    \node[inner sep=0pt] at (13.1,6.3) {\includegraphics[width=1.6cm]{figures/checkmark.jpg}};
+  \end{tikzpicture}
+\end{frame}
 
 % the first example again: every step is a lemma of the database
 \begin{frame}{Array initialization, by lemmas}
@@ -212,7 +293,31 @@
   \end{tikzpicture}
 \end{frame}
 
-\cpa{41}
+% the approach (CPA.pdf, slide 41)
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \node[anchor=west, text=cblue, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.1) {How to do better?};
+    \node[box, minimum width=2.9cm, minimum height=1.45cm, text=cblue] (task) at (2.55,6.75) {task};
+    \node[box, minimum width=3.3cm, minimum height=1.45cm, text=cblue] (proof) at (12.85,6.75) {proof};
+    \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (5.2,6.75) {};
+    \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (10.3,6.75) {};
+    \node[inner sep=0pt] at (7.75,6.75) {\includegraphics[width=5.6cm]{figures/unicorns.png}};
+    \node[inner sep=0pt] at (9.2,7.55) {\includegraphics[width=2.6cm]{figures/wand.png}};
+    \node[fill=blue, text=white, draw=black, line width=0.8pt, font=\small] at (10.0,8.55) {magic unicorn zoo};
+    \node[single arrow, draw, line width=1.4pt, rotate=-90, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (2.7,5.1) {};
+    \node[box, text width=4.4cm, minimum height=2.1cm, text=cgreen, font=\bfseries] at (3.1,2.75)
+      {representation:\\ Trace Equation\\ Systems (TEQs)};
+    \draw[line width=3pt, -{Triangle[length=7pt,width=11pt]}] (8.4,2.95) arc (0:300:0.6);
+    \node[single arrow, draw, line width=1.4pt, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (6.35,2.95) {};
+    \node[single arrow, draw, line width=1.4pt, rotate=180, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (9.65,2.95) {};
+    \node[cylinder, shape border rotate=90, draw, line width=1.6pt, aspect=0.22, minimum width=4.6cm, minimum height=2.1cm,
+          align=center, text=cgreen, font=\bfseries] at (13.25,2.75) {database of\\ program lemmas};
+    \node[align=center, text=cgreen, font=\bfseries] at (7.8,1.2) {simplification\\ by rewriting};
+    \draw[line width=6pt, cgreen, -{Triangle[length=10pt,width=16pt]}] (8.6,3.75) -- (11.0,5.85);
+    \draw[line width=6pt, -{Triangle[length=8pt,width=14pt]}] (7.85,3.95) -- (7.85,4.75);
+    \node[text=white, font=\bfseries\small] at (7.85,4.2) {?};
+  \end{tikzpicture}
+\end{frame}
 
 \begin{frame}{Two obvious ways to use AI}
   \begin{columns}[T]
@@ -240,7 +345,14 @@
 \end{frame}
 
 % the generated proof (CPA.pdf, slide 61), then the same theorem with a better tool
-\cpa{61}
+\begin{frame}[plain]
+  \begin{tikzpicture}[page]
+    \node[anchor=north west, inner sep=0pt] at (0.4,9.75) {\includegraphics[width=11.0cm]{figures/lean.png}};
+    \draw[cred, line width=3pt, decorate, decoration={brace, amplitude=12pt}] (11.15,6.7) -- (11.15,0.85);
+    \node[text=cred, font=\bfseries\Large] at (13.8,3.8) {$\simeq$ assembler};
+    \node[anchor=south east, text=cblue, font=\small] at (15.6,0.15) {https://claude.ai/chat/688827fb-f1ec-41b9-9ab1-c4aa7fa8c5cf};
+  \end{tikzpicture}
+\end{frame}
 
 % the example of CPA.pdf slides 58 to 61, redone in Lean 4.34.1 (checked): one line with grind
 \begin{frame}[fragile]{The same proof, with a better tool}
@@ -422,7 +534,15 @@ theorem rotateLeft_BST [LT α]
   \end{itemize}
 \end{frame}
 
-\cpa{53}
+\begin{frame}{Outlook and discussion}
+  \begin{itemize}
+    \setlength{\itemsep}{0.7em}
+    \item What's the scope and what are the limitations of TEQs?\\ Notably: how to treat recursive procedures?
+    \item How to combine with traditional methods?
+    \item How to build interaction around TEQs?
+    \item How to infer lemmas automatically?\\ LemmaCalc \cit{[Ernst, Fedyukovich, iFM 2025]}
+  \end{itemize}
+\end{frame}
 
 \begin{frame}[plain]
   \centering\vfill

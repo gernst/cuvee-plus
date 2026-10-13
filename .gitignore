@@ -29,5 +29,17 @@ __pycache__/
 # compiled documents, rebuilt from their sources
 *.pdf
 
+# temporary files of LaTeX (*.out only under doc/, elsewhere it is the expected output of a test)
+*.aux
+*.log
+*.nav
+*.snm
+*.toc
+*.vrb
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+doc/**/*.out
+
 # the archive for Zenodo (scripts/zenodo.py)
 dist/
