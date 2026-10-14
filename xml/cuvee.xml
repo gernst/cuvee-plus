@@ -85,11 +85,11 @@
   <rundefinition name="SV-LIB_correct-tags">
     <tasks name="SV-LIB.correct-tags.CoreVerification">
       <includesfile>../sv-benchmarks/sv-lib/CoreVerification.set</includesfile>
-      <propertyfile>../sv-benchmarks/sv-lib/properties/correct-tags.prp</propertyfile>
+      <propertyfile>../sv-benchmarks/sv-lib/properties/correct-annotations.prp</propertyfile>
     </tasks>
     <tasks name="SV-LIB.correct-tags.CTranslated">
       <includesfile>../sv-benchmarks/sv-lib/CTranslated.set</includesfile>
-      <propertyfile>../sv-benchmarks/sv-lib/properties/correct-tags.prp</propertyfile>
+      <propertyfile>../sv-benchmarks/sv-lib/properties/correct-annotations.prp</propertyfile>
     </tasks>
   </rundefinition>
 
