@@ -102,13 +102,12 @@ def grid(spec: list[table.Column], categories: list[str]) -> str:
 
 def transposed(spec: list[table.Column], categories: list[str]) -> str:
     """The table with a row per configuration and, per category and in total, the columns correct true, correct
-    false, wrong (true and false), and score; the best value of a column in bold, a dash where results are missing."""
+    false, and wrong (true and false); the best value of a column in bold, a dash where results are missing."""
     groups = categories + (["Total"] if len(categories) > 1 else [])
     measures = [
         ("true", lambda runs: sum(run.outcome == ("correct", "true") for run in runs), max),
         ("false", lambda runs: sum(run.outcome == ("correct", "false") for run in runs), max),
         ("wrong", lambda runs: sum(run.outcome is not None and run.outcome[0] == "wrong" for run in runs), None),
-        ("score", lambda runs: sum(run.score for run in runs), max),
     ]
 
     def runs(column: table.Column, group: str) -> list[common.Run] | None:
@@ -118,8 +117,8 @@ def transposed(spec: list[table.Column], categories: list[str]) -> str:
         return [run for name in names for run in column.results[name].runs]
 
     values = {column.tool: [[None if runs(column, group) is None else count(runs(column, group)) for _, count, _ in measures] for group in groups] for column in spec}
-    lines = [r"\begin{tabular}{l" + ("|rrrr" * len(groups)) + "}", r"\toprule"]
-    lines.append(" & ".join([""] + [rf"\multicolumn{{4}}{{c}}{{{table.escape(group)}}}" for group in groups]) + r" \\")
+    lines = [r"\begin{tabular}{l" + ("|rrr" * len(groups)) + "}", r"\toprule"]
+    lines.append(" & ".join([""] + [rf"\multicolumn{{3}}{{c}}{{{table.escape(group)}}}" for group in groups]) + r" \\")
     lines.append(" & ".join([""] + [table.escape(name) for _ in groups for name, _, _ in measures]) + r" \\")
     lines.append(r"\midrule")
     for column in spec:
@@ -308,7 +307,7 @@ database \texttt{teq.dfy} with the modules \texttt{aggregation}, \texttt{arithme
 \texttt{-verify}; Cuvée+Z3 adds \texttt{-fallback -z3} (one round of \texttt{-split -prove}), Cuvée (CHC) is
 \texttt{-simplify -chc -z3}. All our runs: BenchExec, 15\,min CPU time, 7\,GB, 2 cores of an Intel Core i7-6700
 @ 3.40\,GHz, unless the legends say otherwise. A dash marks results that are missing, listed as pending.
-Scores as in SV-COMP: correct true $+2$, correct false $+1$, wrong true $-32$, wrong false $-16$.
+No scores are given, since our runs do not validate witnesses.
 
 \section{Aggregates over arrays: the MonoCera tests}
 The 125 SV-COMP tests of Amilon et al.\ (CAV 2023), one per operator (\texttt{\textbackslash forall},
@@ -326,7 +325,7 @@ are Table~3 of the paper (300\,s wall time, AMD Opteron 2220). Tests verified:
 
 \section{SV-COMP ReachSafety-Arrays and -Loops}
 Our runs of Cuvée next to the official results of SV-COMP 2026 for the other verifiers, which validate the
-witnesses (unconfirmed: correct, but the witness was not validated, score 0). Cuvée answers itself with
+witnesses (unconfirmed: correct, but the witness was not validated). Cuvée answers itself with
 \texttt{-verify}, without witnesses.
 \begin{center}\footnotesize
 \fit{\input{svcomp.tex}}

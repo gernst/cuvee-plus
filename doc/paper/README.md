@@ -25,7 +25,8 @@ the valid ones of SV-COMP 2026: the 13 void tasks of Arrays (category
 `missing` in the official files) are left out, which leaves 427 tasks (314
 safe) and 764 (555 safe). The results of Cuvée are ours, with BenchExec
 (900 s CPU time as in SV-COMP, but 7 GB and 2 cores of an Intel Core i7-6700 instead of 15 GB and 4),
-scored as if confirmed; the counts are those of `scripts/common.py` (`load`).
+not scored, since Cuvée produces no witnesses (the table gives no scores since Oct 14, 2026); the counts are
+those of `scripts/common.py` (`load`).
 
 | Column | Version | Result files |
 |---|---|---|

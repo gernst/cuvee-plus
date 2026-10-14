@@ -41,20 +41,20 @@ paper's conversion of the programs for it.
 The breadth comparison, against the official SV-COMP results of CPAchecker, UAutomizer, Symbiotic, AISE, Korn,
 and others (imported from the SV-COMP statistics, not run by us).
 
-| | Arrays (440) | Loops (764) | score |
-|---|--:|--:|--:|
-| Cuvée (0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false | 553 |
-| Cuvée (0.46.9, `-verify`, 15 min, i7-6700) | 138 true, 9 false | 149 true, 16 false | 599 |
-| Cuvée+Z3 (0.46.9, `-verify`, 15 min, i7-6700) | 148 true, 48 false | 230 true, 20 false | 824 |
-| Cuvée (CHC) (0.46.9, 15 min, i7-6700) | 8 true, 45 false | 150 true, 41 false | 402 |
-| Cuvée+Z3 (0.42.2, `-verify`, 15 min) | 148 true, 51 false | 283 true, 28 false | 941 |
-| Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false | 400 |
-| Cuvée (0.42.1, `-verify`, 60 s, i9-9900) | 130 true, 9 false | 125 true, 16 false | 535 |
-| Cuvée (0.46.5, `-verify`, 60 s, i7-6700) | 136 true, 9 false | 145 true, 16 false | 587 |
-| Cuvée (0.46.13, `-verify`, 60 s, i7-6700) | 144 true, 53 false | 148 true, 24 false | 661 |
+| | Arrays (440) | Loops (764) |
+|---|--:|--:|
+| Cuvée (0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false |
+| Cuvée (0.46.9, `-verify`, 15 min, i7-6700) | 138 true, 9 false | 149 true, 16 false |
+| Cuvée+Z3 (0.46.9, `-verify`, 15 min, i7-6700) | 148 true, 48 false | 230 true, 20 false |
+| Cuvée (CHC) (0.46.9, 15 min, i7-6700) | 8 true, 45 false | 150 true, 41 false |
+| Cuvée+Z3 (0.42.2, `-verify`, 15 min) | 148 true, 51 false | 283 true, 28 false |
+| Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false |
+| Cuvée (0.42.1, `-verify`, 60 s, i9-9900) | 130 true, 9 false | 125 true, 16 false |
+| Cuvée (0.46.5, `-verify`, 60 s, i7-6700) | 136 true, 9 false | 145 true, 16 false |
+| Cuvée (0.46.13, `-verify`, 60 s, i7-6700) | 144 true, 53 false | 148 true, 24 false |
 
-Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, Korn 882, CPAchecker 852
-(AISE, which did not enter Arrays, 982 on Loops); see `scripts/out/experiments.pdf`.
+The other tools: the confirmed results of SV-COMP 2026 on the same tasks, see `scripts/out/experiments.pdf`. No
+scores, since Cuvée produces no witnesses: they are only meaningful with witness validation.
 
 - 0.46.13 adds the case splits, the recurrences in arrays and the counterexamples without a solver: against
   0.46.8 at 60 s, 52 gained and none lost on Arrays (44 of them unsafe tasks refuted), 12 gained and 1 lost
@@ -68,7 +68,7 @@ Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, 
   model-checking tools lead.
 - The tasks have machine integers, which TEQ models in part (nondeterministic values in their ranges, unsigned
   wrap-around, since 0.36).
-- No wrong results. Cuvée+Z3 scores as UAutomizer (941), ahead of Korn and CPAchecker, behind Symbiotic.
+- No wrong results.
 - `-fallback` had 5 wrong proofs in 0.42.1, `nla-digbench-scaling/fermat1-ll_unwindbound{1,5,10,20,50}`
   (the other two of the 7 in 0.41.4 time out now): `TEQ` told the exits of an inner loop apart by assumptions
   only, an enclosing loop guards its cases by the branch conditions, such that the normal exit and the `break`
@@ -86,9 +86,8 @@ Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, 
 ## 3. Complementarity: TEQ and Horn clauses
 
 A virtual portfolio of TEQ and `-chc` (correct if either is, 15 min): with 0.46.9, 356 true and 106 false
-correct, score 818, against 599 for TEQ and 402 for CHC alone; TEQ+Z3 and CHC 413 true and 119 false, score 945,
-above UAutomizer (941), all without wrong results (0.42: 341 and 105, score 787; with Z3 786, with the wrong
-results of `-fallback` then). TEQ is strong on arrays, Horn clauses on integer loops. The argument for TEQ as a complement to invariant inference,
+correct, against 287 and 25 for TEQ and 158 and 86 for CHC alone; TEQ+Z3 and CHC 413 true and 119 false, all
+without wrong results (0.42: 341 and 105, with the wrong results of `-fallback` then). TEQ is strong on arrays, Horn clauses on integer loops. The argument for TEQ as a complement to invariant inference,
 and for a portfolio (see the TODO "Portfolio of TEQ and CHC").
 
 ## 4. Mathematical integers: the unbounded set
@@ -177,9 +176,9 @@ Done (Oct 12, 2026, 17:29–17:55, Cuvée 0.42.2, the same setup, complete): `xm
 Arrays and Loops and on the unbounded set, after the fix of the exits of loops; no wrong results.
 
 Done (Oct 13, 2026, from 22:11, Cuvée 0.46.9, 15 min, 2 cores, 7 GB, Intel Core i7-6700, after the migration of the
-lemma database): `xml/cuvee.xml` on SV-COMP Arrays (138 true, 9 false, score 285) and Loops (149 true, 16 false,
-score 314), `xml/cuvee-fallback.xml` on Arrays (148 true, 48 false, score 344) and Loops (230 true, 20 false, score 480),
-`xml/cuvee-chc.xml` on Arrays and Loops (score 402), the MonoCera tests with `xml/cuvee.xml` (79) and
+lemma database): `xml/cuvee.xml` on SV-COMP Arrays (138 true, 9 false) and Loops (149 true, 16 false),
+`xml/cuvee-fallback.xml` on Arrays (148 true, 48 false) and Loops (230 true, 20 false), `xml/cuvee-chc.xml` on
+Arrays (8 true, 45 false) and Loops (150 true, 41 false), the MonoCera tests with `xml/cuvee.xml` (79) and
 `xml/cuvee-fallback.xml` (88), all without wrong results (`scripts/out/experiments.pdf` takes only these runs of
 0.46; the unbounded set and SV-LIB are pending).
 

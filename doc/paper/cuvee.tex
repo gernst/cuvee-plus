@@ -188,14 +188,14 @@ the other tools are taken literally from the official results of SV-COMP~2026~\c
 count a result as correct only if its witness is confirmed. AISE did not participate in
 ReachSafety-Arrays. The results of \cuvee{} were obtained with BenchExec~\cite{benchexec}, with
 \code{-verify}, all modules of the lemma database, and 900\,s of CPU time, as in SV-COMP, but with 7\,GB
-of memory and 2 cores per run instead of 15\,GB and 4 cores. Its results are scored as if they were
-confirmed.
+of memory and 2 cores per run instead of 15\,GB and 4 cores. \cuvee{} produces no witnesses yet, so its
+results are not confirmed, and the table gives no scores.
 
 \begin{table}[t]
 \centering
 \caption{Results of \cuvee{} and of five SV-COMP~2026 participants, the latter taken from the official
-results. ``Unique'' counts the safe tasks that no other tool in the table reports as true. The score
-follows the SV-COMP scheme ($+2$ / $+1$ for correct true / false, $-32$ / $-16$ for wrong true / false).}
+results. ``Unique'' counts the safe tasks that no other tool in the table reports as true. Scores are
+not given, since the results of \cuvee{} are not confirmed by witnesses.}
 \label{tab:results}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{lrrrrrrr}
@@ -207,14 +207,12 @@ follows the SV-COMP scheme ($+2$ / $+1$ for correct true / false, $-32$ / $-16$ 
 \quad correct false & 9 & 42 & 79 & -- & 67 & 51 & \textbf{84} \\
 \quad wrong & 0 & 0 & 0 & -- & 0 & 0 & 0 \\
 \quad unique true & \multicolumn{2}{c}{112} & & & & & \\
-\quad score & 273 & \textbf{326} & 215 & -- & 89 & 59 & 152 \\
 \midrule
 \multicolumn{8}{l}{\emph{ReachSafety-Loops}} \\
 \quad correct true  & 149 & 230 & 364 & \textbf{405} & 365 & 338 & 294 \\
 \quad correct false & 16 & 20 & 156 & 172 & 122 & 133 & \textbf{174} \\
 \quad wrong & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
 \quad unique true & \multicolumn{2}{c}{5} & & & & & \\
-\quad score & 314 & 480 & 884 & \textbf{982} & 852 & 793 & 730 \\
 \bottomrule
 \end{tabular}
 \end{table}

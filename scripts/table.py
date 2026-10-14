@@ -37,14 +37,13 @@ ROWS = [
     ("unconfirmed", lambda runs: sum(run.unconfirmed for run in runs)),
     ("wrong true", counter("wrong", "true")),
     ("wrong false", counter("wrong", "false")),
-    ("score", lambda runs: sum(run.score for run in runs)),
 ]
 
 # rows left out where they are 0 for all tools; only the validation of SV-COMP leaves results unconfirmed
 OPTIONAL = {"unconfirmed"}
 
 # rows whose largest value is set in bold; not those of wrong results, where most tools share the best value 0
-BEST = {"correct true": max, "correct false": max, "score": max}
+BEST = {"correct true": max, "correct false": max}
 
 # names in LaTeX where they differ from the plain labels of common.LABELS
 LATEX = {"cpachecker": r"CPA\checkmark"}
@@ -196,9 +195,8 @@ DOCUMENT = r"""\documentclass[a4paper]{article}
 \fit{\input{table.tex}}
 
 \bigskip
-Score as in SV-COMP: correct true $+2$, correct false $+1$, wrong true $-32$, wrong false $-16$;\\
-unconfirmed (correct, but the witness was not validated) $0$.
-Our runs do not validate witnesses.
+Unconfirmed: correct, but the witness was not validated in SV-COMP.
+Our runs do not validate witnesses, so no scores are given.
 
 \bigskip
 \input{legend.tex}
