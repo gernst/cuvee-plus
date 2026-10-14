@@ -32,6 +32,7 @@ void main(void) {
     aa[i] = v;
     i = i + 1;
   }
+  assume_abort_if_not(aa[N - 1] < 0);
   while (aa[a] >= 0) {
     a = a + 1;
   }

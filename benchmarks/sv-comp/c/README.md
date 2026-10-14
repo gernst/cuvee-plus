@@ -96,7 +96,8 @@ b[10];` does not), which made it report safe programs unsafe. Both changes keep 
 in C otherwise), and the `_Bool` arrays of `base_case` and `single_elem_safe`, which hold 0 and 1 only, are `int`
 arrays declared with the others (TriCera also aliases arrays of different types declared one after the other).
 `standard_vararg_ground` reads up to a negative element, beyond the array if there is none, as the original task
-does: TriCera's unsafe answer there is a violation of memory safety, not of the assertion.
+does: it assumes a negative last element now (`aa[N - 1] < 0`), which keeps the reads within the array and the
+verdict true; its result of TriCera was patched into the run of Oct 14 instead of a rerun.
 
 Before nondet.py and sizes.py, other verifiers found 72 tasks false whose
 expected verdict is true, mostly because the concrete bounds of the originals
