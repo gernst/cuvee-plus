@@ -51,7 +51,6 @@
     ((y$15 Int) (n$9 Nat) (K$11 (Trace Int)) (Y$13 (Trace Int)))
     (=>
       (and
-        (<= (integer n$9) 4294967295)
         (= K$11 (counter 0 1 n$9))
         (=
           Y$13
