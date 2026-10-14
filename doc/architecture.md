@@ -312,7 +312,14 @@ modifies. Functions and loops with ACSL `assigns` or `loop assigns` clauses
 modify the global variables listed there instead (their identifiers, e.g. `a`
 for `a[0..N-1]`), which `Type.check` holds against the body, unless `-teq` or
 `-chc` is among the transforms, which infer them always (`c.Parser.assigned`,
-the parameter `infer` set by `c.Source`). SV-COMP task definitions (`.yml`) defer to the frontend of their
+the parameter `infer` set by `c.Source`). The keywords `while`, `do` and `for` are located tokens
+(`easyparse.Token.Located`, with line and column from 1, a tab one column), which match as keywords and which the
+grammar reads by `L(name)`; each loop of the core gets the attribute `:location (line column function)` of its
+keyword, an s-expression that all printers but C's print, for the locations of witnesses
+([ideas/witnesses.md](../ideas/witnesses.md)). A `for` is a single loop, located at the `for`, whose `continue`s
+are preceded by a copy of the step (`c.Parser.stepped`), those of nested loops not; a `do-while` is located at the
+`do` ([location.c](../examples/c/parsing/location.c),
+[for_break_continue.c](../examples/c/horn/for_break_continue.c)). SV-COMP task definitions (`.yml`) defer to the frontend of their
 input file, C or SV-LIB: their `Source` overrides `input`, which reads the
 input on demand, to load the task and parse its input file, relative to the
 task; the output is printed in the language of the input file (`Config.parse`).

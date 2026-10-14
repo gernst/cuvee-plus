@@ -11,6 +11,10 @@ object Syntax:
   def apply(name: String, text: String) =
     Token.Value(name, text)
 
+  // a keyword at the 0-based line and column of jflex, 1-based in the token, as in witnesses
+  def located(name: String, line: Int, column: Int) =
+    Token.Located(name, line + 1, column + 1)
+
   def error(msg: String) =
     Error.raise(msg)
 
@@ -118,9 +122,11 @@ case class Decl(typ: Type, words: List[String], decls: List[Declarator]) extends
 case class Assign(lhs: Expr, op: String, rhs: Expr) extends Stmt
 case class ExprStmt(expr: Expr) extends Stmt
 case class If(test: Expr, left: Stmt, right: Option[Stmt]) extends Stmt
-case class While(test: Expr, body: Stmt) extends Stmt
-case class DoWhile(body: Stmt, test: Expr) extends Stmt
-case class For(init: Option[Stmt], test: Option[Expr], step: Option[Stmt], body: Stmt) extends Stmt
+// the loops keep the line and column of their keyword (see Grammar.while_), which is not part of equality and of
+// patterns
+case class While(test: Expr, body: Stmt)(val at: (Int, Int)) extends Stmt
+case class DoWhile(body: Stmt, test: Expr)(val at: (Int, Int)) extends Stmt
+case class For(init: Option[Stmt], test: Option[Expr], step: Option[Stmt], body: Stmt)(val at: (Int, Int)) extends Stmt
 case class Return(expr: Option[Expr]) extends Stmt
 case class Block(stmts: List[Stmt]) extends Stmt
 case object Break extends Stmt
@@ -140,9 +146,6 @@ object Decl extends ((Type, List[String], List[Declarator]) => Decl)
 object Assign extends ((Expr, String, Expr) => Stmt)
 object ExprStmt extends (Expr => Stmt)
 object If extends ((Expr, Stmt, Option[Stmt]) => Stmt)
-object While extends ((Expr, Stmt) => Stmt)
-object DoWhile extends ((Stmt, Expr) => Stmt)
-object For extends ((Option[Stmt], Option[Expr], Option[Stmt], Stmt) => Stmt)
 object Return extends (Option[Expr] => Stmt)
 object Block extends (List[Stmt] => Block)
 object Labeled extends ((String, Stmt) => Stmt)
@@ -173,4 +176,4 @@ object Logical extends (List[Top] => Top)
 object LogicFun extends ((Type, String, List[(Type, String)], Option[Expr]) => Top)
 object Property extends ((String, String, Expr) => Top)
 
-case class Loop(test: Option[Expr], body: Stmt, step: Option[Stmt]) extends Stmt
+case class Loop(test: Option[Expr], body: Stmt, step: Option[Stmt])(val at: (Int, Int)) extends Stmt

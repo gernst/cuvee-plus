@@ -39,7 +39,7 @@ flt = ([0-9]+ "." [0-9]* | "." [0-9]+) {exp}? [fFlL]? | [0-9]+ {exp} [fFlL]?
 kw  = "int" | "long" | "short" | "char" | "unsigned" | "signed" | "_Bool" | "bool" | "void" | "float" | "double"
     | "const" | "static" | "extern" | "volatile" | "inline" | "restrict" | "__attribute__"
     | "typedef" | "sizeof"
-    | "if" | "else" | "while" | "do" | "for" | "break" | "continue" | "return" | "goto"
+    | "if" | "else" | "break" | "continue" | "return" | "goto"
     | "switch" | "case" | "default"
     | "(" | ")" | "[" | "]" | [;,{}?:]
     | "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "++" | "--"
@@ -106,6 +106,8 @@ acsl = "requires" | "ensures" | "assigns" | "decreases" | "loop" | "invariant" |
 "__inline" | "__inline__"     { return Syntax.apply("inline"); }
 "__restrict" | "__restrict__" { return Syntax.apply("restrict"); }
 
+// the keywords of loops carry their position, for the locations of witnesses (see Grammar.while_)
+"while" | "do" | "for" { return Syntax.located(yytext(), yyline, yycolumn); }
 {kw}        { return Syntax.apply(yytext()); }
 {str}       { return Syntax.apply("str", yytext()); }
 {flt}       { return Syntax.apply("flt", yytext()); }

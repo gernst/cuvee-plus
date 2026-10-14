@@ -15,6 +15,10 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
   profiles) read against TEQs: what is covered (counters, conditional stores, sums, searches), what needs new
   lemmas (enumerations of set bits as in `for_each_cpu`, wrap-around, halving, reads of `a[i-1]` as chains),
   what is hard (lists, aliasing); benchmarks in `benchmarks/loopannotator`.
+- [witnesses.md](witnesses.md): verification witnesses for SV-COMP: the formats of C and SV-LIB, why TEQ
+  proofs contain no invariants and how to extract them, the missing quantifiers of C witnesses, and a plan from
+  trivial witnesses over the invariants of `-chc` to quantified invariants for arrays; the source positions
+  through the scanner, the grammar and the C parser into the attributes of loops.
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 

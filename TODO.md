@@ -32,7 +32,8 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
 - witness output: SV-COMP scores verdicts without a validated witness with 0
   (doc/paper/README.md); correctness witnesses need loop invariants (from
   the models of Z3 for `-chc`, or derived from the trace equation systems),
-  violation witnesses a path (from the counterexamples of `-chc`); see
+  violation witnesses a path (from the counterexamples of `-chc`); the
+  analysis and plan in [ideas/witnesses.md](ideas/witnesses.md); see
   "Portfolio of TEQ and CHC" below
 - SV-LIB: the frontend (`cuvee.svlib`, see doc/architecture.md) lacks
   unstructured control flow (labels and gotos, e.g. by a loop over a program

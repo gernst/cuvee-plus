@@ -37,9 +37,11 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
   // the context of a function body: its result, the temporary variables for the results of calls,
   // the statements of its labels, which a goto may resolve in its place, and the labels at its end;
-  // the clauses of ACSL of the loop that is translated next, but not of the loops nested in it (see loop)
+  // the clauses of ACSL of the loop that is translated next, but not of the loops nested in it (see loop);
+  // the name of the function, for the locations of its loops (see location)
   case class Ctx(result: Option[(core.Var, Type)], temps: mutable.ListBuffer[core.Var],
-                 labels: Map[String, Stmt] = Map(), ends: Set[String] = Set(), loop: List[Clause] = Nil)
+                 labels: Map[String, Stmt] = Map(), ends: Set[String] = Set(), loop: List[Clause] = Nil,
+                 function: String = "")
 
   type Scope = Map[String, (core.Var, Type)]
 
@@ -1026,14 +1028,14 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
         val right_ = wrap(right.toList.flatMap(stmt(scope, ctx, _)))
         pre :+ state.progs.if_(test_, left_, right_)
 
-      case While(test, body) =>
+      case w @ While(test, body) =>
         val (test_, check) = guard(scope, ctx, test)
         val body_ = wrap(check ++ stmt(scope, ctx.copy(loop = Nil), body))
         val (pre, clauses, assigns) = loop(scope, ctx)
-        pre :+ while_(test_, body_, clauses, assigns)
+        pre :+ while_(test_, body_, clauses, assigns, List(location(ctx, w.at)))
 
       // the test is evaluated after each iteration, also after continue, but not before the first one
-      case DoWhile(body, test) =>
+      case d @ DoWhile(body, test) =>
         val (test_, check) = guard(scope, ctx, test)
         val first = temp(ctx, BoolType)
 
@@ -1043,32 +1045,20 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
           else state.progs.block(Nil, state.progs.if_(state.exprs.app("not", List(first)), state.progs.block(Nil, check), skip) :: state.progs.assign(List(first), List(state.exprs.const("false"))) :: stmt(scope, ctx.copy(loop = Nil), body))
 
         val (pre, clauses, assigns) = loop(scope, ctx)
-        pre ++ List(state.progs.assign(List(first), List(state.exprs.const("true"))), while_(state.exprs.app("or", List(first, test_)), body_, clauses, assigns))
+        pre ++ List(state.progs.assign(List(first), List(state.exprs.const("true"))), while_(state.exprs.app("or", List(first, test_)), body_, clauses, assigns, List(location(ctx, d.at))))
 
       // the initialization may declare variables, whose scope is the loop
-      case For(init, test, step, body) =>
-        List(block(scope, ctx, init.toList :+ Loop(test, body, step)))
+      case f @ For(init, test, step, body) =>
+        List(block(scope, ctx, init.toList :+ Loop(test, body, step)(f.at)))
 
-      // continue must execute the step: the body is an inner loop that is left by break instead of continue,
-      // and a break of the body sets a flag that leaves the outer loop
-      case Loop(test, body, step) =>
+      // continue must execute the step, which precedes it (see stepped), so that the loop stays a single loop
+      case l @ Loop(test, body, step) =>
         val (test_, check) = test.map(guard(scope, ctx, _)).getOrElse((state.exprs.const("true"), Nil))
         val body_ = stmt(scope, ctx.copy(loop = Nil), body)
         val step_ = step.toList.flatMap(stmt(scope, ctx, _))
-
-        if !body_.exists(continues)
-        then
-          val block = state.progs.block(Nil, check ++ body_ ++ step_)
-          val (pre, clauses, assigns) = loop(scope, ctx)
-          pre :+ while_(test_, block, clauses, assigns)
-        else
-          val brk = temp(ctx, BoolType)
-          val inner = while_(state.exprs.const("true"), state.progs.block(Nil, body_.map(exits(brk, _)) :+ state.progs.break))
-          val leave = state.progs.if_(brk, state.progs.break, skip)
-          val block = state.progs.block(Nil, check ++ List(inner, leave) ++ step_)
-          val (pre, clauses, assigns) = loop(scope, ctx)
-          val outer = while_(test_, block, clauses, assigns)
-          pre ++ List(state.progs.assign(List(brk), List(state.exprs.const("false"))), outer)
+        val block = state.progs.block(Nil, check ++ body_.map(stepped(step_, _)) ++ step_)
+        val (pre, clauses, assigns) = loop(scope, ctx)
+        pre :+ while_(test_, block, clauses, assigns, List(location(ctx, l.at)))
 
       // the clauses of the loop are resolved in its scope, e.g. with the variables declared by the initialization of a for
       case Annotated(clauses, loop) =>
@@ -1250,24 +1240,15 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
     then (test_, Nil)
     else (state.exprs.const("true"), pre :+ state.progs.if_(state.exprs.app("not", List(test_)), state.progs.break, skip))
 
-  // whether continue occurs in `prog` outside of nested loops
-  def continues(prog: core.Prog): Boolean =
+  // the continues of a for statement, outside of nested loops, preceded by its step `step`, which is translated once;
+  // without a step, continue stays as it is
+  def stepped(step: List[core.Prog], prog: core.Prog): core.Prog =
     prog match
-      case core.Continue            => true
-      case core.Block(_, progs, _)    => progs.exists(continues)
-      case core.If(_, left, right)  => continues(left) || continues(right)
-      case core.Choice(progs)       => progs.exists(continues)
-      case _                        => false
-
-  // continue leaves the inner loop of a for statement, break additionally sets the flag `brk`
-  def exits(brk: core.Var, prog: core.Prog): core.Prog =
-    prog match
-      case core.Continue            => state.progs.break
-      case core.Break               => state.progs.block(Nil, List(state.progs.assign(List(brk), List(state.exprs.const("true"))), state.progs.break))
-      case core.Block(locals, progs, _) => state.progs.block(locals, progs.map(exits(brk, _)))
-      case core.If(test, left, right) => state.progs.if_(test, exits(brk, left), exits(brk, right))
-      case core.Choice(progs)       => progs.map(exits(brk, _)).reduceRight(state.progs.choice)
-      case _                        => prog
+      case core.Continue if step.nonEmpty => state.progs.block(Nil, step :+ state.progs.continue)
+      case core.Block(locals, progs, _)   => state.progs.block(locals, progs.map(stepped(step, _)))
+      case core.If(test, left, right)     => state.progs.if_(test, stepped(step, left), stepped(step, right))
+      case core.Choice(progs)             => progs.map(stepped(step, _)).reduceRight(state.progs.choice)
+      case _                              => prog
 
   // assignments x op= e and a[i] op= e, where arrays are values that are updated as a whole
   // the arithmetic operators of compound assignments x += e and of increments x++ and decrements x--,
@@ -1422,8 +1403,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
   // loops modify the global variables that their body assigns or that the functions it calls modify,
   // which are their modifies clause, as C has no annotations for it, or those of their loop assigns (see assigned),
-  // followed by the clauses of ACSL (see loop)
-  def while_(test: core.Expr, body: core.Prog, clauses: List[(String, Option[core.Expr])] = Nil, assigns: Option[List[core.Var]] = None): core.Prog =
+  // followed by the clauses of ACSL (see loop) and the location of the loop in the source (see location)
+  def while_(test: core.Expr, body: core.Prog, clauses: List[(String, Option[core.Expr])] = Nil, assigns: Option[List[core.Var]] = None,
+             location: List[(String, Option[Any])] = Nil): core.Prog =
     def calls(prog: core.Prog): Set[core.Var] =
       prog match
         case core.Call(f, _, _) => state.procattrs(f).modifies.toSet
@@ -1432,7 +1414,13 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
     val vars = globals.values.map(_._1).toSet
     val mod = assigns.map(_.toSet).getOrElse((body.mod.toSet intersect vars) ++ calls(body))
     val attrs = if mod.isEmpty then Nil else List("modifies" -> Some(mod.toList.sortBy(_.name.toString)))
-    state.progs.while_(test, body, Attrs(attrs ++ clauses))
+    state.progs.while_(test, body, Attrs(attrs ++ clauses ++ location))
+
+  // the attribute :location (line column function) of a loop whose keyword is at `at`, for the locations of
+  // witnesses; an s-expression, which the printers of all languages print and the SMT-LIB parser reads back
+  def location(ctx: Ctx, at: (Int, Int)): (String, Option[Any]) =
+    val (line, column) = at
+    "location" -> Some(List(sexpr.Num(line.toString), sexpr.Num(column.toString), sexpr.Id(ctx.function)))
 
   // calls of functions whose result has the type of the variable, which needs no conversion
   def direct(rhs: Expr, t: Type) =
@@ -1722,7 +1710,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
     val Function(ret, name, params, _) = f
     val core.Proc(_, _, in, out) = state.procs(name)
 
-    val ctx = Ctx(out.headOption.map((_, ret)), mutable.ListBuffer(), labels(body), ends(body))
+    val ctx = Ctx(out.headOption.map((_, ret)), mutable.ListBuffer(), labels(body), ends(body), function = name)
     val written = assigned(body)
 
     val copies =

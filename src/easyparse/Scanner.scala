@@ -39,7 +39,7 @@ object Scanner:
   case class Match(name: String) extends Scanner:
     def scan(in: Input, cm: Boolean) =
       Input.shift("'" + name + "'", in, cm):
-        case (Token.Keyword(`name`), in_) =>
+        case (Token.Keyword(`name`) | Token.Located(`name`, _, _), in_) =>
           in_
 
   case class Choice(p: Scanner, q: Scanner) extends Scanner:

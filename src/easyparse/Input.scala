@@ -16,6 +16,10 @@ implicit def S(name: String): Scanner =
 def T(name: String): Parser[String] =
   Parser.Match(name)
 
+// the line and column of the keyword `name`, which the scanner has located
+def L(name: String): Parser[(Int, Int)] =
+  Parser.Locate(name)
+
 def J(name: String): Parser[String] =
   S(name).map(name)
 
@@ -70,5 +74,10 @@ object Token:
     def text = name
     
   case class Value(name: String, text: String) extends Token
+
+  // a keyword with the position of its first character, 1-based, for the constructs whose location a frontend
+  // reports, e.g. the loops of C for witnesses; it matches as the keyword (see Scanner.Match)
+  case class Located(name: String, line: Int, column: Int) extends Token:
+    def text = name
 
 case class Fail(in: Input, from: List[String]) extends Exception

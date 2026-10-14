@@ -255,14 +255,18 @@ object Grammar:
   val if_ =
     If(P("if" ~ parens(expr) ~ stmt ~ ("else" ~ stmt).?))
 
+  // the loops with the line and column of their keyword, which the scanner locates
   val while_ =
-    While(P("while" ~ parens(expr) ~ stmt))
+    P(L("while") ~ parens(expr) ~ stmt).map:
+      case at ~ test ~ body => While(test, body)(at)
 
   val dowhile =
-    DoWhile(P("do" ~ stmt ~ "while" ~ parens(expr) ~ ";"))
+    P(L("do") ~ stmt ~ S("while") ~ parens(expr) ~ S(";")).map:
+      case at ~ body ~ test => DoWhile(body, test)(at)
 
   val for_ =
-    For(P("for" ~ "(" ~ simple.? ~ ";" ~ expr.? ~ ";" ~ simple.? ~ ")" ~ stmt))
+    P(L("for") ~ S("(") ~ simple.? ~ S(";") ~ expr.? ~ S(";") ~ simple.? ~ S(")") ~ stmt).map:
+      case at ~ init ~ test ~ step ~ body => For(init, test, step, body)(at)
 
   val return_ =
     Return(P("return" ~ expr.? ~ ";"))

@@ -94,6 +94,12 @@ object Parser:
         case (Token.Value(`name`, value), in_) =>
           (value, in_)
 
+  case class Locate(name: String) extends Parser[(Int, Int)]:
+    def parse(in: Input, cm: Boolean) =
+      Input.shift("'" + name + "'", in, cm):
+        case (Token.Located(`name`, line, column), in_) =>
+          ((line, column), in_)
+
   case class Apply[A, +B](p: Parser[A], f: A => B) extends Parser[B]:
     def parse(in0: Input, cm: Boolean) =
       val (a, in1) = p.parse(in0, cm)
