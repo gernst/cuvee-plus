@@ -70,13 +70,6 @@ the contexts that `-teq` builds, as far as the reasons go.
   their completeness is an obligation of the proofs (two premises of premises.txt where the module does not provide
   it); their disjointness is still assumed: overlapping guards take the first case, a refinement of the choice of the
   core.
-- **Case lists matched in one direction** (`Rewrite.matchesUpdates`): every case of the expression must be covered
-  by a case of the pattern, cases of the pattern that cover none are ignored. That is an equation only where the
-  expression has a case wherever the pattern has one, e.g. where the guards of the expression are complete in the
-  context of the update. The fold of `bisection` (search.dfy) relies on it: its third case keeps the state where
-  `lo < hi` fails or no guard holds, the traces of the binary searches have no such case, and their iteration
-  constraints (`lo < hi`, one of the comparisons holds) exclude it in their updates; the engine does not check
-  that the uncovered cases of the pattern are false there.
 - **Lemmas without a proof**: none in [lean/open.txt](lean/open.txt); the module
   `nested`, which has no Lean proofs; the abstract predicates of the examples (`sorted`, `perm`, `partitioned`,
   `bubbled`, `shaken`, `argmin`, `insert`, `shake`, `nodup`, `merged`, `lb`), axiomatized by their lemmas, and the
@@ -93,9 +86,11 @@ the contexts that `-teq` builds, as far as the reasons go.
   `unspecified.0 == l0` for every `l0` (for `l0 == h0`, one step, `G` and `H` false). Fixed on Oct 14, 2026:
   `bisection` is a definition with `{:fold}` in place of the rule, total by a third case that keeps the state, with
   disjoint guards (the second case excludes `G`); the bounds hold for every run of the definition and are proved in
-  Lean, and the three examples (`bsearch_bisect`, `bsearch_safe`, `lower_bound`) close; the soundness of the fold
-  rests on the coverage of case lists (Trusted without a check). A version with `G` alone (`H` as `¬G`) loses the
-  bound `hi >= upper` of the searches with a third branch, since `hi` would move onto occurrences of the key.
+  Lean, and the three examples (`bsearch_bisect`, `bsearch_safe`, `lower_bound`) close; the fold matches the traces
+  of the loops, which lack the third case, since their guards are complete in the context of their updates (by
+  construction of `-teq`, maintained by the rules; doc/teq.md, the rewrite engine). A version with `G` alone (`H`
+  as `¬G`) loses the bound `hi >= upper` of the searches with a third branch, since `hi` would move onto occurrences
+  of the key.
 
 - `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
   unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final

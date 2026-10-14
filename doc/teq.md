@@ -394,7 +394,9 @@ project at the root (`lakefile.toml`, sources in `lean/`):
   is a definition with `{:fold}`, whose folding is the only rule on it, total
   by a third case that keeps the state where `lo < hi` fails or no guard
   holds, which the traces of the binary searches match since their iteration
-  constraints exclude it in their updates (bugs.md, Trusted without a check).
+  constraints exclude it in their updates: the guards of the traces of `-teq`
+  are complete in that context by construction, which the rules maintain
+  (see the rewrite engine below).
 - [Database.lean](../lean/TEQ/Database.lean), generated: the functions of the
   modules as printed by `-print lean`, and each lemma as a proposition
   `Stmt.<name>` of its printed statement, with the premises of
