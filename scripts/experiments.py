@@ -342,6 +342,7 @@ wrong.
 \fit{\input{union.tex}}
 <union-note>
 \end{center}
+\noindent\plot{quantile-union.pdf}
 
 \section{Mathematical integers: the unbounded set}
 The 481 C programs of \texttt{benchmarks/sv-comp/c}, printed from the Dafny translations of tasks of
@@ -427,6 +428,7 @@ def main():
     spec3 = spec2[:3] + virtual
     (out / "union.tex").write_text(transposed(spec3, categories))
     replacements["union"] = (note(pending(spec3, categories)), "")
+    plots(plt, out, "union", spec3, categories, "Cuvée and the portfolios (Arrays and Loops)", file="quantile-union.pdf")
 
     # 4. unbounded
     spec4 = columns([
