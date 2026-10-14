@@ -49,7 +49,6 @@ Places in the repository that identify the author, found on Oct 13, 2026 by a se
 - `sosy-lab` URLs of sv-benchmarks, BenchExec, SV-COMP results, and the DTDs in `xml/*.xml`.
 - `/home/usea`, `/home/zafer`, `/home/cav23` in `benchmarks/monocera/original_logs_from_paper/` and
   `benchmarks/monocera/run-list/` (the MonoCera authors).
-- `benchmarks/monocera/lemmas.pdf`: author line "Experiments with Cuvée 0.35.15", no metadata.
 - No image or PDF other than `photo.jpg` carries author or GPS metadata.
 
 ## Suggested procedure for an anonymous artifact
