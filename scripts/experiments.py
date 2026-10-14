@@ -434,6 +434,7 @@ def main():
     spec4 = columns([
         ("cuvee", "here", gather("cuvee", ["Unbounded"], unbounded)),
         ("cuvee-fallback", "here", gather("cuvee-fallback", ["Unbounded"], unbounded)),
+        ("cuvee-chc", "here", gather("cuvee-chc", ["Unbounded"], unbounded)),
         ("korn", "here", gather("korn", ["Unbounded"], Need(("-u",)))),
     ])
     (out / "unbounded.tex").write_text(grid(spec4, ["Unbounded"]))
