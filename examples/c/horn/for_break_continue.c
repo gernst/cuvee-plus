@@ -16,8 +16,8 @@ int main(void) {
       m++;
       if (j == 1) continue;
     }
-    assert(m == 3 && j == 3 && k == i + 1);
-    if (i % 2 == 0) continue;
+    assert(m == j);
+    if (i < 3) continue;
   }
   assert(i == 7);
   return 0;

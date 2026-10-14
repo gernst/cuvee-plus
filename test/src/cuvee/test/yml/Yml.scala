@@ -1,6 +1,8 @@
 package cuvee.test
 package yml
 
+import scala.jdk.CollectionConverters._
+
 import utest._
 
 import cuvee.core._
@@ -44,3 +46,58 @@ object Load extends TestSuite:
       val text = "input_files: [a.c]\nproperties:\n  - property_file: p.prp\n    expected_verdict: false\n    subproperty: valid-deref\n"
       load(text) ==> Task("a.c", List(cuvee.yml.Property("p.prp", Some(false), Some("valid-deref"))), "C", None)
       load("input_files: a.c\noptions:\n  data_model: LP64\n") ==> Task("a.c", Nil, "C", Some("LP64"))
+
+// the witnesses of SV-COMP (format 2.0) for the answers of -verify to C programs, without content for now, at a
+// fixed identifier and time, since the command line writes them to a file with a fresh one (see yml.Witness)
+object Witnesses extends TestSuite:
+  import cuvee.yml.Witness
+  import cuvee.yml.Program
+
+  val program = Program("a.c", "00ff", "ILP32")
+  val uuid = java.util.UUID.fromString("c66c3ee7-e0de-4bae-87f0-fd48fc7b961d")
+  val time = java.time.OffsetDateTime.parse("2026-10-14T10:00:23.5+02:00")
+
+  def load(text: String) =
+    org.snakeyaml.engine.v2.api.Load(org.snakeyaml.engine.v2.api.LoadSettings.builder().build()).loadFromString(text)
+
+  // the single entry of a witness, as nested Java maps and lists turned into strings for comparison
+  def entry(status: Status) =
+    val Some(text) = Witness.witness(program, status, uuid, time): @unchecked
+    val List(entry) = load(text).asInstanceOf[java.util.List[?]].asScala.toList: @unchecked
+    entry.asInstanceOf[java.util.Map[String, Any]].asScala
+
+  val tests = Tests:
+    test("correctness"):
+      val e = entry(Status.Correct)
+      e("entry_type") ==> "invariant_set"
+      e("content").toString ==> "[]"
+      e("metadata").toString ==>
+        "{format_version=2.0, uuid=c66c3ee7-e0de-4bae-87f0-fd48fc7b961d, creation_time=2026-10-14T10:00:23+02:00, " +
+        "producer={name=Cuvée, version=" + cuvee.Config.release + "}, task={input_files=[a.c], input_file_hashes={a.c=00ff}, " +
+        "specification=G ! call(reach_error()), data_model=ILP32, language=C}}"
+
+    test("violation"):
+      val e = entry(Status.Incorrect)
+      e("entry_type") ==> "violation_sequence"
+      e("content").toString ==> "[]"
+
+    test("unknown"):
+      Witness.witness(program, Status.Unknown, uuid, time) ==> None
+
+    // the strings are quoted, so that readers of YAML 1.1 take the creation time for a string
+    test("quoted"):
+      val Some(text) = Witness.witness(program, Status.Correct, uuid, time): @unchecked
+      assert(text.contains("\"creation_time\": \"2026-10-14T10:00:23+02:00\""))
+
+    // the input file of a task relative to the task definition, its data model from the task
+    test("task"):
+      val task = Examples.root / "yml" / "parsing" / "ilp32.yml"
+      val Some(p) = Witness.program(cuvee.Config.parse(cuvee.Config.default, List(task.toString))): @unchecked
+      p.name ==> (task / os.up / "long.c").toString
+      p.model ==> "ILP32"
+      p.hash.length ==> 64
+
+    // SV-LIB has witnesses of its own, the format of C does not apply
+    test("svlib"):
+      val script = Examples.root / "svlib" / "horn" / "loop_add.svlib"
+      Witness.program(cuvee.Config.parse(cuvee.Config.default, List(script.toString))) ==> None

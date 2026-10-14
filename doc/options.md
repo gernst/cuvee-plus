@@ -57,6 +57,7 @@ The transformations are applied in the order in which they are given, e.g.
 | `-z3`, `-cvc5` | pass the output to the solver, which checks it: goals and lemmas must hold (a goal that does not is an error), assertions and `check-sat` are passed through, the answers to queries are reported; lemmas with the attribute `free` (Dafny lemmas without a body) are assumed |
 | `-timeout <ms>` | timeout per solver query in milliseconds (default 1000) |
 | `-verify` | instead of the output, answer `correct`, `incorrect`, or `unknown` to each `verify-call` of SV-LIB, or once for other inputs: whether the program satisfies its specification (contracts and loop invariants), aggregated over all obligations, with the solver if there is one; procedures need `-vcgen`, `-teq`, or `-chc` first. A refutation is `incorrect` unless the goal is `:abstract` (a loop without invariant under `-vcgen`, the lowering of `-fallback`) or applies a function declared `:abstract` (the bit operations of C, uninterpreted on integers other than 0 and 1) |
+| `-witness <file>` | `-verify`, and write the witness of SV-COMP (format 2.0) for its answer to a C program or to an SV-COMP task whose input is C to `<file>`: for `correct` a correctness witness, an invariant set without invariants, for `incorrect` a violation witness without segments, both without content for now, which leave the proof and the search for the path to the validator; nothing for `unknown` and for other inputs, e.g. SV-LIB (see [ideas/witnesses.md](../ideas/witnesses.md)) |
 
 ## Debugging and tests
 

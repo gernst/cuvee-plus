@@ -92,12 +92,19 @@ An empty witness recovers most of Loops and almost nothing of Arrays, where the 
 
 ## Plan, cheapest first
 
-1. **Infrastructure and trivial witnesses.** An option `-witness <file>` (tests print to stdout, they never
-   write files); YAML by SnakeYAML Engine, already a dependency, with the metadata from the task `.yml` (data
-   model) and the `.prp` (specification); the attribute `:location` of loops (see below). An empty `invariant_set` for true,
-   a violation sequence with the target only for false. Expected about 120 confirmed results of Loops; measured
-   with the validator definitions of svcomp-bench-defs (`validate-correctness-witnesses-2.0`,
-   `validate-violation-witnesses-2.0`).
+1. **Infrastructure and trivial witnesses.** Implemented (Oct 14, 2026): `-witness <file>`, which implies
+   `-verify`, writes for the answer to a C program or to a task whose input is C (`yml.Witness`, the sink wrapper
+   `Witnessing`, written with SnakeYAML Engine, unit tests `test.yml.Witnesses`, since tests write no files and the
+   uuid and the time are fresh): format 2.0, the input file as given on the command line or relative to the task,
+   its SHA-256, the data model of `-arch` or of the task, the specification `G ! call(reach_error())` (the only
+   property that `-verify` decides for C; `cuvee.py` passes the C file, not the task or the property file), all
+   strings quoted (PyYAML took the creation time for a date). Both witnesses without content, by decision: an
+   `invariant_set` without invariants for true, a `violation_sequence` without segments for false. The latter passes
+   the linter but has no target, which the format requires semantically (exactly one final segment), so validators
+   may reject it; a target at the call of `reach_error` was tried (a located token of the name, a scan of the input)
+   and reverted for now. Open: `-witness witness.yml` in `xml/cuvee*.xml` and fm-tools, and the measurement with the
+   validator definitions of svcomp-bench-defs (`validate-correctness-witnesses-2.0`,
+   `validate-violation-witnesses-2.0`); expected about 120 confirmed results of Loops.
 2. **Invariants of `-chc`.** The model of Z3 gives the predicates of the loop heads. In SV-LIB nearly for free:
    the model is SMT-LIB already, its arguments are renamed to the variables in scope at the tag, the values at the
    entry become `(at x tag)`, and `get-witness` prints the `annotate-tag` commands. In C the same with the

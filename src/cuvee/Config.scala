@@ -82,6 +82,8 @@ case class Config(
     solver: Option[Int => Solver] = None,
     // -verify: the answers correct, incorrect, or unknown (see pipe.Verify)
     verify: Boolean = false,
+    // -witness: the file of the witness of SV-COMP for the answer of -verify to a C program (see yml.Witness)
+    witness: Option[String] = None,
     transforms: List[Transform] = Nil,
     // per query, in milliseconds
     timeout: Int = 1000,
@@ -139,7 +141,9 @@ case class Config(
   // the receiver of the output, by the final configuration: the answers with -verify, with or without a solver,
   // otherwise the solver, if there is one, which checks the output, otherwise the sink of the output, e.g. a printer
   def receiver(init: State): Sink =
-    if verify then cuvee.pipe.Verify.sink(solver.map(_(timeout)), stderr)
+    if verify then
+      val answers = cuvee.pipe.Verify.sink(solver.map(_(timeout)), stderr)
+      witness.map(cuvee.yml.Witness.sink(this, _, answers)).getOrElse(answers)
     else solver.map(solver => Solver.sink(solver(timeout), init, stderr)).getOrElse(sink(this, output.printer, init))
 
   // the configuration with the output in `lang`, which knows the features added so far
@@ -292,6 +296,12 @@ object Config:
         val config_ = config.copy(verify = true, report = (config, printer) => Report.stream(config.stdout, printer))
         (config_, rest)
 
+  // implies -verify, whose answer the witness is for
+  val witness =
+    flag("-witness", "<file>", "with -verify, write the witness of SV-COMP for the answer to a C program to <file>: correct without invariants, incorrect without waypoints, both without content for now"):
+      case (config, name :: rest) =>
+        verify._2.action((config.copy(witness = Some(name)), rest))
+
   val timeout_ =
     flag("-timeout", "<ms>", "timeout per solver query in milliseconds (default 1000)"):
       case (config, ms :: rest) if ms.toIntOption.exists(_ > 0) =>
@@ -382,6 +392,7 @@ object Config:
     z3,
     cvc5,
     verify,
+    witness,
     timeout_,
     linewidth,
     output,
@@ -430,8 +441,11 @@ object Config:
       println("    " + flag.help)
       println()
 
+  // the version, also of the producer of witnesses (see yml.Witness)
+  val release = "0.46.17"
+
   def version() =
-    println("Cuvée 0.46.16")
+    println("Cuvée " + release)
 
   def copyright() =
     println("Gidon Ernst <gidon.ernst@gmail.com>")

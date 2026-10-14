@@ -26,7 +26,7 @@ transformation and any output.
 | `cuvee.boogie` | Boogie frontend and printer, with datatypes written like Dafny's (`data`). |
 | `cuvee.c` | C frontend and printer, for integer programs with arrays as values. |
 | `cuvee.svlib` | SV-LIB frontend (`Parser`, which extends the SMT-LIB parser by the statements and properties of SV-LIB, `Source`) and `Printer`. |
-| `cuvee.yml` | SV-COMP task definitions (`Task`, read with SnakeYAML Engine), whose single input file is read by the frontend of its extension, C or SV-LIB; a missing input file is reported as the task writes it, independent of the directory. |
+| `cuvee.yml` | SV-COMP task definitions (`Task`, read with SnakeYAML Engine), whose single input file is read by the frontend of its extension, C or SV-LIB; a missing input file is reported as the task writes it, independent of the directory; the witnesses of SV-COMP for C (`Witness`, written with SnakeYAML Engine). |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.lean` | Printer of the logic in Lean 4 (`-print lean`), output only. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
@@ -229,6 +229,11 @@ and the next sink.
     procedures, global variables, and tags are an error, since they would be
     answered correct without checking anything (they need `-vcgen`, `-teq`, or
     `-chc`).
+- [`Witnessing`](../src/cuvee/yml/Witness.scala) (`-witness <file>`, which implies `-verify`) wraps the sink of
+  `-verify` and writes the witness of SV-COMP for its answer to the end of the input of a C program: a correctness
+  witness for `correct`, a violation witness for `incorrect`, both without content for now (format 2.0, the strings
+  quoted, since readers of YAML 1.1 take the creation time for a date otherwise), with the input file as given on
+  the command line or relative to the task definition, its SHA-256, and the data model of `-arch` or of the task.
 
 ## Frontends
 
