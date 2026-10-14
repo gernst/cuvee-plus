@@ -91,7 +91,12 @@ integers (`xml/tricera.xml`): in 125 programs the assumption `0 < N` that follow
 moved in front of them (a variable-length array of size 0 is undefined in C), and in 122 programs consecutive
 declarations of arrays of the same type are one declaration (`int a[N], b[N];`), since the TriCera of the MonoCera
 artifact allocates separately declared arrays at the same address (`int a[10]; int b[10];` aliases, `int a[10],
-b[10];` does not), which made it report safe programs unsafe. Both changes keep the semantics.
+b[10];` does not), which made it report safe programs unsafe. Both changes keep the semantics. Besides, `sanfoundry_02_ground` reads
+`Array[1]` and `single_elem_safe` writes index 3, now with `1 < N` and `3 < N` instead of `0 < N` (out of bounds
+in C otherwise), and the `_Bool` arrays of `base_case` and `single_elem_safe`, which hold 0 and 1 only, are `int`
+arrays declared with the others (TriCera also aliases arrays of different types declared one after the other).
+`standard_vararg_ground` reads up to a negative element, beyond the array if there is none, as the original task
+does: TriCera's unsafe answer there is a violation of memory safety, not of the assertion.
 
 Before nondet.py and sizes.py, other verifiers found 72 tasks false whose
 expected verdict is true, mostly because the concrete bounds of the originals
