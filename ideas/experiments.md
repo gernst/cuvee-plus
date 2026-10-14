@@ -51,10 +51,14 @@ and others (imported from the SV-COMP statistics, not run by us).
 | Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false | 400 |
 | Cuvée (0.42.1, `-verify`, 60 s, i9-9900) | 130 true, 9 false | 125 true, 16 false | 535 |
 | Cuvée (0.46.5, `-verify`, 60 s, i7-6700) | 136 true, 9 false | 145 true, 16 false | 587 |
+| Cuvée (0.46.13, `-verify`, 60 s, i7-6700) | 144 true, 53 false | 148 true, 24 false | 661 |
 
 Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, Korn 882, CPAchecker 852
 (AISE, which did not enter Arrays, 982 on Loops); see `scripts/out/experiments.pdf`.
 
+- 0.46.13 adds the case splits, the recurrences in arrays and the counterexamples without a solver: against
+  0.46.8 at 60 s, 52 gained and none lost on Arrays (44 of them unsafe tasks refuted), 12 gained and 1 lost
+  (ps2-ll_unwindbound1, a time out) on Loops.
 - The 60 s rows compare the database migration (Oct 13, 0.46.x: one trace per strongly connected component,
   `-prove`, the migrated modules with `-include`, a second round of `-split -prove`) with the per-variable form
   (0.42.1, `-simplify`, the whole database and `teq:nested`); not in `scripts/out/experiments.pdf`, which takes the
@@ -100,6 +104,7 @@ Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose ar
 | Cuvée `-teq -unbounded` (0.46.13, i7-6700) | 263 | 0 |
 | Cuvée+Z3 `-unbounded` (0.46.13, i7-6700) | 299 | 0 |
 | Cuvée (CHC) `-unbounded` (0.46.13, i7-6700) | 144 | 0 |
+| TriCera, MonoCera artifact, `-arithMode:math` (i9-9900) | 137 | 0 |
 
 - Rerun on Oct 14, 2026 with 0.46.13 after the migration of the lemma database (15 min, i7-6700): Cuvée 234 to
   263, Cuvée+Z3 290 to 299, and Horn clauses (`-chc -z3`, new in this table) 144, no wrong results; the Horn
@@ -109,7 +114,13 @@ Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose ar
   possibly a proof that relied on the overlapping exits (to check).
 - Cuvée and Korn: 91 both, 143 Cuvée only, 84 Korn only. With 60 s: Cuvée 228, Korn 130; TEQ 129 against 4
   on the `array-*` folders, Korn ahead on `loop-lit`, `loop-invgen`, `nla-digbench`.
-- Only Korn has a mode for mathematical integers; the other verifiers would be wrong by construction. A clean
+- TriCera (Oct 14, the TriCera of the MonoCera artifact, `xml/tricera.xml`, 15 min, i9-9900): 137 proved, no
+  wrong result after the programs were made memory safe, which TriCera checks as well (benchmarks/sv-comp/c/README.md:
+  arrays sized for their accesses, `0 < N` before the declarations, consecutive declarations as one, since this
+  TriCera aliases separately declared arrays and answered 33 safe programs unsafe before); the result of
+  standard_vararg_ground, fixed after the run, is patched in from a local run (a time out), the original result
+  files are kept as `results/tricera.2026-10-14_07-59-30.*.orig`.
+- Only Korn and TriCera have a mode for mathematical integers; the other verifiers would be wrong by construction. A clean
   comparison with one Horn-based tool. Korn runs without fuzzing (`-random`), which executes the program on
   machine integers, and with `-confirm` (see `xml/korn.xml`).
 

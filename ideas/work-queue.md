@@ -6,38 +6,10 @@ The open items of the current work (Oct 13, 2026 on), kept up to date; the plans
 double); speed only where a task times out that would succeed. Benchmarks that change are not rerun with Cuvée (the
 user's instruction, Oct 14).
 
-## In progress
-
-- [ ] TriCera on the unbounded set (`xml/tricera.xml`, 15 min, i9-9900, running): then patch the result of
-      `standard_vararg_ground` (now with `aa[N - 1] < 0`) into that run from a local run of TriCera on it, instead of
-      a rerun; rebuild `scripts/out/experiments.pdf`, the TriCera column in section 4 of ideas/experiments.md and in
-      doc/overview/overview.tex, commit.
-- [ ] Compare the 60 s run of 0.46.13 on Arrays and Loops (results of Oct 13, 23:4x) with 0.46.8 (21:35):
-      the gains of the case splits, the recurrence rule and the counterexamples, and no wrong verdict.
-
-## Done (Oct 13–14)
-
-- [x] 15 min runs of 0.46.9 on SV-COMP Arrays and Loops (Cuvée 599, Cuvée+Z3 824, CHC 402, the virtual portfolio
-      TEQ+Z3 and CHC 945) and MonoCera (79, 88 with Z3), no wrong results; integrated into doc/paper/cuvee.tex
-      (`scripts/paper.py`), `scripts/out/experiments.pdf` (only 0.46 runs, section 3 transposed with a quantile
-      plot, uniform colors, scatter plots out of the document), ideas/experiments.md, doc/overview/overview.tex.
-- [x] The unbounded set with 0.46.13 (Cuvée 263, Cuvée+Z3 299, CHC 144 of 481, no wrong results).
-- [x] The C programs of the unbounded set for TriCera, which checks memory safety: arrays sized for their accesses
-      (array-cav19, sanfoundry_02_ground, single_elem_safe), the assumption `0 < N` before the declarations,
-      consecutive declarations of arrays as one (TriCera of the MonoCera artifact aliases separately declared
-      arrays), the sentinel of standard_vararg_ground; all keep the semantics (Cuvée's results unchanged).
-- [x] 0.46.12: case splits on disjunctive premises (`Prove.cases`, in-de20, 41, 42, 51, 61 close), negative literals
-      in the matcher of sums, `select_current_trace_recurrence` (ifeqn1, ifeqn2), `store_select_other`,
-      `maps_counter_scale`, `occurs_counter_step`.
-- [x] 0.46.13: counterexamples without a solver (`Prove.counterexample`) and `integer_zero`: of the 80 array-fpi
-      tasks that 0.46.8 left unknown, 38 unsafe refuted and 7 safe proved locally, no wrong verdict;
-      while_infinite_loop_4 refuted.
-- [x] The overview paper doc/overview/overview.tex (the current approach, the insights, the evaluation).
-- [x] The lemma statistics (`scripts/rules.py` over teq.dfy and the migrated modules; `natural_positive` fires most).
-
 ## Next, by expected gain
 
 - [ ] SV-LIB (CTranslated, CoreVerification) for section 6 of the experiments, the only section still pending.
+- [ ] ps2-ll_unwindbound1 times out with 0.46.13 at 60 s (31 s with 0.46.8).
 - [ ] The inconsistency of the bisection (bugs.md, open): a premise on `bisection_lo`/`_hi` never matches, a premise
       on the rule `bisection` makes bsearch_bisect.dfy not terminate (the earlier "0 goals" were runs killed by
       the timeout; always check the exit status). Next idea: a third case of the function `bisection` that keeps
