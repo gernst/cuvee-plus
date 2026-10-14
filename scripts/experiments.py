@@ -423,7 +423,7 @@ def main():
     virtual = []
     for label, first in (("TEQ + CHC", teq_results), ("TEQ+Z3 + CHC", z3_results)):
         combined = {name: union(first[name], chc_results[name], label) for name in categories if name in first and name in chc_results}
-        LABELS[label] = label
+        LABELS[label] = f"{label} (virtual)"
         virtual.append(table.Column(label, "here", combined))
     spec3 = spec2[:3] + virtual
     (out / "union.tex").write_text(transposed(spec3, categories))
