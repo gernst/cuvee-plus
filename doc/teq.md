@@ -390,13 +390,10 @@ project at the root (`lakefile.toml`, sources in `lean/`):
   core, such that complete guards are an obligation of the proofs.
 - The functions that the engines use through their lemmas only, `cut`,
   `sorted`, `perm`, `partitioned`, `lower` and `upper`, have definitions in
-  the modules without `{:rw}` (no rules), which the proofs use; `bisection`
-  is a definition with `{:fold}`, whose folding is the only rule on it, total
-  by a third case that keeps the state where `lo < hi` fails or no guard
-  holds, which the traces of the binary searches match since their iteration
-  constraints exclude it in their updates: the guards of the traces of `-teq`
-  are complete in that context by construction, which the rules maintain
-  (see the rewrite engine below).
+  the modules without `{:rw}` (no rules), which the proofs use. `bisection`
+  is a definition with `{:fold}`, whose folding is the only rule on it; a
+  third case keeps the state where `lo < hi` fails or no guard holds, which
+  makes it total (see complete guards below).
 - [Database.lean](../lean/TEQ/Database.lean), generated: the functions of the
   modules as printed by `-print lean`, and each lemma as a proposition
   `Stmt.<name>` of its printed statement, with the premises of
@@ -432,9 +429,16 @@ reason why the contexts of `-teq` provide it: reads within the loop
 (`integer k < integer n` of `earlier_counter`, `earlier_sums`, ...), prefixes
 not longer than the list (`prefix_counter`), the lengths of lists that are
 no dependency of a combinator (`sum_consts_prefix`,
-`earlier_not_occurs_prefix`), and complete guards where the module does not
-state them, e.g. arbitrary guards `C1`, `C2`, `C3` (`current_trace_bounded`,
-`current_trace_increasing`).
+`earlier_not_occurs_prefix`).
+
+Complete guards need no premise. A lemma with arbitrary guards (`bisection`,
+`current_trace_bounded`, `current_trace_increasing`) ends in a case for the
+complement of the others, whose result keeps the conclusion true, so the
+lemma holds for every update. The traces of the loops have no such case and
+still match: the matcher requires each case of the expression to be covered
+by a case of the pattern, not the converse, and the guards of the traces of
+`-teq` are complete in the contexts of their updates by construction (the
+iteration constraints), which the rules maintain.
 
 - Check with `scripts/lean/check.sh` (about 20 s from scratch): it fails if
   the generated files are not those of the current modules, if the build

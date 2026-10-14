@@ -63,13 +63,13 @@ the contexts that `-teq` builds, as far as the reasons go.
      database that the simplifier still discharges them in the contexts of the goals.
   5. Document the invariant and the soundness of the database modulo it in doc/teq.md.
 - The premises that the engine does not check are listed in [lean/premises.txt](lean/premises.txt): nine reads and
-  prefixes within the loop, two lengths, and two complete guards. Open: turn the index premises into `requires` where `-prove` decides them
+  prefixes within the loop and two lengths. Open: turn the index premises into `requires` where `-prove` decides them
   in the contexts of the goals (item 4 above), measured on the tests and the SV-COMP rows, which would shrink the
   list to the soundness gaps proper.
 - The guards of `case` updates are printed as `if g₁ then e₁ else if g₂ then e₂ else unspecified` since 0.46.11, so
-  their completeness is an obligation of the proofs (two premises of premises.txt where the module does not provide
-  it); their disjointness is still assumed: overlapping guards take the first case, a refinement of the choice of the
-  core.
+  their completeness is an obligation of the proofs; the lemmas with arbitrary guards end in a case for the
+  complement of the others since Oct 14, 2026 (doc/teq.md). Their disjointness is still assumed: overlapping guards
+  take the first case, a refinement of the choice of the core.
 - **Lemmas without a proof**: none in [lean/open.txt](lean/open.txt); the module
   `nested`, which has no Lean proofs; the abstract predicates of the examples (`sorted`, `perm`, `partitioned`,
   `bubbled`, `shaken`, `argmin`, `insert`, `shake`, `nodup`, `merged`, `lb`), axiomatized by their lemmas, and the
@@ -84,13 +84,11 @@ the contexts that `-teq` builds, as far as the reasons go.
 - The bisection of `teq:search` was inconsistent (found by the Lean proofs, Oct 13, 2026): the rule `bisection`
   guarded both cases by `lo < hi`, a step after the exit was `unspecified`, and `bisection_lo` bounded it, which gave
   `unspecified.0 == l0` for every `l0` (for `l0 == h0`, one step, `G` and `H` false). Fixed on Oct 14, 2026:
-  `bisection` is a definition with `{:fold}` in place of the rule, total by a third case that keeps the state, with
-  disjoint guards (the second case excludes `G`); the bounds hold for every run of the definition and are proved in
-  Lean, and the three examples (`bsearch_bisect`, `bsearch_safe`, `lower_bound`) close; the fold matches the traces
-  of the loops, which lack the third case, since their guards are complete in the context of their updates (by
-  construction of `-teq`, maintained by the rules; doc/teq.md, the rewrite engine). A version with `G` alone (`H`
-  as `¬G`) loses the bound `hi >= upper` of the searches with a third branch, since `hi` would move onto occurrences
-  of the key.
+  `bisection` is a definition with `{:fold}` in place of the rule, with disjoint guards (the second case excludes
+  `G`) and a third case that keeps the state, so the bounds hold for every run and are proved in Lean (doc/teq.md,
+  complete guards). The three examples (`bsearch_bisect`, `bsearch_safe`, `lower_bound`) close. A version with `G`
+  alone (`H` as `¬G`) loses the bound `hi >= upper` of the searches with a third branch, since `hi` would move onto
+  occurrences of the key.
 
 - `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
   unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final

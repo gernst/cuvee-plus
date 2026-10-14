@@ -21,8 +21,8 @@ Open:
 - **The legacy theorems** in `Proofs.lean` (those of lemmas of `legacy/teq.dfy` no longer in the stable modules):
   move them into a frozen `Legacy.lean`, or drop them with the legacy database. Since Oct 13, 2026 search, sorted,
   arrays, counters and strides are in `MODULES` too (131 lemmas): the theorems of arrays and counters checked
-  unchanged except `current_trace_bounded` (its guard premise moved to `premises.txt`), the forward facts of search
-  lost their `↔ True`/`↔ False`, sorted and strides were proved anew.
+  unchanged except `current_trace_bounded` (whose guard premise is a case for the complement of the guards since
+  Oct 14, 2026), the forward facts of search lost their `↔ True`/`↔ False`, sorted and strides were proved anew.
 - **The bisection**: the rule with `bisection_lo` and `bisection_hi` was inconsistent under the semantics of an
   update without a case (bugs.md, Fixed); since Oct 14, 2026 `bisection` is a total definition with `{:fold}`, and the
   bounds are invariants of its update (`current_trace_invariant`, `cut_iff` of `Proofs.lean`).

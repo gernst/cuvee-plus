@@ -3126,16 +3126,19 @@ theorem current_trace_increasing_complete (x0 : Int) (n : Nat) (a : Int) (b : In
            x0
            (List.zip (butlast (counter 0 1 n)) hs)
            (fun x ⟨k, h⟩ =>
-              if C h then x + a else if D h then x + b else x + c)) :=
+              if C h then x + a else if D h then x + b else if E h then x + c else x + a)) :=
   by
     intro ⟨hn, ha, hb, hc⟩
     have hstrict : ∀ (x : Int) (p : Int × Int),
-        x < (fun x (p : Int × Int) => match p with | (k, h) => if C h then x + a else if D h then x + b else x + c) x p := by
+        x < (fun x (p : Int × Int) => match p with
+          | (k, h) => if C h then x + a else if D h then x + b else if E h then x + c else x + a) x p := by
       intro x ⟨k, h⟩
-      show x < (if C h then x + a else if D h then x + b else x + c)
+      show x < (if C h then x + a else if D h then x + b else if E h then x + c else x + a)
       split
       · omega
-      · split <;> omega
+      · split
+        · omega
+        · split <;> omega
     cases n with
     | zero => exact absurd rfl hn
     | succ m =>
@@ -3147,12 +3150,12 @@ theorem current_trace_increasing_complete (x0 : Int) (n : Nat) (a : Int) (b : In
         exact Int.lt_of_lt_of_le (hstrict x0 (0, h)) (trace_mono _ _ _ (fun x p => Int.le_of_lt (hstrict x p)))
 
 theorem current_trace_increasing : Stmt.current_trace_increasing := by
-  intro x0 n a b c hs C D E hhs hc
-  have e : ∀ (h A B C' z : Int), (if C h then A else if D h then B else if E h then C' else z)
-      = (if C h then A else if D h then B else C') := by
+  intro x0 n a b c hs C D E hhs
+  -- the fourth case is the complement of the others, so the conditional never reaches unspecified
+  have e : ∀ (h A B C' z : Int), (if C h then A else if D h then B else if E h then C' else if ¬(C h ∨ D h ∨ E h) then A else z)
+      = (if C h then A else if D h then B else if E h then C' else A) := by
     intro h A B C' z
-    by_cases h1 : C h <;> by_cases h2 : D h <;> simp [h1, h2]
-    rcases hc h with h3 | h3 | h3 <;> simp_all
+    by_cases h1 : C h <;> by_cases h2 : D h <;> by_cases h3 : E h <;> simp [h1, h2, h3]
   simp only [e]
   exact current_trace_increasing_complete x0 n a b c hs C D E hhs
 
@@ -3162,8 +3165,7 @@ theorem current_trace_increasing : Stmt.current_trace_increasing := by
 theorem current_trace_bounded_complete (x0 : Int) (n : Nat) (lo : Int) (hi : Int)
                                     (C1 : Int → Prop) (C2 : Int → Prop)
                                     (C3 : Int → Prop) (F1 : Int → Int)
-                                    (F2 : Int → Int) (F3 : Int → Int)
-                                    (hc : ∀ (y : Int), ¬C1 y ∧ ¬C2 y → C3 y) :
+                                    (F2 : Int → Int) (F3 : Int → Int) :
   lo ≤ x0
     ∧ x0 ≤ hi
     ∧ (∀ (y : Int), lo ≤ y ∧ y ≤ hi ∧ C1 y → lo ≤ F1 y ∧ F1 y ≤ hi)
@@ -3174,20 +3176,20 @@ theorem current_trace_bounded_complete (x0 : Int) (n : Nat) (lo : Int) (hi : Int
            (trace
               x0
               (butlast (counter 0 1 n))
-              (fun x k => if C1 x then F1 x else if C2 x then F2 x else F3 x))
+              (fun x k => if C1 x then F1 x else if C2 x then F2 x else if C3 x then F3 x else x))
          ∧ current
            (trace
               x0
               (butlast (counter 0 1 n))
-              (fun x k => if C1 x then F1 x else if C2 x then F2 x else F3 x))
+              (fun x k => if C1 x then F1 x else if C2 x then F2 x else if C3 x then F3 x else x))
            ≤ hi
          ↔ True) :=
   by
     intro ⟨h1, h2, f1, f2, f3⟩
     simp only [iff_true]
     suffices g : ∀ s x, lo ≤ x ∧ x ≤ hi → lo ≤ current (trace x (butlast (counter s 1 n))
-        (fun x k => if C1 x then F1 x else if C2 x then F2 x else F3 x)) ∧ current (trace x (butlast (counter s 1 n))
-        (fun x k => if C1 x then F1 x else if C2 x then F2 x else F3 x)) ≤ hi from g 0 x0 ⟨h1, h2⟩
+        (fun x k => if C1 x then F1 x else if C2 x then F2 x else if C3 x then F3 x else x)) ∧ current (trace x (butlast (counter s 1 n))
+        (fun x k => if C1 x then F1 x else if C2 x then F2 x else if C3 x then F3 x else x)) ≤ hi from g 0 x0 ⟨h1, h2⟩
     induction n with
     | zero => intro s x hx; simpa [counter, butlast, trace, current] using hx
     | succ m ih =>
@@ -3199,20 +3201,20 @@ theorem current_trace_bounded_complete (x0 : Int) (n : Nat) (lo : Int) (hi : Int
       · rw [ite_eq_right c1]
         by_cases c2 : C2 x
         · rw [ite_eq_left c2]; exact f2 x ⟨hx.1, hx.2, c2⟩
-        · rw [ite_eq_right c2]; exact f3 x ⟨hx.1, hx.2, hc x ⟨c1, c2⟩⟩
+        · rw [ite_eq_right c2]
+          by_cases c3 : C3 x
+          · rw [ite_eq_left c3]; exact f3 x ⟨hx.1, hx.2, c3⟩
+          · rw [ite_eq_right c3]; exact hx
 
 theorem current_trace_bounded : Stmt.current_trace_bounded := by
-  intro x0 n lo hi C1 C2 C3 F1 F2 F3 hc
-  have e : ∀ (y A B C z : Int), (if C1 y then A else if C2 y then B else if C3 y then C else z)
-      = (if C1 y then A else if C2 y then B else C) := by
+  intro x0 n lo hi C1 C2 C3 F1 F2 F3
+  -- the fourth case is the complement of the others, so the conditional never reaches unspecified
+  have e : ∀ (y A B C z : Int), (if C1 y then A else if C2 y then B else if C3 y then C else if ¬(C1 y ∨ C2 y ∨ C3 y) then y else z)
+      = (if C1 y then A else if C2 y then B else if C3 y then C else y) := by
     intro y A B C z
-    by_cases h1 : C1 y
-    · simp [h1]
-    by_cases h2 : C2 y
-    · simp [h1, h2]
-    simp [h1, h2, hc y ⟨h1, h2⟩]
+    by_cases h1 : C1 y <;> by_cases h2 : C2 y <;> by_cases h3 : C3 y <;> simp [h1, h2, h3]
   simp only [e]
-  exact current_trace_bounded_complete x0 n lo hi C1 C2 C3 F1 F2 F3 hc
+  exact current_trace_bounded_complete x0 n lo hi C1 C2 C3 F1 F2 F3
 
 -- which is instantiated at the positions j in the range
 -- (from simple_array_index_value_2)

@@ -1100,7 +1100,7 @@ def Stmt.current_trace_flag : Prop :=
            c)
 
 def Stmt.current_trace_increasing : Prop :=
-  ∀ (x0 : Int) (n : Nat) (a : Int) (b : Int) (c : Int) (hs : List Int) (C : Int → Prop) (D : Int → Prop) (E : Int → Prop) (hhs : length hs = n) (hc : ∀ (h : Int), C h ∨ D h ∨ E h),
+  ∀ (x0 : Int) (n : Nat) (a : Int) (b : Int) (c : Int) (hs : List Int) (C : Int → Prop) (D : Int → Prop) (E : Int → Prop) (hhs : length hs = n),
     n ≠ zero ∧ 0 < a ∧ 0 < b ∧ 0 < c
       → x0
         < current
@@ -1111,10 +1111,16 @@ def Stmt.current_trace_increasing : Prop :=
                 if C h then
                   x + a
                 else
-                  if D h then x + b else if E h then x + c else unspecified))
+                  if D h then
+                    x + b
+                  else
+                    if E h then
+                      x + c
+                    else
+                      if ¬(C h ∨ D h ∨ E h) then x + a else unspecified))
 
 def Stmt.current_trace_bounded : Prop :=
-  ∀ (x0 : Int) (n : Nat) (lo : Int) (hi : Int) (C1 : Int → Prop) (C2 : Int → Prop) (C3 : Int → Prop) (F1 : Int → Int) (F2 : Int → Int) (F3 : Int → Int) (hc : ∀ (y : Int), ¬C1 y ∧ ¬C2 y → C3 y),
+  ∀ (x0 : Int) (n : Nat) (lo : Int) (hi : Int) (C1 : Int → Prop) (C2 : Int → Prop) (C3 : Int → Prop) (F1 : Int → Int) (F2 : Int → Int) (F3 : Int → Int),
     lo ≤ x0
       ∧ x0 ≤ hi
       ∧ (∀ (y : Int), lo ≤ y ∧ y ≤ hi ∧ C1 y → lo ≤ F1 y ∧ F1 y ≤ hi)
@@ -1129,7 +1135,13 @@ def Stmt.current_trace_bounded : Prop :=
                    if C1 x then
                      F1 x
                    else
-                     if C2 x then F2 x else if C3 x then F3 x else unspecified))
+                     if C2 x then
+                       F2 x
+                     else
+                       if C3 x then
+                         F3 x
+                       else
+                         if ¬(C1 x ∨ C2 x ∨ C3 x) then x else unspecified))
            ∧ current
              (trace
                 x0
@@ -1138,7 +1150,13 @@ def Stmt.current_trace_bounded : Prop :=
                    if C1 x then
                      F1 x
                    else
-                     if C2 x then F2 x else if C3 x then F3 x else unspecified))
+                     if C2 x then
+                       F2 x
+                     else
+                       if C3 x then
+                         F3 x
+                       else
+                         if ¬(C1 x ∨ C2 x ∨ C3 x) then x else unspecified))
              ≤ hi
            ↔ True)
 

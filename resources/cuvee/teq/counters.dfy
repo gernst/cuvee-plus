@@ -58,16 +58,18 @@ lemma {:rw} {:teq} current_trace_flag(x0: int, c: int, n: Nat, hs: List<int>, D:
     == if invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !D(k, h)) then x0 else c
 
 // a value that increases by a positive constant in each of its three cases exceeds its initial value after at
-// least one iteration
+// least one iteration; the fourth case, the complement of the others, makes the lemma hold for every update, the
+// traces of the loops match it without that case (doc/teq.md, complete guards)
 // (from large_const)
 lemma {:rw} {:teq} current_trace_increasing(x0: int, n: Nat, a: int, b: int, c: int, hs: List<int>, C: (int) -> bool,
                                             D: (int) -> bool, E: (int) -> bool)
   requires n != zero && 0 < a && 0 < b && 0 < c
   ensures x0 < current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h ::
-    case C(h) => x + a case D(h) => x + b case E(h) => x + c))
+    case C(h) => x + a case D(h) => x + b case E(h) => x + c case !(C(h) || D(h) || E(h)) => x + a))
 
 // an interval that contains the initial value and that each of the three cases maps into itself contains the
-// current value, an inductive invariant; the left-hand side is the conjunction of both bounds, which binds both
+// current value, an inductive invariant; the left-hand side is the conjunction of both bounds, which binds both;
+// the fourth case keeps the value where no guard holds (doc/teq.md, complete guards)
 // (from benchmark51_polynomial)
 lemma {:rw} {:teq} current_trace_bounded(x0: int, n: Nat, lo: int, hi: int, C1: (int) -> bool, C2: (int) -> bool,
                                          C3: (int) -> bool, F1: (int) -> int, F2: (int) -> int, F3: (int) -> int)
@@ -76,8 +78,10 @@ lemma {:rw} {:teq} current_trace_bounded(x0: int, n: Nat, lo: int, hi: int, C1: 
     && (forall y: int :: lo <= y <= hi && C2(y) ==> lo <= F2(y) <= hi)
     && (forall y: int :: lo <= y <= hi && C3(y) ==> lo <= F3(y) <= hi)
   ensures
-    (lo <= current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C1(x) => F1(x) case C2(x) => F2(x) case C3(x) => F3(x)))
-       && current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C1(x) => F1(x) case C2(x) => F2(x) case C3(x) => F3(x))) <= hi)
+    (lo <= current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k ::
+       case C1(x) => F1(x) case C2(x) => F2(x) case C3(x) => F3(x) case !(C1(x) || C2(x) || C3(x)) => x))
+     && current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k ::
+       case C1(x) => F1(x) case C2(x) => F2(x) case C3(x) => F3(x) case !(C1(x) || C2(x) || C3(x)) => x)) <= hi)
       <==> true
 
 // membership in a counter with a positive step d, e.g. the odd positions counter(1, 2, n) of strided stores
