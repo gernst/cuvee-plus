@@ -13,12 +13,15 @@ paper's conversion of the programs for it.
 | | forall (93) | max (4) | min (11) | sum (17) | total |
 |---|--:|--:|--:|--:|--:|
 | Cuvée `-teq` | 53 | 2 | 7 | 17 | 79 |
+| Cuvée+Z3 (0.46.9, `-unbounded`, 15 min, i7-6700) | 59 | 3 | 9 | 17 | 88 |
 | MonoCera (our run, 15 min) | 26 | 2 | 3 | 10 | 41 |
 | MonoCera (paper) | 27 | 2 | 3 | 10 | 42 |
 | Cuvée `-chc` (z3, Horn clauses) | 0 | 0 | 0 | 0 | 0 |
 | TriCera, CPAchecker, SeaHorn (paper) | | | | | 0, 1, 0 |
 
 - The direct comparison with a technique made for quantifiers and aggregates over arrays; no wrong results.
+- Rerun with 0.46.9 (Oct 13, after the migration of the lemma database, `-unbounded`, 15 min, i7-6700): Cuvée
+  unchanged at 79, Cuvée+Z3 88, no wrong results.
 - Both 24, Cuvée only 55 (all 17 `sum`), MonoCera only 17: the strided and backward stores of `array-tiling`
   (`nr*`, `pnr*`, `pr*`, `rewnifrev*`), a weakness to discuss.
 - Time: TEQ at most 20 s per proof, MonoCera up to 274 s.
@@ -42,7 +45,8 @@ and others (imported from the SV-COMP statistics, not run by us).
 |---|--:|--:|--:|
 | Cuvée (0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false | 553 |
 | Cuvée (0.46.9, `-verify`, 15 min, i7-6700) | 138 true, 9 false | 149 true, 16 false | 599 |
-| Cuvée+Z3 (0.46.9, `-verify`, 15 min, i7-6700) | 148 true, 48 false | running | |
+| Cuvée+Z3 (0.46.9, `-verify`, 15 min, i7-6700) | 148 true, 48 false | 230 true, 20 false | 824 |
+| Cuvée (CHC) (0.46.9, 15 min, i7-6700) | 8 true, 45 false | 150 true, 41 false | 402 |
 | Cuvée+Z3 (0.42.2, `-verify`, 15 min) | 148 true, 51 false | 283 true, 28 false | 941 |
 | Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false | 400 |
 | Cuvée (0.42.1, `-verify`, 60 s, i9-9900) | 130 true, 9 false | 125 true, 16 false | 535 |
@@ -77,9 +81,10 @@ Official SV-COMP 2026 scores on the same tasks: Symbiotic 1099, UAutomizer 941, 
 
 ## 3. Complementarity: TEQ and Horn clauses
 
-A virtual portfolio of TEQ and `-chc` (correct if either is, 15 min): 341 true and 105 false correct, score
-787 with no wrong results, against 551 for TEQ and 400 for CHC alone (TEQ+Z3 and CHC: 458 true and 126 false,
-score 786, with the wrong results of `-fallback`). TEQ is strong on arrays, Horn clauses on integer loops. The argument for TEQ as a complement to invariant inference,
+A virtual portfolio of TEQ and `-chc` (correct if either is, 15 min): with 0.46.9, 356 true and 106 false
+correct, score 818, against 599 for TEQ and 402 for CHC alone; TEQ+Z3 and CHC 413 true and 119 false, score 945,
+above UAutomizer (941), all without wrong results (0.42: 341 and 105, score 787; with Z3 786, with the wrong
+results of `-fallback` then). TEQ is strong on arrays, Horn clauses on integer loops. The argument for TEQ as a complement to invariant inference,
 and for a portfolio (see the TODO "Portfolio of TEQ and CHC").
 
 ## 4. Mathematical integers: the unbounded set
@@ -156,9 +161,10 @@ Arrays and Loops and on the unbounded set, after the fix of the exits of loops; 
 
 Done (Oct 13, 2026, from 22:11, Cuvée 0.46.9, 15 min, 2 cores, 7 GB, Intel Core i7-6700, after the migration of the
 lemma database): `xml/cuvee.xml` on SV-COMP Arrays (138 true, 9 false, score 285) and Loops (149 true, 16 false,
-score 314), `xml/cuvee-fallback.xml` on Arrays (148 true, 48 false, score 344), no wrong results; Loops with
-`-fallback`, `xml/cuvee-chc.xml` on Arrays and Loops, and the MonoCera tests with `xml/cuvee.xml` and
-`xml/cuvee-fallback.xml` still running (`scripts/out/experiments.pdf` takes only these runs of 0.46).
+score 314), `xml/cuvee-fallback.xml` on Arrays (148 true, 48 false, score 344) and Loops (230 true, 20 false, score 480),
+`xml/cuvee-chc.xml` on Arrays and Loops (score 402), the MonoCera tests with `xml/cuvee.xml` (79) and
+`xml/cuvee-fallback.xml` (88), all without wrong results (`scripts/out/experiments.pdf` takes only these runs of
+0.46; the unbounded set and SV-LIB are pending).
 
 Done (Oct 13, 2026, 19:44–21:17, Cuvée 0.46.3 to 0.46.5, 60 s, 2 cores, 7 GB, Intel Core i7-6700, complete):
 `xml/cuvee.xml` on SV-COMP Arrays and Loops after each step of the database migration (`-T 60s --vcloudCPUModel`,
