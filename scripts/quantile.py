@@ -17,8 +17,8 @@ def times(results: list[common.Results]) -> list[float]:
 
 def plot(plt, title: str, curves: dict[str, list[float]], names: dict[str, str], colors: dict[str, str], timelimit: float, path):
     figure, axes = plt.subplots(figsize=(6, 3.8))
-    markers = ["o", "s", "^", "v", "D", "P", "X", "*", "<", ">"]
-    for index, (tool, values) in enumerate(curves.items()):
+    markers = common.markers(list(curves))
+    for tool, values in curves.items():
         if not values:
             continue
         # a few markers per curve tell curves of similar colors apart, without cluttering dense curves
@@ -27,7 +27,7 @@ def plot(plt, title: str, curves: dict[str, list[float]], names: dict[str, str],
             values,
             label=f"{names[tool]} ({len(values)})",
             color=colors[tool],
-            marker=markers[index % len(markers)],
+            marker=markers[tool],
             markevery=max(1, len(values) // 8),
             markersize=4,
             linewidth=1.3,

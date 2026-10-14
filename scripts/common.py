@@ -251,8 +251,38 @@ def pyplot():
     return plt
 
 
+# a fixed color and marker per tool, the same in all plots: the configurations of Cuvée in blues and greens, their
+# portfolios in purples, the other verifiers in warm colors and greys; the names of older runs share the style of
+# the configuration they stand for
+STYLES = {
+    "cuvee": ("#1f77b4", "o"),
+    "cuvee-full": ("#1f77b4", "o"),
+    "cuvee-15min": ("#1f77b4", "o"),
+    "cuvee-fallback": ("#17becf", "s"),
+    "cuvee-full-fallback": ("#17becf", "s"),
+    "cuvee-chc": ("#2ca02c", "^"),
+    "cuvee-acsl": ("#bcbd22", "P"),
+    "TEQ + CHC": ("#9467bd", "v"),
+    "TEQ+Z3 + CHC": ("#e377c2", "D"),
+    "symbiotic": ("#d62728", "X"),
+    "aise": ("#ff7f0e", "<"),
+    "uautomizer": ("#8c564b", ">"),
+    "cpachecker": ("#7f7f7f", "*"),
+    "korn": ("#000000", "h"),
+    "monocera": ("#ff9896", "p"),
+}
+
+
 def colors(tools: list[str]) -> dict[str, str]:
-    """One color per tool, the same in all plots, following the default order of the tools."""
-    palette = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
-    order = TOOLS + [tool for tool in tools if tool not in TOOLS]
-    return {tool: palette[order.index(tool) % len(palette)] for tool in tools}
+    """One color per tool, the same in all plots (STYLES); tools without a style get the colors of a palette in
+    the order of their names."""
+    palette = ["#aec7e8", "#ffbb78", "#98df8a", "#c5b0d5", "#c49c94", "#f7b6d2", "#dbdb8d", "#9edae5"]
+    others = sorted(tool for tool in tools if tool not in STYLES)
+    return {tool: STYLES[tool][0] if tool in STYLES else palette[others.index(tool) % len(palette)] for tool in tools}
+
+
+def markers(tools: list[str]) -> dict[str, str]:
+    """One marker per tool, the same in all plots (STYLES)."""
+    fallback = ["o", "s", "^", "v", "D", "P", "X", "*"]
+    others = sorted(tool for tool in tools if tool not in STYLES)
+    return {tool: STYLES[tool][1] if tool in STYLES else fallback[others.index(tool) % len(fallback)] for tool in tools}

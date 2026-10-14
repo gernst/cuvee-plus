@@ -180,14 +180,33 @@ complementary technique for loops over integers. \texttt{-verify} answers \emph{
 
 \section{Evaluation}
 
-On the SV-COMP categories ReachSafety-Arrays (440 tasks) and ReachSafety-Loops (764), with 60\,s per task, the
-current version proves 145 Arrays tasks (136 safe, 9 unsafe) and 161 Loops tasks (145, 16) without a solver, with no
-wrong answer; with Z3 as fallback 190 and 216. Its strength is arrays of unbounded size: most safe Arrays tasks it
-proves are proved by no participant of SV-COMP 2026, which needs invariants quantified over array indices. Loops
-over integers with non-linear invariants (the \texttt{nla-digbench} tasks) are its weakness, where Horn clause
-solvers and model checkers lead. On the MonoCera benchmark of aggregates over arrays (sums, maxima, minima,
-universal properties), the approach covers the sums best. The full runs with 15 minutes per task are in
-\texttt{scripts/out/experiments.pdf}.
+All runs: BenchExec, 15\,min CPU time, 7\,GB, 2 cores of an Intel Core i7-6700; the other tools are the official
+results of SV-COMP 2026. On ReachSafety-Arrays (440 tasks) and ReachSafety-Loops (764):
+
+\begin{center}\small
+\begin{tabular}{l|rrr|rrr|r}
+\toprule
+& \multicolumn{3}{c|}{Arrays} & \multicolumn{3}{c|}{Loops} & \\
+& true & false & wrong & true & false & wrong & score \\
+\midrule
+\cuvee{} (no solver) & 138 & 9 & 0 & 149 & 16 & 0 & 599 \\
+\cuvee{} with Z3 & 148 & 48 & 0 & 230 & 20 & 0 & 824 \\
+\cuvee{} with Horn clauses & 8 & 45 & 0 & 150 & 41 & 0 & 402 \\
+portfolio of the last two & 151 & 67 & 0 & 262 & 52 & 0 & 945 \\
+\midrule
+Symbiotic (SV-COMP 2026) & & & & & & & 1099 \\
+UAutomizer (SV-COMP 2026) & & & & & & & 941 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The strength is arrays of unbounded size: the next tool proves 68 safe Arrays tasks, and 112 of the safe Arrays
+tasks that \cuvee{} proves are proved by none of five SV-COMP~2026 participants; these need invariants quantified
+over array indices. Loops over integers with non-linear invariants (\texttt{nla-digbench}) are the weakness, where
+Horn clause solvers and model checkers lead; the solver helps there most (63 of the 83 proofs it adds on Loops).
+TEQ and Horn clauses are complementary: their portfolio scores higher than either. On the MonoCera benchmark of
+aggregates over arrays (125 tests of universal properties, maxima, minima and sums), \cuvee{} proves 79 and 88
+with Z3, against 41 for MonoCera, a tool built for this class. No configuration gives a wrong answer.
 
 \section{Insights}
 \label{sec:insights}
