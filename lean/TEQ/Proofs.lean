@@ -4172,4 +4172,132 @@ theorem current_trace_mod_add_cases : Stmt.current_trace_mod_add_cases := by
   simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
   exact current_trace_mod_add_cases_complete x0 n m hs C F hhs
 
+-- the bisection of search.dfy: a property that the update preserves holds of the current value; the bounds are such
+-- properties, also with the third case, which keeps the state, so they need no premise on the steps
+
+theorem current_trace_invariant {α β : Type} [Inhabited α] (P : α → Prop) (f : α → β → α)
+    (hf : ∀ x d, P x → P (f x d)) : ∀ (ds : List β) (x : α), P x → P (current (trace x ds f))
+  | [], x, hx => hx
+  | d :: ds, x, hx => by
+    rw [trace_cons, current_step_eq]
+    exact current_trace_invariant P f hf ds (f x d) (hf x d hx)
+
+theorem bisection_lo : Stmt.bisection_lo := by
+  intro l0 h0 ks M G H n hks ⟨hl, hM, hG⟩
+  have hc := cut_bounds G l0 h0 hl
+  have key : l0 ≤ (current (bisection l0 h0 ks M G H)).1 ∧ (current (bisection l0 h0 ks M G H)).1 ≤ cut G l0 h0
+      ∧ (current (bisection l0 h0 ks M G H)).2 ≤ h0 := by
+    unfold bisection
+    apply current_trace_invariant (fun (s : Int × Int) => l0 ≤ s.1 ∧ s.1 ≤ cut G l0 h0 ∧ s.2 ≤ h0)
+    · rintro ⟨lo, hi⟩ k ⟨h1, h2, h3⟩
+      dsimp only
+      by_cases hA : lo < hi
+      · have hm := hM lo hi hA
+        by_cases hg : G (M lo hi)
+        · have := (cut_iff G l0 h0 (M lo hi) (fun p q a b c d => hG p q ⟨a, b, c, d⟩) (by omega) (by omega)).1 hg
+          simp only [hg, hA, and_self, ↓reduceIte]
+          omega
+        · by_cases hh : H (M lo hi)
+          · simp only [hg, hh, hA, not_false_eq_true, and_self, false_and, ↓reduceIte]
+            omega
+          · simp only [hg, hh, hA, not_false_eq_true, and_self, false_and, and_true, or_self, not_true_eq_false,
+              or_true, ↓reduceIte]
+            omega
+      · simp only [hA, and_false, false_and, not_false_eq_true, true_or, ↓reduceIte]
+        omega
+    · exact ⟨Int.le_refl _, hc.1, Int.le_refl _⟩
+  exact ⟨key.1, key.2.1⟩
+
+theorem bisection_hi : Stmt.bisection_hi := by
+  intro l0 h0 ks M G H n hks ⟨hl, hM, hH⟩
+  have hc := cut_bounds (fun j => ¬H j) l0 h0 hl
+  have key : l0 ≤ (current (bisection l0 h0 ks M G H)).1
+      ∧ cut (fun j => ¬H j) l0 h0 ≤ (current (bisection l0 h0 ks M G H)).2
+      ∧ (current (bisection l0 h0 ks M G H)).2 ≤ h0 := by
+    unfold bisection
+    apply current_trace_invariant (fun (s : Int × Int) => l0 ≤ s.1 ∧ cut (fun j => ¬H j) l0 h0 ≤ s.2 ∧ s.2 ≤ h0)
+    · rintro ⟨lo, hi⟩ k ⟨h1, h2, h3⟩
+      dsimp only
+      by_cases hA : lo < hi
+      · have hm := hM lo hi hA
+        by_cases hg : G (M lo hi)
+        · simp only [hg, hA, and_self, ↓reduceIte]
+          omega
+        · by_cases hh : H (M lo hi)
+          · have := (cut_iff (fun j => ¬H j) l0 h0 (M lo hi)
+              (fun p q a b c d e => d (hH p q ⟨a, b, c, e⟩)) (by omega) (by omega))
+            have : ¬(M lo hi < cut (fun j => ¬H j) l0 h0) := fun hlt => (this.2 hlt) hh
+            simp only [hg, hh, hA, not_false_eq_true, and_self, false_and, ↓reduceIte]
+            omega
+          · simp only [hg, hh, hA, not_false_eq_true, and_self, false_and, and_true, or_self, not_true_eq_false,
+              or_true, ↓reduceIte]
+            omega
+      · simp only [hA, and_false, false_and, not_false_eq_true, true_or, ↓reduceIte]
+        omega
+    · exact ⟨Int.le_refl _, hc.2, Int.le_refl _⟩
+  exact ⟨key.2.1, key.2.2⟩
+
+-- the lemmas of 0.46.12 (teq.dfy, arrays, aggregation)
+
+theorem maps_counter_scale (b : Int) (i : Int) (c : Int) (n : Nat) :
+    maps (butlast (counter i c n)) (fun v => b * v) = butlast (counter (b * i) (b * c) n) := by
+  induction n generalizing i with
+  | zero => rfl
+  | succ m ih =>
+    simp only [butlast_counter_succ, maps, ih]
+    rw [Int.mul_add]
+
+theorem store_select_other (a : Int → Int) (i : Int) (j : Int) (v : Int) :
+    i ≠ j
+      → (fun j1 => if j1 = j then a j else (fun j => if j = i then v else a j) j1)
+        = (fun j => if j = i then v else a j) := by
+  intro h
+  funext j1
+  by_cases e : j1 = j
+  · subst e; simp [Ne.symm h]
+  · simp [e]
+
+-- from s ≥ 1 on, the position k is written from k - 1, which the previous step wrote: the value at j is the value at
+-- s - 1 plus the sum of G over s, ..., j
+theorem recurrence_from (G : Int → Int) (c : Int) (j : Int) : ∀ (m : Nat) (s : Int) (x : Int → Int), 1 ≤ s →
+    current (trace x (butlast (counter s 1 m))
+      (fun a i => if i = 0 then fun j => if j = 0 then c else a j
+        else if 0 < i then fun j => if j = i then a (i - 1) + G i else a j else unspecified)) j
+      = if s ≤ j ∧ j < s + m then x (s - 1) + sum (maps (butlast (counter s 1 (j - s + 1).toNat)) G) else x j := by
+  intro m
+  induction m with
+  | zero => intro s x _; simp [counter, butlast, trace, current]; omega
+  | succ t ih =>
+    intro s x hs
+    simp only [butlast_counter_succ, trace, current]
+    rw [if_neg (by omega), if_pos (by omega), ih (s + 1) _ (by omega)]
+    simp only [show s + 1 - 1 = s by omega, ↓reduceIte]
+    by_cases hj : s ≤ j ∧ j < s + (t + 1 : Nat)
+    · rw [if_pos hj]
+      by_cases e : j = s
+      · subst e
+        rw [if_neg (by omega), if_pos rfl, show (j - j + 1).toNat = 0 + 1 by omega, sum_counter_succ]
+        simp [counter, butlast, maps, sum]
+      · rw [if_pos (by omega), show (j - s + 1).toNat = (j - (s + 1) + 1).toNat + 1 by omega, sum_counter_succ]
+        omega
+    · rw [if_neg hj, if_neg (by omega), if_neg (by omega)]
+
+theorem select_current_trace_recurrence (a0 : Int → Int) (n : Nat) (c : Int) (j : Int) (G : Int → Int) :
+    current (trace a0 (butlast (counter 0 1 n))
+      (fun a i => if i = 0 then fun j => if j = 0 then c else a j
+        else if 0 < i then fun j => if j = i then a (i - 1) + G i else a j else unspecified)) j
+      = (if 0 ≤ j ∧ j < integer n then c + sum (maps (butlast (counter 1 1 (natural j))) (fun k => G k)) else a0 j) := by
+  rw [integer_cast, natural_eq]
+  cases n with
+  | zero => simp [counter, butlast, trace, current]; omega
+  | succ m =>
+    simp only [butlast_counter_succ, trace, current, ↓reduceIte, Int.zero_add]
+    rw [recurrence_from G c j m 1 _ (by omega)]
+    push_cast
+    by_cases e : j = 0
+    · subst e; simp [counter, butlast, maps, sum]
+    · by_cases hj : 1 ≤ j ∧ j < 1 + (m : Int)
+      · rw [if_pos hj, if_pos (by omega), show (j - 1 + 1).toNat = j.toNat by omega]
+      · rw [if_neg hj, if_neg e, if_neg (by omega)]
+
 end TEQ

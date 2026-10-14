@@ -117,6 +117,9 @@ def Stmt.zero_integer : Prop :=
   ∀ (n : Nat),
     integer n = 0 ↔ n = zero
 
+def Stmt.integer_zero : Prop :=
+  integer zero = 0
+
 def Stmt.zero_integer_value : Prop :=
   ∀ (n : Nat),
     n = zero → integer n = 0
@@ -157,6 +160,11 @@ def Stmt.maps_counter_affine : Prop :=
   ∀ (a : Int) (b : Int) (i : Int) (c : Int) (n : Nat),
     maps (butlast (counter i c n)) (fun v => a + b * v)
       = butlast (counter (a + b * i) (b * c) n)
+
+def Stmt.maps_counter_scale : Prop :=
+  ∀ (b : Int) (i : Int) (c : Int) (n : Nat),
+    maps (butlast (counter i c n)) (fun v => b * v)
+      = butlast (counter (b * i) (b * c) n)
 
 def Stmt.invs_const : Prop :=
   ∀ (b : Prop) (i : Int) (c : Int) (n : Nat),
@@ -533,6 +541,26 @@ def Stmt.current_trace_prefix_sums_add : Prop :=
          else
            b0 j)
 
+def Stmt.select_current_trace_recurrence : Prop :=
+  ∀ (a0 : Int → Int) (n : Nat) (c : Int) (j : Int) (G : Int → Int),
+    current
+      (trace
+         a0
+         (butlast (counter 0 1 n))
+         (fun a i =>
+            if i = 0 then
+              fun j => if j = 0 then c else a j
+            else
+              if 0 < i then
+                fun j => if j = i then a (i - 1) + G i else a j
+              else
+                unspecified))
+      j
+      = (if 0 ≤ j ∧ j < integer n then
+           c + sum (maps (butlast (counter 1 1 (natural j))) (fun k => G k))
+         else
+           a0 j)
+
 noncomputable def pow (c : Int) (n : Nat) : Int :=
   match n with
   | .zero => 1
@@ -644,8 +672,47 @@ def Stmt.select_not_occurs_selects : Prop :=
     ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + integer n
       → a k ≠ x
 
-axiom bisection :
-  Int → Int → List Int → (Int → Int → Int) → (Int → Prop) → (Int → Prop) → Trace (Int × Int)
+noncomputable def bisection (l0 : Int) (h0 : Int) (ks : List Int)
+                            (M : Int → Int → Int) (G : Int → Prop)
+                            (H : Int → Prop) : Trace (Int × Int) :=
+  trace
+    (l0,
+     h0)
+    ks
+    (fun ⟨lo, hi⟩ k =>
+       (if G (M lo hi) ∧ lo < hi then
+          M lo hi + 1
+        else
+          if H (M lo hi) ∧ ¬G (M lo hi) ∧ lo < hi then
+            lo
+          else
+            if ¬lo < hi ∨ ¬(G (M lo hi) ∨ H (M lo hi)) then lo else unspecified,
+        if G (M lo hi) ∧ lo < hi then
+          hi
+        else
+          if H (M lo hi) ∧ ¬G (M lo hi) ∧ lo < hi then
+            M lo hi
+          else
+            if ¬lo < hi ∨ ¬(G (M lo hi) ∨ H (M lo hi)) then
+              hi
+            else
+              unspecified))
+
+def Stmt.bisection_lo : Prop :=
+  ∀ (l0 : Int) (h0 : Int) (ks : List Int) (M : Int → Int → Int) (G : Int → Prop) (H : Int → Prop) (n : Nat) (hks : length ks = n),
+    l0 ≤ h0
+      ∧ (∀ (l : Int) (h : Int), l < h → l ≤ M l h ∧ M l h < h)
+      ∧ (∀ (p : Int) (q : Int), l0 ≤ p ∧ p ≤ q ∧ q < h0 ∧ G q → G p)
+      → l0 ≤ (current (bisection l0 h0 ks M G H)).1
+        ∧ (current (bisection l0 h0 ks M G H)).1 ≤ cut G l0 h0
+
+def Stmt.bisection_hi : Prop :=
+  ∀ (l0 : Int) (h0 : Int) (ks : List Int) (M : Int → Int → Int) (G : Int → Prop) (H : Int → Prop) (n : Nat) (hks : length ks = n),
+    l0 ≤ h0
+      ∧ (∀ (l : Int) (h : Int), l < h → l ≤ M l h ∧ M l h < h)
+      ∧ (∀ (p : Int) (q : Int), l0 ≤ p ∧ p ≤ q ∧ q < h0 ∧ H p → H q)
+      → cut (fun (j : Int) => ¬H j) l0 h0 ≤ (current (bisection l0 h0 ks M G H)).2
+        ∧ (current (bisection l0 h0 ks M G H)).2 ≤ h0
 
 noncomputable def sorted (a : Int → Int) (lo : Int) (hi : Int) : Prop :=
   ∀ (i : Int) (j : Int), lo ≤ i ∧ i ≤ j ∧ j < hi → a i ≤ a j
@@ -943,6 +1010,12 @@ def Stmt.current_trace_cap : Prop :=
       j
       = (if 0 ≤ j ∧ j < integer n ∧ b ≤ a0 j then b else a0 j)
 
+def Stmt.store_select_other : Prop :=
+  ∀ (a : Int → Int) (i : Int) (j : Int) (v : Int),
+    i ≠ j
+      → (fun j1 => if j1 = j then a j else (fun j => if j = i then v else a j) j1)
+        = (fun j => if j = i then v else a j)
+
 def Stmt.trace_merge_cases_ne : Prop :=
   ∀ (x0 : Int) (n : Nat) (c : Int) (d : Int) (F : Int → Int),
     d = F c
@@ -1068,6 +1141,12 @@ def Stmt.current_trace_bounded : Prop :=
                      if C2 x then F2 x else if C3 x then F3 x else unspecified))
              ≤ hi
            ↔ True)
+
+def Stmt.occurs_counter_step : Prop :=
+  ∀ (i : Int) (d : Int) (n : Nat) (j : Int),
+    0 < d
+      → (occurs j (butlast (counter i d n))
+           ↔ i ≤ j ∧ j < i + integer n * d ∧ (j - i) % d = 0)
 
 def Stmt.select_current_trace_stride2 : Prop :=
   ∀ (a0 : Int → Int) (n : Nat) (X : Int) (Y : Int) (j : Int),

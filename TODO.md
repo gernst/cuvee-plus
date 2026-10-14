@@ -94,14 +94,14 @@ length, the bisection of `teq:search`, the soundness of `sat` with `-chc`, and p
 - The proofs are in [lean/](lean) (doc/teq.md): the statements of the lemmas of the stable modules (teq.dfy,
   aggregation, arithmetic, search, sorted, arrays, counters, strides, unsigned) are generated from them
   (`scripts/lean/generate.py`), the proofs are by hand, and `scripts/lean/check.sh` checks that each lemma is proved
-  as printed. All are proved except the three of [lean/open.txt](lean/open.txt), no `sorry` remains; the
+  as printed. All are proved ([lean/open.txt](lean/open.txt) is empty), no `sorry` remains; the
   counterexamples show the premises that are needed: dependencies of equal length, indices within the lists, and
   complete guards. `cut` and the predicates of sorted.dfy have definitions in the modules (no rules), which the proofs
   use.
 - The premises that the engine does not check (lean/premises.txt), the disjointness of guards, and the lemmas without
   a proof are in bugs.md (Soundness, Trusted without a check).
-- The three lemmas of the bisection of search.dfy are not proved (`lean/open.txt`), since they are inconsistent
-  (see bugs.md); `-print lean` prints the trace of two accumulators of the rule since 0.46.6, as a trace of a product.
+- The bisection of search.dfy is a total definition with `{:fold}` since Oct 14, 2026, whose bounds are proved
+  (bugs.md, Fixed); `-print lean` prints its trace of two accumulators as a trace of a product.
 - The check from scratch takes about 20 s, mostly `simp` and typeclass inference for the decidability of `if` on generic
   types under `open Classical`; `simp only` instead of `simp` would speed it up.
 

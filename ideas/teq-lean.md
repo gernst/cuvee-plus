@@ -23,9 +23,9 @@ Open:
   arrays, counters and strides are in `MODULES` too (131 lemmas): the theorems of arrays and counters checked
   unchanged except `current_trace_bounded` (its guard premise moved to `premises.txt`), the forward facts of search
   lost their `↔ True`/`↔ False`, sorted and strides were proved anew.
-- **The bisection** (`lean/open.txt`): the rule with `bisection_lo` and `bisection_hi` is inconsistent under the
-  semantics of an update without a case (bugs.md); with a premise that all steps have `lo < hi`, the facts follow by
-  induction with `cut_iff` of `Proofs.lean`. `-print lean` prints the rule since 0.46.6, a trace of a product.
+- **The bisection**: the rule with `bisection_lo` and `bisection_hi` was inconsistent under the semantics of an
+  update without a case (bugs.md, Fixed); since Oct 14, 2026 `bisection` is a total definition with `{:fold}`, and the
+  bounds are invariants of its update (`current_trace_invariant`, `cut_iff` of `Proofs.lean`).
 - **The definitions of `cut` and the predicates of sorted.dfy** (in the modules since Oct 13, 2026, formerly models in
   `lean/TEQ/Definitions.lean`) fix one meaning of functions that the engines use through their lemmas only: `cut` on
   an empty interval and the partition points are chosen so (`lower` as the cut of `ar[j] < y`).

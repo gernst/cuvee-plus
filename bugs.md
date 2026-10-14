@@ -16,38 +16,6 @@ true, -16 for a wrong false).
   `forall` (CLAUDE.md), which avoids it there; SMT-LIB and Boogie inputs with constants are exposed (formerly an
   entry of TODO.md, whose example this is).
 
-- **The bisection of `teq:search` is inconsistent** (found by the Lean proofs, Oct 13, 2026; `lean/open.txt`). The
-  rule `bisection` equates the trace of the loop with the function `bisection`, whose cases are guarded by
-  `G(M(lo, hi)) && lo < hi` and `H(M(lo, hi)) && lo < hi`; an update whose guards all fail is `unspecified`, a single
-  constant per type (doc/teq.md, Combinators). `bisection_lo` and `bisection_hi` bound the components of the current
-  value for any number of steps, also for steps after `lo < hi` has failed, where both components are
-  `unspecified`:
-  - Counterexample: `l0 == h0 == 0`, one step (`m == 1`), `G` and `H` false, any probe `M` within the interval. The
-    premises of `bisection_lo` hold (`G` holds on no prefix, vacuously), and it gives
-    `0 <= current(bisection(0, 0, ⌊counter(i, c, 1)⌋, M, G, H)).0 <= cut(G, 0, 0) == 0`, by the rule the first
-    component of `unspecified`, i.e. `unspecified.0 == 0`. The same with `l0 == h0 == 5` gives
-    `unspecified.0 == 5`: the database derives `false`.
-  - Not affected so far: `-prove` instantiates the forward facts at the traces of the loops of the goals, whose
-    iteration constraints give `lo < hi` for every step, so the examples (`examples/dafny/state/bsearch_bisect.dfy`,
-    `bsearch_safe.dfy`, `lower_bound.dfy`) do not reach the contradiction; nothing prevents an instance with a
-    number of steps beyond the exit.
-  - The guards are also neither complete nor disjoint for `lo < hi` alone: where neither `G` nor `H` holds at the
-    probe the step is `unspecified` too, and where both hold the cases disagree (the binary searches have `H == !G`
-    or the negation of the comparison, which avoids both).
-  - Fix, to be decided: a premise of `bisection_lo` and `bisection_hi` that every step is taken with `lo < hi` and
-    some guard true, e.g. `invs(for ⌊bisection(l0, h0, ks, M, G, H)⌋.0, ⌊bisection(l0, h0, ks, M, G, H)⌋.1 check
-    lo, hi :: lo < hi && (G(M(lo, hi)) || H(M(lo, hi))))`, which the iteration constraint of the loop provides
-    (`-prove` looks closed conditions up among the facts); or a third case in the rule that keeps the state,
-    `case !(lo < hi) => lo, hi`, which the traces of the programs do not have, such that the rule would no longer
-    match them. With the premise, the facts follow by induction with `cut_iff` of `lean/TEQ/Proofs.lean`; then the
-    three lemmas leave `lean/open.txt`.
-  - The benchmark definitions (`xml/cuvee*.xml`) include `teq:search`, so the SV-COMP runs load the inconsistent
-    rule set.
-  - Tried on Oct 13, 2026 and reverted: the premise as an `invs` over the histories of the trace and further
-    dependencies `hs`, on `bisection_lo` and `bisection_hi` (never matched, since the histories of the iteration
-    constraint resolve to the raw trace, not to `bisection(...)`), and on the rule `bisection` itself, where the
-    open `hs` is matched against the facts: bsearch_bisect.dfy no longer terminates (killed after 300 s).
-
 - **`sat` of `-chc` with uninterpreted bit operations** (moved from the portfolio in TODO.md): the prelude declares the bit operations
   (`bitand`, `bitor`, `bitxor`, `bitnot`, `shl`, `shr`) without definitions,
   so Z3 may choose their interpretation in clauses that use them and report
@@ -102,7 +70,14 @@ the contexts that `-teq` builds, as far as the reasons go.
   their completeness is an obligation of the proofs (two premises of premises.txt where the module does not provide
   it); their disjointness is still assumed: overlapping guards take the first case, a refinement of the choice of the
   core.
-- **Lemmas without a proof**: the three of [lean/open.txt](lean/open.txt) (the bisection, above); the module
+- **Case lists matched in one direction** (`Rewrite.matchesUpdates`): every case of the expression must be covered
+  by a case of the pattern, cases of the pattern that cover none are ignored. That is an equation only where the
+  expression has a case wherever the pattern has one, e.g. where the guards of the expression are complete in the
+  context of the update. The fold of `bisection` (search.dfy) relies on it: its third case keeps the state where
+  `lo < hi` fails or no guard holds, the traces of the binary searches have no such case, and their iteration
+  constraints (`lo < hi`, one of the comparisons holds) exclude it in their updates; the engine does not check
+  that the uncovered cases of the pattern are false there.
+- **Lemmas without a proof**: none in [lean/open.txt](lean/open.txt); the module
   `nested`, which has no Lean proofs; the abstract predicates of the examples (`sorted`, `perm`, `partitioned`,
   `bubbled`, `shaken`, `argmin`, `insert`, `shake`, `nodup`, `merged`, `lb`), axiomatized by their lemmas, and the
   summary lemmas of examples/dafny/algorithms, which state the correctness of an inner loop in one line
@@ -112,6 +87,15 @@ the contexts that `-teq` builds, as far as the reasons go.
   ideas/teq-database.md names this a candidate cause of its wrong proofs (see below).
 
 ### Fixed, to be confirmed
+
+- The bisection of `teq:search` was inconsistent (found by the Lean proofs, Oct 13, 2026): the rule `bisection`
+  guarded both cases by `lo < hi`, a step after the exit was `unspecified`, and `bisection_lo` bounded it, which gave
+  `unspecified.0 == l0` for every `l0` (for `l0 == h0`, one step, `G` and `H` false). Fixed on Oct 14, 2026:
+  `bisection` is a definition with `{:fold}` in place of the rule, total by a third case that keeps the state, with
+  disjoint guards (the second case excludes `G`); the bounds hold for every run of the definition and are proved in
+  Lean, and the three examples (`bsearch_bisect`, `bsearch_safe`, `lower_bound`) close; the soundness of the fold
+  rests on the coverage of case lists (Trusted without a check). A version with `G` alone (`H` as `¬G`) loses the
+  bound `hi >= upper` of the searches with a third branch, since `hi` would move onto occurrences of the key.
 
 - `-fallback -z3` proves `nla-digbench-scaling/fermat1-ll_unwindbound{1,2,5,10,20,50,100}` of SV-COMP (expected
   unsafe: the shared counter `counter++ < N` of the three nested loops exits them early, after which the final

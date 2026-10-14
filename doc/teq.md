@@ -390,8 +390,11 @@ project at the root (`lakefile.toml`, sources in `lean/`):
   core, such that complete guards are an obligation of the proofs.
 - The functions that the engines use through their lemmas only, `cut`,
   `sorted`, `perm`, `partitioned`, `lower` and `upper`, have definitions in
-  the modules without `{:rw}` (no rules), which the proofs use; a function
-  without a body (`bisection`) is printed as an axiom.
+  the modules without `{:rw}` (no rules), which the proofs use; `bisection`
+  is a definition with `{:fold}`, whose folding is the only rule on it, total
+  by a third case that keeps the state where `lo < hi` fails or no guard
+  holds, which the traces of the binary searches match since their iteration
+  constraints exclude it in their updates (bugs.md, Trusted without a check).
 - [Database.lean](../lean/TEQ/Database.lean), generated: the functions of the
   modules as printed by `-print lean`, and each lemma as a proposition
   `Stmt.<name>` of its printed statement, with the premises of
@@ -412,10 +415,8 @@ project at the root (`lakefile.toml`, sources in `lean/`):
 - [Counterexamples.lean](../lean/TEQ/Counterexamples.lean), by hand: the
   lemmas without their premises are false.
 - [open.txt](../lean/open.txt): the lemmas without a proof, which the
-  generator removes from the modules before printing, each with the reason:
-  the bisection of search.dfy (`bisection`, `bisection_lo`, `bisection_hi`),
-  whose rule and facts are inconsistent under the semantics of an update
-  without a case (bugs.md).
+  generator removes from the modules before printing, each with the reason;
+  empty since the bisection became a total definition (Oct 14, 2026).
 
 The dependencies of a combinator have equal lengths, which `zip` in Lean does
 not assume: `-print lean` adds hypotheses on the lengths to each lemma

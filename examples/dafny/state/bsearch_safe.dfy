@@ -4,7 +4,7 @@
 //
 // sortedness is used where the reads of the array become comparisons of the index with the partition points
 // lower(a, n, y) and upper(a, n, y), which exist for a sorted array, for indices within a[0..n) only; lo and hi read
-// each other and form one trace S of two accumulators, which the rule bisection names: a bisection of [l0, h0) with
+// each other and form one trace S of two accumulators, which bisection folds: a bisection of [l0, h0) with
 // a probe strictly inside the interval, lo + (hi - lo) / 2 here; if its guards G and H hold on a prefix and a suffix,
 // lo stays below the cut of G and hi above the cut of the negation of H (bisection_lo, bisection_hi, forward facts at
 // current(S).0 and current(S).1); the conditions are decided by the rules on sortedness within the range of their

@@ -73,16 +73,21 @@ lemma {:fw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int,
   ensures a[k] != x
 
 // a bisection of [l0, h0) with a probe M strictly inside the interval: while lo < hi, lo moves above the probe where
-// G holds and hi down to it where H holds; named by bisection, which keeps the probe and the guards
-function {:teq} bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool,
+// G holds and hi down to it where H holds; named by bisection, which keeps the probe and the guards (folded); the
+// second case excludes G, such that the cases are disjoint, and the third keeps the state where lo < hi fails or no
+// guard holds, such that they are complete; the traces of the loops have no such case, the fold matches them since
+// their guards are disjoint and their iteration constraints exclude the third case in their updates
+function {:teq} {:fold} bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool,
                           H: int -> bool): Trace<(int, int)>
-
-lemma {:rw} {:teq} bisection(l0: int, h0: int, i: int, c: int, m: Nat, M: (int, int) -> int, G: int -> bool,
-                             H: int -> bool)
-  ensures trace(l0, h0, for ⌊counter(i, c, m)⌋ do lo, hi, k ::
-          case G(M(lo, hi)) && lo < hi => M(lo, hi) + 1 case H(M(lo, hi)) && lo < hi => lo,
-          case G(M(lo, hi)) && lo < hi => hi case H(M(lo, hi)) && lo < hi => M(lo, hi))
-    == bisection(l0, h0, ⌊counter(i, c, m)⌋, M, G, H)
+{
+  trace(l0, h0, for ks do lo, hi, k ::
+        case G(M(lo, hi)) && lo < hi => M(lo, hi) + 1
+        case H(M(lo, hi)) && !G(M(lo, hi)) && lo < hi => lo
+        case !(lo < hi) || !(G(M(lo, hi)) || H(M(lo, hi))) => lo,
+        case G(M(lo, hi)) && lo < hi => hi
+        case H(M(lo, hi)) && !G(M(lo, hi)) && lo < hi => M(lo, hi)
+        case !(lo < hi) || !(G(M(lo, hi)) || H(M(lo, hi))) => hi)
+}
 
 // if G holds on a prefix of [l0, h0), lo stays within l0 and the cut of G, and if H holds on a suffix, hi stays within
 // the cut of its negation and h0
