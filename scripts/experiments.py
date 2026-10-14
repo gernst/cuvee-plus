@@ -99,6 +99,41 @@ def grid(spec: list[table.Column], categories: list[str]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def transposed(spec: list[table.Column], categories: list[str]) -> str:
+    """The table with a row per configuration and, per category and in total, the columns correct true, correct
+    false, wrong (true and false), and score; the best value of a column in bold, a dash where results are missing."""
+    groups = categories + (["Total"] if len(categories) > 1 else [])
+    measures = [
+        ("true", lambda runs: sum(run.outcome == ("correct", "true") for run in runs), max),
+        ("false", lambda runs: sum(run.outcome == ("correct", "false") for run in runs), max),
+        ("wrong", lambda runs: sum(run.outcome is not None and run.outcome[0] == "wrong" for run in runs), None),
+        ("score", lambda runs: sum(run.score for run in runs), max),
+    ]
+
+    def runs(column: table.Column, group: str) -> list[common.Run] | None:
+        names = categories if group == "Total" else [group]
+        if not all(name in column.results for name in names):
+            return None
+        return [run for name in names for run in column.results[name].runs]
+
+    values = {column.tool: [[None if runs(column, group) is None else count(runs(column, group)) for _, count, _ in measures] for group in groups] for column in spec}
+    lines = [r"\begin{tabular}{l" + ("|rrrr" * len(groups)) + "}", r"\toprule"]
+    lines.append(" & ".join([""] + [rf"\multicolumn{{4}}{{c}}{{{table.escape(group)}}}" for group in groups]) + r" \\")
+    lines.append(" & ".join([""] + [table.escape(name) for _ in groups for name, _, _ in measures]) + r" \\")
+    lines.append(r"\midrule")
+    for column in spec:
+        cells = []
+        for g, _ in enumerate(groups):
+            for m, (_, _, choose) in enumerate(measures):
+                value = values[column.tool][g][m]
+                known = [values[other.tool][g][m] for other in spec if values[other.tool][g][m] is not None]
+                best = choose(known) if choose and len(known) > 1 and len(set(known)) > 1 else None
+                cells.append("--" if value is None else rf"\textbf{{{table.number(value)}}}" if value == best else table.number(value))
+        lines.append(" & ".join([table.short(column.tool, LABELS)] + cells) + r" \\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(lines) + "\n"
+
+
 def columns(spec: list[tuple[str, str, dict[str, common.Results]]]) -> list[table.Column]:
     return [table.Column(tool, source, results) for tool, source, results in spec]
 
@@ -390,7 +425,7 @@ def main():
         LABELS[label] = label
         virtual.append(table.Column(label, "here", combined))
     spec3 = spec2[:3] + virtual
-    (out / "union.tex").write_text(grid(spec3, categories))
+    (out / "union.tex").write_text(transposed(spec3, categories))
     replacements["union"] = (note(pending(spec3, categories)), "")
 
     # 4. unbounded
