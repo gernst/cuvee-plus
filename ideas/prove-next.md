@@ -10,11 +10,24 @@ expected gain; what is done is documented in [doc/prove.md](../doc/prove.md): ca
 
 **Symptom.** 30 unsafe array-fpi tasks remain unknown; brs2f leaves `sum(map(⌊counter(0, 1, n)⌋, k :: if 0 < k then
 (if k % 2 == 0 then 20 else 0) else 0)) <= 2 N`, false at N = 3. `Prove.counterexample` skips goals with traces and
-uninterpreted functions.
+uninterpreted functions: `evaluable` admits only the functions of `computed` (logic, comparisons, `+ - * div mod`,
+`ite`, `integer`, `natural`, `zero`, `succ`), and every free variable must be one of the enumerated ones.
 
-**Change.** Extend the evaluator of `Prove.counterexample` to the combinators of teq.dfy (`counter`, `map`, `sum`,
-`count`, stores and selects) for literal bounds: once N is assigned, `n` follows from the premises, and the trace is
-a finite list. An evaluator, not rules: unfolding traces is excluded from the database. Expected gain: up to 30 false.
+**Change.** Extend the evaluator of `Prove.counterexample`:
+- Variables that a premise determines are not enumerated but computed, e.g. `n` from `n == natural(N)` once N is
+  assigned.
+- Ground instances of the functions of the database are evaluated by their definitions in teq.dfy and the modules
+  (`counter`, `current`, `butlast`, `earlier`, `prefix` in teq.dfy, `sum`, `count`, `max` in aggregation.dfy), the
+  same definitions that `scripts/lean/generate.py` turns into Lean; `maps(for ... yield ...)` and `trace(...)` are
+  core constructs (`Maps`, `Trace`), evaluated directly: `maps` applies the update to each element, `trace` folds it
+  over the dependencies. E.g. `counter(0, 1, natural(3))` is `step(0, step(1, step(2, stop(3))))`, `⌊...⌋` its list
+  `[0, 1, 2]`.
+- A function without a body, or a match that ends in `unspecified`, stops the evaluation: the instance does not
+  become `false`, nothing is refuted.
+
+This unfolds the combinators, but only on ground instances inside the search for a counterexample, which can only
+turn a goal into `false`: no rule sees the unfolding, and the rewriting of goals still never unfolds a trace (as the
+proofs in Lean, which unfold to establish facts, not to drive the engine). Expected gain: up to 30 false.
 
 ## 2. Integer reasoning about remainders
 
@@ -52,9 +65,39 @@ can go once examples/dafny/state/bsearch_sorted.dfy no longer needs it. Check: t
 bsearch_sorted and the examples unchanged, a cloud run against 0.46.13. Also the regression of ps2-ll_unwindbound1
 (31 s with 0.46.8, a timeout at 60 s with 0.46.13; bugs.md).
 
-## 4. Deeper or better-chosen case splits
+## 4. Further case splits
 
-in-de52 and in-de62 have more loops than the four premises of `Prove.cases`; sum_by_3_abstracted stays open at any
+`Prove.cases` split only disjunctive premises (0.46.12). Two further kinds, those that `-split` cannot do, are in
+`Prove.alternatives` since 0.46.16 (doc/prove.md, Case splits):
+
+- **A guard that the loop does not change.** loop-acceleration/diamond_1-1 leaves
+  ```
+  forall tmp, x, n, K, X ::
+    0 <= tmp <= 4294967295 && K == counter(0, 1, n) &&
+    X == trace(x := 0, for k in ⌊K⌋ do eps(tmp % 2 == 0 => x + 2, !(tmp % 2 == 0) => x + 1)) &&
+    x₁ == current(X) && invs(for k, x in ⌊K⌋, ⌊X⌋ check x < 99) && 0 <= integer(n) && 99 <= x₁
+    ==> x₁ % 2 == tmp % 2
+  ```
+  The guard `tmp % 2 == 0` mentions only `tmp`, a variable of the goal, not one bound by the trace: in the cases
+  `tmp % 2 == 0` and its negation, the update is a single expression, a counter of step 2 or 1. On the strided
+  stores (array-tiling pr3: four cases over the constant `MINVAL`) the split fixes the case of the store, three
+  levels deep, but the leaves stay open on the remainders of the strides (item 2), which doubles the time to
+  `unknown` (pr3 18 s to 42 s locally).
+- **A remainder by a small literal.** The odd case of diamond_1-1 leaves `!(tmp % 2 == 0) ==> tmp % 2 == 1`, which
+  the rational simplex does not close; the cases `tmp % 2 == 0` and `tmp % 2 == 1` do (the remainder of SMT-LIB is
+  not negative). This is the first step of item 2 for goal variables; the strided stores need it for bound ones.
+
+Considered instead of the guard split and not done (Oct 14, 2026): loop unswitching before `-teq`, i.e. a loop
+whose branch condition reads no variable that the loop modifies becomes `if c { loop with the then-branch } else {
+loop with the else-branch }`, which `-split` would split; it doubles the copies with each condition and the code
+after the loop, and moves the work into a program transformation.
+
+Left to `-split` (in a first version of the change, removed again): the tests of if-then-else outside the updates
+(`-split` lifts and splits them), and a disjunctive conclusion moved into the premises, which showed no gain (a
+search `while i < n && !r` with `ensures r || i == n` then needs the bound `i <= n` of a counter that steps by 0 or 1,
+a matter of the database).
+
+Open: in-de52 and in-de62 have more loops than the four levels of the splits; sum_by_3_abstracted stays open at any
 depth. Instead of a larger depth: split on the disjunctive premise whose `_cases` rule enables the most rules, or
 iterate the depth (2, 4, 8) within the time limit.
 

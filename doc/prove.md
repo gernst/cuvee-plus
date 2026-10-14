@@ -54,7 +54,7 @@ the database keep their form, and a lemma may also match a cycle as a whole (the
   whose views are being computed are suspended by the same mechanism, which also replaces the re-entrance guard of
   the simplifier.
 - *Case splits and counterexamples* where rewriting stops: a remaining goal is proved by cases on a disjunctive
-  premise, and a remaining goal of arithmetic only is refuted by evaluating it at small values.
+  premise, a guard of an update that no loop changes, or a remainder by a small literal, and a remaining goal of arithmetic only is refuted by evaluating it at small values.
 
 **Not taken (yet):** equality saturation over an e-graph, which would make the order of rules irrelevant and keep
 all forms of a term (a library first, integrated only if rule order still costs proofs); splitting the exit of an
@@ -154,10 +154,23 @@ in the conjuncts of a premise.
   ignores the repetition, `D = (k, z) => ...`). A sum of one summand, e.g. `-e`, gives no variable of a pattern
   `v + w` the empty sum 0. A negative literal is the negation of its absolute value among the summands, so the read
   `a[i - 1]` of a pattern matches `a[k + -1]` of the normal form (the recurrences of `aggregation`).
-- **Case splits** (`Prove.cases`): a goal that remains is proved by cases on its first premise that is a disjunction
-  of two or three formulas, each case in a fresh context, up to four premises deep; it is dropped if all cases hold
-  and kept as it is otherwise. The `_cases` rules of `mods` (`teq:unsigned`) introduce such premises,
-  `n == zero || integer(n) < 1`, whose cases make the values of the next loops known (in-de20 to in-de51).
+- **Case splits** (`Prove.cases`, `Prove.alternatives`): a goal that remains is proved by cases, each case in a fresh
+  context, up to four splits deep; it is dropped if all cases hold and kept as it is otherwise. The first that
+  applies of:
+  - the first premise that is a disjunction of two or three formulas: the `_cases` rules of `mods`
+    (`teq:unsigned`) introduce such premises, `n == zero || integer(n) < 1`, whose cases make the values of the next
+    loops known (in-de20 to in-de51);
+  - the first atom `c` of a guard of an update whose variables are all free in the goal, not bound by a trace
+    (`Prove.conditions`): the cases `c` and `!c`, in which the update has fewer cases, e.g. the guard `y % 2 == 0` of
+    a loop that does not change `y` ([diamond.dfy](../examples/dafny/state/diamond.dfy),
+    loop-acceleration/diamond_1-1; 0.46.16); `-split` does not reach into the updates of traces;
+  - the first remainder `x % m` by a literal `2 <= m <= 4` of variables free in the goal (`Prove.remainders`): the
+    cases `x % m == 0, ..., x % m == m - 1`, which the rational simplex does not enumerate, e.g. `y % 2 != 0 ==> y % 2
+    == 1` in the odd case of diamond (0.46.16).
+
+  The other splits are left to `-split`, which splits disjunctive premises, if-then-else, and keeps a disjunctive
+  conclusion as succedents; the splits of `-prove` are only those that `-split` cannot do, or that need rewriting
+  between the levels (the `_cases` rules introduce the disjunction of the next loop).
 - **Counterexamples** (`Prove.counterexample`): a goal that remains without traces, lists and other functions than
   those of arithmetic and logic, over at most four integer, natural or boolean variables, is refuted if its body
   evaluates to false at an assignment of small values and the literals of the goal plus or minus 1; it becomes

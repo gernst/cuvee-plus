@@ -26,9 +26,8 @@ object Prove extends Transform:
       if !isTrivial(cmd_)
     yield cmd_
 
-  // a goal that remains is proved by cases on the first premise that is a disjunction of at most three formulas, each
-  // case with a context of its own, at most `depth` premises deep, e.g. n == zero || integer(n) < 1 that the rules of
-  // mods introduce (in-de41); it is kept as it is unless all cases hold, so that the output does not multiply
+  // a goal that remains is proved by cases (see alternatives), each case with a context of its own, at most `depth`
+  // splits deep; it is kept as it is unless all cases hold, so that the output does not multiply
   def cases(config: Config, state: State, fresh: () => Context, cmd: Cmd, depth: Int): Cmd =
     cmd match
       case Assert(justify, params, phi, attrs) if depth > 0 =>
@@ -92,23 +91,74 @@ object Prove extends Transform:
       case Nil          => LazyList(Nil)
       case xs :: rest   => for x <- LazyList.from(xs); tail <- assignments(rest) yield x :: tail
 
-  // the goals for the cases of the first disjunctive premise of forall xs. φ₁ && ... && φₙ ==> ψ
+  // the goals whose conjunction is equivalent to forall xs. φ₁ && ... && φₙ ==> ψ, tried in this order:
+  // - the cases of the first premise that is a disjunction of at most three formulas, e.g. n == zero || integer(n) < 1
+  //   that the rules of mods introduce (in-de41);
+  // - the cases c and !c of the first guard c of an update that a case split decides (see conditions), e.g. the
+  //   guard tmp % 2 == 0 of the update of a loop that does not change tmp (diamond_1-1); -split does not reach into
+  //   the updates of traces, but splits the other disjunctions and if-then-else itself;
+  // - the cases x % m == 0, ..., x % m == m - 1 of the first remainder by a literal 2 <= m <= 4 whose variables are
+  //   free in the goal, which the simplex does not enumerate, since it is rational (see remainders), e.g. the goal
+  //   !(tmp % 2 == 0) ==> tmp % 2 == 1 of the odd case of diamond_1-1
   def alternatives(phi: Expr): Option[List[Expr]] =
     phi match
       case All(xs, body) =>
         alternatives(body).map(_.map(All(xs, _)))
 
-      case Imp(ante, concl) =>
-        val premises = And.flatten(ante)
+      case _ =>
+        val (premises, concl) =
+          phi match
+            case Imp(ante, concl) => (And.flatten(ante), concl)
+            case _                => (Nil, phi)
+
         premises.indexWhere(premise => Or.flatten(premise).length.min(4) match { case 2 | 3 => true; case _ => false }) match
           case -1 =>
-            None
+            conditions(phi, phi.free) match
+              case c :: _ =>
+                Some(List(Imp(And(premises :+ c), concl), Imp(And(premises :+ Not(c)), concl)))
+
+              case Nil =>
+                for (r, m) <- remainders(phi, phi.free).headOption
+                yield for i <- List.range(BigInt(0), m) yield Imp(And(premises :+ Eq(r, Ints.num(i))), concl)
 
           case i =>
             Some(for disjunct <- Or.flatten(premises(i)) yield Imp(And(premises.patch(i, List(disjunct), 1)), concl))
 
-      case _ =>
-        None
+  // the remainders x % m by a literal 2 <= m <= 4 in `expr` whose variables are among `outer`, with m, whose values
+  // are 0, ..., m - 1 (the remainder of SMT-LIB is not negative)
+  def remainders(expr: Expr, outer: Set[Var]): List[(Expr, BigInt)] =
+    val found = collection.mutable.ListBuffer[(Expr, BigInt)]()
+
+    def visit(expr: Expr): Expr =
+      expr match
+        case Ints.mod(arg, Ints.num(m: BigInt)) if 2 <= m && m <= 4 && arg.free.nonEmpty && arg.free.subsetOf(outer) => found += ((expr, m))
+        case _ =>
+      expr.map(visit)
+
+    visit(expr)
+    found.toList.distinct
+
+  // the conditions of `expr` that a case split may decide, in the order of their occurrence: the atoms of the guards
+  // of updates whose variables are among `outer`, i.e., that depend on no bound variable of a trace or a quantifier,
+  // such that each case fixes the branch everywhere, e.g. tmp % 2 == 0 in the update of a loop that does not change
+  // tmp
+  def conditions(expr: Expr, outer: Set[Var]): List[Expr] =
+    val found = collection.mutable.ListBuffer[Expr]()
+
+    def atoms(cond: Expr): Unit =
+      for conjunct <- And.flatten(cond)
+      do
+        val atom = conjunct match { case Not(arg) => arg; case _ => conjunct }
+        if atom != True && atom != False && atom.free.nonEmpty && atom.free.subsetOf(outer) then found += atom
+
+    def visit(expr: Expr): Expr =
+      expr match
+        case Eps(upds) => upds.foreach(upd => atoms(upd.cond))
+        case _         =>
+      expr.map(visit)
+
+    visit(expr)
+    found.toList.distinct
 
   def used(config: Config, ctx: Context, cmd: Cmd): List[Cmd] =
     cmd match

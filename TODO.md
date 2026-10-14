@@ -19,8 +19,8 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
   `natural(x) == zero <==> x <= 0` instead does the same
 - `-prove` does not refute a goal by substituting a variable that a premise equates with a constructor, e.g.
   `not (n == zero && 0 <= integer(n))` of while_infinite_loop_4 (expected false)
-- `-prove` does not split a premise `n == zero || integer(n) < 1` (the `_cases` rules of `mods`), which sum_by_3,
-  sum_by_3_abstracted and in-de20 need
+- sum_by_3 and sum_by_3_abstracted stay open under the case splits of `-prove` (0.46.12, which closed in-de20 by
+  splitting `n == zero || integer(n) < 1`)
 
 - `-verify` (see [doc/architecture.md](doc/architecture.md)): a refutation is classified per goal, `VCGen`
   marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
@@ -454,8 +454,8 @@ items on the simplifier hold for both copies.
   `0 <= e` does not apply to `e < 0` (on `Int`, `e + 1 <= 0`), such that
   lemmas are stated in both forms.
 - Hypotheses are not split into cases: `X == (if c then A else B)` and
-  disjunctions among the hypotheses remain, `-split` followed by another
-  `-simplify` splits them (see
+  disjunctions among the hypotheses remain (`-prove` splits disjunctions, and the guards of updates since 0.46.16),
+  `-split` followed by another `-simplify` splits them (see
   [diamond_1-1.dfy](benchmarks/sv-comp/dafny/loop-acceleration/diamond_1-1.dfy),
   [half.dfy](benchmarks/sv-comp/dafny/loop-new/half.dfy)).
 - Linear facts over more than two variables are not combined: the context
