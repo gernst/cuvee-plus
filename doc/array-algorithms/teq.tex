@@ -1,0 +1,109 @@
+\section{Trace Equation Systems}\label{sec:teq}
+
+A loop is described by equations over \emph{traces}, the sequences of values that its variables take, one
+value per iteration. This section defines the combinators that the equations use, how a loop is turned into
+a system of equations, and what such a system looks like for single loops, for loops whose variables read
+each other, and for nested loops.
+
+\subsection{Combinators}
+A trace of $n$ steps has $n + 1$ values. Its last value is $\cur(X)$, and the $n$ values before it are the
+list $\bl{X}$, the \emph{history} of $X$; the $j$-th earlier value is $\mathsf{earlier}(j, \bl{X})$. The
+\emph{counter} $\cnt(i, c, n)$ is the trace $\langle i, i + c, \ldots, i + nc\rangle$ of $n$ steps. Traces
+are built and observed by three combinators, each iterating over one or more lists of equal length, the
+\emph{dependencies}, whose elements are bound pointwise:
+\begin{itemize}[nosep]
+\item $\tr{x_0}{D_1, \ldots, D_m}{x, y_1, \ldots, y_m \mapsto u}$, the trace from $x_0$ that steps to $u$ with the
+  next values $y_i$ of the $D_i$;
+\item $\mapc{D_1, \ldots, D_m}{y_1, \ldots, y_m \mapsto e}$, the list of the values of $e$;
+\item $\al{D_1, \ldots, D_m}{y_1, \ldots, y_m \mapsto \varphi}$, $\varphi$ for all positions.
+\end{itemize}
+In Dafny the three are written \texttt{trace(x0, for D do x, y :: u)}, \texttt{maps(for D yield y :: e)} and
+\texttt{invs(for D check y :: φ)}, the history of a trace \texttt{⌊X⌋} and its last value
+\texttt{current(X)}. The number of steps of a trace is never a term of the goal: it is the length of the
+counter of the iterations, $K = \cnt(0, 1, n)$, and lemmas iterate over counters whose number of steps $n$
+they name directly. The type $\mathsf{Nat}$ of such numbers is a datatype with its embedding
+$\intf(n)$ into the integers and the inverse $\natf(i)$, which is $0$ for negative $i$.
+
+An update may consist of guarded cases, $\upd{\varphi_1}{e_1}\ \ \upd{\varphi_2}{e_2}$, which take the
+result of the case whose guard holds. Where no guard holds the update is $\mathsf{unspecified}$, one
+fixed but unknown value per type. The guards of the cases that symbolic execution produces are complete
+for the iterations that the loop actually performs, which the iteration constraint (below) states, and
+disjoint, since they are the conditions of the branches of the loop body.
+
+A trace may have several accumulators, for variables that read each other:
+\[ S = \mathsf{trace}(x_0, y_0,\ \mathsf{for}\ D\ \mathsf{do}\ x, y, d \mapsto u, v) \]
+steps both components at once. Its components are read by $\cur(S).0$, $\cur(S).1$ and their histories by
+$\bl{S}.0$, $\bl{S}.1$, each an ordinary list that can be a dependency of further combinators. No term of a
+tuple type is ever built: a component is only read through these two observers.
+
+\subsection{From a loop to a system}
+Symbolic execution of a loop introduces the counter $K = \cnt(0, 1, n)$ of a fresh number $n$ of
+iterations and expresses the values of the modified variables after the loop as current values of
+traces. It records three kinds of facts:
+\begin{itemize}[nosep]
+\item the \emph{trace equations}, $X = \tr{x_0}{\bl{K}, \ldots}{x, k, \ldots \mapsto u}$, one per
+  trace, whose update $u$ is the effect of one execution of the body;
+\item the \emph{iteration constraint}, $\al{\bl{K}, \bl{X}, \ldots}{k, x, \ldots \mapsto \mathit{test}}$:
+  the loop test held at the start of every iteration;
+\item the \emph{exit}, $\neg\mathit{test}$ for the current values: the loop has stopped.
+\end{itemize}
+Each variable reads some others in the update. The modified variables are partitioned by the strongly
+connected components of this read relation, ordered such that each comes after the components it reads, and
+each component becomes \emph{one} trace: a variable in no cycle gets a trace of one accumulator, a cycle
+gets a trace of several. Each trace has the counter, the histories of the earlier components it reads, and
+the choices of the body among its dependencies. Since the components form an acyclic graph, no trace refers
+to a later one, and the system can be read from top to bottom, each equation defining a trace in terms of
+the previous ones.
+
+\paragraph{A single loop.}
+The linear search \texttt{i := 0; while i < n \&\& a[i] != x \{ i := i + 1; \}} gives
+\begin{gather*}
+  K = \cnt(0, 1, n') \qquad I = \tr{0}{\bl{K}}{i, k \mapsto i + 1} \qquad i = \cur(I)\\
+  \al{\bl{K}, \bl{I}}{k, i \mapsto i < n \wedge a[i] \ne x} \qquad \neg(i < n \wedge a[i] \ne x).
+\end{gather*}
+The trace of $i$ is a counter, the constraint states the test for the earlier values of $i$, the exit for
+the current one.
+
+\paragraph{A cycle.}
+In the binary search, \texttt{lo} and \texttt{hi} read each other through the probe \texttt{(lo + hi) / 2},
+and the two variables form one trace of two accumulators:
+\begin{align*}
+  S = \mathsf{trace}(0, n,\ \mathsf{for}\ \bl{K}\ \mathsf{do}\ lo, hi, k \mapsto\ &\upd{G}{(hi + lo)/2 + 1}\ \ \upd{\neg G}{lo},\\
+  &\upd{G}{hi}\ \ \upd{\neg G}{(hi + lo)/2})
+\end{align*}
+with $G$ for $a[(hi + lo)/2] < x$, the exit values $lo = \cur(S).0$, $hi = \cur(S).1$, and the constraint
+$\al{\bl{K}, \bl{S}.0, \bl{S}.1}{k, lo, hi \mapsto lo < hi}$. Equations of one accumulator each would be
+recursive through each other; one equation over the pair is not. The per-variable view of a component is
+still available when a lemma needs it, as a \emph{projection} (Section~\ref{sec:engine:views}).
+
+\paragraph{Nested loops.}
+An inner loop is summarized while the body of the outer loop is executed, as a system of its own over a
+fresh number of inner iterations. This system is \emph{closed}: its counter, its traces and its exit values
+are substituted by their definitions, so that only the number of inner iterations remains fresh, and the
+inner loop is a value of the outer update. In the nested sum
+\begin{lstlisting}
+c := 0; i := 0;
+while i < m { j := 0; while j < n { j := j + 1; } c := c + j; i := i + 1; }
+\end{lstlisting}
+the final value of $j$ in an outer iteration is $\cur(\tr{0}{\bl{\cnt(0, 1, n_7)}}{j, k \mapsto j + 1})$ for
+the number $n_7$ of inner iterations of that outer iteration, and the trace of $c$ is
+\[ C = \tr{0}{\bl{K}, \seq{N}}{c, k, n_7 \mapsto c + \cur(\tr{0}{\bl{\cnt(0, 1, n_7)}}{j, k' \mapsto j + 1})}. \]
+The numbers of inner iterations form a list $\seq{N}$ of the outer loop, a \emph{choice}: a dependency that
+nothing defines, about which the constraint of the outer loop states what the inner loop's own constraint
+and exit say,
+\begin{align*}
+  \mathsf{invs}(\mathsf{for}\ \bl{K}, \ldots, \seq{N}\ \mathsf{check}\ k, \ldots, n_7 \mapsto\
+    & i < m \wedge \al{\bl{\cnt(0, 1, n_7)}, \ldots}{\ldots \mapsto j < n}\\
+    & {} \wedge \neg(\cur(\ldots) < n)).
+\end{align*}
+Lemmas on single loops apply to the inner loop as it stands in the update, since it is a term like any
+other; once the constraint determines the numbers of iterations, e.g.\ $n_7 = \natf(n)$ in every outer
+iteration, the choice becomes the constant list $\bl{\mathsf{consts}(n', \natf(n))}$ and the inner traces have
+a known number of steps.
+
+\paragraph{The goal.}
+The goal of a method is that its postcondition follows from the facts of the path through it, with the
+traces as variables defined by their equations: $K = \cnt(0, 1, n')$, $S = \mathsf{trace}(\ldots)$, the
+exit values $lo = \cur(S).0$, the iteration constraint and the exit. The equations of the outermost loops are
+kept as equations, which the engine follows where a lemma needs the definition of a trace variable; inner
+loops are closed, as above.

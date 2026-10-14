@@ -1,19 +1,27 @@
-# Trace Equation Systems for Array Algorithms: Worked Examples
+# Array Algorithms by Lemma Lookup: Worked Examples
 
-[array-algorithms.tex](array-algorithms.tex) documents the examples of
-[examples/dafny/algorithms](../../examples/dafny/algorithms) in the style of
-the TEQ paper: for each program the trace equation system, the lemmas, their
-instantiation, and the idea; then the proofs of some of the MonoCera tests
-([benchmarks/monocera](../../benchmarks/monocera)) re-traced, and a summary of
-the principles. One file per example (`lsearch.tex`, `selection_sort.tex`,
-...), included by the main file; `array-algorithms.pdf` is the compiled
-document, rebuilt with the sources.
+[array-algorithms.tex](array-algorithms.tex) shows what it takes to verify array programs by lookup in a database of
+lemmas, with trace equation systems (`-teq`) and the deduction engine (`-prove`): the representation of loops, the
+design of the engine and the insights behind it, worked examples (linear search, nested loops and the transpose,
+binary search and the lower bound, selection sort, bubble sort, gnome sort, the merge and the distinctness check,
+the MonoCera tests of [benchmarks/monocera](../../benchmarks/monocera)), the
+algorithms of [examples/dafny/algorithms](../../examples/dafny/algorithms) that are not proved with what each needs,
+the principles of writing lemmas for lookup, and the insights. `array-algorithms.pdf` is the compiled document,
+rebuilt with the sources.
 
-The document describes the state of Oct 11, 2026: `-teq -simplify` on one trace per variable, with the
-fragments of inner loops of the module `teq:nested`. Since Oct 13, `-teq` makes one trace per strongly
-connected component and closes nested loops, `-prove` replaces `-simplify`, and `teq:nested` is retired to
-`resources/cuvee/legacy` (Oct 14); the nested sorts leave one goal each now, cocktail_sort does not terminate
-(the status lines of the examples). The document is not rewritten until the approach has converged.
+The results are those of reruns on Oct 14, 2026, with the command line in the first line of each example
+(`examples/dafny/algorithms`, `examples/dafny/state`) and, for the MonoCera tests, the options of the run definition
+`MonoCera_unreach-call` of `xml/cuvee.xml` with a 60 s limit (`monocera-table.tex`).
+
+## Files
+
+- `array-algorithms.tex`: preamble, introduction, notation, the order of the sections, the AI declaration.
+- `teq.tex`: trace equation systems (combinators, the partition into components, closed nested loops, choices).
+- `engine.tex`: the engine and the lemma database, each capability with the insight it answers.
+- `lsearch.tex`, `nested.tex`, `bisection.tex`, `sorts.tex`, `monocera.tex` (with `monocera-table.tex`): the worked
+  examples.
+- `open.tex`: the algorithms that are not proved, and what they need.
+- `principles.tex`, `conclusion.tex`: the principles and the insights.
 
 ## Build
 
@@ -21,5 +29,4 @@ connected component and closes nested loops, `-prove` replaces `-simplify`, and 
 pdflatex array-algorithms.tex; pdflatex array-algorithms.tex
 ```
 
-No bibliography. The findings that the sections cite by number are those of
-[NOTES.md](../../examples/dafny/algorithms/NOTES.md) of the examples.
+No bibliography.

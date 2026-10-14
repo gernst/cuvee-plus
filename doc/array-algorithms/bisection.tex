@@ -1,0 +1,121 @@
+\section{Binary Search: a Lemma over a Whole Cycle}\label{sec:bisect}
+
+Binary search is the standard example of a loop whose variables are only meaningful together: $lo$ and $hi$
+narrow an interval through a probe computed from both. This section shows what it takes to prove it by lookup:
+a lemma that names the loop as a whole, two facts about the named loop, and the vocabulary of sorted arrays
+that turns the facts into the postcondition.
+
+\subsection{The programs}
+\begin{lstlisting}
+method search(a: array<int, int>, n: int, x: int) returns (i: int)
+  requires 0 <= n && sorted(a, 0, n)
+  ensures 0 <= i ==> i < n && a[i] == x
+  ensures i < 0 ==> forall k: int :: 0 <= k < n ==> a[k] != x
+{
+  var lo: int; var hi: int; var mid: int;
+  lo := 0; hi := n; i := -1;
+  while lo < hi {
+    mid := (lo + hi) / 2;
+    if a[mid] < x { lo := mid + 1; }
+    else if x < a[mid] { hi := mid; }
+    else { i := mid; break; }
+  }
+}
+\end{lstlisting}
+The second program, the lower bound, has no third branch: \texttt{else \{ hi := mid; \}}, and returns $lo$ with the
+postconditions $0 \le lo \le n$, $a[k] < x$ for $k < lo$ and $x \le a[k]$ for $lo \le k < n$. Both take the
+array sorted on $[0, n)$ and nothing else.
+
+\subsection{The system}
+The two variables form one trace of two accumulators. With $M(lo, hi) = (hi + lo)/2$, $G(m) = a[m] < x$ and
+$H(m) = x < a[m]$,
+\begin{align}
+  S &= \mathsf{trace}(0, n,\ \mathsf{for}\ \bl{K}\ \mathsf{do}\ lo, hi, k \mapsto
+     \upd{G(M)}{M + 1}\ \ \upd{H(M)}{lo}, \nonumber\\
+  &\qquad\qquad \upd{G(M)}{hi}\ \ \upd{H(M)}{M}) \label{eq:bs1}\\
+  &\al{\bl{K}, \bl{S}.0, \bl{S}.1}{k, lo, hi \mapsto lo < hi} \label{eq:bs2a}\\
+  &\al{\bl{K}, \bl{S}.0, \bl{S}.1}{k, lo, hi \mapsto G(M) \vee H(M)} \label{eq:bs2}
+\end{align}
+with $lo = \cur(S).0$, $hi = \cur(S).1$. The second constraint \eqref{eq:bs2} is there because of the \texttt{break}: an iteration
+that finds $x$ leaves the loop, so every iteration that completed took one of the two other branches. After the
+loop there are two paths: the normal exit with $hi \le lo$ and $i = -1$, and the \texttt{break} with $lo < hi$,
+$a[M(lo, hi)] = x$ and $i = M(lo, hi)$.
+
+\subsection{What the proof needs}
+\paragraph{A name for the loop.} The database defines the bisection of an interval with an arbitrary probe and
+two guards, and folds it where its body occurs:
+\begin{lstlisting}
+function {:teq} {:fold} bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int,
+                                  G: int -> bool, H: int -> bool): Trace<(int, int)>
+{
+  trace(l0, h0, for ks do lo, hi, k ::
+        case G(M(lo, hi)) && lo < hi => M(lo, hi) + 1
+        case H(M(lo, hi)) && !G(M(lo, hi)) && lo < hi => lo
+        case !(lo < hi) || !(G(M(lo, hi)) || H(M(lo, hi))) => lo,
+        case G(M(lo, hi)) && lo < hi => hi
+        case H(M(lo, hi)) && !G(M(lo, hi)) && lo < hi => M(lo, hi)
+        case !(lo < hi) || !(G(M(lo, hi)) || H(M(lo, hi))) => hi)
+}
+\end{lstlisting}
+The fold matches the trace \eqref{eq:bs1} as a whole (Section~\ref{sec:engine:cycles}). The probe $M$ is bound from
+the result $M(lo, hi) + 1$ by abstraction, $G$ and $H$ from the guards; the conjunct $lo < hi$ of the definition's
+guards follows from the first constraint \eqref{eq:bs2a}, which holds inside the update, and $\neg G(M)$ in the
+second case follows from the program's guard $x < a[m]$. The third case covers no case of the program and is
+ignored (Section~\ref{sec:engine:cases}). The result is $S = \mathsf{bisection}(0, n, \bl{K}, M, G, H)$.
+
+\paragraph{Two facts about the named loop.} If $G$ holds on a prefix of $[l_0, h_0)$, the lower end stays within $l_0$
+and the \emph{cut} of $G$, the first index where it fails; if $H$ holds on a suffix, the upper end stays within the
+cut of $\neg H$ and $h_0$:
+\begin{lstlisting}
+lemma {:fw} {:teq} bisection_lo(l0: int, h0: int, ks: List<int>, M: (int, int) -> int,
+                                 G: int -> bool, H: int -> bool)
+  requires l0 <= h0
+  requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
+  requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
+  ensures l0 <= current(bisection(l0, h0, ks, M, G, H)).0 <= cut(G, l0, h0)
+\end{lstlisting}
+and \lemma{bisection\_hi} symmetrically, $\mathsf{cut}((j) \Rightarrow \neg H(j), l_0, h_0) \le \cur(\ldots).1 \le h_0$
+under the condition that $H$ holds on a suffix. They are forward facts, triggered by $\cur(S).0$ and $\cur(S).1$ in the
+goal. Their conditions are decided after the instantiation: the probe lies strictly inside the interval by the
+bounds of division (Section~\ref{sec:engine:arith}), and the guards hold on a prefix, respectively a suffix, since
+the rules below turn the comparisons $a[q] < x$ for indices in range into comparisons with a partition point,
+$q < \mathsf{lower}(a, n, x)$, after which the condition is linear.
+
+\paragraph{The vocabulary of sorted arrays.} The cuts become partition points:
+$\mathsf{lower}(a, n, x)$, below which the elements are less than $x$, and $\mathsf{upper}(a, n, x)$, from which
+they are greater: \lemma{cut\_lower} rewrites the cut of $a[j] < x$, and the cut of $\neg(x < a[j])$, i.e.\ of
+$a[j] < x + 1$, is $\mathsf{lower}(a, n, x + 1) = \mathsf{upper}(a, n, x)$ (\lemma{lower\_succ}). For an index in range,
+the comparisons with $x$ are comparisons with the partition points (\lemma{lower}, \lemma{upper},
+$a[m] = x \Leftrightarrow \mathsf{lower} \le m < \mathsf{upper}$ by \lemma{equal}), and the partition points lie within
+$0 \le \mathsf{lower} \le \mathsf{upper} \le n$ (the forward fact \lemma{bounds}).
+
+\paragraph{The postconditions.} At the normal exit, $\mathsf{upper} \le hi \le lo \le \mathsf{lower}$, so the range
+$[\mathsf{lower}, \mathsf{upper})$ of the elements equal to $x$ is empty and no $a[k]$ equals $x$. At the
+\texttt{break}, $a[M] = x$ and $M < hi \le n$. For the lower bound, $H$ is $x \le a[m]$, the negation of $G$; the cut
+of $\neg H$ is the cut of $G$, so $lo \le \mathsf{lower} \le hi$, and at the exit $hi \le lo$ gives
+$lo = \mathsf{lower}(a, n, x)$, from which the two quantified postconditions follow by \lemma{lower} and
+\lemma{lower\_le}. Both programs close in under a minute.
+
+\subsection{Why the definition has three cases}
+The program's update has two cases. A definition with only those two, guarded by $lo < hi$, would be
+\emph{unspecified} in an iteration where $lo < hi$ fails or neither guard holds, and \lemma{bisection\_lo}, stated for
+any number of steps, would bound that unspecified value. Take $l_0 = h_0$, one step, and $G$, $H$ false: all
+conditions of \lemma{bisection\_lo} hold, the cut of $G$ on the empty interval is $l_0$, and the lemma says that the
+first component of $\mathsf{unspecified}$ equals $l_0$, for every $l_0$, which derives $\mathsf{false}$. The facts
+are true of the loops that the programs run, whose iterations all satisfy the constraints, but not of every trace
+that the definition denotes.
+
+The third case removes the gap: where the program's step is undefined, the definition keeps the state, which keeps
+the bounds. The bounds now hold for every run of the definition, and they are proved by induction over the steps,
+carrying $l_0 \le lo \le \mathsf{cut}(G)$ and $hi \le h_0$ (for $hi$: $l_0 \le lo$ and $\mathsf{cut}(\neg H) \le hi \le h_0$).
+The second case excludes $G$, so that the guards are disjoint: where $G$ and $H$ both hold the first case is taken,
+which the bound also allows, since $G(m)$ and $G$ holding on a prefix give $m < \mathsf{cut}(G)$. The fold still
+matches the program because the extra case is excluded by the context of the update.
+
+\paragraph{Why $H$ cannot be replaced by $\neg G$.} In the context of the update, the program's guards are disjoint
+and complete, so $H(m)$ and $\neg G(m)$ agree at every probe that the loop visits. A definition with $G$ alone,
+moving $hi$ down wherever $G$ fails, matches the programs as well, but its fact about $hi$ can only be
+$\mathsf{cut}(G) \le hi$: a run of that definition may move $hi$ onto a position that holds $x$, which the search
+leaves by the \texttt{break}. The search needs $\mathsf{upper} \le hi$, i.e.\ the cut of $\neg H$, a property of $H$
+on the whole interval rather than at the probes. The definition must therefore encode the exit itself: a probe at
+which neither guard holds keeps the state, and $hi$ moves only to positions where $H$ holds.

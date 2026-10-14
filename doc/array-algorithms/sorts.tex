@@ -1,0 +1,142 @@
+\section{Sorts, Cycles and Flags}\label{sec:sorts}
+
+Five algorithms with nested loops or cycles are proved by lemmas written for the closed form of
+Section~\ref{sec:teq}: bubble sort and selection sort, whose inner loops have a known length; gnome sort and the
+merge, whose variables form cycles; and the distinctness check, whose inner loop is a flag. Each file states, at its
+beginning, a summary of what its loops compute and the facts that turn it into the postcondition. Each proof closes
+within 40 seconds, and a wrong postcondition ($\sorted(b, 0, n + 1)$, $\perm(b, a[0 := 1])$, the counts plus one, the
+negated flag) leaves a goal.
+
+\subsection{Selection sort: a summary, a choice, an induction}\label{sec:sorts:selection}
+\begin{lstlisting}
+b := a; i := 0;
+while i < n {
+  m := i; j := i + 1;
+  while j < n { if b[j] < b[m] { m := j; } j := j + 1; }
+  t := b[i]; b[i] := b[m]; b[m] := t;
+  i := i + 1;
+}
+\end{lstlisting}
+With
+\begin{align*}
+  M_7 = \cur(\mathsf{trace}(i,\ &\mathsf{for}\ \bl{\cnt(0, 1, n_{12})}, \bl{\cnt(i + 1, 1, n_{12})}\\
+  &\mathsf{do}\ m, k, j \mapsto \upd{b[j] < b[m]}{j}\ \ \upd{b[m] \le b[j]}{m}))
+\end{align*}
+for the result of the inner loop, the goal is
+\begin{align}
+  b' &= \cur(\tr{a}{\bl{K}, \seq{N}, \bl{\cnt(0, 1, n')}}{b, k, n_{12}, i \mapsto \swap{b}{i}{M_7}}) \label{eq:sel1}\\
+  &\mathsf{invs}(\mathsf{for}\ \bl{K}, \bl{\cnt(0, 1, n')}, \seq{N}\ \mathsf{check}\ k, i, n_{12} \mapsto
+     n_{12} = 0 \vee (i + 1 < n \wedge \intf(n_{12}) + i < n)) \label{eq:sel2}\\
+  &\al{\bl{K}, \bl{\cnt(0, 1, n')}, \seq{N}}{k, i, n_{12} \mapsto n \le \intf(n_{12}) + i + 1} \label{eq:sel3}\\
+  &\Longrightarrow\ \sorted(b', 0, n) \wedge \perm(b', a). \nonumber
+\end{align}
+The inner loop is a selection trace that starts at $i$ and scans $j$ from $i + 1$; the constraints \eqref{eq:sel2} and
+\eqref{eq:sel3} are the inner test and exit, which together determine $\intf(n_{12}) = n - i - 1$ in every outer
+iteration with $i < n$.
+The proof needs four lemmas.
+
+\paragraph{The summary of the inner loop} is a plain rule on its term, true for every number of steps:
+\begin{lstlisting}
+lemma {:rw} current_selection(b: array<int, int>, i: int, nn: Nat)
+  ensures current(trace(i, for ⌊counter(0, 1, nn)⌋, ⌊counter(i + 1, 1, nn)⌋ do m, k, j ::
+            case b[j] < b[m] => j case b[m] <= b[j] => m))
+    == argmin(b, i, i + 1 + integer(nn))
+\end{lstlisting}
+It applies inside the outer update, where the inner loop is a term, and the outer trace becomes a trace of swaps of $i$
+with $\argmin(b, i, \intf(nn) + i + 1)$, with the choice among its dependencies.
+
+\paragraph{The induction} ranges over the counter, the choice and the loop counter, takes the two constraints on the
+choice as side conditions, and states the invariant, a sorted prefix below the rest, as a quantified condition over
+an abstract step $F(b, i, nn)$:
+\begin{lstlisting}
+lemma {:rw} sorted_selection_steps(a: array<int, int>, n: int, m: Nat, ns: List<Nat>,
+                                   ks: List<int>, is: List<int>, ns2: List<Nat>,
+                                   ks3: List<int>, is3: List<int>, ns3: List<Nat>,
+                                   F: (array<int, int>, int, Nat) -> array<int, int>)
+  requires n == integer(m)
+  requires invs(for ks, is, ns2 check k, i, nn :: n <= integer(nn) + i + 1)
+  requires is == ⌊counter(0, 1, m)⌋ && ns2 == ns
+  requires invs(for ks3, is3, ns3 check k, i, nn ::
+             nn == zero || i + 1 < n && integer(nn) + i < n)
+  requires is3 == ⌊counter(0, 1, m)⌋ && ns3 == ns
+  requires forall b: array<int, int>, i: int, nn: Nat ::
+    0 <= i < n && n <= integer(nn) + i + 1 && (nn == zero || i + 1 < n && integer(nn) + i < n)
+      && sorted(b, 0, i) && partitioned(b, 0, i, n)
+      ==> sorted(F(b, i, nn), 0, i + 1) && partitioned(F(b, i, nn), 0, i + 1, n)
+  ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ns, ⌊counter(0, 1, m)⌋
+                               do b, k, nn, i :: F(b, i, nn))), 0, n)
+    <==> true
+\end{lstlisting}
+The two constraints together fix $i + 1 + \intf(nn) = n$ for $i < n$, so every step is constrained. The quantified
+condition is decided by two step lemmas, that the swap with $\argmin(b, i, i + 1 + \intf(nn))$ extends the sorted
+prefix and keeps it below the rest; their side conditions are the hypotheses of the quantifier, among them the
+disjunction, looked up literally. The permutation follows from a lemma on any trace of steps that are permutations,
+over the same three dependencies, and the fact that a swap is one.
+
+\paragraph{What the engine required.} The constraints of the goal carry the counter of the iterations as an unused
+dependency, as in \eqref{eq:sel2}. A closed side condition is simplified
+before it is looked up, which drops an unused dependency and merges equal ones, so a condition written with the
+counter twice is not found. The conditions are therefore matched with open lists, $ks$, $is$, $ns_2$, which binds them
+to the fact's dependencies, and identified with the lists of the left-hand side by equations afterwards. A lookup
+modulo unused and repeated dependencies would make the open lists unnecessary.
+
+\subsection{Bubble sort: the length of each pass as a fact}\label{sec:sorts:bubble}
+Bubble sort's inner loop is a pass of adjacent swaps over $n - k - 1$ positions, which a definition of the file folds
+into $\mathsf{bubble\_pass}(b, \bl{\cnt(0, 1, nn)})$. Here the engine itself has turned the constraints into one fact
+about the choice,
+\[ \mapc{\bl{K}, \seq{N}}{k, nn \mapsto \intf(nn) + k + 1} = \bl{\mathsf{consts}(n', n)}: \]
+every pass has the length that makes $\intf(nn) + k + 1 = n$. The induction takes this equation as a closed condition, found among the facts, and
+states the invariant as a predicate indexed by the iteration, $\mathsf{bubbled}(b, k, n)$, the sorted suffix of length $k$
+above the rest, which a pass of length $n - k - 1$ extends by one; after $n' \ge n - 1$ passes it is the sorted range.
+
+\subsection{Gnome sort and the merge: the cycle as a whole}\label{sec:sorts:cycles}
+In gnome sort, the position and the array form one trace $S$ of two accumulators, since the guard
+$i = 0 \vee b[i - 1] \le b[i]$ reads both and both cases change both. Its invariant, $0 \le i$ and $b[0..i)$ sorted,
+holds for every run of the update, whose guards are complementary, so it is a fact about the trace, not only about
+the loop:
+\begin{lstlisting}
+lemma {:rw} sorted_gnome(a: array<int, int>, ks: List<int>, n: int, x: int,
+                         Sv: Trace<(int, array<int, int>)>)
+  requires Sv == trace(1, a, for ks do i, b, k ::
+                   case i == 0 || b[i - 1] <= b[i] => i + 1
+                   case !(i == 0 || b[i - 1] <= b[i]) => i - 1,
+                   case i == 0 || b[i - 1] <= b[i] => b
+                   case !(i == 0 || b[i - 1] <= b[i]) => b[i := b[i - 1]][i - 1 := b[i]])
+  requires x == current(Sv).0
+  requires 0 <= n && n <= x
+  ensures sorted(current(Sv).1, 0, n) <==> true
+\end{lstlisting}
+With the exit $n \le i$, the postcondition $\sorted(b, 0, n)$ follows. The merge is the same shape: the pointers $i$
+and $j$ form one trace, read by the trace of the output, and two lemmas on the atoms of the postcondition state
+that after at least $m + n$ steps the output is sorted on $[0, m + n)$ and its values there are the merge of the two
+ranges, whose counts are the sums of the counts.
+
+\paragraph{What the engine required.} Three forms of these lemmas failed before this one, each for a reason that
+applies to any lemma about a cycle:
+\begin{itemize}[nosep]
+\item \emph{No trace in a closed condition.} A condition that contains the trace itself, such as $n$ at most the
+  first component of the current value of $\mathsf{trace}(1, a, \ldots)$, is instantiated with fresh bound variables each time it is evaluated, so the
+  views of that trace are recomputed and never memoized; the run did not terminate. The trace is a rule variable
+  $Sv$, bound by the left-hand side to the variable of the goal, and its equation is an open condition, matched
+  against the goal's.
+\item \emph{Components read from the facts.} A closed condition $n \le \cur(Sv).0$ is simplified first, which replaces
+  the read of the component by its view, and is then not found. The component is bound by an open variable,
+  $x = \cur(Sv).0$, matched against the fact $i = \cur(S).0$, and the comparison is decided on $x$.
+\item \emph{No general rule on a predicate of the postcondition.} A forward fact $\sorted(b, 0, i)$ about the trace
+  together with a rule ``a prefix of a sorted range is sorted'' does not terminate: the rule applies to the forward
+  fact itself. The rule is specific to the trace instead.
+\end{itemize}
+
+\subsection{The distinctness check: a flag and a conjunction}\label{sec:sorts:distinct}
+The inner loop compares $a[k]$ with each later element and clears the flag $d$ on a match. Its summary is a plain rule,
+\begin{align*}
+  &\cur(\mathsf{trace}(d,\ \mathsf{for}\ \bl{\cnt(0, 1, nn)}, \bl{\cnt(k + 1, 1, nn)}\\
+  &\qquad \mathsf{do}\ x, i, j \mapsto \upd{a[k] = a[j]}{\mathsf{false}}\ \ \upd{a[k] \ne a[j]}{x}))
+   = d \wedge \mathsf{nodup}(a, k, k + 1 + \intf(nn)),
+\end{align*}
+with $\mathsf{nodup}(a, k, h)$ for ``$a[k]$ does not occur in $a[k + 1..h)$''. The outer trace is then the conjunction of
+$\mathsf{nodup}$ over the iterations, and a second lemma names it
+\[ \mathsf{distincts}(\mathsf{selects}(a, \bl{\cnt(0, 1, \natf(n))})), \]
+with the two constraints on the choice as conditions that fix the length of each scan to $n - k - 1$. The variable of
+the bound in this lemma had to be named apart from the method's $n$: a rule variable with the name of a variable of the
+goal makes an open condition coincide with the fact literally, so that it holds without binding the variable.

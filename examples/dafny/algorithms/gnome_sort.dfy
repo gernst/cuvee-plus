@@ -1,13 +1,16 @@
 // ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/gnome_sort.dfy
 // gnome sort: a single loop whose position moves down at a descent and up otherwise, so that the number of
-// iterations is not a counter; expected to stay open as a negative example of the loop shapes that trace equation
-// systems model, but verified by a summary lemma on the whole atom of the postcondition
+// iterations is not a counter
 //
-// status: verified with -teq -simplify (Oct 11, 2026, night; NOTES.md, finding 36): the position i and the array b
-// are traces over each other with the guard b[i - 1] <= b[i], the number of iterations is not related to n (the exit
-// n <= i only bounds it from below), and the swaps are at i and i - 1, arithmetic on a bound variable; the lemma
-// sorted_gnome below states the invariant sorted(b, 0, i) directly for this shape, with the guard and the positions
-// pinned; the wrong postcondition sorted(b, 0, n + 1) leaves a goal (pending/gnome_wrong.dfy)
+// status (Oct 14, 2026): verified with -teq -prove, both sorted(b, 0, n) and perm(b, a); a wrong postcondition,
+// sorted(b, 0, n + 1) or perm(b, a[0 := 1]), leaves a goal;
+// the position i and the array b read each other through the guard i == 0 || b[i - 1] <= b[i], so they form one
+// trace S of two accumulators; the lemma sorted_gnome states the invariant sorted(b, 0, i) of that trace as a whole,
+// which holds for every run of its update (the guards are complementary), as a rule on the atom of the
+// postcondition: the trace is a rule variable Sv, matched against the variable of the goal, whose equation is an open
+// condition, and the position is read from the facts by an open x == current(Sv).0, so that no condition contains the
+// trace itself (whose views would be recomputed for each instance) or a read of its component (which is replaced by
+// its view before it is looked up); with the exit n <= i, the prefix covers the range
 
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 function perm(a: array<int, int>, b: array<int, int>): bool
@@ -15,33 +18,25 @@ function perm(a: array<int, int>, b: array<int, int>): bool
 lemma {:rw} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
 
-// the invariant of gnome sort is sorted(b, 0, i): a step up (the guard G holds) extends the sorted prefix, a step
-// down with a swap at P(i) == i - 1 and Q(i) == i keeps the prefix below sorted; at the exit n <= i the prefix covers
-// the range; the lemma is on the whole atom of the postcondition (merge.dfy), with the guard and the positions
-// higher-order and pinned, since the literal i - 1 is not matched; the trace of the position is tied by an open trace
-// variable Iv2, matched against its equation, and identified with the dependency Iv of the left-hand side, likewise
-// the trace of the array Bv as the dependency of the position's trace (sound ties, no condition mentions the
-// left-hand side); the step 1 and -1 of the position are variables, since literals in patterns are not matched
-lemma {:rw} sorted_gnome(a: array<int, int>, n: int, u: int, d: int, x: int, Kv: Trace<int>, Iv: Trace<int>, Iv2: Trace<int>,
-                         Kv2: Trace<int>, Bv: Trace<array<int, int>>, Bv2: Trace<array<int, int>>,
-                         G: (int, array<int, int>) -> bool, P: int -> int, Q: int -> int)
-  requires Bv == trace(a, for ⌊Kv⌋, ⌊Iv2⌋ do b, k, i :: case G(i, b) => b case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])
-  requires Iv2 == Iv
-  requires Iv2 == trace(1, for ⌊Kv2⌋, ⌊Bv2⌋ do i, k, b :: case G(i, b) => i + u case !G(i, b) => i + d)
-  requires Kv2 == Kv && Bv2 == Bv && u == 1 && d == -1
-  requires forall i: int, b: array<int, int> :: G(i, b) <==> (i == 0 || b[i - 1] <= b[i])
-  requires forall i: int :: P(i) == i - 1
-  requires forall i: int :: Q(i) == i
-  requires x == current(Iv)
-  requires n <= x
-  ensures sorted(current(trace(a, for ⌊Kv⌋, ⌊Iv⌋ do b, k, i :: case G(i, b) => b case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])), 0, n)
-    <==> true
+// the invariant of gnome sort: b[0..i) is sorted after every step (a step up past an element in order with its
+// predecessor extends the sorted prefix, a swap down keeps the prefix below the new position sorted), and the
+// position stays nonnegative; hence every prefix up to the position is sorted
+lemma {:rw} sorted_gnome(a: array<int, int>, ks: List<int>, n: int, x: int, Sv: Trace<(int, array<int, int>)>)
+  requires Sv == trace(1, a, for ks do i, b, k ::
+                   case i == 0 || b[i - 1] <= b[i] => i + 1
+                   case !(i == 0 || b[i - 1] <= b[i]) => i - 1,
+                   case i == 0 || b[i - 1] <= b[i] => b
+                   case !(i == 0 || b[i - 1] <= b[i]) => b[i := b[i - 1]][i - 1 := b[i]])
+  requires x == current(Sv).0
+  requires 0 <= n && n <= x
+  ensures sorted(current(Sv).1, 0, n) <==> true
 
 // every step is the identity or a swap, so the result is a permutation of the initial array, for any guard and
-// positions
+// positions; it matches the view of the array component, whose dependency is the history of the position
 lemma {:rw} perm_gnome(a: array<int, int>, c: array<int, int>, ks: List<int>, is: List<int>,
                        G: (int, array<int, int>) -> bool, P: int -> int, Q: int -> int)
-  ensures perm(current(trace(a, for ks, is do b, k, i :: case G(i, b) => b case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])), c)
+  ensures perm(current(trace(a, for ks, is do b, k, i ::
+                 case G(i, b) => b case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])), c)
     <==> perm(a, c)
 
 method main(a: array<int, int>, n: int) returns (b: array<int, int>)

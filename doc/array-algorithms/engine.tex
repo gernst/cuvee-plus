@@ -1,0 +1,125 @@
+\section{The Engine}\label{sec:engine}
+
+The goals of Section~\ref{sec:teq} are proved by rewriting with a database of lemmas: an equation
+$l = r$ or an equivalence $l \Leftrightarrow r$ is applied from left to right wherever its left-hand side
+matches, provided its side conditions hold. A goal is proved when it rewrites to $\mathsf{true}$. Nothing is
+inferred: the lemmas state what loops of a certain shape compute, and the engine's job is to find the loops
+of the goal among those shapes. That job is harder than it looks, and the engine is designed around what
+makes it hard. Each design decision below answers a difficulty that the examples of this document met; the
+insight is stated first, then the mechanism.
+
+\subsection{The facts form one structure, not a list}\label{sec:engine:classes}
+\emph{Insight: a lemma must see a term in whatever form the goal states it.} The goal names traces by
+variables, $K = \cnt(0, 1, n)$, $I = \cnt(0, 1, n)$, $b = \cur(B)$, and a lemma about counters must match $\bl{K}$
+as well as $\bl{\cnt(0, 1, n)}$, and $\sorted(b, 0, n)$ as well as $\sorted(\cur(B), 0, n)$.
+
+The facts of the context are kept in a congruence closure: a union-find over their terms, where equal
+arguments make applications equal. The \emph{definitions} of a variable are the members of its class that are
+not variables, in both orientations of every equation and transitively, so $K = I$ follows from two equations
+with the same counter, and $x = f(y)$ with $y = z$ gives $f(z)$. When a pattern does not match a variable, the
+matcher tries its definitions. Only variables have definitions: a term matched through a member of its class
+that contains the term would be rewritten forever.
+
+\subsection{Closed conditions are looked up, not proved again}\label{sec:engine:known}
+\emph{Insight: a side condition whose variables are all bound is a question about the facts, not a new goal.}
+A lemma's side conditions are matched against the facts while they have open variables, which binds them. Once
+a condition is closed, it is first looked up: it holds if it is congruent to a fact modulo the classes, and a
+condition with binders, such as an iteration constraint $\al{\ldots}{\ldots}$, holds if its canonical form
+equals that of a fact. The canonical form renames bound variables by position and sorts dependencies, cases,
+conjuncts and the sides of equations, so that alpha-variants and reorderings coincide. Only a condition that
+is not found is decided by simplification. Without the lookup, a summary lemma that needs the iteration
+constraint of an inner loop as a condition must restate it with fresh variables and identify them with the
+ones of the goal by equations; with it, the condition is written as it is meant. The instance is simplified before
+it is looked up, so a fact whose dependencies include one that its body does not use is not found by a condition
+without it (Section~\ref{sec:sorts:selection}).
+
+\subsection{Arithmetic is decided, not rewritten}\label{sec:engine:arith}
+\emph{Insight: the bounds that make array reads meaningful are linear facts, and a decision procedure should
+supply them.} The context decides linear arithmetic over the integers by a simplex with bounds; strict
+comparisons are offset by one, and an atom $t / k$ for a positive constant $k$ brings its bounds
+$k \cdot (t / k) \le t \le k \cdot (t / k) + k - 1$. So the midpoint of a binary search lies in its interval,
+$lo \le (hi + lo) / 2 < hi$ for $lo < hi$, without a lemma. Solutions of linear equations are substituted into
+polynomials.
+
+\subsection{Views: per-variable lemmas apply to cycles}\label{sec:engine:views}
+\emph{Insight: the database is written for single accumulators, but loops have cycles; the engine should
+translate, not the database.} Most lemmas describe a trace of one accumulator over a counter, a sum, a store,
+a bound. A variable of a cycle is a component of a trace of several accumulators, $\cur(S).0$. The engine
+treats such a read as a marker and matches it modulo its \emph{view}: the trace of that accumulator alone,
+with the other accumulators bound over their histories $\bl{S}.j$ as further dependencies. A lemma about
+$\cur(\tr{x_0}{\bl{K}, hs}{x, k, h \mapsto \ldots})$ then applies to $\cur(S).0$ with $hs := \bl{S}.1$. The
+histories are inert as dependencies, so the projections do not unfold each other, and a component is not
+projected again inside its own view. A marker is replaced by its view once the view reads no component of
+the trace, e.g.\ a counter by its value. Views are memoized by the facts that mention their variables, so
+that positions with the same relevant facts share them.
+
+\subsection{Whole cycles: a lemma may name the loop}\label{sec:engine:cycles}
+\emph{Insight: some loops are only meaningful as a whole, and the iteration constraint belongs inside the
+update.} A pattern with several accumulators matches a trace of as many, component by component: the initial
+values pairwise, the results in the context of the update. In that context the histories of the trace denote
+the accumulators, so every iteration constraint over the histories holds for the accumulators: inside the
+update of the binary search, $lo < hi$ is a fact. This is what makes a lemma like
+\begin{align*}
+  &\mathsf{trace}(l_0, h_0,\ \mathsf{for}\ ks\ \mathsf{do}\ lo, hi, k \mapsto
+   \upd{G(M(lo, hi)) \wedge lo < hi}{M(lo, hi) + 1}\ \ldots)\\
+  &\quad = \mathsf{bisection}(l_0, h_0, ks, M, G, H)
+\end{align*}
+match a program whose guards do not mention $lo < hi$: the conjunct follows from the guard of the program in
+the context of its update. The same mechanism decides guards that depend on the constraint in every rewrite
+inside an update, not only for whole cycles.
+
+Higher-order variables of a pattern, the probe $M$ and the guards $G$, $H$, are bound by abstracting the
+matched term over the bound variables, as in the higher-order pattern fragment, and an instance applied to
+arguments is beta-reduced.
+
+\subsection{Case lists are matched in one direction}\label{sec:engine:cases}
+\emph{Insight: a lemma may be total where the program is partial, as long as the context excludes the
+difference.} An update of cases is matched by requiring every case of the program to be covered by a case of
+the pattern, whose result matches and whose guard follows from the program's guard. Cases of the pattern that
+cover none are ignored. This is an equation wherever the program has a case, and the guards of the program are
+complete in the context of its update by construction: the iteration constraint states that the loop test
+held, and the cases are the branches of the body. So a lemma may add a last case for the complement of its
+guards, e.g.\ $\upd{\neg(lo < hi) \vee \neg(G \vee H)}{lo}$, which keeps the state. The program has no such
+case, the context excludes it, and the lemma becomes true for \emph{every} update, not only those of a loop
+that stops in time. Section~\ref{sec:bisect} shows why this matters for soundness.
+
+\subsection{Forward facts: triggers instead of rewrites on atoms}\label{sec:engine:forward}
+\emph{Insight: many facts about a loop are needed where only its term occurs.} A bound of the current value of
+a monotone trace, or the bounds of a binary search's result, is not a rewrite of anything: no atom of the goal
+mentions it. A lemma marked \texttt{\{:fw\}}, \texttt{requires C ensures φ}, is assumed wherever a term matching
+its \emph{trigger} occurs in a fact; the trigger is the term of $\varphi$ with the most variables, below its
+boolean and arithmetic structure. The trigger is matched like a left-hand side, through definitions and views,
+and the instance names the term as it occurs, so that it reaches the classes and the linear constraints of the
+goal: $\cur(\mathsf{bisection}(\ldots)).0 \le \mathsf{cut}(G, l_0, h_0)$ is assumed as
+$\cur(S).0 \le \mathsf{cut}(G, 0, n)$, and the cut is then rewritten by the database to a partition point of
+the array. Triggers are retried while instances are added, since one instance may enable another; this
+terminates, as the terms are fixed.
+
+\subsection{Suspension: a rule does not prove its own conditions}\label{sec:engine:suspend}
+\emph{Insight: a condition that mentions the rule's own left-hand side must not be rewritten by the rule.}
+While the side conditions of a rule are evaluated, the rule is suspended, and while the view of a component
+is computed, that component is not projected. Without the suspension, a lemma about $\cur(L)$ with the exit
+$\cur(H) \le \cur(L)$ as a condition rewrites the condition by itself and never terminates; with it, the
+condition may mention the left-hand side.
+
+\subsection{What remains a goal}\label{sec:engine:remains}
+A goal that remains is split by cases on its first disjunctive premise, up to four deep, each case in a fresh
+context. A goal without traces and other functions than those of arithmetic, over at most four variables, is
+refuted if it evaluates to false at an assignment of small values; it becomes $\mathsf{false}$, and the
+program is reported incorrect. All other goals are printed as they remain, with the lemmas that were applied,
+so that a residual goal points to the missing lemma.
+
+\subsection{The lemma database}\label{sec:engine:db}
+The database is a set of Dafny files: an entry point, injected with every system, with the declarations
+of the combinators, counters, the functions on lists and the lemmas on traces; and optional modules for
+aggregations (sums, counts, minima and maxima), arithmetic, arrays (stores and their reads), counters,
+searching (no occurrence in a prefix, the bisection of an interval), sorted arrays (sortedness, permutations,
+partition points), strided stores and counters modulo a bound. A lemma is a rewrite rule (\texttt{\{:rw\}}),
+a forward fact (\texttt{\{:fw\}}), or the definition of a function that is folded where its body occurs
+(\texttt{\{:fold\}}). The lemmas of the entry point and of the modules are proved in Lean 4 against
+statements generated from the files, with the trace combinators defined by recursion and guarded cases as
+conditionals that end in $\mathsf{unspecified}$. Where a lemma has arbitrary guards, it ends in a case for
+their complement (Section~\ref{sec:engine:cases}), so that complete guards are not a premise. What the
+proofs still assume is listed with each lemma: reads of the lists of a loop at its iterations, prefixes not
+longer than the list, lists of equal length. The lemmas written for a single program, at the beginning of its
+file, are not checked; Section~\ref{sec:principles:sound} discusses how to keep them sound.

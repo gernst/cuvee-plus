@@ -1,0 +1,76 @@
+\section{The Open Algorithms: What They Need}\label{sec:open}
+
+Twenty of the thirty programs of the folder of algorithms are proved. Of the other ten, eight leave a goal and two
+stop because the rewriting exceeds its budget. Their lemmas, written at the beginning of each file, mostly describe
+inner loops as families of fresh lists, one per inner trace, with the facts of the inner loop distributed over the
+outer iteration constraint; they do not match the closed form of Section~\ref{sec:teq}. For each, this section states
+what a proof needs, and, where an attempt was made, what stood in its way.
+
+\subsection{Insertion sort: an inner loop of data-dependent length}\label{sec:open:insertion}
+Insertion sort moves the new element down while it is less than its predecessor:
+\texttt{while 0 < j \&\& b[j] < b[j - 1] \{ swap; j := j - 1; \}}. Unlike the inner loops of
+Section~\ref{sec:sorts}, the number of inner iterations is not determined by the bounds: the constraints over the
+inner history state that the comparison held in every inner step, and the exit that it failed or $j$ reached $0$.
+The closed form has the inner loop as
+\begin{align*}
+  \cur(\mathsf{trace}(b,\ &\mathsf{for}\ \bl{\cnt(0, 1, nn)}, \bl{\cnt(i, -1, nn)}\\
+  &\mathsf{do}\ x, k', j \mapsto x[j := x[k - k']][k - k' := x[j]]))
+\end{align*}
+with the position $j - 1$ expressed through the outer iteration $k$, and the constraints are nested inside the outer
+iteration constraint, over the history of the outer trace, which the closed form spells out as a term.
+
+\paragraph{What it needs.} A step lemma whose conditions are the inner constraint and exit, and whose conclusion is
+that the result extends the sorted prefix by one, used by an induction over the outer trace with the choice among its
+dependencies. Both lemmas have conditions that contain inner and outer traces as terms, which runs into the cost
+of views recomputed for each instance (Section~\ref{sec:sorts:cycles}); a summary that names the inner loop by
+an abstract $\mathsf{insert}(b, i, nn)$ first, as a plain rule, and states the comparisons as facts about the named
+result, would keep the traces out of the conditions.
+
+\subsection{The partitions: cycles of three accumulators}\label{sec:open:partition}
+In the partition around a pivot, the scanning index $j$ joins the cycle of the array and the boundary $i$, although $j$
+is a counter: the guard reads $b[j]$, and every result of a guarded body reads the variables of its guard, including
+$j$'s two cases $j + 1$, which are equal. The invariants hold for every run of the update ($0 \le i \le j$, the elements
+below $i$ less than the pivot, those from $i$ below $j$ at least the pivot, a permutation), so lemmas in the style of
+gnome sort are sound. But the program alone takes 34 s, and 102 s without the aggregation module, since the views of a
+cycle of three accumulators are expensive, and with the lemmas the rewriting exceeds its budget.
+
+\paragraph{What it needs.} A read relation that merges equal cases first, or takes the guards only for the results that
+differ between the cases, would keep the counter outside the cycle, where the database recognizes it, and leave a
+cycle of two. The three-way partition has the same structure with two boundaries.
+
+\subsection{The first duplicate: an early exit by a flag}\label{sec:open:flags}
+The first duplicate scans the pairs $i < j$ like the distinctness check, but stops both loops when the flag is set. The
+inner flag is the one of Section~\ref{sec:sorts:distinct}, $r \vee \neg\mathsf{nodup}(a, i, i + 1 + \intf(nn))$. The outer
+loop runs while the flag is false, so its constraint states that the flag was false at the head of every outer iteration,
+over the history of the outer trace; the exit of the outer loop is a disjunction, $n \le i \vee r$, and the exit of the
+inner loop depends on the flag as well.
+
+\paragraph{What it needs.} Two rules on the atom $\mathsf{distincts}(\ldots)$, one per case of the outer exit: if the flag is
+set, the last iteration found a duplicate within $[0, n)$; if it is not, every iteration ran with its full length and
+found none. Both take the constraint on the flag at the heads as a condition, which contains the outer trace as a term;
+with the postcondition as two implications, each goal has its literal of the exit.
+
+\subsection{The reversal: a fact lost in a normal form}\label{sec:open:reverse}
+The swaps of $k$ and $n - 1 - k$ are recognized as a reversal by a lemma of the file, whose conditions are linear:
+$2 n' \le c + 1$ and $c \le 2 n'$ for the start $c = n - 1$ of the counter down. They follow from the facts if
+$\intf(n') = i$ for the final value $i$ of the counter. The database rewrites $\intf(n) = x$ into $n = \natf(x)$ under the
+condition $0 \le x$, and the result no longer states $0 \le x$, which is lost if it followed from the equation itself.
+The equivalence $\intf(n) = x \Leftrightarrow 0 \le x \wedge n = \natf(x)$ holds without a condition and keeps the fact; with it,
+the conditions of the reversal follow.
+
+\subsection{Witnesses, duplicates and the step budget}\label{sec:open:other}
+\begin{itemize}[nosep]
+\item \emph{An existential postcondition} (\texttt{max\_element}): the maximum is
+  \[ m = \cur(\mathsf{maxs}(a[0], \mathsf{selects}(a, \bl{\cnt(1, 1, n)}))), \]
+  and $\exists k.\ a[k] = m$ needs a witness. A lemma whose left-hand side is the existential does not apply: the
+  matcher has no case for quantifiers. The same program with the postcondition $\mathsf{occurs}(m, \ldots)$ in the
+  vocabulary of the database closes; quantified left-hand sides, or witnesses taken from the terms of the goal, would
+  close the other.
+\item \emph{The transpose} of the folder keeps two folds and lemmas for fresh lists; the same program with one lemma
+  on the nest (Section~\ref{sec:transpose}) closes.
+\item \emph{The step budget}: the cocktail sort, with two inner loops per outer iteration, and the counting sort, with
+  four loops in sequence and a scatter through a table of positions, stop because the rewriting exceeds its budget,
+  with a rule on counters or sums as the last step. The last step of a rewriting that does not terminate is rarely its
+  cause: finding the cycle needs the rules of the file in pairs on the program, or a report of the rule applications
+  that repeat.
+\end{itemize}

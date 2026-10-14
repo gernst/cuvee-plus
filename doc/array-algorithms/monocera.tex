@@ -1,23 +1,167 @@
-\section{The MonoCera Tests: Array Programs in C}\label{sec:monocera}
+\section{Array Programs in C: the MonoCera Tests}\label{sec:monocera}
 
-The following sections re-trace the proofs of some of the tests of the MonoCera evaluation (Amilon, Esen,
-Gurov, Lidström, Rümmer, \emph{Automatic Program Instrumentation for Automatic Verification}, CAV 2023):
-125 C programs derived from SV-COMP, each with a loop that fills an array and a loop that checks an
-assertion over it, one test per aggregation operator that the assertion admits ($\forall$, $\max$, $\min$,
-$\sum$). They are in \texttt{benchmarks/monocera/polished\_tests/cuvee}, converted as for the other tools of
-that evaluation (macros substituted, \texttt{malloc} replaced by arrays, the SV-COMP harness kept), and run
-with \texttt{-unbounded -teq -simplify} as the benchmark definition does (mathematical integers, as the
-paper runs all tools); \texttt{benchmarks/monocera/summary.md} has the comparison (Table~\ref{tab:monocera})
-and \texttt{lemmas.tex} there the case studies from which the lemmas came. Unlike the algorithms of the
-previous sections, these programs carry no specification and no lemmas of their own: the assertion is the
-postcondition, and everything the proof needs is in the database. The traces below are those of
-\texttt{-rules} and \texttt{-debug rewrite} with Cuvée 0.41.6 on October 12, 2026; the steps on the
-harness (\texttt{truth}, \texttt{number}, the bounds of \texttt{sizeof}) and the repeated reads of counters
-are left out.
+The MonoCera evaluation (Amilon, Esen, Gurov, Lidström, Rümmer, \emph{Automatic Program Instrumentation for
+Automatic Verification}, CAV 2023) has 125 C programs derived from SV-COMP, each with a loop that fills an array and
+a loop that checks an assertion over it, one test per aggregation that the assertion admits ($\forall$, $\max$,
+$\min$, $\sum$). Unlike the Dafny programs of the previous sections, they carry no specification and no lemmas: the
+assertion is the postcondition, and everything a proof needs must come from the database. They are run with all
+modules of the database and mathematical integers, as in that evaluation:
+\texttt{-unbounded -teq} with the modules, \texttt{-prove -split -prove -split -prove}. The second and third rounds
+split the disjunctions that the first introduces, e.g.\ the case of no iteration.
 
-Two things differ from the Dafny examples. The C frontend translates a \texttt{for} loop with a body of
-conditionals into a trace with one case per path, also where the paths agree (the counter $i$ of the first
-loop of every test has two cases $i + 1$), and the simplifier merges such cases first
-(\lemma{trace\_merge\_cases\_ne}). And the symbolic execution of \texttt{main} branches on the harness,
-\texttt{if (N <= 0) return 1} and \texttt{assume\_abort\_if\_not(N <= 2147483647 / sizeof(int))}, so the
-goal has a branch per path of the harness, of which one carries the loops; the others are trivial.
+\input{monocera-table}
+
+Two things distinguish the C programs. A \texttt{for} loop with a body of conditionals gives one case per path, also
+where the paths agree, e.g.\ the counter $i$ with two cases $i + 1$, which the database merges first
+(\lemma{trace\_merge\_cases\_ne}). And the harness branches, \texttt{if (N <= 0) return 1}, so the goal has one
+branch per path, of which one carries the loops. The iteration constraint of a loop with guarded cases also states
+that one of the guards held, e.g.\ $i \bmod 2 = 0 \vee \neg(i \bmod 2 = 0)$: the completeness of the guards in the
+context of the update (Section~\ref{sec:engine:cases}) is a fact of the goal.
+
+\subsection{Loops in sequence: sums of filled arrays}\label{sec:brs2}
+\begin{lstlisting}[language=C]
+for (i = 0; i < N; i++) { if (i % 2 == 0) a[i] = 2; else a[i] = 0; }   // brs2
+for (i = 0; i < N; i++) { if (i == 0) sum[0] = 0; else sum[0] = sum[0] + a[i]; }
+__VERIFIER_assert(sum[0] <= 2 * N);
+\end{lstlisting}
+The second loop reads the final array of the first, and the sum is kept in the cell $0$ of a one-element array, so
+its trace is a trace of stores at the constant key $0$. The proof needs one lemma per shape, each landing in the
+normal form that the next one expects:
+\begin{enumerate}[nosep]
+\item \emph{The counters.} The traces of $i$ are counters, the constraints and exits give $\intf(n) = N$ for both
+  loops, and inside each iteration $i$ is the iteration $k$.
+\item \emph{The first loop is stores of a map.} Its update stores a constant chosen by a condition on the index:
+\begin{align*}
+  &\lemma{stores\_index\_cases\_def}:\\
+  &\quad \mathsf{trace}(a_0,\ \mathsf{for}\ \bl{\cnt(0, 1, n)}, \bl{\cnt(0, 1, n)}\\
+  &\qquad\quad \mathsf{do}\ a, k, i \mapsto \upd{P(k)}{a[k := c]}\ \ \upd{\neg P(k)}{a[k := d]})\\
+  &\quad = \mathsf{stores}(a_0, \bl{\cnt(0, 1, n)}, \mapc{\bl{\cnt(0, 1, n)}}{k \mapsto \ite{P(k)}{c}{d}})
+\end{align*}
+  with $P$ the parity, abstracted from the guard.
+\item \emph{The read in the second loop.} $a'[k]$ is the stored value at $k$ (\lemma{current\_stores}, with the
+  membership and position of $k$ in the counter, \lemma{occurs\_counter\_up} and \lemma{indexof\_counter\_up}), decided
+  in the context of the iteration, where $0 \le k < \intf(n)$.
+\item \emph{The cell is a sum.} The trace of stores into the cell is read as the scalar sum:
+\begin{align*}
+  &\lemma{select\_current\_trace\_reset\_add}:\\
+  &\quad \cur(\mathsf{trace}(a_0, \ldots\ \upd{k = 0}{a[j := c]}\ \ \upd{0 < k}{a[j := a[j] + G(k)]}))[j]\\
+  &\quad = \ite{n = 0}{a_0[j]}{c + \mathsf{sum}(\mapc{\bl{\cnt(0, 1, n)}}{k \mapsto \ite{0 < k}{G(k)}{0}})}
+\end{align*}
+\item \emph{The bound.} \lemma{sum\_cases\_below} bounds a sum of terms that are each $0$, $c$ or $d$ by $e$; its
+  left-hand side is the comparison $\mathsf{sum}(\ldots) \le e$, whose right side binds $e$, so the bound need not be
+  a fact.
+\end{enumerate}
+The test \texttt{sum/ms2}, which stores $i \bmod 2$, differs only in the bound (\lemma{sum\_mod\_below}), and
+\texttt{sum/conda} only in the first loops: an array filled with ones and then updated in place by cases on the
+old value,
+\begin{align*}
+  &\lemma{stores\_cases\_def}:\\
+  &\quad \tr{a_0}{\ldots}{a, k, i \mapsto \upd{P(a[k])}{a[k := c]}\ \ \upd{\neg P(a[k])}{a[k := G(a[k])]}}\\
+  &\quad = \mathsf{stores}(a_0, \ldots, \mapc{\ldots}{k \mapsto \ite{P(a_0[k])}{c}{G(a_0[k])}}),
+\end{align*}
+since each position is read only in its own iteration, before it is written. Its first case stores a constant, not
+$G'(a[k])$: by the time the lemma is tried, the read $a[k]$ inside the update has already become $1$ (the stores of
+the previous loop, read in the context of the iteration), so the program's $a[k] + 1$ is $2$. A higher-order
+instance must contain the term it abstracts, and the constant $2$ contains no $a[k]$.
+
+\paragraph{What this needs.} Loops in sequence compose through their current values: each loop reads the previous
+array, the read is resolved in the context of the iteration, and only then is the shape of the next loop recognized.
+The lemmas are written for the goal as the engine has simplified it, not for the program text. And where the data has
+a different shape, a cell of an array instead of a scalar, the lemma for the new shape lands in the normal form of the
+old one (the right-hand side of the scalar sum), so that everything after it is shared. One detail of the engine is
+needed here: the instance $(z) \mapsto a[z]$ of a higher-order variable must not be eta-reduced to the array $a$,
+since $a(k)$ applied as a function is not the read $a[k]$ that the rules are about; eta reduction applies only to
+functions of array type.
+
+\subsection{Strided writes: a quotient in the bound (open)}\label{sec:pr2}
+\begin{lstlisting}[language=C]
+if (CELLCOUNT % 2 != 0) return 1;   // pr2
+for (i = 1; i <= CELLCOUNT / 2; i++) {
+  volArray[i*2 - 2] = (3 >= MINVAL) ? 3 : 0;
+  volArray[i*2 - 1] = (1 >= MINVAL) ? 1 : 0;
+}
+for (i = 0; i < CELLCOUNT; i++)
+  __VERIFIER_assert(volArray[i] >= MINVAL || volArray[i] == 0);
+\end{lstlisting}
+The loop stores pairs at $2k$ and $2k + 1$, with values chosen by three cases on \texttt{MINVAL} that do not depend
+on the iteration. The module for strided stores reads a cell of the result:
+\begin{align*}
+  &\lemma{select\_current\_trace\_stride2\_cases}:\quad R \Leftrightarrow (\neg P \wedge \neg Q) \Longrightarrow\\
+  &\quad \cur(\mathsf{trace}(a_0, \ldots\ \upd{P}{a[2k := X_1][2k + 1 := Y_1]}\ \ \upd{Q}{\ldots}\ \ \upd{R}{\ldots}))[j]\\
+  &\quad = \ite{0 \le j < 2\,\intf(n)}{\ldots}{a_0[j]},
+\end{align*}
+by the parity of $j$ and the guards. Its side condition requires the guards to be exhaustive; the lemma fixes two
+stores and three cases on its left-hand side. It fires on the reads of the checking loop, and every value it
+produces satisfies the assertion. The goal that remains is the range above the stores:
+\[ 2\,(C / 2) < C \ \wedge\ C \bmod 2 = 0 \ \wedge\ 2\,(C / 2) = i \Longrightarrow \ldots a[i] \ldots \]
+for $C$ the size: the loop ran $C / 2$ times, the read at $i = 2\,(C / 2)$ lies beyond the stores, and the case is
+impossible since $C$ is even. The arithmetic knows the bounds of $C / 2$, but not that $C \bmod 2$ is
+$C - 2\,(C / 2)$, so it does not see the contradiction.
+
+\paragraph{What this needs.} Remainders as linear terms over quotients: with $t \bmod k = t - k \cdot (t / k)$ for a
+positive constant $k$, the facts $C \bmod 2 = 0$ and $2\,(C/2) < C$ are inconsistent, and the test closes. A lemma
+stating the fact for one form of the equation, e.g.\ $x \bmod 2 = 0 \Rightarrow (n = x / 2 \Leftrightarrow x = 2n)$,
+depends on the form in which the engine keeps the equation, which changes with every improvement of the arithmetic;
+the remainder belongs to the decision procedure. The tests with $s$ per-cell guards, \texttt{pr3} to \texttt{pr5},
+need $2^s$ combinations of cases, which a lemma with a fixed number of cases does not provide: a lemma schema with
+the number of stores and cases as a parameter.
+
+\subsection{Stores ahead, in both directions}\label{sec:rewnif}
+\begin{lstlisting}[language=C]
+for (i = 0; i < SIZE; i++) { if (i + 1 < SIZE) a[i+1] = i; a[i] = i; }       // rewnif
+for (i = SIZE - 1; i >= 0; i--) { if (i - 1 >= 0) a[i-1] = i - 2; a[i] = i; } // rewnifrev
+for (i = 0; i < SIZE; i++) __VERIFIER_assert(a[i] >= i);
+\end{lstlisting}
+Each iteration writes one cell ahead before it writes its own; the value written ahead is overwritten by the next
+iteration, so a cell holds what its own iteration wrote last, except the cell past the last iteration, which holds
+the value written ahead. The module for strided stores has one lemma per direction; for the loop down from $s$,
+\begin{lstlisting}
+lemma {:rw} {:teq} select_current_trace_ahead_down(a0: array<int, int>, n: Nat, s: int,
+                                                   F: (int) -> int, G: (int) -> int, j: int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(s, -1, n)⌋ do a, k, i ::
+              case 1 <= i => a[i + (-1) := F(i)][i := G(i)]
+              case i < 1 => a[i := G(i)]))[j]
+      == if s - integer(n) < j && j <= s then G(j)
+         else if j == s - integer(n) && 0 <= j && 0 < integer(n) then F(j + 1)
+         else a0[j]
+\end{lstlisting}
+It fires on the reads of the checking loop with $s := \texttt{SIZE} - 1$, $F := (z) \mapsto z - 2$ and
+$G := (z) \mapsto z$, and the assertion holds in every branch; the test closes under $\forall$ and $\min$.
+
+\paragraph{What this needs.} The pattern contains two literals that a matcher must treat modulo the normal form of the
+goal: the step $-1$ of the counter dependency, matched through the definition of the program's counter, and the store
+position $i + (-1)$, which the goal has as $i - 1$, a sum with a negative literal. The engine compares a negative
+literal among the summands as the negation of its absolute value, so the lemma can be written as the program reads.
+Without that, each such position needs a higher-order variable $P(i)$ pinned to $i - 1$ by a side condition, and each
+literal step a variable $d$ with $d = -1$. The third variant of the test, \texttt{rewnifrev2}, writes ahead upwards in a
+loop that runs downwards, a shape for which there is no lemma.
+
+\subsection{Recurrences on the previous cell}\label{sec:ifeqn2}
+\begin{lstlisting}[language=C]
+for (i = 0; i < N; i++) { if (i == 0) a[0] = 4; else a[i] = a[i-1] + 4; }   // ifeqn2
+for (i = 0; i < N; i++) { if (i == 0) b[0] = 1; else b[i] = b[i-1] + a[i-1]; }
+for (i = 0; i < N; i++) __VERIFIER_assert(b[i] == 2*i*i + 2*i + 1);
+\end{lstlisting}
+A store at $k$ of a value read at $k - 1$ is not a store of a map: the value depends on the trace, not on the initial
+array. The aggregation module names the recurrence by its closed form,
+\begin{lstlisting}
+lemma {:rw} {:teq} select_current_trace_recurrence(a0: array<int, int>, n: Nat, c: int, j: int,
+                                                   G: (int) -> int)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, i ::
+            case i == 0 => a[0 := c] case 0 < i => a[i := a[i - 1] + G(i)]))[j]
+    == if 0 <= j && j < integer(n)
+       then c + sum(maps(for ⌊counter(1, 1, natural(j))⌋ yield k :: G(k)))
+       else a0[j]
+\end{lstlisting}
+The first loop gives $a'[j] = 4 + \mathsf{sum}(\mapc{\bl{\cnt(1, 1, \natf(j))}}{k \mapsto 4}) = 4 + 4j$ (the map of a
+constant and its sum). In the second loop the summand $G(k) = a'[k - 1]$ is then $4k$, so
+$b'[j] = 1 + \mathsf{sum}(\mapc{\bl{\cnt(1, 1, \natf(j))}}{k \mapsto 4k})$; the map of a multiple of the counter is
+a counter, $\bl{\cnt(4, 4, \natf(j))}$ (\lemma{maps\_counter\_scale}), whose sum is the arithmetic series
+(\lemma{sum\_counter}), $2j^2 + 2j$. The read of the checking loop at its index meets the assertion exactly.
+
+\paragraph{What this needs.} The read $a[i - 1]$ of the pattern must match the goal's $a[k + (-1)]$, the same negative
+literal as above; the higher-order summand $G$ must take the read of the other array as a whole; and the closed forms
+of maps and sums over counters must reach polynomials, which the arithmetic compares. The recurrences with other
+increments, products or conditions (\texttt{ifeqn3} to \texttt{ifeqn5}, \texttt{sqm}, \texttt{condm}) need their own
+closed forms; a recurrence solver as a generator of such lemmas would cover the polynomial ones.

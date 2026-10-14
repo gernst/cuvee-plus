@@ -1,4 +1,4 @@
-\section{Linear Search: an Iteration Constraint Abstracted and Instantiated}\label{sec:lsearch}
+\section{Linear Search: a Constraint Named and Instantiated}\label{sec:lsearch}
 
 \subsection{The program}
 \begin{lstlisting}
@@ -12,52 +12,46 @@ method lsearch(a: array<int, int>, n: int, x: int) returns (i: int)
   while i < n && a[i] != x { i := i + 1; }
 }
 \end{lstlisting}
-The first index of $x$ among $a[0..n)$, or $n$. The loop test is data-dependent, so the number of
-iterations is not determined by $n$; the trace equation system records the test as the iteration
-constraint and its negation as the exit.
+The first index of $x$ among $a[0..n)$, or $n$. The test reads the array, so the number of iterations is not
+determined by $n$.
 
-\subsection{The trace equation system}
-\begin{align}
-  K &= \cnt(0, 1, n') \qquad i = \cur(I) \qquad I = \tr{0}{\bl{K}}{i, k \mapsto i + 1} \label{eq:ls0}\\
-  &\al{\bl{K}, \bl{I}}{k, i \mapsto i < n \wedge a[i] \ne x} \label{eq:ls1}\\
-  &\neg(i < n \wedge a[i] \ne x) \label{eq:ls2}\\
-  &\Longrightarrow\ 0 \le i \le n\ \wedge\ (i < n \Rightarrow a[i] = x)\ \wedge\ (\forall k.\ 0 \le k < i \Rightarrow a[k] \ne x) \nonumber
-\end{align}
-With \texttt{-split}, the conclusion becomes four goals, one per conjunct, the last two with their premises
-as hypotheses: $i < n \Rightarrow a[i] = x$, and $0 \le k < i \wedge a[k] = x \Rightarrow \mathsf{false}$.
-The simplifier's own rules do the following: $I$ is a counter by \lemma{counter\_def}, so
-$i = \intf(n')$; the constraint \eqref{eq:ls1} is distributed into
-$\al{\bl{\cnt(0, 1, n')}}{k \mapsto k < n}$, which \lemma{invs\_counter\_upper} resolves to
-$n' = 0 \vee \intf(n') \le n$ (hence $0 \le i \le n$, the first two goals), and
-$\al{\bl{\cnt(0, 1, n')}}{k \mapsto a[k] \ne x}$, the search constraint proper; the exit
-\eqref{eq:ls2} is $n \le i \vee a[i] = x$, which with $i < n$ gives the third goal.
+\subsection{The system}
+\begin{gather}
+  K = \cnt(0, 1, n') \qquad I = \tr{0}{\bl{K}}{i, k \mapsto i + 1} \qquad i = \cur(I) \label{eq:ls0}\\
+  \al{\bl{K}, \bl{I}}{k, i \mapsto i < n \wedge a[i] \ne x} \label{eq:ls1}\\
+  \neg(i < n \wedge a[i] \ne x) \label{eq:ls2}
+\end{gather}
+The run is \texttt{-teq -split -prove}: the postcondition is split into one goal per conjunct, the quantified
+one as $0 \le k < i \wedge a[k] = x \Rightarrow \mathsf{false}$.
 
-\subsection{The lemmas}
-The last goal needs the search constraint at a witness: for $0 \le k < i$, the constraint says
-$a[k] \ne x$. The paper's lemma database has no instantiation of iteration constraints at positions
-(\texttt{TODO.md}: no instantiation at a witness); the two lemmas of \texttt{lsearch.dfy}, since merged
-into \texttt{teq.dfy}, abstract the constraint by an atom and instantiate the atom:
+\subsection{What the proof needs}
+\emph{From the database, the counter.} $I$ is a counter by \lemma{counter\_def}, so $i = \intf(n')$ by
+\lemma{current\_counter}. Inside the constraint the value of $i$ in iteration $k$ is $k$
+(\lemma{earlier\_counter}), and the constraint splits into $\al{\bl{\cnt(0, 1, n')}}{k \mapsto k < n}$, which
+\lemma{invs\_counter\_upper\_nonnegative} turns into $\intf(n') \le n$ for $0 \le n$, and the search
+constraint $\al{\bl{\cnt(0, 1, n')}}{k \mapsto a[k] \ne x}$. The first two postconditions follow, and the third
+from the exit \eqref{eq:ls2}.
+
+\emph{For the last postcondition, the constraint at a position.} The goal needs $a[k] \ne x$ for a $k$ below
+$i$, which is the search constraint at position $k$. A rule cannot take the constraint itself as a side
+condition and instantiate it: matching an iteration constraint as a condition builds the context of its
+combinator, in which the reads it contains are rewritten, and a rule general enough to match there recurs
+(Section~\ref{sec:principles:termination}). Instead, one lemma names what the constraint says, and a second one
+uses the name:
 \begin{align*}
   &\lemma{not\_occurs\_selects\_def}:\\
-  &\quad \al{\bl{\cnt(i, 1, n)}}{k \mapsto a[k] \ne x}\ \Longleftrightarrow\ \neg\mathsf{occurs}(x, \mathsf{selects}(a, \bl{\cnt(i, 1, n)}))\\[4pt]
+  &\quad \al{\bl{\cnt(i, 1, n)}}{k \mapsto a[k] \ne x}\ \Longleftrightarrow\ \neg\mathsf{occurs}(x, \mathsf{selects}(a, \bl{\cnt(i, 1, n)}))\\[2pt]
   &\lemma{select\_not\_occurs\_selects}:\\
   &\quad \neg\mathsf{occurs}(x, \mathsf{selects}(a, \bl{\cnt(i, 1, n)}))\ \wedge\ i \le k < i + \intf(n)
     \ \Longrightarrow\ (a[k] = x) \Longleftrightarrow \mathsf{false}
 \end{align*}
-The first matches the constraint with $i := 0$, $n := n'$ (the counter $K$ is followed in the dependency
-position) and replaces it by the atom "$x$ does not occur among the values of $a$ at the positions
-$0, \ldots, n' - 1$". The second is a rule on the atom $a[k] = x$ of the last goal: its side conditions
-are the fact just produced, matched with $i := 0$, $n := n'$, and the bounds $0 \le k < \intf(n')$,
-decided from $0 \le k < i$ and $i = \intf(n')$. The hypothesis $a[k] = x$ becomes $\mathsf{false}$ and
-the goal closes.
+The first replaces the constraint by the atom ``$x$ does not occur among the values of $a$ at
+$0, \ldots, n' - 1$''. The second is a rule on the atom $a[k] = x$ of the goal: its first condition is matched
+against the atom just produced, which binds $i := 0$ and $n := n'$; its bounds are closed and decided by the
+arithmetic from $0 \le k < i$ and $i = \intf(n')$. The hypothesis $a[k] = x$ becomes $\mathsf{false}$.
 
-This is the pattern of \lemma{not\_occurs\_prefix\_def} and \lemma{earlier\_not\_occurs\_prefix} of
-\texttt{teq.dfy} for reads $\mathsf{earlier}(k, xs)$ of a sequence, here for reads of an array: an
-iteration constraint becomes a named fact about the prefix visited, and a second lemma uses the fact at
-any position in the prefix. \texttt{TODO.md} notes that a side condition that is the iteration constraint
-itself would make the rule cycle (finding 19 of \texttt{NOTES.md}), which is why the abstraction by an
-atom is not merely convenient.
-
-The file's header prescribes \texttt{-teq -split -simplify}, since without the split the disjunction of
-the two exits, $n \le i \vee a[i] = x$, had to be split by the simplifier against the postcondition; with
-the current version the goal closes without \texttt{-split} as well.
+The same pair is in the module for searching, there with the second lemma as a forward fact
+(Section~\ref{sec:engine:forward}): triggered by the read $a[k]$, it assumes $a[k] \ne x$ wherever the read
+occurs, rather than rewriting one particular atom. The pattern is general: an iteration constraint becomes a
+named fact about the prefix that the loop visited, and a second lemma uses the fact at any position in the
+prefix.

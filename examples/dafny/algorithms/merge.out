@@ -1,74 +1,61 @@
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 
-lemma {:rw} sorted_merge_loop(a: array<int, int>, m: int, b: array<int, int>,
-                              n: int, c0: array<int, int>, nn: Nat,
-                              is: List<int>, js: List<int>, s: int,
-                              G: (int, int) -> bool, U: (int, int) -> int,
-                              V: (int, int) -> int, Iv: Trace<int>,
-                              Jv: Trace<int>)
+lemma {:rw} sorted_merge(a: array<int, int>, m: int, b: array<int, int>, n: int,
+                         c0: array<int, int>, nn: Nat, s: int, Kv: Trace<int>,
+                         Sv: Trace<(int, int)>, Cv: Trace<array<int, int>>)
+  requires
+    Cv
+      == trace(c0, for ⌊Kv⌋, ⌊Sv⌋.0, ⌊Sv⌋.1
+               do c, k, i, j ::
+                 case n <= j || i < m && a[i] <= b[j] => c[k := a[i]]
+                 case !(n <= j || i < m && a[i] <= b[j]) => c[k := b[j]])
+  requires
+    Sv
+      == trace(0, 0,
+               for ⌊Kv⌋
+               do i, j, k ::
+                 case n <= j || i < m && a[i] <= b[j] => i + 1
+                 case !(n <= j || i < m && a[i] <= b[j]) => i,
+                 case n <= j || i < m && a[i] <= b[j] => j
+                 case !(n <= j || i < m && a[i] <= b[j]) => j + 1)
+  requires Kv == counter(0, 1, nn)
   requires s == m + n
   requires m + n <= integer(nn)
   requires 0 <= m
   requires 0 <= n
   requires sorted(a, 0, m)
   requires sorted(b, 0, n)
-  requires forall i: int, j: int :: G(i, j) <==> n <= j || i < m && a[i] <= b[j]
-  requires forall i: int, j: int :: U(i, j) == a[i]
-  requires forall i: int, j: int :: V(i, j) == b[j]
-  requires
-    Iv
-      == trace(0, for ⌊counter(0, 1, nn)⌋, js
-               do i, k, j ::
-                 case G(i, j) => i + 1 case !G(i, j) => i)
-  requires is == ⌊Iv⌋
-  requires
-    Jv
-      == trace(0, for ⌊counter(0, 1, nn)⌋, is
-               do j, k, i ::
-                 case G(i, j) => j case !G(i, j) => j + 1)
-  requires js == ⌊Jv⌋
-  ensures
-    sorted(current(trace(c0, for ⌊counter(0, 1, nn)⌋, is, js
-                         do c, k, i, j ::
-                           case G(i, j) => c[k := U(i, j)]
-                           case !G(i, j) => c[k := V(i, j)])), 0, s)
-      <==> true
+  ensures sorted(current(Cv), 0, s) <==> true
 
 function merged(a: array<int, int>, m: int, b: array<int, int>,
                 n: int): List<int>
 
-lemma {:rw} selects_merge_loop(a: array<int, int>, m: int, b: array<int, int>,
-                               n: int, c0: array<int, int>, nn: Nat,
-                               is: List<int>, js: List<int>, s: int,
-                               G: (int, int) -> bool, U: (int, int) -> int,
-                               V: (int, int) -> int, Iv: Trace<int>,
-                               Jv: Trace<int>)
+lemma {:rw} selects_merge(a: array<int, int>, m: int, b: array<int, int>,
+                          n: int, c0: array<int, int>, nn: Nat, s: int,
+                          Kv: Trace<int>, Sv: Trace<(int, int)>,
+                          Cv: Trace<array<int, int>>)
+  requires
+    Cv
+      == trace(c0, for ⌊Kv⌋, ⌊Sv⌋.0, ⌊Sv⌋.1
+               do c, k, i, j ::
+                 case n <= j || i < m && a[i] <= b[j] => c[k := a[i]]
+                 case !(n <= j || i < m && a[i] <= b[j]) => c[k := b[j]])
+  requires
+    Sv
+      == trace(0, 0,
+               for ⌊Kv⌋
+               do i, j, k ::
+                 case n <= j || i < m && a[i] <= b[j] => i + 1
+                 case !(n <= j || i < m && a[i] <= b[j]) => i,
+                 case n <= j || i < m && a[i] <= b[j] => j
+                 case !(n <= j || i < m && a[i] <= b[j]) => j + 1)
+  requires Kv == counter(0, 1, nn)
   requires s == m + n
   requires m + n <= integer(nn)
   requires 0 <= m
   requires 0 <= n
-  requires forall i: int, j: int :: G(i, j) <==> n <= j || i < m && a[i] <= b[j]
-  requires forall i: int, j: int :: U(i, j) == a[i]
-  requires forall i: int, j: int :: V(i, j) == b[j]
-  requires
-    Iv
-      == trace(0, for ⌊counter(0, 1, nn)⌋, js
-               do i, k, j ::
-                 case G(i, j) => i + 1 case !G(i, j) => i)
-  requires is == ⌊Iv⌋
-  requires
-    Jv
-      == trace(0, for ⌊counter(0, 1, nn)⌋, is
-               do j, k, i ::
-                 case G(i, j) => j case !G(i, j) => j + 1)
-  requires js == ⌊Jv⌋
   ensures
-    selects(current(trace(c0, for ⌊counter(0, 1, nn)⌋, is, js
-                          do c, k, i, j ::
-                            case G(i, j) => c[k := U(i, j)]
-                            case !G(i, j) => c[k := V(i, j)])), ⌊counter(0, 1,
-                                                                         natural(s))⌋)
-      == merged(a, m, b, n)
+    selects(current(Cv), ⌊counter(0, 1, natural(s))⌋) == merged(a, m, b, n)
 
 lemma {:rw} count_merged(a: array<int, int>, m: int, b: array<int, int>, n: int,
                          x: int)
@@ -78,37 +65,4 @@ lemma {:rw} count_merged(a: array<int, int>, m: int, b: array<int, int>, n: int,
     count(x, merged(a, m, b, n))
       == count(x, selects(a, ⌊counter(0, 1, natural(m))⌋))
         + count(x, selects(b, ⌊counter(0, 1, natural(n))⌋))
-
-goal
-  forall a: array<int, int>, m: int, b: array<int, int>, n: int,
-         c: array<int, int>, c₁₄: array<int, int>, k₁₇: int, n₈: Nat,
-         K₁₀: Trace<int>, S₁₁: Trace<(int, int)>, C₁₃: Trace<array<int, int>> ::
-    0 <= m
-      && 0 <= n
-      && sorted(a, 0, m)
-      && sorted(b, 0, n)
-      && K₁₀ == counter(0, 1, n₈)
-      && S₁₁
-        == trace(0, 0,
-                 for ⌊K₁₀⌋
-                 do i₅, j₆, k₉ ::
-                   case n <= j₆ || i₅ < m && a[i₅] <= b[j₆] => i₅ + 1
-                   case !(n <= j₆ || i₅ < m && a[i₅] <= b[j₆]) => i₅,
-                   case n <= j₆ || i₅ < m && a[i₅] <= b[j₆] => j₆
-                   case !(n <= j₆ || i₅ < m && a[i₅] <= b[j₆]) => j₆ + 1)
-      && C₁₃
-        == trace(c, for ⌊K₁₀⌋, ⌊S₁₁⌋.0, ⌊S₁₁⌋.1
-                 do c₄, k₉, i₅, j₆ ::
-                   case n <= j₆ || i₅ < m && a[i₅] <= b[j₆] => c₄[k₉ := a[i₅]]
-                   case !(n <= j₆ || i₅ < m && a[i₅] <= b[j₆]) => c₄[
-                     k₉ :=
-                     b[j₆]])
-      && c₁₄ == current(C₁₃)
-      && n₈ == natural(k₁₇)
-      && k₁₇ == m + n
-      ==> sorted(c₁₄, 0, m + n)
-        && (forall x: int ::
-              count(x, selects(c₁₄, ⌊counter(0, 1, natural(m + n))⌋))
-                == count(x, selects(a, ⌊counter(0, 1, natural(m))⌋))
-                  + count(x, selects(b, ⌊counter(0, 1, natural(n))⌋)))
 

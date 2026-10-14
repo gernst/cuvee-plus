@@ -1,0 +1,137 @@
+\section{Nested Loops: the Inner Loop as a Value}\label{sec:nested}
+
+Four nested loops close with the database alone: an inner counter (\texttt{nested\_counter}), its final values
+summed (\texttt{nested\_sum}), a variable incremented by the inner loop (\texttt{nested\_mult}), and the sums of
+the rows of a matrix stored by the outer loop (\texttt{row\_sums}). A fifth, the transpose, needs one lemma
+that states what the two loops together compute. This section shows what the closed form of nested loops of
+Section~\ref{sec:teq} provides and what it leaves to a lemma.
+
+\subsection{The nested sum}
+\begin{lstlisting}
+method main(m: int, n: int) returns (c: int)
+  requires 0 <= m && 0 <= n
+  ensures c == m * n
+{
+  var i: int; var j: int;
+  c := 0; i := 0;
+  while i < m {
+    j := 0;
+    while j < n { j := j + 1; }
+    c := c + j;
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+With $J_7 = \cur(\tr{0}{\bl{\cnt(0, 1, n_7)}}{j, k \mapsto j + 1})$ for the final value of $j$ in an outer
+iteration with $n_7$ inner iterations, the system of the outer loop is
+\begin{align}
+  K &= \cnt(0, 1, n') \qquad c = \cur(C) \qquad i = \cur(I) \nonumber\\
+  C &= \tr{0}{\bl{K}, \seq{N}}{c, k, n_7 \mapsto \upd{\neg(J_7 < n)}{c + J_7}} \label{eq:ns1}\\
+  I &= \tr{0}{\bl{K}, \seq{N}}{i, k, n_7 \mapsto \upd{\neg(J_7 < n)}{i + 1}} \nonumber\\
+  &\mathsf{invs}(\mathsf{for}\ \bl{K}, \bl{C}, \bl{I}, \seq{N}\ \mathsf{check}\ k, c, i, n_7 \mapsto i < m \nonumber\\
+  &\qquad \wedge \al{\bl{\cnt(0, 1, n_7)}, \bl{\tr{0}{\ldots}{\ldots}}}{k', j \mapsto j < n} \wedge \neg(J_7 < n)) \label{eq:ns2}
+\end{align}
+and the exit $\neg(i < m)$. The update has one case, guarded by the exit of the inner loop: the path through the
+body passes the inner loop only once it has stopped. The inner loop occurs as a term in the updates and in the
+constraint; only the numbers $\seq{N}$ of its iterations are fresh.
+
+\paragraph{What the proof needs.} Everything is a lemma on single loops, applied inside the outer combinators:
+\begin{enumerate}[nosep]
+\item The inner trace is a counter (\lemma{counter\_def}), so $J_7 = \intf(n_7)$ (\lemma{current\_counter}).
+  This happens inside the update and inside the constraint alike, since the inner loop is a term like any
+  other.
+\item Inside the constraint \eqref{eq:ns2}, the inner test over the counter becomes $\intf(n_7) \le n$
+  (\lemma{invs\_counter\_upper\_nonnegative}), and with the inner exit $\neg(\intf(n_7) < n)$ the number of
+  inner iterations is determined: $\intf(n_7) = n$ in every outer iteration.
+\item A choice whose values the constraint determines is a constant list (\lemma{consts\_choice}):
+  $\seq{N} = \bl{\mathsf{consts}(n', \natf(n))}$. Its reads in the updates become $\natf(n)$
+  (\lemma{earlier\_consts}), and the guard $\neg(J_7 < n)$ becomes $\mathsf{true}$.
+\item The trace of $c$ adds $n$ in every iteration: it is folded into $\sums$ over a constant list
+  (\lemma{sums}), whose current value is $n \cdot \intf(n')$ (\lemma{current\_sums}, \lemma{sum\_consts}). The
+  outer constraint and exit give $\intf(n') = m$, and the arithmetic substitutes the solution into the
+  polynomial: $c = m \cdot n$.
+\end{enumerate}
+\texttt{nested\_counter} stops after the second step, and \texttt{nested\_mult} differs in the third: the inner
+loop increments the outer variable itself, so its trace is a counter from the previous value $r$, whose final
+value is $r + \intf(n_7)$, and the outer trace of $r$ adds $n$ per iteration as above.
+
+\paragraph{Why the inner loop must be a value.} If the inner loop were described by fresh lists of the outer
+loop, one per inner trace and its final value, each with its own iteration constraint, then the facts about
+one of them (the inner counter is $\cnt(0, 1, n_7)$) would sit in a different combinator than the facts that
+need them (the final value is the current value of that counter), and every substitution between them would
+be a lemma of its own, one per kind of inner loop. As a value of the update, the inner loop is one term, and
+the lemmas on single loops apply to it where it occurs, with the facts of the outer iteration in the context.
+The only thing that cannot be a value is the number of inner iterations, which is what the inner exit
+determines: it stays a choice, and \lemma{consts\_choice} resolves it as soon as the constraint fixes it.
+
+\subsection{The row sums}
+\begin{lstlisting}
+method main(A: array<int, array<int, int>>, m: int, n: int) returns (s: array<int, int>)
+  requires 0 <= m && 0 <= n
+  ensures forall i: int :: 0 <= i < m ==>
+    s[i] == sum(selects(A[i], ⌊counter(0, 1, natural(n))⌋))
+{
+  var i: int; var j: int; var t: int;
+  i := 0;
+  while i < m {
+    t := 0; j := 0;
+    while j < n { t := t + A[i][j]; j := j + 1; }
+    s := s[i := t];
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+The inner loop sums row $i$, the outer loop stores the sum at position $i$. The update of the trace of $s$ is
+\begin{align*}
+  s[i := \cur(\mathsf{trace}(0,\ \mathsf{for}\ &\bl{\cnt(0, 1, n_{10})}, \bl{\tr{0}{\bl{\cnt(0, 1, n_{10})}}{j, k \mapsto j + 1}}\\
+  &\mathsf{do}\ t, k, j \mapsto t + A[i][j]))],
+\end{align*}
+with the inner trace of $j$ among the dependencies of the inner trace of $t$. The numbers of inner iterations
+are resolved to $\natf(n)$ as in the nested sum. Then the database does the rest: the inner trace of $j$ is a
+counter, the reads $A[i][j]$ over it are $\mathsf{selects}(A[i], \bl{\cnt(0, 1, \natf(n))})$ (\lemma{selects}),
+the inner trace of $t$ is a $\sums$ over them, and its current value is their sum (\lemma{current\_sums}). The
+outer trace stores these sums at the positions of a counter (\lemma{stores}), and the read $s[i]$ of the
+postcondition is the stored value at $i$, by \lemma{current\_stores} with the membership and the position of
+$i$ in the counter (\lemma{occurs\_counter\_up}, \lemma{indexof\_counter\_up}): exactly the sum that the
+postcondition states. Nothing in this proof is about nested loops; it is the lemmas of single loops, applied
+in the order in which the terms appear.
+
+\subsection{The transpose: one lemma for the nest}\label{sec:transpose}
+\begin{lstlisting}
+lemma {:rw} current_transpose(B0: array<int, array<int, int>>, A: array<int, array<int, int>>,
+                              m: int, n: int, i: int, j: int)
+  requires 0 <= i < m && 0 <= j < n
+  ensures current(trace(B0, for ⌊counter(0, 1, natural(m))⌋ do B, k ::
+      current(trace(B, for ⌊counter(0, 1, natural(n))⌋ do Bi, ki ::
+        Bi[ki := Bi[ki][k := A[k][ki]]]))))[j][i]
+    == A[i][j]
+
+method main(A: array<int, array<int, int>>, m: int, n: int)
+  returns (B: array<int, array<int, int>>)
+  requires 0 <= m && 0 <= n
+  ensures forall i: int, j: int :: 0 <= i < m && 0 <= j < n ==> B[j][i] == A[i][j]
+{
+  var i: int; var j: int;
+  i := 0;
+  while i < m {
+    j := 0;
+    while j < n { B := B[j := B[j][i := A[i][j]]]; j := j + 1; }
+    i := i + 1;
+  }
+}
+\end{lstlisting}
+The inner loop stores column $i$ of $A$ into row positions of $B$, a store into an array that is itself an
+element of $B$. No lemma of the database describes two-dimensional stores, so the program states one: the left-hand
+side is the nest as the system has it once the numbers of inner iterations are resolved to $\natf(n)$, the outer
+trace whose update is the current value of the inner trace, and the right-hand side the element of the transpose.
+The lemma is a summary of the whole nest in one line, with the side conditions that make the read meaningful.
+The program is otherwise proved by the database, as the row sums: the counters, the choice, and the read of the
+postcondition at $j$, $i$ within the bounds.
+
+\paragraph{What it needs.} The lemma matches because its left-hand side is the term of the goal: an outer trace
+over a counter whose update contains the inner trace as a value. A summary of the inner loop alone would have
+been a rule on $\cur(\tr{B}{\bl{\cnt(0, 1, \natf(n))}}{\ldots})$ with the column as a named function, followed by
+a rule on the outer trace of these columns; the closed form lets one lemma state the result of both, at the
+price of a lemma specific to the nest. The same file in the folder of the algorithms keeps two folds, of the
+columns and of the outer results, and four lemmas written for inner loops described by fresh lists; they do not
+match the closed form, and one goal remains (Section~\ref{sec:open}).

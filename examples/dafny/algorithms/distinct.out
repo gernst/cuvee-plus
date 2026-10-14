@@ -1,81 +1,24 @@
-lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>,
-                              Ns: List<Nat>, Js: List<Trace<int>>,
-                              X: int -> int, c: int)
-  requires invs(for ks, Ks, Ns check k, K, nn :: K == counter(0, 1, nn))
+function nodup(a: array<int, int>, k: int, h: int): bool
+
+lemma {:rw} current_flag_nodup(a: array<int, int>, d: bool, k: int, nn: Nat)
   ensures
-    invs(for ks, Ks, Js
-         check k, K, J ::
-           J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
-      <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
+    current(trace(d, for ⌊counter(0, 1, nn)⌋, ⌊counter(k + 1, 1, nn)⌋
+                  do x, i, j ::
+                    case a[k] == a[j] => false case a[k] != a[j] => x))
+      == (d && nodup(a, k, k + 1 + integer(nn)))
 
-lemma {:rw} invs_current_counter(ks: List<int>, Ns: List<Nat>,
-                                 Js: List<Trace<int>>, js: List<int>,
-                                 X: int -> int, c: int)
-  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
-  ensures
-    invs(for ks, Js, js check k, J, j :: j == current(J))
-      <==> invs(for ks, Ns, js check k, nn, j :: j == X(k) + integer(nn) * c)
-
-function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
-  trace(x0, for ks, bs do x, k, b :: b)
-}
-
-function nodup(a: array<int, int>, k: int, n: int): bool
-
-lemma {:rw} current_results_nodup(a: array<int, int>, n: int, n2: int,
-                                  ks: List<int>, ds: List<bool>,
-                                  Ds: List<Trace<bool>>, Js: List<Trace<int>>,
-                                  Js2: List<Trace<int>>, Ns: List<Nat>,
-                                  js: List<int>)
-  requires invs(for ks, ds, Ds check k, d, D :: d == current(D))
+lemma {:rw} current_distinct_steps(a: array<int, int>, len: int, m: Nat,
+                                   ns: List<Nat>)
   requires
-    invs(for ks, ⌊results(true, ks, ds)⌋, Ds, Js
-         check k, x, D, J ::
-           D
-             == trace(x, for ⌊J⌋
-                      do d, j ::
-                        case a[k] == a[j] => false case a[k] != a[j] => d))
-  requires invs(for ks, Ns, Js check k, nn, J :: J == counter(k + 1, 1, nn))
-  requires invs(for ks, Ns, js check k, nn, j :: j == integer(nn) + k + 1)
-  requires invs(for ks, js check k, j :: n <= j)
-  requires invs(for ks, Js2 check k, J :: invs(for ⌊J⌋ check j :: j < n2))
-  requires Js2 == Js
-  requires n2 == n
+    invs(for ⌊counter(0, 1, m)⌋, ns check k, nn :: len <= integer(nn) + k + 1)
+  requires
+    invs(for ⌊counter(0, 1, m)⌋, ns
+         check k, nn ::
+           nn == zero || k + 1 < len && integer(nn) + k < len)
+  requires len == integer(m)
   ensures
-    current(results(true, ks, ds))
-      == current(trace(true, for ks
-                       do d, k ::
-                         if nodup(a, k, n) then d else false))
-
-lemma {:rw} current_trace_all(ks: List<int>, P: int -> bool)
-  ensures
-    current(trace(true, for ks do d, k :: if P(k) then d else false))
-      == invs(for ks check k :: P(k))
-
-lemma {:rw} distincts_nodup(a: array<int, int>, m: Nat, n: int)
-  requires integer(m) == n
-  ensures
-    invs(for ⌊counter(0, 1, m)⌋ check k :: nodup(a, k, n))
-      <==> distincts(selects(a, ⌊counter(0, 1, m)⌋))
-
-goal
-  forall a: array<int, int>, d₂₁: bool, i₂₂: int, n₁₄: Nat, I₁₇: Trace<int>,
-         D₁₉: Trace<bool>, N?₁₃: List<Nat> ::
-    0 <= i₂₂
-      && I₁₇ == counter(0, 1, n₁₄)
-      && D₁₉
-        == trace(true, for ⌊I₁₇⌋, N?₁₃
-                 do d₄, k₁₅, n₈ ::
-                   current(trace(d₄, for ⌊counter(0, 1, n₈)⌋,
-                                         ⌊counter(k₁₅ + 1, 1, n₈)⌋
-                                 do d₆, k₉, j₇ ::
-                                   case a[k₁₅] == a[j₇] => false
-                                   case a[k₁₅] != a[j₇] => d₆)))
-      && d₂₁ == current(D₁₉)
-      && n₁₄ == natural(i₂₂)
-      && invs(for ⌊I₁₇⌋, N?₁₃
-              check k₁₅, n₈ ::
-                n₈ == zero || k₁₅ + 1 < i₂₂ && integer(n₈) + k₁₅ < i₂₂)
-      && invs(for ⌊I₁₇⌋, N?₁₃ check k₁₅, n₈ :: i₂₂ <= integer(n₈) + k₁₅ + 1)
-      ==> d₂₁ == distincts(selects(a, ⌊counter(0, 1, natural(i₂₂))⌋))
+    current(trace(true, for ⌊counter(0, 1, m)⌋, ns
+                  do d, k, nn ::
+                    d && nodup(a, k, k + 1 + integer(nn))))
+      == distincts(selects(a, ⌊counter(0, 1, natural(len))⌋))
 

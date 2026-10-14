@@ -1,81 +1,91 @@
-\section{Conclusion: Symptoms, an Engine, and the Representation}\label{sec:conclusion}
+\section{Insights}\label{sec:conclusion}
 
-\subsection{The patterns are symptoms}
-Section~\ref{sec:principles} presents the twelve patterns of Table~\ref{tab:principles} as a discipline for
-writing lemmas. Read against their causes, they are a bill for the engine. Nine of the twelve are the matcher
-(specific left-hand sides, fresh variables for closed conditions, the pin, variables named apart), the context
-(open trace variables, the whole atom as left-hand side, arithmetic in the goal's form), or the rewriting
-strategy (side conditions in the forms of the included modules, no condition on the rule's own term, the exit
-of an outer loop as two implications); one is the representation (the fragments of inner loops that do not
-share facts); only the atoms for quantified hypotheses and iteration constraints are partly a design choice,
-what a lemma may take as a fact. The residues of the MonoCera tests sort the same way: the downward stores-ahead
-lemma failed on a literal step and a position computed from a bound variable (Section~\ref{sec:rewnif}),
-\lemma{half\_even} exists for a solution that is not substituted (Section~\ref{sec:pr2}), and a definition lemma
-hid a constraint by rule order. What the examples strained is not the method, lookup of loop shapes in a
-database of lemmas, but the engine that performs the lookup: syntactic matching modulo a fixed list of
-theories, first match without backtracking, a context that follows definitions only where the matcher asks,
-conditions simplified recursively, and normal forms that depend on the order of the rules.
+\subsection{The method is lookup; the difficulty is the engine}
+Verification by lookup states, once, what loops of a shape compute, and finds the loops of a program among the shapes.
+On the MonoCera tests this proves within seconds what inference of quantified array invariants does not find in
+fifteen minutes, and the price is that a loop without a lemma stays open. The examples of this document strained not
+the method but the engine that performs the lookup. Each practice that a lemma writer would otherwise need is a
+symptom of a missing capability of the engine, and the engine of Section~\ref{sec:engine} is organized by the
+symptoms it removes:
+\begin{center}\small
+\begin{tabular}{@{}p{0.31\textwidth}p{0.62\textwidth}@{}}
+\toprule
+capability & what a lemma would need without it \\
+\midrule
+congruence closure as the context & open variables for every trace of the goal, tied by equations; the whole atom of the
+  postcondition as left-hand side, since a variable argument is not expanded; equal counters kept apart \\
+closed conditions looked up & every iteration constraint as a condition restated with fresh lists, identified with the
+  goal's by equations \\
+a decision procedure for linear arithmetic & lemmas for the bounds of a midpoint; conditions stated in the exact form of
+  the goal's facts, since only difference constraints are combined \\
+canonical forms of literals & a higher-order variable pinned to $i - 1$ for every store position, a variable $d = -1$ for
+  every downward step \\
+views of cycles & per-variable equations, each recursive through the others, and every lemma tying the dependency lists
+  back to their traces \\
+patterns over whole cycles, with the constraint in the update & a lemma per pointer, unable to state that the
+  pointers move together \\
+forward facts with triggers & rules on atoms for facts that no atom mentions, and abstractions of constraints that hide
+  them from later rules \\
+suspension of the rule being applied & no condition may mention the left-hand side, so the exit of a loop cannot be
+  stated about its own trace \\
+\bottomrule
+\end{tabular}
+\end{center}
+What remains for the lemma writer is the algorithm's knowledge: what a loop nest computes, which invariant an outer
+loop keeps, and the vocabulary in which the postcondition is stated.
 
-\subsection{Trace equation systems: an interface, not the sole carrier}
-A loop over variables $\bar x$ is, semantically, one fold over the iterations,
-$S = \tr{\bar s_0}{\bl{K}}{\bar s, k \mapsto F(\bar s, k)}$, with the state tuple as the accumulator. A trace
-equation system is this fold decomposed by projection: one equation per variable, with the other components as
-sequences among the dependencies. The decomposition is exact, every projection of a fold over a product is a
-fold over the product's history, and symbolic execution computes it for free. Where the dependencies form a
-layering (a counter, an index over it, an array over both, a sum over the array), the decomposition is the
-compositional reasoning of the method: each equation meets a small lemma of the database and the results are
-substituted downstream, which is why the single loops of this document and the arrays of SV-COMP go through
-with nothing written for the program. A single fold over the state would first have to discover that layering
-before any lemma on a counter or a sum could apply.
+\subsection{The representation: equations per component}
+A loop over variables $\bar x$ is, semantically, one fold over its iterations with the state tuple as the
+accumulator. A system of one equation per variable is this fold decomposed by projection: each equation steps one
+variable, with the others among its dependencies. Where the variables form a layering (a counter, an index over it, an
+array written at the index, a sum over the array), the decomposition is the compositional reasoning of the method: each
+equation meets a small lemma of the database and the result is substituted downstream, which is why single loops and
+the arrays of SV-COMP need nothing written for the program. A single fold over the whole state would first have to
+rediscover that layering before any lemma on a counter or a sum could apply.
 
-Where the graph of dependencies is not a layering, the decomposition is the obstacle, and these are the hard
-examples. Mutually dependent variables, the pointers of the merge, the bounds of the binary search, the position
-and the array of gnome sort, give equations that are individually meaningless, and every lemma reconstructs the
-product by tying the dependency lists back to their traces with open trace variables. Inner loops become fresh
-sequences distributed into fragments over incomparable dependency lists, which is the whole fragments problem of
-Sections~\ref{sec:nsum} and~\ref{sec:sel:frag}. Equal counters that are not identified, the injective selection
-of dependencies, unused dependencies dropped and later missed, and the arity variants of lemmas are bookkeeping
-of dependency lists that a single shared dependency would not have.
+Where the variables read each other, the decomposition is the obstacle: the pointers of a merge, the bounds of a
+binary search, the position and the array of gnome sort give equations that are individually meaningless, each
+recursive through the others. The partition by strongly connected components takes the best of both: a variable in no
+cycle keeps its own equation, where the database's lemmas apply, and a cycle becomes one trace of several
+accumulators, which a lemma may name as a whole. The per-variable view of a component is not lost; it is computed on
+demand, as a projection, when a lemma about a single accumulator needs it. The lemmas keep their form, and the
+engine translates between the representations.
 
-The conclusion we draw is that trace equation systems are the right interface for the lemma database and the
-wrong sole carrier of the goal. The state trace of a loop should be the primary object, with one counter, one
-dependency list $\bl{K}, \bl{S}$, all iteration constraints over it, and the inner loop as a value of the update;
-the per-variable equations are views, $X = \pi_x(S)$ with $\bl{Y} = \mapc{\bl{S}}{\bar s \mapsto \pi_y(\bar s)}$,
-derived by one projection rule whenever the update of a component mentions only some components, which is
-exactly when a lemma of the database can apply to it. The matcher already synthesizes dependencies as maps when
-a pattern dependency is a variable; this is the same mechanism made principal. The lemmas keep their form.
+The same holds for nested loops. An inner loop described by fresh lists of the outer loop, one per inner trace and its
+final value, puts the facts that belong together into different combinators, and every substitution between them is a
+lemma. As a value of the outer update, the inner loop is one term, the lemmas of single loops apply to it, and only the
+number of its iterations is a choice of the outer loop, to be determined by its exit.
 
-\subsection{An engine without the symptoms}
-Five components, from the most local to the most far-reaching, each removing a group of patterns
-(\texttt{ideas/deduction-engine.md} has the details and an order of work):
-\begin{enumerate}[nosep]
-\item \textbf{Congruence closure as the context}, in place of the chains of variable equations and the
-  definitions followed on demand: a pattern variable matches an equivalence class, a definition is followed in
-  every position, both orientations of an equation are available, equal counters are identified, and solutions
-  reach function arguments. This closes \texttt{is\_sorted}, retires \lemma{half\_even} and \lemma{mul\_eq\_cancel},
-  and removes the open trace variables and the whole-atom left-hand sides.
-\item \textbf{Canonical forms before matching}, with closed conditions looked up modulo those forms instead of
-  re-simplified, backtracking over the selection of dependencies, rule variables in their own namespace, and
-  abstraction applied by the engine where a pattern subterm over bound variables fails to match. No fresh
-  variables with identifying equations, no pins, no literal $-1$, no arity variants.
-\item \textbf{Saturation with triggers} in place of the recursive simplification of condition instances:
-  conditional rules fire when their conditions are present, facts about terms that occur are derived forward
-  (the bounds of named monotone traces, the body of an iteration constraint at an index in range, the value of a
-  trace at its exit), and a disjunctive exit is split by the engine when a rule on an atom needs a literal of it.
-  This removes the cycles, the condition on the rule's own term, the atoms for constraints, and the dependence
-  of normal forms on the order of modules; a condition that is a formula to prove, the step of an induction
-  lemma or a pin, is a subgoal with the parent rule suspended.
-\item \textbf{Equality saturation for the terms}, the long-term form of the first three: rules add equal nodes
-  rather than replacing, extraction picks the result, nested e-graphs per combinator body carry the iteration
-  facts.
-\item \textbf{State traces with projections}, as above, which dissolves the fragments problem and makes the
-  lemmas for mutually dependent shapes what their summaries are today after all the tying: a lemma on a fold
-  over a pair with the guard as a higher-order variable.
-\end{enumerate}
-With the first three and the representation, \texttt{is\_sorted} closes by congruence, the nested sums and the
-two minimal problems need no fragment lemmas, the merge, gnome sort and the lower bound take one lemma on a fold
-over a pair, the sorting summaries take the inner fold as one condition instead of seven to twenty-one, the first
-duplicate keeps its equivalence, the existential postcondition of \texttt{max\_element} finds its witness among the
-terms, and the stores-ahead lemma matches downwards as it does upwards. What stays is what the method is for: the
-database of introduction and acceleration rules, the symbolic execution that produces the equations, and the
-summaries and inductions that state what an algorithm's loops compute.
+\subsection{Soundness by totality}
+A lemma that holds for the loops of programs is not yet a lemma: it is applied wherever its term occurs, also to
+traces that no loop produced, e.g.\ a trace past its exit, whose steps are unspecified. The bisection shows the
+failure and the remedy. Stated for a partial update, its bounds derive $\mathsf{false}$; stated for a total definition,
+which keeps the state where the program's step is undefined, they hold for every run and have a proof. The engine
+supports this by matching case lists in one direction: the program's guards are complete in the context of its
+updates, by construction, so a lemma may be total where the program is partial. This turns a premise that every lemma
+with guards would carry, and that no engine checks, into a case of the lemma's definition.
+
+\subsection{What the open examples need}
+\begin{itemize}[nosep]
+\item \emph{Closed conditions looked up modulo unused and repeated dependencies}: the constraints of nested loops carry
+  the counter of the iterations unused, so a summary of a sort must match them with open lists and identify these by
+  equations, which is the bookkeeping that the lookup is meant to remove.
+\item \emph{Views memoized for terms, not only for variables}: a condition that contains a trace is instantiated with
+  fresh bound variables at every evaluation, and its views are recomputed; lemmas about cycles must name the trace by a
+  rule variable and read its components through open variables, and the insertion sorts and the first duplicate,
+  whose constraints contain traces as terms, are blocked by it.
+\item \emph{Normal forms that keep facts}: $\intf(n) = x$ becomes $n = \natf(x)$ only under $0 \le x$, which is then lost;
+  the unconditional form $0 \le x \wedge n = \natf(x)$ keeps it (the reversal).
+\item \emph{Remainders as linear terms over quotients} in the arithmetic, which closes the strided writes of
+  Section~\ref{sec:pr2} without a lemma for one form of an equation.
+\item \emph{A more precise read relation}, taking the guards only for the results that differ between the cases, so that
+  a counter of a guarded body stays outside the cycle of the variables that the guard reads; the partitions have a
+  cycle of three accumulators for that reason, whose views are too expensive.
+\item \emph{Lemma schemas}, with the number of stores, cases or dependencies as a parameter, in place of one lemma per
+  arity.
+\item \emph{Quantified left-hand sides or witnesses} for existential postconditions: the matcher has no case for
+  quantifiers.
+\item \emph{Diagnostics for non-termination}, which report the rule applications that repeat rather than the last one.
+\item \emph{Proofs for the lemmas of programs}: definitions of the abstract predicates and functions of the sorts in
+  Lean, as the database's lemmas have them, so that the summaries and step lemmas are checked rather than trusted.
+\end{itemize}

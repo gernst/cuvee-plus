@@ -558,8 +558,20 @@ Measured on binary search and on the SV-COMP examples
 - The simplex is rebuilt from the constraints of the context at every check that is not cached
   (`Linear.checks`, by the set of constraints); an incremental tableau per context would avoid the rebuilds.
 - Closed conditions with binders are looked up modulo the classes of their closed subterms and the renaming of
-  their bound variables (`Rewrite.known`), not modulo the arithmetic or the unused dependencies of a fact, which
-  the simplification of both sides normalizes in most cases.
+  their bound variables (`Rewrite.known`), not modulo the arithmetic or the unused dependencies of a fact. The
+  instance is simplified before the lookup, which drops its unused dependencies and merges equal ones, while the facts
+  keep theirs: the constraints of nested loops carry the counter of the iterations unused
+  (`invs(for ⌊K⌋, ⌊counter(0, 1, n)⌋, N? check k, i, nn :: ...)`), so the induction of
+  examples/dafny/algorithms/selection_sort.dfy matches them with open lists identified by equations (Oct 14, 2026).
+- A side condition that contains a trace as a term is instantiated with fresh bound variables at every evaluation, so
+  the views of that trace are recomputed and never memoized (the views are memoized by the marker): a lemma about a
+  cycle with `n <= current(trace(...)).0` as a condition did not terminate. Lemmas name the trace by a rule variable
+  with an open equation and read its components by open variables (gnome_sort.dfy, merge.dfy); a closed read
+  `current(Sv).0` is replaced by its view before the lookup and not found. The insertion sorts and first_duplicate,
+  whose constraints contain the inner and outer traces as terms, are blocked by this (doc/array-algorithms, Section
+  on the open algorithms).
+- The matcher has no case for quantifiers: a rule whose left-hand side is `exists k :: ...` never applies, so an
+  existential postcondition needs a witness from elsewhere (examples/dafny/algorithms/max_element.dfy).
 - Only variables have definitions in the matcher (`Context.defs`): a term matched by a member of its class that
   contains it cycles (`a[k]` by `S.2[k] == a[k]`); a class member that does not contain the term would be safe to
   try and is not tried yet.
@@ -583,6 +595,22 @@ Measured on binary search and on the SV-COMP examples
   comma-separated list commits to a further expression after its separator.
 
 ## Trace equation systems (`-teq`)
+
+- The algorithms of examples/dafny/algorithms (Oct 14, 2026): 20 of 30 verified with `-teq -prove`; bubble_sort,
+  selection_sort, gnome_sort, merge and distinct with lemmas for the closed form (summaries of inner loops as plain
+  rules, inductions with the choice of the numbers of inner iterations among the dependencies, rules over whole cycles).
+  Open: the insertion sorts, first_duplicate (traces as terms in conditions, see the deduction engine), max_element
+  (no quantified left-hand sides), partition and three_way_partition (a cycle of three accumulators whose views are too
+  expensive: the file takes 34 s, the rewriting exceeds its budget with the lemmas), reverse (`integer_eq` below),
+  transpose (the version of examples/dafny/state closes), cocktail_sort and counting_sort (step budget); details in
+  doc/array-algorithms.
+- `integer_eq` of teq.dfy rewrites `integer(n) == x` into `n == natural(x)` under `0 <= x`, and the result no longer
+  states `0 <= x`, which is lost when it followed from the equation itself (reverse.dfy needs it for the conditions of
+  its reversal lemma); the unconditional `integer(n) == x <==> 0 <= x && n == natural(x)` keeps it (a change of the
+  database with its Lean proof and expected outputs).
+- The read relation of the partition into components takes the guards of a guarded body for every result, so a
+  counter whose cases are equal (`j + 1` in both) joins the cycle of the variables that the guard reads (the
+  partitions); merging equal cases first, or taking the guards only for the results that differ, would keep it out.
 
 - `-fallback`: the fresh functions that generalize terms of type `Nat` (`Fallback.general`, e.g. `indexof(x, xs)` or
   functions of the input over naturals) are declared over `Int` without the fact that their values are nonnegative,

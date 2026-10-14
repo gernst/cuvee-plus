@@ -2,6 +2,10 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
+\DeclareUnicodeCharacter{230A}{\ensuremath{\lfloor}}
+\DeclareUnicodeCharacter{230B}{\ensuremath{\rfloor}}
+\DeclareUnicodeCharacter{03C6}{\ensuremath{\varphi}}
+\DeclareUnicodeCharacter{2192}{\ensuremath{\to}}
 \usepackage[margin=2.2cm]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{listings}
@@ -11,11 +15,10 @@
 \usepackage{hyperref}
 \hypersetup{colorlinks,linkcolor=black,urlcolor=blue!50!black}
 
-% notation of the TEQ paper
-\newcommand{\bl}[1]{\lfloor #1\rfloor}                       % butlast
+\newcommand{\bl}[1]{\lfloor #1\rfloor}                       % the history of a trace
 \newcommand{\tr}[3]{\mathsf{trace}(#1,\ \mathsf{for}\ #2\ \mathsf{do}\ #3)}
-\newcommand{\mapc}[2]{\mathsf{map}(\mathsf{for}\ #1\ \mathsf{yield}\ #2)}
-\newcommand{\al}[2]{\mathsf{all}(\mathsf{for}\ #1\ \mathsf{check}\ #2)}
+\newcommand{\mapc}[2]{\mathsf{maps}(\mathsf{for}\ #1\ \mathsf{yield}\ #2)}
+\newcommand{\al}[2]{\mathsf{invs}(\mathsf{for}\ #1\ \mathsf{check}\ #2)}
 \newcommand{\cnt}{\mathsf{counter}}
 \newcommand{\cur}{\mathsf{current}}
 \newcommand{\intf}{\mathsf{integer}}
@@ -23,22 +26,23 @@
 \newcommand{\sums}{\mathsf{sums}}
 \newcommand{\sorted}{\mathsf{sorted}}
 \newcommand{\perm}{\mathsf{perm}}
-\newcommand{\partitioned}{\mathsf{partitioned}}
 \newcommand{\argmin}{\mathsf{argmin}}
 \newcommand{\swap}[3]{\mathsf{swap}(#1, #2, #3)}
 \newcommand{\ite}[3]{\mathsf{if}\ #1\ \mathsf{then}\ #2\ \mathsf{else}\ #3}
 \newcommand{\upd}[2]{\mathsf{case}\ #1 \Rightarrow #2}
-\newcommand{\lemma}[1]{\textsf{#1}}
-\newcommand{\seq}[1]{\hat{#1}}                               % the fresh sequences of inner loops
+\newcommand{\lemma}[1]{{\renewcommand{\_}{\textunderscore\allowbreak}\textsf{#1}}}
+\newcommand{\seq}[1]{\hat{#1}}                               % a choice: a list of the outer loop that nothing defines
 
 \lstdefinelanguage{dafny}{
-  morekeywords={method,returns,requires,ensures,var,while,if,else,function,lemma,forall,int,bool,array},
+  morekeywords={method,returns,requires,ensures,var,while,if,else,function,lemma,forall,exists,int,bool,array,
+    trace,for,do,yield,check,case,match,current,maps,invs},
   sensitive=true, morecomment=[l]{//}, morestring=[b]",
 }
 \lstset{language=dafny,basicstyle=\ttfamily\footnotesize,keywordstyle=\bfseries,commentstyle=\itshape\color{black!60},
-  columns=fullflexible,keepspaces=true,xleftmargin=1.5em}
+  columns=fullflexible,keepspaces=true,xleftmargin=1.5em,extendedchars=true,
+  literate={⌊}{{$\lfloor$}}1 {⌋}{{$\rfloor$}}1 {→}{{$\to$}}1}
 
-\title{Trace Equation Systems for Array Algorithms:\\ Worked Examples}
+\title{Array Algorithms by Lemma Lookup:\\ Worked Examples with Trace Equation Systems}
 \author{Gidon Ernst\\[2pt] \small LMU Munich, Germany\\ \small\texttt{gidon.ernst@gmail.com}}
 \date{October 2026}
 
@@ -46,60 +50,75 @@
 \begin{document}
 \maketitle
 
-\noindent
-These notes document the examples of the folder \texttt{examples/dafny/algorithms} of Cuvée in the style of the
-paper \emph{Trace Equation Systems for Program Verification}: for each program we show the trace
-equation system that Cuvée generates (\texttt{-teq}), the lemmas that the simplifier applies
-(\texttt{-simplify}), how they are instantiated, and the conceptual idea behind them. All lemmas are
-stated in the Dafny dialect of Cuvée at the beginning of the respective file; the lemma database (the
-modules of \texttt{resources/cuvee/teq}) is injected by \texttt{-teq}, and the module of the fragments of
-inner loops by \texttt{-include teq:nested} where a file uses it. We write $\bl{X}$ for \texttt{butlast(X)}, the trace $X$
-without its last element, $\cur(X)$ for its last element, and $\cnt(i, c, n)$ for the counter
-$\langle i, i + c, \ldots, i + n c\rangle$ of $n$ steps. The sections are ordered by the complexity of the proof, from a
-single loop with two lemmas to loops in sequence and nested loops with summaries and inductions;
-Section~\ref{sec:lb} documents an attempt that is open. Sections~\ref{sec:monocera} to~\ref{sec:ifeqn2}
-re-trace the proofs of some of the C programs of the MonoCera benchmarks with the database alone, and
-Section~\ref{sec:principles} collects the principles that the examples share, and Section~\ref{sec:conclusion}
-reads them as symptoms of the engine and draws the conclusion for the representation. Capital letters $K, I, B, M$ denote traces,
-hatted letters $\seq{M}, \seq{J}, \seq{N}$ the fresh \emph{sequences} that the summary of an inner loop
-introduces, one entry per iteration of the outer loop. $\swap{x}{p}{q}$ abbreviates the double store
-$x[p := x[q]][q := x[p]]$, which is how the swaps appear in the trace equations.
+\begin{abstract}
+A loop can be verified without an invariant if its effect is a known shape: a counter, a sum, a sequence of stores, a
+bisection of an interval. These notes show what it takes to verify array programs this way. Loops are described by
+equations over the traces of their variables; a database of lemmas states what loops of known shapes compute; and an
+engine rewrites the goal with the lemmas until it is proved. On worked examples, from a linear search to binary search,
+nested loops and the C programs of the MonoCera benchmarks, we show which lemmas each proof needs, which capabilities of
+the engine it relies on, and, for the programs that are not proved, what is missing. The examples are part of the
+verifier Cuvée (\texttt{examples/dafny}, \texttt{benchmarks/monocera}), and every result reported here was rerun.
+\end{abstract}
 
+\section{Introduction}
+Proving a loop correct usually means finding an invariant. Many loops in practice need none: they count, sum, copy,
+fill, or search, and what they compute after $n$ iterations has a closed form that a lemma can state once. Verification
+by lookup exploits this. Symbolic execution describes each loop by equations over the sequences of values its variables
+take, the \emph{traces}; a database of lemmas rewrites traces of known shapes into their closed forms; and the
+postcondition, once the traces are gone, is a formula that the engine decides. Nothing is inferred. A loop whose shape
+has a lemma is proved within seconds; a loop without one stays open, and the goal that remains says which lemma is
+missing.
+
+Three things must work together for this, and the examples of this document test each of them:
+\begin{itemize}[nosep]
+\item \textbf{the representation} must expose the shapes: a counter must look like a counter, also when its variable
+  is read by others, and an inner loop must be a term to which the lemmas of single loops apply
+  (Section~\ref{sec:teq});
+\item \textbf{the engine} must find the shapes in the goal although the goal names traces by variables, splits facts
+  over many hypotheses, and states arithmetic in its own normal form (Section~\ref{sec:engine});
+\item \textbf{the database} must contain the shapes, and its lemmas must be true for every term they match, not only
+  for the loops they were written for (Sections~\ref{sec:engine:db} and~\ref{sec:bisect}).
+\end{itemize}
+The worked examples come in order of what they need. The linear search (Section~\ref{sec:lsearch}) needs an iteration
+constraint named and instantiated at a position. Nested loops (Section~\ref{sec:nested}) need nothing beyond the
+lemmas of single loops, because an inner loop is a value of the outer update; the transpose needs one lemma for the
+nest. Binary search (Section~\ref{sec:bisect}) needs a lemma over the whole loop, whose two variables are meaningless
+apart, and shows why such a lemma must be total to be sound. The C programs of the MonoCera benchmarks
+(Section~\ref{sec:monocera}) need the database alone. Selection sort, bubble sort, gnome sort, the merge and the
+distinctness check (Section~\ref{sec:sorts}) need a summary of what their loops compute and an induction or an
+invariant of the whole cycle, stated for the closed form. The programs that are not proved are discussed with what
+each needs (Section~\ref{sec:open}). Section~\ref{sec:principles} collects the principles of
+writing lemmas for lookup, and Section~\ref{sec:conclusion} the insights into the representation, the engine and
+soundness.
+
+\paragraph{Notation.} Programs and lemmas are in the Dafny dialect of Cuvée, where arrays are total maps
+$\mathsf{array}\langle\mathsf{int},\mathsf{int}\rangle$ and $a[i := v]$ is a store. We write $\bl{X}$ for the history of a
+trace $X$, the list of its values before the last, $\cur(X)$ for its last value, and $\cnt(i, c, n)$ for the counter
+$\langle i, i + c, \ldots, i + nc\rangle$ of $n$ steps. $\swap{x}{p}{q}$ abbreviates the double store
+$x[p := x[q]][q := x[p]]$. Capital letters $K, I, S$ denote traces, and hatted letters $\seq{N}$ choices, lists of an outer
+loop that nothing defines, such as the numbers of iterations of an inner loop. Each example is run by the command line
+in the first line of its file, \texttt{-teq} to generate the trace equation system and \texttt{-prove} to prove it, with
+the modules of the database that the file names.
+
+\input{teq}
+\input{engine}
 \input{lsearch}
-\input{nested_sum}
-\input{row_sums}
-\input{selection_sort}
-\input{bubble_sort}
-\input{cocktail_sort}
-\input{merge}
-\input{gnome_sort}
-\input{counting_sort}
-\input{first_duplicate}
-\input{lower_bound}
+\input{nested}
+\input{bisection}
+\input{sorts}
 \input{monocera}
-\input{monocera_brs2}
-\input{monocera_conda}
-\input{monocera_pr2}
-\input{monocera_rewnif}
-\input{monocera_ifeqn2}
+\input{open}
 \input{principles}
 \input{conclusion}
 
 \section*{AI Declaration}
 
-The theory of trace equation systems, their generation from loops, the rewriting strategy and the matching
-of traces are the work of the author and his coauthors in \emph{Trace Equation Systems for Program
-Verification}; the implementation in Cuvée is described in the competition contribution of Cuvée to
-SV-COMP~2027 (\texttt{doc/paper}), with its own declaration. The examples of \texttt{examples/dafny/algorithms},
-their specifications and lemmas, the modules \texttt{nested} and \texttt{sorting} of the lemma database, the
-findings of \texttt{NOTES.md}, the experiments kept in \texttt{pending/}, the lemmas for the MonoCera tests and
-this document were produced by coding agents (Claude Code with Claude Opus; the restructuring of the document,
-Sections~\ref{sec:monocera} and~\ref{sec:principles} with Claude Fable~5.1) between October 9 and 12, 2026,
-under the direction of the author, who chose the problems, set the rules of the work (no changes to the
-engine, no unfolding of trace combinators in lemmas for programs, every result checked on a wrong
-postcondition, runs with their exit status), decided the open questions, and reviewed the results. The runs
-reported here were made by the agents with the tool; the lemmas of the examples are axioms that no proof
-checks (Section~\ref{sec:principles:sound}), and the text should be read as the agents' account of the
-experiments, reviewed by the author.
+The examples of \texttt{examples/dafny/algorithms} and \texttt{examples/dafny/state}, their specifications and lemmas,
+the lemmas for the MonoCera tests, the reruns reported here and this document were produced by coding agents (Claude
+Code with Claude Opus) between October 9 and 14, 2026, under the direction of the author, who chose the problems, set the
+rules of the work (no unfolding of trace combinators in lemmas for programs, every result checked on a wrong
+postcondition, runs read with their exit status), decided the open questions, and reviewed the results. The lemmas of
+the programs are axioms that no proof checks (Section~\ref{sec:principles:sound}), and the text should be read as the
+agents' account of the experiments, reviewed by the author.
 
 \end{document}
