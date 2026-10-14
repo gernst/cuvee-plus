@@ -97,7 +97,13 @@ Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose ar
 | Cuvée `-teq -unbounded` (0.41.4) | 234 | 0 |
 | Cuvée+Z3 `-unbounded` (0.42.2) | 290 | 0 |
 | Korn `-u` (Oct 11, 2026) | 175 | 0 |
+| Cuvée `-teq -unbounded` (0.46.13, i7-6700) | 263 | 0 |
+| Cuvée+Z3 `-unbounded` (0.46.13, i7-6700) | 299 | 0 |
+| Cuvée (CHC) `-unbounded` (0.46.13, i7-6700) | 144 | 0 |
 
+- Rerun on Oct 14, 2026 with 0.46.13 after the migration of the lemma database (15 min, i7-6700): Cuvée 234 to
+  263, Cuvée+Z3 290 to 299, and Horn clauses (`-chc -z3`, new in this table) 144, no wrong results; the Horn
+  clauses prove fewer than Korn, also a Horn-based tool, and far fewer than TEQ.
 - Cuvée+Z3 against 0.41.4: the three wrong refutations through `bitand` are proved now, as are
   `nla-digbench/fermat1-ll` and `sqrt1-ll` (an error before); `nla-digbench/lcm1` times out (99 s before),
   possibly a proof that relied on the overlapping exits (to check).
