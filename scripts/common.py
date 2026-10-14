@@ -270,6 +270,7 @@ STYLES = {
     "cpachecker": ("#7f7f7f", "*"),
     "korn": ("#000000", "h"),
     "monocera": ("#ff9896", "p"),
+    "tricera": ("#c49c94", "H"),
 }
 
 

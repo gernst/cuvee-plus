@@ -80,6 +80,7 @@ LABELS = {
     "cuvee-fallback": "Cuvée+Z3",
     "cuvee-chc": "Cuvée (CHC)",
     "monocera": "MonoCera",
+    "tricera": "TriCera",
     "cuvee-acsl": "Cuvée -vcgen (ACSL)",
 }
 
@@ -348,7 +349,8 @@ wrong.
 The 481 C programs of \texttt{benchmarks/sv-comp/c}, printed from the Dafny translations of tasks of
 ReachSafety-Arrays and -Loops with symbolic loop bounds, all expected true. Cuvée with \texttt{-unbounded},
 Korn with \texttt{-u} (no ranges for nondeterministic values), without fuzzing, which runs the program on machine
-integers, and with the confirmation of counterexamples.
+integers, and with the confirmation of counterexamples; TriCera of the MonoCera artifact with its default
+mathematical integers, which also checks memory safety (the arrays of the programs are sized for it).
 \begin{center}\footnotesize
 \fit{\input{unbounded.tex}}
 <unbounded-note>
@@ -436,6 +438,7 @@ def main():
         ("cuvee-fallback", "here", gather("cuvee-fallback", ["Unbounded"], unbounded)),
         ("cuvee-chc", "here", gather("cuvee-chc", ["Unbounded"], unbounded)),
         ("korn", "here", gather("korn", ["Unbounded"], Need(("-u",)))),
+        ("tricera", "here", gather("tricera", ["Unbounded"], Need())),
     ])
     (out / "unbounded.tex").write_text(grid(spec4, ["Unbounded"]))
     replacements["unbounded"] = (note(pending(spec4, ["Unbounded"])), legend(spec4))
