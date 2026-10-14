@@ -40,6 +40,10 @@ double); speed only where a task times out that would succeed.
 - [x] Counterexamples without a solver (`Prove.counterexample`, 0.46.13) and `integer_zero`: of the 80 tasks of
       array-fpi that 0.46.8 left unknown at 60 s, 38 unsafe ones are refuted and 7 safe ones proved locally (120 s),
       no wrong verdict; while_infinite_loop_4 refuted. Cloud run pending (the cloud is busy with the 15 min runs).
+- [ ] Counterexamples with concrete evaluation (expected false, 1 point each): 30 unsafe array-fpi tasks remain,
+      e.g. brs2f leaves `sum(map(⌊counter(0, 1, n)⌋, k :: if 0 < k then (if k % 2 == 0 then 20 else 0) else 0)) <=
+      2 N`, false at N = 3, which needs `sum`, `map`, `counter` evaluated for a literal n (an evaluator for closed
+      instances, not rules).
 - [ ] The tasks lost against 0.42.1: in-de52 to in-de62 (try with the case splits), sum_by_3_abstracted (open with
       the case splits), sum_array-2-2, indp5, revcpyswp2 (time outs at 60 s), while_infinite_loop_4.
 - [ ] array-programs partial_mod_count_* (true): conditional stores `case P(k) => a[k := 0] case !P(k) => a[k := k

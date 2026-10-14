@@ -52,8 +52,8 @@ the variables take in the iterations. A database of lemmas, most of them proved 
 Goals that remain after rewriting are encoded in first-order logic and passed to Z3.
 \cuvee{} does not search for counterexamples: it reports a violation only when rewriting refutes a goal.
 It proves 112 safe tasks of ReachSafety-Arrays that none of five SV-COMP~2026 participants
-reports as true in the official results, and without the fallback to Z3 it reports no wrong
-results.
+reports as true in the official results, and it reports no wrong results, also with the fallback to
+Z3.
 
 \emph{Note:} This paper was generated with AI; see the AI Declaration. Its purpose is only to preview
 the tool for the competition.
@@ -203,18 +203,18 @@ follows the SV-COMP scheme ($+2$ / $+1$ for correct true / false, $-32$ / $-16$ 
 & \cuvee{} & \cuvee{}+Z3 & Symbiotic & AISE & UAutom. & CPAchecker & Korn \\
 \midrule
 \multicolumn{8}{l}{\emph{ReachSafety-Arrays}} \\
-\quad correct true  & 131 & \textbf{141} & 68 & -- & 11 & 4 & 34 \\
-\quad correct false & 9 & 45 & 79 & -- & 67 & 51 & \textbf{84} \\
-\quad wrong & 0 & 1 & 0 & -- & 0 & 0 & 0 \\
+\quad correct true  & 132 & \textbf{142} & 68 & -- & 11 & 4 & 34 \\
+\quad correct false & 9 & 42 & 79 & -- & 67 & 51 & \textbf{84} \\
+\quad wrong & 0 & 0 & 0 & -- & 0 & 0 & 0 \\
 \quad unique true & \multicolumn{2}{c}{112} & & & & & \\
-\quad score & 271 & \textbf{311} & 215 & -- & 89 & 59 & 152 \\
+\quad score & 273 & \textbf{326} & 215 & -- & 89 & 59 & 152 \\
 \midrule
 \multicolumn{8}{l}{\emph{ReachSafety-Loops}} \\
-\quad correct true  & 126 & 280 & 364 & \textbf{405} & 365 & 338 & 294 \\
-\quad correct false & 16 & 28 & 156 & 172 & 122 & 133 & \textbf{174} \\
-\quad wrong & 0 & 8 & 0 & 0 & 0 & 1 & 1 \\
-\quad unique true & \multicolumn{2}{c}{3} & & & & & \\
-\quad score & 268 & 348 & 884 & \textbf{982} & 852 & 793 & 730 \\
+\quad correct true  & 149 & 230 & 364 & \textbf{405} & 365 & 338 & 294 \\
+\quad correct false & 16 & 20 & 156 & 172 & 122 & 133 & \textbf{174} \\
+\quad wrong & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
+\quad unique true & \multicolumn{2}{c}{5} & & & & & \\
+\quad score & 314 & 480 & 884 & \textbf{982} & 852 & 793 & 730 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -222,21 +222,21 @@ follows the SV-COMP scheme ($+2$ / $+1$ for correct true / false, $-32$ / $-16$ 
 \paragraph{Strengths.}
 \begin{itemize}
 \item \emph{Arrays of unbounded size.} \cuvee{} proves more safe tasks of ReachSafety-Arrays than any other
-  tool in the table: 141 with Z3 and 131 without, compared with 68 for the next tool. Of these, 112 are not
+  tool in the table: 142 with Z3 and 132 without, compared with 68 for the next tool. Of these, 112 are not
   reported as true by any of the other tools. Most of them are in \code{array-fpi} (50), \code{array-examples}
   (28), and \code{array-crafted} (18), whose loops fill arrays with values that depend on the position or
   on earlier values, and whose sizes are symbolic. With \cuvee{}, the tools prove 197 of the
   314 safe tasks, instead of 85. The summaries do not depend on the number of iterations, so large or
   symbolic bounds do not matter.
-\item \emph{Few wrong results.} Without the fallback, \cuvee{} reports no wrong result on all 1191 tasks.
+\item \emph{No wrong results.} \cuvee{} reports no wrong result on all 1191 tasks, with or without the
+  fallback.
   Most lemmas are proved in Lean~4, so the trusted base is mainly the translation into
-  \acp{TEQ}, the simplifier, the matcher, and the lemmas without a proof. The only wrong results,
-  9 of the fallback, are discussed below.
+  \acp{TEQ}, the deduction engine, and the lemmas without a proof.
 \item \emph{Explanations.} With \code{-rules}, \cuvee{} reports the lemmas that each proof uses, and
   a residual goal points to the lemma that is missing.
 \item \emph{Incremental.} Rewriting also simplifies goals that it does not close. The remaining goals are
-  small enough for Z3: the fallback adds 154 proofs in Loops, 122 of them in the nonlinear tasks of
-  \code{nla-digbench} and its scaled variants, where the simplifier eliminates the loops and Z3 solves the
+  small enough for Z3: the fallback adds 83 proofs in Loops, 63 of them in the nonlinear tasks of
+  \code{nla-digbench} and its scaled variants, where rewriting eliminates the loops and Z3 solves the
   remaining arithmetic.
 \end{itemize}
 
@@ -245,29 +245,23 @@ follows the SV-COMP scheme ($+2$ / $+1$ for correct true / false, $-32$ / $-16$ 
 \item \emph{Few violations.} \cuvee{} does not search for counterexamples. It reports \emph{false} only
   if rewriting refutes a goal, without an abstraction on the way; a model of Z3 for a lowered goal is no
   counterexample, since the lowering generalizes. Thus it reports only 25 of the 322 unsafe tasks of both
-  categories, and 73 with Z3. Nor does it produce witnesses yet. In the official scoring, its proofs
+  categories, and 62 with Z3. Nor does it produce witnesses yet. In the official scoring, its proofs
   would therefore count as unconfirmed.
-\item \emph{Wrong results of the fallback.} The 7 wrong proofs are the variants of
-  \code{nla-digbench-scaling/fermat1-ll\_unwindbound}, whose shared counter exits an outer loop and
-  its two inner loops early; presumably the lowering for Z3 loses a constraint of these exits. The 2 wrong
-  violations are due to a bug: functions that \code{main} calls only in a certain context were also
-  checked for arbitrary arguments. \cuvee{} now checks the entry point \code{main} only, with the
-  other functions inlined at their calls.
 \item \emph{Machine integers.} Signed integers are mathematical integers, since their overflow is
   undefined behavior, which the tasks are meant to avoid. The wrap-around of unsigned integers is
   modeled by remainders modulo $2^k$, which make goals harder to close.
 \item \emph{Coverage of the database.} A loop is summarized only if the database has a lemma for its shape.
   Loops whose summary needs only partial facts, such as bounds, minima, or maxima under conditional
   updates, are often not closed. In Loops, many tasks need nonlinear invariants, such as
-  \code{nla-digbench}, or their loops are state machines. Here \cuvee{} without Z3 proves only 126 tasks,
+  \code{nla-digbench}, or their loops are state machines. Here \cuvee{} without Z3 proves only 149 tasks,
   while the other tools prove 294 to 405. Each lemma fixes the shape of its left-hand side, so a loop that
   writes $s$ cells under $s$ independent conditions requires a lemma for each $s$. Rewriting may also
-  diverge: 58 tasks end with \emph{rewriting does not terminate}.
+  diverge: 193 tasks end with \emph{rewriting does not terminate}.
 \item \emph{Frontend.} \cuvee{} rejects floating-point numbers (29 tasks), \code{goto} into code that
   falls through (26), and fails to parse 37 tasks, mostly because of structs. Bitwise operations are uninterpreted functions, except shifts by constants.
 \item \emph{Limits of the fallback.} The first-order encoding does not cover every goal, e.g., when a goal
   has sequences that are not bound by a quantifier (8 tasks) or lists nested more than twice (8). More
-  often, Z3 does not answer in time: the fallback times out on 335 tasks, against 17 without it.
+  often, Z3 does not answer in time: the fallback times out on 281 tasks, against 11 without it.
 \item \emph{Speed.} The median CPU time of a proof on Arrays is 20\,s, with or without Z3, compared with
   4\,s for Symbiotic in SV-COMP. Even a trivial program takes about 7\,s of CPU time, for the start of the
   JVM and the loading of the lemma database.

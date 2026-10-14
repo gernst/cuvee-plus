@@ -21,6 +21,9 @@ import common
 from table import pdflatex
 
 TEQ = common.SCRIPTS.parent / "resources" / "cuvee" / "teq.dfy"
+# the migrated modules of the database that the benchmark definitions include (-include teq:<module>), not nested
+MODULES = ["aggregation", "arithmetic", "arrays", "counters", "search", "sorted", "strides", "unsigned"]
+DATABASE = [TEQ] + [TEQ.parent / "teq" / f"{name}.dfy" for name in MODULES]
 
 # the document of the statistics, compiled to rules.pdf, with the table rules-table.tex: the table of the rules and the unused lemmas
 DOCUMENT = r"""\documentclass[a4paper]{article}
@@ -53,7 +56,7 @@ count as well. <proved>
 }
 
 \section*{Unused lemmas of \texttt{teq.dfy}}
-<unused> of the <lemmas> lemmas of \texttt{teq.dfy} are used by no proved task:
+<unused> of the <lemmas> lemmas of \texttt{teq.dfy} and its modules are used by no proved task:
 {\footnotesize\raggedright <list>\par}
 \end{document}
 """
@@ -104,9 +107,9 @@ def counts(log: str) -> collections.Counter:
     return used
 
 
-def lemmas(path: Path = TEQ) -> list[str]:
-    """The names of the lemmas of teq.dfy, in their order."""
-    text = path.read_text() if path.is_file() else ""
+def lemmas(paths: list[Path] = DATABASE) -> list[str]:
+    """The names of the lemmas of teq.dfy and its migrated modules, in their order."""
+    text = "".join(path.read_text() for path in paths if path.is_file())
     return re.findall(r"^lemma\s+(?:\{:[^}]*\}\s*)*(\w+)", text, re.M)
 
 
@@ -222,7 +225,7 @@ def main():
 
     for tool in collected:
         print(f"{labels[tool]}: {sum(proved[k] for k in proved if k[0] == tool)} proved tasks, {len(totals[tool])} rules used")
-    print(f"{len(unused)} of {len(lemmas())} lemmas of teq.dfy unused")
+    print(f"{len(unused)} of {len(lemmas())} lemmas of teq.dfy and its modules unused")
     print(args.output / "rules.csv")
     print(args.output / "rules-table.tex")
     print(args.output / "rules-frequency.pdf")
