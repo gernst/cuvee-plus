@@ -24,10 +24,10 @@ void main(void) {
   int v = __VERIFIER_nondet_int();
   _Bool w = __VERIFIER_nondet_bool();
   assume_abort_if_not(0 <= N && N <= 268435455);
+  assume_abort_if_not(0 < N);
   _Bool s[N];
   int n[N];
   _Bool p[N];
-  assume_abort_if_not(0 < N);
   i = 0;
   while (i < N) {
     q = __VERIFIER_nondet_int();

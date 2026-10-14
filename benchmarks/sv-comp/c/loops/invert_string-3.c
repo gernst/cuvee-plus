@@ -26,8 +26,7 @@ int main(void) {
   i = 0;
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && max <= N && max - 1 < N && N <= 268435455);
-  int str1[N];
-  int str2[N];
+  int str1[N], str2[N];
   while (i < max) {
     tmp_1 = __VERIFIER_nondet_int();
     str1[i] = tmp_1;

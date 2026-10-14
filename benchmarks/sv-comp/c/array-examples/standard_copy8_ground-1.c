@@ -24,16 +24,8 @@ int main(void) {
   int i = __VERIFIER_nondet_int();
   int x = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 33554431);
-  int a1[N];
-  int a2[N];
-  int a3[N];
-  int a4[N];
-  int a5[N];
-  int a6[N];
-  int a7[N];
-  int a8[N];
-  int a9[N];
   assume_abort_if_not(0 < N);
+  int a1[N], a2[N], a3[N], a4[N], a5[N], a6[N], a7[N], a8[N], a9[N];
   a = 0;
   while (a < N) {
     tmp_1 = __VERIFIER_nondet_int();

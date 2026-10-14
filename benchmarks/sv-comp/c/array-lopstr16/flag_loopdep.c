@@ -21,8 +21,8 @@ void main(void) {
   int i = __VERIFIER_nondet_int();
   int flag = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 2147483647);
-  _Bool a[N];
   assume_abort_if_not(0 < N);
+  _Bool a[N];
   flag = 0;
   i = 0;
   while (i < N) {

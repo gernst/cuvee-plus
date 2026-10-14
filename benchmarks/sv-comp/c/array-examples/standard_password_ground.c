@@ -23,9 +23,8 @@ void main(void) {
   int v = __VERIFIER_nondet_int();
   int result = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 268435455);
-  int password[N];
-  int guess[N];
   assume_abort_if_not(0 < N);
+  int password[N], guess[N];
   result = 1;
   i = 0;
   while (i < N) {

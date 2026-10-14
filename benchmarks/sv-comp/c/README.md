@@ -86,6 +86,13 @@ python3 benchmarks/sv-comp/c/sizes.py
    around the address space and overlap, which other verifiers report as
    reachable errors.
 
+On Oct 14, 2026, for TriCera, which checks memory safety and runs on the unbounded set with mathematical
+integers (`xml/tricera.xml`): in 125 programs the assumption `0 < N` that followed the declarations of the arrays
+moved in front of them (a variable-length array of size 0 is undefined in C), and in 122 programs consecutive
+declarations of arrays of the same type are one declaration (`int a[N], b[N];`), since the TriCera of the MonoCera
+artifact allocates separately declared arrays at the same address (`int a[10]; int b[10];` aliases, `int a[10],
+b[10];` does not), which made it report safe programs unsafe. Both changes keep the semantics.
+
 Before nondet.py and sizes.py, other verifiers found 72 tasks false whose
 expected verdict is true, mostly because the concrete bounds of the originals
 are needed after all: see [false-verdicts.md](false-verdicts.md). Besides

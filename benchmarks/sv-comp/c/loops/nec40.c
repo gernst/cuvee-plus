@@ -23,8 +23,7 @@ int main(void) {
   int k = __VERIFIER_nondet_int();
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && 0 < N && N <= 268435455);
-  int x[N];
-  int y[N];
+  int x[N], y[N];
   x[0] = 0;
   k = __VERIFIER_nondet_int();
   i = 0;

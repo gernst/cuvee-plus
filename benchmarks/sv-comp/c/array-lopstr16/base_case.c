@@ -21,9 +21,9 @@ void main(void) {
   int i = __VERIFIER_nondet_int();
   int x = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 268435455);
+  assume_abort_if_not(0 < N);
   int n[N];
   _Bool p[N];
-  assume_abort_if_not(0 < N);
   i = 0;
   while (i < N) {
     x = __VERIFIER_nondet_int();

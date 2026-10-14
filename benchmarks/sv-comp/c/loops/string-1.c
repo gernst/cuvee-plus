@@ -27,9 +27,8 @@ int main(void) {
   int nc_B = __VERIFIER_nondet_int();
   int found = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 268435455);
-  int string_A[N];
-  int string_B[N];
   assume_abort_if_not(0 < N);
+  int string_A[N], string_B[N];
   found = 0;
   i = 0;
   while (i < N) {

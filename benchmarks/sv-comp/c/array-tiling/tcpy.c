@@ -25,8 +25,7 @@ int main(void) {
   SIZE = __VERIFIER_nondet_int();
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && SIZE <= N && SIZE / 2 <= N && N <= 268435455);
-  int a[N];
-  int acopy[N];
+  int a[N], acopy[N];
   if (SIZE > 1) {
     i = 0;
     while (i < SIZE) {

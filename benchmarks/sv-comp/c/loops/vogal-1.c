@@ -28,9 +28,8 @@ int main(void) {
   int n_caracter = __VERIFIER_nondet_int();
   int cont_aux = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 268435455);
-  int input_string[N];
-  int vogal_array[N];
   assume_abort_if_not(0 < N);
+  int input_string[N], vogal_array[N];
   i = 0;
   while (i < N / 2) {
     tmp_2 = __VERIFIER_nondet_int();

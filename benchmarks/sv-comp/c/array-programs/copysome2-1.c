@@ -23,10 +23,8 @@ void main(void) {
   int z = __VERIFIER_nondet_int();
   int v = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 134217727);
-  int a1[N];
-  int a2[N];
-  int a3[N];
   assume_abort_if_not(0 < N);
+  int a1[N], a2[N], a3[N];
   z = 150000;
   i = 0;
   while (i < N) {

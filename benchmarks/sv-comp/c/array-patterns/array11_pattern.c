@@ -36,8 +36,7 @@ int main(void) {
   count = 0;
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && ARR_SIZE <= N && N <= 268435455);
-  int array1[N];
-  int array2[N];
+  int array1[N], array2[N];
   while (count < ARR_SIZE) {
     array1[count] = 0;
     array2[count] = 0;

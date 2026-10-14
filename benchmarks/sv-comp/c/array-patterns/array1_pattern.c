@@ -25,8 +25,7 @@ void main(void) {
   int sum = __VERIFIER_nondet_int();
   N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 268435455);
-  int array1[N];
-  int array2[N];
+  int array1[N], array2[N];
   assume_abort_if_not(N > 0);
   num = -1;
   sum = 0;

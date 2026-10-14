@@ -22,10 +22,8 @@ void main(void) {
   int sum = __VERIFIER_nondet_int();
   N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 134217727);
-  int a[N];
-  int b[N];
-  int c[N];
   assume_abort_if_not(0 < N);
+  int a[N], b[N], c[N];
   sum = 0;
   i = 0;
   while (i < N) {

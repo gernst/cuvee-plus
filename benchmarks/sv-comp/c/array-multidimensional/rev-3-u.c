@@ -30,8 +30,7 @@ int main(void) {
   k = 0;
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && n <= N && N <= 511);
-  int A[N][N][N];
-  int B[N][N][N];
+  int A[N][N][N], B[N][N][N];
   while (i < n) {
     j = 0;
     k = 0;

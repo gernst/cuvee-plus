@@ -23,8 +23,7 @@ int main(void) {
   int i = __VERIFIER_nondet_int();
   N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 268435455);
-  int sum[N];
-  int a[N];
+  int sum[N], a[N];
   if (N <= 0) {
     result = 1;
     return result;

@@ -24,8 +24,8 @@ void main(void) {
   int R = __VERIFIER_nondet_int();
   int lim = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 536870911);
-  int a[N];
   assume_abort_if_not(0 < N);
+  int a[N];
   j = 0;
   k = 0;
   lim = __VERIFIER_nondet_int();

@@ -23,10 +23,8 @@ void main(void) {
   int x = __VERIFIER_nondet_int();
   int tmp = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 134217727);
-  int A[N];
-  int B[N];
-  int C[N];
   assume_abort_if_not(0 < N);
+  int A[N], B[N], C[N];
   j = 0;
   i = 0;
   while (i < N) {

@@ -37,10 +37,7 @@ int main(void) {
   i = 0;
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && edgecount <= N && nodecount <= N && N <= 134217727);
-  int Source[N];
-  int Dest[N];
-  int Weight[N];
-  int distance[N];
+  int Source[N], Dest[N], Weight[N], distance[N];
   while (i < edgecount) {
     tmp_1 = __VERIFIER_nondet_int();
     assume_abort_if_not(0 <= tmp_1 && tmp_1 < nodecount);

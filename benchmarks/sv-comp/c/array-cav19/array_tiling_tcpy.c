@@ -24,8 +24,7 @@ void main(void) {
   i = 0;
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && S <= N && 2 * S <= N && N <= 268435455);
-  int a[N];
-  int acopy[N];
+  int a[N], acopy[N];
   while (i < S) {
     acopy[2 * S - (i + 1)] = a[2 * S - (i + 1)];
     acopy[i] = a[i];

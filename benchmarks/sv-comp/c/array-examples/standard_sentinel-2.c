@@ -23,8 +23,8 @@ void main(void) {
   int i = __VERIFIER_nondet_int();
   int tmp = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 536870911);
-  int a[N];
   assume_abort_if_not(0 < N);
+  int a[N];
   marker = __VERIFIER_nondet_int();
   pos = __VERIFIER_nondet_int();
   i = 0;

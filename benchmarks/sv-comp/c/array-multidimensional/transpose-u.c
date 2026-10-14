@@ -28,8 +28,7 @@ int main(void) {
   i = 0;
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && n <= N && N <= 16383);
-  int A[N][N];
-  int C[N][N];
+  int A[N][N], C[N][N];
   while (i < n) {
     j = 0;
     while (j < n) {

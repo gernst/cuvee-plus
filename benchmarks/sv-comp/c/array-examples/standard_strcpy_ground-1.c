@@ -23,9 +23,8 @@ void main(void) {
   int x = __VERIFIER_nondet_int();
   int v = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 268435455);
-  int src[N];
-  int dst[N];
   assume_abort_if_not(0 < N);
+  int src[N], dst[N];
   i = 0;
   j = 0;
   while (j < N) {

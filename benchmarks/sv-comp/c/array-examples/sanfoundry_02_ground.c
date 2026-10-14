@@ -25,8 +25,8 @@ void main(void) {
   int largest2 = __VERIFIER_nondet_int();
   int temp = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 536870911);
-  int Array[N];
   assume_abort_if_not(0 < N);
+  int Array[N];
   i = 0;
   while (i < N) {
     v = __VERIFIER_nondet_int();

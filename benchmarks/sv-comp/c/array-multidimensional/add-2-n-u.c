@@ -32,9 +32,7 @@ int main(void) {
   j = 0;
   int N = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && m <= N && n <= N && N <= 8191);
-  int A[N][N];
-  int B[N][N];
-  int C[N][N];
+  int A[N][N], B[N][N], C[N][N];
   while (i < m) {
     j = 0;
     while (j < n) {

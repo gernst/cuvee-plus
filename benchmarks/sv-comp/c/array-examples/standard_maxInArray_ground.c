@@ -24,8 +24,8 @@ void main(void) {
   int j = __VERIFIER_nondet_int();
   int tmp = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 536870911);
-  int a[N];
   assume_abort_if_not(0 < N);
+  int a[N];
   max = 0;
   j = 0;
   while (j < N) {

@@ -21,8 +21,8 @@ void main(void) {
   int i = __VERIFIER_nondet_int();
   int M = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= M && N < M && 3 * N + 2 < M && M <= 536870911);
-  int a[M];
   assume_abort_if_not(0 < N);
+  int a[M];
   i = 0;
   while (i <= N) {
     a[3 * i] = 0;

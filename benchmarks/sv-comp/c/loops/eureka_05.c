@@ -26,9 +26,8 @@ int main(void) {
   int j = __VERIFIER_nondet_int();
   int temp = __VERIFIER_nondet_int();
   assume_abort_if_not(0 <= N && N <= 268435455);
-  int Array[N];
-  int array_1[N];
   assume_abort_if_not(0 < N);
+  int Array[N], array_1[N];
   n = N;
   i = N - 1;
   while (i >= 0) {
