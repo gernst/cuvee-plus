@@ -55,7 +55,10 @@ python3 benchmarks/sv-comp/c/sizes.py
      go beyond `N` (up to `2 * N`, `i <= N`, or constants), the arrays get a
      fresh size `M` instead, assumed to cover these bounds, and `N` is left
      alone (`array_doub_access_init_const`, `array_tripl_access_init_const`,
-     `vogal-2`);
+     `vogal-2`); the size covers the accesses at an offset of the loop variable
+     too, e.g. `2 * N + 1 < M` for `a[2 * i + 1]` with `i <= N` (since Oct 14,
+     2026, when TriCera, which checks memory safety, found the two `array-cav19`
+     tasks unsafe; both patched by hand);
    - without `N`, a fresh `int N = __VERIFIER_nondet_int()`, with the
      declarations right before the first top-level statement that uses an
      array, assumed to cover the program's own bounds there: those of the

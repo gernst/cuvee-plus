@@ -45,10 +45,10 @@ def bounds(lines, p, end, names, accesses):
     conditions = []
     for k in range(p, end):
         # the bound is that of the first conjunct, e.g. n of while (j < n && a[j] != q)
-        m = re.match(r'^(\s*)while \(\w+ (<|<=) ([^&|)]+?)\s*(&&[^{]*)?\) \{\s*$', lines[k])
+        m = re.match(r'^(\s*)while \((\w+) (<|<=) ([^&|)]+?)\s*(&&[^{]*)?\) \{\s*$', lines[k])
         if not m:
             continue
-        indent, op, bound = len(m.group(1)), m.group(2), m.group(3).strip()
+        indent, var, op, bound = len(m.group(1)), m.group(2), m.group(3), m.group(4).strip()
         j = k + 1
         while j < end and not (lines[j].startswith(' ' * indent + '}') and len(lines[j]) - len(lines[j].lstrip()) == indent):
             j += 1
@@ -61,6 +61,16 @@ def bounds(lines, p, end, names, accesses):
         condition = ('%s <= N' if op == '<' else '%s < N') % bound
         if not changed and condition not in conditions:
             conditions.append(condition)
+        # the accesses at an offset of the loop variable, e.g. a[2 * i + 1] for i <= N, reach 2 * N + 1, which the
+        # size must exceed as well, otherwise the program is not memory safe, which TriCera checks
+        last = bound if op == '<=' else '%s - 1' % bound
+        if not changed and re.fullmatch(r'\w+', last.strip()):
+            for n in names:
+                for index in re.findall(r'\b%s\[([^\[\]]+)\]' % re.escape(n), body):
+                    if re.search(r'\b%s\b' % re.escape(var), index) and index.strip() != var:
+                        reached = re.sub(r'\b%s\b' % re.escape(var), last.strip(), index)
+                        if '%s < N' % reached not in conditions:
+                            conditions.append('%s < N' % reached)
 
     # direct accesses a[e] with an index that does not change, e < N, and calls that pass an array, e.g.
     # linear_search(a, SIZE, 3), whose other arguments may bound the accesses of the callee, arg <= N;

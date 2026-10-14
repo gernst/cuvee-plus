@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
+<!-- TriCera of the MonoCera artifact (tools/monocera/tricera, the tool-info module monocera.py) with its default
+     options, whose integers are mathematical (-arithMode:math), on the unbounded set (benchmarks/sv-comp/c), the second
+     tool with unbounded integers next to Korn; TriCera also checks memory safety, e.g. the bounds of the arrays:
+     run with the tool directory tools/monocera/tricera, as xml/monocera.xml (see doc/benchmarks.md) -->
+<benchmark tool="monocera" displayName="TriCera" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
+
+  <require cpuModel="Intel Core i7-6700 @ 3.40 GHz"/>
+
+  <rundefinition name="local_unreach-call">
+    <tasks name="C.unreach-call.Unbounded">
+      <includesfile>../benchmarks/sv-comp/c/c.set</includesfile>
+      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+  </rundefinition>
+
+</benchmark>
