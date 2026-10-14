@@ -1,6 +1,6 @@
 package cuvee.prove
 
-// copied from cuvee.simplify (Oct 13, 2026): the package prove is independent of simplify, see ideas/deduction-engine-implementation.md
+// copied from cuvee.simplify (Oct 13, 2026): the package prove is independent of simplify, see doc/prove.md
 
 import util.Rational
 import cuvee.Error

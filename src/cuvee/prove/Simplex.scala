@@ -47,7 +47,7 @@ object Delta:
 // bounds that the constraints give it, the atoms are the non-basic variables initially, and check pivots by Bland's
 // rule until all basic variables are within their bounds (satisfiable) or some basic variable can not be fixed
 // (unsatisfiable); strict bounds use Delta; the tableau is built per call, which suffices for the dozens of
-// constraints of a context, incremental pivoting is a later optimization (see ideas/deduction-engine-implementation.md)
+// constraints of a context, incremental pivoting is a later optimization (see doc/prove.md)
 object Simplex:
   // the linear part of a constraint with its leading coefficient positive, and the sign flipped if it was negated
   def linear(poly: Poly): (Poly, Boolean) =

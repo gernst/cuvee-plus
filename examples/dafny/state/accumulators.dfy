@@ -1,5 +1,5 @@
 // ./Cuvee.sh -known teq -print dfy examples/dafny/state/accumulators.dfy
-// the syntax of traces with several accumulators (ideas/deduction-engine-plan.md, section 1.4): the state of the swap
+// the syntax of traces with several accumulators (doc/prove.md, section 1.4): the state of the swap
 // of two arrays as one trace of three accumulators, read by current(S).i and ⌊S⌋.i; parsed, type-checked and printed
 // only (the engine of -prove simplifies such traces, see the binary searches of this folder)
 

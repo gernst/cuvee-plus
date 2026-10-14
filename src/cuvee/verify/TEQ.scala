@@ -114,10 +114,30 @@ object TEQ extends Transform:
         Error.report("entry point not defined", p.name):
           require(state.procdefs.contains(p))
 
-    for
-      cmd <- cmds
-      cmd_ <- verify(config, state, gs, entry, cmd)
-    yield cmd_
+    // a verify-call ends the stage (last), after its goal of the precondition
+    val check =
+      last match
+        case VerifyCall(name, args) => precondition(state, prefix ++ cmds, name, args)
+        case _                      => Nil
+
+    val cmds_ =
+      for
+        cmd <- cmds
+        cmd_ <- verify(config, state, gs, entry, cmd)
+      yield cmd_
+
+    cmds_ ++ check
+
+  // a verify-call of SV-LIB checks the precondition of the procedure for its arguments, under the axioms about the
+  // constants (e.g. (assert (<= 0 y0)), see Horn.isAxiom), as the property correct-annotations requires
+  // (core-verification/loop-add.1 is false without such an axiom); the goal of the procedure assumes it
+  def precondition(state: State, cmds: List[Cmd], name: Name, args: List[Expr]): List[Cmd] =
+    val (in, _, pre, _) = VCGen.contract(state, name)
+    Error.report("wrong number of arguments in verify-call", name, args):
+      require(in.length == args.length)
+    val axioms = cmds.collect { case cmd @ Assert(Axiom, Nil, phi, _) if Horn.isAxiom(state, cmd) => phi }
+    val phi = Imp(And(axioms), Subst.from(in, args)(pre))
+    List(Assert(Goal, Nil, phi, Attrs.empty))
 
   // the module `name` of the lemma database (resources/cuvee/teq), a resource
   def module(name: String) =

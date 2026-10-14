@@ -295,7 +295,7 @@ object Eps:
 // trace(inits, for deps do accs, bound ↦ results): the trace of the values of the accumulators `accs`, starting
 // from `inits`, where each subsequent value is computed by the results from the previous ones and the corresponding
 // values of the dependencies, one entry longer than the dependencies; one accumulator for a variable of a loop that
-// depends on no other, several for the variables of a cycle (see ideas/deduction-engine-plan.md, section 1.4), whose
+// depends on no other, several for the variables of a cycle (see doc/prove.md, section 1.4), whose
 // values are tuples in the type only (Trace<(T₁, ..., Tₘ)>): no term of tuple type is built, the components are read
 // by Component and History
 case class Trace(inits: List[Expr], deps: List[Expr], accs: List[Var], bound: List[Var], results: List[Expr]) extends Expr:

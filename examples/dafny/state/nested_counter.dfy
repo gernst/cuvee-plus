@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -entry main -prove examples/dafny/state/nested_counter.dfy
-// examples/dafny/algorithms/nested_counter.dfy under -teq, without its lemmas (see ideas/state-trace.md)
+// examples/dafny/algorithms/nested_counter.dfy under -teq, without its lemmas (see doc/prove.md)
 
 method main(m: int, n: int) returns (i: int)
   requires 0 <= m && 0 <= n

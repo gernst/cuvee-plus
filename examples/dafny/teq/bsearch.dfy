@@ -1,5 +1,5 @@
 // ./Cuvee.sh examples/dafny/teq/bsearch.dfy
-// experiment: binary search with partition points, for -teq -split -simplify (see ideas/binary-search.md);
+// experiment: binary search with partition points, for -teq -split -simplify (see doc/prove.md);
 // the comparisons of the array with x are those of the indices with the partition points p and q,
 // a[m] < x iff m < p, x < a[m] iff q <= m, a[m] == x iff p <= m < q, given by lemmas on global constants,
 // such that the rules need no variables for the array, the bound, and x;

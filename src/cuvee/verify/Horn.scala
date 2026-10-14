@@ -66,8 +66,9 @@ object Horn extends Transform:
   // the entry clauses of a verify-call of SV-LIB: p_pre(args, gs) for all values of the global variables gs and
   // of the constants, assuming the axioms about them (see constants), since Horn solvers do not support
   // free constants in clauses, which are therefore not asserted; constants that occur elsewhere, e.g. in the bodies
-  // of procedures, are not supported; the precondition of the procedure is assumed for the arguments, as the tasks of
-  // SV-LIB expect, e.g. core-verification/loop-add with arbitrary constants as arguments
+  // of procedures, are not supported; a verify-call mimics a call in the global context of SMT-LIB, so the
+  // precondition of the procedure must follow from the declarations and axioms for the arguments (a query clause), and
+  // the body is verified under it, e.g. core-verification/loop-add.1 (false) and loop-add.2 (true, with 0 <= y0)
   def entry(state: State, cmds: List[Cmd], name: Name, args: List[Expr]): List[Cmd] =
     val (in, _, requires, _) = VCGen.contract(state, name)
 
@@ -85,6 +86,9 @@ object Horn extends Transform:
 
     val clauses = Ref[List[Expr]](Nil)
     clause(gs ++ xs, (axioms_ ++ And.flattenStrong(abstracted(cs, xs, requires_))).distinct, abstracted(cs, xs, head), clauses)
+    // the precondition must hold for the arguments under the axioms, as the property correct-annotations requires
+    // (core-verification/loop-add.1 is false without the axiom 0 <= y0)
+    clause(gs ++ xs, axioms_ :+ Not(abstracted(cs, xs, requires_)), False, clauses)
     clauses.value.map(axiom)
 
   // whether `cmd` is an axiom about constants, e.g. (assert (<= 0 n)) of SV-LIB

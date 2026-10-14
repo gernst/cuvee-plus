@@ -1,6 +1,6 @@
 // ./Cuvee.sh -teq -include teq:search -include teq:sorted -prove examples/dafny/state/bsearch_bisect.dfy
 // the binary search over a sorted array of bsearch_sorted.dfy, proved by a lemma over the whole cycle instead of two
-// layers (package O of ideas/deduction-engine-plan.md): the array, its bound and the key are parameters, the array
+// layers (package O of doc/prove.md): the array, its bound and the key are parameters, the array
 // is sorted, sorted(a, 0, n)
 //
 // sortedness is used where the reads of the array become comparisons of the index with the partition points

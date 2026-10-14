@@ -1,6 +1,6 @@
 // ./Cuvee.sh -teq -include teq:search -include teq:sorted -prove examples/dafny/state/bsearch_safe.dfy
 // bsearch_bisect.dfy with the midpoint that does not overflow, lo + (hi - lo) / 2: the same lemmas, since the
-// bisection takes any probe strictly inside the interval (package O of ideas/deduction-engine-plan.md)
+// bisection takes any probe strictly inside the interval (package O of doc/prove.md)
 //
 // sortedness is used where the reads of the array become comparisons of the index with the partition points
 // lower(a, n, y) and upper(a, n, y), which exist for a sorted array, for indices within a[0..n) only; lo and hi read

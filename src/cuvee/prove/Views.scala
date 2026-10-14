@@ -4,7 +4,7 @@ import cuvee.Debug
 import cuvee.Config
 import cuvee.core._
 
-// the per-variable traces of the paper as views of a trace with several accumulators (ideas/deduction-engine-plan.md,
+// the per-variable traces of the paper as views of a trace with several accumulators (doc/prove.md,
 // section 1.4): the reads of the components of such a trace S, current(S).i (Component), ⌊S⌋.i (History) and through
 // it earlier(j, ⌊S⌋.i), are markers that stay in place; the matcher matches a marker modulo its view, the same read of
 // the projection of S to the component (see project), simplified, such that the lemmas of the database meet the

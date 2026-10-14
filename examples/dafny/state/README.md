@@ -1,7 +1,7 @@
 # Trace equation systems under -prove
 
 Examples of `-teq -prove` (see [doc/teq.md](../../../doc/teq.md), [doc/prove.md](../../../doc/prove.md) and
-[ideas/deduction-engine-plan.md](../../../ideas/deduction-engine-plan.md)): the variables of a loop are partitioned by
+[doc/prove.md](../../../doc/prove.md)): the variables of a loop are partitioned by
 the strongly connected components of their read relation, each component is one trace (of several accumulators for a
 cycle), the per-variable traces of a cycle are projections that the engine of `-prove` computes on demand, and the
 lemma database is [resources/cuvee/teq.dfy](../../../resources/cuvee/teq.dfy). The
@@ -29,4 +29,4 @@ The binary searches, over a sorted array with the array, its bound and the key a
 | bsearch | the search of examples/dafny/teq with constant partition points `p`, `q` in place of sortedness, the bounds of `incs`/`decs` as forward facts | 8 s |
 
 The midpoint is bounded by the linear arithmetic (bounds of division by a constant). `bsearch_sorted` and `bsearch`
-are kept as regression tests of the per-component route (see ideas/deduction-engine-implementation.md).
+are kept as regression tests of the per-component route (see doc/prove.md).

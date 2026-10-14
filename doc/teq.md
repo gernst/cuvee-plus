@@ -20,7 +20,7 @@ case class History(trace: Expr, index: Int)                   // ⌊S⌋.i
 ```
 
 After section 3 of the paper, generalized to several accumulators
-([ideas/deduction-engine-plan.md](../ideas/deduction-engine-plan.md), section 1.4):
+([doc/prove.md](prove.md), section 1.4):
 
 - `Trace(inits, deps, accs, bound, results)` is the trace of the accumulators
   `accs`, one initial value and one result each, of type `Trace(T)` for a
@@ -148,8 +148,8 @@ per-variable traces of a cycle are projections of its trace that the engine of `
 accumulators, e.g. the bisection of the binary searches, which names the trace of `lo` and `hi`; the simplifier of
 `-simplify` does not know traces of several accumulators. Examples in
 [examples/dafny/state](../examples/dafny/state), the design in
-[ideas/deduction-engine-plan.md](../ideas/deduction-engine-plan.md), the implementation in
-[ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md).
+[doc/prove.md](prove.md), the implementation in
+[doc/prove.md](prove.md).
 
 ## The lemma database ([resources/cuvee/teq](../resources/cuvee/teq))
 

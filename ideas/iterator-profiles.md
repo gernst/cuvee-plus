@@ -95,7 +95,7 @@ choose a form of invariant that Frama-C can check. In TEQs both are the database
   whose contracts do not give the result exactly): a TEQ represents such a call by a fresh `Z` constrained by the
   contract. That is *more* than LoopAnnotator can do, which fails on these calls. But what follows are
   *partial descriptions* (bounds, frame conditions), the known weakness (see
-  [binary-search.md](binary-search.md), forward lemmas in `-prove`), and a heap model.
+  [../doc/prove.md](../doc/prove.md), forward lemmas in `-prove`), and a heap model.
 
 ## Body patterns
 
@@ -124,12 +124,12 @@ choose a form of invariant that Frama-C can check. In TEQs both are the database
 - **Reads from earlier iterations**, `a[i-1]` (VAJRA `eqn2`–`eqn5`, `ncomp`, `pcomp`, `sqm`; their future work).
   A TEQ represents them: the read at iteration `k` is a select of the earlier stores at `k - 1`, i.e. the value
   written in the previous iteration. The written values are then themselves a trace, a *chain*
-  ([teq-database.md](teq-database.md) item 3). In `eqn2`, `a[i] = a[i-1] + 4` and then `b[i] = b[i-1] + a[i-1]`
+  ([teq-modules.md](teq-modules.md) item 3). In `eqn2`, `a[i] = a[i-1] + 4` and then `b[i] = b[i-1] + a[i-1]`
   give `b[i] = 2i² + 2i + 1`. That needs (1) matching an index-shifted read against the stores of the same loop
   (the open TODO on patterns with `k - 1`), (2) turning stores whose value depends on the previous one into a
   trace over the values, and (3) closed forms of polynomial recurrences (`triangle_*` covers degree 2 partly).
 - **Nested loops** (`bubble_sort`, 13 + 9 Linux tasks): representable (thm 4.8, `nested`, `sorting`), but this is
-  where the engine still has its problems ([deduction-engine.md](deduction-engine.md), the state traces).
+  where the engine still has its problems ([../doc/prove.md](../doc/prove.md), the state traces).
 - **The index modified in the body** (binary search; outside their class): `-teq-state` with forward lemmas
   (`examples/dafny/state/bsearch.dfy`).
 - **Specifications with user-defined recursive logic functions** (`array_sum` in the original Frama-C Problems,
@@ -137,7 +137,7 @@ choose a form of invariant that Frama-C can check. In TEQs both are the database
   introduction rule *generated* from a recursive definition of the form `f(n) = if n == 0 then init else g(f(n -
   1), n - 1)`: `current(trace(init, for ⌊counter(0, 1, n)⌋ do x, k ↦ g(x, k))) == f(n)`, proved once by induction
   for this form. This is the inverse of what LoopAnnotator does (it writes such functions), and it would let TEQs
-  meet specifications written in that style ([trace-lemma-proofs.md](trace-lemma-proofs.md)).
+  meet specifications written in that style ([teq-lean.md](teq-lean.md)).
 
 ## Summary by dataset
 

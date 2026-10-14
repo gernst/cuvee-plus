@@ -356,7 +356,7 @@ object Simplify extends Transform:
         val update_ = simplify(config, state, combinator(config, state, ctx, deps_, bound_), re(update))
         maps(config, state, ctx, deps_, bound_, update_)
 
-      // traces of several accumulators and their components are not simplified yet (see ideas/deduction-engine-plan.md, 1.4)
+      // traces of several accumulators and their components are not simplified yet (see doc/prove.md, 1.4)
       case _: Trace | _: Component | _: History =>
         expr
 

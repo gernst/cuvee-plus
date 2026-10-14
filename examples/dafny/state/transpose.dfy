@@ -1,6 +1,6 @@
 // ./Cuvee.sh -teq -entry main -prove examples/dafny/state/transpose.dfy
 // examples/dafny/algorithms/transpose.dfy under -teq and one summary lemma on the nested fold, in place of its
-// folds results and column and four lemmas on fragments (see ideas/state-trace.md)
+// folds results and column and four lemmas on fragments (see doc/prove.md)
 
 // the transpose: the outer loop over the columns k of A, the inner over the rows ki of B, which stores A[k][ki] at
 // B[ki][k]; the inner number of iterations is stated as natural(n), since the goal binds it to a choice whose

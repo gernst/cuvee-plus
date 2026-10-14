@@ -5,6 +5,14 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
 
 ## New
 
+- The algorithms of examples/dafny/algorithms under `-teq -prove` (Oct 14, 2026): 15 of 30 are verified, 15 not:
+  one goal each in bubble_sort, insertion_sort, insertion_sort2, selection_sort, gnome_sort (the postcondition
+  `sorted(...) && perm(...)`), distinct, first_duplicate, max_element, merge, partition, three_way_partition,
+  reverse, transpose; cocktail_sort and counting_sort end with "rewriting does not terminate". All were verified
+  with `-teq -simplify` on one trace per variable (Oct 11); their own summary and induction lemmas are written for
+  that form, where an inner loop was fragments of the outer iteration constraint, and do not match since `-teq`
+  closes nested loops (one trace per component, Oct 13). To verify them again, their lemmas are rewritten for the
+  current form (`teq:nested`, the module of the fragments, is in resources/cuvee/legacy since Oct 14).
 - `-prove`: with `natural_positive` (teq.dfy), the rounds of simplification of array-crafted bAnd*, bor*, xor* (15
   tasks, unknown before) do not settle and use up the 1000 steps ("rewriting does not terminate"): the same reads
   `x[0]`, `x[1]` are rewritten in every round, `integer(n)` to `i` by integer_natural modulo the class of `n`; a rule
@@ -14,7 +22,7 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
 - `-prove` does not split a premise `n == zero || integer(n) < 1` (the `_cases` rules of `mods`), which sum_by_3,
   sum_by_3_abstracted and in-de20 need
 
-- `-verify` (see [ideas/verify-answers.md](ideas/verify-answers.md)): a refutation is classified per goal, `VCGen`
+- `-verify` (see [doc/architecture.md](doc/architecture.md)): a refutation is classified per goal, `VCGen`
   marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
   not depend on that loop, which `-split` keeps apart
 - support verifying trace lemmas in Dafny
@@ -529,7 +537,7 @@ Measured on binary search and on the SV-COMP examples
 ## Deduction engine (`-prove`, package `prove`)
 
 - The record of the implementation, with the open steps, is
-  [ideas/deduction-engine-implementation.md](ideas/deduction-engine-implementation.md); the design in
+  [doc/prove.md](doc/prove.md); the design in
   [doc/prove.md](doc/prove.md).
 - The simplex is rebuilt from the constraints of the context at every check that is not cached
   (`Linear.checks`, by the set of constraints); an incremental tableau per context would avoid the rebuilds.

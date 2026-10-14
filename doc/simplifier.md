@@ -257,7 +257,7 @@ are not derived from it.
 
 Some goals hold only because of facts that the goal does not mention, e.g. in
 the not-found exit of binary search (see
-[binary-search.md](../ideas/binary-search.md)), the bounds of the probes, or
+[binary-search.md](prove.md)), the bounds of the probes, or
 `lastlt < k` and `k < lastgt` for the index `k` of `x` in a sorted array,
 whose lemmas never fire, since their conclusions are not subterms of the goal.
 Variables of a side condition that do not occur in the left-hand side are

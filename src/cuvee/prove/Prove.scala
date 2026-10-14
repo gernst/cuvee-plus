@@ -6,7 +6,7 @@ import cuvee.sexpr
 import cuvee.pipe.Transform
 import cuvee.core._
 
-// the deduction engine of -prove (see doc/prove.md and ideas/deduction-engine-implementation.md): the assertions and
+// the deduction engine of -prove (see doc/prove.md and doc/prove.md): the assertions and
 // lemmas with the attribute :rw so far are rewrite rules and those with :fw forward lemmas (see Forward), which are
 // kept as they are, the goals and the other
 // assertions are simplified under a context of congruence classes and linear constraints with these rules (see

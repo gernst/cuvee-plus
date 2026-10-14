@@ -1,6 +1,6 @@
 // ./Cuvee.sh -teq -prove examples/dafny/state/bsearch_sorted.dfy
 // the binary search of bsearch.dfy over a sorted array: the array, its bound and the key are parameters, the array
-// is sorted, sorted(a, n), instead of given by partition points (step 2b of ideas/deduction-engine-implementation.md)
+// is sorted, sorted(a, n), instead of given by partition points (step 2b of doc/prove.md)
 //
 // sortedness is used once, where the reads of the array become comparisons of the index with the partition points
 // lower(a, n, y) and upper(a, n, y), which exist for a sorted array (lower, upper, equal); these hold only
@@ -11,7 +11,7 @@
 //
 // interim: the invariant is a joint one, 0 <= lo <= lower, upper <= hi <= n, and is built here in two layers, which
 // costs (about 45 s against 7 s for bsearch.dfy); a single lemma over the trace of both accumulators is planned
-// (package O of ideas/deduction-engine-plan.md); the midpoint (h + l) / 2 is bounded by the linear arithmetic
+// (package O of doc/prove.md); the midpoint (h + l) / 2 is bounded by the linear arithmetic
 
 function sorted(ar: array<int, int>, len: int): bool
 

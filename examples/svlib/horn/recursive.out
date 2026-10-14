@@ -133,6 +133,9 @@
 
 (assert (=> true main_pre))
 
+(assert
+  (=> (not true) false))
+
 (check-sat)
 
 (verify-call main ())

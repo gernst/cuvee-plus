@@ -2,7 +2,7 @@
 
 The state-trace form of [examples/dafny/teq/swap.md](../teq/swap.md), from the output of `-debug rewrite` of the
 verifying run (264 rewrite steps, 2.3 s, the fresh module `state.dfy`, now `resources/cuvee/teq.dfy`). The lines `view m ~> e`
-are the views of markers that the matcher computed (see ideas/state-trace.md).
+are the views of markers that the matcher computed (see doc/prove.md).
 
 ## The goal
 

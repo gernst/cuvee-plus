@@ -17,7 +17,7 @@ or solvers consume.
   database.
 - [doc/prove.md](doc/prove.md): the deduction engine (`-prove`, package
   `prove`, independent of `simplify`), its record in
-  [ideas/deduction-engine-implementation.md](ideas/deduction-engine-implementation.md).
+  [doc/prove.md](doc/prove.md).
 - [doc/hybrid.md](doc/hybrid.md): derivatives, ODEs, parallel composition
   (`-hybrid`).
 - [doc/style.md](doc/style.md): coding style, incl. lowercase comments that

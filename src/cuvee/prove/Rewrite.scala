@@ -96,7 +96,7 @@ object Rewrite:
     results match
       case Nil =>
         // -debug match reports the rules on traces whose left-hand side does not match a trace, e.g. a summary lemma
-        // on a view of a trace of several accumulators (see ideas/deduction-engine-plan.md, package M)
+        // on a view of a trace of several accumulators (see doc/prove.md, package M)
         (rule.lhs, expr) match
           case (_: Trace, _: Trace) =>
             Debug.info("match", "no match of " + rule.name.getOrElse("?") + " on " + Simplify.show(config.output.printer, expr))
@@ -892,7 +892,7 @@ object Rewrite:
           then conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, facts, decide, subst)
           else
             // -debug conditions reports the closed conditions that fail, the first diagnostics of a match that does not
-            // go through (see ideas/deduction-engine-plan.md, package M)
+            // go through (see doc/prove.md, package M)
             Debug.info("conditions", "not decided: " + Simplify.show(config.output.printer, instance) + " (from " + Simplify.show(config.output.printer, phi) + ")")
             Debug.info("conditions", "  self " + ctx.self.map((t, v) => Simplify.show(config.output.printer, t) + " ~ " + Simplify.show(config.output.printer, v)).mkString(", ") + ", facts on its variables: " + ctx.known.filter(fact => fact.free.intersect(instance.free).nonEmpty).map(Simplify.show(config.output.printer, _)).mkString(" | "))
             unmatched

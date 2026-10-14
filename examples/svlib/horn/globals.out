@@ -74,6 +74,9 @@
     ((g Int))
     (=> true (main_pre g))))
 
+(assert
+  (=> (not true) false))
+
 (check-sat)
 
 (verify-call main ())

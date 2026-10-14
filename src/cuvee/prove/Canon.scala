@@ -3,7 +3,7 @@ package cuvee.prove
 import util.Name
 import cuvee.core._
 
-// canonical keys for the memos of the engine (package B of ideas/deduction-engine-plan.md, in its restricted form):
+// canonical keys for the memos of the engine (package B of doc/prove.md, in its restricted form):
 // the bound variables of a context are renamed by their position, outermost binder first, such that two positions
 // that differ only by the names of their bound variables (which the traversal renames apart from the context, see
 // Subst.rename in Simplify) have the same canonical facts; the memos of the views, the reads and the combinator

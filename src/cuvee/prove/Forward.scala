@@ -6,7 +6,7 @@ import cuvee.Error
 import cuvee.sexpr
 import cuvee.core._
 
-// a forward lemma, the attribute :fw (package J of ideas/deduction-engine-plan.md): whenever a term that matches
+// a forward lemma, the attribute :fw (package J of doc/prove.md): whenever a term that matches
 // `trigger` occurs in a fact assumed by the traversal, the conclusion `concl` is assumed, instantiated by the match,
 // if the condition `cond` holds; the trigger is a term of the conclusion, not a formula, since the conclusion is
 // needed where only its term occurs, e.g. the bound current(incs(x0, b, ...)) <= b at the exit of the binary search,

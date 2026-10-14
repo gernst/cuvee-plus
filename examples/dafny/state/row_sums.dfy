@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/state/row_sums.dfy
-// examples/dafny/algorithms/row_sums.dfy under -teq, without its lemmas (see ideas/state-trace.md)
+// examples/dafny/algorithms/row_sums.dfy under -teq, without its lemmas (see doc/prove.md)
 
 method main(A: array<int, array<int, int>>, m: int, n: int) returns (s: array<int, int>)
   requires 0 <= m && 0 <= n

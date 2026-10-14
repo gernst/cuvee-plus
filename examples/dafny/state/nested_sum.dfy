@@ -1,6 +1,6 @@
 // ./Cuvee.sh -teq -entry main -prove examples/dafny/state/nested_sum.dfy
 // the result of the inner loop is used once per outer iteration (examples/dafny/algorithms/nested_sum.dfy), with the
-// inner loop as a value of the outer update, without the fragment lemmas (see ideas/state-trace.md)
+// inner loop as a value of the outer update, without the fragment lemmas (see doc/prove.md)
 
 method main(m: int, n: int) returns (c: int)
   requires 0 <= m && 0 <= n

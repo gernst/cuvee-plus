@@ -8,14 +8,6 @@ true, -16 for a wrong false).
 
 ### Open
 
-- **`verify-call` of SV-LIB assumes the precondition of the called procedure instead of checking it** (Oct 14,
-  2026, the run of CoreVerification): `loop-add.1` calls `add (x0 y0)` without `(assert (<= 0 y0))`, `add` has
-  `:requires (<= 0 y0)`, the task is expected false (property `correct-annotations`), and both `xml/cuvee.xml` and
-  `xml/cuvee-chc.xml` answer true (`loop-add.2`, with the assertion, is true). The frontend attaches the `:requires`
-  as an assumption of the call; for `verify-call`, the precondition must be an obligation of the arguments. The other
-  five tasks of CoreVerification end in errors of the frontend (`unknown tag "upto"`), since sv-benchmarks merged new
-  SV-LIB conventions.
-
 - **A bound variable captures a constant of the same name** (confirmed with 0.46.7, `-simplify` and `-prove`):
   `(declare-const x Int) (declare-const y Int)` with the goal `(=> (exists ((x Int)) (< x y)) (<= x y))`, which
   is not valid (`x = y + 1`), is turned into the valid `(forall ((x Int)) (=> (< x y) (<= x y)))`, so a solver
@@ -82,12 +74,21 @@ the contexts that `-teq` builds, as far as the reasons go.
   `nested`, which has no Lean proofs; the abstract predicates of the examples (`sorted`, `perm`, `partitioned`,
   `bubbled`, `shaken`, `argmin`, `insert`, `shake`, `nodup`, `merged`, `lb`), axiomatized by their lemmas, and the
   summary lemmas of examples/dafny/algorithms, which state the correctness of an inner loop in one line
-  (doc/array-algorithms/principles.tex, Soundness; ideas/teq-database.md, items 5 and 6); ACSL lemmas, which are
+  (doc/array-algorithms/principles.tex, Soundness; ideas/teq-modules.md, items 5 and 6); ACSL lemmas, which are
   `:free`, and lemmas with `:free` in general (`Solver`, `pipe.Verify` assume them like axioms).
 - **`-fallback` does not assume the premises above** (equal lengths, indices within the lists, complete guards);
-  ideas/teq-database.md names this a candidate cause of its wrong proofs (see below).
+  ideas/teq-modules.md names this a candidate cause of its wrong proofs (see below).
 
 ### Fixed, to be confirmed
+
+- **`verify-call` of SV-LIB assumed the precondition of the called procedure instead of checking it** (Oct 14, 2026,
+  the run of CoreVerification): `loop-add.1` calls `add (x0 y0)` without `(assert (<= 0 y0))`, `add` has
+  `:requires (<= 0 y0)`, the task is expected false, and both `-teq` and `-chc` answered true. Fixed in 0.46.14: a
+  verify-call mimics a call in the global SMT context, so the precondition must follow from the declarations and
+  axioms for the arguments; `TEQ.precondition` adds that goal, `Horn.entry` a query clause. Locally `-chc` answers
+  false on `loop-add.1`, `-teq` unknown (sound; the counterexample search does not take the constant `y0` as a
+  variable); `loop-add.2` stays true. To confirm: a rerun of CoreVerification. The other five tasks there end in
+  errors of the frontend (`unknown tag "upto"`), since sv-benchmarks merged new SV-LIB conventions.
 
 - The bisection of `teq:search` was inconsistent (found by the Lean proofs, Oct 13, 2026): the rule `bisection`
   guarded both cases by `lo < hi`, a step after the exit was `unspecified`, and `bisection_lo` bounded it, which gave
@@ -129,7 +130,7 @@ the contexts that `-teq` builds, as far as the reasons go.
   leaves both of its goals. The mechanism is not excluded by design: `Rewrite.conditions` simplifies an instance
   of a side condition in `ctx.neutral`, which keeps the facts of the goal, in both engines; `Context.active`
   suspends only the rule itself. A harness that runs each `-teq` example with its `*_wrong` variant
-  (ideas/teq-database.md, item 8) would catch a recurrence.
+  (ideas/teq-modules.md, item 8) would catch a recurrence.
 - A side condition that is an `invs` is matched in the context of the fact's combinator, where other rules fire,
   also with the hypotheses of the goal: in [first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy) a rule
   `nodup(a, k, n) <==> true` under the hypothesis `distincts(...)` rewrote the condition
@@ -254,7 +255,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   different rules with `invs` conditions nests through the contexts of the facts they are matched against, and the
   reads are cached by the dependencies and the definitions of the traces, since the contexts of a fact are rebuilt
   at every position at which a condition is matched against it; the six cycles of `pending/` and of this entry
-  terminate, none of them closes its goal, see ideas/reentrance-guard.md):
+  terminate, none of them closes its goal, see doc/prove.md):
   1. A reentrance guard for conditional rules: while the side condition of a rule is decided, the rule is not
      applied inside, e.g. a set of such rules in the context that `Rewrite.apply` skips; this cuts the recursion
      for all conditional rules, and loses only side conditions that need the same rule again.

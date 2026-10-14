@@ -1,5 +1,5 @@
 // ./Cuvee.sh -teq -include teq:search -entry find -prove examples/dafny/state/lsearch.dfy
-// examples/dafny/teq/lsearch.dfy under -teq (see ideas/state-trace.md)
+// examples/dafny/teq/lsearch.dfy under -teq (see doc/prove.md)
 // the first index of x among the first n elements of an array, n if there is none
 //
 // status: verified with -teq -split -simplify by not_occurs_selects_def and select_not_occurs_selects of teq.dfy;

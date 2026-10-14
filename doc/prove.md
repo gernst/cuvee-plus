@@ -1,14 +1,66 @@
 # The deduction engine (`-prove`)
 
-The package [prove/](../src/cuvee/prove) is a second engine for the goals of trace equation systems, built
-after [ideas/deduction-engine.md](../ideas/deduction-engine.md) and
-[ideas/deduction-engine-plan.md](../ideas/deduction-engine-plan.md); the record of its implementation, with the
-instructions and the state of each step, is
-[ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md). `-prove` runs it like
+The package [prove/](../src/cuvee/prove) is a second engine for the goals of trace equation systems; its design is
+below, the open changes are in [ideas/prove-next.md](../ideas/prove-next.md). `-prove` runs it like
 `-simplify` runs the simplifier: the assertions and lemmas with `:rw` are its rules, the other assertions are
 simplified under a context and dropped when they become `true`. The package is independent of
 [simplify/](../src/cuvee/simplify): what it shares with the simplifier (the polynomials, the clauses, the rules, the
 traversal and the matcher) is copied and adapted, not referenced, so that the two engines evolve separately.
+
+## Design
+
+The engine was designed on Oct 12–13, 2026, after the hard algorithms of
+[examples/dafny/algorithms](../examples/dafny/algorithms) and the MonoCera tests had been proved with the simplifier
+of `-simplify` and many workarounds in the lemmas.
+
+**The findings were symptoms of the engine, not of the method.** Every lemma written for a program followed a dozen
+patterns: a left-hand side shaped for one fragment, fresh variables with identifying equations for every `invs`
+condition, open trace variables for the traces of the goal, a "pin" for literals and arithmetic on bound variables,
+the whole atom of a postcondition as left-hand side, side conditions in the forms of the included modules, the exit
+of an outer loop as two implications, variables of the method named apart, and the fragments of inner loops that do
+not share facts. Nine of them came from the matcher, the context, or the rewriting strategy, one from the
+representation, and only the atoms for quantified hypotheses were partly a design choice. The method, the lookup of
+loop shapes in a database of lemmas, was not what the examples strained; the engine that performs the lookup was.
+
+**The representation comes first: one trace per strongly connected component.** A loop is semantically one fold
+over its state; a trace equation system is that fold decomposed by projection, one trace per variable. The
+decomposition helps where the variables form a layering (counter, index, array, sum): each trace is matched by a
+small lemma of its own, which is the compositional reasoning of the paper. It is an obstacle where they do not:
+mutually dependent variables (the pointers of a merge, the bounds of a binary search) have individually meaningless
+traces over each other, inner loops become fragments over incomparable dependency lists, and dependency lists need
+bookkeeping (equal counters, injective selection, arity variants of lemmas). The form that stays partitions the
+modified variables by the strongly connected components of their read relation (see [teq.md](teq.md)): a singleton
+is a trace as in the paper, a cycle one trace of several accumulators. The component graph is acyclic, so every
+trace is a closed term and an inner loop is a value of the outer update; most variables are singletons and are
+matched by the database directly. The per-variable traces of a cycle are views, computed on demand, so the lemmas of
+the database keep their form, and a lemma may also match a cycle as a whole (the bisection).
+
+**The engine replaces each source of symptoms by a component:**
+- *Congruence closure as the context* instead of chains of variable equations and definitions followed on demand:
+  a definition is available in every position and both orientations, equal counters are one class, and a pattern
+  variable matches a class.
+- *Canonical forms and lookup of closed conditions*: alpha-variants and reorderings coincide, so a closed side
+  condition is looked up among the facts modulo classes and renaming instead of being simplified again; the fresh
+  variables and identifying equations of the lemmas are not needed.
+- *A simplex over the rationals* with integer tightening and the bounds of division by literals, instead of
+  difference constraints, so arithmetic in the goal's form is decided rather than matched.
+- *Forward facts with a trigger discipline* instead of rules on atoms that rarely occur: a lemma `{:fw}` is assumed
+  where a term matching its trigger occurs in an assumed fact. The trigger is a term, not a formula; the instance
+  names the term as it occurs, so it reaches the classes and the simplex; instances fire no further triggers
+  (generation 1), an instance that is known already is skipped, and triggers belong on named terms (a function of
+  the database), not on raw trace patterns, which would be matched at every read of every component.
+- *Views and one suspension facility* for cycles: a read of a component is matched as the trace of that accumulator
+  alone, the others bound over their histories; the rules whose conditions are being evaluated and the components
+  whose views are being computed are suspended by the same mechanism, which also replaces the re-entrance guard of
+  the simplifier.
+- *Case splits and counterexamples* where rewriting stops: a remaining goal is proved by cases on a disjunctive
+  premise, and a remaining goal of arithmetic only is refuted by evaluating it at small values.
+
+**Not taken (yet):** equality saturation over an e-graph, which would make the order of rules irrelevant and keep
+all forms of a term (a library first, integrated only if rule order still costs proofs); splitting the exit of an
+outer loop on demand; firing forward lemmas once per trace definition with a memo per lemma and canonical term
+(ideas/prove-next.md), needed before many more forward lemmas, since the firing at every assumed fact is quadratic
+in the conjuncts of a premise.
 
 ## What differs from the simplifier
 
@@ -145,4 +197,4 @@ whose cuts are the partition points (`bsearch_bisect.dfy`, 8 s; `bsearch_safe.df
 8 s); the per-component route is kept as a regression test (`bsearch_sorted.dfy` in two layers, 45 s; `bsearch.dfy`
 with constant partition points, 8 s). Open: the bisection and the partition points of sorted arrays as a module of
 the database, the instances of `invs` by triggers (step 2 of J), the merge and the sorts; see
-[ideas/deduction-engine-implementation.md](../ideas/deduction-engine-implementation.md) and [TODO.md](../TODO.md).
+[doc/prove.md](prove.md) and [TODO.md](../TODO.md).

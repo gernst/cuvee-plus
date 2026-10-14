@@ -8,6 +8,12 @@ user's instruction, Oct 14).
 
 ## Next, by expected gain
 
+- [ ] The two wrong answers of the ACSL tasks (`xml/cuvee-acsl.xml`, Oct 14, Xeon E3-1230 v5): `-vcgen -z3 -verify`
+      answers false on array-examples/data_structures_set_multi_proc_ground-2 and
+      data_structures_set_multi_proc_trivial_ground (expected true); check the annotations of benchmarks/acsl and
+      whether a refuted verification condition with invariants should count as `unknown`.
+- [ ] SV-LIB c-translated/loops-crafted-1/in-de20 is expected false since sv-benchmarks c2d3abfeb, but the program
+      over `Int` satisfies its check (`x == n` for every `n`): Cuvée's `true` looks right, the verdict wrong; report.
 - [ ] SV-LIB: `verify-call` must check the `:requires` of the called procedure (bugs.md, a wrong true on
       `loop-add.1`), and the new conventions of sv-benchmarks (`upto` and other tags).
 - [ ] SV-LIB (CTranslated, CoreVerification) for section 6 of the experiments, the only section still pending.
@@ -34,8 +40,6 @@ user's instruction, Oct 14).
 
 ## Deferred
 
-- [ ] cocktail_sort, counting_sort (do not terminate), the nested sorts (one goal each, their summary lemmas written
-      for the per-variable form; `teq:nested` retired to legacy on Oct 14).
 - [ ] The cost of `-prove`: forward instances simplified again at every firing (a memo; the separate budget of
       0.46.8 was reverted), aggregation on polynomial loops (bugs.md).
 - [ ] nla-digbench: non-linear arithmetic, beyond the lemma database for now.
