@@ -1,23 +1,13 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -include teq:nested -prove examples/dafny/algorithms/insertion_sort2.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/insertion_sort2.dfy
 // insertion sort with nested loops, with two pointers j and p == j - 1 in the inner loop, such that the positions
 // of the swaps are counters: insertion_sort.dfy swaps b[j] and b[j - 1], arithmetic on a bound variable of the
 // trace, which patterns do not match (TODO.md), hence its inner loop cannot be summarized (the principle of
 // reverse.dfy: two pointers instead of index arithmetic)
 //
-// status: verified with -teq -simplify, both sorted(b, 0, n) and perm(b, a);
-// the outer array trace is the chain of the results of the inner loop, B == results(a, ⌊K⌋, B?), and the inner loop
-// is a trace of swaps B' == trace(b, for ⌊J⌋, ⌊P⌋ do y, j, p :: y[j := y[p]][p := y[j]]) over the counters J from i
-// and P from k == i - 1 down by 1, which invs_sums_counter of fragments.dfy recognizes, with the iteration
-// constraints 0 < j and y[j] < y[p], and the exit !(0 < j && b'[j] < b'[p]) on the final values; the summary lemma
-// current_results_insert takes all of them as side conditions, matched against the facts (as current_results_bubble
-// in bubble_sort.dfy, with duplicates identified by equations, since a closed side condition is decided, not
-// matched; the relation i == k + 1 of the two counters is a closed side condition that the simplifier decides), and
-// rewrites the outer trace into the trace of insert(b, i), the insertion of b[i] into b[0..i), an abstract function;
-// sorted(b, 0, n) then follows from sorted_prefix_steps_two, a generic induction over a trace of steps at the
-// positions i of a second counter that extend a sorted prefix, whose quantified side condition the simplifier
-// decides by sorted_insert (the side condition must not state i == k + 1: the simplifier substitutes it, and the
-// pattern sorted(insert(b, i), 0, i + 1) does not match sorted(insert(b, k + 1), 0, k + 2)); perm(b, a) from
-// perm_steps_two and perm_insert
+// status (Oct 14, 2026): -teq -prove leaves one goal, the postcondition sorted(b, 0, n) && perm(b, a); as in
+// bubble_sort.dfy, the summary lemma below was written for -simplify on the per-variable form, where the inner loop
+// was fragments of the outer iteration constraint (verified that way, NOTES.md, doc/array-algorithms), and no longer
+// matches the closed inner loop of -teq; teq:nested is retired to resources/cuvee/legacy
 
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 function perm(a: array<int, int>, b: array<int, int>): bool

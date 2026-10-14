@@ -9,6 +9,12 @@ the principles. One file per example (`lsearch.tex`, `selection_sort.tex`,
 ...), included by the main file; `array-algorithms.pdf` is the compiled
 document, rebuilt with the sources.
 
+The document describes the state of Oct 11, 2026: `-teq -simplify` on one trace per variable, with the
+fragments of inner loops of the module `teq:nested`. Since Oct 13, `-teq` makes one trace per strongly
+connected component and closes nested loops, `-prove` replaces `-simplify`, and `teq:nested` is retired to
+`resources/cuvee/legacy` (Oct 14); the nested sorts leave one goal each now, cocktail_sort does not terminate
+(the status lines of the examples). The document is not rewritten until the approach has converged.
+
 ## Build
 
 ```

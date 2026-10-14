@@ -1,17 +1,11 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -include teq:nested -prove examples/dafny/algorithms/insertion_sort.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/insertion_sort.dfy
 // insertion sort with nested loops: the inner loop moves b[i] down by adjacent swaps while it is smaller than its
 // predecessor
 //
-// status: verified with -teq -simplify, both sorted(b, 0, n) and perm(b, a);
-// the inner loop swaps b[j] and b[j - 1], arithmetic on a bound variable of the trace, which no pattern matches
-// (TODO.md), hence the summary lemma current_results_insert takes the positions of the swaps as higher-order P(y, j)
-// and Q(y, j), like perm_results_swaps before it, and pins them to j and j - 1 by quantified side conditions, which
-// the simplifier decides by beta reduction (the workaround for every literal pattern that is not matched, also the
-// disjunctive guard of merge.dfy); likewise the test y[j] < y[j - 1] of the inner loop is a higher-order D(y, j),
-// pinned, and stated apart from 0 < j, since the simplifier splits the constraint into two fragments; otherwise as
-// insertion_sort2.dfy (two pointers), whose summary has the positions as counters: the inner counter J from i down by
-// 1 by invs_sums_counter of fragments.dfy, the exit on the final values, the duplicate-variable trick for closed
-// side conditions, the induction sorted_prefix_steps_two with sorted_insert, and perm_steps_two with perm_insert
+// status (Oct 14, 2026): -teq -prove leaves one goal, the postcondition sorted(b, 0, n) && perm(b, a); as in
+// bubble_sort.dfy, the summary lemma below was written for -simplify on the per-variable form, where the inner loop
+// was fragments of the outer iteration constraint (verified that way, NOTES.md, doc/array-algorithms), and no longer
+// matches the closed inner loop of -teq; teq:nested is retired to resources/cuvee/legacy
 
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 function perm(a: array<int, int>, b: array<int, int>): bool

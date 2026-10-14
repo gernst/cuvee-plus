@@ -66,8 +66,11 @@ statistics of the experiments (scripts/out/rules.csv, rules-unused.txt) as a gui
   `integer(n) <= j`, which the goal does not contain; the benchmark definitions run a second round of `-split -prove`,
   which splits the disjunctions that the `_cases` rules of `mods` introduce (in-de20, in-de31, sum_by_3 close
   locally). SV-COMP at 60 s with 0.46.5: Arrays 144 correct, Loops 154 (0.42.1: 139, 141), no wrong answers.
-- Next: retiring nested (a rewrite of the lemmas of the three sorts), the remaining conversions to forward lemmas,
-  the firing at definitions (step 3 of J) before more forward lemmas.
+- `nested.dfy` retired to `resources/cuvee/legacy` (Oct 14): bubble_sort, insertion_sort and insertion_sort2 leave
+  the same goal without it (the postcondition), cocktail_sort does not terminate either way; no file includes
+  `teq:nested` any more.
+- Next: the remaining conversions to forward lemmas, the firing at definitions (step 3 of J) before more forward
+  lemmas.
 
 ## The state of the files (before the migration)
 

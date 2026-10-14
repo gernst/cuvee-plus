@@ -8,6 +8,14 @@ true, -16 for a wrong false).
 
 ### Open
 
+- **`verify-call` of SV-LIB assumes the precondition of the called procedure instead of checking it** (Oct 14,
+  2026, the run of CoreVerification): `loop-add.1` calls `add (x0 y0)` without `(assert (<= 0 y0))`, `add` has
+  `:requires (<= 0 y0)`, the task is expected false (property `correct-annotations`), and both `xml/cuvee.xml` and
+  `xml/cuvee-chc.xml` answer true (`loop-add.2`, with the assertion, is true). The frontend attaches the `:requires`
+  as an assumption of the call; for `verify-call`, the precondition must be an obligation of the arguments. The other
+  five tasks of CoreVerification end in errors of the frontend (`unknown tag "upto"`), since sv-benchmarks merged new
+  SV-LIB conventions.
+
 - **A bound variable captures a constant of the same name** (confirmed with 0.46.7, `-simplify` and `-prove`):
   `(declare-const x Int) (declare-const y Int)` with the goal `(=> (exists ((x Int)) (< x y)) (<= x y))`, which
   is not valid (`x = y + 1`), is turned into the valid `(forall ((x Int)) (=> (< x y) (<= x y)))`, so a solver

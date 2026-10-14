@@ -15,6 +15,10 @@ lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>,
            J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
       <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
 
+function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
+  trace(x0, for ks, bs do x, k, b :: b)
+}
+
 function insert(b: array<int, int>, i: int): array<int, int>
 
 lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>,

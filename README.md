@@ -134,8 +134,8 @@ lists them.
   whose rewrite rules `-prove` applies, e.g. the counter lemma;
   `-include teq:<concept>` adds a module of
   [resources/cuvee/teq](resources/cuvee/teq) (`aggregation`, `arithmetic`,
-  `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`, and the
-  unmigrated `nested`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
+  `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`; the former
+  `nested` is in `resources/cuvee/legacy`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
   `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`, `unsigned`) are proved in Lean 4 ([lean/](lean)), against
   statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
   [teq.dfy](resources/cuvee/teq.dfy) is kept but no longer injected. `-rules` reports the rules that

@@ -193,13 +193,14 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   its iteration constraints below `m` and its final values). The rules of
   these files never applied on SV-COMP and specific to one task stay in the
   legacy file.
-  Not migrated: `teq:nested`, the fragments of inner loops (the inner counter,
+  Retired to [legacy/nested.dfy](../resources/cuvee/legacy/nested.dfy) on
+  Oct 14, 2026: the former `teq:nested`, the fragments of inner loops (the inner counter,
   its final value, its iteration constraint, its exit stated on the constraint
   fragment `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, the numbers of
   inner iterations as `⌊consts(m, natural(n))⌋`, the outer trace of a variable
   that only the inner loop modifies, `results`), which `-teq` no longer needs,
-  since an inner loop is a value of the outer update, and which only the
-  nested sorting algorithms still include. The order of the modules is the order in
+  since an inner loop is a value of the outer update; the nested sorting
+  algorithms leave the same goals without it. The order of the modules is the order in
   which the rules are tried.
   [legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy) is the former single
   file of the per-variable form, from which its modules were split: a backup,

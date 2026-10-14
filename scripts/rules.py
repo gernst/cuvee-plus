@@ -21,7 +21,7 @@ import common
 from table import pdflatex
 
 TEQ = common.SCRIPTS.parent / "resources" / "cuvee" / "teq.dfy"
-# the migrated modules of the database that the benchmark definitions include (-include teq:<module>), not nested
+# the migrated modules of the database that the benchmark definitions include (-include teq:<module>)
 MODULES = ["aggregation", "arithmetic", "arrays", "counters", "search", "sorted", "strides", "unsigned"]
 DATABASE = [TEQ] + [TEQ.parent / "teq" / f"{name}.dfy" for name in MODULES]
 

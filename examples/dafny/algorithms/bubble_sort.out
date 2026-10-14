@@ -17,6 +17,10 @@ lemma {:rw} perm_bubble_pass(b: array<int, int>, c: array<int, int>,
                              js: List<int>)
   ensures perm(current(bubble_pass(b, js)), c) <==> perm(b, c)
 
+function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
+  trace(x0, for ks, bs do x, k, b :: b)
+}
+
 lemma {:rw} current_results_bubble(a: array<int, int>, len: int, ks: List<int>,
                                    js: List<int>, Js: List<Trace<int>>,
                                    Js2: List<Trace<int>>, js3: List<int>,

@@ -8,6 +8,8 @@ user's instruction, Oct 14).
 
 ## Next, by expected gain
 
+- [ ] SV-LIB: `verify-call` must check the `:requires` of the called procedure (bugs.md, a wrong true on
+      `loop-add.1`), and the new conventions of sv-benchmarks (`upto` and other tags).
 - [ ] SV-LIB (CTranslated, CoreVerification) for section 6 of the experiments, the only section still pending.
 - [ ] ps2-ll_unwindbound1 times out with 0.46.13 at 60 s (31 s with 0.46.8).
 - [ ] The inconsistency of the bisection (bugs.md, open): a premise on `bisection_lo`/`_hi` never matches, a premise
@@ -32,7 +34,8 @@ user's instruction, Oct 14).
 
 ## Deferred
 
-- [ ] cocktail_sort, counting_sort (do not terminate), the nested sorts with `teq:sorted`, retiring `teq:nested`.
+- [ ] cocktail_sort, counting_sort (do not terminate), the nested sorts (one goal each, their summary lemmas written
+      for the per-variable form; `teq:nested` retired to legacy on Oct 14).
 - [ ] The cost of `-prove`: forward instances simplified again at every firing (a memo; the separate budget of
       0.46.8 was reverted), aggregation on polynomial loops (bugs.md).
 - [ ] nla-digbench: non-linear arithmetic, beyond the lemma database for now.

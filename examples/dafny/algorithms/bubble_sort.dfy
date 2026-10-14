@@ -1,26 +1,12 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -include teq:nested -prove examples/dafny/algorithms/bubble_sort.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/bubble_sort.dfy
 // bubble sort with nested loops: the outer loop moves the bound i down, the inner loop swaps adjacent elements
 // out of order below it
 //
-// status: verified with -teq -simplify, see NOTES.md for the approach and the workarounds;
-// the inner loop becomes fragments of the iteration constraint of the outer loop over fresh sequences, which the
-// simplifier does not combine (invs_counter_equation.dfy, invs_fragments.dfy); the lemma current_results_bubble
-// summarizes the inner loop from these fragments as side conditions, which are matched against the facts of the
-// goal: the result b₃₇ of the outer loop becomes current(trace(a, for ⌊K⌋ do b, k :: current(bubble_pass(b, ...)))),
-// n passes, the k-th over the positions 0, ..., len - k - 2; perm(b, a) then follows from perm_steps, a generic lemma
-// on traces of steps that preserve the permutation, whose quantified side condition the simplifier decides by
-// perm_bubble_pass, and sorted(b, 0, n) from sorted_bubbled_steps, a generic induction over a trace of steps F that
-// keep the invariant bubbled(b, k, len) of the outer loop, a predicate indexed by the iteration (the sorted suffix
-// of length k, partitioned from the prefix), whose quantified side condition the simplifier decides by the lemma on
-// one pass (bubbled_pass); this replaces the lemma
-// sorted_bubble_passes, which stated the correctness of the whole outer loop at once, and the function passlen,
-// which the pattern of that lemma needed for the length len - k - 1 of a pass, arithmetic on a bound variable
-// (TODO.md), whereas the right-hand side of current_results_bubble and the side condition of the induction may
-// contain it; workarounds for the matching of side conditions, see NOTES.md: an invs side condition is matched
-// against the facts only while one of its sequence variables is open (a closed one is decided by the simplifier,
-// which does not find it among the facts, since these keep the counter ⌊I⌋ as a dependency and rename bound
-// variables), hence the conditions are ordered such that each binds a new variable, and duplicates (Js2, js3, Js3)
-// are identified by equations, which are closed and decided
+// status (Oct 14, 2026): -teq -prove leaves one goal, the postcondition sorted(b, 0, n) && perm(b, a); the inner
+// loop is a value of the outer update since -teq closes nested loops, so the lemmas below, written for -simplify on
+// the per-variable form, where the inner loop was fragments of the outer iteration constraint (verified that way on
+// Oct 11, 2026, NOTES.md, doc/array-algorithms), no longer match; the module teq:nested of those fragments is retired
+// to resources/cuvee/legacy (the goal is the same with and without it)
 
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 function perm(a: array<int, int>, b: array<int, int>): bool

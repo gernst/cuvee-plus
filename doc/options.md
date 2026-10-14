@@ -22,7 +22,7 @@ The transformations are applied in the order in which they are given, e.g.
 | `-arch 32\|64` | the data model of C input, 32 or 64 bit Linux (ILP32 or LP64), e.g. for `sizeof`; by default 64, or the data model of an SV-COMP task |
 | `-unbounded` | nondeterministic values of C input are unbounded integers, unsigned ones only nonnegative, instead of within the ranges of their types; unsigned arithmetic does not wrap around |
 | `-entry <name>` | the procedure where executions start, which `-teq` and `-chc` check; by default `main` in C, none otherwise (SV-LIB starts at its `verify-call` commands, `-chc` needs an entry point in Dafny, Boogie, and SMT-LIB); `-vcgen` ignores it and checks every procedure against its contract |
-| `-include <file>` | inject `<file>` into the input after its prelude, parsed in the language of its extension; `-include teq:<concept>` injects the module `<concept>` of the lemma database of `-teq` (`aggregation`, `arithmetic`, `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`, `nested`) |
+| `-include <file>` | inject `<file>` into the input after its prelude, parsed in the language of its extension; `-include teq:<concept>` injects the module `<concept>` of the lemma database of `-teq` (`aggregation`, `arithmetic`, `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`) |
 | `-hybrid` | inject the definitions of parallel composition into Dafny input: channels, events, the history, `send`, and `receive` |
 
 ## Transformations

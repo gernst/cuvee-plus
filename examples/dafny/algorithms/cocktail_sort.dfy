@@ -1,27 +1,13 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -include teq:nested -prove examples/dafny/algorithms/cocktail_sort.dfy
+// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/cocktail_sort.dfy
 // cocktail shaker sort: each outer iteration runs a forward bubble pass over [lo, hi), which moves the maximum to
 // hi - 1, and a backward pass over (lo, hi - 1], which moves the minimum to lo; the backward pass uses two pointers
 // j and p == j - 1 (insertion_sort2.dfy)
 //
-// status: verified with -teq -simplify, both sorted(b, 0, n) and perm(b, a) (Oct 11, 2026, evening);
-// two inner loops per outer iteration: the forward pass is bubble_pass of bubble_sort.dfy from the previous value to
-// an intermediate result, the backward pass bubble_pass_back over the two counters j and p from the intermediate
-// result to the result, all as fragments of the iteration constraint of the outer loop; the summary lemma
-// current_results_shake takes the fragments of both inner loops as side conditions (bubble_sort.dfy,
-// insertion_sort2.dfy) and makes the outer trace the trace of shake(b, k, len), an abstract function; the initial
-// values len - k - 2 and len - k - 3 of the backward counters are higher-order X(k) and Y(k) in the side conditions,
-// with their values as closed invs side conditions that the simplifier decides, since a pattern sum of a rule
-// variable and a bound variable with several summands is not matched (TODO.md); sorted(b, 0, len) follows from the
-// induction sorted_shaken_steps over the invariant shaken(b, k, len) indexed by the iteration (both ends sorted, like
-// bubbled in bubble_sort.dfy), perm(b, a) from perm_steps and perm_shake;
-// the goal stayed open for a day for three reasons, found by truncated copies of the summary lemma with the first k
-// side conditions (NOTES.md): the last side condition, the final values of the backward counter, had all its
-// variables bound by earlier conditions, so it was closed and decided instead of matched against the fact, which
-// fails (NOTES.md, principle 9; now fresh variables js6, Js6 with identifying equations, like js5, Js5 for the forward
-// pass); the bound len <= 2 m + 1 of the induction is not a difference constraint and the simplifier does not combine
-// the facts n <= integer(m) + lo + 1 and lo == integer(m), so the lemma states the bound in the goal's form with lo an
-// open variable; and the rule variable n was renamed to len, apart from the program's n (finding 21), which alone did
-// not help; the run of Oct 10 that closed the goal once presumably decided the closed condition by chance
+// status (Oct 14, 2026): -teq -prove does not terminate (rewriting does not terminate); the summary lemma below,
+// over the fragments of the two inner loops, was written for -simplify on the per-variable form (verified that way on
+// Oct 11, 2026, NOTES.md, doc/array-algorithms), deferred as hard; teq:nested is retired to
+// resources/cuvee/legacy
+
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 function perm(a: array<int, int>, b: array<int, int>): bool
 

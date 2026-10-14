@@ -88,7 +88,7 @@ or solvers consume.
   entry point (`TEQ.modules`); `-include teq:<concept>` injects an optional
   module of [resources/cuvee/teq](resources/cuvee/teq) after it. The optional
   modules were written for the per-variable form and are migrated into modules
-  over teq.dfy alone, all but `nested` ([ideas/teq-modules.md](ideas/teq-modules.md));
+  over teq.dfy alone ([ideas/teq-modules.md](ideas/teq-modules.md)), `nested` retired to `legacy/`;
   the benchmark definitions include all migrated ones. Rules left out of a
   module stay in [legacy/](resources/cuvee/legacy); before dropping a rule,
   check SV-COMP (`scripts/missing.py`, doc/benchmarks.md).

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """missing.py <logfiles.zip> <tasks>: for each task of the file <tasks> (paths of .yml files, one per line), the rules
 that a run of -rules (its :used lists in the zipped log files of BenchExec) applied and that the current lemma database
-(resources/cuvee/teq.dfy and the modules of resources/cuvee/teq, without nested) no longer has, e.g. to find the rules
+(resources/cuvee/teq.dfy and the modules of resources/cuvee/teq) no longer has, e.g. to find the rules
 that a migration of a module dropped; names of the C prelude (uint, truth, ...) are listed as well."""
 import re, sys, zipfile, glob
 names = set()
 for p in ['resources/cuvee/teq.dfy'] + glob.glob('resources/cuvee/teq/*.dfy'):
-    if p.endswith('nested.dfy'): continue
     names |= set(re.findall(r'lemma (?:\{:[^}]*\} )*(\w+)', open(p).read()))
 z = zipfile.ZipFile(sys.argv[1]); files = z.namelist()
 from collections import Counter
