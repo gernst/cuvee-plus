@@ -164,7 +164,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `arithmetic`, `counters`, `aggregation`, `arrays`, `search` in this order,
   and `nested`, `sorting`, `strides` were optional); they are migrated file by
   file into modules over teq.dfy alone (see
-  [ideas/teq-modules.md](../ideas/teq-modules.md)), all but `nested` by
+  [doc/teq.md](teq.md)), all but `nested` by
   Oct 13, 2026; rules that still iterate over the iterations and the loop
   variable, or over further variables `hs`, match the single dependency of
   `-teq` (see [prove.md](prove.md)). Migrated:
@@ -370,6 +370,31 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
     cycling pair; every result is checked on a program with a wrong
     postcondition, which must leave a goal; long runs use a private copy of
     the jar and read the exit status, since a killed run prints no goal.
+
+### Rewrite rules or forward lemmas
+
+A rewrite rule (`{:rw}`) applies where its left-hand side occurs; a forward lemma (`{:fw}`) is assumed by `-prove`
+wherever a term matching its trigger occurs in an assumed fact (see [prove.md](prove.md)). The choice per kind of
+lemma:
+
+- **Rewrite rules**: trace introductions and folds, which name a trace (`trace(...) == stores(...)`, `bisection`);
+  equations that compute a value (`current(counter(i, c, n)) == ...`, `earlier(j, ⌊sums(...)⌋) == ...`); atoms that
+  occur in goals as they are, e.g. postconditions (`sorted_short`, `perm_refl`); the rules on `invs` atoms of
+  iteration constraints.
+- **Forward lemmas**: facts about a term whose atom rarely occurs literally, but which the arithmetic or the classes
+  need where the term occurs: bounds of a trace or of a named value (`bisection_lo`, `bounds` of the partition
+  points, the triangles), bounds and (dis)equations at reads (`earlier_above_iterations`, `earlier_agree_prefix`,
+  `select_not_occurs_selects`), facts that refute an atom (`natural_positive`, `store_occurs_selects`).
+- **Both**, a rule on the atom and a forward lemma on the term, only where an example shows that the atom must be
+  decided where no fact was assumed, e.g. a side condition decided inside an update; otherwise the forward fact
+  suffices, since closed conditions are looked up among the facts.
+
+Triggers belong on named terms (a function of the database), not on raw trace patterns: a trace pattern is matched
+through the views at every read of every component, in every sibling context; so a forward lemma about a trace comes
+with a rule that names the trace (the bisection). The firing at every assumed fact is quadratic in the conjuncts of
+a premise; with dozens of forward lemmas, the firing with a memo per lemma and term is needed first
+(ideas/prove-next.md). The order of a file matters for rules as well: a rule whose pattern subsumes another must come
+after it (`sum_add` after `sum_neg` and `sum_scale`).
 
 ## The semantics in Lean ([lean/](../lean))
 

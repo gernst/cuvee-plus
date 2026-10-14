@@ -1,27 +1,17 @@
 # Work queue of the database migration and the engine
 
 The open items of the current work (Oct 13, 2026 on), kept up to date; the plans behind them are in
-[teq-modules.md](teq-modules.md) (database) and [prove-next.md](prove-next.md) (engine), bugs in
+[doc/teq.md](../doc/teq.md) (database) and [prove-next.md](prove-next.md) (engine), bugs in
 [bugs.md](../bugs.md). Priority: more correct results, `true` first (TEQ is made for proofs, and they score
 double); speed only where a task times out that would succeed. Benchmarks that change are not rerun with Cuvée (the
 user's instruction, Oct 14).
 
 ## Next, by expected gain
 
-- [ ] The two wrong answers of the ACSL tasks (`xml/cuvee-acsl.xml`, Oct 14, Xeon E3-1230 v5): `-vcgen -z3 -verify`
-      answers false on array-examples/data_structures_set_multi_proc_ground-2 and
-      data_structures_set_multi_proc_trivial_ground (expected true); check the annotations of benchmarks/acsl and
-      whether a refuted verification condition with invariants should count as `unknown`.
-- [ ] SV-LIB c-translated/loops-crafted-1/in-de20 is expected false since sv-benchmarks c2d3abfeb, but the program
-      over `Int` satisfies its check (`x == n` for every `n`): Cuvée's `true` looks right, the verdict wrong; report.
-- [ ] SV-LIB: `verify-call` must check the `:requires` of the called procedure (bugs.md, a wrong true on
-      `loop-add.1`), and the new conventions of sv-benchmarks (`upto` and other tags).
-- [ ] SV-LIB (CTranslated, CoreVerification) for section 6 of the experiments, the only section still pending.
+- [ ] Report the bugs of sv-benchmarks (bugs.md, Bugs of sv-benchmarks): the verdict of SV-LIB in-de20 and the
+      out-of-bounds read of standard_vararg_ground.
+- [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
 - [ ] ps2-ll_unwindbound1 times out with 0.46.13 at 60 s (31 s with 0.46.8).
-- [ ] The inconsistency of the bisection (bugs.md, open): a premise on `bisection_lo`/`_hi` never matches, a premise
-      on the rule `bisection` makes bsearch_bisect.dfy not terminate (the earlier "0 goals" were runs killed by
-      the timeout; always check the exit status). Next idea: a third case of the function `bisection` that keeps
-      the state, or the premise as a closed condition over the trace's own histories without `hs`.
 - [ ] Recurrences in arrays: open `ifcomp` (three levels, `c[j] == j^3`: a sum of a quadratic over
       `counter(1, 1, j)`, which needs a general sum of squares with an exact division by 6, as a forward lemma like
       `triangle_even`, and products matched modulo commutativity), `pcomp`, `sqm-if`, `nsqm-if`, `condm`.
@@ -44,8 +34,7 @@ user's instruction, Oct 14).
       0.46.8 was reverted), aggregation on polynomial loops (bugs.md).
 - [ ] nla-digbench: non-linear arithmetic, beyond the lemma database for now.
 - [ ] Lean: the lemmas added since 0.46.12 (`select_current_trace_recurrence`, `store_select_other`,
-      `maps_counter_scale`, `occurs_counter_step`, `integer_zero`), the module `unsigned`, the bisection (the Lean
-      session).
+      `maps_counter_scale`, `occurs_counter_step`, `integer_zero`), the module `unsigned` (the Lean session).
 
 ## Last
 

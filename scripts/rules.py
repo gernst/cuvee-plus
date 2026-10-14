@@ -132,9 +132,10 @@ def frequency(collected, totals, ranked, labels, path):
     axes.set_ylabel("proved tasks")
     axes.grid(axis="y", which="both", linewidth=0.3, alpha=0.5)
     if len(collected) > 1:
-        axes.legend()
+        # below the axes and their label, such that it covers no bar
+        axes.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2, frameon=False)
     figure.tight_layout()
-    figure.savefig(path)
+    figure.savefig(path, bbox_inches="tight")
     plt.close(figure)
 
 

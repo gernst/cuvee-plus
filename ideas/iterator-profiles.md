@@ -124,7 +124,7 @@ choose a form of invariant that Frama-C can check. In TEQs both are the database
 - **Reads from earlier iterations**, `a[i-1]` (VAJRA `eqn2`–`eqn5`, `ncomp`, `pcomp`, `sqm`; their future work).
   A TEQ represents them: the read at iteration `k` is a select of the earlier stores at `k - 1`, i.e. the value
   written in the previous iteration. The written values are then themselves a trace, a *chain*
-  ([teq-modules.md](teq-modules.md) item 3). In `eqn2`, `a[i] = a[i-1] + 4` and then `b[i] = b[i-1] + a[i-1]`
+  (chains are not yet in [doc/teq.md](../doc/teq.md)). In `eqn2`, `a[i] = a[i-1] + 4` and then `b[i] = b[i-1] + a[i-1]`
   give `b[i] = 2i² + 2i + 1`. That needs (1) matching an index-shifted read against the stores of the same loop
   (the open TODO on patterns with `k - 1`), (2) turning stores whose value depends on the previous one into a
   trace over the values, and (3) closed forms of polynomial recurrences (`triangle_*` covers degree 2 partly).
@@ -137,7 +137,7 @@ choose a form of invariant that Frama-C can check. In TEQs both are the database
   introduction rule *generated* from a recursive definition of the form `f(n) = if n == 0 then init else g(f(n -
   1), n - 1)`: `current(trace(init, for ⌊counter(0, 1, n)⌋ do x, k ↦ g(x, k))) == f(n)`, proved once by induction
   for this form. This is the inverse of what LoopAnnotator does (it writes such functions), and it would let TEQs
-  meet specifications written in that style ([teq-lean.md](teq-lean.md)).
+  meet specifications written in that style ([TODO.md](../TODO.md), Proofs of teq.dfy in Lean).
 
 ## Summary by dataset
 

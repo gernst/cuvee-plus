@@ -76,8 +76,8 @@ def gather(benchmark: str, categories: list[str], need: Need, directory: Path = 
 # the labels of the columns, also for tools without results yet
 LABELS = {
     **common.LABELS,
-    "cuvee": "Cuvée",
-    "cuvee-fallback": "Cuvée+Z3",
+    "cuvee": "Cuvée (TEQ)",
+    "cuvee-fallback": "Cuvée+Z3 (TEQ)",
     "cuvee-chc": "Cuvée (CHC)",
     "monocera": "MonoCera",
     "tricera": "TriCera",
@@ -300,11 +300,11 @@ DOCUMENT = r"""\documentclass[a4paper]{article}
 \end{center}
 
 \noindent The experiments of \texttt{ideas/experiments.md}, with the current version of Cuvée only (0.46, after
-the migration of the lemma database). Cuvée runs with \texttt{-teq -prove -split -prove -split -prove} (one trace
+the migration of the lemma database). Cuvée (TEQ) runs with \texttt{-teq -prove -split -prove -split -prove} (one trace
 per strongly connected component of the variables of a loop, the deduction engine \texttt{-prove}), the lemma
 database \texttt{teq.dfy} with the modules \texttt{aggregation}, \texttt{arithmetic}, \texttt{arrays},
 \texttt{counters}, \texttt{search}, \texttt{sorted}, \texttt{strides}, \texttt{unsigned}, and
-\texttt{-verify}; Cuvée+Z3 adds \texttt{-fallback -z3} (one round of \texttt{-split -prove}), Cuvée (CHC) is
+\texttt{-verify}; Cuvée+Z3 (TEQ) adds \texttt{-fallback -z3} (one round of \texttt{-split -prove}), Cuvée (CHC) is
 \texttt{-simplify -chc -z3}. All our runs: BenchExec, 15\,min CPU time, 7\,GB, 2 cores of an Intel Core i7-6700
 @ 3.40\,GHz, unless the legends say otherwise. A dash marks results that are missing, listed as pending.
 No scores are given, since our runs do not validate witnesses.
@@ -369,7 +369,11 @@ The tasks of Arrays and Loops annotated by hand with ACSL (\texttt{benchmarks/ac
 
 \section{SV-LIB: the verification tasks}
 The categories CTranslated (the loop tasks of SV-COMP translated to SV-LIB) and CoreVerification of SV-LIB
-(property correct-tags), with the mathematical integers of SMT-LIB; CoreValidation is out of scope.
+(property correct-tags), with the mathematical integers of SMT-LIB; CoreValidation is out of scope. Our runs of
+Cuvée next to the official results of all participants of the demonstration category SV-LIB of SV-COMP 2026
+(CPAchecker, PySvLib-CHC, SvLibChecker), which validate the witnesses. Each is counted against the expected
+verdicts of its own run: those of SV-COMP 2026 (252 and 5 tasks, some without a verdict then), ours of the
+current sv-benchmarks (253 and 7 tasks).
 \begin{center}\footnotesize
 \fit{\input{svlib.tex}}
 <svlib-note>
@@ -452,10 +456,12 @@ def main():
 
     # 6. SV-LIB
     svlib = ["CTranslated (SV-LIB)", "CoreVerification (SV-LIB)"]
+    official6 = common.collect(["cpachecker", "pysvlib-chc", "svlibchecker"], svlib, args.official, quiet=True)
     spec6 = columns([
         ("cuvee", "here", gather("cuvee", svlib, teq)),
+        ("cuvee-fallback", "here", gather("cuvee-fallback", svlib, teq)),
         ("cuvee-chc", "here", gather("cuvee-chc", svlib, teq)),
-    ])
+    ]) + [table.Column(tool, "SV-COMP", results) for tool, results in official6.items()]
     (out / "svlib.tex").write_text(grid(spec6, svlib))
     replacements["svlib"] = (note(pending(spec6, svlib)), legend(spec6))
     plots(plt, out, "svlib", spec6, svlib, "SV-LIB verification tasks")

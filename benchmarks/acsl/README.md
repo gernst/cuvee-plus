@@ -12,7 +12,9 @@ expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
   (15 min per task, Oct 12, 2026, a partial run stopped with 27 tasks
   unfinished, see [Results](#results)), 3 wrong `false`, 2 of them by arrays
   as values; `veris.c_sendmail_tTflag_arr_one_loop` is corrected since and
-  proves (753).
+  proves (753). Cuvée 0.46.13 (Oct 14, 2026, 15 min, Xeon E3-1230 v5): 753
+  true, the same 2 wrong `false` by arrays as values, whose tasks take their
+  arrays as global variables since and prove.
 
 ## Origin
 
@@ -271,11 +273,13 @@ The 85 tasks that the partial run with 0.42.1 and `-verify` (see
   - arrays of pointers (`array-industry-pattern/array_ptr_partial_init`,
     `array-lopstr16/partial_lesser_bound`), pointer arithmetic
     (`loops/veris.c_NetBSD-libc_loop`).
-- **The arrays as values** (3): `array-examples/sanfoundry_43_ground`
-  assigns an array parameter for its caller, which needs in/out parameters
-  (see [TODO.md](../../TODO.md)); `data_structures_set_multi_proc_ground-2`
-  and `_trivial_ground` pass arrays to functions that change them, wrong
-  `false` answers under `-verify`.
+- **The arrays as values** (3, fixed Oct 14, 2026): `array-examples/sanfoundry_43_ground`
+  assigns an array parameter for its caller, `data_structures_set_multi_proc_ground-2`
+  and `_trivial_ground` pass arrays to functions that change them (wrong
+  `false` answers under `-verify`), which needs in/out parameters (see
+  [TODO.md](../../TODO.md)). Their arrays are global variables now, the
+  functions take them from there (`insert` with a frame condition); all three
+  prove (0.46.14, locally).
 - **A bug of the frontend** (1): `loops-crafted-1/watermelon` declares the
   globals `int true = 1; int false = 0;`, which reach z3 under these names
   and clash with its constants (a solver error, see [TODO.md](../../TODO.md)).

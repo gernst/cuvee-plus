@@ -29,19 +29,21 @@ CATEGORIES = ["Arrays", "Loops"]
 
 # names for display; other benchmarks fall back to the displayName of their definition, e.g. cuvee (Cuvée,
 # whose time limit was 1 min in the runs on Arrays and Loops); cuvee-full, with all modules of the lemma
-# database, is Cuvée, as the configuration of the comparison; Cuvée+Z3 is Cuvée with -fallback, which hands
-# the goals to z3
+# database, is Cuvée (TEQ), as the configuration of the comparison; Cuvée+Z3 (TEQ) is Cuvée (TEQ) with -fallback,
+# which hands the goals to z3
 LABELS = {
-    "cuvee-15min": "Cuvée",
-    "cuvee-fallback": "Cuvée+Z3",
-    "cuvee-full": "Cuvée",
-    "cuvee-full-fallback": "Cuvée+Z3",
+    "cuvee-15min": "Cuvée (TEQ)",
+    "cuvee-fallback": "Cuvée+Z3 (TEQ)",
+    "cuvee-full": "Cuvée (TEQ)",
+    "cuvee-full-fallback": "Cuvée+Z3 (TEQ)",
     "cuvee-chc": "Cuvée (CHC)",
     "symbiotic": "Symbiotic",
     "aise": "AISE",
     "uautomizer": "UAutomizer",
     "cpachecker": "CPAchecker",
     "korn": "Korn",
+    "pysvlib-chc": "PySvLib-CHC",
+    "svlibchecker": "SvLibChecker",
 }
 
 # scores of SV-COMP for verdicts on reachability: a wrong proof costs twice as much as a wrong alarm
@@ -271,6 +273,8 @@ STYLES = {
     "korn": ("#000000", "h"),
     "monocera": ("#ff9896", "p"),
     "tricera": ("#c49c94", "H"),
+    "pysvlib-chc": ("#e7ba52", "d"),
+    "svlibchecker": ("#843c39", "8"),
 }
 
 

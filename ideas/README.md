@@ -9,11 +9,6 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
   gain.
 - [prove-next.md](prove-next.md): the planned changes to the engine of `-prove` after the database migration, with
   what was tried.
-- [teq-modules.md](teq-modules.md): the migration of the lemma database into modules over teq.dfy, its progress,
-  and the choice between rewrite rules and forward lemmas.
-- [teq-lean.md](teq-lean.md): the open points of the Lean proofs of the database (implemented in `lean/`): the
-  premises as `requires`, a Scala test of the generated statements, the legacy theorems, a Lean mode of the
-  printer, faithful guards.
 - [conditional-stores.md](conditional-stores.md): guarded stores merged into stores of conditional values, in
   `-teq`, instead of `2^s` cases (the strided stores `pr3`-`pr5`).
 - [iterator-profiles.md](iterator-profiles.md): the loop patterns of LoopAnnotator (ASE 2026, iterator

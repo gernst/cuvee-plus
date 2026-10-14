@@ -1,4 +1,5 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md)
+// ACSL annotations added by hand (benchmarks/acsl/README.md); the arrays src and dst are global
+// variables instead of parameters, since Cuvée passes arrays by value
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -23,9 +24,11 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int();
 
+int src[100000];
+int dst[100000];
 /*@ assigns dst[0..99999];
     ensures \forall integer t; 0 <= t < 100000 ==> dst[t] == src[t] + 1; */
-void incrementArray(int src[100000] , int dst[100000])
+void incrementArray()
 {
     int i;
     /*@ loop invariant 0 <= i <= 100000;
@@ -37,8 +40,6 @@ void incrementArray(int src[100000] , int dst[100000])
 }
 int main()
 {
-    int src[100000];
-    int dst[100000];
 				
     /*@ loop invariant 0 <= i <= 100000;
         loop assigns i, src[0..99999]; */
@@ -46,7 +47,7 @@ int main()
         src[i] = __VERIFIER_nondet_int();
     }
 
-    incrementArray( src , dst );
+    incrementArray( );
     int x;
     /*@ loop invariant 0 <= x <= 100000;
         loop invariant \forall integer t; 0 <= t < 100000 ==> dst[t] == src[t] + 1;

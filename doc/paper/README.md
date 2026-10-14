@@ -30,8 +30,8 @@ those of `scripts/common.py` (`load`).
 
 | Column | Version | Result files |
 |---|---|---|
-| Cuvée | 0.46.9, `-verify`, the migrated modules | `results/cuvee.2026-10-13_22-11-17` (Arrays), `results/cuvee.2026-10-13_22-11-21` (Loops) |
-| Cuvée+Z3 | 0.46.9, `-verify`, the migrated modules | `results/cuvee-fallback.2026-10-13_22-11-26` (Arrays), `results/cuvee-fallback.2026-10-13_22-11-29` (Loops) |
+| Cuvée (TEQ) | 0.46.9, `-verify`, the migrated modules | `results/cuvee.2026-10-13_22-11-17` (Arrays), `results/cuvee.2026-10-13_22-11-21` (Loops) |
+| Cuvée+Z3 (TEQ) | 0.46.9, `-verify`, the migrated modules | `results/cuvee-fallback.2026-10-13_22-11-26` (Arrays), `results/cuvee-fallback.2026-10-13_22-11-29` (Loops) |
 | Others | SV-COMP 2026 | `scripts/official/<tool>.*.fixed.xml.bz2` |
 
 - The paper names no version of Cuvée. The table was updated on Oct 14, 2026 with the runs of 0.46.9, after the

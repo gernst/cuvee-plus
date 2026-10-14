@@ -1,6 +1,7 @@
 # Bugs
 
-Wrong results, errors, crashes, and non-termination, as of 0.46.7 (Oct 13, 2026); limitations and planned work are
+Wrong results, errors, crashes, and non-termination, as of 0.46.7 (Oct 13, 2026), and the bugs found in the
+benchmarks of others (sv-benchmarks); limitations and planned work are
 in [TODO.md](TODO.md). Soundness comes first: a wrong proof costs more than any open goal (SV-COMP: -32 for a wrong
 true, -16 for a wrong false).
 
@@ -74,21 +75,12 @@ the contexts that `-teq` builds, as far as the reasons go.
   `nested`, which has no Lean proofs; the abstract predicates of the examples (`sorted`, `perm`, `partitioned`,
   `bubbled`, `shaken`, `argmin`, `insert`, `shake`, `nodup`, `merged`, `lb`), axiomatized by their lemmas, and the
   summary lemmas of examples/dafny/algorithms, which state the correctness of an inner loop in one line
-  (doc/array-algorithms/principles.tex, Soundness; ideas/teq-modules.md, items 5 and 6); ACSL lemmas, which are
+  (doc/array-algorithms/principles.tex, Soundness; doc/teq.md); ACSL lemmas, which are
   `:free`, and lemmas with `:free` in general (`Solver`, `pipe.Verify` assume them like axioms).
 - **`-fallback` does not assume the premises above** (equal lengths, indices within the lists, complete guards);
-  ideas/teq-modules.md names this a candidate cause of its wrong proofs (see below).
+  doc/teq.md names this a candidate cause of its wrong proofs (see below).
 
 ### Fixed, to be confirmed
-
-- **`verify-call` of SV-LIB assumed the precondition of the called procedure instead of checking it** (Oct 14, 2026,
-  the run of CoreVerification): `loop-add.1` calls `add (x0 y0)` without `(assert (<= 0 y0))`, `add` has
-  `:requires (<= 0 y0)`, the task is expected false, and both `-teq` and `-chc` answered true. Fixed in 0.46.14: a
-  verify-call mimics a call in the global SMT context, so the precondition must follow from the declarations and
-  axioms for the arguments; `TEQ.precondition` adds that goal, `Horn.entry` a query clause. Locally `-chc` answers
-  false on `loop-add.1`, `-teq` unknown (sound; the counterexample search does not take the constant `y0` as a
-  variable); `loop-add.2` stays true. To confirm: a rerun of CoreVerification. The other five tasks there end in
-  errors of the frontend (`unknown tag "upto"`), since sv-benchmarks merged new SV-LIB conventions.
 
 - The bisection of `teq:search` was inconsistent (found by the Lean proofs, Oct 13, 2026): the rule `bisection`
   guarded both cases by `lo < hi`, a step after the exit was `unspecified`, and `bisection_lo` bounded it, which gave
@@ -130,7 +122,7 @@ the contexts that `-teq` builds, as far as the reasons go.
   leaves both of its goals. The mechanism is not excluded by design: `Rewrite.conditions` simplifies an instance
   of a side condition in `ctx.neutral`, which keeps the facts of the goal, in both engines; `Context.active`
   suspends only the rule itself. A harness that runs each `-teq` example with its `*_wrong` variant
-  (ideas/teq-modules.md, item 8) would catch a recurrence.
+  would catch a recurrence.
 - A side condition that is an `invs` is matched in the context of the fact's combinator, where other rules fire,
   also with the hypotheses of the goal: in [first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy) a rule
   `nodup(a, k, n) <==> true` under the hypothesis `distincts(...)` rewrote the condition
@@ -145,7 +137,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 
 - C: signed overflow is not modelled; `-unbounded` also drops the wrap-around of unsigned integers (which proves
   `geo1-u`, unsafe only by it); arrays are values, so the updates of a callee to an array parameter do not reach
-  the caller (2 of the wrong false of the ACSL runs of Oct 12, 2026); variables declared without a value are
+  the caller (the ACSL tasks that relied on it take their arrays as global variables since Oct 14, 2026); variables declared without a value are
   arbitrary integers; memory safety is not checked (`\valid` is true).
 - `-vcgen`: without a measure, termination is not checked (`VCGen.scala:99`).
 
@@ -349,7 +341,40 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   other state persists across runs. The example is moved out of `vcgen`,
   hence no suite runs it.
 
+## Bugs of sv-benchmarks
+
+Tasks of [sv-benchmarks](https://gitlab.com/sosy-lab/benchmarking/sv-benchmarks) whose expected verdict is wrong or
+whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7c1d7ce). Not reported yet.
+
+- **`sv-lib/c-translated/loops-crafted-1/in-de20`: expected `false`, but the check holds.** The verdict was flipped
+  from correct to incorrect in c2d3abfeb ("Fix verdict of task whose behavior depends on a bounded data type"), but
+  this task does not depend on the bound. Over `Int`, `x := n; y := 0`, the first loop moves `x` to `y`, `z := y`,
+  the second moves it back, and the check `x == n` holds for every `n`: for `n <= 0` both loops are skipped. Proved by
+  Cuvée (TEQ), and by z3 on the inductive invariants `x + y == n`, `y >= 0`, `x >= 0` if `n > 0`, `x == n && y == 0`
+  otherwise (first loop), `x == n - z`, `z >= 0` (second loop). The C original (unsigned) is expected true. All three
+  participants of SV-COMP 2026 time out on it. Our result files of Oct 14 take it as expected true (patched,
+  originals in `results/*.orig`).
+- **`c/array-examples/standard_vararg_ground`: an out-of-bounds read in a task expected true.** `while (aa[a] >= 0)
+  a++;` reads up to the first negative element of the nondeterministic array `aa[100000]`, beyond the array if
+  there is none, which is undefined behavior in C; the verdicts `unreach-call` true and `termination` true assume
+  that the read stops within the array. Verifiers that check memory safety refute it: TriCera answered false on our
+  translation (benchmarks/sv-comp/c), which assumes a negative last element since (`aa[N - 1] < 0`, keeping the
+  verdict true; README there). Our Dafny translation (benchmarks/sv-comp/dafny) reads an unbounded map, where a read
+  beyond `N` is an arbitrary value, not undefined: its verdict true holds (the loop may not terminate, which
+  `unreach-call` allows); SV-LIB has no translation of it.
+
 ## Fixed
+
+- **`verify-call` of SV-LIB assumed the precondition of the called procedure instead of checking it** (Oct 14, 2026,
+  the run of CoreVerification): `loop-add.1` calls `add (x0 y0)` without `(assert (<= 0 y0))`, `add` has
+  `:requires (<= 0 y0)`, the task is expected false, and both `-teq` and `-chc` answered true. Fixed in 0.46.14: a
+  verify-call mimics a call in the global SMT context, so the precondition must follow from the declarations and
+  axioms for the arguments; `TEQ.precondition` adds that goal, `Horn.entry` a query clause. Locally `-chc` answers
+  false on `loop-add.1`, `-teq` unknown (sound; the counterexample search does not take the constant `y0` as a
+  variable); `loop-add.2` stays true. Confirmed locally with the jar of 0.46.14 (Oct 14), and the result files of the
+  cloud runs of 0.46.13 patched accordingly (`results/*.orig` are the originals); confirmed on the cloud by the run of
+  `xml/cuvee-fallback.xml` on 0.46.14 (loop-add.1 correct false). The other five tasks there end in
+  errors of the frontend (`unknown tag "upto"`), since sv-benchmarks merged new SV-LIB conventions.
 
 - A rule is applied while the instances of its own side conditions are simplified (`Rewrite.conditions` simplifies an
   instance before it decides or matches it): a condition that mentions the term of the rule's left-hand side, e.g.

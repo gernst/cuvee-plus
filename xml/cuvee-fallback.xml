@@ -6,7 +6,7 @@
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
   <option name="-teq"/>
-  <!-- the lemma database teq.dfy of -teq and the optional modules migrated so far (ideas/teq-modules.md) -->
+  <!-- the lemma database teq.dfy of -teq and the optional modules migrated so far (doc/teq.md) -->
   <option name="-include">teq:aggregation</option>
   <option name="-include">teq:arithmetic</option>
   <option name="-include">teq:arrays</option>
@@ -78,6 +78,19 @@
       <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/sum/*.yml</include>
       <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+  </rundefinition>
+
+  <!-- the categories SV-LIB.correct-tags.* of SV-COMP (sv-benchmarks/sv-lib) for verifiers; not CoreValidation,
+       whose tasks are for validators, nor the translations of BTOR2, which are on bitvectors -->
+  <rundefinition name="SV-LIB_correct-tags">
+    <tasks name="SV-LIB.correct-tags.CoreVerification">
+      <includesfile>../sv-benchmarks/sv-lib/CoreVerification.set</includesfile>
+      <propertyfile>../sv-benchmarks/sv-lib/properties/correct-annotations.prp</propertyfile>
+    </tasks>
+    <tasks name="SV-LIB.correct-tags.CTranslated">
+      <includesfile>../sv-benchmarks/sv-lib/CTranslated.set</includesfile>
+      <propertyfile>../sv-benchmarks/sv-lib/properties/correct-annotations.prp</propertyfile>
     </tasks>
   </rundefinition>
 

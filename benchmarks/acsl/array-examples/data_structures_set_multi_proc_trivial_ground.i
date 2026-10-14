@@ -1,4 +1,5 @@
-// ACSL annotations added by hand (benchmarks/acsl/README.md): no element is ever inserted (n stays 0)
+// ACSL annotations added by hand (benchmarks/acsl/README.md); the array set is a global
+// variable instead of a parameter, since Cuvée passes arrays by value: no element is ever inserted (n stays 0)
 /*@ assigns \nothing;
     ensures \false; */
 extern void abort(void);
@@ -23,11 +24,13 @@ void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: {reach_error();abort();}
 /*@ assigns \nothing; */
 extern int __VERIFIER_nondet_int();
 
+int set[ 100000 ];
 /*@ requires 0 <= size < 100000;
     assigns set[size];
     ensures \result == size + 1;
-    ensures set[size] == value; */
-int insert( int set [] , int size , int value ) {
+    ensures set[size] == value;
+    ensures \forall integer t; t != size ==> set[t] == \old(set[t]); */
+int insert( int size , int value ) {
   set[ size ] = value;
   return size + 1;
 }
@@ -35,7 +38,7 @@ int insert( int set [] , int size , int value ) {
     assigns \nothing;
     ensures (\result == 1) <==> (\exists integer t; 0 <= t < size && set[t] == value);
     ensures \result == 1 || \result == 0; */
-int elem_exists( int set [ ] , int size , int value ) {
+int elem_exists( int size , int value ) {
   int i;
   /*@ loop invariant 0 <= i <= size;
       loop invariant \forall integer t; 0 <= t < i ==> set[t] != value;
@@ -47,7 +50,6 @@ int elem_exists( int set [ ] , int size , int value ) {
 }
 int main( ) {
   int n = 0;
-  int set[ 100000 ];
   int x;
   int y;
 	
@@ -83,8 +85,8 @@ int main( ) {
       loop invariant n == 0;
       loop assigns v, n, set[0..99999]; */
   for ( v = 0 ; v < 100000 ; v++ ) {
-    if ( elem_exists( set , n , values[ v ] ) ) {
-      n = insert( set , n , values[ v ] );
+    if ( elem_exists( n , values[ v ] ) ) {
+      n = insert( n , values[ v ] );
     }
     /*@ loop invariant 0 <= x <= n;
         loop invariant n == 0;

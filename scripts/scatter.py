@@ -75,7 +75,8 @@ def plot(plt, x: str, y: str, collected, categories: list[str], names: dict[str,
     axes.set_xlabel(f"CPU time of {names[x]} (s)")
     axes.set_ylabel(f"CPU time of {names[y]} (s)")
     axes.grid(True, which="major", alpha=0.3)
-    axes.legend(loc="upper left", frameon=False)
+    # below the axes and their label, such that it covers no curve
+    axes.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2, frameon=False)
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)
     return True

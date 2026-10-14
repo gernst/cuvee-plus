@@ -1,8 +1,7 @@
 # Experiments for a paper comparing TEQ with other techniques
 
-Plan of Oct 12, 2026, from the runs so far. The numbers below mix versions from 0.36.3 to 0.41.3 and limits of
-60 s and 15 min; they show what to expect, the paper needs the reruns at the end, with one version, `-verify`, and
-the same limits for all tools.
+Plan of Oct 12, 2026, updated Oct 14 with the runs of 0.46 (15 min, `-verify`); older rows are kept for the
+comparison. `scripts/out/experiments.pdf` takes the newest runs of 0.46 only.
 
 ## 1. Aggregates over arrays: the MonoCera tests
 
@@ -12,11 +11,11 @@ paper's conversion of the programs for it.
 
 | | forall (93) | max (4) | min (11) | sum (17) | total |
 |---|--:|--:|--:|--:|--:|
-| Cuvée `-teq` | 53 | 2 | 7 | 17 | 79 |
-| Cuvée+Z3 (0.46.9, `-unbounded`, 15 min, i7-6700) | 59 | 3 | 9 | 17 | 88 |
+| Cuvée (TEQ) | 53 | 2 | 7 | 17 | 79 |
+| Cuvée+Z3 (TEQ, 0.46.9, `-unbounded`, 15 min, i7-6700) | 59 | 3 | 9 | 17 | 88 |
 | MonoCera (our run, 15 min) | 26 | 2 | 3 | 10 | 41 |
 | MonoCera (paper) | 27 | 2 | 3 | 10 | 42 |
-| Cuvée `-chc` (z3, Horn clauses) | 0 | 0 | 0 | 0 | 0 |
+| Cuvée (CHC) | 0 | 0 | 0 | 0 | 0 |
 | TriCera, CPAchecker, SeaHorn (paper) | | | | | 0, 1, 0 |
 
 - The direct comparison with a technique made for quantifiers and aggregates over arrays; no wrong results.
@@ -43,15 +42,15 @@ and others (imported from the SV-COMP statistics, not run by us).
 
 | | Arrays (440) | Loops (764) |
 |---|--:|--:|
-| Cuvée (0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false |
-| Cuvée (0.46.9, `-verify`, 15 min, i7-6700) | 138 true, 9 false | 149 true, 16 false |
-| Cuvée+Z3 (0.46.9, `-verify`, 15 min, i7-6700) | 148 true, 48 false | 230 true, 20 false |
-| Cuvée (CHC) (0.46.9, 15 min, i7-6700) | 8 true, 45 false | 150 true, 41 false |
-| Cuvée+Z3 (0.42.2, `-verify`, 15 min) | 148 true, 51 false | 283 true, 28 false |
-| Cuvée (CHC) (0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false |
-| Cuvée (0.42.1, `-verify`, 60 s, i9-9900) | 130 true, 9 false | 125 true, 16 false |
-| Cuvée (0.46.5, `-verify`, 60 s, i7-6700) | 136 true, 9 false | 145 true, 16 false |
-| Cuvée (0.46.13, `-verify`, 60 s, i7-6700) | 144 true, 53 false | 148 true, 24 false |
+| Cuvée (TEQ, 0.42.1, `-verify`, 15 min) | 138 true, 9 false | 126 true, 16 false |
+| Cuvée (TEQ, 0.46.9, `-verify`, 15 min, i7-6700) | 138 true, 9 false | 149 true, 16 false |
+| Cuvée+Z3 (TEQ, 0.46.9, `-verify`, 15 min, i7-6700) | 148 true, 48 false | 230 true, 20 false |
+| Cuvée (CHC, 0.46.9, 15 min, i7-6700) | 8 true, 45 false | 150 true, 41 false |
+| Cuvée+Z3 (TEQ, 0.42.2, `-verify`, 15 min) | 148 true, 51 false | 283 true, 28 false |
+| Cuvée (CHC, 0.36.3, 15 min) | 8 true, 45 false | 149 true, 41 false |
+| Cuvée (TEQ, 0.42.1, `-verify`, 60 s, i9-9900) | 130 true, 9 false | 125 true, 16 false |
+| Cuvée (TEQ, 0.46.5, `-verify`, 60 s, i7-6700) | 136 true, 9 false | 145 true, 16 false |
+| Cuvée (TEQ, 0.46.13, `-verify`, 60 s, i7-6700) | 144 true, 53 false | 148 true, 24 false |
 
 The other tools: the confirmed results of SV-COMP 2026 on the same tasks, see `scripts/out/experiments.pdf`. No
 scores, since Cuvée produces no witnesses: they are only meaningful with witness validation.
@@ -63,7 +62,7 @@ scores, since Cuvée produces no witnesses: they are only meaningful with witnes
   `-prove`, the migrated modules with `-include`, a second round of `-split -prove`) with the per-variable form
   (0.42.1, `-simplify`, the whole database and `teq:nested`); not in `scripts/out/experiments.pdf`, which takes the
   15 min runs. 0.46.5 loses 11 tasks of 0.42.1 (Arrays: indp5, revcpyswp2, time outs; Loops: in-de41 to in-de62,
-  sum_by_3_abstracted, sum_array-2-2, while_infinite_loop_4) and gains 37; see ideas/teq-modules.md.
+  sum_by_3_abstracted, sum_array-2-2, while_infinite_loop_4) and gains 37; see doc/teq.md.
 - Arrays is where TEQ should stand out against the model checkers; on Loops over integers, the Horn-based and
   model-checking tools lead.
 - The tasks have machine integers, which TEQ models in part (nondeterministic values in their ranges, unsigned
@@ -97,12 +96,12 @@ Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose ar
 
 | | proved (15 min) | wrong |
 |---|--:|--:|
-| Cuvée `-teq -unbounded` (0.41.4) | 234 | 0 |
-| Cuvée+Z3 `-unbounded` (0.42.2) | 290 | 0 |
+| Cuvée (TEQ, `-unbounded`, 0.41.4) | 234 | 0 |
+| Cuvée+Z3 (TEQ, `-unbounded`, 0.42.2) | 290 | 0 |
 | Korn `-u` (Oct 11, 2026) | 175 | 0 |
-| Cuvée `-teq -unbounded` (0.46.13, i7-6700) | 263 | 0 |
-| Cuvée+Z3 `-unbounded` (0.46.13, i7-6700) | 299 | 0 |
-| Cuvée (CHC) `-unbounded` (0.46.13, i7-6700) | 144 | 0 |
+| Cuvée (TEQ, `-unbounded`, 0.46.13, i7-6700) | 263 | 0 |
+| Cuvée+Z3 (TEQ, `-unbounded`, 0.46.13, i7-6700) | 299 | 0 |
+| Cuvée (CHC, `-unbounded`, 0.46.13, i7-6700) | 144 | 0 |
 | TriCera, MonoCera artifact, `-arithMode:math` (i9-9900) | 137 | 0 |
 
 - Rerun on Oct 14, 2026 with 0.46.13 after the migration of the lemma database (15 min, i7-6700): Cuvée 234 to
@@ -126,10 +125,21 @@ Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose ar
 ## 5. Annotations against automation: the ACSL tasks
 
 The 838 tasks of SV-COMP Arrays and Loops annotated by hand with ACSL ([benchmarks/acsl](../benchmarks/acsl)),
-303 of Arrays and 535 of Loops, all expected true (the 323 tasks expected false were removed): `-vcgen -z3` with
-the given invariants proves 603 of them (0.40.0, 60 s), TEQ without annotations 263 of the same programs (0.41.4,
-15 min), 614 either. How far TEQ gets automatically, and which tasks need annotations (nonlinear closed forms,
-`\min`). The annotations are not checked with Frama-C.
+303 of Arrays and 535 of Loops, all expected true (the 323 tasks expected false were removed), with the invariants
+as given: `-vcgen -z3 -verify` (`xml/cuvee-acsl.xml`).
+
+| | Arrays | Loops | Split | wrong |
+|---|--:|--:|--:|--:|
+| `-vcgen -z3` (0.40.0, 60 s) | | | | 603 proved in all |
+| `-vcgen -z3 -verify` (0.46.13, 15 min, Xeon E3-1230 v5) | 285 | 423 | 45 | 2 false |
+
+- TEQ without annotations proves 263 of the same programs (0.41.4, 15 min), 614 either (0.40.0); to be recomputed
+  for 0.46.
+- The two wrong answers, false on data_structures_set_multi_proc_ground-2 and
+  data_structures_set_multi_proc_trivial_ground (expected true), came from arrays passed by value to a function that
+  changes them; the tasks (and sanfoundry_43_ground) take their arrays as global variables since, and prove
+  (locally, 0.46.14).
+- The annotations are not checked with Frama-C.
 
 ## 6. SV-LIB: the verification tasks
 
@@ -145,14 +155,32 @@ as tags (`correct-tags`).
 
 | | true | false | wrong |
 |---|--:|--:|--:|
-| Cuvée `-teq` (0.39.0, 60 s, without `teq:nested`) | 125 | 2 | 0 |
-| Cuvée `-chc` (0.39.0, 60 s) | 123 | 37 | 1 (a translation issue, since fixed) |
+| Cuvée (TEQ, 0.39.0, 60 s, without `teq:nested`) | 125 | 2 | 0 |
+| Cuvée (CHC, 0.39.0, 60 s) | 123 | 37 | 1 (a translation issue, since fixed) |
+| Cuvée (TEQ, 0.46.13, 15 min, Xeon E3-1230 v5, patched) | 140 | 29 | 0 |
+| Cuvée (CHC, 0.46.13, 15 min, Xeon E3-1230 v5) | 129 | 40 | 0 |
+| Cuvée+Z3 (TEQ, 0.46.14, 15 min, i7-10700, patched) | 142 | 29 | 0 |
 
-- TEQ proves, Horn clauses also refute: a portfolio as in 3.
-- Other tools from the official results of an SV-LIB category, if SV-COMP has one; otherwise SV-LIB is a second
-  frontend of Cuvée on the same programs, not a comparison.
-- Rerun with `-verify` (`xml/cuvee.xml` and `xml/cuvee-chc.xml`, run definition `SV-LIB_correct-tags`, task sets
-  `CTranslated` and `CoreVerification`), with `teq:nested` again.
+- CoreVerification (Oct 14, 0.46.13): each configuration 1 correct true and 1 wrong true (loop-add.1, expected
+  false), the other tasks `not supported` (the tag `upto` of the new conventions). The wrong true came from
+  `verify-call` assuming the precondition of the callee; fixed in 0.46.14 (the precondition must follow from the
+  declarations and axioms).
+- The wrong true of `-teq` on CTranslated was loops-crafted-1/in-de20, expected false since sv-benchmarks
+  c2d3abfeb, but the program satisfies its check for every integer `n` (inductive invariants checked with z3, see
+  ideas/work-queue.md): the verdict is wrong, and our result files take it as true (patched, originals as
+  `results/*.orig`); the official results of SV-COMP 2026 are unaffected (all three time out).
+- loop-add.1 (CoreVerification): the wrong true of both configurations is fixed in 0.46.14 (`-teq` unknown, `-chc`
+  correct false, confirmed locally); the result files of 0.46.13 are patched accordingly.
+- TEQ proves more, Horn clauses refute more: a portfolio as in 3.
+- The participants of the demonstration category SV-LIB of SV-COMP 2026 (official results, witnesses validated,
+  in `scripts/official`): on CTranslated CPAchecker 111 true, 35 false (13 unconfirmed), PySvLib-CHC 118 true, 38
+  false (11 unconfirmed, 1 wrong true, 1 wrong false), SvLibChecker 116 true, 36 false (7 unconfirmed); on
+  CoreVerification CPAchecker 1 true, SvLibChecker 2 false. Each counted against the verdicts of its own run
+  (SV-COMP 2026: 252 and 5 tasks; ours: 253 and 7). Cuvée (TEQ) proves the most, Cuvée (CHC) refutes the most.
+- Cuvée+Z3 (TEQ) on SV-LIB (Oct 14, 0.46.14, Intel Core i7-10700, after the runs on the Xeon stalled): CTranslated
+  142 true, 29 false (in-de20 patched as above), CoreVerification 1 true and loop-add.1 correct false, which
+  confirms the check of the precondition at `verify-call` on the cloud. In total 143 true, 30 false, no wrong
+  result: the most proofs of all tools on SV-LIB.
 
 ## Ablations
 
@@ -187,10 +215,14 @@ Done (Oct 13, 2026, 19:44–21:17, Cuvée 0.46.3 to 0.46.5, 60 s, 2 cores, 7 GB,
 see doc/benchmarks.md); correct results Arrays 105, 124, 140, 144, 145 and Loops 128, 148, 154, 154, 161, no wrong
 results.
 
-To do: the MonoCera tests with `-unbounded` (`xml/cuvee.xml`, `xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml`),
-MonoCera itself (`xml/monocera.xml`); SV-LIB `CTranslated` and `CoreVerification` (`xml/cuvee.xml`,
-`xml/cuvee-chc.xml`); `-chc` on SV-COMP with `-verify`; the ACSL tasks with `-verify` after the revised
-annotations.
+Done (Oct 14, 2026, Cuvée 0.46.13, 15 min, 2 cores, 7 GB): the unbounded set with `xml/cuvee.xml`,
+`xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml` (i7-6700) and `xml/tricera.xml` (i9-9900), section 4; the ACSL tasks
+with `xml/cuvee-acsl.xml` and SV-LIB `CTranslated` and `CoreVerification` with `xml/cuvee.xml` and
+`xml/cuvee-chc.xml` (Xeon E3-1230 v5), sections 5 and 6.
+
+To do: SV-LIB `CoreVerification` with `-teq` and `-chc` on 0.46.14 (patched for now; the fallback run confirms
+the fix);
+the three changed ACSL tasks (or all, for one version); TEQ on the programs of the ACSL tasks with 0.46.
 
 `scripts/experiments.py` makes `scripts/out/experiments.pdf` from the newest results that meet each experiment's
 requirements (options, time limit), with blanks for the missing ones. The other tools on SV-COMP come from the

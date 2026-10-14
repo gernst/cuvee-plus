@@ -112,6 +112,21 @@ length, the bisection of `teq:search`, the soundness of `sat` with `-chc`, and p
   (bugs.md, Fixed); `-print lean` prints its trace of two accumulators as a trace of a product.
 - The check from scratch takes about 20 s, mostly `simp` and typeclass inference for the decidability of `if` on generic
   types under `open Classical`; `simp only` instead of `simp` would speed it up.
+- Open (formerly ideas/teq-lean.md):
+  - The nine index premises of `lean/premises.txt` (reads and prefixes within the loop) as `requires` of the
+    lemmas, if `-prove` decides `integer(k) < integer(n)` in the contexts of the goals; measure each on `mill -i
+    test` and the SV-COMP rows that use it. The length premise of `sum_consts_prefix` stays (the engine knows no
+    lengths). For now only documented (decision of the user, Oct 13, 2026).
+  - A test in `mill -i test` that generates `Database.lean` in memory and compares it with the committed one, so that
+    a change of a stable module fails the Scala tests without Lean (`generate.py --check` does it on request).
+  - The legacy theorems of `Proofs.lean` (lemmas of `legacy/teq.dfy` no longer in the stable modules): a frozen
+    `Legacy.lean`, or dropped with the legacy database.
+  - The definitions of `cut` and of the predicates of sorted.dfy fix one meaning of functions that the engines use
+    through their lemmas only (`cut` on an empty interval, `lower` as the cut of `ar[j] < y`).
+  - A Lean mode of the printer (`Stmt` definitions and the preamble) instead of the text manipulation of
+    `generate.py`; the comments of `lean.Printer` still refer to the former `resources/cuvee/teq.lean`.
+  - Guards are printed as `if g₁ then e₁ else if g₂ then e₂ else unspecified` (0.46.11); overlapping guards take
+    the first case.
 
 ## Printers
 
@@ -840,8 +855,9 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   - Deferred: array parameters that a function assigns as in/out parameters. Arrays are values in Cuvée's C
     and ACSL, so `void incrementArray(int src[N], int dst[N])` assigns a copy of `dst`: its `ensures dst[t] ==
     src[t] + 1` speaks of the value passed in (z3 answers `Unknown`, quantified), and the caller's `dst` stays
-    unchanged after the call, while C passes a pointer (`array-examples/sanfoundry_43_ground`; wrong false
-    verdicts, see bugs.md). In/out parameters, whose final value the caller receives and
+    unchanged after the call, while C passes a pointer (wrong false verdicts, see bugs.md; the three ACSL tasks
+    affected, `array-examples/sanfoundry_43_ground` and `data_structures_set_multi_proc_*`, take their arrays as
+    global variables since Oct 14, 2026). In/out parameters, whose final value the caller receives and
     `ensures` refers to, are sound when the arguments do not alias, which `\separated` states in Frama-C and
     distinct variables as arguments would ensure here. The memory clauses of the annotations are removed
     (`\valid`, `\valid_read`, `\separated`, `\null`); the two tasks with

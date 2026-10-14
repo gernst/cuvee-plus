@@ -7,7 +7,7 @@
   <require cpuModel="Intel Core i7-6700 @ 3.40 GHz"/>
 
   <option name="-teq"/>
-  <!-- the lemma database teq.dfy of -teq and the optional modules migrated so far (ideas/teq-modules.md) -->
+  <!-- the lemma database teq.dfy of -teq and the optional modules migrated so far (doc/teq.md) -->
   <option name="-include">teq:aggregation</option>
   <option name="-include">teq:arithmetic</option>
   <option name="-include">teq:arrays</option>

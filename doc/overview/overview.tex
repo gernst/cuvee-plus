@@ -111,8 +111,10 @@ e.g.\ bounded integers with wrap-around for unsigned types). For the loop
 i := 0; s := 0; while (i < n) { s := s + a[i]; i := i + 1; }
 \end{lstlisting}
 \texttt{-teq} produces, with the counter $K = \mathit{counter}(0, 1, m)$,
-\[ I = \mathit{counter}(0, 1, m),\quad S = \mathit{trace}(0,\ \textbf{for}\ \tr{I}\ \textbf{do}\ s, i :: s +
-a[i]),\quad \mathit{invs}(\textbf{for}\ \tr{I}\ \textbf{check}\ i :: i < n),\quad \neg(\mathit{current}(I) < n), \]
+\begin{gather*}
+I = \mathit{counter}(0, 1, m),\quad S = \mathit{trace}(0,\ \textbf{for}\ \tr{I}\ \textbf{do}\ s, i :: s + a[i]),\\
+\mathit{invs}(\textbf{for}\ \tr{I}\ \textbf{check}\ i :: i < n),\quad \neg(\mathit{current}(I) < n),
+\end{gather*}
 and the lemma database turns $\mathit{current}(S)$ into $\mathit{sum}(\mathit{selects}(a, \tr{I}))$, the sum of
 the elements read, and the iteration constraint with the exit into $\mathit{current}(I) = n$ for $0 \le n$.
 
@@ -190,9 +192,9 @@ On ReachSafety-Arrays (440 tasks) and ReachSafety-Loops (764):
 & \multicolumn{3}{c|}{Arrays} & \multicolumn{3}{c}{Loops} \\
 & true & false & wrong & true & false & wrong \\
 \midrule
-\cuvee{} (no solver) & 138 & 9 & 0 & 149 & 16 & 0 \\
-\cuvee{} with Z3 & 148 & 48 & 0 & 230 & 20 & 0 \\
-\cuvee{} with Horn clauses & 8 & 45 & 0 & 150 & 41 & 0 \\
+\cuvee{} (TEQ) & 138 & 9 & 0 & 149 & 16 & 0 \\
+\cuvee{}+Z3 (TEQ) & 148 & 48 & 0 & 230 & 20 & 0 \\
+\cuvee{} (CHC) & 8 & 45 & 0 & 150 & 41 & 0 \\
 virtual portfolio of the last two & 151 & 67 & 0 & 262 & 52 & 0 \\
 \midrule
 Symbiotic (SV-COMP 2026, confirmed) & 68 & 79 & 0 & 364 & 156 & 0 \\
