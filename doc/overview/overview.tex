@@ -206,7 +206,9 @@ over array indices. Loops over integers with non-linear invariants (\texttt{nla-
 Horn clause solvers and model checkers lead; the solver helps there most (63 of the 83 proofs it adds on Loops).
 TEQ and Horn clauses are complementary: their portfolio scores higher than either. On the MonoCera benchmark of
 aggregates over arrays (125 tests of universal properties, maxima, minima and sums), \cuvee{} proves 79 and 88
-with Z3, against 41 for MonoCera, a tool built for this class. No configuration gives a wrong answer.
+with Z3, against 41 for MonoCera, a tool built for this class. On 481 programs with symbolic loop bounds and
+mathematical integers (translations of SV-COMP tasks), \cuvee{} proves 263, with Z3 299, while Horn clauses prove
+144 and the Horn-based verifier Korn 175. No configuration gives a wrong answer.
 
 \section{Insights}
 \label{sec:insights}
