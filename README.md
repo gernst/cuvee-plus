@@ -211,8 +211,9 @@ Executions of a C program start in `main`, the entry point (`-entry <name>`
 selects another one): `-teq` emits a goal for `main` only and checks the
 other functions inlined at their calls, in their context; in SV-LIB, the
 `verify-call` commands are the entry points;
-With `-witness <file>`, Cuvée writes a witness of SV-COMP for the answer to a C program, without content for
-now, which leaves the proof or the search for the path to the validator (see doc/options.md).
+With `-witness <file>`, Cuvée writes a witness of SV-COMP for the answer to a C program: without invariants for
+true, with the call of `reach_error` as the target for false, which leave the proof or the search for the path to
+the validator (see doc/options.md).
 `-chc -z3 -verify` (Horn clauses) and `-vcgen -z3 -verify` (the annotations as
 given, `unknown` for loops without invariant) are alternatives that are not
 used in the competition. The SV-LIB frontend does not support labels and

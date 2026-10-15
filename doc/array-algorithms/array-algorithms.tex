@@ -80,7 +80,8 @@ Three things must work together for this, and the examples of this document test
   for the loops they were written for (Sections~\ref{sec:engine:db} and~\ref{sec:bisect}).
 \end{itemize}
 The worked examples come in order of what they need. The linear search (Section~\ref{sec:lsearch}) needs an iteration
-constraint named and instantiated at a position. Nested loops (Section~\ref{sec:nested}) need nothing beyond the
+constraint named and instantiated at a position. The swap of two arrays (Section~\ref{sec:swap}) is a cycle of two
+variables, which the lemmas of single loops resolve through the views of its components. Nested loops (Section~\ref{sec:nested}) need nothing beyond the
 lemmas of single loops, because an inner loop is a value of the outer update; the transpose needs one lemma for the
 nest. Binary search (Section~\ref{sec:bisect}) needs a lemma over the whole loop, whose two variables are meaningless
 apart, and shows why such a lemma must be total to be sound. The C programs of the MonoCera benchmarks
@@ -103,6 +104,7 @@ the modules of the database that the file names.
 \input{teq}
 \input{engine}
 \input{lsearch}
+\input{swap}
 \input{nested}
 \input{bisection}
 \input{sorts}

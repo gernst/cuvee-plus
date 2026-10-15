@@ -18,8 +18,8 @@ The results are those of reruns on Oct 14, 2026, with the command line in the fi
 - `array-algorithms.tex`: preamble, introduction, notation, the order of the sections, the AI declaration.
 - `teq.tex`: trace equation systems (combinators, the partition into components, closed nested loops, choices).
 - `engine.tex`: the engine and the lemma database, each capability with the insight it answers.
-- `lsearch.tex`, `nested.tex`, `bisection.tex`, `sorts.tex`, `monocera.tex` (with `monocera-table.tex`): the worked
-  examples.
+- `lsearch.tex`, `swap.tex`, `nested.tex`, `bisection.tex`, `sorts.tex`, `monocera.tex` (with
+  `monocera-table.tex`): the worked examples.
 - `open.tex`: the algorithms that are not proved, and what they need.
 - `principles.tex`, `conclusion.tex`: the principles and the insights.
 

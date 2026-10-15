@@ -53,7 +53,7 @@ object Witnesses extends TestSuite:
   import cuvee.yml.Witness
   import cuvee.yml.Program
 
-  val program = Program("a.c", "00ff", "ILP32")
+  val program = Program("a.c", "00ff", "ILP32", List((7, 13)))
   val uuid = java.util.UUID.fromString("c66c3ee7-e0de-4bae-87f0-fd48fc7b961d")
   val time = java.time.OffsetDateTime.parse("2026-10-14T10:00:23.5+02:00")
 
@@ -79,7 +79,13 @@ object Witnesses extends TestSuite:
     test("violation"):
       val e = entry(Status.Incorrect)
       e("entry_type") ==> "violation_sequence"
-      e("content").toString ==> "[]"
+      e("content").toString ==>
+        "[{segment=[{waypoint={type=target, action=follow, location={file_name=a.c, line=7, column=13}}}]}]"
+
+    // without a single call of reach_error, the failing assertion is not known
+    test("targets"):
+      Witness.witness(program.copy(targets = Nil), Status.Incorrect, uuid, time) ==> None
+      Witness.witness(program.copy(targets = List((7, 13), (9, 5))), Status.Incorrect, uuid, time) ==> None
 
     test("unknown"):
       Witness.witness(program, Status.Unknown, uuid, time) ==> None
@@ -88,6 +94,8 @@ object Witnesses extends TestSuite:
     test("quoted"):
       val Some(text) = Witness.witness(program, Status.Correct, uuid, time): @unchecked
       assert(text.contains("\"creation_time\": \"2026-10-14T10:00:23+02:00\""))
+      val Some(violation) = Witness.witness(program, Status.Incorrect, uuid, time): @unchecked
+      assert(violation.contains("\"line\": 7"))
 
     // the input file of a task relative to the task definition, its data model from the task
     test("task"):
@@ -96,6 +104,12 @@ object Witnesses extends TestSuite:
       p.name ==> (task / os.up / "long.c").toString
       p.model ==> "ILP32"
       p.hash.length ==> 64
+      p.targets ==> Nil
+
+    // the call in the body of __VERIFIER_assert, not the definition of reach_error, a declaration, or a string
+    test("calls"):
+      Witness.targets((Examples.root / "c" / "vcgen" / "harness.c").toIO) ==> List((14, 13))
+      Witness.targets((Examples.root / "c" / "verify" / "chc_unsafe.c").toIO) ==> List((5, 47))
 
     // SV-LIB has witnesses of its own, the format of C does not apply
     test("svlib"):

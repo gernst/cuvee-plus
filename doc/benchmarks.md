@@ -32,8 +32,8 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 | `xml/cuvee-acsl.xml`, `cuvee-chc.xml` | `-vcgen` on the ACSL tasks of `benchmarks/acsl`, `-chc` |
 | `xml/cpachecker.xml`, `uautomizer.xml`, `korn.xml`, `symbiotic.xml`, `aise.xml`, `monocera.xml` | the other verifiers |
 
-The definitions of Cuvée pass `-witness witness.yml`, a witness of SV-COMP for each answer to a C program,
-without content for now, which BenchExec keeps (`<resultfiles>**/witness.*</resultfiles>`, as for the other
+The definitions of Cuvée pass `-witness witness.yml`, a witness of SV-COMP for each answer to a C program
+(without invariants, or with the target only), which BenchExec keeps (`<resultfiles>**/witness.*</resultfiles>`, as for the other
 verifiers) in `results/<benchmark>.<timestamp>.files/`.
 
 Run definitions and tasks of `cuvee.xml`:

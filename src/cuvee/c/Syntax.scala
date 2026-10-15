@@ -11,9 +11,12 @@ object Syntax:
   def apply(name: String, text: String) =
     Token.Value(name, text)
 
-  // a keyword at the 0-based line and column of jflex, 1-based in the token, as in witnesses
+  // a keyword or a value at the 0-based line and column of jflex, 1-based in the token, as in witnesses
   def located(name: String, line: Int, column: Int) =
-    Token.Located(name, line + 1, column + 1)
+    Token.Located(name, name, line + 1, column + 1)
+
+  def located(name: String, text: String, line: Int, column: Int) =
+    Token.Located(name, text, line + 1, column + 1)
 
   def error(msg: String) =
     Error.raise(msg)

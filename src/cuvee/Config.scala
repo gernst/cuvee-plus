@@ -180,14 +180,14 @@ object Config:
     key -> Flag(Some(args), help, action)
 
   val debug_ =
-    flag("-debug", "<modules>", "enable debugging in <modules> (comma-separated list)"):
+    flag("-debug", "<modules>", "print the steps of the comma-separated <modules>: simplify, rewrite, match, conditions, forward, and views (of -simplify and -prove, see doc/prove.md), solver (the communication with the solvers)"):
       case (config, arg :: rest) =>
         val modules = arg.split(",")
         val config_ = config.copy(debug = config.debug ++ modules)
         (config_, rest)
 
   val vcgen =
-    flag("-vcgen", "generate verification conditions for procedures"):
+    flag("-vcgen", "verification conditions for procedures by weakest preconditions: contracts, loops with invariants, termination measures, global variables, nondeterministic choice and iteration"):
       case (config, rest) =>
         val config_ = config.using(VCGen)
         (config_, rest)
@@ -200,7 +200,7 @@ object Config:
 
   // Horn clauses are no C programs, they are printed in SMT-LIB instead (input files are parsed first, see parse)
   val chc =
-    flag("-chc", "generate constrained Horn clauses for procedures"):
+    flag("-chc", "constrained Horn clauses for procedures, for the inference of invariants, from the entry point"):
       case (config, rest) =>
         val config_ = config.usingMath.using(Horn)
         (config_, rest)
@@ -212,7 +212,7 @@ object Config:
         (config_, rest)
 
   val split =
-    flag("-split", "split goals and lemmas into individual obligations, e.g. after -vcgen"):
+    flag("-split", "split goals and lemmas into individual obligations forall xs. antecedents ==> conclusion, which the solvers report one by one"):
       case (config, rest) =>
         val config_ = config.using(Split)
         (config_, rest)
@@ -224,7 +224,7 @@ object Config:
         (config_, rest)
 
   val fallback =
-    flag("-fallback", "lower trace equation systems into first-order logic for solvers, e.g. after -teq -prove"):
+    flag("-fallback", "lower the trace equation systems that remain into first-order logic for the solvers, e.g. after -teq -prove; the lowered goals are :abstract"):
       case (config, rest) =>
         val config_ = config.using(Fallback)
         (config_, rest)
@@ -236,19 +236,19 @@ object Config:
         (config_, rest)
 
   val rules =
-    flag("-rules", "report the rewrite rules that -simplify applies to each assertion, by their names, as (set-info :used ((name count) ...)) after it"):
+    flag("-rules", "report the rewrite rules that -simplify and -prove apply to each assertion, by their names, as (set-info :used ((name count) ...)) after it"):
       case (config, rest) =>
         val config_ = config.copy(rules = true)
         (config_, rest)
 
   val simplify =
-    flag("-simplify", "simplify formulas and function definitions"):
+    flag("-simplify", "contextual simplification of formulas and function definitions, with the rewrite rules of lemmas and axioms with :rw"):
       case (config, rest) =>
         val config_ = config.using(Simplify)
         (config_, rest)
 
   val prove =
-    flag("-prove", "prove goals with the deduction engine of the package prove (congruence closure, a simplex, matching modulo the classes and the views of traces of several accumulators), like -simplify"):
+    flag("-prove", "prove the goals of -teq with the deduction engine of the package prove: congruence closure, a simplex, matching modulo the classes and the views of traces of several accumulators, forward lemmas (:fw)"):
       case (config, rest) =>
         val config_ = config.using(Prove)
         (config_, rest)
@@ -260,13 +260,13 @@ object Config:
         (config_, rest)
 
   val arch =
-    flag("-arch", "<bits>", "the data model of C input, 32 or 64 bit Linux (ILP32 or LP64), e.g. for sizeof (default 64)"):
+    flag("-arch", "<bits>", "the data model of C input, 32 or 64 bit Linux (ILP32 or LP64), e.g. for sizeof; default 64, or the data model of an SV-COMP task"):
       case (config, (bits @ ("32" | "64")) :: rest) =>
         val config_ = config.copy(arch = bits.toInt)
         (config_, rest)
 
   val entry_ =
-    flag("-entry", "<name>", "the procedure where executions start, which -teq and -chc check (default: main in C)"):
+    flag("-entry", "<name>", "the procedure where executions start, which -teq and -chc check; default main in C, none otherwise (SV-LIB starts at its verify-call commands); -vcgen checks every procedure against its contract"):
       case (config, name :: rest) =>
         (config.copy(entry = Some(name)), rest)
 
@@ -278,27 +278,27 @@ object Config:
 
   // the solvers receive the output, which they check, i.e., goals and lemmas must hold, or verify (-verify)
   val z3 =
-    flag("-z3", "pass output to z3, which checks it: goals and lemmas must hold, the answers to queries are reported"):
+    flag("-z3", "pass the output to z3, which checks it: goals and lemmas must hold, assertions and check-sat are passed through, the answers to queries are reported; lemmas with :free are assumed"):
       case (config, rest) =>
         val config_ = config.copy(solver = Some(Solver.z3))
         (config_, rest)
 
   val cvc5 =
-    flag("-cvc5", "pass output to cvc5, which checks it: goals and lemmas must hold, the answers to queries are reported"):
+    flag("-cvc5", "pass the output to cvc5, which checks it, as with -z3"):
       case (config, rest) =>
         val config_ = config.copy(solver = Some(Solver.cvc5))
         (config_, rest)
 
   // the answers are reported on stdout, the output is not printed
   val verify =
-    flag("-verify", "answer correct, incorrect, or unknown to verify-call, or to the input without verify-call: whether the program satisfies its contracts and loop invariants, with the solver if there is one"):
+    flag("-verify", "instead of the output, answer correct, incorrect, or unknown to each verify-call, or once to the input without verify-call: whether the program satisfies its specification, with the solver if there is one; a refutation is incorrect unless the goal is :abstract or applies a function declared :abstract"):
       case (config, rest) =>
         val config_ = config.copy(verify = true, report = (config, printer) => Report.stream(config.stdout, printer))
         (config_, rest)
 
   // implies -verify, whose answer the witness is for
   val witness =
-    flag("-witness", "<file>", "with -verify, write the witness of SV-COMP for the answer to a C program to <file>: correct without invariants, incorrect without waypoints, both without content for now"):
+    flag("-witness", "<file>", "answer as -verify, and write the witness of SV-COMP (format 2.0) for the answer to a C program to <file>: for correct an invariant set without invariants, for incorrect a violation sequence whose target is the call of reach_error, if there is exactly one; nothing for unknown"):
       case (config, name :: rest) =>
         verify._2.action((config.copy(witness = Some(name)), rest))
 
@@ -327,7 +327,7 @@ object Config:
     flag(
       "-print",
       "<lang>",
-      "print the output in <lang> instead of the language of the input: smt2, dfy, bpl, c (named by their file extensions), lean (the logic only), scala (the internal representation), or null (nothing)"
+      "print the output in <lang> instead of the language of the input: smt2, svlib, dfy, bpl, c (named by their file extensions), lean (the logic only), scala (the internal representation), or null (nothing)"
     ):
       case (config, name :: rest) if langs.contains(name) =>
         val config_ = config.printing(langs(name))
@@ -362,7 +362,7 @@ object Config:
   // the output hides like the rest of the database if the feature teq is known (-teq), and prints otherwise, e.g.
   // for -print lean of the database
   val include =
-    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; teq:<concept> injects the module <concept> of the lemma database of -teq"):
+    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; teq:<concept> injects the module <concept> of the lemma database of -teq: aggregation, arithmetic, arrays, counters, search, sorted, strides, unsigned"):
       // a module that does not exist is reported by its name, e.g. teq:sorting, renamed to teq:sorted on Oct 13, 2026
       case (config, file :: rest) if file.startsWith("teq:") =>
         val module = TEQ.module(file.drop(4))
@@ -372,34 +372,17 @@ object Config:
       case (config, file :: rest) if langs.get(file.suffix).exists(_ != Lang.yml) =>
         (config.including(langs(file.suffix).source, file), rest)
 
-  val flags = Map(
-    debug_,
-    vcgen,
-    teq,
-    chc,
-    flat,
-    split,
-    monomorph,
-    fallback,
-    fuse,
-    simplify,
-    prove,
-    rules,
-    hybrid,
-    arch,
-    entry_,
-    unbounded,
-    z3,
-    cvc5,
-    verify,
-    witness,
-    timeout_,
-    linewidth,
-    output,
-    print_,
-    known_,
-    include
+  // the options in groups, in the order of doc/options.md, for -help
+  val groups = List(
+    "input" -> List(arch, unbounded, entry_, include, hybrid),
+    "transformations" -> List(vcgen, teq, chc, flat, simplify, prove, rules, fallback, split, monomorph, fuse),
+    "output" -> List(print_, linewidth, known_, output),
+    "solvers and answers" -> List(z3, cvc5, timeout_, verify, witness),
+    "debugging" -> List(debug_)
   )
+
+  val flags =
+    groups.flatMap(_._2).toMap
 
   // the languages by their file extensions
   val langs = Map(
@@ -425,24 +408,39 @@ object Config:
     copyright()
     println()
 
-    println("supported input/output dialects")
-    for (suffix, lang) <- langs
-    do println("  " + lang.help + " (extension ." + suffix + ")")
+    println("usage: ./Cuvee.sh [options] file")
     println()
 
-    println("command line options")
-    for (key, flag) <- flags
+    // the languages in a fixed order, each with all of its extensions, e.g. C with .c and .i
+    println("languages of the input, by the extension of the file")
+    for lang <- List(Lang.smtlib, Lang.svlib, Lang.dafny, Lang.boogie, Lang.c, Lang.yml)
     do
-      flag.args match
-        case None =>
-          println("  " + key)
-        case Some(args) =>
-          println("  " + key + " " + args)
-      println("    " + flag.help)
+      val suffixes = langs.toList.collect { case (suffix, `lang`) => "." + suffix }.sorted
+      println("  " + lang.help + " (" + suffixes.mkString(", ") + ")")
+    println()
+
+    for (group, options) <- groups
+    do
+      println(group)
+      for (key, flag) <- options
+      do
+        println("  " + key + flag.args.map(" " + _).getOrElse(""))
+        println("    " + flag.help)
       println()
 
+    // the commands of Cuvee.main, which take the whole command line
+    println("other commands")
+    println("  -test <file>")
+    println("    run the example <file> with the command line of its first line and compare with name.out and name.err; with a .csv file, check a database of expected results")
+    println("  -record <files>")
+    println("    print the rows of a database of expected results for <files>")
+    println("  -help")
+    println("    list the options")
+    println("  -version")
+    println("    print the version")
+
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.46.17"
+  val release = "0.46.18"
 
   def version() =
     println("Cuvée " + release)

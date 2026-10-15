@@ -98,11 +98,14 @@ An empty witness recovers most of Loops and almost nothing of Arrays, where the 
    uuid and the time are fresh): format 2.0, the input file as given on the command line or relative to the task,
    its SHA-256, the data model of `-arch` or of the task, the specification `G ! call(reach_error())` (the only
    property that `-verify` decides for C; `cuvee.py` passes the C file, not the task or the property file), all
-   strings quoted (PyYAML took the creation time for a date). Both witnesses without content, by decision: an
-   `invariant_set` without invariants for true, a `violation_sequence` without segments for false. The latter passes
-   the linter but has no target, which the format requires semantically (exactly one final segment), so validators
-   may reject it; a target at the call of `reach_error` was tried (a located token of the name, a scan of the input)
-   and reverted for now. `-witness witness.yml` is in `xml/cuvee*.xml` (Oct 15, 2026). Open: fm-tools, and the measurement with the
+   strings quoted (PyYAML took the creation time for a date), the numbers plain (`Quoting`). An `invariant_set`
+   without invariants for true; for false a `violation_sequence` with a single segment, the target at the call of
+   `reach_error` or `__VERIFIER_error` (Oct 15, 2026), whose names the C scanner locates (`Token.Located` of a value),
+   found by a scan of the input (`Witness.targets`: followed by `(`, not preceded by `void`, i.e. no declaration or
+   definition, and not in a string); none if the program has no call or several, since the failing assertion is not
+   known: of the 1430 tasks of Arrays, Loops and VerifyThis-Loops, 1345 have exactly one call, 16 several, 69 none
+   (a regular expression over the sources). For a while both witnesses were empty, the violation witness without
+   segments, which passes the linter but lacks the final segment that the format requires. `-witness witness.yml` is in `xml/cuvee*.xml` (Oct 15, 2026). Open: fm-tools, and the measurement with the
    validator definitions of svcomp-bench-defs (`validate-correctness-witnesses-2.0`,
    `validate-violation-witnesses-2.0`); expected about 120 confirmed results of Loops.
 2. **Invariants of `-chc`.** The model of Z3 gives the predicates of the loop heads. In SV-LIB nearly for free:
@@ -134,7 +137,8 @@ which the grammar reads like a keyword, and the attribute `:location` of the loo
 implemented (Oct 14, 2026, not committed); the writer of the witnesses is not.
 
 1. **Tokens** ([Input.scala](../src/easyparse/Input.scala)): a third case of `Token`,
-   `case class Located(name: String, line: Int, column: Int)`, whose text is its name. `Keyword` and `Value` are
+   `case class Located(name: String, text: String, line: Int, column: Int)`, a keyword whose text is its name, or
+   since Oct 15, 2026 also a value (the names of the error functions). `Keyword` and `Value` are
    unchanged, so are their constructions (the `Syntax.apply` of all frontends, `sexpr`, `Token.eof`) and the
    matches by name that do not concern these keywords: `Balanced` and `Until` of the C grammar (brackets, braces,
    `;`), the matches of Typedefs (`typedef`, braces, `;`), `takeWhile(_ != Token.eof)`. No code outside the two
@@ -184,12 +188,13 @@ than `main`), and [for_break_continue.c](../examples/c/horn/for_break_continue.c
 Later, outside the two packages: the printers of SMT-LIB, SV-LIB, Dafny and Boogie drop `:location`, as
 `svlib.Printer.properties` drops `modifies`, since a validator of SV-LIB may reject the attribute. The scanner's
 errors report 0-based positions (`yyline` as is). Further constructs extend the list of located keywords: `if` for
-branching waypoints; the calls of `reach_error`, `__VERIFIER_assert` and `__VERIFIER_nondet_*` are names
-(`Value("sym", ...)`) and need a located value, the same scheme for `Parser.Match`. Not yet located: the
+branching waypoints; the names `reach_error` and `__VERIFIER_error` are located values since Oct 15, 2026
+(`Located("sym", text, line, column)`, which `Parser.Match` takes like a value), for the targets;
+`__VERIFIER_assert` and `__VERIFIER_nondet_*` would follow the same scheme. Not yet located: the
 assertions and nondeterministic calls (`Spec` has no attributes; a `Block` with attributes, as for `:tag` since
-0.39, is flattened on the way), needed only for detailed violation witnesses; the target, since `reach_error()` is
-in the body of `__VERIFIER_assert`, which the grammar skips (`Balanced` in `Grammar.body`): the writer scans the
-input again, which it reads anyway for the SHA-256.
+0.39, is flattened on the way), needed only for detailed violation witnesses; the target is not
+threaded through the parser, since `reach_error()` is in the body of `__VERIFIER_assert`, which the grammar skips
+(`Balanced` in `Grammar.body`): the writer scans the input again, which it reads anyway for the SHA-256.
 
 Considered: the position on every token, in a second parameter list of `Keyword` and `Value`. It needs `()` at
 every construction in all frontends (Scala 3.8.1 does not fill in an omitted list of defaults, `Keyword("(")` is a

@@ -112,6 +112,8 @@ acsl = "requires" | "ensures" | "assigns" | "decreases" | "loop" | "invariant" |
 {str}       { return Syntax.apply("str", yytext()); }
 {flt}       { return Syntax.apply("flt", yytext()); }
 {num}       { return Syntax.apply("num", yytext()); }
+// the names of the error functions of SV-COMP carry their position, for the targets of witnesses (see yml.Witness)
+"reach_error" | "__VERIFIER_error" { return Syntax.located("sym", yytext(), yyline, yycolumn); }
 {sym}       { return Syntax.apply("sym", yytext()); }
 
 [^]         { Syntax.error("unexpected character '" + yytext() + "' at " + yyline + ":" + yycolumn); }

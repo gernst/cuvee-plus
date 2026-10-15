@@ -75,9 +75,9 @@ object Token:
     
   case class Value(name: String, text: String) extends Token
 
-  // a keyword with the position of its first character, 1-based, for the constructs whose location a frontend
-  // reports, e.g. the loops of C for witnesses; it matches as the keyword (see Scanner.Match)
-  case class Located(name: String, line: Int, column: Int) extends Token:
-    def text = name
+  // a keyword (whose text is its name) or a value with the position of its first character, 1-based, for the
+  // constructs whose location a frontend reports, e.g. the loops of C and the calls of reach_error for witnesses;
+  // it matches as the keyword or the value (see Scanner.Match and Parser.Match)
+  case class Located(name: String, text: String, line: Int, column: Int) extends Token
 
 case class Fail(in: Input, from: List[String]) extends Exception

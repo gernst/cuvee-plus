@@ -231,8 +231,9 @@ and the next sink.
     `-chc`).
 - [`Witnessing`](../src/cuvee/yml/Witness.scala) (`-witness <file>`, which implies `-verify`) wraps the sink of
   `-verify` and writes the witness of SV-COMP for its answer to the end of the input of a C program: a correctness
-  witness for `correct`, a violation witness for `incorrect`, both without content for now (format 2.0, the strings
-  quoted, since readers of YAML 1.1 take the creation time for a date otherwise), with the input file as given on
+  witness without invariants for `correct`, a violation witness for `incorrect` whose target is the call of
+  `reach_error`, if there is exactly one (format 2.0, the strings quoted, since readers of YAML 1.1 take the creation
+  time for a date otherwise, the numbers plain), with the input file as given on
   the command line or relative to the task definition, its SHA-256, and the data model of `-arch` or of the task.
 
 ## Frontends
@@ -317,9 +318,9 @@ modifies. Functions and loops with ACSL `assigns` or `loop assigns` clauses
 modify the global variables listed there instead (their identifiers, e.g. `a`
 for `a[0..N-1]`), which `Type.check` holds against the body, unless `-teq` or
 `-chc` is among the transforms, which infer them always (`c.Parser.assigned`,
-the parameter `infer` set by `c.Source`). The keywords `while`, `do` and `for` are located tokens
-(`easyparse.Token.Located`, with line and column from 1, a tab one column), which match as keywords and which the
-grammar reads by `L(name)`; each loop of the core gets the attribute `:location (line column function)` of its
+the parameter `infer` set by `c.Source`). The keywords `while`, `do` and `for` and the names `reach_error` and `__VERIFIER_error` are
+located tokens (`easyparse.Token.Located`, with line and column from 1, a tab one column), which match as keywords
+and values and from which the grammar reads the position of a keyword by `L(name)`; each loop of the core gets the attribute `:location (line column function)` of its
 keyword, an s-expression that all printers but C's print, for the locations of witnesses
 ([ideas/witnesses.md](../ideas/witnesses.md)). A `for` is a single loop, located at the `for`, whose `continue`s
 are preceded by a copy of the step (`c.Parser.stepped`), those of nested loops not; a `do-while` is located at the

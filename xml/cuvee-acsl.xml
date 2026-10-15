@@ -14,7 +14,7 @@
   <option name="-timeout">900000</option>
   <!-- the answers correct, incorrect, or unknown, which cuvee.py reads -->
   <option name="-verify"/>
-  <!-- the witness of SV-COMP for the answer to a C program, without content for now (yml.Witness) -->
+  <!-- the witness of SV-COMP for the answer to a C program, without invariants or with the target only (yml.Witness) -->
   <option name="-witness">witness.yml</option>
 
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP, by the folders of their sets
