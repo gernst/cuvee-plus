@@ -1,7 +1,7 @@
 # SV-COMP tasks with ACSL annotations
 
 The tasks of the SV-COMP categories ReachSafety-Arrays and ReachSafety-Loops
-with the property `unreach-call`, annotated by hand with ACSL: loop
+with the property `unreach-call`, annotated with ACSL by a coding agent, task by task: loop
 invariants, contracts, and logic functions, such that Cuvée can check the
 expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
 
@@ -77,7 +77,8 @@ powers of 2 and 4 that were written with shifts are predicates now (see
 The annotations were written by judgement, without a verifier, in the
 semantics of Frama-C/WP: mathematical integers in annotations, the C types of
 the program variables implicit. They were not checked with Frama-C. Each file
-starts with `// ACSL annotations added by hand (benchmarks/acsl/README.md)`,
+starts with `// ACSL annotations added by hand (benchmarks/acsl/README.md)`
+("by hand" there means individually for the task; the annotations were written by a coding agent),
 followed by a note where they need explanation.
 
 - **Harness**, added mechanically: `reach_error` requires `\false`, so that

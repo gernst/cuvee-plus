@@ -97,4 +97,13 @@
     </tasks>
   </rundefinition>
 
+  <!-- the RAPID benchmarks: array programs in Boogie with quantified postconditions (benchmarks/rapid, adjusted to
+       standard Boogie), whose single procedure is main, the entry point -->
+  <rundefinition name="RAPID_unreach-call">
+    <tasks name="Boogie.unreach-call.RAPID">
+      <option name="-entry">main</option>
+      <includesfile>../benchmarks/rapid/rapid.set</includesfile>
+      <propertyfile>../benchmarks/rapid/properties/unreach-call.prp</propertyfile>
+    </tasks>
+  </rundefinition>
 </benchmark>

@@ -40,8 +40,8 @@ def plot(plt, title: str, curves: dict[str, list[float]], names: dict[str, str],
     axes.set_ylabel("CPU time (s)")
     axes.set_title(title)
     axes.grid(True, which="major", alpha=0.3)
-    # below the axes and their label, such that it covers no curve
-    axes.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2, frameon=False)
+    # right of the axes, one entry below the other, such that it covers no curve
+    axes.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), ncol=1, frameon=False)
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)
 

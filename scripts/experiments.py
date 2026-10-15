@@ -73,15 +73,15 @@ def gather(benchmark: str, categories: list[str], need: Need, directory: Path = 
     return {name: results for name, results in found.items() if results is not None}
 
 
-# the labels of the columns, also for tools without results yet
+# the labels of the columns, also for tools without results yet, named as in the paper (TEQ, TEQ+Z3, CHC)
 LABELS = {
     **common.LABELS,
-    "cuvee": "Cuvée (TEQ)",
-    "cuvee-fallback": "Cuvée+Z3 (TEQ)",
-    "cuvee-chc": "Cuvée (CHC)",
+    "cuvee": "TEQ",
+    "cuvee-fallback": "TEQ+Z3",
+    "cuvee-chc": "CHC",
     "monocera": "MonoCera",
     "tricera": "TriCera",
-    "cuvee-acsl": "Cuvée -vcgen (ACSL)",
+    "cuvee-acsl": "VC (ACSL)",
 }
 
 
@@ -433,7 +433,7 @@ def main():
     spec3 = spec2[:3] + virtual
     (out / "union.tex").write_text(transposed(spec3, categories))
     replacements["union"] = (note(pending(spec3, categories)), "")
-    plots(plt, out, "union", spec3, categories, "Cuvée and the portfolios (Arrays and Loops)", file="quantile-union.pdf")
+    plots(plt, out, "union", spec3, categories, "TEQ and the portfolios (Arrays and Loops)", file="quantile-union.pdf")
 
     # 4. unbounded
     spec4 = columns([

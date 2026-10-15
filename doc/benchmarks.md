@@ -44,6 +44,7 @@ Run definitions and tasks of `cuvee.xml`:
 | `local_unreach-call` | `C.unreach-call.Unbounded`, `Dafny.unreach-call.Unbounded` (benchmarks/sv-comp) |
 | `MonoCera_unreach-call` | `C.unreach-call.MonoCera-Forall`, `-Max`, `-Min`, `-Sum` |
 | `SV-LIB_correct-tags` | `SV-LIB.correct-tags.CoreVerification`, `SV-LIB.correct-tags.CTranslated` |
+| `RAPID_unreach-call` | `Boogie.unreach-call.RAPID` (the 33 RAPID benchmarks in Boogie, [benchmarks/rapid](../benchmarks/rapid), with `-entry main`; also in `cuvee-fallback.xml` and `cuvee-chc.xml`) |
 
 `xml/cuvee-sample.xml` has the run definition `sample_unreach-call` with the tasks `C.unreach-call.Arrays-sample`
 and `C.unreach-call.Loops-sample`: every 9th task of Arrays.set and Loops.set
