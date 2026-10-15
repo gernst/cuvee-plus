@@ -5,6 +5,8 @@
 
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
+  <resultfiles>**/witness.*</resultfiles>
+
   <!-- the program as constrained Horn clauses, solved by z3, after simplifying the procedures -->
   <option name="-simplify"/>
   <option name="-chc"/>
@@ -13,6 +15,8 @@
   <option name="-timeout">900000</option>
   <!-- the answers correct, incorrect, or unknown, which cuvee.py reads -->
   <option name="-verify"/>
+  <!-- the witness of SV-COMP for the answer to a C program, without content for now (yml.Witness) -->
+  <option name="-witness">witness.yml</option>
 
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">

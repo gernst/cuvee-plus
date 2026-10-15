@@ -5,6 +5,8 @@
 
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 
+  <resultfiles>**/witness.*</resultfiles>
+
   <option name="-teq"/>
   <!-- the lemma database teq.dfy of -teq and the optional modules migrated so far (doc/teq.md) -->
   <option name="-include">teq:aggregation</option>
@@ -25,6 +27,8 @@
   <option name="-rules"/>
   <!-- the answers correct, incorrect, or unknown, which cuvee.py reads -->
   <option name="-verify"/>
+  <!-- the witness of SV-COMP for the answer to a C program, without content for now (yml.Witness) -->
+  <option name="-witness">witness.yml</option>
 
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">

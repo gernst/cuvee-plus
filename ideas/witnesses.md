@@ -102,7 +102,7 @@ An empty witness recovers most of Loops and almost nothing of Arrays, where the 
    `invariant_set` without invariants for true, a `violation_sequence` without segments for false. The latter passes
    the linter but has no target, which the format requires semantically (exactly one final segment), so validators
    may reject it; a target at the call of `reach_error` was tried (a located token of the name, a scan of the input)
-   and reverted for now. Open: `-witness witness.yml` in `xml/cuvee*.xml` and fm-tools, and the measurement with the
+   and reverted for now. `-witness witness.yml` is in `xml/cuvee*.xml` (Oct 15, 2026). Open: fm-tools, and the measurement with the
    validator definitions of svcomp-bench-defs (`validate-correctness-witnesses-2.0`,
    `validate-violation-witnesses-2.0`); expected about 120 confirmed results of Loops.
 2. **Invariants of `-chc`.** The model of Z3 gives the predicates of the loop heads. In SV-LIB nearly for free:
