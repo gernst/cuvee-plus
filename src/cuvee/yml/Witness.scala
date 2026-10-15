@@ -48,15 +48,16 @@ object Witness:
     Witnessing(config, file, next)
 
   // the program of the configuration, for C input or an SV-COMP task whose input file is C, otherwise none, e.g.
-  // SV-LIB, whose witnesses are part of the language
+  // SV-LIB, whose witnesses are part of the language; the languages are told apart by their sources, since the
+  // transforms add features to them, e.g. teq by -teq (see Config.having)
   def program(config: Config): Option[Program] =
     config.file match
-      case Some(file) if config.input == Lang.c =>
+      case Some(file) if config.input.source == cuvee.c.Source =>
         Some(program(new File(file), file, config.arch))
 
-      case Some(file) if config.input == Lang.yml =>
+      case Some(file) if config.input.source == Source =>
         val (task, input) = Source.load(file)
-        if Source.lang(task) != Lang.c
+        if Source.lang(task).source != cuvee.c.Source
         then None
         else
           // the input file relative to the task definition as given, as for a validator that is given the task

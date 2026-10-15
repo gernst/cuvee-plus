@@ -111,6 +111,16 @@ object Witnesses extends TestSuite:
       Witness.targets((Examples.root / "c" / "vcgen" / "harness.c").toIO) ==> List((14, 13))
       Witness.targets((Examples.root / "c" / "verify" / "chc_unsafe.c").toIO) ==> List((5, 47))
 
+    // with the transforms that add features to the languages, e.g. teq by -teq, as in the definitions of the
+    // benchmarks (a comparison of the languages wrote no witness under -teq)
+    test("features"):
+      val c = Examples.root / "c" / "vcgen" / "harness.c"
+      val task = Examples.root / "yml" / "parsing" / "ilp32.yml"
+      for args <- List(List("-teq"), List("-teq", "-prove"), List("-chc"), List("-vcgen"))
+      do
+        assert(Witness.program(cuvee.Config.parse(cuvee.Config.default, args :+ c.toString)).nonEmpty)
+        assert(Witness.program(cuvee.Config.parse(cuvee.Config.default, args :+ task.toString)).nonEmpty)
+
     // SV-LIB has witnesses of its own, the format of C does not apply
     test("svlib"):
       val script = Examples.root / "svlib" / "horn" / "loop_add.svlib"
