@@ -1,76 +1,100 @@
-\section{The Open Algorithms: What They Need}\label{sec:open}
+\section{Migrating Lemmas to the Closed Form, and What Stays Open}\label{sec:open}
 
-Twenty of the thirty programs of the folder of algorithms are proved. Of the other ten, eight leave a goal and two
-stop because the rewriting exceeds its budget. Their lemmas, written at the beginning of each file, mostly describe
-inner loops as families of fresh lists, one per inner trace, with the facts of the inner loop distributed over the
-outer iteration constraint; they do not match the closed form of Section~\ref{sec:teq}. For each, this section states
-what a proof needs, and, where an attempt was made, what stood in its way.
+Twenty-seven of the thirty programs of the folder of algorithms are proved. Seven of them had lemmas written for the
+earlier representation of one trace per variable, where an inner loop was a family of fresh lists distributed over the
+outer iteration constraint; these lemmas did not match the closed form of Section~\ref{sec:teq}, and each was
+rewritten for it. This section describes what each needed, as patterns for the next migration, and then the three
+programs that stay open. Every migrated proof was checked on a wrong postcondition, which leaves a goal.
 
-\subsection{Insertion sort: an inner loop of data-dependent length}\label{sec:open:insertion}
-Insertion sort moves the new element down while it is less than its predecessor:
-\texttt{while 0 < j \&\& b[j] < b[j - 1] \{ swap; j := j - 1; \}}. Unlike the inner loops of
-Section~\ref{sec:sorts}, the number of inner iterations is not determined by the bounds: the constraints over the
-inner history state that the comparison held in every inner step, and the exit that it failed or $j$ reached $0$.
-The closed form has the inner loop as
-\begin{align*}
-  \cur(\mathsf{trace}(b,\ &\mathsf{for}\ \bl{\cnt(0, 1, nn)}, \bl{\cnt(i, -1, nn)}\\
-  &\mathsf{do}\ x, k', j \mapsto x[j := x[k - k']][k - k' := x[j]]))
-\end{align*}
-with the position $j - 1$ expressed through the outer iteration $k$, and the constraints are nested inside the outer
-iteration constraint, over the history of the outer trace, which the closed form spells out as a term.
+\subsection{Insertion sort: a pass of data-dependent length}\label{sec:open:insertion}
+Insertion sort moves the new element down while it is less than its predecessor,
+\texttt{while 0 < j \&\& b[j] < b[j - 1] \{ swap; j := j - 1; \}}. Unlike the passes of bubble sort, the number of
+inner iterations is not determined by the bounds: the outer iteration constraint records, for every outer iteration,
+that each executed swap had $b[j] < b[j - 1]$, and the exit of the pass, $j = 0$ or $b[j] \ge b[j - 1]$. The proof has
+three parts.
+\begin{itemize}[nosep]
+\item \emph{The pass is folded.} A function $\mathsf{insert\_pass}(b, i, p, nn)$ marked \texttt{\{:fold\}} has as its
+  body the inner trace as the goal states it, the swaps of the positions $j$, a counter down from $i$, and $j - 1$. In
+  the variant with one pointer, \texttt{-teq} writes $j - 1$ as $k - k'$ over the outer counter $k$ and the inner one
+  $k'$ (since $j = i - k'$ and $i = k + 1$), and the fold matches $-k' + p$ with $p$ a parameter; in the variant with
+  two pointers it is the second counter. The fold also applies inside the constraints, so that they mention the pass
+  by its name.
+\item \emph{An induction over the outer trace} takes the two recorded constraints as side conditions, with
+  higher-order predicates $C$ and $D$ matched against them, and decides its quantified step condition
+  $\forall b, k, nn, i.\ \ldots \wedge \sorted(b, 0, k + 1) \wedge C(\ldots) \wedge D(\ldots) \Rightarrow
+  \sorted(F(b, k, nn, i), 0, k + 2)$ by a step lemma on the pass.
+\item \emph{The step is stated over $k$ alone}: the prefix $[0, k + 1)$ before the pass and $[0, k + 2)$ after it. The
+  engine substitutes $i = k + 1$ in the bound of $\sorted$ but not in the arguments of the pass, so a step lemma
+  stated over $i$ is not matched.
+\end{itemize}
+The permutation follows from a rule that the pass is a permutation and an induction over the steps of the outer trace.
 
-\paragraph{What it needs.} A step lemma whose conditions are the inner constraint and exit, and whose conclusion is
-that the result extends the sorted prefix by one, used by an induction over the outer trace with the choice among its
-dependencies. Both lemmas have conditions that contain inner and outer traces as terms, which runs into the cost
-of views recomputed for each instance (Section~\ref{sec:sorts:cycles}); a summary that names the inner loop by
-an abstract $\mathsf{insert}(b, i, nn)$ first, as a plain rule, and states the comparisons as facts about the named
-result, would keep the traces out of the conditions.
-
-\subsection{The partitions: cycles of three accumulators}\label{sec:open:partition}
-In the partition around a pivot, the scanning index $j$ joins the cycle of the array and the boundary $i$, although $j$
-is a counter: the guard reads $b[j]$, and every result of a guarded body reads the variables of its guard, including
-$j$'s two cases $j + 1$, which are equal. The invariants hold for every run of the update ($0 \le i \le j$, the elements
-below $i$ less than the pivot, those from $i$ below $j$ at least the pivot, a permutation), so lemmas in the style of
-gnome sort are sound. But the program alone takes 34 s, and 102 s without the aggregation module, since the views of a
-cycle of three accumulators are expensive, and with the lemmas the rewriting exceeds its budget.
-
-\paragraph{What it needs.} A read relation that merges equal cases first, or takes the guards only for the results that
-differ between the cases, would keep the counter outside the cycle, where the database recognizes it, and leave a
-cycle of two. The three-way partition has the same structure with two boundaries.
+\subsection{The transpose: a choice fixed by the constraints}\label{sec:open:transpose}
+The inner loop of the transpose folds into $\mathsf{column}(x, A, k, nn)$, over the numbers $\seq{N}$ of inner
+iterations, a choice, which the constraints of the outer loop fix as $\seq{N} = \bl{\consts(m', \natf(n))}$. One lemma
+reads the transposed element of the outer trace of columns; it takes that equation as its side condition, which binds
+the number of rows. The four lemmas of the former form, for the fragments of the inner loop and the outer trace as their
+results, are no longer needed.
 
 \subsection{The first duplicate: an early exit by a flag}\label{sec:open:flags}
-The first duplicate scans the pairs $i < j$ like the distinctness check, but stops both loops when the flag is set. The
-inner flag is the one of Section~\ref{sec:sorts:distinct}, $r \vee \neg\mathsf{nodup}(a, i, i + 1 + \intf(nn))$. The outer
-loop runs while the flag is false, so its constraint states that the flag was false at the head of every outer iteration,
-over the history of the outer trace; the exit of the outer loop is a disjunction, $n \le i \vee r$, and the exit of the
-inner loop depends on the flag as well.
+The first duplicate scans the pairs $i < j$ and stops both loops when a flag is set. The inner loop folds into
+$\mathsf{scan}(x, a, i, nn)$; \texttt{-split} separates the cases of the postcondition, and two rules on the atom
+$\mathsf{distincts}(\ldots)$ take the final flag as it stands among the facts. If the flag is set, some scan found
+$a[i] = a[j]$ with $j < n$, by the constraint that the inner loop ran only while $j < n$. If it is reset, it was reset
+at the head of every outer iteration, so every scan ran up to $n$ by its exit without a match. Two details of the
+engine shaped the rules. The outer counter is an open variable $K_v$, identified with $K$ by its equation: the instance
+of a side condition over two equal dependencies $\bl{\cnt(0, 1, m)}$ normalizes to one dependency, whereas the facts
+keep $\bl{K}$ and $\bl{\cnt(0, 1, m)}$ apart, so the instance is not found. And the outer loop's end is stated with
+$m = \natf(i)$, since after \texttt{-split} the number of iterations and the final index are related by this equation
+only (Section~\ref{sec:open:arith}).
 
-\paragraph{What it needs.} Two rules on the atom $\mathsf{distincts}(\ldots)$, one per case of the outer exit: if the flag is
-set, the last iteration found a duplicate within $[0, n)$; if it is not, every iteration ran with its full length and
-found none. Both take the constraint on the flag at the heads as a condition, which contains the outer trace as a term;
-with the postcondition as two implications, each goal has its literal of the exit.
+\subsection{The partitions: regions of a whole cycle}\label{sec:open:partition}
+In the partition around a pivot, the array and the boundary $i$ read each other, and the scan $j$ joins the cycle
+through the guard; \texttt{-teq} makes them one trace of $(b, i, j)$, of $(b, eq, j, lt)$ for the three-way
+partition. The counts are summarized through the views of their components, as before. The array component is not:
+a summary of it with the positions $j$ stated as a counter, $\bl{\cnt(0, 1, n)}$, is never matched, since the matcher
+pairs the component's dependency $\bl{S}.2$ only with a generic list. The regions of the result are therefore rules
+on the atoms of the postcondition over the whole trace, e.g.
+\begin{align*}
+  &0 \le k < \mathsf{below}(a, p, n, \bl{\cnt(0, 1, n)}) \Rightarrow\\
+  &\quad (\cur(\mathsf{trace}(a, 0, 0,\ \mathsf{for}\ \bl{\cnt(0, 1, n)}\ \mathsf{do}\ \ldots)).0[k] < p) \Leftrightarrow \mathsf{true},
+\end{align*}
+with the pattern a copy of the trace as the goal states it. The bound $i \le j$ needs $\mathsf{below}(\ldots) \le j$
+for a number of iterations $n' = \natf(j)$, again a rule with that equation as its side condition. The views of the cycle of three
+accumulators, which had looked too expensive, are computed without difficulty.
 
-\subsection{The reversal: a fact lost in a normal form}\label{sec:open:reverse}
-The swaps of $k$ and $n - 1 - k$ are recognized as a reversal by a lemma of the file, whose conditions are linear:
-$2 n' \le c + 1$ and $c \le 2 n'$ for the start $c = n - 1$ of the counter down. They follow from the facts if
-$\intf(n') = i$ for the final value $i$ of the counter. The database rewrites $\intf(n) = x$ into $n = \natf(x)$ under the
-condition $0 \le x$, and the result no longer states $0 \le x$, which is lost if it followed from the equation itself.
-The equivalence $\intf(n) = x \Leftrightarrow 0 \le x \wedge n = \natf(x)$ holds without a condition and keeps the fact; with it,
-the conditions of the reversal follow.
+\subsection{The reversal: the exit as it stands}\label{sec:open:reverse}
+The swaps of $k$ and $n - 1 - k$ are recognized as a reversal by a lemma whose bounds, $2n' \le c + 1$ and $c \le 2n'$
+for the start $c = n - 1$ of the counter down, follow from the exit. The exit leaves a disjunction among the facts,
+$n' = 0 \vee n' < j + 2$ for the final value $j$ of the other pointer, which the arithmetic does not split. The
+summary takes that disjunction itself as its side condition, binding $j$ by matching, together with $n' + j = c$
+and $j \le n'$; it is true in both cases, since with no iteration the range has at most one element. No
+\texttt{-split} is needed, which would have related $n'$ and the index $i$ only by $n' = \natf(i)$.
 
-\subsection{Witnesses, duplicates and the step budget}\label{sec:open:other}
+\subsection{Engine findings}\label{sec:open:arith}
+The migration needed no change of the engine, but it ran into three of its limits, each worked around in the lemmas:
+\begin{itemize}[nosep]
+\item \emph{$\natf$ is a one-way bridge.} An equation $n = \natf(x)$ with $0 \le x$ among the facts does not give
+  $\intf(n) = x$ to the arithmetic, so a bound on $\intf(n)$ does not transfer to $x$. The lemmas take the equation
+  and $0 \le x$ as side conditions and state the bound on $x$ directly.
+\item \emph{Instances are normalized, facts are not.} A side condition is simplified after its instantiation, which
+  merges equal dependencies and drops unused ones; the fact it should be found as keeps them. Binding the dependency
+  by an open variable identified by its equation keeps the instance in the facts' form.
+\item \emph{Component dependencies match only generic lists.} The history $\bl{S}.j$ of a component, as a dependency
+  of the view of another component, is not matched by a counter pattern even where its normal form is a counter.
+\end{itemize}
+
+\subsection{What stays open}\label{sec:open:other}
 \begin{itemize}[nosep]
 \item \emph{An existential postcondition} (\texttt{max\_element}): the maximum is
-  \[ m = \cur(\mathsf{maxs}(a[0], \mathsf{selects}(a, \bl{\cnt(1, 1, n)}))), \]
-  and $\exists k.\ a[k] = m$ needs a witness. A lemma whose left-hand side is the existential does not apply: the
-  matcher has no case for quantifiers. The same program with the postcondition $\mathsf{occurs}(m, \ldots)$ in the
-  vocabulary of the database closes; quantified left-hand sides, or witnesses taken from the terms of the goal, would
-  close the other.
-\item \emph{The transpose} of the folder keeps two folds and lemmas for fresh lists; the same program with one lemma
-  on the nest (Section~\ref{sec:transpose}) closes.
+  \[ m = \cur(\mathsf{maxs}(a[0], \selects(a, \bl{\cnt(1, 1, n)}))), \]
+  and $\exists k.\ a[k] = m$ needs a witness. A
+  lemma whose left-hand side is the existential does not apply, since the matcher has no case for quantifiers. The
+  same program with the postcondition $\occurs(m, \ldots)$ in the vocabulary of the database closes; quantified
+  left-hand sides, or witnesses taken from the terms of the goal, would close the other.
 \item \emph{The step budget}: the cocktail sort, with two inner loops per outer iteration, and the counting sort, with
   four loops in sequence and a scatter through a table of positions, stop because the rewriting exceeds its budget,
   with a rule on counters or sums as the last step. The last step of a rewriting that does not terminate is rarely its
-  cause: finding the cycle needs the rules of the file in pairs on the program, or a report of the rule applications
-  that repeat.
+  cause; finding the cycle needs the rules of the file in pairs on the program, or a report of the rule applications
+  that repeat. Their lemmas are those of the former form, not yet migrated.
 \end{itemize}

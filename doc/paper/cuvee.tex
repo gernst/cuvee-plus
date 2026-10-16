@@ -48,12 +48,11 @@
 \begin{abstract}
 \cuvee{} proves the safety of C programs with loops without inferring loop invariants.
 Each loop is summarized by a \ac{TEQ}, which describes the sequences of values that
-the variables take in the iterations. A database of lemmas, most of them proved in Lean, rewrites these equations into closed forms, such as counters, sums, and arrays filled with values.
+the variables take in the iterations. A database of lemmas, proved in Lean, rewrites these equations into closed forms, such as counters, sums, and arrays filled with values.
 Goals that remain after rewriting are encoded in first-order logic and passed to Z3.
 \cuvee{} does not search for counterexamples: it reports a violation only when rewriting refutes a goal.
-It proves 112 safe tasks of ReachSafety-Arrays that none of five SV-COMP~2026 participants
-reports as true in the official results, and it reports no wrong results, also with the fallback to
-Z3.
+It proves 148 safe tasks of ReachSafety-Arrays, against 68 for the best competing participant of
+SV-COMP~2026 in the official results, and it reports no wrong results, also with the fallback to Z3.
 
 \emph{Note:} This paper was generated with AI; see the AI Declaration. Its purpose is only to preview
 the tool for the competition.
@@ -77,10 +76,11 @@ contract. A loop that runs $n$ times is
 replaced by a system of equations over \emph{traces}, sequences of values:
 \begin{itemize}
 \item a synthetic counter $K = \code{counter}(0, 1, n)$ of the iterations;
-\item for each modified variable $x$, an equation
+\item for each modified variable $x$ that reads no variable that reads it, an equation
   \[X = \code{trace}(x_0, \code{for } \lf{K}, \lf{Y}, \dots \code{ do } x, k, y, \dots \Rightarrow u).\]
   The update $u$ has one guarded case per path through the body, and $\lf{Y}$ is the trace of another
-  variable without its last value;
+  variable without its last value; variables that read each other, a strongly connected component of the
+  read relation, get one trace of several accumulators;
 \item the iteration constraint $\code{invs}(\code{for } \dots \code{ check } \dots \Rightarrow
   \varphi)$, which states that each iteration ran with a true loop test along one of these paths;
 \item the exit condition, the negated loop test on the values after the last iteration, which
@@ -183,19 +183,18 @@ make the context inconsistent; it also bounds remainders modulo $2^k$ of the uns
 \section{Strengths and Weaknesses}
 
 Table~\ref{tab:results} compares \cuvee{} with five participants of SV-COMP~2026 on the valid tasks of
-ReachSafety-Arrays (427 tasks, 314 safe) and ReachSafety-Loops (764 tasks, 555 safe). The results of
+ReachSafety-Arrays (440 tasks, 320 safe) and ReachSafety-Loops (764 tasks, 555 safe). The results of
 the other tools are taken literally from the official results of SV-COMP~2026~\cite{svcomp26}, which
 count a result as correct only if its witness is confirmed. AISE did not participate in
 ReachSafety-Arrays. The results of \cuvee{} were obtained with BenchExec~\cite{benchexec}, with
 \code{-verify}, all modules of the lemma database, and 900\,s of CPU time, as in SV-COMP, but with 7\,GB
-of memory and 2 cores per run instead of 15\,GB and 4 cores. \cuvee{} produces no witnesses yet, so its
-results are not confirmed, and the table gives no scores.
+of memory and 2 cores per run instead of 15\,GB and 4 cores. \cuvee{} writes witnesses, but empty ones for now,
+so its results are not confirmed, and the table gives no scores.
 
 \begin{table}[t]
 \centering
 \caption{Results of \cuvee{} and of five SV-COMP~2026 participants, the latter taken from the official
-results. ``Unique'' counts the safe tasks that no other tool in the table reports as true. Scores are
-not given, since the results of \cuvee{} are not confirmed by witnesses.}
+results. Scores are not given, since the results of \cuvee{} are not confirmed by witnesses.}
 \label{tab:results}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{lrrrrrrr}
@@ -203,16 +202,14 @@ not given, since the results of \cuvee{} are not confirmed by witnesses.}
 & \cuvee{} (TEQ) & \cuvee{}+Z3 (TEQ) & Symbiotic & AISE & UAutom. & CPAchecker & Korn \\
 \midrule
 \multicolumn{8}{l}{\emph{ReachSafety-Arrays}} \\
-\quad correct true  & 132 & \textbf{142} & 68 & -- & 11 & 4 & 34 \\
-\quad correct false & 9 & 42 & 79 & -- & 67 & 51 & \textbf{84} \\
+\quad correct true  & 138 & \textbf{148} & 68 & -- & 11 & 4 & 34 \\
+\quad correct false & 9 & 48 & 79 & -- & 67 & 51 & \textbf{84} \\
 \quad wrong & 0 & 0 & 0 & -- & 0 & 0 & 0 \\
-\quad unique true & \multicolumn{2}{c}{112} & & & & & \\
 \midrule
 \multicolumn{8}{l}{\emph{ReachSafety-Loops}} \\
 \quad correct true  & 149 & 230 & 364 & \textbf{405} & 365 & 338 & 294 \\
 \quad correct false & 16 & 20 & 156 & 172 & 122 & 133 & \textbf{174} \\
 \quad wrong & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
-\quad unique true & \multicolumn{2}{c}{5} & & & & & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -220,20 +217,17 @@ not given, since the results of \cuvee{} are not confirmed by witnesses.}
 \paragraph{Strengths.}
 \begin{itemize}
 \item \emph{Arrays of unbounded size.} \cuvee{} proves more safe tasks of ReachSafety-Arrays than any other
-  tool in the table: 142 with Z3 and 132 without, compared with 68 for the next tool. Of these, 112 are not
-  reported as true by any of the other tools. Most of them are in \code{array-fpi} (50), \code{array-examples}
-  (28), and \code{array-crafted} (18), whose loops fill arrays with values that depend on the position or
-  on earlier values, and whose sizes are symbolic. With \cuvee{}, the tools prove 197 of the
-  314 safe tasks, instead of 85. The summaries do not depend on the number of iterations, so large or
-  symbolic bounds do not matter.
-\item \emph{No wrong results.} \cuvee{} reports no wrong result on all 1191 tasks, with or without the
+  tool in the table: 148 with Z3 and 138 without, compared with 68 for the next tool. Most of them fill
+  arrays with values that depend on the position or on earlier values, and their sizes are symbolic. The
+  summaries do not depend on the number of iterations, so large or symbolic bounds do not matter.
+\item \emph{No wrong results.} \cuvee{} reports no wrong result on all tasks, with or without the
   fallback.
-  Most lemmas are proved in Lean~4, so the trusted base is mainly the translation into
-  \acp{TEQ}, the deduction engine, and the lemmas without a proof.
+  The lemmas of the database are proved in Lean~4, so the trusted base is mainly the translation into
+  \acp{TEQ} and the deduction engine.
 \item \emph{Explanations.} With \code{-rules}, \cuvee{} reports the lemmas that each proof uses, and
   a residual goal points to the lemma that is missing.
 \item \emph{Incremental.} Rewriting also simplifies goals that it does not close. The remaining goals are
-  small enough for Z3: the fallback adds 83 proofs in Loops, 63 of them in the nonlinear tasks of
+  small enough for Z3: the fallback adds 81 proofs in Loops, most of them in the nonlinear tasks of
   \code{nla-digbench} and its scaled variants, where rewriting eliminates the loops and Z3 solves the
   remaining arithmetic.
 \end{itemize}
@@ -242,9 +236,9 @@ not given, since the results of \cuvee{} are not confirmed by witnesses.}
 \begin{itemize}
 \item \emph{Few violations.} \cuvee{} does not search for counterexamples. It reports \emph{false} only
   if rewriting refutes a goal, without an abstraction on the way; a model of Z3 for a lowered goal is no
-  counterexample, since the lowering generalizes. Thus it reports only 25 of the 322 unsafe tasks of both
-  categories, and 62 with Z3. Nor does it produce witnesses yet. In the official scoring, its proofs
-  would therefore count as unconfirmed.
+  counterexample, since the lowering generalizes. Thus it reports only 25 of the 329 unsafe tasks of both
+  categories, and 68 with Z3. Its witnesses are empty for now, i.e.\ witnesses are not really supported
+  yet. In the official scoring, its proofs would therefore count as unconfirmed.
 \item \emph{Machine integers.} Signed integers are mathematical integers, since their overflow is
   undefined behavior, which the tasks are meant to avoid. The wrap-around of unsigned integers is
   modeled by remainders modulo $2^k$, which make goals harder to close.
@@ -254,15 +248,12 @@ not given, since the results of \cuvee{} are not confirmed by witnesses.}
   \code{nla-digbench}, or their loops are state machines. Here \cuvee{} without Z3 proves only 149 tasks,
   while the other tools prove 294 to 405. Each lemma fixes the shape of its left-hand side, so a loop that
   writes $s$ cells under $s$ independent conditions requires a lemma for each $s$. Rewriting may also
-  diverge: 193 tasks end with \emph{rewriting does not terminate}.
-\item \emph{Frontend.} \cuvee{} rejects floating-point numbers (29 tasks), \code{goto} into code that
-  falls through (26), and fails to parse 37 tasks, mostly because of structs. Bitwise operations are uninterpreted functions, except shifts by constants.
+  diverge, and such tasks end with \emph{rewriting does not terminate}.
+\item \emph{Frontend.} \cuvee{} rejects floating-point numbers and \code{goto} into code that
+  falls through, and fails to parse some tasks, mostly because of structs. Bitwise operations are uninterpreted functions, except shifts by constants.
 \item \emph{Limits of the fallback.} The first-order encoding does not cover every goal, e.g., when a goal
-  has sequences that are not bound by a quantifier (8 tasks) or lists nested more than twice (8). More
-  often, Z3 does not answer in time: the fallback times out on 281 tasks, against 11 without it.
-\item \emph{Speed.} The median CPU time of a proof on Arrays is 20\,s, with or without Z3, compared with
-  4\,s for Symbiotic in SV-COMP. Even a trivial program takes about 7\,s of CPU time, for the start of the
-  JVM and the loading of the lemma database.
+  has sequences that are not bound by a quantifier or lists nested more than twice. More often, Z3 does
+  not answer in time.
 \end{itemize}
 
 Several lemmas of the database, among them those for conditional stores, sums with resets, and strided

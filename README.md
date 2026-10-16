@@ -119,7 +119,9 @@ lists them.
   - nondeterministic choice and iteration.
 - **Trace equation systems** (`-teq`): verification conditions by symbolic
   execution, where each loop is summarized by a trace equation system: one
-  trace per modified variable, `trace(e, for Y do x, y :: u)`, whose update
+  trace per strongly connected component of the read relation of the modified
+  variables (one per variable where they do not read each other),
+  `trace(e, for Y do x, y :: u)`, whose update
   `u` is an expression or guarded cases `case φ => e`, and the constraint that
   all earlier iterations took a path through the body,
   `invs(for Y check y :: φ)` (in Boogie `all(...)`, in SMT-LIB `invs`), where
@@ -138,8 +140,8 @@ lists them.
   `nested` is in `resources/cuvee/legacy`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
   `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`, `unsigned`) are proved in Lean 4 ([lean/](lean)), against
   statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
-  [teq.dfy](resources/cuvee/teq.dfy) is kept but no longer injected. `-rules` reports the rules that
-  each `-simplify` applies to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain
+  [legacy/teq.dfy](resources/cuvee/legacy/teq.dfy) is kept but no longer injected. `-rules` reports the rules that
+  `-simplify` and `-prove` apply to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain
   into first-order logic for the solvers.
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the

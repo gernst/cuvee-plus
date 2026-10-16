@@ -26,11 +26,11 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 
 | file | contents |
 |---|---|
-| `xml/cuvee.xml` | `-teq` with the migrated modules of the database (`-include teq:<module>`), `-prove -split -prove -rules -verify`; 15 min, 2 cores, 7 GB |
+| `xml/cuvee.xml` | `-teq` with the migrated modules of the database (`-include teq:<module>`), `-prove -split -prove -split -prove -rules -verify` (the second round splits the disjunctions that the rules introduce); 15 min, 2 cores, 7 GB |
 | `xml/cuvee-fallback.xml` | the same with `-fallback` and Z3 for the goals that remain |
 | `xml/cuvee-sample.xml` | the options of `cuvee.xml` on samples of Arrays and Loops, 2 min, i7-6700 |
 | `xml/cuvee-acsl.xml`, `cuvee-chc.xml` | `-vcgen` on the ACSL tasks of `benchmarks/acsl`, `-chc` |
-| `xml/cpachecker.xml`, `uautomizer.xml`, `korn.xml`, `symbiotic.xml`, `aise.xml`, `monocera.xml` | the other verifiers |
+| `xml/cpachecker.xml`, `uautomizer.xml`, `korn.xml`, `symbiotic.xml`, `aise.xml`, `monocera.xml`, `tricera.xml` | the other verifiers (`tricera.xml`: TriCera of the MonoCera artifact, with mathematical integers, on the unbounded set) |
 
 The definitions of Cuvée pass `-witness witness.yml`, a witness of SV-COMP for each answer to a C program
 (without invariants, or with the target only), which BenchExec keeps (`<resultfiles>**/witness.*</resultfiles>`, as for the other

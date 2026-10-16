@@ -32,6 +32,15 @@
 \newcommand{\upd}[2]{\mathsf{case}\ #1 \Rightarrow #2}
 \newcommand{\lemma}[1]{{\renewcommand{\_}{\textunderscore\allowbreak}\textsf{#1}}}
 \newcommand{\seq}[1]{\hat{#1}}                               % a choice: a list of the outer loop that nothing defines
+\newcommand{\ear}{\mathsf{earlier}}
+\newcommand{\stores}{\mathsf{stores}}
+\newcommand{\selects}{\mathsf{selects}}
+\newcommand{\consts}{\mathsf{consts}}
+\newcommand{\occurs}{\mathsf{occurs}}
+\newcommand{\indexof}{\mathsf{indexof}}
+\newcommand{\prefix}{\mathsf{prefix}}
+\newcommand{\rw}{\ \leadsto\ }
+\newcommand{\cuvee}{Cuvée}
 
 \lstdefinelanguage{dafny}{
   morekeywords={method,returns,requires,ensures,var,while,if,else,function,lemma,forall,exists,int,bool,array,
@@ -42,9 +51,10 @@
   columns=fullflexible,keepspaces=true,xleftmargin=1.5em,extendedchars=true,
   literate={⌊}{{$\lfloor$}}1 {⌋}{{$\rfloor$}}1 {→}{{$\to$}}1}
 
-\title{Array Algorithms by Lemma Lookup:\\ Worked Examples with Trace Equation Systems}
+\title{Cuvée: Verifying Array Programs by Trace Equation Systems and a Lemma Database\\[4pt]
+\large The Approach, the Engine, and Worked Examples}
 \author{Gidon Ernst\\[2pt] \small LMU Munich, Germany\\ \small\texttt{gidon.ernst@gmail.com}}
-\date{October 2026}
+\date{October 16, 2026}
 
 \everydisplay{\small}
 \begin{document}
@@ -52,12 +62,16 @@
 
 \begin{abstract}
 A loop can be verified without an invariant if its effect is a known shape: a counter, a sum, a sequence of stores, a
-bisection of an interval. These notes show what it takes to verify array programs this way. Loops are described by
-equations over the traces of their variables; a database of lemmas states what loops of known shapes compute; and an
-engine rewrites the goal with the lemmas until it is proved. On worked examples, from a linear search to binary search,
-nested loops and the C programs of the MonoCera benchmarks, we show which lemmas each proof needs, which capabilities of
-the engine it relies on, and, for the programs that are not proved, what is missing. The examples are part of the
-verifier Cuvée (\texttt{examples/dafny}, \texttt{benchmarks/monocera}), and every result reported here was rerun.
+bisection of an interval. This document describes the verifier Cuvée, which works this way. Symbolic execution
+describes each loop exactly by a trace equation system, equations over the sequences of values of its variables, one
+trace per strongly connected component of the variables that read each other; a database of lemmas, proved in Lean,
+states what loops of known shapes compute; and a deduction engine rewrites the goal with the lemmas and decides the
+remaining arithmetic. We describe the representation, the engine and the database with the insights that shaped them,
+follow one proof step by step, and work through examples from a linear search to binary search, nested loops,
+sorting and partitioning, and the C programs of the MonoCera benchmarks, showing which lemmas each proof needs and
+which capabilities of the engine it relies on. Of thirty array algorithms, twenty-seven are proved. The evaluation
+on SV-COMP shows the strength of the approach, arrays of unbounded size, and its weakness, numeric loops and
+refutations.
 \end{abstract}
 
 \section{Introduction}
@@ -66,9 +80,20 @@ fill, or search, and what they compute after $n$ iterations has a closed form th
 by lookup exploits this. Symbolic execution describes each loop by equations over the sequences of values its variables
 take, the \emph{traces}; a database of lemmas rewrites traces of known shapes into their closed forms; and the
 postcondition, once the traces are gone, is a formula that the engine decides. Nothing is inferred. A loop whose shape
-has a lemma is proved within seconds; a loop without one stays open, and the goal that remains says which lemma is
+has a lemma is proved; a loop without one stays open, and the goal that remains says which lemma is
 missing.
 
+\subsection{The tool}
+\cuvee{} reads C (the dialect of SV-COMP), Dafny, Boogie, SMT-LIB and SV-LIB into one core language, on which
+transformations work: verification conditions by weakest preconditions (\texttt{-vcgen}), trace equation systems
+(\texttt{-teq}), and Horn clauses (\texttt{-chc}); the simplifier (\texttt{-simplify}) and the deduction engine of this
+document (\texttt{-prove}); and printers back into each language or solvers for what remains. \texttt{-teq} starts at the
+entry point of the program, \texttt{main} in C, and inlines the calls. A run of \cuvee{} on an SV-COMP task chains them,
+e.g.\ \texttt{-teq} with the modules of the database, \texttt{-prove -split -prove}, and \texttt{-verify} for the answer.
+\cuvee{} does not need to know whether a goal is provable before trying; what the engine cannot close is lowered for an
+SMT solver or reported as unknown (Section~\ref{sec:engine:beyond}).
+
+\subsection{What must work together}
 Three things must work together for this, and the examples of this document test each of them:
 \begin{itemize}[nosep]
 \item \textbf{the representation} must expose the shapes: a counter must look like a counter, also when its variable
@@ -79,7 +104,8 @@ Three things must work together for this, and the examples of this document test
 \item \textbf{the database} must contain the shapes, and its lemmas must be true for every term they match, not only
   for the loops they were written for (Sections~\ref{sec:engine:db} and~\ref{sec:bisect}).
 \end{itemize}
-The worked examples come in order of what they need. The linear search (Section~\ref{sec:lsearch}) needs an iteration
+The worked examples come in order of what they need. The array initialization (Section~\ref{sec:init}) is followed
+step by step, from the verification condition to the closed goal, and needs the database alone. The linear search (Section~\ref{sec:lsearch}) needs an iteration
 constraint named and instantiated at a position. The swap of two arrays (Section~\ref{sec:swap}) is a cycle of two
 variables, which the lemmas of single loops resolve through the views of its components. Nested loops (Section~\ref{sec:nested}) need nothing beyond the
 lemmas of single loops, because an inner loop is a value of the outer update; the transpose needs one lemma for the
@@ -87,8 +113,10 @@ nest. Binary search (Section~\ref{sec:bisect}) needs a lemma over the whole loop
 apart, and shows why such a lemma must be total to be sound. The C programs of the MonoCera benchmarks
 (Section~\ref{sec:monocera}) need the database alone. Selection sort, bubble sort, gnome sort, the merge and the
 distinctness check (Section~\ref{sec:sorts}) need a summary of what their loops compute and an induction or an
-invariant of the whole cycle, stated for the closed form. The programs that are not proved are discussed with what
-each needs (Section~\ref{sec:open}). Section~\ref{sec:principles} collects the principles of
+invariant of the whole cycle, stated for the closed form. Seven more programs had lemmas written for an earlier
+representation and were migrated to the closed form; their migration, the limits of the engine it ran into, and the
+three programs that stay open are discussed in Section~\ref{sec:open}. Section~\ref{sec:evaluation} reports the results on
+SV-COMP and two benchmarks from the literature. Section~\ref{sec:principles} collects the principles of
 writing lemmas for lookup, and Section~\ref{sec:conclusion} the insights into the representation, the engine and
 soundness.
 
@@ -103,6 +131,8 @@ the modules of the database that the file names.
 
 \input{teq}
 \input{engine}
+\input{database}
+\input{init}
 \input{lsearch}
 \input{swap}
 \input{nested}
@@ -110,6 +140,7 @@ the modules of the database that the file names.
 \input{sorts}
 \input{monocera}
 \input{open}
+\input{evaluation}
 \input{principles}
 \input{conclusion}
 
@@ -117,7 +148,7 @@ the modules of the database that the file names.
 
 The examples of \texttt{examples/dafny/algorithms} and \texttt{examples/dafny/state}, their specifications and lemmas,
 the lemmas for the MonoCera tests, the reruns reported here and this document were produced by coding agents (Claude
-Code with Claude Opus) between October 9 and 14, 2026, under the direction of the author, who chose the problems, set the
+Code with Claude Opus) between October 9 and 16, 2026, under the direction of the author, who chose the problems, set the
 rules of the work (no unfolding of trace combinators in lemmas for programs, every result checked on a wrong
 postcondition, runs read with their exit status), decided the open questions, and reviewed the results. The lemmas of
 the programs are axioms that no proof checks (Section~\ref{sec:principles:sound}), and the text should be read as the

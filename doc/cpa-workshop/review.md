@@ -5,7 +5,7 @@ addressed.
 
 ## 1. The binary search (done)
 
-The slide follows `doc/state-traces`: the binary search over a sorted array, one lemma about the bisection for the
+The slide follows the binary search of `doc/array-algorithms` (formerly `doc/state-traces`): the binary search over a sorted array, one lemma about the bisection for the
 whole loop, its bounds as forward facts through the partition points `lower` and `upper`. The caption says the
 lemmas are general, assumed, and not yet in the database.
 

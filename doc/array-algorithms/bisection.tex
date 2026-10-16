@@ -94,7 +94,15 @@ $[\mathsf{lower}, \mathsf{upper})$ of the elements equal to $x$ is empty and no 
 \texttt{break}, $a[M] = x$ and $M < hi \le n$. For the lower bound, $H$ is $x \le a[m]$, the negation of $G$; the cut
 of $\neg H$ is the cut of $G$, so $lo \le \mathsf{lower} \le hi$, and at the exit $hi \le lo$ gives
 $lo = \mathsf{lower}(a, n, x)$, from which the two quantified postconditions follow by \lemma{lower} and
-\lemma{lower\_le}. Both programs close in under a minute.
+\lemma{lower\_le}.
+
+\paragraph{Why forward facts, and why bounds suffice.} The goal speaks about $lo$ and $hi$, and none of its terms is a
+comparison of the form $\cur(\mathsf{bisection}(\ldots)).0 \le \mathsf{cut}(\ldots)$; a rewrite rule fires only where its
+left-hand side occurs, so a rule on that comparison would never fire. A forward fact is assumed wherever its trigger
+$\cur(\mathsf{bisection}(\ldots)).0$ occurs, and its instance names the term as it occurs, so that the bound reaches the
+arithmetic of the goal. The proof never computes $lo$ or $hi$: the trace of the cycle is named by the shape of its loop
+and described by the bounds that the shape guarantees. This is the form a description takes when a loop has no closed
+form, and it uses the representation unchanged.
 
 \subsection{Why the definition has three cases}
 The program's update has two cases. A definition with only those two, guarded by $lo < hi$, would be

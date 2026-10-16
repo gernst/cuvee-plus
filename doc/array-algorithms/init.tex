@@ -1,0 +1,117 @@
+\section{A First Example: Array Initialization}\label{sec:init}
+
+This section follows one proof from the program to the closed goal, step by step, as the engine performs it. The
+program fills the first $n$ cells of an array with a value; a Hoare-style proof needs the invariant
+$\forall k.\ 0 \le k < i \Rightarrow a[k] = v$. Here, nothing is written for the program: the proof uses the lemmas
+of the database only.
+\begin{lstlisting}
+method init(n: int, v: int) returns (a: array<int, int>)
+  requires 0 <= n
+  ensures forall k: int :: 0 <= k < n ==> a[k] == v
+{
+  var i: int;
+  i := 0;
+  while i < n { a[i] := v; i := i + 1; }
+}
+\end{lstlisting}
+The run is \texttt{./Cuvee.sh -teq -prove examples/dafny/state/init.dfy}; its output has no goal, i.e.\ the goal is
+proved.
+
+\subsection{The verification condition}
+The loop modifies $a$ and $i$. The index reads nothing, the array reads the index, so the two are separate
+components (Section~\ref{sec:teq}), the array after the index. With \texttt{-print dfy} in place of
+\texttt{-prove}, and the fresh variables numbered by the tool, the goal is
+\begin{align*}
+&\forall n, v, a.\ 0 \le n \Rightarrow \forall a', i', n_4{:}\mathsf{Nat}, K, I, A.\\
+&\quad K = \cnt(0, 1, n_4)\ \wedge\ I = \tr{0}{\bl{K}}{i, k \mapsto i + 1}\\
+&\quad \wedge\ A = \tr{a}{\bl{K}, \bl{I}}{a', k, i \mapsto a'[i := v]}\
+ \wedge\ a' = \cur(A)\ \wedge\ i' = \cur(I)\\
+&\quad \wedge\ \al{\bl{K}, \bl{A}, \bl{I}}{k, a', i \mapsto i < n}\ \wedge\ 0 \le \intf(n_4)\\
+&\quad \Rightarrow \neg(i' < n) \Rightarrow \forall k.\ 0 \le k < n \Rightarrow a'[k] = v.
+\end{align*}
+Every construct of the approach appears once. The number $n_4$ of iterations is a fresh natural, about which nothing
+is known but what the iteration constraint and the exit say. $K$ is the counter of the iterations. The trace $I$ of
+the index starts at $0$ and steps by one; the trace $A$ of the array has the history $\bl{I}$ as a further
+dependency, and in iteration $k$ its update reads the index of that iteration through the bound variable $i$, i.e.\
+$i = \ear(\natf(k), \bl{I})$. The exit values are the current values of the traces, and the iteration constraint
+states the loop test for every earlier iteration. Apart from the updates and the test, the condition is the schema
+that every loop gets; it contains no invariant.
+
+\subsection{The lemmas}
+The proof uses these lemmas of the database (\texttt{resources/cuvee/teq.dfy}):
+\begin{lstlisting}
+lemma {:rw} counter_def(i: int, c: int, n: Nat)
+  ensures trace(i, for ⌊counter(0, 1, n)⌋ do x, k :: x + c) == counter(i, c, n)
+lemma {:rw} current_counter(i: int, c: int, n: Nat)
+  ensures current(counter(i, c, n)) == i + integer(n) * c
+lemma {:rw} earlier_counter(k: Nat, i: int, c: int, n: Nat)
+  ensures earlier(k, ⌊counter(i, c, n)⌋) == i + integer(k) * c
+lemma {:rw} invs_counter_upper_nonnegative(m: int, n: Nat)
+  requires 0 <= m
+  ensures invs(for ⌊counter(0, 1, n)⌋ check k :: k < m) <==> integer(n) <= m
+
+function {:fold} stores<a, b>(a: array<a, b>, keys: List<a>, values: List<b>): Trace<array<a, b>>
+{ trace(a, for keys, values do b, k, v :: b[k := v]) }
+lemma {:rw} maps_const<a>(x: a, i: int, c: int, n: Nat)
+  ensures maps(for ⌊counter(i, c, n)⌋ yield v :: x) == ⌊consts(n, x)⌋
+lemma {:rw} current_stores<a, b>(k: a, a: array<a, b>, keys: List<a>, values: List<b>)
+  ensures current(stores(a, keys, values))[k]
+    == if occurs(k, keys) then earlier(indexof(k, keys), values) else a[k]
+
+lemma {:rw} occurs_counter_up(j: int, i: int, n: Nat)
+  ensures occurs(j, ⌊counter(i, 1, n)⌋) <==> i <= j < i + integer(n)
+lemma {:rw} indexof_counter_up(j: int, i: int, n: Nat)
+  requires i <= j < i + integer(n)
+  ensures indexof(j, ⌊counter(i, 1, n)⌋) == natural(j - i)
+lemma {:rw} earlier_consts<a>(k: Nat, n: Nat, x: a)
+  ensures earlier(k, ⌊consts(n, x)⌋) == x
+\end{lstlisting}
+They are of three kinds. \emph{Introduction} lemmas recognize a shape and name it: a trace that adds a constant
+is a counter, and a trace that stores values at keys is $\stores$, a function marked \texttt{\{:fold\}}, whose body
+is rewritten \emph{to} the function. \emph{Acceleration} lemmas give the closed form of a named shape: the last
+value of a counter, its $k$-th value, the value of a store sequence at a key, which is the last value stored there
+or the original one. \emph{Bookkeeping} lemmas relate the functions on lists: $\occurs$, $\indexof$, the constant list
+$\consts$, and $\mapc{\ldots}{\ldots}$, which the engine introduces itself when a lemma needs a list that the
+program computes only implicitly. All of them are proved in Lean (Section~\ref{sec:engine:db}).
+
+\subsection{The proof}
+The engine simplifies the goal under a context of facts, innermost terms first, and applies the first rule whose
+left-hand side matches and whose side conditions hold (Section~\ref{sec:engine}). The steps below are those of
+\texttt{-debug rewrite}, cleaned up.
+
+\paragraph{The index is a counter.} The trace of the index is matched by \lemma{counter\_def} as it stands,
+$\tr{0}{\bl{K}}{i, k \mapsto i + 1} \rw \cnt(0, 1, n_4)$. From here on, $I = \cnt(0, 1, n_4)$ is a fact, and a
+lemma that asks for a counter where the goal has $\bl{I}$ matches through this equation.
+
+\paragraph{The index read by the array is the iteration number.} To simplify the update of $A$, the engine builds the
+context of the combinator: $k$ is a value of $\bl{K}$, so $0 \le k < \intf(n_4)$, and $i$ is the value of $\bl{I}$ at
+position $k$. That read is simplified in the same context,
+$\ear(\natf(k), \bl{I}) \rw 0 + \intf(\natf(k)) \cdot 1 \rw k$, so in every iteration the index is $k$, and the update
+of $A$ becomes $a'[k := v]$. ``The loop stores at $i$'' has become ``the loop stores at $0, 1, \ldots$'', and the
+unused dependency $\bl{I}$ is dropped.
+
+\paragraph{The array is a sequence of stores.} The trace $\tr{a}{\bl{K}}{a', k \mapsto a'[k := v]}$ is matched by the
+body of $\stores$ with $\bl{K}$ as the keys and, as the values, a list that the program never names: the engine
+synthesizes it as the map of the stored value over the iterations,
+\begin{align*}
+  \tr{a}{\bl{K}}{a', k \mapsto a'[k := v]} &\rw \stores(a, \bl{K}, \mapc{\bl{K}}{k \mapsto v}),\\
+  \mapc{\bl{K}}{k \mapsto v} &\rw \bl{\consts(n_4, v)}.
+\end{align*}
+The final array is $\cur(\stores(a, \bl{K}, \bl{\consts(n_4, v)}))$, and the final index
+$\cur(\cnt(0, 1, n_4)) \rw \intf(n_4)$.
+
+\paragraph{The number of iterations is $n$.} The iteration constraint has become $\al{\bl{K}}{k \mapsto k < n}$, which
+\lemma{invs\_counter\_upper\_nonnegative} turns into $\intf(n_4) \le n$, its side condition $0 \le n$ being the
+precondition. The exit gives $n \le \intf(n_4)$, and the arithmetic of the context concludes $\intf(n_4) = n$.
+
+\paragraph{The postcondition.} $a'$ is a variable whose definition is $\cur(A)$, with $A$ the store sequence, and
+\lemma{current\_stores} fires through both:
+\begin{align*}
+a'[k] &\rw \ite{\occurs(k, \bl{K})}{\ear(\indexof(k, \bl{K}), \bl{\consts(n_4, v)})}{a[k]}\\
+\occurs(k, \bl{K}) &\rw 0 \le k < \intf(n_4), \text{ true for } 0 \le k < n = \intf(n_4)\\
+\ear(\natf(k), \bl{\consts(n_4, v)}) &\rw v
+\end{align*}
+by \lemma{occurs\_counter\_up}, \lemma{indexof\_counter\_up} and \lemma{earlier\_consts}. The conclusion $a'[k] = v$ is
+true, and the goal is dropped. Had the program stored $v$ at $2i$ or counted down, other lemmas of the same database
+would have fired; the proof used nothing about the loop but what the database knows about counters, stores and
+constant lists.

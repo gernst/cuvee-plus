@@ -109,17 +109,13 @@ refuted if it evaluates to false at an assignment of small values; it becomes $\
 program is reported incorrect. All other goals are printed as they remain, with the lemmas that were applied,
 so that a residual goal points to the missing lemma.
 
-\subsection{The lemma database}\label{sec:engine:db}
-The database is a set of Dafny files: an entry point, injected with every system, with the declarations
-of the combinators, counters, the functions on lists and the lemmas on traces; and optional modules for
-aggregations (sums, counts, minima and maxima), arithmetic, arrays (stores and their reads), counters,
-searching (no occurrence in a prefix, the bisection of an interval), sorted arrays (sortedness, permutations,
-partition points), strided stores and counters modulo a bound. A lemma is a rewrite rule (\texttt{\{:rw\}}),
-a forward fact (\texttt{\{:fw\}}), or the definition of a function that is folded where its body occurs
-(\texttt{\{:fold\}}). The lemmas of the entry point and of the modules are proved in Lean 4 against
-statements generated from the files, with the trace combinators defined by recursion and guarded cases as
-conditionals that end in $\mathsf{unspecified}$. Where a lemma has arbitrary guards, it ends in a case for
-their complement (Section~\ref{sec:engine:cases}), so that complete guards are not a premise. What the
-proofs still assume is listed with each lemma: reads of the lists of a loop at its iterations, prefixes not
-longer than the list, lists of equal length. The lemmas written for a single program, at the beginning of its
-file, are not checked; Section~\ref{sec:principles:sound} discusses how to keep them sound.
+\subsection{Beyond rewriting}\label{sec:engine:beyond}
+What the engine leaves is not necessarily lost. \texttt{-fallback} lowers the remaining goals into first-order
+logic for Z3, with traces as uninterpreted functions of an index and their characterizing equations, and naturals
+as non-negative integers; it proves goals that need arithmetic or quantifier reasoning beyond the engine, and
+refutes goals without traces. \texttt{-chc} translates the same program into constrained Horn clauses instead, a
+complementary technique for loops over integers. \texttt{-verify} answers \emph{correct}, \emph{incorrect} or
+\emph{unknown} per task, where a refutation counts only if the goal was not over-approximated on the way (goals that
+the lowering generalized are marked abstract), and \texttt{-witness} writes a witness of SV-COMP for the answer,
+which is empty for now: witnesses are not really supported yet. Rewriting is bounded by a step budget per goal; a goal that exhausts it is reported as
+not terminating, which is a non-answer like \emph{unknown}.

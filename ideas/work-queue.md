@@ -39,5 +39,5 @@ user's instruction, Oct 14).
 ## Last
 
 - [ ] When everything is done: the final integration of the results into the documents (doc/paper/cuvee.tex with
-      `scripts/paper.py`, `scripts/out/experiments.pdf`, ideas/experiments.md, doc/overview/overview.tex), commit all
+      `scripts/paper.py`, `scripts/out/experiments.pdf`, ideas/experiments.md, doc/array-algorithms), commit all
       the work, and only then a single push.

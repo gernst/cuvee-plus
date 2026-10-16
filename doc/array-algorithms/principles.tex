@@ -23,7 +23,9 @@ are the database's; the others are knowledge about one algorithm, stated at the 
   postcondition needs (Section~\ref{sec:bisect}).
 \item \textbf{A summary states what a loop nest computes}, as a rule whose left-hand side is the term of the goal: the
   nest of the transpose (Section~\ref{sec:transpose}), and for the sorts the inner loop as an abstract step, a plain rule
-  on the inner loop's term, e.g.\ $\argmin$ (Section~\ref{sec:sorts}).
+  on the inner loop's term, e.g.\ $\argmin$ (Section~\ref{sec:sorts}), or a fold that names the inner loop, such as the
+  passes of the insertion sorts and the scan of the first duplicate (Section~\ref{sec:open}). The fold also renames
+  the inner loop inside the constraints of the outer one, so that later lemmas mention it by its name.
 \item \textbf{An induction lemma states the invariant of an outer loop} as a quantified side condition over an
   abstract step, decided by step lemmas on atoms. No invariant is inferred; its shape is the lemma's knowledge, and
   the engine proves the step.

@@ -5,14 +5,10 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
 
 ## New
 
-- The algorithms of examples/dafny/algorithms under `-teq -prove` (Oct 14, 2026): 15 of 30 are verified, 15 not:
-  one goal each in bubble_sort, insertion_sort, insertion_sort2, selection_sort, gnome_sort (the postcondition
-  `sorted(...) && perm(...)`), distinct, first_duplicate, max_element, merge, partition, three_way_partition,
-  reverse, transpose; cocktail_sort and counting_sort end with "rewriting does not terminate". All were verified
-  with `-teq -simplify` on one trace per variable (Oct 11); their own summary and induction lemmas are written for
-  that form, where an inner loop was fragments of the outer iteration constraint, and do not match since `-teq`
-  closes nested loops (one trace per component, Oct 13). To verify them again, their lemmas are rewritten for the
-  current form (`teq:nested`, the module of the fragments, is in resources/cuvee/legacy since Oct 14).
+- The algorithms of examples/dafny/algorithms under `-teq -prove` (Oct 16, 2026): 27 of 30 are verified; open are
+  max_element (an existential postcondition, no witness), cocktail_sort and counting_sort ("rewriting does not
+  terminate"); their lemmas were written for one trace per variable (verified with `-teq -simplify` on Oct 11) and do not
+  match since `-teq` closes nested loops (one trace per component, Oct 13).
 - `-prove`: with `natural_positive` (teq.dfy), the rounds of simplification of array-crafted bAnd*, bor*, xor* (15
   tasks, unknown before) do not settle and use up the 1000 steps ("rewriting does not terminate"): the same reads
   `x[0]`, `x[1]` are rewritten in every round, `integer(n)` to `i` by integer_natural modulo the class of `n`; a rule
@@ -596,14 +592,13 @@ Measured on binary search and on the SV-COMP examples
 
 ## Trace equation systems (`-teq`)
 
-- The algorithms of examples/dafny/algorithms (Oct 14, 2026): 20 of 30 verified with `-teq -prove`; bubble_sort,
-  selection_sort, gnome_sort, merge and distinct with lemmas for the closed form (summaries of inner loops as plain
-  rules, inductions with the choice of the numbers of inner iterations among the dependencies, rules over whole cycles).
-  Open: the insertion sorts, first_duplicate (traces as terms in conditions, see the deduction engine), max_element
-  (no quantified left-hand sides), partition and three_way_partition (a cycle of three accumulators whose views are too
-  expensive: the file takes 34 s, the rewriting exceeds its budget with the lemmas), reverse (`integer_eq` below),
-  transpose (the version of examples/dafny/state closes), cocktail_sort and counting_sort (step budget); details in
-  doc/array-algorithms.
+- The algorithms of examples/dafny/algorithms (Oct 16, 2026): 27 of 30 verified with `-teq -prove`, with lemmas for
+  the closed form: summaries of inner loops as plain rules or folds (the passes of the insertion sorts, the scan of
+  first_duplicate, the columns of transpose), inductions over the outer trace with the choice of the numbers of inner
+  iterations and the constraints of the pass among their side conditions, rules over whole cycles (the partitions,
+  whose regions are rules on the atoms over the whole trace of (b, i, j), since a summary of the array component with
+  its positions as a counter is not matched), the exit as it stands among the facts (reverse). Open: max_element (no
+  quantified left-hand sides), cocktail_sort and counting_sort (step budget); details in doc/array-algorithms.
 - `integer_eq` of teq.dfy rewrites `integer(n) == x` into `n == natural(x)` under `0 <= x`, and the result no longer
   states `0 <= x`, which is lost when it followed from the equation itself (reverse.dfy needs it for the conditions of
   its reversal lemma); the unconditional `integer(n) == x <==> 0 <= x && n == natural(x)` keeps it (a change of the

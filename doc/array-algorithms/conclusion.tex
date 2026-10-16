@@ -2,8 +2,7 @@
 
 \subsection{The method is lookup; the difficulty is the engine}
 Verification by lookup states, once, what loops of a shape compute, and finds the loops of a program among the shapes.
-On the MonoCera tests this proves within seconds what inference of quantified array invariants does not find in
-fifteen minutes, and the price is that a loop without a lemma stays open. The examples of this document strained not
+On the MonoCera tests this proves what inference of quantified array invariants does not find, and the price is that a loop without a lemma stays open. The examples of this document strained not
 the method but the engine that performs the lookup. Each practice that a lemma writer would otherwise need is a
 symptom of a missing capability of the engine, and the engine of Section~\ref{sec:engine} is organized by the
 symptoms it removes:
@@ -65,27 +64,59 @@ supports this by matching case lists in one direction: the program's guards are 
 updates, by construction, so a lemma may be total where the program is partial. This turns a premise that every lemma
 with guards would carry, and that no engine checks, into a case of the lemma's definition.
 
+\subsection{Soundness beyond the lemmas}
+\begin{itemize}[nosep]
+\item \emph{A refutation is a counterexample only if the goal was exact.} Every approximation on the way, a
+  generalization by the lowering or an uninterpreted function such as a bit operation, makes satisfiability
+  meaningless; such goals are marked abstract, and their refutation is reported as \emph{unknown}.
+\item \emph{Procedures are checked in the context of their calls.} Checked out of context, a procedure gave wrong
+  refutations; the entry point fixes the context, and the other procedures are inlined at their calls.
+\item \emph{Exits are branch conditions} (Section~\ref{sec:teq}): as assumptions, two exits with different values gave
+  overlapping cases, from which any goal followed.
+\end{itemize}
+
+\subsection{The database}
+\begin{itemize}[nosep]
+\item \emph{Order matters.} Rules are tried in the order of the files, so rules that name a trace precede the rules that
+  compute with it, and rules whose patterns subsume others come after the specific ones (a sum $v + w$ also matches
+  $-e$ as $-e + 0$), or the matcher must exclude the degenerate match.
+\item \emph{Facts about terms are forward lemmas}, triggered by a \emph{named} term, a function of the database, rather
+  than by a raw pattern of a trace, which would be matched at every read of every component.
+\item \emph{Definitions are folds.} A function that names a shape is defined with its body and \texttt{\{:fold\}}
+  rather than declared with a separate equation, so that the definition is part of the semantics; this applies to the
+  lemmas of programs as well, where the body takes only the function's parameters.
+\item \emph{Dropping rules that look specific is risky.} A migration of the database that removed the rules not applied
+  in a sample lost dozens of SV-COMP tasks (counters modulo $2^{32}$, sentinels); the usage statistics of full runs
+  decide.
+\item \emph{Rules written for one trace per variable still apply}: the matcher maps their dependencies onto the single
+  dependency of a component, which recovered them without rewriting them.
+\end{itemize}
+
 \subsection{What the open examples need}
 \begin{itemize}[nosep]
-\item \emph{Closed conditions looked up modulo unused and repeated dependencies}: the constraints of nested loops carry
-  the counter of the iterations unused, so a summary of a sort must match them with open lists and identify these by
-  equations, which is the bookkeeping that the lookup is meant to remove.
-\item \emph{Views memoized for terms, not only for variables}: a condition that contains a trace is instantiated with
-  fresh bound variables at every evaluation, and its views are recomputed; lemmas about cycles must name the trace by a
-  rule variable and read its components through open variables, and the insertion sorts and the first duplicate,
-  whose constraints contain traces as terms, are blocked by it.
-\item \emph{Normal forms that keep facts}: $\intf(n) = x$ becomes $n = \natf(x)$ only under $0 \le x$, which is then lost;
-  the unconditional form $0 \le x \wedge n = \natf(x)$ keeps it (the reversal).
+\item \emph{Arithmetic across $\natf$}: an equation $n = \natf(x)$ with $0 \le x$ should give $\intf(n) = x$ to the
+  arithmetic; the migrated proofs state their bounds with the equation as a side condition instead
+  (Section~\ref{sec:open:arith}).
+\item \emph{Closed conditions looked up modulo unused and repeated dependencies}: an instance is normalized, the fact
+  it should be found as is not, so lemmas bind such dependencies by open variables identified by equations.
+\item \emph{Matching of component dependencies by their normal form}, so that a summary of the array component of a
+  partition, with its positions stated as a counter, applies.
 \item \emph{Remainders as linear terms over quotients} in the arithmetic, which closes the strided writes of
   Section~\ref{sec:pr2} without a lemma for one form of an equation.
-\item \emph{A more precise read relation}, taking the guards only for the results that differ between the cases, so that
-  a counter of a guarded body stays outside the cycle of the variables that the guard reads; the partitions have a
-  cycle of three accumulators for that reason, whose views are too expensive.
 \item \emph{Lemma schemas}, with the number of stores, cases or dependencies as a parameter, in place of one lemma per
   arity.
 \item \emph{Quantified left-hand sides or witnesses} for existential postconditions: the matcher has no case for
   quantifiers.
-\item \emph{Diagnostics for non-termination}, which report the rule applications that repeat rather than the last one.
+\item \emph{Diagnostics for non-termination}, which report the rule applications that repeat rather than the last one;
+  the cocktail sort and the counting sort stop on the step budget.
 \item \emph{Proofs for the lemmas of programs}: definitions of the abstract predicates and functions of the sorts in
   Lean, as the database's lemmas have them, so that the summaries and step lemmas are checked rather than trusted.
+\item \emph{Witnesses}: the witnesses that \cuvee{} writes are empty for now; invariants from the closed forms of the
+  traces would confirm its results.
 \end{itemize}
+
+\subsection{Limitations}
+Non-linear integer arithmetic, recurrences without a closed form in the database, arrays written at data-dependent
+positions, and heap data structures are beyond the current database and engine. Proving safe tasks is the strength of
+the approach; refuting unsafe ones needs a model, which the engine does not build and leaves to the solver. And a loop
+whose shape has no lemma stays open: the price of lookup is the database.

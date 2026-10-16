@@ -132,6 +132,5 @@ postcondition at $j$, $i$ within the bounds.
 over a counter whose update contains the inner trace as a value. A summary of the inner loop alone would have
 been a rule on $\cur(\tr{B}{\bl{\cnt(0, 1, \natf(n))}}{\ldots})$ with the column as a named function, followed by
 a rule on the outer trace of these columns; the closed form lets one lemma state the result of both, at the
-price of a lemma specific to the nest. The same file in the folder of the algorithms keeps two folds, of the
-columns and of the outer results, and four lemmas written for inner loops described by fresh lists; they do not
-match the closed form, and one goal remains (Section~\ref{sec:open}).
+price of a lemma specific to the nest. The version in the folder of the algorithms folds the inner loop into
+columns and reads the transpose from the trace of the columns (Section~\ref{sec:open:transpose}).

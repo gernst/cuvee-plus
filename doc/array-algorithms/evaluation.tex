@@ -1,0 +1,54 @@
+\section{Evaluation}\label{sec:evaluation}
+
+The approach was evaluated on the verification tasks of SV-COMP and on two benchmarks from the literature, with
+BenchExec, the limits of SV-COMP for CPU time, 7\,GB of memory and 2 cores. The results of the other tools are the
+official ones of SV-COMP~2026. \cuvee{} writes witnesses, but empty ones for now: witnesses are not really supported,
+so its results are not confirmed, and no scores are given. Table~\ref{tab:evaluation} counts the correct answers by
+the expected verdicts: \texttt{TEQ} is the engine alone, \texttt{TEQ+Z3} lowers the goals that remain for Z3
+(\texttt{-fallback}), and \texttt{CHC} encodes the same programs as Horn clauses for Z3, a baseline from the same
+frontend.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrrrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{tasks} & \multicolumn{2}{c}{\texttt{TEQ}} & \multicolumn{2}{c}{\texttt{TEQ+Z3}} &
+   \multicolumn{2}{c}{\texttt{CHC}} & \multicolumn{2}{c}{best other} \\
+ & true & false & true & false & true & false & true & false & true & false \\
+\midrule
+SV-COMP Arrays & 320 & 120 & 138 & 9 & 148 & 48 & 8 & 45 & 68 & 79 \\
+SV-COMP Loops & 555 & 209 & 149 & 16 & 230 & 20 & 150 & 41 & 405 & 172 \\
+MonoCera tests & 125 & -- & 79 & -- & 88 & -- & 0 & -- & 41 & -- \\
+SV-LIB CTranslated & 190 & 59 & 140 & 29 & 142 & 29 & 129 & 40 & 118 & 38 \\
+Rapid benchmarks & 33 & -- & 17 & -- & 17 & -- & 0 & -- & 30 & -- \\
+\bottomrule
+\end{tabular}
+\caption{Correct answers, true and false, by the expected verdicts of the tasks. None of the configurations gave a
+wrong answer. The best other tool is Symbiotic on Arrays, AISE on Loops, MonoCera on its own tests, PySvLib-CHC on
+SV-LIB, and Rapid on its own benchmarks.}\label{tab:evaluation}
+\end{table}
+
+\paragraph{Arrays of unbounded size are the strength.} On ReachSafety-Arrays, lookup proves 138 safe tasks alone and
+148 with Z3, against 68 for the best participant of SV-COMP~2026 (VeriAbs, which takes part out of competition, proves
+more). These tasks fill arrays with values that depend on the position or on earlier values, over symbolic sizes; they
+need invariants quantified over the array indices, and the summaries of the database do not depend on the number of
+iterations. On the aggregates of the MonoCera tests (Section~\ref{sec:monocera}), lookup proves 79 of 125 and 88 with
+Z3, against 41 for MonoCera, which instruments the programs for these properties.
+
+\paragraph{Numeric loops and refutations are the weakness.} On ReachSafety-Loops, the approach stays behind the tools
+based on abstract interpretation and model checking: many of its tasks need non-linear invariants over integers
+(\texttt{nla-digbench}), where Z3 adds most, and many have loops with constant bounds, which bounded model checking
+unrolls completely while lookup gains nothing from a small bound. Refutations are found only when a goal without
+traces evaluates to false, or by Z3 on the remaining goals; the engine builds no model. Lookup and Horn clauses are
+complementary: each proves tasks that the other does not.
+
+\paragraph{The lemmas are reused.} Each proof reports the lemmas it applies (\texttt{-rules}). In the 286 proofs of
+\texttt{TEQ} on Arrays and Loops, 109 of the 153 lemmas are applied, ten of them in at least 100 tasks; the lemmas
+about counters and the lookup of $\stores$ carry most proofs. Of the 44 unused lemmas, 23 belong to sorting and search,
+written for the algorithms of this document, which are not part of the benchmarks.
+
+\paragraph{Annotations per task, for comparison.} For the 790 safe tasks of Arrays and Loops, a coding agent wrote ACSL
+invariants and contracts for each task, with which a verification condition generator proves 711; lookup proves 285 of
+these without annotations. Annotating each task this way is more successful, but the effort does not carry over to
+other programs, whereas the lemmas are written once, reused, and proved.

@@ -1,18 +1,21 @@
 \begin{table}[t]
 \centering\small
-\begin{tabular}{@{}lrrrr@{}}
+\begin{tabular}{@{}lrrrrr@{}}
 \toprule
-aggregation & tests & lookup (\texttt{-teq -prove}) & MonoCera & Horn clauses for z3 \\
+aggregation & tests & lookup (\texttt{-prove}) & lookup and Z3 & MonoCera & Horn clauses for Z3 \\
 \midrule
-$\forall$ & 93 & 61 & 26 & 0 \\
-$\max$ & 4 & 2 & 2 & 0 \\
-$\min$ & 11 & 8 & 3 & 0 \\
-$\sum$ & 17 & 17 & 10 & 0 \\
+$\forall$ & 93 & 53 & 59 & 26 & 0 \\
+$\max$ & 4 & 2 & 3 & 2 & 0 \\
+$\min$ & 11 & 7 & 9 & 3 & 0 \\
+$\sum$ & 17 & 17 & 17 & 10 & 0 \\
 \midrule
-total & 125 & 88 & 41 & 0 \\
+total & 125 & 79 & 88 & 41 & 0 \\
 \bottomrule
 \end{tabular}
-\caption{Proved tests of the MonoCera evaluation, with mathematical integers. Lookup: the database alone, 60 s per test,
-except \texttt{sum/indp5}, proved in 62 s (October 14, 2026). MonoCera, the instrumenting verifier of that evaluation, and
-Horn clauses solved by z3: 15 minutes per test (October 12, 2026). No result is wrong.}\label{tab:monocera}
+\caption{Proved tests of the MonoCera evaluation, with mathematical integers: lookup by the database alone, lookup with
+the remaining goals lowered for Z3 (\texttt{-fallback}), MonoCera, the instrumenting verifier of that evaluation, and
+Horn clauses for Z3 from the same frontend. No result is wrong. The lemmas for these tests started in a separate file
+(51 tests in a first run, 73 with that file); their generic part has since moved into the database, and the
+specific lemmas (strides, stores ahead) are in \texttt{benchmarks/monocera/lemmas.dfy}, which these runs do not
+use.}\label{tab:monocera}
 \end{table}

@@ -101,6 +101,14 @@ other; once the constraint determines the numbers of iterations, e.g.\ $n_7 = \n
 iteration, the choice becomes the constant list $\bl{\mathsf{consts}(n', \natf(n))}$ and the inner traces have
 a known number of steps.
 
+\paragraph{Exact, with exits as branch conditions.}
+The translation abstracts nothing: the goal is valid iff the program satisfies its assertions, up to the modelled
+semantics of the input language, e.g.\ bounded integers with wrap-around for the unsigned types of C. Calls are
+inlined from the entry point (\texttt{main} in C), and the body of each loop is checked to execute safely from the
+state at the head. Exits by \texttt{break} and \texttt{return} are told apart by branch conditions, not by
+assumptions: as assumptions, two exits with different values gave overlapping cases of an enclosing loop, from which
+any goal followed, a wrong proof found on SV-COMP.
+
 \paragraph{The goal.}
 The goal of a method is that its postcondition follows from the facts of the path through it, with the
 traces as variables defined by their equations: $K = \cnt(0, 1, n')$, $S = \mathsf{trace}(\ldots)$, the

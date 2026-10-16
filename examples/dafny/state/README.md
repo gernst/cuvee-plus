@@ -22,7 +22,7 @@ The binary searches, over a sorted array with the array, its bound and the key a
 
 | example | proof | time |
 |---|---|---|
-| bsearch_bisect | the version of doc/state-traces: the rule `bisection` names the trace of `lo` and `hi` with its probe and guards, two forward lemmas bound `lo` and `hi` by the cuts of the guards, which rules on sortedness rewrite to the partition points `lower(a, n, x)`, `upper(a, n, x)` | 8 s |
+| bsearch_bisect | the version of doc/array-algorithms (binary search): the rule `bisection` names the trace of `lo` and `hi` with its probe and guards, two forward lemmas bound `lo` and `hi` by the cuts of the guards, which rules on sortedness rewrite to the partition points `lower(a, n, x)`, `upper(a, n, x)` | 8 s |
 | bsearch_safe | the same with the probe `lo + (hi - lo) / 2`, which does not overflow | 10 s |
 | lower_bound | the lower bound of examples/dafny/algorithms (open in the former per-variable form) with the same lemmas | 8 s |
 | bsearch_sorted | in two layers: the monotonicity of each component as a forward invariant over its history first, so that the reads of the array within `a[0..n)` become comparisons with the partition points, then the bounds by the abstractions `incs`/`decs` | 45 s |

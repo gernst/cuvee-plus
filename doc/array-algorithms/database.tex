@@ -1,0 +1,31 @@
+\section{The Lemma Database}\label{sec:engine:db}
+
+The database is a set of Dafny files. The entry point, \texttt{resources/cuvee/teq.dfy}, is injected with every
+system: it declares the naturals, lists, traces and their combinators, counters, constant traces, and stores into and
+reads of arrays, with the lemmas that every loop needs. Optional modules add concepts on demand
+(\texttt{-include teq:<module>}): \emph{aggregation} (sums, counts, minima, maxima, parities), \emph{arithmetic}
+(division, remainders, products, powers), \emph{arrays} (stores at distinct keys, conditional stores), \emph{counters}
+(phases, flags, monotone and bounded values), \emph{search} (no occurrence in a prefix, the bisection of an interval),
+\emph{sorted} (sortedness, permutations, partition points), \emph{strides} (strided stores), and \emph{unsigned}
+(counters modulo $2^w$). Altogether there are 153 lemmas over 37 functions.
+
+A lemma is used in one of three ways. A \emph{rewrite rule} (\texttt{\{:rw\}}) replaces its left-hand side, e.g.\ the
+trace that adds $c$ in each step by the counter, and the last value of a counter by $i + nc$. A \emph{fold}
+(\texttt{\{:fold\}}) is the definition of a function, whose body is rewritten to the function where it occurs; it names
+a shape, such as $\stores$, $\mathsf{sums}$ or $\mathsf{bisection}$, and it is the preferred form over a declaration
+with a separate equation, since the definition is then part of the semantics. A \emph{forward lemma}
+(\texttt{\{:fw\}}) adds its instance wherever its trigger occurs among the assumptions
+(Section~\ref{sec:engine:forward}), e.g.\ that a count is nonnegative or that a bisection keeps its lower end below the
+cut of its guard. Rules are tried in the order of the files, so the order decides which abstraction a fact gets: rules
+that name a trace come before rules that compute with named traces, and rules whose patterns subsume others come after
+the specific ones.
+
+The lemmas of the entry point and of the modules are proved in Lean~4 against a semantics of the combinators, traces as
+nonempty lists and the combinators as folds, with guarded cases as conditionals that end in $\mathsf{unspecified}$; the
+statements are generated from the Dafny files, so the proofs are about exactly the lemmas that the engine uses. Where a
+lemma has arbitrary guards, it ends in a case for their complement (Section~\ref{sec:engine:cases}), so that complete
+guards are not a premise. What the proofs still assume is stated as premises of the generated statements: reads of the
+lists of a loop at its iterations, prefixes not longer than the list, lists of equal length, all of which the
+construction of the systems guarantees. The proofs found two kinds of gaps, these implicit premises and an inconsistent
+definition of the bisection (Section~\ref{sec:bisect}). The lemmas written for a single program, at the beginning of its
+file, are not checked; Section~\ref{sec:principles:sound} discusses how to keep them sound.

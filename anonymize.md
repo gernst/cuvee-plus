@@ -12,7 +12,6 @@ Places in the repository that identify the author, found on Oct 13, 2026 by a se
 | `doc/paper/cuvee.tex:41-44, 303-304` | author, LMU, email; "developed by Gidon Ernst at LMU Munich" |
 | `doc/paper/references.bib:66-71` | self-citation `Ernst, Gidon` with the GitHub URL |
 | `doc/array-algorithms/array-algorithms.tex:42` (and the PDF) | author, LMU, email; lines 91-103 tie the author to the TEQ paper ("the author and his coauthors") |
-| `doc/state-traces/state-traces.tex:44` | author, LMU, email |
 | `doc/cpa-workshop/slides.tex:108` | name, "LMU Munich, University of Regensburg", sosy-lab people page |
 | `doc/cpa-workshop/slides.tex:604-623` | "[Coenen, Ernst, submitted 2026]" (the TEQ paper, names the co-author), "[Ernst, Fedyukovich, iFM 2025]" |
 | `doc/cpa-workshop/figures/photo.jpg` | portrait photo of the author, on the title slide |

@@ -2,9 +2,9 @@
 
 Experiments towards sorting and other array algorithms with nested loops with
 `-teq -simplify` in the former per-variable form (until Oct 13, 2026; since then their command lines run `-teq
--prove`, one trace per strongly connected component, with the database `teq.dfy`, and the statuses below are those of the former form; several
-of them fail now on lemmas or functions of the former modules that `teq.dfy` lacks, until the optional modules are
-reorganized; five of them are verified in examples/dafny/state), in the dialect of Dafny of Cuvée: arrays are total maps `array<int, int>`, the first `n`
+-prove`, one trace per strongly connected component, with the database `teq.dfy`; on Oct 16, 27 of the 30 are verified
+that way, all except max_element with `exists`, cocktail_sort, and counting_sort; the rows dated Oct 16 below describe
+the current lemmas, the others those of the former form), in the dialect of Dafny of Cuvée: arrays are total maps `array<int, int>`, the first `n`
 elements are sorted. Each file states its command line in its first line and
 its status in its header; the lemma database `teq.dfy` is injected by `-teq`,
 the lemmas specific to the examples stand at the beginning of each file.
