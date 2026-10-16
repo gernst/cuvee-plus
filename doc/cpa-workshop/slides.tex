@@ -459,36 +459,34 @@
   \includegraphics[width=\textwidth]{figures/rules-frequency.pdf}
   \begin{itemize}
     \item \good{109 of 153 lemmas} used in 286 proofs
-    \item 23 of the 44 unused ones are for algorithms outside the evaluation (searching, sorting)
+    \item 23 of the 44 unused ones: ``canonical'' shape, array algorithms
   \end{itemize}
 \end{frame}
 
 % the array algorithms of examples/dafny/algorithms under -teq -prove (the expected outputs of Oct 14, 2026)
 \begin{frame}{Evaluation: array algorithms}
-  \centering
-  \footnotesize
-  \setlength{\tabcolsep}{4pt}
-  \renewcommand{\arraystretch}{1.15}
-  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{5.4cm}c>{\raggedright\arraybackslash}p{7.6cm}@{}}
-    \toprule
-    \textbf{algorithm} & \textbf{open goals} & \textbf{blocker} \\
-    \midrule
-    argmax, bubble sort, count, distinct, gnome sort, is sorted, lower bound, linear search, merge, perm,
-    prefix sums, row sums, selection sort
-      & \good{0} & --- \\
-    \midrule
-    insertion sort (two variants), transpose & 1 & summary lemma written for the per-variable form \\
-    first duplicate & 1 & nested early exit, rules for the per-variable form \\
-    partition, three-way partition & 1 & lemmas per variable, now one trace over $(b, i, j)$ \\
-    reverse & 1 & lemmas for the per-variable form \\
-    max element & 1 & existential postcondition (no witness) \\
-    cocktail sort, counting sort & \bad{error} & rewriting does not terminate \\
-    \bottomrule
-  \end{tabular}
-  \vspace{0.6em}
+  \small
+  \textbf{\good{proved (18)}}
   \begin{itemize}
-    \small
-    \item main blocker: lemmas of the examples written for one trace per variable
+    \setlength{\itemsep}{0pt}
+    \item search: linear search, lower bound, argmax, first duplicate (early exit)
+    \item aggregation: count, distinct, prefix sums, row sums, is sorted
+    \item sorting: bubble, selection, gnome, insertion (2 variants), merge, perm
+    \item in place: reverse, transpose
+  \end{itemize}
+  \vspace{0.1em}
+  \textbf{\concept{in migration (3)}} {\footnotesize (lemmas written for an older version)}
+  \begin{itemize}
+    \setlength{\itemsep}{0pt}
+    \item partition: quicksort's, three-way
+    \item counting sort (rewriting does not terminate)
+  \end{itemize}
+  \vspace{0.1em}
+  \textbf{\bad{open (2)}} {\footnotesize (approach unclear)}
+  \begin{itemize}
+    \setlength{\itemsep}{0pt}
+    \item max element with an existential postcondition (no witness)
+    \item cocktail sort (two inner loops, rewriting does not terminate)
   \end{itemize}
 \end{frame}
 
