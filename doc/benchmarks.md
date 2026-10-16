@@ -65,4 +65,5 @@ Scripts:
   database lacks, e.g. after a migration of a module.
 - `scripts/table.py`, `scatter.py`, `quantile.py`, `rules.py`, `experiments.py`: the tables, plots, and rule
   statistics of the papers (`ideas/experiments.md`, [SV-COMP.md](../SV-COMP.md)), from the most recent result
-  files that meet their requirements.
+  files that meet their requirements. `experiments.py` also writes the quantile plots of SV-COMP with the legend below the plot
+  (`quantile-<category>-bottom.pdf`), for slides.

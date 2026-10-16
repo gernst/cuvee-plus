@@ -19,15 +19,36 @@ audience knows verification, mostly the automated side, and nothing about TEQs. 
 - **Key ideas:** the task becomes a representation (TEQs), simplified by rewriting with a database of program
   lemmas until the proof is done. The database is the "knowing the solution" of an LLM, checked once and reused.
 
+## The paper, in its order
+
+After "Key ideas", the talk follows the paper (`~/Papers/array-acceleration`), with few bullets:
+
+- **Three key ideas** (motivation.tex), each introduced by an overview slide, the current one in red:
+  1. *Represent the execution of loops as terms*: `trace` and `current` as a fold, a counter, the further
+     combinators, the array copy as a TEQ (the decomposition across variables is in the backup).
+  2. *Named functions for computation fragments*: the introduction rules of `counter`, `stores`, `selects`.
+  3. *Accelerate properties of traces*: the generic lemmas of the database (the lookup of `stores` through
+     `occurs` and `indexof`, `earlier` of `selects`, and these functions over counters), no derivation.
+- **The lemma database**: one slide with the table of modules.
+- **Evaluation**: the table of correct answers, the quantile plots, the use of the lemmas, the ACSL annotations.
+- **Conclusion.**
+
+The theory, the encoding, and the engine (contexts, matching) are not presented.
+
+## Backup: the earlier storyline
+
+The slides below follow after a "Backup" divider (`\appendix`). The two slides on Lean (the generated AVL proof
+and the proof with `grind`) are removed, "Thesis: AI should make tools" and "The two threads meet" are merged.
+
 ## Three claims
 
-1. **Invariants are the wrong representation of loops.**
+1. **Invariants represent what the loop has computed --- not what the loop does.**
 2. **Insight belongs in reusable lemmas** --- not in search, not in proofs of single programs.
 3. **Reasoning must be incremental.**
 
 Each part opens with the claims, the current one in red.
 
-## Claim 1: invariants are the wrong representation → TEQs
+## Claim 1: invariants represent what the loop has computed, not what it does → TEQs
 
 - **Invariants** for the array initialization (`0 <= i <= n`, a quantified invariant, an exit lemma), against **a
   much better explanation**: i counts from 0 to n; a is set to z at all earlier i.
@@ -42,7 +63,7 @@ Each part opens with the claims, the current one in red.
 
 - **Algorithmic invariant inference** rediscovers known facts on every program: the dialog ends with "it's a
   counter".
-- **Array initialization, by lemmas:** every step is a lemma of the database (`counter_def`, `stores`,
+- **Array initialization, by lemmas:** the derivation of the paper's motivation, revealed step by step, the lemma above each arrow, every step a lemma of the database (`counter_def`, `stores`,
   `current_stores`, …), none is written for the program.
 - **Routine, not trivial --- as TEQs:** after the first loop, `s` is `s₀ + sum(selects(a, ⌊I⌋))` (the trace is
   `sums(…)`), after the second, which subtracts the same sequence, `s₁ - sum(selects(a, ⌊I⌋))`; linearity closes it. No auxiliary function: sums and their linearity are in the database.

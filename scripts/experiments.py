@@ -422,6 +422,8 @@ def main():
     replacements["svcomp"] = (note(pending(spec2, categories)), legend(spec2))
     for name in categories:
         plots(plt, out, name, spec2, [name], name, file=f"quantile-{name}.pdf")
+        # a variant with the legend below the plot, for slides
+        plots(plt, out, name, spec2, [name], name, file=f"quantile-{name}-bottom.pdf", legend="bottom")
 
     # 3. complementarity
     teq_results, z3_results, chc_results = (spec2[0].results, spec2[1].results, spec2[2].results)
@@ -476,7 +478,8 @@ def main():
         print(table.pdflatex(out, "experiments"))
 
 
-def plots(plt, out: Path, key: str, spec: list[table.Column], categories: list[str], title: str, file: str | None = None):
+def plots(plt, out: Path, key: str, spec: list[table.Column], categories: list[str], title: str, file: str | None = None,
+          legend: str = "right"):
     """A quantile plot of the columns with results; none if there are none, which the document shows as pending."""
     curves = {}
     limit = 0.0
@@ -490,7 +493,7 @@ def plots(plt, out: Path, key: str, spec: list[table.Column], categories: list[s
         path.unlink(missing_ok=True)
         return
     names = {tool: LABELS.get(tool, tool) for tool in curves}
-    quantile.plot(plt, title, curves, names, common.colors(list(curves)), limit, path)
+    quantile.plot(plt, title, curves, names, common.colors(list(curves)), limit, path, legend=legend)
 
 
 if __name__ == "__main__":

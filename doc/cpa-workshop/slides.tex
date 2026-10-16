@@ -8,6 +8,8 @@
 \usepackage[scaled=0.88]{beramono}
 \usepackage{listings}
 \usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{array}
 \usetikzlibrary{calc,fit,shapes.callouts,shapes.geometric,shapes.arrows,arrows.meta,positioning,decorations.pathreplacing}
 
 % the look of the earlier decks: plain white, bold serif titles at the top left,
@@ -73,9 +75,17 @@
     text width=7.6cm, minimum height=1.7cm},
   box/.style={draw, very thick, align=center, minimum height=1.2cm, inner sep=6pt},
   arrow/.style={-{Stealth[length=3mm]}, very thick}}
+\newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\bl}[1]{\lfloor #1\rfloor}
 \newcommand{\cur}{\mathsf{current}}
 \newcommand{\rw}{\ \leadsto\ }
+% colored on one overlay only: the term a rule matches (blue), the result it produces (green)
+\newcommand{\atblue}[2]{\alt<#1>{\textcolor{cblue}{#2}}{#2}}
+\newcommand{\atgreen}[2]{\alt<#1>{\textcolor{cgreen}{#2}}{#2}}
+% a step of a derivation, the names of its lemmas above the arrow
+\newcommand{\lem}[1]{\text{\color{black!55}\textsf{#1}}}
+\newcommand{\step}[1]{$\overset{\lem{#1}}{\leadsto}$}
+\newcommand{\steptwo}[2]{$\overset{\substack{\lem{#1}\\ \lem{#2}}}{\leadsto}$}
 
 % listings in the boxes of the programs: Bera Mono, line numbers in grey, a thick frame
 \lstset{basicstyle=\ttfamily\scriptsize, columns=fullflexible, keepspaces=true,
@@ -88,12 +98,30 @@
     \vspace{0.8em}
     \begin{enumerate}
       \setlength{\itemsep}{1.2em}
-      \item {\ifnum#1=1\color{cred}\fi Invariants are the wrong representation of loops}
+      \item {\ifnum#1=1\color{cred}\fi Invariants represent what the loop has computed ---\\ not what the loop does}
       \item {\ifnum#1=2\color{cred}\fi Insight belongs in reusable lemmas ---\\ not in search, not in proofs of single programs}
       \item {\ifnum#1=3\color{cred}\fi Reasoning must be incremental}
     \end{enumerate}
   \end{frame}}
 
+
+% the three Big Picture of the paper's motivation, the current one in red
+\newcommand{\ideas}[1]{%
+  \begin{frame}{Three key ideas}
+    \vspace{0.8em}
+    \begin{enumerate}
+      \setlength{\itemsep}{1.2em}
+      \item {\ifnum#1=1\color{cred}\fi Represent the execution of loops as terms in the logic}
+      \item {\ifnum#1=2\color{cred}\fi Introduce named functions for known computation fragments}
+      \item {\ifnum#1=3\color{cred}\fi Accelerate properties of traces by algebraic reasoning}
+    \end{enumerate}
+  \end{frame}}
+% the notation of the paper (definitions.tex)
+\newcommand{\tr}[1]{\langle #1 \rangle}
+\newcommand{\TRACE}[4]{\mathsf{trace}(#1,\ \mathsf{for}\ #2\ \mathsf{do}\ #3 \mapsto #4)}
+\newcommand{\FOLD}[4]{\mathsf{fold}(#1,\ \mathsf{for}\ #2\ \mathsf{do}\ #3 \mapsto #4)}
+\newcommand{\MAPS}[3]{\mathsf{maps}(\mathsf{for}\ #1\ \mathsf{yield}\ #2 \mapsto #3)}
+\newcommand{\INVS}[3]{\mathsf{invs}(\mathsf{for}\ #1\ \mathsf{check}\ #2 \mapsto #3)}
 
 \begin{document}
 
@@ -141,20 +169,36 @@
   \end{tikzpicture}
 \end{frame}
 
+% the CEGAR dialog of CPA.pdf, slides 28 to 35, at its end, in the layout of the original
+\begin{frame}
+  \begin{tikzpicture}[page]
+    \node[anchor=west, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.35) {Algorithmic invariant inference};
+    \draw[line width=1.6pt] (0.71,0.93) rectangle (5.82,7.47);
+    \node[anchor=north west, align=left, font=\ttfamily] at (1.0,7.0)
+      {i = 0\\[1.1em] while i < n\\ \ \ i += 1\\ \ \ \ldots\\[1.1em] assert\\ \ \ i == n};
+    \onslide<2->{
+    \filldraw[line width=1.6pt, fill=white] (6.16,0.93) -- (10.54,0.93) -- (10.54,4.75) -- (11.87,6.98) -- (10.54,6.37)
+      -- (10.54,7.47) -- (6.16,7.47) -- cycle;
+    \node[anchor=north west, align=left, font=\ttfamily\small, text=cred] at (6.35,7.2)
+      {i $\le$ n $\wedge$\\ \ \ !(i < n)\\ $\Longrightarrow$ i == n ?\\[2.2em] yes.\\[1.2em] you are right!\\ it's a counter};}
+    \node[anchor=north west, inner sep=0pt] at (12.2,7.47) {\includegraphics[width=2.68cm]{figures/checkmark.jpg}};
+  \end{tikzpicture}
+\end{frame}
+
 \begin{frame}{Routine, not trivial}
   \begin{tikzpicture}
     \useasboundingbox (0,0) rectangle (14.4,7.6);
     \program{0.1}{6.6}{8}{for i = 0..n, \ \ s += a[i], {}, for i = 0..n, \ \ s -= a[i], {}, assert, \ \ s == 0}
-    \node[bubble, text width=8.6cm, align=left, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (9.9,6.2) {\textbf{automated}: $0 \le i \le n$, then\\ \bad{unrolling until the timeout}};
-    \node[bubble, text width=8.6cm, align=left, font=\small, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (9.9,3.4) {\textbf{interactive}: write the loop again\\[2pt]
-        {\ttfamily\footnotesize\begin{tabular}{@{}r@{\hspace{5pt}}l@{}}
+    \node[bubble, text width=9.35cm, align=left, callout pointer width=0.3cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (9.95,6.75) {\textbf{automated}: $0 \le i \le n$, then\\ \bad{unrolling until the timeout}};
+    \node[bubble, text width=9.35cm, align=left, callout pointer width=0.3cm, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (9.95,3.55) {\textbf{interactive}: write the loop again\\[2pt]
+        {\ttfamily\small\begin{tabular}{@{}r@{\hspace{5pt}}l@{}}
           \color{black!45}1 & function sum(i, n, a): int \{\\
           \color{black!45}2 & \ \ if 0 <= i < n\\
           \color{black!45}3 & \ \ then a[i] + sum(i+1, n, a)\\
           \color{black!45}4 & \ \ else 0 \}
         \end{tabular}}\\[2pt]
-        \bad{+ lemmas: empty sum, unfolding, linearity, \ldots}};
-    \node[align=center, font=\small, text width=8.6cm] at (9.9,0.9) {too hard for inference,\\ tedious and error-prone for a person};
+        \bad{+ lemmas: empty sum, unfolding, linearity}};
+    \node[align=center, font=\large, text width=10cm] at (9.9,0.45) {hard for inference,\\ tedious and error-prone for a person};
   \end{tikzpicture}
 \end{frame}
 
@@ -180,7 +224,7 @@
 \end{frame}
 
 % why LLMs work: a good representation and knowing the solution, which motivates the claims
-\begin{frame}{LLMs for software verification}
+\begin{frame}{Why are LLMs so good?}
   \vspace{0.6em}
   \begin{enumerate}
     \setlength{\itemsep}{0.4em}
@@ -189,6 +233,7 @@
   \end{enumerate}
   \pause
   \vspace{1.2em}
+  Applied to software verification:
   \begin{itemize}
     \setlength{\itemsep}{0.4em}
     \item need a trusted cross-check of proofs
@@ -199,7 +244,7 @@
 % overview of the approach (after CPA.pdf, slide 41)
 \begin{frame}
   \begin{tikzpicture}[page]
-    \node[anchor=west, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.35) {Key ideas};
+    \node[anchor=west, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.35) {Big Picture};
     \node[box, minimum width=2.9cm, minimum height=1.45cm, text=cblue] (task) at (2.55,6.75) {task};
     \node[box, minimum width=3.3cm, minimum height=1.45cm, text=cblue] (proof) at (12.85,6.75) {proof};
     \node[single arrow, draw, line width=1.4pt, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (5.2,6.75) {};
@@ -210,25 +255,276 @@
     \node[inner sep=0pt] at (10.75,8.1) {\includegraphics[width=2.2cm]{figures/wand.png}};
     \node[left color=magenta!25, right color=violet!25, draw=magenta!60!black, line width=0.8pt, rounded corners=3pt,
           text=cpurple!80!black, font=\small\bfseries] at (7.8,8.35) {magic unicorn zoo};
+    \onslide<2->{
     \node[single arrow, draw, line width=1.4pt, rotate=-90, minimum height=1.2cm, minimum width=0.8cm, single arrow head extend=3pt] at (2.7,5.1) {};
     \node[box, text width=4.4cm, minimum height=2.1cm, text=cgreen, font=\bfseries] at (3.1,2.75)
-      {representation:\\ Trace Equation\\ Systems (TEQs)};
+      {representation:\\ Trace Equation\\ Systems (TEQs)};}
+    \onslide<4->{
     \draw[line width=3pt, -{Triangle[length=7pt,width=11pt]}] (8.4,2.95) arc (0:300:0.6);
     \node[single arrow, draw, line width=1.4pt, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (6.35,2.95) {};
-    \node[single arrow, draw, line width=1.4pt, rotate=180, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (9.65,2.95) {};
+    \node[single arrow, draw, line width=1.4pt, rotate=180, minimum height=1.1cm, minimum width=0.8cm, single arrow head extend=3pt] at (9.65,2.95) {};}
+    \onslide<3->{
     \node[cylinder, shape border rotate=90, draw, line width=1.6pt, aspect=0.22, minimum width=4.6cm, minimum height=2.1cm,
-          align=center, text=cgreen, font=\bfseries] at (13.25,2.75) {database of\\ program lemmas};
+          align=center, text=cgreen, font=\bfseries] at (13.25,2.75) {database of\\ program lemmas};}
+    \onslide<4->{
     \node[align=center, text=cgreen, font=\bfseries] at (7.8,1.2) {simplification\\ by rewriting};
     \draw[line width=6pt, cgreen, -{Triangle[length=10pt,width=16pt]}] (8.6,3.75) -- (11.0,5.85);
     \draw[line width=6pt, -{Triangle[length=8pt,width=14pt]}] (7.85,3.95) -- (7.85,4.75);
-    \node[text=white, font=\bfseries\small] at (7.85,4.2) {?};
+    \node[text=white, font=\bfseries\small] at (7.85,4.2) {?};}
   \end{tikzpicture}
+\end{frame}
+
+% =====================================================================================================================
+% the three Big Picture, in the order of the paper's motivation (~/Papers/array-acceleration/motivation.tex)
+\ideas{0}
+
+% ---------------------------------------------------------------------------------------------------------------------
+% idea 1: the execution of loops as terms
+\ideas{1}
+
+\begin{frame}{Loops as terms}
+  \[
+    \begin{aligned}
+      & \cur(\TRACE{x^0}{\bl{\boldsymbol{Y}}}{x, y}{u}) \\
+      & \qquad \triangleq\ \FOLD{x^0}{\bl{\boldsymbol{Y}}}{x, y}{u}
+    \end{aligned}
+  \]
+  \vspace{0.4em}
+  \begin{itemize}
+    \item the \concept{trace} $\tr{x^0, \dots, x^n}$ \good{retains all intermediate values}
+    \item example: $\concept{\mathsf{counter}(i, c, n)} = \tr{i, i + c, \dots, i + n \cdot c}$
+  \end{itemize}
+  \vspace{1.5em}
+  \begin{itemize}
+    \item further combinators: $\mathsf{maps}$ (pointwise), $\mathsf{invs}$ (on all values)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Example: array copy}
+  \begin{tikzpicture}
+    \useasboundingbox (0,0) rectangle (14.4,7.4);
+    \program{-0.35}{6.3}{5}{for i = 0..len, \ \ a[i] := b[i], {}, assume 0 <= j < len, assert a[j] == b[j]}
+    \node[draw, very thick, anchor=north east, inner sep=5pt, font=\small] at (14.7,6.35) {%
+      $\begin{aligned}
+        \uncover<1->{K &= \concept{\mathsf{counter}(0, 1, n)} \qquad \text{with } 0 \le n} \\[8pt]
+        \uncover<2->{I &= \TRACE{0}{\bl{K}}{i, k}{i + 1}} \\[8pt]
+        \uncover<3->{A &= \mathsf{trace}\big(a^0,\ \mathsf{for}\ \underbrace{\bl{K, I}}_{\makebox[0pt]{\scriptsize dependencies}}\ \mathsf{do}\
+                         \underbrace{a, k, i \mapsto a[i := b[i]]}_{\makebox[0pt]{\scriptsize update}}\big)} \\[8pt]
+        \uncover<4->{& \INVS{\bl{K, I}}{k, i}{i < \mathit{len}}}
+      \end{aligned}$};
+  \end{tikzpicture}
+\end{frame}
+
+% ---------------------------------------------------------------------------------------------------------------------
+% idea 2: named functions for computation fragments
+\ideas{2}
+
+\begin{frame}{Named functions for computation fragments}
+  \begin{align*}
+    \uncover<1->{& \TRACE{i}{\bl{\mathsf{counter}(0, 1, n)}}{x, k}{x + c} && \rw \concept{\mathsf{counter}(i, c, n)}} \\
+    \uncover<2->{& \TRACE{a}{\bl{K}, \bl{V}}{a, k, v}{a[k := v]} && \rw \concept{\mathsf{stores}(a, \bl{K}, \bl{V})}} \\
+    \uncover<3->{& \MAPS{\bl{K}}{k}{a[k]} && \rw \concept{\mathsf{selects}(a, \bl{K})}}
+  \end{align*}
+  \vspace{0.4em}
+  \begin{itemize}
+    \item<4-> defined \good{independently of the programs} in which they appear
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------------------------------------------------------------
+% idea 3: accelerating properties of traces by algebraic reasoning, with the generic lemmas of the database
+\ideas{3}
+
+\begin{frame}{Accelerating properties of traces}
+  \small
+  \vspace{-0.4em}
+  \begin{align*}
+    \uncover<1->{& \cur(\mathsf{stores}(a, \bl{K}, \bl{V}))[k]} \\
+    \uncover<1->{& \qquad \rw \mathsf{if}\ \concept{\mathsf{occurs}(k, \bl{K})}\ \mathsf{then}\
+                   \mathsf{earlier}(\concept{\mathsf{indexof}(k, \bl{K})}, \bl{V})\ \mathsf{else}\ a[k]} \\[1pt]
+    \uncover<2->{& \mathsf{earlier}(j, \mathsf{selects}(a, \bl{K}))} \\
+    \uncover<2->{& \qquad \rw a[\mathsf{earlier}(j, \bl{K})]} \\[1pt]
+    \uncover<3->{& \concept{\mathsf{occurs}}(j, \bl{\mathsf{counter}(i, 1, n)})} \\
+    \uncover<3->{& \qquad \rw i \le j < i + n} \\[1pt]
+    \uncover<3->{& \concept{\mathsf{indexof}}(j, \bl{\mathsf{counter}(i, 1, n)}) \qquad (i \le j < i + n)} \\
+    \uncover<3->{& \qquad \rw j - i} \\[1pt]
+    \uncover<3->{& \mathsf{earlier}(j, \bl{\mathsf{counter}(i, c, n)})} \\
+    \uncover<3->{& \qquad \rw i + j \cdot c}
+  \end{align*}
+\end{frame}
+
+% the generic lemmas next to their instances for the array copy (I = counter(0, 1, n), V = selects(b, ⌊I⌋)); when a lemma
+% rewrites a subterm of an earlier instance, that subterm is first marked in blue, then replaced by the result in green
+\begin{frame}{Accelerating properties of traces}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{@{}>{\color{black!45}\let\concept\relax}l@{\hspace{0.7cm}}l@{}}
+    \textbf{database (generic)} & \uncover<2->{\textbf{array copy}, $I = \mathsf{counter}(0, 1, n)$} \\[4pt]
+    $\cur(\mathsf{stores}(a, \bl{K}, \bl{V}))[k]$
+      & \uncover<2->{$\cur(\mathsf{stores}(a^0, \bl{I}, \mathsf{selects}(b, \bl{I})))[j]$} \\
+    $\quad \rw \mathsf{if}\ \concept{\mathsf{occurs}(k, \bl{K})}\ \mathsf{then}$
+      & \uncover<2->{$\quad \rw \mathsf{if}\ \only<2>{\mathsf{occurs}(j, \bl{I})}\only<3>{\concept{\mathsf{occurs}(j, \bl{I})}}%
+                       \only<4>{\textcolor{cgreen}{0 \le j < n}}\only<5->{0 \le j < n}\ \mathsf{then}$} \\
+    $\qquad \mathsf{earlier}(\concept{\mathsf{indexof}(k, \bl{K})}, \bl{V})\ \mathsf{else}\ a[k]$
+      & \uncover<2->{$\qquad \only<2-4>{\mathsf{earlier}(\mathsf{indexof}(j, \bl{I}), \mathsf{selects}(b, \bl{I}))}%
+                       \only<5>{\mathsf{earlier}(\concept{\mathsf{indexof}(j, \bl{I})}, \mathsf{selects}(b, \bl{I}))}%
+                       \only<6>{\mathsf{earlier}(\textcolor{cgreen}{j}, \mathsf{selects}(b, \bl{I}))}%
+                       \only<7>{\concept{\mathsf{earlier}(j, \mathsf{selects}(b, \bl{I}))}}%
+                       \only<8>{\textcolor{cgreen}{b[\mathsf{earlier}(j, \bl{I})]}}%
+                       \only<9>{b[\concept{\mathsf{earlier}(j, \bl{I})}]}%
+                       \only<10>{b[\textcolor{cgreen}{j}]}%
+                       \only<11->{b[j]}\ \mathsf{else}\ a^0[j]$} \\[4pt]
+    $\concept{\mathsf{occurs}}(j, \bl{\mathsf{counter}(i, 1, n)})$
+      & \uncover<3->{$\atblue{3}{\mathsf{occurs}(j, \bl{\mathsf{counter}(0, 1, n)})}$} \\
+    $\quad \rw i \le j < i + n$
+      & \uncover<3->{$\quad \rw \atgreen{4}{0 \le j < n}$} \\[4pt]
+    $\concept{\mathsf{indexof}}(j, \bl{\mathsf{counter}(i, 1, n)})$
+      & \uncover<5->{$\atblue{5}{\mathsf{indexof}(j, \bl{\mathsf{counter}(0, 1, n)})}$} \\
+    $\quad \rw j - i$
+      & \uncover<5->{$\quad \rw \atgreen{6}{j}$} \\[4pt]
+    $\mathsf{earlier}(j, \mathsf{selects}(a, \bl{K}))$
+      & \uncover<7->{$\atblue{7}{\mathsf{earlier}(j, \mathsf{selects}(b, \bl{I}))}$} \\
+    $\quad \rw a[\mathsf{earlier}(j, \bl{K})]$
+      & \uncover<7->{$\quad \rw \only<7-8>{\atgreen{8}{b[\mathsf{earlier}(j, \bl{I})]}}\only<9>{b[\concept{\mathsf{earlier}(j, \bl{I})}]}%
+                       \only<10>{b[\textcolor{cgreen}{j}]}\only<11->{b[j]}$} \\[4pt]
+    $\mathsf{earlier}(j, \bl{\mathsf{counter}(i, c, n)})$
+      & \uncover<9->{$\atblue{9}{\mathsf{earlier}(j, \bl{\mathsf{counter}(0, 1, n)})}$} \\
+    $\quad \rw i + j \cdot c$
+      & \uncover<9->{$\quad \rw \atgreen{10}{j}$}
+  \end{tabular}
+  \vspace{0.6em}
+
+  \small
+  \uncover<11->{\color{cgreen}altogether, for $0 \le j < n$:\quad $\cur(A)[j] \rw b[j]$ \quad --- no quantified invariant}
+\end{frame}
+
+% =====================================================================================================================
+% the lemma database (database.tex), on one slide
+\begin{frame}{The lemma database}
+  \begin{columns}[c]
+    \begin{column}{0.3\textwidth}
+      \begin{itemize}
+        \item 153 lemmas, 37 functions
+        \item written with \concept{coding agents} from open goals
+        \item \good{all proved in Lean}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.7\textwidth}
+      \footnotesize
+      \setlength{\tabcolsep}{4pt}
+      \begin{tabular}{llrrr}
+        \toprule
+        \textbf{module} & \textbf{concepts} & \textbf{rw} & \textbf{fw} & \textbf{fun} \\
+        \midrule
+        core        & combinators, counters, stores & 32 & 2 & 16 \\
+        counters    & phases, flags, bounds         & 10 & 0 &  0 \\
+        arithmetic  & div, mod, products            &  6 & 5 &  1 \\
+        unsigned    & counters mod $2^w$            & 12 & 0 &  1 \\
+        arrays      & distinct, conditional         & 11 & 0 &  0 \\
+        strides     & strided stores                &  5 & 0 &  0 \\
+        aggregation & sum, count, min, max          & 36 & 3 & 11 \\
+        search      & linear, binary                &  4 & 7 &  3 \\
+        sorted      & sortedness, permutations      & 19 & 1 &  5 \\
+        \midrule
+        total       &                               & 135 & 18 & 37 \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% =====================================================================================================================
+% evaluation (evaluation.tex)
+\begin{frame}{Evaluation: correct answers}
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lrrrrrrrrrr}
+    \toprule
+     & \multicolumn{2}{c}{\textbf{tasks}} & \multicolumn{2}{c}{\code{TEQ}} & \multicolumn{2}{c}{\code{TEQ+Z3}} & \multicolumn{2}{c}{\code{CHC}} & \multicolumn{2}{c}{\textbf{best other}} \\
+    \textbf{benchmark} & true & false & true & false & true & false & true & false & true & false \\
+    \midrule
+    SV-COMP \code{Arrays}    & 320 & 120 & 138 &  9 & \textbf{148} & 48 &   8 & 45 & 68 & \textbf{79} \\
+    SV-COMP \code{Loops}     & 555 & 209 & 149 & 16 & 230 & 20 & 150 & 41 & \textbf{405} & \textbf{172} \\
+    \midrule
+    MonoCera \code{forall}   &  93 &  -- &  53 & -- & \textbf{59} & -- & 0 & -- & 26 & -- \\
+    MonoCera \code{max}      &   4 &  -- &   2 & -- & \textbf{3} & -- &  0 & -- &  2 & -- \\
+    MonoCera \code{min}      &  11 &  -- &   7 & -- & \textbf{9} & -- &  0 & -- &  3 & -- \\
+    MonoCera \code{sum}      &  17 &  -- & \textbf{17} & -- & \textbf{17} & -- & 0 & -- & 10 & -- \\
+    \midrule
+    SV-LIB \code{CTranslated} & 190 & 59 & 140 & 29 & \textbf{142} & 29 & 129 & \textbf{40} & 118 & 38 \\
+    \midrule
+    Rapid                    &  33 &  -- &  17 & -- & 17 & -- & 0 & -- & \textbf{30} & -- \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.2em}
+  \begin{itemize}
+    \small
+    \item \code{Arrays}: \good{148 proofs against 68}; MonoCera: \good{88 of 125 against 41}
+    \item numeric \code{Loops} and refutations remain the strength of other methods
+    \item ACSL by an agent: 711 of 790 safe tasks (SV-COMP, minor adaptations)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Evaluation: CPU time}
+  \begin{tikzpicture}[page]
+    \node[anchor=north west, inner sep=0pt] at (0.25,8.7) {\includegraphics[width=7.65cm]{figures/quantile-Arrays-bottom.pdf}};
+    \node[anchor=north east, inner sep=0pt] at (15.75,8.7) {\includegraphics[width=7.65cm]{figures/quantile-Loops-bottom.pdf}};
+  \end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Evaluation: use of the lemmas}
+  \centering
+  \includegraphics[width=\textwidth]{figures/rules-frequency.pdf}
+  \begin{itemize}
+    \item \good{109 of 153 lemmas} used in 286 proofs
+    \item 23 of the 44 unused ones are for algorithms outside the evaluation (searching, sorting)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Evaluation: annotations per task}
+  \begin{itemize}
+    \item an agent annotated each safe task of \code{Arrays} and \code{Loops} with ACSL:
+          \concept{711 of 790} proved
+    \item TEQs without annotations: \concept{285 of 790}
+    \item but lemmas are \good{written once, reused, and proved}
+  \end{itemize}
+\end{frame}
+
+% conclusion (conclusion.tex)
+\begin{frame}{Conclusion}
+  \begin{itemize}
+    \item \concept{Trace Equation Systems}: loops as terms, simplified by a \concept{database of lemmas}
+    \item coding agents write the lemmas, \good{Lean checks them}
+    \item next: recursive procedures, witnesses, a shared database across tools
+  \end{itemize}
+\end{frame}
+
+% =====================================================================================================================
+% backup: the slides of the earlier storyline (three claims)
+\appendix
+\begin{frame}[plain]
+  \centering\vfill{\bfseries\fontsize{17}{20}\selectfont Backup}\vfill
+\end{frame}
+
+\begin{frame}{Modular across variables}
+  \[
+    \bl{XY} = \TRACE{(x^0, y^0)}{\bl{XY}}{(x, y)}{(f(x, y), g(x, y))}
+  \]
+  \vspace{-0.4em}
+  \[
+    \leftrightsquigarrow\quad
+    \begin{aligned}[t]
+      X &= \TRACE{x^0}{\bl{Y}}{x, y}{f(x, y)} \\
+      Y &= \TRACE{y^0}{\bl{X}}{y, x}{g(x, y)}
+    \end{aligned}
+  \]
 \end{frame}
 
 \claims{0}
 
 % =====================================================================================================================
-% claim 1: invariants are the wrong representation -> TEQs
+% claim 1: invariants represent what the loop has computed, not what it does -> TEQs
 \claims{1}
 
 \begin{frame}
@@ -283,37 +579,29 @@
 % claim 2: insight belongs in reusable lemmas -> the database; AI should make tools
 \claims{2}
 
-% the CEGAR dialog of CPA.pdf, slides 28 to 35, at its end, in the layout of the original
-\begin{frame}
-  \begin{tikzpicture}[page]
-    \node[anchor=west, font=\bfseries\fontsize{17}{20}\selectfont] at (0.8,9.35) {Algorithmic invariant inference};
-    \draw[line width=1.6pt] (0.71,0.93) rectangle (5.82,7.47);
-    \node[anchor=north west, align=left, font=\ttfamily] at (1.0,7.0)
-      {i = 0\\[1.1em] while i < n\\ \ \ i += 1\\ \ \ \ldots\\[1.1em] assert\\ \ \ i == n};
-    \filldraw[line width=1.6pt, fill=white] (6.16,0.93) -- (10.54,0.93) -- (10.54,4.75) -- (11.87,6.98) -- (10.54,6.37)
-      -- (10.54,7.47) -- (6.16,7.47) -- cycle;
-    \node[anchor=north west, align=left, font=\ttfamily\small, text=cred] at (6.35,7.2)
-      {i $\le$ n $\wedge$\\ \ \ !(i < n)\\ $\Longrightarrow$ i == n ?\\[2.2em] yes.\\[1.2em] you are right!\\ it's a counter};
-    \node[anchor=north west, inner sep=0pt] at (12.2,7.47) {\includegraphics[width=2.68cm]{figures/checkmark.jpg}};
-  \end{tikzpicture}
-\end{frame}
 
-% the first example again: every step is a lemma of the database
+% the first example again: every step is a lemma of the database, the derivation as in the paper (motivation.tex)
 \begin{frame}{Array initialization, by lemmas}
   \begin{tikzpicture}
     \useasboundingbox (0,0) rectangle (14.4,7.4);
     \program{0.1}{6.4}{7}{while i < n, \ \ a[i] := z, \ \ i := i + 1, {}, assert, \ \ i == n \&\&, \ \ a[k] == z}
-    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L1.east)+(0.15,0)$)}] at (10.0,6.6)
-      {$\mathsf{trace}(0, \mathsf{for}\ \bl{K}\ \mathsf{do}\ i, k \mapsto i + 1)$\\ $\rw \concept{\mathsf{counter}(0, 1, n)}$\\
-       {\footnotesize\color{black!55} lemma \textsf{counter}}};
-    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.0,4.2)
-      {$\mathsf{trace}(a, \mathsf{for}\ \bl{I}\ \mathsf{do}\ a', i \mapsto a'[i := z])$\\
-       $\rw \concept{\mathsf{stores}(a, \bl{I}, \bl{\mathsf{consts}(n, z)})}$\\
-       {\footnotesize\color{black!55} definition \textsf{stores}, lemma \textsf{maps\_const}}};
-    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L7.east)+(0.15,0)$)}] at (10.0,1.5)
-      {$a'[k] \rw \mathsf{if}\ 0 \le k < n\ \mathsf{then}\ z\ \ldots$\\ $\rw z$\\
-       {\footnotesize\color{black!55} lemmas \textsf{current\_stores},\\ \textsf{occurs\_counter\_up}, \textsf{earlier\_consts}}};
-    \node[align=center, font=\small] at (2.4,0.6) {\good{every step a database lemma},\\ none for the program};
+    \node[draw, very thick, anchor=north east, inner sep=6pt, font=\small] at (14.4,7.55) {%
+      \renewcommand{\arraystretch}{1.0}%
+      \begin{tabular}{@{}r@{\ }l@{}}
+        \multicolumn{2}{@{}l@{}}{\uncover<1->{$I = \mathsf{trace}(0, \mathsf{for}\ \bl{K}\ \mathsf{do}\ i, k \mapsto i + 1)$}} \\
+        \uncover<1->{\step{counter\_def}} & \uncover<1->{$\concept{\mathsf{counter}(0, 1, n)}$} \\[-1pt]
+        \multicolumn{2}{@{}l@{}}{\uncover<2->{$A = \mathsf{trace}(a, \mathsf{for}\ \bl{I}\ \mathsf{do}\ a', i \mapsto a'[i := z])$}} \\
+        \uncover<2->{\step{def.\ stores}} & \uncover<2->{$\concept{\mathsf{stores}}(a, \bl{I}, \underline{\mathsf{maps}(\mathsf{for}\ \bl{I}\ \mathsf{yield}\ i \mapsto z)})$} \\
+        \uncover<3->{\step{maps\_const}} & \uncover<3->{$\concept{\mathsf{stores}}(a, \bl{I}, \bl{\concept{\mathsf{consts}(n, z)}})$} \\[-1pt]
+        \multicolumn{2}{@{}l@{}}{\uncover<4->{$i = \cur(I) = \cur(\mathsf{counter}(0, 1, n))$}} \\
+        \uncover<4->{\step{current\_counter}} & \uncover<4->{$\concept{n}$} \\[-1pt]
+        \multicolumn{2}{@{}l@{}}{\uncover<5->{$a[k] = \cur(A)[k]$}} \\
+        \uncover<5->{\step{current\_stores}} & \uncover<5->{$\mathsf{if}\ \mathsf{occurs}(k, \bl{I})$} \\
+         & \uncover<5->{$\mathsf{then}\ \mathsf{earlier}(\mathsf{indexof}(k, \bl{I}), \bl{\mathsf{consts}(n, z)})$} \\
+         & \uncover<5->{$\mathsf{else}\ a[k]$} \\
+        \uncover<6->{\steptwo{occurs\_counter\_up,}{earlier\_consts}} & \uncover<6->{$\mathsf{if}\ \concept{0 \le k < n}\ \mathsf{then}\ \concept{z}\ \mathsf{else}\ a[k]$}
+      \end{tabular}};
+    \onslide<6->{\node[align=center, font=\small] at (2.0,1.3) {\good{every step}\\ \good{a database lemma},\\ none for the program};}
   \end{tikzpicture}
 \end{frame}
 
@@ -356,99 +644,29 @@
   \end{center}
 \end{frame}
 
-% the generated proof (CPA.pdf, slide 61), then the same theorem with a better tool
-\begin{frame}
-  \begin{tikzpicture}[page]
-    \node[anchor=north west, inner sep=0pt] at (0.4,9.75) {\includegraphics[width=11.0cm]{figures/lean.png}};
-    \draw[cred, line width=3pt, decorate, decoration={brace, amplitude=12pt}] (11.15,6.7) -- (11.15,0.85);
-    \node[text=cred, font=\bfseries\Large] at (13.8,3.8) {$\simeq$ assembler};
-    \node[anchor=south east, text=cblue, font=\small] at (15.6,0.15) {https://claude.ai/chat/688827fb-f1ec-41b9-9ab1-c4aa7fa8c5cf};
-  \end{tikzpicture}
-\end{frame}
-
-% the example of CPA.pdf slides 58 to 61, redone in Lean 4.34.1 (checked) for all trees: fun_cases and grind
-\begin{frame}[fragile]{The same proof, with a better tool}
-  \begin{columns}[T]
-    \begin{column}{0.55\textwidth}
-\begin{lstlisting}
-inductive Tree (α : Type) where
-  | leaf : Tree α
-  | node : Tree α → α → Tree α → Tree α
-
-def toList : Tree α → List α
-  | leaf => []
-  | node l x r => toList l ++ [x] ++ toList r
-
-def BST [LT α] : Tree α → Prop
-  | leaf => True
-  | node l x r => (∀ y ∈ toList l, y < x) ∧
-      (∀ y ∈ toList r, x < y) ∧ BST l ∧ BST r
-
-def rotateLeft : Tree α → Tree α
-  | node l x (node rl y rr) =>
-      node (node l x rl) y rr
-  | t => t
-\end{lstlisting}
-    \end{column}
-    \begin{column}{0.43\textwidth}
-\begin{lstlisting}[firstnumber=19]
-theorem rotateLeft_BST [LT α]
-    (lt_trans : ∀ {a b c : α},
-       a < b → b < c → a < c)
-    (t : Tree α) (h : BST t) :
-    BST (rotateLeft t) := by
-  fun_cases rotateLeft t
-    <;> grind [rotateLeft,
-               BST, toList]
-\end{lstlisting}
-      \vspace{0.6em}
-      \begin{itemize}\small
-        \item \good{for all trees}: a case split and \texttt{grind}, checked by Lean
-        \item a \concept{better tool} beats a better proof --- this one built by people
-      \end{itemize}
-    \end{column}
-  \end{columns}
-\end{frame}
-
 \begin{frame}{Thesis: AI should make tools}
   \begin{center}
-  \begin{tikzpicture}
-    \node[box, text width=2.4cm] (ai) {AI};
-    \node[box, text width=4.4cm, right=1.6cm of ai, text=cgreen] (tool)
-      {\bfseries tool\\ \mdseries\small lemmas, rules, frontends, tests};
-    \node[box, text width=2.4cm, right=1.6cm of tool] (prog) {programs};
-    \node[box, text width=4.4cm, below=1.0cm of tool, font=\small] (check) {checked once\\ (Lean, the engine, tests)};
-    \draw[arrow] (ai) -- node[above, font=\small] {builds} (tool);
-    \draw[arrow] (tool) -- node[above, font=\small] {verifies} (prog);
-    \draw[arrow] (check) -- (tool);
+  \begin{tikzpicture}[scale=0.8, transform shape]
+    \node[box, minimum width=1.4cm] (ai) {AI};
+    \node[cylinder, shape border rotate=90, draw, very thick, aspect=0.2, align=center, minimum width=4.6cm, minimum height=2.0cm,
+          right=1.3cm of ai, text=cgreen, font=\bfseries] (db) {database of program lemmas\\ \mdseries\small rules, frontends, tests};
+    \node[box, right=1.3cm of db] (engine) {engine on TEQs};
+    \node[box, right=1.3cm of engine] (prog) {programs};
+    \node[box, minimum height=0.8cm, below=0.5cm of db, font=\small] (check) {checked once (Lean, the engine, tests)};
+    \draw[arrow] (ai) -- node[above, font=\small] {builds} (db);
+    \draw[arrow] (db) -- (engine);
+    \draw[arrow] (engine) -- node[above, font=\small] {verifies} (prog);
+    \draw[arrow] (check) -- (db);
   \end{tikzpicture}
   \end{center}
-  \vspace{0.3em}
+  \vspace{-0.6em}
   \begin{itemize}
-    \item the cost is paid \good{once per concept}, not once per program
+    \small
+    \item the cost is paid \good{once per concept}, not once per program: every program benefits
     \item the trust is in a \good{checked artifact}, not in a language model\\
       {\small (lemmas written for one program are assumed, unless proved)}
-    \item AI writes what people find tedious: the lemma for every loop shape
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{The two threads meet}
-  \begin{center}
-  \begin{tikzpicture}[scale=0.8, transform shape]
-    \node[box, text width=3.4cm] (ai) {AI proposes};
-    \node[cylinder, shape border rotate=90, draw, very thick, aspect=0.25, align=center, text width=3.4cm,
-          right=1.5cm of ai, text=cgreen, font=\bfseries] (db) {database of\\program lemmas};
-    \node[box, text width=3.4cm, right=1.5cm of db] (engine) {engine on TEQs};
-    \node[box, text width=3.4cm, below=0.9cm of db, font=\small] (lean) {Lean checks once};
-    \draw[arrow] (ai) -- (db);
-    \draw[arrow] (db) -- (engine);
-    \draw[arrow] (lean) -- (db);
-    \node[below=0.5cm of engine, font=\small, text=cgreen] {every program benefits};
-  \end{tikzpicture}
-  \end{center}
-  \begin{itemize}
-    \item TEQs make knowledge \concept{explicit and modular}: one lemma per loop shape
-    \item what AI can write and a tool can check --- or LemmaCalc \cit{[iFM 25]}, without AI
+    \item TEQs make knowledge \concept{explicit and modular}: one lemma per loop shape,\\
+      what AI can write and a tool can check --- or LemmaCalc \cit{[iFM 25]}, without AI
   \end{itemize}
 \end{frame}
 

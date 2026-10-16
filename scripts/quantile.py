@@ -15,8 +15,9 @@ def times(results: list[common.Results]) -> list[float]:
     return sorted(run.cputime for each in results for run in each.runs if run.solved)
 
 
-def plot(plt, title: str, curves: dict[str, list[float]], names: dict[str, str], colors: dict[str, str], timelimit: float, path):
-    figure, axes = plt.subplots(figsize=(6, 3.8))
+def plot(plt, title: str, curves: dict[str, list[float]], names: dict[str, str], colors: dict[str, str], timelimit: float, path,
+         legend: str = "right"):
+    figure, axes = plt.subplots(figsize=(6, 3.8) if legend == "right" else (6, 4.6))
     markers = common.markers(list(curves))
     for tool, values in curves.items():
         if not values:
@@ -40,8 +41,12 @@ def plot(plt, title: str, curves: dict[str, list[float]], names: dict[str, str],
     axes.set_ylabel("CPU time (s)")
     axes.set_title(title)
     axes.grid(True, which="major", alpha=0.3)
-    # right of the axes, one entry below the other, such that it covers no curve
-    axes.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), ncol=1, frameon=False)
+    # outside the axes, such that it covers no curve: right of them, one entry below the other,
+    # or below them in columns, which leaves the plot the full width (for slides)
+    if legend == "right":
+        axes.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), ncol=1, frameon=False)
+    else:
+        axes.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3, frameon=False)
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)
 
