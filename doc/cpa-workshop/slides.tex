@@ -1,5 +1,5 @@
 % compile with pdflatex (twice): Linux Libertine for text and Bera Mono for code
-% storyline: story.md; the pictures in figures/ are taken from the earlier decks (CPA.pdf, Next Generation.pdf)
+% the pictures in figures/ are taken from the earlier decks (CPA.pdf, Next Generation.pdf)
 \documentclass[aspectratio=1610,14pt]{beamer}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -82,6 +82,7 @@
 % colored on one overlay only: the term a rule matches (blue), the result it produces (green)
 \newcommand{\atblue}[2]{\alt<#1>{\textcolor{cblue}{#2}}{#2}}
 \newcommand{\atgreen}[2]{\alt<#1>{\textcolor{cgreen}{#2}}{#2}}
+\newcommand{\atpurple}[2]{\alt<#1>{\textcolor{cpurple}{#2}}{#2}}
 % a step of a derivation, the names of its lemmas above the arrow
 \newcommand{\lem}[1]{\text{\color{black!55}\textsf{#1}}}
 \newcommand{\step}[1]{$\overset{\lem{#1}}{\leadsto}$}
@@ -335,67 +336,36 @@
 % idea 3: accelerating properties of traces by algebraic reasoning, with the generic lemmas of the database
 \ideas{3}
 
-\begin{frame}{Accelerating properties of traces}
-  \small
-  \vspace{-0.4em}
-  \begin{align*}
-    \uncover<1->{& \cur(\mathsf{stores}(a, \bl{K}, \bl{V}))[k]} \\
-    \uncover<1->{& \qquad \rw \mathsf{if}\ \concept{\mathsf{occurs}(k, \bl{K})}\ \mathsf{then}\
-                   \mathsf{earlier}(\concept{\mathsf{indexof}(k, \bl{K})}, \bl{V})\ \mathsf{else}\ a[k]} \\[1pt]
-    \uncover<2->{& \mathsf{earlier}(j, \mathsf{selects}(a, \bl{K}))} \\
-    \uncover<2->{& \qquad \rw a[\mathsf{earlier}(j, \bl{K})]} \\[1pt]
-    \uncover<3->{& \concept{\mathsf{occurs}}(j, \bl{\mathsf{counter}(i, 1, n)})} \\
-    \uncover<3->{& \qquad \rw i \le j < i + n} \\[1pt]
-    \uncover<3->{& \concept{\mathsf{indexof}}(j, \bl{\mathsf{counter}(i, 1, n)}) \qquad (i \le j < i + n)} \\
-    \uncover<3->{& \qquad \rw j - i} \\[1pt]
-    \uncover<3->{& \mathsf{earlier}(j, \bl{\mathsf{counter}(i, c, n)})} \\
-    \uncover<3->{& \qquad \rw i + j \cdot c}
-  \end{align*}
-\end{frame}
-
-% the generic lemmas next to their instances for the array copy (I = counter(0, 1, n), V = selects(b, ⌊I⌋)); when a lemma
+% the lemmas of the database, instantiated for the array copy (I = counter(0, 1, n), V = selects(b, ⌊I⌋)); when a lemma
 % rewrites a subterm of an earlier instance, that subterm is first marked in blue, then replaced by the result in green
 \begin{frame}{Accelerating properties of traces}
-  \footnotesize
-  \renewcommand{\arraystretch}{1.15}
-  \begin{tabular}{@{}>{\color{black!45}\let\concept\relax}l@{\hspace{0.7cm}}l@{}}
-    \textbf{database (generic)} & \uncover<2->{\textbf{array copy}, $I = \mathsf{counter}(0, 1, n)$} \\[4pt]
-    $\cur(\mathsf{stores}(a, \bl{K}, \bl{V}))[k]$
-      & \uncover<2->{$\cur(\mathsf{stores}(a^0, \bl{I}, \mathsf{selects}(b, \bl{I})))[j]$} \\
-    $\quad \rw \mathsf{if}\ \concept{\mathsf{occurs}(k, \bl{K})}\ \mathsf{then}$
-      & \uncover<2->{$\quad \rw \mathsf{if}\ \only<2>{\mathsf{occurs}(j, \bl{I})}\only<3>{\concept{\mathsf{occurs}(j, \bl{I})}}%
-                       \only<4>{\textcolor{cgreen}{0 \le j < n}}\only<5->{0 \le j < n}\ \mathsf{then}$} \\
-    $\qquad \mathsf{earlier}(\concept{\mathsf{indexof}(k, \bl{K})}, \bl{V})\ \mathsf{else}\ a[k]$
-      & \uncover<2->{$\qquad \only<2-4>{\mathsf{earlier}(\mathsf{indexof}(j, \bl{I}), \mathsf{selects}(b, \bl{I}))}%
-                       \only<5>{\mathsf{earlier}(\concept{\mathsf{indexof}(j, \bl{I})}, \mathsf{selects}(b, \bl{I}))}%
-                       \only<6>{\mathsf{earlier}(\textcolor{cgreen}{j}, \mathsf{selects}(b, \bl{I}))}%
-                       \only<7>{\concept{\mathsf{earlier}(j, \mathsf{selects}(b, \bl{I}))}}%
-                       \only<8>{\textcolor{cgreen}{b[\mathsf{earlier}(j, \bl{I})]}}%
-                       \only<9>{b[\concept{\mathsf{earlier}(j, \bl{I})}]}%
-                       \only<10>{b[\textcolor{cgreen}{j}]}%
-                       \only<11->{b[j]}\ \mathsf{else}\ a^0[j]$} \\[4pt]
-    $\concept{\mathsf{occurs}}(j, \bl{\mathsf{counter}(i, 1, n)})$
-      & \uncover<3->{$\atblue{3}{\mathsf{occurs}(j, \bl{\mathsf{counter}(0, 1, n)})}$} \\
-    $\quad \rw i \le j < i + n$
-      & \uncover<3->{$\quad \rw \atgreen{4}{0 \le j < n}$} \\[4pt]
-    $\concept{\mathsf{indexof}}(j, \bl{\mathsf{counter}(i, 1, n)})$
-      & \uncover<5->{$\atblue{5}{\mathsf{indexof}(j, \bl{\mathsf{counter}(0, 1, n)})}$} \\
-    $\quad \rw j - i$
-      & \uncover<5->{$\quad \rw \atgreen{6}{j}$} \\[4pt]
-    $\mathsf{earlier}(j, \mathsf{selects}(a, \bl{K}))$
-      & \uncover<7->{$\atblue{7}{\mathsf{earlier}(j, \mathsf{selects}(b, \bl{I}))}$} \\
-    $\quad \rw a[\mathsf{earlier}(j, \bl{K})]$
-      & \uncover<7->{$\quad \rw \only<7-8>{\atgreen{8}{b[\mathsf{earlier}(j, \bl{I})]}}\only<9>{b[\concept{\mathsf{earlier}(j, \bl{I})}]}%
-                       \only<10>{b[\textcolor{cgreen}{j}]}\only<11->{b[j]}$} \\[4pt]
-    $\mathsf{earlier}(j, \bl{\mathsf{counter}(i, c, n)})$
-      & \uncover<9->{$\atblue{9}{\mathsf{earlier}(j, \bl{\mathsf{counter}(0, 1, n)})}$} \\
-    $\quad \rw i + j \cdot c$
-      & \uncover<9->{$\quad \rw \atgreen{10}{j}$}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{@{}l@{\ }l@{}}
+    \multicolumn{2}{@{}l@{}}{\uncover<1->{\textbf{array copy}, \textcolor{cpurple}{$I = \mathsf{counter}(0, 1, n)$}}} \\[4pt]
+    \multicolumn{2}{@{}l@{}}{\uncover<1->{$\cur(\mathsf{stores}(a^0, \bl{I}, \mathsf{selects}(b, \bl{I})))[j]$}} \\
+    \multicolumn{2}{@{}l@{}}{\small\uncover<1->{$\quad \rw \mathsf{if}\ \only<1>{\mathsf{occurs}(j, \bl{I})}\only<2>{\concept{\mathsf{occurs}(j, \bl{\textcolor{cpurple}{I}})}}%
+                       \only<3>{\textcolor{cgreen}{0 \le j < n}}\only<4->{0 \le j < n}\ \mathsf{then}\ %
+                       \only<1-3>{\mathsf{earlier}(\mathsf{indexof}(j, \bl{I}), \mathsf{selects}(b, \bl{I}))}%
+                       \only<4>{\mathsf{earlier}(\concept{\mathsf{indexof}(j, \bl{\textcolor{cpurple}{I}})}, \mathsf{selects}(b, \bl{I}))}%
+                       \only<5>{\mathsf{earlier}(\textcolor{cgreen}{j}, \mathsf{selects}(b, \bl{I}))}%
+                       \only<6>{\concept{\mathsf{earlier}(j, \mathsf{selects}(b, \bl{I}))}}%
+                       \only<7>{\textcolor{cgreen}{b[\mathsf{earlier}(j, \bl{I})]}}%
+                       \only<8>{b[\concept{\mathsf{earlier}(j, \bl{\textcolor{cpurple}{I}})}]}%
+                       \only<9>{b[\textcolor{cgreen}{j}]}%
+                       \only<10->{b[j]}\ \mathsf{else}\ a^0[j]$}} \\[4pt]
+    \uncover<2->{$\atblue{2}{\mathsf{occurs}(j, \bl{\atpurple{2}{\mathsf{counter}(0, 1, n)}})}$}
+      & \uncover<2->{${} \rw \atgreen{3}{0 \le j < n}$} \\[4pt]
+    \uncover<4->{$\atblue{4}{\mathsf{indexof}(j, \bl{\atpurple{4}{\mathsf{counter}(0, 1, n)}})}$}
+      & \uncover<4->{${} \rw \atgreen{5}{j}$} \\[4pt]
+    \uncover<6->{$\atblue{6}{\mathsf{earlier}(j, \mathsf{selects}(b, \bl{I}))}$}
+      & \uncover<6->{${} \rw \only<6-7>{\atgreen{7}{b[\mathsf{earlier}(j, \bl{I})]}}\only<8>{b[\concept{\mathsf{earlier}(j, \bl{\textcolor{cpurple}{I}})}]}%
+                       \only<9>{b[\textcolor{cgreen}{j}]}\only<10->{b[j]}$} \\[4pt]
+    \uncover<8->{$\atblue{8}{\mathsf{earlier}(j, \bl{\atpurple{8}{\mathsf{counter}(0, 1, n)}})}$}
+      & \uncover<8->{${} \rw \atgreen{9}{j}$}
   \end{tabular}
-  \vspace{0.6em}
+  \vspace{0.3em}
 
-  \small
-  \uncover<11->{\color{cgreen}altogether, for $0 \le j < n$:\quad $\cur(A)[j] \rw b[j]$ \quad --- no quantified invariant}
+  \uncover<10->{\color{cgreen}altogether, for $0 \le j < n$:\quad $\cur(A)[j] \rw b[j]$\\ no quantified invariant}
 \end{frame}
 
 % =====================================================================================================================
