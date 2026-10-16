@@ -134,7 +134,7 @@
     \node[font=\Large] at (8,5.75) {CPAchecker Workshop 2026};
     \node[anchor=south west, inner sep=0pt] at (0.35,0.41) {\includegraphics[height=3.86cm]{figures/photo.jpg}};
     \node[anchor=north west, align=left] at (3.45,4.25)
-      {{\Large\bfseries Gidon Ernst}\\[3pt] LMU Munich, University of Regensburg\\ \textcolor{cblue}{https://www.sosy-lab.org/people/ernst/}};
+      {{\Large\bfseries Gidon Ernst}\quad joint work with Hannah Coenen\\[3pt] LMU Munich, University of Regensburg\\ \textcolor{cblue}{https://www.sosy-lab.org/people/ernst/}};
     \node[anchor=south west, inner sep=0pt] at (3.75,0.41) {\includegraphics[height=1.3cm]{figures/logos.png}};
     \node[anchor=south east] at (15.1,0.55) {October 16, 2026};
   \end{tikzpicture}
@@ -339,13 +339,13 @@
 % the lemmas of the database, instantiated for the array copy (I = counter(0, 1, n), V = selects(b, ⌊I⌋)); when a lemma
 % rewrites a subterm of an earlier instance, that subterm is first marked in blue, then replaced by the result in green
 \begin{frame}{Accelerating properties of traces}
-  \renewcommand{\arraystretch}{1.3}
+  \renewcommand{\arraystretch}{1.22}
   \begin{tabular}{@{}l@{\ }l@{}}
     \multicolumn{2}{@{}l@{}}{\uncover<1->{\textbf{array copy}, \textcolor{cpurple}{$I = \mathsf{counter}(0, 1, n)$}}} \\[4pt]
     \multicolumn{2}{@{}l@{}}{\uncover<1->{$\cur(\mathsf{stores}(a^0, \bl{I}, \mathsf{selects}(b, \bl{I})))[j]$}} \\
-    \multicolumn{2}{@{}l@{}}{\small\uncover<1->{$\quad \rw \mathsf{if}\ \only<1>{\mathsf{occurs}(j, \bl{I})}\only<2>{\concept{\mathsf{occurs}(j, \bl{\textcolor{cpurple}{I}})}}%
-                       \only<3>{\textcolor{cgreen}{0 \le j < n}}\only<4->{0 \le j < n}\ \mathsf{then}\ %
-                       \only<1-3>{\mathsf{earlier}(\mathsf{indexof}(j, \bl{I}), \mathsf{selects}(b, \bl{I}))}%
+    \multicolumn{2}{@{}l@{}}{\uncover<1->{$\quad \rw \mathsf{if}\ \only<1>{\mathsf{occurs}(j, \bl{I})}\only<2>{\concept{\mathsf{occurs}(j, \bl{\textcolor{cpurple}{I}})}}%
+                       \only<3>{\textcolor{cgreen}{0 \le j < n}}\only<4->{0 \le j < n}\ \mathsf{then}$}} \\
+    \multicolumn{2}{@{}l@{}}{\uncover<1->{$\qquad\quad \only<1-3>{\mathsf{earlier}(\mathsf{indexof}(j, \bl{I}), \mathsf{selects}(b, \bl{I}))}%
                        \only<4>{\mathsf{earlier}(\concept{\mathsf{indexof}(j, \bl{\textcolor{cpurple}{I}})}, \mathsf{selects}(b, \bl{I}))}%
                        \only<5>{\mathsf{earlier}(\textcolor{cgreen}{j}, \mathsf{selects}(b, \bl{I}))}%
                        \only<6>{\concept{\mathsf{earlier}(j, \mathsf{selects}(b, \bl{I}))}}%
@@ -371,18 +371,10 @@
 % =====================================================================================================================
 % the lemma database (database.tex), on one slide
 \begin{frame}{The lemma database}
-  \begin{columns}[c]
-    \begin{column}{0.3\textwidth}
-      \begin{itemize}
-        \item 153 lemmas, 37 functions
-        \item written with \concept{coding agents} from open goals
-        \item \good{all proved in Lean}
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.7\textwidth}
-      \footnotesize
-      \setlength{\tabcolsep}{4pt}
-      \begin{tabular}{llrrr}
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{llrrr}
         \toprule
         \textbf{module} & \textbf{concepts} & \textbf{rw} & \textbf{fw} & \textbf{fun} \\
         \midrule
@@ -399,8 +391,28 @@
         total       &                               & 135 & 18 & 37 \\
         \bottomrule
       \end{tabular}
-    \end{column}
-  \end{columns}
+  \end{center}
+  \vspace{-0.4em}
+  \begin{itemize}
+    \item written by hand and with \concept{coding agents} from open goals
+    \item \good{all proved in Lean}, via an export (found two issues)
+  \end{itemize}
+\end{frame}
+
+% the introduction rule of bisection (database.tex): binary search as a whole, higher-order patterns M, G, H
+\begin{frame}{How to summarize binary search}
+  \begin{align*}
+    & \mathsf{trace}\big((l_0, h_0),\ \mathsf{for}\ \bl{K}\ \mathsf{do}\ lo, hi, k \mapsto \\
+    & \qquad \mathsf{if}\ G(M(lo, hi)) \land lo < hi\ \mathsf{then}\ (M(lo, hi) + 1, hi), \\
+    & \qquad \mathsf{if}\ H(M(lo, hi)) \land \lnot G(M(lo, hi)) \land lo < hi\ \mathsf{then}\ (lo, M(lo, hi)), \\
+    & \qquad \mathsf{if}\ \textit{(otherwise)}\ \mathsf{then}\ (lo, hi)\big) \\
+    & \quad \rw \concept{\mathsf{bisection}((l_0, h_0), \bl{K}, M, G, H)}
+  \end{align*}
+  \vspace{0.6em}
+  \begin{itemize}
+    \item expressing lemmas like this points to required features (forwarding, higher-order, \dots)
+    \item lesson: engine and lemma database were \concept{co-developed}
+  \end{itemize}
 \end{frame}
 
 % =====================================================================================================================
@@ -427,12 +439,11 @@
     Rapid                    &  33 &  -- &  17 & -- & 17 & -- & 0 & -- & \textbf{30} & -- \\
     \bottomrule
   \end{tabular}
-  \vspace{0.2em}
+  \vspace{0.4em}
+  \normalsize
   \begin{itemize}
-    \small
-    \item \code{Arrays}: \good{148 proofs against 68}; MonoCera: \good{88 of 125 against 41}
-    \item numeric \code{Loops} and refutations remain the strength of other methods
-    \item ACSL by an agent: 711 of 790 safe tasks (SV-COMP, minor adaptations)
+    \item other methods better on numeric \code{Loops} and for finding CEX
+    \item ACSL by an agent: 711 of 790 safe SV-COMP tasks
   \end{itemize}
 \end{frame}
 
@@ -452,354 +463,37 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Evaluation: annotations per task}
+% related work (related.tex): a few principles, each against TEQs
+\begin{frame}{Related work}
+  \small
   \begin{itemize}
-    \item an agent annotated each safe task of \code{Arrays} and \code{Loops} with ACSL:
-          \concept{711 of 790} proved
-    \item TEQs without annotations: \concept{285 of 790}
-    \item but lemmas are \good{written once, reused, and proved}
+    \setlength{\itemsep}{0.4em}
+    \item \concept{loops as axioms} over time points \cit{[Trace Logic, VIAP]}\\
+          TEQs: a trace is a \good{term}, lemmas are matched against it
+    \item \concept{loop acceleration}, also for arrays \cit{[Frohn, Giesl; Booster]}\\
+          TEQs: acceleration schemes are \good{lemmas}, not built into the algorithm
+    \item \concept{quantified invariants} \cit{[Horn clauses, synthesis]}\\
+          TEQs: \good{no quantifier to guess}, the trace is the whole history
+    \item \concept{folds} in decidable logics \cit{[Array Folds Logic]}\\
+          TEQs: give up decidability, gain \good{compositionality}
+    \item \concept{LLM invariants} per task \cit{[Lemur, LaM4Inv]}\\
+          TEQs: lemmas are \good{written once, reused, and proved}
   \end{itemize}
 \end{frame}
 
 % conclusion (conclusion.tex)
 \begin{frame}{Conclusion}
   \begin{itemize}
-    \item \concept{Trace Equation Systems}: loops as terms, simplified by a \concept{database of lemmas}
+    \item \bad{challenge: routine but hard programming concepts}
+    \item \concept{Trace Equation Systems}: loops as terms
+      \[
+        x = \cur(X) \quad \text{where} \quad X = \TRACE{x^0}{\bl{\boldsymbol{Y}}}{x, y}{u}
+      \]
+    \item simplified by a \concept{database of lemmas}
     \item coding agents write the lemmas, \good{Lean checks them}
-    \item next: recursive procedures, witnesses, a shared database across tools
+    \item next: recursive procedures, witnesses, share database
+    \item next: infer lemmas on demand by other means, e.g.\ theory exploration \cit{[LemmaCalc]}
   \end{itemize}
-\end{frame}
-
-% =====================================================================================================================
-% backup: the slides of the earlier storyline (three claims)
-\appendix
-\begin{frame}[plain]
-  \centering\vfill{\bfseries\fontsize{17}{20}\selectfont Backup}\vfill
-\end{frame}
-
-\begin{frame}{Modular across variables}
-  \[
-    \bl{XY} = \TRACE{(x^0, y^0)}{\bl{XY}}{(x, y)}{(f(x, y), g(x, y))}
-  \]
-  \vspace{-0.4em}
-  \[
-    \leftrightsquigarrow\quad
-    \begin{aligned}[t]
-      X &= \TRACE{x^0}{\bl{Y}}{x, y}{f(x, y)} \\
-      Y &= \TRACE{y^0}{\bl{X}}{y, x}{g(x, y)}
-    \end{aligned}
-  \]
-\end{frame}
-
-\claims{0}
-
-% =====================================================================================================================
-% claim 1: invariants represent what the loop has computed, not what it does -> TEQs
-\claims{1}
-
-\begin{frame}
-  \frametitle{\only<1>{Invariants}\only<2>{A much better explanation}}
-  \begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (14.4,7.4);
-    \program{0.1}{6.4}{7}{while i < n, \ \ a[i] := z, \ \ i := i + 1, {}, assert, \ \ i == n \&\&, \ \ a[k] == z}
-    \only<1>{
-      \node[bubble, callout absolute pointer={($(P |- L1.east)+(0.15,0)$)}, text=cred] at (10.4,6.8) {$0 \le i \le n$};
-      \node[bubble, callout absolute pointer={($(P |- L3.east)+(0.15,0)$)}, text=cred] at (10.4,4.7) {$\forall j.\ 0 \le j < i \Rightarrow a[j] = z$};
-      \node[bubble, callout absolute pointer={($(P |- L6.east)+(0.15,0)$)}, text=cred] at (10.4,1.8) {lemma:\\ $i \le n \wedge \neg(i < n) \Rightarrow i = n$};}
-    \only<2>{
-      \node[bubble, callout absolute pointer={($(P |- L1.east)+(0.15,0)$)}, text=cblue] (b1) at (10.4,6.8) {$i$ counts from $0$ to $n$};
-      \node[bubble, callout absolute pointer={($(P |- L3.east)+(0.15,0)$)}, text=cblue] (b2) at (10.4,4.7) {$a$ is set to $z$ \textcolor{cgreen}{\bfseries at all earlier $i$}};
-      \draw[cgreen, very thick, -{Stealth[length=2.5mm]}] (b2.east) -- ++(0.35,0) |- (b1.east);
-      \node[bubble, callout absolute pointer={($(P |- L6.east)+(0.15,0)$)}, text=cblue] at (10.4,1.8) {lemma:\\ a counter from $0$ to $n$ ends at $n$};}
-  \end{tikzpicture}
-\end{frame}
-
-\begin{frame}{Trace equation systems}
-  \begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (14.4,7.4);
-    \program{0.1}{6.4}{7}{while i < n, \ \ a[i] := z, \ \ i := i + 1, {}, assert, \ \ i == n \&\&, \ \ a[k] == z}
-    \node[bubble, callout absolute pointer={($(P |- L1.east)+(0.15,0)$)}] (b1) at (10.4,6.8) {$I = \concept{\mathsf{counter}(0, 1, n)}$};
-    \node[bubble, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] (b2) at (10.4,4.7) {$A = \concept{\mathsf{stores}(a, {\color{cgreen}\bl{I}}, \bl{\mathsf{consts}(n, z)})}$};
-    \draw[cgreen, very thick, -{Stealth[length=2.5mm]}] (b2.east) -- ++(0.35,0) |- (b1.east);
-    \only<1>{\node[bubble, callout absolute pointer={($(P |- L6.east)+(0.15,0)$)}] at (10.4,1.8) {$\textcolor{cpurple}{\cur(}\concept{\mathsf{counter}(0, 1, n)}\textcolor{cpurple}{)} = n$};}
-    \only<2>{\node[bubble, callout absolute pointer={($(P |- L7.east)+(0.15,0)$)}, align=left] at (10.4,1.8) {$\textcolor{cpurple}{\cur(}\concept{\mathsf{stores}(a, ks, vs)}\textcolor{cpurple}{)}[k] =$\\
-        \quad $\mathsf{if}\ k \in ks\ \mathsf{then}\ vs[\mathsf{indexof}(k, ks)]$\\ \quad $\mathsf{else}\ a[k]$};}
-  \end{tikzpicture}
-\end{frame}
-
-\begin{frame}{Variable-modular, not state-modular}
-  \[
-    x_n = \cur(X) \quad \text{where}
-  \]
-  \[
-    X = \mathsf{trace}(x_0,\ \mathsf{for}\ \underbrace{\bl{K}, \bl{Y}}_{\text{dependencies}}\ \mathsf{do}\ x, k, y
-      \mapsto \underbrace{u(x, k, y)}_{\text{update}})
-  \]
-  \vspace{0.3em}
-  \begin{itemize}
-    \item \concept{CHCs}: a loop is a relation on \emph{states}
-    \item \concept{TEQs}: a loop is what each \emph{variable computes} over the iterations
-    \item the loop is its own specification: \good{sound, relatively complete}
-    \item no induction per program: it is in the \concept{lemmas of the database}, proved once
-    \item program fragments get \good{names}: counter, stores, sums --- knowledge about them is reusable
-  \end{itemize}
-\end{frame}
-
-% =====================================================================================================================
-% claim 2: insight belongs in reusable lemmas -> the database; AI should make tools
-\claims{2}
-
-
-% the first example again: every step is a lemma of the database, the derivation as in the paper (motivation.tex)
-\begin{frame}{Array initialization, by lemmas}
-  \begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (14.4,7.4);
-    \program{0.1}{6.4}{7}{while i < n, \ \ a[i] := z, \ \ i := i + 1, {}, assert, \ \ i == n \&\&, \ \ a[k] == z}
-    \node[draw, very thick, anchor=north east, inner sep=6pt, font=\small] at (14.4,7.55) {%
-      \renewcommand{\arraystretch}{1.0}%
-      \begin{tabular}{@{}r@{\ }l@{}}
-        \multicolumn{2}{@{}l@{}}{\uncover<1->{$I = \mathsf{trace}(0, \mathsf{for}\ \bl{K}\ \mathsf{do}\ i, k \mapsto i + 1)$}} \\
-        \uncover<1->{\step{counter\_def}} & \uncover<1->{$\concept{\mathsf{counter}(0, 1, n)}$} \\[-1pt]
-        \multicolumn{2}{@{}l@{}}{\uncover<2->{$A = \mathsf{trace}(a, \mathsf{for}\ \bl{I}\ \mathsf{do}\ a', i \mapsto a'[i := z])$}} \\
-        \uncover<2->{\step{def.\ stores}} & \uncover<2->{$\concept{\mathsf{stores}}(a, \bl{I}, \underline{\mathsf{maps}(\mathsf{for}\ \bl{I}\ \mathsf{yield}\ i \mapsto z)})$} \\
-        \uncover<3->{\step{maps\_const}} & \uncover<3->{$\concept{\mathsf{stores}}(a, \bl{I}, \bl{\concept{\mathsf{consts}(n, z)}})$} \\[-1pt]
-        \multicolumn{2}{@{}l@{}}{\uncover<4->{$i = \cur(I) = \cur(\mathsf{counter}(0, 1, n))$}} \\
-        \uncover<4->{\step{current\_counter}} & \uncover<4->{$\concept{n}$} \\[-1pt]
-        \multicolumn{2}{@{}l@{}}{\uncover<5->{$a[k] = \cur(A)[k]$}} \\
-        \uncover<5->{\step{current\_stores}} & \uncover<5->{$\mathsf{if}\ \mathsf{occurs}(k, \bl{I})$} \\
-         & \uncover<5->{$\mathsf{then}\ \mathsf{earlier}(\mathsf{indexof}(k, \bl{I}), \bl{\mathsf{consts}(n, z)})$} \\
-         & \uncover<5->{$\mathsf{else}\ a[k]$} \\
-        \uncover<6->{\steptwo{occurs\_counter\_up,}{earlier\_consts}} & \uncover<6->{$\mathsf{if}\ \concept{0 \le k < n}\ \mathsf{then}\ \concept{z}\ \mathsf{else}\ a[k]$}
-      \end{tabular}};
-    \onslide<6->{\node[align=center, font=\small] at (2.0,1.3) {\good{every step}\\ \good{a database lemma},\\ none for the program};}
-  \end{tikzpicture}
-\end{frame}
-
-\begin{frame}{Routine, not trivial --- as TEQs}
-  \begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (14.4,7.4);
-    \program{0.1}{6.4}{8}{for i = 0..n, \ \ s += a[i], {}, for i = 0..n, \ \ s -= a[i], {}, assert, \ \ s == 0}
-    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (10.0,6.4) {{\small $\mathsf{current}(\mathsf{trace}(s_0, \mathsf{for}\ \bl{I}\ \mathsf{do}\ s, i \mapsto s + a[i]))$}\\
-        $\rw s_0 + \concept{\mathsf{sum}(\mathsf{selects}(a, \bl{I}))}$};
-    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (10.0,4.0) {{\small $\mathsf{current}(\mathsf{trace}(s_1, \mathsf{for}\ \bl{I}\ \mathsf{do}\ s, i \mapsto s - a[i]))$}\\
-        $\rw s_1 - \concept{\mathsf{sum}(\mathsf{selects}(a, \bl{I}))}$};
-    \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L8.east)+(0.15,0)$)}] at (10.0,1.5) {linearity: $s_0 + \mathsf{sum}(\ldots) - \mathsf{sum}(\ldots) = s_0$\\
-        \good{no auxiliary function:}\\ \good{sums and linearity are in the database}};
-  \end{tikzpicture}
-\end{frame}
-
-
-\begin{frame}{Two obvious ways to use AI}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{AI as the verifier}
-      \begin{itemize}
-        \item ``model checking is dead''
-        \item \bad{no trust}, no cross-check
-        \item the answer is only as good as the last prompt
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{AI as the proof generator}
-      \begin{itemize}
-        \item Lean, Leanstral, \ldots: the proof is checked
-        \item \bad{cost paid case by case}
-        \item proofs at the level of \bad{assembler}
-      \end{itemize}
-    \end{column}
-  \end{columns}
-  \vspace{1.2em}
-  \begin{center}
-    both apply generative AI \emph{per program}
-  \end{center}
-\end{frame}
-
-\begin{frame}{Thesis: AI should make tools}
-  \begin{center}
-  \begin{tikzpicture}[scale=0.8, transform shape]
-    \node[box, minimum width=1.4cm] (ai) {AI};
-    \node[cylinder, shape border rotate=90, draw, very thick, aspect=0.2, align=center, minimum width=4.6cm, minimum height=2.0cm,
-          right=1.3cm of ai, text=cgreen, font=\bfseries] (db) {database of program lemmas\\ \mdseries\small rules, frontends, tests};
-    \node[box, right=1.3cm of db] (engine) {engine on TEQs};
-    \node[box, right=1.3cm of engine] (prog) {programs};
-    \node[box, minimum height=0.8cm, below=0.5cm of db, font=\small] (check) {checked once (Lean, the engine, tests)};
-    \draw[arrow] (ai) -- node[above, font=\small] {builds} (db);
-    \draw[arrow] (db) -- (engine);
-    \draw[arrow] (engine) -- node[above, font=\small] {verifies} (prog);
-    \draw[arrow] (check) -- (db);
-  \end{tikzpicture}
-  \end{center}
-  \vspace{-0.6em}
-  \begin{itemize}
-    \small
-    \item the cost is paid \good{once per concept}, not once per program: every program benefits
-    \item the trust is in a \good{checked artifact}, not in a language model\\
-      {\small (lemmas written for one program are assumed, unless proved)}
-    \item TEQs make knowledge \concept{explicit and modular}: one lemma per loop shape,\\
-      what AI can write and a tool can check --- or LemmaCalc \cit{[iFM 25]}, without AI
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{How Cuvée is built}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{what it took}
-      \begin{itemize}
-        \item years of personal experience with the approach
-        \item two weeks of Claude Code (Max plan)
-        \item Opus does as well as Fable, which is perhaps not worth its cost
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{who did what}
-      \begin{itemize}
-        \item the AI \good{fills the gaps}
-        \item the \concept{main ideas}, \concept{guidance} and \concept{decisions} are human
-      \end{itemize}
-    \end{column}
-  \end{columns}
-  \vfill
-  \centerline{\good{you can make a verification tool from scratch over a weekend}}
-  \vspace{0.6em}
-\end{frame}
-
-\begin{frame}{What the AI contributed}
-  \begin{itemize}
-    \item built: the lemma database, a new deduction engine, state traces, the SV-LIB frontend, tests
-    \item a \good{profound understanding of the theory}; works with it autonomously, e.g.\ in creating the
-      lemma database
-    \item spots \good{corner cases} reliably, and is \good{self-critical}
-    \item substantial contributions to the approach itself:
-      \begin{itemize}
-        \item the binary search by a bisection
-        \item higher-order matching
-        \item most importantly, the partition of the state into strongly connected components, and
-          recognizing what the main point is
-      \end{itemize}
-  \end{itemize}
-\end{frame}
-
-% =====================================================================================================================
-% claim 3: reasoning must be incremental -> rewriting, state traces, partial descriptions
-\claims{3}
-
-\begin{frame}{Incremental reasoning on TEQs}
-  rewriting with the database, \concept{one program fragment at a time}:
-  partial results stay useful, nothing must be guessed up front
-  \vspace{0.5em}
-  \begin{itemize}
-    \setlength{\itemsep}{0.3em}
-    \item \textbf{two loops}: the second builds on the summary of the first (the sums)
-    \item \textbf{swap}: one question at a time --- what does iteration $k$ read?
-    \item \textbf{nested loops}: the inner loop first, then the outer one
-    \item \textbf{binary search}: bounds, while the number of iterations stays unknown
-  \end{itemize}
-  \vspace{0.5em}
-  what makes it work: \concept{state traces}, \concept{partial descriptions}, \concept{a deduction engine}
-\end{frame}
-
-\begin{frame}{State traces: variables that read each other}
-  \begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (14.4,7.4);
-    \program{0.1}{6.4}{5}{while i < n, \ \ t := a[i], \ \ a[i] := b[i], \ \ b[i] := t, \ \ i := i + 1}
-    \only<1>{
-      \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L3.east)+(0.15,0)$)}] at (10.0,6.0) {$A = \mathsf{trace}(a, \ldots \bl{B} \ldots)$\\ $B = \mathsf{trace}(b, \ldots \bl{A} \ldots)$\\
-          \bad{one trace per variable: mutually recursive}};}
-    \only<2->{
-      \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L3.east)+(0.15,0)$)}] at (10.0,6.0) {$S = \mathsf{trace}(a, b,\ \mathsf{for}\ \bl{I}\ \mathsf{do}\ a', b', i \mapsto$\\
-          $a'[i := b'[i]],\ b'[i := a'[i]])$\\ \good{one trace per strongly connected component}};}
-    \only<3>{
-      \node[bubble, text width=8.4cm, callout absolute pointer={($(P |- L4.east)+(0.15,0)$)}] at (10.0,2.8) {the lemmas see \concept{projections} of $S$:\\[2pt]
-          $b'[k] \rw \mathsf{if}\ k \in \mathsf{prefix}(k, \bl{I})\ \ldots\ \mathsf{else}\ b[k]$\\[2pt]
-          iteration $k$ reads what \good{no earlier iteration wrote}};}
-  \end{tikzpicture}
-\end{frame}
-
-\begin{frame}{State traces: nested loops}
-  \begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (14.4,7.4);
-    \program{0.1}{6.6}{7}{c := 0; i := 0, while i < m, \ \ j := 0, \ \ while j < n, \ \ \ \ j := j + 1, \ \ c := c + j, \ \ i := i + 1}
-    \node[bubble, callout absolute pointer={($(P |- L4.east)+(0.15,0)$)}] at (10.4,6.1) {the inner loop, summarized while\\ the outer one is executed:\\ $j' = \cur(\mathsf{counter}(0, 1, n)) = n$};
-    \node[bubble, callout absolute pointer={($(P |- L6.east)+(0.15,0)$)}] at (10.4,2.8) {the outer update sees \good{one value}:\\ $C = \mathsf{trace}(0, \mathsf{for}\ \bl{K}\ \mathsf{do}\ c, k \mapsto c + n)$\\
-        $\cur(C) = m \cdot n$};
-    \node[align=center, font=\small] at (2.6,1.4) {no fresh sequences,\\ \good{no lemmas for program fragments}};
-  \end{tikzpicture}
-\end{frame}
-
-\begin{frame}{Partial descriptions: binary search over a sorted array}
-  \begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (14.4,7.4);
-    \program{0.1}{6.8}{10}{{lo, hi, i := 0, n, -1}, while lo < hi, \ \ mid := (lo + hi) / 2, \ \ if a[mid] < x, \ \ \ \ lo := mid + 1, \ \ else if x < a[mid], \ \ \ \ hi := mid, \ \ else, \ \ \ \ i := mid, \ \ \ \ break}
-    \node[bubble, text width=7.3cm, callout absolute pointer={($(P |- L2.east)+(0.15,0)$)}] at (11.05,6.6)
-      {\concept{one lemma for the whole loop}:\\ $S \rw \mathsf{bisection}(0, n, \ldots)$};
-    \node[bubble, text width=7.3cm, callout absolute pointer={($(P |- L5.east)+(0.15,0)$)}] at (11.05,4.15)
-      {\concept{forward facts}:\\ $0 \le lo \le \mathsf{lower}(a, n, x)$\\ $\mathsf{upper}(a, n, x) \le hi \le n$};
-    \node[bubble, text width=7.3cm, callout absolute pointer={($(P |- L9.east)+(0.15,0)$)}] at (11.05,1.6)
-      {found: $\mathsf{lower} \le mid < \mathsf{upper}$\\ exit: $\mathsf{lower} = \mathsf{upper}$};
-    \node[align=center, font=\small, text=black!55] at (3.0,0.3) {general lemmas, assumed,\\ not yet in the database};
-  \end{tikzpicture}
-\end{frame}
-
-% =====================================================================================================================
-% evaluation (placeholder: the numbers are filled in once the runs with one version are done)
-\begin{frame}{Evaluation}
-  \begin{center}
-  \begin{tabular}{lrrr}
-    \hline
-    benchmark & tasks & TEQs & reference\\
-    \hline
-    MaxPranq & 17 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
-    Rapid & 33 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
-    MonoCera & 125 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
-    SV-COMP Arrays & 440 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
-    SV-COMP Loops & 764 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
-    array algorithms & 30 & \textcolor{black!35}{--} & \textcolor{black!35}{--}\\
-    \hline
-  \end{tabular}
-  \end{center}
-  \vspace{0.8em}
-  \textcolor{black!45}{placeholder: results with one version of Cuvée, to be filled in}
-\end{frame}
-
-% =====================================================================================================================
-% close
-\begin{frame}{Questions for this community}
-  \begin{columns}[T]
-    \begin{column}{0.46\textwidth}
-      \concept{CHCs}: state-modular\\
-      {\small inductive invariants over integers}
-    \end{column}
-    \begin{column}{0.46\textwidth}
-      \concept{TEQs}: variable-modular\\
-      {\small loops that compute something}
-    \end{column}
-  \end{columns}
-  \vspace{1em}
-  \begin{itemize}
-    \item complementary: TEQ summaries as \concept{loop acceleration} inside a CPA?
-    \item TEQ normal forms, lowered to quantified invariants, in \concept{correctness witnesses}?
-    \item \concept{shared frontends}: C, SV-LIB, Boogie, Dafny --- and Horn clauses as output
-    \item which tasks does each side solve alone, and why?
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Outlook and discussion}
-  \begin{itemize}
-    \setlength{\itemsep}{0.7em}
-    \item What's the scope and what are the limitations of TEQs?\\ Notably: how to treat recursive procedures?
-    \item How to combine with traditional methods?
-    \item How to build interaction around TEQs?
-    \item How to infer lemmas automatically?\\ LemmaCalc \cit{[Ernst, Fedyukovich, iFM 2025]}
-  \end{itemize}
-\end{frame}
-
-\begin{frame}[plain]
-  \centering\vfill
-  {\fontsize{20}{26}\selectfont\bfseries Don't let AI verify programs.\\ Let it build the tools that do,\\[0.2em]
-  \good{on a representation that makes their knowledge reusable.}}\\[2em]
-  Thank you!\\[0.5em]
-  {\small Trace Equation Systems for Program Verification \cit{[Coenen, Ernst, submitted 2026]}}
-  \vfill
 \end{frame}
 
 % references: titles only where they are certain, otherwise authors, venue and topic
@@ -807,21 +501,25 @@
   \scriptsize
   \begin{itemize}
     \setlength{\itemsep}{0.15em}
-    \item C.~Coenen, G.~Ernst. \emph{Trace Equation Systems for Program Verification.} Submitted, 2026.
-    \item G.~Ernst, G.~Fedyukovich. LemmaCalc: helper lemmas by program transformation. iFM 2025.
-    \item K.~Nishimura, J.-P.~Lozi, J.~Lawall. \emph{Generating Loop Invariants for Deductive Verification using
-      Iterator Profiles.} ASE 2026.
+    \item H.~Coenen, G.~Ernst. \emph{Trace Equation Systems for Program Verification.} Submitted, 2026.
     \item J.~Amilon, Z.~Esen, D.~Gurov, C.~Lidström, P.~Rümmer. \emph{Automatic Program Instrumentation for
       Automatic Verification.} CAV 2023 (MonoCera).
-    \item S.~Chakraborty, A.~Gupta, D.~Unadkat. \emph{Verifying Array Manipulating Programs with Full-Program
-      Induction.} TACAS 2020. \emph{Diffy: Inductive Reasoning of Array Programs Using Difference Invariants.} CAV 2021.
-    \item P.~Georgiou, B.~Gleiss, L.~Kovács. \emph{Trace Logic for Inductive Loop Reasoning.} FMCAD 2020.
-    \item F.~Frohn. \emph{A Calculus for Modular Loop Acceleration.} TACAS 2020. Acceleration of array lookups,
-      CAV 2026.
+    \item P.~Georgiou, B.~Gleiss, L.~Kovács. \emph{Trace Logic for Inductive Loop Reasoning.} FMCAD 2020 (Rapid).
+    \item P.~Rajkhowa, F.~Lin. \emph{VIAP -- Automated System for Verifying Integer Assignment Programs with Loops.}
+      SYNASC 2017.
+    \item F.~Frohn, J.~Giesl. \emph{Accelerating Loops with Arrays.} IJCAR 2026.
+    \item F.~Alberti, S.~Ghilardi, N.~Sharygina. \emph{Booster: An Acceleration-Based Verification Framework for
+      Array Programs.} ATVA 2014.
+    \item N.~Bjørner, K.~McMillan, A.~Rybalchenko. \emph{On Solving Universally Quantified Horn Clauses.} SAS 2013.
+    \item G.~Fedyukovich, S.~Prabhu, K.~Madhukar, A.~Gupta. \emph{Quantified Invariants via Syntax-Guided
+      Synthesis.} CAV 2019.
     \item P.~Daca, T.~A.~Henzinger, A.~Kupriyanov. \emph{Array Folds Logic.} CAV 2016.
-    \item H.~Unno, S.~Torii, H.~Sakamoto. \emph{Automating Induction for Solving Horn Clauses.} CAV 2017.
-    \item A.~Bundy, A.~Stevens, F.~van Harmelen, A.~Ireland, A.~Smaill. \emph{Rippling: A Heuristic for Guiding
-      Inductive Proofs.} Artificial Intelligence, 1993.
+    \item H.~Wu, C.~Barrett, N.~Narodytska. \emph{Lemur: Integrating Large Language Models in Automated Program
+      Verification.} ICLR 2024.
+    \item G.~Wu, W.~Cao, Y.~Yao, H.~Wei, T.~Chen, X.~Ma. \emph{LLM Meets Bounded Model Checking: Neuro-symbolic
+      Loop Invariant Inference.} ASE 2024 (LaM4Inv).
+    \item G.~Ernst, G.~Fedyukovich. \emph{Quick Theory Exploration for Algebraic Data Types via Program
+      Transformations.} iFM 2025 (LemmaCalc).
   \end{itemize}
 \end{frame}
 
