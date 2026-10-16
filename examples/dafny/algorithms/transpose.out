@@ -1,77 +1,18 @@
-function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
-  trace(x0, for ks, bs do x, k, b :: b)
-}
-
 function {:fold} column(B0: array<int, array<int, int>>,
                         A: array<int, array<int, int>>, k: int,
                         nn: Nat): Trace<array<int, array<int, int>>> {
   trace(B0, for ⌊counter(0, 1, nn)⌋ do B, j :: B[j := B[j][k := A[k][j]]])
 }
 
-lemma {:rw} invs_column_counter(ks: List<int>,
-                                hs: List<array<int, array<int, int>>>,
-                                Bs: List<Trace<array<int, array<int, int>>>>,
-                                Js: List<Trace<int>>, Js2: List<Trace<int>>,
-                                A: array<int, array<int, int>>, n: int)
-  requires invs(for ks, Js2 check k, J :: J == counter(0, 1, natural(n)))
-  requires Js2 == Js
-  ensures
-    invs(for ks, hs, Bs, Js
-         check k, h, B, J ::
-           B == trace(h, for ⌊J⌋ do x, j :: x[j := x[j][k := A[k][j]]]))
-      <==> invs(for ks, hs, Bs
-                check k, h, B ::
-                  B == column(h, A, k, natural(n)))
-
-lemma {:rw} invs_current_column(ks: List<int>,
-                                hs: List<array<int, array<int, int>>>,
-                                bs: List<array<int, array<int, int>>>,
-                                Bs: List<Trace<array<int, array<int, int>>>>,
-                                Bs2: List<Trace<array<int, array<int, int>>>>,
-                                A: array<int, array<int, int>>, n: int)
-  requires
-    invs(for ks, hs, Bs2 check k, h, B :: B == column(h, A, k, natural(n)))
-  requires Bs2 == Bs
-  ensures
-    invs(for ks, bs, Bs check k, b, B :: b == current(B))
-      <==> invs(for ks, hs, bs
-                check k, h, b ::
-                  b == current(column(h, A, k, natural(n))))
-
-lemma {:rw} current_results_steps(x0: array<int, array<int, int>>,
-                                  ks: List<int>,
-                                  bs: List<array<int, array<int, int>>>,
-                                  F: (array<int, array<int, int>>, int) -> array<int, array<int, int>>)
-  requires invs(for ks, ⌊results(x0, ks, bs)⌋, bs check k, x, b :: b == F(x, k))
-  ensures
-    current(results(x0, ks, bs))
-      == current(trace(x0, for ks do x, k :: F(x, k)))
-
 lemma {:rw} current_transpose(B0: array<int, array<int, int>>,
                               A: array<int, array<int, int>>, m: Nat, nn: Nat,
-                              i: int, j: int)
+                              ns: List<Nat>, i: int, j: int)
+  requires ns == ⌊consts(m, nn)⌋
   ensures
-    current(trace(B0, for ⌊counter(0, 1, m)⌋
-                  do x, k ::
-                    current(column(x, A, k, nn))))[j][i]
+    current(trace(B0, for ⌊counter(0, 1, m)⌋, ns
+                  do x, k, n ::
+                    current(column(x, A, k, n))))[j][i]
       == (if 0 <= i < integer(m) && 0 <= j < integer(nn)
           then A[i][j]
           else B0[j][i])
-
-goal
-  forall A: array<int, array<int, int>>, n: int, B: array<int, array<int, int>>,
-         B₂₁: array<int, array<int, int>>, i₂₂: int, n₁₄: Nat, I₁₈: Trace<int>,
-         B₁₉: Trace<array<int, array<int, int>>>, N?₁₃: List<Nat>, i: int,
-         j: int ::
-    I₁₈ == counter(0, 1, n₁₄)
-      && B₁₉
-        == trace(B, for ⌊I₁₈⌋, N?₁₃
-                 do B₄, k₁₅, n₈ ::
-                   current(column(B₄, A, k₁₅, n₈)))
-      && B₂₁ == current(B₁₉)
-      && n₁₄ == natural(i₂₂)
-      && N?₁₃ == ⌊consts(n₁₄, natural(n))⌋
-      && 0 <= i < i₂₂
-      && 0 <= j < n
-      ==> B₂₁[j][i] == A[i][j]
 

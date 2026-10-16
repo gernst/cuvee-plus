@@ -15,8 +15,8 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [perm.dfy](perm.dfy) | verified: permutations by swaps in single loops |
 | [bubble_sort.dfy](bubble_sort.dfy) | verified: nested loops, `sorted` by the induction lemma, `perm` |
 | [selection_sort.dfy](selection_sort.dfy) | verified: summary of the inner loop, `sorted` by the induction lemma, `perm` |
-| [insertion_sort.dfy](insertion_sort.dfy) | verified with `-include teq:nested`: the swaps at `j - 1` as pinned higher-order positions |
-| [insertion_sort2.dfy](insertion_sort2.dfy) | verified with `-include teq:nested`: the same with two pointers, summary and induction lemma |
+| [insertion_sort.dfy](insertion_sort.dfy) | verified with `-prove` (Oct 16): the pass folded with the position `j - 1` as `k - kk`, the lemmas of insertion_sort2 |
+| [insertion_sort2.dfy](insertion_sort2.dfy) | verified with `-prove` (Oct 16): the pass folded, an induction over the outer trace with the constraints of the pass as side conditions |
 | [nested_counter.dfy](nested_counter.dfy) | verified: the simplest nested loop |
 | [nested_sum.dfy](nested_sum.dfy), [nested_mult.dfy](nested_mult.dfy) | verified: the generic fragment lemmas |
 | [fragments.dfy](fragments.dfy) | verified: the generic fragment lemmas on the two minimal problems |
@@ -27,15 +27,15 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [max_element.dfy](max_element.dfy) | verified with `occurs`; open with `exists` (no witness) |
 | [argmax.dfy](argmax.dfy) | verified: a selection trace with rules on the atoms |
 | [partition.dfy](partition.dfy) | verified: Lomuto partition, conditional swaps at a count |
-| [reverse.dfy](reverse.dfy) | verified: two pointers, `-simplify -split -simplify` |
+| [reverse.dfy](reverse.dfy) | verified with `-prove` (Oct 16): two pointers, the summary takes the disjunction of the exit as its side condition |
 | [is_sorted.dfy](is_sorted.dfy) | open by one substitution of the exit into `sorted`; two rules tried without effect (finding 35) |
 | [row_sums.dfy](row_sums.dfy) | verified with `-include teq:nested`: a chain of specific lemmas, no substitution lemma (finding 29) |
-| [transpose.dfy](transpose.dfy) | verified with `-include teq:nested`: as row_sums, the columns folded |
+| [transpose.dfy](transpose.dfy) | verified with `-prove` (Oct 16): the columns folded, the numbers of inner iterations fixed by `consts` |
 | [prefix_sums.dfy](prefix_sums.dfy) | verified: the recurrence with the term at the written position |
 | [distinct.dfy](distinct.dfy) | verified: nested loops with a flag, summary and `current_trace_all` |
 | [three_way_partition.dfy](three_way_partition.dfy) | verified: Dutch flag by a single scan, two counts |
 | [cocktail_sort.dfy](cocktail_sort.dfy) | verified with `-include teq:nested`: a closed condition over fresh variables, the bound in the goal's form (finding 27) |
-| [first_duplicate.dfy](first_duplicate.dfy) | verified with the postcondition as two implications (finding 31) |
+| [first_duplicate.dfy](first_duplicate.dfy) | verified with `-prove -split -prove` (Oct 16): the inner loop folded, one rule per case of the flag |
 | [merge.dfy](merge.dfy) | verified: pinned higher-order guard, pointers tied by open trace variables |
 | [counting_sort.dfy](counting_sort.dfy) | verified: four loops in sequence, the key range as an atom |
 | [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32); verified under `-prove` by a bisection lemma over the cycle ([state/lower_bound.dfy](../state/lower_bound.dfy)) |

@@ -3,35 +3,15 @@ lemma {:rw} invs_pairs(n: Nat, m: int, hs: List<int>, gs: List<int>)
     invs(for ⌊counter(0, 1, n)⌋, hs, gs check k, h, g :: 2 * k + 1 < m)
       <==> n == zero || 2 * integer(n) - 1 < m
 
-lemma {:rw} exit_pointers(m: int, n: Nat, i: int)
-  requires i == integer(n)
-  ensures m <= integer(n) + i + 1 <==> m <= 2 * integer(n) + 1
-
-lemma {:rw} current_reversal(a: array<int, int>, c: int, d: int, n: Nat, j: int)
-  requires 2 * integer(n) <= c + 1
-  requires c <= 2 * integer(n)
+lemma {:rw} current_reversal_exit(a: array<int, int>, c: int, d: int, n: Nat,
+                                  j: int, m: int)
+  requires n == zero || integer(n) < m + 2
+  requires integer(n) + m == c
+  requires m <= integer(n)
   requires d == -1
   ensures
     current(trace(a, for ⌊counter(0, 1, n)⌋, ⌊counter(c, d, n)⌋
                   do b, k, l ::
                     b[k := b[l]][l := b[k]]))[j]
       == (if 0 <= j <= c then a[c - j] else a[j])
-
-goal
-  forall a: array<int, int>, n: int, b₁₆: array<int, int>, i₁₇: int, j₁₈: int,
-         n₈: Nat, I₁₁: Trace<int>, J₁₂: Trace<int>, B₁₃: Trace<array<int, int>>,
-         k: int ::
-    I₁₁ == counter(0, 1, n₈)
-      && J₁₂ == counter(n + -1, -1, n₈)
-      && B₁₃
-        == trace(a, for ⌊I₁₁⌋, ⌊J₁₂⌋
-                 do b₅, k₉, j₇ ::
-                   b₅[k₉ := b₅[j₇]][j₇ := b₅[k₉]])
-      && b₁₆ == current(B₁₃)
-      && n₈ == natural(i₁₇)
-      && i₁₇ + j₁₈ + 1 == n
-      && integer(n₈) < j₁₈ + 2
-      && j₁₈ <= i₁₇
-      && 0 <= k <= integer(n₈) + j₁₈
-      ==> b₁₆[k] == a[-k + n + -1]
 

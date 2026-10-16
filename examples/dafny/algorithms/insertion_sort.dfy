@@ -2,10 +2,10 @@
 // insertion sort with nested loops: the inner loop moves b[i] down by adjacent swaps while it is smaller than its
 // predecessor
 //
-// status (Oct 14, 2026): -teq -prove leaves one goal, the postcondition sorted(b, 0, n) && perm(b, a); as in
-// bubble_sort.dfy, the summary lemma below was written for -simplify on the per-variable form, where the inner loop
-// was fragments of the outer iteration constraint (verified that way, NOTES.md, doc/array-algorithms), and no longer
-// matches the closed inner loop of -teq; teq:nested is retired to resources/cuvee/legacy
+// status (Oct 16, 2026): verified with -teq -prove, both sorted(b, 0, n) and perm(b, a); a wrong postcondition,
+// sorted(b, 0, n + 1) or perm(b, a[0 := 1]), leaves a goal; the lemmas of insertion_sort2.dfy, except for the pass:
+// -teq states the position j - 1 of the swaps as k - kk over the outer and the inner counter (j == i - kk and
+// i == k + 1), which the fold insert_pass matches with k as a parameter, such that no second pointer is needed
 
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 function perm(a: array<int, int>, b: array<int, int>): bool
@@ -13,66 +13,49 @@ function perm(a: array<int, int>, b: array<int, int>): bool
 lemma {:rw} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
 
-// the inner counter (fragments.dfy)
-lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>, Ns: List<Nat>, Js: List<Trace<int>>, X: int -> int, c: int)
-  requires invs(for ks, Ks, Ns check k, K, nn :: K == counter(0, 1, nn))
-  ensures invs(for ks, Ks, Js check k, K, J :: J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
-    <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
-
-function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a>
+// one pass of the inner loop in iteration p of the outer loop: the swaps of the positions j, a counter down from i,
+// and j - 1, which -teq states as p - kk over the inner counter kk (with i == p + 1)
+function {:fold} insert_pass(b: array<int, int>, i: int, p: int, nn: Nat): Trace<array<int, int>>
 {
-  trace(x0, for ks, bs do x, k, b :: b)
+  trace(b, for ⌊counter(0, 1, nn)⌋, ⌊counter(i, -1, nn)⌋ do x, kk, j :: x[j := x[-kk + p]][-kk + p := x[j]])
 }
 
-// the insertion of b[i] into b[0..i)
-function insert(b: array<int, int>, i: int): array<int, int>
+lemma {:rw} perm_insert_pass(b: array<int, int>, c: array<int, int>, i: int, p: int, nn: Nat)
+  ensures perm(current(insert_pass(b, i, p, nn)), c) <==> perm(b, c)
 
-// the summary of the inner loop with one pointer: the swaps are at the positions P(y, j) and Q(y, j), higher-order,
-// pinned to j and j - 1 by quantified side conditions, since a pattern y[j := y[j - 1]] with arithmetic on the bound
-// variable j is not matched (TODO.md); likewise the test D(b, j) of the loop
-lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>, is: List<int>, bs: List<array<int, int>>,
-                                   Bs: List<Trace<array<int, int>>>, Js: List<Trace<int>>, Ns: List<Nat>, Ns2: List<Nat>, js: List<int>,
-                                   Js3: List<Trace<int>>, Bs5: List<Trace<array<int, int>>>, Js5: List<Trace<int>>,
-                                   bs6: List<array<int, int>>, js6: List<int>, Js7: List<Trace<int>>,
-                                   P: (array<int, int>, int) -> int, Q: (array<int, int>, int) -> int, D: (array<int, int>, int) -> bool)
-  requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
-  requires invs(for ks, ⌊results(a, ks, bs)⌋, Bs, Js check k, x, B, J ::
-    B == trace(x, for ⌊J⌋ do y, j :: y[P(y, j) := y[Q(y, j)]][Q(y, j) := y[P(y, j)]]))
-  requires forall y: array<int, int>, j: int :: P(y, j) == j
-  requires forall y: array<int, int>, j: int :: Q(y, j) == j - 1
-  requires invs(for is, Ns, Js3 check i, nn, J :: J == counter(i, d, nn))
-  requires Js3 == Js && d == -1
-  requires invs(for ks, is check k, i :: i == k + 1)
-  // the final values of the counter in the form that the module nested gives them, j == i - nn (without the module the
-  // fragment is j == current(J), and the summary was stated with it)
-  requires invs(for ks, Ns2, js check k, nn, j :: integer(nn) + j == k + 1)
-  requires Ns2 == Ns
-  requires invs(for ks, Js7 check k, J :: invs(for ⌊J⌋ check j :: 0 < j))
-  requires Js7 == Js
-  requires invs(for ks, Bs5, Js5 check k, B, J :: invs(for ⌊B⌋, ⌊J⌋ check y, j :: D(y, j)))
-  requires Bs5 == Bs && Js5 == Js
-  requires forall y: array<int, int>, j: int :: D(y, j) <==> y[j] < y[j - 1]
-  requires invs(for ks, bs6, js6 check k, b, j :: !(0 < j && D(b, j)))
-  requires bs6 == bs && js6 == js
-  ensures current(results(a, ks, bs)) == current(trace(a, for ks, is do b, k, i :: insert(b, i)))
+lemma {:rw} perm_steps_three(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>, is: List<int>,
+                             F: (array<int, int>, int, Nat, int) -> array<int, int>)
+  requires forall b: array<int, int>, k: int, nn: Nat, i: int :: perm(F(b, k, nn, i), b)
+  ensures perm(current(trace(a, for ks, ns, is do b, k, nn, i :: F(b, k, nn, i))), c) <==> perm(a, c)
 
-lemma {:rw} perm_insert(b: array<int, int>, c: array<int, int>, i: int)
-  ensures perm(insert(b, i), c) <==> perm(b, c)
+// a pass on a sorted prefix b[0..i) with p == i - 1, every swap of which had y[j] < y[q], and which stopped at j == 0
+// or at y[j] >= y[j - 1], sorts b[0..i + 1)
+lemma {:rw} sorted_insert_pass(b: array<int, int>, i: int, p: int, nn: Nat)
+  requires p + 1 == i && 0 <= p && integer(nn) <= p + 1 && sorted(b, 0, p + 1)
+  requires invs(for ⌊counter(0, 1, nn)⌋, ⌊insert_pass(b, i, p, nn)⌋, ⌊counter(i, -1, nn)⌋
+                check kk, y, j :: y[j] < y[-kk + p])
+  requires !(integer(nn) <= p
+             && current(insert_pass(b, i, p, nn))[-integer(nn) + p + 1] < current(insert_pass(b, i, p, nn))[-integer(nn) + p])
+  ensures sorted(current(insert_pass(b, i, p, nn)), 0, p + 2) <==> true
 
-lemma {:rw} perm_steps_two(a: array<int, int>, c: array<int, int>, ks: List<int>, is: List<int>,
-                           F: (array<int, int>, int, int) -> array<int, int>)
-  requires forall b: array<int, int>, k: int, i: int :: perm(F(b, k, i), b)
-  ensures perm(current(trace(a, for ks, is do b, k, i :: F(b, k, i))), c) <==> perm(a, c)
-
-lemma {:rw} sorted_insert(b: array<int, int>, i: int)
-  requires sorted(b, 0, i)
-  ensures sorted(insert(b, i), 0, i + 1) <==> true
-
-lemma {:rw} sorted_prefix_steps_two(a: array<int, int>, n: int, m: Nat, F: (array<int, int>, int, int) -> array<int, int>)
-  requires n <= integer(m) + 1
-  requires forall b: array<int, int>, k: int, i: int :: 0 <= i && sorted(b, 0, i)
-    ==> sorted(F(b, k, i), 0, i + 1)
-  ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ⌊counter(1, 1, m)⌋ do b, k, i :: F(b, k, i))), 0, n)
+// the induction for a growing sorted prefix from one element: the steps F in iteration k at i == k + 1 extend the
+// sorted prefix b[0..i) by i, under the two constraints C and D that hold at every step (over the history of the
+// trace), hence m steps sort b[0..len) if len <= m + 1
+lemma {:rw} sorted_insert_steps(a: array<int, int>, len: int, m: Nat, ns: List<Nat>,
+                                F: (array<int, int>, int, Nat, int) -> array<int, int>,
+                                C: (int, int, array<int, int>, Nat) -> bool, D: (int, array<int, int>, int, Nat) -> bool)
+  requires len <= integer(m) + 1
+  requires invs(for ⌊counter(0, 1, m)⌋, ⌊counter(1, 1, m)⌋,
+                    ⌊trace(a, for ⌊counter(0, 1, m)⌋, ns, ⌊counter(1, 1, m)⌋ do b, k, nn, i :: F(b, k, nn, i))⌋, ns
+                check k, i, b, nn :: C(k, i, b, nn))
+  requires invs(for ⌊counter(0, 1, m)⌋,
+                    ⌊trace(a, for ⌊counter(0, 1, m)⌋, ns, ⌊counter(1, 1, m)⌋ do b, k, nn, i :: F(b, k, nn, i))⌋,
+                    ⌊counter(1, 1, m)⌋, ns
+                check k, b, i, nn :: D(k, b, i, nn))
+  requires forall b: array<int, int>, k: int, nn: Nat, i: int ::
+    0 <= k < integer(m) && i == k + 1 && integer(nn) <= k + 1 && sorted(b, 0, k + 1) && C(k, i, b, nn) && D(k, b, i, nn)
+      ==> sorted(F(b, k, nn, i), 0, k + 2)
+  ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ns, ⌊counter(1, 1, m)⌋ do b, k, nn, i :: F(b, k, nn, i))), 0, len)
     <==> true
 
 method main(a: array<int, int>, n: int) returns (b: array<int, int>)

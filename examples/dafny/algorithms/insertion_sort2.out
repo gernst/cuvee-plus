@@ -5,168 +5,81 @@ function perm(a: array<int, int>, b: array<int, int>): bool
 lemma {:rw} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
 
-lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>,
-                              Ns: List<Nat>, Js: List<Trace<int>>,
-                              X: int -> int, c: int)
-  requires invs(for ks, Ks, Ns check k, K, nn :: K == counter(0, 1, nn))
-  ensures
-    invs(for ks, Ks, Js
-         check k, K, J ::
-           J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
-      <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
-
-function {:fold} results<a>(x0: a, ks: List<int>, bs: List<a>): Trace<a> {
-  trace(x0, for ks, bs do x, k, b :: b)
+function {:fold} insert_pass(b: array<int, int>, i: int, p: int,
+                             nn: Nat): Trace<array<int, int>> {
+  trace(b, for ⌊counter(0, 1, nn)⌋, ⌊counter(i, -1, nn)⌋, ⌊counter(p, -1, nn)⌋
+        do x, kk, j, q ::
+          x[j := x[q]][q := x[j]])
 }
 
-function insert(b: array<int, int>, i: int): array<int, int>
+lemma {:rw} perm_insert_pass(b: array<int, int>, c: array<int, int>, i: int,
+                             p: int, nn: Nat)
+  ensures perm(current(insert_pass(b, i, p, nn)), c) <==> perm(b, c)
 
-lemma {:rw} current_results_insert(a: array<int, int>, d: int, ks: List<int>,
-                                   is: List<int>, bs: List<array<int, int>>,
-                                   Bs: List<Trace<array<int, int>>>,
-                                   Js: List<Trace<int>>, Ps: List<Trace<int>>,
-                                   Ns: List<Nat>, Ns2: List<Nat>,
-                                   Js2: List<Trace<int>>, js: List<int>,
-                                   Ns3: List<Nat>, ps: List<int>,
-                                   Ns4: List<Nat>, Js4: List<Trace<int>>,
-                                   Bs5: List<Trace<array<int, int>>>,
-                                   Js5: List<Trace<int>>, Ps5: List<Trace<int>>,
-                                   bs6: List<array<int, int>>, js6: List<int>,
-                                   ps6: List<int>)
-  requires invs(for ks, bs, Bs check k, b, B :: b == current(B))
+lemma {:rw} perm_steps_three(a: array<int, int>, c: array<int, int>,
+                             ks: List<int>, ns: List<Nat>, is: List<int>,
+                             F: (array<int, int>, int, Nat, int) -> array<int, int>)
   requires
-    invs(for ks, ⌊results(a, ks, bs)⌋, Bs, Js, Ps
-         check k, x, B, J, P ::
-           B == trace(x, for ⌊J⌋, ⌊P⌋ do y, j, p :: y[j := y[p]][p := y[j]]))
-  requires invs(for ks, Ns, Ps check k, nn, P :: P == counter(k, d, nn))
-  requires d == -1
-  requires invs(for is, Ns2, Js2 check i, nn, J :: J == counter(i, d, nn))
-  requires Ns2 == Ns
-  requires Js2 == Js
-  requires invs(for ks, is check k, i :: i == k + 1)
-  requires invs(for ks, Ns3, js check k, nn, j :: integer(nn) + j == k + 1)
-  requires Ns3 == Ns
-  requires invs(for ks, Ns4, ps check k, nn, p :: integer(nn) + p == k)
-  requires Ns4 == Ns
-  requires invs(for ks, Js4 check k, J :: invs(for ⌊J⌋ check j :: 0 < j))
-  requires Js4 == Js
-  requires
-    invs(for ks, Bs5, Js5, Ps5
-         check k, B, J, P ::
-           invs(for ⌊B⌋, ⌊J⌋, ⌊P⌋ check y, j, p :: y[j] < y[p]))
-  requires Bs5 == Bs
-  requires Js5 == Js
-  requires Ps5 == Ps
-  requires
-    invs(for ks, bs6, js6, ps6 check k, b, j, p :: !(0 < j && b[j] < b[p]))
-  requires bs6 == bs
-  requires js6 == js
-  requires ps6 == ps
+    forall b: array<int, int>, k: int, nn: Nat, i: int ::
+      perm(F(b, k, nn, i), b)
   ensures
-    current(results(a, ks, bs))
-      == current(trace(a, for ks, is do b, k, i :: insert(b, i)))
-
-lemma {:rw} perm_insert(b: array<int, int>, c: array<int, int>, i: int)
-  ensures perm(insert(b, i), c) <==> perm(b, c)
-
-lemma {:rw} perm_steps_two(a: array<int, int>, c: array<int, int>,
-                           ks: List<int>, is: List<int>,
-                           F: (array<int, int>, int, int) -> array<int, int>)
-  requires forall b: array<int, int>, k: int, i: int :: perm(F(b, k, i), b)
-  ensures
-    perm(current(trace(a, for ks, is do b, k, i :: F(b, k, i))), c)
+    perm(current(trace(a, for ks, ns, is do b, k, nn, i :: F(b, k, nn, i))), c)
       <==> perm(a, c)
 
-lemma {:rw} sorted_insert(b: array<int, int>, i: int)
-  requires sorted(b, 0, i)
-  ensures sorted(insert(b, i), 0, i + 1) <==> true
-
-lemma {:rw} sorted_prefix_steps_two(a: array<int, int>, n: int, m: Nat,
-                                    F: (array<int, int>, int, int) -> array<int, int>)
-  requires n <= integer(m) + 1
+lemma {:rw} sorted_insert_pass(b: array<int, int>, i: int, p: int, nn: Nat)
+  requires p + 1 == i
+  requires 0 <= p
+  requires integer(nn) <= p + 1
+  requires sorted(b, 0, p + 1)
   requires
-    forall b: array<int, int>, k: int, i: int ::
-      0 <= i && sorted(b, 0, i) ==> sorted(F(b, k, i), 0, i + 1)
-  ensures
-    sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ⌊counter(1, 1, m)⌋
-                         do b, k, i ::
-                           F(b, k, i))), 0, n)
-      <==> true
+    invs(for ⌊counter(0, 1, nn)⌋,
+             ⌊insert_pass(b, i, p, nn)⌋,
+             ⌊counter(i, -1, nn)⌋,
+             ⌊counter(p, -1, nn)⌋
+         check kk, y, j, q ::
+           y[j] < y[q])
+  requires
+    !(integer(nn) <= p
+        && current(insert_pass(b, i, p, nn))[-integer(nn) + p + 1]
+          < current(insert_pass(b, i, p, nn))[-integer(nn) + p])
+  ensures sorted(current(insert_pass(b, i, p, nn)), 0, p + 2) <==> true
 
-goal
-  forall a: array<int, int>, n: int, b₃₁: array<int, int>, n₂₂: Nat,
-         K₂₄: Trace<int>, N?₂₁: List<Nat> ::
-    0 <= n
-      && K₂₄ == counter(0, 1, n₂₂)
-      && b₃₁
-        == current(trace(a, for ⌊K₂₄⌋, N?₂₁, ⌊counter(1, 1, n₂₂)⌋
-                         do b₇, k₂₃, n₁₄, i₆ ::
-                           current(trace(b₇, for ⌊counter(0, 1, n₁₄)⌋,
-                                                 ⌊counter(i₆, -1, n₁₄)⌋,
-                                                 ⌊counter(k₂₃, -1, n₁₄)⌋
-                                         do b₁₁, k₁₅, j₁₂, p₁₃ ::
-                                           b₁₁[j₁₂ := b₁₁[p₁₃]][
-                                             p₁₃ :=
-                                             b₁₁[j₁₂]]))))
-      && (n₂₂ == zero || 1 < n && integer(n₂₂) < n)
-      && invs(for ⌊K₂₄⌋, ⌊counter(1, 1, n₂₂)⌋, N?₂₁
-              check k₂₃, i₆, n₁₄ ::
-                integer(n₁₄) <= k₂₃ + 1)
-      && invs(for ⌊K₂₄⌋,
-                  ⌊counter(1, 1, n₂₂)⌋,
-                  ⌊trace(a, for ⌊K₂₄⌋, N?₂₁, ⌊counter(1, 1, n₂₂)⌋
-                         do b₇, k₂₃, n₁₄, i₆ ::
-                           current(trace(b₇, for ⌊counter(0, 1, n₁₄)⌋,
-                                                 ⌊counter(i₆, -1, n₁₄)⌋,
-                                                 ⌊counter(k₂₃, -1, n₁₄)⌋
-                                         do b₁₁, k₁₅, j₁₂, p₁₃ ::
-                                           b₁₁[j₁₂ := b₁₁[p₁₃]][
-                                             p₁₃ :=
-                                             b₁₁[j₁₂]])))⌋,
-                  N?₂₁
-              check k₂₃, i₆, b₇, n₁₄ ::
-                invs(for ⌊counter(0, 1, n₁₄)⌋,
-                         ⌊trace(b₇, for ⌊counter(0, 1, n₁₄)⌋,
-                                        ⌊counter(i₆, -1, n₁₄)⌋,
-                                        ⌊counter(k₂₃, -1, n₁₄)⌋
-                                do b₁₁, k₁₅, j₁₂, p₁₃ ::
-                                  b₁₁[j₁₂ := b₁₁[p₁₃]][p₁₃ := b₁₁[j₁₂]])⌋,
-                         ⌊counter(i₆, -1, n₁₄)⌋,
-                         ⌊counter(k₂₃, -1, n₁₄)⌋
-                     check k₁₅, b₁₁, j₁₂, p₁₃ ::
-                       b₁₁[j₁₂] < b₁₁[p₁₃]))
-      && invs(for ⌊K₂₄⌋, ⌊counter(1, 1, n₂₂)⌋, N?₂₁
-              check k₂₃, i₆, n₁₄ ::
-                0 <= integer(n₁₄))
-      && invs(for ⌊K₂₄⌋,
-                  ⌊counter(1, 1, n₂₂)⌋,
-                  ⌊trace(a, for ⌊K₂₄⌋, N?₂₁, ⌊counter(1, 1, n₂₂)⌋
-                         do b₇, k₂₃, n₁₄, i₆ ::
-                           current(trace(b₇, for ⌊counter(0, 1, n₁₄)⌋,
-                                                 ⌊counter(i₆, -1, n₁₄)⌋,
-                                                 ⌊counter(k₂₃, -1, n₁₄)⌋
-                                         do b₁₁, k₁₅, j₁₂, p₁₃ ::
-                                           b₁₁[j₁₂ := b₁₁[p₁₃]][
-                                             p₁₃ :=
-                                             b₁₁[j₁₂]])))⌋,
-                  N?₂₁
-              check k₂₃, i₆, b₇, n₁₄ ::
-                !(integer(n₁₄) <= k₂₃
-                    && current(trace(b₇, for ⌊counter(0, 1, n₁₄)⌋,
-                                             ⌊counter(i₆, -1, n₁₄)⌋,
-                                             ⌊counter(k₂₃, -1, n₁₄)⌋
-                                     do b₁₁, k₁₅, j₁₂, p₁₃ ::
-                                       b₁₁[j₁₂ := b₁₁[p₁₃]][
-                                         p₁₃ :=
-                                         b₁₁[j₁₂]]))[-integer(n₁₄) + k₂₃ + 1]
-                      < current(trace(b₇, for ⌊counter(0, 1, n₁₄)⌋,
-                                              ⌊counter(i₆, -1, n₁₄)⌋,
-                                              ⌊counter(k₂₃, -1, n₁₄)⌋
-                                      do b₁₁, k₁₅, j₁₂, p₁₃ ::
-                                        b₁₁[j₁₂ := b₁₁[p₁₃]][
-                                          p₁₃ :=
-                                          b₁₁[j₁₂]]))[-integer(n₁₄) + k₂₃]))
-      && 0 <= integer(n₂₂)
-      && n <= integer(n₂₂) + 1
-      ==> sorted(b₃₁, 0, n) && perm(b₃₁, a)
+lemma {:rw} sorted_insert_steps(a: array<int, int>, len: int, m: Nat,
+                                ns: List<Nat>,
+                                F: (array<int, int>, int, Nat, int) -> array<int, int>,
+                                C: (int, int, array<int, int>, Nat) -> bool,
+                                D: (int, array<int, int>, int, Nat) -> bool)
+  requires len <= integer(m) + 1
+  requires
+    invs(for ⌊counter(0, 1, m)⌋,
+             ⌊counter(1, 1, m)⌋,
+             ⌊trace(a, for ⌊counter(0, 1, m)⌋, ns, ⌊counter(1, 1, m)⌋
+                    do b, k, nn, i ::
+                      F(b, k, nn, i))⌋,
+             ns
+         check k, i, b, nn ::
+           C(k, i, b, nn))
+  requires
+    invs(for ⌊counter(0, 1, m)⌋,
+             ⌊trace(a, for ⌊counter(0, 1, m)⌋, ns, ⌊counter(1, 1, m)⌋
+                    do b, k, nn, i ::
+                      F(b, k, nn, i))⌋,
+             ⌊counter(1, 1, m)⌋,
+             ns
+         check k, b, i, nn ::
+           D(k, b, i, nn))
+  requires
+    forall b: array<int, int>, k: int, nn: Nat, i: int ::
+      0 <= k < integer(m)
+        && i == k + 1
+        && integer(nn) <= k + 1
+        && sorted(b, 0, k + 1)
+        && C(k, i, b, nn)
+        && D(k, b, i, nn)
+        ==> sorted(F(b, k, nn, i), 0, k + 2)
+  ensures
+    sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ns, ⌊counter(1, 1, m)⌋
+                         do b, k, nn, i ::
+                           F(b, k, nn, i))), 0, len)
+      <==> true
 
