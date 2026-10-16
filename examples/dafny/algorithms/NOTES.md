@@ -26,18 +26,18 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [count_occurrences.dfy](count_occurrences.dfy) | verified: the count named as the normal form |
 | [max_element.dfy](max_element.dfy) | verified with `occurs`; open with `exists` (no witness) |
 | [argmax.dfy](argmax.dfy) | verified: a selection trace with rules on the atoms |
-| [partition.dfy](partition.dfy) | verified: Lomuto partition, conditional swaps at a count |
+| [partition.dfy](partition.dfy) | verified with `-prove` (Oct 16): Lomuto partition, one trace of `(b, i, j)`, the regions as rules on the atoms over the whole trace |
 | [reverse.dfy](reverse.dfy) | verified with `-prove` (Oct 16): two pointers, the summary takes the disjunction of the exit as its side condition |
 | [is_sorted.dfy](is_sorted.dfy) | open by one substitution of the exit into `sorted`; two rules tried without effect (finding 35) |
 | [row_sums.dfy](row_sums.dfy) | verified with `-include teq:nested`: a chain of specific lemmas, no substitution lemma (finding 29) |
 | [transpose.dfy](transpose.dfy) | verified with `-prove` (Oct 16): the columns folded, the numbers of inner iterations fixed by `consts` |
 | [prefix_sums.dfy](prefix_sums.dfy) | verified: the recurrence with the term at the written position |
 | [distinct.dfy](distinct.dfy) | verified: nested loops with a flag, summary and `current_trace_all` |
-| [three_way_partition.dfy](three_way_partition.dfy) | verified: Dutch flag by a single scan, two counts |
-| [cocktail_sort.dfy](cocktail_sort.dfy) | verified with `-include teq:nested`: a closed condition over fresh variables, the bound in the goal's form (finding 27) |
+| [three_way_partition.dfy](three_way_partition.dfy) | verified with `-prove` (Oct 16): Dutch flag by a single scan, one trace of `(b, eq, j, lt)`, as partition |
+| [cocktail_sort.dfy](cocktail_sort.dfy) | open under `-prove` (rewriting does not terminate); verified before with `-include teq:nested`: a closed condition over fresh variables, the bound in the goal's form (finding 27) |
 | [first_duplicate.dfy](first_duplicate.dfy) | verified with `-prove -split -prove` (Oct 16): the inner loop folded, one rule per case of the flag |
 | [merge.dfy](merge.dfy) | verified: pinned higher-order guard, pointers tied by open trace variables |
-| [counting_sort.dfy](counting_sort.dfy) | verified: four loops in sequence, the key range as an atom |
+| [counting_sort.dfy](counting_sort.dfy) | open under `-prove` (rewriting does not terminate); verified before: four loops in sequence, the key range as an atom |
 | [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32); verified under `-prove` by a bisection lemma over the cycle ([state/lower_bound.dfy](../state/lower_bound.dfy)) |
 | [gnome_sort.dfy](gnome_sort.dfy) | verified: the invariant `sorted(b, 0, i)` in one lemma on the atom, the traces tied by open trace variables (finding 36) |
 

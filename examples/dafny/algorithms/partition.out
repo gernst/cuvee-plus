@@ -19,40 +19,45 @@ lemma {:rw} maps_lomuto_read(a: array<int, int>, p: int, n: Nat, is: List<int>,
            P(b[k], k, h))
       == maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: P(a[k], k, h))
 
-function below(a: array<int, int>, p: int, n: Nat, hs: List<int>): int
-
-lemma {:rw} below_def(a: array<int, int>, p: int, n: Nat, hs: List<int>)
-  ensures
-    count(true, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a[k] < p))
-      == below(a, p, n, hs)
+function {:fold} below(a: array<int, int>, p: int, n: Nat, hs: List<int>): int {
+  count(true, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a[k] < p))
+}
 
 lemma {:rw} below_nonnegative(a: array<int, int>, p: int, n: Nat, hs: List<int>)
   ensures 0 <= below(a, p, n, hs)
 
-lemma {:rw} below_le(a: array<int, int>, p: int, n: Nat, hs: List<int>)
-  ensures below(a, p, n, hs) <= integer(n)
+lemma {:rw} below_le_natural(a: array<int, int>, p: int, n: Nat, hs: List<int>,
+                             m: int)
+  requires n == natural(m)
+  requires 0 <= m
+  ensures below(a, p, n, hs) <= m <==> true
 
-lemma {:rw} current_lomuto_below(a: array<int, int>, p: int, n: Nat,
-                                 hs: List<int>, k: int)
+lemma {:rw} partition_below(a: array<int, int>, p: int, n: Nat, k: int)
   requires 0 <= k
-  requires k < below(a, p, n, hs)
+  requires k < below(a, p, n, ⌊counter(0, 1, n)⌋)
   ensures
-    current(lomuto(a, p, n, ⌊counts(0, true, maps(for ⌊counter(0, 1, n)⌋, hs
-                                                  yield k2, h ::
-                                                    a[k2] < p))⌋))[k]
+    current(trace(a, 0, 0,
+                  for ⌊counter(0, 1, n)⌋
+                  do b, i, j, kk ::
+                    case b[j] < p => b[i := b[j]][j := b[i]]
+                    case p <= b[j] => b,
+                    case b[j] < p => i + 1 case p <= b[j] => i,
+                    j + 1)).0[k]
       < p
       <==> true
 
-lemma {:rw} current_lomuto_above(a: array<int, int>, p: int, n: Nat,
-                                 hs: List<int>, k: int)
-  requires below(a, p, n, hs) <= k
+lemma {:rw} partition_above(a: array<int, int>, p: int, n: Nat, k: int)
+  requires below(a, p, n, ⌊counter(0, 1, n)⌋) <= k
   requires k < integer(n)
   ensures
     p
-      <= current(lomuto(a, p, n, ⌊counts(0, true, maps(for ⌊counter(0, 1, n)⌋,
-                                                           hs
-                                                       yield k2, h ::
-                                                         a[k2] < p))⌋))[k]
+      <= current(trace(a, 0, 0,
+                       for ⌊counter(0, 1, n)⌋
+                       do b, i, j, kk ::
+                         case b[j] < p => b[i := b[j]][j := b[i]]
+                         case p <= b[j] => b,
+                         case b[j] < p => i + 1 case p <= b[j] => i,
+                         j + 1)).0[k]
       <==> true
 
 lemma {:rw} perm_lomuto(a: array<int, int>, c: array<int, int>, p: int, n: Nat,
@@ -61,26 +66,4 @@ lemma {:rw} perm_lomuto(a: array<int, int>, c: array<int, int>, p: int, n: Nat,
 
 lemma {:rw} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
-
-goal
-  forall a: array<int, int>, n: int, b₁₄: array<int, int>, i₁₅: int, j₁₆: int,
-         n₈: Nat, K₁₀: Trace<int>, S₁₁: Trace<(array<int, int>, int, int)> ::
-    0 <= j₁₆
-      && K₁₀ == counter(0, 1, n₈)
-      && S₁₁
-        == trace(a, 0, 0,
-                 for ⌊K₁₀⌋
-                 do b₅, i₆, j₇, k₉ ::
-                   case b₅[j₇] < a[n + -1] => b₅[i₆ := b₅[j₇]][j₇ := b₅[i₆]]
-                   case a[n + -1] <= b₅[j₇] => b₅,
-                   case b₅[j₇] < a[n + -1] => i₆ + 1
-                   case a[n + -1] <= b₅[j₇] => i₆,
-                   j₇ + 1)
-      && b₁₄ == current(S₁₁).0
-      && i₁₅ == below(a, a[n + -1], n₈, ⌊counter(0, 1, n₈)⌋)
-      && n₈ == natural(j₁₆)
-      && n == j₁₆ + 1
-      ==> i₁₅ <= j₁₆
-        && (forall k: int :: 0 <= k < i₁₅ ==> b₁₄[k] < a[n + -1])
-        && (forall k: int :: i₁₅ <= k < j₁₆ ==> a[n + -1] <= b₁₄[k])
 

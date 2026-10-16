@@ -8,11 +8,10 @@
 // the inner loop of selection sort is this loop, with argmin
 
 // the trace of the position of the maximum so far, which moves to the positions of a counter whose value is larger
-function argmaxs(a: array<int, int>, p0: int, i: int, n: Nat): Trace<int>
-
-lemma {:rw} argmaxs_def(a: array<int, int>, p0: int, i: int, n: Nat)
-  ensures trace(p0, for ⌊counter(0, 1, n)⌋, ⌊counter(i, 1, n)⌋ do p, k, j :: case a[p] < a[j] => j case a[j] <= a[p] => p)
-    == argmaxs(a, p0, i, n)
+function {:fold} argmaxs(a: array<int, int>, p0: int, i: int, n: Nat): Trace<int>
+{
+  trace(p0, for ⌊counter(0, 1, n)⌋, ⌊counter(i, 1, n)⌋ do p, k, j :: case a[p] < a[j] => j case a[j] <= a[p] => p)
+}
 
 // the final position is the initial one or one of the counter, hence within their bounds
 lemma {:rw} current_argmaxs_lower(a: array<int, int>, p0: int, i: int, n: Nat, b: int)

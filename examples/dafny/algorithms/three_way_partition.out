@@ -31,21 +31,16 @@ lemma {:rw} maps_threeway_read_one(a: array<int, int>, p: int, n: Nat,
            P(b[k], k))
       == maps(for ⌊counter(0, 1, n)⌋ yield k :: P(a[k], k))
 
-function below(a: array<int, int>, p: int, n: Nat): int
+function {:fold} below(a: array<int, int>, p: int, n: Nat): int {
+  count(true, maps(for ⌊counter(0, 1, n)⌋ yield k :: a[k] < p))
+}
 
-function beloweq(a: array<int, int>, p: int, n: Nat, hs: List<int>): int
-
-lemma {:rw} below_def(a: array<int, int>, p: int, n: Nat)
-  ensures
-    count(true, maps(for ⌊counter(0, 1, n)⌋ yield k :: a[k] < p))
-      == below(a, p, n)
-
-lemma {:rw} beloweq_def(a: array<int, int>, p: int, n: Nat, hs: List<int>)
-  ensures
-    count(true, maps(for ⌊counter(0, 1, n)⌋, hs
-                     yield k, h ::
-                       a[k] < p || a[k] == p))
-      == beloweq(a, p, n, hs)
+function {:fold} beloweq(a: array<int, int>, p: int, n: Nat,
+                         hs: List<int>): int {
+  count(true, maps(for ⌊counter(0, 1, n)⌋, hs
+                   yield k, h ::
+                     a[k] < p || a[k] == p))
+}
 
 lemma {:rw} below_nonnegative(a: array<int, int>, p: int, n: Nat)
   ensures 0 <= below(a, p, n)
@@ -53,54 +48,68 @@ lemma {:rw} below_nonnegative(a: array<int, int>, p: int, n: Nat)
 lemma {:rw} below_le_beloweq(a: array<int, int>, p: int, n: Nat, hs: List<int>)
   ensures below(a, p, n) <= beloweq(a, p, n, hs)
 
-lemma {:rw} beloweq_le(a: array<int, int>, p: int, n: Nat, hs: List<int>)
-  ensures beloweq(a, p, n, hs) <= integer(n)
-
-lemma {:rw} current_threeway_below(a: array<int, int>, p: int, n: Nat,
-                                   hs: List<int>, k: int)
+lemma {:rw} threeway_lt(a: array<int, int>, p: int, n: Nat, k: int)
   requires 0 <= k
   requires k < below(a, p, n)
   ensures
-    current(threeway(a, p, n, ⌊counts(0, true, maps(for ⌊counter(0, 1, n)⌋, hs
-                                                    yield k2, h ::
-                                                      a[k2] < p
-                                                        || a[k2] == p))⌋,
-                     ⌊counts(0, true, maps(for ⌊counter(0, 1, n)⌋
-                                           yield k2 ::
-                                             a[k2] < p))⌋))[k]
+    current(trace(a, 0, 0, 0,
+                  for ⌊counter(0, 1, n)⌋
+                  do b, e, j, l, kk ::
+                    case b[j] < p => b[j := b[e]][e := b[j := b[e]][l]][
+                      l :=
+                      b[j]]
+                    case b[j] == p => b[j := b[e]][e := b[j]]
+                    case p < b[j] => b,
+                    case b[j] < p || b[j] == p => e + 1 case p < b[j] => e,
+                    j + 1,
+                    case b[j] < p => l + 1
+                    case b[j] == p || p < b[j] => l)).0[k]
       < p
       <==> true
 
-lemma {:rw} current_threeway_equal(a: array<int, int>, p: int, n: Nat,
-                                   hs: List<int>, k: int)
+lemma {:rw} threeway_eq(a: array<int, int>, p: int, n: Nat, k: int)
   requires below(a, p, n) <= k
-  requires k < beloweq(a, p, n, hs)
+  requires k < beloweq(a, p, n, ⌊counter(0, 1, n)⌋)
   ensures
-    current(threeway(a, p, n, ⌊counts(0, true, maps(for ⌊counter(0, 1, n)⌋, hs
-                                                    yield k2, h ::
-                                                      a[k2] < p
-                                                        || a[k2] == p))⌋,
-                     ⌊counts(0, true, maps(for ⌊counter(0, 1, n)⌋
-                                           yield k2 ::
-                                             a[k2] < p))⌋))[k]
+    current(trace(a, 0, 0, 0,
+                  for ⌊counter(0, 1, n)⌋
+                  do b, e, j, l, kk ::
+                    case b[j] < p => b[j := b[e]][e := b[j := b[e]][l]][
+                      l :=
+                      b[j]]
+                    case b[j] == p => b[j := b[e]][e := b[j]]
+                    case p < b[j] => b,
+                    case b[j] < p || b[j] == p => e + 1 case p < b[j] => e,
+                    j + 1,
+                    case b[j] < p => l + 1
+                    case b[j] == p || p < b[j] => l)).0[k]
       == p
       <==> true
 
-lemma {:rw} current_threeway_above(a: array<int, int>, p: int, n: Nat,
-                                   hs: List<int>, k: int)
-  requires beloweq(a, p, n, hs) <= k
+lemma {:rw} threeway_gt(a: array<int, int>, p: int, n: Nat, k: int)
+  requires beloweq(a, p, n, ⌊counter(0, 1, n)⌋) <= k
   requires k < integer(n)
   ensures
     p
-      < current(threeway(a, p, n, ⌊counts(0, true, maps(for ⌊counter(0, 1, n)⌋,
-                                                            hs
-                                                        yield k2, h ::
-                                                          a[k2] < p
-                                                            || a[k2] == p))⌋,
-                         ⌊counts(0, true, maps(for ⌊counter(0, 1, n)⌋
-                                               yield k2 ::
-                                                 a[k2] < p))⌋))[k]
+      < current(trace(a, 0, 0, 0,
+                      for ⌊counter(0, 1, n)⌋
+                      do b, e, j, l, kk ::
+                        case b[j] < p => b[j := b[e]][e := b[j := b[e]][l]][
+                          l :=
+                          b[j]]
+                        case b[j] == p => b[j := b[e]][e := b[j]]
+                        case p < b[j] => b,
+                        case b[j] < p || b[j] == p => e + 1 case p < b[j] => e,
+                        j + 1,
+                        case b[j] < p => l + 1
+                        case b[j] == p || p < b[j] => l)).0[k]
       <==> true
+
+lemma {:rw} beloweq_le_natural(a: array<int, int>, p: int, n: Nat,
+                               hs: List<int>, m: int)
+  requires n == natural(m)
+  requires 0 <= m
+  ensures beloweq(a, p, n, hs) <= m <==> true
 
 lemma {:rw} perm_threeway(a: array<int, int>, c: array<int, int>, p: int,
                           n: Nat, es: List<int>, ls: List<int>)
@@ -108,35 +117,4 @@ lemma {:rw} perm_threeway(a: array<int, int>, c: array<int, int>, p: int,
 
 lemma {:rw} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
-
-goal
-  forall a: array<int, int>, p: int, b₁₃: array<int, int>, eq₁₄: int, j₁₆: int,
-         lt₁₇: int, n₈: Nat, K₁₀: Trace<int>,
-         S₁₁: Trace<(array<int, int>, int, int, int)> ::
-    0 <= j₁₆
-      && K₁₀ == counter(0, 1, n₈)
-      && S₁₁
-        == trace(a, 0, 0, 0,
-                 for ⌊K₁₀⌋
-                 do b₃, eq₄, j₆, lt₇, k₉ ::
-                   case b₃[j₆] < p => b₃[j₆ := b₃[eq₄]][
-                     eq₄ :=
-                     b₃[j₆ := b₃[eq₄]][lt₇]][
-                     lt₇ :=
-                     b₃[j₆]]
-                   case b₃[j₆] == p => b₃[j₆ := b₃[eq₄]][eq₄ := b₃[j₆]]
-                   case p < b₃[j₆] => b₃,
-                   case b₃[j₆] < p || b₃[j₆] == p => eq₄ + 1
-                   case p < b₃[j₆] => eq₄,
-                   j₆ + 1,
-                   case b₃[j₆] < p => lt₇ + 1
-                   case b₃[j₆] == p || p < b₃[j₆] => lt₇)
-      && b₁₃ == current(S₁₁).0
-      && eq₁₄ == beloweq(a, p, n₈, ⌊counter(0, 1, n₈)⌋)
-      && n₈ == natural(j₁₆)
-      && lt₁₇ == below(a, p, n₈)
-      ==> eq₁₄ <= j₁₆
-        && (forall k: int :: 0 <= k < lt₁₇ ==> b₁₃[k] < p)
-        && (forall k: int :: lt₁₇ <= k < eq₁₄ ==> b₁₃[k] == p)
-        && (forall k: int :: eq₁₄ <= k < j₁₆ ==> p < b₁₃[k])
 

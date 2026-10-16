@@ -8,10 +8,10 @@
 
 // the occurrences of x among the values of a at the positions of a counter, named, such that the postcondition and the
 // trace equation system normalize to the same term, since the counter I of the loop is not inlined into the facts
-function occurrences(x: int, a: array<int, int>, i: int, n: Nat): int
-
-lemma {:rw} occurrences_def(x: int, a: array<int, int>, i: int, n: Nat)
-  ensures count(x, selects(a, ⌊counter(i, 1, n)⌋)) == occurrences(x, a, i, n)
+function {:fold} occurrences(x: int, a: array<int, int>, i: int, n: Nat): int
+{
+  count(x, selects(a, ⌊counter(i, 1, n)⌋))
+}
 
 method main(a: array<int, int>, n: int, x: int) returns (c: int)
   requires 0 <= n

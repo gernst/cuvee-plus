@@ -1,5 +1,4 @@
-function occurrences(x: int, a: array<int, int>, i: int, n: Nat): int
-
-lemma {:rw} occurrences_def(x: int, a: array<int, int>, i: int, n: Nat)
-  ensures count(x, selects(a, ⌊counter(i, 1, n)⌋)) == occurrences(x, a, i, n)
+function {:fold} occurrences(x: int, a: array<int, int>, i: int, n: Nat): int {
+  count(x, selects(a, ⌊counter(i, 1, n)⌋))
+}
 

@@ -466,27 +466,22 @@
 % the array algorithms of examples/dafny/algorithms under -teq -prove (the expected outputs of Oct 14, 2026)
 \begin{frame}{Evaluation: array algorithms}
   \small
-  \textbf{\good{proved (18)}}
+  \textbf{\good{proved (20)}}
   \begin{itemize}
     \setlength{\itemsep}{0pt}
     \item search: linear search, lower bound, argmax, first duplicate (early exit)
     \item aggregation: count, distinct, prefix sums, row sums, is sorted
     \item sorting: bubble, selection, gnome, insertion (2 variants), merge, perm
     \item in place: reverse, transpose
-  \end{itemize}
-  \vspace{0.1em}
-  \textbf{\concept{in migration (3)}} {\footnotesize (lemmas written for an older version)}
-  \begin{itemize}
-    \setlength{\itemsep}{0pt}
     \item partition: quicksort's, three-way
-    \item counting sort (rewriting does not terminate)
   \end{itemize}
   \vspace{0.1em}
-  \textbf{\bad{open (2)}} {\footnotesize (approach unclear)}
+  \textbf{\bad{open (3, engine limitations/approach unclear)}}
   \begin{itemize}
     \setlength{\itemsep}{0pt}
     \item max element with an existential postcondition (no witness)
     \item cocktail sort (two inner loops, rewriting does not terminate)
+    \item counting sort (rewriting does not terminate)
   \end{itemize}
 \end{frame}
 
