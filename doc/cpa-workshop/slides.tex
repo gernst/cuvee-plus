@@ -463,6 +463,35 @@
   \end{itemize}
 \end{frame}
 
+% the array algorithms of examples/dafny/algorithms under -teq -prove (the expected outputs of Oct 14, 2026)
+\begin{frame}{Evaluation: array algorithms}
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{5.4cm}c>{\raggedright\arraybackslash}p{7.6cm}@{}}
+    \toprule
+    \textbf{algorithm} & \textbf{open goals} & \textbf{blocker} \\
+    \midrule
+    argmax, bubble sort, count, distinct, gnome sort, is sorted, lower bound, linear search, merge, perm,
+    prefix sums, row sums, selection sort
+      & \good{0} & --- \\
+    \midrule
+    insertion sort (two variants), transpose & 1 & summary lemma written for the per-variable form \\
+    first duplicate & 1 & nested early exit, rules for the per-variable form \\
+    partition, three-way partition & 1 & lemmas per variable, now one trace over $(b, i, j)$ \\
+    reverse & 1 & lemmas for the per-variable form \\
+    max element & 1 & existential postcondition (no witness) \\
+    cocktail sort, counting sort & \bad{error} & rewriting does not terminate \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.6em}
+  \begin{itemize}
+    \small
+    \item main blocker: lemmas of the examples written for one trace per variable
+  \end{itemize}
+\end{frame}
+
 % related work (related.tex): a few principles, each against TEQs
 \begin{frame}{Related work}
   \small
@@ -489,10 +518,13 @@
       \[
         x = \cur(X) \quad \text{where} \quad X = \TRACE{x^0}{\bl{\boldsymbol{Y}}}{x, y}{u}
       \]
-    \item simplified by a \concept{database of lemmas}
-    \item coding agents write the lemmas, \good{Lean checks them}
+    \item simplified by a \concept{database of lemmas} \\[8pt]
+      \pause
+    \item \good{coding agents find lemmas and check them in Lean}
+    \item \good{coding agents \underline{design} and implement tools} \\[8pt]
+      \pause
     \item next: recursive procedures, witnesses, share database
-    \item next: infer lemmas on demand by other means, e.g.\ theory exploration \cit{[LemmaCalc]}
+    \item next: lemmas on demand by theory exploration \cit{[LemmaCalc]}
   \end{itemize}
 \end{frame}
 
