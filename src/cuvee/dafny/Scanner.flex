@@ -35,7 +35,8 @@ kw  = "function" | "predicate" | "axiom" | "lemma" | "goal" | "const" | "datatyp
     | "trace" | "maps" | "invs" | "match" | "case" | "for" | "do" | "yield" | "fuse" | "???"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "=>" | "->" | "==" | "<" | ">" | "*" | "'" | "|" | "." | ".." | "⌊" | "⌋"
 
-sym = [a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*
+sym = [a-zA-Zω_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*
+    | "until+" | "unless+" | "release+"
     | [+\-/%] | "&" | "^" | "&&" | "||" | "==>" | "<==>" | "!"
     | "!=" | "<=" | ">="
 

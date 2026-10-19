@@ -418,6 +418,10 @@ object Printer extends cuvee.pipe.Printer:
       case Old(expr) =>
         apps(atom("old"), lines(expr))
 
+      // not part of SMT-LIB, temporal operators and placeholders, written like applications, (always phi), (|ω$3| x)
+      case Prop(op, args) =>
+        apps(mangle(op), lines(args))
+
       // not part of SMT-LIB, the derivative with respect to xs is written (diff (xs) expr)
       case Diff(xs, expr) =>
         apps(atom("diff"), list(lines(xs)), lines(expr))

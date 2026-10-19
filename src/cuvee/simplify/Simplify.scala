@@ -210,6 +210,11 @@ object Simplify extends Transform:
       case Old(arg) =>
         Old(simplify(config, state, ctx.neutral, arg))
 
+      // the facts hold now, not at the other states of the trace that the operands of temporal operators talk about
+      case Prop(op, args) =>
+        val ctx_ = ctx.copy(facts = Facts.empty, chains = Chains.empty, diffs = Diffs.empty).neutral
+        Prop(op, simplify(config, state, ctx_, args))
+
       case As(arg, typ) =>
         val arg_ = simplify(config, state, ctx, arg)
         As(arg_, typ)

@@ -130,6 +130,11 @@ case class Subst[+T <: Type, +E <: Expr](params: Map[Param, T], vars: Map[Var, E
       case Old(expr) =>
         Old(this(expr))
 
+      // a substitution inside of a temporal operator replaces the variables at all states of the trace, which is
+      // what a renaming of state variables means, but not the effect of an assignment
+      case Prop(op, args) =>
+        Prop(op, this(args))
+
       case Bind(quant, bound, body) =>
         val (rename, that) = avoid(bound)
         Bind(quant, rename(bound), that(body))

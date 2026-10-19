@@ -630,6 +630,18 @@ class Parser(var state: State):
       case App("old", List(arg)) =>
         state.exprs.old(resolve(scope, arg))
 
+      // the temporal operators, whose arities are checked with the types (see Type.check); a prefix operator without
+      // operand comes from an operator of higher precedence before it, e.g. !always p, which needs !(always p)
+      case App(op, Nil) if core.Prop.ops.contains(Name(op, None)) =>
+        Error.raise("temporal operator without operand, parenthesize it after operators that bind tighter, e.g. !(always p)", op)
+
+      case App(op, args) if core.Prop.ops.contains(Name(op, None)) =>
+        core.Prop(Name(op, None), args.map(resolve(scope, _)))
+
+      // placeholders of the verification conditions of temporal properties, e.g. ω₃(x, y), which are not declared
+      case App(op, args) if core.Prop.isPlaceholder(op) && !state.funs.contains((op, args.length)) =>
+        core.Prop(op, args.map(resolve(scope, _)))
+
       // unary + is the identity
       case App("+", List(arg)) =>
         resolve(scope, arg)

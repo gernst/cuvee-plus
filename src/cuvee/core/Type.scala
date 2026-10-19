@@ -359,6 +359,21 @@ object Type:
       case Old(arg) =>
         check(state, scope, arg, res, subst, pending)
 
+      // the operands of temporal operators are formulas, the arguments of placeholders state variables of any type
+      case Prop(op, args) =>
+        if Prop.isPlaceholder(op)
+        then
+          val wrong = args.filterNot(_.isInstanceOf[Var])
+          Error.report("placeholder applied to expressions that are not variables", op, wrong):
+            require(wrong.isEmpty)
+        else
+          Error.report("wrong number of arguments of temporal operator", op, args):
+            require(Prop.ops.get(op) == Some(args.length))
+          check(state, scope, args, args.map(_ => Sort.bool), subst, pending)
+
+        Error.report("type mismatch", expr, Sort.bool, res):
+          unify(state, scope, Sort.bool, res, subst)
+
       // each accumulator starts with its initial value and is updated by its result
       case Trace(inits, deps, accs, bound, results) =>
         Error.report("mismatching accumulators, initial values and results", expr):

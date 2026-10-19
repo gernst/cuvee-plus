@@ -6,9 +6,13 @@ object Grammar:
   import easyparse._
   import Brackets._
 
+  // the temporal operators take an operand down to the comparisons, always x >= 0 && p is (always (x >= 0)) && p
   val prefix_ops = Map(
     "-" -> 9,
-    "!" -> 9
+    "!" -> 9,
+    "next" -> 5,
+    "always" -> 5,
+    "eventually" -> 5
   )
 
   val postfix_ops = Map[String, Int](
@@ -19,6 +23,13 @@ object Grammar:
     "==>" -> (Assoc.Right, 1),
     "||" -> (Assoc.Left, 2),
     "&&" -> (Assoc.Left, 3),
+    // the binary temporal operators bind looser than the unary ones, always p until q is (always p) until q
+    "until" -> (Assoc.Right, 4),
+    "unless" -> (Assoc.Right, 4),
+    "release" -> (Assoc.Right, 4),
+    "until+" -> (Assoc.Right, 4),
+    "unless+" -> (Assoc.Right, 4),
+    "release+" -> (Assoc.Right, 4),
     "==" -> (Assoc.Left, 5),
     "!=" -> (Assoc.Left, 5),
     ">=" -> (Assoc.Left, 5),

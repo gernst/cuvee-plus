@@ -24,6 +24,7 @@ sealed trait Expr:
       case As(arg, typ)                       => As(f(arg), typ)
       case Diff(xs, arg)                      => Diff(xs, f(arg))
       case Old(arg)                           => Old(f(arg))
+      case Prop(op, args)                     => Prop(op, args.map(f))
       case Trace(inits, deps, accs, bound, results) => Trace(inits.map(f), deps.map(f), accs, bound, results.map(f))
       case Component(trace, i)                => Component(f(trace), i)
       case History(trace, i)                  => History(f(trace), i)
@@ -165,6 +166,38 @@ case class Old(expr: Expr) extends Expr:
   def funs = expr.funs
   def typ = expr.typ
 
+// a temporal operator of linear temporal logic applied to formulas, e.g. always(p), or a placeholder, whose `op` is a
+// fresh name, applied to state variables of any type, which stands for an abstract set of traces over them;
+// not a function: always(p) is not determined by the value of p now, hence congruence does not apply to it
+case class Prop(op: Name, args: List[Expr]) extends Expr:
+  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
+  def params = args.params
+  def free = args.free
+  def funs = args.funs
+  def typ = Sort.bool
+
+object Prop:
+  // the operators by name with their arities, on Bool:
+  // next, always, eventually, and the binary until (U), unless (weak until, W), and release (R), whose strict
+  // variants with + expose their left operand for at least one step before they recur
+  val ops: Map[Name, Int] = Map(
+    Name("next", None) -> 1,
+    Name("always", None) -> 1,
+    Name("eventually", None) -> 1,
+    Name("until", None) -> 2,
+    Name("unless", None) -> 2,
+    Name("release", None) -> 2,
+    Name("until+", None) -> 2,
+    Name("unless+", None) -> 2,
+    Name("release+", None) -> 2
+  )
+
+  // the base name of placeholders, which are indexed, e.g. ω$3
+  val placeholder = "ω"
+
+  def isPlaceholder(op: Name) =
+    op.name == placeholder && op.index.nonEmpty
+
 object Old:
   // replace old(e) by e[gs := gs_], where gs_ are the values of the global variables gs at the entry,
   // nested occurrences of old refer to the same values
@@ -196,6 +229,7 @@ object Old:
       case As(arg, typ)              => As(instance(now, before, old, arg), now(typ))
       case Diff(xs, arg)             => Diff(su.lhs(xs), instance(now, before, old, arg))
       case Old(arg)                  => instance(now, before, true, arg)
+      case Prop(op, args)            => Prop(op, args.map(instance(now, before, old, _)))
 
       case Bind(quant, bound, body) =>
         val (bound_, inner) = bind(bound)

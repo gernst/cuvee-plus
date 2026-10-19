@@ -303,6 +303,16 @@ Each frontend follows the same structure (see `cuvee.dafny` and
 
 The syntax of the combinators of trace equation systems is in
 [teq.md](teq.md), that of hybrid programs in [hybrid.md](hybrid.md).
+The temporal operators (`Prop`, [datastructures.md](datastructures.md)) are
+operators of the mixfix tables of Dafny: `next`, `always`, and `eventually`
+are prefix operators of precedence 5, whose operand extends to the
+comparisons (`always x >= 0 && p` is `(always (x >= 0)) && p`), the binary
+`until`, `unless`, `release`, `until+`, `unless+`, and `release+` associate
+to the right with precedence 4, between `&&` and the comparisons
+(`always p until q` is `(always p) until q`). The words are reserved; the
+scanner reads `until+` etc. as one token, and `ω` starts identifiers, for the
+placeholders `ω₃(x)` of printed verification conditions. `!` binds tighter, so
+`!always p` is an error and must be written `!(always p)`.
 
 The SMT-LIB frontend is an exception: it reads s-expressions with the shared
 `sexpr` scanner and turns them into core directly. The C frontend is another:

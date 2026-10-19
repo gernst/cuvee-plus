@@ -82,6 +82,7 @@ case class Is(expr: Expr, fun: Fun)            // tester of a datatype construct
 case class As(expr: Expr, typ: Type)           // type annotation
 case class Diff(xs: List[Var], expr: Expr)     // derivative (xs :: expr)'
 case class Old(expr: Expr)                     // value at the entry of the procedure
+case class Prop(op: Name, args: List[Expr])    // temporal operator, always p, or placeholder ω₃(x, y)
 case class Bind(quant: Name, bound: List[Var], body: Expr)   // forall, exists
 case class Lam(bound: List[Var], body: Expr, typ: Type)      // an array of one index, or a function (Arrow)
 case class Let(bound: List[Var], args: List[Expr], body: Expr)
@@ -165,6 +166,16 @@ case class Component(trace, index); case class History(trace, index)  // current
 - **`Diff(xs, e)`** is a derivative, see [hybrid.md](hybrid.md).
 - **`Old(e)`** never reaches the solver. `Old.elim(gs, gs_, ...)` replaces
   it by `e[gs := gs_]` before verification.
+- **`Prop(op, args)`** is a formula of linear temporal logic over the trace that starts now
+  ([ideas/ltl.md](../ideas/ltl.md)): a temporal operator of `Prop.ops` on formulas, `next`, `always`,
+  `eventually`, `until`, `unless` (weak until), `release`, and the strict `until+`, `unless+`, `release+`; or a
+  placeholder, whose `op` is an indexed `ω` (`Prop.isPlaceholder`), applied to variables, an abstract set of
+  traces over them. It is not a function: `always p` is not determined by the value of `p` now, so nothing
+  applies congruence to it, both engines simplify its operands without the facts of the context, and
+  `Normalize.lift` does not lift `ite` out of it. `Subst` replaces variables at all states of the trace, which
+  is right for a renaming but not for the effect of an assignment. Dafny writes the operators in mixfix
+  notation, `always p until q`; SMT-LIB writes them like applications, `(always p)`, and a placeholder as
+  `(|ω$3| x)`, unless a function of the same name is declared. Boogie, C, and Lean do not print them.
 - **Trace combinators** `Trace`, `Maps`, `Invs`, whose updates are
   expressions, guarded ones as `Eps` of cases `Upd`, are described in
   [teq.md](teq.md). A trace has one or several accumulators, with one initial

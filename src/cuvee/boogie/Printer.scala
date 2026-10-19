@@ -702,7 +702,7 @@ object Printer extends cuvee.pipe.Printer:
       case Old(arg) =>
         call("old", List(doc(arg)))
 
-      case Is(_, _) | As(_, _) | Diff(_, _) | Match(_, _) =>
+      case Is(_, _) | As(_, _) | Diff(_, _) | Prop(_, _) | Match(_, _) =>
         Error.raise("not supported in Boogie", expr)
 
       // quantifiers are always in parentheses

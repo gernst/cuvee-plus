@@ -39,7 +39,7 @@ object Printer extends cuvee.pipe.Printer:
     else "`" + name_ + "`"
 
   // identifiers as accepted by the scanner, including unicode subscripts, and primed ones x' (see Grammar.id_prime)
-  val identifier = "[a-zA-Z_][a-zA-Z0-9⁰-⁹₀-₉_~#$?']*".r
+  val identifier = "[a-zA-Zω_][a-zA-Z0-9⁰-⁹₀-₉_~#$?']*".r
 
   // elements separated by commas, which go on separate lines if the enclosing group does not fit
   def commas(docs: List[Doc]): Doc =
@@ -546,6 +546,9 @@ object Printer extends cuvee.pipe.Printer:
         val op = name(fun.name)
         Some((op, Grammar.prefix_ops(op), arg))
 
+      case Prop(op, List(arg)) if Grammar.prefix_ops.contains(name(op)) =>
+        Some((name(op), Grammar.prefix_ops(name(op)), arg))
+
       case _ =>
         None
 
@@ -612,6 +615,9 @@ object Printer extends cuvee.pipe.Printer:
         if args.length == 2 || (args.length > 2 && chain)
         then operator(op, args)
         else None
+
+      case Prop(op, args @ List(_, _)) if Grammar.infix_ops.contains(name(op)) =>
+        operator(name(op), args)
 
       case Not(Eq(a, b)) =>
         infix(Distinct(List(a, b)))
@@ -954,9 +960,13 @@ object Printer extends cuvee.pipe.Printer:
       case Store(base, index, value) =>
         Group(doc(base, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
 
+      // the temporal operators are words, followed by a space, whose operands extend to the comparisons, which
+      // have the same precedence, since the parser admits operators of at least the precedence of a prefix operator
       case _ if prefix(expr).isDefined =>
         val Some((op, prec, arg)) = prefix(expr): @unchecked
-        text(op) ~ doc(arg, (prec, None))
+        if op.head.isLetter
+        then text(op) ~~ doc(arg, (prec - 1, None))
+        else text(op) ~ doc(arg, (prec, None))
 
       // x < y <= z, which breaks before the operators if it does not fit
       case _ if comparisons(expr).isDefined =>
@@ -1028,6 +1038,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case Old(arg) =>
         call("old", List(doc(arg)))
+
+      // placeholders, the other temporal operators are printed in mixfix notation above
+      case Prop(op, args) =>
+        call(name(op), args.map(doc(_)))
 
       case Diff(xs, arg) =>
         Group(text("(") ~ Align(commas(xs.map(doc(_))) ~~ text("::") ~ Nest(2, line ~ doc(arg))) ~ text(")'"))

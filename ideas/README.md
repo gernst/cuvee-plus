@@ -19,6 +19,9 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
   proofs contain no invariants and how to extract them, the missing quantifiers of C witnesses, and a plan from
   trivial witnesses over the invariants of `-chc` to quantified invariants for arrays; the source positions
   through the scanner, the grammar and the C parser into the attributes of loops.
+- [ltl.md](ltl.md): linear temporal specifications by weakest preconditions (ISoLA 2026): temporal
+  `guarantees` of Dafny methods and loops with hypothesis operators, a forward generator in `-vcgen`, the
+  lowering of the goals for solvers, and points of the paper to check.
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 

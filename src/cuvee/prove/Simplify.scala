@@ -186,6 +186,10 @@ object Simplify:
       case Old(arg) =>
         Old(simplify(config, state, ctx.neutral, arg))
 
+      // the facts hold now, not at the other states of the trace that the operands of temporal operators talk about
+      case Prop(op, args) =>
+        Prop(op, simplify(config, state, ctx.restricted(_ => false).neutral, args))
+
       case As(arg, typ) =>
         val arg_ = simplify(config, state, ctx, arg)
         As(arg_, typ)

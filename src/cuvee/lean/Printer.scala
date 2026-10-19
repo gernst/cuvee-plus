@@ -698,7 +698,7 @@ object Printer extends cuvee.pipe.Printer:
       case Eps(updates) =>
         doc(updates.foldRight(Unspecified(expr.typ)) { case (Upd(cond, rhs), rest) => Ite(cond, rhs, rest) })
 
-      case _: Old | _: Diff | _: Rec =>
+      case _: Old | _: Diff | _: Prop | _: Rec =>
         unsupported(expr)
 
   // the number of accumulators of a trace, by its type

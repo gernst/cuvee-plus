@@ -832,6 +832,11 @@ class Parser(private var init: State):
       case List(Id("diff"), xs, arg) =>
         state.exprs.diff(variables(scope, xs), expr(scope, arg))
 
+      // not part of SMT-LIB, temporal operators and placeholders, unless they are declared functions, e.g. in SV-LIB
+      case List(Id(op), args*) if (Prop.ops.contains(Name(op, None)) || Prop.isPlaceholder(op)) && !state.funs.contains((op, args.length)) =>
+        val args_ = list(args) { expr(scope, _) }
+        Prop(if Prop.isPlaceholder(op) then op else Name(op, None), args_)
+
       // testers of constructors
       case List(List(Id("_"), Id("is"), Id(name)), arg) =>
         val constrs = state.constrs
