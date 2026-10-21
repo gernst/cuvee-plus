@@ -48,52 +48,45 @@ case class Attrs(attrs: List[(String, Option[Any])]):
 
     Attrs(attrs_)
 
-  // the free variables of the expressions among the values, e.g. of loop invariants
-  def free: Set[Var] =
-    attrs.flatMap(_._2).collect { case expr: Expr => expr.free }.flatten.toSet
+  def args =
+    attrs.collect { case (_, Some(expr: Expr)) => expr }
 
-  // the functions applied in the expressions among the values
-  def funs: Set[Fun] =
-    attrs.flatMap(_._2).collect { case expr: Expr => expr.funs }.flatten.toSet
+  def free =
+    args.free
+
+  def funs =
+    args.funs
 
   def flatten =
     attrs flatMap:
       case (kw, None)      => List(Kw(kw))
       case (kw, Some(arg)) => List(Kw(kw), arg)
 
-  // the contracts of procedures, conjunctions of the clauses
-  def requires: Expr =
-    And(values[Expr]("requires"))
 
-  def ensures: Expr =
-    And(values[Expr]("ensures"))
-
-  // the global variables modified by procedures and loops
-  def modifies: List[Var] =
+  def modifies =
     values[List[Var]]("modifies").flatten.distinct
 
-  // the components of a lexicographic termination measure, of procedures and loops
-  def decreases: List[Expr] =
+  def decreases =
     values[Expr]("decreases")
 
-  // the invariants of loops, and the differential invariants of differential equations, in order
-  def invariants: List[Expr] =
+  def invariants =
     values[Expr]("invariant")
 
-  // the location invariants of SV-LIB (check-true), which a loop must satisfy whenever its test is evaluated,
-  // in contrast to invariants, they are not assumed, i.e., they need not be inductive
-  def checks: List[Expr] =
+  def checks =
     values[Expr]("check-true")
 
-  // the tags of SV-LIB, which link the annotations of annotate-tag commands to a procedure body or loop
-  // (see State.annotated)
-  def tags: List[Name] =
+  def tags =
     values[Name]("tag")
 
   def invariant: Expr =
     And(invariants)
 
-  // the assumption-commitment contracts of procedures over the history, for parallel composition
+  def requires =
+    And(values[Expr]("requires"))
+
+  def ensures =
+    And(values[Expr]("ensures"))
+
   def assumes: Expr =
     And(values[Expr]("assumes"))
 

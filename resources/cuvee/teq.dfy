@@ -10,16 +10,16 @@
 
 datatype {:teq} {:lean} Nat = zero | succ(pred: Nat)
 
-function {:teq} integer(n: Nat): int
+function {:teq} integer(x₀: Nat): int
 {
-  match n
+  match x₀
   case zero => 0
   case succ(m) => integer(m) + 1
 }
 
-function {:teq} natural(x: int): Nat
+function {:teq} natural(x₀: int): Nat
 {
-  if x <= 0 then zero else succ(natural(x - 1))
+  if x₀ <= 0 then zero else succ(natural(x₀ - 1))
 }
 
 datatype {:teq} {:lean} List<a₀> = nil | cons(head: a₀, tail: List<a₀>)

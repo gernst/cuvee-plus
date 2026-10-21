@@ -15,12 +15,12 @@ noncomputable def max (x : Int) (y : Int) : Int :=
 
 axiom shift (x : Int) : let (x, y) : Int × Int := (x + 1, x); y < x
 
-axiom ax_cf106bf4 :
+axiom ax_81b25f19 :
   (0 : Int) < 1
     ∧ (2.5 : ℝ) = 0.25
     ∧ (1 : Int) ≠ 2 ∧ (1 : Int) ≠ 3 ∧ (2 : Int) ≠ 3
 
-axiom ax_fe79d428 : top (cons c nil) = c
+axiom ax_ad278932 : top (cons c nil) = c
 
 -- push 1
 

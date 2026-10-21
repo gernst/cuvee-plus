@@ -9,8 +9,8 @@ type List<a₀>
 type Nat
 function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
 function earlier<a₀>(x₀: Nat, x₁: List<a₀>): a₀
-function integer(n: Nat): int
-function natural(x: int): Nat
+function integer(x₀: Nat): int
+function natural(x₀: int): Nat
 predicate p(s: List<int>)
 const J: List<int>
 const K: List<int>

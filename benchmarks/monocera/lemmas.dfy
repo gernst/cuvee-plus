@@ -7,9 +7,9 @@
 
 datatype {:teq} {:lean} Nat = zero | succ(pred: Nat)
 
-function {:teq} integer(n: Nat): int
+function {:teq} integer(x₀: Nat): int
 {
-  match n
+  match x₀
   case zero => 0
   case succ(m) => integer(m) + 1
 }

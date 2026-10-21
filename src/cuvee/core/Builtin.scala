@@ -9,8 +9,6 @@ object False extends App(Fun.false_, Nil, Sort.bool, Nil)
 
 object Skip extends Block(Nil, Nil)
 
-// calls h_ := h.send(c, v), x, h_ := h.receive(c), and h_ := h.tick(t) of the methods of the type history
-// (see hybrid.dfy), which return the history extended by an event, where the enclosing procedure must keep its commitment
 object Send extends Sugar.call("history_send", 3, 1)
 object Recv extends Sugar.call("history_receive", 2, 2)
 object Tick extends Sugar.call("history_tick", 2, 1)
@@ -49,8 +47,6 @@ object Eqv extends Sugar.binary(Fun.eqv)
 object And extends Sugar.commutative(Fun.and, True, Assoc.Left)
 object Or extends Sugar.commutative(Fun.or, False, Assoc.Left)
 
-// constants and arithmetic per numeric type, e.g. Ints.plus and Reals.plus, where Ints.div is div and Reals.div is /,
-// and mod and the successor are on Int only
 object Ints:
   val zero = Lit(BigInt(0), Sort.int)
   val one = Lit(BigInt(1), Sort.int)
@@ -60,8 +56,7 @@ object Ints:
   object plus extends Sugar.commutative(Fun.int.plus, zero, Assoc.Left)
   object minus extends Sugar.associative(Fun.int.minus, Assoc.Left)
   object times extends Sugar.commutative(Fun.int.times, one, Assoc.Left)
-  object div extends Sugar.associative(Fun.int.div, Assoc.Left)
-  // mod is not associative, and unlike div not n-ary in SMT-LIB
+  object div extends Sugar.binary(Fun.int.div)
   object mod extends Sugar.binary(Fun.int.mod)
 
   object lt extends Sugar.binary(Fun.int.lt)
@@ -69,7 +64,6 @@ object Ints:
   object gt extends Sugar.binary(Fun.int.gt)
   object ge extends Sugar.binary(Fun.int.ge)
 
-  // the successor n + 1, which matches sums with a summand 1, e.g. x + y + 1 as the successor of x + y
   object succ:
     def apply(expr: Expr) =
       plus(expr, one)
@@ -79,9 +73,8 @@ object Ints:
         case plus(args) if args.contains(one) => Some(plus(args diff List(one)))
         case _                                => None
 
-  // the coefficients must be integral; lazy, since the sugar above needs zero and one, which would build the ring
-  // before the sugar otherwise
-  lazy val ring = Ring(Sort.int, zero, num, uminus, plus, minus, times, n => Lit(n.toBigInt, Sort.int))
+  lazy val ring =
+    Ring(Sort.int, zero, num, uminus, plus, minus, times, n => Lit(n.toBigInt, Sort.int))
 
 object Reals:
   val zero = Lit(Rational(0), Sort.real)
@@ -92,17 +85,16 @@ object Reals:
   object plus extends Sugar.commutative(Fun.real.plus, zero, Assoc.Left)
   object minus extends Sugar.associative(Fun.real.minus, Assoc.Left)
   object times extends Sugar.commutative(Fun.real.times, one, Assoc.Left)
-  object div extends Sugar.associative(Fun.real.div, Assoc.Left)
+  object div extends Sugar.binary(Fun.real.div)
 
   object lt extends Sugar.binary(Fun.real.lt)
   object le extends Sugar.binary(Fun.real.le)
   object gt extends Sugar.binary(Fun.real.gt)
   object ge extends Sugar.binary(Fun.real.ge)
 
-  lazy val ring = Ring(Sort.real, zero, num, uminus, plus, minus, times, r => Lit(r, Sort.real))
+  lazy val ring =
+    Ring(Sort.real, zero, num, uminus, plus, minus, times, r => Lit(r, Sort.real))
 
-// the sugar of arithmetic on Int or Real, by which polynomials are read and printed back (see simplify.Arith),
-// where the integral coefficients on Int become integer literals
 case class Ring(
     typ: Type,
     zero: Expr,
@@ -115,23 +107,17 @@ case class Ring(
 )
 
 object Ring:
-  // the ring of `typ`, if it is Int or Real
   def apply(typ: Type): Option[Ring] =
     typ match
       case Sort.int  => Some(Ints.ring)
       case Sort.real => Some(Reals.ring)
       case _         => None
 
-// the functions on traces (see Fun.trace): counter(i, c, n) is the trace i, i + c, ..., i + n c,
-// current(X) is the last element of X, butlast(X), written ⌊X⌋, is the sequence of all but the last element of X,
-// and earlier(k, xs) is the k-th element of such a sequence
 object Counter extends Sugar.ternary(Fun.trace.counter)
 object Current extends Sugar.unary(Fun.trace.current)
 object Butlast extends Sugar.unary(Fun.trace.butlast)
 object Earlier extends Sugar.binary(Fun.trace.earlier)
 
-// the constructors of the datatypes of trace equation systems, Nat, List, and Trace of teq.dfy, as in Fun.nat, Fun.list,
-// and Fun.trace, e.g. Lists.nil(elem) and Traces.step(x, xs)
 object Nats:
   object zero:
     def apply(): Expr =
@@ -147,7 +133,6 @@ object Nats:
   object natural extends Sugar.unary(Fun.nat.natural)
 
 object Lists:
-  // the empty list needs the type of its elements
   object nil:
     def apply(elem: Type): Expr =
       App(Fun.list.nil, Nil, Sort.list(elem), Nil)
@@ -163,7 +148,6 @@ object Traces:
   object stop extends Sugar.unary(Fun.trace.stop)
   object step extends Sugar.binary(Fun.trace.step)
 
-// a value of type `typ` that is not specified, the constant unspecified of teq.dfy
 object Unspecified:
   def apply(typ: Type): Expr =
     App(Fun.trace.unspecified, Nil, typ, Nil)
@@ -171,9 +155,8 @@ object Unspecified:
   def unapply(expr: Expr): Option[Type] =
     expr match
       case App(fun, _, typ, Nil) if fun == Fun.trace.unspecified => Some(typ)
-      case _                                                      => None
+      case _                                                     => None
 
-// the tuples of the prelude of Dafny, tupleₙ(x₁, ..., xₙ), e.g. the argument of a match on several values
 object Tuples:
   def name(arity: Int) =
     Name("tuple", Some(arity))
@@ -181,11 +164,9 @@ object Tuples:
   def unapply(expr: Expr): Option[List[Expr]] =
     expr match
       case App(fun, _, _, args) if fun.name == name(args.length) => Some(args)
-      case _                                                    => None
+      case _                                                     => None
 
-// the functions on sequences, as in Fun.seq, e.g. Seqs.len(s) and Seqs.nth(s, i)
 object Seqs:
-  // the empty sequence needs the type of its elements
   object empty:
     def apply(elem: Type): Expr =
       App(Fun.seq.empty, Nil, Sort.seq(elem), Nil)
@@ -207,7 +188,6 @@ object Seqs:
   object member extends Sugar.binary(Fun.seq.member)
   object proper extends Sugar.binary(Fun.seq.proper)
 
-// the functions on finite sets, as in Fun.set
 object Sets:
   object empty:
     def apply(elem: Type): Expr =
@@ -227,7 +207,6 @@ object Sets:
   object card extends Sugar.unary(Fun.set.card)
   object proper extends Sugar.binary(Fun.set.proper)
 
-// the functions on finite multisets, as in Fun.bag
 object Bags:
   object empty:
     def apply(elem: Type): Expr =
@@ -249,9 +228,7 @@ object Bags:
   object select extends Sugar.binary(Fun.bag.select)
   object proper extends Sugar.binary(Fun.bag.proper)
 
-// the functions on finite maps, as in Fun.map
 object FinMaps:
-  // the empty map needs the types of its keys and values
   object empty:
     def apply(key: Type, value: Type): Expr =
       App(Fun.map.empty, Nil, Sort.map(key, value), Nil)
@@ -276,8 +253,25 @@ object FinMaps:
 // where indexed functions are named by their indexed identifier, e.g. "_ extract 7 0" for (_ extract 7 0)
 object BitVecs:
   val unary = Set("bvnot", "bvneg")
-  val binary = Set("bvand", "bvor", "bvxor", "bvnand", "bvnor", "bvxnor", "bvadd", "bvsub", "bvmul",
-    "bvudiv", "bvurem", "bvsdiv", "bvsrem", "bvsmod", "bvshl", "bvlshr", "bvashr")
+  val binary = Set(
+    "bvand",
+    "bvor",
+    "bvxor",
+    "bvnand",
+    "bvnor",
+    "bvxnor",
+    "bvadd",
+    "bvsub",
+    "bvmul",
+    "bvudiv",
+    "bvurem",
+    "bvsdiv",
+    "bvsrem",
+    "bvsmod",
+    "bvshl",
+    "bvlshr",
+    "bvashr"
+  )
   val comparisons = Set("bvult", "bvule", "bvugt", "bvuge", "bvslt", "bvsle", "bvsgt", "bvsge")
   val indexed = Set("extract", "zero_extend", "sign_extend", "repeat", "rotate_left", "rotate_right")
 
@@ -296,17 +290,17 @@ object BitVecs:
       Some(Fun(name_, Nil, Fun.formals(widths.map(BitVec(_))*), res))
 
     (name, indices, widths) match
-      case (_, Nil, List(n)) if unary contains name                    => instance(BitVec(n))
-      case (_, Nil, List(n, m)) if (binary contains name) && n == m    => instance(BitVec(n))
+      case (_, Nil, List(n)) if unary contains name                      => instance(BitVec(n))
+      case (_, Nil, List(n, m)) if (binary contains name) && n == m      => instance(BitVec(n))
       case (_, Nil, List(n, m)) if (comparisons contains name) && n == m => instance(Sort.bool)
-      case ("bvcomp", Nil, List(n, m)) if n == m                       => instance(BitVec(1))
-      case ("bv2nat", Nil, List(n))                                    => instance(Sort.int)
-      case ("concat", Nil, List(n, m))                                 => instance(BitVec(n + m))
-      case ("extract", List(i, j), List(n)) if j <= i && i < n         => instance(BitVec(i - j + 1))
-      case ("zero_extend" | "sign_extend", List(k), List(n))           => instance(BitVec(n + k))
-      case ("repeat", List(k), List(n)) if 0 < k                       => instance(BitVec(n * k))
-      case ("rotate_left" | "rotate_right", List(k), List(n))          => instance(BitVec(n))
-      case _                                                           => None
+      case ("bvcomp", Nil, List(n, m)) if n == m                         => instance(BitVec(1))
+      case ("bv2nat", Nil, List(n))                                      => instance(Sort.int)
+      case ("concat", Nil, List(n, m))                                   => instance(BitVec(n + m))
+      case ("extract", List(i, j), List(n)) if j <= i && i < n           => instance(BitVec(i - j + 1))
+      case ("zero_extend" | "sign_extend", List(k), List(n))             => instance(BitVec(n + k))
+      case ("repeat", List(k), List(n)) if 0 < k                         => instance(BitVec(n * k))
+      case ("rotate_left" | "rotate_right", List(k), List(n))            => instance(BitVec(n))
+      case _                                                             => None
 
   // the bitvector literal of width n with `value`, between 0 and 2^n - 1
   def lit(value: BigInt, n: Int): Lit =

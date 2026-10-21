@@ -17,7 +17,7 @@ noncomputable def g (s : List Int) (a : Int → Int) (i : Int) : Int :=
   else
     (fun j => if j = i then 0 else a j) i
 
-axiom ax_f0a4b875 (x : Int) : f x ≥ 0
+axiom ax_d392b9a7 (x : Int) : f x ≥ 0
 
 @[simp] axiom length_nil {α : Type} [Inhabited α] : length (Nil : List α) = 0
 

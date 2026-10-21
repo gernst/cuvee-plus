@@ -178,6 +178,16 @@ items on the simplifier hold for both copies.
   matches on a formal into cases. `Rule.from` does not substitute the pattern
   for the formal; it could use `Rec.from`. `Rule.from` accumulates premises
   with `if cond == True then ... else And(...)`.
+- `Fun` equality includes the names of the formals (the overrides of
+  `equals` and `hashCode` are gone), hence the formals of constructors are
+  `x₀`, `x₁`, ... in all frontends, as in `Fun`, and so are those of the
+  functions of `teq.dfy`. Open:
+  `Fuse.fuse` gives its `Rec` the variables of the request as formals, while
+  the cases call `hf` with formals `ff.formals ++ ys`, so `Rec.funs`
+  (`- fun`) keeps the recursive calls, `Rec.retype` (`fun_ == fun`) sees a
+  change, and the patterns of `Type.check(Rec)` do not apply `fun`; `Fuse`
+  should keep `hf` and rename its cases instead. `legacy/teq.dfy` and
+  `legacy/core.dfy` still use other names.
 - `Subst.apply(attrs)` maps expressions only, so `modifies` lists are neither
   renamed nor retyped, while `Type.expand(attrs)` handles them
   (→ `Attrs.map` with a function for variables).

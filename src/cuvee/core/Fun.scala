@@ -15,30 +15,18 @@ case class Sig(name: Name, sorts: List[Option[Sig]]):
         case (Some(sig), Some(sig_)) => sig <= sig_
         case _                       => false
 
-// functions are equal if their names and signatures are, regardless of the names of the formal parameters,
-// e.g. the declarations of built-in functions in the preludes and the values below
+// functions are equal if their names, signatures, and the names of their formal parameters are, hence the
+// declarations of built-in functions in the preludes name the formals as the values below
 case class Fun(name: Name, params: List[Param], formals: List[Var], res: Type):
   def args = formals.types
   def arity = formals.length
   def sig = Sig(name, args.sig)
-
-  override def equals(that: Any) =
-    that match
-      case Fun(name_, params_, formals_, res_) =>
-        name == name_ && params == params_ && args == formals_.types && res == res_
-
-      case _ =>
-        false
-
-  override def hashCode =
-    (name, params, args, res).hashCode
 
 object Fun:
   import Param.a
   import Param.b
   import Sort.bool
 
-  // formal parameters are named x$0, x$1, ... as for functions declared in SMT-LIB
   def formals(types: Type*) =
     Expr.vars("x", types.toList)
 
@@ -126,9 +114,6 @@ object Fun:
 
     val all = List(empty, singleton, card, member, keys, values, subset, get, update, minus, store)
 
-  // the functions on traces and lists of trace equation systems: counter(i, c, n) is the trace i, i + c, ..., i + n c
-  // of n steps (a Nat), current the last element of a trace, butlast (written ⌊X⌋) all but the last element,
-  // earlier the elements of lists at a Nat
   object trace:
     val counter = Fun("counter", Nil, formals(Sort.int, Sort.int, Sort.nat), Sort.trace(Sort.int))
     val current = Fun("current", List(a), formals(Sort.trace(a)), a)
@@ -137,21 +122,15 @@ object Fun:
 
     val all = List(counter, current, butlast, earlier)
 
-    // a value that is not specified, e.g. of an update without cases, the constant of teq.dfy
     val unspecified = Fun("unspecified", List(a), Nil, a)
 
-    // the constructors of the datatype Trace of teq.dfy, the last value, or a value followed by the remaining trace
     val stop = Fun("stop", List(a), formals(a), Sort.trace(a))
     val step = Fun("step", List(a), formals(a, Sort.trace(a)), Sort.trace(a))
 
-  // the constructors of the datatypes Nat and List of teq.dfy, which are equal to those that it declares,
-  // since the type parameters are numbered as there
   object nat:
     val zero = Fun("zero", Nil, Nil, Sort.nat)
     val succ = Fun("succ", Nil, formals(Sort.nat), Sort.nat)
 
-    // the value of a natural as an integer, and the natural of an integer, zero for those that are not positive,
-    // e.g. of the values of a counter as indices
     val integer = Fun("integer", Nil, formals(Sort.nat), Sort.int)
     val natural = Fun("natural", Nil, formals(Sort.int), Sort.nat)
 
@@ -166,7 +145,6 @@ object Fun:
   val and = Fun("and", Nil, formals(bool, bool), bool)
   val or = Fun("or", Nil, formals(bool, bool), bool)
 
-  // arithmetic and comparison, which SMT-LIB overloads for Int and Real
   object int:
     val uminus = Fun("-", Nil, formals(Sort.int), Sort.int)
     val plus = Fun("+", Nil, formals(Sort.int, Sort.int), Sort.int)

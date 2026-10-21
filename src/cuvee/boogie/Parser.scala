@@ -74,10 +74,9 @@ class Parser(var state: State):
                   state = state.declare(sel, params_, List(this_), typ_, Attrs.empty)
                   state.funs((sel, 1))
 
-              // the formal parameters of constructors are named after the selectors
-              val formals_ =
-                for sel_ <- sels_
-                yield state.exprs.formal(sel_.name, sel_.res)
+              // the formal parameters of constructors are numbered as in SMT-LIB, such that they coincide with the
+              // built-in constructors (see core.Fun)
+              val formals_ = core.Expr.vars("x", sels_.map(_.res))
 
               state = state.declare(constr, params_, formals_, sort_, Attrs.empty)
               (state.funs((constr, formals_.length)), sels_)
