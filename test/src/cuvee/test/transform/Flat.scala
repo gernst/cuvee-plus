@@ -11,8 +11,7 @@ import cuvee.Cuvee
 object FlatHorn extends TestSuite:
   val tests =
     Examples.tests(Examples.find(os.sub / "dafny" / "horn", "dfy")): file =>
-      Examples.show(List("-chc", "-entry", "main", "-flat", "-z3", file.toString))
-      val (_, results) = Cuvee.run("-chc", "-entry", "main", "-flat", "-z3", file.toString)
+      val results = Examples.answers("-chc", "-entry", "main", "-flat", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
@@ -23,6 +22,5 @@ object Flat extends TestSuite:
 
   val tests = Tests:
     test("satisfiable"):
-      Examples.show(List("-flat", "-z3", file))
-      val (_, results) = Cuvee.run("-flat", "-z3", file)
+      val results = Examples.answers("-flat", "-z3", file)
       Examples.status(results) ==> Status.Sat

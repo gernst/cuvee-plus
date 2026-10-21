@@ -65,6 +65,14 @@ object Examples:
   def status(results: List[cuvee.core.Result]): cuvee.core.Status =
     results.collect { case status: cuvee.core.Status => status }.last
 
+  // runs Cuvee on `args` and returns what it reports, e.g. the answers of the solver and the errors (see Report.collect)
+  def answers(args: String*): List[cuvee.core.Result] =
+    show(args)
+    val buffer = mutable.ListBuffer[cuvee.core.Result]()
+    val config = cuvee.Config.parse(cuvee.Config.default, args.toList).copy(report = (_, _) => cuvee.pipe.Report.collect(buffer))
+    Cuvee.pipe(config, Nil)
+    buffer.toList
+
   // the options of the languages that an example needs, among those of the command line in its first line,
   // i.e., -hybrid, and the declarations of teq.dfy without its transform for -teq (-known teq), e.g. for inputs that
   // use its types Nat and List
@@ -124,16 +132,16 @@ object Examples:
   // runs Cuvee on `args` and returns the messages of all errors that are reported
   def errors(args: String*): List[String] =
     show(args)
-    val (_, results) = Cuvee.run(args*)
-    results.collect { case error: Error => error.msg }
+    val (_, errors) = Cuvee.run(args*)
+    errors.map(_.msg)
 
   // runs Cuvee on `args` and returns the commands that reach the sink, i.e., after all transforms,
   // except for the prelude of the frontend, together with the messages of all errors that are reported
   def output(args: String*): (List[Cmd], List[String]) =
     show(args)
     val buffer = mutable.ListBuffer[Cmd]()
-    val (_, results) = Cuvee.run(args.toList, List(Sink.collect(buffer)))
-    (buffer.toList.filterNot(prelude(args*).contains), results.collect { case error: Error => error.msg })
+    val (_, errors) = Cuvee.run(args.toList, List(Sink.collect(buffer)))
+    (buffer.toList.filterNot(prelude(args*).contains), errors.map(_.msg))
 
   // the commands that the stages pass on, before the declarations known to the receiver are dropped (see Cuvee.pipe),
   // e.g. the lemma database injected by -teq, with the messages of the errors that are reported
@@ -145,8 +153,8 @@ object Examples:
     val (init, cmds) = config.input.source(config, config.reader)
     val buffer = mutable.ListBuffer[Cmd]()
     val report = cuvee.pipe.Report.stream(new java.io.PrintStream(java.io.OutputStream.nullOutputStream), config.input.printer)
-    val (_, _, results) = cuvee.pipe.Pipe.run(cmds #::: LazyList(cuvee.core.Done), config.stages(init, Sink.collect(buffer)), report, incremental = false)
-    (buffer.toList, results.collect { case error: Error => error.msg })
+    val (_, _, errors) = cuvee.pipe.Pipe.run(cmds #::: LazyList(cuvee.core.Done), config.stages(init, Sink.collect(buffer)), report, incremental = false)
+    (buffer.toList, errors.map(_.msg))
 
   // the commands of the prelude of the frontend of the input file in `args`
   def prelude(args: String*): List[Cmd] =

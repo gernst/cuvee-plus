@@ -11,8 +11,7 @@ object BitVectors extends TestSuite:
   val tests = Tests:
     test("solver"):
       val file = Examples.root / "smtlib" / "language" / "bitvectors.smt2"
-      Examples.show(List("-z3", file.toString))
-      val (_, results) = Cuvee.run("-z3", file.toString)
+      val results = Examples.answers("-z3", file.toString)
       Examples.status(results) ==> Status.Unsat
 
 // malformed answers of solvers and malformed applications of sugar are errors, not internal errors

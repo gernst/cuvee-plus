@@ -13,6 +13,5 @@ object Monomorph extends TestSuite:
 
   val tests = Tests:
     test("solver"):
-      Examples.show(List("-monomorph", "-z3", file))
-      val (_, results) = Cuvee.run("-monomorph", "-z3", file)
+      val results = Examples.answers("-monomorph", "-z3", file)
       Examples.status(results) ==> Status.Sat

@@ -79,6 +79,12 @@ extension (self: Iterable[Prog])
   @targetName("Progs.mod")
   def mod = self.flatMap(_.mod).toSet
 
+  @targetName("Progs.free")
+  def free = self.flatMap(_.free).toSet
+
+  @targetName("Progs.funs")
+  def funs = self.flatMap(_.funs).toSet
+
 extension (self: List[Expr])
   @targetName("Exprs.types")
   def types = self.map(_.typ)

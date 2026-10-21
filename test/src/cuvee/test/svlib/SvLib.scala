@@ -20,8 +20,7 @@ object Horn extends TestSuite:
 
   val tests =
     Examples.tests(Examples.find(os.sub / "svlib", "svlib").filter(stated)): file =>
-      Examples.show(List("-chc", "-z3", file.toString))
-      val (_, results) = Cuvee.run("-chc", "-z3", file.toString)
+      val results = Examples.answers("-chc", "-z3", file.toString)
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
 // the annotations of annotate-tag commands are attached to the procedures and loops by the transforms,

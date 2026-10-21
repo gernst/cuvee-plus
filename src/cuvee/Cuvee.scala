@@ -37,22 +37,22 @@ object Cuvee extends util.Main:
         System.out.flush()
         sys.exit(code)
 
-  def run(args: String*): (List[Cmd], List[Result]) =
+  def run(args: String*): (List[Cmd], List[Error]) =
     run(args.toList)
 
-  def run(args: List[String], sinks: List[Sink] = Nil): (List[Cmd], List[Result]) =
-    val (_, cmds, results) = pipe(args, sinks)
-    (cmds, results)
+  def run(args: List[String], sinks: List[Sink] = Nil): (List[Cmd], List[Error]) =
+    val (_, cmds, errors) = pipe(args, sinks)
+    (cmds, errors)
 
-  def pipe(args: List[String], sinks: List[Sink]): (Int, List[Cmd], List[Result]) =
+  def pipe(args: List[String], sinks: List[Sink]): (Int, List[Cmd], List[Error]) =
     pipe(Config.parse(Config.default, args), sinks)
 
-  def pipe(args: List[String]): (Int, List[Cmd], List[Result]) =
+  def pipe(args: List[String]): (Int, List[Cmd], List[Error]) =
     pipe(args, Nil)
 
   // the output is additionally passed to `sinks`, e.g. to collect the commands in tests,
-  // returns the exit code, the processed commands, and the results (see Pipe.run)
-  def pipe(config: Config, sinks: List[Sink]): (Int, List[Cmd], List[Result]) =
+  // returns the exit code, the processed commands, and the errors (see Pipe.run)
+  def pipe(config: Config, sinks: List[Sink]): (Int, List[Cmd], List[Error]) =
     Debug.modules = config.debug
 
     // fresh names are deterministic per run
@@ -68,7 +68,7 @@ object Cuvee extends util.Main:
       catch
         case result: Error =>
           config.report(config, config.input.printer).report(result, false)
-          return (Pipe.errorCode, Nil, List(result))
+          return (Pipe.ExternalError, Nil, List(result))
 
     // the declarations that the receiver knows are dropped before it, e.g. the prelude of the language of the output
     // for a printer, before further sinks, e.g. of tests, which therefore see what the receiver sees;

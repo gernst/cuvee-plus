@@ -85,13 +85,13 @@ case class Call(proc: Name, args: List[Expr], res: List[Var]) extends Prog:
 // which State.annotated asserts at its beginning
 case class Block(locals: List[Var], progs: List[Prog], attrs: Attrs = Attrs.empty) extends Prog:
   def mod = progs.mod -- locals
-  def free = (progs.flatMap(_.free).toSet ++ attrs.free) -- locals
-  def funs = progs.flatMap(_.funs).toSet ++ attrs.funs
+  def free = (progs.free ++ attrs.free) -- locals
+  def funs = progs.funs ++ attrs.funs
 
 case class Choice(progs: List[Prog]) extends Prog:
   def mod = progs.mod
-  def free = progs.flatMap(_.free).toSet
-  def funs = progs.flatMap(_.funs).toSet
+  def free = progs.free
+  def funs = progs.funs
 
 object Choice extends (List[Prog] => Choice):
   // the alternatives of nested choices
@@ -113,8 +113,6 @@ case class While(test: Expr, body: Prog, attrs: Attrs) extends Prog:
   def free = test.free ++ body.free ++ attrs.free
   def funs = test.funs ++ body.funs ++ attrs.funs
 
-// a loop with a nondeterministic number of iterations, while * { body },
-// which corresponds to the repetition of hybrid programs in dL
 case class Iter(body: Prog, attrs: Attrs) extends Prog:
   def mod = body.mod
   def free = body.free ++ attrs.free
@@ -135,8 +133,8 @@ case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attr
 // "assumes" and "commits"; the programs must not share the variables that they modify, other than the history
 case class Par(progs: List[Prog]) extends Prog:
   def mod = progs.mod
-  def free = progs.flatMap(_.free).toSet
-  def funs = progs.flatMap(_.funs).toSet
+  def free = progs.free
+  def funs = progs.funs
 
 object Par:
   // the variables modified by a program, including the global variables modified by the procedures it calls,

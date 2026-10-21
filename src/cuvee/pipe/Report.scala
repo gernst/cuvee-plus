@@ -25,10 +25,11 @@ object Report:
           for (line <- printer.lines(result))
             stream.println(line)
 
+  // all results except success, which is collected only with print-success, e.g. unsupported in tests
   class collect(buffer: mutable.ListBuffer[Result]) extends Report:
     def report(result: Result, printSuccess: Boolean) =
       result match
-        case ack: Ack if !printSuccess =>
+        case Ack.Success if !printSuccess =>
         // suppressed response
 
         case _ =>

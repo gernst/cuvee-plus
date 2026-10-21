@@ -21,18 +21,18 @@ trait Sink:
   // the answer to `last`, and the answers to the queries among `cmds` together with those added in front of `last`,
   // where the answers to each query follow the same rule as in Pipe.run, and queries without answer are skipped
   def query(cmds: List[Cmd], last: Cmd): (Result, List[Result], Sink) =
-    val (answers, sink) =
-      cmds.foldLeft((Nil: List[Result], this)):
-        case ((answers, sink), cmd: Query) =>
-          val (result, added, sink_) = sink.query(cmd)
-          val result_ = if result == Ack.Done then answers ++ added else answers :+ result
-          (result_, sink_)
+    cmds match
+      case Nil =>
+        query(last)
 
-        case ((answers, sink), cmd) =>
-          (answers, sink.exec(cmd))
+      case (cmd: Query) :: rest =>
+        val (result, added, sink) = query(cmd)
+        val answers = if result == Ack.Done then added else List(result)
+        val (result_, added_, sink_) = sink.query(rest, last)
+        (result_, answers ++ added_, sink_)
 
-    val (result, added, sink_) = sink.query(last)
-    (result, answers ++ added, sink_)
+      case cmd :: rest =>
+        exec(cmd).query(rest, last)
 
   def exec(cmd: Cmd) =
     val (_, _, sink) = query(cmd)

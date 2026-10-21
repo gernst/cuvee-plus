@@ -13,11 +13,12 @@ import cuvee.sexpr.Id
 // print-success is handled here, since it concerns the reports, not the sinks;
 // errors are reported and stop the run unless it is incremental, which continues with the next command;
 // other exceptions are reported as internal errors and always stop the run;
-// returns the exit code of the run (see Cuvee.main), the commands that were processed, and the results,
-// 0 if it was not stopped or only by an error of an incremental run
+// returns the exit code of the run (see Cuvee.main), 0 if it was not stopped or only by an error of an incremental
+// run, the commands that were processed, and the errors, whereas the other results are only reported (see
+// Report.collect)
 object Pipe:
-  val errorCode = 1
-  val internalCode = 2
+  val ExternalError = 1
+  val InternalError = 2
 
   // exceptions other than Error, whose stack trace is printed with -debug internal
   def internal(cause: Throwable): Error =
@@ -34,7 +35,7 @@ object Pipe:
     var code = 0
 
     val done = mutable.ListBuffer[Cmd]()
-    val results = mutable.ListBuffer[Result]()
+    val errors = mutable.ListBuffer[Error]()
 
     try
       Breaks.breakable:
@@ -60,9 +61,7 @@ object Pipe:
 
                 if answers.nonEmpty then
                   for result <- answers
-                  do
-                    report.report(result, printSuccess)
-                    results.append(result)
+                  do report.report(result, printSuccess)
                   if cmd != Done then done.append(cmd)
 
                 if cmd == Exit
@@ -75,10 +74,10 @@ object Pipe:
 
                   if cmd != Done then
                     done.append(cmd)
-                  results.append(result)
+                  errors.append(result)
 
                   if (!incremental)
-                    code = errorCode
+                    code = ExternalError
                     Breaks.break()
 
                 case NonFatal(cause) =>
@@ -87,21 +86,21 @@ object Pipe:
 
                   if cmd != Done then
                     done.append(cmd)
-                  results.append(result)
-                  code = internalCode
+                  errors.append(result)
+                  code = InternalError
                   Breaks.break()
 
     catch
       // catches parse errors, which have no command
       case result: Error =>
         report.report(result, printSuccess)
-        results.append(result)
-        if !incremental then code = errorCode
+        errors.append(result)
+        if !incremental then code = ExternalError
 
       case NonFatal(cause) =>
         val result = internal(cause)
         report.report(result, printSuccess)
-        results.append(result)
-        code = internalCode
+        errors.append(result)
+        code = InternalError
 
-    (code, done.toList, results.toList)
+    (code, done.toList, errors.toList)

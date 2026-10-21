@@ -13,8 +13,7 @@ object Horn extends TestSuite:
   // the other examples are not covered, since their procedures with a body have contracts
   val tests =
     Examples.tests(Examples.find(os.sub / "boogie" / "horn", "bpl")): file =>
-      Examples.show(List("-chc", "-entry", "main", "-monomorph", "-z3", file.toString))
-      val (_, results) = Cuvee.run("-chc", "-entry", "main", "-monomorph", "-z3", file.toString)
+      val results = Examples.answers("-chc", "-entry", "main", "-monomorph", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
       Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
 
@@ -51,6 +50,5 @@ object Globals extends TestSuite:
 
     test("unsupported by solvers"):
       val file = Examples.root / "boogie" / "parsing" / "unsupported.bpl"
-      Examples.show(List("-z3", file.toString))
-      val (_, results) = Cuvee.run("-z3", file.toString)
+      val results = Examples.answers("-z3", file.toString)
       assert(results.contains(Ack.Unsupported))
