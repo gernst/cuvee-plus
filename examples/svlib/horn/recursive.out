@@ -24,17 +24,17 @@
 
 (assert
   (forall
-    ((n Int) (r1$2 Int))
+    ((n Int) (r1$1 Int))
     (=>
       (and (count_pre n) (<= n 0))
-      (count_assign_2 n 0 r1$2))))
+      (count_assign_2 n 0 r1$1))))
 
 (assert
   (forall
-    ((n Int) (r Int) (r1$2 Int))
+    ((n Int) (r Int) (r1$1 Int))
     (=>
-      (count_assign_2 n r r1$2)
-      (count_join_1 n r r1$2))))
+      (count_assign_2 n r r1$1)
+      (count_join_1 n r r1$1))))
 
 (assert
   (forall
@@ -52,33 +52,33 @@
 
 (assert
   (forall
-    ((n Int) (r Int) (r1$3 Int))
+    ((n Int) (r Int) (r1$2 Int))
     (=>
       (and
         (count_pre n)
         (not (<= n 0))
-        (count_post (- n 1) r1$3))
-      (count_call_3 n r r1$3))))
+        (count_post (- n 1) r1$2))
+      (count_call_3 n r r1$2))))
 
 (assert
   (forall
-    ((n Int) (r Int) (r1$2 Int))
+    ((n Int) (r Int) (r1$1 Int))
     (=>
-      (count_call_3 n r r1$2)
-      (count_assign_4 n (+ 1 r1$2) r1$2))))
+      (count_call_3 n r r1$1)
+      (count_assign_4 n (+ 1 r1$1) r1$1))))
 
 (assert
   (forall
-    ((n Int) (r Int) (r1$2 Int))
+    ((n Int) (r Int) (r1$1 Int))
     (=>
-      (count_assign_4 n r r1$2)
-      (count_join_1 n r r1$2))))
+      (count_assign_4 n r r1$1)
+      (count_join_1 n r r1$1))))
 
 (assert
   (forall
-    ((n Int) (r Int) (r1$2 Int))
+    ((n Int) (r Int) (r1$1 Int))
     (=>
-      (count_join_1 n r r1$2)
+      (count_join_1 n r r1$1)
       (count_post n r))))
 
 (declare-const main_pre Bool)
@@ -96,49 +96,45 @@
 
 (assert
   (forall
-    ((result Int) (r2$5 Int))
+    ((result Int) (r2$4 Int))
     (=>
-      (and main_pre (count_post 3 r2$5))
-      (main_call_1 result r2$5))))
+      (and main_pre (count_post 3 r2$4))
+      (main_call_1 result r2$4))))
 
 (assert
   (forall
-    ((result Int) (r2$4 Int))
+    ((result Int) (r2$3 Int))
     (=>
-      (main_call_1 result r2$4)
-      (= r2$4 3))))
+      (main_call_1 result r2$3)
+      (= r2$3 3))))
 
 (assert
   (forall
-    ((result Int) (r2$4 Int))
+    ((result Int) (r2$3 Int))
     (=>
       (and
-        (main_call_1 result r2$4)
+        (main_call_1 result r2$3)
         true)
-      (main_spec_2 result r2$4))))
+      (main_spec_2 result r2$3))))
 
 (assert
   (forall
-    ((result Int) (r2$4 Int))
+    ((result Int) (r2$3 Int))
     (=>
-      (main_spec_2 result r2$4)
-      (main_assign_3 0 r2$4))))
+      (main_spec_2 result r2$3)
+      (main_assign_3 0 r2$3))))
 
 (assert
   (forall
-    ((result Int) (r2$4 Int))
+    ((result Int) (r2$3 Int))
     (=>
-      (main_assign_3 result r2$4)
+      (main_assign_3 result r2$3)
       (main_post result))))
 
 (assert (=> true main_pre))
 
 (assert
   (=> (not true) false))
-
-(check-sat)
-
-(verify-call main ())
 
 (check-sat)
 

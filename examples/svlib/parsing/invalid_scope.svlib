@@ -1,6 +1,6 @@
 ; ./Cuvee.sh examples/svlib/parsing/invalid_scope.svlib
-; the variables of an annotation are resolved in the scope of the tagged statement, the local variable y of add
-; is not in scope at the body of main, which has the same tag
+; the variables of an annotation are resolved in the scope of the tagged statement, the input y0 of add is not
+; in scope at the body of main, which has the same tag
 
 (define-proc add
   ((x0 Int) (y0 Int))
@@ -17,4 +17,4 @@
   ()
   (! (call add (1 2) (r)) :tag body))
 
-(annotate-tag body :check-true (<= 0 y))
+(annotate-tag body :check-true (<= 0 y0))

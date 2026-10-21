@@ -4,24 +4,22 @@
   add
   ((x0 Int) (y0 Int))
   ((x Int))
-  (block
-    (locals (y Int))
-    (assign (x x0) (y y0))
-    (while
-      (< 0 y)
-      (assign (x (+ x 1)) (y (- y 1)) (g (+ g 1)))
-      :tag
-      while-loop
-      :invariant
-      (and
-        (<= 0 y)
-        (= (+ x y) (+ x0 y0)))
-      :modifies
-      (g)))
-  :tag
-  proc-add
-  :modifies
-  (g))
+  ((y Int))
+  (!
+    (sequence
+      (assign (x x0) (y y0))
+      (!
+        (while
+          (< 0 y)
+          (assign (x (+ x 1)) (y (- y 1)) (g (+ g 1))))
+        :tag
+        while-loop
+        :invariant
+        (and
+          (<= 0 y)
+          (= (+ x y) (+ x0 y0)))))
+    :tag
+    proc-add))
 
 (annotate-tag proc-add :requires (<= 0 y0) :ensures (= x (+ x0 y0)))
 

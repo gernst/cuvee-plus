@@ -2,25 +2,11 @@ package cuvee.core
 
 import util.Name
 
-case class Sig(name: Name, sorts: List[Option[Sig]]):
-  infix def <=(that: Sig): Boolean =
-    val Sig(name_, sorts_) = that
-    if name != name_
-    then false
-    else if sorts.length != sorts_.length
-    then false
-    else
-      (sorts zip sorts_).forall:
-        case (_, None)               => true
-        case (Some(sig), Some(sig_)) => sig <= sig_
-        case _                       => false
-
 // functions are equal if their names, signatures, and the names of their formal parameters are, hence the
 // declarations of built-in functions in the preludes name the formals as the values below
 case class Fun(name: Name, params: List[Param], formals: List[Var], res: Type):
   def args = formals.types
   def arity = formals.length
-  def sig = Sig(name, args.sig)
 
 object Fun:
   import Param.a

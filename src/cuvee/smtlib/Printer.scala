@@ -235,20 +235,26 @@ object Printer extends cuvee.pipe.Printer:
       case DeclareVar(Var(name, typ), _) =>
         apps(atom("declare-var"), mangle(name), lines(typ))
 
+      // not part of SV-LIB: procedures without body, whose contract and modifies clause are attributes;
       // the formal parameters are named, since the contract may refer to them
       case DeclareProc(Proc(name, Nil, in, out), attrs) =>
         apps(atom("declare-proc"), mangle(name), list(formals(in)), list(formals(out)), lines(attrs))
-
-      case DefineProc(Proc(name, Nil, in, out), body, attrs) =>
-        apps(atom("define-proc"), mangle(name), list(formals(in)), list(formals(out)), lines(body), lines(attrs))
 
       case DeclareProc(Proc(name, params, in, out), attrs) =>
         val body_ = apps(atom("par"), list(lines(params)), list(formals(in)), list(formals(out)), lines(attrs))
         apps(atom("declare-proc"), mangle(name), body_)
 
+      // the local variables of a procedure are those of the block of its body, its properties annotate the body,
+      // without the modifies clause, which the parser infers (see Parser.procedure)
+      case DefineProc(Proc(name, Nil, in, out), body, attrs) =>
+        val (locals, body_) = procedure(body, attrs)
+        apps(atom("define-proc"), mangle(name), list(formals(in)), list(formals(out)), list(formals(locals)), body_)
+
+      // not part of SV-LIB: polymorphic procedures
       case DefineProc(Proc(name, params, in, out), body, attrs) =>
-        val body_ = apps(atom("par"), list(lines(params)), list(formals(in)), list(formals(out)), lines(body), lines(attrs))
-        apps(atom("define-proc"), mangle(name), body_)
+        val (locals, body_) = procedure(body, attrs)
+        val sig = apps(atom("par"), list(lines(params)), list(formals(in)), list(formals(out)), list(formals(locals)), body_)
+        apps(atom("define-proc"), mangle(name), sig)
 
       // the commands of SV-LIB, whose attributes are resolved already (see svlib.Parser)
       case AnnotateTag(tag, attrs) =>
@@ -445,25 +451,49 @@ object Printer extends cuvee.pipe.Printer:
           require(cases.forall(_.cond == True))
         apps(atom("match"), lines(arg), list(for Case(pat, body, _) <- cases; line <- apps(lines(pat), lines(body)) yield line))
 
+  // the local variables and the annotated body of a procedure (see DefineProc)
+  def procedure(body: Prog, attrs: Attrs): (List[Var], List[String]) =
+    val (locals, progs) =
+      body match
+        case Block(locals, progs, _) => (locals, progs)
+        case _                       => (Nil, List(body))
+
+    (locals, annotated(apps(atom("sequence"), lines(progs)), properties(attrs)))
+
+  // the properties of a procedure or loop, without its modifies clause, which the parser infers
+  def properties(attrs: Attrs): List[String] =
+    lines(Attrs(attrs.attrs.filterNot(_._1 == "modifies")))
+
+  // (! s attrs), or s without attributes
+  def annotated(prog: List[String], attrs: List[String]): List[String] =
+    if attrs.isEmpty
+    then prog
+    else apps(atom("!"), prog, attrs)
+
+  // the statements of SV-LIB, and those that it does not have: blocks with local variables, spec, abort, iter, ode,
+  // and par; an assertion is a location invariant of the empty statement
   def lines(prog: Prog): List[String] =
     prog match
       case Break =>
-        apps(atom("break"))
+        app("break")
 
       case Continue =>
-        apps(atom("continue"))
+        app("continue")
 
       case Return =>
-        apps(atom("return"))
+        app("return")
+
+      case Spec(Nil, True, True) =>
+        app("sequence")
 
       case Spec(Nil, False, True) =>
-        apps(atom("abort"))
+        app("abort")
 
       case Spec(Nil, True, phi) =>
         apps(atom("assume"), lines(phi))
 
       case Spec(Nil, phi, True) =>
-        apps(atom("assert"), lines(phi))
+        apps(atom("!"), app("sequence"), kw("check-true"), lines(phi))
 
       case Spec(xs, True, True) =>
         apps(atom("havoc"), lines(xs))
@@ -477,31 +507,29 @@ object Printer extends cuvee.pipe.Printer:
       case Call(proc, args, res) =>
         apps(atom("call"), mangle(proc), list(lines(args)), list(lines(res)))
 
-      // the attributes of a sequence of SV-LIB, e.g. its tags, as its annotation, (! (sequence ...) :tag t)
-      case Block(Nil, progs, attrs) if !attrs.isEmpty =>
-        apps(atom("!"), apps(atom("sequence"), lines(progs)), lines(attrs))
+      case Block(Nil, progs, attrs) =>
+        annotated(apps(atom("sequence"), lines(progs)), properties(attrs))
 
-      case Block(locals, progs, attrs) if !attrs.isEmpty =>
-        apps(atom("!"), lines(Block(locals, progs)), lines(attrs))
-
-      case Block(locals, progs, _) =>
-        apps(mangle("block"), apps(mangle("locals"), formals(locals)), lines(progs))
+      case Block(locals, progs, attrs) =>
+        annotated(apps(atom("block"), apps(atom("locals"), formals(locals)), lines(progs)), properties(attrs))
 
       case Choice(progs) =>
-        apps(atom("choose"), lines(progs))
+        apps(atom("choice"), lines(progs))
+
+      case If(test, left, Block(Nil, Nil, attrs)) if attrs.isEmpty =>
+        apps(atom("if"), lines(test), lines(left))
 
       case If(test, left, right) =>
         apps(atom("if"), lines(test), lines(left), lines(right))
 
       case While(test, body, attrs) =>
-        apps(atom("while"), lines(test), lines(body), lines(attrs))
+        annotated(apps(atom("while"), lines(test), lines(body)), properties(attrs))
 
       case Iter(body, attrs) =>
-        apps(atom("iter"), lines(body), lines(attrs))
+        annotated(apps(atom("iter"), lines(body)), properties(attrs))
 
       case Ode(time, xs, rhs, dom, attrs) =>
-        apps(atom("ode"), lines(time), list(eqs(xs, rhs)), lines(dom), lines(attrs))
+        annotated(apps(atom("ode"), lines(time), list(eqs(xs, rhs)), lines(dom)), properties(attrs))
 
-      // not part of SMT-LIB, the programs in parallel, e.g. (par (call ...) ...)
       case Par(progs) =>
         apps(atom("par"), lines(progs))

@@ -20,15 +20,18 @@ object Simplify extends Transform:
   // debug output is printed with the printer of the configuration;
   // with -rules, the rules applied to an assertion follow it as (set-info :used ((name count) ...)), also if it
   // simplifies to true and is dropped (see used)
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
     val rules = Rules.from(state, prefix ++ cmds)
 
-    for
-      cmd <- cmds
-      ctx = Context.empty.withRules(rules)
-      cmd_ <- if cmd.isRule then List(cmd) else simplify(config, state, ctx, cmd) :: used(config, ctx, cmd)
-      if !isTrivial(cmd_)
-    yield cmd_
+    val cmds_ =
+      for
+        cmd <- cmds
+        ctx = Context.empty.withRules(rules)
+        cmd_ <- if cmd.isRule then List(cmd) else simplify(config, state, ctx, cmd) :: used(config, ctx, cmd)
+        if !isTrivial(cmd_)
+      yield cmd_
+
+    (cmds_, Some(last))
 
   // with -rules, the rules applied to the assertion `cmd` by this simplification, as structured meta information
   // (set-info :used ((name count) ...)), which solvers do not receive (see Solver.Sink and pipe.Verify); only the

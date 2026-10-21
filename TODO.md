@@ -18,9 +18,6 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
 - sum_by_3 and sum_by_3_abstracted stay open under the case splits of `-prove` (0.46.12, which closed in-de20 by
   splitting `n == zero || integer(n) < 1`)
 
-- `-verify` (see [doc/architecture.md](doc/architecture.md)): a refutation is classified per goal, `VCGen`
-  marks the whole goal of a procedure `:abstract` if one of its loops has no invariant, also the obligations that do
-  not depend on that loop, which `-split` keeps apart
 - support verifying trace lemmas in Dafny
 - identify performance improvements, notably in the simplifier
 - thread config through more code, so that it is usually available
@@ -31,16 +28,14 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
   violation witnesses a path (from the counterexamples of `-chc`); the
   analysis and plan in [ideas/witnesses.md](ideas/witnesses.md); see
   "Portfolio of TEQ and CHC" below
-- SV-LIB: the frontend (`cuvee.svlib`, see doc/architecture.md) lacks
+- SV-LIB, whose program syntax the SMT-LIB frontend shares (see doc/architecture.md), lacks
   unstructured control flow (labels and gotos, e.g. by a loop over a program
   counter, with the invariants of labels as `pc = k ⇒ φ`), `define-procs-rec`,
   tags on statements other than loops, procedure bodies and sequences (0.39.0:
   `(! (sequence ...) :tag t)` is a `core.Block` with attributes, whose
   `check-true` annotations `State.annotated` asserts at its beginning, as the
   translated C tasks of SV-COMP use for their assertions; the printers of C,
-  Boogie and Dafny drop the attributes of blocks, and the SMT-LIB printer
-  writes them as `(! (sequence ...) ...)` of SV-LIB, which the SMT-LIB parser
-  does not read, by decision), the liveness
+  Boogie and Dafny drop the attributes of blocks), the liveness
   properties `:recurring` and `:not-recurring`, which 6 of the 7 core
   verification tasks use, and `:decreases-lex`, `get-witness` (the query
   `GetWitness`, answered `unsupported`; see witness output) and
@@ -49,6 +44,11 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
   constants in the bodies of procedures with `-chc` (Horn solvers reject free
   constants, the entry clause quantifies only those of the arguments and
   axioms); a dangling tag is an error, the report says to ignore it
+- The modified global variables of procedures and loops are inferred by the
+  parser (`smtlib.Parser.modifies`), and a body may list them as
+  `:modifies`; the inference belongs into the verification (`-verify`,
+  `VCGen`, `Horn`), such that the parser keeps what is written. Procedures
+  without body (`declare-proc`) list them, there is nothing to infer from.
 - SV-COMP tool entry and zenodo archive: the archive of 0.41.4 is published
   (10.5281/zenodo.23317707, in fm-tools `data/cuvee.yml`, merge request !1176,
   and in doc/paper); it predates the entry points (25c90e96), without which
@@ -60,13 +60,6 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
   renamed `sorted`, `strides`), the options in fm-tools do not: align them. The tool-info module
   `cuvee.py` is the pull request sosy-lab/benchexec#1327 (branch `add-cuvee`
   of github.com/gernst/benchexec), to be kept in sync with this repository
-
-## Bugs
-
-Moved to [bugs.md](bugs.md) (Oct 13, 2026), also the entries that comments elsewhere cite as "see TODO.md":
-the cycle through `sum_invs_const`, the patterns with two cases (`condm`), sums over a bound variable
-(`ifcomp`), `sanfoundry_02_ground`, `diamond_2-2`, the variable capture in SMT-LIB, the dependencies of equal
-length, the bisection of `teq:search`, the soundness of `sat` with `-chc`, and parallel composition.
 
 ## General
 
@@ -151,6 +144,13 @@ items on the simplifier hold for both copies.
 
 ### Core
 
+- `Prog.subprogs` is a second traversal of programs next to `Prog.map`,
+  for three recursive queries that each special-case a statement or two
+  and recurse through it otherwise: `Prog.modifies` (which matches `Block`
+  as well), `VCGen.abstracts`, and `calls` inside `c.Parser.while_`. The
+  queries could be members like `mod`, `free` and `funs`, or use one fold
+  over the children, together with the generic traversal of expressions
+  below.
 - One generic traversal with binders: `Subst.apply`, `Old.instance`,
   `Type.expand(expr)` and `Rec.calls` each repeat the list of binders
   (`Bind`, `Lam`, `Trace`, `Maps`, `Invs`, `Let`, `Match`, `Rec`); the `Match`
@@ -260,6 +260,19 @@ items on the simplifier hold for both copies.
 
 ### Transforms and verification
 
+- Abstractness for `-verify` comes from two sources. A goal is
+  `:abstract` when `VCGen.abstracts` finds a loop without invariant, or when
+  `Fallback` lowered it. A function is abstract when declared `:abstract`
+  (the C bit operations) or defined in terms of one; `pipe.Verify` collects
+  those in `abstracts` while the stream passes, from `Cmd.funs`. That
+  closure follows the order of the stream, so a definition never sees an
+  abstract function that comes after it, e.g. in mutual recursion. It is
+  also the only reason for `Expr.funs` and `Cmd.funs`, whose other cases
+  (`FuseFuns`, patterns, `Rec`) nobody reads. The functions could be marked
+  once in the `State` when they are defined, and the frontends or `VCGen`
+  could mark the goals that apply them. `Verify` would then test the goal's
+  attribute only, and the two names `abstracts` (programs in `VCGen`,
+  functions in `Verify`) would go.
 - `VCGen`, `TEQ` and `Horn` repeat the setup of a procedure (→ one helper):
   - the contract and the globals `gs` with fresh copies `gs_`;
   - `Old.elim` of the body and the postcondition;

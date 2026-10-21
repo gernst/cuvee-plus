@@ -32,51 +32,51 @@
 
 (assert
   (forall
-    ((x0 Int) (y0 Int) (x Int) (y$2 Int))
+    ((x0 Int) (y0 Int) (x Int) (y$1 Int))
     (=>
-      (add_assign_1 x0 y0 x y$2)
-      (add_inv_2 x0 y0 x y$2))))
+      (add_assign_1 x0 y0 x y$1)
+      (add_inv_2 x0 y0 x y$1))))
 
 (assert
   (forall
-    ((x0 Int) (y0 Int) (x Int) (y$2 Int))
+    ((x0 Int) (y0 Int) (x Int) (y$1 Int))
     (=>
-      (add_inv_2 x0 y0 x y$2)
+      (add_inv_2 x0 y0 x y$1)
       (and
-        (<= 0 y$2)
-        (= (+ x y$2) (+ x0 y0))))))
+        (<= 0 y$1)
+        (= (+ x y$1) (+ x0 y0))))))
 
 (assert
   (forall
-    ((x0 Int) (y0 Int) (x Int) (y$2 Int) (m$3 Int))
-    (=>
-      (and
-        (add_inv_2 x0 y0 x y$2)
-        (< 0 y$2)
-        (= m$3 y$2))
-      (add_assign_3 x0 y0 (+ x 1) (- y$2 1) m$3))))
-
-(assert
-  (forall
-    ((x0 Int) (y0 Int) (x Int) (y$2 Int) (m$3 Int))
-    (=>
-      (add_assign_3 x0 y0 x y$2 m$3)
-      (add_inv_2 x0 y0 x y$2))))
-
-(assert
-  (forall
-    ((x0 Int) (y0 Int) (x Int) (y$2 Int) (m$3 Int))
-    (=>
-      (add_assign_3 x0 y0 x y$2 m$3)
-      (and (<= 0 m$3) (< y$2 m$3)))))
-
-(assert
-  (forall
-    ((x0 Int) (y0 Int) (x Int) (y$2 Int))
+    ((x0 Int) (y0 Int) (x Int) (y$1 Int) (m$2 Int))
     (=>
       (and
-        (add_inv_2 x0 y0 x y$2)
-        (not (< 0 y$2)))
+        (add_inv_2 x0 y0 x y$1)
+        (< 0 y$1)
+        (= m$2 y$1))
+      (add_assign_3 x0 y0 (+ x 1) (- y$1 1) m$2))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$1 Int) (m$2 Int))
+    (=>
+      (add_assign_3 x0 y0 x y$1 m$2)
+      (add_inv_2 x0 y0 x y$1))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$1 Int) (m$2 Int))
+    (=>
+      (add_assign_3 x0 y0 x y$1 m$2)
+      (and (<= 0 m$2) (< y$1 m$2)))))
+
+(assert
+  (forall
+    ((x0 Int) (y0 Int) (x Int) (y$1 Int))
+    (=>
+      (and
+        (add_inv_2 x0 y0 x y$1)
+        (not (< 0 y$1)))
       (add_post x0 y0 x))))
 
 (declare-const x1 Int)
@@ -94,10 +94,6 @@
     (=>
       (and (<= 0 y1) (not (<= 0 y1)))
       false)))
-
-(check-sat)
-
-(verify-call add (x1 y1))
 
 (check-sat)
 

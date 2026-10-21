@@ -20,14 +20,14 @@ namespace TEQ
 open Nat (zero succ)
 open List (nil cons length)
 
-noncomputable def integer (n : Nat) : Int :=
-  match n with
+noncomputable def integer (x₀ : Nat) : Int :=
+  match x₀ with
   | .zero => 0
   | .succ m => integer m + 1
 
-noncomputable def natural (x : Int) : Nat :=
-  if x ≤ 0 then zero else succ (natural (x - 1))
-termination_by x.toNat
+noncomputable def natural (x₀ : Int) : Nat :=
+  if x₀ ≤ 0 then zero else succ (natural (x₀ - 1))
+termination_by x₀.toNat
 decreasing_by all_goals omega
 
 axiom unspecified {α₀ : Type} [Inhabited α₀] : α₀

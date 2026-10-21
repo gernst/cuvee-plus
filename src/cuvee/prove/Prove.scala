@@ -13,18 +13,21 @@ import cuvee.core._
 // Simplify, Rewrite, Context), each with a fresh number of rewrite steps; goals that simplify to true are dropped;
 // like -simplify, with -rules the rules applied follow each assertion as (set-info :used ((name count) ...))
 object Prove extends Transform:
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
     val rules = Rules.from(state, prefix ++ cmds)
     val forward = Forward.from(prefix ++ cmds)
 
     def fresh() = Context.empty(state).withRules(rules).copy(forward = forward)
 
-    for
-      cmd <- cmds
-      ctx = fresh()
-      cmd_ <- if cmd.isRule || Forward.is(cmd) then List(cmd) else counterexample(config, state, fresh, cases(config, state, fresh, Simplify.simplify(config, state, ctx, cmd), 4)) :: used(config, ctx, cmd)
-      if !isTrivial(cmd_)
-    yield cmd_
+    val cmds_ =
+      for
+        cmd <- cmds
+        ctx = fresh()
+        cmd_ <- if cmd.isRule || Forward.is(cmd) then List(cmd) else counterexample(config, state, fresh, cases(config, state, fresh, Simplify.simplify(config, state, ctx, cmd), 4)) :: used(config, ctx, cmd)
+        if !isTrivial(cmd_)
+      yield cmd_
+
+    (cmds_, Some(last))
 
   // a goal that remains is proved by cases (see alternatives), each case with a context of its own, at most `depth`
   // splits deep; it is kept as it is unless all cases hold, so that the output does not multiply

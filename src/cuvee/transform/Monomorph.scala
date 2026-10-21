@@ -18,7 +18,7 @@ import cuvee.core._
 object Monomorph extends Transform:
   // poly: the polymorphic functions of the input with their declaration or definition,
   // instances: the instances emitted so far, out: the output
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
     val poly = polymorphic(config.output.features, prefix ++ cmds)
     val instances = Ref(Map[(Name, Int, List[Type]), Fun]())
     val out = mutable.ListBuffer[Cmd]()
@@ -28,7 +28,7 @@ object Monomorph extends Transform:
     out.clear()
 
     cmds.foreach(command(state, poly, instances, out, _))
-    out.toList
+    (out.toList, Some(last))
 
   // the polymorphic functions of `cmds` with their declaration or definition,
   // except those that the receiver of the output knows, e.g. = and select of SMT-LIB (see Sink.known)

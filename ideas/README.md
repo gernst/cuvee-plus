@@ -22,6 +22,8 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
 - [ltl.md](ltl.md): linear temporal specifications by weakest preconditions (ISoLA 2026): temporal
   `guarantees` of Dafny methods and loops with hypothesis operators, a forward generator in `-vcgen`, the
   lowering of the goals for solvers, and points of the paper to check.
+- [answer-mapping.md](answer-mapping.md): transforms map the answers back as well as the commands, one response
+  per input command, the single check of CHC solvers at `Done`, and what it means for `-verify`.
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 

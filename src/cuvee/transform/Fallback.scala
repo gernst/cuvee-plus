@@ -40,11 +40,14 @@ object Fallback extends Transform:
   // the sorts of trace equation systems
   val sorts = Set(Con.trace, Con.list, Con.nat)
 
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    for
-      cmd <- cmds
-      cmd_ <- fallback(state, cmd)
-    yield cmd_
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+    val cmds_ =
+      for
+        cmd <- cmds
+        cmd_ <- fallback(state, cmd)
+      yield cmd_
+
+    (cmds_, Some(last))
 
   def fallback(state: State, cmd: Cmd): List[Cmd] =
     cmd match

@@ -34,7 +34,7 @@ import cuvee.core._
 //
 // active: the rules whose side conditions are being evaluated at this position (see Rewrite.apply), which are not
 // applied inside, since a rule that rewrites the instance of its own condition or the reads of a fact its condition is
-// matched against recurs until the steps are exhausted (see TODO.md on sum_invs_const); copied along to the nested
+// matched against recurs until the steps are exhausted (see bugs.md on sum_invs_const); copied along to the nested
 // contexts of conditions and combinators
 //
 // reads: the values of the bound variables of combinators over the counter of a loop, by the dependencies, the bound

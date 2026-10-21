@@ -25,7 +25,7 @@ transformation and any output.
 | `cuvee.smtlib` | SMT-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks). |
 | `cuvee.boogie` | Boogie frontend and printer, with datatypes written like Dafny's (`data`). |
 | `cuvee.c` | C frontend and printer, for integer programs with arrays as values. |
-| `cuvee.svlib` | SV-LIB frontend (`Parser`, which extends the SMT-LIB parser by the statements and properties of SV-LIB, `Source`) and `Printer`. |
+| `cuvee.svlib` | SV-LIB frontend (`Source`, which reads scripts with the SMT-LIB parser, whose programs are those of SV-LIB) and `Printer`, the SMT-LIB printer with an empty line after each command. |
 | `cuvee.yml` | SV-COMP task definitions (`Task`, read with SnakeYAML Engine), whose single input file is read by the frontend of its extension, C or SV-LIB; a missing input file is reported as the task writes it, independent of the directory; the witnesses of SV-COMP for C (`Witness`, written with SnakeYAML Engine). |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.lean` | Printer of the logic in Lean 4 (`-print lean`), output only. |
@@ -109,11 +109,18 @@ adds them to its state. A control command or query (`check-sat`, `push`,
 - the flushing command.
 
 It then passes the result on to the next sink. `push` and `pop` save and
-restore the prefix and the state. A transform is a plain function:
+restore the prefix and the state. A transform is a plain function, which
+returns the commands in front of the flush and the command that flushes them
+downstream, usually the one it was given, none if it consumes it (`Horn` the
+`verify-call`, which is then acknowledged):
 
 ```scala
-type Transform = (Config, State, List[Cmd], List[Cmd], Cmd) => List[Cmd]
+type Transform = (Config, State, List[Cmd], List[Cmd], Cmd) => (List[Cmd], Option[Cmd])
 ```
+
+`push`, `pop`, `reset`, `Done`, and `Exit` are passed on whatever the
+transform returns, since they change the stacks of all stages or end the input
+for every sink.
 
 The answers to several queries that a transform adds, e.g. `check-sat` and
 `get-model` after `Horn`, are reported one by one (`Answers`).
@@ -138,8 +145,10 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point after assignments, calls, loop heads, and joins, followed
-  by `check-sat` and `get-model`, whose model is printed in the language of the
-  input.
+  by `check-sat` and `get-model` at the end of the input, whose model is
+  printed in the language of the input. A `verify-call` of SV-LIB adds its
+  entry clauses (`Horn.entry`) and is not passed on; there is at most one, at
+  the end, since the single `check-sat` covers all of them.
   - Procedures with a body have predicates and no contract, which is an
     error, except for `requires` of `main` (in C, the globals are zero; their
     initializers are assignments at the beginning of `main`). The entry
@@ -349,19 +358,22 @@ input file, C or SV-LIB: their `Source` overrides `input`, which reads the
 input on demand, to load the task and parse its input file, relative to the
 task; the output is printed in the language of the input file (`Config.parse`).
 
-The SV-LIB frontend (`.svlib`, [SV-LIB 1.0](https://arxiv.org/abs/2511.21509))
-extends the SMT-LIB parser: `define-proc` with local variables, the
-statements `sequence`, `choice`, `if` without else, `(! s attrs)`, and the
-commands `annotate-tag` and `verify-call`, which are core commands
-`AnnotateTag` and `VerifyCall`, since an annotation may follow the procedure
-it belongs to, up to the `verify-call` that it applies to. Properties
-(`:requires`, `:ensures`, `:invariant`, `:decreases`, `:check-true`) are
-attributes of loops and of procedure bodies, written inline or linked by
-`annotate-tag` to the statements with the `:tag`; the parser resolves their
-variables in the scope of the tagged statement and their functions in the
-state at the command, and keeps a table from tags to these scopes. The
-stages collect the `AnnotateTag` commands in `State.annotations`, and
-`VCGen` and `Horn` attach them to the loops of a body
+Programs in SMT-LIB (`.smt2`) and SV-LIB (`.svlib`, [SV-LIB 1.0](https://arxiv.org/abs/2511.21509))
+are written in the syntax of SV-LIB, which `smtlib.Parser` reads and
+`smtlib.Printer` writes for both: `define-proc` with local variables,
+`(define-proc p (in) (out) (locals) body)`, the statements `assume`,
+`assign`, `havoc`, `call`, `sequence`, `choice`, `if` with or without else,
+`while`, `break`, `continue`, `return`, `(! s attrs)`, and the commands
+`annotate-tag` and `verify-call`, which are core commands `AnnotateTag` and
+`VerifyCall`, since an annotation may follow the procedure it belongs to, up
+to the `verify-call` that it applies to. Properties (`:requires`, `:ensures`,
+`:invariant`, `:decreases`, `:check-true`) are attributes of loops and of
+procedure bodies, written inline or linked by `annotate-tag` to the
+statements with the `:tag`; the parser resolves their variables in the scope
+of the tagged statement (`Parser.Tagged`, that of the signature for a body)
+and their functions in the state at the command, and keeps a table from tags
+to these statements. The stages collect the `AnnotateTag` commands in
+`State.annotations`, and `VCGen` and `Horn` attach them to the loops of a body
 (`State.annotated`) when they verify it at the `VerifyCall`, which flushes
 the stages like `check-sat`. `VCGen` adds the goal that the arguments
 satisfy the precondition, `Horn` the entry clause `p_pre(args, gs)`, in
@@ -370,40 +382,31 @@ about them, since Horn solvers reject free constants, and a `check-sat`.
 `(at x tag)` is `old(x)` when `tag` is that of the procedure body and `x` a
 global variable or an input; `:check-true` of a loop is checked at every
 evaluation of its test without being assumed, elsewhere it is asserted before
-the statement. Tags on other statements are rejected, since the core has no
-annotations there, and so are `define-procs-rec`, labels and gotos, the
-properties `:recurring` and `:not-recurring`, `:decreases-lex`, witnesses and traces. The modified
-global variables of procedures and loops are inferred, as in C. The verdict
-of a task is decided by the BenchExec module [cuvee.py](../cuvee.py) from the
-answers of `-verify` to the `verify-call`s.
+the statement. An annotation of the whole body is that of the procedure, so a
+loop that is the whole body needs a `sequence` around it for its own. Tags on
+other statements are rejected, since the core has no annotations there, and
+so are `define-procs-rec`, labels and gotos, the properties `:recurring` and
+`:not-recurring`, `:decreases-lex`, witnesses and traces. The modified global
+variables of procedures and loops are inferred (`Parser.modifies`), as in C,
+unless the body lists them as `:modifies`. The verdict of a task is decided by
+the BenchExec module [cuvee.py](../cuvee.py) from the answers of `-verify` to
+the `verify-call`s.
 
-### Programs in SV-LIB and in the SMT-LIB of Cuvée
+What the core has beyond SV-LIB is written as extensions of its syntax:
 
-Both languages share the logic (terms, sorts, datatypes, functions, and the
-combinators of trace equation systems, printed by `smtlib.Printer`) and
-`declare-var` for global variables, but write programs differently. The
-SMT-LIB dialect (`smtlib.Parser.prog`) is the core's own notation, printed one
-to one; SV-LIB (`svlib.Parser.stmt`) is the language of the tasks, read into
-the same core:
+| | syntax |
+|---|---|
+| blocks with local variables | `(block (locals (x T) ...) s ...)`, anywhere in a body |
+| assertions | `(assert φ)`, printed as the location invariant `(! (sequence) :check-true φ)` |
+| specifications | `(spec (xs) pre post)`, `(abort)` |
+| hybrid programs | `(iter s)`, `(ode t ((x e) ...) dom)`, `(par (call ...) ...)`, with properties as `(! (iter s) :invariant φ)` |
+| polymorphic procedures | `(define-proc p (par (a) (in) (out) (locals) body))` |
+| procedures without body | `(declare-proc p (in) (out) :requires φ :ensures ψ :modifies (x ...))`, also with `par` |
+| contracts of hybrid programs | `:assumes` and `:commits` of a body |
+| values at the entry | `(old x)` besides `(at x tag)` |
 
-| | SMT-LIB of Cuvée | SV-LIB |
-|---|---|---|
-| procedure | `(define-proc p (in) (out) body attrs)`, the local variables in the block of the body | `(define-proc p (in) (out) (locals) body)` |
-| contract | attributes after the body, `:requires`, `:ensures`, `:modifies` | annotations of the body, `(! body :requires φ :ensures ψ)` |
-| modified globals | `:modifies (x ...)`, required: the other globals must not be assigned (`Type.check`) | inferred from the assignments and calls (`svlib.Parser.modifies`); a `:modifies` of the core is dropped by `svlib.Printer` |
-| loop properties | attributes after the body, `(while test body :invariant φ)` | `(! (while test body) :invariant φ)`, or `annotate-tag` on a `:tag` |
-| blocks | `(block (locals x ...) s ...)`, with local variables anywhere | `(sequence s ...)`, without local variables |
-| assertions | `(assert φ)`, `(abort)`, `(spec (xs) pre post)` | `(! (sequence) :check-true φ)`, a location invariant |
-| choices | `(choose s ...)`, `(if test s₁ s₂)` with both branches | `(choice s ...)`, `(if test s)` without else |
-| values at the entry | `(old x)` | `(at x tag)` with the tag of the body |
-| polymorphism, declarations | `(define-proc p (par (a) ...) ...)`, `declare-proc` | not supported (`svlib.Printer`) |
-| further statements | `iter`, `ode`, `par` (hybrid programs) | `label`, `goto`, `define-procs-rec`, rejected by the parser |
-| what is verified | every procedure against its contract (`-vcgen`), or the entry point (`-entry`, `-teq`, `-chc`); `annotate-tag` and `verify-call` are read as well, e.g. in printed SV-LIB that is parsed back | the `verify-call` commands, one answer each with `-verify` |
-
-A script printed as SV-LIB (`-print svlib`) and read back keeps its meaning but
-not its text: the contracts become annotations, the modifies clauses are
-inferred again, and blocks with local variables outside the body are not
-printable.
+A script printed and read back keeps its meaning but not its text: the
+modifies clauses of bodies and loops are dropped and inferred again.
 
 ## Errors and debugging
 

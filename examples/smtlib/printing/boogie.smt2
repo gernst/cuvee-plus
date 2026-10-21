@@ -7,5 +7,5 @@
 (assert (distinct x y 0))
 (assert (< x y 0))
 (assert (= (let ((x y)) (+ x x)) 0))
-(define-proc m () ((a Int) (b Int))
+(define-proc m () ((a Int) (b Int)) ()
   (spec (a) (< 0 a) (< a b)))

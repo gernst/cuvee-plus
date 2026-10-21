@@ -2,9 +2,9 @@
   p
   ((x Int))
   ((y Int))
-  (block
-    (locals)
-    (assert (< 0 x))
+  ()
+  (sequence
+    (! (sequence) :check-true (< 0 x))
     (assume (< x 2))
     (havoc y)
     (spec (y) (< 0 x) (< x y))

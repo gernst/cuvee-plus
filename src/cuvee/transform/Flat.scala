@@ -16,11 +16,14 @@ import cuvee.core._
 // neither are type parameters that are instantiated by records, e.g. in arrays of records;
 // in clauses ∀ xs. φ₁ ∧ ... ∧ φₙ ⇒ ψ, equations x == t of the antecedent with x among xs are inlined (see eliminate)
 object Flat extends Transform:
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
-    for
-      cmd <- cmds
-      cmd_ <- flat(state, cmd)
-    yield cmd_
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+    val cmds_ =
+      for
+        cmd <- cmds
+        cmd_ <- flat(state, cmd)
+      yield cmd_
+
+    (cmds_, Some(last))
 
   def flat(state: State, cmd: Cmd): List[Cmd] =
     cmd match

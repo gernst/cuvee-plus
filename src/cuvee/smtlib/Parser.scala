@@ -92,10 +92,10 @@ object Parser:
   def annotation(from: List[Any]): Attrs =
     Attrs(annotations(from))
 
-  // a statement with a tag of SV-LIB, a procedure body or a loop: the scope of its variables, that of a contract if
-  // it is the body of a procedure, the tag of the body of the enclosing procedure, and the variables whose values at
-  // the entry of the procedure are available there, to which (at x tag) of SV-LIB refers (see svlib.Parser)
-  case class Tagged(scope: Scope, contract: Option[Scope], body: Option[Name], entry: Set[Name])
+  // a statement of SV-LIB with a tag: the scope of its properties, which is that of the signature for the body of a
+  // procedure, whose contract cannot refer to the local variables, and the enclosing procedure, whose signature gives
+  // the variables that (at x tag) may refer to
+  case class Tagged(scope: Scope, proc: Name)
 
 class Parser(private var init: State):
   import Parser.annotation
@@ -344,76 +344,364 @@ class Parser(private var init: State):
       case List(Id(cmd @ ("assert" | "goal" | "lemma")), phi, attrs*) =>
         assertion(justification(cmd), Nil, phi, attrs.toList)
 
-      // procedural fragment
+      // procedural fragment, the syntax of SV-LIB (see the comment on procedure)
 
-      // global variables, which procedures may modify if they declare so
+      // global variables, which procedures may modify
       case List(Id("declare-var"), Id(name), sort, attrs*) =>
         val typ_ = typ(Scope.empty, sort)
         val attrs_ = annotation(attrs.toList)
         state = state.declare(name, typ_, attrs_)
         state.cmds.declareVar(name)
 
+      // not part of SV-LIB: procedures without body, whose contract and modifies clause are attributes
       case List(Id("declare-proc"), Id(name), List(in*), List(out*), attrs*) =>
-        procedure(name, Nil, list(in) { formal(Scope.empty, _) }, list(out) { formal(Scope.empty, _) }, None, attrs.toList)
-
-      case List(Id("define-proc"), Id(name), List(in*), List(out*), body, attrs*) =>
-        procedure(name, Nil, list(in) { formal(Scope.empty, _) }, list(out) { formal(Scope.empty, _) }, Some(body), attrs.toList)
+        declaration(name, Nil, list(in) { formal(Scope.empty, _) }, list(out) { formal(Scope.empty, _) }, attrs.toList)
 
       case List(Id("declare-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), attrs*)) =>
         val params_ = list(params) { param(_) }
         val scope = Scope(params_)
-        procedure(name, params_, list(in) { formal(scope, _) }, list(out) { formal(scope, _) }, None, attrs.toList)
+        declaration(name, params_, list(in) { formal(scope, _) }, list(out) { formal(scope, _) }, attrs.toList)
 
-      case List(Id("define-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), body, attrs*)) =>
+      case List(Id("define-proc"), Id(name), List(in*), List(out*), List(locals*), body) =>
+        val in_ = list(in) { formal(Scope.empty, _) }
+        val out_ = list(out) { formal(Scope.empty, _) }
+        val locals_ = list(locals) { formal(Scope.empty, _) }
+        procedure(name, Nil, in_, out_, locals_, body)
+
+      // not part of SV-LIB: polymorphic procedures
+      case List(Id("define-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), List(locals*), body)) =>
         val params_ = list(params) { param(_) }
         val scope = Scope(params_)
-        procedure(name, params_, list(in) { formal(scope, _) }, list(out) { formal(scope, _) }, Some(body), attrs.toList)
+        val in_ = list(in) { formal(scope, _) }
+        val out_ = list(out) { formal(scope, _) }
+        val locals_ = list(locals) { formal(scope, _) }
+        procedure(name, params_, in_, out_, locals_, body)
 
-      // the commands of SV-LIB (see svlib.Parser), e.g. in printed output that is parsed again
+      case List(Id("define-procs-rec"), _*) =>
+        Error.raise("not supported", "define-procs-rec")
+
       case List(Id("annotate-tag"), Id(tag), attrs*) =>
         annotate(tag, attrs.toList)
 
       case List(Id("verify-call"), Id(name), List(args*)) =>
         verifyCall(name, args.toList)
 
+      // witnesses are not produced, the answer is unsupported (see Sink)
+      case List(Id("get-witness")) =>
+        GetWitness
+
+      case List(Id("select-trace"), _*) =>
+        Error.raise("not supported", "select-trace")
+
       case _ =>
         Error.raise("not a command", Parser.head(from))
 
-  // procedures are declared together with their contract before the body is resolved, which may call them recursively;
-  // they may read all global variables, which the formal parameters shadow,
-  // and the inputs and the global variables that are not modified must not be assigned
-  def procedure(name: Name, params: List[Param], in: List[Var], out: List[Var], body: Option[Any], attrs: List[Any]): Cmd =
+  // a procedure without body is declared with its contract, which may refer to its type parameters, the global
+  // variables, which the formal parameters shadow, and its formal parameters; the global variables that it modifies
+  // are listed, since there is no body to infer them from
+  def declaration(name: Name, params: List[Param], in: List[Var], out: List[Var], attrs: List[Any]): Cmd =
     val globals = state.globals
     val scope = Scope(params) ++ globals ++ in ++ out
     val attrs_ = contract(scope, attrs)
 
-    for tag <- attrs_.tags
-    do record(tag, Tagged(scope, Some(scope), attrs_.tags.headOption, (globals ++ in).map(_.name).toSet))
-
-    val mod = attrs_.modifies
-    val nonglobal = mod.filterNot(globals.contains)
+    val nonglobal = attrs_.modifies.filterNot(globals.contains)
     Error.report("modifies clause of procedure lists variables that are not global", name, nonglobal):
       require(nonglobal.isEmpty)
 
     state = state.declare(name, params, in, out, attrs_)
+    state.cmds.declareProc(name)
 
-    body match
-      case None =>
-        state.cmds.declareProc(name)
+  // programs in the syntax of SV-LIB: procedures with local variables, whose properties are attributes of loops and
+  // of procedure bodies, written inline as (! s attrs) or linked by annotate-tag commands to the statements with the
+  // tag; the variables of a property are resolved in the scope of the tagged statement, its functions in the state at
+  // the command, which is why annotate-tag commands are resolved here but attached to the statements only by the
+  // transforms (see State.annotated); the global variables that procedures and loops modify are inferred, unless the
+  // body lists them as :modifies;
+  // not part of SV-LIB: blocks with local variables, assert, spec, abort, iter, ode, par, polymorphic procedures, and
+  // procedures without body (see declaration);
+  // not supported: define-procs-rec, labels and gotos, tags on statements other than loops, procedure bodies and
+  // sequences, the properties recurring, not-recurring and decreases-lex, witnesses (get-witness answers unsupported)
+  // and traces
+  //
+  // the signature is declared before the body is resolved, which may call the procedure recursively;
+  // the body may read all global variables, and the inputs and the other global variables must not be assigned
+  // (see Type.check); the local variables are those of the block of the body
+  def procedure(name: Name, params: List[Param], in: List[Var], out: List[Var], locals: List[Var], body: Any): Cmd =
+    val globals = state.globals
+    val formals = in ++ out ++ locals
 
-      case Some(body) =>
-        val fixed = in.toSet ++ (globals.toSet -- mod)
-        val body_ = state.progs.check(scope, fixed, mod.toSet, prog(scope, body))
-        state = state.define(name, body_)
-        state.cmds.defineProc(name)
+    Error.report("duplicate parameters or local variables of procedure", name, formals):
+      require(formals.distinctBy(_.name) == formals)
 
-  // the annotations of an annotate-tag command of SV-LIB, resolved like the contract of the first statement with
-  // the tag, as if written there; the SV-LIB frontend resolves them by their kind (see svlib.Parser)
+    val outer = Scope(params) ++ globals ++ in ++ out
+    val scope = outer ++ locals
+
+    // the tags of the body are declared with the signature, (at x tag) of the statements inside refers to them
+    val (inner, attrs) = annotated(body)
+    val tags_ = Attrs(tagsOf(attrs).map("tag" -> Some(_)))
+    state = state.declare(name, params, in, out, tags_)
+
+    val tagged = Tagged(outer, name)
+    for tag <- tagsOf(attrs) do record(tag, tagged)
+
+    val progs =
+      stmt(scope, name, inner) match
+        case Block(Nil, progs, attrs) if attrs.isEmpty => progs
+        case prog                                       => List(prog)
+
+    // location invariants of the body hold at the entry
+    val attrs_ = properties(tagged, true, attrs)
+    val body_ = Block(locals, attrs_.checks.map(Spec.assert) ++ progs)
+
+    val nonglobal = attrs_.modifies.filterNot(globals.contains)
+    Error.report("modifies clause of procedure lists variables that are not global", name, nonglobal):
+      require(nonglobal.isEmpty)
+
+    val attrs__ = inferred(Attrs(attrs_.attrs.filterNot(_._1 == "check-true")), body_)
+
+    val fixed = in.toSet ++ (globals.toSet -- attrs__.modifies)
+    val checked = state.progs.check(outer, fixed, attrs__.modifies.toSet, body_)
+    state = state.copy(procattrs = state.procattrs + (name -> attrs__)).define(name, checked)
+    DefineProc(state.procs(name), checked, attrs__)
+
+  // the properties of a procedure body or loop `prog` with its modifies clause, unless it lists one already
+  def inferred(attrs: Attrs, prog: Prog): Attrs =
+    if attrs.contains("modifies") then attrs else attrs ++ modifies(prog)
+
+  // the global variables that `prog` assigns, directly or by calls (see Par.modifies), as its modifies clause
+  def modifies(prog: Prog): Attrs =
+    val mod = (Par.modifies(state, prog) intersect state.globals.toSet).toList.sortBy(_.name.toString)
+    if mod.isEmpty
+    then Attrs.empty
+    else Attrs(List("modifies" -> Some(mod)))
+
+  // the statement of an annotation (! s attrs) with its attributes, where nested annotations are merged,
+  // (! (! s a) b) is (! s a b), and a statement without annotation has none
+  def annotated(from: Any): (Any, List[Any]) =
+    from match
+      case List(Id("!"), inner, attrs*) =>
+        val (inner_, attrs_) = annotated(inner)
+        (inner_, attrs_ ++ attrs)
+
+      case _ =>
+        (from, Nil)
+
+  def tagsOf(from: List[Any]): List[Name] =
+    Parser.annotations(from).collect:
+      case ("tag", Some(Id(tag))) =>
+        val tag_ : Name = tag
+        tag_
+
+  // the statements inside the procedure `proc`
+  def stmt(scope: Scope, proc: Name, from: Any): Prog =
+    from match
+      case List(Id("!"), _*) =>
+        val (inner, attrs) = annotated(from)
+
+        inner match
+          case List(Id("while"), test, prog) =>
+            val tagged = Tagged(scope, proc)
+            for tag <- tagsOf(attrs) do record(tag, tagged)
+            val prog_ = stmt(scope, proc, prog)
+            state.progs.while_(expr(scope, test), prog_, inferred(properties(tagged, true, attrs), prog_))
+
+          case List(Id("iter"), prog) =>
+            val tagged = Tagged(scope, proc)
+            for tag <- tagsOf(attrs) do record(tag, tagged)
+            val prog_ = stmt(scope, proc, prog)
+            state.progs.iter(prog_, inferred(properties(tagged, true, attrs), prog_))
+
+          // the properties may refer to the time, which is bound on Real
+          case List(Id("ode"), Id(time), List(pairs*), dom) =>
+            val time_ = Var(time, Sort.real)
+            val scope_ = scope ++ List(time_)
+            val (xs, rhs) = assignments(scope_, pairs)
+            val tagged = Tagged(scope_, proc)
+            for tag <- tagsOf(attrs) do record(tag, tagged)
+            state.progs.ode(time_, xs, rhs, expr(scope_, dom), properties(tagged, true, attrs))
+
+          // a sequence with tags is a block with its tags and location invariants, which the transforms assert at its
+          // beginning (see State.annotated)
+          case List(Id("sequence"), progs*) if tagsOf(attrs).nonEmpty =>
+            val tagged = Tagged(scope, proc)
+            for tag <- tagsOf(attrs) do record(tag, tagged)
+            Block(Nil, list(progs) { stmt(scope, proc, _) }, properties(tagged, true, attrs))
+
+          // the core has no attributes on other statements: their location invariants are asserted before them
+          // and tags, which annotate-tag commands could refer to later, are rejected
+          case _ =>
+            for case ("tag", Some(tag)) <- Parser.annotations(attrs) do
+              Error.raise("tag on a statement that is neither a loop, the body of a procedure, nor a sequence", tag)
+
+            val attrs_ = properties(Tagged(scope, proc), true, attrs)
+            val progs =
+              stmt(scope, proc, inner) match
+                case Block(Nil, Nil, attrs) if attrs.isEmpty => Nil
+                case prog                                     => List(prog)
+
+            attrs_.checks.map(Spec.assert) ++ progs match
+              case List(prog) => prog
+              case progs_     => Block(Nil, progs_)
+
+      case List(Id("assume"), phi) =>
+        Spec.assume(expr(scope, phi))
+
+      case List(Id("assign"), pairs*) =>
+        val (lhs, rhs) = assignments(scope, pairs)
+        state.progs.assign(lhs, rhs)
+
+      case List(Id("havoc"), xs*) =>
+        Spec.havoc(list(xs) { variable(scope, _) })
+
+      case List(Id("sequence"), progs*) =>
+        state.progs.block(Nil, list(progs) { stmt(scope, proc, _) })
+
+      case List(Id("choice"), progs*) if progs.nonEmpty =>
+        Choice(list(progs) { stmt(scope, proc, _) })
+
+      case List(Id("call"), Id(name), List(args*), List(res*)) =>
+        state.progs.call(name, list(args) { expr(scope, _) }, list(res) { variable(scope, _) })
+
+      case List(Id("return")) =>
+        Return
+
+      case List(Id("break")) =>
+        Break
+
+      case List(Id("continue")) =>
+        Continue
+
+      case List(Id("if"), test, left) =>
+        state.progs.if_(expr(scope, test), stmt(scope, proc, left), Block(Nil, Nil))
+
+      case List(Id("if"), test, left, right) =>
+        state.progs.if_(expr(scope, test), stmt(scope, proc, left), stmt(scope, proc, right))
+
+      case List(Id("while"), test, prog) =>
+        val prog_ = stmt(scope, proc, prog)
+        state.progs.while_(expr(scope, test), prog_, modifies(prog_))
+
+      case List(Id("label" | "goto"), _*) =>
+        Error.raise("not supported", "labels and gotos")
+
+      // not part of SV-LIB
+
+      case List(Id("assert"), phi) =>
+        Spec.assert(expr(scope, phi))
+
+      case List(Id("abort")) =>
+        Spec(Nil, False, True)
+
+      case List(Id("spec"), xs, pre, post) =>
+        Spec(variables(scope, xs), expr(scope, pre), expr(scope, post))
+
+      case List(Id("block"), List(Id("locals"), locals*), progs*) =>
+        val locals_ = list(locals) { formal(scope, _) }
+        val scope_ = scope ++ locals_
+        state.progs.block(locals_, list(progs) { stmt(scope_, proc, _) })
+
+      case List(Id("iter"), prog) =>
+        val prog_ = stmt(scope, proc, prog)
+        state.progs.iter(prog_, modifies(prog_))
+
+      // the time is bound on Real
+      case List(Id("ode"), Id(time), List(pairs*), dom) =>
+        val time_ = Var(time, Sort.real)
+        val scope_ = scope ++ List(time_)
+        val (xs, rhs) = assignments(scope_, pairs)
+        state.progs.ode(time_, xs, rhs, expr(scope_, dom), Attrs.empty)
+
+      case List(Id("par"), calls*) =>
+        val calls_ =
+          list(calls):
+            case from =>
+              stmt(scope, proc, from) match
+                case call: Call => call
+                case prog_      => Error.raise("parallel composition of statements that are not calls", prog_)
+        state.progs.par(calls_)
+
+      case _ =>
+        Error.raise("not a statement", Parser.head(from))
+
+  // the properties of the statement `tagged`, written `inline` as its annotation or in an annotate-tag command, whose
+  // values are resolved by their keyword, wherever they are written: formulas for location invariants, invariants and
+  // contracts, which are those of the core, integers for termination measures, names for tags, and variables for
+  // modifies clauses; other attributes, e.g. :named, are kept
+  def properties(tagged: Tagged, inline: Boolean, from: List[Any]): Attrs =
+    val scope = tagged.scope
+
+    val attrs_ =
+      for (kw, arg) <- Parser.annotations(from)
+      yield (kw, arg) match
+        case ("tag", Some(Id(tag))) if inline =>
+          val tag_ : Name = tag
+          kw -> Some(tag_)
+
+        case ("tag", _) =>
+          Error.raise("tag in an annotate-tag command", arg.getOrElse(kw))
+
+        // the precondition is evaluated at the entry, where the old values are the current ones (see State.declare)
+        case ("requires", Some(phi)) =>
+          kw -> Some(Old.elim(Nil, Nil, formula(tagged, scope, phi)))
+
+        // not part of SV-LIB: the assumption and commitment of a procedure (see verify.VCGen)
+        case ("check-true" | "invariant" | "ensures" | "assumes" | "commits", Some(phi)) =>
+          kw -> Some(formula(tagged, scope, phi))
+
+        case ("decreases", Some(arg)) =>
+          kw -> Some(integer(tagged, scope, arg))
+
+        // not part of SV-LIB: the global variables that a procedure or loop modifies, in place of those inferred
+        case ("modifies", Some(List(xs*))) =>
+          kw -> Some(list(xs) { variable(scope, _) })
+
+        case ("recurring" | "not-recurring" | "decreases-lex", _) =>
+          Error.raise("not supported", kw)
+
+        case _ =>
+          kw -> arg
+
+    Attrs(attrs_)
+
+  def formula(tagged: Tagged, scope: Scope, from: Any): Expr =
+    state.exprs.check(scope, expr(scope, at(tagged, from)), Sort.bool)
+
+  def integer(tagged: Tagged, scope: Scope, from: Any): Expr =
+    state.exprs.check(scope, expr(scope, at(tagged, from)), Sort.int)
+
+  // (at x tag) refers to the value of the variable x at the entry of the enclosing procedure, old(x), if `tag` is
+  // the tag of its body, which is supported for global variables (see Old.elim) and for inputs, which are never
+  // assigned; the values of outputs and locals at the entry, other tags, and final are not supported
+  def at(tagged: Tagged, from: Any): Any =
+    from match
+      case List(Id("at"), Id(x), Id(tag)) =>
+        val x_ : Name = x
+        val tag_ : Name = tag
+        val Proc(_, _, in, _) = state.procs(tagged.proc)
+
+        Error.report("at refers to a tag other than that of the body of the procedure", from):
+          require(state.procattrs(tagged.proc).tags.contains(tag_))
+
+        Error.report("at refers to a variable that is neither global nor an input", from):
+          require((state.globals ++ in).exists(_.name == x_))
+
+        List(Id("old"), Id(x))
+
+      case List(Id("at" | "final"), _*) =>
+        Error.raise("not supported", from)
+
+      case List(args*) =>
+        args.toList.map(at(tagged, _))
+
+      case _ =>
+        from
+
+  // the annotations of an annotate-tag command, resolved as if written at the first statement with the tag
   def annotate(tag: Name, from: List[Any]): Cmd =
     Error.report("unknown tag", tag):
       require(tags.contains(tag))
 
-    linked(tag, contract(tags(tag).head.scope, from))
+    linked(tag, properties(tags(tag).head, false, from))
 
   // the variables of the annotations `attrs` of `tag` must be in scope at every statement with the tag
   def linked(tag: Name, attrs: Attrs): Cmd =
@@ -427,30 +715,19 @@ class Parser(private var init: State):
 
     AnnotateTag(tag, attrs)
 
-  // the arguments of a verify-call of SV-LIB are resolved in the scope of the global variables and checked against
-  // the signature of the procedure; if it is not declared, e.g. in the output of -vcgen, where the procedures are
-  // replaced by their goals, the arguments are checked on their own
+  // the arguments of a verify-call are terms over the global variables, checked against the inputs of the procedure,
+  // which must be declared
   def verifyCall(name: Name, from: List[Any]): Cmd =
     val scope = Scope(Nil, state.globals)
-    val args = list(from) { expr(scope, _) }
+    VerifyCall(name, state.exprs.arguments(scope, name, list(from) { expr(scope, _) }))
 
-    if state.procs.contains(name) then
-      val Proc(_, _, _, out) = state.procs(name)
-      val res = Expr.vars("r", out.types).fresh
-      val mod = state.procattrs(name).modifies.toSet
-      state.progs.check(scope ++ res, Set(), mod, Call(name, args, res)) match
-        case Call(_, args_, _) => VerifyCall(name, args_)
-        case prog              => Error.raise("not a call", prog)
-    else
-      VerifyCall(name, args.map(arg => state.exprs.check(scope, arg, arg.typ)))
-
-  // attributes whose arguments are resolved: formulas for contracts, invariants and location invariants (SV-LIB),
-  // integers for termination measures, lists of variables for modifies, and names for tags (SV-LIB)
+  // the attributes of a procedure without body, whose arguments are resolved: formulas for contracts, integers for
+  // termination measures, and lists of variables for modifies
   def contract(scope: Scope, from: List[Any]): Attrs =
     val attrs_ =
       for (kw, arg) <- Parser.annotations(from)
       yield (kw, arg) match
-        case ("requires" | "ensures" | "invariant" | "check-true" | "assumes" | "commits", Some(phi)) =>
+        case ("requires" | "ensures" | "assumes" | "commits", Some(phi)) =>
           kw -> Some(state.exprs.check(scope, expr(scope, phi), Sort.bool))
 
         case ("decreases", Some(arg)) =>
@@ -458,11 +735,6 @@ class Parser(private var init: State):
 
         case ("modifies", Some(List(xs*))) =>
           kw -> Some(list(xs) { variable(scope, _) })
-
-        // the tags of SV-LIB, e.g. in printed output that is parsed again
-        case ("tag", Some(Id(tag))) =>
-          val tag_ : Name = tag
-          kw -> Some(tag_)
 
         case _ =>
           kw -> arg
@@ -488,71 +760,6 @@ class Parser(private var init: State):
         case List(x, arg) => (variable(scope, x), expr(scope, arg))
         case from         => Error.raise("not an assignment", from)
     pairs.unzip
-
-  // programs as written by the printer, the expressions are type checked together with the whole body
-  def prog(scope: Scope, from: Any): Prog =
-    from match
-      case List(Id("break"))    => Break
-      case List(Id("continue")) => Continue
-      case List(Id("return"))   => Return
-      case List(Id("abort"))    => Spec(Nil, False, True)
-
-      case List(Id("assume"), phi) =>
-        Spec.assume(expr(scope, phi))
-
-      case List(Id("assert"), phi) =>
-        Spec.assert(expr(scope, phi))
-
-      case List(Id("havoc"), xs*) =>
-        Spec.havoc(list(xs) { variable(scope, _) })
-
-      case List(Id("spec"), xs, pre, post) =>
-        Spec(variables(scope, xs), expr(scope, pre), expr(scope, post))
-
-      case List(Id("assign"), pairs*) =>
-        val (lhs, rhs) = assignments(scope, pairs)
-        state.progs.assign(lhs, rhs)
-
-      case List(Id("call"), Id(name), List(args*), res) =>
-        state.progs.call(name, list(args) { expr(scope, _) }, variables(scope, res))
-
-      case List(Id("block"), List(Id("locals"), locals*), progs*) =>
-        val locals_ = list(locals) { formal(scope, _) }
-        val scope_ = scope ++ locals_
-        state.progs.block(locals_, list(progs) { prog(scope_, _) })
-
-      case List(Id("choose"), progs*) =>
-        Choice(list(progs) { prog(scope, _) })
-
-      case List(Id("if"), test, left, right) =>
-        state.progs.if_(expr(scope, test), prog(scope, left), prog(scope, right))
-
-      case List(Id("while"), test, body, attrs*) =>
-        val attrs_ = contract(scope, attrs.toList)
-        for tag <- attrs_.tags do record(tag, Tagged(scope, None, None, Set()))
-        state.progs.while_(expr(scope, test), prog(scope, body), attrs_)
-
-      case List(Id("iter"), body, attrs*) =>
-        state.progs.iter(prog(scope, body), contract(scope, attrs.toList))
-
-      // the time is bound on Real
-      case List(Id("ode"), Id(time), List(pairs*), dom, attrs*) =>
-        val time_ = Var(time, Sort.real)
-        val scope_ = scope ++ List(time_)
-        val (xs, rhs) = assignments(scope_, pairs)
-        state.progs.ode(time_, xs, rhs, expr(scope_, dom), contract(scope_, attrs.toList))
-
-      case List(Id("par"), calls*) =>
-        val calls_ =
-          list(calls):
-            case from =>
-              prog(scope, from) match
-                case call: Call => call
-                case prog_      => Error.raise("parallel composition of statements that are not calls", prog_)
-        state.progs.par(calls_)
-
-      case _ =>
-        Error.raise("not a program", Parser.head(from))
 
   // the sort `name` must have been declared already as it may occur recursively
   def datatype(name: Name, decl: Any): Datatype =

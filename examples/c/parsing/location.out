@@ -50,15 +50,16 @@
   sum
   ((n Int))
   ((result Int))
-  (block
-    (locals)
+  ()
+  (sequence
     (block
       (locals (s Int) (i Int))
       (assign (s 0))
       (assign (i 0))
-      (while
-        (< i n)
-        (block (locals) (assign (s (+ s i))) (assign (i (+ i 1))))
+      (!
+        (while
+          (< i n)
+          (sequence (assign (s (+ s i))) (assign (i (+ i 1)))))
         :location
         (8 3 sum))
       (assign (result s))
@@ -68,48 +69,48 @@
   main
   ()
   ((result Int))
-  (block
-    (locals (tmp$1 Bool) (tmp$2 Int))
+  ((tmp$1 Bool) (tmp$2 Int))
+  (sequence
     (block
       (locals (x Int))
       (assign (x 0))
       (assign (tmp$1 true))
-      (while
-        (or tmp$1 (< x 10))
-        (block
-          (locals)
-          (assign (tmp$1 false))
-          (block (locals) (assign (x (+ x 1)))))
+      (!
+        (while
+          (or tmp$1 (< x 10))
+          (sequence
+            (assign (tmp$1 false))
+            (sequence (assign (x (+ x 1))))))
         :location
         (14 3 main))
       (block
         (locals (i Int))
         (assign (i 0))
-        (while
-          (< i 10)
-          (block
-            (locals)
-            (block
-              (locals)
-              (while (> x 0) (assign (x (- x 1))) :location (19 2 main)))
-            (assign (i (+ i 1))))
+        (!
+          (while
+            (< i 10)
+            (sequence
+              (sequence
+                (!
+                  (while (> x 0) (assign (x (- x 1))))
+                  :location
+                  (19 2 main)))
+              (assign (i (+ i 1)))))
           :location
           (18 3 main)))
       (block
         (locals (j Int))
         (assign (j 0))
-        (while
-          (< j 10)
-          (block
-            (locals)
-            (block
-              (locals)
-              (if
-                (= j 5)
-                (block (locals) (assign (j (+ j 1))) (continue))
-                (block (locals)))
-              (assign (x (+ x 1))))
-            (assign (j (+ j 1))))
+        (!
+          (while
+            (< j 10)
+            (sequence
+              (sequence
+                (if
+                  (= j 5)
+                  (sequence (assign (j (+ j 1))) (continue)))
+                (assign (x (+ x 1))))
+              (assign (j (+ j 1)))))
           :location
           (22 3 main)))
       (call sum (x) (tmp$2))

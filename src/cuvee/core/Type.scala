@@ -17,14 +17,12 @@ sealed trait Type:
   def params: Set[Param]
   // the sort constructors that occur in the type
   def cons: Set[Con]
-  def sig: Option[Sig]
 
 // a type parameter, which is rigid inside the declaration that introduces it (see rigid),
 // and is instantiated freshly at each use otherwise
 case class Param(name: Name) extends Type:
   def params = Set(this)
   def cons = Set()
-  def sig = None
 
   def asIndex = (name, this)
 
@@ -39,7 +37,6 @@ case class Sort(con: Con, args: List[Type]) extends Type:
   def name = con.name
   def params = args.params
   def cons = args.cons + con
-  def sig = Some(Sig(con.name, args.sig))
 
 // the counter for fresh type parameters
 // bitvectors of width n, (_ BitVec n) in SMT-LIB, whose functions are instantiated per width (see BitVecs)
@@ -47,7 +44,6 @@ case class BitVec(n: Int) extends Type:
   def name = Name("BitVec", None)
   def params = Set()
   def cons = Set()
-  def sig = Some(Sig(Name("BitVec", Some(n)), Nil))
 
 // the counter for fresh type parameters
 object Param extends Counter:
@@ -506,6 +502,23 @@ object Type:
         val su = Subst.fresh(fun.params)
         Error.report("type mismatch", expr, expr.typ, res):
           unify(state, scope, su(expr.typ), res, subst)
+
+  // the arguments of a verify-call of the procedure `name`, checked together against its inputs, whose type parameters
+  // are instantiated freshly, as those of a call (see check(prog)), which has results as well
+  def arguments(state: State, scope: Scope, name: Name, args: List[Expr]): List[Expr] =
+    Error.report("procedure not declared", name):
+      require(state.procs.contains(name))
+
+    val Proc(_, params, in, _) = state.procs(name)
+
+    Error.report("wrong number of arguments in verify-call", name, args):
+      require(in.length == args.length)
+
+    val su = Subst.fresh(params)
+    val subst = Ref[Subst[Type, Expr]](Subst.empty)
+    val pending = Ref[List[App]](Nil)
+    check(state, scope, args, su(in.types), subst, pending)
+    instantiate(state, scope, subst, pending, args)
 
   // patterns consist of variables and constructors applied to patterns, where each variable occurs at most once
   def pattern(state: State, pat: Expr): Boolean =

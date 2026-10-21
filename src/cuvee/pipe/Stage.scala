@@ -5,8 +5,10 @@ import cuvee.Error
 import cuvee.core._
 
 // arguments: the configuration of the run, e.g. its printer, the state, which already encompasses the new commands,
-// the commands passed so far, the new commands, and the command that flushes them, e.g. Done
-type Transform = (Config, State, List[Cmd], List[Cmd], Cmd) => List[Cmd]
+// the commands passed so far, the new commands, and the command that flushes them, e.g. Done;
+// the result: the commands in front of the flush, and the command that flushes them downstream, usually the same,
+// none if the transform consumes it, e.g. Horn the verify-call (see Stage.query)
+type Transform = (Config, State, List[Cmd], List[Cmd], Cmd) => (List[Cmd], Option[Cmd])
 
 object Stage:
   def empty(config: Config, init: State, transform: Transform, next: Sink) =
@@ -52,11 +54,19 @@ case class Stage(
         val stage_ = copy(rpending = decl :: rpending, state = state.add(decl))
         (Ack.Success, Nil, stage_)
 
+      // push, pop, and reset change the stack of every stage, Done and Exit end the input for every sink, hence these
+      // are passed on whatever the transform returns; another flush that the transform consumes is acknowledged
       case last =>
         val pending = rpending.reverse
 
-        val cmds = transform(config, state, prefix, pending, last)
-        val (result, added, next_) = next.query(cmds, last)
+        val (cmds, flush) = transform(config, state, prefix, pending, last)
+        val (result, added, next_) =
+          last match
+            case Push(_) | Pop(_) | Reset | Done | Exit => next.query(cmds, last)
+            case _ =>
+              flush match
+                case Some(flush) => next.query(cmds, flush)
+                case None        => (Ack.Success, Nil, next.exec(cmds))
 
         val prefix_ = prefix ++ pending
         val rpending_ = Nil

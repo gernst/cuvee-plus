@@ -409,6 +409,11 @@ case class State(
     def check(scope: Scope, expr: Expr, typ: Type) =
       Overload(State.this, Type.expand(State.this, Type.check(State.this, scope, expr, typ)))
 
+    // the arguments of a verify-call of procedure `name` (see Type.arguments)
+    def arguments(scope: Scope, name: Name, args: List[Expr]) =
+      for arg <- Type.arguments(State.this, scope, name, args)
+      yield Overload(State.this, Type.expand(State.this, arg))
+
   // programs, which are type checked as a whole by `check`
   object progs:
     def check(scope: Scope, fixed: Set[Var], mod: Set[Var], prog: Prog) =

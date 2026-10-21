@@ -127,28 +127,27 @@
   incr
   ((y T))
   ((z T))
-  (block
-    (locals)
-    (assign (z (+ y 1)))
-    (assign (count (+ count 1))))
-  :modifies
-  (count)
-  :ensures
-  (and
-    (= z (+ y 1))
-    (= count (+ (old count) 1))))
+  ()
+  (!
+    (sequence
+      (assign (z (+ y 1)))
+      (assign (count (+ count 1))))
+    :ensures
+    (and
+      (= z (+ y 1))
+      (= count (+ (old count) 1)))))
 
 (define-proc
   twice
   ((a T))
   ((b T))
-  (block (locals (c Int)) (assign (c a)) (call incr (c) (b)) (call incr (b) (b)))
-  :modifies
-  (count)
-  :ensures
-  (and
-    (= b (+ a 2))
-    (= count (+ (old count) 2))))
+  ((c Int))
+  (!
+    (sequence (assign (c a)) (call incr (c) (b)) (call incr (b) (b)))
+    :ensures
+    (and
+      (= b (+ a 2))
+      (= count (+ (old count) 2)))))
 
 (lemma
   (!

@@ -79,10 +79,6 @@ extension (self: Iterable[Prog])
   @targetName("Progs.mod")
   def mod = self.flatMap(_.mod).toSet
 
-extension (self: List[Type])
-  @targetName("Types.sig")
-  def sig = self.map(_.sig)
-
 extension (self: List[Expr])
   @targetName("Exprs.types")
   def types = self.map(_.typ)

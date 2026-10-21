@@ -103,7 +103,7 @@ object Path:
 // except for programs without loops
 object TEQ extends Transform:
   // the lemma database is injected by the source (see Config.injected)
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): List[Cmd] =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
     val gs = Type.expand(state, state.globals)
     val entry = config.entryPoint
 
@@ -126,7 +126,7 @@ object TEQ extends Transform:
         cmd_ <- verify(config, state, gs, entry, cmd)
       yield cmd_
 
-    cmds_ ++ check
+    (cmds_ ++ check, Some(last))
 
   // a verify-call of SV-LIB checks the precondition of the procedure for its arguments, under the axioms about the
   // constants (e.g. (assert (<= 0 y0)), see Horn.isAxiom), as the property correct-annotations requires

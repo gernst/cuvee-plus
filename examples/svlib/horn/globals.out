@@ -79,9 +79,5 @@
 
 (check-sat)
 
-(verify-call main ())
-
-(check-sat)
-
 (get-model)
 

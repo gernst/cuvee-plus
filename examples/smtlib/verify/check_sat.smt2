@@ -6,9 +6,8 @@
 (assert (< 0 c))
 (assert (< c 0))
 
-(define-proc p ((x Int)) ((y Int))
-  (block
-    (locals)
+(define-proc p ((x Int)) ((y Int)) ()
+  (sequence
     (assign (y (+ x 1)))
     (assert (< x y))))
 
