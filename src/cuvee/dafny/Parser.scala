@@ -10,6 +10,10 @@ import cuvee.core.Attrs
 import cuvee.sexpr
 
 class Parser(var state: State):
+  // the commands of an included file, parsed by a fresh parser (see Source.included)
+  var include: String => List[core.Cmd] =
+    path => Error.raise("include not supported here", path)
+
   // the constructors and selectors of a datatype whose sort is declared already
   def datatype(data: DataDef) =
     val DataDef(_, name, params, constrs, _) = data
@@ -120,6 +124,12 @@ class Parser(var state: State):
     cmd match
       case Check =>
         List(core.CheckSat)
+
+      // the declarations of the included file are known to the rest of the input
+      case Include(path) =>
+        val cmds = include(path)
+        for case decl: core.Decl <- cmds do state = state.add(decl)
+        cmds
 
       case VarDef(vars) =>
         val scope = Scope.empty

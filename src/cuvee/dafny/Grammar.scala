@@ -439,8 +439,11 @@ object Grammar:
   val fuse =
     Fuse(P("fuse" ~ annotation.* ~ expr ~ "=" ~ "???"))
 
+  val include =
+    Include(P("include" ~ str))
+
   val cmd: Parser[Cmd] =
-    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check | fuse)
+    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check | fuse | include)
 
   val script =
     P(cmd.*)

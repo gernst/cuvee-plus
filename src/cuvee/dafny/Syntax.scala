@@ -146,6 +146,8 @@ case object Check extends Cmd
 // fuse term = ???, where term is the composition of two defined functions (see core.FuseFuns)
 case class Fuse(attrs: List[String], term: Expr) extends Cmd
 case class VarDef(vars: List[(String, Type)]) extends Cmd
+// include "path", the commands of another file, relative to the including one (see Source.included)
+case class Include(path: String) extends Cmd
 case class SortDef(attrs: List[String], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
 case class DataDef(attrs: List[String], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
 case class DataDefs(datas: List[DataDef]) extends Cmd
@@ -194,6 +196,7 @@ object Lemma
 object Goal extends ((List[String], List[String], Expr) => Cmd)
 object Fuse extends ((List[String], Expr) => Cmd)
 object VarDef extends (List[(String, Type)] => Cmd)
+object Include extends (String => Cmd)
 object SortDef extends ((List[String], String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
 object DataDef extends ((List[String], String, List[String], List[Constr], Option[List[Cmd]]) => DataDef)
 object DataDefs extends (List[DataDef] => Cmd)

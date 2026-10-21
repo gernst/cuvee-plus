@@ -280,6 +280,15 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      another (unparenthesized) comparison (`Parser.chain`). Parenthesized expressions are `Tuple(List(e))` in the syntax,
      which is how `(x == y) == b` stays apart. Chains must not mix `<`/`<=`
      with `>`/`>=`.
+   - Dafny's `include "path"` parses the file at `path`, relative to the
+     including file, by a fresh parser that starts from the state after the
+     prelude (`dafny.Source.included`), which is immutable and shared by all
+     includes: the file cannot refer to the declarations of the including one.
+     Its commands take the place of the `include`, and the parser adds their
+     declarations to its state, so the rest of the input can use them. A file
+     is included as often as it is mentioned, cycles are not detected, and
+     the prelude has no includes; an `include` in a file of `-include` is
+     relative to the input ([include.dfy](../examples/dafny/parsing/include.dfy)).
 5. **Prelude** (`resources/cuvee/<lang>/prelude.*`), in the frontend's own
    syntax: the built-in sorts, the generic operators, and definitions such as
    Dafny's tuples. Each declaration names the languages that it is part of by

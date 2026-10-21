@@ -1,0 +1,11 @@
+function base(x: int): int {
+  x + 1
+}
+
+function twice(x: int): int {
+  2 * base(x) - 1
+}
+
+lemma quadruple(x: int)
+  ensures twice(twice(x)) == 4 * base(x) - 1
+
