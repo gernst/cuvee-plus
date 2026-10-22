@@ -14,6 +14,7 @@ import cuvee.simplify.Simplify
 import cuvee.prove.Prove
 import cuvee.transform.Fallback
 import cuvee.transform.Flat
+import cuvee.transform.Impl
 import cuvee.transform.Monomorph
 import cuvee.transform.Split
 import cuvee.verify.Horn
@@ -25,6 +26,15 @@ case class Flag(
     help: String,
     action: PartialFunction[(Config, List[String]), (Config, List[String])]
 )
+
+// a module of a feature, resources/cuvee/<feature>/<name>.dfy, injected by -include <feature>:<name>, with the
+// source that parses it
+case class Module(feature: String, source: Source, path: String)
+
+// a feature whose modules -include injects (see Config.features): the modules that are injected before them if the
+// feature is known, e.g. teq.dfy of -teq, and whether its modules need the feature to be known, since they are
+// written over these
+case class Feature(entry: List[(Source, String)], needsKnown: Boolean)
 
 // a language with the source that reads it and the printer that writes it,
 // features: the features that it has built in, whose declarations are not printed (see Sink.known),
@@ -100,8 +110,8 @@ case class Config(
     // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print;
     // teq injects the modules of the lemma database (see injected)
     known: Set[String] = Set(),
-    // the further modules of the lemma database, e.g. by -include teq:aggregation, with the sources that parse them
-    modules: List[(Source, String)] = Nil,
+    // the modules of features, e.g. of the lemma database by -include teq:aggregation (see injected)
+    modules: List[Module] = Nil,
     // the files of the user that are injected into the input after the modules, with the sources of their
     // languages (see -include and Source.apply)
     includes: List[(Source, String)] = Nil,
@@ -128,17 +138,32 @@ case class Config(
   def program: Source =
     if input.source == cuvee.yml.Source then cuvee.yml.Source.lang(file).source else input.source
 
-  // the modules of the lemma database that are injected into the input after its prelude (see Source.apply):
-  // teq.dfy of -teq (see TEQ.modules) if the feature teq is known, then the further ones, each once, such that the
-  // order of the options does not matter; the further ones are written over teq.dfy, hence they need it
-  def injected =
-    if modules.nonEmpty then
-      Error.report("-include teq:<concept> needs -teq or -known teq", modules.map(_._2)*):
-        require(known.contains("teq"))
+  // the modules that are injected into the input after its prelude (see Source.apply): the entries of the known
+  // features, e.g. teq.dfy of -teq (see TEQ.modules), then the modules of -include <feature>:<name>, each once, such
+  // that the order of the options does not matter; the modules of a feature that needs to be known need its entry
+  def injected: List[(Source, String)] =
+    for Module(name, _, path) <- modules
+    do
+      Config.features.toMap.get(name) match
+        case None =>
+          Error.raise("unknown feature of -include <feature>:<name>", name)
 
-    if known.contains("teq")
-    then (TEQ.modules ++ modules).distinct
-    else Nil
+        case Some(feature) =>
+          Error.report(s"-include $name:<concept> needs -$name or -known $name", path):
+            require(!feature.needsKnown || known.contains(name))
+
+    val entries =
+      for
+        (name, feature) <- Config.features
+        if known.contains(name)
+        module <- feature.entry
+      yield module
+
+    val modules_ =
+      for Module(_, source, path) <- modules
+      yield (source, path)
+
+    (entries ++ modules_).distinct
 
   // the receiver of the output, by the final configuration: the solver, if there is one, which answers the goals
   // and lemmas, otherwise the sink of the output, e.g. a printer, which answers them by their form
@@ -178,6 +203,13 @@ case class Config(
         Stage.empty(this, init, transform, next)
 
 object Config:
+  // the features whose modules -include <feature>:<name> injects, in the order of their entries: the lemma database
+  // of -teq, and the implementations of -implement, which need nothing, since a translation keeps them
+  val features = List(
+    "teq" -> Feature(TEQ.modules, needsKnown = true),
+    "impl" -> Feature(Nil, needsKnown = false)
+  )
+
   val default =
     Config(None, Lang.smtlib, Lang.smtlib, (config, printer, _) => Sink.stream(config.stdout, printer, config.output.features), (config, printer) => Report.stream(config.stderr, printer))
 
@@ -192,6 +224,13 @@ object Config:
       case (config, arg :: rest) =>
         val modules = arg.split(",")
         val config_ = config.copy(debug = config.debug ++ modules)
+        (config_, rest)
+
+  // a transformation of the task, not a technique, hence a translation without it keeps the task as written
+  val implement =
+    flag("-implement", "replace the functions implemented by procedures with :implementation <function> by calls in the expressions that programs execute, whose contracts may leave the result open, e.g. before -vcgen"):
+      case (config, rest) =>
+        val config_ = config.using(Impl)
         (config_, rest)
 
   val vcgen =
@@ -359,22 +398,23 @@ object Config:
         (config_, rest)
 
   // a file of the user, e.g. with lemmas, in the language of its extension; task definitions describe no declarations
-  // teq:<concept> is the module <concept>.dfy of the lemma database (resources/cuvee/teq), e.g. teq:sorted, which
-  // the output hides like the rest of the database if the feature teq is known (-teq), and prints otherwise, e.g.
-  // for -print lean of the database
+  // <feature>:<name> is the module resources/cuvee/<feature>/<name>.dfy of a feature (see features), e.g. teq:sorted
+  // of the lemma database, which the output hides like the rest of the database if the feature teq is known (-teq),
+  // and prints otherwise, e.g. for -print lean of the database
   val include =
-    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; teq:<concept> injects the module <concept> of the lemma database of -teq: aggregation, arithmetic, arrays, counters, search, sorted, strides, unsigned"):
-      // a module that does not exist is reported by the source (see Source.resource)
-      case (config, file :: rest) if file.startsWith("teq:") =>
-        val module = TEQ.module(file.drop(4))
-        (config.copy(modules = config.modules :+ (cuvee.dafny.Source, module)), rest)
+    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; <feature>:<name> injects the module <name> of a feature: teq:<concept> of the lemma database of -teq (aggregation, arithmetic, arrays, counters, search, sorted, strides, unsigned), impl:<name> of the implementations of -implement"):
+      // an unknown feature is reported with the input (see injected), a module that does not exist by the source
+      // (see Source.resource)
+      case (config, file :: rest) if file.contains(":") =>
+        val (name, module) = file.splitAt(file.indexOf(":"))
+        (config.copy(modules = config.modules :+ Module(name, cuvee.dafny.Source, s"/cuvee/$name/${module.drop(1)}.dfy")), rest)
       case (config, file :: rest) if langs.get(file.suffix).exists(_ != Lang.yml) =>
         (config.including(langs(file.suffix).source, file), rest)
 
   // the options in groups, in the order of doc/options.md, for -help
   val groups = List(
     "input" -> List(arch, unbounded, entry_, include, hybrid),
-    "transformations" -> List(vcgen, teq, chc, flat, simplify, prove, rules, fallback, split, monomorph, fuse),
+    "transformations" -> List(implement, vcgen, teq, chc, flat, simplify, prove, rules, fallback, split, monomorph, fuse),
     "output" -> List(print_, quiet, linewidth, known_, output),
     "solvers and answers" -> List(z3, cvc5, timeout_, witness),
     "debugging" -> List(debug_)
@@ -439,7 +479,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.48.1"
+  val release = "0.49.0"
 
   def version() =
     println("Cuvée " + release)

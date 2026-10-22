@@ -33,7 +33,7 @@ transformation and any output.
 | `cuvee.verify` | `VCGen` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), `FourierMotzkin` (linear constraints over the rationals), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
 | `cuvee.prove` | the deduction engine of `-prove` ([prove.md](prove.md)): `Prove` (the transform), `Simplify` and `Rewrite` (the traversal and the matcher, copied from `cuvee.simplify` and adapted, independent of it), `Context` with `Classes` (congruence closure), `Linear` and `Simplex` (linear arithmetic over the rationals), `Views` (the per-variable projections of traces of several accumulators), and its own `Arith`, `Normalize`, `Rule`. |
-| `cuvee.transform` | `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
+| `cuvee.transform` | `Impl` (implemented functions replaced by calls to their procedures, `-implement`), `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
 ## A run
@@ -42,7 +42,7 @@ transformation and any output.
 
 1. `Config.parse` reads the command line:
    - the input language from the file extension;
-   - the transforms in order (`-vcgen`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`, `-prove`),
+   - the transforms in order (`-implement`, `-vcgen`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`, `-prove`),
      and `-rules`, which makes `-simplify` report the rules it applies (see [simplifier.md](simplifier.md));
    - the printer (`-print`);
    - the sink (stdout, `-o`), the solver (`-z3`, `-cvc5`), which checks the
@@ -183,6 +183,14 @@ for every sink.
 - [`Prove`](../src/cuvee/prove/Prove.scala) is the second engine for the goals of trace equation systems
   (`-prove`), with congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole
   cycles and forward lemmas ([`Forward`](../src/cuvee/prove/Forward.scala)), see [prove.md](prove.md).
+- [`Impl`](../src/cuvee/transform/Impl.scala) replaces the functions that
+  procedures with `:implementation <function>` implement by calls in the
+  executed expressions of procedure bodies (`-implement`,
+  [options.md](options.md)): the calls are lifted in front of their statement
+  into fresh locals `test`, short-circuit operators and `ite` become
+  conditionals, a loop guard with calls an `Iter` that breaks; it is a
+  transformation of the task, hence optional, such that a translation keeps
+  the task as written.
 - [`Flat`](../src/cuvee/transform/Flat.scala) eliminates records
   (non-recursive datatypes with one constructor), whose declarations are
   dropped: functions take their fields, functions with records as results are
@@ -323,8 +331,13 @@ Each frontend follows the same structure (see `cuvee.dafny` and
    drops it, e.g. the tuples are `{:dfy}` only, so SMT-LIB output declares
    them as datatypes, and Dafny's `map` reaches the solvers as a declared
    sort. Declarations that coincide with existing ones leave the state
-   unchanged (`State.unless`). Transforms see the prelude's declarations,
-   e.g. `Monomorph` ignores those that are part of the output language.
+   unchanged (`State.unless`), except a sort declared again with
+   `:implementation` (`Attrs.isImplementation`), e.g. by a datatype that
+   defines a sort of the prelude in a module of `-include impl:<name>`: it
+   takes the new attributes, such that its definition carries them and is
+   printed rather than dropped with the prelude. Transforms see the
+   prelude's declarations, e.g. `Monomorph` ignores those that are part of
+   the output language.
    `Trace` is in no prelude: it exists only with `-teq` ([teq.md](teq.md)).
 6. **Printer** (`Printer.scala`): core back to concrete syntax with
    easyprint.

@@ -81,8 +81,12 @@ case class State(
         Block(locals, attrs_.checks.map(Spec.assert) ++ progs.map(annotated), rest)
       case _                        => prog.map(identity, annotated)
 
+  // a sort declared again with :implementation, e.g. by a datatype for a sort of a prelude, takes the new attributes,
+  // such that its definition carries them (see cmds.defineSort and cmds.declareDatatypes)
   def declare(name: Name, arity: Int, attrs: Attrs): State =
-    unless(sorts.get(name) == Some(Con(name, arity))):
+    if sorts.get(name) == Some(Con(name, arity)) && attrs.isImplementation
+    then copy(sortattrs = sortattrs + (name -> attrs))
+    else unless(sorts.get(name) == Some(Con(name, arity))):
       Error.report("sort already declared", name):
         require(!sorts.contains(name))
 
