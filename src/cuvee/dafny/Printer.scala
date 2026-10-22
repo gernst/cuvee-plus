@@ -280,8 +280,10 @@ object Printer extends cuvee.pipe.Printer:
     else space ~ text("returns (") ~ flow(out.map(formal)) ~ text(")")
 
   // selectors are declared without the qualification with the datatype, which the parser adds again
+  // the selector without the qualification of the parser, which is the core name of the datatype, e.g. Set_head of
+  // a datatype set, whose name is translated (see Parser.datatype)
   def selector(con: Con, sel: Fun): String =
-    name(sel.name).stripPrefix(name(con.name) + "_")
+    name(Name(sel.name.subscripted.stripPrefix(con.name.subscripted + "_"), None))
 
   def datatype(con: Con, data: Datatype, attrs: Attrs): Doc =
     val Datatype(params_, constrs) = data

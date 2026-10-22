@@ -388,8 +388,9 @@ object Grammar:
   val sortimpl =
     P(braces(sortcmd.*) | nil)
 
+  // {:name} or {:name value}, whose value is resolved by the parser depending on the name
   val annotation =
-    P(braces(":" ~ id))
+    P(braces(":" ~ id ~ expr.?))
 
   val sortdef =
     SortDef(P("type" ~ annotation.* ~ id ~ params ~ (right(braces(sortcmd.*)) | left(sortalias.?))))
@@ -416,7 +417,7 @@ object Grammar:
     Goal(P("goal" ~ params ~ annotation.* ~ expr))
 
   val vardef =
-    VarDef(P("var" ~ vars ~ Scanner.Choice(";", Scanner.Accept)))
+    VarDef(P("var" ~ annotation.* ~ vars ~ Scanner.Choice(";", Scanner.Accept)))
 
   val returns =
     P("returns" ~ formals)

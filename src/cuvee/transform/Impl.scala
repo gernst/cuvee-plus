@@ -9,7 +9,7 @@ import cuvee.sexpr.Id
 import cuvee.sexpr.Str
 
 // implementations of the functions of the core, e.g. those of sets, sequences, and maps, by procedures whose contracts
-// may leave the result open, i.e., nondeterministic operations: a procedure with the attribute :implementation f
+// may leave the result open, i.e., nondeterministic operations: a procedure with the attribute :implements f
 // implements the function named f of the same arity by its single output; the applications of such functions in the
 // expressions that programs execute become calls, in the order of evaluation, whose results are fresh locals, such that
 // each evaluation chooses anew; the right-hand sides of && || ==> and ite are evaluated only if they are needed, as are
@@ -19,13 +19,18 @@ import cuvee.sexpr.Str
 // and the implementing procedures, which must not rely on implementations themselves; applications under binders,
 // which bind variables of the arguments, and under old, which evaluates them in another state, are not supported
 object Impl extends Transform:
+  // the entry of the implementations, injected before the modules of -include impl:<name> (see Config.features),
+  // with the source that parses it
+  val modules =
+    List((cuvee.dafny.Source, "/cuvee/impl.dfy"))
+
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val procs = implementations(state)
 
     val cmds_ =
       for cmd <- cmds
       yield cmd match
-        case DefineProc(proc, body, attrs) if procs.nonEmpty && !attrs.contains("implementation") =>
+        case DefineProc(proc, body, attrs) if procs.nonEmpty && !attrs.contains("implements") =>
           DefineProc(proc, impl(state, procs, body), attrs)
 
         case _ =>
@@ -39,7 +44,7 @@ object Impl extends Transform:
     val entries =
       for
         (name, attrs) <- state.procattrs.toList
-        value <- attrs.get("implementation")
+        value <- attrs.get("implements")
       yield
         val proc = state.procs(name)
         val fun = value match

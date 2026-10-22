@@ -32,8 +32,8 @@ case class Flag(
 case class Module(feature: String, source: Source, path: String)
 
 // a feature whose modules -include injects (see Config.features): the modules that are injected before them if the
-// feature is known, e.g. teq.dfy of -teq, and whether its modules need the feature to be known, since they are
-// written over these
+// feature is known or one of its modules is included, e.g. teq.dfy of -teq, and whether its modules need the feature
+// to be known
 case class Feature(entry: List[(Source, String)], needsKnown: Boolean)
 
 // a language with the source that reads it and the printer that writes it,
@@ -138,9 +138,10 @@ case class Config(
   def program: Source =
     if input.source == cuvee.yml.Source then cuvee.yml.Source.lang(file).source else input.source
 
-  // the modules that are injected into the input after its prelude (see Source.apply): the entries of the known
-  // features, e.g. teq.dfy of -teq (see TEQ.modules), then the modules of -include <feature>:<name>, each once, such
-  // that the order of the options does not matter; the modules of a feature that needs to be known need its entry
+  // the modules that are injected into the input after its prelude (see Source.apply): the entries of the features
+  // that are known or whose modules are included, e.g. teq.dfy of -teq (see TEQ.modules) and impl.dfy (see
+  // Impl.modules), then the modules of -include <feature>:<name>, each once, such that the order of the options does
+  // not matter, since the modules are written over the entries
   def injected: List[(Source, String)] =
     for Module(name, _, path) <- modules
     do
@@ -155,7 +156,7 @@ case class Config(
     val entries =
       for
         (name, feature) <- Config.features
-        if known.contains(name)
+        if known.contains(name) || modules.exists(_.feature == name)
         module <- feature.entry
       yield module
 
@@ -207,7 +208,7 @@ object Config:
   // of -teq, and the implementations of -implement, which need nothing, since a translation keeps them
   val features = List(
     "teq" -> Feature(TEQ.modules, needsKnown = true),
-    "impl" -> Feature(Nil, needsKnown = false)
+    "impl" -> Feature(Impl.modules, needsKnown = false)
   )
 
   val default =
@@ -228,7 +229,7 @@ object Config:
 
   // a transformation of the task, not a technique, hence a translation without it keeps the task as written
   val implement =
-    flag("-implement", "replace the functions implemented by procedures with :implementation <function> by calls in the expressions that programs execute, whose contracts may leave the result open, e.g. before -vcgen"):
+    flag("-implement", "replace the functions implemented by procedures with :implements <function> by calls in the expressions that programs execute, whose contracts may leave the result open, e.g. before -vcgen"):
       case (config, rest) =>
         val config_ = config.using(Impl)
         (config_, rest)
@@ -479,7 +480,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.49.0"
+  val release = "0.49.1"
 
   def version() =
     println("Cuvée " + release)

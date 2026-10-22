@@ -129,10 +129,13 @@ case class Constr(name: String, sels: List[Sel])
 object Sel extends ((String, Type) => Sel)
 object Constr extends ((String, List[Sel]) => Constr)
 
-case class Axiom(params: List[String], attrs: List[String], phi: Expr) extends Cmd
+// an annotation {:name} or one with a value, {:name value}, e.g. the pattern {:implements x in this}
+type Annotation = (String, Option[Expr])
+
+case class Axiom(params: List[String], attrs: List[Annotation], phi: Expr) extends Cmd
 // lemma name<a>(x: A) returns (y: B) requires φ ensures ψ, whose body is absent (free) or empty
 case class Lemma(
-    attrs: List[String],
+    attrs: List[Annotation],
     name: String,
     params: List[String],
     formals: List[(String, Type)],
@@ -141,19 +144,19 @@ case class Lemma(
     ens: List[Expr],
     body: Option[Prog]
 ) extends Cmd
-case class Goal(params: List[String], attrs: List[String], phi: Expr) extends Cmd
+case class Goal(params: List[String], attrs: List[Annotation], phi: Expr) extends Cmd
 case object Check extends Cmd
 // fuse term = ???, where term is the composition of two defined functions (see core.FuseFuns)
-case class Fuse(attrs: List[String], term: Expr) extends Cmd
-case class VarDef(vars: List[(String, Type)]) extends Cmd
+case class Fuse(attrs: List[Annotation], term: Expr) extends Cmd
+case class VarDef(attrs: List[Annotation], vars: List[(String, Type)]) extends Cmd
 // include "path", the commands of another file, relative to the including one (see Source.included)
 case class Include(path: String) extends Cmd
-case class SortDef(attrs: List[String], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
-case class DataDef(attrs: List[String], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
+case class SortDef(attrs: List[Annotation], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
+case class DataDef(attrs: List[Annotation], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
 case class DataDefs(datas: List[DataDef]) extends Cmd
 
 case class FunDef(
-    attrs: List[String],
+    attrs: List[Annotation],
     name: String,
     params: List[String],
     formals: List[(String, Type)],
@@ -165,7 +168,7 @@ case class FunDef(
 ) extends Cmd
 
 case class MethodDef(
-    attrs: List[String],
+    attrs: List[Annotation],
     name: String,
     params: List[String],
     formals: List[(String, Type)],
@@ -179,11 +182,11 @@ case class MethodDef(
     body: Option[Prog]
 ) extends Cmd
 
-object Axiom extends ((List[String], List[String], Expr) => Cmd)
+object Axiom extends ((List[String], List[Annotation], Expr) => Cmd)
 object Lemma
     extends (
         (
-            List[String],
+            List[Annotation],
             String,
             List[String],
             List[(String, Type)],
@@ -193,19 +196,19 @@ object Lemma
             Option[Prog]
         ) => Cmd
     )
-object Goal extends ((List[String], List[String], Expr) => Cmd)
-object Fuse extends ((List[String], Expr) => Cmd)
-object VarDef extends (List[(String, Type)] => Cmd)
+object Goal extends ((List[String], List[Annotation], Expr) => Cmd)
+object Fuse extends ((List[Annotation], Expr) => Cmd)
+object VarDef extends ((List[Annotation], List[(String, Type)]) => Cmd)
 object Include extends (String => Cmd)
-object SortDef extends ((List[String], String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
-object DataDef extends ((List[String], String, List[String], List[Constr], Option[List[Cmd]]) => DataDef)
+object SortDef extends ((List[Annotation], String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
+object DataDef extends ((List[Annotation], String, List[String], List[Constr], Option[List[Cmd]]) => DataDef)
 object DataDefs extends (List[DataDef] => Cmd)
-object FunDef extends ((List[String], String, List[String], List[(String, Type)], Type, List[Expr], List[Expr], List[List[Expr]], Option[Expr]) => Cmd)
+object FunDef extends ((List[Annotation], String, List[String], List[(String, Type)], Type, List[Expr], List[Expr], List[List[Expr]], Option[Expr]) => Cmd)
 
 object MethodDef
     extends (
         (
-            List[String],
+            List[Annotation],
             String,
             List[String],
             List[(String, Type)],
