@@ -1,4 +1,1 @@
-(error
-  "lemma does not hold"
-  "Sat"
-  "(= x 0)")
+incorrect

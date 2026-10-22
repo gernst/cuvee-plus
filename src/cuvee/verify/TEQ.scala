@@ -103,12 +103,12 @@ object Path:
 // except for programs without loops
 object TEQ extends Transform:
   // the lemma database is injected by the source (see Config.injected)
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val gs = Type.expand(state, state.globals)
-    val entry = config.entryPoint
+    val entry = config.entry
 
     // the entry point must be defined by the end of the input, e.g. main in C
-    if last == Done then
+    if last == Some(Done) then
       for p <- entry
       do
         Error.report("entry point not defined", p.name):
@@ -117,8 +117,8 @@ object TEQ extends Transform:
     // a verify-call ends the stage (last), after its goal of the precondition
     val check =
       last match
-        case VerifyCall(name, args) => precondition(state, prefix ++ cmds, name, args)
-        case _                      => Nil
+        case Some(VerifyCall(name, args)) => precondition(state, prefix ++ cmds, name, args)
+        case _                            => Nil
 
     val cmds_ =
       for
@@ -126,7 +126,7 @@ object TEQ extends Transform:
         cmd_ <- verify(config, state, gs, entry, cmd)
       yield cmd_
 
-    (cmds_ ++ check, Some(last))
+    (cmds_ ++ check, last)
 
   // a verify-call of SV-LIB checks the precondition of the procedure for its arguments, under the axioms about the
   // constants (e.g. (assert (<= 0 y0)), see Horn.isAxiom), as the property correct-annotations requires
@@ -145,17 +145,17 @@ object TEQ extends Transform:
 
   // the lemma database that -teq injects, its entry point resources/cuvee/teq.dfy: the declarations that the transform
   // and the engines refer to (Sort.trace, Fun.trace) and the lemmas about traces; the optional modules of
-  // resources/cuvee/teq are injected on demand by -include teq:<name>, after it
+  // resources/cuvee/teq are injected on demand by -include teq:<name>, after it; each with the source that parses it
   val modules =
-    List("/cuvee/teq.dfy")
+    List((cuvee.dafny.Source, "/cuvee/teq.dfy"))
 
   // the declarations of the functions on traces and the lemmas about them, the modules parsed in order by a fresh
   // parser for Dafny, for tests
   lazy val lemmas: List[Cmd] =
     val (_, parser, _) = cuvee.dafny.Source.newParser(Config.default)
-    modules.flatMap(cuvee.dafny.Source.parse(_, parser))
+    modules.flatMap((_, module) => cuvee.dafny.Source.parse(module, parser))
 
-  // a goal for the entry point only, if there is one (see Config.entryPoint), since calls are inlined, which checks
+  // a goal for the entry point only, if there is one (see Config.entry), since calls are inlined, which checks
   // the other procedures in the context of their calls; a goal for each procedure otherwise
   def verify(config: Config, state: State, gs: List[Var], entry: Option[Name], cmd: Cmd): List[Cmd] =
     cmd match

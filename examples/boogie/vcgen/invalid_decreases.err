@@ -1,3 +1,1 @@
-error "goal does not hold"
-  "Sat"
-  "(forall ((n Int) (r Int)) (=> (and (<= 0 n) true) (forall ((i$1 Int)) (and (<= 0 n) (forall ((i$1 Int)) (=> (<= 0 i$1) (and (=> (< 0 i$1) (and (<= 0 (+ i$1 0)) (or (and (<= 0 (+ i$1 1)) (< (+ i$1 0 1) (+ i$1 1))) (and (= (+ i$1 0 1) (+ i$1 1)) (<= 0 1) (< 1 1))))) (=> (not (< 0 i$1)) (and (=> (< 0 n) (and (<= 0 (- n 1)) (<= 0 n) (< (- n 1) n) (forall ((r$2 Int)) (=> true true)))) (=> (not (< 0 n)) true))))))))))"
+incorrect

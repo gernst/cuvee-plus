@@ -1,4 +1,4 @@
-// ./Cuvee.sh -chc -z3 -verify examples/c/verify/chc_unsafe.c
+// ./Cuvee.sh -chc -z3 examples/c/verify/chc_unsafe.c
 // the clauses are unsatisfiable, the assertion fails after the loop
 
 extern void reach_error(void);

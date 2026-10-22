@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -prove -fallback -z3 -verify examples/c/verify/teq_bits_abstract.c
+// ./Cuvee.sh -teq -prove -fallback -z3 examples/c/verify/teq_bits_abstract.c
 // & on integers other than 0 and 1 stays uninterpreted (bitand, :abstract in the prelude of C): z3 refutes the goal
 // by an interpretation of bitand that is not the bitwise and, which is no counterexample, hence unknown, not incorrect
 extern int __VERIFIER_nondet_int(void);

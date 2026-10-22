@@ -1,4 +1,4 @@
-// ./Cuvee.sh -vcgen -z3 -verify examples/c/verify/vcgen_no_invariant.c
+// ./Cuvee.sh -vcgen -z3 examples/c/verify/vcgen_no_invariant.c
 // the loop has no invariant, i.e., true, which is too weak: the refuted goal is :abstract, no counterexample
 
 extern void reach_error(void);

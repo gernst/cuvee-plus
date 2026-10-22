@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -prove -split -prove -fallback -z3 -verify examples/c/verify/teq_nested_break.c
+// ./Cuvee.sh -teq -prove -split -prove -fallback -z3 examples/c/verify/teq_nested_break.c
 // the exits of the inner loop, by its test (j == 10 is never reached) and by break (j == 5), are told apart by
 // branch conditions, such that the cases of the updates of the outer loop are disjoint; before, both were guarded
 // by true and j + 1 == 5, which contradict for j == 4 (x == 4 and x == 5), and z3 proved the false assertion

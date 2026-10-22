@@ -1,4 +1,4 @@
-// ./Cuvee.sh -vcgen -z3 -verify examples/c/verify/entry_context_vcgen.c
+// ./Cuvee.sh -vcgen -z3 examples/c/verify/entry_context_vcgen.c
 // -vcgen checks every function against its contract, even without one for all n, which does not hold
 extern int __VERIFIER_nondet_int(void);
 extern void abort(void);

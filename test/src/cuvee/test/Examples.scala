@@ -61,7 +61,7 @@ object Examples:
     cuvee.core.Param.reset()
     source(config, reader)
 
-  // the answer to the last check-sat among the results, e.g. before the model added by -chc
+  // the last answer among the results, e.g. to the last check-sat, or that of -chc to the program before its model
   def status(results: List[cuvee.core.Result]): cuvee.core.Status =
     results.collect { case status: cuvee.core.Status => status }.last
 
@@ -93,12 +93,12 @@ object Examples:
       case "expected: valid"   => true
       case "expected: invalid" => false
 
-  // the examples below `dir` with extension `ext` that are accepted, i.e., whose expected reports contain no errors
-  // other than goals that do not hold, except for the cases of the frontends and printers in the modules parsing
+  // the examples below `dir` with extension `ext` that are accepted, i.e., whose expected reports contain no errors,
+  // refuted goals are answered incorrect, except for the cases of the frontends and printers in the modules parsing
   // and printing, whose output is checked by its expected output, and the scripts of the module solver, which need one
   def valid(dir: os.SubPath, ext: String): List[os.Path] =
     def cases(file: os.Path) = file.segments.exists(Set("parsing", "printing", "solver"))
-    find(dir, ext).filter(file => !cases(file) && reported(file).forall(_ == "goal does not hold"))
+    find(dir, ext).filter(file => !cases(file) && reported(file).isEmpty)
 
   // the examples of the roundtrip suites (see roundtrip), which run every example again and parse its output back,
   // only if the environment variable CUVEE_PRINTING is set: they are needed when a parser or a printer changes
@@ -121,7 +121,7 @@ object Examples:
   def show(args: Seq[String]): Unit =
     println(("./Cuvee.sh" +: args.map(_.replace(workspace.toString + "/", ""))).mkString(" "))
 
-  // the messages of the errors among the expected reports of an example, e.g. "goal does not hold"
+  // the messages of the errors among the expected reports of an example
   def reported(file: os.Path): List[String] =
     errors(cuvee.test.Expected.expected(file.toNIO, "err"))
 

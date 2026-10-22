@@ -1,4 +1,4 @@
-// ./Cuvee.sh -vcgen -z3 -verify examples/c/verify/vcgen_invariant.c
+// ./Cuvee.sh -vcgen -z3 examples/c/verify/vcgen_invariant.c
 // the loop invariant is strong enough for the assertion
 extern void reach_error(void);
 void __VERIFIER_assert(int cond) { if (!cond) reach_error(); }

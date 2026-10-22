@@ -21,7 +21,7 @@ Main features:
 - **Simplifier** with a rewrite engine for lemmas (`-simplify`), and the
   **fallback** of the remaining goals to first-order logic (`-fallback`).
 - **Solvers** z3 and cvc5 (`-z3`, `-cvc5`), and **answers** `correct`,
-  `incorrect`, or `unknown` as in SV-COMP (`-verify`).
+  `incorrect`, or `unknown` as in SV-COMP to every goal and lemma.
 
 ## Competition preview (SV-COMP 2027)
 
@@ -178,21 +178,24 @@ lists them.
   *Trace Equation Systems for Program Verification*; and Fourier-Motzkin
   elimination over the rationals.
 - **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`), which check the output:
-  goals and lemmas are checked for validity, a goal that does not hold is an
-  error, and assertions and `check-sat` are passed
+  goals and lemmas are checked for validity and answered `correct`,
+  `incorrect`, or `unknown`, and assertions and `check-sat` are passed
   through. Lemmas with the attribute `free` (Dafny lemmas without a body) are
   assumed without proof, like axioms, although they are meant to follow from
   the theory.
-- **Answers** (`-verify`, with or without solver; procedures need `-vcgen`,
-  `-teq`, or `-chc`): instead of the output, `correct`, `incorrect`, or
-  `unknown` for each `verify-call` of SV-LIB, or once for other inputs, whether
-  the program satisfies its specification (contracts and loop invariants),
-  aggregated over all obligations: goals and lemmas, which must be valid, and
-  each `check-sat`, e.g. of `-chc`, which must be satisfiable. A refutation is
-  `incorrect`, unless the goal is `:abstract`, i.e., stronger than the
+- **Answers**: every goal and lemma that is not free is answered `correct`,
+  `incorrect`, or `unknown` when it is given, by the solver, or without
+  solver by its form (`true`, `false`); the answers to the outputs of a goal
+  are combined, e.g. the parts of `-split`, a goal dropped since it was
+  reduced to `true` is `correct`, and a procedure has one answer per goal
+  that `-vcgen` or `-teq` generates. A refutation is
+  `unknown` if the goal is `:abstract`, i.e., stronger than the
   specification: a loop without invariant under `-vcgen`, the lowering of
   `-fallback`, or a function declared `:abstract` that the goal applies, e.g.
   the bit operations of C, uninterpreted on integers other than 0 and 1.
+  `-chc` answers its `check-sat` `correct` for `sat` and `incorrect` for
+  `unsat`, followed by the model. `-quiet` prints the answers only, not the
+  output.
 
 Known limitations and planned work are listed in [TODO.md](TODO.md), bugs in [bugs.md](bugs.md).
 
@@ -204,11 +207,11 @@ SV-LIB.correct-tags.CoreVerification and SV-LIB.correct-tags.CTranslated
 (SV-LIB scripts, property `correct-tags`), with the same command for both:
 
 ```sh
-./Cuvee.sh -teq -prove -split -prove -fallback -z3 -timeout 900000 -verify [-arch 32|64] task
+./Cuvee.sh -teq -prove -split -prove -fallback -z3 -timeout 900000 [-arch 32|64] task
 ```
 
-where the answer is `correct` (the property holds), `incorrect` (it is
-violated), or `unknown`, one for each `verify-call` of an SV-LIB script.
+where the answers are `correct`, `incorrect`, or `unknown`, one per goal: the
+property is violated if one is `incorrect`, and holds if all are `correct`.
 Executions of a C program start in `main`, the entry point (`-entry <name>`
 selects another one): `-teq` emits a goal for `main` only and checks the
 other functions inlined at their calls, in their context; in SV-LIB, the
@@ -216,7 +219,7 @@ other functions inlined at their calls, in their context; in SV-LIB, the
 With `-witness <file>`, Cuvée writes a witness of SV-COMP for the answer to a C program: without invariants for
 true, with the call of `reach_error` as the target for false, which leave the proof or the search for the path to
 the validator (see doc/options.md).
-`-chc -z3 -verify` (Horn clauses) and `-vcgen -z3 -verify` (the annotations as
+`-chc -z3` (Horn clauses) and `-vcgen -z3` (the annotations as
 given, `unknown` for loops without invariant) are alternatives that are not
 used in the competition. The SV-LIB frontend does not support labels and
 gotos, `define-procs-rec`, the properties `:recurring` and `:not-recurring`, and
@@ -238,7 +241,7 @@ below and [doc/architecture.md](doc/architecture.md)). The runs included the mod
 `strides`, which the competition command does not load.
 
 - [cuvee.py](cuvee.py): the tool-info module of BenchExec, which interprets
-  the answers of `-verify` (`correct` is true and `incorrect` false, for every
+  the answers (any `incorrect` is false, all `correct` true, for every
   property); submitted to BenchExec as `benchexec/tools/cuvee.py`
   ([sosy-lab/benchexec#1327](https://github.com/sosy-lab/benchexec/pull/1327)).
   The entry of fm-tools (`data/cuvee.yml`, merge request !1176 of

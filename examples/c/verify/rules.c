@@ -1,5 +1,5 @@
-// ./Cuvee.sh -teq -prove -rules -verify examples/c/verify/rules.c
-// the rules applied by -simplify, (set-info :used ...), are printed on stderr, since -verify does not print the output
+// ./Cuvee.sh -teq -prove -rules examples/c/verify/rules.c
+// the rules applied by -prove, (set-info :used ...), are printed with the output
 
 extern void reach_error(void);
 void __VERIFIER_assert(int cond) { if (!cond) reach_error(); }

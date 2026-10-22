@@ -1,2 +1,2 @@
-// ./Cuvee.sh -print null examples/dafny/parsing/sequences_index_int.dfy
+// ./Cuvee.sh -quiet examples/dafny/parsing/sequences_index_int.dfy
 function f(n: int): int { n[0] }

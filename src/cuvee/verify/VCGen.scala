@@ -13,7 +13,7 @@ import cuvee.core.Attrs
 object VCGen extends Transform:
   // the global variables gs are computed once and passed to the generation of the verification conditions;
   // declarations keep defined sorts, which are expanded where they meet the expressions (see Type.expand)
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val gs = Type.expand(state, state.globals)
 
     val cmds_ =
@@ -25,7 +25,7 @@ object VCGen extends Transform:
     // a verify-call has no goal of its own: the precondition of the procedure is assumed for the arguments, as the
     // tasks of SV-LIB expect (e.g. core-verification/loop-add), and the procedures are verified by their definitions,
     // hence all executions from the call are covered
-    (cmds_, Some(last))
+    (cmds_, last)
 
   // the goals of a command, the other commands are kept
   def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
@@ -66,7 +66,7 @@ object VCGen extends Transform:
         List(cmd)
 
   // whether `prog` contains a loop without invariants, whose invariant is true, such that the goal is stronger than
-  // the specification and its refutation is no counterexample (see pipe.Verify)
+  // the specification and its refutation is no counterexample (see Solver.sink)
   def abstracts(prog: Prog): Boolean =
     prog match
       case While(_, _, attrs) if attrs.invariants.isEmpty => true

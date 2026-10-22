@@ -1,4 +1,4 @@
-// ./Cuvee.sh -print null examples/dafny/parsing/traces_map.dfy
+// ./Cuvee.sh -quiet examples/dafny/parsing/traces_map.dfy
 type Trace<a₀>
 type List<a₀>
 const J: List<int>

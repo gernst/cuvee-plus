@@ -46,8 +46,9 @@ transformation and any output.
      and `-rules`, which makes `-simplify` report the rules it applies (see [simplifier.md](simplifier.md));
    - the printer (`-print`);
    - the sink (stdout, `-o`), the solver (`-z3`, `-cvc5`), which checks the
-     output, and the answers of `-verify`, with or without solver;
-     `Config.receiver` builds the sink from the final configuration.
+     output, and `-quiet`, which prints only the reports, e.g. the answers;
+     `Config.receiver` builds the sink from the final configuration, the
+     reports go through `Config.reporter`, also to the witness of `-witness`.
 2. `config.input.source(reader)` parses the frontend's prelude first
    (`prelude.*`). It returns the initial `State`, which holds its
    declarations, and a lazy `LazyList[Cmd]`, which begins with these
@@ -74,8 +75,8 @@ transformation and any output.
    Dafny file without its logic: `teq` keeps the declarations and lemmas of
    the lemma database out of the output (they are declared in the input, as
    with `-teq`, but without its transform).
-   `-print null` and `-print scala` replace only
-   the printer of the output; transforms whose output a language cannot
+   `-print scala` replaces only the printer of the output, `-quiet` prints
+   nothing; transforms whose output a language cannot
    express (`hasMath`, e.g. `-chc` of C) print SMT-LIB instead. Lean
    (`Lang.lean`) is an output only, which knows the built-in declarations of
    all languages: its printer maps them to Lean (booleans to propositions,
@@ -89,7 +90,9 @@ transformation and any output.
    rules `@[simp]`; the output assumes `open Classical`.
 4. `Pipe.run` feeds the commands, followed by the internal `Done`, through
    the chain. It reports each result (`Ack`, `Status`, `Model`, `Error`, ...)
-   through `Report`. An `Error` stops the run unless the pipe is incremental;
+   through `Report`, first the answers that a flush brings (see "Answers"),
+   then the answer to the command itself; `Ack.Done` is no answer and not
+   reported. An `Error` stops the run unless the pipe is incremental;
    other exceptions are reported as `internal error` (stack trace with
    `-debug internal`) and always stop it. `Pipe.run` returns an exit code,
    1 for an error and 2 for an internal error, with which `Cuvee.main`
@@ -100,30 +103,31 @@ transformation and any output.
 
 A [`Stage`](../src/cuvee/pipe/Stage.scala) buffers declarations (`Decl`) and
 adds them to its state. A control command or query (`check-sat`, `push`,
-`Done`, ...) flushes the buffer: it calls the stage's `Transform` with:
+`Done`, ...) flushes the buffer, and so does a goal or a lemma that is not
+free, which is answered immediately (see "Answers"): it calls the stage's
+`Transform` with:
 
 - the configuration of the run, e.g. its printer for debug output;
 - the current state;
 - the commands passed so far;
 - the pending commands;
-- the flushing command.
+- the flushing command, none for a goal or lemma, which is among the pending
+  commands.
 
 It then passes the result on to the next sink. `push` and `pop` save and
-restore the prefix and the state. A transform is a plain function, which
-returns the commands in front of the flush and the command that flushes them
-downstream, usually the one it was given, none if it consumes it (`Horn` the
-`verify-call`, which is then acknowledged):
+restore the prefix and the state. A transform returns the commands in front of
+the flush and the command that flushes them downstream, usually the one it was
+given, none if it consumes it (`Horn` the `verify-call`, which is then
+acknowledged):
 
 ```scala
-type Transform = (Config, State, List[Cmd], List[Cmd], Cmd) => (List[Cmd], Option[Cmd])
+trait Transform:
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd])
 ```
 
 `push`, `pop`, `reset`, `Done`, and `Exit` are passed on whatever the
 transform returns, since they change the stacks of all stages or end the input
 for every sink.
-
-The answers to several queries that a transform adds, e.g. `check-sat` and
-`get-model` after `Horn`, are reported one by one (`Answers`).
 
 - [`VCGen`](../src/cuvee/verify/VCGen.scala) replaces each procedure
   definition by a goal: `∀ in, out, globals. pre ⇒ wp(body, post)`.
@@ -140,7 +144,7 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   by a goal from symbolic execution with trace equation systems for loops,
   one trace per strongly connected component of the read relation of a loop's
   variables, of several accumulators for a cycle (`TEQ.system`);
-  with an entry point (`Config.entryPoint`) only that of the entry point,
+  with an entry point (`Config.entry`) only that of the entry point,
   whose calls are inlined, see [teq.md](teq.md).
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
@@ -152,7 +156,7 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   - Procedures with a body have predicates and no contract, which is an
     error, except for `requires` of `main` (in C, the globals are zero; their
     initializers are assignments at the beginning of `main`). The entry
-    point (`Config.entryPoint`: `-entry`, or `main` in C) has the clause
+    point (`Config.entry`: `-entry`, or `main` in C) has the clause
     `requires ⇒ p_pre`; the other procedures have trivial contracts, their
     preconditions are inferred from their calls. Outside C and SV-LIB (whose
     entries are its `verify-call` commands), `-chc` needs `-entry`; a C
@@ -198,7 +202,8 @@ The answers to several queries that a transform adds, e.g. `check-sat` and
   functions by their instances, which are emitted before their first use.
 - [`Fallback`](../src/cuvee/transform/Fallback.scala) lowers trace equation
   systems into first-order logic for solvers (`-fallback`, see
-  [teq.md](teq.md)).
+  [teq.md](teq.md)): goals and lemmas that are not free are lowered, axioms
+  and free lemmas over traces, lists, and naturals are dropped.
 
 ### Sinks
 
@@ -213,37 +218,49 @@ and the next sink.
   - Goals and lemmas are checked for validity in a `push`/`pop` scope; lemmas
     are then asserted. Lemmas with the attribute `:free` are assumed without
     proof, like axioms.
-  - Procedures and global variables must have been eliminated by `-vcgen` or
-    `-chc`.
-- [`Verify`](../src/cuvee/pipe/Verify.scala) (`-verify`) answers
-  `correct`, `incorrect`, or `unknown` (the cases `Correct`, `Incorrect`, `Unknown` of
-  [`Status`](../src/cuvee/core/Cmd.scala))
-  to `verify-call`, and to `Done` if there was no `verify-call`, aggregated over
-  the obligations so far; the answers are reported on stdout, the output is not
-  printed. The commands go to the solver directly, as with the solver sink but
-  without its parser state, since models and other answers are not reported.
-  - Each obligation has the status that it has if the program is correct
-    (`Verify.expected`): goals and lemmas `unsat` of their negation, `check-sat`
-    `sat`, since a model of the clauses of `Horn` gives the invariants; a
-    `check-sat` of the input counts as well. The answer of the solver holds if
-    it is the expected one, refutes if it is the opposite one, unless the goal
-    is `:abstract` (a loop without invariant in `VCGen`, a goal lowered by
-    `Fallback`) or applies a function declared `:abstract` (`Cmd.funs`), or
-    one defined in terms of such, e.g. the bit operations of the C prelude,
-    and is undecided otherwise. Without solver, only the goal
-    `false` is refuted.
-  - The outcome is incorrect once an obligation is refuted, otherwise unknown
-    once one is undecided; all obligations are checked.
-  - Refuted goals are no errors, such that all commands are processed;
-    procedures, global variables, and tags are an error, since they would be
-    answered correct without checking anything (they need `-vcgen`, `-teq`, or
-    `-chc`).
-- [`Witnessing`](../src/cuvee/yml/Witness.scala) (`-witness <file>`, which implies `-verify`) wraps the sink of
-  `-verify` and writes the witness of SV-COMP for its answer to the end of the input of a C program: a correctness
+  - Goals and lemmas are answered `correct` (`unsat` of the negation),
+    `incorrect` (`sat`), or `unknown`; a refutation is `unknown` if the goal
+    is `:abstract`, i.e., stronger than what it was generated from (a loop
+    without invariant in `VCGen`, a goal lowered by `Fallback`), or applies a
+    function declared `:abstract` (`Cmd.funs`), or one defined in terms of
+    such, e.g. the bit operations of the C prelude, which the solver
+    interprets freely. Free lemmas are acknowledged.
+  - Procedures, global variables, and tags must have been eliminated by
+    `-vcgen`, `-teq`, or `-chc`; they are unsupported, and a program that
+    reaches the solver unchecked has no answers, i.e., it is `unknown`.
+- [`Witnessing`](../src/cuvee/yml/Witness.scala) (`-witness <file>`) is a `Report` in
+  front of the reporter: it collects the answers and writes the witness of SV-COMP at the end of the input of a C
+  program for their verdict, `incorrect` if one is, `correct` if there is one and all are, `unknown` otherwise: a correctness
   witness without invariants for `correct`, a violation witness for `incorrect` whose target is the call of
   `reach_error`, if there is exactly one (format 2.0, the strings quoted, since readers of YAML 1.1 take the creation
   time for a date otherwise, the numbers plain), with the input file as given on
   the command line or relative to the task definition, its SHA-256, and the data model of `-arch` or of the task.
+
+### Answers
+
+Every goal and lemma that is not free is answered `correct`, `incorrect`, or `unknown` (the cases of
+[`Status`](../src/cuvee/core/Cmd.scala)) when it is given, or not at all (`Ack.Done`); free lemmas are assumed
+and acknowledged like axioms, `success`, which is reported only with `print-success`.
+
+- The sink answers by validity, the solver, or by the form of the goal (`Sink.passive`): `true` correct, `false`
+  incorrect, the others not at all, e.g. a printer. A refutation is `unknown` if the goal is `:abstract`.
+- A stage flushes the pending declarations in front of the goal, whose outputs are answered first, e.g. the
+  goals that `VCGen` generates for procedures, and reported before the answer to the goal (`Sink.query(cmds,
+  last)`, the added answers). It then transforms the goal on its own and passes its outputs on; the answer to the
+  goal combines the answers to them (`Stage.combine`): `incorrect` if one is, no answer if one has none,
+  `unknown` if one is undecided, and `correct` if all are, e.g. the parts of `-split`, also if there are none,
+  since a transform drops a goal only when it has reduced it to `true` (`Simplify`, `Prove`, `Split`).
+- Goals generated from other commands, e.g. procedures, have one answer each, at the next flush.
+
+The consumers read the answers as a set: [cuvee.py](../cuvee.py) and the witness of `-witness` take any
+`incorrect` for false, at least one and all `correct` for true, and `unknown` otherwise.
+
+`Horn` is the exception, since a CHC solver takes one problem with one `check-sat`, without `push`/`pop` and
+`reset`: it checks at `Done` only, and the answer to its `check-sat` is that of the program, `correct` for `sat`
+and `incorrect` for `unsat`, followed by the model (`Horn.report`, a `Report` in front of the
+reports, see `Config.reporter`). This is exact for at most one `verify-call`, at the end. See
+[ideas/answer-mapping.md](../ideas/answer-mapping.md) for the rejected alternative, answers mapped back to the
+input commands by the transforms.
 
 ## Frontends
 
@@ -339,8 +356,8 @@ which declares the core theory with arithmetic on `Int` only, arrays, and the
 background theory of C: the bit operations `&`, `|`, `^`, `~` and shifts by
 non-constants are uninterpreted functions declared `:abstract`, with rules of
 the simplifier for the operands 0 and 1 (`{:smt2} {:rw}`, not passed to the
-solvers), such that `-verify` takes a refutation that depends on them for no
-counterexample (`pipe.Verify`). It builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
+solvers), such that the solver sink takes a refutation that depends on them for no
+counterexample (`unknown`). It builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
 that it can infer the global variables that each function and each loop
 modifies. Functions and loops with ACSL `assigns` or `loop assigns` clauses
 modify the global variables listed there instead (their identifiers, e.g. `a`
@@ -389,8 +406,8 @@ so are `define-procs-rec`, labels and gotos, the properties `:recurring` and
 `:not-recurring`, `:decreases-lex`, witnesses and traces. The modified global
 variables of procedures and loops are inferred (`Parser.modifies`), as in C,
 unless the body lists them as `:modifies`. The verdict of a task is decided by
-the BenchExec module [cuvee.py](../cuvee.py) from the answers of `-verify` to
-the `verify-call`s.
+the BenchExec module [cuvee.py](../cuvee.py) from the answers to the goals
+that the `verify-call`s flush (see "Answers").
 
 What the core has beyond SV-LIB is written as extensions of its syntax:
 
@@ -445,7 +462,7 @@ README; options in [options.md](options.md)), e.g.
   a folder per language of the input (`dafny`, `boogie`, `c`, `smtlib`,
   `svlib`, `yml`) with a subfolder per module, e.g. `language`, `parsing` (the cases
   of the frontend, e.g. `examples/dafny/parsing/globals_call.dfy` with
-  `-print null` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
+  `-quiet` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
   `simplify`, `hybrid`, and `transform`; one suite per language checks all of
   its examples ([Checked.scala](../test/src/cuvee/test/Checked.scala)).
   The translations of SV-COMP tasks (`benchmarks/sv-comp/dafny`) instead share one

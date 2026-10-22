@@ -1,4 +1,4 @@
-// ./Cuvee.sh -print null examples/c/parsing/invalid_switch.c
+// ./Cuvee.sh -quiet examples/c/parsing/invalid_switch.c
 // a break nested inside the statements of a case is not supported, since the copies of the cases end at breaks
 // between their statements only
 int main(void) {

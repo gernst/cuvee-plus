@@ -1,2 +1,2 @@
-// ./Cuvee.sh -print null examples/c/parsing/double.c
+// ./Cuvee.sh -quiet examples/c/parsing/double.c
 double f(void);

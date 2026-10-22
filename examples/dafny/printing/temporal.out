@@ -1,0 +1,30 @@
+function prime(n: int): bool
+
+const p: bool
+
+const q: bool
+
+const r: bool
+
+goal forall x: int :: x >= 0 ==> always eventually prime(x)
+
+goal forall x: int :: always x >= 0 && x < 3 ==> next x >= 1
+
+goal p until q until r
+
+goal (p until q) until r
+
+goal always p until q
+
+goal always (p until q)
+
+goal !(always p) <==> eventually !p
+
+goal p unless+ q || p release+ q && p until+ q
+
+goal p unless q ==> p release q
+
+goal (always p) == q
+
+goal forall x: int :: ω₃(x) ==> next ω₃(x)
+

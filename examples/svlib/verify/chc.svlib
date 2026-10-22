@@ -1,5 +1,5 @@
-; ./Cuvee.sh -chc -z3 -verify examples/svlib/verify/chc.svlib
-; the clauses of the query are satisfiable, which -verify expects of a check-sat (see pipe.Verify.expected)
+; ./Cuvee.sh -chc -z3 examples/svlib/verify/chc.svlib
+; the clauses of the query are satisfiable, which Horn answers correct (see Horn.report)
 ; for the running example of the SV-LIB report (vcgen/loop_add.svlib)
 
 (set-logic LIA)

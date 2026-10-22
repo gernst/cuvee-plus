@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -prove -split -prove -verify examples/c/verify/teq_bits.c
+// ./Cuvee.sh -teq -prove -split -prove -quiet examples/c/verify/teq_bits.c
 // &, |, ^ on the integers 0 and 1, the truth values that the conditional writes, by the rules of the prelude of C:
 // without them, bitand, bitor, bitxor stay uninterpreted, the goals open, and -fallback -z3 refutes them
 extern int __VERIFIER_nondet_int(void);

@@ -75,14 +75,14 @@ case class Config(
     input: Lang,
     output: Lang,
     // built from the final configuration, such that the order of the command line options does not matter,
-    // the sink of the output without solver or with -print null
+    // the sink of the output without solver
     sink: (Config, Printer, State) => Sink,
     report: (Config, Printer) => Report,
     // the solver of -z3 or -cvc5, given the timeout, which receives the output, see receiver
     solver: Option[Int => Solver] = None,
-    // -verify: the answers correct, incorrect, or unknown (see pipe.Verify)
-    verify: Boolean = false,
-    // -witness: the file of the witness of SV-COMP for the answer of -verify to a C program (see yml.Witness)
+    // -quiet: no output, only the reports, e.g. the answers
+    quiet: Boolean = false,
+    // -witness: the file of the witness of SV-COMP for the answers to a C program (see yml.Witness)
     witness: Option[String] = None,
     transforms: List[Transform] = Nil,
     // per query, in milliseconds
@@ -92,8 +92,11 @@ case class Config(
     // whether the nondeterministic values of C input range over all integers, instead of the values of their types,
     // except that unsigned ones are nonnegative (see c.Parser.havoc)
     unbounded: Boolean = false,
-    // -entry: the procedure where executions start, by default main in C (see entryPoint)
-    entry: Option[String] = None,
+    // -entry: the procedure where executions start, as SV-COMP has it main in C, set with the input file (see
+    // arguments), none otherwise, where the transforms that need one say so (Horn), SV-LIB starts at its verify-call
+    // commands instead; which procedures are checked is up to the technique: VCGen checks all against their
+    // contracts, TEQ inlines the others
+    entry: Option[Name] = None,
     // the features added to the languages of the input and of the output, e.g. teq by -teq, kept for -print;
     // teq injects the modules of the lemma database (see injected)
     known: Set[String] = Set(),
@@ -125,26 +128,31 @@ case class Config(
   def program: Source =
     if input.source == cuvee.yml.Source then cuvee.yml.Source.lang(file).source else input.source
 
-  // the procedure where executions start, -entry or main in C, as SV-COMP has it; none otherwise, where the
-  // transforms that need one say so (Horn), SV-LIB starts at its verify-call commands instead; which procedures
-  // are checked is up to the technique: VCGen checks all against their contracts, TEQ inlines the others
-  def entryPoint: Option[Name] =
-    entry.map(Name(_, None)).orElse(if program == cuvee.c.Source then Some(Name("main", None)) else None)
-
   // the modules of the lemma database that are injected into the input after its prelude (see Source.apply):
   // teq.dfy of -teq (see TEQ.modules) if the feature teq is known, then the further ones, each once, such that the
-  // order of the options does not matter
+  // order of the options does not matter; the further ones are written over teq.dfy, hence they need it
   def injected =
-    val modules_ = if known.contains("teq") then TEQ.modules.map((cuvee.dafny.Source, _)) else Nil
-    (modules_ ++ modules).distinct
+    if modules.nonEmpty then
+      Error.report("-include teq:<concept> needs -teq or -known teq", modules.map(_._2)*):
+        require(known.contains("teq"))
 
-  // the receiver of the output, by the final configuration: the answers with -verify, with or without a solver,
-  // otherwise the solver, if there is one, which checks the output, otherwise the sink of the output, e.g. a printer
+    if known.contains("teq")
+    then (TEQ.modules ++ modules).distinct
+    else Nil
+
+  // the receiver of the output, by the final configuration: the solver, if there is one, which answers the goals
+  // and lemmas, otherwise the sink of the output, e.g. a printer, which answers them by their form
   def receiver(init: State): Sink =
-    if verify then
-      val answers = cuvee.pipe.Verify.sink(solver.map(_(timeout)), stderr)
-      witness.map(cuvee.yml.Witness.sink(this, _, answers)).getOrElse(answers)
-    else solver.map(solver => Solver.sink(solver(timeout), init, stderr)).getOrElse(sink(this, output.printer, init))
+    solver match
+      case Some(solver) => Solver.sink(solver(timeout), init, stderr)
+      case None         => sink(this, if quiet then Printer.silent else output.printer, init)
+
+  // the reports of the run in the language of the input, also to the witness with -witness,
+  // and with -chc the answer to the check-sat of the clauses as the answer to the program (see Horn.report)
+  def reporter: Report =
+    val report_ = report(this, input.printer)
+    val witnessed = witness.map(cuvee.yml.Witness.report(this, _, report_)).getOrElse(report_)
+    if transforms.contains(Horn) then Horn.report(witnessed) else witnessed
 
   // the configuration with the output in `lang`, which knows the features added so far
   def printing(lang: Lang) =
@@ -268,7 +276,7 @@ object Config:
   val entry_ =
     flag("-entry", "<name>", "the procedure where executions start, which -teq and -chc check; default main in C, none otherwise (SV-LIB starts at its verify-call commands); -vcgen checks every procedure against its contract"):
       case (config, name :: rest) =>
-        (config.copy(entry = Some(name)), rest)
+        (config.copy(entry = Some(Name(name, None))), rest)
 
   val unbounded =
     flag("-unbounded", "nondeterministic values of C input are unbounded integers, unsigned ones nonnegative, instead of within the ranges of their types"):
@@ -276,9 +284,9 @@ object Config:
         val config_ = config.copy(unbounded = true)
         (config_, rest)
 
-  // the solvers receive the output, which they check, i.e., goals and lemmas must hold, or verify (-verify)
+  // the solvers receive the output, which they check, i.e., they answer the goals and lemmas
   val z3 =
-    flag("-z3", "pass the output to z3, which checks it: goals and lemmas must hold, assertions and check-sat are passed through, the answers to queries are reported; lemmas with :free are assumed"):
+    flag("-z3", "pass the output to z3, which checks it: goals and lemmas are answered correct, incorrect, or unknown (unknown if the goal is :abstract or applies a function declared :abstract), assertions and check-sat are passed through, the answers to queries are reported; lemmas with :free are assumed"):
       case (config, rest) =>
         val config_ = config.copy(solver = Some(Solver.z3))
         (config_, rest)
@@ -289,18 +297,10 @@ object Config:
         val config_ = config.copy(solver = Some(Solver.cvc5))
         (config_, rest)
 
-  // the answers are reported on stdout, the output is not printed
-  val verify =
-    flag("-verify", "instead of the output, answer correct, incorrect, or unknown to each verify-call, or once to the input without verify-call: whether the program satisfies its specification, with the solver if there is one; a refutation is incorrect unless the goal is :abstract or applies a function declared :abstract"):
-      case (config, rest) =>
-        val config_ = config.copy(verify = true, report = (config, printer) => Report.stream(config.stdout, printer))
-        (config_, rest)
-
-  // implies -verify, whose answer the witness is for
   val witness =
-    flag("-witness", "<file>", "answer as -verify, and write the witness of SV-COMP (format 2.0) for the answer to a C program to <file>: for correct an invariant set without invariants, for incorrect a violation sequence whose target is the call of reach_error, if there is exactly one; nothing for unknown"):
+    flag("-witness", "<file>", "write the witness of SV-COMP (format 2.0) for the verdict of the answers to a C program to <file>, incorrect if one is, correct if all are: for correct an invariant set without invariants, for incorrect a violation sequence whose target is the call of reach_error, if there is exactly one; nothing for unknown"):
       case (config, name :: rest) =>
-        verify._2.action((config.copy(witness = Some(name)), rest))
+        (config.copy(witness = Some(name)), rest)
 
   val timeout_ =
     flag("-timeout", "<ms>", "timeout per solver query in milliseconds (default 1000)"):
@@ -313,6 +313,12 @@ object Config:
       case (config, name :: rest) =>
         val config_ = config.copy(sink = (config, printer, _) => Sink.file(name, printer, config.output.features), report = (config, printer) => Report.stream(config.stdout, printer))
         (config_, rest)
+
+  // a flag of its own rather than a printer, such that it does not depend on the order of -print
+  val quiet =
+    flag("-quiet", "print no output, only the reports, e.g. the answers to the goals and the errors"):
+      case (config, rest) =>
+        (config.copy(quiet = true), rest)
 
   // the printers are objects, all of which are set, such that the order of the options does not matter
   val linewidth =
@@ -327,7 +333,7 @@ object Config:
     flag(
       "-print",
       "<lang>",
-      "print the output in <lang> instead of the language of the input: smt2, svlib, dfy, bpl, c (named by their file extensions), lean (the logic only), scala (the internal representation), or null (nothing)"
+      "print the output in <lang> instead of the language of the input: smt2, svlib, dfy, bpl, c (named by their file extensions), lean (the logic only), or scala (the internal representation)"
     ):
       case (config, name :: rest) if langs.contains(name) =>
         val config_ = config.printing(langs(name))
@@ -335,11 +341,6 @@ object Config:
 
       case (config, "lean" :: rest) =>
         val config_ = config.printing(Lang.lean)
-        (config_, rest)
-
-      // the declarations that the output drops remain those of the language of the output so far
-      case (config, "null" :: rest) =>
-        val config_ = config.copy(output = config.output.copy(printer = Printer.silent))
         (config_, rest)
 
       case (config, "scala" :: rest) =>
@@ -363,11 +364,9 @@ object Config:
   // for -print lean of the database
   val include =
     flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; teq:<concept> injects the module <concept> of the lemma database of -teq: aggregation, arithmetic, arrays, counters, search, sorted, strides, unsigned"):
-      // a module that does not exist is reported by its name, e.g. teq:sorting, renamed to teq:sorted on Oct 13, 2026
+      // a module that does not exist is reported by the source (see Source.resource)
       case (config, file :: rest) if file.startsWith("teq:") =>
         val module = TEQ.module(file.drop(4))
-        if getClass.getResource(module) == null
-        then Error.raise("unknown module of the lemma database (resources/cuvee/teq)", file)
         (config.copy(modules = config.modules :+ (cuvee.dafny.Source, module)), rest)
       case (config, file :: rest) if langs.get(file.suffix).exists(_ != Lang.yml) =>
         (config.including(langs(file.suffix).source, file), rest)
@@ -376,8 +375,8 @@ object Config:
   val groups = List(
     "input" -> List(arch, unbounded, entry_, include, hybrid),
     "transformations" -> List(vcgen, teq, chc, flat, simplify, prove, rules, fallback, split, monomorph, fuse),
-    "output" -> List(print_, linewidth, known_, output),
-    "solvers and answers" -> List(z3, cvc5, timeout_, verify, witness),
+    "output" -> List(print_, quiet, linewidth, known_, output),
+    "solvers and answers" -> List(z3, cvc5, timeout_, witness),
     "debugging" -> List(debug_)
   )
 
@@ -440,7 +439,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.47.1"
+  val release = "0.48.0"
 
   def version() =
     println("Cuvée " + release)
@@ -490,7 +489,9 @@ object Config:
         val input = langs(file.suffix)
         val output = if input == Lang.yml then cuvee.yml.Source.lang(Some(file)) else input
         val config_ = config.copy(file = Some(file), input = input, output = output)
-        arguments(config_, rest)
+        // executions of C programs start in main, unless -entry says otherwise, before or after the file
+        val entry = if config_.program == cuvee.c.Source then config.entry.orElse(Some(Name("main", None))) else config.entry
+        arguments(config_.copy(entry = entry), rest)
 
       case _ =>
         Error.raise("unsupported command line option or input file", args)

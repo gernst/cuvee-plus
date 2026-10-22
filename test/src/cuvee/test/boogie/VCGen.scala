@@ -15,7 +15,7 @@ object Horn extends TestSuite:
     Examples.tests(Examples.find(os.sub / "boogie" / "horn", "bpl")): file =>
       val results = Examples.answers("-chc", "-entry", "main", "-monomorph", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
-      Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
+      Examples.status(results) ==> (if Examples.holds(file) then Status.Correct else Status.Incorrect)
 
 // global variables are eliminated by -vcgen and -chc, and are not passed to solvers
 object Globals extends TestSuite:
@@ -29,21 +29,21 @@ object Globals extends TestSuite:
 
   val tests = Tests:
     test("declared"):
-      val cmds = output("-print", "null", globals.toString)
+      val cmds = output("-quiet", globals.toString)
       val vars = cmds.collect { case DeclareVar(x, _) => x.name.name }
       vars ==> List("counter", "limit")
 
     test("eliminated by -vcgen"):
-      val cmds = output("-vcgen", "-print", "null", globals.toString)
+      val cmds = output("-vcgen", "-quiet", globals.toString)
       assert(!cmds.exists(_.isInstanceOf[DeclareVar]))
 
     test("eliminated by -chc"):
-      val cmds = output("-chc", "-entry", "main", "-print", "null", horn.toString)
+      val cmds = output("-chc", "-entry", "main", "-quiet", horn.toString)
       assert(!cmds.exists(_.isInstanceOf[DeclareVar]))
 
     // the predicates range over the global variables, the postcondition also over their values at the entry
     test("arguments of the predicates"):
-      val cmds = output("-chc", "-entry", "main", "-print", "null", horn.toString)
+      val cmds = output("-chc", "-entry", "main", "-quiet", horn.toString)
       val arity = cmds.collect { case DeclareFun(fun, _) => fun.name.name -> fun.arity }.toMap
       arity("incr_pre") ==> 2
       arity("incr_post") ==> 4

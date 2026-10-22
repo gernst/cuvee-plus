@@ -52,17 +52,14 @@ object Pipe:
                 val (result, added, next) = sink.query(cmd)
                 sink = next
 
-                // the answers to queries added by a transform are reported only if the command has no answer,
-                // e.g. Done, which is not part of the input, and whose own answer is never reported
-                val answers =
-                  if result == Ack.Done && added.nonEmpty then added
-                  else if cmd == Done && result == Ack.Done then Nil
-                  else List(result)
+                // the answers that the command brings, e.g. those to the obligations buffered before it, are
+                // reported before its own answer; Ack.Done is no answer, e.g. that of Done, which is not part of
+                // the input
+                val answers = (added :+ result).filterNot(_ == Ack.Done)
 
-                if answers.nonEmpty then
-                  for result <- answers
-                  do report.report(result, printSuccess)
-                  if cmd != Done then done.append(cmd)
+                for result <- answers
+                do report.report(result, printSuccess)
+                if cmd != Done then done.append(cmd)
 
                 if cmd == Exit
                 then Breaks.break()
@@ -103,4 +100,5 @@ object Pipe:
         errors.append(result)
         code = InternalError
 
+    report.done()
     (code, done.toList, errors.toList)

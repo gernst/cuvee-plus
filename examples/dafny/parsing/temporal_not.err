@@ -1,0 +1,2 @@
+error "temporal operator without operand, parenthesize it after operators that bind tighter, e.g. !(always p)"
+  "always"

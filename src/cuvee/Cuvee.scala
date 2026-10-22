@@ -75,7 +75,7 @@ object Cuvee extends util.Main:
     // the reports are in the language of the input
     val main = config.receiver(init)
     val sink = Sink.filter(main.knows, Sink.tee(main, sinks*))
-    val report = config.report(config, config.input.printer)
+    val report = config.reporter
     val stages = config.stages(init, sink)
 
     // stages flush pending declarations only on control commands and queries,

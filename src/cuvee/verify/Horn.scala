@@ -4,6 +4,7 @@ import util.Name
 import util.Ref
 import cuvee.Config
 import cuvee.Error
+import cuvee.pipe.Report
 import cuvee.pipe.Transform
 import cuvee.core._
 import cuvee.core.Attrs
@@ -24,13 +25,13 @@ object Horn extends Transform:
   // or is set at the beginning, i.e., when nothing has been passed through so far;
   // at the end of the input, the clauses are checked for satisfiability; a verify-call of SV-LIB adds its entry
   // clauses and is not passed on, there is at most one, at the end, since a single check-sat covers all of them
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
-    // the entry point, where executions start (see Config.entryPoint), which SV-LIB does not need, since its entries
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
+    // the entry point, where executions start (see Config.entry), which SV-LIB does not need, since its entries
     // are the verify-call commands; the others need one, it must be defined by the end of the input
-    val start = config.entryPoint
+    val start = config.entry
     val svlib = config.program == cuvee.svlib.Source
 
-    if last == Done then
+    if last == Some(Done) then
       for p <- start
       do
         Error.report("entry point not defined", p.name):
@@ -40,7 +41,7 @@ object Horn extends Transform:
     val cmds_ =
       for
         cmd <- cmds
-        if !(last.isInstanceOf[VerifyCall] && isAxiom(state, cmd));
+        if !(last.exists(_.isInstanceOf[VerifyCall]) && isAxiom(state, cmd));
         cmd_ <- horn(state, start, svlib, cmd)
       yield cmd_
 
@@ -53,12 +54,28 @@ object Horn extends Transform:
       then List(SetLogic("HORN"))
       else Nil
 
-    // the model of the predicates are the inferred invariants, if the clauses are satisfiable, which they are iff
-    // the program is correct, as -verify expects (see pipe.Verify.expected)
+    // the model of the predicates are the inferred invariants, if the clauses are satisfiable
     last match
-      case Done                   => (logic ++ cmds_ ++ List(CheckSat, GetModel), Some(last))
-      case VerifyCall(name, args) => (logic ++ cmds_ ++ entry(state, prefix ++ cmds, name, args), None)
-      case _                      => (logic ++ cmds_, Some(last))
+      case Some(Done)                   => (logic ++ cmds_ ++ List(CheckSat, GetModel), last)
+      case Some(VerifyCall(name, args)) => (logic ++ cmds_ ++ entry(state, prefix ++ cmds, name, args), None)
+      case _                            => (logic ++ cmds_, last)
+
+  // the clauses are satisfiable iff the program is correct, hence the answer to the check-sat at the end of the input
+  // is the answer to the program, correct for sat and incorrect for unsat, followed by the model, whose predicates
+  // are the inferred invariants (see Config.reporter)
+  def report(next: Report): Report =
+    new Report:
+      def report(result: Result, printSuccess: Boolean) =
+        next.report(checked(result), printSuccess)
+
+      override def done() =
+        next.done()
+
+  def checked(result: Result): Result =
+    result match
+      case Status.Sat   => Status.Correct
+      case Status.Unsat => Status.Incorrect
+      case _            => result
 
   // the entry clauses of a verify-call of SV-LIB: p_pre(args, gs) for all values of the global variables gs and
   // of the constants, assuming the axioms about them (see constants), since Horn solvers do not support

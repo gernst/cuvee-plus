@@ -1,4 +1,4 @@
-// ./Cuvee.sh -chc -z3 -verify examples/c/verify/chc_safe.c
+// ./Cuvee.sh -chc -z3 examples/c/verify/chc_safe.c
 // the clauses are satisfiable, the invariant inferred
 
 extern void reach_error(void);

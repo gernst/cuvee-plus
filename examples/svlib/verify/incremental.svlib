@@ -1,4 +1,4 @@
-; ./Cuvee.sh -vcgen -z3 -verify examples/svlib/verify/incremental.svlib
+; ./Cuvee.sh -vcgen -z3 examples/svlib/verify/incremental.svlib
 ; two queries, each answered by the outcome of the obligations so far (vcgen/incremental.svlib)
 
 (set-logic NIA)

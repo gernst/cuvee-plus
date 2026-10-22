@@ -20,7 +20,7 @@ object Simplify extends Transform:
   // debug output is printed with the printer of the configuration;
   // with -rules, the rules applied to an assertion follow it as (set-info :used ((name count) ...)), also if it
   // simplifies to true and is dropped (see used)
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val rules = Rules.from(state, prefix ++ cmds)
 
     val cmds_ =
@@ -31,10 +31,10 @@ object Simplify extends Transform:
         if !isTrivial(cmd_)
       yield cmd_
 
-    (cmds_, Some(last))
+    (cmds_, last)
 
   // with -rules, the rules applied to the assertion `cmd` by this simplification, as structured meta information
-  // (set-info :used ((name count) ...)), which solvers do not receive (see Solver.Sink and pipe.Verify); only the
+  // (set-info :used ((name count) ...)), which solvers do not receive (see Solver.sink); only the
   // applications of this simplification, such that the counts of several, e.g. before and after -split, add up
   // (see scripts/rules.py)
   def used(config: Config, ctx: Context, cmd: Cmd): List[Cmd] =

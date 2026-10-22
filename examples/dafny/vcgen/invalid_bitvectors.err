@@ -1,3 +1,1 @@
-error "goal does not hold"
-  "Sat"
-  "(forall ((x (_ BitVec 8)) (y (_ BitVec 8))) (=> (and true true) (bvugt (bvadd x #b00000001) x)))"
+incorrect

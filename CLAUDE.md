@@ -62,7 +62,7 @@ or solvers consume.
   scripts/lean/generate.py; see lean/README.md); `lean` works in the repository through
   `lean-toolchain`, `lake` only as `$(elan which lake)`.
 - Run: `mill -i run <options> <file>`. `-print` takes an argument
-  (`-print null`).
+  (`-print smt2`), `-quiet` prints no output.
 - z3 by hand only with a timeout: `z3 -T:5 file.smt2`.
 - Commands that may read stdin hang otherwise: `java -jar cuvee.jar` only
   with a file, a timeout, and `< /dev/null`; mill in scripts with
@@ -154,17 +154,19 @@ or solvers consume.
 - **Expected values in unit tests** must be in the simplifier's normal form.
 - **Polymorphic assertions** need `lemma name<a>(...)`. Never run z3 or
   `-monomorph` on polymorphic input; such tests only generate goals
-  (`-print null`).
+  (`-quiet`).
 - **Testing database lemmas:** on core terms with
   `Rules.from(State.empty, TEQ.lemmas)` (teq.dfy) and `Rewrite`; the tests of
   the rewriting of `-simplify` on lemmas of the former database parse
   `legacy/teq.dfy` (`test/dafny/TEQ.scala`).
 - **Preludes** are injected into the stream; transforms see them, tests that
   call a `Source` directly drop `Examples.prelude(...)`.
-- **Stages buffer declarations**, losing the sink's answers to them; filters
-  that need those are sink wrappers.
+- **Stages buffer declarations**, except goals and lemmas that are not free,
+  which flush and are answered immediately, by the combination of the answers
+  to their outputs (doc/architecture.md, "Answers"); filters that need the
+  answers to other declarations are sink wrappers.
 - **Entry points:** `-teq` emits a goal for the entry point only and `-chc`
-  starts from it (`Config.entryPoint`: `-entry <name>`, otherwise `main` in
+  starts from it (`Config.entry`: `-entry <name>`, otherwise `main` in
   C; SV-LIB starts at its `verify-call` commands); the other procedures are
   checked in the context of their calls. `-vcgen` checks every procedure
   against its contract.
@@ -187,7 +189,8 @@ or solvers consume.
   annotation in the scope of the tagged statement, the transforms attach the
   annotations to loops and procedures when the `verify-call` flushes them
   (`State.annotated`); tags are allowed on loops and procedure bodies only;
-  with `-verify`, each `verify-call` is answered `correct`, `incorrect`, or
-  `unknown` (`pipe.Verify`), which `cuvee.py` reads. Out of scope by decision: labels and gotos,
+  the goals that a `verify-call` flushes are answered `correct`,
+  `incorrect`, or `unknown` by the sink, which `cuvee.py` reads as a set
+  (doc/architecture.md, "Answers"). Out of scope by decision: labels and gotos,
   `define-procs-rec`, `:recurring`, `:not-recurring`, `:decreases-lex`,
   witnesses and traces.

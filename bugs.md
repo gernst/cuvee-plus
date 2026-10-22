@@ -22,10 +22,10 @@ true, -16 for a wrong false).
   so Z3 may choose their interpretation in clauses that use them and report
   them satisfiable for a program that is not safe; `sat` should count only
   if the clauses use no such function, which Cuvée can check.
-  Still open in 0.46.7: `pipe.Verify` takes a `check-sat` of the clauses with `approximated = false`
-  ([Verify.scala:85-90](src/cuvee/pipe/Verify.scala#L85-L90)), so `sat` counts as `correct` even if the clauses
-  apply a function declared `:abstract`; the fix of 0.42.1 covers refuted goals only. `Cmd.funs` of the clauses
-  against `abstracts`, as for goals, would make it `unknown`.
+  Still open in 0.48.0: `Horn.report` takes `sat` of the clauses for `correct`
+  ([Horn.scala](src/cuvee/verify/Horn.scala), `checked`), even if the clauses apply a function declared
+  `:abstract`; the fix of 0.42.1 covers refuted goals only (`Solver.sink`). `Cmd.funs` of the clauses against
+  the abstract functions, as for goals, would make it `unknown`.
 
 - **Parallel composition** (`-hybrid`, moved from TODO.md):
   - Sequential calls neither establish the callee's assumption nor guarantee
@@ -76,7 +76,7 @@ the contexts that `-teq` builds, as far as the reasons go.
   `bubbled`, `shaken`, `argmin`, `insert`, `shake`, `nodup`, `merged`, `lb`), axiomatized by their lemmas, and the
   summary lemmas of examples/dafny/algorithms, which state the correctness of an inner loop in one line
   (doc/array-algorithms/principles.tex, Soundness; doc/teq.md); ACSL lemmas, which are
-  `:free`, and lemmas with `:free` in general (`Solver`, `pipe.Verify` assume them like axioms).
+  `:free`, and lemmas with `:free` in general (`Solver` assumes them like axioms).
 - **`-fallback` does not assume the premises above** (equal lengths, indices within the lists, complete guards);
   doc/teq.md names this a candidate cause of its wrong proofs (see below).
 
@@ -150,7 +150,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   a loop body with ten conditionals in sequence, presumably from the 2^10
   paths of its symbolic execution (see
   [diamond_2-2.dfy](benchmarks/sv-comp/dafny/loop-acceleration/diamond_2-2.dfy)).
-- `-verify` stops at a solver error with the error instead of an answer, e.g. `-teq -prove -z3 -verify` without
+- A solver error stops the run with the error instead of an answer, e.g. `-teq -prove -z3` without
   `-fallback` (`unknown constant integer (Nat)`); an error of the solver could count as `unknown` for its goal
 - An input file with an unknown extension, e.g. a preprocessed C file
   `.i`, ends in an uncaught exception with a stack trace

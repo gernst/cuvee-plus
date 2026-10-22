@@ -1,4 +1,4 @@
-// ./Cuvee.sh -vcgen -z3 -verify examples/c/verify/vcgen_weak_invariant.c
+// ./Cuvee.sh -vcgen -z3 examples/c/verify/vcgen_weak_invariant.c
 // the loop invariant holds but is too weak for the assertion, which fails against the specification
 extern void reach_error(void);
 void __VERIFIER_assert(int cond) { if (!cond) reach_error(); }

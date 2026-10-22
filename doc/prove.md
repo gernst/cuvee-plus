@@ -174,7 +174,7 @@ in the conjuncts of a premise.
 - **Counterexamples** (`Prove.counterexample`): a goal that remains without traces, lists and other functions than
   those of arithmetic and logic, over at most four integer, natural or boolean variables, is refuted if its body
   evaluates to false at an assignment of small values and the literals of the goal plus or minus 1; it becomes
-  `false`, which `-verify` answers with `incorrect` unless the goal is `:abstract`. The unsafe variants of array-fpi
+  `false`, which is answered `incorrect` unless the goal is `:abstract`. The unsafe variants of array-fpi
   leave such goals, e.g. `forall N :: !(0 < N && N <= 536870911)` of brs1f.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested

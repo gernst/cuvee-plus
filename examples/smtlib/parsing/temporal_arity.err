@@ -1,0 +1,4 @@
+(error
+  "wrong number of arguments of temporal operator"
+  "Name(until,None)"
+  "List(App(Fun(Name(true,None),List(),List(),Sort(Con(Name(Bool,None),0),List())),List(),Sort(Con(Name(Bool,None),0),List()),List()))")

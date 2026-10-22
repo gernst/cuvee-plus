@@ -26,8 +26,6 @@
   <option name="-prove"/>
   <!-- the rules applied to each goal, for the statistics of scripts/rules.py -->
   <option name="-rules"/>
-  <!-- the answers correct, incorrect, or unknown, which cuvee.py reads -->
-  <option name="-verify"/>
   <!-- the witness of SV-COMP for the answer to a C program, without invariants or with the target only (yml.Witness) -->
   <option name="-witness">witness.yml</option>
 

@@ -30,14 +30,14 @@ object Fuse extends Transform:
     case Fails
     case Undecided
 
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val cmds_ =
       for cmd <- cmds
       yield cmd match
         case FuseFuns(term, None, attrs) => FuseFuns(term, Some(fuse(state, term)), attrs)
         case _                           => cmd
 
-    (cmds_, Some(last))
+    (cmds_, last)
 
   // the composition g(f(xs), ys) of two defined functions as a recursive function of the distinct variables xs and ys
   def fuse(state: State, term: Expr): Rec =

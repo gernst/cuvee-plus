@@ -93,7 +93,7 @@ accumulators is a trace of their product, `trace (e₁, e₂) Y (fun ⟨x₁, x�
 
 `TEQ` replaces each procedure definition by a goal from symbolic execution,
 after section 4 of the paper; with an entry point (`-entry`, or `main` in C,
-see `Config.entryPoint`) only that of the entry point, since calls are inlined,
+see `Config.entry`) only that of the entry point, since calls are inlined,
 which checks the other procedures in the context of their calls, and not for
 arbitrary arguments (e.g. `sanfoundry_24-1`, whose `printEven` holds only for
 the even numbers that `main` passes).
@@ -561,8 +561,13 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   definition are replaced by fresh functions without definition,
   which generalizes the goal: a model of the solver need not be a
   counterexample.
-- The declarations and lemmas of the lemma database and lemmas over traces, lists,
-  and naturals are dropped.
+- Lemmas that are not free are lowered like goals: checking the stronger
+  lowered lemma is sound, and the solver assumes it only once it holds, for
+  all interpretations of the fresh functions; a refutation is `unknown`
+  (`:abstract`). Polymorphic goals and lemmas are errors. The declarations of
+  the lemma database and the axioms and free lemmas over traces, lists, and
+  naturals are dropped, which is sound for assumptions, unlike assuming
+  their stronger lowering.
 - Tests: [fallback.dfy](../examples/dafny/teq/fallback.dfy),
   [fallback_count.dfy](../examples/dafny/teq/fallback_count.dfy),
   [fallback.c](../examples/c/teq/fallback.c),

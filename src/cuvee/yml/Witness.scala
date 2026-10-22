@@ -25,26 +25,26 @@ import easyparse.Token
 import cuvee.Config
 import cuvee.Lang
 import cuvee.core._
-import cuvee.pipe.Sink
+import cuvee.pipe.Report
 
 // the program of a witness: its input file as given on the command line or in the task definition, the SHA-256 of
 // its contents, its data model, ILP32 or LP64, and the lines and columns of the calls of reach_error (see targets)
 case class Program(name: String, hash: String, model: String, targets: List[(Int, Int)])
 
 // the verification witnesses of SV-COMP (format 2.0, https://gitlab.com/sosy-lab/benchmarking/sv-witnesses) for the
-// answer of -verify to a C program: correct gives a correctness witness without invariants, which leaves the proof
+// answers to a C program: correct gives a correctness witness without invariants, which leaves the proof
 // to the validator, incorrect a violation witness whose single segment is the target, the call of reach_error, which
 // leaves the search for the path to the validator, if the program has exactly one call, otherwise none, since the
 // failing assertion is not known (see ideas/witnesses.md)
 object Witness:
-  // the property of SV-COMP that the answers of -verify to C programs decide
+  // the property of SV-COMP that the answers to C programs decide
   val specification = "G ! call(reach_error())"
 
   // the functions whose calls violate the specification, as in c.Parser
   val errors = Set("reach_error", "__VERIFIER_error")
 
   // writes the witness for the answer to the end of the input, if it is correct or incorrect, to `file`
-  def sink(config: Config, file: String, next: Sink) =
+  def report(config: Config, file: String, next: Report) =
     Witnessing(config, file, next)
 
   // the program of the configuration, for C input or an SV-COMP task whose input file is C, otherwise none, e.g.
@@ -143,24 +143,29 @@ class Quoting(settings: DumpSettings) extends StandardRepresenter(settings):
       def representData(data: Any) = representScalar(Tag.STR, data.toString, ScalarStyle.DOUBLE_QUOTED)
   )
 
-// passes the commands to `next`, and writes the witness for its answer to the end of the input (see Verify)
-case class Witnessing(config: Config, file: String, next: Sink) extends Sink:
-  override def knows =
-    next.knows
+// passes the reports to `next`, and writes the witness for the answer to the input at the end of the run: incorrect if
+// one of the reported answers is, correct if there is one and all are, otherwise unknown, for which there is none
+case class Witnessing(config: Config, file: String, next: Report) extends Report:
+  val answers = scala.collection.mutable.ListBuffer[Status]()
 
-  def query(cmd: Cmd) =
-    val (result, added, next_) = next.query(cmd)
+  def report(result: Result, printSuccess: Boolean) =
+    result match
+      case answer @ (Status.Correct | Status.Incorrect | Status.Unknown) => answers += answer
+      case _                                                             =>
+    next.report(result, printSuccess)
 
-    (cmd, result) match
-      case (Done, status: Status) =>
-        for
-          program <- Witness.program(config)
-          text <- Witness.witness(program, status, UUID.randomUUID(), OffsetDateTime.now())
-        do
-          val out = new PrintStream(file, "UTF-8")
-          try out.print(text)
-          finally out.close()
+  override def done() =
+    val status =
+      if answers.contains(Status.Incorrect) then Status.Incorrect
+      else if answers.nonEmpty && answers.forall(_ == Status.Correct) then Status.Correct
+      else Status.Unknown
 
-      case _ =>
+    for
+      program <- Witness.program(config)
+      text <- Witness.witness(program, status, UUID.randomUUID(), OffsetDateTime.now())
+    do
+      val out = new PrintStream(file, "UTF-8")
+      try out.print(text)
+      finally out.close()
 
-    (result, added, copy(next = next_))
+    next.done()

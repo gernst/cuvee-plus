@@ -41,7 +41,7 @@ object TEQ extends TestSuite:
     test("without loops"):
       for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(loops)
       do
-        val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
+        val (cmds, errors) = Examples.output("-teq", "-quiet", file.toString)
         if errors != List(contracts)
         then
           errors ==> Nil
@@ -52,7 +52,7 @@ object TEQ extends TestSuite:
     // one-point rule; the invariant over the counter is rewritten as well, such that only arithmetic remains
     test("lemmas"):
       val sum = Examples.root / "dafny" / "vcgen" / "sum.dfy"
-      val (cmds, errors) = Examples.stream("-teq", "-include", "teq:aggregation", "-simplify", "-print", "null", sum.toString)
+      val (cmds, errors) = Examples.stream("-teq", "-include", "teq:aggregation", "-simplify", "-quiet", sum.toString)
       errors ==> Nil
       assert(cmds.exists { case DefineFun(fun, _, _) => fun == Fun.trace.counter; case _ => false })
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked
@@ -62,8 +62,8 @@ object TEQ extends TestSuite:
 
       // also without loops, once, as part of the prelude of the source (see Config.injected)
       val abs = Examples.root / "dafny" / "vcgen" / "abs.dfy"
-      val (cmds_, _) = Examples.stream("-teq", "-print", "null", abs.toString)
-      val prelude = Examples.prelude("-teq", "-print", "null", abs.toString)
+      val (cmds_, _) = Examples.stream("-teq", "-quiet", abs.toString)
+      val prelude = Examples.prelude("-teq", "-quiet", abs.toString)
       assert(cuvee.verify.TEQ.lemmas.forall(prelude.contains))
       cmds_.count(cuvee.verify.TEQ.lemmas.contains) ==> cuvee.verify.TEQ.lemmas.length
 
@@ -73,14 +73,14 @@ object TEQ extends TestSuite:
       for name <- List("break.dfy", "continue.dfy", "return.dfy", "invalid_break.dfy")
       do
         val file = Examples.root / "dafny" / "vcgen" / name
-        val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
+        val (cmds, errors) = Examples.output("-teq", "-quiet", file.toString)
         errors ==> Nil
         assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
 
     // the counter i of sum.dfy is recognized by the lemma of example 2.3
     test("counter"):
       val file = Examples.root / "dafny" / "vcgen" / "sum.dfy"
-      val (cmds, errors) = Examples.output("-teq", "-print", "null", file.toString)
+      val (cmds, errors) = Examples.output("-teq", "-quiet", file.toString)
       errors ==> Nil
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked
 
@@ -156,7 +156,7 @@ object TEQ extends TestSuite:
     // calls are inlined, which rejects callees with a contract
     test("calls with contract"):
       val file = Examples.root / "dafny" / "vcgen" / "call.dfy"
-      val (_, errors) = Examples.output("-teq", "-print", "null", file.toString)
+      val (_, errors) = Examples.output("-teq", "-quiet", file.toString)
       errors ==> List(contracts)
 
     // a loop that assigns a constant: the dependency of the lemma whose bound variable the update does not use

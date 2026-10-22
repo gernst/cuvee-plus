@@ -1,0 +1,4 @@
+goal forall x: int :: x == 0 ==> always x == 0
+
+goal forall x: int :: x == 0 && always x == 0 ==> eventually x == 0
+

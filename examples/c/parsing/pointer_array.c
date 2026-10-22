@@ -1,2 +1,2 @@
-// ./Cuvee.sh -print null examples/c/parsing/pointer_array.c
+// ./Cuvee.sh -quiet examples/c/parsing/pointer_array.c
 int *g[2]; int main(void) { return 0; }

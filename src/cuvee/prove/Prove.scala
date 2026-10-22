@@ -13,7 +13,7 @@ import cuvee.core._
 // Simplify, Rewrite, Context), each with a fresh number of rewrite steps; goals that simplify to true are dropped;
 // like -simplify, with -rules the rules applied follow each assertion as (set-info :used ((name count) ...))
 object Prove extends Transform:
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val rules = Rules.from(state, prefix ++ cmds)
     val forward = Forward.from(prefix ++ cmds)
 
@@ -27,7 +27,7 @@ object Prove extends Transform:
         if !isTrivial(cmd_)
       yield cmd_
 
-    (cmds_, Some(last))
+    (cmds_, last)
 
   // a goal that remains is proved by cases (see alternatives), each case with a context of its own, at most `depth`
   // splits deep; it is kept as it is unless all cases hold, so that the output does not multiply
@@ -47,7 +47,7 @@ object Prove extends Transform:
   // a goal that remains and has no traces, lists, or other functions than those of arithmetic and logic left, e.g.
   // forall N :: !(0 < N && N <= 536870911) of an unsafe task, is refuted by a counterexample among small values and
   // the literals of the goal, plus or minus 1, which its instance evaluates to false at: the goal is false then, which
-  // -verify answers with incorrect unless the goal is :abstract (see pipe.Verify); at most four variables
+  // a sink answers incorrect unless the goal is :abstract (see Sink.passive); at most four variables
   def counterexample(config: Config, state: State, fresh: () => Context, cmd: Cmd): Cmd =
     cmd match
       case Assert(justify, Nil, phi, attrs) if phi != True && phi != False =>

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -prove -split -prove -verify examples/c/verify/entry_unreached.c
+// ./Cuvee.sh -teq -prove -split -prove -quiet examples/c/verify/entry_unreached.c
 // a function that the entry point main does not call is not checked, its assertion is never reached
 extern void abort(void);
 void reach_error(void) { abort(); }

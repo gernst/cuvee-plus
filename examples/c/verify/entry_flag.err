@@ -1,0 +1,262 @@
+correct
+((define-fun f_pre ((x$0 Int)) Bool true)
+  (define-fun
+    f_inv_4
+    ((x$0 Int) (x$1 Int) (x$2 Int))
+    Bool
+    (let
+      ((a!1
+          (exists
+            ((x!3 Int))
+            (let
+              ((a!1
+                  (not
+                    (<=
+                      (+ x$0 (* (- 1) x!3))
+                      (- 1)))))
+              (and a!1 (not (<= x$0 x!3)) (= x$2 (+ 1 x!3))))))
+        (a!2
+          (not
+            (<=
+              (+ x$0 (* (- 1) x$2))
+              (- 1)))))
+      (or
+        a!1
+        a!2
+        (and (<= 0 x$0) (= x$2 0)))))
+  (define-fun
+    f_assign_2
+    ((x$0 Int) (x$1 Int) (x$2 Int))
+    Bool
+    (and (not (<= 0 x$0)) (= x$1 0)))
+  (define-fun
+    f_assign_8
+    ((x$0 Int) (x$1 Int) (x$2 Int))
+    Bool
+    (let
+      ((a!1
+          (not
+            (<=
+              (+ x$0 (* (- 1) x$1))
+              (- 1))))
+        (a!2
+          (exists
+            ((x!3 Int))
+            (let
+              ((a!1
+                  (not
+                    (<=
+                      (+ x$0 (* (- 1) x!3))
+                      (- 1)))))
+              (and a!1 (not (<= x$0 x!3)) (= x$1 (+ 1 x!3)))))))
+      (let
+        ((a!3
+            (and
+              (or
+                a!1
+                (and (<= 0 x$0) (= x$1 0))
+                a!2)
+              (<= x$0 x$1)))
+          (a!5
+            (and
+              (or
+                (and (<= 0 x$0) (= x$1 0))
+                a!1
+                a!2)
+              (<= x$0 x$1)
+              (= x$2 x$1))))
+        (let
+          ((a!4
+              (and
+                (or
+                  (and a!1 (<= x$0 x$1))
+                  a!3)
+                (= x$2 x$1))))
+          (or a!4 a!5)))))
+  (define-fun
+    f_spec_7
+    ((x$0 Int) (x$1 Int) (x$2 Int))
+    Bool
+    (let
+      ((a!1
+          (not
+            (<=
+              (+ x$0 (* (- 1) x$2))
+              (- 1))))
+        (a!2
+          (exists
+            ((x!3 Int))
+            (let
+              ((a!1
+                  (not
+                    (<=
+                      (+ x$0 (* (- 1) x!3))
+                      (- 1)))))
+              (and a!1 (not (<= x$0 x!3)) (= x$2 (+ 1 x!3)))))))
+      (let
+        ((a!3
+            (and
+              (or
+                a!2
+                a!1
+                (and (<= 0 x$0) (= x$2 0)))
+              (<= x$0 x$2)))
+          (a!4
+            (and
+              (or
+                a!1
+                (and (<= 0 x$0) (= x$2 0))
+                a!2)
+              (<= x$0 x$2))))
+        (or
+          (and a!1 (<= x$0 x$2))
+          a!3
+          a!4))))
+  (define-fun
+    f_post
+    ((x$0 Int) (x$1 Int))
+    Bool
+    (let
+      ((a!1
+          (not
+            (<=
+              (+ x$0 (* (- 1) x$1))
+              (- 1))))
+        (a!2
+          (exists
+            ((x!2 Int))
+            (let
+              ((a!1
+                  (not
+                    (<=
+                      (+ x$0 (* (- 1) x!2))
+                      (- 1)))))
+              (and a!1 (not (<= x$0 x!2)) (= x$1 (+ 1 x!2)))))))
+      (let
+        ((a!3
+            (and
+              (or
+                (and (<= 0 x$0) (= x$1 0))
+                a!1
+                a!2)
+              (<= x$0 x$1)))
+          (a!4
+            (and
+              (or
+                a!1
+                (and (<= 0 x$0) (= x$1 0))
+                a!2)
+              (<= x$0 x$1))))
+        (or
+          (and (not (<= 0 x$0)) (= x$1 0))
+          a!3
+          a!4))))
+  (define-fun
+    f_assign_6
+    ((x$0 Int) (x$1 Int) (x$2 Int))
+    Bool
+    (let
+      ((a!1
+          (exists
+            ((x!3 Int))
+            (let
+              ((a!1
+                  (not
+                    (<=
+                      (+ x$0 (* (- 1) x!3))
+                      (- 1)))))
+              (and a!1 (not (<= x$0 x!3)) (= x$2 (+ 1 x!3))))))
+        (a!2
+          (exists
+            ((x!3 Int))
+            (let
+              ((a!1
+                  (not
+                    (<=
+                      (+ x$0 (* (- 1) x!3))
+                      (- 1))))
+                (a!2
+                  (exists
+                    ((x!4 Int))
+                    (let
+                      ((a!1
+                          (not
+                            (<=
+                              (+ x$0 (* (- 1) x!4))
+                              (- 1)))))
+                      (and a!1 (not (<= x$0 x!4)) (= x!3 (+ 1 x!4)))))))
+              (and
+                (or
+                  a!1
+                  a!2
+                  (and (<= 0 x$0) (= x!3 0)))
+                (not (<= x$0 x!3))
+                (= x$2 (+ 1 x!3)))))))
+      (or a!1 a!2)))
+  (define-fun
+    f_exit_5
+    ((x$0 Int) (x$1 Int) (x$2 Int))
+    Bool
+    (let
+      ((a!1
+          (not
+            (<=
+              (+ x$0 (* (- 1) x$2))
+              (- 1))))
+        (a!2
+          (exists
+            ((x!3 Int))
+            (let
+              ((a!1
+                  (not
+                    (<=
+                      (+ x$0 (* (- 1) x!3))
+                      (- 1)))))
+              (and a!1 (not (<= x$0 x!3)) (= x$2 (+ 1 x!3)))))))
+      (let
+        ((a!3
+            (and
+              (or
+                a!2
+                a!1
+                (and (<= 0 x$0) (= x$2 0)))
+              (<= x$0 x$2))))
+        (or
+          (and a!1 (<= x$0 x$2))
+          a!3))))
+  (define-fun
+    f_join_1
+    ((x$0 Int) (x$1 Int) (x$2 Int))
+    Bool
+    (<= 0 x$0))
+  (define-fun
+    f_assign_3
+    ((x$0 Int) (x$1 Int) (x$2 Int))
+    Bool
+    (and (<= 0 x$0) (= x$2 0)))
+  (define-fun bitnot ((x$0 Int)) Int 0)
+  (define-fun
+    shl
+    ((x$0 Int) (x$1 Int))
+    Int
+    0)
+  (define-fun
+    bitor
+    ((x$0 Int) (x$1 Int))
+    Int
+    0)
+  (define-fun
+    bitand
+    ((x$0 Int) (x$1 Int))
+    Int
+    0)
+  (define-fun
+    shr
+    ((x$0 Int) (x$1 Int))
+    Int
+    0)
+  (define-fun
+    bitxor
+    ((x$0 Int) (x$1 Int))
+    Int
+    0))

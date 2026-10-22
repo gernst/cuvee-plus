@@ -20,8 +20,8 @@ import cuvee.core._
 // fresh functions of their free variables, defined in the antecedent of the goal, and the remaining functions of
 // trace equation systems by fresh functions without definition, which generalizes the goal;
 // a trace of several accumulators is one function per accumulator, read by its components and histories;
-// functions defined with {:fold} are unfolded first; the declarations and lemmas of teq.dfy are dropped,
-// as are lemmas over traces, lists, and naturals; guards need not be complete (see break), hence each case is
+// functions defined with {:fold} are unfolded first; lemmas that are not free are lowered like goals, the declarations
+// of teq.dfy are dropped, as are axioms and free lemmas over traces, lists, and naturals; guards need not be complete (see break), hence each case is
 // an implication, and the entry is unconstrained if no guard holds
 object Fallback extends Transform:
   // what lowering a goal has produced: the declarations of the new functions, their definitions as facts of the goal,
@@ -40,28 +40,32 @@ object Fallback extends Transform:
   // the sorts of trace equation systems
   val sorts = Set(Con.trace, Con.list, Con.nat)
 
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val cmds_ =
       for
         cmd <- cmds
         cmd_ <- fallback(state, cmd)
       yield cmd_
 
-    (cmds_, Some(last))
+    (cmds_, last)
 
   def fallback(state: State, cmd: Cmd): List[Cmd] =
     cmd match
-      case Assert(Goal, Nil, phi, attrs) =>
+      // a lemma that is not free is checked like a goal; the lowered one is stronger, hence it may be assumed once
+      // it holds (see Solver.sink), which it then does for all interpretations of the new functions
+      case Assert(justify @ (Goal | Lemma), Nil, phi, attrs) if !attrs.contains("free") =>
         val out = Ref(Lowered(Nil, Nil, Map(), Map(), Map()))
         val phi_ = expr(state, Map(), out, phi, Some(true))
         val Lowered(decls, defs, _, _, _) = out.value
         val phi__ = if defs.isEmpty then phi_ else Imp(And(defs.reverse), phi_)
-        // the lowered goal is stronger than the original one, its refutation is no counterexample (see pipe.Verify)
+        // the lowered goal is stronger than the original one, its refutation is no counterexample (see Solver.sink)
         val attrs_ = if phi__ == phi then attrs else attrs ++ Attrs.from("abstract")
-        decls.reverse :+ Assert(Goal, Nil, phi__, attrs_)
+        decls.reverse :+ Assert(justify, Nil, phi__, attrs_)
 
-      case Assert(Goal, _, _, _) =>
-        Error.raise("polymorphic goals are not supported by -fallback", cmd)
+      case Assert(Goal | Lemma, _, _, attrs) if !attrs.contains("free") =>
+        Error.raise("polymorphic goals and lemmas are not supported by -fallback", cmd)
+
+      // assumptions that cannot be expressed are dropped, which is sound, unlike assuming their stronger lowering
 
       case decl: Decl if decl.attrs.contains("teq") =>
         Nil

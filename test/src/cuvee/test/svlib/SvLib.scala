@@ -21,7 +21,7 @@ object Horn extends TestSuite:
   val tests =
     Examples.tests(Examples.find(os.sub / "svlib", "svlib").filter(stated)): file =>
       val results = Examples.answers("-chc", "-z3", file.toString)
-      Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
+      Examples.status(results) ==> (if Examples.holds(file) then Status.Correct else Status.Incorrect)
 
 // the annotations of annotate-tag commands are attached to the procedures and loops by the transforms,
 // after the command, which may follow the procedure, and the properties of the output of -vcgen in SV-LIB parse again
@@ -30,7 +30,7 @@ object Annotations extends TestSuite:
 
   val tests = Tests:
     test("linked"):
-      val cmds = Examples.input("-print", "null", file.toString)
+      val cmds = Examples.input("-quiet", file.toString)
       val tags = cmds.collect { case AnnotateTag(tag, _) => tag.indexed }
       tags ==> List("proc-add", "while-loop")
       // the contract is linked, the invariant is inline, neither is in the other place
@@ -39,7 +39,7 @@ object Annotations extends TestSuite:
       proc.tags.map(_.indexed) ==> List("proc-add")
 
     test("verified"):
-      val (cmds, errors) = Examples.output("-vcgen", "-print", "null", file.toString)
+      val (cmds, errors) = Examples.output("-vcgen", "-quiet", file.toString)
       errors ==> Nil
       // the goal of the procedure, the verify-call has none, as it assumes the precondition, the annotations are consumed
       cmds.collect { case Assert(Goal, _, _, _) => () }.length ==> 1

@@ -36,7 +36,7 @@ derivatives in [hybrid.md](hybrid.md).
     is dropped; each `-simplify` reports its own applications, such that those
     of several, e.g. before and after `-split`, add up (`scripts/rules.py`).
     Solvers do not receive it, z3 rejects structured values of `set-info`
-    contrary to SMT-LIB: the solver sink and the sink of `-verify` print it on
+    contrary to SMT-LIB: the solver sink prints it on
     stderr instead (`Solver.info`). Applications in subterms that are dropped
     later count as well, so that the counts are an upper bound
     ([rules.dfy](../examples/dafny/teq/rules.dfy)).

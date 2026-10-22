@@ -19,14 +19,14 @@ import cuvee.simplify.Normalize
 // or with a succedent that is also an antecedent, are dropped, as are duplicates;
 // beforehand, if-then-else is lifted out of the terms of atoms (see Normalize.lift), such that it is split as well
 object Split extends Transform:
-  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Cmd): (List[Cmd], Option[Cmd]) =
+  def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val cmds_ =
       for
         cmd <- cmds
         cmd_ <- split(cmd)
       yield cmd_
 
-    (cmds_, Some(last))
+    (cmds_, last)
 
   // rewrite rules are kept as they are, like in Simplify, since their pieces would be rules of their own
   def split(cmd: Cmd): List[Cmd] =

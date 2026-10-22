@@ -1,4 +1,4 @@
-// ./Cuvee.sh -print null examples/dafny/parsing/traces_typing.dfy
+// ./Cuvee.sh -quiet examples/dafny/parsing/traces_typing.dfy
 // type checking of the combinators trace, map, and all, the types of the bound variables are inferred from the dependencies
 type Trace<a₀>
 type List<a₀>

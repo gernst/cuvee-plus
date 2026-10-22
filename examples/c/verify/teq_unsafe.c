@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -prove -split -prove -verify examples/c/verify/teq_unsafe.c
+// ./Cuvee.sh -teq -prove -split -prove -quiet examples/c/verify/teq_unsafe.c
 // the goal simplifies to false, a refutation without solver, since the steps of -teq are equivalences
 
 extern void reach_error(void);

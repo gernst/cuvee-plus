@@ -8,6 +8,9 @@ import cuvee.core._
 trait Report:
   def report(result: Result, printSuccess: Boolean): Unit
 
+  // the end of the run, e.g. to write the witness of the answers (see yml.Witness)
+  def done(): Unit = ()
+
 object Report:
   def stream(stream: PrintStream, printer: Printer) =
     new print(stream, printer)

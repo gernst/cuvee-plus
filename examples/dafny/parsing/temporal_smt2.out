@@ -1,0 +1,142 @@
+(declare-sort Bag 1)
+
+(declare-sort Map 2)
+
+(declare-datatype
+  tuple$1
+  (par
+    (a$0)
+    ((tuple$1 (|tuple₁_0| a$0)))))
+
+(declare-datatype
+  tuple$2
+  (par
+    (a$0 a$1)
+    ((tuple$2 (|tuple₂_0| a$0) (|tuple₂_1| a$1)))))
+
+(declare-datatype
+  tuple$3
+  (par
+    (a$0 a$1 a$2)
+    ((tuple$3 (|tuple₃_0| a$0) (|tuple₃_1| a$1) (|tuple₃_2| a$2)))))
+
+(declare-datatype
+  tuple$4
+  (par
+    (a$0 a$1 a$2 a$3)
+    ((tuple$4 (|tuple₄_0| a$0) (|tuple₄_1| a$1) (|tuple₄_2| a$2) (|tuple₄_3| a$3)))))
+
+(declare-datatype
+  tuple$5
+  (par
+    (a$0 a$1 a$2 a$3 a$4)
+    ((tuple$5
+        (|tuple₅_0| a$0)
+        (|tuple₅_1| a$1)
+        (|tuple₅_2| a$2)
+        (|tuple₅_3| a$3)
+        (|tuple₅_4| a$4)))))
+
+(declare-datatype
+  tuple$6
+  (par
+    (a$0 a$1 a$2 a$3 a$4 a$5)
+    ((tuple$6
+        (|tuple₆_0| a$0)
+        (|tuple₆_1| a$1)
+        (|tuple₆_2| a$2)
+        (|tuple₆_3| a$3)
+        (|tuple₆_4| a$4)
+        (|tuple₆_5| a$5)))))
+
+(declare-datatype
+  tuple$7
+  (par
+    (a$0 a$1 a$2 a$3 a$4 a$5 a$6)
+    ((tuple$7
+        (|tuple₇_0| a$0)
+        (|tuple₇_1| a$1)
+        (|tuple₇_2| a$2)
+        (|tuple₇_3| a$3)
+        (|tuple₇_4| a$4)
+        (|tuple₇_5| a$5)
+        (|tuple₇_6| a$6)))))
+
+(declare-datatype
+  tuple$8
+  (par
+    (a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7)
+    ((tuple$8
+        (|tuple₈_0| a$0)
+        (|tuple₈_1| a$1)
+        (|tuple₈_2| a$2)
+        (|tuple₈_3| a$3)
+        (|tuple₈_4| a$4)
+        (|tuple₈_5| a$5)
+        (|tuple₈_6| a$6)
+        (|tuple₈_7| a$7)))))
+
+(declare-datatype
+  tuple$9
+  (par
+    (a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8)
+    ((tuple$9
+        (|tuple₉_0| a$0)
+        (|tuple₉_1| a$1)
+        (|tuple₉_2| a$2)
+        (|tuple₉_3| a$3)
+        (|tuple₉_4| a$4)
+        (|tuple₉_5| a$5)
+        (|tuple₉_6| a$6)
+        (|tuple₉_7| a$7)
+        (|tuple₉_8| a$8)))))
+
+(declare-datatype
+  tuple$10
+  (par
+    (a$0 a$1 a$2 a$3 a$4 a$5 a$6 a$7 a$8 a$9)
+    ((tuple$10
+        (|tuple₁₀_0| a$0)
+        (|tuple₁₀_1| a$1)
+        (|tuple₁₀_2| a$2)
+        (|tuple₁₀_3| a$3)
+        (|tuple₁₀_4| a$4)
+        (|tuple₁₀_5| a$5)
+        (|tuple₁₀_6| a$6)
+        (|tuple₁₀_7| a$7)
+        (|tuple₁₀_8| a$8)
+        (|tuple₁₀_9| a$9)))))
+
+(define-fun
+  quot
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  rem
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(declare-const p Bool)
+
+(declare-const q Bool)
+
+(goal
+  (forall
+    ((x Int))
+    (=>
+      (and (always (>= x 0)) (< x 3))
+      (until (next (>= x 1)) p))))
+
+(goal
+  (until+ (always p) q))
+
+(goal
+  (forall
+    ((x Int))
+    (=>
+      (|ω$3| x)
+      (eventually (|ω$3| x)))))
+

@@ -13,7 +13,7 @@ object FlatHorn extends TestSuite:
     Examples.tests(Examples.find(os.sub / "dafny" / "horn", "dfy")): file =>
       val results = Examples.answers("-chc", "-entry", "main", "-flat", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
-      Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
+      Examples.status(results) ==> (if Examples.holds(file) then Status.Correct else Status.Incorrect)
 
 // the transformation -flat on examples/smtlib/transform/flat*.smt2 is checked by their expected outputs,
 // its errors by those of examples/smtlib/parsing/flat_*.smt2

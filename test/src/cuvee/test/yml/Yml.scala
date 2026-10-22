@@ -22,16 +22,16 @@ object Tasks extends TestSuite:
   val tests =
     Examples.tests(Examples.valid(os.sub / "yml", "yml")): file =>
       // the same commands as for the input file
-      Examples.show(List("-print", "null", file.toString))
-      val (cmds, _) = Cuvee.run("-print", "null", file.toString)
-      Examples.show(List("-print", "null", input(file).toString))
-      val (cmds_, _) = Cuvee.run("-print", "null", input(file).toString)
+      Examples.show(List("-quiet", file.toString))
+      val (cmds, _) = Cuvee.run("-quiet", file.toString)
+      Examples.show(List("-quiet", input(file).toString))
+      val (cmds_, _) = Cuvee.run("-quiet", input(file).toString)
       cmds ==> cmds_
 
       // the expected verdict of the property
       val List(prop) = task(file).properties: @unchecked
       val results = Examples.answers("-simplify", "-chc", "-z3", file.toString)
-      Examples.status(results) ==> (if prop.expected == Some(true) then Status.Sat else Status.Unsat)
+      Examples.status(results) ==> (if prop.expected == Some(true) then Status.Correct else Status.Incorrect)
 
 // the task definition is read with SnakeYAML, the input files may be a single string or a list
 // (see examples/yml/parsing for the errors)
@@ -46,7 +46,7 @@ object Load extends TestSuite:
       load(text) ==> Task("a.c", List(cuvee.yml.Property("p.prp", Some(false), Some("valid-deref"))), "C", None)
       load("input_files: a.c\noptions:\n  data_model: LP64\n") ==> Task("a.c", Nil, "C", Some("LP64"))
 
-// the witnesses of SV-COMP (format 2.0) for the answers of -verify to C programs, without content for now, at a
+// the witnesses of SV-COMP (format 2.0) for the answers to C programs, without content for now, at a
 // fixed identifier and time, since the command line writes them to a file with a fresh one (see yml.Witness)
 object Witnesses extends TestSuite:
   import cuvee.yml.Witness

@@ -17,7 +17,7 @@ object Horn extends TestSuite:
       // the answer to the check-sat at the end is the last result
       val results = Examples.answers("-chc", "-entry", "main", "-z3", file.toString)
       results.collect { case error: Error => error.msg } ==> Nil
-      Examples.status(results) ==> (if Examples.holds(file) then Status.Sat else Status.Unsat)
+      Examples.status(results) ==> (if Examples.holds(file) then Status.Correct else Status.Incorrect)
 
 // the models of -chc (the commands are those of the examples in dafny/horn and dafny/parsing/horn_*.dfy)
 object HornCmds extends TestSuite:
@@ -25,11 +25,11 @@ object HornCmds extends TestSuite:
     // the model of the predicates is read back from the solver and printed in the language of the input
     test("model"):
       val max = Examples.root / "dafny" / "horn" / "max.dfy"
-      val List(Status.Sat, Model(decls)) = Examples.answers("-chc", "-entry", "main", "-z3", max.toString): @unchecked
+      val List(Status.Correct, Model(decls)) = Examples.answers("-chc", "-entry", "main", "-z3", max.toString): @unchecked
       assert(decls.nonEmpty && decls.forall(_.isInstanceOf[DefineFun]))
       assert(cuvee.dafny.Printer.lines(Model(decls)).exists(_.startsWith("function max_")))
 
     // no model if the clauses are unsatisfiable
     test("no model"):
       val invalid = Examples.root / "dafny" / "horn" / "invalid_max.dfy"
-      Examples.answers("-chc", "-entry", "main", "-z3", invalid.toString) ==> List(Status.Unsat)
+      Examples.answers("-chc", "-entry", "main", "-z3", invalid.toString) ==> List(Status.Incorrect)

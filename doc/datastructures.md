@@ -260,7 +260,7 @@ case class Par(progs: List[Prog])                       // parallel composition
 - **`free`** includes the variables in the attributes, e.g. in loop
   invariants; **`funs`**, the functions applied, also those in the
   attributes, as does `Cmd.funs`, which excludes the functions that the
-  command declares or defines (e.g. `pipe.Verify` finds the goals that apply
+  command declares or defines (e.g. the solver sink finds the goals that apply
   a function declared `:abstract`).
 - **`Ode`**, **`Iter`**, **`Par`**, `Send`, `Recv`, and `Tick` are hybrid programs and
   parallel composition, see [hybrid.md](hybrid.md).

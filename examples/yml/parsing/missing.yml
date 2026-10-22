@@ -1,2 +1,2 @@
-# ./Cuvee.sh -print null examples/yml/parsing/missing.yml
+# ./Cuvee.sh -quiet examples/yml/parsing/missing.yml
 input_files: missing.c

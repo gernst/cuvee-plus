@@ -46,8 +46,8 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
   axioms); a dangling tag is an error, the report says to ignore it
 - The modified global variables of procedures and loops are inferred by the
   parser (`smtlib.Parser.modifies`), and a body may list them as
-  `:modifies`; the inference belongs into the verification (`-verify`,
-  `VCGen`, `Horn`), such that the parser keeps what is written. Procedures
+  `:modifies`; the inference belongs into the verification (`VCGen`,
+  `TEQ`, `Horn`), such that the parser keeps what is written. Procedures
   without body (`declare-proc`) list them, there is nothing to infer from.
 - SV-COMP tool entry and zenodo archive: the archive of 0.41.4 is published
   (10.5281/zenodo.23317707, in fm-tools `data/cuvee.yml`, merge request !1176,
@@ -260,10 +260,10 @@ items on the simplifier hold for both copies.
 
 ### Transforms and verification
 
-- Abstractness for `-verify` comes from two sources. A goal is
+- Abstractness for the answers comes from two sources. A goal is
   `:abstract` when `VCGen.abstracts` finds a loop without invariant, or when
   `Fallback` lowered it. A function is abstract when declared `:abstract`
-  (the C bit operations) or defined in terms of one; `pipe.Verify` collects
+  (the C bit operations) or defined in terms of one; the solver sink collects
   those in `abstracts` while the stream passes, from `Cmd.funs`. That
   closure follows the order of the stream, so a definition never sees an
   abstract function that comes after it, e.g. in mutual recursion. It is
@@ -878,7 +878,7 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     assertion, postcondition, line) that failed; `-vcgen -z3` prints
     nothing when all goals hold.
   - The C operators `shl`, `shr`, `bitand`, `bitor`, `bitxor`, `bitnot` are uninterpreted (`:abstract` in the C
-    prelude, so `-verify` takes a refutation through them for `unknown`): interpret them where possible (shifts
+    prelude, so a refutation through them is `unknown`): interpret them where possible (shifts
     of constants as multiplications by powers of 2, masks of low bits as `%`, e.g. `(x & 5) == 5` with
     `x % 8 == 5` of `bin-suffix-5`); `&` of two truth values is `and` already (`c.Parser.logical`).
   - Contracts of functions that read globals need the globals' values as

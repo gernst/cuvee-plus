@@ -7,9 +7,9 @@ import cuvee.Error
 import cuvee.core._
 import java.io.FileOutputStream
 
-// the answer to a command, and separately the answers to the queries that transforms add in front of it,
-// e.g. check-sat and get-model added at the end of the input (see Stage),
-// which are reported only if the command has no answer of its own (Ack.Done, see Pipe.run)
+// the answer to a command, and separately the answers that a flush brings: those to the obligations that a stage
+// buffered before it, and to the queries that transforms add in front of it, e.g. check-sat and get-model added at
+// the end of the input (see Stage), which are reported before the answer to the command (see Pipe.run)
 trait Sink:
   def query(cmd: Cmd): (Result, List[Result], Sink)
 
@@ -18,21 +18,29 @@ trait Sink:
   def knows: Set[String] =
     Set()
 
-  // the answer to `last`, and the answers to the queries among `cmds` together with those added in front of `last`,
-  // where the answers to each query follow the same rule as in Pipe.run, and queries without answer are skipped
-  def query(cmds: List[Cmd], last: Cmd): (Result, List[Result], Sink) =
+  // the answers to the commands `cmds`, i.e. to the goals and lemmas, which every sink answers, and to the queries,
+  // also none (Ack.Done), which Pipe.run does not report, together with the answers that they bring, e.g. those to the goals of procedures that a stage passes on in front of a goal (see
+  // Stage.query); free lemmas are not among them, they are acknowledged like axioms
+  def query(cmds: List[Cmd]): (List[Result], Sink) =
     cmds match
       case Nil =>
-        query(last)
-
-      case (cmd: Query) :: rest =>
-        val (result, added, sink) = query(cmd)
-        val answers = if result == Ack.Done then added else List(result)
-        val (result_, added_, sink_) = sink.query(rest, last)
-        (result_, answers ++ added_, sink_)
+        (Nil, this)
 
       case cmd :: rest =>
-        exec(cmd).query(rest, last)
+        val (result, added, sink) = query(cmd)
+        val answers =
+          cmd match
+            case Assert(Goal | Lemma, _, _, attrs) if !attrs.contains("free") => added :+ result
+            case _: Query                                                    => added :+ result
+            case _                                                           => added
+        val (answers_, sink_) = sink.query(rest)
+        (answers ++ answers_, sink_)
+
+  // the answer to `last`, and the answers to the commands among `cmds` and those that `last` brings
+  def query(cmds: List[Cmd], last: Cmd): (Result, List[Result], Sink) =
+    val (answers, sink) = query(cmds)
+    val (result, added, sink_) = sink.query(last)
+    (result, answers ++ added, sink_)
 
   def exec(cmd: Cmd) =
     val (_, _, sink) = query(cmd)
@@ -54,7 +62,8 @@ object Sink:
   def file(name: String, printer: Printer, knows: Set[String]) =
     Print(new PrintStream(new FileOutputStream(name)), printer, knows)
 
-  // drops the declarations whose features the receiver knows, which it acknowledges like a printer
+  // drops the declarations whose features the receiver knows, which it acknowledges like a printer, except that a goal
+  // or lemma that is not free is unknown, since nobody checks it
   def filter(features: Set[String], next: Sink) =
     Filter(features, next)
 
@@ -73,9 +82,26 @@ object Sink:
   def tee(primary: Sink, secondary: Sink*) =
     Tee(primary, secondary.toList)
 
-  // the answer of sinks that only pass on commands without solving
+  // the answer of sinks that only pass on commands without solving: a goal or lemma is decided by its form, true
+  // correct and false incorrect, unless it is :abstract (see Solver.sink), and unknown otherwise, such that every one
+  // that reaches a sink is answered; a free lemma, which is assumed, is acknowledged like an axiom
   def passive(cmd: Cmd): Result =
     cmd match
+      case Assert(Lemma, _, _, attrs) if attrs.contains("free") =>
+        Ack.Success
+
+      case Assert(Goal | Lemma, _, True, _) =>
+        Status.Correct
+
+      case Assert(Goal | Lemma, _, False, attrs) if attrs.contains("abstract") =>
+        Status.Unknown
+
+      case Assert(Goal | Lemma, _, False, _) =>
+        Status.Incorrect
+
+      case Assert(Goal | Lemma, _, _, _) =>
+        Status.Unknown
+
       case _: Decl =>
         Ack.Success
 
@@ -96,7 +122,7 @@ object Sink:
       case GetModel =>
         Ack.Done
 
-      // no answer of its own, the answers to the obligations that the transforms add are reported instead (see Pipe.run)
+      // no answer of its own, the goals generated for the procedures are answered
       case _: VerifyCall =>
         Ack.Done
 
@@ -116,7 +142,10 @@ object Sink:
 
     def query(cmd: Cmd) =
       if known(features, cmd)
-      then (Ack.Success, Nil, this)
+      then
+        cmd match
+          case Assert(Goal | Lemma, _, _, attrs) if !attrs.contains("free") => (Status.Unknown, Nil, this)
+          case _                                                           => (Ack.Success, Nil, this)
       else
         val (result, added, next_) = next.query(cmd)
         (result, added, Filter(features, next_))

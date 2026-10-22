@@ -1,4 +1,4 @@
-// ./Cuvee.sh -print null examples/dafny/parsing/conditionals_update_ite.dfy
+// ./Cuvee.sh -quiet examples/dafny/parsing/conditionals_update_ite.dfy
 // the cases of updates begin with case, if-then-else expressions need no parentheses there
 type Trace<a>
 type List<a₀>

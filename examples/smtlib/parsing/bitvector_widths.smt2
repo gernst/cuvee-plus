@@ -1,4 +1,4 @@
-; ./Cuvee.sh -print null examples/smtlib/parsing/bitvector_widths.smt2
+; ./Cuvee.sh -quiet examples/smtlib/parsing/bitvector_widths.smt2
 ; the functions are instantiated for the widths of their arguments, compared to literals of the expected width
 (declare-const x (_ BitVec 8))
 (assert (= (concat x #b1) #b000000000))

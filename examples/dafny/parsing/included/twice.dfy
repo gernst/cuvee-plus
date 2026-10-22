@@ -1,4 +1,4 @@
-// ./Cuvee.sh -print null examples/dafny/parsing/included/twice.dfy
+// ./Cuvee.sh -quiet examples/dafny/parsing/included/twice.dfy
 // included by include.dfy, includes base.dfy of the same directory
 include "base.dfy"
 

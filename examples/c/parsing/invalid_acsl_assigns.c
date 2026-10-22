@@ -1,4 +1,4 @@
-// ./Cuvee.sh -vcgen -print null examples/c/parsing/invalid_acsl_assigns.c
+// ./Cuvee.sh -vcgen -quiet examples/c/parsing/invalid_acsl_assigns.c
 // without -teq and -chc, the loop assigns clause is the modifies clause of the loop, which must list the global
 // variable g that the body assigns; the local variable i is inferred
 int g;

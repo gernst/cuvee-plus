@@ -138,12 +138,11 @@ object Solver:
       case _                                => decl
 
   // a sink that passes commands to the solver,
-  // goals and lemmas are proved first and must be valid, lemmas are asserted subsequently,
+  // goals and lemmas are proved first and answered correct, incorrect, or unknown, lemmas that hold are asserted subsequently,
   // the parser keeps track of the declarations known to the solver, starting from `init`,
   // and interprets the answers to queries in that state
   // the declarations that SMT-LIB has built in ({:smt2}, see the preludes) are not passed to the solver,
-  // all others are, without their attributes, e.g. those of higher-order features ({:ho}), which a solver may reject;
-  // goals that do not hold are reported in SMT-LIB
+  // all others are, without their attributes, e.g. those of higher-order features ({:ho}), which a solver may reject
   class Sink(init: State, solver: Solver, stderr: PrintStream) extends cuvee.pipe.Sink:
     val parser = new Parser(init)
     val printer = Printer
@@ -153,6 +152,17 @@ object Solver:
 
     // the answer to the last check-sat, a model is available only if it is sat
     var status: Option[Status] = None
+
+    // the functions declared :abstract, and those defined in terms of them (see Assert)
+    val abstracts = scala.collection.mutable.Set[Fun]()
+
+    // the state is updated only once the solver has accepted the declaration,
+    // attributes are kept in the state but not sent to the solver
+    def declare(decl: Decl) =
+      val state_ = parser.state.add(decl)
+      val ack = solver.ack(Solver.noAttrs(decl))
+      parser.state = state_
+      (ack, Nil, this)
 
     def query(cmd: Cmd) =
       cmd match
@@ -165,16 +175,23 @@ object Solver:
         case Assert(Lemma, params, phi, attrs) if attrs.contains("free") =>
           (solver.ack(Assert(Axiom, params, phi, attrs.retain("named", "pattern"))), Nil, this)
 
-        // the solver's answer is reported if the goal is not valid, i.e., sat or unknown
+        // goals and lemmas are answered by their validity: unsat of the negation correct, sat incorrect, unless the
+        // goal is :abstract, i.e., stronger than what it was generated from, e.g. for a loop without invariant (VCGen)
+        // or a lowered goal (Fallback), or applies a function declared :abstract, which the solver interprets freely,
+        // e.g. the bit operations of C, such that its counterexample need not be one (unknown); lemmas that hold are
+        // assumed subsequently
         case Assert(justify, params, phi, attrs) =>
-          val status = solver.valid(params, phi)
-          if status != Status.Unsat then
-            Error.raise(justify.toString.toLowerCase + " does not hold", status, printer.lines(phi).map(_.trim).mkString(" "))
+          val answer =
+            solver.valid(params, phi) match
+              case Status.Unsat                                                                 => Status.Correct
+              case Status.Sat if attrs.contains("abstract") || phi.funs.exists(abstracts.contains) => Status.Unknown
+              case Status.Sat                                                                   => Status.Incorrect
+              case _                                                                            => Status.Unknown
 
-          if justify == Lemma
+          if justify == Lemma && answer == Status.Correct
           then solver.ack(Assert(Axiom, params, phi, attrs.retain("named", "pattern")))
 
-          (Ack.Success, Nil, this)
+          (answer, Nil, this)
 
         case CheckSat =>
           val status_ = solver.check()
@@ -231,13 +248,17 @@ object Solver:
           parser.state = parser.state.add(option)
           (solver.option(option), Nil, this)
 
-        // the state is updated only once the solver has accepted the declaration,
-        // attributes are kept in the state but not sent to the solver
+        // functions whose counterexamples are no counterexamples, see above, and those defined in terms of them
+        case decl @ DeclareFun(fun, attrs) if attrs.contains("abstract") =>
+          abstracts += fun
+          declare(decl)
+
+        case decl @ DefineFun(fun, _, _) if decl.funs.exists(abstracts.contains) =>
+          abstracts += fun
+          declare(decl)
+
         case decl: Decl =>
-          val state_ = parser.state.add(decl)
-          val ack = solver.ack(Solver.noAttrs(decl))
-          parser.state = state_
-          (ack, Nil, this)
+          declare(decl)
 
         case Push(depth) =>
           val ack = solver.ack(cmd)

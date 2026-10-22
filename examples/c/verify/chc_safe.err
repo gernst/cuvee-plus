@@ -1,0 +1,139 @@
+correct
+((define-fun main_pre () Bool true)
+  (define-fun
+    main_assign_1
+    ((x$0 Int) (x$1 Int))
+    Bool
+    (= x$1 0))
+  (define-fun
+    main_inv_2
+    ((x$0 Int) (x$1 Int))
+    Bool
+    (let
+      ((a!1
+          (exists
+            ((x!2 Int))
+            (and (not (>= x!2 11)) (not (<= 10 x!2)) (= x$1 (+ 1 x!2))))))
+      (or a!1 (not (>= x$1 11)) (= x$1 0))))
+  (define-fun
+    main_exit_3
+    ((x$0 Int) (x$1 Int))
+    Bool
+    (let
+      ((a!1
+          (exists
+            ((x!2 Int))
+            (and (not (>= x!2 11)) (not (<= 10 x!2)) (= x$1 (+ 1 x!2))))))
+      (let
+        ((a!2
+            (and
+              (or a!1 (not (>= x$1 11)) (= x$1 0))
+              (<= 10 x$1))))
+        (or
+          (and (not (>= x$1 11)) (<= 10 x$1))
+          a!2))))
+  (define-fun
+    main_assign_4
+    ((x$0 Int) (x$1 Int))
+    Bool
+    (let
+      ((a!1
+          (exists
+            ((x!2 Int))
+            (and (not (>= x!2 11)) (not (<= 10 x!2)) (= x$1 (+ 1 x!2)))))
+        (a!2
+          (exists
+            ((x!2 Int))
+            (let
+              ((a!1
+                  (exists
+                    ((x!3 Int))
+                    (and (not (>= x!3 11)) (not (<= 10 x!3)) (= x!2 (+ 1 x!3))))))
+              (and
+                (or (= x!2 0) (not (>= x!2 11)) a!1)
+                (not (<= 10 x!2))
+                (= x$1 (+ 1 x!2)))))))
+      (or a!1 a!2)))
+  (define-fun
+    main_post
+    ((x$0 Int))
+    Bool
+    (exists
+      ((x!1 Int))
+      (let
+        ((a!1
+            (exists
+              ((x!2 Int))
+              (and (not (>= x!2 11)) (not (<= 10 x!2)) (= x!1 (+ 1 x!2))))))
+        (and
+          (or (= x!1 0) (not (>= x!1 11)) a!1)
+          (<= 10 x!1)
+          (= x$0 0)))))
+  (define-fun
+    main_spec_5
+    ((x$0 Int) (x$1 Int))
+    Bool
+    (let
+      ((a!1
+          (exists
+            ((x!2 Int))
+            (and (not (>= x!2 11)) (not (<= 10 x!2)) (= x$1 (+ 1 x!2))))))
+      (let
+        ((a!2
+            (and
+              (or a!1 (not (>= x$1 11)) (= x$1 0))
+              (<= 10 x$1))))
+        (or
+          (and (not (>= x$1 11)) (<= 10 x$1))
+          a!2))))
+  (define-fun
+    main_assign_6
+    ((x$0 Int) (x$1 Int))
+    Bool
+    (let
+      ((a!1
+          (exists
+            ((x!2 Int))
+            (and (not (>= x!2 11)) (not (<= 10 x!2)) (= x$1 (+ 1 x!2))))))
+      (let
+        ((a!2
+            (and
+              (or a!1 (not (>= x$1 11)) (= x$1 0))
+              (<= 10 x$1)
+              (= x$0 0)))
+          (a!3
+            (and
+              (or a!1 (not (>= x$1 11)) (= x$1 0))
+              (<= 10 x$1))))
+        (let
+          ((a!4
+              (or
+                (and (not (>= x$1 11)) (<= 10 x$1))
+                a!3)))
+          (or a!2 (and a!4 (= x$0 0)))))))
+  (define-fun
+    shr
+    ((x$0 Int) (x$1 Int))
+    Int
+    0)
+  (define-fun bitnot ((x$0 Int)) Int 0)
+  (define-fun
+    shl
+    ((x$0 Int) (x$1 Int))
+    Int
+    0)
+  (define-fun
+    bitor
+    ((x$0 Int) (x$1 Int))
+    Int
+    0)
+  (define-fun
+    bitand
+    ((x$0 Int) (x$1 Int))
+    Int
+    0)
+  (define-fun
+    bitxor
+    ((x$0 Int) (x$1 Int))
+    Int
+    0))

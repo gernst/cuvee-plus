@@ -96,10 +96,10 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
         case _                                                          => false
 
     init.map(strip) match
-      case Some(Call("malloc" | "safe_malloc" | "alloca", List(size))) if sizes.isEmpty && elements(size) =>
+      case Some(Call("malloc" | "safe_malloc" | "safe_malloc_or_loop" | "alloca", List(size))) if sizes.isEmpty && elements(size) =>
         (ArrayType(t), None)
 
-      case Some(Call("calloc" | "safe_calloc", List(_, size))) if sizes.isEmpty && strip(size).isInstanceOf[SizeofType] =>
+      case Some(Call("calloc" | "safe_calloc" | "safe_calloc_or_loop", List(_, size))) if sizes.isEmpty && strip(size).isInstanceOf[SizeofType] =>
         (ArrayType(t), Some(Items(Nil)))
 
       // other pointers are values, e.g. int *p = NULL, which cannot be dereferenced

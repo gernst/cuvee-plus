@@ -7,11 +7,9 @@ lemma {:rw} current_transpose(B0: array<int, array<int, int>>,
   requires j < n
   ensures
     current(trace(B0, for ⌊counter(0, 1, natural(m))⌋
-                      do B, k ::
-                        current(trace(B, for ⌊counter(0, 1, natural(n))⌋
-                                         do Bi, ki ::
-                                           Bi[
-                                             ki :=
-                                             Bi[ki][k := A[k][ki]]]))))[j][i]
+                  do B, k ::
+                    current(trace(B, for ⌊counter(0, 1, natural(n))⌋
+                                  do Bi, ki ::
+                                    Bi[ki := Bi[ki][k := A[k][ki]]]))))[j][i]
       == A[i][j]
 

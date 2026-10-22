@@ -1,2 +1,2 @@
-# ./Cuvee.sh -print null examples/yml/parsing/no_input.yml
+# ./Cuvee.sh -quiet examples/yml/parsing/no_input.yml
 properties: []

@@ -2,34 +2,25 @@ package cuvee.test
 
 import utest._
 
-import cuvee.Config
 import cuvee.core._
-import cuvee.pipe.Verify
+import cuvee.pipe.Sink
+import cuvee.verify.Horn
 
-// -verify answers correct, incorrect, or unknown (see pipe.Verify, examples/*/verify)
+// the goals and lemmas are answered correct, incorrect, or unknown by the sink (see Sink.passive, Solver.sink,
+// examples/*/verify)
 object VerifyAnswers extends TestSuite:
   val tests = Tests:
-    // a solver checks the output unless -verify is given, regardless of the order of the options
-    test("options"):
-      val check = Config.parse(Config.default, List("-z3", "-vcgen", "input.c"))
-      assert(check.solver.nonEmpty, !check.verify)
+    // without solver, goals are decided by their form, a refutation of a goal that is stronger than the
+    // specification is no counterexample
+    test("passive"):
+      Sink.passive(Assert(Goal, Nil, True, Attrs.empty)) ==> Status.Correct
+      Sink.passive(Assert(Goal, Nil, False, Attrs.empty)) ==> Status.Incorrect
+      Sink.passive(Assert(Goal, Nil, False, Attrs.from("abstract"))) ==> Status.Unknown
+      Sink.passive(Assert(Goal, Nil, Var("x", Sort.bool), Attrs.empty)) ==> Status.Unknown
+      Sink.passive(Assert(Lemma, Nil, False, Attrs.from("free"))) ==> Ack.Success
 
-      val verify = Config.parse(Config.default, List("-verify", "-vcgen", "-z3", "input.c"))
-      assert(verify.solver.nonEmpty, verify.verify)
-
-    // an obligation holds if the answer is the expected status, it is refuted by the opposite one unless it is
-    // stronger than the specification
-    test("outcome"):
-      Verify.expected(Assert(Goal, Nil, True, Attrs.empty)) ==> Status.Unsat
-      Verify.expected(CheckSat) ==> Status.Sat
-      Verify.outcome(Status.Unsat, Status.Unsat, false) ==> Status.Correct
-      Verify.outcome(Status.Unsat, Status.Sat, false) ==> Status.Incorrect
-      Verify.outcome(Status.Unsat, Status.Sat, true) ==> Status.Unknown
-      Verify.outcome(Status.Unsat, Status.Unknown, false) ==> Status.Unknown
-      Verify.outcome(Status.Sat, Status.Sat, false) ==> Status.Correct
-      Verify.outcome(Status.Sat, Status.Unsat, false) ==> Status.Incorrect
-
-    test("aggregation"):
-      Verify.and(Status.Correct, Status.Unknown) ==> Status.Unknown
-      Verify.and(Status.Unknown, Status.Incorrect) ==> Status.Incorrect
-      Verify.and(Status.Correct, Status.Correct) ==> Status.Correct
+    // the clauses of Horn are satisfiable iff the program is correct
+    test("horn"):
+      Horn.checked(Status.Sat) ==> Status.Correct
+      Horn.checked(Status.Unsat) ==> Status.Incorrect
+      Horn.checked(Status.Unknown) ==> Status.Unknown

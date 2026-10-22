@@ -1,4 +1,4 @@
-// ./Cuvee.sh -print null examples/c/parsing/invalid_acsl_loop.c
+// ./Cuvee.sh -quiet examples/c/parsing/invalid_acsl_loop.c
 // loop annotations precede a loop
 int main(void) {
   int x = 0;
