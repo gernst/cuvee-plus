@@ -63,7 +63,7 @@ object Fallback extends Transform:
         decls.reverse :+ Assert(justify, Nil, phi__, attrs_)
 
       case Assert(Goal | Lemma, _, _, attrs) if !attrs.contains("free") =>
-        Error.raise("polymorphic goals and lemmas are not supported by -fallback", cmd)
+        Error.raise("polymorphic goals and lemmas are not supported by -fallback", attrs.values[cuvee.sexpr.Id]("named").map(_.text)*)
 
       // assumptions that cannot be expressed are dropped, which is sound, unlike assuming their stronger lowering
 

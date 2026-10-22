@@ -1,0 +1,2 @@
+error "-include teq:<concept> needs -teq or -known teq"
+  "/cuvee/teq/aggregation.dfy"

@@ -574,7 +574,9 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   [fallback_negated.c](../examples/c/teq/fallback_negated.c),
   [fallback_nested.c](../examples/c/teq/fallback_nested.c),
   [fallback_recursion.dfy](../examples/dafny/teq/fallback_recursion.dfy),
-  [fallback_accumulators.dfy](../examples/dafny/teq/fallback_accumulators.dfy)
+  [fallback_accumulators.dfy](../examples/dafny/teq/fallback_accumulators.dfy),
+  [fallback_lemma.dfy](../examples/dafny/teq/fallback_lemma.dfy),
+  [invalid_fallback_polymorphic.dfy](../examples/dafny/teq/invalid_fallback_polymorphic.dfy)
   (a cycle).
 
 ## Simplification and rewriting

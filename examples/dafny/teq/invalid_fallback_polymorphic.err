@@ -1,0 +1,1 @@
+error "polymorphic goals and lemmas are not supported by -fallback" "same"
