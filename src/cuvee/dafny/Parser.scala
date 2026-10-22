@@ -131,12 +131,12 @@ class Parser(var state: State):
         for case decl: core.Decl <- cmds do state = state.add(decl)
         cmds
 
-      case VarDef(vars) =>
+      case VarDef(attrs, vars) =>
         val scope = Scope.empty
         for (name, typ) <- vars
         yield
           val typ_ = resolve(scope, typ)
-          state = state.declare(name, typ_, Attrs.empty)
+          state = state.declare(name, typ_, keywords(attrs))
           state.cmds.declareVar(name)
 
       case Axiom(params, attrs, expr) =>
@@ -157,7 +157,7 @@ class Parser(var state: State):
             case Some(pre) => All(formals, App("=>", List(pre, post)))
 
         val (params_, phi_, attrs_) = assertion(params, attrs, expr)
-        val free = if body.isEmpty && !attrs.contains("free") then List("free" -> None) else Nil
+        val free = if body.isEmpty && !attrs.exists(_._1 == "free") then List("free" -> None) else Nil
         List(state.cmds.lemma(params_, phi_, Attrs(attrs_.attrs ++ free :+ ("named" -> Some(sexpr.Id(name))))))
 
       case Goal(params, attrs, expr) =>
@@ -178,7 +178,7 @@ class Parser(var state: State):
         val xs = (names zip (ff.args ++ gf.args.tail)).map(state.exprs.formal(_, _))
         val scope = Scope((ff.params ++ gf.params).distinct, xs)
         val term_ = check(scope, resolve(scope, term), gf.res)
-        List(core.FuseFuns(term_, None, Attrs(attrs.map(_ -> None))))
+        List(core.FuseFuns(term_, None, keywords(attrs)))
 
       case Fuse(_, term) =>
         Error.raise("fuse needs a composition g(f(x₁, ..., xₙ), y₁, ..., yₘ) of two defined functions", term)
@@ -189,7 +189,7 @@ class Parser(var state: State):
         val scope_ = scope ++ params_
 
         val arity_ = params.length
-        state = state.declare(name, arity_, Attrs(attrs.map(_ -> None)))
+        state = state.declare(name, arity_, keywords(attrs))
 
         impl match
           case Left(None) =>
@@ -222,7 +222,7 @@ class Parser(var state: State):
       // followed by the members of all of them
       case DataDefs(datas) =>
         for DataDef(attrs, name, params, _, _) <- datas
-        do state = state.declare(name, params.length, Attrs(attrs.map(_ -> None)))
+        do state = state.declare(name, params.length, keywords(attrs))
 
         for data <- datas
         do datatype(data)
@@ -248,11 +248,38 @@ class Parser(var state: State):
 
   // the formula of an axiom, lemma, or goal is resolved and checked in the scope of its type parameters,
   // the type parameters of the assertion are these followed by those that remain in the formula otherwise
-  def assertion(params: List[String], attrs: List[String], expr: Expr): (List[core.Param], core.Expr, Attrs) =
+  def assertion(params: List[String], attrs: List[Annotation], expr: Expr): (List[core.Param], core.Expr, Attrs) =
     val params_ = params.map(resolve(Scope.empty, _))
     val phi_ = formula(Scope.empty ++ params_, expr)
-    val attrs_ = Attrs(attrs.map(_ -> None))
+    val attrs_ = keywords(attrs)
     (params_ ++ phi_.params.toList.filterNot(params_.contains), phi_, attrs_)
+
+  // annotations without values, e.g. {:rw}
+  def keywords(attrs: List[Annotation]): Attrs =
+    for (name, arg) <- attrs
+    do
+      Error.report("annotation with a value", name):
+        require(arg.isEmpty)
+
+    Attrs(attrs.map((name, _) => name -> None))
+
+  // the annotations of a function whose inputs are in `scope`, where {:implements pattern} names the function that
+  // it implements and the positions of its arguments by an application to the inputs, of the result type `res`
+  // (see transform.Impl); other annotations have no values
+  def annotations(scope: Scope, attrs: List[Annotation], res: core.Type): Attrs =
+    val attrs_ =
+      for (name, arg) <- attrs
+      yield arg match
+        case Some(pattern) if name == "implements" =>
+          name -> Some(check(scope, resolve(scope, pattern), res))
+
+        case Some(_) =>
+          Error.raise("annotation with a value", name)
+
+        case None =>
+          name -> None
+
+    Attrs(attrs_)
 
   def formula(scope: Scope, phi: Expr) =
     val expr_ = resolve(scope, phi)
@@ -308,7 +335,7 @@ class Parser(var state: State):
 
         val typ_ = resolve(scope_, typ)
         val scope__ = scope_ ++ formals_
-        val attrs_ = Attrs(attrs.map(_ -> None) ++ contract(scope__, Nil, req, ens, dec).attrs)
+        val attrs_ = annotations(scope__, attrs, typ_) ++ contract(scope__, Nil, req, ens, dec)
 
         val arity = formals_.length
         state = state.declare(qname, params_, formals_, typ_, attrs_)
@@ -343,7 +370,7 @@ class Parser(var state: State):
         val ac_ =
           assumes.map(phi => "assumes" -> Some(formula(scope__, phi))) ++
             commits.map(phi => "commits" -> Some(formula(scope__, phi)))
-        val attrs_ = Attrs(attrs.map(_ -> None) ++ contract(scope__, mod, req, ens, dec).attrs ++ ac_)
+        val attrs_ = Attrs(keywords(attrs).attrs ++ contract(scope__, mod, req, ens, dec).attrs ++ ac_)
         state = state.declare(qname, params_, formals_, rets_, attrs_)
 
         val mod_ = attrs_.modifies

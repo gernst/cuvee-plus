@@ -184,7 +184,7 @@ for every sink.
   (`-prove`), with congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole
   cycles and forward lemmas ([`Forward`](../src/cuvee/prove/Forward.scala)), see [prove.md](prove.md).
 - [`Impl`](../src/cuvee/transform/Impl.scala) replaces the functions that
-  procedures with `:implementation <function>` implement by calls in the
+  procedures with `:implements <function>` implement by calls in the
   executed expressions of procedure bodies (`-implement`,
   [options.md](options.md)): the calls are lifted in front of their statement
   into fresh locals `test`, short-circuit operators and `ite` become
@@ -314,6 +314,13 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      another (unparenthesized) comparison (`Parser.chain`). Parenthesized expressions are `Tuple(List(e))` in the syntax,
      which is how `(x == y) == b` stays apart. Chains must not mix `<`/`<=`
      with `>`/`>=`.
+   - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
+     included; only `{:implements pattern}` of a function has a value, the
+     pattern of the function it implements (see
+     [ideas/implementations.md](../ideas/implementations.md)), resolved in the
+     scope of its inputs, `this` included, and checked against its result type
+     (`Parser.annotations`), e.g. `{:implements x in this}`; the Dafny printer
+     writes it back, the SMT-LIB printer drops it.
    - Dafny's `include "path"` parses the file at `path`, relative to the
      including file, by a fresh parser that starts from the state after the
      prelude (`dafny.Source.included`), which is immutable and shared by all
@@ -332,7 +339,7 @@ Each frontend follows the same structure (see `cuvee.dafny` and
    them as datatypes, and Dafny's `map` reaches the solvers as a declared
    sort. Declarations that coincide with existing ones leave the state
    unchanged (`State.unless`), except a sort declared again with
-   `:implementation` (`Attrs.isImplementation`), e.g. by a datatype that
+   `:implements` (`Attrs.isImplementation`), e.g. by a datatype that
    defines a sort of the prelude in a module of `-include impl:<name>`: it
    takes the new attributes, such that its definition carries them and is
    printed rather than dropped with the prelude. Transforms see the
