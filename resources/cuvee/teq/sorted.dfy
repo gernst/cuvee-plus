@@ -4,7 +4,7 @@
 // atoms, and the partition points of a sorted array, which turn its reads into comparisons of indices; an optional
 // module over teq.dfy alone (-include teq:sorted; the cuts of its comparisons are those of the bisection of
 // teq:search), migrated on Oct 13, 2026 from
-// sorting.dfy of the per-variable form, with the partition points of examples/dafny/state/bsearch_bisect.dfy; the
+// sorting.dfy of the per-variable form, with the partition points of examples/dafny/algorithms/bsearch.dfy; the
 // algorithms' own knowledge (summaries of inner loops, step lemmas) stays with the examples; the predicates and the
 // partition points are defined here (the proofs of the lemmas in lean/ use the definitions), but the engines use
 // the lemmas only, the definitions are no rules

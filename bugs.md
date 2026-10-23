@@ -87,7 +87,8 @@ the contexts that `-teq` builds, as far as the reasons go.
   `unspecified.0 == l0` for every `l0` (for `l0 == h0`, one step, `G` and `H` false). Fixed on Oct 14, 2026:
   `bisection` is a definition with `{:fold}` in place of the rule, with disjoint guards (the second case excludes
   `G`) and a third case that keeps the state, so the bounds hold for every run and are proved in Lean (doc/teq.md,
-  complete guards). The three examples (`bsearch_bisect`, `bsearch_safe`, `lower_bound`) close. A version with `G`
+  complete guards). The three examples (`bsearch_bisect`, now `algorithms/bsearch.dfy`, `bsearch_safe`, removed on
+  Oct 23, 2026, and `lower_bound`) close. A version with `G`
   alone (`H` as `¬G`) loses the bound `hi >= upper` of the searches with a third branch, since `hi` would move onto
   occurrences of the key.
 
@@ -163,8 +164,9 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   conditional on its right-hand side, into parts that are no valid rules, on
   which a following `-simplify` fails with "variables of right hand side do
   not occur in left hand side or condition".
-- The round trips of `CUVEE_PRINTING` fail on four examples (Oct 13, 2026): `smtlib.Programs` on
-  `dafny/state/bsearch_bisect.dfy`, `bsearch_safe.dfy` and `lower_bound.dfy`, which use the predicates of
+- The round trips of `CUVEE_PRINTING` fail on four examples (Oct 13, 2026; three since `bsearch_safe.dfy` was
+  removed on Oct 23): `smtlib.Programs` on `dafny/algorithms/bsearch.dfy` (formerly `dafny/state/bsearch_bisect.dfy`)
+  and `lower_bound.dfy`, which use the predicates of
   `teq:sorted` and do not resolve without `-include` (since the migration of the modules), and `dafny.Roundtrip` on
   `dafny/state/accumulators.dfy` ("unknown type" when the output is parsed again in the test, not on the command line).
 - `t.0.1` is scanned as `t` `.` `0.1`.
