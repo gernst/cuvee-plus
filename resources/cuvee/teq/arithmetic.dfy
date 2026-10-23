@@ -1,12 +1,12 @@
 // arithmetic: the rules of integer arithmetic that the arithmetic of -prove does not decide on its own (division and
 // remainders of non-literal arguments, products, powers); an optional module over teq.dfy alone (-include
-// teq:arithmetic), migrated on Oct 13, 2026 from the module of the per-variable form (in legacy/teq.dfy): the rules on
-// naturals and integers are in teq.dfy; left out are the rules that -prove decides without them (mod_add_even, the
-// halves and thirds of polynomials with literal coefficients, natural_zero), those never applied on SV-COMP
-// (natural_one, natural_two, integer_one, integer_two, pow_two_mod_three, and div_quotient_remainder, which does not
-// match the product k * m of the normal form of -prove), and the sums with a nonnegative d of the triangle bounds,
-// which follow from these as forward facts by the linear arithmetic; the bounds of the triangles are forward facts
-// about their term, the others rewrite rules; the function pow of the former core.dfy is declared here
+// teq:arithmetic), migrated on Oct 13, 2026 from the module of the per-variable form: the rules on naturals and
+// integers are in teq.dfy; left out are the rules that -prove decides without them (mod_add_even, the halves and thirds
+// of polynomials with literal coefficients, natural_zero), those never applied on SV-COMP (natural_one, natural_two,
+// integer_one, integer_two, pow_two_mod_three, and div_quotient_remainder, which does not match the product k * m of
+// the normal form of -prove), and the sums with a nonnegative d of the triangle bounds, which follow from these as
+// forward facts by the linear arithmetic; the bounds of the triangles are forward facts about their term, the others
+// rewrite rules; the function pow of the former core.dfy is declared here
 
 // powers, which are not unfolded
 function {:teq} pow(c: int, n: Nat): int

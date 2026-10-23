@@ -5,8 +5,8 @@
 //
 // status (Oct 14, 2026): -teq -prove does not terminate (rewriting does not terminate); the summary lemma below,
 // over the fragments of the two inner loops, was written for -simplify on the per-variable form (verified that way on
-// Oct 11, 2026, NOTES.md, doc/array-algorithms), deferred as hard; teq:nested is retired to
-// resources/cuvee/legacy
+// Oct 11, 2026, NOTES.md, doc/array-algorithms), deferred as hard; teq:nested is retired and was
+// removed on Oct 23, 2026
 
 function sorted(a: array<int, int>, lo: int, hi: int): bool
 function perm(a: array<int, int>, b: array<int, int>): bool

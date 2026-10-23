@@ -80,14 +80,14 @@ lemma {:rw} {:teq} invs_counter_mod_upper_cases(b: int, i: int, m: int, n: Nat)
 
 // the final value of a sum modulo m is the remainder of the sum, which the lemmas on sums compute
 // (from sum_natnum, the only task of SV-COMP that uses it)
-lemma {:rw} {:teq} current_trace_mod_add_const(x0: int, n: Nat, m: int, c: int, hs: List<int>)
+lemma {:rw} {:teq} current_trace_mod_add_const(x0: int, n: Nat, m: int, c: int)
   requires 0 <= x0 && x0 < m
-  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: (k + x + c) % m))
-    == current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: k + x + c)) % m
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: (k + x + c) % m))
+    == current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: k + x + c)) % m
 
 // the same for a value that is increased in some iterations only
 // (from mono-crafted_10; used on SV-COMP by mono-crafted_10, trex03-2 only)
-lemma {:rw} {:teq} current_trace_mod_add_cases(x0: int, n: Nat, m: int, hs: List<int>, C: (int) -> bool, F: (int) -> int)
+lemma {:rw} {:teq} current_trace_mod_add_cases(x0: int, n: Nat, m: int, C: (int) -> bool, F: (int) -> int)
   requires 0 <= x0 && x0 < m
-  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: case C(k) => (x + F(k)) % m case !C(k) => x))
-    == current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: case C(k) => x + F(k) case !C(k) => x)) % m
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C(k) => (x + F(k)) % m case !C(k) => x))
+    == current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C(k) => x + F(k) case !C(k) => x)) % m

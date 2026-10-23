@@ -11,14 +11,6 @@ namespace TEQ
 open Nat (zero succ)
 open List (nil cons length)
 
--- prefix_prefix for j > k
-example : ¬ («prefix» 2 («prefix» 1 [(1 : Int), 2]) = «prefix» 2 [1, 2]) :=
-  by simp [«prefix»]
-
--- occurs_earlier for the empty sequence
-example : ¬ (occurs (earlier 0 ([] : List Int)) []) :=
-  by simp [occurs]
-
 -- prefix_counter and prefix_consts for k > n, where the prefix is as long as the list
 example : ¬ («prefix» 1 (butlast (counter 0 1 0)) = butlast (counter 0 1 1)) :=
   by simp [«prefix», counter, butlast]
@@ -47,16 +39,6 @@ example : ¬ (count (0 : Int) (maps (List.zip (butlast (counter 0 1 1)) ([] : Li
     = (integer 1 + 1 - 1 - 0) / 1) :=
   by simp [maps, count, counter, butlast, integer]
 
--- invs_counter_positive_last
-example : ¬ (invs (List.zip ([] : List Int) (List.zip ([] : List Int) (butlast (counter 0 0 1)))) (fun ⟨h, g, x⟩ => 0 < x + 0)
-    ↔ (1 : Nat) = zero ∨ 0 < (0 : Int) + 0 ∧ 0 < 0 + (integer 1 - 1) * 0 + 0) :=
-  by simp [invs]
-
--- invs_counter_positive_middle
-example : ¬ (invs (List.zip ([] : List Int) (List.zip (butlast (counter 0 0 1)) ([] : List Int))) (fun ⟨h, x, g⟩ => 0 < x + 0)
-    ↔ (1 : Nat) = zero ∨ 0 < (0 : Int) + 0 ∧ 0 < 0 + (integer 1 - 1) * 0 + 0) :=
-  by simp [invs]
-
 -- agree_prefix_def
 example : ¬ (invs (List.zip (butlast (counter 0 1 1)) ([] : List Int))
       (fun ⟨k, h⟩ => earlier (natural k) [(1 : Int)] = earlier (natural k) [2])
@@ -73,15 +55,6 @@ example : ¬ (invs (List.zip (butlast (counter 0 1 1)) (List.zip ([] : List Int)
     ↔ above_iterations 1 [0]) :=
   by simp [invs, above_iterations, earlier, integer]
 
--- consts_prefix_def
-example : ¬ (invs (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨k, h⟩ => earlier (natural k) [(1 : Int)] = 2)
-    ↔ consts_prefix 1 2 [1]) :=
-  by simp [invs, consts_prefix, earlier]
-
--- sum_consts_prefix for a list that is longer than the iterations
-example : ¬ (consts_prefix 1 1 [(1 : Int), 1] → sum [1, 1] = 1 * integer 1) :=
-  by simp [consts_prefix, earlier, sum, integer_cast]
-
 -- select_current_trace_cap
 example : ¬ (current (trace (fun (_ : Int) => (1 : Int)) (List.zip (butlast (counter 0 1 1)) ([] : List Int))
       (fun a ⟨k, h⟩ => if a k < 0 then a else fun j => if j = k then 0 else a j)) 0
@@ -97,12 +70,6 @@ example : ¬ ((1 : Nat) ≠ zero ∧ (0 : Int) < 1 ∧ (0 : Int) < 1 ∧ (0 : In
 -- selects_stores and selects_stores_counter, with fewer values than keys
 example : ¬ (distincts [(0 : Int)] → selects (current (stores (fun (_ : Int) => (0 : Int)) [0] [])) [0] = []) :=
   by simp [distincts, occurs, selects, maps, stores, trace, current]
-
--- current_trace_conditional_store_distinct, with more positions than iterations
-example : ¬ (distincts [(0 : Int)] → current (trace (fun (_ : Int) => (0 : Int)) (List.zip (butlast (counter 0 1 0)) (List.zip [(0 : Int)] [(0 : Int)]))
-      (fun a ⟨k, p, c⟩ => if True then fun j => if j = p then 1 else a j else a)) 0
-    = (if occurs 0 [(0 : Int)] ∧ True then 1 else 0)) :=
-  by simp [distincts, occurs, trace, current, counter, butlast]
 
 -- select_current_trace_conditional_store_deps
 example : ¬ (current (trace (fun (_ : Int) => (0 : Int)) (List.zip (butlast (counter 0 1 1)) (List.zip ([] : List Int) (List.zip ([] : List Int) ([] : List Int))))

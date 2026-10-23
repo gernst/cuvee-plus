@@ -1,9 +1,9 @@
 // arrays: stores at the positions of a counter and of distinct keys, conditional stores and resets, the reads of an
 // array updated along a trace; an optional module over teq.dfy alone (-include teq:arrays), migrated on Oct 13, 2026
-// from the module of the per-variable form (in legacy/teq.dfy): the folds stores and selects and their reads are in
-// teq.dfy, the recurrences with sums in aggregation, the rules never applied on SV-COMP (shifts, the prefixes of
-// selects and stores, occurs_selects, selects_stores, conditional stores at distinct positions, the constant
-// recurrence) are left in the legacy file
+// from the module of the per-variable form: the folds stores and selects and their reads are in teq.dfy, the
+// recurrences with sums in aggregation, the rules never applied on SV-COMP (shifts, the prefixes of selects and stores,
+// occurs_selects, selects_stores, conditional stores at distinct positions, the constant recurrence) were left out and
+// dropped with the legacy database on Oct 23, 2026
 
 // each key is visited once only if they are distinct, hence b[k] is still the initial value a[k],
 // in any context f of the read, which may depend on the other dependencies, but not on the accumulator otherwise
@@ -82,8 +82,8 @@ lemma {:rw} {:teq} select_current_trace_conditional_store_deps(a0: array<int, in
 // a clamp of each element to b, where the guard reads the initial element, since each position is written in its own
 // iteration only; a generic guard C(a[k], k) is no pattern, and C(a, k) would read other positions
 // (from condn, condnf; used on SV-COMP by condn only)
-lemma {:rw} {:teq} select_current_trace_cap(a0: array<int, int>, n: Nat, j: int, b: int, hs: List<int>)
-  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case a[k] < b => a case b <= a[k] => a[k := b]))[j]
+lemma {:rw} {:teq} select_current_trace_cap(a0: array<int, int>, n: Nat, j: int, b: int)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case a[k] < b => a case b <= a[k] => a[k := b]))[j]
     == if 0 <= j < integer(n) && b <= a0[j] then b else a0[j]
 
 // a store of the old value of a cell after a store at another position changes nothing, e.g. volArray[2 k + 1] =

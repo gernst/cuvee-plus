@@ -209,7 +209,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   result contains the rewritten term (`Rewrite.apply`). Also non-terminating, not analysed yet:
   `add-3-n-u`, `copy-partial-3-u`, `diff-3-n-u`.
 - A cycle through a side condition that is an iteration constraint, resolved for `sum_invs_const` of teq.dfy, which
-  was `consts_prefix_def` and `sum_consts_prefix` (in legacy/teq.dfy since Oct 23, 2026, replaced by `consts_choice` and `sum_consts`), with the atom `consts_prefix(n, c, js)` abstracting the
+  was `consts_prefix_def` and `sum_consts_prefix` (dropped on Oct 23, 2026, replaced by `consts_choice` and `sum_consts`), with the atom `consts_prefix(n, c, js)` abstracting the
   constraint like `agree_prefix`; the mechanism remains for any rule with a general left-hand side and an `invs` side
   condition: `sum_invs_const` had the left-hand side `sum(js)`, which matches every sum, and the side condition
   `invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)`, open in `n` and `c`, which `Rewrite.conditions`
@@ -224,7 +224,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   in the sense of conditional rewriting (its condition is not smaller than its left-hand side), which `Rule.check`
   could reject statically: no `invs` in a side condition whose dependencies are variables of the left-hand side.
   The decisive ingredient is the second one, a left-hand side that matches what the rewriting of the reads
-  produces: the fragment lemmas of [fragments.dfy](examples/dafny/algorithms/fragments.dfy) have `invs` side conditions
+  produces: the fragment lemmas of fragments.dfy (removed on Oct 23, 2026) had `invs` side conditions
   over the lists of their left-hand sides, but their left-hand sides are `invs` fragments with specific bodies, and
   they terminate in every file; `invs_subst_counter` (body `t == F(k, J)`, higher-order) and `earlier_invs_def`
   (left-hand side `earlier(natural(i), ts)`) of the first version of
@@ -284,7 +284,7 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   decided true without binding `Ns`, and `Rewrite.apply` reports "variables of a rule not instantiated by its
   match", which replaces the goal; a pin `forall lo, hi :: G(lo, hi) <==> a[(hi + lo) / 2] < x` with the lemma's `x`
   unbound was decided only because the method's variable is also named `x` (see
-  [fragments.dfy](examples/dafny/algorithms/fragments.dfy), whose test methods name their sequences `KK, NN, ...` apart,
+  fragments.dfy (removed on Oct 23, 2026), whose test methods name their sequences `KK, NN, ...` apart,
   and [lower_bound.dfy](examples/dafny/algorithms/lower_bound.dfy)).
 - A left-hand side `current(trace(0, for ⌊counter(0, 1, nn)⌋, hs do ...))` matched against `current(Lo)` through the
   definition `Lo == trace(...)` of the trace variable in the context binds the higher-order guard but leaves the

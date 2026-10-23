@@ -1,12 +1,12 @@
-// the lemma database of -teq, its entry point, which -teq injects at the beginning of its output: the declarations
-// that the transform and the engines refer to (Sort.trace, Fun.trace, whose type parameters and formals are numbered
-// as they expect), the functions on lists that the lemmas need, and the lemmas about the traces of trace equation
-// systems (one trace per strongly connected component of the variables of a loop), which the engine of -prove
-// applies; started Oct 12, 2026 as the module state.dfy of -teq-state with the lemmas that the examples of
-// examples/dafny/state need, copied from the modules of the per-variable form, and distincts from the former core.dfy
-// (sum, count, max, min, parity and the sums are in the module aggregation, pow in arithmetic); the optional modules of
-// resources/cuvee/teq are injected on demand by -include teq:<name>, the former single file of the per-variable form
-// is kept in resources/cuvee/legacy/teq.dfy, not injected
+// the lemma database of -teq, its entry point, which -teq injects at the beginning of its output: the declarations that
+// the transform and the engines refer to (Sort.trace, Fun.trace, whose type parameters and formals are numbered as they
+// expect), the functions on lists that the lemmas need, and the lemmas about the traces of trace equation systems (one
+// trace per strongly connected component of the variables of a loop), which the engine of -prove applies; started Oct
+// 12, 2026 as the module state.dfy of -teq-state with the lemmas that the examples of examples/dafny/state need, copied
+// from the modules of the per-variable form, and distincts from the former core.dfy (sum, count, max, min, parity and
+// the sums are in the module aggregation, pow in arithmetic); the optional modules of resources/cuvee/teq are injected
+// on demand by -include teq:<name>, the former single file of the per-variable form and the other legacy files were
+// removed on Oct 23, 2026
 
 datatype {:teq} {:lean} Nat = zero | succ(pred: Nat)
 
@@ -254,6 +254,12 @@ lemma {:rw} {:teq} prefix_maps_counter(k: Nat, i: int, c: int, n: Nat, ys: List<
 lemma {:rw} {:teq} butlast_counter_nil(i: int, c: int, n: Nat)
   ensures (⌊counter(i, c, n)⌋ == nil) <==> (n == zero)
 
+// a counter of no steps has no values, e.g. a sum over no positions
+// (from examples/dafny/algorithms/prefix_sums.dfy; unused on SV-COMP)
+lemma {:rw} {:teq} butlast_counter_zero(i: int, c: int)
+  ensures ⌊counter(i, c, zero)⌋
+    == nil
+
 lemma {:rw} {:teq} current_consts<a>(n: Nat, x: a)
   ensures current(consts(n, x))
     == x
@@ -268,6 +274,12 @@ lemma {:rw} {:teq} consts_choice<a>(n: Nat, xs: List<a>, c: a)
   ensures invs(for ⌊counter(0, 1, n)⌋, xs check k, x :: x == c) <==> xs == ⌊consts(n, c)⌋
 
 // arrays
+
+// no keys select no values
+// (from examples/dafny/algorithms/prefix_sums.dfy; unused on SV-COMP)
+lemma {:rw} {:teq} selects_nil<a, b>(a: array<a, b>)
+  ensures selects(a, nil)
+    == nil
 
 lemma {:rw} {:teq} earlier_selects<a, b>(j: Nat, a: array<a, b>, keys: List<a>)
   ensures earlier(j, selects(a, keys))
