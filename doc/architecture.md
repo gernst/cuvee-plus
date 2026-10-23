@@ -131,9 +131,15 @@ for every sink.
 
 - [`VCGen`](../src/cuvee/verify/VCGen.scala) replaces each procedure
   definition by a goal: `∀ in, out, globals. pre ⇒ wp(body, post)`.
-  - Loops, iterations, calls (by contract), `old`, termination measures,
-    differential equations and parallel composition ([hybrid.md](hybrid.md))
-    each have a rule.
+  - Loops, iterations, calls, `old`, termination measures, differential
+    equations and parallel composition ([hybrid.md](hybrid.md)) each have a
+    rule.
+  - Calls are by the contract of the callee, except calls of procedures with a
+    body and no contract (`requires`, `ensures`, `assumes`, `commits`,
+    including those of `annotate-tag`), which are inlined (`VCGen.inlined`):
+    the inputs take the arguments, the outputs are assigned to the results at
+    the end or at a return, `old(e)` refers to the values at the call; calls
+    of recursive procedures without a contract do not terminate.
   - `old(e)` is eliminated first, by `Old.elim`, into fresh variables for the
     values at the entry.
   - An assertion (`Spec(xs, pre, post)` with `pre` not `true`) is assumed
@@ -145,7 +151,8 @@ for every sink.
   one trace per strongly connected component of the read relation of a loop's
   variables, of several accumulators for a cycle (`TEQ.system`);
   with an entry point (`Config.entry`) only that of the entry point,
-  whose calls are inlined, see [teq.md](teq.md).
+  whose calls are inlined, those of procedures with a contract by the
+  contract, as in `-vcgen`, see [teq.md](teq.md).
 - [`Horn`](../src/cuvee/verify/Horn.scala) translates procedures into Horn
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point after assignments, calls, loop heads, and joins, followed
