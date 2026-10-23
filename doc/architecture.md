@@ -411,8 +411,10 @@ and their functions in the state at the command, and keeps a table from tags
 to these statements. The stages collect the `AnnotateTag` commands in
 `State.annotations`, and `VCGen` and `Horn` attach them to the loops of a body
 (`State.annotated`) when they verify it at the `VerifyCall`, which flushes
-the stages like `check-sat`. `VCGen` adds the goal that the arguments
-satisfy the precondition, `Horn` the entry clause `p_pre(args, gs)`, in
+the stages like `check-sat`. The precondition is checked for the arguments
+in the global context, under the axioms about the constants and for all values
+of the global variables, not assumed: `VCGen` and `TEQ` add the goal
+(`VCGen.precondition`), `Horn` a query clause and the entry clause `p_pre(args, gs)`, in
 which the constants of the script are quantified together with the axioms
 about them, since Horn solvers reject free constants, and a `check-sat`.
 `(at x tag)` is `old(x)` when `tag` is that of the procedure body and `x` a

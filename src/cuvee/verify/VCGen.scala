@@ -22,10 +22,26 @@ object VCGen extends Transform:
         cmd_ <- verify(state, gs, cmd)
       yield cmd_
 
-    // a verify-call has no goal of its own: the precondition of the procedure is assumed for the arguments, as the
-    // tasks of SV-LIB expect (e.g. core-verification/loop-add), and the procedures are verified by their definitions,
-    // hence all executions from the call are covered
-    (cmds_, last)
+    // a verify-call ends the stage (last), after its goal of the precondition; the procedures are verified by their
+    // definitions under their preconditions, hence all executions from the call are covered
+    val check =
+      last match
+        case Some(VerifyCall(name, args)) => List(precondition(state, prefix ++ cmds, gs, name, args))
+        case _                            => Nil
+
+    (cmds_ ++ check, last)
+
+  // a verify-call of SV-LIB checks the precondition of the procedure for its arguments in the global context, i.e.,
+  // under the axioms about the constants (e.g. (assert (<= 0 y0)), see Horn.isAxiom) and for all values of the global
+  // variables, as the property correct-annotations requires (core-verification/loop-add.1 is false without such an
+  // axiom), rather than assuming it; -teq and -chc check it likewise (TEQ, Horn.entry)
+  def precondition(state: State, cmds: List[Cmd], gs: List[Var], name: Name, args: List[Expr]): Cmd =
+    val (in, _, pre, _) = contract(state, name)
+    Error.report("wrong number of arguments in verify-call", name, args):
+      require(in.length == args.length)
+    val axioms = cmds.collect { case cmd @ Assert(Axiom, Nil, phi, _) if Horn.isAxiom(state, cmd) => phi }
+    val phi = Imp(And(axioms), Subst.from(in, args)(pre))
+    Assert(Goal, Nil, All(gs.filter(phi.free), phi), Attrs.empty)
 
   // the goals of a command, the other commands are kept
   def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =

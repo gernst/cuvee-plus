@@ -1,4 +1,5 @@
-; addition by a loop, as in the SV-LIB report, without an invariant, which -teq and -chc do not need
+; addition by a loop, as in the SV-LIB report, without an invariant, which -teq and -chc do not need; the axiom about
+; y1 establishes the precondition, which the verify-call checks
 (set-logic LIA)
 
 (define-proc add
@@ -17,5 +18,7 @@
 
 (declare-const x1 Int)
 (declare-const y1 Int)
+
+(assert (<= 0 y1))
 
 (verify-call add (x1 y1))

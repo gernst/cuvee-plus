@@ -1,6 +1,6 @@
-; ./Cuvee.sh -vcgen -z3 examples/svlib/vcgen/precondition.svlib
-; the precondition of the procedure is assumed for the arguments of the verify-call, as the tasks of SV-LIB expect
-; (core-verification/loop-add), such that constants as arguments need no axioms
+; ./Cuvee.sh -vcgen -z3 examples/svlib/vcgen/invalid_precondition.svlib
+; the verify-call checks the precondition of the procedure for its arguments in the global context, which does not
+; constrain y1 (core-verification/loop-add.1, false; loop_add.svlib has the axiom (<= 0 y1))
 
 (set-logic LIA)
 
