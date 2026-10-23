@@ -1,0 +1,2 @@
+error "functions implemented by methods under binders or old are not supported"
+  "some"

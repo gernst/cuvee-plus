@@ -33,7 +33,7 @@ transformation and any output.
 | `cuvee.verify` | `VCGen` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), `FourierMotzkin` (linear constraints over the rationals), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
 | `cuvee.prove` | the deduction engine of `-prove` ([prove.md](prove.md)): `Prove` (the transform), `Simplify` and `Rewrite` (the traversal and the matcher, copied from `cuvee.simplify` and adapted, independent of it), `Context` with `Classes` (congruence closure), `Linear` and `Simplex` (linear arithmetic over the rationals), `Views` (the per-variable projections of traces of several accumulators), and its own `Arith`, `Normalize`, `Rule`. |
-| `cuvee.transform` | `Implement` (implemented functions replaced by their implementations, `-implement`), `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
+| `cuvee.transform` | `Implement` (implemented functions replaced by their implementations, functions or methods, `-implement`), `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
 ## A run
@@ -183,13 +183,18 @@ for every sink.
 - [`Prove`](../src/cuvee/prove/Prove.scala) is the second engine for the goals of trace equation systems
   (`-prove`), with congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole
   cycles and forward lemmas ([`Forward`](../src/cuvee/prove/Forward.scala)), see [prove.md](prove.md).
-- [`Implement`](../src/cuvee/transform/Implement.scala) replaces the functions that
-  functions with `{:implement pattern}` implement by these (`-implement`,
-  [options.md](options.md)), everywhere except in the implementations, with
-  the arguments at the positions of the pattern, an application of the
-  implemented function to a permutation of the inputs; it is a transformation
-  of the task, hence optional, such that a translation keeps the task as
-  written ([ideas/implementations.md](../ideas/implementations.md)).
+- [`Implement`](../src/cuvee/transform/Implement.scala) replaces the
+  functions that functions and methods with `{:implement pattern}` implement
+  (`-implement`, [options.md](options.md)), the pattern an application of the
+  implemented function to a permutation of the inputs: an implementation by a
+  function everywhere except in the implementations; one by a method, which
+  may be nondeterministic, in the executed expressions of procedure bodies
+  only, lifted into calls in front of their statement into fresh locals
+  `test`, short-circuit operators and `ite` as conditionals, a loop guard with
+  calls as an `Iter` that breaks; applications in specifications are errors.
+  It is a transformation of the task, hence optional, such that a translation
+  keeps the task as written
+  ([ideas/implementations.md](../ideas/implementations.md)).
 - [`Flat`](../src/cuvee/transform/Flat.scala) eliminates records
   (non-recursive datatypes with one constructor), whose declarations are
   dropped: functions take their fields, functions with records as results are

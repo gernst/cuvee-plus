@@ -1,0 +1,53 @@
+function some(s: seq<int>): int
+
+method {:implement some(s)} any(s: seq<int>) returns (x: int)
+  requires |s| > 0
+  ensures x in s
+
+method m(s: seq<int>) returns (x: int, b: bool)
+  requires |s| > 0
+{
+  {
+    var test₁: int, test₂: int;
+    test₁ := any(s);
+    test₂ := any(s);
+    x := test₁ + test₂;
+  }
+  {
+    var test₃: int;
+    test₃ := any(s);
+    if test₃ > 0 {
+      b := true;
+    } else {
+      b := false;
+    }
+  }
+  {
+    var test₅: bool;
+    if b {
+      var test₄: int;
+      test₄ := any(s);
+      test₅ := test₄ == x;
+    } else {
+      test₅ := false;
+    }
+    b := test₅;
+  }
+  while * {
+    var test₇: bool;
+    if b {
+      var test₆: int;
+      test₆ := any(s);
+      test₇ := test₆ < x;
+    } else {
+      test₇ := false;
+    }
+    if !test₇ {
+      break;
+    }
+    {
+      x := x - 1;
+    }
+  }
+}
+

@@ -1,2 +1,2 @@
-error "the pattern of {:implement} does not have the result type of the function"
+error "the pattern of {:implement} does not have the result type of the implementation"
   "f"

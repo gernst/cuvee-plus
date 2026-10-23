@@ -229,7 +229,7 @@ object Config:
 
   // a transformation of the task, not a technique, hence a translation without it keeps the task as written
   val implement =
-    flag("-implement", "replace the functions that functions with {:implement pattern} implement by these, everywhere except in the implementations, e.g. those of -include implement:<name>, with the arguments at the positions of the pattern, an application of the implemented function to a permutation of the inputs"):
+    flag("-implement", "replace the functions that functions and methods with {:implement pattern} implement, the pattern an application of the implemented function to a permutation of the inputs: an implementation by a function everywhere except in the implementations, one by a method, which may be nondeterministic, by calls in the expressions that programs execute, in the order of evaluation; applications of those in specifications are errors"):
       case (config, rest) =>
         val config_ = config.using(Implement)
         (config_, rest)
@@ -480,7 +480,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.49.4"
+  val release = "0.49.5"
 
   def version() =
     println("Cuvée " + release)
