@@ -489,7 +489,7 @@ README; options in [options.md](options.md)), e.g.
 - Example tests: every file in `examples/` (except `datastructures`) states its
   command line in its first line, as a comment that can be pasted into a shell
   in the root of the repository, e.g.
-  `; ./Cuvee.sh -prove examples/smtlib/simplify/arith.smt2`. Its expected output is
+  `; ./Cuvee.sh -prove examples/smtlib/prove/arith.smt2`. Its expected output is
   `name.out` (stdout) and `name.err` (stderr, the reports), where a missing
   file stands for no lines. `./Cuvee.sh -test <file>` checks an example
   ([test/Expected.scala](../src/cuvee/test/Expected.scala)), and so does
@@ -505,7 +505,7 @@ README; options in [options.md](options.md)), e.g.
   `svlib`, `yml`) with a subfolder per module, e.g. `language`, `parsing` (the cases
   of the frontend, e.g. `examples/dafny/parsing/globals_call.dfy` with
   `-quiet` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
-  `simplify`, `hybrid`, and `transform`; one suite per language checks all of
+  `prove`, `hybrid`, and `transform`; one suite per language checks all of
   its examples ([Checked.scala](../test/src/cuvee/test/Checked.scala)).
   The algorithms of
   `examples/dafny/algorithms`, whose runs take minutes, run only if

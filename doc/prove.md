@@ -271,7 +271,7 @@ the former simplifier (`-simplify`, package `simplify`, removed Oct 23, 2026).
     whose initial value is in the range, assumes the range of the accumulator
     (`wrapped`), which holds for all its values by induction, such that the
     remainders under the test of the loop are dropped
-    ([remainders.dfy](../examples/dafny/simplify/remainders.dfy),
+    ([remainders.dfy](../examples/dafny/prove/remainders.dfy),
     `examples/c/teq/unsigned_*.c`).
   - Derivatives are computed by the rules of dL ([hybrid.md](hybrid.md)).
 - [`Rewrite`](../src/cuvee/prove/Rewrite.scala) applies conditional rules
@@ -286,8 +286,8 @@ the former simplifier (`-simplify`, package `simplify`, removed Oct 23, 2026).
     rule on `current(Lv)`) was rewritten by the rule itself without end; a
     condition that is matched against an `invs` fact builds the context of
     that fact's combinator, whose reads the rule would match again
-    ([reentrant.dfy](../examples/dafny/simplify/reentrant.dfy),
-    [reentrant_invs.dfy](../examples/dafny/simplify/reentrant_invs.dfy)). A
+    ([reentrant.dfy](../examples/dafny/prove/reentrant.dfy),
+    [reentrant_invs.dfy](../examples/dafny/prove/reentrant_invs.dfy)). A
     condition that needs the same rule on another instance is not decided.
   - The reads of a combinator context, the values `z == earlier(natural(k), ⌊Z⌋)`
     of its bound variables (`Simplify.iterations`), are normalized by the

@@ -655,7 +655,7 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   (`Rules.from(State.empty, TEQ.lemmas)` with `Rewrite`).
 - [RewriteTraces.scala](../test/src/cuvee/test/prove/RewriteTraces.scala)
   tests the rewrite engine with the examples of the paper (counters,
-  summations, `selects`) in single steps; `examples/dafny/simplify/traces*.dfy`,
+  summations, `selects`) in single steps; `examples/dafny/prove/traces*.dfy`,
   `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
   traces, which declare `Trace` and the functions on traces as in teq.dfy.
 - E.g. `./Cuvee.sh -teq -prove examples/dafny/vcgen/sum.dfy`.

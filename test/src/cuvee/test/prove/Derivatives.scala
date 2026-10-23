@@ -16,7 +16,7 @@ object Derivatives extends TestSuite:
 
   val tests = Tests:
     // derivatives are on Real only, the type checker rejects these, which are built directly
-    // (see examples/dafny/simplify/derivatives.dfy for the others)
+    // (see examples/dafny/prove/derivatives.dfy for the others)
     test("integers"):
       diff(Ints.times(n, n), n) ==> "(n :: n * n)'"
       diff(Ints.lt(n, Ints.zero), n) ==> "(n :: n < 0)'"

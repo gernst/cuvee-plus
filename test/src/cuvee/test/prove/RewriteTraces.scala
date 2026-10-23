@@ -10,7 +10,7 @@ import cuvee.prove.Rule
 import cuvee.prove.Rewrite
 
 // patterns with the combinators trace, map, and all, as in the examples of Trace Equation Systems, in single steps
-// whose results the simplifier would change (see examples/dafny/simplify/traces*.dfy for the others),
+// whose results the simplifier would change (see examples/dafny/prove/traces*.dfy for the others),
 // where the first dependency of the expressions is the counter ⌊J⌋ of the iterations, J == counter(0, 1, n),
 // as in TEQ.loop
 object RewriteTraces extends TestSuite:

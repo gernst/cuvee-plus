@@ -14,7 +14,7 @@ import cuvee.pipe._
 
 // an example as a test of its command line, stated in its first line as a comment of its language,
 // which can be pasted into a shell in the root of the repository, e.g.
-//   ; ./Cuvee.sh -prove examples/smtlib/simplify/arith.smt2
+//   ; ./Cuvee.sh -prove examples/smtlib/prove/arith.smt2
 // whose last argument is the example itself; the expected output and reports are the lines that stdout and stderr show,
 // in name.out and name.err next to the example, where a missing file stands for no lines;
 // the reports are compared as text, and so is the output of examples in a directory named printing,
