@@ -33,6 +33,11 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
   length would add conversions without simplifying a proof); `cutFrom` stays the recursion on a natural for Lean;
   the arrays TODOs are answered in [conditional-stores.md](conditional-stores.md) (the missing join of guarded
   stores, and constant abstractions); a `swap` fold for the permutations remains an idea (below).
+- `swap(a, p, q)` is a fold of its two stores in sorted.dfy (formerly a TODO there), with `select_swap` for its
+  elements; `perm_swap`, `perm_swaps_one`, `perm_swaps` are stated over it, so `P` and `Q` occur once each. The six
+  sorting examples that include `teq:sorted` state their local swaps as `swap(...)`, since the stores of the
+  programs are folded before their lemmas are matched (without that, two leave a goal, three time out, one does not
+  terminate); all ten examples with `teq:sorted` are correct with it; SV-COMP not run yet.
 - Each lemma that at most three proved tasks use names them on its `(from ...)` line, each unused lemma says why it
   stays (doc/teq.md, conventions); stale remarks fixed (rewnifrev is proved by `select_current_trace_ahead_down`,
   `integer_zero` is in teq.dfy).
@@ -122,8 +127,6 @@ once the gap is closed (Scala changes, not done here).
 
 ## Open points of earlier analyses
 
-- A `swap` fold, `a[p := a[q]][q := a[p]]`, for `perm_swap` and the traces of swaps, where `P` and `Q` would occur
-  once instead of twice (formerly a TODO in sorted.dfy).
 - The normal form of naturals and integers: `integer_eq` loses `0 <= x` and moves the equation out of the
   arithmetic (TODO.md, reverse.dfy); options: the unconditional form, a forward lemma that keeps the equation, or a
   bridge from the classes to the arithmetic (Scala).

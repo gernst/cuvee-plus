@@ -29,13 +29,13 @@ lemma {:rw} current_selection(b: array<int, int>, i: int, nn: Nat)
 lemma {:rw} sorted_swap_argmin_nat(b: array<int, int>, i: int, nn: Nat, n: int)
   requires partitioned(b, 0, i, n)
   requires i < n && n <= integer(nn) + i + 1 && (nn == zero || i + 1 < n && integer(nn) + i < n) && sorted(b, 0, i)
-  ensures sorted(b[i := b[argmin(b, i, i + 1 + integer(nn))]][argmin(b, i, i + 1 + integer(nn)) := b[i]], 0, i + 1)
+  ensures sorted(swap(b, i, argmin(b, i, i + 1 + integer(nn))), 0, i + 1)
     <==> true
 
 lemma {:rw} partitioned_swap_argmin_nat(b: array<int, int>, i: int, nn: Nat, n: int)
   requires partitioned(b, 0, i, n)
   requires i < n && n <= integer(nn) + i + 1 && (nn == zero || i + 1 < n && integer(nn) + i < n) && sorted(b, 0, i)
-  ensures partitioned(b[i := b[argmin(b, i, i + 1 + integer(nn))]][argmin(b, i, i + 1 + integer(nn)) := b[i]],
+  ensures partitioned(swap(b, i, argmin(b, i, i + 1 + integer(nn))),
                       0, i + 1, n)
     <==> true
 
@@ -58,7 +58,7 @@ lemma {:rw} sorted_selection_steps(a: array<int, int>, n: int, m: Nat, ns: List<
 
 // a swap is a permutation
 lemma {:rw} perm_swap_any(x: array<int, int>, p: int, q: int)
-  ensures perm(x[p := x[q]][q := x[p]], x) <==> true
+  ensures perm(swap(x, p, q), x) <==> true
 
 // a trace of steps that preserve the permutation, which also read the choice and the loop counter
 lemma {:rw} perm_steps_choice(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>, is: List<int>,

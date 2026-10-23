@@ -14,10 +14,7 @@ lemma {:rw} sorted_swap_argmin_nat(b: array<int, int>, i: int, nn: Nat, n: int)
   requires nn == zero || i + 1 < n && integer(nn) + i < n
   requires sorted(b, 0, i)
   ensures
-    sorted(b[i := b[argmin(b, i, i + 1 + integer(nn))]][
-             argmin(b, i, i + 1 + integer(nn)) :=
-             b[i]], 0, i + 1)
-      <==> true
+    sorted(swap(b, i, argmin(b, i, i + 1 + integer(nn))), 0, i + 1) <==> true
 
 lemma {:rw} partitioned_swap_argmin_nat(b: array<int, int>, i: int, nn: Nat,
                                         n: int)
@@ -27,9 +24,7 @@ lemma {:rw} partitioned_swap_argmin_nat(b: array<int, int>, i: int, nn: Nat,
   requires nn == zero || i + 1 < n && integer(nn) + i < n
   requires sorted(b, 0, i)
   ensures
-    partitioned(b[i := b[argmin(b, i, i + 1 + integer(nn))]][
-                  argmin(b, i, i + 1 + integer(nn)) :=
-                  b[i]], 0, i + 1, n)
+    partitioned(swap(b, i, argmin(b, i, i + 1 + integer(nn))), 0, i + 1, n)
       <==> true
 
 lemma {:rw} sorted_selection_steps(a: array<int, int>, n: int, m: Nat,
@@ -62,7 +57,7 @@ lemma {:rw} sorted_selection_steps(a: array<int, int>, n: int, m: Nat,
       <==> true
 
 lemma {:rw} perm_swap_any(x: array<int, int>, p: int, q: int)
-  ensures perm(x[p := x[q]][q := x[p]], x) <==> true
+  ensures perm(swap(x, p, q), x) <==> true
 
 lemma {:rw} perm_steps_choice(a: array<int, int>, c: array<int, int>,
                               ks: List<int>, ns: List<Nat>, is: List<int>,

@@ -2,8 +2,7 @@ function {:fold} bubble_pass(b: array<int, int>,
                              js: List<int>): Trace<array<int, int>> {
   trace(b, for js
         do x, j ::
-          case x[j + 1] < x[j] => x[j := x[j + 1]][j + 1 := x[j]]
-          case x[j] <= x[j + 1] => x)
+          case x[j + 1] < x[j] => swap(x, j, j + 1) case x[j] <= x[j + 1] => x)
 }
 
 lemma {:rw} perm_bubble_pass(b: array<int, int>, c: array<int, int>,

@@ -16,7 +16,7 @@
 function lomuto(a: array<int, int>, p: int, n: Nat, is: List<int>): Trace<array<int, int>>
 
 lemma {:rw} lomuto_def(a: array<int, int>, p: int, n: Nat, is: List<int>, js: List<int>)
-  ensures trace(a, for ⌊counter(0, 1, n)⌋, is, js do b, k, i, j :: case b[k] < p => b[i := b[k]][k := b[i]] case p <= b[k] => b)
+  ensures trace(a, for ⌊counter(0, 1, n)⌋, is, js do b, k, i, j :: case b[k] < p => swap(b, i, k) case p <= b[k] => b)
     == lomuto(a, p, n, is)
 
 // the elements at the positions k, read in iteration k, are those of a
@@ -45,14 +45,14 @@ lemma {:rw} below_le_natural(a: array<int, int>, p: int, n: Nat, hs: List<int>, 
 lemma {:rw} partition_below(a: array<int, int>, p: int, n: Nat, k: int)
   requires 0 <= k < below(a, p, n, ⌊counter(0, 1, n)⌋)
   ensures (current(trace(a, 0, 0, for ⌊counter(0, 1, n)⌋ do b, i, j, kk ::
-                     case b[j] < p => b[i := b[j]][j := b[i]] case p <= b[j] => b,
+                     case b[j] < p => swap(b, i, j) case p <= b[j] => b,
                      case b[j] < p => i + 1 case p <= b[j] => i,
                      j + 1)).0[k] < p) <==> true
 
 lemma {:rw} partition_above(a: array<int, int>, p: int, n: Nat, k: int)
   requires below(a, p, n, ⌊counter(0, 1, n)⌋) <= k < integer(n)
   ensures (p <= current(trace(a, 0, 0, for ⌊counter(0, 1, n)⌋ do b, i, j, kk ::
-                     case b[j] < p => b[i := b[j]][j := b[i]] case p <= b[j] => b,
+                     case b[j] < p => swap(b, i, j) case p <= b[j] => b,
                      case b[j] < p => i + 1 case p <= b[j] => i,
                      j + 1)).0[k]) <==> true
 

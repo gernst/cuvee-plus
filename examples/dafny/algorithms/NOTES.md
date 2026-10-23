@@ -14,10 +14,10 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [lsearch.dfy](lsearch.dfy) | verified with the database alone (`-teq -prove`, formerly examples/dafny/state, Oct 23, 2026) |
 | [bsearch.dfy](bsearch.dfy) | verified with `-prove`: the binary search over a sorted array by the rule `bisection` over the whole cycle (formerly `dafny/state/bsearch_bisect.dfy`, moved Oct 23, 2026) |
 | [perm.dfy](perm.dfy) | verified: permutations by swaps in single loops; since Oct 23, 2026 with the lemmas of `teq:sorted` alone (not rerun) |
-| [bubble_sort.dfy](bubble_sort.dfy) | verified: nested loops, `sorted` by the induction lemma, `perm` |
-| [selection_sort.dfy](selection_sort.dfy) | verified: summary of the inner loop, `sorted` by the induction lemma, `perm` |
-| [insertion_sort.dfy](insertion_sort.dfy) | verified with `-prove` (Oct 16): the pass folded with the position `j - 1` as `k - kk`, the lemmas of insertion_sort2 |
-| [insertion_sort2.dfy](insertion_sort2.dfy) | verified with `-prove` (Oct 16): the pass folded, an induction over the outer trace with the constraints of the pass as side conditions |
+| [bubble_sort.dfy](bubble_sort.dfy) | verified: nested loops, `sorted` by the induction lemma, `perm`; its swaps as `swap(...)` of `teq:sorted` since Oct 23, 2026 |
+| [selection_sort.dfy](selection_sort.dfy) | verified: summary of the inner loop, `sorted` by the induction lemma, `perm`; its swaps as `swap(...)` of `teq:sorted` since Oct 23, 2026 |
+| [insertion_sort.dfy](insertion_sort.dfy) | verified with `-prove` (Oct 16): the pass folded with the position `j - 1` as `k - kk`, the lemmas of insertion_sort2; its swaps as `swap(...)` of `teq:sorted` since Oct 23, 2026 |
+| [insertion_sort2.dfy](insertion_sort2.dfy) | verified with `-prove` (Oct 16): the pass folded, an induction over the outer trace with the constraints of the pass as side conditions; its swaps as `swap(...)` of `teq:sorted` since Oct 23, 2026 |
 | [nested_counter.dfy](nested_counter.dfy) | verified with the database alone: the simplest nested loop (formerly examples/dafny/state) |
 | [nested_sum.dfy](nested_sum.dfy), [nested_mult.dfy](nested_mult.dfy) | verified with the database alone, the inner loop a value of the outer update (formerly examples/dafny/state; the generic fragment lemmas of the former versions are gone) |
 | [fragments.dfy](fragments.dfy) | verified: the generic fragment lemmas on the two minimal problems |
@@ -27,7 +27,7 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [count_occurrences.dfy](count_occurrences.dfy) | verified: the count named as the normal form |
 | [max_element.dfy](max_element.dfy) | verified with `occurs`; open with `exists` (no witness) |
 | [argmax.dfy](argmax.dfy) | verified: a selection trace with rules on the atoms |
-| [partition.dfy](partition.dfy) | verified with `-prove` (Oct 16): Lomuto partition, one trace of `(b, i, j)`, the regions as rules on the atoms over the whole trace |
+| [partition.dfy](partition.dfy) | verified with `-prove` (Oct 16): Lomuto partition, one trace of `(b, i, j)`, the regions as rules on the atoms over the whole trace; its swaps as `swap(...)` of `teq:sorted` since Oct 23, 2026 |
 | [reverse.dfy](reverse.dfy) | verified with `-prove` (Oct 16): two pointers, the summary takes the disjunction of the exit as its side condition |
 | [is_sorted.dfy](is_sorted.dfy) | verified under `-prove` (open under `-simplify` by one substitution of the exit into `sorted`, finding 35); since Oct 23, 2026 with `current_trace_flag` of `teq:counters`, now of any type, and `sorted_adjacent` of `teq:sorted` (not rerun) |
 | [row_sums.dfy](row_sums.dfy) | verified with the database alone (formerly examples/dafny/state; the former version needed `-include teq:nested` and a chain of specific lemmas, finding 29) |
@@ -40,7 +40,7 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [merge.dfy](merge.dfy) | verified: pinned higher-order guard, pointers tied by open trace variables |
 | [counting_sort.dfy](counting_sort.dfy) | open under `-prove` (rewriting does not terminate); verified before: four loops in sequence, the key range as an atom; its histogram lemma is `current_trace_histogram` of `teq:aggregation` since Oct 23, 2026 |
 | [lower_bound.dfy](lower_bound.dfy) | open: closes only with the exit untied from the traces; sound ties re-enter (finding 32); now verified under `-prove` with the database alone (formerly examples/dafny/state, Oct 23, 2026) |
-| [gnome_sort.dfy](gnome_sort.dfy) | verified: the invariant `sorted(b, 0, i)` in one lemma on the atom, the traces tied by open trace variables (finding 36) |
+| [gnome_sort.dfy](gnome_sort.dfy) | verified: the invariant `sorted(b, 0, i)` in one lemma on the atom, the traces tied by open trace variables (finding 36); its swaps as `swap(...)` of `teq:sorted` since Oct 23, 2026 |
 
 ## Abstract predicates
 

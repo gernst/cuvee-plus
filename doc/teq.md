@@ -248,6 +248,11 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
 - Functions that are traces are defined by them with `{:fold}`, whose rule
   folds such a trace into the function (`stores`, `sums`, `selects`, ...);
   these definitions stand among the lemmas, at the position of their rule.
+  A fold need not be a trace: `swap(a, p, q)` of sorted.dfy folds the two
+  stores `a[p := a[q]][q := a[p]]`, such that the lemmas on swaps name the
+  positions once each; its elements are `select_swap`, and lemmas of programs
+  that include `teq:sorted` state their swaps as `swap(...)`, since the stores
+  of the program are folded before they are matched.
 - Functions that produce traces are plural (`sums`, `maxs`, `counts`), their
   scalar counterparts singular (`sum`, `max`, `count`).
 - Lemmas found on the SV-COMP examples (`benchmarks/sv-comp/dafny`) are merged into

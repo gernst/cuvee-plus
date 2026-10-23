@@ -3733,6 +3733,10 @@ theorem perm_swap_self (a : Int → Int) (p q : Int) :
   refine ⟨t, t, ?_, ?_, ?_⟩ <;> intro i <;> simp only [t] <;>
     by_cases h1 : i = q <;> by_cases h2 : i = p <;> by_cases h3 : p = q <;> simp_all
 
+-- the elements of a swap, which unfolds to its two stores
+theorem select_swap : Stmt.select_swap := by
+  intro a p q j; rfl
+
 theorem perm_swap (a b : Int → Int) (p q : Int) :
     perm (fun j => if j = q then a p else (fun j => if j = p then a q else a j) j) b ↔ perm a b :=
   perm_congr b (perm_swap_self a p q)
