@@ -29,7 +29,7 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 | `xml/cuvee.xml` | `-teq` with the migrated modules of the database (`-include teq:<module>`), `-prove -split -prove -split -prove -rules` (the second round splits the disjunctions that the rules introduce); 15 min, 2 cores, 7 GB |
 | `xml/cuvee-fallback.xml` | the same with `-fallback` and Z3 for the goals that remain |
 | `xml/cuvee-sample.xml` | the options of `cuvee.xml` on samples of Arrays and Loops, 2 min, i7-6700 |
-| `xml/cuvee-acsl.xml`, `cuvee-chc.xml` | `-vcgen` on the ACSL tasks of `benchmarks/acsl`, `-chc` |
+| `xml/cuvee-acsl.xml`, `cuvee-chc.xml` | `-vcgen -split -z3` on `benchmarks/acsl` (the categories Arrays and Loops as in sv-benchmarks, the true tasks annotated with ACSL), `-chc` |
 | `xml/cpachecker.xml`, `uautomizer.xml`, `korn.xml`, `symbiotic.xml`, `aise.xml`, `monocera.xml`, `tricera.xml` | the other verifiers (`tricera.xml`: TriCera of the MonoCera artifact, with mathematical integers, on the unbounded set) |
 
 The definitions of Cuvée pass `-witness witness.yml`, a witness of SV-COMP for each answer to a C program
