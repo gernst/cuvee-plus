@@ -573,7 +573,6 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   their stronger lowering.
 - Tests: [fallback.dfy](../examples/dafny/teq/fallback.dfy),
   [fallback_count.dfy](../examples/dafny/teq/fallback_count.dfy),
-  [fallback.c](../examples/c/teq/fallback.c),
   [fallback_negated.c](../examples/c/teq/fallback_negated.c),
   [fallback_nested.c](../examples/c/teq/fallback_nested.c),
   [fallback_recursion.dfy](../examples/dafny/teq/fallback_recursion.dfy),

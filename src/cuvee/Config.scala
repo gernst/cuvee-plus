@@ -9,11 +9,11 @@ import util.Name
 import cuvee.core._
 import cuvee.pipe._
 import cuvee.smtlib.Solver
-import cuvee.simplify.Fuse
 import cuvee.simplify.Simplify
 import cuvee.prove.Prove
 import cuvee.transform.Fallback
 import cuvee.transform.Flat
+import cuvee.transform.Fuse
 import cuvee.transform.Implement
 import cuvee.transform.Monomorph
 import cuvee.transform.Split
@@ -480,7 +480,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.49.7"
+  val release = "0.49.8"
 
   def version() =
     println("Cuvée " + release)
