@@ -1,0 +1,75 @@
+; ./Cuvee.sh -teq -include teq:aggregation -include teq:arithmetic -include teq:arrays -include teq:counters -include teq:search -include teq:sorted -include teq:strides -include teq:unsigned -include teq:series -prove -split -prove -split -prove examples/svlib/verify/teq_definitions_class.svlib
+; in-de62.2 of SV-LIB (c-translated/loops-crafted-1), whose definition of a natural refers to a natural of its class:
+; the matcher does not follow it (Context.defs, modulo the classes), otherwise integer_natural and the canonical
+; variable of the class rewrite integer(n) into itself until the rewrite steps are exhausted (0.50.16)
+; This file is part of the SV-Benchmarks collection of verification tasks:
+; https://github.com/sosy-lab/sv-benchmarks
+;
+; SPDX-FileCopyrightText: 2025 The SV-Benchmarks Community
+;
+; SPDX-License-Identifier: Apache-2.0
+
+(set-logic QF_LIA)
+
+(set-option :produce-witnesses true)
+
+(set-info :format-version "1.0")
+
+(define-proc
+  main
+  ()
+  ((result Int))
+  ((n Int) (x Int) (y Int) (z Int))
+  (!
+    (sequence
+      (assume (>= n 0))
+      (assign (x n))
+      (assign (y 0))
+      (!
+        (while
+          (< 0 x)
+          (sequence (assign (x (- x 1))) (assign (y (+ y 1)))))
+        :tag
+        main-while-1)
+      (assign (z y))
+      (!
+        (while
+          (< 0 z)
+          (sequence (assign (x (+ x 1))) (assign (z (- z 1)))))
+        :tag
+        main-while-2)
+      (!
+        (while
+          (< 0 y)
+          (sequence (assign (y (- y 1))) (assign (z (+ z 1)))))
+        :tag
+        main-while-3)
+      (!
+        (while
+          (< 0 x)
+          (sequence (assign (x (- x 1))) (assign (y (+ y 1)))))
+        :tag
+        main-while-4)
+      (!
+        (while
+          (< 0 z)
+          (sequence (assign (x (+ x 1))) (assign (z (- z 1)))))
+        :tag
+        main-while-5)
+      (!
+        (while
+          (< 0 y)
+          (sequence (assign (y (- y 1))) (assign (x (- x 1)))))
+        :tag
+        main-while-6)
+      (! (sequence) :tag main-check-1)
+      (assign (result 0))
+      (return))
+    :tag
+    main))
+
+(annotate-tag main-check-1 :check-true (= x 0))
+
+(verify-call main ())
+
+(get-witness)

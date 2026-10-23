@@ -119,3 +119,14 @@ Low priority until such a lemma is in the database.
 indp5, revcpyswp2, sum_array-2-2 (timeouts at 60 s, lost against 0.42.1), the recurrences of `ifcomp`, `pcomp`,
 `sqm-if`, `condm`, the conditional stores of partial_mod_count_*, and the 15 algorithms not verified under `-teq
 -prove` (TODO.md) are work on the database and the examples first (the work queue of TODO.md).
+
+## Definitions and canonical variables (Oct 24, 2026)
+
+`Context.defs` excludes the definitions of a variable that contain a variable of its class (0.50.17), which fixes
+the loop of in-de62.2 (bugs.md, Fixed) but is a kludge: the matcher follows definitions of a class, the simplifier
+replaces variables by the canonical one of a class, and the two can undo each other's work in other forms as well,
+e.g. through a chain of two definitions. A more principled approach would match and rewrite modulo the classes in
+one place, e.g. definitions normalized by `Classes.normalize` before they are matched, or an orientation of the
+definitions that decreases with respect to an order on the terms (as in completion), such that a rewrite through a
+definition never leads back to its left-hand side. Open until a further loop of this kind shows up.
+

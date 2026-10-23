@@ -82,10 +82,13 @@ case class Context(
   // the definitions of a variable, which the matcher tries after the variable itself: the members of its class that
   // are not variables and do not contain it (see Rewrite.matches); only variables have definitions, as in the
   // simplifier: a term matched by a term of its class that contains it, e.g. a[k] by S.2[k] == a[k] assumed from a
-  // sibling conjunct, is rewritten to a term that contains a[k] again, without end
+  // sibling conjunct, is rewritten to a term that contains a[k] again, without end; contained modulo the classes, by
+  // a variable equal to it, e.g. n == natural(y - integer(m)) with m == n, whose rewrite of integer(n) by
+  // integer_natural contains integer(m), which the simplifier turns into integer(n) again, the canonical variable of
+  // the class (examples/svlib/verify/teq_definitions_class.svlib)
   def defs(expr: Expr): List[Expr] =
     expr match
-      case x: Var => classes.defs(x).filterNot(_.free.contains(x))
+      case x: Var => classes.defs(x).filterNot(_.free.exists(classes.equal(_, x)))
       case _      => Nil
 
   // whether `rule` is suspended at this position, by identity
