@@ -27,15 +27,6 @@
     </tasks>
   </rundefinition>
 
-  <!-- the local benchmarks: the Dafny translations of SV-COMP tasks and the C programs printed from them,
-       whose loops are unbounded (benchmarks/sv-comp) -->
-  <rundefinition name="local_unreach-call">
-    <tasks name="C.unreach-call.Unbounded">
-      <includesfile>../benchmarks/sv-comp/c/c.set</includesfile>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
-    </tasks>
-  </rundefinition>
-
   <columns>
     <column title="UsedConfig">Used algorithm property</column>
   </columns>

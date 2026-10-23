@@ -27,7 +27,7 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
 - `select_current_trace_stride2_cases` over one counter: its second counter, `⌊counter(1, 1, n)⌋`, was not read.
 - From examples/dafny/algorithms: `current_trace_flag` of counters.dfy is of any type (it replaces the boolean copy
   of is_sorted.dfy), and `current_trace_histogram` (counting_sort.dfy) is in aggregation.dfy; both proved in Lean.
-- `pow_two_mod_three` to the legacy file, local again in underapprox_1-2 of the Dafny translations of SV-COMP, with
+- `pow_two_mod_three` to the legacy file, local again in underapprox_1-2 of the former Dafny translations of SV-COMP (removed Oct 23, 2026), with
   `current_trace_geometric`, which it needs too.
 - The TODOs in the modules are gone: `cut` and `sorted` keep their integer bounds, those of the programs (a natural
   length would add conversions without simplifying a proof); `cutFrom` stays the recursion on a natural for Lean;

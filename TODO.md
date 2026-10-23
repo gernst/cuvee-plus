@@ -2,6 +2,8 @@
 
 Open problems, limitations, and planned work, grouped by area; bugs (wrong results, errors, crashes,
 non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architecture.md](doc/architecture.md).
+The files `<name>.dfy` named as examples were the Dafny translations of SV-COMP tasks in `benchmarks/sv-comp/dafny`,
+removed with their C versions on Oct 23, 2026 (in the history of git before that).
 
 ## New
 
@@ -126,14 +128,6 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
   which a namespace around the output would avoid. Only the modules of the
   database are checked with Lean, through scripts/lean/generate.py, which adds
   the preamble.
-- The C printer of the Dafny translations of SV-COMP
-  (`benchmarks/sv-comp/dafny`, `-print c -known dfy,teq,rw`): all 651 print as
-  C that parses again (`benchmarks/sv-comp/c`), whose programs, printed back as
-  Dafny, are those of their sources. The translations use `quot` and `rem` of
-  the prelude of Dafny for the division and remainder of C, have no global
-  variables where C would initialize them to zero (`loops/eureka_05`,
-  `n.c40`, `nec40`), and fill the constant arrays of C by loops with arbitrary
-  values (`loops/vogal-1`, `vogal-2`, `eureka_01-2`).
 
 ## Code structure
 
@@ -445,77 +439,77 @@ removed on Oct 23, 2026.
   among several.
 - A lemma that is an equation of integers, e.g. `2 * s == n + n * n`, is a
   rule on its left-hand side as a term, not on the atom; equivalences of atoms
-  work (see [gauss_sum.dfy](benchmarks/sv-comp/dafny/loop-new/gauss_sum.dfy)). A
+  work (see `gauss_sum.dfy`). A
   monomial such as `2 * s` inside a polynomial is not matched against the
   definition `s == e` of the context.
 - A comparison pattern `b < x` with `b` open does not match `k < x + n`,
   where `b` would be the difference `k - n`, while `0 < x + c` matches with
   `c := n - k` (see
-  [benchmark04_conjunctive.dfy](benchmarks/sv-comp/dafny/loop-zilu/benchmark04_conjunctive.dfy)).
+  `benchmark04_conjunctive.dfy`).
 - A higher-order pattern as a summand, e.g. `G(k)` in `G(k) + b[k]`, matches
   a single summand of the expression, not several, e.g. not `2 * k + 3` in
   `b[k] + 2 * k + 3`, and a variable as the coefficient of a monomial does not
   match a literal coefficient, such that affine updates are not matched
-  generically (see [sqm.dfy](benchmarks/sv-comp/dafny/array-fpi/sqm.dfy)).
+  generically (see `sqm.dfy`).
 - Rules on a comparison do not match its negation, e.g. a rule for
   `0 <= e` does not apply to `e < 0` (on `Int`, `e + 1 <= 0`), such that
   lemmas are stated in both forms.
 - Hypotheses are not split into cases: `X == (if c then A else B)` and
   disjunctions among the hypotheses remain (`-prove` splits disjunctions, and the guards of updates since 0.46.16),
   `-split` followed by another `-prove` splits them (see
-  [diamond_1-1.dfy](benchmarks/sv-comp/dafny/loop-acceleration/diamond_1-1.dfy),
-  [half.dfy](benchmarks/sv-comp/dafny/loop-new/half.dfy)).
+  `diamond_1-1.dfy`,
+  `half.dfy`).
 - Linear facts over more than two variables are not combined: the context
   `n0 <= 0`, `n1 <= 0`, `0 < n0 + n1` is not found inconsistent, since
   `n0 + n1` is no difference constraint (`Diffs`), while `FourierMotzkin`
-  would decide it (see [seq-3.dfy](benchmarks/sv-comp/dafny/loop-invgen/seq-3.dfy)).
+  would decide it (see `seq-3.dfy`).
 - Expressions with binders are compared literally, not modulo the names of
   their bound variables: `count(0, maps(for ⌊K⌋, ⌊L⌋ yield k₁₀, l₈ :: k₁₀ % 2))`
   and the same with `k, h`, which the right-hand side of a rule introduces,
-  are not found equal (see [sumt2.dfy](benchmarks/sv-comp/dafny/loops-crafted-1/sumt2.dfy)).
+  are not found equal (see `sumt2.dfy`).
 - Expressions are compared literally, also modulo the definitions of the
   context: `sum(selects(x, ⌊K⌋))` and `sum(selects(x, ⌊counter(0, 1, 100)⌋))`
   with `K == counter(0, 1, 100)` are not found equal, since definitions are
   followed in matching only (`Context.↑`), and a side condition
   `ks == ⌊counter(0, 1, m + 1)⌋` with `ks := ⌊K⌋` is not decided (see
-  [mapsum1.dfy](benchmarks/sv-comp/dafny/array-crafted/mapsum1.dfy)).
+  `mapsum1.dfy`).
 - The branches of a conditional formula are not simplified under the facts
   of the context: `r != 0 ==> if a then 1 == r else 0 == r` stays, while
   `r != 0 && 0 == r ==> p` is closed; nor is a disjunction among the
   hypotheses, `(a && 1 == r || !a && 0 == r) && r != 0` (see
-  [standard_password_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_password_ground.dfy)).
+  `standard_password_ground.dfy`).
 - Reads over writes at a different position are decided in the neutral
   context (`Simplify.select` with `ctx.neutral`), without the facts: `j != 3`
   among the hypotheses does not reduce `a[3 := w][j]` to `a[j]`; a lemma
   `if j != i then a[i := v][j] == a[j]`, whose side condition is decided
   against the facts, does (see
-  [single_elem_safe.dfy](benchmarks/sv-comp/dafny/array-lopstr16/single_elem_safe.dfy)).
+  `single_elem_safe.dfy`).
 - Conditionals inside equations and products are not lifted, e.g.
   `(if c then x else n) == (if c then x * x else n)`; a lemma for equations of
   conditionals with the same test applies, but one for the product
   `(if c then x else y) * (if c then x else y)` does not match, presumably
   since products of conditionals are monomials of the polynomial (see
-  [motivex.dfy](benchmarks/sv-comp/dafny/array-lopstr16/motivex.dfy)).
+  `motivex.dfy`).
 - Facts with coefficients are not combined: `n₁₄ <= 200000` and
   `100000 < n₆` do not give `n₁₄ < 2 * n₆`, since difference constraints
   have unit coefficients; nor is an interval `100000 < n₆ < 100002` on Int
   narrowed to `n₆ == 100001` (see
-  [array_doub_access_init_const.dfy](benchmarks/sv-comp/dafny/array-cav19/array_doub_access_init_const.dfy)).
+  `array_doub_access_init_const.dfy`).
 - A pattern sum of a rule variable and a bound variable, e.g. the position
   `c - k` of a store in an update, matches only if the variable takes a single
   summand: `S + -k` matches, `2 * S + -k + -1` and `S + -k + -1` do not, nor
   does the pattern `c - 1 - k` (see
-  [array_tiling_tcpy.dfy](benchmarks/sv-comp/dafny/array-cav19/array_tiling_tcpy.dfy)).
+  `array_tiling_tcpy.dfy`).
 - A lemma for a monomial with a coefficient, e.g.
   `2 * ((-x + x * x) / 2) == -x + x * x`, does not match that monomial inside
   an equation, `n * n == 2 * ((-n + n * n) / 2) + n`, presumably since
   equations are normalized as differences of polynomials (see
-  [ps2-ll.dfy](benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy)).
+  `ps2-ll.dfy`).
 - Conjunctions are matched in order, not modulo commutativity: a pattern `R && A && B ==> C`, with a variable `R`
   for the other premises, matches `u < 3 && A && B ==> C`, but neither `A && u < 3 && B ==> C`, nor
   `A && B && u < 3 ==> C`, nor `u < 3 && B && A ==> C`; further variables between them, `R1 && A && R2 && B && R3`,
   do not help. Lemmas that need two premises of a goal therefore depend on the order in which the simplifier
-  emits them (see [seq-3.dfy](benchmarks/sv-comp/dafny/loop-invgen/seq-3.dfy), where the order fits). Chains of comparisons are
+  emits them (see `seq-3.dfy`, where the order fits). Chains of comparisons are
   conjunctions already (the parser resolves them), only printed as chains. Premises are looked up at any position
   as side conditions instead (`Rewrite.conditions`), also comparisons, e.g. `requires 2 * a + p <= b + 2 * c &&
   c < a` with `ensures (p + 1 < b) <==> true`, as in MADWiFi-encode_ie_ok; this form does not work for seq-3,
@@ -524,12 +518,12 @@ removed on Oct 23, 2026.
   cancellation of a factor, e.g. `k * j < 1000000 * k`, and a lemma
   `if 0 <= k then (k * a < k * b) <==> (0 < k && a < b)` does not match it,
   since a variable of a pattern does not match the coefficient 1000000 of the
-  monomial `1000000 * k` (see [count_by_k.dfy](benchmarks/sv-comp/dafny/loop-new/count_by_k.dfy)).
+  monomial `1000000 * k` (see `count_by_k.dfy`).
 
 ## Performance
 
-Measured on binary search and on the SV-COMP examples
-(`benchmarks/sv-comp/dafny`):
+Measured on binary search and on the former Dafny translations of SV-COMP tasks
+(`benchmarks/sv-comp/dafny`, removed on Oct 23, 2026):
 
 - The rewrite steps per command are limited to 1000 (`Context.withRules`),
   and an exhausted budget is reported as "rewriting does not terminate",
@@ -549,7 +543,7 @@ Measured on binary search and on the SV-COMP examples
   second time with `X` bound to the trace.
 - Each round of the fixpoint of `Simplify.apply` simplifies the whole
   formula again. Programs with many loops grow accordingly, e.g.
-  [standard_copy9_ground-2.dfy](benchmarks/sv-comp/dafny/array-examples/standard_copy9_ground-2.dfy)
+  `standard_copy9_ground-2.dfy`
   takes about 20 s for a chain of nine copies, against about 2 s for one copy.
 - Non-termination is detected by the budget of steps or by a stack overflow,
   after 8 to 13 s, both reported as "rewriting does not terminate"
@@ -626,20 +620,6 @@ Measured on binary search and on the SV-COMP examples
   unlike the entries of lists of naturals and the length functions, which get `0 <= f(xs)` among the definitions of
   the goal; the lowered goal is weaker than necessary. Fix: `general` adds `forall xs. 0 <= f(xs)` for a term of type
   `Nat`, as `named` does for the lengths.
-- The runs of the Dafny translations of SV-COMP (`Dafny.unreach-call.Unbounded`, 2 min, 2026-10-10 16:13 against
-  15:25): `array-lopstr16/flag_loopdep_simple` is no longer proved (also not with `-fallback`), not because of
-  the merged `mod_two_not_zero`; whether the other lemmas of 9a13ed0f or the eta reduction of 97c533c7 is open;
-  `loops/vogal-2` reports rewriting does not terminate (one goal locally) since its table of vowels is filled by a
-  loop. `loop-crafted/simple_array_index_value_1-1` was open by `mod_two_not_zero`, which is local again.
-- The C programs of the translations (`benchmarks/sv-comp/c`) differ from their Dafny sources in 42 of the 270 rows
-  of the databases: 32 have lemmas of their own in the Dafny file, which the C file does not contain (mostly closed
-  in Dafny, one goal in C); the other 10 differ by the shape of the program that the C frontend builds, e.g. a block
-  around the locals of main (`loop-new/gauss_sum`, `half`, `loops-crafted-1/sumt4`, `array-tiling/revcpyswp2`,
-  `skipped`, `skippedu`, `array-crafted/zero_sum_const_m2`, `array-programs/partial_mod_count_limited_1`,
-  `array-examples/sanfoundry_02_ground`, `sanfoundry_10_ground`).
-- Loops bounded by small constants remain in 10 translations (`loop-lit/bh2017-ex1-poly`, `cggmp2005b`,
-  `hh2012-ex3`, `loop-invgen/id_build`, `loop-simple/nested_1b`, `loops/eureka_01-2`, `invert_string-3`,
-  `sum04-1`, `sum04-2`, `vogal-2`), some asserting the bound, e.g. `k == 4` after `while k <= 3`.
 - The functions on traces are declared only by the lemma database
   ([teq.dfy](resources/cuvee/teq.dfy)), whose names may clash with the input,
   and which only Dafny inputs can use (`Config.features`).
@@ -662,8 +642,8 @@ Measured on binary search and on the SV-COMP examples
   for `l <= h` is a lemma in teq/bsearch.dfy (`-prove` bounds `t div k` in its
   linear arithmetic, not yet `quot` of C, see [doc/prove.md](doc/prove.md)), nor cancels factors,
   e.g. `2 * n / 2` (see
-  [mlceu2.dfy](benchmarks/sv-comp/dafny/array-tiling/mlceu2.dfy),
-  [array_of_struct_ptr_monotonic.dfy](benchmarks/sv-comp/dafny/array-industry-pattern/array_of_struct_ptr_monotonic.dfy)).
+  `mlceu2.dfy`,
+  `array_of_struct_ptr_monotonic.dfy`).
 - Solutions of arithmetic equations are inlined into polynomials only
   (`Chains.solved`), not substituted elsewhere, e.g. `forall x. x == y + 1
   ==> p(x)` stays; a solution that depends on its variable through the
@@ -740,11 +720,11 @@ Measured on binary search and on the SV-COMP examples
   which gives `n <= j`; the examples abstract the constraint by an atom first,
   e.g. `!occurs(e, selects(a, ⌊counter(0, 1, n)⌋))` by `not_occurs_selects` of teq.dfy, which a second lemma
   takes as its side condition (see
-  [standard_sentinel-2.dfy](benchmarks/sv-comp/dafny/array-examples/standard_sentinel-2.dfy)),
+  `standard_sentinel-2.dfy`),
   since a side condition that is an iteration constraint does not terminate.
 - Nested loops: the outer trace takes the values of summarized inner traces,
   whose composition, e.g. `k == n * m`, is not accelerated (see
-  [nested-1.dfy](benchmarks/sv-comp/dafny/loop-new/nested-1.dfy)).
+  `nested-1.dfy`).
 
 ## Dafny frontend
 
@@ -859,13 +839,28 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
   declarations. Step axioms of recursive definitions are best stated
   backwards, `n > 0 ==> f(a, n) == f(a, n-1) + a[n-1]`: z3 cannot trigger on
   `f(a, n+1)` (`+` is interpreted) and unfolds `f(a, n)` forever.
-- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the tasks of the categories Arrays and Loops with
-  hand-written annotations, checked with `-vcgen -z3`; results per folder and the causes of the open tasks in
-  [benchmarks/acsl/README.md](benchmarks/acsl/README.md)); open issues of the support, by impact:
-  - A refuted goal is printed as one SMT-LIB string, `(error "goal does not
-    hold" "Sat" "(forall ...)")`, without the annotation (loop invariant,
-    assertion, postcondition, line) that failed; `-vcgen -z3` prints
-    nothing when all goals hold.
+- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the categories Arrays and Loops laid out as in
+  sv-benchmarks, 1204 tasks, the 838 true tasks that Cuvée's C supports with annotations, checked with
+  `-vcgen -split -z3`, `xml/cuvee-acsl.xml`; the results per folder and the causes of the open tasks in
+  [benchmarks/acsl/README.md](benchmarks/acsl/README.md) are of the earlier layout). Run of Oct 23, 2026
+  (0.49.6, 15 min, AMD Ryzen 7 PRO 5750G): 723 of the 838 annotated tasks proved (Arrays 262 of 303, Loops
+  461 of 535), against 756 on Oct 14 (0.46.13, `-split` for the Split set only); wrong `false`:
+  `watermelon` (bugs.md), `copy-partial-3-u` and `verifythis/lcp` (below). Open issues, by impact:
+  - `-split` for all tasks costs 35 that prove without it in seconds (Oct 23, 2026): one part of a split goal
+    is `unknown` (`array-crafted/bAnd*`, `bor*`, `xor*`, `mapavg*`, `mapsum*`, nine of `reducercommutativity`,
+    26 in all) or times out (`nla-digbench/hard-ll*`, `prodbin-ll_valuebound*`, `prod4br-ll_valuebound100`,
+    `array-patterns/array25_pattern`, 9), e.g. `mapsum1` and `hard-ll` prove without `-split` in 5 and 2.5 s;
+    the 48 tasks of the former Split set need it. Since, `-split` only for the 47 tasks of Loops that need it
+    (`benchmarks/acsl/Loops-split.set`, task set `C.unreach-call.Loops-split`); open: why z3 fails on the
+    parts (quantified parts without the hypotheses that the whole goal gives?).
+  - `array-multidimensional/copy-partial-3-u`: its annotations are too weak for the final assertion (as its
+    header says), which z3 now refutes (a wrong `false`; it timed out before); the other `copy-partial-*`
+    and the `add-*`, `diff-*` tasks time out.
+  - The true tasks without annotations (structs, `VerifyThis-Loops.set`) end in errors or, where `-vcgen`
+    checks a function without a contract for all inputs, in a wrong `false` (`verifythis/lcp`); the false
+    tasks without annotations end mostly in `unknown`. Annotate the VerifyThis tasks.
+  - A goal is answered `incorrect` without the annotation (loop invariant,
+    assertion, postcondition, line) that failed.
   - The C operators `shl`, `shr`, `bitand`, `bitor`, `bitxor`, `bitnot` are uninterpreted (`:abstract` in the C
     prelude, so a refutation through them is `unknown`): interpret them where possible (shifts
     of constants as multiplications by powers of 2, masks of low bits as `%`, e.g. `(x & 5) == 5` with
@@ -883,8 +878,6 @@ Subset of C without memory ([c/](src/cuvee/c), [examples/c](examples/c)).
     modulo 2^64, `lcm2`, `prod4br`; `array-programs/partial_mod_count_2-5`
     (counts with integer division); `array-patterns/array26` (parity of a
     count).
-  - `nla-digbench/prodbin-ll` and `geo2-ll_unwindbound1` time out since 0.41.4, which they did not with 0.40.0
-    (2 to 3 s), also without `-verify` (not bisected).
   - Runs under CPU load time out at 10 s on trivial tasks (`loop-lit/mine2017-ex4.6`
     proves in 2.6 s alone); the limits of the runs in the README are not
     those of the tool.
@@ -948,31 +941,6 @@ scores it unknown).
 - The properties and expected verdicts of a task (`Task.properties`) are read
   but not used; only a single input file is supported, in a language that
   Cuvée reads, by its extension (`yml.Source.lang`).
-- The C versions of the local benchmarks (`benchmarks/sv-comp/c`) are patched
-  by nondet.py, sizes.py, and bounds or conditions on the inputs of 34 tasks
-  (see [false-verdicts.md](benchmarks/sv-comp/c/false-verdicts.md)); open:
-  - not checked by a full run: of the patched tasks, 10 of group 2 have not
-    run again (eureka_01-2, array_init_nondet_vars,
-    array_min_and_copy_shift_sum_add, mono-crafted_6,
-    linear-inequality-inv-a, -c, -d, hard-ll, underapprox_1-2, mod3) and 23
-    of group 3; the wrong true verdicts of Symbiotic (57) and AISE (55),
-    nearly all in files with uninitialized locals, should be gone with
-    nondet.py; Cuvée has not run on the patched files.
-  - 9 tasks that only AISE finds false, without a known cause (group 4:
-    bAnd5, bor5, xor5, mapsum5, mapavg5, sanfoundry_10_ground, init-2-n-u,
-    gj2007, mono-crafted_1); AISE's first stage fails (`bin/runexec`
-    missing), so these verdicts come from its KLEE fallback.
-  - The Dafny translations lack the patches
-    ([c_patches.diff](benchmarks/sv-comp/dafny/c_patches.diff)); printing the
-    C versions again undoes them. The expected verdict true of the group 1
-    translations is wrong without their conditions.
-  - partial_mod_count_limited_gen assumes `N % 60 == 0`, which suffices but
-    is stronger than needed.
-  - geo1-u is unsafe only by the wrap-around of `unsigned long long`, which
-    Cuvée+Z3 and Korn prove safe (see bugs.md).
-  - 5 translations lose an update of an array parameter and are excluded
-    from the task sets until fixed (see the
-    [README](benchmarks/sv-comp/c/README.md)).
 
 ## Bitvectors
 

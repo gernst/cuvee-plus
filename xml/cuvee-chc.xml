@@ -29,21 +29,6 @@
     </tasks>
   </rundefinition>
 
-  <!-- the local benchmarks: the Dafny translations of SV-COMP tasks and the C programs printed from them,
-       whose loops are unbounded (benchmarks/sv-comp) -->
-  <rundefinition name="local_unreach-call">
-    <!-- the C programs are meant for mathematical integers, as their Dafny translations (see their README) -->
-    <tasks name="C.unreach-call.Unbounded">
-      <option name="-unbounded"/>
-      <includesfile>../benchmarks/sv-comp/c/c.set</includesfile>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
-    </tasks>
-    <tasks name="Dafny.unreach-call.Unbounded">
-      <includesfile>../benchmarks/sv-comp/dafny/dafny.set</includesfile>
-      <propertyfile>../benchmarks/sv-comp/dafny/properties/unreach-call.prp</propertyfile>
-    </tasks>
-  </rundefinition>
-
   <!-- the SV-COMP tests of the CAV 2023 paper on MonoCera, converted for Cuvée (benchmarks/monocera/convert_cuvee.py),
        by the operator that MonoCera instruments -->
   <!-- as in the paper, which runs all tools with mathematical integers (TriCera's default -arithMode:math) -->
@@ -51,22 +36,22 @@
     <tasks name="C.unreach-call.MonoCera-Forall">
       <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/forall/*.yml</include>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+      <propertyfile>../benchmarks/monocera/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Max">
       <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/max/*.yml</include>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+      <propertyfile>../benchmarks/monocera/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Min">
       <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/min/*.yml</include>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+      <propertyfile>../benchmarks/monocera/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Sum">
       <option name="-unbounded"/>
       <include>../benchmarks/monocera/polished_tests/cuvee/sum/*.yml</include>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+      <propertyfile>../benchmarks/monocera/properties/unreach-call.prp</propertyfile>
     </tasks>
   </rundefinition>
 

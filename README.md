@@ -256,10 +256,8 @@ below and [doc/architecture.md](doc/architecture.md)). The runs included the mod
   The entry of fm-tools (`data/cuvee.yml`, merge request !1176 of
   [fm-tools](https://gitlab.com/sosy-lab/benchmarking/fm-tools)) gives the
   options, the categories, and the DOI of the archive.
-- [benchmarks/sv-comp](benchmarks/sv-comp): Dafny translations of the tasks of
-  both categories and C programs printed from them; `./benchmark
-  xml/<definition>.xml -r <rundefinition> -t <tasks>` runs Cuvée and other
-  verifiers on them and on the original tasks with BenchExec, whose results
+- `./benchmark xml/<definition>.xml -r <rundefinition> -t <tasks>` runs Cuvée
+  and other verifiers on the tasks of both categories with BenchExec, whose results
   [scripts](scripts) summarize (`table.py`, `scatter.py`, `quantile.py`,
   `rules.py`, `compare.py`; see [doc/benchmarks.md](doc/benchmarks.md)). [SV-COMP.md](SV-COMP.md) records the results and the
   limitations found.

@@ -2,7 +2,10 @@
 
 BenchExec writes one result file per benchmark (e.g. cuvee-15min, symbiotic) and task set (its block,
 e.g. C.unreach-call.Loops or Loops). The scripts take the most recent file for each pair, so that a
-rerun of one tool or of one category replaces the older results without further configuration.
+rerun of one tool or of one category replaces the older results without further configuration. A category
+may be run in parts, task sets of their own whose names add a suffix of PARTS (C.unreach-call.Loops-split, the
+tasks of Loops that xml/cuvee-acsl.xml runs with -split): the most recent file of each part is merged into the
+category, task by task, the most recent file winning.
 """
 
 import argparse
@@ -53,6 +56,9 @@ SCORES = {
     ("wrong", "true"): -32,
     ("wrong", "false"): -16,
 }
+
+# the suffixes of the task sets that are parts of a category, e.g. Loops-split of Loops
+PARTS = ("-split",)
 
 FILENAME = re.compile(r"^(?P<benchmark>.+)\.(?P<date>\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d)\.results\..+\.xml\.bz2$")
 
@@ -105,8 +111,9 @@ class Results:
     memlimit: str
     cores: str
     cpus: list[str]  # the models of the CPUs of the hosts that ran the tasks, e.g. Intel Core i9-9900 @ 3.10 GHz
-    path: Path
+    path: Path  # the most recent of the merged files
     runs: list[Run]
+    paths: tuple[Path, ...] = ()  # all merged files, one per part of the category (see PARTS)
 
 
 def label(benchmark: str, attributes: dict[str, str] | None = None) -> str:
@@ -127,16 +134,29 @@ def header(path: Path) -> dict[str, str]:
 
 def category(block: str) -> str:
     # C.unreach-call.Loops and Loops (older definitions of Cuvée) are the same category; tasks in other
-    # languages keep theirs, e.g. Dafny.unreach-call.Unbounded is Unbounded (Dafny), next to the C version
+    # languages keep theirs, e.g. Boogie.unreach-call.RAPID is RAPID (Boogie)
     parts = block.split(".")
+    name = parts[-1]
+    for suffix in PARTS:
+        name = name.removesuffix(suffix)
     if len(parts) == 3 and parts[0] != "C":
-        return f"{parts[2]} ({parts[0]})"
-    return parts[-1]
+        return f"{name} ({parts[0]})"
+    return name
 
 
-def latest(results: Path = RESULTS) -> dict[tuple[str, str], Path]:
-    """The most recent result file for each benchmark and category."""
-    found: dict[tuple[str, str], tuple[str, Path]] = {}
+def newest(found: list[tuple[str, str, Path]]) -> list[Path]:
+    """The most recent file of each block among (date, block, path), the most recent overall first."""
+    per_block: dict[str, tuple[str, Path]] = {}
+    for date, block, path in found:
+        if block not in per_block or per_block[block][0] < date:
+            per_block[block] = (date, path)
+    return [path for _, path in sorted(per_block.values(), reverse=True)]
+
+
+def latest(results: Path = RESULTS) -> dict[tuple[str, str], list[Path]]:
+    """The most recent result file for each benchmark, category, and part of it (see PARTS), the most recent
+    first."""
+    found: dict[tuple[str, str], list[tuple[str, str, Path]]] = {}
     for path in results.glob("*.results.*.xml.bz2"):
         match = FILENAME.match(path.name)
         if not match:
@@ -145,11 +165,8 @@ def latest(results: Path = RESULTS) -> dict[tuple[str, str], Path]:
         block = header(path).get("block")
         if not block:
             continue
-        key = (match["benchmark"], category(block))
-        date = match["date"]
-        if key not in found or found[key][0] < date:
-            found[key] = (date, path)
-    return {key: path for key, (_, path) in found.items()}
+        found.setdefault((match["benchmark"], category(block)), []).append((match["date"], block, path))
+    return {key: newest(files) for key, files in found.items()}
 
 
 def seconds(value: str | None) -> float | None:
@@ -168,21 +185,19 @@ def task(name: str) -> str:
     return name
 
 
-def load(benchmark: str, path: Path) -> Results:
-    root = ET.parse(bz2.open(path)).getroot()
+def load(benchmark: str, path: Path | list[Path]) -> Results:
+    """The results of a file, or of the files of the parts of a category, the most recent first (see latest),
+    merged task by task, the most recent file with a status winning (a run stopped before the task finished has
+    none); the attributes are those of the most recent file."""
+    paths = [path] if isinstance(path, Path) else path
+    merged: dict[str, Run] = {}
+    for part in reversed(paths):
+        for run in runs(part):
+            if run.status or run.task not in merged:
+                merged[run.task] = run
+    root = ET.parse(bz2.open(paths[0])).getroot()
+    path = paths[0]
     name = category(root.get("block", ""))
-    runs = []
-    for run in root.iter("run"):
-        columns = {column.get("title"): column.get("value") for column in run.iter("column")}
-        runs.append(
-            Run(
-                task=task(run.get("name", "")),
-                category=name,
-                status=columns.get("status") or "",
-                result=columns.get("category") or "",
-                cputime=seconds(columns.get("cputime")),
-            )
-        )
     return Results(
         benchmark=benchmark,
         label=label(benchmark, root.attrib),
@@ -194,8 +209,27 @@ def load(benchmark: str, path: Path) -> Results:
         cores=root.get("cpuCores", ""),
         cpus=sorted({cpu.get("model", "") for cpu in root.iter("cpu")} - {""}),
         path=path,
-        runs=runs,
+        runs=list(merged.values()),
+        paths=tuple(paths),
     )
+
+
+def runs(path: Path) -> list[Run]:
+    root = ET.parse(bz2.open(path)).getroot()
+    name = category(root.get("block", ""))
+    found = []
+    for run in root.iter("run"):
+        columns = {column.get("title"): column.get("value") for column in run.iter("column")}
+        found.append(
+            Run(
+                task=task(run.get("name", "")),
+                category=name,
+                status=columns.get("status") or "",
+                result=columns.get("category") or "",
+                cputime=seconds(columns.get("cputime")),
+            )
+        )
+    return found
 
 
 def collect(tools: list[str], categories: list[str], results: Path = RESULTS, quiet: bool = False) -> dict[str, dict[str, Results]]:
@@ -205,12 +239,12 @@ def collect(tools: list[str], categories: list[str], results: Path = RESULTS, qu
     collected: dict[str, dict[str, Results]] = {}
     for tool in tools:
         for name in categories:
-            path = files.get((tool, name))
-            if path is None:
+            paths = files.get((tool, name))
+            if paths is None:
                 if not quiet:
                     print(f"no results for {tool} on {name} in {results}", file=sys.stderr)
                 continue
-            collected.setdefault(tool, {})[name] = load(tool, path)
+            collected.setdefault(tool, {})[name] = load(tool, paths)
     return collected
 
 

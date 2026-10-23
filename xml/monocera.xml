@@ -16,19 +16,19 @@
   <rundefinition name="MonoCera_unreach-call">
     <tasks name="C.unreach-call.MonoCera-Forall">
       <include>../benchmarks/monocera/polished_tests/monocera/forall/*.yml</include>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+      <propertyfile>../benchmarks/monocera/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Max">
       <include>../benchmarks/monocera/polished_tests/monocera/max/*.yml</include>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+      <propertyfile>../benchmarks/monocera/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Min">
       <include>../benchmarks/monocera/polished_tests/monocera/min/*.yml</include>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+      <propertyfile>../benchmarks/monocera/properties/unreach-call.prp</propertyfile>
     </tasks>
     <tasks name="C.unreach-call.MonoCera-Sum">
       <include>../benchmarks/monocera/polished_tests/monocera/sum/*.yml</include>
-      <propertyfile>../benchmarks/sv-comp/c/properties/unreach-call.prp</propertyfile>
+      <propertyfile>../benchmarks/monocera/properties/unreach-call.prp</propertyfile>
     </tasks>
   </rundefinition>
 

@@ -204,13 +204,8 @@ Our runs do not validate witnesses, so no scores are given.
 <scatter>\end{document}
 """
 
-# the title and the description of the setup of the document per selection of categories: the categories of
-# SV-COMP, or the C versions of the local benchmarks (Unbounded), whose tasks and runs differ
-TITLES = {
-    ("Unbounded",): r"Cuvée and the verifiers of SV-COMP 2026\\[0.5ex] on the unbounded C versions of the local benchmarks",
-}
+# the title of the document
 TITLE = r"Cuvée and the verifiers of SV-COMP 2026\\[0.5ex] on ReachSafety-Arrays and ReachSafety-Loops"
-SETUPS = {("Unbounded",): "setup-unbounded.tex"}
 
 
 def facts(columns: list[Column]) -> str:
@@ -275,9 +270,8 @@ def main():
     # tools in the order of the columns, which scatter.py follows in the names of its plots
     tools = list(dict.fromkeys(column.tool for column in columns))
     (args.output / "facts.tex").write_text(facts(columns))
-    selection = tuple(args.categories)
-    shutil.copyfile(common.SCRIPTS / SETUPS.get(selection, "setup.tex"), args.output / "setup.tex")
-    document = DOCUMENT.replace("<title>", TITLES.get(selection, TITLE)).replace("<scatter>", scatter(args.output, tools))
+    shutil.copyfile(common.SCRIPTS / "setup.tex", args.output / "setup.tex")
+    document = DOCUMENT.replace("<title>", TITLE).replace("<scatter>", scatter(args.output, tools))
     (args.output / "comparison.tex").write_text(document)
     if args.no_pdf:
         print(args.output / "comparison.tex")

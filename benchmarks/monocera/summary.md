@@ -122,9 +122,9 @@ is one of the following.
 3. Sums accumulated in an array cell (all `sum` tests: `brs*`, `ms*`,
    `s*lif`, `conda`). In `brs2`, `sum[0] = sum[0] + a[i]` is a store at the
    constant index 0, which is not recognized as a sum over the trace, so
-   that `sum[0] <= 2*N` with `a[k] <= 2` stays; the Dafny translations of
-   `benchmarks/sv-comp` make `sum[0]` a scalar (see
-   [its summary](../sv-comp/dafny/summary.md)), the C programs do not. In
+   that `sum[0] <= 2*N` with `a[k] <= 2` stays; our former Dafny
+   translations of SV-COMP tasks made `sum[0]` a scalar, the C programs do
+   not. In
    `conda`, `sum(selects(a, ...)) == 2*N` stays, over an array that a second
    loop modifies in place by its old contents. The lemmas below close all
    `sum` tests (see Lemmas for the open goals).

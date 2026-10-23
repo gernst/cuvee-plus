@@ -1,3 +1,0 @@
-# the task definitions of the C versions of the local SV-COMP benchmarks, for BenchExec, relative to this
-# file, with the expected verdicts of the property unreach-call
-*/*.yml
