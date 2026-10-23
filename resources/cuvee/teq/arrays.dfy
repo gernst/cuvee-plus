@@ -12,11 +12,10 @@ lemma {:rw} {:teq} trace_read_initial<a, b>(a: array<a, b>, keys: List<a>, fs: L
   ensures trace(a, for keys, fs do b, k, f :: b[k := f(b[k])])
     == trace(a, for keys, fs do b, k, f :: b[k := f(a[k])])
 
-// TODO: stores_cases seems to work around a limitation in the matcher: we cannot instantiate a `maps` term from the full case-distinction
-
 // a loop that updates each position once, by cases on its old value, stores the values computed from the initial
 // array, since a[k] is not modified before iteration k; the first case stores a constant, since a higher-order
-// instance must contain the term it abstracts, a[k] (see Rewrite.abstraction)
+// instance must contain the term it abstracts, a[k] (see Rewrite.abstraction); a workaround for two gaps of the
+// engine, like the conditional stores below (ideas/conditional-stores.md)
 // (from MonoCera: conda, s1lif-s5lif)
 lemma {:rw} {:teq} stores_cases(a0: array<int, int>, n: Nat, c: int, P: (int) -> bool, G: (int) -> int)
   ensures
@@ -60,7 +59,8 @@ lemma {:rw} {:teq} selects_stores_counter(a: array<int, int>, i: int, c: int, n:
   requires c != 0
   ensures selects(current(stores(a, ⌊counter(i, c, n)⌋, vs)), ⌊counter(i, c, n)⌋) == vs
 
-// stores at the positions of a counter, guarded by C, keep the other positions; a read at j
+// stores at the positions of a counter, guarded by C, keep the other positions; a read at j; the case that keeps the
+// array is no store, so the fold stores does not apply (ideas/conditional-stores.md)
 // (from copysome1-1, copysome1-2; used on SV-COMP by copysome1-1 only)
 lemma {:rw} {:teq} select_current_trace_conditional_store(a0: array<int, int>, n: Nat, j: int, C: (int) -> bool,
                                                    V: (int) -> int)
@@ -68,7 +68,6 @@ lemma {:rw} {:teq} select_current_trace_conditional_store(a0: array<int, int>, n
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case C(k) => a[k := V(k)] case !C(k) => a))[j]
       == if 0 <= j < integer(n) && C(j) then V(j) else a0[j]
 
-// TODO: explain why this is not covered by the standard selects/stores mechanism, perhaps because of a limitation in the `maps` instantiation?
 // the same, with the guard and the value on the values of three further dependencies at the iteration of j
 // (from array_mul_init; used on SV-COMP by array_mul_init, motivex only)
 lemma {:rw} {:teq} select_current_trace_conditional_store_deps(a0: array<int, int>, n: Nat, j: int, hs: List<int>,

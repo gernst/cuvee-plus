@@ -4,10 +4,19 @@
 //
 // findings: y is doubled in each iteration, a geometric sequence, which the lemma accelerates to x0 * pow(c, n)
 // with the auxiliary function pow, which is not unfolded, such that the iterations are not unrolled, and
-// pow_two_mod_three of teq.dfy states that powers of 2 are not divisible by 3; closed (no output)
-// note: its lemmas are part of teq.dfy now (current_trace_geometric, pow_two_mod_three) and are removed here
+// pow_two_mod_three states that powers of 2 are not divisible by 3; closed (no output)
+// note: both lemmas are local again (Oct 23, 2026): they were part of teq.dfy, then left in the legacy file as
+// specific to these tasks; pow is declared by teq:arithmetic, which the benchmark definitions include
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 6
 
+
+// a value multiplied by c in each iteration, a geometric sequence
+lemma {:rw} current_trace_geometric(x0: int, c: int, n: Nat)
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: c * x)) == x0 * pow(c, n)
+
+// a power of 2 is not divisible by 3
+lemma {:rw} pow_two_mod_three(n: Nat)
+  ensures (pow(2, n) % 3 == 0) <==> false
 
 method main() {
   var N: int;

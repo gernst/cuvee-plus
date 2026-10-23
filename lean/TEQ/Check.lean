@@ -90,7 +90,6 @@ example : Stmt.double_eq_half := @double_eq_half
 example : Stmt.div_below := @div_below
 example : Stmt.div_nonpos := @div_nonpos
 example : Stmt.mul_lt_cancel := @mul_lt_cancel
-example : Stmt.pow_two_mod_three := @pow_two_mod_three
 example : Stmt.triangle_bound := @triangle_bound
 example : Stmt.triangle_nonneg := @triangle_nonneg
 example : Stmt.triangle_nonneg_below := @triangle_nonneg_below

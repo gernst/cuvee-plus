@@ -27,6 +27,12 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
 - `select_current_trace_stride2_cases` over one counter: its second counter, `⌊counter(1, 1, n)⌋`, was not read.
 - From examples/dafny/algorithms: `current_trace_flag` of counters.dfy is of any type (it replaces the boolean copy
   of is_sorted.dfy), and `current_trace_histogram` (counting_sort.dfy) is in aggregation.dfy; both proved in Lean.
+- `pow_two_mod_three` to the legacy file, local again in underapprox_1-2 of the Dafny translations of SV-COMP, with
+  `current_trace_geometric`, which it needs too.
+- The TODOs in the modules are gone: `cut` and `sorted` keep their integer bounds, those of the programs (a natural
+  length would add conversions without simplifying a proof); `cutFrom` stays the recursion on a natural for Lean;
+  the arrays TODOs are answered in [conditional-stores.md](conditional-stores.md) (the missing join of guarded
+  stores, and constant abstractions); a `swap` fold for the permutations remains an idea (below).
 - Each lemma that at most three proved tasks use names them on its `(from ...)` line, each unused lemma says why it
   stays (doc/teq.md, conventions); stale remarks fixed (rewnifrev is proved by `select_current_trace_ahead_down`,
   `integer_zero` is in teq.dfy).
@@ -37,7 +43,7 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
 (`bisection`, `bisection_lo/hi`), `earlier_above_iterations`, `div_nonpos`, `pow_two_mod_three`, `prefix_sums`,
 `sum_empty`, `sum_indicator_false`, `count_false_above` (now in the legacy file), `parities` with `current_parities`,
 `select_current_trace_prefix_sums_add`. Of these, only `pow_two_mod_three` is specific to the constants of its tasks (a
-candidate for the legacy file); the others are laws of functions of the database or pairs of used lemmas. 41
+now in the legacy file); the others are laws of functions of the database or pairs of used lemmas. 41
 lemmas are used by at most three tasks.
 
 ## What could be unified (database only)
@@ -116,10 +122,8 @@ once the gap is closed (Scala changes, not done here).
 
 ## Open points of earlier analyses
 
-- The TODOs in the modules (Oct 23): `cut` with a natural length instead of `cutFrom`; why `sorted` has two integer
-  bounds (it is a quantified definition whose bounds come from the programs; a natural length would add conversions
-  without simplifying a proof); a `swap` fold for `perm_swap` and the traces of swaps; why `stores_cases` and
-  `select_current_trace_conditional_store_deps` are not covered by `stores` (the two gaps of the table above).
+- A `swap` fold, `a[p := a[q]][q := a[p]]`, for `perm_swap` and the traces of swaps, where `P` and `Q` would occur
+  once instead of twice (formerly a TODO in sorted.dfy).
 - The normal form of naturals and integers: `integer_eq` loses `0 <= x` and moves the equation out of the
   arithmetic (TODO.md, reverse.dfy); options: the unconditional form, a forward lemma that keeps the equation, or a
   bridge from the classes to the arithmetic (Scala).
@@ -131,6 +135,3 @@ once the gap is closed (Scala changes, not done here).
   `-prove`: products modulo commutativity (`div_quotient_remainder` in the legacy file), conjunctions in order,
   literal disjunctive guards, higher-order variables for array reads, polymorphic higher-order side conditions,
   the selection of dependencies not backtracked, bare bound variables in `invs` patterns.
-- Stale: TODO.md's "fragments.dfy, candidates for teq.dfy" (the module `nested` is retired), "as for `counts` in
-  teq.dfy" (aggregation now); the work queue's "Lean: the lemmas added since 0.46.12" (done); NOTES.md on row_sums
-  (it terminates).

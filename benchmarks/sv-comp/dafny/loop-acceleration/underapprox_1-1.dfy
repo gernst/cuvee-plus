@@ -4,7 +4,7 @@
 //
 // findings: unsafe, not closed with the lemmas of underapprox_1-2, as expected: pow(2, 6) is 64, which the lemmas
 // do not evaluate either
-// note: its lemmas are part of teq.dfy now (current_trace_geometric, pow_two_mod_three) and are removed here
+// note: the lemmas of underapprox_1-2 (current_trace_geometric, pow_two_mod_three) are local to that file
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 6, and the assertion keeps 64,
 // which y is for N == 6
 

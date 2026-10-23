@@ -435,7 +435,7 @@ removed on Oct 23, 2026.
 - Guards below combinators are matched syntactically first, so a bound
   variable that occurs only in guards may match any formula, e.g. `b` matches
   `!b`; lemmas whose guards are more specific must come first (as for
-  `counts` in [teq.dfy](resources/cuvee/teq.dfy)).
+  `counts` in [aggregation.dfy](resources/cuvee/teq/aggregation.dfy)).
 - Variables that occur only in side conditions of rules or in guards of
   patterns are instantiated by matching the conjuncts against the facts of the
   context (`Context.known`, assumptions and negated conclusions as given, not
@@ -727,13 +727,11 @@ Measured on binary search and on the SV-COMP examples
   (see [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy), [selection_sort.dfy](examples/dafny/algorithms/selection_sort.dfy),
   which keeps the raw constraint as a side condition). Such definition lemmas should have a body that the matcher
   cannot synthesize, e.g. an `earlier` read as in `agree_prefix_def`.
-- The fragments of an inner loop are resolved by generic lemmas (the inner trace over the inner counter is a counter,
-  its final value, the test, the exit, the lengths as a constant sequence), see
-  [fragments.dfy](examples/dafny/algorithms/fragments.dfy), candidates for teq.dfy; they are what the sharing of facts
-  of 7b420a0 did, as rewrite rules. Likewise `results` with `current_results_steps` for the outer trace of a variable
-  that only the inner loop modifies, `current_trace_all`, `current_trace_histogram`, `current_trace_prefix_sums_array`,
-  and the lemmas on `perm` (see [NOTES.md](examples/dafny/algorithms/NOTES.md), the entry of Oct 11 for their
-  termination analysis).
+- The candidates for the database among the lemmas of examples/dafny/algorithms are in
+  [ideas/database-review.md](ideas/database-review.md) (Oct 23, 2026); the fragment lemmas of
+  [fragments.dfy](examples/dafny/algorithms/fragments.dfy), once candidates for teq.dfy, are obsolete since `-teq`
+  closes nested loops and the module `nested` is retired: the nested examples verify with the database alone;
+  `current_trace_histogram` is in aggregation.dfy.
 - Induction lemmas with the invariant as a predicate indexed by the iteration, `bubbled(b, k, len)`, and a
   quantified side condition `forall b, k :: 0 <= k < integer(m) && I(b, k) ==> I(F(b, k), k + 1)` that the simplifier
   decides by step lemmas on atoms, replace whole-loop lemmas of sorting algorithms; the number of steps must be

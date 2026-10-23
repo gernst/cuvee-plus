@@ -2,11 +2,11 @@
 // remainders of non-literal arguments, products, powers); an optional module over teq.dfy alone (-include
 // teq:arithmetic), migrated on Oct 13, 2026 from the module of the per-variable form (in legacy/teq.dfy): the rules on
 // naturals and integers are in teq.dfy; left out are the rules that -prove decides without them (mod_add_even, the
-// halves and thirds of polynomials with literal coefficients, natural_zero), those never applied on
-// SV-COMP (natural_one, natural_two, integer_one, integer_two, and div_quotient_remainder, which does not match the
-// product k * m of the normal form of -prove), and the sums with a nonnegative d of the triangle
-// bounds, which follow from these as forward facts by the linear arithmetic; the bounds of the triangles are forward
-// facts about their term, the others rewrite rules; the function pow of the former core.dfy is declared here
+// halves and thirds of polynomials with literal coefficients, natural_zero), those never applied on SV-COMP
+// (natural_one, natural_two, integer_one, integer_two, pow_two_mod_three, and div_quotient_remainder, which does not
+// match the product k * m of the normal form of -prove), and the sums with a nonnegative d of the triangle bounds,
+// which follow from these as forward facts by the linear arithmetic; the bounds of the triangles are forward facts
+// about their term, the others rewrite rules; the function pow of the former core.dfy is declared here
 
 // powers, which are not unfolded
 function {:teq} pow(c: int, n: Nat): int
@@ -45,13 +45,6 @@ lemma {:rw} {:teq} div_nonpos(x: int, c: int)
 lemma {:rw} {:teq} mul_lt_cancel(k: int, a: int, b: int)
   requires 0 <= k
   ensures (k * a < k * b) <==> (0 < k && a < b)
-
-
-// a power of 2 is not divisible by 3
-// (from underapprox_1-1, underapprox_1-2; unused on SV-COMP; specific to the constants of these tasks, a candidate for
-// the legacy file)
-lemma {:rw} {:teq} pow_two_mod_three(n: Nat)
-  ensures (pow(2, n) % 3 == 0) <==> false
 
 // the sum 0 + 1 + ... + (n - 1) plus 1 is at least n
 // (from afnp2014)

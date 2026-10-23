@@ -33,8 +33,6 @@ user's instruction, Oct 14).
 - [ ] The cost of `-prove`: forward instances simplified again at every firing (a memo; the separate budget of
       0.46.8 was reverted), aggregation on polynomial loops (bugs.md).
 - [ ] nla-digbench: non-linear arithmetic, beyond the lemma database for now.
-- [ ] Lean: the lemmas added since 0.46.12 (`select_current_trace_recurrence`, `store_select_other`,
-      `maps_counter_scale`, `occurs_counter_step`, `integer_zero`), the module `unsigned` (the Lean session).
 
 ## Last
 

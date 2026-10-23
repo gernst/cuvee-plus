@@ -569,10 +569,6 @@ def Stmt.mul_lt_cancel : Prop :=
   ∀ (k : Int) (a : Int) (b : Int),
     0 ≤ k → (k * a < k * b ↔ 0 < k ∧ a < b)
 
-def Stmt.pow_two_mod_three : Prop :=
-  ∀ (n : Nat),
-    pow 2 n % 3 = 0 ↔ False
-
 def Stmt.triangle_bound : Prop :=
   ∀ (n : Int),
     n ≤ (-n + n * n) / 2 + 1
