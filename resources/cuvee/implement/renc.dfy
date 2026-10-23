@@ -9,29 +9,25 @@
 // Soundness: R is one relation for all choices of the prophecy, which forces the solver to generalize: the run whose
 // prophecy is the key of a read asserts its true value, hence R admits it in every other run, which therefore can
 // follow each real execution. The arguments of R may tell executions apart, never runs of one execution with
-// different prophecies; hence R and K are not members of map, whose receiver carries the prophecy: R(s, c, v) :=
-// v == s.last satisfies every assertion and lets reads at other keys see the value of the prophecy key (for 10 at key
-// 1, 20 at key 2, and reads x of 1 and y of 2, z3 proves the false x == y).
+// different prophecies; hence R and K are static members of map, without the receiver, which carries the prophecy:
+// as R(this, c, v), R(s, c, v) := v == s.last satisfies every assertion and lets reads at other keys see the value
+// of the prophecy key (for 10 at key 1, 20 at key 2, and reads x of 1 and y of 2, z3 proves the false x == y).
+//
+// Context: the paper's R(in, cnt, obj) has the inputs of the program, which the module does not know; instead, get
+// and has receive the context of the client by {:context ctx}, which -implement and -instrument fill with the
+// variables in scope at the read, except those that carry the prophecy (variables of map, cnt), see
+// Implement.context; R and K are polymorphic in its type, a tuple that -monomorph instantiates and -flat flattens
+// (in this order). Without it, a read sees the values of all inputs (m[1] after m[1 := a] is any value).
 //
 // Limits: whatever R cannot tell apart is merged, which keeps soundness and loses completeness:
-// - the inputs `in` of the paper's R(in, cnt, obj) are omitted, since a module does not know the inputs of the
-//   program, hence a read sees the values of all inputs (m[1] after m[1 := a] is any value);
 // - cnt starts with an arbitrary value, hence each read has every number and sees the values of all reads (two reads
 //   of 10 and 20 may each see both); the program can reset cnt := 0 at the entry (modifies cnt), the module cannot;
 // - the paper also requires deterministic programs (nondeterminism as inputs, see ideas/nondet.md); otherwise the
 //   predicates need not be functions.
 // See ideas/implement.md.
 //
-// The predicates are polymorphic in the type of the values, one per instance for a solver. Dafny itself reserves
-// `map`, Cuvée's dialect does not.
-
-// the value of the read numbered c
-predicate {:implement} R<b>(c: int, v: b)
-
-// the answer of the test k in m numbered c: not in the paper, whose heaps have no membership test (the validity of an
-// address follows from the allocation counter); a test observes the map like a read, hence it needs a predicate of its
-// own, or both could be one predicate over the pair of answer and value
-predicate {:implement} K(c: int, d: bool)
+// The predicates are polymorphic in the types of the values and of the context, one per instance for a solver. Dafny
+// itself reserves `map`, Cuvée's dialect does not.
 
 // the number of the last observation, the only global state: a read would otherwise change its receiver (methods have
 // a single output, values are immutable); it only increases, never reset, so the observations of all maps are
@@ -45,17 +41,27 @@ var {:implement} cnt: int
 // allocated addresses, since maps have no allocation
 datatype {:implement} map<a, b> = map_(last_key: a, last: b, last_def: bool)
 {
+  // the value of the read numbered c in the context ctx of the client, the variables in scope where the read happens,
+  // which tell executions apart, e.g. the paper's inputs (see Implement.context); static, since this carries the
+  // prophecy (see Soundness), hence R<b, x> of the values and the context only
+  static predicate {:implement} R<x>(ctx: x, c: int, v: b)
+
+  // the answer of the test k in m numbered c: not in the paper, whose heaps have no membership test (the validity of
+  // an address follows from the allocation counter); a test observes the map like a read, hence it needs a predicate
+  // of its own, or both could be one predicate over the pair of answer and value
+  static predicate {:implement} K<x>(ctx: x, c: int, d: bool)
+
   // a read: the true value at the prophecy key, an arbitrary value of R elsewhere
-  method {:implement this[k]} get(k: a) returns (v: b)
+  method {:implement this[k]} {:context ctx} get<x>(k: a, ctx: x) returns (v: b)
     modifies cnt
   {
     cnt := cnt + 1;
     if last_key == k && last_def {
-      assert R(cnt, last);
+      assert R(ctx, cnt, last);
       v := last;
     } else {
       v := *;
-      assume R(cnt, v);
+      assume R(ctx, cnt, v);
     }
   }
 
@@ -67,16 +73,16 @@ datatype {:implement} map<a, b> = map_(last_key: a, last: b, last_def: bool)
   }
 
   // a test: the true answer at the prophecy key, an arbitrary answer of K elsewhere
-  method {:implement k in this} has(k: a) returns (d: bool)
+  method {:implement k in this} {:context ctx} has<x>(k: a, ctx: x) returns (d: bool)
     modifies cnt
   {
     cnt := cnt + 1;
     if last_key == k {
-      assert K(cnt, last_def);
+      assert K(ctx, cnt, last_def);
       d := last_def;
     } else {
       d := *;
-      assume K(cnt, d);
+      assume K(ctx, cnt, d);
     }
   }
 }

@@ -15,8 +15,9 @@ object Programs extends TestSuite:
   // function types are not read back, since lambdas of SMT-LIB are arrays;
   // likewise the datatypes Nat and List of teq.dfy (see -teq), and the combinators of the lemma database, whose
   // dependencies ⌊...⌋ refer to its declarations, e.g. selects(a, ⌊counter(0, 1, n)⌋), and the examples that use the
-  // functions of its modules (-include teq:<concept>), which do not resolve without the module
-  val prelude = List("tuple", "event", "chan", "seq<", "datatype", "type ", "->", "List<", ": Nat", "⌊", "-include teq:")
+  // functions of its modules (-include teq:<concept>), which do not resolve without the module, as the examples of
+  // the modules of implementations (-include implement:<name>)
+  val prelude = List("tuple", "event", "chan", "seq<", "datatype", "type ", "->", "List<", ": Nat", "⌊", "-include teq:", "-include implement:")
 
   def plain(file: os.Path) =
     !prelude.exists(os.read(file).contains)

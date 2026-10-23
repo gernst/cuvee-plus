@@ -383,7 +383,10 @@ object Grammar:
     P("=" ~ typ)
 
   val sortcmd =
-    P(constdef | fundef | preddef | procdef)
+    P(staticdef | constdef | fundef | preddef | procdef)
+
+  val staticdef =
+    Static(P("static" ~ (fundef | preddef | procdef)))
 
   val sortimpl =
     P(braces(sortcmd.*) | nil)

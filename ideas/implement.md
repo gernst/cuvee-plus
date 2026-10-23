@@ -23,14 +23,55 @@ Findings of Oct 23, 2026 (programs on `map<int, int>`, `-instrument -chc -entry 
   at key 2, z3 proves the false `m[1] == m[2]`. Hence `R` and `K` stay top-level.
 - **Incomplete where `R` cannot tell executions apart** (whatever it cannot separate is merged):
   - Inputs: the paper's `R(in, cnt, obj)`. Without them, `m[1]` after `m[1 := a]` is any value: `assert m[1] == a`
-    fails, with symbolic keys and concrete values it holds. With a global `inp := a` as an argument of `R` (a copy of
-    the module), both hold. Open: how a module gets the inputs, e.g. `-instrument` passing those of the entry, which
-    makes `R` depend on the program, or a ghost global of the program.
+    fails, with symbolic keys and concrete values it holds. Solved by the context (below): `in1`, `in2` hold.
   - The start of `cnt`, arbitrary: each read has every number, so two reads of 10 and 20 may each see both
     (`m[1] + m[2] == 30` fails). With `cnt := 0` at the beginning of `main` it holds. Open: initializers of global
     variables, an entry precondition from the module, or `-instrument` resetting the globals of implementations at
     the entry.
 - Determinism: nondeterministic programs keep soundness, not completeness ([nondet.md](nondet.md)).
+
+### Proposal: predicates with a context of the client
+
+The arguments of `R` and `K` are determined by the datatype (the value type `b`), the context that tells executions
+apart comes from the client. Hence:
+
+- **Static members with a polymorphic context:** `static predicate R<x>(ctx: x, c: int, v: b)` in `map<a, b>`, of
+  the datatype (it uses `b`), but without `this`, which carries the prophecy. Static members get only the type
+  parameters of the datatype that their signature mentions (here `b`), such that `-monomorph` can determine the
+  instances. The context is a tuple, which `-monomorph` instantiates and `-flat` flattens, as for `map_` now; larger
+  contexts nest tuples (the prelude has up to 10 components), the empty one needs a unit value.
+- **The context reaches the body as an input that the pattern leaves out:** `method {:implement this[k]}
+  get<x>(k: a, {:context} ctx: x) returns (v: b)`, with `R(ctx, cnt, v)` in the body; the check that a pattern
+  contains all inputs exempts it. `-instrument` passes the tuple of the place it inlines into. (A built-in `context`
+  that `-instrument` substitutes would keep signatures, but has a free type parameter until then.)
+- **What goes into the tuple:** the variables in scope at that place, minus those that carry the prophecy:
+  variables of implemented sorts (`m` holds `last_key`) and the globals of the implementation (`cnt`). `-instrument`
+  builds it, so the soundness condition holds by construction. Sound since, by induction over the reads, every run
+  can follow the real execution up to a read, where the variables of the program agree in all runs. Restricted to the
+  inputs of the entry, it is the paper's `R(in, cnt, obj)`.
+- **Not in the constructor:** the context of the creation of a map would be sound and, for maps created at the
+  entry, exactly `in`, but its type would be a type parameter of the datatype, `map<a, b, x>`, whose sort has arity
+  2 and whose clients' types must not change; maps created at different places would have different types. The
+  constructor can carry what has a fixed type, e.g. `born: int`, the counter at the creation, which makes the start
+  of `cnt` irrelevant (`R(born, cnt, v)` over the difference); the context comes in at the observation.
+- **How many relations:** sound in all variants, since each read is self-contained (the asserting run and the
+  assuming runs meet at the same read, the contents of the map travel in the prophecy, not in `R`), hence no
+  chaining of instances is needed:
+  - one shared `R` over a uniform context (the entry's inputs): fewest unknowns, the paper's form;
+  - one per context type: what `-monomorph` gives for free with `R<x>`, instances of the same type are shared
+    (sound, generalization);
+  - one per call of `get`: `-instrument` renames `R` per place, many small unknowns, like the predicates of the
+    program points of `Horn`.
+
+  Start with one per context type; copies per call as an experiment if z3 benefits.
+
+Done (Oct 23, 2026), Dafny only by decision: `static` in the Dafny frontend
+([static.dfy](../examples/dafny/parsing/static.dfy)), `{:context ctx}` and `Implement.context` (the scope minus the
+variables of implemented sorts and the globals of implementations, uninitialized variables included, which is sound
+but adds noise), static `R<x>` and `K<x>` in `renc`
+([implement_renc_inputs.dfy](../examples/dafny/transform/implement_renc_inputs.dfy)). The order is `-monomorph -flat`
+(`-flat` first: "record instantiates a type parameter"). Open: the start of `cnt` (`cnt := 0` by hand in the
+examples; `born` in the constructor), copies of `R` per call.
 
 Not supported by decision: implementing methods, patterns other than a function applied to a permutation of the
 inputs, receivers whose representation changes, rewriting the bodies of implementations.
