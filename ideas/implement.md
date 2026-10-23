@@ -26,10 +26,9 @@ the context, sizes by `N`, the conditions of soundness). Open:
   over such reads takes 28 s, a merge 29 s; most examples take 1-9 s.
 - **Copies of the predicates per call** (`-instrument` renaming `R` per place) instead of one per context type, if z3
   benefits; sound, since the asserting and the assuming runs meet at the same observation.
-- **A check of the bodies** of implementations: no function implemented by a method applied in them (it would stay
-  an uninterpreted function on representations, as `last_key in s` in the first `remove`), and the conditions of
-  soundness (an asserting run for every observation, a numbering independent of the prophecy) as syntactic checks;
-  see also [renc-verification.md](renc-verification.md).
+- **The conditions of soundness of renc as checks** (an asserting run for every observation, a numbering
+  independent of the prophecy), specific to the encoding; see also [renc-verification.md](renc-verification.md).
+  Implemented functions in bodies are an error since 0.50.14.
 
 Decided against, with the reason:
 
