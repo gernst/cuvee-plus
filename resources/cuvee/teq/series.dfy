@@ -48,15 +48,50 @@ lemma {:rw} {:teq} sum_fourths_scaled(a: int, i: int, n: Nat)
 // rewrite rules with a quotient, the quotient needs an exactness fact whose trigger a forward lemma cannot name, all its
 // terms having one variable); in a variable c equal to the number of iterations, e.g. the final value of a loop
 // counter, looked up among the facts: the linear arithmetic does not relate the powers of c to those of integer(n)
-// (c * c and integer(n) * integer(n) are different monomials), hence the squares and cubes of integer(n), which the
-// sums of a counter leave (sum_counter), are equated with those of c at the squares; the higher powers of integer(n)
-// linked to c do not terminate on mono-crafted_13, and such a link at integer(n) as its trigger slows down every task
-// with a counter (array_4 from 19 s to a timeout of 90 s)
+// (c * c and integer(n) * integer(n) are different monomials), hence the powers of integer(n) that remain, e.g. of
+// the sums of a counter (sum_counter), are related to those of c by the lemmas below, each one equation triggered at
+// a fold or at a quotient: a link at integer(n) as its trigger slows down every task with a counter (array_4 from 19 s
+// to a timeout of 90 s) or exhausts the rewrite steps (in-de61.1 of SV-LIB, whose five loops have counters equal to
+// each other), and the higher powers of integer(n) linked to c do not terminate on mono-crafted_13
 // (from nla-digbench: ps3 to ps6; MonoCera: ncomp, pcomp)
 lemma {:fw} {:teq} squares_at(c: int, i: int, n: Nat)
   requires c == integer(n)
   ensures 6 * squares(i, n) == (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
-    && integer(n) * integer(n) == c * c && integer(n) * integer(n) * integer(n) == c * c * c
+
+// the halved triangles in integer(n) that sum_counter of teq:aggregation leaves for the sum of a counter, e.g.
+// (-integer(n) + integer(n) * integer(n)) / 2 of the sum of y = k + 1 of ps2, in c as well, at the quotient as its
+// trigger, which occurs only where such a sum was rewritten: one equation each, since the engine splits a forward
+// lemma at its conjunctions and triggers each conjunct on its own, and the conjuncts integer(n) * integer(n) == c * c
+// of a former squares_at were triggered at integer(n), at every counter (in-de61.1 of SV-LIB: rewriting does not
+// terminate); the coefficient a separately, since a * x does not match x
+// (from nla-digbench: ps2 to ps6; MonoCera: ncomp, pcomp)
+lemma {:fw} {:teq} triangle_at(c: int, n: Nat)
+  requires c == integer(n)
+  ensures 2 * ((integer(n) + integer(n) * integer(n)) / 2) == c + c * c
+
+lemma {:fw} {:teq} triangle_below_at(c: int, n: Nat)
+  requires c == integer(n)
+  ensures 2 * ((-integer(n) + integer(n) * integer(n)) / 2) == -c + c * c
+
+lemma {:fw} {:teq} triangle_scaled_at(a: int, c: int, n: Nat)
+  requires c == integer(n)
+  ensures 2 * ((a * integer(n) + a * integer(n) * integer(n)) / 2) == a * c + a * c * c
+
+lemma {:fw} {:teq} triangle_below_scaled_at(a: int, c: int, n: Nat)
+  requires c == integer(n)
+  ensures 2 * ((-a * integer(n) + a * integer(n) * integer(n)) / 2) == -a * c + a * c * c
+
+// the square and the cube of integer(n) equated with those of c, e.g. the n * n of the sum of 2 * k + 1 of ps3, which
+// no quotient holds: each as one equation with the fold, such that it is triggered at the fold (with squares_at, the
+// linear arithmetic derives integer(n) * integer(n) == c * c), not at integer(n) as a conjunct of its own would be
+// (from nla-digbench: ps3, ps5)
+lemma {:fw} {:teq} squares_square_at(c: int, i: int, n: Nat)
+  requires c == integer(n)
+  ensures 6 * squares(i, n) + integer(n) * integer(n) == (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1) + c * c
+
+lemma {:fw} {:teq} squares_cube_at(c: int, i: int, n: Nat)
+  requires c == integer(n)
+  ensures 6 * squares(i, n) + integer(n) * integer(n) * integer(n) == (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1) + c * c * c
 
 lemma {:fw} {:teq} cubes_at(c: int, i: int, n: Nat)
   requires c == integer(n)

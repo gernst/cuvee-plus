@@ -1383,8 +1383,39 @@ def Stmt.squares_at : Prop :=
     c = integer n
       → 6 * squares i n
         = (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
-        ∧ integer n * integer n = c * c
-        ∧ integer n * integer n * integer n = c * c * c
+
+def Stmt.triangle_at : Prop :=
+  ∀ (c : Int) (n : Nat),
+    c = integer n → 2 * ((integer n + integer n * integer n) / 2) = c + c * c
+
+def Stmt.triangle_below_at : Prop :=
+  ∀ (c : Int) (n : Nat),
+    c = integer n → 2 * ((-integer n + integer n * integer n) / 2) = -c + c * c
+
+def Stmt.triangle_scaled_at : Prop :=
+  ∀ (a : Int) (c : Int) (n : Nat),
+    c = integer n
+      → 2 * ((a * integer n + a * integer n * integer n) / 2) = a * c + a * c * c
+
+def Stmt.triangle_below_scaled_at : Prop :=
+  ∀ (a : Int) (c : Int) (n : Nat),
+    c = integer n
+      → 2 * ((-a * integer n + a * integer n * integer n) / 2)
+        = -a * c + a * c * c
+
+def Stmt.squares_square_at : Prop :=
+  ∀ (c : Int) (i : Int) (n : Nat),
+    c = integer n
+      → 6 * squares i n + integer n * integer n
+        = (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
+          + c * c
+
+def Stmt.squares_cube_at : Prop :=
+  ∀ (c : Int) (i : Int) (n : Nat),
+    c = integer n
+      → 6 * squares i n + integer n * integer n * integer n
+        = (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
+          + c * c * c
 
 def Stmt.cubes_at : Prop :=
   ∀ (c : Int) (i : Int) (n : Nat),
