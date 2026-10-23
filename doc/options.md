@@ -46,7 +46,7 @@ The transformations are applied in the order in which they are given, e.g.
 
 | Option | Meaning |
 |---|---|
-| `-print <lang>` | print the output in `<lang>` instead of the language of the input: `smt2`, `dfy`, `bpl`, `c`, `lean` (the logic only: sorts, datatypes, functions, axioms, lemmas, and goals), or `scala` (the internal representation) |
+| `-print <lang>` | print the output and the reports (answers, models, errors) in `<lang>` instead of the language of the input: `smt2`, `dfy`, `bpl`, `c`, `lean` (the logic only: sorts, datatypes, functions, axioms, lemmas, and goals), or `scala` (the internal representation) |
 | `-quiet` | print no output, only the reports, e.g. the answers to the goals and the errors, which go to stderr (stdout with `-o`) |
 | `-linewidth <n>` | lay out the output for lines of `<n>` characters (default 80) |
 | `-known <features>` | omit the declarations with the comma-separated attributes `<features>` from the output, e.g. `dfy,teq` (a C program without the logic of its Dafny source, where `teq` keeps the declarations and lemmas of the lemma database out of the output) |

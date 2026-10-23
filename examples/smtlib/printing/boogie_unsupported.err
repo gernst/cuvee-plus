@@ -1,3 +1,1 @@
-(error
-  "attributes of loops not supported in Boogie"
-  "List((other,Some(Id(x))))")
+error "attributes of loops not supported in Boogie" "List((other,Some(Id(x))))"
