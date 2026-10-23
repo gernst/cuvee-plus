@@ -1,0 +1,10 @@
+goal
+  forall r: int, g: int ::
+    true
+      ==> (forall y₂: int ::
+             0 <= 1 + 1
+               && true
+               && (forall r₃: int, g₄: int ::
+                     r₃ == 2 * (1 + 1) && g₄ == g + 1 + (1 + 1)
+                       ==> r₃ == 4 && g₄ == g + 3 && true))
+

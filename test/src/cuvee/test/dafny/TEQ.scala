@@ -8,16 +8,13 @@ import cuvee.simplify.Rule
 import cuvee.simplify.Rewrite
 
 // verification by symbolic execution and trace equation systems:
-// for programs without loops, the verdicts coincide with -vcgen,
-// loops are summarized by trace equation systems, which the rewrite engine simplifies with lemmas;
+// for programs without loops, the verdicts coincide with -vcgen (global variables, old, and calls are in
+// examples/dafny/teq/globals_calls.dfy), loops are summarized by trace equation systems, which the rewrite engine simplifies with lemmas;
 // the programs whose goals vanish are in examples/c/teq, examples/dafny/teq, and examples/dafny/parsing/teq_*.dfy
 object TEQ extends TestSuite:
   // a rule whose type parameters and variables are the free ones of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =
     Rule(lhs.params, lhs.free, lhs, rhs, cond)
-
-  def loops(file: os.Path) =
-    os.read(file).contains("while")
 
   // all subexpressions
   def subexprs(expr: Expr): List[Expr] =
@@ -34,14 +31,6 @@ object TEQ extends TestSuite:
     cuvee.dafny.Source.parse("/cuvee/legacy/teq.dfy", parser)
 
   val tests = Tests:
-    // goals are generated without errors (z3 is never run on them)
-    test("without loops"):
-      for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(loops)
-      do
-        val (cmds, errors) = Examples.output("-teq", "-quiet", file.toString)
-        errors ==> Nil
-        assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
-
     // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy;
     // that of s, which the lemma on sums of the module aggregation rewrites, is unused, its equation vanishes by the
     // one-point rule; the invariant over the counter is rewritten as well, such that only arithmetic remains
