@@ -113,8 +113,8 @@ lists them.
 - **Implementations** (`-implement`): built-in sorts and functions, e.g.
   sets, get implementations that programs are verified against, functions
   and possibly nondeterministic methods with `{:implement pattern}`, from
-  modules such as `-include implement:listset`; `-instrument` inlines the
-  methods instead of calling them, e.g. for `-include implement:renc`, maps
+  modules such as `-include implement:renc`; `-instrument` inlines the
+  methods instead of calling them, e.g. for `renc`, maps
   and sets by the heap encoding Enc_R, whose contents a Horn solver infers
   (`-chc`, [examples/dafny/renc](examples/dafny/renc))
   ([doc/implement.md](doc/implement.md)).

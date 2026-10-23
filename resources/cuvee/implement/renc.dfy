@@ -1,4 +1,4 @@
-// maps implemented by the heap encoding Enc_R (Esen, Rümmer, Weber, "Sound and Complete Invariant-Based Heap
+// maps and sets implemented by the heap encoding Enc_R (Esen, Rümmer, Weber, "Sound and Complete Invariant-Based Heap
 // Encodings", arXiv 2504.15844), -include implement:renc: the map is gone, the keys play the addresses and the values
 // the objects; every observation of a map, a read m[k] or a test k in m, is numbered by tick and takes its answer from
 // an uninterpreted predicate, except those of the prophecy key of the map, which take the true answer and assert the
@@ -47,8 +47,8 @@
 // itself reserves `map`, Cuvée's dialect does not.
 
 // the number of the last observation, the only global state: a read would otherwise change its receiver (methods have
-// a single output, values are immutable); it only increases, never reset, so the observations of all maps and sets
-// are numbered apart and R, K, S, and N stay functions of the number, relative to its start, which is arbitrary (see
+// a single output, values are immutable); it only increases, so the observations of all maps and sets are numbered
+// apart and R, K, S, and N stay functions of the number; its start is arbitrary unless the program resets it (see
 // Limits)
 var {:implement} tick: int
 
@@ -388,11 +388,6 @@ datatype {:implement} map<a, b> = map_(last_key: a, last: b, last_in: bool, vers
     assume N(version, z);
   }
 
-  // the values and the submap relation depend on all keys, which a single prophecy key does not see:
-  // nondeterministic, constrained at the prophecy key only, which is sound, but shows nothing about other keys (as
-  // uninterpreted functions they would be unsound: maps whose contents differ but whose states of the encoding agree
-  // would be indistinguishable)
-
   // the keys are exact, a set that shares the prophecy key and the version of the map, hence its size; KeySet and
   // ValueSet, not Keys and Values, which would shadow the members of Dafny in the clients (m.Values would call the
   // method)
@@ -401,9 +396,13 @@ datatype {:implement} map<a, b> = map_(last_key: a, last: b, last_in: bool, vers
     set_(last_key, last_in, version)
   }
 
-  // the values are not: an element of a set must be its prophecy element in some run, also elements that are not
-  // values, which a map does not know (all keys of a map over bool may be defined); arbitrary, constrained where the
-  // prophecy elements agree, with a version of its own, whose size is at most that of the map
+  // the values and the submap relation are not exact: they depend on all keys, which a single prophecy key does not
+  // see; as uninterpreted functions they would be unsound (maps whose contents differ but whose states of the
+  // encoding agree would be indistinguishable), hence nondeterministic, constrained at the prophecy key only; the
+  // values cannot share the prophecy of the map, since an element of a set must be its prophecy element in some run,
+  // also elements that are not values, which a map does not know (all keys of a map over bool may be defined):
+  // arbitrary, constrained where the prophecy elements agree, with a version of its own, whose size is at most that
+  // of the map
   method {:implement this.Values} ValueSet() returns (s: set<b>)
     modifies tick
   {
