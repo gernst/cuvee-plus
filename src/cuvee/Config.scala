@@ -13,7 +13,7 @@ import cuvee.simplify.Simplify
 import cuvee.prove.Prove
 import cuvee.transform.Fallback
 import cuvee.transform.Flat
-import cuvee.transform.Fuse
+import cuvee.simplify.Fuse
 import cuvee.transform.Implement
 import cuvee.transform.Monomorph
 import cuvee.transform.Split
