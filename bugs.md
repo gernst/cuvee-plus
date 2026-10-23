@@ -164,11 +164,6 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   conditional on its right-hand side, into parts that are no valid rules, on
   which a following `-simplify` fails with "variables of right hand side do
   not occur in left hand side or condition".
-- The round trips of `CUVEE_PRINTING` fail on four examples (Oct 13, 2026; three since `bsearch_safe.dfy` was
-  removed on Oct 23): `smtlib.Programs` on `dafny/algorithms/bsearch.dfy` (formerly `dafny/state/bsearch_bisect.dfy`)
-  and `lower_bound.dfy`, which use the predicates of
-  `teq:sorted` and do not resolve without `-include` (since the migration of the modules), and `dafny.Roundtrip` on
-  `dafny/state/accumulators.dfy` ("unknown type" when the output is parsed again in the test, not on the command line).
 - `t.0.1` is scanned as `t` `.` `0.1`.
 - The printer's `any` raises `MatchError` on plain strings and numbers.
 - Dafny printed from C input (`-print dfy`) is not parsed back: the prelude
