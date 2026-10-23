@@ -110,13 +110,24 @@ lists them.
   its Dafny source), and its logic in Lean 4
   (`-print lean`, e.g. the goals of `-vcgen`): sorts, datatypes, functions,
   axioms, lemmas, and goals, but no programs.
+- **Implementations** (`-implement`): built-in sorts and functions, e.g.
+  sets, and declared functions are given implementations that programs are
+  verified against: a datatype for a sort, functions and methods with
+  `{:implement pattern}` (`:implement pattern` in SMT-LIB and SV-LIB), whose
+  pattern names the implemented function applied to their inputs; methods may
+  choose their result nondeterministically and replace the applications in
+  executed expressions by calls; modules of implementations with
+  `-include implement:<name>`, e.g. `listset`
+  ([ideas/implementations.md](ideas/implementations.md)).
 - **Verification conditions** (`-vcgen`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;
   - loops with invariants, including `break`, `continue` and `return`;
   - termination measures (`decreases`);
   - global variables;
-  - nondeterministic choice and iteration.
+  - nondeterministic choice and iteration;
+  - calls by the contract of the callee, inlined if it has a body and no
+    contract.
 - **Trace equation systems** (`-teq`): verification conditions by symbolic
   execution, where each loop is summarized by a trace equation system: one
   trace per strongly connected component of the read relation of the modified

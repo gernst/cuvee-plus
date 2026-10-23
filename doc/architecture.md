@@ -22,10 +22,9 @@ transformation and any output.
 | `easyprint` | Wadler-style pretty printing (`Doc`, `Group`, `Nest`, `line`). |
 | `cuvee.sexpr` | The s-expression scanner and syntax for SMT-LIB. |
 | `cuvee.core` | The common representation: `Type`, `Expr`, `Prog`, `Cmd`, `Fun`, `Attrs` and `State`, plus type checking (`Type.check`), substitution (`Subst`), overloading (`Overload`) and syntactic sugar (`Builtin`, `Sugar`). |
-| `cuvee.smtlib` | SMT-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks). |
+| `cuvee.smtlib` | SMT-LIB and SV-LIB frontend (`Parser`, `Source`), `Printer`, and `Solver` (z3 and cvc5 as sinks); SV-LIB scripts are SMT-LIB scripts whose programs are those of SV-LIB, read and written by the same parser and printer, `Lang.svlib` differs from `Lang.smtlib` by its feature `svlib`, which tells them apart (`Config.program`). |
 | `cuvee.boogie` | Boogie frontend and printer, with datatypes written like Dafny's (`data`). |
 | `cuvee.c` | C frontend and printer, for integer programs with arrays as values. |
-| `cuvee.svlib` | SV-LIB frontend (`Source`, which reads scripts with the SMT-LIB parser, whose programs are those of SV-LIB) and `Printer`, the SMT-LIB printer with an empty line after each command. |
 | `cuvee.yml` | SV-COMP task definitions (`Task`, read with SnakeYAML Engine), whose single input file is read by the frontend of its extension, C or SV-LIB; a missing input file is reported as the task writes it, independent of the directory; the witnesses of SV-COMP for C (`Witness`, written with SnakeYAML Engine). |
 | `cuvee.dafny` | Dafny frontend and printer, including the extensions for hybrid programs and parallel composition. |
 | `cuvee.lean` | Printer of the logic in Lean 4 (`-print lean`), output only. |
@@ -335,12 +334,17 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      which is how `(x == y) == b` stays apart. Chains must not mix `<`/`<=`
      with `>`/`>=`.
    - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
-     included; only `{:implement pattern}` of a function has a value, the
-     pattern of the function it implements (see
+     included; only `{:implement pattern}` of a function or method has a
+     value, the pattern of the function it implements (see
      [ideas/implementations.md](../ideas/implementations.md)), resolved in the
      scope of its inputs, `this` included, and checked against its result type
-     (`Parser.annotations`), e.g. `{:implement x in this}`; the Dafny printer
-     writes it back, the SMT-LIB printer drops it.
+     or single output (`Parser.annotations`), e.g. `{:implement x in this}`.
+     SMT-LIB and SV-LIB (`:implement (f x)` on `declare-fun`, `define-fun`,
+     `declare-proc`, and the body of `define-proc`) and Boogie
+     (`{:implement f(x)}` on functions and procedures) resolve the pattern the
+     same way (`implementation` of their parsers). The Dafny and Boogie
+     printers and the SMT-LIB printer of procedures write it back; the SMT-LIB
+     printer drops it on functions, whose declarations go to solvers.
    - Dafny's `include "path"` parses the file at `path`, relative to the
      including file, by a fresh parser that starts from the state after the
      prelude (`dafny.Source.included`), which is immutable and shared by all

@@ -1,0 +1,43 @@
+(declare-fun twice (Int) Int)
+
+(define-fun double ((x Int)) Int (* 2 x))
+
+(declare-fun some (Int Int) Int)
+
+(declare-proc
+  between
+  ((lo Int) (hi Int))
+  ((x Int))
+  :implement
+  (some lo hi)
+  :requires
+  (<= lo hi)
+  :ensures
+  (and (<= lo x) (<= x hi)))
+
+(declare-fun other (Int) Int)
+
+(define-proc
+  succ
+  ((y Int))
+  ((z Int))
+  ()
+  (!
+    (sequence (assign (z (+ y 1))))
+    :implement
+    (other y)))
+
+(define-proc
+  main
+  ((n Int))
+  ((r Int))
+  ()
+  (sequence
+    (assign (r (double n)))
+    (block
+      (locals (test$1 Int) (test$2 Int))
+      (call between (0 r) (test$1))
+      (call succ (r) (test$2))
+      (assign
+        (r (+ test$1 test$2))))))
+

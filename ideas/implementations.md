@@ -2,8 +2,8 @@
 
 A plan to give the built-in sorts and functions (sets, sequences, maps, and declared functions) concrete
 implementations that programs are verified against, where an implementation may be nondeterministic. Functions are
-implemented, by functions or by methods; methods are not implemented. Implemented in 0.49.0 to 0.49.3 (Oct 22-23,
-2026) and since (see "State" below).
+implemented, by functions or by methods; methods are not implemented. Implemented in 0.49.0 to 0.49.6 (Oct 22-23,
+2026, see "State" below).
 
 ## Modules
 
@@ -126,17 +126,25 @@ Implemented:
   `dafny/parsing/implement.dfy`, `invalid_annotation_value.dfy`, `invalid_implement_type.dfy`, and
   `dafny/transform/implement.dfy`.
 - 0.49.3: `impl` and `implements` renamed to `implement` (attribute, feature, folder, entry, `Implement`).
-- Not committed yet: implementations by methods: `{:implement pattern}` on methods with a single output, checked
-  against its type; their applications lifted into calls in executed expressions; errors in specifications, under
-  binders and `old`; the counter and the oracle removed from `implement.dfy`; the examples
-  `dafny/transform/implement_method.dfy`, `invalid_implement_specification.dfy`, `invalid_implement_binder.dfy`.
+- 0.49.5: implementations by methods: `{:implement pattern}` on methods with a single output, checked against its
+  type; their applications lifted into calls in executed expressions; errors in specifications, under binders and
+  `old`; the counter and the oracle removed from `implement.dfy`; the examples `dafny/transform/implement_method.dfy`,
+  `invalid_implement_specification.dfy`, `invalid_implement_binder.dfy`.
+- 0.49.6: calls in the backends, which makes implementations by methods usable in all of them: with a contract by
+  the contract in `-vcgen` and `-teq` (which rejected such calls before), without one inlined in `-vcgen` and `-teq`
+  and summarized in `-chc`.
+- Not committed yet: the patterns in SMT-LIB and SV-LIB (`:implement (f x)` on `declare-fun`, `define-fun`,
+  `declare-proc`, and the body of `define-proc`) and Boogie (`{:implement f(x)}` on functions and procedures),
+  resolved in the scope of the inputs and checked against the single result (`implementation` of both parsers); the
+  examples `smtlib/transform/implement.smt2`, `smtlib/parsing/invalid_implement_type.smt2`,
+  `boogie/transform/implement.bpl`.
 
 To do:
 
 - Shared abstract functions in `implement.dfy` (e.g. `choose` on sets) and implementations of them by methods in
   `listset`, once needed.
-- Refinement obligations as goals.
-- SMT-LIB attributes resolved as expressions, if modules in SMT-LIB are needed.
+- Refinement obligations as goals: an implementation satisfies the axioms of the abstract function, for a method its
+  postcondition implies them.
 
 Not supported by decision: implementing methods, patterns other than a function applied to a permutation of the
 inputs, determinization of nondeterministic implementations (oracle inputs, counters of evaluations), receivers

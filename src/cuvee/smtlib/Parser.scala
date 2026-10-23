@@ -264,7 +264,7 @@ class Parser(private var init: State):
         val formals_ = Expr.vars("x", args_)
         val res_ = typ(scope, res)
         val fun = Fun(name, params_, formals_, res_)
-        val attrs_ = annotation(attrs.toList)
+        val attrs_ = implementation(name, scope ++ formals_, List(res_), annotation(attrs.toList))
 
         state = state.declare(name, params_, formals_, res_, attrs_)
         DeclareFun(fun, attrs_)
@@ -279,7 +279,7 @@ class Parser(private var init: State):
 
         val expr_ = expr(scope ++ formals_, body)
         val body_ = state.exprs.check(scope, expr_, res_)
-        val attrs_ = annotation(attrs.toList)
+        val attrs_ = implementation(name, scope ++ formals_, List(res_), annotation(attrs.toList))
 
         state = state.declare(name, params_, formals_, res_, attrs_)
         state = state.define(name, formals_.length, body_)
@@ -307,7 +307,7 @@ class Parser(private var init: State):
         val formals_ = Expr.vars("x", args_)
         val res_ = typ(scope, res)
         val fun = Fun(name, params_, formals_, res_)
-        val attrs_ = annotation(attrs.toList)
+        val attrs_ = implementation(name, scope ++ formals_, List(res_), annotation(attrs.toList))
 
         state = state.declare(name, params_, formals_, res_, attrs_)
         DeclareFun(fun, attrs_)
@@ -322,7 +322,7 @@ class Parser(private var init: State):
 
         val expr_ = expr(scope ++ formals_, body)
         val body_ = state.exprs.check(scope, expr_, res_)
-        val attrs_ = annotation(attrs.toList)
+        val attrs_ = implementation(name, scope ++ formals_, List(res_), annotation(attrs.toList))
 
         state = state.declare(name, params_, formals_, res_, attrs_)
         state = state.define(name, formals_.length, body_)
@@ -402,7 +402,7 @@ class Parser(private var init: State):
   def declaration(name: Name, params: List[Param], in: List[Var], out: List[Var], attrs: List[Any]): Cmd =
     val globals = state.globals
     val scope = Scope(params) ++ globals ++ in ++ out
-    val attrs_ = contract(scope, attrs)
+    val attrs_ = implementation(name, Scope(params) ++ in, out.types, contract(scope, attrs))
 
     val nonglobal = attrs_.modifies.filterNot(globals.contains)
     Error.report("modifies clause of procedure lists variables that are not global", name, nonglobal):
@@ -457,7 +457,7 @@ class Parser(private var init: State):
     Error.report("modifies clause of procedure lists variables that are not global", name, nonglobal):
       require(nonglobal.isEmpty)
 
-    val attrs__ = inferred(Attrs(attrs_.attrs.filterNot(_._1 == "check-true")), body_)
+    val attrs__ = implementation(name, Scope(params) ++ in, out.types, inferred(Attrs(attrs_.attrs.filterNot(_._1 == "check-true")), body_))
 
     val fixed = in.toSet ++ (globals.toSet -- attrs__.modifies)
     val checked = state.progs.check(outer, fixed, attrs__.modifies.toSet, body_)
@@ -735,6 +735,24 @@ class Parser(private var init: State):
 
         case ("modifies", Some(List(xs*))) =>
           kw -> Some(list(xs) { variable(scope, _) })
+
+        case _ =>
+          kw -> arg
+
+    Attrs(attrs_)
+
+  // the pattern of :implement, by which a function or a procedure names the function that it implements and the
+  // positions of its arguments, an application to its inputs in `scope`, of the type of its single result, the result
+  // of a function or the output of a procedure, among `results` (see transform.Implement); other attributes unchanged
+  def implementation(name: Name, scope: Scope, results: List[Type], attrs: Attrs): Attrs =
+    val attrs_ =
+      for (kw, arg) <- attrs.attrs
+      yield (kw, arg) match
+        case ("implement", Some(pattern)) =>
+          Error.report("an implementation with :implement pattern has a single result", name.subscripted):
+            require(results.length == 1)
+          Error.report("the pattern of :implement does not have the result type of the implementation", name.subscripted):
+            kw -> Some(state.exprs.check(scope, expr(scope, pattern), results.head))
 
         case _ =>
           kw -> arg

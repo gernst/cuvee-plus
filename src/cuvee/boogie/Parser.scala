@@ -108,7 +108,6 @@ class Parser(var state: State):
 
       case FunDef(attrs, name, params, formals, typ, body) =>
         val scope = Scope.empty
-        val attrs_ = attributes(scope, attrs)
 
         val params_ = params.map(resolve(scope, _))
         val scope_ = scope ++ params_
@@ -116,6 +115,7 @@ class Parser(var state: State):
         val formals_ = flatten(formals).map(resolve(scope_, _))
         val typ_ = resolve(scope_, typ)
         val scope__ = scope_ ++ formals_
+        val attrs_ = implementation(name, scope, scope__, List(typ_), attrs)
 
         val arity = formals_.length
         state = state.declare(name, params_, formals_, typ_, attrs_)
@@ -137,13 +137,13 @@ class Parser(var state: State):
       // the formal parameters shadow global variables of the same name
       case ProcDef(attrs, name, params, formals, rets, specs, body) =>
         val scope = Scope.empty
-        val attrs_ = attributes(scope, attrs)
 
         val params_ = params.map(resolve(scope, _))
         val scope_ = scope ++ params_
 
         val formals_ = flatten(formals).map(resolve(scope_, _))
         val rets_ = flatten(rets).map(resolve(scope_, _))
+        val attrs_ = implementation(name, scope, scope_ ++ formals_, rets_.map(_.typ), attrs)
 
         val globals = state.globals
         val scope__ = scope_ ++ globals ++ formals_ ++ rets_
@@ -181,6 +181,25 @@ class Parser(var state: State):
       yield name -> arg
 
     Attrs(attrs_)
+
+  // the attributes of a function or procedure `name`, resolved in `scope`, except the pattern of {:implement}, by which
+  // it names the function that it implements and the positions of its arguments, an application to its inputs in
+  // `inputs`, of the type of its single result, the result of a function or the output of a procedure, among
+  // `results` (see transform.Implement)
+  def implementation(name: String, scope: Scope, inputs: Scope, results: List[core.Type], attrs: List[Attr]): Attrs =
+    val attrs_ =
+      for attr <- attrs
+      yield attr match
+        case Attr("implement", List(pattern)) =>
+          Error.report("an implementation with {:implement pattern} has a single result", name):
+            require(results.length == 1)
+          Error.report("the pattern of {:implement} does not have the result type of the implementation", name):
+            Attrs(List("implement" -> Some(state.exprs.check(inputs, resolve(inputs, pattern), results.head))))
+
+        case _ =>
+          attributes(scope, List(attr))
+
+    Attrs(attrs_.flatMap(_.attrs))
 
   def term(scope: Scope, expr: Expr) =
     val expr_ = resolve(scope, expr)

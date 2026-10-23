@@ -1,0 +1,26 @@
+function twice(x: int): int;
+
+function {:implement twice(x)} double(x: int): int { 2 * x }
+
+function some(lo: int, hi: int): int;
+
+procedure {:implement some(lo, hi)} between(lo: int, hi: int) returns (x: int);
+  requires lo <= hi;
+  ensures lo <= x && x <= hi;
+
+function other(y: int): int;
+
+procedure {:implement other(y)} succ(y: int) returns (z: int) {
+  z := y + 1;
+}
+
+procedure main(n: int) returns (r: int) {
+  r := double(n);
+  {
+    var test₁: int, test₂: int;
+    call test₁ := between(0, r);
+    call test₂ := succ(r);
+    r := test₁ + test₂;
+  }
+}
+

@@ -69,9 +69,11 @@ object Lang:
   val lean =
     Lang("Lean", cuvee.smtlib.Source, cuvee.lean.Printer, Set("smt2", "dfy", "bpl", "c", "lean"))
 
-  // the language of the logic is SMT-LIB, whose output drops the prelude
+  // SV-LIB scripts are SMT-LIB scripts, read and written by the parser and printer of SMT-LIB, which know the
+  // programs of SV-LIB (see smtlib.Parser.procedure), and start from its prelude; the language of the logic is
+  // SMT-LIB, whose output drops the prelude
   val svlib =
-    Lang("SV-LIB", cuvee.svlib.Source, cuvee.svlib.Printer, Set("smt2", "svlib"))
+    Lang("SV-LIB", cuvee.smtlib.Source, cuvee.smtlib.Printer, Set("smt2", "svlib"))
 
   // its output is the language of the input file of the task (see Config.parse and yml.Source)
   val yml =
@@ -133,9 +135,10 @@ case class Config(
   def including(source: Source, file: String) =
     copy(includes = includes :+ (source, file))
 
-  // the source of the program, that of the input file of a task definition for one
-  def program: Source =
-    if input.source == cuvee.yml.Source then cuvee.yml.Source.lang(file).source else input.source
+  // the language of the program, that of the input file of a task definition for one; SMT-LIB and SV-LIB share
+  // their source and printer, the file extension among the features tells them apart, e.g. svlib
+  def program: Lang =
+    if input.source == cuvee.yml.Source then cuvee.yml.Source.lang(file) else input
 
   // the modules that are injected into the input after its prelude (see Source.apply): the entries of the features
   // that are known or whose modules are included, e.g. teq.dfy of -teq (see TEQ.modules) and implement.dfy (see
@@ -471,7 +474,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.50.1"
+  val release = "0.50.2"
 
   def version() =
     println("Cuvée " + release)
@@ -522,7 +525,7 @@ object Config:
         val output = if input == Lang.yml then cuvee.yml.Source.lang(Some(file)) else input
         val config_ = config.copy(file = Some(file), input = input, output = output)
         // executions of C programs start in main, unless -entry says otherwise, before or after the file
-        val entry = if config_.program == cuvee.c.Source then config.entry.orElse(Some(Name("main", None))) else config.entry
+        val entry = if config_.program.source == cuvee.c.Source then config.entry.orElse(Some(Name("main", None))) else config.entry
         arguments(config_.copy(entry = entry), rest)
 
       case _ =>
