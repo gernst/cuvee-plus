@@ -111,4 +111,4 @@ Low priority until such a lemma is in the database.
 
 indp5, revcpyswp2, sum_array-2-2 (timeouts at 60 s, lost against 0.42.1), the recurrences of `ifcomp`, `pcomp`,
 `sqm-if`, `condm`, the conditional stores of partial_mod_count_*, and the 15 algorithms not verified under `-teq
--prove` (TODO.md) are work on the database and the examples first (ideas/work-queue.md).
+-prove` (TODO.md) are work on the database and the examples first (the work queue of TODO.md).

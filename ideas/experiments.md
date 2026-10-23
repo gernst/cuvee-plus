@@ -135,7 +135,7 @@ as tags (`correct-tags`).
   declarations and axioms).
 - The wrong true of `-teq` on CTranslated was loops-crafted-1/in-de20, expected false since sv-benchmarks
   c2d3abfeb, but the program satisfies its check for every integer `n` (inductive invariants checked with z3, see
-  ideas/work-queue.md): the verdict is wrong, and our result files take it as true (patched, originals as
+  the work queue of TODO.md): the verdict is wrong, and our result files take it as true (patched, originals as
   `results/*.orig`); the official results of SV-COMP 2026 are unaffected (all three time out).
 - loop-add.1 (CoreVerification): the wrong true of both configurations is fixed in 0.46.14 (`-teq` unknown, `-chc`
   correct false, confirmed locally); the result files of 0.46.13 are patched accordingly.

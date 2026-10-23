@@ -5,8 +5,6 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
 [doc/architecture.md](../doc/architecture.md); the deduction engine `-prove` and its design, in
 [doc/prove.md](../doc/prove.md), Oct 14, 2026).
 
-- [work-queue.md](work-queue.md): the open items of the current work on the database and the engine, by expected
-  gain.
 - [prove-next.md](prove-next.md): the planned changes to the engine of `-prove` after the database migration, with
   what was tried.
 - [database-review.md](database-review.md): the review of the lemma database of Oct 23, 2026: usage on SV-COMP,
@@ -25,12 +23,11 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
 - [ltl.md](ltl.md): linear temporal specifications by weakest preconditions (ISoLA 2026): temporal
   `guarantees` of Dafny methods and loops with hypothesis operators, a forward generator in `-vcgen`, the
   lowering of the goals for solvers, and points of the paper to check.
-- [answer-mapping.md](answer-mapping.md): rejected: transforms map the answers back as well as the commands, one
-  response per input command; why goals and lemmas flush and are answered immediately instead.
-- [implementations.md](implementations.md): implementations of the built-in sorts and functions by modules of
-  `-include implement:<name>`: datatypes for sorts, functions and methods with `{:implement <pattern>}` (a
-  permutation of the inputs) for functions, the methods nondeterministic, lifted into calls in executed expressions
-  (`-implement`); what remains to do.
+- [implement.md](implement.md): the open points of the implementations of
+  [doc/implement.md](../doc/implement.md): shared abstract functions, refinement obligations as goals.
+- [nondet.md](nondet.md): determinization of every source of nondeterminism (havoc, uninitialized variables, choice,
+  iteration, calls by contract, ODEs) by an oracle `nondet(ticks)` with a global counter, for witnesses, `-teq`, and
+  nondeterministic implementations as expressions.
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 

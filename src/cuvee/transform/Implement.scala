@@ -8,7 +8,7 @@ import cuvee.core._
 
 // implementations of functions by functions and methods with the attribute :implement, whose value, the pattern, is
 // the implemented function applied to a permutation of the inputs of the implementation, e.g. x in this for a member
-// of a datatype that defines the sort of sets (see ideas/implementations.md);
+// of a datatype that defines the sort of sets (see doc/implement.md);
 // - an implementation by a function replaces the applications of the implemented function everywhere: in programs,
 //   contracts, invariants, function bodies, axioms, and lemmas, since the abstract functions have no meaning on the
 //   datatypes that define their sorts, except in the implementations themselves;

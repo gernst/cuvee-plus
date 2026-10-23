@@ -111,14 +111,9 @@ lists them.
   (`-print lean`, e.g. the goals of `-vcgen`): sorts, datatypes, functions,
   axioms, lemmas, and goals, but no programs.
 - **Implementations** (`-implement`): built-in sorts and functions, e.g.
-  sets, and declared functions are given implementations that programs are
-  verified against: a datatype for a sort, functions and methods with
-  `{:implement pattern}` (`:implement pattern` in SMT-LIB and SV-LIB), whose
-  pattern names the implemented function applied to their inputs; methods may
-  choose their result nondeterministically and replace the applications in
-  executed expressions by calls; modules of implementations with
-  `-include implement:<name>`, e.g. `listset`
-  ([ideas/implementations.md](ideas/implementations.md)).
+  sets, get implementations that programs are verified against, functions
+  and possibly nondeterministic methods with `{:implement pattern}`, from
+  modules such as `-include implement:listset` ([doc/implement.md](doc/implement.md)).
 - **Verification conditions** (`-vcgen`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;
