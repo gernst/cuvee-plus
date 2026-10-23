@@ -15,10 +15,6 @@
   <!-- the witness of SV-COMP for the answer to a C program, without invariants or with the target only (yml.Witness) -->
   <option name="-witness">witness.yml</option>
 
-  <!-- z3 proves the verification conditions of some tasks only as separate goals, e.g. geo1/2/3-ll and lcm2 of
-       nla-digbench (benchmarks/acsl/README.md) -->
-  <option name="-split"/>
-
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP, by the sets of sv-benchmarks/c, which
        benchmarks/acsl copies with the annotated programs -->
   <rundefinition name="ACSL_unreach-call">
@@ -29,7 +25,15 @@
     <tasks name="C.unreach-call.Loops">
       <includesfile>../benchmarks/acsl/Loops.set</includesfile>
       <includesfile>../benchmarks/acsl/VerifyThis-Loops.set</includesfile>
+      <excludesfile>../benchmarks/acsl/Loops-split.set</excludesfile>
       <propertyfile>../benchmarks/acsl/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <!-- the tasks of Loops whose verification conditions z3 proves only as separate goals, e.g. geo1/2/3-ll and lcm2
+         of nla-digbench (benchmarks/acsl/README.md); -split for all tasks costs others, on whose parts z3 fails -->
+    <tasks name="C.unreach-call.Loops-split">
+      <includesfile>../benchmarks/acsl/Loops-split.set</includesfile>
+      <propertyfile>../benchmarks/acsl/properties/unreach-call.prp</propertyfile>
+      <option name="-split"/>
     </tasks>
   </rundefinition>
 </benchmark>
