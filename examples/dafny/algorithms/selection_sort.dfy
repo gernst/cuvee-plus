@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/selection_sort.dfy
+// ./Cuvee.sh -teq -include teq:sorted -include teq:aggregation -entry main -prove examples/dafny/algorithms/selection_sort.dfy
 // selection sort with nested loops: the inner loop finds the position m of the minimum of b[i..n), which is swapped
 // to position i
 //
@@ -14,13 +14,6 @@
 // the constraints are matched with open lists, identified by equations afterwards: a closed instance would be
 // simplified first, which drops the unused dependency ⌊K⌋ of the counter of the iterations that the facts keep, so
 // that it is not found among them
-
-function sorted(a: array<int, int>, lo: int, hi: int): bool
-function perm(a: array<int, int>, b: array<int, int>): bool
-function partitioned(b: array<int, int>, lo: int, mid: int, hi: int): bool
-
-lemma {:rw} perm_refl(a: array<int, int>)
-  ensures perm(a, a) <==> true
 
 // the position of the minimum of b[lo..hi), lo if the range is empty
 function argmin(b: array<int, int>, lo: int, hi: int): int

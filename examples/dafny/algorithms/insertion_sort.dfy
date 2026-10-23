@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/insertion_sort.dfy
+// ./Cuvee.sh -teq -include teq:sorted -include teq:aggregation -entry main -prove examples/dafny/algorithms/insertion_sort.dfy
 // insertion sort with nested loops: the inner loop moves b[i] down by adjacent swaps while it is smaller than its
 // predecessor
 //
@@ -6,12 +6,6 @@
 // sorted(b, 0, n + 1) or perm(b, a[0 := 1]), leaves a goal; the lemmas of insertion_sort2.dfy, except for the pass:
 // -teq states the position j - 1 of the swaps as k - kk over the outer and the inner counter (j == i - kk and
 // i == k + 1), which the fold insert_pass matches with k as a parameter, such that no second pointer is needed
-
-function sorted(a: array<int, int>, lo: int, hi: int): bool
-function perm(a: array<int, int>, b: array<int, int>): bool
-
-lemma {:rw} perm_refl(a: array<int, int>)
-  ensures perm(a, a) <==> true
 
 // one pass of the inner loop in iteration p of the outer loop: the swaps of the positions j, a counter down from i,
 // and j - 1, which -teq states as p - kk over the inner counter kk (with i == p + 1)

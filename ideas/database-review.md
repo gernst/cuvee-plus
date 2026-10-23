@@ -73,10 +73,11 @@ Of the other local lemmas:
 
 - **Copies of the database**, removed: perm.dfy (`perm_refl`, `perm_swap`, `perm_swaps`, with `teq:sorted`),
   is_sorted.dfy (`sorted_def`, `sorted_short`, and the boolean `current_trace_flag_bool`, with `teq:sorted` and
-  `teq:counters`). Left: the sorting algorithms (bubble, cocktail, gnome, insertion, selection, partition,
-  three_way_partition, merge, counting_sort) declare `sorted` and `perm` and copy `perm_refl` (cocktail_sort also
-  `perm_steps`) instead of including `teq:sorted`, whose other rules would then be tried on them too (NOTES.md,
-  finding 22); each needs a run to switch.
+  `teq:counters`); bubble_sort, gnome_sort, insertion_sort, insertion_sort2, selection_sort, partition
+  (`sorted`, `perm`, `partitioned`, `perm_refl`, with `teq:sorted`, Oct 23, 2026: correct as before, 30 to 80 %
+  slower, since the other rules of the module are tried too). Left: cocktail_sort (also a copy of `perm_steps`),
+  three_way_partition, merge, counting_sort, which time out at 60 s with and without the copies, so the switch could
+  not be compared.
 - **Moved into the database**: `current_trace_flag` of any type, `current_trace_histogram`.
 - **Candidates, not moved**: the bounds of `maxs` over `selects` (`select_le_maxs`, `occurs_maxs` of max_element,
   which stays open for its existential postcondition); the fold `argmaxs` with its bounds (argmax.dfy; its trace

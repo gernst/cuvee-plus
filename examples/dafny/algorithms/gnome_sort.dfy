@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/gnome_sort.dfy
+// ./Cuvee.sh -teq -include teq:sorted -entry main -prove examples/dafny/algorithms/gnome_sort.dfy
 // gnome sort: a single loop whose position moves down at a descent and up otherwise, so that the number of
 // iterations is not a counter
 //
@@ -11,12 +11,6 @@
 // condition, and the position is read from the facts by an open x == current(Sv).0, so that no condition contains the
 // trace itself (whose views would be recomputed for each instance) or a read of its component (which is replaced by
 // its view before it is looked up); with the exit n <= i, the prefix covers the range
-
-function sorted(a: array<int, int>, lo: int, hi: int): bool
-function perm(a: array<int, int>, b: array<int, int>): bool
-
-lemma {:rw} perm_refl(a: array<int, int>)
-  ensures perm(a, a) <==> true
 
 // the invariant of gnome sort: b[0..i) is sorted after every step (a step up past an element in order with its
 // predecessor extends the sorted prefix, a swap down keeps the prefix below the new position sorted), and the

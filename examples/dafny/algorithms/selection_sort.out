@@ -1,12 +1,3 @@
-function sorted(a: array<int, int>, lo: int, hi: int): bool
-
-function perm(a: array<int, int>, b: array<int, int>): bool
-
-function partitioned(b: array<int, int>, lo: int, mid: int, hi: int): bool
-
-lemma {:rw} perm_refl(a: array<int, int>)
-  ensures perm(a, a) <==> true
-
 function argmin(b: array<int, int>, lo: int, hi: int): int
 
 lemma {:rw} current_selection(b: array<int, int>, i: int, nn: Nat)

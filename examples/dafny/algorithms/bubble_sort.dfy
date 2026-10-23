@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/bubble_sort.dfy
+// ./Cuvee.sh -teq -include teq:sorted -include teq:aggregation -entry main -prove examples/dafny/algorithms/bubble_sort.dfy
 // bubble sort with nested loops: the outer loop moves the bound i down, the inner loop swaps adjacent elements
 // out of order below it
 //
@@ -11,12 +11,6 @@
 // ranges over the counter and the choice, takes that equation as a closed side condition (looked up among the
 // facts), and decides its quantified step condition by bubbled_pass_nat; perm(b, a) follows from perm_steps_choice
 // and perm_bubble_pass
-
-function sorted(a: array<int, int>, lo: int, hi: int): bool
-function perm(a: array<int, int>, b: array<int, int>): bool
-
-lemma {:rw} perm_refl(a: array<int, int>)
-  ensures perm(a, a) <==> true
 
 // one pass of bubble sort over the positions js: adjacent elements out of order are swapped
 function {:fold} bubble_pass(b: array<int, int>, js: List<int>): Trace<array<int, int>>
