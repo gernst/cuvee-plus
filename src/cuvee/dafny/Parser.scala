@@ -263,15 +263,17 @@ class Parser(var state: State):
 
     Attrs(attrs.map((name, _) => name -> None))
 
-  // the annotations of a function whose inputs are in `scope`, where {:implements pattern} names the function that
-  // it implements and the positions of its arguments by an application to the inputs, of the result type `res`
+  // the annotations of function `fun` whose inputs are in `scope`, where {:implements pattern} names the function
+  // that it implements and the positions of its arguments by an application to the inputs, of the result type `res`
   // (see transform.Impl); other annotations have no values
-  def annotations(scope: Scope, attrs: List[Annotation], res: core.Type): Attrs =
+  def annotations(fun: String, scope: Scope, attrs: List[Annotation], res: core.Type): Attrs =
     val attrs_ =
       for (name, arg) <- attrs
       yield arg match
         case Some(pattern) if name == "implements" =>
-          name -> Some(check(scope, resolve(scope, pattern), res))
+          val pattern_ = resolve(scope, pattern)
+          Error.report("the pattern of {:implements} does not have the result type of the function", fun):
+            name -> Some(check(scope, pattern_, res))
 
         case Some(_) =>
           Error.raise("annotation with a value", name)
@@ -335,7 +337,7 @@ class Parser(var state: State):
 
         val typ_ = resolve(scope_, typ)
         val scope__ = scope_ ++ formals_
-        val attrs_ = annotations(scope__, attrs, typ_) ++ contract(scope__, Nil, req, ens, dec)
+        val attrs_ = annotations(qname, scope__, attrs, typ_) ++ contract(scope__, Nil, req, ens, dec)
 
         val arity = formals_.length
         state = state.declare(qname, params_, formals_, typ_, attrs_)

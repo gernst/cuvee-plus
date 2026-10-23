@@ -166,29 +166,26 @@ method sum(s0: set<int>) returns (r: int)
 
 ## State
 
-Implemented in 0.49.0:
+Implemented:
 
-- `-include <feature>:<name>` with `Config.features` (`teq`, `impl`), `Module`, `Feature`.
-- `Attrs.isImplementation` and `State.declare` for sorts defined by an implementation.
-- `-implement` with `transform/Impl.scala` in its first form: procedures with `:implements <name>` replace
-  functions by name and arity, lifted into calls in executed expressions. This is superseded by the plan above.
-
-Implemented since, not committed yet:
-
-- Dafny annotations with values: `{:implements pattern}` on functions, resolved in the scope of the inputs and
-  checked against the result type (`Parser.annotations`), printed back by the Dafny printer, dropped by the SMT-LIB
-  printer; annotations on `var`.
-- The entry module `resources/cuvee/impl.dfy` with `ticks` and `nondet` (`Impl.modules`), injected whenever an
-  `impl` module is included or the feature `impl` is known (`Config.injected`).
+- 0.49.0: `-include <feature>:<name>` with `Config.features` (`teq`, `impl`), `Module`, `Feature`;
+  `Attrs.isImplementation` and `State.declare` for sorts defined by an implementation.
+- 0.49.1: Dafny annotations with values, `{:implements pattern}` on functions, resolved in the scope of the inputs
+  and checked against the result type (`Parser.annotations`), printed back by the Dafny printer, dropped by the
+  SMT-LIB printer; annotations on `var`; the entry module `resources/cuvee/impl.dfy` with `ticks` and `nondet`
+  (`Impl.modules`), injected whenever an `impl` module is included or the feature `impl` is known
+  (`Config.injected`).
+- Not committed yet: `Impl` for deterministic implementations by functions, which replaces the first form by
+  procedures: the patterns are checked (an application to distinct inputs, all of them or all but one), the
+  applications replaced everywhere except in the implementations; the module `resources/cuvee/impl/listset.dfy`;
+  the examples `dafny/parsing/implements.dfy`, `invalid_annotation_value.dfy`, `invalid_implements_type.dfy`, and
+  `dafny/transform/implement.dfy`.
 
 To do:
 
-- Rewrite `Impl` for function implementations: the patterns (permutations, the optional oracle input), the
-  replacement everywhere for deterministic ones, the counter and the oracle for nondeterministic ones, the
-  preconditions, `:modifies` and the monotonicity of `ticks` by the call graph.
+- Nondeterministic implementations in `Impl`: the counter and the oracle, the preconditions, `:modifies` and the
+  monotonicity of `ticks` by the call graph.
 - SMT-LIB attributes resolved as expressions instead of kept as s-expressions, if modules in SMT-LIB are needed.
-- Tests: example files with `-implement` and the expected output of the transformed client, and a module in
-  `resources/cuvee/impl`.
 
 Not supported by decision: implementing methods, patterns other than a function applied to a permutation of the
 inputs, receivers whose representation changes.
