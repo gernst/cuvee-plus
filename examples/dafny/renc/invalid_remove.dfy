@@ -1,13 +1,13 @@
 // ./Cuvee.sh -include implement:renc -instrument -chc -entry main -monomorph -flat -z3 -timeout 30000 examples/dafny/renc/invalid_remove.dfy
 // the removal m - s of renc: 1 is not in m - {1}
-// (cnt := 0 by hand: the start of the numbering of the observations is arbitrary otherwise)
+// (tick := 0 by hand: the start of the numbering of the observations is arbitrary otherwise)
 method main()
-  modifies cnt
+  modifies tick
 {
   var m: map<int, int>;
   var b: bool;
   var x: int;
-  cnt := 0;
+  tick := 0;
   m := map[];
   m := m[1 := 10];
   m := m[2 := 20];

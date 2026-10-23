@@ -50,6 +50,9 @@ object Fun:
   object set:
     val empty = Fun("set.empty", List(a), Nil, Sort.set(a))
     val singleton = Fun("set.singleton", List(a), formals(a), Sort.set(a))
+    // the update s[x := b], which contains x exactly if b, an insertion if b is true, of which set displays are built
+    // (see dafny.Parser); not part of cvc5
+    val update = Fun("set.update", List(a), formals(Sort.set(a), a, bool), Sort.set(a))
     val union = Fun("set.union", List(a), formals(Sort.set(a), Sort.set(a)), Sort.set(a))
     val inter = Fun("set.inter", List(a), formals(Sort.set(a), Sort.set(a)), Sort.set(a))
     val minus = Fun("set.minus", List(a), formals(Sort.set(a), Sort.set(a)), Sort.set(a))
@@ -60,7 +63,7 @@ object Fun:
     // not part of cvc5: proper subsets s < t
     val proper = Fun("set.proper_subset", List(a), formals(Sort.set(a), Sort.set(a)), bool)
 
-    val all = List(empty, singleton, union, inter, minus, member, subset, card, proper)
+    val all = List(empty, singleton, update, union, inter, minus, member, subset, card, proper)
 
   // finite multisets (bags) as in cvc5, where bag(x, n) holds x with multiplicity n,
   // the union adds multiplicities, the intersection takes the minimum, and the difference subtracts them

@@ -47,6 +47,8 @@ function {:smt2} {:dfy} set.subset<a₀>(x₀: Set<a₀>, x₁: Set<a₀>): bool
 
 function {:smt2} {:dfy} set.card<a₀>(x₀: Set<a₀>): int;
 
+function {:smt2} {:dfy} set.update<a₀>(x₀: Set<a₀>, x₁: a₀, x₂: bool): Set<a₀>;
+
 function {:smt2} {:dfy} set.proper_subset<a₀>(x₀: Set<a₀>, x₁: Set<a₀>): bool;
 
 function {:smt2} {:dfy} bag.empty<a₀>(): Bag<a₀>;

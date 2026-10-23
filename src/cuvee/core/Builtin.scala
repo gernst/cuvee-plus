@@ -199,6 +199,7 @@ object Sets:
         case _                   => false
 
   object singleton extends Sugar.unary(Fun.set.singleton)
+  object update extends Sugar.ternary(Fun.set.update)
   object union extends Sugar.associative(Fun.set.union, Assoc.Left)
   object inter extends Sugar.associative(Fun.set.inter, Assoc.Left)
   object minus extends Sugar.binary(Fun.set.minus)

@@ -204,14 +204,15 @@ case class Component(trace, index); case class History(trace, index)  // current
   - `seq.++` for `+`, and `seq.prefixof` for `<=`, on sequences.
 
   `select` and `store` (Dafny's `s[i]` and `s[i := v]`) are overloaded in
-  the same way for arrays, sequences, and maps, membership `in` for sequences,
+  the same way for arrays, sequences, and maps, `store` also for sets
+  (`s[x := b]`, `set.update`, which contains `x` exactly if `b`), membership `in` for sequences,
   sets, multisets, and maps (dispatched by its second argument). Maps
   (`Fun.map`, sugar `FinMaps`) are not expected to be supported by the
   solvers, and the
   generic `-` takes a second argument of another type for `m - s`.
   Each implementation is a single function of `Fun`, where those that are
   not part of cvc5 are added, e.g. `seq.member` for `x in s`, `seq.store`
-  for `s[i := v]`, `map.store` for `m[k := v]`, and the proper orders
+  for `s[i := v]`, `map.store` for `m[k := v]`, `set.update` for `s[x := b]`, and the proper orders
   `seq.proper_prefixof`, `set.proper_subset`, `bag.proper_subbag`; the
   solvers do not accept these yet (see TODO.md). `Type.check` records the
   applications of overloaded operators as pending constraints (a `Ref`

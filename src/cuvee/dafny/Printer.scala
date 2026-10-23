@@ -603,6 +603,7 @@ object Printer extends cuvee.pipe.Printer:
       // the update m[k := v] of a map is printed as an access, see doc
       case FinMaps.update(_, FinMaps.singleton(_, _)) => None
       case FinMaps.store(_, _, _)                     => None
+      case Sets.update(_, _, _)                       => None
       case FinMaps.member(key, map)                   => operator("in", List(key, map))
       case Not(FinMaps.member(key, map))              => operator("!in", List(key, map))
       case FinMaps.update(left, right)                => operator("+", List(left, right))
@@ -684,6 +685,7 @@ object Printer extends cuvee.pipe.Printer:
     expr match
       case Sets.empty()          => Some(Nil)
       case Sets.singleton(elem)  => Some(List(elem))
+      case Sets.update(set, elem, True) => members(set).map(_ :+ elem)
       case Sets.union(left, right) =>
         for left_ <- members(left); right_ <- members(right)
         yield left_ ++ right_
@@ -704,6 +706,7 @@ object Printer extends cuvee.pipe.Printer:
     expr match
       case FinMaps.empty()                => Some(Nil)
       case FinMaps.singleton(key, value)  => Some(List((key, value)))
+      case FinMaps.store(map, key, value) => pairs(map).map(_ :+ (key, value))
       case FinMaps.update(left, right) =>
         for left_ <- pairs(left); right_ <- pairs(right)
         yield left_ ++ right_
@@ -910,6 +913,9 @@ object Printer extends cuvee.pipe.Printer:
 
       case FinMaps.store(map, key, value) =>
         Group(doc(map, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(key) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
+
+      case Sets.update(set, elem, member) =>
+        Group(doc(set, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(elem) ~~ text(":=") ~ line ~ doc(member)) ~ text("]"))
 
       case FinMaps.keys(map) =>
         doc(map, operand) ~ text(".Keys")

@@ -1,14 +1,14 @@
 // ./Cuvee.sh -include implement:renc -instrument -chc -entry main -monomorph -flat -z3 -timeout 30000 examples/dafny/renc/invalid_counter.dfy
 // a counter in the map, which ends at n, not n + 1
-// (cnt := 0 by hand: the start of the numbering of the observations is arbitrary otherwise)
+// (tick := 0 by hand: the start of the numbering of the observations is arbitrary otherwise)
 method main(n: int)
-  modifies cnt
+  modifies tick
   requires 0 <= n
 {
   var m: map<int, int>;
   var i: int;
   var x: int;
-  cnt := 0;
+  tick := 0;
   m := map[];
   m := m[0 := 0];
   i := 0;

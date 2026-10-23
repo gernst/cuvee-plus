@@ -614,15 +614,16 @@ class Parser(var state: State):
         val arg_ = resolve(scope, arg)
         state.exprs.app(core.Overload.card, List(arg_))
 
-      // {a, b, c} is the union of the singletons, multiset{a, b, c} that of the elements with multiplicity 1
+      // {a, b, c} inserts b and c into the singleton {a}, s[b := true], pointwise rather than unions of singletons,
+      // e.g. for the encoding of renc; multiset{a, b, c} is the union of the elements with multiplicity 1
       case SetLit(Nil) =>
         state.exprs.app(core.Fun.set.empty, Nil)
 
-      case SetLit(args) =>
-        val singletons_ =
-          for arg <- args
-          yield state.exprs.app(core.Fun.set.singleton, List(resolve(scope, arg)))
-        singletons_.reduceLeft((left, right) => state.exprs.app(core.Fun.set.union, List(left, right)))
+      case SetLit(first :: rest) =>
+        val singleton_ : core.Expr = state.exprs.app(core.Fun.set.singleton, List(resolve(scope, first)))
+        rest.foldLeft(singleton_):
+          case (set_, elem) =>
+            state.exprs.app(core.Fun.set.update, List(set_, resolve(scope, elem), state.exprs.app(core.Fun.true_, Nil)))
 
       case BagLit(Nil) =>
         state.exprs.app(core.Fun.bag.empty, Nil)
@@ -633,15 +634,17 @@ class Parser(var state: State):
           yield state.exprs.app(core.Fun.bag.make, List(resolve(scope, arg), state.exprs.num(1)))
         elems_.reduceLeft((left, right) => state.exprs.app(core.Fun.bag.union, List(left, right)))
 
-      // map[k := v, ...] overwrites the singleton maps from left to right, such that later keys win, as in Dafny
+      // map[k := v, ...] stores the further pairs into the singleton of the first from left to right, such that later
+      // keys win, as in Dafny; stores rather than merges of singletons, which are pointwise, e.g. for the encoding of
+      // renc
       case MapLit(Nil) =>
         state.exprs.app(core.Fun.map.empty, Nil)
 
-      case MapLit(args) =>
-        val singletons_ =
-          for (key, value) <- args
-          yield state.exprs.app(core.Fun.map.singleton, List(resolve(scope, key), resolve(scope, value)))
-        singletons_.reduceLeft((left, right) => state.exprs.app(core.Fun.map.update, List(left, right)))
+      case MapLit((key, value) :: rest) =>
+        val singleton_ : core.Expr = state.exprs.app(core.Fun.map.singleton, List(resolve(scope, key), resolve(scope, value)))
+        rest.foldLeft(singleton_):
+          case (map_, (key, value)) =>
+            state.exprs.app(core.Fun.map.store, List(map_, resolve(scope, key), resolve(scope, value)))
 
       // chained comparisons x < y <= z are the conjunction x < y && y <= z, which must not mix directions, as in Dafny;
       // parenthesized comparisons are tuples, which do not chain, e.g. (x == y) == b

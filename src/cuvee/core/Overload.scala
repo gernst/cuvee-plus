@@ -6,7 +6,7 @@ import cuvee.Error
 // overloaded operators, which are implemented by different functions depending on the type of the first argument:
 // arithmetic and comparisons on Int and Real, e.g. + by Fun.int.plus on Int and by Fun.real.plus on Real,
 // + and <= on sequences, which are concatenation and prefix,
-// and select and store, which index and update arrays, sequences, and maps;
+// and select and store, which index and update arrays, sequences, and maps, and update sets (s[x := b]);
 // the frontends declare them generically in their preludes, the type checker determines the implementation
 // once the type of the first argument is known and checks the application against its signature (see Type.check),
 // and afterwards, each application is replaced by its implementation (see apply),
@@ -89,8 +89,9 @@ object Overload:
     val proper = overload("<", Fun.set.proper)
     val member = overload("in", Fun.set.member)
     val card = overload("|_|", Fun.set.card)
+    val store = overload("store", Fun.set.update)
 
-    val all = List(inter, union, minus, subset, proper, member, card)
+    val all = List(inter, union, minus, subset, proper, member, card, store)
 
   object bag:
     val inter = overload("*", Fun.bag.inter)

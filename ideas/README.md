@@ -25,6 +25,9 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
   lowering of the goals for solvers, and points of the paper to check.
 - [implement.md](implement.md): the open points of the implementations of
   [doc/implement.md](../doc/implement.md): shared abstract functions, refinement obligations as goals.
+- [renc-verification.md](renc-verification.md): verifying the encoding of renc with `-vcgen` and cvc5: contracts
+  over the abstract types, coupling invariants, the intended meaning of the predicates along the run with true
+  answers, the global conditions checked separately, and the gaps of the current setup.
 - [nondet.md](nondet.md): determinization of every source of nondeterminism (havoc, uninitialized variables, choice,
   iteration, calls by contract, ODEs) by an oracle `nondet(ticks)` with a global counter, for witnesses, `-teq`, and
   nondeterministic implementations as expressions.
