@@ -65,7 +65,9 @@ would otherwise give polymorphic Horn clauses.
 
 - **Implementations meet at representations:** since bodies are not rewritten, an implemented function applied in a
   body stays an uninterpreted function on representations, which is unsound; bodies read the fields of other
-  implemented datatypes instead (e.g. `m - s` in `renc` reads `s.last_key`).
+  implemented datatypes instead (e.g. `m - s` in `renc` reads `s.last_key`). `-implement` checks this: implemented
+  functions in the bodies and contracts of implementations (except their patterns and contexts) are an error
+  ([invalid_implement_body.dfy](../examples/dafny/transform/invalid_implement_body.dfy)).
 - **Calls inside bodies stay calls,** also under `-instrument`, which inlines only the applications of clients.
 - **Members must not shadow Dafny's:** a member method named `Values` would be called by `m.Values` of a client;
   hence `KeySet`, `ValueSet`.

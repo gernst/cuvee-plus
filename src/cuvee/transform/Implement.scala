@@ -45,6 +45,7 @@ object Implement extends Transform:
           None
 
         case decl: Decl if decl.attrs.isImplementation =>
+          representations(funs.keySet ++ methods.keySet, decl)
           Some(decl)
 
         case cmd if funs.isEmpty && methods.isEmpty =>
@@ -122,6 +123,20 @@ object Implement extends Transform:
 
       case _ =>
         Error.raise("a pattern must be an application", name.subscripted)
+
+  // the bodies and contracts of implementations are not rewritten, they work on representations, on which an implemented
+  // function would stay uninterpreted, which is unsound (e.g. x in s for an implemented set s); the patterns and the
+  // context name implemented functions on purpose
+  def representations(implemented: Set[Fun], decl: Decl): Unit =
+    val contracts = Attrs(decl.attrs.attrs.filterNot((kw, _) => kw == "implement" || kw == "context"))
+    val bodies = decl match
+      case DefineFun(_, body, _)  => body.funs
+      case DefineProc(_, body, _) => body.funs
+      case _                      => Set()
+
+    val names = (bodies ++ contracts.funs).filter(implemented.contains).map(_.name.subscripted).toList.distinct
+    Error.report("implemented functions applied in an implementation", names*):
+      require(names.isEmpty)
 
   // the program with the applications of functions implemented by functions replaced in all its expressions,
   // including those of the attributes, e.g. invariants

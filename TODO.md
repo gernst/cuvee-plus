@@ -47,9 +47,8 @@ with Cuvée (the user's instruction, Oct 14).
   `VCGen`, `TEQ`, `Horn`, so that the parser keeps what is written.
 - Lambdas of function type printed in SMT-LIB (arrays) are not read back.
 - `-monomorph` leaves polymorphic assertions uninstantiated, which solvers reject.
-- Implementations ([ideas/implement.md](ideas/implement.md)): a check that the bodies of implementations apply no
-  function implemented by a method (they are not rewritten, such an application stays an uninterpreted function on
-  representations); the start of the counter of `renc` (`tick := 0` by hand in examples/dafny/renc).
+- Implementations ([ideas/implement.md](ideas/implement.md)): the start of the counter of `renc` (`tick := 0` by
+  hand in examples/dafny/renc).
 - The implementations of overloaded operators that cvc5 lacks (`seq.store`, `seq.member`, `seq.proper_prefixof`,
   `set.proper_subset`, `set.update`, `bag.select`, `bag.proper_subbag`, `map.store`) are declared but not defined; define them
   in terms of cvc5's functions (then `examples/dafny/vcgen/seq.dfy` and the cvc5 tests of sets).
