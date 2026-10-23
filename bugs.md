@@ -345,6 +345,20 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
 
 ## Fixed
 
+- **A cycle in `-prove` with `teq:unsigned` since 0.50** (Oct 23, 2026): `loop-acceleration/multivar_1-2` and
+  `loops-crafted-1/nested3-2` of SV-COMP Loops (both expected false) timed out, while 0.49.4 refuted them in 25 s and
+  44 s. Two causes, bisected locally: (1) 1da27f83 (the range `0 <= t mod k <= |k| - 1` in the simplex) made the
+  instances of the counterexample search expensive (multivar_1-2: 10 s before, 113 s after): an instance at literal
+  values, simplified by `Simplify.simplify` with all rules, assumed a premise like `natural(4294967296) == zero`
+  (the case `n == zero` of a split, `n` instantiated), which the classes took as a fact without a clash, since
+  `natural(c)` is no literal or constructor; in that undetected contradiction the rules kept rewriting the same eleven
+  constants (`natural(c) ~> zero` by the classes, about 720 rounds in 60 s, under `-debug rewrite,simplify`).
+  (2) `butlast_counter_zero` of teq.dfy (Oct 23, `⌊counter(i, c, zero)⌋ == nil`) turned the counter of an inner loop
+  without iterations into `nil`, on which no rule acts, where the lemmas on counters had closed it (nested3-2).
+  Fixed in 0.50.6: the counterexample search evaluates its instances (`Eval`, new) instead of simplifying them,
+  `Simplify.eq_` decides equations of natural constants (`zero`, `natural(c)` of a literal, by `max(c, 0)`), and
+  `butlast_counter_zero` is dropped; multivar_1-2 is refuted in 9 s, nested3-2 in 33 s (locally).
+
 - **`verify-call` of SV-LIB assumed the precondition of the called procedure instead of checking it** (Oct 14, 2026,
   the run of CoreVerification): `loop-add.1` calls `add (x0 y0)` without `(assert (<= 0 y0))`, `add` has
   `:requires (<= 0 y0)`, the task is expected false, and both `-teq` and `-chc` answered true. Fixed in 0.46.14: a

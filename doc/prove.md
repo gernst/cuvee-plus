@@ -176,7 +176,11 @@ in the conjuncts of a premise.
   those of arithmetic and logic, over at most four integer, natural or boolean variables, is refuted if its body
   evaluates to false at an assignment of small values and the literals of the goal plus or minus 1; it becomes
   `false`, which is answered `incorrect` unless the goal is `:abstract`. The unsafe variants of array-fpi
-  leave such goals, e.g. `forall N :: !(0 < N && N <= 536870911)` of brs1f.
+  leave such goals, e.g. `forall N :: !(0 < N && N <= 536870911)` of brs1f. The instances are evaluated (`Eval`,
+  closed terms of the computed functions over `BigInt` and booleans, naturals by `max(c, 0)`, Euclidean `div` and
+  `mod`), not simplified: simplified with the rules, an instance could assume a false premise such as
+  `natural(4294967296) == zero` that the classes do not recognize as contradictory, and keep rewriting in that
+  context (bugs.md, Fixed, Oct 23, 2026); `Simplify.eq_` decides such equations of natural constants as well.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.

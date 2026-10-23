@@ -209,6 +209,10 @@ theorem sum_counter_le (s : Int) (t : Nat) (f : Int → Int) (b : Int) (h : ∀ 
 theorem natural_integer (n : Nat) : natural (integer n) = n :=
   by simp [natural_eq, integer_cast]
 
+theorem integer_natural_facts : Stmt.integer_natural_facts := by
+  intro n
+  exact ⟨by rw [integer_cast]; omega, natural_integer n⟩
+
 theorem integer_natural (x : Int) : 0 ≤ x → integer (natural x) = x :=
   by intro h; simp [natural_eq, integer_cast]; omega
 
@@ -1571,10 +1575,7 @@ theorem indexof_counter_step : Stmt.indexof_counter_step := by
       Int.mul_ediv_cancel_left _ (by omega : d ≠ 0)]
   simp [Int.max_eq_left hc0]
 
--- a counter of no steps has no values, and no keys select no values
-theorem butlast_counter_zero : Stmt.butlast_counter_zero := by
-  intro i c; rfl
-
+-- no keys select no values
 theorem selects_nil : Stmt.selects_nil := by
   intro α β _ _ a; rfl
 
