@@ -1,7 +1,3 @@
-lemma range()
-  ensures forall x: int :: 0 <= x % 4294967296
-  ensures forall x: int :: x % 4294967296 < 4294967296
-
 lemma outside()
   ensures false
 

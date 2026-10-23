@@ -160,10 +160,6 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   files are read.
 - Readers of input files and the stream of `-o` are never closed.
 - The stderr of a solver is never read, which can block it.
-- `-split` also splits lemmas marked `{:rw}`, e.g. an equivalence with a
-  conditional on its right-hand side, into parts that are no valid rules, on
-  which a following `-prove` fails with "variables of right hand side do
-  not occur in left hand side or condition".
 - `t.0.1` is scanned as `t` `.` `0.1`.
 - The printer's `any` raises `MatchError` on plain strings and numbers.
 - Dafny printed from C input (`-print dfy`) is not parsed back: the prelude
