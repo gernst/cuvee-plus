@@ -178,7 +178,8 @@ for every sink.
   - The body starts from `p_pre`; branches extend the facts of the first
     clause by the test, and `break`, `continue`, `return`, and the end of a
     block lead directly to the predicate of their target, whose variables are
-    those in scope there.
+    those in scope there; `assume false` ends the path (no clauses after it),
+    e.g. the side branches of `renc` that only derive facts.
   - Annotations (`invariant`, `decreases`), preconditions of procedures
     without body, and assertions are goals in the head of clauses,
     `facts ⇒ φ`.
@@ -334,6 +335,11 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      their instances. Inside the type, members are called without `this`,
      outside as `x.f(args)`, static ones as `T.f(args)`
      ([static.dfy](../examples/dafny/parsing/static.dfy)).
+   - Dafny's displays are pointwise: `{a, b}` updates the singleton `{a}`
+     (`s[b := true]`, `set.update`), `map[k := v, l := w]` stores into the
+     singleton `map[k := v]`; `s[x := b]` updates sets (an extension of the
+     dialect). Expressions as written are not changed, e.g. `s + {x}` stays a
+     union.
    - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
      included; only `{:implement pattern}` and `{:context x}` have a value,
      resolved in the scope of the inputs (`Parser.annotations`; in SMT-LIB

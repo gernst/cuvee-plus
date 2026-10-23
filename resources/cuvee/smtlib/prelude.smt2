@@ -50,6 +50,8 @@
 (declare-fun set.member (par (a$0) (a$0 (Set a$0)) Bool :smt2 :dfy))
 (declare-fun set.subset (par (a$0) ((Set a$0) (Set a$0)) Bool :smt2 :dfy))
 (declare-fun set.card (par (a$0) ((Set a$0)) Int :smt2 :dfy))
+; not part of cvc5, the implementation of s[x := b], which contains x exactly if b
+(declare-fun set.update (par (a$0) ((Set a$0) a$0 Bool) (Set a$0) :smt2 :dfy))
 ; not part of cvc5, the implementation of s < t
 (declare-fun set.proper_subset (par (a$0) ((Set a$0) (Set a$0)) Bool :smt2 :dfy))
 

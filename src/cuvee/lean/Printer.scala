@@ -562,6 +562,9 @@ object Printer extends cuvee.pipe.Printer:
       case Sets.singleton(elem) =>
         text("{") ~ doc(elem) ~ text("}")
 
+      case Sets.update(set, elem, True) =>
+        app(text("insert"), List(elem, set))
+
       case App(fun, _, _, _) if Fun.set.all.contains(fun) && infix(expr).isEmpty =>
         unsupported(expr)
 

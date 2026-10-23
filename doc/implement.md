@@ -65,7 +65,7 @@ generic methods would otherwise give polymorphic Horn clauses.
 Examples: [dafny/transform/implement.dfy](../examples/dafny/transform/implement.dfy) (`listset`),
 [implement_method.dfy](../examples/dafny/transform/implement_method.dfy),
 [instrument.dfy](../examples/dafny/transform/instrument.dfy),
-[dafny/renc](../examples/dafny/renc) (`renc` with `-instrument -chc -monomorph -flat`, `cnt := 0` by hand: reads,
+[dafny/renc](../examples/dafny/renc) (`renc` with `-instrument -chc -monomorph -flat`, `tick := 0` by hand: reads,
 tests, displays, merges, removals, keys, sets, loops, the context of `inputs.dfy`, the weak operations on whole maps,
 the soundness conditions of `invalid_absent.dfy` and `invalid_merge.dfy`),
 [smtlib/transform/implement.smt2](../examples/smtlib/transform/implement.smt2),
