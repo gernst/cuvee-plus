@@ -592,9 +592,7 @@ Measured on binary search and on the SV-COMP examples
   - an equation `x == y` of a bound and a free variable is not eliminated by the one-point rule when the bound one
     is the canonical variable of the class (the smallest by name): `forall x :: x == y ==> p(x)` stays,
     `exists x :: x == y && p(x)` too (binders.smt2, `OnePoint.used`);
-  - a bound variable defined by an arithmetic equation is not eliminated, e.g. `x` of `y == x + 1` (normalize.smt2);
-  - the range `0 <= e % k < k` of a remainder by a literal is not known to the simplex (`range` of
-    examples/dafny/prove/remainders.dfy).
+  - a bound variable defined by an arithmetic equation is not eliminated, e.g. `x` of `y == x + 1` (normalize.smt2).
 
 ## Traces with several accumulators (branch `accumulators`)
 

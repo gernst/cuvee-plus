@@ -80,7 +80,9 @@ in the conjuncts of a premise.
   coefficients are rounded (`Poly.floor`), so `2 * x < 7` bounds `x` by 3; products of atoms are variables of their
   own. An atom `t div k` for a positive literal `k` brings its bounds `k * (t div k) <= t <= k * (t div k) + k - 1`,
   added with the first constraint that mentions it (also when an atom is denied), so the midpoint of a binary search
-  lies in its interval, `l <= (h + l) / 2 < h` for `l < h`, without lemmas. Disequations are refuted when the
+  lies in its interval, `l <= (h + l) / 2 < h` for `l < h`, without lemmas; likewise an atom `t % k` for a
+  literal `k != 0` brings its range `0 <= t % k <= |k| - 1` (`range` of
+  [remainders.dfy](../examples/dafny/prove/remainders.dfy)). Disequations are refuted when the
   constraints determine the difference. The solutions of linear equations for
   a variable (`x` by `40 - n`) are recorded as `solved` and inlined into polynomials, as the chains did.
 - **Closed side conditions are looked up** before they are decided (`Rewrite.known`): a closed instance that is
@@ -265,8 +267,8 @@ the former simplifier (`-simplify`, package `simplify`, removed Oct 23, 2026).
     `(x + 1) % 2^32`, `(x % 2^32) % 2` is `x % 2`. A remainder whose argument
     `p`, or its representative with the coefficients centered around 0
     (`representatives`, e.g. `x - 1` for `x + 4294967295`), is known to be in
-    `0, ..., k - 1` is that polynomial. The range `0 <= e % k <= |k| - 1` of a
-    remainder is not known to the simplex yet (TODO.md). The update of a
+    `0, ..., k - 1` is that polynomial. The simplex bounds every
+    remainder by `0 <= e % k <= |k| - 1` (see above). The update of a
     trace whose results are remainders modulo `k` or the accumulator, and
     whose initial value is in the range, assumes the range of the accumulator
     (`wrapped`), which holds for all its values by induction, such that the

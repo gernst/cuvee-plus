@@ -30,8 +30,11 @@ or solvers consume.
 
 - New algorithms need not close every goal: report which remain and why.
 - Commit only when the user explicitly says so, never on your own; when an
-  item is finished (compiles, all tests pass), report and wait. Messages are
-  one line `area: what changed; ...; version X.Y.Z`.
+  item is finished (compiles, all tests pass), report and wait. Messages
+  follow the usual convention: a short summary line `area: what changed`
+  (at most about 72 characters, no period), a blank line, then the details
+  in a body wrapped at 72 characters (one paragraph or `-` item per
+  change), ending with `version X.Y.Z` when the version changes.
 - Bump `Config.version` ([src/cuvee/Config.scala](src/cuvee/Config.scala))
   in every commit that changes Scala code: second digit for major features,
   third for minor ones. Commits without Scala changes (examples, docs,
