@@ -1,0 +1,29 @@
+datatype pair<a, b>
+  = pair(fst: a, snd: b)
+
+function pair_second<b>(x: b, y: b): b {
+  y
+}
+
+function pair_valid<b>(y: b): bool
+
+method pair_make<a, b>(x: a, y: b) returns (p: pair<a, b>) {
+  p := pair(x, y);
+}
+
+function pair_swapped<a, b>(this: pair<a, b>): pair<b, a> {
+  pair(pair_snd(this), pair_fst(this))
+}
+
+method pair_copy<a, b>(this: pair<a, b>) returns (p: pair<a, b>)
+  requires pair_valid(pair_snd(this))
+{
+  p := pair_make(pair_fst(this), pair_second(pair_snd(this), pair_snd(this)));
+}
+
+method m(x: int, y: bool) returns (p: pair<int, bool>)
+  requires pair_valid(y)
+{
+  p := pair_make(x, pair_second(y, y));
+}
+

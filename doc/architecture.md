@@ -327,10 +327,17 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      another (unparenthesized) comparison (`Parser.chain`). Parenthesized expressions are `Tuple(List(e))` in the syntax,
      which is how `(x == y) == b` stays apart. Chains must not mix `<`/`<=`
      with `>`/`>=`.
+   - Dafny's members of types (`datatype` and `type` with a body) are
+     top-level declarations `T_f` with `this: T<...>` as their first input;
+     `static` members have no `this` and only the type parameters of `T`
+     that their signature mentions, such that their arguments determine
+     their instances. Inside the type, members are called without `this`,
+     outside as `x.f(args)`, static ones as `T.f(args)`
+     ([static.dfy](../examples/dafny/parsing/static.dfy)).
    - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
-     included; only `{:implement pattern}` has a value, resolved in the scope
-     of the inputs (`Parser.annotations`; in SMT-LIB and Boogie
-     `implementation`, see [implement.md](implement.md)).
+     included; only `{:implement pattern}` and `{:context x}` have a value,
+     resolved in the scope of the inputs (`Parser.annotations`; in SMT-LIB
+     and Boogie `implementation`, see [implement.md](implement.md)).
    - Dafny's `include "path"` parses the file at `path`, relative to the
      including file, by a fresh parser that starts from the state after the
      prelude (`dafny.Source.included`), which is immutable and shared by all

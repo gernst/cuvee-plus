@@ -104,7 +104,20 @@ class Parser(var state: State):
   // i.e., inside the members of a type
   def isMember(scope: Scope, fun: String, arity: Int) =
     scope.vars.get("this").exists: self =>
-      state.funs.contains((member(self, fun), 1 + arity)) || state.procs.contains(member(self, fun))
+      declared(member(self, fun), 1 + arity)
+
+  // the qualified name of the static member `fun` with `arity` arguments of the type of `this` in scope, if any
+  def static(scope: Scope, fun: String, arity: Int): Option[String] =
+    scope.vars.get("this").map(member(_, fun)).filter(declared(_, arity))
+
+  // whether `qname` is a function or method with `arity` inputs
+  def declared(qname: String, arity: Int) =
+    state.funs.contains((qname, arity)) || state.procs.get(qname).exists(_.in.length == arity)
+
+  // the type parameters of a type among `params` that the types of a signature mention, all of them for members with
+  // `this`
+  def used(params: List[core.Param], types: List[core.Type]): List[core.Param] =
+    params.filter(param => types.exists(_.params.contains(param)))
 
   // type checking resolves the overloaded operators, see core.Overload
   def check(scope: Scope, expr: core.Expr, typ: core.Type): core.Expr =
@@ -276,6 +289,10 @@ class Parser(var state: State):
           Error.report("the pattern of {:implement} does not have the result type of the implementation", fun):
             name -> Some(check(scope, pattern_, res))
 
+        // the input of an implementing method that receives the context of the client (see transform.Implement)
+        case Some(input) if name == "context" =>
+          name -> Some(resolve(scope, input))
+
         case Some(_) =>
           Error.raise("annotation with a value", name)
 
@@ -327,16 +344,22 @@ class Parser(var state: State):
 
   def resolve(scope: Scope, prefix: String, outer_ : List[core.Param], self: List[core.Var], cmd: Cmd): List[core.Cmd] =
     cmd match
+      // static members have no `this`, hence only those type parameters of the type that their signature mentions
+      // (see used), e.g. the parameter b of a datatype map<a, b> for static predicate R(c: int, v: b), such that
+      // their instances are determined by the arguments and the result
+      case Static(cmd) =>
+        resolve(scope, prefix, outer_, Nil, cmd)
+
       case FunDef(attrs, fun, inner, formals, typ, req, ens, dec, body) =>
         val qname = prefix + fun
 
         val inner_ = inner.map(resolve(scope, _))
-        val params_ = outer_ ++ inner_
         val scope_ = scope ++ inner_
 
         val formals_ = self ++ formals.map(resolve(scope_, _))
 
         val typ_ = resolve(scope_, typ)
+        val params_ = used(outer_, typ_ :: formals_.types) ++ inner_
         val scope__ = scope_ ++ formals_
         val attrs_ = annotations(qname, scope__, attrs, typ_) ++ contract(scope__, Nil, req, ens, dec)
 
@@ -360,11 +383,11 @@ class Parser(var state: State):
         val qname = prefix + meth
 
         val inner_ = inner.map(resolve(scope, _))
-        val params_ = outer_ ++ inner_
         val scope_ = scope ++ inner_
 
         val formals_ = self ++ formals.map(resolve(scope_, _))
         val rets_ = rets.toList.flatten.map(resolve(scope_, _))
+        val params_ = used(outer_, formals_.types ++ rets_.types) ++ inner_
 
         // methods may read all global variables and modify those in their modifies clause,
         // the formal parameters shadow global variables of the same name
@@ -715,7 +738,15 @@ class Parser(var state: State):
         then apply(scope, state.exprs.app(fun, Nil), args)
         else if isMember(scope, fun, args.length)
         then resolve(scope, Inner(App("this", Nil), List(Member(fun, args))))
-        else Error.raise("unresolved identifier", fun)
+        else
+          static(scope, fun, args.length) match
+            case Some(qname) => state.exprs.app(qname, args.map(resolve(scope, _)))
+            case None        => Error.raise("unresolved identifier", fun)
+
+      // static functions of a type, qualified by its name, T.f(args)
+      case Inner(App(name, Nil), Member(fun, args) :: rest) if !scope.vars.contains(name) && state.funs.contains((name + "_" + fun, args.length)) =>
+        val base_ = state.exprs.app(name + "_" + fun, args.map(resolve(scope, _)))
+        resolve(scope, base_, rest)
 
       case Inner(base, access) =>
         val base_ = resolve(scope, base)
@@ -842,9 +873,20 @@ class Parser(var state: State):
         val args_ = args.map(resolve(scope, _))
         state.progs.call(name, args_, lhs_)
 
-      // calls to the methods of the enclosing type, with `this` implicit
+      // calls to the methods of the enclosing type, with `this` implicit, and to its static methods
       case Assign(lhs, List(Inner(App(name, args), Nil))) if isMember(scope, name, args.length) =>
         resolve(scope, Assign(lhs, List(Inner(App("this", Nil), List(Member(name, args))))))
+
+      case Assign(lhs, List(Inner(App(name, args), Nil))) if static(scope, name, args.length).exists(state.procs.contains(_)) =>
+        val lhs_ = results(scope, lhs)
+        val args_ = args.map(resolve(scope, _))
+        state.progs.call(static(scope, name, args.length).get, args_, lhs_)
+
+      // static methods of a type, qualified by its name, x := T.m(args)
+      case Assign(lhs, List(Inner(App(name, Nil), List(Member(meth, args))))) if !scope.vars.contains(name) && state.procs.contains(name + "_" + meth) =>
+        val lhs_ = results(scope, lhs)
+        val args_ = args.map(resolve(scope, _))
+        state.progs.call(name + "_" + meth, args_, lhs_)
 
       // all method calls must be top-level on variables, other members are functions (see the access of members)
       case Assign(lhs, List(rhs @ Inner(App(base, Nil), List(Member(fun, args))))) =>

@@ -29,6 +29,13 @@ by methods (procedures); methods are not implemented. The code is
   drops it on functions, whose declarations go to solvers.
 - A function has at most one implementation. Members are lowered with `this` first; functions without a receiver
   (`{}`, `{x}`) are implemented at the top level.
+- **Context** (Dafny only): `{:context ctx}` on an implementing method names an input that the pattern leaves out,
+  which receives the context of the client at each application, the variables in scope there as a tuple (`true` for
+  none, the variable for one, nested beyond the tuples of the prelude), except those that carry the state of
+  implementations: variables of implemented sorts and global variables declared `{:implement}`
+  (`Implement.context`). Encodings use it to tell executions apart, e.g. `renc` as the argument of its predicates
+  (static members, polymorphic in the type of the context, see [static.dfy](../examples/dafny/parsing/static.dfy));
+  `-monomorph` instantiates the tuples, `-flat` then flattens them.
 
 ## The transform
 
@@ -58,6 +65,10 @@ generic methods would otherwise give polymorphic Horn clauses.
 Examples: [dafny/transform/implement.dfy](../examples/dafny/transform/implement.dfy) (`listset`),
 [implement_method.dfy](../examples/dafny/transform/implement_method.dfy),
 [instrument.dfy](../examples/dafny/transform/instrument.dfy),
-[implement_renc.dfy](../examples/dafny/transform/implement_renc.dfy) (`renc` with `-instrument -chc -flat -monomorph`),
+[implement_renc.dfy](../examples/dafny/transform/implement_renc.dfy),
+[implement_renc_inputs.dfy](../examples/dafny/transform/implement_renc_inputs.dfy) (`renc` with
+`-instrument -chc -monomorph -flat`, the context, `cnt := 0` by hand),
 [smtlib/transform/implement.smt2](../examples/smtlib/transform/implement.smt2),
-[boogie/transform/implement.bpl](../examples/boogie/transform/implement.bpl).
+[boogie/transform/implement.bpl](../examples/boogie/transform/implement.bpl), and for `-instrument`
+[smtlib/transform/instrument.smt2](../examples/smtlib/transform/instrument.smt2),
+[boogie/transform/instrument.bpl](../examples/boogie/transform/instrument.bpl).

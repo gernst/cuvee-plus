@@ -154,6 +154,8 @@ case class Include(path: String) extends Cmd
 case class SortDef(attrs: List[Annotation], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
 case class DataDef(attrs: List[Annotation], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
 case class DataDefs(datas: List[DataDef]) extends Cmd
+// a static member of a type, a function or method without `this`
+case class Static(cmd: Cmd) extends Cmd
 
 case class FunDef(
     attrs: List[Annotation],
@@ -183,6 +185,7 @@ case class MethodDef(
 ) extends Cmd
 
 object Axiom extends ((List[String], List[Annotation], Expr) => Cmd)
+object Static extends (Cmd => Cmd)
 object Lemma
     extends (
         (

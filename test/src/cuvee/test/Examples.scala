@@ -77,14 +77,20 @@ object Examples:
   // i.e., -hybrid, and the declarations of teq.dfy without its transform for -teq (-known teq), e.g. for inputs that
   // use its types Nat and List
   // and the modules of the lemma database that it includes (-include teq:<concept>), whose declarations its output
-  // may refer to, and the features it declares known (-known teq), e.g. the syntax examples of traces
+  // may refer to, and those of implementations (-include implement:<name>), whose declarations its input may refer
+  // to, e.g. the counter cnt of renc, which are known (-known implement) such that the output does not contain them,
+  // and the features it declares known (-known teq), e.g. the syntax examples of traces
   def options(file: os.Path): List[String] =
     val args = cuvee.test.Expected.command(workspace.toNIO, file.toNIO).getOrElse(Nil)
     val pairs = args.zip(args.drop(1))
-    val modules = pairs.collect { case ("-include", module) if module.startsWith("teq:") => List("-include", module) }
+    val modules = pairs.collect { case ("-include", module) if module.startsWith("teq:") || module.startsWith("implement:") => List("-include", module) }
     val known = pairs.collect { case ("-known", feature) => List("-known", feature) }
     val teq = if args.contains("-teq") && !known.contains(List("-known", "teq")) then List("-known", "teq") else Nil
-    args.filter(_ == "-hybrid") ++ teq ++ known.flatten ++ modules.flatten
+    val implement =
+      if modules.exists(_(1).startsWith("implement:")) && !known.contains(List("-known", "implement"))
+      then List("-known", "implement")
+      else Nil
+    args.filter(_ == "-hybrid") ++ teq ++ implement ++ known.flatten ++ modules.flatten
 
   // whether the goals of an example hold, as stated in its second line, after its command line,
   // as a comment of its language: "// expected: valid" or "; expected: invalid"
