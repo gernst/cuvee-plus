@@ -85,6 +85,14 @@ lemma {:rw} {:teq} current_trace_bounded(x0: int, n: Nat, lo: int, hi: int, C1: 
        case C1(x) => F1(x) case C2(x) => F2(x) case C3(x) => F3(x) case !(C1(x) || C2(x) || C3(x)) => x)) <= hi)
       <==> true
 
+// phases: a value that adds a where a guard holds of another variable and keeps its value otherwise, e.g. z = z + 2
+// after a threshold on x, keeps its remainder modulo a (for a == 0 it keeps its value); a forward fact, since the
+// number of additions is not known
+// (from loops-crafted-1: mono-crafted_12)
+lemma {:fw} {:teq} current_trace_step_or_keep_mod(x0: int, n: Nat, a: int, xs: List<int>, C: (int) -> bool)
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, xs do z, k, x :: case C(x) => z + a case !C(x) => z)) % a
+    == x0 % a
+
 // membership in a counter with a positive step d, e.g. the odd positions counter(1, 2, n) of strided stores
 // (from mbpr2)
 lemma {:rw} {:teq} occurs_counter_step(i: int, d: int, n: Nat, j: int)

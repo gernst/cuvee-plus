@@ -1,0 +1,18 @@
+function maps₄(x₀: int, x₁: int): int
+
+function sum_from₂(x₀: int, x₁: int): int
+
+goal {:abstract}
+  (forall m: int ::
+     0 <= m
+       ==> (forall j₅: int ::
+              0 <= j₅ < m ==> maps₄(m, j₅) == (0 + j₅ * 1) * (0 + j₅ * 1)))
+    && (forall m: int ::
+          0 <= m
+            ==> sum_from₂(m, m) == 0
+              && (forall j₃: int ::
+                    0 <= j₃ < m
+                      ==> sum_from₂(m, j₃)
+                        == maps₄(m, j₃) + sum_from₂(m, j₃ + 1)))
+    ==> (forall m: int, r: int :: 0 <= m ==> true ==> 0 <= sum_from₂(m, 0))
+

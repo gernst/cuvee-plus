@@ -155,6 +155,18 @@ once the gap is closed (Scala changes, not done here).
 | a pattern of nested stores has a fixed number of stores | the stride lemmas (2, 3, the cases of pr2) |
 | a pattern has a fixed number of dependencies, one bound variable each (no tuples), and a polymorphic higher-order side condition is not matched | one lemma per number and type of dependencies: `perm_steps` (int), `perm_steps_two` (int, int), `perm_steps_nat` (int, Nat), `perm_steps_three` (int, Nat, int), where Lean proves all from one lemma over any list of dependencies (`perm_steps_general`); kept specific by decision (Oct 23, 2026) |
 
+## Rejected lemmas
+
+- A choice (Oct 23, 2026, for gj2007b): a value that takes an element where a guard holds of a choice `h` and keeps
+  its value otherwise is its initial value or one of the elements, as a forward fact
+  `current(T) == x0 || occurs(current(T), xs)`. The pattern also matches updates without a choice, the guard `D(h)`
+  instantiated to true, e.g. the copy `tmp = counter` of the bound of an unwinding (`sqrt1-ll_unwindbound*`) or, over
+  any list `xs`, `j = i + 4 + 2` with `xs` built as `maps(..., i + 6)` (loopv2); rewriting with the disjunctions of
+  their instances does not terminate. Over the history `⌊X⌋` of a trace instead of `xs`, it no longer matches gj2007b,
+  whose `X`, a counter, `-prove` merges with the counter of the iterations, but still the copy of sqrt1. On the 60 s
+  run of Loops: gj2007b gained, loopv2 and seven `sqrt1-ll_unwindbound` tasks lost. A pattern cannot exclude a guard
+  that is constantly true; a fold of the choice trace would have the same problem.
+
 ## Open points of earlier analyses
 
 - The normal form of naturals and integers: `integer_eq` loses `0 <= x` and moves the equation out of the

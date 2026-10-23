@@ -737,6 +737,11 @@ object Fallback extends Transform:
       case Ite(test, left, right) if left.typ == Sort.nat =>
         Ite(expr(state, env, out, test), expr(state, env, out, left), expr(state, env, out, right))
 
+      // a function defined with {:fold} whose result is no trace or list, e.g. a sum of squares over a counter, is
+      // unfolded like those of traces and lists (see define), such that its body is lowered rather than generalized
+      case App(fun, inst, _, args) if isFold(state, fun) =>
+        expr(state, env, out, unfold(state, fun, inst, args), polarity)
+
       // recursive definitions of teq.dfy over lists and naturals are unfolded once per position (see recursion),
       // equations and other functions of traces, lists, and naturals are generalized
       case app @ App(fun, _, typ, args) if isTeq(state, fun) || (typ :: args.types).exists(_.cons.exists(sorts.contains)) =>

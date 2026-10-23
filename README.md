@@ -146,9 +146,9 @@ lists them.
   whose rewrite rules `-prove` applies, e.g. the counter lemma;
   `-include teq:<concept>` adds a module of
   [resources/cuvee/teq](resources/cuvee/teq) (`aggregation`, `arithmetic`,
-  `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`; the former
+  `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`, `series`; the former
   `nested` is in `resources/cuvee/legacy`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
-  `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`, `unsigned`) are proved in Lean 4 ([lean/](lean)), against
+  `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`, `unsigned`, `series`) are proved in Lean 4 ([lean/](lean)), against
   statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
   [legacy/teq.dfy](resources/cuvee/legacy/teq.dfy) is kept but no longer injected. `-rules` reports the rules that
   `-prove` applies to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain

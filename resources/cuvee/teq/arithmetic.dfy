@@ -69,3 +69,12 @@ lemma {:fw} {:teq} triangle_even(x: int)
 
 lemma {:fw} {:teq} triangle_even_below(x: int)
   ensures 2 * ((-x + x * x) / 2) == -x + x * x
+
+// the triangles of arithmetic scaled by a coefficient a, as sum_counter leaves them for a counter by a, e.g.
+// (-3 n - 3 n n) / 2
+// (from MonoCera: ncomp, pcomp)
+lemma {:fw} {:teq} triangle_even_scaled(a: int, x: int)
+  ensures 2 * ((a * x + a * x * x) / 2) == a * x + a * x * x
+
+lemma {:fw} {:teq} triangle_even_below_scaled(a: int, x: int)
+  ensures 2 * ((-a * x + a * x * x) / 2) == -a * x + a * x * x
