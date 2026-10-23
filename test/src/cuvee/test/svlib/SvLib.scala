@@ -41,7 +41,7 @@ object Annotations extends TestSuite:
     test("verified"):
       val (cmds, errors) = Examples.output("-vcgen", "-quiet", file.toString)
       errors ==> Nil
-      // the goal of the procedure, the verify-call has none, as it assumes the precondition, the annotations are consumed
-      cmds.collect { case Assert(Goal, _, _, _) => () }.length ==> 1
+      // the goal of the procedure and that of the verify-call, which checks the precondition, the annotations are consumed
+      cmds.collect { case Assert(Goal, _, _, _) => () }.length ==> 2
       cmds.collect { case AnnotateTag(_, _) => () } ==> Nil
       cmds.collect { case VerifyCall(proc, _) => proc.indexed } ==> List("add")
