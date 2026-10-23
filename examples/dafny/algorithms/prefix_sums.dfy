@@ -1,8 +1,8 @@
 // ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/prefix_sums.dfy
 // the prefix sums of a[0..n) in b: b[i] is the sum of a[0..i], computed from b[i - 1] with the two pointers k == i - 1
-// and i, as the lemma current_trace_prefix_sums of teq.dfy expects them
+// and i, as the lemma select_current_trace_prefix_sums of teq:aggregation expects them
 //
-// status: verified with -teq -simplify; the trace of b is the recurrence of current_trace_prefix_sums of teq.dfy
+// status: verified with -teq -simplify; the trace of b is the recurrence of select_current_trace_prefix_sums of teq:aggregation
 // with the added term a[i] at the written position i (teq.dfy has G(k) at the position k of the predecessor), hence
 // the variant current_trace_prefix_sums_array; it reads the array directly, since the matcher instantiates a
 // higher-order G(i) for a[i] by the array a itself (maps(... yield i :: a(i)) remained); its conditional includes
@@ -12,7 +12,7 @@
 // so the trace has three dependencies, of which the pattern selects two
 
 // an array filled by a recurrence at the positions 1, ..., n, each element from its predecessor plus the element of
-// a at its own position: current_trace_prefix_sums of teq.dfy with the added term at the written position i instead
+// a at its own position: select_current_trace_prefix_sums of teq:aggregation with the added term at the written position i instead
 // of k, and with the array read instead of a higher-order G(i), which the matcher instantiates by the array itself
 lemma {:rw} current_trace_prefix_sums_array(b0: array<int, int>, a: array<int, int>, n: Nat, j: int)
   ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := a[i] + b[k]]))[j]

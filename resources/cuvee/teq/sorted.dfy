@@ -7,7 +7,8 @@
 // sorting.dfy of the per-variable form, with the partition points of examples/dafny/algorithms/bsearch.dfy; the
 // algorithms' own knowledge (summaries of inner loops, step lemmas) stays with the examples; the predicates and the
 // partition points are defined here (the proofs of the lemmas in lean/ use the definitions), but the engines use
-// the lemmas only, the definitions are no rules
+// the lemmas only, the definitions are no rules; no task of SV-COMP uses them (the results since Oct 13, 2026), they
+// serve the examples of examples/dafny/state and examples/dafny/algorithms
 
 // a[lo..hi) is nondecreasing
 function {:teq} sorted(a: array<int, int>, lo: int, hi: int): bool
@@ -29,6 +30,8 @@ function {:teq} partitioned(a: array<int, int>, lo: int, mid: int, hi: int): boo
   forall i: int, j: int :: lo <= i && i < mid && mid <= j && j < hi ==> a[i] <= a[j]
 }
 
+// TODO: why is sorted expressed with two integer bounds, and not one integer bound and a natural length?
+
 // the empty range and ranges of one element are sorted, the empty prefix is partitioned from the rest
 lemma {:rw} {:teq} sorted_empty(a: array<int, int>, lo: int)
   ensures sorted(a, lo, lo) <==> true
@@ -45,13 +48,15 @@ lemma {:rw} {:teq} partitioned_whole(a: array<int, int>, lo: int, hi: int)
 
 // no descent between the adjacent positions k and k + 1 for k below n means sorted up to n + 1
 // (from is_sorted)
-lemma {:rw} {:teq} sorted_def(a: array<int, int>, n: Nat)
+lemma {:rw} {:teq} sorted_adjacent(a: array<int, int>, n: Nat)
   ensures invs(for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ check k, i :: a[k] <= a[i]) <==> sorted(a, 0, integer(n) + 1)
 
 // permutations
 
 lemma {:rw} {:teq} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
+
+// TODO: can we express the array swap of two indices as a defined fold function?
 
 // a swap preserves the permutation
 lemma {:rw} {:teq} perm_swap(a: array<int, int>, b: array<int, int>, p: int, q: int)

@@ -63,7 +63,7 @@ example : ¬ (invs (List.zip (butlast (counter 0 1 1)) ([] : List Int))
     ↔ agree_prefix 1 [1] [2]) :=
   by simp [invs, agree_prefix, earlier]
 
--- not_occurs_prefix_def
+-- not_occurs_prefix
 example : ¬ (invs (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨k, h⟩ => earlier (natural k) [(1 : Int)] ≠ 1)
     ↔ ¬occurs 1 («prefix» 1 [(1 : Int)])) :=
   by simp [invs, occurs, «prefix»]
@@ -82,7 +82,7 @@ example : ¬ (invs (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨
 example : ¬ (consts_prefix 1 1 [(1 : Int), 1] → sum [1, 1] = 1 * integer 1) :=
   by simp [consts_prefix, earlier, sum, integer_cast]
 
--- current_trace_cap
+-- select_current_trace_cap
 example : ¬ (current (trace (fun (_ : Int) => (1 : Int)) (List.zip (butlast (counter 0 1 1)) ([] : List Int))
       (fun a ⟨k, h⟩ => if a k < 0 then a else fun j => if j = k then 0 else a j)) 0
     = (if 0 ≤ (0 : Int) ∧ 0 < integer 1 ∧ 0 ≤ (1 : Int) then 0 else 1)) :=
@@ -104,7 +104,7 @@ example : ¬ (distincts [(0 : Int)] → current (trace (fun (_ : Int) => (0 : In
     = (if occurs 0 [(0 : Int)] ∧ True then 1 else 0)) :=
   by simp [distincts, occurs, trace, current, counter, butlast]
 
--- current_trace_conditional_store_deps
+-- select_current_trace_conditional_store_deps
 example : ¬ (current (trace (fun (_ : Int) => (0 : Int)) (List.zip (butlast (counter 0 1 1)) (List.zip ([] : List Int) (List.zip ([] : List Int) ([] : List Int))))
       (fun a ⟨k, h, c, v⟩ => if True then fun j => if j = k then 1 else a j else a)) 0
     = (if 0 ≤ (0 : Int) ∧ 0 < integer 1 ∧ True then 1 else 0)) :=

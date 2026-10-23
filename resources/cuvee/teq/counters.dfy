@@ -25,7 +25,7 @@ lemma {:rw} {:teq} invs_two_phases(x0: int, n: Nat, b: int, c: int, B: int)
              || (if integer(n) - 1 <= b - x0 then x0 + integer(n) - 1 else b + (integer(n) - 1 - (b - x0)) * c) < B)
 
 // an iteration constraint that is a negated disjunction, as the test of a break, is two of them
-// (from benchmark09_conjunctive)
+// (from benchmark09_conjunctive, the only task of SV-COMP that uses it)
 lemma {:rw} {:teq} invs_not_or(hs: List<int>, gs: List<int>, fs: List<int>, P: (int, int, int) -> bool,
                                Q: (int, int, int) -> bool)
   ensures invs(for hs, gs, fs check h, g, f :: !(P(h, g, f) || Q(h, g, f)))
@@ -45,22 +45,23 @@ lemma {:rw} {:teq} current_trace_two_phases(x0: int, n: Nat, b: int, c: int)
 
 // a follower: y increases by 1 whenever it does not exceed the value x of a counter with step 1, hence y is the
 // larger of its initial value and the final value of x, given that it starts at least at x
-// (from benchmark05_conjunctive)
+// (from benchmark05_conjunctive, the only task of SV-COMP that uses it)
 lemma {:rw} {:teq} current_trace_catch_up(y0: int, x0: int, n: Nat)
   requires x0 <= y0
   ensures current(trace(y0, for ⌊counter(0, 1, n)⌋, ⌊counter(x0, 1, n)⌋ do y, k, x :: case y <= x => y + 1 case x < y => y))
     == if x0 + integer(n) <= y0 then y0 else x0 + integer(n)
 
-// a flag, initially x0, that is set to c whenever D holds, is x0 at the end iff D never held, otherwise c
-// (from standard_compare_ground)
-lemma {:rw} {:teq} current_trace_flag(x0: int, c: int, n: Nat, hs: List<int>, D: (int, int) -> bool)
+// a flag, initially x0, that is set to c whenever D holds, is x0 at the end iff D never held, otherwise c, of any type,
+// e.g. a boolean flag
+// (from standard_compare_ground; examples/dafny/algorithms/is_sorted.dfy, formerly its current_trace_flag_bool)
+lemma {:rw} {:teq} current_trace_flag<a>(x0: a, c: a, n: Nat, hs: List<int>, D: (int, int) -> bool)
   ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do f, k, h :: case D(k, h) => c case !D(k, h) => f))
     == if invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !D(k, h)) then x0 else c
 
 // a value that increases by a positive constant in each of its three cases exceeds its initial value after at
 // least one iteration; the fourth case, the complement of the others, makes the lemma hold for every update, the
 // traces of the loops match it without that case (doc/teq.md, complete guards)
-// (from large_const)
+// (from large_const, the only task of SV-COMP that uses it)
 lemma {:rw} {:teq} current_trace_increasing(x0: int, n: Nat, a: int, b: int, c: int, hs: List<int>, C: (int) -> bool,
                                             D: (int) -> bool, E: (int) -> bool)
   requires n != zero && 0 < a && 0 < b && 0 < c

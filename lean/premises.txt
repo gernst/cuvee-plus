@@ -18,7 +18,4 @@ current_mins_earlier: integer k < integer n -- the values of a loop are read at 
 prefix_counter: integer k ≤ integer n -- the prefixes of a counter are cut at the iterations of its loop
 
 # lengths that lean.Printer.lengths does not see, since the list is no dependency of a combinator
-sum_consts_prefix: (hjs : length js = n) -- the values of an inner loop, one per iteration of the outer one
-
-# search.dfy
 earlier_not_occurs_prefix: (hxs : length xs = n) -- xs is a list of the loop of n iterations

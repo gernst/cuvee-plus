@@ -105,7 +105,7 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
 - Open (formerly ideas/teq-lean.md):
   - The nine index premises of `lean/premises.txt` (reads and prefixes within the loop) as `requires` of the
     lemmas, if `-prove` decides `integer(k) < integer(n)` in the contexts of the goals; measure each on `mill -i
-    test` and the SV-COMP rows that use it. The length premise of `sum_consts_prefix` stays (the engine knows no
+    test` and the SV-COMP rows that use it. The length premise of `earlier_not_occurs_prefix` stays (the engine knows no
     lengths). For now only documented (decision of the user, Oct 13, 2026).
   - A test in `mill -i test` that generates `Database.lean` in memory and compares it with the committed one, so that
     a change of a stable module fails the Scala tests without Lean (`generate.py --check` does it on request).
@@ -733,7 +733,7 @@ Measured on binary search and on the SV-COMP examples
   `invs(for ks, js check k, j :: n <= j + k + 1) <==> exits(ks, js, n)`, matches `2 k + 1 < n` and `0 <= integer(nn)`
   (see [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy), [selection_sort.dfy](examples/dafny/algorithms/selection_sort.dfy),
   which keeps the raw constraint as a side condition). Such definition lemmas should have a body that the matcher
-  cannot synthesize, e.g. an `earlier` read as in `consts_prefix_def`.
+  cannot synthesize, e.g. an `earlier` read as in `agree_prefix_def`.
 - The fragments of an inner loop are resolved by generic lemmas (the inner trace over the inner counter is a counter,
   its final value, the test, the exit, the lengths as a constant sequence), see
   [fragments.dfy](examples/dafny/algorithms/fragments.dfy), candidates for teq.dfy; they are what the sharing of facts
@@ -749,7 +749,7 @@ Measured on binary search and on the SV-COMP examples
 - No instantiation of the iteration constraint at a witness, e.g. a search
   whose constraint states that `P` holds before the exit `n`, and `!P(j)`,
   which gives `n <= j`; the examples abstract the constraint by an atom first,
-  e.g. `!occurs(e, selects(a, ⌊counter(0, 1, n)⌋))` by `not_occurs_selects_def` of teq.dfy, which a second lemma
+  e.g. `!occurs(e, selects(a, ⌊counter(0, 1, n)⌋))` by `not_occurs_selects` of teq.dfy, which a second lemma
   takes as its side condition (see
   [standard_sentinel-2.dfy](benchmarks/sv-comp/dafny/array-examples/standard_sentinel-2.dfy)),
   since a side condition that is an iteration constraint does not terminate.

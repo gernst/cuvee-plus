@@ -1,8 +1,6 @@
 // ./Cuvee.sh -teq -entry main -prove examples/dafny/algorithms/nested_counter.dfy
-// the simplest nested loop: the inner loop counts to n and has no effect on the outer variable
-//
-// status: verified with -teq -simplify; the inner loop's trace equations become iteration constraints of the outer
-// loop over fresh sequences, which are unused for the goal i == m
+// the simplest nested loop: the inner loop counts to n and has no effect on the outer variable; verified with the
+// database alone (Oct 23, 2026, formerly examples/dafny/state, see doc/prove.md)
 
 method main(m: int, n: int) returns (i: int)
   requires 0 <= m && 0 <= n

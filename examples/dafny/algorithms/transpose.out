@@ -1,18 +1,15 @@
-function {:fold} column(B0: array<int, array<int, int>>,
-                        A: array<int, array<int, int>>, k: int,
-                        nn: Nat): Trace<array<int, array<int, int>>> {
-  trace(B0, for ⌊counter(0, 1, nn)⌋ do B, j :: B[j := B[j][k := A[k][j]]])
-}
-
 lemma {:rw} current_transpose(B0: array<int, array<int, int>>,
-                              A: array<int, array<int, int>>, m: Nat, nn: Nat,
-                              ns: List<Nat>, i: int, j: int)
-  requires ns == ⌊consts(m, nn)⌋
+                              A: array<int, array<int, int>>, m: int, n: int,
+                              i: int, j: int)
+  requires 0 <= i
+  requires i < m
+  requires 0 <= j
+  requires j < n
   ensures
-    current(trace(B0, for ⌊counter(0, 1, m)⌋, ns
-                  do x, k, n ::
-                    current(column(x, A, k, n))))[j][i]
-      == (if 0 <= i < integer(m) && 0 <= j < integer(nn)
-          then A[i][j]
-          else B0[j][i])
+    current(trace(B0, for ⌊counter(0, 1, natural(m))⌋
+                  do B, k ::
+                    current(trace(B, for ⌊counter(0, 1, natural(n))⌋
+                                  do Bi, ki ::
+                                    Bi[ki := Bi[ki][k := A[k][ki]]]))))[j][i]
+      == A[i][j]
 
