@@ -7,10 +7,9 @@
 # expected
 cd "$(dirname "$0")" || exit 1
 
-MODULES=(-include teq:aggregation -include teq:arithmetic -include teq:arrays -include teq:counters
-  -include teq:search -include teq:sorted -include teq:strides -include teq:unsigned)
-TEQ=(-teq "${MODULES[@]}" -prove -split -prove -split -prove)
-FALLBACK=("${TEQ[@]}" -fallback -z3)
+# the options of SV-COMP (-svcomp, first), with and without the fallback; -svcomp includes -witness witness.yml
+TEQ=(-svcomp)
+FALLBACK=(-svcomp -fallback -z3)
 CHC=(-chc -z3)
 
 ./Cuvee.sh -version || exit 1
