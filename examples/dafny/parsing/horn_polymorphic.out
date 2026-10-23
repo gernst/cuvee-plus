@@ -1,0 +1,36 @@
+logic HORN
+
+function id_pre<a>(x: a): bool
+
+function id_post<a>(x: a, y: a): bool
+
+function id_assign_1<a>(x: a, y: a): bool
+
+axiom <a> forall x: a :: id_pre(x) ==> id_assign_1(x, x)
+
+axiom <a> forall x: a, y: a :: id_assign_1(x, y) ==> id_post(x, y)
+
+const main_pre: bool
+
+const main_post: bool
+
+function main_call_1(z₁: int): bool
+
+function main_spec_2(z₁: int): bool
+
+axiom true ==> main_pre
+
+axiom main_pre ==> id_pre(1)
+
+axiom forall z₂: int :: main_pre && id_post(1, z₂) ==> main_call_1(z₂)
+
+axiom forall z₁: int :: main_call_1(z₁) ==> z₁ == 1
+
+axiom forall z₁: int :: main_call_1(z₁) && true ==> main_spec_2(z₁)
+
+axiom forall z₁: int :: main_spec_2(z₁) ==> main_post
+
+check
+
+model
+

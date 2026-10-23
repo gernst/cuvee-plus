@@ -171,7 +171,10 @@ for every sink.
     contract (`VCGen.instance`, also the type parameters), whose
     precondition's conjuncts are goals and whose postcondition's conjuncts
     are facts. Polymorphic procedures that are only specified thus yield
-    monomorphic clauses.
+    monomorphic clauses; those with a body yield predicates (also of their
+    program points) and clauses that are polymorphic in their type
+    parameters, which Horn solvers do not accept (`-instrument` inlines
+    implementations instead, [implement.md](implement.md)).
   - The body starts from `p_pre`; branches extend the facts of the first
     clause by the test, and `break`, `continue`, `return`, and the end of a
     block lead directly to the predicate of their target, whose variables are

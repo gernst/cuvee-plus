@@ -1,0 +1,1 @@
+error "return in an implementation that is inlined" "g"
