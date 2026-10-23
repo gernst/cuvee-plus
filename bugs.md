@@ -90,6 +90,15 @@ the contexts that `-teq` builds, as far as the reasons go.
 
 ### Fixed, to be confirmed
 
+- **A rewriting loop through a definition modulo the classes** (0.50.16, fixed in 0.50.17): on in-de62.2 of SV-LIB
+  (c-translated/loops-crafted-1, expected true), `integer_natural` rewrote `integer(n7)` through the definition
+  `n7 == natural(-integer(n25) + ...)`, whose `n25` the classes had made equal to `n7`; the simplifier replaced `n25` by
+  the canonical `n7`, and the rule applied again until the rewrite steps ran out ("rewriting does not terminate", in
+  both configurations at 120 s). `Context.defs` excluded only the definitions that contain the variable
+  syntactically; now those with a variable of its class (examples/svlib/verify/teq_definitions_class.svlib). The
+  inlining of `c == integer(n)` of 0.50.16 brought the equation that merged the two classes. A kludge rather than a
+  principle (ideas/prove-next.md).
+
 - The bisection of `teq:search` was inconsistent (found by the Lean proofs, Oct 13, 2026): the rule `bisection`
   guarded both cases by `lo < hi`, a step after the exit was `unspecified`, and `bisection_lo` bounded it, which gave
   `unspecified.0 == l0` for every `l0` (for `l0 == h0`, one step, `G` and `H` false). Fixed on Oct 14, 2026:

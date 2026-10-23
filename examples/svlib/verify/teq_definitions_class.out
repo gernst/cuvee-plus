@@ -1,0 +1,10 @@
+(set-logic QF_LIA)
+
+(set-option :produce-witnesses true)
+
+(set-info :format-version "1.0")
+
+(verify-call main ())
+
+(get-witness)
+

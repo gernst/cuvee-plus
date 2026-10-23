@@ -66,11 +66,20 @@ in the conjuncts of a premise.
   equations: a persistent union-find over the terms of the facts, where applications are decomposed into their
   arguments and merged by congruence, and everything else (variables, literals, binders, the combinators) is a node
   of its own. The definitions of a variable are the members of its class that are not variables and do not contain
-  it (`Context.defs`), in both orientations and transitively (`K == I` identifies two counters, `x == f(y)` with
+  it, modulo the classes, i.e. no variable equal to it (`Context.defs`; since 0.50.17, before syntactically, which let
+  `integer_natural` and the canonical variable of a class rewrite `integer(n)` into itself on in-de62.2 of SV-LIB,
+  examples/svlib/verify/teq_definitions_class.svlib), in both orientations and transitively (`K == I` identifies two counters, `x == f(y)` with
   `y == z` gives `f(z)`); the matcher tries them when a pattern does not match the variable itself
   (`Rewrite.matches`). Only variables have definitions: a term matched by a member of its class that contains it, e.g.
   `a[k]` by `S.2[k] == a[k]` assumed from a sibling conjunct, is rewritten to a term that contains it again, without
-  end. Two literals or two constructors in one class, or a disequation whose sides are in one class, make the context
+  end.
+  How principled the check modulo the classes is: it removes the one cycle that was observed, the matcher following
+  a definition and the simplifier replacing a variable by the canonical one of its class (`Simplify.var_`), which
+  undid each other on in-de62.2 (bugs.md, Fixed); the two components still do not know of each other, so a cycle
+  through two definitions, or through a definition and an inlined solution of the arithmetic, is not excluded by
+  construction, only by the bound on the rewrite steps. It is a guard on one observed failure, not an invariant
+  of the design; a principled form would rewrite modulo the classes in one place, or orient definitions by an order
+  on terms so that no rewrite leads back (ideas/prove-next.md, Definitions and canonical variables). Two literals or two constructors in one class, or a disequation whose sides are in one class, make the context
   inconsistent. `Simplify.var_` replaces a variable by the literal of its class, or by the canonical variable of the
   class (the smallest by name).
 - **A simplex** ([`Simplex`](../src/cuvee/prove/Simplex.scala), [`Linear`](../src/cuvee/prove/Theory.scala)) in
