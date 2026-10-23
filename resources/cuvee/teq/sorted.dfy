@@ -8,7 +8,7 @@
 // algorithms' own knowledge (summaries of inner loops, step lemmas) stays with the examples; the predicates and the
 // partition points are defined here (the proofs of the lemmas in lean/ use the definitions), but the engines use
 // the lemmas only, the definitions are no rules; no task of SV-COMP uses them (the results since Oct 13, 2026), they
-// serve the examples of examples/dafny/state and examples/dafny/algorithms
+// serve the examples of examples/dafny/algorithms
 
 // a[lo..hi) is nondecreasing
 function {:teq} sorted(a: array<int, int>, lo: int, hi: int): bool

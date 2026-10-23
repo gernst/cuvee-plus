@@ -1,4 +1,4 @@
-// ./Cuvee.sh examples/dafny/teq/init.dfy
+// ./Cuvee.sh -teq -prove examples/dafny/teq/init.dfy
 // the initialization of the first n elements of the array a with the value v
 
 method init(n: int, v: int) returns (a: array<int, int>)

@@ -600,7 +600,7 @@ Measured on binary search and on the SV-COMP examples
 
 - The frontends and printers of Dafny, Boogie, SMT-LIB and SV-LIB, the Lean printer and `-fallback` know traces with
   several accumulators and the component reads (doc/teq.md, Syntax). The matcher of `-prove` matches patterns of several accumulators
-  against cycles as a whole (the bisection of examples/dafny/state).
+  against cycles as a whole (the bisection of examples/dafny/algorithms/bsearch.dfy).
 - `-fallback` on lists of traces of several accumulators (an inner loop with a cycle) is implemented (one length
   function for all components) but has no test yet.
 - The grammars of Dafny and Boogie need each initial value of a trace to end with a comma before `for`, since a
@@ -657,7 +657,7 @@ Measured on binary search and on the SV-COMP examples
 - Facts about terms are not derived by the simplifier (see [doc/prove.md](doc/prove.md#facts-that-the-goal-does-not-mention));
   bsearch.dfy needs a cut, `assert φ; assume φ;`, and `-teq`
   does not assume assertions. `-prove` has forward lemmas (`{:fw}`, see
-  [doc/prove.md](doc/prove.md)), with which the binary search of examples/dafny/state closes without the cut;
+  [doc/prove.md](doc/prove.md)), with which the binary search of examples/dafny/algorithms/bsearch.dfy closes without the cut;
   which lemmas of the database should be `{:fw}` rather than `{:rw}` is open.
 - The simplifier evaluates integer division on literals and divides by
   literals on Real, but knows no bounds of division, e.g. `l <= (h + l) / 2`

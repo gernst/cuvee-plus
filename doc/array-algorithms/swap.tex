@@ -12,7 +12,7 @@ method swap(a: array<int, int>, b: array<int, int>, n: int)
 }
 \end{lstlisting}
 The exchange of the first $n$ elements of two arrays, element by element (the example \texttt{swap.dfy} of
-\texttt{examples/dafny/state}). Each array is written with values read from the other, so neither can be
+\texttt{examples/dafny/teq}). Each array is written with values read from the other, so neither can be
 described without the other: the two arrays form a cycle of the read relation. A proof by an invariant states what
 both arrays hold below and above $i$; here, no invariant is given.
 

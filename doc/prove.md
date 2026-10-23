@@ -161,7 +161,7 @@ in the conjuncts of a premise.
     loops known (in-de20 to in-de51);
   - the first atom `c` of a guard of an update whose variables are all free in the goal, not bound by a trace
     (`Prove.conditions`): the cases `c` and `!c`, in which the update has fewer cases, e.g. the guard `y % 2 == 0` of
-    a loop that does not change `y` ([diamond.dfy](../examples/dafny/state/diamond.dfy),
+    a loop that does not change `y` ([diamond.dfy](../examples/dafny/teq/diamond.dfy),
     loop-acceleration/diamond_1-1; 0.46.16); `-split` does not reach into the updates of traces;
   - the first remainder `x % m` by a literal `2 <= m <= 4` of variables free in the goal (`Prove.remainders`): the
     cases `x % m == 0, ..., x % m == m - 1`, which the rational simplex does not enumerate, e.g. `y % 2 != 0 ==> y % 2
@@ -416,7 +416,8 @@ with their exit status, time and remaining goals, as the baseline for the work o
 
 ## State
 
-Oct 13, 2026: the examples of [examples/dafny/state](../examples/dafny/state) check under `-teq -prove`. With
+Oct 13, 2026: the examples then in `examples/dafny/state` (since Oct 23 in [examples/dafny/teq](../examples/dafny/teq)
+and [examples/dafny/algorithms](../examples/dafny/algorithms)) check under `-teq -prove`. With
 the database `teq.dfy` alone: single loops, the swap of two arrays, four nested loops without fragment lemmas, the
 transpose with one summary lemma, and the syntax example, 1.5 to 5 s. The binary search over a sorted array, with the
 array, its bound and the key as parameters, closes by a lemma over the whole cycle, a named bisection with a probe

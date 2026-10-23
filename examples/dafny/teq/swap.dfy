@@ -1,5 +1,6 @@
-// ./Cuvee.sh examples/dafny/teq/swap.dfy
-// the exchange of the first n elements of two arrays, element by element
+// ./Cuvee.sh -teq -prove examples/dafny/teq/swap.dfy
+// the exchange of the first n elements of two arrays, element by element, by one trace: the arrays and the index form
+// one cycle, whose per-variable traces are projections (see doc/prove.md and swap.md)
 
 method swap(a: array<int, int>, b: array<int, int>, n: int) returns (a_: array<int, int>, b_: array<int, int>)
   requires 0 <= n

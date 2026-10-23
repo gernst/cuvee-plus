@@ -14,7 +14,7 @@ method init(n: int, v: int) returns (a: array<int, int>)
   while i < n { a[i] := v; i := i + 1; }
 }
 \end{lstlisting}
-The run is \texttt{./Cuvee.sh -teq -prove examples/dafny/state/init.dfy}; its output has no goal, i.e.\ the goal is
+The run is \texttt{./Cuvee.sh -teq -prove examples/dafny/teq/init.dfy}; its output has no goal, i.e.\ the goal is
 proved.
 
 \subsection{The verification condition}

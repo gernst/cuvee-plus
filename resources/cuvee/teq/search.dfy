@@ -78,7 +78,7 @@ lemma {:fw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int,
 // second case excludes G, such that the cases are disjoint, and the third keeps the state where lo < hi fails or no
 // guard holds, such that they are complete; the traces of the loops have no such case, the fold matches them since
 // their guards are disjoint and their iteration constraints exclude the third case in their updates
-// (unused on SV-COMP; for the binary searches of examples/dafny/state)
+// (unused on SV-COMP; for the binary search of examples/dafny/algorithms/bsearch.dfy)
 function {:teq} {:fold} bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool,
                           H: int -> bool): Trace<(int, int)>
 {
@@ -93,14 +93,14 @@ function {:teq} {:fold} bisection(l0: int, h0: int, ks: List<int>, M: (int, int)
 
 // if G holds on a prefix of [l0, h0), lo stays within l0 and the cut of G, and if H holds on a suffix, hi stays within
 // the cut of its negation and h0
-// (unused on SV-COMP; for the binary searches of examples/dafny/state)
+// (unused on SV-COMP; for the binary search of examples/dafny/algorithms/bsearch.dfy)
 lemma {:fw} {:teq} bisection_lo(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool, H: int -> bool)
   requires l0 <= h0
   requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
   requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
   ensures l0 <= current(bisection(l0, h0, ks, M, G, H)).0 <= cut(G, l0, h0)
 
-// (unused on SV-COMP; for the binary searches of examples/dafny/state)
+// (unused on SV-COMP; for the binary search of examples/dafny/algorithms/bsearch.dfy)
 lemma {:fw} {:teq} bisection_hi(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool, H: int -> bool)
   requires l0 <= h0
   requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
