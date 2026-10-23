@@ -6,12 +6,24 @@
 // methods are meant to be inlined into the program (-instrument), as the paper's encoding is a program transformation;
 // as calls, -chc would summarize the generic methods by polymorphic clauses.
 //
-// Limits: the inputs `in` of the paper's R(in, cnt, obj) are omitted, since a module does not know the inputs of the
-// program: the encoding stays sound, but is complete only for programs whose observations do not depend on their
-// inputs. The paper also requires deterministic programs (nondeterminism as inputs, see ideas/nondet.md); otherwise
-// the predicates need not be functions, which again keeps soundness and may lose completeness. The predicates are
-// polymorphic in the type of the values, one per instance for a solver. Dafny itself reserves `map`, Cuvée's dialect
-// does not.
+// Soundness: R is one relation for all choices of the prophecy, which forces the solver to generalize: the run whose
+// prophecy is the key of a read asserts its true value, hence R admits it in every other run, which therefore can
+// follow each real execution. The arguments of R may tell executions apart, never runs of one execution with
+// different prophecies; hence R and K are not members of map, whose receiver carries the prophecy: R(s, c, v) :=
+// v == s.last satisfies every assertion and lets reads at other keys see the value of the prophecy key (for 10 at key
+// 1, 20 at key 2, and reads x of 1 and y of 2, z3 proves the false x == y).
+//
+// Limits: whatever R cannot tell apart is merged, which keeps soundness and loses completeness:
+// - the inputs `in` of the paper's R(in, cnt, obj) are omitted, since a module does not know the inputs of the
+//   program, hence a read sees the values of all inputs (m[1] after m[1 := a] is any value);
+// - cnt starts with an arbitrary value, hence each read has every number and sees the values of all reads (two reads
+//   of 10 and 20 may each see both); the program can reset cnt := 0 at the entry (modifies cnt), the module cannot;
+// - the paper also requires deterministic programs (nondeterminism as inputs, see ideas/nondet.md); otherwise the
+//   predicates need not be functions.
+// See ideas/implement.md.
+//
+// The predicates are polymorphic in the type of the values, one per instance for a solver. Dafny itself reserves
+// `map`, Cuvée's dialect does not.
 
 // the value of the read numbered c
 predicate {:implement} R<b>(c: int, v: b)
@@ -23,7 +35,7 @@ predicate {:implement} K(c: int, d: bool)
 
 // the number of the last observation, the only global state: a read would otherwise change its receiver (methods have
 // a single output, values are immutable); it only increases, never reset, so the observations of all maps are
-// numbered apart and R and K stay functions of the number
+// numbered apart and R and K stay functions of the number, relative to its start, which is arbitrary (see Limits)
 var {:implement} cnt: int
 
 // each map value carries the state of the encoding for its own prophecy: the key last_key, chosen when the map is
