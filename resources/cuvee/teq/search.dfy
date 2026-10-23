@@ -3,7 +3,7 @@
 // bisection of an interval with a probe, whose bounds are the cuts of its guards (cut, declared in teq.dfy); an
 // optional module over teq.dfy
 // alone (-include teq:search), migrated on Oct 13, 2026 from the module of the per-variable form (in legacy/teq.dfy),
-// with the search lemmas of teq.dfy and the bisection of examples/dafny/state/bsearch_bisect.dfy; the facts at the
+// with the search lemmas of teq.dfy and the bisection of examples/dafny/algorithms/bsearch.dfy; the facts at the
 // reads are forward lemmas, triggered by the read, earlier(j, xs) or a[k], whose other variables are matched against
 // the facts of the abstractions
 

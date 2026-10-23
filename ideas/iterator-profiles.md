@@ -131,7 +131,7 @@ choose a form of invariant that Frama-C can check. In TEQs both are the database
 - **Nested loops** (`bubble_sort`, 13 + 9 Linux tasks): representable (thm 4.8, `nested`, `sorting`), but this is
   where the engine still has its problems ([../doc/prove.md](../doc/prove.md), the state traces).
 - **The index modified in the body** (binary search; outside their class): `-teq-state` with forward lemmas
-  (`examples/dafny/state/bsearch.dfy`).
+  (`examples/dafny/algorithms/bsearch.dfy`, formerly `examples/dafny/state/bsearch_bisect.dfy`).
 - **Specifications with user-defined recursive logic functions** (`array_sum` in the original Frama-C Problems,
   `sumArr`): the goal speaks about `sumArr(a, n)`, the TEQ about a trace. A generic bridge would be an
   introduction rule *generated* from a recursive definition of the form `f(n) = if n == 0 then init else g(f(n -

@@ -1,0 +1,12 @@
+int f(int *p);
+
+int g(int _0_, int _1_);
+
+int main(void) {
+  int result;
+  int tmp_1;
+  tmp_1 = g(1, 2);
+  result = tmp_1;
+  return result;
+}
+

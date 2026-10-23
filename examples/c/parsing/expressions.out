@@ -1,0 +1,41 @@
+int g;
+
+int truth(int x) {
+  int result;
+  if (x != 0) {
+    result = !(x != 0) ? 1 : 0;
+    return result;
+  } else {
+    result = x != 0 && 1 != 0 ? 1 : 0;
+    return result;
+  }
+}
+
+int decrement(int n) {
+  int result;
+  int n_1;
+  int tmp_2;
+  n_1 = n;
+  while (true) {
+    tmp_2 = n_1;
+    n_1 = n_1 - 1;
+    if (!(tmp_2 > 0)) {
+      break;
+    }
+  }
+  result = n_1;
+  return result;
+}
+
+int main(void) {
+  int result;
+  g = 1;
+  int *p;
+  int *q;
+  int *r;
+  p = 0;
+  q = 0;
+  result = g + (p == q ? 1 : 0);
+  return result;
+}
+

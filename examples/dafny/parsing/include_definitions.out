@@ -1,0 +1,4 @@
+function double(x: int): int {
+  2 * x
+}
+
