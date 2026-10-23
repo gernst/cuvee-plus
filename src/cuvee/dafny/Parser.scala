@@ -263,16 +263,17 @@ class Parser(var state: State):
 
     Attrs(attrs.map((name, _) => name -> None))
 
-  // the annotations of function `fun` whose inputs are in `scope`, where {:implement pattern} names the function
-  // that it implements and the positions of its arguments by an application to the inputs, of the result type `res`
-  // (see transform.Implement); other annotations have no values
+  // the annotations of an implementation `fun`, a function or a method, whose inputs are in `scope`, where
+  // {:implement pattern} names the function that it implements and the positions of its arguments by an application
+  // to the inputs, of the type `res` of the result of the function or of the single output of the method (see
+  // transform.Implement and transform.Choose); other annotations have no values
   def annotations(fun: String, scope: Scope, attrs: List[Annotation], res: core.Type): Attrs =
     val attrs_ =
       for (name, arg) <- attrs
       yield arg match
         case Some(pattern) if name == "implement" =>
           val pattern_ = resolve(scope, pattern)
-          Error.report("the pattern of {:implement} does not have the result type of the function", fun):
+          Error.report("the pattern of {:implement} does not have the result type of the implementation", fun):
             name -> Some(check(scope, pattern_, res))
 
         case Some(_) =>
@@ -372,7 +373,16 @@ class Parser(var state: State):
         val ac_ =
           assumes.map(phi => "assumes" -> Some(formula(scope__, phi))) ++
             commits.map(phi => "commits" -> Some(formula(scope__, phi)))
-        val attrs_ = Attrs(keywords(attrs).attrs ++ contract(scope__, mod, req, ens, dec).attrs ++ ac_)
+        // a method that implements a function by {:implement pattern} has a single output, the result
+        val annots_ =
+          if attrs.exists((name, arg) => name == "implement" && arg.nonEmpty)
+          then
+            Error.report("a method with {:implement pattern} has a single output", qname):
+              require(rets_.length == 1)
+            annotations(qname, scope_ ++ formals_, attrs, rets_.head.typ)
+          else keywords(attrs)
+
+        val attrs_ = Attrs(annots_.attrs ++ contract(scope__, mod, req, ens, dec).attrs ++ ac_)
         state = state.declare(qname, params_, formals_, rets_, attrs_)
 
         val mod_ = attrs_.modifies
