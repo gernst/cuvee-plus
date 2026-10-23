@@ -21,8 +21,13 @@ object Cuvee extends util.Main:
       // outputs of the reducers of SV-COMP, which the parsers and transforms recurse into;
       // an uncaught exception is reported by the thread, and the exit code stays 1
       case _ =>
+        // -svcomp as the first argument stands for the options of SV-COMP, the other arguments follow them
+        val args_ =
+          if args.headOption == Some("-svcomp")
+          then svcomp ++ args.tail
+          else args.toList
         var code = 1
-        val thread = Thread(null, () => code = pipe(args.toList)._1, "cuvee", 1L << 30)
+        val thread = Thread(null, () => code = pipe(args_)._1, "cuvee", 1L << 30)
         thread.start()
         thread.join()
         System.out.flush()
@@ -34,6 +39,25 @@ object Cuvee extends util.Main:
   def run(args: List[String], sinks: List[Sink] = Nil): (List[Cmd], List[Error]) =
     val (_, cmds, errors) = pipe(args, sinks)
     (cmds, errors)
+
+  // the options of the participation in SV-COMP, which -svcomp stands for, such that the entry of fm-tools can pass
+  // -svcomp only and a new version of Cuvée change them without a change there: trace equation systems with the
+  // modules of the lemma database, the deduction engine with two rounds of splitting, the fallback to z3 for the goals
+  // that remain, whose time limit is that of the run, and the witness of the answer
+  val svcomp = List(
+    "-teq",
+    "-include", "teq:aggregation",
+    "-include", "teq:arithmetic",
+    "-include", "teq:arrays",
+    "-include", "teq:counters",
+    "-include", "teq:search",
+    "-include", "teq:sorted",
+    "-include", "teq:strides",
+    "-include", "teq:unsigned",
+    "-prove", "-split", "-prove", "-split", "-prove",
+    "-fallback", "-z3", "-timeout", "900000",
+    "-witness", "witness.yml"
+  )
 
   def pipe(args: List[String], sinks: List[Sink]): (Int, List[Cmd], List[Error]) =
     pipe(Config.parse(Config.default, args), sinks)
