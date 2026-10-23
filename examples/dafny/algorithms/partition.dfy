@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/partition.dfy
+// ./Cuvee.sh -teq -include teq:sorted -include teq:aggregation -entry main -prove examples/dafny/algorithms/partition.dfy
 // the partition of a[0..n) around the pivot a[n - 1] (Lomuto), the inner step of quicksort
 //
 // status (Oct 16, 2026): verified with -teq -prove; a wrong postcondition, the lower region up to i inclusive or
@@ -9,8 +9,6 @@
 // partition_above), since a summary of the array component with the positions j stated as a counter is not matched
 // (the matcher pairs the component's dependency ⌊S⌋.2 only with a generic list); the bound i <= j is stated with
 // n' == natural(j), as -teq relates the number of iterations and j only by it (below_le_natural)
-
-function perm(a: array<int, int>, b: array<int, int>): bool
 
 // the trace of the conditional swaps of the position k with the position i (the number of elements below the pivot so
 // far, a further dependency) when a[k] is below the pivot p; the guard reads b[k], which is a[k], since before
@@ -60,9 +58,6 @@ lemma {:rw} partition_above(a: array<int, int>, p: int, n: Nat, k: int)
 
 lemma {:rw} perm_lomuto(a: array<int, int>, c: array<int, int>, p: int, n: Nat, is: List<int>)
   ensures perm(current(lomuto(a, p, n, is)), c) <==> perm(a, c)
-
-lemma {:rw} perm_refl(a: array<int, int>)
-  ensures perm(a, a) <==> true
 
 method main(a: array<int, int>, n: int) returns (b: array<int, int>, i: int)
   requires 0 < n

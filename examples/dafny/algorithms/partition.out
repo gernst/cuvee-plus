@@ -1,5 +1,3 @@
-function perm(a: array<int, int>, b: array<int, int>): bool
-
 function lomuto(a: array<int, int>, p: int, n: Nat,
                 is: List<int>): Trace<array<int, int>>
 
@@ -63,7 +61,4 @@ lemma {:rw} partition_above(a: array<int, int>, p: int, n: Nat, k: int)
 lemma {:rw} perm_lomuto(a: array<int, int>, c: array<int, int>, p: int, n: Nat,
                         is: List<int>)
   ensures perm(current(lomuto(a, p, n, is)), c) <==> perm(a, c)
-
-lemma {:rw} perm_refl(a: array<int, int>)
-  ensures perm(a, a) <==> true
 

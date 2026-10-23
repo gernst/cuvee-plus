@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -include teq:aggregation -entry main -prove examples/dafny/algorithms/insertion_sort2.dfy
+// ./Cuvee.sh -teq -include teq:sorted -include teq:aggregation -entry main -prove examples/dafny/algorithms/insertion_sort2.dfy
 // insertion sort with nested loops, with two pointers j and p == j - 1 in the inner loop, such that the positions
 // of the swaps are counters: insertion_sort.dfy swaps b[j] and b[j - 1], arithmetic on a bound variable of the
 // trace (the principle of reverse.dfy: two pointers instead of index arithmetic)
@@ -12,12 +12,6 @@
 // the step is stated over k alone (the prefix [0, k + 1) before, [0, k + 2) after), since the engine substitutes
 // i == k + 1 in the bound of sorted but not in the arguments of the pass; perm(b, a) follows from perm_steps_three
 // and perm_insert_pass
-
-function sorted(a: array<int, int>, lo: int, hi: int): bool
-function perm(a: array<int, int>, b: array<int, int>): bool
-
-lemma {:rw} perm_refl(a: array<int, int>)
-  ensures perm(a, a) <==> true
 
 // one pass of the inner loop: the swaps of the positions j and q, counters down from i and p
 function {:fold} insert_pass(b: array<int, int>, i: int, p: int, nn: Nat): Trace<array<int, int>>
