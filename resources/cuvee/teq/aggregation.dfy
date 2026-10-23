@@ -1,12 +1,13 @@
-// aggregation: sums, parities, counts, maxima and minima as traces and as functions of lists, with their
-// acceleration (current, earlier), linearity of sums, indicators, and bounds, and the abstraction of an iteration
-// constraint by consts_prefix; an optional module over teq.dfy alone (-include teq:aggregation), migrated on Oct 13,
-// 2026 from the module of the per-variable form (in legacy/teq.dfy), with the functions sum, count, max, min, parity
-// and the sums of the former core.dfy and teq.dfy, and the parities; the rules that were never applied on SV-COMP and
-// are specific to one task are left in the legacy file (below_prefix, nonneg_prefix, the maxima and minima of counters
-// and constants, the prefixes of maxima, minima and counts, the indicators of two dependencies, the updates of
-// selects, sum_squares); the bounds of counts and of the prefix maxima and minima by their initial value are forward
-// lemmas, facts about the term
+// aggregation: sums, parities, counts, maxima and minima as traces and as functions of lists, with their acceleration
+// (current, earlier), linearity of sums, indicators, and bounds; an optional module over teq.dfy alone (-include
+// teq:aggregation), migrated on Oct 13, 2026 from the module of the per-variable form (in legacy/teq.dfy), with the
+// functions sum, count, max, min, parity and the sums of the former core.dfy and teq.dfy, and the parities; the rules
+// that were never applied on SV-COMP and are specific to one task are left in the legacy file (below_prefix,
+// nonneg_prefix, the maxima and minima of counters and constants, the prefixes of maxima, minima and counts, the
+// indicators of two dependencies, the updates of selects, sum_squares), as is consts_prefix, the abstraction of a
+// constant sequence read at the iterations, since consts_choice of teq.dfy makes a constant sequence of a dependency
+// ⌊consts(n, c)⌋, whose sum is sum_consts; the bounds of counts and of the prefix maxima and minima by their initial
+// value are forward lemmas, facts about the term
 
 // the functions of lists and integers that the aggregates fold
 // the sum of a list
@@ -59,10 +60,12 @@ lemma {:rw} {:teq} earlier_sums(j: Nat, x: int, values: List<int>)
   ensures earlier(j, ⌊sums(x, values)⌋)
     == x + sum(prefix(j, values))
 
+// (unused on SV-COMP; the prefix of the fold sums, kept as such)
 lemma {:rw} {:teq} prefix_sums(k: Nat, x: int, values: List<int>)
   ensures prefix(k, ⌊sums(x, values)⌋)
     == ⌊sums(x, prefix(k, values))⌋
 
+// (unused on SV-COMP; the empty sum, kept as a law of sum)
 lemma {:rw} {:teq} sum_empty()
   ensures sum(nil)
     == 0
@@ -75,26 +78,21 @@ lemma {:rw} {:teq} sum_counter(i: int, c: int, n: Nat)
   ensures sum(⌊counter(i, c, n)⌋)
     == (2 * i + (integer(n) - 1) * c) * integer(n) / 2
 
-// the first n values of js are all c
-function {:teq} consts_prefix(n: Nat, c: int, js: List<int>): bool
-{
-  match n
-  case zero => true
-  case succ(m) => consts_prefix(m, c, js) && earlier(m, js) == c
-}
-
 // the prefix maxima and minima starting with an initial value
+// (used on SV-COMP by standard_maxInArray_ground only)
 function {:teq} {:fold} maxs(x: int, values: List<int>): Trace<int>
 {
   trace(x, for values do m, v :: case m < v => v case v <= m => m)
 }
 
+// (used on SV-COMP by standard_minInArray_ground-2 only)
 function {:teq} {:fold} mins(x: int, values: List<int>): Trace<int>
 {
   trace(x, for values do m, v :: case v < m => v case m <= v => m)
 }
 
 // the number of occurrences of a value, counted from an initial value
+// (used on SV-COMP by half, sumt2 only)
 function {:teq} {:fold} counts<a>(x: int, e: a, vs: List<a>): Trace<int>
 {
   trace(x, for vs do y, v :: case v == e => y + 1 case v != e => y)
@@ -102,22 +100,24 @@ function {:teq} {:fold} counts<a>(x: int, e: a, vs: List<a>): Trace<int>
 
 // on booleans, the guards are the values themselves; the occurrences of false come first,
 // since the guard b of the other lemma also matches !b, which counts the occurrences of true among the negations
-lemma {:rw} {:teq} counts_false_def(x: int, bs: List<bool>)
+lemma {:rw} {:teq} counts_false(x: int, bs: List<bool>)
   ensures trace(x, for bs do y, b :: case !b => y + 1 case b => y)
     == counts(x, false, bs)
 
-lemma {:rw} {:teq} counts_true_def(x: int, bs: List<bool>)
+// (used on SV-COMP by mono-crafted_10 only)
+lemma {:rw} {:teq} counts_true(x: int, bs: List<bool>)
   ensures trace(x, for bs do y, b :: case b => y + 1 case !b => y)
     == counts(x, true, bs)
-
-// the values of a sequence at the iterations 0, ..., n - 1 are all c, e.g. the final values of an inner counter
-// (from nested_sum)
-lemma {:rw} {:teq} consts_prefix_def(n: Nat, c: int, js: List<int>, hs: List<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), js) == c) <==> consts_prefix(n, c, js)
 
 lemma {:rw} {:teq} current_trace_add_at<a>(a: array<a, int>, k: a, values: List<int>)
   ensures current(trace(a, for values do b, v :: b[k := b[k] + v]))
     == a[k := a[k] + sum(values)]
+
+// a histogram: the increments at the keys a[k] add to each cell v the number of occurrences of v among the keys
+// (from examples/dafny/algorithms/counting_sort.dfy; unused on SV-COMP)
+lemma {:rw} {:teq} current_trace_histogram(c0: array<int, int>, a: array<int, int>, n: Nat, hs: List<int>, v: int)
+  ensures current(trace(c0, for ⌊counter(0, 1, n)⌋, hs do c, k, h :: c[a[k] := c[a[k]] + 1]))[v]
+    == c0[v] + count(v, selects(a, ⌊counter(0, 1, n)⌋))
 
 lemma {:rw} {:teq} current_counts<a>(x: int, e: a, vs: List<a>)
   ensures current(counts(x, e, vs))
@@ -132,15 +132,6 @@ lemma {:rw} {:teq} earlier_counts<a>(j: Nat, x: int, e: a, vs: List<a>)
 lemma {:rw} {:teq} sums_consts(x: int, n: Nat, c: int)
   ensures sums(x, ⌊consts(n, c)⌋)
     == counter(x, c, n)
-
-// the sum of the first n values of a sequence that are all c, e.g. the final values of the counter of an inner loop;
-// the iteration constraint is abstracted by consts_prefix (see consts_prefix_def), since an iteration constraint as
-// a side condition does not terminate
-// (from examples/dafny/algorithms/nested_sum.dfy)
-lemma {:rw} {:teq} sum_consts_prefix(n: Nat, c: int, js: List<int>)
-  requires consts_prefix(n, c, js)
-  ensures sum(js)
-    == c * integer(n)
 
 // a sum of n terms that are each 0, c, or d is at most n times the largest of them, and one of remainders k % m of
 // the iterations k from 0 at most n (m - 1); the left-hand sides are comparisons, whose constants bind the bound
@@ -169,42 +160,38 @@ lemma {:rw} {:teq} sum_add(xs: List<int>, ys: List<int>)
 
 // a sum of indicators, 1 where a condition holds and 0 otherwise, is the number of values where it holds, which the
 // lemmas on counts evaluate
+// (used on SV-COMP by brs1 only)
 lemma {:rw} {:teq} sum_indicator_true<a>(xs: List<a>, P: a -> bool)
   ensures sum(maps(for xs yield x :: if P(x) then 1 else 0)) == count(true, maps(for xs yield x :: P(x)))
 
+// (unused on SV-COMP; the pair of sum_indicator_true)
 lemma {:rw} {:teq} sum_indicator_false<a>(xs: List<a>, P: a -> bool)
   ensures sum(maps(for xs yield x :: if P(x) then 0 else 1)) == count(false, maps(for xs yield x :: P(x)))
 
+// (used on SV-COMP by nest-if3 only)
 lemma {:rw} {:teq} count_consts<a>(n: Nat, e: a, v: a)
   ensures count(e, ⌊consts(n, v)⌋)
     == if v == e then integer(n) else 0
 
-// the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body
+// the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body; the counts of
+// false are the others, by count_false_true below (count_false_below and count_false_above are in the legacy file)
+// (used on SV-COMP by gj2007, mono-crafted_1, mono-crafted_9 only)
 lemma {:rw} {:teq} count_true_below(m: int, i: int, n: Nat)
   requires i <= m <= i + integer(n)
   ensures count(true, maps(for ⌊counter(i, 1, n)⌋ yield k :: k < m))
     == m - i
 
-lemma {:rw} {:teq} count_false_below(m: int, i: int, n: Nat)
-  requires i <= m <= i + integer(n)
-  ensures count(false, maps(for ⌊counter(i, 1, n)⌋ yield k :: k < m))
-    == i + integer(n) - m
-
+// (used on SV-COMP by brs1, mono-crafted_10 only)
 lemma {:rw} {:teq} count_true_above(m: int, i: int, n: Nat)
   requires i <= m <= i + integer(n)
   ensures count(true, maps(for ⌊counter(i, 1, n)⌋ yield k :: m <= k))
     == i + integer(n) - m
 
-lemma {:rw} {:teq} count_false_above(m: int, i: int, n: Nat)
-  requires i <= m <= i + integer(n)
-  ensures count(false, maps(for ⌊counter(i, 1, n)⌋ yield k :: m <= k))
-    == m - i
-
 lemma {:fw} {:teq} count_nonnegative<a>(e: a, vs: List<a>)
   ensures 0 <= count(e, vs)
 
 // the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m
-// (from half, sumt2)
+// (from half, sumt2, the only tasks of SV-COMP that use it)
 lemma {:rw} {:teq} count_remainder(n: Nat, m: int, r: int, hs: List<int>)
   requires 0 < m && 0 <= r < m
   ensures count(r, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: k % m)) == (integer(n) + m - 1 - r) / m
@@ -217,30 +204,36 @@ lemma {:rw} {:teq} count_false_true(i: int, c: int, n: Nat, hs: List<int>, P: (i
     == integer(n) - count(true, maps(for ⌊counter(i, c, n)⌋, hs yield k, h :: P(k, h)))
 
 // the iterations where a value is r are counted by the occurrences of r among the values
-// (from sumt2)
+// (from sumt2, the only task of SV-COMP that uses it)
 lemma {:rw} {:teq} count_true_eq(ks: List<int>, r: int, hs: List<int>, F: (int, int) -> int)
   ensures count(true, maps(for ks, hs yield k, h :: F(k, h) == r))
     == count(r, maps(for ks, hs yield k, h :: F(k, h)))
 
 // the initial value is a bound of the prefix maxima and minima, which are attained by some value otherwise
+// (used on SV-COMP by standard_maxInArray_ground only)
 lemma {:fw} {:teq} current_maxs_initial(x: int, values: List<int>)
   ensures x <= current(maxs(x, values))
 
+// (used on SV-COMP by standard_maxInArray_ground only)
 lemma {:rw} {:teq} current_maxs_earlier(k: Nat, x: int, values: List<int>)
   ensures earlier(k, values) <= current(maxs(x, values))
 
+// (used on SV-COMP by standard_minInArray_ground-2 only)
 lemma {:fw} {:teq} current_mins_initial(x: int, values: List<int>)
   ensures current(mins(x, values)) <= x
 
+// (used on SV-COMP by standard_minInArray_ground-2 only)
 lemma {:rw} {:teq} current_mins_earlier(k: Nat, x: int, values: List<int>)
   ensures current(mins(x, values)) <= earlier(k, values)
 
 // the prefix parities starting with an initial value
+// (unused on SV-COMP, with its current_parities; kept as a fold of the module)
 function {:teq} {:fold} parities(x: int, values: List<int>): Trace<int>
 {
   trace(x, for values do s, v :: case v % 2 == 0 => s + 1 case v % 2 != 0 => s - 1)
 }
 
+// (unused on SV-COMP; the final value of the fold parities)
 lemma {:rw} {:teq} current_parities(x: int, values: List<int>)
   ensures current(parities(x, values))
     == x + parity(values)
@@ -251,19 +244,19 @@ lemma {:rw} {:teq} current_parities(x: int, values: List<int>)
 // (from MonoCera: brs1-brs5, ms2-ms5)
 lemma {:rw} {:teq} select_current_trace_reset_add(a0: array<int, int>, j: int, n: Nat, c: int, G: (int) -> int)
   ensures
-    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a[j := a[j] + G(k)]))[j]
+    current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a[j := a[j] + G(k)]))[j]
       == if n == zero then a0[j] else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0))
 
 // an array filled by a recurrence at the positions 1, ..., n, each element from its predecessor plus G of the position
 // of the predecessor, is the initial element plus the sum of G over the positions before
 // (from eqn1, eqn1f, nsqm, nsqmf, pcomp, pcompf, sqm)
-lemma {:rw} {:teq} current_trace_prefix_sums(b0: array<int, int>, n: Nat, j: int, G: (int) -> int)
+lemma {:rw} {:teq} select_current_trace_prefix_sums(b0: array<int, int>, n: Nat, j: int, G: (int) -> int)
   ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := G(k) + b[k]]))[j]
     == if 0 <= j <= integer(n) then b0[0] + sum(maps(for ⌊counter(0, 1, natural(j))⌋ yield k :: G(k))) else b0[j]
 
 // the same with two added terms, since a higher-order summand matches a single summand only (see TODO.md)
-// (from nsqm, nsqmf, pcomp, pcompf, sqm)
-lemma {:rw} {:teq} current_trace_prefix_sums_add(b0: array<int, int>, n: Nat, j: int, G: (int) -> int,
+// (from nsqm, nsqmf, pcomp, pcompf, sqm; unused on SV-COMP, whose tasks nsqm, pcomp remain open for other reasons)
+lemma {:rw} {:teq} select_current_trace_prefix_sums_add(b0: array<int, int>, n: Nat, j: int, G: (int) -> int,
                                                  H: (int) -> int)
   ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := b[k] + G(k) + H(k)]))[j]
     == if 0 <= j <= integer(n) then b0[0] + sum(maps(for ⌊counter(0, 1, natural(j))⌋ yield k :: G(k) + H(k))) else b0[j]

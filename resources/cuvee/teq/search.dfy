@@ -31,7 +31,7 @@ lemma {:rw} {:teq} agree_prefix_def(n: Nat, xs: List<int>, ys: List<int>, hs: Li
 
 // a search: the elements before the exit n differ from e, i.e., e does not occur in the prefix of length n
 // (from standard_find_ground-1)
-lemma {:rw} {:teq} not_occurs_prefix_def(n: Nat, e: int, xs: List<int>, hs: List<int>)
+lemma {:rw} {:teq} not_occurs_prefix(n: Nat, e: int, xs: List<int>, hs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), xs) != e) <==> !occurs(e, prefix(n, xs))
 
 // the values of the iterations exceed the iterations
@@ -46,7 +46,7 @@ lemma {:fw} {:teq} earlier_agree_prefix(n: Nat, j: Nat, xs: List<int>, ys: List<
   ensures earlier(j, xs) == earlier(j, ys)
 
 // which is instantiated at the positions j in that range
-// (from standard_find_ground-1)
+// (from standard_find_ground-1, the only task of SV-COMP that uses it)
 lemma {:fw} {:teq} earlier_not_occurs_prefix(n: Nat, j: Nat, e: int, xs: List<int>)
   requires !occurs(e, prefix(n, xs)) && integer(j) < integer(n)
   ensures earlier(j, xs) != e
@@ -60,14 +60,15 @@ lemma {:fw} {:teq} store_occurs_selects(n: Nat, j: int, x: int, a: array<int, in
   ensures occurs(x, selects(a[j := x], ⌊counter(0, 1, n)⌋)) || integer(n) <= j
 
 // which is instantiated at the positions j in the range
-// (from simple_array_index_value_2)
+// (from simple_array_index_value_2; unused on SV-COMP; the fact at the reads of above_iterations)
 lemma {:fw} {:teq} earlier_above_iterations(n: Nat, j: Nat, ts: List<int>)
   requires above_iterations(n, ts) && integer(j) < integer(n)
   ensures integer(j) < earlier(j, ts)
 
-lemma {:rw} {:teq} not_occurs_selects_def(a: array<int, int>, x: int, i: int, n: Nat)
+lemma {:rw} {:teq} not_occurs_selects(a: array<int, int>, x: int, i: int, n: Nat)
   ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x) <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
 
+// (used on SV-COMP by n.c40, str_cpy only)
 lemma {:fw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int, n: Nat, k: int)
   requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋)) && i <= k < i + integer(n)
   ensures a[k] != x
@@ -77,6 +78,7 @@ lemma {:fw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int,
 // second case excludes G, such that the cases are disjoint, and the third keeps the state where lo < hi fails or no
 // guard holds, such that they are complete; the traces of the loops have no such case, the fold matches them since
 // their guards are disjoint and their iteration constraints exclude the third case in their updates
+// (unused on SV-COMP; for the binary searches of examples/dafny/state)
 function {:teq} {:fold} bisection(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool,
                           H: int -> bool): Trace<(int, int)>
 {
@@ -91,12 +93,14 @@ function {:teq} {:fold} bisection(l0: int, h0: int, ks: List<int>, M: (int, int)
 
 // if G holds on a prefix of [l0, h0), lo stays within l0 and the cut of G, and if H holds on a suffix, hi stays within
 // the cut of its negation and h0
+// (unused on SV-COMP; for the binary searches of examples/dafny/state)
 lemma {:fw} {:teq} bisection_lo(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool, H: int -> bool)
   requires l0 <= h0
   requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h
   requires forall p: int, q: int :: l0 <= p && p <= q && q < h0 && G(q) ==> G(p)
   ensures l0 <= current(bisection(l0, h0, ks, M, G, H)).0 <= cut(G, l0, h0)
 
+// (unused on SV-COMP; for the binary searches of examples/dafny/state)
 lemma {:fw} {:teq} bisection_hi(l0: int, h0: int, ks: List<int>, M: (int, int) -> int, G: int -> bool, H: int -> bool)
   requires l0 <= h0
   requires forall l: int, h: int :: l < h ==> l <= M(l, h) && M(l, h) < h

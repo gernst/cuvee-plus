@@ -216,12 +216,28 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   its declarations, other input with a fresh Dafny parser; the TEQ transform
   relies on it. It defines the datatype `Trace`, declares the functions on traces,
   and lemmas about them, which are `{:rw}` (rewrite rules of `-prove`) or `{:fw}` (forward lemmas) and
-  free, without a body (assumed by the solvers without proof). Lemmas that
-  identify a trace with a function of the database are named after it, e.g.
-  `stores_def` (likewise `selects_def` for `maps`, `agree_prefix_def` for
-  `invs`), those about an accessor of such a function after both, e.g.
-  `current_sums` or `earlier_prefix`, the others after what they state,
-  e.g. `current_trace_two_phases` or `sum_add`.
+  free, without a body (assumed by the solvers without proof). A function
+  that is a trace or a map is a fold (`{:fold}`, below) rather than a
+  declaration with a lemma `<name>_def` (Oct 23, 2026: `mods`). A `_def`
+  lemma remains where the function cannot be its own fold: `counter_def`
+  (the counter is the iteration of its own definition), `consts_def` (over a
+  counter of any start and step, which a fold, whose variables are its
+  formals, does not abstract), and the definitions of the predicates that
+  abstract iteration constraints, `agree_prefix_def` and
+  `above_iterations_def`, whose further dependency `hs` is no formal of the
+  predicate. A lemma that rewrites into a function without defining it is
+  named after what it states, e.g. `counts_true` (a trace of booleans),
+  `stores_cases`, `sorted_adjacent`, `not_occurs_prefix`; those about an
+  accessor of a function after both, e.g. `current_sums` or `earlier_prefix`,
+  the others after what they state, e.g. `current_trace_two_phases` or
+  `sum_add`.
+- A lemma that at most three proved tasks of SV-COMP apply says so on its
+  `(from ...)` line, `used on SV-COMP by <tasks> only` (the union of the
+  results of Cuvée since Oct 13, 2026, counted by `-rules`, see
+  scripts/rules.py), and a lemma that none applies, `unused on SV-COMP`, with
+  the reason why it stays (a law of a function of the database, a pair of a
+  used lemma, the examples); the lemmas of `sorted` serve the examples only
+  (module header).
 - `Trace` exists only with `-teq`. Inputs that use traces without `-teq`
   declare `Trace` themselves; Dafny inputs with `-teq` use the declarations of
   the database, inputs in other languages cannot.
@@ -262,7 +278,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
     generalized to a map, and hides it from the lemmas on traces
     (`diamond_1-1`); the predicate and its consequences are in `aggregation.dfy`, the
     definition is local (`linear-inequality-inv-*`), unlike definitions with
-    a specific body such as `consts_prefix_def`;
+    a specific body such as `agree_prefix_def`;
   - `!(y % 2 == 0) <==> y % 2 == 1` again, which opened
     `simple_array_index_value_1-1`;
   - lemmas on maps of a counter with a further dependency that the body does
@@ -270,7 +286,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
     `maps_counter_affine` does not match as `N + -k + -1`
     (`array_init_both_ends_multiple_sum`).
 - Auxiliary predicates abstract iteration constraints, e.g. `agree_prefix`
-  and `consts_prefix`, and are defined by recursion over the positions,
+  and `above_iterations`, and are defined by recursion over the positions,
   `earlier(m, xs)`, which the Lean proofs use; their names avoid
   those that inputs declare with other meanings, since equal signatures are
   identified.
@@ -305,7 +321,13 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `invs(for ⌊K⌋, ⌊X⌋ check k, x :: x == 5)` becomes `consts_prefix(n, 5, ⌊X⌋)`,
   which hides the constraint from `Simplify.invariants`, since that collects
   `invs` facts only; a definition lemma therefore comes late among the lemmas
-  on `invs`, after those that use such constraints.
+  on `invs`, after those that use such constraints. `consts_prefix_def` and
+  `sum_consts_prefix` are in legacy/teq.dfy since Oct 23, 2026, never applied
+  on SV-COMP: `consts_choice` of teq.dfy makes the constraint on a dependency
+  the constant sequence `xs == ⌊consts(n, c)⌋`, whose sum is `sum_consts`,
+  without the premise on the length of the list that the read `earlier(natural(k), js)`
+  needed in Lean; definition lemmas of this form remain in search.dfy
+  (`agree_prefix_def`, `not_occurs_prefix`).
 - Lemmas written for a program (the summaries of inner loops, the inductions,
   the chains of [examples/dafny/algorithms](../examples/dafny/algorithms),
   whose NOTES.md records the findings) follow patterns that the matcher
@@ -457,8 +479,7 @@ and that the engine does not check are listed in `premises.txt`, each with the
 reason why the contexts of `-teq` provide it: reads within the loop
 (`integer k < integer n` of `earlier_counter`, `earlier_sums`, ...), prefixes
 not longer than the list (`prefix_counter`), the lengths of lists that are
-no dependency of a combinator (`sum_consts_prefix`,
-`earlier_not_occurs_prefix`).
+no dependency of a combinator (`earlier_not_occurs_prefix`).
 
 Complete guards need no premise. A lemma with arbitrary guards (`bisection`,
 `current_trace_bounded`, `current_trace_increasing`) ends in a case for the

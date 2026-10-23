@@ -97,6 +97,8 @@ function {:teq} consts<a>(n: Nat, v: a): Trace<a>
   case succ(m) => step(v, consts(m, v))
 }
 
+// TODO: can we make cutFrom replace cut everywhere, i.e., inline it?
+
 // the cut of a predicate G that holds on a prefix of [l, h): the first index where it fails, h if none (l if the
 // interval is empty); a predicate H that holds on a suffix has the cut of its negation, the first index where H
 // holds; by the search of the n indices from l, cutFrom, which recurs on a natural; neither is a rule of the engines
@@ -179,7 +181,7 @@ lemma {:rw} {:teq} counter_def(i: int, c: int, n: Nat)
   ensures trace(i, for ⌊counter(0, 1, n)⌋ do x, k :: x + c)
     == counter(i, c, n)
 
-// a variable that keeps its value in each iteration (consts_def of counters.dfy), e.g. the index of a search before it
+// a variable that keeps its value in each iteration, e.g. the index of a search before it
 // is found; without it, a summary lemma with a case that keeps the value matches the trace with its other cases
 // unspecified
 lemma {:rw} {:teq} consts_def<a>(x: a, i: int, c: int, n: Nat)

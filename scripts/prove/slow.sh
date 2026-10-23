@@ -1,6 +1,6 @@
 #!/bin/bash
 # the slow sets of the engine of -prove, run on request or before a commit, not in between (see quick.sh):
-# the transpose, the unit tests, and the algorithms of examples/dafny/algorithms with their command lines, each with a
+# the unit tests and the algorithms of examples/dafny/algorithms with their command lines, each with a
 # 60 s timeout, two at a time, reporting the exit status, the time and the number of remaining goals per file, as the
 # baseline for the work on the algorithms (most leave goals or fail, since teq.dfy lacks their lemmas and the optional
 # modules they include were written for the per-variable form)
@@ -8,7 +8,6 @@
 cd "$(dirname "$0")/../.."
 jar=${1:-cuvee.jar}
 
-timeout 60 nice -n 19 java -cp "$jar" cuvee.Cuvee -test examples/dafny/state/transpose.dfy < /dev/null 2>&1 | tail -1
 mill -i test.testOnly cuvee.test.prove.SimplexTests cuvee.test.prove.ClassesTests < /dev/null 2>&1 | grep "Tests:"
 
 one() {

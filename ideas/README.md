@@ -9,6 +9,9 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
   gain.
 - [prove-next.md](prove-next.md): the planned changes to the engine of `-prove` after the database migration, with
   what was tried.
+- [database-review.md](database-review.md): the review of the lemma database of Oct 23, 2026: usage on SV-COMP,
+  what could be unified, the lemmas of examples/dafny/algorithms (copies, candidates, program-specific), the
+  lemmas that work around gaps of the engine, the open points of earlier analyses.
 - [conditional-stores.md](conditional-stores.md): guarded stores merged into stores of conditional values, in
   `-teq`, instead of `2^s` cases (the strided stores `pr3`-`pr5`).
 - [iterator-profiles.md](iterator-profiles.md): the loop patterns of LoopAnnotator (ASE 2026, iterator

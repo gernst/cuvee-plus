@@ -32,7 +32,7 @@ from earlier iterations, pointer aliasing, and calls whose contracts do not give
 | T (`break`/`return` paths) | guards that need not cover every case (Cuvée's deviation from the paper) |
 | I-P invariant | the iteration constraint `all(for ⌊K⌋, … check …)`; `invs` facts |
 | I-E with a recursive logic function | `current(trace(init, for ⌊K⌋, … do x, k ↦ update))`, one term for all loops |
-| I-E as a quantifier over `a[qi]` | `stores` / `current_trace_conditional_store`, `selects` |
+| I-E as a quantifier over `a[qi]` | `stores` / `select_current_trace_conditional_store`, `selects` |
 | I-I from the profile | the index trace, named `counter(i, c, n)` by an introduction rule; the bounds from `invs_counter_*` |
 | iterator profile (per header pattern) | a database module per iteration concept, matched on combinators, not on syntax |
 | `.lemma` templates, assumed per loop | acceleration lemmas, proved once (Lean) and matched |
@@ -102,8 +102,8 @@ choose a form of invariant that Frama-C can check. In TEQs both are the database
 ### Covered, or close
 
 - **Conditional writes at the index**: `if (c(a[i])) a[i] = v;` (example 1 of the paper; VAJRA `cond*`, `mod*`,
-  `res*`). `current_trace_conditional_store`. The guard reads `a[i]` in the current state, which at iteration `i`
-  still holds `a₀[i]` (`stores_def_read_unmodified`).
+  `res*`). `select_current_trace_conditional_store`. The guard reads `a[i]` in the current state, which at iteration `i`
+  still holds `a₀[i]` (`stores_read_unmodified`).
 - **Accumulators**: `sum += a[i]`, `count++` under a condition (example 2; `array_sum`, `sum_even`,
   `occurences_of_x`). `sums`, `counts`, `current_sums`. A conditional increment `case C ⇒ x + f(k), case ¬C ⇒ x`
   needs the two cases merged into `x + (if C then f(k) else 0)` before `sums` applies. That is the same merge as

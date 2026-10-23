@@ -130,7 +130,7 @@ the contexts that `-teq` builds, as far as the reasons go.
   `invs(for ⌊counter(0, 1, m)⌋, rs check k, r :: r == !nodup(a, k, n))` of a lemma on `distincts(...)` into the fact
   `invs(... :: !r)`, so that `distincts(...)` was proved from itself, also for the negated postcondition; the path
   through the split goals is not isolated. Side conditions of a rule should not be simplifiable by rules that use
-  the conclusion; atoms as side conditions (`consts_prefix` style) avoid it.
+  the conclusion; atoms as side conditions (`agree_prefix` style) avoid it.
 
 ### Deviations of the semantics, by decision
 
@@ -221,7 +221,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   result contains the rewritten term (`Rewrite.apply`). Also non-terminating, not analysed yet:
   [add-3-n-u](benchmarks/sv-comp/dafny/array-multidimensional/add-3-n-u.dfy), `copy-partial-3-u`, `diff-3-n-u`.
 - A cycle through a side condition that is an iteration constraint, resolved for `sum_invs_const` of teq.dfy, which
-  is `consts_prefix_def` and `sum_consts_prefix` now, with the atom `consts_prefix(n, c, js)` abstracting the
+  was `consts_prefix_def` and `sum_consts_prefix` (in legacy/teq.dfy since Oct 23, 2026, replaced by `consts_choice` and `sum_consts`), with the atom `consts_prefix(n, c, js)` abstracting the
   constraint like `agree_prefix`; the mechanism remains for any rule with a general left-hand side and an `invs` side
   condition: `sum_invs_const` had the left-hand side `sum(js)`, which matches every sum, and the side condition
   `invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)`, open in `n` and `c`, which `Rewrite.conditions`

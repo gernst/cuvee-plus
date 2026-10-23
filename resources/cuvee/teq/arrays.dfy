@@ -12,36 +12,38 @@ lemma {:rw} {:teq} trace_read_initial<a, b>(a: array<a, b>, keys: List<a>, fs: L
   ensures trace(a, for keys, fs do b, k, f :: b[k := f(b[k])])
     == trace(a, for keys, fs do b, k, f :: b[k := f(a[k])])
 
+// TODO: stores_cases seems to work around a limitation in the matcher: we cannot instantiate a `maps` term from the full case-distinction
+
 // a loop that updates each position once, by cases on its old value, stores the values computed from the initial
 // array, since a[k] is not modified before iteration k; the first case stores a constant, since a higher-order
 // instance must contain the term it abstracts, a[k] (see Rewrite.abstraction)
 // (from MonoCera: conda, s1lif-s5lif)
-lemma {:rw} {:teq} stores_cases_def(a0: array<int, int>, n: Nat, c: int, P: (int) -> bool, G: (int) -> int)
+lemma {:rw} {:teq} stores_cases(a0: array<int, int>, n: Nat, c: int, P: (int) -> bool, G: (int) -> int)
   ensures
-    trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(a[k]) => a[k := c] case !P(a[k]) => a[k := G(a[k])])
+    trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case P(a[k]) => a[k := c] case !P(a[k]) => a[k := G(a[k])])
       == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(a0[k]) then c else G(a0[k])))
 
 // a loop that stores at each position k a constant chosen by cases on k stores these values
 // (from MonoCera: brs2-brs5)
-lemma {:rw} {:teq} stores_index_cases_def(a0: array<int, int>, n: Nat, c: int, d: int, P: (int) -> bool)
+lemma {:rw} {:teq} stores_index_cases(a0: array<int, int>, n: Nat, c: int, d: int, P: (int) -> bool)
   ensures
-    trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case P(k) => a[k := c] case !P(k) => a[k := d])
+    trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case P(k) => a[k := c] case !P(k) => a[k := d])
       == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(k) then c else d))
 
 // stores at the positions 0, ..., n - 1 of values read from the array itself outside of that range read the initial
 // array
-// (from standard_palindrome_ground)
-lemma {:rw} {:teq} stores_def_read_unmodified(a0: array<int, int>, n: Nat, hs: List<int>, F: (int, int) -> int)
+// (from standard_palindrome_ground, the only task of SV-COMP that uses it)
+lemma {:rw} {:teq} stores_read_unmodified(a0: array<int, int>, n: Nat, hs: List<int>, F: (int, int) -> int)
   requires invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: integer(n) <= F(k, h))
   ensures trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := a[F(k, h)]])
     == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a0[F(k, h)]))
 
 // the same where the other iterations keep the array, e.g. since the simplifier has reduced sum[0] + a[i] to sum[0]
 // for a[i] == 0
-// (from MonoCera: ms1)
+// (from MonoCera: ms1, the only task of SV-COMP that uses it)
 lemma {:rw} {:teq} select_current_trace_reset_keep(a0: array<int, int>, j: int, n: Nat, c: int)
   ensures
-    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case k == 0 => a[j := c] case 0 < k => a))[j]
+    current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a))[j]
       == if n == zero then a0[j] else c
 
 // a read at a position other than that of an update, also where the simplifier does not decide that they differ, from
@@ -53,22 +55,23 @@ lemma {:rw} {:teq} select_store_other<a, b>(a: array<a, b>, i: a, v: b, j: a)
 
 // the elements of stores at the positions of a counter, read at the positions of the same counter, are the stored
 // values; both counters are patterns, since they are different trace variables in programs
-// (from conda, condaf, ss1, ss1f)
+// (from conda, condaf, ss1, ss1f; used on SV-COMP by revcpyswp2 only)
 lemma {:rw} {:teq} selects_stores_counter(a: array<int, int>, i: int, c: int, n: Nat, vs: List<int>)
   requires c != 0
   ensures selects(current(stores(a, ⌊counter(i, c, n)⌋, vs)), ⌊counter(i, c, n)⌋) == vs
 
 // stores at the positions of a counter, guarded by C, keep the other positions; a read at j
-// (from copysome1-1, copysome1-2)
-lemma {:rw} {:teq} current_trace_conditional_store(a0: array<int, int>, n: Nat, j: int, C: (int) -> bool,
+// (from copysome1-1, copysome1-2; used on SV-COMP by copysome1-1 only)
+lemma {:rw} {:teq} select_current_trace_conditional_store(a0: array<int, int>, n: Nat, j: int, C: (int) -> bool,
                                                    V: (int) -> int)
   ensures
-    current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i :: case C(i) => a[i := V(i)] case !C(i) => a))[j]
+    current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case C(k) => a[k := V(k)] case !C(k) => a))[j]
       == if 0 <= j < integer(n) && C(j) then V(j) else a0[j]
 
+// TODO: explain why this is not covered by the standard selects/stores mechanism, perhaps because of a limitation in the `maps` instantiation?
 // the same, with the guard and the value on the values of three further dependencies at the iteration of j
-// (from array_mul_init)
-lemma {:rw} {:teq} current_trace_conditional_store_deps(a0: array<int, int>, n: Nat, j: int, hs: List<int>,
+// (from array_mul_init; used on SV-COMP by array_mul_init, motivex only)
+lemma {:rw} {:teq} select_current_trace_conditional_store_deps(a0: array<int, int>, n: Nat, j: int, hs: List<int>,
                                                         cs: List<int>, vs: List<int>, C: (int, int, int) -> bool,
                                                         V: (int, int, int) -> int)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs, cs, vs do a, k, h, c, v ::
@@ -79,8 +82,8 @@ lemma {:rw} {:teq} current_trace_conditional_store_deps(a0: array<int, int>, n: 
 
 // a clamp of each element to b, where the guard reads the initial element, since each position is written in its own
 // iteration only; a generic guard C(a[k], k) is no pattern, and C(a, k) would read other positions
-// (from condn, condnf)
-lemma {:rw} {:teq} current_trace_cap(a0: array<int, int>, n: Nat, j: int, b: int, hs: List<int>)
+// (from condn, condnf; used on SV-COMP by condn only)
+lemma {:rw} {:teq} select_current_trace_cap(a0: array<int, int>, n: Nat, j: int, b: int, hs: List<int>)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: case a[k] < b => a case b <= a[k] => a[k := b]))[j]
     == if 0 <= j < integer(n) && b <= a0[j] then b else a0[j]
 

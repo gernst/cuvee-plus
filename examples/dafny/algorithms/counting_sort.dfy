@@ -5,8 +5,8 @@
 // status: verified with -teq -simplify; the precondition on the keys is the atom keys_below(a, n, k) instead of
 // forall i :: 0 <= i < n ==> 0 <= a[i] < k, since a quantified side condition is not matched against a quantified
 // hypothesis (the vocabulary approach of count_occurrences.dfy); the four loops summarize in sequence: the zeroing is
-// stores of consts (teq.dfy), the histogram by current_trace_histogram (the increments at the keys a[k] add the
-// counts of the values), the prefix sums of the counts fold into sums over the counts (teq.dfy), and their stores at
+// stores of consts (teq.dfy), the histogram by current_trace_histogram of teq:aggregation (the increments at the
+// keys a[k] add the counts of the values), the prefix sums of the counts fold into sums over the counts (teq.dfy), and their stores at
 // the values are the abstract rank_table(c, a, n, kk) by rank_table_def, which binds kk in the pattern of the
 // scatter; the scatter stores a[k] at the position read from the table, which is then incremented, i.e. at its rank
 // plus the number of equal elements before it: sorted_scatter and count_scatter state the result on the whole
@@ -19,11 +19,6 @@ function sorted(a: array<int, int>, lo: int, hi: int): bool
 // the keys of a[0..n) are in [0, k): the precondition as an atom, since a quantified side condition is not matched
 // against a quantified hypothesis
 function keys_below(a: array<int, int>, n: int, k: int): bool
-
-// a histogram: the increments at the keys a[k] add the number of occurrences of each value
-lemma {:rw} current_trace_histogram(c0: array<int, int>, a: array<int, int>, n: Nat, hs: List<int>, v: int)
-  ensures current(trace(c0, for ⌊counter(0, 1, n)⌋, hs do c, k, h :: c[a[k] := c[a[k]] + 1]))[v]
-    == c0[v] + count(v, selects(a, ⌊counter(0, 1, n)⌋))
 
 // the table of start positions: for the values v below kk, the number of elements of a[0..n) below v, over c
 // elsewhere; the prefix sums of the histogram stored at the values
