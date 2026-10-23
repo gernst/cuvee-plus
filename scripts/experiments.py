@@ -29,8 +29,8 @@ class Need:
 
     options: tuple[str, ...] = ()
     timelimit: float | None = FULL
-    # a prefix of the version of the tool, e.g. "0.42." for the runs before the migration of the lemma database
-    version: str | None = None
+    # prefixes of the version of the tool, e.g. "0.42." for the runs before the migration of the lemma database
+    version: str | tuple[str, ...] | None = None
 
 
 def options(path: Path) -> set[str]:
@@ -47,7 +47,8 @@ def options(path: Path) -> set[str]:
 
 
 def find(benchmark: str, name: str, need: Need, directory: Path = common.RESULTS) -> common.Results | None:
-    """The most recent results of `benchmark` on category `name` that meet `need`."""
+    """The most recent results of `benchmark` on category `name` that meet `need`, merged with the most recent
+    results of the other parts of the category that meet it (common.PARTS)."""
     candidates = []
     for path in directory.glob(f"{benchmark}.*.results.*.xml.bz2"):
         match = common.FILENAME.match(path.name)
@@ -62,10 +63,10 @@ def find(benchmark: str, name: str, need: Need, directory: Path = common.RESULTS
             continue
         if not set(need.options) <= options(path):
             continue
-        candidates.append((match["date"], path))
+        candidates.append((match["date"], attributes.get("block", ""), path))
     if not candidates:
         return None
-    return common.load(benchmark, max(candidates)[1])
+    return common.load(benchmark, common.newest(candidates))
 
 
 def gather(benchmark: str, categories: list[str], need: Need, directory: Path = common.RESULTS) -> dict[str, common.Results]:
@@ -299,15 +300,16 @@ DOCUMENT = r"""\documentclass[a4paper]{article}
 {\small\today\par}
 \end{center}
 
-\noindent The experiments of \texttt{ideas/experiments.md}, with the current version of Cuvée only (0.46, after
-the migration of the lemma database). Cuvée (TEQ) runs with \texttt{-teq -prove -split -prove -split -prove} (one trace
-per strongly connected component of the variables of a loop, the deduction engine \texttt{-prove}), the lemma
-database \texttt{teq.dfy} with the modules \texttt{aggregation}, \texttt{arithmetic}, \texttt{arrays},
-\texttt{counters}, \texttt{search}, \texttt{sorted}, \texttt{strides}, \texttt{unsigned}, and
-\texttt{-verify}; Cuvée+Z3 (TEQ) adds \texttt{-fallback -z3} (one round of \texttt{-split -prove}), Cuvée (CHC) is
-\texttt{-simplify -chc -z3}. All our runs: BenchExec, 15\,min CPU time, 7\,GB, 2 cores of an Intel Core i7-6700
-@ 3.40\,GHz, unless the legends say otherwise. A dash marks results that are missing, listed as pending.
-No scores are given, since our runs do not validate witnesses.
+\noindent The experiments of \texttt{ideas/experiments.md}, with the current versions of Cuvée only (0.49 and 0.50,
+after the migration of the lemma database and with the answers per goal). Cuvée (TEQ) runs with \texttt{-teq -prove
+-split -prove -split -prove} (one trace per strongly connected component of the variables of a loop, the deduction
+engine \texttt{-prove}), the lemma database \texttt{teq.dfy} with the modules \texttt{aggregation},
+\texttt{arithmetic}, \texttt{arrays}, \texttt{counters}, \texttt{search}, \texttt{sorted}, \texttt{strides},
+\texttt{unsigned}; Cuvée+Z3 (TEQ) adds \texttt{-fallback -z3} (one round of \texttt{-split -prove}), Cuvée (CHC) is
+\texttt{-simplify -chc -z3}. Cuvée answers each goal, which the tool-info module combines to the verdict, and
+writes witnesses (\texttt{-witness}). All our runs: BenchExec, 15\,min CPU time, 7\,GB, 2 cores of an AMD Ryzen 7
+PRO 5750G, unless the legends say otherwise. A dash marks results that are missing, listed as pending. No scores
+are given, since our runs do not validate witnesses.
 
 \section{Aggregates over arrays: the MonoCera tests}
 The 125 SV-COMP tests of Amilon et al.\ (CAV 2023), one per operator (\texttt{\textbackslash forall},
@@ -325,8 +327,7 @@ are Table~3 of the paper (300\,s wall time, AMD Opteron 2220). Tests verified:
 
 \section{SV-COMP ReachSafety-Arrays and -Loops}
 Our runs of Cuvée next to the official results of SV-COMP 2026 for the other verifiers, which validate the
-witnesses (unconfirmed: correct, but the witness was not validated). Cuvée answers itself with
-\texttt{-verify}, without witnesses.
+witnesses (unconfirmed: correct, but the witness was not validated). Cuvée's witnesses are not validated.
 \begin{center}\footnotesize
 \fit{\input{svcomp.tex}}
 <svcomp-note>
@@ -344,23 +345,11 @@ wrong.
 \end{center}
 \noindent\plot{quantile-union.pdf}
 
-\section{Mathematical integers: the unbounded set}
-The 481 C programs of \texttt{benchmarks/sv-comp/c}, printed from the Dafny translations of tasks of
-ReachSafety-Arrays and -Loops with symbolic loop bounds, all expected true. Cuvée with \texttt{-unbounded},
-Korn with \texttt{-u} (no ranges for nondeterministic values), without fuzzing, which runs the program on machine
-integers, and with the confirmation of counterexamples; TriCera of the MonoCera artifact with its default
-mathematical integers, which also checks memory safety (the arrays of the programs are sized for it).
-\begin{center}\footnotesize
-\fit{\input{unbounded.tex}}
-<unbounded-note>
-\medskip
-<unbounded-legend>
-\end{center}
-\noindent\plot{quantile-Unbounded.pdf}
-
 \section{Annotations against automation: the ACSL tasks}
-The tasks of Arrays and Loops annotated by hand with ACSL (\texttt{benchmarks/acsl}), checked with
-\texttt{-vcgen -z3} (60\,s), against TEQ without annotations on the same programs (Section~2). True tasks proved:
+The tasks of Arrays and Loops with ACSL (\texttt{benchmarks/acsl}, laid out as in sv-benchmarks, the true tasks
+that Cuvée's C supports annotated by a coding agent), checked with \texttt{-vcgen -z3}, \texttt{-split} for the
+47 tasks of Loops that need it (a task set of its own, merged into Loops), against TEQ without annotations on the
+same programs (Section~2). True tasks proved:
 \begin{center}\footnotesize
 \fit{\input{acsl.tex}}
 \par\medskip
@@ -381,6 +370,16 @@ current sv-benchmarks (253 and 7 tasks).
 <svlib-legend>
 \end{center}
 \noindent\plot{quantile-svlib.pdf}
+
+\section{Quantified postconditions: the RAPID benchmarks}
+The 33 array programs in Boogie of the evaluation of RAPID (Georgiou, Gleiss, Kovács), each one procedure with one
+loop without invariant and a quantified postcondition, all expected correct (\texttt{benchmarks/rapid}).
+\begin{center}\footnotesize
+\fit{\input{rapid.tex}}
+<rapid-note>
+\medskip
+<rapid-legend>
+\end{center}
 \end{document}
 """
 
@@ -394,11 +393,12 @@ def main():
     plt = common.pyplot()
     replacements = {}
 
-    # only the runs of the current version of Cuvée (one trace per component, -prove, the migrated modules);
-    # older runs are not mixed in, their configurations are pending until rerun
-    current = "0.46."
-    teq = Need(("-verify",), version=current)
-    unbounded = Need(("-verify", "-unbounded"), version=current)
+    # only the runs of the current versions of Cuvée (one trace per component, -prove, the migrated modules, the
+    # answers per goal of 0.48.0 without -verify); older runs are not mixed in, their configurations are pending
+    # until rerun
+    current = ("0.49.", "0.50.")
+    teq = Need(version=current)
+    unbounded = Need(("-unbounded",), version=current)
 
     # 1. MonoCera
     spec1 = columns([
@@ -437,26 +437,14 @@ def main():
     replacements["union"] = (note(pending(spec3, categories)), "")
     plots(plt, out, "union", spec3, categories, "TEQ and the portfolios (Arrays and Loops)", file="quantile-union.pdf")
 
-    # 4. unbounded
-    spec4 = columns([
-        ("cuvee", "here", gather("cuvee", ["Unbounded"], unbounded)),
-        ("cuvee-fallback", "here", gather("cuvee-fallback", ["Unbounded"], unbounded)),
-        ("cuvee-chc", "here", gather("cuvee-chc", ["Unbounded"], unbounded)),
-        ("korn", "here", gather("korn", ["Unbounded"], Need(("-u",)))),
-        ("tricera", "here", gather("tricera", ["Unbounded"], Need())),
-    ])
-    (out / "unbounded.tex").write_text(grid(spec4, ["Unbounded"]))
-    replacements["unbounded"] = (note(pending(spec4, ["Unbounded"])), legend(spec4))
-    plots(plt, out, "Unbounded", spec4, ["Unbounded"], "Unbounded set", file="quantile-Unbounded.pdf")
-
-    # 5. ACSL, whose tasks are matched with those of sv-benchmarks/c by folder and name
+    # 4. ACSL, whose tasks are matched with those of sv-benchmarks/c by folder and name
     annotated = gather("cuvee-acsl", categories, Need(timelimit=None, version=current))
-    expected = expectations([results.path for results in annotated.values()])
+    expected = expectations([path for results in annotated.values() for path in results.paths])
     annotated = {name: replace(results, runs=[replace(run, task=acsl_task(run.task)) for run in results.runs]) for name, results in annotated.items()}
     (out / "acsl.tex").write_text(acsl(annotated, teq_results, expected))
     replacements["acsl"] = ("", legend(columns([("cuvee-acsl", "here", annotated)])))
 
-    # 6. SV-LIB
+    # 5. SV-LIB
     svlib = ["CTranslated (SV-LIB)", "CoreVerification (SV-LIB)"]
     official6 = common.collect(["cpachecker", "pysvlib-chc", "svlibchecker"], svlib, args.official, quiet=True)
     spec6 = columns([
@@ -467,6 +455,16 @@ def main():
     (out / "svlib.tex").write_text(grid(spec6, svlib))
     replacements["svlib"] = (note(pending(spec6, svlib)), legend(spec6))
     plots(plt, out, "svlib", spec6, svlib, "SV-LIB verification tasks")
+
+    # 6. RAPID
+    rapid = ["RAPID (Boogie)"]
+    spec7 = columns([
+        ("cuvee", "here", gather("cuvee", rapid, teq)),
+        ("cuvee-fallback", "here", gather("cuvee-fallback", rapid, teq)),
+        ("cuvee-chc", "here", gather("cuvee-chc", rapid, teq)),
+    ])
+    (out / "rapid.tex").write_text(grid(spec7, rapid))
+    replacements["rapid"] = (note(pending(spec7, rapid)), legend(spec7))
 
     document = DOCUMENT
     for key, (text, legend_text) in replacements.items():

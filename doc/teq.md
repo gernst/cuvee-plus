@@ -255,7 +255,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   of the program are folded before they are matched.
 - Functions that produce traces are plural (`sums`, `maxs`, `counts`), their
   scalar counterparts singular (`sum`, `max`, `count`).
-- Lemmas found on the SV-COMP examples (`benchmarks/sv-comp/dafny`) are merged into
+- Lemmas found on the Dafny translations of SV-COMP tasks (removed on Oct 23, 2026) are merged into
   the groups, with the examples they come from as `(from ...)`, and two new
   groups, the length of iterations and arithmetic in the normal form of the
   simplifier. Left out are lemmas that are no rules in general: the split of
@@ -665,13 +665,3 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
   traces, which declare `Trace` and the functions on traces as in teq.dfy.
 - E.g. `./Cuvee.sh -teq -prove examples/dafny/vcgen/sum.dfy`.
-- The Dafny translations of SV-COMP (`benchmarks/sv-comp/dafny`) and the C
-  programs printed from them (`benchmarks/sv-comp/c`, since patched for other
-  verifiers) are benchmarks, not tests (their databases of expected results
-  were removed Oct 23, 2026); their summary is
-  `benchmarks/sv-comp/dafny/summary.md`. The translations write the division
-  and remainder of C as `quot` and `rem` of the prelude of Dafny, lemmas keep
-  `/` and `%`. `-print c -known dfy,teq,rw` prints their programs without
-  the logic, where `teq` keeps the lemmas of the database out of the output;
-  the C programs lack the lemmas of their Dafny files, hence they leave goals
-  that the Dafny files close (see TODO.md).

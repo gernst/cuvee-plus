@@ -4,6 +4,8 @@ Wrong results, errors, crashes, and non-termination, as of 0.46.7 (Oct 13, 2026)
 benchmarks of others (sv-benchmarks); limitations and planned work are
 in [TODO.md](TODO.md). Soundness comes first: a wrong proof costs more than any open goal (SV-COMP: -32 for a wrong
 true, -16 for a wrong false).
+The files `<name>.dfy` named as examples were the Dafny translations of SV-COMP tasks in `benchmarks/sv-comp/dafny`,
+removed with their C versions on Oct 23, 2026 (in the history of git before that).
 
 ## Soundness
 
@@ -26,6 +28,12 @@ true, -16 for a wrong false).
   ([Horn.scala](src/cuvee/verify/Horn.scala), `checked`), even if the clauses apply a function declared
   `:abstract`; the fix of 0.42.1 covers refuted goals only (`Solver.sink`). `Cmd.funs` of the clauses against
   the abstract functions, as for goals, would make it `unknown`.
+
+- **C variables named like the constants of SMT-LIB** (`int true = 1; int false = 0;`,
+  `benchmarks/acsl/loops-crafted-1/watermelon`, formerly an entry of the errors below): they keep their names and
+  reach z3 as `(true Int)`, `(false Int)`, a sort error ("solver error") until the answers per goal (0.48.0);
+  since, z3 refutes two of the goals, a wrong `false` of the true task under `-vcgen -split -z3` (0.49.6, Oct 23,
+  2026). Such names need renaming in the frontend.
 
 - **Parallel composition** (`-hybrid`, moved from TODO.md):
   - Sequential calls neither establish the callee's assumption nor guarantee
@@ -104,14 +112,6 @@ the contexts that `-teq` builds, as far as the reasons go.
   `fermat1-ll_unwindbound1` is `unknown`, 627 s). Still wrong in the 15-minute runs of 0.42.1 (5 of them, the
   others time out); a rerun with 0.42.2 is pending, which may also lose correct results that came from such
   contradictions.
-- `-fallback -z3` proves `benchmarks/sv-comp/dafny/nla-digbench/geo1-u` (expected unsafe), in the runs of
-  `xml/cuvee-quick-fallback.xml` of 2026-10-10 15:25 and 16:12: a soundness problem of the encoding or of the
-  lemmas it relies on, not yet analysed; possibly the overlapping exits of loops above (fixed in 0.42.2), to
-  check. Its C version is unsafe only by the wrap-around of `unsigned long long`,
-  which the C frontend models without `-unbounded` (0.36.0): the fallback no longer proves geo1-u and its 14
-  variants in nla-digbench-scaling, Z3 finds a model instead (15-minute runs of Oct 11, 2026), and `-chc` reports
-  the violation; with `-unbounded`, it proves it again, as the semantics drops the wrap-around. The Dafny version,
-  over mathematical integers, has not been rerun.
 - **The published SV-COMP archive** (0.41.4, 10.5281/zenodo.23317707) predates the entry points (25c90e96):
   `-teq` checks functions out of the context of their calls and answers `incorrect` for `sanfoundry_24-1` and
   `verifythis/lcp` (wrong false). Fixed in the code; the archive is wrong until a new version is published (see
@@ -144,13 +144,10 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 
 ## Errors and crashes
 
-- C: variables named like the constants of SMT-LIB, `int true = 1; int false = 0;`
-  (`benchmarks/acsl/loops-crafted-1/watermelon`), keep their names and reach z3 as `(true Int)`, a sort error
-  ("solver error"); such names need renaming in the frontend.
 - `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on
   a loop body with ten conditionals in sequence, presumably from the 2^10
   paths of its symbolic execution (see
-  [diamond_2-2.dfy](benchmarks/sv-comp/dafny/loop-acceleration/diamond_2-2.dfy)).
+  `diamond_2-2.dfy`).
 - A solver error stops the run with the error instead of an answer, e.g. `-teq -prove -z3` without
   `-fallback` (`unknown constant integer (Nat)`); an error of the solver could count as `unknown` for its goal
 - An input file with an unknown extension, e.g. a preprocessed C file
@@ -190,7 +187,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   the bounds `0 <= k < n` of the iterations that matching the `invs` of the
   side condition assumes in the context of its body (`Simplify.combinator`),
   where the rule is tried again (see
-  [standard_find_ground-1.dfy](benchmarks/sv-comp/dafny/array-examples/standard_find_ground-1.dfy)).
+  `standard_find_ground-1.dfy`).
 - A pattern with two cases matches an update with a single case, which one
   case of the pattern covers (`Rewrite.matchesUpdates`); variables of the rule
   that occur only in the other case stay uninstantiated, and the rule is
@@ -198,19 +195,19 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   `trace(x0, ... :: case c => F(x, k, h) case !c => G(x, k, h)) == if c then trace(... F ...) else trace(... G ...)`
   rewrites `trace(a, ... :: x[h := x[h] + 2])` to
   `if true then trace(... F ...) else trace(... G ...)` with `G` free, which
-  does not terminate (see [condm.dfy](benchmarks/sv-comp/dafny/array-fpi/condm.dfy)).
+  does not terminate (see `condm.dfy`).
   This is why the joins of guarded stores are not part of teq.dfy: they
   match every store with one case, e.g. `a[k := a[-k + 99999]]` of
-  [standard_palindrome_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_palindrome_ground.dfy),
+  `standard_palindrome_ground.dfy`,
   as `if true then ... else G(a, k, h)` with `G` free, which hides the update
   from other lemmas.
-- A cycle through the arithmetic: in [ss1.dfy](benchmarks/sv-comp/dafny/array-fpi/ss1.dfy), the equation
+- A cycle through the arithmetic: in `ss1.dfy`, the equation
   `sum₄₀ == sum₂₂ + sum(selects(a₃₁, ⌊I₃₉⌋))` is solved for `sum₂₂` (`Chains`), whose value is then inlined into
   `⌊consts(n, sum₂₂ + 1)⌋`, which `selects_stores` returns for `selects(a₃₁, ⌊I₃₉⌋)`, which reappears in the
   solution; the poly guard against cycles (`Simplify.poly`) sees the equations of the context only, not the rules.
   Remedies: prefer to solve for the variable that occurs in fewer definitions (`sum₄₀`), or reject a rewrite whose
   result contains the rewritten term (`Rewrite.apply`). Also non-terminating, not analysed yet:
-  [add-3-n-u](benchmarks/sv-comp/dafny/array-multidimensional/add-3-n-u.dfy), `copy-partial-3-u`, `diff-3-n-u`.
+  `add-3-n-u`, `copy-partial-3-u`, `diff-3-n-u`.
 - A cycle through a side condition that is an iteration constraint, resolved for `sum_invs_const` of teq.dfy, which
   was `consts_prefix_def` and `sum_consts_prefix` (in legacy/teq.dfy since Oct 23, 2026, replaced by `consts_choice` and `sum_consts`), with the atom `consts_prefix(n, c, js)` abstracting the
   constraint like `agree_prefix`; the mechanism remains for any rule with a general left-hand side and an `invs` side
@@ -221,7 +218,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   (`Simplify.iterations`) are rewritten, e.g. `earlier(natural(k), ⌊X⌋)` to `sum(prefix(natural(k), ...))` by
   `earlier_sums`, on which `sum_invs_const` is tried again, with the same fact, one level deeper, until the budget is
   exhausted (the cache of `Context.combinators` is filled only after the context is complete); e.g.
-  [ps2-ll.dfy](benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy) repeats the same eight steps 122 times, 30 s, and
+  `ps2-ll.dfy` repeats the same eight steps 122 times, 30 s, and
   terminates after 48 steps without the lemma; likewise ps3-ll to ps6-ll, cohencu-ll, cohendiv-ll, for_bounded_loop1,
   copy-3-n-u, diff-2-n-u (13 of the 16 errors of the Dafny translations at 0.34.22). Such a rule is not decreasing
   in the sense of conditional rewriting (its condition is not smaller than its left-hand side), which `Rule.check`
@@ -258,7 +255,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   rounds, but the repetitions above remain, and it closes nothing (241 against 243 true, within the noise).
   The injection of 7b420a0, all invariants over the counter of a loop pointwise with `earlier(natural(k), Z)`, made
   the nested reads recurse further (19 errors), and is reverted in 0.34.23.
-- [sanfoundry_02_ground.dfy](benchmarks/sv-comp/dafny/array-examples/sanfoundry_02_ground.dfy) times out (60 s), on the trace
+- `sanfoundry_02_ground.dfy` times out (60 s), on the trace
   of the two largest elements, whose updates read the array at the counter from 2.
 
 ## Matching failures
@@ -271,7 +268,7 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   `prefix(N, t) == prefix(N, u)`, while `q(prefix(n, xs), prefix(n, ys))` and
   `xs == ys` are; reproduced with the former `-simplify` alone on a lemma
   `if prefix(n, xs) == prefix(n, ys) then (earlier(j, xs) == earlier(j, ys)) <==> true`
-  (see [standard_compare_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_compare_ground.dfy),
+  (see `standard_compare_ground.dfy`,
   which uses the predicate `agree` instead).
 - A sum that contains a bound variable of a combinator in a pattern is not
   matched, even against the same sum: the lemma
@@ -279,9 +276,9 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   does not rewrite `current(trace(a2, for ⌊counter(0, 1, N)⌋ do a, k :: a[k := a[k + -1]]))`
   with the former `-simplify`, while `a[k := a[k] + d]` matches `a[k := a[k] + 6]`;
   recurrences over the previous element are not matched (see
-  [ifcomp.dfy](benchmarks/sv-comp/dafny/array-fpi/ifcomp.dfy)), only those whose
+  `ifcomp.dfy`), only those whose
   index is a dependency, e.g. `⌊counter(1, 1, n)⌋` (see
-  [eqn1.dfy](benchmarks/sv-comp/dafny/array-fpi/eqn1.dfy)).
+  `eqn1.dfy`).
 - Rule variables are not renamed apart from the free variables of the goal: if the goal has a variable `Ns` and
   a lemma's side condition has its own variable `Ns`, the open condition coincides with the fact literally, is
   decided true without binding `Ns`, and `Rewrite.apply` reports "variables of a rule not instantiated by its
@@ -334,15 +331,13 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
   Cuvée (TEQ), and by z3 on the inductive invariants `x + y == n`, `y >= 0`, `x >= 0` if `n > 0`, `x == n && y == 0`
   otherwise (first loop), `x == n - z`, `z >= 0` (second loop). The C original (unsigned) is expected true. All three
   participants of SV-COMP 2026 time out on it. Our result files of Oct 14 take it as expected true (patched,
-  originals in `results/*.orig`).
+  originals in `results/*.orig`); those of Oct 23 (0.49.5, `cuvee.xml` and `cuvee-fallback.xml`) are not patched
+  and count Cuvée's `true` as `incorrect true`.
 - **`c/array-examples/standard_vararg_ground`: an out-of-bounds read in a task expected true.** `while (aa[a] >= 0)
   a++;` reads up to the first negative element of the nondeterministic array `aa[100000]`, beyond the array if
   there is none, which is undefined behavior in C; the verdicts `unreach-call` true and `termination` true assume
-  that the read stops within the array. Verifiers that check memory safety refute it: TriCera answered false on our
-  translation (benchmarks/sv-comp/c), which assumes a negative last element since (`aa[N - 1] < 0`, keeping the
-  verdict true; README there). Our Dafny translation (benchmarks/sv-comp/dafny) reads an unbounded map, where a read
-  beyond `N` is an arbitrary value, not undefined: its verdict true holds (the loop may not terminate, which
-  `unreach-call` allows); SV-LIB has no translation of it.
+  that the read stops within the array. Verifiers that check memory safety refute it (TriCera, on a translation of
+  ours, removed since); SV-LIB has no translation of it.
 
 ## Fixed
 

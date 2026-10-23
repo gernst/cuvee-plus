@@ -683,7 +683,7 @@ group above, as `resources/cuvee/teq/nested.dfy` plus `current_trace_histogram`,
 `current_trace_prefix_sums_array`, `sum_selects_cons`, `sum_selects_zero`,
 `earlier_maps_counter`, `mul_eq_cancel`) injected by `-include` into the
 twelve examples of `examples/dafny/teq` and every fourth recorded task of
-`benchmarks/sv-comp/dafny/expected.csv` (68 tasks), one core, 120 s per
+the former `benchmarks/sv-comp/dafny/expected.csv` (68 tasks, removed since), one core, 120 s per
 file: no task changed its number of goals, none timed out, the mean time was
 11 s and the maximum 66 s (`ss1`, an expected error). The two apparent
 mismatches, `linear-inequality-inv-c` (unresolved `below_prefix`) and

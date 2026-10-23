@@ -72,19 +72,21 @@ USED = re.compile(r":used \(\s*([^\s()]+)\s+(\d+)\s*\)")
 
 
 def logs(results: common.Results) -> dict[str, str]:
-    """The logs of the runs of `results` by the file names of their tasks, e.g. simple_3-1.yml."""
-    stem = results.path.name.split(".results.", 1)[0]
+    """The logs of the runs of `results` by the file names of their tasks, e.g. simple_3-1.yml, from the files of
+    all its parts (common.PARTS), the most recent winning, as in the merged runs."""
     found = {}
-    archive = results.path.with_name(stem + ".logfiles.zip")
-    folder = results.path.with_name(stem + ".logfiles")
-    if archive.is_file():
-        with zipfile.ZipFile(archive) as zip:
-            for name in zip.namelist():
-                if name.endswith(".yml.log"):
-                    found[name.rsplit("/", 1)[-1].split(".", 1)[1][: -len(".log")]] = zip.read(name).decode(errors="replace")
-    elif folder.is_dir():
-        for path in folder.glob("*.yml.log"):
-            found[path.name.split(".", 1)[1][: -len(".log")]] = path.read_text(errors="replace")
+    for file in reversed(results.paths or (results.path,)):
+        stem = file.name.split(".results.", 1)[0]
+        archive = file.with_name(stem + ".logfiles.zip")
+        folder = file.with_name(stem + ".logfiles")
+        if archive.is_file():
+            with zipfile.ZipFile(archive) as zip:
+                for name in zip.namelist():
+                    if name.endswith(".yml.log"):
+                        found[name.rsplit("/", 1)[-1].split(".", 1)[1][: -len(".log")]] = zip.read(name).decode(errors="replace")
+        elif folder.is_dir():
+            for path in folder.glob("*.yml.log"):
+                found[path.name.split(".", 1)[1][: -len(".log")]] = path.read_text(errors="replace")
     return found
 
 

@@ -23,7 +23,7 @@ TASK = """format_version: '2.0'
 input_files: '{name}.c'
 
 properties:
-  - property_file: ../../../../sv-comp/c/properties/unreach-call.prp
+  - property_file: ../../../properties/unreach-call.prp
     expected_verdict: true
 
 options:

@@ -1,7 +1,8 @@
 # Experiments for a paper comparing TEQ with other techniques
 
 Plan of Oct 12, 2026, updated Oct 14 with the runs of 0.46 (15 min, `-verify`); older rows are kept for the
-comparison. `scripts/out/experiments.pdf` takes the newest runs of 0.46 only.
+comparison. `scripts/out/experiments.pdf` takes the newest runs of 0.49 and 0.50 only. The unbounded set (the
+Dafny translations of SV-COMP tasks and their C versions, formerly section 4) was dropped on Oct 23, 2026.
 
 ## 1. Aggregates over arrays: the MonoCera tests
 
@@ -78,9 +79,7 @@ scores, since Cuvée produces no witnesses: they are only meaningful with witnes
   `egcd2-ll_valuebound20` times out, 837 s before) and proves `fermat1-ll_valuebound50` and `_valuebound100` in
   addition; the `fermat1-ll_unwindbound*` tasks are `unknown` or time out.
 - The wrong refutations of 0.41.4 are gone: `array-examples/sanfoundry_24-1` and `verifythis/lcp` were goals of
-  helper functions out of the context of `main` (entry points, 0.42.0), the three on the unbounded set were
-  refuted through an uninterpreted `bitand` on truth values (rules of the C prelude for 0 and 1; the
-  other bit operations are `:abstract` since 0.42.1, their refutations `unknown`).
+  helper functions out of the context of `main` (entry points, 0.42.0).
 
 ## 3. Complementarity: TEQ and Horn clauses
 
@@ -89,40 +88,7 @@ correct, against 287 and 25 for TEQ and 158 and 86 for CHC alone; TEQ+Z3 and CHC
 without wrong results (0.42: 341 and 105, with the wrong results of `-fallback` then). TEQ is strong on arrays, Horn clauses on integer loops. The argument for TEQ as a complement to invariant inference,
 and for a portfolio (see the TODO "Portfolio of TEQ and CHC").
 
-## 4. Mathematical integers: the unbounded set
-
-The 481 C programs of [benchmarks/sv-comp/c](../benchmarks/sv-comp/c) (all expected true), printed from the
-Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose arithmetic is unbounded.
-
-| | proved (15 min) | wrong |
-|---|--:|--:|
-| Cuvée (TEQ, `-unbounded`, 0.41.4) | 234 | 0 |
-| Cuvée+Z3 (TEQ, `-unbounded`, 0.42.2) | 290 | 0 |
-| Korn `-u` (Oct 11, 2026) | 175 | 0 |
-| Cuvée (TEQ, `-unbounded`, 0.46.13, i7-6700) | 263 | 0 |
-| Cuvée+Z3 (TEQ, `-unbounded`, 0.46.13, i7-6700) | 299 | 0 |
-| Cuvée (CHC, `-unbounded`, 0.46.13, i7-6700) | 144 | 0 |
-| TriCera, MonoCera artifact, `-arithMode:math` (i9-9900) | 137 | 0 |
-
-- Rerun on Oct 14, 2026 with 0.46.13 after the migration of the lemma database (15 min, i7-6700): Cuvée 234 to
-  263, Cuvée+Z3 290 to 299, and Horn clauses (`-chc -z3`, new in this table) 144, no wrong results; the Horn
-  clauses prove fewer than Korn, also a Horn-based tool, and far fewer than TEQ.
-- Cuvée+Z3 against 0.41.4: the three wrong refutations through `bitand` are proved now, as are
-  `nla-digbench/fermat1-ll` and `sqrt1-ll` (an error before); `nla-digbench/lcm1` times out (99 s before),
-  possibly a proof that relied on the overlapping exits (to check).
-- Cuvée and Korn: 91 both, 143 Cuvée only, 84 Korn only. With 60 s: Cuvée 228, Korn 130; TEQ 129 against 4
-  on the `array-*` folders, Korn ahead on `loop-lit`, `loop-invgen`, `nla-digbench`.
-- TriCera (Oct 14, the TriCera of the MonoCera artifact, `xml/tricera.xml`, 15 min, i9-9900): 137 proved, no
-  wrong result after the programs were made memory safe, which TriCera checks as well (benchmarks/sv-comp/c/README.md:
-  arrays sized for their accesses, `0 < N` before the declarations, consecutive declarations as one, since this
-  TriCera aliases separately declared arrays and answered 33 safe programs unsafe before); the result of
-  standard_vararg_ground, fixed after the run, is patched in from a local run (a time out), the original result
-  files are kept as `results/tricera.2026-10-14_07-59-30.*.orig`.
-- Only Korn and TriCera have a mode for mathematical integers; the other verifiers would be wrong by construction. A clean
-  comparison with one Horn-based tool. Korn runs without fuzzing (`-random`), which executes the program on
-  machine integers, and with `-confirm` (see `xml/korn.xml`).
-
-## 5. Annotations against automation: the ACSL tasks
+## 4. Annotations against automation: the ACSL tasks
 
 The tasks of SV-COMP Arrays and Loops with ACSL ([benchmarks/acsl](../benchmarks/acsl)), since Oct 23, 2026 laid
 out exactly as the C categories (1204 tasks, 875 true), of which the 838 true tasks of Arrays (303) and Loops (535)
@@ -143,7 +109,7 @@ The table below is of the earlier layout, the 838 annotated tasks only, `-split`
   (locally, 0.46.14).
 - The annotations are not checked with Frama-C.
 
-## 6. SV-LIB: the verification tasks
+## 5. SV-LIB: the verification tasks
 
 Only the verification tasks: `SV-LIB.correct-tags.CTranslated` and `CoreVerification` (a handful of hand-written
 SV-LIB programs); `CoreValidation`, whose tasks are for validators, is out of scope, as are the BTOR2
@@ -194,8 +160,7 @@ as tags (`correct-tags`).
 ## Reruns
 
 Done (Oct 12, 2026, 12:47–13:55, Cuvée 0.41.4, `-verify`, 15 min, 2 cores, 7 GB, Intel Core i9-9900, complete
-result files): `xml/cuvee.xml` and `xml/cuvee-fallback.xml` on SV-COMP Arrays and Loops and on the unbounded set
-(`-unbounded`), `xml/korn.xml` on the unbounded set (`-u`). An earlier attempt at 11:31 lost the results still
+result files): `xml/cuvee.xml` and `xml/cuvee-fallback.xml` on SV-COMP Arrays and Loops. An earlier attempt at 11:31 lost the results still
 running when the connection to the cloud master broke (11:54).
 
 Done (Oct 12, 2026, 16:51–17:16, Cuvée 0.42.1, the same setup, complete): `xml/cuvee.xml` and
@@ -203,24 +168,23 @@ Done (Oct 12, 2026, 16:51–17:16, Cuvée 0.42.1, the same setup, complete): `xm
 the `fermat1-ll` tasks time out at 60 s.
 
 Done (Oct 12, 2026, 17:29–17:55, Cuvée 0.42.2, the same setup, complete): `xml/cuvee-fallback.xml` on SV-COMP
-Arrays and Loops and on the unbounded set, after the fix of the exits of loops; no wrong results.
+Arrays and Loops, after the fix of the exits of loops; no wrong results.
 
 Done (Oct 13, 2026, from 22:11, Cuvée 0.46.9, 15 min, 2 cores, 7 GB, Intel Core i7-6700, after the migration of the
 lemma database): `xml/cuvee.xml` on SV-COMP Arrays (138 true, 9 false) and Loops (149 true, 16 false),
 `xml/cuvee-fallback.xml` on Arrays (148 true, 48 false) and Loops (230 true, 20 false), `xml/cuvee-chc.xml` on
 Arrays (8 true, 45 false) and Loops (150 true, 41 false), the MonoCera tests with `xml/cuvee.xml` (79) and
 `xml/cuvee-fallback.xml` (88), all without wrong results (`scripts/out/experiments.pdf` takes only these runs of
-0.46; the unbounded set and SV-LIB are pending).
+0.46; SV-LIB is pending).
 
 Done (Oct 13, 2026, 19:44–21:17, Cuvée 0.46.3 to 0.46.5, 60 s, 2 cores, 7 GB, Intel Core i7-6700, complete):
 `xml/cuvee.xml` on SV-COMP Arrays and Loops after each step of the database migration (`-T 60s --vcloudCPUModel`,
 see doc/benchmarks.md); correct results Arrays 105, 124, 140, 144, 145 and Loops 128, 148, 154, 154, 161, no wrong
 results.
 
-Done (Oct 14, 2026, Cuvée 0.46.13, 15 min, 2 cores, 7 GB): the unbounded set with `xml/cuvee.xml`,
-`xml/cuvee-fallback.xml`, `xml/cuvee-chc.xml` (i7-6700) and `xml/tricera.xml` (i9-9900), section 4; the ACSL tasks
-with `xml/cuvee-acsl.xml` and SV-LIB `CTranslated` and `CoreVerification` with `xml/cuvee.xml` and
-`xml/cuvee-chc.xml` (Xeon E3-1230 v5), sections 5 and 6.
+Done (Oct 14, 2026, Cuvée 0.46.13, 15 min, 2 cores, 7 GB): the ACSL tasks with `xml/cuvee-acsl.xml` and SV-LIB
+`CTranslated` and `CoreVerification` with `xml/cuvee.xml` and `xml/cuvee-chc.xml` (Xeon E3-1230 v5), sections 4
+and 5.
 
 To do: SV-LIB `CoreVerification` with `-teq` and `-chc` on 0.46.14 (patched for now; the fallback run confirms
 the fix);
