@@ -12,6 +12,7 @@ the lemmas specific to the examples stand at the beginning of each file.
 | file | status |
 | ---- | ------ |
 | [lsearch.dfy](lsearch.dfy) | verified (`-teq -split -simplify`) |
+| [bsearch.dfy](bsearch.dfy) | verified with `-prove`: the binary search over a sorted array by the rule `bisection` over the whole cycle (formerly `dafny/state/bsearch_bisect.dfy`, moved Oct 23, 2026) |
 | [perm.dfy](perm.dfy) | verified: permutations by swaps in single loops |
 | [bubble_sort.dfy](bubble_sort.dfy) | verified: nested loops, `sorted` by the induction lemma, `perm` |
 | [selection_sort.dfy](selection_sort.dfy) | verified: summary of the inner loop, `sorted` by the induction lemma, `perm` |

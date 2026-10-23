@@ -1,7 +1,7 @@
 // ./Cuvee.sh -teq -include teq:search -include teq:sorted -prove examples/dafny/state/lower_bound.dfy
 // the lower bound of x in a sorted array, after examples/dafny/algorithms/lower_bound.dfy (open under -teq -simplify):
 // the binary search without the found case, whose result is the partition point lower(a, n, x); proved with the
-// named bisection of bsearch_bisect.dfy (package O of doc/prove.md): the guard of the else branch,
+// named bisection of examples/dafny/algorithms/bsearch.dfy (package O of doc/prove.md): the guard of the else branch,
 // !(a[mid] < x), is normalized to x <= a[mid], whose negation is a[mid] < x again, so its cut is lower(a, n, x) by
 // cut_lower, and the reads of that form get their own rule (lower_le); the exit hi <= lo with
 // lo <= lower(a, n, x) <= hi makes lo the partition point, which closes both quantified postconditions by the rules

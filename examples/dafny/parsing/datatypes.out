@@ -1,0 +1,34 @@
+datatype list<a>
+  = nil | cons(head: a, tail: list<a>)
+
+function annotation(xs: list<int>): bool {
+  xs != nil as list<int>
+}
+
+function tester(xs: list<int>): bool {
+  xs.cons? && !xs.nil?
+}
+
+function keys(m: map<int, bool>): set<int> {
+  m.Keys
+}
+
+datatype pair
+  = pair(fst: int, snd: int)
+
+function pair_sum(this: pair): int {
+  pair_fst(this) + pair_snd(this)
+}
+
+function pair_twice(this: pair): int {
+  pair_sum(this) + pair_sum(this)
+}
+
+method pair_get(this: pair) returns (x: int) {
+  x := pair_fst(this);
+}
+
+method pair_get2(this: pair) returns (y: int) {
+  y := pair_get(this);
+}
+

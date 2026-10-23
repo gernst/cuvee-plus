@@ -1,7 +1,7 @@
-// ./Cuvee.sh -teq -include teq:search -include teq:sorted -prove examples/dafny/state/bsearch_bisect.dfy
-// the binary search over a sorted array of bsearch_sorted.dfy, proved by a lemma over the whole cycle instead of two
-// layers (package O of doc/prove.md): the array, its bound and the key are parameters, the array
-// is sorted, sorted(a, 0, n)
+// ./Cuvee.sh -teq -include teq:search -include teq:sorted -prove examples/dafny/algorithms/bsearch.dfy
+// binary search over a sorted array, proved by a lemma over the whole cycle (package O of doc/prove.md): the array,
+// its bound and the key are parameters, the array is sorted, sorted(a, 0, n); the variants with partition points,
+// the probe lo + (hi - lo) / 2, and two layers of per-component abstractions were removed (Oct 23, 2026)
 //
 // sortedness is used where the reads of the array become comparisons of the index with the partition points
 // lower(a, n, y) and upper(a, n, y), which exist for a sorted array, for indices within a[0..n) only; lo and hi read

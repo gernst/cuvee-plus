@@ -61,8 +61,8 @@ to 95, with the same correct results.
 **Change, if the cost matters.** A memo of the instances per context: an instance whose canonical form (`Canon`,
 modulo the classes) is known is not assumed again and does not count as a change of the round. Narrower: a raw
 instance is assumed only if one of its atoms is not yet in the classes. The repeated firing of `Forward.saturate`
-can go once examples/dafny/state/bsearch_sorted.dfy no longer needs it. Check: the 26 tasks end `unknown` in seconds,
-bsearch_sorted and the examples unchanged, a cloud run against 0.46.13. Also the regression of ps2-ll_unwindbound1
+was needed by examples/dafny/state/bsearch_sorted.dfy, removed Oct 23, 2026. Check: the 26 tasks end `unknown` in
+seconds, the examples unchanged, a cloud run against 0.46.13. Also the regression of ps2-ll_unwindbound1
 (31 s with 0.46.8, a timeout at 60 s with 0.46.13; bugs.md).
 
 ## 4. Further case splits

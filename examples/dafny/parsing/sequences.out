@@ -1,0 +1,32 @@
+type S = seq<int>
+
+function alias(s: S): int {
+  s[0] + |s|
+}
+
+function array_(a: array<int, bool>, i: int): bool {
+  a[i] && a[i := false] == a
+}
+
+function id<a>(x: a): a {
+  x
+}
+
+function index_id(s: seq<int>): bool {
+  id(s)[0] == s[1]
+}
+
+function update(s: seq<bool>, i: int, j: int): bool {
+  s[i] == s[j] && s[i := s[j]] == s
+}
+
+const c<a>: a
+
+function constant(s: seq<int>): bool {
+  c + c == s[0]
+}
+
+function slices(s: seq<int>): bool {
+  s[1..|s|] + s[0..1] == [s[0]] + s[1..|s|]
+}
+

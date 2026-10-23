@@ -1,0 +1,22 @@
+const c: int -> int
+
+const apply_constant: int := c(1)
+
+function apply(g: (int, bool) -> int): int {
+  g(1, true)
+}
+
+function g(x: int): bool
+
+function apply_variable(g: int -> int): int {
+  g(1)
+}
+
+const lambda: (int, bool) -> int := (x: int, b: bool) => if b then x else 0
+
+const curried: int -> bool -> int := (x: int) => (b: bool) => x
+
+function ten(g: (int, int, int, int, int, int, int, int, int, int) -> int): bool {
+  true
+}
+
