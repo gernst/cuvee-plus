@@ -26,14 +26,14 @@ Source code and documentation: https://github.com/gernst/cuvee-plus
 
 Requires Java 21 (e.g. the Ubuntu package `openjdk-21-jre-headless`).
 
-    ./Cuvee.sh -teq -include teq:aggregation -include teq:arithmetic \
-      -include teq:arrays -include teq:counters -include teq:search \
-      -include teq:sorted -include teq:strides -include teq:unsigned \
-      -prove -split -prove -split -prove -fallback -z3 -timeout 900000 \
-      -witness witness.yml [-arch 32|64] task
+    ./Cuvee.sh -svcomp -fallback -z3 -timeout 900000 [-arch 32|64] task
 
 for a C program (`task.c`, `task.i`) or an SV-LIB script (`task.svlib`).
-Without `-fallback -z3`, the goals that the lemma database does not close are
+`-svcomp`, as the first argument, stands for the options of SV-COMP: trace
+equation systems with all modules of the lemma database (`-teq -include
+teq:<module>`), the deduction engine with two rounds of splitting (`-prove
+-split -prove -split -prove`), and the witness (`-witness witness.yml`); the
+other arguments follow. Without `-fallback -z3`, the goals that the lemma database does not close are
 answered `unknown`. The answer is `correct` (the property holds), `incorrect`
 (it is violated), or `unknown`, one for each `verify-call` of an SV-LIB script;
 executions of a C program start in `main`. Errors, e.g. constructs that are not
