@@ -1,5 +1,9 @@
 # Verifying renc with `-vcgen`
 
+Note (Oct 23, 2026): this plan is too complex for what it gains (new syntax for implemented sorts, ghost inputs,
+`{:truth}` annotations, a lowering of maps for cvc5, monomorphic verification conditions, and separate checks of the
+global conditions); kept as a record of what a proof would need.
+
 Plan (Oct 23, 2026), not implemented: the operations of
 [renc.dfy](../resources/cuvee/implement/renc.dfy) get contracts over the original types (`map<a, b>`, `set<a>`),
 `-vcgen` turns them into verification conditions, and cvc5 proves them, with a representation invariant that couples
