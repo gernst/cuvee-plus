@@ -478,13 +478,15 @@ object Config:
     println("other commands")
     println("  -test <file>")
     println("    run the example <file> with the command line of its first line and compare with name.out and name.err")
+    println("  -svcomp ...")
+    println("    as the first argument, the options of SV-COMP, followed by the other arguments: " + Cuvee.svcomp.mkString(" "))
     println("  -help")
     println("    list the options")
     println("  -version")
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.50.10"
+  val release = "0.50.11"
 
   def version() =
     println("Cuvée " + release)

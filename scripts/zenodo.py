@@ -201,8 +201,8 @@ def upload(sandbox: bool):
     else:
         # the last record has been published on the website: a new version of it, which starts with its files and
         # metadata
-        version = request(sandbox, "POST", f"/deposit/depositions/{state['id']}/actions/newversion")
-        draft = request(sandbox, "GET", version["links"]["latest_draft"])
+        created = request(sandbox, "POST", f"/deposit/depositions/{state['id']}/actions/newversion")
+        draft = request(sandbox, "GET", created["links"]["latest_draft"])
 
     # a single zip file per record
     for file in draft.get("files", []):
