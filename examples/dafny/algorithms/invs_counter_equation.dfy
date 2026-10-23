@@ -4,7 +4,7 @@
 //
 // status: verified since the module nested of the lemma database (Oct 11, 2026) resolves the fragments by generic
 // lemmas (invs_sums_counter, invs_current_counter, invs_invs_counter_upper_zero, invs_exit_counter_zero), the
-// method's sequences named apart from the variables of those lemmas (NOTES.md, finding 9); the problem of the
+// method's sequences named apart from the variables of those lemmas (former NOTES.md, finding 9); the problem of the
 // simplifier remains: the equation K == counter(0, 1, nn) of the bound variable K is not followed when the sibling
 // conjunct J == trace(0, for ⌊K⌋ do x, i :: x + 1) is simplified, which becomes sums(0, maps(for ⌊K⌋ yield i :: 1))
 // by the generic fold of sums instead of counter(0, 1, nn) by counter_def (at the top level, in inner_loop_flat.dfy,

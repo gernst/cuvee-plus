@@ -10,7 +10,7 @@
 // j == integer(nn) by the simplifier itself, and the conclusion j == n, which needs all four fragments at the same
 // position k, is derived only by the lemmas; the variables of the method are named apart from the variables of the
 // lemmas of the module (Ns, Js, js), whose capture made the restated exit lemma fail with "variables of a rule not
-// instantiated by its match" (NOTES.md, finding 21)
+// instantiated by its match" (former NOTES.md, finding 21)
 
 method test(n: int, m: Nat, NN: List<Nat>, JJ: List<Trace<int>>, jj: List<int>)
   requires 0 <= n

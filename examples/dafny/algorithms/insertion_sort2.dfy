@@ -22,11 +22,6 @@ function {:fold} insert_pass(b: array<int, int>, i: int, p: int, nn: Nat): Trace
 lemma {:rw} perm_insert_pass(b: array<int, int>, c: array<int, int>, i: int, p: int, nn: Nat)
   ensures perm(current(insert_pass(b, i, p, nn)), c) <==> perm(b, c)
 
-lemma {:rw} perm_steps_three(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>, is: List<int>,
-                             F: (array<int, int>, int, Nat, int) -> array<int, int>)
-  requires forall b: array<int, int>, k: int, nn: Nat, i: int :: perm(F(b, k, nn, i), b)
-  ensures perm(current(trace(a, for ks, ns, is do b, k, nn, i :: F(b, k, nn, i))), c) <==> perm(a, c)
-
 // a pass on a sorted prefix b[0..i) with p == i - 1, every swap of which had y[j] < y[q], and which stopped at j == 0
 // or at y[j] >= y[j - 1], sorts b[0..i + 1)
 lemma {:rw} sorted_insert_pass(b: array<int, int>, i: int, p: int, nn: Nat)

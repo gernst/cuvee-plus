@@ -5,7 +5,7 @@
 //
 // status (Oct 14, 2026): -teq -prove does not terminate (rewriting does not terminate); the summary lemma below,
 // over the fragments of the two inner loops, was written for -simplify on the per-variable form (verified that way on
-// Oct 11, 2026, NOTES.md, doc/array-algorithms), deferred as hard; teq:nested is retired and was
+// Oct 11, 2026, the former NOTES.md, doc/array-algorithms), deferred as hard; teq:nested is retired and was
 // removed on Oct 23, 2026
 
 function sorted(a: array<int, int>, lo: int, hi: int): bool
@@ -98,9 +98,9 @@ lemma {:rw} shaken_shake(b: array<int, int>, k: int, len: int)
 // the counter of the outer loop is the trace variable K of the goal, with K == counter(0, 1, m) as a hypothesis, which
 // the open trace variable Kv of the left-hand side picks up (the form with ⌊counter(0, 1, m)⌋ never matches)
 // the bound len <= 2 m + 1 is not a difference constraint, and the goal has it as n <= integer(m) + lo + 1 with
-// lo == integer(m) as a separate fact, which the simplifier does not combine (NOTES.md, finding 11); so the bound is
+// lo == integer(m) as a separate fact, which the simplifier does not combine (former NOTES.md, finding 11); so the bound is
 // stated in the goal's form, with lo an open variable matched against its equation; the counter as a dependency of
-// the combinator matches ⌊K⌋ with K == counter(0, 1, m) in the context (NOTES.md, bubble sort)
+// the combinator matches ⌊K⌋ with K == counter(0, 1, m) in the context (former NOTES.md, bubble sort)
 lemma {:rw} sorted_shaken_steps(a: array<int, int>, len: int, m: Nat, l: int, F: (array<int, int>, int) -> array<int, int>)
   requires l == integer(m)
   requires len <= integer(m) + l + 1
