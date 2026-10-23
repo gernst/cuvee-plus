@@ -69,3 +69,26 @@ lemma {:rw} trace_merge_store(a0: array<int, int>, n: Nat, P: bool, X: int, Y: i
 
 The first is presumably cheaper and suffices for the benchmarks; the second
 also catches cases that arise after other rewrites. Neither is implemented.
+
+## The same gap for a single store per iteration
+
+The engine has no join of guarded stores at all, also where one store per iteration would fold into `stores`, and
+the lemmas of the database work around it shape by shape (arrays.dfy):
+
+- `select_current_trace_conditional_store` and its variant `_deps` (copysome1-1, array_mul_init, motivex): the update
+  `case C(k) => a[k := V(k)] case !C(k) => a` has a case that keeps the array, which is no store, so the fold
+  `stores` does not match. Joined into `a[k := if C(k) then V(k) else a[k]]`, the general mechanism would apply:
+  `trace_read_initial` turns the read `a[k]` into the initial `a0[k]` (the keys of a counter are distinct), the trace
+  folds into `stores(a0, ⌊counter(0, 1, n)⌋, maps(...))` with the values synthesized as a map, and `current_stores`
+  with the lemmas on counters gives the read at `j`, which is the right-hand side of the lemma. The same holds for
+  `select_current_trace_cap` (condn) and `select_current_trace_reset_keep` (ms1).
+- `stores_cases` (conda, s1lif-s5lif) is that chain for two stores by cases on the old value, `case P(a[k]) =>
+  a[k := c] case !P(a[k]) => a[k := G(a[k])]`, and needs a second gap closed as well: its first case stores a
+  constant `c`, since a higher-order variable is only instantiated by an abstraction of a term that occurs
+  (`Rewrite.abstraction`), so `F(a[k])` cannot be the constant function; with constant abstractions, one lemma with
+  `F` and `G` would cover both cases, but `trace_read_initial` would then match every trace of stores at distinct
+  keys (`f = z => v`) and rewrite it to itself.
+- `stores_index_cases` (brs2-brs5) is the same with guards on the index.
+
+A join as a step of the engine (the second variant above) would make these six lemmas derived.
+

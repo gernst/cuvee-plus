@@ -10,7 +10,7 @@
 // the lemmas only, the definitions are no rules; no task of SV-COMP uses them (the results since Oct 13, 2026), they
 // serve the examples of examples/dafny/algorithms
 
-// a[lo..hi) is nondecreasing
+// a[lo..hi) is nondecreasing; the bounds are integers, as the indices of the programs, like those of cut
 function {:teq} sorted(a: array<int, int>, lo: int, hi: int): bool
 {
   forall i: int, j: int :: lo <= i && i <= j && j < hi ==> a[i] <= a[j]
@@ -29,8 +29,6 @@ function {:teq} partitioned(a: array<int, int>, lo: int, mid: int, hi: int): boo
 {
   forall i: int, j: int :: lo <= i && i < mid && mid <= j && j < hi ==> a[i] <= a[j]
 }
-
-// TODO: why is sorted expressed with two integer bounds, and not one integer bound and a natural length?
 
 // the empty range and ranges of one element are sorted, the empty prefix is partitioned from the rest
 lemma {:rw} {:teq} sorted_empty(a: array<int, int>, lo: int)
@@ -55,8 +53,6 @@ lemma {:rw} {:teq} sorted_adjacent(a: array<int, int>, n: Nat)
 
 lemma {:rw} {:teq} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
-
-// TODO: can we express the array swap of two indices as a defined fold function?
 
 // a swap preserves the permutation
 lemma {:rw} {:teq} perm_swap(a: array<int, int>, b: array<int, int>, p: int, q: int)

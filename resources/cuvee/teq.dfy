@@ -97,8 +97,6 @@ function {:teq} consts<a>(n: Nat, v: a): Trace<a>
   case succ(m) => step(v, consts(m, v))
 }
 
-// TODO: can we make cutFrom replace cut everywhere, i.e., inline it?
-
 // the cut of a predicate G that holds on a prefix of [l, h): the first index where it fails, h if none (l if the
 // interval is empty); a predicate H that holds on a suffix has the cut of its negation, the first index where H
 // holds; by the search of the n indices from l, cutFrom, which recurs on a natural; neither is a rule of the engines
