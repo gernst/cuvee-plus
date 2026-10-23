@@ -172,6 +172,9 @@ object VCGen extends Transform:
       case Tick(call) =>
         this.call(state, proc, call, And(commit, post))
 
+      case call: Call if inlined(state, call.proc) =>
+        inlining(state, gs, call, post)
+
       case call: Call =>
         this.call(state, proc, call, post)
 
@@ -214,6 +217,30 @@ object VCGen extends Transform:
             case call: Call => call
             case _          => Error.raise("parallel composition of statements that are not calls", prog)
         par(state, gs, proc, assume, commit, calls, post)
+
+  // whether the calls of procedure `name` are inlined: it has a body and no contract (precondition, postcondition,
+  // assumption, commitment), as -teq does (see TEQ.call); calls of recursive procedures without a contract do not
+  // terminate
+  def inlined(state: State, name: Name): Boolean =
+    val attrs = state.annotated(name)
+    state.procdefs.contains(name) && attrs.requires == True && attrs.ensures == True && attrs.assumes == True && attrs.commits == True
+
+  // a call of a procedure without a contract by its body, like a block whose locals are the formal parameters, renamed
+  // apart from the variables of the caller: the inputs are the values of the arguments, the outputs are arbitrary
+  // initially and assigned to the results at the end and at a return, old(e) in the body refers to the values gs_ of
+  // the global variables at the call, and the type parameters are instantiated by the arguments and results
+  def inlining(state: State, gs: List[Var], call: Call, post: Expr): Expr =
+    val Call(name, args, res) = call
+    val (in, out, _, _) = contract(state, name)
+    val types = Type.bind(state, in.types ++ out.types, args.types ++ res.types)
+    val (vars_, rename) = Subst.rename(in ++ out)
+    val (in_, out_) = types(vars_).splitAt(in.length)
+    val gs_ = gs.fresh
+
+    val body = types(Old.elim(gs, gs_, rename(state.annotated(state.procdefs(name)))))
+    val exit = Subst.from(res, out_)(post)
+    val phi = wp(state, gs, name, True, True, body, exit, False, False, exit)
+    All(out_, Subst.from(gs_ ++ in_, gs ++ args)(phi))
 
   // calls by the contract of the procedure, where the measure of `proc` must decrease on recursive calls
   def call(state: State, proc: Name, call: Call, post: Expr): Expr =

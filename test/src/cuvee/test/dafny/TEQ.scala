@@ -27,8 +27,6 @@ object TEQ extends TestSuite:
       arg
     expr :: inner.result()
 
-  val contracts = "calls of procedures with a contract are not supported"
-
   // the former lemma database of the per-variable form (resources/cuvee/legacy/teq.dfy), no longer injected, whose
   // lemmas the tests of the rewriting of -simplify below use
   lazy val legacy: List[Cmd] =
@@ -36,16 +34,13 @@ object TEQ extends TestSuite:
     cuvee.dafny.Source.parse("/cuvee/legacy/teq.dfy", parser)
 
   val tests = Tests:
-    // goals are generated without errors (z3 is never run on them);
-    // examples that call methods with a contract are rejected, since calls are inlined (see "calls with contract")
+    // goals are generated without errors (z3 is never run on them)
     test("without loops"):
       for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filterNot(loops)
       do
         val (cmds, errors) = Examples.output("-teq", "-quiet", file.toString)
-        if errors != List(contracts)
-        then
-          errors ==> Nil
-          assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
+        errors ==> Nil
+        assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
 
     // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy;
     // that of s, which the lemma on sums of the module aggregation rewrites, is unused, its equation vanishes by the
@@ -153,11 +148,12 @@ object TEQ extends TestSuite:
         val inv_ = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, inv)
         assert(!subexprs(inv_).exists(_.isInstanceOf[Invs]))
 
-    // calls are inlined, which rejects callees with a contract
+    // calls of callees with a contract are by the contract, those of callees without one are inlined
     test("calls with contract"):
       val file = Examples.root / "dafny" / "vcgen" / "call.dfy"
-      val (_, errors) = Examples.output("-teq", "-quiet", file.toString)
-      errors ==> List(contracts)
+      val (cmds, errors) = Examples.output("-teq", "-quiet", file.toString)
+      errors ==> Nil
+      assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
 
     // a loop that assigns a constant: the dependency of the lemma whose bound variable the update does not use
     // is instantiated by a dependency of the expression, here the counter defined in the context (the lemmas of the

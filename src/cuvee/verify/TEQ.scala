@@ -238,17 +238,30 @@ object TEQ extends Transform:
         val p_ = p.fresh(List(z))
         symex(config, state, proc, prog, p_.when(z)) ++ choice(config, state, proc, rest, p_.when(Not(z)))
 
-  // calls are inlined, which requires procedures without a contract, e.g. functions in C:
+  // calls of procedures with a contract are by the contract, as in -vcgen (see VCGen.instance): the precondition is
+  // checked, the results and the modified global variables take fresh values, and the postcondition is assumed;
+  // calls of procedures without a contract, e.g. functions in C, are inlined:
   // the paths through the body of the callee, like a block whose locals are the formal parameters:
   // the inputs are the values of the arguments, the outputs are arbitrary initially, a return leaves the callee only,
   // and the variables of the caller with the same names are restored afterwards, before the results are assigned;
-  // calls of recursive procedures do not terminate
+  // calls of recursive procedures without a contract do not terminate
   def call(config: Config, state: State, proc: Name, call: Call, p: Path): List[Path] =
-    val Call(name, args, res) = call
-    val (in, out, pre, post) = VCGen.contract(state, name)
+    val Call(name, _, res) = call
+    val (_, _, pre, post) = VCGen.contract(state, name)
 
-    Error.report("calls of procedures with a contract are not supported", name):
-      require(pre == True && post == True)
+    if pre != True || post != True
+    then
+      // the postcondition refers to the fresh values and to those of the caller before the call
+      val (pre_, fresh, phi, _) = VCGen.instance(state, proc, call)
+      val mod = Type.expand(state, state.procattrs(name).modifies)
+      val p_ = p.check(p(pre_)).fresh(fresh)
+      List(p_.assume(p_(phi)).assign(res ++ mod, fresh))
+    else inlining(config, state, name, call, p)
+
+  // the paths through the body of the callee `name` of `call`, which has no contract
+  def inlining(config: Config, state: State, name: Name, call: Call, p: Path): List[Path] =
+    val Call(_, args, res) = call
+    val (in, out, _, _) = VCGen.contract(state, name)
 
     Error.report("procedure without body", name):
       require(state.procdefs contains name)

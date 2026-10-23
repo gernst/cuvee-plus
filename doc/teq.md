@@ -93,16 +93,19 @@ accumulators is a trace of their product, `trace (e₁, e₂) Y (fun ⟨x₁, x�
 
 `TEQ` replaces each procedure definition by a goal from symbolic execution,
 after section 4 of the paper; with an entry point (`-entry`, or `main` in C,
-see `Config.entry`) only that of the entry point, since calls are inlined,
-which checks the other procedures in the context of their calls, and not for
-arbitrary arguments (e.g. `sanfoundry_24-1`, whose `printEven` holds only for
-the even numbers that `main` passes).
+see `Config.entry`) only that of the entry point, since calls of procedures
+without a contract are inlined, which checks these procedures in the context
+of their calls, and not for arbitrary arguments (e.g. `sanfoundry_24-1`, whose
+`printEven` holds only for the even numbers that `main` passes).
 
 - A `Path` holds the fresh variables for nondeterministic choices, the values
   of the variables as a substitution, and the assumptions, branch conditions,
   and checks along the way. Choices `if *` become branches on fresh booleans,
-  calls are inlined, which requires procedures without a contract (e.g. C
-  functions) and does not terminate for recursive ones.
+  calls of procedures without a contract (e.g. C functions) are inlined,
+  which does not terminate for recursive ones, and calls of procedures with a
+  contract are by the contract, as in `-vcgen` (`VCGen.instance`): the
+  precondition is a check, the results and modified global variables are
+  fresh, the postcondition an assumption.
 - Each loop yields a single path (theorem 4.8), which assumes its trace
   equation system (definition 4.4, partitioned as below): one `Trace` per
   strongly connected component of the modified variables, whose updates have a
