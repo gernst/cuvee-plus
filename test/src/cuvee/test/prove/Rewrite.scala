@@ -8,7 +8,7 @@ import cuvee.prove.Rule
 import cuvee.prove.Context
 
 // single rewrite steps whose input the simplifier would change before the rules apply
-// (see examples/smtlib/simplify/rewrite*.smt2 and examples/dafny/simplify/rewrite*.dfy for the others)
+// (see examples/smtlib/prove/rewrite*.smt2 and examples/dafny/prove/rewrite*.dfy for the others)
 object Rewrite extends TestSuite:
   // a rule whose type parameters and variables are the free ones of its left-hand side
   def rw(lhs: Expr, rhs: Expr, cond: Expr = True) =

@@ -7,7 +7,7 @@ import cuvee.core._
 import cuvee.prove.Normalize as N
 
 // formulas are normalized into equivalent clauses forall xs. antecedents ==> succedents
-// (see examples/smtlib/simplify/clauses.smt2), ite is lifted out of atoms where clauses are split
+// (see examples/smtlib/prove/clauses.smt2), ite is lifted out of atoms where clauses are split
 object Normalize extends TestSuite:
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)

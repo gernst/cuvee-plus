@@ -1,0 +1,15 @@
+; ./Cuvee.sh -prove examples/smtlib/prove/boolean.smt2
+; cancellation laws of the boolean connectives
+(declare-const p Bool)
+(declare-const q Bool)
+(assert (and p q (not p)))
+(assert (or p (not p)))
+(assert (=> (and p q) p))
+(assert (and p (=> p q)))
+(assert (not (not p)))
+(assert (ite p q q))
+(assert (ite p true false))
+(assert (= p true))
+(assert (<=> p true))
+(assert (<=> (and p q) (and p q)))
+(assert (<=> p (not q)))

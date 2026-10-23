@@ -231,7 +231,7 @@ Isabelle formalization.
    parser and printer. Tests `examples/dafny/printing/temporal.dfy` (compared as text),
    `examples/dafny/parsing/temporal_*.dfy` (SMT-LIB output, `!always p`, non-`Bool` operands, placeholders on
    expressions), `examples/smtlib/parsing/temporal*.smt2` (functions of the same names, arity),
-   `examples/dafny/simplify/temporal*.dfy` (no facts inside the operators, in `-simplify` and `-prove`).
+   `examples/dafny/prove/temporal*.dfy` (no facts inside the operators, in `-simplify` and `-prove`).
 3. **Clauses**: `guarantees`, `coinduction`, `induction` in grammar, scanner, parser, `Attrs.guarantees`, Dafny
    printer, SMT-LIB parser; rejected by the other printers, `-teq`, and `-chc`.
 4. **`Temporal` in `verify`**: `unfold`, `collapse`, the hypothesis operators, the rules above, the checks
