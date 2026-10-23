@@ -1,11 +1,10 @@
 // searching: the abstractions of the iteration constraints of linear searches (agreeing prefixes, no occurrence in a
 // prefix or among the values read at a counter, values above the iterations) with their facts at the reads, and the
 // bisection of an interval with a probe, whose bounds are the cuts of its guards (cut, declared in teq.dfy); an
-// optional module over teq.dfy
-// alone (-include teq:search), migrated on Oct 13, 2026 from the module of the per-variable form (in legacy/teq.dfy),
-// with the search lemmas of teq.dfy and the bisection of examples/dafny/algorithms/bsearch.dfy; the facts at the
-// reads are forward lemmas, triggered by the read, earlier(j, xs) or a[k], whose other variables are matched against
-// the facts of the abstractions
+// optional module over teq.dfy alone (-include teq:search), migrated on Oct 13, 2026 from the module of the
+// per-variable form, with the search lemmas of teq.dfy and the bisection of examples/dafny/algorithms/bsearch.dfy; the
+// facts at the reads are forward lemmas, triggered by the read, earlier(j, xs) or a[k], whose other variables are
+// matched against the facts of the abstractions
 
 // the first n values of xs and ys agree
 function {:teq} agree_prefix(n: Nat, xs: List<int>, ys: List<int>): bool
@@ -25,19 +24,19 @@ function {:teq} above_iterations(n: Nat, ts: List<int>): bool
 
 // two sequences that are equal at the iterations 0, ..., n - 1 agree there
 // (from standard_compare_ground)
-lemma {:rw} {:teq} agree_prefix_def(n: Nat, xs: List<int>, ys: List<int>, hs: List<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), xs) == earlier(natural(k), ys))
+lemma {:rw} {:teq} agree_prefix_def(n: Nat, xs: List<int>, ys: List<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋ check k :: earlier(natural(k), xs) == earlier(natural(k), ys))
     <==> agree_prefix(n, xs, ys)
 
 // a search: the elements before the exit n differ from e, i.e., e does not occur in the prefix of length n
 // (from standard_find_ground-1)
-lemma {:rw} {:teq} not_occurs_prefix(n: Nat, e: int, xs: List<int>, hs: List<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: earlier(natural(k), xs) != e) <==> !occurs(e, prefix(n, xs))
+lemma {:rw} {:teq} not_occurs_prefix(n: Nat, e: int, xs: List<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋ check k :: earlier(natural(k), xs) != e) <==> !occurs(e, prefix(n, xs))
 
 // the values of the iterations exceed the iterations
 // (from simple_array_index_value_2)
-lemma {:rw} {:teq} above_iterations_def(n: Nat, ts: List<int>, hs: List<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋, hs, ts check k, h, t :: k < t) <==> above_iterations(n, ts)
+lemma {:rw} {:teq} above_iterations_def(n: Nat, ts: List<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋, ts check k, t :: k < t) <==> above_iterations(n, ts)
 
 // agreeing sequences are equal at each position in the range, a fact at the reads
 // (from standard_compare_ground)

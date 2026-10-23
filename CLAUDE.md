@@ -88,14 +88,14 @@ or solvers consume.
 - The lemma database: `-teq` injects [teq.dfy](resources/cuvee/teq.dfy), the
   entry point (`TEQ.modules`); `-include teq:<concept>` injects an optional
   module of [resources/cuvee/teq](resources/cuvee/teq) after it. The optional
-  modules were written for the per-variable form and are migrated into modules
-  over teq.dfy alone ([doc/teq.md](doc/teq.md)), `nested` retired to `legacy/`;
-  the benchmark definitions include all migrated ones. Rules left out of a
-  module stay in [legacy/](resources/cuvee/legacy); before dropping a rule,
-  check SV-COMP (`scripts/missing.py`, doc/benchmarks.md).
-  [legacy/teq.dfy](resources/cuvee/legacy/teq.dfy) is the former single file
-  of the per-variable form: a backup, not injected. Rules are tried in the
-  order of the file, so it decides which abstraction a fragment gets.
+  modules were migrated into modules over teq.dfy alone
+  ([doc/teq.md](doc/teq.md)); the benchmark definitions include all of them.
+  The legacy database (the former single file of the per-variable form, the
+  retired `nested`) was removed on Oct 23, 2026: a rule dropped from a module
+  is gone; before dropping one, check SV-COMP (`scripts/missing.py`,
+  doc/benchmarks.md) and the examples, and keep a rule that only one task
+  needs local to that task. Rules are tried in the order of the file, so it
+  decides which abstraction a fragment gets.
 - Tests of trace equation systems are Dafny examples only, not SMT-LIB or
   Boogie. Those that should not pull in the lemma database of `-teq` duplicate
   the declarations of `teq.dfy` that they need, with its indexed names (e.g.
@@ -151,9 +151,8 @@ or solvers consume.
   `-monomorph` on polymorphic input; such tests only generate goals
   (`-quiet`).
 - **Testing database lemmas:** on core terms with
-  `Rules.from(State.empty, TEQ.lemmas)` (teq.dfy) and `prove.Rewrite`; the
-  tests on lemmas of the former database parse `legacy/teq.dfy`
-  (`test/dafny/TEQ.scala`).
+  `Rules.from(State.empty, TEQ.lemmas)` (teq.dfy) and `prove.Rewrite`, with
+  the modules they need parsed after it (`test/dafny/TEQ.scala`).
 - **Preludes** are injected into the stream; transforms see them, tests that
   call a `Source` directly drop `Examples.prelude(...)`.
 - **Stages buffer declarations**, except goals and lemmas that are not free,

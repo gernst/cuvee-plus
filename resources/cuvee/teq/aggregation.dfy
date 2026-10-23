@@ -1,13 +1,13 @@
 // aggregation: sums, parities, counts, maxima and minima as traces and as functions of lists, with their acceleration
 // (current, earlier), linearity of sums, indicators, and bounds; an optional module over teq.dfy alone (-include
-// teq:aggregation), migrated on Oct 13, 2026 from the module of the per-variable form (in legacy/teq.dfy), with the
-// functions sum, count, max, min, parity and the sums of the former core.dfy and teq.dfy, and the parities; the rules
-// that were never applied on SV-COMP and are specific to one task are left in the legacy file (below_prefix,
-// nonneg_prefix, the maxima and minima of counters and constants, the prefixes of maxima, minima and counts, the
-// indicators of two dependencies, the updates of selects, sum_squares), as is consts_prefix, the abstraction of a
-// constant sequence read at the iterations, since consts_choice of teq.dfy makes a constant sequence of a dependency
-// ⌊consts(n, c)⌋, whose sum is sum_consts; the bounds of counts and of the prefix maxima and minima by their initial
-// value are forward lemmas, facts about the term
+// teq:aggregation), migrated on Oct 13, 2026 from the module of the per-variable form, with the functions sum, count,
+// max, min, parity and the sums of the former core.dfy and teq.dfy, and the parities; the rules that were never applied
+// on SV-COMP and are specific to one task were left out and dropped with the legacy database on Oct 23, 2026
+// (below_prefix, nonneg_prefix, the maxima and minima of counters and constants, the prefixes of maxima, minima and
+// counts, the indicators of two dependencies, the updates of selects, sum_squares), as was consts_prefix, the
+// abstraction of a constant sequence read at the iterations, since consts_choice of teq.dfy makes a constant sequence
+// of a dependency ⌊consts(n, c)⌋, whose sum is sum_consts; the bounds of counts and of the prefix maxima and minima by
+// their initial value are forward lemmas, facts about the term
 
 // the functions of lists and integers that the aggregates fold
 // the sum of a list
@@ -174,7 +174,7 @@ lemma {:rw} {:teq} count_consts<a>(n: Nat, e: a, v: a)
     == if v == e then integer(n) else 0
 
 // the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body; the counts of
-// false are the others, by count_false_true below (count_false_below and count_false_above are in the legacy file)
+// false are the others, by count_false_true below
 // (used on SV-COMP by gj2007, mono-crafted_1, mono-crafted_9 only)
 lemma {:rw} {:teq} count_true_below(m: int, i: int, n: Nat)
   requires i <= m <= i + integer(n)
@@ -192,9 +192,9 @@ lemma {:fw} {:teq} count_nonnegative<a>(e: a, vs: List<a>)
 
 // the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m
 // (from half, sumt2, the only tasks of SV-COMP that use it)
-lemma {:rw} {:teq} count_remainder(n: Nat, m: int, r: int, hs: List<int>)
+lemma {:rw} {:teq} count_remainder(n: Nat, m: int, r: int)
   requires 0 < m && 0 <= r < m
-  ensures count(r, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: k % m)) == (integer(n) + m - 1 - r) / m
+  ensures count(r, maps(for ⌊counter(0, 1, n)⌋ yield k :: k % m)) == (integer(n) + m - 1 - r) / m
 
 // among the truth values of a map over the n iterations, those that are false are the others than those that are
 // true; the dependencies are kept as matched, such that the counts are syntactically equal to those of the program

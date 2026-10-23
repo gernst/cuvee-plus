@@ -10,7 +10,7 @@
 // the trace of the position of the maximum so far, which moves to the positions of a counter whose value is larger
 function {:fold} argmaxs(a: array<int, int>, p0: int, i: int, n: Nat): Trace<int>
 {
-  trace(p0, for ⌊counter(0, 1, n)⌋, ⌊counter(i, 1, n)⌋ do p, k, j :: case a[p] < a[j] => j case a[j] <= a[p] => p)
+  trace(p0, for ⌊counter(i, 1, n)⌋ do p, j :: case a[p] < a[j] => j case a[j] <= a[p] => p)
 }
 
 // the final position is the initial one or one of the counter, hence within their bounds

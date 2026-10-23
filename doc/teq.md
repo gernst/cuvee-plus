@@ -172,7 +172,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   variable, or over further variables `hs`, match the single dependency of
   `-teq` (see [prove.md](prove.md)). Migrated:
   `core.dfy`, whose declarations went into teq.dfy (`distincts`, `selects`)
-  and into the modules of their concept, the file is in `legacy/`;
+  and into the modules of their concept;
   `aggregation.dfy` (`-include teq:aggregation`: the functions `sum`, `count`,
   `max`, `min`, `parity` and the traces `sums`, `parities`, `counts`, `maxs`,
   `mins`, with the linearity of sums, indicators and bounds);
@@ -194,10 +194,9 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   (`-include teq:unsigned`: `mods(i, c, m, n)`, the counter modulo `m` of the
   unsigned variables of C, whose arithmetic wraps around, with the bounds of
   its iteration constraints below `m` and its final values). The rules of
-  these files never applied on SV-COMP and specific to one task stay in the
-  legacy file.
-  Retired to [legacy/nested.dfy](../resources/cuvee/legacy/nested.dfy) on
-  Oct 14, 2026: the former `teq:nested`, the fragments of inner loops (the inner counter,
+  these files never applied on SV-COMP and specific to one task were left
+  out; they were dropped with the legacy database on Oct 23, 2026.
+  Retired on Oct 14, 2026 (and removed on Oct 23): the former `teq:nested`, the fragments of inner loops (the inner counter,
   its final value, its iteration constraint, its exit stated on the constraint
   fragment `invs(for ks, Ns check k, nn :: integer(nn) <= n)`, the numbers of
   inner iterations as `⌊consts(m, natural(n))⌋`, the outer trace of a variable
@@ -205,9 +204,8 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   since an inner loop is a value of the outer update; the nested sorting
   algorithms leave the same goals without it. The order of the modules is the order in
   which the rules are tried.
-  [legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy) is the former single
-  file of the per-variable form, from which its modules were split: a backup,
-  not injected. The database is printed as Lean by
+  The former single file of the per-variable form, from which the modules
+  were split, was kept as a backup until Oct 23, 2026. The database is printed as Lean by
   [scripts/lean/generate.py](../scripts/lean/generate.py), which concatenates
   the modules into one file and prints it with `-print lean` (with `-teq`, the
   output hides the database).
@@ -224,8 +222,9 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   counter of any start and step, which a fold, whose variables are its
   formals, does not abstract), and the definitions of the predicates that
   abstract iteration constraints, `agree_prefix_def` and
-  `above_iterations_def`, whose further dependency `hs` is no formal of the
-  predicate. A lemma that rewrites into a function without defining it is
+  `above_iterations_def` (recursive definitions over the positions, which the
+  Lean proofs use; since they lost their further dependency `hs` on Oct 23,
+  2026, they could become folds). A lemma that rewrites into a function without defining it is
   named after what it states, e.g. `counts_true` (a trace of booleans),
   `stores_cases`, `sorted_adjacent`, `not_occurs_prefix`; those about an
   accessor of a function after both, e.g. `current_sums` or `earlier_prefix`,
@@ -314,8 +313,10 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   and the lemma that needs the constraint takes the atom as its side
   condition, e.g. `sum_consts_prefix`, which is matched against the facts
   syntactically. The body of the definition lemma reads the sequence
-  explicitly, `earlier(natural(k), js)`, with a further dependency `hs` for
-  those of the constraint: a bound variable `j` of a dependency `J` of the
+  explicitly, `earlier(natural(k), js)` (a further dependency `hs` for those
+  of the constraint, which these lemmas had, is not needed: the matcher ignores
+  the dependencies of the expression that the pattern does not select, Oct 23,
+  2026): a bound variable `j` of a dependency `J` of the
   constraint matches the read through its equation
   `j == earlier(natural(k), J)` in the context of the combinator, as do an
   explicit read and the symmetric equation `c == j`, while `c` must not
@@ -326,7 +327,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   which hides the constraint from `Simplify.invariants`, since that collects
   `invs` facts only; a definition lemma therefore comes late among the lemmas
   on `invs`, after those that use such constraints. `consts_prefix_def` and
-  `sum_consts_prefix` are in legacy/teq.dfy since Oct 23, 2026, never applied
+  `sum_consts_prefix` were dropped on Oct 23, 2026, never applied
   on SV-COMP: `consts_choice` of teq.dfy makes the constraint on a dependency
   the constant sequence `xs == ⌊consts(n, c)⌋`, whose sum is `sum_consts`,
   without the premise on the length of the list that the read `earlier(natural(k), js)`
@@ -457,12 +458,9 @@ project at the root (`lakefile.toml`, sources in `lean/`):
 - [Proofs.lean](../lean/TEQ/Proofs.lean), by hand: a theorem of the name of
   each lemma with its statement (`<name>_rule` for a lemma named like a
   function, `lower` and `upper` of sorted.dfy, also for its `Stmt`, since the
-  body of `Stmt.lower` would resolve `lower` to it), and the auxiliary lemmas;
-  it also keeps the
-  theorems of the lemmas of the former single file
-  ([legacy/teq.dfy](../resources/cuvee/legacy/teq.dfy)) that the stable
-  modules no longer contain, with the auxiliary predicates of those
-  (`below_prefix`, ...).
+  body of `Stmt.lower` would resolve `lower` to it), and the auxiliary lemmas
+  (the theorems of the lemmas that the stable modules no longer contain were
+  removed with the legacy database on Oct 23, 2026).
 - [Check.lean](../lean/TEQ/Check.lean), generated:
   `example : Stmt.<name> := @<name>` for each lemma, so a lemma whose
   statement changed or that has no proof fails the build.

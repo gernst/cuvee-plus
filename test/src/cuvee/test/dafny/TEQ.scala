@@ -24,11 +24,12 @@ object TEQ extends TestSuite:
       arg
     expr :: inner.result()
 
-  // the former lemma database of the per-variable form (resources/cuvee/legacy/teq.dfy), no longer injected, whose
-  // lemmas the tests of the rewriting of -prove below use
-  lazy val legacy: List[Cmd] =
+  // the lemma database with the modules aggregation and counters, whose lemmas the tests of the rewriting of -prove
+  // below use
+  lazy val database: List[Cmd] =
     val (_, parser, _) = cuvee.dafny.Source.newParser(cuvee.Config.default)
-    cuvee.dafny.Source.parse("/cuvee/legacy/teq.dfy", parser)
+    cuvee.verify.TEQ.modules.flatMap((_, module) => cuvee.dafny.Source.parse(module, parser)) ++
+      List("aggregation", "counters").flatMap(name => cuvee.dafny.Source.parse(cuvee.verify.TEQ.module(name), parser))
 
   val tests = Tests:
     // the lemma database is injected at the beginning, whose counter lemma rewrites the trace of i in sum.dfy;
@@ -88,26 +89,17 @@ object TEQ extends TestSuite:
       val phi_ = cuvee.prove.Simplify.simplify(cuvee.Config.default, State.empty, cuvee.prove.Context.empty(State.empty).copy(polarity = Some(true)).withRules(List(rule)), phi)
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
 
-    // an update of a visited key replaces its contribution to the count, and the prefix counts are counts of prefixes;
-    // the conditions are decided by the assumptions of the context (the lemmas of the legacy database)
+    // the prefix counts are counts of prefixes (earlier_counts of the module aggregation)
     test("count"):
-      val rules = cuvee.prove.Rules.from(State.empty, legacy)
-      def fun(name: String) = legacy.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun; case DefineFun(fun, _, _) if fun.name.name == name => fun }.get
+      val rules = cuvee.prove.Rules.from(State.empty, database)
+      def fun(name: String) = database.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun; case DefineFun(fun, _, _) if fun.name.name == name => fun }.get
       def app(name: String, args: Expr*) = App(fun(name), args.toList)
       def has(expr: Expr, name: String) = subexprs(expr).exists { case App(f, _, _, _) => f.name.name == name; case _ => false }
 
-      val a = Var("a", Sort.array(Sort.int, Sort.int))
-      val k = Var("k", Sort.int)
-      val w = Var("w", Sort.int)
       val e = Var("e", Sort.int)
       val j = Var("j", Sort.nat)
       val x = Var("x", Sort.int)
       val keys = Var("keys", Sort.list(Sort.int))
-
-      val ctx = cuvee.prove.Context.empty(State.empty).assume(app("distincts", keys)).withRules(rules)
-      val updated = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("count", e, app("selects", Store(a, k, w), keys)))
-      assert(subexprs(updated).contains(app("count", e, app("selects", a, keys))))
-      assert(!subexprs(updated).exists { case Store(_, _, _) => true; case _ => false })
 
       val bounds = cuvee.prove.Context.empty(State.empty).withRules(rules)
       val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
@@ -145,10 +137,10 @@ object TEQ extends TestSuite:
       assert(cmds.exists { case Assert(Goal, _, _, _) => true; case _ => false })
 
     // a loop that assigns a constant: the dependency of the lemma whose bound variable the update does not use
-    // is instantiated by a dependency of the expression, here the counter defined in the context (the lemmas of the
-    // legacy database)
+    // is instantiated by a dependency of the expression, here the counter defined in the context (current_trace_constant
+    // of the module counters)
     test("constant updates"):
-      val rules = cuvee.prove.Rules.from(State.empty, legacy)
+      val rules = cuvee.prove.Rules.from(State.empty, database)
       val n = Var("n", Sort.nat)
       val trace = Sort(Con("Trace", 1), List(Sort.int))
       val K = Var("K", trace)

@@ -1,7 +1,7 @@
 function {:fold} argmaxs(a: array<int, int>, p0: int, i: int,
                          n: Nat): Trace<int> {
-  trace(p0, for ⌊counter(0, 1, n)⌋, ⌊counter(i, 1, n)⌋
-        do p, k, j ::
+  trace(p0, for ⌊counter(i, 1, n)⌋
+        do p, j ::
           case a[p] < a[j] => j case a[j] <= a[p] => p)
 }
 

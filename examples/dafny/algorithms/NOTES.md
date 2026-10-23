@@ -20,13 +20,13 @@ the lemmas specific to the examples stand at the beginning of each file.
 | [insertion_sort2.dfy](insertion_sort2.dfy) | verified with `-prove` (Oct 16): the pass folded, an induction over the outer trace with the constraints of the pass as side conditions; its swaps as `swap(...)` of `teq:sorted` since Oct 23, 2026 |
 | [nested_counter.dfy](nested_counter.dfy) | verified with the database alone: the simplest nested loop (formerly examples/dafny/state) |
 | [nested_sum.dfy](nested_sum.dfy), [nested_mult.dfy](nested_mult.dfy) | verified with the database alone, the inner loop a value of the outer update (formerly examples/dafny/state; the generic fragment lemmas of the former versions are gone) |
-| [fragments.dfy](fragments.dfy) | verified: the generic fragment lemmas on the two minimal problems |
+| fragments.dfy | removed on Oct 23, 2026 with the legacy database: the generic fragment lemmas on the two minimal problems, which `-teq` no longer needs |
 | [inner_loop_flat.dfy](inner_loop_flat.dfy) | verified: the facts of an inner loop at the top level |
 | [invs_counter_equation.dfy](invs_counter_equation.dfy) | verified with `-include teq:nested` (problem 1, minimal) |
 | [invs_fragments.dfy](invs_fragments.dfy) | verified with `-include teq:nested` (problem 2, minimal); method variables named apart |
 | [count_occurrences.dfy](count_occurrences.dfy) | verified: the count named as the normal form |
 | [max_element.dfy](max_element.dfy) | verified with `occurs`; open with `exists` (no witness) |
-| [argmax.dfy](argmax.dfy) | verified: a selection trace with rules on the atoms |
+| [argmax.dfy](argmax.dfy) | verified: a selection trace with rules on the atoms; its fold over one counter since Oct 23, 2026 |
 | [partition.dfy](partition.dfy) | verified with `-prove` (Oct 16): Lomuto partition, one trace of `(b, i, j)`, the regions as rules on the atoms over the whole trace; its swaps as `swap(...)` of `teq:sorted` since Oct 23, 2026 |
 | [reverse.dfy](reverse.dfy) | verified with `-prove` (Oct 16): two pointers, the summary takes the disjunction of the exit as its side condition |
 | [is_sorted.dfy](is_sorted.dfy) | verified under `-prove` (open under `-simplify` by one substitution of the exit into `sorted`, finding 35); since Oct 23, 2026 with `current_trace_flag` of `teq:counters`, now of any type, and `sorted_adjacent` of `teq:sorted` (not rerun) |

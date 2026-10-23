@@ -95,6 +95,19 @@ lemma {:rw} {:teq} perm_steps_two(a: array<int, int>, c: array<int, int>, ks: Li
   requires forall b: array<int, int>, k: int, i: int :: perm(F(b, k, i), b)
   ensures perm(current(trace(a, for ks, is do b, k, i :: F(b, k, i))), c) <==> perm(a, c)
 
+// the same over the iterations and a choice of naturals, e.g. the numbers of iterations of an inner loop, and with a
+// further dependency, e.g. the loop variable; a polymorphic version is not matched (TODO.md)
+// (from examples/dafny/algorithms: bubble_sort; insertion_sort, insertion_sort2, selection_sort)
+lemma {:rw} {:teq} perm_steps_nat(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>,
+                                  F: (array<int, int>, int, Nat) -> array<int, int>)
+  requires forall b: array<int, int>, k: int, nn: Nat :: perm(F(b, k, nn), b)
+  ensures perm(current(trace(a, for ks, ns do b, k, nn :: F(b, k, nn))), c) <==> perm(a, c)
+
+lemma {:rw} {:teq} perm_steps_three(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>, is: List<int>,
+                                    F: (array<int, int>, int, Nat, int) -> array<int, int>)
+  requires forall b: array<int, int>, k: int, nn: Nat, i: int :: perm(F(b, k, nn, i), b)
+  ensures perm(current(trace(a, for ks, ns, is do b, k, nn, i :: F(b, k, nn, i))), c) <==> perm(a, c)
+
 // inductions: the invariant of the outer loop as a quantified side condition over the steps F, which the simplifier
 // decides by step lemmas on the atoms; all steps of the trace must be constrained, hence the number of steps is
 // exactly n, or the steps extend the prefix for all positions

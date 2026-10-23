@@ -1,9 +1,9 @@
 // counters: the shapes of traces over a counter, phases, flags, catching up, merged cases, constants, increasing and
 // bounded values; an optional module over teq.dfy alone (-include teq:counters), migrated on Oct 13, 2026 from the
-// module of the per-variable form (in legacy/teq.dfy): the counters themselves, their reads and the bounds of their
-// iteration constraints are in teq.dfy; left in the legacy file are the rules never applied on SV-COMP, among them the
-// counters modulo m of the unsigned variables of C (mods and its rules, which the C examples do not need under -prove),
-// the remainders and the geometric traces, and the rules on prefixes, occurrences and indices of lists
+// module of the per-variable form: the counters themselves, their reads and the bounds of their iteration constraints
+// are in teq.dfy; left out and dropped with the legacy database on Oct 23, 2026 are the rules never applied on SV-COMP,
+// among them the counters modulo m of the unsigned variables of C (mods and its rules, which the C examples do not need
+// under -prove), the remainders and the geometric traces, and the rules on prefixes, occurrences and indices of lists
 
 // two cases whose results agree under the guard of the second one, x == c, which the simplifier has substituted
 // into it, are one; the second result is a variable d, since F(c) would be compared literally
@@ -86,7 +86,14 @@ lemma {:rw} {:teq} current_trace_bounded(x0: int, n: Nat, lo: int, hi: int, C1: 
       <==> true
 
 // membership in a counter with a positive step d, e.g. the odd positions counter(1, 2, n) of strided stores
-// (from mbpr2; in legacy/teq.dfy from occurs_counter_step of the per-variable form)
+// (from mbpr2)
 lemma {:rw} {:teq} occurs_counter_step(i: int, d: int, n: Nat, j: int)
   requires 0 < d
   ensures occurs(j, ⌊counter(i, d, n)⌋) <==> i <= j < i + integer(n) * d && (j - i) % d == 0
+
+// the position of a value of a counter with a positive step d among its values, e.g. for the reads of strided stores
+// (general form of indexof_counter_up of teq.dfy)
+lemma {:rw} {:teq} indexof_counter_step(j: int, i: int, d: int, n: Nat)
+  requires 0 < d && i <= j < i + integer(n) * d && (j - i) % d == 0
+  ensures indexof(j, ⌊counter(i, d, n)⌋)
+    == natural((j - i) / d)

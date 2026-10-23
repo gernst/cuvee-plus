@@ -8,8 +8,8 @@ library `TEQ` of the Lake project at the root of the repository (`lakefile.toml`
 - `TEQ/Semantics.lean` (by hand): the datatype of traces and the combinators `trace`, `maps`, `invs`.
 - `TEQ/Database.lean` (generated): the functions of the modules as printed by `-print lean`, and each lemma as the
   proposition `Stmt.<name>`, its printed statement with the premises of `premises.txt`.
-- `TEQ/Proofs.lean` (by hand): the theorem `<name>` of each lemma, with the auxiliary lemmas, and the theorems of the
-  lemmas of the former single file (`resources/cuvee/legacy/teq.dfy`) that are no longer in the stable modules.
+- `TEQ/Proofs.lean` (by hand): the theorem `<name>` of each lemma, with the auxiliary lemmas (the theorems of the
+  former legacy database, the lemmas no longer in the stable modules, were removed on Oct 23, 2026).
 - `TEQ/Check.lean` (generated): `example : Stmt.<name> := @<name>` for each lemma (`<name>_rule` for a lemma named
   like a function).
 - `TEQ/Counterexamples.lean` (by hand): the lemmas without their premises are false.

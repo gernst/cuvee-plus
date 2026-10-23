@@ -7,7 +7,7 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
 
 ## Done
 
-- `consts_prefix`, `consts_prefix_def`, `sum_consts_prefix` to the legacy file: `consts_choice` and `sum_consts`
+- `consts_prefix`, `consts_prefix_def`, `sum_consts_prefix` dropped (to the legacy file, then removed with it): `consts_choice` and `sum_consts`
   cover them, and the length premise of `sum_consts_prefix` is gone from lean/premises.txt.
 - `mods` is a fold (`{:fold}` with the trace of its update), `mods_def` gone; the Lean proofs go through
   `mods_start` (the trace over a counter of any start is the same).
@@ -20,14 +20,14 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
   `stores_index_cases`, `select_current_trace_reset_keep`, `select_current_trace_conditional_store`; strides:
   `stride2`, `stride3`, `ahead`; aggregation: `select_current_trace_reset_add`); in Lean, each is derived from its
   former statement (`<name>_zip`) by `trace_zip_self`.
-- `count_false_below` and `count_false_above` to the legacy file: `count_false_true` reduces a count of false to
+- `count_false_below` and `count_false_above` dropped: `count_false_true` reduces a count of false to
   the count of true, which `count_true_below`/`_above` evaluate.
 - One prefix for the reads of a final array: `select_current_trace_conditional_store(_deps)`,
   `select_current_trace_cap`, `select_current_trace_prefix_sums(_add)`.
 - `select_current_trace_stride2_cases` over one counter: its second counter, `⌊counter(1, 1, n)⌋`, was not read.
 - From examples/dafny/algorithms: `current_trace_flag` of counters.dfy is of any type (it replaces the boolean copy
   of is_sorted.dfy), and `current_trace_histogram` (counting_sort.dfy) is in aggregation.dfy; both proved in Lean.
-- `pow_two_mod_three` to the legacy file, local again in underapprox_1-2 of the former Dafny translations of SV-COMP (removed Oct 23, 2026), with
+- `pow_two_mod_three` dropped, local again in underapprox_1-2 of the former Dafny translations of SV-COMP (removed Oct 23, 2026), with
   `current_trace_geometric`, which it needs too.
 - The TODOs in the modules are gone: `cut` and `sorted` keep their integer bounds, those of the programs (a natural
   length would add conversions without simplifying a proof); `cutFrom` stays the recursion on a natural for Lean;
@@ -38,6 +38,24 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
   sorting examples that include `teq:sorted` state their local swaps as `swap(...)`, since the stores of the
   programs are folded before their lemmas are matched (without that, two leave a goal, three time out, one does not
   terminate); all ten examples with `teq:sorted` are correct with it; SV-COMP not run yet.
+- The legacy database is removed (resources/cuvee/legacy: the former single file of the per-variable form,
+  core.dfy, the retired `nested`), with the 60 theorems of Proofs.lean that only its lemmas needed, their auxiliary
+  predicates (`below_prefix`, `nonneg_prefix`, `consts_prefix`) and lemmas, and their counterexamples; four of its
+  theorems stay as auxiliary lemmas of kept proofs (`earlier_prefix`, `natural_zero`, `selects_stores`,
+  `select_not_occurs_selects_beyond`). The unit tests of test/dafny/TEQ.scala parse the modules instead (the
+  assertion on the selects of a store, a rule of the legacy file only, is gone). fragments.dfy of the algorithms,
+  the fragment lemmas of the former `nested`, is removed.
+- `hs` dropped from the seven lemmas whose body does not read it (`count_remainder`, `select_current_trace_cap`,
+  `current_trace_mod_add_const`, `current_trace_mod_add_cases`, `agree_prefix_def`, `not_occurs_prefix`,
+  `above_iterations_def`): the matcher ignores the dependencies of the expression that the pattern does not select,
+  and on the 21 tasks that use six of them (8 of the 27 of `not_occurs_prefix`), the outputs were byte-identical with
+  and without `hs`. It stays where the body reads it through a higher-order variable (table below). The Lean proofs
+  are direct over the counter.
+- New in the database, proved in Lean: `indexof_counter_step` (the position in a counter with a step, beside
+  `occurs_counter_step`), `butlast_counter_zero` and `selects_nil` (with `sum_empty`, the sum over no positions of
+  prefix_sums.dfy), `perm_steps_nat` and `perm_steps_three` (the copies of bubble_sort, the insertion sorts and
+  selection_sort; one lemma per number and type of dependencies, see the table below). argmax.dfy iterates over one
+  counter.
 - Each lemma that at most three proved tasks use names them on its `(from ...)` line, each unused lemma says why it
   stays (doc/teq.md, conventions); stale remarks fixed (rewnifrev is proved by `select_current_trace_ahead_down`,
   `integer_zero` is in teq.dfy).
@@ -46,9 +64,9 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
 
 121 of the 150 lemmas and folds were used (before the unifications). Unused: the module `sorted` (the examples only), the bisection of `search`
 (`bisection`, `bisection_lo/hi`), `earlier_above_iterations`, `div_nonpos`, `pow_two_mod_three`, `prefix_sums`,
-`sum_empty`, `sum_indicator_false`, `count_false_above` (now in the legacy file), `parities` with `current_parities`,
+`sum_empty`, `sum_indicator_false`, `count_false_above` (dropped), `parities` with `current_parities`,
 `select_current_trace_prefix_sums_add`. Of these, only `pow_two_mod_three` is specific to the constants of its tasks (a
-now in the legacy file); the others are laws of functions of the database or pairs of used lemmas. 41
+dropped); the others are laws of functions of the database or pairs of used lemmas. 41
 lemmas are used by at most three tasks.
 
 ## What could be unified (database only)
@@ -61,18 +79,11 @@ Done on Oct 23, 2026 (above): the duplicated counters, the counts of a threshold
   beside `_cases`, `invs_mods_down` beside `_cases`, `invs_counter_mod_upper_zero` beside `_cases`): each pair is a
   specialization whose side condition removes the disjunction `n == zero || ...`, which is not split in the context
   of a combinator; they stay as long as that holds (see below).
-- **Further dependencies `hs`.** Lemmas carry an extra list `hs` (or `hs, cs, vs`) for the other dependencies of
-  the matched combinator, inconsistently: `current_trace_flag`, `current_trace_increasing`, `select_current_trace_cap`,
-  `count_remainder`, `count_false_true`, `count_true_eq`, the `_def` lemmas of `search`, the `current_trace_mod_*`
-  of unsigned have one, the other trace lemmas none. A pattern without it does not match a combinator with more
-  dependencies, one with it matches one or two; which lemmas need it is not recorded. Not unified: adding or
-  removing `hs` changes what a lemma matches, so each change needs the tasks of the lemma.
 - `sum_indicator_false` stays: it turns a sum into a count, which `count_false_true` does not do.
 - **Folds that are not possible.** `counter_def` (the counter is the dependency of its own trace; a fold body would
   mention `counter`), `consts_def` (over a counter of any start and step, while a fold abstracts its formals only;
-  a fold over `⌊counter(0, 1, n)⌋` would lose the general form), `agree_prefix_def` and `above_iterations_def`
-  (their further dependency `hs` is no formal of the predicate; as a formal it would change the predicate and its
-  Lean proofs).
+  a fold over `⌊counter(0, 1, n)⌋` would lose the general form). `agree_prefix_def` and `above_iterations_def` could
+  be folds since they lost `hs` (open: their recursive definitions are what the Lean proofs use).
 
 ## The lemmas of examples/dafny/algorithms
 
@@ -91,8 +102,8 @@ Of the other local lemmas:
   not be compared.
 - **Moved into the database**: `current_trace_flag` of any type, `current_trace_histogram`.
 - **Candidates, not moved**: the bounds of `maxs` over `selects` (`select_le_maxs`, `occurs_maxs` of max_element,
-  which stays open for its existential postcondition); the fold `argmaxs` with its bounds (argmax.dfy; its trace
-  iterates over a second counter that the update does not read); `invs_pairs` of reverse.dfy as an affine bound
+  which stays open for its existential postcondition); the fold `argmaxs` with its bounds (argmax.dfy, over one counter
+  since Oct 23, 2026); `invs_pairs` of reverse.dfy as an affine bound
   `a k + b < m` of a counter; `perm_steps` with three dependencies or a natural one (`perm_steps_three`,
   `perm_steps_choice`), which the database has for one and two integer dependencies (a polymorphic version is not
   matched, TODO.md); `sum_selects_zero` (prefix_sums.dfy), better as `⌊counter(i, c, zero)⌋ == nil`. None of them
@@ -119,11 +130,12 @@ once the gap is closed (Scala changes, not done here).
 | the disjunction `n == zero || ...` is not split in the context of a combinator | the disjunction-free variants above |
 | facts of the classes (`n == zero`, `n == natural(x)`) do not reach the linear arithmetic | `zero_integer_value`, `natural_positive` (forward lemmas), `integer_eq` with its side condition (TODO.md) |
 | an iteration constraint as a side condition recurs through its own fact | atoms for constraints: `agree_prefix`, `above_iterations`, `!occurs(e, prefix(...))` |
-| no quantifier over the further dependencies of a combinator | the `hs` lists above |
+| a rule variable must not capture a bound variable of the expression | the further dependency `hs` of the lemmas whose body reads it through a higher-order variable, `D(k, h)` (`current_trace_flag`, `current_trace_increasing`, `count_false_true`, `count_true_eq`, `stores_read_unmodified`, `select_current_trace_conditional_store_deps`) |
 | an equation of integers as a lemma rewrites its left-hand side as a term | `double_eq_half` (stated as an equivalence of atoms) |
 | complete guards are an obligation of the proofs | the complementary last case of `current_trace_increasing`, `current_trace_bounded`, `bisection` |
 | the engine does not check reads within the loop or lengths | the premises of [lean/premises.txt](../lean/premises.txt) |
 | a pattern of nested stores has a fixed number of stores | the stride lemmas (2, 3, the cases of pr2) |
+| a pattern has a fixed number of dependencies, one bound variable each (no tuples), and a polymorphic higher-order side condition is not matched | one lemma per number and type of dependencies: `perm_steps` (int), `perm_steps_two` (int, int), `perm_steps_nat` (int, Nat), `perm_steps_three` (int, Nat, int), where Lean proves all from one lemma over any list of dependencies (`perm_steps_general`); kept specific by decision (Oct 23, 2026) |
 
 ## Open points of earlier analyses
 
@@ -131,10 +143,9 @@ once the gap is closed (Scala changes, not done here).
   arithmetic (TODO.md, reverse.dfy); options: the unconditional form, a forward lemma that keeps the equation, or a
   bridge from the classes to the arithmetic (Scala).
 - Lean (TODO.md, Proofs of teq.dfy in Lean): the index premises as `requires` where `-prove` decides them; a Scala
-  test that compares the generated Database.lean; the legacy theorems of Proofs.lean (now with `consts_prefix`) in a
-  frozen Legacy.lean.
+  test that compares the generated Database.lean.
 - The benchmark definitions include all modules, the options in fm-tools do not (TODO.md).
 - The matcher items of TODO.md (Simplifier and rewriting) were found under `-simplify` and are to be rechecked under
-  `-prove`: products modulo commutativity (`div_quotient_remainder` in the legacy file), conjunctions in order,
+  `-prove`: products modulo commutativity (`div_quotient_remainder`, dropped), conjunctions in order,
   literal disjunctive guards, higher-order variables for array reads, polymorphic higher-order side conditions,
   the selection of dependencies not backtracked, bare bound variables in `invs` patterns.
