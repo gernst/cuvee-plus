@@ -1365,6 +1365,22 @@ noncomputable def fourths (i : Int) (n : Nat) : Int :=
 noncomputable def fifths (i : Int) (n : Nat) : Int :=
   sum (maps (butlast (counter i 1 n)) (fun k => k * k * k * k * k))
 
+def Stmt.squares_zero : Prop :=
+  ∀ (i : Int),
+    squares i zero = 0
+
+def Stmt.cubes_zero : Prop :=
+  ∀ (i : Int),
+    cubes i zero = 0
+
+def Stmt.fourths_zero : Prop :=
+  ∀ (i : Int),
+    fourths i zero = 0
+
+def Stmt.fifths_zero : Prop :=
+  ∀ (i : Int),
+    fifths i zero = 0
+
 def Stmt.sum_squares_scaled : Prop :=
   ∀ (a : Int) (i : Int) (n : Nat),
     sum (maps (butlast (counter i 1 n)) (fun k => a * k * k)) = a * squares i n
@@ -1378,67 +1394,33 @@ def Stmt.sum_fourths_scaled : Prop :=
     sum (maps (butlast (counter i 1 n)) (fun k => a * k * k * k * k))
       = a * fourths i n
 
-def Stmt.squares_at : Prop :=
-  ∀ (c : Int) (i : Int) (n : Nat),
-    c = integer n
-      → 6 * squares i n
-        = (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
+def Stmt.squares_closed : Prop :=
+  ∀ (i : Int) (n : Nat),
+    6 * squares i n
+      = (i + integer n - 1) * (i + integer n) * (2 * (i + integer n) - 1)
+        - (i - 1) * i * (2 * i - 1)
 
-def Stmt.triangle_at : Prop :=
-  ∀ (c : Int) (n : Nat),
-    c = integer n → 2 * ((integer n + integer n * integer n) / 2) = c + c * c
+def Stmt.cubes_closed : Prop :=
+  ∀ (i : Int) (n : Nat),
+    4 * cubes i n
+      = (i + integer n) * (i + integer n) * (i + integer n - 1)
+        * (i + integer n - 1)
+        - i * i * (i - 1) * (i - 1)
 
-def Stmt.triangle_below_at : Prop :=
-  ∀ (c : Int) (n : Nat),
-    c = integer n → 2 * ((-integer n + integer n * integer n) / 2) = -c + c * c
+def Stmt.fourths_closed : Prop :=
+  ∀ (i : Int) (n : Nat),
+    30 * fourths i n
+      = (i + integer n) * (i + integer n - 1) * (2 * (i + integer n) - 1)
+        * (3 * (i + integer n) * (i + integer n) - 3 * (i + integer n) - 1)
+        - i * (i - 1) * (2 * i - 1) * (3 * i * i - 3 * i - 1)
 
-def Stmt.triangle_scaled_at : Prop :=
-  ∀ (a : Int) (c : Int) (n : Nat),
-    c = integer n
-      → 2 * ((a * integer n + a * integer n * integer n) / 2) = a * c + a * c * c
-
-def Stmt.triangle_below_scaled_at : Prop :=
-  ∀ (a : Int) (c : Int) (n : Nat),
-    c = integer n
-      → 2 * ((-a * integer n + a * integer n * integer n) / 2)
-        = -a * c + a * c * c
-
-def Stmt.squares_square_at : Prop :=
-  ∀ (c : Int) (i : Int) (n : Nat),
-    c = integer n
-      → 6 * squares i n + integer n * integer n
-        = (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
-          + c * c
-
-def Stmt.squares_cube_at : Prop :=
-  ∀ (c : Int) (i : Int) (n : Nat),
-    c = integer n
-      → 6 * squares i n + integer n * integer n * integer n
-        = (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
-          + c * c * c
-
-def Stmt.cubes_at : Prop :=
-  ∀ (c : Int) (i : Int) (n : Nat),
-    c = integer n
-      → 4 * cubes i n
-        = (i + c) * (i + c) * (i + c - 1) * (i + c - 1)
-          - i * i * (i - 1) * (i - 1)
-
-def Stmt.fourths_at : Prop :=
-  ∀ (c : Int) (i : Int) (n : Nat),
-    c = integer n
-      → 30 * fourths i n
-        = (i + c) * (i + c - 1) * (2 * (i + c) - 1)
-          * (3 * (i + c) * (i + c) - 3 * (i + c) - 1)
-          - i * (i - 1) * (2 * i - 1) * (3 * i * i - 3 * i - 1)
-
-def Stmt.fifths_at : Prop :=
-  ∀ (c : Int) (i : Int) (n : Nat),
-    c = integer n
-      → 12 * fifths i n
-        = (i + c) * (i + c) * (i + c - 1) * (i + c - 1)
-          * (2 * (i + c) * (i + c) - 2 * (i + c) - 1)
-          - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1)
+def Stmt.fifths_closed : Prop :=
+  ∀ (i : Int) (n : Nat),
+    12 * fifths i n
+      = (i + integer n) * (i + integer n) * (i + integer n - 1)
+        * (i + integer n - 1)
+        * (2 * (i + integer n) * (i + integer n) - 2 * (i + integer n) - 1)
+        - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1)
 
 def Stmt.current_trace_geometric : Prop :=
   ∀ (y0 : Int) (z : Int) (n : Nat),

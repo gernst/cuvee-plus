@@ -183,7 +183,10 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   instantiated and simplified again wherever they fire, which uses up the 1000 steps of the goal on array-crafted
   bAnd*, bor*, xor*, reducercommutativity avg*, sum*, data_structures_set_multi_proc_ground-2 ("rewriting does not
   terminate" instead of `unknown`, no correct result lost). Steps of their own for each instance (0.46.8) turned the
-  breaks into timeouts and were reverted (ideas/prove-next.md).
+  breaks into timeouts and were reverted (ideas/prove-next.md). At 120 s (xml/cuvee-fallback.xml, 0.50.15, Oct 24,
+  2026, i7-6700) also nla-digbench-scaling/mannadiv_unwindbound* (7 tasks, the same error at 900 s with 0.49.5) and
+  cohencu-ll_unwindbound1, ps5-ll_unwindbound1 (both expected false; instances of teq:series at every variable of the
+  class of integer(n) and at squares(0, zero), fixed in 0.50.16: answered incorrect, as expected).
 
 - A rule whose left-hand side is a comparison of two open variables, e.g.
   `j < n` with a side condition `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: P(k, h))`,

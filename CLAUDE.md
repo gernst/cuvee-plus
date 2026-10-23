@@ -117,7 +117,10 @@ or solvers consume.
 - A fact that is needed where only its term occurs (a bound of
   `current(incs(...))`) is a forward lemma, `{:fw}`, not a rewrite rule on
   the atom: `-prove` assumes its instances wherever a term matching its
-  trigger occurs in an assumed fact (`Forward`).
+  trigger occurs in an assumed fact (`Forward`). Its trigger is tried at every
+  matching term, also without an instance: trigger at a fold of the term, one
+  fact per lemma (`-split` makes conjuncts lemmas of their own), no variables
+  bound by conditions alone (doc/teq.md, "What a forward lemma costs").
 - Long runs use a private copy of `cuvee.jar`: a rebuild during a run crashes
   the JVM, and the checkout's jar may contain uncommitted changes.
 - Runs on `-teq` examples take a timeout and one core
