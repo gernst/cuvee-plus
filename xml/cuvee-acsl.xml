@@ -15,25 +15,20 @@
   <!-- the witness of SV-COMP for the answer to a C program, without invariants or with the target only (yml.Witness) -->
   <option name="-witness">witness.yml</option>
 
-  <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP, by the folders of their sets
-       (sv-benchmarks/c/Arrays.set, Loops.set) that benchmarks/acsl contains -->
+  <!-- z3 proves the verification conditions of some tasks only as separate goals, e.g. geo1/2/3-ll and lcm2 of
+       nla-digbench (benchmarks/acsl/README.md) -->
+  <option name="-split"/>
+
+  <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP, by the sets of sv-benchmarks/c, which
+       benchmarks/acsl copies with the annotated programs -->
   <rundefinition name="ACSL_unreach-call">
     <tasks name="C.unreach-call.Arrays">
-      <include>../benchmarks/acsl/array-*/*.yml</include>
-      <include>../benchmarks/acsl/reducercommutativity/*.yml</include>
-      <excludesfile>../benchmarks/acsl/split.set</excludesfile>
+      <includesfile>../benchmarks/acsl/Arrays.set</includesfile>
       <propertyfile>../benchmarks/acsl/properties/unreach-call.prp</propertyfile>
-    </tasks>
-    <!-- tasks whose verification conditions z3 proves only as separate goals (see benchmarks/acsl/README.md) -->
-    <tasks name="C.unreach-call.Split">
-      <includesfile>../benchmarks/acsl/split.set</includesfile>
-      <propertyfile>../benchmarks/acsl/properties/unreach-call.prp</propertyfile>
-      <option name="-split"/>
     </tasks>
     <tasks name="C.unreach-call.Loops">
-      <include>../benchmarks/acsl/loop*/*.yml</include>
-      <include>../benchmarks/acsl/nla-digbench*/*.yml</include>
-      <excludesfile>../benchmarks/acsl/split.set</excludesfile>
+      <includesfile>../benchmarks/acsl/Loops.set</includesfile>
+      <includesfile>../benchmarks/acsl/VerifyThis-Loops.set</includesfile>
       <propertyfile>../benchmarks/acsl/properties/unreach-call.prp</propertyfile>
     </tasks>
   </rundefinition>

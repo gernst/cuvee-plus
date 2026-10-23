@@ -1,69 +1,67 @@
 # SV-COMP tasks with ACSL annotations
 
-The tasks of the SV-COMP categories ReachSafety-Arrays and ReachSafety-Loops
-with the property `unreach-call`, annotated with ACSL by a coding agent, task by task: loop
-invariants, contracts, and logic functions, such that Cuvée can check the
-expected verdict `true` by verification conditions (`-vcgen -z3 -verify`).
+The categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP, laid out
+exactly as in sv-benchmarks, with ACSL annotations, written by a coding agent
+task by task, in the programs of the tasks expected `true`: loop invariants,
+contracts, and logic functions, such that Cuvée can check the expected
+verdict by verification conditions (`-vcgen -split -z3`).
 
-- **838 tasks**, 303 of Arrays and 535 of Loops, all expected `true` (the
-  323 tasks expected `false` are removed). All have the contracts of the
-  harness, 799 have loop invariants.
-- **Proved with Cuvée 0.42.1 and `-verify`: 752 of the 838 true tasks**
-  (15 min per task, Oct 12, 2026, a partial run stopped with 27 tasks
-  unfinished, see [Results](#results)), 3 wrong `false`, 2 of them by arrays
-  as values; `veris.c_sendmail_tTflag_arr_one_loop` is corrected since and
-  proves (753). Cuvée 0.46.13 (Oct 14, 2026, 15 min, Xeon E3-1230 v5): 753
-  true, the same 2 wrong `false` by arrays as values, whose tasks take their
-  arrays as global variables since and prove.
+- **1204 tasks with `unreach-call`**, the same as the C categories
+  `C.unreach-call.Arrays` (440, 320 true) and `C.unreach-call.Loops` (764,
+  555 true) of `xml/cuvee.xml`.
+- **838 annotated programs**, all of tasks expected `true`: 303 of Arrays and
+  535 of Loops. The other tasks are as in sv-benchmarks, without annotations:
+  the tasks expected `false`, the 33 true tasks whose programs use structs,
+  which Cuvée's C does not support, and the 4 true tasks of
+  `VerifyThis-Loops.set`. Some of them do not parse or prove.
+- **The code of the annotated programs is that of sv-benchmarks**, with the
+  same bounds, except 3 tasks that take their arrays as global variables
+  instead of parameters, since Cuvée passed arrays by value
+  (`data_structures_set_multi_proc_ground-2`,
+  `data_structures_set_multi_proc_trivial_ground`, `sanfoundry_43_ground`).
+- **Results before the rearrangement** (838 true tasks, see
+  [Results](#results)): Cuvée 0.42.1 proved 752 (Oct 12, 2026, 15 min, a
+  partial run), Cuvée 0.46.13 753 (Oct 14, 2026, 15 min, Xeon E3-1230 v5),
+  with 2 wrong `false` by arrays as values, whose tasks prove since.
 
 ## Origin
 
-Copied from `sv-benchmarks/c/<folder>` (the sets `Arrays.set` and `Loops.set`
-of [sv-benchmarks](https://gitlab.com/sosy-lab/benchmarking/sv-benchmarks),
-checkout of Dec 23, 2025) with their task definitions and licenses, in the
-same folder layout. The task definitions keep only the `unreach-call`
-property, which [properties/unreach-call.prp](properties/unreach-call.prp)
-states; the 225 tasks of these folders with other properties only are not
-copied. Changes since (Oct 12, 2026):
-
-- The 37 tasks whose programs use structs are removed, which Cuvée's C does
-  not support (`array-industry-pattern/array_of_struct_*`, most of
-  `array-lopstr16`, `loop-industry-pattern/aiob_*` and `ofuf_*`,
-  `loops/bubble_sort-2`, `n.c24`, the two `verisec_OpenSER` tasks,
-  `loops-crafted-1/discover_list`, `net_reset`, `array-examples/relax-2-2`).
-- The allocations of sv-benchmarks ada89e0473b (unchecked `malloc` and
-  `calloc` replaced by `safe_malloc` and `safe_calloc`) are merged into the
-  166 files they touch, with the annotations unchanged.
-- The 323 tasks expected `false` are removed (their task definitions and
-  programs, none shared with a true task): under `-verify` their answers
-  depend on whether z3 refutes the failing assertion or an annotation, which
-  says little about the annotations; 838 tasks remain, all expected `true`.
+The sets `Arrays.set`, `Loops.set`, and `VerifyThis-Loops.set` of
+[sv-benchmarks](https://gitlab.com/sosy-lab/benchmarking/sv-benchmarks) (the
+checkout of Oct 14, 2026, 4d6b7c1d7ce, that the SV-COMP runs of
+`xml/cuvee.xml` use) with their folders, licenses, and property files, as in
+`sv-benchmarks/c`, but only the tasks with the property `unreach-call` (the
+task definitions unchanged, with all their properties) and their programs: the
+tasks with other properties only, the programs of no task, and the subfolders
+that the sets do not include (`todo`, `witnesses`) are left out, and the
+licenses linked to the root of sv-benchmarks are copies. The programs of the
+838 annotated tasks replace those of sv-benchmarks (Oct 23, 2026). Their
+annotations were written for a checkout of Dec 23, 2025, into which the
+allocations of sv-benchmarks ada89e0473b (`safe_malloc`, `safe_calloc`) were
+merged; the code is otherwise unchanged since. Until Oct 23, 2026, the folder
+had only the 838 annotated tasks, with the property `unreach-call` alone, and
+the 48 tasks that z3 proves only with `-split` as a separate task set
+(`split.set`).
 
 ## Running
 
 ```
-./Cuvee.sh -vcgen -z3 -timeout 900000 -verify benchmarks/acsl/<folder>/<task>.yml
+./Cuvee.sh -vcgen -split -z3 -timeout 900000 benchmarks/acsl/<folder>/<task>.yml
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Arrays -T 60s
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Loops -T 60s
-./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Split -T 60s
 ```
 
-The task set `C.unreach-call.Split` runs with `-split` in addition, for the
-tasks whose verification conditions z3 proves only as separate goals, listed
-in [split.set](split.set), which the other sets exclude:
-`array-programs/partial_mod_count_limited_gen` (18 s with `-split`, 252 s
-without), `geo1/2/3-ll` with `unsigned long long` (32), `lcm2` (15).
-
-With `-verify` (since 0.41.0, see [doc/architecture.md](../../doc/architecture.md))
-Cuvée answers `correct`, `incorrect`, or `unknown`, which
-[cuvee.py](../../cuvee.py) maps to `true`, `false`, and `unknown`. The
-annotations are the specification: a goal that z3 refutes (`Sat`) is
-`incorrect`, also if the annotation holds but is too weak, so a true task
-with a weak or wrong annotation ends as a wrong `false`. `Unknown` of z3 is
-`unknown`. Without `-verify`, `-vcgen -z3`
-prints the goals that do not hold, `(error "goal does not hold" "Sat"
-...)`, and `-split` before `-z3` makes each annotation a goal of its own,
-which locates a failing one.
+`-split` makes each annotation a goal of its own, which z3 needs for some
+tasks, e.g. `array-programs/partial_mod_count_limited_gen` (18 s with
+`-split`, 252 s without), `geo1/2/3-ll` with `unsigned long long` (32), and
+`lcm2` (15), and which shows the failing annotation. Cuvée answers each goal
+`correct`, `incorrect`, or `unknown`, which [cuvee.py](../../cuvee.py)
+combines to `true`, `false`, and `unknown`. The annotations are the
+specification: a goal that z3 refutes (`Sat`) is `incorrect`, also if the
+annotation holds but is too weak, so a true task with a weak or wrong
+annotation ends as a wrong `false`; `unknown` of z3 is `unknown`. For the
+tasks without annotations, whose loops have no invariants, the answers say
+little about the method.
 
 Refutations are not always counterexamples: `1 << k`, `&` and the other
 bitwise operators on values other than truth values are uninterpreted
@@ -172,6 +170,7 @@ followed by a note where they need explanation.
 
 ## Results
 
+In the layout before Oct 23, 2026 (the 838 annotated tasks, the Split set separate).
 Cuvée 0.42.1 (the jar of the checkout, whose uncommitted changes concern
 `-teq`), `xml/cuvee-acsl.xml` with `-verify`, 15 min per task, the three task
 sets (Oct 12, 2026, `results/cuvee-acsl.2026-10-12_17-20-5*`), stopped when
