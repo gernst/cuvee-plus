@@ -1,4 +1,4 @@
-// ./Cuvee.sh -include implement:renc -instrument -chc -entry main -monomorph -flat -z3 examples/dafny/transform/implement_renc_inputs.dfy
+// ./Cuvee.sh -include implement:renc -instrument -chc -entry main -monomorph -flat -z3 -timeout 30000 examples/dafny/renc/inputs.dfy
 // keys and values given by the inputs: the reads of renc receive the context of the client, here (i, j, a, b, x),
 // which tells the executions apart, such that z3 infers R(ctx, c, v) with v == a; without the context, the read
 // would see the values of all inputs

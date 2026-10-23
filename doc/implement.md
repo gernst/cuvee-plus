@@ -10,7 +10,7 @@ by methods (procedures); methods are not implemented. The code is
 ## Modules and sorts
 
 - Modules are injected by `-include implement:<name>` (`resources/cuvee/implement/<name>.dfy`, e.g. `listset`, sets
-  as lists without duplicates, `renc`, maps by the heap encoding Enc_R for `-instrument`) or `-include file`, after the entry `implement.dfy` (no declarations yet). They are
+  as lists without duplicates, `renc`, maps and sets by the heap encoding Enc_R for `-instrument`) or `-include file`, after the entry `implement.dfy` (no declarations yet). They are
   injected before the input, hence they implement functions of the core, of the entry, or of themselves, not those of
   a client.
 - All their declarations carry `{:implement}`, hence `-known implement` drops them from the output.
@@ -65,9 +65,9 @@ generic methods would otherwise give polymorphic Horn clauses.
 Examples: [dafny/transform/implement.dfy](../examples/dafny/transform/implement.dfy) (`listset`),
 [implement_method.dfy](../examples/dafny/transform/implement_method.dfy),
 [instrument.dfy](../examples/dafny/transform/instrument.dfy),
-[implement_renc.dfy](../examples/dafny/transform/implement_renc.dfy),
-[implement_renc_inputs.dfy](../examples/dafny/transform/implement_renc_inputs.dfy) (`renc` with
-`-instrument -chc -monomorph -flat`, the context, `cnt := 0` by hand),
+[dafny/renc](../examples/dafny/renc) (`renc` with `-instrument -chc -monomorph -flat`, `cnt := 0` by hand: reads,
+tests, displays, merges, removals, keys, sets, loops, the context of `inputs.dfy`, the weak operations on whole maps,
+the soundness conditions of `invalid_absent.dfy` and `invalid_merge.dfy`),
 [smtlib/transform/implement.smt2](../examples/smtlib/transform/implement.smt2),
 [boogie/transform/implement.bpl](../examples/boogie/transform/implement.bpl), and for `-instrument`
 [smtlib/transform/instrument.smt2](../examples/smtlib/transform/instrument.smt2),

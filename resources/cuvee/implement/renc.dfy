@@ -12,6 +12,17 @@
 // different prophecies; hence R and K are static members of map, without the receiver, which carries the prophecy:
 // as R(this, c, v), R(s, c, v) := v == s.last satisfies every assertion and lets reads at other keys see the value
 // of the prophecy key (for 10 at key 1, 20 at key 2, and reads x of 1 and y of 2, z3 proves the false x == y).
+// Likewise, every observation must have a run that asserts its answer, also a read of a key that is not in the map
+// (arbitrary), and the numbering by cnt must not depend on the prophecy, e.g. the observations of a merge; otherwise
+// the solver can block all runs at an observation and proves anything after it.
+//
+// Operations: reads m[k], tests k in m, stores m[k := v], removals m - s, merges m + n (also displays
+// map[k := v, ...]), and the keys m.Keys are exact; |m|, m.Values, and m <= n depend on all keys and are only
+// constrained at the prophecy key, sound but weak. Sets are encoded alike (set, with the predicate S): tests,
+// unions, intersections, differences, and displays are exact, |s|, s <= t, and s < t weak. The two meet at their
+// representations only: the bodies of implementations are not rewritten, hence the operations of maps on sets read
+// the fields of the set and assert or assume set.S themselves, and never apply an implemented function (which would
+// stay an uninterpreted function on representations).
 //
 // Context: the paper's R(in, cnt, obj) has the inputs of the program, which the module does not know; instead, get
 // and has receive the context of the client by {:context ctx}, which -implement and -instrument fill with the
@@ -34,6 +45,100 @@
 // numbered apart and R and K stay functions of the number, relative to its start, which is arbitrary (see Limits)
 var {:implement} cnt: int
 
+// sets by the same encoding: each set carries a prophecy element last_key and whether it is in the set, tests are
+// observations numbered by cnt like those of maps, with the predicate S of their answers
+datatype {:implement} set<a> = set_(last_key: a, last_def: bool)
+{
+  // the answer of the test numbered c in the context ctx of the client, static like R and K
+  static predicate {:implement} S<x>(ctx: x, c: int, d: bool)
+
+  // a test: the true answer at the prophecy element, an arbitrary answer of S elsewhere
+  method {:implement k in this} {:context ctx} has<x>(k: a, ctx: x) returns (d: bool)
+    modifies cnt
+  {
+    cnt := cnt + 1;
+    if last_key == k {
+      assert S(ctx, cnt, last_def);
+      d := last_def;
+    } else {
+      d := *;
+      assume S(ctx, cnt, d);
+    }
+  }
+
+  // union, intersection, and difference keep the prophecy element of this and observe t there, once, with the
+  // element in the context, as the merge of maps (see there)
+  method {:implement this + t} {:context ctx} union<x>(t: set<a>, ctx: x) returns (r: set<a>)
+    modifies cnt
+  {
+    var d: bool;
+    cnt := cnt + 1;
+    if t.last_key == last_key {
+      assert S((ctx, last_key), cnt, t.last_def);
+      d := t.last_def;
+    } else {
+      d := *;
+      assume S((ctx, last_key), cnt, d);
+    }
+    r := set_(last_key, last_def || d);
+  }
+
+  method {:implement this * t} {:context ctx} inter<x>(t: set<a>, ctx: x) returns (r: set<a>)
+    modifies cnt
+  {
+    var d: bool;
+    cnt := cnt + 1;
+    if t.last_key == last_key {
+      assert S((ctx, last_key), cnt, t.last_def);
+      d := t.last_def;
+    } else {
+      d := *;
+      assume S((ctx, last_key), cnt, d);
+    }
+    r := set_(last_key, last_def && d);
+  }
+
+  method {:implement this - t} {:context ctx} minus<x>(t: set<a>, ctx: x) returns (r: set<a>)
+    modifies cnt
+  {
+    var d: bool;
+    cnt := cnt + 1;
+    if t.last_key == last_key {
+      assert S((ctx, last_key), cnt, t.last_def);
+      d := t.last_def;
+    } else {
+      d := *;
+      assume S((ctx, last_key), cnt, d);
+    }
+    r := set_(last_key, last_def && !d);
+  }
+
+  // the size and the subset relations depend on all elements, constrained at the prophecy element only (see maps)
+  method {:implement |this|} size() returns (z: int)
+  {
+    z := *;
+    assume 0 <= z && (last_def ==> 1 <= z);
+  }
+
+  method {:implement this <= t} subset(t: set<a>) returns (d: bool)
+  {
+    if last_def && t.last_key == last_key && !t.last_def {
+      d := false;
+    } else {
+      d := *;
+    }
+  }
+
+  method {:implement this < t} proper(t: set<a>) returns (d: bool)
+  {
+    if last_def && t.last_key == last_key && !t.last_def {
+      d := false;
+    } else {
+      d := *;
+    }
+  }
+}
+
 // each map value carries the state of the encoding for its own prophecy: the key last_key, chosen when the map is
 // created, the value last stored there, and whether one was; hence the encoding is generic in the types of keys and
 // values (a global prophecy would fix the type of the keys), stores are functions of the map, and several maps have
@@ -51,14 +156,20 @@ datatype {:implement} map<a, b> = map_(last_key: a, last: b, last_def: bool)
   // of its own, or both could be one predicate over the pair of answer and value
   static predicate {:implement} K<x>(ctx: x, c: int, d: bool)
 
-  // a read: the true value at the prophecy key, an arbitrary value of R elsewhere
+  // a read: the true value at the prophecy key, an arbitrary value of R elsewhere; the value of a key that is not in
+  // the map is unspecified, hence arbitrary, but asserted as well: otherwise no run would assert R for the read, the
+  // solver could choose it empty and block all runs there, which proves anything after the read
   method {:implement this[k]} {:context ctx} get<x>(k: a, ctx: x) returns (v: b)
     modifies cnt
   {
     cnt := cnt + 1;
-    if last_key == k && last_def {
-      assert R(ctx, cnt, last);
-      v := last;
+    if last_key == k {
+      if last_def {
+        v := last;
+      } else {
+        v := *;
+      }
+      assert R(ctx, cnt, v);
     } else {
       v := *;
       assume R(ctx, cnt, v);
@@ -85,6 +196,93 @@ datatype {:implement} map<a, b> = map_(last_key: a, last: b, last_def: bool)
       assume K(ctx, cnt, d);
     }
   }
+
+  // the removal of the keys of s keeps the prophecy key, at which it observes s, once, with the key in the context,
+  // as the merge (see there)
+  method {:implement this - s} {:context ctx} remove<x>(s: set<a>, ctx: x) returns (r: map<a, b>)
+    modifies cnt
+  {
+    var d: bool;
+    cnt := cnt + 1;
+    if s.last_key == last_key {
+      assert set.S((ctx, last_key), cnt, s.last_def);
+      d := s.last_def;
+    } else {
+      d := *;
+      assume set.S((ctx, last_key), cnt, d);
+    }
+    r := map_(last_key, last, last_def && !d);
+  }
+
+  // the merge this + n, whose keys of n win (also map displays with several keys): the result keeps the prophecy key
+  // of this, at which it observes n, a test and, if the key is in n, a read; their context includes the observed key,
+  // which depends on the prophecy of this, but every run that observes it has a counterpart whose prophecy of n is the
+  // same key and that asserts the true answer, which keeps it sound, and without which K would merge the answers of
+  // n at all keys; the read is numbered even if it does not happen, since the numbers must not depend on the
+  // prophecy (whether the observed key is in n), otherwise the runs of one execution would number the later
+  // observations apart, the asserting runs would miss the assuming ones, and the solver could block them all
+  method {:implement this + n} {:context ctx} merge<x>(n: map<a, b>, ctx: x) returns (r: map<a, b>)
+    modifies cnt
+  {
+    var d: bool;
+    var v: b;
+    cnt := cnt + 1;
+    if n.last_key == last_key {
+      assert K((ctx, last_key), cnt, n.last_def);
+      d := n.last_def;
+    } else {
+      d := *;
+      assume K((ctx, last_key), cnt, d);
+    }
+    cnt := cnt + 1;
+    if d {
+      if n.last_key == last_key && n.last_def {
+        assert R((ctx, last_key), cnt, n.last);
+        v := n.last;
+      } else {
+        v := *;
+        assume R((ctx, last_key), cnt, v);
+      }
+      r := map_(last_key, v, true);
+    } else {
+      r := this;
+    }
+  }
+
+  // the size, the keys, the values, and the submap relation depend on all keys, which a single prophecy key does not
+  // see: nondeterministic, constrained at the prophecy key only, which is sound, but shows nothing about other keys
+  // (as uninterpreted functions they would be unsound: maps whose contents differ but whose states of the encoding
+  // agree would have the same size)
+  method {:implement |this|} size() returns (z: int)
+  {
+    z := *;
+    assume 0 <= z && (last_def ==> 1 <= z);
+  }
+
+  // the keys are exact, a set that shares the prophecy key of the map
+  function {:implement this.Keys} keys(): set<a>
+  {
+    set_(last_key, last_def)
+  }
+
+  // the values are not: an element of a set must be its prophecy element in some run, also elements that are not
+  // values, which a map does not know (all keys of a map over bool may be defined); arbitrary, constrained where the
+  // prophecy elements agree
+  method {:implement this.Values} values() returns (s: set<b>)
+  {
+    s := *;
+    assume last_def && s.last_key == last ==> s.last_def;
+  }
+
+  // false if the prophecy keys agree and witness a key of this that n lacks or maps elsewhere, arbitrary otherwise
+  method {:implement this <= n} submap(n: map<a, b>) returns (d: bool)
+  {
+    if last_def && n.last_key == last_key && (!n.last_def || n.last != last) {
+      d := false;
+    } else {
+      d := *;
+    }
+  }
 }
 
 // a fresh map with an arbitrary prophecy key, top-level since it has no receiver; cnt is not reset, see above
@@ -95,4 +293,33 @@ method {:implement map[]} empty<a, b>() returns (m: map<a, b>)
   k := *;
   v := *;
   m := map_(k, v, false);
+}
+
+// the empty set {} and the singleton {k} of sets, with an arbitrary prophecy element
+method {:implement {}} emptyset<a>() returns (s: set<a>)
+{
+  var p: a;
+  p := *;
+  s := set_(p, false);
+}
+
+method {:implement {k}} singleton<a>(k: a) returns (s: set<a>)
+{
+  var p: a;
+  p := *;
+  s := set_(p, p == k);
+}
+
+// the singleton map[k := v], with an arbitrary prophecy key like empty, which holds v if it is k
+method {:implement map[k := v]} single<a, b>(k: a, v: b) returns (m: map<a, b>)
+{
+  var p: a;
+  var w: b;
+  p := *;
+  w := *;
+  if p == k {
+    m := map_(k, v, true);
+  } else {
+    m := map_(p, w, false);
+  }
 }

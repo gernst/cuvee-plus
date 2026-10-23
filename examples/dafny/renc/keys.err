@@ -1,0 +1,1960 @@
+correct
+function main_assign_22(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!10`: int, `x!11`: int ::
+    x₇
+      && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+      && x₂ != 1
+      && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+      && x₄ == (`x!10` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₉ == x₇,
+  exists `x!10`: int, `x!11`: int ::
+    x₇
+      && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+      && x₂ != 1
+      && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+      && x₄ == (`x!10` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄;
+  var `a!3`: bool := (x₁ == 1
+                        && x₂ == 1
+                        && x₃ == 10
+                        && x₄
+                        && x₅ == 1
+                        && x₆
+                        && x₇
+                        || `a!2`)
+    && x₉ == x₇;
+  x₁ == 1 && x₂ == 1 && x₃ == 10 && x₄ && x₅ == 1 && x₆ && x₇ && x₉
+    || `a!1`
+    || `a!3`
+}
+
+function main_assign_25(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                        x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                        x₁₅: bool): bool {
+  var `a!1`: bool := exists `x!16`: int, `x!17`: int ::
+    x₇
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₂ != 1
+      && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 2
+      && x₁₃ == x₇
+      && x₁₄ == x₈;
+  x₁ == 1
+    && x₂ == 1
+    && x₃ == 10
+    && x₄
+    && x₅ == 1
+    && x₆
+    && x₇
+    && x₁₀ == 1
+    && x₁₁
+    && x₁₂ == 2
+    && x₁₃
+    && x₁₄ == x₈
+    || `a!1`
+}
+
+function main_spec_28(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                      x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                      x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₀ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₀ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16`,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₀ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₀ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16` && x₁₂ == x₁₀;
+  `a!1` && x₁₂ == x₁₀ || `a!2`
+}
+
+function main_assign_16(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                        x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                        x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!16`: int, `x!17`: int ::
+    x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 0
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 1
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    `a!1` && x₁ == 1 + `x!16`;
+  `a!1` || `a!2`
+}
+
+function main_assign_14(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                        x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                        x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!16`: int, `x!17`: int ::
+    x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 0
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈,
+  exists `x!16`: int, `x!17`: int ::
+    x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 0
+      && x₅ == x₂
+      && x₆ == x₄;
+  `a!1` || `a!2` && x₁₀ == x₅ && x₁₁ == x₆ && x₁₂ == 1 && x₁₃ == x₇ && x₁₄ == x₈
+}
+
+function main_spec_31(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                      x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                      x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool,
+  `a!3`: bool,
+  `a!4`: bool := x₁ == 1 && x₁₅ || x₁₃ && x₁ == 2 && !x₁₅,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16`,
+  exists `x!16`: int ::
+    var `a!1`: bool,
+    `a!2`: bool := exists `x!17`: int, `x!18`: int, `x!19`: bool, `x!20`: int,
+                          `x!21`: bool, `x!22`: bool, `x!23`: bool, `x!24`: int,
+                          `x!25`: int ::
+      var `a!1`: bool := exists `x!26`: int, `x!27`: int ::
+        `x!22`
+          && `x!18` == (if `x!26` == 1 then 10 else `x!27`)
+          && `x!17` != 1
+          && `x!17` == (if `x!26` == 1 then 1 else `x!26`)
+          && `x!19` == (`x!26` == 1)
+          && `x!25` == 1
+          && `x!20` == `x!17`
+          && `x!21` == `x!19`
+          && `x!24` == `x!17`
+          && x₁₅ == `x!19`
+          && `x!24` == 2
+          && x₁₃ == `x!22`
+          && x₁₄ == `x!23`;
+      (`x!25` == 1
+         && `x!17` == 1
+         && `x!18` == 10
+         && `x!19`
+         && `x!20` == 1
+         && `x!21`
+         && `x!22`
+         && `x!24` == 1
+         && x₁₅
+         && `x!24` == 2
+         && x₁₃
+         && x₁₄ == `x!23`
+         || `a!1`)
+        && x₁ == 1 + `x!25`,
+    exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!3`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!2`;
+    (x₁₃ && x₁ == 2 && !x₁₅ || x₁ == 1 && x₁₅ || `a!1`)
+      && `a!3`
+      && x₁₀ != x₁₂
+      && x₁ == 1 + `x!16`,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁₀ != x₁₂ && x₁ == 1 + `x!16`;
+  var `a!5`: bool := `a!2` && x₁₀ != x₁₂ || `a!4`;
+  `a!1` && `a!2` && x₁₀ != x₁₂ || `a!3` || `a!1` && `a!5`
+}
+
+function main_assign_7(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool, x₉: int, x₁₀: int,
+                       x₁₁: bool, x₁₂: int, x₁₃: int, x₁₄: bool, x₁₅: int,
+                       x₁₆: int): bool {
+  x₁ == 0 && !x₁₄ && x₁₅ == x₁₂ && x₁₆ == x₁₃
+}
+
+function main_assign_29(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                        x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                        x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool,
+  `a!4`: bool := exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₀ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₀ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16`,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₀ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₀ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16` && x₁₂ == x₁₀,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₀ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₀ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16` && x₁₂ == x₁₀ && x₁₅ == x₁₁;
+  var `a!3`: bool := (`a!1` && x₁₂ == x₁₀ || `a!2`) && x₁₅ == x₁₁;
+  `a!3` || `a!4`
+}
+
+function main_block_26(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                       x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                       x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!3`: bool,
+  `a!4`: bool := exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16`,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₀ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    (`x!16` == 1
+       && x₂ == 1
+       && x₃ == 10
+       && x₄
+       && x₅ == 1
+       && x₆
+       && x₇
+       && x₁₀ == 1
+       && x₁₁
+       && x₁₀ == 2
+       && x₁₃
+       && x₁₄ == x₈
+       || `a!1`)
+      && x₁ == 1 + `x!16`
+      && x₁₂ == x₁₀
+      && x₁₅ == x₁₁,
+  exists `x!16`: int ::
+    var `a!1`: bool,
+    `a!2`: bool := exists `x!17`: int, `x!18`: int, `x!19`: bool, `x!20`: int,
+                          `x!21`: bool, `x!22`: bool, `x!23`: bool, `x!24`: int,
+                          `x!25`: int ::
+      var `a!1`: bool := exists `x!26`: int, `x!27`: int ::
+        `x!22`
+          && `x!18` == (if `x!26` == 1 then 10 else `x!27`)
+          && `x!17` != 1
+          && `x!17` == (if `x!26` == 1 then 1 else `x!26`)
+          && `x!19` == (`x!26` == 1)
+          && `x!25` == 1
+          && `x!20` == `x!17`
+          && `x!21` == `x!19`
+          && `x!24` == `x!17`
+          && x₁₅ == `x!19`
+          && `x!24` == 2
+          && x₁₃ == `x!22`
+          && x₁₄ == `x!23`;
+      (`x!25` == 1
+         && `x!17` == 1
+         && `x!18` == 10
+         && `x!19`
+         && `x!20` == 1
+         && `x!21`
+         && `x!22`
+         && `x!24` == 1
+         && x₁₅
+         && `x!24` == 2
+         && x₁₃
+         && x₁₄ == `x!23`
+         || `a!1`)
+        && x₁ == 1 + `x!25`,
+    exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!3`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!2`;
+    (x₁₃ && x₁ == 2 && !x₁₅ || x₁ == 1 && x₁₅ || `a!1`)
+      && `a!3`
+      && x₁₀ != x₁₂
+      && x₁ == 1 + `x!16`;
+  var `a!2`: bool := (x₁ == 1 && x₁₅ || x₁₃ && x₁ == 2 && !x₁₅)
+    && `a!1`
+    && x₁₀ != x₁₂;
+  `a!2` || `a!3` || `a!4`
+}
+
+function main_spec_30(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                      x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                      x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16`,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁₀ != x₁₂ && x₁ == 1 + `x!16`;
+  `a!1` && x₁₀ != x₁₂ || `a!2`
+}
+
+function `Set_S<tuple$2<Bool,Bool>>`(x₀: bool, x₁: bool, x₂: int,
+                                     x₃: bool): bool {
+  var `a!1`: bool := exists `x!4`: int, `x!5`: int, `x!6`: bool, `x!7`: int,
+                            `x!8`: bool, `x!9`: bool, `x!10`: bool, `x!11`: int,
+                            `x!12`: int ::
+    var `a!1`: bool := exists `x!13`: int, `x!14`: int ::
+      `x!9`
+        && `x!5` == (if `x!13` == 1 then 10 else `x!14`)
+        && `x!4` != 1
+        && `x!4` == (if `x!13` == 1 then 1 else `x!13`)
+        && `x!6` == (`x!13` == 1)
+        && `x!12` == 1
+        && `x!7` == `x!4`
+        && `x!8` == `x!6`
+        && `x!11` == `x!4`
+        && x₃ == `x!6`
+        && `x!11` == 2
+        && x₀ == `x!9`
+        && x₁ == `x!10`;
+    (`x!12` == 1
+       && `x!4` == 1
+       && `x!5` == 10
+       && `x!6`
+       && `x!7` == 1
+       && `x!8`
+       && `x!9`
+       && `x!11` == 1
+       && x₃
+       && `x!11` == 2
+       && x₀
+       && x₁ == `x!10`
+       || `a!1`)
+      && x₂ == 1 + `x!12`;
+  `a!1` || x₀ && x₂ == 2 && !x₃ || x₂ == 1 && x₃
+}
+
+function main_block_15(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                       x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                       x₁₅: bool): bool {
+  var `a!1`: bool := exists `x!16`: int, `x!17`: int ::
+    x₁₅
+      && x₂ != 1
+      && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈;
+  x₁ == 1
+    && x₂ == 1
+    && x₃ == 10
+    && x₄
+    && x₅ == 1
+    && x₆
+    && x₁₀ == 1
+    && x₁₁
+    && x₁₂ == 1
+    && x₁₃ == x₇
+    && x₁₄ == x₈
+    && x₁₅
+    || `a!1`
+}
+
+function main_post(x₀: int, x₁: int): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!2`: int, `x!3`: int, `x!4`: bool, `x!5`: int,
+                        `x!6`: bool, `x!7`: bool, `x!8`: bool, `x!9`: bool ::
+    var `a!1`: bool,
+    `a!2`: bool,
+    `a!3`: bool := exists `x!10`: int, `x!11`: int ::
+      !`x!8`
+        && `x!3` == (if `x!10` == 1 then 10 else `x!11`)
+        && `x!2` != 2
+        && `x!2` != 1
+        && `x!2` == (if `x!10` == 1 then 1 else `x!10`)
+        && `x!4` == (`x!10` == 1)
+        && x₁ == 2
+        && `x!5` == `x!2`
+        && `x!6` == `x!4`
+        && `x!7`
+        && `x!9` == `x!8`,
+    exists `x!10`: int, `x!11`: int ::
+      `x!2` != 2
+        && `x!2` != 1
+        && `x!2` == (if `x!10` == 1 then 1 else `x!10`)
+        && `x!3` == (if `x!10` == 1 then 10 else `x!11`)
+        && `x!4` == (`x!10` == 1)
+        && x₁ == 2
+        && `x!5` == `x!2`
+        && `x!6` == `x!4`
+        && `x!7`
+        && !`x!8`
+        && !`x!9`,
+    exists `x!10`: int, `x!11`: bool, `x!12`: int, `x!13`: bool, `x!14`: int,
+           `x!15`: bool, `x!16`: bool ::
+      var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+        `x!7`
+          && `x!3` == (if `x!17` == 1 then 10 else `x!18`)
+          && `x!2` != 1
+          && `x!2` == (if `x!17` == 1 then 1 else `x!17`)
+          && `x!4` == (`x!17` == 1)
+          && `x!10` == 1
+          && `x!5` == `x!2`
+          && `x!6` == `x!4`
+          && `x!12` == `x!2`
+          && `x!13` == `x!4`
+          && `x!14` == 2
+          && `x!15` == `x!7`
+          && `x!16` == `x!11`;
+      (x₁ == 1 && `x!8` || `x!15` && x₁ == 2 && !`x!8`)
+        && (`x!10` == 1
+              && `x!2` == 1
+              && `x!3` == 10
+              && `x!4`
+              && `x!5` == 1
+              && `x!6`
+              && `x!7`
+              && `x!12` == 1
+              && `x!13`
+              && `x!14` == 2
+              && `x!15`
+              && `x!16` == `x!11`
+              || `a!1`)
+        && `x!12` != `x!14`
+        && x₁ == 1 + `x!10`
+        && `x!9` == `x!8`;
+    x₁ == 2
+      && `x!2` == 1
+      && `x!3` == 10
+      && `x!4`
+      && `x!5` == 1
+      && `x!6`
+      && `x!7`
+      && !`x!8`
+      && !`x!9`
+      || `a!1`
+      || !`x!8`
+        && x₁ == 2
+        && `x!2` == 1
+        && `x!3` == 10
+        && `x!4`
+        && `x!5` == 1
+        && `x!6`
+        && `x!7`
+        && `x!9` == `x!8`
+      || `a!2`
+      || x₁ == 2
+        && `x!2` == 2
+        && !`x!4`
+        && `x!5` == 2
+        && !`x!6`
+        && `x!7`
+        && !`x!8`
+        && !`x!9`
+      || `a!3`,
+  exists `x!2`: int, `x!3`: int, `x!4`: bool, `x!5`: int, `x!6`: bool,
+         `x!7`: bool, `x!8`: bool, `x!9`: bool ::
+    var `a!1`: bool,
+    `a!2`: bool,
+    `a!3`: bool := exists `x!10`: int, `x!11`: int ::
+      !`x!8`
+        && `x!3` == (if `x!10` == 1 then 10 else `x!11`)
+        && `x!2` != 2
+        && `x!2` != 1
+        && `x!2` == (if `x!10` == 1 then 1 else `x!10`)
+        && `x!4` == (`x!10` == 1)
+        && x₁ == 2
+        && `x!5` == `x!2`
+        && `x!6` == `x!4`
+        && `x!7`
+        && `x!9` == `x!8`,
+    exists `x!10`: int, `x!11`: int ::
+      `x!2` != 2
+        && `x!2` != 1
+        && `x!2` == (if `x!10` == 1 then 1 else `x!10`)
+        && `x!3` == (if `x!10` == 1 then 10 else `x!11`)
+        && `x!4` == (`x!10` == 1)
+        && x₁ == 2
+        && `x!5` == `x!2`
+        && `x!6` == `x!4`
+        && `x!7`
+        && !`x!8`
+        && !`x!9`,
+    exists `x!10`: int, `x!11`: bool, `x!12`: int, `x!13`: bool, `x!14`: int,
+           `x!15`: bool, `x!16`: bool ::
+      var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+        `x!7`
+          && `x!3` == (if `x!17` == 1 then 10 else `x!18`)
+          && `x!2` != 1
+          && `x!2` == (if `x!17` == 1 then 1 else `x!17`)
+          && `x!4` == (`x!17` == 1)
+          && `x!10` == 1
+          && `x!5` == `x!2`
+          && `x!6` == `x!4`
+          && `x!12` == `x!2`
+          && `x!13` == `x!4`
+          && `x!14` == 2
+          && `x!15` == `x!7`
+          && `x!16` == `x!11`;
+      (x₁ == 1 && `x!8` || `x!15` && x₁ == 2 && !`x!8`)
+        && (`x!10` == 1
+              && `x!2` == 1
+              && `x!3` == 10
+              && `x!4`
+              && `x!5` == 1
+              && `x!6`
+              && `x!7`
+              && `x!12` == 1
+              && `x!13`
+              && `x!14` == 2
+              && `x!15`
+              && `x!16` == `x!11`
+              || `a!1`)
+        && `x!12` != `x!14`
+        && x₁ == 1 + `x!10`
+        && `x!9` == `x!8`;
+    x₁ == 2
+      && `x!2` == 1
+      && `x!3` == 10
+      && `x!4`
+      && `x!5` == 1
+      && `x!6`
+      && `x!7`
+      && !`x!8`
+      && !`x!9`
+      || `a!1`
+      || !`x!8`
+        && x₁ == 2
+        && `x!2` == 1
+        && `x!3` == 10
+        && `x!4`
+        && `x!5` == 1
+        && `x!6`
+        && `x!7`
+        && `x!9` == `x!8`
+      || `a!2`
+      || x₁ == 2
+        && `x!2` == 2
+        && !`x!4`
+        && `x!5` == 2
+        && !`x!6`
+        && `x!7`
+        && !`x!8`
+        && !`x!9`
+      || `a!3`;
+  `a!1` || `a!2`
+}
+
+function main_spec_6(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                     x₆: bool, x₇: bool, x₈: bool, x₉: int, x₁₀: int, x₁₁: bool,
+                     x₁₂: int, x₁₃: int, x₁₄: bool, x₁₅: int, x₁₆: int): bool {
+  x₁ == 0
+}
+
+function main_spec_20(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                      x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                      x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!16`: int, `x!17`: int ::
+    x₁₅
+      && x₂ != 1
+      && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈,
+  exists `x!16`: int, `x!17`: int ::
+    x₂ != 1
+      && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈;
+  var `a!3`: bool := (x₁ == 1 && x₁₅ || x₁₃ && x₁ == 2 && !x₁₅) && `a!2`;
+  `a!1` || `a!3`
+}
+
+function main_block_12(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!9`: int, `x!10`: int ::
+    x₇
+      && x₃ == (if `x!9` == 1 then 10 else `x!10`)
+      && x₂ != 1
+      && x₂ == (if `x!9` == 1 then 1 else `x!9`)
+      && x₄ == (`x!9` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄,
+  exists `x!9`: bool ::
+    var `a!1`: bool := exists `x!10`: int, `x!11`: int ::
+      x₇
+        && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+        && x₂ != 1
+        && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+        && x₄ == (`x!10` == 1)
+        && x₁ == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && `x!9` == x₇;
+    x₁ == 1 && x₂ == 1 && x₃ == 10 && x₄ && x₅ == 1 && x₆ && x₇ && `x!9`
+      || `a!1`;
+  `a!1` || x₁ == 1 && x₂ == 1 && x₃ == 10 && x₄ && x₅ == 1 && x₆ && x₇ || `a!2`
+}
+
+function main_assign_10(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!9`: int, `x!10`: int ::
+    x₂ == (if `x!9` == 1 then 1 else `x!9`)
+      && x₃ == (if `x!9` == 1 then 10 else `x!10`)
+      && x₄ == (`x!9` == 1)
+      && x₁ == 0,
+  exists `x!9`: int, `x!10`: int ::
+    x₄ == (`x!9` == 1)
+      && x₁ == 0
+      && x₃ == (if `x!9` == 1 then 10 else `x!10`)
+      && x₂ == (if `x!9` == 1 then 1 else `x!9`);
+  `a!1` || `a!2`
+}
+
+function main_pre(x₀: int): bool {
+  true
+}
+
+function main_assign_8(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool, x₉: int, x₁₀: int,
+                       x₁₁: bool, x₁₂: int, x₁₃: int, x₁₄: bool): bool {
+  x₁ == 0 && !x₁₁ && x₁₂ == x₉ && x₁₃ == x₁₀ && !x₁₄
+    || x₁ == 0 && !x₁₁ && x₁₂ == x₉ && x₁₃ == x₁₀ && x₁₄ == x₁₁
+}
+
+function main_assign_18(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                        x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                        x₁₅: bool): bool {
+  x₁ == 1
+    && x₂ == 1
+    && x₃ == 10
+    && x₄
+    && x₅ == 1
+    && x₆
+    && x₁₀ == 1
+    && x₁₁
+    && x₁₂ == 1
+    && x₁₃ == x₇
+    && x₁₄ == x₈
+    && x₁₅
+    || x₁ == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈
+      && x₁₅ == x₁₁
+}
+
+function main_spec_17(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                      x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                      x₁₅: bool): bool {
+  var `a!1`: bool := exists `x!16`: int, `x!17`: int ::
+    x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₀ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈;
+  x₁ == 1
+    && x₂ == 1
+    && x₃ == 10
+    && x₄
+    && x₅ == 1
+    && x₆
+    && x₁₀ == 1
+    && x₁₁
+    && x₁₂ == 1
+    && x₁₃ == x₇
+    && x₁₄ == x₈
+    || `a!1` && x₁₂ == x₁₀
+}
+
+function main_assign_1(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool): bool {
+  x₁ == 0
+}
+
+function main_assign_27(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                        x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                        x₁₅: bool): bool {
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    (`x!16` == 1
+       && x₂ == 1
+       && x₃ == 10
+       && x₄
+       && x₅ == 1
+       && x₆
+       && x₇
+       && x₁₀ == 1
+       && x₁₁
+       && x₁₂ == 2
+       && x₁₃
+       && x₁₄ == x₈
+       || `a!1`)
+      && x₁ == 1 + `x!16`
+}
+
+function main_block_3(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool, x₉: int, x₁₀: int,
+                      x₁₁: bool): bool {
+  x₁ == 0 && !x₁₁
+}
+
+function main_assign_21(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                        x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                        x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!16`: int, `x!17`: int ::
+    x₉
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₂ != 1
+      && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈
+      && x₁₅ == x₉,
+  exists `x!16`: int, `x!17`: int ::
+    x₉
+      && x₂ != 1
+      && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈;
+  var `a!3`: bool := (x₁ == 1
+                        && x₂ == 1
+                        && x₃ == 10
+                        && x₄
+                        && x₅ == 1
+                        && x₆
+                        && x₁₀ == 1
+                        && x₁₁
+                        && x₁₂ == 1
+                        && x₁₃ == x₇
+                        && x₁₄ == x₈
+                        && x₉
+                        || `a!2`)
+    && x₁₅ == x₉;
+  x₁ == 1
+    && x₂ == 1
+    && x₃ == 10
+    && x₄
+    && x₅ == 1
+    && x₆
+    && x₉
+    && x₁₀ == 1
+    && x₁₁
+    && x₁₂ == 1
+    && x₁₃ == x₇
+    && x₁₄ == x₈
+    && x₁₅
+    || `a!1`
+    || `a!3`
+}
+
+function main_assign_9(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool, x₉: int, x₁₀: int,
+                       x₁₁: bool): bool {
+  x₁ == 0 && !x₄ && x₉ == x₂ && x₁₀ == x₃ && !x₁₁
+    || x₁ == 0 && !x₄ && x₉ == x₂ && x₁₀ == x₃ && x₁₁ == x₄
+}
+
+function main_spec_5(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                     x₆: bool, x₇: bool, x₈: bool, x₉: int, x₁₀: int, x₁₁: bool,
+                     x₁₂: int, x₁₃: int, x₁₄: bool, x₁₅: int, x₁₆: int): bool {
+  x₁ == 0
+}
+
+function main_block_23(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool): bool {
+  exists `x!9`: bool ::
+    var `a!1`: bool,
+    `a!2`: bool,
+    `a!3`: bool := exists `x!10`: int, `x!11`: int ::
+      !x₈
+        && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+        && x₂ != 2
+        && x₂ != 1
+        && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+        && x₄ == (`x!10` == 1)
+        && x₁ == 2
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₇
+        && `x!9` == x₈,
+    exists `x!10`: int, `x!11`: int ::
+      x₂ != 2
+        && x₂ != 1
+        && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+        && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+        && x₄ == (`x!10` == 1)
+        && x₁ == 2
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₇
+        && !x₈
+        && !`x!9`,
+    exists `x!10`: int, `x!11`: bool, `x!12`: int, `x!13`: bool, `x!14`: int,
+           `x!15`: bool, `x!16`: bool ::
+      var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+        x₇
+          && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+          && x₂ != 1
+          && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+          && x₄ == (`x!17` == 1)
+          && `x!10` == 1
+          && x₅ == x₂
+          && x₆ == x₄
+          && `x!12` == x₂
+          && `x!13` == x₄
+          && `x!14` == 2
+          && `x!15` == x₇
+          && `x!16` == `x!11`;
+      (x₁ == 1 && x₈ || `x!15` && x₁ == 2 && !x₈)
+        && (`x!10` == 1
+              && x₂ == 1
+              && x₃ == 10
+              && x₄
+              && x₅ == 1
+              && x₆
+              && x₇
+              && `x!12` == 1
+              && `x!13`
+              && `x!14` == 2
+              && `x!15`
+              && `x!16` == `x!11`
+              || `a!1`)
+        && `x!12` != `x!14`
+        && x₁ == 1 + `x!10`
+        && `x!9` == x₈;
+    `a!1`
+      || x₁ == 2
+        && x₂ == 1
+        && x₃ == 10
+        && x₄
+        && x₅ == 1
+        && x₆
+        && x₇
+        && !x₈
+        && !`x!9`
+      || `a!2`
+      || !x₈
+        && x₁ == 2
+        && x₂ == 1
+        && x₃ == 10
+        && x₄
+        && x₅ == 1
+        && x₆
+        && x₇
+        && `x!9` == x₈
+      || `a!3`
+      || x₁ == 2 && x₂ == 2 && !x₄ && x₅ == 2 && !x₆ && x₇ && !x₈ && !`x!9`
+}
+
+function main_block_24(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool, x₉: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!10`: int, `x!11`: int, `x!12`: bool, `x!13`: int,
+                        `x!14`: bool, `x!15`: bool ::
+    var `a!1`: bool,
+    `a!2`: bool := exists `x!16`: int, `x!17`: int, `x!18`: bool, `x!19`: int,
+                          `x!20`: bool, `x!21`: bool, `x!22`: bool, `x!23`: int,
+                          `x!24`: int ::
+      var `a!1`: bool := exists `x!25`: int, `x!26`: int ::
+        `x!21`
+          && `x!17` == (if `x!25` == 1 then 10 else `x!26`)
+          && `x!16` != 1
+          && `x!16` == (if `x!25` == 1 then 1 else `x!25`)
+          && `x!18` == (`x!25` == 1)
+          && `x!24` == 1
+          && `x!19` == `x!16`
+          && `x!20` == `x!18`
+          && `x!23` == `x!16`
+          && x₉ == `x!18`
+          && `x!23` == 2
+          && `x!14` == `x!21`
+          && `x!15` == `x!22`;
+      (`x!24` == 1
+         && `x!16` == 1
+         && `x!17` == 10
+         && `x!18`
+         && `x!19` == 1
+         && `x!20`
+         && `x!21`
+         && `x!23` == 1
+         && x₉
+         && `x!23` == 2
+         && `x!14`
+         && `x!15` == `x!22`
+         || `a!1`)
+        && x₁ == 1 + `x!24`,
+    exists `x!16`: int, `x!17`: int ::
+      x₇
+        && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+        && x₂ != 1
+        && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+        && x₄ == (`x!16` == 1)
+        && `x!10` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && `x!11` == x₂
+        && `x!12` == x₄
+        && `x!13` == 2
+        && `x!14` == x₇
+        && `x!15` == x₈;
+    (x₁ == 1 && x₉ || `x!14` && x₁ == 2 && !x₉ || `a!1`)
+      && (`x!10` == 1
+            && x₂ == 1
+            && x₃ == 10
+            && x₄
+            && x₅ == 1
+            && x₆
+            && x₇
+            && `x!11` == 1
+            && `x!12`
+            && `x!13` == 2
+            && `x!14`
+            && `x!15` == x₈
+            || `a!2`)
+      && `x!11` != `x!13`
+      && x₁ == 1 + `x!10`,
+  exists `x!10`: int, `x!11`: int, `x!12`: bool, `x!13`: bool ::
+    var `a!1`: bool := exists `x!14`: int, `x!15`: int ::
+      x₇
+        && x₃ == (if `x!14` == 1 then 10 else `x!15`)
+        && x₂ != 1
+        && x₂ == (if `x!14` == 1 then 1 else `x!14`)
+        && x₄ == (`x!14` == 1)
+        && `x!10` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && `x!11` == x₂
+        && x₉ == x₄
+        && `x!11` == 2
+        && `x!12` == x₇
+        && `x!13` == x₈;
+    (`x!10` == 1
+       && x₂ == 1
+       && x₃ == 10
+       && x₄
+       && x₅ == 1
+       && x₆
+       && x₇
+       && `x!11` == 1
+       && x₉
+       && `x!11` == 2
+       && `x!12`
+       && `x!13` == x₈
+       || `a!1`)
+      && x₁ == 1 + `x!10`;
+  `a!1`
+    || `a!2`
+    || (exists `x!10`: int, `x!11`: bool, `x!12`: int, `x!13`: bool,
+               `x!14`: bool, `x!15`: bool ::
+          var `a!1`: bool,
+          `a!2`: bool := exists `x!16`: int ::
+            var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+              x₇
+                && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+                && x₂ != 1
+                && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+                && x₄ == (`x!17` == 1)
+                && `x!16` == 1
+                && x₅ == x₂
+                && x₆ == x₄
+                && `x!10` == x₂
+                && x₉ == x₄
+                && `x!10` == 2
+                && `x!13` == x₇
+                && `x!14` == x₈;
+            (`x!16` == 1
+               && x₂ == 1
+               && x₃ == 10
+               && x₄
+               && x₅ == 1
+               && x₆
+               && x₇
+               && `x!10` == 1
+               && x₉
+               && `x!10` == 2
+               && `x!13`
+               && `x!14` == x₈
+               || `a!1`)
+              && x₁ == 1 + `x!16`
+              && `x!11` == x₉
+              && `x!12` == `x!10`
+              && `x!15` == x₉,
+          exists `x!16`: int ::
+            var `a!1`: bool,
+            `a!2`: bool := exists `x!17`: int, `x!18`: int, `x!19`: bool,
+                                  `x!20`: int, `x!21`: bool, `x!22`: bool,
+                                  `x!23`: bool, `x!24`: int, `x!25`: int ::
+              var `a!1`: bool := exists `x!26`: int, `x!27`: int ::
+                `x!22`
+                  && `x!18` == (if `x!26` == 1 then 10 else `x!27`)
+                  && `x!17` != 1
+                  && `x!17` == (if `x!26` == 1 then 1 else `x!26`)
+                  && `x!19` == (`x!26` == 1)
+                  && `x!25` == 1
+                  && `x!20` == `x!17`
+                  && `x!21` == `x!19`
+                  && `x!24` == `x!17`
+                  && x₉ == `x!19`
+                  && `x!24` == 2
+                  && `x!13` == `x!22`
+                  && `x!14` == `x!23`;
+              (`x!25` == 1
+                 && `x!17` == 1
+                 && `x!18` == 10
+                 && `x!19`
+                 && `x!20` == 1
+                 && `x!21`
+                 && `x!22`
+                 && `x!24` == 1
+                 && x₉
+                 && `x!24` == 2
+                 && `x!13`
+                 && `x!14` == `x!23`
+                 || `a!1`)
+                && x₁ == 1 + `x!25`,
+            exists `x!17`: int, `x!18`: int ::
+              x₇
+                && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+                && x₂ != 1
+                && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+                && x₄ == (`x!17` == 1)
+                && `x!16` == 1
+                && x₅ == x₂
+                && x₆ == x₄
+                && `x!10` == x₂
+                && `x!11` == x₄
+                && `x!12` == 2
+                && `x!13` == x₇
+                && `x!14` == x₈;
+            (x₁ == 1 && x₉ || `x!13` && x₁ == 2 && !x₉ || `a!1`)
+              && (`x!16` == 1
+                    && x₂ == 1
+                    && x₃ == 10
+                    && x₄
+                    && x₅ == 1
+                    && x₆
+                    && x₇
+                    && `x!10` == 1
+                    && `x!11`
+                    && `x!12` == 2
+                    && `x!13`
+                    && `x!14` == x₈
+                    || `a!2`)
+              && `x!10` != `x!12`
+              && x₁ == 1 + `x!16`
+              && `x!15` == x₉;
+          `a!1` || `a!2`)
+}
+
+function main_assign_33(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool,
+  `a!3`: bool := exists `x!10`: int, `x!11`: int ::
+    !x₈
+      && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+      && x₂ != 2
+      && x₂ != 1
+      && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+      && x₄ == (`x!10` == 1)
+      && x₁ == 2
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₇
+      && x₉ == x₈,
+  exists `x!10`: int, `x!11`: int ::
+    x₂ != 2
+      && x₂ != 1
+      && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+      && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+      && x₄ == (`x!10` == 1)
+      && x₁ == 2
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₇
+      && !x₈
+      && !x₉,
+  exists `x!10`: int, `x!11`: bool, `x!12`: int, `x!13`: bool, `x!14`: int,
+         `x!15`: bool, `x!16`: bool ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!10` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && `x!12` == x₂
+        && `x!13` == x₄
+        && `x!14` == 2
+        && `x!15` == x₇
+        && `x!16` == `x!11`;
+    (x₁ == 1 && x₈ || `x!15` && x₁ == 2 && !x₈)
+      && (`x!10` == 1
+            && x₂ == 1
+            && x₃ == 10
+            && x₄
+            && x₅ == 1
+            && x₆
+            && x₇
+            && `x!12` == 1
+            && `x!13`
+            && `x!14` == 2
+            && `x!15`
+            && `x!16` == `x!11`
+            || `a!1`)
+      && `x!12` != `x!14`
+      && x₁ == 1 + `x!10`
+      && x₉ == x₈;
+  x₁ == 2 && x₂ == 1 && x₃ == 10 && x₄ && x₅ == 1 && x₆ && x₇ && !x₈ && !x₉
+    || x₁ == 2 && x₂ == 2 && !x₄ && x₅ == 2 && !x₆ && x₇ && !x₈ && !x₉
+    || `a!1`
+    || !x₈
+      && x₁ == 2
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₉ == x₈
+    || `a!2`
+    || `a!3`
+}
+
+function main_block_4(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool, x₉: int, x₁₀: int,
+                      x₁₁: bool, x₁₂: int, x₁₃: int, x₁₄: bool): bool {
+  x₁ == 0 && !x₁₄
+}
+
+function main_assign_11(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!9`: int, `x!10`: int ::
+    x₂ == (if `x!9` == 1 then 1 else `x!9`)
+      && x₃ == (if `x!9` == 1 then 10 else `x!10`)
+      && x₄ == (`x!9` == 1)
+      && x₁ == 0
+      && x₅ == x₂
+      && x₆ == x₄,
+  exists `x!9`: int, `x!10`: int ::
+    x₂ == (if `x!9` == 1 then 1 else `x!9`)
+      && x₃ == (if `x!9` == 1 then 10 else `x!10`)
+      && x₄ == (`x!9` == 1)
+      && x₁ == 0;
+  `a!1` || `a!2` && x₅ == x₂ && x₆ == x₄
+}
+
+function main_block_2(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool): bool {
+  x₁ == 0 && !x₄
+}
+
+function main_assign_32(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                        x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                        x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                        x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool,
+  `a!3`: bool,
+  `a!5`: bool,
+  `a!6`: bool := exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₉ == x₄
+        && x₁₀ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    (`x!16` == 1
+       && x₂ == 1
+       && x₃ == 10
+       && x₄
+       && x₅ == 1
+       && x₆
+       && x₇
+       && x₁₀ == 1
+       && x₉
+       && x₁₀ == 2
+       && x₁₃
+       && x₁₄ == x₈
+       || `a!1`)
+      && x₁ == 1 + `x!16`
+      && x₁₁ == x₉
+      && x₁₂ == x₁₀
+      && x₁₅ == x₉,
+  exists `x!16`: int ::
+    var `a!1`: bool,
+    `a!3`: bool := exists `x!17`: int, `x!18`: int, `x!19`: bool, `x!20`: int,
+                          `x!21`: bool, `x!22`: bool, `x!23`: bool, `x!24`: int,
+                          `x!25`: int ::
+      var `a!1`: bool := exists `x!26`: int, `x!27`: int ::
+        `x!22`
+          && `x!18` == (if `x!26` == 1 then 10 else `x!27`)
+          && `x!17` != 1
+          && `x!17` == (if `x!26` == 1 then 1 else `x!26`)
+          && `x!19` == (`x!26` == 1)
+          && `x!25` == 1
+          && `x!20` == `x!17`
+          && `x!21` == `x!19`
+          && `x!24` == `x!17`
+          && x₉ == `x!19`
+          && `x!24` == 2
+          && x₁₃ == `x!22`
+          && x₁₄ == `x!23`;
+      (`x!25` == 1
+         && `x!17` == 1
+         && `x!18` == 10
+         && `x!19`
+         && `x!20` == 1
+         && `x!21`
+         && `x!22`
+         && `x!24` == 1
+         && x₉
+         && `x!24` == 2
+         && x₁₃
+         && x₁₄ == `x!23`
+         || `a!1`)
+        && x₁ == 1 + `x!25`,
+    exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool,
+    `a!4`: bool := x₁ == 1 && x₉ || x₁₃ && x₁ == 2 && !x₉ || `a!1`,
+    `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!3`;
+    `a!2` && `a!4` && x₁₀ != x₁₂ && x₁ == 1 + `x!16` && x₁₅ == x₉,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool := `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!1`;
+    `a!2` && x₁ == 1 + `x!16`,
+  exists `x!16`: int ::
+    var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₀ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    (`x!16` == 1
+       && x₂ == 1
+       && x₃ == 10
+       && x₄
+       && x₅ == 1
+       && x₆
+       && x₇
+       && x₁₀ == 1
+       && x₁₁
+       && x₁₀ == 2
+       && x₁₃
+       && x₁₄ == x₈
+       || `a!1`)
+      && x₁ == 1 + `x!16`
+      && x₁₂ == x₁₀
+      && x₉ == x₁₁,
+  exists `x!16`: int ::
+    var `a!1`: bool,
+    `a!3`: bool := exists `x!17`: int, `x!18`: int, `x!19`: bool, `x!20`: int,
+                          `x!21`: bool, `x!22`: bool, `x!23`: bool, `x!24`: int,
+                          `x!25`: int ::
+      var `a!1`: bool := exists `x!26`: int, `x!27`: int ::
+        `x!22`
+          && `x!18` == (if `x!26` == 1 then 10 else `x!27`)
+          && `x!17` != 1
+          && `x!17` == (if `x!26` == 1 then 1 else `x!26`)
+          && `x!19` == (`x!26` == 1)
+          && `x!25` == 1
+          && `x!20` == `x!17`
+          && `x!21` == `x!19`
+          && `x!24` == `x!17`
+          && x₉ == `x!19`
+          && `x!24` == 2
+          && x₁₃ == `x!22`
+          && x₁₄ == `x!23`;
+      (`x!25` == 1
+         && `x!17` == 1
+         && `x!18` == 10
+         && `x!19`
+         && `x!20` == 1
+         && `x!21`
+         && `x!22`
+         && `x!24` == 1
+         && x₉
+         && `x!24` == 2
+         && x₁₃
+         && x₁₄ == `x!23`
+         || `a!1`)
+        && x₁ == 1 + `x!25`,
+    exists `x!17`: int, `x!18`: int ::
+      x₇
+        && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+        && x₂ != 1
+        && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+        && x₄ == (`x!17` == 1)
+        && `x!16` == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₁₀ == x₂
+        && x₁₁ == x₄
+        && x₁₂ == 2
+        && x₁₃ == x₇
+        && x₁₄ == x₈;
+    var `a!2`: bool,
+    `a!4`: bool := x₁ == 1 && x₉ || x₁₃ && x₁ == 2 && !x₉ || `a!1`,
+    `x!16` == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₇
+      && x₁₀ == 1
+      && x₁₁
+      && x₁₂ == 2
+      && x₁₃
+      && x₁₄ == x₈
+      || `a!3`;
+    `a!2` && `a!4` && x₁₀ != x₁₂ && x₁ == 1 + `x!16`;
+  var `a!4`: bool := (x₁ == 1 && x₉ || x₁₃ && x₁ == 2 && !x₉)
+    && `a!3`
+    && x₁₀ != x₁₂;
+  `a!1` || `a!2` || (`a!4` || `a!5` || `a!6`) && x₁₅ == x₉
+}
+
+function main_block_13(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                       x₆: bool, x₇: bool, x₈: bool, x₉: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!10`: int, `x!11`: int ::
+    x₉
+      && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+      && x₂ != 1
+      && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+      && x₄ == (`x!10` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄,
+  exists `x!10`: int, `x!11`: bool, `x!12`: int, `x!13`: bool, `x!14`: bool,
+         `x!15`: bool ::
+    var `a!1`: bool := exists `x!16`: int, `x!17`: int ::
+      x₉
+        && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+        && x₂ != 1
+        && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+        && x₄ == (`x!16` == 1)
+        && x₁ == 1
+        && x₅ == x₂
+        && x₆ == x₄
+        && `x!10` == x₂
+        && `x!11` == x₄
+        && `x!12` == 1
+        && `x!13` == x₇
+        && `x!14` == x₈
+        && `x!15` == x₉;
+    x₁ == 1
+      && x₂ == 1
+      && x₃ == 10
+      && x₄
+      && x₅ == 1
+      && x₆
+      && x₉
+      && `x!10` == 1
+      && `x!11`
+      && `x!12` == 1
+      && `x!13` == x₇
+      && `x!14` == x₈
+      && `x!15`
+      || `a!1`;
+  x₁ == 1 && x₂ == 1 && x₃ == 10 && x₄ && x₅ == 1 && x₆ && x₉ || `a!1` || `a!2`
+}
+
+function main_spec_19(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool, x₉: bool, x₁₀: int,
+                      x₁₁: bool, x₁₂: int, x₁₃: bool, x₁₄: bool,
+                      x₁₅: bool): bool {
+  var `a!1`: bool,
+  `a!2`: bool := exists `x!16`: int, `x!17`: int ::
+    x₂ != 1
+      && x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈,
+  exists `x!16`: int, `x!17`: int ::
+    x₂ == (if `x!16` == 1 then 1 else `x!16`)
+      && x₃ == (if `x!16` == 1 then 10 else `x!17`)
+      && x₄ == (`x!16` == 1)
+      && x₁ == 1
+      && x₅ == x₂
+      && x₆ == x₄
+      && x₁₀ == x₂
+      && x₁₁ == x₄
+      && x₁₂ == 1
+      && x₁₃ == x₇
+      && x₁₄ == x₈;
+  `a!1` || `a!2` && x₁₀ != x₁₂
+}
+
+function main_spec_34(x₀: int, x₁: int, x₂: int, x₃: int, x₄: bool, x₅: int,
+                      x₆: bool, x₇: bool, x₈: bool): bool {
+  exists `x!9`: bool ::
+    var `a!1`: bool,
+    `a!2`: bool,
+    `a!3`: bool := exists `x!10`: int, `x!11`: int ::
+      !x₈
+        && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+        && x₂ != 2
+        && x₂ != 1
+        && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+        && x₄ == (`x!10` == 1)
+        && x₁ == 2
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₇
+        && `x!9` == x₈,
+    exists `x!10`: int, `x!11`: int ::
+      x₂ != 2
+        && x₂ != 1
+        && x₂ == (if `x!10` == 1 then 1 else `x!10`)
+        && x₃ == (if `x!10` == 1 then 10 else `x!11`)
+        && x₄ == (`x!10` == 1)
+        && x₁ == 2
+        && x₅ == x₂
+        && x₆ == x₄
+        && x₇
+        && !x₈
+        && !`x!9`,
+    exists `x!10`: int, `x!11`: bool, `x!12`: int, `x!13`: bool, `x!14`: int,
+           `x!15`: bool, `x!16`: bool ::
+      var `a!1`: bool := exists `x!17`: int, `x!18`: int ::
+        x₇
+          && x₃ == (if `x!17` == 1 then 10 else `x!18`)
+          && x₂ != 1
+          && x₂ == (if `x!17` == 1 then 1 else `x!17`)
+          && x₄ == (`x!17` == 1)
+          && `x!10` == 1
+          && x₅ == x₂
+          && x₆ == x₄
+          && `x!12` == x₂
+          && `x!13` == x₄
+          && `x!14` == 2
+          && `x!15` == x₇
+          && `x!16` == `x!11`;
+      (x₁ == 1 && x₈ || `x!15` && x₁ == 2 && !x₈)
+        && (`x!10` == 1
+              && x₂ == 1
+              && x₃ == 10
+              && x₄
+              && x₅ == 1
+              && x₆
+              && x₇
+              && `x!12` == 1
+              && `x!13`
+              && `x!14` == 2
+              && `x!15`
+              && `x!16` == `x!11`
+              || `a!1`)
+        && `x!12` != `x!14`
+        && x₁ == 1 + `x!10`
+        && `x!9` == x₈;
+    `a!1`
+      || x₁ == 2
+        && x₂ == 1
+        && x₃ == 10
+        && x₄
+        && x₅ == 1
+        && x₆
+        && x₇
+        && !x₈
+        && !`x!9`
+      || `a!2`
+      || !x₈
+        && x₁ == 2
+        && x₂ == 1
+        && x₃ == 10
+        && x₄
+        && x₅ == 1
+        && x₆
+        && x₇
+        && `x!9` == x₈
+      || `a!3`
+      || x₁ == 2 && x₂ == 2 && !x₄ && x₅ == 2 && !x₆ && x₇ && !x₈ && !`x!9`
+}

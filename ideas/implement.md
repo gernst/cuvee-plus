@@ -29,6 +29,27 @@ Findings of Oct 23, 2026 (programs on `map<int, int>`, `-instrument -chc -entry 
     variables, an entry precondition from the module, or `-instrument` resetting the globals of implementations at
     the entry.
 - Determinism: nondeterministic programs keep soundness, not completeness ([nondet.md](nondet.md)).
+- **Two further conditions of soundness** (found with the operations of Oct 23, 2026, both gave `correct` for false
+  assertions): every observation needs a run that asserts its answer, also a read of a key that is not in the map
+  (the run whose prophecy is that key asserts an arbitrary value; before, it only assumed, so `R` could be empty and
+  block all runs, [invalid_absent.dfy](../examples/dafny/renc/invalid_absent.dfy)), and the numbering by `cnt` must not depend on the prophecy (the
+  merge observed one or two times depending on whether the prophecy key of `m` is in `n`, so the runs of one
+  execution numbered later reads apart, [invalid_merge.dfy](../examples/dafny/renc/invalid_merge.dfy)). An observation may depend on the prophecy
+  of another map in its context (the merge observes `n` at the prophecy key of `m`), since its counterpart run with
+  the same prophecy of `n` asserts it.
+- **Operations on whole maps** (`|m|`, `m.Keys`, `m.Values`, `m <= n`) are not expressible by one prophecy key:
+  nondeterministic, constrained there only, sound but they show nothing about other keys; as uninterpreted functions
+  they would be unsound (maps with different contents but equal states of the encoding).
+- **Sets by the same encoding** (`set` in renc.dfy, predicate `S`): without them, sets reached z3 as cvc5's
+  `set.member`, which z3 does not know, and cvc5 solves no Horn clauses. Maps and sets meet at their representations
+  only (`m - s` reads `s.last_key`, `m.Keys` is `set_(last_key, last_def)`), since the bodies of implementations
+  are not rewritten: an implemented function applied in a body stays an uninterpreted function on representations,
+  which is unsound (the first `remove` had `last_key in s`). Open: a check in `Implement` that the bodies of
+  implementations apply no function implemented by a method. `m.Values` cannot be exact: every element must be the
+  prophecy element of a set in some run, also those that are no values, which the map does not know.
+- **Cost:** a display with two keys (two singletons and a merge) takes z3 about 60 s, a loop reading what a loop
+  stored (`m[i] == 2 * i` for all `i < n`) is unknown after 60 s, a sum over such reads takes 28 s; fills, counters,
+  and tests in loops take 2-5 s.
 
 ### Proposal: predicates with a context of the client
 
@@ -69,7 +90,7 @@ Done (Oct 23, 2026), Dafny only by decision: `static` in the Dafny frontend
 ([static.dfy](../examples/dafny/parsing/static.dfy)), `{:context ctx}` and `Implement.context` (the scope minus the
 variables of implemented sorts and the globals of implementations, uninitialized variables included, which is sound
 but adds noise), static `R<x>` and `K<x>` in `renc`
-([implement_renc_inputs.dfy](../examples/dafny/transform/implement_renc_inputs.dfy)). The order is `-monomorph -flat`
+([inputs.dfy](../examples/dafny/renc/inputs.dfy)). The order is `-monomorph -flat`
 (`-flat` first: "record instantiates a type parameter"). Open: the start of `cnt` (`cnt := 0` by hand in the
 examples; `born` in the constructor), copies of `R` per call.
 

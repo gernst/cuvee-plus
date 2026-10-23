@@ -499,7 +499,8 @@ README; options in [options.md](options.md)), e.g.
   `svlib`, `yml`) with a subfolder per module, e.g. `language`, `parsing` (the cases
   of the frontend, e.g. `examples/dafny/parsing/globals_call.dfy` with
   `-quiet` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
-  `prove`, `hybrid`, and `transform`; one suite per language checks all of
+  `prove`, `hybrid`, `transform`, and `renc` (the maps and sets of
+  `-include implement:renc`); one suite per language checks all of
   its examples ([Checked.scala](../test/src/cuvee/test/Checked.scala)).
   The algorithms of
   `examples/dafny/algorithms`, whose runs take minutes, run only if
