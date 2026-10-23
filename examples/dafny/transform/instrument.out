@@ -1,0 +1,44 @@
+var count: int
+
+function first<a>(x: a, y: a): a
+
+function some(s: seq<int>): int
+
+method {:implement some(s)} any(s: seq<int>) returns (x: int)
+  requires |s| > 0
+  ensures x in s
+
+function get(s: seq<int>, i: int): int
+
+method m(x: int, y: int, s: seq<int>) returns (r: int)
+  modifies count
+  requires 0 < |s|
+{
+  {
+    var test₁: int, test₆: int, test₇: int;
+    {
+      var x₂: int, y₃: int, z₄: int, count₅: int;
+      x₂, y₃ := y, x;
+      count₅ := count;
+      {
+        count := count + 1;
+        assert count == count₅ + 1;
+        z₄ := *;
+        assume z₄ == x₂ || z₄ == y₃;
+      }
+      test₁ := z₄;
+    }
+    test₆ := any(s);
+    {
+      var s₈: seq<int>, i₉: int, x₁₀: int;
+      s₈, i₉ := s, 0;
+      assert 0 <= i₉ < |s₈|;
+      {
+        x₁₀ := s₈[i₉];
+      }
+      test₇ := x₁₀;
+    }
+    r := test₁ + test₆ + test₇;
+  }
+}
+

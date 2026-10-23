@@ -121,11 +121,17 @@ case class Config(
     stderr: PrintStream = System.err,
     // whether -prove reports the rules that it applies to each assertion (see Prove.used)
     rules: Boolean = false,
+    // -instrument: -implement inlines the bodies of the implementations by methods instead of calling them
+    instrument: Boolean = false,
     // keep last
     debug: Set[String] = Set()
 ):
   def using(transform: Transform) =
     copy(transforms = transforms :+ transform)
+
+  // the stage of the implementations once, for -implement and -instrument together
+  def implementing =
+    if transforms.contains(Implement) then this else using(Implement)
 
   // the configuration with `feature` known to the languages of the input and of the output
   def having(feature: String) =
@@ -233,8 +239,12 @@ object Config:
   val implement =
     flag("-implement", "replace the functions that functions and methods with {:implement pattern} implement, the pattern an application of the implemented function to a permutation of the inputs: an implementation by a function everywhere except in the implementations, one by a method, which may be nondeterministic, by calls in the expressions that programs execute, in the order of evaluation; applications of those in specifications are errors"):
       case (config, rest) =>
-        val config_ = config.using(Implement)
-        (config_, rest)
+        (config.implementing, rest)
+
+  val instrument =
+    flag("-instrument", "-implement, where the applications of the functions implemented by methods with a body become those bodies instead of calls, e.g. for encodings that instrument the program; the inlined methods are dropped"):
+      case (config, rest) =>
+        (config.implementing.copy(instrument = true), rest)
 
   val vcgen =
     flag("-vcgen", "verification conditions for procedures by weakest preconditions: contracts, loops with invariants, termination measures, global variables, nondeterministic choice and iteration"):
@@ -411,7 +421,7 @@ object Config:
   // the options in groups, in the order of doc/options.md, for -help
   val groups = List(
     "input" -> List(arch, unbounded, entry_, include, hybrid),
-    "transformations" -> List(implement, vcgen, teq, chc, flat, prove, rules, fallback, split, monomorph, fuse),
+    "transformations" -> List(implement, instrument, vcgen, teq, chc, flat, prove, rules, fallback, split, monomorph, fuse),
     "output" -> List(print_, quiet, linewidth, known_, output),
     "solvers and answers" -> List(z3, cvc5, timeout_, witness),
     "debugging" -> List(debug_)
@@ -474,7 +484,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.50.6"
+  val release = "0.50.7"
 
   def version() =
     println("Cuvée " + release)

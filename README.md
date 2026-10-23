@@ -113,7 +113,8 @@ lists them.
 - **Implementations** (`-implement`): built-in sorts and functions, e.g.
   sets, get implementations that programs are verified against, functions
   and possibly nondeterministic methods with `{:implement pattern}`, from
-  modules such as `-include implement:listset` ([doc/implement.md](doc/implement.md)).
+  modules such as `-include implement:listset`; `-instrument` inlines the
+  methods instead of calling them ([doc/implement.md](doc/implement.md)).
 - **Verification conditions** (`-vcgen`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;

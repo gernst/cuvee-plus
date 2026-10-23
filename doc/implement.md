@@ -10,7 +10,7 @@ by methods (procedures); methods are not implemented. The code is
 ## Modules and sorts
 
 - Modules are injected by `-include implement:<name>` (`resources/cuvee/implement/<name>.dfy`, e.g. `listset`, sets
-  as lists without duplicates) or `-include file`, after the entry `implement.dfy` (no declarations yet). They are
+  as lists without duplicates, `renc`, maps by the heap encoding Enc_R for `-instrument`) or `-include file`, after the entry `implement.dfy` (no declarations yet). They are
   injected before the input, hence they implement functions of the core, of the entry, or of themselves, not those of
   a client.
 - All their declarations carry `{:implement}`, hence `-known implement` drops them from the output.
@@ -47,7 +47,17 @@ they are.
 - **Backends:** a method with a contract is called by its contract in `-vcgen` and `-teq`; one with a body only is
   inlined in `-vcgen` and `-teq` and summarized in `-chc`.
 
+`-instrument` is `-implement` (one stage, `Config.instrument`), where the applications of functions implemented by
+methods with a body become those bodies instead of calls, with the same attributes: a block whose locals are the
+formal parameters renamed apart, with the type parameters instantiated, that assigns the arguments to the inputs,
+asserts the precondition (the postcondition is not needed, the body is exact), keeps the global variables in locals if
+the body has `old`, and assigns the output to the result; `return` in such a body is an error. The inlined methods
+are dropped, methods without body are called. Encodings that instrument the program need it, e.g. `renc`, whose
+generic methods would otherwise give polymorphic Horn clauses.
+
 Examples: [dafny/transform/implement.dfy](../examples/dafny/transform/implement.dfy) (`listset`),
 [implement_method.dfy](../examples/dafny/transform/implement_method.dfy),
+[instrument.dfy](../examples/dafny/transform/instrument.dfy),
+[implement_renc.dfy](../examples/dafny/transform/implement_renc.dfy) (`renc` with `-instrument -chc -flat -monomorph`),
 [smtlib/transform/implement.smt2](../examples/smtlib/transform/implement.smt2),
 [boogie/transform/implement.bpl](../examples/boogie/transform/implement.bpl).

@@ -103,7 +103,7 @@ object Horn extends Transform:
     // the precondition must hold for the arguments under the axioms, as the property correct-annotations requires
     // (core-verification/loop-add.1 is false without the axiom 0 <= y0)
     clause(gs ++ xs, axioms_ :+ Not(abstracted(cs, xs, requires_)), False, clauses)
-    clauses.value.map(axiom)
+    clauses.value.map(axiom(Nil, _))
 
   // whether `cmd` is an axiom about constants, e.g. (assert (<= 0 n)) of SV-LIB
   def isAxiom(state: State, cmd: Cmd): Boolean =
@@ -198,13 +198,14 @@ object Horn extends Transform:
         val exit = List(App(state, post, scope))
         wp(state, name, scope, List(body_), entry, exit, None, None, exit, decls_, clauses)
 
-        decls ++ decls_.value ++ clauses.value.map(axiom)
+        decls ++ decls_.value ++ clauses.value.map(axiom(params, _))
 
       case _ =>
         List(cmd)
 
   // the predicates p_pre and p_post of procedure `name` together with their declarations,
-  // Horn solvers do not support polymorphism, therefore procedures must not have type parameters
+  // which are polymorphic in the type parameters of the procedure, like its other predicates and its clauses,
+  // which Horn solvers do not support, i.e., they must be instantiated (see Monomorph)
   def declare(state: State, name: Name): (Fun, Fun, List[DeclareFun]) =
     val pre = precondition(state, name)
     val post = postcondition(state, name)
@@ -215,8 +216,9 @@ object Horn extends Transform:
 
     (pre, post, List(DeclareFun(pre, Attrs.empty), DeclareFun(post, Attrs.empty)))
 
-  def axiom(phi: Expr): Assert =
-    Assert(Axiom, Nil, phi, Attrs.empty)
+  // the clauses of a polymorphic procedure are polymorphic in its type parameters `params`
+  def axiom(params: List[Param], phi: Expr): Assert =
+    Assert(Axiom, params, phi, Attrs.empty)
 
   // the predicates p_pre and p_post of procedure `name`,
   // whose formal parameters are the inputs and the global variables,
@@ -237,9 +239,9 @@ object Horn extends Transform:
     Expr.vars("g", gs.types)
 
   // a fresh predicate for a program point in procedure `proc` with the variables in `scope` as formal parameters,
-  // numbered by the predicates declared so far
-  def predicate(proc: Name, what: String, scope: List[Var], decls: Ref[List[DeclareFun]]): Fun =
-    val pred = Fun(proc.name + "_" + what + "_" + (decls.value.length + 1), Nil, scope, Sort.bool)
+  // numbered by the predicates declared so far, with the type parameters of the procedure, which the scope may mention
+  def predicate(state: State, proc: Name, what: String, scope: List[Var], decls: Ref[List[DeclareFun]]): Fun =
+    val pred = Fun(proc.name + "_" + what + "_" + (decls.value.length + 1), state.procs(proc).params, scope, Sort.bool)
     decls := decls.value :+ DeclareFun(pred, Attrs.empty)
     pred
 
@@ -303,14 +305,14 @@ object Horn extends Transform:
       case Spec(xs, pre_, post_) :: rest =>
         clause(scope, pre, pre_, clauses)
 
-        val next = predicate(proc, "spec", scope, decls)
+        val next = predicate(state, proc, "spec", scope, decls)
         val (xs_, su) = Subst.rename(xs)
         clause(scope ++ xs_, pre :+ su(post_), App(state, next, su(scope)), clauses)
         wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)
 
       // pre ⇒ next(scope[xs := rhs]), where next is a fresh predicate over the scope
       case Assign(xs, rhs) :: rest =>
-        val next = predicate(proc, "assign", scope, decls)
+        val next = predicate(state, proc, "assign", scope, decls)
         val su = Subst.from(xs, rhs)
         clause(scope, pre, App(state, next, su(scope)), clauses)
         wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)
@@ -320,7 +322,7 @@ object Horn extends Transform:
       // both instantiated for the call, which also instantiates the type parameters by the types of the arguments
       case (call @ Call(name, args, res)) :: rest if !state.procdefs.contains(name) =>
         val (requires, fresh, ensures, rename) = VCGen.instance(state, proc, call)
-        val next = predicate(proc, "call", scope, decls)
+        val next = predicate(state, proc, "call", scope, decls)
 
         this.clauses(scope, pre, And.flattenStrong(requires), clauses)
         clause(scope ++ fresh, pre ++ And.flattenStrong(ensures), App(state, next, rename(scope)), clauses)
@@ -341,7 +343,7 @@ object Horn extends Transform:
         val res_ = res.fresh
         val mod_ = mod.fresh
         val su = Subst.from(res ++ mod, res_ ++ mod_)
-        val next = predicate(proc, "call", scope, decls)
+        val next = predicate(state, proc, "call", scope, decls)
 
         clause(scope, pre, App(state, precondition(state, name), args ++ gs), clauses)
 
@@ -405,7 +407,7 @@ object Horn extends Transform:
         val ms = Expr.vars("m", dec.map(_.typ)).fresh
         val scope_ = scope ++ ms
 
-        val inv = predicate(proc, "inv", scope, decls)
+        val inv = predicate(state, proc, "inv", scope, decls)
         val head = App(state, inv, scope)
         val iter = if dec.isEmpty then List(head) else List(head, VCGen.decreases(dec, ms))
 
@@ -436,6 +438,6 @@ object Horn extends Transform:
     if rest.isEmpty
     then body(post)
     else
-      val next = predicate(proc, what, scope, decls)
+      val next = predicate(state, proc, what, scope, decls)
       body(List(App(state, next, scope)))
       wp(state, proc, scope, rest, List(App(state, next, scope)), post, break, continue, return_, decls, clauses)
