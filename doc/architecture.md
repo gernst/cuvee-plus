@@ -186,18 +186,8 @@ for every sink.
   under the facts of the context ([`Simplify`](../src/cuvee/prove/Simplify.scala)), with conditional rewrite rules
   ([`Rewrite`](../src/cuvee/prove/Rewrite.scala)), congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole
   cycles and forward lemmas ([`Forward`](../src/cuvee/prove/Forward.scala)), see [prove.md](prove.md).
-- [`Implement`](../src/cuvee/transform/Implement.scala) replaces the
-  functions that functions and methods with `{:implement pattern}` implement
-  (`-implement`, [options.md](options.md)), the pattern an application of the
-  implemented function to a permutation of the inputs: an implementation by a
-  function everywhere except in the implementations; one by a method, which
-  may be nondeterministic, in the executed expressions of procedure bodies
-  only, lifted into calls in front of their statement into fresh locals
-  `test`, short-circuit operators and `ite` as conditionals, a loop guard with
-  calls as an `Iter` that breaks; applications in specifications are errors.
-  It is a transformation of the task, hence optional, such that a translation
-  keeps the task as written
-  ([ideas/implementations.md](../ideas/implementations.md)).
+- [`Implement`](../src/cuvee/transform/Implement.scala) replaces implemented
+  functions by their implementations (`-implement`, [implement.md](implement.md)).
 - [`Flat`](../src/cuvee/transform/Flat.scala) eliminates records
   (non-recursive datatypes with one constructor), whose declarations are
   dropped: functions take their fields, functions with records as results are
@@ -285,9 +275,10 @@ The consumers read the answers as a set: [cuvee.py](../cuvee.py) and the witness
 `Horn` is the exception, since a CHC solver takes one problem with one `check-sat`, without `push`/`pop` and
 `reset`: it checks at `Done` only, and the answer to its `check-sat` is that of the program, `correct` for `sat`
 and `incorrect` for `unsat`, followed by the model (`Horn.report`, a `Report` in front of the
-reports, see `Config.reporter`). This is exact for at most one `verify-call`, at the end. See
-[ideas/answer-mapping.md](../ideas/answer-mapping.md) for the rejected alternative, answers mapped back to the
-input commands by the transforms.
+reports, see `Config.reporter`). This is exact for at most one `verify-call`, at the end. Mapping the answers
+back to the input commands by each transform, one response per command, was rejected (Oct 22, 2026): the answers
+to buffered goals came back together at the next flush, and the goals of procedures have no place among the
+answers to the input.
 
 ## Frontends
 
@@ -334,17 +325,9 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      which is how `(x == y) == b` stays apart. Chains must not mix `<`/`<=`
      with `>`/`>=`.
    - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
-     included; only `{:implement pattern}` of a function or method has a
-     value, the pattern of the function it implements (see
-     [ideas/implementations.md](../ideas/implementations.md)), resolved in the
-     scope of its inputs, `this` included, and checked against its result type
-     or single output (`Parser.annotations`), e.g. `{:implement x in this}`.
-     SMT-LIB and SV-LIB (`:implement (f x)` on `declare-fun`, `define-fun`,
-     `declare-proc`, and the body of `define-proc`) and Boogie
-     (`{:implement f(x)}` on functions and procedures) resolve the pattern the
-     same way (`implementation` of their parsers). The Dafny and Boogie
-     printers and the SMT-LIB printer of procedures write it back; the SMT-LIB
-     printer drops it on functions, whose declarations go to solvers.
+     included; only `{:implement pattern}` has a value, resolved in the scope
+     of the inputs (`Parser.annotations`; in SMT-LIB and Boogie
+     `implementation`, see [implement.md](implement.md)).
    - Dafny's `include "path"` parses the file at `path`, relative to the
      including file, by a fresh parser that starts from the state after the
      prelude (`dafny.Source.included`), which is immutable and shared by all
@@ -363,10 +346,7 @@ Each frontend follows the same structure (see `cuvee.dafny` and
    them as datatypes, and Dafny's `map` reaches the solvers as a declared
    sort. Declarations that coincide with existing ones leave the state
    unchanged (`State.unless`), except a sort declared again with
-   `:implement` (`Attrs.isImplementation`), e.g. by a datatype that
-   defines a sort of the prelude in a module of `-include implement:<name>`: it
-   takes the new attributes, such that its definition carries them and is
-   printed rather than dropped with the prelude. Transforms see the
+   `:implement`, which takes the new attributes ([implement.md](implement.md)). Transforms see the
    prelude's declarations, e.g. `Monomorph` ignores those that are part of
    the output language.
    `Trace` is in no prelude: it exists only with `-teq` ([teq.md](teq.md)).

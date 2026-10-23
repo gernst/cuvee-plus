@@ -18,6 +18,8 @@ or solvers consume.
   mention.
 - [doc/hybrid.md](doc/hybrid.md): derivatives, ODEs, parallel composition
   (`-hybrid`).
+- [doc/implement.md](doc/implement.md): implementations of sorts and functions
+  (`-implement`, `-include implement:<name>`).
 - [doc/style.md](doc/style.md): coding style, incl. lowercase comments that
   explain why.
 - [doc/options.md](doc/options.md): the command line options.
@@ -158,16 +160,10 @@ or solvers consume.
   which flush and are answered immediately, by the combination of the answers
   to their outputs (doc/architecture.md, "Answers"); filters that need the
   answers to other declarations are sink wrappers.
-- **Implementations** ([ideas/implementations.md](ideas/implementations.md)):
-  `{:implement pattern}` on a function or a method names the function it
-  implements, the pattern an application to a permutation of all its inputs
-  (`this` included), nothing more general; methods have a single output and
-  may be nondeterministic, with no determinization (no oracles, counters).
-  Modules are `-include implement:<name>` after the entry `implement.dfy`, all
-  their declarations tagged `{:implement}` (dropped by `-known implement`);
-  they can only implement functions declared before them, not a client's.
-  `-implement` is optional, since a translation keeps the task as written.
-  Methods are not implemented.
+- **Implementations** ([doc/implement.md](doc/implement.md)): patterns are a
+  function applied to a permutation of all inputs, nothing more general;
+  methods implement functions (possibly nondeterministically), methods are
+  never implemented; the bodies of implementations are not rewritten.
 - **Entry points:** `-teq` emits a goal for the entry point only and `-chc`
   starts from it (`Config.entry`: `-entry <name>`, otherwise `main` in
   C; SV-LIB starts at its `verify-call` commands); the other procedures are
