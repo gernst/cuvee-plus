@@ -92,6 +92,19 @@ object Parser:
   def annotation(from: List[Any]): Attrs =
     Attrs(annotations(from))
 
+  // the polymorphic form of a declaration, definition, or assertion, (cmd name (par (a ...) args ...)) and
+  // (cmd (par (a ...) phi attrs ...)), as the monomorphic form with the type parameters a ..., none for that form
+  def polymorphic(from: Any): (List[Any], Any) =
+    from match
+      case List(cmd @ Id("declare-const" | "declare-fun" | "define-fun" | "declare-proc" | "define-proc"), name, List(Id("par"), List(params*), args*)) =>
+        (params.toList, List(cmd, name) ++ args)
+
+      case List(cmd @ Id("assert" | "goal" | "lemma"), List(Id("par"), List(params*), args*)) =>
+        (params.toList, List(cmd) ++ args)
+
+      case _ =>
+        (Nil, from)
+
   // a statement of SV-LIB with a tag: the scope of its properties, which is that of the signature for the body of a
   // procedure, whose contract cannot refer to the local variables, and the enclosing procedure, whose signature gives
   // the variables that (at x tag) may refer to
@@ -137,7 +150,9 @@ class Parser(private var init: State):
     init = state
 
   def cmd(from: Any): Cmd =
-    from match
+    val (params, from_) = Parser.polymorphic(from)
+
+    from_ match
       // control commands
 
       case List(Id("set-logic"), Id(logic)) =>
@@ -242,54 +257,12 @@ class Parser(private var init: State):
         val data_ = datatype(name, decl)
         DeclareDatatypes(List(state.sorts(name)), List(data_), attrs_)
 
-      // polymorphic Alt-Ergo .psmt declarations and definitions
-
-      case List(Id("declare-const"), Id(name), List(Id("par"), List(params*), res, attrs*)) =>
-        val params_ = list(params) { param(_) }
-        val scope = Scope(params_)
-
-        val formals_ = Nil
-        val res_ = typ(scope, res)
-        val fun = Fun(name, params_, formals_, res_)
-        val attrs_ = annotation(attrs.toList)
-
-        state = state.declare(name, params_, formals_, res_, attrs_)
-        DeclareFun(fun, attrs_)
-
-      case List(Id("declare-fun"), Id(name), List(Id("par"), List(params*), List(args*), res, attrs*)) =>
-        val params_ = list(params) { param(_) }
-        val scope = Scope(params_)
-
-        val args_ = list(args) { typ(scope, _) }
-        val formals_ = Expr.vars("x", args_)
-        val res_ = typ(scope, res)
-        val fun = Fun(name, params_, formals_, res_)
-        val attrs_ = implementation(name, scope ++ formals_, List(res_), annotation(attrs.toList))
-
-        state = state.declare(name, params_, formals_, res_, attrs_)
-        DeclareFun(fun, attrs_)
-
-      case List(Id("define-fun"), Id(name), List(Id("par"), List(params*), List(formals*), res, body, attrs*)) =>
-        val params_ = list(params) { param(_) }
-        val scope = Scope(params_)
-
-        val formals_ = list(formals) { formal(scope, _) }
-        val res_ = typ(scope, res)
-        val fun = Fun(name, params_, formals_, res_)
-
-        val expr_ = expr(scope ++ formals_, body)
-        val body_ = state.exprs.check(scope, expr_, res_)
-        val attrs_ = implementation(name, scope ++ formals_, List(res_), annotation(attrs.toList))
-
-        state = state.declare(name, params_, formals_, res_, attrs_)
-        state = state.define(name, formals_.length, body_)
-        DefineFun(fun, body_, attrs_)
-
-      // monomorphic SMT-LIB declarations and definitions
+      // declarations and definitions, monomorphic as in SMT-LIB or polymorphic as in Alt-Ergo's .psmt, (par (a ...)
+      // ...), whose type parameters `params` are those of the polymorphic form (see Parser.polymorphic)
 
       case List(Id("declare-const"), Id(name), res, attrs*) =>
-        val params_ = Nil
-        val scope = Scope.empty
+        val params_ = list(params) { param(_) }
+        val scope = Scope(params_)
 
         val formals_ = Nil
         val res_ = typ(scope, res)
@@ -300,8 +273,8 @@ class Parser(private var init: State):
         DeclareFun(fun, attrs_)
 
       case List(Id("declare-fun"), Id(name), List(args*), res, attrs*) =>
-        val params_ = Nil
-        val scope = Scope.empty
+        val params_ = list(params) { param(_) }
+        val scope = Scope(params_)
 
         val args_ = list(args) { typ(scope, _) }
         val formals_ = Expr.vars("x", args_)
@@ -313,8 +286,8 @@ class Parser(private var init: State):
         DeclareFun(fun, attrs_)
 
       case List(Id("define-fun"), Id(name), List(formals*), res, body, attrs*) =>
-        val params_ = Nil
-        val scope = Scope.empty
+        val params_ = list(params) { param(_) }
+        val scope = Scope(params_)
 
         val formals_ = list(formals) { formal(scope, _) }
         val res_ = typ(scope, res)
@@ -330,19 +303,11 @@ class Parser(private var init: State):
 
       // assertions and proof goals
 
-      case List(Id(cmd @ ("assert" | "goal" | "lemma")), List(Id("par"), List(params*), List(Id("!"), phi, attrs*))) =>
-        val params_ = list(params) { param(_) }
-        assertion(justification(cmd), params_, phi, attrs.toList)
-
-      case List(Id(cmd @ ("assert" | "goal" | "lemma")), List(Id("par"), List(params*), phi, attrs*)) =>
-        val params_ = list(params) { param(_) }
-        assertion(justification(cmd), params_, phi, attrs.toList)
-
       case List(Id(cmd @ ("assert" | "goal" | "lemma")), List(Id("!"), phi, attrs*)) =>
-        assertion(justification(cmd), Nil, phi, attrs.toList)
+        assertion(justification(cmd), list(params) { param(_) }, phi, attrs.toList)
 
       case List(Id(cmd @ ("assert" | "goal" | "lemma")), phi, attrs*) =>
-        assertion(justification(cmd), Nil, phi, attrs.toList)
+        assertion(justification(cmd), list(params) { param(_) }, phi, attrs.toList)
 
       // procedural fragment, the syntax of SV-LIB (see the comment on procedure)
 
@@ -353,23 +318,14 @@ class Parser(private var init: State):
         state = state.declare(name, typ_, attrs_)
         state.cmds.declareVar(name)
 
-      // not part of SV-LIB: procedures without body, whose contract and modifies clause are attributes
+      // not part of SV-LIB: procedures without body, whose contract and modifies clause are attributes, and
+      // polymorphic procedures
       case List(Id("declare-proc"), Id(name), List(in*), List(out*), attrs*) =>
-        declaration(name, Nil, list(in) { formal(Scope.empty, _) }, list(out) { formal(Scope.empty, _) }, attrs.toList)
-
-      case List(Id("declare-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), attrs*)) =>
         val params_ = list(params) { param(_) }
         val scope = Scope(params_)
         declaration(name, params_, list(in) { formal(scope, _) }, list(out) { formal(scope, _) }, attrs.toList)
 
       case List(Id("define-proc"), Id(name), List(in*), List(out*), List(locals*), body) =>
-        val in_ = list(in) { formal(Scope.empty, _) }
-        val out_ = list(out) { formal(Scope.empty, _) }
-        val locals_ = list(locals) { formal(Scope.empty, _) }
-        procedure(name, Nil, in_, out_, locals_, body)
-
-      // not part of SV-LIB: polymorphic procedures
-      case List(Id("define-proc"), Id(name), List(Id("par"), List(params*), List(in*), List(out*), List(locals*), body)) =>
         val params_ = list(params) { param(_) }
         val scope = Scope(params_)
         val in_ = list(in) { formal(scope, _) }
@@ -403,10 +359,7 @@ class Parser(private var init: State):
     val globals = state.globals
     val scope = Scope(params) ++ globals ++ in ++ out
     val attrs_ = implementation(name, Scope(params) ++ in, out.types, contract(scope, attrs))
-
-    val nonglobal = attrs_.modifies.filterNot(globals.contains)
-    Error.report("modifies clause of procedure lists variables that are not global", name, nonglobal):
-      require(nonglobal.isEmpty)
+    state.progs.modifies(name, attrs_.modifies)
 
     state = state.declare(name, params, in, out, attrs_)
     state.cmds.declareProc(name)
@@ -453,14 +406,11 @@ class Parser(private var init: State):
     val attrs_ = properties(tagged, true, attrs)
     val body_ = Block(locals, attrs_.checks.map(Spec.assert) ++ progs)
 
-    val nonglobal = attrs_.modifies.filterNot(globals.contains)
-    Error.report("modifies clause of procedure lists variables that are not global", name, nonglobal):
-      require(nonglobal.isEmpty)
+    state.progs.modifies(name, attrs_.modifies)
 
     val attrs__ = implementation(name, Scope(params) ++ in, out.types, inferred(Attrs(attrs_.attrs.filterNot(_._1 == "check-true")), body_))
 
-    val fixed = in.toSet ++ (globals.toSet -- attrs__.modifies)
-    val checked = state.progs.check(outer, fixed, attrs__.modifies.toSet, body_)
+    val checked = state.progs.body(outer, in, attrs__.modifies, body_)
     state = state.copy(procattrs = state.procattrs + (name -> attrs__)).define(name, checked)
     DefineProc(state.procs(name), checked, attrs__)
 
