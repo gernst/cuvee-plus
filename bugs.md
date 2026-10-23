@@ -31,9 +31,9 @@ removed with their C versions on Oct 23, 2026 (in the history of git before that
 
 - **C variables named like the constants of SMT-LIB** (`int true = 1; int false = 0;`,
   `benchmarks/acsl/loops-crafted-1/watermelon`, formerly an entry of the errors below): they keep their names and
-  reach z3 as `(true Int)`, `(false Int)`, a sort error ("solver error") until the answers per goal (0.48.0);
-  since, z3 refutes two of the goals, a wrong `false` of the true task under `-vcgen -split -z3` (0.49.6, Oct 23,
-  2026). Such names need renaming in the frontend.
+  reach z3 as `(true Int)`, `(false Int)`: under `-vcgen -z3` a sort error ("solver error", 0.50.2, Oct 23, 2026),
+  under `-vcgen -split -z3` z3 refutes two of the split goals, a wrong `false` of the true task (0.49.6, Oct 23).
+  Such names need renaming in the frontend.
 
 - **Parallel composition** (`-hybrid`, moved from TODO.md):
   - Sequential calls neither establish the callee's assumption nor guarantee
@@ -352,6 +352,8 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
   `integer(n)` occurs, added in bcbef0d3), whose instances are simplified again at every fact (see "Forward instances
   use up the steps of a goal"): with it, `s1lif` and `condn` time out at 120 s locally, without it they prove in 14 s
   and 21 s. Fixed by dropping the lemma again (`integer_eq` alone, as before); `Eval` and `Simplify.eq_` stay.
+  Confirmed on the cloud with 0.50.8 (60 s, AMD Ryzen 7 PRO 5750G): 87 and 99 of 125 proved, the same tasks as with
+  0.50.4, no wrong results.
 
 - **A cycle in `-prove` with `teq:unsigned` since 0.50** (Oct 23, 2026): `loop-acceleration/multivar_1-2` and
   `loops-crafted-1/nested3-2` of SV-COMP Loops (both expected false) timed out, while 0.49.4 refuted them in 25 s and

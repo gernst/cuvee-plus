@@ -209,8 +209,10 @@ Cleanup, none of it a bug.
 - ACSL: `\min`, `\max`, `\abs`; labels of `\at` other than `Pre`, `Here`, `LoopEntry`; contracts of functions that
   read globals need their values as preconditions; interpret `shl`, `shr`, `bitand`, ... where possible
   (`(x & 5) == 5` as `x % 8 == 5`); `-chc` answers `unknown` on unsigned arithmetic of annotated programs.
-- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), 723 of 838 annotated true tasks on Oct 23): why z3 fails on
-  the parts of `-split` (35 tasks prove only without it); `copy-partial-3-u` is refuted (weak annotations), the other
+- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl); Oct 23, 0.50.2, 60 s, `-split` only for `Loops-split.set`:
+  288 of 320 true tasks of Arrays, 467 of 555 of Loops): why z3 fails on the parts of `-split` (35 tasks prove only
+  without it); `prodbin-ll` and `prod4br-ll_valuebound5` prove only with it (2 to 3 s) and belong in
+  `Loops-split.set`; `copy-partial-3-u` has weak annotations (refuted at 15 min, a timeout at 60 s), the other
   `copy-partial-*`, `add-*`, `diff-*` time out; annotate the VerifyThis tasks; nonlinear closed forms (`geo*`,
   `lcm2`, `prod4br`, `partial_mod_count_2-5`, `array26`).
 

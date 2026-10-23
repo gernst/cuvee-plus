@@ -438,7 +438,7 @@ def main():
     plots(plt, out, "union", spec3, categories, "TEQ and the portfolios (Arrays and Loops)", file="quantile-union.pdf")
 
     # 4. ACSL, whose tasks are matched with those of sv-benchmarks/c by folder and name
-    annotated = gather("cuvee-acsl", categories, Need(timelimit=None, version=current))
+    annotated = gather("cuvee-acsl", categories, Need(version=current))
     expected = expectations([path for results in annotated.values() for path in results.paths])
     annotated = {name: replace(results, runs=[replace(run, task=acsl_task(run.task)) for run in results.runs]) for name, results in annotated.items()}
     (out / "acsl.tex").write_text(acsl(annotated, teq_results, expected))
