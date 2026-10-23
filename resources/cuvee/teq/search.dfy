@@ -6,37 +6,26 @@
 // facts at the reads are forward lemmas, triggered by the read, earlier(j, xs) or a[k], whose other variables are
 // matched against the facts of the abstractions
 
-// the first n values of xs and ys agree
-function {:teq} agree_prefix(n: Nat, xs: List<int>, ys: List<int>): bool
-{
-  match n
-  case zero => true
-  case succ(m) => agree_prefix(m, xs, ys) && earlier(m, xs) == earlier(m, ys)
-}
-
-// the first n values of ts exceed their positions
-function {:teq} above_iterations(n: Nat, ts: List<int>): bool
-{
-  match n
-  case zero => true
-  case succ(m) => above_iterations(m, ts) && integer(m) < earlier(m, ts)
-}
-
-// two sequences that are equal at the iterations 0, ..., n - 1 agree there
+// the first n values of xs and ys agree: folded from the iteration constraint that they are equal at the iterations
+// 0, ..., n - 1
 // (from standard_compare_ground)
-lemma {:rw} {:teq} agree_prefix_def(n: Nat, xs: List<int>, ys: List<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋ check k :: earlier(natural(k), xs) == earlier(natural(k), ys))
-    <==> agree_prefix(n, xs, ys)
+function {:teq} {:fold} agree_prefix(n: Nat, xs: List<int>, ys: List<int>): bool
+{
+  invs(for ⌊counter(0, 1, n)⌋ check k :: earlier(natural(k), xs) == earlier(natural(k), ys))
+}
 
 // a search: the elements before the exit n differ from e, i.e., e does not occur in the prefix of length n
 // (from standard_find_ground-1)
 lemma {:rw} {:teq} not_occurs_prefix(n: Nat, e: int, xs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋ check k :: earlier(natural(k), xs) != e) <==> !occurs(e, prefix(n, xs))
 
-// the values of the iterations exceed the iterations
+// the first n values of ts exceed their positions: folded from the iteration constraint that the values of the
+// iterations exceed the iterations
 // (from simple_array_index_value_2)
-lemma {:rw} {:teq} above_iterations_def(n: Nat, ts: List<int>)
-  ensures invs(for ⌊counter(0, 1, n)⌋, ts check k, t :: k < t) <==> above_iterations(n, ts)
+function {:teq} {:fold} above_iterations(n: Nat, ts: List<int>): bool
+{
+  invs(for ⌊counter(0, 1, n)⌋, ts check k, t :: k < t)
+}
 
 // agreeing sequences are equal at each position in the range, a fact at the reads
 // (from standard_compare_ground)

@@ -4,7 +4,7 @@
 # the premises of lean/premises.txt, and for each lemma the check that the theorem <name> of lean/TEQ/Proofs.lean
 # proves it; the datatype of traces is that of lean/TEQ/Semantics.lean, which the printed one must equal
 #
-#   scripts/lean/generate.py [--jar cuvee.jar] [--check]
+#   scripts/lean/generate.py [--jar cuvee.jar | --classpath <classpath>] [--check]
 #
 # --check compares instead of writing and fails if the files differ, e.g. after a change of a module; the lemmas of
 # lean/open.txt are removed from the modules before printing
@@ -33,15 +33,17 @@ def norm(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
-def run_printer(jar):
-    # a private copy of the jar, which a rebuild during the run would otherwise replace
+def run_printer(jar, classpath=None):
+    # a private copy of the jar, which a rebuild during the run would otherwise replace; a classpath is taken as it is,
+    # e.g. that of the test JVM (test/src/cuvee/test/Lean.scala)
     with tempfile.TemporaryDirectory() as tmp:
-        copy = os.path.join(tmp, "cuvee.jar")
-        shutil.copy(jar, copy)
+        if classpath is None:
+            classpath = os.path.join(tmp, "cuvee.jar")
+            shutil.copy(jar, classpath)
         source = os.path.join(tmp, "database.dfy")
         with open(source, "w") as out:
             out.write(modules())
-        result = subprocess.run(["java", "-cp", copy, "cuvee.Cuvee", "-print", "lean", source],
+        result = subprocess.run(["java", "-cp", classpath, "cuvee.Cuvee", "-print", "lean", source],
                                 stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120)
         if result.returncode != 0 or result.stderr.strip():
             sys.exit("-print lean failed:\n" + result.stderr)
@@ -184,9 +186,10 @@ namespace TEQ
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--jar", default=os.path.join(ROOT, "cuvee.jar"))
+    parser.add_argument("--classpath", help="the classpath of the printer instead of a copy of the jar")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    files = dict(zip(["lean/TEQ/Database.lean", "lean/TEQ/Check.lean"], generate(run_printer(args.jar))))
+    files = dict(zip(["lean/TEQ/Database.lean", "lean/TEQ/Check.lean"], generate(run_printer(args.jar, args.classpath))))
     stale = []
     for path, text in files.items():
         full = os.path.join(ROOT, path)

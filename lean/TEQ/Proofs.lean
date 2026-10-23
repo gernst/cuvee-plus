@@ -209,10 +209,6 @@ theorem sum_counter_le (s : Int) (t : Nat) (f : Int → Int) (b : Int) (h : ∀ 
 theorem natural_integer (n : Nat) : natural (integer n) = n :=
   by simp [natural_eq, integer_cast]
 
-theorem integer_natural_facts : Stmt.integer_natural_facts := by
-  intro n
-  exact ⟨by rw [integer_cast]; omega, natural_integer n⟩
-
 theorem integer_natural (x : Int) : 0 ≤ x → integer (natural x) = x :=
   by intro h; simp [natural_eq, integer_cast]; omega
 
@@ -713,33 +709,15 @@ theorem indexof_lt_length {α : Type} [Inhabited α] (k : α) (ks : List α) (h 
 
 theorem agree_prefix_forall (n : Nat) (xs ys : List Int) :
     agree_prefix n xs ys ↔ ∀ i : Nat, i < n → earlier i xs = earlier i ys := by
-  induction n with
-  | zero => simp [agree_prefix]
-  | succ m ih =>
-    simp only [agree_prefix]
-    rw [ih]
-    constructor
-    · intro ⟨h1, h2⟩ i hi
-      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hi) with h | h
-      · exact h1 i h
-      · subst h; exact h2
-    · intro h
-      exact ⟨fun i hi => h i (by omega), h m (by omega)⟩
+  unfold agree_prefix
+  rw [invs_counter_forall]
+  simp [natural_eq]
 
-theorem above_iterations_forall (n : Nat) (ts : List Int) :
+theorem above_iterations_forall (n : Nat) (ts : List Int) (hts : ts.length = n) :
     above_iterations n ts ↔ ∀ i : Nat, i < n → integer i < earlier i ts := by
-  induction n with
-  | zero => simp [above_iterations]
-  | succ m ih =>
-    simp only [above_iterations]
-    rw [ih]
-    constructor
-    · intro ⟨h1, h2⟩ i hi
-      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hi) with h | h
-      · exact h1 i h
-      · subst h; exact h2
-    · intro h
-      exact ⟨fun i hi => h i (by omega), h m (by omega)⟩
+  unfold above_iterations
+  refine (invs_zip_counter 0 n ts hts (fun k t => k < t)).trans ?_
+  simp [integer_cast]
 
 theorem not_occurs_prefix_forall (n : Nat) (xs : List Int) (e : Int) (hxs : xs.length = n) :
     ¬occurs e («prefix» n xs) ↔ ∀ i : Nat, i < n → earlier i xs ≠ e := by
@@ -837,14 +815,6 @@ theorem invs_not_or (hs : List Int) (gs : List Int) (fs : List Int)
     | nil => simp [invs]
     | cons p ps ih => obtain ⟨h, g, f⟩ := p; simp only [invs] at *; rw [ih]; grind
 
--- two sequences that are equal at the iterations 0, ..., n - 1 agree there
--- (from standard_compare_ground)
-theorem agree_prefix_def : Stmt.agree_prefix_def := by
-  intro n xs ys _ _
-  rw [agree_prefix_forall]
-  refine (invs_counter_forall 0 n (fun k => earlier (natural k) xs = earlier (natural k) ys)).trans ?_
-  simp [natural_eq]
-
 -- a search: the elements before the exit n differ from e, i.e., e does not occur in the prefix of length n
 -- (from standard_find_ground-1)
 theorem not_occurs_prefix : Stmt.not_occurs_prefix := by
@@ -868,16 +838,6 @@ theorem not_occurs_selects (a : Int → Int) (x : Int) (i : Int)
       simp only [butlast_counter_succ, invs, maps, occurs]
       rw [ih]
       grind
-
--- the values of the iterations exceed the iterations
--- (from simple_array_index_value_2)
-theorem above_iterations_def (n : Nat) (ts : List Int) (hts : length ts = n) :
-  invs (List.zip (butlast (counter 0 1 n)) ts) (fun ⟨k, t⟩ => k < t)
-    ↔ above_iterations n ts :=
-  by
-    rw [above_iterations_forall]
-    refine (invs_zip_counter 0 n ts hts (fun k t => k < t)).trans ?_
-    simp [integer_cast]
 
 -- a choice of a loop whose values are all determined by the iteration constraint is a constant list
 theorem consts_choice {α : Type} [Inhabited α] (n : Nat) (xs : List α)
@@ -1376,13 +1336,7 @@ theorem earlier_agree_prefix (n : Nat) (j : Nat) (xs : List Int)
   by
     intro ⟨h, hj⟩
     simp only [integer_cast] at hj
-    induction n with
-    | zero => omega
-    | succ m ih =>
-      simp only [agree_prefix] at h
-      by_cases e : j = m
-      · subst e; exact h.2
-      · exact ih h.1 (by omega)
+    exact (agree_prefix_forall n xs ys).mp h j (by omega)
 
 -- which is instantiated at the positions j in that range
 -- (from standard_find_ground-1)
@@ -2461,19 +2415,11 @@ theorem current_trace_bounded : Stmt.current_trace_bounded := by
 
 -- which is instantiated at the positions j in the range
 -- (from simple_array_index_value_2)
-theorem earlier_above_iterations (n : Nat) (j : Nat) (ts : List Int) :
-  above_iterations n ts ∧ integer j < integer n
-    → integer j < earlier j ts :=
-  by
-    intro ⟨h, hj⟩
-    simp only [integer_cast] at hj
-    induction n with
-    | zero => omega
-    | succ m ih =>
-      simp only [above_iterations] at h
-      by_cases e : j = m
-      · subst e; simpa [integer_cast] using h.2
-      · exact ih h.1 (by omega)
+theorem earlier_above_iterations : Stmt.earlier_above_iterations := by
+  intro n j ts n1 hts hn ⟨h, hj⟩
+  simp only [integer_cast] at hj ⊢
+  have := (above_iterations_forall n ts (by rw [← hn]; exact hts)).mp h j (by omega)
+  simpa [integer_cast] using this
 
 -- arithmetic, in the normal form of the simplifier
 

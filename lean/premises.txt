@@ -19,3 +19,4 @@ prefix_counter: integer k ≤ integer n -- the prefixes of a counter are cut at 
 
 # lengths that lean.Printer.lengths does not see, since the list is no dependency of a combinator
 earlier_not_occurs_prefix: (hxs : length xs = n) -- xs is a list of the loop of n iterations
+earlier_above_iterations: (hn : n1 = n) -- ts is a list of the loop of n iterations, the dependency of the fold above_iterations

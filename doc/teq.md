@@ -216,15 +216,13 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   and lemmas about them, which are `{:rw}` (rewrite rules of `-prove`) or `{:fw}` (forward lemmas) and
   free, without a body (assumed by the solvers without proof). A function
   that is a trace or a map is a fold (`{:fold}`, below) rather than a
-  declaration with a lemma `<name>_def` (Oct 23, 2026: `mods`). A `_def`
-  lemma remains where the function cannot be its own fold: `counter_def`
-  (the counter is the iteration of its own definition), `consts_def` (over a
-  counter of any start and step, which a fold, whose variables are its
-  formals, does not abstract), and the definitions of the predicates that
-  abstract iteration constraints, `agree_prefix_def` and
-  `above_iterations_def` (recursive definitions over the positions, which the
-  Lean proofs use; since they lost their further dependency `hs` on Oct 23,
-  2026, they could become folds). A lemma that rewrites into a function without defining it is
+  declaration with a lemma `<name>_def` (Oct 23, 2026: `mods`, and the
+  predicates that abstract iteration constraints, `agree_prefix` and
+  `above_iterations`, folds of their constraints). A `_def` lemma remains
+  where the function cannot be its own fold: `counter_def` (the counter is the
+  iteration of its own definition) and `consts_def` (over a counter of any
+  start and step, which a fold, whose variables are its formals, does not
+  abstract). A lemma that rewrites into a function without defining it is
   named after what it states, e.g. `counts_true` (a trace of booleans),
   `stores_cases`, `sorted_adjacent`, `not_occurs_prefix`; those about an
   accessor of a function after both, e.g. `current_sums` or `earlier_prefix`,
@@ -281,7 +279,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
     generalized to a map, and hides it from the lemmas on traces
     (`diamond_1-1`); the predicate and its consequences are in `aggregation.dfy`, the
     definition is local (`linear-inequality-inv-*`), unlike definitions with
-    a specific body such as `agree_prefix_def`;
+    a specific body such as the fold `agree_prefix`;
   - `!(y % 2 == 0) <==> y % 2 == 1` again, which opened
     `simple_array_index_value_1-1`;
   - lemmas on maps of a counter with a further dependency that the body does
@@ -332,7 +330,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   the constant sequence `xs == ⌊consts(n, c)⌋`, whose sum is `sum_consts`,
   without the premise on the length of the list that the read `earlier(natural(k), js)`
   needed in Lean; definition lemmas of this form remain in search.dfy
-  (`agree_prefix_def`, `not_occurs_prefix`).
+  (the folds `agree_prefix`, `above_iterations`, and `not_occurs_prefix`).
 - Lemmas written for a program (the summaries of inner loops, the inductions,
   the chains of [examples/dafny/algorithms](../examples/dafny/algorithms),
   whose NOTES.md records the findings) follow patterns that the matcher

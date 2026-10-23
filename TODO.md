@@ -59,7 +59,6 @@ with Cuvée (the user's instruction, Oct 14).
 
 - The index premises of `lean/premises.txt` as `requires` of the lemmas, if `-prove` decides them (only
   documented, decision of the user, Oct 13).
-- A test in `mill -i test` that compares a generated `Database.lean` with the committed one.
 - `cut` and the predicates of sorted.dfy fix one meaning of functions the engines use through their lemmas only.
 - A Lean mode of the printer instead of the text manipulation of `generate.py`; the comments of `lean.Printer`
   refer to the former `resources/cuvee/teq.lean`.
