@@ -58,11 +58,19 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
 - `butlast_counter_zero` (`⌊counter(i, c, zero)⌋ == nil`, added for prefix_sums.dfy) dropped again: it turned the
   counter of an inner loop without iterations into `nil`, on which no rule acts, where the lemmas on counters had
   closed the goal (nested3-2, bugs.md, Fixed).
-- `integer_natural_facts` in teq.dfy, a forward lemma `0 <= integer(n) && natural(integer(n)) == n` at every
-  `integer(n)`, beside `integer_eq`, which stays for the bodies of iteration constraints (forward lemmas do not reach
-  under binders; nested_sum needs it): of three variants (`integer_eq` unconditional; the forward lemma instead of it;
-  both), both kept everything on reverse, nested_sum, while_infinite_loop_4 (25 s to 13 s), const_1-1, in-de20,
-  afnp2014 (20 s to 26 s) and cohencu-ll_valuebound5; the sample of 30 tasks of `integer_eq` is still to run.
+- `integer_natural_facts`, a forward lemma `0 <= integer(n) && natural(integer(n)) == n` at every `integer(n)` beside
+  `integer_eq` (bcbef0d3), was dropped again: it kept everything on reverse, nested_sum, while_infinite_loop_4 (25 s
+  to 13 s), const_1-1, in-de20 and cohencu-ll_valuebound5, but cost time wherever `integer(n)` occurs, since forward
+  instances are simplified again at every fact; MonoCera lost 8 tasks at 60 s (s1lif and condn time out at 120 s with
+  it, prove in 14 s and 21 s without; bugs.md, Fixed). Of the other variants, the forward lemma instead of `integer_eq`
+  loses nested_sum (`integer_eq` works in the bodies of iteration constraints, which forward lemmas do not reach) and
+  the unconditional `integer_eq` changed nothing measured; `integer_eq` stays as it is.
+- `agree_prefix` and `above_iterations` are folds of their iteration constraints (`agree_prefix_def`,
+  `above_iterations_def` gone); in Lean, their characterizations are proved from the definitions by `invs`, and
+  `earlier_above_iterations` has the length premise of `ts` in lean/premises.txt, since the printer does not see that
+  `ts` is a dependency through the fold. The nine tasks of the two former lemmas answer as before.
+- `mill -i test` checks that the generated Lean statements are those of the current modules
+  (test/src/cuvee/test/Lean.scala, `generate.py --check --classpath` of the tests).
 - Each lemma that at most three proved tasks use names them on its `(from ...)` line, each unused lemma says why it
   stays (doc/teq.md, conventions); stale remarks fixed (rewnifrev is proved by `select_current_trace_ahead_down`,
   `integer_zero` is in teq.dfy).
@@ -89,8 +97,7 @@ Done on Oct 23, 2026 (above): the duplicated counters, the counts of a threshold
 - `sum_indicator_false` stays: it turns a sum into a count, which `count_false_true` does not do.
 - **Folds that are not possible.** `counter_def` (the counter is the dependency of its own trace; a fold body would
   mention `counter`), `consts_def` (over a counter of any start and step, while a fold abstracts its formals only;
-  a fold over `⌊counter(0, 1, n)⌋` would lose the general form). `agree_prefix_def` and `above_iterations_def` could
-  be folds since they lost `hs` (open: their recursive definitions are what the Lean proofs use).
+  a fold over `⌊counter(0, 1, n)⌋` would lose the general form).
 
 ## The lemmas of examples/dafny/algorithms
 
@@ -149,8 +156,7 @@ once the gap is closed (Scala changes, not done here).
 - The normal form of naturals and integers: `integer_eq` loses `0 <= x` and moves the equation out of the
   arithmetic (TODO.md, reverse.dfy); options: the unconditional form, a forward lemma that keeps the equation, or a
   bridge from the classes to the arithmetic (Scala).
-- Lean (TODO.md, Proofs of teq.dfy in Lean): the index premises as `requires` where `-prove` decides them; a Scala
-  test that compares the generated Database.lean.
+- Lean (TODO.md, Proofs of teq.dfy in Lean): the index premises as `requires` where `-prove` decides them.
 - The benchmark definitions include all modules, the options in fm-tools do not (TODO.md).
 - The matcher items of TODO.md (Simplifier and rewriting) were found under `-simplify` and are to be rechecked under
   `-prove`: products modulo commutativity (`div_quotient_remainder`, dropped), conjunctions in order,

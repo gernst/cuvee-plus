@@ -18,7 +18,8 @@ library `TEQ` of the Lake project at the root of the repository (`lakefile.toml`
 - `open.txt`: the lemmas without a proof, which the generator removes from the modules before printing, each with
   the reason.
 
-Check with `scripts/lean/check.sh`, which fails if the generated files are not those of the current modules
+`mill -i test` checks that the generated files are those of the current modules (test/src/cuvee/test/Lean.scala, by
+`generate.py --check` with the classpath of the tests). Check with `scripts/lean/check.sh`, which fails if the generated files are not those of the current modules
 (`--regenerate` regenerates them), if the build fails, or on a `sorry`. Regenerate with `scripts/lean/generate.py`,
 which prints the modules with a copy of `cuvee.jar`. A changed lemma then fails in `Check.lean` until its theorem in
 `Proofs.lean` states and proves the new statement. Details in `doc/teq.md`.

@@ -140,10 +140,6 @@ def Stmt.integer_eq : Prop :=
   ∀ (n : Nat) (x : Int),
     0 ≤ x → (integer n = x ↔ n = natural x)
 
-def Stmt.integer_natural_facts : Prop :=
-  ∀ (n : Nat),
-    0 ≤ integer n ∧ natural (integer n) = n
-
 def Stmt.maps_identity : Prop :=
   ∀ {α : Type} [Inhabited α] (xs : List α) (n : Nat) (hxs : length xs = n),
     maps xs (fun x => x) = xs
@@ -597,31 +593,17 @@ def Stmt.triangle_even_below : Prop :=
 
 noncomputable def agree_prefix (n : Nat) (xs : List Int)
                                (ys : List Int) : Prop :=
-  match n with
-  | .zero => True
-  | .succ m => agree_prefix m xs ys ∧ earlier m xs = earlier m ys
-
-noncomputable def above_iterations (n : Nat) (ts : List Int) : Prop :=
-  match n with
-  | .zero => True
-  | .succ m => above_iterations m ts ∧ integer m < earlier m ts
-
-def Stmt.agree_prefix_def : Prop :=
-  ∀ (n : Nat) (xs : List Int) (ys : List Int) (hxs : length xs = n) (hys : length ys = n),
-    invs
-      (butlast (counter 0 1 n))
-      (fun k => earlier (natural k) xs = earlier (natural k) ys)
-      ↔ agree_prefix n xs ys
+  invs
+    (butlast (counter 0 1 n))
+    (fun k => earlier (natural k) xs = earlier (natural k) ys)
 
 def Stmt.not_occurs_prefix : Prop :=
   ∀ (n : Nat) (e : Int) (xs : List Int) (hxs : length xs = n),
     invs (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs ≠ e)
       ↔ ¬occurs e («prefix» n xs)
 
-def Stmt.above_iterations_def : Prop :=
-  ∀ (n : Nat) (ts : List Int) (hts : length ts = n),
-    invs (List.zip (butlast (counter 0 1 n)) ts) (fun ⟨k, t⟩ => k < t)
-      ↔ above_iterations n ts
+noncomputable def above_iterations (n : Nat) (ts : List Int) : Prop :=
+  invs (List.zip (butlast (counter 0 1 n)) ts) (fun ⟨k, t⟩ => k < t)
 
 def Stmt.earlier_agree_prefix : Prop :=
   ∀ (n : Nat) (j : Nat) (xs : List Int) (ys : List Int),
@@ -640,7 +622,7 @@ def Stmt.store_occurs_selects : Prop :=
         ∨ integer n ≤ j
 
 def Stmt.earlier_above_iterations : Prop :=
-  ∀ (n : Nat) (j : Nat) (ts : List Int),
+  ∀ (n : Nat) (j : Nat) (ts : List Int) (n1 : Nat) (hts : length ts = n1) (hn : n1 = n),
     above_iterations n ts ∧ integer j < integer n → integer j < earlier j ts
 
 def Stmt.not_occurs_selects : Prop :=

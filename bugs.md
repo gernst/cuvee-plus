@@ -345,6 +345,14 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
 
 ## Fixed
 
+- **MonoCera tests slower since 0.50.6** (Oct 23, 2026, 60 s runs on the AMD Ryzen 7 PRO 5750G against 0.50.4):
+  `xml/cuvee.xml` lost `sum/conda`, `s1lif` to `s5lif` (26 to 31 s with 0.50.4) and `condn` (33 to 35 s, forall and
+  max), 87 to 79 of 125 proved; `xml/cuvee-fallback.xml` the same and `mbpr3`, `mbpr4`, 99 to 89; no wrong results.
+  Cause: the forward lemma `integer_natural_facts` of teq.dfy (`0 <= integer(n) && natural(integer(n)) == n` wherever
+  `integer(n)` occurs, added in bcbef0d3), whose instances are simplified again at every fact (see "Forward instances
+  use up the steps of a goal"): with it, `s1lif` and `condn` time out at 120 s locally, without it they prove in 14 s
+  and 21 s. Fixed by dropping the lemma again (`integer_eq` alone, as before); `Eval` and `Simplify.eq_` stay.
+
 - **A cycle in `-prove` with `teq:unsigned` since 0.50** (Oct 23, 2026): `loop-acceleration/multivar_1-2` and
   `loops-crafted-1/nested3-2` of SV-COMP Loops (both expected false) timed out, while 0.49.4 refuted them in 25 s and
   44 s. Two causes, bisected locally: (1) 1da27f83 (the range `0 <= t mod k <= |k| - 1` in the simplex) made the
