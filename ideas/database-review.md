@@ -52,10 +52,17 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
   and without `hs`. It stays where the body reads it through a higher-order variable (table below). The Lean proofs
   are direct over the counter.
 - New in the database, proved in Lean: `indexof_counter_step` (the position in a counter with a step, beside
-  `occurs_counter_step`), `butlast_counter_zero` and `selects_nil` (with `sum_empty`, the sum over no positions of
-  prefix_sums.dfy), `perm_steps_nat` and `perm_steps_three` (the copies of bubble_sort, the insertion sorts and
+  `occurs_counter_step`), `selects_nil`, `perm_steps_nat` and `perm_steps_three` (the copies of bubble_sort, the insertion sorts and
   selection_sort; one lemma per number and type of dependencies, see the table below). argmax.dfy iterates over one
   counter.
+- `butlast_counter_zero` (`⌊counter(i, c, zero)⌋ == nil`, added for prefix_sums.dfy) dropped again: it turned the
+  counter of an inner loop without iterations into `nil`, on which no rule acts, where the lemmas on counters had
+  closed the goal (nested3-2, bugs.md, Fixed).
+- `integer_natural_facts` in teq.dfy, a forward lemma `0 <= integer(n) && natural(integer(n)) == n` at every
+  `integer(n)`, beside `integer_eq`, which stays for the bodies of iteration constraints (forward lemmas do not reach
+  under binders; nested_sum needs it): of three variants (`integer_eq` unconditional; the forward lemma instead of it;
+  both), both kept everything on reverse, nested_sum, while_infinite_loop_4 (25 s to 13 s), const_1-1, in-de20,
+  afnp2014 (20 s to 26 s) and cohencu-ll_valuebound5; the sample of 30 tasks of `integer_eq` is still to run.
 - Each lemma that at most three proved tasks use names them on its `(from ...)` line, each unused lemma says why it
   stays (doc/teq.md, conventions); stale remarks fixed (rewnifrev is proved by `select_current_trace_ahead_down`,
   `integer_zero` is in teq.dfy).

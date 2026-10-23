@@ -140,6 +140,10 @@ def Stmt.integer_eq : Prop :=
   ∀ (n : Nat) (x : Int),
     0 ≤ x → (integer n = x ↔ n = natural x)
 
+def Stmt.integer_natural_facts : Prop :=
+  ∀ (n : Nat),
+    0 ≤ integer n ∧ natural (integer n) = n
+
 def Stmt.maps_identity : Prop :=
   ∀ {α : Type} [Inhabited α] (xs : List α) (n : Nat) (hxs : length xs = n),
     maps xs (fun x => x) = xs
@@ -226,10 +230,6 @@ def Stmt.prefix_maps_counter : Prop :=
 def Stmt.butlast_counter_nil : Prop :=
   ∀ (i : Int) (c : Int) (n : Nat),
     butlast (counter i c n) = nil ↔ n = zero
-
-def Stmt.butlast_counter_zero : Prop :=
-  ∀ (i : Int) (c : Int),
-    butlast (counter i c zero) = nil
 
 def Stmt.current_consts : Prop :=
   ∀ {α : Type} [Inhabited α] (n : Nat) (x : α),

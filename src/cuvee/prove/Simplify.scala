@@ -575,6 +575,14 @@ object Simplify:
       case Some(lit) => lit
       case None      => ctx.classes.canonical(x)
 
+  // the value of a natural constant, zero or natural(c) of an integer literal c, whose value is max(c, 0)
+  object Natural:
+    def unapply(expr: Expr): Option[BigInt] =
+      expr match
+        case Nats.zero()                     => Some(BigInt(0))
+        case Nats.natural(Lit(c: BigInt, _)) => Some(c max 0)
+        case _                               => None
+
   def eq_(config: Config, state: State, ctx: Context, left: Expr, right: Expr): Expr =
     (left, right) match
       case _ if left == right =>
@@ -597,6 +605,11 @@ object Simplify:
         True
 
       case (Lit(a, _), Lit(b, _)) =>
+        if a == b then True else False
+
+      // natural constants, equal iff their values are, e.g. natural(4294967296) == zero of an instance of the
+      // counterexample search, which the classes would take as a fact without noticing its contradiction
+      case (Natural(a), Natural(b)) =>
         if a == b then True else False
 
       case (True, False) | (False, True) =>

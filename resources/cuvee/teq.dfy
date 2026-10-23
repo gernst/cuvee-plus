@@ -167,6 +167,14 @@ lemma {:rw} {:teq} integer_eq(n: Nat, x: int)
   requires 0 <= x
   ensures (integer(n) == x) <==> (n == natural(x))
 
+// the value of a number of iterations is nonnegative, and the number is that of its value, as facts wherever integer(n)
+// occurs: with an equation integer(n) == x among the facts, the classes relate n and natural(x) by congruence, while
+// the equation stays in the arithmetic, which integer_eq takes out of it where it applies; integer_eq stays for the
+// bodies of iteration constraints, which forward lemmas do not reach (Oct 23, 2026: nested_sum needs it, the facts
+// halve the time of the refutation of while_infinite_loop_4)
+lemma {:fw} {:teq} integer_natural_facts(n: Nat)
+  ensures 0 <= integer(n) && natural(integer(n)) == n
+
 // lists
 
 lemma {:rw} {:teq} maps_identity<a>(xs: List<a>)
@@ -253,12 +261,6 @@ lemma {:rw} {:teq} prefix_maps_counter(k: Nat, i: int, c: int, n: Nat, ys: List<
 
 lemma {:rw} {:teq} butlast_counter_nil(i: int, c: int, n: Nat)
   ensures (⌊counter(i, c, n)⌋ == nil) <==> (n == zero)
-
-// a counter of no steps has no values, e.g. a sum over no positions
-// (from examples/dafny/algorithms/prefix_sums.dfy; unused on SV-COMP)
-lemma {:rw} {:teq} butlast_counter_zero(i: int, c: int)
-  ensures ⌊counter(i, c, zero)⌋
-    == nil
 
 lemma {:rw} {:teq} current_consts<a>(n: Nat, x: a)
   ensures current(consts(n, x))
