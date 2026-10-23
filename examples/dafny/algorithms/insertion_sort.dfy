@@ -11,7 +11,7 @@
 // and j - 1, which -teq states as p - kk over the inner counter kk (with i == p + 1)
 function {:fold} insert_pass(b: array<int, int>, i: int, p: int, nn: Nat): Trace<array<int, int>>
 {
-  trace(b, for ⌊counter(0, 1, nn)⌋, ⌊counter(i, -1, nn)⌋ do x, kk, j :: x[j := x[-kk + p]][-kk + p := x[j]])
+  trace(b, for ⌊counter(0, 1, nn)⌋, ⌊counter(i, -1, nn)⌋ do x, kk, j :: swap(x, j, -kk + p))
 }
 
 lemma {:rw} perm_insert_pass(b: array<int, int>, c: array<int, int>, i: int, p: int, nn: Nat)

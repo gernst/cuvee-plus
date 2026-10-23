@@ -112,6 +112,7 @@ example : Stmt.partitioned_empty := @partitioned_empty
 example : Stmt.partitioned_whole := @partitioned_whole
 example : Stmt.sorted_adjacent := @sorted_adjacent
 example : Stmt.perm_refl := @perm_refl
+example : Stmt.select_swap := @select_swap
 example : Stmt.perm_swap := @perm_swap
 example : Stmt.perm_swaps_one := @perm_swaps_one
 example : Stmt.perm_swaps := @perm_swaps

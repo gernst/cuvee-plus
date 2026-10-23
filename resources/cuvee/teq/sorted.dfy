@@ -1,14 +1,14 @@
-// sorting: the abstract predicates sorted, perm (permutation as a total map on the indices, so that a swap at any
-// two positions preserves it) and partitioned, with the generic lemmas on traces of swaps and of steps, the inductions
-// for sorting by a growing sorted prefix, with the invariant as a quantified side condition decided by step lemmas on
-// atoms, and the partition points of a sorted array, which turn its reads into comparisons of indices; an optional
-// module over teq.dfy alone (-include teq:sorted; the cuts of its comparisons are those of the bisection of
-// teq:search), migrated on Oct 13, 2026 from
-// sorting.dfy of the per-variable form, with the partition points of examples/dafny/algorithms/bsearch.dfy; the
-// algorithms' own knowledge (summaries of inner loops, step lemmas) stays with the examples; the predicates and the
-// partition points are defined here (the proofs of the lemmas in lean/ use the definitions), but the engines use
-// the lemmas only, the definitions are no rules; no task of SV-COMP uses them (the results since Oct 13, 2026), they
-// serve the examples of examples/dafny/algorithms
+// sorting: the abstract predicates sorted, perm (permutation as a total map on the indices, so that a swap at any two
+// positions preserves it) and partitioned, the swap of two elements as a fold of its two stores (Oct 23, 2026), with
+// the generic lemmas on traces of swaps and of steps, the inductions for sorting by a growing sorted prefix, with the
+// invariant as a quantified side condition decided by step lemmas on atoms, and the partition points of a sorted array,
+// which turn its reads into comparisons of indices; an optional module over teq.dfy alone (-include teq:sorted; the
+// cuts of its comparisons are those of the bisection of teq:search), migrated on Oct 13, 2026 from sorting.dfy of the
+// per-variable form, with the partition points of examples/dafny/algorithms/bsearch.dfy; the algorithms' own knowledge
+// (summaries of inner loops, step lemmas) stays with the examples; the predicates and the partition points are defined
+// here (the proofs of the lemmas in lean/ use the definitions), but the engines use the lemmas only, the definitions
+// are no rules; no task of SV-COMP uses them (the results since Oct 13, 2026), they serve the examples of
+// examples/dafny/algorithms
 
 // a[lo..hi) is nondecreasing; the bounds are integers, as the indices of the programs, like those of cut
 function {:teq} sorted(a: array<int, int>, lo: int, hi: int): bool
@@ -54,21 +54,33 @@ lemma {:rw} {:teq} sorted_adjacent(a: array<int, int>, n: Nat)
 lemma {:rw} {:teq} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
 
+// the swap of the elements at p and q, folded from its two stores, such that the lemmas on swaps name the positions
+// once each
+function {:teq} {:fold} swap(a: array<int, int>, p: int, q: int): array<int, int>
+{
+  a[p := a[q]][q := a[p]]
+}
+
+// the elements of a swap, since the folded term hides the stores from the reads of arrays
+lemma {:rw} {:teq} select_swap(a: array<int, int>, p: int, q: int, j: int)
+  ensures swap(a, p, q)[j]
+    == if j == q then a[p] else if j == p then a[q] else a[j]
+
 // a swap preserves the permutation
 lemma {:rw} {:teq} perm_swap(a: array<int, int>, b: array<int, int>, p: int, q: int)
-  ensures perm(a[p := a[q]][q := a[p]], b) <==> perm(a, b)
+  ensures perm(swap(a, p, q), b) <==> perm(a, b)
 
 // a trace of swaps at positions that depend on the state and the iteration preserves the permutation, a higher-order
 // pattern; for one and for two dependencies
 // (from perm, selection_sort)
 lemma {:rw} {:teq} perm_swaps_one(a: array<int, int>, b: array<int, int>, ks: List<int>,
                                   P: (array<int, int>, int) -> int, Q: (array<int, int>, int) -> int)
-  ensures perm(current(trace(a, for ks do x, k :: x[P(x, k) := x[Q(x, k)]][Q(x, k) := x[P(x, k)]])), b)
+  ensures perm(current(trace(a, for ks do x, k :: swap(x, P(x, k), Q(x, k)))), b)
     <==> perm(a, b)
 
 lemma {:rw} {:teq} perm_swaps(a: array<int, int>, b: array<int, int>, ks: List<int>, hs: List<int>,
                               P: (array<int, int>, int, int) -> int, Q: (array<int, int>, int, int) -> int)
-  ensures perm(current(trace(a, for ks, hs do x, k, h :: x[P(x, k, h) := x[Q(x, k, h)]][Q(x, k, h) := x[P(x, k, h)]])), b)
+  ensures perm(current(trace(a, for ks, hs do x, k, h :: swap(x, P(x, k, h), Q(x, k, h)))), b)
     <==> perm(a, b)
 
 // a trace of steps that preserve the permutation, whose quantified side condition the simplifier decides once F is

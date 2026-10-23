@@ -733,42 +733,26 @@ def Stmt.perm_refl : Prop :=
   ∀ (a : Int → Int),
     perm a a ↔ True
 
+noncomputable def swap (a : Int → Int) (p : Int) (q : Int) : Int → Int :=
+  fun j => if j = q then a p else (fun j => if j = p then a q else a j) j
+
+def Stmt.select_swap : Prop :=
+  ∀ (a : Int → Int) (p : Int) (q : Int) (j : Int),
+    swap a p q j = (if j = q then a p else if j = p then a q else a j)
+
 def Stmt.perm_swap : Prop :=
   ∀ (a : Int → Int) (b : Int → Int) (p : Int) (q : Int),
-    perm
-      (fun j => if j = q then a p else (fun j => if j = p then a q else a j) j)
-      b
-      ↔ perm a b
+    perm (swap a p q) b ↔ perm a b
 
 def Stmt.perm_swaps_one : Prop :=
   ∀ (a : Int → Int) (b : Int → Int) (ks : List Int) (P : (Int → Int) → Int → Int) (Q : (Int → Int) → Int → Int) (n : Nat) (hks : length ks = n),
-    perm
-      (current
-         (trace
-            a
-            ks
-            (fun x k =>
-               fun j =>
-                 if j = Q x k then
-                   x (P x k)
-                 else
-                   (fun j => if j = P x k then x (Q x k) else x j) j)))
-      b
-      ↔ perm a b
+    perm (current (trace a ks (fun x k => swap x (P x k) (Q x k)))) b ↔ perm a b
 
 def Stmt.perm_swaps : Prop :=
   ∀ (a : Int → Int) (b : Int → Int) (ks : List Int) (hs : List Int) (P : (Int → Int) → Int → Int → Int) (Q : (Int → Int) → Int → Int → Int) (n : Nat) (hks : length ks = n) (hhs : length hs = n),
     perm
       (current
-         (trace
-            a
-            (List.zip ks hs)
-            (fun x ⟨k, h⟩ =>
-               fun j =>
-                 if j = Q x k h then
-                   x (P x k h)
-                 else
-                   (fun j => if j = P x k h then x (Q x k h) else x j) j)))
+         (trace a (List.zip ks hs) (fun x ⟨k, h⟩ => swap x (P x k h) (Q x k h))))
       b
       ↔ perm a b
 

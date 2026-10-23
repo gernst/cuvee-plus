@@ -20,7 +20,7 @@ lemma {:rw} sorted_gnome(a: array<int, int>, ks: List<int>, n: int, x: int, Sv: 
                    case i == 0 || b[i - 1] <= b[i] => i + 1
                    case !(i == 0 || b[i - 1] <= b[i]) => i - 1,
                    case i == 0 || b[i - 1] <= b[i] => b
-                   case !(i == 0 || b[i - 1] <= b[i]) => b[i := b[i - 1]][i - 1 := b[i]])
+                   case !(i == 0 || b[i - 1] <= b[i]) => swap(b, i, i - 1))
   requires x == current(Sv).0
   requires 0 <= n && n <= x
   ensures sorted(current(Sv).1, 0, n) <==> true
@@ -30,7 +30,7 @@ lemma {:rw} sorted_gnome(a: array<int, int>, ks: List<int>, n: int, x: int, Sv: 
 lemma {:rw} perm_gnome(a: array<int, int>, c: array<int, int>, ks: List<int>, is: List<int>,
                        G: (int, array<int, int>) -> bool, P: int -> int, Q: int -> int)
   ensures perm(current(trace(a, for ks, is do b, k, i ::
-                 case G(i, b) => b case !G(i, b) => b[Q(i) := b[P(i)]][P(i) := b[Q(i)]])), c)
+                 case G(i, b) => b case !G(i, b) => swap(b, Q(i), P(i)))), c)
     <==> perm(a, c)
 
 method main(a: array<int, int>, n: int) returns (b: array<int, int>)

@@ -16,7 +16,7 @@
 // one pass of the inner loop: the swaps of the positions j and q, counters down from i and p
 function {:fold} insert_pass(b: array<int, int>, i: int, p: int, nn: Nat): Trace<array<int, int>>
 {
-  trace(b, for ⌊counter(0, 1, nn)⌋, ⌊counter(i, -1, nn)⌋, ⌊counter(p, -1, nn)⌋ do x, kk, j, q :: x[j := x[q]][q := x[j]])
+  trace(b, for ⌊counter(0, 1, nn)⌋, ⌊counter(i, -1, nn)⌋, ⌊counter(p, -1, nn)⌋ do x, kk, j, q :: swap(x, j, q))
 }
 
 lemma {:rw} perm_insert_pass(b: array<int, int>, c: array<int, int>, i: int, p: int, nn: Nat)
