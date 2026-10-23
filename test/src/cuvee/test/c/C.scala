@@ -13,7 +13,9 @@ object Roundtrip extends TestSuite:
       Examples.roundtrip(file, Nil, rounds = 1)
 
 // all examples with -chc whose second line states whether all assertions hold,
-// except for division by variables, for which z3 answers unknown
+// except for division by variables, for which z3 answers unknown; z3 answers each within 250 ms when the machine is
+// idle, the timeout of 5 s instead of the default of 1 s is for runs under load (for_break_continue.c answered unknown
+// twice with a load average around 20 on 4 cores, Oct 23, 2026)
 object Horn extends TestSuite:
   val skip = Set("div.c")
 
@@ -22,7 +24,7 @@ object Horn extends TestSuite:
 
   val tests =
     Examples.tests(Examples.find(os.sub / "c", "c").filter(stated).filterNot(file => skip.contains(file.last))): file =>
-      val results = Examples.answers("-chc", "-prove", "-z3", file.toString)
+      val results = Examples.answers("-chc", "-prove", "-z3", "-timeout", "5000", file.toString)
       Examples.status(results) ==> (if Examples.holds(file) then Status.Correct else Status.Incorrect)
 
 // the output is C: what is not C is printed in SMT-LIB as SMT_LIB(...), e.g. assertions and quantifiers,
