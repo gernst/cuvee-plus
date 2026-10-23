@@ -60,12 +60,6 @@ lemma {:rw} sorted_selection_steps(a: array<int, int>, n: int, m: Nat, ns: List<
 lemma {:rw} perm_swap_any(x: array<int, int>, p: int, q: int)
   ensures perm(swap(x, p, q), x) <==> true
 
-// a trace of steps that preserve the permutation, which also read the choice and the loop counter
-lemma {:rw} perm_steps_choice(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>, is: List<int>,
-                              F: (array<int, int>, int, Nat) -> array<int, int>)
-  requires forall b: array<int, int>, i: int, nn: Nat :: perm(F(b, i, nn), b)
-  ensures perm(current(trace(a, for ks, ns, is do b, k, nn, i :: F(b, i, nn))), c) <==> perm(a, c)
-
 method main(a: array<int, int>, n: int) returns (b: array<int, int>)
   requires 0 <= n
   ensures sorted(b, 0, n)

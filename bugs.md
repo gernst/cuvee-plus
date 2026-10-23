@@ -116,7 +116,7 @@ the contexts that `-teq` builds, as far as the reasons go.
   `-teq` checks functions out of the context of their calls and answers `incorrect` for `sanfoundry_24-1` and
   `verifythis/lcp` (wrong false). Fixed in the code; the archive is wrong until a new version is published (see
   the SV-COMP tool entry in TODO.md).
-- **Vacuous proofs of the examples** (examples/dafny/algorithms/NOTES.md, finding 13; `pending/first_duplicate`):
+- **Vacuous proofs of the examples** (the former examples/dafny/algorithms/NOTES.md (doc/algorithms.md, History), finding 13; `pending/first_duplicate`):
   the entry below. Neither case reproduces with 0.46.7 (Oct 13, 2026): `fd2_d3.dfy` prepended to
   `program_wrong.dfy` and `program2_wrong.dfy` (with `-include` of `aggregation`, `arrays`, `search`,
   `counters`, which the migration requires) leaves a goal under `-teq -simplify` and `-teq -prove`, and `vac.dfy`
@@ -294,11 +294,11 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   definition `Lo == trace(...)` of the trace variable in the context binds the higher-order guard but leaves the
   dependency variables `nn` and `hs` unbound: a rule then fires with "variables of a rule not instantiated by its
   match", or its identifying equations `nn2 == nn` stay open and are never matched (the probes of lower_bound.dfy,
-  NOTES.md finding 32).
+  the former NOTES.md, finding 32).
 - A lemma of an injected module (`-include teq:nested`) does not fire on a goal where the identical lemma, included
   as a user file or written in the input, does: `invs_counter_consts` of nested.dfy on
   [row_sums.dfy](examples/dafny/algorithms/row_sums.dfy) (`-rules` does not list it; it fires on transpose.dfy, and
-  the two further chain lemmas stay in row_sums.dfy for this reason, NOTES.md finding 34). Not understood: the rules
+  the two further chain lemmas stay in row_sums.dfy for this reason, the former NOTES.md, finding 34). Not understood: the rules
   differ by the attribute `{:teq}` and by their position among the rules.
 - The exit of a loop in the conclusion of a goal is a disjunction, `i < n && !r || r == !distincts(...)` for the exit
   `!(i < n && !r)`, which `-split` does not split, and the context of the second disjunct does not contain the literals

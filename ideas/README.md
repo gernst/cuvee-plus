@@ -31,7 +31,7 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 
-The findings of the algorithms under the former `-simplify` are numbered in
-[examples/dafny/algorithms/NOTES.md](../examples/dafny/algorithms/NOTES.md) and written up in
+The algorithms are described in [doc/algorithms.md](../doc/algorithms.md); their findings under the former
+`-simplify` were numbered in the former examples/dafny/algorithms/NOTES.md (its history section) and written up in
 [doc/array-algorithms](../doc/array-algorithms) (the state of Oct 11, 2026); the observations on the code are in
 [TODO.md](../TODO.md), the bugs in [bugs.md](../bugs.md).

@@ -333,7 +333,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   (the folds `agree_prefix`, `above_iterations`, and `not_occurs_prefix`).
 - Lemmas written for a program (the summaries of inner loops, the inductions,
   the chains of [examples/dafny/algorithms](../examples/dafny/algorithms),
-  whose NOTES.md records the findings) follow patterns that the matcher
+  [algorithms.md](algorithms.md)) follow patterns that the matcher
   imposes:
   - **Variables named apart.** The variables of a lemma are named apart from
     those of the goal, i.e. of the method and its context: a variable of a

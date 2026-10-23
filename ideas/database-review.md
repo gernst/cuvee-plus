@@ -71,6 +71,11 @@ counted by `-rules` as in [scripts/rules.py](../scripts/rules.py)); MonoCera and
   `ts` is a dependency through the fold. The nine tasks of the two former lemmas answer as before.
 - `mill -i test` checks that the generated Lean statements are those of the current modules
   (test/src/cuvee/test/Lean.scala, `generate.py --check --classpath` of the tests).
+- The local copies of `perm_steps` are gone from bubble_sort, insertion_sort, insertion_sort2 and selection_sort,
+  which use `perm_steps_nat` and `perm_steps_three` of `teq:sorted` (all four correct, 22 to 33 s).
+- examples/dafny/algorithms/NOTES.md is replaced by [doc/algorithms.md](../doc/algorithms.md): the status of all 30
+  examples from a run of 0.50.8, how they are proved, the principles for their lemmas under `-prove`, and a history
+  section that points to the last version of NOTES.md for the numbered findings of Oct 9 to 16.
 - Each lemma that at most three proved tasks use names them on its `(from ...)` line, each unused lemma says why it
   stays (doc/teq.md, conventions); stale remarks fixed (rewnifrev is proved by `select_current_trace_ahead_down`,
   `integer_zero` is in teq.dfy).
@@ -119,8 +124,7 @@ Of the other local lemmas:
   which stays open for its existential postcondition); the fold `argmaxs` with its bounds (argmax.dfy, over one counter
   since Oct 23, 2026); `invs_pairs` of reverse.dfy as an affine bound
   `a k + b < m` of a counter; `perm_steps` with three dependencies or a natural one (`perm_steps_three`,
-  `perm_steps_choice`), which the database has for one and two integer dependencies (a polymorphic version is not
-  matched, TODO.md); `sum_selects_zero` (prefix_sums.dfy), better as `⌊counter(i, c, zero)⌋ == nil`. None of them
+  `perm_steps_choice`), now in the database as `perm_steps_nat` and `perm_steps_three` (Done above); `sum_selects_zero` (prefix_sums.dfy), better as `⌊counter(i, c, zero)⌋ == nil`. None of them
   occurs in the SV-COMP translations.
 - **Specific to their programs**, staying local: the folds and inductions of the sorting algorithms (`bubble_pass`,
   `insert_pass`, `shake`, `lomuto`, `threeway`, `bubbled`, ...), merge (`merged`), counting_sort (`rank_table`,

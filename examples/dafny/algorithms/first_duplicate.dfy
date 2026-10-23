@@ -46,7 +46,7 @@ method main(a: array<int, int>, n: int) returns (r: bool)
   requires 0 <= n
   // the postcondition as two implications: the exit !(i < n && !r) of the outer loop is then a literal in the context
   // of each (as the equivalence, the goal's conclusion is i < n && !r || r == !distincts(...), where the rule on
-  // distincts(...) sees neither n <= i nor r, NOTES.md)
+  // distincts(...) sees neither n <= i nor r, the former NOTES.md)
   ensures r ==> !distincts(selects(a, ⌊counter(0, 1, natural(n))⌋))
   ensures !r ==> distincts(selects(a, ⌊counter(0, 1, natural(n))⌋))
 {

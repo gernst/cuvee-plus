@@ -29,7 +29,8 @@ object Examples:
     if sys.env.contains("CUVEE_ALGORITHMS") then Nil else List(os.sub / "dafny" / "algorithms")
 
   // examples whose runs do not terminate, which are no tests (none at the moment; row_sums and transpose were, until
-  // their lemmas were restated, see examples/dafny/algorithms/NOTES.md, finding 19)
+  // their lemmas were restated, see the former
+  // examples/dafny/algorithms/NOTES.md, finding 19, doc/algorithms.md)
   val nonterminating = Set[String]()
 
   def terminating(file: os.Path) =

@@ -21,12 +21,6 @@ function {:fold} bubble_pass(b: array<int, int>, js: List<int>): Trace<array<int
 lemma {:rw} perm_bubble_pass(b: array<int, int>, c: array<int, int>, js: List<int>)
   ensures perm(current(bubble_pass(b, js)), c) <==> perm(b, c)
 
-// a trace of steps that preserve the permutation, which also read a choice ns (the numbers of inner iterations)
-lemma {:rw} perm_steps_choice(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>,
-                              F: (array<int, int>, int, Nat) -> array<int, int>)
-  requires forall b: array<int, int>, k: int, nn: Nat :: perm(F(b, k, nn), b)
-  ensures perm(current(trace(a, for ks, ns do b, k, nn :: F(b, k, nn))), c) <==> perm(a, c)
-
 // the invariant of the outer loop after k passes: the suffix b[len - k..len) is sorted and all of b[0..len - k) are
 // at most all of it, where the suffix is all of b[0..len) once k reaches len; a predicate indexed by the iteration,
 // such that the induction below ranges over all iterations without a case distinction on k
