@@ -1,4 +1,4 @@
-# Implementations (`-implement`)
+# Implementations (`-implement`, `-instrument`)
 
 Built-in sorts and functions (sets, sequences, maps) and declared functions can be given implementations that
 programs are verified against; an implementation may be nondeterministic. Functions are implemented, by functions or
@@ -9,38 +9,37 @@ by methods (procedures); methods are not implemented. The code is
 
 ## Modules and sorts
 
-- Modules are injected by `-include implement:<name>` (`resources/cuvee/implement/<name>.dfy`, e.g. `listset`, sets
-  as lists without duplicates, `renc`, maps and sets by the heap encoding Enc_R for `-instrument`) or `-include file`, after the entry `implement.dfy` (no declarations yet). They are
-  injected before the input, hence they implement functions of the core, of the entry, or of themselves, not those of
-  a client.
+- Modules are injected by `-include implement:<name>` (`resources/cuvee/implement/<name>.dfy`) or `-include file`,
+  after the entry `implement.dfy` (no declarations yet), before the input: they implement functions of the core, of
+  the entry, or of themselves, not those of a client. The module so far is `renc` (maps and sets by the heap encoding
+  Enc_R, see below).
 - All their declarations carry `{:implement}`, hence `-known implement` drops them from the output.
-- A datatype with `{:implement}` defines a sort of the prelude of the same name (`State.declare` lets it take the new
-  attributes): `datatype {:implement} set<a> = Nil | Cons(head: a, tail: set<a>)`. The types of the client do not
-  change; equality becomes that of representations.
+- A datatype with `{:implement}` defines the sort of the prelude of the same name (`State.declare` lets it take the
+  new attributes), e.g. `datatype {:implement} set<a> = set_(last_key: a, last_in: bool, version: int)` in `renc`.
+  The types of the client do not change; equality becomes that of representations.
 
 ## Implementations
 
 - `{:implement pattern}` on a function or method names the implemented function applied to a permutation of all
-  inputs, `this` included, e.g. `{:implement x in this}` on the member `member(x)` of `set`. Nothing more general is
-  matched. The pattern is resolved in the scope of the inputs and checked against the result type, or the type of the
-  single output of a method.
+  inputs, `this` included, e.g. `{:implement k in this}` on the member `Contains(k, ctx)` of `set` in `renc`. Nothing
+  more general is matched. The pattern is resolved in the scope of the inputs and checked against the result type, or
+  the type of the single output of a method.
 - Syntax: Dafny `{:implement x in this}`, Boogie `{:implement f(x)}` on functions and procedures, SMT-LIB and SV-LIB
   `:implement (f x)` on `declare-fun`, `define-fun`, `declare-proc`, and the body of `define-proc`. The SMT-LIB printer
   drops it on functions, whose declarations go to solvers.
-- A function has at most one implementation. Members are lowered with `this` first; functions without a receiver
-  (`{}`, `{x}`) are implemented at the top level.
+- A function has at most one implementation. Members are lowered with `this` first, `static` members without it;
+  functions without a receiver (`{}`, `{x}`, `map[]`, `map[k := v]`) are implemented at the top level.
 - **Context** (Dafny only): `{:context ctx}` on an implementing method names an input that the pattern leaves out,
-  which receives the context of the client at each application, the variables in scope there as a tuple (`true` for
-  none, the variable for one, nested beyond the tuples of the prelude), except those that carry the state of
-  implementations: variables of implemented sorts and global variables declared `{:implement}`
-  (`Implement.context`). Encodings use it to tell executions apart, e.g. `renc` as the argument of its predicates
-  (static members, polymorphic in the type of the context, see [static.dfy](../examples/dafny/parsing/static.dfy));
-  `-monomorph` instantiates the tuples, `-flat` then flattens them.
+  which receives the context of the client at each application (`Implement.context`): the variables in scope there
+  as a tuple (`true` for none, the variable for one, nested beyond the tuples of the prelude), except those that
+  carry the state of implementations, i.e., variables of implemented sorts and global variables declared
+  `{:implement}`. Encodings use it to tell executions apart (`renc`); `-monomorph` instantiates the tuples, `-flat`
+  then flattens them, in this order.
 
 ## The transform
 
 `-implement` is optional: without it, a translation keeps the task as written. Implementations themselves are left as
-they are.
+they are, their bodies are not rewritten.
 
 - **By a function:** every application is replaced, with the arguments at the positions of the pattern, also in
   contracts, invariants, function bodies, axioms, and lemmas.
@@ -54,21 +53,54 @@ they are.
 - **Backends:** a method with a contract is called by its contract in `-vcgen` and `-teq`; one with a body only is
   inlined in `-vcgen` and `-teq` and summarized in `-chc`.
 
-`-instrument` is `-implement` (one stage, `Config.instrument`), where the applications of functions implemented by
-methods with a body become those bodies instead of calls, with the same attributes: a block whose locals are the
+**`-instrument`** is `-implement` (one stage, `Config.instrument`) with the same attributes, where the applications of
+functions implemented by methods with a body become those bodies instead of calls: a block whose locals are the
 formal parameters renamed apart, with the type parameters instantiated, that assigns the arguments to the inputs,
-asserts the precondition (the postcondition is not needed, the body is exact), keeps the global variables in locals if
-the body has `old`, and assigns the output to the result; `return` in such a body is an error. The inlined methods
-are dropped, methods without body are called. Encodings that instrument the program need it, e.g. `renc`, whose
-generic methods would otherwise give polymorphic Horn clauses.
+asserts the precondition (the postcondition is not needed, the body is exact), keeps the global variables in locals
+if the body has `old`, and assigns the output to the result; `return` in such a body is an error. The inlined methods
+are dropped, methods without body are called. Encodings that instrument the program need it: their generic methods
+would otherwise give polymorphic Horn clauses.
 
-Examples: [dafny/transform/implement.dfy](../examples/dafny/transform/implement.dfy) (`listset`),
-[implement_method.dfy](../examples/dafny/transform/implement_method.dfy),
-[instrument.dfy](../examples/dafny/transform/instrument.dfy),
-[dafny/renc](../examples/dafny/renc) (`renc` with `-instrument -chc -monomorph -flat`, `tick := 0` by hand: reads,
-tests, displays, merges, removals, keys, sets, loops, the context of `inputs.dfy`, the weak operations on whole maps,
-the soundness conditions of `invalid_absent.dfy` and `invalid_merge.dfy`),
-[smtlib/transform/implement.smt2](../examples/smtlib/transform/implement.smt2),
-[boogie/transform/implement.bpl](../examples/boogie/transform/implement.bpl), and for `-instrument`
-[smtlib/transform/instrument.smt2](../examples/smtlib/transform/instrument.smt2),
-[boogie/transform/instrument.bpl](../examples/boogie/transform/instrument.bpl).
+## Writing modules
+
+- **Implementations meet at representations:** since bodies are not rewritten, an implemented function applied in a
+  body stays an uninterpreted function on representations, which is unsound; bodies read the fields of other
+  implemented datatypes instead (e.g. `m - s` in `renc` reads `s.last_key`).
+- **Calls inside bodies stay calls,** also under `-instrument`, which inlines only the applications of clients.
+- **Members must not shadow Dafny's:** a member method named `Values` would be called by `m.Values` of a client;
+  hence `KeySet`, `ValueSet`.
+- **Qualified static members:** `T.f(args)`; for sorts whose name is a keyword (`map`), the lowered name, `Map_f`.
+- **Side branches:** a branch that ends in `assume false` only derives facts; `-chc` ends the path there.
+
+## renc
+
+[renc.dfy](../resources/cuvee/implement/renc.dfy) implements maps and sets by Enc_R (Esen, Rümmer, Weber,
+arXiv 2504.15844), for `-include implement:renc -instrument -chc -entry main -monomorph -flat -z3`; its header is the
+reference, in short:
+
+- **Encoding:** each map or set carries a prophecy key (`last_key`), its value (`last`), and whether it is in
+  (`last_in`), plus its `version`; every observation (read, test) is numbered by the global `tick` and answered by a
+  static predicate, `R` (values), `K` (tests of maps), `S` (tests of sets), which the run whose prophecy is the
+  observed key asserts and every other run assumes. The arguments are the context, the number, and the answer.
+- **Operations:** reads, tests, stores, set updates `s[x := b]`, displays (singletons with stores or updates, see the
+  Dafny frontend), merges `m + n`, removals `m - s`, unions, intersections, differences, and `m.Keys` are exact;
+  `m.Values`, `m <= n`, `s <= t`, `s < t` are constrained at the prophecy key only (sound, weak).
+- **Sizes** are a predicate `N(version, z)` of the version, the number of the last change: changes derive it in side
+  branches from the size before and their observation of the old membership, bulk operations within the bounds of the
+  true size, and only reads of sizes assume it, such that loops do not depend on it.
+- **Soundness** needs the predicates independent of the prophecy (hence static), an asserting run for every
+  observation (also reads of absent keys), and a numbering by `tick` that does not depend on the prophecy.
+- **Limits:** `tick` is reset by hand (`tick := 0`, `modifies tick`) in the examples; loops that count new keys
+  (`|m| == n` after `n` new keys) are unknown to z3; deterministic programs only for completeness.
+
+## Examples
+
+- [dafny/transform/implement_method.dfy](../examples/dafny/transform/implement_method.dfy),
+  [instrument.dfy](../examples/dafny/transform/instrument.dfy),
+  [smtlib/transform/implement.smt2](../examples/smtlib/transform/implement.smt2),
+  [instrument.smt2](../examples/smtlib/transform/instrument.smt2),
+  [boogie/transform/implement.bpl](../examples/boogie/transform/implement.bpl),
+  [instrument.bpl](../examples/boogie/transform/instrument.bpl).
+- [dafny/renc](../examples/dafny/renc): reads, tests, displays, merges, removals, keys, sets and set updates, sizes,
+  loops (fills, counters, tests, insertions, overwrites), the context (`inputs.dfy`), the weak operations, and the
+  conditions of soundness (`invalid_absent.dfy`, `invalid_merge.dfy`); the `invalid_*` examples are refuted.
