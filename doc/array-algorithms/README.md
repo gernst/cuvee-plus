@@ -12,7 +12,7 @@ open, the evaluation, the principles of writing lemmas for lookup, and the insig
 (the first lemmas for the MonoCera tests). `array-algorithms.pdf` is the compiled document.
 
 The examples run by the command line in the first line of each file (`examples/dafny/algorithms`,
-`examples/dafny/state`); the numbers of the evaluation are those of the TEQ paper (`doc/array-acceleration`).
+`examples/dafny/teq`); the numbers of the evaluation are those of the TEQ paper (`doc/array-acceleration`).
 
 ## Files
 

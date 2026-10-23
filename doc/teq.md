@@ -149,7 +149,7 @@ per-variable form for every loop, the former `-teq`, was removed on Oct 13, 2026
 per-variable traces of a cycle are projections of its trace that the engine of `-prove` computes on demand (see
 [prove.md](prove.md)), and a rule may also match the trace of a cycle as a whole, with a pattern of several
 accumulators, e.g. the bisection of the binary searches, which names the trace of `lo` and `hi`. Examples in
-[examples/dafny/state](../examples/dafny/state), the design in
+[examples/dafny/teq](../examples/dafny/teq) and [examples/dafny/algorithms](../examples/dafny/algorithms), the design in
 [doc/prove.md](prove.md), the implementation in
 [doc/prove.md](prove.md).
 
@@ -159,7 +159,8 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `-teq` injects (`TEQ.modules`, `Config.injected`): the types `Nat`, `List`,
   `Trace`, the functions of `Fun.trace`, the functions on lists that the lemmas
   need, and the lemmas about traces, started as the module `state.dfy` of
-  `-teq-state` with the lemmas of [examples/dafny/state](../examples/dafny/state).
+  `-teq-state` with the lemmas of the examples then in `examples/dafny/state` (since Oct 23, 2026 in
+  [examples/dafny/teq](../examples/dafny/teq) and [examples/dafny/algorithms](../examples/dafny/algorithms)).
   The optional modules of [resources/cuvee/teq](../resources/cuvee/teq) are
   injected on demand by `-include teq:<concept>`, after it. They were written
   for the per-variable form (until Oct 13, 2026, `-teq` injected `core`,
@@ -335,9 +336,9 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
     rule with the name of a variable of the goal captures it, e.g. a lemma
     variable `n` that occurs only in its condition is then taken as the
     goal's `n` and the match leaves it unbound ("variables of a rule not
-    instantiated"). The binary searches of
-    [examples/dafny/state](../examples/dafny/state) write their lemmas over
-    `ar`, `len`, `y` for the method's `a`, `n`, `x`.
+    instantiated"). The binary search of
+    [examples/dafny/algorithms/bsearch.dfy](../examples/dafny/algorithms/bsearch.dfy) writes its lemmas
+    over `ar`, `len`, `y` for the method's `a`, `n`, `x`.
   - **Specific left-hand sides.** A left-hand side `invs(...)` whose body has
     a bare bound variable of a variable dependency on one side, `n <= j` or
     `j == integer(nn)`, matches every comparison, respectively equation,

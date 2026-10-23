@@ -1,4 +1,4 @@
-// ./Cuvee.sh examples/dafny/teq/copy.dfy
+// ./Cuvee.sh -teq -prove examples/dafny/teq/copy.dfy
 // the copy of the first n elements of an array a into the array b
 
 method copy(a: array<int, int>, n: int) returns (b: array<int, int>)
