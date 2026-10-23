@@ -263,16 +263,16 @@ class Parser(var state: State):
 
     Attrs(attrs.map((name, _) => name -> None))
 
-  // the annotations of function `fun` whose inputs are in `scope`, where {:implements pattern} names the function
+  // the annotations of function `fun` whose inputs are in `scope`, where {:implement pattern} names the function
   // that it implements and the positions of its arguments by an application to the inputs, of the result type `res`
-  // (see transform.Impl); other annotations have no values
+  // (see transform.Implement); other annotations have no values
   def annotations(fun: String, scope: Scope, attrs: List[Annotation], res: core.Type): Attrs =
     val attrs_ =
       for (name, arg) <- attrs
       yield arg match
-        case Some(pattern) if name == "implements" =>
+        case Some(pattern) if name == "implement" =>
           val pattern_ = resolve(scope, pattern)
-          Error.report("the pattern of {:implements} does not have the result type of the function", fun):
+          Error.report("the pattern of {:implement} does not have the result type of the function", fun):
             name -> Some(check(scope, pattern_, res))
 
         case Some(_) =>

@@ -1,0 +1,2 @@
+error "the pattern of {:implement} does not have the result type of the function"
+  "f"

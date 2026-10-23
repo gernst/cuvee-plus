@@ -129,7 +129,7 @@ case class Constr(name: String, sels: List[Sel])
 object Sel extends ((String, Type) => Sel)
 object Constr extends ((String, List[Sel]) => Constr)
 
-// an annotation {:name} or one with a value, {:name value}, e.g. the pattern {:implements x in this}
+// an annotation {:name} or one with a value, {:name value}, e.g. the pattern {:implement x in this}
 type Annotation = (String, Option[Expr])
 
 case class Axiom(params: List[String], attrs: List[Annotation], phi: Expr) extends Cmd

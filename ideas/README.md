@@ -25,9 +25,9 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
 - [answer-mapping.md](answer-mapping.md): rejected: transforms map the answers back as well as the commands, one
   response per input command; why goals and lemmas flush and are answered immediately instead.
 - [implementations.md](implementations.md): implementations of the built-in sorts and functions by modules of
-  `-include impl:<name>`: datatypes for sorts, functions with `:implements <pattern>` (a permutation of the
+  `-include implement:<name>`: datatypes for sorts, functions with `:implement <pattern>` (a permutation of the
   inputs), nondeterministic ones by an oracle `nondet(ticks + i)` with a global counter, and the transform
-  `-implement`; its first form (procedures) is implemented, the rest is not.
+  `-implement`; the deterministic implementations are implemented, the nondeterministic ones are not.
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 

@@ -5,18 +5,18 @@ import cuvee.Error
 import cuvee.pipe.Transform
 import cuvee.core._
 
-// implementations of functions by functions with the attribute :implements, whose value, the pattern, is the
+// implementations of functions by functions with the attribute :implement, whose value, the pattern, is the
 // implemented function applied to a permutation of the inputs of the implementation, e.g. x in this for a member of
 // a datatype that defines the sort of sets (see ideas/implementations.md); the applications of the implemented
 // functions are replaced by those of their implementations, with the arguments at the positions of the pattern,
 // everywhere: in programs, contracts, invariants, function bodies, axioms, and lemmas, since the abstract functions
 // have no meaning on the datatypes that define their sorts, except in the implementations themselves; an
 // implementation with an input that is not in its pattern reads a nondeterministic value, which is not supported yet
-object Impl extends Transform:
-  // the entry of the implementations, injected before the modules of -include impl:<name> (see Config.features),
+object Implement extends Transform:
+  // the entry of the implementations, injected before the modules of -include implement:<name> (see Config.features),
   // with the source that parses it
   val modules =
-    List((cuvee.dafny.Source, "/cuvee/impl.dfy"))
+    List((cuvee.dafny.Source, "/cuvee/implement.dfy"))
 
   // an implementation `impl` of a function with the inputs of `impl` in the order of the arguments of the function
   case class Implementation(impl: Fun, pattern: List[Var])
@@ -47,7 +47,7 @@ object Impl extends Transform:
     val entries =
       for
         (key, attrs) <- state.funattrs.toList
-        pattern <- attrs.values[Expr]("implements")
+        pattern <- attrs.values[Expr]("implement")
       yield
         val impl = state.funs(key)
 
