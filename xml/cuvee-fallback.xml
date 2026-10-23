@@ -7,27 +7,15 @@
 
   <resultfiles>**/witness.*</resultfiles>
 
-  <option name="-teq"/>
-  <!-- the lemma database teq.dfy of -teq and the optional modules migrated so far (doc/teq.md) -->
-  <option name="-include">teq:aggregation</option>
-  <option name="-include">teq:arithmetic</option>
-  <option name="-include">teq:arrays</option>
-  <option name="-include">teq:counters</option>
-  <option name="-include">teq:search</option>
-  <option name="-include">teq:sorted</option>
-  <option name="-include">teq:strides</option>
-  <option name="-include">teq:unsigned</option>
-  <option name="-prove"/>
-  <option name="-split"/>
-  <option name="-prove"/>
+  <!-- the options of SV-COMP (Cuvee.svcomp, doc/options.md), first: trace equation systems with all modules of the lemma
+       database, -prove with two rounds of splitting, and the witness of the answer to a C program -->
+  <option name="-svcomp"/>
   <!-- the rules applied to each goal, for the statistics of scripts/rules.py -->
   <option name="-rules"/>
   <option name="-fallback"/>
   <option name="-z3"/>
   <!-- z3 is limited by the time limit only, which this covers, since -timeout defaults to 1 s per query -->
   <option name="-timeout">900000</option>
-  <!-- the witness of SV-COMP for the answer to a C program, without invariants or with the target only (yml.Witness) -->
-  <option name="-witness">witness.yml</option>
 
   <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
   <rundefinition name="SV-COMP27_unreach-call">

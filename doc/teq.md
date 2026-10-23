@@ -177,7 +177,8 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `max`, `min`, `parity` and the traces `sums`, `parities`, `counts`, `maxs`,
   `mins`, with the linearity of sums, indicators and bounds);
   `arithmetic.dfy` (`-include teq:arithmetic`: `pow` and the rules that the
-  arithmetic of `-prove` does not decide on its own); `search.dfy`
+  arithmetic of `-prove` does not decide on its own, e.g. the exactness of the
+  halved triangles, also with a coefficient); `search.dfy`
   (`-include teq:search`: agreeing prefixes, no occurrence, values above the
   iterations, with their facts at the reads as forward lemmas, and the
   bisection of an interval with a probe, `bisection`, `bisection_lo/hi`);
@@ -187,13 +188,24 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   stores at a counter and at distinct keys, conditional stores, resets, the
   reads of an array updated along a trace); `counters.dfy`
   (`-include teq:counters`: phases, flags, catching up, merged cases, constant,
-  increasing and bounded values); and `strides.dfy` (`-include teq:strides`:
+  increasing and bounded values, the remainders of phases that add a constant); and `strides.dfy` (`-include teq:strides`:
   the strided stores and stores ahead of the MonoCera benchmarks, see
   [benchmarks/monocera](../benchmarks/monocera), which fix the number of
   stores and of cases on their left-hand sides); and `unsigned.dfy`
   (`-include teq:unsigned`: `mods(i, c, m, n)`, the counter modulo `m` of the
   unsigned variables of C, whose arithmetic wraps around, with the bounds of
-  its iteration constraints below `m` and its final values). The rules of
+  its iteration constraints below `m` and its final values); and
+  `series.dfy` (`-include teq:series`, after `teq:aggregation` and
+  `teq:arithmetic`, whose `sum` and `pow` it uses: the folds `squares`,
+  `cubes`, `fourths`, `fifths` of the sums of the powers of a counter from
+  `i`, with their coefficients taken out and Faulhaber's formulas times their
+  denominators as forward facts in a variable `c == integer(n)`, and the
+  geometric sequences and the fold `series` of geometric series, Oct 23,
+  2026). The forward facts of `series.dfy` are triggered at its folds, not at
+  general terms such as a sum over a counter or the current value of a trace:
+  such a trigger is tried at every matching term and slows down the tasks it
+  does not apply to, even without an instance (zero_sum4: 857 instead of 193
+  rewrites, until the bound on the steps is exhausted). The rules of
   these files never applied on SV-COMP and specific to one task were left
   out; they were dropped with the legacy database on Oct 23, 2026.
   Retired on Oct 14, 2026 (and removed on Oct 23): the former `teq:nested`, the fragments of inner loops (the inner counter,
@@ -552,6 +564,11 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   `X(0) == e && ∀ j. 0 <= j < n ==> (φᵢ ==> X(j + 1) == eᵢ)`, one
   implication per case, since the guards need not be complete (`break`);
   `invs` is `∀ j. 0 <= j < n ==> φ`.
+- Applications of functions defined with `{:fold}` whose result is no trace
+  or list, e.g. `squares(i, n)` of `teq:series`, are unfolded as well, and
+  their bodies lowered (since 0.50.15; before, they were generalized like the
+  other functions of trace equation systems, which lost the sums that z3
+  evaluates for bounded inputs, e.g. of `cohencu-ll_valuebound1`).
 - A trace `S` of several accumulators is one function per accumulator,
   `S_0(j)`, `S_1(j)`, ... (`Fallback.head`; the lowered head is a tuple of
   their applications, which no output contains): the equation

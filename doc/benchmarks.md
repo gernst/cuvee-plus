@@ -28,8 +28,8 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 
 | file | contents |
 |---|---|
-| `xml/cuvee.xml` | `-teq` with the migrated modules of the database (`-include teq:<module>`), `-prove -split -prove -split -prove -rules` (the second round splits the disjunctions that the rules introduce); 15 min, 2 cores, 7 GB |
-| `xml/cuvee-fallback.xml` | the same with `-fallback` and Z3 for the goals that remain |
+| `xml/cuvee.xml` | `-svcomp -rules`: `-teq` with all modules of the database, `-prove -split -prove -split -prove` (the second round splits the disjunctions that the rules introduce), the witness (`Cuvee.svcomp`, doc/options.md); 15 min, 2 cores, 7 GB |
+| `xml/cuvee-fallback.xml` | the same with `-fallback -z3 -timeout 900000`, Z3 for the goals that remain (since 0.50.15 also with the second round of splitting) |
 | `xml/cuvee-acsl.xml`, `cuvee-chc.xml` | `-vcgen -z3` on `benchmarks/acsl` (the categories Arrays and Loops as in sv-benchmarks, the true tasks annotated with ACSL; `-split` for the task set `C.unreach-call.Loops-split`), `-chc` |
 | `xml/cpachecker.xml`, `uautomizer.xml`, `korn.xml`, `symbiotic.xml`, `aise.xml`, `monocera.xml` | the other verifiers |
 

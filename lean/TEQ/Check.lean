@@ -8,6 +8,7 @@
 --   resources/cuvee/teq/counters.dfy
 --   resources/cuvee/teq/strides.dfy
 --   resources/cuvee/teq/unsigned.dfy
+--   resources/cuvee/teq/series.dfy
 -- do not edit: a definition that does not check is fixed in the module or in lean.Printer
 import TEQ.Proofs
 
@@ -96,6 +97,8 @@ example : Stmt.triangle_nonneg := @triangle_nonneg
 example : Stmt.triangle_nonneg_below := @triangle_nonneg_below
 example : Stmt.triangle_even := @triangle_even
 example : Stmt.triangle_even_below := @triangle_even_below
+example : Stmt.triangle_even_scaled := @triangle_even_scaled
+example : Stmt.triangle_even_below_scaled := @triangle_even_below_scaled
 example : Stmt.not_occurs_prefix := @not_occurs_prefix
 example : Stmt.earlier_agree_prefix := @earlier_agree_prefix
 example : Stmt.earlier_not_occurs_prefix := @earlier_not_occurs_prefix
@@ -148,6 +151,7 @@ example : Stmt.current_trace_catch_up := @current_trace_catch_up
 example : Stmt.current_trace_flag := @current_trace_flag
 example : Stmt.current_trace_increasing := @current_trace_increasing
 example : Stmt.current_trace_bounded := @current_trace_bounded
+example : Stmt.current_trace_step_or_keep_mod := @current_trace_step_or_keep_mod
 example : Stmt.occurs_counter_step := @occurs_counter_step
 example : Stmt.indexof_counter_step := @indexof_counter_step
 example : Stmt.select_current_trace_stride2 := @select_current_trace_stride2
@@ -166,5 +170,14 @@ example : Stmt.invs_counter_mod_upper_zero := @invs_counter_mod_upper_zero
 example : Stmt.invs_counter_mod_upper_cases := @invs_counter_mod_upper_cases
 example : Stmt.current_trace_mod_add_const := @current_trace_mod_add_const
 example : Stmt.current_trace_mod_add_cases := @current_trace_mod_add_cases
+example : Stmt.sum_squares_scaled := @sum_squares_scaled
+example : Stmt.sum_cubes_scaled := @sum_cubes_scaled
+example : Stmt.sum_fourths_scaled := @sum_fourths_scaled
+example : Stmt.squares_at := @squares_at
+example : Stmt.cubes_at := @cubes_at
+example : Stmt.fourths_at := @fourths_at
+example : Stmt.fifths_at := @fifths_at
+example : Stmt.current_trace_geometric := @current_trace_geometric
+example : Stmt.current_series := @current_series
 
 end TEQ

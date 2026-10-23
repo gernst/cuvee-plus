@@ -8,6 +8,7 @@
 --   resources/cuvee/teq/counters.dfy
 --   resources/cuvee/teq/strides.dfy
 --   resources/cuvee/teq/unsigned.dfy
+--   resources/cuvee/teq/series.dfy
 -- do not edit: a definition that does not check is fixed in the module or in lean.Printer
 import TEQ.Semantics
 
@@ -591,6 +592,14 @@ def Stmt.triangle_even_below : Prop :=
   ∀ (x : Int),
     2 * ((-x + x * x) / 2) = -x + x * x
 
+def Stmt.triangle_even_scaled : Prop :=
+  ∀ (a : Int) (x : Int),
+    2 * ((a * x + a * x * x) / 2) = a * x + a * x * x
+
+def Stmt.triangle_even_below_scaled : Prop :=
+  ∀ (a : Int) (x : Int),
+    2 * ((-a * x + a * x * x) / 2) = -a * x + a * x * x
+
 noncomputable def agree_prefix (n : Nat) (xs : List Int)
                                (ys : List Int) : Prop :=
   invs
@@ -1125,6 +1134,16 @@ def Stmt.current_trace_bounded : Prop :=
              ≤ hi
            ↔ True)
 
+def Stmt.current_trace_step_or_keep_mod : Prop :=
+  ∀ (x0 : Int) (n : Nat) (a : Int) (xs : List Int) (C : Int → Prop) (hxs : length xs = n),
+    current
+      (trace
+         x0
+         (List.zip (butlast (counter 0 1 n)) xs)
+         (fun z ⟨k, x⟩ => if C x then z + a else if ¬C x then z else unspecified))
+      % a
+      = x0 % a
+
 def Stmt.occurs_counter_step : Prop :=
   ∀ (i : Int) (d : Int) (n : Nat) (j : Int),
     0 < d
@@ -1333,5 +1352,72 @@ def Stmt.current_trace_mod_add_cases : Prop :=
              (fun x k =>
                 if C k then x + F k else if ¬C k then x else unspecified))
           % m
+
+noncomputable def squares (i : Int) (n : Nat) : Int :=
+  sum (maps (butlast (counter i 1 n)) (fun k => k * k))
+
+noncomputable def cubes (i : Int) (n : Nat) : Int :=
+  sum (maps (butlast (counter i 1 n)) (fun k => k * k * k))
+
+noncomputable def fourths (i : Int) (n : Nat) : Int :=
+  sum (maps (butlast (counter i 1 n)) (fun k => k * k * k * k))
+
+noncomputable def fifths (i : Int) (n : Nat) : Int :=
+  sum (maps (butlast (counter i 1 n)) (fun k => k * k * k * k * k))
+
+def Stmt.sum_squares_scaled : Prop :=
+  ∀ (a : Int) (i : Int) (n : Nat),
+    sum (maps (butlast (counter i 1 n)) (fun k => a * k * k)) = a * squares i n
+
+def Stmt.sum_cubes_scaled : Prop :=
+  ∀ (a : Int) (i : Int) (n : Nat),
+    sum (maps (butlast (counter i 1 n)) (fun k => a * k * k * k)) = a * cubes i n
+
+def Stmt.sum_fourths_scaled : Prop :=
+  ∀ (a : Int) (i : Int) (n : Nat),
+    sum (maps (butlast (counter i 1 n)) (fun k => a * k * k * k * k))
+      = a * fourths i n
+
+def Stmt.squares_at : Prop :=
+  ∀ (c : Int) (i : Int) (n : Nat),
+    c = integer n
+      → 6 * squares i n
+        = (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
+        ∧ integer n * integer n = c * c
+        ∧ integer n * integer n * integer n = c * c * c
+
+def Stmt.cubes_at : Prop :=
+  ∀ (c : Int) (i : Int) (n : Nat),
+    c = integer n
+      → 4 * cubes i n
+        = (i + c) * (i + c) * (i + c - 1) * (i + c - 1)
+          - i * i * (i - 1) * (i - 1)
+
+def Stmt.fourths_at : Prop :=
+  ∀ (c : Int) (i : Int) (n : Nat),
+    c = integer n
+      → 30 * fourths i n
+        = (i + c) * (i + c - 1) * (2 * (i + c) - 1)
+          * (3 * (i + c) * (i + c) - 3 * (i + c) - 1)
+          - i * (i - 1) * (2 * i - 1) * (3 * i * i - 3 * i - 1)
+
+def Stmt.fifths_at : Prop :=
+  ∀ (c : Int) (i : Int) (n : Nat),
+    c = integer n
+      → 12 * fifths i n
+        = (i + c) * (i + c) * (i + c - 1) * (i + c - 1)
+          * (2 * (i + c) * (i + c) - 2 * (i + c) - 1)
+          - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1)
+
+def Stmt.current_trace_geometric : Prop :=
+  ∀ (y0 : Int) (z : Int) (n : Nat),
+    current (trace y0 (butlast (counter 0 1 n)) (fun y k => y * z)) = y0 * pow z n
+
+noncomputable def series (x0 : Int) (z : Int) (a : Int) (n : Nat) : Trace Int :=
+  trace x0 (butlast (counter 0 1 n)) (fun x k => x * z + a)
+
+def Stmt.current_series : Prop :=
+  ∀ (x0 : Int) (z : Int) (a : Int) (n : Nat),
+    (z - 1) * current (series x0 z a n) + a = ((z - 1) * x0 + a) * pow z n
 
 end TEQ

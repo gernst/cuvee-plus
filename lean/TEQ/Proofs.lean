@@ -2473,6 +2473,21 @@ theorem triangle_even (x : Int) : 2 * ((x + x * x) / 2) = x + x * x :=
 theorem triangle_even_below (x : Int) : 2 * ((-x + x * x) / 2) = -x + x * x :=
   by have := triangle_even x; omega
 
+-- the triangles scaled by a: a times an even number is even
+theorem triangle_even_scaled : Stmt.triangle_even_scaled := by
+  intro a x
+  have h : (x + x * x) % 2 = 0 := by have := triangle_even x; omega
+  have e : a * x + a * x * x = a * (x + x * x) := by grind
+  have h2 : (a * x + a * x * x) % 2 = 0 := by rw [e, Int.mul_emod, h]; simp
+  omega
+
+theorem triangle_even_below_scaled : Stmt.triangle_even_below_scaled := by
+  intro a x
+  have h : (-x + x * x) % 2 = 0 := by have := triangle_even_below x; omega
+  have e : -a * x + a * x * x = a * (-x + x * x) := by grind
+  have h2 : (-a * x + a * x * x) % 2 = 0 := by rw [e, Int.mul_emod, h]; simp
+  omega
+
 theorem triangle_nonneg_below (x : Int) : 0 ≤ (-x + x * x) / 2 :=
   by
     have h : 0 ≤ x * (x - 1) := by
@@ -3449,5 +3464,159 @@ theorem select_current_trace_recurrence (a0 : Int → Int) (n : Nat) (c : Int) (
     · by_cases hj : 1 ≤ j ∧ j < 1 + (m : Int)
       · rw [if_pos hj, if_pos (by omega), show (j - 1 + 1).toNat = j.toNat by omega]
       · rw [if_neg hj, if_neg e, if_neg (by omega)]
+
+-- the phases of counters.dfy
+
+-- adding a or keeping the value keeps the remainder modulo a, over any list of keys
+theorem current_trace_step_or_keep_mod_gen (a : Int) (C : Int → Prop) :
+    ∀ (ks : List Int) (xs : List Int) (z0 : Int),
+      current (trace z0 (List.zip ks xs)
+        (fun z ⟨k, x⟩ => if C x then z + a else if ¬C x then z else unspecified)) % a = z0 % a
+  | [], _, z0 => rfl
+  | _ :: _, [], z0 => rfl
+  | k :: ks, x :: xs, z0 => by
+    simp only [List.zip_cons_cons, trace, current]
+    by_cases hc : C x
+    · simp only [hc, if_true]
+      rw [current_trace_step_or_keep_mod_gen a C ks xs (z0 + a), Int.add_emod_right]
+    · simp only [hc, if_false, not_false_eq_true, if_true]
+      exact current_trace_step_or_keep_mod_gen a C ks xs z0
+
+theorem current_trace_step_or_keep_mod : Stmt.current_trace_step_or_keep_mod := by
+  intro x0 n a xs C hxs
+  exact current_trace_step_or_keep_mod_gen a C _ xs x0
+
+-- series.dfy: the sums of the powers of a counter and the geometric sequences and series
+
+-- a constant factor of the mapped function comes out of the sum
+theorem sum_maps_mul (a : Int) (g : Int → Int) : ∀ (l : List Int), sum (maps l (fun k => a * g k)) = a * sum (maps l g)
+  | [] => by simp [maps, sum]
+  | k :: l => by simp only [maps, sum]; rw [sum_maps_mul a g l, Int.mul_add]
+
+theorem sum_squares_scaled : Stmt.sum_squares_scaled := by
+  intro a i n
+  simp only [squares, Int.mul_assoc]
+  exact sum_maps_mul a (fun k => k * k) _
+
+theorem sum_cubes_scaled : Stmt.sum_cubes_scaled := by
+  intro a i n
+  simp only [cubes, Int.mul_assoc]
+  exact sum_maps_mul a (fun k => k * (k * k)) _
+
+theorem sum_fourths_scaled : Stmt.sum_fourths_scaled := by
+  intro a i n
+  simp only [fourths, Int.mul_assoc]
+  exact sum_maps_mul a (fun k => k * (k * (k * k))) _
+
+-- the closed forms of the folds from any start i, by induction over the steps
+theorem squares_closed (n : Nat) : ∀ (i : Int),
+    6 * squares i n = (i + n - 1) * (i + n) * (2 * (i + n) - 1) - (i - 1) * i * (2 * i - 1) := by
+  induction n with
+  | zero => intro i; simp [squares, counter, butlast, maps, sum]
+  | succ m ih =>
+    intro i
+    have := ih (i + 1)
+    simp only [squares] at this ⊢
+    rw [butlast_counter_succ]
+    simp only [maps, sum]
+    push_cast at this ⊢
+    grind
+
+theorem cubes_closed (n : Nat) : ∀ (i : Int),
+    4 * cubes i n = (i + n) * (i + n) * (i + n - 1) * (i + n - 1) - i * i * (i - 1) * (i - 1) := by
+  induction n with
+  | zero => intro i; simp [cubes, counter, butlast, maps, sum]
+  | succ m ih =>
+    intro i
+    have := ih (i + 1)
+    simp only [cubes] at this ⊢
+    rw [butlast_counter_succ]
+    simp only [maps, sum]
+    push_cast at this ⊢
+    grind
+
+theorem fourths_closed (n : Nat) : ∀ (i : Int),
+    30 * fourths i n = (i + n) * (i + n - 1) * (2 * (i + n) - 1) * (3 * (i + n) * (i + n) - 3 * (i + n) - 1)
+      - i * (i - 1) * (2 * i - 1) * (3 * i * i - 3 * i - 1) := by
+  induction n with
+  | zero => intro i; simp [fourths, counter, butlast, maps, sum]
+  | succ m ih =>
+    intro i
+    have := ih (i + 1)
+    simp only [fourths] at this ⊢
+    rw [butlast_counter_succ]
+    simp only [maps, sum]
+    push_cast at this ⊢
+    grind
+
+theorem fifths_closed (n : Nat) : ∀ (i : Int),
+    12 * fifths i n = (i + n) * (i + n) * (i + n - 1) * (i + n - 1) * (2 * (i + n) * (i + n) - 2 * (i + n) - 1)
+      - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1) := by
+  induction n with
+  | zero => intro i; simp [fifths, counter, butlast, maps, sum]
+  | succ m ih =>
+    intro i
+    have := ih (i + 1)
+    simp only [fifths] at this ⊢
+    rw [butlast_counter_succ]
+    simp only [maps, sum]
+    push_cast at this ⊢
+    grind
+
+theorem squares_at : Stmt.squares_at := by
+  intro c i n h
+  subst h
+  rw [integer_cast]
+  exact ⟨squares_closed n i, rfl, rfl⟩
+
+theorem cubes_at : Stmt.cubes_at := by
+  intro c i n h
+  subst h
+  rw [integer_cast]
+  exact cubes_closed n i
+
+theorem fourths_at : Stmt.fourths_at := by
+  intro c i n h
+  subst h
+  rw [integer_cast]
+  exact fourths_closed n i
+
+theorem fifths_at : Stmt.fifths_at := by
+  intro c i n h
+  subst h
+  rw [integer_cast]
+  exact fifths_closed n i
+
+-- geometric sequences and series, from any start of the counter, which the updates do not read
+theorem current_trace_geometric_gen (z : Int) (n : Nat) :
+    ∀ (s y0 : Int), current (trace y0 (butlast (counter s 1 n)) (fun y k => y * z)) = y0 * pow z n := by
+  induction n with
+  | zero => intro s y0; simp [counter, butlast, trace, current, pow]
+  | succ m ih =>
+    intro s y0
+    rw [butlast_counter_succ]
+    simp only [trace, current]
+    rw [ih, pow]
+    grind
+
+theorem current_trace_geometric : Stmt.current_trace_geometric := by
+  intro y0 z n
+  exact current_trace_geometric_gen z n 0 y0
+
+theorem current_trace_geometric_affine_gen (z a : Int) (n : Nat) :
+    ∀ (s x0 : Int), (z - 1) * current (trace x0 (butlast (counter s 1 n)) (fun x k => x * z + a)) + a
+      = ((z - 1) * x0 + a) * pow z n := by
+  induction n with
+  | zero => intro s x0; simp [counter, butlast, trace, current, pow]
+  | succ m ih =>
+    intro s x0
+    rw [butlast_counter_succ]
+    simp only [trace, current]
+    rw [ih, pow]
+    grind
+
+theorem current_series : Stmt.current_series := by
+  intro x0 z a n
+  exact current_trace_geometric_affine_gen z a n 0 x0
 
 end TEQ

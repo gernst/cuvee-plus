@@ -40,10 +40,11 @@ object Cuvee extends util.Main:
     val (_, cmds, errors) = pipe(args, sinks)
     (cmds, errors)
 
-  // the options of the participation in SV-COMP, which -svcomp stands for, such that the entry of fm-tools can pass
-  // -svcomp only and a new version of Cuvée change them without a change there: trace equation systems with the
-  // modules of the lemma database, the deduction engine with two rounds of splitting, the fallback to z3 for the goals
-  // that remain, whose time limit is that of the run, and the witness of the answer
+  // the options of the participation in SV-COMP, which -svcomp stands for, such that the entry of fm-tools and the
+  // benchmark definitions can pass -svcomp and a new version of Cuvée change them without a change there: trace
+  // equation systems with the modules of the lemma database (series after aggregation and arithmetic, whose sum and pow
+  // it uses), the deduction engine with two rounds of splitting, and the witness of the answer; the fallback to z3
+  // for the goals that remain is passed after it (-fallback -z3 -timeout <ms>)
   val svcomp = List(
     "-teq",
     "-include", "teq:aggregation",
@@ -54,8 +55,8 @@ object Cuvee extends util.Main:
     "-include", "teq:sorted",
     "-include", "teq:strides",
     "-include", "teq:unsigned",
+    "-include", "teq:series",
     "-prove", "-split", "-prove", "-split", "-prove",
-    "-fallback", "-z3", "-timeout", "900000",
     "-witness", "witness.yml"
   )
 
