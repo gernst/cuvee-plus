@@ -48,18 +48,16 @@
 
 (goal
   (forall
-    ((y$15 Int) (n$9 Nat) (K$11 (Trace Int)) (Y$13 (Trace Int)))
+    ((y$15 Int) (Y$13 (Trace Int)))
     (=>
       (and
-        (= K$11 (counter 0 1 n$9))
         (=
           Y$13
           (trace
             (y$8 0)
-            ((k$10 (butlast K$11)))
+            ((k$10 (as nil (List Int))))
             (mod (+ y$8 1) 4294967296)))
-        (= y$15 (current Y$13))
-        (= n$9 zero))
+        (= y$15 (current Y$13)))
       (= y$15 0))))
 
 (goal
