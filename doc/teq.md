@@ -199,19 +199,20 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `teq:arithmetic`, whose `sum` and `pow` it uses: the folds `squares`,
   `cubes`, `fourths`, `fifths` of the sums of the powers of a counter from
   `i`, with their coefficients taken out and Faulhaber's formulas times their
-  denominators as forward facts in a variable `c == integer(n)`, the halved
-  triangles that `sum_counter` leaves and the powers of `integer(n)` in `c` as
-  well, and the
+  denominators as forward facts in `integer(n)`, the sums over no iterations,
+  and the
   geometric sequences and the fold `series` of geometric series, Oct 23,
   2026). The forward facts of `series.dfy` are triggered at its folds, not at
   general terms such as a sum over a counter or the current value of a trace:
   such a trigger is tried at every matching term and slows down the tasks it
   does not apply to, even without an instance (zero_sum4: 857 instead of 193
-  rewrites, until the bound on the steps is exhausted). Each of its forward
-  lemmas is one equation, since the engine splits a forward lemma at its
-  conjunctions and triggers each conjunct on its own: a conjunct
-  `integer(n) * integer(n) == c * c` would be triggered at every
-  `integer(n)` (in-de61.1 and in-de62.1 of SV-LIB in 0.50.15). The rules of
+  rewrites, until the bound on the steps is exhausted). Its facts are stated
+  in `integer(n)`, which the arithmetic relates to the variables equal to it
+  (doc/prove.md, `solved`); in 0.50.15 they were stated in a variable `c`
+  looked up by the condition `c == integer(n)`, which matched every variable of
+  the class with an instance each, with links between the powers of `c` and
+  `integer(n)` (`-split` splits a lemma at its conjunctions, and each part is
+  a forward lemma with a trigger of its own). The rules of
   these files never applied on SV-COMP and specific to one task were left
   out; they were dropped with the legacy database on Oct 23, 2026.
   Retired on Oct 14, 2026 (and removed on Oct 23): the former `teq:nested`, the fragments of inner loops (the inner counter,
@@ -441,6 +442,24 @@ with a rule that names the trace (the bisection). The firing at every assumed fa
 a premise; with dozens of forward lemmas, the firing with a memo per lemma and term is needed first
 (ideas/prove-next.md). The order of a file matters for rules as well: a rule whose pattern subsumes another must come
 after it (`sum_add` after `sum_neg` and `sum_scale`).
+
+What a forward lemma costs, from `series.dfy` (Oct 23-24, 2026):
+
+- **A general trigger costs everywhere.** A trigger such as any sum over a counter, the current value of any trace,
+  or `integer(n)` is tried at every matching term of every assumed fact, also where it never yields an instance:
+  zero_sum4 went from 193 to 857 rewrites of `integer(n)` until the rewrite steps of the command ran out ("rewriting
+  does not terminate"), array_4 from 19 s to a timeout. A term that only the lemma is about is folded first, e.g.
+  `squares(i, n)` for `sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k))`, and the lemma triggered at the fold.
+- **One fact per lemma.** `-split` splits a lemma at its conjunctions, `name_1`, `name_2`, ..., and each part gets
+  the trigger of its own terms: a conjunct `integer(n) * integer(n) == c * c` next to a fact about `squares(i, n)`
+  was triggered at `integer(n)`, at every counter (in-de61.1 of SV-LIB).
+- **No variables bound by conditions alone.** A variable of the conclusion that only a condition binds, e.g. `c` of
+  `requires c == integer(n)`, is matched against every member of the class, one instance each (four on
+  ps5-ll_unwindbound1); state the fact in the term itself, here `integer(n)`, which the arithmetic relates to the
+  variables equal to it (prove.md, `solved`).
+- **Degenerate terms.** An instance is simplified again each time it fires, with the rewrite steps of the command;
+  where a fold occurs at a degenerate argument, e.g. `squares(0, zero)` in the case `n == zero` of a split, a rule
+  that evaluates it (`squares_zero`) avoids polynomial instances in `integer(zero)`.
 
 ## The semantics in Lean ([lean/](../lean))
 

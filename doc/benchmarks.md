@@ -13,6 +13,11 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
   `cuvee.jar` and `z3` of the checkout, which are uploaded at the start: build and copy the jar before
   (`mill -i assembly; cp out/assembly.dest/out.jar cuvee.jar`), and do not rebuild it before the upload is done.
   The result header names the version of the jar (`-version`).
+- To measure a jar other than the checkout's, e.g. one with a module of the database under test, while the checkout's
+  `cuvee.jar` holds uncommitted changes of others: `--tool-directory <dir>` with `Cuvee.sh`, `cuvee.jar` and `z3` in
+  `<dir>`, a path relative to the checkout (e.g. the git-ignored `out/bench/tool`; a directory outside it, e.g. in
+  `/tmp`, is not available to the workers, whose runs then fail with "Cannot execute"). A definition with options of
+  its own, e.g. an additional `-include`, is a copy in `out/bench/` with paths relative to it (`../../sv-benchmarks`).
 - **One call per `<tasks>`**, never several `-t` in one call: tasks of different sets with the same file name get
   each other's results. Start one call per set, in parallel if needed, in the background (they take minutes).
 - `-T` overrides the time limit of the definition (`-T 60s` for runs during development), `--vcloudCPUModel` its

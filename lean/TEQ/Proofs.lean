@@ -3509,7 +3509,7 @@ theorem sum_fourths_scaled : Stmt.sum_fourths_scaled := by
   exact sum_maps_mul a (fun k => k * (k * (k * k))) _
 
 -- the closed forms of the folds from any start i, by induction over the steps
-theorem squares_closed (n : Nat) : ∀ (i : Int),
+theorem squares_closed_from (n : Nat) : ∀ (i : Int),
     6 * squares i n = (i + n - 1) * (i + n) * (2 * (i + n) - 1) - (i - 1) * i * (2 * i - 1) := by
   induction n with
   | zero => intro i; simp [squares, counter, butlast, maps, sum]
@@ -3522,7 +3522,7 @@ theorem squares_closed (n : Nat) : ∀ (i : Int),
     push_cast at this ⊢
     grind
 
-theorem cubes_closed (n : Nat) : ∀ (i : Int),
+theorem cubes_closed_from (n : Nat) : ∀ (i : Int),
     4 * cubes i n = (i + n) * (i + n) * (i + n - 1) * (i + n - 1) - i * i * (i - 1) * (i - 1) := by
   induction n with
   | zero => intro i; simp [cubes, counter, butlast, maps, sum]
@@ -3535,7 +3535,7 @@ theorem cubes_closed (n : Nat) : ∀ (i : Int),
     push_cast at this ⊢
     grind
 
-theorem fourths_closed (n : Nat) : ∀ (i : Int),
+theorem fourths_closed_from (n : Nat) : ∀ (i : Int),
     30 * fourths i n = (i + n) * (i + n - 1) * (2 * (i + n) - 1) * (3 * (i + n) * (i + n) - 3 * (i + n) - 1)
       - i * (i - 1) * (2 * i - 1) * (3 * i * i - 3 * i - 1) := by
   induction n with
@@ -3549,7 +3549,7 @@ theorem fourths_closed (n : Nat) : ∀ (i : Int),
     push_cast at this ⊢
     grind
 
-theorem fifths_closed (n : Nat) : ∀ (i : Int),
+theorem fifths_closed_from (n : Nat) : ∀ (i : Int),
     12 * fifths i n = (i + n) * (i + n) * (i + n - 1) * (i + n - 1) * (2 * (i + n) * (i + n) - 2 * (i + n) - 1)
       - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1) := by
   induction n with
@@ -3563,61 +3563,42 @@ theorem fifths_closed (n : Nat) : ∀ (i : Int),
     push_cast at this ⊢
     grind
 
-theorem squares_at : Stmt.squares_at := by
-  intro c i n h
-  subst h
+-- the closed forms in integer(n), and the sums over no iterations
+theorem squares_closed : Stmt.squares_closed := by
+  intro i n
   rw [integer_cast]
-  exact squares_closed n i
+  exact squares_closed_from n i
 
--- the links of the powers of integer(n) and c, with the fold
-theorem squares_square_at : Stmt.squares_square_at := by
-  intro c i n h
-  subst h
-  rw [integer_cast, squares_closed n i]
+theorem squares_zero : Stmt.squares_zero := by
+  intro i
+  simp [squares, counter, butlast, maps, sum]
 
-theorem squares_cube_at : Stmt.squares_cube_at := by
-  intro c i n h
-  subst h
-  rw [integer_cast, squares_closed n i]
-
--- the halved triangles in c: those in integer(n), exact
-theorem triangle_at : Stmt.triangle_at := by
-  intro c n h
-  subst h
-  exact triangle_even (integer n)
-
-theorem triangle_below_at : Stmt.triangle_below_at := by
-  intro c n h
-  subst h
-  exact triangle_even_below (integer n)
-
-theorem triangle_scaled_at : Stmt.triangle_scaled_at := by
-  intro a c n h
-  subst h
-  exact triangle_even_scaled a (integer n)
-
-theorem triangle_below_scaled_at : Stmt.triangle_below_scaled_at := by
-  intro a c n h
-  subst h
-  exact triangle_even_below_scaled a (integer n)
-
-theorem cubes_at : Stmt.cubes_at := by
-  intro c i n h
-  subst h
+theorem cubes_closed : Stmt.cubes_closed := by
+  intro i n
   rw [integer_cast]
-  exact cubes_closed n i
+  exact cubes_closed_from n i
 
-theorem fourths_at : Stmt.fourths_at := by
-  intro c i n h
-  subst h
-  rw [integer_cast]
-  exact fourths_closed n i
+theorem cubes_zero : Stmt.cubes_zero := by
+  intro i
+  simp [cubes, counter, butlast, maps, sum]
 
-theorem fifths_at : Stmt.fifths_at := by
-  intro c i n h
-  subst h
+theorem fourths_closed : Stmt.fourths_closed := by
+  intro i n
   rw [integer_cast]
-  exact fifths_closed n i
+  exact fourths_closed_from n i
+
+theorem fourths_zero : Stmt.fourths_zero := by
+  intro i
+  simp [fourths, counter, butlast, maps, sum]
+
+theorem fifths_closed : Stmt.fifths_closed := by
+  intro i n
+  rw [integer_cast]
+  exact fifths_closed_from n i
+
+theorem fifths_zero : Stmt.fifths_zero := by
+  intro i
+  simp [fifths, counter, butlast, maps, sum]
 
 -- geometric sequences and series, from any start of the counter, which the updates do not read
 theorem current_trace_geometric_gen (z : Int) (n : Nat) :

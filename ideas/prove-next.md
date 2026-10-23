@@ -58,6 +58,13 @@ itself: the same reads x[0], x[1] are simplified again in about 31 sibling conte
 `unknown` instead of breaking off, but on Arrays at 60 s the errors fall from 58 to 38 and the timeouts rise from 76
 to 95, with the same correct results.
 
+**Tried and reverted (0.50.15, Oct 24, 2026).** A memo of the simplified instances, raw to simplified, as an
+immutable map of the context that the contexts extending it inherit (sound, since a sibling never sees a
+simplification under the other's facts): few hits, since the traversal builds the context of each position from its
+parent (each conjunct with its siblings, the contexts of combinators per position); on ps5-ll_unwindbound1 278
+simplifications of three distinct instances remained. It fixed cohencu-ll_unwindbound1 only; the cause there was
+fixed in the database instead (series.dfy in integer(n), 0.50.16).
+
 **Change, if the cost matters.** A memo of the instances per context: an instance whose canonical form (`Canon`,
 modulo the classes) is known is not assumed again and does not count as a change of the round. Narrower: a raw
 instance is assumed only if one of its atoms is not yet in the classes. The repeated firing of `Forward.saturate`

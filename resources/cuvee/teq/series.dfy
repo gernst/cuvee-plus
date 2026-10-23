@@ -30,6 +30,20 @@ function {:teq} {:fold} fifths(i: int, n: Nat): int
   sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k * k * k * k))
 }
 
+// the sums over no iterations, e.g. in the case n == zero of a split, whose instances of the closed forms below would
+// be polynomials in integer(zero), simplified again at every fact (ps5-ll_unwindbound1: the rewrite steps exhausted)
+lemma {:rw} {:teq} squares_zero(i: int)
+  ensures squares(i, zero) == 0
+
+lemma {:rw} {:teq} cubes_zero(i: int)
+  ensures cubes(i, zero) == 0
+
+lemma {:rw} {:teq} fourths_zero(i: int)
+  ensures fourths(i, zero) == 0
+
+lemma {:rw} {:teq} fifths_zero(i: int)
+  ensures fifths(i, zero) == 0
+
 // a coefficient of the powers, as the expansions of (k + 1)^p leave them, e.g. 3 * k * k of ps4, outside the folds:
 // a * squares(i, n) is linear in the fold, and a fold with a coefficient would not match the powers without one (the
 // pattern a * k * k does not match k * k, whose normal form has no factor 1); sum_scale of teq:aggregation does not
@@ -43,70 +57,35 @@ lemma {:rw} {:teq} sum_cubes_scaled(a: int, i: int, n: Nat)
 lemma {:rw} {:teq} sum_fourths_scaled(a: int, i: int, n: Nat)
   ensures sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: a * k * k * k * k)) == a * fourths(i, n)
 
-// the sums of the powers from i, Faulhaber's formulas times their denominators, as the difference of the sums below
-// i + c and below i, without division, as forward facts about the folds, which stay atoms of the linear arithmetic (as
-// rewrite rules with a quotient, the quotient needs an exactness fact whose trigger a forward lemma cannot name, all its
-// terms having one variable); in a variable c equal to the number of iterations, e.g. the final value of a loop
-// counter, looked up among the facts: the linear arithmetic does not relate the powers of c to those of integer(n)
-// (c * c and integer(n) * integer(n) are different monomials), hence the powers of integer(n) that remain, e.g. of
-// the sums of a counter (sum_counter), are related to those of c by the lemmas below, each one equation triggered at
-// a fold or at a quotient: a link at integer(n) as its trigger slows down every task with a counter (array_4 from 19 s
-// to a timeout of 90 s) or exhausts the rewrite steps (in-de61.1 of SV-LIB, whose five loops have counters equal to
-// each other), and the higher powers of integer(n) linked to c do not terminate on mono-crafted_13
+// the sums of the powers from i, Faulhaber's formulas (Academia Algebrae, 1631) times their denominators, as the
+// difference of the sums below i + integer(n) and below i, without division: forward facts about the folds, which stay
+// atoms of the linear arithmetic (as rewrite rules with a quotient, the quotient needs an exactness fact whose trigger
+// a forward lemma cannot name, all its terms having one variable); triggered at the fold, the term with the most
+// variables, once per fold; in integer(n), which the arithmetic relates to the variables equal to it, e.g. the final
+// value c of a loop counter, since it inlines the solution c == integer(n) (0.50.16; before, the facts were stated in
+// such a c, looked up among the facts, which matched every variable of the class of integer(n), with an instance each,
+// until the rewrite steps were exhausted on ps5-ll_unwindbound1)
 // (from nla-digbench: ps3 to ps6; MonoCera: ncomp, pcomp)
-lemma {:fw} {:teq} squares_at(c: int, i: int, n: Nat)
-  requires c == integer(n)
-  ensures 6 * squares(i, n) == (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1)
+lemma {:fw} {:teq} squares_closed(i: int, n: Nat)
+  ensures 6 * squares(i, n)
+    == (i + integer(n) - 1) * (i + integer(n)) * (2 * (i + integer(n)) - 1)
+       - (i - 1) * i * (2 * i - 1)
 
-// the halved triangles in integer(n) that sum_counter of teq:aggregation leaves for the sum of a counter, e.g.
-// (-integer(n) + integer(n) * integer(n)) / 2 of the sum of y = k + 1 of ps2, in c as well, at the quotient as its
-// trigger, which occurs only where such a sum was rewritten: one equation each, since the engine splits a forward
-// lemma at its conjunctions and triggers each conjunct on its own, and the conjuncts integer(n) * integer(n) == c * c
-// of a former squares_at were triggered at integer(n), at every counter (in-de61.1 of SV-LIB: rewriting does not
-// terminate); the coefficient a separately, since a * x does not match x
-// (from nla-digbench: ps2 to ps6; MonoCera: ncomp, pcomp)
-lemma {:fw} {:teq} triangle_at(c: int, n: Nat)
-  requires c == integer(n)
-  ensures 2 * ((integer(n) + integer(n) * integer(n)) / 2) == c + c * c
+lemma {:fw} {:teq} cubes_closed(i: int, n: Nat)
+  ensures 4 * cubes(i, n)
+    == (i + integer(n)) * (i + integer(n)) * (i + integer(n) - 1) * (i + integer(n) - 1)
+       - i * i * (i - 1) * (i - 1)
 
-lemma {:fw} {:teq} triangle_below_at(c: int, n: Nat)
-  requires c == integer(n)
-  ensures 2 * ((-integer(n) + integer(n) * integer(n)) / 2) == -c + c * c
-
-lemma {:fw} {:teq} triangle_scaled_at(a: int, c: int, n: Nat)
-  requires c == integer(n)
-  ensures 2 * ((a * integer(n) + a * integer(n) * integer(n)) / 2) == a * c + a * c * c
-
-lemma {:fw} {:teq} triangle_below_scaled_at(a: int, c: int, n: Nat)
-  requires c == integer(n)
-  ensures 2 * ((-a * integer(n) + a * integer(n) * integer(n)) / 2) == -a * c + a * c * c
-
-// the square and the cube of integer(n) equated with those of c, e.g. the n * n of the sum of 2 * k + 1 of ps3, which
-// no quotient holds: each as one equation with the fold, such that it is triggered at the fold (with squares_at, the
-// linear arithmetic derives integer(n) * integer(n) == c * c), not at integer(n) as a conjunct of its own would be
-// (from nla-digbench: ps3, ps5)
-lemma {:fw} {:teq} squares_square_at(c: int, i: int, n: Nat)
-  requires c == integer(n)
-  ensures 6 * squares(i, n) + integer(n) * integer(n) == (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1) + c * c
-
-lemma {:fw} {:teq} squares_cube_at(c: int, i: int, n: Nat)
-  requires c == integer(n)
-  ensures 6 * squares(i, n) + integer(n) * integer(n) * integer(n) == (i + c - 1) * (i + c) * (2 * (i + c) - 1) - (i - 1) * i * (2 * i - 1) + c * c * c
-
-lemma {:fw} {:teq} cubes_at(c: int, i: int, n: Nat)
-  requires c == integer(n)
-  ensures 4 * cubes(i, n) == (i + c) * (i + c) * (i + c - 1) * (i + c - 1) - i * i * (i - 1) * (i - 1)
-
-lemma {:fw} {:teq} fourths_at(c: int, i: int, n: Nat)
-  requires c == integer(n)
+lemma {:fw} {:teq} fourths_closed(i: int, n: Nat)
   ensures 30 * fourths(i, n)
-    == (i + c) * (i + c - 1) * (2 * (i + c) - 1) * (3 * (i + c) * (i + c) - 3 * (i + c) - 1)
+    == (i + integer(n)) * (i + integer(n) - 1) * (2 * (i + integer(n)) - 1)
+         * (3 * (i + integer(n)) * (i + integer(n)) - 3 * (i + integer(n)) - 1)
        - i * (i - 1) * (2 * i - 1) * (3 * i * i - 3 * i - 1)
 
-lemma {:fw} {:teq} fifths_at(c: int, i: int, n: Nat)
-  requires c == integer(n)
+lemma {:fw} {:teq} fifths_closed(i: int, n: Nat)
   ensures 12 * fifths(i, n)
-    == (i + c) * (i + c) * (i + c - 1) * (i + c - 1) * (2 * (i + c) * (i + c) - 2 * (i + c) - 1)
+    == (i + integer(n)) * (i + integer(n)) * (i + integer(n) - 1) * (i + integer(n) - 1)
+         * (2 * (i + integer(n)) * (i + integer(n)) - 2 * (i + integer(n)) - 1)
        - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1)
 
 // geometric sequences: a value multiplied by z in each iteration is its initial value times a power of z, the function

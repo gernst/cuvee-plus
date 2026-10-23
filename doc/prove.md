@@ -84,7 +84,11 @@ in the conjuncts of a premise.
   literal `k != 0` brings its range `0 <= t % k <= |k| - 1` (`range` of
   [remainders.dfy](../examples/dafny/prove/remainders.dfy)). Disequations are refuted when the
   constraints determine the difference. The solutions of linear equations for
-  a variable (`x` by `40 - n`) are recorded as `solved` and inlined into polynomials, as the chains did.
+  a variable (`x` by `40 - n`) are recorded as `solved` and inlined into polynomials, as the chains did; also a
+  solution that is the value of a natural (`c` by `integer(n)`, the final value of a counter, `Linear.integer`, since
+  0.50.16), such that the monomials of `c` are those of `integer(n)` (`c * c` and `integer(n) * integer(n)` were
+  different atoms of the arithmetic, which the classes do not relate); other equations of a variable with a term that
+  is not arithmetic are classes.
 - **Closed side conditions are looked up** before they are decided (`Rewrite.known`): a closed instance that is
   congruent to a fact modulo the classes holds; an instance with binders, e.g. an `invs`, holds if its canonical form
   equals that of a fact after both are normalized under the classes (`Classes.normalize`, registered subterms
@@ -132,7 +136,10 @@ in the conjuncts of a premise.
   lets the guards of the view of `current(S).0` be rewritten, so its bound matches, in the former
   `bsearch_sorted.dfy`, removed Oct 23, 2026); this
   terminates, as the terms are fixed and an instance whose conjuncts are all known is skipped; no lemma fires while
-  a trigger is matched.
+  a trigger is matched. An instance is simplified again each time its lemma fires, with the rewrite steps of the
+  command, so many instances of large polynomials can exhaust them; the costs of triggers, conjunctions (which
+  `-split` makes lemmas of their own) and variables bound by conditions alone are in teq.md ("What a forward lemma
+  costs").
   `-debug forward` prints the instances.
 - **Lemmas over whole cycles** (`Rewrite.matches`): a pattern with several accumulators,
   `trace(l0, h0, for ... do lo, hi, k :: u₀, u₁)`, matches a trace of as many accumulators component by component,

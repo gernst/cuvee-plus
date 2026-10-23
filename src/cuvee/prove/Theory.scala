@@ -41,6 +41,13 @@ object Linear:
   // for each command (see Context.withRules), since the same check is made at many positions
   type Checks = Map[(Set[Constraint], Set[(Ring, Poly)]), Boolean]
 
+  // a solution that is the value of a natural, e.g. c == integer(n) of the final value of a counter, which is inlined
+  // like an arithmetic one, such that the monomials of c are those of integer(n)
+  def integer(e: Expr): Boolean =
+    e match
+      case Nats.integer(_) => true
+      case _               => false
+
 // the linear constraints on Int and Real among the facts, decided by the simplex over the rationals (see Simplex),
 // which replaces the difference constraints of the simplifier: comparisons and equations as constraints 0 <= p and
 // 0 < p, where on Int a strict comparison is the non-strict one offset by 1 and the coefficients are rounded
@@ -145,7 +152,7 @@ case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], sol
       for
         (x, rest) <- poly.solution((x, _) => !(solved contains x))
         e = rest.toExpr(ring)
-        if e.isArith
+        if e.isArith || Linear.integer(e)
       yield (x, e)
     solution match
       case Some(pair) => copy(solved = solved + pair)
