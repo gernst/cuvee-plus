@@ -386,20 +386,16 @@ class Parser(var state: State):
         state = state.declare(qname, params_, formals_, rets_, attrs_)
 
         val mod_ = attrs_.modifies
-        val nonglobal = mod_.filterNot(globals.contains)
-        Error.report("modifies clause of method lists variables that are not global", qname, nonglobal):
-          require(nonglobal.isEmpty)
+        state.progs.modifies(qname, mod_)
 
         body match
           case None =>
             val cmd_ = state.cmds.declareProc(qname)
             List(cmd_)
 
-          // the inputs of a method and the global variables that are not modified must not be assigned
           case Some(prog) =>
             val prog_ = resolve(scope__, prog)
-            val fixed = formals_.toSet ++ (globals.toSet -- mod_)
-            val body_ = check(scope__, fixed, mod_.toSet, prog_)
+            val body_ = state.progs.body(scope__, formals_, mod_, prog_)
             state = state.define(qname, body_)
 
             val cmd_ = state.cmds.defineProc(qname)

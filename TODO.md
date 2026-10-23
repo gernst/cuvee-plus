@@ -90,15 +90,13 @@ Cleanup, none of it a bug.
 - Transforms: abstractness from two sources (`VCGen.abstracts`, the solver's closure in the order of the stream,
   which misses mutual recursion; mark the functions in the `State` instead); `VCGen`, `TEQ`, `Horn` repeat the
   setup of a procedure and pass the four exits separately; `Monomorph` replays the prefix on every flush.
-- Frontends: the checks of a procedure written three times; Dafny and Boogie share most syntax, resolvers and
-  grammars; Dafny contracts are fields, Boogie's a list of clauses; four folds of collection literals; the `par` and
-  monomorphic forms of SMT-LIB parsed and printed separately; `c.Parser` (1743 lines) mixes concerns; the flex
-  scanners throw `RuntimeException`.
+- Frontends: Dafny and Boogie share most syntax, resolvers and grammars; Dafny contracts are fields, Boogie's a
+  list of clauses; four folds of collection literals; the `par` and monomorphic forms of SMT-LIB printed separately;
+  `c.Parser` (1743 lines) mixes concerns; the flex scanners throw `RuntimeException`.
 - Printers and pipeline: the mixfix printers of Dafny, Boogie and C share most methods (→ a base trait);
   recomputed guards (`case _ if f(e).isDefined`); repeated Dafny printer cases; `Pipe.run` handles errors twice and
   lets `StackOverflowError` escape; `-help` lists options in arbitrary order; global mutable state (fresh-name
   counters, printer widths, `Debug.modules`); `object Debug` and `trait Debug` share a name.
-- Remove `src/cuvee/boogie/Scanner.java~` and add `*~` to `.gitignore`.
 - Tests: helpers defined in several suites; two harnesses (`test.Examples`, `test.Expected`); no direct tests of
   easyparse and `prove/Arith`; 444 feature warnings (`String => Name`), 2 deprecations, a non-exhaustive match in
   `prove/Simplify`.

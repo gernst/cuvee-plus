@@ -423,6 +423,17 @@ case class State(
     def check(scope: Scope, fixed: Set[Var], mod: Set[Var], prog: Prog) =
       Overload(State.this, Type.expand(State.this, Type.check(State.this, scope, fixed, mod, prog)))
 
+    // the modifies clause `mod` of procedure `name`, which lists global variables only, as all frontends require
+    def modifies(name: Name, mod: List[Var]): Unit =
+      val nonglobal = mod.filterNot(globals.contains)
+      Error.report("modifies clause of procedure lists variables that are not global", name.subscripted, nonglobal):
+        require(nonglobal.isEmpty)
+
+    // the body of a procedure with the inputs `in` and the modifies clause `mod`, checked in `scope`, where the
+    // inputs and the global variables that are not modified must not be assigned
+    def body(scope: Scope, in: List[Var], mod: List[Var], prog: Prog): Prog =
+      check(scope, in.toSet ++ (globals.toSet -- mod), mod.toSet, prog)
+
     def skip = Skip
     def break = Break
     def continue = Continue

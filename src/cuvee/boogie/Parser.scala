@@ -149,10 +149,8 @@ class Parser(var state: State):
         val scope__ = scope_ ++ globals ++ formals_ ++ rets_
         val contract_ = contract(scope__, specs)
 
-        val mod = contract_.modifies.toSet
-        val unknown = mod.filterNot(globals.contains)
-        Error.report("modifies clause of procedure lists variables that are not global", name, unknown):
-          require(unknown.isEmpty)
+        val mod = contract_.modifies
+        state.progs.modifies(name, mod)
 
         state = state.declare(name, params_, formals_, rets_, Attrs(attrs_.attrs ++ contract_.attrs))
 
@@ -161,11 +159,9 @@ class Parser(var state: State):
             val cmd_ = state.cmds.declareProc(name)
             List(cmd_)
 
-          // the inputs of a procedure and the global variables that are not modified must not be assigned
           case Some(prog) =>
             val prog_ = resolve(scope__, prog)
-            val fixed = formals_.toSet ++ (globals.toSet -- mod)
-            val body_ = state.progs.check(scope__, fixed, mod, prog_)
+            val body_ = state.progs.body(scope__, formals_, mod, prog_)
             state = state.define(name, body_)
 
             val cmd_ = state.cmds.defineProc(name)
