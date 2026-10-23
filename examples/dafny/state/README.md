@@ -18,15 +18,11 @@ prints its summary lemma).
 `accumulators.dfy` shows the syntax of traces with several accumulators (`trace(e₁, e₂, for ... do x₁, x₂, k :: u₁, u₂)`,
 `current(S).i`, `⌊S⌋.i`, see doc/teq.md), parsed, type-checked and printed.
 
-The binary searches, over a sorted array with the array, its bound and the key as parameters (`sorted(a, n)`):
+The binary search over a sorted array, proved by the rule `bisection` over the whole cycle, is
+[examples/dafny/algorithms/bsearch.dfy](../algorithms/bsearch.dfy) (formerly `bsearch_bisect` here), which runs with
+the algorithms on demand (`CUVEE_ALGORITHMS`); its variants (`bsearch_safe`, `bsearch_sorted`, `bsearch`) were
+removed on Oct 23, 2026 (see doc/prove.md).
 
 | example | proof | time |
 |---|---|---|
-| bsearch_bisect | the version of doc/array-algorithms (binary search): the rule `bisection` names the trace of `lo` and `hi` with its probe and guards, two forward lemmas bound `lo` and `hi` by the cuts of the guards, which rules on sortedness rewrite to the partition points `lower(a, n, x)`, `upper(a, n, x)` | 8 s |
-| bsearch_safe | the same with the probe `lo + (hi - lo) / 2`, which does not overflow | 10 s |
-| lower_bound | the lower bound of examples/dafny/algorithms (open in the former per-variable form) with the same lemmas | 8 s |
-| bsearch_sorted | in two layers: the monotonicity of each component as a forward invariant over its history first, so that the reads of the array within `a[0..n)` become comparisons with the partition points, then the bounds by the abstractions `incs`/`decs` | 45 s |
-| bsearch | the search of examples/dafny/teq with constant partition points `p`, `q` in place of sortedness, the bounds of `incs`/`decs` as forward facts | 8 s |
-
-The midpoint is bounded by the linear arithmetic (bounds of division by a constant). `bsearch_sorted` and `bsearch`
-are kept as regression tests of the per-component route (see doc/prove.md).
+| lower_bound | the lower bound of examples/dafny/algorithms (open in the former per-variable form) with the lemmas of the bisection | 8 s |

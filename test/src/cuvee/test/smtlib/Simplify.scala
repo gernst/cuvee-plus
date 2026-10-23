@@ -21,12 +21,4 @@ object Derivatives extends TestSuite:
       diff(Ints.times(n, n), n) ==> "(n :: n * n)'"
       diff(Ints.lt(n, Ints.zero), n) ==> "(n :: n < 0)'"
 
-// programs are simplified statement by statement (see examples/dafny/simplify/statements.dfy),
-// before verification the verdicts are the same
-object SimplifyPrograms extends TestSuite:
-  val tests = Tests:
-    test("examples"):
-      for file <- Examples.find(os.sub / "dafny" / "vcgen", "dfy").filter(Examples.supported)
-      do
-        val refuted = Examples.answers("-vcgen", "-z3", file.toString).contains(cuvee.core.Status.Incorrect)
-        Examples.answers("-simplify", "-vcgen", "-z3", file.toString).contains(cuvee.core.Status.Incorrect) ==> refuted
+// the verdicts of the programs simplified statement by statement are checked by transform.Verdicts

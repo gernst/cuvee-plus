@@ -1,0 +1,14 @@
+type Trace<a₀>
+
+type List<a₀>
+
+function cases(J: List<int>): bool {
+  trace(0, for J do s, j :: case j < 0 => s case 0 <= j => s + 1)
+    == trace(0, for J do s, j :: s)
+}
+
+function ite(J: List<int>): bool {
+  trace(0, for J do s, j :: if j < 0 then s else s + 1)
+    == trace(0, for J do s, j :: s)
+}
+

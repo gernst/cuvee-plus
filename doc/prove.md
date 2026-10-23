@@ -129,7 +129,8 @@ in the conjuncts of a premise.
   with a polarity also fires the forward lemmas on its own terms when it is decided (`Simplify.forward`), so a goal
   that is a bare atom, `0 <= (x + x * x) / 2`, follows from the instance at its term; the triggers are tried again at the same
   terms as long as instances are added, since one instance may enable another (the invariant `0 <= lo` over `⌊S⌋.0`
-  lets the guards of the view of `current(S).0` be rewritten, so its bound matches, in `bsearch_sorted.dfy`); this
+  lets the guards of the view of `current(S).0` be rewritten, so its bound matches, in the former
+  `bsearch_sorted.dfy`, removed Oct 23, 2026); this
   terminates, as the terms are fixed and an instance whose conjuncts are all known is skipped; no lemma fires while
   a trigger is matched.
   `-debug forward` prints the instances.
@@ -140,11 +141,11 @@ in the conjuncts of a premise.
   `current(T).i` or `⌊T⌋.i` of the pattern matches the same read of a variable by its definition; lambdas match
   lambdas of the same arity with their bound variables related. An equation `S == trace(...)` of several
   accumulators is rewritten with `S` as its self, so a rule over the whole cycle can name the trace. The binary
-  search over a sorted array is proved so in `bsearch_bisect.dfy`: the rule `bisection` names the trace with its
+  search over a sorted array is proved so in `algorithms/bsearch.dfy`: the rule `bisection` names the trace with its
   probe `M` and guards `G`, `H`, higher-order patterns `G(M(lo, hi))` whose inner function is bound first (from the
   result `M(lo, hi) + 1`) and whose instantiated arguments are beta-reduced (`Rewrite.beta`); a higher-order pattern
   that is not instantiated yet may take several summands of a sum, like a variable, if the sum does not match
-  otherwise, so `M(lo, hi) + 1` matches `lo + (hi - lo) / 2 + 1` (`bsearch_safe.dfy`).
+  otherwise, so `M(lo, hi) + 1` matches `lo + (hi - lo) / 2 + 1` (the former `bsearch_safe.dfy`).
 - **Rules of the per-variable form** (`Rewrite.combinator`): many rules of the database iterate over the iterations
   and a loop variable, `for ⌊counter(0, 1, n)⌋, ⌊counter(0, 1, n)⌋ do a, k, i`, or over the iterations and further
   variables, `for ⌊counter(0, 1, n)⌋, hs do f, k, h`, where `-teq` has the loop variable only. A dependency of the
@@ -205,9 +206,10 @@ Oct 13, 2026: the examples of [examples/dafny/state](../examples/dafny/state) ch
 the database `teq.dfy` alone: single loops, the swap of two arrays, four nested loops without fragment lemmas, the
 transpose with one summary lemma, and the syntax example, 1.5 to 5 s. The binary search over a sorted array, with the
 array, its bound and the key as parameters, closes by a lemma over the whole cycle, a named bisection with a probe
-whose cuts are the partition points (`bsearch_bisect.dfy`, 8 s; `bsearch_safe.dfy` with the probe
+whose cuts are the partition points (now `algorithms/bsearch.dfy`, 8 s; a variant with the probe
 `lo + (hi - lo) / 2`), and so does the lower bound of the algorithms (`lower_bound.dfy`, open under `-simplify`,
-8 s); the per-component route is kept as a regression test (`bsearch_sorted.dfy` in two layers, 45 s; `bsearch.dfy`
-with constant partition points, 8 s). Open: the bisection and the partition points of sorted arrays as a module of
+8 s); the per-component route was a regression test (`bsearch_sorted.dfy` in two layers, 45 s; `bsearch.dfy`
+with constant partition points, 8 s) until Oct 23, 2026, when only the bisection was kept, among the algorithms,
+which run on demand (`CUVEE_ALGORITHMS`). Open: the bisection and the partition points of sorted arrays as a module of
 the database, the instances of `invs` by triggers (step 2 of J), the merge and the sorts; see
 [doc/prove.md](prove.md) and [TODO.md](../TODO.md).
