@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-cav19/array_tripl_access_init_const.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-cav19/array_tripl_access_init_const.dfy
 // SV-COMP array-cav19/array_tripl_access_init_const.yml (expected: safe), translated from the C program by hand:
 // the positions 3 i, 3 i + 1, and 3 i + 2 are set to 0 for i = 0, ..., N, and all positions up to 3 N are
 // checked to be nonnegative

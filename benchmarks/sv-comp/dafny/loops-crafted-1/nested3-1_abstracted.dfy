@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/nested3-1_abstracted.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/nested3-1_abstracted.dfy
 // SV-COMP loops-crafted-1/nested3-1_abstracted.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks z % 4; y % 2; x % 2
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455

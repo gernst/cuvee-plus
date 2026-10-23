@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/nested9.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/nested9.dfy
 // SV-COMP loop-invgen/nested9.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nested6 with other constants or assertions; checks k-i <= 2*n
 

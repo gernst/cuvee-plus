@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/nla-digbench/geo3-ll.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/nla-digbench/geo3-ll.c
 // SV-COMP nla-digbench/geo3-ll.yml, translated from benchmarks/sv-comp/dafny/nla-digbench/geo3-ll.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

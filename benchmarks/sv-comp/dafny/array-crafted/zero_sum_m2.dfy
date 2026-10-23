@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-crafted/zero_sum_m2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-crafted/zero_sum_m2.dfy
 // SV-COMP array-crafted/zero_sum_m2.yml (expected: safe), translated from the C program by hand:
 // the elements of an array of shorts of arbitrary size are added to sum twice and subtracted twice, which is 0 then
 //

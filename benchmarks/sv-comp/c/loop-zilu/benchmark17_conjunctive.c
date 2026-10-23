@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-zilu/benchmark17_conjunctive.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-zilu/benchmark17_conjunctive.c
 // SV-COMP loop-zilu/benchmark17_conjunctive.yml, translated from benchmarks/sv-comp/dafny/loop-zilu/benchmark17_conjunctive.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

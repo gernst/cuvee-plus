@@ -24,8 +24,7 @@ object Examples:
     !unsupported.contains(file.relativeTo(root).toString)
 
   // directories of examples that are no tests by default: the algorithms of examples/dafny/algorithms, whose runs
-  // take minutes, only if the environment variable CUVEE_ALGORITHMS is set (like CUVEE_SVCOMP for the translations
-  // of SV-COMP, see Checked.scala)
+  // take minutes, only if the environment variable CUVEE_ALGORITHMS is set
   val excluded: List[os.SubPath] =
     if sys.env.contains("CUVEE_ALGORITHMS") then Nil else List(os.sub / "dafny" / "algorithms")
 

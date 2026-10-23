@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-industry-pattern/mod3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-industry-pattern/mod3.dfy
 // SV-COMP loop-industry-pattern/mod3.yml (expected: safe), translated from the C program by hand:
 // x is raised to the next multiple of 3 if it is not one, with y = 0, and otherwise by 4 or 5 with y = 1; if y == 0
 // at the end, x % 3 == 0 is checked; unsigned int is int without wrap-around, which keeps the remainders here, since

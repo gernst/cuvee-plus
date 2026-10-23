@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_running-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_running-1.dfy
 // SV-COMP array-examples/standard_running-1.yml (expected: unsafe), translated from the C
 // program by hand: the unsafe variant of standard_running-2, whose second test resets the flag for a negative
 // element whose entry in b is 0, which it always is

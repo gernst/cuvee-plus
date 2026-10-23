@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-lopstr16/partial_lesser_bound.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-lopstr16/partial_lesser_bound.dfy
 // SV-COMP array-lopstr16/partial_lesser_bound.yml (expected: safe), translated from the C program by hand:
 // pointers are only compared with null, they are modeled by truth values, whether they are not null, where
 // malloc does not fail; the fields of structs are arrays of their own; the array of pointers is set to null,

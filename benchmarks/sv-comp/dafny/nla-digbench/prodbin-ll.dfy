@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/prodbin-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/prodbin-ll.dfy
 // SV-COMP nla-digbench/prodbin-ll.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy, where the function number of the C prelude is written as a conditional: the product of a
 // and b by binary multiplication, with the invariant checked in and after the loop

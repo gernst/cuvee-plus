@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_strcmp_ground.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_strcmp_ground.dfy
 // SV-COMP array-examples/standard_strcmp_ground.yml (expected: safe), translated from the C program by hand:
 // _strcmp (inlined) returns 1 at the first position where a and b differ, and 0 otherwise, in which case they
 // are checked to agree everywhere; the return from the loop is a break with the result

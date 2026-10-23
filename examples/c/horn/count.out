@@ -54,46 +54,46 @@
 
 (declare-fun
   main_spec_1
-  (Int Int Int Int Int Int)
+  (Int Int Int Int Int)
   Bool)
 
 (declare-fun
   main_assign_2
-  (Int Int Int Int Int Int)
+  (Int Int Int Int Int)
   Bool)
 
 (declare-fun
   main_spec_3
-  (Int Int Int Int Int Int)
+  (Int Int Int Int Int)
   Bool)
 
 (declare-fun
   main_assign_4
+  (Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_block_5
+  (Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_6
   (Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_assign_5
+  main_inv_7
   (Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_inv_6
+  main_block_8
   (Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_exit_7
-  (Int Int Int Int Int Int)
-  Bool)
-
-(declare-fun
-  main_join_8
-  (Int Int Int Int Int Int)
-  Bool)
-
-(declare-fun
-  main_assign_9
+  main_join_9
   (Int Int Int Int Int Int)
   Bool)
 
@@ -108,158 +108,164 @@
   Bool)
 
 (declare-fun
-  main_spec_12
+  main_assign_12
   (Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_assign_13
-  (Int Int Int Int Int Int)
+  main_spec_13
+  (Int Int Int Int Int)
   Bool)
 
-(assert
-  (forall
-    ((counter Int))
-    (=> (= counter 0) (main_pre counter))))
+(declare-fun
+  main_assign_14
+  (Int Int Int Int Int)
+  Bool)
+
+(assert (main_pre 0))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (n$4 Int) (i$5 Int) (tmp$6 Int))
+    ((result Int) (counter Int) (n$4 Int) (tmp$5 Int))
     (=>
       (and
-        (main_pre counter$2)
-        (= counter counter$2)
-        (<= 0 (+ tmp$6 2147483648))
-        (<= tmp$6 2147483647))
-      (main_spec_1 counter$2 result counter tmp$6 n$4 i$5))))
+        (main_pre counter)
+        (<= 0 (+ tmp$5 2147483648))
+        (<= tmp$5 2147483647))
+      (main_spec_1 counter result counter tmp$5 n$4))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int))
     (=>
-      (main_spec_1 counter$2 result counter tmp$3 n$4 i$5)
-      (main_assign_2 counter$2 result counter tmp$3 tmp$3 i$5))))
+      (main_spec_1 counter$2 result counter tmp$3 n$4)
+      (main_assign_2 counter$2 result counter tmp$3 tmp$3))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int))
     (=>
       (and
-        (main_assign_2 counter$2 result counter tmp$3 n$4 i$5)
+        (main_assign_2 counter$2 result counter tmp$3 n$4)
         (<= 0 n$4))
-      (main_spec_3 counter$2 result counter tmp$3 n$4 i$5))))
+      (main_spec_3 counter$2 result counter tmp$3 n$4))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int))
     (=>
-      (main_spec_3 counter$2 result counter tmp$3 n$4 i$5)
-      (main_assign_4 counter$2 result 0 tmp$3 n$4 i$5))))
+      (main_spec_3 counter$2 result counter tmp$3 n$4)
+      (main_assign_4 counter$2 result 0 tmp$3 n$4))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int))
     (=>
-      (main_assign_4 counter$2 result counter tmp$3 n$4 i$5)
-      (main_assign_5 counter$2 result counter tmp$3 n$4 0))))
+      (main_assign_4 counter$2 result counter tmp$3 n$4)
+      (main_assign_6 counter$2 result counter tmp$3 n$4 0))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
     (=>
-      (main_assign_5 counter$2 result counter tmp$3 n$4 i$5)
-      (main_inv_6 counter$2 result counter tmp$3 n$4 i$5))))
+      (main_assign_6 counter$2 result counter tmp$3 n$4 i$6)
+      (main_inv_7 counter$2 result counter tmp$3 n$4 i$6))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
     (=>
       (and
-        (main_inv_6 counter$2 result counter tmp$3 n$4 i$5)
-        (< i$5 n$4)
+        (main_inv_7 counter$2 result counter tmp$3 n$4 i$6)
+        (< i$6 n$4)
         (=
-          (ite (<= 0 i$5) (mod i$5 2) (- (mod i$5 2)))
+          (ite (<= 0 i$6) (mod i$6 2) (- (mod i$6 2)))
           1))
-      (main_assign_9 counter$2 result counter tmp$3 n$4 (+ i$5 1)))))
+      (main_assign_10 counter$2 result counter tmp$3 n$4 (+ i$6 1)))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
     (=>
-      (main_assign_9 counter$2 result counter tmp$3 n$4 i$5)
-      (main_inv_6 counter$2 result counter tmp$3 n$4 i$5))))
+      (main_assign_10 counter$2 result counter tmp$3 n$4 i$6)
+      (main_inv_7 counter$2 result counter tmp$3 n$4 i$6))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
     (=>
       (and
-        (main_inv_6 counter$2 result counter tmp$3 n$4 i$5)
-        (< i$5 n$4)
+        (main_inv_7 counter$2 result counter tmp$3 n$4 i$6)
+        (< i$6 n$4)
         (not
           (=
-            (ite (<= 0 i$5) (mod i$5 2) (- (mod i$5 2)))
+            (ite (<= 0 i$6) (mod i$6 2) (- (mod i$6 2)))
             1)))
-      (main_join_8 counter$2 result counter tmp$3 n$4 i$5))))
+      (main_join_9 counter$2 result counter tmp$3 n$4 i$6))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
     (=>
-      (main_join_8 counter$2 result counter tmp$3 n$4 i$5)
-      (main_assign_10 counter$2 result (+ counter 1) tmp$3 n$4 i$5))))
+      (main_join_9 counter$2 result counter tmp$3 n$4 i$6)
+      (main_assign_11 counter$2 result (+ counter 1) tmp$3 n$4 i$6))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
     (=>
-      (main_assign_10 counter$2 result counter tmp$3 n$4 i$5)
-      (main_assign_11 counter$2 result counter tmp$3 n$4 (+ i$5 1)))))
+      (main_assign_11 counter$2 result counter tmp$3 n$4 i$6)
+      (main_block_8 counter$2 result counter tmp$3 n$4 i$6))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
     (=>
-      (main_assign_11 counter$2 result counter tmp$3 n$4 i$5)
-      (main_inv_6 counter$2 result counter tmp$3 n$4 i$5))))
+      (main_block_8 counter$2 result counter tmp$3 n$4 i$6)
+      (main_assign_12 counter$2 result counter tmp$3 n$4 (+ i$6 1)))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
+    (=>
+      (main_assign_12 counter$2 result counter tmp$3 n$4 i$6)
+      (main_inv_7 counter$2 result counter tmp$3 n$4 i$6))))
+
+(assert
+  (forall
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$6 Int))
     (=>
       (and
-        (main_inv_6 counter$2 result counter tmp$3 n$4 i$5)
-        (not (< i$5 n$4)))
-      (main_exit_7 counter$2 result counter tmp$3 n$4 i$5))))
+        (main_inv_7 counter$2 result counter tmp$3 n$4 i$6)
+        (<= n$4 i$6))
+      (main_block_5 counter$2 result counter tmp$3 n$4))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int))
     (=>
-      (main_exit_7 counter$2 result counter tmp$3 n$4 i$5)
+      (main_block_5 counter$2 result counter tmp$3 n$4)
       (<= counter n$4))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int))
     (=>
-      (and
-        (main_exit_7 counter$2 result counter tmp$3 n$4 i$5)
-        true)
-      (main_spec_12 counter$2 result counter tmp$3 n$4 i$5))))
+      (main_block_5 counter$2 result counter tmp$3 n$4)
+      (main_spec_13 counter$2 result counter tmp$3 n$4))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int))
     (=>
-      (main_spec_12 counter$2 result counter tmp$3 n$4 i$5)
-      (main_assign_13 counter$2 0 counter tmp$3 n$4 i$5))))
+      (main_spec_13 counter$2 result counter tmp$3 n$4)
+      (main_assign_14 counter$2 0 counter tmp$3 n$4))))
 
 (assert
   (forall
-    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int) (i$5 Int))
+    ((counter$2 Int) (result Int) (counter Int) (tmp$3 Int) (n$4 Int))
     (=>
-      (main_assign_13 counter$2 result counter tmp$3 n$4 i$5)
+      (main_assign_14 counter$2 result counter tmp$3 n$4)
       (main_post counter$2 result counter))))
 
 (check-sat)

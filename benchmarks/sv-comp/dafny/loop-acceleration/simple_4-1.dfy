@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/simple_4-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/simple_4-1.dfy
 // SV-COMP loop-acceleration/simple_4-1.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of simple_1-1 with other constants or assertions; checks !(x % 2)
 

@@ -1,10 +1,10 @@
 package cuvee.test
-package simplify
+package prove
 
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.Normalize as N
+import cuvee.prove.Normalize as N
 
 // formulas are normalized into equivalent clauses forall xs. antecedents ==> succedents
 // (see examples/smtlib/simplify/clauses.smt2), ite is lifted out of atoms where clauses are split

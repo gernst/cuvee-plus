@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/apache-escape-absolute.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/apache-escape-absolute.dfy
 // SV-COMP loop-invgen/apache-escape-absolute.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a program of the folder; checks cp-1 < urilen; 0 <= cp-1; cp < urilen; 0 <= cp; cp <
 // urilen; 0 <= cp; cp < urilen; 0 <= cp; cp+1 < urilen; 0 <= cp+1; cp < urilen; 0<=cp; cp < urilen; 0<=cp; c <

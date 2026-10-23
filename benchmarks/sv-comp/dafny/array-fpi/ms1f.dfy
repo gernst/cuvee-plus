@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ms1f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ms1f.dfy
 // SV-COMP array-fpi/ms1f.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of ms1, which asserts that the sum, which is 0, is N
 //

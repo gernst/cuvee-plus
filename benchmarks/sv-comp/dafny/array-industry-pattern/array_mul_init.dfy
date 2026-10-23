@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/array-industry-pattern/array_mul_init.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/array-industry-pattern/array_mul_init.dfy
 // SV-COMP array-industry-pattern/array_mul_init.yml (expected: safe), translated from the C
 // program by hand: a and b are initialized to the index, then at arbitrary positions overwritten by an arbitrary k
 // and its square, such that b is a or its square at all positions

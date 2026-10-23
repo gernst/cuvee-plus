@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/traces.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/traces.dfy
 // the combinators of trace equation systems: guards and results are simplified, cases with guard false are dropped,
 // results are simplified under their guard, and all is true if its body is;
 // dependencies whose bound variables are unused are dropped, except the first one if none remains,

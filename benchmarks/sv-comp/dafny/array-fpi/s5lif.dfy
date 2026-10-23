@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/s5lif.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/s5lif.dfy
 // SV-COMP array-fpi/s5lif.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of s1lif with other constants or assertions; checks sum[0] == 6*N
 

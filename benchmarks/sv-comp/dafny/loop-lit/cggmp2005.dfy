@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/cggmp2005.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/cggmp2005.dfy
 // SV-COMP loop-lit/cggmp2005.yml (expected: safe), translated from the C program by hand: i
 // counts up by 2 from 1, j down by 1 from 10, until they cross, which happens at j == 6
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/eqn2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/eqn2.dfy
 // SV-COMP array-fpi/eqn2.yml (expected: safe), translated from the C program by hand: as eqn1
 // with steps of 4: a holds 4, 8, ..., b the partial sums of a plus 1, which are checked to be 2 i * i + 2 i + 1
 // (eqn3 to eqn5 are variants)

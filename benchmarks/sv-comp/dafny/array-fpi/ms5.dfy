@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ms5.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ms5.dfy
 // SV-COMP array-fpi/ms5.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of ms1 with other constants or assertions; checks sum[0] <= 4*N
 

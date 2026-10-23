@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops-crafted-1/mono-crafted_14.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loops-crafted-1/mono-crafted_14.c
 // SV-COMP loops-crafted-1/mono-crafted_14.yml, translated from benchmarks/sv-comp/dafny/loops-crafted-1/mono-crafted_14.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

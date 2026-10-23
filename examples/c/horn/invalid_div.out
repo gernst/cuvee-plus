@@ -58,7 +58,7 @@
 
 (declare-fun main_assign_3 (Int Int) Bool)
 
-(assert (=> true main_pre))
+(assert main_pre)
 
 (assert
   (forall
@@ -82,9 +82,7 @@
   (forall
     ((result Int) (x$1 Int))
     (=>
-      (and
-        (main_assign_1 result x$1)
-        true)
+      (main_assign_1 result x$1)
       (main_spec_2 result x$1))))
 
 (assert

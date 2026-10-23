@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/prod4br-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/prod4br-ll.dfy
 // SV-COMP nla-digbench/prod4br-ll.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks q + a * b * p == (long long) x * y; q == (long long) x *
 // y; a * b == 0

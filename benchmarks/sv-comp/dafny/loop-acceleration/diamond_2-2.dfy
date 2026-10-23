@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/diamond_2-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/diamond_2-2.dfy
 // SV-COMP loop-acceleration/diamond_2-2.yml (expected: safe), translated from the C program by
 // hand: as diamond_1-1, with ten steps per iteration that depend on the parity of y, by 2 each if y is even, and by
 // 1, -2, 2, -2, 2, -4, 4, 2, -4, -4 otherwise, which sum to -5; x is unsigned in C, which wraps around for odd y,

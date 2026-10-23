@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify -chc examples/c/horn/invalid_count.c
+// ./Cuvee.sh -chc -prove examples/c/horn/invalid_count.c
 // expected: invalid
 // the loop counts only every second iteration
 

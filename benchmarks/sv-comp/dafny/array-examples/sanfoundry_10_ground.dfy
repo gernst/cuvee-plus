@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/sanfoundry_10_ground.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/sanfoundry_10_ground.dfy
 // SV-COMP array-examples/sanfoundry_10_ground.yml (expected: safe), translated from the C program by hand:
 // the first position pos of an element is searched, the elements after it are shifted down by one, and the
 // elements before pos are checked to differ from it

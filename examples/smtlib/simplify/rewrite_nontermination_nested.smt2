@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/rewrite_nontermination_nested.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/rewrite_nontermination_nested.smt2
 ; rules whose results grow exhaust the stack before the bound on the steps, which is reported in the same way
 (declare-fun f (Int) Int)
 (declare-fun p (Int) Bool)

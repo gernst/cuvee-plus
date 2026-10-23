@@ -1,4 +1,4 @@
-// ./Cuvee.sh -hybrid -vcgen -simplify examples/dafny/hybrid/par.dfy
+// ./Cuvee.sh -hybrid -vcgen -prove examples/dafny/hybrid/par.dfy
 // methods with assumption-commitment contracts over the global history of events,
 // composed in parallel, verified with -hybrid -vcgen,
 // where -hybrid declares the type of histories with the methods send and receive,

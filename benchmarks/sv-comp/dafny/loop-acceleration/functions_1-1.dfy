@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/functions_1-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/functions_1-1.dfy
 // SV-COMP loop-acceleration/functions_1-1.yml (expected: safe), translated from the C program by
 // hand: x is updated by f(x) = x + 2 up to 268435455 (0x0fffffff), and is even then
 //

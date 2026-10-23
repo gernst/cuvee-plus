@@ -30,7 +30,7 @@ object Tasks extends TestSuite:
 
       // the expected verdict of the property
       val List(prop) = task(file).properties: @unchecked
-      val results = Examples.answers("-simplify", "-chc", "-z3", file.toString)
+      val results = Examples.answers("-chc", "-prove", "-z3", file.toString)
       Examples.status(results) ==> (if prop.expected == Some(true) then Status.Correct else Status.Incorrect)
 
 // the task definition is read with SnakeYAML, the input files may be a single string or a list

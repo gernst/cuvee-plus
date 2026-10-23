@@ -10,14 +10,12 @@ or solvers consume.
 - [doc/architecture.md](doc/architecture.md): pipeline, packages, stages,
   frontends, tests.
 - [doc/datastructures.md](doc/datastructures.md): the core.
-- [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion, and
-  facts that the goal does not mention.
 - [doc/teq.md](doc/teq.md): trace equation systems (`-teq`, one trace per
   strongly connected component of a loop's variables), combinators, lemma
   database.
 - [doc/prove.md](doc/prove.md): the deduction engine (`-prove`, package
-  `prove`, independent of `simplify`), its record in
-  [doc/prove.md](doc/prove.md).
+  `prove`), simplification, rewriting, and facts that the goal does not
+  mention.
 - [doc/hybrid.md](doc/hybrid.md): derivatives, ODEs, parallel composition
   (`-hybrid`).
 - [doc/style.md](doc/style.md): coding style, incl. lowercase comments that
@@ -55,8 +53,7 @@ or solvers consume.
   `examples/dafny/algorithms` run only with `CUVEE_ALGORITHMS=1 mill -i test`
   (about five minutes), the roundtrip suites of the printers (every example
   printed and parsed back) only with `CUVEE_PRINTING=1`, which a change of a
-  parser or a printer requires, the SV-COMP databases only with
-  `CUVEE_SVCOMP=1`.
+  parser or a printer requires.
 - Lean proofs of the stable database modules: `scripts/lean/check.sh`
   (`--regenerate` after changing a module of `MODULES` in
   scripts/lean/generate.py; see lean/README.md); `lean` works in the repository through
@@ -79,8 +76,7 @@ or solvers consume.
 - `-teq` partitions the variables of a loop by
   the strongly connected components of their read relation, one trace per
   component, of several accumulators for a cycle (`TEQ.system`); its goals are
-  for `-prove`, since `-simplify` does not know traces of several
-  accumulators. The per-variable form of the paper is gone (Oct 13, 2026).
+  for `-prove`. The per-variable form of the paper is gone (Oct 13, 2026).
 - `Trace` exists only with `-teq` (declared in
   [teq.dfy](resources/cuvee/teq.dfy)); never include it implicitly or in
   preludes.
@@ -108,18 +104,15 @@ or solvers consume.
   modules produce; a file includes only the modules its lemmas are written
   for. Examples that do not terminate stay in the tree and are listed in
   `Examples.nonterminating`.
-- A closed `invs` side condition is decided, not matched, and fails under
-  `-simplify`: write it over a fresh list variable and identify it by an
-  equation (`Js2 == Js`); `-prove` looks closed conditions up among the facts
-  modulo classes and renaming (`Rewrite.known`), which needs no such variable.
-  A side condition may mention the term of the rule's own left-hand side
+- A closed `invs` side condition is looked up among the facts modulo
+  classes and renaming (`Rewrite.known`). A side condition may mention the term of the rule's own left-hand side
   (`l == current(Lv)` for a rule on `current(Lv)`): the rule is suspended while
   its conditions are evaluated (`Context.active`), so the instance is not
   rewritten by the rule itself.
 - A fact that is needed where only its term occurs (a bound of
   `current(incs(...))`) is a forward lemma, `{:fw}`, not a rewrite rule on
   the atom: `-prove` assumes its instances wherever a term matching its
-  trigger occurs in an assumed fact (`Forward`); `-simplify` does not use them.
+  trigger occurs in an assumed fact (`Forward`).
 - Long runs use a private copy of `cuvee.jar`: a rebuild during a run crashes
   the JVM, and the checkout's jar may contain uncommitted changes.
 - Runs on `-teq` examples take a timeout and one core
@@ -139,12 +132,9 @@ or solvers consume.
   `Trace(init, deps, acc, bound, update)`; the components of a trace of
   several are read by `Component(S, i)` and `History(S, i)` only, never by
   tuple selectors. Only the Dafny frontend and printer know the syntax of
-  several accumulators yet (`doc/teq.md`), and only `-prove` simplifies such
-  traces.
-- **The simplifier runs only in `-simplify`.** Other transforms never call it
-  or its helpers. The engine of `-prove` (package `prove`) copies what it
-  needs from `simplify` and never references it; changes to one are not
-  mirrored in the other unless asked.
+  several accumulators yet (`doc/teq.md`).
+- **The simplifier runs only in `-prove`.** Other transforms never call it
+  or its helpers (`Split` uses `prove.Normalize.lift` only).
 - **Simplifier helpers are local.** Each normalizes its own constructor, in
   one step, building with the normalizing helpers (`not(...)`, not
   `Not(...)`). The outer loops iterate. No global normal forms, no further
@@ -156,9 +146,9 @@ or solvers consume.
   `-monomorph` on polymorphic input; such tests only generate goals
   (`-quiet`).
 - **Testing database lemmas:** on core terms with
-  `Rules.from(State.empty, TEQ.lemmas)` (teq.dfy) and `Rewrite`; the tests of
-  the rewriting of `-simplify` on lemmas of the former database parse
-  `legacy/teq.dfy` (`test/dafny/TEQ.scala`).
+  `Rules.from(State.empty, TEQ.lemmas)` (teq.dfy) and `prove.Rewrite`; the
+  tests on lemmas of the former database parse `legacy/teq.dfy`
+  (`test/dafny/TEQ.scala`).
 - **Preludes** are injected into the stream; transforms see them, tests that
   call a `Source` directly drop `Examples.prelude(...)`.
 - **Stages buffer declarations**, except goals and lemmas that are not free,

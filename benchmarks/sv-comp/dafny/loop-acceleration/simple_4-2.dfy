@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/simple_4-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/simple_4-2.dfy
 // SV-COMP loop-acceleration/simple_4-2.yml (expected: safe), translated from the C program by
 // hand: x counts down by 2 from 268435440 (0x0ffffff0), an even number, to 0, and is even then
 //

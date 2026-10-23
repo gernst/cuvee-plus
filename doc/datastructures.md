@@ -382,5 +382,5 @@ case class Subst[T <: Type, E <: Expr](params: Map[Param, T], vars: Map[Var, E])
 
 ## Simplifier
 
-The data structures of the simplifier (`Context`, `Poly`, `Constraint`,
-`Rule`) and fusion (`Fuse`) are described in [simplifier.md](simplifier.md).
+The data structures of the simplifier of `-prove` (`Context`, `Classes`, `Poly`, `Rule`) are described in
+[prove.md](prove.md), fusion (`Fuse`, in `cuvee.transform`) in [architecture.md](architecture.md).

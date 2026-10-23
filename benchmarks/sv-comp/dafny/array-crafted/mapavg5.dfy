@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-crafted/mapavg5.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-crafted/mapavg5.dfy
 // SV-COMP array-crafted/mapavg5.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of mapavg1 with other constants or assertions
 

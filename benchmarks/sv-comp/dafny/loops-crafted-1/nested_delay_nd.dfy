@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/nested_delay_nd.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/nested_delay_nd.dfy
 // SV-COMP loops-crafted-1/nested_delay_nd.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks a==b && c==SIZE
 // note: the concrete loop bounds are symbolic, arbitrary positive values: SIZE for 200000

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/ps6-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/ps6-ll.dfy
 // SV-COMP nla-digbench/ps6-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ps2-ll with other constants or assertions; checks -2*y*y*y*y*y*y - 6 * y*y*y*y*y - 5 *
 // y*y*y*y + y*y + 12*x == 0; -2*y*y*y*y*y*y - 6 * y*y*y*y*y - 5 * y*y*y*y + y*y + 12*x == 0; k*y == y*y

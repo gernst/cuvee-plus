@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/eureka_05.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/eureka_05.dfy
 // SV-COMP loops/eureka_05.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks array[i]==i
 // note: the global variables of the C program are local, and the array that the selection sort sorts, global

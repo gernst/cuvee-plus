@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/phases_2-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/phases_2-2.dfy
 // SV-COMP loop-acceleration/phases_2-2.yml (expected: safe), translated from the C program by
 // hand: x starts at 1 and is squared while that stays below y, then incremented, until it reaches y > 0, which is
 // checked (unsigned int is int)

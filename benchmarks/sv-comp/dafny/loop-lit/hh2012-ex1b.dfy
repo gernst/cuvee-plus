@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/hh2012-ex1b.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/hh2012-ex1b.dfy
 // SV-COMP loop-lit/hh2012-ex1b.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks j <= 100; j == 100; i <= 100; i == 100
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100

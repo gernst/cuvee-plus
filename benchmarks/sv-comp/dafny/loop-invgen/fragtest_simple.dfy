@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/fragtest_simple.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/fragtest_simple.dfy
 // SV-COMP loop-invgen/fragtest_simple.yml (expected: safe), translated from the C program by
 // hand: i and k count up together nondeterministically, then both count down n = i times, and k is checked to stay
 // nonnegative (the first loop and pvlen do not matter)

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/sorting_bubblesort_ground-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/sorting_bubblesort_ground-2.dfy
 // SV-COMP array-examples/sorting_bubblesort_ground-2.yml (expected: unsafe), translated from the
 // C program by ./Cuvee.sh -print dfy: a variant of sorting_bubblesort_ground-1 with other constants or assertions;
 // checks a[x] <= a[y]

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invariants/const.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invariants/const.c
 // SV-COMP loop-invariants/const.yml, translated from benchmarks/sv-comp/dafny/loop-invariants/const.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

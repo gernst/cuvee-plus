@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-acceleration/functions_1-1.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-acceleration/functions_1-1.c
 // SV-COMP loop-acceleration/functions_1-1.yml, translated from benchmarks/sv-comp/dafny/loop-acceleration/functions_1-1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

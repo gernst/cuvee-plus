@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-new/nested-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-new/nested-1.dfy
 // SV-COMP loop-new/nested-1.yml (expected: safe), translated from the C program by hand: k counts
 // the iterations of two nested loops over n and m, both at least 10, which are at least 100
 //

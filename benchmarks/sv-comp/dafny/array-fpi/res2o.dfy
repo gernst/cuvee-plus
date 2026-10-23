@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/res2o.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/res2o.dfy
 // SV-COMP array-fpi/res2o.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of res1o with other constants or assertions; checks sum[0] <= 3*N
 

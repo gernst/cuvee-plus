@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/monocera/polished_tests/cuvee/forall/eqn4.c
+// ./Cuvee.sh -teq -prove benchmarks/monocera/polished_tests/cuvee/forall/eqn4.c
 /*
  * Benchmarks contributed by Divyesh Unadkat[1,2], Supratik Chakraborty[1], Ashutosh Gupta[1]
  * [1] Indian Institute of Technology Bombay, Mumbai

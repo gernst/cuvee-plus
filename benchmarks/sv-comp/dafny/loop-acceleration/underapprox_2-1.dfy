@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/underapprox_2-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/underapprox_2-1.dfy
 // SV-COMP loop-acceleration/underapprox_2-1.yml (expected: unsafe), translated from the C program
 // by ./Cuvee.sh -print dfy: a variant of underapprox_1-1 with other constants or assertions; checks x != 6
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 6

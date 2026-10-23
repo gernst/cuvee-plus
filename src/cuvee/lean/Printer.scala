@@ -225,7 +225,7 @@ object Printer extends cuvee.pipe.Printer:
         case _                                                        => counters
     tag(deps) ++ deps.flatMap(dependencies(_, counters_)) ++ dependencies(body, counters_)
 
-  // rewrite rules of -simplify are simp lemmas
+  // rewrite rules of -prove are simp lemmas
   def simp(attrs: Attrs): Doc =
     if attrs.contains("rw") then text("@[simp]") ~ space else empty
 

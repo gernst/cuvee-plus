@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-industry-pattern/array_shadowinit.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-industry-pattern/array_shadowinit.dfy
 // SV-COMP array-industry-pattern/array_shadowinit.yml (expected: safe), translated from the C
 // program by hand: a of arbitrary size N is initialized with its index by a second index k that shadows i
 //

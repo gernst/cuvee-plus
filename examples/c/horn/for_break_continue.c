@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify -chc examples/c/horn/for_break_continue.c
+// ./Cuvee.sh -chc -prove examples/c/horn/for_break_continue.c
 // expected: valid
 // continue of a for executes its step, also next to a break, and that of the innermost for only: each iteration
 // starts with the counter one step further, which a skipped or a repeated step would violate

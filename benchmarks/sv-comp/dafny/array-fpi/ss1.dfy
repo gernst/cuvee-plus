@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ss1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ss1.dfy
 // SV-COMP array-fpi/ss1.yml (expected: safe), translated from the C program by hand: a is set to
 // 1, sum is N, sum is added to each element, which is N + 1 then, and sum adds the elements to N, which gives N *
 // (N + 2); sum[0] of the one-element array as a scalar

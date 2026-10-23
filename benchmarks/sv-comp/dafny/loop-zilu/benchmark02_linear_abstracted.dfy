@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark02_linear_abstracted.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark02_linear_abstracted.dfy
 // SV-COMP loop-zilu/benchmark02_linear_abstracted.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks l>=1
 

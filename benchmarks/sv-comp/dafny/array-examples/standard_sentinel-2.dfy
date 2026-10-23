@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_sentinel-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_sentinel-2.dfy
 // SV-COMP array-examples/standard_sentinel-2.yml (expected: safe), translated from the C program
 // by hand: a is filled with arbitrary values, a marker is placed at a position pos inside the array, and the search
 // for the marker, which has no bound, stops at pos at the latest

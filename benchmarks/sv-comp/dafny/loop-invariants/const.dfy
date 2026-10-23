@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invariants/const.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invariants/const.dfy
 // SV-COMP loop-invariants/const.yml (expected: safe), translated from the C program by hand: s
 // stays 0, since it is only incremented if it is not 0, which is checked at nondeterministic points
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/rules_ground.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/rules_ground.dfy
 // an equation of the context with a ground side is a rule without variables, in either direction
 datatype box = box(v: int)
 function f(x: int): int

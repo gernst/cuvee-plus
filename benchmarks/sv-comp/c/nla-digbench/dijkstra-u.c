@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/nla-digbench/dijkstra-u.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/nla-digbench/dijkstra-u.c
 // SV-COMP nla-digbench/dijkstra-u.yml, translated from benchmarks/sv-comp/dafny/nla-digbench/dijkstra-u.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

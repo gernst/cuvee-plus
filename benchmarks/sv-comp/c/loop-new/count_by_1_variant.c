@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-new/count_by_1_variant.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-new/count_by_1_variant.c
 // SV-COMP loop-new/count_by_1_variant.yml, translated from benchmarks/sv-comp/dafny/loop-new/count_by_1_variant.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

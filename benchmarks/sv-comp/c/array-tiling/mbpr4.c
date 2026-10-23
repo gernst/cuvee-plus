@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-tiling/mbpr4.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-tiling/mbpr4.c
 // SV-COMP array-tiling/mbpr4.yml, translated from benchmarks/sv-comp/dafny/array-tiling/mbpr4.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

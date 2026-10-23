@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-multidimensional/copy-3-n-u.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-multidimensional/copy-3-n-u.dfy
 // SV-COMP array-multidimensional/copy-3-n-u.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a program of the folder; checks A[i][j][k]==B[i][j][k]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: m for 1000, n for 1500, p for 1800

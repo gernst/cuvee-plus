@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/gj2007b.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/gj2007b.dfy
 // SV-COMP loop-lit/gj2007b.yml (expected: safe), translated from the C program by hand: m takes
 // some of the values of x = 0, ..., n - 1, and is checked to be in that range if n > 0
 //

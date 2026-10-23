@@ -120,7 +120,7 @@ object Solver:
   def sink(solver: Solver, init: State, stderr: PrintStream = System.err) =
     Sink(init, solver, stderr)
 
-  // the meta information for the user, e.g. the rules applied by -simplify (set-info :used ...), which z3 rejects
+  // the meta information for the user, e.g. the rules applied by -prove (set-info :used ...), which z3 rejects
   // as structured values, contrary to SMT-LIB, is printed on `stderr` instead of passed to the solver
   def info(stderr: PrintStream, cmd: SetInfo) =
     for line <- Printer.lines(cmd) if line.nonEmpty
@@ -203,7 +203,7 @@ object Solver:
         case _: DeclareProc | _: DefineProc | _: DeclareVar | _: AnnotateTag =>
           (Ack.Unsupported, Nil, this)
 
-        // the rules applied by -simplify are reported (see Solver.info)
+        // the rules applied by -prove are reported (see Solver.info)
         case info @ SetInfo("used", _) =>
           Solver.info(stderr, info)
           (Ack.Success, Nil, this)

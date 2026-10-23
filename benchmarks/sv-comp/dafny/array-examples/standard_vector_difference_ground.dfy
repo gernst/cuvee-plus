@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_vector_difference_ground.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_vector_difference_ground.dfy
 // SV-COMP array-examples/standard_vector_difference_ground.yml (expected: safe), translated from
 // the C program by hand: a and b are filled with arbitrary values and c is their difference element by element
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/brs1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/brs1.dfy
 // SV-COMP array-fpi/brs1.yml (expected: safe), translated from the C program by hand: a is set
 // to 1 where i % 1 == 0, i.e., everywhere, and sum adds the elements except the first, which is at most N; sum[0]
 // of the one-element array as a scalar

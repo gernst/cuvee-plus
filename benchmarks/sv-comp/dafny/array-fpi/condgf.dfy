@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/condgf.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/condgf.dfy
 // SV-COMP array-fpi/condgf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of condg with other constants or assertions; checks a[i] == 0
 

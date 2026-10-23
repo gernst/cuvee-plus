@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/array-fpi/nsqmf.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/array-fpi/nsqmf.dfy
 // SV-COMP array-fpi/nsqmf.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of nsqm, whose first element is 1 instead of N + 1
 //

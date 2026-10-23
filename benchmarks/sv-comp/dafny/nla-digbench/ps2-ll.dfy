@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/ps2-ll.dfy
 // SV-COMP nla-digbench/ps2-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: y counts up to k and x accumulates y, and 2 x == y * y + y, as y * y - 2 x + y == 0, is checked in
 // and after the loop (long long is int)

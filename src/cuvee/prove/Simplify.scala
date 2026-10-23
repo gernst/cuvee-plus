@@ -12,9 +12,9 @@ import util.disjoint
 import util.intersects
 
 // contextual simplification of formulas, where each subterm is simplified under the facts known to hold at its
-// position, the traversal of the engine of -prove (see Prove); copied from cuvee.simplify.Simplify (Oct 13, 2026)
+// position, the traversal of the engine of -prove (see Prove); copied from the former simplify.Simplify (Oct 13, 2026)
 // and adapted: the context has classes in place of chains (see Context), the reads of the components of state
-// traces are markers (see Views), programs and derivatives are not simplified
+// traces are markers (see Views), programs are not simplified
 object Simplify:
   // `ctx` is an empty context, which provides the rewrite rules;
   // the antecedents of assertions are assumed in the context of their succedents during simplification;
@@ -179,9 +179,9 @@ object Simplify:
         val arg_ = simplify(config, state, ctx.neutral, arg)
         is(config, state, ctx, arg_, fun)
 
-      // derivatives are not computed by this engine (see cuvee.simplify.Simplify.diff)
       case Diff(xs, arg) =>
-        Diff(xs, simplify(config, state, ctx.neutral, arg))
+        val arg_ = simplify(config, state, ctx.neutral, arg)
+        diff(config, state, xs, arg_)
 
       case Old(arg) =>
         Old(simplify(config, state, ctx.neutral, arg))
@@ -844,6 +844,65 @@ object Simplify:
       if r.num > n.abs / 2 then r - Rational(n.abs) else r
     val centered_ = Poly(centered(poly.const), poly.monos.map(m => Mono(centered(m.factor), m.atoms))).normalize
     List(poly, centered_).distinct
+
+  // the derivative of `expr` with respect to `xs` (see Diff), by the rules of dL:
+  // derivatives are on Real only, derivatives of terms on Int are kept;
+  // terms that do not contain xs have derivative 0, a variable x in xs has derivative x',
+  // derivatives are linear, products follow the product rule,
+  // and the derivative of e < f and of e <= f is e' <= f', that of a conjunction is the conjunction of the derivatives;
+  // derivatives of other expressions are kept, e.g. of applications of other functions and of division
+  def diff(config: Config, state: State, xs: List[Var], expr: Expr): Expr =
+    expr match
+      case _ if expr.typ == Sort.real && (xs disjoint expr.free) =>
+        Reals.zero
+
+      case x: Var if x.typ == Sort.real =>
+        x.primed
+
+      case Reals.uminus(arg) =>
+        val arg_ = diff(config, state, xs, arg)
+        Reals.uminus(arg_)
+
+      case Reals.plus(args) =>
+        val args_ = args.map(diff(config, state, xs, _))
+        Reals.plus(args_)
+
+      case Reals.minus(left, right) =>
+        val left_ = diff(config, state, xs, left)
+        val right_ = diff(config, state, xs, right)
+        Reals.minus(left_, right_)
+
+      // (a * b * c)' = a' * b * c + a * b' * c + a * b * c'
+      case Reals.times(args) =>
+        val summands =
+          for (arg, i) <- args.zipWithIndex
+          yield
+            val arg_ = diff(config, state, xs, arg)
+            Reals.times(args.updated(i, arg_))
+        Reals.plus(summands)
+
+      case Reals.lt(left, right) =>
+        val left_ = diff(config, state, xs, left)
+        val right_ = diff(config, state, xs, right)
+        Reals.le(left_, right_)
+
+      case Reals.le(left, right) =>
+        val left_ = diff(config, state, xs, left)
+        val right_ = diff(config, state, xs, right)
+        Reals.le(left_, right_)
+
+      // equations are invariant if both sides change alike
+      case Eq(left, right) if left.typ == Sort.real =>
+        val left_ = diff(config, state, xs, left)
+        val right_ = diff(config, state, xs, right)
+        Eq(left_, right_)
+
+      case And(phis) =>
+        val phis_ = phis.map(diff(config, state, xs, _))
+        And(phis_)
+
+      case _ =>
+        Diff(xs, expr)
 
   // the difference right - left of the sides of a comparison as a normalized polynomial,
   // whose sign is all that matters, hence with integral coefficients without a common divisor

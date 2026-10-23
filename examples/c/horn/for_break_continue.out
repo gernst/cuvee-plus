@@ -54,29 +54,26 @@
 
 (declare-fun main_assign_1 (Int Int Int Int) Bool)
 
-(declare-fun main_assign_2 (Int Int Int Int) Bool)
+(declare-fun main_block_2 (Int Int Int Int) Bool)
 
-(declare-fun main_inv_3 (Int Int Int Int) Bool)
+(declare-fun main_assign_3 (Int Int Int Int) Bool)
 
-(declare-fun main_exit_4 (Int Int Int Int) Bool)
+(declare-fun main_inv_4 (Int Int Int Int) Bool)
+
+(declare-fun main_block_5 (Int Int Int Int) Bool)
 
 (declare-fun
-  main_spec_5
+  main_spec_6
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_assign_6
+  main_assign_7
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_join_7
-  (Int Int Int Int Int)
-  Bool)
-
-(declare-fun
-  main_assign_8
+  main_join_8
   (Int Int Int Int Int)
   Bool)
 
@@ -86,27 +83,27 @@
   Bool)
 
 (declare-fun
-  main_inv_10
+  main_block_10
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_exit_11
+  main_assign_11
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_spec_12
+  main_inv_12
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_assign_13
+  main_block_13
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_join_14
+  main_spec_14
   (Int Int Int Int Int)
   Bool)
 
@@ -121,12 +118,12 @@
   Bool)
 
 (declare-fun
-  main_spec_17
+  main_assign_17
   (Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_join_18
+  main_spec_18
   (Int Int Int Int Int)
   Bool)
 
@@ -135,16 +132,13 @@
   (Int Int Int Int Int)
   Bool)
 
-(declare-fun
-  main_assign_20
-  (Int Int Int Int Int)
-  Bool)
+(declare-fun main_assign_20 (Int Int Int Int) Bool)
 
 (declare-fun main_spec_21 (Int Int Int Int) Bool)
 
 (declare-fun main_assign_22 (Int Int Int Int) Bool)
 
-(assert (=> true main_pre))
+(assert main_pre)
 
 (assert
   (forall
@@ -158,21 +152,21 @@
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int))
     (=>
       (main_assign_1 result i$1 j$2 k$3)
-      (main_assign_2 result 0 j$2 k$3))))
+      (main_assign_3 result 0 j$2 k$3))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int))
     (=>
-      (main_assign_2 result i$1 j$2 k$3)
-      (main_inv_3 result i$1 j$2 k$3))))
+      (main_assign_3 result i$1 j$2 k$3)
+      (main_inv_4 result i$1 j$2 k$3))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int))
     (=>
       (and
-        (main_inv_3 result i$1 j$2 k$3)
+        (main_inv_4 result i$1 j$2 k$3)
         (< i$1 10))
       (= k$3 i$1))))
 
@@ -181,63 +175,60 @@
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (and
-        (main_inv_3 result i$1 j$2 k$3)
-        (< i$1 10)
-        true)
-      (main_spec_5 result i$1 j$2 k$3 m$4))))
+        (main_inv_4 result i$1 j$2 k$3)
+        (< i$1 10))
+      (main_spec_6 result i$1 j$2 k$3 m$4))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
-      (main_spec_5 result i$1 j$2 k$3 m$4)
-      (main_assign_6 result i$1 j$2 (+ k$3 1) m$4))))
+      (main_spec_6 result i$1 j$2 k$3 m$4)
+      (main_assign_7 result i$1 j$2 (+ k$3 1) m$4))))
+
+(assert
+  (forall
+    ((result Int) (j$2 Int) (k$3 Int) (m$4 Int))
+    (=>
+      (main_assign_7 result 7 j$2 k$3 m$4)
+      (main_block_2 result 7 j$2 k$3))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (and
-        (main_assign_6 result i$1 j$2 k$3 m$4)
-        (= i$1 7))
-      (main_exit_4 result i$1 j$2 k$3))))
-
-(assert
-  (forall
-    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
-    (=>
-      (and
-        (main_assign_6 result i$1 j$2 k$3 m$4)
+        (main_assign_7 result i$1 j$2 k$3 m$4)
         (not (= i$1 7)))
-      (main_join_7 result i$1 j$2 k$3 m$4))))
+      (main_join_8 result i$1 j$2 k$3 m$4))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
-      (main_join_7 result i$1 j$2 k$3 m$4)
-      (main_assign_8 result i$1 j$2 k$3 0))))
-
-(assert
-  (forall
-    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
-    (=>
-      (main_assign_8 result i$1 j$2 k$3 m$4)
-      (main_assign_9 result i$1 0 k$3 m$4))))
+      (main_join_8 result i$1 j$2 k$3 m$4)
+      (main_assign_9 result i$1 j$2 k$3 0))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (main_assign_9 result i$1 j$2 k$3 m$4)
-      (main_inv_10 result i$1 j$2 k$3 m$4))))
+      (main_assign_11 result i$1 0 k$3 m$4))))
+
+(assert
+  (forall
+    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
+    (=>
+      (main_assign_11 result i$1 j$2 k$3 m$4)
+      (main_inv_12 result i$1 j$2 k$3 m$4))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (and
-        (main_inv_10 result i$1 j$2 k$3 m$4)
+        (main_inv_12 result i$1 j$2 k$3 m$4)
         (< j$2 3))
       (= m$4 j$2))))
 
@@ -246,88 +237,83 @@
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (and
-        (main_inv_10 result i$1 j$2 k$3 m$4)
-        (< j$2 3)
-        true)
-      (main_spec_12 result i$1 j$2 k$3 m$4))))
+        (main_inv_12 result i$1 j$2 k$3 m$4)
+        (< j$2 3))
+      (main_spec_14 result i$1 j$2 k$3 m$4))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
-      (main_spec_12 result i$1 j$2 k$3 m$4)
-      (main_assign_13 result i$1 j$2 k$3 (+ m$4 1)))))
+      (main_spec_14 result i$1 j$2 k$3 m$4)
+      (main_assign_15 result i$1 j$2 k$3 (+ m$4 1)))))
 
 (assert
   (forall
-    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
+    ((result Int) (i$1 Int) (k$3 Int) (m$4 Int))
     (=>
-      (and
-        (main_assign_13 result i$1 j$2 k$3 m$4)
-        (= j$2 1))
-      (main_assign_15 result i$1 (+ j$2 1) k$3 m$4))))
-
-(assert
-  (forall
-    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
-    (=>
-      (main_assign_15 result i$1 j$2 k$3 m$4)
-      (main_inv_10 result i$1 j$2 k$3 m$4))))
-
-(assert
-  (forall
-    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
-    (=>
-      (and
-        (main_assign_13 result i$1 j$2 k$3 m$4)
-        (not (= j$2 1)))
-      (main_join_14 result i$1 j$2 k$3 m$4))))
-
-(assert
-  (forall
-    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
-    (=>
-      (main_join_14 result i$1 j$2 k$3 m$4)
-      (main_assign_16 result i$1 (+ j$2 1) k$3 m$4))))
+      (main_assign_15 result i$1 1 k$3 m$4)
+      (main_assign_16 result i$1 2 k$3 m$4))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (main_assign_16 result i$1 j$2 k$3 m$4)
-      (main_inv_10 result i$1 j$2 k$3 m$4))))
+      (main_inv_12 result i$1 j$2 k$3 m$4))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (and
-        (main_inv_10 result i$1 j$2 k$3 m$4)
-        (not (< j$2 3)))
-      (main_exit_11 result i$1 j$2 k$3 m$4))))
+        (main_assign_15 result i$1 j$2 k$3 m$4)
+        (not (= j$2 1)))
+      (main_block_13 result i$1 j$2 k$3 m$4))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
-      (main_exit_11 result i$1 j$2 k$3 m$4)
+      (main_block_13 result i$1 j$2 k$3 m$4)
+      (main_assign_17 result i$1 (+ j$2 1) k$3 m$4))))
+
+(assert
+  (forall
+    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
+    (=>
+      (main_assign_17 result i$1 j$2 k$3 m$4)
+      (main_inv_12 result i$1 j$2 k$3 m$4))))
+
+(assert
+  (forall
+    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
+    (=>
+      (and
+        (main_inv_12 result i$1 j$2 k$3 m$4)
+        (<= 3 j$2))
+      (main_block_10 result i$1 j$2 k$3 m$4))))
+
+(assert
+  (forall
+    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
+    (=>
+      (main_block_10 result i$1 j$2 k$3 m$4)
       (= m$4 j$2))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
-      (and
-        (main_exit_11 result i$1 j$2 k$3 m$4)
-        true)
-      (main_spec_17 result i$1 j$2 k$3 m$4))))
+      (main_block_10 result i$1 j$2 k$3 m$4)
+      (main_spec_18 result i$1 j$2 k$3 m$4))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (and
-        (main_spec_17 result i$1 j$2 k$3 m$4)
+        (main_spec_18 result i$1 j$2 k$3 m$4)
         (< i$1 3))
       (main_assign_19 result (+ i$1 1) j$2 k$3 m$4))))
 
@@ -336,54 +322,52 @@
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (main_assign_19 result i$1 j$2 k$3 m$4)
-      (main_inv_3 result i$1 j$2 k$3))))
+      (main_inv_4 result i$1 j$2 k$3))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
     (=>
       (and
-        (main_spec_17 result i$1 j$2 k$3 m$4)
-        (not (< i$1 3)))
-      (main_join_18 result i$1 j$2 k$3 m$4))))
+        (main_spec_18 result i$1 j$2 k$3 m$4)
+        (<= 3 i$1))
+      (main_block_5 result i$1 j$2 k$3))))
 
 (assert
   (forall
-    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
+    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int))
     (=>
-      (main_join_18 result i$1 j$2 k$3 m$4)
-      (main_assign_20 result (+ i$1 1) j$2 k$3 m$4))))
+      (main_block_5 result i$1 j$2 k$3)
+      (main_assign_20 result (+ i$1 1) j$2 k$3))))
 
 (assert
   (forall
-    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int) (m$4 Int))
+    ((result Int) (i$1 Int) (j$2 Int) (k$3 Int))
     (=>
-      (main_assign_20 result i$1 j$2 k$3 m$4)
-      (main_inv_3 result i$1 j$2 k$3))))
+      (main_assign_20 result i$1 j$2 k$3)
+      (main_inv_4 result i$1 j$2 k$3))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int))
     (=>
       (and
-        (main_inv_3 result i$1 j$2 k$3)
-        (not (< i$1 10)))
-      (main_exit_4 result i$1 j$2 k$3))))
+        (main_inv_4 result i$1 j$2 k$3)
+        (<= 10 i$1))
+      (main_block_2 result i$1 j$2 k$3))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int))
     (=>
-      (main_exit_4 result i$1 j$2 k$3)
+      (main_block_2 result i$1 j$2 k$3)
       (= i$1 7))))
 
 (assert
   (forall
     ((result Int) (i$1 Int) (j$2 Int) (k$3 Int))
     (=>
-      (and
-        (main_exit_4 result i$1 j$2 k$3)
-        true)
+      (main_block_2 result i$1 j$2 k$3)
       (main_spec_21 result i$1 j$2 k$3))))
 
 (assert

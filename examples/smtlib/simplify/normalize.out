@@ -19,8 +19,8 @@
 
 (assert
   (forall
-    ((y Int) (x$1 Int))
+    ((x Int) (y Int) (x$1 Int))
     (=>
-      (and (= (+ y 1) x$1) (p y))
+      (and (= y (+ x 1)) (p y) (= x$1 (+ x 2)))
       (q x$1 x$1))))
 

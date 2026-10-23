@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/definitions.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/definitions.dfy
 // function definitions with :rw whose body is a match on a parameter give one rule per case,
 // with disjoint patterns here, since overlapping ones are not treated specially; the lemmas vanish
 datatype List<a> = Nil | Cons(head: a, tail: List<a>)

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ss4.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ss4.dfy
 // SV-COMP array-fpi/ss4.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of ss1 with other constants or assertions; checks sum[0] == (long long)N*(N+1)
 

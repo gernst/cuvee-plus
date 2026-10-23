@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/eqn1f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/eqn1f.dfy
 // SV-COMP array-fpi/eqn1f.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of eqn1, where a increases by 20, such that b is not i * i + i + 1
 //

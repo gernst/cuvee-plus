@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark02_linear.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark02_linear.dfy
 // SV-COMP loop-zilu/benchmark02_linear.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: i counts from l > 0 to n, and l >= 1 is checked
 //

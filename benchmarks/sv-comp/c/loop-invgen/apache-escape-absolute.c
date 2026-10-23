@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invgen/apache-escape-absolute.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invgen/apache-escape-absolute.c
 // SV-COMP loop-invgen/apache-escape-absolute.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/apache-escape-absolute.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

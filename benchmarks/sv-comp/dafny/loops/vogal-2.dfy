@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/vogal-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/vogal-2.dfy
 // SV-COMP loops/vogal-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of vogal-1 with other constants or assertions; checks cont_aux==cont
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 10 (MAX); the loops

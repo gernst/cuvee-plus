@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/rules_dafny.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/rules_dafny.dfy
 // rewrite rules are assertions and lemmas with the attribute :rw
 function f(x: int): int
 function g(x: int): int

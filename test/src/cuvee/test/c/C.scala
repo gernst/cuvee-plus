@@ -22,7 +22,7 @@ object Horn extends TestSuite:
 
   val tests =
     Examples.tests(Examples.find(os.sub / "c", "c").filter(stated).filterNot(file => skip.contains(file.last))): file =>
-      val results = Examples.answers("-simplify", "-chc", "-z3", file.toString)
+      val results = Examples.answers("-chc", "-prove", "-z3", file.toString)
       Examples.status(results) ==> (if Examples.holds(file) then Status.Correct else Status.Incorrect)
 
 // the output is C: what is not C is printed in SMT-LIB as SMT_LIB(...), e.g. assertions and quantifiers,

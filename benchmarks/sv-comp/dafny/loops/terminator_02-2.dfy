@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/terminator_02-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/terminator_02-2.dfy
 // SV-COMP loops/terminator_02-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: x is incremented, or x and z are decremented, nondeterministically, while x < 100 and z > 100, and
 // the negation of the test is checked at the end

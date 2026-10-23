@@ -81,7 +81,7 @@ case class Iter(body: Prog, attrs: Attrs)               // while * { body }
   an `Ode` modifies the history, which must be in the modifies clause of the
   method and of loops around it (`Type.check`). The derivatives of the
   invariants must be simplified
-  (`-simplify`) before the goals can be passed to a solver.
+  (`-prove`) before the goals can be passed to a solver.
 
 ## Parallel composition
 

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/down.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/down.dfy
 // SV-COMP loop-invgen/down.yml (expected: safe), translated from the C program by hand: k counts
 // up with i to an arbitrary n, then down with j from n to 0, and is positive before each decrement
 //

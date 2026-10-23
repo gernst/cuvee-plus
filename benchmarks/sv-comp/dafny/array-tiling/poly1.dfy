@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/poly1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/poly1.dfy
 // SV-COMP array-tiling/poly1.yml (expected: safe), translated from the C program by hand:
 // a[i] = i * i, which is checked (long long is int)
 //

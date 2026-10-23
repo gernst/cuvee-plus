@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-crafted/simple_array_index_value_4.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-crafted/simple_array_index_value_4.c
 // SV-COMP loop-crafted/simple_array_index_value_4.yml, translated from benchmarks/sv-comp/dafny/loop-crafted/simple_array_index_value_4.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

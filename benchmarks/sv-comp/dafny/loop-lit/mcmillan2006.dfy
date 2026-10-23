@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/mcmillan2006.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/mcmillan2006.dfy
 // SV-COMP loop-lit/mcmillan2006.yml (expected: safe), translated from the C program by hand: an
 // array of arbitrary size n, at most 1000, is initialized to 0 and checked
 //

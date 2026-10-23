@@ -1,17 +1,17 @@
 package cuvee.test
-package smtlib
+package prove
 
 import utest._
 
 // derivatives (x, y :: e)' by the rules of dL, printed in Dafny syntax
 object Derivatives extends TestSuite:
   import cuvee.core._
-  import cuvee.simplify.Context
+  import cuvee.prove.Context
 
   val n = Var("n", Sort.int)
 
   def diff(expr: Expr, xs: Var*) =
-    val expr_ = cuvee.simplify.Simplify.simplify(cuvee.Config.default, State.empty, Context.empty, Diff(xs.toList, expr))
+    val expr_ = cuvee.prove.Simplify.simplify(cuvee.Config.default, State.empty, Context.empty(State.empty), Diff(xs.toList, expr))
     cuvee.dafny.Printer.lines(expr_).mkString(" ").replaceAll(" +", " ")
 
   val tests = Tests:

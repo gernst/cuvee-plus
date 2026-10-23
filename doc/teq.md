@@ -29,7 +29,7 @@ After section 3 of the paper, generalized to several accumulators
   with `inits`; each further value is the results of the previous ones and
   the next values of the dependencies, which `bound` ranges over point-wise.
   `Trace.apply(init, deps, acc, bound, update)` builds the single case and
-  `Trace.single` matches it; the lemma database and `-simplify` handle that
+  `Trace.single` matches it; the lemma database handles that
   case only, the engine of `-prove`, the parsers and printers of Dafny, Boogie,
   SMT-LIB (and SV-LIB, whose terms are those of SMT-LIB), the Lean printer and
   the lowering of `-fallback` also several. Several accumulators are for the variables of a loop that depend on
@@ -148,8 +148,7 @@ per-variable form for every loop, the former `-teq`, was removed on Oct 13, 2026
 [teq.dfy](../resources/cuvee/teq.dfy). The
 per-variable traces of a cycle are projections of its trace that the engine of `-prove` computes on demand (see
 [prove.md](prove.md)), and a rule may also match the trace of a cycle as a whole, with a pattern of several
-accumulators, e.g. the bisection of the binary searches, which names the trace of `lo` and `hi`; the simplifier of
-`-simplify` does not know traces of several accumulators. Examples in
+accumulators, e.g. the bisection of the binary searches, which names the trace of `lo` and `hi`. Examples in
 [examples/dafny/state](../examples/dafny/state), the design in
 [doc/prove.md](prove.md), the implementation in
 [doc/prove.md](prove.md).
@@ -269,8 +268,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   bounds of sums under the auxiliary predicates `below_prefix` and
   `nonneg_prefix`, and counters with a step (`indexof_counter_step`,
   `prefix_maps_counter`). A merged lemma is checked by re-running the tasks
-  whose local copies it replaces, which must reproduce their rows of
-  `benchmarks/sv-comp/dafny/expected.csv`, and by its proof in Lean (lean/). This
+  whose local copies it replaces, which must reproduce their results, and by its proof in Lean (lean/). This
   showed further lemmas that stay local:
   - the definition of an auxiliary predicate by an iteration constraint with
     a general body, `invs(... :: x <= b) <==> below_prefix(n, xs, b)`, since
@@ -302,7 +300,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   rewriting, since its condition is not smaller than its left-hand side; since
   0.42.3 the run terminates (the rule is suspended while its condition is
   matched, and the reads of a context are normalized by the rules without an
-  `invs` condition, [simplifier.md](simplifier.md)), but the rule still does
+  `invs` condition, [prove.md](prove.md)), but the rule still does
   not apply, since the read it would match is not rewritten while it is
   suspended. Instead, a definition lemma abstracts the constraint by an atom, e.g.
   `consts_prefix_def`:
@@ -369,7 +367,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
     matched, and a condition `l == current(Lv)` of a rule on `current(Lv)`
     with `Lv` bound rewrote `current(Lv)` by the rule itself without end;
     the rule is suspended while its conditions are evaluated
-    (`Context.active`, [simplifier.md](simplifier.md)). The summaries took
+    (`Context.active`, [prove.md](prove.md)). The summaries took
     `current(results(...))` as left-hand side rather than `results(...)` for
     this reason, and lower_bound.dfy stays open for another (its summary leaves
     the dependency variables unbound, TODO.md).
@@ -605,7 +603,7 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
 ## Simplification and rewriting
 
 - The simplifier's helpers `trace`, `maps`, and `invs`
-  ([Simplify.scala](../src/cuvee/simplify/Simplify.scala)) collapse equal
+  ([Simplify.scala](../src/cuvee/prove/Simplify.scala)) collapse equal
   dependencies (by `eq_`), renaming their bound variables to the first one,
   and drop dependencies whose bound variables are unused, except counters
   `⌊counter(...)⌋`; the first one is kept if none remains, since the
@@ -628,7 +626,7 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   bound to `k`, they also assume `0 <= k < n`, since the loop exits when
   `k == n`, and `z == earlier(k, ⌊Z⌋)` for each other dependency `⌊Z⌋`
   bound to `z` (`Simplify.iterations`).
-- The rewrite engine ([Rewrite.scala](../src/cuvee/simplify/Rewrite.scala))
+- The rewrite engine ([Rewrite.scala](../src/cuvee/prove/Rewrite.scala))
   matches the binding structure of the combinators: dependencies of the
   pattern are selected among those of the expression (`bound` of
   `Rewrite.matches` relates the bound variables), and dependencies that are
@@ -655,7 +653,7 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
 - [TEQ.scala](../test/src/cuvee/test/dafny/TEQ.scala) checks the goals of
   `-teq`, the injection of the database, and the lemmas on core terms
   (`Rules.from(State.empty, TEQ.lemmas)` with `Rewrite`).
-- [RewriteTraces.scala](../test/src/cuvee/test/simplify/RewriteTraces.scala)
+- [RewriteTraces.scala](../test/src/cuvee/test/prove/RewriteTraces.scala)
   tests the rewrite engine with the examples of the paper (counters,
   summations, `selects`) in single steps; `examples/dafny/simplify/traces*.dfy`,
   `dependencies.dfy`, and `invariants.dfy` the simplifier and the rewrite rules on
@@ -663,11 +661,8 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
 - E.g. `./Cuvee.sh -teq -prove examples/dafny/vcgen/sum.dfy`.
 - The Dafny translations of SV-COMP (`benchmarks/sv-comp/dafny`) and the C
   programs printed from them (`benchmarks/sv-comp/c`, since patched for other
-  verifiers, which `expected.csv` predates) have databases of their
-  expected results (`expected.csv`, suites `SVComp` and `SVCompC`, only with
-  `CUVEE_SVCOMP`), recorded one process per task with 60 s under the former
-  per-variable form with `-simplify` (to be recorded again under `-teq -prove`,
-  which `test/Database.scala` now runs); their summary is
+  verifiers) are benchmarks, not tests (their databases of expected results
+  were removed Oct 23, 2026); their summary is
   `benchmarks/sv-comp/dafny/summary.md`. The translations write the division
   and remainder of C as `quot` and `rem` of the prelude of Dafny, lemmas keep
   `/` and `%`. `-print c -known dfy,teq,rw` prints their programs without

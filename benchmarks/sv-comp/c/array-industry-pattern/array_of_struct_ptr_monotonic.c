@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-industry-pattern/array_of_struct_ptr_monotonic.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-industry-pattern/array_of_struct_ptr_monotonic.c
 // SV-COMP array-industry-pattern/array_of_struct_ptr_monotonic.yml, translated from benchmarks/sv-comp/dafny/array-industry-pattern/array_of_struct_ptr_monotonic.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

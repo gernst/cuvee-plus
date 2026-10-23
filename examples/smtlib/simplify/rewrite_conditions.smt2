@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/rewrite_conditions.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/rewrite_conditions.smt2
 ; variables that occur only in the condition are instantiated by matching it against the facts of the context,
 ; the assumptions and the negated conclusions, in the order of the conjuncts: closed ones are decided, open ones
 ; are matched against the facts, also without any instantiated variable, comparisons and equations as well

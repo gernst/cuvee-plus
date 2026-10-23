@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/modp.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/modp.dfy
 // SV-COMP array-fpi/modp.yml (expected: safe), translated from the C program by hand: sum counts
 // to N, a is set to it, and a[i] % N == 0 is checked
 //

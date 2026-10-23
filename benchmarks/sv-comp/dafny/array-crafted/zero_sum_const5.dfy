@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-crafted/zero_sum_const5.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-crafted/zero_sum_const5.dfy
 // SV-COMP array-crafted/zero_sum_const5.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of zero_sum_const1 with other constants or assertions; checks sum == 0
 

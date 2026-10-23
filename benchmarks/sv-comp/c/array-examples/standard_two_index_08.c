@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-examples/standard_two_index_08.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-examples/standard_two_index_08.c
 // SV-COMP array-examples/standard_two_index_08.yml, translated from benchmarks/sv-comp/dafny/array-examples/standard_two_index_08.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

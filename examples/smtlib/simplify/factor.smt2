@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/factor.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/factor.smt2
 ; disjuncts common to all conjuncts and conjuncts common to all disjuncts are extracted
 (declare-const a Bool)
 (declare-const b Bool)

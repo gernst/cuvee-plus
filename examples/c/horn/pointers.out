@@ -65,10 +65,10 @@
 
 (assert
   (forall
-    ((p (Ptr Int)) (g$3 (Ptr Int)) (g (Ptr Int)))
+    ((p (Ptr Int)) (g (Ptr Int)))
     (=>
-      (and (id_pre p g$3) (= g g$3))
-      (id_assign_1 p g$3 p g))))
+      (id_pre p g)
+      (id_assign_1 p g p g))))
 
 (assert
   (forall
@@ -104,13 +104,12 @@
 
 (assert
   (forall
-    ((p (Ptr Int)) (g$4 (Ptr Int)) (g (Ptr Int)))
+    ((p (Ptr Int)) (g (Ptr Int)))
     (=>
       (and
-        (isnull_pre p g$4)
-        (= g g$4)
+        (isnull_pre p g)
         (= p (as null (Ptr Int))))
-      (isnull_assign_2 p g$4 1 g))))
+      (isnull_assign_2 p g 1 g))))
 
 (assert
   (forall
@@ -121,14 +120,13 @@
 
 (assert
   (forall
-    ((p (Ptr Int)) (g$4 (Ptr Int)) (result Int) (g (Ptr Int)))
+    ((p (Ptr Int)) (result Int) (g (Ptr Int)))
     (=>
       (and
-        (isnull_pre p g$4)
-        (= g g$4)
+        (isnull_pre p g)
         (not
           (= p (as null (Ptr Int)))))
-      (isnull_join_1 p g$4 result g))))
+      (isnull_join_1 p g result g))))
 
 (assert
   (forall
@@ -200,15 +198,10 @@
 
 (assert
   (forall
-    ((g$5 (Ptr Int))
-      (result Int)
-      (g (Ptr Int))
-      (tmp$6 (Ptr Int))
-      (tmp$7 Int)
-      (v$9 (Ptr Void)))
+    ((result Int) (g (Ptr Int)) (tmp$6 (Ptr Int)) (tmp$7 Int) (v$9 (Ptr Void)))
     (=>
-      (and (main_pre g$5) (= g g$5))
-      (main_assign_1 g$5 result g tmp$6 tmp$7 (as null (Ptr Int)) v$9))))
+      (main_pre g)
+      (main_assign_1 g result g tmp$6 tmp$7 (as null (Ptr Int)) v$9))))
 
 (assert
   (forall
@@ -236,8 +229,8 @@
       (main_assign_2 g$5 result g tmp$6 tmp$7 q$8 v$9)
       (and
         (= g (as null (Ptr Int)))
-        (= q$8 (as null (Ptr Int)))
-        (= v$9 (as null (Ptr Void)))))))
+        (= v$9 (as null (Ptr Void)))
+        (= q$8 (as null (Ptr Int)))))))
 
 (assert
   (forall
@@ -249,9 +242,7 @@
       (q$8 (Ptr Int))
       (v$9 (Ptr Void)))
     (=>
-      (and
-        (main_assign_2 g$5 result g tmp$6 tmp$7 q$8 v$9)
-        true)
+      (main_assign_2 g$5 result g tmp$6 tmp$7 q$8 v$9)
       (main_spec_3 g$5 result g tmp$6 tmp$7 q$8 v$9))))
 
 (assert
@@ -335,9 +326,7 @@
       (q$8 (Ptr Int))
       (v$9 (Ptr Void)))
     (=>
-      (and
-        (main_call_5 g$5 result g tmp$6 tmp$7 q$8 v$9)
-        true)
+      (main_call_5 g$5 result g tmp$6 tmp$7 q$8 v$9)
       (main_spec_6 g$5 result g tmp$6 tmp$7 q$8 v$9))))
 
 (assert
@@ -363,9 +352,7 @@
       (q$8 (Ptr Int))
       (v$9 (Ptr Void)))
     (=>
-      (and
-        (main_spec_6 g$5 result g tmp$6 tmp$7 q$8 v$9)
-        true)
+      (main_spec_6 g$5 result g tmp$6 tmp$7 q$8 v$9)
       (main_spec_7 g$5 result g tmp$6 tmp$7 q$8 v$9))))
 
 (assert

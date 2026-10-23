@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/sina5.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/sina5.dfy
 // SV-COMP array-fpi/sina5.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of sina1 with other constants or assertions; checks a[i] == 2*N + 1
 

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/sqm-if.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/sqm-if.dfy
 // SV-COMP array-fpi/sqm-if.yml (expected: safe), translated from the C program by hand: as
 // nsqm-if from 1 instead of N + 1, checked to be (i + 1) * (i + 1)
 //

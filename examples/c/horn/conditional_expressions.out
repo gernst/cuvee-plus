@@ -58,10 +58,10 @@
 
 (assert
   (forall
-    ((c$7 Int) (result Int) (c Int))
+    ((result Int) (c Int))
     (=>
-      (and (f_pre c$7) (= c c$7))
-      (f_assign_1 c$7 result (+ c 1)))))
+      (f_pre c)
+      (f_assign_1 c result (+ c 1)))))
 
 (assert
   (forall
@@ -83,63 +83,110 @@
 
 (declare-fun
   main_assign_1
-  (Int Int Int Int Int Int Int Int Int)
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_call_2
-  (Int Int Int Int Int Int Int Int Int)
+  main_join_2
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_assign_3
-  (Int Int Int Int Int Int Int Int Int)
+  main_call_3
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
   main_assign_4
-  (Int Int Int Int Int Int Int Int Int)
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_spec_5
-  (Int Int Int Int Int Int Int Int Int)
+  main_assign_5
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
   main_assign_6
-  (Int Int Int Int Int Int Int Int Int)
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
   main_assign_7
-  (Int Int Int Int Int Int Int Int Int)
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
   main_assign_8
-  (Int Int Int Int Int Int Int Int Int)
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_assign_9
-  (Int Int Int Int Int Int Int Int Int)
+  main_spec_9
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_spec_10
-  (Int Int Int Int Int Int Int Int Int)
+  main_join_10
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_assign_11
-  (Int Int Int Int Int Int Int Int Int)
+  main_call_11
+  (Int Int Int Int Int Int Int Int Int Int Int)
   Bool)
+
+(declare-fun
+  main_assign_12
+  (Int Int Int Int Int Int Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_13
+  (Int Int Int Int Int Int Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_14
+  (Int Int Int Int Int Int Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_15
+  (Int Int Int Int Int Int Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_16
+  (Int Int Int Int Int Int Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_spec_17
+  (Int Int Int Int Int Int Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_18
+  (Int Int Int Int Int Int Int Int Int Int Int)
+  Bool)
+
+(assert (main_pre 0))
 
 (assert
   (forall
-    ((c Int))
-    (=> (= c 0) (main_pre c))))
+    ((result Int)
+      (c Int)
+      (tmp$9 Int)
+      (tmp$10 Int)
+      (tmp$11 Int)
+      (tmp$12 Int)
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (r$16 Int))
+    (=>
+      (main_pre c)
+      (main_assign_1 c result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 0 r$16))))
 
 (assert
   (forall
@@ -150,24 +197,12 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (and (main_pre c$8) (= c c$8))
-      (main_assign_1 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 0 r$14))))
-
-(assert
-  (forall
-    ((c$8 Int)
-      (result Int)
-      (c Int)
-      (tmp$9 Int)
-      (tmp$10 Int)
-      (tmp$11 Int)
-      (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
-    (=>
-      (main_assign_1 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
+      (main_assign_1 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
       (f_pre c))))
 
 (assert
@@ -179,15 +214,17 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int)
-      (tmp$15 Int)
-      (c$16 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int)
+      (tmp$17 Int)
+      (c$18 Int))
     (=>
       (and
-        (main_assign_1 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-        (f_post c tmp$15 c$16))
-      (main_call_2 c$8 result c$16 tmp$15 tmp$10 tmp$11 tmp$12 i$13 r$14))))
+        (main_assign_1 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+        (f_post c tmp$17 c$18))
+      (main_call_3 c$8 result c$18 tmp$17 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16))))
 
 (assert
   (forall
@@ -198,11 +235,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_call_2 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (main_assign_3 c$8 result c tmp$9 tmp$9 tmp$11 tmp$12 i$13 r$14))))
+      (main_call_3 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_4 c$8 result c tmp$9 tmp$10 tmp$9 tmp$12 tmp$13 tmp$14 i$15 r$16))))
 
 (assert
   (forall
@@ -213,11 +252,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_assign_3 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (main_assign_4 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 tmp$10))))
+      (main_assign_4 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_join_2 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16))))
 
 (assert
   (forall
@@ -228,11 +269,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_assign_4 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (and (= c 1) (= i$13 0) (= r$14 1)))))
+      (main_assign_5 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_6 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 (+ i$15 1) r$16))))
 
 (assert
   (forall
@@ -243,13 +286,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (and
-        (main_assign_4 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-        true)
-      (main_spec_5 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14))))
+      (main_assign_6 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_7 c$8 result c tmp$9 tmp$10 tmp$10 tmp$12 tmp$13 tmp$14 i$15 r$16))))
 
 (assert
   (forall
@@ -260,11 +303,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_spec_5 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (main_assign_6 c$8 result c tmp$9 tmp$10 i$13 tmp$12 i$13 r$14))))
+      (main_assign_7 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_join_2 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16))))
 
 (assert
   (forall
@@ -275,11 +320,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_assign_6 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (main_assign_7 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 (+ i$13 1) r$14))))
+      (main_join_2 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_8 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 tmp$11))))
 
 (assert
   (forall
@@ -290,11 +337,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_assign_7 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (main_assign_8 c$8 result c tmp$9 tmp$10 tmp$11 tmp$11 i$13 r$14))))
+      (main_assign_8 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (and (= c 1) (= i$15 0) (= r$16 1)))))
 
 (assert
   (forall
@@ -305,11 +354,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_assign_8 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (main_assign_9 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 tmp$12))))
+      (main_assign_8 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_spec_9 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16))))
 
 (assert
   (forall
@@ -320,11 +371,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_assign_9 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (and (= c 1) (= i$13 1) (= r$14 0)))))
+      (main_call_11 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_12 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$12 i$15 r$16))))
 
 (assert
   (forall
@@ -335,13 +388,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (and
-        (main_assign_9 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-        true)
-      (main_spec_10 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14))))
+      (main_assign_12 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_join_10 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16))))
 
 (assert
   (forall
@@ -352,11 +405,13 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_spec_10 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
-      (main_assign_11 c$8 0 c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14))))
+      (main_spec_9 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_13 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$15 tmp$14 i$15 r$16))))
 
 (assert
   (forall
@@ -367,10 +422,131 @@
       (tmp$10 Int)
       (tmp$11 Int)
       (tmp$12 Int)
-      (i$13 Int)
-      (r$14 Int))
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
     (=>
-      (main_assign_11 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 i$13 r$14)
+      (main_assign_13 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_14 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 (+ i$15 1) r$16))))
+
+(assert
+  (forall
+    ((c$8 Int)
+      (result Int)
+      (c Int)
+      (tmp$9 Int)
+      (tmp$10 Int)
+      (tmp$11 Int)
+      (tmp$12 Int)
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
+    (=>
+      (main_assign_14 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_15 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$13 i$15 r$16))))
+
+(assert
+  (forall
+    ((c$8 Int)
+      (result Int)
+      (c Int)
+      (tmp$9 Int)
+      (tmp$10 Int)
+      (tmp$11 Int)
+      (tmp$12 Int)
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
+    (=>
+      (main_assign_15 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_join_10 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16))))
+
+(assert
+  (forall
+    ((c$8 Int)
+      (result Int)
+      (c Int)
+      (tmp$9 Int)
+      (tmp$10 Int)
+      (tmp$11 Int)
+      (tmp$12 Int)
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
+    (=>
+      (main_join_10 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_16 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 tmp$14))))
+
+(assert
+  (forall
+    ((c$8 Int)
+      (result Int)
+      (c Int)
+      (tmp$9 Int)
+      (tmp$10 Int)
+      (tmp$11 Int)
+      (tmp$12 Int)
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
+    (=>
+      (main_assign_16 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (and (= c 1) (= i$15 1) (= r$16 0)))))
+
+(assert
+  (forall
+    ((c$8 Int)
+      (result Int)
+      (c Int)
+      (tmp$9 Int)
+      (tmp$10 Int)
+      (tmp$11 Int)
+      (tmp$12 Int)
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
+    (=>
+      (main_assign_16 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_spec_17 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16))))
+
+(assert
+  (forall
+    ((c$8 Int)
+      (result Int)
+      (c Int)
+      (tmp$9 Int)
+      (tmp$10 Int)
+      (tmp$11 Int)
+      (tmp$12 Int)
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
+    (=>
+      (main_spec_17 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
+      (main_assign_18 c$8 0 c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16))))
+
+(assert
+  (forall
+    ((c$8 Int)
+      (result Int)
+      (c Int)
+      (tmp$9 Int)
+      (tmp$10 Int)
+      (tmp$11 Int)
+      (tmp$12 Int)
+      (tmp$13 Int)
+      (tmp$14 Int)
+      (i$15 Int)
+      (r$16 Int))
+    (=>
+      (main_assign_18 c$8 result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 i$15 r$16)
       (main_post c$8 result c))))
 
 (check-sat)

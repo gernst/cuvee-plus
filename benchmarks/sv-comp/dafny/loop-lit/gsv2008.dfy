@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/gsv2008.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/gsv2008.dfy
 // SV-COMP loop-lit/gsv2008.yml (expected: safe), translated from the C program by hand: x,
 // initially -50, accumulates y, which counts up from an arbitrary value above -1000, until x is nonnegative, when y
 // is positive

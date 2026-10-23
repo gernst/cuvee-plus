@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/derivatives.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/derivatives.dfy
 // derivatives (x, y :: e)' by the rules of dL: constants, variables, sums, the product rule, comparisons, and conjunctions,
 // the chain rule for other functions is not applied
 function f(x: real): real

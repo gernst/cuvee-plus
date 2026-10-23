@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ifncompf.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ifncompf.dfy
 // SV-COMP array-fpi/ifncompf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ifncomp with other constants or assertions; checks c[i] == i*i*i
 

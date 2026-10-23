@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/invert_string-3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/invert_string-3.dfy
 // SV-COMP loops/invert_string-3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of invert_string-1 with other constants or assertions; checks str1[i] == str2[j]
 

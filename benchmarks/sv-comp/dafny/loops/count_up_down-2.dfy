@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/count_up_down-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/count_up_down-2.dfy
 // SV-COMP loops/count_up_down-2.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of count_up_down-1 with other constants or assertions; checks y!=n
 

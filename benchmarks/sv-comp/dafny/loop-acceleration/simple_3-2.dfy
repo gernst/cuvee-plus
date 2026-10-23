@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/simple_3-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/simple_3-2.dfy
 // SV-COMP loop-acceleration/simple_3-2.yml (expected: safe), translated from the C program by
 // hand: x counts by 2 up to an arbitrary bound N, an unsigned short, and is even then
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-crafted/zero_sum_const1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-crafted/zero_sum_const1.dfy
 // SV-COMP array-crafted/zero_sum_const1.yml (expected: safe), translated from the C program by hand:
 // the array is set to 1, summed up, and subtracted again, which leaves 0 (long is int)
 //

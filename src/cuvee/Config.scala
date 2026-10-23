@@ -9,11 +9,10 @@ import util.Name
 import cuvee.core._
 import cuvee.pipe._
 import cuvee.smtlib.Solver
-import cuvee.simplify.Simplify
 import cuvee.prove.Prove
 import cuvee.transform.Fallback
 import cuvee.transform.Flat
-import cuvee.simplify.Fuse
+import cuvee.transform.Fuse
 import cuvee.transform.Implement
 import cuvee.transform.Monomorph
 import cuvee.transform.Split
@@ -118,7 +117,7 @@ case class Config(
     // the lines of stdout and stderr, which tests capture instead (see test.Expected)
     stdout: PrintStream = System.out,
     stderr: PrintStream = System.err,
-    // whether -simplify reports the rules that it applies to each assertion (see Simplify.apply)
+    // whether -prove reports the rules that it applies to each assertion (see Prove.used)
     rules: Boolean = false,
     // keep last
     debug: Set[String] = Set()
@@ -221,7 +220,7 @@ object Config:
     key -> Flag(Some(args), help, action)
 
   val debug_ =
-    flag("-debug", "<modules>", "print the steps of the comma-separated <modules>: simplify, rewrite, match, conditions, forward, and views (of -simplify and -prove, see doc/prove.md), solver (the communication with the solvers)"):
+    flag("-debug", "<modules>", "print the steps of the comma-separated <modules>: simplify, rewrite, match, conditions, forward, and views (of -prove, see doc/prove.md), solver (the communication with the solvers)"):
       case (config, arg :: rest) =>
         val modules = arg.split(",")
         val config_ = config.copy(debug = config.debug ++ modules)
@@ -284,15 +283,9 @@ object Config:
         (config_, rest)
 
   val rules =
-    flag("-rules", "report the rewrite rules that -simplify and -prove apply to each assertion, by their names, as (set-info :used ((name count) ...)) after it"):
+    flag("-rules", "report the rewrite rules that -prove applies to each assertion, by their names, as (set-info :used ((name count) ...)) after it"):
       case (config, rest) =>
         val config_ = config.copy(rules = true)
-        (config_, rest)
-
-  val simplify =
-    flag("-simplify", "contextual simplification of formulas and function definitions, with the rewrite rules of lemmas and axioms with :rw"):
-      case (config, rest) =>
-        val config_ = config.using(Simplify)
         (config_, rest)
 
   val prove =
@@ -415,7 +408,7 @@ object Config:
   // the options in groups, in the order of doc/options.md, for -help
   val groups = List(
     "input" -> List(arch, unbounded, entry_, include, hybrid),
-    "transformations" -> List(implement, vcgen, teq, chc, flat, simplify, prove, rules, fallback, split, monomorph, fuse),
+    "transformations" -> List(implement, vcgen, teq, chc, flat, prove, rules, fallback, split, monomorph, fuse),
     "output" -> List(print_, quiet, linewidth, known_, output),
     "solvers and answers" -> List(z3, cvc5, timeout_, witness),
     "debugging" -> List(debug_)
@@ -471,16 +464,14 @@ object Config:
     // the commands of Cuvee.main, which take the whole command line
     println("other commands")
     println("  -test <file>")
-    println("    run the example <file> with the command line of its first line and compare with name.out and name.err; with a .csv file, check a database of expected results")
-    println("  -record <files>")
-    println("    print the rows of a database of expected results for <files>")
+    println("    run the example <file> with the command line of its first line and compare with name.out and name.err")
     println("  -help")
     println("    list the options")
     println("  -version")
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.49.8"
+  val release = "0.50.0"
 
   def version() =
     println("Cuvée " + release)

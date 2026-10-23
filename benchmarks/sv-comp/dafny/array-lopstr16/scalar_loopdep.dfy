@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-lopstr16/scalar_loopdep.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-lopstr16/scalar_loopdep.dfy
 // SV-COMP array-lopstr16/scalar_loopdep.yml (expected: safe), translated from the C program by hand:
 // a[i] = y, where y counts up from 100, and a[i] >= 100 is checked
 //

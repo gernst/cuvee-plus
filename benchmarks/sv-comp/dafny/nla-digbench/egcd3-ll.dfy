@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/egcd3-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/egcd3-ll.dfy
 // SV-COMP nla-digbench/egcd3-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of egcd-ll with other constants or assertions; checks a == y * r + x * p; b == x * q + y *
 // s; a == k * b + c; v == b * d; p*x - q*x + r*y - s*y == a

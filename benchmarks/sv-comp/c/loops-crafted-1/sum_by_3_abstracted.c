@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops-crafted-1/sum_by_3_abstracted.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loops-crafted-1/sum_by_3_abstracted.c
 // SV-COMP loops-crafted-1/sum_by_3_abstracted.yml, translated from benchmarks/sv-comp/dafny/loops-crafted-1/sum_by_3_abstracted.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

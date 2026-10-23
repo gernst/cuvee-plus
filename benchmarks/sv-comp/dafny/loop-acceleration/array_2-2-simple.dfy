@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/array_2-2-simple.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/array_2-2-simple.dfy
 // SV-COMP loop-acceleration/array_2-2-simple.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a variant of array_2-1-simple with other constants or assertions; checks A[2048/2] ==
 // B[2048/2]

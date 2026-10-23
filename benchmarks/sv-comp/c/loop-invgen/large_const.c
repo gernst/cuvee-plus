@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invgen/large_const.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invgen/large_const.c
 // SV-COMP loop-invgen/large_const.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/large_const.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/array-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/array-2.dfy
 // SV-COMP loops/array-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of array-1 with other constants or assertions; checks array[0]>menor
 

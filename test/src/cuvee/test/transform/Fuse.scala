@@ -1,10 +1,10 @@
 package cuvee.test
-package simplify
+package transform
 
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.Fuse as F
+import cuvee.transform.Fuse as F
 import _root_.util.Name
 
 // fixpoint fusion of two recursive functions on lists of integers into one, g(f(xs), ys) as h(xs, ys)

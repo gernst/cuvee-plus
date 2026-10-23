@@ -3,20 +3,14 @@
 Tasks of the categories ReachSafety-Loops and ReachSafety-Arrays, from
 `sv-benchmarks/c/<folder>` (see Coverage below),
 translated by hand to Dafny, in `benchmarks/sv-comp/dafny/<folder>/<task>.dfy`. Each
-file states its command line in its first line (`-teq -simplify`, some with
-`-split -simplify`), its findings in its header, and its remaining goals at
-its end. Their lemmas are marked `{:teq}`, so that they are not printed.
+file states its command line in its first line (`-teq -prove`, some with
+`-split -prove`; written for the former `-simplify`), its findings in its
+header, and its remaining goals at its end. Their lemmas are marked `{:teq}`, so that they are not printed.
 
-The expected results are in one database,
-[expected.csv](expected.csv): the file, whether the task is safe or unsafe,
-the number of remaining goals (`error` if the run reports an error, `timeout`
-if it did not end within 60 s), and the time. The rows were recorded on
-2026-10-10, one process per task with 60 s, by `./Cuvee.sh -record <file>`;
-`./Cuvee.sh -test benchmarks/sv-comp/dafny/expected.csv` checks all rows in one
-JVM (about an hour by the recorded times). The test suite `SVComp` checks them
-only if the environment variable `CUVEE_SVCOMP` is set. The C programs printed
-from the translations are in `../c`, with their own database (see
-doc/architecture.md).
+The translations are benchmarks, not tests: their database of expected results
+(`expected.csv`, recorded 2026-10-10 under the former per-variable form) was
+removed on 2026-10-23. The C programs printed from the translations are in
+`../c`.
 
 - `__VERIFIER_nondet_*()` is `x := *;`, an arbitrary value.
 - Simple integer programs (`loop-new/count_by_1`, `loop-zilu`) are
@@ -41,7 +35,7 @@ doc/architecture.md).
 
 ## Results
 
-The current results are those of the database ([expected.csv](expected.csv),
+The results of the former database (`expected.csv`, removed 2026-10-23,
 270 rows: 160 closed, 86 open, 18 timeouts, 6 errors) and of the runs of
 `xml/cuvee-quick.xml` on all 651 translations (2026-10-10 16:13, 2 min: 234
 proved, 387 unknown, 22 timeouts, 8 errors; with `xml/cuvee-quick-fallback.xml`

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/monocera/polished_tests/cuvee/forall/array_shadowinit.c
+// ./Cuvee.sh -teq -prove benchmarks/monocera/polished_tests/cuvee/forall/array_shadowinit.c
 extern void abort(void);
 #include <assert.h>
 void reach_error() { assert(0); }

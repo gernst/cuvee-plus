@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loop-invariants/linear-inequality-inv-b.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loop-invariants/linear-inequality-inv-b.dfy
 // SV-COMP loop-invariants/linear-inequality-inv-b.yml (expected: unsafe), translated from the C
 // program by hand: as linear-inequality-inv-a, but the sum is an unsigned char, which wraps around modulo 256, such
 // that it can be below the last value

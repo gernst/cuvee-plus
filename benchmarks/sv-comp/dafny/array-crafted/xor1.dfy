@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-crafted/xor1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-crafted/xor1.dfy
 // SV-COMP array-crafted/xor1.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder
 // note: merges xor2, xor3 and xor4, which differ only in the bound (1000, 10000, 100000)

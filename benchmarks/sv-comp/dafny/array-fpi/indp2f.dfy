@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/indp2f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/indp2f.dfy
 // SV-COMP array-fpi/indp2f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of indp2 with other constants or assertions; checks a[i]==0
 

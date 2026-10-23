@@ -5,8 +5,8 @@ import utest._
 import cuvee.Config
 import cuvee.Error
 import cuvee.core._
-import cuvee.simplify.Context
-import cuvee.simplify.Simplify
+import cuvee.prove.Context
+import cuvee.prove.Simplify
 
 // recursive functions (Rec), which have no syntax: a function bound in its cases, whose patterns apply it
 // to patterns of its arguments, with guards as conditions
@@ -116,5 +116,5 @@ object Recs extends TestSuite:
     test("simplify"):
       val body = Ite(Ints.le(n, Ints.zero), Ints.zero, Ints.plus(n, Ints.zero))
       val rec = Rec(sum, List(Case(App(sum, List(n)), body, Ints.le(n, Ints.zero))))
-      Simplify.simplify(Config.default, State.empty, Context.empty, rec) ==>
+      Simplify.simplify(Config.default, State.empty, Context.empty(State.empty), rec) ==>
         Rec(sum, List(Case(App(sum, List(n)), Ints.zero, Ints.le(n, Ints.zero))))

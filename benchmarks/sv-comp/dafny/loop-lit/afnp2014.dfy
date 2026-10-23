@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/afnp2014.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/afnp2014.dfy
 // SV-COMP loop-lit/afnp2014.yml (expected: safe), translated from the C program by hand: x
 // accumulates the values of y, which counts from 0, for a nondeterministic number of iterations below 1000, and
 // stays at least y, the nondeterministic test as a variable c that is havocked before each test

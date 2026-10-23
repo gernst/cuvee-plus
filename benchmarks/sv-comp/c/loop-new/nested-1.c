@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-new/nested-1.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-new/nested-1.c
 // SV-COMP loop-new/nested-1.yml, translated from benchmarks/sv-comp/dafny/loop-new/nested-1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

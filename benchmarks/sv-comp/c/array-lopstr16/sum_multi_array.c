@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-lopstr16/sum_multi_array.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-lopstr16/sum_multi_array.c
 // SV-COMP array-lopstr16/sum_multi_array.yml, translated from benchmarks/sv-comp/dafny/array-lopstr16/sum_multi_array.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

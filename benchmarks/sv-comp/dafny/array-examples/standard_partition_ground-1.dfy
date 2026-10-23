@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_partition_ground-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_partition_ground-1.dfy
 // SV-COMP array-examples/standard_partition_ground-1.yml (expected: unsafe), translated from the
 // C program by ./Cuvee.sh -print dfy: a variant of standard_partition_ground-2 with other constants or assertions;
 // checks bb[ x ] >= 0; cc[ x ] < 0

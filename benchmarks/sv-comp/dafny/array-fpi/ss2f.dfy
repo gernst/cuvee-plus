@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ss2f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ss2f.dfy
 // SV-COMP array-fpi/ss2f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ss2 with other constants or assertions; checks a[i] == N*(N+2)
 

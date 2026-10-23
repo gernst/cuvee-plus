@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-crafted/simple_vardep_2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-crafted/simple_vardep_2.dfy
 // SV-COMP loop-crafted/simple_vardep_2.yml (expected: safe), translated from the C program by
 // hand: as simple_vardep_1, with k == 3 i and j == 2 i checked
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/eureka_01-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/eureka_01-2.dfy
 // SV-COMP loops/eureka_01-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks distance[i]>=0
 // note: the concrete loop bounds are symbolic, arbitrary positive values: edgecount for 20

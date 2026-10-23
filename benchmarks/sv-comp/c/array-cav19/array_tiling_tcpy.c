@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-cav19/array_tiling_tcpy.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-cav19/array_tiling_tcpy.c
 // SV-COMP array-cav19/array_tiling_tcpy.yml, translated from benchmarks/sv-comp/dafny/array-cav19/array_tiling_tcpy.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

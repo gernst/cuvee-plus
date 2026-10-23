@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/n.c40.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/n.c40.dfy
 // SV-COMP loops/n.c40.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of n.c11 with other constants or assertions
 // note: the global variables of the C program, zero there, are local; of the array x, only x[0] == 0 is kept,

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-programs/partial_mod_count_limited_gen.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-programs/partial_mod_count_limited_gen.dfy
 // SV-COMP array-programs/partial_mod_count_limited_gen.yml (expected: safe), translated from the
 // C program by ./Cuvee.sh -print dfy: a program of the folder; checks j <= ((N*(R-1))/(R*R))
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000

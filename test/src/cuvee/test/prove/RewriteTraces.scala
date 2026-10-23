@@ -1,13 +1,13 @@
 package cuvee.test
-package simplify
+package prove
 
 import utest._
 
 import cuvee.Config
 import cuvee.core._
-import cuvee.simplify.Context
-import cuvee.simplify.Rule
-import cuvee.simplify.Rewrite
+import cuvee.prove.Context
+import cuvee.prove.Rule
+import cuvee.prove.Rewrite
 
 // patterns with the combinators trace, map, and all, as in the examples of Trace Equation Systems, in single steps
 // whose results the simplifier would change (see examples/dafny/simplify/traces*.dfy for the others),
@@ -41,7 +41,7 @@ object RewriteTraces extends TestSuite:
   val n = Var("n", Sort.nat)
 
   // the counter of the iterations
-  val ctx = Context.empty.assume(Eq(J, Counter(Ints.zero, Ints.one, n)))
+  val ctx = Context.empty(State.empty).assume(Eq(J, Counter(Ints.zero, Ints.one, n)))
 
   def R(rules: List[Rule], expr: Expr, ctx: Context = ctx) =
     Rewrite.rewrite(Config.default, State.empty, ctx.withRules(rules), expr)
@@ -77,7 +77,7 @@ object RewriteTraces extends TestSuite:
 
       // without a counter of the iterations, the first dependency of the expression comes first
       val none = Trace(Ints.zero, List(W, Butlast(L)), s, List(w, l), Ints.plus(s, Ints.times(l, l)))
-      R(List(sumsRule), none, Context.empty.assume(Eq(L, Counter(Ints.one, Ints.plus(Ints.one, Ints.one), n)))) ==>
+      R(List(sumsRule), none, Context.empty(State.empty).assume(Eq(L, Counter(Ints.one, Ints.plus(Ints.one, Ints.one), n)))) ==>
         app(sums, Ints.zero, Maps(List(W, Butlast(L)), List(w, l), Ints.times(l, l)))
 
     // a guard D(x, v) && φ of the pattern binds D to the whole guard of the expression, from which φ must follow

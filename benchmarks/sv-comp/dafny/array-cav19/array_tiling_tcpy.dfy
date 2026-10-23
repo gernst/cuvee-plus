@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-cav19/array_tiling_tcpy.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-cav19/array_tiling_tcpy.dfy
 // SV-COMP array-cav19/array_tiling_tcpy.yml (expected: safe), translated from the C program by hand:
 // acopy is a copy of a of length 2 S, filled from both ends at once, and checked to agree with a
 //

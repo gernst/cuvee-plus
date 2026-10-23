@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-simple/nested_1b.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-simple/nested_1b.dfy
 // SV-COMP loop-simple/nested_1b.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder
 

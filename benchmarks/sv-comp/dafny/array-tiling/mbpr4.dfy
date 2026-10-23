@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/mbpr4.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/mbpr4.dfy
 // SV-COMP array-tiling/mbpr4.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of mbpr2 with other constants or assertions; checks volArray[i] >= MINVAL || volArray[i] ==
 // 0

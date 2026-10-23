@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/array-fpi/ifcomp.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/array-fpi/ifcomp.dfy
 // SV-COMP array-fpi/ifcomp.yml (expected: safe), translated from the C program by hand: three
 // arrays by recurrences, whose first elements are set in the first iteration: a the multiples of 6, b their partial
 // sums plus 1, c the partial sums of b, which are the cubes i * i * i

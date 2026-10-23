@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/vogal-1.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loops/vogal-1.c
 // SV-COMP loops/vogal-1.yml, translated from benchmarks/sv-comp/dafny/loops/vogal-1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/terminator_03-2_abstracted.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/terminator_03-2_abstracted.dfy
 // SV-COMP loops/terminator_03-2_abstracted.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of terminator_02-2_abstracted with other constants or assertions; checks y<=0 ||
 // (y>0 && x>=100)

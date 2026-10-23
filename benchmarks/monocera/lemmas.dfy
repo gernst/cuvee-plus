@@ -1,5 +1,5 @@
 // lemmas for the open goals of the MonoCera tests (see summary.md), injected by -include, e.g.
-// ./Cuvee.sh -teq -simplify -split -simplify -include benchmarks/monocera/lemmas.dfy benchmarks/monocera/polished_tests/cuvee/sum/brs1.c
+// ./Cuvee.sh -teq -prove -split -prove -include benchmarks/monocera/lemmas.dfy benchmarks/monocera/polished_tests/cuvee/sum/brs1.c
 // the file is parsed on its own, without the state of the input or of teq.dfy, hence it repeats the declarations
 // of teq.dfy that the lemmas need, exactly as there
 

@@ -1,6 +1,0 @@
-method m(x: int) returns (y: int)
-  requires 0 <= x
-{
-  y := x + 1;
-}
-

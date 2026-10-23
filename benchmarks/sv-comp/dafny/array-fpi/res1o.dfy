@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/res1o.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/res1o.dfy
 // SV-COMP array-fpi/res1o.yml (expected: safe), translated from the C program by hand: two
 // arrays of ones are summed up, which gives at most 2 N
 //

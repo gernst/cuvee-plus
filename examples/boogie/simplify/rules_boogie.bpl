@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/boogie/simplify/rules_boogie.bpl
+// ./Cuvee.sh -prove examples/boogie/simplify/rules_boogie.bpl
 // rewrite rules are assertions and lemmas with the attribute :rw
 function f(x: int): int;
 function g(x: int): int;

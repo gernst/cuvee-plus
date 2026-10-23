@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/simple_1-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/simple_1-2.dfy
 // SV-COMP loop-acceleration/simple_1-2.yml (expected: safe), translated from the C program by
 // hand: x is increased by 2 from 0 while below 0x0fffffff, and checked to be even (no wrap-around below the bound)
 //

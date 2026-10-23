@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-crafted/mapsum1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-crafted/mapsum1.dfy
 // SV-COMP array-crafted/mapsum1.yml (expected: safe), translated from the C program by hand:
 // the sum of i + x[i] over an arbitrary array of N = 100 elements (the function mapsum, inlined at its three
 // calls) does not change when x[0] and x[1] are swapped, and when the array is then rotated by one position

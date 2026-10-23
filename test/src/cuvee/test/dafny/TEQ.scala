@@ -4,8 +4,8 @@ package dafny
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.Rule
-import cuvee.simplify.Rewrite
+import cuvee.prove.Rule
+import cuvee.prove.Rewrite
 
 // verification by symbolic execution and trace equation systems:
 // for programs without loops, the verdicts coincide with -vcgen (global variables, old, and calls are in
@@ -25,7 +25,7 @@ object TEQ extends TestSuite:
     expr :: inner.result()
 
   // the former lemma database of the per-variable form (resources/cuvee/legacy/teq.dfy), no longer injected, whose
-  // lemmas the tests of the rewriting of -simplify below use
+  // lemmas the tests of the rewriting of -prove below use
   lazy val legacy: List[Cmd] =
     val (_, parser, _) = cuvee.dafny.Source.newParser(cuvee.Config.default)
     cuvee.dafny.Source.parse("/cuvee/legacy/teq.dfy", parser)
@@ -36,7 +36,7 @@ object TEQ extends TestSuite:
     // one-point rule; the invariant over the counter is rewritten as well, such that only arithmetic remains
     test("lemmas"):
       val sum = Examples.root / "dafny" / "vcgen" / "sum.dfy"
-      val (cmds, errors) = Examples.stream("-teq", "-include", "teq:aggregation", "-simplify", "-quiet", sum.toString)
+      val (cmds, errors) = Examples.stream("-teq", "-include", "teq:aggregation", "-prove", "-quiet", sum.toString)
       errors ==> Nil
       assert(cmds.exists { case DefineFun(fun, _, _) => fun == Fun.trace.counter; case _ => false })
       val List(phi) = cmds.collect { case Assert(Goal, _, phi, _) => phi }: @unchecked
@@ -85,13 +85,13 @@ object TEQ extends TestSuite:
 
       // the synthetic counter K == counter(0, 1, n) is followed from the premises (see Context.↑),
       // the trace of the loop variable i becomes counter(0, 1, n), only that of s remains
-      val phi_ = cuvee.simplify.Simplify(cuvee.Config.default, State.empty, cuvee.simplify.Context.pos.withRules(List(rule)), phi)
+      val phi_ = cuvee.prove.Simplify.simplify(cuvee.Config.default, State.empty, cuvee.prove.Context.empty(State.empty).copy(polarity = Some(true)).withRules(List(rule)), phi)
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
 
     // an update of a visited key replaces its contribution to the count, and the prefix counts are counts of prefixes;
     // the conditions are decided by the assumptions of the context (the lemmas of the legacy database)
     test("count"):
-      val rules = cuvee.simplify.Rules.from(State.empty, legacy)
+      val rules = cuvee.prove.Rules.from(State.empty, legacy)
       def fun(name: String) = legacy.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun; case DefineFun(fun, _, _) if fun.name.name == name => fun }.get
       def app(name: String, args: Expr*) = App(fun(name), args.toList)
       def has(expr: Expr, name: String) = subexprs(expr).exists { case App(f, _, _, _) => f.name.name == name; case _ => false }
@@ -104,12 +104,12 @@ object TEQ extends TestSuite:
       val x = Var("x", Sort.int)
       val keys = Var("keys", Sort.list(Sort.int))
 
-      val ctx = cuvee.simplify.Context.empty.assume(app("distincts", keys)).withRules(rules)
+      val ctx = cuvee.prove.Context.empty(State.empty).assume(app("distincts", keys)).withRules(rules)
       val updated = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("count", e, app("selects", Store(a, k, w), keys)))
       assert(subexprs(updated).contains(app("count", e, app("selects", a, keys))))
       assert(!subexprs(updated).exists { case Store(_, _, _) => true; case _ => false })
 
-      val bounds = cuvee.simplify.Context.empty.withRules(rules)
+      val bounds = cuvee.prove.Context.empty(State.empty).withRules(rules)
       val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
       assert(subexprs(earlier).contains(app("count", e, app("prefix", j, keys))))
       assert(!has(earlier, "counts"))
@@ -118,7 +118,7 @@ object TEQ extends TestSuite:
     // which is m - k - 1 on Int, whereas the constant of 1023 - i is folded,
     // also with a second dependency whose bound variable is unused, and with the counter defined in the context
     test("invs with literal bound"):
-      val rules = cuvee.simplify.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
+      val rules = cuvee.prove.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
       val n = Var("n", Sort.nat)
       val trace = Sort(Con("Trace", 1), List(Sort.int))
       val I = Var("I", trace)
@@ -127,7 +127,7 @@ object TEQ extends TestSuite:
       val k = Var("k", Sort.int)
       val bound = Lit(BigInt(1024), Sort.int)
       val counter = Counter(Ints.zero, Ints.one, n)
-      val ctx = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, Nats.integer(n))).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
+      val ctx = cuvee.prove.Context.empty(State.empty).assume(Ints.le(Ints.zero, Nats.integer(n))).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
 
       for inv <- List(
           Invs(List(Butlast(counter)), List(i), Ints.lt(i, bound)),
@@ -148,7 +148,7 @@ object TEQ extends TestSuite:
     // is instantiated by a dependency of the expression, here the counter defined in the context (the lemmas of the
     // legacy database)
     test("constant updates"):
-      val rules = cuvee.simplify.Rules.from(State.empty, legacy)
+      val rules = cuvee.prove.Rules.from(State.empty, legacy)
       val n = Var("n", Sort.nat)
       val trace = Sort(Con("Trace", 1), List(Sort.int))
       val K = Var("K", trace)
@@ -156,5 +156,5 @@ object TEQ extends TestSuite:
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val loop = Trace(Ints.one, List(Butlast(K)), x, List(k), Ints.zero)
-      val ctx = cuvee.simplify.Context.empty.assume(Ints.le(Ints.zero, Nats.integer(n))).assume(Eq(K, Counter(Ints.zero, Ints.one, n))).assume(Eq(X, loop)).withRules(rules)
+      val ctx = cuvee.prove.Context.empty(State.empty).assume(Ints.le(Ints.zero, Nats.integer(n))).assume(Eq(K, Counter(Ints.zero, Ints.one, n))).assume(Eq(X, loop)).withRules(rules)
       Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Nats.zero()), Ints.one, Ints.zero)

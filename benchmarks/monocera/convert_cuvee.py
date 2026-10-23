@@ -55,7 +55,7 @@ def convert(test: str):
     source = SVCOMP / f"{test}.c"
     target = OUT / f"{test}.c"
     target.parent.mkdir(parents=True, exist_ok=True)
-    header = f"// ./Cuvee.sh -teq -simplify benchmarks/monocera/polished_tests/cuvee/{test}.c\n"
+    header = f"// ./Cuvee.sh -teq -prove benchmarks/monocera/polished_tests/cuvee/{test}.c\n"
     target.write_text(header + mallocs(defines(source.read_text())))
     target.with_suffix(".yml").write_text(TASK.format(test=test, name=target.stem))
     print(target.relative_to(HERE))

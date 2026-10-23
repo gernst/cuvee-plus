@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/simple_2-1_abstracted.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/simple_2-1_abstracted.dfy
 // SV-COMP loop-acceleration/simple_2-1_abstracted.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of simple_1-1_abstracted with other constants or assertions; checks x
 // >= 0x0fffffff

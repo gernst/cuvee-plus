@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/rewnif.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/rewnif.dfy
 // SV-COMP array-tiling/rewnif.yml (expected: safe), translated from the C program by hand:
 // a[i + 1] = i (if in bounds) and then a[i] = i, and a[i] >= i is checked
 //

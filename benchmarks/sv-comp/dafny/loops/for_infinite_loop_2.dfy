@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/for_infinite_loop_2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/for_infinite_loop_2.dfy
 // SV-COMP loops/for_infinite_loop_2.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: as for_infinite_loop_1, with the unreachable end checking x != 0
 //

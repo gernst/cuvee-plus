@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-cav19/array_init_pair_symmetr.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-cav19/array_init_pair_symmetr.c
 // SV-COMP array-cav19/array_init_pair_symmetr.yml, translated from benchmarks/sv-comp/dafny/array-cav19/array_init_pair_symmetr.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

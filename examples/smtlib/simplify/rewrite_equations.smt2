@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/rewrite_equations.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/rewrite_equations.smt2
 ; equations match in either orientation
 (declare-fun f (Int) Int)
 (declare-const a Int)

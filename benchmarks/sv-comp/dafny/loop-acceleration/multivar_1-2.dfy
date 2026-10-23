@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/multivar_1-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/multivar_1-2.dfy
 // SV-COMP loop-acceleration/multivar_1-2.yml (expected: unsafe), translated from the C program by
 // hand: the unsafe variant of multivar_1-1, where y starts at x + 1
 //

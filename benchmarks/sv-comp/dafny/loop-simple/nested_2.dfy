@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-simple/nested_2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-simple/nested_2.dfy
 // SV-COMP loop-simple/nested_2.yml (expected: safe), translated from the C program by hand: two
 // nested loops count a and b to 6, and both are 6 at the end
 //

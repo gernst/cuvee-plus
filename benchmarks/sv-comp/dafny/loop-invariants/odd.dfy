@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invariants/odd.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invariants/odd.dfy
 // SV-COMP loop-invariants/odd.yml (expected: safe), translated from the C program by hand: x
 // starts at 1 and is increased by 2 in a nondeterministic loop, and x % 2 == 1 is checked; unsigned int is int, its
 // wrap-around at 2^32 keeps the remainder

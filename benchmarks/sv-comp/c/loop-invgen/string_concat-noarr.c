@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invgen/string_concat-noarr.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invgen/string_concat-noarr.c
 // SV-COMP loop-invgen/string_concat-noarr.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/string_concat-noarr.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

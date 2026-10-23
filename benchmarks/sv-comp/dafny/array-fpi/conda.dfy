@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/conda.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/conda.dfy
 // SV-COMP array-fpi/conda.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, then increased by 1 where it is 1, and sums up to 2 * N; sum[0] of the one-element array as a scalar
 //

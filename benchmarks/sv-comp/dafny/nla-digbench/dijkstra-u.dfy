@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/dijkstra-u.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/dijkstra-u.dfy
 // SV-COMP nla-digbench/dijkstra-u.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks r < 2 * p + q; p*p + r*q == n*q; h * h * h - 12 * h * n *
 // q + 16 * n * p * q - h * q * q - 4 * p * q * q + 12 * h * q * r - 16 * p * q * r == 0; h * h * n - 4 * h * n * p

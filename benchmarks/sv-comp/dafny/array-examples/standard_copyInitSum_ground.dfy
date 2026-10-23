@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_copyInitSum_ground.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_copyInitSum_ground.dfy
 // SV-COMP array-examples/standard_copyInitSum_ground.yml (expected: safe), translated from the C
 // program by hand: a is initialized to 42, copied into b, incr is added to each element of b, which is then 42 +
 // incr

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/array_4.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/array_4.dfy
 // SV-COMP loop-acceleration/array_4.yml (expected: safe), translated from the C program by hand:
 // the array is arbitrary but for a 0 at its last position 1023, and the search for the first 0 stops at most there,
 // which is checked

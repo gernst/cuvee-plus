@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/NetBSD_loop.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/NetBSD_loop.dfy
 // SV-COMP loop-invgen/NetBSD_loop.yml (expected: safe), translated from the C program by hand: p
 // counts from 0 to MAXPATHLEN, and stays within 0 and MAXPATHLEN
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/eqn3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/eqn3.dfy
 // SV-COMP array-fpi/eqn3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of eqn1 with other constants or assertions; checks b[i] == 3*i*i + 3*i + 1
 

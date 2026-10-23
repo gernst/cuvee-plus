@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-programs/copysome2-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-programs/copysome2-2.dfy
 // SV-COMP array-programs/copysome2-2.yml (expected: unsafe), translated from the C program by hand:
 // as copysome2-1, but a3 is checked to agree with a2, which differs at z
 //

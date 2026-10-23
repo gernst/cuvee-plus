@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ms2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ms2.dfy
 // SV-COMP array-fpi/ms2.yml (expected: safe), translated from the C program by hand: a[i] = i %
 // 2, and the sum of all but a[0] is checked to be at most N (ms3 to ms5 are variants)
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ss3f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ss3f.dfy
 // SV-COMP array-fpi/ss3f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ss3 with other constants or assertions; checks sum[0] == N*(N+1)
 

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-zilu/benchmark02_linear_abstracted.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-zilu/benchmark02_linear_abstracted.c
 // SV-COMP loop-zilu/benchmark02_linear_abstracted.yml, translated from benchmarks/sv-comp/dafny/loop-zilu/benchmark02_linear_abstracted.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

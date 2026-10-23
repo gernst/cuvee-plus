@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/underapprox_2-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/underapprox_2-2.dfy
 // SV-COMP loop-acceleration/underapprox_2-2.yml (expected: safe), translated from the C program
 // by hand: as underapprox_1-2, with the assertion on x, which counts to 6
 //

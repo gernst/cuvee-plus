@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/traces_counter.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/traces_counter.dfy
 // rewriting of trace equation systems (example 2.3): a variable increased by c in each iteration is a counter,
 // matched modulo commutativity, every case of the update is covered by the case of the pattern,
 // different increments in the cases are not a counter

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-programs/copysome1-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-programs/copysome1-2.dfy
 // SV-COMP array-programs/copysome1-2.yml (expected: unsafe), translated from the C program by
 // hand: the unsafe variant of copysome1-1, where z is 150001 in the check, such that the position 150000, which is
 // not copied, is compared

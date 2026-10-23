@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/geo1-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/geo1-ll.dfy
 // SV-COMP nla-digbench/geo1-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy, where the function number of the C prelude is written as a conditional: a geometric series x
 // accumulates y, which is multiplied by z, and the closed form is checked

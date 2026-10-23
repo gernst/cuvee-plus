@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-crafted/simple_array_index_value_4.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-crafted/simple_array_index_value_4.dfy
 // SV-COMP loop-crafted/simple_array_index_value_4.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of simple_array_index_value_2 with other constants or assertions;
 // checks (index1 < 100000) && (index2 < 100000); array[index1] == array[index2]

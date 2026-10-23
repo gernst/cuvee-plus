@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/nr2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/nr2.dfy
 // SV-COMP array-tiling/nr2.yml (expected: safe), translated from the C program by hand:
 // as pr2, with MINVAL = 2, where an inner loop j = 2, 1 stores j or 0 at 2 i - j
 //

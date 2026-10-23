@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/array_1-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/array_1-2.dfy
 // SV-COMP loop-acceleration/array_1-2.yml (expected: safe), translated from the C program by
 // hand: A[i] is set to i for i below 1024, and A[1023] is 1023
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/mbpr2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/mbpr2.dfy
 // SV-COMP array-tiling/mbpr2.yml (expected: safe), translated from the C program by hand:
 // an array of even length 2 m gets 3 or 0 (by a test that holds) at the even positions 2 i - 2 and keeps the
 // odd ones in a first loop, and 1 or 0 (by a test that fails) at the odd positions 2 i - 1 in a second loop;

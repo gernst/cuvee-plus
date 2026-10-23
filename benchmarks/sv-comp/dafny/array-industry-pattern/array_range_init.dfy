@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-industry-pattern/array_range_init.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-industry-pattern/array_range_init.dfy
 // SV-COMP array-industry-pattern/array_range_init.yml (expected: unsafe), translated from the C program by hand:
 // a[i] = 10 for 0 <= i <= 10000 and 0 otherwise, and all are checked to be 10
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-cav19/array_init_pair_symmetr2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-cav19/array_init_pair_symmetr2.dfy
 // SV-COMP array-cav19/array_init_pair_symmetr2.yml (expected: safe), translated from the C program by hand:
 // a[i] = x and b[i] = y for values x > y chosen in each iteration, c[i] = a[i] - b[i], and c[i] > 0 is checked
 //

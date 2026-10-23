@@ -4,7 +4,7 @@ import cuvee.Config
 import cuvee.sexpr
 import cuvee.pipe.Transform
 import cuvee.core._
-import cuvee.simplify.Normalize
+import cuvee.prove.Normalize
 
 // splitting of goals and lemmas into individual proof obligations of the form
 // forall xs. antecedents ==> succedents, e.g. those from VCGen, which are reported separately by the solvers,

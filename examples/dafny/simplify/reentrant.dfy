@@ -1,4 +1,4 @@
-// ./Cuvee.sh -vcgen -simplify examples/dafny/simplify/reentrant.dfy
+// ./Cuvee.sh -vcgen -prove examples/dafny/simplify/reentrant.dfy
 // a rule whose side condition mentions the rule's own left-hand side term: the instance f(a) <= 1 of the condition is
 // simplified before it is decided, which rewrote f(a) by the rule itself, whose condition was decided again, without
 // end; the rule is suspended while its conditions are evaluated (Context.active), so the condition is decided from

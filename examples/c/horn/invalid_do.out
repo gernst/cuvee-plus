@@ -72,7 +72,7 @@
 
 (declare-fun main_assign_10 (Int Bool Bool Int) Bool)
 
-(assert (=> true main_pre))
+(assert main_pre)
 
 (assert
   (forall
@@ -97,42 +97,39 @@
 
 (assert
   (forall
-    ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int))
-    (=>
-      (and
-        (main_inv_3 result tmp$3 tmp$4 i$5)
-        true
-        tmp$4)
-      (main_join_5 result tmp$3 tmp$4 i$5))))
-
-(assert
-  (forall
     ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int) (tmp$6 Bool))
     (=>
       (and
-        (main_inv_3 result tmp$3 tmp$4 i$5)
-        true
-        (not tmp$4)
-        true)
-      (main_spec_6 result tmp$6 tmp$4 i$5))))
+        (main_inv_3 result tmp$3 false i$5)
+        (not tmp$4))
+      (main_spec_6 result tmp$6 false i$5))))
 
 (assert
   (forall
     ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int))
     (=>
       (and
-        (main_spec_6 result tmp$3 tmp$4 i$5)
-        tmp$3)
-      (main_join_5 result tmp$3 tmp$4 i$5))))
-
-(assert
-  (forall
-    ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int))
-    (=>
-      (and
-        (main_spec_6 result tmp$3 tmp$4 i$5)
+        (main_spec_6 result false tmp$4 i$5)
         (not tmp$3))
-      (main_exit_4 result tmp$3 tmp$4 i$5))))
+      (main_exit_4 result false tmp$4 i$5))))
+
+(assert
+  (forall
+    ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int))
+    (=>
+      (and
+        (main_spec_6 result true tmp$4 i$5)
+        tmp$3)
+      (main_join_5 result true tmp$4 i$5))))
+
+(assert
+  (forall
+    ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int))
+    (=>
+      (and
+        (main_inv_3 result tmp$3 true i$5)
+        tmp$4)
+      (main_join_5 result tmp$3 true i$5))))
 
 (assert
   (forall
@@ -159,15 +156,6 @@
   (forall
     ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int))
     (=>
-      (and
-        (main_inv_3 result tmp$3 tmp$4 i$5)
-        (not true))
-      (main_exit_4 result tmp$3 tmp$4 i$5))))
-
-(assert
-  (forall
-    ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int))
-    (=>
       (main_exit_4 result tmp$3 tmp$4 i$5)
       (= i$5 1))))
 
@@ -175,9 +163,7 @@
   (forall
     ((result Int) (tmp$3 Bool) (tmp$4 Bool) (i$5 Int))
     (=>
-      (and
-        (main_exit_4 result tmp$3 tmp$4 i$5)
-        true)
+      (main_exit_4 result tmp$3 tmp$4 i$5)
       (main_spec_9 result tmp$3 tmp$4 i$5))))
 
 (assert

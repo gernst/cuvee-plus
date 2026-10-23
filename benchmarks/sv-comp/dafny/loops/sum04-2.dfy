@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/sum04-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/sum04-2.dfy
 // SV-COMP loops/sum04-2.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: sn grows by 2 in 8 iterations, and sn == 16 or sn == 0 is checked
 //

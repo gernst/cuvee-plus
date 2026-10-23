@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-multidimensional/add-3-n-u.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-multidimensional/add-3-n-u.dfy
 // SV-COMP array-multidimensional/add-3-n-u.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a variant of add-2-n-u with other constants or assertions; checks
 // C[i][j][k]==A[i][j][k]+B[i][j][k]

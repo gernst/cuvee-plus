@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/mannadiv.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/mannadiv.dfy
 // SV-COMP nla-digbench/mannadiv.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy, where the function number of the C prelude is written as a conditional: Manna's division of x1 by x2
 // by repeated subtraction, with the invariant checked in and after the loop

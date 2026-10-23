@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_reverse_ground.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_reverse_ground.dfy
 // SV-COMP array-examples/standard_reverse_ground.yml (expected: safe), translated from the C
 // program by hand: a is filled with arbitrary values, b is its reverse, which is checked element by element
 //

@@ -107,7 +107,7 @@
   (Int Int Int Int Int)
   Bool)
 
-(assert (=> true main_pre))
+(assert main_pre)
 
 (assert
   (forall
@@ -185,7 +185,7 @@
     (=>
       (and
         (main_inv_6 result tmp$2 n$3 k$4 i$5)
-        (not (< i$5 n$3)))
+        (<= n$3 i$5))
       (main_exit_7 result tmp$2 n$3 k$4 i$5))))
 
 (assert
@@ -199,9 +199,7 @@
   (forall
     ((result Int) (tmp$2 Int) (n$3 Int) (k$4 Int) (i$5 Int))
     (=>
-      (and
-        (main_exit_7 result tmp$2 n$3 k$4 i$5)
-        true)
+      (main_exit_7 result tmp$2 n$3 k$4 i$5)
       (main_spec_10 result tmp$2 n$3 k$4 i$5))))
 
 (assert

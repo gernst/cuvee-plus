@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/n.c40.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loops/n.c40.c
 // SV-COMP loops/n.c40.yml, translated from benchmarks/sv-comp/dafny/loops/n.c40.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

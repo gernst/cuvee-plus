@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loop-new/half.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loop-new/half.dfy
 // SV-COMP loop-new/half.yml (expected: safe), translated from the C program by hand: n counts the
 // even numbers below 2 * k, which are k many
 //

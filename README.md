@@ -18,7 +18,7 @@ Main features:
 - **Deduction engine** (`-prove`) for the goals of trace equation systems, with
   congruence closure, a simplex, and traces of several accumulators, see
   [doc/prove.md](doc/prove.md).
-- **Simplifier** with a rewrite engine for lemmas (`-simplify`), and the
+- **Rewrite engine** for lemmas, part of `-prove`, and the
   **fallback** of the remaining goals to first-order logic (`-fallback`).
 - **Solvers** z3 and cvc5 (`-z3`, `-cvc5`), and **answers** `correct`,
   `incorrect`, or `unknown` as in SV-COMP to every goal and lemma.
@@ -56,7 +56,7 @@ cd cuvee-plus
 ```sh
 mill -i assembly                          # build out/assembly.dest/out.jar
 cp out/assembly.dest/out.jar cuvee.jar    # the jar that Cuvee.sh runs
-mill -i test                              # run the tests (CUVEE_PRINTING=1 after parser or printer changes, CUVEE_ALGORITHMS=1 and CUVEE_SVCOMP=1 for the slow suites)
+mill -i test                              # run the tests (CUVEE_PRINTING=1 after parser or printer changes, CUVEE_ALGORITHMS=1 for the slow suite)
 ```
 
 ## Usage
@@ -141,7 +141,7 @@ lists them.
   `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`, `unsigned`) are proved in Lean 4 ([lean/](lean)), against
   statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
   [legacy/teq.dfy](resources/cuvee/legacy/teq.dfy) is kept but no longer injected. `-rules` reports the rules that
-  `-simplify` and `-prove` apply to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain
+  `-prove` applies to each goal, as `(set-info :used ...)`. `-fallback` encodes the trace equation systems that remain
   into first-order logic for the solvers.
 - **Constrained Horn clauses** (`-chc`): the same programs as Horn clauses
   for invariant inference. `-flat` then replaces record arguments of the
@@ -156,15 +156,14 @@ lists them.
 - **Splitting** (`-split`): goals and lemmas are split into individual
   obligations `forall xs. antecedents ==> conclusion`, which the solvers report
   one by one.
-- **Deduction engine** (`-prove`): a second engine for the goals of `-teq` and
-  independent of the simplifier: congruence closure and a simplex
+- **Deduction engine** (`-prove`): contextual simplification of formulas and
+  function definitions, with congruence closure and a simplex
   over the rationals as the context, matching modulo the classes, the
   per-variable views of traces of several accumulators (one trace per strongly connected
   component of the variables of a loop, `-teq`), rules over whole
-  cycles, and forward lemmas (`{:fw}`), see [doc/prove.md](doc/prove.md).
-- **Simplifier** (`-simplify`): contextual simplification of formulas and
-  simplification of programs, normalisation of arithmetic on `Int` and `Real`
-  into polynomials, comparisons with positive coefficients, and derivatives.
+  cycles, and forward lemmas (`{:fw}`); normalisation of arithmetic on `Int`
+  and `Real` into polynomials, comparisons with positive coefficients, and
+  derivatives; see [doc/prove.md](doc/prove.md).
 - **Rewrite engine**: conditional rules `lhs = rhs if cond` from the
   assertions and lemmas with the attribute `:rw` (`axiom {:rw} φ`,
   `lemma {:rw} name(xs) requires ψ ensures φ` in Dafny, `lemma {:rw} φ;` in
@@ -172,11 +171,10 @@ lists them.
   `φ` is a universally quantified equation, equivalence, negation, or boolean
   atom, optionally with a premise as condition, and from function definitions
   with `:rw` whose body is a match on a parameter (one rule per case),
-  applied by `-simplify` after each round,
+  applied by `-prove` after each round,
   matching modulo associativity, commutativity, and 0 of `+` and `-`, and the
   binding structure of the trace combinators `trace`, `maps`, and `invs` from
-  *Trace Equation Systems for Program Verification*; and Fourier-Motzkin
-  elimination over the rationals.
+  *Trace Equation Systems for Program Verification*.
 - **Solvers** (`-z3`, `-cvc5`, `-timeout <ms>`), which check the output:
   goals and lemmas are checked for validity and answered `correct`,
   `incorrect`, or `unknown`, and assertions and `check-sat` are passed
@@ -271,8 +269,6 @@ below and [doc/architecture.md](doc/architecture.md)). The runs included the mod
   how a run flows through them.
 - [doc/datastructures.md](doc/datastructures.md): the core representation of
   types, expressions, programs, commands, and the state.
-- [doc/simplifier.md](doc/simplifier.md): the simplifier, rewriting, fusion,
-  and facts that the goal does not mention.
 - [doc/teq.md](doc/teq.md): trace equation systems, the combinators, and the
   lemma database.
 - [doc/hybrid.md](doc/hybrid.md): derivatives, differential equations, and

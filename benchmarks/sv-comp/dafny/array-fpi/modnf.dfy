@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/modnf.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/modnf.dfy
 // SV-COMP array-fpi/modnf.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of modn, which asserts that the elements, which are 0, are 1
 //

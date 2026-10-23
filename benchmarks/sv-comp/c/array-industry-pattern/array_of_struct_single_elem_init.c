@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-industry-pattern/array_of_struct_single_elem_init.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-industry-pattern/array_of_struct_single_elem_init.c
 // SV-COMP array-industry-pattern/array_of_struct_single_elem_init.yml, translated from benchmarks/sv-comp/dafny/array-industry-pattern/array_of_struct_single_elem_init.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invariants/odd.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invariants/odd.c
 // SV-COMP loop-invariants/odd.yml, translated from benchmarks/sv-comp/dafny/loop-invariants/odd.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

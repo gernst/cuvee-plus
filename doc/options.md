@@ -34,9 +34,8 @@ The transformations are applied in the order in which they are given, e.g.
 | `-teq` | verification conditions by symbolic execution, each loop summarized by a Trace Equation System (TEQ): the modified variables of a loop partitioned by the strongly connected components of their read relation, one trace per component, of several accumulators for a cycle, whose per-variable traces are views that `-prove` follows on demand; injects the lemma database `teq.dfy`, whose rules `-prove` applies (see [teq.md](teq.md)); calls inlined, those of callees with a contract by the contract |
 | `-chc` | constrained Horn clauses for procedures, for the inference of invariants |
 | `-flat` | replace arguments of predicates that are records by their fields, e.g. after `-chc` |
-| `-simplify` | contextual simplification of formulas and function definitions, with the rewrite rules of lemmas and axioms with `:rw` (see [simplifier.md](simplifier.md)) |
-| `-prove` | the deduction engine of the package `prove`, like `-simplify` for the goals of `-teq`: congruence closure and a simplex as the context, matching modulo the classes and the views of traces of several accumulators, rules over whole cycles (patterns of several accumulators), and forward lemmas (`{:fw}`) (see [prove.md](prove.md)) |
-| `-rules` | report the rewrite rules that `-simplify` and `-prove` apply to each assertion, by their names, as `(set-info :used ((name count) ...))` after it |
+| `-prove` | the deduction engine of the package `prove`, contextual simplification of formulas and function definitions with the rewrite rules of lemmas and axioms with `:rw`, for the goals of `-teq` in particular: congruence closure and a simplex as the context, matching modulo the classes and the views of traces of several accumulators, rules over whole cycles (patterns of several accumulators), and forward lemmas (`{:fw}`) (see [prove.md](prove.md)) |
+| `-rules` | report the rewrite rules that `-prove` applies to each assertion, by their names, as `(set-info :used ((name count) ...))` after it |
 | `-fallback` | lower the Trace Equation Systems that remain into first-order logic for the solvers, e.g. after `-teq -prove`, a trace of several accumulators into one function per accumulator; goals and lemmas that are not free are lowered, `:abstract` if they change, polymorphic ones are errors, axioms and free lemmas over traces, lists, and naturals are dropped |
 | `-split` | split goals and lemmas into individual obligations `forall xs. antecedents ==> conclusion`, which the solvers report one by one |
 | `-monomorph` | replace polymorphic functions by their monomorphic instances, e.g. before `-z3` |
@@ -64,8 +63,8 @@ The transformations are applied in the order in which they are given, e.g.
 
 | Option | Meaning |
 |---|---|
-| `-debug <modules>` | print the steps of the given comma-separated modules, e.g. `simplify,rewrite` (the steps of the simplifier and of the rewrite engine that change an expression, in the language of the output, also those of `-prove`, where `rewrite` includes the views of traces of several accumulators, `match` the matches through the definitions of variables and the trace patterns that fail, `conditions` the closed side conditions that fail, `forward` the instances of forward lemmas (`{:fw}`), and `views` the misses of the memo of views, see [prove.md](prove.md)) or `solver` (the communication with the solvers) |
-| `-test <file>` | run the example `<file>` with the command line of its first line and compare with the expected `name.out` and `name.err`; with a `.csv` file, check a database of expected results |
+| `-debug <modules>` | print the steps of the given comma-separated modules, e.g. `simplify,rewrite` (the steps of the traversal and of the rewrite engine of `-prove` that change an expression, in the language of the output, where `rewrite` includes the views of traces of several accumulators, `match` the matches through the definitions of variables and the trace patterns that fail, `conditions` the closed side conditions that fail, `forward` the instances of forward lemmas (`{:fw}`), and `views` the misses of the memo of views, see [prove.md](prove.md)) or `solver` (the communication with the solvers) |
+| `-test <file>` | run the example `<file>` with the command line of its first line and compare with the expected `name.out` and `name.err` |
 | `-help` | list the options |
 | `-version` | print the version |
 

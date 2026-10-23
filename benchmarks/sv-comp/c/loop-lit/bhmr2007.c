@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-lit/bhmr2007.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-lit/bhmr2007.c
 // SV-COMP loop-lit/bhmr2007.yml, translated from benchmarks/sv-comp/dafny/loop-lit/bhmr2007.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

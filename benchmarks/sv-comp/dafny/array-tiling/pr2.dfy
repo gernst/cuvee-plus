@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/pr2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/pr2.dfy
 // SV-COMP array-tiling/pr2.yml (expected: safe), translated from the C program by hand:
 // as mbpr2, but both positions in one loop, and MINVAL is not initialized (arbitrary)
 //

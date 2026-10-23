@@ -1,4 +1,4 @@
-package cuvee.simplify
+package cuvee.transform
 
 import cuvee.Config
 import cuvee.Error

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/nested_1-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/nested_1-2.dfy
 // SV-COMP loop-acceleration/nested_1-2.yml (expected: unsafe), translated from the C program by
 // hand: the unsafe variant of nested_1-1, which asserts that the final x, which is odd, is even
 //

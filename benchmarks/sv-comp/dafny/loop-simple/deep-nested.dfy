@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-simple/deep-nested.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-simple/deep-nested.dfy
 // SV-COMP loop-simple/deep-nested.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder
 // note: the concrete loop bounds are symbolic, arbitrary positive values: uint32_max for 4294967295

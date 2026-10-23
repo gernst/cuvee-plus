@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-lopstr16/base_case.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-lopstr16/base_case.dfy
 // SV-COMP array-lopstr16/base_case.yml (expected: safe), translated from the C program by hand:
 // pointers are only compared with null, they are modeled by truth values, whether they are not null, where
 // malloc does not fail; the fields of structs are arrays of their own; each struct gets a value n and a pointer

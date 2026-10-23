@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_allDiff2_ground.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_allDiff2_ground.dfy
 // SV-COMP array-examples/standard_allDiff2_ground.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks a[x] != a[y]
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100000

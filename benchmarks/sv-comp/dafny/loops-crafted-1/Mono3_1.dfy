@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/Mono3_1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/Mono3_1.dfy
 // SV-COMP loops-crafted-1/Mono3_1.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks y!=0
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000

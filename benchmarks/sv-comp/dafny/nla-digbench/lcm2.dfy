@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/lcm2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/lcm2.dfy
 // SV-COMP nla-digbench/lcm2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of lcm1 with other constants or assertions; checks x*u + y*v == 2*a*b; x*u + y*v == 2*a*b
 

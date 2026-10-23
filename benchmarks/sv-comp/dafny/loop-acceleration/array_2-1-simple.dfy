@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/array_2-1-simple.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/array_2-1-simple.dfy
 // SV-COMP loop-acceleration/array_2-1-simple.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks A[2048/2] != B[2048/2]
 // note: the arrays are not initialized (the values of C, which constant(0) gave them), and the assertion A[2048/2]

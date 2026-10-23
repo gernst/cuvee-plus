@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/sum03-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/sum03-1.dfy
 // SV-COMP loops/sum03-1.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of sum01-2 with other constants or assertions; checks sn==x*(2) || sn == 0
 

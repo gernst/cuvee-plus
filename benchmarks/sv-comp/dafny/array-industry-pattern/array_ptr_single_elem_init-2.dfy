@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-industry-pattern/array_ptr_single_elem_init-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-industry-pattern/array_ptr_single_elem_init-2.dfy
 // SV-COMP array-industry-pattern/array_ptr_single_elem_init-2.yml (expected: unsafe), translated from the C program by hand:
 // as array_single_elem_init, but a[15000] != 1 is checked after a[15000] = 1
 //

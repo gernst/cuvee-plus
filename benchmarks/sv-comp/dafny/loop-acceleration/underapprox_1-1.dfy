@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/underapprox_1-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/underapprox_1-1.dfy
 // SV-COMP loop-acceleration/underapprox_1-1.yml (expected: unsafe), translated from the C program
 // by hand: the unsafe variant of underapprox_1-2, which asserts that y, which is 64, is not 64
 //

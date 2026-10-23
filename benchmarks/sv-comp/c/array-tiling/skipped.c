@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-tiling/skipped.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-tiling/skipped.c
 // SV-COMP array-tiling/skipped.yml, translated from benchmarks/sv-comp/dafny/array-tiling/skipped.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

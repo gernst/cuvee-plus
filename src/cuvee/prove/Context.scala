@@ -2,7 +2,7 @@ package cuvee.prove
 
 import cuvee.core._
 
-// a sequent at the current position of the engine (after cuvee.simplify.Context, see doc/prove.md)
+// a sequent at the current position of the engine (after the former simplify.Context, see doc/prove.md)
 //
 // state: the declarations, e.g. the datatypes whose selectors read the components of traces (see Views)
 //

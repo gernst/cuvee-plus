@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/linear_sea.ch.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loops/linear_sea.ch.c
 // SV-COMP loops/linear_sea.ch.yml, translated from benchmarks/sv-comp/dafny/loops/linear_sea.ch.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

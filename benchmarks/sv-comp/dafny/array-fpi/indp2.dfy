@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/indp2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/indp2.dfy
 // SV-COMP array-fpi/indp2.yml (expected: safe), translated from the C program by hand: a[i] is
 // set to (i - 1) * (i + 1), then i * i is subtracted and 1 added, which gives 0
 //

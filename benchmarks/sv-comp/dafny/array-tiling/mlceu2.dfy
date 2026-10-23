@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/mlceu2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/mlceu2.dfy
 // SV-COMP array-tiling/mlceu2.yml (expected: safe), translated from the C program by hand:
 // a[i] = 1 if i >> 16 > 250, else 0, which is 0 for the sizes below 100000, which is checked; i >> 16 is i /
 // 65536 for i >= 0

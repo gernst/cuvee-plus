@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-programs/partial_mod_count_2.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-programs/partial_mod_count_2.c
 // SV-COMP array-programs/partial_mod_count_2.yml, translated from benchmarks/sv-comp/dafny/array-programs/partial_mod_count_2.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

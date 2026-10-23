@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify -chc examples/c/horn/pointers.c
+// ./Cuvee.sh -chc -prove examples/c/horn/pointers.c
 // expected: valid
 // pointers that are not allocations are values, which are compared and tested but not dereferenced,
 // null pointer constants are 0 and its casts to pointer types, global pointers are null initially

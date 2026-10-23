@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/definitions_tuple.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/definitions_tuple.dfy
 // a definition by a match on a tuple of its parameters gives a rule per case, whose patterns replace the parameters
 datatype Nat = zero | succ(pred: Nat)
 datatype List<a> = nil | cons(head: a, tail: List<a>)

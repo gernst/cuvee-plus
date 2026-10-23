@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/arith.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/arith.smt2
 ; normal form of arithmetic as polynomials
 (declare-const x Int)
 (declare-const y Int)

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loop-acceleration/diamond_1-2.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loop-acceleration/diamond_1-2.dfy
 // SV-COMP loop-acceleration/diamond_1-2.yml (expected: unsafe), translated from the C program by
 // hand: the unsafe variant of diamond_1-1, which counts by 1 if y is even and by 2 otherwise
 //

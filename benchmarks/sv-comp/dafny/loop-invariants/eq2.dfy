@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invariants/eq2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invariants/eq2.dfy
 // SV-COMP loop-invariants/eq2.yml (expected: safe), translated from the C program by hand: y and
 // z start at w + 1 and are incremented together, which is checked
 //
