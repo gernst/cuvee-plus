@@ -126,7 +126,8 @@ Dafny translations of SV-COMP tasks, whose loop bounds are symbolic and whose ar
 
 The tasks of SV-COMP Arrays and Loops with ACSL ([benchmarks/acsl](../benchmarks/acsl)), since Oct 23, 2026 laid
 out exactly as the C categories (1204 tasks, 875 true), of which the 838 true tasks of Arrays (303) and Loops (535)
-that Cuvée's C supports have annotations, with the invariants as given: `-vcgen -split -z3` (`xml/cuvee-acsl.xml`).
+that Cuvée's C supports have annotations, with the invariants as given: `-vcgen -z3` (`xml/cuvee-acsl.xml`),
+`-split` for the 47 tasks of Loops that need it (`Loops-split.set`, a task set of its own).
 The table below is of the earlier layout, the 838 annotated tasks only, `-split` for the Split set alone.
 
 | | Arrays | Loops | Split | wrong |

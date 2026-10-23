@@ -4,7 +4,8 @@ The categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP, laid out
 exactly as in sv-benchmarks, with ACSL annotations, written by a coding agent
 task by task, in the programs of the tasks expected `true`: loop invariants,
 contracts, and logic functions, such that Cuvée can check the expected
-verdict by verification conditions (`-vcgen -split -z3`).
+verdict by verification conditions (`-vcgen -z3`, with `-split` for the tasks of
+[Loops-split.set](Loops-split.set)).
 
 - **1204 tasks with `unreach-call`**, the same as the C categories
   `C.unreach-call.Arrays` (440, 320 true) and `C.unreach-call.Loops` (764,
@@ -46,15 +47,21 @@ the 48 tasks that z3 proves only with `-split` as a separate task set
 ## Running
 
 ```
-./Cuvee.sh -vcgen -split -z3 -timeout 900000 benchmarks/acsl/<folder>/<task>.yml
+./Cuvee.sh -vcgen -z3 -timeout 900000 benchmarks/acsl/<folder>/<task>.yml
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Arrays -T 60s
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Loops -T 60s
+./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Loops-split -T 60s
 ```
 
-`-split` makes each annotation a goal of its own, which z3 needs for some
-tasks, e.g. `array-programs/partial_mod_count_limited_gen` (18 s with
-`-split`, 252 s without), `geo1/2/3-ll` with `unsigned long long` (32), and
-`lcm2` (15), and which shows the failing annotation. Cuvée answers each goal
+`-split` makes each annotation a goal of its own, which z3 needs for the 47
+tasks of [Loops-split.set](Loops-split.set), `geo1/2/3-ll` with `unsigned
+long long` (32) and `lcm2` (15) of `nla-digbench` and
+`nla-digbench-scaling`, which the task set `C.unreach-call.Loops` excludes
+and `C.unreach-call.Loops-split` runs with `-split`; it also shows the failing
+annotation. For other tasks it costs: with `-split` for all tasks (Oct 23,
+2026), 35 that prove without it in seconds had a part `unknown` or timed out
+(TODO.md). `array-programs/partial_mod_count_limited_gen`, formerly with
+`-split` (18 s, 252 s without), proves without it within the limit. Cuvée answers each goal
 `correct`, `incorrect`, or `unknown`, which [cuvee.py](../../cuvee.py)
 combines to `true`, `false`, and `unknown`. The annotations are the
 specification: a goal that z3 refutes (`Sat`) is `incorrect`, also if the
