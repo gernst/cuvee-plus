@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/insertion_sort-2-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/insertion_sort-2-2.dfy
 // SV-COMP loops/insertion_sort-2-2.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of insertion_sort-1-2 with other constants or assertions; checks v[k-1]<=v[k]
 

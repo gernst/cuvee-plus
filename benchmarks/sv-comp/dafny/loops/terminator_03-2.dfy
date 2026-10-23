@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/terminator_03-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/terminator_03-2.dfy
 // SV-COMP loops/terminator_03-2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: x grows by y > 0 until it reaches 100, which is checked
 //

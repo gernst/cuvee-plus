@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_init3_ground-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_init3_ground-2.dfy
 // SV-COMP array-examples/standard_init3_ground-2.yml (expected: safe), translated from the C
 // program by hand: a is initialized three times, to 42, 43, and 44, and is 44 then
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-cav19/array_min_and_copy_shift_sum_add.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-cav19/array_min_and_copy_shift_sum_add.c
 // SV-COMP array-cav19/array_min_and_copy_shift_sum_add.yml, translated from benchmarks/sv-comp/dafny/array-cav19/array_min_and_copy_shift_sum_add.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

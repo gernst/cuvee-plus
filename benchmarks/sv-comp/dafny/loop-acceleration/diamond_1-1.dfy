@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loop-acceleration/diamond_1-1.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loop-acceleration/diamond_1-1.dfy
 // SV-COMP loop-acceleration/diamond_1-1.yml (expected: safe), translated from the C program by
 // hand: x counts by 2 if y is even, by 1 otherwise, up to 99, and has the parity of y then, unsigned in C
 //

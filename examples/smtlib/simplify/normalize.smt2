@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/normalize.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/normalize.smt2
 ; assertions are normalized into clauses forall xs. antecedents ==> succedents after simplification, the antecedents are the context of the succedents, let is turned into equations, whose arithmetic ones are solved and substituted
 (declare-fun p (Int) Bool)
 (declare-fun q (Int Int) Bool)

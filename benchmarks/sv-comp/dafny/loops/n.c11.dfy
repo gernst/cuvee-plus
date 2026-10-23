@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/n.c11.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/n.c11.dfy
 // SV-COMP loops/n.c11.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: len counts up to 4 and is reset to 0 there, while a[len] is set to 0, and 0 <= len < 5 is checked
 //

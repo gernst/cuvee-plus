@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ms1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ms1.dfy
 // SV-COMP array-fpi/ms1.yml (expected: safe), translated from the C program by hand: a[i] is i %
 // 1, i.e., 0, and sum adds the elements except the first, which is 0; sum[0] of the one-element array as a scalar
 //

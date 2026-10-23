@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/MADWiFi-encode_ie_ok.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/MADWiFi-encode_ie_ok.dfy
 // SV-COMP loop-invgen/MADWiFi-encode_ie_ok.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 0<=p; p+1<bufsize_0
 //

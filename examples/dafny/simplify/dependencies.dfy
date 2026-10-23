@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/dependencies.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/dependencies.dfy
 // the dependencies of combinators: unused ones are dropped, except counters, equal ones are collapsed,
 // invariants distribute over conjunctions, each part keeps the dependencies that it uses,
 // the iterations of a loop, counted by the first dependency, are 0 <= k < integer(n), and the other dependencies

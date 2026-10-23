@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/sina1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/sina1.dfy
 // SV-COMP array-fpi/sina1.yml (expected: safe), translated from the C program by hand: sum
 // counts to N, and a is set to sum, which is N; sum[0] of the one-element array as a scalar
 //

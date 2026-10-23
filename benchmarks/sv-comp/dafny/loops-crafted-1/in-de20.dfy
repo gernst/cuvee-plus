@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/in-de20.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/in-de20.dfy
 // SV-COMP loops-crafted-1/in-de20.yml (expected: safe), translated from the C program by hand: x
 // counts down from n, unsigned, to 0 while y counts up, then x counts up again while z counts y down, and x is n
 // then

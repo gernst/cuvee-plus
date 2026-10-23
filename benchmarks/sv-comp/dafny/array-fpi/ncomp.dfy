@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ncomp.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ncomp.dfy
 // SV-COMP array-fpi/ncomp.yml (expected: safe), translated from the C program by hand: as
 // ifncomp, with the initial elements set before the loops from 1
 //

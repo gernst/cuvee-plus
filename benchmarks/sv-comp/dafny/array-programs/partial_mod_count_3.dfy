@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-programs/partial_mod_count_3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-programs/partial_mod_count_3.dfy
 // SV-COMP array-programs/partial_mod_count_3.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: a variant of partial_mod_count_1 with other constants or assertions; checks j < (N/6)+2
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1000000

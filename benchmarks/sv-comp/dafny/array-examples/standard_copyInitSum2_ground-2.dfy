@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_copyInitSum2_ground-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_copyInitSum2_ground-2.dfy
 // SV-COMP array-examples/standard_copyInitSum2_ground-2.yml (expected: safe), translated from
 // the C program by hand: a is initialized to 42, copied into b, and the index is added to each element of b, which
 // is then 42 + x

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/sina4f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/sina4f.dfy
 // SV-COMP array-fpi/sina4f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of sina4 with other constants or assertions; checks b[i] == N
 

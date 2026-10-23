@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/c/loop-invgen/seq-3.c
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/c/loop-invgen/seq-3.c
 // SV-COMP loop-invgen/seq-3.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/seq-3.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

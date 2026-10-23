@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/linear_sea.ch.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/linear_sea.ch.dfy
 // SV-COMP loops/linear_sea.ch.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks linear_search(a,SIZE,3)
 // note: the arrays are not initialized (the values of C, which constant(0) gave them), since the result does not

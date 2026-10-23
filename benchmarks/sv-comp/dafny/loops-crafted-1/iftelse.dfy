@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/iftelse.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/iftelse.dfy
 // SV-COMP loops-crafted-1/iftelse.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: i steps by 3 up to n, and j or k by 3 depending on the parity of i, and i / 2 <= j is
 // checked (unsigned int is int)

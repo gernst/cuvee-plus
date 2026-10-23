@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_copy6_ground-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_copy6_ground-2.dfy
 // SV-COMP array-examples/standard_copy6_ground-2.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of standard_copy1_ground-1 with other constants or assertions; checks
 // a1[x] == a7[x]

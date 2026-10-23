@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/boolean.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/boolean.smt2
 ; cancellation laws of the boolean connectives
 (declare-const p Bool)
 (declare-const q Bool)

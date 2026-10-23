@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/nested5-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/nested5-2.dfy
 // SV-COMP loops-crafted-1/nested5-2.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of nested3-1 with other constants or assertions; checks !(v % 4)
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 268435455, M for 10

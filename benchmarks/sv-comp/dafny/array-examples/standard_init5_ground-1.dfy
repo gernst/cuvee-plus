@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_init5_ground-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_init5_ground-1.dfy
 // SV-COMP array-examples/standard_init5_ground-1.yml (expected: safe), translated from the C program by hand:
 // the array is set to 42, 43, 44, 45, 46 by five loops, and checked to be 46
 //

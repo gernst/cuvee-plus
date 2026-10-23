@@ -11,7 +11,7 @@ import cuvee.core._
 // kept as they are, the goals and the other
 // assertions are simplified under a context of congruence classes and linear constraints with these rules (see
 // Simplify, Rewrite, Context), each with a fresh number of rewrite steps; goals that simplify to true are dropped;
-// like -simplify, with -rules the rules applied follow each assertion as (set-info :used ((name count) ...))
+// with -rules, the rules applied follow each assertion as (set-info :used ((name count) ...))
 object Prove extends Transform:
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val rules = Rules.from(state, prefix ++ cmds)

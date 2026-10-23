@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/array-fpi/nsqm.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/array-fpi/nsqm.dfy
 // SV-COMP array-fpi/nsqm.yml (expected: safe), translated from the C program by hand: b holds
 // the odd numbers by a recurrence, and a the squares plus N, from N + 1 and the partial sums of b plus 2, as sqm
 //

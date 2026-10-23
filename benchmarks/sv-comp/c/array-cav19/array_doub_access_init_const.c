@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-cav19/array_doub_access_init_const.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-cav19/array_doub_access_init_const.c
 // SV-COMP array-cav19/array_doub_access_init_const.yml, translated from benchmarks/sv-comp/dafny/array-cav19/array_doub_access_init_const.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

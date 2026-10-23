@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/hh2012-ex2b.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/hh2012-ex2b.dfy
 // SV-COMP loop-lit/hh2012-ex2b.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of hh2012-ex1b with other constants or assertions; checks n <= 60; n == 60
 

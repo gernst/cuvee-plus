@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-new/gauss_sum.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-new/gauss_sum.dfy
 // SV-COMP loop-new/gauss_sum.yml (expected: safe), translated from the C program by hand: the sum
 // of 1, ..., n is n * (n + 1) / 2
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark04_conjunctive.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark04_conjunctive.dfy
 // SV-COMP loop-zilu/benchmark04_conjunctive.yml (expected: safe), translated from the C program
 // by hand: j counts up from 0 to n, k down from at least n, and k is nonnegative then
 //

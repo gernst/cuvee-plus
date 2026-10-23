@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/traces_sums.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/traces_sums.dfy
 // rewriting of trace equation systems (example 2.6): the dependency V is instantiated by a map over the dependencies
 // of the expression, a bound variable that is the value yields the dependency itself,
 // and the value must not depend on the accumulator

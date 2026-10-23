@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/id_trans.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/id_trans.dfy
 // SV-COMP loop-invgen/id_trans.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 0 <= j; j < material_length; 0 <= j/4; j/4 < nlen
 

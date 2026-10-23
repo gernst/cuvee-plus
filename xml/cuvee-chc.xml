@@ -7,9 +7,9 @@
 
   <resultfiles>**/witness.*</resultfiles>
 
-  <!-- the program as constrained Horn clauses, solved by z3, after simplifying the procedures -->
-  <option name="-simplify"/>
+  <!-- the program as constrained Horn clauses, simplified by the engine of -prove, solved by z3 -->
   <option name="-chc"/>
+  <option name="-prove"/>
   <option name="-z3"/>
   <!-- z3 is limited by the time limit only, which this covers, since -timeout defaults to 1 s per query -->
   <option name="-timeout">900000</option>

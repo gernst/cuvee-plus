@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-patterns/array20_pattern.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-patterns/array20_pattern.dfy
 // SV-COMP array-patterns/array20_pattern.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of array10_pattern with other constants or assertions; checks sum == 0 || sum ==
 // 1

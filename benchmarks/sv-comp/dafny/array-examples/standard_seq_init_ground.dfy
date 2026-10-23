@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/array-examples/standard_seq_init_ground.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/array-examples/standard_seq_init_ground.dfy
 // SV-COMP array-examples/standard_seq_init_ground.yml (expected: safe), translated from the C
 // program by hand: a[0] is 7 and each further element is its predecessor plus 1, hence a is increasing
 //

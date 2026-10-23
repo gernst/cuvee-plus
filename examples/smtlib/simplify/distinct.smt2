@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/distinct.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/distinct.smt2
 ; distinct is n-ary, two arguments are simplified to a negated equation
 (declare-const x Int)
 (declare-const y Int)

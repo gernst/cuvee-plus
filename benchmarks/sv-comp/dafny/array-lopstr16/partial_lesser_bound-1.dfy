@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-lopstr16/partial_lesser_bound-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-lopstr16/partial_lesser_bound-1.dfy
 // SV-COMP array-lopstr16/partial_lesser_bound-1.yml (expected: safe), translated from the C program by hand:
 // the array is set to 0, then the first half to 10, which is checked
 //

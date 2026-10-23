@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/geo3-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/geo3-ll.dfy
 // SV-COMP nla-digbench/geo3-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of geo1-ll with other constants or assertions; checks z*x - x + a - az*y == 0; z*x - x + a
 // - az*y == 0

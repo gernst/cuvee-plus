@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/bh2017-ex3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/bh2017-ex3.dfy
 // SV-COMP loop-lit/bh2017-ex3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks m <= 60; n <= 60; m == 60; n == 60
 

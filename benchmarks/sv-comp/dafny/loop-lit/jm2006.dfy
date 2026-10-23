@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/jm2006.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/jm2006.dfy
 // SV-COMP loop-lit/jm2006.yml (expected: safe), translated from the C program by hand: x and y
 // count down from i and j, nonnegative, until x is 0, and y is 0 then if i == j
 //

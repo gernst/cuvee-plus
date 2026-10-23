@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/eqn1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/eqn1.dfy
 // SV-COMP array-fpi/eqn1.yml (expected: safe), translated from the C program by hand: a holds
 // the even numbers 2, 4, ..., by a recurrence, and b the partial sums of a plus 1, which are i * i + i + 1
 //

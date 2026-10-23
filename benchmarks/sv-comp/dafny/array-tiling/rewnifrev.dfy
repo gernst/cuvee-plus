@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/rewnifrev.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/rewnifrev.dfy
 // SV-COMP array-tiling/rewnifrev.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks a[i] >= i
 

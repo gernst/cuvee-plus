@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/eureka_01-2.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loops/eureka_01-2.c
 // SV-COMP loops/eureka_01-2.yml, translated from benchmarks/sv-comp/dafny/loops/eureka_01-2.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

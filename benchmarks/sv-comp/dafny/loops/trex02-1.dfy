@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/trex02-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/trex02-1.dfy
 // SV-COMP loops/trex02-1.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: the global x is decremented by calls of foo, in both branches of a nondeterministic choice, while x > 0, and
 // x <= 0 is checked

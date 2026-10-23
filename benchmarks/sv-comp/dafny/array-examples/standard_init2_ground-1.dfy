@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_init2_ground-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_init2_ground-1.dfy
 // SV-COMP array-examples/standard_init2_ground-1.yml (expected: unsafe), translated from the C program by hand:
 // as standard_init2_ground-2, but the array is checked to be 42, which the second loop overwrote (the -1
 // variants of standard_init3 to _init9 are similar)

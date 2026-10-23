@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/condmf.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/condmf.dfy
 // SV-COMP array-fpi/condmf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of condm with other constants or assertions; checks a[i] % 2 == N % 2
 

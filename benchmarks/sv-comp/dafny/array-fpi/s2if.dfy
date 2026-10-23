@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/s2if.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/s2if.dfy
 // SV-COMP array-fpi/s2if.yml (expected: safe), translated from the C program by hand: a is set
 // to 2, and the elements that are 2 are summed (the others would multiply), which gives 2 * N; sum[0] of the
 // one-element array as a scalar

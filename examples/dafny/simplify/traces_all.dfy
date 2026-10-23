@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/traces_all.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/traces_all.dfy
 // all(for ⌊K⌋ check k :: k < len) with the bound variable related to that of the expression,
 // and the variables of the rule must not capture the bound variables of the expression
 type Trace<a₀>

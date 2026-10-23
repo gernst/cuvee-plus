@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/pnr3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/pnr3.dfy
 // SV-COMP array-tiling/pnr3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of pnr2 with other constants or assertions; checks a[i]!=DEFAULTVAL
 

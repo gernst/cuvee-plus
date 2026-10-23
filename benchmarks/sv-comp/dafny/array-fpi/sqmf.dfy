@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/sqmf.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/sqmf.dfy
 // SV-COMP array-fpi/sqmf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of sqm with other constants or assertions; checks a[i] == (i+1)*(i+1)
 

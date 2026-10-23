@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/while_infinite_loop_4.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/while_infinite_loop_4.dfy
 // SV-COMP loops/while_infinite_loop_4.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of while_infinite_loop_1 with other constants or assertions; checks x==0; x==0
 

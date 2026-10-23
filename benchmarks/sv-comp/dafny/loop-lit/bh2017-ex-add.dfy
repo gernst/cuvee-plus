@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/bh2017-ex-add.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/bh2017-ex-add.dfy
 // SV-COMP loop-lit/bh2017-ex-add.yml (expected: safe), translated from the C program by hand: two
 // counters m and n are incremented nondeterministically up to 60 and reset to 0 there, and are checked to stay at
 // most 60

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/array_3-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/array_3-2.dfy
 // SV-COMP loop-acceleration/array_3-2.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of array_1-1 with other constants or assertions; checks i <= 1024 / 2
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 1024

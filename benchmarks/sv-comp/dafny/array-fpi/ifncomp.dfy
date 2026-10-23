@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ifncomp.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ifncomp.dfy
 // SV-COMP array-fpi/ifncomp.yml (expected: safe), translated from the C program by hand: a holds
 // 6, 12, ..., b the partial sums of a plus 1, c the partial sums of b plus N, which are checked to be N + i * i *
 // i, with the initial elements set in the first iteration

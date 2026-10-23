@@ -31,9 +31,9 @@ transformation and any output.
 | `cuvee.lean` | Printer of the logic in Lean 4 (`-print lean`), output only. |
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `VCGen` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
-| `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), `FourierMotzkin` (linear constraints over the rationals), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
+| `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), and `FourierMotzkin` (linear constraints over the rationals). |
 | `cuvee.prove` | the deduction engine of `-prove` ([prove.md](prove.md)): `Prove` (the transform), `Simplify` and `Rewrite` (the traversal and the matcher, copied from `cuvee.simplify` and adapted, independent of it), `Context` with `Classes` (congruence closure), `Linear` and `Simplex` (linear arithmetic over the rationals), `Views` (the per-variable projections of traces of several accumulators), and its own `Arith`, `Normalize`, `Rule`. |
-| `cuvee.transform` | `Implement` (implemented functions replaced by their implementations, functions or methods, `-implement`), `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
+| `cuvee.transform` | `Implement` (implemented functions replaced by their implementations, functions or methods, `-implement`), `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), `Fallback` (trace equation systems in first-order logic), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
 ## A run
@@ -42,8 +42,8 @@ transformation and any output.
 
 1. `Config.parse` reads the command line:
    - the input language from the file extension;
-   - the transforms in order (`-implement`, `-vcgen`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-simplify`, `-prove`),
-     and `-rules`, which makes `-simplify` report the rules it applies (see [simplifier.md](simplifier.md));
+   - the transforms in order (`-implement`, `-vcgen`, `-teq`, `-chc`, `-flat`, `-split`, `-monomorph`, `-fallback`, `-fuse`, `-prove`),
+     and `-rules`, which makes `-prove` report the rules it applies (see [prove.md](prove.md));
    - the printer (`-print`);
    - the sink (stdout, `-o`), the solver (`-z3`, `-cvc5`), which checks the
      output, and `-quiet`, which prints only the reports, e.g. the answers;
@@ -183,12 +183,9 @@ for every sink.
   - The `-chc` tests use [examples/dafny/horn](../examples/dafny/horn) and
     [examples/boogie/horn](../examples/boogie/horn), whose procedures with a
     body have no contracts.
-- [`Simplify`](../src/cuvee/simplify/Simplify.scala) rewrites assertions and
-  function definitions to a fixpoint under the facts of the context, with
-  conditional rewrite rules ([`Rewrite`](../src/cuvee/simplify/Rewrite.scala)),
-  see [simplifier.md](simplifier.md).
-- [`Prove`](../src/cuvee/prove/Prove.scala) is the second engine for the goals of trace equation systems
-  (`-prove`), with congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole
+- [`Prove`](../src/cuvee/prove/Prove.scala) (`-prove`) rewrites assertions and function definitions to a fixpoint
+  under the facts of the context ([`Simplify`](../src/cuvee/prove/Simplify.scala)), with conditional rewrite rules
+  ([`Rewrite`](../src/cuvee/prove/Rewrite.scala)), congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole
   cycles and forward lemmas ([`Forward`](../src/cuvee/prove/Forward.scala)), see [prove.md](prove.md).
 - [`Implement`](../src/cuvee/transform/Implement.scala) replaces the
   functions that functions and methods with `{:implement pattern}` implement
@@ -219,6 +216,18 @@ for every sink.
   solvers reject a name that is already defined.
 - [`Monomorph`](../src/cuvee/transform/Monomorph.scala) replaces polymorphic
   functions by their instances, which are emitted before their first use.
+- [`Fuse`](../src/cuvee/transform/Fuse.scala) (`-fuse`) answers the requests
+  `fuse g(f(xs), ys) = ???` of Dafny input:
+  - **`Fuse(state, g, f)`** fuses the composition `g(f(xs), ys)` of two `Rec`s
+    into one `h(xs, ys)` (fixpoint fusion, deforestation): one case per case of
+    `f`, whose body `e` becomes `g(e, ys)` with `g` driven into it. A recursive
+    call of `f` becomes one of `h`, conditionals are driven into their branches,
+    and a constructor application selects the cases of `g` statically in their
+    order, with their guards as tests (`Ite`). Inside the selected bodies,
+    `g(f(t), z)` becomes `h(t, z)`. If a pattern is undecided, i.e. it has a
+    constructor where the expression has none, `g` is applied as a value
+    (`Apply`), as are the remaining calls of `g` and `f`. The result is equivalent if
+    both are total and their recursion is monomorphic.
 - [`Fallback`](../src/cuvee/transform/Fallback.scala) lowers trace equation
   systems into first-order logic for solvers (`-fallback`, see
   [teq.md](teq.md)): goals and lemmas that are not free are lowered, axioms
@@ -385,8 +394,8 @@ The SMT-LIB frontend is an exception: it reads s-expressions with the shared
 it starts from its own prelude (`resources/cuvee/c/prelude.bpl`, in Boogie),
 which declares the core theory with arithmetic on `Int` only, arrays, and the
 background theory of C: the bit operations `&`, `|`, `^`, `~` and shifts by
-non-constants are uninterpreted functions declared `:abstract`, with rules of
-the simplifier for the operands 0 and 1 (`{:smt2} {:rw}`, not passed to the
+non-constants are uninterpreted functions declared `:abstract`, with rewrite rules
+of `-prove` for the operands 0 and 1 (`{:smt2} {:rw}`, not passed to the
 solvers), such that the solver sink takes a refutation that depends on them for no
 counterexample (`unknown`). It builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
 that it can infer the global variables that each function and each loop
@@ -480,7 +489,7 @@ README; options in [options.md](options.md)), e.g.
 - Example tests: every file in `examples/` (except `datastructures`) states its
   command line in its first line, as a comment that can be pasted into a shell
   in the root of the repository, e.g.
-  `; ./Cuvee.sh -simplify examples/smtlib/simplify/arith.smt2`. Its expected output is
+  `; ./Cuvee.sh -prove examples/smtlib/simplify/arith.smt2`. Its expected output is
   `name.out` (stdout) and `name.err` (stderr, the reports), where a missing
   file stands for no lines. `./Cuvee.sh -test <file>` checks an example
   ([test/Expected.scala](../src/cuvee/test/Expected.scala)), and so does
@@ -498,28 +507,19 @@ README; options in [options.md](options.md)), e.g.
   `-quiet` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
   `simplify`, `hybrid`, and `transform`; one suite per language checks all of
   its examples ([Checked.scala](../test/src/cuvee/test/Checked.scala)).
-  The translations of SV-COMP tasks (`benchmarks/sv-comp/dafny`) instead share one
-  database of expected results, `benchmarks/sv-comp/dafny/expected.csv`, with the
-  verdict of each task (safe or unsafe) and the number of remaining goals
-  ([test/Database.scala](../src/cuvee/test/Database.scala)):
-  `./Cuvee.sh -record <file> ...` prints rows, `./Cuvee.sh -test <db>.csv`
-  checks all of them, and the suite `SVComp` runs only if the environment
-  variable `CUVEE_SVCOMP` is set; likewise the algorithms of
-  `examples/dafny/algorithms`, whose runs take minutes, only if
+  The algorithms of
+  `examples/dafny/algorithms`, whose runs take minutes, run only if
   `CUVEE_ALGORITHMS` is set (`Examples.excluded`), and the roundtrip suites
   of the printers (`Roundtrip` and `Programs`, every example printed and
   parsed back, `Examples.printing`) only if `CUVEE_PRINTING` is set, which
-  a change of a parser or a printer requires. The C programs printed from these
-  translations (`benchmarks/sv-comp/c`, by `-print c -known dfy,teq,rw`,
-  those that parse again) have the same expected results, without times,
-  in `benchmarks/sv-comp/c/expected.csv` (suite `SVCompC`), recorded before
-  the programs were patched for other verifiers (see
-  [benchmarks/sv-comp/c/README.md](../benchmarks/sv-comp/c/README.md)).
+  a change of a parser or a printer requires. The translations of SV-COMP
+  tasks (`benchmarks/sv-comp`) are benchmarks, not tests
+  ([benchmarks.md](benchmarks.md)).
   The examples verified against a solver state `// expected: valid` or
   `// expected: invalid` in their second line.
 - Relational tests run further commands on the accepted examples and print
-  them: the printers must roundtrip (`Examples.roundtrip`), `-split`, `-flat`,
-  and `-simplify` must keep the verdicts, and `-chc -z3` must agree with the
+  them: the printers must roundtrip (`Examples.roundtrip`), `-split` and `-flat`
+  must keep the verdicts, and `-chc -z3` must agree with the
   second line.
 - Unit tests build core terms directly where the command line cannot observe
   a property, e.g. the theories of `Context`, single rewrite steps, and the

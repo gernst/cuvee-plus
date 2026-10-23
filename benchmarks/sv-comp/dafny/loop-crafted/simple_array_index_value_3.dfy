@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-crafted/simple_array_index_value_3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-crafted/simple_array_index_value_3.dfy
 // SV-COMP loop-crafted/simple_array_index_value_3.yml (expected: safe), translated from the C
 // program by hand: array[i] = 2 i, by a value tmp that grows by 2, checked to be 2 i or 0
 //

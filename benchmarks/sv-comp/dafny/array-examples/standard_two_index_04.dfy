@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_two_index_04.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_two_index_04.dfy
 // SV-COMP array-examples/standard_two_index_04.yml (expected: safe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of standard_two_index_01 with other constants or assertions; checks
 // a[j] == b[4*j+1]

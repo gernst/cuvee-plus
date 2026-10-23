@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/nr3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/nr3.dfy
 // SV-COMP array-tiling/nr3.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nr2 with other constants or assertions; checks volArray[i] >= MINVAL || volArray[i] == 0
 

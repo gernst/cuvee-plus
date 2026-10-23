@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark05_conjunctive.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark05_conjunctive.dfy
 // SV-COMP loop-zilu/benchmark05_conjunctive.yml (expected: safe), translated from the C program
 // by hand: x counts up to n from below y, and y follows x once x passes it, such that y is n at the end
 //

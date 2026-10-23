@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-new/count_by_1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-new/count_by_1.dfy
 // SV-COMP loop-new/count_by_1.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: i counts to 1000000, which is checked
 //

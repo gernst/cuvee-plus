@@ -58,10 +58,10 @@
 
 (assert
   (forall
-    ((c$3 Int) (result Int) (c Int))
+    ((result Int) (c Int))
     (=>
-      (and (f_pre c$3) (= c c$3))
-      (f_assign_1 c$3 result (+ c 1)))))
+      (f_pre c)
+      (f_assign_1 c result (+ c 1)))))
 
 (assert
   (forall
@@ -82,72 +82,103 @@
 (declare-fun main_post (Int Int Int) Bool)
 
 (declare-fun
-  main_assign_1
-  (Int Int Int Int Int)
+  main_join_1
+  (Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_assign_2
-  (Int Int Int Int Int)
+  main_call_2
+  (Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
-  main_spec_3
-  (Int Int Int Int Int)
+  main_assign_3
+  (Int Int Int Int Int Int)
   Bool)
 
 (declare-fun
   main_assign_4
-  (Int Int Int Int Int)
+  (Int Int Int Int Int Int)
   Bool)
 
-(assert
-  (forall
-    ((c Int))
-    (=> (= c 0) (main_pre c))))
+(declare-fun
+  main_assign_5
+  (Int Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_spec_6
+  (Int Int Int Int Int Int)
+  Bool)
+
+(declare-fun
+  main_assign_7
+  (Int Int Int Int Int Int)
+  Bool)
+
+(assert (main_pre 0))
 
 (assert
   (forall
-    ((c$4 Int) (result Int) (c Int) (r$6 Int))
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (tmp$6 Int) (r$7 Int))
     (=>
-      (and (main_pre c$4) (= c c$4))
-      (main_assign_1 c$4 result c 2 r$6))))
+      (main_call_2 c$4 result c tmp$5 tmp$6 r$7)
+      (main_assign_3 c$4 result c tmp$5 tmp$5 r$7))))
 
 (assert
   (forall
-    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (tmp$6 Int) (r$7 Int))
     (=>
-      (main_assign_1 c$4 result c tmp$5 r$6)
-      (main_assign_2 c$4 result c tmp$5 tmp$5))))
+      (main_assign_3 c$4 result c tmp$5 tmp$6 r$7)
+      (main_join_1 c$4 result c tmp$5 tmp$6 r$7))))
 
 (assert
   (forall
-    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    ((result Int) (c Int) (tmp$5 Int) (r$7 Int))
     (=>
-      (main_assign_2 c$4 result c tmp$5 r$6)
+      (main_pre c)
+      (main_assign_4 c result c tmp$5 2 r$7))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (tmp$6 Int) (r$7 Int))
+    (=>
+      (main_assign_4 c$4 result c tmp$5 tmp$6 r$7)
+      (main_join_1 c$4 result c tmp$5 tmp$6 r$7))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (tmp$6 Int) (r$7 Int))
+    (=>
+      (main_join_1 c$4 result c tmp$5 tmp$6 r$7)
+      (main_assign_5 c$4 result c tmp$5 tmp$6 tmp$6))))
+
+(assert
+  (forall
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (tmp$6 Int) (r$7 Int))
+    (=>
+      (main_assign_5 c$4 result c tmp$5 tmp$6 r$7)
       (= c 1))))
 
 (assert
   (forall
-    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (tmp$6 Int) (r$7 Int))
     (=>
-      (and
-        (main_assign_2 c$4 result c tmp$5 r$6)
-        true)
-      (main_spec_3 c$4 result c tmp$5 r$6))))
+      (main_assign_5 c$4 result c tmp$5 tmp$6 r$7)
+      (main_spec_6 c$4 result c tmp$5 tmp$6 r$7))))
 
 (assert
   (forall
-    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (tmp$6 Int) (r$7 Int))
     (=>
-      (main_spec_3 c$4 result c tmp$5 r$6)
-      (main_assign_4 c$4 0 c tmp$5 r$6))))
+      (main_spec_6 c$4 result c tmp$5 tmp$6 r$7)
+      (main_assign_7 c$4 0 c tmp$5 tmp$6 r$7))))
 
 (assert
   (forall
-    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (r$6 Int))
+    ((c$4 Int) (result Int) (c Int) (tmp$5 Int) (tmp$6 Int) (r$7 Int))
     (=>
-      (main_assign_4 c$4 result c tmp$5 r$6)
+      (main_assign_7 c$4 result c tmp$5 tmp$6 r$7)
       (main_post c$4 result c))))
 
 (check-sat)

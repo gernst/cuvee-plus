@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-multidimensional/init-non-constant-2-n-u.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-multidimensional/init-non-constant-2-n-u.dfy
 // SV-COMP array-multidimensional/init-non-constant-2-n-u.yml (expected: safe), translated from
 // the C program by ./Cuvee.sh -print dfy: a program of the folder; checks A[i][j]==i+j+C
 

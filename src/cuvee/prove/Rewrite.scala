@@ -19,7 +19,7 @@ import util.intersects
 // variables that occur only in the condition of a rule or in the guard of a case are instantiated by matching
 // the conjuncts against the facts of the context or the conjuncts of the guard of the expression (see conditions);
 // a match is a substitution of the type parameters and variables of the rule
-// copied from cuvee.simplify.Rewrite (Oct 13, 2026) and adapted (see doc/prove.md): an expression that a pattern
+// copied from the former simplify.Rewrite (Oct 13, 2026) and adapted (see doc/prove.md): an expression that a pattern
 // does not match is matched by the other members of its class (see Context.defs) and, for the markers of state
 // traces, by its view (see Views); a closed side condition is looked up among the facts modulo the classes before it
 // is decided
@@ -105,8 +105,10 @@ object Rewrite:
         expr
 
       case rhs :: rest =>
-        Error.report("rewriting does not terminate", rule):
-          require(ctx.steps.value > 0)
+        // raised directly, not by Error.report, which would also wrap a stack overflow at this point; without the rule,
+        // since whether the bound on the steps or the stack is exhausted first depends on the size of the stack
+        if ctx.steps.value <= 0
+        then Error.raise("rewriting does not terminate")
 
         // Error.report("rewriting with multiple result"):
         //    require(rest.isEmpty)

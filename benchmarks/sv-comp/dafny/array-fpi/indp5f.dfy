@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/indp5f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/indp5f.dfy
 // SV-COMP array-fpi/indp5f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of indp5 with other constants or assertions; checks sum[0] == N
 

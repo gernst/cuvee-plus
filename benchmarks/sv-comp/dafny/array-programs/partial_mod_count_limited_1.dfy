@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-programs/partial_mod_count_limited_1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-programs/partial_mod_count_limited_1.dfy
 // SV-COMP array-programs/partial_mod_count_limited_1.yml (expected: safe), translated from the C program by hand:
 // a[i] = i + 1, overwritten by i % R = 0 with R = 1 while the count k of zeros is below lim < N, and the count
 // j of zeros is checked to stay below N (unsigned R is int)

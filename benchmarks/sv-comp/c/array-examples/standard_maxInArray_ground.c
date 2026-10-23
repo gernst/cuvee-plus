@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-examples/standard_maxInArray_ground.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-examples/standard_maxInArray_ground.c
 // SV-COMP array-examples/standard_maxInArray_ground.yml, translated from benchmarks/sv-comp/dafny/array-examples/standard_maxInArray_ground.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

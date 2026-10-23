@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-examples/sanfoundry_24-1.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-examples/sanfoundry_24-1.c
 // SV-COMP array-examples/sanfoundry_24-1.yml, translated from benchmarks/sv-comp/dafny/array-examples/sanfoundry_24-1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

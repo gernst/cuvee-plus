@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/mono-crafted_6.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/mono-crafted_6.dfy
 // SV-COMP loops-crafted-1/mono-crafted_6.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: x counts to N, by 1 below 3 * N / 4 and by 2 above, and x == N is checked
 //

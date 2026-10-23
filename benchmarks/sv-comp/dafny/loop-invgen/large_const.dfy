@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/large_const.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/large_const.dfy
 // SV-COMP loop-invgen/large_const.yml (expected: safe), translated from the C program by hand: k
 // grows by one of the constants 4000, 2000, 10000 in each of n < 10 iterations, chosen by an arbitrary v, then
 // counts down n times and stays positive; the original assumes n < 2 in the loop, kept here, and returns otherwise,

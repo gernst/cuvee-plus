@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invariants/mod4.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invariants/mod4.dfy
 // SV-COMP loop-invariants/mod4.yml (expected: safe), translated from the C program by hand: x
 // starts at 0 and is increased by 4 in a nondeterministic loop, and x % 4 == 0 is checked; unsigned int is int, its
 // wrap-around at 2^32 keeps the remainder

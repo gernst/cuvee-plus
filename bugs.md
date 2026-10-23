@@ -9,10 +9,10 @@ true, -16 for a wrong false).
 
 ### Open
 
-- **A bound variable captures a constant of the same name** (confirmed with 0.46.7, `-simplify` and `-prove`):
+- **A bound variable captures a constant of the same name** (confirmed with 0.46.7, `-prove` and the former `-simplify`):
   `(declare-const x Int) (declare-const y Int)` with the goal `(=> (exists ((x Int)) (< x y)) (<= x y))`, which
   is not valid (`x = y + 1`), is turned into the valid `(forall ((x Int)) (=> (< x y) (<= x y)))`, so a solver
-  after `-simplify` or `-prove` proves it. Normalization renames bound variables apart from the free variables,
+  after `-prove` proves it. Normalization renames bound variables apart from the free variables,
   but constants are functions and are not avoided. The Dafny examples of `-teq` bind their variables with
   `forall` (CLAUDE.md), which avoids it there; SMT-LIB and Boogie inputs with constants are exposed (formerly an
   entry of TODO.md, whose example this is).
@@ -162,7 +162,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 - The stderr of a solver is never read, which can block it.
 - `-split` also splits lemmas marked `{:rw}`, e.g. an equivalence with a
   conditional on its right-hand side, into parts that are no valid rules, on
-  which a following `-simplify` fails with "variables of right hand side do
+  which a following `-prove` fails with "variables of right hand side do
   not occur in left hand side or condition".
 - `t.0.1` is scanned as `t` `.` `0.1`.
 - The printer's `any` raises `MatchError` on plain strings and numbers.
@@ -172,7 +172,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 
 ## Non-termination and timeouts
 
-- **`-prove` is slower than `-simplify` on polynomial loops** (Oct 13, 2026, 0.46.5 to 0.46.9, measured locally and on
+- **`-prove` is slower than the former `-simplify` on polynomial loops** (Oct 13, 2026, 0.46.5 to 0.46.9, measured locally and on
   the cloud at 60 s): nla-digbench-scaling/bresenham-ll_valuebound1 takes 8 s with teq.dfy alone, 11 s with
   `teq:arithmetic` and `teq:unsigned`, 46 s with `teq:aggregation` in addition (the other modules add 0 to 4 s); of
   that, about 20 s are the three forward lemmas of aggregation (`count_nonnegative`, `current_maxs_initial`,
@@ -273,7 +273,7 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   that is not instantiated yet, e.g. `prefix(n, xs) == prefix(n, ys)` with `n`
   open, is not matched against an equal hypothesis
   `prefix(N, t) == prefix(N, u)`, while `q(prefix(n, xs), prefix(n, ys))` and
-  `xs == ys` are; reproduced with `-simplify` alone on a lemma
+  `xs == ys` are; reproduced with the former `-simplify` alone on a lemma
   `if prefix(n, xs) == prefix(n, ys) then (earlier(j, xs) == earlier(j, ys)) <==> true`
   (see [standard_compare_ground.dfy](benchmarks/sv-comp/dafny/array-examples/standard_compare_ground.dfy),
   which uses the predicate `agree` instead).
@@ -281,7 +281,7 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   matched, even against the same sum: the lemma
   `current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: a[k := a[k + -1]])) == hit(a0)`
   does not rewrite `current(trace(a2, for ⌊counter(0, 1, N)⌋ do a, k :: a[k := a[k + -1]]))`
-  with `-simplify`, while `a[k := a[k] + d]` matches `a[k := a[k] + 6]`;
+  with the former `-simplify`, while `a[k := a[k] + d]` matches `a[k := a[k] + 6]`;
   recurrences over the previous element are not matched (see
   [ifcomp.dfy](benchmarks/sv-comp/dafny/array-fpi/ifcomp.dfy)), only those whose
   index is a dependency, e.g. `⌊counter(1, 1, n)⌋` (see
@@ -310,18 +310,6 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   ([first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy) states it as two implications instead).
 - An instantiated higher-order variable leaves a beta-redex in the output, `((k: int) => !nodup(a, k, n))(k)`
   (first_duplicate.dfy with a lemma `current(results(x0, ks, maps(for ks yield k :: F(k))))`).
-- A closed side condition that is an `invs` over variables bound by earlier conditions is decided by the simplifier, which
-  does not find it among the facts (these keep unused dependencies, e.g. the traces of `lo` and `hi`, and their bound
-  variables are renamed), so the condition fails although the fact exists; the condition must be written over fresh
-  variables, matched, and identified by equations (`js6 == js4 && Js6 == Js3`). This was the condition of
-  [cocktail_sort.dfy](examples/dafny/algorithms/cocktail_sort.dfy) that blocked its summary for a day (the one
-  run that closed the goal presumably decided the closed condition by chance), found with truncated copies of the
-  lemma with its first k conditions; the same closed instance also loses its unused dependencies when the simplifier
-  simplifies it (`invs(for ⌊Kv⌋, ⌊Rv⌋, ⌊Iv⌋ check k, h, i :: !h)` becomes two dependencies,
-  [first_duplicate.dfy](examples/dafny/algorithms/first_duplicate.dfy)). A closed `invs` condition should be matched
-  against the facts modulo unused dependencies instead.
-  `-prove` looks closed conditions up among the facts modulo classes and renaming (`Rewrite.known`, CLAUDE.md);
-  `-simplify` does not.
 
 ## Flaky tests
 
@@ -333,7 +321,7 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
   `examples/dafny/vcgen` (`SimplifyPrograms`, `VCGen`, `Split`) reported
   "goal does not hold" for [bitvectors.dfy](examples/dafny/language/bitvectors.dfy)
   sometimes in the full test run, depending on the tests run before it in the
-  same JVM; alone, and with `java -jar cuvee.jar -simplify -vcgen -z3`, it
+  same JVM; alone, and with `java -jar cuvee.jar -vcgen -z3`, it
   passes. The fresh-name counters are reset per run (`Cuvee.pipe`), so some
   other state persists across runs. The example is moved out of `vcgen`,
   hence no suite runs it.

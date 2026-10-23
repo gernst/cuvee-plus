@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/sina3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/sina3.dfy
 // SV-COMP array-fpi/sina3.yml (expected: safe), translated from the C program by hand: a and b
 // are set to 1, the sum N of a is added to b into a, which is checked to be N + 1 (sina4, sina5 are variants)
 //

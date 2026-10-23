@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/const_1-2_abstracted.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/const_1-2_abstracted.dfy
 // SV-COMP loop-acceleration/const_1-2_abstracted.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks x == 1
 

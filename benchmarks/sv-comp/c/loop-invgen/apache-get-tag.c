@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invgen/apache-get-tag.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invgen/apache-get-tag.c
 // SV-COMP loop-invgen/apache-get-tag.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/apache-get-tag.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

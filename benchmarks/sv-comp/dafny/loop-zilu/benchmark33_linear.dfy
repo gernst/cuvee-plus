@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark33_linear.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark33_linear.dfy
 // SV-COMP loop-zilu/benchmark33_linear.yml (expected: safe), translated from the C program by
 // hand: x counts up from a nonnegative value to 100 at least
 //

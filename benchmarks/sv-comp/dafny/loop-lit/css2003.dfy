@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/css2003.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/css2003.dfy
 // SV-COMP loop-lit/css2003.yml (expected: safe), translated from the C program by hand: i counts
 // up, j accumulates k, which counts down from 0 or 1, and 1 <= i + k <= 2 and i >= 1 are checked
 //

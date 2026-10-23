@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/nsqm-if.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/nsqm-if.dfy
 // SV-COMP array-fpi/nsqm-if.yml (expected: safe), translated from the C program by hand: b holds
 // the odd numbers, a the partial sums of b + 2 from N + 1, which are checked to be N + (i + 1) * (i + 1), with the
 // initial elements set in the first iteration

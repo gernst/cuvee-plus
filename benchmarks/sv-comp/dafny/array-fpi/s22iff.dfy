@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/s22iff.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/s22iff.dfy
 // SV-COMP array-fpi/s22iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of s22if with other constants or assertions; checks sum[0] == 3*N
 

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/array-fpi/pcompf.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/array-fpi/pcompf.dfy
 // SV-COMP array-fpi/pcompf.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of pcomp, which asserts that the cubes are squares
 //

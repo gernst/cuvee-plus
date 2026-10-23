@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/monocera/polished_tests/cuvee/min/array_init_var_plus_ind.c
+// ./Cuvee.sh -teq -prove benchmarks/monocera/polished_tests/cuvee/min/array_init_var_plus_ind.c
 extern void abort(void);
 extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
 void reach_error() { __assert_fail("0", "array_init_var_plus_ind.c", 3, "reach_error"); }

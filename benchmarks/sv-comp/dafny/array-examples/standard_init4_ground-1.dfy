@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_init4_ground-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_init4_ground-1.dfy
 // SV-COMP array-examples/standard_init4_ground-1.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a variant of standard_init1_ground-1 with other constants or assertions; checks
 // a[x] == 46

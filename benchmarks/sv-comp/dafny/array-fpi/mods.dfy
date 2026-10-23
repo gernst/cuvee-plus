@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/mods.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/mods.dfy
 // SV-COMP array-fpi/mods.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, summed up to N, N is added to each element, which is then taken modulo N + 1, and checked to be 0
 //

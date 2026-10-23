@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-crafted/bor5.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-crafted/bor5.dfy
 // SV-COMP array-crafted/bor5.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of bor1 with other constants or assertions
 

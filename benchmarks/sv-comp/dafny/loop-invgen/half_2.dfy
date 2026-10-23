@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invgen/half_2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invgen/half_2.dfy
 // SV-COMP loop-invgen/half_2.yml (expected: safe), translated from the C program by hand: k
 // counts down from n once for every two steps of i up to n, and then n / 2 more times, staying positive before each
 // step

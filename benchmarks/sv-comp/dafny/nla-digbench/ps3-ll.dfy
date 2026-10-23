@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/ps3-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/ps3-ll.dfy
 // SV-COMP nla-digbench/ps3-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: y counts up to k and x accumulates y * y, and 6 x == 2 y^3 + 3 y^2 + y is checked in and after the
 // loop

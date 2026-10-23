@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/s1if.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/s1if.dfy
 // SV-COMP array-fpi/s1if.yml (expected: safe), translated from the C program by hand: a of
 // arbitrary size N is set to 1, and the elements that are 1 are summed (the others would multiply), which gives N;
 // sum[0] of the one-element array as a scalar

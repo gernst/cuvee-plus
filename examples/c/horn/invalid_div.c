@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify -chc examples/c/horn/invalid_div.c
+// ./Cuvee.sh -chc -prove examples/c/horn/invalid_div.c
 // expected: invalid
 // division truncates towards zero in C, -7 / 2 is -3, unlike div of SMT-LIB, which rounds down to -4
 

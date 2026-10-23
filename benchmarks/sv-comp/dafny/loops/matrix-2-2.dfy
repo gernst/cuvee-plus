@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/matrix-2-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/matrix-2-2.dfy
 // SV-COMP loops/matrix-2-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks matriz[j][k]<maior
 

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loop-invariants64/linear-inequality-inv-d.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loop-invariants64/linear-inequality-inv-d.dfy
 // SV-COMP loop-invariants64/linear-inequality-inv-d.yml (expected: safe), translated from the C
 // program by hand: as loop-invariants/linear-inequality-inv-a for unsigned int, 0 < n <= 2^32 - 1 values v <= 2^32
 // - 1, whose sum (unsigned long) is at most (2^32 - 1)^2

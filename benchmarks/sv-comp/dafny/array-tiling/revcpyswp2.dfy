@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/revcpyswp2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/revcpyswp2.dfy
 // SV-COMP array-tiling/revcpyswp2.yml (expected: safe), translated from the C program by hand:
 // a and b are reverse copies of arbitrary arrays, swapped twice element by element, and a is checked to be the
 // reverse copy

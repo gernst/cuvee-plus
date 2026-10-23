@@ -138,9 +138,9 @@ non-termination) are in [bugs.md](bugs.md), the architecture in [doc/architectur
 ## Code structure
 
 Opportunities for cleaning up, making the code uniform, and merging common
-concepts, found by reading the whole code base; none is a bug. The engine of
-`-prove` copies the simplifier (package `prove`, by decision, CLAUDE.md), so the
-items on the simplifier hold for both copies.
+concepts, found by reading the whole code base; none is a bug. The simplifier is
+the traversal of `-prove` (package `prove`); the former package `simplify` was
+removed on Oct 23, 2026.
 
 ### Core
 
@@ -385,13 +385,13 @@ items on the simplifier hold for both copies.
 
 ### Tests
 
-- `rw`, `app` and `R` are defined in `simplify/Rewrite`,
-  `simplify/RewriteTraces` and `dafny/TEQ`. `Contexts` defines `simplify`
+- `rw`, `app` and `R` are defined in `prove/Rewrite`,
+  `prove/RewriteTraces` and `dafny/TEQ`. `prove/Simplify` defines `simplify`
   three times and shorthands such as `v`, `c`, `P`, `lit`.
 - `test.Examples` (`output`, `errors`, `stream`) and `cuvee.test.Expected.run`
   are two harnesses that run a command line in memory.
 - No direct tests of easyparse (`Mixfix` precedences and associativity,
-  `Repeat`, `Intersperse`) and of `simplify/Arith`.
+  `Repeat`, `Intersperse`) and of `prove/Arith`.
 - Warnings of `mill -i compile`:
   - 444 feature warnings (the implicit conversion `String => Name` without
     `-language:implicitConversions`);
@@ -427,7 +427,7 @@ items on the simplifier hold for both copies.
   not for terms such as `history.events == []`; innermost first, which may
   rewrite subterms before a rule for the whole term applies.
 - The goal of [clock.dfy](examples/dafny/hybrid/clock.dfy) remains after
-  `-simplify`: the rules of `delay` would need the fact `history.events == []`,
+  `-prove`: the rules of `delay` would need the fact `history.events == []`,
   and `exists s` would need to be instantiated by the time. Plan: replace
   quantified variables of record types, whose selectors occur in the body, by
   their constructor applied to fresh variables (as `Flat` does), with the
@@ -443,18 +443,6 @@ items on the simplifier hold for both copies.
   (`Rewrite.conditions`), in the order of the conjuncts; open comparisons and
   equations of side conditions are not searched, and the first match is taken
   among several.
-- Fourier-Motzkin ([simplify/FourierMotzkin.scala](src/cuvee/simplify/FourierMotzkin.scala))
-  is not used yet. Proposal, in this order:
-  1. decide `0 <= p`/`0 < p` against the linear facts of the context (the
-     comparisons among the assumptions, negated ones among the conclusions)
-     in `Simplify.implied`/`denied`, sound on `Int` too, with tightening
-     (`0 < p` is `1 <= p`, rounding by the gcd of the coefficients);
-  2. mark contexts with unsatisfiable linear assumptions inconsistent;
-  3. then redundant bounds vanish by `nary`, e.g. `x <= 3 && x <= 5`;
-  4. eliminate `exists x` over linear constraints where the number of
-     constraints does not grow (`l <= 1` or `u <= 1` bounds), exact on `Real`,
-     on `Int` for coefficients ±1;
-  5. limit the number of constraints (e.g. 20).
 - A lemma that is an equation of integers, e.g. `2 * s == n + n * n`, is a
   rule on its left-hand side as a term, not on the atom; equivalences of atoms
   work (see [gauss_sum.dfy](benchmarks/sv-comp/dafny/loop-new/gauss_sum.dfy)). A
@@ -474,7 +462,7 @@ items on the simplifier hold for both copies.
   lemmas are stated in both forms.
 - Hypotheses are not split into cases: `X == (if c then A else B)` and
   disjunctions among the hypotheses remain (`-prove` splits disjunctions, and the guards of updates since 0.46.16),
-  `-split` followed by another `-simplify` splits them (see
+  `-split` followed by another `-prove` splits them (see
   [diamond_1-1.dfy](benchmarks/sv-comp/dafny/loop-acceleration/diamond_1-1.dfy),
   [half.dfy](benchmarks/sv-comp/dafny/loop-new/half.dfy)).
 - Linear facts over more than two variables are not combined: the context
@@ -595,18 +583,23 @@ Measured on binary search and on the SV-COMP examples
   contains it cycles (`a[k]` by `S.2[k] == a[k]`); a class member that does not contain the term would be safe to
   try and is not tried yet.
 - The C frontend under `-teq` (partitioned by components since Oct 13, 2026) is tested by examples/c/teq and examples/c/verify
-  only; the databases of SV-COMP (`expected.csv`) were recorded under the former per-variable form with `-simplify`
-  and are to be recorded again.
+  only.
 - The matcher of `-prove` matches sums modulo associativity and commutativity, products not: a pattern `m * k`
   does not match the normal form `k * m` (e.g. `div_quotient_remainder`, left in legacy/teq.dfy).
-- `-prove` simplifies assertions and function definitions only; programs, attributes and derivatives pass
-  through unchanged.
+- `-prove` simplifies assertions and function definitions only; programs and attributes pass through unchanged
+  (dropped with the former simplifier, Oct 23, 2026; derivatives are computed).
+- What `-prove` does not do yet that the former simplifier did (examples/smtlib/simplify, test/prove/Simplify.scala):
+  - an equation `x == y` of a bound and a free variable is not eliminated by the one-point rule when the bound one
+    is the canonical variable of the class (the smallest by name): `forall x :: x == y ==> p(x)` stays,
+    `exists x :: x == y && p(x)` too (binders.smt2, `OnePoint.used`);
+  - a bound variable defined by an arithmetic equation is not eliminated, e.g. `x` of `y == x + 1` (normalize.smt2);
+  - the range `0 <= e % k < k` of a remainder by a literal is not known to the simplex (`range` of
+    examples/dafny/simplify/remainders.dfy).
 
 ## Traces with several accumulators (branch `accumulators`)
 
 - The frontends and printers of Dafny, Boogie, SMT-LIB and SV-LIB, the Lean printer and `-fallback` know traces with
-  several accumulators and the component reads (doc/teq.md, Syntax); the engine of `-simplify` leaves them
-  unsimplified (`-teq` needs `-prove`). The matcher of `-prove` matches patterns of several accumulators
+  several accumulators and the component reads (doc/teq.md, Syntax). The matcher of `-prove` matches patterns of several accumulators
   against cycles as a whole (the bisection of examples/dafny/state).
 - `-fallback` on lists of traces of several accumulators (an inner loop with a cycle) is implemented (one length
   function for all components) but has no test yet.
@@ -661,7 +654,7 @@ Measured on binary search and on the SV-COMP examples
   some case of the pattern, such that a higher-order guard bound by a later
   case of the pattern is still open when an earlier case of the expression
   needs it.
-- Facts about terms are not derived by the simplifier (see [doc/simplifier.md](doc/simplifier.md#forward-reasoning));
+- Facts about terms are not derived by the simplifier (see [doc/prove.md](doc/prove.md#facts-that-the-goal-does-not-mention));
   bsearch.dfy needs a cut, `assert φ; assume φ;`, and `-teq`
   does not assume assertions. `-prove` has forward lemmas (`{:fw}`, see
   [doc/prove.md](doc/prove.md)), with which the binary search of examples/dafny/state closes without the cut;
@@ -968,8 +961,7 @@ scores it unknown).
     linear-inequality-inv-a, -c, -d, hard-ll, underapprox_1-2, mod3) and 23
     of group 3; the wrong true verdicts of Symbiotic (57) and AISE (55),
     nearly all in files with uninitialized locals, should be gone with
-    nondet.py; Cuvée has not run on the patched files, and their
-    `expected.csv` predates the patches.
+    nondet.py; Cuvée has not run on the patched files.
   - 9 tasks that only AISE finds false, without a known cause (group 4:
     bAnd5, bor5, xor5, mapsum5, mapavg5, sanfoundry_10_ground, init-2-n-u,
     gj2007, mono-crafted_1); AISE's first stage fails (`bin/runexec`

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/sqrt1-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/sqrt1-ll.dfy
 // SV-COMP nla-digbench/sqrt1-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: the integer square root a of n by the sum s of the odd numbers t, with the invariants checked in and
 // after the loop

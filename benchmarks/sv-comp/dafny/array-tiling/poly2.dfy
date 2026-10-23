@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/poly2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/poly2.dfy
 // SV-COMP array-tiling/poly2.yml (expected: safe), translated from the C program by hand:
 // a[i] = i * i + 2, then a[i] - 2, which is checked to be i * i (long long is int)
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/c/array-industry-pattern/array_mul_init.c
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/c/array-industry-pattern/array_mul_init.c
 // SV-COMP array-industry-pattern/array_mul_init.yml, translated from benchmarks/sv-comp/dafny/array-industry-pattern/array_mul_init.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

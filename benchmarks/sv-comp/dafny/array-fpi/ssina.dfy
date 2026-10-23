@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ssina.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ssina.dfy
 // SV-COMP array-fpi/ssina.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, its sum N added to each element, and the new sum N * (N + 1) added again, which gives (N + 1) * (N + 1)
 //

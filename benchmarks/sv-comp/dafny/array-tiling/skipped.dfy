@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/skipped.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/skipped.dfy
 // SV-COMP array-tiling/skipped.yml (expected: safe), translated from the C program by hand:
 // the elements are arbitrary, and are clamped to their position at the positions 2 i - 2 and 2 i - 1, and a[i]
 // <= i is checked

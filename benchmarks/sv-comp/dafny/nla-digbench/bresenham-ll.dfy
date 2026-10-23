@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/bresenham-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/bresenham-ll.dfy
 // SV-COMP nla-digbench/bresenham-ll.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks 2*yx - 2*xy - X + (long long) 2*Y - v == 0; 2*yx - 2*xy -
 // X + (long long) 2*Y - v + 2*y == 0

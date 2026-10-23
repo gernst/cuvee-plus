@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/c/array-examples/standard_compare_ground.c
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/c/array-examples/standard_compare_ground.c
 // SV-COMP array-examples/standard_compare_ground.yml, translated from benchmarks/sv-comp/dafny/array-examples/standard_compare_ground.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

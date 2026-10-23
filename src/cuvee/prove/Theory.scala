@@ -5,7 +5,7 @@ import cuvee.core._
 import util.Ref
 
 // an immutable collection of facts of some theory, which records the facts it can express and ignores the others,
-// and which detects when they contradict each other (after cuvee.simplify.Theory)
+// and which detects when they contradict each other (after the former simplify.Theory)
 trait Theory:
   def inconsistent: Boolean
   def assume(expr: Expr): Theory
@@ -16,7 +16,7 @@ object Facts:
 
 // the facts as given, the assumptions are known to hold, the conclusions are known not to hold;
 // they are inconsistent if false is among the assumptions, true among the conclusions, or a fact among both
-// (copied from cuvee.simplify.Facts)
+// (copied from the former simplify.Facts)
 case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) extends Theory:
   def assume(expr: Expr): Facts =
     val conflict = expr == False || (concls contains expr)

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/array-fpi/condn.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/array-fpi/condn.dfy
 // SV-COMP array-fpi/condn.yml (expected: safe), translated from the C program by hand: a is
 // filled with arbitrary values, which are capped at N, and are at most N then
 //

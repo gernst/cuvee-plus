@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/rewrite.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/rewrite.smt2
 ; rewrite rules are applied after each round of simplification, their results are simplified further,
 ; terms under test are arguments of the uninterpreted predicate p, which the simplifier only traverses
 (declare-fun p (Int) Bool)

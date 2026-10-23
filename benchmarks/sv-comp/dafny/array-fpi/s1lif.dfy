@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/s1lif.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/s1lif.dfy
 // SV-COMP array-fpi/s1lif.yml (expected: safe), translated from the C program by hand: a is set
 // to 1, incremented where it is 1, and summed up, which gives 2 N (s2lif to s5lif are variants)
 //

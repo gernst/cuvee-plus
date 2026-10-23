@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_copy1_ground-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_copy1_ground-2.dfy
 // SV-COMP array-examples/standard_copy1_ground-2.yml (expected: unsafe), translated from the C
 // program by hand: the unsafe variant of standard_copy1_ground-1: a2 is filled with arbitrary values as well, and
 // the copy assigns a1 to itself, such that a2 is not a copy

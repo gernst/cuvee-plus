@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-lopstr16/base_case.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-lopstr16/base_case.c
 // SV-COMP array-lopstr16/base_case.yml, translated from benchmarks/sv-comp/dafny/array-lopstr16/base_case.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

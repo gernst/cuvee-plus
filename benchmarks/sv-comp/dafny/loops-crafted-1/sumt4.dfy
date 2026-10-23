@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/sumt4.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/sumt4.dfy
 // SV-COMP loops-crafted-1/sumt4.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: four counters count the remainders of l modulo 4, 3, 2, and their sum is checked to be l
 //

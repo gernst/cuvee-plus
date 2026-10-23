@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-invariants/eq1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-invariants/eq1.dfy
 // SV-COMP loop-invariants/eq1.yml (expected: safe), translated from the C program by hand: w and
 // x, and y and z, start equal and are incremented or decremented together, which is checked; unsigned int is int,
 // its wrap-around affects both alike

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/brs1f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/brs1f.dfy
 // SV-COMP array-fpi/brs1f.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of brs1, whose sum starts at N / 2 + 10 in the first iteration, such that it exceeds N
 //

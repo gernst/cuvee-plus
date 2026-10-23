@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invgen/heapsort.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invgen/heapsort.c
 // SV-COMP loop-invgen/heapsort.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/heapsort.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

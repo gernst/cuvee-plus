@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/nsqm-iff.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/nsqm-iff.dfy
 // SV-COMP array-fpi/nsqm-iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nsqm-if with other constants or assertions; checks a[i] == (i+1)*(i+1)
 

@@ -113,9 +113,7 @@
   Bool)
 
 (assert
-  (forall
-    ((n Int))
-    (=> true (main_pre n))))
+  (forall ((n Int)) (main_pre n)))
 
 (assert
   (forall
@@ -135,7 +133,7 @@
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (and (main_pre n) (not (< n 0)))
+      (and (main_pre n) (<= 0 n))
       (main_join_1 n result tmp$2 counter$3 x$4))))
 
 (assert
@@ -163,9 +161,7 @@
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (and
-        (main_inv_5 n result tmp$2 counter$3 x$4)
-        true)
+      (main_inv_5 n result tmp$2 counter$3 x$4)
       (main_assign_7 n result counter$3 counter$3 x$4))))
 
 (assert
@@ -190,7 +186,7 @@
     (=>
       (and
         (main_assign_8 n result tmp$2 counter$3 x$4)
-        (not (<= n tmp$2)))
+        (< tmp$2 n))
       (main_join_9 n result tmp$2 counter$3 x$4))))
 
 (assert
@@ -211,15 +207,6 @@
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (and
-        (main_inv_5 n result tmp$2 counter$3 x$4)
-        (not true))
-      (main_exit_6 n result tmp$2 counter$3 x$4))))
-
-(assert
-  (forall
-    ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
-    (=>
       (main_exit_6 n result tmp$2 counter$3 x$4)
       (and
         (= x$4 n)
@@ -229,9 +216,7 @@
   (forall
     ((n Int) (result Int) (tmp$2 Int) (counter$3 Int) (x$4 Int))
     (=>
-      (and
-        (main_exit_6 n result tmp$2 counter$3 x$4)
-        true)
+      (main_exit_6 n result tmp$2 counter$3 x$4)
       (main_spec_11 n result tmp$2 counter$3 x$4))))
 
 (assert

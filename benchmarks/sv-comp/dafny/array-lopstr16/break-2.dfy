@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-lopstr16/break-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-lopstr16/break-2.dfy
 // SV-COMP array-lopstr16/break-2.yml (expected: safe), translated from the C program by hand:
 // the elements are set to 10 up to the middle, where the loop breaks, and they are checked there
 //

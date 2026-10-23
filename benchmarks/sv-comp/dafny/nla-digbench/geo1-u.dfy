@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/geo1-u.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/geo1-u.dfy
 // SV-COMP nla-digbench/geo1-u.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks x*z - x - y + 1 == 0; 1 + x - y == 0
 

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-patterns/array1_pattern.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-patterns/array1_pattern.dfy
 // SV-COMP array-patterns/array1_pattern.yml (expected: safe), translated from the C program by
 // hand: two arrays of zeros get index * num * num at index and num * index at N - 1 - index for nondeterministic
 // indices until a nondeterministic exit, with num = -1, and the sum of both arrays is checked to be 0

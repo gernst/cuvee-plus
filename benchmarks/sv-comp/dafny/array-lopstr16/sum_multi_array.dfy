@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-lopstr16/sum_multi_array.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-lopstr16/sum_multi_array.dfy
 // SV-COMP array-lopstr16/sum_multi_array.yml (expected: safe), translated from the C program by hand:
 // a[i] and b[i] are arbitrary, c[i] = a[i] + b[i], which is checked (the fields n of structs are the arrays)
 //

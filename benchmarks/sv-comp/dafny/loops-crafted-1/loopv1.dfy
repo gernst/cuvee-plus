@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/loopv1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/loopv1.dfy
 // SV-COMP loops-crafted-1/loopv1.yml (expected: safe), translated from the C program by hand: i
 // increases by 6 or by 3, chosen arbitrarily, up to n, at most SIZE == 50000001, and is a multiple of 3 then
 //

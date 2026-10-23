@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-fpi/modp.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-fpi/modp.c
 // SV-COMP array-fpi/modp.yml, translated from benchmarks/sv-comp/dafny/array-fpi/modp.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark32_linear.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark32_linear.dfy
 // SV-COMP loop-zilu/benchmark32_linear.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: x alternates between 1 and 2, if it is one of them, and x <= 8 is checked
 //

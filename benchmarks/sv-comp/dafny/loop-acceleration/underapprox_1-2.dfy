@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/underapprox_1-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/underapprox_1-2.dfy
 // SV-COMP loop-acceleration/underapprox_1-2.yml (expected: safe), translated from the C program by hand: y is
 // doubled 6 times, starting from 1, and a power of 2 is not divisible by 3
 //

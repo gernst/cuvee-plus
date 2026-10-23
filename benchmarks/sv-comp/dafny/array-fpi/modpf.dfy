@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/modpf.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/modpf.dfy
 // SV-COMP array-fpi/modpf.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of modp with other constants or assertions; checks a[i] % N == 1
 

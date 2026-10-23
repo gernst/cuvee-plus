@@ -1,11 +1,11 @@
 package cuvee.test
-package simplify
+package prove
 
 import utest._
 
 import cuvee.core._
-import cuvee.simplify.Rule
-import cuvee.simplify.Context
+import cuvee.prove.Rule
+import cuvee.prove.Context
 
 // single rewrite steps whose input the simplifier would change before the rules apply
 // (see examples/smtlib/simplify/rewrite*.smt2 and examples/dafny/simplify/rewrite*.dfy for the others)
@@ -26,18 +26,18 @@ object Rewrite extends TestSuite:
 
   // a single step at the top of `expr`, subterms are not rewritten (the simplifier traverses them)
   def R(rules: List[Rule], expr: Expr): Expr =
-    R(Context.empty.withRules(rules), expr)
+    R(Context.empty(State.empty).withRules(rules), expr)
 
   def R(ctx: Context, expr: Expr): Expr =
-    cuvee.simplify.Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, expr)
+    cuvee.prove.Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, expr)
 
   val tests = Tests:
-    // a variable of the pattern may take the neutral element if the expression is a sum, where 0 is dropped
+    // a sum of one summand gives no variable of the pattern the neutral element 0 (see doc/prove.md)
     test("neutral"):
       val rules = List(rw(app(f, Ints.plus(x, y)), app(g, y)))
-      R(rules, app(f, Ints.plus(a, Ints.zero))) ==> app(g, Ints.zero)
+      R(rules, app(f, Ints.plus(a, Ints.zero))) ==> app(f, Ints.plus(a, Ints.zero))
       R(rules, app(f, a)) ==> app(f, a)
 
       // but only if there are fewer summands than variables, x + y matches a + b with x = a or x = b, not x = 0
-      val ms = cuvee.simplify.Rewrite.matches(cuvee.Config.default, State.empty, Context.empty, Set(), Set(x, y), Set(), Ints.plus(x, y), None, Map(), Set(), Ints.plus(a, b), Subst.empty)
+      val ms = cuvee.prove.Rewrite.matches(cuvee.Config.default, State.empty, Context.empty(State.empty), Set(), Set(x, y), Set(), Ints.plus(x, y), None, Map(), Set(), Ints.plus(a, b), Subst.empty)
       ms.map(_.vars(x)) ==> List(a, b)

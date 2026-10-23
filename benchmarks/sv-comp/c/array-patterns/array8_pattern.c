@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-patterns/array8_pattern.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-patterns/array8_pattern.c
 // SV-COMP array-patterns/array8_pattern.yml, translated from benchmarks/sv-comp/dafny/array-patterns/array8_pattern.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

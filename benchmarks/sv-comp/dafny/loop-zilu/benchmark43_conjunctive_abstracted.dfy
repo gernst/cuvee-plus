@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark43_conjunctive_abstracted.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark43_conjunctive_abstracted.dfy
 // SV-COMP loop-zilu/benchmark43_conjunctive_abstracted.yml (expected: safe), translated from the
 // C program by ./Cuvee.sh -print dfy: a program of the folder; checks x == 100 || y == 100
 

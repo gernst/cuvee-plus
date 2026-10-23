@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/for_bounded_loop1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/for_bounded_loop1.dfy
 // SV-COMP loops/for_bounded_loop1.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a program of the folder; checks x==0; x!=0; x==0
 

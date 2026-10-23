@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-cav19/array_init_nondet_vars.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-cav19/array_init_nondet_vars.dfy
 // SV-COMP array-cav19/array_init_nondet_vars.yml (expected: safe), translated from the C program
 // by hand: a[i] = i + j + k with positive j and a positive k chosen in each iteration, and a[i] >= i + 2 is checked
 //

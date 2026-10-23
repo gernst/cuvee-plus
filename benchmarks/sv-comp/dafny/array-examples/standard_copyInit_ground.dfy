@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_copyInit_ground.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_copyInit_ground.dfy
 // SV-COMP array-examples/standard_copyInit_ground.yml (expected: safe), translated from the C program by hand:
 // a is set to 42, copied into b, and b is checked to be 42
 //

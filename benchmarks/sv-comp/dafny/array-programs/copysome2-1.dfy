@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-programs/copysome2-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-programs/copysome2-1.dfy
 // SV-COMP array-programs/copysome2-1.yml (expected: safe), translated from the C program by hand:
 // a2 is a copy of a1 except at z, and a3 a copy of a2 except at z, where it gets a1[z]; a3 is checked to agree
 // with a1

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark09_conjunctive.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark09_conjunctive.dfy
 // SV-COMP loop-zilu/benchmark09_conjunctive.yml (expected: safe), translated from the C program
 // by hand: x and y, equal and nonnegative, count down together until x is 0, or one of them is negative, which
 // breaks the loop, and y is 0 then

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-multidimensional/init-2-n-u.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-multidimensional/init-2-n-u.dfy
 // SV-COMP array-multidimensional/init-2-n-u.yml (expected: safe), translated from the C program by
 // hand: a two-dimensional array, an array of rows, is set to C by nested loops, and checked by nested loops
 //

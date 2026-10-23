@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/rewrite_arithmetic.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/rewrite_arithmetic.smt2
 ; sums match modulo associativity, commutativity, and the neutral element 0, where the last variable takes
 ; the rest of the summands, a negated variable takes negative summands only, and comparisons match modulo moving
 ; summands between the sides, where < on Int is <= with 1 added, and on Real the strictness must agree

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-zilu/benchmark51_polynomial.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-zilu/benchmark51_polynomial.c
 // SV-COMP loop-zilu/benchmark51_polynomial.yml, translated from benchmarks/sv-comp/dafny/loop-zilu/benchmark51_polynomial.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-lit/css2003.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-lit/css2003.c
 // SV-COMP loop-lit/css2003.yml, translated from benchmarks/sv-comp/dafny/loop-lit/css2003.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

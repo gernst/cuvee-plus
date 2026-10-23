@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/traces_higher_order.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/traces_higher_order.dfy
 // higher-order patterns P(x) of variables of function type applied to bound variables (Miller's fragment), where the
 // dependency Xs follows from the bound variable of the expression, the instantiated right-hand side is beta-reduced,
 // a single bound variable of the pattern cannot abstract two of the expression, repeated occurrences must agree,

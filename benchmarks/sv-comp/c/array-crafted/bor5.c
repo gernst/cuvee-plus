@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-crafted/bor5.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-crafted/bor5.c
 // SV-COMP array-crafted/bor5.yml, translated from benchmarks/sv-comp/dafny/array-crafted/bor5.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

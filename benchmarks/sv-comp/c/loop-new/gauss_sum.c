@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-new/gauss_sum.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-new/gauss_sum.c
 // SV-COMP loop-new/gauss_sum.yml, translated from benchmarks/sv-comp/dafny/loop-new/gauss_sum.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/rewrite_polymorphic.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/rewrite_polymorphic.dfy
 // the type parameters of a rule are instantiated, here with int, and annotations e as T of the expression are skipped
 datatype List<a> = nil | cons(head: a, tail: List<a>)
 function length<a>(xs: List<a>): int

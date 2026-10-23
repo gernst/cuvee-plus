@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/trex03-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/trex03-2.dfy
 // SV-COMP loops/trex03-2.yml (expected: safe), translated from the C program by ./Cuvee.sh -print
 // dfy: one of three counters x1, x2, x3 is decremented by 1 in each iteration, chosen nondeterministically, while
 // all are positive, and one of them is checked to be 0 at the end (unsigned int is int)

@@ -1,4 +1,4 @@
-; ./Cuvee.sh -simplify examples/smtlib/simplify/context.smt2
+; ./Cuvee.sh -prove examples/smtlib/simplify/context.smt2
 ; subterms are simplified under the facts known at their position
 (declare-const p Bool)
 (declare-const x Int)

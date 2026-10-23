@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ss1f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ss1f.dfy
 // SV-COMP array-fpi/ss1f.yml (expected: unsafe), translated from the C program by hand: the
 // unsafe variant of ss1, whose elements are 2 initially
 //

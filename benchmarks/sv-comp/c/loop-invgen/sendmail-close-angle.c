@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invgen/sendmail-close-angle.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invgen/sendmail-close-angle.c
 // SV-COMP loop-invgen/sendmail-close-angle.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/sendmail-close-angle.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

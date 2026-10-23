@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-programs/partial_mod_count_2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-programs/partial_mod_count_2.dfy
 // SV-COMP array-programs/partial_mod_count_2.yml (expected: safe), translated from the C program by hand:
 // as partial_mod_count_1 with R = 2, where the count of zeros, the even i > N / 2, stays below N / 4
 //

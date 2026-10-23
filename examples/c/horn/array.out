@@ -60,7 +60,7 @@
 
 (declare-fun
   clear_assign_1
-  ((Array Int Int) Int (Array Int Int) Int)
+  ((Array Int Int) Int (Array Int Int))
   Bool)
 
 (declare-fun
@@ -85,19 +85,18 @@
 
 (assert
   (forall
-    ((a (Array Int Int)) (n Int) (i$4 Int))
+    ((a (Array Int Int)) (n Int))
     (=>
       (clear_pre a n)
-      (clear_assign_1 a n a i$4))))
+      (clear_assign_1 a n a))))
 
 (assert
   (forall
     ((a (Array Int Int))
       (n Int)
-      (a$3 (Array Int Int))
-      (i$4 Int))
+      (a$3 (Array Int Int)))
     (=>
-      (clear_assign_1 a n a$3 i$4)
+      (clear_assign_1 a n a$3)
       (clear_assign_2 a n a$3 0))))
 
 (assert
@@ -151,7 +150,7 @@
     (=>
       (and
         (clear_inv_3 a n a$3 i$4)
-        (not (< i$4 n)))
+        (<= n i$4))
       (clear_post a n))))
 
 (declare-const main_pre Bool)
@@ -213,7 +212,7 @@
   (Int Bool (Array Int Int) Bool)
   Bool)
 
-(assert (=> true main_pre))
+(assert main_pre)
 
 (assert
   (forall
@@ -264,9 +263,7 @@
       (a$6 (Array Int Int))
       (b$7 Bool))
     (=>
-      (and
-        (main_call_2 result tmp$5 a$6 b$7)
-        true)
+      (main_call_2 result tmp$5 a$6 b$7)
       (main_spec_3 result tmp$5 a$6 b$7))))
 
 (assert
@@ -347,13 +344,11 @@
       (a$6 (Array Int Int))
       (b$7 Bool))
     (=>
-      (and
-        (main_inv_6 result tmp$5 a$6 b$7)
-        (not
-          (or
-            tmp$5
-            (and (< 0 (select a$6 0)) b$7))))
-      (main_exit_7 result tmp$5 a$6 b$7))))
+      (main_inv_6 result false a$6 b$7)
+      (or
+        tmp$5
+        (and (< 0 (select a$6 0)) b$7)
+        (main_exit_7 result false a$6 b$7)))))
 
 (assert
   (forall
@@ -372,9 +367,7 @@
       (a$6 (Array Int Int))
       (b$7 Bool))
     (=>
-      (and
-        (main_exit_7 result tmp$5 a$6 b$7)
-        true)
+      (main_exit_7 result tmp$5 a$6 b$7)
       (main_spec_10 result tmp$5 a$6 b$7))))
 
 (assert

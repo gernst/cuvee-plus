@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-simple/nested_1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-simple/nested_1.dfy
 // SV-COMP loop-simple/nested_1.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of nested_2 with other constants or assertions
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 6

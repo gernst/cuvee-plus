@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify -chc examples/c/horn/array.c
+// ./Cuvee.sh -chc -prove examples/c/horn/array.c
 // expected: valid
 // arrays are values, which are copied when passed
 

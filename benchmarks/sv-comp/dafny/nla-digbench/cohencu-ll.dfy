@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/cohencu-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/cohencu-ll.dfy
 // SV-COMP nla-digbench/cohencu-ll.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: x == n^3 is computed by finite differences y and z, with the invariants checked in and
 // after the loop

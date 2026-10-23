@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/sorts.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/sorts.dfy
 // arithmetic on defined sorts is normalized, which was a type mismatch before, the lemma vanishes
 type T = int
 var count: T

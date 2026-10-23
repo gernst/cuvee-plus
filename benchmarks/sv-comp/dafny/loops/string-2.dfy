@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/string-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/string-2.dfy
 // SV-COMP loops/string-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of string-1 with other constants or assertions; checks found == 0 || found == 1
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 5 (MAX)

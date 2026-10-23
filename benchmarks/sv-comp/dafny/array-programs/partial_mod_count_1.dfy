@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-programs/partial_mod_count_1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-programs/partial_mod_count_1.dfy
 // SV-COMP array-programs/partial_mod_count_1.yml (expected: safe), translated from the C program by hand:
 // a[i] = i + 1, overwritten by i % R for i > N / 2 with R = 1, and the count j of zeros is checked to stay
 // below N / 2 (unsigned R is int)

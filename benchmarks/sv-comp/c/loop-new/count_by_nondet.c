@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-new/count_by_nondet.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-new/count_by_nondet.c
 // SV-COMP loop-new/count_by_nondet.yml, translated from benchmarks/sv-comp/dafny/loop-new/count_by_nondet.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

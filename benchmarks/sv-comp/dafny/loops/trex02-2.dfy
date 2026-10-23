@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/trex02-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/trex02-2.dfy
 // SV-COMP loops/trex02-2.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of trex01-1 with other constants or assertions; checks x==0
 

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_copyInitSum3_ground.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_copyInitSum3_ground.dfy
 // SV-COMP array-examples/standard_copyInitSum3_ground.yml (expected: safe), translated from the C program by hand:
 // a is set to 42 and copied into b, then i is added to b[i] and a[i] subtracted, which leaves b[i] == i
 //

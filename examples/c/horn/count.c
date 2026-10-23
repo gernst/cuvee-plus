@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify -chc examples/c/horn/count.c
+// ./Cuvee.sh -chc -prove examples/c/horn/count.c
 // expected: valid
 // loops, for with continue, and global variables, verified with -chc
 

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/nested3-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/nested3-2.dfy
 // SV-COMP loops-crafted-1/nested3-2.yml (expected: unsafe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of nested3-1 with other constants or assertions; checks !(z % 4); !(y % 2); !(x
 // % 2)

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/mine2017-ex4.6.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/mine2017-ex4.6.dfy
 // SV-COMP loop-lit/mine2017-ex4.6.yml (expected: safe), translated from the C program by hand: x
 // counts down from 40 to 0, with the bounds checked in the loop
 //

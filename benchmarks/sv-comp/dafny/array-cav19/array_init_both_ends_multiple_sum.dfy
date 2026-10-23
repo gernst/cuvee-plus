@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-cav19/array_init_both_ends_multiple_sum.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-cav19/array_init_both_ends_multiple_sum.dfy
 // SV-COMP array-cav19/array_init_both_ends_multiple_sum.yml (expected: safe), translated from
 // the C program by hand: a[i] = i, b[N - i - 1] = i, and the sum of a[i] - b[N - i - 1] is 0
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-multidimensional/copy-partial-3-u.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-multidimensional/copy-partial-3-u.c
 // SV-COMP array-multidimensional/copy-partial-3-u.yml, translated from benchmarks/sv-comp/dafny/array-multidimensional/copy-partial-3-u.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

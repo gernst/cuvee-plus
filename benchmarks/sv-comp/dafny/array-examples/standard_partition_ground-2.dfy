@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_partition_ground-2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_partition_ground-2.dfy
 // SV-COMP array-examples/standard_partition_ground-2.yml (expected: safe), translated from the C
 // program by hand: the nonnegative elements of aa are collected in bb, counted by b, the negative ones in cc,
 // counted by c, and the collected elements of bb are nonnegative

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-lopstr16/flag_loopdep_simple.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-lopstr16/flag_loopdep_simple.dfy
 // SV-COMP array-lopstr16/flag_loopdep_simple.yml (expected: safe), translated from the C program by hand:
 // the elements are arbitrary (the function init, inlined), the flag is set if one is not 0, and if it is not
 // set, all are checked to be 0

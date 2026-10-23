@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-invgen/NetBSD_loop.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-invgen/NetBSD_loop.c
 // SV-COMP loop-invgen/NetBSD_loop.yml, translated from benchmarks/sv-comp/dafny/loop-invgen/NetBSD_loop.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

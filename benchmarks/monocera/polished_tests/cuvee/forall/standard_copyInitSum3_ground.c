@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/monocera/polished_tests/cuvee/forall/standard_copyInitSum3_ground.c
+// ./Cuvee.sh -teq -prove benchmarks/monocera/polished_tests/cuvee/forall/standard_copyInitSum3_ground.c
 extern void abort(void);
 #include <assert.h>
 void reach_error() { assert(0); }

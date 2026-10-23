@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/trex03-2_abstracted.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loops/trex03-2_abstracted.c
 // SV-COMP loops/trex03-2_abstracted.yml, translated from benchmarks/sv-comp/dafny/loops/trex03-2_abstracted.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

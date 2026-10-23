@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_copyInitSum2_ground-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_copyInitSum2_ground-1.dfy
 // SV-COMP array-examples/standard_copyInitSum2_ground-1.yml (expected: unsafe), translated from
 // the C program by ./Cuvee.sh -print dfy: a variant of standard_copyInitSum2_ground-2 with other constants or
 // assertions; checks b[x] == 42 + x

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-patterns/array1_pattern_buggy.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-patterns/array1_pattern_buggy.dfy
 // SV-COMP array-patterns/array1_pattern_buggy.yml (expected: unsafe), translated from the C
 // program by ./Cuvee.sh -print dfy: a program of the folder; checks sum == 0
 

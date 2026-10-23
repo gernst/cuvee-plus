@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loops/while_infinite_loop_2.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loops/while_infinite_loop_2.c
 // SV-COMP loops/while_infinite_loop_2.yml, translated from benchmarks/sv-comp/dafny/loops/while_infinite_loop_2.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

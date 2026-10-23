@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-industry-pattern/array_of_struct_ptr_monotonic.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-industry-pattern/array_of_struct_ptr_monotonic.dfy
 // SV-COMP array-industry-pattern/array_of_struct_ptr_monotonic.yml (expected: safe), translated from the C program by hand:
 // pointers are only compared with null, they are modeled by truth values, whether they are not null, where
 // malloc does not fail; at the even positions, each struct gets a value t and a pointer p1 that is allocated if

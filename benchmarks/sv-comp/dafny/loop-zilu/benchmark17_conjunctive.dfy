@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark17_conjunctive.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark17_conjunctive.dfy
 // SV-COMP loop-zilu/benchmark17_conjunctive.yml (expected: safe), translated from the C program
 // by hand: i and k count up from 0 together up to an arbitrary n, and k is at least n then
 //

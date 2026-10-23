@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/c/loop-invariants/linear-inequality-inv-a.c
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/c/loop-invariants/linear-inequality-inv-a.c
 // SV-COMP loop-invariants/linear-inequality-inv-a.yml, translated from benchmarks/sv-comp/dafny/loop-invariants/linear-inequality-inv-a.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

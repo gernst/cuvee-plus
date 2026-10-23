@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-multidimensional/transpose-u.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-multidimensional/transpose-u.c
 // SV-COMP array-multidimensional/transpose-u.yml, translated from benchmarks/sv-comp/dafny/array-multidimensional/transpose-u.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

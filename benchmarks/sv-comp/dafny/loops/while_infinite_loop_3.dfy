@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/while_infinite_loop_3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/while_infinite_loop_3.dfy
 // SV-COMP loops/while_infinite_loop_3.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: an infinite loop calls eval, which sets the global x to 0 in a loop that it leaves at
 // once, and checks x == 0, and the unreachable end checks x != 0

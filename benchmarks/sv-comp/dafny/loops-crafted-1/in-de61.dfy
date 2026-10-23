@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/in-de61.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/in-de61.dfy
 // SV-COMP loops-crafted-1/in-de61.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of in-de20 with other constants or assertions; checks z==n
 

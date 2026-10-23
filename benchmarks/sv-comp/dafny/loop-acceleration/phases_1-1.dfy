@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loop-acceleration/phases_1-1.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loop-acceleration/phases_1-1.dfy
 // SV-COMP loop-acceleration/phases_1-1.yml (expected: safe), translated from the C program by hand: x counts by 1
 // up to 65520 (0xfff0), then by 2 up to 268435455 (0x0fffffff), and is even then
 //

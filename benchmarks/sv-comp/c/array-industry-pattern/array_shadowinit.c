@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-industry-pattern/array_shadowinit.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-industry-pattern/array_shadowinit.c
 // SV-COMP array-industry-pattern/array_shadowinit.yml, translated from benchmarks/sv-comp/dafny/array-industry-pattern/array_shadowinit.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

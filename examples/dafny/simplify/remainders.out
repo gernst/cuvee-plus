@@ -1,4 +1,7 @@
-lemma outside(x: int)
-  requires 0 <= x
-  ensures (x + 1) % 4294967296 == x + 1
+lemma range()
+  ensures forall x: int :: 0 <= x % 4294967296
+  ensures forall x: int :: x % 4294967296 < 4294967296
+
+lemma outside()
+  ensures false
 

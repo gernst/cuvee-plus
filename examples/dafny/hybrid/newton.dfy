@@ -1,4 +1,4 @@
-// ./Cuvee.sh -vcgen -simplify examples/dafny/hybrid/newton.dfy
+// ./Cuvee.sh -vcgen -prove examples/dafny/hybrid/newton.dfy
 // newton's law of motion under a constant acceleration a: the closed forms of velocity and position
 // with respect to the time t of the differential equation, starting from x0 and v0, as differential invariants;
 // the invariant of the position follows by the differential cut with the one of the velocity

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/remainders.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/remainders.dfy
 // remainders by a literal: their range 0 <= e % k < k decides comparisons, remainders modulo multiples of k are taken
 // apart, e.g. of the overflow of unsigned integers of C, and a remainder whose argument is known to be in the range is
 // the argument itself, also as the representative with the centered coefficients, e.g. x - 1 for x + 4294967295

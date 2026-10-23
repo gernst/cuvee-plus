@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/divbin2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/divbin2.dfy
 // SV-COMP nla-digbench/divbin2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of divbin with other constants or assertions; checks A == q * b + r; A == q * b + r
 

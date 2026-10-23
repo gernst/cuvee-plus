@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark37_conjunctive.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark37_conjunctive.dfy
 // SV-COMP loop-zilu/benchmark37_conjunctive.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: x and y count down together while x > 0, and y >= 0 is checked
 //

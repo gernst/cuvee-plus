@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/indp3.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/indp3.dfy
 // SV-COMP array-fpi/indp3.yml (expected: safe), translated from the C program by hand: a[i] = (i
 // - 1) * (i - 1), plus i twice, minus 1, which is checked to be i * i (indp4, indp5 are variants)
 //

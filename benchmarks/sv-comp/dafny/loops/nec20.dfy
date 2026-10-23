@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops/nec20.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops/nec20.dfy
 // SV-COMP loops/nec20.yml (expected: unsafe), translated from the C program by ./Cuvee.sh -print
 // dfy: a variant of nec11 with other constants or assertions; checks j<1025
 

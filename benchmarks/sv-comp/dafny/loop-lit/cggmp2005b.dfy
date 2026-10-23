@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/cggmp2005b.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/cggmp2005b.dfy
 // SV-COMP loop-lit/cggmp2005b.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks k == 4
 // note: the concrete loop bounds are symbolic, arbitrary positive values: N for 100, M for 20

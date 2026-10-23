@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/loop-acceleration/underapprox_1-2.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/loop-acceleration/underapprox_1-2.c
 // SV-COMP loop-acceleration/underapprox_1-2.yml, translated from benchmarks/sv-comp/dafny/loop-acceleration/underapprox_1-2.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-programs/copysome2-1.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-programs/copysome2-1.c
 // SV-COMP array-programs/copysome2-1.yml, translated from benchmarks/sv-comp/dafny/array-programs/copysome2-1.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

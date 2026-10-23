@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark23_conjunctive.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark23_conjunctive.dfy
 // SV-COMP loop-zilu/benchmark23_conjunctive.yml (expected: safe), translated from the C program
 // by hand: j counts by 2 while i counts to 100, and j is 200 then
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-lopstr16/scalar_loopdep.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-lopstr16/scalar_loopdep.c
 // SV-COMP array-lopstr16/scalar_loopdep.yml, translated from benchmarks/sv-comp/dafny/array-lopstr16/scalar_loopdep.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

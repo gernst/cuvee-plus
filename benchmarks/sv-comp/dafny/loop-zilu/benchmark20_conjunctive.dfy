@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark20_conjunctive.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark20_conjunctive.dfy
 // SV-COMP loop-zilu/benchmark20_conjunctive.yml (expected: safe), translated from the C program
 // by ./Cuvee.sh -print dfy: sum accumulates i up to n, from nonnegative values, and sum >= 0 is checked
 //

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/ifeqn2f.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/ifeqn2f.dfy
 // SV-COMP array-fpi/ifeqn2f.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of ifeqn2 with other constants or assertions; checks b[i] == 2*i*i + 2*i
 

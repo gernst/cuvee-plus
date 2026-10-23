@@ -1,11 +1,9 @@
 # The deduction engine (`-prove`)
 
 The package [prove/](../src/cuvee/prove) is a second engine for the goals of trace equation systems; its design is
-below, the open changes are in [ideas/prove-next.md](../ideas/prove-next.md). `-prove` runs it like
-`-simplify` runs the simplifier: the assertions and lemmas with `:rw` are its rules, the other assertions are
-simplified under a context and dropped when they become `true`. The package is independent of
-[simplify/](../src/cuvee/simplify): what it shares with the simplifier (the polynomials, the clauses, the rules, the
-traversal and the matcher) is copied and adapted, not referenced, so that the two engines evolve separately.
+below, the open changes are in [ideas/prove-next.md](../ideas/prove-next.md). `-prove` runs it: the assertions and lemmas with `:rw` are its rules, the other assertions are
+simplified under a context and dropped when they become `true`. The polynomials, the clauses, the rules, the traversal and the matcher were copied from the former simplifier
+(`-simplify`, removed Oct 23, 2026) and adapted.
 
 ## Design
 
@@ -62,7 +60,7 @@ outer loop on demand; firing forward lemmas once per trace definition with a mem
 (ideas/prove-next.md), needed before many more forward lemmas, since the firing at every assumed fact is quadratic
 in the conjuncts of a premise.
 
-## What differs from the simplifier
+## What differs from the former simplifier
 
 - **Congruence closure** ([`Classes`](../src/cuvee/prove/Classes.scala)) in place of the chains of variable
   equations: a persistent union-find over the terms of the facts, where applications are decomposed into their
@@ -180,7 +178,223 @@ in the conjuncts of a premise.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.
-- Programs, attributes and derivatives are not simplified; `-prove` is for the goals of `-teq`.
+- Programs and attributes are not simplified; `-prove` is for the goals of `-teq`. Derivatives are computed by the
+  rules of dL as in the simplifier (`Simplify.diff`, copied), so the goals of hybrid programs reach the context of the
+  engine ([newton.dfy](../examples/dafny/hybrid/newton.dfy), open under the former simplifier).
+
+## Simplification and rewriting
+
+The traversal and the rewrite engine of `-prove`, which the components above extend; the engine was copied from
+the former simplifier (`-simplify`, package `simplify`, removed Oct 23, 2026).
+
+- [`Simplify`](../src/cuvee/prove/Simplify.scala) rewrites assertions and
+  function definitions to a fixpoint; programs and attributes pass through. Assertions are normalized into clauses (`Normalize`) before
+  simplification and after each round of it, which repeats while they change
+  (`Simplify.apply`), such that e.g. the equations of `let` are simplified in
+  the context; they are dropped if they simplify to `true`.
+  `Normalize.lift` lifts `ite` out of the terms of atoms to the level of
+  formulas, `A[ite(c, a, b)]` to `ite(c, A[a], A[b])`, but not out of
+  binders, derivatives, and `old` inside of `A`; `Split` uses it.
+  - All methods take `(config, state, ctx, ...)`. The context `Context` holds the
+    facts known at the current position and the rewrite rules, which are
+    extracted from the assertions, lemmas, and function definitions with the
+    attribute `:rw` (`Rules.from`) and are kept as they are; a definition
+    whose body is a match on a parameter gives one rule per case, with the
+    pattern in place of the parameter (overlapping patterns are not handled).
+    Each rule carries the attributes of its command (`Rule.attrs`), whose
+    `:named` names it: the name of a lemma, which the Dafny parser adds, or
+    the function of a definition, which `Rules.from` adds; the rules of the
+    facts of a context have none.
+  - With `-rules`, the context counts the applications of each named rule
+    (`Context.applied`), shared by its copies like the steps and fresh for each
+    command; the applications while deciding a side condition or a guard count
+    only if it holds (`Rewrite.holds`), those while matching a rule only if it
+    applies. The counts follow each assertion as structured meta information
+    `(set-info :used ((name count) ...))`, also if it simplifies to true and
+    is dropped; each `-prove` reports its own applications, such that those
+    of several, e.g. before and after `-split`, add up (`scripts/rules.py`).
+    Solvers do not receive it, z3 rejects structured values of `set-info`
+    contrary to SMT-LIB: the solver sink prints it on
+    stderr instead (`Solver.info`). Applications in subterms that are dropped
+    later count as well, so that the counts are an upper bound
+    ([rules.dfy](../examples/dafny/teq/rules.dfy)).
+  - Each round (`once`) simplifies the subterms first and dispatches on the
+    built-in functions; afterwards, one rewrite step with the rules of the
+    context is tried at the top (`Rewrite.step`), until a fixpoint.
+  - Every kind of expression has a helper that takes the simplified
+    subterms and builds the result, `and`, `or`, `not`, `imp`, `eq_`,
+    `distinct`, `ite`, `upd`, `case_`, `match_`, `trace`, `maps`, `invs`, ...
+    The helpers are local normalizations of one constructor: they call each
+    other where they build further formulas (e.g. `not` instead of `Not`,
+    except in the fallthrough case of `not` itself), and leave out what the
+    outer loop already decides. E.g. complementary conjuncts are found by
+    `nary`, which simplifies each argument of `and` and `or` assuming the
+    others, not by `and` itself.
+  - One-point rule: `eq_` turns `x == e` into `true` if `x` is existential
+    seen from the current position (`Context.existential`): bound by `exists`
+    (`Context.exists`), or by `forall` (`Context.forall`) below an odd number of
+    negations and premises (`Context.flip` swaps `universal` and `existential`),
+    and `x` occurs nowhere else: not in `e`, not in the facts of the context (`Context.used`,
+    which includes the primed variables of derivatives), and `e` has no
+    variables bound inside the scope of `x`. `bind` then drops `x`. This
+    relies on the context recording all siblings between the binder and the
+    equation, which holds for `and`, `or`, `not`, `==>`, and binders only;
+    the branches of `ite`, the bodies of `let`, `match`, and `invs`, and
+    neutral positions forget which variables are universal and existential
+    (`Context.neutral`); the variables of `let`, `match`, and the combinators are
+    neither (`Context.bind`).
+    Callers that use `eq_` as a decision (`distinct`, `select`, `deps`)
+    pass `ctx.neutral`.
+  - `trace`, `maps`, and `invs` normalize their dependencies, see
+    [teq.md](teq.md).
+  - `and` extracts the disjuncts that are common to all conjuncts,
+    `(A ∨ C) ∧ (A ∨ B)` is `A ∨ (C ∧ B)`, and `or` dually the common
+    conjuncts; this is a local transformation, not a conversion to CNF or
+    DNF.
+  - The rewrite rules are extracted from formulas
+    `∀ xs. if φ then l == r` (also `<==>`, `!p` for `p == false`, and a
+    boolean atom `p` for `p == true`); the variables of `r` and `φ` must occur
+    in `l` (`Rule.check`).
+  - Arithmetic is normalised into polynomials (`Arith`); comparisons and
+    equations on `Int` and `Real` become `0 < p`, `0 <= p`, and `0 == p`,
+    with `p` primitive, printed with positive coefficients on both sides.
+  - Remainders by a literal `k` (`mod`), e.g. of the unsigned arithmetic of
+    C, take their coefficients modulo `k`, after remainders modulo multiples
+    of `k` among the atoms are replaced by their arguments, also through the
+    definitions of variables (`remainders`): `(x % 2^32 + 1) % 2^32` is
+    `(x + 1) % 2^32`, `(x % 2^32) % 2` is `x % 2`. A remainder whose argument
+    `p`, or its representative with the coefficients centered around 0
+    (`representatives`, e.g. `x - 1` for `x + 4294967295`), is known to be in
+    `0, ..., k - 1` is that polynomial. The range `0 <= e % k <= |k| - 1` of a
+    remainder is not known to the simplex yet (TODO.md). The update of a
+    trace whose results are remainders modulo `k` or the accumulator, and
+    whose initial value is in the range, assumes the range of the accumulator
+    (`wrapped`), which holds for all its values by induction, such that the
+    remainders under the test of the loop are dropped
+    ([remainders.dfy](../examples/dafny/simplify/remainders.dfy),
+    `examples/c/teq/unsigned_*.c`).
+  - Derivatives are computed by the rules of dL ([hybrid.md](hybrid.md)).
+- [`Rewrite`](../src/cuvee/prove/Rewrite.scala) applies conditional rules
+  innermost first, also as a library. Its methods take
+  `(config, state, ctx, ...)` as well; matches are substitutions, and side
+  conditions are decided by `Simplify.simplify` in the context. Matching
+  below the combinators of TEQs is described in [teq.md](teq.md).
+  - A rule is suspended while its left-hand side is matched and its
+    conditions are evaluated (`Context.active`, `Rewrite.apply`): the instance
+    of a condition is simplified before it is decided or matched, and a
+    condition that mentions the rule's own term (`l == current(Lv)` for a
+    rule on `current(Lv)`) was rewritten by the rule itself without end; a
+    condition that is matched against an `invs` fact builds the context of
+    that fact's combinator, whose reads the rule would match again
+    ([reentrant.dfy](../examples/dafny/simplify/reentrant.dfy),
+    [reentrant_invs.dfy](../examples/dafny/simplify/reentrant_invs.dfy)). A
+    condition that needs the same rule on another instance is not decided.
+  - The reads of a combinator context, the values `z == earlier(natural(k), ⌊Z⌋)`
+    of its bound variables (`Simplify.iterations`), are normalized by the
+    rules without an `invs` condition only (`Rule.plain`), since a rule with
+    one would be matched against the `invs` facts and build their contexts in
+    turn, through every such rule; and they are cached by the dependencies,
+    the bound variables and the definitions of the traces (`Context.reads`),
+    since the contexts of a fact are built for every position at which a
+    condition is matched against it, with different facts, while the reads
+    normalize the same. A context built while a rule is suspended may lack
+    that rule's rewrites of its reads and is reused nevertheless.
+
+### Data structures
+
+The context (`Context`, with `Facts`, `Classes` and `Linear`) is described above.
+
+- **`Poly(const, monos)`** with `Mono(factor, atoms)` is the normal form of
+  arithmetic, with `Rational` coefficients. `Ring` (in `core.Builtin`) bundles
+  the sugar of one type (`Ints.ring`, `Reals.ring`) to read and print
+  polynomials.
+- **`Poly.sides`** splits a polynomial into its negative and positive parts,
+  so that comparisons have positive coefficients on both sides.
+- **`Poly.primitive`** scales a polynomial by a positive factor to integral
+  coefficients without a common divisor. Comparisons and equations on `Int`
+  and `Real` with 0 use it (`Simplify.difference`), since only the sign
+  matters there, e.g. `x < 2y + 1.5` becomes `2x < 4y + 3`, and `0.5x == y`
+  becomes `x == 2y`.
+- **`Rule(params, vars, lhs, rhs, cond)`** is a conditional rewrite rule with
+  the type parameters `params` and the variables `vars`, the quantified
+  variables of a lemma (`Rule.from`), which must occur in `lhs` or `cond` if
+  they occur in `rhs`; other free variables and type parameters are
+  constants. The conjuncts of `cond` are taken in their order, instantiated
+  so far and simplified: a closed one is decided by the simplifier, an open
+  one is matched against the facts of the context (`Context.known`: the
+  assumptions and the negated conclusions as given, only double negations
+  removed), which instantiates the variables that occur only in `cond`, e.g.
+  `n` of `sorted(a, n)`; open comparisons and equations are not searched, since
+  there are many arithmetic facts, hence the conjuncts that bind variables
+  come first in a lemma (`Rewrite.conditions`). `Rewrite` applies the first rule that matches at the top of
+  an expression, a single step, the simplifier traverses and iterates; a
+  match is a `Subst` of the type parameters and variables of the rule,
+  modulo type instantiation, A/C and 0 of `+` and `-`, comparisons modulo
+  moving summands between the sides (as normalized polynomials of the
+  difference, where `<` on `Int` is `<=` with 1 added), equations modulo
+  symmetry (`a == b` matches `b == a`), and the binding
+  structure of `Trace`, `Maps`, and `Invs` ([teq.md](teq.md)).
+  Higher-order patterns `F(t₁, ..., tₙ)`, a variable of function type of the
+  rule or of a dependency that is a rule variable, applied to distinct bound
+  variables of the pattern (Miller's fragment) or to terms whose variables
+  are instantiated already, match by abstraction: `F = (z₁, ..., zₙ) => e'`,
+  where the bound variables of the expression that correspond to those of
+  the pattern are bound, and all occurrences of the instances of the terms
+  are replaced by fresh variables, which must occur, e.g. `f = z => z * c + k`
+  for `b[k := f(b[k])]` against `b[k := b[k] * c + k]`. A rule variable `F`
+  must not capture other bound variables of the expression, but may abstract
+  the accumulator; for a variable of a dependency, `instantiate` excludes the
+  accumulator. A bound variable of a dependency that is a rule variable is
+  chosen among those of the expression. The simplifier beta-reduces the
+  instantiated right-hand side. A guard `D(x, h) && φ` of a case of the
+  pattern, whose first conjunct is a higher-order pattern, binds `D` to the
+  whole guard of the expression; the conjuncts of `φ` are treated like side
+  conditions, against the conjuncts of that guard instead of the facts, which
+  may bind further variables, e.g. the bound `b` of `F(x, h) <= b`, and the
+  closed ones must follow from it (`Rewrite.guard`, `Rewrite.conditions`),
+  e.g. the increase `x < F(x, h)` of a monotonic trace; so do the conjuncts of
+  other guards that do not match the guard of the expression as a whole. The updates and bodies of combinators
+  are matched in the context of the simplifier there (`Simplify.combinator`),
+  i.e. assuming the invariants over their dependencies and the iterations of
+  loops, and for the right-hand side of `X == trace(...)` also the invariants
+  over `⌊X⌋` (`self` of `Rewrite.matches`), e.g. the test of a loop.
+  A function definition with `:rw` whose body is a match on a parameter
+  gives one rule per case, the pattern in place of the parameter, and
+  the other parameters that clash with pattern variables renamed apart
+  (`Rule.from(state, fun, body)`). Overlapping patterns are not handled: a later
+  case's rule also fires on arguments that an earlier case matches.
+
+### Facts that the goal does not mention
+
+`Simplify` and `Rewrite` reason backwards from the goal; the forward lemmas (`{:fw}`, see above) are the
+exception. A subterm of the goal
+is rewritten when the left-hand side of a rule matches it and the rule's
+condition holds in the context. The context is consulted for decisions
+(`Context.implied`, `Context.denied`, `Rewrite.holds`), and since side
+conditions bind variables, also for matching (`Rewrite.conditions`). New facts
+are not derived from it.
+
+Some goals hold only because of facts that the goal does not mention, e.g. in
+the not-found exit of binary search (see
+[prove.md](prove.md)), the bounds of the probes, or
+`lastlt < k` and `k < lastgt` for the index `k` of `x` in a sorted array,
+whose lemmas never fire, since their conclusions are not subterms of the goal.
+Variables of a side condition that do not occur in the left-hand side are
+therefore bound by matching the condition against the facts, e.g. `k` of
+`a[k] == x`, and the lemma states its conclusion in the shape of the goal
+(`Rewrite.conditions`, see `Rule` above). Derived facts are not combined: the
+lemma must state `lastlt + 1 < lastgt`, not the two facts `lastlt < k` and
+`k < lastgt`.
+
+Otherwise, cuts state such facts in the program,
+`assert φ; assume φ;` after a loop, where the assertion is a goal whose atoms
+the rewrite rules apply to (see
+[bsearch.dfy](../examples/dafny/teq/bsearch.dfy)).
+The SV-COMP examples instead abstract an iteration constraint by an atom,
+which a second lemma takes as its side condition (see
+[summary.md](../benchmarks/sv-comp/dafny/summary.md)); the lemma database does
+the same, since an iteration constraint as a side condition recurs through the
+facts it is matched against (see [teq.md](teq.md)).
 
 ## Debugging
 
@@ -189,7 +403,7 @@ went through the definition of a variable, the rules on traces whose left-hand s
 the expression that no case of the pattern covers and the guard that fails; `-debug conditions` the closed side
 conditions that fail, with the `self` of the context and the facts on the condition's variables; `-debug forward`
 the instances of forward lemmas with their terms; `-debug simplify`
-the steps of the traversal; `-rules` reports the rules applied per assertion as with `-simplify`, and the instances of forward lemmas assumed. The compound
+the steps of the traversal; `-rules` reports the rules applied per assertion, and the instances of forward lemmas assumed. The compound
 expressions of the core cache their hash (`Expr.hashCode`), since the memos and classes hash large terms at every
 lookup.
 
@@ -207,7 +421,7 @@ the database `teq.dfy` alone: single loops, the swap of two arrays, four nested 
 transpose with one summary lemma, and the syntax example, 1.5 to 5 s. The binary search over a sorted array, with the
 array, its bound and the key as parameters, closes by a lemma over the whole cycle, a named bisection with a probe
 whose cuts are the partition points (now `algorithms/bsearch.dfy`, 8 s; a variant with the probe
-`lo + (hi - lo) / 2`), and so does the lower bound of the algorithms (`lower_bound.dfy`, open under `-simplify`,
+`lo + (hi - lo) / 2`), and so does the lower bound of the algorithms (`lower_bound.dfy`, open under the former simplifier,
 8 s); the per-component route was a regression test (`bsearch_sorted.dfy` in two layers, 45 s; `bsearch.dfy`
 with constant partition points, 8 s) until Oct 23, 2026, when only the bisection was kept, among the algorithms,
 which run on demand (`CUVEE_ALGORITHMS`). Open: the bisection and the partition points of sorted arrays as a module of

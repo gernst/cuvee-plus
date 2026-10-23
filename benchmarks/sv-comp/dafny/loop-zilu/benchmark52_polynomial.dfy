@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-zilu/benchmark52_polynomial.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-zilu/benchmark52_polynomial.dfy
 // SV-COMP loop-zilu/benchmark52_polynomial.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: i counts up while i * i < 100, and i == 10 is checked
 //

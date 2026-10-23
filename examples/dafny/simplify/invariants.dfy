@@ -1,4 +1,4 @@
-// ./Cuvee.sh -simplify examples/dafny/simplify/invariants.dfy
+// ./Cuvee.sh -prove examples/dafny/simplify/invariants.dfy
 // the invariants of the context over some of the dependencies hold in the bodies and updates, not for others,
 // and the invariants that mention the combinator itself hold in its update: in X == trace(...), ⌊X⌋ is the accumulator,
 // and in Y == maps(...), Y is the update, e.g. the test of a loop lo < hi in the trace of lo, not without the equation

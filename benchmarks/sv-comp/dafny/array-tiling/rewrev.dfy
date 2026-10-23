@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/rewrev.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/rewrev.dfy
 // SV-COMP array-tiling/rewrev.yml (expected: safe), translated from the C program by hand:
 // backwards from i = S - 2 to -1, a[i] = 7 (if i >= 0) and then a[i + 1] = 3, and each element is checked to be
 // at least 2

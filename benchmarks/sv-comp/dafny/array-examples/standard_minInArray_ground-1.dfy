@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_minInArray_ground-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_minInArray_ground-1.dfy
 // SV-COMP array-examples/standard_minInArray_ground-1.yml (expected: unsafe), translated from the C program by hand:
 // the minimum of 0 and the elements is computed, and each element is checked to be above it, which fails for
 // the minimal element

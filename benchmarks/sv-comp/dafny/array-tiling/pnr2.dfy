@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/pnr2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/pnr2.dfy
 // SV-COMP array-tiling/pnr2.yml (expected: safe), translated from the C program by hand:
 // values read from a port are stored at 2 i - 2 and 2 i - 1, replaced by 10 if they are 0, and each element is
 // checked to be nonzero

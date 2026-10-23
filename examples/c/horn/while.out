@@ -68,7 +68,7 @@
 
 (declare-fun main_assign_8 (Int Bool Int) Bool)
 
-(assert (=> true main_pre))
+(assert main_pre)
 
 (assert
   (forall
@@ -88,10 +88,7 @@
   (forall
     ((result Int) (tmp$2 Bool) (i$3 Int) (tmp$4 Bool))
     (=>
-      (and
-        (main_inv_2 result tmp$2 i$3)
-        true
-        true)
+      (main_inv_2 result tmp$2 i$3)
       (main_spec_4 result tmp$4 i$3))))
 
 (assert
@@ -99,18 +96,18 @@
     ((result Int) (tmp$2 Bool) (i$3 Int))
     (=>
       (and
-        (main_spec_4 result tmp$2 i$3)
-        tmp$2)
-      (main_join_5 result tmp$2 i$3))))
+        (main_spec_4 result false i$3)
+        (not tmp$2))
+      (main_exit_3 result false i$3))))
 
 (assert
   (forall
     ((result Int) (tmp$2 Bool) (i$3 Int))
     (=>
       (and
-        (main_spec_4 result tmp$2 i$3)
-        (not tmp$2))
-      (main_exit_3 result tmp$2 i$3))))
+        (main_spec_4 result true i$3)
+        tmp$2)
+      (main_join_5 result true i$3))))
 
 (assert
   (forall
@@ -130,15 +127,6 @@
   (forall
     ((result Int) (tmp$2 Bool) (i$3 Int))
     (=>
-      (and
-        (main_inv_2 result tmp$2 i$3)
-        (not true))
-      (main_exit_3 result tmp$2 i$3))))
-
-(assert
-  (forall
-    ((result Int) (tmp$2 Bool) (i$3 Int))
-    (=>
       (main_exit_3 result tmp$2 i$3)
       (<= 0 i$3))))
 
@@ -146,9 +134,7 @@
   (forall
     ((result Int) (tmp$2 Bool) (i$3 Int))
     (=>
-      (and
-        (main_exit_3 result tmp$2 i$3)
-        true)
+      (main_exit_3 result tmp$2 i$3)
       (main_spec_7 result tmp$2 i$3))))
 
 (assert

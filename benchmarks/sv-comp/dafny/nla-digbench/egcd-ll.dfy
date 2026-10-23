@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/nla-digbench/egcd-ll.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/nla-digbench/egcd-ll.dfy
 // SV-COMP nla-digbench/egcd-ll.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: a program of the folder; checks 1 == p * s - r * q; a == y * r + x * p; b == x * q + y * s; a - b ==
 // 0; p*x + r*y - b == 0; q*r - p*s + 1 == 0; q*x + s*y - b == 0

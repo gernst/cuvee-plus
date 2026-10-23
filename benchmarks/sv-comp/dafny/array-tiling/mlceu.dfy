@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-tiling/mlceu.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-tiling/mlceu.dfy
 // SV-COMP array-tiling/mlceu.yml (expected: unsafe), translated from the C program by hand:
 // as mlceu2, but the sizes go up to 66060288 / 4, where i >> 16 > 250 holds for the last positions
 //

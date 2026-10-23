@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-acceleration/const_1-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-acceleration/const_1-1.dfy
 // SV-COMP loop-acceleration/const_1-1.yml (expected: safe), translated from the C program by
 // hand: x is set to 0 in each of 1024 iterations, and is 0 then
 //

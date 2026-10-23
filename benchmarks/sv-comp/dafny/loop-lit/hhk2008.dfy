@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loop-lit/hhk2008.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loop-lit/hhk2008.dfy
 // SV-COMP loop-lit/hhk2008.yml (expected: safe), translated from the C program by hand: res
 // counts up from a while cnt counts down from b to 0, then res is a + b
 //

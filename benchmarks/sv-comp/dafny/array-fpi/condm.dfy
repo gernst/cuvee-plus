@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/array-fpi/condm.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/array-fpi/condm.dfy
 // SV-COMP array-fpi/condm.yml (expected: safe), translated from the C program by hand: a of
 // arbitrary size N is set to 0, then 2 or 1 is added to each element, depending on the parity of N, which the
 // elements have then

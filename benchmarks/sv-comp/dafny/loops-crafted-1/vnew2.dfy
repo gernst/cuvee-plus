@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/loops-crafted-1/vnew2.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/loops-crafted-1/vnew2.dfy
 // SV-COMP loops-crafted-1/vnew2.yml (expected: safe), translated from the C program by ./Cuvee.sh
 // -print dfy: i, j, k step by 3 up to n, and are checked to be equal and not a multiple of SIZE + 2
 //

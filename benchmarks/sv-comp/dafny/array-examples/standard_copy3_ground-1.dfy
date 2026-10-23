@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/standard_copy3_ground-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/standard_copy3_ground-1.dfy
 // SV-COMP array-examples/standard_copy3_ground-1.yml (expected: safe), translated from the C program by hand:
 // an arbitrary array is copied three times, and the last copy is checked to agree with it
 //

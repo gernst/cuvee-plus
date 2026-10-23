@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-fpi/s2lif.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-fpi/s2lif.c
 // SV-COMP array-fpi/s2lif.yml, translated from benchmarks/sv-comp/dafny/array-fpi/s2lif.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

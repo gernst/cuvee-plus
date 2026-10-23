@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify -split -simplify benchmarks/sv-comp/dafny/loops-crafted-1/mono-crafted_11.dfy
+// ./Cuvee.sh -teq -prove -split -prove benchmarks/sv-comp/dafny/loops-crafted-1/mono-crafted_11.dfy
 // SV-COMP loops-crafted-1/mono-crafted_11.yml (expected: safe), translated from the C program by
 // ./Cuvee.sh -print dfy: a variant of mono-crafted_1 with other constants or assertions; checks (x%2)==0
 // note: the concrete loop bounds are symbolic: N = 20 * K for 100000000, and the threshold that is a fraction of

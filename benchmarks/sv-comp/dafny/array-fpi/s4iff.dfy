@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-fpi/s4iff.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-fpi/s4iff.dfy
 // SV-COMP array-fpi/s4iff.yml (expected: unsafe), translated from the C program by ./Cuvee.sh
 // -print dfy: a variant of s4if with other constants or assertions; checks sum[0] == 5*N
 

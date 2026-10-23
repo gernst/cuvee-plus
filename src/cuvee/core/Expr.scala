@@ -140,7 +140,7 @@ case class As(expr: Expr, typ: Type) extends Expr:
 
 // the (time-)derivative of `expr` with respect to the variables `xs`, i.e., the sum of ∂expr/∂x * x' for x in xs,
 // where the variables xs are ordinary free variables without primes, which are introduced only by computing
-// the derivative (see Simplify.diff); xs must be on Real;
+// the derivative (see prove.Simplify.diff); xs must be on Real;
 // the primed variables are free, too, since the derivative refers to them once it is computed
 case class Diff(xs: List[Var], expr: Expr) extends Expr:
   def params = xs.params ++ expr.params

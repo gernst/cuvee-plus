@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/dafny/array-examples/sorting_selectionsort_ground-1.dfy
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/dafny/array-examples/sorting_selectionsort_ground-1.dfy
 // SV-COMP array-examples/sorting_selectionsort_ground-1.yml (expected: unsafe), translated from
 // the C program by ./Cuvee.sh -print dfy: a variant of sorting_selectionsort_ground-2 with other constants or
 // assertions; checks a[x] <= a[y]; a[x] >= a[i]; a[x] <= a[y]

@@ -1,4 +1,4 @@
-// ./Cuvee.sh -teq -simplify benchmarks/sv-comp/c/array-multidimensional/min-2-u.c
+// ./Cuvee.sh -teq -prove benchmarks/sv-comp/c/array-multidimensional/min-2-u.c
 // SV-COMP array-multidimensional/min-2-u.yml, translated from benchmarks/sv-comp/dafny/array-multidimensional/min-2-u.dfy by ./Cuvee.sh -print c -known dfy,teq,rw
 
 // the SV-COMP harness

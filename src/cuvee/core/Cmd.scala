@@ -55,7 +55,7 @@ sealed trait Cmd:
       case VerifyCall(_, args)           => args.funs
       case _                             => Set()
 
-  // axioms, lemmas, and function definitions with the attribute :rw, which are rewrite rules of -simplify,
+  // axioms, lemmas, and function definitions with the attribute :rw, which are rewrite rules of -prove,
   // and function definitions with the attribute :fold, whose rules fold their body into a call (see Rules.from)
   def isRule: Boolean =
     this match
@@ -126,5 +126,5 @@ case class Assert(justify: Justify, params: List[Param], phi: Expr, attrs: Attrs
 
 // the request to fuse the composition `term` = g(f(x₁, ..., xₙ), y₁, ..., yₘ) of two defined functions into a single
 // recursive function, whose variables are distinct, and which is the right-hand side `rhs` once the stage Fuse
-// has processed it (see simplify.Fuse); Dafny only, written fuse term = ???
+// has processed it (see transform.Fuse); Dafny only, written fuse term = ???
 case class FuseFuns(term: Expr, rhs: Option[Expr], attrs: Attrs) extends Decl
