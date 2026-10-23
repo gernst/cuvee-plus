@@ -14,7 +14,7 @@ import cuvee.simplify.Simplify
 import cuvee.prove.Prove
 import cuvee.transform.Fallback
 import cuvee.transform.Flat
-import cuvee.transform.Impl
+import cuvee.transform.Implement
 import cuvee.transform.Monomorph
 import cuvee.transform.Split
 import cuvee.verify.Horn
@@ -139,8 +139,8 @@ case class Config(
     if input.source == cuvee.yml.Source then cuvee.yml.Source.lang(file).source else input.source
 
   // the modules that are injected into the input after its prelude (see Source.apply): the entries of the features
-  // that are known or whose modules are included, e.g. teq.dfy of -teq (see TEQ.modules) and impl.dfy (see
-  // Impl.modules), then the modules of -include <feature>:<name>, each once, such that the order of the options does
+  // that are known or whose modules are included, e.g. teq.dfy of -teq (see TEQ.modules) and implement.dfy (see
+  // Implement.modules), then the modules of -include <feature>:<name>, each once, such that the order of the options does
   // not matter, since the modules are written over the entries
   def injected: List[(Source, String)] =
     for Module(name, _, path) <- modules
@@ -208,7 +208,7 @@ object Config:
   // of -teq, and the implementations of -implement, which need nothing, since a translation keeps them
   val features = List(
     "teq" -> Feature(TEQ.modules, needsKnown = true),
-    "impl" -> Feature(Impl.modules, needsKnown = false)
+    "implement" -> Feature(Implement.modules, needsKnown = false)
   )
 
   val default =
@@ -229,9 +229,9 @@ object Config:
 
   // a transformation of the task, not a technique, hence a translation without it keeps the task as written
   val implement =
-    flag("-implement", "replace the functions that functions with {:implements pattern} implement by these, everywhere except in the implementations, e.g. those of -include impl:<name>, with the arguments at the positions of the pattern, an application of the implemented function to a permutation of the inputs"):
+    flag("-implement", "replace the functions that functions with {:implement pattern} implement by these, everywhere except in the implementations, e.g. those of -include implement:<name>, with the arguments at the positions of the pattern, an application of the implemented function to a permutation of the inputs"):
       case (config, rest) =>
-        val config_ = config.using(Impl)
+        val config_ = config.using(Implement)
         (config_, rest)
 
   val vcgen =
@@ -403,7 +403,7 @@ object Config:
   // of the lemma database, which the output hides like the rest of the database if the feature teq is known (-teq),
   // and prints otherwise, e.g. for -print lean of the database
   val include =
-    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; <feature>:<name> injects the module <name> of a feature: teq:<concept> of the lemma database of -teq (aggregation, arithmetic, arrays, counters, search, sorted, strides, unsigned), impl:<name> of the implementations of -implement"):
+    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; <feature>:<name> injects the module <name> of a feature: teq:<concept> of the lemma database of -teq (aggregation, arithmetic, arrays, counters, search, sorted, strides, unsigned), implement:<name> of the implementations of -implement"):
       // an unknown feature is reported with the input (see injected), a module that does not exist by the source
       // (see Source.resource)
       case (config, file :: rest) if file.contains(":") =>
@@ -480,7 +480,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.49.2"
+  val release = "0.49.3"
 
   def version() =
     println("Cuvée " + release)

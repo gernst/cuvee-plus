@@ -81,7 +81,7 @@ case class State(
         Block(locals, attrs_.checks.map(Spec.assert) ++ progs.map(annotated), rest)
       case _                        => prog.map(identity, annotated)
 
-  // a sort declared again with :implements, e.g. by a datatype for a sort of a prelude, takes the new attributes,
+  // a sort declared again with :implement, e.g. by a datatype for a sort of a prelude, takes the new attributes,
   // such that its definition carries them (see cmds.defineSort and cmds.declareDatatypes)
   def declare(name: Name, arity: Int, attrs: Attrs): State =
     if sorts.get(name) == Some(Con(name, arity)) && attrs.isImplementation

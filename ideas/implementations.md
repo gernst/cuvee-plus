@@ -7,23 +7,23 @@ rest is not.
 
 ## Modules
 
-- The implementations are Dafny files in `resources/cuvee/impl/<name>.dfy`, injected by
-  `-include impl:<name>` (or by `-include file.dfy` of the user). `-include <feature>:<name>` is generic over the
-  features of `Config.features`: `teq` (entry `teq.dfy`, needs `-teq` or `-known teq`) and `impl` (no entry, needs
+- The implementations are Dafny files in `resources/cuvee/implement/<name>.dfy`, injected by
+  `-include implement:<name>` (or by `-include file.dfy` of the user). `-include <feature>:<name>` is generic over the
+  features of `Config.features`: `teq` (entry `teq.dfy`, needs `-teq` or `-known teq`) and `implement` (no entry, needs
   nothing, since a translation keeps the modules).
-- As `teq.dfy` for the lemma database, a common entry module `resources/cuvee/impl.dfy` declares what all
+- As `teq.dfy` for the lemma database, a common entry module `resources/cuvee/implement.dfy` declares what all
   implementations share: the counter `var ticks: int` and the oracle `function nondet<a>(k: int): a`, which reads
-  nondeterministic values. It is the entry of the feature `impl` in `Config.features`, injected before the modules
-  of `-include impl:<name>`; unlike that of `teq`, it is injected whenever an `impl` module is, not only if the
+  nondeterministic values. It is the entry of the feature `implement` in `Config.features`, injected before the modules
+  of `-include implement:<name>`; unlike that of `teq`, it is injected whenever an `implement` module is, not only if the
   feature is known, since the feature needs nothing else (the condition of `Config.injected` becomes per feature).
 - Whether the output drops a module's declarations is decided by their attributes, as for the preludes.
 
 ## Sorts
 
-- A module defines a sort of the prelude by a datatype of the same name with `{:implements}`, e.g.
-  `datatype {:implements} set<a> = Nil | Cons(head: a, tail: set<a>)`. The type of the client's variables does
+- A module defines a sort of the prelude by a datatype of the same name with `{:implement}`, e.g.
+  `datatype {:implement} set<a> = Nil | Cons(head: a, tail: set<a>)`. The type of the client's variables does
   not change, only the meaning of the sort.
-- `State.declare` lets a sort that is declared again with `:implements` (`Attrs.isImplementation`) and the same
+- `State.declare` lets a sort that is declared again with `:implement` (`Attrs.isImplementation`) and the same
   arity take the new attributes, such that the definition carries them and is printed rather than dropped with the
   prelude; `State.define` accepts a definition of a declared sort already.
 - Equality on the sort becomes equality of representations, which coincides with that of the abstract values only
@@ -32,7 +32,7 @@ rest is not.
 
 ## Functions
 
-- An implementation is a function with `{:implements <pattern>}`, either a member of the datatype, whose
+- An implementation is a function with `{:implement <pattern>}`, either a member of the datatype, whose
   lowering puts `this` first, or a top-level function for the functions without a receiver (`{}`, `{x}`, `[]`).
 - The pattern is a function applied to a permutation of the inputs of the implementation, `this` included, written
   in the frontend's syntax and resolved in the scope of the inputs, e.g. `x in this` for `set.member(x, this)`,
@@ -42,7 +42,7 @@ rest is not.
 - **Deterministic implementations** have exactly the inputs of the pattern.
 - **Nondeterministic implementations** have one input more, which the pattern does not mention, of any type: a
   value that the transform supplies from an oracle and the implementation maps to its choice, e.g.
-  `function {:implements choose(this)} choose(c: int): a requires this.Cons? { nth(c % card()) }`. Several
+  `function {:implement choose(this)} choose(c: int): a requires this.Cons? { nth(c % card()) }`. Several
   choices take a tuple.
 - The correctness of an implementation for the abstract axioms of the function is a lemma over its definition,
   for all oracle values, e.g. `s.Cons? ==> s.member(s.choose(c))`, proved, not assumed.
@@ -62,10 +62,10 @@ the modules.
      `f(args, nondet(ticks + i))`, followed by `ticks := ticks + n`. Occurrences in branches that are not
      evaluated (right operands of `&&`, `||`, `==>`, branches of `ite`) use up their numbers, which is harmless:
      only uniqueness matters.
-   - `nondet<a>(k: int): a` of `impl.dfy` is uninterpreted and has no axioms, hence it cannot make the task
-     inconsistent; `ticks` of `impl.dfy` is a global integer that only increases. The transform looks both up
+   - `nondet<a>(k: int): a` of `implement.dfy` is uninterpreted and has no axioms, hence it cannot make the task
+     inconsistent; `ticks` of `implement.dfy` is a global integer that only increases. The transform looks both up
      by name and reports their absence, e.g. `-implement` with an implementation module included by path that
-     does not start from `impl.dfy`.
+     does not start from `implement.dfy`.
    - Loop guards: the guard is evaluated anew in each iteration, hence the loop increments `ticks` at the beginning
      of the body and after the loop, or becomes an `Iter` that breaks (see 3).
    - The procedures that evaluate such occurrences, directly or by calls (the call graph), get `ticks` in their
@@ -110,22 +110,22 @@ method sum(s0: set<int>) returns (r: int)
 }
 ```
 
-The module, `-include impl:listset`:
+The module, `-include implement:listset`:
 
 ```dafny
-datatype {:implements} set<a> = Nil | Cons(head: a, tail: set<a>)
+datatype {:implement} set<a> = Nil | Cons(head: a, tail: set<a>)
 {
-  function {:implements x in this} member(x: a): bool
+  function {:implement x in this} member(x: a): bool
   { this.Cons? && (head == x || tail.member(x)) }
 
-  function {:implements |this|} card(): int
+  function {:implement |this|} card(): int
   { if this.Nil? then 0 else 1 + tail.card() }
 
-  function {:implements this - t} minus(t: set<a>): set<a>
+  function {:implement this - t} minus(t: set<a>): set<a>
   { if this.Nil? then Nil else if t.member(head) then tail.minus(t) else Cons(head, tail.minus(t)) }
 
   // nondeterministic: c is supplied by the transform
-  function {:implements choose(this)} choose(c: int): a
+  function {:implement choose(this)} choose(c: int): a
     requires this.Cons?
   { nth(c % card()) }
 
@@ -134,8 +134,8 @@ datatype {:implements} set<a> = Nil | Cons(head: a, tail: set<a>)
   { if i == 0 then head else tail.nth(i - 1) }
 }
 
-function {:implements {}} empty<a>(): set<a> { Nil }
-function {:implements {x}} singleton<a>(x: a): set<a> { Cons(x, Nil) }
+function {:implement {}} empty<a>(): set<a> { Nil }
+function {:implement {x}} singleton<a>(x: a): set<a> { Cons(x, Nil) }
 
 lemma choose_impl<a>(s: set<a>, c: int) requires s.Cons? ensures s.member(s.choose(c))
 ```
@@ -143,7 +143,7 @@ lemma choose_impl<a>(s: set<a>, c: int) requires s.Cons? ensures s.member(s.choo
 The client after `-implement`, members in member syntax:
 
 ```dafny
-// var ticks: int and function nondet<a>(k: int): a from impl.dfy
+// var ticks: int and function nondet<a>(k: int): a from implement.dfy
 
 method sum(s0: set<int>) returns (r: int)
   modifies ticks
@@ -168,22 +168,22 @@ method sum(s0: set<int>) returns (r: int)
 
 Implemented:
 
-- 0.49.0: `-include <feature>:<name>` with `Config.features` (`teq`, `impl`), `Module`, `Feature`;
+- 0.49.0: `-include <feature>:<name>` with `Config.features` (`teq`, `implement`), `Module`, `Feature`;
   `Attrs.isImplementation` and `State.declare` for sorts defined by an implementation.
-- 0.49.1: Dafny annotations with values, `{:implements pattern}` on functions, resolved in the scope of the inputs
+- 0.49.1: Dafny annotations with values, `{:implement pattern}` on functions, resolved in the scope of the inputs
   and checked against the result type (`Parser.annotations`), printed back by the Dafny printer, dropped by the
-  SMT-LIB printer; annotations on `var`; the entry module `resources/cuvee/impl.dfy` with `ticks` and `nondet`
-  (`Impl.modules`), injected whenever an `impl` module is included or the feature `impl` is known
+  SMT-LIB printer; annotations on `var`; the entry module `resources/cuvee/implement.dfy` with `ticks` and `nondet`
+  (`Implement.modules`), injected whenever an `implement` module is included or the feature `implement` is known
   (`Config.injected`).
-- Not committed yet: `Impl` for deterministic implementations by functions, which replaces the first form by
+- Not committed yet: `Implement` for deterministic implementations by functions, which replaces the first form by
   procedures: the patterns are checked (an application to distinct inputs, all of them or all but one), the
-  applications replaced everywhere except in the implementations; the module `resources/cuvee/impl/listset.dfy`;
-  the examples `dafny/parsing/implements.dfy`, `invalid_annotation_value.dfy`, `invalid_implements_type.dfy`, and
+  applications replaced everywhere except in the implementations; the module `resources/cuvee/implement/listset.dfy`;
+  the examples `dafny/parsing/implement.dfy`, `invalid_annotation_value.dfy`, `invalid_implement_type.dfy`, and
   `dafny/transform/implement.dfy`.
 
 To do:
 
-- Nondeterministic implementations in `Impl`: the counter and the oracle, the preconditions, `:modifies` and the
+- Nondeterministic implementations in `Implement`: the counter and the oracle, the preconditions, `:modifies` and the
   monotonicity of `ticks` by the call graph.
 - SMT-LIB attributes resolved as expressions instead of kept as s-expressions, if modules in SMT-LIB are needed.
 

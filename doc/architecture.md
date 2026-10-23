@@ -33,7 +33,7 @@ transformation and any output.
 | `cuvee.verify` | `VCGen` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), `FourierMotzkin` (linear constraints over the rationals), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
 | `cuvee.prove` | the deduction engine of `-prove` ([prove.md](prove.md)): `Prove` (the transform), `Simplify` and `Rewrite` (the traversal and the matcher, copied from `cuvee.simplify` and adapted, independent of it), `Context` with `Classes` (congruence closure), `Linear` and `Simplex` (linear arithmetic over the rationals), `Views` (the per-variable projections of traces of several accumulators), and its own `Arith`, `Normalize`, `Rule`. |
-| `cuvee.transform` | `Impl` (implemented functions replaced by their implementations, `-implement`), `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
+| `cuvee.transform` | `Implement` (implemented functions replaced by their implementations, `-implement`), `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), and `Fallback` (trace equation systems in first-order logic). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
 ## A run
@@ -183,8 +183,8 @@ for every sink.
 - [`Prove`](../src/cuvee/prove/Prove.scala) is the second engine for the goals of trace equation systems
   (`-prove`), with congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole
   cycles and forward lemmas ([`Forward`](../src/cuvee/prove/Forward.scala)), see [prove.md](prove.md).
-- [`Impl`](../src/cuvee/transform/Impl.scala) replaces the functions that
-  functions with `{:implements pattern}` implement by these (`-implement`,
+- [`Implement`](../src/cuvee/transform/Implement.scala) replaces the functions that
+  functions with `{:implement pattern}` implement by these (`-implement`,
   [options.md](options.md)), everywhere except in the implementations, with
   the arguments at the positions of the pattern, an application of the
   implemented function to a permutation of the inputs; it is a transformation
@@ -314,11 +314,11 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      which is how `(x == y) == b` stays apart. Chains must not mix `<`/`<=`
      with `>`/`>=`.
    - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
-     included; only `{:implements pattern}` of a function has a value, the
+     included; only `{:implement pattern}` of a function has a value, the
      pattern of the function it implements (see
      [ideas/implementations.md](../ideas/implementations.md)), resolved in the
      scope of its inputs, `this` included, and checked against its result type
-     (`Parser.annotations`), e.g. `{:implements x in this}`; the Dafny printer
+     (`Parser.annotations`), e.g. `{:implement x in this}`; the Dafny printer
      writes it back, the SMT-LIB printer drops it.
    - Dafny's `include "path"` parses the file at `path`, relative to the
      including file, by a fresh parser that starts from the state after the
@@ -338,8 +338,8 @@ Each frontend follows the same structure (see `cuvee.dafny` and
    them as datatypes, and Dafny's `map` reaches the solvers as a declared
    sort. Declarations that coincide with existing ones leave the state
    unchanged (`State.unless`), except a sort declared again with
-   `:implements` (`Attrs.isImplementation`), e.g. by a datatype that
-   defines a sort of the prelude in a module of `-include impl:<name>`: it
+   `:implement` (`Attrs.isImplementation`), e.g. by a datatype that
+   defines a sort of the prelude in a module of `-include implement:<name>`: it
    takes the new attributes, such that its definition carries them and is
    printed rather than dropped with the prelude. Transforms see the
    prelude's declarations, e.g. `Monomorph` ignores those that are part of

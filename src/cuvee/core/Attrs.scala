@@ -65,7 +65,7 @@ case class Attrs(attrs: List[(String, Option[Any])]):
 
   // a declaration that implements one made before, e.g. a datatype for a sort of a prelude (see State.declare)
   def isImplementation =
-    contains("implements")
+    contains("implement")
 
   def modifies =
     values[List[Var]]("modifies").flatten.distinct
