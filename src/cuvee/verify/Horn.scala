@@ -29,7 +29,7 @@ object Horn extends Transform:
     // the entry point, where executions start (see Config.entry), which SV-LIB does not need, since its entries
     // are the verify-call commands; the others need one, it must be defined by the end of the input
     val start = config.entry
-    val svlib = config.program == cuvee.svlib.Source
+    val svlib = config.program.features.contains("svlib")
 
     if last == Some(Done) then
       for p <- start
