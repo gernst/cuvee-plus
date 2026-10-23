@@ -199,13 +199,19 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `teq:arithmetic`, whose `sum` and `pow` it uses: the folds `squares`,
   `cubes`, `fourths`, `fifths` of the sums of the powers of a counter from
   `i`, with their coefficients taken out and Faulhaber's formulas times their
-  denominators as forward facts in a variable `c == integer(n)`, and the
+  denominators as forward facts in a variable `c == integer(n)`, the halved
+  triangles that `sum_counter` leaves and the powers of `integer(n)` in `c` as
+  well, and the
   geometric sequences and the fold `series` of geometric series, Oct 23,
   2026). The forward facts of `series.dfy` are triggered at its folds, not at
   general terms such as a sum over a counter or the current value of a trace:
   such a trigger is tried at every matching term and slows down the tasks it
   does not apply to, even without an instance (zero_sum4: 857 instead of 193
-  rewrites, until the bound on the steps is exhausted). The rules of
+  rewrites, until the bound on the steps is exhausted). Each of its forward
+  lemmas is one equation, since the engine splits a forward lemma at its
+  conjunctions and triggers each conjunct on its own: a conjunct
+  `integer(n) * integer(n) == c * c` would be triggered at every
+  `integer(n)` (in-de61.1 and in-de62.1 of SV-LIB in 0.50.15). The rules of
   these files never applied on SV-COMP and specific to one task were left
   out; they were dropped with the legacy database on Oct 23, 2026.
   Retired on Oct 14, 2026 (and removed on Oct 23): the former `teq:nested`, the fragments of inner loops (the inner counter,

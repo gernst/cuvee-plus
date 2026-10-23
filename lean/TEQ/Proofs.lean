@@ -3567,7 +3567,39 @@ theorem squares_at : Stmt.squares_at := by
   intro c i n h
   subst h
   rw [integer_cast]
-  exact ⟨squares_closed n i, rfl, rfl⟩
+  exact squares_closed n i
+
+-- the links of the powers of integer(n) and c, with the fold
+theorem squares_square_at : Stmt.squares_square_at := by
+  intro c i n h
+  subst h
+  rw [integer_cast, squares_closed n i]
+
+theorem squares_cube_at : Stmt.squares_cube_at := by
+  intro c i n h
+  subst h
+  rw [integer_cast, squares_closed n i]
+
+-- the halved triangles in c: those in integer(n), exact
+theorem triangle_at : Stmt.triangle_at := by
+  intro c n h
+  subst h
+  exact triangle_even (integer n)
+
+theorem triangle_below_at : Stmt.triangle_below_at := by
+  intro c n h
+  subst h
+  exact triangle_even_below (integer n)
+
+theorem triangle_scaled_at : Stmt.triangle_scaled_at := by
+  intro a c n h
+  subst h
+  exact triangle_even_scaled a (integer n)
+
+theorem triangle_below_scaled_at : Stmt.triangle_below_scaled_at := by
+  intro a c n h
+  subst h
+  exact triangle_even_below_scaled a (integer n)
 
 theorem cubes_at : Stmt.cubes_at := by
   intro c i n h
