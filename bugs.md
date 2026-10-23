@@ -162,6 +162,10 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 - Dafny printed from C input (`-print dfy`) is not parsed back: the prelude
   declares a function named `const` with type parameters,
   `function {:c} {:smt2} const<a₀, a₁>(x₀: a₁): array<a₀, a₁>`.
+- `-test` crashes with `Error(not a type, Id(Nat))` instead of reporting a difference when a stale expected output
+  in SMT-LIB uses a sort of the lemma database (`Nat`, `Trace`), which the output omits and the comparison does not
+  declare when it parses the expected output back (`test.Expected`); seen on `examples/c/teq/unsigned_down.c` after
+  1318322c (Oct 23, 2026).
 
 ## Non-termination and timeouts
 
