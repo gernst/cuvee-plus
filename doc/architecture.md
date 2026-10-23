@@ -156,9 +156,9 @@ for every sink.
   clauses over uninterpreted predicates: `p_pre`, `p_post`, and one predicate
   per program point after assignments, calls, loop heads, and joins, followed
   by `check-sat` and `get-model` at the end of the input, whose model is
-  printed in the language of the input. A `verify-call` of SV-LIB adds its
-  entry clauses (`Horn.entry`) and is not passed on; there is at most one, at
-  the end, since the single `check-sat` covers all of them.
+  printed in the language of the output, like all reports. A `verify-call`
+  of SV-LIB adds its entry clauses (`Horn.entry`) and is not passed on; there
+  is at most one, at the end, since the single `check-sat` covers all of them.
   - Procedures with a body have predicates and no contract, which is an
     error, except for `requires` of `main` (in C, the globals are zero; their
     initializers are assignments at the beginning of `main`). The entry

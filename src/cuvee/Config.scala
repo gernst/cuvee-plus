@@ -79,7 +79,7 @@ object Lang:
   val yml =
     Lang("SV-COMP task definition", cuvee.yml.Source, cuvee.c.Printer, Set("c"), false)
 
-// input, output: the languages of the input file, whose printer prints the reports, and of the output,
+// input, output: the languages of the input file and of the output, whose printer also prints the reports,
 // the output does not contain the declarations of its features (see Sink.known and Cuvee.pipe)
 case class Config(
     file: Option[String],
@@ -181,10 +181,10 @@ case class Config(
       case Some(solver) => Solver.sink(solver(timeout), init, stderr)
       case None         => sink(this, if quiet then Printer.silent else output.printer, init)
 
-  // the reports of the run in the language of the input, also to the witness with -witness,
+  // the reports of the run in the language of the output (-print), also to the witness with -witness,
   // and with -chc the answer to the check-sat of the clauses as the answer to the program (see Horn.report)
   def reporter: Report =
-    val report_ = report(this, input.printer)
+    val report_ = report(this, output.printer)
     val witnessed = witness.map(cuvee.yml.Witness.report(this, _, report_)).getOrElse(report_)
     if transforms.contains(Horn) then Horn.report(witnessed) else witnessed
 
@@ -379,7 +379,7 @@ object Config:
     flag(
       "-print",
       "<lang>",
-      "print the output in <lang> instead of the language of the input: smt2, svlib, dfy, bpl, c (named by their file extensions), lean (the logic only), or scala (the internal representation)"
+      "print the output and the reports in <lang> instead of the language of the input: smt2, svlib, dfy, bpl, c (named by their file extensions), lean (the logic only), or scala (the internal representation)"
     ):
       case (config, name :: rest) if langs.contains(name) =>
         val config_ = config.printing(langs(name))
@@ -486,7 +486,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.50.11"
+  val release = "0.50.12"
 
   def version() =
     println("Cuvée " + release)
