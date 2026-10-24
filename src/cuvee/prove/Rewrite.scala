@@ -13,18 +13,19 @@ import util.intersects
 // matching is syntactic modulo
 //   the instantiation of the type parameters of the rules,
 //   associativity and commutativity of + and - on Int and Real, and their neutral element 0,
+//   associativity and commutativity of * on Int and Real, and its neutral element 1, where products do not match
+//   position by position (see matchesFactors),
 //   comparisons as differences, and the symmetry of equations,
 //   the binding structure of the combinators trace, map, and all, and the cases of their updates,
 //   higher-order patterns, which match by abstraction;
 // variables that occur only in the condition of a rule or in the guard of a case are instantiated by matching
 // the conjuncts against the facts of the context or the conjuncts of the guard of the expression (see conditions);
 // a match is a substitution of the type parameters and variables of the rule
-// copied from the former simplify.Rewrite (Oct 13, 2026) and adapted (see doc/prove.md): an expression that a pattern
-// does not match is matched by the other members of its class (see Context.defs) and, for the markers of state
-// traces, by its view (see Views); a closed side condition is looked up among the facts modulo the classes before it
-// is decided
+// an expression that a pattern does not match is matched by the other members of its class (see Context.defs) and, for
+// the markers of state traces, by its view (see Views); a closed side condition is looked up among the facts modulo the
+// classes before it is decided
 object Rewrite:
-  // `self` is the variable that `expr` defines, if it is the right-hand side of an equation (see matches)
+  // `self` is the variable that `expr` defines, if it is the right-hand side of an equation (see matchesExpr)
   def rewrite(config: Config, state: State, ctx: Context, expr: Expr, self: Option[Var] = None): Expr =
     // note, do not recurse here, the main traversal is in simplify
     expr match
@@ -63,7 +64,7 @@ object Rewrite:
     val ctx_ = ctx.copy(active = rule :: ctx.active)
     val results =
       for
-        subst <- matches(config, state, ctx_, rule.params, rule.vars, Set(), rule.lhs, self, Map(), Set(), expr, Subst.empty)
+        subst <- matchesExpr(config, state, ctx_, rule.params, rule.vars, Set(), rule.lhs, self, Map(), Set(), expr, Subst.empty)
         subst_ <- conditions(
           config,
           state,
@@ -89,8 +90,9 @@ object Rewrite:
           require(unbound.subsetOf(rule.lhs.free))
         subst__ = unbound.foldLeft(subst_)((subst, x) => subst + (x -> Unspecified(subst(x.typ))))
         rhs = subst__(rule.rhs)
-        // steps that do not change the expression are not applications, e.g. x + 0 = x for x without +
-        if rhs != expr
+        // steps that do not change the expression are not applications, e.g. x + 0 = x for x without +; nor are those
+        // whose result contains the expression modulo the classes, which would lead back to it (see Classes.within)
+        if rhs != expr && !ctx.classes.within(expr, rhs)
       yield rhs
 
     results match
@@ -104,14 +106,12 @@ object Rewrite:
         ctx.applied := applied
         expr
 
-      case rhs :: rest =>
+      // of several results, e.g. of a sum that matches in several ways (see matchesSummands), the first one is taken
+      case rhs :: _ =>
         // raised directly, not by Error.report, which would also wrap a stack overflow at this point; without the rule,
         // since whether the bound on the steps or the stack is exhausted first depends on the size of the stack
         if ctx.steps.value <= 0
         then Error.raise("rewriting does not terminate")
-
-        // Error.report("rewriting with multiple result"):
-        //    require(rest.isEmpty)
 
         ctx.steps := ctx.steps.value - 1
         for name <- rule.name
@@ -142,7 +142,7 @@ object Rewrite:
 
   // x is instantiated by arg, whose type instantiates that of x
   def bind(state: State, params: Set[Param], x: Var, arg: Expr, subst: Subst[Type, Expr]): List[Subst[Type, Expr]] =
-    for subst_ <- matches(state, params, x.typ, arg.typ, subst)
+    for subst_ <- matchesType(state, params, x.typ, arg.typ, subst)
     yield subst_ + (x -> arg)
 
   // all matches of the pattern `pat` to `arg` that extend `subst`, while matching below the combinators trace, map, and all:
@@ -151,7 +151,7 @@ object Rewrite:
   // which are instantiated like those, `bound` relates the other bound variables of the pattern to those of the expression,
   // which are among `avoid`, and which the variables of the rule must not capture;
   // `self` is the variable that the expression defines, X in X == trace(...) or Y == maps(...), if it is a combinator
-  def matches(
+  def matchesExpr(
       config: Config,
       state: State,
       ctx: Context,
@@ -165,7 +165,7 @@ object Rewrite:
       arg: Expr,
       subst: Subst[Type, Expr]
   ): List[Subst[Type, Expr]] =
-    val direct = matches_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
+    val direct = matchesExpr_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
 
     // a variable that the pattern does not match as it is, is matched like the other members of its class, its
     // definitions (see Context.defs), e.g. a variable K with K == counter(0, 1, n) by the counter; and a marker of a
@@ -179,7 +179,7 @@ object Rewrite:
       val defs =
         for
           e <- ctx.defs(arg)
-          subst_ <- matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
+          subst_ <- matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
         yield
           Debug.step("match", Simplify.show(config.output.printer, arg) + " by its definition", Simplify.show(config.output.printer, e))
           subst_
@@ -195,17 +195,17 @@ object Rewrite:
         val structural =
           for
             e <- Views.structural(ctx, pat, arg).toList
-            subst_ <- matches_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
+            subst_ <- matchesExpr_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
           yield subst_
 
         if structural.nonEmpty
         then structural
         else
           Views.projected(config, state, ctx, arg) match
-            case Some(e) => matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
+            case Some(e) => matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
             case None    => unmatched
 
-  def matches_(
+  def matchesExpr_(
       config: Config,
       state: State,
       ctx: Context,
@@ -235,7 +235,7 @@ object Rewrite:
 
       // annotations e as T of the expression are skipped, the left-hand sides of rules have none (see Rules.from)
       case (_, As(inner, _)) =>
-        matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, inner, subst)
+        matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, inner, subst)
 
       // higher-order patterns F(t₁, ..., tₙ) of a variable of function type, of the rule or of a dependency (locals),
       // applied to distinct bound variables of the pattern (Miller's fragment), or to terms whose variables are instantiated
@@ -259,13 +259,13 @@ object Rewrite:
       // guarded cases, where a result that is not Eps is a single case whose guard is true,
       // e.g. the update y + 1 of a pattern covers both cases if b then y + 1, if !b then y + 1
       case (Eps(updates), Eps(updates_)) =>
-        matches(config, state, ctx, params, vars, locals, updates, self, bound, avoid, updates_, subst)
+        matchesCases(config, state, ctx, params, vars, locals, updates, self, bound, avoid, updates_, subst)
 
       case (Eps(updates), _) =>
-        matches(config, state, ctx, params, vars, locals, updates, self, bound, avoid, List(Upd(True, arg)), subst)
+        matchesCases(config, state, ctx, params, vars, locals, updates, self, bound, avoid, List(Upd(True, arg)), subst)
 
       case (_, Eps(updates_)) =>
-        matches(config, state, ctx, params, vars, locals, List(Upd(True, pat)), self, bound, avoid, updates_, subst)
+        matchesCases(config, state, ctx, params, vars, locals, List(Upd(True, pat)), self, bound, avoid, updates_, subst)
 
       // comparisons modulo moving summands between the sides, and < and <= on Int;
       // the constant of the pattern is moved to the expression, whose constants are folded,
@@ -276,7 +276,7 @@ object Rewrite:
           (ring_, strict_, poly_) <- comparison(arg)
           if ring == ring_ && strict == strict_
           const = Poly.const(poly.const)
-          subst_ <- matches(
+          subst_ <- matchesSummands(
             config,
             state,
             ctx,
@@ -301,23 +301,40 @@ object Rewrite:
         if arg.typ == ring.typ
         then
           val args = summands(ring, arg)
-          matches(config, state, ctx, params, vars, locals, ring, summands(ring, pat), self, bound, avoid, args, arg.isSum && args.length > 1, subst)
+          matchesSummands(config, state, ctx, params, vars, locals, ring, summands(ring, pat), self, bound, avoid, args, arg.isSum && args.length > 1, subst)
         else unmatched
+
+      // products position by position as other applications, and only if that fails modulo associativity,
+      // commutativity, and the neutral element 1, e.g. the pattern a * k * k matches k * k with a = 1 (see
+      // matchesFactors), such that the matches of products that match as they are stay the same
+      case (App(fun, _, _, args), _) if (fun == Fun.int.times || fun == Fun.real.times) && arg.typ == pat.typ =>
+        val Some(ring) = Ring(pat.typ): @unchecked
+        val direct =
+          arg match
+            case App(`fun`, _, _, args_) if args_.length == args.length =>
+              matchesExprs(config, state, ctx, params, vars, locals, args, self, bound, avoid, args_, subst).distinct
+            case _ =>
+              unmatched
+        if direct.nonEmpty
+        then direct
+        else
+          val args_ = factors(arg)
+          matchesFactors(config, state, ctx, params, vars, locals, ring, factors(pat), self, bound, avoid, args_, args_.length > 1, subst)
 
       // equations modulo symmetry, e.g. the pattern a[k] == x matches x == a[i]
       case (App(fun, inst, typ, args), App(fun_, inst_, typ_, args_)) if fun == fun_ && args.length == args_.length =>
         val orders = if fun == Fun.eq_ then List(args_, args_.reverse) else List(args_)
         val substs =
           for
-            subst1 <- matches(state, params, inst, inst_, subst)
-            subst2 <- matches(state, params, typ, typ_, subst1)
+            subst1 <- matchesTypes(state, params, inst, inst_, subst)
+            subst2 <- matchesType(state, params, typ, typ_, subst1)
             order <- orders
-            subst3 <- matches(config, state, ctx, params, vars, locals, args, self, bound, avoid, order, subst2)
+            subst3 <- matchesExprs(config, state, ctx, params, vars, locals, args, self, bound, avoid, order, subst2)
           yield subst3
         substs.distinct
 
       case (Lit(value, typ), Lit(value_, typ_)) if value == value_ =>
-        matches(state, params, typ, typ_, subst)
+        matchesType(state, params, typ, typ_, subst)
 
       // the updates and bodies are matched in the context that the simplifier has there (see Simplify.combinator),
       // which is determined by the expression, e.g. guards follow from the test of the loop
@@ -328,10 +345,10 @@ object Rewrite:
           case pairs => pairs)
         lazy val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)).copy(self = self_), deps_, ys_)
         for
-          subst1 <- matches(config, state, ctx, params, vars, locals, init, self, bound, avoid, init_, subst)
+          subst1 <- matchesExpr(config, state, ctx, params, vars, locals, init, self, bound, avoid, init_, subst)
           subst2 <- combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(acc -> acc_), subst1):
             (locals_, bound_, avoid_, subst) =>
-              matches(config, state, inner, params, vars, locals_, update, None, bound_, avoid_, update_, subst)
+              matchesExpr(config, state, inner, params, vars, locals_, update, None, bound_, avoid_, update_, subst)
         yield subst2
 
       // a trace of several accumulators, component by component (a lemma over a whole cycle, package O of the plan):
@@ -343,10 +360,10 @@ object Rewrite:
         val self_ = self.map(x => Views.selfOf(x, accs_)).getOrElse(ctx.self)
         lazy val inner = Simplify.combinator(config, state, ctx.bind(accs_).copy(self = self_), deps_, ys_)
         for
-          subst1 <- matches(config, state, ctx, params, vars, locals, inits, self, bound, avoid, inits_, subst)
+          subst1 <- matchesExprs(config, state, ctx, params, vars, locals, inits, self, bound, avoid, inits_, subst)
           subst2 <- combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, (accs zip accs_).toMap, subst1):
             (locals_, bound_, avoid_, subst) =>
-              matches(config, state, inner, params, vars, locals_, results, None, bound_, avoid_, results_, subst)
+              matchesExprs(config, state, inner, params, vars, locals_, results, None, bound_, avoid_, results_, subst)
         yield subst2
 
       // the reads of a component of a trace of several accumulators by the same component of a pattern, the trace
@@ -361,20 +378,20 @@ object Rewrite:
       // lambdas of the same arity, their bodies with the bound variables related, e.g. the guard m => a[m] < x of a
       // bisection against the pattern m => ar[m] < y of the lemma that names its cut
       case (Lam(xs, body, _), Lam(xs_, body_, _)) if xs.length == xs_.length && xs.types == xs_.types =>
-        matches(config, state, ctx, params, vars, locals, body, self, bound ++ (xs zip xs_), avoid ++ xs_, body_, subst)
+        matchesExpr(config, state, ctx, params, vars, locals, body, self, bound ++ (xs zip xs_), avoid ++ xs_, body_, subst)
 
       case (Maps(deps, ys, update), Maps(deps_, ys_, update_)) =>
         val self_ = self.map(y => (y, update_)).toList
         lazy val inner = Simplify.combinator(config, state, ctx.copy(self = self_), deps_, ys_)
         combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(), subst):
           (locals_, bound_, avoid_, subst) =>
-            matches(config, state, inner, params, vars, locals_, update, None, bound_, avoid_, update_, subst)
+            matchesExpr(config, state, inner, params, vars, locals_, update, None, bound_, avoid_, update_, subst)
 
       case (Invs(deps, ys, body), Invs(deps_, ys_, body_)) =>
         lazy val inner = Simplify.combinator(config, state, ctx, deps_, ys_)
         combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(), subst):
           (locals_, bound_, avoid_, subst) =>
-            matches(config, state, inner, params, vars, locals_, body, None, bound_, avoid_, body_, subst)
+            matchesExpr(config, state, inner, params, vars, locals_, body, None, bound_, avoid_, body_, subst)
 
       case _ if pat == arg =>
         List(subst)
@@ -382,7 +399,7 @@ object Rewrite:
       case _ =>
         unmatched
 
-  def matches(
+  def matchesExprs(
       config: Config,
       state: State,
       ctx: Context,
@@ -402,8 +419,8 @@ object Rewrite:
 
       case (pat :: pats_, arg :: args_) =>
         for
-          subst1 <- matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
-          subst2 <- matches(config, state, ctx, params, vars, locals, pats_, self, bound, avoid, args_, subst1)
+          subst1 <- matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
+          subst2 <- matchesExprs(config, state, ctx, params, vars, locals, pats_, self, bound, avoid, args_, subst1)
         yield subst2
 
       case _ =>
@@ -417,8 +434,7 @@ object Rewrite:
   // otherwise e.g. x + 1 would match 1 with x = 0, which rewrites literals inside of sums first,
   // and only if there are fewer summands than variables left, otherwise e.g. v + w would match k + 1
   // also with v = 0 and w = k + 1
-  @scala.annotation.targetName("matchesSums")
-  def matches(
+  def matchesSummands(
       config: Config,
       state: State,
       ctx: Context,
@@ -462,7 +478,7 @@ object Rewrite:
           for
             ((sign_, arg), i) <- args.zipWithIndex
             if sign == sign_
-            subst_ <- matches(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
+            subst_ <- matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
             result <- fix(rest, args.patch(i, unmatched, 1), subst_)
           yield result
 
@@ -475,7 +491,7 @@ object Rewrite:
         // e.g. y + 1 with x = -y - 1, whose result matches again with x = y + 1
         case List((sign, x)) if (args.nonEmpty || sum) && (sign || args.forall(!_._1)) =>
           val rest = if sign then args else negate(args)
-          matches(config, state, ctx, params, vars, locals, x, self, bound, avoid, Rewrite.sum(ring, rest), subst)
+          matchesExpr(config, state, ctx, params, vars, locals, x, self, bound, avoid, Rewrite.sum(ring, rest), subst)
 
         case List(_) =>
           unmatched
@@ -485,7 +501,7 @@ object Rewrite:
             for
               ((sign_, arg), i) <- args.zipWithIndex
               value = if sign == sign_ then arg else ring.uminus(arg)
-              subst_ <- matches(config, state, ctx, params, vars, locals, x, self, bound, avoid, value, subst)
+              subst_ <- matchesExpr(config, state, ctx, params, vars, locals, x, self, bound, avoid, value, subst)
               result <- distribute(flex_, args.patch(i, Nil, 1), subst_)
             yield result
 
@@ -493,7 +509,7 @@ object Rewrite:
             for
               subst_ <-
                 if sum && args.length < flex.length
-                then matches(config, state, ctx, params, vars, locals, x, self, bound, avoid, ring.zero, subst)
+                then matchesExpr(config, state, ctx, params, vars, locals, x, self, bound, avoid, ring.zero, subst)
                 else Nil
               result <- distribute(flex_, args, subst_)
             yield result
@@ -514,6 +530,85 @@ object Rewrite:
         (rest, subst_) <- fix(fixed_, args, subst)
         result <- distribute(flex_, rest, subst_)
       yield result
+
+  // products modulo associativity, commutativity, and the neutral element 1, after the sums (see matchesSummands):
+  // the factors that are not variables of the pattern are matched to some factor first, and the remaining factors are
+  // distributed over the variables of the pattern, where all but the last variable take a single factor or none, and
+  // the last one takes the rest; variables take the empty product 1 only if the expression is a product itself,
+  // otherwise e.g. a * k would match k with a = 1, and a * x every term, and only if there are fewer factors than
+  // variables left
+  def matchesFactors(
+      config: Config,
+      state: State,
+      ctx: Context,
+      params: Set[Param],
+      vars: Set[Var],
+      locals: Set[Var],
+      ring: Ring,
+      pats: List[Expr],
+      self: Option[Var],
+      bound: Map[Var, Var],
+      avoid: Set[Var],
+      args: List[Expr],
+      product: Boolean,
+      subst: Subst[Type, Expr]
+  ): List[Subst[Type, Expr]] =
+    def flexible(factor: Expr) =
+      factor match
+        case x: Var => mayBind(vars, locals, x) && !subst.vars.contains(x)
+        case _      => false
+
+    val (flex, fixed) = pats.partition(flexible)
+
+    // equal factors of the expression are tried once at each step, e.g. k * k * k against k * k * k
+    def fix(fixed: List[Expr], args: List[Expr], subst: Subst[Type, Expr]): List[(List[Expr], Subst[Type, Expr])] =
+      fixed match
+        case Nil =>
+          List((args, subst))
+
+        case pat :: rest =>
+          for
+            (arg, i) <- args.zipWithIndex.distinctBy(_._1)
+            subst_ <- matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
+            result <- fix(rest, args.patch(i, Nil, 1), subst_)
+          yield result
+
+    def distribute(flex: List[Expr], args: List[Expr], subst: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+      flex match
+        case Nil =>
+          if args.isEmpty then List(subst) else unmatched
+
+        case List(x) if args.nonEmpty || product =>
+          matchesExpr(config, state, ctx, params, vars, locals, x, self, bound, avoid, Rewrite.product(ring, args), subst)
+
+        case List(_) =>
+          unmatched
+
+        case x :: flex_ =>
+          val single =
+            for
+              (arg, i) <- args.zipWithIndex.distinctBy(_._1)
+              subst_ <- matchesExpr(config, state, ctx, params, vars, locals, x, self, bound, avoid, arg, subst)
+              result <- distribute(flex_, args.patch(i, Nil, 1), subst_)
+            yield result
+
+          val none =
+            for
+              subst_ <-
+                if product && args.length < flex.length
+                then matchesExpr(config, state, ctx, params, vars, locals, x, self, bound, avoid, Rewrite.product(ring, Nil), subst)
+                else Nil
+              result <- distribute(flex_, args, subst_)
+            yield result
+
+          single ++ none
+
+    val results =
+      for
+        (rest, subst_) <- fix(fixed, args, subst)
+        result <- distribute(flex, rest, subst_)
+      yield result
+    results.distinct
 
   // the dependencies of a combinator in the pattern are partitioned into variables of the rule and other expressions,
   // the latter are matched to a selection of the dependencies of the expression, which relates their bound variables,
@@ -563,7 +658,7 @@ object Rewrite:
           val fresh =
             for
               (((dep_, y_), i), k) <- available.zipWithIndex
-              subst1 <- matches(config, state, ctx, params, vars, locals, dep, self, bound, avoid, dep_, subst)
+              subst1 <- matchesExpr(config, state, ctx, params, vars, locals, dep, self, bound, avoid, dep_, subst)
               (selected, subst2) <- select(rest, available.patch(k, Nil, 1), (dep, y_) :: taken, subst1)
             yield (selected + (y -> y_), subst2)
 
@@ -611,11 +706,11 @@ object Rewrite:
   ): List[Subst[Type, Expr]] =
     val defined =
       Views.traceOf(ctx, s) match
-        case Some((x: Var, tr_)) => matches(config, state, ctx, params, vars, locals, tr, Some(x), bound, avoid, tr_, subst)
+        case Some((x: Var, tr_)) => matchesExpr(config, state, ctx, params, vars, locals, tr, Some(x), bound, avoid, tr_, subst)
         case _                   => Nil
     if defined.nonEmpty
     then defined
-    else matches(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
+    else matchesExpr(config, state, ctx, params, vars, locals, tr, self, bound, avoid, s, subst)
 
   // the applications of lambdas in `expr` reduced, e.g. the argument M(lo, hi) of a pattern G(M(lo, hi)) once M is
   // instantiated by (l, h) => (h + l) / 2, which is then found as (hi + lo) / 2 in the expression (see abstraction)
@@ -762,7 +857,7 @@ object Rewrite:
 
         for
           seq <- seqs
-          subst1 <- matches(config, state, ctx, params, vars, locals, z, self, bound, avoid, seq, subst)
+          subst1 <- matchesExpr(config, state, ctx, params, vars, locals, z, self, bound, avoid, seq, subst)
           subst2 <- instantiate(config, state, ctx, params, vars, locals, rest, self, bound, avoid, deps_, ys_, accs, subst1)
         yield subst2
 
@@ -772,7 +867,7 @@ object Rewrite:
   // each case of the update of the expression is covered by some case of the pattern, whose result matches
   // and whose guard matches or follows from its own (see guard)
   @scala.annotation.targetName("matchesUpdates")
-  def matches(
+  def matchesCases(
       config: Config,
       state: State,
       ctx: Context,
@@ -794,14 +889,14 @@ object Rewrite:
         val covered =
           for
             Upd(cond, rhs) <- updates
-            subst1 <- matches(config, state, ctx, params, vars, locals, rhs, self, bound, avoid, rhs_, subst)
+            subst1 <- matchesExpr(config, state, ctx, params, vars, locals, rhs, self, bound, avoid, rhs_, subst)
             subst2 <- guard(config, state, ctx, params, vars, locals, cond, self, bound, avoid, cond_, subst1)
           yield subst2
         if covered.isEmpty then
           Debug.info("match", "  no case of the pattern covers " + Simplify.show(config.output.printer, cond_) + " => " + Simplify.show(config.output.printer, rhs_))
         for
           subst2 <- covered
-          subst3 <- matches(config, state, ctx, params, vars, locals, updates, self, bound, avoid, rest, subst2)
+          subst3 <- matchesCases(config, state, ctx, params, vars, locals, updates, self, bound, avoid, rest, subst2)
         yield subst3
 
   // whether a dependency is the counter of the iterations of a loop, counter(0, 1, n),
@@ -834,13 +929,13 @@ object Rewrite:
     def decide(phi: Expr) =
       phi == True || holds(config, state, ctx, Imp(guard_, phi))
 
-    matches(config, state, ctx, params, vars, locals, guard, self, bound, avoid, guard_, subst) match
+    matchesExpr(config, state, ctx, params, vars, locals, guard, self, bound, avoid, guard_, subst) match
       case Nil =>
         val whole =
           guard match
             case And((first @ Apply(f: Var, _)) :: rest) if mayBind(vars, locals, f) =>
               for
-                subst1 <- matches(config, state, ctx, params, vars, locals, first, self, bound, avoid, guard_, subst)
+                subst1 <- matchesExpr(config, state, ctx, params, vars, locals, first, self, bound, avoid, guard_, subst)
                 subst2 <- conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, And.flatten(guard_), decide, subst1)
               yield subst2
 
@@ -901,7 +996,7 @@ object Rewrite:
         else
           for
             fact <- facts
-            subst1 <- matches(config, state, ctx, params, vars, locals, instance, self, bound, avoid, fact, subst)
+            subst1 <- matchesExpr(config, state, ctx, params, vars, locals, instance, self, bound, avoid, fact, subst)
             subst2 <- conditions(config, state, ctx, params, vars, locals, rest, self, bound, avoid, facts, decide, subst1)
           yield subst2
 
@@ -972,6 +1067,19 @@ object Rewrite:
     yield (!sign, expr)
 
   // the sum of the summands, the positive ones first, which is 0 if there are none
+  // the factors of a product, which is flattened, an expression that is no product is a single factor
+  def factors(expr: Expr): List[Expr] =
+    expr match
+      case App(fun, _, _, args) if fun == Fun.int.times || fun == Fun.real.times => args.flatMap(factors)
+      case _                                                                   => List(expr)
+
+  // the product of factors, 1 for none
+  def product(ring: Ring, factors: List[Expr]): Expr =
+    factors match
+      case Nil         => ring.lit(util.Rational(1))
+      case List(factor) => factor
+      case _           => ring.times(factors)
+
   def sum(ring: Ring, summands: List[(Boolean, Expr)]): Expr =
     val pos = summands.filter(_._1).map(_._2)
     val neg = summands.filterNot(_._1).map(_._2)
@@ -983,7 +1091,7 @@ object Rewrite:
 
   // the type parameters `params` of the rule in the pattern are instantiated consistently, a single match or none,
   // other type parameters are constants; defined sorts are expanded in both already (see Type.expand)
-  def matches(state: State, params: Set[Param], pat: Type, typ: Type, subst: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+  def matchesType(state: State, params: Set[Param], pat: Type, typ: Type, subst: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     (pat, typ) match
       case (p: Param, _) if params.contains(p) =>
         subst.params.get(p) match
@@ -991,7 +1099,7 @@ object Rewrite:
           case None    => List(subst + (p -> typ))
 
       case (Sort(con, args), Sort(con_, args_)) if con == con_ =>
-        matches(state, params, args, args_, subst)
+        matchesTypes(state, params, args, args_, subst)
 
       case _ if pat == typ =>
         List(subst)
@@ -1000,15 +1108,15 @@ object Rewrite:
         unmatched
 
   @scala.annotation.targetName("matchesTypes")
-  def matches(state: State, params: Set[Param], pats: List[Type], types_ : List[Type], subst: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+  def matchesTypes(state: State, params: Set[Param], pats: List[Type], types_ : List[Type], subst: Subst[Type, Expr]): List[Subst[Type, Expr]] =
     (pats, types_) match
       case (Nil, Nil) =>
         List(subst)
 
       case (pat :: pats_, typ :: types__) =>
         for
-          subst1 <- matches(state, params, pat, typ, subst)
-          subst2 <- matches(state, params, pats_, types__, subst1)
+          subst1 <- matchesType(state, params, pat, typ, subst)
+          subst2 <- matchesTypes(state, params, pats_, types__, subst1)
         yield subst2
 
       case _ =>

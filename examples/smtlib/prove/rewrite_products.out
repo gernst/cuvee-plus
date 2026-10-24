@@ -1,0 +1,14 @@
+(declare-fun g (Int) Int)
+
+(declare-const y Int)
+
+(declare-const z Int)
+
+(assert
+  (!
+    (forall ((a Int) (x Int)) (= (g (* a x x)) a))
+    :rw))
+
+(assert
+  (! (= (g z) 0) :lemma))
+

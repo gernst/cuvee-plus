@@ -122,11 +122,16 @@ indp5, revcpyswp2, sum_array-2-2 (timeouts at 60 s, lost against 0.42.1), the re
 
 ## Definitions and canonical variables (Oct 24, 2026)
 
-`Context.defs` excludes the definitions of a variable that contain a variable of its class (0.50.17), which fixes
-the loop of in-de62.2 (bugs.md, Fixed) but is a kludge: the matcher follows definitions of a class, the simplifier
-replaces variables by the canonical one of a class, and the two can undo each other's work in other forms as well,
-e.g. through a chain of two definitions. A more principled approach would match and rewrite modulo the classes in
-one place, e.g. definitions normalized by `Classes.normalize` before they are matched, or an orientation of the
-definitions that decreases with respect to an order on the terms (as in completion), such that a rewrite through a
-definition never leads back to its left-hand side. Open until a further loop of this kind shows up.
+0.50.17 excluded the definitions of a variable that contain a variable of its class (`Context.defs`), a kludge that
+fixed the loop of in-de62.2 (bugs.md, Fixed). 0.50.18 replaced it by two general measures (doc/prove.md): a rewrite
+whose result contains its own term modulo the classes, but not as it is, is not applied (`Classes.within`), and the
+root of a class is chosen by an order (`Classes.rank`: literal, variable by name, other), the canonical variable of
+`Simplify.var_`.
 
+Open, a third stage: the normal form of the arithmetic atoms in the simplifier, a registered atom of sort Int or Real
+replaced by the root of its class, with `Linear` built from the normalized facts and rebuilt after merges; then
+`c * c` and `integer(n) * integer(n)` coincide in general, and `Linear.integer` (0.50.16) is a special case. Only for
+arithmetic atoms: traces, lists, histories and binders stay as they are, since views, the selection of dependencies,
+`self` and `Canon` depend on their syntax. Matching keeps going through the members of a class (normalizing alone
+would miss matches through a definition that is not the root). About 100 lines and many changed expected outputs; to
+be prepared on a branch with a comparison on all task sets, once a further monomial gap or loop calls for it.

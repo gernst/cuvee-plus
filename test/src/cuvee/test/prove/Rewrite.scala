@@ -39,5 +39,5 @@ object Rewrite extends TestSuite:
       R(rules, app(f, a)) ==> app(f, a)
 
       // but only if there are fewer summands than variables, x + y matches a + b with x = a or x = b, not x = 0
-      val ms = cuvee.prove.Rewrite.matches(cuvee.Config.default, State.empty, Context.empty(State.empty), Set(), Set(x, y), Set(), Ints.plus(x, y), None, Map(), Set(), Ints.plus(a, b), Subst.empty)
+      val ms = cuvee.prove.Rewrite.matchesExpr(cuvee.Config.default, State.empty, Context.empty(State.empty), Set(), Set(x, y), Set(), Ints.plus(x, y), None, Map(), Set(), Ints.plus(a, b), Subst.empty)
       ms.map(_.vars(x)) ==> List(a, b)

@@ -48,9 +48,12 @@ case class Classes(
     classOf(expr).collectFirst { case lit: Lit => lit }
 
   // the canonical variable of the class of a variable, the smallest one by name, such that equal variables are
-  // replaced consistently (the replace of the chains of the simplifier)
+  // replaced consistently (the replace of the chains of the simplifier); the root of the class unless it has a
+  // literal (see rank)
   def canonical(x: Var): Var =
-    classOf(x).collect { case y: Var => y }.minByOption(y => (y.name.name, y.name.index.getOrElse(-1))).getOrElse(x)
+    find(x) match
+      case y: Var => y
+      case _      => classOf(x).collect { case y: Var => y }.minByOption(y => (y.name.name, y.name.index.getOrElse(-1))).getOrElse(x)
 
   lazy val inconsistent: Boolean =
     clashed || diseqs.exists((a, b) => equal(a, b))
@@ -86,6 +89,22 @@ case class Classes(
     val expr_ = expr.map(normalize)
     if parent.contains(expr_) then find(expr_) else expr_
 
+  // whether `outer` contains `inner` as a proper subterm modulo the classes, both normalized, but not as it is: a
+  // rewrite of `inner` to such an `outer` leads back to its own term through the classes, e.g. integer(n7) to
+  // -integer(n25) + ... with n25 == n7, which the simplifier turns into integer(n7) again (see Rewrite.applyActive); a
+  // result equal to the term modulo the classes, e.g. its literal, is no such cycle, and a result that contains the
+  // term as it is, e.g. of a rule f(x) == f(f(x)), is left to the bound on the steps, which reports the rule
+  def within(inner: Expr, outer: Expr): Boolean =
+    def occurs(inner: Expr, expr: Expr): Boolean =
+      expr == inner || {
+        var found = false
+        expr.map { arg => found = found || occurs(inner, arg); arg }
+        found
+      }
+    val inner_ = normalize(inner)
+    val outer_ = normalize(outer)
+    outer_ != inner_ && occurs(inner_, outer_) && !occurs(inner, outer)
+
   def congruent(a: Expr, b: Expr): Boolean =
     (a, b) match
       case (App(f, i, _, as), App(g, j, _, bs)) =>
@@ -112,8 +131,19 @@ case class Classes(
         case _ =>
           added
 
+  // the rank of a root: a literal before a variable before any other term, variables by name, such that the root of a
+  // class is the representative that the simplifier uses (see canonical and Simplify.var_) and normalize gives the
+  // same, rather than whichever root the order of the merges left (see merge)
+  def rank(expr: Expr): (Int, String, Int) =
+    expr match
+      case _: Lit => (0, "", 0)
+      case x: Var => (1, x.name.name, x.name.index.getOrElse(-1))
+      case _      => (2, "", 0)
+
   // the classes of a and b are merged, the smaller one into the larger, after which the applications over the
-  // smaller class may be congruent to those over the larger one, which are merged in turn
+  // smaller class may be congruent to those over the larger one, which are merged in turn; the root of the merged
+  // class is the one of lower rank, the larger class's if they tie, and the members keep the order of the larger
+  // class first, which is the order in which the definitions are tried (see Context.defs)
   def merge(a: Expr, b: Expr): Classes =
     val cl = add(a).add(b)
     val ra = cl.find(a)
@@ -122,13 +152,14 @@ case class Classes(
     then cl
     else
       val (small, big) = if cl.members(ra).length <= cl.members(rb).length then (ra, rb) else (rb, ra)
+      val (child, root) = if Ordering[(Int, String, Int)].lt(rank(small), rank(big)) then (big, small) else (small, big)
       val usesSmall = cl.uses.getOrElse(small, Nil)
       val usesBig = cl.uses.getOrElse(big, Nil)
       val members_ = cl.members(big) ++ cl.members(small)
       val merged = cl.copy(
-        parent = cl.parent + (small -> big),
-        members = cl.members - small + (big -> members_),
-        uses = cl.uses - small + (big -> (usesBig ++ usesSmall)),
+        parent = cl.parent + (child -> root),
+        members = cl.members - small - big + (root -> members_),
+        uses = cl.uses - small - big + (root -> (usesBig ++ usesSmall)),
         clashed = cl.clashed || clashes(members_)
       )
       val pairs = for u <- usesSmall; v <- usesBig if merged.congruent(u, v) yield (u, v)

@@ -31,7 +31,7 @@ object Views:
     Trace(List(inits(i)), deps ++ others.map((_, j) => History(s, j)), List(accs(i)), bound ++ others.map(_._1), List(results(i)))
 
   // the projection of a marker as a term, for a pattern of the same shape (current of a trace, the history of a trace),
-  // against which the matcher matches the pattern structurally without simplifying it (see Rewrite.matches); none for
+  // against which the matcher matches the pattern structurally without simplifying it (see Rewrite.matchesExpr); none for
   // patterns of other shapes, which need the normal form of the component (see projected)
   def structural(ctx: Context, pat: Expr, expr: Expr): Option[Expr] =
     (pat, expr) match
@@ -66,7 +66,7 @@ object Views:
         yes
 
   // the simplified view of a marker (see view), against which the matcher matches a pattern that does not match the
-  // marker itself (see Rewrite.matches), like the definition of a variable (see Context.defs); the projection of a
+  // marker itself (see Rewrite.matchesExpr), like the definition of a variable (see Context.defs); the projection of a
   // component is not simplified again inside the simplification of its own view (e.g. the two arrays of a swap read
   // each other): the inner read stays a marker, which the rules treat as an opaque value, e.g. one stored into the
   // other array; the views are memoized per command by the marker and the relevant facts of the context under the
