@@ -262,11 +262,14 @@ below and [doc/architecture.md](doc/architecture.md)). The runs included the mod
   limitations found.
 - [archive](archive): the README, `smoketest.sh`, and examples of the archive
   for the competition; `scripts/zenodo.py package` builds `dist/cuvee.zip`
-  from the last commit and runs its smoke test (`-teq`, `-teq -fallback -z3`,
-  and `-chc -z3` on a safe and an unsafe C program and SV-LIB script), `upload`
-  puts it into a draft on Zenodo (with a personal access token, see the
-  script), which is published by hand. The archive of the competition version
-  is [10.5281/zenodo.23317707](https://doi.org/10.5281/zenodo.23317707).
+  from the last commit and runs its smoke test (`-svcomp`, `-svcomp -fallback
+  -z3`, and `-chc -z3` on a safe and an unsafe C program and SV-LIB script),
+  `upload` puts it into a draft on Zenodo (with a personal access token, see
+  the script), which is published by hand. The archive of the current version
+  in fm-tools is 0.50.18,
+  [10.5281/zenodo.23607469](https://doi.org/10.5281/zenodo.23607469); the
+  paper cites the earlier
+  [10.5281/zenodo.23317707](https://doi.org/10.5281/zenodo.23317707).
 - [doc/paper](doc/paper): the competition preview (LNCS), see
   [above](#competition-preview-sv-comp-2027).
 
