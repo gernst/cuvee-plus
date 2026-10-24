@@ -1,7 +1,8 @@
 ; ./Cuvee.sh -teq -include teq:aggregation -include teq:arithmetic -include teq:arrays -include teq:counters -include teq:search -include teq:sorted -include teq:strides -include teq:unsigned -include teq:series -prove -split -prove -split -prove examples/svlib/verify/teq_definitions_class.svlib
 ; in-de62.2 of SV-LIB (c-translated/loops-crafted-1), whose definition of a natural refers to a natural of its class:
-; the matcher does not follow it (Context.defs, modulo the classes), otherwise integer_natural and the canonical
-; variable of the class rewrite integer(n) into itself until the rewrite steps are exhausted (0.50.16)
+; integer_natural would rewrite integer(n) through it into a term that contains integer(n) modulo the classes, which
+; the canonical variable of the class turns into integer(n) again until the rewrite steps are exhausted (0.50.16); such
+; a rewrite is not applied (Classes.within)
 ; This file is part of the SV-Benchmarks collection of verification tasks:
 ; https://github.com/sosy-lab/sv-benchmarks
 ;

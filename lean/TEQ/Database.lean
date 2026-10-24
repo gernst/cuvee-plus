@@ -1381,19 +1381,6 @@ def Stmt.fifths_zero : Prop :=
   ∀ (i : Int),
     fifths i zero = 0
 
-def Stmt.sum_squares_scaled : Prop :=
-  ∀ (a : Int) (i : Int) (n : Nat),
-    sum (maps (butlast (counter i 1 n)) (fun k => a * k * k)) = a * squares i n
-
-def Stmt.sum_cubes_scaled : Prop :=
-  ∀ (a : Int) (i : Int) (n : Nat),
-    sum (maps (butlast (counter i 1 n)) (fun k => a * k * k * k)) = a * cubes i n
-
-def Stmt.sum_fourths_scaled : Prop :=
-  ∀ (a : Int) (i : Int) (n : Nat),
-    sum (maps (butlast (counter i 1 n)) (fun k => a * k * k * k * k))
-      = a * fourths i n
-
 def Stmt.squares_closed : Prop :=
   ∀ (i : Int) (n : Nat),
     6 * squares i n

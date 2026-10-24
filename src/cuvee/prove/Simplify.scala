@@ -12,9 +12,9 @@ import util.disjoint
 import util.intersects
 
 // contextual simplification of formulas, where each subterm is simplified under the facts known to hold at its
-// position, the traversal of the engine of -prove (see Prove); copied from the former simplify.Simplify (Oct 13, 2026)
-// and adapted: the context has classes in place of chains (see Context), the reads of the components of state
-// traces are markers (see Views), programs are not simplified
+// position, the traversal of the engine of -prove (see Prove): the context holds the facts in classes, linear
+// constraints and as they are (see Context), the reads of the components of state traces are markers (see Views),
+// programs are not simplified
 object Simplify:
   // `ctx` is an empty context, which provides the rewrite rules;
   // the antecedents of assertions are assumed in the context of their succedents during simplification;
@@ -341,7 +341,7 @@ object Simplify:
 
       // the reads of the components of a trace of several accumulators are markers, replaced by their views once these
       // read no component any more (see Views), e.g. the counter of a loop by its value; otherwise they stay, and the
-      // matcher matches them modulo their views (see Rewrite.matches)
+      // matcher matches them modulo their views (see Rewrite.matchesExpr)
       case Component(s, i) =>
         val expr_ = Component(simplify(config, state, ctx.neutral, s), i)
         Views.projected(config, state, ctx, expr_) match

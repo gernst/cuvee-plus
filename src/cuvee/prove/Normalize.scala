@@ -1,7 +1,5 @@
 package cuvee.prove
 
-// copied from the former package simplify (Oct 13, 2026; removed Oct 23, 2026), see doc/prove.md
-
 import cuvee.core._
 
 // normalization of formulas into clauses forall xs. antecedents ==> succedents, after the earlier Cuvée (cuvee.pure.Clause):

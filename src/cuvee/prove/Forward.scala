@@ -91,12 +91,12 @@ object Forward:
     if expr == from then to else expr.map(replace(_, from, to))
 
   // the instances of `fw` at `term` in `ctx`: matched like the left-hand side of a rule (also by definitions and
-  // views, see Rewrite.matches), the condition decided like that of a rule, and the trigger's instance replaced by the
+  // views, see Rewrite.matchesExpr), the condition decided like that of a rule, and the trigger's instance replaced by the
   // term as it occurs, such that the fact is about the term of the goal, current(S).0 <= p, not about its view
   def fire(config: Config, state: State, ctx: Context, fw: Forward, term: Expr): List[Expr] =
     for
-      _ <- Rewrite.matches(state, fw.params, fw.trigger.typ, term.typ, Subst.empty)
-      subst <- Rewrite.matches(config, state, ctx, fw.params, fw.vars, Set(), fw.trigger, None, Map(), Set(), term, Subst.empty)
+      _ <- Rewrite.matchesType(state, fw.params, fw.trigger.typ, term.typ, Subst.empty)
+      subst <- Rewrite.matchesExpr(config, state, ctx, fw.params, fw.vars, Set(), fw.trigger, None, Map(), Set(), term, Subst.empty)
       subst_ <- Rewrite.conditions(config, state, ctx, fw.params, fw.vars, Set(), And.flatten(fw.cond), None, Map(), Set(), ctx.known, Rewrite.holds(config, state, ctx, _), subst)
     yield
       // the instance is simplified by the rules, such that its terms meet those of the goal, e.g. the cut of a

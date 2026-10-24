@@ -65,21 +65,23 @@ in the conjuncts of a premise.
 - **Congruence closure** ([`Classes`](../src/cuvee/prove/Classes.scala)) in place of the chains of variable
   equations: a persistent union-find over the terms of the facts, where applications are decomposed into their
   arguments and merged by congruence, and everything else (variables, literals, binders, the combinators) is a node
-  of its own. The definitions of a variable are the members of its class that are not variables and do not contain
-  it, modulo the classes, i.e. no variable equal to it (`Context.defs`; since 0.50.17, before syntactically, which let
-  `integer_natural` and the canonical variable of a class rewrite `integer(n)` into itself on in-de62.2 of SV-LIB,
-  examples/svlib/verify/teq_definitions_class.svlib), in both orientations and transitively (`K == I` identifies two counters, `x == f(y)` with
+  of its own. The root of a class is a literal before a variable before any other term, variables by name
+  (`Classes.rank`, since 0.50.18; before, the root of the larger class), the canonical variable that
+  `Simplify.var_` uses. The definitions of a variable are the members of its class that are not variables and do not
+  contain it (`Context.defs`), in both orientations and transitively (`K == I` identifies two counters, `x == f(y)` with
   `y == z` gives `f(z)`); the matcher tries them when a pattern does not match the variable itself
-  (`Rewrite.matches`). Only variables have definitions: a term matched by a member of its class that contains it, e.g.
+  (`Rewrite.matchesExpr`). Only variables have definitions: a term matched by a member of its class that contains it, e.g.
   `a[k]` by `S.2[k] == a[k]` assumed from a sibling conjunct, is rewritten to a term that contains it again, without
   end.
-  How principled the check modulo the classes is: it removes the one cycle that was observed, the matcher following
-  a definition and the simplifier replacing a variable by the canonical one of its class (`Simplify.var_`), which
-  undid each other on in-de62.2 (bugs.md, Fixed); the two components still do not know of each other, so a cycle
-  through two definitions, or through a definition and an inlined solution of the arithmetic, is not excluded by
-  construction, only by the bound on the rewrite steps. It is a guard on one observed failure, not an invariant
-  of the design; a principled form would rewrite modulo the classes in one place, or orient definitions by an order
-  on terms so that no rewrite leads back (ideas/prove-next.md, Definitions and canonical variables). Two literals or two constructors in one class, or a disequation whose sides are in one class, make the context
+  A rewrite whose result contains its own term modulo the classes, but not as it is, is not applied
+  (`Classes.within`, `Rewrite.applyActive`, since 0.50.18): the matcher follows a definition and the simplifier
+  replaces a variable by the canonical one of its class, which could undo each other, e.g. `integer(n7)` rewritten
+  to `-integer(n25) + ...` with `n25 == n7` on in-de62.2 of SV-LIB (examples/svlib/verify/teq_definitions_class.svlib,
+  bugs.md, Fixed); a result that contains its term as it is, e.g. of a rule `f(x) == f(f(x))`, is left to the bound
+  on the steps, which reports the rule. The check holds for any cycle through the classes, not only through a
+  variable (0.50.17 excluded only the definitions with a variable of the class); it does not make the matcher and the
+  simplifier agree on terms other than variables, which normalizing the arithmetic atoms would
+  (ideas/prove-next.md, Definitions and canonical variables). Two literals or two constructors in one class, or a disequation whose sides are in one class, make the context
   inconsistent. `Simplify.var_` replaces a variable by the literal of its class, or by the canonical variable of the
   class (the smallest by name).
 - **A simplex** ([`Simplex`](../src/cuvee/prove/Simplex.scala), [`Linear`](../src/cuvee/prove/Theory.scala)) in
@@ -150,7 +152,7 @@ in the conjuncts of a premise.
   `-split` makes lemmas of their own) and variables bound by conditions alone are in teq.md ("What a forward lemma
   costs").
   `-debug forward` prints the instances.
-- **Lemmas over whole cycles** (`Rewrite.matches`): a pattern with several accumulators,
+- **Lemmas over whole cycles** (`Rewrite.matchesExpr`): a pattern with several accumulators,
   `trace(l0, h0, for ... do lo, hi, k :: u₀, u₁)`, matches a trace of as many accumulators component by component,
   the initial values pairwise and the results in the context of the update, where the histories of the trace that
   the matched variable defines denote the accumulators, so the iteration constraint holds there; a read
@@ -300,7 +302,14 @@ the former simplifier (`-simplify`, package `simplify`, removed Oct 23, 2026).
   innermost first, also as a library. Its methods take
   `(config, state, ctx, ...)` as well; matches are substitutions, and side
   conditions are decided by `Simplify.simplify` in the context. Matching
-  below the combinators of TEQs is described in [teq.md](teq.md).
+  below the combinators of TEQs is described in [teq.md](teq.md). Sums are
+  matched modulo associativity, commutativity and 0 (`matchesSummands`),
+  products modulo associativity, commutativity and 1 where they do not match
+  position by position (`matchesFactors`, since 0.50.18): `a * k * k` matches
+  `k * k` with `a = 1` and `3 * k * k` with `a = 3`, and `a * v` matches
+  `3 * k * k` with `v = k * k`, which lets `sum_scale` take the coefficient out
+  of a mapped function; a factor 1 only for a term that is a product itself,
+  otherwise `a * x` would match every term.
   - A rule is suspended while its left-hand side is matched and its
     conditions are evaluated (`Context.active`, `Rewrite.apply`): the instance
     of a condition is simplified before it is decided or matched, and a
@@ -379,7 +388,7 @@ The context (`Context`, with `Facts`, `Classes` and `Linear`) is described above
   are matched in the context of the simplifier there (`Simplify.combinator`),
   i.e. assuming the invariants over their dependencies and the iterations of
   loops, and for the right-hand side of `X == trace(...)` also the invariants
-  over `⌊X⌋` (`self` of `Rewrite.matches`), e.g. the test of a loop.
+  over `⌊X⌋` (`self` of `Rewrite.matchesExpr`), e.g. the test of a loop.
   A function definition with `:rw` whose body is a match on a parameter
   gives one rule per case, the pattern in place of the parameter, and
   the other parameters that clash with pattern variables renamed apart

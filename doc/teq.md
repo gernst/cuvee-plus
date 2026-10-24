@@ -198,7 +198,7 @@ accumulators, e.g. the bisection of the binary searches, which names the trace o
   `series.dfy` (`-include teq:series`, after `teq:aggregation` and
   `teq:arithmetic`, whose `sum` and `pow` it uses: the folds `squares`,
   `cubes`, `fourths`, `fifths` of the sums of the powers of a counter from
-  `i`, with their coefficients taken out and Faulhaber's formulas times their
+  `i`, whose coefficients `sum_scale` takes out, and Faulhaber's formulas times their
   denominators as forward facts in `integer(n)`, the sums over no iterations,
   and the
   geometric sequences and the fold `series` of geometric series, Oct 23,
@@ -673,7 +673,7 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
 - The rewrite engine ([Rewrite.scala](../src/cuvee/prove/Rewrite.scala))
   matches the binding structure of the combinators: dependencies of the
   pattern are selected among those of the expression (`bound` of
-  `Rewrite.matches` relates the bound variables), and dependencies that are
+  `Rewrite.matchesExpr` relates the bound variables), and dependencies that are
   variables of the rule are instantiated by `Maps` expressions. Each case of the expression's update is
   covered by a case of the pattern, whose guard matches syntactically (which
   instantiates bound variables that occur only in guards, e.g. `b` in

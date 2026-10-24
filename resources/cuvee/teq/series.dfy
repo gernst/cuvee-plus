@@ -9,6 +9,8 @@
 // the sums of the powers of a counter by 1 from i, abstracted by folds (see above); the offset i in each fold, not a
 // rule that shifts counters to 0, which would change the normal form of every map over a counter, e.g. of the reads of
 // arrays
+// a coefficient, e.g. 3 * k * k of the expansion of (k + 1)^2, is taken out of the sum by sum_scale of teq:aggregation,
+// which matches the product modulo associativity, commutativity and the factor 1 (0.50.18; before, a rule per fold)
 // (from nla-digbench: ps3 to ps6; MonoCera: ncomp, pcomp)
 function {:teq} {:fold} squares(i: int, n: Nat): int
 {
@@ -43,19 +45,6 @@ lemma {:rw} {:teq} fourths_zero(i: int)
 
 lemma {:rw} {:teq} fifths_zero(i: int)
   ensures fifths(i, zero) == 0
-
-// a coefficient of the powers, as the expansions of (k + 1)^p leave them, e.g. 3 * k * k of ps4, outside the folds:
-// a * squares(i, n) is linear in the fold, and a fold with a coefficient would not match the powers without one (the
-// pattern a * k * k does not match k * k, whose normal form has no factor 1); sum_scale of teq:aggregation does not
-// take the coefficient out of the mapped function
-lemma {:rw} {:teq} sum_squares_scaled(a: int, i: int, n: Nat)
-  ensures sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: a * k * k)) == a * squares(i, n)
-
-lemma {:rw} {:teq} sum_cubes_scaled(a: int, i: int, n: Nat)
-  ensures sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: a * k * k * k)) == a * cubes(i, n)
-
-lemma {:rw} {:teq} sum_fourths_scaled(a: int, i: int, n: Nat)
-  ensures sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: a * k * k * k * k)) == a * fourths(i, n)
 
 // the sums of the powers from i, Faulhaber's formulas (Academia Algebrae, 1631) times their denominators, as the
 // difference of the sums below i + integer(n) and below i, without division: forward facts about the folds, which stay

@@ -1,7 +1,5 @@
 package cuvee.prove
 
-// copied from the former package simplify (Oct 13, 2026; removed Oct 23, 2026), see doc/prove.md
-
 import cuvee.Error
 import cuvee.sexpr
 import cuvee.core._

@@ -96,8 +96,8 @@ the contexts that `-teq` builds, as far as the reasons go.
   the canonical `n7`, and the rule applied again until the rewrite steps ran out ("rewriting does not terminate", in
   both configurations at 120 s). `Context.defs` excluded only the definitions that contain the variable
   syntactically; now those with a variable of its class (examples/svlib/verify/teq_definitions_class.svlib). The
-  inlining of `c == integer(n)` of 0.50.16 brought the equation that merged the two classes. A kludge rather than a
-  principle (ideas/prove-next.md).
+  inlining of `c == integer(n)` of 0.50.16 brought the equation that merged the two classes. A kludge, replaced in
+  0.50.18 by the general check of `Rewrite.applyActive` (`Classes.within`, doc/prove.md).
 
 - The bisection of `teq:search` was inconsistent (found by the Lean proofs, Oct 13, 2026): the rule `bisection`
   guarded both cases by `lo < hi`, a step after the exit was `unspecified`, and `bisection_lo` bounded it, which gave

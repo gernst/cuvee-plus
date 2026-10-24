@@ -3488,26 +3488,6 @@ theorem current_trace_step_or_keep_mod : Stmt.current_trace_step_or_keep_mod := 
 
 -- series.dfy: the sums of the powers of a counter and the geometric sequences and series
 
--- a constant factor of the mapped function comes out of the sum
-theorem sum_maps_mul (a : Int) (g : Int → Int) : ∀ (l : List Int), sum (maps l (fun k => a * g k)) = a * sum (maps l g)
-  | [] => by simp [maps, sum]
-  | k :: l => by simp only [maps, sum]; rw [sum_maps_mul a g l, Int.mul_add]
-
-theorem sum_squares_scaled : Stmt.sum_squares_scaled := by
-  intro a i n
-  simp only [squares, Int.mul_assoc]
-  exact sum_maps_mul a (fun k => k * k) _
-
-theorem sum_cubes_scaled : Stmt.sum_cubes_scaled := by
-  intro a i n
-  simp only [cubes, Int.mul_assoc]
-  exact sum_maps_mul a (fun k => k * (k * k)) _
-
-theorem sum_fourths_scaled : Stmt.sum_fourths_scaled := by
-  intro a i n
-  simp only [fourths, Int.mul_assoc]
-  exact sum_maps_mul a (fun k => k * (k * (k * k))) _
-
 -- the closed forms of the folds from any start i, by induction over the steps
 theorem squares_closed_from (n : Nat) : ∀ (i : Int),
     6 * squares i n = (i + n - 1) * (i + n) * (2 * (i + n) - 1) - (i - 1) * i * (2 * i - 1) := by
