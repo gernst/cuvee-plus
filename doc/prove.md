@@ -81,7 +81,7 @@ in the conjuncts of a premise.
   on the steps, which reports the rule. The check holds for any cycle through the classes, not only through a
   variable (0.50.17 excluded only the definitions with a variable of the class); it does not make the matcher and the
   simplifier agree on terms other than variables, which normalizing the arithmetic atoms would
-  (ideas/prove-next.md, Definitions and canonical variables). Two literals or two constructors in one class, or a disequation whose sides are in one class, make the context
+  (ideas/prove-next.md, Normal form of the arithmetic atoms). Two literals or two constructors in one class, or a disequation whose sides are in one class, make the context
   inconsistent. `Simplify.var_` replaces a variable by the literal of its class, or by the canonical variable of the
   class (the smallest by name).
 - **A simplex** ([`Simplex`](../src/cuvee/prove/Simplex.scala), [`Linear`](../src/cuvee/prove/Theory.scala)) in

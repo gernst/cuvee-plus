@@ -154,8 +154,9 @@ def Stmt.consts_def : Prop :=
     trace x (butlast (counter i c n)) (fun y v => y) = consts n x
 
 def Stmt.maps_earlier : Prop :=
-  ∀ {α : Type} [Inhabited α] (n : Nat) (xs : List α) (hxs : length xs = n),
-    maps (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs) = xs
+  ∀ {α : Type} [Inhabited α] (n : Nat) (xs : List α) (hxs : integer n ≤ integer (length xs)),
+    maps (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs)
+      = «prefix» n xs
 
 def Stmt.maps_counter_affine : Prop :=
   ∀ (a : Int) (b : Int) (i : Int) (c : Int) (n : Nat),
@@ -607,7 +608,7 @@ noncomputable def agree_prefix (n : Nat) (xs : List Int)
     (fun k => earlier (natural k) xs = earlier (natural k) ys)
 
 def Stmt.not_occurs_prefix : Prop :=
-  ∀ (n : Nat) (e : Int) (xs : List Int) (hxs : length xs = n),
+  ∀ (n : Nat) (e : Int) (xs : List Int) (hxs : integer n ≤ integer (length xs)),
     invs (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs ≠ e)
       ↔ ¬occurs e («prefix» n xs)
 

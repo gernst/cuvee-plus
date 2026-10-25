@@ -186,9 +186,11 @@ lemma {:rw} {:teq} consts_def<a>(x: a, i: int, c: int, n: Nat)
   ensures trace(x, for ⌊counter(i, c, n)⌋ do y, v :: y)
     == consts(n, x)
 
+// the values that a loop of n iterations reads from xs at its iterations, which are within xs, as all reads of
+// earlier are (n <= length(xs)), not the whole list: the list may be that of an earlier loop with more iterations
 lemma {:rw} {:teq} maps_earlier<a>(n: Nat, xs: List<a>)
   ensures maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(natural(k), xs))
-    == xs
+    == prefix(n, xs)
 
 lemma {:rw} {:teq} maps_counter_affine(a: int, b: int, i: int, c: int, n: Nat)
   ensures maps(for ⌊counter(i, c, n)⌋ yield v :: a + b * v)

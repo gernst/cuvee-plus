@@ -27,7 +27,7 @@ with Cuvée (the user's instruction, Oct 14).
 - [ ] Deferred: the cost of `-prove` (forward instances simplified at every firing; a memo was tried and reverted);
       the rest of nla-digbench (geo1, geo3, cohencu; 71 correct with the module series since 0.50.18, from 18), the
       non-terminations at the bound on the steps (fermat1, egcd2, mannadiv), a normal form of arithmetic atoms
-      (stage 3 of ideas/prove-next.md).
+      (items 1 to 3 of ideas/prove-next.md: equalities from the simplex to the classes, stage 3, naturals and integers).
 - [ ] Last: integrate the results into doc/paper/cuvee.tex (`scripts/paper.py`), `scripts/out/experiments.pdf`,
       ideas/experiments.md, doc/array-algorithms; commit all the work, then a single push.
 

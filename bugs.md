@@ -90,6 +90,26 @@ the contexts that `-teq` builds, as far as the reasons go.
 
 ### Fixed, to be confirmed
 
+- **`maps_earlier` without its length premise proves a false program** (found Oct 26, 2026, 0.51.1, also in 0.50.18,
+  the version of fm-tools): `-svcomp` answers `correct` for a variant of `array-crafted/zero_sum1` whose second loop
+  sums `N - 1` of the `N` values that the first loop stores nondeterministically, so that `s == -a[N-1]` at the
+  assertion `s == 0`. The second loop reads `a[k]`, which the rules of the stores rewrite to
+  `if k < integer(n₁) then earlier(natural(k), Tmp?) else a₀[k]` with the choices `Tmp?` of the first loop and its
+  count `n₁`; with `k < n₂ <= n₁` the read is `earlier(natural(k), Tmp?)`, and `maps_earlier` (teq.dfy,
+  `maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(natural(k), xs)) == xs`) rewrites the values of the first `n₂`
+  positions to the whole list, the sum of `N - 1` values to that of `N`. The lemma holds only if `length(xs) == n`
+  (its Lean proof has the hypothesis, `lean/TEQ/Counterexamples.lean` the counterexample), which "Trusted without a
+  check" below takes as provided by the contexts of `-teq`: it is not, when a loop reads the choices of an earlier
+  loop. Reproduce with the program of zero_sum1 with `i < N - 1` in its second loop and `-svcomp`; `-slice` shows
+  the wrong invariant `sum == sum(Tmp?)` of the second loop of zero_sum1 itself. Fixed on Oct 26, 2026 (to be confirmed on the cloud): the right-hand side of `maps_earlier` is `prefix(n, xs)`,
+  sound without a condition, since the reads on its left-hand side presuppose `n <= length(xs)`, the precondition
+  of `earlier`, which all reads of `-teq` meet; no length facts (which were costly). The Lean premise of lists that
+  are only read is `integer n ≤ integer (length xs)` now, not `length xs = n` (`lean.Printer.lengths`), under
+  which all 164 lemmas are proved again: `maps_earlier` was the only lemma that assumed more than its reads. The
+  false variant is `unknown`, zero_sum1 still `correct`; `-slice` gives `sum == sum(prefix(n, Tmp?))` with
+  `i == integer(n)` for the second loop of zero_sum1, whose assertion `Slice` no longer decides: `n₂ == n₃` follows
+  from `integer(n₂) == integer(n₃)` in the simplex, which does not reach the classes.
+
 - **A rewriting loop through a definition modulo the classes** (0.50.16, fixed in 0.50.17): on in-de62.2 of SV-LIB
   (c-translated/loops-crafted-1, expected true), `integer_natural` rewrote `integer(n7)` through the definition
   `n7 == natural(-integer(n25) + ...)`, whose `n25` the classes had made equal to `n7`; the simplifier replaced `n25` by

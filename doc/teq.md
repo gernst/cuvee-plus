@@ -513,10 +513,13 @@ project at the root (`lakefile.toml`, sources in `lean/`):
 The dependencies of a combinator have equal lengths, which `zip` in Lean does
 not assume: `-print lean` adds hypotheses on the lengths to each lemma
 (`lean.Printer.lengths`), `(hxs : length xs = n)` for each list variable that
-is a dependency of a combinator, also through a `{:fold}` function, or that is
-read at the iterations `k` of a counter by `earlier(natural(k), xs)`, where `n`
+is a dependency of a combinator, also through a `{:fold}` function, where `n`
 is the number of steps of a counter among the dependencies or a further
-parameter `(n : Nat)` of the lemma. The premises that the printer cannot see
+parameter `(n : Nat)` of the lemma, and `(hxs : integer n ≤ integer (length xs))`
+for one that is only read at the iterations `k` of a counter by
+`earlier(natural(k), xs)`: the precondition of the reads, since the list may be
+that of an earlier loop with more iterations (since Oct 26, 2026, before
+`length xs = n`, which `maps_earlier` relied on, see bugs.md). The premises that the printer cannot see
 and that the engine does not check are listed in `premises.txt`, each with the
 reason why the contexts of `-teq` provide it: reads within the loop
 (`integer k < integer n` of `earlier_counter`, `earlier_sums`, ...), prefixes

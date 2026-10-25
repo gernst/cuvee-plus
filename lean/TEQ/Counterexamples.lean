@@ -18,7 +18,8 @@ example : ¬ («prefix» 1 (butlast (counter 0 1 0)) = butlast (counter 0 1 1)) 
 example : ¬ («prefix» 1 (butlast (consts 0 (0 : Int))) = butlast (consts 1 0)) :=
   by simp [«prefix», consts, butlast]
 
--- maps_earlier for a list that is longer than the iterations
+-- the former maps_earlier, whose right-hand side was the whole list, for a list that is longer than the iterations,
+-- e.g. that of an earlier loop with more iterations (bugs.md); maps_earlier has its prefix now
 example : ¬ (maps (butlast (counter 0 1 0)) (fun k => earlier (natural k) [(1 : Int)]) = [1]) :=
   by simp [maps, counter, butlast]
 

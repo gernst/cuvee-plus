@@ -5,8 +5,9 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
 [doc/architecture.md](../doc/architecture.md); the deduction engine `-prove` and its design, in
 [doc/prove.md](../doc/prove.md), Oct 14, 2026).
 
-- [prove-next.md](prove-next.md): the planned changes to the engine of `-prove` after the database migration, with
-  what was tried.
+- [prove-next.md](prove-next.md): the open changes to the engine of `-prove`, ordered by expected gain, with what
+  was tried: equalities from the simplex to the classes, the normal form of arithmetic atoms, naturals and integers
+  (the rule statistics), remainders, the depth of case splits, rounds that do not settle, closed instances.
 - [database-review.md](database-review.md): the review of the lemma database of Oct 23, 2026: usage on SV-COMP,
   what could be unified, the lemmas of examples/dafny/algorithms (copies, candidates, program-specific), the
   lemmas that work around gaps of the engine, the open points of earlier analyses.

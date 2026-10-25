@@ -543,29 +543,39 @@ theorem maps_const {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int)
     | zero => rfl
     | succ m ih => simp [butlast_counter_succ, maps, consts, butlast, ih]
 
+-- the reads of a loop of n iterations at its iterations, which are within the list (n ≤ length xs), are its prefix
+-- of length n, the whole list only if it is not longer (Counterexamples.lean)
 theorem maps_earlier {α : Type} [Inhabited α] (n : Nat) (xs : List α)
-                                                    (hxs : length xs = n) :
-  maps (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs) = xs :=
+                                                    (hxs : integer n ≤ integer (length xs)) :
+  maps (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs) = «prefix» n xs :=
   by
-    subst hxs
-    have gen : ∀ (s : Int) (xs : List α),
-        maps (butlast (counter s 1 xs.length)) (fun k => earlier (natural (k - s)) xs) = xs := by
+    simp only [integer_cast] at hxs
+    have gen : ∀ (s : Int) (xs : List α) (n : Nat), n ≤ xs.length →
+        maps (butlast (counter s 1 n)) (fun k => earlier (natural (k - s)) xs) = «prefix» n xs := by
       intro s xs
       induction xs generalizing s with
-      | nil => rfl
-      | cons x xs ih =>
-        simp only [List.length_cons, butlast_counter_succ, maps]
-        have hd : natural (s - s) = zero := by simp [natural_eq]
-        have hk : ∀ k, s + 1 ≤ k ∧ k < s + 1 + (xs.length : Int) →
-            earlier (natural (k - s)) (x :: xs) = earlier (natural (k - (s + 1))) xs := by
-          intro k hk
-          rw [natural, ite_eq_right (by omega : ¬(k - s ≤ 0))]
-          simp only [earlier]
-          congr 2
-          omega
-        rw [hd, maps_counter_congr_gen (s + 1) xs.length _ _ hk, ih (s + 1)]
+      | nil =>
+        intro n hn
+        have : n = 0 := by simpa using hn
+        subst this
         rfl
-    have := gen 0 xs
+      | cons x xs ih =>
+        intro n hn
+        cases n with
+        | zero => rfl
+        | succ m =>
+          simp only [butlast_counter_succ, maps]
+          have hd : natural (s - s) = zero := by simp [natural_eq]
+          have hk : ∀ k, s + 1 ≤ k ∧ k < s + 1 + (m : Int) →
+              earlier (natural (k - s)) (x :: xs) = earlier (natural (k - (s + 1))) xs := by
+            intro k hk
+            rw [natural, ite_eq_right (by omega : ¬(k - s ≤ 0))]
+            simp only [earlier]
+            congr 2
+            omega
+          rw [hd, maps_counter_congr_gen (s + 1) m _ _ hk, ih (s + 1) m (by simp at hn; omega)]
+          rfl
+    have := gen 0 xs n (by omega)
     simpa using this
 
 theorem maps_counter_affine (a : Int) (b : Int) (i : Int) (c : Int)
@@ -719,15 +729,16 @@ theorem above_iterations_forall (n : Nat) (ts : List Int) (hts : ts.length = n) 
   refine (invs_zip_counter 0 n ts hts (fun k t => k < t)).trans ?_
   simp [integer_cast]
 
-theorem not_occurs_prefix_forall (n : Nat) (xs : List Int) (e : Int) (hxs : xs.length = n) :
+theorem not_occurs_prefix_forall (n : Nat) (xs : List Int) (e : Int) (hxs : n ≤ xs.length) :
     ¬occurs e («prefix» n xs) ↔ ∀ i : Nat, i < n → earlier i xs ≠ e := by
   induction xs generalizing n with
   | nil =>
-    subst hxs
+    have : n = 0 := by simpa using hxs
+    subst this
     simp [«prefix», occurs]
   | cons x xs ih =>
     cases n with
-    | zero => simp at hxs
+    | zero => simp [«prefix», occurs]
     | succ m =>
       simp only [«prefix», occurs, not_or]
       rw [ih m (by simp at hxs; omega)]
@@ -819,7 +830,8 @@ theorem invs_not_or (hs : List Int) (gs : List Int) (fs : List Int)
 -- (from standard_find_ground-1)
 theorem not_occurs_prefix : Stmt.not_occurs_prefix := by
   intro n e xs hxs
-  rw [not_occurs_prefix_forall n xs e hxs]
+  simp only [integer_cast] at hxs
+  rw [not_occurs_prefix_forall n xs e (by omega)]
   refine (invs_counter_forall 0 n (fun k => earlier (natural k) xs ≠ e)).trans ?_
   simp [natural_eq]
 
@@ -1345,7 +1357,7 @@ theorem earlier_not_occurs_prefix (n : Nat) (j : Nat) (e : Int)
   ¬occurs e («prefix» n xs) ∧ integer j < integer n → earlier j xs ≠ e :=
   by
     intro ⟨h1, h2⟩
-    rw [not_occurs_prefix_forall n xs e hxs] at h1
+    rw [not_occurs_prefix_forall n xs e (by omega)] at h1
     simp only [integer_cast] at h2
     exact h1 j (by omega)
 

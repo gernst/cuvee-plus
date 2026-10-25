@@ -143,10 +143,12 @@ object Printer extends cuvee.pipe.Printer:
   // the hypotheses on the lengths of the dependencies of the combinators in a lemma, whose semantics in Lean zips the
   // dependencies, which truncates them to the shortest one, whereas the dependencies of a combinator of Cuvée have equal
   // lengths (see resources/cuvee/teq.lean): the lists among the dependencies of each combinator, also of a function
-  // defined by one (:fold, e.g. stores), and the lists read at the iterations k of a counter, earlier(natural(k), xs),
-  // have the length n of the loop, the number of steps of ⌊counter(_, _, n)⌋ or ⌊consts(n, _)⌋ among the dependencies,
-  // or a fresh variable n of the lemma if no counter gives it; the hypotheses `length xs = n` use the function length
-  // of teq.dfy, List.length of Lean, and are named h<xs>
+  // defined by one (:fold, e.g. stores), have the length n of the loop, the number of steps of ⌊counter(_, _, n)⌋ or
+  // ⌊consts(n, _)⌋ among the dependencies, or a fresh variable n of the lemma if no counter gives it, `length xs = n`;
+  // the lists read at the iterations k of a counter, earlier(natural(k), xs), and no dependency, are at least as long
+  // as the loop, `integer n ≤ integer (length xs)`, the precondition of the reads, since the list may be that of an
+  // earlier loop with more iterations (bugs.md, maps_earlier); the hypotheses use the function length of teq.dfy,
+  // List.length of Lean, and are named h<xs>
   def lengths(phi: Expr): (List[Var], List[(String, Expr)]) =
     val (xs, body) =
       phi match
@@ -155,7 +157,10 @@ object Printer extends cuvee.pipe.Printer:
 
     val tagged = dependencies(body, Map())
     val vars = tagged.map(_._1).distinct
-    val known = tagged.collect { case (x, Some(n)) => (x, n) }.toMap
+    val reads = tagged.collect { case (x, Some(n), false) => (x, n) }.toMap
+    val known = reads ++ tagged.collect { case (x, Some(n), true) => (x, n) }.toMap
+    // a dependency anywhere has the length of its loop, a list that is only read is at least as long
+    val dependency = tagged.collect { case (x, _, true) => x }.toSet
 
     val fresh =
       if vars.forall(known.contains) then None
@@ -164,7 +169,12 @@ object Printer extends cuvee.pipe.Printer:
         val name_ = Iterator.from(0).map(i => if i == 0 then "n" else "n" + i).find(!used.contains(_)).get
         Some(Var(Name(name_, None), Sort.nat))
 
-    val hyps = for x <- vars yield ("h" + name(x.name), Eq(App(length, List(x)), known.getOrElse(x, fresh.get)))
+    val hyps =
+      for x <- vars
+      yield
+        val n = known.getOrElse(x, fresh.get)
+        val hyp = if dependency.contains(x) then Eq(App(length, List(x)), n) else Ints.le(Nats.integer(n), Nats.integer(App(length, List(x))))
+        ("h" + name(x.name), hyp)
     (fresh.toList, hyps)
 
   // the function length of lists, List.length of Lean, declared in teq.dfy with :lean, hence not printed
@@ -185,7 +195,8 @@ object Printer extends cuvee.pipe.Printer:
 
   // the lists that are dependencies of combinators in `expr` with the lengths of their loops, if a counter gives them,
   // where `counters` are the variables bound to the iterations of counters by the enclosing combinators
-  def dependencies(expr: Expr, counters: Map[Var, Expr]): List[(Var, Option[Expr])] =
+  // tagged with whether they are dependencies (true) or only read (false)
+  def dependencies(expr: Expr, counters: Map[Var, Expr]): List[(Var, Option[Expr], Boolean)] =
     expr match
       case Trace(inits, deps, _, bound, results) =>
         inits.flatMap(dependencies(_, counters)) ++ results.flatMap(loop(deps, bound, _, counters))
@@ -197,13 +208,13 @@ object Printer extends cuvee.pipe.Printer:
         loop(deps, bound, body, counters)
 
       case Earlier(Nats.natural(k: Var), xs: Var) if counters.contains(k) =>
-        List((xs, Some(counters(k))))
+        List((xs, Some(counters(k)), false))
 
       case App(fun, _, _, args) if folds.contains(fun.name) =>
         tag(folds(fun.name).map(args)) ++ args.flatMap(dependencies(_, counters))
 
       case _ =>
-        val buffer = mutable.ListBuffer[(Var, Option[Expr])]()
+        val buffer = mutable.ListBuffer[(Var, Option[Expr], Boolean)]()
         expr.map { sub => buffer ++= dependencies(sub, counters); sub }
         buffer.toList
 
@@ -214,11 +225,11 @@ object Printer extends cuvee.pipe.Printer:
       case Butlast(App(fun, _, _, List(n, _))) if fun.name == Name("consts", None)         => n
     }
 
-  def tag(deps: List[Expr]): List[(Var, Option[Expr])] =
+  def tag(deps: List[Expr]): List[(Var, Option[Expr], Boolean)] =
     val n = steps(deps)
-    deps.collect { case x: Var => (x, n) }
+    deps.collect { case x: Var => (x, n, true) }
 
-  def loop(deps: List[Expr], bound: List[Var], body: Expr, counters: Map[Var, Expr]): List[(Var, Option[Expr])] =
+  def loop(deps: List[Expr], bound: List[Var], body: Expr, counters: Map[Var, Expr]): List[(Var, Option[Expr], Boolean)] =
     val counters_ =
       (deps, bound) match
         case (Butlast(Counter(Ints.zero, Ints.one, n)) :: _, k :: _) => counters + (k -> n)
