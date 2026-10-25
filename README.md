@@ -59,6 +59,12 @@ cp out/assembly.dest/out.jar cuvee.jar    # the jar that Cuvee.sh runs
 mill -i test                              # run the tests (CUVEE_PRINTING=1 after parser or printer changes, CUVEE_ALGORITHMS=1 for the slow suite)
 ```
 
+`make` does the first two steps. `make native` builds `cuvee.native`, a native
+executable that starts in milliseconds, with GraalVM's `native-image` (by
+default GraalVM CE 25 from coursier, see the `Makefile`), which
+`Cuvee-native.sh` runs like `Cuvee.sh` the jar; it has only been tried on a
+few examples (in the VerifierCloud: `xml/cuvee-native.xml`, doc/benchmarks.md).
+
 ## Usage
 
 ```sh

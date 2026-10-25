@@ -36,6 +36,7 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 | `xml/cuvee.xml` | `-svcomp -rules`: `-teq` with all modules of the database, `-prove -split -prove -split -prove` (the second round splits the disjunctions that the rules introduce), the witness (`Cuvee.svcomp`, doc/options.md); 15 min, 2 cores, 7 GB |
 | `xml/cuvee-fallback.xml` | the same with `-fallback -z3 -timeout 900000`, Z3 for the goals that remain (since 0.50.15 also with the second round of splitting) |
 | `xml/cuvee-acsl.xml`, `cuvee-chc.xml` | `-vcgen -z3` on `benchmarks/acsl` (the categories Arrays and Loops as in sv-benchmarks, the true tasks annotated with ACSL; `-split` for the task set `C.unreach-call.Loops-split`), `-chc` |
+| `xml/cuvee-native.xml` | `cuvee.xml` with the native executable (`make native`, `Cuvee-native.sh`), which starts without a JVM: `PYTHONPATH=xml ./benchmark xml/cuvee-native.xml ...` with the tool-info module `xml/toolinfo/cuvee_native.py`, which uploads `Cuvee-native.sh`, `cuvee.native` and `z3`; the binary needs glibc 2.34 and zlib on the workers |
 | `xml/cpachecker.xml`, `uautomizer.xml`, `korn.xml`, `symbiotic.xml`, `aise.xml`, `monocera.xml` | the other verifiers |
 
 The definitions of Cuvée pass `-witness witness.yml`, a witness of SV-COMP for each answer to a C program

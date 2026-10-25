@@ -1,6 +1,7 @@
 # build output
 out/
 cuvee.jar
+cuvee.native
 
 # IDE and build server state
 .bsp/
