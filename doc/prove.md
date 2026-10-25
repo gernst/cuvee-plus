@@ -450,7 +450,10 @@ under the facts known at their position. Nothing that is known is forgotten (Oct
   `x + 1` when `x` holds `x0 + 1`.
 - **Loops.** The head of a loop has fresh choices for the variables that its body modifies (`.mod`, which includes
   the global variables of calls), constrained by its invariants, also those of its tags; the facts from before the
-  loop hold in its body and after it, which adds the negated test unless the body breaks out of the loop.
+  loop hold in its body and after it. The loop is left where its test does not hold and at the `break`s of its body,
+  where it does: the positions of the breaks are merged, and joined with the exit by the test like the branches of
+  an `if` (`Slice.Exits`, `Slice.leave`), so a test after the loop is decided in each case, e.g. whether a search
+  found its key ([slice_exits.dfy](../examples/dafny/prove/slice_exits.dfy)); `continue` ends an iteration.
 - **Unreachable code** is dropped: the branch of a decided test, statements after a jump or after a position whose
   context is inconsistent (`assume false`), and a loop that is not entered, of which the assertion of its invariants
   remains, since its head is reached. Statements without effect are dropped from blocks, and a block of one statement

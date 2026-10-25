@@ -149,7 +149,7 @@ or solvers consume.
   complete: no lookups of `procattrs(name).modifies` at the consumers. Local
   variables and parameters must not shadow global variables; a loop without
   modifies clause may modify what its enclosing scope may. Questions about the
-  statements of a program are methods of each kind (`returns`, `breaks`,
+  statements of a program are methods of each kind (`returns`,
   `abstracts`, `calls`), there is no `subprogs`.
 - **`-prove` simplifies procedures** (`Slice`, doc/prove.md "Programs"): the
   context speaks about choices only and forgets nothing, program variables are

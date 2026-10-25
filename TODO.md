@@ -47,10 +47,8 @@ with Cuvée (the user's instruction, Oct 14).
   keeps (e.g. a trace whose update is a constant, `invs` of a loop with `break`), printing them as `annotate-tag`
   commands of SV-LIB and as `loop_invariant` entries of C witnesses, and checking them with `-vcgen`; violation
   witnesses with the values of a counterexample.
-- Simplification of procedures (`Slice`, doc/prove.md, "Programs"): the exact state after a loop with `break`
-  (the positions of the breaks merged with the negated test, by an `Exits` result of the traversal instead of
-  `Prog.breaks`); writing back by arithmetic, e.g. `x0 + 2` as `x + 1` when `x` holds `x0 + 1`; `Ode` and `Par`
-  are not simplified, attributes are kept as they are.
+- Simplification of procedures (`Slice`, doc/prove.md, "Programs"): writing back by arithmetic, e.g. `x0 + 2` as
+  `x + 1` when `x` holds `x0 + 1`; `Ode` and `Par` are not simplified, attributes are kept as they are.
 - SV-LIB: unstructured control flow (labels, gotos), `define-procs-rec`, tags on other statements, `:recurring`,
   `:not-recurring`, `:decreases-lex`, `get-witness`, `select-trace`, answers to `verify-call` for interactive use;
   `-chc` with constants in procedure bodies (Horn solvers reject free constants).

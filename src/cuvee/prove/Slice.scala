@@ -24,7 +24,7 @@ import cuvee.verify.TEQ
 // a loop starts from fresh choices for the variables that it modifies, constrained by its invariants, and with -slice
 // by its trace equation system, simplified and attached to the loop as an invariant (see head); the facts from
 // before the loop hold in its body and after it, since they do not speak about these choices; after the loop the test
-// is known not to hold, unless the body breaks out of it
+// is known not to hold where it is left normally, and the positions of its breaks join that exit (see leave)
 object Slice:
   // a position in the procedure `proc`: the context of the facts over the choices, the values of the program variables
   // in scope over the choices, and the facts assumed since the entry of the procedure, whose suffixes are the facts of
@@ -38,6 +38,20 @@ object Slice:
     // fresh choices for `xs`
     def havoc(xs: Iterable[Var]): At =
       copy(values = values ++ xs.map(x => x -> x.fresh))
+
+  // how a statement ends: normally at a position, unless it does not terminate normally, and by break and continue at
+  // the positions of these jumps, which the enclosing loop takes; return leaves the procedure, which is not followed
+  case class Exits(normal: Option[At], breaks: List[At], continues: List[At]):
+    // the jumps of `that` as well, e.g. of the statements of a sequence
+    def jumps(that: Exits): Exits =
+      Exits(normal, breaks ++ that.breaks, continues ++ that.continues)
+
+    def map(f: At => At): Exits =
+      Exits(normal.map(f), breaks.map(f), continues.map(f))
+
+  object Exits:
+    def normal(at: At): Exits =
+      Exits(Some(at), Nil, Nil)
 
   // the context of a procedure has the rewrite rules and forward lemmas of the input, with one number of steps for the
   // whole procedure, as a goal has (see Context.withRules), and no polarity, which expressions of programs do not have;
@@ -102,11 +116,11 @@ object Slice:
   def simplify(config: Config, state: State, at: At, expr: Expr): Expr =
     written(at, expr, value(config, state, at, expr))
 
-  // the simplified program and the position after it, none if it does not terminate normally, i.e., it jumps;
+  // the simplified program and how it ends (see Exits);
   // unreachable statements are dropped, after a jump or an inconsistent context, the branch of a decided test, a loop
   // that is not entered, and so are those of a block that have no effect;
   // each kind of statement has its helper, which simplifies its parts at the positions where they are evaluated
-  def simplify(config: Config, state: State, at: At, prog: Prog): (Prog, Option[At]) =
+  def simplify(config: Config, state: State, at: At, prog: Prog): (Prog, Exits) =
     prog match
       case Break | Continue | Return      => jump(config, state, at, prog)
       case Spec(xs, pre, post)            => spec(config, state, at, xs, pre, post)
@@ -120,49 +134,55 @@ object Slice:
       case Ode(time, xs, rhs, dom, attrs) => ode(config, state, at, time, xs, rhs, dom, attrs)
       case Par(progs)                     => par(config, state, at, progs)
 
-  // a jump does not terminate normally, the statements after it are unreachable
-  def jump(config: Config, state: State, at: At, prog: Prog): (Prog, Option[At]) =
-    (prog, None)
+  // a jump does not terminate normally, the statements after it are unreachable; break and continue end at the
+  // position of the jump, which the enclosing loop takes
+  def jump(config: Config, state: State, at: At, prog: Prog): (Prog, Exits) =
+    prog match
+      case Break    => (prog, Exits(None, List(at), Nil))
+      case Continue => (prog, Exits(None, Nil, List(at)))
+      case _        => (prog, Exits(None, Nil, Nil))
 
   // the precondition is assumed once it is checked, as in VCGen
-  def spec(config: Config, state: State, at: At, xs: List[Var], pre: Expr, post: Expr): (Prog, Option[At]) =
+  def spec(config: Config, state: State, at: At, xs: List[Var], pre: Expr, post: Expr): (Prog, Exits) =
     val pre_ = simplify(config, state, at, pre)
     val checked = at.assume(config, state, value(config, state, at, pre))
     val after = checked.havoc(xs)
     val post_ = simplify(config, state, after, post)
     val spec = if xs.isEmpty && pre_ == True && post_ == True then Skip else Spec(xs, pre_, post_)
-    (spec, Some(after.assume(config, state, value(config, state, after, post))))
+    (spec, Exits.normal(after.assume(config, state, value(config, state, after, post))))
 
   // the right-hand sides are evaluated before any variable is bound to its new value; an assignment of the current
   // value of a variable has no effect
-  def assign(config: Config, state: State, at: At, xs: List[Var], rhs: List[Expr]): (Prog, Option[At]) =
+  def assign(config: Config, state: State, at: At, xs: List[Var], rhs: List[Expr]): (Prog, Exits) =
     val values = rhs.map(value(config, state, at, _))
     val rhs_ = (rhs zip values).map((e, v) => written(at, e, v))
     val changed = (xs zip rhs_).filterNot((x, e) => x == e)
     val assign = if changed.isEmpty then Skip else Assign(changed.map(_._1), changed.map(_._2))
-    (assign, Some(at.copy(values = at.values ++ (xs zip values))))
+    (assign, Exits.normal(at.copy(values = at.values ++ (xs zip values))))
 
   // the results and the global variables that the procedure modifies are choices
-  def call(config: Config, state: State, at: At, name: util.Name, args: List[Expr], res: List[Var], vars: List[Var]): (Prog, Option[At]) =
+  def call(config: Config, state: State, at: At, name: util.Name, args: List[Expr], res: List[Var], vars: List[Var]): (Prog, Exits) =
     val prog = Call(name, args.map(simplify(config, state, at, _)), res, vars)
-    (prog, Some(at.havoc(prog.mod intersect at.values.keySet)))
+    (prog, Exits.normal(at.havoc(prog.mod intersect at.values.keySet)))
 
   // the locals are choices, their initial values are not determined; a block of a single statement without locals
   // and attributes is that statement, e.g. the branch of a decided test
-  def block(config: Config, state: State, at: At, locals: List[Var], progs: List[Prog], attrs: Attrs): (Prog, Option[At]) =
-    val (progs_, after) = sequence(config, state, at.havoc(locals), progs)
-    val restored = after.map(scoped(at, _, locals))
+  def block(config: Config, state: State, at: At, locals: List[Var], progs: List[Prog], attrs: Attrs): (Prog, Exits) =
+    val (progs_, exits) = sequence(config, state, at.havoc(locals), progs)
+    val restored = exits.map(scoped(at, _, locals))
     progs_.filterNot(_ == Skip) match
       case List(prog) if locals.isEmpty && attrs == Attrs.empty => (prog, restored)
       case progs__                                              => (Block(locals, progs__, attrs), restored)
 
-  // each alternative from the same position
-  def choice(config: Config, state: State, at: At, progs: List[Prog]): (Prog, Option[At]) =
+  // each alternative from the same position, whose jumps are those of all alternatives
+  def choice(config: Config, state: State, at: At, progs: List[Prog]): (Prog, Exits) =
     val results = progs.map(simplify(config, state, at, _))
-    (Choice(results.map(_._1)), merge(config, state, at, results.flatMap(_._2)))
+    val exits = results.map(_._2)
+    val normal = merge(config, state, at, exits.flatMap(_.normal))
+    (Choice(results.map(_._1)), Exits(normal, exits.flatMap(_.breaks), exits.flatMap(_.continues)))
 
   // a decided test selects its branch
-  def if_(config: Config, state: State, at: At, test: Expr, left: Prog, right: Prog): (Prog, Option[At]) =
+  def if_(config: Config, state: State, at: At, test: Expr, left: Prog, right: Prog): (Prog, Exits) =
     val cond = value(config, state, at, test)
     cond match
       case True =>
@@ -174,37 +194,47 @@ object Slice:
       case _ =>
         val (left_, l) = simplify(config, state, at.assume(config, state, cond), left)
         val (right_, r) = simplify(config, state, at.assume(config, state, Context.not(cond)), right)
-        (If(written(at, test, cond), left_, right_), join(config, state, at, cond, l, r))
+        (If(written(at, test, cond), left_, right_), Exits(join(config, state, at, cond, l.normal, r.normal), Nil, Nil).jumps(l).jumps(r))
 
   // a loop that is not entered has no effect, but its head is reached, where its invariants are checked, as VCGen does;
   // otherwise its attributes are kept, its invariants hold at the head, where its trace equation system is attached as
-  // a further one with -slice (see head)
-  def while_(config: Config, state: State, at: At, test: Expr, body: Prog, attrs: Attrs): (Prog, Option[At]) =
+  // a further one with -slice (see head); it is left where the test does not hold and at the breaks of its body (see
+  // leave), whose continues end an iteration
+
+  def while_(config: Config, state: State, at: At, test: Expr, body: Prog, attrs: Attrs): (Prog, Exits) =
     if value(config, state, at, test) == False
     then spec(config, state, at, Nil, And(state.annotated(attrs).invariants), True)
     else
       val (head, attrs_) = this.head(config, state, at, Some(test), body, attrs)
       val cond = value(config, state, head, test)
-      val (body_, _) = simplify(config, state, head.assume(config, state, cond), body)
-      val after =
-        if body.breaks then Some(head)
-        else if cond == True then None
-        else Some(head.assume(config, state, Context.not(cond)))
-      (While(written(head, test, cond), body_, attrs_), after)
+      val (body_, exits) = simplify(config, state, head.assume(config, state, cond), body)
+      val exit = if cond == True then None else Some(head.assume(config, state, Context.not(cond)))
+      (While(written(head, test, cond), body_, attrs_), leave(config, state, head, Some(cond), exit, exits.breaks))
 
-  def iter(config: Config, state: State, at: At, body: Prog, attrs: Attrs): (Prog, Option[At]) =
+  def iter(config: Config, state: State, at: At, body: Prog, attrs: Attrs): (Prog, Exits) =
     val (head, attrs_) = this.head(config, state, at, None, body, attrs)
-    val (body_, _) = simplify(config, state, head, body)
-    (Iter(body_, attrs_), Some(head))
+    val (body_, exits) = simplify(config, state, head, body)
+    (Iter(body_, attrs_), leave(config, state, head, None, Some(head), exits.breaks))
+
+  // the position after a loop with the test `cond` at its `head`, if it has one, where it is left at the `exit`, where
+  // the test does not hold, and at the `breaks` of its body, where it does: the breaks are merged (see merge), and joined
+  // with the exit by the test like the branches of an if (see join), such that a test after the loop is decided in each
+  // case, e.g. whether a search found its key; a loop without test is left at the head as well, merged with the
+  // breaks; none if it is never left; it ends normally, its jumps are its own
+  def leave(config: Config, state: State, head: At, cond: Option[Expr], exit: Option[At], breaks: List[At]): Exits =
+    val broken = merge(config, state, head, breaks)
+    cond match
+      case Some(cond) => Exits(join(config, state, head, Context.not(cond), exit, broken), Nil, Nil)
+      case None       => Exits(merge(config, state, head, exit.toList ++ breaks), Nil, Nil)
 
   // not simplified, its effect is havoc of the variables that it evolves
-  def ode(config: Config, state: State, at: At, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): (Prog, Option[At]) =
-    (Ode(time, xs, rhs, dom, attrs), Some(at.havoc(xs.toSet intersect at.values.keySet)))
+  def ode(config: Config, state: State, at: At, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): (Prog, Exits) =
+    (Ode(time, xs, rhs, dom, attrs), Exits.normal(at.havoc(xs.toSet intersect at.values.keySet)))
 
   // not simplified, its effect is havoc of the variables that it modifies
-  def par(config: Config, state: State, at: At, progs: List[Prog]): (Prog, Option[At]) =
+  def par(config: Config, state: State, at: At, progs: List[Prog]): (Prog, Exits) =
     val prog = Par(progs)
-    (prog, Some(at.havoc(prog.mod intersect at.values.keySet)))
+    (prog, Exits.normal(at.havoc(prog.mod intersect at.values.keySet)))
 
   // the position at the head of a loop with test `test` and its attributes: the variables that the body modifies are
   // choices, constrained by the invariants of the loop, also those of its tags (see State.annotated), as VCGen assumes
@@ -236,23 +266,23 @@ object Slice:
     (head.assume(config, state, value(config, state, head, And(state.annotated(attrs).invariants))), attrs_)
 
   // the statements of a block in sequence, up to the first that does not terminate normally or after which the
-  // context is inconsistent, e.g. assume false: the statements after it are unreachable
-  def sequence(config: Config, state: State, at: At, progs: List[Prog]): (List[Prog], Option[At]) =
+  // context is inconsistent, e.g. assume false: the statements after it are unreachable; the jumps of all of them
+  def sequence(config: Config, state: State, at: At, progs: List[Prog]): (List[Prog], Exits) =
     progs match
       case Nil =>
-        (Nil, Some(at))
+        (Nil, Exits.normal(at))
 
       case prog :: rest =>
         simplify(config, state, at, prog) match
-          case (prog_, Some(after)) if after.ctx.inconsistent =>
-            (List(prog_), None)
+          case (prog_, exits @ Exits(Some(after), _, _)) if after.ctx.inconsistent =>
+            (List(prog_), exits.copy(normal = None))
 
-          case (prog_, Some(after)) =>
+          case (prog_, exits @ Exits(Some(after), _, _)) =>
             val (rest_, last) = sequence(config, state, after, rest)
-            (prog_ :: rest_, last)
+            (prog_ :: rest_, last.jumps(exits))
 
-          case (prog_, None) =>
-            (List(prog_), None)
+          case (prog_, exits) =>
+            (List(prog_), exits)
 
   // the locals of a block go out of scope at its end, where the variables of the same names outside are visible
   // again with the values that they had before the block, which the block cannot have changed

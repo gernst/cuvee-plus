@@ -1,0 +1,14 @@
+method search(len: int, key: int) returns (res: int) {
+  var idx: int, found: bool;
+  idx := 0;
+  found := false;
+  while idx < len {
+    if idx == key {
+      found := true;
+      break;
+    }
+    idx := idx + 1;
+  }
+  res := idx;
+}
+

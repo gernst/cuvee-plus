@@ -15,8 +15,6 @@ sealed trait Prog:
   def funs: Set[Fun]
   // whether the program contains return
   def returns: Boolean
-  // whether the program contains break that leaves it, i.e., not inside a loop of it
-  def breaks: Boolean
   // whether the program contains a loop without invariants, whose invariant is true
   def abstracts: Boolean
   // the procedures that the program calls
@@ -43,7 +41,6 @@ case object Break extends Prog:
   def free = Set()
   def funs = Set()
   def returns = false
-  def breaks = true
   def abstracts = false
   def calls = Set()
 
@@ -52,7 +49,6 @@ case object Continue extends Prog:
   def free = Set()
   def funs = Set()
   def returns = false
-  def breaks = false
   def abstracts = false
   def calls = Set()
 
@@ -61,7 +57,6 @@ case object Return extends Prog:
   def free = Set()
   def funs = Set()
   def returns = true
-  def breaks = false
   def abstracts = false
   def calls = Set()
 
@@ -70,7 +65,6 @@ case class Spec(xs: List[Var], pre: Expr, post: Expr) extends Prog:
   def free = pre.free ++ post.free ++ xs
   def funs = pre.funs ++ post.funs
   def returns = false
-  def breaks = false
   def abstracts = false
   def calls = Set()
 
@@ -89,7 +83,6 @@ case class Assign(lhs: List[Var], rhs: List[Expr]) extends Prog:
   def free = rhs.free ++ lhs
   def funs = rhs.funs
   def returns = false
-  def breaks = false
   def abstracts = false
   def calls = Set()
 
@@ -101,7 +94,6 @@ case class Call(proc: Name, args: List[Expr], res: List[Var], vars: List[Var]) e
   def free = args.free ++ res ++ vars
   def funs = args.funs
   def returns = false
-  def breaks = false
   def abstracts = false
   def calls = Set(proc)
 
@@ -112,7 +104,6 @@ case class Block(locals: List[Var], progs: List[Prog], attrs: Attrs = Attrs.empt
   def free = (progs.free ++ attrs.free) -- locals
   def funs = progs.funs ++ attrs.funs
   def returns = progs.exists(_.returns)
-  def breaks = progs.exists(_.breaks)
   def abstracts = progs.exists(_.abstracts)
   def calls = progs.flatMap(_.calls).toSet
 
@@ -121,7 +112,6 @@ case class Choice(progs: List[Prog]) extends Prog:
   def free = progs.free
   def funs = progs.funs
   def returns = progs.exists(_.returns)
-  def breaks = progs.exists(_.breaks)
   def abstracts = progs.exists(_.abstracts)
   def calls = progs.flatMap(_.calls).toSet
 
@@ -140,17 +130,14 @@ case class If(test: Expr, left: Prog, right: Prog) extends Prog:
   def free = test.free ++ left.free ++ right.free
   def funs = test.funs ++ left.funs ++ right.funs
   def returns = left.returns || right.returns
-  def breaks = left.breaks || right.breaks
   def abstracts = left.abstracts || right.abstracts
   def calls = left.calls ++ right.calls
 
-// a break in the body leaves the loop only
 case class While(test: Expr, body: Prog, attrs: Attrs) extends Prog:
   def mod = body.mod
   def free = test.free ++ body.free ++ attrs.free
   def funs = test.funs ++ body.funs ++ attrs.funs
   def returns = body.returns
-  def breaks = false
   def abstracts = attrs.invariants.isEmpty || body.abstracts
   def calls = body.calls
 
@@ -159,7 +146,6 @@ case class Iter(body: Prog, attrs: Attrs) extends Prog:
   def free = body.free ++ attrs.free
   def funs = body.funs ++ attrs.funs
   def returns = body.returns
-  def breaks = false
   def abstracts = attrs.invariants.isEmpty || body.abstracts
   def calls = body.calls
 
@@ -173,7 +159,6 @@ case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attr
   def free = rhs.free ++ dom.free ++ attrs.free - time ++ xs
   def funs = rhs.funs ++ dom.funs ++ attrs.funs
   def returns = false
-  def breaks = false
   def abstracts = false
   def calls = Set()
 
@@ -185,7 +170,6 @@ case class Par(progs: List[Prog]) extends Prog:
   def free = progs.free
   def funs = progs.funs
   def returns = progs.exists(_.returns)
-  def breaks = progs.exists(_.breaks)
   def abstracts = progs.exists(_.abstracts)
   def calls = progs.flatMap(_.calls).toSet
 

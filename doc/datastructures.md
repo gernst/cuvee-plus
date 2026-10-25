@@ -131,7 +131,7 @@ case class Component(trace, index); case class History(trace, index)  // current
   `sort.map(f)`, `attrs.map(f)`, `prog.map(e, p)` (expressions, attributes,
   and immediate subprograms), and `cmd.map(e, p)`. Questions about the
   statements of a program are methods of each kind of statement, like `mod`
-  (`returns`, `breaks`, `abstracts`, `calls`), not a generic list of
+  (`returns`, `abstracts`, `calls`), not a generic list of
   subprograms. There is no `subexprs`: to visit the subexpressions,
   call `expr.map` for its side effect and return the argument unchanged.
   Traversals that rename bound variables, e.g. `Subst`, are written out.
@@ -235,7 +235,7 @@ case class Component(trace, index); case class History(trace, index)  // current
 ```scala
 sealed trait Prog {
   def mod: Set[Var]; def free: Set[Var]; def funs: Set[Fun]
-  def returns: Boolean; def breaks: Boolean; def abstracts: Boolean; def calls: Set[Name]
+  def returns: Boolean; def abstracts: Boolean; def calls: Set[Name]
 }
 
 case object Break; case object Continue; case object Return
