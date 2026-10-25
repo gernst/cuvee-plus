@@ -1,0 +1,24 @@
+logic LIA
+
+var g: int
+
+var h: int
+
+method set()
+  modifies g
+{
+  g := 1;
+}
+
+method down(n: int)
+  modifies g, h
+{
+  if 0 < n {
+    down(n - 1);
+    while h < n {
+      set();
+      h := h + 1;
+    }
+  }
+}
+

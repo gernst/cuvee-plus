@@ -65,9 +65,11 @@ object Fallback extends Transform:
       case Assert(Goal | Lemma, _, _, attrs) if !attrs.contains("free") =>
         Error.raise("polymorphic goals and lemmas are not supported by -fallback", attrs.values[cuvee.sexpr.Id]("named").map(_.text)*)
 
-      // assumptions that cannot be expressed are dropped, which is sound, unlike assuming their stronger lowering
+      // assumptions that cannot be expressed are dropped, which is sound, unlike assuming their stronger lowering;
+      // so are the declarations of trace equation systems, and those of folds, which are unfolded where they are applied
+      // (see expr), also folds that are not part of the lemma database, e.g. of an example
 
-      case decl: Decl if decl.attrs.contains("teq") =>
+      case decl: Decl if decl.attrs.contains("teq") || decl.attrs.contains("fold") =>
         Nil
 
       case Assert(_, _, All(xs, _), _) if xs.exists(x => x.typ.cons.exists(sorts.contains)) =>

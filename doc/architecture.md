@@ -31,7 +31,7 @@ transformation and any output.
 | `cuvee.pipe` | `Source`, `Stage`, `Sink`, `Report`, `Pipe` and the `Printer` interface. |
 | `cuvee.verify` | `VCGen` (weakest preconditions to goals), `TEQ` (symbolic execution and trace equation systems), and `Horn` (constrained Horn clauses). |
 | `cuvee.simplify` | `Simplify` (contextual simplification under a `Context`), `Arith` (polynomials over `Int` and `Real`), `Rewrite` (rewrite engine for conditional rules), and `FourierMotzkin` (linear constraints over the rationals). |
-| `cuvee.prove` | the deduction engine of `-prove` ([prove.md](prove.md)): `Prove` (the transform), `Simplify` and `Rewrite` (the traversal and the matcher, copied from `cuvee.simplify` and adapted, independent of it), `Context` with `Classes` (congruence closure), `Linear` and `Simplex` (linear arithmetic over the rationals), `Views` (the per-variable projections of traces of several accumulators), and its own `Arith`, `Normalize`, `Rule`. |
+| `cuvee.prove` | the deduction engine of `-prove` ([prove.md](prove.md)): `Prove` (the transform), `Simplify` and `Rewrite` (the traversal and the matcher, copied from `cuvee.simplify` and adapted, independent of it), `Context` with `Classes` (congruence closure), `Linear` and `Simplex` (linear arithmetic over the rationals), `Views` (the per-variable projections of traces of several accumulators), `Slice` (procedures by symbolic execution), and its own `Arith`, `Normalize`, `Rule`. |
 | `cuvee.transform` | `Implement` (implemented functions replaced by their implementations, functions or methods, `-implement`), `Flat` (records are replaced by their fields, equations of bound variables are inlined), `Split` (goals into individual obligations), `Monomorph` (instances of polymorphic functions), `Fallback` (trace equation systems in first-order logic), and `Fuse` (fixpoint fusion of recursive functions, `-fuse`). |
 | `cuvee` | `Cuvee` (main), `Config` (command line), `Error` and `Debug`. |
 
@@ -186,7 +186,8 @@ for every sink.
   - The `-chc` tests use [examples/dafny/horn](../examples/dafny/horn) and
     [examples/boogie/horn](../examples/boogie/horn), whose procedures with a
     body have no contracts.
-- [`Prove`](../src/cuvee/prove/Prove.scala) (`-prove`) rewrites assertions and function definitions to a fixpoint
+- [`Prove`](../src/cuvee/prove/Prove.scala) (`-prove`) simplifies procedures by symbolic execution
+  ([`Slice`](../src/cuvee/prove/Slice.scala)), and rewrites assertions and function definitions to a fixpoint
   under the facts of the context ([`Simplify`](../src/cuvee/prove/Simplify.scala)), with conditional rewrite rules
   ([`Rewrite`](../src/cuvee/prove/Rewrite.scala)), congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole congruence closure and a simplex as its context, the views of traces of several accumulators, rules over whole
   cycles and forward lemmas ([`Forward`](../src/cuvee/prove/Forward.scala)), see [prove.md](prove.md).
@@ -398,8 +399,11 @@ non-constants are uninterpreted functions declared `:abstract`, with rewrite rul
 of `-prove` for the operands 0 and 1 (`{:smt2} {:rw}`, not passed to the
 solvers), such that the solver sink takes a refutation that depends on them for no
 counterexample (`unknown`). It builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
-that it can infer the global variables that each function and each loop
-modifies. Functions and loops with ACSL `assigns` or `loop assigns` clauses
+that it can infer the global variables that each function modifies: the bodies are resolved first, then the modifies
+clauses are a fixpoint over them, since functions may call each other (`c.Parser.modifies`), and only then are the
+bodies checked, whose calls get the modifies clauses of their functions (see `Call` in
+[datastructures.md](datastructures.md)); parameters with the name of a global variable are renamed apart, as local
+variables are. Functions and loops with ACSL `assigns` or `loop assigns` clauses
 modify the global variables listed there instead (their identifiers, e.g. `a`
 for `a[0..N-1]`), which `Type.check` holds against the body, unless `-teq` or
 `-chc` is among the transforms, which infer them always (`c.Parser.assigned`,
@@ -446,8 +450,10 @@ loop that is the whole body needs a `sequence` around it for its own. Tags on
 other statements are rejected, since the core has no annotations there, and
 so are `define-procs-rec`, labels and gotos, the properties `:recurring` and
 `:not-recurring`, `:decreases-lex`, witnesses and traces. The modified global
-variables of procedures and loops are inferred (`Parser.modifies`), as in C,
-unless the body lists them as `:modifies`. The verdict of a task is decided by
+variables of procedures are inferred from the resolved body (`Parser.modifies`), as in C, unless the body lists them
+as `:modifies`, and recorded before the body is checked, such that its calls, also the recursive ones, get the
+modifies clauses of their procedures; a recursive call adds nothing to the clause, which is therefore the fixpoint, as
+mutual recursion is not supported. Loops have no modifies clause unless they list one. The verdict of a task is decided by
 the BenchExec module [cuvee.py](../cuvee.py) from the answers to the goals
 that the `verify-call`s flush (see "Answers").
 
@@ -465,7 +471,7 @@ What the core has beyond SV-LIB is written as extensions of its syntax:
 | values at the entry | `(old x)` besides `(at x tag)` |
 
 A script printed and read back keeps its meaning but not its text: the
-modifies clauses of bodies and loops are dropped and inferred again.
+modifies clauses of bodies and loops are dropped, those of bodies are inferred again.
 
 ## Errors and debugging
 

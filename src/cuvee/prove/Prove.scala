@@ -19,11 +19,15 @@ object Prove extends Transform:
 
     def fresh() = Context.empty(state).withRules(rules).copy(forward = forward)
 
+    // procedures are simplified by symbolic execution (see Slice)
     val cmds_ =
       for
         cmd <- cmds
         ctx = fresh()
-        cmd_ <- if cmd.isRule || Forward.is(cmd) then List(cmd) else counterexample(cases(config, state, fresh, Simplify.simplify(config, state, ctx, cmd), 4)) :: used(config, ctx, cmd)
+        cmd_ <- cmd match
+          case _ if cmd.isRule || Forward.is(cmd) => List(cmd)
+          case proc: DefineProc                  => List(Slice.simplify(config, state, rules, forward, proc))
+          case _                                 => counterexample(cases(config, state, fresh, Simplify.simplify(config, state, ctx, cmd), 4)) :: used(config, ctx, cmd)
         if !isTrivial(cmd_)
       yield cmd_
 

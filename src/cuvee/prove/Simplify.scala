@@ -14,7 +14,7 @@ import util.intersects
 // contextual simplification of formulas, where each subterm is simplified under the facts known to hold at its
 // position, the traversal of the engine of -prove (see Prove): the context holds the facts in classes, linear
 // constraints and as they are (see Context), the reads of the components of state traces are markers (see Views),
-// programs are not simplified
+// programs are not simplified here (see Slice)
 object Simplify:
   // `ctx` is an empty context, which provides the rewrite rules;
   // the antecedents of assertions are assumed in the context of their succedents during simplification;

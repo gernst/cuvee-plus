@@ -1401,19 +1401,12 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case _ => false
       case _                                   => false
 
-  // loops modify the global variables that their body assigns or that the functions it calls modify,
-  // which are their modifies clause, as C has no annotations for it, or those of their loop assigns (see assigned),
-  // followed by the clauses of ACSL (see loop) and the location of the loop in the source (see location)
+  // loops have a modifies clause only if they have loop assigns (see assigned), otherwise they modify what their body
+  // modifies (see Type.check); followed by the clauses of ACSL (see loop) and the location of the loop in the source
+  // (see location)
   def while_(test: core.Expr, body: core.Prog, clauses: List[(String, Option[core.Expr])] = Nil, assigns: Option[List[core.Var]] = None,
              location: List[(String, Option[Any])] = Nil): core.Prog =
-    def calls(prog: core.Prog): Set[core.Var] =
-      prog match
-        case core.Call(f, _, _) => state.procattrs(f).modifies.toSet
-        case _                  => prog.subprogs.flatMap(calls).toSet
-
-    val vars = globals.values.map(_._1).toSet
-    val mod = assigns.map(_.toSet).getOrElse((body.mod.toSet intersect vars) ++ calls(body))
-    val attrs = if mod.isEmpty then Nil else List("modifies" -> Some(mod.toList.sortBy(_.name.toString)))
+    val attrs = assigns.toList.map(xs => "modifies" -> Some(xs.sortBy(_.name.toString)))
     state.progs.while_(test, body, Attrs(attrs ++ clauses ++ location))
 
   // the attribute :location (line column function) of a loop whose keyword is at `at`, for the locations of
@@ -1463,78 +1456,11 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case Quant(_, _, body)    => List(body)
       case _                    => Nil
 
-  // the functions called in an expression
-  def calls(e: Expr): Set[String] =
-    e match
-      case Call(f, _) => parts(e).toSet.flatMap(calls) + f
-      case _          => parts(e).toSet.flatMap(calls)
-
   // the variables incremented or decremented in an expression
   def writes(e: Expr): Set[String] =
     e match
       case Incr(lhs, _, _) => parts(e).toSet.flatMap(writes) ++ root(lhs)
       case _               => parts(e).toSet.flatMap(writes)
-
-  // the global variables assigned in a function body directly, respecting local declarations that shadow them,
-  // and the functions that it calls
-  def effects(scope: Set[String], s: Stmt): (Set[String], Set[String]) =
-    def global(x: String) =
-      if globals.contains(x) && !scope.contains(x) then Set(x) else Set()
-
-    // the global variables incremented in expressions, and the functions they call
-    def exprs(es: List[Expr]): (Set[String], Set[String]) =
-      (es.toSet.flatMap(writes).flatMap(global), es.toSet.flatMap(calls))
-
-    // iteratively, since the statements of a block may be many, e.g. in the outputs of the reducers of SV-COMP
-    def all(scope: Set[String], stmts: List[Stmt]): (Set[String], Set[String]) =
-      val (_, mod, called) =
-        stmts.foldLeft((scope, Set[String](), Set[String]())):
-          case ((scope, mod, called), Decl(_, _, decls)) =>
-            val (mod_, called_) = exprs(decls.flatMap(_.init))
-            (scope ++ decls.map(_.name), mod ++ mod_, called ++ called_)
-
-          case ((scope, mod, called), stmt) =>
-            val (mod_, called_) = effects(scope, stmt)
-            (scope, mod ++ mod_, called ++ called_)
-      (mod, called)
-
-    s match
-      case Assign(lhs, _, rhs)                 =>
-        val (mod, called) = exprs(List(lhs, rhs))
-        (root(lhs).flatMap(global) ++ mod, called)
-      case ExprStmt(e)                         => exprs(List(e))
-      case Return(e)                           => exprs(e.toList)
-      case If(test, left, right)               => all(scope, List(ExprStmt(test), left) ++ right.toList)
-      case While(test, body)                   => all(scope, List(ExprStmt(test), body))
-      case DoWhile(body, test)                 => all(scope, List(body, ExprStmt(test)))
-      case For(init, test, step, body)         => all(scope, init.toList ++ test.map(ExprStmt(_)).toList ++ step.toList :+ body)
-      case Loop(test, body, step)              => all(scope, test.map(ExprStmt(_)).toList ++ step.toList :+ body)
-      case Block(stmts)                        => all(scope, stmts)
-      case Labeled(_, stmt)                    => all(scope, List(stmt))
-      case Switch(test, body)                  => all(scope, ExprStmt(test) :: body)
-      case Case(_, stmt)                       => all(scope, List(stmt))
-      case Annotated(_, loop)                  => all(scope, List(loop))
-      case decl: Decl                          => all(scope, List(decl))
-      case _                                   => (Set(), Set())
-
-  // the global variables modified by each function, directly or by the functions it calls, as a fixpoint
-  def modifies(defs: List[Function]): Map[String, Set[String]] =
-    val direct =
-      for Function(_, f, params, body) <- defs
-      yield f -> effects(params.map(_._2).toSet, body.getOrElse(Block(Nil)))
-
-    val calls = direct.toMap.view.mapValues(_._2.filter(functions.contains)).toMap
-    var mod = direct.toMap.view.mapValues(_._1).toMap
-
-    var changed = true
-    while changed do
-      val mod_ =
-        for (f, xs) <- mod
-        yield f -> (xs ++ calls(f).flatMap(g => mod.getOrElse(g, Set())))
-      changed = mod_ != mod
-      mod = mod_
-
-    mod
 
   // the global declarations of ACSL: logic functions and predicates are functions, defined by their body if they
   // have one, which may call them recursively, axioms are axioms, and lemmas are free lemmas, which are trusted,
@@ -1635,7 +1561,6 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       if !pointer then declared(state.vars(x)) = (elem(t, words), sizes, init)
 
     val initialized = inits.toSet.flatMap(_.mod).map(_.name.name)
-    val mod = modifies(defs.values.toList).map((f, xs) => if f == "main" then f -> (xs ++ initialized) else f -> xs)
 
     // the precondition of main that the global variables without initializer are zero,
     // which is type checked here, since the attributes of procedures are not checked with their bodies
@@ -1649,19 +1574,19 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
     // the declarations of ACSL in their order before the contracts of the procedures, which may refer to them
     val logical = mutable.Queue.from(tops.collect { case top @ (_: LogicFun | _: Property) => logic(top) })
 
-    // procedures are declared before the bodies are resolved, since they may call each other
+    // the modifies clauses of the assigns clauses of ACSL by function, main also modifies the global variables that it
+    // initializes; the others are inferred from the bodies (see modifies)
+    val assigns = mutable.Map[String, List[core.Var]]()
+
+    // procedures are declared before the bodies are resolved, since they may call each other; parameters that shadow
+    // global variables are renamed apart, as local variables are (see block)
     for (name, Function(ret, _, params, _)) <- defs
     do
-      val in = params.map((t, x) => state.exprs.formal(x, typ(t)))
+      val in = params.map((t, x) => if globals.contains(x) then state.exprs.formal(x, typ(t)).fresh else state.exprs.formal(x, typ(t)))
       val out = if ret == VoidType then Nil else List(state.exprs.formal("result", typ(ret)))
       val scope = globals.toMap ++ (for ((t, x), v) <- params zip in yield x -> (v, t))
-      // main also modifies the global variables that it initializes
-      val mod_ =
-        assigned(scope, contracts.getOrElse(name, Nil), "assigns") match
-          case Some(xs) if name == "main" => (xs ++ initialized.map(globals(_)._1)).distinct.sortBy(_.name.toString)
-          case Some(xs)                   => xs
-          case None                       => mod(name).toList.sorted.map(globals(_)._1)
-      val modifies = if mod_.isEmpty then Nil else List("modifies" -> Some(mod_))
+      for xs <- assigned(scope, contracts.getOrElse(name, Nil), "assigns")
+      do assigns(name) = if name == "main" then (xs ++ initialized.map(globals(_)._1)).distinct.sortBy(_.name.toString) else xs
       val requires = if name == "main" && zeros.nonEmpty then List("requires" -> Some(zeros_)) else Nil
       val contract = clauses(scope, Env(out.headOption.map((_, ret)), None), contracts.getOrElse(name, Nil))
       // the ranges of the parameters of unsigned types of functions with annotations, as in Frama-C/WP
@@ -1671,12 +1596,21 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
         else
           for ((t, _), v) <- params zip in if t.isInstanceOf[IntType] && !t.asInstanceOf[IntType].signed; phi <- bounds(t, v)
           yield "requires" -> Some(state.exprs.check(core.Scope.empty ++ in, phi, state.types.sort("Bool")))
-      val attrs = Attrs(modifies ++ requires ++ ranges ++ contract)
+      val attrs = Attrs(requires ++ ranges ++ contract)
 
       Error.report("parameter named result", name):
         require(ret == VoidType || !params.exists(_._2 == "result"))
 
       state = state.declare(name, Nil, in, out, attrs)
+
+    // the bodies in the order of the input, resolved before their modifies clauses are known, which the type check
+    // needs (see Call)
+    val bodies =
+      for case f @ Function(_, name, _, Some(body)) <- tops if defs(name) eq f
+      yield name -> define(f, body, if name == "main" then inits.toList else Nil)
+
+    for (name, mod) <- modifies(assigns.toMap, bodies.toMap)
+    do state = state.copy(procattrs = state.procattrs.updated(name, Attrs(List("modifies" -> Some(mod))) ++ state.procattrs(name)))
 
     // the commands in the order of the input, where a function is emitted at its definition
     for top <- tops
@@ -1694,19 +1628,51 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
             case None =>
               cmds += state.cmds.declareProc(name)
 
-            case Some(body) =>
-              val entry = if name == "main" then inits.toList else Nil
-              val body_ = define(f, body, mod(name), entry)
-              state = state.define(name, body_)
+            case Some(_) =>
+              state = state.define(name, check(name, bodies.toMap.apply(name)))
               cmds += state.cmds.defineProc(name)
 
         case _ =>
 
     cmds.toList
 
-  // parameters that are assigned are copied into fresh locals, since the inputs of procedures are fixed,
-  // followed by the statements on entry, i.e. the initializers of the global variables for main
-  def define(f: Function, body: Block, mod: Set[String], entry: List[core.Prog]): core.Prog =
+  // the modifies clauses of the functions: those of `assigns`, and for the others the global variables that their
+  // `bodies` assign, directly or by the functions that they call, as a fixpoint, since they may call each other;
+  // functions without body and assigns clause modify none; the calls of the bodies are not resolved yet, they modify
+  // no global variables (see Call), and .mod has the assigned local variables and results as well
+  def modifies(assigns: Map[String, List[core.Var]], bodies: Map[String, core.Prog]): Map[String, List[core.Var]] =
+    val vars = globals.values.map(_._1).toSet
+    val direct =
+      for (name, body) <- bodies if !assigns.contains(name)
+      yield name -> (body.mod intersect vars)
+
+    var mod = direct
+    var changed = true
+    while changed do
+      val mod_ =
+        for (name, xs) <- mod
+        yield name -> (xs ++ bodies(name).calls.flatMap(g => assigns.get(g.name).map(_.toSet).orElse(mod.get(g.name)).getOrElse(Set())))
+      changed = mod_ != mod
+      mod = mod_
+
+    val inferred =
+      for (name, xs) <- mod if xs.nonEmpty
+      yield name -> xs.toList.sortBy(_.name.toString)
+    assigns.filter(_._2.nonEmpty) ++ inferred
+
+  // the body of function `name`, checked with its modifies clause, which the inputs and the global variables that it
+  // does not modify must not be assigned
+  def check(name: String, prog: core.Prog): core.Prog =
+    val core.Proc(_, _, in, out) = state.procs(name)
+    val mod = state.procattrs(name).modifies.toSet
+    val fixed = in.toSet ++ (globals.values.map(_._1).toSet -- mod)
+    val scope = core.Scope.empty ++ globals.values.map(_._1).toList ++ in ++ out
+    state.progs.check(scope, fixed, mod, prog)
+
+  // the body of `f`, not checked yet (see check): parameters that are assigned are copied into fresh locals, since the
+  // inputs of procedures are fixed, followed by the statements on entry, i.e. the initializers of the global variables
+  // for main
+  def define(f: Function, body: Block, entry: List[core.Prog]): core.Prog =
     val Function(ret, name, params, _) = f
     val core.Proc(_, _, in, out) = state.procs(name)
 
@@ -1724,8 +1690,4 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
     val body_ = block(scope, ctx, body.stmts, body = true)
     val init = for (_, v, copy, _) <- copies yield state.progs.assign(List(copy), List(v))
-    val prog = state.progs.block(copies.map(_._3) ++ ctx.temps.toList, init ++ entry :+ body_)
-
-    val fixed = in.toSet ++ (globals.values.map(_._1).toSet -- mod.map(globals(_)._1))
-    val scope_ = core.Scope.empty ++ globals.values.map(_._1).toList ++ in ++ out
-    state.progs.check(scope_, fixed, mod.map(globals(_)._1), prog)
+    state.progs.block(copies.map(_._3) ++ ctx.temps.toList, init ++ entry :+ body_)

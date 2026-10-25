@@ -75,19 +75,13 @@ object VCGen extends Transform:
         val post_ = Old.elim(gs, gs_, post)
         val phi = wp(state, gs, name, assume, commit, body_, post_, False, False, post_)
         val phi_ = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(phi)))
-        val attrs = if abstracts(body_) then Attrs.from("abstract") else Attrs.empty
+        // a loop without invariants, whose invariant is true, makes the goal stronger than the specification, such that
+        // its refutation is no counterexample (see Solver.sink)
+        val attrs = if body_.abstracts then Attrs.from("abstract") else Attrs.empty
         List(Assert(Goal, params, phi_, attrs))
 
       case _ =>
         List(cmd)
-
-  // whether `prog` contains a loop without invariants, whose invariant is true, such that the goal is stronger than
-  // the specification and its refutation is no counterexample (see Solver.sink)
-  def abstracts(prog: Prog): Boolean =
-    prog match
-      case While(_, _, attrs) if attrs.invariants.isEmpty => true
-      case Iter(_, attrs) if attrs.invariants.isEmpty     => true
-      case _                                              => prog.subprogs.exists(abstracts)
 
   // formal parameters, precondition, and postcondition of procedure `name`
   def contract(state: State, name: Name): (List[Var], List[Var], Expr, Expr) =
@@ -230,7 +224,7 @@ object VCGen extends Transform:
   // initially and assigned to the results at the end and at a return, old(e) in the body refers to the values gs_ of
   // the global variables at the call, and the type parameters are instantiated by the arguments and results
   def inlining(state: State, gs: List[Var], call: Call, post: Expr): Expr =
-    val Call(name, args, res) = call
+    val Call(name, args, res, _) = call
     val (in, out, _, _) = contract(state, name)
     val types = Type.bind(state, in.types ++ out.types, args.types ++ res.types)
     val (vars_, rename) = Subst.rename(in ++ out)
@@ -251,7 +245,7 @@ object VCGen extends Transform:
   // measure of `proc` on recursive calls, the fresh values of the results and the modified global variables,
   // the postcondition over them, and the renaming of the results and modified variables to these values
   def instance(state: State, proc: Name, call: Call): (Expr, List[Var], Expr, Subst[Nothing, Var]) =
-    val Call(name, args, res) = call
+    val Call(name, args, res, mod) = call
     val (in, out, pre, phi) = contract(state, name)
 
     Error.report("wrong number of arguments or results in call", name, args, res):
@@ -259,7 +253,6 @@ object VCGen extends Transform:
 
     // results and the modified global variables are fresh since `args` may refer to their old values,
     // the precondition refers to the values of the global variables before the call, as does old(e) in the postcondition
-    val mod = Type.expand(state, state.procattrs(name).modifies)
     val (vars_, rename) = Subst.rename(res ++ mod)
     // the substitutions replace the formal parameters and instantiate the type parameters of a polymorphic procedure
     // by the types of the arguments, and those of the results, which su_ replaces in addition,

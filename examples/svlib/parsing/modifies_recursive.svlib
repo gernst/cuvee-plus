@@ -1,0 +1,17 @@
+; ./Cuvee.sh -print dfy examples/svlib/parsing/modifies_recursive.svlib
+; the modifies clause of a procedure is inferred from its body before the body is checked: the global variables that
+; it assigns and that the procedures it calls modify; a recursive call adds none, it gets the clause of its procedure
+; when the body is checked; loops have no modifies clause, they modify what their body does
+(set-logic LIA)
+(declare-var g Int)
+(declare-var h Int)
+(define-proc set () () ()
+  (assign (g 1)))
+(define-proc down ((n Int)) () ()
+  (if (< 0 n)
+    (sequence
+      (call down ((- n 1)) ())
+      (while (< h n)
+        (sequence
+          (call set () ())
+          (assign (h (+ h 1))))))))

@@ -338,10 +338,10 @@ object Printer extends cuvee.pipe.Printer:
       case Assign(List(x), List(rhs)) =>
         Group(text(name(x.name)) ~~ text("=") ~ Nest(2, line ~ doc(rhs))) ~ text(";")
 
-      case Call(proc, args, Nil) =>
+      case Call(proc, args, Nil, _) =>
         call(name(proc), args.map(doc(_))) ~ text(";")
 
-      case Call(proc, args, List(x)) =>
+      case Call(proc, args, List(x), _) =>
         text(name(x.name)) ~~ text("=") ~~ call(name(proc), args.map(doc(_))) ~ text(";")
 
       case Block(_, _, _) =>

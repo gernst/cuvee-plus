@@ -1,0 +1,10 @@
+method branches(a: int) returns (r: int) {
+  var x: int, y: int;
+  x := a;
+  y := 0;
+  if x < 0 {
+    x := -x;
+  }
+  r := x;
+}
+

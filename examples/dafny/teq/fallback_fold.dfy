@@ -2,7 +2,7 @@
 // a function defined with {:fold} whose result is no trace or list is unfolded, and its body lowered: the sum of the
 // squares below n, the fold of the sum of a map over a counter, is the recursive sum over the entries of the map
 
-function {:teq} {:fold} squares_below(n: Nat): int
+function {:fold} squares_below(n: Nat): int
 {
   sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: k * k))
 }

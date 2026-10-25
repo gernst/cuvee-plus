@@ -413,10 +413,10 @@ object Printer extends cuvee.pipe.Printer:
       case Assign(lhs, rhs) =>
         Group(commas(lhs.map(doc(_))) ~~ text(":=") ~ Nest(2, line ~ commas(rhs.map(doc(_))))) ~ text(";")
 
-      case Call(proc, args, Nil) =>
+      case Call(proc, args, Nil, _) =>
         call(name(proc), args.map(doc(_))) ~ text(";")
 
-      case Call(proc, args, res) =>
+      case Call(proc, args, res, _) =>
         Group(commas(res.map(doc(_))) ~~ text(":=") ~~ call(name(proc), args.map(doc(_)))) ~ text(";")
 
       case Block(_, _, _) =>

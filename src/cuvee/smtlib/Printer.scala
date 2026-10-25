@@ -504,7 +504,7 @@ object Printer extends cuvee.pipe.Printer:
       case Assign(lhs, rhs) =>
         apps(atom("assign"), eqs(lhs, rhs))
 
-      case Call(proc, args, res) =>
+      case Call(proc, args, res, _) =>
         apps(atom("call"), mangle(proc), list(lines(args)), list(lines(res)))
 
       case Block(Nil, progs, attrs) =>

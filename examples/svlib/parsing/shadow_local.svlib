@@ -1,0 +1,6 @@
+; ./Cuvee.sh -quiet examples/svlib/parsing/shadow_local.svlib
+; local variables must not have the name of a global variable, which a call may modify (see Call)
+(set-logic LIA)
+(declare-var g Int)
+(define-proc p () () ((g Int))
+  (assign (g 1)))

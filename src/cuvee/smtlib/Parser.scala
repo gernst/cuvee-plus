@@ -368,8 +368,8 @@ class Parser(private var init: State):
   // of procedure bodies, written inline as (! s attrs) or linked by annotate-tag commands to the statements with the
   // tag; the variables of a property are resolved in the scope of the tagged statement, its functions in the state at
   // the command, which is why annotate-tag commands are resolved here but attached to the statements only by the
-  // transforms (see State.annotated); the global variables that procedures and loops modify are inferred, unless the
-  // body lists them as :modifies;
+  // transforms (see State.annotated); the global variables that procedures modify are inferred, unless the body lists
+  // them as :modifies, loops have no modifies clause unless they list one;
   // not part of SV-LIB: blocks with local variables, assert, spec, abort, iter, ode, par, polymorphic procedures, and
   // procedures without body (see declaration);
   // not supported: define-procs-rec, labels and gotos, tags on statements other than loops, procedure bodies and
@@ -408,19 +408,27 @@ class Parser(private var init: State):
 
     state.progs.modifies(name, attrs_.modifies)
 
-    val attrs__ = implementation(name, Scope(params) ++ in, out.types, inferred(Attrs(attrs_.attrs.filterNot(_._1 == "check-true")), body_))
+    val attrs__ = implementation(name, Scope(params) ++ in, out.types, inferred(name, Attrs(attrs_.attrs.filterNot(_._1 == "check-true")), body_))
 
+    // the modifies clause is recorded before the body is checked, which resolves the calls with the modifies clauses
+    // of their procedures (see Call), also the recursive ones
+    state = state.copy(procattrs = state.procattrs + (name -> attrs__))
     val checked = state.progs.body(outer, in, attrs__.modifies, body_)
-    state = state.copy(procattrs = state.procattrs + (name -> attrs__)).define(name, checked)
+    state = state.define(name, checked)
     DefineProc(state.procs(name), checked, attrs__)
 
-  // the properties of a procedure body or loop `prog` with its modifies clause, unless it lists one already
-  def inferred(attrs: Attrs, prog: Prog): Attrs =
-    if attrs.contains("modifies") then attrs else attrs ++ modifies(prog)
+  // the properties of the body `prog` of procedure `name` with its modifies clause, unless it lists one already
+  def inferred(name: Name, attrs: Attrs, prog: Prog): Attrs =
+    if attrs.contains("modifies") then attrs else attrs ++ modifies(name, prog)
 
-  // the global variables that `prog` assigns, directly or by calls (see Par.modifies), as its modifies clause
-  def modifies(prog: Prog): Attrs =
-    val mod = (Par.modifies(state, prog) intersect state.globals.toSet).toList.sortBy(_.name.toString)
+  // the global variables that the body `prog` of procedure `name` assigns, directly or by the procedures that it calls,
+  // whose modifies clauses are known, as its modifies clause; a recursive call modifies the global variables of this
+  // clause, hence it adds none, and as mutual recursion is not supported (define-procs-rec), this is the fixpoint;
+  // the calls of `prog` are not resolved yet, they modify no global variables (see Call), and .mod has the assigned
+  // local variables and results as well
+  def modifies(name: Name, prog: Prog): Attrs =
+    val called = (prog.calls - name).toList.flatMap(state.procattrs.get(_).toList.flatMap(_.modifies))
+    val mod = ((prog.mod ++ called) intersect state.globals.toSet).toList.sortBy(_.name.toString)
     if mod.isEmpty
     then Attrs.empty
     else Attrs(List("modifies" -> Some(mod)))
@@ -453,13 +461,13 @@ class Parser(private var init: State):
             val tagged = Tagged(scope, proc)
             for tag <- tagsOf(attrs) do record(tag, tagged)
             val prog_ = stmt(scope, proc, prog)
-            state.progs.while_(expr(scope, test), prog_, inferred(properties(tagged, true, attrs), prog_))
+            state.progs.while_(expr(scope, test), prog_, properties(tagged, true, attrs))
 
           case List(Id("iter"), prog) =>
             val tagged = Tagged(scope, proc)
             for tag <- tagsOf(attrs) do record(tag, tagged)
             val prog_ = stmt(scope, proc, prog)
-            state.progs.iter(prog_, inferred(properties(tagged, true, attrs), prog_))
+            state.progs.iter(prog_, properties(tagged, true, attrs))
 
           // the properties may refer to the time, which is bound on Real
           case List(Id("ode"), Id(time), List(pairs*), dom) =>
@@ -529,7 +537,7 @@ class Parser(private var init: State):
 
       case List(Id("while"), test, prog) =>
         val prog_ = stmt(scope, proc, prog)
-        state.progs.while_(expr(scope, test), prog_, modifies(prog_))
+        state.progs.while_(expr(scope, test), prog_, Attrs.empty)
 
       case List(Id("label" | "goto"), _*) =>
         Error.raise("not supported", "labels and gotos")
@@ -552,7 +560,7 @@ class Parser(private var init: State):
 
       case List(Id("iter"), prog) =>
         val prog_ = stmt(scope, proc, prog)
-        state.progs.iter(prog_, modifies(prog_))
+        state.progs.iter(prog_, Attrs.empty)
 
       // the time is bound on Real
       case List(Id("ode"), Id(time), List(pairs*), dom) =>

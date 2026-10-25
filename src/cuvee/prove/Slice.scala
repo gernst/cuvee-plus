@@ -1,0 +1,263 @@
+package cuvee.prove
+
+import cuvee.Config
+import cuvee.core._
+
+// the simplification of procedures by symbolic execution, slice by slice, which keeps the structure of the program, its statements,
+// assignments, and if-then-else, and simplifies the expressions in it under the facts known at their position;
+// nothing that is known is forgotten:
+//
+// - the context speaks about choices only, fresh variables for the nondeterministic choices of the program: the
+//   inputs at the entry (parameters, outputs, globals, and the locals of blocks, whose initial values are not
+//   determined), havoc and the outputs of contracts, the variables modified by calls, the alternatives of a choice
+//   where they differ, and the state at the head of a loop; choices never change, hence the facts over them hold
+//   until the end of the procedure;
+// - each program variable is bound to its current value, a term over the choices (see At.values): an assignment
+//   replaces the binding and adds no fact, a branch with a test joins the values by ite;
+// - an expression of the program is simplified as its value in the context, and written back over the program
+//   variables in scope (see written), where its value is expressed by them; otherwise it stays as it is, such that the
+//   program never mentions a choice
+//
+// a loop starts from fresh choices for the variables that it modifies, constrained by its invariants; the facts from
+// before the loop hold in its body and after it, since they do not speak about these choices; after the loop the test
+// is known not to hold, unless the body breaks out of it
+object Slice:
+  // a position in the program: the context of the facts over the choices, the values of the program variables in
+  // scope over the choices, and the facts assumed since the entry of the procedure, whose suffixes are the facts of
+  // the branches that a join combines (see join)
+  case class At(ctx: Context, values: Map[Var, Expr], facts: List[Expr]):
+    def assume(config: Config, state: State, phi: Expr): At =
+      if phi == True
+      then this
+      else At(Forward.assume(config, state, ctx, List(phi), Nil), values, facts :+ phi)
+
+    // fresh choices for `xs`
+    def havoc(xs: Iterable[Var]): At =
+      copy(values = values ++ xs.map(x => x -> x.fresh))
+
+  // the context of a procedure has the rewrite rules and forward lemmas of the input, with one number of steps for the
+  // whole procedure, as a goal has (see Context.withRules), and no polarity, which expressions of programs do not have;
+  // the inputs of the procedure are choices, also the outputs and the global variables of the body, whose initial
+  // values are those of the caller; the precondition holds at the entry; the body stays a block
+  def simplify(config: Config, state: State, rules: List[Rule], forward: List[Forward], cmd: DefineProc): DefineProc =
+    val DefineProc(proc, body, attrs) = cmd
+    val ctx = Context.empty(state).withRules(rules).copy(forward = forward).neutral
+    val entry = At(ctx, Map(), Nil).havoc(proc.in ++ proc.out ++ body.free)
+    val at = entry.assume(config, state, value(config, state, entry, state.annotated(attrs).requires))
+    val (body_, _) = simplify(config, state, at, body)
+    body_ match
+      case _: Block => DefineProc(proc, body_, attrs)
+      case _        => DefineProc(proc, Block(Nil, List(body_)), attrs)
+
+  // the value of `expr` at `at`, simplified in its context; the ite of the values joined after branches are lifted out of the atoms of
+  // formulas, whose cases are then decided each under its test, e.g. x < 0 is false after if (x < 0) { x := -x; }
+  def value(config: Config, state: State, at: At, expr: Expr): Expr =
+    val su = Subst(Map(), at.values)
+    val expr_ = if expr.typ == Sort.bool then Normalize.lift(su(expr)) else su(expr)
+    Simplify.simplify(config, state, at.ctx, expr_)
+
+  // `expr` of the program, whose value is `value`, as `value` over the program variables in scope, by the variables
+  // whose values are its subterms, if no choice remains (choices are fresh, never program variables), otherwise
+  // `expr` as it is; literals are not replaced by variables of the same value; binders are not entered, since a
+  // program variable could be captured there; of several variables with the same value, those of `expr` are preferred,
+  // e.g. x of x < 0 after x := a
+  def written(at: At, expr: Expr, value: Expr): Expr =
+    val inverse =
+      for (x, e) <- at.values.toList.sortBy((x, _) => (expr.free contains x, x.name.toString))
+      if !e.isInstanceOf[Lit] && e != True && e != False
+      yield e -> x
+    val holders = inverse.toMap
+
+    def back(expr: Expr): Expr =
+      expr match
+        case _ if holders contains expr => holders(expr)
+        case _: App                     => expr.map(back)
+        case _                          => expr
+
+    val expr_ = back(value)
+    if expr_.free.subsetOf(at.values.keySet)
+    then expr_
+    else expr
+
+  // `expr` of the program, simplified at `at` and written back
+  def simplify(config: Config, state: State, at: At, expr: Expr): Expr =
+    written(at, expr, value(config, state, at, expr))
+
+  // the simplified program and the position after it, none if it does not terminate normally, i.e., it jumps;
+  // unreachable statements are dropped, after a jump or an inconsistent context, the branch of a decided test, a loop
+  // that is not entered, and so are those of a block that have no effect;
+  // each kind of statement has its helper, which simplifies its parts at the positions where they are evaluated
+  def simplify(config: Config, state: State, at: At, prog: Prog): (Prog, Option[At]) =
+    prog match
+      case Break | Continue | Return      => jump(config, state, at, prog)
+      case Spec(xs, pre, post)            => spec(config, state, at, xs, pre, post)
+      case Assign(xs, rhs)                => assign(config, state, at, xs, rhs)
+      case Call(name, args, res, vars)    => call(config, state, at, name, args, res, vars)
+      case Block(locals, progs, attrs)    => block(config, state, at, locals, progs, attrs)
+      case Choice(progs)                  => choice(config, state, at, progs)
+      case If(test, left, right)          => if_(config, state, at, test, left, right)
+      case While(test, body, attrs)       => while_(config, state, at, test, body, attrs)
+      case Iter(body, attrs)              => iter(config, state, at, body, attrs)
+      case Ode(time, xs, rhs, dom, attrs) => ode(config, state, at, time, xs, rhs, dom, attrs)
+      case Par(progs)                     => par(config, state, at, progs)
+
+  // a jump does not terminate normally, the statements after it are unreachable
+  def jump(config: Config, state: State, at: At, prog: Prog): (Prog, Option[At]) =
+    (prog, None)
+
+  // the precondition is assumed once it is checked, as in VCGen
+  def spec(config: Config, state: State, at: At, xs: List[Var], pre: Expr, post: Expr): (Prog, Option[At]) =
+    val pre_ = simplify(config, state, at, pre)
+    val checked = at.assume(config, state, value(config, state, at, pre))
+    val after = checked.havoc(xs)
+    val post_ = simplify(config, state, after, post)
+    val spec = if xs.isEmpty && pre_ == True && post_ == True then Skip else Spec(xs, pre_, post_)
+    (spec, Some(after.assume(config, state, value(config, state, after, post))))
+
+  // the right-hand sides are evaluated before any variable is bound to its new value; an assignment of the current
+  // value of a variable has no effect
+  def assign(config: Config, state: State, at: At, xs: List[Var], rhs: List[Expr]): (Prog, Option[At]) =
+    val values = rhs.map(value(config, state, at, _))
+    val rhs_ = (rhs zip values).map((e, v) => written(at, e, v))
+    val changed = (xs zip rhs_).filterNot((x, e) => x == e)
+    val assign = if changed.isEmpty then Skip else Assign(changed.map(_._1), changed.map(_._2))
+    (assign, Some(at.copy(values = at.values ++ (xs zip values))))
+
+  // the results and the global variables that the procedure modifies are choices
+  def call(config: Config, state: State, at: At, name: util.Name, args: List[Expr], res: List[Var], vars: List[Var]): (Prog, Option[At]) =
+    val prog = Call(name, args.map(simplify(config, state, at, _)), res, vars)
+    (prog, Some(at.havoc(prog.mod intersect at.values.keySet)))
+
+  // the locals are choices, their initial values are not determined; a block of a single statement without locals
+  // and attributes is that statement, e.g. the branch of a decided test
+  def block(config: Config, state: State, at: At, locals: List[Var], progs: List[Prog], attrs: Attrs): (Prog, Option[At]) =
+    val (progs_, after) = sequence(config, state, at.havoc(locals), progs)
+    val restored = after.map(scoped(at, _, locals))
+    progs_.filterNot(_ == Skip) match
+      case List(prog) if locals.isEmpty && attrs == Attrs.empty => (prog, restored)
+      case progs__                                              => (Block(locals, progs__, attrs), restored)
+
+  // each alternative from the same position
+  def choice(config: Config, state: State, at: At, progs: List[Prog]): (Prog, Option[At]) =
+    val results = progs.map(simplify(config, state, at, _))
+    (Choice(results.map(_._1)), merge(config, state, at, results.flatMap(_._2)))
+
+  // a decided test selects its branch
+  def if_(config: Config, state: State, at: At, test: Expr, left: Prog, right: Prog): (Prog, Option[At]) =
+    val cond = value(config, state, at, test)
+    cond match
+      case True =>
+        simplify(config, state, at, left)
+
+      case False =>
+        simplify(config, state, at, right)
+
+      case _ =>
+        val (left_, l) = simplify(config, state, at.assume(config, state, cond), left)
+        val (right_, r) = simplify(config, state, at.assume(config, state, Context.not(cond)), right)
+        (If(written(at, test, cond), left_, right_), join(config, state, at, cond, l, r))
+
+  // a loop that is not entered has no effect, but its head is reached, where its invariants are checked, as VCGen does;
+  // otherwise its attributes are kept, its invariants hold at the head (see head)
+  def while_(config: Config, state: State, at: At, test: Expr, body: Prog, attrs: Attrs): (Prog, Option[At]) =
+    if value(config, state, at, test) == False
+    then spec(config, state, at, Nil, And(state.annotated(attrs).invariants), True)
+    else
+      val head = this.head(config, state, at, body, attrs)
+      val cond = value(config, state, head, test)
+      val (body_, _) = simplify(config, state, head.assume(config, state, cond), body)
+      val after =
+        if body.breaks then Some(head)
+        else if cond == True then None
+        else Some(head.assume(config, state, Context.not(cond)))
+      (While(written(head, test, cond), body_, attrs), after)
+
+  def iter(config: Config, state: State, at: At, body: Prog, attrs: Attrs): (Prog, Option[At]) =
+    val head = this.head(config, state, at, body, attrs)
+    val (body_, _) = simplify(config, state, head, body)
+    (Iter(body_, attrs), Some(head))
+
+  // not simplified, its effect is havoc of the variables that it evolves
+  def ode(config: Config, state: State, at: At, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): (Prog, Option[At]) =
+    (Ode(time, xs, rhs, dom, attrs), Some(at.havoc(xs.toSet intersect at.values.keySet)))
+
+  // not simplified, its effect is havoc of the variables that it modifies
+  def par(config: Config, state: State, at: At, progs: List[Prog]): (Prog, Option[At]) =
+    val prog = Par(progs)
+    (prog, Some(at.havoc(prog.mod intersect at.values.keySet)))
+
+  // the position at the head of a loop: the variables that the body modifies are choices, constrained by the
+  // invariants of the loop, also those of its tags (see State.annotated), as VCGen assumes them; they are checked
+  // elsewhere, since the attributes are kept
+  def head(config: Config, state: State, at: At, body: Prog, attrs: Attrs): At =
+    val head = at.havoc(body.mod intersect at.values.keySet)
+    head.assume(config, state, value(config, state, head, And(state.annotated(attrs).invariants)))
+
+  // the statements of a block in sequence, up to the first that does not terminate normally or after which the
+  // context is inconsistent, e.g. assume false: the statements after it are unreachable
+  def sequence(config: Config, state: State, at: At, progs: List[Prog]): (List[Prog], Option[At]) =
+    progs match
+      case Nil =>
+        (Nil, Some(at))
+
+      case prog :: rest =>
+        simplify(config, state, at, prog) match
+          case (prog_, Some(after)) if after.ctx.inconsistent =>
+            (List(prog_), None)
+
+          case (prog_, Some(after)) =>
+            val (rest_, last) = sequence(config, state, after, rest)
+            (prog_ :: rest_, last)
+
+          case (prog_, None) =>
+            (List(prog_), None)
+
+  // the locals of a block go out of scope at its end, where the variables of the same names outside are visible
+  // again with the values that they had before the block, which the block cannot have changed
+  def scoped(outer: At, inner: At, locals: List[Var]): At =
+    val values = locals.foldLeft(inner.values)((values, x) => outer.values.get(x) match
+      case Some(e) => values.updated(x, e)
+      case None    => values - x
+    )
+    inner.copy(values = values)
+
+  // the join after the branches of a test `cond`: the values that differ are joined by ite, the facts of the branches
+  // by a disjunction, each with its case of the test, unless they are the cases only; the facts before the branches
+  // hold in both
+  def join(config: Config, state: State, before: At, cond: Expr, left: Option[At], right: Option[At]): Option[At] =
+    (left, right) match
+      case (Some(l), Some(r)) =>
+        val values = before.values.keySet.map(x => x -> (if l.values(x) == r.values(x) then l.values(x) else Ite(cond, l.values(x), r.values(x)))).toMap
+        val ls = l.facts.drop(before.facts.length)
+        val rs = r.facts.drop(before.facts.length)
+        val joined = before.copy(values = values)
+        if ls.length <= 1 && rs.length <= 1
+        then Some(joined)
+        else Some(joined.assume(config, state, Or(And(ls), And(rs))))
+
+      case (Some(l), None) =>
+        Some(l)
+
+      case (None, Some(r)) =>
+        Some(r)
+
+      case (None, None) =>
+        None
+
+  // the merge after the alternatives of a choice, which has no test: the values that differ become fresh choices,
+  // which each alternative defines in its disjunct of the facts
+  def merge(config: Config, state: State, before: At, afters: List[At]): Option[At] =
+    afters match
+      case Nil =>
+        None
+
+      case List(after) =>
+        Some(after)
+
+      case _ =>
+        val differ = before.values.keySet.filter(x => afters.map(_.values(x)).distinct.length > 1).toList
+        val joined = before.havoc(differ)
+        val disjuncts =
+          for after <- afters
+          yield And(after.facts.drop(before.facts.length) ++ differ.map(x => Eq(joined.values(x), after.values(x))))
+        Some(joined.copy(values = before.values.keySet.map(x => x -> (if differ contains x then joined.values(x) else afters.head.values(x))).toMap).assume(config, state, Or(disjuncts)))

@@ -116,6 +116,39 @@ An empty witness recovers most of Loops and almost nothing of Arrays, where the 
    true only with a witness that checks. The run of CTranslated of Oct 14, 2026 has one wrong true that this
    would have caught.
 
+## Invariants from the TEQ system, without the goal (Oct 24, 2026)
+
+The target is SV-LIB, whose witnesses must be strictly inductive (C needs none for Arrays, an empty one suffices
+mostly for Loops). The conventions of sv-benchmarks (`sv-lib/CONVENTIONS.md`) ask for "a full correctness witness
+containing the invariants and function contracts required for a modular proof": an `:invariant` at every tagged
+loop, presumably contracts of the called procedures. The 253 tasks of `c-translated` declare QF_LIA (168), QF_NIA
+(58: loop-acceleration, loops-crafted-1, loop-invgen, ...), QF_ALIA (20) and ALL (7); whether a witness may leave the
+logic of its task (quantified invariants for QF_ALIA) is to be checked in the standard.
+
+**Start easy** (the user's decision, Oct 24, 2026): take the invariant that the system is already, `∃ n, K, X. TEQ`
+with the state as the `current` of its traces (theorem 4.7), not an invariant extracted from the proof of the goal (a
+derivation, see above):
+
+1. **Simplify it** with the simplifier and the database of `-prove`, without the goal: the rules that give closed
+   forms (`current(counter(i, c, n)) = i + n·c`, the series facts) remove the traces where they can, and equations
+   such as `x = x0 + n` eliminate `n`. For `loop-add` of SV-LIB's examples, `x = x0 + n`, `y = y0 - n`, `n <= y0`
+   give `x + y = x0 + y0` and `0 <= y`, its witness.
+2. **Lower it, potentially**, where traces remain, by the encoding of `-fallback` (traces and folds in first-order
+   logic); open whether a witness may declare the functions that the lowering needs.
+3. Print it as `annotate-tag :invariant` at the tag of the loop.
+
+The invariant is inductive by the theorem, as long as simplification and lowering preserve equivalence; whether the
+validator can check it is another question. Later, only if needed: candidates beyond the system (bounds, parities of
+`phases_*`) made inductive by Houdini, a check of the witness by `-vcgen -z3`, the invariants of `-chc` as a second
+source, nested loops and the contracts of called procedures (`-teq` inlines calls). Open: the scoring of a correct
+verdict without a valid witness in SV-LIB.
+
+The place for it is the simplifier of procedures, `Slice` (Oct 25, 2026, [doc/prove.md](../doc/prove.md),
+"Programs"): its loop heads assume the invariants of the loop already, an invariant of the TEQ of the loop would be
+assumed there as well and attached as `:invariant`, simplified in the context of the facts before the loop, which are
+over choices and never become false (the values at the entry of the loop are the choices that the program variables
+are bound to there).
+
 ## Source positions in the C frontend
 
 Implemented (Oct 14-15, 2026): the C scanner locates `while`, `do`, `for` and the names of the error functions

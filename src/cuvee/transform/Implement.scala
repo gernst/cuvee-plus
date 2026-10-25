@@ -176,9 +176,9 @@ object Implement extends Transform:
         val (xs, pre, rhs_) = lift(state, methods, scope, rhs)
         block(xs, pre, Assign(lhs, rhs_))
 
-      case Call(name, args, res) =>
+      case Call(name, args, res, vars) =>
         val (xs, pre, args_) = lift(state, methods, scope, args)
-        block(xs, pre, Call(name, args_, res))
+        block(xs, pre, Call(name, args_, res, vars))
 
       case If(test, left, right) =>
         val (xs, pre, test_) = lift(state, methods, scope, test)
@@ -264,7 +264,7 @@ object Implement extends Transform:
 
         body match
           case None =>
-            val call = Call(proc.name, inputs, List(res))
+            val call = Call(proc.name, inputs, List(res), Type.expand(state, state.procattrs(proc.name).modifies))
             (xs ++ List(res), pre ++ List(call), res)
 
           case Some(body) =>
@@ -312,7 +312,7 @@ object Implement extends Transform:
     val Proc(name, _, in, out) = proc
 
     Error.report("return in an implementation that is inlined", name.subscripted):
-      require(!returns(body))
+      require(!body.returns)
 
     val types = Type.bind(state, in.types ++ out.types, args.types ++ List(res.typ))
     val (formals, rename) = Subst.rename(in ++ out)
@@ -356,10 +356,6 @@ object Implement extends Transform:
     typ match
       case Sort(con, args) => state.sortattrs.get(con.name).exists(_.isImplementation) || args.exists(implemented(state, _))
       case _               => false
-
-  // whether `prog` contains return
-  def returns(prog: Prog): Boolean =
-    prog == Return || prog.subprogs.exists(returns)
 
   // the operator `fun` of `left` and `right`, whose right operand is evaluated only if the left one is `needed` (true
   // or false), and whose value is `short` otherwise: as is if the right operand calls no implementation, otherwise a

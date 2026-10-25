@@ -129,8 +129,10 @@ case class Component(trace, index); case class History(trace, index)  // current
 - **Traversals:** `expr.map(f)` applies `f` to the immediate subexpressions
   point-wise and keeps bound variables, likewise `upd.map(f)`,
   `sort.map(f)`, `attrs.map(f)`, `prog.map(e, p)` (expressions, attributes,
-  and immediate subprograms), and `cmd.map(e, p)`; `prog.subprogs` lists the
-  immediate subprograms. There is no `subexprs`: to visit the subexpressions,
+  and immediate subprograms), and `cmd.map(e, p)`. Questions about the
+  statements of a program are methods of each kind of statement, like `mod`
+  (`returns`, `breaks`, `abstracts`, `calls`), not a generic list of
+  subprograms. There is no `subexprs`: to visit the subexpressions,
   call `expr.map` for its side effect and return the argument unchanged.
   Traversals that rename bound variables, e.g. `Subst`, are written out.
 - **`Match`** has linear patterns built from constructors and variables
@@ -231,12 +233,15 @@ case class Component(trace, index); case class History(trace, index)  // current
 ## Programs ([Prog.scala](../src/cuvee/core/Prog.scala))
 
 ```scala
-sealed trait Prog { def mod: Set[Var]; def free: Set[Var]; def funs: Set[Fun] }
+sealed trait Prog {
+  def mod: Set[Var]; def free: Set[Var]; def funs: Set[Fun]
+  def returns: Boolean; def breaks: Boolean; def abstracts: Boolean; def calls: Set[Name]
+}
 
 case object Break; case object Continue; case object Return
 case class Spec(xs: List[Var], pre: Expr, post: Expr)   // assert pre; havoc xs; assume post
 case class Assign(lhs: List[Var], rhs: List[Expr])      // parallel assignment
-case class Call(proc: Name, args: List[Expr], res: List[Var])
+case class Call(proc: Name, args: List[Expr], res: List[Var], vars: List[Var])  // vars: modified globals
 case class Block(locals: List[Var], progs: List[Prog])
 case class Choice(progs: List[Prog])                    // nondeterministic choice
 case class If(test: Expr, left: Prog, right: Prog)
@@ -248,16 +253,27 @@ case class Par(progs: List[Prog])                       // parallel composition
 
 - **`Spec`** covers `assert`, `assume` and `havoc`, through
   `Spec.assert(phi)`, `Spec.assume(phi)` and `Spec.havoc(xs)`.
-- **`mod`** is the set of assigned variables. Global variables modified by
-  calls are not included; they come from the callee's `modifies` attribute.
+- **`mod`** is the set of assigned variables, including the global variables
+  that calls modify: the `vars` of a `Call`, the callee's `modifies`
+  attribute in its order, which `Type.check` fills in when it resolves the
+  call. The frontends build calls with no `vars`, as they build their
+  arguments before the types are checked; `Sugar.call` (the procedures of the
+  history, which pass it as argument and result) and `Implement` build them
+  with theirs. `Subst` renames `vars` like the results.
+- **Shadowing.** Local variables and parameters must not have the name of a
+  global variable (`Type.check`, `State.declare`): the core cannot tell them
+  apart, and a global variable that a call modifies would be confused with
+  the local one, e.g. renamed with it. The C frontend renames them apart.
 - **Modifies clauses.** `Type.check` takes the global variables that the
-  enclosing procedure may modify. A loop modifies the global variables in its
-  `modifies` attribute only, which must be modifiable outside of the loop and
-  subsume the global variables that its body assigns, that calls in it modify,
-  and the history that differential equations tick. Hence `VCGen` and `TEQ`
-  take the modified variables of a loop as its `mod` and its `modifies`
-  attribute. The C frontend infers the attribute of loops, the others require
-  it in the input (`while ... modifies g` in Dafny, `modifies g;` in Boogie).
+  enclosing procedure may modify. A loop with a `modifies` attribute modifies
+  the global variables in it only, which must be modifiable outside of the
+  loop and subsume the global variables that its body assigns, that calls in
+  it modify, and the history that differential equations tick; a loop without
+  one may modify what the enclosing scope may. `VCGen` and `TEQ` take the
+  modified variables of a loop as its `mod` and its `modifies` attribute. The
+  frontends infer the attribute of procedures in C and SV-LIB, not of loops;
+  Dafny and Boogie require it in the input (`modifies g`), also for loops
+  that restrict it.
 - **`free`** includes the variables in the attributes, e.g. in loop
   invariants; **`funs`**, the functions applied, also those in the
   attributes, as does `Cmd.funs`, which excludes the functions that the

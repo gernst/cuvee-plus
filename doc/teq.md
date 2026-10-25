@@ -593,7 +593,11 @@ nothing polymorphic remains of the lemma database, hence no `-monomorph`.
   or list, e.g. `squares(i, n)` of `teq:series`, are unfolded as well, and
   their bodies lowered (since 0.50.15; before, they were generalized like the
   other functions of trace equation systems, which lost the sums that z3
-  evaluates for bounded inputs, e.g. of `cohencu-ll_valuebound1`).
+  evaluates for bounded inputs, e.g. of `cohencu-ll_valuebound1`); their
+  declarations are dropped, like those marked `{:teq}`, also of folds outside
+  of the database, which must not be marked `{:teq}`: the attribute makes a
+  declaration part of the database, which a printer for a receiver that knows
+  it leaves out (`-known teq`, see `Sink.known`).
 - A trace `S` of several accumulators is one function per accumulator,
   `S_0(j)`, `S_1(j)`, ... (`Fallback.head`; the lowered head is a tuple of
   their applications, which no output contains): the equation

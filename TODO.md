@@ -72,8 +72,7 @@ with Cuvée (the user's instruction, Oct 14).
 Cleanup, none of it a bug.
 
 - Core:
-  - `Prog.subprogs` next to `Prog.map` (queries `Prog.modifies`, `VCGen.abstracts`, `calls` of `c.Parser.while_`);
-    one generic traversal with binders for `Subst.apply`, `Old.instance`, `Type.expand`, `Rec.calls`.
+  - One generic traversal with binders for `Subst.apply`, `Old.instance`, `Type.expand`, `Rec.calls`.
   - Int and Real twins (`Fun`, `Builtin`, `Overload`, rings); `Ring` without `lt`, `le`, `div`.
   - Four builders of applications (`Overload.app`, `App.apply`, `State.exprs.app`, `smtlib.Parser.app`).
   - Sugar copies (`Sugar.empty`, the arities of `unary`/`binary`/`ternary`, the `all` lists of `Fun`).

@@ -210,6 +210,10 @@ case class State(
             case Some(pre: Expr) if kw == "requires" => (kw, Some(Old.elim(Nil, Nil, pre)))
             case _                                   => (kw, arg)
 
+      val shadowing = (in ++ out).filter(x => vars.contains(x.name))
+      Error.report("parameters of procedure shadow global variables", name, shadowing):
+        require(shadowing.isEmpty)
+
       val proc = Proc(name, params, in, out)
       copy(procs = procs + (name -> proc), procattrs = procattrs + (name -> attrs_))
 
@@ -455,8 +459,9 @@ case class State(
     def assign(lhs: List[Var], rhs: List[Expr]) =
       Assign(lhs, rhs)
 
+    // the global variables that the call modifies are filled in by the type check (see Call)
     def call(proc: Name, args: List[Expr], res: List[Var]) =
-      Call(proc, args, res)
+      Call(proc, args, res, Nil)
 
     def block(locals: List[Var], progs: List[Prog]) =
       Block(locals, progs)

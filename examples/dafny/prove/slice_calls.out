@@ -1,0 +1,19 @@
+var g: int
+
+var h: int
+
+method set()
+  modifies g
+
+method calls() returns (r: int)
+  modifies g, h
+{
+  g := 1;
+  h := 2;
+  set();
+  r := 0;
+  if g == 1 {
+    r := 1;
+  }
+}
+

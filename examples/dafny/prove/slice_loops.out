@@ -1,0 +1,15 @@
+method loops(a: int) returns (r: int) {
+  var x: int, y: int, i: int;
+  x := 0;
+  y := 5;
+  i := 0;
+  while i < a
+    invariant 0 <= x
+  {
+    x := x + 1;
+    i := i + 1;
+  }
+  r := x;
+  assume false;
+}
+

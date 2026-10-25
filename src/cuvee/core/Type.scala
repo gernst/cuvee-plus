@@ -197,7 +197,7 @@ object Type:
     prog match
       case Spec(ys, pre, post)         => Spec(expand(state, ys), expand(state, pre), expand(state, post))
       case Assign(lhs, rhs)            => Assign(expand(state, lhs), rhs.map(expand(state, _)))
-      case Call(proc, args, res)       => Call(proc, args.map(expand(state, _)), expand(state, res))
+      case Call(proc, args, res, vars) => Call(proc, args.map(expand(state, _)), expand(state, res), expand(state, vars))
       case Block(locals, progs, attrs) => Block(expand(state, locals), progs.map(expand(state, _)), expand(state, attrs))
       case While(test, body, attrs)    => While(expand(state, test), expand(state, body), expand(state, attrs))
       case Iter(body, attrs)           => Iter(expand(state, body), expand(state, attrs))
@@ -655,7 +655,9 @@ object Type:
   // well-formedness of programs: assignments match up, break and continue occur inside loops only,
   // and all expressions are well-typed, variables in `fixed`, e.g. the inputs of a procedure, must not be assigned;
   // `mod` are the global variables that may be modified, those in the modifies clause of the procedure
-  // and of the innermost loop, which subsumes the global variables that calls modify;
+  // and of the innermost loop that has one, which subsumes the global variables that calls modify;
+  // local variables must not shadow global variables, such that a global variable that a call modifies is not
+  // confused with a local one (see Call);
   // variables are not checked for being declared, since unknown names are rejected already when resolving them
   def check(state: State, scope: Scope, fixed: Set[Var], mod: Set[Var], prog: Prog): Prog =
     check(state, scope, fixed, mod, prog, false)
@@ -691,7 +693,8 @@ object Type:
 
       // arguments and results are checked together against the signature of the procedure,
       // whose type parameters are instantiated freshly
-      case Call(name, args, res) =>
+      // the call is resolved with the modifies clause of the procedure as the global variables that it modifies
+      case Call(name, args, res, _) =>
         assignable(fixed, res)
 
         Error.report("procedure not declared", name):
@@ -715,11 +718,15 @@ object Type:
           unify(state, scope, res.types, su(out.types), subst)
 
         val args_ = instantiate(state, scope, subst, pending, args)
-        Call(name, args_, res)
+        Call(name, args_, res, expand(state, state.procattrs(name).modifies))
 
       case Block(locals, progs, attrs) =>
         Error.report("duplicate local variables", locals):
           require(locals.distinctBy(_.name) == locals)
+
+        val shadowing = locals.filter(x => state.vars.contains(x.name))
+        Error.report("local variables shadow global variables", shadowing):
+          require(shadowing.isEmpty)
 
         // locals shadow fixed variables of the same name
         val scope_ = scope ++ locals
@@ -779,8 +786,14 @@ object Type:
 
   // the body of a loop modifies the global variables in the modifies clause of the loop only, directly or by calls,
   // which must be global variables that are modifiable outside of the loop
+  // a loop without modifies clause may modify the global variables that the enclosing scope may modify
   def loop_(state: State, scope: Scope, fixed: Set[Var], mod: Set[Var], body: Prog, attrs: Attrs): Prog =
-    val mod_ = attrs.modifies.toSet
+    if !attrs.contains("modifies")
+    then check(state, scope, fixed, mod, body, true)
+    else loop_(state, scope, fixed, mod, body, attrs.modifies.toSet)
+
+  // a loop with the modifies clause `mod_`, which restricts the global variables that its body may modify
+  def loop_(state: State, scope: Scope, fixed: Set[Var], mod: Set[Var], body: Prog, mod_ : Set[Var]): Prog =
 
     val nonglobal = mod_ -- state.globals
     Error.report("modifies clause of loop lists variables that are not global", nonglobal):

@@ -202,7 +202,8 @@ in the conjuncts of a premise.
 - **One suspension facility** (`Context.active`): the rules whose side conditions are being evaluated (the
   re-entrance guard of the simplifier) and the components whose views are being computed, copied into the nested
   contexts; a memoized combinator context takes the suspended set of the position where it is reused.
-- Programs and attributes are not simplified; `-prove` is for the goals of `-teq`. Derivatives are computed by the
+- Procedures are simplified by symbolic execution (`Slice`, see "Programs" below), attributes are not; `-prove` is
+  for the goals of `-teq` foremost. Derivatives are computed by the
   rules of dL as in the simplifier (`Simplify.diff`, copied), so the goals of hybrid programs reach the context of the
   engine ([newton.dfy](../examples/dafny/hybrid/newton.dfy), open under the former simplifier).
 
@@ -212,7 +213,7 @@ The traversal and the rewrite engine of `-prove`, which the components above ext
 the former simplifier (`-simplify`, package `simplify`, removed Oct 23, 2026).
 
 - [`Simplify`](../src/cuvee/prove/Simplify.scala) rewrites assertions and
-  function definitions to a fixpoint; programs and attributes pass through. Assertions are normalized into clauses (`Normalize`) before
+  function definitions to a fixpoint; attributes pass through, procedures go to `Slice` (see "Programs"). Assertions are normalized into clauses (`Normalize`) before
   simplification and after each round of it, which repeats while they change
   (`Simplify.apply`), such that e.g. the equations of `let` are simplified in
   the context; they are dropped if they simplify to `true`.
@@ -426,6 +427,43 @@ abstracted an iteration constraint by an atom instead, which a second lemma
 took as its side condition; the lemma database does
 the same, since an iteration constraint as a side condition recurs through the
 facts it is matched against (see [teq.md](teq.md)).
+
+## Programs
+
+[`Slice`](../src/cuvee/prove/Slice.scala) simplifies procedures by symbolic execution, statement by statement, and
+keeps the structure of the program: its statements, assignments, and if-then-else, whose expressions are simplified
+under the facts known at their position. Nothing that is known is forgotten (Oct 25, 2026):
+
+- **Choices.** The context speaks about choices only, fresh variables for the nondeterministic choices of the
+  program: the inputs at the entry (parameters, outputs, the global variables of the body, the locals of blocks), havoc
+  and the outputs of contracts, the results and modified global variables of calls (`Call.vars`, see
+  [datastructures.md](datastructures.md)), the alternatives of a choice where they differ, and the state at the head
+  of a loop. Choices never change, so the facts over them hold until the end of the procedure.
+- **Values.** Each program variable is bound to its current value, a term over the choices (`Slice.At`). An assignment
+  replaces the binding and adds no fact; after the branches of a test, the values that differ are joined by `ite`,
+  the facts of the branches by a disjunction with the cases of the test (`join`); after a choice, the values that
+  differ are fresh choices that each alternative defines in its disjunct (`merge`).
+- **Writing back.** An expression is simplified as its value in the context (`value`, where the `ite` of joined
+  values are lifted out of the atoms of formulas, such that each case is decided under its test), and written back
+  over the program variables in scope that hold its subterms, those of the expression first (`written`); otherwise it
+  stays as written, so the program never mentions a choice. The write-back is syntactic: `x0 + 2` is not written as
+  `x + 1` when `x` holds `x0 + 1`.
+- **Loops.** The head of a loop has fresh choices for the variables that its body modifies (`.mod`, which includes
+  the global variables of calls), constrained by its invariants, also those of its tags; the facts from before the
+  loop hold in its body and after it, which adds the negated test unless the body breaks out of the loop.
+- **Unreachable code** is dropped: the branch of a decided test, statements after a jump or after a position whose
+  context is inconsistent (`assume false`), and a loop that is not entered, of which the assertion of its invariants
+  remains, since its head is reached. Statements without effect are dropped from blocks, and a block of one statement
+  without locals and attributes is that statement.
+- **Context.** One context per procedure (`Slice.simplify` of a `DefineProc`, called by `Prove`), with the rules and
+  forward lemmas of the input, one number of steps for the whole procedure, and no polarity. Each kind of statement
+  has its helper (`spec`, `assign`, `call`, `block`, `choice`, `if_`, `while_`, `iter`, `ode`, `par`, `jump`); `Ode`
+  and `Par` are not simplified, they make the variables that they modify choices.
+
+Examples: [slice_branches.dfy](../examples/dafny/prove/slice_branches.dfy),
+[slice_loops.dfy](../examples/dafny/prove/slice_loops.dfy), [slice_calls.dfy](../examples/dafny/prove/slice_calls.dfy).
+The invariants of TEQs for the head of a loop, e.g. for witnesses, are not computed yet
+([ideas/witnesses.md](../ideas/witnesses.md)).
 
 ## Debugging
 

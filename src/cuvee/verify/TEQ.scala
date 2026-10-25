@@ -246,21 +246,20 @@ object TEQ extends Transform:
   // and the variables of the caller with the same names are restored afterwards, before the results are assigned;
   // calls of recursive procedures without a contract do not terminate
   def call(config: Config, state: State, proc: Name, call: Call, p: Path): List[Path] =
-    val Call(name, _, res) = call
+    val Call(name, _, res, mod) = call
     val (_, _, pre, post) = VCGen.contract(state, name)
 
     if pre != True || post != True
     then
       // the postcondition refers to the fresh values and to those of the caller before the call
       val (pre_, fresh, phi, _) = VCGen.instance(state, proc, call)
-      val mod = Type.expand(state, state.procattrs(name).modifies)
       val p_ = p.check(p(pre_)).fresh(fresh)
       List(p_.assume(p_(phi)).assign(res ++ mod, fresh))
     else inlining(config, state, name, call, p)
 
   // the paths through the body of the callee `name` of `call`, which has no contract
   def inlining(config: Config, state: State, name: Name, call: Call, p: Path): List[Path] =
-    val Call(_, args, res) = call
+    val Call(_, args, res, _) = call
     val (in, out, _, _) = VCGen.contract(state, name)
 
     Error.report("procedure without body", name):

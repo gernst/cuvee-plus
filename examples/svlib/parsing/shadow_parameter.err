@@ -1,0 +1,4 @@
+(error
+  "parameters of procedure shadow global variables"
+  "Name(p,None)"
+  "List(Var(Name(g,None),Sort(Con(Name(Int,None),0),List())))")

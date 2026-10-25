@@ -1,3 +1,0 @@
-error "call modifies variables that are not in the modifies clause"
-  "Name(set,None)"
-  "List(Var(Name(g,None),Sort(Con(Name(Int,None),0),List())))"

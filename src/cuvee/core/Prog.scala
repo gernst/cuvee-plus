@@ -7,23 +7,20 @@ case class Proc(name: Name, params: List[Param], in: List[Var], out: List[Var]):
   def res = out.types
 
 sealed trait Prog:
-  // the variables that are assigned, which excludes the global variables modified by calls
+  // the variables that are assigned, including the global variables modified by calls (see Call)
   def mod: Set[Var]
   // the variables that are read or assigned, including those in attributes, e.g. loop invariants
   def free: Set[Var]
   // the functions applied in the expressions, including those in attributes
   def funs: Set[Fun]
-
-  // the immediate subprograms
-  def subprogs: List[Prog] =
-    this match
-      case Block(_, progs, _) => progs
-      case Choice(progs)      => progs
-      case If(_, left, right) => List(left, right)
-      case While(_, body, _)  => List(body)
-      case Iter(body, _)      => List(body)
-      case Par(progs)         => progs
-      case _                  => Nil
+  // whether the program contains return
+  def returns: Boolean
+  // whether the program contains break that leaves it, i.e., not inside a loop of it
+  def breaks: Boolean
+  // whether the program contains a loop without invariants, whose invariant is true
+  def abstracts: Boolean
+  // the procedures that the program calls
+  def calls: Set[Name]
 
   // apply `e` to the immediate expressions, including those in attributes, and `p` to the immediate subprograms,
   // point-wise, where the assigned and local variables are kept
@@ -32,7 +29,7 @@ sealed trait Prog:
       case Break | Continue | Return   => this
       case Spec(xs, pre, post)         => Spec(xs, e(pre), e(post))
       case Assign(xs, rhs)             => Assign(xs, rhs.map(e))
-      case Call(proc, args, res)       => Call(proc, args.map(e), res)
+      case Call(proc, args, res, vars) => Call(proc, args.map(e), res, vars)
       case Block(locals, progs, attrs) => Block(locals, progs.map(p), attrs.map(e))
       case Choice(progs)               => Choice(progs.map(p))
       case If(test, left, right)       => If(e(test), p(left), p(right))
@@ -45,21 +42,37 @@ case object Break extends Prog:
   def mod = Set()
   def free = Set()
   def funs = Set()
+  def returns = false
+  def breaks = true
+  def abstracts = false
+  def calls = Set()
 
 case object Continue extends Prog:
   def mod = Set()
   def free = Set()
   def funs = Set()
+  def returns = false
+  def breaks = false
+  def abstracts = false
+  def calls = Set()
 
 case object Return extends Prog:
   def mod = Set()
   def free = Set()
   def funs = Set()
+  def returns = true
+  def breaks = false
+  def abstracts = false
+  def calls = Set()
 
 case class Spec(xs: List[Var], pre: Expr, post: Expr) extends Prog:
   def mod = Set(xs*)
   def free = pre.free ++ post.free ++ xs
   def funs = pre.funs ++ post.funs
+  def returns = false
+  def breaks = false
+  def abstracts = false
+  def calls = Set()
 
 object Spec:
   def havoc(xs: List[Var]) =
@@ -75,11 +88,22 @@ case class Assign(lhs: List[Var], rhs: List[Expr]) extends Prog:
   def mod = Set(lhs*)
   def free = rhs.free ++ lhs
   def funs = rhs.funs
+  def returns = false
+  def breaks = false
+  def abstracts = false
+  def calls = Set()
 
-case class Call(proc: Name, args: List[Expr], res: List[Var]) extends Prog:
-  def mod = Set(res*)
-  def free = args.free ++ res
+// `vars` are the global variables that the procedure modifies, its modifies clause in its order, which Type.check fills
+// in when it resolves the call; the frontends build calls with none, as they build the arguments before their types
+// are checked
+case class Call(proc: Name, args: List[Expr], res: List[Var], vars: List[Var]) extends Prog:
+  def mod = Set(res*) ++ vars
+  def free = args.free ++ res ++ vars
   def funs = args.funs
+  def returns = false
+  def breaks = false
+  def abstracts = false
+  def calls = Set(proc)
 
 // the attributes of a block are those of a statement of SV-LIB, (! (sequence ...) :tag t), e.g. location invariants,
 // which State.annotated asserts at its beginning
@@ -87,11 +111,19 @@ case class Block(locals: List[Var], progs: List[Prog], attrs: Attrs = Attrs.empt
   def mod = progs.mod -- locals
   def free = (progs.free ++ attrs.free) -- locals
   def funs = progs.funs ++ attrs.funs
+  def returns = progs.exists(_.returns)
+  def breaks = progs.exists(_.breaks)
+  def abstracts = progs.exists(_.abstracts)
+  def calls = progs.flatMap(_.calls).toSet
 
 case class Choice(progs: List[Prog]) extends Prog:
   def mod = progs.mod
   def free = progs.free
   def funs = progs.funs
+  def returns = progs.exists(_.returns)
+  def breaks = progs.exists(_.breaks)
+  def abstracts = progs.exists(_.abstracts)
+  def calls = progs.flatMap(_.calls).toSet
 
 object Choice extends (List[Prog] => Choice):
   // the alternatives of nested choices
@@ -107,16 +139,29 @@ case class If(test: Expr, left: Prog, right: Prog) extends Prog:
   def mod = left.mod ++ right.mod
   def free = test.free ++ left.free ++ right.free
   def funs = test.funs ++ left.funs ++ right.funs
+  def returns = left.returns || right.returns
+  def breaks = left.breaks || right.breaks
+  def abstracts = left.abstracts || right.abstracts
+  def calls = left.calls ++ right.calls
 
+// a break in the body leaves the loop only
 case class While(test: Expr, body: Prog, attrs: Attrs) extends Prog:
   def mod = body.mod
   def free = test.free ++ body.free ++ attrs.free
   def funs = test.funs ++ body.funs ++ attrs.funs
+  def returns = body.returns
+  def breaks = false
+  def abstracts = attrs.invariants.isEmpty || body.abstracts
+  def calls = body.calls
 
 case class Iter(body: Prog, attrs: Attrs) extends Prog:
   def mod = body.mod
   def free = body.free ++ attrs.free
   def funs = body.funs ++ attrs.funs
+  def returns = body.returns
+  def breaks = false
+  def abstracts = attrs.invariants.isEmpty || body.abstracts
+  def calls = body.calls
 
 // a system of ordinary differential equations x' = e for x in xs and e in rhs,
 // which evolves for some time within the domain `dom`, the evolution constraint,
@@ -127,6 +172,10 @@ case class Ode(time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attr
   def mod = Set(xs*)
   def free = rhs.free ++ dom.free ++ attrs.free - time ++ xs
   def funs = rhs.funs ++ dom.funs ++ attrs.funs
+  def returns = false
+  def breaks = false
+  def abstracts = false
+  def calls = Set()
 
 // parallel composition of programs, of which verification supports calls to procedures only (see VCGen),
 // whose assumption-commitment contracts over the global history of events are in their attributes,
@@ -135,24 +184,21 @@ case class Par(progs: List[Prog]) extends Prog:
   def mod = progs.mod
   def free = progs.free
   def funs = progs.funs
+  def returns = progs.exists(_.returns)
+  def breaks = progs.exists(_.breaks)
+  def abstracts = progs.exists(_.abstracts)
+  def calls = progs.flatMap(_.calls).toSet
 
 object Par:
-  // the variables modified by a program, including the global variables modified by the procedures it calls,
-  // except for the global history of events, if it is declared (see State.history)
-  def modifies(state: State, prog: Prog): Set[Var] =
-    val mod = prog match
-      case Call(name, _, res)   => (res ++ state.procattrs(name).modifies).toSet
-      case Block(locals, progs, _) => progs.flatMap(modifies(state, _)).toSet -- locals
-      case _                    => prog.mod ++ prog.subprogs.flatMap(modifies(state, _))
-    mod -- state.vars.get("history")
-
-  // the variables modified by one program and used by another, other than the history
+  // the variables modified by one program and used by another, other than the global history of events, if it is
+  // declared (see State.history)
   def shared(state: State, progs: List[Prog]): Set[Var] =
+    val history = state.vars.get("history").toSet
     val pairs =
       for
         (left, i) <- progs.zipWithIndex
         (right, j) <- progs.zipWithIndex
         if i != j
-      yield modifies(state, left) intersect (right.free -- state.vars.get("history") ++ modifies(state, right))
+      yield (left.mod -- history) intersect (right.free ++ right.mod -- history)
 
     pairs.flatten.toSet

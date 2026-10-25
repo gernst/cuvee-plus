@@ -212,16 +212,17 @@ enum Assoc:
       case Right => xs.reduceRight(f)
 
 object Sugar:
-  // calls of the procedure `name` with `in` arguments and `out` results
+  // calls of the procedure `name` with `in` arguments and `out` results, which modifies no global variables, e.g.
+  // the procedures of the history, which is passed as an argument and returned as a result
   class call(val name: Name, in: Int, out: Int):
     def apply(args: List[Expr], res: List[Var]): Call =
       Error.report("wrong number of arguments or results in call", name, args, res):
         require(args.length == in && res.length == out)
-      Call(name, args, res)
+      Call(name, args, res, Nil)
 
     def unapply(prog: Prog): Option[Call] =
       prog match
-        case call @ Call(`name`, args, res) if args.length == in && res.length == out =>
+        case call @ Call(`name`, args, res, _) if args.length == in && res.length == out =>
           Some(call)
 
         case _ =>

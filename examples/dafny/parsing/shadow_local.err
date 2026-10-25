@@ -1,0 +1,2 @@
+error "local variables shadow variables in scope"
+  "List(Var(Name(g,None),Sort(Con(Name(Int,None),0),List())))"

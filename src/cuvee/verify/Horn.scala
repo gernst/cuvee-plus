@@ -325,7 +325,7 @@ object Horn extends Transform:
       // a procedure without body: the goals pre ⇒ φ for the conjuncts φ of its precondition,
       // and pre ∧ ψ ⇒ next(scope[res, mod := res_, mod_]) for the conjuncts ψ of its postcondition,
       // both instantiated for the call, which also instantiates the type parameters by the types of the arguments
-      case (call @ Call(name, args, res)) :: rest if !state.procdefs.contains(name) =>
+      case (call @ Call(name, args, res, _)) :: rest if !state.procdefs.contains(name) =>
         val (requires, fresh, ensures, rename) = VCGen.instance(state, proc, call)
         val next = predicate(state, proc, "call", scope, decls)
 
@@ -336,7 +336,7 @@ object Horn extends Transform:
       // pre ⇒ name_pre(args, gs), which collects the states in which `name` is called,
       // and pre ∧ name_post(args, gs, res_, gs[mod := mod_]) ⇒ next(scope[res, mod := res_, mod_]),
       // where res_ are the results and mod_ the new values of the global variables modified by `name`
-      case Call(name, args, res) :: rest =>
+      case Call(name, args, res, mod) :: rest =>
         val Proc(_, _, in, out) = state.procs(name)
 
         Error.report("wrong number of arguments or results in call", name, args, res):
@@ -344,7 +344,6 @@ object Horn extends Transform:
 
         // results and modified global variables are fresh since `args` may refer to their old values
         val gs = Type.expand(state, state.globals)
-        val mod = Type.expand(state, state.procattrs(name).modifies)
         val res_ = res.fresh
         val mod_ = mod.fresh
         val su = Subst.from(res ++ mod, res_ ++ mod_)

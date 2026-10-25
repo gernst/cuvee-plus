@@ -18,7 +18,8 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
   what is hard (lists, aliasing); benchmarks in `benchmarks/loopannotator`.
 - [witnesses.md](witnesses.md): verification witnesses for SV-COMP: the formats of C and SV-LIB, why TEQ
   proofs contain no invariants and how to extract them, the missing quantifiers of C witnesses, and a plan from
-  trivial witnesses over the invariants of `-chc` to quantified invariants for arrays; the source positions
+  trivial witnesses over the invariants of `-chc` to quantified invariants for arrays; inductive invariants for
+  SV-LIB from the TEQ system without the goal (simplified, potentially lowered); the source positions
   through the scanner, the grammar and the C parser into the attributes of loops.
 - [ltl.md](ltl.md): linear temporal specifications by weakest preconditions (ISoLA 2026): temporal
   `guarantees` of Dafny methods and loops with hypothesis operators, a forward generator in `-vcgen`, the
