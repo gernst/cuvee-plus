@@ -1,0 +1,15 @@
+method twice(len: int) returns (res: int)
+  requires 0 <= len
+{
+  var tot: int, idx: int;
+  tot := 0;
+  idx := 0;
+  while idx < len
+    invariant tot == 2 * idx && idx <= len && 0 <= idx
+  {
+    tot := tot + 2;
+    idx := idx + 1;
+  }
+  res := tot;
+}
+

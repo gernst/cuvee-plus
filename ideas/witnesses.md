@@ -143,11 +143,11 @@ validator can check it is another question. Later, only if needed: candidates be
 source, nested loops and the contracts of called procedures (`-teq` inlines calls). Open: the scoring of a correct
 verdict without a valid witness in SV-LIB.
 
-The place for it is the simplifier of procedures, `Slice` (Oct 25, 2026, [doc/prove.md](../doc/prove.md),
-"Programs"): its loop heads assume the invariants of the loop already, an invariant of the TEQ of the loop would be
-assumed there as well and attached as `:invariant`, simplified in the context of the facts before the loop, which are
-over choices and never become false (the values at the entry of the loop are the choices that the program variables
-are bound to there).
+Implemented as `-slice` (Oct 25, 2026, [doc/prove.md](../doc/prove.md), "Programs"): the simplifier of procedures
+(`Slice`) takes the system of each loop as its head, simplified in the context before the loop, and attaches it as an
+`invariant` over the program variables, the remaining choices quantified existentially, e.g. `tot == 2 * idx && idx
+<= len && 0 <= idx`. Open: lowering the traces and `invs` that remain, printing the invariants as `annotate-tag`
+commands of SV-LIB at the tags of the loops, and checking them (`-vcgen`).
 
 ## Source positions in the C frontend
 

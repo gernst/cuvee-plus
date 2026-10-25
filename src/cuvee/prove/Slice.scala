@@ -1,7 +1,10 @@
 package cuvee.prove
 
+import util.Name
 import cuvee.Config
 import cuvee.core._
+import cuvee.verify.Path
+import cuvee.verify.TEQ
 
 // the simplification of procedures by symbolic execution, slice by slice, which keeps the structure of the program, its statements,
 // assignments, and if-then-else, and simplifies the expressions in it under the facts known at their position;
@@ -18,18 +21,19 @@ import cuvee.core._
 //   variables in scope (see written), where its value is expressed by them; otherwise it stays as it is, such that the
 //   program never mentions a choice
 //
-// a loop starts from fresh choices for the variables that it modifies, constrained by its invariants; the facts from
+// a loop starts from fresh choices for the variables that it modifies, constrained by its invariants, and with -slice
+// by its trace equation system, simplified and attached to the loop as an invariant (see head); the facts from
 // before the loop hold in its body and after it, since they do not speak about these choices; after the loop the test
 // is known not to hold, unless the body breaks out of it
 object Slice:
-  // a position in the program: the context of the facts over the choices, the values of the program variables in
-  // scope over the choices, and the facts assumed since the entry of the procedure, whose suffixes are the facts of
+  // a position in the procedure `proc`: the context of the facts over the choices, the values of the program variables
+  // in scope over the choices, and the facts assumed since the entry of the procedure, whose suffixes are the facts of
   // the branches that a join combines (see join)
-  case class At(ctx: Context, values: Map[Var, Expr], facts: List[Expr]):
+  case class At(proc: Name, ctx: Context, values: Map[Var, Expr], facts: List[Expr]):
     def assume(config: Config, state: State, phi: Expr): At =
       if phi == True
       then this
-      else At(Forward.assume(config, state, ctx, List(phi), Nil), values, facts :+ phi)
+      else copy(ctx = Forward.assume(config, state, ctx, List(phi), Nil), facts = facts :+ phi)
 
     // fresh choices for `xs`
     def havoc(xs: Iterable[Var]): At =
@@ -42,7 +46,7 @@ object Slice:
   def simplify(config: Config, state: State, rules: List[Rule], forward: List[Forward], cmd: DefineProc): DefineProc =
     val DefineProc(proc, body, attrs) = cmd
     val ctx = Context.empty(state).withRules(rules).copy(forward = forward).neutral
-    val entry = At(ctx, Map(), Nil).havoc(proc.in ++ proc.out ++ body.free)
+    val entry = At(proc.name, ctx, Map(), Nil).havoc(proc.in ++ proc.out ++ body.free)
     val at = entry.assume(config, state, value(config, state, entry, state.annotated(attrs).requires))
     val (body_, _) = simplify(config, state, at, body)
     body_ match
@@ -78,6 +82,25 @@ object Slice:
     if expr_.free.subsetOf(at.values.keySet)
     then expr_
     else expr
+
+  // the invariant `phi` over the choices at the head `at` of a loop, written over the program variables in scope by the
+  // variables whose values are its subterms, also below binders, which are those of trace equation systems, whose
+  // bound variables are fresh; the choices that remain, e.g. the number of iterations and the values at the entry of
+  // the variables that the loop modifies, are quantified existentially, which keeps it inductive, as the choices do not
+  // change from one iteration to the next
+  def invariant(at: At, phi: Expr): Expr =
+    val holders =
+      (for (x, e) <- at.values.toList.sortBy(_._1.name.toString).reverse if !e.isInstanceOf[Lit] && e != True && e != False
+       yield e -> x).toMap
+
+    def back(expr: Expr): Expr =
+      expr match
+        case _ if holders contains expr => holders(expr)
+        case _                          => expr.map(back)
+
+    val phi_ = back(phi)
+    val choices = (phi_.free -- at.values.keySet).toList.sortBy(_.name.toString)
+    if choices.isEmpty then phi_ else Ex(choices, phi_)
 
   // `expr` of the program, simplified at `at` and written back
   def simplify(config: Config, state: State, at: At, expr: Expr): Expr =
@@ -158,24 +181,25 @@ object Slice:
         (If(written(at, test, cond), left_, right_), join(config, state, at, cond, l, r))
 
   // a loop that is not entered has no effect, but its head is reached, where its invariants are checked, as VCGen does;
-  // otherwise its attributes are kept, its invariants hold at the head (see head)
+  // otherwise its attributes are kept, its invariants hold at the head, where its trace equation system is attached as
+  // a further one with -slice (see head)
   def while_(config: Config, state: State, at: At, test: Expr, body: Prog, attrs: Attrs): (Prog, Option[At]) =
     if value(config, state, at, test) == False
     then spec(config, state, at, Nil, And(state.annotated(attrs).invariants), True)
     else
-      val head = this.head(config, state, at, body, attrs)
+      val (head, attrs_) = this.head(config, state, at, Some(test), body, attrs)
       val cond = value(config, state, head, test)
       val (body_, _) = simplify(config, state, head.assume(config, state, cond), body)
       val after =
         if body.breaks then Some(head)
         else if cond == True then None
         else Some(head.assume(config, state, Context.not(cond)))
-      (While(written(head, test, cond), body_, attrs), after)
+      (While(written(head, test, cond), body_, attrs_), after)
 
   def iter(config: Config, state: State, at: At, body: Prog, attrs: Attrs): (Prog, Option[At]) =
-    val head = this.head(config, state, at, body, attrs)
+    val (head, attrs_) = this.head(config, state, at, None, body, attrs)
     val (body_, _) = simplify(config, state, head, body)
-    (Iter(body_, attrs), Some(head))
+    (Iter(body_, attrs_), Some(head))
 
   // not simplified, its effect is havoc of the variables that it evolves
   def ode(config: Config, state: State, at: At, time: Var, xs: List[Var], rhs: List[Expr], dom: Expr, attrs: Attrs): (Prog, Option[At]) =
@@ -186,12 +210,34 @@ object Slice:
     val prog = Par(progs)
     (prog, Some(at.havoc(prog.mod intersect at.values.keySet)))
 
-  // the position at the head of a loop: the variables that the body modifies are choices, constrained by the
-  // invariants of the loop, also those of its tags (see State.annotated), as VCGen assumes them; they are checked
-  // elsewhere, since the attributes are kept
-  def head(config: Config, state: State, at: At, body: Prog, attrs: Attrs): At =
-    val head = at.havoc(body.mod intersect at.values.keySet)
-    head.assume(config, state, value(config, state, head, And(state.annotated(attrs).invariants)))
+  // the position at the head of a loop with test `test` and its attributes: the variables that the body modifies are
+  // choices, constrained by the invariants of the loop, also those of its tags (see State.annotated), as VCGen assumes
+  // them; they are checked elsewhere, since the attributes are kept;
+  // with -slice, the values of the variables that the loop modifies are those after an arbitrary number of iterations
+  // of its trace equation system (see TEQ.head), built from the values at the entry and simplified in the context
+  // before the loop, where it is equivalent, which the head assumes and the loop gets as a further invariant, over the
+  // program variables (see invariant)
+  def head(config: Config, state: State, at: At, test: Option[Expr], body: Prog, attrs: Attrs): (At, Attrs) =
+    val system =
+      if config.slice
+      then TEQ.head(config, state, at.proc, test, body, attrs, Path(Subst(Map(), at.values)))
+      else None
+
+    val (head, attrs_) =
+      system match
+        case Some((_, cur, teq)) =>
+          val phi = Simplify.simplify(config, state, at.ctx, teq)
+          val head = at.copy(values = at.values ++ (TEQ.modified(body, attrs) zip cur)).assume(config, state, phi)
+          // the invariant over the program variables is simplified once more, at a positive position, where the
+          // equations of its existential variables are eliminated, e.g. those of traces that nothing else reads, in a
+          // context without the facts, which are over the choices
+          val inv = Simplify.simplify(config, state, at.ctx.restricted(_ => false).copy(polarity = Some(true)), invariant(head, phi))
+          (head, if inv == True then attrs else attrs ++ Attrs(List("invariant" -> Some(inv))))
+
+        case None =>
+          (at.havoc(body.mod intersect at.values.keySet), attrs)
+
+    (head.assume(config, state, value(config, state, head, And(state.annotated(attrs).invariants))), attrs_)
 
   // the statements of a block in sequence, up to the first that does not terminate normally or after which the
   // context is inconsistent, e.g. assume false: the statements after it are unreachable

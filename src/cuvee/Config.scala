@@ -123,6 +123,9 @@ case class Config(
     rules: Boolean = false,
     // -instrument: -implement inlines the bodies of the implementations by methods instead of calling them
     instrument: Boolean = false,
+    // -slice: the heads of loops in the simplification of procedures by -prove are their trace equation systems,
+    // simplified and attached as invariants (see prove.Slice)
+    slice: Boolean = false,
     // keep last
     debug: Set[String] = Set()
 ):
@@ -301,6 +304,13 @@ object Config:
         val config_ = config.copy(rules = true)
         (config_, rest)
 
+  // the lemma database is injected as by -teq, whose transform does not run, such that procedures reach -prove
+  val slice =
+    flag("-slice", "simplify procedures with -prove, where the head of each loop is its trace equation system as by -teq, simplified and attached to the loop as an invariant; injects the lemma database teq.dfy, implies -prove"):
+      case (config, rest) =>
+        val config_ = config.usingMath.having("teq").copy(slice = true)
+        (if config_.transforms.contains(Prove) then config_ else config_.using(Prove), rest)
+
   val prove =
     flag("-prove", "prove the goals of -teq with the deduction engine of the package prove: congruence closure, a simplex, matching modulo the classes and the views of traces of several accumulators, forward lemmas (:fw)"):
       case (config, rest) =>
@@ -421,7 +431,7 @@ object Config:
   // the options in groups, in the order of doc/options.md, for -help
   val groups = List(
     "input" -> List(arch, unbounded, entry_, include, hybrid),
-    "transformations" -> List(implement, instrument, vcgen, teq, chc, flat, prove, rules, fallback, split, monomorph, fuse),
+    "transformations" -> List(implement, instrument, vcgen, teq, chc, flat, prove, slice, rules, fallback, split, monomorph, fuse),
     "output" -> List(print_, quiet, linewidth, known_, output),
     "solvers and answers" -> List(z3, cvc5, timeout_, witness),
     "debugging" -> List(debug_)
@@ -486,7 +496,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.51.0"
+  val release = "0.51.1"
 
   def version() =
     println("Cuvée " + release)

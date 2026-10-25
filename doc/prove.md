@@ -462,8 +462,21 @@ under the facts known at their position. Nothing that is known is forgotten (Oct
 
 Examples: [slice_branches.dfy](../examples/dafny/prove/slice_branches.dfy),
 [slice_loops.dfy](../examples/dafny/prove/slice_loops.dfy), [slice_calls.dfy](../examples/dafny/prove/slice_calls.dfy).
-The invariants of TEQs for the head of a loop, e.g. for witnesses, are not computed yet
-([ideas/witnesses.md](../ideas/witnesses.md)).
+**Trace equation systems at the heads of loops** (`-slice`, Oct 25, 2026). With `-slice`, which injects the lemma
+database like `-teq` but does not run its transform, the head of a loop is its system (`TEQ.head`), built from the
+values at the entry by the symbolic execution of `-teq`: the loop variables are bound to their values after an
+arbitrary number of iterations, fresh choices like the number of iterations and the traces, and the system is
+simplified in the context before the loop, where the database gives closed forms, e.g. `tot == 2 * integer(n)`, and
+assumed at the head. Written over the program variables in scope, with the remaining choices quantified existentially
+(`Slice.invariant`, which keeps it inductive, as the choices do not change between iterations), and simplified once
+more, at a positive position and without the facts over the choices, which eliminates the traces that nothing else
+reads by the one-point rule, it is attached to the loop as a further `invariant`, e.g. `tot == 2 * idx && idx <= len
+&& 0 <= idx`. An inner loop gets its own system from the values at its entry, the head of the outer loop, whose number
+of iterations its invariant quantifies. Examples: [slice_closed_form.dfy](../examples/dafny/teq/slice_closed_form.dfy),
+[slice_nested.dfy](../examples/dafny/teq/slice_nested.dfy), [slice_break.dfy](../examples/dafny/teq/slice_break.dfy),
+[slice_series.dfy](../examples/dafny/teq/slice_series.dfy). Open: the traces and `invs` that simplification keeps
+(e.g. a trace whose update is a constant, `trace(col₉, for ⌊K⌋ do ... :: wid)`), which witnesses need lowered
+([ideas/witnesses.md](../ideas/witnesses.md)), and checking the attached invariants by `-vcgen`.
 
 ## Debugging
 

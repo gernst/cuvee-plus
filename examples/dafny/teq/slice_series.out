@@ -1,0 +1,21 @@
+method squares_below(len: int) returns (res: int)
+  requires 0 <= len
+{
+  var tot: int, idx: int;
+  tot := 0;
+  idx := 0;
+  while idx < len
+    invariant
+      exists n₉: Nat ::
+        tot == squares(0, n₉) && idx == integer(n₉) <= len && 0 <= integer(n₉)
+  {
+    tot := tot + idx * idx;
+    idx := idx + 1;
+  }
+  if 0 <= tot {
+    res := tot;
+  } else {
+    res := -1;
+  }
+}
+

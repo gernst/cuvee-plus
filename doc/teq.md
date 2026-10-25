@@ -124,6 +124,11 @@ of their calls, and not for arbitrary arguments (e.g. `sanfoundry_24-1`, whose
 - A loop whose body ends by `break` or `return` on all paths runs it at most
   once: its body is a conditional on the test, without a trace equation
   system, where `break` continues after the loop.
+- `TEQ.loop` is `TEQ.head`, the system of the loop from the state at its
+  entry (the fresh variables, the values of the loop variables after an
+  arbitrary number of iterations, and the system), followed by `TEQ.exits`,
+  the paths that leave it. `-slice` takes `TEQ.head` as the head of a loop in
+  the simplification of procedures (see [prove.md](prove.md), "Programs").
 - The goal is that all checks hold and the postcondition follows on every
   path.
 - Differential equations and parallel composition are not supported; loop

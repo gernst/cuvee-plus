@@ -289,24 +289,38 @@ object TEQ extends Transform:
     val xs = modified(body, attrs)
     val guard = test.getOrElse(True)
 
+    head(config, state, proc, test, body, attrs, p) match
+      // no path through the body leads to another iteration, e.g. a body that ends by break or return on all paths:
+      // the loop runs the body at most once, as a conditional, without a trace equation system, where the paths that
+      // end by break continue after the loop, and loops without test may also be left before the body
+      case None =>
+        val guard_ = p(guard)
+        val once =
+          for q <- symex(config, state, proc, body, if test.isDefined then p.when(guard_) else p)
+          yield if q.jump == Some(Return) then q else q.copy(jump = None)
+
+        test match
+          case Some(_) => once :+ p.when(Not(guard_))
+          case None    => p :: once
+
+      case Some((fresh, cur, teq)) =>
+        exits(config, state, proc, test, body, xs, fresh, cur, teq, p)
+
+  // the trace equation system of a loop from the state `p` at its entry, the state after an arbitrary number of
+  // iterations: the fresh variables, the values of the loop variables (see modified) there, and the system, closed for
+  // nested loops (see system); none if no path through the body leads to another iteration; also the head of a loop
+  // for the simplification of programs (see prove.Slice)
+  def head(config: Config, state: State, proc: Name, test: Option[Expr], body: Prog, attrs: Attrs, p: Path): Option[(List[Var], List[Expr], Expr)] =
+    val xs = modified(body, attrs)
+    val guard = test.getOrElse(True)
+
     // the body from an arbitrary state x♯ of the loop variables, the other variables keep their values
     val sharp = xs.fresh
     val inner = Path(p.su ++ Subst.from(xs, sharp)).copy(depth = p.depth + 1)
     val paths = symex(config, state, proc, body, inner).filter(iterates)
 
-    // no path through the body leads to another iteration, e.g. a body that ends by break or return on all paths:
-    // the loop runs the body at most once, as a conditional, without a trace equation system, where the paths that
-    // end by break continue after the loop, and loops without test may also be left before the body
     if paths.isEmpty
-    then
-      val guard_ = p(guard)
-      val once =
-        for q <- symex(config, state, proc, body, if test.isDefined then p.when(guard_) else p)
-        yield if q.jump == Some(Return) then q else q.copy(jump = None)
-
-      test match
-        case Some(_) => once :+ p.when(Not(guard_))
-        case None    => p :: once
+    then None
     else
       // the nondeterministic choices of the body are ranged over by lists, named after them with a final ?, e.g. Choice?
       val zs = paths.flatMap(_.zs).distinct
@@ -321,33 +335,36 @@ object TEQ extends Transform:
       val constraint = And(List(inner(guard), paths_).flatMap(And.flattenStrong))
 
       // one trace per strongly connected component of the loop's variables (see system), closed for nested loops
-      val (fresh, cur, teq) =
-        system(state, xs, sharp, zs, Zs, n, k, K, paths, constraint, p, closed = p.depth > 0)
+      Some(system(state, xs, sharp, zs, Zs, n, k, K, paths, constraint, p, closed = p.depth > 0))
 
-      // the state at the exit, from which the body executes safely if the guard holds,
-      // the paths of the body from there that end by break or return leave the loop as well
-      val exit = p.fresh(fresh).assign(xs, cur)
-      val last = symex(config, state, proc, body, Path(exit.su).copy(depth = p.depth + 1))
-      val safe = Path.formula(last.map(_.steps))
-      val exit_ = exit.assume(teq)
-      val guard_ = exit_(guard)
-      val checked = if safe == True then exit_ else exit_.check(Imp(guard_, safe))
+  // the paths that leave a loop from the state after the iterations of its system (see head)
+  def exits(config: Config, state: State, proc: Name, test: Option[Expr], body: Prog, xs: List[Var], fresh: List[Var], cur: List[Expr], teq: Expr, p: Path): List[Path] =
+    val guard = test.getOrElse(True)
 
-      // the exits are told apart by branch conditions, the negated test and the guard before a break or return,
-      // which an enclosing loop takes as the guards of the cases of its updates (Upd(q.B, ...)), such that these are
-      // disjoint, otherwise exits with different values would give contradicting cases
-      val left =
-        for q <- last if !iterates(q)
-        yield
-          val jump = if q.jump == Some(Return) then q.jump else None
-          Path(q.su, checked.steps ++ (Step.When(guard_) :: q.steps), jump)
+    // the state at the exit, from which the body executes safely if the guard holds,
+    // the paths of the body from there that end by break or return leave the loop as well
+    val exit = p.fresh(fresh).assign(xs, cur)
+    val last = symex(config, state, proc, body, Path(exit.su).copy(depth = p.depth + 1))
+    val safe = Path.formula(last.map(_.steps))
+    val exit_ = exit.assume(teq)
+    val guard_ = exit_(guard)
+    val checked = if safe == True then exit_ else exit_.check(Imp(guard_, safe))
 
-      test match
-        case Some(test) =>
-          checked.when(Not(exit_(test))) :: left
+    // the exits are told apart by branch conditions, the negated test and the guard before a break or return,
+    // which an enclosing loop takes as the guards of the cases of its updates (Upd(q.B, ...)), such that these are
+    // disjoint, otherwise exits with different values would give contradicting cases
+    val left =
+      for q <- last if !iterates(q)
+      yield
+        val jump = if q.jump == Some(Return) then q.jump else None
+        Path(q.su, checked.steps ++ (Step.When(guard_) :: q.steps), jump)
 
-        case None =>
-          checked :: left
+    test match
+      case Some(test) =>
+        checked.when(Not(exit_(test))) :: left
+
+      case None =>
+        checked :: left
 
   // the trace equation system of a loop (definition 4.4 of the paper, with its variables partitioned): the variables
   // are partitioned by the strongly connected components of their read relation, a variable reads the variables that

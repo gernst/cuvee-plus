@@ -85,7 +85,8 @@ object Examples:
     val pairs = args.zip(args.drop(1))
     val modules = pairs.collect { case ("-include", module) if module.startsWith("teq:") || module.startsWith("implement:") => List("-include", module) }
     val known = pairs.collect { case ("-known", feature) => List("-known", feature) }
-    val teq = if args.contains("-teq") && !known.contains(List("-known", "teq")) then List("-known", "teq") else Nil
+    // -slice injects the lemma database like -teq
+    val teq = if (args.contains("-teq") || args.contains("-slice")) && !known.contains(List("-known", "teq")) then List("-known", "teq") else Nil
     val implement =
       if modules.exists(_(1).startsWith("implement:")) && !known.contains(List("-known", "implement"))
       then List("-known", "implement")

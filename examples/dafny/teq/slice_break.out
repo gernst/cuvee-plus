@@ -1,0 +1,21 @@
+method search(len: int, key: int) returns (res: int)
+  requires 0 <= len
+{
+  var idx: int;
+  idx := 0;
+  while idx < len
+    invariant
+      exists Idx₁₂: Trace<int>, n₉: Nat ::
+        Idx₁₂ == counter(0, 1, n₉)
+          && idx == integer(n₉) <= len
+          && invs(for ⌊Idx₁₂⌋ check k₁₀ :: k₁₀ != key)
+          && 0 <= integer(n₉)
+  {
+    if idx == key {
+      break;
+    }
+    idx := idx + 1;
+  }
+  res := idx;
+}
+
