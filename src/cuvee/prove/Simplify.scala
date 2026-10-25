@@ -398,13 +398,13 @@ object Simplify:
     val re = Canon.renaming(ctx.bound, bound)
     val key = (deps.map(re(_)), bound.map(re(_)), Canon.key(ctx, re))
     val facts =
-      ctx.combinators.value.get(key) match
+      ctx.memos.value.combinators.get(key) match
         case Some(facts) =>
           facts.map(Canon.back(re)(_))
 
         case None =>
           val facts = invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound)
-          ctx.combinators := ctx.combinators.value + (key -> facts.map(re(_)))
+          ctx.memos := ctx.memos.value.copy(combinators = ctx.memos.value.combinators + (key -> facts.map(re(_))))
           facts
     ctx.neutral.bind(bound).assume(facts, Nil)
 
@@ -463,7 +463,7 @@ object Simplify:
   def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     val re = Canon.renaming(ctx.bound, bound)
     val key = (deps.map(re(_)), bound.map(re(_)), Canon.key(ctx, re))
-    ctx.reads.value.get(key) match
+    ctx.memos.value.reads.get(key) match
       case Some(values) =>
         values.map(Canon.back(re)(_))
 
@@ -479,7 +479,7 @@ object Simplify:
 
             case _ =>
               Nil
-        ctx.reads := ctx.reads.value + (key -> values.map(re(_)))
+        ctx.memos := ctx.memos.value.copy(reads = ctx.memos.value.reads + (key -> values.map(re(_))))
         values
 
   // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,

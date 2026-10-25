@@ -39,12 +39,12 @@ object Canon:
   def key(ctx: Context, re: Subst[Nothing, Var], keep: Expr => Boolean = _ => true): Key =
     def canon(phi: Expr): Expr =
       val memo = (phi, re)
-      ctx.canon.value.get(memo) match
+      ctx.memos.value.canon.get(memo) match
         case Some(phi_) =>
           phi_
         case None =>
           val phi_ = term(re(phi))
-          ctx.canon := ctx.canon.value + (memo -> phi_)
+          ctx.memos := ctx.memos.value.copy(canon = ctx.memos.value.canon + (memo -> phi_))
           phi_
     (ctx.self.map((dep, value) => (canon(dep), canon(value))), ctx.facts.assms.filter(keep).map(canon).toSet, ctx.facts.concls.filter(keep).map(canon).toSet)
 

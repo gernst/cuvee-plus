@@ -111,3 +111,46 @@ object Eval:
     if r >= 0 then (q, r)
     else if b > 0 then (q - 1, r + b)
     else (q + 1, r - b)
+
+  // a goal that remains and has no traces, lists, or other functions than those of arithmetic and logic left, e.g.
+  // forall N :: !(0 < N && N <= 536870911) of an unsafe task, is refuted by a counterexample among small values and
+  // the literals of the goal, plus or minus 1, which its instance evaluates to false at: the goal is false then, which
+  // a sink answers incorrect unless the goal is :abstract (see Sink.passive); at most four variables; the instances
+  // are evaluated (see apply), not simplified, since the rules decide anything in a context whose contradiction the
+  // theories miss, e.g. the premise natural(4294967296) == zero of a case that the instance does not satisfy
+  def counterexample(cmd: Cmd): Cmd =
+    cmd match
+      case Assert(justify, Nil, phi, attrs) if phi != True && phi != False =>
+        val (xs, body) =
+          phi match
+            case All(xs, body) => (xs, body)
+            case _             => (Nil, phi)
+
+        val scalar = xs.forall(x => x.typ == Sort.int || x.typ == Sort.nat || x.typ == Sort.bool)
+        if xs.length > 4 || !scalar || !evaluable(body) || !body.free.subsetOf(xs.toSet)
+        then cmd
+        else
+          val ints = (literals(body) ++ List(BigInt(0), BigInt(1), BigInt(-1))).flatMap(c => List(c - 1, c, c + 1)).distinct.take(24)
+          val choices =
+            for x <- xs
+            yield
+              if x.typ == Sort.bool then List(True, False)
+              else if x.typ == Sort.nat then ints.filter(_ >= 0).map(c => Nats.natural(Lit(c, Sort.int)))
+              else ints.map(c => Lit(c, Sort.int))
+
+          val refuted = assignments(choices).take(4096).exists(values => bool(Subst.from(xs, values)(body)) == Some(false))
+          if refuted then Assert(justify, Nil, False, attrs) else cmd
+
+      case _ =>
+        cmd
+
+  def literals(expr: Expr): List[BigInt] =
+    expr match
+      case Lit(value: BigInt, _) => List(value)
+      case App(_, _, _, args)    => args.flatMap(literals)
+      case _                     => Nil
+
+  def assignments(choices: List[List[Expr]]): LazyList[List[Expr]] =
+    choices match
+      case Nil          => LazyList(Nil)
+      case xs :: rest   => for x <- LazyList.from(xs); tail <- assignments(rest) yield x :: tail

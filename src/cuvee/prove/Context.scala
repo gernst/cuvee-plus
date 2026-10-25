@@ -37,11 +37,8 @@ import cuvee.core._
 // whose views are being computed (see Rewrite.apply and Views.projected), which are not applied or projected inside;
 // one facility for both kinds of re-entrance, by identity for rules and by the key of a component for views
 //
-// reads, views, combinators: the memos of the values of the bound variables of combinators (see Simplify.iterations),
-// of the simplified views of the markers of traces of several accumulators (see Views), and of the facts of the contexts of the updates
-// and bodies of combinators (see Simplify.combinator), keyed by the canonical facts of the position (see Canon) and
-// holding their values under the canonical names, shared by the copies of this context like steps and fresh for each
-// command (see withRules)
+// memos: the memos of the engine (see Context.Memos), shared by the copies of this context like steps and fresh for
+// each command (see withRules)
 //
 // forward: the forward lemmas, whose instances at the terms of the facts that the traversal assumes are assumed with
 // them (see Forward.assume), none while a trigger is matched
@@ -57,18 +54,15 @@ case class Context(
     rules: List[Rule] = Nil,
     steps: util.Ref[Int] = util.Ref(0),
     self: List[(Expr, Expr)] = Nil,
-    combinators: util.Ref[Context.Combinators] = util.Ref(Map()),
     applied: util.Ref[Map[String, Int]] = util.Ref(Map()),
     active: List[AnyRef] = Nil,
-    reads: util.Ref[Context.Reads] = util.Ref(Map()),
-    views: util.Ref[Context.Views] = util.Ref(Map()),
-    canon: util.Ref[Map[(Expr, Subst[Nothing, Var]), Expr]] = util.Ref(Map()),
+    memos: util.Ref[Context.Memos] = util.Ref(Context.Memos()),
     forward: List[Forward] = Nil
 ):
-  // the rewrite rules with a fresh number of steps and no memoized contexts, views or reads, which are shared by the
-  // copies of this context, and which guards against rules that do not terminate
+  // the rewrite rules with a fresh number of steps and no memos, which are shared by the copies of this context, and
+  // which guards against rules that do not terminate
   def withRules(rules: List[Rule], steps: Int = 1000) =
-    copy(rules = rules, steps = util.Ref(steps), combinators = util.Ref(Map()), applied = util.Ref(Map()), reads = util.Ref(Map()), views = util.Ref(Map()), canon = util.Ref(Map()), linear = linear.copy(checks = util.Ref(Map())))
+    copy(rules = rules, steps = util.Ref(steps), applied = util.Ref(Map()), memos = util.Ref(Context.Memos()), linear = linear.copy(checks = util.Ref(Map())))
 
   // an expression seen through its class, never a variable: a variable matches only by a definition that is not a
   // variable, the first member of its class that is none, any other expression as itself,
@@ -248,15 +242,17 @@ object Context:
       case Reals.le(a, b) => Reals.lt(b, a)
       case _              => Not(phi)
 
-  // the facts of the contexts of combinators by their dependencies and bound variables and the key of the outer
-  // context, all under the canonical names (see Canon)
-  type Combinators = Map[(List[Expr], List[Var], Canon.Key), List[Expr]]
-
-  // the values of the bound variables of combinators, likewise
-  type Reads = Map[(List[Expr], List[Var], Canon.Key), List[Expr]]
-
-  // the views of markers by the marker and the key of the context, likewise (see Views)
-  type Views = Map[(Expr, Canon.Key), Expr]
+  // the memos of the engine, keyed by the canonical facts of the position (see Canon) and holding their values under
+  // the canonical names: the facts of the contexts of the updates and bodies of combinators by their dependencies and
+  // bound variables (see Simplify.combinator), the values of the bound variables of combinators, likewise (see
+  // Simplify.iterations), the simplified views of the markers of traces of several accumulators (see Views), and the
+  // canonical forms of the closed conditions with the renaming to them (see Canon)
+  case class Memos(
+      combinators: Map[(List[Expr], List[Var], Canon.Key), List[Expr]] = Map(),
+      reads: Map[(List[Expr], List[Var], Canon.Key), List[Expr]] = Map(),
+      views: Map[(Expr, Canon.Key), Expr] = Map(),
+      canon: Map[(Expr, Subst[Nothing, Var]), Expr] = Map()
+  )
 
   def empty(state: State) =
     Context(state, Nil, Set(), Set(), Facts.empty, Classes.empty(state.constrs.values.toSet), Linear.empty, None)

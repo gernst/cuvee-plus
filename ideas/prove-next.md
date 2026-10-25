@@ -3,7 +3,7 @@
 The open changes to the engine, as of Oct 26, 2026 (0.51.1), ordered by the expected gain; what is done is
 documented in [doc/prove.md](../doc/prove.md).
 
-Done, by version: counterexamples by evaluation (`Prove.counterexample`, 0.46.13, 38 unsafe array-fpi tasks); case
+Done, by version: counterexamples by evaluation (`Eval.counterexample`, 0.46.13, 38 unsafe array-fpi tasks); case
 splits on disjunctive premises (0.46.12: in-de20, in-de41, in-de42, in-de51), on guards that a loop does not change
 and on remainders by small literals of goal variables (`Prove.alternatives`, 0.46.16, diamond_1-1); negative literals
 as negated summands of the matcher (0.46.12); solutions `c == integer(n)` inlined like arithmetic ones
@@ -33,9 +33,22 @@ decides `n == m` on naturals by the simplex (`implied`/`denied` of `integer(n) =
 sound and free of cycles (a decision, no rewrite, unlike the cycle through `integer` that the comment of
 `Classes.within` describes), but nothing asks `n₂ == n₃`, the assertion is a polynomial over the two sums.
 
-**Change.** After a fact is assumed, check the atoms `integer(n)` against each other, the pairs whose difference the
-constraints bound to 0 from both sides, and merge their naturals in the classes; cost unknown, measure on the task
-sets (the number of atoms `integer(n)` of a goal is small, one per loop).
+**Tried and reverted (Oct 26, 2026): an exchange of equalities in `Context.assume`.** Both directions are needed,
+since the assertion is decided by the simplex: two opposite constraints `0 <= p` and `0 <= -p` of a difference of two
+atoms (or of an atom and a constant) became an equation for the classes, `integer` was injective in the classes
+(`integer(x)` and `integer(y)` in one class merged `x` and `y`), and the merges of arithmetic terms, also by
+congruence, became equations of the simplex, in rounds until neither had new ones. It decided zero_sum1 under
+`-slice`, the false variant stayed open, but on the cloud (fallback, 120 s, AMD Ryzen 7 PRO 5750G, against 0.51.2)
+Arrays lost 21 true and false results and gained 1 (the family eqn*, sqm*, ncomp, pcomp, about 20 s before, timeouts
+after), Loops lost 13 (all of cohendiv, in-de51, in-de61, in-de62) and gained none; timeouts rose by 42 and 39, the
+median CPU time from 20.9 to 24.6 s, no flips; locally, hybrid/ball.dfy lost its proof (`-vcgen -prove`, Real). The
+cost is in every assumed fact: the classes grow by the merges of arithmetic terms and the simplex by their equations,
+which the traversal pays at every position.
+
+**Change, narrower.** Only on demand, where it is needed: when the simplifier compares two atoms of the same function
+whose arguments differ only in naturals, e.g. `sum(prefix(n₂, xs))` against `sum(prefix(n₃, xs))` in a polynomial,
+ask the simplex whether the naturals' integers are equal; or only at the exits of loops, between the numbers of
+iterations of loops with the same bound. Measure on the families above before anything else.
 
 ## 2. Normal form of the arithmetic atoms (stage 3)
 
@@ -116,7 +129,7 @@ is not worthwhile, it was tried before. The open regression of ps2-ll_unwindboun
 
 Deprioritized (the user's decision, Oct 2026: counterexamples are not of interest). 30 unsafe array-fpi tasks remain
 unknown, e.g. brs2f leaves `sum(map(⌊counter(0, 1, n)⌋, k :: if 0 < k then (if k % 2 == 0 then 20 else 0) else 0))
-<= 2 N`, false at N = 3, since `Prove.counterexample` evaluates only the functions of `Eval.computed`. The change would
+<= 2 N`, false at N = 3, since `Eval.counterexample` evaluates only the functions of `Eval.computed`. The change would
 compute the variables that a premise determines and evaluate ground instances of the database by their definitions
 (`counter`, `current`, `butlast`, `earlier`, `prefix`, `sum`, `count`, `max`; `maps` and `trace` directly), inside
 the search for a counterexample only, which can only turn a goal into `false`; up to 30 false.

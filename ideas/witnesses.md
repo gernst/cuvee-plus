@@ -68,7 +68,7 @@ An invariant follows from the closed forms of the traces at a generic number of 
    values are dropped (`Config.unbounded`): an invariant such as `s <= i*255` may itself overflow in C and needs
    `(long long)` casts. `div` and `mod` of SMT-LIB round otherwise than `/` and `%` of C (a case split, or
    operands known to be nonnegative); `store` terms have no counterpart in C.
-7. **Violation witnesses.** `Prove.counterexample` gives values of at most four variables of a remaining goal,
+7. **Violation witnesses.** `Eval.counterexample` gives values of at most four variables of a remaining goal,
    which must be traced back to their nondeterministic calls (the numbers of iterations are dropped). All
    `__VERIFIER_assert` share one `reach_error()`, so the target needs a `function_enter` waypoint at the
    assertion, hence a map from goals (also after `-split`) to source assertions. A counterexample that depends

@@ -60,45 +60,41 @@ object Slice:
     val expr_ = if expr.typ == Sort.bool then Normalize.lift(su(expr)) else su(expr)
     Simplify.simplify(config, state, at.ctx, expr_)
 
-  // `expr` of the program, whose value is `value`, as `value` over the program variables in scope, by the variables
-  // whose values are its subterms, if no choice remains (choices are fresh, never program variables), otherwise
-  // `expr` as it is; literals are not replaced by variables of the same value; binders are not entered, since a
-  // program variable could be captured there; of several variables with the same value, those of `expr` are preferred,
-  // e.g. x of x < 0 after x := a
-  def written(at: At, expr: Expr, value: Expr): Expr =
-    val inverse =
-      for (x, e) <- at.values.toList.sortBy((x, _) => (expr.free contains x, x.name.toString))
-      if !e.isInstanceOf[Lit] && e != True && e != False
-      yield e -> x
-    val holders = inverse.toMap
+  // `value` over the choices at `at`, with its subterms replaced by the program variables in scope that hold them, of
+  // several those of `preferred` first, then the smallest by name, e.g. x of x < 0 after x := a; literals are not
+  // replaced by variables of the same value; binders are entered only if `binders`, since a program variable could be
+  // captured there
+  def back(at: At, preferred: Set[Var], binders: Boolean, value: Expr): Expr =
+    // the map keeps the last pair of a value, hence the order: preferred last, and among them the smallest name last
+    val order = Ordering.Tuple2(Ordering.Boolean, Ordering.String.reverse)
+    val holders =
+      (for (x, e) <- at.values.toList.sortBy((x, _) => (preferred contains x, x.name.toString))(using order)
+       if !e.isInstanceOf[Lit] && e != True && e != False
+       yield e -> x).toMap
 
-    def back(expr: Expr): Expr =
+    def replace(expr: Expr): Expr =
       expr match
         case _ if holders contains expr => holders(expr)
-        case _: App                     => expr.map(back)
+        case _: App                     => expr.map(replace)
+        case _ if binders               => expr.map(replace)
         case _                          => expr
 
-    val expr_ = back(value)
+    replace(value)
+
+  // `expr` of the program, whose value is `value`, written back over the program variables in scope (see back), if no
+  // choice remains (choices are fresh, never program variables), otherwise `expr` as it is; binders are not entered
+  def written(at: At, expr: Expr, value: Expr): Expr =
+    val expr_ = back(at, expr.free, false, value)
     if expr_.free.subsetOf(at.values.keySet)
     then expr_
     else expr
 
-  // the invariant `phi` over the choices at the head `at` of a loop, written over the program variables in scope by the
-  // variables whose values are its subterms, also below binders, which are those of trace equation systems, whose
-  // bound variables are fresh; the choices that remain, e.g. the number of iterations and the values at the entry of
-  // the variables that the loop modifies, are quantified existentially, which keeps it inductive, as the choices do not
-  // change from one iteration to the next
+  // the invariant `phi` over the choices at the head `at` of a loop, written over the program variables in scope (see
+  // back), also below binders, which are those of trace equation systems, whose bound variables are fresh; the choices
+  // that remain, e.g. the number of iterations and the values at the entry of the variables that the loop modifies,
+  // are quantified existentially, which keeps it inductive, as the choices do not change from one iteration to the next
   def invariant(at: At, phi: Expr): Expr =
-    val holders =
-      (for (x, e) <- at.values.toList.sortBy(_._1.name.toString).reverse if !e.isInstanceOf[Lit] && e != True && e != False
-       yield e -> x).toMap
-
-    def back(expr: Expr): Expr =
-      expr match
-        case _ if holders contains expr => holders(expr)
-        case _                          => expr.map(back)
-
-    val phi_ = back(phi)
+    val phi_ = back(at, Set(), true, phi)
     val choices = (phi_.free -- at.values.keySet).toList.sortBy(_.name.toString)
     if choices.isEmpty then phi_ else Ex(choices, phi_)
 

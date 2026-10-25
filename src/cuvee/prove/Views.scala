@@ -84,7 +84,7 @@ object Views:
       def keep(phi: Expr) = phi.free.nonEmpty && phi.free.subsetOf(relevant)
       val re = Canon.renaming(ctx.bound)
       val memo = (re(expr), Canon.key(ctx, re, keep))
-      ctx.views.value.get(memo) match
+      ctx.memos.value.views.get(memo) match
         case Some(e_) =>
           Canon.back(re)(e_)
 
@@ -93,7 +93,7 @@ object Views:
           Debug.info("views", "  self " + memo._2._1.map((a, b) => Simplify.show(config.output.printer, a) + " ~ " + Simplify.show(config.output.printer, b)).mkString(", ") + " facts " + memo._2._2.map(Simplify.show(config.output.printer, _)).toList.sorted.mkString(" | "))
           val e_ = Simplify.simplify(config, state, ctx.restricted(keep).neutral.copy(active = key :: ctx.active), e)
           Debug.step("rewrite", "view " + Simplify.show(config.output.printer, expr), Simplify.show(config.output.printer, e_))
-          ctx.views := ctx.views.value + (memo -> re(e_))
+          ctx.memos := ctx.memos.value.copy(views = ctx.memos.value.views + (memo -> re(e_)))
           e_
 
   // the self of a trace of several accumulators S, as defined by X == trace(...) (see Simplify.once): each history

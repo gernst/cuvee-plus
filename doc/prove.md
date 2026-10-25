@@ -84,7 +84,7 @@ in the conjuncts of a premise.
   (ideas/prove-next.md, Normal form of the arithmetic atoms). Two literals or two constructors in one class, or a disequation whose sides are in one class, make the context
   inconsistent. `Simplify.var_` replaces a variable by the literal of its class, or by the canonical variable of the
   class (the smallest by name).
-- **A simplex** ([`Simplex`](../src/cuvee/prove/Simplex.scala), [`Linear`](../src/cuvee/prove/Theory.scala)) in
+- **A simplex** ([`Simplex`](../src/cuvee/prove/Simplex.scala), [`Linear`](../src/cuvee/prove/Linear.scala)) in
   place of the difference constraints: the general simplex over the rationals with bounds (Dutertre and de Moura),
   strict bounds by an infinitesimal, Bland's rule, built per check from the constraints of the context (memoized per
   context, since `Linear.inconsistent` is lazy). On `Int`, a strict comparison is the non-strict one offset by 1 and the
@@ -190,7 +190,7 @@ in the conjuncts of a premise.
   The other splits are left to `-split`, which splits disjunctive premises, if-then-else, and keeps a disjunctive
   conclusion as succedents; the splits of `-prove` are only those that `-split` cannot do, or that need rewriting
   between the levels (the `_cases` rules introduce the disjunction of the next loop).
-- **Counterexamples** (`Prove.counterexample`): a goal that remains without traces, lists and other functions than
+- **Counterexamples** (`Eval.counterexample`): a goal that remains without traces, lists and other functions than
   those of arithmetic and logic, over at most four integer, natural or boolean variables, is refuted if its body
   evaluates to false at an assignment of small values and the literals of the goal plus or minus 1; it becomes
   `false`, which is answered `incorrect` unless the goal is `:abstract`. The unsafe variants of array-fpi
@@ -491,8 +491,8 @@ lookup.
 
 ## Checks
 
-`scripts/prove/quick.sh` runs after each change (under 30 s: the state examples except the transpose and the binary
-searches against their expected outputs); `scripts/prove/slow.sh` runs on request
+`scripts/prove/quick.sh` runs after each change (each example within 20 s: the examples of trace equation systems in
+`examples/dafny/teq` and `examples/c/teq` against their expected outputs); `scripts/prove/slow.sh` runs on request
 or before a commit (the transpose, the unit tests, the 30 algorithms of `examples/dafny/algorithms`
 with their exit status, time and remaining goals, as the baseline for the work on them).
 
