@@ -110,9 +110,9 @@ iterate the depth (2, 4, 8) within the time limit.
 
 ## 5. Products modulo commutativity
 
-The matcher matches sums modulo associativity and commutativity, products not: `div_quotient_remainder` (dropped with the legacy database) does
-not match `k * m` (TODO.md); `ifcomp` needs products matched modulo commutativity with a general sum of squares.
-Low priority until such a lemma is in the database.
+Done in 0.50.18: products are matched modulo associativity and commutativity, with the identity 1 for product terms
+only (`Rewrite.matchesFactors`, doc/prove.md), which gained the family cohendiv with the fallback and made the scaled
+rules of the module series redundant. `ifcomp` still needs a general sum of squares with exact division.
 
 ## Not in the engine
 

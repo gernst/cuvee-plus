@@ -357,6 +357,12 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
 
 ## Fixed
 
+- **The roundtrip of `fallback_fold.dfy` failed** (found Oct 25, 2026, since 0.50.15): the example marked its own
+  fold `{:teq}`, so that `-fallback` drops its declaration, which the printer then also dropped for a receiver that
+  knows the database (`-known teq`, `Sink.known`), and the printed program called an undeclared function. Fixed in
+  0.51.0: `-fallback` drops the declarations of folds (`{:fold}`), which it unfolds where they are applied, and the
+  example no longer claims to be part of the database. The printing suite (`CUVEE_PRINTING=1`) had not run since.
+
 - **MonoCera tests slower since 0.50.6** (Oct 23, 2026, 60 s runs on the AMD Ryzen 7 PRO 5750G against 0.50.4):
   `xml/cuvee.xml` lost `sum/conda`, `s1lif` to `s5lif` (26 to 31 s with 0.50.4) and `condn` (33 to 35 s, forall and
   max), 87 to 79 of 125 proved; `xml/cuvee-fallback.xml` the same and `mbpr3`, `mbpr4`, 99 to 89; no wrong results.

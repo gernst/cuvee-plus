@@ -16,7 +16,9 @@ Main features:
   Equation Systems** with a database of lemmas, most of them proved in Lean
   (`-teq`), and **constrained Horn clauses** (`-chc`).
 - **Deduction engine** (`-prove`) for the goals of trace equation systems, with
-  congruence closure, a simplex, and traces of several accumulators, see
+  congruence closure, a simplex, and traces of several accumulators, which
+  also simplifies procedures by symbolic execution, with the trace equation
+  systems of their loops as attached invariants (`-slice`), see
   [doc/prove.md](doc/prove.md).
 - **Rewrite engine** for lemmas, part of `-prove`, and the
   **fallback** of the remaining goals to first-order logic (`-fallback`).
@@ -173,7 +175,10 @@ lists them.
   obligations `forall xs. antecedents ==> conclusion`, which the solvers report
   one by one.
 - **Deduction engine** (`-prove`): contextual simplification of formulas and
-  function definitions, with congruence closure and a simplex
+  function definitions, and of procedures by symbolic execution, which keeps
+  their structure and forgets nothing (with `-slice`, the head of each loop is
+  its trace equation system, attached as an invariant over the program
+  variables, e.g. `tot == 2 * idx && idx <= len && 0 <= idx`), with congruence closure and a simplex
   over the rationals as the context, matching modulo the classes, the
   per-variable views of traces of several accumulators (one trace per strongly connected
   component of the variables of a loop, `-teq`), rules over whole
@@ -221,10 +226,12 @@ SV-LIB.correct-tags.CoreVerification and SV-LIB.correct-tags.CTranslated
 (SV-LIB scripts, property `correct-tags`), with the same command for both:
 
 ```sh
-./Cuvee.sh -teq -prove -split -prove -fallback -z3 -timeout 900000 [-arch 32|64] task
+./Cuvee.sh -svcomp -fallback -z3 -timeout 900000 [-arch 32|64] task
 ```
 
-where the answers are `correct`, `incorrect`, or `unknown`, one per goal: the
+where `-svcomp`, as the first argument, stands for `-teq` with all modules of the lemma database,
+`-prove -split -prove -split -prove`, and `-witness witness.yml` (see doc/options.md). The answers are `correct`,
+`incorrect`, or `unknown`, one per goal: the
 property is violated if one is `incorrect`, and holds if all are `correct`.
 Executions of a C program start in `main`, the entry point (`-entry <name>`
 selects another one): `-teq` emits a goal for `main` only and checks the

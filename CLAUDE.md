@@ -143,6 +143,19 @@ or solvers consume.
   several accumulators yet (`doc/teq.md`).
 - **The simplifier runs only in `-prove`.** Other transforms never call it
   or its helpers (`Split` uses `prove.Normalize.lift` only).
+- **Calls carry the global variables that they modify** (`Call.vars`, the
+  callee's modifies clause in its order), which `Type.check` fills in; build
+  calls with `Nil` before the check. `Prog.mod` includes them, so it is
+  complete: no lookups of `procattrs(name).modifies` at the consumers. Local
+  variables and parameters must not shadow global variables; a loop without
+  modifies clause may modify what its enclosing scope may. Questions about the
+  statements of a program are methods of each kind (`returns`, `breaks`,
+  `abstracts`, `calls`), there is no `subprogs`.
+- **`-prove` simplifies procedures** (`Slice`, doc/prove.md "Programs"): the
+  context speaks about choices only and forgets nothing, program variables are
+  bound to terms over them, expressions are written back over the variables in
+  scope; with `-slice`, the head of a loop is its trace equation system
+  (`TEQ.head`), attached as an invariant.
 - **Simplifier helpers are local.** Each normalizes its own constructor, in
   one step, building with the normalizing helpers (`not(...)`, not
   `Not(...)`). The outer loops iterate. No global normal forms, no further

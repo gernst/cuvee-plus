@@ -13,8 +13,9 @@ with Cuvée (the user's instruction, Oct 14).
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
 - [ ] ps2-ll_unwindbound1 times out at 60 s (31 s with 0.46.8).
-- [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma,
-      products modulo commutativity), `pcomp`, `sqm-if`, `nsqm-if`, `condm`.
+- [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma;
+      products are matched modulo commutativity since 0.50.18 and the module series has the sums of powers),
+      `pcomp`, `sqm-if`, `nsqm-if`, `condm`.
 - [ ] Strided stores (array-tiling `mbpr*`, `pr*`, `pnr*`, 22 true tasks): the parity `(i - 1) % 2 == 0` against
       `i % 2 == 0` needs integer reasoning about remainders.
 - [ ] Counterexamples by concrete evaluation of `sum`, `map`, `counter` for a literal `n` (30 unsafe array-fpi tasks,
@@ -23,8 +24,10 @@ with Cuvée (the user's instruction, Oct 14).
       sum_by_3_abstracted, sum_array-2-2, indp5, revcpyswp2.
 - [ ] partial_mod_count_* (true): conditional stores whose second value is not a constant, then a count of zeros.
 - [ ] array-patterns (30 true tasks): pairwise cancelling sums over stores at nondeterministic indices.
-- [ ] Deferred: the cost of `-prove` (forward instances simplified at every firing, a memo; aggregation on polynomial
-      loops); nla-digbench (non-linear arithmetic).
+- [ ] Deferred: the cost of `-prove` (forward instances simplified at every firing; a memo was tried and reverted);
+      the rest of nla-digbench (geo1, geo3, cohencu; 71 correct with the module series since 0.50.18, from 18), the
+      non-terminations at the bound on the steps (fermat1, egcd2, mannadiv), a normal form of arithmetic atoms
+      (stage 3 of ideas/prove-next.md).
 - [ ] Last: integrate the results into doc/paper/cuvee.tex (`scripts/paper.py`), `scripts/out/experiments.pdf`,
       ideas/experiments.md, doc/array-algorithms; commit all the work, then a single push.
 
@@ -36,15 +39,21 @@ with Cuvée (the user's instruction, Oct 14).
   (`n == zero && 0 <= integer(n)` of while_infinite_loop_4).
 - Verify trace lemmas in Dafny; performance of the simplifier; thread `Config` through more code; error messages
   with a printer instead of the internal syntax (also the parse errors of `fuse`).
-- SV-COMP: package and upload a zenodo archive newer than 0.41.4 (which predates the entry points) with
-  `scripts/zenodo.py`, enter its DOI in fm-tools and doc/paper, align the options of fm-tools with those of the
-  experiments; keep `cuvee.py` in sync with sosy-lab/benchexec#1327.
-- Witnesses with invariants and violations: [ideas/witnesses.md](ideas/witnesses.md).
+- SV-COMP: the archive of 0.50.18 is on Zenodo (10.5281/zenodo.23607469), fm-tools passes `-svcomp -fallback -z3
+  -timeout 900000` (branch `cuvee-0.50.18` of gernst/fm-tools, the merge request is open); the DOI of doc/paper is
+  still that of an earlier archive; keep `cuvee.py` in sync with sosy-lab/benchexec#1327.
+- Witnesses with invariants ([ideas/witnesses.md](ideas/witnesses.md)): `-slice` attaches the trace equation systems of
+  loops as invariants over the program variables (0.51.1); open: lowering the traces and `invs` that simplification
+  keeps (e.g. a trace whose update is a constant, `invs` of a loop with `break`), printing them as `annotate-tag`
+  commands of SV-LIB and as `loop_invariant` entries of C witnesses, and checking them with `-vcgen`; violation
+  witnesses with the values of a counterexample.
+- Simplification of procedures (`Slice`, doc/prove.md, "Programs"): the exact state after a loop with `break`
+  (the positions of the breaks merged with the negated test, by an `Exits` result of the traversal instead of
+  `Prog.breaks`); writing back by arithmetic, e.g. `x0 + 2` as `x + 1` when `x` holds `x0 + 1`; `Ode` and `Par`
+  are not simplified, attributes are kept as they are.
 - SV-LIB: unstructured control flow (labels, gotos), `define-procs-rec`, tags on other statements, `:recurring`,
   `:not-recurring`, `:decreases-lex`, `get-witness`, `select-trace`, answers to `verify-call` for interactive use;
   `-chc` with constants in procedure bodies (Horn solvers reject free constants).
-- The modifies clauses are inferred by the parser (`smtlib.Parser.modifies`); the inference belongs into
-  `VCGen`, `TEQ`, `Horn`, so that the parser keeps what is written.
 - Lambdas of function type printed in SMT-LIB (arrays) are not read back.
 - `-monomorph` leaves polymorphic assertions uninstantiated, which solvers reject.
 - Implementations ([ideas/implement.md](ideas/implement.md)): the start of the counter of `renc` (`tick := 0` by
