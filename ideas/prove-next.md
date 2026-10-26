@@ -51,6 +51,19 @@ over a counter that is false at N = 3, since `Eval.counterexample` evaluates onl
 The change would evaluate ground instances of the database by their definitions inside the search for a
 counterexample only.
 
+## 6. The join of guarded stores
+
+Cases of an update whose bodies are the same stores up to the stored values merge into one case with conditional
+values, as a step of the simplifier ([conditional-stores.md](conditional-stores.md), second variant). It would derive
+six lemmas (`stores_cases`, `stores_index_cases`, `select_current_trace_conditional_store(_deps)`, `_cap`,
+`_reset_keep`) and cover the 2^s cases of pr3-pr5.
+
+## 7. Matcher limitations with a task behind them
+
+Conditionals inside equations (motivex), the branches of a conditional formula under the facts
+(standard_password_ground), rounding and cancellation of factors (count_by_k); each local (TODO.md, "Matching and
+rewriting").
+
 ## Not in the engine
 
 sum_array-2-2, the recurrences of `ifcomp`, `pcomp`, `sqm-if`, `condm`, the conditional stores of

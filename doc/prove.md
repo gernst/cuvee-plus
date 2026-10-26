@@ -22,6 +22,11 @@ The engine consists of:
 - **views** of the components of cycles and one **suspension** facility;
 - **case splits and counterexamples** where rewriting stops.
 
+Not taken, by decision: equality saturation over an e-graph, which would make the order of rules irrelevant and keep
+all forms of a term; it is too complicated here (binders in the combinators and views, contextual reasoning per
+position, conditional rules decided by the simplex, AC matching), and its gains are reached step by step: rewriting
+modulo the classes, AC matching, the canonical forms, the case splits.
+
 ## The context
 
 [`Context`](../src/cuvee/prove/Context.scala) holds the facts known at a position, the bound variables by scope, the
