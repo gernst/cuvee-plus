@@ -37,6 +37,7 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 | `xml/cuvee-fallback.xml` | the same with `-fallback -z3 -timeout 900000`, Z3 for the goals that remain |
 | `xml/cuvee-acsl.xml`, `cuvee-chc.xml` | `-vcgen -z3` on `benchmarks/acsl` (the categories Arrays and Loops as in sv-benchmarks, the true tasks annotated with ACSL; `-split` for the task set `C.unreach-call.Loops-split`), `-chc` |
 | `xml/cuvee-native.xml` | `cuvee.xml` with the native executable (`make native`, `Cuvee-native.sh`), which starts without a JVM: `PYTHONPATH=xml ./benchmark xml/cuvee-native.xml ...` with the tool-info module `xml/toolinfo/cuvee_native.py`, which uploads `Cuvee-native.sh`, `cuvee.native` and `z3`; the binary needs glibc 2.34 and zlib on the workers |
+| `xml/cuvee-portfolio.xml` | the portfolio of [ideas/portfolio.md](../ideas/portfolio.md): `portfolio.py` runs Korn's fuzzer (`fuzz/`, 30 s), `-fallback -z3` and `-chc` in parallel on the native executable and prints the output of the first definite answer; `PYTHONPATH=xml ./benchmark xml/cuvee-portfolio.xml ...` with the tool-info module `xml/toolinfo/cuvee_portfolio.py`, which uploads the script, `Cuvee-native.sh`, `cuvee.native`, `z3` and the harness; the fuzzer needs `gcc` with `-m32` on the workers |
 | `xml/cpachecker.xml`, `uautomizer.xml`, `korn.xml`, `symbiotic.xml`, `aise.xml`, `monocera.xml` | the other verifiers |
 
 The definitions of Cuvée pass `-witness witness.yml`, a witness of SV-COMP for each answer to a C program

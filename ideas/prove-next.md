@@ -35,10 +35,23 @@ stack samples of array_2-1-simple show three places:
   (`Ordering.by(_.toString)`, Expr.scala); old, but the canonical forms normalize far more often;
 - forward lemmas: `Forward.saturate` looks up facts by `Rewrite.known` and `Classes.equal`, hashing deep terms;
 - the checks of `Context.implied`, through `Classes.add`.
-So these regressions are likely one problem of cost: a structural ordering of `Expr` (or cached keys) in
-`Poly.normalize`, and a profile of `Forward.saturate`, come first. The repeated reads (rewnifrev), and the unsigned
-arithmetic with division (linear_sea.ch, geo1, prodbin), whose wrapping functions and `quot`/`rem` the database and the
-canonical forms treat as atoms, come after.
+The structural ordering of `Expr` (0.52.6) made the engine 10 to 20 % faster and gained about ten tasks near the
+limit, none of the regressions above (array_2-1-simple came back with the database, see above). A profile (Java Flight
+Recorder, 15 s per task, 0.52.8, shares of the samples) of linear_sea.ch, theatreSquare, array_2-2-simple, rewnifrev:
+- matching 30 to 65 %, of which the side conditions of rules (`Rewrite.conditions`, each a check of `denied` or
+  `implied` through the simplex) about half in linear_sea.ch and array_2-2-simple;
+- `Forward.saturate` 13 to 22 % in two of the four, not the main cost;
+- the simplex 17 to 20 %; `Context.fix` 6 to 17 %; `Poly.normalize` 14 to 26 %; renormalization 14 % in theatreSquare;
+- the hashes of terms 6 to 19 % on their own (`hashCode` of `Sort`, `Con`, `Var`, `Type`), recomputed recursively at
+  each lookup in a map; loading the database 4 to 8 %.
+Candidates, cheapest first: a cached hash per term, a memo of the decided conditions of rules per context, `Context.fix`
+only for a variable that a fact bounds from both sides.
+
+Perhaps not worthwhile: these are constant factors, while the tasks above mostly do not finish with more time either
+(15 min solve few of them, and 116 tasks end at the bound of the rewrite steps, see below); a speedup moves the tasks
+just at the limit, as the ordering did, not the regressions. The repeated reads (rewnifrev), the unsigned arithmetic with
+division (linear_sea.ch, geo1, prodbin), whose wrapping functions and `quot`/`rem` the database and the canonical forms
+treat as atoms, and the rounds that do not settle (item 4) are where the tasks are.
 - The four `_unwindbound1` false tasks (cohencu, ps4, ps5, ps6) are recovered (0.52.4) by the variables of a
   fact that the simplex fixes to a value (`Context.fix`, on the incremental tableau; naturals did it by
   `natural_nonpositive`) and `butlast_counter_consts`. Not done: bound propagation over the rows, which would fix
