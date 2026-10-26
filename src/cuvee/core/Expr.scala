@@ -73,8 +73,38 @@ sealed trait Expr:
         false
 
 object Expr:
-  // TODO: structural ordering, for now by the printed representation
-  given Ordering[Expr] = Ordering.by(_.toString)
+  // the order of the printed representations, computed structurally without building the strings, which normal forms
+  // sort often (see prove.Poly): case classes by their names and then their fields in order, lists element by
+  // element, other values by their printed representation; it agrees with comparing the strings, since the
+  // separators of the printed representation come before letters and digits
+  given Ordering[Expr] = (a, b) => structural(a, b)
+
+  def structural(a: Any, b: Any): Int =
+    (a, b) match
+      case (a: AnyRef, b: AnyRef) if a eq b =>
+        0
+
+      case (a: List[?], b: List[?]) =>
+        (a, b) match
+          case (Nil, Nil)         => 0
+          case (Nil, _)           => -1
+          case (_, Nil)           => 1
+          case (x :: xs, y :: ys) =>
+            val c = structural(x, y)
+            if c != 0 then c else structural(xs, ys)
+
+      case (a: Product, b: Product) if a.productArity > 0 || b.productArity > 0 =>
+        val c = a.productPrefix.compareTo(b.productPrefix)
+        if c != 0 then c
+        else
+          val xs = a.productIterator
+          val ys = b.productIterator
+          var d = 0
+          while d == 0 && xs.hasNext && ys.hasNext do d = structural(xs.next(), ys.next())
+          if d != 0 then d else java.lang.Boolean.compare(xs.hasNext, ys.hasNext)
+
+      case _ =>
+        a.toString.compareTo(b.toString)
 
   def vars(name: String, types: List[Type]) =
     for (typ, index) <- types.zipWithIndex
