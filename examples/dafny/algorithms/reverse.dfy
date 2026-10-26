@@ -14,17 +14,17 @@
 
 // the loop test i < j of the two pointers, as an iteration constraint over the counter: twice the iterations stay
 // below the length, i.e. the pairs are disjoint; the lemmas of teq.dfy resolve bounds on the counter itself only
-lemma {:rw} invs_pairs(n: Nat, m: int, hs: List<int>, gs: List<int>)
+lemma {:rw} invs_pairs(n: int, m: int, hs: List<int>, gs: List<int>)
   ensures invs(for ⌊counter(0, 1, n)⌋, hs, gs check k, h, g :: 2 * k + 1 < m)
-    <==> n == zero || 2 * integer(n) - 1 < m
+    <==> n <= 0 || 2 * n - 1 < m
 
 // the same with the exit of the loop as it stands among the facts, without a case split: the other pointer m, bound
 // by the disjunction of the exit, and the end c of the range satisfy n + m == c and m <= n; either the loop did not
 // run (n == 0, then c == m <= 0 and the array is unchanged on the range of at most one element) or n < m + 2, which
 // gives the bounds of current_reversal
-lemma {:rw} current_reversal_exit(a: array<int, int>, c: int, d: int, n: Nat, j: int, m: int)
-  requires n == zero || integer(n) < m + 2
-  requires integer(n) + m == c && m <= integer(n) && d == -1
+lemma {:rw} current_reversal_exit(a: array<int, int>, c: int, d: int, n: int, j: int, m: int)
+  requires n <= 0 || n < m + 2
+  requires n + m == c && m <= n && d == -1
   ensures current(trace(a, for ⌊counter(0, 1, n)⌋, ⌊counter(c, d, n)⌋ do b, k, l :: b[k := b[l]][l := b[k]]))[j]
     == if 0 <= j <= c then a[c - j] else a[j]
 

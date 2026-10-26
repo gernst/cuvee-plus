@@ -6,12 +6,26 @@ object Classes:
   def empty(constrs: Set[Fun]) =
     Classes(constrs, Map(), Map(), Map(), Nil, false)
 
+  type Rank = (Int, Int, Int, String)
+
+  // the order of the roots, given by the context (see Context.order): a literal before a variable before any other
+  // term, variables by the depth of the scope that binds them, then by index and name; the root of a class is its
+  // least member, and an equation is solved for its greatest variable (see solve), so that the canonical forms write
+  // the variables of inner scopes by those of outer ones
+  case class Order(rank: Expr => Rank)
+
+  def rank(depth: Var => Int)(expr: Expr): Rank =
+    expr match
+      case _: Lit => (0, 0, 0, "")
+      case x: Var => (1, depth(x), x.name.index.getOrElse(-1), x.name.name)
+      case _      => (2, 0, 0, "")
+
 // congruence closure over the terms of the facts: a persistent union-find whose nodes are the registered terms, where
 // applications are decomposed into their arguments and everything else (variables, literals, binders, the combinators
 // of trace equation systems) is a node of its own; two applications of the same function to arguments of the same
-// classes are merged (congruence); the theory replaces the chains of variable equations of the simplifier: the
-// definitions of a variable are the other members of its class, which the matcher follows in any position, both
-// orientations of an equation are available, and equal terms are identified transitively, e.g. two counters K == I
+// classes are merged (congruence); the definitions of a variable are the other members of its class, which the
+// matcher follows in any position and orientation, e.g. two counters K == I; with the solutions of linear equations
+// (solved), the classes give the canonical forms of terms (normalize), Shostak-style
 //
 // parent: the union-find, every registered term maps to itself or to a term of its class;
 // members: the members of each class by its root;
@@ -25,8 +39,12 @@ case class Classes(
     members: Map[Expr, List[Expr]],
     uses: Map[Expr, List[Expr]],
     diseqs: List[(Expr, Expr)],
-    clashed: Boolean
+    clashed: Boolean,
+    solved: Map[Var, Expr] = Map(),
+    merges: Int = 0
 ) extends Theory:
+  // solved: the solutions of linear equations by variable (see solve); merges: the number of merges, by which the
+  // context knows when to renormalize its facts (see Context.assume)
   def find(expr: Expr): Expr =
     parent.get(expr) match
       case Some(next) if next != expr => find(next)
@@ -43,18 +61,6 @@ case class Classes(
   def defs(expr: Expr): List[Expr] =
     classOf(expr).filter(e => e != expr && !e.isInstanceOf[Var])
 
-  // the literal of the class, if it has one
-  def literal(expr: Expr): Option[Lit] =
-    classOf(expr).collectFirst { case lit: Lit => lit }
-
-  // the canonical variable of the class of a variable, the smallest one by name, such that equal variables are
-  // replaced consistently (the replace of the chains of the simplifier); the root of the class unless it has a
-  // literal (see rank)
-  def canonical(x: Var): Var =
-    find(x) match
-      case y: Var => y
-      case _      => classOf(x).collect { case y: Var => y }.minByOption(y => (y.name.name, y.name.index.getOrElse(-1))).getOrElse(x)
-
   lazy val inconsistent: Boolean =
     clashed || diseqs.exists((a, b) => equal(a, b))
 
@@ -68,32 +74,84 @@ case class Classes(
     parent.keySet.collect { case x: Var => x }
 
   // all terms of a fact are registered, such that their classes are known, equations merge, disequations are kept
-  def assume(expr: Expr): Classes =
+  def assume(expr: Expr)(using order: Classes.Order): Classes =
     expr match
-      case Eq(a, b)      => merge(a, b)
+      case Eq(a, b)      => merge(a, b).solve(a, b)
       case Not(Eq(a, b)) => add(a).add(b).copy(diseqs = (a, b) :: diseqs)
       case Not(phi)      => add(phi)
       case _             => add(expr)
 
-  def deny(expr: Expr): Classes =
+  def deny(expr: Expr)(using order: Classes.Order): Classes =
     expr match
       case Eq(a, b)      => add(a).add(b).copy(diseqs = (a, b) :: diseqs)
-      case Not(Eq(a, b)) => merge(a, b)
+      case Not(Eq(a, b)) => merge(a, b).solve(a, b)
       case Not(phi)      => add(phi)
       case _             => add(expr)
 
-  // the term with its registered subterms replaced by the roots of their classes, bottom-up, such that terms that
-  // the classes identify become syntactically equal, also below binders, which the classes do not decompose (see
-  // Rewrite.known); bound variables are not registered, since they are renamed apart from the context
+  // the solution of a linear equation for its greatest variable that is not solved yet, e.g. x by 40 - n for
+  // n + x == 40, if it is arithmetic over variables (see Poly.solution); the variable is merged with its solution;
+  // other terms, e.g. reads of traces or arrays, are never solutions, they stay members of their classes
+  def solve(a: Expr, b: Expr)(using order: Classes.Order): Classes =
+    Ring(a.typ) match
+      case Some(ring) =>
+        val poly = (Arith.toPoly(ring, a) - Arith.toPoly(ring, b)).normalize
+        val solution =
+          for
+            (x, rest) <- poly.solution(order.rank, (x, rest) => !(solved contains x) && rest.monos.forall(_.atoms.forall(_._1.isInstanceOf[Var])))
+            e = rest.toExpr(ring)
+            if e.isArith
+          yield (x, e)
+        solution match
+          case Some((x, e)) => merge(x, e).copy(solved = solved + (x -> e))
+          case None         => this
+      case None =>
+        this
+
+  // the canonical form of a term, bottom-up: a solved variable by the canonical form of its solution, arithmetic by its
+  // polynomial normal form, as the simplifier writes it, and a registered term by the root of its class, such that
+  // terms that the classes identify become equal, also below binders, which the classes do not decompose; bound
+  // variables are not registered, since they are renamed apart from the context
   def normalize(expr: Expr): Expr =
     val expr_ = expr.map(normalize)
-    if parent.contains(expr_) then find(expr_) else expr_
+    val expr__ =
+      expr_ match
+        case x: Var =>
+          solution(x) match
+            case Some(e) => normalize(e)
+            case None    => find(x)
+        case _ if expr_.isArith =>
+          Ring(expr_.typ) match
+            case Some(ring) => Arith.normalize(ring, expr_)
+            case None       => expr_
+        case _ =>
+          expr_
+    if parent.contains(expr__) then find(expr__) else expr__
+
+  // the solution of a variable of the class of x (see solve), unless it depends on that variable (see acyclic)
+  def solution(x: Var): Option[Expr] =
+    classOf(x).iterator.flatMap {
+      case y: Var => solved.get(y).filter(acyclic(y, _))
+      case _      => None
+    }.nextOption()
+
+  // whether e does not depend on x through the classes, transitively, e.g. the solution of n by an expression over a
+  // trace K with K == counter(0, 1, n), whose inlining would loop (see normalize, Simplify.var_)
+  def acyclic(x: Var, e: Expr): Boolean =
+    def reach(todo: List[Var], seen: Set[Var]): Set[Var] =
+      todo match
+        case Nil                          => seen
+        case y :: rest if seen contains y => reach(rest, seen)
+        case y :: rest =>
+          val next = classOf(y).flatMap(_.free).toList
+          reach(next ++ rest, seen + y)
+
+    !reach(e.free.toList, Set()).contains(x)
 
   // whether `outer` contains `inner` as a proper subterm modulo the classes, both normalized, but not as it is: a
-  // rewrite of `inner` to such an `outer` leads back to its own term through the classes, e.g. integer(n7) to
-  // -integer(n25) + ... with n25 == n7, which the simplifier turns into integer(n7) again (see Rewrite.applyActive); a
-  // result equal to the term modulo the classes, e.g. its literal, is no such cycle, and a result that contains the
-  // term as it is, e.g. of a rule f(x) == f(f(x)), is left to the bound on the steps, which reports the rule
+  // rewrite of `inner` to such an `outer` leads back to its own term through the canonical forms, e.g. f(n7) to
+  // -f(n25) + ... with n25 == n7 (see Rewrite.applyActive); a result equal to the term modulo the classes, e.g. its
+  // literal, is no such cycle, and one that contains the term as it is, e.g. of a rule f(x) == f(f(x)), is left to
+  // the bound on the steps
   def within(inner: Expr, outer: Expr): Boolean =
     def occurs(inner: Expr, expr: Expr): Boolean =
       expr == inner || {
@@ -113,7 +171,7 @@ case class Classes(
         false
 
   // a new term and its arguments, which is merged with an application that is congruent to it
-  def add(expr: Expr): Classes =
+  def add(expr: Expr)(using order: Classes.Order): Classes =
     if parent.contains(expr)
     then this
     else
@@ -131,20 +189,11 @@ case class Classes(
         case _ =>
           added
 
-  // the rank of a root: a literal before a variable before any other term, variables by name, such that the root of a
-  // class is the representative that the simplifier uses (see canonical and Simplify.var_) and normalize gives the
-  // same, rather than whichever root the order of the merges left (see merge)
-  def rank(expr: Expr): (Int, String, Int) =
-    expr match
-      case _: Lit => (0, "", 0)
-      case x: Var => (1, x.name.name, x.name.index.getOrElse(-1))
-      case _      => (2, "", 0)
-
   // the classes of a and b are merged, the smaller one into the larger, after which the applications over the
   // smaller class may be congruent to those over the larger one, which are merged in turn; the root of the merged
   // class is the one of lower rank, the larger class's if they tie, and the members keep the order of the larger
   // class first, which is the order in which the definitions are tried (see Context.defs)
-  def merge(a: Expr, b: Expr): Classes =
+  def merge(a: Expr, b: Expr)(using order: Classes.Order): Classes =
     val cl = add(a).add(b)
     val ra = cl.find(a)
     val rb = cl.find(b)
@@ -152,12 +201,13 @@ case class Classes(
     then cl
     else
       val (small, big) = if cl.members(ra).length <= cl.members(rb).length then (ra, rb) else (rb, ra)
-      val (child, root) = if Ordering[(Int, String, Int)].lt(rank(small), rank(big)) then (big, small) else (small, big)
+      val (child, root) = if Ordering[Classes.Rank].lt(order.rank(small), order.rank(big)) then (big, small) else (small, big)
       val usesSmall = cl.uses.getOrElse(small, Nil)
       val usesBig = cl.uses.getOrElse(big, Nil)
       val members_ = cl.members(big) ++ cl.members(small)
       val merged = cl.copy(
         parent = cl.parent + (child -> root),
+        merges = cl.merges + 1,
         members = cl.members - small - big + (root -> members_),
         uses = cl.uses - small - big + (root -> (usesBig ++ usesSmall)),
         clashed = cl.clashed || clashes(members_)

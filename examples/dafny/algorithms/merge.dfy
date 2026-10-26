@@ -18,7 +18,7 @@ function sorted(a: array<int, int>, lo: int, hi: int): bool
 // after at least m + n steps from 0, 0, the first m + n values of the output are the merge of a[0..m) and b[0..n)
 // (the further steps store beyond them); the traces are rule variables, matched against the variables of the goal,
 // whose equations are open conditions, so that no condition contains a trace itself
-lemma {:rw} sorted_merge(a: array<int, int>, m: int, b: array<int, int>, n: int, c0: array<int, int>, nn: Nat, s: int,
+lemma {:rw} sorted_merge(a: array<int, int>, m: int, b: array<int, int>, n: int, c0: array<int, int>, nn: int, s: int,
                          Kv: Trace<int>, Sv: Trace<(int, int)>, Cv: Trace<array<int, int>>)
   requires Cv == trace(c0, for ⌊Kv⌋, ⌊Sv⌋.0, ⌊Sv⌋.1 do c, k, i, j ::
                    case n <= j || i < m && a[i] <= b[j] => c[k := a[i]]
@@ -27,13 +27,13 @@ lemma {:rw} sorted_merge(a: array<int, int>, m: int, b: array<int, int>, n: int,
                    case n <= j || i < m && a[i] <= b[j] => i + 1 case !(n <= j || i < m && a[i] <= b[j]) => i,
                    case n <= j || i < m && a[i] <= b[j] => j case !(n <= j || i < m && a[i] <= b[j]) => j + 1)
   requires Kv == counter(0, 1, nn)
-  requires s == m + n && m + n <= integer(nn)
+  requires s == m + n && m + n <= nn
   requires 0 <= m && 0 <= n && sorted(a, 0, m) && sorted(b, 0, n)
   ensures sorted(current(Cv), 0, s) <==> true
 
 function merged(a: array<int, int>, m: int, b: array<int, int>, n: int): List<int>
 
-lemma {:rw} selects_merge(a: array<int, int>, m: int, b: array<int, int>, n: int, c0: array<int, int>, nn: Nat, s: int,
+lemma {:rw} selects_merge(a: array<int, int>, m: int, b: array<int, int>, n: int, c0: array<int, int>, nn: int, s: int,
                           Kv: Trace<int>, Sv: Trace<(int, int)>, Cv: Trace<array<int, int>>)
   requires Cv == trace(c0, for ⌊Kv⌋, ⌊Sv⌋.0, ⌊Sv⌋.1 do c, k, i, j ::
                    case n <= j || i < m && a[i] <= b[j] => c[k := a[i]]
@@ -42,21 +42,21 @@ lemma {:rw} selects_merge(a: array<int, int>, m: int, b: array<int, int>, n: int
                    case n <= j || i < m && a[i] <= b[j] => i + 1 case !(n <= j || i < m && a[i] <= b[j]) => i,
                    case n <= j || i < m && a[i] <= b[j] => j case !(n <= j || i < m && a[i] <= b[j]) => j + 1)
   requires Kv == counter(0, 1, nn)
-  requires s == m + n && m + n <= integer(nn)
+  requires s == m + n && m + n <= nn
   requires 0 <= m && 0 <= n
-  ensures selects(current(Cv), ⌊counter(0, 1, natural(s))⌋) == merged(a, m, b, n)
+  ensures selects(current(Cv), ⌊counter(0, 1, s)⌋) == merged(a, m, b, n)
 
 lemma {:rw} count_merged(a: array<int, int>, m: int, b: array<int, int>, n: int, x: int)
   requires 0 <= m && 0 <= n
   ensures count(x, merged(a, m, b, n))
-    == count(x, selects(a, ⌊counter(0, 1, natural(m))⌋)) + count(x, selects(b, ⌊counter(0, 1, natural(n))⌋))
+    == count(x, selects(a, ⌊counter(0, 1, m)⌋)) + count(x, selects(b, ⌊counter(0, 1, n)⌋))
 
 method main(a: array<int, int>, m: int, b: array<int, int>, n: int) returns (c: array<int, int>)
   requires 0 <= m && 0 <= n
   requires sorted(a, 0, m) && sorted(b, 0, n)
   ensures sorted(c, 0, m + n)
-  ensures forall x: int :: count(x, selects(c, ⌊counter(0, 1, natural(m + n))⌋))
-    == count(x, selects(a, ⌊counter(0, 1, natural(m))⌋)) + count(x, selects(b, ⌊counter(0, 1, natural(n))⌋))
+  ensures forall x: int :: count(x, selects(c, ⌊counter(0, 1, m + n)⌋))
+    == count(x, selects(a, ⌊counter(0, 1, m)⌋)) + count(x, selects(b, ⌊counter(0, 1, n)⌋))
 {
   var i: int;
   var j: int;

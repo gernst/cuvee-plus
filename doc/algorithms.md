@@ -8,7 +8,7 @@ each: `CUVEE_ALGORITHMS=1 mill -i test` and `scripts/prove/slow.sh` run it.
 
 ## Status
 
-Run locally with 0.50.8 on Oct 23, 2026 (90 s each, two at a time, under load); all outputs as expected, except cocktail_sort.
+Times from local runs, 90 s each, two at a time; all outputs as expected, except cocktail_sort.
 
 | example | status | time |
 |---|---|---|
@@ -41,7 +41,7 @@ Run locally with 0.50.8 on Oct 23, 2026 (90 s each, two at a time, under load); 
 | [three_way_partition](../examples/dafny/algorithms/three_way_partition.dfy) | verified: Dutch flag, one trace of `(b, eq, j, lt)` | 66s |
 | [merge](../examples/dafny/algorithms/merge.dfy) | verified: a pinned higher-order guard, pointers tied by open trace variables | 39s |
 | [counting_sort](../examples/dafny/algorithms/counting_sort.dfy) | open: "rewriting does not terminate" (lemmas of the per-variable form) | 36s |
-| [cocktail_sort](../examples/dafny/algorithms/cocktail_sort.dfy) | open: no answer within 90 s, formerly "rewriting does not terminate" (lemmas of the per-variable form) | 90s |
+| [cocktail_sort](../examples/dafny/algorithms/cocktail_sort.dfy) | open: no answer within 90 s (its lemmas are of the per-variable form) | 90s |
 
 ## How they are proved
 
@@ -93,20 +93,9 @@ What the work on these examples taught, as far as it holds for `-prove` (the dat
 
 ## Open
 
-- cocktail_sort and counting_sort end with "rewriting does not terminate"; their lemmas were written for the former
-  per-variable form and do not match the closed nested loops of `-teq`.
+- cocktail_sort and counting_sort: their lemmas are of the per-variable form and do not match the closed nested
+  loops of `-teq`.
 - max_element with `exists` (no witness).
 - The algorithms that still copy the predicates of `teq:sorted` (rule 3 above).
-- The matcher gaps that the lemmas work around are listed in TODO.md ("Simplifier and rewriting", found under the
-  former `-simplify`, to be rechecked under `-prove`) and in [ideas/database-review.md](../ideas/database-review.md)
-  (the lemmas that work around gaps of the engine).
-
-## History
-
-The examples were developed from Oct 9 to Oct 16, 2026 under the former `-simplify` with one trace per variable:
-nested loops then needed fragment lemmas (the module `nested`, fragments.dfy, both removed on Oct 23), and the work
-produced 37 numbered findings about the tool and proposals, recorded in the former NOTES.md of the folder (its last
-version: `git show 1318322c:examples/dafny/algorithms/NOTES.md`; the findings that references in bugs.md and the
-examples cite by number are there). The write-up of that period is [array-algorithms](array-algorithms). On Oct 23
-the duplicates of examples/dafny/state replaced their versions here with the database alone, and the local copies of
-database lemmas went (doc of the database review: [ideas/database-review.md](../ideas/database-review.md)).
+- The matcher gaps that the lemmas work around: TODO.md ("Simplifier and rewriting") and
+  [ideas/database-review.md](../ideas/database-review.md).

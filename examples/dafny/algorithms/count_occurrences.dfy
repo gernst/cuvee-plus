@@ -8,14 +8,14 @@
 
 // the occurrences of x among the values of a at the positions of a counter, named, such that the postcondition and the
 // trace equation system normalize to the same term, since the counter I of the loop is not inlined into the facts
-function {:fold} occurrences(x: int, a: array<int, int>, i: int, n: Nat): int
+function {:fold} occurrences(x: int, a: array<int, int>, i: int, n: int): int
 {
   count(x, selects(a, ⌊counter(i, 1, n)⌋))
 }
 
 method main(a: array<int, int>, n: int, x: int) returns (c: int)
   requires 0 <= n
-  ensures c == count(x, selects(a, ⌊counter(0, 1, natural(n))⌋))
+  ensures c == count(x, selects(a, ⌊counter(0, 1, n)⌋))
 {
   var i: int;
   c := 0;

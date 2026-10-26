@@ -104,10 +104,10 @@ object Fun:
     val all = List(empty, singleton, card, member, keys, values, subset, get, update, minus, store)
 
   object trace:
-    val counter = Fun("counter", Nil, formals(Sort.int, Sort.int, Sort.nat), Sort.trace(Sort.int))
+    val counter = Fun("counter", Nil, formals(Sort.int, Sort.int, Sort.int), Sort.trace(Sort.int))
     val current = Fun("current", List(a), formals(Sort.trace(a)), a)
     val butlast = Fun("butlast", List(a), formals(Sort.trace(a)), Sort.list(a))
-    val earlier = Fun("earlier", List(a), formals(Sort.nat, Sort.list(a)), a)
+    val earlier = Fun("earlier", List(a), formals(Sort.int, Sort.list(a)), a)
 
     val all = List(counter, current, butlast, earlier)
 
@@ -115,13 +115,6 @@ object Fun:
 
     val stop = Fun("stop", List(a), formals(a), Sort.trace(a))
     val step = Fun("step", List(a), formals(a, Sort.trace(a)), Sort.trace(a))
-
-  object nat:
-    val zero = Fun("zero", Nil, Nil, Sort.nat)
-    val succ = Fun("succ", Nil, formals(Sort.nat), Sort.nat)
-
-    val integer = Fun("integer", Nil, formals(Sort.nat), Sort.int)
-    val natural = Fun("natural", Nil, formals(Sort.int), Sort.nat)
 
   object list:
     val nil = Fun("nil", List(a), Nil, Sort.list(a))

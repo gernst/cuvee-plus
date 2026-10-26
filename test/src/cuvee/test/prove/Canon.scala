@@ -9,7 +9,7 @@ import cuvee.prove.Canon
 // the canonical forms of terms with binders of the engine of -prove: alpha-variants, the order of dependencies and
 // of cases, idempotence
 object CanonTests extends TestSuite:
-  val n = Var("n", Sort.nat)
+  val n = Var("n", Sort.int)
   val x = Var("x", Sort.int)
   val y = Var("y", Sort.int)
   val k = Var("k", Sort.int)
@@ -56,7 +56,7 @@ object CanonTests extends TestSuite:
     // a closed side condition is known if a fact is an alpha-variant of it (see Rewrite.known), also through the
     // classes: n == m makes invs over ⌊counter(0, 1, m)⌋ known for the fact over ⌊counter(0, 1, n)⌋
     test("known"):
-      val m = Var("m", Sort.nat)
+      val m = Var("m", Sort.int)
       val fact = Invs(List(ks), List(k), Ints.lt(k, x))
       val ctx = cuvee.prove.Context.empty(State.empty).assume(List(fact), Nil)
       assert(cuvee.prove.Rewrite.known(ctx, ctx.known, Invs(List(ks), List(j), Ints.lt(j, x))))

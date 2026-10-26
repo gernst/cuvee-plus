@@ -19,6 +19,8 @@ object ClassesTests extends TestSuite:
   def lit(k: Int) = Lit(BigInt(k), Sort.int)
   def app(fun: Fun, args: Expr*) = App(fun, args.toList)
 
+  given Classes.Order = Classes.Order(Classes.rank(_ => 0))
+
   def facts(phis: Expr*) =
     phis.foldLeft(Classes.empty(Set(c, d)))(_.assume(_))
 

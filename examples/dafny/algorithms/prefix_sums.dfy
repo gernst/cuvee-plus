@@ -14,22 +14,22 @@
 // an array filled by a recurrence at the positions 1, ..., n, each element from its predecessor plus the element of
 // a at its own position: select_current_trace_prefix_sums of teq:aggregation with the added term at the written position i instead
 // of k, and with the array read instead of a higher-order G(i), which the matcher instantiates by the array itself
-lemma {:rw} current_trace_prefix_sums_array(b0: array<int, int>, a: array<int, int>, n: Nat, j: int)
+lemma {:rw} current_trace_prefix_sums_array(b0: array<int, int>, a: array<int, int>, n: int, j: int)
   ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := a[i] + b[k]]))[j]
-    == if 0 <= j <= integer(n) then b0[0] + sum(selects(a, ⌊counter(1, 1, natural(j))⌋)) else b0[j]
+    == if 0 <= j <= n then b0[0] + sum(selects(a, ⌊counter(1, 1, j)⌋)) else b0[j]
 
 // the sum of the values at the positions i, ..., i + m is the first plus the sum of the rest
 lemma {:rw} sum_selects_cons(a: array<int, int>, i: int, m: int)
   requires 0 <= m
-  ensures sum(selects(a, ⌊counter(i, 1, natural(m + 1))⌋)) == a[i] + sum(selects(a, ⌊counter(i + 1, 1, natural(m))⌋))
+  ensures sum(selects(a, ⌊counter(i, 1, m + 1)⌋)) == a[i] + sum(selects(a, ⌊counter(i + 1, 1, m)⌋))
 
 // the sum over no positions
 lemma {:rw} sum_selects_zero(a: array<int, int>, i: int, c: int)
-  ensures sum(selects(a, ⌊counter(i, c, zero)⌋)) == 0
+  ensures sum(selects(a, ⌊counter(i, c, 0)⌋)) == 0
 
 method main(a: array<int, int>, n: int) returns (b: array<int, int>)
   requires 0 < n
-  ensures forall i: int :: 0 <= i < n ==> b[i] == sum(selects(a, ⌊counter(0, 1, natural(i + 1))⌋))
+  ensures forall i: int :: 0 <= i < n ==> b[i] == sum(selects(a, ⌊counter(0, 1, i + 1)⌋))
 {
   var i: int;
   var k: int;

@@ -102,8 +102,8 @@ object Forward:
       // the instance is simplified by the rules, such that its terms meet those of the goal, e.g. the cut of a
       // bisection, cut(m => a[m] < x, 0, n), becomes the partition point lower(a, n, x) that the reads of the array
       // become; the trigger's term stays as it occurs, since a marker is replaced only by a closed view
-      // an instance that the rules reduce to true, e.g. integer(n) == 0 to the known n == zero, is assumed as it is, since
-      // it may still be news to the arithmetic, whose constraints do not see the equations of the classes
+      // an instance that the rules reduce to true is assumed as it is, since it may still be news to the arithmetic,
+      // whose constraints do not see the equations of the classes
       val raw = replace(subst_(fw.concl), subst_(fw.trigger), term)
       val simplified = Simplify.simplify(config, state, ctx.neutral, raw)
       val phi = if simplified == True then raw else simplified

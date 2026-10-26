@@ -9,7 +9,7 @@ import cuvee.core._
 
 // the fallback encoding of trace equation systems into first-order logic (section 5.3 of the paper), for solvers:
 // traces and lists of goals become uninterpreted functions of an integer index, whose entries are characterized
-// point-wise, and naturals become integers; a trace X of n steps has the entries X(0), ..., X(n), its butlast those
+// point-wise; a trace X of n steps has the entries X(0), ..., X(n), its butlast those
 // below n, and the length of all dependencies of a combinator is the n of its first one, ⌊counter(0, 1, n)⌋,
 // written directly or by an equation K == counter(0, 1, n); counters are not named, their entries are i + j * c;
 // the variables of traces and lists bound by universal quantifiers of positive polarity or by existential ones of
@@ -21,8 +21,8 @@ import cuvee.core._
 // trace equation systems by fresh functions without definition, which generalizes the goal;
 // a trace of several accumulators is one function per accumulator, read by its components and histories;
 // functions defined with {:fold} are unfolded first; lemmas that are not free are lowered like goals, the declarations
-// of teq.dfy are dropped, as are axioms and free lemmas over traces, lists, and naturals; guards need not be complete (see break), hence each case is
-// an implication, and the entry is unconstrained if no guard holds
+// of teq.dfy are dropped, as are axioms and free lemmas over traces and lists; guards need not be complete (see
+// break), hence each case is an implication, and the entry is unconstrained if no guard holds
 object Fallback extends Transform:
   // what lowering a goal has produced: the declarations of the new functions, their definitions as facts of the goal,
   // the applications of the new functions, without the index, that replace combinators and other sequences
@@ -38,7 +38,7 @@ object Fallback extends Transform:
     (e, e.free.toList.sortBy(_.toString).map(env.get))
 
   // the sorts of trace equation systems
-  val sorts = Set(Con.trace, Con.list, Con.nat)
+  val sorts = Set(Con.trace, Con.list)
 
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val cmds_ =
@@ -72,11 +72,21 @@ object Fallback extends Transform:
       case decl: Decl if decl.attrs.contains("teq") || decl.attrs.contains("fold") =>
         Nil
 
-      case Assert(_, _, All(xs, _), _) if xs.exists(x => x.typ.cons.exists(sorts.contains)) =>
+      case Assert(_, _, phi, _) if sequential(phi) =>
         Nil
 
       case _ =>
         List(cmd)
+
+  // whether a term of `expr` or a variable it binds has a type that mentions traces or lists, e.g. counter(0, 1, m) of
+  // an assumption, which -fallback cannot express (the bound variables of quantifiers, e.g. ⌊K⌋, as well)
+  def sequential(expr: Expr): Boolean =
+    var found = expr.typ.cons.exists(sorts.contains)
+    expr match
+      case Bind(_, xs, _) => found = found || xs.exists(x => x.typ.cons.exists(sorts.contains))
+      case _              =>
+    expr.map { sub => found = found || sequential(sub); sub }
+    found
 
   def isSeq(typ: Type) =
     typ match
@@ -88,15 +98,12 @@ object Fallback extends Transform:
       case Sort(Con.trace | Con.list, List(elem)) => elem
       case _                                      => Error.raise("not a trace or list", typ)
 
-  // the type of the entries of nested traces and lists, with naturals as integers, and the number of indices
+  // the type of the entries of nested traces and lists, and the number of indices
   def entries(typ: Type): (Type, Int) =
     typ match
       case Sort(Con.trace | Con.list, List(elem)) =>
         val (base, n) = entries(elem)
         (base, n + 1)
-
-      case Sort.nat =>
-        (Sort.int, 0)
 
       case _ =>
         (typ, 0)
@@ -130,22 +137,13 @@ object Fallback extends Transform:
     parts(head).collect:
       case App(fun, _, _, _) => fun
 
-  // the variable with naturals as integers
-  def lower(x: Var) =
-    if x.typ == Sort.nat then Var(x.name, Sort.int) else x
-
   def isFold(state: State, fun: Fun) =
     state.funattrs.get((fun.name, fun.arity)).exists(_.contains("fold"))
 
   def isTeq(state: State, fun: Fun) =
     state.funattrs.get((fun.name, fun.arity)).exists(_.contains("teq"))
 
-  // the functions of the prelude that are lowered over the integers where they are applied to naturals (see expr):
-  // equations and conditionals, whose meaning does not change when the naturals are embedded into the integers;
-  // nothing marks the functions of the prelude, hence the explicit list
-  val lowered = Set(Fun.eq_, Fun.ite).map(fun => (fun.name, fun.arity))
-
-  // whether the types mention traces or lists, which are lowered into functions, unlike the naturals
+  // whether the types mention traces or lists, which are lowered into functions
   def sequences(types: List[Type]) =
     types.exists(_.cons.exists(con => con == Con.trace || con == Con.list))
 
@@ -173,12 +171,6 @@ object Fallback extends Transform:
       case _ =>
         Error.raise("not a lowered trace or list", head)
 
-  def nonnegative(x: Var) =
-    Ints.le(Ints.zero, lower(x))
-
-  // `phi` under the premise `nats`, if there is one
-  def premise(nats: Expr, phi: Expr) =
-    if nats == True then phi else Imp(nats, phi)
 
   // the formulas that hold as hypotheses of all of `phi` of the polarity `positive`, as in the context of the
   // simplifier, from which the lengths of the traces and lists that `phi` binds follow, which must hold for all of
@@ -299,13 +291,6 @@ object Fallback extends Transform:
       val funs_ = funs(head)
       out.map(o => o.copy(decls = funs_.reverse.map(DeclareFun(_, Attrs.empty)) ++ o.decls))
 
-      // the entries of lists of naturals are nonnegative
-      if elem(x.typ) == Sort.nat then
-        val fun = funs_.head
-        val is = Expr.vars("i", fun.args).fresh
-        val phi = All(is, Ints.le(Ints.zero, App(fun, fun.args, fun.res, is)))
-        out.map(o => o.copy(defs = phi :: o.defs))
-
       // the lengths of the traces of a list of traces, which are nonnegative, one for all components
       if funs_.head.arity == 2 then
         val first = funs_.head
@@ -397,7 +382,7 @@ object Fallback extends Transform:
   // of a dependency ⌊K⌋, such that terms over traces of different lengths are distinct
   def arguments(env: Map[Var, (Expr, Expr)], e: Expr): List[Var] =
     val lowered = e.free.filter(env.contains).flatMap(x => env(x)._1.free ++ env(x)._2.free)
-    (e.free.filterNot(env.contains).map(lower) ++ lowered).toList.sortBy(_.toString)
+    (e.free.filterNot(env.contains) ++ lowered).toList.sortBy(_.toString)
 
   // a fresh function of the free variables for a combinator, defined in the antecedent of the goal,
   // or for another trace or list, with a fresh function for its length, both without definition
@@ -408,9 +393,6 @@ object Fallback extends Transform:
 
       case None =>
         val xs = arguments(env, seq)
-
-        // the definitions hold for the arguments that are naturals, which are nonnegative
-        val nats = And(seq.free.toList.filter(_.typ == Sort.nat).map(nonnegative))
 
         Error.report("trace or list with free sequences not supported by -fallback", seq):
           require(!xs.exists(x => x.typ.cons.exists(sorts.contains)))
@@ -448,11 +430,11 @@ object Fallback extends Transform:
             val j = Var("j", Sort.int).fresh
             val v_ = expr(state, env, out, v)
             val range = And(Ints.le(Ints.zero, j), Ints.le(j, len))
-            val phi = All(xs, premise(nats, All(List(j), Imp(range, Eq(at(head, j), v_)))))
+            val phi = All(xs, All(List(j), Imp(range, Eq(at(head, j), v_))))
             out.map(o => o.copy(defs = phi :: o.defs))
 
           case _ if combinator =>
-            val phi = All(xs, premise(nats, define(state, env, out, head, len, seq)))
+            val phi = All(xs, define(state, env, out, head, len, seq))
             out.map(o => o.copy(defs = phi :: o.defs))
 
           case _ =>
@@ -480,7 +462,7 @@ object Fallback extends Transform:
         val App(_, _, _, args) = parts(head).head: @unchecked
         x -> (at(head, j), App(lenfun, (args :+ j).types, Sort.int, args :+ j))
 
-    val su = Subst.from(scalars.map((_, x) => lower(x)), scalars.map((dep, _) => entry(state, env, out, dep, j)))
+    val su = Subst.from(scalars.map(_._2), scalars.map((dep, _) => entry(state, env, out, dep, j)))
     (env ++ env_, su)
 
   // the case φ ⇒ lhs == e of each guarded result, or the equation of a single one
@@ -499,7 +481,7 @@ object Fallback extends Transform:
       case Trace(inits, deps, accs, bound, results) =>
         val (env_, su) = bind(state, env, out, deps, bound, j)
         val comps = parts(head)
-        val accs_ = Subst.from(accs.map(lower), comps.map(at(_, j)))
+        val accs_ = Subst.from(accs, comps.map(at(_, j)))
         val phis =
           for ((comp, init), result) <- comps zip inits zip results
           yield
@@ -541,10 +523,10 @@ object Fallback extends Transform:
       case _ =>
         general(state, env, out, Eq(x, rhs))
 
-  // a definition of teq.dfy by a match on its parameter at `index` of type List (`list`) or Nat, with a case per
-  // constructor, whose other case recurs on the tail (or the predecessor) only, with the other arguments unchanged:
-  // the base case, the head of the list (or the predecessor), and the step, in which `rec` is the recursive result,
-  // e.g. sum, count, occurs, pow, agree_prefix
+  // a definition of teq.dfy by a match on its parameter at `index` of type List (`list`), with a case per constructor,
+  // whose other case recurs on the tail only, or by a test x <= 0 on its integer parameter at `index`, whose other
+  // branch recurs on x - 1 only, with the other arguments unchanged: the base case, the head of the list (or a variable
+  // k for x - 1), and the step, in which `rec` is the recursive result, e.g. sum, count, occurs, pow, agree_prefix
   case class Recursion(index: Int, list: Boolean, base: Expr, head: Var, rec: Var, step: Expr)
 
   def recursion(state: State, fun: Fun): Option[Recursion] =
@@ -553,26 +535,45 @@ object Fallback extends Transform:
         val index = fun.formals.indexOf(x)
         val rec = Var("rec", fun.res).fresh
         val bases = cases.collect:
-          case Case(Lists.nil() | Nats.zero(), body, _) => body
+          case Case(Lists.nil(), body, _) => body
         val steps = cases.collect:
           case Case(Lists.cons(y: Var, ys: Var), body, _) => (true, y, ys, body)
-          case Case(Nats.succ(m: Var), body, _)          => (false, m, m, body)
 
         (bases, steps) match
           case (List(base), List((list, head, tail, body))) =>
             val step = calls(fun, fun.formals.updated(index, tail), rec, body)
             // the tail occurs in the recursive calls only, the predecessor may occur as a value
-            if base.free.contains(x) || step.free.contains(x) || (list && step.free.contains(tail))
+            if base.free.contains(x) || step.free.contains(x) || (list && step.free.contains(tail)) || applies(fun, step)
             then None
             else Some(Recursion(index, list, base, head, rec, step))
 
           case _ =>
             None
 
+      // the step for x > 0 in k == x - 1, its recursive calls on x - 1 replaced by rec, the other occurrences of x by k + 1
+      case Some(Ite(Ints.le(x: Var, Ints.zero), base, body)) if fun.formals.contains(x) && !base.free.contains(x) =>
+        val index = fun.formals.indexOf(x)
+        val rec = Var("rec", fun.res).fresh
+        val k = Var("k", Sort.int).fresh
+        val step = calls(fun, fun.formals.updated(index, Ints.minus(x, Ints.one)), rec, body)
+        // a call that is not on x - 1 with the other arguments unchanged would be unfolded again at each lowering
+        if applies(fun, step)
+        then None
+        else Some(Recursion(index, false, base, k, rec, Subst.from(List(x), List(Ints.succ(k)))(step)))
+
       case _ =>
         None
 
   // the recursive calls of `fun` with the arguments `args` in `expr` replaced by `rec`
+  // whether `expr` applies `fun`
+  def applies(fun: Fun, expr: Expr): Boolean =
+    expr match
+      case App(`fun`, _, _, _) => true
+      case _ =>
+        var found = false
+        expr.map { arg => found = found || applies(fun, arg); arg }
+        found
+
   def calls(fun: Fun, args: List[Expr], rec: Var, expr: Expr): Expr =
     expr match
       case App(`fun`, _, _, `args`) => rec
@@ -581,8 +582,8 @@ object Fallback extends Transform:
   // the application `e` of a recursive definition (see recursion) as a fresh function R of the free variables and a
   // position, defined in the antecedent of the goal by the definition unfolded once per position, hence consistent
   // with teq.dfy: over a list xs of length n, R(n) is the base case and R(j) the step for xs(j) and R(j + 1), and the
-  // application is R(0); over a natural n, R(0) is the base case and R(k + 1) the step for k and R(k), and the
-  // application is R(n)
+  // application is R(0); over an integer n, R(0) is the base case and R(k + 1) the step for k and R(k), and the
+  // application is R(n), where R(k) is the base case for all k <= 0, since the definitions clamp
   def recursive(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], e: App, r: Recursion): Expr =
     out.value.general.get(key(env, e)) match
       case Some(result) =>
@@ -594,11 +595,10 @@ object Fallback extends Transform:
         val others = Subst.from(fun.formals, args)
         val base = expr(state, env, out, su(others(r.base)))
         val step = expr(state, env, out, su(others(r.step)))
-        val head = lower(Var(r.head.name, su(r.head.typ)))
-        val rec = lower(Var(r.rec.name, su(r.rec.typ)))
+        val head = Var(r.head.name, su(r.head.typ))
+        val rec = Var(r.rec.name, su(r.rec.typ))
 
         val xs = arguments(env, e)
-        val nats = And(e.free.toList.filter(_.typ == Sort.nat).map(nonnegative))
         val res = entries(su(fun.res))._1
         // named after its positions, e.g. sum_from(j) for the suffix from j, pow_upto(k) for the steps up to k
         val suffix = if r.list then "_from" else "_upto"
@@ -615,10 +615,12 @@ object Fallback extends Transform:
           else
             val n = expr(state, env, out, args(r.index))
             val step_ = Subst.from(List(head, rec), List(j, at(app, j)))(step)
-            val phi = And(Eq(at(app, Ints.zero), base), All(List(j), Imp(And(Ints.le(Ints.zero, j), Ints.lt(j, n)), Eq(at(app, Ints.succ(j)), step_))))
+            // the base case at all positions up to 0, since the definitions clamp, rather than a conditional
+            // ite(n <= 0, base, R(n)) at each application, whose case splits the solver would chain
+            val phi = And(All(List(j), Imp(Ints.le(j, Ints.zero), Eq(at(app, j), base))), All(List(j), Imp(And(Ints.le(Ints.zero, j), Ints.lt(j, n)), Eq(at(app, Ints.succ(j)), step_))))
             (phi, at(app, n))
 
-        out.map(o => o.copy(decls = DeclareFun(f, Attrs.empty) :: o.decls, defs = All(xs, premise(nats, phi)) :: o.defs, general = o.general + (key(env, e) -> result)))
+        out.map(o => o.copy(decls = DeclareFun(f, Attrs.empty) :: o.decls, defs = All(xs, phi) :: o.defs, general = o.general + (key(env, e) -> result)))
         result
 
   // a fresh function of the free variables in place of `e`, which generalizes the goal
@@ -628,14 +630,6 @@ object Fallback extends Transform:
         app
 
       case None =>
-        // a function of the list `lowered` over naturals is lowered in expr, generalizing it would weaken the goal
-        // silently, e.g. the equations n == natural(i) of the numbers of iterations before 0.46.7
-        e match
-          case App(fun, _, typ, args) if lowered.contains((fun.name, fun.arity)) =>
-            Error.report("function over naturals not lowered by -fallback", e):
-              require(sequences(typ :: args.types))
-          case _ =>
-
         val xs = arguments(env, e)
 
         Error.report("term with free sequences not supported by -fallback", e):
@@ -645,9 +639,8 @@ object Fallback extends Transform:
           case App(fun, _, _, _) => Name(fun.name.name, Some(Var.next()))
           case _                 => Name("general", Some(Var.next()))
 
-        val typ = if e.typ == Sort.nat then Sort.int else e.typ
-        val fun = Fun(name, Nil, Expr.vars("x", xs.types), typ)
-        val app = App(fun, xs.types, typ, xs)
+        val fun = Fun(name, Nil, Expr.vars("x", xs.types), e.typ)
+        val app = App(fun, xs.types, e.typ, xs)
         out.map(o => o.copy(decls = DeclareFun(fun, Attrs.empty) :: o.decls, general = o.general + (key(env, e) -> app)))
         app
 
@@ -656,7 +649,7 @@ object Fallback extends Transform:
   def expr(state: State, env: Map[Var, (Expr, Expr)], out: Ref[Lowered], e: Expr, polarity: Option[Boolean] = None): Expr =
     e match
       case x: Var =>
-        lower(x)
+        x
 
       case Bind(quant, xs, body) if xs.exists(x => isSeq(x.typ)) =>
         val positive = polarity.getOrElse:
@@ -670,10 +663,7 @@ object Fallback extends Transform:
         if rest.isEmpty then expr(state, env_, out, body, polarity) else expr(state, env_, out, Bind(quant, rest, body), polarity)
 
       case Bind(quant, xs, body) =>
-        val nats = And(xs.filter(_.typ == Sort.nat).map(nonnegative))
-        val body_ = expr(state, env, out, body, polarity)
-        val body__ = if nats == True then body_ else if quant == All.name then Imp(nats, body_) else And(nats, body_)
-        Bind(quant, xs.map(lower), body__)
+        Bind(quant, xs, expr(state, env, out, body, polarity))
 
       case Imp(ante, concl) =>
         Imp(expr(state, env, out, ante, polarity.map(!_)), expr(state, env, out, concl, polarity))
@@ -706,19 +696,6 @@ object Fallback extends Transform:
       case Earlier(k, seq) =>
         entry(state, env, out, seq, expr(state, env, out, k))
 
-      case Nats.integer(n) =>
-        expr(state, env, out, n)
-
-      case Nats.natural(x) =>
-        val x_ = expr(state, env, out, x)
-        Ite(Ints.le(Ints.zero, x_), x_, Ints.zero)
-
-      case Nats.zero() =>
-        Ints.zero
-
-      case Nats.succ(n) =>
-        Ints.succ(expr(state, env, out, n))
-
       case App(fun, _, _, List(seq)) if fun.name.name == "length" && isSeq(seq.typ) =>
         sequence(state, env, out, seq)._2
 
@@ -730,22 +707,13 @@ object Fallback extends Transform:
         val body_ = su(expr(state, env_, out, body, polarity))
         All(List(j), Imp(And(Ints.le(Ints.zero, j), Ints.lt(j, len)), body_))
 
-      // the functions of the list `lowered` over naturals: equations and conditionals of naturals are those of their
-      // values as integers, rebuilt such that their type instances are Int, e.g. n == natural(i) of the number of
-      // iterations of a loop
-      case Eq(left, right) if left.typ == Sort.nat =>
-        Eq(expr(state, env, out, left), expr(state, env, out, right))
-
-      case Ite(test, left, right) if left.typ == Sort.nat =>
-        Ite(expr(state, env, out, test), expr(state, env, out, left), expr(state, env, out, right))
-
       // a function defined with {:fold} whose result is no trace or list, e.g. a sum of squares over a counter, is
       // unfolded like those of traces and lists (see define), such that its body is lowered rather than generalized
       case App(fun, inst, _, args) if isFold(state, fun) =>
         expr(state, env, out, unfold(state, fun, inst, args), polarity)
 
-      // recursive definitions of teq.dfy over lists and naturals are unfolded once per position (see recursion),
-      // equations and other functions of traces, lists, and naturals are generalized
+      // recursive definitions of teq.dfy over lists and integers are unfolded once per position (see recursion),
+      // equations and other functions of traces and lists are generalized
       case app @ App(fun, _, typ, args) if isTeq(state, fun) || (typ :: args.types).exists(_.cons.exists(sorts.contains)) =>
         recursion(state, fun) match
           case Some(r) => recursive(state, env, out, app, r)

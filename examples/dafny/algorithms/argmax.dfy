@@ -8,23 +8,23 @@
 // the inner loop of selection sort is this loop, with argmin
 
 // the trace of the position of the maximum so far, which moves to the positions of a counter whose value is larger
-function {:fold} argmaxs(a: array<int, int>, p0: int, i: int, n: Nat): Trace<int>
+function {:fold} argmaxs(a: array<int, int>, p0: int, i: int, n: int): Trace<int>
 {
   trace(p0, for ⌊counter(i, 1, n)⌋ do p, j :: case a[p] < a[j] => j case a[j] <= a[p] => p)
 }
 
 // the final position is the initial one or one of the counter, hence within their bounds
-lemma {:rw} current_argmaxs_lower(a: array<int, int>, p0: int, i: int, n: Nat, b: int)
+lemma {:rw} current_argmaxs_lower(a: array<int, int>, p0: int, i: int, n: int, b: int)
   requires b <= p0 && b <= i
   ensures (b <= current(argmaxs(a, p0, i, n))) <==> true
 
-lemma {:rw} current_argmaxs_upper(a: array<int, int>, p0: int, i: int, n: Nat, b: int)
-  requires p0 < b && i + integer(n) <= b
+lemma {:rw} current_argmaxs_upper(a: array<int, int>, p0: int, i: int, n: int, b: int)
+  requires p0 < b && i + n <= b
   ensures (current(argmaxs(a, p0, i, n)) < b) <==> true
 
 // and its value bounds the initial position and those of the counter
-lemma {:rw} select_le_argmaxs(a: array<int, int>, p0: int, i: int, n: Nat, k: int)
-  requires k == p0 || i <= k < i + integer(n)
+lemma {:rw} select_le_argmaxs(a: array<int, int>, p0: int, i: int, n: int, k: int)
+  requires k == p0 || i <= k < i + n
   ensures (a[k] <= a[current(argmaxs(a, p0, i, n))]) <==> true
 
 method main(a: array<int, int>, n: int) returns (p: int)

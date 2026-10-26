@@ -1,16 +1,13 @@
 # Ideas
 
-Proposals, plans and open points that are not implemented; implemented proposals are removed once their
-documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0.41.0, in
-[doc/architecture.md](../doc/architecture.md); the deduction engine `-prove` and its design, in
-[doc/prove.md](../doc/prove.md), Oct 14, 2026).
+Proposals, plans and open points that are not implemented; a proposal is removed once it is implemented and
+documented in `doc/`.
 
-- [prove-next.md](prove-next.md): the open changes to the engine of `-prove`, ordered by expected gain, with what
-  was tried: equalities from the simplex to the classes, the normal form of arithmetic atoms, naturals and integers
-  (the rule statistics), remainders, the depth of case splits, rounds that do not settle, closed instances.
-- [database-review.md](database-review.md): the review of the lemma database of Oct 23, 2026: usage on SV-COMP,
-  what could be unified, the lemmas of examples/dafny/algorithms (copies, candidates, program-specific), the
-  lemmas that work around gaps of the engine, the open points of earlier analyses.
+- [prove-next.md](prove-next.md): the open changes to the engine of `-prove`, ordered by expected gain: equalities
+  from the simplex to the classes, remainders, the depth of case splits, rounds that do not settle, closed instances.
+- [canonical.md](canonical.md): the open points of the canonical forms of the context and of the integer counts.
+- [database-review.md](database-review.md): the lemma database: what could be unified, candidates among the lemmas
+  of examples/dafny/algorithms, the lemmas that work around gaps of the engine.
 - [conditional-stores.md](conditional-stores.md): guarded stores merged into stores of conditional values, in
   `-teq`, instead of `2^s` cases (the strided stores `pr3`-`pr5`).
 - [iterator-profiles.md](iterator-profiles.md): the loop patterns of LoopAnnotator (ASE 2026, iterator
@@ -36,7 +33,5 @@ documentation lives in `doc/` (entry points, 0.42.0; the answers of `-verify`, 0
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 
-The algorithms are described in [doc/algorithms.md](../doc/algorithms.md); their findings under the former
-`-simplify` were numbered in the former examples/dafny/algorithms/NOTES.md (its history section) and written up in
-[doc/array-algorithms](../doc/array-algorithms) (the state of Oct 11, 2026); the observations on the code are in
+The algorithms are described in [doc/algorithms.md](../doc/algorithms.md); the observations on the code are in
 [TODO.md](../TODO.md), the bugs in [bugs.md](../bugs.md).

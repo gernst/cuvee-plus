@@ -12,7 +12,7 @@
 // lemmas of the module (Ns, Js, js), whose capture made the restated exit lemma fail with "variables of a rule not
 // instantiated by its match" (former NOTES.md, finding 21)
 
-method test(n: int, m: Nat, NN: List<Nat>, JJ: List<Trace<int>>, jj: List<int>)
+method test(n: int, m: int, NN: List<int>, JJ: List<Trace<int>>, jj: List<int>)
   requires 0 <= n
 {
   assume invs(for ⌊counter(0, 1, m)⌋, NN, JJ, jj check k, nn, J, j ::

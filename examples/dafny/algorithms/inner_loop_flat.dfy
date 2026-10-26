@@ -4,7 +4,7 @@
 //
 // status: verified with -teq -simplify (compare invs_counter_equation.dfy, the same facts inside an invs)
 
-method test(n: int, nn: Nat, K: Trace<int>, J: Trace<int>, j: int)
+method test(n: int, nn: int, K: Trace<int>, J: Trace<int>, j: int)
   requires 0 <= n
 {
   assume K == counter(0, 1, nn) && J == trace(0, for ⌊K⌋ do x, i :: x + 1) && j == current(J)

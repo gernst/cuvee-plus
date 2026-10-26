@@ -109,6 +109,14 @@ case class Context(
   def exists(xs: List[Var]) =
     copy(bound = xs :: bound, existential = existential ++ xs)
 
+  // the depth of the scope that binds x, 0 for the free variables
+  def depth(x: Var): Int =
+    val i = bound.indexWhere(_ contains x)
+    if i < 0 then 0 else bound.length - i
+
+  // the order of the roots of the classes, by the scopes of this context (see Classes.Order)
+  given order: Classes.Order = Classes.Order(Classes.rank(depth))
+
   // below a negation or in the premise of an implication, where universal variables become existential
   // and vice versa, since forall x. !phi is !exists x. !!phi
   def flip =
@@ -132,33 +140,25 @@ case class Context(
   def used: Set[Var] =
     facts.free ++ classes.free
 
-  // whether e does not depend on x through the definitions of the context, transitively, e.g. the solution of n by
-  // an expression over a trace K with K == counter(0, 1, n), whose inlining would loop (see Simplify.poly)
-  def acyclic(x: Var, e: Expr): Boolean =
-    def reach(todo: List[Var], seen: Set[Var]): Set[Var] =
-      todo match
-        case Nil                         => seen
-        case y :: rest if seen contains y => reach(rest, seen)
-        case y :: rest =>
-          val next = (linear.solved.get(y).toList ++ classes.classOf(y)).flatMap(_.free).toList
-          reach(next ++ rest, seen + y)
-
-    !reach(e.free.toList, Set()).contains(x)
-
-  // each fact is passed to all theories, and stored as given, also the equations of variables, which the classes
-  // substitute away (see Simplify.var_), such that the facts determine the classes and the linear constraints (the
-  // memos are keyed by the facts, see Canon); facts are not normalized, e.g. Simplify.implied misses (p y) when the
-  // fact is stored as (p x); this is done at the top level instead: Simplify.simplify iterates to a fixpoint
+  // each fact is passed to all theories: the classes and the linear constraints get it as given, such that the
+  // matcher sees all its terms as members of their classes, the facts in canonical form (see Classes.normalize), all
+  // of them again after a merge of classes, such that e.g. Simplify.implied finds (p y) for the fact (p x) with
+  // x == y
   def assume(phi: Expr): Context =
     phi match
       case Eq(e1, e2) if e1 == e2 =>
         this
 
       case _ =>
-        copy(facts = facts.assume(phi), classes = classes.assume(phi), linear = linear.assume(phi), rules = Context.rules(phi) ++ rules)
+        val phi_ = classes.normalize(phi)
+        val classes_ = classes.assume(phi)
+        val facts_ = if phi_ == True then facts else facts.assume(phi_)
+        copy(facts = if classes_.merges == classes.merges then facts_ else facts_.map(classes_.normalize), classes = classes_, linear = linear.assume(phi), rules = Context.rules(phi) ++ rules)
 
   def deny(phi: Expr): Context =
-    copy(facts = facts.deny(phi), classes = classes.deny(phi), linear = linear.deny(phi))
+    val classes_ = classes.deny(phi)
+    val facts_ = facts.deny(phi)
+    copy(facts = if classes_.merges == classes.merges then facts_ else facts_.map(classes_.normalize), classes = classes_, linear = linear.deny(phi))
 
   def theories: List[Theory] =
     List(facts, classes, linear)

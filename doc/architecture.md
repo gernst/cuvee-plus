@@ -225,7 +225,7 @@ for every sink.
 - [`Fallback`](../src/cuvee/transform/Fallback.scala) lowers trace equation
   systems into first-order logic for solvers (`-fallback`, see
   [teq.md](teq.md)): goals and lemmas that are not free are lowered, axioms
-  and free lemmas over traces, lists, and naturals are dropped.
+  and free lemmas over traces and lists are dropped.
 
 ### Sinks
 
@@ -280,10 +280,7 @@ The consumers read the answers as a set: [cuvee.py](../cuvee.py) and the witness
 `Horn` is the exception, since a CHC solver takes one problem with one `check-sat`, without `push`/`pop` and
 `reset`: it checks at `Done` only, and the answer to its `check-sat` is that of the program, `correct` for `sat`
 and `incorrect` for `unsat`, followed by the model (`Horn.report`, a `Report` in front of the
-reports, see `Config.reporter`). This is exact for at most one `verify-call`, at the end. Mapping the answers
-back to the input commands by each transform, one response per command, was rejected (Oct 22, 2026): the answers
-to buffered goals came back together at the next flush, and the goals of procedures have no place among the
-answers to the input.
+reports, see `Config.reporter`). This is exact for at most one `verify-call`, at the end.
 
 ## Frontends
 

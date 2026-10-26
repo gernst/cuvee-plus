@@ -10,19 +10,19 @@
 // argmax.dfy); the second method keeps it as an open goal
 
 // the maximum of the initial value a[j] and the values at the positions of a counter bounds each of them
-lemma {:rw} select_le_maxs(a: array<int, int>, j: int, k: int, i: int, n: Nat)
-  requires k == j || i <= k < i + integer(n)
+lemma {:rw} select_le_maxs(a: array<int, int>, j: int, k: int, i: int, n: int)
+  requires k == j || i <= k < i + n
   ensures (a[k] <= current(maxs(a[j], selects(a, ⌊counter(i, 1, n)⌋)))) <==> true
 
 // and is attained at one of them: it occurs among the values at the positions of a counter that covers them
-lemma {:rw} occurs_maxs(a: array<int, int>, j: int, i: int, n: Nat, lo: int, m: Nat)
-  requires lo <= j < lo + integer(m) && lo <= i && i + integer(n) <= lo + integer(m)
+lemma {:rw} occurs_maxs(a: array<int, int>, j: int, i: int, n: int, lo: int, m: int)
+  requires lo <= j < lo + m && lo <= i && i + n <= lo + m
   ensures occurs(current(maxs(a[j], selects(a, ⌊counter(i, 1, n)⌋))), selects(a, ⌊counter(lo, 1, m)⌋)) <==> true
 
 method max_element(a: array<int, int>, n: int) returns (m: int)
   requires 0 < n
   ensures forall k: int :: 0 <= k < n ==> a[k] <= m
-  ensures occurs(m, selects(a, ⌊counter(0, 1, natural(n))⌋))
+  ensures occurs(m, selects(a, ⌊counter(0, 1, n)⌋))
 {
   var i: int;
   m := a[0];

@@ -15,7 +15,7 @@ object Roundtrip extends TestSuite:
 // all examples with -chc whose second line states whether all assertions hold,
 // except for division by variables, for which z3 answers unknown; z3 answers each within 250 ms when the machine is
 // idle, the timeout of 5 s instead of the default of 1 s is for runs under load (for_break_continue.c answered unknown
-// twice with a load average around 20 on 4 cores, Oct 23, 2026)
+// under a load average around 20 on 4 cores)
 object Horn extends TestSuite:
   val skip = Set("div.c")
 

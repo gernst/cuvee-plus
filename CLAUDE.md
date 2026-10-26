@@ -81,21 +81,21 @@ or solvers consume.
 - `-teq` partitions the variables of a loop by
   the strongly connected components of their read relation, one trace per
   component, of several accumulators for a cycle (`TEQ.system`); its goals are
-  for `-prove`. The per-variable form of the paper is gone (Oct 13, 2026).
+  for `-prove`.
 - `Trace` exists only with `-teq` (declared in
   [teq.dfy](resources/cuvee/teq.dfy)); never include it implicitly or in
   preludes.
 - The lemma database: `-teq` injects [teq.dfy](resources/cuvee/teq.dfy), the
   entry point (`TEQ.modules`); `-include teq:<concept>` injects an optional
-  module of [resources/cuvee/teq](resources/cuvee/teq) after it. The optional
-  modules were migrated into modules over teq.dfy alone
+  module of [resources/cuvee/teq](resources/cuvee/teq) after it
   ([doc/teq.md](doc/teq.md)); the benchmark definitions include all of them.
-  The legacy database (the former single file of the per-variable form, the
-  retired `nested`) was removed on Oct 23, 2026: a rule dropped from a module
-  is gone; before dropping one, check SV-COMP (`scripts/missing.py`,
+  Before dropping a rule, check SV-COMP (`scripts/missing.py`,
   doc/benchmarks.md) and the examples, and keep a rule that only one task
   needs local to that task. Rules are tried in the order of the file, so it
   decides which abstraction a fragment gets.
+- Counts, lengths and positions of the database are `int`; the definitions
+  clamp (`counter(i, c, n)` is `stop(i)` for `n <= 0`), and a lemma states
+  `requires 0 <= n` where it needs it. There are no naturals.
 - Tests of trace equation systems are Dafny examples only, not SMT-LIB or
   Boogie. Those that should not pull in the lemma database of `-teq` duplicate
   the declarations of `teq.dfy` that they need, with its indexed names (e.g.
@@ -158,8 +158,12 @@ or solvers consume.
   (`TEQ.head`), attached as an invariant.
 - **Simplifier helpers are local.** Each normalizes its own constructor, in
   one step, building with the normalizing helpers (`not(...)`, not
-  `Not(...)`). The outer loops iterate. No global normal forms, no further
-  case splits.
+  `Not(...)`). The outer loops iterate. No global normal forms other than the
+  canonical forms of the context (`Classes.normalize`), no further case splits.
+- **Canonical forms** (doc/prove.md, "The context"): one order of roots
+  (`Context.order`, variables of outer scopes first); only solutions that
+  are arithmetic over variables are substituted, never equations of traces
+  or other terms, which the matcher reaches through their classes.
 - **Helpers used as decisions** (e.g. `eq_(...) == True`) get
   `ctx.neutral`.
 - **Expected values in unit tests** must be in the simplifier's normal form.

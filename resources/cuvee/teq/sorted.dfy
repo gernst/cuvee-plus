@@ -1,13 +1,11 @@
 // sorting: the abstract predicates sorted, perm (permutation as a total map on the indices, so that a swap at any two
-// positions preserves it) and partitioned, the swap of two elements as a fold of its two stores (Oct 23, 2026), with
-// the generic lemmas on traces of swaps and of steps, the inductions for sorting by a growing sorted prefix, with the
-// invariant as a quantified side condition decided by step lemmas on atoms, and the partition points of a sorted array,
-// which turn its reads into comparisons of indices; an optional module over teq.dfy alone (-include teq:sorted; the
-// cuts of its comparisons are those of the bisection of teq:search), migrated on Oct 13, 2026 from sorting.dfy of the
-// per-variable form, with the partition points of examples/dafny/algorithms/bsearch.dfy; the algorithms' own knowledge
-// (summaries of inner loops, step lemmas) stays with the examples; the predicates and the partition points are defined
-// here (the proofs of the lemmas in lean/ use the definitions), but the engines use the lemmas only, the definitions
-// are no rules; no task of SV-COMP uses them (the results since Oct 13, 2026), they serve the examples of
+// positions preserves it) and partitioned, the swap of two elements as a fold of its two stores, with the generic
+// lemmas on traces of swaps and of steps, the inductions for sorting by a growing sorted prefix, with the invariant as
+// a quantified side condition decided by step lemmas on atoms, and the partition points of a sorted array, which turn
+// its reads into comparisons of indices; an optional module over teq.dfy (-include teq:sorted; the cuts of its
+// comparisons are those of the bisection of teq:search); the algorithms' own knowledge (summaries of inner loops, step
+// lemmas) stays with the examples; the predicates and the partition points are defined here for the proofs in lean/,
+// but the engines use the lemmas only, the definitions are no rules; they serve the examples of
 // examples/dafny/algorithms
 
 // a[lo..hi) is nondecreasing; the bounds are integers, as the indices of the programs, like those of cut
@@ -46,8 +44,8 @@ lemma {:rw} {:teq} partitioned_whole(a: array<int, int>, lo: int, hi: int)
 
 // no descent between the adjacent positions k and k + 1 for k below n means sorted up to n + 1
 // (from is_sorted)
-lemma {:rw} {:teq} sorted_adjacent(a: array<int, int>, n: Nat)
-  ensures invs(for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ check k, i :: a[k] <= a[i]) <==> sorted(a, 0, integer(n) + 1)
+lemma {:rw} {:teq} sorted_adjacent(a: array<int, int>, n: int)
+  ensures invs(for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ check k, i :: a[k] <= a[i]) <==> sorted(a, 0, n + 1)
 
 // permutations
 
@@ -95,17 +93,12 @@ lemma {:rw} {:teq} perm_steps_two(a: array<int, int>, c: array<int, int>, ks: Li
   requires forall b: array<int, int>, k: int, i: int :: perm(F(b, k, i), b)
   ensures perm(current(trace(a, for ks, is do b, k, i :: F(b, k, i))), c) <==> perm(a, c)
 
-// the same over the iterations and a choice of naturals, e.g. the numbers of iterations of an inner loop, and with a
-// further dependency, e.g. the loop variable; a polymorphic version is not matched (TODO.md)
-// (from examples/dafny/algorithms: bubble_sort; insertion_sort, insertion_sort2, selection_sort)
-lemma {:rw} {:teq} perm_steps_nat(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>,
-                                  F: (array<int, int>, int, Nat) -> array<int, int>)
-  requires forall b: array<int, int>, k: int, nn: Nat :: perm(F(b, k, nn), b)
-  ensures perm(current(trace(a, for ks, ns do b, k, nn :: F(b, k, nn))), c) <==> perm(a, c)
-
-lemma {:rw} {:teq} perm_steps_three(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<Nat>, is: List<int>,
-                                    F: (array<int, int>, int, Nat, int) -> array<int, int>)
-  requires forall b: array<int, int>, k: int, nn: Nat, i: int :: perm(F(b, k, nn, i), b)
+// the same with a further dependency, e.g. a choice of the numbers of iterations of an inner loop and the loop
+// variable; a polymorphic version is not matched (TODO.md)
+// (from examples/dafny/algorithms: insertion_sort, insertion_sort2, selection_sort)
+lemma {:rw} {:teq} perm_steps_three(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<int>, is: List<int>,
+                                    F: (array<int, int>, int, int, int) -> array<int, int>)
+  requires forall b: array<int, int>, k: int, nn: int, i: int :: perm(F(b, k, nn, i), b)
   ensures perm(current(trace(a, for ks, ns, is do b, k, nn, i :: F(b, k, nn, i))), c) <==> perm(a, c)
 
 // inductions: the invariant of the outer loop as a quantified side condition over the steps F, which the simplifier
@@ -114,8 +107,8 @@ lemma {:rw} {:teq} perm_steps_three(a: array<int, int>, c: array<int, int>, ks: 
 
 // a growing sorted prefix partitioned from the rest: exactly n steps sort b[0..n)
 // (from selection_sort)
-lemma {:rw} {:teq} sorted_prefix_steps(a: array<int, int>, n: int, m: Nat, F: (array<int, int>, int) -> array<int, int>)
-  requires n == integer(m)
+lemma {:rw} {:teq} sorted_prefix_steps(a: array<int, int>, n: int, m: int, F: (array<int, int>, int) -> array<int, int>)
+  requires n == m
   requires forall b: array<int, int>, k: int :: 0 <= k < n && sorted(b, 0, k) && partitioned(b, 0, k, n)
     ==> sorted(F(b, k), 0, k + 1) && partitioned(F(b, k), 0, k + 1, n)
   ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋ do b, k :: F(b, k))), 0, n) <==> true
@@ -123,8 +116,8 @@ lemma {:rw} {:teq} sorted_prefix_steps(a: array<int, int>, n: int, m: Nat, F: (a
 // a growing sorted prefix from one element, the steps at the positions i of a second counter from 1 extending the
 // sorted prefix b[0..i) by i for all i, hence m steps sort b[0..m + 1) and b[0..n) if n <= m + 1
 // (from insertion_sort)
-lemma {:rw} {:teq} sorted_prefix_steps_two(a: array<int, int>, n: int, m: Nat, F: (array<int, int>, int, int) -> array<int, int>)
-  requires n <= integer(m) + 1
+lemma {:rw} {:teq} sorted_prefix_steps_two(a: array<int, int>, n: int, m: int, F: (array<int, int>, int, int) -> array<int, int>)
+  requires n <= m + 1
   requires forall b: array<int, int>, k: int, i: int :: 0 <= i && sorted(b, 0, i) ==> sorted(F(b, k, i), 0, i + 1)
   ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ⌊counter(1, 1, m)⌋ do b, k, i :: F(b, k, i))), 0, n)
     <==> true

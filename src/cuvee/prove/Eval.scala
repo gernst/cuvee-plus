@@ -5,11 +5,11 @@ import cuvee.core.*
 // the values of closed terms of the functions that are computed from literals, for the counterexample search of
 // Prove: an instance of a goal at literal values is evaluated directly, without the rules, the classes and the
 // simplex, which may decide anything in a context whose contradiction they do not detect (e.g. the premise
-// natural(4294967296) == zero of a case that the instance does not satisfy); integers and naturals are BigInt, the
-// value of a natural is nonnegative; a term without a value (a variable, a division by zero, another function) has none
+// 4294967296 <= 0 of a case that the instance does not satisfy); integers are BigInt; a term without a value (a
+// variable, a division by zero, another function) has none
 object Eval:
   // the functions whose values are computed from literals, without quantifiers
-  val computed = Set("and", "or", "not", "=>", "=", "distinct", "<", "<=", ">", ">=", "+", "-", "*", "div", "mod", "ite", "true", "false", "integer", "natural", "zero", "succ")
+  val computed = Set("and", "or", "not", "=>", "=", "distinct", "<", "<=", ">", ">=", "+", "-", "*", "div", "mod", "ite", "true", "false")
 
   def evaluable(expr: Expr): Boolean =
     expr match
@@ -26,10 +26,6 @@ object Eval:
         (fun.name.name, args) match
           case ("true", Nil)        => Some(true)
           case ("false", Nil)       => Some(false)
-          case ("zero", Nil)        => Some(BigInt(0))
-          case ("succ", List(n))    => int(n).map(_ + 1)
-          case ("natural", List(x)) => int(x).map(_ max 0)
-          case ("integer", List(n)) => int(n)
           case ("not", List(phi))   => bool(phi).map(!_)
 
           // a false conjunct decides the conjunction, also if another one has no value, and dually
@@ -117,7 +113,7 @@ object Eval:
   // the literals of the goal, plus or minus 1, which its instance evaluates to false at: the goal is false then, which
   // a sink answers incorrect unless the goal is :abstract (see Sink.passive); at most four variables; the instances
   // are evaluated (see apply), not simplified, since the rules decide anything in a context whose contradiction the
-  // theories miss, e.g. the premise natural(4294967296) == zero of a case that the instance does not satisfy
+  // theories miss, e.g. the premise 4294967296 <= 0 of a case that the instance does not satisfy
   def counterexample(cmd: Cmd): Cmd =
     cmd match
       case Assert(justify, Nil, phi, attrs) if phi != True && phi != False =>
@@ -126,7 +122,7 @@ object Eval:
             case All(xs, body) => (xs, body)
             case _             => (Nil, phi)
 
-        val scalar = xs.forall(x => x.typ == Sort.int || x.typ == Sort.nat || x.typ == Sort.bool)
+        val scalar = xs.forall(x => x.typ == Sort.int || x.typ == Sort.bool)
         if xs.length > 4 || !scalar || !evaluable(body) || !body.free.subsetOf(xs.toSet)
         then cmd
         else
@@ -135,7 +131,6 @@ object Eval:
             for x <- xs
             yield
               if x.typ == Sort.bool then List(True, False)
-              else if x.typ == Sort.nat then ints.filter(_ >= 0).map(c => Nats.natural(Lit(c, Sort.int)))
               else ints.map(c => Lit(c, Sort.int))
 
           val refuted = assignments(choices).take(4096).exists(values => bool(Subst.from(xs, values)(body)) == Some(false))

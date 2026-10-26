@@ -4,12 +4,11 @@
 // different increments in the cases are not a counter
 type Trace<a₀>
 type List<a₀>
-type Nat
-function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
-function steps(xs: List<int>): Nat
+function counter(x₀: int, x₁: int, x₂: int): Trace<int>
+function steps(xs: List<int>): int
 predicate p(t: Trace<int>)
 const J: Trace<int>
-const n: Nat
+const n: int
 lemma {:rw} trace_1(i: int, c: int, K: Trace<int>)
   ensures trace(i, for ⌊K⌋ do x, k :: x + c) == counter(i, c, steps(⌊K⌋))
 {}

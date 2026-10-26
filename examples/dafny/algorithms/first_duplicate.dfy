@@ -14,23 +14,23 @@
 // since the arithmetic inlines the final value i == integer(m) of the counter (0.50.16; before, as m == natural(i))
 
 // the inner loop in iteration i of the outer loop: the flag x is set once a[i] equals a later a[j]
-function {:fold} scan(x: bool, a: array<int, int>, i: int, nn: Nat): Trace<bool>
+function {:fold} scan(x: bool, a: array<int, int>, i: int, nn: int): Trace<bool>
 {
   trace(x, for ⌊counter(0, 1, nn)⌋, ⌊counter(i + 1, 1, nn)⌋ do r, kk, j :: case a[i] == a[j] => true case a[i] != a[j] => r)
 }
 
 // the flag is set at the end: some scan found a[i] == a[j], where j < n by the constraint of the inner loop (it ran
 // only while j < n), and i < j, hence the elements are not distinct
-lemma {:rw} distincts_flag_set(a: array<int, int>, n: int, m: Nat, ns: List<Nat>, Kv: Trace<int>)
+lemma {:rw} distincts_flag_set(a: array<int, int>, n: int, m: int, ns: List<int>, Kv: Trace<int>)
   requires Kv == counter(0, 1, m)
   requires current(trace(false, for ⌊Kv⌋, ns, ⌊counter(0, 1, m)⌋ do x, k, nn, i :: current(scan(x, a, i, nn))))
-  requires invs(for ⌊Kv⌋, ⌊counter(0, 1, m)⌋, ns check k, i, nn :: nn == zero || i + 1 < n && integer(nn) + i < n)
-  ensures distincts(selects(a, ⌊counter(0, 1, natural(n))⌋)) <==> false
+  requires invs(for ⌊Kv⌋, ⌊counter(0, 1, m)⌋, ns check k, i, nn :: nn <= 0 || i + 1 < n && nn + i < n)
+  ensures distincts(selects(a, ⌊counter(0, 1, n)⌋)) <==> false
 
 // the flag is reset at the end and the outer loop ran up to n (n <= integer(m)): the flag was reset at the head of
 // every iteration, hence every scan started reset and ended reset, at the end only, i.e. it ran up to n, by its exit,
 // without a match; hence no element has a later duplicate (for i < 0, n <= i < 0 and the range is empty)
-lemma {:rw} distincts_flags_reset(a: array<int, int>, n: int, m: Nat, ns: List<Nat>, Kv: Trace<int>)
+lemma {:rw} distincts_flags_reset(a: array<int, int>, n: int, m: int, ns: List<int>, Kv: Trace<int>)
   requires Kv == counter(0, 1, m)
   requires !current(trace(false, for ⌊Kv⌋, ns, ⌊counter(0, 1, m)⌋ do x, k, nn, i :: current(scan(x, a, i, nn))))
   requires invs(for ⌊Kv⌋,
@@ -38,17 +38,17 @@ lemma {:rw} distincts_flags_reset(a: array<int, int>, n: int, m: Nat, ns: List<N
                     ⌊counter(0, 1, m)⌋
                 check k, x, i :: !x)
   requires invs(for ⌊Kv⌋, ⌊counter(0, 1, m)⌋, ns
-                check k, i, nn :: !(integer(nn) + i + 1 < n && !current(scan(false, a, i, nn))))
-  requires n <= integer(m)
-  ensures distincts(selects(a, ⌊counter(0, 1, natural(n))⌋)) <==> true
+                check k, i, nn :: !(nn + i + 1 < n && !current(scan(false, a, i, nn))))
+  requires n <= m
+  ensures distincts(selects(a, ⌊counter(0, 1, n)⌋)) <==> true
 
 method main(a: array<int, int>, n: int) returns (r: bool)
   requires 0 <= n
   // the postcondition as two implications: the exit !(i < n && !r) of the outer loop is then a literal in the context
   // of each (as the equivalence, the goal's conclusion is i < n && !r || r == !distincts(...), where the rule on
   // distincts(...) sees neither n <= i nor r, the former NOTES.md)
-  ensures r ==> !distincts(selects(a, ⌊counter(0, 1, natural(n))⌋))
-  ensures !r ==> distincts(selects(a, ⌊counter(0, 1, natural(n))⌋))
+  ensures r ==> !distincts(selects(a, ⌊counter(0, 1, n)⌋))
+  ensures !r ==> distincts(selects(a, ⌊counter(0, 1, n)⌋))
 {
   var i: int;
   var j: int;

@@ -5,45 +5,41 @@ tasks.
 
 ## Work queue: database and engine
 
-By expected gain; plans in [doc/teq.md](doc/teq.md) and [ideas/prove-next.md](ideas/prove-next.md). Priority: more
-correct results, `true` first; speed only where a task times out that would succeed. Changed benchmarks are not rerun
-with Cuvée (the user's instruction, Oct 14).
+By expected gain; plans in [ideas/canonical.md](ideas/canonical.md) and [ideas/prove-next.md](ideas/prove-next.md).
+Priority: more correct results, `true` first; speed only where a task times out that would succeed. Changed
+benchmarks are not rerun with Cuvée.
 
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
-- [ ] ps2-ll_unwindbound1 times out at 60 s (31 s with 0.46.8).
-- [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma;
-      products are matched modulo commutativity since 0.50.18 and the module series has the sums of powers),
+- [ ] Integer counts and canonical forms (ideas/canonical.md): Loops with `-fallback` lost 19 true tasks
+      (nla-digbench), four false `_unwindbound1` tasks became unknown; the canonical facts cost time.
+- [ ] ps2-ll_unwindbound1 times out at 60 s.
+- [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma),
       `pcomp`, `sqm-if`, `nsqm-if`, `condm`.
 - [ ] Strided stores (array-tiling `mbpr*`, `pr*`, `pnr*`, 22 true tasks): the parity `(i - 1) % 2 == 0` against
       `i % 2 == 0` needs integer reasoning about remainders.
 - [ ] Counterexamples by concrete evaluation of `sum`, `map`, `counter` for a literal `n` (30 unsafe array-fpi tasks,
       e.g. brs2f).
-- [ ] Tasks lost against 0.42.1: in-de52, in-de62 (more loops than the depth of the case splits), sum_by_3,
-      sum_by_3_abstracted, sum_array-2-2, indp5, revcpyswp2.
+- [ ] Lost tasks: in-de52, in-de62 (more loops than the depth of the case splits), sum_by_3, sum_by_3_abstracted,
+      sum_array-2-2.
 - [ ] partial_mod_count_* (true): conditional stores whose second value is not a constant, then a count of zeros.
 - [ ] array-patterns (30 true tasks): pairwise cancelling sums over stores at nondeterministic indices.
-- [ ] Deferred: the cost of `-prove` (forward instances simplified at every firing; a memo was tried and reverted);
-      the rest of nla-digbench (geo1, geo3, cohencu; 71 correct with the module series since 0.50.18, from 18), the
-      non-terminations at the bound on the steps (fermat1, egcd2, mannadiv), a normal form of arithmetic atoms
-      (items 1 to 3 of ideas/prove-next.md: equalities from the simplex to the classes, stage 3, naturals and integers).
+- [ ] Deferred: the cost of `-prove` (forward instances simplified at every firing); the rest of nla-digbench (geo1,
+      geo3, cohencu); the non-terminations at the bound on the steps (fermat1, egcd2, mannadiv); equalities from the
+      simplex to the classes (ideas/prove-next.md).
 - [ ] Last: integrate the results into doc/paper/cuvee.tex (`scripts/paper.py`), `scripts/out/experiments.pdf`,
       ideas/experiments.md, doc/array-algorithms; commit all the work, then a single push.
 
 ## General
 
-- `-prove` does not terminate on array-crafted bAnd*, bor*, xor* with `natural_positive` (the reads `x[0]`, `x[1]`
-  are rewritten in every round, `integer(n)` to `i` modulo the class of `n`).
-- `-prove` does not refute a goal by substituting a variable that a premise equates with a constructor
-  (`n == zero && 0 <= integer(n)` of while_infinite_loop_4).
 - Verify trace lemmas in Dafny; performance of the simplifier; thread `Config` through more code; error messages
   with a printer instead of the internal syntax (also the parse errors of `fuse`).
 - SV-COMP: the archive of 0.50.18 is on Zenodo (10.5281/zenodo.23607469), fm-tools passes `-svcomp -fallback -z3
   -timeout 900000` (branch `cuvee-0.50.18` of gernst/fm-tools, the merge request is open); the DOI of doc/paper is
   still that of an earlier archive; keep `cuvee.py` in sync with sosy-lab/benchexec#1327.
 - Witnesses with invariants ([ideas/witnesses.md](ideas/witnesses.md)): `-slice` attaches the trace equation systems of
-  loops as invariants over the program variables (0.51.1); open: lowering the traces and `invs` that simplification
+  loops as invariants over the program variables; open: lowering the traces and `invs` that simplification
   keeps (e.g. a trace whose update is a constant, `invs` of a loop with `break`), printing them as `annotate-tag`
   commands of SV-LIB and as `loop_invariant` entries of C witnesses, and checking them with `-vcgen`; violation
   witnesses with the values of a counterexample.
@@ -67,10 +63,10 @@ with Cuvée (the user's instruction, Oct 14).
 ## Proofs of teq.dfy in Lean
 
 - The index premises of `lean/premises.txt` as `requires` of the lemmas, if `-prove` decides them (only
-  documented, decision of the user, Oct 13).
+  documented, by decision).
 - `cut` and the predicates of sorted.dfy fix one meaning of functions the engines use through their lemmas only.
-- A Lean mode of the printer instead of the text manipulation of `generate.py`; the comments of `lean.Printer`
-  refer to the former `resources/cuvee/teq.lean`.
+- A Lean mode of the printer instead of the text manipulation of `generate.py`; `generate.py` writes an unused
+  `open Nat (zero succ)`.
 - `simp only` instead of `simp` (the check takes about 20 s); a preamble for `-print lean` (`open Classical`,
   Mathlib, a namespace against clashes such as `List` and `max`).
 
@@ -153,11 +149,9 @@ Cleanup, none of it a bug.
 
 - The algorithms: max_element (no quantified left-hand sides), cocktail_sort and counting_sort (step budget) are
   open (doc/array-algorithms).
-- `integer_eq` loses `0 <= x` when it followed from the equation; the unconditional form keeps it (reverse).
 - The read relation of the partition takes the guards for every result, so a counter with equal cases joins the
   cycle that the guards read.
-- `-fallback`: fresh functions for terms of type `Nat` get no `0 <= f(xs)`; lists of traces of several accumulators
-  have no test.
+- `-fallback`: lists of traces of several accumulators have no test.
 - The functions on traces are declared by teq.dfy only, whose names may clash with the input.
 - The guards of updates are the branch conditions only; the loop test is assumed only for traces that are the
   right-hand side of an equation.
@@ -165,7 +159,6 @@ Cleanup, none of it a bug.
 - Which lemmas of the database should be `{:fw}` rather than `{:rw}`.
 - No bounds of division (`l <= (h + l) / 2`) except for `t div k` in the arithmetic of `-prove` (not `quot` of C),
   no cancellation (`2 * n / 2`, mlceu2).
-- Arithmetic solutions are inlined into polynomials only, not substituted elsewhere.
 - The selection of dependencies is not backtracked when a side condition fails (nested_mult).
 - A bare bound variable in the body of an `invs` pattern is synthesized as a map and matches every fragment of that
   shape (cocktail_sort, selection_sort); `Rule.check` could reject such left-hand sides with `invs` side conditions.

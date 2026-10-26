@@ -1008,9 +1008,9 @@ object Rewrite:
   // the same number of dependencies), since the normalization of a fact under the classes costs a traversal
   def known(ctx: Context, facts: List[Expr], phi: Expr): Boolean =
     facts.contains(phi) || {
-      val classes = ctx.classes.add(phi)
+      val classes = ctx.classes.add(phi)(using ctx.order)
       lazy val phi_ = classes.normalize(phi)
-      facts.exists(fact => classes.equal(fact, phi) || (Canon.binds(phi) && shaped(fact, phi) && Canon.equal(classes.normalize(fact), phi_)))
+      facts.exists(fact => classes.equal(fact, phi) || (Canon.binds(phi) && shaped(fact, phi) && Canon.equal(fact, phi_)))
     }
 
   def shaped(a: Expr, b: Expr): Boolean =

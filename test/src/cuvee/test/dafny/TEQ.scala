@@ -76,7 +76,7 @@ object TEQ extends TestSuite:
 
       val i = Var("i", Sort.int)
       val c = Var("c", Sort.int)
-      val n = Var("n", Sort.nat)
+      val n = Var("n", Sort.int)
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val rule = rw(
@@ -97,7 +97,7 @@ object TEQ extends TestSuite:
       def has(expr: Expr, name: String) = subexprs(expr).exists { case App(f, _, _, _) => f.name.name == name; case _ => false }
 
       val e = Var("e", Sort.int)
-      val j = Var("j", Sort.nat)
+      val j = Var("j", Sort.int)
       val x = Var("x", Sort.int)
       val keys = Var("keys", Sort.list(Sort.int))
 
@@ -111,7 +111,7 @@ object TEQ extends TestSuite:
     // also with a second dependency whose bound variable is unused, and with the counter defined in the context
     test("invs with literal bound"):
       val rules = cuvee.prove.Rules.from(State.empty, cuvee.verify.TEQ.lemmas)
-      val n = Var("n", Sort.nat)
+      val n = Var("n", Sort.int)
       val trace = Sort(Con("Trace", 1), List(Sort.int))
       val I = Var("I", trace)
       val K = Var("K", trace)
@@ -119,7 +119,7 @@ object TEQ extends TestSuite:
       val k = Var("k", Sort.int)
       val bound = Lit(BigInt(1024), Sort.int)
       val counter = Counter(Ints.zero, Ints.one, n)
-      val ctx = cuvee.prove.Context.empty(State.empty).assume(Ints.le(Ints.zero, Nats.integer(n))).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
+      val ctx = cuvee.prove.Context.empty(State.empty).assume(Ints.le(Ints.zero, n)).assume(Eq(I, counter)).assume(Eq(K, counter)).withRules(rules)
 
       for inv <- List(
           Invs(List(Butlast(counter)), List(i), Ints.lt(i, bound)),
@@ -141,12 +141,12 @@ object TEQ extends TestSuite:
     // of the module counters)
     test("constant updates"):
       val rules = cuvee.prove.Rules.from(State.empty, database)
-      val n = Var("n", Sort.nat)
+      val n = Var("n", Sort.int)
       val trace = Sort(Con("Trace", 1), List(Sort.int))
       val K = Var("K", trace)
       val X = Var("X", trace)
       val x = Var("x", Sort.int)
       val k = Var("k", Sort.int)
       val loop = Trace(Ints.one, List(Butlast(K)), x, List(k), Ints.zero)
-      val ctx = cuvee.prove.Context.empty(State.empty).assume(Ints.le(Ints.zero, Nats.integer(n))).assume(Eq(K, Counter(Ints.zero, Ints.one, n))).assume(Eq(X, loop)).withRules(rules)
-      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Eq(n, Nats.zero()), Ints.one, Ints.zero)
+      val ctx = cuvee.prove.Context.empty(State.empty).assume(Ints.le(Ints.zero, n)).assume(Eq(K, Counter(Ints.zero, Ints.one, n))).assume(Eq(X, loop)).withRules(rules)
+      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Ints.le(n, Ints.zero), Ints.one, Ints.zero)

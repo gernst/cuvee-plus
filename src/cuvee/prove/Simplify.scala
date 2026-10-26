@@ -179,8 +179,11 @@ object Simplify:
         val arg_ = simplify(config, state, ctx.neutral, arg)
         is(config, state, ctx, arg_, fun)
 
+      // a derivative depends on the term, not only on its value: the body is simplified with the facts that do not
+      // mention the variables xs only, e.g. x' == v at the head of an ode must not write v of (t, x, v :: v == a * t)'
+      // as x', whose derivative would be 0
       case Diff(xs, arg) =>
-        val arg_ = simplify(config, state, ctx.neutral, arg)
+        val arg_ = simplify(config, state, ctx.restricted(phi => xs disjoint phi.free).neutral, arg)
         diff(config, state, xs, arg_)
 
       case Old(arg) =>
@@ -284,20 +287,16 @@ object Simplify:
         val args_ = simplify(config, state, ctx.neutral, args)
         app(config, state, ctx, fun, inst, typ, args_)
 
-      // bound variables are renamed apart from the context before entering the body,
-      // naturals that occur as integers only become integers within their range (see integers)
+      // bound variables are renamed apart from the context before entering the body
       case All(bound, body) =>
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val (bound__, ranges, body__) = integers(bound_, re(body))
-        val body___ = if ranges.isEmpty then body__ else Imp(And(ranges), body__)
-        val body_ = simplify(config, state, ctx.forall(bound__), body___)
-        all(config, state, ctx, bound__, body_)
+        val body_ = simplify(config, state, ctx.forall(bound_), re(body))
+        all(config, state, ctx, bound_, body_)
 
       case Ex(bound, body) =>
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val (bound__, ranges, body__) = integers(bound_, re(body))
-        val body_ = simplify(config, state, ctx.exists(bound__), And(ranges :+ body__))
-        ex(config, state, ctx, bound__, body_)
+        val body_ = simplify(config, state, ctx.exists(bound_), re(body))
+        ex(config, state, ctx, bound_, body_)
 
       // the body has no polarity, since the context does not record the bindings
       case Let(bound, args, body) =>
@@ -454,8 +453,8 @@ object Simplify:
       re(body)
 
   // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),
-  // then 0 <= k < integer(n), since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
-  // is its value in iteration k, i.e., z == earlier(natural(k), ⌊Z⌋), which is simplified within the range,
+  // then 0 <= k < n, since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
+  // is its value in iteration k, i.e., z == earlier(k, ⌊Z⌋), which is simplified within the range,
   // e.g. z == k for ⌊Z⌋ with Z == counter(0, 1, n), which then bounds z as well
   // the reads are normalized by the rules without an invs side condition only (see Rule.plain): a summary whose
   // condition is matched against the invs facts would build the contexts of those facts in turn, whose reads are
@@ -472,10 +471,10 @@ object Simplify:
           (deps, bound) match
             case (Butlast(ctx.↑(Counter(Ints.zero, Ints.one, n))) :: deps_, k :: bound_) =>
               val ctx_ = ctx.neutral.bind(bound).copy(rules = ctx.rules.filter(Rule.plain))
-              val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, Nats.integer(n)))
+              val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, n))
               val range = simplify(config, state, ctx_, bounds)
               val inside = ctx_.assume(range, Nil)
-              range ++ (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(Nats.natural(k), dep))))
+              range ++ (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(k, dep))))
 
             case _ =>
               Nil
@@ -522,66 +521,16 @@ object Simplify:
       case None       => 
         simplify(config, state, ctx, expr)
 
-  // simplify an integer- or real-valued term into a polynomial (not normalized):
-  // descend through +, -, * and literals, simplify the leaves,
-  // which may in turn become arithmetic expressions, and combine the results;
-  // on Real, division by a term that simplifies to a nonzero literal is multiplication by its inverse;
-  // variables with the solution of an arithmetic equation in the context are inlined (see Chains.solved),
-  // unless the solution depends on the variable through the equations of the context, which would loop
+  // an integer- or real-valued term as a polynomial (not normalized), its leaves simplified (see Arith.toPoly)
   def poly(config: Config, state: State, ctx: Context, ring: Ring, expr: Expr): Poly =
-    expr match
-      case ring.num(n: BigInt) =>
-        Poly.const(Rational(n))
+    Arith.toPoly(ring, expr, simplify(config, state, ctx, _))
 
-      case ring.num(n: Rational) =>
-        Poly.const(n)
-
-      case ring.uminus(arg) =>
-        val arg_ = poly(config, state, ctx, ring, arg)
-        -arg_
-
-      case ring.plus(args) =>
-        val args_ = args.map(poly(config, state, ctx, ring, _))
-        args_.foldLeft(Poly.zero)(_ + _)
-
-      case ring.minus(left, right) =>
-        val left_ = poly(config, state, ctx, ring, left)
-        val right_ = poly(config, state, ctx, ring, right)
-        left_ - right_
-
-      case ring.times(args) =>
-        val args_ = args.map(poly(config, state, ctx, ring, _))
-        args_.foldLeft(Poly.one)(_ * _)
-
-      case Reals.div(left, right) =>
-        val left_ = poly(config, state, ctx, ring, left)
-        val right_ = simplify(config, state, ctx, right)
-        right_ match
-          case ring.num(r: Rational) if !r.isZero => left_ * (Rational(1) / r)
-          case _                                  => Poly.atom(Reals.div(left_.normalize.toExpr(ring), right_))
-
-      case _ =>
-        simplify(config, state, ctx, expr) match
-          case x: Var if ctx.linear.solved.get(x).exists(ctx.acyclic(x, _)) =>
-            poly(config, state, ctx, ring, ctx.linear.solved(x))
-
-          case expr_ =>
-            Arith.toPoly(ring, expr_)
-
-  // variables known to be equal to a literal are replaced by it, those known to be equal to other variables by the
-  // canonical variable of their class (see Classes.canonical), which is one of them
+  // a variable is replaced by its canonical form under the classes (see Classes.normalize): the literal of its class,
+  // the solution of its class (see Classes.solve), e.g. x by 40 - n for n + x == 40 in every position, or the root,
+  // the variable of the outermost scope (see Classes.rank), as in Shostak's combination, such that terms are written
+  // over the variables of the outer scopes, whereas the matcher still tries every member of the class
   def var_(config: Config, state: State, ctx: Context, x: Var): Expr =
-    ctx.classes.literal(x) match
-      case Some(lit) => lit
-      case None      => ctx.classes.canonical(x)
-
-  // the value of a natural constant, zero or natural(c) of an integer literal c, whose value is max(c, 0)
-  object Natural:
-    def unapply(expr: Expr): Option[BigInt] =
-      expr match
-        case Nats.zero()                     => Some(BigInt(0))
-        case Nats.natural(Lit(c: BigInt, _)) => Some(c max 0)
-        case _                               => None
+    ctx.classes.normalize(x)
 
   def eq_(config: Config, state: State, ctx: Context, left: Expr, right: Expr): Expr =
     (left, right) match
@@ -605,11 +554,6 @@ object Simplify:
         True
 
       case (Lit(a, _), Lit(b, _)) =>
-        if a == b then True else False
-
-      // natural constants, equal iff their values are, e.g. natural(4294967296) == zero of an instance of the
-      // counterexample search, which the classes would take as a fact without noticing its contradiction
-      case (Natural(a), Natural(b)) =>
         if a == b then True else False
 
       case (True, False) | (False, True) =>
@@ -708,6 +652,13 @@ object Simplify:
         Subst.from(List(x), List(index))(body)
 
       case ctx.↑(Store(base_, index_, _)) if eq_(config, state, ctx.neutral, index_, index) == False =>
+        Select(base_, index)
+
+      // the indices decided by the facts, e.g. a[3 := w][j] with j != 3 known (single_elem_safe)
+      case ctx.↑(Store(_, index_, value)) if ctx.neutral.implied(Eq(index_, index)) =>
+        value
+
+      case ctx.↑(Store(base_, index_, _)) if ctx.neutral.denied(Eq(index_, index)) =>
         Select(base_, index)
 
       case _ =>
@@ -947,7 +898,7 @@ object Simplify:
   def eq(config: Config, state: State, ctx: Context, ring: Ring, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isZero then True else False
-    else if poly.solution((x, rest) => point(ctx, x, rest.toExpr(ring))).nonEmpty
+    else if poly.solution(ctx.order.rank, (x, rest) => point(ctx, x, rest.toExpr(ring))).nonEmpty
     then True
     else
       val (left, right) = poly.sides
@@ -1024,33 +975,6 @@ object Simplify:
       case _ =>
         None
 
-  // a bound natural n that occurs only as its value integer(n) is an integer variable of the same name within its range
-  // 0 <= n, such that arithmetic reasons about it, e.g. forall n: Nat :: integer(n) != 10 is false for n == 10;
-  // the bound variables, the ranges, and the body with the integers
-  def integers(bound: List[Var], body: Expr): (List[Var], List[Expr], Expr) =
-    val naturals = bound.filter(x => x.typ == Sort.nat && asInteger(x, body))
-    val ints = naturals.map(x => Var(x.name, Sort.int))
-    val su = (naturals zip ints).toMap
-    val bound_ = bound.map(x => su.getOrElse(x, x))
-    (bound_, ints.map(Ints.le(Ints.zero, _)), (naturals zip ints).foldLeft(body)((expr, x) => integer(x._1, x._2, expr)))
-
-  // whether `x` occurs in `expr` only as integer(x)
-  def asInteger(x: Var, expr: Expr): Boolean =
-    expr match
-      case Nats.integer(`x`) => true
-      case `x`               => false
-      case _ =>
-        var only = true
-        expr.map { arg => only = only && asInteger(x, arg); arg }
-        only
-
-  // `expr` with integer(x) replaced by `m`
-  def integer(x: Var, m: Var, expr: Expr): Expr =
-    expr match
-      case Nats.integer(`x`) => m
-      case _                 => expr.map(integer(x, m, _))
-
-  // forall distributes over and, where each conjunct binds the variables that it uses
   def all(config: Config, state: State, ctx: Context, bound: List[Var], body: Expr): Expr =
     body match
       case And(phis) => and(config, state, ctx, phis.map(bind(config, state, ctx, All.name, bound, _)))

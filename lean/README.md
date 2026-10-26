@@ -9,8 +9,12 @@ library `TEQ` of the Lake project at the root of the repository (`lakefile.toml`
 - `TEQ/Semantics.lean` (by hand): the datatype of traces and the combinators `trace`, `maps`, `invs`.
 - `TEQ/Database.lean` (generated): the functions of the modules as printed by `-print lean`, and each lemma as the
   proposition `Stmt.<name>`, its printed statement with the premises of `premises.txt`.
-- `TEQ/Proofs.lean` (by hand): the theorem `<name>` of each lemma, with the auxiliary lemmas (the theorems of the
-  former legacy database, the lemmas no longer in the stable modules, were removed on Oct 23, 2026).
+- `TEQ/Naturals.lean` (by hand): in the namespace `TEQ.N`, the definitions by recursion on naturals (`counter`,
+  `consts`, `earlier`, `prefix`, `indexof`, `cutFrom`, `pow`, and those built on them), the statements over them, and
+  their proofs by induction.
+- `TEQ/Proofs.lean` (by hand): the theorem `<name>` of each lemma, from the theorem `N.<name>` of Naturals.lean
+  through one bridge per definition (the definition over integers is the one over naturals at `toNat`, e.g.
+  `counter i c n = N.counter i c n.toNat`, since a count that is not positive is no step).
 - `TEQ/Check.lean` (generated): `example : Stmt.<name> := @<name>` for each lemma (`<name>_rule` for a lemma named
   like a function).
 - `TEQ/Counterexamples.lean` (by hand): the lemmas without their premises are false.

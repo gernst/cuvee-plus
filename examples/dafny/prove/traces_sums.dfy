@@ -4,12 +4,11 @@
 // and the value must not depend on the accumulator
 type Trace<a₀>
 type List<a₀>
-type Nat
-function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
-function steps(xs: List<int>): Nat
+function counter(x₀: int, x₁: int, x₂: int): Trace<int>
+function steps(xs: List<int>): int
 predicate p(t: Trace<int>)
 const J: Trace<int>
-const n: Nat
+const n: int
 function sums(i: int, V: List<int>): Trace<int>
 const W: List<int>
 const arr: array<int, int>

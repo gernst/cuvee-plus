@@ -22,9 +22,9 @@ function keys_below(a: array<int, int>, n: int, k: int): bool
 
 // the table of start positions: for the values v below kk, the number of elements of a[0..n) below v, over c
 // elsewhere; the prefix sums of the histogram stored at the values
-function rank_table(c: array<int, int>, a: array<int, int>, n: Nat, kk: Nat): array<int, int>
+function rank_table(c: array<int, int>, a: array<int, int>, n: int, kk: int): array<int, int>
 
-lemma {:rw} rank_table_def(c0: array<int, int>, a: array<int, int>, n: Nat, kk: Nat, hs: List<int>)
+lemma {:rw} rank_table_def(c0: array<int, int>, a: array<int, int>, n: int, kk: int, hs: List<int>)
   ensures current(stores(c0, ⌊counter(0, 1, kk)⌋,
       ⌊sums(0, maps(for ⌊counter(0, 1, kk)⌋, hs yield v, h :: count(v, selects(a, ⌊counter(0, 1, n)⌋))))⌋))
     == rank_table(c0, a, n, kk)
@@ -32,9 +32,9 @@ lemma {:rw} rank_table_def(c0: array<int, int>, a: array<int, int>, n: Nat, kk: 
 // the scatter: each element a[k] is stored at its start position plus the number of equal elements before it, which
 // the increments of the table count; the result is sorted on 0, ..., n - 1 if the keys are in [0, kk), and the
 // stored elements are those of a
-lemma {:rw} sorted_scatter(b0: array<int, int>, c2: array<int, int>, a: array<int, int>, n: Nat, kk: Nat, s: int, hs: List<int>, hs2: List<int>, hs3: List<int>, kb: int, Iv: Trace<int>)
-  requires s == integer(n)
-  requires keys_below(a, s, kb) && kb == integer(kk)
+lemma {:rw} sorted_scatter(b0: array<int, int>, c2: array<int, int>, a: array<int, int>, n: int, kk: int, s: int, hs: List<int>, hs2: List<int>, hs3: List<int>, kb: int, Iv: Trace<int>)
+  requires s == n
+  requires keys_below(a, s, kb) && kb == kk
   requires Iv == counter(0, 1, n)
   requires hs3 == ⌊Iv⌋
   ensures sorted(current(stores(b0,
@@ -42,9 +42,9 @@ lemma {:rw} sorted_scatter(b0: array<int, int>, c2: array<int, int>, a: array<in
       selects(a, hs3))), 0, s)
     <==> true
 
-lemma {:rw} count_scatter(b0: array<int, int>, c2: array<int, int>, a: array<int, int>, n: Nat, kk: Nat, s: int, hs: List<int>, hs2: List<int>, hs3: List<int>, x: int, kb: int, Iv: Trace<int>)
-  requires s == integer(n)
-  requires keys_below(a, s, kb) && kb == integer(kk)
+lemma {:rw} count_scatter(b0: array<int, int>, c2: array<int, int>, a: array<int, int>, n: int, kk: int, s: int, hs: List<int>, hs2: List<int>, hs3: List<int>, x: int, kb: int, Iv: Trace<int>)
+  requires s == n
+  requires keys_below(a, s, kb) && kb == kk
   requires Iv == counter(0, 1, n)
   requires hs3 == ⌊Iv⌋
   ensures count(x, selects(current(stores(b0,
@@ -56,7 +56,7 @@ method main(a: array<int, int>, n: int, k: int) returns (b: array<int, int>)
   requires 0 <= n && 0 < k
   requires keys_below(a, n, k)
   ensures sorted(b, 0, n)
-  ensures forall x: int :: count(x, selects(b, ⌊counter(0, 1, natural(n))⌋)) == count(x, selects(a, ⌊counter(0, 1, natural(n))⌋))
+  ensures forall x: int :: count(x, selects(b, ⌊counter(0, 1, n)⌋)) == count(x, selects(a, ⌊counter(0, 1, n)⌋))
 {
   var c: array<int, int>;
   var i: int;

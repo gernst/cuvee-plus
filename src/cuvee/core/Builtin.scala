@@ -118,20 +118,6 @@ object Current extends Sugar.unary(Fun.trace.current)
 object Butlast extends Sugar.unary(Fun.trace.butlast)
 object Earlier extends Sugar.binary(Fun.trace.earlier)
 
-object Nats:
-  object zero:
-    def apply(): Expr =
-      App(Fun.nat.zero, Nil, Sort.nat, Nil)
-
-    def unapply(expr: Expr): Boolean =
-      expr match
-        case App(fun, _, _, Nil) => fun == Fun.nat.zero
-        case _                   => false
-
-  object succ extends Sugar.unary(Fun.nat.succ)
-  object integer extends Sugar.unary(Fun.nat.integer)
-  object natural extends Sugar.unary(Fun.nat.natural)
-
 object Lists:
   object nil:
     def apply(elem: Type): Expr =

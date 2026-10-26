@@ -5,7 +5,7 @@
 // that the lemmas refer to, since its prelude is injected after parsing
 type Trace<a₀>
 type {:lean} List<a₀>
-type {:lean} Nat
+type {:lean} int
 function butlast<a₀>(x₀: Trace<a₀>): List<a₀>
 function current<a₀>(x₀: Trace<a₀>): a₀
 

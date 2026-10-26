@@ -13,23 +13,23 @@
 function nodup(a: array<int, int>, k: int, h: int): bool
 
 // the inner loop: a flag that is cleared when a later element equals a[k], scanned from k + 1 for nn steps
-lemma {:rw} current_flag_nodup(a: array<int, int>, d: bool, k: int, nn: Nat)
+lemma {:rw} current_flag_nodup(a: array<int, int>, d: bool, k: int, nn: int)
   ensures current(trace(d, for ⌊counter(0, 1, nn)⌋, ⌊counter(k + 1, 1, nn)⌋ do x, i, j ::
             case a[k] == a[j] => false case a[k] != a[j] => x))
-    == (d && nodup(a, k, k + 1 + integer(nn)))
+    == (d && nodup(a, k, k + 1 + nn))
 
 // the outer loop: the conjunction of nodup over the iterations, with the numbers of inner iterations fixed by the two
 // constraints of the inner loop to len - k - 1, is the distinctness of a[0..len); len is bound by the first constraint
-lemma {:rw} current_distinct_steps(a: array<int, int>, len: int, m: Nat, ns: List<Nat>)
-  requires invs(for ⌊counter(0, 1, m)⌋, ns check k, nn :: len <= integer(nn) + k + 1)
-  requires invs(for ⌊counter(0, 1, m)⌋, ns check k, nn :: nn == zero || k + 1 < len && integer(nn) + k < len)
-  requires len == integer(m)
-  ensures current(trace(true, for ⌊counter(0, 1, m)⌋, ns do d, k, nn :: d && nodup(a, k, k + 1 + integer(nn))))
-    == distincts(selects(a, ⌊counter(0, 1, natural(len))⌋))
+lemma {:rw} current_distinct_steps(a: array<int, int>, len: int, m: int, ns: List<int>)
+  requires invs(for ⌊counter(0, 1, m)⌋, ns check k, nn :: len <= nn + k + 1)
+  requires invs(for ⌊counter(0, 1, m)⌋, ns check k, nn :: nn <= 0 || k + 1 < len && nn + k < len)
+  requires len == m
+  ensures current(trace(true, for ⌊counter(0, 1, m)⌋, ns do d, k, nn :: d && nodup(a, k, k + 1 + nn)))
+    == distincts(selects(a, ⌊counter(0, 1, len)⌋))
 
 method main(a: array<int, int>, n: int) returns (d: bool)
   requires 0 <= n
-  ensures d <==> distincts(selects(a, ⌊counter(0, 1, natural(n))⌋))
+  ensures d <==> distincts(selects(a, ⌊counter(0, 1, n)⌋))
 {
   var i: int;
   var j: int;

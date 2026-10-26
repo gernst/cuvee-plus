@@ -28,20 +28,20 @@ function bubbled(b: array<int, int>, k: int, len: int): bool
 
 // one pass over the positions 0, ..., nn - 1 for nn == len - k - 1 moves the maximum of b[0..nn] to nn, which extends
 // the sorted suffix by one (for nn == 0 the pass is empty, and the suffix is the whole range already)
-lemma {:rw} bubbled_pass_nat(b: array<int, int>, nn: Nat, k: int, len: int)
-  requires integer(nn) == len - k - 1 && bubbled(b, k, len)
+lemma {:rw} bubbled_pass_nat(b: array<int, int>, nn: int, k: int, len: int)
+  requires nn == len - k - 1 && bubbled(b, k, len)
   ensures bubbled(current(bubble_pass(b, ⌊counter(0, 1, nn)⌋)), k + 1, len) <==> true
 
 // the induction for bubble sort over a trace whose steps also read a choice ns, whose values the maps equation fixes
 // to len - k - 1 in iteration k: the steps F keep the invariant from one iteration to the next, hence m steps sort
 // b[0..len) if len <= m + 1 (the invariant holds initially by its definition, and every step is constrained, since
 // the equation holds at every position of the choice)
-lemma {:rw} sorted_bubbled_steps_choice(a: array<int, int>, len: int, m: Nat, ns: List<Nat>,
-                                        F: (array<int, int>, int, Nat) -> array<int, int>)
-  requires len <= integer(m) + 1
-  requires maps(for ⌊counter(0, 1, m)⌋, ns yield k, nn :: integer(nn) + k + 1) == ⌊consts(m, len)⌋
-  requires forall b: array<int, int>, k: int, nn: Nat ::
-    0 <= k < integer(m) && integer(nn) + k + 1 == len && bubbled(b, k, len) ==> bubbled(F(b, k, nn), k + 1, len)
+lemma {:rw} sorted_bubbled_steps_choice(a: array<int, int>, len: int, m: int, ns: List<int>,
+                                        F: (array<int, int>, int, int) -> array<int, int>)
+  requires len <= m + 1
+  requires maps(for ⌊counter(0, 1, m)⌋, ns yield k, nn :: nn + k + 1) == ⌊consts(m, len)⌋
+  requires forall b: array<int, int>, k: int, nn: int ::
+    0 <= k < m && nn + k + 1 == len && bubbled(b, k, len) ==> bubbled(F(b, k, nn), k + 1, len)
   ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ns do b, k, nn :: F(b, k, nn))), 0, len) <==> true
 
 method main(a: array<int, int>, n: int) returns (b: array<int, int>)

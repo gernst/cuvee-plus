@@ -32,7 +32,7 @@ The merge was tried as a lemma of the database, included with `-include`
 together with the declarations of `teq.dfy` that it needs:
 
 ```
-lemma {:rw} trace_merge_store(a0: array<int, int>, n: Nat, P: bool, X: int, Y: int, E: (int) -> int)
+lemma {:rw} trace_merge_store(a0: array<int, int>, n: int, P: bool, X: int, Y: int, E: (int) -> int)
   ensures trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case P => a[E(k) := X] case !P => a[E(k) := Y])
     == trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: a[E(k) := if P then X else Y])
 ```

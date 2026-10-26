@@ -3,11 +3,9 @@ package cuvee.prove
 import cuvee.core._
 
 // an immutable collection of facts of some theory, which records the facts it can express and ignores the others,
-// and which detects when they contradict each other
+// and which detects when they contradict each other (see Context.assume)
 trait Theory:
   def inconsistent: Boolean
-  def assume(expr: Expr): Theory
-  def deny(expr: Expr): Theory
 
 object Facts:
   val empty = Facts(Nil, Nil, false)
@@ -30,3 +28,12 @@ case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) e
 
   def free: Set[Var] =
     assms.free ++ concls.free
+
+  // the facts in the form f gives them, e.g. canonical after a merge of classes (see Context.assume), except those
+  // that f decides, which are kept as they are: they are the facts that the classes record
+  def map(f: Expr => Expr): Facts =
+    def keep(phi: Expr) =
+      f(phi) match
+        case True | False => phi
+        case phi_         => phi_
+    Facts(assms.map(keep), concls.map(keep), inconsistent)

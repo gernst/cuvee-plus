@@ -64,8 +64,7 @@ object Con:
   // finite maps, which no solver supports (see Fun.map)
   val map = Con("Map", 2)
   val trace = Con("Trace", 1)
-  // the naturals and lists of trace equation systems, the datatypes Nat and List of teq.dfy
-  val nat = Con("Nat", 0)
+  // the lists of trace equation systems, the datatype List of teq.dfy, whose counts, lengths and positions are integers
   val list = Con("List", 1)
 
 object Sort:
@@ -93,7 +92,6 @@ object Sort:
   def trace(elem: Type) =
     Sort(Con.trace, List(elem))
 
-  val nat = Sort(Con.nat, Nil)
 
   def list(elem: Type) =
     Sort(Con.list, List(elem))

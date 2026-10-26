@@ -145,8 +145,8 @@ object Printer extends cuvee.pipe.Printer:
   // lengths (see resources/cuvee/teq.lean): the lists among the dependencies of each combinator, also of a function
   // defined by one (:fold, e.g. stores), have the length n of the loop, the number of steps of ⌊counter(_, _, n)⌋ or
   // ⌊consts(n, _)⌋ among the dependencies, or a fresh variable n of the lemma if no counter gives it, `length xs = n`;
-  // the lists read at the iterations k of a counter, earlier(natural(k), xs), and no dependency, are at least as long
-  // as the loop, `integer n ≤ integer (length xs)`, the precondition of the reads, since the list may be that of an
+  // the lists read at the iterations k of a counter, earlier(k, xs), and no dependency, are at least as long
+  // as the loop, `n ≤ length xs`, the precondition of the reads, since the list may be that of an
   // earlier loop with more iterations (bugs.md, maps_earlier); the hypotheses use the function length of teq.dfy,
   // List.length of Lean, and are named h<xs>
   def lengths(phi: Expr): (List[Var], List[(String, Expr)]) =
@@ -167,18 +167,19 @@ object Printer extends cuvee.pipe.Printer:
       else
         val used = (body.free ++ xs).map(_.name.subscripted)
         val name_ = Iterator.from(0).map(i => if i == 0 then "n" else "n" + i).find(!used.contains(_)).get
-        Some(Var(Name(name_, None), Sort.nat))
+        Some(Var(Name(name_, None), Sort.int))
 
     val hyps =
       for x <- vars
       yield
         val n = known.getOrElse(x, fresh.get)
-        val hyp = if dependency.contains(x) then Eq(App(length, List(x)), n) else Ints.le(Nats.integer(n), Nats.integer(App(length, List(x))))
+        val hyp = if dependency.contains(x) then Eq(App(length, List(x)), n) else Ints.le(n, App(length, List(x)))
         ("h" + name(x.name), hyp)
     (fresh.toList, hyps)
 
-  // the function length of lists, List.length of Lean, declared in teq.dfy with :lean, hence not printed
-  val length = Fun("length", List(Param("a")), List(Var("xs", Sort.list(Param("a")))), Sort.nat)
+  // the function length of lists, List.length of Lean, declared in teq.dfy with :lean, hence not printed; an integer in
+  // Cuvée, which Lean coerces from the natural of List.length
+  val length = Fun("length", List(Param("a")), List(Var("xs", Sort.list(Param("a")))), Sort.int)
 
   // the positions of the formal parameters of the functions defined by a combinator (:fold, e.g. stores) that are
   // its dependencies, recorded when the definitions are printed
@@ -207,7 +208,7 @@ object Printer extends cuvee.pipe.Printer:
       case Invs(deps, bound, body) =>
         loop(deps, bound, body, counters)
 
-      case Earlier(Nats.natural(k: Var), xs: Var) if counters.contains(k) =>
+      case Earlier(k: Var, xs: Var) if counters.contains(k) =>
         List((xs, Some(counters(k)), false))
 
       case App(fun, _, _, args) if folds.contains(fun.name) =>

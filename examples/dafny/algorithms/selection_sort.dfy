@@ -19,38 +19,38 @@
 function argmin(b: array<int, int>, lo: int, hi: int): int
 
 // the inner loop: the position of the minimum of b[i..i + 1 + nn), scanned from i + 1 for nn steps
-lemma {:rw} current_selection(b: array<int, int>, i: int, nn: Nat)
+lemma {:rw} current_selection(b: array<int, int>, i: int, nn: int)
   ensures current(trace(i, for ⌊counter(0, 1, nn)⌋, ⌊counter(i + 1, 1, nn)⌋ do m, k, j ::
             case b[j] < b[m] => j case b[m] <= b[j] => m))
-    == argmin(b, i, i + 1 + integer(nn))
+    == argmin(b, i, i + 1 + nn)
 
 // one step of selection sort keeps the sorted prefix below the rest, given the constraints of the inner loop, which
 // fix i + 1 + nn == n; n is bound by the condition on partitioned, the others are looked up among the hypotheses
-lemma {:rw} sorted_swap_argmin_nat(b: array<int, int>, i: int, nn: Nat, n: int)
+lemma {:rw} sorted_swap_argmin_nat(b: array<int, int>, i: int, nn: int, n: int)
   requires partitioned(b, 0, i, n)
-  requires i < n && n <= integer(nn) + i + 1 && (nn == zero || i + 1 < n && integer(nn) + i < n) && sorted(b, 0, i)
-  ensures sorted(swap(b, i, argmin(b, i, i + 1 + integer(nn))), 0, i + 1)
+  requires i < n && n <= nn + i + 1 && (nn <= 0 || i + 1 < n && nn + i < n) && sorted(b, 0, i)
+  ensures sorted(swap(b, i, argmin(b, i, i + 1 + nn)), 0, i + 1)
     <==> true
 
-lemma {:rw} partitioned_swap_argmin_nat(b: array<int, int>, i: int, nn: Nat, n: int)
+lemma {:rw} partitioned_swap_argmin_nat(b: array<int, int>, i: int, nn: int, n: int)
   requires partitioned(b, 0, i, n)
-  requires i < n && n <= integer(nn) + i + 1 && (nn == zero || i + 1 < n && integer(nn) + i < n) && sorted(b, 0, i)
-  ensures partitioned(swap(b, i, argmin(b, i, i + 1 + integer(nn))),
+  requires i < n && n <= nn + i + 1 && (nn <= 0 || i + 1 < n && nn + i < n) && sorted(b, 0, i)
+  ensures partitioned(swap(b, i, argmin(b, i, i + 1 + nn)),
                       0, i + 1, n)
     <==> true
 
 // the induction over the counter, the choice of the numbers of inner iterations and the loop counter, with the two
 // constraints of the inner loop on the choice as closed side conditions
-lemma {:rw} sorted_selection_steps(a: array<int, int>, n: int, m: Nat, ns: List<Nat>, ks: List<int>, is: List<int>,
-                                   ns2: List<Nat>, ks3: List<int>, is3: List<int>, ns3: List<Nat>,
-                                   F: (array<int, int>, int, Nat) -> array<int, int>)
-  requires n == integer(m)
-  requires invs(for ks, is, ns2 check k, i, nn :: n <= integer(nn) + i + 1)
+lemma {:rw} sorted_selection_steps(a: array<int, int>, n: int, m: int, ns: List<int>, ks: List<int>, is: List<int>,
+                                   ns2: List<int>, ks3: List<int>, is3: List<int>, ns3: List<int>,
+                                   F: (array<int, int>, int, int) -> array<int, int>)
+  requires n == m
+  requires invs(for ks, is, ns2 check k, i, nn :: n <= nn + i + 1)
   requires is == ⌊counter(0, 1, m)⌋ && ns2 == ns
-  requires invs(for ks3, is3, ns3 check k, i, nn :: nn == zero || i + 1 < n && integer(nn) + i < n)
+  requires invs(for ks3, is3, ns3 check k, i, nn :: nn <= 0 || i + 1 < n && nn + i < n)
   requires is3 == ⌊counter(0, 1, m)⌋ && ns3 == ns
-  requires forall b: array<int, int>, i: int, nn: Nat ::
-    0 <= i < n && n <= integer(nn) + i + 1 && (nn == zero || i + 1 < n && integer(nn) + i < n)
+  requires forall b: array<int, int>, i: int, nn: int ::
+    0 <= i < n && n <= nn + i + 1 && (nn <= 0 || i + 1 < n && nn + i < n)
       && sorted(b, 0, i) && partitioned(b, 0, i, n)
       ==> sorted(F(b, i, nn), 0, i + 1) && partitioned(F(b, i, nn), 0, i + 1, n)
   ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋, ns, ⌊counter(0, 1, m)⌋ do b, k, nn, i :: F(b, i, nn))), 0, n)

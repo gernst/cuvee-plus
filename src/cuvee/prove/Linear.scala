@@ -4,27 +4,18 @@ import util.Rational
 import cuvee.core._
 
 object Linear:
-  def empty = Linear(Nil, Nil, Map(), util.Ref(Map()))
+  def empty = Linear(Nil, Nil, util.Ref(Map()))
 
   // the results of the checks by the set of constraints and disequations, shared by the copies of a context and fresh
   // for each command (see Context.withRules), since the same check is made at many positions
   type Checks = Map[(Set[Constraint], Set[(Ring, Poly)]), Boolean]
 
-  // a solution that is the value of a natural, e.g. c == integer(n) of the final value of a counter, which is inlined
-  // like an arithmetic one, such that the monomials of c are those of integer(n)
-  def integer(e: Expr): Boolean =
-    e match
-      case Nats.integer(_) => true
-      case _               => false
-
-// the linear constraints on Int and Real among the facts, decided by the simplex over the rationals (see Simplex),
-// which replaces the difference constraints of the simplifier: comparisons and equations as constraints 0 <= p and
-// 0 < p, where on Int a strict comparison is the non-strict one offset by 1 and the coefficients are rounded
-// (Poly.floor), such that e.g. 2 * n < 52 bounds n by 25; disequations on Int and Real are kept apart and contradict
-// the constraints if these determine the value of the difference; the solutions of linear equations for a variable,
-// e.g. x by 40 - n for n + x == 40, are recorded as `solved` and inlined into polynomials by the simplifier (see
-// Simplify.poly), while the equation remains a constraint
-case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], solved: Map[Var, Expr], checks: util.Ref[Linear.Checks]) extends Theory:
+// the linear constraints on Int and Real among the facts, decided by the simplex over the rationals (see Simplex):
+// comparisons and equations as constraints 0 <= p and 0 < p, where on Int a strict comparison is the non-strict one
+// offset by 1 and the coefficients are rounded (Poly.floor), such that e.g. 2 * n < 52 bounds n by 25; disequations
+// are kept apart and contradict the constraints if these determine the value of the difference; the solutions of
+// linear equations are kept by the classes (see Classes.solve)
+case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], checks: util.Ref[Linear.Checks]) extends Theory:
   // a disequation p != 0 is refuted if the constraints bound p to 0 from both sides; the check is cached (see checks)
   lazy val inconsistent: Boolean =
     val key = (constraints.toSet, diseqs.toSet)
@@ -57,7 +48,7 @@ case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], sol
       case Reals.gt(left, right)                 => lt(Reals.ring, right, left)
       case Eq(left, right) if Ring(left.typ).isDefined =>
         val Some(ring) = Ring(left.typ): @unchecked
-        le(ring, left, right).le(ring, right, left).solve(ring, left, right)
+        le(ring, left, right).le(ring, right, left)
       case _                                     => this
 
   def deny(expr: Expr): Linear =
@@ -112,17 +103,3 @@ case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], sol
       remainders.distinct.foldLeft(linear) { case (linear, (r, max)) =>
         linear.add(ring, Constraint.le(Poly.zero, r)).add(ring, Constraint.le(r, Poly.const(max)))
       }
-
-  // the first solution of a linear equation for a variable that is not solved yet, if it is an arithmetic
-  // expression (see Poly.solution); equations with a variable or a literal are classes (see Classes)
-  def solve(ring: Ring, left: Expr, right: Expr): Linear =
-    val poly = (Arith.toPoly(ring, left) - Arith.toPoly(ring, right)).normalize
-    val solution =
-      for
-        (x, rest) <- poly.solution((x, _) => !(solved contains x))
-        e = rest.toExpr(ring)
-        if e.isArith || Linear.integer(e)
-      yield (x, e)
-    solution match
-      case Some(pair) => copy(solved = solved + pair)
-      case None       => this

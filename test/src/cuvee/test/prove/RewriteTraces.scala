@@ -38,7 +38,7 @@ object RewriteTraces extends TestSuite:
   val s = Var("s", int)
   val j = Var("j", int)
   val J = Var("J", trace)
-  val n = Var("n", Sort.nat)
+  val n = Var("n", Sort.int)
 
   // the counter of the iterations
   val ctx = Context.empty(State.empty).assume(Eq(J, Counter(Ints.zero, Ints.one, n)))
@@ -97,13 +97,13 @@ object RewriteTraces extends TestSuite:
       d ==> Lam(List(s, j), Ints.lt(Ints.zero, j), Arrow(List(int, int), Sort.bool))
       f ==> Lam(List(s, j), Ints.plus(s, j), Arrow(List(int, int), int))
 
-      // the increase does not follow from the guard, here with the bounds 0 <= j < integer(n) of the counter of the iterations,
+      // the increase does not follow from the guard, here with the bounds 0 <= j < n of the counter of the iterations,
       // whereas a guard j < 0 contradicts them, such that the case is unreachable and any increase follows
-      val other = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(Ints.lt(j, Nats.integer(n)), Ints.plus(s, j)))))
+      val other = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(Ints.lt(j, n), Ints.plus(s, j)))))
       R(List(rule), other) ==> other
 
     // the conjuncts of a guard that does not match the guard of the expression as a whole follow from it,
-    // or are matched against its conjuncts, which instantiates variables that occur only in the guard, here b = integer(n)
+    // or are matched against its conjuncts, which instantiates variables that occur only in the guard, here b = n
     test("guard conjuncts"):
       val Xs = Var("Xs", ints)
       val b = Var("b", int)
@@ -113,8 +113,8 @@ object RewriteTraces extends TestSuite:
         app(capped, i, Xs, b)
       )
 
-      val expr = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(And(Ints.le(s, Nats.integer(n)), Ints.lt(Ints.zero, j)), Ints.plus(s, j)))))
-      R(List(rule), expr) ==> app(capped, Ints.zero, Butlast(J), Nats.integer(n))
+      val expr = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(And(Ints.le(s, n), Ints.lt(Ints.zero, j)), Ints.plus(s, j)))))
+      R(List(rule), expr) ==> app(capped, Ints.zero, Butlast(J), n)
 
       // the bound must be among the conjuncts of the guard of the expression
       val other = Trace(Ints.zero, List(Butlast(J)), s, List(j), Eps(List(Upd(Ints.lt(Ints.zero, j), Ints.plus(s, j)))))

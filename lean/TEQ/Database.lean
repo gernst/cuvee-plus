@@ -21,16 +21,6 @@ namespace TEQ
 open Nat (zero succ)
 open List (nil cons length)
 
-noncomputable def integer (x₀ : Nat) : Int :=
-  match x₀ with
-  | .zero => 0
-  | .succ m => integer m + 1
-
-noncomputable def natural (x₀ : Int) : Nat :=
-  if x₀ ≤ 0 then zero else succ (natural (x₀ - 1))
-termination_by x₀.toNat
-decreasing_by all_goals omega
-
 axiom unspecified {α₀ : Type} [Inhabited α₀] : α₀
 
 open Trace
@@ -45,24 +35,23 @@ noncomputable def butlast {α₀ : Type} [Inhabited α₀] (x₀ : Trace α₀) 
   | .stop _ => nil
   | .step x xs => cons x (butlast xs)
 
-noncomputable def counter (x₀ : Int) (x₁ : Int) (x₂ : Nat) : Trace Int :=
-  match x₂ with
-  | .zero => stop x₀
-  | .succ m => step x₀ (counter (x₀ + x₁) x₁ m)
+noncomputable def counter (x₀ : Int) (x₁ : Int) (x₂ : Int) : Trace Int :=
+  if x₂ ≤ 0 then stop x₀ else step x₀ (counter (x₀ + x₁) x₁ (x₂ - 1))
+termination_by x₂.toNat
+decreasing_by all_goals omega
 
-noncomputable def earlier {α₀ : Type} [Inhabited α₀] (x₀ : Nat)
+noncomputable def earlier {α₀ : Type} [Inhabited α₀] (x₀ : Int)
                                                      (x₁ : List α₀) : α₀ :=
-  match x₀, x₁ with
-  | _, .nil => unspecified
-  | .zero, .cons x _ => x
-  | .succ k, .cons _ xs => earlier k xs
+  match x₁ with
+  | .nil => unspecified
+  | .cons x xs =>
+    if x₀ < 0 then unspecified else if x₀ = 0 then x else earlier (x₀ - 1) xs
 
-noncomputable def «prefix» {α : Type} [Inhabited α] (k : Nat)
+noncomputable def «prefix» {α : Type} [Inhabited α] (k : Int)
                                                     (xs : List α) : List α :=
-  match k, xs with
-  | .zero, _ => nil
-  | _, .nil => nil
-  | .succ m, .cons x ys => cons x («prefix» m ys)
+  match xs with
+  | .nil => nil
+  | .cons x ys => if k ≤ 0 then nil else cons x («prefix» (k - 1) ys)
 
 noncomputable def occurs {α : Type} [Inhabited α] (x : α)
                                                   (xs : List α) : Prop :=
@@ -71,28 +60,28 @@ noncomputable def occurs {α : Type} [Inhabited α] (x : α)
   | .cons y ys => y = x ∨ occurs x ys
 
 noncomputable def indexof {α : Type} [Inhabited α] (x : α)
-                                                   (xs : List α) : Nat :=
+                                                   (xs : List α) : Int :=
   match xs with
-  | .nil => zero
-  | .cons y ys => if occurs x ys then succ (indexof x ys) else zero
+  | .nil => 0
+  | .cons y ys => if occurs x ys then indexof x ys + 1 else 0
 
 noncomputable def distincts {α : Type} [Inhabited α] (xs : List α) : Prop :=
   match xs with
   | .nil => True
   | .cons y ys => ¬occurs y ys ∧ distincts ys
 
-noncomputable def consts {α : Type} [Inhabited α] (n : Nat) (v : α) : Trace α :=
-  match n with
-  | .zero => stop v
-  | .succ m => step v (consts m v)
+noncomputable def consts {α : Type} [Inhabited α] (n : Int) (v : α) : Trace α :=
+  if n ≤ 0 then stop v else step v (consts (n - 1) v)
+termination_by n.toNat
+decreasing_by all_goals omega
 
-noncomputable def cutFrom (G : Int → Prop) (l : Int) (n : Nat) : Int :=
-  match n with
-  | .zero => l
-  | .succ k => if G l then cutFrom G (l + 1) k else l
+noncomputable def cutFrom (G : Int → Prop) (l : Int) (n : Int) : Int :=
+  if n ≤ 0 then l else if G l then cutFrom G (l + 1) (n - 1) else l
+termination_by n.toNat
+decreasing_by all_goals omega
 
 noncomputable def cut (G : Int → Prop) (l : Int) (h : Int) : Int :=
-  cutFrom G l (natural (h - l))
+  cutFrom G l (h - l)
 
 noncomputable def selects {α β : Type} [Inhabited α] [Inhabited β] (a : α → β)
                                                                    (keys : List α) : List β :=
@@ -106,140 +95,103 @@ noncomputable def stores {α β : Type} [Inhabited α] [Inhabited β] (a : α �
     (List.zip keys values)
     (fun b ⟨k, v⟩ => fun j => if j = k then v else b j)
 
-def Stmt.natural_integer : Prop :=
-  ∀ (n : Nat),
-    natural (integer n) = n
-
-def Stmt.integer_natural : Prop :=
-  ∀ (x : Int),
-    0 ≤ x → integer (natural x) = x
-
-def Stmt.zero_integer : Prop :=
-  ∀ (n : Nat),
-    integer n = 0 ↔ n = zero
-
-def Stmt.integer_zero : Prop :=
-  integer zero = 0
-
-def Stmt.zero_integer_value : Prop :=
-  ∀ (n : Nat),
-    n = zero → integer n = 0
-
-def Stmt.integer_injective : Prop :=
-  ∀ (m : Nat) (n : Nat),
-    integer m = integer n ↔ m = n
-
-def Stmt.natural_nonpositive : Prop :=
-  ∀ (x : Int),
-    x ≤ 0 → natural x = zero
-
-def Stmt.natural_positive : Prop :=
-  ∀ (x : Int),
-    0 < x → natural x ≠ zero
-
-def Stmt.integer_eq : Prop :=
-  ∀ (n : Nat) (x : Int),
-    0 ≤ x → (integer n = x ↔ n = natural x)
-
 def Stmt.maps_identity : Prop :=
-  ∀ {α : Type} [Inhabited α] (xs : List α) (n : Nat) (hxs : length xs = n),
+  ∀ {α : Type} [Inhabited α] (xs : List α) (n : Int) (hxs : length xs = n),
     maps xs (fun x => x) = xs
 
 def Stmt.counter_def : Prop :=
-  ∀ (i : Int) (c : Int) (n : Nat),
+  ∀ (i : Int) (c : Int) (n : Int),
     trace i (butlast (counter 0 1 n)) (fun x k => x + c) = counter i c n
 
 def Stmt.consts_def : Prop :=
-  ∀ {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int) (n : Nat),
+  ∀ {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int) (n : Int),
     trace x (butlast (counter i c n)) (fun y v => y) = consts n x
 
 def Stmt.maps_earlier : Prop :=
-  ∀ {α : Type} [Inhabited α] (n : Nat) (xs : List α) (hxs : integer n ≤ integer (length xs)),
-    maps (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs)
-      = «prefix» n xs
+  ∀ {α : Type} [Inhabited α] (n : Int) (xs : List α) (hxs : n ≤ length xs),
+    maps (butlast (counter 0 1 n)) (fun k => earlier k xs) = «prefix» n xs
 
 def Stmt.maps_counter_affine : Prop :=
-  ∀ (a : Int) (b : Int) (i : Int) (c : Int) (n : Nat),
+  ∀ (a : Int) (b : Int) (i : Int) (c : Int) (n : Int),
     maps (butlast (counter i c n)) (fun v => a + b * v)
       = butlast (counter (a + b * i) (b * c) n)
 
 def Stmt.maps_counter_scale : Prop :=
-  ∀ (b : Int) (i : Int) (c : Int) (n : Nat),
+  ∀ (b : Int) (i : Int) (c : Int) (n : Int),
     maps (butlast (counter i c n)) (fun v => b * v)
       = butlast (counter (b * i) (b * c) n)
 
 def Stmt.invs_const : Prop :=
-  ∀ (b : Prop) (i : Int) (c : Int) (n : Nat),
-    invs (butlast (counter i c n)) (fun v => b) ↔ n = zero ∨ b
+  ∀ (b : Prop) (i : Int) (c : Int) (n : Int),
+    invs (butlast (counter i c n)) (fun v => b) ↔ n ≤ 0 ∨ b
 
 def Stmt.invs_counter_lower : Prop :=
-  ∀ (m : Int) (i : Int) (c : Int) (n : Nat),
+  ∀ (m : Int) (i : Int) (c : Int) (n : Int),
     invs (butlast (counter i c n)) (fun k => m ≤ k)
-      ↔ n = zero ∨ m ≤ i ∧ m ≤ i + (integer n - 1) * c
+      ↔ n ≤ 0 ∨ m ≤ i ∧ m ≤ i + (n - 1) * c
 
 def Stmt.distincts_counter : Prop :=
-  ∀ (i : Int) (c : Int) (n : Nat),
+  ∀ (i : Int) (c : Int) (n : Int),
     c ≠ 0 → distincts (butlast (counter i c n))
 
 def Stmt.invs_counter_upper_nonnegative : Prop :=
-  ∀ (m : Int) (n : Nat),
-    0 ≤ m → (invs (butlast (counter 0 1 n)) (fun k => k < m) ↔ integer n ≤ m)
+  ∀ (m : Int) (n : Int),
+    0 ≤ m → (invs (butlast (counter 0 1 n)) (fun k => k < m) ↔ n ≤ m)
 
 def Stmt.invs_counter_upper : Prop :=
-  ∀ (m : Int) (i : Int) (c : Int) (n : Nat),
+  ∀ (m : Int) (i : Int) (c : Int) (n : Int),
     invs (butlast (counter i c n)) (fun k => k < m)
-      ↔ n = zero ∨ i < m ∧ i + (integer n - 1) * c < m
+      ↔ n ≤ 0 ∨ i < m ∧ i + (n - 1) * c < m
 
 def Stmt.current_counter : Prop :=
-  ∀ (i : Int) (c : Int) (n : Nat),
-    current (counter i c n) = i + integer n * c
+  ∀ (i : Int) (c : Int) (n : Int),
+    0 ≤ n → current (counter i c n) = i + n * c
 
 def Stmt.earlier_counter : Prop :=
-  ∀ (k : Nat) (i : Int) (c : Int) (n : Nat),
-    integer k < integer n →
-      (earlier k (butlast (counter i c n)) = i + integer k * c)
+  ∀ (k : Int) (i : Int) (c : Int) (n : Int),
+    0 ≤ k ∧ k < n →
+      (earlier k (butlast (counter i c n)) = i + k * c)
 
 def Stmt.prefix_counter : Prop :=
-  ∀ (k : Nat) (i : Int) (c : Int) (n : Nat),
-    integer k ≤ integer n →
+  ∀ (k : Int) (i : Int) (c : Int) (n : Int),
+    k ≤ n →
       («prefix» k (butlast (counter i c n)) = butlast (counter i c k))
 
 def Stmt.occurs_counter_up : Prop :=
-  ∀ (j : Int) (i : Int) (n : Nat),
-    occurs j (butlast (counter i 1 n)) ↔ i ≤ j ∧ j < i + integer n
+  ∀ (j : Int) (i : Int) (n : Int),
+    occurs j (butlast (counter i 1 n)) ↔ i ≤ j ∧ j < i + n
 
 def Stmt.indexof_counter_up : Prop :=
-  ∀ (j : Int) (i : Int) (n : Nat),
-    i ≤ j ∧ j < i + integer n
-      → indexof j (butlast (counter i 1 n)) = natural (j - i)
+  ∀ (j : Int) (i : Int) (n : Int),
+    i ≤ j ∧ j < i + n → indexof j (butlast (counter i 1 n)) = j - i
 
 def Stmt.maps_const : Prop :=
-  ∀ {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int) (n : Nat),
+  ∀ {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int) (n : Int),
     maps (butlast (counter i c n)) (fun v => x) = butlast (consts n x)
 
 def Stmt.prefix_maps_counter : Prop :=
-  ∀ (k : Nat) (i : Int) (c : Int) (n : Nat) (ys : List Int) (F : Int → Int) (hys : length ys = n),
-    integer k ≤ integer n
+  ∀ (k : Int) (i : Int) (c : Int) (n : Int) (ys : List Int) (F : Int → Int) (hys : length ys = n),
+    k ≤ n
       → «prefix»
         k
         (maps (List.zip (butlast (counter i c n)) ys) (fun ⟨v, y⟩ => F v))
         = maps (butlast (counter i c k)) (fun v => F v)
 
 def Stmt.butlast_counter_nil : Prop :=
-  ∀ (i : Int) (c : Int) (n : Nat),
-    butlast (counter i c n) = nil ↔ n = zero
+  ∀ (i : Int) (c : Int) (n : Int),
+    butlast (counter i c n) = nil ↔ n ≤ 0
 
 def Stmt.current_consts : Prop :=
-  ∀ {α : Type} [Inhabited α] (n : Nat) (x : α),
+  ∀ {α : Type} [Inhabited α] (n : Int) (x : α),
     current (consts n x) = x
 
 def Stmt.earlier_consts : Prop :=
-  ∀ {α : Type} [Inhabited α] (k : Nat) (n : Nat) (x : α),
-    integer k < integer n →
+  ∀ {α : Type} [Inhabited α] (k : Int) (n : Int) (x : α),
+    0 ≤ k ∧ k < n →
       (earlier k (butlast (consts n x)) = x)
 
 def Stmt.consts_choice : Prop :=
-  ∀ {α : Type} [Inhabited α] (n : Nat) (xs : List α) (c : α) (hxs : length xs = n),
+  ∀ {α : Type} [Inhabited α] (n : Int) (xs : List α) (c : α) (hxs : length xs = n),
     invs (List.zip (butlast (counter 0 1 n)) xs) (fun ⟨k, x⟩ => x = c)
       ↔ xs = butlast (consts n c)
 
@@ -248,18 +200,18 @@ def Stmt.selects_nil : Prop :=
     selects a nil = nil
 
 def Stmt.earlier_selects : Prop :=
-  ∀ {α β : Type} [Inhabited α] [Inhabited β] (j : Nat) (a : α → β) (keys : List α) (n : Nat) (hkeys : length keys = n),
-    integer j < integer n →
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (j : Int) (a : α → β) (keys : List α) (n : Int) (hkeys : length keys = n),
+    0 ≤ j ∧ j < n →
       (earlier j (selects a keys) = a (earlier j keys))
 
 def Stmt.current_stores : Prop :=
-  ∀ {α β : Type} [Inhabited α] [Inhabited β] (k : α) (a : α → β) (keys : List α) (values : List β) (n : Nat) (hkeys : length keys = n) (hvalues : length values = n),
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (k : α) (a : α → β) (keys : List α) (values : List β) (n : Int) (hkeys : length keys = n) (hvalues : length values = n),
     current (stores a keys values) k
       = (if occurs k keys then earlier (indexof k keys) values else a k)
 
 def Stmt.earlier_stores : Prop :=
-  ∀ {α β : Type} [Inhabited α] [Inhabited β] (k : α) (j : Nat) (a : α → β) (keys : List α) (values : List β) (n : Nat) (hkeys : length keys = n) (hvalues : length values = n),
-    integer j < integer n →
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (k : α) (j : Int) (a : α → β) (keys : List α) (values : List β) (n : Int) (hkeys : length keys = n) (hvalues : length values = n),
+    0 ≤ j ∧ j < n →
       (earlier j (butlast (stores a keys values)) k
          = (if occurs k («prefix» j keys) then
               earlier (indexof k («prefix» j keys)) values
@@ -291,28 +243,28 @@ noncomputable def sums (x : Int) (values : List Int) : Trace Int :=
   trace x values (fun s v => s + v)
 
 def Stmt.current_sums : Prop :=
-  ∀ (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     current (sums x values) = x + sum values
 
 def Stmt.earlier_sums : Prop :=
-  ∀ (j : Nat) (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
-    integer j < integer n →
+  ∀ (j : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    0 ≤ j ∧ j < n →
       (earlier j (butlast (sums x values)) = x + sum («prefix» j values))
 
 def Stmt.prefix_sums : Prop :=
-  ∀ (k : Nat) (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
+  ∀ (k : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     «prefix» k (butlast (sums x values)) = butlast (sums x («prefix» k values))
 
 def Stmt.sum_empty : Prop :=
   sum nil = 0
 
 def Stmt.sum_consts : Prop :=
-  ∀ (n : Nat) (x : Int),
-    sum (butlast (consts n x)) = x * integer n
+  ∀ (n : Int) (x : Int),
+    0 ≤ n → sum (butlast (consts n x)) = x * n
 
 def Stmt.sum_counter : Prop :=
-  ∀ (i : Int) (c : Int) (n : Nat),
-    sum (butlast (counter i c n)) = (2 * i + (integer n - 1) * c) * integer n / 2
+  ∀ (i : Int) (c : Int) (n : Int),
+    0 ≤ n → sum (butlast (counter i c n)) = (2 * i + (n - 1) * c) * n / 2
 
 noncomputable def maxs (x : Int) (values : List Int) : Trace Int :=
   trace
@@ -334,22 +286,22 @@ noncomputable def counts {α : Type} [Inhabited α] (x : Int) (e : α)
     (fun y v => if v = e then y + 1 else if v ≠ e then y else unspecified)
 
 def Stmt.counts_false : Prop :=
-  ∀ (x : Int) (bs : List Prop) (n : Nat) (hbs : length bs = n),
+  ∀ (x : Int) (bs : List Prop) (n : Int) (hbs : length bs = n),
     trace x bs (fun y b => if ¬b then y + 1 else if b then y else unspecified)
       = counts x False bs
 
 def Stmt.counts_true : Prop :=
-  ∀ (x : Int) (bs : List Prop) (n : Nat) (hbs : length bs = n),
+  ∀ (x : Int) (bs : List Prop) (n : Int) (hbs : length bs = n),
     trace x bs (fun y b => if b then y + 1 else if ¬b then y else unspecified)
       = counts x True bs
 
 def Stmt.current_trace_add_at : Prop :=
-  ∀ {α : Type} [Inhabited α] (a : α → Int) (k : α) (values : List Int) (n : Nat) (hvalues : length values = n),
+  ∀ {α : Type} [Inhabited α] (a : α → Int) (k : α) (values : List Int) (n : Int) (hvalues : length values = n),
     current (trace a values (fun b v => fun j => if j = k then b k + v else b j))
       = (fun j => if j = k then a k + sum values else a j)
 
 def Stmt.current_trace_histogram : Prop :=
-  ∀ (c0 : Int → Int) (a : Int → Int) (n : Nat) (hs : List Int) (v : Int) (hhs : length hs = n),
+  ∀ (c0 : Int → Int) (a : Int → Int) (n : Int) (hs : List Int) (v : Int) (hhs : length hs = n),
     current
       (trace
          c0
@@ -359,21 +311,21 @@ def Stmt.current_trace_histogram : Prop :=
       = c0 v + count v (selects a (butlast (counter 0 1 n)))
 
 def Stmt.current_counts : Prop :=
-  ∀ {α : Type} [Inhabited α] (x : Int) (e : α) (vs : List α) (n : Nat) (hvs : length vs = n),
+  ∀ {α : Type} [Inhabited α] (x : Int) (e : α) (vs : List α) (n : Int) (hvs : length vs = n),
     current (counts x e vs) = x + count e vs
 
 def Stmt.earlier_counts : Prop :=
-  ∀ {α : Type} [Inhabited α] (j : Nat) (x : Int) (e : α) (vs : List α) (n : Nat) (hvs : length vs = n),
-    integer j < integer n →
+  ∀ {α : Type} [Inhabited α] (j : Int) (x : Int) (e : α) (vs : List α) (n : Int) (hvs : length vs = n),
+    0 ≤ j ∧ j < n →
       (earlier j (butlast (counts x e vs)) = x + count e («prefix» j vs))
 
 def Stmt.sums_consts : Prop :=
-  ∀ (x : Int) (n : Nat) (c : Int),
+  ∀ (x : Int) (n : Int) (c : Int),
     sums x (butlast (consts n c)) = counter x c n
 
 def Stmt.sum_cases_below : Prop :=
-  ∀ (n : Nat) (c : Int) (d : Int) (e : Int) (P : Int → Prop),
-    0 ≤ e ∧ integer n * c ≤ e ∧ integer n * d ≤ e
+  ∀ (n : Int) (c : Int) (d : Int) (e : Int) (P : Int → Prop),
+    0 ≤ e ∧ n * c ≤ e ∧ n * d ≤ e
       → sum
         (maps
            (butlast (counter 0 1 n))
@@ -381,89 +333,89 @@ def Stmt.sum_cases_below : Prop :=
         ≤ e
 
 def Stmt.sum_mod_below : Prop :=
-  ∀ (n : Nat) (m : Int) (e : Int),
-    0 < m ∧ integer n * (m - 1) ≤ e
+  ∀ (n : Int) (m : Int) (e : Int),
+    0 ≤ n ∧ 0 < m ∧ n * (m - 1) ≤ e
       → sum (maps (butlast (counter 0 1 n)) (fun k => if 0 < k then k % m else 0))
         ≤ e
 
 def Stmt.sum_neg : Prop :=
-  ∀ (values : List Int) (n : Nat) (hvalues : length values = n),
+  ∀ (values : List Int) (n : Int) (hvalues : length values = n),
     sum (maps values (fun v => -v)) = -sum values
 
 def Stmt.sum_scale : Prop :=
-  ∀ (values : List Int) (a : Int) (n : Nat) (hvalues : length values = n),
+  ∀ (values : List Int) (a : Int) (n : Int) (hvalues : length values = n),
     sum (maps values (fun v => a * v)) = a * sum values
 
 def Stmt.sum_add : Prop :=
-  ∀ (xs : List Int) (ys : List Int) (n : Nat) (hxs : length xs = n) (hys : length ys = n),
+  ∀ (xs : List Int) (ys : List Int) (n : Int) (hxs : length xs = n) (hys : length ys = n),
     sum (maps (List.zip xs ys) (fun ⟨v, w⟩ => v + w)) = sum xs + sum ys
 
 def Stmt.sum_indicator_true : Prop :=
-  ∀ {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) (n : Nat) (hxs : length xs = n),
+  ∀ {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) (n : Int) (hxs : length xs = n),
     sum (maps xs (fun x => if P x then 1 else 0))
       = count True (maps xs (fun x => P x))
 
 def Stmt.sum_indicator_false : Prop :=
-  ∀ {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) (n : Nat) (hxs : length xs = n),
+  ∀ {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) (n : Int) (hxs : length xs = n),
     sum (maps xs (fun x => if P x then 0 else 1))
       = count False (maps xs (fun x => P x))
 
 def Stmt.count_consts : Prop :=
-  ∀ {α : Type} [Inhabited α] (n : Nat) (e : α) (v : α),
-    count e (butlast (consts n v)) = (if v = e then integer n else 0)
+  ∀ {α : Type} [Inhabited α] (n : Int) (e : α) (v : α),
+    0 ≤ n → count e (butlast (consts n v)) = (if v = e then n else 0)
 
 def Stmt.count_true_below : Prop :=
-  ∀ (m : Int) (i : Int) (n : Nat),
-    i ≤ m ∧ m ≤ i + integer n
+  ∀ (m : Int) (i : Int) (n : Int),
+    i ≤ m ∧ m ≤ i + n
       → count True (maps (butlast (counter i 1 n)) (fun k => k < m)) = m - i
 
 def Stmt.count_true_above : Prop :=
-  ∀ (m : Int) (i : Int) (n : Nat),
-    i ≤ m ∧ m ≤ i + integer n
-      → count True (maps (butlast (counter i 1 n)) (fun k => m ≤ k))
-        = i + integer n - m
+  ∀ (m : Int) (i : Int) (n : Int),
+    i ≤ m ∧ m ≤ i + n
+      → count True (maps (butlast (counter i 1 n)) (fun k => m ≤ k)) = i + n - m
 
 def Stmt.count_nonnegative : Prop :=
   ∀ {α : Type} [Inhabited α] (e : α) (vs : List α),
     0 ≤ count e vs
 
 def Stmt.count_remainder : Prop :=
-  ∀ (n : Nat) (m : Int) (r : Int),
-    0 < m ∧ 0 ≤ r ∧ r < m
+  ∀ (n : Int) (m : Int) (r : Int),
+    0 ≤ n ∧ 0 < m ∧ 0 ≤ r ∧ r < m
       → count r (maps (butlast (counter 0 1 n)) (fun k => k % m))
-        = (integer n + m - 1 - r) / m
+        = (n + m - 1 - r) / m
 
 def Stmt.count_false_true : Prop :=
-  ∀ (i : Int) (c : Int) (n : Nat) (hs : List Int) (P : Int → Int → Prop) (hhs : length hs = n),
-    count
-      False
-      (maps (List.zip (butlast (counter i c n)) hs) (fun ⟨k, h⟩ => P k h))
-      = integer n
-        - count
-          True
-          (maps (List.zip (butlast (counter i c n)) hs) (fun ⟨k, h⟩ => P k h))
+  ∀ (i : Int) (c : Int) (n : Int) (hs : List Int) (P : Int → Int → Prop) (hhs : length hs = n),
+    0 ≤ n
+      → count
+        False
+        (maps (List.zip (butlast (counter i c n)) hs) (fun ⟨k, h⟩ => P k h))
+        = n
+          - count
+            True
+            (maps (List.zip (butlast (counter i c n)) hs) (fun ⟨k, h⟩ => P k h))
 
 def Stmt.count_true_eq : Prop :=
-  ∀ (ks : List Int) (r : Int) (hs : List Int) (F : Int → Int → Int) (n : Nat) (hks : length ks = n) (hhs : length hs = n),
+  ∀ (ks : List Int) (r : Int) (hs : List Int) (F : Int → Int → Int) (n : Int) (hks : length ks = n) (hhs : length hs = n),
     count True (maps (List.zip ks hs) (fun ⟨k, h⟩ => F k h = r))
       = count r (maps (List.zip ks hs) (fun ⟨k, h⟩ => F k h))
 
 def Stmt.current_maxs_initial : Prop :=
-  ∀ (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     x ≤ current (maxs x values)
 
 def Stmt.current_maxs_earlier : Prop :=
-  ∀ (k : Nat) (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
-    integer k < integer n →
+  ∀ (k : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    0 ≤ k ∧ k < n →
       (earlier k values ≤ current (maxs x values))
 
 def Stmt.current_mins_initial : Prop :=
-  ∀ (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     current (mins x values) ≤ x
 
 def Stmt.current_mins_earlier : Prop :=
-  ∀ (k : Nat) (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
-    integer k < integer n →
+  ∀ (k : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    0 ≤ k ∧ k < n →
       (current (mins x values) ≤ earlier k values)
 
 noncomputable def parities (x : Int) (values : List Int) : Trace Int :=
@@ -474,11 +426,11 @@ noncomputable def parities (x : Int) (values : List Int) : Trace Int :=
        if v % 2 = 0 then s + 1 else if v % 2 ≠ 0 then s - 1 else unspecified)
 
 def Stmt.current_parities : Prop :=
-  ∀ (x : Int) (values : List Int) (n : Nat) (hvalues : length values = n),
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     current (parities x values) = x + parity values
 
 def Stmt.select_current_trace_reset_add : Prop :=
-  ∀ (a0 : Int → Int) (j : Int) (n : Nat) (c : Int) (G : Int → Int),
+  ∀ (a0 : Int → Int) (j : Int) (n : Int) (c : Int) (G : Int → Int),
     current
       (trace
          a0
@@ -492,7 +444,7 @@ def Stmt.select_current_trace_reset_add : Prop :=
               else
                 unspecified))
       j
-      = (if n = zero then
+      = (if n ≤ 0 then
            a0 j
          else
            c
@@ -502,34 +454,33 @@ def Stmt.select_current_trace_reset_add : Prop :=
                   (fun k => if 0 < k then G k else 0)))
 
 def Stmt.select_current_trace_prefix_sums : Prop :=
-  ∀ (b0 : Int → Int) (n : Nat) (j : Int) (G : Int → Int),
+  ∀ (b0 : Int → Int) (n : Int) (j : Int) (G : Int → Int),
     current
       (trace
          b0
          (List.zip (butlast (counter 0 1 n)) (butlast (counter 1 1 n)))
          (fun b ⟨k, i⟩ => fun j => if j = i then G k + b k else b j))
       j
-      = (if 0 ≤ j ∧ j ≤ integer n then
-           b0 0 + sum (maps (butlast (counter 0 1 (natural j))) (fun k => G k))
+      = (if 0 ≤ j ∧ j ≤ n then
+           b0 0 + sum (maps (butlast (counter 0 1 j)) (fun k => G k))
          else
            b0 j)
 
 def Stmt.select_current_trace_prefix_sums_add : Prop :=
-  ∀ (b0 : Int → Int) (n : Nat) (j : Int) (G : Int → Int) (H : Int → Int),
+  ∀ (b0 : Int → Int) (n : Int) (j : Int) (G : Int → Int) (H : Int → Int),
     current
       (trace
          b0
          (List.zip (butlast (counter 0 1 n)) (butlast (counter 1 1 n)))
          (fun b ⟨k, i⟩ => fun j => if j = i then b k + G k + H k else b j))
       j
-      = (if 0 ≤ j ∧ j ≤ integer n then
-           b0 0
-             + sum (maps (butlast (counter 0 1 (natural j))) (fun k => G k + H k))
+      = (if 0 ≤ j ∧ j ≤ n then
+           b0 0 + sum (maps (butlast (counter 0 1 j)) (fun k => G k + H k))
          else
            b0 j)
 
 def Stmt.select_current_trace_recurrence : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (c : Int) (j : Int) (G : Int → Int),
+  ∀ (a0 : Int → Int) (n : Int) (c : Int) (j : Int) (G : Int → Int),
     current
       (trace
          a0
@@ -543,15 +494,15 @@ def Stmt.select_current_trace_recurrence : Prop :=
               else
                 unspecified))
       j
-      = (if 0 ≤ j ∧ j < integer n then
-           c + sum (maps (butlast (counter 1 1 (natural j))) (fun k => G k))
+      = (if 0 ≤ j ∧ j < n then
+           c + sum (maps (butlast (counter 1 1 j)) (fun k => G k))
          else
            a0 j)
 
-noncomputable def pow (c : Int) (n : Nat) : Int :=
-  match n with
-  | .zero => 1
-  | .succ m => c * pow c m
+noncomputable def pow (c : Int) (n : Int) : Int :=
+  if n ≤ 0 then 1 else c * pow c (n - 1)
+termination_by n.toNat
+decreasing_by all_goals omega
 
 def Stmt.mod_self : Prop :=
   ∀ (x : Int),
@@ -601,49 +552,46 @@ def Stmt.triangle_even_below_scaled : Prop :=
   ∀ (a : Int) (x : Int),
     2 * ((-a * x + a * x * x) / 2) = -a * x + a * x * x
 
-noncomputable def agree_prefix (n : Nat) (xs : List Int)
+noncomputable def agree_prefix (n : Int) (xs : List Int)
                                (ys : List Int) : Prop :=
-  invs
-    (butlast (counter 0 1 n))
-    (fun k => earlier (natural k) xs = earlier (natural k) ys)
+  invs (butlast (counter 0 1 n)) (fun k => earlier k xs = earlier k ys)
 
 def Stmt.not_occurs_prefix : Prop :=
-  ∀ (n : Nat) (e : Int) (xs : List Int) (hxs : integer n ≤ integer (length xs)),
-    invs (butlast (counter 0 1 n)) (fun k => earlier (natural k) xs ≠ e)
+  ∀ (n : Int) (e : Int) (xs : List Int) (hxs : n ≤ length xs),
+    invs (butlast (counter 0 1 n)) (fun k => earlier k xs ≠ e)
       ↔ ¬occurs e («prefix» n xs)
 
-noncomputable def above_iterations (n : Nat) (ts : List Int) : Prop :=
+noncomputable def above_iterations (n : Int) (ts : List Int) : Prop :=
   invs (List.zip (butlast (counter 0 1 n)) ts) (fun ⟨k, t⟩ => k < t)
 
 def Stmt.earlier_agree_prefix : Prop :=
-  ∀ (n : Nat) (j : Nat) (xs : List Int) (ys : List Int),
-    agree_prefix n xs ys ∧ integer j < integer n → earlier j xs = earlier j ys
+  ∀ (n : Int) (j : Int) (xs : List Int) (ys : List Int),
+    agree_prefix n xs ys ∧ j < n → earlier j xs = earlier j ys
 
 def Stmt.earlier_not_occurs_prefix : Prop :=
-  ∀ (n : Nat) (j : Nat) (e : Int) (xs : List Int) (hxs : length xs = n),
-    ¬occurs e («prefix» n xs) ∧ integer j < integer n → earlier j xs ≠ e
+  ∀ (n : Int) (j : Int) (e : Int) (xs : List Int) (hxs : length xs = n),
+    ¬occurs e («prefix» n xs) ∧ 0 ≤ j ∧ j < n → earlier j xs ≠ e
 
 def Stmt.store_occurs_selects : Prop :=
-  ∀ (n : Nat) (j : Int) (x : Int) (a : Int → Int),
+  ∀ (n : Int) (j : Int) (x : Int) (a : Int → Int),
     0 ≤ j
       → occurs
         x
         (selects (fun j1 => if j1 = j then x else a j1) (butlast (counter 0 1 n)))
-        ∨ integer n ≤ j
+        ∨ n ≤ j
 
 def Stmt.earlier_above_iterations : Prop :=
-  ∀ (n : Nat) (j : Nat) (ts : List Int) (n1 : Nat) (hts : length ts = n1) (hn : n1 = n),
-    above_iterations n ts ∧ integer j < integer n → integer j < earlier j ts
+  ∀ (n : Int) (j : Int) (ts : List Int) (n1 : Int) (hts : length ts = n1) (hn : n1 = n),
+    above_iterations n ts ∧ 0 ≤ j ∧ j < n → j < earlier j ts
 
 def Stmt.not_occurs_selects : Prop :=
-  ∀ (a : Int → Int) (x : Int) (i : Int) (n : Nat),
+  ∀ (a : Int → Int) (x : Int) (i : Int) (n : Int),
     invs (butlast (counter i 1 n)) (fun k => a k ≠ x)
       ↔ ¬occurs x (selects a (butlast (counter i 1 n)))
 
 def Stmt.select_not_occurs_selects : Prop :=
-  ∀ (a : Int → Int) (x : Int) (i : Int) (n : Nat) (k : Int),
-    ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + integer n
-      → a k ≠ x
+  ∀ (a : Int → Int) (x : Int) (i : Int) (n : Int) (k : Int),
+    ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + n → a k ≠ x
 
 noncomputable def bisection (l0 : Int) (h0 : Int) (ks : List Int)
                             (M : Int → Int → Int) (G : Int → Prop)
@@ -672,7 +620,7 @@ noncomputable def bisection (l0 : Int) (h0 : Int) (ks : List Int)
               unspecified))
 
 def Stmt.bisection_lo : Prop :=
-  ∀ (l0 : Int) (h0 : Int) (ks : List Int) (M : Int → Int → Int) (G : Int → Prop) (H : Int → Prop) (n : Nat) (hks : length ks = n),
+  ∀ (l0 : Int) (h0 : Int) (ks : List Int) (M : Int → Int → Int) (G : Int → Prop) (H : Int → Prop) (n : Int) (hks : length ks = n),
     l0 ≤ h0
       ∧ (∀ (l : Int) (h : Int), l < h → l ≤ M l h ∧ M l h < h)
       ∧ (∀ (p : Int) (q : Int), l0 ≤ p ∧ p ≤ q ∧ q < h0 ∧ G q → G p)
@@ -680,7 +628,7 @@ def Stmt.bisection_lo : Prop :=
         ∧ (current (bisection l0 h0 ks M G H)).1 ≤ cut G l0 h0
 
 def Stmt.bisection_hi : Prop :=
-  ∀ (l0 : Int) (h0 : Int) (ks : List Int) (M : Int → Int → Int) (G : Int → Prop) (H : Int → Prop) (n : Nat) (hks : length ks = n),
+  ∀ (l0 : Int) (h0 : Int) (ks : List Int) (M : Int → Int → Int) (G : Int → Prop) (H : Int → Prop) (n : Int) (hks : length ks = n),
     l0 ≤ h0
       ∧ (∀ (l : Int) (h : Int), l < h → l ≤ M l h ∧ M l h < h)
       ∧ (∀ (p : Int) (q : Int), l0 ≤ p ∧ p ≤ q ∧ q < h0 ∧ H p → H q)
@@ -717,11 +665,11 @@ def Stmt.partitioned_whole : Prop :=
     partitioned a lo hi hi ↔ True
 
 def Stmt.sorted_adjacent : Prop :=
-  ∀ (a : Int → Int) (n : Nat),
+  ∀ (a : Int → Int) (n : Int),
     invs
       (List.zip (butlast (counter 0 1 n)) (butlast (counter 1 1 n)))
       (fun ⟨k, i⟩ => a k ≤ a i)
-      ↔ sorted a 0 (integer n + 1)
+      ↔ sorted a 0 (n + 1)
 
 def Stmt.perm_refl : Prop :=
   ∀ (a : Int → Int),
@@ -739,11 +687,11 @@ def Stmt.perm_swap : Prop :=
     perm (swap a p q) b ↔ perm a b
 
 def Stmt.perm_swaps_one : Prop :=
-  ∀ (a : Int → Int) (b : Int → Int) (ks : List Int) (P : (Int → Int) → Int → Int) (Q : (Int → Int) → Int → Int) (n : Nat) (hks : length ks = n),
+  ∀ (a : Int → Int) (b : Int → Int) (ks : List Int) (P : (Int → Int) → Int → Int) (Q : (Int → Int) → Int → Int) (n : Int) (hks : length ks = n),
     perm (current (trace a ks (fun x k => swap x (P x k) (Q x k)))) b ↔ perm a b
 
 def Stmt.perm_swaps : Prop :=
-  ∀ (a : Int → Int) (b : Int → Int) (ks : List Int) (hs : List Int) (P : (Int → Int) → Int → Int → Int) (Q : (Int → Int) → Int → Int → Int) (n : Nat) (hks : length ks = n) (hhs : length hs = n),
+  ∀ (a : Int → Int) (b : Int → Int) (ks : List Int) (hs : List Int) (P : (Int → Int) → Int → Int → Int) (Q : (Int → Int) → Int → Int → Int) (n : Int) (hks : length ks = n) (hhs : length hs = n),
     perm
       (current
          (trace a (List.zip ks hs) (fun x ⟨k, h⟩ => swap x (P x k h) (Q x k h))))
@@ -751,25 +699,19 @@ def Stmt.perm_swaps : Prop :=
       ↔ perm a b
 
 def Stmt.perm_steps : Prop :=
-  ∀ (a : Int → Int) (c : Int → Int) (ks : List Int) (F : (Int → Int) → Int → Int → Int) (n : Nat) (hks : length ks = n),
+  ∀ (a : Int → Int) (c : Int → Int) (ks : List Int) (F : (Int → Int) → Int → Int → Int) (n : Int) (hks : length ks = n),
     (∀ (b : Int → Int) (k : Int), perm (F b k) b)
       → (perm (current (trace a ks (fun b k => F b k))) c ↔ perm a c)
 
 def Stmt.perm_steps_two : Prop :=
-  ∀ (a : Int → Int) (c : Int → Int) (ks : List Int) (is : List Int) (F : (Int → Int) → Int → Int → Int → Int) (n : Nat) (hks : length ks = n) (his : length is = n),
+  ∀ (a : Int → Int) (c : Int → Int) (ks : List Int) (is : List Int) (F : (Int → Int) → Int → Int → Int → Int) (n : Int) (hks : length ks = n) (his : length is = n),
     (∀ (b : Int → Int) (k : Int) (i : Int), perm (F b k i) b)
       → (perm (current (trace a (List.zip ks is) (fun b ⟨k, i⟩ => F b k i))) c
            ↔ perm a c)
 
-def Stmt.perm_steps_nat : Prop :=
-  ∀ (a : Int → Int) (c : Int → Int) (ks : List Int) (ns : List Nat) (F : (Int → Int) → Int → Nat → Int → Int) (n : Nat) (hks : length ks = n) (hns : length ns = n),
-    (∀ (b : Int → Int) (k : Int) (nn : Nat), perm (F b k nn) b)
-      → (perm (current (trace a (List.zip ks ns) (fun b ⟨k, nn⟩ => F b k nn))) c
-           ↔ perm a c)
-
 def Stmt.perm_steps_three : Prop :=
-  ∀ (a : Int → Int) (c : Int → Int) (ks : List Int) (ns : List Nat) (is : List Int) (F : (Int → Int) → Int → Nat → Int → Int → Int) (n : Nat) (hks : length ks = n) (hns : length ns = n) (his : length is = n),
-    (∀ (b : Int → Int) (k : Int) (nn : Nat) (i : Int), perm (F b k nn i) b)
+  ∀ (a : Int → Int) (c : Int → Int) (ks : List Int) (ns : List Int) (is : List Int) (F : (Int → Int) → Int → Int → Int → Int → Int) (n : Int) (hks : length ks = n) (hns : length ns = n) (his : length is = n),
+    (∀ (b : Int → Int) (k : Int) (nn : Int) (i : Int), perm (F b k nn i) b)
       → (perm
            (current
               (trace
@@ -780,8 +722,8 @@ def Stmt.perm_steps_three : Prop :=
            ↔ perm a c)
 
 def Stmt.sorted_prefix_steps : Prop :=
-  ∀ (a : Int → Int) (n : Int) (m : Nat) (F : (Int → Int) → Int → Int → Int),
-    n = integer m
+  ∀ (a : Int → Int) (n : Int) (m : Int) (F : (Int → Int) → Int → Int → Int),
+    n = m
       ∧ (∀ (b : Int → Int) (k : Int),
            0 ≤ k ∧ k < n ∧ sorted b 0 k ∧ partitioned b 0 k n
              → sorted (F b k) 0 (k + 1) ∧ partitioned (F b k) 0 (k + 1) n)
@@ -792,8 +734,8 @@ def Stmt.sorted_prefix_steps : Prop :=
            ↔ True)
 
 def Stmt.sorted_prefix_steps_two : Prop :=
-  ∀ (a : Int → Int) (n : Int) (m : Nat) (F : (Int → Int) → Int → Int → Int → Int),
-    n ≤ integer m + 1
+  ∀ (a : Int → Int) (n : Int) (m : Int) (F : (Int → Int) → Int → Int → Int → Int),
+    n ≤ m + 1
       ∧ (∀ (b : Int → Int) (k : Int) (i : Int),
            0 ≤ i ∧ sorted b 0 i → sorted (F b k i) 0 (i + 1))
       → (sorted
@@ -846,7 +788,7 @@ def Stmt.lower_succ : Prop :=
     sorted ar 0 len → lower ar len (y + 1) = upper ar len y
 
 def Stmt.trace_read_initial : Prop :=
-  ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (keys : List α) (fs : List (β → β)) (n : Nat) (hkeys : length keys = n) (hfs : length fs = n),
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (keys : List α) (fs : List (β → β)) (n : Int) (hkeys : length keys = n) (hfs : length fs = n),
     distincts keys
       → trace
         a
@@ -858,7 +800,7 @@ def Stmt.trace_read_initial : Prop :=
           (fun b ⟨k, f⟩ => fun j => if j = k then f (a k) else b j)
 
 def Stmt.stores_cases : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (c : Int) (P : Int → Prop) (G : Int → Int),
+  ∀ (a0 : Int → Int) (n : Int) (c : Int) (P : Int → Prop) (G : Int → Int),
     trace
       a0
       (butlast (counter 0 1 n))
@@ -878,7 +820,7 @@ def Stmt.stores_cases : Prop :=
            (fun k => if P (a0 k) then c else G (a0 k)))
 
 def Stmt.stores_index_cases : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (c : Int) (d : Int) (P : Int → Prop),
+  ∀ (a0 : Int → Int) (n : Int) (c : Int) (d : Int) (P : Int → Prop),
     trace
       a0
       (butlast (counter 0 1 n))
@@ -893,8 +835,8 @@ def Stmt.stores_index_cases : Prop :=
         (maps (butlast (counter 0 1 n)) (fun k => if P k then c else d))
 
 def Stmt.stores_read_unmodified : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (hs : List Int) (F : Int → Int → Int) (hhs : length hs = n),
-    invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => integer n ≤ F k h)
+  ∀ (a0 : Int → Int) (n : Int) (hs : List Int) (F : Int → Int → Int) (hhs : length hs = n),
+    invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => n ≤ F k h)
       → trace
         a0
         (List.zip (butlast (counter 0 1 n)) hs)
@@ -907,7 +849,7 @@ def Stmt.stores_read_unmodified : Prop :=
              (fun ⟨k, h⟩ => a0 (F k h)))
 
 def Stmt.select_current_trace_reset_keep : Prop :=
-  ∀ (a0 : Int → Int) (j : Int) (n : Nat) (c : Int),
+  ∀ (a0 : Int → Int) (j : Int) (n : Int) (c : Int),
     current
       (trace
          a0
@@ -918,14 +860,14 @@ def Stmt.select_current_trace_reset_keep : Prop :=
             else
               if 0 < k then a else unspecified))
       j
-      = (if n = zero then a0 j else c)
+      = (if n ≤ 0 then a0 j else c)
 
 def Stmt.select_store_other : Prop :=
   ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (i : α) (v : β) (j : α),
     j ≠ i → (fun j => if j = i then v else a j) j = a j
 
 def Stmt.selects_stores_counter : Prop :=
-  ∀ (a : Int → Int) (i : Int) (c : Int) (n : Nat) (vs : List Int) (hvs : length vs = n),
+  ∀ (a : Int → Int) (i : Int) (c : Int) (n : Int) (vs : List Int) (hvs : length vs = n),
     c ≠ 0
       → selects
         (current (stores a (butlast (counter i c n)) vs))
@@ -933,7 +875,7 @@ def Stmt.selects_stores_counter : Prop :=
         = vs
 
 def Stmt.select_current_trace_conditional_store : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (j : Int) (C : Int → Prop) (V : Int → Int),
+  ∀ (a0 : Int → Int) (n : Int) (j : Int) (C : Int → Prop) (V : Int → Int),
     current
       (trace
          a0
@@ -944,10 +886,10 @@ def Stmt.select_current_trace_conditional_store : Prop :=
             else
               if ¬C k then a else unspecified))
       j
-      = (if 0 ≤ j ∧ j < integer n ∧ C j then V j else a0 j)
+      = (if 0 ≤ j ∧ j < n ∧ C j then V j else a0 j)
 
 def Stmt.select_current_trace_conditional_store_deps : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (j : Int) (hs : List Int) (cs : List Int) (vs : List Int) (C : Int → Int → Int → Prop) (V : Int → Int → Int → Int) (hhs : length hs = n) (hcs : length cs = n) (hvs : length vs = n),
+  ∀ (a0 : Int → Int) (n : Int) (j : Int) (hs : List Int) (cs : List Int) (vs : List Int) (C : Int → Int → Int → Prop) (V : Int → Int → Int → Int) (hhs : length hs = n) (hcs : length cs = n) (hvs : length vs = n),
     current
       (trace
          a0
@@ -958,21 +900,13 @@ def Stmt.select_current_trace_conditional_store_deps : Prop :=
             else
               if ¬C h c v then a else unspecified))
       j
-      = (if 0 ≤ j
-           ∧ j < integer n
-           ∧ C
-             (earlier (natural j) hs)
-             (earlier (natural j) cs)
-             (earlier (natural j) vs) then
-           V
-             (earlier (natural j) hs)
-             (earlier (natural j) cs)
-             (earlier (natural j) vs)
+      = (if 0 ≤ j ∧ j < n ∧ C (earlier j hs) (earlier j cs) (earlier j vs) then
+           V (earlier j hs) (earlier j cs) (earlier j vs)
          else
            a0 j)
 
 def Stmt.select_current_trace_cap : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (j : Int) (b : Int),
+  ∀ (a0 : Int → Int) (n : Int) (j : Int) (b : Int),
     current
       (trace
          a0
@@ -983,7 +917,7 @@ def Stmt.select_current_trace_cap : Prop :=
             else
               if b ≤ a k then fun j => if j = k then b else a j else unspecified))
       j
-      = (if 0 ≤ j ∧ j < integer n ∧ b ≤ a0 j then b else a0 j)
+      = (if 0 ≤ j ∧ j < n ∧ b ≤ a0 j then b else a0 j)
 
 def Stmt.store_select_other : Prop :=
   ∀ (a : Int → Int) (i : Int) (j : Int) (v : Int),
@@ -992,7 +926,7 @@ def Stmt.store_select_other : Prop :=
         = (fun j => if j = i then v else a j)
 
 def Stmt.trace_merge_cases_ne : Prop :=
-  ∀ (x0 : Int) (n : Nat) (c : Int) (d : Int) (F : Int → Int),
+  ∀ (x0 : Int) (n : Int) (c : Int) (d : Int) (F : Int → Int),
     d = F c
       → trace
         x0
@@ -1001,7 +935,7 @@ def Stmt.trace_merge_cases_ne : Prop :=
         = trace x0 (butlast (counter 0 1 n)) (fun x k => F x)
 
 def Stmt.invs_two_phases : Prop :=
-  ∀ (x0 : Int) (n : Nat) (b : Int) (c : Int) (B : Int),
+  ∀ (x0 : Int) (n : Int) (b : Int) (c : Int) (B : Int),
     x0 ≤ b ∧ 0 < c
       → (invs
            (List.zip (butlast (counter 0 1 n)) (butlast
@@ -1017,51 +951,45 @@ def Stmt.invs_two_phases : Prop :=
                                                           else
                                                             unspecified))))
            (fun ⟨k, x⟩ => x < B)
-           ↔ n = zero
-             ∨ (if integer n - 1 ≤ b - x0 then
-                  x0 + integer n - 1
-                else
-                  b + (integer n - 1 - (b - x0)) * c)
+           ↔ n ≤ 0
+             ∨ (if n - 1 ≤ b - x0 then x0 + n - 1 else b + (n - 1 - (b - x0)) * c)
                < B)
 
 def Stmt.invs_not_or : Prop :=
-  ∀ (hs : List Int) (gs : List Int) (fs : List Int) (P : Int → Int → Int → Prop) (Q : Int → Int → Int → Prop) (n : Nat) (hhs : length hs = n) (hgs : length gs = n) (hfs : length fs = n),
+  ∀ (hs : List Int) (gs : List Int) (fs : List Int) (P : Int → Int → Int → Prop) (Q : Int → Int → Int → Prop) (n : Int) (hhs : length hs = n) (hgs : length gs = n) (hfs : length fs = n),
     invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬(P h g f ∨ Q h g f))
       ↔ invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬P h g f)
         ∧ invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬Q h g f)
 
 def Stmt.current_trace_constant : Prop :=
-  ∀ {α : Type} [Inhabited α] (x : α) (y : α) (i : Int) (c : Int) (n : Nat),
+  ∀ {α : Type} [Inhabited α] (x : α) (y : α) (i : Int) (c : Int) (n : Int),
     current (trace x (butlast (counter i c n)) (fun z v => y))
-      = (if n = zero then x else y)
+      = (if n ≤ 0 then x else y)
 
 def Stmt.current_trace_two_phases : Prop :=
-  ∀ (x0 : Int) (n : Nat) (b : Int) (c : Int),
-    x0 ≤ b ∧ 0 ≤ c
+  ∀ (x0 : Int) (n : Int) (b : Int) (c : Int),
+    0 ≤ n ∧ x0 ≤ b ∧ 0 ≤ c
       → current
         (trace
            x0
            (butlast (counter 0 1 n))
            (fun x k =>
               if x < b then x + 1 else if b ≤ x then x + c else unspecified))
-        = (if integer n ≤ b - x0 then
-             x0 + integer n
-           else
-             b + (integer n - (b - x0)) * c)
+        = (if n ≤ b - x0 then x0 + n else b + (n - (b - x0)) * c)
 
 def Stmt.current_trace_catch_up : Prop :=
-  ∀ (y0 : Int) (x0 : Int) (n : Nat),
-    x0 ≤ y0
+  ∀ (y0 : Int) (x0 : Int) (n : Int),
+    0 ≤ n ∧ x0 ≤ y0
       → current
         (trace
            y0
            (List.zip (butlast (counter 0 1 n)) (butlast (counter x0 1 n)))
            (fun y ⟨k, x⟩ =>
               if y ≤ x then y + 1 else if x < y then y else unspecified))
-        = (if x0 + integer n ≤ y0 then y0 else x0 + integer n)
+        = (if x0 + n ≤ y0 then y0 else x0 + n)
 
 def Stmt.current_trace_flag : Prop :=
-  ∀ {α : Type} [Inhabited α] (x0 : α) (c : α) (n : Nat) (hs : List Int) (D : Int → Int → Prop) (hhs : length hs = n),
+  ∀ {α : Type} [Inhabited α] (x0 : α) (c : α) (n : Int) (hs : List Int) (D : Int → Int → Prop) (hhs : length hs = n),
     current
       (trace
          x0
@@ -1075,8 +1003,8 @@ def Stmt.current_trace_flag : Prop :=
            c)
 
 def Stmt.current_trace_increasing : Prop :=
-  ∀ (x0 : Int) (n : Nat) (a : Int) (b : Int) (c : Int) (hs : List Int) (C : Int → Prop) (D : Int → Prop) (E : Int → Prop) (hhs : length hs = n),
-    n ≠ zero ∧ 0 < a ∧ 0 < b ∧ 0 < c
+  ∀ (x0 : Int) (n : Int) (a : Int) (b : Int) (c : Int) (hs : List Int) (C : Int → Prop) (D : Int → Prop) (E : Int → Prop) (hhs : length hs = n),
+    0 < n ∧ 0 < a ∧ 0 < b ∧ 0 < c
       → x0
         < current
           (trace
@@ -1095,7 +1023,7 @@ def Stmt.current_trace_increasing : Prop :=
                       if ¬(C h ∨ D h ∨ E h) then x + a else unspecified))
 
 def Stmt.current_trace_bounded : Prop :=
-  ∀ (x0 : Int) (n : Nat) (lo : Int) (hi : Int) (C1 : Int → Prop) (C2 : Int → Prop) (C3 : Int → Prop) (F1 : Int → Int) (F2 : Int → Int) (F3 : Int → Int),
+  ∀ (x0 : Int) (n : Int) (lo : Int) (hi : Int) (C1 : Int → Prop) (C2 : Int → Prop) (C3 : Int → Prop) (F1 : Int → Int) (F2 : Int → Int) (F3 : Int → Int),
     lo ≤ x0
       ∧ x0 ≤ hi
       ∧ (∀ (y : Int), lo ≤ y ∧ y ≤ hi ∧ C1 y → lo ≤ F1 y ∧ F1 y ≤ hi)
@@ -1136,7 +1064,7 @@ def Stmt.current_trace_bounded : Prop :=
            ↔ True)
 
 def Stmt.current_trace_step_or_keep_mod : Prop :=
-  ∀ (x0 : Int) (n : Nat) (a : Int) (xs : List Int) (C : Int → Prop) (hxs : length xs = n),
+  ∀ (x0 : Int) (n : Int) (a : Int) (xs : List Int) (C : Int → Prop) (hxs : length xs = n),
     current
       (trace
          x0
@@ -1146,18 +1074,18 @@ def Stmt.current_trace_step_or_keep_mod : Prop :=
       = x0 % a
 
 def Stmt.occurs_counter_step : Prop :=
-  ∀ (i : Int) (d : Int) (n : Nat) (j : Int),
-    0 < d
+  ∀ (i : Int) (d : Int) (n : Int) (j : Int),
+    0 ≤ n ∧ 0 < d
       → (occurs j (butlast (counter i d n))
-           ↔ i ≤ j ∧ j < i + integer n * d ∧ (j - i) % d = 0)
+           ↔ i ≤ j ∧ j < i + n * d ∧ (j - i) % d = 0)
 
 def Stmt.indexof_counter_step : Prop :=
-  ∀ (j : Int) (i : Int) (d : Int) (n : Nat),
-    0 < d ∧ i ≤ j ∧ j < i + integer n * d ∧ (j - i) % d = 0
-      → indexof j (butlast (counter i d n)) = natural ((j - i) / d)
+  ∀ (j : Int) (i : Int) (d : Int) (n : Int),
+    0 < d ∧ i ≤ j ∧ j < i + n * d ∧ (j - i) % d = 0
+      → indexof j (butlast (counter i d n)) = (j - i) / d
 
 def Stmt.select_current_trace_stride2 : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (X : Int) (Y : Int) (j : Int),
+  ∀ (a0 : Int → Int) (n : Int) (X : Int) (Y : Int) (j : Int),
     current
       (trace
          a0
@@ -1169,10 +1097,10 @@ def Stmt.select_current_trace_stride2 : Prop :=
               else
                 (fun j => if j = 2 * k then X else a j) j))
       j
-      = (if 0 ≤ j ∧ j < 2 * integer n then if j % 2 = 0 then X else Y else a0 j)
+      = (if 0 ≤ j ∧ j < 2 * n then if j % 2 = 0 then X else Y else a0 j)
 
 def Stmt.select_current_trace_stride3 : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (X : Int) (Y : Int) (Z : Int) (j : Int),
+  ∀ (a0 : Int → Int) (n : Int) (X : Int) (Y : Int) (Z : Int) (j : Int),
     current
       (trace
          a0
@@ -1189,13 +1117,13 @@ def Stmt.select_current_trace_stride3 : Prop :=
                      (fun j => if j = 3 * k then X else a j) j)
                   j))
       j
-      = (if 0 ≤ j ∧ j < 3 * integer n then
+      = (if 0 ≤ j ∧ j < 3 * n then
            if j % 3 = 0 then X else if j % 3 = 1 then Y else Z
          else
            a0 j)
 
 def Stmt.select_current_trace_stride2_cases : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (P : Prop) (Q : Prop) (R : Prop) (X1 : Int) (Y1 : Int) (X2 : Int) (Y2 : Int) (X3 : Int) (Y3 : Int) (j : Int),
+  ∀ (a0 : Int → Int) (n : Int) (P : Prop) (Q : Prop) (R : Prop) (X1 : Int) (Y1 : Int) (X2 : Int) (Y2 : Int) (X3 : Int) (Y3 : Int) (j : Int),
     (R ↔ ¬P ∧ ¬Q)
       → current
         (trace
@@ -1225,7 +1153,7 @@ def Stmt.select_current_trace_stride2_cases : Prop :=
                   else
                     unspecified))
         j
-        = (if 0 ≤ j ∧ j < 2 * integer n then
+        = (if 0 ≤ j ∧ j < 2 * n then
              if j % 2 = 0 then
                if P then X1 else if Q then X2 else X3
              else
@@ -1234,8 +1162,8 @@ def Stmt.select_current_trace_stride2_cases : Prop :=
              a0 j)
 
 def Stmt.select_current_trace_ahead : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (m : Int) (F : Int → Int) (G : Int → Int) (j : Int),
-    integer n ≤ m
+  ∀ (a0 : Int → Int) (n : Int) (m : Int) (F : Int → Int) (G : Int → Int) (j : Int),
+    n ≤ m
       → current
         (trace
            a0
@@ -1253,13 +1181,13 @@ def Stmt.select_current_trace_ahead : Prop :=
                 else
                   unspecified))
         j
-        = (if 0 ≤ j ∧ j < integer n then
+        = (if 0 ≤ j ∧ j < n then
              G j
            else
-             if j = integer n ∧ 0 < j ∧ j < m then F (j - 1) else a0 j)
+             if j = n ∧ 0 < j ∧ j < m then F (j - 1) else a0 j)
 
 def Stmt.select_current_trace_ahead_down : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (s : Int) (F : Int → Int) (G : Int → Int) (j : Int),
+  ∀ (a0 : Int → Int) (n : Int) (s : Int) (F : Int → Int) (G : Int → Int) (j : Int),
     current
       (trace
          a0
@@ -1274,71 +1202,69 @@ def Stmt.select_current_trace_ahead_down : Prop :=
             else
               if i < 1 then fun j => if j = i then G i else a j else unspecified))
       j
-      = (if s - integer n < j ∧ j ≤ s then
+      = (if s - n < j ∧ j ≤ s then
            G j
          else
-           if j = s - integer n ∧ 0 ≤ j ∧ 0 < integer n then F (j + 1) else a0 j)
+           if j = s - n ∧ 0 ≤ j ∧ 0 < n then F (j + 1) else a0 j)
 
-noncomputable def mods (i : Int) (c : Int) (m : Int) (n : Nat) : Trace Int :=
+noncomputable def mods (i : Int) (c : Int) (m : Int) (n : Int) : Trace Int :=
   trace i (butlast (counter 0 1 n)) (fun x k => (x + c) % m)
 
 def Stmt.invs_mods_upper : Prop :=
-  ∀ (b : Int) (i : Int) (c : Int) (m : Int) (n : Nat),
+  ∀ (b : Int) (i : Int) (c : Int) (m : Int) (n : Int),
     0 ≤ i ∧ i < b ∧ 0 < c ∧ b + c ≤ m
-      → (invs (butlast (mods i c m n)) (fun x => x < b)
-           ↔ i + (integer n - 1) * c < b)
+      → (invs (butlast (mods i c m n)) (fun x => x < b) ↔ i + (n - 1) * c < b)
 
 def Stmt.invs_mods_upper_cases : Prop :=
-  ∀ (b : Int) (i : Int) (c : Int) (m : Int) (n : Nat),
+  ∀ (b : Int) (i : Int) (c : Int) (m : Int) (n : Int),
     0 ≤ i ∧ i < m ∧ 0 < c ∧ b + c ≤ m
       → (invs (butlast (mods i c m n)) (fun x => x < b)
-           ↔ n = zero ∨ i + (integer n - 1) * c < b)
+           ↔ n ≤ 0 ∨ i + (n - 1) * c < b)
 
 def Stmt.invs_mods_down : Prop :=
-  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
+  ∀ (i : Int) (c : Int) (m : Int) (n : Int),
     0 < i ∧ i < m ∧ c < m ∧ i % (m - c) = 0
       → (invs (butlast (mods i c m n)) (fun x => 0 < x)
-           ↔ 0 < i - (integer n - 1) * (m - c))
+           ↔ 0 < i - (n - 1) * (m - c))
 
 def Stmt.invs_mods_down_cases : Prop :=
-  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
+  ∀ (i : Int) (c : Int) (m : Int) (n : Int),
     0 ≤ i ∧ i < m ∧ c < m ∧ i % (m - c) = 0
       → (invs (butlast (mods i c m n)) (fun x => 0 < x)
-           ↔ n = zero ∨ 0 < i - (integer n - 1) * (m - c))
+           ↔ n ≤ 0 ∨ 0 < i - (n - 1) * (m - c))
 
 def Stmt.current_mods_up : Prop :=
-  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
-    0 ≤ i + integer n * c ∧ i + integer n * c < m
-      → current (mods i c m n) = i + integer n * c
+  ∀ (i : Int) (c : Int) (m : Int) (n : Int),
+    0 ≤ n ∧ 0 ≤ i + n * c ∧ i + n * c < m → current (mods i c m n) = i + n * c
 
 def Stmt.current_mods : Prop :=
-  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
-    0 ≤ i ∧ i < m → current (mods i c m n) = (i + integer n * c) % m
+  ∀ (i : Int) (c : Int) (m : Int) (n : Int),
+    0 ≤ n ∧ 0 ≤ i ∧ i < m → current (mods i c m n) = (i + n * c) % m
 
 def Stmt.butlast_mods_up : Prop :=
-  ∀ (i : Int) (c : Int) (m : Int) (n : Nat),
-    0 ≤ i ∧ 0 ≤ c ∧ i + (integer n - 1) * c < m
+  ∀ (i : Int) (c : Int) (m : Int) (n : Int),
+    0 ≤ i ∧ 0 ≤ c ∧ i + (n - 1) * c < m
       → butlast (mods i c m n) = butlast (counter i c n)
 
 def Stmt.invs_counter_mod_upper_zero : Prop :=
-  ∀ (b : Int) (m : Int) (n : Nat),
+  ∀ (b : Int) (m : Int) (n : Int),
     0 < b ∧ b < m
-      → (invs (butlast (counter 0 1 n)) (fun k => k % m < b) ↔ integer n - 1 < b)
+      → (invs (butlast (counter 0 1 n)) (fun k => k % m < b) ↔ n - 1 < b)
 
 def Stmt.invs_counter_mod_upper_cases : Prop :=
-  ∀ (b : Int) (i : Int) (m : Int) (n : Nat),
+  ∀ (b : Int) (i : Int) (m : Int) (n : Int),
     0 ≤ i ∧ i < m ∧ b < m
       → (invs (butlast (counter 0 1 n)) (fun k => (k + i) % m < b)
-           ↔ n = zero ∨ i + integer n - 1 < b)
+           ↔ n ≤ 0 ∨ i + n - 1 < b)
 
 def Stmt.current_trace_mod_add_const : Prop :=
-  ∀ (x0 : Int) (n : Nat) (m : Int) (c : Int),
+  ∀ (x0 : Int) (n : Int) (m : Int) (c : Int),
     0 ≤ x0 ∧ x0 < m
       → current (trace x0 (butlast (counter 0 1 n)) (fun x k => (k + x + c) % m))
         = current (trace x0 (butlast (counter 0 1 n)) (fun x k => k + x + c)) % m
 
 def Stmt.current_trace_mod_add_cases : Prop :=
-  ∀ (x0 : Int) (n : Nat) (m : Int) (C : Int → Prop) (F : Int → Int),
+  ∀ (x0 : Int) (n : Int) (m : Int) (C : Int → Prop) (F : Int → Int),
     0 ≤ x0 ∧ x0 < m
       → current
         (trace
@@ -1354,71 +1280,72 @@ def Stmt.current_trace_mod_add_cases : Prop :=
                 if C k then x + F k else if ¬C k then x else unspecified))
           % m
 
-noncomputable def squares (i : Int) (n : Nat) : Int :=
+noncomputable def squares (i : Int) (n : Int) : Int :=
   sum (maps (butlast (counter i 1 n)) (fun k => k * k))
 
-noncomputable def cubes (i : Int) (n : Nat) : Int :=
+noncomputable def cubes (i : Int) (n : Int) : Int :=
   sum (maps (butlast (counter i 1 n)) (fun k => k * k * k))
 
-noncomputable def fourths (i : Int) (n : Nat) : Int :=
+noncomputable def fourths (i : Int) (n : Int) : Int :=
   sum (maps (butlast (counter i 1 n)) (fun k => k * k * k * k))
 
-noncomputable def fifths (i : Int) (n : Nat) : Int :=
+noncomputable def fifths (i : Int) (n : Int) : Int :=
   sum (maps (butlast (counter i 1 n)) (fun k => k * k * k * k * k))
 
 def Stmt.squares_zero : Prop :=
-  ∀ (i : Int),
-    squares i zero = 0
+  ∀ (i : Int) (n : Int),
+    n ≤ 0 → squares i n = 0
 
 def Stmt.cubes_zero : Prop :=
-  ∀ (i : Int),
-    cubes i zero = 0
+  ∀ (i : Int) (n : Int),
+    n ≤ 0 → cubes i n = 0
 
 def Stmt.fourths_zero : Prop :=
-  ∀ (i : Int),
-    fourths i zero = 0
+  ∀ (i : Int) (n : Int),
+    n ≤ 0 → fourths i n = 0
 
 def Stmt.fifths_zero : Prop :=
-  ∀ (i : Int),
-    fifths i zero = 0
+  ∀ (i : Int) (n : Int),
+    n ≤ 0 → fifths i n = 0
 
 def Stmt.squares_closed : Prop :=
-  ∀ (i : Int) (n : Nat),
-    6 * squares i n
-      = (i + integer n - 1) * (i + integer n) * (2 * (i + integer n) - 1)
-        - (i - 1) * i * (2 * i - 1)
+  ∀ (i : Int) (n : Int),
+    0 ≤ n
+      → 6 * squares i n
+        = (i + n - 1) * (i + n) * (2 * (i + n) - 1) - (i - 1) * i * (2 * i - 1)
 
 def Stmt.cubes_closed : Prop :=
-  ∀ (i : Int) (n : Nat),
-    4 * cubes i n
-      = (i + integer n) * (i + integer n) * (i + integer n - 1)
-        * (i + integer n - 1)
-        - i * i * (i - 1) * (i - 1)
+  ∀ (i : Int) (n : Int),
+    0 ≤ n
+      → 4 * cubes i n
+        = (i + n) * (i + n) * (i + n - 1) * (i + n - 1)
+          - i * i * (i - 1) * (i - 1)
 
 def Stmt.fourths_closed : Prop :=
-  ∀ (i : Int) (n : Nat),
-    30 * fourths i n
-      = (i + integer n) * (i + integer n - 1) * (2 * (i + integer n) - 1)
-        * (3 * (i + integer n) * (i + integer n) - 3 * (i + integer n) - 1)
-        - i * (i - 1) * (2 * i - 1) * (3 * i * i - 3 * i - 1)
+  ∀ (i : Int) (n : Int),
+    0 ≤ n
+      → 30 * fourths i n
+        = (i + n) * (i + n - 1) * (2 * (i + n) - 1)
+          * (3 * (i + n) * (i + n) - 3 * (i + n) - 1)
+          - i * (i - 1) * (2 * i - 1) * (3 * i * i - 3 * i - 1)
 
 def Stmt.fifths_closed : Prop :=
-  ∀ (i : Int) (n : Nat),
-    12 * fifths i n
-      = (i + integer n) * (i + integer n) * (i + integer n - 1)
-        * (i + integer n - 1)
-        * (2 * (i + integer n) * (i + integer n) - 2 * (i + integer n) - 1)
-        - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1)
+  ∀ (i : Int) (n : Int),
+    0 ≤ n
+      → 12 * fifths i n
+        = (i + n) * (i + n) * (i + n - 1) * (i + n - 1)
+          * (2 * (i + n) * (i + n) - 2 * (i + n) - 1)
+          - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1)
 
 def Stmt.current_trace_geometric : Prop :=
-  ∀ (y0 : Int) (z : Int) (n : Nat),
+  ∀ (y0 : Int) (z : Int) (n : Int),
     current (trace y0 (butlast (counter 0 1 n)) (fun y k => y * z)) = y0 * pow z n
 
-noncomputable def series (x0 : Int) (z : Int) (a : Int) (n : Nat) : Trace Int :=
+noncomputable def series (x0 : Int) (z : Int) (a : Int) (n : Int) : Trace Int :=
   trace x0 (butlast (counter 0 1 n)) (fun x k => x * z + a)
 
 def Stmt.current_series : Prop :=
-  ∀ (x0 : Int) (z : Int) (a : Int) (n : Nat),
+  ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),
     (z - 1) * current (series x0 z a n) + a = ((z - 1) * x0 + a) * pow z n
 
 end TEQ

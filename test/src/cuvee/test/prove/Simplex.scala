@@ -4,6 +4,7 @@ package prove
 import utest._
 
 import cuvee.core._
+import cuvee.prove.Classes
 import cuvee.prove.Linear
 
 // the linear constraints of the engine of -prove, decided by the simplex over the rationals, with the integers
@@ -86,11 +87,14 @@ object SimplexTests extends TestSuite:
       assert(ctx.deny(Eq(x, y)).inconsistent)
       assert(!facts(Ints.le(x, y)).deny(Eq(x, y)).inconsistent)
 
-    // solutions of linear equations for a variable, e.g. x by 40 - n, which the simplifier inlines
+    // solutions of linear equations for a variable, e.g. x by 40 - n, which the classes keep and the simplifier
+    // inlines, for the variable of the last rank (see Classes.rank), here x, bound inside of n
     test("solved"):
       val ctx = facts(Eq(Ints.plus(n, x), lit(40)))
-      assert(ctx.solved.contains(x) || ctx.solved.contains(n))
       assert(ctx.assume(Ints.lt(lit(40), Ints.plus(n, x))).inconsistent)
+      val classes = Classes.empty(Set()).assume(Eq(Ints.plus(n, x), lit(40)))(using Classes.Order(Classes.rank(y => if y == x then 2 else 1)))
+      classes.solved.keySet ==> Set(x)
+      assert(classes.equal(x, classes.solved(x)))
 
     // t div k for a positive literal k is bounded by k * (t div k) <= t <= k * (t div k) + k - 1: the midpoint of the
     // binary search lies in the interval, l <= (h + l) / 2 < h for l < h, and 0 <= (h + l) / 2 for 0 <= l

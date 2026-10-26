@@ -16,15 +16,6 @@ import TEQ.Proofs
 -- (<name>_rule if a function has the name)
 namespace TEQ
 
-example : Stmt.natural_integer := @natural_integer
-example : Stmt.integer_natural := @integer_natural
-example : Stmt.zero_integer := @zero_integer
-example : Stmt.integer_zero := @integer_zero
-example : Stmt.zero_integer_value := @zero_integer_value
-example : Stmt.integer_injective := @integer_injective
-example : Stmt.natural_nonpositive := @natural_nonpositive
-example : Stmt.natural_positive := @natural_positive
-example : Stmt.integer_eq := @integer_eq
 example : Stmt.maps_identity := @maps_identity
 example : Stmt.counter_def := @counter_def
 example : Stmt.consts_def := @consts_def
@@ -120,7 +111,6 @@ example : Stmt.perm_swaps_one := @perm_swaps_one
 example : Stmt.perm_swaps := @perm_swaps
 example : Stmt.perm_steps := @perm_steps
 example : Stmt.perm_steps_two := @perm_steps_two
-example : Stmt.perm_steps_nat := @perm_steps_nat
 example : Stmt.perm_steps_three := @perm_steps_three
 example : Stmt.sorted_prefix_steps := @sorted_prefix_steps
 example : Stmt.sorted_prefix_steps_two := @sorted_prefix_steps_two

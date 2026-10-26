@@ -11,7 +11,7 @@
 // the equation is followed); the invs is then distributed over its conjuncts, each with the dependencies it uses,
 // see invs_fragments.dfy
 
-method test(n: int, m: Nat, KK: List<Trace<int>>, NN: List<Nat>, JJ: List<Trace<int>>, jj: List<int>)
+method test(n: int, m: int, KK: List<Trace<int>>, NN: List<int>, JJ: List<Trace<int>>, jj: List<int>)
   requires 0 <= n
 {
   assume invs(for ⌊counter(0, 1, m)⌋, KK, NN, JJ, jj check k, K, nn, J, j ::

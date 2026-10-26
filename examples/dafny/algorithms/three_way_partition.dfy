@@ -13,9 +13,9 @@ function perm(a: array<int, int>, b: array<int, int>): bool
 
 // the trace of the three-way partition: the positions es of the first element not below p and ls of the first
 // element not below or equal to p are further dependencies (the counts, as in partition.dfy)
-function threeway(a: array<int, int>, p: int, n: Nat, es: List<int>, ls: List<int>): Trace<array<int, int>>
+function threeway(a: array<int, int>, p: int, n: int, es: List<int>, ls: List<int>): Trace<array<int, int>>
 
-lemma {:rw} threeway_def(a: array<int, int>, p: int, n: Nat, es: List<int>, js: List<int>, ls: List<int>)
+lemma {:rw} threeway_def(a: array<int, int>, p: int, n: int, es: List<int>, js: List<int>, ls: List<int>)
   ensures trace(a, for ⌊counter(0, 1, n)⌋, es, js, ls do b, k, eq, j, lt ::
       case b[k] < p => b[k := b[eq]][eq := b[k := b[eq]][lt]][lt := b[k]]
       case b[k] == p => b[k := b[eq]][eq := b[k]]
@@ -24,35 +24,35 @@ lemma {:rw} threeway_def(a: array<int, int>, p: int, n: Nat, es: List<int>, js: 
 
 // the elements at the positions k, read in iteration k, are those of a, since only positions below k are written
 // before iteration k
-lemma {:rw} maps_threeway_read(a: array<int, int>, p: int, n: Nat, es: List<int>, ls: List<int>, hs: List<int>, P: (int, int, int) -> bool)
+lemma {:rw} maps_threeway_read(a: array<int, int>, p: int, n: int, es: List<int>, ls: List<int>, hs: List<int>, P: (int, int, int) -> bool)
   ensures maps(for ⌊counter(0, 1, n)⌋, ⌊threeway(a, p, n, es, ls)⌋, hs yield k, b, h :: P(b[k], k, h))
     == maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: P(a[k], k, h))
 
-lemma {:rw} maps_threeway_read_one(a: array<int, int>, p: int, n: Nat, es: List<int>, ls: List<int>, P: (int, int) -> bool)
+lemma {:rw} maps_threeway_read_one(a: array<int, int>, p: int, n: int, es: List<int>, ls: List<int>, P: (int, int) -> bool)
   ensures maps(for ⌊counter(0, 1, n)⌋, ⌊threeway(a, p, n, es, ls)⌋ yield k, b :: P(b[k], k))
     == maps(for ⌊counter(0, 1, n)⌋ yield k :: P(a[k], k))
 
 // the number of elements below p among the first n, and the number of those below or equal to p, named, such that
 // the facts of the goal and the side conditions of the lemmas normalize to the same term (partition.dfy); the
 // second keeps the counter of the loop as a further dependency hs
-function {:fold} below(a: array<int, int>, p: int, n: Nat): int
+function {:fold} below(a: array<int, int>, p: int, n: int): int
 {
   count(true, maps(for ⌊counter(0, 1, n)⌋ yield k :: a[k] < p))
 }
-function {:fold} beloweq(a: array<int, int>, p: int, n: Nat, hs: List<int>): int
+function {:fold} beloweq(a: array<int, int>, p: int, n: int, hs: List<int>): int
 {
   count(true, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a[k] < p || a[k] == p))
 }
 
-lemma {:rw} below_nonnegative(a: array<int, int>, p: int, n: Nat)
+lemma {:rw} below_nonnegative(a: array<int, int>, p: int, n: int)
   ensures 0 <= below(a, p, n)
 
-lemma {:rw} below_le_beloweq(a: array<int, int>, p: int, n: Nat, hs: List<int>)
+lemma {:rw} below_le_beloweq(a: array<int, int>, p: int, n: int, hs: List<int>)
   ensures below(a, p, n) <= beloweq(a, p, n, hs)
 
 // the regions of the result on the whole state trace of (b, eq, j, lt): below the number of elements below p, equal
 // up to the number of elements at most p, above from there up to n
-lemma {:rw} threeway_lt(a: array<int, int>, p: int, n: Nat, k: int)
+lemma {:rw} threeway_lt(a: array<int, int>, p: int, n: int, k: int)
   requires 0 <= k < below(a, p, n)
   ensures (current(trace(a, 0, 0, 0, for ⌊counter(0, 1, n)⌋ do b, e, j, l, kk ::
                      case b[j] < p => b[j := b[e]][e := b[j := b[e]][l]][l := b[j]]
@@ -62,7 +62,7 @@ lemma {:rw} threeway_lt(a: array<int, int>, p: int, n: Nat, k: int)
                      j + 1,
                      case b[j] < p => l + 1 case b[j] == p || p < b[j] => l)).0[k] < p) <==> true
 
-lemma {:rw} threeway_eq(a: array<int, int>, p: int, n: Nat, k: int)
+lemma {:rw} threeway_eq(a: array<int, int>, p: int, n: int, k: int)
   requires below(a, p, n) <= k < beloweq(a, p, n, ⌊counter(0, 1, n)⌋)
   ensures (current(trace(a, 0, 0, 0, for ⌊counter(0, 1, n)⌋ do b, e, j, l, kk ::
                      case b[j] < p => b[j := b[e]][e := b[j := b[e]][l]][l := b[j]]
@@ -72,8 +72,8 @@ lemma {:rw} threeway_eq(a: array<int, int>, p: int, n: Nat, k: int)
                      j + 1,
                      case b[j] < p => l + 1 case b[j] == p || p < b[j] => l)).0[k] == p) <==> true
 
-lemma {:rw} threeway_gt(a: array<int, int>, p: int, n: Nat, k: int)
-  requires beloweq(a, p, n, ⌊counter(0, 1, n)⌋) <= k < integer(n)
+lemma {:rw} threeway_gt(a: array<int, int>, p: int, n: int, k: int)
+  requires beloweq(a, p, n, ⌊counter(0, 1, n)⌋) <= k < n
   ensures (p < current(trace(a, 0, 0, 0, for ⌊counter(0, 1, n)⌋ do b, e, j, l, kk ::
                      case b[j] < p => b[j := b[e]][e := b[j := b[e]][l]][l := b[j]]
                      case b[j] == p => b[j := b[e]][e := b[j]]
@@ -84,11 +84,11 @@ lemma {:rw} threeway_gt(a: array<int, int>, p: int, n: Nat, k: int)
 
 // the bound beloweq_le for a number of iterations n == natural(m), as -teq relates it to the final value m of the
 // scan, which the arithmetic does not resolve into integer(n) == m
-lemma {:rw} beloweq_le_natural(a: array<int, int>, p: int, n: Nat, hs: List<int>, m: int)
-  requires n == natural(m) && 0 <= m
+lemma {:rw} beloweq_le_natural(a: array<int, int>, p: int, n: int, hs: List<int>, m: int)
+  requires n == m && 0 <= m
   ensures beloweq(a, p, n, hs) <= m <==> true
 
-lemma {:rw} perm_threeway(a: array<int, int>, c: array<int, int>, p: int, n: Nat, es: List<int>, ls: List<int>)
+lemma {:rw} perm_threeway(a: array<int, int>, c: array<int, int>, p: int, n: int, es: List<int>, ls: List<int>)
   ensures perm(current(threeway(a, p, n, es, ls)), c) <==> perm(a, c)
 
 lemma {:rw} perm_refl(a: array<int, int>)

@@ -15,7 +15,7 @@ lemma {:rw} perm_refl(a: array<int, int>)
   ensures perm(a, a) <==> true
 
 // the inner counters (fragments.dfy)
-lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>, Ns: List<Nat>, Js: List<Trace<int>>, X: int -> int, c: int)
+lemma {:rw} invs_sums_counter(ks: List<int>, Ks: List<Trace<int>>, Ns: List<int>, Js: List<Trace<int>>, X: int -> int, c: int)
   requires invs(for ks, Ks, Ns check k, K, nn :: K == counter(0, 1, nn))
   ensures invs(for ks, Ks, Js check k, K, J :: J == sums(X(k), maps(for ⌊K⌋ yield i :: c)))
     <==> invs(for ks, Ns, Js check k, nn, J :: J == counter(X(k), c, nn))
@@ -46,10 +46,10 @@ function shake(b: array<int, int>, k: int, n: int): array<int, int>
 // equations and iteration constraints of both inner loops as side conditions (bubble_sort.dfy, insertion_sort2.dfy)
 lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int, len3: int, d: int, ks: List<int>,
                                   bs: List<array<int, int>>, Bs: List<Trace<array<int, int>>>, cs: List<array<int, int>>,
-                                  Cs: List<Trace<array<int, int>>>, Js: List<Trace<int>>, Ns: List<Nat>, js: List<int>,
-                                  Js2: List<Trace<int>>, Ps: List<Trace<int>>, Ns2: List<Nat>, Js3: List<Trace<int>>,
+                                  Cs: List<Trace<array<int, int>>>, Js: List<Trace<int>>, Ns: List<int>, js: List<int>,
+                                  Js2: List<Trace<int>>, Ps: List<Trace<int>>, Ns2: List<int>, Js3: List<Trace<int>>,
                                   ps: List<int>, Ps3: List<Trace<int>>, js4: List<int>, Js4: List<Trace<int>>,
-                                  js5: List<int>, Ns5: List<Nat>, js6: List<int>, Ns6: List<Nat>, Ns7: List<Nat>, X: int -> int, Y: int -> int)
+                                  js5: List<int>, Ns5: List<int>, js6: List<int>, Ns6: List<int>, Ns7: List<int>, X: int -> int, Y: int -> int)
   // the first pass: from the previous value x to the intermediate result c, over the counter J from k
   requires invs(for ks, cs, Cs check k, c, C :: c == current(C))
   requires invs(for ks, ⌊results(a, ks, bs)⌋, Cs, Js check k, x, C, J :: C == bubble_pass(x, ⌊J⌋))
@@ -59,7 +59,7 @@ lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int, len3:
   requires Js2 == Js && len2 == len
   // the final values of the forward counter in the form that the module nested gives them (without the module the
   // fragment is j == current(J), and the summary was stated with it)
-  requires invs(for ks, Ns5, js5 check k, nn, j :: j == integer(nn) + k)
+  requires invs(for ks, Ns5, js5 check k, nn, j :: j == nn + k)
   requires js5 == js && Ns5 == Ns
   // the second pass: from the intermediate result c to the result b, over the counters J' from len - k - 2 and
   // P' from len - k - 3 down by 1
@@ -75,13 +75,13 @@ lemma {:rw} current_results_shake(a: array<int, int>, len: int, len2: int, len3:
   requires Js4 == Js3
   requires invs(for ks, js4 check k, j :: j <= k)
   // the final values of the backward counters in the module's forms, p == len - k - 3 - nn and j == len - k - 2 - nn
-  requires invs(for ks, Ns6, ps check k, nn, p :: integer(nn) + p + k + 3 == len)
+  requires invs(for ks, Ns6, ps check k, nn, p :: nn + p + k + 3 == len)
   requires Ns6 == Ns2
   // the final values of the backward counter J' with fresh variables, matched against the fact, then identified: with
   // js4 and Js3 bound by the conditions above, the condition is closed and decided instead, which fails (the first
   // condition that fails, found by the truncated copies cock7_*; the same condition for the forward pass, js5 and
   // Js5, uses fresh variables)
-  requires invs(for ks, Ns7, js6 check k, nn, j :: integer(nn) + j + k + 2 == len)
+  requires invs(for ks, Ns7, js6 check k, nn, j :: nn + j + k + 2 == len)
   requires js6 == js4 && Ns7 == Ns2
   ensures current(results(a, ks, bs)) == current(trace(a, for ks do b, k :: shake(b, k, len)))
 
@@ -101,10 +101,10 @@ lemma {:rw} shaken_shake(b: array<int, int>, k: int, len: int)
 // lo == integer(m) as a separate fact, which the simplifier does not combine (former NOTES.md, finding 11); so the bound is
 // stated in the goal's form, with lo an open variable matched against its equation; the counter as a dependency of
 // the combinator matches ⌊K⌋ with K == counter(0, 1, m) in the context (former NOTES.md, bubble sort)
-lemma {:rw} sorted_shaken_steps(a: array<int, int>, len: int, m: Nat, l: int, F: (array<int, int>, int) -> array<int, int>)
-  requires l == integer(m)
-  requires len <= integer(m) + l + 1
-  requires forall b: array<int, int>, k: int :: 0 <= k < integer(m) && shaken(b, k, len) ==> shaken(F(b, k), k + 1, len)
+lemma {:rw} sorted_shaken_steps(a: array<int, int>, len: int, m: int, l: int, F: (array<int, int>, int) -> array<int, int>)
+  requires l == m
+  requires len <= m + l + 1
+  requires forall b: array<int, int>, k: int :: 0 <= k < m && shaken(b, k, len) ==> shaken(F(b, k), k + 1, len)
   ensures sorted(current(trace(a, for ⌊counter(0, 1, m)⌋ do b, k :: F(b, k))), 0, len) <==> true
 
 // a shake is a permutation, and a trace of steps that preserve the permutation (bubble_sort.dfy)

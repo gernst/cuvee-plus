@@ -3,8 +3,7 @@
 // and the variables of the rule must not capture the bound variables of the expression
 type Trace<a₀>
 type List<a₀>
-type Nat
-function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
+function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 function steps(xs: List<int>): int
 predicate p(t: Trace<int>)
 const J: Trace<int>

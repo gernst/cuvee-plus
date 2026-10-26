@@ -326,8 +326,8 @@ object TEQ extends Transform:
       val zs = paths.flatMap(_.zs).distinct
       val Zs = zs.map(z => Var(z.name.name.capitalize + "?", Sort.list(z.typ)).fresh)
 
-      // the number of iterations, a natural, whose value is nonnegative as an integer, an atom of arithmetic
-      val n = Var("n", Sort.nat).fresh
+      // the number of iterations, an integer that is not negative (see rest of system)
+      val n = Var("n", Sort.int).fresh
       val k = Var("k", Sort.int).fresh
       val K = Var("K", Sort.trace(Sort.int)).fresh
       // all earlier iterations have taken some path through the body, with the guard holding before each of them
@@ -441,7 +441,7 @@ object TEQ extends Transform:
     val counter = Counter(Ints.zero, Ints.one, n)
     val current = sharp.indices.map(exits).toList
     val iterations = Invs(Butlast(K) :: sharp.indices.map(histories).toList ++ Zs, k :: sharp ++ zs, constraint)
-    val rest = List(iterations, Ints.le(Ints.zero, Nats.integer(n)))
+    val rest = List(iterations, Ints.le(Ints.zero, n))
 
     if closed
     then

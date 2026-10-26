@@ -101,10 +101,10 @@ case class Poly(const: Rational, monos: List[Mono]):
     def mod(r: Rational) = Rational(r.num mod n.abs)
     Poly(mod(normalize.const), normalize.monos.map(m => Mono(mod(m.factor), m.atoms))).normalize
 
-  // the first variable x with coefficient 1 or -1 whose solution of this == 0 for x is `admissible`,
-  // which does not contain x, e.g. n + x - 40 for x is 40 - n; in the order of the monomials,
-  // which is canonical for normalized polynomials
-  def solution(admissible: (Var, Poly) => Boolean): Option[(Var, Poly)] =
+  // the variable x with coefficient 1 or -1 whose solution of this == 0 for x is `admissible`,
+  // which does not contain x, e.g. n + x - 40 for x is 40 - n; of the candidates the one of the last rank
+  // (see Classes.rank), so that the solution is over the variables that the classes keep as roots
+  def solution(rank: Var => Classes.Rank, admissible: (Var, Poly) => Boolean): Option[(Var, Poly)] =
     val solutions =
       for
         mono <- monos.iterator
@@ -115,7 +115,7 @@ case class Poly(const: Rational, monos: List[Mono]):
         rest = Poly(const, monos.filterNot(_ == mono)) * (-mono.factor)
         if !rest.monos.exists(_.atoms.exists((atom, _) => atom.free contains x)) && admissible(x, rest)
       yield (x, rest)
-    solutions.nextOption()
+    solutions.maxByOption((x, _) => rank(x))
 
   // the parts with negative and with positive coefficients, negated and as they are,
   // i.e., (neg, pos) with this = pos - neg, where both have positive coefficients only
@@ -155,23 +155,27 @@ object Poly:
 //
 // example: (x + 1) * (x - 1)  ~>  x*x + -1
 object Arith:
-  // entry point for the simplifier:
-  // normalize an arithmetic expression whose subterms are already simplified
+  // the normal form of an arithmetic expression whose subterms are canonical already (see Classes.normalize)
   def normalize(ring: Ring, expr: Expr): Expr =
     toPoly(ring, expr).normalize.toExpr(ring)
 
-  // interpret an expression as a polynomial, flattening sums and products
-  def toPoly(ring: Ring, expr: Expr): Poly =
+  // an expression as a polynomial, flattening sums and products, its other subterms by `leaf`, e.g. the simplifier
+  // (see Simplify.poly), whose result may be arithmetic again; on Real, division by a nonzero literal (after `leaf`) is
+  // multiplication by its inverse
+  def toPoly(ring: Ring, expr: Expr, leaf: Expr => Expr = identity): Poly =
     expr match
       case ring.num(n: BigInt)     => Poly.const(Rational(n))
       case ring.num(n: Rational)   => Poly.const(n)
-      case ring.uminus(arg)        => -toPoly(ring, arg)
-      case ring.plus(args)         => args.map(toPoly(ring, _)).foldLeft(Poly.zero)(_ + _)
-      case ring.minus(left, right) => toPoly(ring, left) - toPoly(ring, right)
-      case ring.times(args)        => args.map(toPoly(ring, _)).foldLeft(Poly.one)(_ * _)
+      case ring.uminus(arg)        => -toPoly(ring, arg, leaf)
+      case ring.plus(args)         => args.map(toPoly(ring, _, leaf)).foldLeft(Poly.zero)(_ + _)
+      case ring.minus(left, right) => toPoly(ring, left, leaf) - toPoly(ring, right, leaf)
+      case ring.times(args)        => args.map(toPoly(ring, _, leaf)).foldLeft(Poly.one)(_ * _)
 
-      case Reals.div(left, Lit(r: Rational, _)) if ring == Reals.ring && !r.isZero =>
-        toPoly(ring, left) * (Rational(1) / r)
+      case Reals.div(left, right) if ring == Reals.ring =>
+        leaf(right) match
+          case Lit(r: Rational, _) if !r.isZero => toPoly(ring, left, leaf) * (Rational(1) / r)
+          case right_                          => Poly.atom(Reals.div(toPoly(ring, left, leaf).normalize.toExpr(ring), right_))
 
       case _ =>
-        Poly.atom(expr)
+        val expr_ = leaf(expr)
+        if expr_ == expr then Poly.atom(expr) else toPoly(ring, expr_)

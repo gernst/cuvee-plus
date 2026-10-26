@@ -5,9 +5,9 @@
 // of s into a sum, which the left-hand side matches again, with the same fact, one level deeper; the rule is
 // suspended while its conditions are evaluated, and the reads of a context are normalized by the rules without an
 // invs condition only, so the run terminates (the goal is closed by the lemmas of the database, not by this rule)
-lemma {:rw} sum_invs_const(n: Nat, c: int, js: List<int>)
-  requires invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)
-  ensures sum(js) == c * integer(n)
+lemma {:rw} sum_invs_const(n: int, c: int, js: List<int>)
+  requires 0 <= n && invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)
+  ensures sum(js) == c * n
 
 method main(n: int, c: int) returns (s: int)
   requires 0 <= n
