@@ -8,19 +8,22 @@ object Classes:
 
   type Rank = (Int, Int, Int, Int, String)
 
-  // the order of the roots, given by the context (see Context.order): a literal before a variable before any other
+  // the order of the roots, given by the context (see Context.order): a variable before a literal before any other
   // term, variables by the depth of the scope that binds them and their position in it, then by index and name; the
   // root of a class is its least member, and an equation is solved for its greatest variable (see solve), so that the
   // canonical forms write the variables of inner scopes by those of outer ones, and those of a binder by the earlier
-  // ones, e.g. the position i == k + 1 of a loop by the counter k of its iterations
+  // ones, e.g. the position i == k + 1 of a loop by the counter k of its iterations; a variable stays a variable where
+  // its value is a literal, e.g. the position k of a case k == c of an update, whose result is then the same as that of
+  // the other cases, which Simplify.eps merges; arithmetic still substitutes the solutions of its variables (normalize),
+  // and the matcher reaches the literal through the class (see Context.defs)
   case class Order(rank: Expr => Rank)
 
   def rank(scope: Var => (Int, Int))(expr: Expr): Rank =
     expr match
-      case _: Lit => (0, 0, 0, 0, "")
       case x: Var =>
         val (depth, position) = scope(x)
-        (1, depth, position, x.name.index.getOrElse(-1), x.name.name)
+        (0, depth, position, x.name.index.getOrElse(-1), x.name.name)
+      case _: Lit => (1, 0, 0, 0, "")
       case _ => (2, 0, 0, 0, "")
 
 // congruence closure over the terms of the facts: a persistent union-find whose nodes are the registered terms, where

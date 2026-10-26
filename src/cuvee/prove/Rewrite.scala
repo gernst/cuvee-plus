@@ -97,12 +97,11 @@ object Rewrite:
 
     results match
       case Nil =>
-        // -debug match reports the rules on traces whose left-hand side does not match a trace, e.g. a summary lemma
-        // on a view of a trace of several accumulators (see doc/prove.md, package M)
-        (rule.lhs, expr) match
-          case (_: Trace, _: Trace) =>
-            Debug.info("match", "no match of " + rule.name.getOrElse("?") + " on " + Simplify.show(config.output.printer, expr))
-          case _ =>
+        // -debug match reports the rules whose left-hand side has the head of the expression but does not match it,
+        // e.g. a summary lemma on a view of a trace of several accumulators (see doc/prove.md, package M) or a rule on a
+        // comparison whose sides do not match; rules of other heads are not candidates and are not reported
+        if Debug.modules.contains("match") && head(rule.lhs).isDefined && head(rule.lhs) == head(expr) then
+          Debug.info("match", "no match of " + rule.name.getOrElse("?") + " on " + Simplify.show(config.output.printer, expr))
         ctx.applied := applied
         expr
 
@@ -118,6 +117,15 @@ object Rewrite:
         do ctx.applied := ctx.applied.value.updated(name, ctx.applied.value.getOrElse(name, 0) + 1)
         Debug.step("rewrite", Simplify.show(config.output.printer, expr), Simplify.show(config.output.printer, rhs))
         rhs
+
+  // the head of a term for the report of failed matches: the function of an application, the kind of a combinator
+  def head(expr: Expr): Option[String] =
+    expr match
+      case App(fun, _, _, _) => Some(fun.name.toString)
+      case _: Trace          => Some("trace")
+      case _: Maps           => Some("maps")
+      case _: Invs           => Some("invs")
+      case _                 => None
 
   // side conditions and the guards of updates are decided by the simplifier in the context,
   // whose applications of rules count only if the condition holds (see Context.applied)
@@ -752,7 +760,10 @@ object Rewrite:
             case _ if arg.free.forall(x => bound.contains(x) || subst.vars.contains(x) || !mayBind(vars, locals, x)) =>
               List((beta((subst ++ Subst(Map(), bound))(arg)), subst))
 
+            // an argument of a higher-order variable whose variables the match has not bound yet, e.g. the index of a
+            // store matched after its value
             case _ =>
+              Debug.info("match", "  argument " + arg + " of a higher-order variable has unbound variables")
               unmatched
 
         for

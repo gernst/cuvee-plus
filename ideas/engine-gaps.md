@@ -11,7 +11,7 @@ examples of the affected lemmas, the test suite, and one cloud run of Arrays and
 the jar of main against the new one, `scripts/compare.py`); then replace the workarounds by their plain forms (Lean
 proofs by a subagent).
 
-## 1. Comparisons of conditionals with literals
+## 1. Comparisons of conditionals with literals (done, 0.52.9)
 
 **Gap.** `assume_abort_if_not(c)` of C reaches the goals as `ite(c, 1, 0) != 0`, which `Simplify.eq_` does not reduce
 to `c`: it has no case for a conditional against a literal. Inside `invs` the constraint stays in that form, so no rule
@@ -21,17 +21,21 @@ on `c` matches (array_init_nondet_vars, array_init_pair_symmetr2).
 `ite(test, eq_(a, d), eq_(b, d))`; the helper `ite` makes `ite(c, true, false)` the test and `ite(c, false, true)` its
 negation. Local to `eq_`, no new terms.
 
-**Tests.** A C example with `assume_abort_if_not` inside a loop; array_init_nondet_vars, array_init_pair_symmetr2.
+**Tests.** examples/c/teq/assume_abort.c: the constraints are `0 < tmp` and `tmp < 10`; its goal remains, since the
+constraint is not instantiated at the position read (see "Not done"); the same holds for array_init_nondet_vars and
+array_init_pair_symmetr2, which need a rule on the atom of their goal in addition.
 
-## 2. Failed matches of all rules in `-debug match`
+## 2. Failed matches of all rules in `-debug match` (done, 0.52.9)
 
 **Gap.** `-debug match` reports failed matches only for rules on traces; for others (e.g. a comparison whose side is
 a read of a trace) nothing is printed, which makes failures such as the higher-order value of the copy from both ends
 hard to diagnose.
 
-**Change.** In `Rewrite`, a line for every rule tried on a term that does not match, with the first subterm that fails.
+**Change.** In `Rewrite`, a line for every rule whose left-hand side has the head of the term (the function of an
+application, the kind of a combinator) but does not match, only with `-debug match`; and a line for an argument of a
+higher-order variable whose variables are not bound yet. The first subterm that fails is not reported yet.
 
-## 3. Variables of combinators kept instead of literals
+## 3. Variables kept instead of literals (done, 0.52.9; measured in the cloud)
 
 **Gap.** Under a guard `k == c` with a literal `c`, the class of the iteration variable `k` has the root `c`
 (`Classes.rank`: a literal before a variable), and `Classes.normalize` writes the result with `c` instead of `k`. Two
@@ -45,8 +49,11 @@ case k == 150000 => a[150000 := earlier(150000, T)]
 
 which `Simplify.eps` does not merge, so the fold `stores` does not apply; the database has `stores_cases_point`.
 
-**Change.** In `Classes.rank` (the order given by `Context.order`), the variables bound by a combinator come before
-literals; everything else is unchanged. The literal stays in the class and the simplex knows `k = c`, so comparisons
+**Change.** In `Classes.rank` (the order given by `Context.order`), every variable comes before literals. Only the
+variables of combinators would do, but no total order has a local variable before a literal, a literal before an
+outer variable, and an outer variable before a local one (the canonical forms write inner variables by outer ones).
+`Context.fix` recognized a variable fixed by the simplex by a literal root and assumed its value again without end; it
+looks for a literal among the members now. The literal stays in the class and the simplex knows `k = c`, so comparisons
 and reads over stores are decided as before; the existing merging of `Simplify.eps` then combines the two cases into
 `a[k := earlier(k, T)]`. Lemmas whose patterns use the literal (`select_current_trace_recurrence`, `case i == 0 =>
 a[0 := c]`) still match, since the matcher follows the members of a variable's class.
@@ -57,8 +64,9 @@ experiment measures it: the test suite and the cloud run, before any change of t
 
 **Database.** `stores_cases_point` (arrays.dfy) goes, `trace_merge_cases_ne` (counters.dfy) presumably too.
 
-**Tests.** examples/c/teq/stores_cases_point.c (correct without the lemma), copysome2-1, the users of
-`trace_merge_cases_ne`.
+**Tests.** examples/c/teq/stores_cases_point.c is correct without the lemma (local, Oct 26; unknown with 0.52.8 within
+10 s); copysome2-1, the users of `trace_merge_cases_ne`. The lemma stays until the cloud run of Arrays and Loops shows
+the cost of the change (out/bench/cuvee-arrays.xml, tool-main against tool-rank).
 
 ## 4. Remainders and division
 
@@ -79,14 +87,17 @@ no forward lemmas for division.
 **Tests.** counters_phase_mod.dfy, mono-crafted_12 (7 s with the rewrite rule instead of 41 s), array-tiling/tcpy;
 pr2, mbpr2 need the parity of successors in addition (`(i + 1) % 2` against `i % 2`), left open.
 
-## 5. Higher-order values at arithmetic arguments (to diagnose)
+## 5. Higher-order values at arithmetic arguments (diagnosis open)
 
 **Gap.** With the index in normal form (`-k + m + -1`), the pattern `a[-k + m + -1 := F(-k + m + -1)][k := F(k)]`
 does not match the copy from both ends, while `a[-k + m + -1 := b[-k + m + -1]]` does; the database has one lemma per
 kind of source (`select_current_trace_copy_both_ends(_list)`). Patterns are in normal form by the database, not by
 reading. Candidates: the instance of the argument after substituting `m` is compared literally in
 `Rewrite.abstraction` and is not in normal form (the summands are ordered by their atoms), or the value is matched
-before the index binds `m`. Diagnosed with step 2 first; then a change, or the two lemmas stay.
+before the index binds `m`. Ruled out with step 2 on `acopy[SIZE-i-1] = 2 * a[SIZE-i-1]; acopy[i] = 2 * a[i]`: the
+pattern is flat as the goals are, and no argument with unbound variables is reported, so `m` is bound in time. Left:
+the conditions of `Rewrite.abstraction` (`replaced.forall(...)`, the check against `avoid`), the next place for a
+debug line; until then the two lemmas stay.
 
 ## Database work (no change of the engine)
 
@@ -118,4 +129,5 @@ before the index binds `m`. Diagnosed with step 2 first; then a change, or the t
 
 ## Order
 
-1, 2 (small, local), then 3 as a measured experiment, then 4, then the database work, then 5 once diagnosed.
+1, 2, 3 done (0.52.9); next: the cloud result of 3 (then `stores_cases_point` out), 4, the database work, 5 once
+diagnosed.

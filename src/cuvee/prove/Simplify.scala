@@ -591,6 +591,14 @@ object Simplify:
       case (_, False) => not(config, state, ctx, left)
       case (False, _) => not(config, state, ctx, right)
 
+      // a conditional with literal branches against a literal is its test, its negation, or a constant, e.g.
+      // ite(c, 1, 0) == 0 of assume_abort_if_not in C is !c
+      case (Ite(test, a: Lit, b: Lit), d: Lit) =>
+        ite(config, state, ctx, test, eq_(config, state, ctx, a, d), eq_(config, state, ctx, b, d))
+
+      case (d: Lit, Ite(test, a: Lit, b: Lit)) =>
+        ite(config, state, ctx, test, eq_(config, state, ctx, d, a), eq_(config, state, ctx, d, b))
+
       // extensionality: lambdas are equal if their bodies are for all values of the variables, which are renamed apart,
       // the equation of an array or function value and a lambda is kept, which defines it (see select and app)
       case (Lam(xs, body, _), Lam(ys, body_, _)) if xs.length == ys.length =>
