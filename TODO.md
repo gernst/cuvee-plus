@@ -12,8 +12,9 @@ benchmarks are not rerun with Cuvée.
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
-- [ ] Integer counts and canonical forms (ideas/canonical.md): Loops with `-fallback` lost 19 true tasks
-      (nla-digbench), four false `_unwindbound1` tasks became unknown; the canonical facts cost time.
+- [ ] Integer counts and canonical forms (ideas/canonical.md): Loops with `-fallback` 13 true tasks below 0.51.4
+      (nla-digbench), four false `_unwindbound1` tasks unknown; the canonical facts cost time; the expected outputs of
+      the changed examples and several unit tests are not regenerated.
 - [ ] ps2-ll_unwindbound1 times out at 60 s.
 - [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma),
       `pcomp`, `sqm-if`, `nsqm-if`, `condm`.

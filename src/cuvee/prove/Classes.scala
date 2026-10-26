@@ -6,19 +6,22 @@ object Classes:
   def empty(constrs: Set[Fun]) =
     Classes(constrs, Map(), Map(), Map(), Nil, false)
 
-  type Rank = (Int, Int, Int, String)
+  type Rank = (Int, Int, Int, Int, String)
 
   // the order of the roots, given by the context (see Context.order): a literal before a variable before any other
-  // term, variables by the depth of the scope that binds them, then by index and name; the root of a class is its
-  // least member, and an equation is solved for its greatest variable (see solve), so that the canonical forms write
-  // the variables of inner scopes by those of outer ones
+  // term, variables by the depth of the scope that binds them and their position in it, then by index and name; the
+  // root of a class is its least member, and an equation is solved for its greatest variable (see solve), so that the
+  // canonical forms write the variables of inner scopes by those of outer ones, and those of a binder by the earlier
+  // ones, e.g. the position i == k + 1 of a loop by the counter k of its iterations
   case class Order(rank: Expr => Rank)
 
-  def rank(depth: Var => Int)(expr: Expr): Rank =
+  def rank(scope: Var => (Int, Int))(expr: Expr): Rank =
     expr match
-      case _: Lit => (0, 0, 0, "")
-      case x: Var => (1, depth(x), x.name.index.getOrElse(-1), x.name.name)
-      case _      => (2, 0, 0, "")
+      case _: Lit => (0, 0, 0, 0, "")
+      case x: Var =>
+        val (depth, position) = scope(x)
+        (1, depth, position, x.name.index.getOrElse(-1), x.name.name)
+      case _ => (2, 0, 0, 0, "")
 
 // congruence closure over the terms of the facts: a persistent union-find whose nodes are the registered terms, where
 // applications are decomposed into their arguments and everything else (variables, literals, binders, the combinators
@@ -107,25 +110,41 @@ case class Classes(
       case None =>
         this
 
-  // the canonical form of a term, bottom-up: a solved variable by the canonical form of its solution, arithmetic by its
-  // polynomial normal form, as the simplifier writes it, and a registered term by the root of its class, such that
-  // terms that the classes identify become equal, also below binders, which the classes do not decompose; bound
-  // variables are not registered, since they are renamed apart from the context
+  // the canonical form of a term, bottom-up: arithmetic by its polynomial normal form, as the simplifier writes it, with
+  // the solved variables among its atoms replaced by their solutions (see Simplify.poly), and a registered term by the
+  // root of its class, such that terms that the classes identify become equal, also below binders, which the classes
+  // do not decompose; solutions are substituted inside arithmetic only, so that a variable keeps its place elsewhere,
+  // e.g. the index i of a store a[i := a[i - 1] + 2] where i == k + 1 gives a[i := a[k] + 2]; an arithmetic term
+  // whose class has a solved variable as its root stays as it is; bound variables are not registered, since they are
+  // renamed apart from the context; an equation of equal sides is true, e.g. a definition x == f(y) of the classes,
+  // which the facts keep as it is (see Facts.map)
   def normalize(expr: Expr): Expr =
     val expr_ = expr.map(normalize)
     val expr__ =
       expr_ match
-        case x: Var =>
-          solution(x) match
-            case Some(e) => normalize(e)
-            case None    => find(x)
+        case Eq(a, b) if a == b =>
+          True
         case _ if expr_.isArith =>
           Ring(expr_.typ) match
-            case Some(ring) => Arith.normalize(ring, expr_)
+            case Some(ring) => Arith.toPoly(ring, expr_, substitute).normalize.toExpr(ring)
             case None       => expr_
         case _ =>
           expr_
-    if parent.contains(expr__) then find(expr__) else expr__
+    if parent.contains(expr__) then
+      find(expr__) match
+        case y: Var if expr__.isArith && solution(y).isDefined => expr__
+        case root                                              => root
+    else expr__
+
+  // a solved atom of a polynomial by the canonical form of its solution
+  def substitute(expr: Expr): Expr =
+    expr match
+      case x: Var =>
+        solution(x) match
+          case Some(e) => normalize(e)
+          case None    => x
+      case _ =>
+        expr
 
   // the solution of a variable of the class of x (see solve), unless it depends on that variable (see acyclic)
   def solution(x: Var): Option[Expr] =

@@ -161,9 +161,10 @@ or solvers consume.
   `Not(...)`). The outer loops iterate. No global normal forms other than the
   canonical forms of the context (`Classes.normalize`), no further case splits.
 - **Canonical forms** (doc/prove.md, "The context"): one order of roots
-  (`Context.order`, variables of outer scopes first); only solutions that
-  are arithmetic over variables are substituted, never equations of traces
-  or other terms, which the matcher reaches through their classes.
+  (`Context.order`, variables of outer scopes and earlier binder positions
+  first); solutions that are arithmetic over variables are substituted
+  inside arithmetic only, never equations of traces or other terms, which
+  the matcher reaches through their classes.
 - **Helpers used as decisions** (e.g. `eq_(...) == True`) get
   `ctx.neutral`.
 - **Expected values in unit tests** must be in the simplifier's normal form.

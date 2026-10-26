@@ -35,17 +35,21 @@ rules, and the memos. Each assumed fact goes to all theories:
   binders, combinators) is a node of its own. Two literals or two constructors in one class, or a disequation whose
   sides are in one class, are inconsistent.
   - **Order.** The root of a class is its least member by `Context.order`: a literal before a variable before any
-    other term, variables by the depth of the scope that binds them (free variables first), then by index and name.
-    Terms are thus written over the variables of the outermost scopes, e.g. the count of an inner loop by the bound of
-    its test.
+    other term, variables by the depth of the scope that binds them (free variables first) and their position in it,
+    then by index and name. Terms are thus written over the variables of the outer scopes and those of a binder over
+    the earlier ones, e.g. the count of an inner loop by the bound of its test, the position `i == k + 1` of a loop by
+    the counter `k` of its iterations.
   - **Solutions.** A linear equation is solved for its greatest variable if the solution is arithmetic over variables
     (`Classes.solve`, `Poly.solution`), e.g. `x` by `40 - n` for `n + x == 40`; the variable is merged with its
-    solution. Nothing else is substituted: equations of traces, reads of traces and arrays, and applications stay
-    members of their classes.
-  - **Canonical forms.** `Classes.normalize` replaces a solved variable by its solution, arithmetic by its polynomial
-    normal form, and a registered term by its root; `Simplify.var_` is `normalize` of the variable, and the facts are
-    renormalized after each merge (`Context.assume`). A solution that depends on its variable through the classes is
-    not used (`Classes.acyclic`).
+    solution. Solutions are substituted inside arithmetic only (`Classes.substitute`, `Simplify.poly`), so a variable
+    keeps its place elsewhere: `a[i := a[i - 1] + 2]` with `i == k + 1` is `a[i := a[k] + 2]`, the shape the lemmas
+    match. Nothing else is substituted: equations of traces, reads of traces and arrays, and applications stay members
+    of their classes.
+  - **Canonical forms.** `Classes.normalize` writes arithmetic in its polynomial normal form with the solutions of its
+    atoms, a registered term by its root, and an equation of equal sides as `true`; `Simplify.var_` is `normalize` of
+    the variable. The facts are renormalized after each merge (`Context.assume`); a fact that becomes `true` keeps its
+    form, since the facts are the keys of the memos (`Facts.map`). A solution that depends on its variable through
+    the classes is not used (`Classes.acyclic`).
   - **Definitions.** The members of the class of a variable that are not variables and do not contain it
     (`Context.defs`) are its definitions, in both orientations and transitively; the matcher tries them when a pattern
     does not match the variable itself (`Rewrite.matchesExpr`). A rewrite whose result contains its own term modulo

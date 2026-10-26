@@ -521,14 +521,14 @@ object Simplify:
       case None       => 
         simplify(config, state, ctx, expr)
 
-  // an integer- or real-valued term as a polynomial (not normalized), its leaves simplified (see Arith.toPoly)
+  // an integer- or real-valued term as a polynomial (not normalized), its leaves simplified (see Arith.toPoly), the
+  // solved variables among them replaced by their solutions (see Classes.substitute)
   def poly(config: Config, state: State, ctx: Context, ring: Ring, expr: Expr): Poly =
-    Arith.toPoly(ring, expr, simplify(config, state, ctx, _))
+    Arith.toPoly(ring, expr, leaf => ctx.classes.substitute(simplify(config, state, ctx, leaf)))
 
-  // a variable is replaced by its canonical form under the classes (see Classes.normalize): the literal of its class,
-  // the solution of its class (see Classes.solve), e.g. x by 40 - n for n + x == 40 in every position, or the root,
-  // the variable of the outermost scope (see Classes.rank), as in Shostak's combination, such that terms are written
-  // over the variables of the outer scopes, whereas the matcher still tries every member of the class
+  // a variable is replaced by the root of its class (see Classes.normalize): its literal, or the variable of the
+  // outermost scope (see Classes.Order); its solution only inside arithmetic (see poly), while the matcher still tries
+  // every member of the class
   def var_(config: Config, state: State, ctx: Context, x: Var): Expr =
     ctx.classes.normalize(x)
 

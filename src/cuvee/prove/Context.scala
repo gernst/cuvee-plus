@@ -109,13 +109,13 @@ case class Context(
   def exists(xs: List[Var]) =
     copy(bound = xs :: bound, existential = existential ++ xs)
 
-  // the depth of the scope that binds x, 0 for the free variables
-  def depth(x: Var): Int =
+  // the depth of the scope that binds x and its position there, (0, 0) for the free variables
+  def scope(x: Var): (Int, Int) =
     val i = bound.indexWhere(_ contains x)
-    if i < 0 then 0 else bound.length - i
+    if i < 0 then (0, 0) else (bound.length - i, bound(i).indexOf(x))
 
   // the order of the roots of the classes, by the scopes of this context (see Classes.Order)
-  given order: Classes.Order = Classes.Order(Classes.rank(depth))
+  given order: Classes.Order = Classes.Order(Classes.rank(scope))
 
   // below a negation or in the premise of an implication, where universal variables become existential
   // and vice versa, since forall x. !phi is !exists x. !!phi

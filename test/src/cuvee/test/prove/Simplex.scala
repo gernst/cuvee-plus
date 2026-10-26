@@ -92,7 +92,7 @@ object SimplexTests extends TestSuite:
     test("solved"):
       val ctx = facts(Eq(Ints.plus(n, x), lit(40)))
       assert(ctx.assume(Ints.lt(lit(40), Ints.plus(n, x))).inconsistent)
-      val classes = Classes.empty(Set()).assume(Eq(Ints.plus(n, x), lit(40)))(using Classes.Order(Classes.rank(y => if y == x then 2 else 1)))
+      val classes = Classes.empty(Set()).assume(Eq(Ints.plus(n, x), lit(40)))(using Classes.Order(Classes.rank(y => if y == x then (2, 0) else (1, 0))))
       classes.solved.keySet ==> Set(x)
       assert(classes.equal(x, classes.solved(x)))
 
