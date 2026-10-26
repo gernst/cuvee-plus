@@ -4,30 +4,32 @@ import util.Rational
 import cuvee.core._
 
 object Linear:
-  def empty = Linear(Nil, Nil, util.Ref(Map()))
-
-  // the results of the checks by the set of constraints and disequations, shared by the copies of a context and fresh
-  // for each command (see Context.withRules), since the same check is made at many positions
-  type Checks = Map[(Set[Constraint], Set[(Ring, Poly)]), Boolean]
+  def empty = Linear(Nil, Nil, Tableau.empty)
 
 // the linear constraints on Int and Real among the facts, decided by the simplex over the rationals (see Simplex):
 // comparisons and equations as constraints 0 <= p and 0 < p, where on Int a strict comparison is the non-strict one
 // offset by 1 and the coefficients are rounded (Poly.floor), such that e.g. 2 * n < 52 bounds n by 25; disequations
 // are kept apart and contradict the constraints if these determine the value of the difference; the solutions of
 // linear equations are kept by the classes (see Classes.solve)
-case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], checks: util.Ref[Linear.Checks]) extends Theory:
-  // a disequation p != 0 is refuted if the constraints bound p to 0 from both sides; the check is cached (see checks)
+// the constraints are kept in the tableau of the simplex as well, solved incrementally (see Tableau)
+case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], tableau: Tableau) extends Theory:
+  // a disequation p != 0 is refuted if the constraints bound p to 0 from both sides
   lazy val inconsistent: Boolean =
-    val key = (constraints.toSet, diseqs.toSet)
-    checks.value.get(key) match
-      case Some(result) =>
-        result
+    !tableau.sat || diseqs.exists: (ring, poly) =>
+      !tableau.add(positive(ring, poly)).sat && !tableau.add(positive(ring, -poly)).sat
 
-      case None =>
-        val result = !Simplex.satisfiable(constraints) || diseqs.exists: (ring, poly) =>
-          !Simplex.satisfiable(positive(ring, poly) :: constraints) && !Simplex.satisfiable(positive(ring, -poly) :: constraints)
-        checks := checks.value + (key -> result)
-        result
+  // the integer variables among `xs` that the constraints fix to a value, e.g. k of 0 <= k and k < n with n <= 1: the
+  // value of k in the solved tableau is the only candidate, confirmed if a smaller and a larger value contradict the
+  // constraints, which the incremental tableau decides with two constraints added to it
+  def fixed(xs: List[Var]): List[(Var, BigInt)] =
+    for
+      x <- xs if tableau.sat && x.typ == Sort.int
+      i <- tableau.atoms.get(List((x, BigInt(1)))).toList
+      v = tableau.value(i) if v.d.isZero && v.c.den == 1
+      n = v.c.num
+      if !tableau.add(Constraint.le(Poly.atom(x), Poly.const(Rational(n - 1)))).sat
+      if !tableau.add(Constraint.le(Poly.const(Rational(n + 1)), Poly.atom(x))).sat
+    yield (x, n)
 
   // 0 < p, on Int as 0 <= p - 1
   def positive(ring: Ring, poly: Poly): Constraint =
@@ -97,7 +99,7 @@ case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], che
           case (atom @ Ints.mod(_, Ints.ring.num(k: BigInt)), _) <- mono.atoms
           if ring == Ints.ring && k != 0
         yield (Poly.atom(atom), Rational(k.abs - 1))
-      val linear = divisions.distinct.foldLeft(copy(constraints = c_ :: constraints)) { case (linear, (t, d, offset)) =>
+      val linear = divisions.distinct.foldLeft(copy(constraints = c_ :: constraints, tableau = tableau.add(c_))) { case (linear, (t, d, offset)) =>
         linear.add(ring, Constraint.le(d, t)).add(ring, Constraint.le(t, d + Poly.const(offset)))
       }
       remainders.distinct.foldLeft(linear) { case (linear, (r, max)) =>

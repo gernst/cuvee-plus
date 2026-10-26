@@ -44,10 +44,12 @@ case class Classes(
     diseqs: List[(Expr, Expr)],
     clashed: Boolean,
     solved: Map[Var, Expr] = Map(),
-    merges: Int = 0
+    merges: Int = 0,
+    retired: List[Expr] = Nil
 ) extends Theory:
-  // solved: the solutions of linear equations by variable (see solve); merges: the number of merges, by which the
-  // context knows when to renormalize its facts (see Context.assume)
+  // solved: the solutions of linear equations by variable (see solve); merges: the number of merges and solutions,
+  // retired: the roots that they changed, newest first, by which the context renormalizes those of its facts that
+  // mention them, the others are canonical already (see Context.assume)
   def find(expr: Expr): Expr =
     parent.get(expr) match
       case Some(next) if next != expr => find(next)
@@ -105,7 +107,9 @@ case class Classes(
             if e.isArith
           yield (x, e)
         solution match
-          case Some((x, e)) => merge(x, e).copy(solved = solved + (x -> e))
+          case Some((x, e)) =>
+            val cl = merge(x, e)
+            cl.copy(solved = solved + (x -> e), merges = cl.merges + 1, retired = cl.find(x) :: x :: cl.retired)
           case None         => this
       case None =>
         this
@@ -227,6 +231,7 @@ case class Classes(
       val merged = cl.copy(
         parent = cl.parent + (child -> root),
         merges = cl.merges + 1,
+        retired = child :: cl.retired,
         members = cl.members - small - big + (root -> members_),
         uses = cl.uses - small - big + (root -> (usesBig ++ usesSmall)),
         clashed = cl.clashed || clashes(members_)

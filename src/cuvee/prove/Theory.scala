@@ -10,6 +10,14 @@ trait Theory:
 object Facts:
   val empty = Facts(Nil, Nil, false)
 
+  // whether `phi` has one of `exprs` as a subterm
+  def mentions(phi: Expr, exprs: Set[Expr]): Boolean =
+    exprs.contains(phi) || {
+      var found = false
+      phi.map { arg => found = found || mentions(arg, exprs); arg }
+      found
+    }
+
 // the facts as given, the assumptions are known to hold, the conclusions are known not to hold;
 // they are inconsistent if false is among the assumptions, true among the conclusions, or a fact among both
 case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) extends Theory:
@@ -37,3 +45,7 @@ case class Facts(assms: List[Expr], concls: List[Expr], inconsistent: Boolean) e
         case True | False => phi
         case phi_         => phi_
     Facts(assms.map(keep), concls.map(keep), inconsistent)
+
+  // map only the facts that mention one of `exprs`
+  def mapMentioning(exprs: Set[Expr], f: Expr => Expr): Facts =
+    map(phi => if Facts.mentions(phi, exprs) then f(phi) else phi)

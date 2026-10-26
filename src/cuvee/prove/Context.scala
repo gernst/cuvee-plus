@@ -62,7 +62,7 @@ case class Context(
   // the rewrite rules with a fresh number of steps and no memos, which are shared by the copies of this context, and
   // which guards against rules that do not terminate
   def withRules(rules: List[Rule], steps: Int = 1000) =
-    copy(rules = rules, steps = util.Ref(steps), applied = util.Ref(Map()), memos = util.Ref(Context.Memos()), linear = linear.copy(checks = util.Ref(Map())))
+    copy(rules = rules, steps = util.Ref(steps), applied = util.Ref(Map()), memos = util.Ref(Context.Memos()))
 
   // an expression seen through its class, never a variable: a variable matches only by a definition that is not a
   // variable, the first member of its class that is none, any other expression as itself,
@@ -96,7 +96,7 @@ case class Context(
   // Views.projected), with the same bound variables, rules of the input, and memos; the rules of the facts of the
   // context are dropped (they have no name, see Context.rules) and come back with the facts that are kept
   def restricted(keep: Expr => Boolean): Context =
-    val base = copy(facts = Facts.empty, classes = Classes.empty(state.constrs.values.toSet), linear = Linear.empty.copy(checks = linear.checks), rules = rules.filter(_.name.isDefined))
+    val base = copy(facts = Facts.empty, classes = Classes.empty(state.constrs.values.toSet), linear = Linear.empty, rules = rules.filter(_.name.isDefined))
     base.assume(facts.assms.filter(keep), facts.concls.filter(keep))
 
   // variables bound by let, match, and the combinators, which are neither universal nor existential
@@ -153,12 +153,21 @@ case class Context(
         val phi_ = classes.normalize(phi)
         val classes_ = classes.assume(phi)
         val facts_ = if phi_ == True then facts else facts.assume(phi_)
-        copy(facts = if classes_.merges == classes.merges then facts_ else facts_.map(classes_.normalize), classes = classes_, linear = linear.assume(phi), rules = Context.rules(phi) ++ rules)
+        copy(facts = Context.renormalize(classes, classes_, facts_), classes = classes_, linear = linear.assume(phi), rules = Context.rules(phi) ++ rules).fix(phi)
 
   def deny(phi: Expr): Context =
     val classes_ = classes.deny(phi)
     val facts_ = facts.deny(phi)
-    copy(facts = if classes_.merges == classes.merges then facts_ else facts_.map(classes_.normalize), classes = classes_, linear = linear.deny(phi))
+    copy(facts = Context.renormalize(classes, classes_, facts_), classes = classes_, linear = linear.deny(phi)).fix(phi)
+
+  // the variables of `phi` that the linear constraints fix to a value, e.g. k of 0 <= k and k < n with n <= 1, are
+  // that value in the classes, which the simplex does not tell them, so that terms over them are decided, also
+  // nonlinear ones; only after a fact that is a constraint, and only those not fixed already
+  def fix(phi: Expr): Context =
+    val xs = phi.free.toList.filter(x => x.typ == Sort.int && !classes.find(x).isInstanceOf[Lit])
+    if xs.isEmpty || linear.constraints.isEmpty
+    then this
+    else linear.fixed(xs).foldLeft(this) { case (ctx, (x, n)) => ctx.assume(Eq(x, Lit(n, Sort.int))) }
 
   def theories: List[Theory] =
     List(facts, classes, linear)
@@ -216,6 +225,13 @@ case class Context(
         deny(phi).assume(Nil, neg)
 
 object Context:
+  // the facts after `classes` became `classes_`: those that mention a root that a merge or a solution changed, the
+  // others are canonical already (see Classes.retired)
+  def renormalize(classes: Classes, classes_ : Classes, facts: Facts): Facts =
+    if classes_.merges == classes.merges
+    then facts
+    else facts.mapMentioning(classes_.retired.take(classes_.retired.length - classes.retired.length).toSet, classes_.normalize)
+
   // an equation of a term with variables and a ground term is a rewrite rule without instantiable variables,
   // whose free variables are constants; it terminates, since each step removes occurrences of variables
   def rules(phi: Expr): List[Rule] =

@@ -52,7 +52,8 @@ rules, and the memos. Each assumed fact goes to all theories:
     of their classes.
   - **Canonical forms.** `Classes.normalize` writes arithmetic in its polynomial normal form with the solutions of its
     atoms, a registered term by its root, and an equation of equal sides as `true`; `Simplify.var_` is `normalize` of
-    the variable. The facts are renormalized after each merge (`Context.assume`); a fact that becomes `true` keeps its
+    the variable. After a merge or a solution, the facts that mention a root it changed are renormalized
+    (`Classes.retired`, `Context.renormalize`), the others are canonical already; a fact that becomes `true` keeps its
     form, since the facts are the keys of the memos (`Facts.map`). A solution that depends on its variable through
     the classes is not used (`Classes.acyclic`).
   - **Definitions.** The members of the class of a variable that are not variables and do not contain it
@@ -65,8 +66,12 @@ rules, and the memos. Each assumed fact goes to all theories:
   `Int`, a strict comparison is the non-strict one offset by 1 and coefficients are rounded (`Poly.floor`), so
   `2 * x < 7` bounds `x` by 3; products of atoms are variables of their own. An atom `t div k` for a positive literal
   `k` brings `k * (t div k) <= t <= k * (t div k) + k - 1`, an atom `t % k` brings `0 <= t % k <= |k| - 1`.
-  Disequations are refuted when the constraints determine the difference. Checks are cached by the set of
-  constraints (`Linear.checks`).
+  Disequations are refuted when the constraints determine the difference. The tableau is persistent (`Tableau`): a
+  constraint is added to the solved tableau of its context and pivots from there, so a check of `implied` costs a
+  few pivots. A variable of a new fact that the constraints fix to a value, e.g. `k` of `0 <= k` and `k < n` with
+  `n <= 1`, is that value in the classes (`Context.fix`): its value in the solved tableau is the only candidate,
+  confirmed if a smaller and a larger value contradict the constraints; so terms over it are decided, also
+  nonlinear ones.
 
 A formula follows from the context if denying it makes a theory inconsistent (`Context.implied`).
 
@@ -124,9 +129,7 @@ by the simplifier in the context.
   match by abstraction (Miller's fragment, or terms whose variables are instantiated); the simplifier beta-reduces
   the instantiated right-hand side. A guard `D(x, h) && φ` binds `D` to the whole guard of the expression, and the
   conjuncts of `φ` must follow from it (`Rewrite.guard`). Updates and bodies of combinators are matched in their
-  context (`Simplify.combinator`), assuming the invariants over their dependencies; a bound variable that the simplex
-  fixes to a literal bound among these facts, e.g. `k` of `0 <= k < n` with `n <= 1`, is that literal in the classes,
-  so that terms over it are decided, also nonlinear ones.
+  context (`Simplify.combinator`), assuming the invariants over their dependencies.
 - **Side conditions** are taken in order: a closed one is decided, an open one is matched against the facts, which
   binds the variables that occur only in conditions; so conjuncts that bind variables come first in a lemma. A closed
   condition is first looked up among the facts modulo the classes and the canonical forms of binders

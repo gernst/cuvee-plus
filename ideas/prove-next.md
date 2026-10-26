@@ -16,10 +16,10 @@ are recovered. Open:
   to facts as in congruence closure ([canonical.md](canonical.md)).
 - **rewnifrev** (true): the goal is left at the array trace with `n == SIZE` known but not substituted into the
   count of `counter`; find the rule that no longer fires (`-debug match,conditions` against 0.51.4).
-- The four `_unwindbound1` false tasks (cohencu, ps4, ps5, ps6) are recovered (0.52.3) by the bound variables of a
-  combinator that the simplex fixes to a literal (`Simplify.combinator`, which naturals did by `natural_nonpositive`)
-  and `butlast_counter_consts`; the general form, the fixed variables of the simplex for every context, waits for an
-  incremental simplex, whose candidate checks are cheap.
+- The four `_unwindbound1` false tasks (cohencu, ps4, ps5, ps6) are recovered (0.52.4) by the variables of a
+  fact that the simplex fixes to a value (`Context.fix`, on the incremental tableau; naturals did it by
+  `natural_nonpositive`) and `butlast_counter_consts`. Not done: bound propagation over the rows, which would fix
+  variables that the new fact does not mention.
 
 ### B. Bounded unrolling for counterexamples and bounded proofs
 

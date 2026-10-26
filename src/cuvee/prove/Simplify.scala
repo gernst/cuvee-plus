@@ -430,16 +430,7 @@ object Simplify:
           val facts = invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound)
           ctx.memos := ctx.memos.value.copy(combinators = ctx.memos.value.combinators + (key -> facts.map(re(_))))
           facts
-    val inner = ctx.neutral.bind(bound).assume(facts, Nil)
-    // a bound variable that the simplex fixes to a literal bound, e.g. k of 0 <= k < n with n <= 1, is that literal in
-    // the classes, which the simplex does not tell them, so that terms over it are decided, also nonlinear ones
-    val fixed =
-      for
-        x <- bound if x.typ == Sort.int
-        case Ints.le(l: Lit, `x`) <- facts
-        if inner.implied(Ints.le(x, l))
-      yield Eq(x, l)
-    inner.assume(fixed.distinct, Nil)
+    ctx.neutral.bind(bound).assume(facts, Nil)
 
   // the range 0 <= acc < k of the accumulator of a trace whose initial value is known to be in it and whose results are
   // remainders modulo k or the accumulator itself, which holds for all values of the accumulator by induction, e.g. of

@@ -15,8 +15,6 @@ benchmarks are not rerun with Cuvée.
 - [ ] Integer counts and canonical forms (ideas/prove-next.md, plan A): timeouts on Loops (array_2-*-simple,
       linear_sea.ch, nested_4, nested3-1_abstracted, theatreSquare, cohendiv, geo1), rewnifrev; the canonical facts
       cost time.
-- [ ] An incremental simplex (a persistent tableau in `Linear`), then the variables that it fixes to a literal as
-      equations of the classes in every context, instead of the bound variables of combinators only.
 - [ ] ps2-ll_unwindbound1 times out at 60 s.
 - [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma),
       `pcomp`, `sqm-if`, `nsqm-if`, `condm`.
