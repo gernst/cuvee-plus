@@ -13,8 +13,11 @@ documented in `doc/`.
 - [database-review.md](database-review.md): the lemma database: what could be unified, candidates among the lemmas
   of examples/dafny/algorithms, the lemmas that work around gaps of the engine.
 - [array-lemmas.md](array-lemmas.md): the open classes of SV-COMP Arrays (Oct 26, 2026), the lemmas added to the
-  database, the workarounds in [array-lemmas.dfy](array-lemmas.dfy) with the gaps of the engine they wait for, the
-  plan for reducer commutativity.
+  database, the workarounds among them with the gaps of the engine they wait for, the plan for reducer
+  commutativity.
+- [engine-gaps.md](engine-gaps.md): a plan to close the gaps of `-prove` behind the workarounds of the database
+  (comparisons of conditionals, `-debug match`, iteration variables kept instead of literals, remainders and division,
+  higher-order values at arithmetic arguments), the database work, and what is not done and why.
 - [dnf-guards.md](dnf-guards.md): the cases of updates with conjunctive guards (DNF) instead of cases merged by
   equal results, the merging moved into the matcher for higher-order guard variables.
 - [conditional-stores.md](conditional-stores.md): guarded stores merged into stores of conditional values, in

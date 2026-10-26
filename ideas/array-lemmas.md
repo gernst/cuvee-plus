@@ -8,7 +8,7 @@ Baseline: 137 true and 62 false correct, 113 true tasks unsolved (41 unknown in 
 ## Lemmas added to the database
 
 All proved in Lean (`scripts/lean/check.sh`), checked locally with the database in the jar (`-cp <resources>:cuvee.jar`)
-and without other changes; each gain also without the lemmas of [array-lemmas.dfy](array-lemmas.dfy).
+and without other changes.
 
 | Lemma | Module | Tasks |
 |---|---|---|
@@ -29,19 +29,26 @@ proves standard_sentinel-2 and loop-acceleration/array_4 (8 s each; examples/c/t
 same equivalence on `occurs(x, selects(a[j := x], ...))` was the alternative; a rule for stores of other values would
 split the counter at the store, which is no form of the programs, and no task needs it.
 
-## Lemmas outside the database ([array-lemmas.dfy](array-lemmas.dfy))
+## Workarounds moved into the database
 
-Injected by `-include ideas/array-lemmas.dfy`; each works around a gap of the engine, named with it, or is needed by
-one task only. Not proved in Lean.
+First injected by an include, now in the modules (proved in Lean); each works around a gap of the engine, named in its
+comment and in TODO.md, or is needed by one task only:
 
-| Lemmas | Tasks | Gap of the engine |
-|---|---|---|
-| `compact`, `compact_lower/upper` (C[j++] = i) | partial_init | terms with binders compared literally by the arithmetic, not modulo the names of bound variables; `⌊K⌋` and `⌊counter(0, 1, n)⌋` not identified below a binder; hence the count is a variable of the conditions and the keys a list |
-| `filter_above/below`, `*_select` (bb[b++] = aa[a]) | partition_ground-2, partition_original | the same |
-| `earlier_le_current_maxs_seeded`, mins (a maximum seeded with a[0]) | sanfoundry_27 | none, one task |
-| `select_current_trace_copy_both_ends(_list)` | tcpy (array-tiling and array-cav19) | rule patterns are not normalized as goals (`m - k - 1` matches nothing, `-k + m + -1` does); a higher-order value `F(m - k - 1)` with an argument other than a bound variable does not match |
-| `stores_cases_point` | copysome2-1 | cases with results equal after substituting the equation of the guard are not merged (`k != c => a[k := F(k)]`, `k == c => a[c := F(c)]`) |
-| `div_mod`, `mod2_succ` (forward lemmas) | tcpy, pr2, mbpr2 | division with remainder and the parity of successors in the arithmetic |
+| Lemmas | Module | Tasks | Gap of the engine |
+|---|---|---|---|
+| fold `compacts`, `select_current_compacts_lower/upper` (C[j++] = i) | aggregation | partial_init | terms with binders compared literally by the arithmetic, not modulo the names of bound variables; `⌊K⌋` and `⌊counter(0, 1, n)⌋` not identified below a binder; hence the count is a variable of the conditions and the keys a list |
+| folds `filters_above/below`, `select_current_filters_above/below` (bb[b++] = aa[a]) | aggregation | partition_ground-2, partition_original | the same |
+| `current_maxs_seeded_earlier`, `current_mins_seeded_earlier` (a maximum seeded with a[0]) | aggregation | sanfoundry_27 | none, one task |
+| `select_current_trace_copy_both_ends(_list)` | arrays | tcpy (array-tiling and array-cav19) | rule patterns are not normalized as goals (`m - k - 1` matches nothing, `-k + m + -1` does); a higher-order value `F(m - k - 1)` with an argument other than a bound variable does not match |
+| `stores_cases_point` | arrays | copysome2-1 | cases with results equal after substituting the equation of the guard are not merged (`k != c => a[k := F(k)]`, `k == c => a[c := F(c)]`) |
+
+Not moved: the forward lemmas `div_mod` (`x == c * (x / c) + x % c` for `0 < c`) and `mod2_succ` (`(x + 1) % 2 ==
+1 - x % 2`), which pr2, mbpr2 and array-tiling/tcpy need: they trigger at every division and every remainder of a
+successor, general terms (doc/teq.md, "What a forward lemma costs"), and are the likely cause of the 10 timeouts of
+Loops with the fallback; division with remainder and parity belong in the arithmetic of `-prove` (TODO.md).
+
+Tests: examples/c/teq/compacts.c, filters.c, max_seeded.c, copy_both_ends.c, stores_cases_point.c and their `_wrong`
+variants.
 
 ## Suggestions for the engine
 
@@ -124,5 +131,5 @@ with the edited database and `teq:arraylemmas`; results/cuvee-arrays.*), true an
 - The median CPU time of the tasks solved by both rose from 22.6 s to 28.0 s (Arrays) and 21.7 s to 27.5 s (Loops).
 
 Tests: examples/c/teq/copy_prefix.c, max_prefix.c, rows.c (unknown without the lemmas) and their `_wrong` variants
-(unknown); maps_earlier_prefix.c (a wrong assertion over a prefix) stays unknown. The lemmas of array-lemmas.dfy were
+(unknown); maps_earlier_prefix.c (a wrong assertion over a prefix) stays unknown. The workarounds were
 checked on programs with wrong assertions (compaction, filter, seeded maximum, both ends): unknown.

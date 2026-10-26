@@ -1,7 +1,8 @@
 // aggregation: sums, parities, counts, maxima and minima as traces and as functions of lists, with their acceleration
-// (current, earlier), linearity of sums, indicators, and bounds; an optional module over teq.dfy (-include
-// teq:aggregation); a constant sequence of a dependency is ⌊consts(n, c)⌋ (consts_choice of teq.dfy), whose sum is
-// sum_consts; the bounds of counts and of the prefix maxima and minima by their initial value are forward lemmas
+// (current, earlier), linearity of sums, indicators, and bounds, compactions and filters (stores at counted positions);
+// an optional module over teq.dfy (-include teq:aggregation); a constant sequence of a dependency is ⌊consts(n, c)⌋
+// (consts_choice of teq.dfy), whose sum is sum_consts; the bounds of counts and of the prefix maxima and minima by
+// their initial value are forward lemmas
 
 // the functions of lists and integers that the aggregates fold
 // the sum of a list
@@ -235,6 +236,80 @@ lemma {:rw} {:teq} current_mins_earlier(k: int, x: int, values: List<int>)
 lemma {:rw} {:teq} current_mins_prefix_earlier(k: int, x: int, n: int, xs: List<int>)
   requires 0 <= k < n
   ensures current(mins(x, prefix(n, xs))) <= earlier(k, xs)
+
+// the maximum seeded with the read at h and continued with the reads at i, ..., i + n - 1, for h = i - 1, bounds the
+// reads at h, ..., i + n - 1, e.g. largest = a[0] before a loop from 1
+// (from sanfoundry_27_ground, the only task of SV-COMP that uses it)
+lemma {:rw} {:teq} current_maxs_seeded_earlier(j: int, h: int, i: int, n: int, xs: List<int>)
+  requires h == i - 1 && h <= j < i + n
+  ensures earlier(j, xs) <= current(maxs(earlier(h, xs), maps(for ⌊counter(i, 1, n)⌋ yield v :: earlier(v, xs))))
+
+// (unused on SV-COMP; the counterpart of current_maxs_seeded_earlier)
+lemma {:rw} {:teq} current_mins_seeded_earlier(j: int, h: int, i: int, n: int, xs: List<int>)
+  requires h == i - 1 && h <= j < i + n
+  ensures current(mins(earlier(h, xs), maps(for ⌊counter(i, 1, n)⌋ yield v :: earlier(v, xs)))) <= earlier(j, xs)
+
+// compactions and filters: a store at a position j that counts the iterations where a guard holds, C[j++] = i or
+// bb[b++] = aa[a]; the folds keep the keys as a list, a variable ⌊K⌋ of the program, and the counts are variables of the
+// conditions, matched against the facts, since the arithmetic compares terms with binders literally, not modulo the
+// names of their bound variables, and does not identify ⌊K⌋ with ⌊counter(0, 1, n)⌋ below a binder (TODO.md)
+
+// the iterations k where P(k) holds stored at the positions 0, 1, ... in the order of the loop
+// (from standard_partial_init_ground)
+function {:teq} {:fold} compacts(c0: array<int, int>, ks: List<int>, P: (int) -> bool): Trace<array<int, int>>
+{
+  trace(c0, for ks, ⌊counts(0, true, maps(for ks yield k :: P(k)))⌋ do c, k, j :: case P(k) => c[j := k] case !P(k) => c)
+}
+
+// the x-th of them is at least x, and at most x plus the iterations without P after it
+// (from standard_partial_init_ground)
+lemma {:rw} {:teq} select_current_compacts_lower(c0: array<int, int>, K: Trace<int>, n: int, m: int, x: int,
+                                                 P: (int) -> bool)
+  requires K == counter(0, 1, n)
+  requires m == count(true, maps(for ⌊K⌋ yield k :: P(k)))
+  requires 0 <= x < m
+  ensures x <= current(compacts(c0, ⌊K⌋, P))[x]
+
+// (from standard_partial_init_ground)
+lemma {:rw} {:teq} select_current_compacts_upper(c0: array<int, int>, K: Trace<int>, n: int, m: int, x: int,
+                                                 P: (int) -> bool)
+  requires K == counter(0, 1, n)
+  requires m == count(true, maps(for ⌊K⌋ yield k :: P(k)))
+  requires 0 <= x < m
+  ensures current(compacts(c0, ⌊K⌋, P))[x] + m <= x + n
+
+// the values F(k) of the iterations where b <= F(k) holds stored at the positions 0, 1, ..., hence the first m
+// positions, for the count m, hold values not below b
+// (from standard_partition_ground-2, standard_partition_original_ground)
+function {:teq} {:fold} filters_above(c0: array<int, int>, ks: List<int>, b: int, F: (int) -> int): Trace<array<int, int>>
+{
+  trace(c0, for ks, ⌊counts(0, true, maps(for ks yield k :: b <= F(k)))⌋ do c, k, j ::
+        case b <= F(k) => c[j := F(k)] case F(k) < b => c)
+}
+
+// (from standard_partition_ground-2, standard_partition_original_ground)
+lemma {:rw} {:teq} select_current_filters_above(c0: array<int, int>, ks: List<int>, b: int, F: (int) -> int, m: int,
+                                                x: int)
+  requires m == count(true, maps(for ks yield k :: b <= F(k)))
+  requires 0 <= x < m
+  ensures b <= current(filters_above(c0, ks, b, F))[x]
+
+// the same for the values below b, e.g. in the else branch, whose count is the iterations minus the count of the
+// others, as counts_false states it
+// (from standard_partition_original_ground)
+function {:teq} {:fold} filters_below(c0: array<int, int>, ks: List<int>, b: int, F: (int) -> int): Trace<array<int, int>>
+{
+  trace(c0, for ks, ⌊counts(0, false, maps(for ks yield k :: b <= F(k)))⌋ do c, k, j ::
+        case b <= F(k) => c case F(k) < b => c[j := F(k)])
+}
+
+// (from standard_partition_original_ground)
+lemma {:rw} {:teq} select_current_filters_below(c0: array<int, int>, K: Trace<int>, n: int, b: int, F: (int) -> int,
+                                                m: int, x: int)
+  requires K == counter(0, 1, n)
+  requires count(true, maps(for ⌊K⌋ yield k :: b <= F(k))) + m == n
+  requires 0 <= x < m
+  ensures current(filters_below(c0, ⌊K⌋, b, F))[x] < b
 
 // the prefix parities starting with an initial value
 // (unused on SV-COMP, with its current_parities; kept as a fold of the module)

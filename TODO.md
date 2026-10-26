@@ -29,9 +29,10 @@ benchmarks are not rerun with Cuvée.
 - [ ] Lost tasks: in-de52, in-de62 (more loops than the depth of the case splits).
 - [ ] partial_mod_count_* (true): conditional stores whose second value is not a constant, then a count of zeros.
 - [ ] array-patterns (30 true tasks): pairwise cancelling sums over stores at nondeterministic indices.
-- [ ] Arrays (ideas/array-lemmas.md, Oct 26): the gaps of the engine behind the workarounds of
-      ideas/array-lemmas.dfy (compactions and filters, copies from both ends, cases split at a position, division and
-      parity), each listed with its tasks; then move the lemmas into the database.
+- [ ] Arrays (ideas/array-lemmas.md, Oct 26): the gaps of the engine behind the workarounds in the database
+      (compactions and filters, copies from both ends, cases split at a position), each listed with its tasks; then
+      replace the workarounds by their plain forms; plan in ideas/engine-gaps.md. Division with remainder and parity in the arithmetic of `-prove`
+      (pr2, mbpr2, array-tiling/tcpy; forward lemmas at every division cost too much).
 - [ ] Reducer commutativity (reducercommutativity, array-crafted bAnd/bor/xor; plan in ideas/array-lemmas.md): one
       fold per operator (`bitands`, `bitors`, `bitxors`, max and min as folds with their symmetric variants), swap and
       rotation lemmas per operator, the value lists as slices.

@@ -412,6 +412,66 @@ theorem current_mins_prefix_earlier : Stmt.current_mins_prefix_earlier := by
   exact current_mins_earlier k x («prefix» n xs) («prefix» n xs).length rfl
     ⟨hk, by rw [prefix_N]; have := lt_length_prefix k.toNat n.toNat xs (by omega) (by omega); omega⟩
 
+theorem current_maxs_seeded_earlier : Stmt.current_maxs_seeded_earlier := by
+  intro j h i n xs ⟨hh, hj1, hj2⟩
+  by_cases e : j = h
+  · subst e; exact N.current_maxs_initial _ _ _ rfl
+  · rw [counter_N]
+    have hr := N.current_maxs_earlier (j - i).toNat (earlier h xs)
+      (maps (butlast (N.counter i 1 n.toNat)) (fun v => earlier v xs)) n.toNat
+      (by rw [N.length_maps, N.length_butlast_counter]) (by rw [N.integer_cast, N.integer_cast]; omega)
+    rwa [N.earlier_maps_counter _ _ _ _ (by omega), show i + ((j - i).toNat : Int) = j by omega] at hr
+
+theorem current_mins_seeded_earlier : Stmt.current_mins_seeded_earlier := by
+  intro j h i n xs ⟨hh, hj1, hj2⟩
+  by_cases e : j = h
+  · subst e; exact N.current_mins_initial _ _ _ rfl
+  · rw [counter_N]
+    have hr := N.current_mins_earlier (j - i).toNat (earlier h xs)
+      (maps (butlast (N.counter i 1 n.toNat)) (fun v => earlier v xs)) n.toNat
+      (by rw [N.length_maps, N.length_butlast_counter]) (by rw [N.integer_cast, N.integer_cast]; omega)
+    rwa [N.earlier_maps_counter _ _ _ _ (by omega), show i + ((j - i).toNat : Int) = j by omega] at hr
+
+-- compacts without the dead branch of its update, from the count 0 on
+theorem compacts_N (c0 : Int → Int) (ks : List Int) (P : Int → Prop) : compacts c0 ks P = N.compacting P c0 0 ks := by
+  simp only [compacts, N.compacting, N.ite_not_else]
+
+theorem select_current_compacts_lower : Stmt.select_current_compacts_lower := by
+  intro c0 K n m x P ⟨hK, hm, hx0, hxm⟩
+  subst hK hm
+  rw [counter_N] at hxm ⊢
+  rw [compacts_N]
+  have := (N.compacting_from P n.toNat 0 0 c0 x).2.2 ⟨hx0, by omega⟩
+  omega
+
+theorem select_current_compacts_upper : Stmt.select_current_compacts_upper := by
+  intro c0 K n m x P ⟨hK, hm, hx0, hxm⟩
+  subst hK hm
+  rw [counter_N] at hxm ⊢
+  rw [compacts_N]
+  have h1 := (N.compacting_from P n.toNat 0 0 c0 x).1
+  have := (N.compacting_from P n.toNat 0 0 c0 x).2.2 ⟨hx0, by omega⟩
+  omega
+
+theorem select_current_filters_above : Stmt.select_current_filters_above := by
+  intro c0 ks b F m x n hks ⟨hm, hx0, hxm⟩
+  rw [show filters_above c0 ks b F = N.filtering_above c0 0 ks b F by
+    simp only [filters_above, N.filtering_above, N.ite_le_lt]]
+  exact (N.filtering_above_from b F ks 0 c0 x).2 ⟨hx0, by omega⟩
+
+theorem select_current_filters_below : Stmt.select_current_filters_below := by
+  intro c0 K n b F m x ⟨hK, hm, hx0, hxm⟩
+  subst hK
+  rw [counter_N] at hm ⊢
+  rw [show filters_below c0 (butlast (N.counter 0 1 n.toNat)) b F
+      = N.filtering_below c0 0 (butlast (N.counter 0 1 n.toNat)) b F by
+    simp only [filters_below, N.filtering_below, N.ite_le_lt]]
+  have ht := N.count_true_false (fun k => b ≤ F k) (butlast (N.counter 0 1 n.toNat))
+  rw [N.length_butlast_counter] at ht
+  have h1 := N.count_nonnegative True (maps (butlast (N.counter 0 1 n.toNat)) (fun k => b ≤ F k))
+  have h2 := N.count_nonnegative False (maps (butlast (N.counter 0 1 n.toNat)) (fun k => b ≤ F k))
+  exact (N.filtering_below_from b F _ 0 c0 x).2 ⟨hx0, by omega⟩
+
 theorem current_parities : Stmt.current_parities := by
   intro x values n hvalues; exact N.current_parities x values values.length rfl
 
@@ -621,6 +681,16 @@ theorem stores_cases : Stmt.stores_cases := by
 theorem stores_index_cases : Stmt.stores_index_cases := by
   intro a0 n c d P; rw [counter_N]; exact N.stores_index_cases a0 n.toNat c d P
 
+theorem stores_cases_point : Stmt.stores_cases_point := by
+  intro a0 n c F
+  simp only [N.ite_ne_eq]
+  rw [← N.trace_stores_maps]
+  congr 1
+  funext a k j
+  by_cases e : k = c
+  · subst e; simp
+  · simp [e]
+
 theorem stores_read_unmodified : Stmt.stores_read_unmodified := by
   intro a0 n hs F hhs h
   obtain ⟨m, rfl⟩ : ∃ m : Nat, n = m := ⟨hs.length, hhs.symm⟩
@@ -655,6 +725,15 @@ theorem select_current_trace_cap : Stmt.select_current_trace_cap := by
   intro a0 n j b
   rw [counter_N, N.select_current_trace_cap, N.integer_cast]
   exact ite_iff ⟨fun ⟨h1, h2, h3⟩ => ⟨h1, by omega, h3⟩, fun ⟨h1, h2, h3⟩ => ⟨h1, by omega, h3⟩⟩ _ _
+
+theorem select_current_trace_copy_both_ends : Stmt.select_current_trace_copy_both_ends := by
+  intro a0 b n m j
+  rw [counter_N, N.copy_both_ends_from b m j n.toNat 0 a0]
+  exact ite_iff (by omega) _ _
+
+theorem select_current_trace_copy_both_ends_list : Stmt.select_current_trace_copy_both_ends_list := by
+  intro a0 xs n m j hxs
+  exact select_current_trace_copy_both_ends a0 (fun v => earlier v xs) n m j
 
 theorem store_select_other : Stmt.store_select_other := N.store_select_other
 

@@ -1,6 +1,7 @@
 // arrays: stores at the positions of a counter and of distinct keys, conditional stores and resets, the reads of an
-// array updated along a trace; an optional module over teq.dfy (-include teq:arrays); the folds stores and selects
-// and their reads are in teq.dfy, the recurrences with sums in aggregation
+// array updated along a trace, the rows of two-dimensional arrays, copies from both ends; an optional module over
+// teq.dfy (-include teq:arrays); the folds stores and selects and their reads are in teq.dfy, the recurrences with sums
+// in aggregation
 
 // each key is visited once only if they are distinct, hence b[k] is still the initial value a[k],
 // in any context f of the read, which may depend on the other dependencies, but not on the accumulator otherwise
@@ -33,6 +34,14 @@ lemma {:rw} {:teq} stores_index_cases(a0: array<int, int>, n: int, c: int, d: in
   ensures
     trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case P(k) => a[k := c] case !P(k) => a[k := d])
       == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(k) then c else d))
+
+// a loop whose iteration k stores F(k) at k by two cases split at a position c, where the simplifier has substituted
+// c for k in the second case, so that the cases are not merged (TODO.md, ideas/dnf-guards.md)
+// (from copysome2-1, the only task of SV-COMP that uses it)
+lemma {:rw} {:teq} stores_cases_point(a0: array<int, int>, n: int, c: int, F: (int) -> int)
+  ensures
+    trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k != c => a[k := F(k)] case k == c => a[c := F(c)])
+      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: F(k)))
 
 // stores at the positions 0, ..., n - 1 of values read from the array itself outside of that range read the initial
 // array
@@ -90,6 +99,22 @@ lemma {:rw} {:teq} select_current_trace_conditional_store_deps(a0: array<int, in
 lemma {:rw} {:teq} select_current_trace_cap(a0: array<int, int>, n: int, j: int, b: int)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case a[k] < b => a case b <= a[k] => a[k := b]))[j]
     == if 0 <= j < n && b <= a0[j] then b else a0[j]
+
+// a copy from both ends: iteration k copies the positions m - k - 1 and k from b, so a position covered by either
+// range holds b at it, whatever the order of the stores and whether the ranges overlap; the index as the simplifier
+// normalizes it, and the source an array or the list of values of an earlier loop, since a higher-order value
+// F(m - k - 1) does not match (TODO.md)
+// (from array-tiling/tcpy, array-cav19/array_tiling_tcpy)
+lemma {:rw} {:teq} select_current_trace_copy_both_ends(a0: array<int, int>, b: array<int, int>, n: int, m: int, j: int)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: a[-k + m + -1 := b[-k + m + -1]][k := b[k]]))[j]
+    == if 0 <= j < n || m - n <= j < m then b[j] else a0[j]
+
+// (from array-tiling/tcpy)
+lemma {:rw} {:teq} select_current_trace_copy_both_ends_list(a0: array<int, int>, xs: List<int>, n: int, m: int,
+                                                            j: int)
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k ::
+                  a[-k + m + -1 := earlier(-k + m + -1, xs)][k := earlier(k, xs)]))[j]
+    == if 0 <= j < n || m - n <= j < m then earlier(j, xs) else a0[j]
 
 // a store of the old value of a cell after a store at another position changes nothing, e.g. volArray[2 k + 1] =
 // volArray[2 k + 1] after volArray[2 k] = c

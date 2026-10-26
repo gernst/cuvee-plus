@@ -4889,4 +4889,161 @@ theorem current_trace_geometric_affine_gen (z a : Int) (n : Nat) :
 theorem current_series : Stmt.current_series := by
   intro x0 z a n
   exact current_trace_geometric_affine_gen z a n 0 x0
+
+-- seeded maxima and minima, compactions, filters (aggregation), stores at a point and copies from both ends (arrays)
+
+-- the k-th value of a map over a counter by 1 is the function at the k-th value of the counter
+theorem earlier_maps_counter {γ : Type} [Inhabited γ] (f : Int → γ) (k : Nat) :
+    ∀ (i : Int) (m : Nat), k < m → earlier k (maps (butlast (counter i 1 m)) f) = f (i + k) := by
+  induction k with
+  | zero => intro i m h; cases m with
+    | zero => omega
+    | succ t => simp [butlast_counter_succ, maps, earlier]
+  | succ k ih => intro i m h; cases m with
+    | zero => omega
+    | succ t =>
+      simp only [butlast_counter_succ, maps, earlier]
+      rw [ih (i + 1) t (by omega)]; congr 1; push_cast; omega
+
+-- the length of a map is that of its dependency, which the reads of the maxima and minima need
+theorem length_maps {β γ : Type} (ds : List β) (f : β → γ) : (maps ds f).length = ds.length := by
+  induction ds with
+  | nil => rfl
+  | cons d ds ih => simp [maps, ih]
+
+-- a count of the truth values of a list is at most its length, the bound of a compaction
+theorem count_le_length {α : Type} [Inhabited α] (e : α) (vs : List α) : count e vs ≤ vs.length := by
+  induction vs with
+  | nil => simp [count]
+  | cons v ws ih => simp only [count, List.length_cons]; split <;> omega
+
+-- the occurrences of true and of false in a list of truth values make up its length, which relates the stored values
+-- of filters_below to the count of the others
+theorem count_true_false (Q : Int → Prop) (ks : List Int) :
+    count True (maps ks Q) + count False (maps ks Q) = ks.length := by
+  induction ks with
+  | nil => simp [maps, count]
+  | cons k ks ih =>
+    simp only [maps, count, List.length_cons]
+    by_cases h : Q k <;> simp [h] <;> omega
+
+-- compacts from the count y on, without the dead branch of its update
+noncomputable def compacting (P : Int → Prop) (c : Int → Int) (y : Int) (ks : List Int) : Trace (Int → Int) :=
+  trace c (List.zip ks (butlast (counts y True (maps ks (fun k => P k)))))
+    (fun c ⟨k, j⟩ => if P k then fun j1 => if j1 = j then k else c j1 else c)
+
+-- a compaction from position s and count y on: the positions y, ..., y + cnt - 1 hold iterations k with x - y of the
+-- stored iterations before them from s on and y + cnt - 1 - x after them below s + t; the others are kept
+theorem compacting_from (P : Int → Prop) (t : Nat) : ∀ (s y : Int) (c : Int → Int) (x : Int),
+    count True (maps (butlast (counter s 1 t)) (fun k => P k)) ≤ t ∧
+    (¬(y ≤ x ∧ x < y + count True (maps (butlast (counter s 1 t)) (fun k => P k)))
+      → current (compacting P c y (butlast (counter s 1 t))) x = c x) ∧
+    (y ≤ x ∧ x < y + count True (maps (butlast (counter s 1 t)) (fun k => P k))
+      → s + (x - y) ≤ current (compacting P c y (butlast (counter s 1 t))) x
+        ∧ current (compacting P c y (butlast (counter s 1 t))) x
+          + (y + count True (maps (butlast (counter s 1 t)) (fun k => P k))) ≤ x + s + t) := by
+  induction t with
+  | zero => intro s y c x; simp [counter, butlast, maps, count, compacting, counts, trace, current]; intro h1 h2; omega
+  | succ t ih =>
+    intro s y c x
+    simp only [compacting, counts, butlast_counter_succ, maps, count, trace, butlast, List.zip_cons_cons,
+      current] at ih ⊢
+    have h0 := count_nonnegative True (maps (butlast (counter (s + 1) 1 t)) (fun k => P k))
+    by_cases hp : P s
+    · simp only [hp, ite_true] at ih ⊢
+      obtain ⟨h1, h2, h3⟩ := ih (s + 1) (y + 1) (fun j1 => if j1 = y then s else c j1) x
+      refine ⟨by omega, ?_, ?_⟩
+      · intro hx; rw [h2 (by omega)]; rw [if_neg (by omega)]
+      · intro hx
+        by_cases e : x = y
+        · subst e; rw [h2 (by omega)]; simp; omega
+        · have := h3 (by omega); push_cast at this ⊢; omega
+    · have hf : (False = True) = False := propext ⟨fun h => cast h.symm trivial, False.elim⟩
+      simp only [hp, hf, ite_false, ne_eq, not_false_eq_true, ite_true] at ih ⊢
+      obtain ⟨h1, h2, h3⟩ := ih (s + 1) y c x
+      refine ⟨by omega, ?_, ?_⟩
+      · intro hx; exact h2 (by omega)
+      · intro hx; have := h3 (by omega); push_cast at this ⊢; omega
+
+-- filters_above from the count y on, without the dead branch of its update
+noncomputable def filtering_above (c : Int → Int) (y : Int) (ks : List Int) (b : Int) (F : Int → Int) :
+    Trace (Int → Int) :=
+  trace c (List.zip ks (butlast (counts y True (maps ks (fun k => b ≤ F k)))))
+    (fun c ⟨k, j⟩ => if b ≤ F k then fun j1 => if j1 = j then F k else c j1 else c)
+
+-- the positions y, ..., y + cnt - 1 hold values at least b, the others are kept
+theorem filtering_above_from (b : Int) (F : Int → Int) (ks : List Int) : ∀ (y : Int) (c : Int → Int) (x : Int),
+    (¬(y ≤ x ∧ x < y + count True (maps ks (fun k => b ≤ F k))) → current (filtering_above c y ks b F) x = c x) ∧
+    (y ≤ x ∧ x < y + count True (maps ks (fun k => b ≤ F k)) → b ≤ current (filtering_above c y ks b F) x) := by
+  induction ks with
+  | nil => intro y c x; simp [maps, count, filtering_above, counts, trace, butlast, current]; intro h1 h2; omega
+  | cons k ks ih =>
+    intro y c x
+    simp only [filtering_above, counts, maps, count, trace, butlast, List.zip_cons_cons, current] at ih ⊢
+    have h0 := count_nonnegative True (maps ks (fun k => b ≤ F k))
+    by_cases hq : b ≤ F k
+    · simp only [hq, ite_true] at ih ⊢
+      obtain ⟨h2, h3⟩ := ih (y + 1) (fun j1 => if j1 = y then F k else c j1) x
+      refine ⟨?_, ?_⟩
+      · intro hx; rw [h2 (by omega)]; simp [show x ≠ y by omega]
+      · intro hx
+        by_cases e : x = y
+        · subst e; rw [h2 (by omega)]; simp; omega
+        · exact h3 (by omega)
+    · have hf : (False = True) = False := propext ⟨fun h => cast h.symm trivial, False.elim⟩
+      simp only [hq, hf, ite_false, ne_eq, not_false_eq_true, ite_true] at ih ⊢
+      obtain ⟨h2, h3⟩ := ih y c x
+      exact ⟨fun hx => h2 (by omega), fun hx => h3 (by omega)⟩
+
+-- filters_below from the count y on, without the dead branch of its update
+noncomputable def filtering_below (c : Int → Int) (y : Int) (ks : List Int) (b : Int) (F : Int → Int) :
+    Trace (Int → Int) :=
+  trace c (List.zip ks (butlast (counts y False (maps ks (fun k => b ≤ F k)))))
+    (fun c ⟨k, j⟩ => if b ≤ F k then c else fun j1 => if j1 = j then F k else c j1)
+
+-- the positions y, ..., y + cnt - 1 hold values below b, the others are kept
+theorem filtering_below_from (b : Int) (F : Int → Int) (ks : List Int) : ∀ (y : Int) (c : Int → Int) (x : Int),
+    (¬(y ≤ x ∧ x < y + count False (maps ks (fun k => b ≤ F k))) → current (filtering_below c y ks b F) x = c x) ∧
+    (y ≤ x ∧ x < y + count False (maps ks (fun k => b ≤ F k)) → current (filtering_below c y ks b F) x < b) := by
+  induction ks with
+  | nil => intro y c x; simp [maps, count, filtering_below, counts, trace, butlast, current]; intro h1 h2; omega
+  | cons k ks ih =>
+    intro y c x
+    simp only [filtering_below, counts, maps, count, trace, butlast, List.zip_cons_cons, current] at ih ⊢
+    have h0 := count_nonnegative False (maps ks (fun k => b ≤ F k))
+    have hf : (True = False) = False := propext ⟨fun h => cast h trivial, False.elim⟩
+    by_cases hq : b ≤ F k
+    · simp only [hq, hf, ite_true, ite_false, ne_eq, not_false_eq_true] at ih ⊢
+      obtain ⟨h2, h3⟩ := ih y c x
+      exact ⟨fun hx => h2 (by omega), fun hx => h3 (by omega)⟩
+    · simp only [hq, ite_true, ite_false] at ih ⊢
+      obtain ⟨h2, h3⟩ := ih (y + 1) (fun j1 => if j1 = y then F k else c j1) x
+      refine ⟨?_, ?_⟩
+      · intro hx; rw [h2 (by omega)]; simp [show x ≠ y by omega]
+      · intro hx
+        by_cases e : x = y
+        · subst e; rw [h2 (by omega)]; simp; omega
+        · exact h3 (by omega)
+
+-- a loop that stores F k at each k of its dependency is stores of the map of F
+theorem trace_stores_maps (F : Int → Int) (ks : List Int) : ∀ (a0 : Int → Int),
+    trace a0 ks (fun a k => fun j => if j = k then F k else a j) = stores a0 ks (maps ks (fun k => F k)) := by
+  induction ks with
+  | nil => intro a0; rfl
+  | cons k ks ih => intro a0; simp only [trace, stores, maps, List.zip_cons_cons] at ih ⊢; rw [ih]
+
+-- a copy from both ends from position s on: the positions s, ..., s + t - 1 and m - s - t, ..., m - s - 1 hold b
+theorem copy_both_ends_from (b : Int → Int) (m j : Int) (t : Nat) : ∀ (s : Int) (a : Int → Int),
+    current (trace a (butlast (counter s 1 t))
+      (fun a k => fun j => if j = k then b k else (fun j => if j = -k + m + -1 then b (-k + m + -1) else a j) j)) j
+      = if s ≤ j ∧ j < s + t ∨ m - s - t ≤ j ∧ j < m - s then b j else a j := by
+  induction t with
+  | zero => intro s a; simp [counter, butlast, trace, current]; intro h; omega
+  | succ t ih =>
+    intro s a
+    simp only [butlast_counter_succ, trace, current]
+    rw [ih (s + 1)]
+    push_cast
+    (repeat' split) <;> (try subst_vars) <;> first | rfl | omega
+
 end TEQ.N

@@ -92,11 +92,11 @@ modules are injected after it by `-include teq:<concept>`:
 
 | Module | Contents |
 |---|---|
-| `aggregation` | `sum`, `count`, `max`, `min`, `parity` and the traces `sums`, `parities`, `counts`, `maxs`, `mins` |
+| `aggregation` | `sum`, `count`, `max`, `min`, `parity` and the traces `sums`, `parities`, `counts`, `maxs`, `mins`; compactions and filters (`compacts`, `filters_above`, `filters_below`) |
 | `arithmetic` | `pow`, and the facts the arithmetic does not decide alone, e.g. halved triangles |
 | `search` | agreeing prefixes, no occurrence, values above the iterations, the bisection with a probe |
 | `sorted` | `sorted`, `perm`, `partitioned`, `swap`, the partition points `lower`, `upper` |
-| `arrays` | stores at a counter and at distinct keys, conditional stores, resets, reads along a trace |
+| `arrays` | stores at a counter and at distinct keys, conditional stores, resets, reads along a trace, rows of two-dimensional arrays, copies from both ends |
 | `counters` | phases, flags, catching up, merged cases, constant, increasing and bounded values |
 | `strides` | strided stores and stores ahead (MonoCera) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |
