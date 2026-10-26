@@ -54,8 +54,9 @@ one task only. Not proved in Lean.
    lemmas that fire at every division.
 6. The normal form of choices: guards in DNF, the merging of cases by results in the matcher
    ([dnf-guards.md](dnf-guards.md)); also merging results that are equal after substituting the guard's equation.
-7. Conditional results of traces as cases (`Simplify.cases`, worktree `reducer`, untested): `ite` lifted out of the
-   results with `Normalize.ite`, such that `ret < x[i] ? x[i] : ret` is matched by `maxs`.
+7. Conditional results of traces as cases: done in 0.52.7 (`Simplify.cases`, doc/teq.md, examples/c/teq/ite_cases.c),
+   `ite` lifted out of the results with `Normalize.ite`, such that `ret < x[i] ? x[i] : ret` is matched by `maxs`; not
+   measured on SV-COMP and not run with the test suite yet.
 8. `ite(c, 1, 0) != 0` of `assume_abort_if_not` is not simplified to `c` inside `invs`
    (array_init_nondet_vars, pair_symmetr2).
 9. Reading an iteration constraint at a witness `0 <= x < n` (standard_vararg, array_init_nondet_vars,

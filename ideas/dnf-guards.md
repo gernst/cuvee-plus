@@ -2,7 +2,7 @@
 
 A proposal for the normal form of the cases of updates (`Eps`): one case per conjunction of tests, with the merging
 of cases by their results moved from the simplifier into the matcher. Prerequisite: the conditionals of the results
-of traces are lifted into cases (`Simplify.cases`, worktree `reducer`), which produces such conjunctions anyway.
+of traces are lifted into cases (`Simplify.cases`, 0.52.7), which produces such conjunctions anyway.
 
 ## Now
 
@@ -59,7 +59,7 @@ all.
 
 ## Steps
 
-1. Measure the lifting of conditionals alone (worktree `reducer`): the tests and the SV-COMP sets, against the
+1. Measure the lifting of conditionals alone (0.52.7): the tests and the SV-COMP sets, against the
    baseline.
 2. Drop the merging by results in `Simplify.eps`, except for a choice whose results are all equal; split
    disjunctive tests of branches into disjoint conjunctions.

@@ -1076,9 +1076,31 @@ object Simplify:
       case List(Upd(_, rhs)) => rhs
       case _                 => Eps(merged)
 
+  // the conditionals in the results are lifted out of them into cases, the form of the updates of branching statements,
+  // which the patterns of the lemmas name, e.g. ret < x[i] ? x[i] : ret of C is case ret < v => v case v <= ret => ret
   def trace(config: Config, state: State, ctx: Context, inits: List[Expr], deps: List[Expr], accs: List[Var], bound: List[Var], results: List[Expr]): Expr =
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, results.free -- accs)
-    Trace(inits, deps_, accs, bound_, results.map(re(_)))
+    Trace(inits, deps_, accs, bound_, results.map(result => cases(config, state, ctx, re(result))))
+
+  // R[ite(c, a, b)] is case c => R[a] case !c => R[b] for the outermost leftmost conditional that is not below a binder
+  // (Normalize.ite), and so on in the cases, also in those of a result that is a choice already
+  def cases(config: Config, state: State, ctx: Context, result: Expr): Expr =
+    result match
+      case Eps(updates) =>
+        eps(config, state, ctx, result.typ, updates.map(upd => Upd(upd.cond, cases(config, state, ctx, upd.rhs))))
+
+      case _ =>
+        Normalize.ite(result) match
+          case Some(it @ Ite(test, left, right)) =>
+            val updates =
+              List(
+                Upd(test, cases(config, state, ctx, Normalize.replace(result, it, left))),
+                Upd(not(config, state, ctx.neutral, test), cases(config, state, ctx, Normalize.replace(result, it, right)))
+              )
+            eps(config, state, ctx, result.typ, updates)
+
+          case _ =>
+            result
 
   def maps(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var], update: Expr): Expr =
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free)
