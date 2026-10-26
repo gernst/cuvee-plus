@@ -203,8 +203,10 @@ Cleanup, none of it a bug.
 - Signed overflow is not modelled; unsigned loop counters (`x = uint(x + 1)`) are no counters for `-teq`.
 - `goto` to a label whose statement falls through (26 tasks, mostly backward gotos of the reducers, which could be
   loops).
-- No structs (37 tasks end in a generic parse error, not "not supported"), unions, floating point, bitwise
-  operators of integers, preprocessor, `&`, `*p`, pointer arithmetic, arrays of pointers, GCC builtins.
+- No structs (37 tasks end in a generic parse error, not "not supported"), unions, bitwise operators of integers,
+  preprocessor, `&`, `*p`, pointer arithmetic, arrays of pointers, GCC builtins. Floating point numbers are
+  uninterpreted (`c.Parser.floats`): properties of the floats themselves (freire1/2) are not proved, `long double` is
+  not parsed; the aiob/ofuf tasks of loop-industry-pattern fail on comma expressions with string literals.
 - Array parameters that a function assigns as in/out parameters (arrays are values; wrong false verdicts, bugs.md).
 - z3 answers `unknown` for Horn clauses with division by variables (div.c) and for calls in loops whose callee has
   no goals.

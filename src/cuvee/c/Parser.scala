@@ -21,6 +21,12 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
   // the signatures of the functions by name
   val functions = mutable.Map[String, Function]()
 
+  // the functions of math.h without a body, which are pure, as uninterpreted functions of their arguments rather than
+  // procedures, e.g. sqrt (see floats)
+  val math = Set("sqrt", "sqrtf", "sqrtl", "fabs", "fabsf", "fabsl", "floor", "floorf", "ceil", "ceilf", "pow", "powf",
+                 "exp", "expf", "log", "logf")
+  val pure = mutable.Set[String]()
+
   // the logic functions and predicates of ACSL by name (see logic)
   val logics = mutable.Map[String, LogicFun]()
 
@@ -60,7 +66,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case BoolType     => state.types.sort("Bool")
       case ArrayType(e) => state.types.sort("Array", List(state.types.sort("Int"), typ(e)))
       case VoidType     => Error.raise("void is not a type of values")
-      case FloatType    => Error.raise("floating point numbers are not supported", t)
+      case FloatType(kind) => floats(); state.types.sort(floatSort(kind))
 
       // pointers are values of the background theory of C (resources/cuvee/c/prelude.bpl), which cannot be dereferenced,
       // where void * points to Void
@@ -115,7 +121,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case ArrayType(e) => state.exprs.app("const", List(zero(e)))
       case PointerType(_) => state.exprs.const("null")
       case VoidType     => Error.raise("void is not a type of values")
-      case FloatType    => Error.raise("floating point numbers are not supported", t)
+      case FloatType(kind) => float(kind, "of_int", state.exprs.num(0))
 
   def temp(ctx: Ctx, t: Type): core.Var =
     val x = state.exprs.formal("tmp", typ(t)).fresh
@@ -127,6 +133,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
     t match
       case IntType(_, _) | Integer => expr
       case BoolType => state.exprs.app("number", List(expr))
+      // truncation towards zero, undefined out of range, hence any integer
+      case FloatType(kind) => float(kind, "to_int", expr)
       case _        => Error.raise("not an integer", expr)
 
   def toBool(expr: core.Expr, t: Type): core.Expr =
@@ -134,6 +142,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case BoolType => expr
       case IntType(_, _) | Integer => state.exprs.app("truth", List(expr))
       case PointerType(_) => state.exprs.app("not", List(state.exprs.app("=", List(expr, state.exprs.const("null")))))
+      case FloatType(kind) => state.exprs.app("not", List(float(kind, "eq", expr, zero(FloatType(kind)))))
       case _        => Error.raise("not a truth value", expr)
 
   // the size of an integer type in bytes, where long has 4 bytes in the data model ILP32 and 8 bytes in LP64
@@ -203,6 +212,85 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case (Some(f), _, _) if !fits(from, to)                                                    => state.exprs.app(f, List(e))
       case _                                                                                     => e
 
+  // floating point numbers as uninterpreted sorts Float and Double, whose operations are declared functions, e.g.
+  // Double_add and Double_lt, with the conversions Double_of_int, Double_to_int, Float_of_Double, Double_of_Float, and
+  // the literals that are no integers Double_lit(num, den); sound for proofs, as IEEE floating point numbers are one
+  // interpretation of them, but no counterexample through them is genuine, hence they are :abstract, as the bit
+  // operations of the prelude, for which the solver answers unknown rather than incorrect (see smtlib.Solver); declared
+  // at their first use, and emitted before the commands of the translation unit (see unit)
+  var floating = false
+
+  val freely = Attrs(List("abstract" -> None))
+
+  def floatSort(kind: String): String =
+    if kind == "float" then "Float" else "Double"
+
+  def floats(): Unit =
+    if !floating
+    then
+      floating = true
+      val int = state.types.sort("Int")
+      val bool = state.types.sort("Bool")
+      for s <- List("Float", "Double") do state = state.declare(s, 0, Attrs.empty)
+      for (name, args, res) <- floatFuns
+      do
+        val formals = args.zipWithIndex.map((t, i) => state.exprs.formal("x" + i, if t == "Int" then int else if t == "Bool" then bool else state.types.sort(t)))
+        state = state.declare(name, Nil, formals, if res == "Int" then int else if res == "Bool" then bool else state.types.sort(res), freely)
+
+  def floatFuns: List[(String, List[String], String)] =
+    List("Float", "Double").flatMap: s =>
+      List(
+        (s + "_of_int", List("Int"), s),
+        (s + "_to_int", List(s), "Int"),
+        (s + "_lit", List("Int", "Int"), s),
+        (s + "_neg", List(s), s),
+        (s + "_add", List(s, s), s),
+        (s + "_sub", List(s, s), s),
+        (s + "_mul", List(s, s), s),
+        (s + "_div", List(s, s), s),
+        (s + "_lt", List(s, s), "Bool"),
+        (s + "_le", List(s, s), "Bool"),
+        (s + "_eq", List(s, s), "Bool")
+      )
+    ++ List(("Float_of_Double", List("Double"), "Float"), ("Double_of_Float", List("Float"), "Double"))
+
+  def float(kind: String, op: String, args: core.Expr*): core.Expr =
+    floats()
+    state.exprs.app(floatSort(kind) + "_" + op, args.toList)
+
+  // a literal, e.g. 2.0 as Double_of_int(2), as conversions of integers round to the nearest value like literals,
+  // 0.5f as Float_lit(1, 2)
+  def floatLiteral(text: String): (core.Expr, Type) =
+    val kind = if text.endsWith("f") || text.endsWith("F") then "float" else "double"
+    val digits = text.stripSuffix("f").stripSuffix("F").stripSuffix("l").stripSuffix("L")
+    val value =
+      Error.report("unsupported floating point literal", text):
+        BigDecimal(digits)
+    val e =
+      if value.isWhole
+      then float(kind, "of_int", state.exprs.num(value.toBigInt))
+      else
+        val v = value.bigDecimal.stripTrailingZeros
+        val den = BigInt(10).pow(v.scale)
+        float(kind, "lit", state.exprs.num(BigInt(v.unscaledValue)), state.exprs.num(den))
+    (e, FloatType(kind))
+
+  // the common type of the operands of an arithmetic operator: double if one is, float if one is, otherwise the
+  // integer type of the usual arithmetic conversions
+  def arithmetic(lt: Type, rt: Type): Type =
+    (lt, rt) match
+      case (FloatType("double"), _) | (_, FloatType("double")) => FloatType("double")
+      case (FloatType(_), _) | (_, FloatType(_))               => FloatType("float")
+      case _                                                   => common(lt, rt)
+
+  // a value of type `from` converted to the arithmetic type `to`, as in C
+  def cast(e: core.Expr, from: Type, to: Type): core.Expr =
+    (from, to) match
+      case (FloatType(k), FloatType(l)) if k == l => e
+      case (FloatType(k), FloatType(l))           => state.exprs.app(floatSort(l) + "_of_" + floatSort(k), List(e))
+      case (_, FloatType(l))                      => float(l, "of_int", toInt(e, from))
+      case _                                      => convert(toInt(e, from), from, to)
+
   // the result of an arithmetic operator in the integer type `t`, which wraps around for unsigned types after
   // additions, subtractions, multiplications, and shifts left; quotients, remainders, and shifts right of values
   // within the range stay within it, and the bit operations are declared only
@@ -213,7 +301,19 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
   // a binary arithmetic operator applied to the operands converted to their common type, which is the type of the
   // result, where shifts have the promoted type of their left operand, whose right operand is not converted
-  def binary(op: String, left: core.Expr, lt: Type, right: core.Expr, rt: Type): (core.Expr, IntType) =
+  def binary(op: String, left: core.Expr, lt: Type, right: core.Expr, rt: Type): (core.Expr, Type) =
+    arithmetic(lt, rt) match
+      case t @ FloatType(kind) =>
+        val name = op match
+          case "+" => "add"
+          case "-" => "sub"
+          case "*" => "mul"
+          case "/" => "div"
+          case _   => Error.raise("operator on floating point numbers", op)
+        (float(kind, name, cast(left, lt, t), cast(right, rt, t)), t)
+      case _ => binary_(op, left, lt, right, rt)
+
+  def binary_(op: String, left: core.Expr, lt: Type, right: core.Expr, rt: Type): (core.Expr, IntType) =
     val shift = op == "<<" || op == ">>"
     val t = if shift then promote(lt) else common(lt, rt)
     val left_ = convert(toInt(left, lt), lt, t)
@@ -360,8 +460,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case Num(text) =>
         (Nil, state.exprs.num(literal(text)), literalType(text))
 
-      case FloatNum(_) =>
-        Error.raise("floating point numbers are not supported", e)
+      case FloatNum(text) =>
+        val (e_, t) = floatLiteral(text)
+        (Nil, e_, t)
 
       case Id("true") if !scope.contains("true") =>
         (Nil, state.exprs.const("true"), BoolType)
@@ -383,9 +484,13 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
           case _               => Error.raise("indexing of an expression that is not an array", base)
 
       case Call(f, Nil) if f.startsWith("__VERIFIER_nondet_") =>
-        val t = if f == "__VERIFIER_nondet_bool" then BoolType else integer(f.stripPrefix("__VERIFIER_nondet_")).getOrElse(IntType.int)
+        val t = nondetType(f)
         val x = temp(ctx, t)
         (List(havoc(f, x)), x, t)
+
+      case Call(f, args) if pure.contains(f) =>
+        val (pre, args_) = arguments(scope, ctx, f, args)
+        (pre, state.exprs.app(f, args_), functions(f).typ)
 
       case Call(f, args) =>
         val (pre, args_) = arguments(scope, ctx, f, args)
@@ -399,8 +504,12 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
       case App("-", List(arg)) =>
         val (pre, arg_, t) = expr(scope, ctx, arg)
-        val t_ = promote(t)
-        (pre, wrap("-", state.exprs.app("-", List(toInt(arg_, t))), t_), t_)
+        t match
+          case FloatType(kind) =>
+            (pre, float(kind, "neg", arg_), t)
+          case _ =>
+            val t_ = promote(t)
+            (pre, wrap("-", state.exprs.app("-", List(toInt(arg_, t))), t_), t_)
 
       case App("!", List(arg)) =>
         val (pre, arg_) = cond(scope, ctx, arg)
@@ -457,8 +566,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
               require(typ(lt) == typ(rt))
             state.exprs.app("=", List(left_, right_))
           case _ =>
-            val t = common(lt, rt)
-            state.exprs.app("=", List(convert(toInt(left_, lt), lt, t), convert(toInt(right_, rt), rt, t)))
+            arithmetic(lt, rt) match
+              case t @ FloatType(kind) => float(kind, "eq", cast(left_, lt, t), cast(right_, rt, t))
+              case t                   => state.exprs.app("=", List(cast(left_, lt, t), cast(right_, rt, t)))
 
         (pre1 ++ pre2, if op == "==" then eq else state.exprs.app("not", List(eq)), BoolType)
 
@@ -466,15 +576,19 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case App(op @ ("<" | "<=" | ">" | ">="), List(left, right)) =>
         val (pre1, left0, lt) = expr(scope, ctx, left)
         val (pre2, right0, rt) = expr(scope, ctx, right)
-        val t = common(lt, rt)
-        val left_ = convert(toInt(left0, lt), lt, t)
-        val right_ = convert(toInt(right0, rt), rt, t)
+        val t = arithmetic(lt, rt)
+        val left_ = cast(left0, lt, t)
+        val right_ = cast(right0, rt, t)
 
-        val phi = op match
-          case "<"  => state.exprs.app("<", List(left_, right_))
-          case "<=" => state.exprs.app("<=", List(left_, right_))
-          case ">"  => state.exprs.app(">", List(left_, right_))
-          case _    => state.exprs.app(">=", List(left_, right_))
+        val phi = (op, t) match
+          case ("<", FloatType(kind))  => float(kind, "lt", left_, right_)
+          case ("<=", FloatType(kind)) => float(kind, "le", left_, right_)
+          case (">", FloatType(kind))  => float(kind, "lt", right_, left_)
+          case (_, FloatType(kind))    => float(kind, "le", right_, left_)
+          case ("<", _)  => state.exprs.app("<", List(left_, right_))
+          case ("<=", _) => state.exprs.app("<=", List(left_, right_))
+          case (">", _)  => state.exprs.app(">", List(left_, right_))
+          case _         => state.exprs.app(">=", List(left_, right_))
 
         (pre1 ++ pre2, phi, BoolType)
 
@@ -490,7 +604,11 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       // casts to signed integer types are the identity, as integers are unbounded, those to unsigned types wrap around
       case Cast(t: IntType, e) =>
         val (pre, e_, t_) = expr(scope, ctx, e)
-        (pre, convert(toInt(e_, t_), t_, t), t)
+        (pre, cast(e_, t_, t), t)
+
+      case Cast(t: FloatType, e) =>
+        val (pre, e_, t_) = expr(scope, ctx, e)
+        (pre, cast(e_, t_, t), t)
 
       case Cast(BoolType, e) =>
         val (pre, e_) = cond(scope, ctx, e)
@@ -542,8 +660,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
           if lt == BoolType && rt == BoolType
           then (BoolType, left_, right_)
           else
-            val t = common(lt, rt)
-            (t, convert(toInt(left_, lt), lt, t), convert(toInt(right_, rt), rt, t))
+            val t = arithmetic(lt, rt)
+            (t, cast(left_, lt, t), cast(right_, rt, t))
 
         if pre1.isEmpty && pre2.isEmpty
         then (pre0, state.exprs.app("ite", List(test_, left__, right__)), t)
@@ -572,9 +690,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
   // a value of C type `t`, converted as in C
   def value(scope: Scope, ctx: Ctx, e: Expr, t: Type): (List[core.Prog], core.Expr) =
     t match
-      case IntType(_, _) =>
+      case IntType(_, _) | FloatType(_) =>
         val (pre, e_, t_) = expr(scope, ctx, e)
-        (pre, convert(toInt(e_, t_), t_, t))
+        (pre, cast(e_, t_, t))
       case BoolType => cond(scope, ctx, e)
       case PointerType(_) if isNull(e) => (Nil, state.exprs.const("null"))
 
@@ -1012,6 +1130,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
         List(state.progs.assume(state.exprs.const("false")))
 
       // calls as statements, whose result is discarded
+      case ExprStmt(Call(f, args)) if pure.contains(f) =>
+        arguments(scope, ctx, f, args)._1
+
       case ExprStmt(Call(f, args)) if functions.contains(f) =>
         val (pre, args_) = arguments(scope, ctx, f, args)
         val ret = functions(f).typ
@@ -1286,7 +1407,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
             // x op= e is x = x op e, whose result is converted to the type of x
             val (pre, rhs_, rt) = expr(scope, ctx, rhs)
             val (e_, t_) = binary(op, v, t, rhs_, rt)
-            (pre, convert(e_, t_, t))
+            (pre, cast(e_, t_, t))
 
         pre :+ state.progs.assign(List(v), List(rhs_))
 
@@ -1396,10 +1517,17 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
     rhs match
       case Call("__VERIFIER_nondet_bool", Nil) => t == BoolType
       case Call(f, Nil) if f.startsWith("__VERIFIER_nondet_") =>
-        val from = integer(f.stripPrefix("__VERIFIER_nondet_")).getOrElse(IntType.int)
-        t.isInstanceOf[IntType] && fits(from, t)
+        nondetType(f) match
+          case from: FloatType => t == from
+          case from            => t.isInstanceOf[IntType] && fits(from, t)
       case _ => false
-      case _                                   => false
+
+  // the type of the values of a nondet function, e.g. double for __VERIFIER_nondet_double
+  def nondetType(f: String): Type =
+    f.stripPrefix("__VERIFIER_nondet_") match
+      case "bool"                => BoolType
+      case kind @ ("float" | "double") => FloatType(kind)
+      case name                  => integer(name).getOrElse(IntType.int)
 
   // loops have a modifies clause only if they have loop assigns (see assigned), otherwise they modify what their body
   // modifies (see Type.check); followed by the clauses of ACSL (see loop) and the location of the loop in the source
@@ -1418,7 +1546,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
   // calls of functions whose result has the type of the variable, which needs no conversion
   def direct(rhs: Expr, t: Type) =
     rhs match
-      case Call(f, _) => functions.get(f).exists(_.typ == t)
+      case Call(f, _) => functions.get(f).exists(_.typ == t) && !pure.contains(f)
       case _          => false
 
   // the names assigned in a statement, syntactically, for the parameters that must be copied into locals
@@ -1580,7 +1708,13 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
     // procedures are declared before the bodies are resolved, since they may call each other; parameters that shadow
     // global variables are renamed apart, as local variables are (see block)
-    for (name, Function(ret, _, params, _)) <- defs
+    for (name, f) <- defs if math.contains(name) && f.body.isEmpty
+    do
+      pure += name
+      val formals = f.params.map((t, x) => state.exprs.formal(x, typ(t)))
+      state = state.declare(name, Nil, formals, typ(f.typ), freely)
+
+    for (name, Function(ret, _, params, _)) <- defs if !pure.contains(name)
     do
       val in = params.map((t, x) => if globals.contains(x) then state.exprs.formal(x, typ(t)).fresh else state.exprs.formal(x, typ(t)))
       val out = if ret == VoidType then Nil else List(state.exprs.formal("result", typ(ret)))
@@ -1625,6 +1759,9 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
         case f @ Function(_, name, _, _) if defs(name) eq f =>
           f.body match
+            case None if pure.contains(name) =>
+              cmds += state.cmds.declareFun(name, f.params.length)
+
             case None =>
               cmds += state.cmds.declareProc(name)
 
@@ -1634,7 +1771,11 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
         case _ =>
 
-    cmds.toList
+    // the declarations of floating point numbers, if used (see floats)
+    val floatCmds =
+      if !floating then Nil
+      else List("Float", "Double").map(s => state.cmds.declareSort(s)) ++ floatFuns.map((name, args, _) => state.cmds.declareFun(name, args.length))
+    floatCmds ++ cmds.toList
 
   // the modifies clauses of the functions: those of `assigns`, and for the others the global variables that their
   // `bodies` assign, directly or by the functions that they call, as a fixpoint, since they may call each other;

@@ -1,0 +1,105 @@
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quot
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  rem
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(define-fun uchar ((x Int)) Int (mod x 256))
+
+(define-fun ushort ((x Int)) Int (mod x 65536))
+
+(define-fun uint ((x Int)) Int (mod x 4294967296))
+
+(define-fun
+  ulonglong
+  ((x Int))
+  Int
+  (mod x 18446744073709551616))
+
+(declare-fun bitand (Int Int) Int)
+
+(declare-fun bitor (Int Int) Int)
+
+(declare-fun bitxor (Int Int) Int)
+
+(declare-fun bitnot (Int) Int)
+
+(declare-fun shl (Int Int) Int)
+
+(declare-fun shr (Int Int) Int)
+
+(declare-sort Float 0)
+
+(declare-sort Double 0)
+
+(declare-fun Float_of_int (Int) Float)
+
+(declare-fun Float_to_int (Float) Int)
+
+(declare-fun Float_lit (Int Int) Float)
+
+(declare-fun Float_neg (Float) Float)
+
+(declare-fun Float_add (Float Float) Float)
+
+(declare-fun Float_sub (Float Float) Float)
+
+(declare-fun Float_mul (Float Float) Float)
+
+(declare-fun Float_div (Float Float) Float)
+
+(declare-fun Float_lt (Float Float) Bool)
+
+(declare-fun Float_le (Float Float) Bool)
+
+(declare-fun Float_eq (Float Float) Bool)
+
+(declare-fun Double_of_int (Int) Double)
+
+(declare-fun Double_to_int (Double) Int)
+
+(declare-fun Double_lit (Int Int) Double)
+
+(declare-fun Double_neg (Double) Double)
+
+(declare-fun Double_add (Double Double) Double)
+
+(declare-fun Double_sub (Double Double) Double)
+
+(declare-fun Double_mul (Double Double) Double)
+
+(declare-fun Double_div (Double Double) Double)
+
+(declare-fun Double_lt (Double Double) Bool)
+
+(declare-fun Double_le (Double Double) Bool)
+
+(declare-fun Double_eq (Double Double) Bool)
+
+(declare-fun Float_of_Double (Double) Float)
+
+(declare-fun Double_of_Float (Float) Double)
+
+(goal
+  (forall
+    ((tmp$4 Double))
+    (Double_eq tmp$4 tmp$4)))
+

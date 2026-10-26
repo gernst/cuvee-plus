@@ -47,15 +47,16 @@ case class IntType(signed: Boolean, rank: String) extends Type
 case object BoolType extends Type
 case object VoidType extends Type
 case class ArrayType(elem: Type) extends Type
-// pointers and floating point numbers only in the signatures of builtins, the parser rejects them otherwise
+// pointers to values of type elem, which cannot be dereferenced
 case class PointerType(elem: Type) extends Type
-case object FloatType extends Type
+// floating point numbers, kind float or double, as uninterpreted sorts (see Parser.floats)
+case class FloatType(kind: String) extends Type
 // the mathematical integers of ACSL, integer, the type of its arithmetic
 case object Integer extends Type
 
 sealed trait Expr
 case class Num(value: String) extends Expr
-// floating point constants, e.g. 2.0, which the parser rejects
+// floating point constants, e.g. 2.0 or 0.5f
 case class FloatNum(value: String) extends Expr
 case class Id(name: String) extends Expr
 case class Index(base: Expr, index: Expr) extends Expr

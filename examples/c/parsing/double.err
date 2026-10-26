@@ -1,3 +1,0 @@
-(error
-  "floating point numbers are not supported"
-  "FloatType")

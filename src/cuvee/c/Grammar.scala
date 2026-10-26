@@ -116,9 +116,8 @@ object Grammar:
   val void =
     VoidType("void")
 
-  // e.g. __VERIFIER_nondet_double
-  val float =
-    FloatType("float" | "double")
+  val float: Parser[Type] =
+    (J("float") | J("double")).map(FloatType(_))
 
   // the types of ACSL, which occur only in annotations
   val logic =

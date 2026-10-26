@@ -395,7 +395,12 @@ background theory of C: the bit operations `&`, `|`, `^`, `~` and shifts by
 non-constants are uninterpreted functions declared `:abstract`, with rewrite rules
 of `-prove` for the operands 0 and 1 (`{:smt2} {:rw}`, not passed to the
 solvers), such that the solver sink takes a refutation that depends on them for no
-counterexample (`unknown`). It builds expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
+counterexample (`unknown`). Floating point numbers are two uninterpreted sorts, `Float` and `Double`, whose operations,
+conversions (from and to `Int`, between the two, as C converts implicitly) and non-integral literals are declared
+functions, `:abstract` as well, declared only in a translation unit that uses them (`c.Parser.floats`); the functions
+of `math.h` without a body (`sqrt`, `fabs`, ...) are such functions too, not procedures. Proofs hold for IEEE floats,
+one interpretation of them, while their counterexamples need not (`unknown`), and `-chc` gets a solver error. It builds
+expressions on `Int` and `Bool` directly, and parses the whole translation unit at once, so
 that it can infer the global variables that each function modifies: the bodies are resolved first, then the modifies
 clauses are a fixpoint over them, since functions may call each other (`c.Parser.modifies`), and only then are the
 bodies checked, whose calls get the modifies clauses of their functions (see `Call` in
