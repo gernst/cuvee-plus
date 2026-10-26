@@ -216,6 +216,13 @@ lemma {:fw} {:teq} current_maxs_initial(x: int, values: List<int>)
 lemma {:rw} {:teq} current_maxs_earlier(k: int, x: int, values: List<int>)
   ensures earlier(k, values) <= current(maxs(x, values))
 
+// the values of a loop are a prefix of the list it reads (maps_earlier), whose reads within the prefix are bounded
+// alike, since a read of the list is no read of the prefix
+// (from standard_maxInArray_ground)
+lemma {:rw} {:teq} current_maxs_prefix_earlier(k: int, x: int, n: int, xs: List<int>)
+  requires 0 <= k < n
+  ensures earlier(k, xs) <= current(maxs(x, prefix(n, xs)))
+
 // (used on SV-COMP by standard_minInArray_ground-2 only)
 lemma {:fw} {:teq} current_mins_initial(x: int, values: List<int>)
   ensures current(mins(x, values)) <= x
@@ -223,6 +230,11 @@ lemma {:fw} {:teq} current_mins_initial(x: int, values: List<int>)
 // (used on SV-COMP by standard_minInArray_ground-2 only)
 lemma {:rw} {:teq} current_mins_earlier(k: int, x: int, values: List<int>)
   ensures current(mins(x, values)) <= earlier(k, values)
+
+// (from standard_minInArray_ground-2)
+lemma {:rw} {:teq} current_mins_prefix_earlier(k: int, x: int, n: int, xs: List<int>)
+  requires 0 <= k < n
+  ensures current(mins(x, prefix(n, xs))) <= earlier(k, xs)
 
 // the prefix parities starting with an initial value
 // (unused on SV-COMP, with its current_parities; kept as a fold of the module)

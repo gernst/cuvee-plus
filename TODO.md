@@ -12,11 +12,12 @@ benchmarks are not rerun with Cuvée.
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
-- [ ] Regressions since 0.51.4 (ideas/prove-next.md, plan A, with a table per task): rewnifrev, array_2-*-simple,
-      linear_sea.ch, theatreSquare, geo1, prodbin, cohendiv-ll, max20-1. Few rewrite steps, the time goes into the
-      matcher on comparisons (`Poly.normalize` sorting by `Expr.toString`), `Forward.saturate` and `Context.implied`;
-      repeated reads of counters (rewnifrev) and unsigned arithmetic with division (linear_sea.ch, geo1, prodbin) are
-      relevant for the database. More time (15 min) and its 116 tasks at the step bound: ideas/prove-next.md, plan A.
+- [ ] Regressions since 0.51.4 (ideas/prove-next.md, plan A, with a table per task): rewnifrev, linear_sea.ch, geo1,
+      prodbin, cohendiv-ll, max20-1 (array_2-*-simple and theatreSquare work again, Oct 26). Few rewrite steps, the
+      time goes into the matcher on comparisons (`Poly.normalize` sorting by `Expr.toString`), `Forward.saturate` and
+      `Context.implied`; repeated reads of counters (rewnifrev) and unsigned arithmetic with division (linear_sea.ch,
+      geo1, prodbin) are relevant for the database. More time (15 min) and its 116 tasks at the step bound:
+      ideas/prove-next.md, plan A.
       Experiments of Oct 26, 2026: the portfolio (ideas/portfolio.md), -slice alone (ideas/slice.md).
 - [ ] ps2-ll_unwindbound1 times out at 60 s.
 - [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma),
@@ -25,10 +26,15 @@ benchmarks are not rerun with Cuvée.
       `i % 2 == 0` needs integer reasoning about remainders.
 - [ ] Counterexamples by concrete evaluation of `sum`, `map`, `counter` for a literal `n` (30 unsafe array-fpi tasks,
       e.g. brs2f).
-- [ ] Lost tasks: in-de52, in-de62 (more loops than the depth of the case splits), sum_by_3, sum_by_3_abstracted,
-      sum_array-2-2.
+- [ ] Lost tasks: in-de52, in-de62 (more loops than the depth of the case splits).
 - [ ] partial_mod_count_* (true): conditional stores whose second value is not a constant, then a count of zeros.
 - [ ] array-patterns (30 true tasks): pairwise cancelling sums over stores at nondeterministic indices.
+- [ ] Arrays (ideas/array-lemmas.md, Oct 26): the gaps of the engine behind the workarounds of
+      ideas/array-lemmas.dfy (compactions and filters, copies from both ends, cases split at a position, division and
+      parity), each listed with its tasks; then move the lemmas into the database.
+- [ ] Reducer commutativity (reducercommutativity, array-crafted bAnd/bor/xor; plan in ideas/array-lemmas.md): one
+      fold per operator (`bitands`, `bitors`, `bitxors`, max and min as folds with their symmetric variants), swap and
+      rotation lemmas per operator, the value lists as slices.
 - [ ] Deferred: the cost of `-prove` (forward instances simplified at every firing); the rest of nla-digbench (geo1,
       geo3, cohencu); the non-terminations at the bound on the steps (fermat1, egcd2, mannadiv); equalities from the
       simplex to the classes (ideas/prove-next.md).

@@ -196,6 +196,11 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   2026, i7-6700) also nla-digbench-scaling/mannadiv_unwindbound* (7 tasks, the same error at 900 s with 0.49.5) and
   cohencu-ll_unwindbound1, ps5-ll_unwindbound1 (both expected false; instances of teq:series at every variable of the
   class of integer(n) and at squares(0, zero), fixed in 0.50.16: answered incorrect, as expected).
+  `store_occurs_selects` was removed from search.dfy (Oct 26, 2026): its instance, a disjunction with an occurrence in
+  the values of a store, is not normalized by any rule and came back at every read of every store; on a sum over five
+  elements after a swap (the shape of reducercommutativity sum*), the run ended in 19 s with `unknown` instead of a
+  timeout without it. Its task, standard_sentinel-2, and loop-acceleration/array_4 are proved by the rule
+  `invs_select_store_ne` on the iteration constraint of the search instead. The other reducers are not rerun yet.
 
 - A rule whose left-hand side is a comparison of two open variables, e.g.
   `j < n` with a side condition `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: P(k, h))`,

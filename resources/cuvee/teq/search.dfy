@@ -37,19 +37,19 @@ lemma {:fw} {:teq} earlier_not_occurs_prefix(n: int, j: int, e: int, xs: List<in
   requires !occurs(e, prefix(n, xs)) && 0 <= j && j < n
   ensures earlier(j, xs) != e
 
-// a sentinel: a value x stored at a position j occurs among the values read at the positions 0, ..., n - 1, unless j
-// is beyond them; a forward fact at the reads, which are the trigger, since the bound n <= j occurs in the
-// goal only as a comparison of the loop variable
-// (from standard_sentinel-2)
-lemma {:fw} {:teq} store_occurs_selects(n: int, j: int, x: int, a: array<int, int>)
-  requires 0 <= j
-  ensures occurs(x, selects(a[j := x], ⌊counter(0, 1, n)⌋)) || n <= j
-
 // which is instantiated at the positions j in the range
 // (from simple_array_index_value_2; unused on SV-COMP; the fact at the reads of above_iterations)
 lemma {:fw} {:teq} earlier_above_iterations(n: int, j: int, ts: List<int>)
   requires above_iterations(n, ts) && 0 <= j && j < n
   ensures j < earlier(j, ts)
+
+// a sentinel: the reads of an array where x is stored at j differ from x at the positions i, ..., i + n - 1 exactly if
+// j is not among them and the reads of the array before differ from x there; a rule on the iteration constraint of
+// the search, before not_occurs_selects folds it
+// (from standard_sentinel-2, loop-acceleration/array_4)
+lemma {:rw} {:teq} invs_select_store_ne(x: int, a: array<int, int>, j: int, i: int, n: int)
+  ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[j := x][k] != x)
+    <==> !(i <= j && j < i + n) && invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x)
 
 lemma {:rw} {:teq} not_occurs_selects(a: array<int, int>, x: int, i: int, n: int)
   ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x) <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))

@@ -111,6 +111,10 @@ def Stmt.maps_earlier : Prop :=
   ∀ {α : Type} [Inhabited α] (n : Int) (xs : List α) (hxs : n ≤ length xs),
     maps (butlast (counter 0 1 n)) (fun k => earlier k xs) = «prefix» n xs
 
+def Stmt.earlier_prefix : Prop :=
+  ∀ {α : Type} [Inhabited α] (j : Int) (k : Int) (xs : List α),
+    j < k → earlier j («prefix» k xs) = earlier j xs
+
 def Stmt.maps_counter_affine : Prop :=
   ∀ (a : Int) (b : Int) (i : Int) (c : Int) (n : Int),
     maps (butlast (counter i c n)) (fun v => a + b * v)
@@ -414,6 +418,10 @@ def Stmt.current_maxs_earlier : Prop :=
     0 ≤ k ∧ k < n →
       (earlier k values ≤ current (maxs x values))
 
+def Stmt.current_maxs_prefix_earlier : Prop :=
+  ∀ (k : Int) (x : Int) (n : Int) (xs : List Int) (hxs : k < length xs),
+    0 ≤ k ∧ k < n → earlier k xs ≤ current (maxs x («prefix» n xs))
+
 def Stmt.current_mins_initial : Prop :=
   ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     current (mins x values) ≤ x
@@ -422,6 +430,10 @@ def Stmt.current_mins_earlier : Prop :=
   ∀ (k : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     0 ≤ k ∧ k < n →
       (current (mins x values) ≤ earlier k values)
+
+def Stmt.current_mins_prefix_earlier : Prop :=
+  ∀ (k : Int) (x : Int) (n : Int) (xs : List Int) (hxs : k < length xs),
+    0 ≤ k ∧ k < n → current (mins x («prefix» n xs)) ≤ earlier k xs
 
 noncomputable def parities (x : Int) (values : List Int) : Trace Int :=
   trace
@@ -577,17 +589,16 @@ def Stmt.earlier_not_occurs_prefix : Prop :=
   ∀ (n : Int) (j : Int) (e : Int) (xs : List Int) (hxs : length xs = n),
     ¬occurs e («prefix» n xs) ∧ 0 ≤ j ∧ j < n → earlier j xs ≠ e
 
-def Stmt.store_occurs_selects : Prop :=
-  ∀ (n : Int) (j : Int) (x : Int) (a : Int → Int),
-    0 ≤ j
-      → occurs
-        x
-        (selects (fun j1 => if j1 = j then x else a j1) (butlast (counter 0 1 n)))
-        ∨ n ≤ j
-
 def Stmt.earlier_above_iterations : Prop :=
   ∀ (n : Int) (j : Int) (ts : List Int) (n1 : Int) (hts : length ts = n1) (hn : n1 = n),
     above_iterations n ts ∧ 0 ≤ j ∧ j < n → j < earlier j ts
+
+def Stmt.invs_select_store_ne : Prop :=
+  ∀ (x : Int) (a : Int → Int) (j : Int) (i : Int) (n : Int),
+    invs
+      (butlast (counter i 1 n))
+      (fun k => (fun j1 => if j1 = j then x else a j1) k ≠ x)
+      ↔ ¬(i ≤ j ∧ j < i + n) ∧ invs (butlast (counter i 1 n)) (fun k => a k ≠ x)
 
 def Stmt.not_occurs_selects : Prop :=
   ∀ (a : Int → Int) (x : Int) (i : Int) (n : Int),
@@ -803,6 +814,25 @@ def Stmt.trace_read_initial : Prop :=
           a
           (List.zip keys fs)
           (fun b ⟨k, f⟩ => fun j => if j = k then f (a k) else b j)
+
+def Stmt.current_trace_row : Prop :=
+  ∀ (A0 : Int → Int → Int) (r : Int) (n : Int) (V : Int → Int),
+    current
+      (trace
+         A0
+         (butlast (counter 0 1 n))
+         (fun A j =>
+            fun j1 =>
+              if j1 = r then fun j1 => if j1 = j then V j else A r j1 else A j1))
+      = (fun j =>
+           if j = r then
+             current
+               (trace
+                  (A0 r)
+                  (butlast (counter 0 1 n))
+                  (fun b j => fun j1 => if j1 = j then V j else b j1))
+           else
+             A0 j)
 
 def Stmt.stores_cases : Prop :=
   ∀ (a0 : Int → Int) (n : Int) (c : Int) (P : Int → Prop) (G : Int → Int),

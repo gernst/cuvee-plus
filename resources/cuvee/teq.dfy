@@ -124,6 +124,14 @@ lemma {:rw} {:teq} maps_earlier<a>(n: int, xs: List<a>)
   ensures maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(k, xs))
     == prefix(n, xs)
 
+// a read within such a prefix reads the list, e.g. a[x] == b[x] where b is a copy of a by a loop, whose values are
+// the prefix, while the read of a is of the list
+// (from standard_copy*_ground, standard_strcpy_*, standard_compareModified_ground, standard_two_index_01)
+lemma {:rw} {:teq} earlier_prefix<a>(j: int, k: int, xs: List<a>)
+  requires j < k
+  ensures earlier(j, prefix(k, xs))
+    == earlier(j, xs)
+
 lemma {:rw} {:teq} maps_counter_affine(a: int, b: int, i: int, c: int, n: int)
   ensures maps(for ⌊counter(i, c, n)⌋ yield v :: a + b * v)
     == ⌊counter(a + b * i, b * c, n)⌋

@@ -14,6 +14,8 @@ earlier_sums: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its 
 earlier_counts: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
 current_maxs_earlier: 0 ≤ k ∧ k < n -- the values of a loop are read at its iterations
 current_mins_earlier: 0 ≤ k ∧ k < n -- the values of a loop are read at its iterations
+current_maxs_prefix_earlier: (hxs : k < length xs) -- the list is read at the iterations of a loop that it covers
+current_mins_prefix_earlier: (hxs : k < length xs) -- the list is read at the iterations of a loop that it covers
 
 # prefixes: the prefixes that the lemmas make are those of the earlier states of a loop, at most its length
 prefix_counter: k ≤ n -- the prefixes of a counter are cut at the iterations of its loop

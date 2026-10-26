@@ -164,6 +164,13 @@ theorem maps_earlier : Stmt.maps_earlier := by
     (fun k => N.earlier (N.natural k) xs) (fun k hk => by simp only [earlier_N_nonneg k xs (by omega), N.natural_eq])]
   exact N.maps_earlier n.toNat xs (by rw [N.integer_cast, N.integer_cast]; omega)
 
+theorem earlier_prefix : Stmt.earlier_prefix := by
+  intro α _ j k xs h
+  by_cases hj : 0 ≤ j
+  · rw [earlier_N_nonneg j _ hj, earlier_N_nonneg j _ hj, prefix_N]
+    exact N.earlier_prefix j.toNat k.toNat xs (by rw [N.integer_cast, N.integer_cast]; omega)
+  · rw [earlier_N, earlier_N]; simp [show j < 0 by omega]
+
 theorem maps_counter_affine : Stmt.maps_counter_affine := by
   intro a b i c n; rw [counter_N, counter_N]; exact N.maps_counter_affine a b i c n.toNat
 
@@ -371,6 +378,26 @@ theorem current_maxs_earlier : Stmt.current_maxs_earlier := by
   rw [earlier_N_nonneg k _ hk]
   exact N.current_maxs_earlier k.toNat x values n.toNat (by omega) (by rw [N.integer_cast, N.integer_cast]; omega)
 
+-- a position below the cut and within the list is within the prefix
+theorem lt_length_prefix {α : Type} [Inhabited α] (k n : Nat) (xs : List α) (hn : k < n) (hxs : k < xs.length) :
+    k < (N.«prefix» n xs).length := by
+  induction xs generalizing k n with
+  | nil => simp at hxs
+  | cons x ys ih =>
+    cases n with
+    | zero => omega
+    | succ m =>
+      simp only [N.«prefix», List.length_cons]
+      cases k with
+      | zero => omega
+      | succ j => have := ih j m (by omega) (by simp at hxs; omega); omega
+
+theorem current_maxs_prefix_earlier : Stmt.current_maxs_prefix_earlier := by
+  intro k x n xs hxs ⟨hk, hkn⟩
+  rw [← earlier_prefix k n xs hkn]
+  exact current_maxs_earlier k x («prefix» n xs) («prefix» n xs).length rfl
+    ⟨hk, by rw [prefix_N]; have := lt_length_prefix k.toNat n.toNat xs (by omega) (by omega); omega⟩
+
 theorem current_mins_initial : Stmt.current_mins_initial := by
   intro x values n hvalues; exact N.current_mins_initial x values values.length rfl
 
@@ -378,6 +405,12 @@ theorem current_mins_earlier : Stmt.current_mins_earlier := by
   intro k x values n hvalues ⟨hk, hkn⟩
   rw [earlier_N_nonneg k _ hk]
   exact N.current_mins_earlier k.toNat x values n.toNat (by omega) (by rw [N.integer_cast, N.integer_cast]; omega)
+
+theorem current_mins_prefix_earlier : Stmt.current_mins_prefix_earlier := by
+  intro k x n xs hxs ⟨hk, hkn⟩
+  rw [← earlier_prefix k n xs hkn]
+  exact current_mins_earlier k x («prefix» n xs) («prefix» n xs).length rfl
+    ⟨hk, by rw [prefix_N]; have := lt_length_prefix k.toNat n.toNat xs (by omega) (by omega); omega⟩
 
 theorem current_parities : Stmt.current_parities := by
   intro x values n hvalues; exact N.current_parities x values values.length rfl
@@ -449,13 +482,6 @@ theorem earlier_not_occurs_prefix : Stmt.earlier_not_occurs_prefix := by
   rw [earlier_N_nonneg j xs hj]
   exact N.earlier_not_occurs_prefix n.toNat j.toNat e xs (by omega) ⟨h, by rw [N.integer_cast, N.integer_cast]; omega⟩
 
-theorem store_occurs_selects : Stmt.store_occurs_selects := by
-  intro n j x a hj
-  rw [counter_N]
-  rcases N.store_occurs_selects n.toNat j x a hj with h | h
-  · exact Or.inl h
-  · rw [N.integer_cast] at h; exact Or.inr (by omega)
-
 theorem earlier_above_iterations : Stmt.earlier_above_iterations := by
   intro n j ts n1 hts hn ⟨h, hj, hjn⟩
   rw [above_iterations_N] at h
@@ -464,6 +490,22 @@ theorem earlier_above_iterations : Stmt.earlier_above_iterations := by
     ⟨h, by rw [N.integer_cast, N.integer_cast]; omega⟩
   rw [N.integer_cast, Int.toNat_of_nonneg hj] at this
   exact this
+
+theorem invs_select_store_ne : Stmt.invs_select_store_ne := by
+  intro x a j i n
+  rw [counter_N, N.invs_counter_forall, N.invs_counter_forall]
+  constructor
+  · intro h
+    refine ⟨fun ⟨h1, h2⟩ => ?_, fun k hk => ?_⟩
+    · have := h (j - i).toNat (by omega)
+      rw [show i + ((j - i).toNat : Int) = j by omega] at this
+      simp at this
+    · have := h k hk
+      by_cases e : i + k = j <;> simp_all
+  · intro ⟨h1, h2⟩ k hk
+    by_cases e : i + k = j
+    · exact absurd ⟨by omega, by omega⟩ h1
+    · simpa [e] using h2 k hk
 
 theorem not_occurs_selects : Stmt.not_occurs_selects := by
   intro a x i n; rw [counter_N]; exact N.not_occurs_selects a x i n.toNat
@@ -550,6 +592,25 @@ theorem lower_succ : Stmt.lower_succ := by
   intro ar len y h; rw [lower_N, upper_N]; exact N.lower_succ ar len y h
 
 -- the lemmas of arrays.dfy
+
+-- the row update of a two-dimensional array over any dependency, by induction on it
+theorem current_trace_row_list (r : Int) (V : Int → Int) :
+    ∀ (ds : List Int) (A0 : Int → Int → Int),
+      current (trace A0 ds (fun A j => fun j1 => if j1 = r then fun j1 => if j1 = j then V j else A r j1 else A j1))
+        = (fun j => if j = r then current (trace (A0 r) ds (fun b j => fun j1 => if j1 = j then V j else b j1))
+                    else A0 j) := by
+  intro ds
+  induction ds with
+  | nil => intro A0; funext j; by_cases h : j = r <;> simp [trace, current, h]
+  | cons d ds ih =>
+    intro A0
+    simp only [trace, current]
+    rw [ih]
+    funext j
+    by_cases h : j = r <;> simp [h]
+
+theorem current_trace_row : Stmt.current_trace_row := by
+  intro A0 r n V; exact current_trace_row_list r V _ A0
 
 theorem trace_read_initial : Stmt.trace_read_initial := by
   intro α β _ _ a keys fs n hkeys hfs; exact N.trace_read_initial a keys fs keys.length rfl (by omega)

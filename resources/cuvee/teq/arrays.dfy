@@ -9,6 +9,14 @@ lemma {:rw} {:teq} trace_read_initial<a, b>(a: array<a, b>, keys: List<a>, fs: L
   ensures trace(a, for keys, fs do b, k, f :: b[k := f(b[k])])
     == trace(a, for keys, fs do b, k, f :: b[k := f(a[k])])
 
+// an inner loop that updates the row r of a two-dimensional array only, cell by cell, is an update of that row by a
+// trace over the row, whose stores fold as those of a one-dimensional array; the outer loop over the rows then
+// updates each row once, which trace_read_initial reads from the initial array
+// (from array-multidimensional: init-2-n-u, init-non-constant-2-n-u, copy-2-u, copy-partial-2-n-u, rev-2-n-u)
+lemma {:rw} {:teq} current_trace_row(A0: array<int, array<int, int>>, r: int, n: int, V: (int) -> int)
+  ensures current(trace(A0, for ⌊counter(0, 1, n)⌋ do A, j :: A[r := A[r][j := V(j)]]))
+    == A0[r := current(trace(A0[r], for ⌊counter(0, 1, n)⌋ do b, j :: b[j := V(j)]))]
+
 // a loop that updates each position once, by cases on its old value, stores the values computed from the initial
 // array, since a[k] is not modified before iteration k; the first case stores a constant, since a higher-order
 // instance must contain the term it abstracts, a[k] (see Rewrite.abstraction); a workaround for two gaps of the

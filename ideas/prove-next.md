@@ -14,13 +14,16 @@ are recovered. Open, against 0.51.4 (Oct 26, 2026, 0.52.4 at 120 s, checked at 1
 | Task | 0.51.4 | now (15 min) | most frequent rewrites in 15 s (local, 0.52.5) |
 |---|---|---|---|
 | rewnifrev (Arrays, MonoCera) | true 17 s | unknown, timeout | `earlier(k, ⌊I⌋)` 22 of 29: the same read of the counter `i` at many positions |
-| array_2-1-simple (false), array_2-2-simple | 20–23 s | timeout | 6 in all: stuck after the first trace and map of the array |
 | linear_sea.ch | true 25 s | timeout | `uint((tmp div 2) + 1)`, `quot(tmp, 2)`: unsigned arithmetic with division (binary search) |
-| theatreSquare (fallback) | true 48 s | timeout | reads `earlier`/`current` of several traces |
 | geo1-ll_unwindbound1 (fallback) | true 66 s | step bound | `ulonglong(k)`, `ulonglong(c + 1)` 15 each: wrapping of unsigned long long |
 | prodbin-ll_valuebound5, 50, 100 (fallback) | true 41–77 s | timeout | `rem(y, 2)`, `quot(y, 2)`: C's division of the halving loop |
 | cohendiv-ll (fallback) | true 116 s | timeout | `current(trace(b…))` with `pow` |
 | max20-1 (fallback, Arrays) | true 82 s | timeout | reads of the array trace |
+
+Work again (cloud, Oct 26, 2026, 0.52.4 with the database of that day, 120 s, ideas/array-lemmas.md): array_2-1-simple
+(false, 26 s) and array_2-2-simple (28 s), without any of the new rules, presumably by the removal of
+`store_occurs_selects`, whose instances came back at every read of a store; theatreSquare with the fallback (61 s).
+sum_by_3, sum_by_3_abstracted and sum_array-2-2 (TODO.md, "Lost tasks") are solved by 0.52.4 itself.
 
 Only slower, solved within 15 min: nested_4 (107 s), nested3-1_abstracted (129 s), cohendiv-ll_valuebound10 (75 s),
 prodbin-ll_valuebound20 (101 s).

@@ -132,7 +132,7 @@ decides these conditions. Lemmas that hold for all integers by the clamping have
   (`current(counter(i, c, n))`), atoms that occur in goals as they are (`sorted_short`), the rules on `invs`.
 - Forward lemmas: facts about a term whose atom rarely occurs, but which the arithmetic or the classes need where the
   term occurs: bounds of traces or named values (`bisection_lo`, the triangles), facts at reads
-  (`earlier_above_iterations`), facts that refute an atom (`store_occurs_selects`).
+  (`earlier_above_iterations`).
 - Both only where an example needs the atom decided where no fact was assumed.
 
 **What a forward lemma costs.** A trigger is tried at every matching term of every assumed fact, also where it never
@@ -143,6 +143,12 @@ yields an instance, so:
 - no variables bound by conditions alone: such a variable is matched against every member of a class, one instance
   each; state the fact in the term itself;
 - degenerate arguments of folds get a rule that evaluates them (`squares_zero`).
+- no facts that no rule normalizes: an instance is simplified again at every firing, and one that the simplifier
+  cannot reduce, e.g. a disjunction with an occurrence in the values of a store, comes back unchanged at every read
+  of every store. The removed `store_occurs_selects` (`occurs(x, selects(a[j := x], ⌊counter(0, 1, n)⌋)) || n <= j`,
+  triggered at the reads of stores, for standard_sentinel-2) used up the steps of the reducers of array-crafted and
+  reducercommutativity this way; a fact that refutes an atom belongs in a rewrite rule on that atom, here
+  `invs_select_store_ne` on the iteration constraint of the search.
 
 **Lemmas written for a program** (summaries of inner loops, the chains of
 [examples/dafny/algorithms](../examples/dafny/algorithms), [algorithms.md](algorithms.md)) follow the matcher:
