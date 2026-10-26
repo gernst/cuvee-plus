@@ -75,13 +75,14 @@ sealed trait Expr:
 object Expr:
   // the order of the printed representations, computed structurally without building the strings, which normal forms
   // sort often (see prove.Poly): case classes by their names and then their fields in order, lists element by
-  // element, other values by their printed representation; it agrees with comparing the strings, since the
-  // separators of the printed representation come before letters and digits
-  given Ordering[Expr] = (a, b) => structural(a, b)
+  // element, other values by their printed representation followed by the separator after them in the printed
+  // representation of the whole, `,` or `)`, such that it agrees with comparing the strings, also where one is a
+  // prefix of the other, e.g. x' before x, since ' comes before the comma after x
+  given Ordering[Expr] = (a, b) => structural(a, b, ')', ')')
 
-  def structural(a: Any, b: Any): Int =
+  def structural(a: Any, b: Any, sa: Char, sb: Char): Int =
     (a, b) match
-      case (a: AnyRef, b: AnyRef) if a eq b =>
+      case (a: AnyRef, b: AnyRef) if (a eq b) && sa == sb =>
         0
 
       case (a: List[?], b: List[?]) =>
@@ -90,21 +91,23 @@ object Expr:
           case (Nil, _)           => -1
           case (_, Nil)           => 1
           case (x :: xs, y :: ys) =>
-            val c = structural(x, y)
-            if c != 0 then c else structural(xs, ys)
+            val c = structural(x, y, if xs.isEmpty then ')' else ',', if ys.isEmpty then ')' else ',')
+            if c != 0 then c else structural(xs, ys, sa, sb)
 
-      case (a: Product, b: Product) if a.productArity > 0 || b.productArity > 0 =>
-        val c = a.productPrefix.compareTo(b.productPrefix)
-        if c != 0 then c
-        else
-          val xs = a.productIterator
-          val ys = b.productIterator
-          var d = 0
-          while d == 0 && xs.hasNext && ys.hasNext do d = structural(xs.next(), ys.next())
-          if d != 0 then d else java.lang.Boolean.compare(xs.hasNext, ys.hasNext)
+      case (a: Product, b: Product) if a.productArity > 0 && b.productArity > 0 && a.productPrefix == b.productPrefix =>
+        val n = a.productArity
+        var i = 0
+        var d = 0
+        while d == 0 && i < n do
+          d = structural(a.productElement(i), b.productElement(i), if i == n - 1 then ')' else ',', if i == n - 1 then ')' else ',')
+          i += 1
+        d
+
+      case (a: Product, b: Product) if a.productArity > 0 && b.productArity > 0 =>
+        (a.productPrefix + "(").compareTo(b.productPrefix + "(")
 
       case _ =>
-        a.toString.compareTo(b.toString)
+        (a.toString + sa).compareTo(b.toString + sb)
 
   def vars(name: String, types: List[Type]) =
     for (typ, index) <- types.zipWithIndex
