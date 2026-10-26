@@ -3,6 +3,8 @@
 Proposals, plans and open points that are not implemented; a proposal is removed once it is implemented and
 documented in `doc/`.
 
+- [portfolio.md](portfolio.md): a wrapper (portfolio.py) that runs fuzzing, cuvee-fallback, `-chc` and bounded
+  unrolling in parallel on the native binary, with what each method is good at and the steps.
 - [prove-next.md](prove-next.md): the plan (the regressions since 0.51.4, bounded unrolling for counterexamples and
   bounded proofs) and the open changes to the engine of `-prove`, ordered by expected gain.
 - [canonical.md](canonical.md): the open points of the canonical forms of the context and of the integer counts.
