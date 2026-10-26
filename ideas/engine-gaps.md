@@ -105,6 +105,19 @@ change (regenerated only once the measurement says the design pays off).
 examples of the lemmas of Oct 26, copysome2-1 without `stores_cases_point`, benchmark43 (10 s each), then the cloud
 run of Arrays and Loops against 0.52.10.
 
+## 3c. Merging cases (Oct 26)
+
+- Done (0.52.11): the cases of the paths of a loop body are grouped by their results in `TEQ.update`, before any
+  simplification; examples/c/teq/stores_cases_point.c (two branches storing `a[i]`) is proved without the lemma.
+  copysome2-1 is not: its branches store `a2[i]` and `a1[i]`, equal only by the earlier loop.
+- Rejected: merging in `Simplify.eps` by assuming the guards. Both guards are false together (disjoint), the
+  disjunction is too weak (the results differ under the other guard).
+- Later: the directed test, `e₁` simplified under the guard of the other case equals `e₂` (then `e₁` covers both), and
+  the converse; it would merge copysome2-1.
+- The prototype of 3b (canonical variables in terms, values inside arithmetic, the constant of a polynomial written
+  as the canonical variable of its class) is kept as a patch, not measured in the cloud; ideas/engine-consolidation.md
+  proposes to put the policy of normal forms into one place first.
+
 ## 4. Remainders and division
 
 **Gaps.** (a) `Simplify.remainders` substitutes a variable inside `x % n` only if its definition is a remainder (the

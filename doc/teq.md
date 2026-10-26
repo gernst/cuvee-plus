@@ -65,6 +65,9 @@ paper; calls of procedures without a contract are inlined, so they are checked i
   variables (below), the counter `K == counter(0, 1, n)` with `0 <= n`, and the iteration constraint `Invs`; it checks
   that the body executes safely from the current state. Its exits (the negated test, `break` or `return` in a last
   iteration) are told apart by branch conditions, which an enclosing loop uses as the guards of its cases.
+- The update of a variable has one case per path through the body; cases with the same result are grouped, their
+  guards joined by a disjunction (`TEQ.update`), e.g. the paths of a body that does not modify the variable
+  ([stores_cases_point.c](../examples/c/teq/stores_cases_point.c)).
 - A loop whose body ends by `break` or `return` on all paths runs at most once and is a conditional.
 - `TEQ.loop` is `TEQ.head`, the system from the state at the entry, followed by `TEQ.exits`; `-slice` uses
   `TEQ.head` at the heads of loops ([prove.md](prove.md), "Programs").

@@ -18,6 +18,8 @@ documented in `doc/`.
 - [engine-gaps.md](engine-gaps.md): a plan to close the gaps of `-prove` behind the workarounds of the database
   (comparisons of conditionals, `-debug match`, iteration variables kept instead of literals, remainders and division,
   higher-order values at arithmetic arguments), the database work, and what is not done and why.
+- [engine-consolidation.md](engine-consolidation.md): a review of the engine of `-prove`: the places that decide
+  normal forms, equality, derived facts, alternatives in matching, memos and choices, with proposals to unify them.
 - [dnf-guards.md](dnf-guards.md): the cases of updates with conjunctive guards (DNF) instead of cases merged by
   equal results, the merging moved into the matcher for higher-order guard variables.
 - [conditional-stores.md](conditional-stores.md): guarded stores merged into stores of conditional values, in

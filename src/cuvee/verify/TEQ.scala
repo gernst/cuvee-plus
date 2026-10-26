@@ -454,11 +454,20 @@ object TEQ extends Transform:
       val defs = Eq(K, counter) :: order.toList.map((x, trace) => Eq(x, trace)) ++ (cur zip current).map((x, e) => Eq(x, e))
       (cur ++ List(n, K) ++ order.map(_._1) ++ Zs, cur, And(defs ++ rest))
 
-  // a single unconditional case is its result
+  // the cases of the paths grouped by their results, which are the same where a path does not update the variable,
+  // e.g. x of a body if (c) y = y + 1; else z = z + 1; whose paths both keep x; the guards of a group are joined by a
+  // disjunction, in the order of the first path; a single case is its result, as in Simplify.eps (where no guard holds,
+  // the value is not specified)
   def update(updates: List[Upd]): Expr =
-    updates match
-      case List(Upd(True, rhs)) => rhs
-      case _                    => Eps(updates)
+    val groups =
+      updates.foldLeft(List.empty[(Expr, List[Expr])]): (groups, upd) =>
+        groups.indexWhere(_._1 == upd.rhs) match
+          case -1 => groups :+ (upd.rhs, List(upd.cond))
+          case i  => groups.updated(i, (upd.rhs, groups(i)._2 :+ upd.cond))
+
+    groups match
+      case List((rhs, _)) => rhs
+      case _              => Eps(groups.map((rhs, conds) => Upd(Or(conds), rhs)))
 
   // the paths through a loop body that lead to the next iteration, i.e., that end normally or by continue
   def iterates(q: Path): Boolean =
